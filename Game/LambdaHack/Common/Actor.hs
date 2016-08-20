@@ -6,8 +6,9 @@ module Game.LambdaHack.Common.Actor
     -- * The@ Acto@r type
   , Actor(..), ResDelta(..), ActorAspect
   , deltaSerious, deltaMild, xM, minusM, minusTwoM, oneM
-  , bspeed, actorTemplate, braced, waitedLastTurn, actorDying, unoccupied
-  , hpTooLow, hpHuge, calmEnough, hpEnough
+  , bspeedFromItems, bspeed
+  , actorTemplate, braced, waitedLastTurn, actorDying, unoccupied
+  , hpTooLowFromItems, hpTooLow, hpHuge, calmEnough, hpEnough
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
   , keySelected, ppContainer, ppCStore, ppCStoreIn, verbCStore
@@ -149,11 +150,17 @@ actorTemplate btrunk bsymbol bname bpronoun bcolor bhp bcalm
       bproj = False
   in Actor{..}
 
-bspeed :: Actor -> [ItemFull] -> Speed
-bspeed b activeItems =
+bspeedFromItems :: Actor -> [ItemFull] -> Speed
+bspeedFromItems b activeItems =
   case btrajectory b of
     Nothing -> toSpeed $ max 1  -- avoid infinite wait
-               $ sumSlotNoFilter IK.EqpSlotAddSpeed activeItems
+               $ sumSlotNoFilterFromItems IK.EqpSlotAddSpeed activeItems
+    Just (_, speed) -> speed
+
+bspeed :: Actor -> AspectRecord -> Speed
+bspeed b AspectRecord{aSpeed} =
+  case btrajectory b of
+    Nothing -> toSpeed $ max 1 aSpeed  -- avoid infinite wait
     Just (_, speed) -> speed
 
 -- | Whether an actor is braced for combat this clip.
@@ -168,22 +175,26 @@ actorDying :: Actor -> Bool
 actorDying b = bhp b <= 0
                || bproj b && maybe True (null . fst) (btrajectory b)
 
-hpTooLow :: Actor -> [ItemFull] -> Bool
-hpTooLow b activeItems =
-  let maxHP = sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
+hpTooLowFromItems :: Actor -> [ItemFull] -> Bool
+hpTooLowFromItems b activeItems =
+  let maxHP = sumSlotNoFilterFromItems IK.EqpSlotAddMaxHP activeItems
   in bhp b <= oneM || 5 * bhp b < xM maxHP && bhp b <= xM 10
+
+hpTooLow :: Actor -> AspectRecord -> Bool
+hpTooLow b AspectRecord{aMaxHP} =
+  bhp b <= oneM || 5 * bhp b < xM aMaxHP && bhp b <= xM 10
 
 hpHuge :: Actor -> Bool
 hpHuge b = bhp b > xM 40
 
-calmEnough :: Actor -> [ItemFull] -> Bool
-calmEnough b activeItems =
-  let calmMax = max 1 $ sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
+calmEnough :: Actor -> AspectRecord -> Bool
+calmEnough b AspectRecord{aMaxCalm} =
+  let calmMax = max 1 aMaxCalm
   in 2 * xM calmMax <= 3 * bcalm b && bcalm b >= xM 10
 
-hpEnough :: Actor -> [ItemFull] -> Bool
-hpEnough b activeItems =
-  let hpMax = max 1 $ sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
+hpEnough :: Actor -> AspectRecord -> Bool
+hpEnough b AspectRecord{aMaxHP} =
+  let hpMax = max 1 aMaxHP
   in xM hpMax <= 3 * bhp b && bhp b >= xM 10
 
 -- | Checks for the presence of actors in a position.

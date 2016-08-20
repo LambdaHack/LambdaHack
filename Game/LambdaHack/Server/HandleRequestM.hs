@@ -36,7 +36,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.CommonM
@@ -162,8 +161,10 @@ addSmell :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 addSmell aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  smellRadius <- sumOrganEqpServer IK.EqpSlotAddSmell aid
-  let dumbMonster = not (fhasGender $ gplayer fact) && smellRadius <= 0
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! aid
+      smellRadius = aSmell ar
+      dumbMonster = not (fhasGender $ gplayer fact) && smellRadius <= 0
   unless (bproj b || dumbMonster) $ do
     -- TODO: right now only humans leave smell and content should not
     -- give humans the ability to smell (dominated monsters are rare enough).
@@ -383,10 +384,11 @@ reqMoveItems :: (MonadAtomic m, MonadServer m)
              => ActorId -> [(ItemId, Int, CStore, CStore)] -> m ()
 reqMoveItems aid l = do
   b <- getsState $ getActorBody aid
-  activeItems <- activeItemsServer aid
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! aid
   -- Server accepts item movement based on calm at the start, not end
   -- or in the middle, to avoid interrupted or partially ignored commands.
-  let calmE = calmEnough b activeItems
+      calmE = calmEnough b ar
   mapM_ (reqMoveItem aid calmE) l
 
 reqMoveItem :: (MonadAtomic m, MonadServer m)
@@ -463,8 +465,9 @@ reqProject :: (MonadAtomic m, MonadServer m)
 reqProject source tpxy eps iid cstore = do
   let req = ReqProject tpxy eps iid cstore
   b <- getsState $ getActorBody source
-  activeItems <- activeItemsServer source
-  let calmE = calmEnough b activeItems
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! source
+      calmE = calmEnough b ar
   if cstore == CSha && not calmE then execFailure source req ItemNotCalm
   else do
     mfail <- projectFail source tpxy eps iid cstore False
@@ -480,8 +483,9 @@ reqApply :: (MonadAtomic m, MonadServer m)
 reqApply aid iid cstore = do
   let req = ReqApply iid cstore
   b <- getsState $ getActorBody aid
-  activeItems <- activeItemsServer aid
-  let calmE = calmEnough b activeItems
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! aid
+      calmE = calmEnough b ar
   if cstore == CSha && not calmE then execFailure aid req ItemNotCalm
   else do
     bag <- getsState $ getActorBag aid cstore
@@ -493,7 +497,7 @@ reqApply aid iid cstore = do
         localTime <- getsState $ getLocalTime (blid b)
         let skill = EM.findWithDefault 0 Ability.AbApply actorSk
             itemFull = itemToF iid kit
-            legal = permittedApply localTime skill b activeItems " " itemFull
+            legal = permittedApply localTime skill b ar " " itemFull
         case legal of
           Left reqFail -> execFailure aid req reqFail
           Right _ -> applyItem aid iid cstore

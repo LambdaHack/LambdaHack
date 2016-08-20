@@ -22,9 +22,9 @@ import Game.LambdaHack.Content.ModeKind
 -- | How much AI benefits from applying the effect. Multipllied by item p.
 -- Negative means harm to the enemy when thrown at him. Effects with zero
 -- benefit won't ever be used, neither actively nor passively.
-effectToBenefit :: Kind.COps -> Actor -> [ItemFull] -> Faction
-                -> IK.Effect -> Int
-effectToBenefit cops b activeItems fact eff =
+effectToBenefit :: Kind.COps -> Actor -> AspectRecord -> Faction -> IK.Effect
+                -> Int
+effectToBenefit cops b ar@AspectRecord{..} fact eff =
   let dungeonDweller = not $ fcanEscape $ gplayer fact
   in case eff of
     IK.ELabel _ -> 0
@@ -33,30 +33,26 @@ effectToBenefit cops b activeItems fact eff =
                    -- often splash damage, etc.
     IK.Explode _ -> 0  -- depends on explosion
     IK.RefillHP p ->
-      let hpMax = sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
-      in if p > 0
+         if p > 0
          -- TODO: when picking up, always deem valuable; when drinking, only if
          -- HP not maxxed.
          then 10 * min p (max 0 $ fromIntegral
-                          $ (xM hpMax - bhp b) `divUp` oneM)
+                          $ (xM aMaxHP - bhp b) `divUp` oneM)
          else max (-99) (11 * p)
     IK.OverfillHP p ->
-      let hpMax = sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
-      in if p > 0
+         if p > 0
          then 11 * min p (max 1 $ fromIntegral
-                          $ (xM hpMax - bhp b) `divUp` oneM)
+                          $ (xM aMaxHP - bhp b) `divUp` oneM)
          else max (-99) (11 * p)
     IK.RefillCalm p ->
-      let calmMax = sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
-      in if p > 0
+         if p > 0
          then min p (max 0 $ fromIntegral
-                     $ (xM calmMax - bcalm b) `divUp` oneM)
+                     $ (xM aMaxCalm - bcalm b) `divUp` oneM)
          else max (-20) p
     IK.OverfillCalm p ->
-      let calmMax = sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
-      in if p > 0
+         if p > 0
          then min p (max 1 $ fromIntegral
-                     $ (xM calmMax - bcalm b) `divUp` oneM)
+                     $ (xM aMaxCalm - bcalm b) `divUp` oneM)
          else max (-20) p
     IK.Dominate -> -200
     IK.Impress -> -10
@@ -79,11 +75,11 @@ effectToBenefit cops b activeItems fact eff =
          then 1
          else -p  -- get rid of the foe
     IK.CreateItem COrgan grp _ ->  -- TODO: use the timeout
-      let (total, count) = organBenefit grp cops b activeItems fact
+      let (total, count) = organBenefit grp cops b ar fact
       in total `divUp` count  -- average over all matching grp; rarities ignored
     IK.CreateItem{} -> 30  -- TODO
     IK.DropItem COrgan grp True ->  -- calculated for future use, general pickup
-      let (total, _) = organBenefit grp cops b activeItems fact
+      let (total, _) = organBenefit grp cops b ar fact
       in - total  -- sum over all matching grp; simplification: rarities ignored
     IK.DropItem _ _ False -> -15
     IK.DropItem _ _ True -> -30
@@ -98,17 +94,17 @@ effectToBenefit cops b activeItems fact eff =
     IK.ApplyPerfume -> 0  -- depends on the smell sense of friends and foes
     IK.OneOf _ -> 1  -- usually a mixed blessing, but slightly beneficial
     IK.OnSmash _ -> 0  -- TOOD: can be beneficial or not; analyze explosions
-    IK.Recharging e -> effectToBenefit cops b activeItems fact e  -- for weapons
+    IK.Recharging e -> effectToBenefit cops b ar fact e  -- for weapons
     IK.Temporary _ -> 0
 
 -- TODO: calculating this for "temporary conditions" takes forever
 organBenefit :: GroupName ItemKind -> Kind.COps
-             -> Actor -> [ItemFull] -> Faction
+             -> Actor -> AspectRecord -> Faction
              -> (Int, Int)
-organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}} b activeItems fact =
+organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}} b ar fact =
   let f p _ kind (sacc, pacc) =
         let paspect asp = p * aspectToBenefit cops b asp
-            peffect eff = p * effectToBenefit cops b activeItems fact eff
+            peffect eff = p * effectToBenefit cops b ar fact eff
         in ( sacc + sum (map paspect $ IK.iaspects kind)
                   + sum (map peffect $ IK.ieffects kind)
            , pacc + p )
@@ -138,13 +134,13 @@ aspectToBenefit _cops _b asp =
 -- | Determine the total benefit from having an item in eqp or inv,
 -- according to item type, and also the benefit confered by equipping the item
 -- and from meleeing with it or applying it or throwing it.
-totalUsefulness :: Kind.COps -> Actor -> [ItemFull] -> Faction -> ItemFull
+totalUsefulness :: Kind.COps -> Actor -> AspectRecord -> Faction -> ItemFull
                 -> Maybe (Int, Int)
-totalUsefulness cops b activeItems fact itemFull =
+totalUsefulness cops b ar fact itemFull =
   let ben effects aspects =
-        let effSum = sum $ map (effectToBenefit cops b activeItems fact) effects
+        let effSum = sum $ map (effectToBenefit cops b ar fact) effects
             aspBens = map (aspectToBenefit cops b) $ aspectRecordToList aspects  -- TODO
-            periodicEffBens = map (effectToBenefit cops b activeItems fact)
+            periodicEffBens = map (effectToBenefit cops b ar fact)
                                   (stripRecharging effects)
             timeout = aTimeout $ aspectRecordFull itemFull
             periodicBens | timeout == 0 = []

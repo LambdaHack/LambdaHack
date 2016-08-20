@@ -109,8 +109,11 @@ condAnyFoeAdjM aid = do
 condHpTooLowM :: MonadClient m => ActorId -> m Bool
 condHpTooLowM aid = do
   b <- getsState $ getActorBody aid
-  activeItems <- activeItemsClient aid
-  return $! hpTooLow b activeItems
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
+  return $! hpTooLow b ar
 
 -- | Require the actor stands over a triggerable tile.
 condOnTriggerableM :: MonadStateRead m => ActorId -> m Bool
@@ -134,7 +137,7 @@ threatDistList aid = do
         activeItems <- activeItemsClient aid2
         actorMaxSkE <- enemyMaxAbFromItems activeItems aid2
         let nonmoving = EM.findWithDefault 0 Ability.AbMove actorMaxSkE <= 0
-        return $! not (hpTooLow b2 activeItems || nonmoving)
+        return $! not (hpTooLowFromItems b2 activeItems || nonmoving)
   allThreats <- filterM strongActor allAtWar
   let addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
   return $ sortBy (comparing fst) $ map addDist allThreats
@@ -186,9 +189,9 @@ condCanProjectM maxSkills aid = do
              else
                actorSkillsClient aid
   let skill = EM.findWithDefault 0 Ability.AbProject actorSk
-      q _ itemFull b activeItems =
+      q _ itemFull b ar =
         either (const False) id
-        $ permittedProject False skill b activeItems " " itemFull
+        $ permittedProject False skill b ar " " itemFull
   benList <- benAvailableItems aid q [CEqp, CInv, CGround]
   let missiles = filter (maybe True ((< 0) . snd) . fst . fst) benList
   return $ not (null missiles)
@@ -198,7 +201,7 @@ condCanProjectM maxSkills aid = do
 -- and the items' values.
 benAvailableItems :: MonadClient m
                   => ActorId
-                  -> (Maybe Int -> ItemFull -> Actor -> [ItemFull] -> Bool)
+                  -> (Maybe Int -> ItemFull -> Actor -> AspectRecord -> Bool)
                   -> [CStore]
                   -> m [( (Maybe (Int, Int), (Int, CStore))
                         , (ItemId, ItemFull) )]
@@ -206,21 +209,24 @@ benAvailableItems aid permitted cstores = do
   cops <- getsState scops
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
-  activeItems <- activeItemsClient aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   condAnyFoeAdj <- condAnyFoeAdjM aid
   condShineBetrays <- condShineBetraysM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condNotCalmEnough <- condNotCalmEnoughM aid
-  let ben cstore bag =
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
+      ben cstore bag =
         [ ((benefit, (k, cstore)), (iid, itemFull))
         | (iid, kit@(k, _)) <- EM.assocs bag
         , let itemFull = itemToF iid kit
-              benefit = totalUsefulness cops b activeItems fact itemFull
+              benefit = totalUsefulness cops b ar fact itemFull
               hind = hinders condAnyFoeAdj condShineBetrays
                              condAimEnemyPresent condNotCalmEnough
-                             b activeItems itemFull
-        , permitted (fst <$> benefit) itemFull b activeItems
+                             b ar itemFull
+        , permitted (fst <$> benefit) itemFull b ar
           && (cstore /= CEqp || hind) ]
       benCStore cs = do
         bag <- getsState $ getActorBag aid cs
@@ -230,16 +236,16 @@ benAvailableItems aid permitted cstores = do
     -- keep it lazy
 
 -- TODO: also take into account dynamic lights *not* wielded by the actor
-hinders :: Bool -> Bool -> Bool -> Bool -> Actor -> [ItemFull] -> ItemFull
+hinders :: Bool -> Bool -> Bool -> Bool -> Actor -> AspectRecord -> ItemFull
         -> Bool
 hinders condAnyFoeAdj condShineBetrays condAimEnemyPresent
         condNotCalmEnough  -- perhaps enemies don't have projectiles
-        body activeItems itemFull =
+        body ar itemFull =
   let itemShine = 0 < aShine (aspectRecordFull itemFull)
       itemShineBad = itemShine && condNotCalmEnough && not condAnyFoeAdj
   in -- Fast actors want to hide in darkness to ambush opponents and want
      -- to hit hard for the short span they get to survive melee.
-     bspeed body activeItems > speedNormal
+     bspeed body ar > speedNormal
      && (itemShineBad
          || 0 > aHurtMelee (aspectRecordFull itemFull))
      -- In the presence of enemies (seen, or unseen but distressing)
@@ -260,8 +266,11 @@ hinders condAnyFoeAdj condShineBetrays condAimEnemyPresent
 condNotCalmEnoughM :: MonadClient m => ActorId -> m Bool
 condNotCalmEnoughM aid = do
   b <- getsState $ getActorBody aid
-  activeItems <- activeItemsClient aid
-  return $! not (calmEnough b activeItems)
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
+  return $! not (calmEnough b ar)
 
 -- | Require that the actor stands over a desirable item.
 condDesirableFloorItemM :: MonadClient m => ActorId -> m Bool
@@ -328,7 +337,7 @@ condMeleeBadM aid = do
         actorMaxSk2 <- enemyMaxAbFromItems activeItems2 aid2
         let condUsableWeapon2 = any isMelee activeItems2
             canMelee2 = EM.findWithDefault 0 Ability.AbMelee actorMaxSk2 > 0
-            hpGood = not $ hpTooLow b2 activeItems2
+            hpGood = not $ hpTooLowFromItems b2 activeItems2
         return $! hpGood && condUsableWeapon2 && canMelee2
   strongCloseFriends <- filterM strongActor closeFriends
   actorAspect <- getsClient sactorAspect
@@ -351,7 +360,7 @@ condShineBetraysM :: MonadClient m => ActorId -> m Bool
 condShineBetraysM aid = do
   b <- getsState $ getActorBody aid
   eqpItems <- map snd <$> fullAssocsClient aid [CEqp]
-  let actorEqpShines = sumSlotNoFilter IK.EqpSlotAddShine eqpItems > 0
+  let actorEqpShines = sumSlotNoFilterFromItems IK.EqpSlotAddShine eqpItems > 0
   aInAmbient <- getsState $ actorInAmbient b
   return $! not aInAmbient     -- tile is dark, so actor could hide
             && actorEqpShines  -- but actor betrayed by his equipped light

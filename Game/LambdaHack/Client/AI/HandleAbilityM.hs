@@ -80,21 +80,24 @@ actionStrategy aid = do
   aInAmbient <- getsState $ actorInAmbient body
   explored <- getsClient sexplored
   (fleeL, badVic) <- fleeList aid
-  let lidExplored = ES.member (blid body) explored
-      panicFleeL = fleeL ++ badVic
-      actorShines = sumSlotNoFilter IK.EqpSlotAddShine activeItems > 0
-      condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
-      condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
-      condThreatNearby = not $ null $ takeWhile ((<= 9) . fst) threatDistL
-      speed1_5 = speedScale (3%2) (bspeed body activeItems)
-      condFastThreatAdj = any (\(_, (_, b)) -> bspeed b activeItems > speed1_5)
-                          $ takeWhile ((== 1) . fst) threatDistL
-      heavilyDistressed =  -- actor hit by a proj or similarly distressed
-        deltaSerious (bcalmDelta body)
+  activeI <- activeItemsFunClient
   actorAspect <- getsClient sactorAspect
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
+      lidExplored = ES.member (blid body) explored
+      panicFleeL = fleeL ++ badVic
+      actorShines = aShine ar > 0
+      condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
+      condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
+      condThreatNearby = not $ null $ takeWhile ((<= 9) . fst) threatDistL
+      speed1_5 = speedScale (3%2) (bspeed body ar)
+      condFastThreatAdj = any (\(_, (aid2, b2)) ->
+                                let activeItems2 = activeI aid
+                                in bspeedFromItems b2 activeItems2 > speed1_5)
+                          $ takeWhile ((== 1) . fst) threatDistL
+      heavilyDistressed =  -- actor hit by a proj or similarly distressed
+        deltaSerious (bcalmDelta body)
       actorMaxSk = aAbility ar
       abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
       stratToFreq :: MonadStateRead m
@@ -256,7 +259,6 @@ pickup :: MonadClient m
 pickup aid onlyWeapon = do
   benItemL <- benGroundItems aid
   b <- getsState $ getActorBody aid
-  activeItems <- activeItemsClient aid
   -- This calmE is outdated when one of the items increases max Calm
   -- (e.g., in pickup, which handles many items at once), but this is OK,
   -- the server accepts item movement based on calm at the start, not end
@@ -264,7 +266,11 @@ pickup aid onlyWeapon = do
   -- The calmE is inaccurate also if an item not IDed, but that's intended
   -- and the server will ignore and warn (and content may avoid that,
   -- e.g., making all rings identified)
-  let calmE = calmEnough b activeItems
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
+      calmE = calmEnough b ar
       isWeapon (_, (_, itemFull)) = isMeleeEqp itemFull
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
@@ -287,8 +293,11 @@ equipItems :: MonadClient m
 equipItems aid = do
   cops <- getsState scops
   body <- getsState $ getActorBody aid
-  activeItems <- activeItemsClient aid
-  let calmE = calmEnough body activeItems
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
+      calmE = calmEnough body ar
   fact <- getsState $ (EM.! bfid body) . sfactionD
   eqpAssocs <- fullAssocsClient aid [CEqp]
   invAssocs <- fullAssocsClient aid [CInv]
@@ -318,7 +327,7 @@ equipItems aid = do
       filterNeeded (_, itemFull) =
         not $ unneeded cops condAnyFoeAdj condShineBetrays
                        condAimEnemyPresent (not calmE)
-                       body activeItems fact itemFull
+                       body ar fact itemFull
       bestThree = bestByEqpSlot (filter filterNeeded eqpAssocs)
                                 (filter filterNeeded invAssocs)
                                 (filter filterNeeded shaAssocs)
@@ -344,8 +353,11 @@ yieldUnneeded :: MonadClient m
 yieldUnneeded aid = do
   cops <- getsState scops
   body <- getsState $ getActorBody aid
-  activeItems <- activeItemsClient aid
-  let calmE = calmEnough body activeItems
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
+      calmE = calmEnough body ar
   fact <- getsState $ (EM.! bfid body) . sfactionD
   eqpAssocs <- fullAssocsClient aid [CEqp]
   condAnyFoeAdj <- condAnyFoeAdjM aid
@@ -359,11 +371,11 @@ yieldUnneeded aid = do
       -- in play again.
   let yieldSingleUnneeded (iidEqp, itemEqp) =
         let csha = if calmE then CSha else CInv
-        in if | harmful cops body activeItems fact itemEqp ->
+        in if | harmful cops body ar fact itemEqp ->
                 [(iidEqp, itemK itemEqp, CEqp, CInv)]
               | hinders condAnyFoeAdj condShineBetrays
                         condAimEnemyPresent (not calmE)
-                        body activeItems itemEqp ->
+                        body ar itemEqp ->
                 [(iidEqp, itemK itemEqp, CEqp, csha)]
               | otherwise -> []
       yieldAllUnneeded = concatMap yieldSingleUnneeded eqpAssocs
@@ -376,8 +388,11 @@ unEquipItems :: MonadClient m
 unEquipItems aid = do
   cops <- getsState scops
   body <- getsState $ getActorBody aid
-  activeItems <- activeItemsClient aid
-  let calmE = calmEnough body activeItems
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
+      calmE = calmEnough body ar
   fact <- getsState $ (EM.! bfid body) . sfactionD
   eqpAssocs <- fullAssocsClient aid [CEqp]
   invAssocs <- fullAssocsClient aid [CInv]
@@ -426,7 +441,7 @@ unEquipItems aid = do
       filterNeeded (_, itemFull) =
         not $ unneeded cops condAnyFoeAdj condShineBetrays
                        condAimEnemyPresent (not calmE)
-                       body activeItems fact itemFull
+                       body ar fact itemFull
       bestThree =
         bestByEqpSlot eqpAssocs invAssocs (filter filterNeeded shaAssocs)
       bInvSha = concatMap
@@ -468,26 +483,26 @@ bestByEqpSlot eqpAssocs invAssocs shaAssocs =
                                              bestSingle eqpSlot g3)
   in M.assocs $ M.mapWithKey bestThree eqpInvShaMap
 
-harmful :: Kind.COps -> Actor -> [ItemFull] -> Faction -> ItemFull -> Bool
-harmful cops body activeItems fact itemFull =
+harmful :: Kind.COps -> Actor -> AspectRecord -> Faction -> ItemFull -> Bool
+harmful cops body ar fact itemFull =
   -- Items that are known and their effects are not stricly beneficial
   -- should not be equipped (either they are harmful or they waste eqp space).
   maybe False (\(u, _) -> u <= 0)
-    (totalUsefulness cops body activeItems fact itemFull)
+    (totalUsefulness cops body ar fact itemFull)
 
 -- TODO: if noctovision radius higher than min sight light, turn all lights off,
 -- (unless the level is lit by default)
 unneeded :: Kind.COps -> Bool -> Bool -> Bool -> Bool
-         -> Actor -> [ItemFull] -> Faction -> ItemFull
+         -> Actor -> AspectRecord -> Faction -> ItemFull
          -> Bool
 unneeded cops condAnyFoeAdj condShineBetrays
          condAimEnemyPresent condNotCalmEnough
-         body activeItems fact itemFull =
-  harmful cops body activeItems fact itemFull
+         body ar fact itemFull =
+  harmful cops body ar fact itemFull
   || hinders condAnyFoeAdj condShineBetrays
              condAimEnemyPresent condNotCalmEnough
-             body activeItems itemFull
-  || let calmE = calmEnough body activeItems  -- unneeded risk
+             body ar itemFull
+  || let calmE = calmEnough body ar  -- unneeded risk
          itemShine = 0 < aShine (aspectRecordFull itemFull)
      in itemShine && not calmE
 
@@ -556,7 +571,10 @@ trigger aid fleeViaStairs = do
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
   b <- getsState $ getActorBody aid
-  activeItems <- activeItemsClient aid
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let lid = blid b
   lvl <- getLevel lid
@@ -604,9 +622,9 @@ trigger aid fleeViaStairs = do
           -- for high score.
           if not (fcanEscape $ gplayer fact) || not allExplored
           then 0
-          else effectToBenefit cops b activeItems fact ef
+          else effectToBenefit cops b ar fact ef
         TK.Cause ef | not fleeViaStairs ->
-          return $! effectToBenefit cops b activeItems fact ef
+          return $! effectToBenefit cops b ar fact ef
         _ -> return 0
   benFeats <- mapM ben feats
   let benFeat = zip benFeats feats
@@ -632,11 +650,14 @@ projectItem aid = do
           let skill = EM.findWithDefault 0 AbProject actorSk
           -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
           -- and no actors or obstracles along the path.
-          let q _ itemFull b2 activeItems =
+          let q _ itemFull b2 ar =
                 either (const False) id
-                $ permittedProject False skill b2 activeItems " " itemFull
-          activeItems <- activeItemsClient aid
-          let calmE = calmEnough b activeItems
+                $ permittedProject False skill b2 ar " " itemFull
+          actorAspect <- getsClient sactorAspect
+          let ar = case EM.lookup aid actorAspect of
+                Just aspectRecord -> aspectRecord
+                Nothing -> assert `failure` aid
+              calmE = calmEnough b ar
               stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
           benList <- benAvailableItems aid q stores
           localTime <- getsState $ getLocalTime (blid b)
@@ -689,16 +710,19 @@ applyItem aid applyGroup = do
   b <- getsState $ getActorBody aid
   localTime <- getsState $ getLocalTime (blid b)
   let skill = EM.findWithDefault 0 AbApply actorSk
-      q _ itemFull _ activeItems =
+      q _ itemFull _ ar =
         -- TODO: terrible hack to prevent the use of identified healing gems
         let freq = case itemDisco itemFull of
               Nothing -> []
               Just ItemDisco{itemKind} -> IK.ifreq itemKind
         in maybe True (<= 0) (lookup "gem" freq)
            && either (const False) id
-                (permittedApply localTime skill b activeItems " " itemFull)
-  activeItems <- activeItemsClient aid
-  let calmE = calmEnough b activeItems
+                (permittedApply localTime skill b ar " " itemFull)
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
+      calmE = calmEnough b ar
       stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
   benList <- benAvailableItems aid q stores
   organs <- mapM (getsState . getItemBody) $ EM.keys $ borgan b

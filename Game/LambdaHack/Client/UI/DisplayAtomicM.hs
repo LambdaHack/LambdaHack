@@ -145,8 +145,11 @@ displayRespUpdAtomicUI verbose oldDiscoKind oldDiscoAspect cmd = case cmd of
     mleader <- getsClient _sleader
     when (Just aid == mleader) $ do
       b <- getsState $ getActorBody aid
-      hpMax <- sumOrganEqpClient IK.EqpSlotAddMaxHP aid
-      when (bhp b >= xM hpMax && hpMax > 0
+      actorAspect <- getsClient sactorAspect
+      let ar = case EM.lookup aid actorAspect of
+            Just aspectRecord -> aspectRecord
+            Nothing -> assert `failure` aid
+      when (bhp b >= xM (aMaxHP ar) && aMaxHP ar > 0
             && resCurrentTurn (bhpDelta b) > 0) $ do
         actorVerbMU aid b "recover your health fully"
         stopPlayBack

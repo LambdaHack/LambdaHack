@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
     strengthOnSmash, strengthCreateOrgan, strengthDropOrgan
   , strengthEqpSlot, strengthEffect
-  , strongestSlot, sumSlotNoFilter
+  , strongestSlot, sumSlotNoFilter, sumSlotNoFilterFromItems
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
   , unknownMelee, filterRecharging, stripRecharging, stripOnSmash
@@ -129,8 +129,27 @@ strongestSlot eqpSlot is =
       slotIs = filter f is
   in strongestSlotNoFilter eqpSlot slotIs
 
-sumSlotNoFilter :: EqpSlot -> [ItemFull] -> Int
-sumSlotNoFilter eqpSlot is =
+sumSlotNoFilter :: EqpSlot -> AspectRecord -> Int
+sumSlotNoFilter eqpSlot AspectRecord{..} =
+  case eqpSlot of
+    EqpSlotPeriodic -> if aPeriodic then aTimeout else 0
+    EqpSlotTimeout -> aTimeout
+    EqpSlotAddHurtMelee -> aHurtMelee
+    EqpSlotAddHurtRanged -> aHurtRanged
+    EqpSlotAddArmorMelee -> aArmorMelee
+    EqpSlotAddArmorRanged -> aArmorRanged
+    EqpSlotAddMaxHP -> aMaxHP
+    EqpSlotAddMaxCalm -> aMaxCalm
+    EqpSlotAddSpeed -> aSpeed
+    EqpSlotAddSight -> aSight
+    EqpSlotAddSmell -> aSmell
+    EqpSlotAddShine -> aShine
+    EqpSlotAddNocto -> aNocto
+    EqpSlotWeapon -> assert `failure` eqpSlot
+    EqpSlotAddAbility ab -> EM.findWithDefault 0 ab aAbility
+
+sumSlotNoFilterFromItems :: EqpSlot -> [ItemFull] -> Int
+sumSlotNoFilterFromItems eqpSlot is =
   let f itemFull = strengthFromEqpSlot eqpSlot itemFull * itemK itemFull
   in sum $ map f is
 

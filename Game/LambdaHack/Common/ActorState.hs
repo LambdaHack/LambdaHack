@@ -297,11 +297,10 @@ memActor aid lid s =
 getLocalTime :: LevelId -> State -> Time
 getLocalTime lid s = ltime $ sdungeon s EM.! lid
 
-regenCalmDelta :: Actor -> [ItemFull] -> State -> Int64
-regenCalmDelta b activeItems s =
-  let calmMax = sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
-      calmIncr = oneM  -- normal rate of calm regen
-      maxDeltaCalm = xM calmMax - bcalm b
+regenCalmDelta :: Actor -> AspectRecord -> State -> Int64
+regenCalmDelta b AspectRecord{aMaxCalm} s =
+  let calmIncr = oneM  -- normal rate of calm regen
+      maxDeltaCalm = xM aMaxCalm - bcalm b
       -- Worry actor by enemies felt (even if not seen)
       -- on the level within 3 steps.
       fact = (EM.! bfid b) . sfactionD $ s

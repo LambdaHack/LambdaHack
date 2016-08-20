@@ -127,7 +127,7 @@ getAnyItems psuit prompt promptGeneric cLegalRaw cLegalAfterCalm askWhenLone ask
 -- or switch to any other store.
 -- Used, e.g., for viewing inventory and item descriptions.
 getStoreItem :: MonadClientUI m
-             => (Actor -> [ItemFull] -> ItemDialogMode -> Text)
+             => (Actor -> AspectRecord -> ItemDialogMode -> Text)
                                  -- ^ how to describe suitable items
              -> ItemDialogMode   -- ^ initial mode
              -> m (Either Text ((ItemId, ItemFull), ItemDialogMode))
@@ -153,9 +153,9 @@ getStoreItem prompt cInitial = do
 getFull :: MonadClientUI m
         => m Suitability
                             -- ^ which items to consider suitable
-        -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
+        -> (Actor -> AspectRecord -> ItemDialogMode -> Text)
                             -- ^ specific prompt for only suitable items
-        -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
+        -> (Actor -> AspectRecord -> ItemDialogMode -> Text)
                             -- ^ generic prompt
         -> [CStore]         -- ^ initial legal modes
         -> [CStore]         -- ^ legal modes with Calm taken into account
@@ -220,9 +220,9 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
 getItem :: MonadClientUI m
         => m Suitability
                             -- ^ which items to consider suitable
-        -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
+        -> (Actor -> AspectRecord -> ItemDialogMode -> Text)
                             -- ^ specific prompt for only suitable items
-        -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
+        -> (Actor -> AspectRecord -> ItemDialogMode -> Text)
                             -- ^ generic prompt
         -> ItemDialogMode   -- ^ first mode, legal or not
         -> [ItemDialogMode] -- ^ the (rest of) legal modes
@@ -259,8 +259,8 @@ data Suitability =
 
 transition :: forall m. MonadClientUI m
            => m Suitability
-           -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
-           -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
+           -> (Actor -> AspectRecord -> ItemDialogMode -> Text)
+           -> (Actor -> AspectRecord -> ItemDialogMode -> Text)
            -> Bool
            -> [ItemDialogMode]
            -> Int
@@ -274,7 +274,10 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   ItemSlots itemSlots organSlots <- getsClient sslots
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
-  activeItems <- activeItemsClient leader
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup leader actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` leader
   fact <- getsState $ (EM.! bfid body) . sfactionD
   hs <- partyAfterLeader leader
   bagAll <- getsState $ \s -> accessModeBag leader s cCur
@@ -372,7 +375,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         { defLabel
         , defCond = not $ null cRest
         , defAction = \_ -> do
-            let calmE = calmEnough body activeItems
+            let calmE = calmEnough body ar
                 mcCur = filter (`elem` cLegal) [cCur]
                 (cCurAfterCalm, cRestAfterCalm) = case cRest ++ mcCur of
                   c1@(MStore CSha) : c2 : rest | not calmE ->
@@ -416,9 +419,9 @@ transition psuit prompt promptGeneric permitMulitple cLegal
       (bagFiltered, promptChosen) =
         case itemDialogState of
           ISuitable   -> (bagSuit,
-                          prompt body activeItems cCur <> ":")
+                          prompt body ar cCur <> ":")
           IAll        -> (bag,
-                          promptGeneric body activeItems cCur <> ":")
+                          promptGeneric body ar cCur <> ":")
   case cCur of
     MStats -> do
       io <- statsOverlay leader
@@ -458,8 +461,11 @@ legalWithUpdatedLeader cCur cRest = do
   leader <- getLeaderUI
   let newLegal = cCur : cRest  -- not updated in any way yet
   b <- getsState $ getActorBody leader
-  activeItems <- activeItemsClient leader
-  let calmE = calmEnough b activeItems
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup leader actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` leader
+      calmE = calmEnough b ar
       legalAfterCalm = case newLegal of
         c1@(MStore CSha) : c2 : rest | not calmE -> (c2, c1 : rest)
         [MStore CSha] | not calmE -> (MStore CGround, newLegal)

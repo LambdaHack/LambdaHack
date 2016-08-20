@@ -35,7 +35,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind (isUknownSpace)
@@ -117,12 +116,11 @@ targetStrategy aid = do
   -- and only if they can shoot at the moment)
   canEscape <- factionCanEscape (bfid b)
   explored <- getsClient sexplored
-  smellRadius <- sumOrganEqpClient IK.EqpSlotAddSmell aid
   activeItems <- activeItemsClient aid
   let condNoUsableWeapon = all (not . isMelee) activeItems
       lidExplored = ES.member (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
-      canSmell = smellRadius > 0
+      canSmell = aSmell ar > 0
       meleeNearby | canEscape = nearby `div` 2  -- not aggresive
                   | otherwise = nearby
       rangedNearby = 2 * meleeNearby
@@ -139,7 +137,7 @@ targetStrategy aid = do
            chessDist (bpos body) (bpos b) < n
            && not condNoUsableWeapon
            && EM.findWithDefault 0 AbMelee actorMaxSk > 0
-           && not (hpTooLow b activeItems)
+           && not (hpTooLow b ar)
            && not (nonmoving && condMeleeBad)
       targetableRangedOrSpecial body =
         chessDist (bpos body) (bpos b) < rangedNearby
@@ -150,7 +148,7 @@ targetStrategy aid = do
   nearbyFoes <- filterM targetableEnemy allFoes
   mleader <- getsClient _sleader
   let itemUsefulness itemFull =
-        fst <$> totalUsefulness cops b activeItems fact itemFull
+        fst <$> totalUsefulness cops b ar fact itemFull
       desirableBag bag = any (\(iid, k) ->
         let itemFull = itemToF iid k
             use = itemUsefulness itemFull
@@ -158,7 +156,7 @@ targetStrategy aid = do
       desirable (_, (_, Nothing)) = True
       desirable (_, (_, Just bag)) = desirableBag bag
       -- TODO: make more common when weak ranged foes preferred, etc.
-      focused = bspeed b activeItems < speedNormal || condHpTooLow
+      focused = bspeed b ar < speedNormal || condHpTooLow
       couldMoveLastTurn =
         let axtorSk = if mleader == Just aid then actorMaxSk else actorMinSk
         in EM.findWithDefault 0 AbMove axtorSk > 0

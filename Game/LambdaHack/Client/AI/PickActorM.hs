@@ -90,6 +90,7 @@ pickActorToMove refreshTarget = do
             condMeleeBad <- condMeleeBadM aid
             threatDistL <- threatDistList aid
             (fleeL, _) <- fleeList aid
+            activeI <- activeItemsFunClient
             let abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
                 condNoUsableWeapon = all (not . isMelee) activeItems
                 canMelee = abInMaxSkill AbMelee && not condNoUsableWeapon
@@ -99,8 +100,9 @@ pickActorToMove refreshTarget = do
                 threatAdj = takeWhile ((== 1) . fst) threatDistL
                 condThreatAdj = not $ null threatAdj
                 condFastThreatAdj =
-                  any (\(_, (_, b)) ->
-                         bspeed b activeItems > bspeed body activeItems)
+                  any (\(_, (aid2, b2)) ->
+                        let activeItems2 = activeI aid
+                        in bspeedFromItems b2 activeItems2 > bspeed body ar)
                       threatAdj
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.

@@ -58,8 +58,9 @@ targetDesc target = do
     Just (TEnemy aid _) -> do
       side <- getsClient sside
       b <- getsState $ getActorBody aid
-      maxHP <- sumOrganEqpClient IK.EqpSlotAddMaxHP aid
-      let percentage = 100 * bhp b `div` xM (max 5 maxHP)
+      activeItems <- activeItemsClient aid
+      let maxHP = sumSlotNoFilterFromItems IK.EqpSlotAddMaxHP activeItems
+          percentage = 100 * bhp b `div` xM (max 5 maxHP)
           stars | percentage < 20  = "[____]"
                 | percentage < 40  = "[*___]"
                 | percentage < 60  = "[**__]"
@@ -341,16 +342,17 @@ drawLeaderStatus waitT width = do
                                        else ("Calm", "HP")
   case mleader of
     Just leader -> do
-      activeItems <- activeItemsClient leader
-      let (darkL, bracedL, hpDelta, calmDelta,
+      actorAspect <- getsClient sactorAspect
+      let ar = case EM.lookup leader actorAspect of
+            Just aspectRecord -> aspectRecord
+            Nothing -> assert `failure`leader
+          (darkL, bracedL, hpDelta, calmDelta,
            ahpS, bhpS, acalmS, bcalmS) =
             let b@Actor{bhp, bcalm} = getActorBody leader s
-                amaxHP = sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
-                amaxCalm = sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
             in ( not (actorInAmbient b s)
                , braced b, bhpDelta b, bcalmDelta b
-               , tshow $ max 0 amaxHP, tshow (bhp `divUp` oneM)
-               , tshow $ max 0 amaxCalm, tshow (bcalm `divUp` oneM))
+               , tshow $ max 0 $ aMaxHP ar, tshow (bhp `divUp` oneM)
+               , tshow $ max 0 $ aMaxCalm ar, tshow (bcalm `divUp` oneM))
           -- This is a valuable feedback for the otherwise hard to observe
           -- 'wait' command.
           slashes = ["/", "|", "\\", "|"]
@@ -387,8 +389,12 @@ drawLeaderDamage width = do
       b <- getsState $ getActorBody leader
       localTime <- getsState $ getLocalTime (blid b)
       allAssocs <- fullAssocsClient leader [CEqp, COrgan]
-      let activeItems = map snd allAssocs
-          calmE = calmEnough b $ map snd allAssocs
+      actorAspect <- getsClient sactorAspect
+      let ar = case EM.lookup leader actorAspect of
+            Just aspectRecord -> aspectRecord
+            Nothing -> assert `failure` leader
+          activeItems = map snd allAssocs
+          calmE = calmEnough b ar
           forced = assert (not $ bproj b) False
           permitted = permittedPrecious calmE forced
           preferredPrecious = either (const False) id . permitted
@@ -409,7 +415,7 @@ drawLeaderDamage width = do
                   tdice = case mdice of
                     Nothing -> "0"
                     Just dice -> tshow dice
-                  bonus = sumSlotNoFilter IK.EqpSlotAddHurtMelee activeItems
+                  bonus = aHurtMelee ar
                   unknownBonus = unknownMelee activeItems
                   tbonus = if bonus == 0
                            then if unknownBonus then "+?" else ""

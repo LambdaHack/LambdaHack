@@ -582,7 +582,6 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
   let verb = fromMaybe (MU.Text $ verbCStore destCStore) mverb
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  activeItems <- activeItemsClient leader
   -- This calmE is outdated when one of the items increases max Calm
   -- (e.g., in pickup, which handles many items at once), but this is OK,
   -- the server accepts item movement based on calm at the start, not end
@@ -590,7 +589,11 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
   -- The calmE is inaccurate also if an item not IDed, but that's intended
   -- and the server will ignore and warn (and content may avoid that,
   -- e.g., making all rings identified)
-  let calmE = calmEnough b activeItems
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup leader actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` leader
+      calmE = calmEnough b ar
       cLegal | calmE = cLegalRaw
              | destCStore == CSha = []
              | otherwise = delete CSha cLegalRaw
@@ -616,8 +619,11 @@ moveItems :: forall m. MonadClientUI m
 moveItems cLegalRaw (fromCStore, l) destCStore = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  activeItems <- activeItemsClient leader
-  let calmE = calmEnough b activeItems
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup leader actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` leader
+      calmE = calmEnough b ar
       ret4 :: MonadClientUI m
            => [(ItemId, ItemFull)]
            -> Int -> [(ItemId, Int, CStore, CStore)]
@@ -691,8 +697,11 @@ projectItem :: MonadClientUI m
 projectItem ts (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  activeItems <- activeItemsClient leader
-  let calmE = calmEnough b activeItems
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup leader actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` leader
+      calmE = calmEnough b ar
   if not calmE && fromCStore == CSha then failSer ItemNotCalm
   else do
     mpsuitReq <- psuitReq ts
@@ -738,8 +747,11 @@ applyItem :: MonadClientUI m
 applyItem ts (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  activeItems <- activeItemsClient leader
-  let calmE = calmEnough b activeItems
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup leader actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` leader
+      calmE = calmEnough b ar
   if not calmE && fromCStore == CSha then failSer ItemNotCalm
   else do
     p <- permittedApplyClient $ triggerSymbols ts

@@ -20,7 +20,6 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -178,11 +177,12 @@ dominateFid fid target = do
   deduceKilled target tb
   -- TODO: some messages after game over below? Compare with dieSer.
   ais <- getsState $ getCarriedAssocs tb
-  calmMax <- sumOrganEqpServer IK.EqpSlotAddMaxCalm target
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! target
   execUpdAtomic $ UpdLoseActor target tb ais
   let bNew = tb { bfid = fid
                 , bfidImpressed = bfid tb
-                , bcalm = max 0 $ xM calmMax `div` 2 }
+                , bcalm = max 0 $ xM (aMaxCalm ar) `div` 2 }
   execUpdAtomic $ UpdSpotActor target bNew ais
   let discoverSeed (iid, cstore) = do
         seed <- getsServer $ (EM.! iid) . sitemSeedD
@@ -208,9 +208,10 @@ dominateFid fid target = do
 advanceTime :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 advanceTime aid = do
   b <- getsState $ getActorBody aid
-  activeItems <- activeItemsServer aid
   localTime <- getsState $ getLocalTime (blid b)
-  let actorTurn = ticksPerMeter $ bspeed b activeItems
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! aid
+      actorTurn = ticksPerMeter $ bspeed b ar
       halfStandardTurn = timeDeltaDiv (Delta timeTurn) 2
       -- Dead bodies stay around for only a half of standard turn,
       -- even if paralyzed (that is, wrt local time).
@@ -260,7 +261,6 @@ managePerTurn :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 managePerTurn aid = do
   b <- getsState $ getActorBody aid
   unless (bproj b) $ do
-    activeItems <- activeItemsServer aid
     fact <- getsState $ (EM.! bfid b) . sfactionD
     dominated <-
       -- We react one turn after bcalm reaches 0, to let it be
@@ -274,7 +274,9 @@ managePerTurn aid = do
       then dominateFidSfx (bfidImpressed b) aid
       else return False
     unless dominated $ do
-      newCalmDelta <- getsState $ regenCalmDelta b activeItems
+      actorAspect <- getsServer sactorAspect
+      let ar = actorAspect EM.! aid
+      newCalmDelta <- getsState $ regenCalmDelta b ar
       let clearMark = 0
       unless (newCalmDelta == 0) $
         -- Update delta for the current player turn.
@@ -289,8 +291,9 @@ managePerTurn aid = do
 udpateCalm :: (MonadAtomic m, MonadServer m) => ActorId -> Int64 -> m ()
 udpateCalm target deltaCalm = do
   tb <- getsState $ getActorBody target
-  activeItems <- activeItemsServer target
-  let calmMax64 = xM $ sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! target
+      calmMax64 = xM $ aMaxCalm ar
   execUpdAtomic $ UpdRefillCalm target deltaCalm
   when (bcalm tb < calmMax64
         && bcalm tb + deltaCalm >= calmMax64

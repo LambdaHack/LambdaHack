@@ -195,11 +195,11 @@ permittedPrecious calmE forced itemFull =
                     Just ItemDisco{itemAspect=Just _} -> True
                     _ -> not isPrecious
 
-permittedProject :: Bool -> Int -> Actor -> [ItemFull] -> [Char] -> ItemFull
+permittedProject :: Bool -> Int -> Actor -> AspectRecord -> [Char] -> ItemFull
                  -> Either ReqFailure Bool
-permittedProject forced skill b activeItems
+permittedProject forced skill b ar
                  triggerSyms itemFull@ItemFull{itemBase} =
-  let calmE = calmEnough b activeItems
+  let calmE = calmEnough b ar
       hurtRanged = aHurtRanged $ aspectRecordFull itemFull
   in if
     | not forced
@@ -229,11 +229,11 @@ permittedProject forced skill b activeItems
                 else jsymbol itemBase `elem` triggerSyms
           in hasEffects && permittedSlot
 
-permittedApply :: Time -> Int -> Actor -> [ItemFull] -> [Char] -> ItemFull
+permittedApply :: Time -> Int -> Actor -> AspectRecord -> [Char] -> ItemFull
                -> Either ReqFailure Bool
-permittedApply localTime skill b activeItems
+permittedApply localTime skill b ar
                triggerSyms itemFull@ItemFull{itemBase} =
-  let calmE = calmEnough b activeItems
+  let calmE = calmEnough b ar
   in if
     | skill < 1 -> Left ApplyUnskilled
     | jsymbol itemBase == '?' && skill < 2 -> Left ApplyRead

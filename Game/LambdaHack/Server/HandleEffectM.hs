@@ -246,7 +246,9 @@ effectHurt :: (MonadAtomic m, MonadServer m)
 effectHurt nDm source target verboseEffectConstructor = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  hpMax <- sumOrganEqpServer IK.EqpSlotAddMaxHP target
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! target
+      hpMax = aMaxHP ar
   n <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   hurtBonus <- armorHurtBonus source target
   let mult = 100 + hurtBonus
@@ -273,27 +275,25 @@ armorHurtBonus :: (MonadAtomic m, MonadServer m)
                => ActorId -> ActorId
                -> m Int
 armorHurtBonus source target = do
-  sactiveItems <- activeItemsServer source
-  tactiveItems <- activeItemsServer target
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  let itemBonus =
-        if bproj sb
-        then sumSlotNoFilter IK.EqpSlotAddHurtRanged sactiveItems
-             - sumSlotNoFilter IK.EqpSlotAddArmorRanged tactiveItems
-        else sumSlotNoFilter IK.EqpSlotAddHurtMelee sactiveItems
-             - sumSlotNoFilter IK.EqpSlotAddArmorMelee tactiveItems
+  actorAspect <- getsServer sactorAspect
+  let sar = actorAspect EM.! source
+      tar = actorAspect EM.! target
+      itemBonus = if bproj sb
+                  then aHurtRanged sar - aArmorRanged tar
+                  else aHurtMelee sar - aArmorMelee tar
       block = braced tb
   return $! itemBonus - if block then 50 else 0
 
 halveCalm :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 halveCalm target = do
   tb <- getsState $ getActorBody target
-  activeItems <- activeItemsServer target
-  let calmMax = sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
-      upperBound = if hpTooLow tb activeItems
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! target
+      upperBound = if hpTooLow tb ar
                    then 0  -- to trigger domination, etc.
-                   else max (xM calmMax) (bcalm tb) `div` 2
+                   else max (xM $ aMaxCalm ar) (bcalm tb) `div` 2
       deltaCalm = min minusTwoM (upperBound - bcalm tb)
   -- HP loss decreases Calm by at least minusTwoM, to overcome Calm regen,
   -- when far from shooting foe and to avoid "hears something",
@@ -372,8 +372,10 @@ effectRefillHP :: (MonadAtomic m, MonadServer m)
                => Bool -> Int -> ActorId -> ActorId -> m Bool
 effectRefillHP overfill power source target = do
   tb <- getsState $ getActorBody target
-  hpMax <- sumOrganEqpServer IK.EqpSlotAddMaxHP target
-  let overMax | overfill = xM hpMax * 10  -- arbitrary limit to scumming
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! target
+      hpMax = aMaxHP ar
+      overMax | overfill = xM hpMax * 10  -- arbitrary limit to scumming
               | otherwise = xM hpMax
       serious = not (bproj tb) && source /= target && power > 1
       deltaHP | power > 0 = min (xM power) (max 0 $ overMax - bhp tb)
@@ -397,8 +399,10 @@ effectRefillCalm ::  (MonadAtomic m, MonadServer m)
                  => Bool -> m () -> Int -> ActorId -> ActorId -> m Bool
 effectRefillCalm overfill execSfx power source target = do
   tb <- getsState $ getActorBody target
-  calmMax <- sumOrganEqpServer IK.EqpSlotAddMaxCalm target
-  let overMax | overfill = xM calmMax * 10  -- arbitrary limit to scumming
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! target
+      calmMax = aMaxCalm ar
+      overMax | overfill = xM calmMax * 10  -- arbitrary limit to scumming
               | otherwise = xM calmMax
       serious = not (bproj tb) && source /= target && power > 1
       deltaCalm | power > 0 = min (xM power) (max 0 $ overMax - bcalm tb)
@@ -453,8 +457,9 @@ effectCallFriend execSfx nDm source target = do
   power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  activeItems <- activeItemsServer target
-  if not $ hpEnough tb activeItems then do
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! target
+  if not $ hpEnough tb ar then do
     unless (bproj tb) $ do
       let subject = partActor tb
           verb = "lack enough HP to call aid"
@@ -485,8 +490,9 @@ effectSummon execSfx actorFreq nDm source target = do
   power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  activeItems <- activeItemsServer target
-  if not $ calmEnough tb activeItems then do
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! target
+  if not $ calmEnough tb ar then do
     unless (bproj tb) $ do
       let subject = partActor tb
           verb = "lack enough Calm to summon"
@@ -501,7 +507,7 @@ effectSummon execSfx actorFreq nDm source target = do
     ps <- getsState $ nearbyFreePoints 25 validTile (bpos tb) (blid tb)
     localTime <- getsState $ getLocalTime (blid tb)
     -- Make sure summoned actors start acting after the summoner.
-    let targetTime = timeShift localTime $ ticksPerMeter $ bspeed tb activeItems
+    let targetTime = timeShift localTime $ ticksPerMeter $ bspeed tb ar
         afterTime = timeShift targetTime $ Delta timeClip
     bs <- forM (take power ps) $ \p -> do
       maid <- addAnyActor actorFreq (blid tb) afterTime (Just p)
@@ -685,8 +691,9 @@ effectInsertMove :: (MonadAtomic m, MonadServer m)
 effectInsertMove execSfx nDm target = do
   p <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   b <- getsState $ getActorBody target
-  activeItems <- activeItemsServer target
-  let tpm = ticksPerMeter $ bspeed b activeItems
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! target
+  let tpm = ticksPerMeter $ bspeed b ar
       t = timeDeltaScale tpm (-p)
   execUpdAtomic $ UpdAgeActor target t
   execSfx
@@ -754,8 +761,9 @@ effectCreateItem target store grp tim = do
     IK.TimerActorTurn nDm -> do
       k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
       let !_A = assert (k >= 0) ()
-      activeItems <- activeItemsServer target
-      let actorTurn = ticksPerMeter $ bspeed tb activeItems
+      actorAspect <- getsServer sactorAspect
+      let ar = actorAspect EM.! target
+          actorTurn = ticksPerMeter $ bspeed tb ar
       return $! timeDeltaScale actorTurn k
   let c = CActor target store
   bagBefore <- getsState $ getCBag c
@@ -994,8 +1002,9 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
               -- Give the actor one extra turn and also let the push start ASAP.
               -- So, if the push lasts one (his) turn, he will not lose
               -- any turn of movement (but he may need to retrace the push).
-              activeItems <- activeItemsServer target
-              let tpm = ticksPerMeter $ bspeed tb activeItems
+              actorAspect <- getsServer sactorAspect
+              let ar = actorAspect EM.! target
+                  tpm = ticksPerMeter $ bspeed tb ar
                   delta = timeDeltaScale tpm (-1)
               execUpdAtomic $ UpdAgeActor target delta
               execSfx

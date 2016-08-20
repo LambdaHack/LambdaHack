@@ -4,7 +4,7 @@ module Game.LambdaHack.Server.CommonM
   ( execFailure, getPerFid
   , revealItems, moveStores, deduceQuits, deduceKilled, electLeader
   , addActor, addActorIid, projectFail
-  , pickWeaponServer, sumOrganEqpServer, actorSkillsServer
+  , pickWeaponServer, actorSkillsServer
   , recomputeCachePer
   ) where
 
@@ -252,12 +252,13 @@ projectFail source tpxy eps iid cstore isBlast = do
         Nothing ->  return $ Just ProjectOutOfReach
         Just kit -> do
           itemToF <- itemToFullServer
-          activeItems <- activeItemsServer source
           actorSk <- actorSkillsServer source
-          let skill = EM.findWithDefault 0 Ability.AbProject actorSk
+          actorAspect <- getsServer sactorAspect
+          let ar = actorAspect EM.! source
+              skill = EM.findWithDefault 0 Ability.AbProject actorSk
               itemFull@ItemFull{itemBase} = itemToF iid kit
               forced = isBlast || bproj sb
-              legal = permittedProject forced skill sb activeItems " " itemFull
+              legal = permittedProject forced skill sb ar " " itemFull
           case legal of
             Left reqFail ->  return $ Just reqFail
             Right _ -> do
@@ -427,8 +428,10 @@ pickWeaponServer source = do
   localTime <- getsState $ getLocalTime (blid sb)
   -- For projectiles we need to accept even items without any effect,
   -- so that the projectile dissapears and "No effect" feedback is produced.
-  let allAssocs = eqpAssocs ++ bodyAssocs
-      calmE = calmEnough sb $ map snd allAssocs
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! source
+      allAssocs = eqpAssocs ++ bodyAssocs
+      calmE = calmEnough sb ar
       forced = bproj sb
       permitted = permittedPrecious calmE forced
       legalPrecious = either (const False) (const True) . permitted
@@ -448,12 +451,6 @@ pickWeaponServer source = do
       (iid, _) <- rndToAction $ oneOf maxIis
       let cstore = if isJust (lookup iid bodyAssocs) then COrgan else CEqp
       return $ Just (iid, cstore)
-
-sumOrganEqpServer :: MonadServer m
-                  => IK.EqpSlot -> ActorId -> m Int
-sumOrganEqpServer eqpSlot aid = do
-  activeAssocs <- activeItemsServer aid
-  return $! sumSlotNoFilter eqpSlot activeAssocs
 
 actorSkillsServer :: MonadServer m => ActorId -> m Ability.Skills
 actorSkillsServer aid  = do

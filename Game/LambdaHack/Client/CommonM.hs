@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.CommonM
   ( getPerFid, aidTgtToPos, aidTgtAims, makeLine
   , partAidLeader, partActorLeader, partPronounLeader
   , actorSkillsClient, updateItemSlot, fullAssocsClient, activeItemsClient
-  , itemToFullClient, pickWeaponClient, sumOrganEqpClient
+  , activeItemsFunClient, itemToFullClient, pickWeaponClient
   , enemyMaxAb, enemyMaxAbFromItems
   , updateSalter, createSalter
   , aspectRecordFromItemClient, aspectRecordFromActorClient, createSactorAspect
@@ -28,7 +28,6 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -40,7 +39,6 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 
 -- | Get the current perception of a client.
@@ -242,6 +240,16 @@ activeItemsClient aid = do
   activeAssocs <- fullAssocsClient aid [CEqp, COrgan]
   return $! map snd activeAssocs
 
+activeItemsFunClient :: MonadClient m => m (ActorId -> [ItemFull])
+activeItemsFunClient = do
+  cops <- getsState scops
+  discoKind <- getsClient sdiscoKind
+  discoAspect <- getsClient sdiscoAspect
+  s <- getState
+  let activeI aid = map snd
+                    $ fullAssocs cops discoKind discoAspect aid [CEqp, COrgan] s
+  return activeI
+
 itemToFullClient :: MonadClient m => m (ItemId -> ItemQuant -> ItemFull)
 itemToFullClient = do
   cops <- getsState scops
@@ -263,8 +271,12 @@ pickWeaponClient source target = do
   actorSk <- actorSkillsClient source
   sb <- getsState $ getActorBody source
   localTime <- getsState $ getLocalTime (blid sb)
-  let allAssocs = eqpAssocs ++ bodyAssocs
-      calmE = calmEnough sb $ map snd allAssocs
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup source actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` source
+      allAssocs = eqpAssocs ++ bodyAssocs
+      calmE = calmEnough sb ar
       forced = assert (not $ bproj sb) False
       permitted = permittedPrecious calmE forced
       preferredPrecious = either (const False) id . permitted
@@ -279,12 +291,6 @@ pickWeaponClient source target = do
       -- Prefer COrgan, to hint to the player to trash the equivalent CEqp item.
       let cstore = if isJust (lookup iid bodyAssocs) then COrgan else CEqp
       return $ Just $ ReqMelee target iid cstore
-
-sumOrganEqpClient :: MonadClient m
-                  => IK.EqpSlot -> ActorId -> m Int
-sumOrganEqpClient eqpSlot aid = do
-  activeItems <- activeItemsClient aid
-  return $! sumSlotNoFilter eqpSlot activeItems
 
 updateSalter :: MonadClient m => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 updateSalter lid pts = do

@@ -115,10 +115,10 @@ chooseItemDialogMode :: MonadClientUI m
                      => ItemDialogMode -> m (MError, ItemDialogMode)
 chooseItemDialogMode c = do
   let subject = partActor
-      verbSha body activeItems = if calmEnough body activeItems
-                                 then "notice"
-                                 else "paw distractedly"
-      prompt body activeItems c2 =
+      verbSha body ar = if calmEnough body ar
+                        then "notice"
+                        else "paw distractedly"
+      prompt body ar c2 =
         let (tIn, t) = ppItemDialogMode c2
         in case c2 of
         MStore CGround ->  -- TODO: variant for actors without (unwounded) feet
@@ -129,7 +129,7 @@ chooseItemDialogMode c = do
         MStore CSha ->
           makePhrase
             [ MU.Capitalize
-              $ MU.SubjectVerbSg (subject body) (verbSha body activeItems)
+              $ MU.SubjectVerbSg (subject body) (verbSha body ar)
             , MU.Text tIn
             , MU.Text t ]
         MStore COrgan ->
@@ -201,8 +201,11 @@ chooseItemProjectHuman :: forall m. MonadClientUI m
 chooseItemProjectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  activeItems <- activeItemsClient leader
-  let calmE = calmEnough b activeItems
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup leader actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` leader
+  let calmE = calmEnough b ar
       cLegalRaw = [CGround, CInv, CEqp, CSha]
       cLegal | calmE = cLegalRaw
              | otherwise = delete CSha cLegalRaw
@@ -234,8 +237,11 @@ permittedProjectClient triggerSyms = do
   b <- getsState $ getActorBody leader
   actorSk <- actorSkillsClient leader
   let skill = EM.findWithDefault 0 AbProject actorSk
-  activeItems <- activeItemsClient leader
-  return $ permittedProject False skill b activeItems triggerSyms
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup leader actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` leader
+  return $ permittedProject False skill b ar triggerSyms
 
 projectCheck :: MonadClientUI m => Point -> m (Maybe ReqFailure)
 projectCheck tpos = do
@@ -307,8 +313,11 @@ chooseItemApplyHuman :: forall m. MonadClientUI m => [Trigger] -> m MError
 chooseItemApplyHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  activeItems <- activeItemsClient leader
-  let calmE = calmEnough b activeItems
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup leader actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` leader
+  let calmE = calmEnough b ar
       cLegalRaw = [CGround, CInv, CEqp, CSha]
       cLegal | calmE = cLegalRaw
              | otherwise = delete CSha cLegalRaw
@@ -336,9 +345,12 @@ permittedApplyClient triggerSyms = do
   b <- getsState $ getActorBody leader
   actorSk <- actorSkillsClient leader
   let skill = EM.findWithDefault 0 AbApply actorSk
-  activeItems <- activeItemsClient leader
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup leader actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` leader
   localTime <- getsState $ getLocalTime (blid b)
-  return $ permittedApply localTime skill b activeItems triggerSyms
+  return $ permittedApply localTime skill b ar triggerSyms
 
 -- * PickLeader
 

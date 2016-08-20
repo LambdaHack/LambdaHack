@@ -193,8 +193,11 @@ itemOverlay store lid bag = do
 statsOverlay :: MonadClient m => ActorId -> m OKX
 statsOverlay aid = do
   b <- getsState $ getActorBody aid
-  activeItems <- activeItemsClient aid
-  let block n = n + if braced b then 50 else 0
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
+      block n = n + if braced b then 50 else 0
       prSlot :: (Y, SlotChar) -> (IK.EqpSlot, Int -> Text) -> (Text, KYX)
       prSlot (y, c) (eqpSlot, f) =
         let fullText t =
@@ -202,7 +205,7 @@ statsOverlay aid = do
                          , MU.Text $ T.justifyLeft 22 ' '
                                    $ IK.slotName eqpSlot
                          , MU.Text t ]
-            valueText = f $ sumSlotNoFilter eqpSlot activeItems
+            valueText = f $ sumSlotNoFilter eqpSlot ar
             ft = fullText valueText
         in (ft, (Right c, (y, 0, T.length ft)))
       -- Some values can be negative, for others 0 is equivalent but shorter.
