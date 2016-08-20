@@ -371,11 +371,9 @@ createActor aid b ais = do
         _ -> tap
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   modifyClient $ \cli -> cli {sxhair = affect $ sxhair cli}
-  side <- getsClient sside
-  when (bfid b == side && not (bproj b)) $ do
-    aspectRecord <- aspectRecordFromActorClient b ais
-    let f = EM.insert aid aspectRecord
-    modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
+  aspectRecord <- aspectRecordFromActorClient b ais
+  let f = EM.insert aid aspectRecord
+  modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
 
 destroyActor :: MonadClient m => ActorId -> Actor -> Bool -> m ()
 destroyActor aid b destroy = do
@@ -393,20 +391,15 @@ destroyActor aid b destroy = do
         in TgtAndPath (affect tapTgt) newMPath
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   modifyClient $ \cli -> cli {sxhair = affect $ sxhair cli}
-  side <- getsClient sside
-  when (bfid b == side && not (bproj b)) $ do
-    let f = EM.delete aid
-    modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
+  let f = EM.delete aid
+  modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
 
 addItemToActor :: MonadClient m => ItemId -> Item -> Int -> ActorId -> m ()
 addItemToActor iid itemBase k aid = do
-  side <- getsClient sside
-  b <- getsState $ getActorBody aid
-  when (bfid b == side && not (bproj b)) $ do
-    arItem <- aspectRecordFromItemClient iid itemBase
-    let g arActor = sumAspectRecord [(arActor, 1), (arItem, k)]
-        f = EM.adjust g aid
-    modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
+  arItem <- aspectRecordFromItemClient iid itemBase
+  let g arActor = sumAspectRecord [(arActor, 1), (arItem, k)]
+      f = EM.adjust g aid
+  modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
 
 perception :: MonadClient m => LevelId -> Perception -> Perception -> m ()
 perception lid outPer inPer = do

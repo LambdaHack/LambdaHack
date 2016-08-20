@@ -345,10 +345,8 @@ createSactorAspect :: MonadClient m => State -> m ()
 createSactorAspect s = do
   disco <- getsClient sdiscoKind
   discoAspect <- getsClient sdiscoAspect
-  side <- getsClient sside
-  let as = fidActorNotProjAssocs side s
-      f (aid, b) = (aid, aspectRecordFromActorState disco discoAspect b s)
-  modifyClient $ \cli -> cli {sactorAspect = EM.fromDistinctAscList $ map f as}
+  let f b = aspectRecordFromActorState disco discoAspect b s
+  modifyClient $ \cli -> cli {sactorAspect = EM.map f $ sactorD s}
 
 enemyMaxAbSum :: MonadClient m => [ItemFull] -> m Ability.Skills
 enemyMaxAbSum activeItems = do
