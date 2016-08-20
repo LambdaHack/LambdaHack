@@ -43,11 +43,11 @@ cmdAtomicSemSer cmd = case cmd of
     when (actorHasShine actorAspect aid) $ invalidateLucidLid $ blid b
     addPerActor aid b
   UpdDestroyActor aid b _ -> do
+    deletePerActor aid b
     actorAspectOld <- getsServer sactorAspect
     when (actorHasShine actorAspectOld aid) $ invalidateLucidLid $ blid b
     let f = EM.delete aid
     modifyServer $ \ser -> ser {sactorAspect = f $ sactorAspect ser}
-    deletePerActor aid b
   UpdCreateItem iid _ _ (CFloor lid _) -> do
     discoAspect <- getsServer sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
@@ -57,7 +57,7 @@ cmdAtomicSemSer cmd = case cmd of
       invalidateLucidAid aid
     when (store `elem` [CEqp, COrgan]) $ do
       addItemToActor iid k aid
-      when (itemAffectsPerRadius discoAspect iid) $ invalidatePerActor aid
+      when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
   UpdDestroyItem iid _ _ (CFloor lid _) -> do
     discoAspect <- getsServer sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
@@ -67,7 +67,7 @@ cmdAtomicSemSer cmd = case cmd of
       invalidateLucidAid aid
     when (store `elem` [CEqp, COrgan]) $ do
       addItemToActor iid (-k) aid
-      when (itemAffectsPerRadius discoAspect iid) $ invalidatePerActor aid
+      when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
   UpdSpotActor aid b _ -> do
     -- On server, it does't affect aspects, but does affect lucid (Ascend).
     actorAspect <- getsServer sactorAspect
@@ -76,9 +76,9 @@ cmdAtomicSemSer cmd = case cmd of
     addPerActor aid b
   UpdLoseActor aid b _ -> do
     -- On server, it does't affect aspects, but does affect lucid (Ascend).
+    deletePerActor aid b
     actorAspectOld <- getsServer sactorAspect
     when (actorHasShine actorAspectOld aid) $ invalidateLucidLid $ blid b
-    deletePerActor aid b
   UpdSpotItem iid _ _ (CFloor lid _) -> do
     discoAspect <- getsServer sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
@@ -88,7 +88,7 @@ cmdAtomicSemSer cmd = case cmd of
       invalidateLucidAid aid
     when (store `elem` [CEqp, COrgan]) $ do
       addItemToActor iid k aid
-      when (itemAffectsPerRadius discoAspect iid) $ invalidatePerActor aid
+      when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
   UpdLoseItem iid _ _ (CFloor lid _) -> do
     discoAspect <- getsServer sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
@@ -98,7 +98,7 @@ cmdAtomicSemSer cmd = case cmd of
       invalidateLucidAid aid
     when (store `elem` [CEqp, COrgan]) $ do
       addItemToActor iid (-k) aid
-      when (itemAffectsPerRadius discoAspect iid) $ invalidatePerActor aid
+      when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
   UpdMoveActor aid _ _ -> do
     actorAspect <- getsServer sactorAspect
     when (actorHasShine actorAspect aid) $ invalidateLucidAid aid
@@ -112,7 +112,7 @@ cmdAtomicSemSer cmd = case cmd of
   UpdMoveItem iid k aid s1 s2 -> do
     discoAspect <- getsServer sdiscoAspect
     let itemAffectsPer = itemAffectsPerRadius discoAspect iid
-        invalidatePer = when itemAffectsPer $ invalidatePerActor aid
+        invalidatePer = when itemAffectsPer $ reconsiderPerActor aid
         itemAffectsShine = itemAffectsShineRadius discoAspect iid [s1, s2]
         invalidateLucid = when itemAffectsShine $ invalidateLucidAid aid
     case s1 of
@@ -206,6 +206,12 @@ itemAffectsPerRadius discoAspect iid =
 
 addPerActor :: MonadServer m => ActorId -> Actor -> m ()
 addPerActor aid b = do
+  actorAspect <- getsServer sactorAspect
+  let AspectRecord{..} = actorAspect EM.! aid
+  unless (aSight <= 0 && aNocto <= 0 && aSmell <= 0) $ addPerActorAny aid b
+
+addPerActorAny :: MonadServer m => ActorId -> Actor -> m ()
+addPerActorAny aid b = do
   let fid = bfid b
       lid = blid b
       f PerceptionCache{perActor} = PerceptionCache
@@ -218,6 +224,12 @@ addPerActor aid b = do
 
 deletePerActor :: MonadServer m => ActorId -> Actor -> m ()
 deletePerActor aid b = do
+  actorAspect <- getsServer sactorAspect
+  let AspectRecord{..} = actorAspect EM.! aid
+  unless (aSight <= 0 && aNocto <= 0 && aSmell <= 0) $ deletePerActorAny aid b
+
+deletePerActorAny :: MonadServer m => ActorId -> Actor -> m ()
+deletePerActorAny aid b = do
   let fid = bfid b
       lid = blid b
       f PerceptionCache{perActor} = PerceptionCache
@@ -230,8 +242,23 @@ deletePerActor aid b = do
 
 invalidatePerActor :: MonadServer m => ActorId -> m ()
 invalidatePerActor aid = do
+  actorAspect <- getsServer sactorAspect
+  let AspectRecord{..} = actorAspect EM.! aid
+  unless (aSight <= 0 && aNocto <= 0 && aSmell <= 0) $ do
+    b <- getsState $ getActorBody aid
+    addPerActorAny aid b
+
+reconsiderPerActor :: MonadServer m => ActorId -> m ()
+reconsiderPerActor aid = do
   b <- getsState $ getActorBody aid
-  addPerActor aid b
+  actorAspect <- getsServer sactorAspect
+  let AspectRecord{..} = actorAspect EM.! aid
+  if aSight <= 0 && aNocto <= 0 && aSmell <= 0
+  then do
+    perCacheFid <- getsServer sperCacheFid
+    when (EM.member aid $ perActor ((perCacheFid EM.! bfid b) EM.! blid b)) $
+      deletePerActorAny aid b
+  else addPerActorAny aid b
 
 invalidatePerLid :: MonadServer m => LevelId -> m ()
 invalidatePerLid lid = do
@@ -241,5 +268,10 @@ invalidatePerLid lid = do
           { ptotal = FovInvalid
           , perActor = EM.map (const FovInvalid) perActor }
   modifyServer $ \ser ->
-    ser { sperCacheFid = EM.map (EM.adjust f lid) $ sperCacheFid ser
-        , sperValidFid = EM.map (EM.insert lid False) $ sperValidFid ser }
+    let perCacheFidNew = EM.map (EM.adjust f lid) $ sperCacheFid ser
+        g fid valid |
+          ptotal ((perCacheFidNew EM.! fid) EM.! lid) == FovInvalid =
+          EM.insert lid False valid
+        g _ valid = valid
+    in ser { sperCacheFid = perCacheFidNew
+           , sperValidFid = EM.mapWithKey g $ sperValidFid ser }

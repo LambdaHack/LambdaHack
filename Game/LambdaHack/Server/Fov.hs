@@ -313,11 +313,15 @@ perceptionCacheFromLevel :: ActorAspect -> FovClearLid
                          -> FactionId -> LevelId -> State
                          -> PerceptionCache
 perceptionCacheFromLevel actorAspect fovClearLid fid lid s =
-  let lvlBodies = EM.fromList $ actorAssocs (== fid) lid s
-      bodyMap = EM.mapWithKey (\aid b -> (b, actorAspect EM.! aid)) lvlBodies
-      fovClear = fovClearLid EM.! lid
-      perActor =
-        EM.map (FovValid . uncurry (cacheBeforeLucidFromActor fovClear)) bodyMap
+  let fovClear = fovClearLid EM.! lid
+      lvlBodies = actorAssocs (== fid) lid s
+      f (aid, b) =
+        let ar@AspectRecord{..} = actorAspect EM.! aid
+        in if aSight <= 0 && aNocto <= 0 && aSmell <= 0  -- dumb missiles
+           then Nothing
+           else Just (aid, FovValid $ cacheBeforeLucidFromActor fovClear b ar)
+      lvlCaches = mapMaybe f lvlBodies
+      perActor = EM.fromList lvlCaches
       total = totalFromPerActor perActor
   in PerceptionCache{ptotal = FovValid total, perActor}
 
