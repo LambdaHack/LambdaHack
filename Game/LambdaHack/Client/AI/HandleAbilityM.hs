@@ -93,7 +93,7 @@ actionStrategy aid = do
       condThreatNearby = not $ null $ takeWhile ((<= 9) . fst) threatDistL
       speed1_5 = speedScale (3%2) (bspeed body ar)
       condFastThreatAdj = any (\(_, (aid2, b2)) ->
-                                let activeItems2 = activeI aid
+                                let activeItems2 = activeI aid2
                                 in bspeedFromItems b2 activeItems2 > speed1_5)
                           $ takeWhile ((== 1) . fst) threatDistL
       heavilyDistressed =  -- actor hit by a proj or similarly distressed

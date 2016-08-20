@@ -101,7 +101,7 @@ pickActorToMove refreshTarget = do
                 condThreatAdj = not $ null threatAdj
                 condFastThreatAdj =
                   any (\(_, (aid2, b2)) ->
-                        let activeItems2 = activeI aid
+                        let activeItems2 = activeI aid2
                         in bspeedFromItems b2 activeItems2 > bspeed body ar)
                       threatAdj
                 heavilyDistressed =
