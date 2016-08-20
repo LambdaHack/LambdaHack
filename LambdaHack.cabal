@@ -82,18 +82,13 @@ flag curses
   default:            False
   manual:             True
 
-flag expose_internal
-  description:        expose internal functions and types, but don't switch on any other release mode options
-  default:            False
-  manual:             True
-
 flag with_expensive_assertions
   description:        turn on expensive assertions of well-tested code
   default:            False
   manual:             True
 
 flag release
-  description:        prepare for a release (expose, optimize, etc.)
+  description:        prepare for a release (expose internal functions and types, optimize, etc.)
   default:            False
   manual:             True
 
@@ -293,9 +288,6 @@ library
     other-modules:    Game.LambdaHack.Common.HSFile
     build-depends:    zlib >= 0.5.3.1
   }
-
-  if flag(expose_internal)
-    cpp-options:      -DEXPOSE_INTERNAL
 
   if flag(with_expensive_assertions)
     cpp-options:      -DWITH_EXPENSIVE_ASSERTIONS
