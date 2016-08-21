@@ -5,6 +5,7 @@ module Game.LambdaHack.Content.ItemKind
   , Effect(..), TimerDice(..)
   , Aspect(..), ThrowMod(..)
   , Feature(..), EqpSlot(..)
+  , properEffect
   , toVelocity, toLinger, toOrganGameTurn, toOrganActorTurn, toOrganNone
   , validateSingleItemKind, validateAllItemKind
   ) where
@@ -92,6 +93,13 @@ data Effect =
   deriving (Show, Read, Eq, Ord, Generic)
 
 instance NFData Effect
+
+properEffect :: Effect -> Bool
+properEffect eff = case eff of
+  ELabel{} -> False
+  EqpSlot{} -> False
+  Temporary{} -> False
+  _ -> True
 
 data TimerDice =
     TimerNone

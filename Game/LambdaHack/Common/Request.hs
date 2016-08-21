@@ -217,8 +217,8 @@ permittedProject forced skill b ar
         Right False -> legal
         Right True -> Right $
           let hasEffects = case itemDisco itemFull of
-                Just ItemDisco{itemKind=IK.ItemKind{ieffects=[]}} ->
-                  False
+                Just ItemDisco{itemKind=IK.ItemKind{ieffects}} ->
+                  not $ null $ filter IK.properEffect ieffects
                 _ -> True
               permittedSlot =
                 if ' ' `elem` triggerSyms
