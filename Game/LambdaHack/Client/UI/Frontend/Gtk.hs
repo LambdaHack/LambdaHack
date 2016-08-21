@@ -11,8 +11,8 @@ import Game.LambdaHack.Common.Prelude hiding (Alt)
 import Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import qualified Data.ByteString.Char8 as BS
+import qualified Data.EnumMap.Strict as EM
 import Data.IORef
-import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Graphics.UI.Gtk hiding (Point)
 
@@ -26,7 +26,7 @@ import Game.LambdaHack.Common.Point
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
   { sview :: !TextView                    -- ^ the widget to draw to
-  , stags :: !(M.Map Color.Attr TextTag)  -- ^ text color tags for fg/bg
+  , stags :: !(EM.EnumMap Color.Attr TextTag)  -- ^ text color tags for fg/bg
   }
 
 data GtkFrame = GtkFrame
@@ -49,7 +49,7 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
   ttt <- textTagTableNew
-  stags <- M.fromList <$>
+  stags <- EM.fromList <$>
              mapM (\ak -> do
                       tt <- textTagNew Nothing
                       textTagTableAdd ttt tt
@@ -201,7 +201,7 @@ display sess@FrontendSession{sview, stags} frame = postGUISync $ do
   let GtkFrame{..} = evalFrame sess frame
   tb <- textViewGetBuffer sview
   let attrs = zip [0..] gfAttr
-      defAttr = stags M.! Color.defAttr
+      defAttr = stags EM.! Color.defAttr
   textBufferSetByteString tb gfChar
   mapM_ (setTo tb defAttr 0) attrs
 
@@ -230,7 +230,7 @@ evalFrame :: FrontendSession -> SingleFrame -> GtkFrame
 evalFrame FrontendSession{stags} SingleFrame{singleFrame} =
   let levelChar = unlines $ map (map Color.acChar) singleFrame
       gfChar = BS.pack $ init levelChar
-      -- Strict version of @map (map ((stags M.!) . fst)) sfLeve
+      -- Strict version of @map (map ((stags EM.!) . fst)) sfLeve
       gfAttr  = reverse $ foldl' ff [] singleFrame
       ff ll l = reverse (foldl' f [] l) : ll
       f l Color.AttrChar{acAttr=Color.Attr{..}} =
@@ -246,6 +246,6 @@ evalFrame FrontendSession{stags} SingleFrame{singleFrame} =
                 else (fg, Color.defFG)
               _ -> (fg, bg)
             acAttr1 = Color.Attr fg1 bg1
-            !tag = stags M.! acAttr1
+            !tag = stags EM.! acAttr1
         in tag : l
   in GtkFrame{..}

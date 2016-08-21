@@ -11,7 +11,7 @@ import Game.LambdaHack.Common.Prelude
 
 import Control.Concurrent.Async
 import Data.Char (chr, ord)
-import qualified Data.Map.Strict as M
+import qualified Data.EnumMap.Strict as EM
 import qualified UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C
 
@@ -25,7 +25,7 @@ import Game.LambdaHack.Common.Point
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
   { swin    :: !C.Window  -- ^ the window to draw to
-  , sstyles :: !(M.Map Color.Attr C.CursesStyle)
+  , sstyles :: !(EM.EnumMap Color.Attr C.CursesStyle)
       -- ^ map from fore/back colour pairs to defined curses styles
   }
 
@@ -49,7 +49,7 @@ startup _sdebugCli = do
   let (ks, vs) = unzip s
   ws <- C.convertStyles vs
   let swin = C.stdScr
-      sstyles = M.fromList (zip ks ws)
+      sstyles = EM.fromList (zip ks ws)
       sess = FrontendSession{..}
   rf <- createRawFrontend (display sess) shutdown
   let storeKeys :: IO ()
@@ -70,7 +70,7 @@ display :: FrontendSession    -- ^ frontend session data
 display FrontendSession{..} SingleFrame{singleFrame} = do
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
-  let defaultStyle = sstyles M.! Color.defAttr
+  let defaultStyle = sstyles EM.! Color.defAttr
   C.erase
   C.setStyle defaultStyle
   -- We need to remove the last character from the status line,
@@ -78,7 +78,7 @@ display FrontendSession{..} SingleFrame{singleFrame} = do
   -- due to the curses historical limitations.
   let level = init singleFrame ++ [init $ last singleFrame]
       nm = zip [0..] $ map (zip [0..]) level
-  sequence_ [ C.setStyle (M.findWithDefault defaultStyle acAttr1 sstyles)
+  sequence_ [ C.setStyle (EM.findWithDefault defaultStyle acAttr1 sstyles)
               >> C.mvWAddStr swin y x [acChar]
             | (y, line) <- nm
             , (x, Color.AttrChar{acAttr=Color.Attr{..}, ..}) <- line
