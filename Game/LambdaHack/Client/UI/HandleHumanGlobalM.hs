@@ -601,7 +601,7 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
       promptEqp = makePhrase ["What consumable to", verb]
       p :: CStore -> (Text, m Suitability)
       p cstore = if cstore `elem` [CEqp, CSha] && cLegalRaw /= [CGround]
-                 then (promptEqp, return $ SuitsSomething goesIntoEqp)
+                 then (promptEqp, return $ SuitsSomething $ \itemFull -> goesIntoEqp $ itemBase itemFull)
                  else (prompt, return SuitsEverything)
       (promptGeneric, psuit) = p destCStore
   ggi <-
@@ -637,9 +637,9 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
               in ret4 rest n ((iid, k, fromCStore, toCStore) : acc)
         if cLegalRaw == [CGround]  -- normal pickup
         then case destCStore of
-          CEqp | calmE && goesIntoSha itemFull ->
+          CEqp | calmE && goesIntoSha (itemBase itemFull) ->
             retRec CSha
-          CEqp | not $ goesIntoEqp itemFull ->
+          CEqp | not $ goesIntoEqp (itemBase itemFull) ->
             retRec CInv
           CEqp | eqpOverfull b (oldN + k) -> do
             -- If this stack doesn't fit, we don't equip any part of it,

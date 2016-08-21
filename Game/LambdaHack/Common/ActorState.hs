@@ -380,17 +380,16 @@ itemToFull Kind.COps{coitem=Kind.Ops{okind}}
 -- Non-durable item that hurts doesn't go into equipment by default,
 -- but if it is in equipment or among organs, it's used for melee
 -- nevertheless, e.g., thorns.
-goesIntoEqp :: ItemFull -> Bool
-goesIntoEqp itemFull = isJust (strengthEqpSlot $ itemBase itemFull)
--- TODO: not needed if EqpSlotWeapon stays         || isMeleeEqp itemFull)
+goesIntoEqp :: Item -> Bool
+goesIntoEqp item = IK.Equipable `elem` jfeature item
 
-goesIntoInv :: ItemFull -> Bool
-goesIntoInv itemFull = IK.Precious `notElem` jfeature (itemBase itemFull)
-                       && not (goesIntoEqp itemFull)
+goesIntoInv :: Item -> Bool
+goesIntoInv item = IK.Precious `notElem` jfeature item
+                   && not (goesIntoEqp item)
 
-goesIntoSha :: ItemFull -> Bool
-goesIntoSha itemFull = IK.Precious `elem` jfeature (itemBase itemFull)
-                       && not (goesIntoEqp itemFull)
+goesIntoSha :: Item -> Bool
+goesIntoSha item = IK.Precious `elem` jfeature item
+                   && not (goesIntoEqp item)
 
 eqpOverfull :: Actor -> Int -> Bool
 eqpOverfull b n = let size = sum $ map fst $ EM.elems $ beqp b

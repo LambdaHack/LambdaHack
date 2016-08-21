@@ -200,6 +200,7 @@ effectSem source target iid recharged effect = do
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect 0
   case effect of
     IK.ELabel _ -> return False
+    IK.EqpSlot _ -> return False
     IK.Hurt nDm -> effectHurt nDm source target IK.RefillHP
     IK.Burn nDm -> effectBurn nDm source target
     IK.Explode t -> effectExplode execSfx t target

@@ -733,6 +733,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
       animate (blid b) deathAct
     else case effect of
         IK.ELabel{} -> return ()
+        IK.EqpSlot{} -> return ()
         IK.Hurt{} -> return ()  -- avoid spam; SfxStrike just sent
         IK.Burn{} -> do
           if isOurAlive

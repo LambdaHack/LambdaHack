@@ -32,9 +32,6 @@ strengthEffect f itemFull =
       concatMap f ieffects
     Nothing -> []
 
-strengthFeature :: (Feature -> [b]) -> Item -> [b]
-strengthFeature f item = concatMap f (jfeature item)
-
 strengthOnSmash :: ItemFull -> [Effect]
 strengthOnSmash =
   let p (OnSmash eff) = [eff]
@@ -55,11 +52,11 @@ strengthDropOrgan =
       p _ = []
   in strengthEffect p
 
-strengthEqpSlot :: Item -> Maybe (EqpSlot, Text)
+strengthEqpSlot :: ItemFull -> Maybe EqpSlot
 strengthEqpSlot item =
-  let p (EqpSlot eqpSlot t) = [(eqpSlot, t)]
+  let p (EqpSlot eqpSlot) = [eqpSlot]
       p _ = []
-  in case strengthFeature p item of
+  in case strengthEffect p item of
     [] -> Nothing
     [x] -> Just x
     xs -> assert `failure` (xs, item)
@@ -68,7 +65,7 @@ strengthToThrow :: Item -> ThrowMod
 strengthToThrow item =
   let p (ToThrow tmod) = [tmod]
       p _ = []
-  in case strengthFeature p item of
+  in case concatMap p (jfeature item) of
     [] -> ThrowMod 100 100
     [x] -> x
     xs -> assert `failure` (xs, item)
@@ -120,8 +117,8 @@ strongestSlotNoFilter eqpSlot is =
 strongestSlot :: EqpSlot -> [(ItemId, ItemFull)]
               -> [(Int, (ItemId, ItemFull))]
 strongestSlot eqpSlot is =
-  let f (_, itemFull) = case strengthEqpSlot $ itemBase itemFull of
-        Just (eqpSlot2, _) | eqpSlot2 == eqpSlot -> True
+  let f (_, itemFull) = case strengthEqpSlot itemFull of
+        Just eqpSlot2 | eqpSlot2 == eqpSlot -> True
         _ -> False
       slotIs = filter f is
   in strongestSlotNoFilter eqpSlot slotIs

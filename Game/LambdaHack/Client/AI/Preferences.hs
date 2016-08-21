@@ -28,6 +28,7 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
   let dungeonDweller = not $ fcanEscape $ gplayer fact
   in case eff of
     IK.ELabel _ -> 0
+    IK.EqpSlot _ -> 0
     IK.Hurt d -> -(min 150 $ 10 * Dice.meanDice d)
     IK.Burn d -> -(min 200 $ 15 * Dice.meanDice d)
                    -- often splash damage, etc.
@@ -155,7 +156,7 @@ totalUsefulness cops b ar fact itemFull =
             isWeapon = isMeleeEqp itemFull
             totalSum
               | isWeapon && effSum < 0 = - effSum + selfSum
-              | not $ goesIntoEqp itemFull = effSum
+              | not $ goesIntoEqp $ itemBase itemFull = effSum
               | mixedBlessing =
                   0  -- significant mixed blessings out of AI control
               | otherwise = selfSum  -- if the weapon heals the enemy, it

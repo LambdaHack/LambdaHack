@@ -51,11 +51,12 @@ data ItemKind = ItemKind
 -- are possible. Constructors are sorted vs increasing impact/danger.
 data Effect =
     -- Ordinary effects.
-    ELabel !Text          -- ^ secret (learned as effect) label of the item
+    ELabel !Text      -- ^ secret (learned as effect) label of the item
+  | EqpSlot !EqpSlot  -- ^ AI and UI flag that leaks item properties
   | Hurt !Dice.Dice
-  | Burn !Dice.Dice  -- TODO: generalize to other elements? ignite terrain?
+  | Burn !Dice.Dice   -- TODO: generalize to other elements? ignite terrain?
   | Explode !(GroupName ItemKind)
-                          -- ^ explode, producing this group of blasts
+                      -- ^ explode, producing this group of blasts
   | RefillHP !Int
   | OverfillHP !Int
   | RefillCalm !Int
@@ -144,9 +145,9 @@ data Feature =
   | ToThrow !ThrowMod       -- ^ parameters modifying a throw
   | Identified              -- ^ the item starts identified
   | Applicable              -- ^ AI and UI flag: consider applying
-  | EqpSlot !EqpSlot !Text  -- ^ AI and UI flag: goes into equipment
-  | Precious                -- ^ can't throw or apply if not calm enough;
-                            --   AI and UI flag: don't risk identifying by use
+  | Equipable               -- ^ AI and UI flag: consider equipping
+  | Precious                -- ^ AI and UI flag: don't risk identifying by use
+                            --   also, can't throw or apply if not calm enough;
   | Tactic !Tactic          -- ^ overrides actor's tactic (TODO)
   deriving (Show, Eq, Ord, Generic)
 
@@ -161,7 +162,9 @@ data EqpSlot =
   | EqpSlotLightSource
   | EqpSlotWeapon
   | EqpSlotAddAbility Ability.Ability
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Read, Eq, Ord, Generic)
+
+instance NFData EqpSlot
 
 instance Hashable Effect
 

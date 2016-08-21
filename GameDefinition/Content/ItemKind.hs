@@ -172,8 +172,8 @@ sharpeningTool = ItemKind
   , iverbHit = "smack"
   , iweight  = 400
   , iaspects = [AddHurtMelee $ d 10 |*| 3]
-  , ieffects = []
-  , ifeature = [EqpSlot EqpSlotAddHurtMelee "", Identified]
+  , ieffects = [EqpSlot EqpSlotAddHurtMelee]
+  , ifeature = [Identified, Equipable]
   , idesc    = "A portable sharpening stone that lets you fix your weapons between or even during fights, without the need to set up camp, fish out tools and assemble a proper sharpening workshop."
   , ikit     = []
   }
@@ -205,8 +205,8 @@ motionScanner = ItemKind
   , iweight  = 300
   , iaspects = [ AddNocto 1
                , AddHurtMelee (dl 5 - 10), AddArmorRanged (dl 10 - 20) ]
-  , ieffects = []
-  , ifeature = [EqpSlot EqpSlotMiscBonus "", Identified]
+  , ieffects = [EqpSlot EqpSlotMiscBonus]
+  , ifeature = [Identified, Equipable]
   , idesc    = "A silk flag with a bell for detecting sudden draft changes. May indicate a nearby corridor crossing or a fast enemy approaching in the dark. Is also very noisy."
   , ikit     = []
   }
@@ -224,8 +224,8 @@ light1 = ItemKind
   , iweight  = 1200
   , iaspects = [ AddShine 3       -- not only flashes, but also sparks
                , AddSight (-2) ]  -- unused by AI due to the mixed blessing
-  , ieffects = [Burn 2]
-  , ifeature = [EqpSlot EqpSlotLightSource "", Identified]
+  , ieffects = [Burn 2, EqpSlot EqpSlotLightSource]
+  , ifeature = [Identified, Equipable]
   , idesc    = "A smoking, heavy wooden torch, burning in an unsteady glow."
   , ikit     = []
   }
@@ -239,9 +239,10 @@ light2 = ItemKind
   , iverbHit = "burn"
   , iweight  = 1000
   , iaspects = [AddShine 3, AddSight (-1)]
-  , ieffects = [Burn 3, Paralyze 6, OnSmash (Explode "burning oil 3")]
+  , ieffects = [ Burn 3, Paralyze 6, OnSmash (Explode "burning oil 3")
+               , EqpSlot EqpSlotLightSource ]
   , ifeature = [ toVelocity 70  -- hard not to spill the oil while throwing
-               , Fragile, EqpSlot EqpSlotLightSource "", Identified ]
+               , Fragile, Identified, Equipable ]
   , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
   , ikit     = []
   }
@@ -255,9 +256,10 @@ light3 = ItemKind
   , iverbHit = "burn"
   , iweight  = 2400
   , iaspects = [AddShine 4, AddSight (-1)]
-  , ieffects = [Burn 4, Paralyze 8, OnSmash (Explode "burning oil 4")]
+  , ieffects = [ Burn 4, Paralyze 8, OnSmash (Explode "burning oil 4")
+               , EqpSlot EqpSlotLightSource ]
   , ifeature = [ toVelocity 70  -- hard to throw so that it opens and burns
-               , Fragile, EqpSlot EqpSlotLightSource "", Identified ]
+               , Fragile, Identified, Equipable ]
   , idesc    = "Very bright and very heavy brass lantern."
   , ikit     = []
   }
@@ -278,9 +280,9 @@ gorget = ItemKind
                , Timeout $ 1 + d 2
                , AddArmorMelee $ 2 + d 3
                , AddArmorRanged $ 2 + d 3 ]
-  , ieffects = [Recharging (RefillCalm 1)]
-  , ifeature = [ Durable, Precious, EqpSlot EqpSlotMiscBonus ""
-               , Identified, toVelocity 50 ]  -- not dense enough
+  , ieffects = [Recharging (RefillCalm 1), EqpSlot EqpSlotMiscBonus]
+  , ifeature = [ Durable, Precious, Identified
+               , toVelocity 50, Equipable ]  -- not dense enough
   , idesc    = "Highly ornamental, cold, large, steel medallion on a chain. Unlikely to offer much protection as an armor piece, but the old, worn engraving reassures you."
   , ikit     = []
   }
@@ -294,9 +296,8 @@ necklace = ItemKind
   , iverbHit = "whip"
   , iweight  = 30
   , iaspects = [Periodic]
-  , ieffects = []
-  , ifeature = [ Precious, EqpSlot EqpSlotMiscBonus ""
-               , toVelocity 50 ]  -- not dense enough
+  , ieffects = [EqpSlot EqpSlotMiscBonus]
+  , ifeature = [Precious, toVelocity 50, Equipable]  -- not dense enough
   , idesc    = "Menacing Greek symbols shimmer with increasing speeds along a chain of fine encrusted links. After a tense build-up, a prismatic arc shoots towards the ground and the iridescence subdues, becomes ordered and resembles a harmless ornament again, for a time."
   , ikit     = []
   }
@@ -366,9 +367,8 @@ imageItensifier = ItemKind
   , iverbHit = "bang"
   , iweight  = 500
   , iaspects = [AddNocto 1, AddSight (-1), AddArmorMelee $ 1 + dl 3 |*| 3]
-  , ieffects = []
-  , ifeature = [ Precious, Identified, Durable
-               , EqpSlot EqpSlotMiscBonus "" ]
+  , ieffects = [EqpSlot EqpSlotMiscBonus]
+  , ifeature = [Precious, Identified, Durable, Equipable]
   , idesc    = "Contraption of lenses and mirrors on a polished brass headband for capturing and strengthening light in dark environment. Hampers vision in daylight. Stackable."
   , ikit     = []
   }
@@ -382,9 +382,8 @@ sightSharpening = ItemKind
   , iverbHit = "rap"
   , iweight  = 50
   , iaspects = [Unique, AddSight $ 1 + d 2, AddHurtMelee $ d 2 |*| 3]
-  , ieffects = []
-  , ifeature = [ Precious, Identified, Durable
-               , EqpSlot EqpSlotAddSight "" ]
+  , ieffects = [EqpSlot EqpSlotAddSight]
+  , ifeature = [Precious, Identified, Durable, Equipable]
   , idesc    = "Let's you better focus your weaker eye."
   , ikit     = []
   }
@@ -402,37 +401,42 @@ ring = ItemKind
   , iweight  = 15
   , iaspects = []
   , ieffects = [Explode "blast 20"]
-  , ifeature = [Precious, Identified]
+  , ifeature = [Precious, Identified, Equipable]
   , idesc    = "It looks like an ordinary object, but it's in fact a generator of exceptional effects: adding to some of your natural abilities and subtracting from others. You'd profit enormously if you could find a way to multiply such generators."
   , ikit     = []
   }
 ring1 = ring
   { irarity  = [(10, 2)]
   , iaspects = [AddSpeed $ 1 + d 2, AddMaxHP $ dl 7 - 7 - d 7]
-  , ieffects = [Explode "distortion"]  -- strong magic
-  , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddSpeed ""]
+  , ieffects = [ Explode "distortion"  -- strong magic
+               , EqpSlot EqpSlotAddSpeed ]
+  , ifeature = ifeature ring
   }
 ring2 = ring
   { irarity  = [(10, 5)]
   , iaspects = [AddMaxHP $ 10 + dl 10, AddMaxCalm $ dl 5 - 20 - d 5]
-  , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddMaxHP ""]
+  , ieffects = [EqpSlot EqpSlotAddMaxHP]
+  , ifeature = ifeature ring
   }
 ring3 = ring
   { irarity  = [(10, 5)]
   , iaspects = [AddMaxCalm $ 29 + dl 10]
-  , ifeature = ifeature ring ++ [EqpSlot EqpSlotMiscBonus ""]
+  , ieffects = [EqpSlot EqpSlotMiscBonus]
+  , ifeature = ifeature ring
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with solemn, strangely comforting, worn out words."
   }
 ring4 = ring
   { irarity  = [(3, 3), (10, 5)]
   , iaspects = [AddHurtMelee $ d 5 + dl 5 |*| 3, AddMaxHP $ dl 3 - 5 - d 3]
-  , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddHurtMelee ""]
+  , ieffects = [EqpSlot EqpSlotAddHurtMelee]
+  , ifeature = ifeature ring
   }
 ring5 = ring  -- by the time it's found, probably no space in eqp
   { irarity  = [(5, 0), (10, 2)]
   , iaspects = [AddShine $ d 2]
-  , ieffects = [Explode "distortion"]  -- strong magic
-  , ifeature = ifeature ring ++ [EqpSlot EqpSlotLightSource ""]
+  , ieffects = [ Explode "distortion"  -- strong magic
+               , EqpSlot EqpSlotLightSource ]
+  , ifeature = ifeature ring
   , idesc    = "A sturdy ring with a large, shining stone."
   }
 ring6 = ring
@@ -440,24 +444,27 @@ ring6 = ring
   , irarity  = [(10, 2)]
   , iaspects = [ Unique, AddSpeed $ 3 + d 4
                , AddMaxCalm $ - 20 - d 20, AddMaxHP $ - 20 - d 20 ]
-  , ieffects = [ELabel "of Rush"]  -- no explosion, because Durable
-  , ifeature = ifeature ring ++ [Durable, EqpSlot EqpSlotAddSpeed ""]
+  , ieffects = [ ELabel "of Rush"  -- no explosion, because Durable
+               , EqpSlot EqpSlotAddSpeed ]
+  , ifeature = ifeature ring ++ [Durable]
   }
 ring7 = ring
   { ifreq    = [("useful", 100), ("ring of opportunity sniper", 1) ]
   , irarity  = [(1, 1)]
   , iaspects = [AddAbility AbProject 8]
   , ieffects = [ ELabel "of opportunity sniper"
-               , Explode "distortion" ]  -- strong magic
-  , ifeature = ifeature ring ++ [EqpSlot (EqpSlotAddAbility AbProject) ""]
+               , Explode "distortion"  -- strong magic
+               , EqpSlot (EqpSlotAddAbility AbProject) ]
+  , ifeature = ifeature ring
   }
 ring8 = ring
   { ifreq    = [("useful", 1), ("ring of opportunity grenadier", 1) ]
   , irarity  = [(1, 1)]
   , iaspects = [AddAbility AbProject 11]
   , ieffects = [ ELabel "of opportunity grenadier"
-               , Explode "distortion" ]  -- strong magic
-  , ifeature = ifeature ring ++ [EqpSlot (EqpSlotAddAbility AbProject) ""]
+               , Explode "distortion"  -- strong magic
+               , EqpSlot (EqpSlotAddAbility AbProject) ]
+  , ifeature = ifeature ring
   }
 
 -- * Ordinary exploding consumables, often intended to be thrown
@@ -735,9 +742,9 @@ armorLeather = ItemKind
   , iaspects = [ AddHurtMelee (-3)
                , AddArmorMelee $ 1 + d 2 + dl 2 |*| 5
                , AddArmorRanged $ d 2 + dl 2 |*| 5 ]
-  , ieffects = []
+  , ieffects = [EqpSlot EqpSlotAddArmorMelee]
   , ifeature = [ toVelocity 30  -- unwieldy to throw and blunt
-               , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
+               , Durable, Identified, Equipable ]
   , idesc    = "A stiff jacket formed from leather boiled in bee wax. Protects from anything that is not too sharp. Smells much better than the rest of your garment."
   , ikit     = []
   }
@@ -749,8 +756,9 @@ armorMail = armorLeather
   , iaspects = [ AddHurtMelee (-3)
                , AddArmorMelee $ 1 + d 2 + dl 3 |*| 5
                , AddArmorRanged $ 2 + d 2 + dl 3 |*| 5 ]
+  , ieffects = [EqpSlot EqpSlotAddArmorRanged]
   , ifeature = [ toVelocity 40  -- unwieldy to throw and blunt
-               , Durable, EqpSlot EqpSlotAddArmorRanged "", Identified ]
+               , Durable, Identified, Equipable ]
   , idesc    = "A long shirt woven from iron rings that are hard to pierce through. Discourages foes from attacking your torso, making it harder for them to hit you."
   }
 gloveFencing = ItemKind
@@ -764,9 +772,9 @@ gloveFencing = ItemKind
   , iweight  = 100
   , iaspects = [ AddHurtMelee $ (d 2 + dl 10) |*| 3
                , AddArmorRanged $ d 2 |*| 5 ]
-  , ieffects = []
+  , ieffects = [EqpSlot EqpSlotAddArmorRanged]
   , ifeature = [ toVelocity 30  -- flaps and flutters
-               , Durable, EqpSlot EqpSlotAddArmorRanged "", Identified ]
+               , Durable, Identified, Equipable ]
   , idesc    = "A fencing glove from rough leather ensuring a good grip. Also quite effective in deflecting or even catching slow projectiles."
   , ikit     = []
   }
@@ -808,9 +816,10 @@ buckler = ItemKind
                , AddHurtMelee (-30)
                , Timeout $ d 3 + 3 - dl 3 |*| 2 ]
   , ieffects = [ Hurt (1 * d 1)  -- to display xdy everywhere in Hurt
-               , Recharging (PushActor (ThrowMod 200 50)) ]
+               , Recharging (PushActor (ThrowMod 200 50))
+               , EqpSlot EqpSlotAddArmorMelee ]
   , ifeature = [ toVelocity 40  -- unwieldy to throw
-               , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
+               , Durable, Identified, Equipable ]
   , idesc    = "Heavy and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too small to intercept projectiles with."
   , ikit     = []
   }
@@ -822,9 +831,10 @@ shield = buckler
   , iaspects = [ AddArmorMelee 80
                , AddHurtMelee (-70)
                , Timeout $ d 6 + 6 - dl 6 |*| 2 ]
-  , ieffects = [Hurt (1 * d 1), Recharging (PushActor (ThrowMod 400 50))]
+  , ieffects = [ Hurt (1 * d 1), Recharging (PushActor (ThrowMod 400 50))
+               , EqpSlot EqpSlotAddArmorMelee ]
   , ifeature = [ toVelocity 30  -- unwieldy to throw
-               , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
+               , Durable, Identified, Equipable]
   , idesc    = "Large and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
   }
 
@@ -842,9 +852,9 @@ dagger = ItemKind
   , iaspects = [ AddHurtMelee $ d 3 + dl 3 |*| 3
                , AddArmorMelee $ d 2 |*| 5
                , AddHurtRanged (-60) ]  -- as powerful as a dart
-  , ieffects = [Hurt (6 * d 1)]
+  , ieffects = [Hurt (6 * d 1), EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 40  -- ensuring it hits with the tip costs speed
-               , Durable, EqpSlot EqpSlotWeapon "", Identified ]
+               , Durable, Identified, Equipable ]
   , idesc    = "A short dagger for thrusting and parrying blows. Does not penetrate deeply, but is hard to block. Especially useful in conjunction with a larger weapon."
   , ikit     = []
   }
@@ -876,9 +886,9 @@ hammer = ItemKind
   , iweight  = 1500
   , iaspects = [ AddHurtMelee $ d 2 + dl 2 |*| 3
                , AddHurtRanged (-80) ]  -- as powerful as a dart
-  , ieffects = [Hurt (8 * d 1)]
+  , ieffects = [Hurt (8 * d 1), EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 20  -- ensuring it hits with the sharp tip costs
-               , Durable, EqpSlot EqpSlotWeapon "", Identified ]
+               , Durable, Identified, Equipable ]
   , idesc    = "It may not cause grave wounds, but neither does it glance off nor ricochet. Great sidearm for opportunistic blows against armored foes."
   , ikit     = []
   }
@@ -906,9 +916,9 @@ sword = ItemKind
   , iverbHit = "slash"
   , iweight  = 2000
   , iaspects = []
-  , ieffects = [Hurt (10 * d 1)]
+  , ieffects = [Hurt (10 * d 1), EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 5  -- ensuring it hits with the tip costs speed
-               , Durable, EqpSlot EqpSlotWeapon "", Identified ]
+               , Durable, Identified, Equipable ]
   , idesc    = "Difficult to master; deadly when used effectively. The steel is particularly hard and keen, but rusts quickly without regular maintenance."
   , ikit     = []
   }
@@ -940,9 +950,9 @@ halberd = ItemKind
   , iverbHit = "impale"
   , iweight  = 3000
   , iaspects = [AddArmorMelee $ 1 + dl 3 |*| 5]
-  , ieffects = [Hurt (12 * d 1)]
+  , ieffects = [Hurt (12 * d 1), EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 5  -- not balanced
-               , Durable, EqpSlot EqpSlotWeapon "", Identified ]
+               , Durable, Identified, Equipable ]
   , idesc    = "An improvised but deadly weapon made of a blade from a scythe attached to a long pole."
   , ikit     = []
   }

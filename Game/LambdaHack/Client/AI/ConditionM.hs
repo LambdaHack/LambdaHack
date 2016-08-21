@@ -43,7 +43,6 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -304,12 +303,12 @@ desirableItem canEsc use itemFull =
           || IK.Precious `elem` jfeature item
      else
        -- A hack to prevent monsters from picking up unidentified treasure.
-       let preciousWithoutSlot =
+       let preciousNotUseful =
              IK.Precious `elem` jfeature item  -- risk from treasure hunters
-             && isNothing (strengthEqpSlot item)  -- unlikely to be useful
+             && IK.Equipable `notElem` jfeature item  -- unlikely to be useful
        in use /= Just 0
           && not (isNothing use  -- needs resources to id
-                  && preciousWithoutSlot)
+                  && preciousNotUseful)
           -- TODO: terrible hack for the identified healing gems and normal
           -- gems identified with a scroll
           && maybe True (<= 0) (lookup "gem" freq)

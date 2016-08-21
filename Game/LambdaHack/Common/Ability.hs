@@ -10,6 +10,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import Control.DeepSeq
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Hashable (Hashable)
@@ -26,7 +27,7 @@ data Ability =
   | AbProject
   | AbApply
   | AbTrigger
-  deriving (Eq, Ord, Generic, Enum, Bounded)
+  deriving (Read, Eq, Ord, Generic, Enum, Bounded)
 
 -- | Skill level in particular abilities.
 type Skills = EM.EnumMap Ability Int
@@ -67,6 +68,8 @@ instance Show Ability where
   show AbProject = "fling"
   show AbApply = "apply"
   show AbTrigger = "trigger floor"
+
+instance NFData Ability
 
 instance Binary Ability where
   put = putWord8 . toEnum . fromEnum

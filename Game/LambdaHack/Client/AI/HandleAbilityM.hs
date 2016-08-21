@@ -276,10 +276,10 @@ pickup aid onlyWeapon = do
       prepareOne (oldN, l4) ((_, (k, _)), (iid, itemFull)) =
         let n = oldN + k
             (newN, toCStore)
-              | calmE && goesIntoSha itemFull = (oldN, CSha)
-              | goesIntoEqp itemFull && eqpOverfull b n =
+              | calmE && goesIntoSha (itemBase itemFull) = (oldN, CSha)
+              | goesIntoEqp (itemBase itemFull) && eqpOverfull b n =
                 (oldN, if calmE then CSha else CInv)
-              | goesIntoEqp itemFull = (n, CEqp)
+              | goesIntoEqp (itemBase itemFull) = (n, CEqp)
               | otherwise = (oldN, CInv)
         in (newN, (iid, k, CGround, toCStore) : l4)
       (_, prepared) = foldl' prepareOne (0, []) $ filterWeapon benItemL
@@ -331,11 +331,11 @@ equipItems aid = do
                                 (filter filterNeeded invAssocs)
                                 (filter filterNeeded shaAssocs)
       bEqpInv = foldl' (improve CInv) (0, [])
-                $ map (\((slot, _), (eqp, inv, _)) ->
+                $ map (\(slot, (eqp, inv, _)) ->
                         (slot, (inv, eqp))) bestThree
       bEqpBoth | calmE =
                    foldl' (improve CSha) bEqpInv
-                   $ map (\((slot, _), (eqp, _, sha)) ->
+                   $ map (\(slot, (eqp, _, sha)) ->
                            (slot, (sha, eqp))) bestThree
                | otherwise = bEqpInv
       (_, prepared) = bEqpBoth
@@ -444,10 +444,10 @@ unEquipItems aid = do
       bestThree =
         bestByEqpSlot eqpAssocs invAssocs (filter filterNeeded shaAssocs)
       bInvSha = concatMap
-                  (improve CInv . (\((slot, _), (_, inv, sha)) ->
+                  (improve CInv . (\(slot, (_, inv, sha)) ->
                                     (slot, (sha, inv)))) bestThree
       bEqpSha = concatMap
-                  (improve CEqp . (\((slot, _), (eqp, _, sha)) ->
+                  (improve CEqp . (\(slot, (eqp, _, sha)) ->
                                     (slot, (sha, eqp)))) bestThree
       prepared = if calmE then bInvSha ++ bEqpSha else []
   return $! if null prepared
@@ -455,9 +455,9 @@ unEquipItems aid = do
             else returN "unEquipItems" $ ReqMoveItems prepared
 
 groupByEqpSlot :: [(ItemId, ItemFull)]
-               -> M.Map (IK.EqpSlot, Text) [(ItemId, ItemFull)]
+               -> M.Map IK.EqpSlot [(ItemId, ItemFull)]
 groupByEqpSlot is =
-  let f (iid, itemFull) = case strengthEqpSlot $ itemBase itemFull of
+  let f (iid, itemFull) = case strengthEqpSlot itemFull of
         Nothing -> Nothing
         Just es -> Just (es, [(iid, itemFull)])
       withES = mapMaybe f is
@@ -466,7 +466,7 @@ groupByEqpSlot is =
 bestByEqpSlot :: [(ItemId, ItemFull)]
               -> [(ItemId, ItemFull)]
               -> [(ItemId, ItemFull)]
-              -> [((IK.EqpSlot, Text)
+              -> [(IK.EqpSlot
                   , ( [(Int, (ItemId, ItemFull))]
                     , [(Int, (ItemId, ItemFull))]
                     , [(Int, (ItemId, ItemFull))] ) )]
@@ -477,9 +477,9 @@ bestByEqpSlot eqpAssocs invAssocs shaAssocs =
       appendThree (g1, g2, g3) (h1, h2, h3) = (g1 ++ h1, g2 ++ h2, g3 ++ h3)
       eqpInvShaMap = M.unionsWith appendThree [eqpMap, invMap, shaMap]
       bestSingle = strongestSlot
-      bestThree (eqpSlot, _) (g1, g2, g3) = (bestSingle eqpSlot g1,
-                                             bestSingle eqpSlot g2,
-                                             bestSingle eqpSlot g3)
+      bestThree eqpSlot (g1, g2, g3) = (bestSingle eqpSlot g1,
+                                        bestSingle eqpSlot g2,
+                                        bestSingle eqpSlot g3)
   in M.assocs $ M.mapWithKey bestThree eqpInvShaMap
 
 harmful :: Kind.COps -> Actor -> AspectRecord -> Faction -> ItemFull -> Bool

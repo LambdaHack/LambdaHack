@@ -30,6 +30,7 @@ effectToSuffix :: Effect -> Text
 effectToSuffix effect =
   case effect of
     ELabel _ -> ""  -- printed specially
+    EqpSlot _ -> ""  -- more accurate data in aspects; here only AI summary
     Hurt dice -> wrapInParens (tshow dice)
     Burn d -> wrapInParens (tshow d
                             <+> if d > 1 then "burns" else "burn")
@@ -148,9 +149,9 @@ featureToSuff feat =
     Durable -> wrapInChevrons "durable"
     ToThrow tmod -> wrapInChevrons $ tmodToSuff "flies" tmod
     Identified -> ""
-    Applicable -> ""
-    EqpSlot{} -> ""
-    Precious -> wrapInChevrons "precious"
+    Applicable -> wrapInChevrons "applicable?"
+    Equipable -> wrapInChevrons "equipable?"
+    Precious -> wrapInChevrons "precious?"
     Tactic tactics -> "overrides tactics to" <+> tshow tactics
 
 affixBonus :: Int -> Text
