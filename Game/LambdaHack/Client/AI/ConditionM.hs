@@ -160,7 +160,7 @@ condBlocksFriendsM aid = do
 condFloorWeaponM :: MonadClient m => ActorId -> m Bool
 condFloorWeaponM aid = do
   floorAssocs <- fullAssocsClient aid [CGround]
-  let lootIsWeapon = any (isMeleeEqp . snd) floorAssocs
+  let lootIsWeapon = any (isMelee . snd) floorAssocs
   return lootIsWeapon  -- keep it lazy
 
 -- | Check whether the actor has no weapon in equipment.

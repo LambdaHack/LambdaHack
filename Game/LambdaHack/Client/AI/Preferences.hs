@@ -153,7 +153,7 @@ totalUsefulness cops b ar fact itemFull =
               not (null selfBens)
               && (selfSum > 0 && minimum selfBens < -10
                   || selfSum < 0 && maximum selfBens > 10)
-            isWeapon = isMeleeEqp itemFull
+            isWeapon = isMelee itemFull
             totalSum
               | isWeapon && effSum < 0 = - effSum + selfSum
               | not $ goesIntoEqp $ itemBase itemFull = effSum

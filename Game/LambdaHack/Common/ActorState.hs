@@ -15,7 +15,7 @@ module Game.LambdaHack.Common.ActorState
   , actorInAmbient, actorSkills, dispEnemy, fullAssocs, itemToFull
   , goesIntoEqp, goesIntoInv, goesIntoSha, eqpOverfull, eqpFreeN
   , storeFromC, lidFromC, aidFromC, hasCharge
-  , strongestMelee, isMelee, isMeleeEqp
+  , strongestMelee, isMelee
   ) where
 
 import Prelude ()
@@ -468,13 +468,8 @@ isMelee itemFull =
   let p IK.Hurt{} = True
       p IK.Burn{} = True
       p _ = False
+      durable = IK.Durable `elem` jfeature (itemBase itemFull)
   in case itemDisco itemFull of
     Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}} ->
-      any p ieffects
+      any p ieffects && durable
     Nothing -> False
-
--- Melee weapon so good (durable) that goes into equipment by default.
-isMeleeEqp :: ItemFull -> Bool
-isMeleeEqp itemFull =
-  let durable = IK.Durable `elem` jfeature (itemBase itemFull)
-  in isMelee itemFull && durable

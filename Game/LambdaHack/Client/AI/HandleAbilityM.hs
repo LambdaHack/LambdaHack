@@ -270,7 +270,7 @@ pickup aid onlyWeapon = do
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
       calmE = calmEnough b ar
-      isWeapon (_, (_, itemFull)) = isMeleeEqp itemFull
+      isWeapon (_, (_, itemFull)) = isMelee itemFull
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
       prepareOne (oldN, l4) ((_, (k, _)), (iid, itemFull)) =
@@ -687,8 +687,8 @@ projectItem aid = do
                                Nothing -> -1  -- experiment if no options
                                Just (_, ben) -> ben
                            * (if recharged then 1 else 0)
-                in if -- Durable weapon is usually too useful for melee.
-                      not (isMeleeEqp itemFull)
+                in if -- Melee weapon is usually needed in hand.
+                      not (isMelee itemFull)
                       && benR < 0
                       && trange >= chessDist (bpos b) fpos
                    then Just ( -benR * rangeMult `div` 10
