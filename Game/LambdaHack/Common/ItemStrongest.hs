@@ -16,6 +16,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Ord as Ord
 
+import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Misc
@@ -105,7 +106,16 @@ strengthFromEqpSlot eqpSlot itemFull =
           p (Burn d) = [Dice.meanDice d]
           p _ = []
       in sum (strengthEffect p itemFull)
-    EqpSlotAddAbility ab -> EM.findWithDefault 0 ab aSkills
+    EqpSlotMiscAbility ->
+      EM.findWithDefault 0 Ability.AbWait aSkills
+      + EM.findWithDefault 0 Ability.AbMoveItem aSkills
+      + EM.findWithDefault 0 Ability.AbTrigger aSkills
+    EqpSlotAbMove -> EM.findWithDefault 0 Ability.AbMove aSkills
+    EqpSlotAbMelee -> EM.findWithDefault 0 Ability.AbMelee aSkills
+    EqpSlotAbDisplace -> EM.findWithDefault 0 Ability.AbDisplace aSkills
+    EqpSlotAbAlter -> EM.findWithDefault 0 Ability.AbAlter aSkills
+    EqpSlotAbProject -> EM.findWithDefault 0 Ability.AbProject aSkills
+    EqpSlotAbApply -> EM.findWithDefault 0 Ability.AbApply aSkills
 
 strongestSlotNoFilter :: EqpSlot -> [(ItemId, ItemFull)]
                       -> [(Int, (ItemId, ItemFull))]

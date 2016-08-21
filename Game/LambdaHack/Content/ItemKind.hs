@@ -170,8 +170,14 @@ data EqpSlot =
   | EqpSlotAddSight
   | EqpSlotLightSource
   | EqpSlotWeapon
-  | EqpSlotAddAbility Ability.Ability
-  deriving (Show, Read, Eq, Ord, Generic)
+  | EqpSlotMiscAbility
+  | EqpSlotAbMove
+  | EqpSlotAbMelee
+  | EqpSlotAbDisplace
+  | EqpSlotAbAlter
+  | EqpSlotAbProject
+  | EqpSlotAbApply
+  deriving (Show, Read, Eq, Ord, Enum, Bounded, Generic)
 
 instance NFData EqpSlot
 

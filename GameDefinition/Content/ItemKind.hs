@@ -456,7 +456,7 @@ ring7 = ring
   , iaspects = [AddAbility AbProject 8]
   , ieffects = [ ELabel "of opportunity sniper"
                , Explode "distortion"  -- strong magic
-               , EqpSlot (EqpSlotAddAbility AbProject) ]
+               , EqpSlot EqpSlotAbProject ]
   }
 ring8 = ring
   { ifreq    = [("useful", 1), ("ring of opportunity grenadier", 1) ]
@@ -464,7 +464,7 @@ ring8 = ring
   , iaspects = [AddAbility AbProject 11]
   , ieffects = [ ELabel "of opportunity grenadier"
                , Explode "distortion"  -- strong magic
-               , EqpSlot (EqpSlotAddAbility AbProject) ]
+               , EqpSlot EqpSlotAbProject ]
   }
 
 -- * Ordinary exploding consumables, often intended to be thrown

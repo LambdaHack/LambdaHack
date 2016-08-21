@@ -345,6 +345,7 @@ equipItems aid = do
 
 toShare :: IK.EqpSlot -> Bool
 toShare IK.EqpSlotMiscBonus = False
+toShare IK.EqpSlotMiscAbility = False
 toShare _ = True
 
 yieldUnneeded :: MonadClient m
