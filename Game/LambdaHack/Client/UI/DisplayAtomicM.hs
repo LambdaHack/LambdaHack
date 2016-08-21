@@ -921,8 +921,8 @@ strike source target iid cstore hitStatus = assert (source /= target) $ do
         let sActs =
               if bproj sb
               then [ MU.SubjectVerbSg spart "connect" ]
-              else [ MU.SubjectVerbSg spart "swing"
-                   , partItemChoice itemFull ]
+              else [ MU.SubjectVerbSg spart verb, tpart
+                   , "with", partItemChoice itemFull ]
         in makeSentence [ MU.Phrase sActs <> ", but"
                         , MU.SubjectVerbSg tpart "block"
                         , if n > 1 then "doggedly" else "partly"
