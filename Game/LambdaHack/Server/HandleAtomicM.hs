@@ -133,7 +133,13 @@ cmdAtomicSemSer cmd = case cmd of
           addItemToActor iid k aid
           invalidatePer
         invalidateLucid  -- from itemAffects, s2 provides light or s1 is CGround
-  UpdRefillCalm aid _ -> invalidatePerActor aid  -- TODO: reset much less often
+  UpdRefillCalm aid n -> do
+    actorAspect <- getsServer sactorAspect
+    body <- getsState $ getActorBody aid
+    let AspectRecord{aSight} = actorAspect EM.! aid
+        radiusOld = boundSightByCalm aSight (bcalm body)
+        radiusNew = boundSightByCalm aSight (bcalm body + n)
+    when (radiusOld /= radiusNew) $ invalidatePerActor aid
   UpdAlterTile lid pos fromTile toTile -> do
     clearChanged <- updateSclear lid pos fromTile toTile
     litChanged <- updateSlit lid pos fromTile toTile

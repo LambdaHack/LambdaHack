@@ -18,7 +18,7 @@ module Game.LambdaHack.Server.Fov
     -- * Update of invalidated Fov data
   , perceptionFromPTotal, perActorFromLevel, totalFromPerActor, lucidFromLevel
     -- * Computation of initial perception and caches
-  , perFidInDungeon, aspectRecordFromActorServer
+  , perFidInDungeon, aspectRecordFromActorServer, boundSightByCalm
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , cacheBeforeLucidFromActor
@@ -37,6 +37,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.Int (Int64)
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -154,13 +155,17 @@ perActorFromLevel perActorOld getActorB actorAspect fovClear =
         in FovValid $ cacheBeforeLucidFromActor fovClear b ar
   in EM.mapWithKey f perActorOld
 
+boundSightByCalm :: Int -> Int64 -> Int
+boundSightByCalm sight calm =
+  min (fromIntegral $ calm `div` (5 * oneM)) sight
+
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
 -- Also compute positions seen by noctovision and perceived by smell.
 cacheBeforeLucidFromActor :: FovClear -> Actor -> AspectRecord
                           -> CacheBeforeLucid
 cacheBeforeLucidFromActor clearPs body AspectRecord{..} =
-  let radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) aSight
+  let radius = boundSightByCalm aSight (bcalm body)
       creachable = PerReachable $ fullscan clearPs radius (bpos body)
       cnocto = PerVisible $ fullscan clearPs aNocto (bpos body)
       -- TODO: until AI can handle/ignore it, only radius 2 used
