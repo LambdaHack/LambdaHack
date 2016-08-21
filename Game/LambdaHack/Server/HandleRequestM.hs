@@ -36,6 +36,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.CommonM
@@ -409,10 +410,16 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
      execFailure aid req ItemNotCalm
    | otherwise -> do
     when (fromCStore == CGround) $ do
-      seed <- getsServer $ (EM.! iid) . sitemSeedD
-      item <- getsState $ getItemBody iid
-      Level{ldepth} <- getLevel $ jlid item
-      execUpdAtomic $ UpdDiscoverSeed fromC iid seed ldepth
+      itemToF <- itemToFullServer
+      case itemToF iid (k, []) of
+        ItemFull{itemDisco=
+                   Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}}}
+          | not $ null $ filter IK.properEffect ieffects ->
+          return ()  -- discover by use
+        ItemFull{itemBase} -> do
+          seed <- getsServer $ (EM.! iid) . sitemSeedD
+          Level{ldepth} <- getLevel $ jlid itemBase
+          execUpdAtomic $ UpdDiscoverSeed fromC iid seed ldepth
     upds <- generalMoveItem iid k fromC toC
     mapM_ execUpdAtomic upds
     -- Reset timeout for equipped periodic items.
