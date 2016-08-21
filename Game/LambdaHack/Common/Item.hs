@@ -74,7 +74,7 @@ data AspectRecord = AspectRecord
   , aSmell       :: !Int
   , aShine       :: !Int
   , aNocto       :: !Int
-  , aAbility     :: !Ability.Skills
+  , aSkills      :: !Ability.Skills
   }
   deriving (Show, Eq, Generic)
 
@@ -96,7 +96,7 @@ emptyAspectRecord = AspectRecord
   , aSmell       = 0
   , aShine       = 0
   , aNocto       = 0
-  , aAbility     = EM.empty
+  , aSkills      = Ability.zeroSkills
   }
 
 sumAspectRecord :: [(AspectRecord, Int)] -> AspectRecord
@@ -113,11 +113,11 @@ sumAspectRecord l = AspectRecord
   , aSmell       = sum $ mapScale aSmell l
   , aShine       = sum $ mapScale aShine l
   , aNocto       = sum $ mapScale aNocto l
-  , aAbility     = EM.unionsWith (+) $ mapScaleAbility l
+  , aSkills      = EM.unionsWith (+) $ mapScaleAbility l
   }
  where
   mapScale f = map (\(ar, k) -> f ar * k)
-  mapScaleAbility = map (\(ar, k) -> EM.map (* k) $ aAbility ar)
+  mapScaleAbility = map (\(ar, k) -> Ability.scaleSkills k $ aSkills ar)
 
 -- | The map of item ids to item aspects.
 -- The full map is known by the server.
@@ -176,7 +176,7 @@ aspectRecordToList AspectRecord{..} =
   ++ [IK.AddSmell $ intToDice aSmell | aSmell /= 0]
   ++ [IK.AddShine $ intToDice aShine | aShine /= 0]
   ++ [IK.AddNocto $ intToDice aNocto | aNocto /= 0]
-  ++ [IK.AddAbility ab $ intToDice n | (ab, n) <- EM.assocs aAbility, n /= 0]
+  ++ [IK.AddAbility ab $ intToDice n | (ab, n) <- EM.assocs aSkills, n /= 0]
 
 castAspect :: AbsDepth -> AbsDepth -> AspectRecord -> IK.Aspect
            -> Rnd AspectRecord
@@ -220,8 +220,8 @@ castAspect ldepth totalDepth ar asp =
       return $! ar {aNocto = n + aNocto ar}
     IK.AddAbility ab d -> do
       n <- castDice ldepth totalDepth d
-      return $! ar {aAbility = Ability.addSkills (EM.singleton ab n)
-                                                 (aAbility ar)}
+      return $! ar {aSkills = Ability.addSkills (EM.singleton ab n)
+                                                (aSkills ar)}
 
 addMeanAspect :: AspectRecord -> IK.Aspect -> AspectRecord
 addMeanAspect ar asp =
@@ -264,8 +264,8 @@ addMeanAspect ar asp =
       in ar {aNocto = n + aNocto ar}
     IK.AddAbility ab d ->
       let n = Dice.meanDice d
-      in ar {aAbility = Ability.addSkills (EM.singleton ab n)
-                                          (aAbility ar)}
+      in ar {aSkills = Ability.addSkills (EM.singleton ab n)
+                                         (aSkills ar)}
 
 seedToAspect :: ItemSeed -> IK.ItemKind -> AbsDepth -> AbsDepth -> AspectRecord
 seedToAspect (ItemSeed itemSeed) kind ldepth totalDepth =

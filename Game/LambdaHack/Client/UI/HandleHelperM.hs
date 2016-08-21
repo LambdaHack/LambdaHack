@@ -223,7 +223,7 @@ statsOverlay aid = do
         , (aSmell, "smell radius", \t -> tshow (max 0 t) <> "m")
         , (aShine, "shine radius", \t -> tshow (max 0 t) <> "m")
         , (aNocto, "night vision radius", \t -> tshow (max 0 t) <> "m") ]
-        ++ [ (EM.findWithDefault 0 ab . aAbility, tshow ab <+> "ability", tshow)
+        ++ [ (EM.findWithDefault 0 ab . aSkills, tshow ab <+> "ability", tshow)
            | ab <- [minBound..maxBound] ]
       zipReslot = zipWith prSlot $ zip [0..] allZeroSlots
       (ts, kxs) = unzip $ zipReslot slotList

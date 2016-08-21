@@ -85,7 +85,7 @@ pickActorToMove refreshTarget = do
             let ar = case EM.lookup aid actorAspect of
                   Just aspectRecord -> aspectRecord
                   Nothing -> assert `failure` aid
-                actorMaxSk = aAbility ar
+                actorMaxSk = aSkills ar
             activeItems <- activeItemsClient aid
             condMeleeBad <- condMeleeBadM aid
             threatDistL <- threatDistList aid

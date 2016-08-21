@@ -105,7 +105,7 @@ strengthFromEqpSlot eqpSlot itemFull =
           p (Burn d) = [Dice.meanDice d]
           p _ = []
       in sum (strengthEffect p itemFull)
-    EqpSlotAddAbility ab -> EM.findWithDefault 0 ab aAbility
+    EqpSlotAddAbility ab -> EM.findWithDefault 0 ab aSkills
 
 strongestSlotNoFilter :: EqpSlot -> [(ItemId, ItemFull)]
                       -> [(Int, (ItemId, ItemFull))]

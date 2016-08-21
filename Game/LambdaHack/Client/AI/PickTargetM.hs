@@ -97,7 +97,7 @@ targetStrategy aid = do
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
-      actorMaxSk = aAbility ar
+      actorMaxSk = aSkills ar
       canMove = EM.findWithDefault 0 AbMove actorMaxSk > 0
                 || EM.findWithDefault 0 AbDisplace actorMaxSk > 0
                 -- TODO: needed for now, because AI targets and shoots enemies

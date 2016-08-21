@@ -146,7 +146,7 @@ dominateFidSfx fid target = do
   -- and the game wouldn't end.
   actorAspect <- getsServer sactorAspect
   let ar = actorAspect EM.! target
-      actorMaxSk = aAbility ar
+      actorMaxSk = aSkills ar
       -- Check that the actor can move, also between levels and through doors.
       -- Otherwise, it's too awkward for human player to control.
       canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0

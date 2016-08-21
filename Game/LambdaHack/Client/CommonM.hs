@@ -340,5 +340,5 @@ enemyMaxAb :: MonadClient m => ActorId -> m Ability.Skills
 enemyMaxAb aid = do
   actorAspect <- getsClient sactorAspect
   case EM.lookup aid actorAspect of
-    Just aspectRecord -> return $! aAbility aspectRecord
+    Just aspectRecord -> return $! aSkills aspectRecord
     Nothing -> assert `failure` aid

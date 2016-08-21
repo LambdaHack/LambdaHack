@@ -282,7 +282,7 @@ reqDisplace source target = do
       req = ReqDisplace target
   actorAspect <- getsServer sactorAspect
   let ar = actorAspect EM.! target
-  dEnemy <- getsState $ dispEnemy source target $ aAbility ar
+  dEnemy <- getsState $ dispEnemy source target $ aSkills ar
   if | not adj -> execFailure source req DisplaceDistant
      | atWar && not dEnemy -> do
        mweapon <- pickWeaponServer source

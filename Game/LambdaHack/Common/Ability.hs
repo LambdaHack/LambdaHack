@@ -30,6 +30,11 @@ data Ability =
   deriving (Read, Eq, Ord, Generic, Enum, Bounded)
 
 -- | Skill level in particular abilities.
+--
+-- This representation is sparse, so better than a record when there are more
+-- item kinds (with few abilities) than actors (with many abilities),
+-- especially if the number of abilities grows as the engine is developed.
+-- It's also easier to code and maintain.
 type Skills = EM.EnumMap Ability Int
 
 zeroSkills :: Skills
@@ -47,7 +52,7 @@ scaleSkills n = EM.map (n *)
 minusTen, blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems :: Skills
 
 -- To make sure only a lot of weak items can override move-only-leader, etc.
-minusTen = EM.fromList $ zip [minBound..maxBound] [-10, -10..]
+minusTen = EM.fromDistinctAscList $ zip [minBound..maxBound] (repeat (-10))
 
 blockOnly = EM.delete AbWait minusTen
 
@@ -56,7 +61,7 @@ meleeAdjacent = EM.delete AbMelee blockOnly
 -- Melee and reaction fire.
 meleeAndRanged = EM.delete AbProject meleeAdjacent
 
-ignoreItems = EM.fromList $ zip [AbMoveItem, AbProject, AbApply] [-10, -10..]
+ignoreItems = EM.fromList $ zip [AbMoveItem, AbProject, AbApply] (repeat (-10))
 
 instance Show Ability where
   show AbMove = "move"

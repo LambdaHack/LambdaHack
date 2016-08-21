@@ -156,7 +156,7 @@ condBFS aid = do
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
-      actorMaxSk = aAbility ar
+      actorMaxSk = aSkills ar
       alterSkill =
         min (maxBound - 1)  -- @maxBound :: Word8@ means unalterable
             (toEnum $ EM.findWithDefault 0 Ability.AbAlter actorMaxSk)

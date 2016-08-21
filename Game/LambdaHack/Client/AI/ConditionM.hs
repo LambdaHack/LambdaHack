@@ -187,7 +187,7 @@ condCanProjectM maxSkills aid = do
                let ar = case EM.lookup aid actorAspect of
                      Just aspectRecord -> aspectRecord
                      Nothing -> assert `failure` aid
-               return $! aAbility ar
+               return $! aSkills ar
              else
                actorSkillsClient aid
   let skill = EM.findWithDefault 0 Ability.AbProject actorSk
@@ -353,7 +353,7 @@ condMeleeBadM aid = do
       ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
-      actorMaxSk = aAbility ar
+      actorMaxSk = aSkills ar
   return $ condNoUsableWeapon
            || EM.findWithDefault 0 Ability.AbMelee actorMaxSk <= 0
            || noFriendlyHelp  -- still not getting friends' help

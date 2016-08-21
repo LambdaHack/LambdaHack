@@ -326,7 +326,7 @@ actorSkills mleader aid ar s =
       factionSkills
         | Just aid == mleader = Ability.zeroSkills
         | otherwise = fskillsOther player `Ability.addSkills` skillsFromTactic
-      itemSkills = aAbility ar
+      itemSkills = aSkills ar
   in itemSkills `Ability.addSkills` factionSkills
 
 tacticSkills :: Tactic -> Ability.Skills
