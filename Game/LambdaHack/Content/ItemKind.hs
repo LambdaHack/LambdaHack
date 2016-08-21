@@ -90,6 +90,8 @@ data Effect =
   | Recharging !Effect    -- ^ this effect inactive until timeout passes
   | Temporary !Text       -- ^ the item is temporary, vanishes at even void
                           --   Periodic activation, unless Durable
+  | Unique                -- ^ at most one copy can ever be generated
+  | Periodic              -- ^ in eqp, triggered as often as @Timeout@ permits
   deriving (Show, Read, Eq, Ord, Generic)
 
 instance NFData Effect
@@ -98,7 +100,8 @@ properEffect :: Effect -> Bool
 properEffect eff = case eff of
   ELabel{} -> False
   EqpSlot{} -> False
-  Temporary{} -> False
+  Unique -> False
+  Periodic -> False
   _ -> True
 
 data TimerDice =
@@ -119,9 +122,7 @@ instance NFData TimerDice
 -- | Aspects of items. Those that are named @Add*@ are additive
 -- (starting at 0) for all items wielded by an actor and they affect the actor.
 data Aspect =
-    Unique              -- ^ at most one copy can ever be generated
-  | Periodic            -- ^ in equipment, apply as often as @Timeout@ permits
-  | Timeout !Dice.Dice         -- ^ some effects disabled until item recharges
+    Timeout !Dice.Dice         -- ^ some effects disabled until item recharges
   | AddHurtMelee !Dice.Dice    -- ^ percentage damage bonus in melee
   | AddHurtRanged !Dice.Dice   -- ^ percentage damage bonus in ranged
   | AddArmorMelee !Dice.Dice   -- ^ percentage armor bonus against melee
@@ -213,20 +214,14 @@ toOrganActorTurn grp nDm = CreateItem COrgan grp (TimerActorTurn nDm)
 toOrganNone :: GroupName ItemKind -> Effect
 toOrganNone grp = CreateItem COrgan grp TimerNone
 
+-- TODO: reject some other duplicates
 -- TODO: reject aspects with dice 0
 -- | Catch invalid item kind definitions.
 validateSingleItemKind :: ItemKind -> [Text]
 validateSingleItemKind ItemKind{..} =
   [ "iname longer than 23" | T.length iname > 23 ]
   ++ validateRarity irarity
-  -- Reject duplicate Timeout and Periodic, because they are not additive.
-  -- Otherwise their behaviour may not agree with the item's in-game
-  -- description.
-  ++ let periodicAspect :: Aspect -> Bool
-         periodicAspect Periodic = True
-         periodicAspect _ = False
-         ps = filter periodicAspect iaspects
-     in ["more than one Periodic specification" | length ps > 1]
+  -- Reject duplicate Timeout, because it's not additive.
   ++ let timeoutAspect :: Aspect -> Bool
          timeoutAspect Timeout{} = True
          timeoutAspect _ = False

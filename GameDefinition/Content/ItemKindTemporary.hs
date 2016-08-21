@@ -31,11 +31,11 @@ tmpAs name aspects = ItemKind
   , irarity  = [(1, 1)]
   , iverbHit = "affect"
   , iweight  = 0
-  , iaspects = [Periodic]  -- timeout is 0; activates and vanishes soon,
-                           -- depending on initial timer setting
-               ++ aspects
+  , iaspects = -- timeout is 0; activates and vanishes soon,
+               -- depending on initial timer setting
+               aspects
   , ieffects = let tmp = Temporary $ "be no longer" <+> name
-               in [Recharging tmp, OnSmash tmp]
+               in [Periodic, Recharging tmp, OnSmash tmp]
   , ifeature = [Identified]
   , idesc    = ""
   , ikit     = []

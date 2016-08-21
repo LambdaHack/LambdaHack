@@ -162,11 +162,11 @@ torsor = ItemKind
   , irarity  = [(9, 0), (10, 1000)]  -- unique
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ Unique, AddMaxHP 300, AddMaxCalm 100, AddSpeed 10, AddNocto 2
+  , iaspects = [ AddMaxHP 300, AddMaxCalm 100, AddSpeed 10, AddNocto 2
                , AddAbility AbProject 2, AddAbility AbApply 1
                , AddAbility AbAlter 3, AddAbility AbTrigger (-1) ]
                    -- can't switch levels, a miniboss
-  , ieffects = []
+  , ieffects = [Unique]
   , ifeature = [Durable, Identified]
   , idesc    = "A principal homogeneous manifold, that acts freely and with enormous force, but whose stabilizers are trivial, making it rather helpless without a support group."
   , ikit     = [ ("right torsion", COrgan), ("left torsion", COrgan)
@@ -351,10 +351,10 @@ rhinoceros = ItemKind
   , irarity  = [(2, 0), (3, 1000000), (4, 0)]  -- unique
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ Unique, AddMaxHP 90, AddMaxCalm 60, AddSpeed 25, AddNocto 2
+  , iaspects = [ AddMaxHP 90, AddMaxCalm 60, AddSpeed 25, AddNocto 2
                , AddAbility AbTrigger (-1) ]
                    -- can't switch levels, a miniboss
-  , ieffects = []
+  , ieffects = [Unique]
   , ifeature = [Durable, Identified]
   , idesc    = "The last of its kind. Blind with rage. Charges at deadly speed."
   , ikit     = [ ("armored skin", COrgan), ("eye 2", COrgan)

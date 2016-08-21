@@ -101,7 +101,7 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
       f _ _ _ ik _ acc | ik `ES.member` uniqueSet = acc
       f itemGroup q p ik kind acc =
         -- Don't consider lvlSpawned for uniques.
-        let ld = if IK.Unique `elem` IK.iaspects kind then ldAbs else ldSpawned
+        let ld = if IK.Unique `elem` IK.ieffects kind then ldAbs else ldSpawned
             rarity = linearInterpolation ld (IK.irarity kind)
         in (q * p * rarity, ((ik, kind), itemGroup)) : acc
       g (itemGroup, q) = ofoldrGroup itemGroup (f itemGroup q) []

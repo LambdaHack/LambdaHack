@@ -113,6 +113,8 @@ effectToSuffix effect =
     OnSmash _ -> ""  -- printed inside a separate section
     Recharging _ -> ""  -- printed inside Periodic or Timeout
     Temporary _ -> ""
+    Unique -> ""  -- marked by capital letters in name
+    Periodic -> ""  -- printed specially
 
 tmodToSuff :: Text -> ThrowMod -> Text
 tmodToSuff verb ThrowMod{..} =
@@ -126,8 +128,6 @@ tmodToSuff verb ThrowMod{..} =
 kindAspectToSuffix :: Aspect -> Text
 kindAspectToSuffix aspect =
   case aspect of
-    Unique -> ""  -- marked by capital letters in name
-    Periodic -> ""  -- printed specially
     Timeout{} -> ""  -- printed specially
     AddHurtMelee t -> wrapInParens $ affixDice t <> "% melee"
     AddHurtRanged t -> wrapInParens $ affixDice t <> "% ranged"

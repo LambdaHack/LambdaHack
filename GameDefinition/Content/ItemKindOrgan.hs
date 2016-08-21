@@ -348,8 +348,8 @@ insectMortality = fist
   , ifreq    = [("insect mortality", 100)]
   , icount   = 1
   , iverbHit = "age"
-  , iaspects = [Periodic, Timeout $ 40 + d 10]
-  , ieffects = [Recharging (RefillHP (-1))]
+  , iaspects = [Timeout $ 40 + d 10]
+  , ieffects = [Periodic, Recharging (RefillHP (-1))]
   , idesc    = ""
   }
 sapientBrain = armoredSkin
@@ -378,9 +378,8 @@ speedGland n = armoredSkin
   , icount   = 1
   , iverbHit = "spit at"
   , iaspects = [ AddSpeed $ intToDice n
-               , Periodic
                , Timeout $ intToDice $ 100 `div` n ]
-  , ieffects = [Recharging (RefillHP 1)]
+  , ieffects = [Periodic, Recharging (RefillHP 1)]
   , idesc    = ""
   }
 speedGland2 = speedGland 2
@@ -393,8 +392,8 @@ scentGland = armoredSkin  -- TODO: cone attack, 3m away, project? apply?
   , ifreq    = [("scent gland", 100)]
   , icount   = 1
   , iverbHit = "spray at"
-  , iaspects = [Periodic, Timeout $ 10 + d 2 |*| 5 ]
-  , ieffects = [ Recharging (Explode "distressing odor")
+  , iaspects = [Timeout $ 10 + d 2 |*| 5 ]
+  , ieffects = [ Periodic, Recharging (Explode "distressing odor")
                , Recharging ApplyPerfume ]
   , idesc    = ""
   }
@@ -404,23 +403,23 @@ boilingVent = armoredSkin
   , iflavour = zipPlain [Blue]
   , icount   = 1
   , iverbHit = "menace"
-  , iaspects = [Periodic, Timeout $ 2 + d 2 |*| 5]
-  , ieffects = [Recharging (Explode "boiling water")]
+  , iaspects = [Timeout $ 2 + d 2 |*| 5]
+  , ieffects = [Periodic, Recharging (Explode "boiling water")]
   , idesc    = ""
   }
 arsenicVent = boilingVent
   { iname    = "vent"
   , ifreq    = [("arsenic vent", 100)]
   , iflavour = zipPlain [Cyan]
-  , iaspects = [Periodic, Timeout $ 2 + d 2 |*| 5]
-  , ieffects = [Recharging (Explode "weakness mist")]
+  , iaspects = [Timeout $ 2 + d 2 |*| 5]
+  , ieffects = [Periodic, Recharging (Explode "weakness mist")]
   }
 sulfurVent = boilingVent
   { iname    = "vent"
   , ifreq    = [("sulfur vent", 100)]
   , iflavour = zipPlain [BrYellow]
-  , iaspects = [Periodic, Timeout $ 2 + d 2 |*| 5]
-  , ieffects = [Recharging (Explode "strength mist")]
+  , iaspects = [Timeout $ 2 + d 2 |*| 5]
+  , ieffects = [Periodic, Recharging (Explode "strength mist")]
   }
 bonusHP = armoredSkin
   { iname    = "bonus HP"

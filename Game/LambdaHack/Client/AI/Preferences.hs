@@ -97,6 +97,8 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
     IK.OnSmash _ -> 0  -- TOOD: can be beneficial or not; analyze explosions
     IK.Recharging e -> effectToBenefit cops b ar fact e  -- for weapons
     IK.Temporary _ -> 0
+    IK.Unique -> 0
+    IK.Periodic -> 0
 
 -- TODO: calculating this for "temporary conditions" takes forever
 organBenefit :: GroupName ItemKind -> Kind.COps
@@ -115,8 +117,6 @@ organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}} b ar fact =
 aspectToBenefit :: Kind.COps -> Actor -> IK.Aspect -> Int
 aspectToBenefit _cops _b asp =
   case asp of
-    IK.Unique -> 0
-    IK.Periodic -> 0
     IK.Timeout{} -> 0
     IK.AddHurtMelee p -> Dice.meanDice p
     IK.AddHurtRanged p | p < 0 -> 0  -- TODO: don't ignore for missiles

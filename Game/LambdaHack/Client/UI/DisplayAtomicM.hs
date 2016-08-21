@@ -871,6 +871,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.OnSmash{} -> assert `failure` sfx
         IK.Recharging{} -> assert `failure` sfx
         IK.Temporary t -> actorVerbMU aid b $ MU.Text t
+        IK.Unique -> assert `failure` sfx
+        IK.Periodic -> assert `failure` sfx
   SfxMsgFid _ msg -> msgAdd msg
   SfxMsgAll msg -> msgAdd msg
 

@@ -62,9 +62,7 @@ newtype ItemSeed = ItemSeed Int
   deriving (Show, Eq, Ord, Enum, Hashable, Binary)
 
 data AspectRecord = AspectRecord
-  { aUnique      :: !Bool
-  , aPeriodic    :: !Bool
-  , aTimeout     :: !Int
+  { aTimeout     :: !Int
   , aHurtMelee   :: !Int
   , aHurtRanged  :: !Int
   , aArmorMelee  :: !Int
@@ -86,9 +84,7 @@ instance Hashable AspectRecord
 
 emptyAspectRecord :: AspectRecord
 emptyAspectRecord = AspectRecord
-  { aUnique      = False
-  , aPeriodic    = False
-  , aTimeout     = 0
+  { aTimeout     = 0
   , aHurtMelee   = 0
   , aHurtRanged  = 0
   , aArmorMelee  = 0
@@ -105,9 +101,7 @@ emptyAspectRecord = AspectRecord
 
 sumAspectRecord :: [(AspectRecord, Int)] -> AspectRecord
 sumAspectRecord l = AspectRecord
-  { aUnique      = False
-  , aPeriodic    = False
-  , aTimeout     = 0
+  { aTimeout     = 0
   , aHurtMelee   = sum $ mapScale aHurtMelee l
   , aHurtRanged  = sum $ mapScale aHurtRanged l
   , aArmorMelee  = sum $ mapScale aArmorMelee l
@@ -170,9 +164,7 @@ instance Binary Item
 
 aspectRecordToList :: AspectRecord -> [IK.Aspect]
 aspectRecordToList AspectRecord{..} =
-  [IK.Unique | aUnique]
-  ++ [IK.Periodic | aPeriodic]
-  ++ [IK.Timeout $ intToDice aTimeout | aTimeout /= 0]
+  [IK.Timeout $ intToDice aTimeout | aTimeout /= 0]
   ++ [IK.AddHurtMelee $ intToDice aHurtMelee | aHurtMelee /= 0]
   ++ [IK.AddHurtRanged $ intToDice aHurtRanged | aHurtRanged /= 0]
   ++ [IK.AddArmorMelee $ intToDice aArmorMelee | aArmorMelee /= 0]
@@ -190,8 +182,6 @@ castAspect :: AbsDepth -> AbsDepth -> AspectRecord -> IK.Aspect
            -> Rnd AspectRecord
 castAspect ldepth totalDepth ar asp =
   case asp of
-    IK.Unique -> return $! assert (not $ aUnique ar) $ ar {aUnique = True}
-    IK.Periodic -> return $! assert (not $ aPeriodic ar) $ ar {aPeriodic = True}
     IK.Timeout d -> do
       n <- castDice ldepth totalDepth d
       return $! assert (aTimeout ar == 0) $ ar {aTimeout = n}
@@ -236,8 +226,6 @@ castAspect ldepth totalDepth ar asp =
 addMeanAspect :: AspectRecord -> IK.Aspect -> AspectRecord
 addMeanAspect ar asp =
   case asp of
-    IK.Unique -> assert (not $ aUnique ar) $ ar {aUnique = True}
-    IK.Periodic -> assert (not $ aPeriodic ar) $ ar {aPeriodic = True}
     IK.Timeout d ->
       let n = Dice.meanDice d
       in assert (aTimeout ar == 0) $ ar {aTimeout = n}

@@ -64,29 +64,31 @@ itemEffectAndDestroy source target iid c = do
       itemToF <- itemToFullServer
       let itemFull = itemToF iid kit
       case itemDisco itemFull of
-        Just ItemDisco { itemAspect=Just aspectRecord
-                       , itemKind=IK.ItemKind{IK.ieffects} } ->
-          effectAndDestroy source target iid c False ieffects aspectRecord kit
+        Just ItemDisco {itemKind=IK.ItemKind{IK.ieffects}} ->
+          effectAndDestroy source target iid c False ieffects itemFull
         _ -> assert `failure` (source, target, iid, c)
 
 effectAndDestroy :: (MonadAtomic m, MonadServer m)
                  => ActorId -> ActorId -> ItemId -> Container -> Bool
-                 -> [IK.Effect] -> AspectRecord -> ItemQuant
+                 -> [IK.Effect] -> ItemFull
                  -> m ()
-effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
-  let mtimeout = aTimeout aspects
+effectAndDestroy source target iid c periodic effs ItemFull{..} = do
+  let (timeout, isPeriodic) = case itemDisco of
+        Just ItemDisco{itemKind, itemAspect=Just ar} ->
+          (aTimeout ar, IK.Periodic `elem` IK.ieffects itemKind)
+        _ -> assert `failure` itemDisco
   lid <- getsState $ lidFromC c
   localTime <- getsState $ getLocalTime lid
-  let it1 = let timeoutTurns = timeDeltaScale (Delta timeTurn) mtimeout
+  let it1 = let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
                 charging startT = timeShift startT timeoutTurns > localTime
-            in filter charging it
+            in filter charging itemTimer
       len = length it1
-      recharged = len < k
-  let !_A = assert (len <= k `blame` (kitK, source, target, iid, c)) ()
+      recharged = len < itemK
+  let !_A = assert (len <= itemK `blame` (source, target, iid, c)) ()
   -- If there is no Timeout, but there are Recharging,
   -- then such effects are disabled whenever the item is affected
   -- by a Discharge attack (TODO).
-  it2 <- case mtimeout of
+  it2 <- case timeout of
     n | n /= 0 && recharged ->
       return $ localTime : it1
     _ ->
@@ -94,10 +96,10 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
       return it1
   -- We use up the charge even if eventualy every effect fizzles. Tough luck.
   -- At least we don't destroy the item in such case. Also, we ID it regardless.
-  it3 <- if it /= it2 && not (mtimeout == 0 && aPeriodic aspects) then do  -- TODO: if the second condition is only an optimization, write so and/or check Temporary instead
-           execUpdAtomic $ UpdTimeItem iid c it it2
+  it3 <- if itemTimer /= it2 && not (timeout == 0 && isPeriodic) then do  -- TODO: if the second condition is only an optimization, write so and/or check Temporary instead
+           execUpdAtomic $ UpdTimeItem iid c itemTimer it2
            return it2
-         else return it
+         else return itemTimer
   -- If the activation is not periodic, trigger at least the effects
   -- that are not recharging and so don't depend on @recharged@.
   when (not periodic || recharged) $ do
@@ -113,12 +115,11 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
                    tmpEffect (IK.OnSmash IK.Temporary{}) = True
                    tmpEffect _ = False
                in find tmpEffect effs
-    item <- getsState $ getItemBody iid
-    let durable = IK.Durable `elem` jfeature item
+    let durable = IK.Durable `elem` jfeature itemBase
         imperishable = durable || periodic && isNothing mtmp
-        kit = if isNothing mtmp || periodic then (1, take 1 it3) else (k, it3)
+        kit = if isNothing mtmp || periodic then (1, take 1 it3) else (itemK, it3)
     unless imperishable $
-      execUpdAtomic $ UpdLoseItem iid item kit c
+      execUpdAtomic $ UpdLoseItem iid itemBase kit c
     -- At this point, the item is potentially no longer in container @c@,
     -- so we don't pass @c@ along.
     triggered <- itemEffectDisco source target iid c recharged periodic effs
@@ -126,7 +127,7 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
     -- Regardless, we don't rewind the time, because some info is gained
     -- (that the item does not exhibit any effects in the given context).
     unless (triggered || imperishable) $
-      execUpdAtomic $ UpdSpotItem iid item kit c
+      execUpdAtomic $ UpdSpotItem iid itemBase kit c
 
 itemEffectCause :: (MonadAtomic m, MonadServer m)
                 => ActorId -> Point -> IK.Effect
@@ -137,13 +138,11 @@ itemEffectCause aid tpos ef = do
   bag <- getsState $ getCBag c
   case EM.assocs bag of
     [(iid, kit)] -> do
+      itemToF <- itemToFullServer
+      let itemFull = itemToF iid kit
       -- No block against tile, hence unconditional.
-      discoAspect <- getsServer sdiscoAspect
-      let aspects = case EM.lookup iid discoAspect of
-            Just aspectRecord -> aspectRecord
-            _ -> assert `failure` (aid, tpos, ef, iid)
       execSfxAtomic $ SfxTrigger aid tpos $ TK.Cause ef
-      effectAndDestroy aid aid iid c False [ef] aspects kit
+      effectAndDestroy aid aid iid c False [ef] itemFull
       return True
     ab -> assert `failure` (aid, tpos, ab)
 
@@ -179,7 +178,7 @@ itemEffect source target iid recharged periodic effects = do
   unless (triggered  -- some effect triggered, so feedback comes from them
           || periodic  -- don't spam from fizzled periodic effects
           || bproj sb) $  -- don't spam, projectiles can be very numerous
-    if null effects
+    if null $ filter IK.properEffect effects
     then execSfxAtomic $ SfxMsgFid (bfid sb) "Nothing happens."
     else execSfxAtomic $ SfxMsgFid (bfid sb) "It flashes and fizzles."
   return triggered
@@ -234,6 +233,8 @@ effectSem source target iid recharged effect = do
     IK.OnSmash _ -> return False  -- ignored under normal circumstances
     IK.Recharging e -> effectRecharging recursiveCall e recharged
     IK.Temporary _ -> effectTemporary execSfx source iid
+    IK.Unique -> return False
+    IK.Periodic -> return False
 
 -- + Individual semantic functions for effects
 
@@ -842,14 +843,10 @@ dropCStoreItem store aid b hit iid kit@(k, _) = do
       durable = IK.Durable `elem` jfeature item
       isDestroyed = hit && not durable || bproj b && fragile
   if isDestroyed then do
-    discoAspect <- getsServer sdiscoAspect
-    let aspects = case EM.lookup iid discoAspect of
-          Just aspectRecord -> aspectRecord
-          _ -> assert `failure` (aid, iid)
     itemToF <- itemToFullServer
     let itemFull = itemToF iid kit
         effs = strengthOnSmash itemFull
-    effectAndDestroy aid aid iid c False effs aspects kit
+    effectAndDestroy aid aid iid c False effs itemFull
   else do
     cDrop <- pickDroppable aid b
     mvCmd <- generalMoveItem iid k (CActor aid store) cDrop
@@ -884,14 +881,14 @@ effectPolyItem execSfx source target = do
         <+> ppCStoreIn cstore <> "."
       return False
     (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
-      Just ItemDisco{itemKind, itemKindId, itemAspect = Just aspects} -> do
+      Just ItemDisco{itemKind, itemKindId} -> do
         let maxCount = Dice.maxDice $ IK.icount itemKind
         if | itemK < maxCount -> do
              execSfxAtomic $ SfxMsgFid (bfid sb) $
                "The purpose of repurpose is served by" <+> tshow maxCount
                <+> "pieces of this item, not by" <+> tshow itemK <> "."
              return False
-           | aUnique aspects -> do
+           | IK.Unique `elem` IK.ieffects itemKind -> do
              execSfxAtomic $ SfxMsgFid (bfid sb)
                "Unique items can't be repurposed."
              return False

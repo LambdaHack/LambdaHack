@@ -94,9 +94,8 @@ rollItem lvlSpawned lid itemFreq = do
   m5 <- rndToAction $ newItem cops flavour disco discoRev uniqueSet
                               itemFreq lvlSpawned lid ldepth totalDepth
   case m5 of
-    Just (_, _, ItemDisco{ itemKindId
-                         , itemAspect=Just aspectRecord}, _, _) ->
-      when (aUnique aspectRecord) $
+    Just (_, _, ItemDisco{itemKindId, itemKind}, _, _) ->
+      when (IK.Unique `elem` IK.ieffects itemKind) $
         modifyServer $ \ser ->
           ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}
     _ -> return ()

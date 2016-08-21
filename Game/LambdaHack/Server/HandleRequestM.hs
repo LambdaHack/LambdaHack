@@ -409,9 +409,10 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
    | (fromCStore == CSha || toCStore == CSha) && not calmE ->
      execFailure aid req ItemNotCalm
    | otherwise -> do
+    itemToF <- itemToFullServer
+    let itemFull = itemToF iid (k, [])
     when (fromCStore == CGround) $ do
-      itemToF <- itemToFullServer
-      case itemToF iid (k, []) of
+      case itemFull of
         ItemFull{itemDisco=
                    Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}}}
           | not $ null $ filter IK.properEffect ieffects ->
@@ -426,10 +427,9 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
     when (toCStore `elem` [CEqp, COrgan]
           && fromCStore `notElem` [CEqp, COrgan]) $ do
       localTime <- getsState $ getLocalTime (blid b)
-      discoAspect <- getsServer sdiscoAspect
       -- The first recharging period after pick up is random,
       -- between 1 and 2 standard timeouts of the item.
-      mrndTimeout <- rndToAction $ computeRndTimeout localTime discoAspect iid
+      mrndTimeout <- rndToAction $ computeRndTimeout localTime iid itemFull
       let beforeIt = case iid `EM.lookup` bagBefore of
             Nothing -> []  -- no such items before move
             Just (_, it2) -> it2
@@ -448,17 +448,17 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
             execUpdAtomic $ UpdTimeItem iid toC afterIt resetIt
         Nothing -> return ()  -- no Periodic or Timeout aspect; don't touch
 
-computeRndTimeout :: Time -> DiscoveryAspect -> ItemId -> Rnd (Maybe Time)
-computeRndTimeout localTime discoAspect iid = do
-  case EM.lookup iid discoAspect of
-    Just aspectRecord ->
-      case aTimeout aspectRecord of
-        t | t /= 0 && aPeriodic aspectRecord -> do
+computeRndTimeout :: Time -> ItemId -> ItemFull -> Rnd (Maybe Time)
+computeRndTimeout localTime iid ItemFull{..}= do
+  case itemDisco of
+    Just ItemDisco{itemKind, itemAspect=Just ar} ->
+      case aTimeout ar of
+        t | t /= 0 && IK.Periodic `elem` IK.ieffects itemKind -> do
           rndT <- randomR (0, t)
           let rndTurns = timeDeltaScale (Delta timeTurn) rndT
           return $ Just $ timeShift localTime rndTurns
         _ -> return Nothing
-    _ -> assert `failure` (iid, discoAspect)
+    _ -> assert `failure` iid
 
 -- * ReqProject
 
