@@ -13,7 +13,6 @@ import Control.Arrow (second)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Function
-import qualified Data.Map.Strict as M
 import Data.Ord
 import Data.Ratio
 
@@ -456,13 +455,13 @@ unEquipItems aid = do
             else returN "unEquipItems" $ ReqMoveItems prepared
 
 groupByEqpSlot :: [(ItemId, ItemFull)]
-               -> M.Map IK.EqpSlot [(ItemId, ItemFull)]
+               -> EM.EnumMap IK.EqpSlot [(ItemId, ItemFull)]
 groupByEqpSlot is =
   let f (iid, itemFull) = case strengthEqpSlot itemFull of
         Nothing -> Nothing
         Just es -> Just (es, [(iid, itemFull)])
       withES = mapMaybe f is
-  in M.fromListWith (++) withES
+  in EM.fromListWith (++) withES
 
 bestByEqpSlot :: [(ItemId, ItemFull)]
               -> [(ItemId, ItemFull)]
@@ -472,16 +471,16 @@ bestByEqpSlot :: [(ItemId, ItemFull)]
                     , [(Int, (ItemId, ItemFull))]
                     , [(Int, (ItemId, ItemFull))] ) )]
 bestByEqpSlot eqpAssocs invAssocs shaAssocs =
-  let eqpMap = M.map (\g -> (g, [], [])) $ groupByEqpSlot eqpAssocs
-      invMap = M.map (\g -> ([], g, [])) $ groupByEqpSlot invAssocs
-      shaMap = M.map (\g -> ([], [], g)) $ groupByEqpSlot shaAssocs
+  let eqpMap = EM.map (\g -> (g, [], [])) $ groupByEqpSlot eqpAssocs
+      invMap = EM.map (\g -> ([], g, [])) $ groupByEqpSlot invAssocs
+      shaMap = EM.map (\g -> ([], [], g)) $ groupByEqpSlot shaAssocs
       appendThree (g1, g2, g3) (h1, h2, h3) = (g1 ++ h1, g2 ++ h2, g3 ++ h3)
-      eqpInvShaMap = M.unionsWith appendThree [eqpMap, invMap, shaMap]
+      eqpInvShaMap = EM.unionsWith appendThree [eqpMap, invMap, shaMap]
       bestSingle = strongestSlot
       bestThree eqpSlot (g1, g2, g3) = (bestSingle eqpSlot g1,
                                         bestSingle eqpSlot g2,
                                         bestSingle eqpSlot g3)
-  in M.assocs $ M.mapWithKey bestThree eqpInvShaMap
+  in EM.assocs $ EM.mapWithKey bestThree eqpInvShaMap
 
 harmful :: Kind.COps -> Actor -> AspectRecord -> Faction -> ItemFull -> Bool
 harmful cops body ar fact itemFull =
