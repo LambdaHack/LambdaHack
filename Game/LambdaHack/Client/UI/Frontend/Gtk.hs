@@ -207,15 +207,15 @@ display :: FrontendSession  -- ^ frontend session data
 display sess@FrontendSession{sview, stags} frame = postGUISync $ do
   let GtkFrame{..} = evalFrame sess frame
   tb <- textViewGetBuffer sview
+  textBufferSetByteString tb gfChar
   let attrs = zip [0..] gfAttr
       defAttr = stags EM.! Color.defAttr
-  textBufferSetByteString tb gfChar
-  mapM_ (setTo tb defAttr 0) attrs
+  mapM_ (setTo tb defAttr) attrs
 
-setTo :: TextBuffer -> TextTag -> Int -> (Int, [TextTag]) -> IO ()
-setTo _ _ _ (_,  []) = return ()
-setTo tb defAttr lx (ly, attr:attrs) = do
-  ib <- textBufferGetIterAtLineOffset tb ly lx
+setTo :: TextBuffer -> TextTag -> (Int, [TextTag]) -> IO ()
+setTo _ _ (_,  []) = return ()
+setTo tb defAttr (ly, attr:attrs) = do
+  ib <- textBufferGetIterAtLineOffset tb ly 0
   ie <- textIterCopy ib
   let setIter :: TextTag -> Int -> [TextTag] -> IO ()
       setIter previous repetitions [] = do
@@ -235,24 +235,21 @@ setTo tb defAttr lx (ly, attr:attrs) = do
 
 evalFrame :: FrontendSession -> SingleFrame -> GtkFrame
 evalFrame FrontendSession{stags} SingleFrame{singleFrame} =
-  let levelChar = unlines $ map (map Color.acChar) singleFrame
-      gfChar = BS.pack $ init levelChar
-      -- Strict version of @map (map ((stags EM.!) . fst)) sfLevel@.
-      gfAttr  = reverse $ foldl' ff [] singleFrame
-      ff ll l = reverse (foldl' f [] l) : ll
-      f l Color.AttrChar{acAttr=Color.Attr{..}} =
-        let (fg1, bg1) = case bg of
-              Color.BrRed -> (Color.defBG, Color.defFG)  -- highlighted tile
+  let f Color.AttrChar{acAttr=acAttr@Color.Attr{..}} =
+        let acAttr1 = case bg of
+              Color.BrRed ->
+                Color.Attr Color.defBG Color.defFG  -- highlighted tile
               Color.BrBlue ->  -- blue highlighted tile
                 if fg /= Color.Blue
-                then (fg, Color.Blue)
-                else (fg, Color.BrBlack)
+                then Color.Attr fg Color.Blue
+                else Color.Attr fg Color.BrBlack
               Color.BrYellow ->  -- yellow highlighted tile
                 if fg /= Color.BrBlack
-                then (fg, Color.BrBlack)
-                else (fg, Color.defFG)
-              _ -> (fg, bg)
-            acAttr1 = Color.Attr fg1 bg1
-            !tag = stags EM.! acAttr1
-        in tag : l
+                then Color.Attr fg Color.BrBlack
+                else Color.Attr fg Color.defFG
+              _ -> acAttr
+        in stags EM.! acAttr1
+      gfAttr = map (map f) singleFrame
+      levelChar = unlines $ map (map Color.acChar) singleFrame
+      gfChar = BS.pack $ init levelChar
   in GtkFrame{..}

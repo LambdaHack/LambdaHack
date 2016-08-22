@@ -317,13 +317,9 @@ drawBaseFrame dm drawnLevelId = do
         , selectedStatus ++ nameStatus ++ statusGap
           ++ damageStatus ++ leaderStatus
           ++ targetStatus ]
-      fLine y =
-        let f l x = let ac = dis $ Point x y in ac : l
-        in foldl' f [] [lxsize-1,lxsize-2..0]
+      fLine y = map (\x -> dis $ Point x y) [0..lxsize-1]
       emptyLine = toAttrLine $ T.replicate lxsize " "
-      singleFrame =
-        let f l y = let !line = fLine y in line : l
-        in emptyLine : foldl' f [] [lysize-1,lysize-2..0] ++ sfBottom
+      singleFrame = emptyLine : map fLine [0..lysize-1] ++ sfBottom
   return $! SingleFrame{..}
 
 -- Comfortably accomodates 3-digit level numbers and 25-character
