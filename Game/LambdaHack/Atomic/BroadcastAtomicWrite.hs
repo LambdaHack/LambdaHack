@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 -- | Sending atomic commands to clients and executing them on the server.
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.

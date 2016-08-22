@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 -- | Operations for starting and restarting the game.
 module Game.LambdaHack.Server.StartM
   ( gameReset, reinitGame, initPer, recruitActors, applyDebug

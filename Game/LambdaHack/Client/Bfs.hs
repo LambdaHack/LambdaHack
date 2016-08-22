@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, DeriveGeneric, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Breadth first search algorithms.
 module Game.LambdaHack.Client.Bfs
   ( BfsDistance, MoveLegal(..), minKnownBfs, apartBfs, fillBfs

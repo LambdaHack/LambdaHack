@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts #-}
 -- | Operations concerning dungeon level tiles.
 --
 -- Unlike for many other content types, there is no type @Tile@,

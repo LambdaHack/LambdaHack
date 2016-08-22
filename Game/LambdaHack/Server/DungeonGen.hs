@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 -- | The unpopulated dungeon generation routine.
 module Game.LambdaHack.Server.DungeonGen
   ( FreshDungeon(..), dungeonGen

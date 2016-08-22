@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 -- | Arrays, based on Data.Vector.Unboxed, indexed by @Point@.
 module Game.LambdaHack.Common.PointArray
   ( Array(..), pindex, punindex

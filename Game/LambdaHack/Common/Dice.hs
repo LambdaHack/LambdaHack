@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, DeriveGeneric, FlexibleInstances, TypeSynonymInstances #-}
+{-# LANGUAGE DeriveGeneric, FlexibleInstances, TypeSynonymInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Representation of dice for parameters scaled with current level depth.
 module Game.LambdaHack.Common.Dice

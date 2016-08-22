@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 -- | Ways for the client to use player input via UI to produce server
 -- requests, based on the client's view (visualized for the player)
 -- of the game state.

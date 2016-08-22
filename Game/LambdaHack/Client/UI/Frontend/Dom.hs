@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 -- | Text frontend running in Browser or in Webkit.
 module Game.LambdaHack.Client.UI.Frontend.Dom
   ( startup, frontendName

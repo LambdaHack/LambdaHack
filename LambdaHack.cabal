@@ -246,8 +246,9 @@ library
 
   default-language:   Haskell2010
   default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings
-                      BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf
-  other-extensions:   CPP, TemplateHaskell, MultiParamTypeClasses, RankNTypes,
+                      BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf,
+                      CPP
+  other-extensions:   TemplateHaskell, MultiParamTypeClasses, RankNTypes,
                       TypeFamilies, FlexibleContexts, FlexibleInstances,
                       DeriveFunctor, FunctionalDependencies,
                       GeneralizedNewtypeDeriving, TupleSections,

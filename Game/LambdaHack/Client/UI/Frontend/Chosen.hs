@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 -- | Re-export the operations of the chosen raw frontend
 -- (determined at compile time with cabal flags).
 module Game.LambdaHack.Client.UI.Frontend.Chosen

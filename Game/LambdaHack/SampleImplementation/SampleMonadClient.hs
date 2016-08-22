@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, FlexibleInstances, GeneralizedNewtypeDeriving,
+{-# LANGUAGE FlexibleInstances, GeneralizedNewtypeDeriving,
              MultiParamTypeClasses #-}
 -- | The main game action monad type implementation. Just as any other
 -- component of the library, this implementation can be substituted.

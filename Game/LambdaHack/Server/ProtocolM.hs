@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 -- | The server definitions for the server-client communication protocol.
 module Game.LambdaHack.Server.ProtocolM
   ( -- * The communication channels

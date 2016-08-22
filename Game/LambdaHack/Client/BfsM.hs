@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, TupleSections #-}
+{-# LANGUAGE TupleSections #-}
 -- | Breadth first search and realted algorithms using the client monad.
 module Game.LambdaHack.Client.BfsM
   ( invalidateBfsAid, invalidateBfsLid, invalidateBfsAll

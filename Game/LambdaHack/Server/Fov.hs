@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 -- | Field Of View scanning with a variety of algorithms.
 -- See <https://github.com/LambdaHack/LambdaHack/wiki/Fov-and-los>
 -- for discussion.

@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 -- | Factions taking part in the game: e.g., two human players controlling
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Common.Faction

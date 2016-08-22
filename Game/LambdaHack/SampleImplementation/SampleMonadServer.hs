@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | The main game action monad type implementation. Just as any other
 -- component of the library, this implementation can be substituted.
 -- This module should not be imported anywhere except in 'Action'
