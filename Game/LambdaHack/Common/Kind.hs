@@ -62,12 +62,15 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
        , opick = \cgroup p ->
            case M.lookup cgroup kindFreq of
              Just freqRaw ->
-               let freq = toFreq ("opick ('" <> tshow cgroup <> "')") freqRaw
+               let freq = toFreq ("opick ('" <> tshow cgroup <> "')")
+                          $ filter (p . snd . snd) freqRaw
                in if nullFreq freq
                   then return Nothing
-                  else fmap Just $ frequency $ do
+                  else fmap (Just . fst) $ frequency freq
+                    {- with monadic notation; may produce empty freq:
                     (i, k) <- freq
                     breturn (p k) i
+                    -}
                     {- with MonadComprehensions:
                     frequency [ i | (i, k) <- kindFreq M.! cgroup, p k ]
                     -}
