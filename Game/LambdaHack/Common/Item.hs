@@ -46,7 +46,8 @@ newtype ItemKindIx = ItemKindIx Int
 
 data KindMean = KindMean
   { kmKind :: !(Kind.Id IK.ItemKind)
-  , kmMean :: !AspectRecord }
+  , kmMean :: !AspectRecord
+  }
   deriving (Show, Eq, Generic)
 
 instance Binary KindMean

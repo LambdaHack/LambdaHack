@@ -21,7 +21,7 @@ cdefs = ContentDef
   , getFreq = cfreq
   , validateSingle = validateSingleCaveKind
   , validateAll = validateAllCaveKind
-  , content =
+  , content = contentFromList
       [rogue, arena, empty, noise, shallow1rogue, battle, skirmish, ambush, safari1, safari2, safari3, rogueLit, boardgame]
   }
 rogue,        arena, empty, noise, shallow1rogue, battle, skirmish, ambush, safari1, safari2, safari3, rogueLit, boardgame :: CaveKind

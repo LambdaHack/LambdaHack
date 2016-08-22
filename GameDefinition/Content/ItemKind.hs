@@ -26,7 +26,8 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validateSingle = validateSingleItemKind
   , validateAll = validateAllItemKind
-  , content = items ++ organs ++ blasts ++ actors ++ temporaries
+  , content =  contentFromList $
+      items ++ organs ++ blasts ++ actors ++ temporaries
   }
 
 items :: [ItemKind]

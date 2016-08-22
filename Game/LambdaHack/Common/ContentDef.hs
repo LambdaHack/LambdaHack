@@ -8,23 +8,29 @@
 -- of @ContentDef@ instances, are defined in a directory
 -- of the game code proper, with names corresponding to their kinds.
 module Game.LambdaHack.Common.ContentDef
-  ( ContentDef(..)
+  ( ContentDef(..), contentFromList
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import qualified Data.EnumMap.Strict as EM
+
+import Game.LambdaHack.Common.KindOps
 import Game.LambdaHack.Common.Misc
 
 -- | The general type of a particular game content, e.g., item kinds.
 data ContentDef a = ContentDef
-  { getSymbol      :: !(a -> Char)  -- ^ symbol, e.g., to print on the map
-  , getName        :: !(a -> Text)  -- ^ name, e.g., to show to the player
+  { getSymbol      :: !(a -> Char)     -- ^ symbol, e.g., to print on the map
+  , getName        :: !(a -> Text)     -- ^ name, e.g., to show to the player
   , getFreq        :: !(a -> Freqs a)  -- ^ frequency within groups
   , validateSingle :: !(a -> [Text])
       -- ^ validate a content item and list all offences
   , validateAll    :: !([a] -> [Text])
       -- ^ validate the whole defined content of this type and list all offences
-  , content        :: ![a]       -- ^ all the defined content of this type
+  , content        :: !(EM.EnumMap (Id a) a)  -- ^ all content of this type
   }
+
+contentFromList :: [a] -> (EM.EnumMap (Id a) a)
+contentFromList = EM.fromDistinctAscList . zip [toEnum 0..]

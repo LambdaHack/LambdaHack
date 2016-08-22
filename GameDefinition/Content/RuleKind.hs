@@ -24,7 +24,7 @@ cdefs = ContentDef
   , getFreq = rfreq
   , validateSingle = validateSingleRuleKind
   , validateAll = validateAllRuleKind
-  , content =
+  , content = contentFromList
       [standard]
   }
 

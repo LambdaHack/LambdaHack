@@ -22,7 +22,7 @@ cdefs = ContentDef
   , getFreq = mfreq
   , validateSingle = validateSingleModeKind
   , validateAll = validateAllModeKind
-  , content =
+  , content = contentFromList
       [campaign, raid, skirmish, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, boardgame, screensaverSafari, screensaverSkirmish]
   }
 campaign,        raid, skirmish, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, boardgame, screensaverSafari, screensaverSkirmish :: ModeKind

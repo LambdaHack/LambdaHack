@@ -15,7 +15,7 @@ cdefs = ContentDef
   , getFreq = pfreq
   , validateSingle = validateSinglePlaceKind
   , validateAll = validateAllPlaceKind
-  , content =
+  , content = contentFromList
       [rect, rectWindows, ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, boardgame]
   }
 rect,        rectWindows, ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, boardgame :: PlaceKind

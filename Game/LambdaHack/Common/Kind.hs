@@ -27,33 +27,31 @@ import Game.LambdaHack.Content.TileKind
 -- of type @a@.
 createOps :: forall a. Show a => ContentDef a -> Ops a
 createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
-  assert (length content <= fromEnum (maxBound :: Id a)) $
-  let kindMap :: EM.EnumMap (Id a) a
-      !kindMap = EM.fromDistinctAscList $ zip [toEnum 0..] content
-      kindFreq :: M.Map (GroupName a) [(Int, (Id a, a))]
+  assert (EM.size content <= fromEnum (maxBound :: Id a)) $
+  let kindFreq :: M.Map (GroupName a) [(Int, (Id a, a))]
       kindFreq =
         let tuples = [ (cgroup, (n, (i, k)))
-                     | (i, k) <- EM.assocs kindMap
+                     | (i, k) <- EM.assocs content
                      , (cgroup, n) <- getFreq k
                      , n > 0 ]
             f m (cgroup, nik) = M.insertWith (++) cgroup [nik] m
         in foldl' f M.empty tuples
       correct a = not (T.null (getName a)) && all ((> 0) . snd) (getFreq a)
       singleOffenders = [ (offences, a)
-                        | a <- content
+                        | a <- EM.elems content
                         , let offences = validateSingle a
                         , not (null offences) ]
-      allOffences = validateAll content
-  in assert (allB correct content) $
+      allOffences = validateAll $ EM.elems content
+  in assert (allB correct $ EM.elems content) $
      assert (null singleOffenders `blame` "some content items not valid"
                                   `twith` singleOffenders) $
      assert (null allOffences `blame` "the content set not valid"
-                              `twith` (allOffences, content))
+                              `twith` allOffences)
      -- By this point 'content' can be GCd.
      Ops
        { okind = \i ->
-          let assFail = assert `failure` "no kind" `twith` (i, kindMap)
-          in EM.findWithDefault assFail i kindMap
+          let assFail = assert `failure` "no kind" `twith` (i, content)
+          in EM.findWithDefault assFail i content
        , ouniqGroup = \cgroup ->
            let freq = let assFail = assert `failure` "no unique group"
                                            `twith` (cgroup, kindFreq)
@@ -74,15 +72,15 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
                     frequency [ i | (i, k) <- kindFreq M.! cgroup, p k ]
                     -}
              _ -> return Nothing
-       , ofoldrWithKey = \f z -> foldr (uncurry f) z $ EM.assocs kindMap
+       , ofoldrWithKey = \f z -> foldr (uncurry f) z $ EM.assocs content
        , ofoldrGroup = \cgroup f z ->
            case M.lookup cgroup kindFreq of
              Just freq -> foldr (\(p, (i, a)) -> f p i a) z freq
              _ -> assert `failure` "no group '" <> tshow cgroup
                                    <> "' among content that has groups"
                                    <+> tshow (M.keys kindFreq)
-       , obounds = ( fst $ EM.findMin kindMap
-                   , fst $ EM.findMax kindMap )
+       , obounds = ( fst $ EM.findMin content
+                   , fst $ EM.findMax content )
        }
 
 -- | Operations for all content types, gathered together.
