@@ -74,8 +74,8 @@ displayFrame mf = do
 
 -- | Push frames or delays to the frame queue. The frames depict
 -- the @lid@ level.
-displayFrames :: MonadClientUI m => (LevelId, Frames) -> m ()
-displayFrames (lid, frs) = do
+displayFrames :: MonadClientUI m => LevelId -> Frames -> m ()
+displayFrames lid frs = do
   mapM_ displayFrame frs
   -- Can be different than @blid b@, e.g., when our actor is attacked
   -- on a remote level.

@@ -266,7 +266,7 @@ displayRespUpdAtomicUI verbose oldDiscoKind oldDiscoAspect cmd = case cmd of
       report <- getReportUI
       let truncRep = [renderReport report]
       frame <- drawOverlay ColorFull False truncRep lidV
-      displayFrames (lidV, [Just frame])
+      displayFrames lidV [Just frame]
   UpdDiscover c iid _ _ _ -> discover c oldDiscoKind oldDiscoAspect iid
   UpdCover{} -> return ()  -- don't spam when doing undo
   UpdDiscoverKind c iid _ -> discover c oldDiscoKind oldDiscoAspect iid

@@ -29,24 +29,17 @@ newtype Animation = Animation [AnimationDiff]
 -- | Render animations on top of a screen frame.
 renderAnim :: SingleFrame -> Animation -> Frames
 renderAnim basicFrame@SingleFrame{singleFrame = levelOld, ..} (Animation anim) =
-  let modifyFrame :: AnimationDiff -> Maybe SingleFrame
+  let modifyFrame :: AnimationDiff -> SingleFrame
       modifyFrame am =
-        let fLine y lineOld =
-              let f l (x, acOld) =
-                    let pos = Point x y
-                        !ac = EM.findWithDefault acOld pos am
-                    in ac : l
-              in foldl' f [] $ reverse $ zip [0..] lineOld
-            singleFrame =  -- fully evaluated inside
-              let f l (y, lineOld) = let !line = fLine y lineOld in line : l
-              in foldl' f [] (reverse $ zip [0..] levelOld)
-        in Just SingleFrame{..}  -- a thunk within Just
-      modifyFrames :: (AnimationDiff, Frames) -> AnimationDiff
-                   -> (AnimationDiff, Frames)
-      modifyFrames (amPrevious, frs) am =
-        let frame = if am == amPrevious then Nothing else modifyFrame am
-        in (am, frame : frs)
-  in Just basicFrame : reverse (snd $ foldl' modifyFrames (EM.empty, []) anim)
+        let fLine (y, lineOld) =
+              let f (x, acOld) = EM.findWithDefault acOld (Point x y) am
+              in map f $ zip [0..] lineOld
+            singleFrame = map fLine $ zip [0..] levelOld
+        in SingleFrame{..}
+      modifyFrames :: (AnimationDiff, AnimationDiff) -> Maybe SingleFrame
+      modifyFrames (am, amPrevious) =
+        if am == amPrevious then Nothing else Just $ modifyFrame am
+  in Just basicFrame : map modifyFrames (zip anim (EM.empty : anim))
 
 blank :: Maybe AttrChar
 blank = Nothing

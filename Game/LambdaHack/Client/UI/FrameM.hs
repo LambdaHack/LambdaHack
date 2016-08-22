@@ -49,7 +49,7 @@ promptGetKey dm ov sfBlank frontKeyKeys = do
     km : kms | not keyPressed && (null frontKeyKeys
                                   || km `elem` frontKeyKeys) -> do
       frontKeyFrame <- drawOverlay dm sfBlank ov lidV
-      displayFrames (lidV, [Just frontKeyFrame])
+      displayFrames lidV [Just frontKeyFrame]
       modifySession $ \sess -> sess {slastPlay = kms}
       Config{configRunStopMsgs} <- getsSession sconfig
       when configRunStopMsgs $ promptAdd $ "Voicing '" <> tshow km <> "'."
@@ -111,7 +111,7 @@ renderFrames arena anim = do
 animate :: MonadClientUI m => LevelId -> Animation -> m ()
 animate arena anim = do
   frames <- renderFrames arena anim
-  displayFrames (arena, frames)
+  displayFrames arena frames
 
 fadeOutOrIn :: MonadClientUI m => Bool -> m ()
 fadeOutOrIn out = do
@@ -120,4 +120,4 @@ fadeOutOrIn out = do
   Level{lxsize, lysize} <- getLevel arena
   animMap <- rndToAction $ fadeout out topRight 2 lxsize lysize
   animFrs <- renderFrames arena animMap
-  displayFrames (arena, tail animFrs)  -- no basic frame between fadeout and in
+  displayFrames arena (tail animFrs)  -- no basic frame between fadeout and in
