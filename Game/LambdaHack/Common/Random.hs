@@ -51,7 +51,7 @@ rollFreq fr g = case runFrequency fr of
   [] -> assert `failure` "choice from an empty frequency"
                `twith` nameFrequency fr
   [(n, x)] | n <= 0 -> assert `failure` "singleton void frequency"
-                                 `twith` (nameFrequency fr, n, x)
+                              `twith` (nameFrequency fr, n, x)
   [(_, x)] -> (x, g)  -- speedup
   fs -> let sumf = sum (map fst fs)
             (r, ng) = R.randomR (1, sumf) g

@@ -2,7 +2,7 @@
 module Game.LambdaHack.Common.PointArray
   ( Array(..), pindex, punindex
   , (!), accessI, (//)
-  , replicateA, replicateMA, generateA, generateMA, sizeA
+  , replicateA, replicateMA, generateA, generateMA, unfoldrNA, sizeA
   , foldlA', ifoldlA', ifoldrA', mapA, imapA, mapWithKeyMA
   , safeSetA, unsafeSetA, unsafeUpdateA, unsafeWriteA, unsafeWriteManyA
   , minIndexA, minLastIndexA, minIndexesA, maxIndexA, maxLastIndexA, forceA
@@ -10,6 +10,7 @@ module Game.LambdaHack.Common.PointArray
 
 import Prelude ()
 
+import Control.Arrow (first)
 import Game.LambdaHack.Common.Prelude
 
 import Control.Arrow ((***))
@@ -123,6 +124,13 @@ generateMA axsize aysize fm = do
   let gm n = liftM cnv $ fm $ punindex axsize n
   v <- U.generateM (axsize * aysize) gm
   return $! Array{avector = v, ..}
+
+unfoldrNA :: Enum c => X -> Y -> (b -> (c, b)) -> b -> Array c
+{-# INLINE unfoldrNA #-}
+unfoldrNA axsize aysize fm b =
+  let gm = Just . first cnv . fm
+      v = U.unfoldrN (axsize * aysize) gm b
+  in Array {avector = v, ..}
 
 -- | Content identifiers array size.
 sizeA :: Array c -> (X, Y)

@@ -11,8 +11,10 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
+import qualified System.Random as R
 
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -38,11 +40,13 @@ convertTileMaps :: Kind.COps
                 -> Rnd TileMap
 convertTileMaps Kind.COps{coTileSpeedup}
                 cdefTile mcdefTileWalkable cxsize cysize ltile = do
-  let f :: Point -> Rnd (Kind.Id TileKind)
-      f p = case EM.lookup p ltile of
-        Just t -> return t
-        Nothing -> cdefTile
-  converted1 <- PointArray.generateMA cxsize cysize f
+  let runCdefTile :: R.StdGen -> (Kind.Id TileKind, R.StdGen)
+      runCdefTile = St.runState cdefTile
+      runUnfold gen =
+        let (gen1, gen2) = R.split gen
+        in (PointArray.unfoldrNA cxsize cysize runCdefTile gen1, gen2)
+  converted0 <- St.state runUnfold
+  let converted1 = converted0 PointArray.// EM.assocs ltile
   case mcdefTileWalkable of
     Nothing -> return converted1  -- no walkable tiles for filling the map
     Just cdefTileWalkable -> do  -- some tiles walkable, so ensure connectivity
