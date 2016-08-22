@@ -2,6 +2,10 @@
 -- | Text frontend based on Gtk.
 module Game.LambdaHack.Client.UI.Frontend.Gtk
   ( startup, frontendName
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , startupFun, shutdown, doAttr, extraAttr, display, setTo, evalFrame
+#endif
   ) where
 
 import Prelude ()
@@ -44,7 +48,10 @@ frontendName = "gtk"
 -- Because of Windows, GTK needs to be on a bound thread,
 -- so we can't avoid the communication overhead of bound threads.
 startup :: DebugModeCli -> IO RawFrontend
-startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
+startup sdebugCli = startupBound $ startupFun sdebugCli
+
+startupFun :: DebugModeCli -> MVar RawFrontend -> IO ()
+startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   -- Init GUI.
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
@@ -194,8 +201,8 @@ extraAttr DebugModeCli{scolorIsBold} =
 --     , textTagStretch := StretchUltraExpanded
 
 -- | Add a frame to be drawn.
-display :: FrontendSession    -- ^ frontend session data
-        -> SingleFrame  -- ^ the screen frame to draw
+display :: FrontendSession  -- ^ frontend session data
+        -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
 display sess@FrontendSession{sview, stags} frame = postGUISync $ do
   let GtkFrame{..} = evalFrame sess frame
@@ -230,7 +237,7 @@ evalFrame :: FrontendSession -> SingleFrame -> GtkFrame
 evalFrame FrontendSession{stags} SingleFrame{singleFrame} =
   let levelChar = unlines $ map (map Color.acChar) singleFrame
       gfChar = BS.pack $ init levelChar
-      -- Strict version of @map (map ((stags EM.!) . fst)) sfLeve
+      -- Strict version of @map (map ((stags EM.!) . fst)) sfLevel@.
       gfAttr  = reverse $ foldl' ff [] singleFrame
       ff ll l = reverse (foldl' f [] l) : ll
       f l Color.AttrChar{acAttr=Color.Attr{..}} =

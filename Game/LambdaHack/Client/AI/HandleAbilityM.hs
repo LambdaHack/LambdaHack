@@ -3,6 +3,14 @@
 -- for picking the best action for an actor.
 module Game.LambdaHack.Client.AI.HandleAbilityM
   ( actionStrategy
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , waitBlockNow, pickup, equipItems, toShare, yieldUnneeded, unEquipItems
+  , groupByEqpSlot, bestByEqpSlot, harmful, unneeded, meleeBlocker, meleeAny
+  , trigger, projectItem, applyItem, flee
+  , displaceFoe, displaceBlocker, displaceTowards
+  , chase, moveTowards, moveOrRunAid
+#endif
   ) where
 
 import Prelude ()

@@ -3,6 +3,12 @@
 -- (determined at compile time with cabal flags).
 module Game.LambdaHack.Client.UI.DrawM
   ( targetDescLeader, drawBaseFrame
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , targetDesc, targetDescXhair
+  , drawArenaStatus, drawLeaderStatus, drawLeaderDamage
+  , drawSelected, drawPlayerName
+#endif
   ) where
 
 import Prelude ()
