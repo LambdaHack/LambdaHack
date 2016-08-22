@@ -187,12 +187,10 @@ safeSetA c Array{..} =
 -- | Map monadically over an array (function applied to each element
 -- and its index) and ignore the results.
 mapWithKeyMA :: Enum c => Monad m
-              => (Point -> c -> m ()) -> Array c -> m ()
+             => (Point -> c -> m ()) -> Array c -> m ()
 {-# INLINE mapWithKeyMA #-}
 mapWithKeyMA f Array{..} =
-  U.ifoldl' (\a n c -> a >> f (punindex axsize n) (cnv c))
-            (return ())
-            avector
+  U.imapM_ (\n c -> f (punindex axsize n) (cnv c)) avector
 
 -- | Yield the point coordinates of a minimum element of the array.
 -- The array may not be empty.

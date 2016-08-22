@@ -75,7 +75,7 @@ embedItem lid pos tk = do
       -- TODO: unhack this, e.g., by turning each Cause into Embed
       itemFreq = zip embeds (repeat 1)
                  ++ -- Hack: the bag, not item, is relevant.
-                    [("hero", 1) |  not (null causes) && null embeds]
+                    [("hero", 1) | not (null causes) && null embeds]
       container = CEmbed lid pos
   void $ rollAndRegisterItem lid itemFreq container False Nothing
 
