@@ -204,13 +204,14 @@ extraAttr DebugModeCli{scolorIsBold} =
 display :: FrontendSession  -- ^ frontend session data
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
-display sess@FrontendSession{sview, stags} frame = postGUISync $ do
-  let GtkFrame{..} = evalFrame sess frame
-  tb <- textViewGetBuffer sview
-  textBufferSetByteString tb gfChar
-  let attrs = zip [0..] gfAttr
+display sess@FrontendSession{sview, stags} frame = do
+  let !GtkFrame{..} = evalFrame sess frame
       defAttr = stags EM.! Color.defAttr
-  mapM_ (setTo tb defAttr) attrs
+      attrs = zip [0..] gfAttr
+  postGUISync $ do
+    tb <- textViewGetBuffer sview
+    textBufferSetByteString tb gfChar
+    mapM_ (setTo tb defAttr) attrs
 
 setTo :: TextBuffer -> TextTag -> (Int, [TextTag]) -> IO ()
 setTo _ _ (_,  []) = return ()

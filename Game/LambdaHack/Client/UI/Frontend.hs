@@ -142,7 +142,7 @@ chanFrontendIO sdebugCli = do
               | sfrontendStd sdebugCli = Std.startup sdebugCli
               | otherwise = Chosen.startup sdebugCli
       maxFps = fromMaybe defaultMaxFps $ smaxFps sdebugCli
-      delta = microInSec `div` maxFps
+      delta = max 1 $ microInSec `div` maxFps
   rf <- startup
   fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
   fdelay <- newMVar 0
