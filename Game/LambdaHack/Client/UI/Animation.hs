@@ -228,7 +228,6 @@ fadeout out topRight step lxsize lysize = do
                     ++ [0..min ybound ((n - xbound + x) `div` 2)]
                 ]
         return $! EM.fromList l
-      startN = if out then 3 else 1
-      fs = [startN, startN + step .. lxsize - 14]
-  as <- mapM rollFrame fs
-  return $! Animation $ if out then as else reverse (EM.empty : as)
+      fs | out = [3, 3 + step .. lxsize - 14]
+         | otherwise = [lxsize - 14, lxsize - 14 - step .. 1]
+  Animation <$> mapM rollFrame fs

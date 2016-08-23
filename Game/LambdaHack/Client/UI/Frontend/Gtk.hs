@@ -205,6 +205,8 @@ display :: FrontendSession  -- ^ frontend session data
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
 display sess@FrontendSession{sview, stags} frame = do
+  -- Computation should be kept out of postGUISync, to give it time
+  -- to refresh view. Otherwise, frames are getting skipped.
   let !GtkFrame{..} = evalFrame sess frame
       defAttr = stags EM.! Color.defAttr
       attrs = zip [0..] gfAttr
