@@ -251,6 +251,7 @@ evalFrame FrontendSession{stags} SingleFrame{singleFrame} =
               _ -> acAttr
         in stags EM.! acAttr1
       gfAttr = map (map f) singleFrame
-      levelChar = unlines $ map (map Color.acChar) singleFrame
+      levelChar =
+        unlines $ map (map (\Color.AttrChar{acChar} -> acChar)) singleFrame
       gfChar = BS.pack $ init levelChar
   in GtkFrame{..}
