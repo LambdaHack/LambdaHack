@@ -7,7 +7,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Control.Monad.Trans.State.Strict as St
+import qualified Control.Monad.Trans.State.Lazy as St
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES

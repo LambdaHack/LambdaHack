@@ -22,7 +22,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Control.Exception as Ex hiding (handle)
-import qualified Control.Monad.Trans.State.Strict as St
+import qualified Control.Monad.Trans.State.Lazy as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -244,10 +244,10 @@ tryRestore Kind.COps{corule} sdebugSer = do
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadServer m => Rnd a -> m a
 rndToAction r = do
-  g <- getsServer srandom
-  let (a, ng) = St.runState r g
-  modifyServer $ \ser -> ser {srandom = ng}
-  return $! a
+  gen <- getsServer srandom
+  let (gen1, gen2) = R.split gen
+  modifyServer $ \ser -> ser {srandom = gen1}
+  return $! St.evalState r gen2
 
 -- | Gets a random generator from the arguments or, if not present,
 -- generates one.

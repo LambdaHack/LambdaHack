@@ -15,10 +15,11 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Control.Monad.Trans.State.Strict as St
+import qualified Control.Monad.Trans.State.Lazy as St
 import Data.Binary
 import System.Directory
 import System.FilePath
+import qualified System.Random as R
 
 import Game.LambdaHack.Client.FileM
 import Game.LambdaHack.Client.State
@@ -94,7 +95,7 @@ removeServerSave = do
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a
 rndToAction r = do
-  g <- getsClient srandom
-  let (a, ng) = St.runState r g
-  modifyClient $ \cli -> cli {srandom = ng}
-  return a
+  gen <- getsClient srandom
+  let (gen1, gen2) = R.split gen
+  modifyClient $ \ser -> ser {srandom = gen1}
+  return $! St.evalState r gen2
