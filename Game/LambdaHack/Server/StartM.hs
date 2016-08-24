@@ -361,7 +361,6 @@ applyDebug = do
     ser {sdebugSer = (sdebugSer ser) { sniffIn
                                      , sniffOut
                                      , sallClear
-                                     , sstopAfter
                                      , sdbgMsgSer
                                      , snewGameSer
                                      , sdumpInitRngs

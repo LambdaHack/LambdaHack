@@ -73,7 +73,6 @@ data DebugModeSer = DebugModeSer
   , sgameMode      :: !(Maybe (GroupName ModeKind))
   , sautomateAll   :: !Bool
   , skeepAutomated :: !Bool
-  , sstopAfter     :: !(Maybe Int)
   , sdungeonRng    :: !(Maybe R.StdGen)
   , smainRng       :: !(Maybe R.StdGen)
   , snewGameSer    :: !Bool
@@ -144,7 +143,6 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , sgameMode = Nothing
                                , sautomateAll = False
                                , skeepAutomated = False
-                               , sstopAfter = Nothing
                                , sdungeonRng = Nothing
                                , smainRng = Nothing
                                , snewGameSer = False
@@ -231,8 +229,7 @@ instance Binary DebugModeSer where
     ssavePrefixSer <- get
     sdbgMsgSer <- get
     sdebugCli <- get
-    let sstopAfter = Nothing
-        sdungeonRng = Nothing
+    let sdungeonRng = Nothing
         smainRng = Nothing
         snewGameSer = False
         sdumpInitRngs = False

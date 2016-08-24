@@ -42,6 +42,7 @@ data DebugModeCli = DebugModeCli
       -- ^ Whether to use void (no input/output) frontend for all clients.
   , sdbgMsgCli      :: !Bool
       -- ^ Show clients' internal debug messages.
+  , sstopAfter      :: !(Maybe Int)
   }
   deriving (Show, Eq, Generic)
 
@@ -63,4 +64,5 @@ defDebugModeCli = DebugModeCli
   , sfrontendStd = False
   , sfrontendNull = False
   , sdbgMsgCli = False
+  , sstopAfter = Nothing
   }

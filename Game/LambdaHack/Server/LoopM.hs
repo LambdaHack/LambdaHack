@@ -178,7 +178,7 @@ endClip arenas = do
     arena <- rndToAction $ oneOf arenas
     spawnMonster arena
     -- Check, once per turn, for benchmark game stop, after a set time.
-    stopAfter <- getsServer $ sstopAfter . sdebugSer
+    stopAfter <- getsServer $ sstopAfter . sdebugCli . sdebugSer
     case stopAfter of
       Nothing -> return True
       Just stopA -> do
