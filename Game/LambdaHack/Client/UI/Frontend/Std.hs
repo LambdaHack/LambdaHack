@@ -1,6 +1,10 @@
 -- | Text frontend based on stdin/stdout, intended for bots.
 module Game.LambdaHack.Client.UI.Frontend.Std
   ( startup, frontendName
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , shutdown, display
+#endif
   ) where
 
 import Prelude ()
@@ -48,7 +52,8 @@ shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
 display :: SingleFrame  -- ^ the screen frame to draw
         -> IO ()
 display SingleFrame{singleFrame} =
-  let bs = map (BS.pack . map Color.acChar) singleFrame ++ [BS.empty]
+  let prChar Color.AttrChar{acChar} = acChar
+      bs = map (BS.pack . map prChar) singleFrame ++ [BS.empty]
   in mapM_ BS.putStrLn bs
 
 keyTranslate :: Char -> K.KM
