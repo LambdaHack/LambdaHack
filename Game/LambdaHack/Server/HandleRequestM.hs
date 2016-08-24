@@ -10,7 +10,7 @@
 -- TODO: document
 module Game.LambdaHack.Server.HandleRequestM
   ( handleRequestAI, handleReqAI, handleRequestUI
-  , reqMove, reqDisplace
+  , reqMove, reqDisplace, reqGameExit
   ) where
 
 import Prelude ()

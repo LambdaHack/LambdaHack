@@ -68,9 +68,9 @@ loopAI sdebugCli = do
     _ -> assert `failure` "unexpected command" `twith` (side, restored, cmd1)
   handleResponseAI cmd1
   -- State and client state now valid.
-  debugPrint $ "AI client" <+> tshow side <+> "started."
+  debugPossiblyPrint $ "AI client" <+> tshow side <+> "started."
   loop
-  debugPrint $ "AI client" <+> tshow side <+> "stopped."
+  debugPossiblyPrint $ "AI client" <+> tshow side <+> "stopped."
  where
   loop = do
     cmd <- receiveResponse
@@ -113,6 +113,7 @@ loopUI copsClient sconfig sdebugCli = do
         Nothing ->
           putSession sess {schanF, sbinding}
       return False
+  resetSessionStart
   Kind.COps{corule} <- getsState scops
   let title = rtitle $ Kind.stdRuleset corule
   side <- getsClient sside
@@ -148,11 +149,11 @@ loopUI copsClient sconfig sdebugCli = do
     km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
     if km == K.escKM then addPressedEsc else promptAdd "Prove yourself!"
   -- State and client state now valid.
-  debugPrint $ "UI client" <+> tshow side <+> "started."
+  debugPossiblyPrint $ "UI client" <+> tshow side <+> "started."
   loop
-  debugPrint $ "Frontend" <+> tshow side <+> "shutting down."
+  debugPossiblyPrint $ "Frontend" <+> tshow side <+> "shutting down."
   frontendShutdown
-  debugPrint $ "UI cliet" <+> tshow side <+> "stopped."
+  debugPossiblyPrint $ "UI cliet" <+> tshow side <+> "stopped."
  where
   loop = do
     cmd <- receiveResponse

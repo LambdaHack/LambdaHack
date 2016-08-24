@@ -13,6 +13,7 @@ import Game.LambdaHack.Common.Prelude
 import Data.Binary
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
+import Data.Time.Clock.POSIX
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Config
@@ -24,6 +25,7 @@ import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Time
 
 -- | The information that is used across a client playing session,
 -- including many consecutive games in a single session.
@@ -56,6 +58,9 @@ data SessionUI = SessionUI
   , smenuIxHistory  :: !Int           -- ^ index of last used History Menu item
   , sdisplayNeeded  :: !Bool          -- ^ something to display on current level
   , skeysHintMode   :: !KeysHintMode  -- ^ how to show keys hints when no messages
+  , sstart          :: !POSIXTime     -- ^ this session start time
+  , sgstart         :: !POSIXTime     -- ^ this game start time
+  , sallTime        :: !Time          -- ^ clips from start of session to current game start
   }
 
 -- | Current aiming mode of a client.
@@ -111,6 +116,9 @@ emptySessionUI sconfig =
     , smenuIxHistory = 0
     , sdisplayNeeded = False
     , skeysHintMode = KeysHintPresent
+    , sstart = 0
+    , sgstart = 0
+    , sallTime = timeZero
     }
 
 toggleMarkVision :: SessionUI -> SessionUI
@@ -158,6 +166,9 @@ instance Binary SessionUI where
         swaitTimes = 0
         smenuIxMain = 0
         skeysHintMode = KeysHintAbsent
+        sstart = 0
+        sgstart = 0
+        sallTime = timeZero
     return $! SessionUI{..}
 
 instance Binary RunParams where

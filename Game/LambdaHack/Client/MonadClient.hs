@@ -8,7 +8,8 @@ module Game.LambdaHack.Client.MonadClient
                     , restartClient
                     )
     -- * Assorted primitives
-  , debugPrint, saveName, tryRestore, removeServerSave, rndToAction
+  , debugPossiblyPrint, saveName, tryRestore, removeServerSave
+  , rndToAction
   ) where
 
 import Prelude ()
@@ -46,8 +47,8 @@ class MonadClient m => MonadClientSetup m where
   saveClient    :: m ()
   restartClient :: m ()
 
-debugPrint :: MonadClient m => Text -> m ()
-debugPrint t = do
+debugPossiblyPrint :: MonadClient m => Text -> m ()
+debugPossiblyPrint t = do
   sdbgMsgCli <- getsClient $ sdbgMsgCli . sdebugCli
   when sdbgMsgCli $ liftIO $ Save.delayPrint t
 

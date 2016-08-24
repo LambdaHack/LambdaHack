@@ -45,6 +45,7 @@ import Game.LambdaHack.Client.UI.OverlayM
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.Slideshow
 import Game.LambdaHack.Client.UI.SlideshowM
+import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Request
@@ -63,10 +64,24 @@ queryUI = do
     if keyPressed then do
       discardPressedKey
       addPressedEsc
+      -- Regaining control of faction cancels @--stopAfter@.
+      modifyClient $ \cli ->
+        cli {sdebugCli = (sdebugCli cli) {sstopAfter = Nothing}}
       if fleaderMode (gplayer fact) /= LeaderNull then
         return (ReqUIAutomate, Nothing)  -- stop AI
       else return (ReqUINop, Nothing)  -- TODO: somehow stop? restart?
-    else return (ReqUINop, Nothing)
+    else do
+      -- As long as UI faction is under AI control, check, once per move,
+      -- for benchmark game stop, after a set time.
+      stopAfter <- getsClient $ sstopAfter . sdebugCli
+      case stopAfter of
+        Nothing -> return (ReqUINop, Nothing)
+        Just stopA -> do
+          exit <- elapsedSessionTimeGT stopA
+          if exit then do
+            tellAllClipPS
+            return (ReqUIGameExit, Nothing)  -- ask server to exit
+          else return (ReqUINop, Nothing)
   else do
     let mleader = gleader fact
         !_A = assert (isJust mleader) ()

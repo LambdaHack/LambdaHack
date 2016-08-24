@@ -96,7 +96,6 @@ loopSer sdebug executorUI executorAI = do
       initPer
       reinitGame
       writeSaveAll False
-  resetSessionStart
   -- Note that if a faction enters dungeon on a level with no spawners,
   -- the faction won't cause spawning on its active arena
   -- as long as it has no leader. This may cause regeneration items
@@ -177,17 +176,7 @@ endClip arenas = do
     -- e.g., spreading leaders across levels to bump monster generation.
     arena <- rndToAction $ oneOf arenas
     spawnMonster arena
-    -- Check, once per turn, for benchmark game stop, after a set time.
-    stopAfter <- getsServer $ sstopAfter . sdebugCli . sdebugSer
-    case stopAfter of
-      Nothing -> return True
-      Just stopA -> do
-        exit <- elapsedSessionTimeGT stopA
-        if exit then do
-          tellAllClipPS
-          gameExit
-          return False  -- don't re-enter the game loop
-        else return True
+    return True
   else return True
 
 -- | Trigger periodic items for all actors on the given level.
@@ -270,6 +259,10 @@ handleActors lid = do
         case fst cmdS of
           ReqUIAutomate -> execUpdAtomic $ UpdAutoFaction side False
           ReqUINop -> return ()
+          ReqUIGameExit -> do
+            reqGameExit aid
+            -- This is not proper UI-forced save, but a timeout, so don't save.
+            modifyServer $ \ser -> ser {swriteSave = False}
           _ -> assert `failure` cmdS  -- TODO: handle more
         -- Clear messages in the UI client, regardless if leaderless or not.
         execUpdAtomic $ UpdRecordHistory side
@@ -337,7 +330,6 @@ gameExit = do
 restartGame :: (MonadAtomic m, MonadServerReadRequest m)
             => m () -> m () -> Maybe (GroupName ModeKind) ->  m ()
 restartGame updConn loop mgameMode = do
-  tellGameClipPS
   cops <- getsState scops
   sdebugNxt <- getsServer sdebugNxt
   srandom <- getsServer srandom

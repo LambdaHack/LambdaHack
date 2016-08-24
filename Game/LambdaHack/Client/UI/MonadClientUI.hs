@@ -5,12 +5,14 @@ module Game.LambdaHack.Client.UI.MonadClientUI
                  , liftIO  -- exposed only to be implemented, not used,
                  )
     -- * Assorted primitives
-  , mapStartY, displayFrames
+  , clientPrintUI, mapStartY, displayFrames
   , setFrontAutoYes, anyKeyPressed, discardPressedKey, addPressedEsc
   , connFrontendFrontKey, frontendShutdown, chanFrontend
   , getReportUI, getLeaderUI, getArenaUI, viewedLevelUI
   , leaderTgtToPos, leaderTgtAims, xhairToPos
   , scoreToSlideshow, defaultHistory
+  , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
+  , resetSessionStart, resetGameStart
   ) where
 
 import Prelude ()
@@ -18,10 +20,12 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.Text.IO as T
 import Data.Time.Clock
 import Data.Time.Clock.POSIX
 import Data.Time.LocalTime
 import qualified NLP.Miniutter.English as MU
+import System.IO
 
 import Game.LambdaHack.Client.CommonM
 import qualified Game.LambdaHack.Client.Key as K
@@ -46,6 +50,13 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ModeKind
+
+-- Assumes no interleaving with other clients, because each UI client
+-- in a different terminal/window/machine.
+clientPrintUI :: MonadClientUI m => Text -> m ()
+clientPrintUI t = liftIO $ do
+  T.hPutStrLn stderr t
+  hFlush stderr
 
 -- | The row where the dungeon map starts.
 mapStartY :: Y
@@ -228,3 +239,53 @@ defaultHistory configHistoryMax = liftIO $ do
   return $! addReport emptyHist timeZero
          $ singletonReport $ toMsg $ toAttrLine
          $ makeSentence ["Human history log started on", curDate]
+
+tellAllClipPS :: MonadClientUI m => m ()
+tellAllClipPS = do
+  bench <- getsClient $ sbenchmark . sdebugCli
+  when bench $ do
+    sstartPOSIX <- getsSession sstart
+    curPOSIX <- liftIO $ getPOSIXTime
+    allTime <- getsSession sallTime
+    gtime <- getsState stime
+    let time = absoluteTimeAdd allTime gtime
+    let diff = fromRational $ toRational $ curPOSIX - sstartPOSIX
+        cps = fromIntegral (timeFit time timeClip) / diff :: Double
+    clientPrintUI $
+      "Session time:" <+> tshow diff <> "s."
+      <+> "Average clips per second:" <+> tshow cps <> "."
+
+tellGameClipPS :: MonadClientUI m => m ()
+tellGameClipPS = do
+  bench <- getsClient $ sbenchmark . sdebugCli
+  when bench $ do
+    sgstartPOSIX <- getsSession sgstart
+    curPOSIX <- liftIO $ getPOSIXTime
+    -- If loaded game, don't report anything.
+    unless (sgstartPOSIX == 0) $ do
+      time <- getsState stime
+      let diff = fromRational $ toRational $ curPOSIX - sgstartPOSIX
+          cps = fromIntegral (timeFit time timeClip) / diff :: Double
+      -- This means: "Game portion after last reload time:...".
+      clientPrintUI $
+        "Game time:" <+> tshow diff <> "s."
+        <+> "Average clips per second:" <+> tshow cps <> "."
+
+elapsedSessionTimeGT :: MonadClientUI m => Int -> m Bool
+elapsedSessionTimeGT stopAfter = do
+  current <- liftIO getPOSIXTime
+  sstartPOSIX <- getsSession sstart
+  return $! fromIntegral stopAfter + sstartPOSIX <= current
+
+resetSessionStart :: MonadClientUI m => m ()
+resetSessionStart = do
+  sstart <- liftIO getPOSIXTime
+  modifySession $ \cli -> cli {sstart}
+  resetGameStart
+
+resetGameStart :: MonadClientUI m => m ()
+resetGameStart = do
+  sgstart <- liftIO getPOSIXTime
+  time <- getsState stime
+  modifySession $ \cli ->
+    cli {sgstart, sallTime = absoluteTimeAdd (sallTime cli) time}

@@ -527,6 +527,9 @@ quitFactionUI fid mbody toSt = do
   let fidName = MU.Text $ gname fact
       horror = isHorrorFact fact
   side <- getsClient sside
+  when (side == fid && maybe False ((/= Camping) . stOutcome) toSt) $ do
+    tellGameClipPS
+    resetGameStart
   let msgIfSide _ | fid /= side = Nothing
       msgIfSide s = Just s
       (startingPart, partingPart) = case toSt of

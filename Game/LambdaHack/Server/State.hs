@@ -13,7 +13,6 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
-import Data.Time.Clock.POSIX
 import qualified System.Random as R
 
 import Game.LambdaHack.Atomic
@@ -24,7 +23,6 @@ import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Perception
-import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ItemRev
@@ -53,9 +51,6 @@ data StateServer = StateServer
   , srngs         :: !RNGs          -- ^ initial random generators
   , squit         :: !Bool          -- ^ exit the game loop
   , swriteSave    :: !Bool          -- ^ write savegame to a file now
-  , sstart        :: !POSIXTime     -- ^ this session start time
-  , sgstart       :: !POSIXTime     -- ^ this game start time
-  , sallTime      :: !Time          -- ^ clips since the start of the session
   , sheroNames    :: !(EM.EnumMap FactionId [(Int, (Text, Text))])
                                     -- ^ hero names sent by clients
   , sdebugSer     :: !DebugModeSer  -- ^ current debugging mode
@@ -126,9 +121,6 @@ emptyStateServer =
                    , startingRandomGenerator = Nothing }
     , squit = False
     , swriteSave = False
-    , sstart = 0
-    , sgstart = 0
-    , sallTime = timeZero
     , sheroNames = EM.empty
     , sdebugSer = defDebugModeSer
     , sdebugNxt = defDebugModeSer
@@ -196,9 +188,6 @@ instance Binary StateServer where
         sfovLitLid = EM.empty
         squit = False
         swriteSave = False
-        sstart = 0
-        sgstart = 0
-        sallTime = timeZero
         sdebugNxt = defDebugModeSer  -- TODO: here difficulty level, etc. from the last session is wiped out
     return $! StateServer{..}
 

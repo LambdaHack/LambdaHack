@@ -148,8 +148,6 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
                   return HighScore.empty
                 else
                   restoreScore cops
-  sstart <- getsServer sstart  -- copy over from previous game
-  sallTime <- getsServer sallTime  -- copy over from previous game
   sheroNames <- getsServer sheroNames  -- copy over from previous game
 #ifdef USE_BROWSER
   -- TODO: implement as an commandline option and have a diff set of default
@@ -179,11 +177,11 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
         St.evalState rnd dungeonSeed
       defState = defStateGlobal freshDungeon freshTotalDepth
                                 faction cops scoreTable modeKindId
-      defSer = emptyStateServer { sstart, sallTime, sheroNames, srandom
+      defSer = emptyStateServer { sheroNames
+                                , srandom
                                 , srngs = RNGs (Just dungeonSeed)
                                                (Just srandom) }
   putServer defSer
-  when (sbenchmark $ sdebugCli sdebug) resetGameStart
   modifyServer $ \ser -> ser {sdiscoKind, sdiscoKindRev, sflavour}
   when (sdumpInitRngs sdebug) dumpRngs
   return $! defState

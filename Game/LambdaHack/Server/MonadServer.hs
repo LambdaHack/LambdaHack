@@ -12,8 +12,6 @@ module Game.LambdaHack.Server.MonadServer
   , debugPossiblyPrint, debugPossiblyPrintAndExit
   , serverPrint, saveServer, saveName, dumpRngs
   , restoreScore, registerScore
-  , resetSessionStart, resetGameStart, elapsedSessionTimeGT
-  , tellAllClipPS, tellGameClipPS
   , tryRestore, rndToAction, getSetGen
   ) where
 
@@ -46,7 +44,6 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Save
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.FileM
@@ -175,56 +172,6 @@ registerScore status mbody fid = do
                            ourVictims theirVictims
                            (fhiCondPoly $ gplayer fact)
   outputScore registeredScore
-
-resetSessionStart :: MonadServer m => m ()
-resetSessionStart = do
-  sstart <- liftIO getPOSIXTime
-  modifyServer $ \ser -> ser {sstart}
-
--- TODO: all this breaks when games are loaded; we'd need to save
--- elapsed game clock time to fix this.
-resetGameStart :: MonadServer m => m ()
-resetGameStart = do
-  sgstart <- liftIO getPOSIXTime
-  time <- getsState stime
-  modifyServer $ \ser ->
-    ser {sgstart, sallTime = absoluteTimeAdd (sallTime ser) time}
-
-elapsedSessionTimeGT :: MonadServer m => Int -> m Bool
-elapsedSessionTimeGT stopAfter = do
-  current <- liftIO getPOSIXTime
-  sstartPOSIX <- getsServer sstart
-  return $! fromIntegral stopAfter + sstartPOSIX <= current
-
-tellAllClipPS :: MonadServer m => m ()
-tellAllClipPS = do
-  bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
-  when bench $ do
-    sstartPOSIX <- getsServer sstart
-    curPOSIX <- liftIO $ getPOSIXTime
-    allTime <- getsServer sallTime
-    gtime <- getsState stime
-    let time = absoluteTimeAdd allTime gtime
-    let diff = fromRational $ toRational $ curPOSIX - sstartPOSIX
-        cps = fromIntegral (timeFit time timeClip) / diff :: Double
-    debugPossiblyPrint $
-      "Session time:" <+> tshow diff <> "s."
-      <+> "Average clips per second:" <+> tshow cps <> "."
-
-tellGameClipPS :: MonadServer m => m ()
-tellGameClipPS = do
-  bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
-  when bench $ do
-    sgstartPOSIX <- getsServer sgstart
-    curPOSIX <- liftIO $ getPOSIXTime
-    -- If loaded game, don't report anything.
-    unless (sgstartPOSIX == 0) $ do
-      time <- getsState stime
-      let diff = fromRational $ toRational $ curPOSIX - sgstartPOSIX
-          cps = fromIntegral (timeFit time timeClip) / diff :: Double
-      debugPossiblyPrint $
-        "Game time:" <+> tshow diff <> "s."
-        <+> "Average clips per second:" <+> tshow cps <> "."
 
 tryRestore :: MonadServer m
            => Kind.COps -> DebugModeSer -> m (Maybe (State, StateServer))

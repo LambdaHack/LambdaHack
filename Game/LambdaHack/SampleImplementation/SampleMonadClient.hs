@@ -96,7 +96,11 @@ instance MonadClientSetup (CliImplementation SessionUI resp req) where
                      { schanF = schanF sess
                      , sbinding = sbinding sess
                      , shistory = shistory sess
-                     , _sreport = _sreport sess }
+                     , _sreport = _sreport sess
+                     , sstart = sstart sess
+                     , sgstart =  sgstart sess
+                     , sallTime = sallTime sess
+                     }
     in ((), cliS {cliSession = newSess})
 
 instance MonadClientUI (CliImplementation SessionUI resp req) where
