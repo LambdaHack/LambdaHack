@@ -36,6 +36,8 @@ instance Binary Vector where
   put = put . (fromIntegral :: Int -> Int32) . fromEnum
   get = fmap (toEnum . (fromIntegral :: Int32 -> Int)) get
 
+-- Note that the conversion is not monotonic wrt the natural @Ord@ instance,
+-- to keep it in sync with Point.
 instance Enum Vector where
   {-# INLINE fromEnum #-}
   fromEnum = fromEnumVector

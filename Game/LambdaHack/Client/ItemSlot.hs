@@ -10,7 +10,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
-import Data.Bits (shiftL, shiftR)
+import Data.Bits (unsafeShiftL, unsafeShiftR)
 import Data.Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -36,10 +36,10 @@ instance Binary SlotChar where
 
 instance Enum SlotChar where
   fromEnum (SlotChar n c) =
-    ord c + (if isUpper c then 100 else 0) + shiftL n 8
+    unsafeShiftL n 8 + ord c + (if isUpper c then 100 else 0)
   toEnum e =
-    let n = shiftR e 8
-        c0 = e - shiftL n 8
+    let n = unsafeShiftR e 8
+        c0 = e - unsafeShiftL n 8
         c100 = c0 - if c0 > 150 then 100 else 0
     in SlotChar n (chr c100)
 

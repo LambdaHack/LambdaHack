@@ -44,6 +44,11 @@ instance NFData Point
 -- because it is not contiguous --- we don't know the horizontal
 -- width of the levels nor of the screen.
 -- The conversion is implemented mainly for @EnumMap@ and @EnumSet@.
+-- Note that the conversion is not monotonic wrt the natural @Ord@ instance,
+-- because we want adjacent points in line to have adjacent enumerations,
+-- because some of the screen layout and most of processing is line-by-line.
+-- Consequently, one can use EM.fromAscList on @(1, 8)..(10, 8)@, but not on
+-- @(1, 7)..(10, 9)@.
 instance Enum Point where
   {-# INLINE fromEnum #-}
   fromEnum = fromEnumPoint

@@ -64,10 +64,10 @@ data Attr = Attr
 
 instance Enum Attr where
   {-# INLINE fromEnum #-}
-  fromEnum Attr{..} = fromEnum fg + unsafeShiftL (fromEnum bg) 8
+  fromEnum Attr{..} = unsafeShiftL (fromEnum bg) 8 + fromEnum fg
   {-# INLINE toEnum #-}
-  toEnum n = Attr (toEnum $ n .&. (2 ^ (8 :: Int) - 1))
-                  (toEnum $ unsafeShiftR n 8)
+  toEnum n = Attr (toEnum $ unsafeShiftR n 8)
+                  (toEnum $ n .&. (2 ^ (8 :: Int) - 1))
 
 instance Binary Attr where
   put = putWord16le . toEnum . fromEnum
@@ -85,10 +85,10 @@ data AttrChar = AttrChar
 
 instance Enum AttrChar where
   {-# INLINE fromEnum #-}
-  fromEnum AttrChar{..} = fromEnum acAttr + unsafeShiftL (fromEnum acChar) 16
+  fromEnum AttrChar{..} = unsafeShiftL (fromEnum acAttr) 16 + fromEnum acChar
   {-# INLINE toEnum #-}
-  toEnum n = AttrChar (toEnum $ n .&. (2 ^ (16 :: Int) - 1))
-                      (toEnum $ unsafeShiftR n 16)
+  toEnum n = AttrChar (toEnum $ unsafeShiftR n 16)
+                      (toEnum $ n .&. (2 ^ (16 :: Int) - 1))
 
 instance Binary AttrChar where
   put = putWord32le . toEnum . fromEnum
@@ -102,7 +102,7 @@ isBright c = c >= BrBlack
 -- | Due to the limitation of the curses library used in the curses frontend,
 -- only these are legal backgrounds.
 legalBG :: [Color]
-legalBG = [Black, White, Blue, BrBlack]
+legalBG = [Black, Blue, White, BrBlack]
 
 -- | Colour sets.
 darkCol, brightCol, stdCol :: [Color]

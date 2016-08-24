@@ -48,6 +48,8 @@ cnv :: (Enum a, Enum b) => a -> b
 {-# INLINE cnv #-}
 cnv = toEnum . fromEnum
 
+-- Note that @Ord@ on @Int@ is not monotonic wrt @Ord@ on @Point@.
+-- We need to keep it that way, because we want close xs to have close indexes.
 pindex :: X -> Point -> Int
 {-# INLINE pindex #-}
 pindex xsize (Point x y) = x + y * xsize
