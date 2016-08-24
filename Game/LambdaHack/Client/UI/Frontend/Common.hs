@@ -21,8 +21,8 @@ data KMP = KMP { kmpKeyMod  :: !K.KM
                , kmpPointer :: !Point }
 
 data RawFrontend = RawFrontend
-  { fdisplay  :: SingleFrame -> IO ()
-  , fshutdown :: IO ()
+  { fdisplay  :: !(SingleFrame -> IO ())
+  , fshutdown :: !(IO ())
   , fshowNow  :: !(MVar ())
   , fchanKey  :: !(STM.TQueue KMP)
   }
