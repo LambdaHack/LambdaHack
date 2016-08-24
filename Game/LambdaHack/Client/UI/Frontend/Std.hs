@@ -12,7 +12,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Control.Concurrent.Async
-import qualified Data.ByteString.Char8 as BS
 import Data.Char (chr, ord)
 import qualified System.IO as SIO
 
@@ -35,10 +34,10 @@ startup _sdebugCli = do
   rf <- createRawFrontend display shutdown
   let storeKeys :: IO ()
       storeKeys = do
-        l <- BS.hGetLine SIO.stdin  -- blocks here, so no polling
-        let c = case BS.uncons l of
-              Nothing -> '\n'  -- empty line counts as RET
-              Just (hd, _) -> hd
+        l <- SIO.hGetLine SIO.stdin  -- blocks here, so no polling
+        let c = case l of
+              [] -> '\n'  -- empty line counts as RET
+              hd : _ -> hd
             K.KM{..} = keyTranslate c
         saveKMP rf modifier key originPoint
         storeKeys
@@ -53,8 +52,8 @@ display :: SingleFrame  -- ^ the screen frame to draw
         -> IO ()
 display SingleFrame{singleFrame} =
   let prChar Color.AttrChar{acChar} = acChar
-      bs = map (BS.pack . map prChar) singleFrame ++ [BS.empty]
-  in mapM_ BS.putStrLn bs
+      bs = map (map prChar) singleFrame ++ [""]
+  in mapM_ putStrLn bs
 
 keyTranslate :: Char -> K.KM
 keyTranslate e = (\(key, modifier) -> K.KM modifier key) $
