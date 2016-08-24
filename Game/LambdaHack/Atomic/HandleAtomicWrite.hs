@@ -3,6 +3,17 @@
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.HandleAtomicWrite
   ( handleCmdAtomic
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , updCreateActor, updDestroyActor, updCreateItem, updDestroyItem
+  , updMoveActor, updWaitActor, updDisplaceActor, updMoveItem
+  , updAgeActor, updRefillHP, updRefillCalm, updFidImpressedActor
+  , updTrajectory, updColorActor, updQuitFaction, updLeadFaction
+  , updDiplFaction, updTacticFaction, updAutoFaction, updRecordKill
+  , updAlterTile, updAlterClear, updLearnSecrets, updSpotTile, updLoseTile
+  , updAlterSmell, updSpotSmell, updLoseSmell, updTimeItem, updAgeGame
+  , updRestart, updRestartServer, updResumeServer
+#endif
   ) where
 
 import Prelude ()

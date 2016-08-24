@@ -3,6 +3,11 @@
 -- moves turn by turn.
 module Game.LambdaHack.Server.LoopM
   ( loopSer
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , endClip, applyPeriodicLevel, handleActors, gameExit, restartGame
+  , writeSaveAll, setTrajectory
+#endif
   ) where
 
 import Prelude ()
