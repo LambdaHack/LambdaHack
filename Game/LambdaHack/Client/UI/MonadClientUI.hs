@@ -78,9 +78,11 @@ connFrontend req = do
 
 displayFrame :: MonadClientUI m => Maybe SingleFrame -> m ()
 displayFrame mf = do
-  let frame = case mf of
-        Nothing -> FrontDelay 1
-        Just fr -> FrontFrame fr
+  frame <- case mf of
+    Nothing -> return $! FrontDelay 1
+    Just fr -> do
+      modifySession $ \cli -> cli {snframes = snframes cli + 1}
+      return $! FrontFrame fr
   connFrontend frame
 
 -- | Push frames or delays to the frame queue. The frames depict
@@ -248,12 +250,17 @@ tellAllClipPS = do
     curPOSIX <- liftIO $ getPOSIXTime
     allTime <- getsSession sallTime
     gtime <- getsState stime
+    allNframes <- getsSession sallNframes
+    gnframes <- getsSession snframes
     let time = absoluteTimeAdd allTime gtime
-    let diff = fromRational $ toRational $ curPOSIX - sstartPOSIX
+        nframes = allNframes + gnframes
+        diff = fromRational $ toRational $ curPOSIX - sstartPOSIX
         cps = fromIntegral (timeFit time timeClip) / diff :: Double
+        fps = fromIntegral nframes / diff :: Double
     clientPrintUI $
       "Session time:" <+> tshow diff <> "s."
       <+> "Average clips per second:" <+> tshow cps <> "."
+      <+> "Average FPS:" <+> tshow fps <> "."
 
 tellGameClipPS :: MonadClientUI m => m ()
 tellGameClipPS = do
@@ -264,12 +271,15 @@ tellGameClipPS = do
     -- If loaded game, don't report anything.
     unless (sgstartPOSIX == 0) $ do
       time <- getsState stime
+      nframes <- getsSession snframes
       let diff = fromRational $ toRational $ curPOSIX - sgstartPOSIX
           cps = fromIntegral (timeFit time timeClip) / diff :: Double
+          fps = fromIntegral nframes / diff :: Double
       -- This means: "Game portion after last reload time:...".
       clientPrintUI $
         "Game time:" <+> tshow diff <> "s."
         <+> "Average clips per second:" <+> tshow cps <> "."
+        <+> "Average FPS:" <+> tshow fps <> "."
 
 elapsedSessionTimeGT :: MonadClientUI m => Int -> m Bool
 elapsedSessionTimeGT stopAfter = do
@@ -287,5 +297,9 @@ resetGameStart :: MonadClientUI m => m ()
 resetGameStart = do
   sgstart <- liftIO getPOSIXTime
   time <- getsState stime
+  nframes <- getsSession snframes
   modifySession $ \cli ->
-    cli {sgstart, sallTime = absoluteTimeAdd (sallTime cli) time}
+    cli { sgstart
+        , sallTime = absoluteTimeAdd (sallTime cli) time
+        , snframes = 0
+        , sallNframes = sallNframes cli + nframes }

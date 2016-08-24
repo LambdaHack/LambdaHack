@@ -61,6 +61,8 @@ data SessionUI = SessionUI
   , sstart          :: !POSIXTime     -- ^ this session start time
   , sgstart         :: !POSIXTime     -- ^ this game start time
   , sallTime        :: !Time          -- ^ clips from start of session to current game start
+  , snframes        :: !Int           -- ^ this game current frame count
+  , sallNframes     :: !Int           -- ^ frame count from start of session to current game start
   }
 
 -- | Current aiming mode of a client.
@@ -119,6 +121,8 @@ emptySessionUI sconfig =
     , sstart = 0
     , sgstart = 0
     , sallTime = timeZero
+    , snframes = 0
+    , sallNframes = 0
     }
 
 toggleMarkVision :: SessionUI -> SessionUI
@@ -169,6 +173,8 @@ instance Binary SessionUI where
         sstart = 0
         sgstart = 0
         sallTime = timeZero
+        snframes = 0
+        sallNframes = 0
     return $! SessionUI{..}
 
 instance Binary RunParams where

@@ -98,8 +98,10 @@ instance MonadClientSetup (CliImplementation SessionUI resp req) where
                      , shistory = shistory sess
                      , _sreport = _sreport sess
                      , sstart = sstart sess
-                     , sgstart =  sgstart sess
+                     , sgstart = sgstart sess
                      , sallTime = sallTime sess
+                     , snframes = snframes sess
+                     , sallNframes = sallNframes sess
                      }
     in ((), cliS {cliSession = newSess})
 
