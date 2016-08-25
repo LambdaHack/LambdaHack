@@ -64,7 +64,7 @@ data Attr = Attr
 
 instance Enum Attr where
   {-# INLINE fromEnum #-}
-  fromEnum Attr{..} = unsafeShiftL (fromEnum bg) 8 + fromEnum fg
+  fromEnum Attr{..} = unsafeShiftL (fromEnum fg) 8 + fromEnum bg
   {-# INLINE toEnum #-}
   toEnum n = Attr (toEnum $ unsafeShiftR n 8)
                   (toEnum $ n .&. (2 ^ (8 :: Int) - 1))
