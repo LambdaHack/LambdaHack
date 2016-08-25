@@ -380,9 +380,15 @@ destroyActor aid b destroy = do
   when destroy $ modifyClient $ updateTarget aid (const Nothing)  -- gc
   modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}  -- gc
   let affect tgt = case tgt of
-        TEnemy a _ | a == aid -> TPoint (blid b) (bpos b)
-          -- If *really* nothing more interesting, the actor will
-          -- go to last known location to perhaps find other foes.
+        TEnemy a permit | a == aid ->
+          if destroy then
+            -- If *really* nothing more interesting, the actor will
+            -- go to last known location to perhaps find other foes.
+            TPoint (blid b) (bpos b)
+          else
+            -- If enemy only hides (or we stepped behind obstacle) find him.
+
+            TEnemyPos a (blid b) (bpos b) permit
         _ -> tgt
       affect3 TgtAndPath{..} =
         let newMPath = case tapPath of

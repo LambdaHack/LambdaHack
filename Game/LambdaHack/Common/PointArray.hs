@@ -30,7 +30,7 @@ import Game.LambdaHack.Common.Point
 
 -- TODO: for now, until there's support for GeneralizedNewtypeDeriving
 -- for Unboxed, there's a lot of @Word8@ in place of @c@ here
--- and a contraint @Enum c@ instead of @Unbox c@.
+-- and a constraint @Enum c@ instead of @Unbox c@.
 
 -- TODO: perhaps make them an instance of Data.Vector.Generic?
 -- | Arrays indexed by @Point@.

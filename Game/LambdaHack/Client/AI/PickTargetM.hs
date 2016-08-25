@@ -304,7 +304,7 @@ targetStrategy aid = do
                  AndPath{} -> return $! returN "TEnemy" tap{tapPath=mpath}
         TEnemyPos _ lid p permit  -- chase last position even if foe hides
           | lid /= blid b  -- wrong level
-            || chessDist (bpos b) p >= nearby  -- too far and not visible
+            || chessDist (bpos b) p > aSight ar  -- not obscured due to my move
             || permit  -- never follow a friend more than 1 step
             -> pickNewTarget
           | p == bpos b -> tellOthersNothingHere p
