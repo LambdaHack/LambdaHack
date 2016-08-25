@@ -325,7 +325,7 @@ perceptionCacheFromLevel actorAspect fovClearLid fid lid s =
            then Nothing
            else Just (aid, FovValid $ cacheBeforeLucidFromActor fovClear b ar)
       lvlCaches = mapMaybe f lvlBodies
-      perActor = EM.fromList lvlCaches
+      perActor = EM.fromDistinctAscList lvlCaches
       total = totalFromPerActor perActor
   in PerceptionCache{ptotal = FovValid total, perActor}
 

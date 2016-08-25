@@ -454,7 +454,7 @@ selectNoneHuman = do
   side <- getsClient sside
   lidV <- viewedLevelUI
   oursIds <- getsState $ actorRegularIds (== side) lidV
-  let ours = ES.fromList oursIds
+  let ours = ES.fromDistinctAscList oursIds
   oldSel <- getsSession sselected
   let wasNone = ES.null $ ES.intersection ours oldSel
       upd = if wasNone

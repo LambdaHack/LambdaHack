@@ -61,13 +61,13 @@ mkVoidRoom area = do
 -- there is only one connected component in the graph of all areas.
 connectGrid :: (X, Y) -> Rnd [(Point, Point)]
 connectGrid (nx, ny) = do
-  let unconnected = S.fromList [ Point x y
-                               | x <- [0..nx-1], y <- [0..ny-1] ]
+  let unconnected = S.fromDistinctAscList [ Point x y
+                                          | x <- [0..nx-1], y <- [0..ny-1] ]
   -- Candidates are neighbours that are still unconnected. We start with
   -- a random choice.
   rx <- randomR (0, nx-1)
   ry <- randomR (0, ny-1)
-  let candidates = S.fromList [Point rx ry]
+  let candidates = S.fromDistinctAscList [Point rx ry]
   connectGrid' (nx, ny) unconnected candidates []
 
 connectGrid' :: (X, Y) -> S.Set Point -> S.Set Point

@@ -40,16 +40,16 @@ startup _sdebugCli = do
 --  C.keypad C.stdScr False  -- TODO: may help to fix xterm keypad on Ubuntu
   void $ C.cursSet C.CursorInvisible
   let s = [ (Color.Attr{fg, bg}, C.Style (toFColor fg) (toBColor bg))
-          | fg <- [minBound..maxBound],
-            -- No more color combinations possible: 16*4, 64 is max.
-            bg <- Color.legalBG ]
+          | -- No more color combinations possible: 16*4, 64 is max.
+            fg <- [minBound..maxBound]
+          , bg <- Color.legalBG ]
   nr <- C.colorPairs
   when (nr < length s) $
     C.end >> (assert `failure` "terminal has too few color pairs" `twith` nr)
   let (ks, vs) = unzip s
   ws <- C.convertStyles vs
   let swin = C.stdScr
-      sstyles = EM.fromList (zip ks ws)
+      sstyles = EM.fromDistinctAscList (zip ks ws)
       sess = FrontendSession{..}
   rf <- createRawFrontend (display sess) shutdown
   let storeKeys :: IO ()

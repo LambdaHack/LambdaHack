@@ -57,7 +57,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
   ttt <- textTagTableNew
-  stags <- EM.fromList <$>
+  stags <- EM.fromDistinctAscList <$>
              mapM (\ak -> do
                       tt <- textTagNew Nothing
                       textTagTableAdd ttt tt
