@@ -321,12 +321,12 @@ leadLevelSwitch = do
             -- Keep the leader: he is on stairs and not stuck
             -- and we don't want to clog stairs or get pushed to another level.
             unless (not leaderStuck && Tile.isStair cotile t) $ do
-              actorD <- getsState sactorD
+              s <- getState
               let ourLvl (lid, lvl) =
                     ( lid
                     , EM.size (lfloor lvl)
                     , -- Drama levels skipped, hence @Regular@.
-                      actorRegularAssocsLvl (== bfid body) lvl actorD )
+                      actorRegularIds (== bfid body) lid s )
               ours <- getsState $ map ourLvl . EM.assocs . sdungeon
               -- Non-humans, being born in the dungeon, have a rough idea of
               -- the number of items left on the level and will focus
@@ -336,7 +336,7 @@ leadLevelSwitch = do
               -- In addition, sole stranded actors tend to become leaders
               -- so that they can join the main force ASAP.
               let freqList = [ (k, (lid, a))
-                             | (lid, itemN, (a, _) : rest) <- ours
+                             | (lid, itemN, a : rest) <- ours
                              , not leaderStuck || lid /= blid body
                              , let len = 1 + min 10 (length rest)
                                    k = 1000000 `div` (3 * itemN + len) ]

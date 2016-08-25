@@ -4,8 +4,8 @@
 -- TODO: Document an export list after it's rewritten according to #17.
 module Game.LambdaHack.Common.ActorState
   ( fidActorNotProjAssocs, fidActorNotProjList
-  , actorAssocsLvl, actorAssocs, actorList, actorIds
-  , actorRegularAssocsLvl, actorRegularAssocs, actorRegularList, actorRegularIds
+  , actorAssocs, actorList, actorIds
+  , actorRegularAssocs, actorRegularList, actorRegularIds
   , bagAssocs, bagAssocsK, calculateTotal
   , mergeItemQuant, sharedAllOwnedFid, findIid
   , getCBag, getActorBag, getBodyActorBag, mapActorItems_, getActorAssocs
@@ -55,44 +55,32 @@ fidActorNotProjList fid s =
   let f b = not (bproj b) && bfid b == fid
   in filter f $ EM.elems $ sactorD s
 
-actorAssocsLvl :: (FactionId -> Bool) -> Level -> ActorDict
-               -> [(ActorId, Actor)]
-actorAssocsLvl p lvl actorD =
-  mapMaybe (\aid -> let b = actorD EM.! aid
-                    in if p (bfid b)
-                       then Just (aid, b)
-                       else Nothing)
-  $ concat $ EM.elems $ lprio lvl
-
 actorAssocs :: (FactionId -> Bool) -> LevelId -> State
             -> [(ActorId, Actor)]
 actorAssocs p lid s =
-  actorAssocsLvl p (sdungeon s EM.! lid) (sactorD s)
+  let f (_, b) = blid b == lid && p (bfid b)
+  in filter f $ EM.assocs $ sactorD s
 
 actorList :: (FactionId -> Bool) -> LevelId -> State
           -> [Actor]
-actorList p lid s = map snd $ actorAssocs p lid s
+actorList p lid s =
+  let f b = blid b == lid && p (bfid b)
+  in filter f $ EM.elems $ sactorD s
 
 actorIds :: LevelId -> State -> [ActorId]
 actorIds lid s = concat $ EM.elems $ lprio $ sdungeon s EM.! lid
 
-actorRegularAssocsLvl :: (FactionId -> Bool) -> Level -> ActorDict
-                      -> [(ActorId, Actor)]
-actorRegularAssocsLvl p lvl actorD =
-  mapMaybe (\aid -> let b = actorD EM.! aid
-                    in if not (bproj b) && bhp b > 0 && p (bfid b)
-                       then Just (aid, b)
-                       else Nothing)
-  $ concat $ EM.elems $ lprio lvl
-
 actorRegularAssocs :: (FactionId -> Bool) -> LevelId -> State
                    -> [(ActorId, Actor)]
 actorRegularAssocs p lid s =
-  actorRegularAssocsLvl p (sdungeon s EM.! lid) (sactorD s)
+  let f (_, b) = not (bproj b) && blid b == lid && p (bfid b) && bhp b > 0
+  in filter f $ EM.assocs $ sactorD s
 
 actorRegularList :: (FactionId -> Bool) -> LevelId -> State
                  -> [Actor]
-actorRegularList p lid s = map snd $ actorRegularAssocs p lid s
+actorRegularList p lid s =
+  let f b = not (bproj b) && blid b == lid && p (bfid b) && bhp b > 0
+  in filter f $ EM.elems $ sactorD s
 
 actorRegularIds :: (FactionId -> Bool) -> LevelId -> State
                 -> [ActorId]
