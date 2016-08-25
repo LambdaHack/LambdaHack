@@ -192,12 +192,14 @@ closestUnknown aid = do
   bfs <- getCacheBfs aid
   let closestPoss = PointArray.minIndexesA bfs
       dist = bfs PointArray.! head closestPoss
-  if dist >= apartBfs then do
-    when (lclear lvl == lseen lvl) $ do  -- explored fully, mark it once for all
-      let !_A = assert (lclear lvl >= lseen lvl) ()
-      modifyClient $ \cli ->
-        cli {sexplored = ES.insert (blid body) (sexplored cli)}
-    return Nothing
+  when (lclear lvl <= lseen lvl) $ do
+    -- Some unknown may still be accessible through suspect tiles,
+    -- so we return them below, but we alrady know the unknown (or the suspect)
+    -- are not clear, so we mark the level explored.
+    let !_A = assert (lclear lvl >= lseen lvl) ()
+    modifyClient $ \cli ->
+      cli {sexplored = ES.insert (blid body) (sexplored cli)}
+  if dist >= apartBfs then return Nothing
   else do
     let unknownAround p =
           let vic = vicinity lxsize lysize p
@@ -242,7 +244,7 @@ closestSuspect aid = do
   case suspect of
     [] -> do
       -- We assume @closestSuspect@ is called only when there are no more
-      -- pathable unknown tiles on the map.
+      -- pathable unknown tiles on the map (including the knowledge from lseen).
       -- If the level has inaccessible open areas (at least from some stairs)
       -- here finally mark it explored, to enable transition to other levels.
       -- We should generally avoid such levels, because digging and/or trying

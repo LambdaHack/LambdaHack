@@ -115,11 +115,8 @@ targetStrategy aid = do
   -- wounded or alone actors, perhaps only until they are shot first time,
   -- and only if they can shoot at the moment)
   canEscape <- factionCanEscape (bfid b)
-  explored <- getsClient sexplored
   activeItems <- activeItemsClient aid
   let condNoUsableWeapon = all (not . isMelee) activeItems
-      lidExplored = ES.member (blid b) explored
-      allExplored = ES.size explored == EM.size dungeon
       canSmell = aSmell ar > 0
       meleeNearby | canEscape = nearby `div` 2  -- not aggresive
                   | otherwise = nearby
@@ -233,20 +230,27 @@ targetStrategy aid = do
                          && accessible cops lvl pNew
                       then vToTgt vOld
                       else do
+                        explored <- getsClient sexplored
+                        let lidExplored = ES.member (blid b) explored
                         upos <- if lidExplored
                                 then return Nothing
                                 else closestUnknown aid
                         case upos of
                           Nothing -> do
-                            csuspect <- if lidExplored
+                            explored2 <- getsClient sexplored
+                            let lidExplored2 = ES.member (blid b) explored2
+                            csuspect <- if lidExplored2
                                         then return []
                                         else closestSuspect aid
                             case csuspect of
                               [] -> do
+                                explored3 <- getsClient sexplored
+                                let allExplored3 = ES.size explored3
+                                                   == EM.size dungeon
                                 let ctriggersMiddle =
                                       if EM.findWithDefault 0 AbTrigger
                                                             actorMaxSk > 0
-                                         && not allExplored
+                                         && not allExplored3
                                       then ctriggers
                                       else mzero
                                 if nullFreq ctriggersMiddle then do
@@ -313,6 +317,9 @@ targetStrategy aid = do
         _ | not $ null nearbyFoes ->
           pickNewTarget  -- prefer close foes to anything
         TPoint lid pos -> do
+          explored <- getsClient sexplored
+          let lidExplored = ES.member (blid b) explored
+              allExplored = ES.size explored == EM.size dungeon
           bag <- getsState $ getCBag $ CFloor lid pos
           let t = lvl `at` pos
           if lid /= blid b  -- wrong level
