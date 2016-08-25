@@ -81,7 +81,6 @@ revealItems :: (MonadAtomic m, MonadServer m)
 revealItems mfid mbody = do
   let !_A = assert (maybe True (not . bproj . snd) mbody) ()
   itemToF <- itemToFullServer
-  dungeon <- getsState sdungeon
   let discover aid store iid k =
         let itemFull = itemToF iid k
             c = CActor aid store
@@ -100,7 +99,8 @@ revealItems mfid mbody = do
           -- even though it may introduce a slight lag.
           -- AI clients being sent this is a bigger waste anyway.
           join $ getsState $ mapActorItems_ (discover aid) b
-  mapDungeonActors_ f dungeon
+  as <- getsState $ EM.keys . sactorD
+  mapM_ f as
   maybe (return ())
         (\(aid, b) -> join $ getsState $ mapActorItems_ (discover aid) b)
         mbody

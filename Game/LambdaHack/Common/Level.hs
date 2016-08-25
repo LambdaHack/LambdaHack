@@ -7,8 +7,7 @@ module Game.LambdaHack.Common.Level
   , Level(..), ActorPrio, ItemFloor, TileMap, SmellMap
     -- * Level query
   , at, accessible, accessibleUnknown, accessibleDir
-  , knownLsecret, isSecretPos, hideTile
-  , findPos, findPosTry, mapLevelActors_, mapDungeonActors_
+  , knownLsecret, isSecretPos, hideTile, findPos, findPosTry
   ) where
 
 import Prelude ()
@@ -175,16 +174,6 @@ findPosTry numTries ltile m l@(_ : tl) = assert (numTries > 0) $
           then return $! pos
           else search (k - 1)
   in search numTries
-
-mapLevelActors_ :: Monad m => (ActorId -> m a) -> Level -> m ()
-mapLevelActors_ f Level{lprio} = do
-  let as = concat $ EM.elems lprio
-  mapM_ f as
-
-mapDungeonActors_ :: Monad m => (ActorId -> m a) -> Dungeon -> m ()
-mapDungeonActors_ f dungeon = do
-  let ls = EM.elems dungeon
-  mapM_ (mapLevelActors_ f) ls
 
 instance Binary Level where
   put Level{..} = do
