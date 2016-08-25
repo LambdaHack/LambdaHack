@@ -4,8 +4,8 @@
 -- TODO: Document an export list after it's rewritten according to #17.
 module Game.LambdaHack.Common.ActorState
   ( fidActorNotProjAssocs, fidActorNotProjList
-  , actorAssocsLvl, actorAssocs, actorList
-  , actorRegularAssocsLvl, actorRegularAssocs, actorRegularList
+  , actorAssocsLvl, actorAssocs, actorList, actorIds
+  , actorRegularAssocsLvl, actorRegularAssocs, actorRegularList, actorRegularIds
   , bagAssocs, bagAssocsK, calculateTotal
   , mergeItemQuant, sharedAllOwnedFid, findIid
   , getCBag, getActorBag, getBodyActorBag, mapActorItems_, getActorAssocs
@@ -51,7 +51,9 @@ fidActorNotProjAssocs fid s =
   in filter f $ EM.assocs $ sactorD s
 
 fidActorNotProjList :: FactionId -> State -> [Actor]
-fidActorNotProjList fid s = map snd $ fidActorNotProjAssocs fid s
+fidActorNotProjList fid s =
+  let f b = not (bproj b) && bfid b == fid
+  in filter f $ EM.elems $ sactorD s
 
 actorAssocsLvl :: (FactionId -> Bool) -> Level -> ActorDict
                -> [(ActorId, Actor)]
@@ -71,6 +73,9 @@ actorList :: (FactionId -> Bool) -> LevelId -> State
           -> [Actor]
 actorList p lid s = map snd $ actorAssocs p lid s
 
+actorIds :: LevelId -> State -> [ActorId]
+actorIds lid s = concat $ EM.elems $ lprio $ sdungeon s EM.! lid
+
 actorRegularAssocsLvl :: (FactionId -> Bool) -> Level -> ActorDict
                       -> [(ActorId, Actor)]
 actorRegularAssocsLvl p lvl actorD =
@@ -88,6 +93,10 @@ actorRegularAssocs p lid s =
 actorRegularList :: (FactionId -> Bool) -> LevelId -> State
                  -> [Actor]
 actorRegularList p lid s = map snd $ actorRegularAssocs p lid s
+
+actorRegularIds :: (FactionId -> Bool) -> LevelId -> State
+                -> [ActorId]
+actorRegularIds p lid s = map fst $ actorRegularAssocs p lid s
 
 getItemBody :: ItemId -> State -> Item
 getItemBody iid s =

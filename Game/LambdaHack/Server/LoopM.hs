@@ -204,8 +204,8 @@ applyPeriodicLevel lid = do
       applyPeriodicActor aid = do
         applyPeriodicCStore aid COrgan
         applyPeriodicCStore aid CEqp
-  allActors <- getsState $ actorRegularAssocs (const True) lid
-  mapM_ (\(aid, _) -> applyPeriodicActor aid) allActors
+  allActors <- getsState $ actorRegularIds (const True) lid
+  mapM_ applyPeriodicActor allActors
 
 -- | Perform moves for individual actors, as long as there are actors
 -- with the next move time less or equal to the end of current cut-off.

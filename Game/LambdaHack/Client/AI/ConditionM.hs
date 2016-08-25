@@ -148,9 +148,9 @@ threatDistList aid = do
 condBlocksFriendsM :: MonadClient m => ActorId -> m Bool
 condBlocksFriendsM aid = do
   b <- getsState $ getActorBody aid
-  ours <- getsState $ actorRegularAssocs (== bfid b) (blid b)
+  ours <- getsState $ actorRegularIds (== bfid b) (blid b)
   targetD <- getsClient stargetD
-  let blocked (aid2, _) = aid2 /= aid &&
+  let blocked aid2 = aid2 /= aid &&
         case EM.lookup aid2 targetD of
           Just TgtAndPath{tapPath=AndPath{pathList=q : _}} | q == bpos b -> True
           _ -> False
