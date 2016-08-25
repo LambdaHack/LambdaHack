@@ -304,7 +304,8 @@ projectBla source pos rest iid cstore isBlast = do
   case iid `EM.lookup` bag of
     Nothing -> assert `failure` (source, pos, rest, iid, cstore)
     Just kit@(_, it) -> do
-      addProjectile pos rest iid kit lid (bfid sb) localTime isBlast
+      let btime = absoluteTimeAdd timeEpsilon localTime
+      addProjectile pos rest iid kit lid (bfid sb) btime isBlast
       let c = CActor source cstore
       execUpdAtomic $ UpdLoseItem iid item (1, take 1 it) c
 
