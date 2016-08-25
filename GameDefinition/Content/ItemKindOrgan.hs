@@ -422,7 +422,8 @@ sulfurVent = boilingVent
   , ieffects = [Periodic, Recharging (Explode "strength mist")]
   }
 bonusHP = armoredSkin
-  { iname    = "bonus HP"
+  { isymbol  = '+'
+  , iname    = "bonus HP"
   , ifreq    = [("bonus HP", 100)]
   , icount   = 1
   , iverbHit = "intimidate"

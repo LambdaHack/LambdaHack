@@ -75,8 +75,7 @@ itemDesc c localTime itemFull =
       (scaledWeight, unitWeight)
         | weight > 1000 =
           (tshow $ fromIntegral weight / (1000 :: Double), "kg")
-        | weight > 0 = (tshow weight, "g")
-        | otherwise = ("", "")
+        | otherwise = (tshow weight, "g")
       ln = abs $ fromEnum $ jlid (itemBase itemFull)
       colorSymbol = uncurry (flip Color.AttrChar) (viewItem $ itemBase itemFull)
       blurb =
@@ -84,7 +83,9 @@ itemDesc c localTime itemFull =
         <> nstats
         <> ":"
         <+> desc
-        <+> makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
+        <+> if weight > 0
+            then makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
+            else ""
         <+> makeSentence ["First found on level", MU.Text $ tshow ln]
   in colorSymbol : toAttrLine blurb
 
