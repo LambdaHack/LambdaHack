@@ -285,7 +285,6 @@ projectFail source tpxy eps iid cstore isBlast = do
                         projectBla source pos rest iid cstore isBlast
                       return Nothing
 
-
 projectBla :: (MonadAtomic m, MonadServer m)
            => ActorId    -- ^ actor projecting the item (is on current lvl)
            -> Point      -- ^ starting point of the projectile

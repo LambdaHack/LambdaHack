@@ -307,23 +307,24 @@ display DebugModeCli{scolorIsBold}
           removeProp style "font-weight"
           setProp style "border-color" "transparent"
         else do
-          when (scolorIsBold == Just True) $
-            setProp style "font-weight" "bold"
-          if bg `elem` [Color.BrRed, Color.BrBlue, Color.BrYellow, Color.defBG]
-          then removeProp style "background-color"
-          else setProp style "background-color" (Color.colorToRGB bg)
-          setProp style "color" (Color.colorToRGB fg)
+          when (scolorIsBold == Just True) $ setProp style "font-weight" "bold"
+          setProp style "color" $ Color.colorToRGB fg
           case bg of
-            Color.BrRed ->  -- highlighted tile
-              let ourColor = Color.colorToRGB Color.Red
-              in setProp style "border-color" ourColor
-            Color.BrBlue ->  -- blue highlighted tile
-              let ourColor = Color.colorToRGB Color.Blue
-              in setProp style "border-color" ourColor
-            Color.BrYellow ->  -- yellow highlighted tile
-              let ourColor = Color.colorToRGB Color.BrYellow
-              in setProp style "border-color" ourColor
-            _ -> setProp style "border-color" "transparent"
+            Color.BrRed -> do  -- highlighted tile
+              setProp style "border-color" $ Color.colorToRGB Color.Red
+              removeProp style "background-color"
+            Color.BrBlue -> do  -- blue highlighted tile
+              setProp style "border-color" $ Color.colorToRGB Color.Blue
+              removeProp style "background-color"
+            Color.BrYellow -> do  -- yellow highlighted tile
+              setProp style "border-color" $ Color.colorToRGB Color.BrYellow
+              removeProp style "background-color"
+            Color.Black -> do
+              removeProp style "background-color"
+              setProp style "border-color" "transparent"
+            _ -> do
+              setProp style "background-color" $ Color.colorToRGB bg
+              setProp style "border-color" "transparent"
       acs = concat singleFrame
   -- Sync, no point mutitasking threads in the single-threaded JS
   callback <- newRequestAnimationFrameCallbackSync $ \_ -> do
