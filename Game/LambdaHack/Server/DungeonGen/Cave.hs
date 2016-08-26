@@ -7,7 +7,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Arrow ((&&&))
 import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM)
 
@@ -106,25 +105,23 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                  <$> opick cdarkCorTile (const True)
   litCorTile <- fromMaybe (assert `failure` clitCorTile)
                 <$> opick clitCorTile (const True)
-  let addPl :: (TileMapEM, [Place], [(Point, Either Area (Area, Place))])
+  let addPl :: (TileMapEM, [Place], EM.EnumMap Point (Area, Area))
             -> (Point, Either Area Area)
-            -> Rnd (TileMapEM, [Place], [(Point, Either Area (Area, Place))])
-      addPl (m, pls, qls) (i, Left r) = return (m, pls, (i, Left r) : qls)
+            -> Rnd (TileMapEM, [Place], EM.EnumMap Point (Area, Area))
+      addPl (!m, !pls, !qls) (i, Left r) =
+        return (m, pls, EM.insert i (r, r) qls)
       addPl (m, pls, qls) (i, Right r) = do
         (tmap, place) <-
           buildPlace cops kc dnight darkCorTile litCorTile ldepth totalDepth r
-        return (EM.union tmap m, place : pls, (i, Right (r, place)) : qls)
-  (lplaces, dplaces, qplaces0) <- foldM addPl (fence, [], []) places0
+        return ( EM.union tmap m
+               , place : pls
+               , EM.insert i (shrinkPlace cops (r, place)) qls )
+  (lplaces, dplaces, qplaces) <- foldM addPl (fence, [], EM.empty) places0
   lcorridors <- do
     connects <- connectGrid lgrid
     let allConnects = connects `union` addedConnects  -- no duplicates
-        qplaces = EM.fromList qplaces0
         connectPos :: (Point, Point) -> Rnd Corridor
-        connectPos (p0, p1) = do
-          let shrinkForFence = either (id &&& id) (shrinkPlace cops)
-              rr0 = shrinkForFence $ qplaces EM.! p0
-              rr1 = shrinkForFence $ qplaces EM.! p1
-          connectPlaces rr0 rr1
+        connectPos (p0, p1) = connectPlaces (qplaces EM.! p0) (qplaces EM.! p1)
     cs <- mapM connectPos allConnects
     let pickedCorTile = if dnight then darkCorTile else litCorTile
     return $! EM.unions (map (digCorridors pickedCorTile) cs)
