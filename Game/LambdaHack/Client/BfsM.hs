@@ -39,7 +39,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.TileKind (TileKind)
+import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 
 invalidateBfs :: ActorId
               -> EM.EnumMap ActorId BfsAndPath
@@ -188,24 +188,24 @@ furthestKnown aid = do
 closestUnknown :: MonadClient m => ActorId -> m (Maybe Point)
 closestUnknown aid = do
   body <- getsState $ getActorBody aid
-  lvl@Level{lxsize, lysize} <- getLevel $ blid body
+  lvl <- getLevel $ blid body
   bfs <- getCacheBfs aid
   let closestPoss = PointArray.minIndexesA bfs
       dist = bfs PointArray.! head closestPoss
   when (lclear lvl <= lseen lvl) $ do
     -- Some unknown may still be accessible through suspect tiles,
-    -- so we return them below, but we alrady know the unknown (or the suspect)
+    -- so we return them below, but we already know the unknown (or the suspect)
     -- are not clear, so we mark the level explored.
     let !_A = assert (lclear lvl >= lseen lvl) ()
     modifyClient $ \cli ->
       cli {sexplored = ES.insert (blid body) (sexplored cli)}
   if dist >= apartBfs then return Nothing
   else do
-    let unknownAround p =
-          let vic = vicinity lxsize lysize p
-              posUnknown pos = bfs PointArray.! pos < apartBfs
-              vicUnknown = filter posUnknown vic
-          in length vicUnknown
+    let unknownAround pos =
+          let vic = vicinityUnsafe pos
+              countUnknown :: Int -> Point -> Int
+              countUnknown c p = if isUknownSpace $ lvl `at` p then c + 1 else c
+          in foldl' countUnknown 0 vic
         cmp = comparing unknownAround
     return $ Just $ maximumBy cmp closestPoss
 
