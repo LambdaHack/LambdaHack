@@ -43,7 +43,7 @@ import Game.LambdaHack.Content.TileKind (isUknownSpace)
 targetStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy TgtAndPath)
 targetStrategy aid = do
-  cops@Kind.COps{corule, cotile, coTileSpeedup} <- getsState scops
+  cops@Kind.COps{corule, cotile} <- getsState scops
   let stdRuleset = Kind.stdRuleset corule
       nearby = rnearby stdRuleset
   itemToF <- itemToFullClient
@@ -238,38 +238,30 @@ targetStrategy aid = do
                         case upos of
                           Nothing -> do
                             explored2 <- getsClient sexplored
-                            let lidExplored2 = ES.member (blid b) explored2
-                            csuspect <- if lidExplored2
-                                        then return []
-                                        else closestSuspect aid
-                            case csuspect of
-                              [] -> do
-                                explored3 <- getsClient sexplored
-                                let allExplored3 = ES.size explored3
-                                                   == EM.size dungeon
-                                let ctriggersMiddle =
-                                      if EM.findWithDefault 0 AbTrigger
-                                                            actorMaxSk > 0
-                                         && not allExplored3
-                                      then ctriggers
-                                      else mzero
-                                if nullFreq ctriggersMiddle then do
-                                  -- All stones turned, time to win or die.
-                                  afoes <- closestFoes allFoes aid
-                                  case afoes of
-                                    (_, (aid2, _)) : _ ->
-                                      setPath $ TEnemy aid2 False
-                                    [] ->
-                                      if nullFreq ctriggers then do
-                                        furthest <- furthestKnown aid
-                                        setPath $ TPoint (blid b) furthest
-                                      else do
-                                        p <- rndToAction $ frequency ctriggers
-                                        setPath $ TPoint (blid b) p
-                                else do
-                                  p <- rndToAction $ frequency ctriggers
-                                  setPath $ TPoint (blid b) p
-                              p : _ -> setPath $ TPoint (blid b) p
+                            let allExplored2 = ES.size explored2
+                                               == EM.size dungeon
+                                ctriggersMiddle =
+                                  if EM.findWithDefault
+                                       0 AbTrigger actorMaxSk > 0
+                                     && not allExplored2
+                                  then ctriggers
+                                  else mzero
+                            if nullFreq ctriggersMiddle then do
+                              -- All stones turned, time to win or die.
+                              afoes <- closestFoes allFoes aid
+                              case afoes of
+                                (_, (aid2, _)) : _ ->
+                                  setPath $ TEnemy aid2 False
+                                [] ->
+                                  if nullFreq ctriggers then do
+                                    furthest <- furthestKnown aid
+                                    setPath $ TPoint (blid b) furthest
+                                  else do
+                                    p <- rndToAction $ frequency ctriggers
+                                    setPath $ TPoint (blid b) p
+                            else do
+                              p <- rndToAction $ frequency ctriggers
+                              setPath $ TPoint (blid b) p
                           Just p -> setPath $ TPoint (blid b) p
                     (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
                 else do
@@ -339,7 +331,6 @@ targetStrategy aid = do
                        in sml <= ltime lvl)
                    && if not lidExplored
                       then not (isUknownSpace t)  -- closestUnknown
-                           && not (Tile.isSuspect coTileSpeedup t)  -- closestSuspect
                            && not (condEnoughGear && Tile.isStair cotile t)
                       else  -- closestTriggers
                         -- Try to kill that very last enemy for his loot before

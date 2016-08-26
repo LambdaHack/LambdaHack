@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.BfsM
   ( invalidateBfsAid, invalidateBfsLid, invalidateBfsAll
   , getCacheBfsAndPath, getCacheBfs, getCachePath, unexploredDepth
-  , closestUnknown, closestSuspect, closestSmell, furthestKnown
+  , closestUnknown, closestSmell, furthestKnown
   , closestTriggers, closestItems, closestFoes
 #ifdef EXPOSE_INTERNAL
   , createBfs, updatePathFromBfs, condBFS
@@ -185,6 +185,13 @@ furthestKnown aid = do
                    furthestPos
 
 -- | Closest reachable unknown tile position, if any.
+--
+-- Note: some of these tiles are behind suspect tiles and they are chosen
+-- in preference to more distant directly accessible unknown tiles.
+-- This is in principle OK, but in dungeons with few hidden doors
+-- AI is at a disadvantage (and with many hidden doors, it fares as well
+-- as a human that deduced the dungeon properties). Changing Bfs to accomodate
+-- all dungeon styles would be complex and would slow down the engine.
 closestUnknown :: MonadClient m => ActorId -> m (Maybe Point)
 closestUnknown aid = do
   body <- getsState $ getActorBody aid
@@ -195,7 +202,13 @@ closestUnknown aid = do
   when (lclear lvl <= lseen lvl) $ do
     -- Some unknown may still be accessible through suspect tiles,
     -- so we return them below, but we already know the unknown (or the suspect)
-    -- are not clear, so we mark the level explored.
+    -- are not clear or not reachable, so we mark the level explored.
+    -- If the level has inaccessible open areas (at least from stairs AI used)
+    -- the level will nevertheless here finally marked explored,
+    -- to enable transition to other levels.
+    -- We should generally avoid such levels, because digging and/or trying
+    -- to find other stairs leading to disconnected areas is not KISS
+    -- so we don't do this in AI, so AI is at a disadvantage.
     let !_A = assert (lclear lvl >= lseen lvl) ()
     modifyClient $ \cli ->
       cli {sexplored = ES.insert (blid body) (sexplored cli)}
@@ -231,32 +244,6 @@ closestSmell aid = do
       let ts = mapMaybe (\x@(p, _) -> fmap (,x) (accessBfs bfs p)) smells
           ds = filter (\(d, _) -> d /= 0) ts  -- bpos of aid
       return $! sortBy (comparing (fst &&& absoluteTimeNegate . snd . snd)) ds
-
--- | Closest (wrt paths) suspect tile.
-closestSuspect :: MonadClient m => ActorId -> m [Point]
-closestSuspect aid = do
-  Kind.COps{coTileSpeedup} <- getsState scops
-  body <- getsState $ getActorBody aid
-  lvl <- getLevel $ blid body
-  let f :: [Point] -> Point -> Kind.Id TileKind -> [Point]
-      f acc p t = if Tile.isSuspect coTileSpeedup t then p : acc else acc
-      suspect = PointArray.ifoldlA' f [] $ ltile lvl
-  case suspect of
-    [] -> do
-      -- We assume @closestSuspect@ is called only when there are no more
-      -- pathable unknown tiles on the map (including the knowledge from lseen).
-      -- If the level has inaccessible open areas (at least from some stairs)
-      -- here finally mark it explored, to enable transition to other levels.
-      -- We should generally avoid such levels, because digging and/or trying
-      -- to find other stairs leading to disconnected areas is not KISS
-      -- so we don't do this in AI, so AI is at a disadvantage.
-      modifyClient $ \cli ->
-        cli {sexplored = ES.insert (blid body) (sexplored cli)}
-      return []
-    _ -> do
-      bfs <- getCacheBfs aid
-      let ds = mapMaybe (\p -> fmap (,p) (accessBfs bfs p)) suspect
-      return $! map snd $ sortBy (comparing fst) ds
 
 -- TODO: We assume linear dungeon in @unexploredD@,
 -- because otherwise we'd need to calculate shortest paths in a graph, etc.
