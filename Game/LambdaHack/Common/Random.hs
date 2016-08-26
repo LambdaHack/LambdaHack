@@ -8,6 +8,8 @@ module Game.LambdaHack.Common.Random
   , Chance, chance
     -- * Casting dice scaled with level
   , castDice, chanceDice, castDiceXY
+    -- * Specialized monadic folds
+  , foldrM, foldlM'
   ) where
 
 import Prelude ()
@@ -100,3 +102,11 @@ castDiceXY ldepth totalDepth (Dice.DiceXY dx dy) = do
   x <- castDice ldepth totalDepth dx
   y <- castDice ldepth totalDepth dy
   return (x, y)
+
+foldrM :: Foldable t => (a -> b -> Rnd b) -> b -> t a -> Rnd b
+foldrM f z0 xs = let f' x (z, g) = St.runState (f x z) g
+                 in St.state $ \g -> foldr f' (z0, g) xs
+
+foldlM' :: Foldable t => (b -> a -> Rnd b) -> b -> t a -> Rnd b
+foldlM' f z0 xs = let f' (z, g) x = St.runState (f z x) g
+                  in St.state $ \g -> foldl' f' (z0, g) xs

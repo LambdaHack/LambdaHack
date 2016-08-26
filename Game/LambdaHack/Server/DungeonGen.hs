@@ -144,7 +144,7 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
                  -> Rnd ( [(Point, Kind.Id TileKind)]
                         , [(Point, Kind.Id TileKind)]
                         , [(Point, Kind.Id TileKind)] )
-      makeStairs moveUp noAsc noDesc (up, down, upDown) =
+      makeStairs moveUp noAsc noDesc (!up, !down, !upDown) =
         if (if moveUp then noAsc else noDesc) then
           return (up, down, upDown)
         else do
@@ -169,9 +169,9 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
   let !_A = assert (null stairsUp1) ()
   let nstairUpLeft = nstairUp - length stairsUpDown1
   (stairsUp2, stairsDown2, stairsUpDown2) <-
-    foldM (\sts _ -> makeStairs True (ln == maxD) (ln == minD) sts)
-          (stairsUp1, stairsDown1, stairsUpDown1)
-          [1 .. nstairUpLeft]
+    foldlM' (\sts _ -> makeStairs True (ln == maxD) (ln == minD) sts)
+            (stairsUp1, stairsDown1, stairsUpDown1)
+            [1 .. nstairUpLeft]
   -- If only a single tile of up-and-down stairs, add one more stairs down.
   (stairsUp, stairsDown, stairsUpDown) <-
     if null (stairsUp2 ++ stairsDown2)
@@ -274,13 +274,13 @@ dungeonGen cops caves = do
                         $ max 10 $ max (abs minD) (abs maxD)
   let gen :: (Int, [(LevelId, Level)]) -> (Int, (GroupName CaveKind, Maybe Bool))
           -> Rnd (Int, [(LevelId, Level)])
-      gen (nstairUp, l) (n, caveTB) = do
+      gen (nstairUp, l) (!n, !caveTB) = do
         let ln = toEnum n
         lvl <- findGenerator cops ln minId maxId freshTotalDepth nstairUp caveTB
         -- nstairUp for the next level is nstairDown for the current level
         let nstairDown = length $ snd $ lstair lvl
         return (nstairDown, (ln, lvl) : l)
-  (nstairUpLast, levels) <- foldM gen (0, []) $ reverse $ IM.assocs caves
+  (nstairUpLast, levels) <- foldlM' gen (0, []) $ reverse $ IM.assocs caves
   let !_A = assert (nstairUpLast == 0) ()
   let freshDungeon = EM.fromList levels
   return $! FreshDungeon{..}

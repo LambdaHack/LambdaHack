@@ -181,7 +181,7 @@ aspectRecordToList AspectRecord{..} =
 
 castAspect :: AbsDepth -> AbsDepth -> AspectRecord -> IK.Aspect
            -> Rnd AspectRecord
-castAspect ldepth totalDepth ar asp =
+castAspect ldepth totalDepth !ar asp =
   case asp of
     IK.Timeout d -> do
       n <- castDice ldepth totalDepth d
@@ -270,8 +270,8 @@ addMeanAspect ar asp =
 
 seedToAspect :: ItemSeed -> IK.ItemKind -> AbsDepth -> AbsDepth -> AspectRecord
 seedToAspect (ItemSeed itemSeed) kind ldepth totalDepth =
-  let rollM = foldM (castAspect ldepth totalDepth) emptyAspectRecord
-                    (IK.iaspects kind)
+  let rollM = foldlM' (castAspect ldepth totalDepth) emptyAspectRecord
+                      (IK.iaspects kind)
   in St.evalState rollM (mkStdGen itemSeed)
 
 meanAspect :: IK.ItemKind -> AspectRecord
