@@ -65,7 +65,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                         , cocave=Kind.Ops{okind} }
           ldepth totalDepth dkind = do
   let kc@CaveKind{..} = okind dkind
-  lgrid@(gx, gy) <- castDiceXY ldepth totalDepth cgrid
+  lgrid <- castDiceXY ldepth totalDepth cgrid
   -- Make sure that in caves not filled with rock, there is a passage
   -- across the cave, even if a single room blocks most of the cave.
   -- Also, ensure fancy outer fences are not obstructed by room walls.
@@ -73,64 +73,74 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                  $ toArea (0, 0, cxsize - 1, cysize - 1)
       subFullArea = fromMaybe (assert `failure` kc)
                     $ toArea (1, 1, cxsize - 2, cysize - 2)
-      area | gx * gy == 1
-             || couterFenceTile /= "basic outer fence" = subFullArea
-           | otherwise = fullArea
-      gs = grid lgrid area
-  (addedConnects, voidPlaces) <-
-    if gx * gy > 1 then do
-       let fractionOfPlaces r = round $ r * fromIntegral (gx * gy)
-           cauxNum = fractionOfPlaces cauxConnects
-       addedC <- replicateM cauxNum (randomConnection lgrid)
-       let gridArea = fromMaybe (assert `failure` lgrid)
-                      $ toArea (0, 0, gx - 1, gy - 1)
-           voidNum = fractionOfPlaces cmaxVoid
-       voidPl <- replicateM voidNum $ xyInArea gridArea  -- repetitions are OK
-       return (addedC, voidPl)
-    else return ([], [])
-  minPlaceSize <- castDiceXY ldepth totalDepth cminPlaceSize
-  maxPlaceSize <- castDiceXY ldepth totalDepth cmaxPlaceSize
-  dnight <- chanceDice ldepth totalDepth cnightChance
+      fractionOfPlaces (gx, gy) r = round $ r * fromIntegral (gx * gy)
   darkCorTile <- fromMaybe (assert `failure` cdarkCorTile)
                  <$> opick cdarkCorTile (const True)
   litCorTile <- fromMaybe (assert `failure` clitCorTile)
                 <$> opick clitCorTile (const True)
-  let decidePlace :: (TileMapEM, [Place], EM.EnumMap Point (Area, Area))
-                  -> (Point, Area)
-                  -> Rnd (TileMapEM, [Place], EM.EnumMap Point (Area, Area))
-      decidePlace (!m, !pls, !qls) (i, ar) = do
-        -- Reserved for corridors and the global fence.
-        let innerArea = fromMaybe (assert `failure` (i, ar)) $ shrink ar
-        if i `elem` voidPlaces
-        then do
-          r <- mkVoidRoom innerArea
-          return (m, pls, EM.insert i (r, r) qls)
-        else do
-          r <- mkRoom minPlaceSize maxPlaceSize innerArea
-          (tmap, place) <-
-            buildPlace cops kc dnight darkCorTile litCorTile ldepth totalDepth r
-          return ( EM.union tmap m
-                 , place : pls
-                 , EM.insert i (shrinkPlace cops (r, place)) qls )
-  (lplaces, dplaces, qplaces) <- foldM decidePlace (EM.empty, [], EM.empty) gs
-  lcorridors <- do
-    connects <- connectGrid lgrid
-    let allConnects = connects `union` addedConnects  -- no duplicates
-        connectPos :: (Point, Point) -> Rnd Corridor
-        connectPos (p0, p1) = connectPlaces (qplaces EM.! p0) (qplaces EM.! p1)
-    cs <- mapM connectPos allConnects
-    let pickedCorTile = if dnight then darkCorTile else litCorTile
-    return $! EM.unions (map (digCorridors pickedCorTile) cs)
-  doorMap <- do
-    -- The hacks below are instead of unionWithKeyM, which is costly.
-    let mergeCor _ pl cor =
-          let hidden = Tile.hideAs cotile pl
-          in if hidden == pl then Nothing  -- boring tile, can't hide doors
-                             else Just (hidden, cor)
-        intersectionWithKeyMaybe combine =
-          EM.mergeWithKey combine (const EM.empty) (const EM.empty)
-        interCor = intersectionWithKeyMaybe mergeCor lplaces lcorridors  -- fast
-    mapWithKeyM (pickOpening cops kc lplaces litCorTile) interCor  -- very small
+  dnight <- chanceDice ldepth totalDepth cnightChance
+  let createPlaces lgr@(gx, gy) = do
+        let area | gx * gy == 1
+                   || couterFenceTile /= "basic outer fence" = subFullArea
+                 | otherwise = fullArea
+            gs = grid lgr area
+        minPlaceSize <- castDiceXY ldepth totalDepth cminPlaceSize
+        maxPlaceSize <- castDiceXY ldepth totalDepth cmaxPlaceSize
+        voidPlaces <-
+          if gx * gy > 1 then do
+            let gridArea = fromMaybe (assert `failure` lgr)
+                           $ toArea (0, 0, gx - 1, gy - 1)
+                voidNum = fractionOfPlaces lgr cmaxVoid
+            replicateM voidNum $ xyInArea gridArea  -- repetitions are OK
+          else return []
+        let decidePlace :: (TileMapEM, [Place], EM.EnumMap Point (Area, Area))
+                        -> (Point, Area)
+                        -> Rnd ( TileMapEM, [Place]
+                               , EM.EnumMap Point (Area, Area) )
+            decidePlace (!m, !pls, !qls) (i, ar) = do
+              -- Reserved for corridors and the global fence.
+              let innerArea = fromMaybe (assert `failure` (i, ar)) $ shrink ar
+              if i `elem` voidPlaces
+              then do
+                r <- mkVoidRoom innerArea
+                return (m, pls, EM.insert i (r, r) qls)
+              else do
+                r <- mkRoom minPlaceSize maxPlaceSize innerArea
+                (tmap, place) <-
+                  buildPlace cops kc dnight darkCorTile litCorTile
+                             ldepth totalDepth r
+                return ( EM.union tmap m
+                       , place : pls
+                       , EM.insert i (shrinkPlace cops (r, place)) qls )
+        foldM decidePlace (EM.empty, [], EM.empty) gs
+  (lplaces, dplaces, qplaces) <- createPlaces lgrid
+  let lcorridorsFun lgr@(gx, gy) = do
+        addedConnects <-
+          if gx * gy > 1 then do
+            let cauxNum = fractionOfPlaces lgr cauxConnects
+            replicateM cauxNum (randomConnection lgr)
+          else return []
+        connects <- connectGrid lgr
+        let allConnects = connects `union` addedConnects  -- duplicates removed
+            connectPos :: (Point, Point) -> Rnd Corridor
+            connectPos (p0, p1) =
+              connectPlaces (qplaces EM.! p0) (qplaces EM.! p1)
+        cs <- mapM connectPos allConnects
+        let pickedCorTile = if dnight then darkCorTile else litCorTile
+        return $! EM.unions (map (digCorridors pickedCorTile) cs)
+  lcorridors <- lcorridorsFun lgrid
+  let doorMapFun lpl lcor = do
+        -- The hacks below are instead of unionWithKeyM, which is costly.
+        let mergeCor _ pl cor =
+              let hidden = Tile.hideAs cotile pl
+              in if hidden == pl then Nothing  -- boring tile, can't hide doors
+                                 else Just (hidden, cor)
+            intersectionWithKeyMaybe combine =
+              EM.mergeWithKey combine (const EM.empty) (const EM.empty)
+            interCor = intersectionWithKeyMaybe mergeCor lpl lcor  -- fast
+        mapWithKeyM (pickOpening cops kc lplaces litCorTile)
+                    interCor  -- very small
+  doorMap <- doorMapFun lplaces lcorridors
   fence <- buildFenceRnd cops couterFenceTile subFullArea
   let dmap = EM.unions [doorMap, lplaces, lcorridors, fence]  -- order matters
   return $! Cave {dkind, dmap, dplaces, dnight}
