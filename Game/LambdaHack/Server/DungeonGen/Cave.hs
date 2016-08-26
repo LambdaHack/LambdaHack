@@ -10,7 +10,6 @@ import Game.LambdaHack.Common.Prelude
 import Control.Arrow ((&&&))
 import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM)
-import qualified Data.Map.Strict as M
 
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -64,9 +63,7 @@ buildCave :: Kind.COps         -- ^ content definitions
           -> Kind.Id CaveKind  -- ^ cave kind to use for generation
           -> Rnd Cave
 buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
-                        , cocave=Kind.Ops{okind}
-                        , coplace=Kind.Ops{okind=pokind}
-                        , coTileSpeedup }
+                        , cocave=Kind.Ops{okind} }
           ldepth totalDepth dkind = do
   let kc@CaveKind{..} = okind dkind
   lgrid@(gx, gy) <- castDiceXY ldepth totalDepth cgrid
@@ -94,89 +91,98 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
     else return ([], [])
   minPlaceSize <- castDiceXY ldepth totalDepth cminPlaceSize
   maxPlaceSize <- castDiceXY ldepth totalDepth cmaxPlaceSize
-  places0 <- mapM (\ (i, r) -> do
-                     -- Reserved for corridors and the global fence.
-                     let innerArea = fromMaybe (assert `failure` (i, r))
-                                     $ shrink r
-                     r' <- if i `elem` voidPlaces
-                           then Left <$> mkVoidRoom innerArea
-                           else Right <$> mkRoom minPlaceSize
-                                                    maxPlaceSize innerArea
-                     return (i, r')) gs
+  let decideRoom :: (Point, Area) -> Rnd (Point, Either Area Area)
+      decideRoom (i, r) = do
+        -- Reserved for corridors and the global fence.
+        let innerArea = fromMaybe (assert `failure` (i, r)) $ shrink r
+        r' <- if i `elem` voidPlaces
+              then Left <$> mkVoidRoom innerArea
+              else Right <$> mkRoom minPlaceSize maxPlaceSize innerArea
+        return (i, r')
+  places0 <- mapM decideRoom gs
   fence <- buildFenceRnd cops couterFenceTile subFullArea
   dnight <- chanceDice ldepth totalDepth cnightChance
   darkCorTile <- fromMaybe (assert `failure` cdarkCorTile)
                  <$> opick cdarkCorTile (const True)
   litCorTile <- fromMaybe (assert `failure` clitCorTile)
                 <$> opick clitCorTile (const True)
-  let pickedCorTile = if dnight then darkCorTile else litCorTile
+  let addPl :: (TileMapEM, [Place], [(Point, Either Area (Area, Place))])
+            -> (Point, Either Area Area)
+            -> Rnd (TileMapEM, [Place], [(Point, Either Area (Area, Place))])
       addPl (m, pls, qls) (i, Left r) = return (m, pls, (i, Left r) : qls)
       addPl (m, pls, qls) (i, Right r) = do
         (tmap, place) <-
           buildPlace cops kc dnight darkCorTile litCorTile ldepth totalDepth r
         return (EM.union tmap m, place : pls, (i, Right (r, place)) : qls)
   (lplaces, dplaces, qplaces0) <- foldM addPl (fence, [], []) places0
-  connects <- connectGrid lgrid
-  let allConnects = connects `union` addedConnects  -- no duplicates
-      qplaces = M.fromList qplaces0
-  cs <- mapM (\(p0, p1) -> do
-                let shrinkPlace (r, Place{qkind}) =
-                      case shrink r of
-                        Nothing -> (r, r)  -- FNone place of x and/or y size 1
-                        Just sr ->
-                          if pfence (pokind qkind) `elem` [FFloor, FGround]
-                          then
-                            -- Avoid corridors touching the floor fence,
-                            -- but let them merge with the fence.
-                            case shrink sr of
-                              Nothing -> (sr, r)
-                              Just mergeArea -> (mergeArea, r)
-                          else (sr, sr)
-                    shrinkForFence = either (id &&& id) shrinkPlace
-                    rr0 = shrinkForFence $ qplaces M.! p0
-                    rr1 = shrinkForFence $ qplaces M.! p1
-                connectPlaces rr0 rr1) allConnects
-  let lcorridors = EM.unions (map (digCorridors pickedCorTile) cs)
-      lm = EM.union lplaces lcorridors
-      -- Convert wall openings into doors, possibly.
-      f pos (hidden, cor) = do
-        -- Openings have a certain chance to be doors
-        -- and doors have a certain chance to be open.
-        rd <- chance cdoorChance
-        if rd then do  -- door created
-          ro <- chance copenChance
-          doorClosedId <- Tile.revealAs cotile hidden
-          if ro then Tile.openTo cotile doorClosedId
-                else return $! doorClosedId
-        else do  -- opening kept
-          if Tile.isLit coTileSpeedup cor then return cor
-          else do
-            -- If any cardinally adjacent room tile lit, make the opening lit.
-            let roomTileLit p =
-                  case EM.lookup p lplaces of
-                    Nothing -> False
-                    Just tile -> Tile.isLit coTileSpeedup tile
-                vic = vicinityCardinal cxsize cysize pos
-            if any roomTileLit vic
-            then return litCorTile
-            else return cor
-      -- The hacks below are instead of unionWithKeyM, which is costly.
-      mergeCor _ pl cor =
+  lcorridors <- do
+    connects <- connectGrid lgrid
+    let allConnects = connects `union` addedConnects  -- no duplicates
+        qplaces = EM.fromList qplaces0
+        connectPos :: (Point, Point) -> Rnd Corridor
+        connectPos (p0, p1) = do
+          let shrinkForFence = either (id &&& id) (shrinkPlace cops)
+              rr0 = shrinkForFence $ qplaces EM.! p0
+              rr1 = shrinkForFence $ qplaces EM.! p1
+          connectPlaces rr0 rr1
+    cs <- mapM connectPos allConnects
+    let pickedCorTile = if dnight then darkCorTile else litCorTile
+    return $! EM.unions (map (digCorridors pickedCorTile) cs)
+  -- Convert wall openings into doors, possibly.
+  doorMap <- do
+   -- The hacks below are instead of unionWithKeyM, which is costly.
+   let mergeCor _ pl cor =
         let hidden = Tile.hideAs cotile pl
         in if hidden == pl then Nothing  -- boring tile, can't hide doors
                            else Just (hidden, cor)
-      intersectionWithKeyMaybe combine =
+       intersectionWithKeyMaybe combine =
         EM.mergeWithKey combine (const EM.empty) (const EM.empty)
-      interCor = intersectionWithKeyMaybe mergeCor lplaces lcorridors  -- fast
-  doorMap <- mapWithKeyM f interCor  -- very small
-  let dmap = EM.union doorMap lm
-      cave = Cave
-        { dkind
-        , dmap
-        , dplaces
-        , dnight
-        }
-  return $! cave
+       interCor = intersectionWithKeyMaybe mergeCor lplaces lcorridors  -- fast
+   mapWithKeyM (pickOpening cops kc lplaces litCorTile) interCor  -- very small
+  let dmap = EM.unions [doorMap, lplaces, lcorridors]
+  return $! Cave {dkind, dmap, dplaces, dnight}
+
+shrinkPlace :: Kind.COps -> (Area, Place) -> (Area, Area)
+shrinkPlace Kind.COps{coplace=Kind.Ops{okind}} (r, Place{qkind}) =
+  case shrink r of
+    Nothing -> (r, r)  -- FNone place of x and/or y size 1
+    Just sr ->
+      if pfence (okind qkind) `elem` [FFloor, FGround]
+      then
+        -- Avoid corridors touching the floor fence,
+        -- but let them merge with the fence.
+        case shrink sr of
+          Nothing -> (sr, r)
+          Just mergeArea -> (mergeArea, r)
+      else (sr, sr)
+
+pickOpening :: Kind.COps -> CaveKind -> TileMapEM -> Kind.Id TileKind
+            -> Point -> (Kind.Id TileKind, Kind.Id TileKind)
+            -> Rnd (Kind.Id TileKind)
+pickOpening Kind.COps{cotile, coTileSpeedup}
+            CaveKind{cxsize, cysize, cdoorChance, copenChance}
+            lplaces litCorTile
+            pos (hidden, cor) = do
+  -- Openings have a certain chance to be doors
+  -- and doors have a certain chance to be open.
+  rd <- chance cdoorChance
+  if rd then do  -- door created
+    ro <- chance copenChance
+    doorClosedId <- Tile.revealAs cotile hidden
+    if ro then Tile.openTo cotile doorClosedId
+          else return $! doorClosedId
+  else do  -- opening kept
+    if Tile.isLit coTileSpeedup cor then return cor
+    else do
+      -- If any cardinally adjacent room tile lit, make the opening lit.
+      let roomTileLit p =
+            case EM.lookup p lplaces of
+              Nothing -> False
+              Just tile -> Tile.isLit coTileSpeedup tile
+          vic = vicinityCardinal cxsize cysize pos
+      if any roomTileLit vic
+      then return litCorTile
+      else return cor
 
 digCorridors :: Kind.Id TileKind -> Corridor -> TileMapEM
 digCorridors tile (p1:p2:ps) =
