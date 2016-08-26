@@ -45,6 +45,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -901,7 +902,6 @@ chase aid doDisplace avoidAmbient = do
 moveTowards :: MonadClient m
             => ActorId -> Point -> Point -> Point -> Bool -> m (Strategy Vector)
 moveTowards aid source target goal relaxed = do
-  Kind.COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   actorSk <- actorSkillsClient aid
   let alterSkill = EM.findWithDefault 0 AbAlter actorSk
@@ -909,13 +909,13 @@ moveTowards aid source target goal relaxed = do
                     `blame` (source, bpos b, aid, b, goal)) ()
       !_B = assert (adjacent source target
                     `blame` (source, target, aid, b, goal)) ()
-  lvl <- getLevel $ blid b
   fact <- getsState $ (EM.! bfid b) . sfactionD
   friends <- getsState $ actorList (not . isAtWar fact) $ blid b
-  let noFriends = unoccupied friends
+  salter <- getsClient salter
+  let lalter = salter EM.! blid b
+      noFriends = unoccupied friends
       -- Only actors with AbAlter can search for hidden doors, etc.
-      enterableHere p =
-        alterSkill >= Tile.alterMinWalk coTileSpeedup (lvl `at` p)
+      enterableHere p = alterSkill >= fromEnum (lalter PointArray.! p)
   if noFriends target && enterableHere target then
     return $! returN "moveTowards adjacent" $ target `vectorToFrom` source
   else do
@@ -938,7 +938,7 @@ moveTowards aid source target goal relaxed = do
 moveOrRunAid :: MonadClient m
              => Bool -> ActorId -> Vector -> m (Maybe RequestAnyAbility)
 moveOrRunAid run source dir = do
-  cops@Kind.COps{cotile, coTileSpeedup} <- getsState scops
+  cops@Kind.COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorSk <- actorSkillsClient source
   let lid = blid sb
@@ -988,12 +988,8 @@ moveOrRunAid run source dir = do
          -- This could be, e.g., inaccessible open door with an item in it,
          -- but for this case to happen, it would also need to be unwalkable.
          assert `failure` "AI causes AlterBlockItem" `twith` (run, source, dir)
-       | not (Tile.isWalkable coTileSpeedup t)  -- not implied
-              && (Tile.isSuspect coTileSpeedup t
-                  || Tile.isOpenable cotile t
-                  || Tile.isClosable cotile t
-                  || Tile.isChangeable coTileSpeedup t) ->
-         -- No access, so search and/or alter the tile.
+       | not (Tile.isWalkable coTileSpeedup t) ->  -- not implied
+         -- Not empty, but alter skill suffices, so search or alter the tile.
          return $! Just $ RequestAnyAbility $ ReqAlter tpos Nothing
        | otherwise ->
          -- Boring tile, no point bumping into it, do WaitSer if really idle.

@@ -362,6 +362,7 @@ moveSearchAlterAid source dir = do
       spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos
+      alterMinWalk = Tile.alterMinWalk coTileSpeedup t
       runStopOrCmd
         -- Movement requires full access.
         | accessible cops lvl tpos =
@@ -371,12 +372,11 @@ moveSearchAlterAid source dir = do
         -- not implied by the lack of access.
         | not (Tile.isWalkable coTileSpeedup t)
           && (not (knownLsecret lvl)
-              || (isSecretPos lvl tpos  -- possible secrets here
-                  && (Tile.isSuspect coTileSpeedup t  -- not yet searched
-                      || Tile.hideAs cotile t /= t))  -- search again
-              || Tile.isOpenable cotile t
-              || Tile.isClosable cotile t
-              || Tile.isChangeable coTileSpeedup t)
+              || isSecretPos lvl tpos  -- possible secrets here
+                 && (Tile.isSuspect coTileSpeedup t  -- not yet searched
+                     || Tile.hideAs cotile t /= t)  -- search again
+              || alterMinWalk < 10
+              || alterMinWalk >= 10 && alterSkill >= alterMinWalk)
           = if | alterSkill < Tile.alterMinWalk coTileSpeedup t ->
                  Left $ showReqFailure AlterUnwalked
                | EM.member tpos $ lfloor lvl ->
