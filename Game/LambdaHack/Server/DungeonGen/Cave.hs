@@ -90,33 +90,29 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
     else return ([], [])
   minPlaceSize <- castDiceXY ldepth totalDepth cminPlaceSize
   maxPlaceSize <- castDiceXY ldepth totalDepth cmaxPlaceSize
-  let decideRoom :: (Point, Area) -> Rnd (Point, Either Area Area)
-      decideRoom (i, r) = do
-        -- Reserved for corridors and the global fence.
-        let innerArea = fromMaybe (assert `failure` (i, r)) $ shrink r
-        r' <- if i `elem` voidPlaces
-              then Left <$> mkVoidRoom innerArea
-              else Right <$> mkRoom minPlaceSize maxPlaceSize innerArea
-        return (i, r')
-  places0 <- mapM decideRoom gs
-  fence <- buildFenceRnd cops couterFenceTile subFullArea
   dnight <- chanceDice ldepth totalDepth cnightChance
   darkCorTile <- fromMaybe (assert `failure` cdarkCorTile)
                  <$> opick cdarkCorTile (const True)
   litCorTile <- fromMaybe (assert `failure` clitCorTile)
                 <$> opick clitCorTile (const True)
-  let addPl :: (TileMapEM, [Place], EM.EnumMap Point (Area, Area))
-            -> (Point, Either Area Area)
-            -> Rnd (TileMapEM, [Place], EM.EnumMap Point (Area, Area))
-      addPl (!m, !pls, !qls) (i, Left r) =
-        return (m, pls, EM.insert i (r, r) qls)
-      addPl (m, pls, qls) (i, Right r) = do
-        (tmap, place) <-
-          buildPlace cops kc dnight darkCorTile litCorTile ldepth totalDepth r
-        return ( EM.union tmap m
-               , place : pls
-               , EM.insert i (shrinkPlace cops (r, place)) qls )
-  (lplaces, dplaces, qplaces) <- foldM addPl (fence, [], EM.empty) places0
+  let decidePlace :: (TileMapEM, [Place], EM.EnumMap Point (Area, Area))
+                  -> (Point, Area)
+                  -> Rnd (TileMapEM, [Place], EM.EnumMap Point (Area, Area))
+      decidePlace (!m, !pls, !qls) (i, ar) = do
+        -- Reserved for corridors and the global fence.
+        let innerArea = fromMaybe (assert `failure` (i, ar)) $ shrink ar
+        if i `elem` voidPlaces
+        then do
+          r <- mkVoidRoom innerArea
+          return (m, pls, EM.insert i (r, r) qls)
+        else do
+          r <- mkRoom minPlaceSize maxPlaceSize innerArea
+          (tmap, place) <-
+            buildPlace cops kc dnight darkCorTile litCorTile ldepth totalDepth r
+          return ( EM.union tmap m
+                 , place : pls
+                 , EM.insert i (shrinkPlace cops (r, place)) qls )
+  (lplaces, dplaces, qplaces) <- foldM decidePlace (EM.empty, [], EM.empty) gs
   lcorridors <- do
     connects <- connectGrid lgrid
     let allConnects = connects `union` addedConnects  -- no duplicates
@@ -125,18 +121,18 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
     cs <- mapM connectPos allConnects
     let pickedCorTile = if dnight then darkCorTile else litCorTile
     return $! EM.unions (map (digCorridors pickedCorTile) cs)
-  -- Convert wall openings into doors, possibly.
   doorMap <- do
-   -- The hacks below are instead of unionWithKeyM, which is costly.
-   let mergeCor _ pl cor =
-        let hidden = Tile.hideAs cotile pl
-        in if hidden == pl then Nothing  -- boring tile, can't hide doors
-                           else Just (hidden, cor)
-       intersectionWithKeyMaybe combine =
-        EM.mergeWithKey combine (const EM.empty) (const EM.empty)
-       interCor = intersectionWithKeyMaybe mergeCor lplaces lcorridors  -- fast
-   mapWithKeyM (pickOpening cops kc lplaces litCorTile) interCor  -- very small
-  let dmap = EM.unions [doorMap, lplaces, lcorridors]
+    -- The hacks below are instead of unionWithKeyM, which is costly.
+    let mergeCor _ pl cor =
+          let hidden = Tile.hideAs cotile pl
+          in if hidden == pl then Nothing  -- boring tile, can't hide doors
+                             else Just (hidden, cor)
+        intersectionWithKeyMaybe combine =
+          EM.mergeWithKey combine (const EM.empty) (const EM.empty)
+        interCor = intersectionWithKeyMaybe mergeCor lplaces lcorridors  -- fast
+    mapWithKeyM (pickOpening cops kc lplaces litCorTile) interCor  -- very small
+  fence <- buildFenceRnd cops couterFenceTile subFullArea
+  let dmap = EM.unions [doorMap, lplaces, lcorridors, fence]  -- order matters
   return $! Cave {dkind, dmap, dplaces, dnight}
 
 shrinkPlace :: Kind.COps -> (Area, Place) -> (Area, Area)
