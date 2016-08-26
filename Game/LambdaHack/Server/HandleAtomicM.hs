@@ -3,6 +3,14 @@
 -- and sent to clients.
 module Game.LambdaHack.Server.HandleAtomicM
   ( cmdAtomicSemSer
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , addItemToActor, updateSclear, updateSlit
+  , invalidateLucidLid, invalidateLucidAid
+  , actorHasShine, itemAffectsShineRadius, itemAffectsPerRadius
+  , addPerActor, addPerActorAny, deletePerActor, deletePerActorAny
+  , invalidatePerActor, reconsiderPerActor, invalidatePerLid
+#endif
   ) where
 
 import Prelude ()

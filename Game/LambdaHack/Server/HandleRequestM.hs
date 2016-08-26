@@ -11,6 +11,14 @@
 module Game.LambdaHack.Server.HandleRequestM
   ( handleRequestAI, handleReqAI, handleRequestUI
   , reqMove, reqDisplace, reqGameExit
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , handleReqUI, setBWait, handleRequestTimed, handleRequestTimedCases
+  , switchLeader, addSmell, reqMelee, reqAlter, reqWait
+  , reqMoveItems, reqMoveItem, computeRndTimeout, reqProject, reqApply
+  , reqTrigger, triggerEffect, reqGameRestart, reqGameSave
+  , reqTactic, reqAutomate
+#endif
   ) where
 
 import Prelude ()
