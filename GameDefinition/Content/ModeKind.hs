@@ -317,7 +317,9 @@ rosterCoop = Roster
   { rosterList = [ playerAntiHero { fname = "Coral" }
                  , playerAntiHero { fname = "Amber"
                                   , fleaderMode = LeaderNull }
-                 , playerAnimal { fhasUI = True }
+                 , playerAnimal { fleaderMode =
+                                     LeaderUI $ AutoLeader False False
+                                , fhasUI = True }
                  , playerAnimal
                  , playerMonster
                  , playerMonster { fname = "Leaderless Monster Hive"
