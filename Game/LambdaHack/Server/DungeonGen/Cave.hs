@@ -8,6 +8,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import Data.Foldable (foldr')
 import Data.Key (mapWithKeyM)
 
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -112,7 +113,10 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                 return ( EM.union tmap m
                        , place : pls
                        , EM.insert i (shrinkPlace cops (r, place)) qls )
-        foldM decidePlace (EM.empty, [], EM.empty) gs
+        let foldlM' :: Monad m => (b -> a -> m b) -> b -> [a] -> m b
+            foldlM' f z0 xs = foldr' f' return xs z0
+             where f' x k z = f z x >>= k
+        foldlM' decidePlace (EM.empty, [], EM.empty) gs
   (lplaces, dplaces, qplaces) <- createPlaces lgrid
   let lcorridorsFun lgr@(gx, gy) = do
         addedConnects <-
