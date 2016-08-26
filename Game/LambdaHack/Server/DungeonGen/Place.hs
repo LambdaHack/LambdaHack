@@ -156,17 +156,17 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
 -- | Roll a legend of a place plan: a map from plan symbols to tile kinds.
 olegend :: Kind.COps -> GroupName TileKind
         -> Rnd (EM.EnumMap Char (Kind.Id TileKind))
-olegend Kind.COps{cotile=Kind.Ops{ofoldrWithKey, opick}} cgroup =
-  let getSymbols _ tk acc =
+olegend Kind.COps{cotile=Kind.Ops{ofoldlWithKey', opick}} cgroup =
+  let getSymbols !acc _ tk =
         maybe acc (const $ ES.insert (TK.tsymbol tk) acc)
           (lookup cgroup $ TK.tfreq tk)
-      symbols = ofoldrWithKey getSymbols ES.empty
-      getLegend s acc = do
+      symbols = ofoldlWithKey' getSymbols ES.empty
+      getLegend s !acc = do
         m <- acc
         tk <- fmap (fromMaybe $ assert `failure` (cgroup, s))
               $ opick cgroup $ (== s) . TK.tsymbol
         return $! EM.insert s tk m
-      legend = ES.foldr getLegend (return EM.empty) symbols
+      legend = ES.foldr' getLegend (return EM.empty) symbols
   in legend
 
 ooverride :: Kind.COps -> [(Char, GroupName TileKind)]

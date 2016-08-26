@@ -38,7 +38,7 @@ type ItemSeedDict = EM.EnumMap ItemId ItemSeed
 type UniqueSet = ES.EnumSet (Kind.Id ItemKind)
 
 serverDiscos :: Kind.COps -> Rnd (DiscoveryKind, DiscoveryKindRev)
-serverDiscos Kind.COps{coitem=Kind.Ops{obounds, ofoldrWithKey, okind}} = do
+serverDiscos Kind.COps{coitem=Kind.Ops{obounds, ofoldlWithKey', okind}} = do
   let ixs = map toEnum $ take (Ix.rangeSize obounds) [0..]
       shuffle :: Eq a => [a] -> Rnd [a]
       shuffle [] = return []
@@ -46,13 +46,13 @@ serverDiscos Kind.COps{coitem=Kind.Ops{obounds, ofoldrWithKey, okind}} = do
         x <- oneOf l
         (x :) <$> shuffle (delete x l)
   shuffled <- shuffle ixs
-  let f kmKind _ (ikMap, ikRev, ix : rest) =
+  let f (!ikMap, !ikRev, ix : rest) kmKind _ =
         let kmMean = meanAspect $ okind kmKind
         in (EM.insert ix KindMean{..} ikMap, EM.insert kmKind ix ikRev, rest)
-      f ik  _ (ikMap, _, []) =
+      f (ikMap, _, []) ik  _ =
         assert `failure` "too short ixs" `twith` (ik, ikMap)
       (discoS, discoRev, _) =
-        ofoldrWithKey f (EM.empty, EM.empty, shuffled)
+        ofoldlWithKey' f (EM.empty, EM.empty, shuffled)
   return (discoS, discoRev)
 
 -- | Build an item with the given stats.
@@ -139,17 +139,18 @@ emptyFlavourMap = FlavourMap EM.empty
 
 -- | Assigns flavours to item kinds. Assures no flavor is repeated for the same
 -- symbol, except for items with only one permitted flavour.
-rollFlavourMap :: S.Set Flavour -> Kind.Id ItemKind -> ItemKind
+rollFlavourMap :: S.Set Flavour
                -> Rnd ( EM.EnumMap (Kind.Id ItemKind) Flavour
                       , EM.EnumMap Char (S.Set Flavour) )
+               -> Kind.Id ItemKind -> ItemKind
                -> Rnd ( EM.EnumMap (Kind.Id ItemKind) Flavour
                       , EM.EnumMap Char (S.Set Flavour) )
-rollFlavourMap fullFlavSet key ik rnd =
+rollFlavourMap fullFlavSet rnd key ik =
   let flavours = IK.iflavour ik
   in if length flavours == 1
      then rnd
      else do
-       (assocs, availableMap) <- rnd
+       (!assocs, !availableMap) <- rnd
        let available =
              EM.findWithDefault fullFlavSet (IK.isymbol ik) availableMap
            proper = S.fromList flavours `S.intersection` available
@@ -163,10 +164,10 @@ rollFlavourMap fullFlavSet key ik rnd =
 
 -- | Randomly chooses flavour for all item kinds for this game.
 dungeonFlavourMap :: Kind.COps -> Rnd FlavourMap
-dungeonFlavourMap Kind.COps{coitem=Kind.Ops{ofoldrWithKey}} =
+dungeonFlavourMap Kind.COps{coitem=Kind.Ops{ofoldlWithKey'}} =
   liftM (FlavourMap . fst) $
-    ofoldrWithKey (rollFlavourMap (S.fromList stdFlav))
-                  (return (EM.empty, EM.empty))
+    ofoldlWithKey' (rollFlavourMap (S.fromList stdFlav))
+                   (return (EM.empty, EM.empty))
 
 -- | Reverse item map, for item creation, to keep items and item identifiers
 -- in bijection.

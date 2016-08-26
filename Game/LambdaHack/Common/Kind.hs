@@ -75,7 +75,10 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
                     frequency [ i | (i, k) <- kindFreq M.! cgroup, p k ]
                     -}
              _ -> return Nothing
-       , ofoldrWithKey = \f z -> foldr (uncurry f) z $ EM.assocs content
+       , ofoldlWithKey' = \f z -> foldl' (\b (k, a) -> f b k a) z
+                                  $ EM.assocs content
+       , ofoldrWithKey = \f z -> foldr (uncurry f) z
+                                 $ EM.assocs content
        , ofoldrGroup = \cgroup f z ->
            case M.lookup cgroup kindFreq of
              Just freq -> foldr (\(p, (i, a)) -> f p i a) z freq

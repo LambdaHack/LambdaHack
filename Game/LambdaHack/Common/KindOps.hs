@@ -28,6 +28,8 @@ data Ops a = Ops
                                     --   and satisfying a predicate
   , ofoldrWithKey :: !(forall b. (Id a -> a -> b -> b) -> b -> b)
                                     -- ^ fold over all content elements of @a@
+  , ofoldlWithKey' :: !(forall b. (b -> Id a -> a -> b) -> b -> b)
+                                    -- ^ fold strictly over all content @a@
   , ofoldrGroup   :: !(forall b.
                      GroupName a -> (Int -> Id a -> a -> b -> b) -> b -> b)
                                     -- ^ fold over the given group only
