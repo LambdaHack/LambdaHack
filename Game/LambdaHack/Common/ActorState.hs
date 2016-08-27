@@ -61,8 +61,7 @@ actorAssocs p lid s =
   let f (_, b) = blid b == lid && p (bfid b)
   in filter f $ EM.assocs $ sactorD s
 
-actorList :: (FactionId -> Bool) -> LevelId -> State
-          -> [Actor]
+actorList :: (FactionId -> Bool) -> LevelId -> State -> [Actor]
 actorList p lid s =
   let f b = blid b == lid && p (bfid b)
   in filter f $ EM.elems $ sactorD s
@@ -106,8 +105,11 @@ posToActors :: Point -> LevelId -> State -> [(ActorId, Actor)]
 posToActors pos lid s =
   let as = actorAssocs (const True) lid s
       l = filter (\(_, b) -> bpos b == pos) as
-  in assert (length l <= 1 || all (bproj . snd) l
+  in
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+     assert (length l <= 1 || all (bproj . snd) l
              `blame` "many actors at the same position" `twith` l)
+#endif
      l
 
 nearbyFreePoints :: Int
