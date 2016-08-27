@@ -3,7 +3,7 @@ module Game.LambdaHack.Common.PointArray
   ( Array(..), pindex, punindex
   , (!), accessI, (//)
   , replicateA, replicateMA, generateA, generateMA, unfoldrNA, sizeA
-  , foldlA', ifoldlA', ifoldrA', mapA, imapA, mapWithKeyMA
+  , foldrA, foldlA', ifoldrA, ifoldrA', ifoldlA', mapA, imapA, mapWithKeyMA
   , safeSetA, unsafeSetA, unsafeUpdateA, unsafeWriteA, unsafeWriteManyA
   , minIndexA, minLastIndexA, minIndexesA, maxIndexA, maxLastIndexA, forceA
   ) where
@@ -139,6 +139,12 @@ sizeA :: Array c -> (X, Y)
 {-# INLINE sizeA #-}
 sizeA Array{..} = (axsize, aysize)
 
+-- | Fold right over an array.
+foldrA :: Enum c => (c -> a -> a) -> a -> Array c -> a
+{-# INLINE foldrA #-}
+foldrA f z0 Array{..} =
+  U.foldr (\c a-> f (cnv c) a) z0 avector
+
 -- | Fold left strictly over an array.
 foldlA' :: Enum c => (a -> c -> a) -> a -> Array c -> a
 {-# INLINE foldlA' #-}
@@ -151,6 +157,13 @@ ifoldlA' :: Enum c => (a -> Point -> c -> a) -> a -> Array c -> a
 {-# INLINE ifoldlA' #-}
 ifoldlA' f z0 Array{..} =
   U.ifoldl' (\a n c -> f a (punindex axsize n) (cnv c)) z0 avector
+
+-- | Fold right over an array
+-- (function applied to each element and its index).
+ifoldrA :: Enum c => (Point -> c -> a -> a) -> a -> Array c -> a
+{-# INLINE ifoldrA #-}
+ifoldrA f z0 Array{..} =
+  U.ifoldr (\n c a -> f (punindex axsize n) (cnv c) a) z0 avector
 
 -- | Fold right strictly over an array
 -- (function applied to each element and its index).
@@ -217,10 +230,10 @@ minIndexesA :: Enum c => Array c -> [Point]
 {-# INLINE minIndexesA #-}
 minIndexesA Array{..} =
   map (punindex axsize)
-  $ Bundle.foldl' imin [] . Bundle.indexed . G.stream
+  $ Bundle.foldr imin [] . Bundle.indexed . G.stream
   $ avector
  where
-  imin acc (i, x) = i `seq` if x == minE then i : acc else acc
+  imin (i, x) acc = i `seq` if x == minE then i : acc else acc
   minE = cnv $ U.minimum avector
 
 -- | Yield the point coordinates of the first maximum element of the array.

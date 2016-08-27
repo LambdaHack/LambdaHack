@@ -264,14 +264,14 @@ closestTriggers onlyDir aid = do
   let allExplored = ES.size explored == EM.size dungeon
       -- If lid not explored, aid equips a weapon and so can leave level.
       lidExplored = ES.member (blid body) explored
-      f :: [(Int, Point)] -> Point -> Kind.Id TileKind -> [(Int, Point)]
-      f acc p t =
+      f :: Point -> Kind.Id TileKind -> [(Int, Point)] ->[(Int, Point)]
+      f p t acc =
         if Tile.isWalkable coTileSpeedup t && not (null $ Tile.causeEffects cotile t)
         then case Tile.ascendTo cotile t of
           [] ->
             -- Escape (or guard) only after exploring, for high score, etc.
             if isNothing onlyDir && allExplored
-            then (9999999, p) : acc  -- all from that level congregate here
+            then (9999999, p) : acc  -- all from level congregate here
             else acc
           l ->
             if not escape && allExplored
@@ -289,7 +289,7 @@ closestTriggers onlyDir aid = do
                        in maybe aiCond (\d -> d == (k > 0)) onlyDir
                  in map (,p) (filter g l) ++ acc
         else acc
-      triggersAll = PointArray.ifoldlA' f [] $ ltile lvl
+      triggersAll = PointArray.ifoldrA f [] $ ltile lvl
       -- Don't target stairs under the actor. Most of the time they
       -- are blocked and stay so, so we seek other stairs, if any.
       -- If no other stairs in this direction, let's wait here,
@@ -334,9 +334,11 @@ closestItems aid = do
   body <- getsState $ getActorBody aid
   lvl@Level{lfloor} <- getLevel $ blid body
   let items = EM.assocs lfloor
-      f :: [Point] -> Point -> Kind.Id TileKind -> [Point]
-      f acc p t = if Tile.isChangeable coTileSpeedup t then p : acc else acc
-      changeable = PointArray.ifoldlA' f [] $ ltile lvl
+      f :: Point -> Kind.Id TileKind -> [Point] -> [Point]
+      f p t acc = if Tile.isChangeable coTileSpeedup t
+                  then p : acc
+                  else acc
+      changeable = PointArray.ifoldrA f [] $ ltile lvl
   if null items && null changeable then return []
   else do
     bfs <- getCacheBfs aid
