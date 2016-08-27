@@ -89,10 +89,9 @@ fillBfs lalter alterSkill source PointArray.Array{..} =
         VM.unsafeWrite vThawed p (bfsDistance c)
         void $ U.unsafeFreeze vThawed
       bfs :: BfsDistance -> [PointI] -> ()  -- modifies the vector
-      bfs distance predK =
-        let distCompl = distance .&. complement minKnownBfs
-            processKnown :: PointI -> [PointI] -> [PointI]
-            processKnown pos succK2 =
+      bfs !distance !predK =
+        let processKnown :: PointI -> [PointI] -> [PointI]
+            processKnown !pos !succK2 =
               -- Terrible hack trigger warning!
               -- Unsafe ops inside @fKnown@ seem to be OK, for no particularly
               -- clear reason. The array value given to each p depends on
@@ -107,16 +106,19 @@ fillBfs lalter alterSkill source PointArray.Array{..} =
               -- strict version inside the ST monad. So it uses little memory
               -- and is fast.
               let fKnown :: [PointI] -> VectorI -> [PointI]
-                  fKnown l move =
-                    let p = pos + move
+                  fKnown !l !move =
+                    let !p = pos + move
                         visitedMove = accessI p /= apartBfs
                     in if visitedMove
                        then l
                        else let alter :: Word8
-                                alter = lalter `PointArray.accessI` p
+                                !alter = lalter `PointArray.accessI` p
                             in if | alterSkill < alter -> l
-                                  | alter == 1 -> unsafeWriteI p distCompl
-                                                  `seq` l
+                                  | alter == 1 ->
+                                      let distCompl =
+                                            distance .&. complement minKnownBfs
+                                      in unsafeWriteI p distCompl
+                                         `seq` l
                                   | otherwise -> unsafeWriteI p distance
                                                  `seq` p : l
               in foldl' fKnown succK2 movesI

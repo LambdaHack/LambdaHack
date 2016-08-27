@@ -68,7 +68,7 @@ createBfs canMove alterSkill aid = do
   let lid = blid b
   Level{lxsize, lysize} <- getLevel lid
   let !aInitial = PointArray.replicateA lxsize lysize apartBfs
-  let !source = bpos b
+      !source = bpos b
       !_ = PointArray.unsafeWriteA aInitial source minKnownBfs
   when canMove $ do
     salter <- getsClient salter
