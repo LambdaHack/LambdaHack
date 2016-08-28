@@ -8,6 +8,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import Control.Concurrent.Async
 import System.Environment (getArgs)
 
 import TieKnot
@@ -17,4 +18,5 @@ import TieKnot
 main :: IO ()
 main = do
   args <- getArgs
-  tieKnot args
+  a <- async $ tieKnot args
+  wait a
