@@ -41,21 +41,16 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 
-invalidateBfs :: ActorId
-              -> EM.EnumMap ActorId BfsAndPath
-              -> EM.EnumMap ActorId BfsAndPath
-invalidateBfs aid = EM.insert aid BfsInvalid
-
 invalidateBfsAid :: MonadClient m => ActorId -> m ()
 invalidateBfsAid aid =
-  modifyClient $ \cli -> cli {sbfsD = invalidateBfs aid (sbfsD cli)}
+  modifyClient $ \cli -> cli {sbfsD = EM.insert aid BfsInvalid (sbfsD cli)}
 
 invalidateBfsLid :: MonadClient m => LevelId -> m ()
 invalidateBfsLid lid = do
   side <- getsClient sside
-  ass <- getsState $ actorAssocs (== side) lid
-  let as = map fst . filter (not . bproj . snd) $ ass
-  mapM_ invalidateBfsAid as
+  let f (_, b) = blid b == lid && bfid b == side && not (bproj b)
+  as <- getsState $ filter f . EM.assocs . sactorD
+  mapM_ (invalidateBfsAid . fst) as
 
 invalidateBfsAll :: MonadClient m => m ()
 invalidateBfsAll =

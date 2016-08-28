@@ -103,8 +103,8 @@ bagAssocsK s bag =
 -- | Finds all actors at a position on the current level.
 posToActors :: Point -> LevelId -> State -> [(ActorId, Actor)]
 posToActors pos lid s =
-  let as = actorAssocs (const True) lid s
-      l = filter (\(_, b) -> bpos b == pos) as
+  let f (_, b) = blid b == lid && bpos b == pos
+      l = filter f $ EM.assocs $ sactorD s
   in
 #ifdef WITH_EXPENSIVE_ASSERTIONS
      assert (length l <= 1 || all (bproj . snd) l
@@ -117,7 +117,7 @@ nearbyFreePoints :: Int
                  -> [Point]
 nearbyFreePoints ntries f start lid s =
   let lvl@Level{lxsize, lysize} = sdungeon s EM.! lid
-      as = actorList (const True) lid s
+      as = filter (\b -> blid b == lid) $ EM.elems $ sactorD s
       good p = f (lvl `at` p)
                && Tile.isWalkable (Kind.coTileSpeedup $ scops s) (lvl `at` p)
                && unoccupied as p
