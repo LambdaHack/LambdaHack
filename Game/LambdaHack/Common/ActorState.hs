@@ -14,8 +14,7 @@ module Game.LambdaHack.Common.ActorState
   , tryFindHeroK, getLocalTime, itemPrice, regenCalmDelta
   , actorInAmbient, actorSkills, dispEnemy, fullAssocs, itemToFull
   , goesIntoEqp, goesIntoInv, goesIntoSha, eqpOverfull, eqpFreeN
-  , storeFromC, lidFromC, aidFromC, hasCharge
-  , strongestMelee, isMelee
+  , storeFromC, lidFromC, aidFromC
   ) where
 
 import Prelude ()
@@ -25,14 +24,11 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import Data.Int (Int64)
-import qualified Data.Ord as Ord
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
-import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -420,50 +416,3 @@ aidFromC CFloor{} = Nothing
 aidFromC CEmbed{} = Nothing
 aidFromC (CActor aid _) = Just aid
 aidFromC c@CTrunk{} = assert `failure` c
-
-hasCharge :: Time -> ItemFull -> Bool
-hasCharge localTime itemFull@ItemFull{..} =
-  let timeout = aTimeout $ aspectRecordFull itemFull
-      timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
-      charging startT = timeShift startT timeoutTurns > localTime
-      it1 = filter charging itemTimer
-  in length it1 < itemK
-
-strMelee :: Bool -> Time -> ItemFull -> Maybe Int
-strMelee effectBonus localTime itemFull =
-  let durable = IK.Durable `elem` jfeature (itemBase itemFull)
-      recharged = hasCharge localTime itemFull
-      -- We assume extra weapon effects are useful and so such
-      -- weapons are preferred over weapons with no effects.
-      -- If the player doesn't like a particular weapon's extra effect,
-      -- he has to manage this manually.
-      p (IK.Hurt d) = [Dice.meanDice d]
-      p (IK.Burn d) = [Dice.meanDice d]
-      p IK.ELabel{} = []
-      p IK.OnSmash{} = []
-      -- Hackish extra bonus to force Summon as first effect used
-      -- before Calm of enemy is depleted.
-      p (IK.Recharging IK.Summon{}) = [999 | recharged && effectBonus]
-      -- We assume the weapon is still worth using, even if some effects
-      -- are charging; in particular, we assume Hurt or Burn are not
-      -- under Recharging.
-      p IK.Recharging{} = [100 | recharged && effectBonus]
-      p IK.Temporary{} = []
-      p IK.Unique = []
-      p IK.Periodic = []
-      p _ = [100 | effectBonus]
-      psum = sum (strengthEffect p itemFull)
-  in if not (isMelee $ itemBase $ itemFull) || psum == 0
-     then Nothing
-     else Just $ psum + if durable then 1000 else 0
-
-strongestMelee :: Bool -> Time -> [(ItemId, ItemFull)]
-               -> [(Int, (ItemId, ItemFull))]
-strongestMelee effectBonus localTime is =
-  let f = strMelee effectBonus localTime
-      g (iid, itemFull) = (\v -> (v, (iid, itemFull))) <$> f itemFull
-  in sortBy (flip $ Ord.comparing fst) $ mapMaybe g is
-
--- TODO: take into account incriptions, when implemented
-isMelee :: Item -> Bool
-isMelee item = IK.Meleeable `elem` jfeature item

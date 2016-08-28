@@ -389,17 +389,14 @@ drawLeaderDamage width = do
                    (T.unpack t)
   stats <- case mleader of
     Just leader -> do
-      actorSk <- actorSkillsClient leader
-      b <- getsState $ getActorBody leader
-      localTime <- getsState $ getLocalTime (blid b)
       allAssocs <- fullAssocsClient leader [CEqp, COrgan]
+      actorSk <- actorSkillsClient leader
+      sb <- getsState $ getActorBody leader
+      localTime <- getsState $ getLocalTime (blid sb)
       actorAspect <- getsClient sactorAspect
-      let ar = case EM.lookup leader actorAspect of
-            Just aspectRecord -> aspectRecord
-            Nothing -> assert `failure` leader
-          activeItems = map snd allAssocs
-          calmE = calmEnough b ar
-          forced = assert (not $ bproj b) False
+      let ar = actorAspect EM.! leader
+          calmE = calmEnough sb ar
+          forced = assert (not $ bproj sb) False
           permitted = permittedPrecious calmE forced
           preferredPrecious = either (const False) id . permitted
           strongest = strongestMelee False localTime allAssocs
@@ -420,7 +417,7 @@ drawLeaderDamage width = do
                     Nothing -> "0"
                     Just dice -> tshow dice
                   bonus = aHurtMelee ar
-                  unknownBonus = unknownMelee activeItems
+                  unknownBonus = unknownMelee $ map snd allAssocs
                   tbonus = if bonus == 0
                            then if unknownBonus then "+?" else ""
                            else (if bonus > 0 then "+" else "")

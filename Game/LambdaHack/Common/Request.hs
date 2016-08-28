@@ -15,7 +15,6 @@ import Game.LambdaHack.Common.Prelude
 
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest

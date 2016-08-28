@@ -7,6 +7,7 @@ module Game.LambdaHack.Common.ItemStrongest
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
   , unknownMelee, filterRecharging, stripRecharging, stripOnSmash
+  , hasCharge, strongestMelee, isMelee
   ) where
 
 import Prelude ()
@@ -101,11 +102,7 @@ strengthFromEqpSlot eqpSlot itemFull =
     EqpSlotAddSpeed -> aSpeed
     EqpSlotAddSight -> aSight
     EqpSlotLightSource -> aShine
-    EqpSlotWeapon ->
-      let p (Hurt d) = [Dice.meanDice d]
-          p (Burn d) = [Dice.meanDice d]
-          p _ = []
-      in sum (strengthEffect p itemFull)
+    EqpSlotWeapon -> fromMaybe 0 $ strMelee True maxBound itemFull
     EqpSlotMiscAbility ->
       EM.findWithDefault 0 Ability.AbWait aSkills
       + EM.findWithDefault 0 Ability.AbMoveItem aSkills
@@ -116,6 +113,52 @@ strengthFromEqpSlot eqpSlot itemFull =
     EqpSlotAbAlter -> EM.findWithDefault 0 Ability.AbAlter aSkills
     EqpSlotAbProject -> EM.findWithDefault 0 Ability.AbProject aSkills
     EqpSlotAbApply -> EM.findWithDefault 0 Ability.AbApply aSkills
+
+strMelee :: Bool -> Time -> ItemFull -> Maybe Int
+strMelee effectBonus localTime itemFull =
+  let recharged = hasCharge localTime itemFull
+      -- We assume extra weapon effects are useful and so such
+      -- weapons are preferred over weapons with no effects.
+      -- If the player doesn't like a particular weapon's extra effect,
+      -- he has to manage this manually.
+      p (Hurt d) = [Dice.meanDice d]
+      p (Burn d) = [Dice.meanDice d]
+      p ELabel{} = []
+      p OnSmash{} = []
+      -- Hackish extra bonus to force Summon as first effect used
+      -- before Calm of enemy is depleted.
+      p (Recharging Summon{}) = [999 | recharged && effectBonus]
+      -- We assume the weapon is still worth using, even if some effects
+      -- are charging; in particular, we assume Hurt or Burn are not
+      -- under Recharging.
+      p Recharging{} = [100 | recharged && effectBonus]
+      p Temporary{} = []
+      p Unique = []
+      p Periodic = []
+      p _ = [100 | effectBonus]
+      psum = sum (strengthEffect p itemFull)
+  in if not (isMelee $ itemBase $ itemFull) || psum == 0
+     then Nothing
+     else Just psum
+
+hasCharge :: Time -> ItemFull -> Bool
+hasCharge localTime itemFull@ItemFull{..} =
+  let timeout = aTimeout $ aspectRecordFull itemFull
+      timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
+      charging startT = timeShift startT timeoutTurns > localTime
+      it1 = filter charging itemTimer
+  in length it1 < itemK
+
+strongestMelee :: Bool -> Time -> [(ItemId, ItemFull)]
+               -> [(Int, (ItemId, ItemFull))]
+strongestMelee effectBonus localTime is =
+  let f = strMelee effectBonus localTime
+      g (iid, itemFull) = (\v -> (v, (iid, itemFull))) <$> f itemFull
+  in sortBy (flip $ Ord.comparing fst) $ mapMaybe g is
+
+-- TODO: take into account incriptions, when implemented
+isMelee :: Item -> Bool
+isMelee item = Meleeable `elem` jfeature item
 
 strongestSlotNoFilter :: EqpSlot -> [(ItemId, ItemFull)]
                       -> [(Int, (ItemId, ItemFull))]

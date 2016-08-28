@@ -26,6 +26,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -253,10 +254,8 @@ pickWeaponClient source target = do
   sb <- getsState $ getActorBody source
   localTime <- getsState $ getLocalTime (blid sb)
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup source actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` source
-      allAssocs = eqpAssocs ++ bodyAssocs
+  let allAssocs = eqpAssocs ++ bodyAssocs
+      ar = actorAspect EM.! source
       calmE = calmEnough sb ar
       forced = assert (not $ bproj sb) False
       permitted = permittedPrecious calmE forced
