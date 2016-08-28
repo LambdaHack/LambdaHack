@@ -29,9 +29,8 @@ import Game.LambdaHack.Common.Point
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { sview        :: !TextView                    -- ^ the widget to draw to
-  , stags        :: !(EM.EnumMap Color.Attr TextTag)  -- ^ text color tags for fg/bg
-  , ssyncDisplay :: !(MVar ())
+  { sview :: !TextView                    -- ^ the widget to draw to
+  , stags :: !(EM.EnumMap Color.Attr TextTag)  -- ^ text color tags for fg/bg
   }
 
 data GtkFrame = GtkFrame
@@ -71,7 +70,6 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   sview <- textViewNewWithBuffer tb
   textViewSetEditable sview False
   textViewSetCursorVisible sview False
-  ssyncDisplay <- newEmptyMVar
   let sess = FrontendSession{..}
   rf <- createRawFrontend (display sess) shutdown
   putMVar rfMVar rf
@@ -207,19 +205,13 @@ display :: FrontendSession  -- ^ frontend session data
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
 display sess@FrontendSession{..} frame = do
-  postGUIAsync $ do
-    let GtkFrame{..} = evalFrame sess frame
-        defAttr = stags EM.! Color.defAttr
-        attrs = zip [0..] gfAttr
+  let !GtkFrame{..} = evalFrame sess frame
+      !defAttr = stags EM.! Color.defAttr
+      attrs = zip [0..] gfAttr
+  postGUISync $ do
     tb <- textViewGetBuffer sview
     textBufferSetByteString tb gfChar
     mapM_ (setTo tb defAttr) attrs
-    -- We compute evalFrame on the bound gtk thread, but give it ample time
-    -- to refresh view by calling it asynchronously and waiting here
-    -- until it's done. This is manual sync instead of the frame-dropping
-    -- (when under load) sync via @postGUISync@.
-    putMVar ssyncDisplay ()
-  void $ takeMVar ssyncDisplay
 
 setTo :: TextBuffer -> TextTag -> (Int, [TextTag]) -> IO ()
 setTo _ _ (_,  []) = return ()
