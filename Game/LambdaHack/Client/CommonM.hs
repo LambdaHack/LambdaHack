@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.CommonM
   ( getPerFid, aidTgtToPos, aidTgtAims, makeLine
   , partAidLeader, partActorLeader, partPronounLeader
-  , actorSkillsClient, updateItemSlot, fullAssocsClient, activeItemsClient
+  , actorSkillsClient, updateItemSlot, fullAssocsClient
   , itemToFullClient, pickWeaponClient, enemyMaxAb, updateSalter, createSalter
   , aspectRecordFromItemClient, aspectRecordFromActorClient, createSactorAspect
   ) where
@@ -230,11 +230,6 @@ fullAssocsClient aid cstores = do
   discoKind <- getsClient sdiscoKind
   discoAspect <- getsClient sdiscoAspect
   getsState $ fullAssocs cops discoKind discoAspect aid cstores
-
-activeItemsClient :: MonadClient m => ActorId -> m [ItemFull]
-activeItemsClient aid = do
-  activeAssocs <- fullAssocsClient aid [CEqp, COrgan]
-  return $! map snd activeAssocs
 
 itemToFullClient :: MonadClient m => m (ItemId -> ItemQuant -> ItemFull)
 itemToFullClient = do

@@ -393,7 +393,8 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
       b = actorTemplate trunkId bsymbol bname bpronoun bcolor diffHP calm
                         pos lid time bfid
       -- Insert the trunk as the actor's organ.
-      withTrunk = b {borgan = EM.singleton trunkId (itemK, itemTimer)}
+      withTrunk = b { borgan = EM.singleton trunkId (itemK, itemTimer)
+                    , bweapon = if isMelee itemBase then 1 else 0 }
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
   execUpdAtomic $ UpdCreateActor aid (tweakBody withTrunk) [(trunkId, itemBase)]

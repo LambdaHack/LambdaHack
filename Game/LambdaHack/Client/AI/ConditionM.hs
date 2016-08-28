@@ -133,15 +133,13 @@ threatDistList aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allAtWar <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
-  let strongActor (aid2, b2) = do
-        let ar = case EM.lookup aid2 actorAspect of
-              Just aspectRecord -> aspectRecord
-              Nothing -> assert `failure` aid2
-        actorMaxSkE <- enemyMaxAb aid2
-        let nonmoving = EM.findWithDefault 0 Ability.AbMove actorMaxSkE <= 0
-        return $! not (hpTooLow b2 ar || nonmoving)
-  allThreats <- filterM strongActor allAtWar
-  let addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
+  let strongActor (aid2, b2) =
+        let ar = actorAspect EM.! aid2
+            actorMaxSkE = aSkills ar
+            nonmoving = EM.findWithDefault 0 Ability.AbMove actorMaxSkE <= 0
+        in not (hpTooLow b2 ar || nonmoving)
+      allThreats = filter strongActor allAtWar
+      addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
   return $ sortBy (comparing fst) $ map addDist allThreats
 
 -- | Require the actor blocks the paths of any of his party members.
@@ -336,24 +334,19 @@ condMeleeBadM aid = do
           \b1 -> chessDist (bpos b1) tgtPos <= 3
         _ -> const False
       closeFriends = filter (closeEnough . snd) friends
-      strongActor (aid2, b2) = do
-        let ar = case EM.lookup aid2 actorAspect of
-              Just aspectRecord -> aspectRecord
-              Nothing -> assert `failure` aid2
-        actorMaxSk2 <- enemyMaxAb aid2
-        let condUsableWeapon2 = bweapon b >= 0
+      strongActor (aid2, b2) =
+        let ar = actorAspect EM.! aid2
+            actorMaxSk2 = aSkills ar
+            condUsableWeapon2 = bweapon b >= 0
             canMelee2 = EM.findWithDefault 0 Ability.AbMelee actorMaxSk2 > 0
             hpGood = not $ hpTooLow b2 ar
-        return $! hpGood && condUsableWeapon2 && canMelee2
-  strongCloseFriends <- filterM strongActor closeFriends
-  let noFriendlyHelp = length closeFriends < 3
+        in hpGood && condUsableWeapon2 && canMelee2
+      strongCloseFriends = filter strongActor closeFriends
+      noFriendlyHelp = length closeFriends < 3
                        && null strongCloseFriends
                        && length friends > 1  -- solo fighters aggresive
                        && not (hpHuge b)  -- uniques, etc., aggresive
-      ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
-      actorMaxSk = aSkills ar
+      actorMaxSk = aSkills $ actorAspect EM.! aid
   return $ condNoUsableWeapon
            || EM.findWithDefault 0 Ability.AbMelee actorMaxSk <= 0
            || noFriendlyHelp  -- still not getting friends' help
