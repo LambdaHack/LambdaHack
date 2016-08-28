@@ -183,17 +183,15 @@ makeLine onlyFirst body fpos epsOld = do
 
 actorSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
 actorSkillsClient aid = do
-  actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
+  ar <- getsClient $ (EM.! aid) . sactorAspect
   body <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid body) . sfactionD
   side <- getsClient sside
   -- Newest Leader in _sleader, not yet in sfactionD.
-  mleader1 <- if side == bfid body then getsClient _sleader else return Nothing
-  let mleader2 = fst <$> gleader fact
-      mleader = mleader1 `mplus` mleader2
+  mleader <- if side == bfid body
+             then getsClient _sleader
+             else do
+               fact <- getsState $ (EM.! bfid body) . sfactionD
+               return $! fst <$> gleader fact
   getsState $ actorSkills mleader aid ar
 
 updateItemSlot :: MonadClient m

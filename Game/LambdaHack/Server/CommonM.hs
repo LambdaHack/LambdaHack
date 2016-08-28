@@ -455,8 +455,7 @@ pickWeaponServer source = do
 
 actorSkillsServer :: MonadServer m => ActorId -> m Ability.Skills
 actorSkillsServer aid  = do
-  actorAspect <- getsServer sactorAspect
-  let ar = actorAspect EM.! aid
+  ar <- getsServer $ (EM.! aid) . sactorAspect
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   let mleader = fst <$> gleader fact
