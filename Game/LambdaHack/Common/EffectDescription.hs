@@ -149,9 +149,10 @@ featureToSuff feat =
     Durable -> wrapInChevrons "durable"
     ToThrow tmod -> wrapInChevrons $ tmodToSuff "flies" tmod
     Identified -> ""
-    Applicable -> wrapInChevrons "applicable?"
-    Equipable -> wrapInChevrons "equipable?"
-    Precious -> wrapInChevrons "precious?"
+    Applicable -> wrapInChevrons "applied by default"
+    Equipable -> wrapInChevrons "equipped by default"
+    Meleeable -> wrapInChevrons "melee with by default"
+    Precious -> wrapInChevrons "seems precious"
     Tactic tactics -> "overrides tactics to" <+> tshow tactics
 
 affixBonus :: Int -> Text

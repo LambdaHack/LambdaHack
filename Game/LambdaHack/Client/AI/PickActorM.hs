@@ -14,7 +14,6 @@ import Data.Ord
 import Game.LambdaHack.Client.AI.ConditionM
 import Game.LambdaHack.Client.AI.PickTargetM
 import Game.LambdaHack.Client.Bfs
-import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability
@@ -86,12 +85,11 @@ pickActorToMove refreshTarget = do
                   Just aspectRecord -> aspectRecord
                   Nothing -> assert `failure` aid
                 actorMaxSk = aSkills ar
-            activeItems <- activeItemsClient aid
             condMeleeBad <- condMeleeBadM aid
             threatDistL <- threatDistList aid
             (fleeL, _) <- fleeList aid
             let abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
-                condNoUsableWeapon = all (not . isMelee) activeItems
+                condNoUsableWeapon = bweapon body == 0
                 canMelee = abInMaxSkill AbMelee && not condNoUsableWeapon
                 condCanFlee = not (null fleeL)
                 condThreatAtHandVeryClose =

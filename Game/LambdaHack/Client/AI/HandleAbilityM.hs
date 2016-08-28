@@ -66,7 +66,6 @@ actionStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy RequestAnyAbility)
 actionStrategy aid = do
   body <- getsState $ getActorBody aid
-  activeItems <- activeItemsClient aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
@@ -77,7 +76,7 @@ actionStrategy aid = do
   condOnTriggerable <- condOnTriggerableM aid
   condBlocksFriends <- condBlocksFriendsM aid
   condNoEqpWeapon <- condNoEqpWeaponM aid
-  let condNoUsableWeapon = all (not . isMelee) activeItems
+  let condNoUsableWeapon = bweapon body == 0
   condEnoughGear <- condEnoughGearM aid
   condFloorWeapon <- condFloorWeaponM aid
   condCanProject <- condCanProjectM False aid
@@ -278,19 +277,20 @@ pickup aid onlyWeapon = do
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
       calmE = calmEnough b ar
-      isWeapon (_, (_, itemFull)) = isMelee itemFull
+      isWeapon (_, (_, item)) = isMelee item
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
-      prepareOne (oldN, l4) ((_, (k, _)), (iid, itemFull)) =
+      prepareOne (oldN, l4) ((_, (k, _)), (iid, item)) =
         let n = oldN + k
             (newN, toCStore)
-              | calmE && goesIntoSha (itemBase itemFull) = (oldN, CSha)
-              | goesIntoEqp (itemBase itemFull) && eqpOverfull b n =
+              | calmE && goesIntoSha item = (oldN, CSha)
+              | goesIntoEqp item && eqpOverfull b n =
                 (oldN, if calmE then CSha else CInv)
-              | goesIntoEqp (itemBase itemFull) = (n, CEqp)
+              | goesIntoEqp item = (n, CEqp)
               | otherwise = (oldN, CInv)
         in (newN, (iid, k, CGround, toCStore) : l4)
-      (_, prepared) = foldl' prepareOne (0, []) $ filterWeapon benItemL
+      (_, prepared) = foldl' prepareOne (0, [])
+                      $ filterWeapon $ map (second (second itemBase)) benItemL
   return $! if null prepared
             then reject
             else returN "pickup" $ ReqMoveItems prepared
@@ -697,7 +697,7 @@ projectItem aid = do
                                Just (_, ben) -> ben
                            * (if recharged then 1 else 0)
                 in if -- Melee weapon is usually needed in hand.
-                      not (isMelee itemFull)
+                      not (isMelee itemBase)
                       && benR < 0
                       && trange >= chessDist (bpos b) fpos
                    then Just ( -benR * rangeMult `div` 10

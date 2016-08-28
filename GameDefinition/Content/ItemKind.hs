@@ -817,7 +817,7 @@ buckler = ItemKind
                , Recharging (PushActor (ThrowMod 200 50))
                , EqpSlot EqpSlotAddArmorMelee ]
   , ifeature = [ toVelocity 40  -- unwieldy to throw
-               , Durable, Identified, Equipable ]
+               , Durable, Identified, Equipable, Meleeable ]
   , idesc    = "Heavy and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too small to intercept projectiles with."
   , ikit     = []
   }
@@ -832,7 +832,7 @@ shield = buckler
   , ieffects = [ Hurt (1 * d 1), Recharging (PushActor (ThrowMod 400 50))
                , EqpSlot EqpSlotAddArmorMelee ]
   , ifeature = [ toVelocity 30  -- unwieldy to throw
-               , Durable, Identified, Equipable]
+               , Durable, Identified, Equipable, Meleeable ]
   , idesc    = "Large and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
   }
 
@@ -852,7 +852,7 @@ dagger = ItemKind
                , AddHurtRanged (-60) ]  -- as powerful as a dart
   , ieffects = [Hurt (6 * d 1), EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 40  -- ensuring it hits with the tip costs speed
-               , Durable, Identified, Equipable ]
+               , Durable, Identified, Equipable, Meleeable ]
   , idesc    = "A short dagger for thrusting and parrying blows. Does not penetrate deeply, but is hard to block. Especially useful in conjunction with a larger weapon."
   , ikit     = []
   }
@@ -888,7 +888,7 @@ hammer = ItemKind
                , AddHurtRanged (-80) ]  -- as powerful as a dart
   , ieffects = [Hurt (8 * d 1), EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 20  -- ensuring it hits with the sharp tip costs
-               , Durable, Identified, Equipable ]
+               , Durable, Identified, Equipable, Meleeable ]
   , idesc    = "It may not cause grave wounds, but neither does it glance off nor ricochet. Great sidearm for opportunistic blows against armored foes."
   , ikit     = []
   }
@@ -920,7 +920,7 @@ sword = ItemKind
   , iaspects = []
   , ieffects = [Hurt (10 * d 1), EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 5  -- ensuring it hits with the tip costs speed
-               , Durable, Identified, Equipable ]
+               , Durable, Identified, Equipable, Meleeable ]
   , idesc    = "Difficult to master; deadly when used effectively. The steel is particularly hard and keen, but rusts quickly without regular maintenance."
   , ikit     = []
   }
@@ -955,7 +955,7 @@ halberd = ItemKind
   , iaspects = [AddArmorMelee $ 1 + dl 3 |*| 5]
   , ieffects = [Hurt (12 * d 1), EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 5  -- not balanced
-               , Durable, Identified, Equipable ]
+               , Durable, Identified, Equipable, Meleeable ]
   , idesc    = "An improvised but deadly weapon made of a blade from a scythe attached to a long pole."
   , ikit     = []
   }

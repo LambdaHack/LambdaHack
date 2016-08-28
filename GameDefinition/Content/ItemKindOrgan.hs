@@ -35,7 +35,7 @@ fist = ItemKind
   , iweight  = 2000
   , iaspects = []
   , ieffects = [Hurt (4 * d 1)]
-  , ifeature = [Durable, Identified]
+  , ifeature = [Durable, Identified, Meleeable]
   , idesc    = ""
   , ikit     = []
   }
@@ -181,7 +181,7 @@ thorn = fist
   , icount   = 2 + d 3
   , iverbHit = "impale"
   , ieffects = [Hurt (2 * d 1)]
-  , ifeature = [Identified]  -- not Durable
+  , ifeature = [Identified, Meleeable]  -- not Durable
   , idesc    = ""
   }
 boilingFissure = fist
@@ -190,7 +190,7 @@ boilingFissure = fist
   , icount   = 5 + d 5
   , iverbHit = "hiss at"
   , ieffects = [Burn $ 1 * d 1]
-  , ifeature = [Identified]  -- not Durable
+  , ifeature = [Identified, Meleeable]  -- not Durable
   , idesc    = ""
   }
 arsenicFissure = boilingFissure
@@ -212,7 +212,7 @@ beeSting = fist
   , iverbHit = "sting"
   , iaspects = [AddArmorMelee 90, AddArmorRanged 90]
   , ieffects = [Burn $ 2 * d 1, Paralyze 6, RefillHP 5]
-  , ifeature = [Identified]  -- not Durable
+  , ifeature = [Identified, Meleeable]  -- not Durable
   , idesc    = "Painful, but beneficial."
   }
 sting = fist
@@ -246,7 +246,7 @@ venomFang = fist
                , Recharging (toOrganNone "poisoned") ]
   , idesc    = ""
   }
-screechingBeak = armoredSkin
+screechingBeak = fist
   { iname    = "screeching beak"
   , ifreq    = [("screeching beak", 100)]
   , icount   = 1
@@ -343,7 +343,7 @@ nostril = armoredSkin
 
 -- * Assorted
 
-insectMortality = fist
+insectMortality = armoredSkin
   { iname    = "insect mortality"
   , ifreq    = [("insect mortality", 100)]
   , icount   = 1

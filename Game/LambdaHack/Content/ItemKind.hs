@@ -155,6 +155,7 @@ data Feature =
   | Identified              -- ^ the item starts identified
   | Applicable              -- ^ AI and UI flag: consider applying
   | Equipable               -- ^ AI and UI flag: consider equipping
+  | Meleeable               -- ^ AI and UI flag: consider meleeing with
   | Precious                -- ^ AI and UI flag: don't risk identifying by use
                             --   also, can't throw or apply if not calm enough;
   | Tactic !Tactic          -- ^ overrides actor's tactic (TODO)

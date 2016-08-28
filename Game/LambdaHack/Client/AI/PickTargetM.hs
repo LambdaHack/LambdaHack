@@ -115,8 +115,7 @@ targetStrategy aid = do
   -- wounded or alone actors, perhaps only until they are shot first time,
   -- and only if they can shoot at the moment)
   canEscape <- factionCanEscape (bfid b)
-  activeItems <- activeItemsClient aid
-  let condNoUsableWeapon = all (not . isMelee) activeItems
+  let condNoUsableWeapon = bweapon b == 0
       canSmell = aSmell ar > 0
       meleeNearby | canEscape = nearby `div` 2  -- not aggresive
                   | otherwise = nearby

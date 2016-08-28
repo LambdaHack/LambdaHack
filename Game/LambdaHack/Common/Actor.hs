@@ -68,6 +68,7 @@ data Actor = Actor
   , borgan        :: !ItemBag      -- ^ organs
   , beqp          :: !ItemBag      -- ^ personal equipment
   , binv          :: !ItemBag      -- ^ personal inventory
+  , bweapon       :: !Int          -- ^ number of weapons among eqp and organs
 
     -- Assorted
   , bwait         :: !Bool         -- ^ is the actor waiting right now?
@@ -136,9 +137,10 @@ actorTemplate btrunk bsymbol bname bpronoun bcolor bhp bcalm
   let btrajectory = Nothing
       boldpos = Nothing
       boldlid = blid
+      borgan  = EM.empty
       beqp    = EM.empty
       binv    = EM.empty
-      borgan  = EM.empty
+      bweapon = 0
       bwait   = False
       bfidImpressed = bfid
       bfidOriginal = bfid
@@ -240,9 +242,10 @@ instance Binary Actor where
     put boldpos
     put blid
     put boldlid
-    put binv
-    put beqp
     put borgan
+    put beqp
+    put binv
+    put bweapon
     put btime
     put bwait
     put bfid
@@ -264,9 +267,10 @@ instance Binary Actor where
     boldpos <- get
     blid <- get
     boldlid <- get
-    binv <- get
-    beqp <- get
     borgan <- get
+    beqp <- get
+    binv <- get
+    bweapon <- get
     btime <- get
     bwait <- get
     bfid <- get

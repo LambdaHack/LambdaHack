@@ -449,9 +449,11 @@ strMelee effectBonus localTime itemFull =
       -- under Recharging.
       p IK.Recharging{} = [100 | recharged && effectBonus]
       p IK.Temporary{} = []
+      p IK.Unique = []
+      p IK.Periodic = []
       p _ = [100 | effectBonus]
       psum = sum (strengthEffect p itemFull)
-  in if not (isMelee itemFull) || psum == 0
+  in if not (isMelee $ itemBase $ itemFull) || psum == 0
      then Nothing
      else Just $ psum + if durable then 1000 else 0
 
@@ -462,13 +464,6 @@ strongestMelee effectBonus localTime is =
       g (iid, itemFull) = (\v -> (v, (iid, itemFull))) <$> f itemFull
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe g is
 
-isMelee :: ItemFull -> Bool
-isMelee itemFull =
-  let p IK.Hurt{} = True
-      p IK.Burn{} = True
-      p _ = False
-      durable = IK.Durable `elem` jfeature (itemBase itemFull)
-  in case itemDisco itemFull of
-    Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}} ->
-      any p ieffects && durable
-    Nothing -> False
+-- TODO: take into account incriptions, when implemented
+isMelee :: Item -> Bool
+isMelee item = IK.Meleeable `elem` jfeature item

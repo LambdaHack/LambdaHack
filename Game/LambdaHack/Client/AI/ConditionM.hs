@@ -159,21 +159,23 @@ condBlocksFriendsM aid = do
 -- | Require the actor stands over a weapon that would be auto-equipped.
 condFloorWeaponM :: MonadClient m => ActorId -> m Bool
 condFloorWeaponM aid = do
-  floorAssocs <- fullAssocsClient aid [CGround]
+  floorAssocs <- getsState $ getActorAssocs aid CGround
   let lootIsWeapon = any (isMelee . snd) floorAssocs
   return lootIsWeapon  -- keep it lazy
 
 -- | Check whether the actor has no weapon in equipment.
 condNoEqpWeaponM :: MonadClient m => ActorId -> m Bool
 condNoEqpWeaponM aid = do
-  allAssocs <- fullAssocsClient aid [CEqp]
-  return $ all (not . isMelee . snd) allAssocs  -- keep it lazy
+  eqpAssocs <- getsState $ getActorAssocs aid CEqp
+  return $ all (not . isMelee . snd) eqpAssocs  -- keep it lazy
 
 -- | Check whether the actor has enough gear to go look for enemies.
+-- We assume weapons is equipment are better than any among organs
+-- or at least provide some essential diversity.
 condEnoughGearM :: MonadClient m => ActorId -> m Bool
 condEnoughGearM aid = do
-  eqpAssocs <- fullAssocsClient aid [CEqp]
-  invAssocs <- fullAssocsClient aid [CInv]
+  eqpAssocs <- getsState $ getActorAssocs aid CEqp
+  invAssocs <- getsState $ getActorAssocs aid CInv
   return $ any (isMelee . snd) eqpAssocs
            || length (eqpAssocs ++ invAssocs) >= 5
     -- keep it lazy
@@ -323,8 +325,7 @@ condMeleeBadM aid = do
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  activeItems <- activeItemsClient aid
-  let condNoUsableWeapon = all (not . isMelee) activeItems
+  let condNoUsableWeapon = bweapon b == 0
       friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularAssocs friendlyFid (blid b)
   let closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
@@ -340,8 +341,7 @@ condMeleeBadM aid = do
               Just aspectRecord -> aspectRecord
               Nothing -> assert `failure` aid2
         actorMaxSk2 <- enemyMaxAb aid2
-        activeItems2 <- activeItemsClient aid2
-        let condUsableWeapon2 = any isMelee activeItems2
+        let condUsableWeapon2 = bweapon b >= 0
             canMelee2 = EM.findWithDefault 0 Ability.AbMelee actorMaxSk2 > 0
             hpGood = not $ hpTooLow b2 ar
         return $! hpGood && condUsableWeapon2 && canMelee2
