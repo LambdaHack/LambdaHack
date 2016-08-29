@@ -115,6 +115,7 @@ strengthFromEqpSlot eqpSlot itemFull =
     EqpSlotAbApply -> EM.findWithDefault 0 Ability.AbApply aSkills
 
 strMelee :: Bool -> Time -> ItemFull -> Int
+{-# INLINE strMelee #-}
 strMelee effectBonus localTime itemFull =
   let recharged = hasCharge localTime itemFull
       -- We assume extra weapon effects are useful and so such
@@ -123,19 +124,20 @@ strMelee effectBonus localTime itemFull =
       -- he has to manage this manually.
       p (Hurt d) = [Dice.meanDice d]
       p (Burn d) = [Dice.meanDice d]
+      p _ | not effectBonus = []
       p ELabel{} = []
       p OnSmash{} = []
       -- Hackish extra bonus to force Summon as first effect used
       -- before Calm of enemy is depleted.
-      p (Recharging Summon{}) = [999 | recharged && effectBonus]
+      p (Recharging Summon{}) = [999 | recharged]
       -- We assume the weapon is still worth using, even if some effects
       -- are charging; in particular, we assume Hurt or Burn are not
       -- under Recharging.
-      p Recharging{} = [100 | recharged && effectBonus]
+      p Recharging{} = [100 | recharged]
       p Temporary{} = []
       p Unique = []
       p Periodic = []
-      p _ = [100 | effectBonus]
+      p _ = [100]
   in sum (strengthEffect p itemFull)
 
 hasCharge :: Time -> ItemFull -> Bool
