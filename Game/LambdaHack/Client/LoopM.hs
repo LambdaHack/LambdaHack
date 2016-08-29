@@ -153,7 +153,7 @@ loopUI copsClient sconfig sdebugCli = do
   loop
   debugPossiblyPrint $ "Frontend" <+> tshow side <+> "shutting down."
   frontendShutdown
-  debugPossiblyPrint $ "UI cliet" <+> tshow side <+> "stopped."
+  debugPossiblyPrint $ "UI client" <+> tshow side <+> "stopped."
  where
   loop = do
     cmd <- receiveResponse
