@@ -43,16 +43,16 @@ frontendDefense:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 8 --maxFps 60 --dumpInitRngs --automateAll --gameMode defense
 
 benchCampaign:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 47 --setMainRng 47
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 60 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 7 --setMainRng 7
 
 benchBattle:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode battle --setDungeonRng 47 --setMainRng 47
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 60 --automateAll --keepAutomated --gameMode battle --setDungeonRng 7 --setMainRng 7
 
 benchFrontendCampaign:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 47 --setMainRng 47
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --benchmark --stopAfter 60 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 7 --setMainRng 7
 
 benchFrontendBattle:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode battle --setDungeonRng 47 --setMainRng 47
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --benchmark --stopAfter 60 --automateAll --keepAutomated --gameMode battle --setDungeonRng 7 --setMainRng 7
 
 benchNull: benchCampaign benchBattle
 
