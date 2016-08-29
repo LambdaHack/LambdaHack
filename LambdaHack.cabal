@@ -357,9 +357,8 @@ executable LambdaHack
 
   if impl(ghcjs) {
 -- This is the largest GHCJS_BUSY_YIELD value that does not cause dropped frames
--- on my machine with default --maxFps. Also, the best GHCJS_SCHED_QUANTUM
--- value wrt keyboard responsiveness.
-    cpp-options:      -DGHCJS_BUSY_YIELD=100 -DGHCJS_SCHED_QUANTUM=1
+-- on my machine with default --maxFps.
+    cpp-options:      -DGHCJS_BUSY_YIELD=50
 --TODO:    js-sources: a drop-in replacement for zlib when there is one
   } else {
     build-depends:    zlib >= 0.5.3.1
@@ -415,7 +414,7 @@ test-suite test
   ghc-options:        -threaded "-with-rtsopts=-C0.005 -K1K" -rtsopts
 
   if impl(ghcjs) {
-    cpp-options:      -DGHCJS_BUSY_YIELD=100 -DGHCJS_SCHED_QUANTUM=1
+    cpp-options:      -DGHCJS_BUSY_YIELD=50
   } else {
     build-depends:    zlib >= 0.5.3.1
   }
