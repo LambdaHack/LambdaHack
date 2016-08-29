@@ -102,6 +102,10 @@ sendUpdateAI :: MonadServerReadRequest m
 sendUpdateAI fid cmd = do
   conn <- getsDict $ snd . (EM.! fid)
   writeTQueueAI cmd $ responseS conn
+  cmdS <- readTQueueAI $ requestS conn
+  case fst cmdS of
+    ReqAINop -> return ()
+    _ -> assert `failure` cmdS
 
 sendQueryAI :: MonadServerReadRequest m
             => FactionId -> ActorId -> m RequestAI
@@ -132,8 +136,12 @@ sendUpdateUI fid cmd = do
   cs <- getsDict $ fst . (EM.! fid)
   case cs of
     Nothing -> assert `failure` "no channel for faction" `twith` fid
-    Just conn ->
+    Just conn -> do
       writeTQueueUI cmd $ responseS conn
+      cmdS <- readTQueueUI $ requestS conn
+      case fst cmdS of
+        ReqUINop -> return ()
+        _ -> assert `failure` cmdS
 
 sendQueryUI :: (MonadAtomic m, MonadServerReadRequest m)
             => FactionId -> ActorId -> m RequestUI

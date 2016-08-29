@@ -68,6 +68,7 @@ handleReqAI :: (MonadAtomic m, MonadServer m)
             => FactionId -> ActorId -> ReqAI -> m ()
 handleReqAI _fid aid cmd = case cmd of
   ReqAITimed (RequestAnyAbility cmdT) -> handleRequestTimed aid cmdT
+  ReqAINop -> return ()
 
 -- | The semantics of server commands. Only the first two cases take time.
 handleRequestUI :: (MonadAtomic m, MonadServer m)

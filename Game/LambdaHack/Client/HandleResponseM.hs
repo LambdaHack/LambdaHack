@@ -33,6 +33,7 @@ handleResponseAI cmd = case cmd of
     mapM_ (\c -> cmdAtomicSemCli c
                  >> execUpdAtomic c) cmds
     mapM_ (storeUndo . UpdAtomic) cmds
+    sendRequest (ReqAINop, Nothing)
   RespQueryAI -> do
     cmdC <- queryAI
     sendRequest cmdC
@@ -56,9 +57,11 @@ handleResponseUI cmd = case cmd of
           displayRespUpdAtomicUI False oldDiscoKind oldDiscoAspect c
     mapM_ handle cmds
     mapM_ (storeUndo . UpdAtomic) cmds  -- TODO: only store cmdA?
+    sendRequest (ReqUINop, Nothing)
   RespSfxAtomicUI sfx -> do
     displayRespSfxAtomicUI False sfx
     storeUndo $ SfxAtomic sfx
+    sendRequest (ReqUINop, Nothing)
   RespQueryUI -> do
     cmdH <- queryUI
     sendRequest cmdH

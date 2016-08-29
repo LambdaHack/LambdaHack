@@ -30,7 +30,9 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- channel for Ping, probably, and then client sends as many commands
 -- as it wants at once
 -- | Client-server requests sent by AI clients.
-newtype ReqAI = ReqAITimed RequestAnyAbility
+data ReqAI =
+    ReqAITimed RequestAnyAbility
+  | ReqAINop
   deriving Show
 
 type RequestAI = (ReqAI, Maybe (ActorId, Maybe Target))
