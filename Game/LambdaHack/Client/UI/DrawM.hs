@@ -29,7 +29,6 @@ import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
-import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor as Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
@@ -44,7 +43,6 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
@@ -389,22 +387,14 @@ drawLeaderDamage width = do
                    (T.unpack t)
   stats <- case mleader of
     Just leader -> do
-      allAssocs <- fullAssocsClient leader [CEqp, COrgan]
+      allAssocsRaw <- fullAssocsClient leader [CEqp, COrgan]
+      let allAssocs = filter (isMelee . itemBase . snd) allAssocsRaw
       actorSk <- actorSkillsClient leader
-      sb <- getsState $ getActorBody leader
-      localTime <- getsState $ getLocalTime (blid sb)
       actorAspect <- getsClient sactorAspect
-      let ar = actorAspect EM.! leader
-          calmE = calmEnough sb ar
-          forced = assert (not $ bproj sb) False
-          permitted = permittedPrecious calmE forced
-          preferredPrecious = either (const False) id . permitted
-          strongest = strongestMelee False localTime allAssocs
-          strongestPreferred = filter (preferredPrecious . snd . snd) strongest
-          damage = case strongestPreferred of
-            _ | EM.findWithDefault 0 Ability.AbMelee actorSk <= 0 -> "0"
+      strongest <- pickWeaponM allAssocs actorSk actorAspect leader False
+      let damage = case strongest of
             [] -> "0"
-            (_average, (_, itemFull)) : _ ->
+            (_averageDmg, (_, itemFull)) : _ ->
               let getD :: IK.Effect -> Maybe Dice.Dice -> Maybe Dice.Dice
                   getD (IK.Hurt dice) acc = Just $ dice + fromMaybe 0 acc
                   getD (IK.Burn dice) acc = Just $ dice + fromMaybe 0 acc
@@ -416,7 +406,7 @@ drawLeaderDamage width = do
                   tdice = case mdice of
                     Nothing -> "0"
                     Just dice -> tshow dice
-                  bonus = aHurtMelee ar
+                  bonus = aHurtMelee $ actorAspect EM.! leader
                   unknownBonus = unknownMelee $ map snd allAssocs
                   tbonus = if bonus == 0
                            then if unknownBonus then "+?" else ""

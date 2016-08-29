@@ -428,9 +428,9 @@ pickWeaponServer source = do
   actorSk <- actorSkillsServer source
   sb <- getsState $ getActorBody source
   localTime <- getsState $ getLocalTime (blid sb)
+  actorAspect <- getsServer sactorAspect
   -- For projectiles we need to accept even items without any effect,
   -- so that the projectile dissapears and "No effect" feedback is produced.
-  actorAspect <- getsServer sactorAspect
   let ar = actorAspect EM.! source
       allAssocs = eqpAssocs ++ bodyAssocs
       calmE = calmEnough sb ar

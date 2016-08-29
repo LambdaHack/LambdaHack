@@ -251,19 +251,11 @@ pickWeaponClient source target = do
   eqpAssocs <- fullAssocsClient source [CEqp]
   bodyAssocs <- fullAssocsClient source [COrgan]
   actorSk <- actorSkillsClient source
-  sb <- getsState $ getActorBody source
-  localTime <- getsState $ getLocalTime (blid sb)
   actorAspect <- getsClient sactorAspect
-  let allAssocs = eqpAssocs ++ bodyAssocs
-      ar = actorAspect EM.! source
-      calmE = calmEnough sb ar
-      forced = assert (not $ bproj sb) False
-      permitted = permittedPrecious calmE forced
-      preferredPrecious = either (const False) id . permitted
-      strongest = strongestMelee True localTime allAssocs
-      strongestPreferred = filter (preferredPrecious . snd . snd) strongest
-  case strongestPreferred of
-    _ | EM.findWithDefault 0 Ability.AbMelee actorSk <= 0 -> return Nothing
+  let allAssocsRaw = eqpAssocs ++ bodyAssocs
+      allAssocs = filter (isMelee . itemBase . snd) allAssocsRaw
+  strongest <- pickWeaponM allAssocs actorSk actorAspect source True
+  case strongest of
     [] -> return Nothing
     iis@((maxS, _) : _) -> do
       let maxIis = map snd $ takeWhile ((== maxS) . fst) iis

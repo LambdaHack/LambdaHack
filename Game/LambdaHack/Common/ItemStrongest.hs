@@ -102,7 +102,7 @@ strengthFromEqpSlot eqpSlot itemFull =
     EqpSlotAddSpeed -> aSpeed
     EqpSlotAddSight -> aSight
     EqpSlotLightSource -> aShine
-    EqpSlotWeapon -> fromMaybe 0 $ strMelee True maxBound itemFull
+    EqpSlotWeapon -> strMelee True maxBound itemFull
     EqpSlotMiscAbility ->
       EM.findWithDefault 0 Ability.AbWait aSkills
       + EM.findWithDefault 0 Ability.AbMoveItem aSkills
@@ -114,7 +114,7 @@ strengthFromEqpSlot eqpSlot itemFull =
     EqpSlotAbProject -> EM.findWithDefault 0 Ability.AbProject aSkills
     EqpSlotAbApply -> EM.findWithDefault 0 Ability.AbApply aSkills
 
-strMelee :: Bool -> Time -> ItemFull -> Maybe Int
+strMelee :: Bool -> Time -> ItemFull -> Int
 strMelee effectBonus localTime itemFull =
   let recharged = hasCharge localTime itemFull
       -- We assume extra weapon effects are useful and so such
@@ -136,10 +136,7 @@ strMelee effectBonus localTime itemFull =
       p Unique = []
       p Periodic = []
       p _ = [100 | effectBonus]
-      psum = sum (strengthEffect p itemFull)
-  in if not (isMelee $ itemBase $ itemFull) || psum == 0
-     then Nothing
-     else Just psum
+  in sum (strengthEffect p itemFull)
 
 hasCharge :: Time -> ItemFull -> Bool
 hasCharge localTime itemFull@ItemFull{..} =
@@ -151,10 +148,10 @@ hasCharge localTime itemFull@ItemFull{..} =
 
 strongestMelee :: Bool -> Time -> [(ItemId, ItemFull)]
                -> [(Int, (ItemId, ItemFull))]
+strongestMelee _ _ [] = []
 strongestMelee effectBonus localTime is =
-  let f = strMelee effectBonus localTime
-      g (iid, itemFull) = (\v -> (v, (iid, itemFull))) <$> f itemFull
-  in sortBy (flip $ Ord.comparing fst) $ mapMaybe g is
+  let f ii@(_, itemFull) = (strMelee effectBonus localTime itemFull, ii)
+  in sortBy (flip $ Ord.comparing fst) $ map f is
 
 -- TODO: take into account incriptions, when implemented
 isMelee :: Item -> Bool
