@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, MultiWayIf #-}
 -- | Text frontend running in Browser or in Webkit.
 module Game.LambdaHack.Client.UI.Frontend.Dom
   ( startup, frontendName
@@ -9,7 +9,8 @@ import Prelude.Compat
 
 import Control.Concurrent
 import Control.Monad
-import Control.Monad.Reader (ask, liftIO)
+import qualified Control.Monad.IO.Class as IO
+import Control.Monad.Trans.Reader (ask)
 import Data.Char (chr)
 import Data.Maybe
 import Data.Text (Text)
@@ -18,9 +19,9 @@ import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
                   webViewGetDomDocument)
 import GHCJS.DOM.CSSStyleDeclaration (removeProperty, setProperty)
 import GHCJS.DOM.Document (createElement, getBody, keyDown, keyPress)
-import GHCJS.DOM.Element (click, contextMenu, getStyle, setInnerHTML)
-import GHCJS.DOM.EventM (mouseAltKey, mouseButton, mouseCtrlKey, mouseMetaKey,
-                         mouseShiftKey, on, preventDefault)
+import GHCJS.DOM.Element (contextMenu, getStyle, mouseUp, setInnerHTML)
+import GHCJS.DOM.EventM (EventM, mouseAltKey, mouseButton, mouseCtrlKey,
+                         mouseMetaKey, mouseShiftKey, on, preventDefault)
 import GHCJS.DOM.HTMLCollection (item)
 import GHCJS.DOM.HTMLTableCellElement (HTMLTableCellElement,
                                        castToHTMLTableCellElement)
@@ -28,14 +29,14 @@ import GHCJS.DOM.HTMLTableElement (HTMLTableElement, castToHTMLTableElement,
                                    getRows, setCellPadding, setCellSpacing)
 import GHCJS.DOM.HTMLTableRowElement (HTMLTableRowElement,
                                       castToHTMLTableRowElement, getCells)
-import GHCJS.DOM.JSFFI.Generated.RequestAnimationFrameCallback
-import GHCJS.DOM.JSFFI.Generated.Window (requestAnimationFrame)
 import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
                                 getKeyIdentifier, getKeyLocation, getMetaKey,
                                 getShiftKey)
 import GHCJS.DOM.Node (appendChild)
-import GHCJS.DOM.Types (CSSStyleDeclaration, castToHTMLDivElement)
+import GHCJS.DOM.RequestAnimationFrameCallback
+import GHCJS.DOM.Types (CSSStyleDeclaration, IsMouseEvent, castToHTMLDivElement)
 import GHCJS.DOM.UIEvent (getCharCode, getKeyCode, getWhich)
+import GHCJS.DOM.Window (requestAnimationFrame)
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Frontend.Common
@@ -44,6 +45,8 @@ import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
+
+saveKMP rf modifier key p = saveKM rf K.KM{pointer = Just p,..}
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
@@ -83,8 +86,8 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
   Just pageStyle <- getStyle body
   setProp pageStyle "background-color" (Color.colorToRGB Color.Black)
   setProp pageStyle "color" (Color.colorToRGB Color.White)
-  Just divBlock <- fmap castToHTMLDivElement
-                   <$> createElement doc (Just ("div" :: Text))
+  Just divBlockRaw <- createElement doc (Just ("div" :: Text))
+  divBlock <- castToHTMLDivElement divBlockRaw
   Just divStyle <- getStyle divBlock
   setProp divStyle "text-align" "center"
   case (saddress, stitle) of
@@ -98,8 +101,8 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
       cell = "<td>" ++ [chr 160]
       row = "<tr>" ++ concat (replicate lxsize cell)
       rows = concat (replicate lysize row)
-  Just tableElem <- fmap castToHTMLTableElement
-                     <$> createElement doc (Just ("table" :: Text))
+  Just tableElemRaw <- createElement doc (Just ("table" :: Text))
+  tableElem <- castToHTMLTableElement tableElemRaw
   void $ appendChild divBlock (Just tableElem)
   Just scharStyle <- getStyle tableElem
   -- Speed: http://www.w3.org/TR/CSS21/tables.html#fixed-table-layout
@@ -125,7 +128,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
   rf <- createRawFrontend (display sdebugCli sess) shutdown
   -- Handle keypresses. http://unixpapa.com/js/key.html
   -- A bunch of fauity hacks; @keyPress@ doesn't handle non-character keys
-  -- while with @keeDown@ all of getKeyIdentifier, getWhich and getKeyCode
+  -- while with @keyDown@ all of getKeyIdentifier, getWhich and getKeyCode
   -- return absurd codes for, e.g., semicolon in Chromium.
   -- The new standard might help on newer browsers
   -- http://www.w3schools.com/jsref/event_key_keycode.asp
@@ -160,17 +163,15 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
                                   -- until @key@ available in webkit DOM
     when (not $ null quirksN) $ do
       let !key = K.keyTranslateWeb quirksN False
-          !pointer = Nothing
-          !km = K.KM{..}
           _ks = T.unpack (K.showKey key)
-      -- liftIO $ do
+      -- IO.liftIO $ do
       --   putStrLn $ "keyId: " ++ keyId
       --   putStrLn $ "quirksN: " ++ quirksN
       --   putStrLn $ "key: " ++ _ks
       --   putStrLn $ "which: " ++ show which
       --   putStrLn $ "keyCode: " ++ show keyCode
       --   putStrLn $ "modifier: " ++ show modifier
-      liftIO $ saveKM rf km
+      IO.liftIO $ saveKMP rf modifier key (Point 0 0)
       -- Pass through Ctrl-+ and others, disable Tab.
       when (modifier `elem` [K.NoModifier, K.Shift]) preventDefault
   void $ doc `on` keyPress $ do
@@ -187,19 +188,17 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
             3 {-KEY_LOCATION_NUMPAD-} -> True
             _ -> False
           !key = K.keyTranslateWeb quirksN onKeyPad
-          !pointer = Nothing
           !modifierNoShift =  -- to prevent Shift-!, etc.
             if modifier == K.Shift then K.NoModifier else modifier
-          !km = K.KM{modifier=modifierNoShift, ..}
           _ks = T.unpack (K.showKey key)
-      -- liftIO $ do
+      -- IO.liftIO $ do
       --   putStrLn $ "charCode: " ++ show charCode
       --   putStrLn $ "quirksN: " ++ quirksN
       --   putStrLn $ "key: " ++ _ks
       --   putStrLn $ "which: " ++ show which
       --   putStrLn $ "keyCode: " ++ show keyCode
       --   putStrLn $ "modifier: " ++ show modifier
-      liftIO $ saveKM rf km
+      IO.liftIO $ saveKMP rf modifierNoShift key (Point 0 0)
       -- Pass through Ctrl-+ and others, disable Tab.
       when (modifier `elem` [K.NoModifier, K.Shift]) preventDefault
   -- Handle mouseclicks, per-cell.
@@ -231,35 +230,37 @@ removeProp style propRef = do
 -- | Let each table cell handle mouse events inside.
 handleMouse :: RawFrontend -> (HTMLTableCellElement, (Int, Int)) -> IO ()
 handleMouse rf (cell, (cx, cy)) = do
-  let saveMouse = do
-        -- https://hackage.haskell.org/package/ghcjs-dom-0.2.1.0/docs/GHCJS-DOM-EventM.html
-        but <- mouseButton
+  let readMod :: IsMouseEvent e => EventM HTMLTableCellElement e K.Modifier
+      readMod = do
         modCtrl <- mouseCtrlKey
         modShift <- mouseShiftKey
         modAlt <- mouseAltKey
         modMeta <- mouseMetaKey
-        let !modifier = modifierTranslate modCtrl modShift modAlt modMeta
-        liftIO $ do
+        return $! modifierTranslate modCtrl modShift modAlt modMeta
+      saveMouse = do
+        -- https://hackage.haskell.org/package/ghcjs-dom-0.2.1.0/docs/GHCJS-DOM-EventM.html
+        but <- mouseButton
+        modifier <- readMod
+        IO.liftIO $ do
       -- TODO: mdrawWin <- displayGetWindowAtPointer display
       -- let setCursor (drawWin, _, _) =
       --       drawWindowSetCursor drawWin (Just cursor)
       -- maybe (return ()) setCursor mdrawWin
-          let !key = case but of
-                0 -> K.LeftButtonPress
-                1 -> K.MiddleButtonPress
-                2 -> K.RightButtonPress
-                _ -> K.LeftButtonPress
-              !pointer = Just $! Point cx cy
-              !km = K.KM{..}
-              _ks = T.unpack (K.showKey key)
-          -- liftIO $ putStrLn $ "m: " ++ _ks ++ show modifier ++ show pointer
-          -- Store the mouse event coords in the keypress channel.
-          liftIO $ saveKM rf km
-  void $ cell `on` contextMenu $ do
+          let mkey = case but of
+                0 -> Just K.LeftButtonPress
+                1 -> Just K.MiddleButtonPress
+                2 -> Just K.RightButtonPress  -- not handled in contextMenu
+                _ -> Nothing  -- probably a glitch
+              pointer = Point cx cy
+          -- _ks = T.unpack (K.showKey key)
+          -- IO.liftIO $ putStrLn $ "m: " ++ _ks ++ show modifier ++ show pointer
+          maybe (return ())
+                (\key -> IO.liftIO $ saveKMP rf modifier key pointer) mkey
+  void $ cell `on` contextMenu $
+    preventDefault
+  void $ cell `on` mouseUp $ do
     saveMouse
     preventDefault
-  void $ cell `on` click $
-    saveMouse
 
 -- | Get the list of all cells of an HTML table.
 flattenTable :: HTMLTableElement -> IO [HTMLTableCellElement]
@@ -267,13 +268,17 @@ flattenTable table = do
   let lxsize = fromIntegral $ fst normalLevelBound + 1
       lysize = fromIntegral $ snd normalLevelBound + 4
   Just rows <- getRows table
-  lmrow <- mapM (item rows) [0..lysize-1]
-  let lrow = map (castToHTMLTableRowElement . fromJust) lmrow
-      getC :: HTMLTableRowElement -> IO [HTMLTableCellElement]
+  let f y = do
+        Just rowsItem <- item rows y
+        castToHTMLTableRowElement rowsItem
+  lrow <- mapM f [0..lysize-1]
+  let getC :: HTMLTableRowElement -> IO [HTMLTableCellElement]
       getC row = do
         Just cells <- getCells row
-        lmcell <- mapM (item cells) [0..lxsize-1]
-        return $! map (castToHTMLTableCellElement . fromJust) lmcell
+        let g x = do
+              Just cellsItem <- item cells x
+              castToHTMLTableCellElement cellsItem
+        mapM g [0..lxsize-1]
   lrc <- mapM getC lrow
   return $! concat lrc
 
@@ -296,25 +301,26 @@ display DebugModeCli{scolorIsBold}
           removeProp style "font-weight"
           setProp style "border-color" "transparent"
         else do
-          when (scolorIsBold == Just True) $
-            setProp style "font-weight" "bold"
-          if bg `elem` [Color.BrRed, Color.BrBlue, Color.BrYellow, Color.defBG]
-          then removeProp style "background-color"
-          else setProp style "background-color" (Color.colorToRGB bg)
-          setProp style "color" (Color.colorToRGB fg)
+          when (scolorIsBold == Just True) $ setProp style "font-weight" "bold"
+          setProp style "color" $ Color.colorToRGB fg
           case bg of
-            Color.BrRed ->  -- highlighted tile
-              let ourColor = Color.colorToRGB Color.Red
-              in setProp style "border-color" ourColor
-            Color.BrBlue ->  -- blue highlighted tile
-              let ourColor = Color.colorToRGB Color.Blue
-              in setProp style "border-color" ourColor
-            Color.BrYellow ->  -- yellow highlighted tile
-              let ourColor = Color.colorToRGB Color.BrYellow
-              in setProp style "border-color" ourColor
-            _ -> setProp style "border-color" "transparent"
+            Color.BrRed -> do  -- highlighted tile
+              setProp style "border-color" $ Color.colorToRGB Color.Red
+              removeProp style "background-color"
+            Color.BrBlue -> do  -- blue highlighted tile
+              setProp style "border-color" $ Color.colorToRGB Color.Blue
+              removeProp style "background-color"
+            Color.BrYellow -> do  -- yellow highlighted tile
+              setProp style "border-color" $ Color.colorToRGB Color.BrYellow
+              removeProp style "background-color"
+            Color.Black -> do
+              removeProp style "background-color"
+              setProp style "border-color" "transparent"
+            _ -> do
+              setProp style "background-color" $ Color.colorToRGB bg
+              setProp style "border-color" "transparent"
       acs = concat $ overlay sfLevel
-  -- TODO: Sync or Async?
+  -- Sync, no point mutitasking threads in the single-threaded JS
   callback <- newRequestAnimationFrameCallback $ \_ -> do
     mapM_ setChar $ zip scharCells acs
   -- This ensure no frame redraws while callback executes.
