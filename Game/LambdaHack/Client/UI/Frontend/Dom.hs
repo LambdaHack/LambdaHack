@@ -11,7 +11,6 @@ import Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.Reader (ask)
 import Data.Char (chr)
-import Data.Functor.Infix ((<$$>))
 import qualified Data.Text as T
 import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
                   webViewGetDomDocument)
@@ -27,15 +26,15 @@ import GHCJS.DOM.HTMLTableElement (HTMLTableElement, castToHTMLTableElement,
                                    getRows, setCellPadding, setCellSpacing)
 import GHCJS.DOM.HTMLTableRowElement (HTMLTableRowElement,
                                       castToHTMLTableRowElement, getCells)
-import GHCJS.DOM.JSFFI.Generated.RequestAnimationFrameCallback
-import GHCJS.DOM.JSFFI.Generated.Window (requestAnimationFrame)
 import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
                                 getKeyIdentifier, getKeyLocation, getMetaKey,
                                 getShiftKey)
 import GHCJS.DOM.Node (appendChild)
+import GHCJS.DOM.RequestAnimationFrameCallback
 import GHCJS.DOM.Types (CSSStyleDeclaration, IsMouseEvent, castToHTMLDivElement)
 import GHCJS.DOM.UIEvent (getCharCode, getKeyCode, getWhich)
 import GHCJS.DOM.WheelEvent (getDeltaY)
+import GHCJS.DOM.Window (requestAnimationFrame)
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Frame
@@ -83,8 +82,8 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
   Just pageStyle <- getStyle body
   setProp pageStyle "background-color" (Color.colorToRGB Color.Black)
   setProp pageStyle "color" (Color.colorToRGB Color.White)
-  Just divBlock <-
-    castToHTMLDivElement <$$> createElement doc (Just ("div" :: Text))
+  Just divBlockRaw <- createElement doc (Just ("div" :: Text))
+  divBlock <- castToHTMLDivElement divBlockRaw
   Just divStyle <- getStyle divBlock
   setProp divStyle "text-align" "center"
   case (saddress, stitle) of
@@ -98,8 +97,8 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
       cell = "<td>" ++ [chr 160]
       row = "<tr>" ++ concat (replicate lxsize cell)
       rows = concat (replicate lysize row)
-  Just tableElem <-
-    castToHTMLTableElement <$$> createElement doc (Just ("table" :: Text))
+  Just tableElemRaw <- createElement doc (Just ("table" :: Text))
+  tableElem <- castToHTMLTableElement tableElemRaw
   void $ appendChild divBlock (Just tableElem)
   Just scharStyle <- getStyle tableElem
   -- Speed: http://www.w3.org/TR/CSS21/tables.html#fixed-table-layout
@@ -278,13 +277,17 @@ flattenTable table = do
   let lxsize = fromIntegral $ fst normalLevelBound + 1
       lysize = fromIntegral $ snd normalLevelBound + 4
   Just rows <- getRows table
-  lmrow <- mapM (item rows) [0..lysize-1]
-  let lrow = map (castToHTMLTableRowElement . fromJust) lmrow
-      getC :: HTMLTableRowElement -> IO [HTMLTableCellElement]
+  let f y = do
+        Just rowsItem <- item rows y
+        castToHTMLTableRowElement rowsItem
+  lrow <- mapM f [0..lysize-1]
+  let getC :: HTMLTableRowElement -> IO [HTMLTableCellElement]
       getC row = do
         Just cells <- getCells row
-        lmcell <- mapM (item cells) [0..lxsize-1]
-        return $! map (castToHTMLTableCellElement . fromJust) lmcell
+        let g x = do
+              Just cellsItem <- item cells x
+              castToHTMLTableCellElement cellsItem
+        mapM g [0..lxsize-1]
   lrc <- mapM getC lrow
   return $! concat lrc
 
