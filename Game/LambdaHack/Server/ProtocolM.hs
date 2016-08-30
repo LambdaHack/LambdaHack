@@ -1,7 +1,7 @@
 -- | The server definitions for the server-client communication protocol.
 module Game.LambdaHack.Server.ProtocolM
   ( -- * The communication channels
-    ChanServer(..)
+    TQueue, ChanServer(..)
   , ConnServerDict  -- exposed only to be implemented, not used
     -- * The server-client communication monad
   , MonadServerReadRequest
@@ -28,7 +28,6 @@ import Game.LambdaHack.Common.Prelude
 
 import Control.Concurrent
 import Control.Concurrent.Async
-import Control.Concurrent.STM (TQueue, atomically)
 import qualified Control.Concurrent.STM as STM
 import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM, mapWithKeyM_)
@@ -46,6 +45,30 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.DebugM
 import Game.LambdaHack.Server.MonadServer hiding (liftIO)
 import Game.LambdaHack.Server.State
+
+type TQueue = STM.TQueue
+
+writeTQueueAI :: MonadServerReadRequest m
+              => ResponseAI -> TQueue ResponseAI -> m ()
+writeTQueueAI cmd responseS = do
+  debug <- getsServer $ sniffOut . sdebugSer
+  when debug $ debugResponseAI cmd
+  liftIO $ STM.atomically $ STM.writeTQueue responseS cmd
+
+writeTQueueUI :: MonadServerReadRequest m
+              => ResponseUI -> TQueue ResponseUI -> m ()
+writeTQueueUI cmd responseS = do
+  debug <- getsServer $ sniffOut . sdebugSer
+  when debug $ debugResponseUI cmd
+  liftIO $ STM.atomically $ STM.writeTQueue responseS cmd
+
+readTQueueAI :: MonadServerReadRequest m
+             => TQueue RequestAI -> m RequestAI
+readTQueueAI requestS = liftIO $ STM.atomically $ STM.readTQueue requestS
+
+readTQueueUI :: MonadServerReadRequest m
+             => TQueue RequestUI -> m RequestUI
+readTQueueUI requestS = liftIO $ STM.atomically $ STM.readTQueue requestS
 
 -- | Connection channel between the server and a single client.
 data ChanServer resp req = ChanServer
@@ -74,28 +97,6 @@ class MonadServer m => MonadServerReadRequest m where
   modifyDict   :: (ConnServerDict -> ConnServerDict) -> m ()
   putDict      :: ConnServerDict -> m ()
   liftIO       :: IO a -> m a
-
-writeTQueueAI :: MonadServerReadRequest m
-              => ResponseAI -> TQueue ResponseAI -> m ()
-writeTQueueAI cmd responseS = do
-  debug <- getsServer $ sniffOut . sdebugSer
-  when debug $ debugResponseAI cmd
-  liftIO $ atomically $ STM.writeTQueue responseS cmd
-
-writeTQueueUI :: MonadServerReadRequest m
-              => ResponseUI -> TQueue ResponseUI -> m ()
-writeTQueueUI cmd responseS = do
-  debug <- getsServer $ sniffOut . sdebugSer
-  when debug $ debugResponseUI cmd
-  liftIO $ atomically $ STM.writeTQueue responseS cmd
-
-readTQueueAI :: MonadServerReadRequest m
-             => TQueue RequestAI -> m RequestAI
-readTQueueAI requestS = liftIO $ atomically $ STM.readTQueue requestS
-
-readTQueueUI :: MonadServerReadRequest m
-             => TQueue RequestUI -> m RequestUI
-readTQueueUI requestS = liftIO $ atomically $ STM.readTQueue requestS
 
 sendUpdateAI :: MonadServerReadRequest m
              => FactionId -> ResponseAI -> m ()
