@@ -1,7 +1,7 @@
 -- | The server definitions for the server-client communication protocol.
 module Game.LambdaHack.Server.ProtocolM
   ( -- * The communication channels
-    TQueue, ChanServer(..)
+    CliSerQueue, ChanServer(..)
   , ConnServerDict  -- exposed only to be implemented, not used
     -- * The server-client communication monad
   , MonadServerReadRequest
@@ -28,7 +28,6 @@ import Game.LambdaHack.Common.Prelude
 
 import Control.Concurrent
 import Control.Concurrent.Async
-import qualified Control.Concurrent.STM as STM
 import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM, mapWithKeyM_)
 import Game.LambdaHack.Common.Thread
@@ -46,34 +45,37 @@ import Game.LambdaHack.Server.DebugM
 import Game.LambdaHack.Server.MonadServer hiding (liftIO)
 import Game.LambdaHack.Server.State
 
-type TQueue = STM.TQueue
+type CliSerQueue = MVar
 
-writeTQueueAI :: MonadServerReadRequest m
-              => ResponseAI -> TQueue ResponseAI -> m ()
-writeTQueueAI cmd responseS = do
+writeQueueAI :: MonadServerReadRequest m
+              => ResponseAI -> CliSerQueue ResponseAI -> m ()
+writeQueueAI cmd responseS = do
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponseAI cmd
-  liftIO $ STM.atomically $ STM.writeTQueue responseS cmd
+  liftIO $ putMVar responseS cmd
 
-writeTQueueUI :: MonadServerReadRequest m
-              => ResponseUI -> TQueue ResponseUI -> m ()
-writeTQueueUI cmd responseS = do
+writeQueueUI :: MonadServerReadRequest m
+              => ResponseUI -> CliSerQueue ResponseUI -> m ()
+writeQueueUI cmd responseS = do
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponseUI cmd
-  liftIO $ STM.atomically $ STM.writeTQueue responseS cmd
+  liftIO $ putMVar responseS cmd
 
-readTQueueAI :: MonadServerReadRequest m
-             => TQueue RequestAI -> m RequestAI
-readTQueueAI requestS = liftIO $ STM.atomically $ STM.readTQueue requestS
+readQueueAI :: MonadServerReadRequest m
+             => CliSerQueue RequestAI -> m RequestAI
+readQueueAI requestS = liftIO $ takeMVar requestS
 
-readTQueueUI :: MonadServerReadRequest m
-             => TQueue RequestUI -> m RequestUI
-readTQueueUI requestS = liftIO $ STM.atomically $ STM.readTQueue requestS
+readQueueUI :: MonadServerReadRequest m
+             => CliSerQueue RequestUI -> m RequestUI
+readQueueUI requestS = liftIO $ takeMVar requestS
+
+newQueue :: IO (CliSerQueue a)
+newQueue = newEmptyMVar
 
 -- | Connection channel between the server and a single client.
 data ChanServer resp req = ChanServer
-  { responseS :: !(TQueue resp)
-  , requestS  :: !(TQueue req)
+  { responseS :: !(CliSerQueue resp)
+  , requestS  :: !(CliSerQueue req)
   }
 
 -- | Connections to the human-controlled client of a faction and
@@ -102,8 +104,8 @@ sendUpdateAI :: MonadServerReadRequest m
              => FactionId -> ResponseAI -> m ()
 sendUpdateAI fid cmd = do
   conn <- getsDict $ snd . (EM.! fid)
-  writeTQueueAI cmd $ responseS conn
-  cmdS <- readTQueueAI $ requestS conn
+  writeQueueAI cmd $ responseS conn
+  cmdS <- readQueueAI $ requestS conn
   case fst cmdS of
     ReqAINop -> return ()
     _ -> assert `failure` cmdS
@@ -112,8 +114,8 @@ sendQueryAI :: MonadServerReadRequest m
             => FactionId -> ActorId -> m RequestAI
 sendQueryAI fid aid = do
   conn <- getsDict $ snd . (EM.! fid)
-  writeTQueueAI RespQueryAI $ responseS conn
-  req <- readTQueueAI $ requestS conn
+  writeQueueAI RespQueryAI $ responseS conn
+  req <- readQueueAI $ requestS conn
   debug <- getsServer $ sniffIn . sdebugSer
   when debug $ debugRequestAI aid req
   return $! req
@@ -122,8 +124,8 @@ sendNonLeaderQueryAI :: MonadServerReadRequest m
                      => FactionId -> ActorId -> m ReqAI
 sendNonLeaderQueryAI fid aid = do
   conn <- getsDict $ snd . (EM.! fid)
-  writeTQueueAI (RespNonLeaderQueryAI aid) $ responseS conn
-  req <- readTQueueAI $ requestS conn
+  writeQueueAI (RespNonLeaderQueryAI aid) $ responseS conn
+  req <- readQueueAI $ requestS conn
   case req of
     (_, Just{}) -> assert `failure` req
     (cmd, Nothing) -> do
@@ -138,8 +140,8 @@ sendUpdateUI fid cmd = do
   case cs of
     Nothing -> assert `failure` "no channel for faction" `twith` fid
     Just conn -> do
-      writeTQueueUI cmd $ responseS conn
-      cmdS <- readTQueueUI $ requestS conn
+      writeQueueUI cmd $ responseS conn
+      cmdS <- readQueueUI $ requestS conn
       case fst cmdS of
         ReqUINop -> return ()
         _ -> assert `failure` cmdS
@@ -151,8 +153,8 @@ sendQueryUI fid aid = do
   case cs of
     Nothing -> assert `failure` "no channel for faction" `twith` fid
     Just conn -> do
-      writeTQueueUI RespQueryUI $ responseS conn
-      req <- readTQueueUI $ requestS conn
+      writeQueueUI RespQueryUI $ responseS conn
+      req <- readQueueUI $ requestS conn
       debug <- getsServer $ sniffIn . sdebugSer
       when debug $ debugRequestUI aid req
       return $! req
@@ -188,8 +190,8 @@ updateConn executorUI executorAI = do
   oldD <- getDict
   let mkChanServer :: IO (ChanServer resp req)
       mkChanServer = do
-        responseS <- STM.newTQueueIO
-        requestS <- STM.newTQueueIO
+        responseS <- newQueue
+        requestS <- newQueue
         return $! ChanServer{..}
       addConn :: FactionId -> Faction -> IO ConnServerFaction
       addConn fid fact = case EM.lookup fid oldD of

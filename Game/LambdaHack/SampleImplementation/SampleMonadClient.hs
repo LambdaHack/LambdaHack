@@ -16,7 +16,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Control.Concurrent.STM as STM
+import Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict hiding (State)
 import Data.Binary
@@ -118,12 +118,12 @@ instance MonadClientUI (CliImplementation SessionUI resp req) where
 instance MonadClientReadResponse resp (CliImplementation sess resp req) where
   receiveResponse = CliImplementation $ do
     ChanServer{responseS} <- gets cliDict
-    IO.liftIO $ STM.atomically . STM.readTQueue $ responseS
+    IO.liftIO $ takeMVar responseS
 
 instance MonadClientWriteRequest req (CliImplementation sess resp req) where
   sendRequest scmd = CliImplementation $ do
     ChanServer{requestS} <- gets cliDict
-    IO.liftIO $ STM.atomically . STM.writeTQueue requestS $ scmd
+    IO.liftIO $ putMVar requestS scmd
 
 -- | The game-state semantics of atomic commands
 -- as computed on the client.
