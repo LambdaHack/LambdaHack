@@ -51,7 +51,7 @@ loopAI sdebugCli = do
   restored <- case restoredG of
     Just (s, cli, ()) | not $ snewGameCli sdebugCli -> do  -- Restore game.
       let sCops = updateCOps (const cops) s
-      handleResponseAI $ RespUpdAtomicAI $ UpdResumeServer sCops
+      handleSelfAI $ UpdResumeServer sCops
       putClient cli {sdebugCli}
       return True
     _ -> return False
@@ -100,7 +100,7 @@ loopUI copsClient sconfig sdebugCli = do
   restored <- case restoredG of
     Just (s, cli, sess) | not $ snewGameCli sdebugCli -> do  -- Restore game.
       let sCops = updateCOps (const cops) s
-      handleResponseUI $ RespUpdAtomicUI $ UpdResumeServer sCops
+      handleSelfUI $ UpdResumeServer sCops
       putSession sess {schanF, sbinding}
       putClient cli {sdebugCli}
       return True
@@ -119,12 +119,10 @@ loopUI copsClient sconfig sdebugCli = do
   side <- getsClient sside
   cmd1 <- receiveResponse
   case (restored, cmd1) of
-    (True, RespUpdAtomicUI UpdResume{}) ->
-      handleResponseUI cmd1
+    (True, RespUpdAtomicUI UpdResume{}) -> return ()
     (True, RespUpdAtomicUI UpdRestart{}) -> do
       msgAdd $
         "Ignoring an old savefile and starting a new" <+> title <+> "game."
-      handleResponseUI cmd1
     (False, RespUpdAtomicUI UpdResume{}) -> do
       removeServerSave
       error $ T.unpack $
@@ -135,8 +133,8 @@ loopUI copsClient sconfig sdebugCli = do
       -- Generate initial history. Only for UI clients.
       shistory <- defaultHistory $ configHistoryMax sconfig
       modifySession $ \sess -> sess {shistory}
-      handleResponseUI cmd1
     _ -> assert `failure` "unexpected command" `twith` (side, restored, cmd1)
+  handleResponseUI cmd1
   fact <- getsState $ (EM.! side) . sfactionD
   if isAIFact fact then do
     -- Prod the frontend to flush frames and start showing then continuously.
