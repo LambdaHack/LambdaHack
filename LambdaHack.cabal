@@ -88,7 +88,7 @@ flag with_expensive_assertions
   manual:             True
 
 flag release
-  description:        prepare for a release (expose internal functions and types, optimize, etc.)
+  description:        prepare for a release (expose internal functions and types, etc.)
   default:            False
   manual:             True
 
@@ -258,6 +258,7 @@ library
   ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
   ghc-options:        -fno-warn-auto-orphans -fno-warn-implicit-prelude
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields
+  ghc-options:        -O2 -fno-ignore-asserts
 
   if impl(ghcjs) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
@@ -294,9 +295,9 @@ library
 
   if flag(release) {
     cpp-options:      -DEXPOSE_INTERNAL
-    ghc-options:      -O2 -fno-ignore-asserts
   } else {
-    ghc-options:      -O0
+-- dummy:
+    ghc-options:      -fwarn-tabs
   }
 
 executable LambdaHack
@@ -354,6 +355,7 @@ executable LambdaHack
   ghc-options:        -fno-warn-auto-orphans -fno-warn-implicit-prelude
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields
   ghc-options:        -threaded "-with-rtsopts=-C0.005 -K1K" -rtsopts
+  ghc-options:        -O2 -fno-ignore-asserts
 
   if impl(ghcjs) {
 -- This is the largest GHCJS_BUSY_YIELD value that does not cause dropped frames
@@ -363,12 +365,6 @@ executable LambdaHack
   } else {
     build-depends:    zlib >= 0.5.3.1
   }
-
-  if flag(release)
-    ghc-options:      -O2 -fno-ignore-asserts "-with-rtsopts=-N1"
--- TODO: -N
-  else
-    ghc-options:      -O0
 
 test-suite test
   type:               exitcode-stdio-1.0
@@ -412,15 +408,10 @@ test-suite test
   ghc-options:        -fno-warn-auto-orphans -fno-warn-implicit-prelude
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields
   ghc-options:        -threaded "-with-rtsopts=-C0.005 -K1K" -rtsopts
+  ghc-options:        -O2 -fno-ignore-asserts
 
   if impl(ghcjs) {
     cpp-options:      -DGHCJS_BUSY_YIELD=50
   } else {
     build-depends:    zlib >= 0.5.3.1
   }
-
-  if flag(release)
-    ghc-options:      -O2 -fno-ignore-asserts "-with-rtsopts=-N1"
--- TODO: -N
-  else
-    ghc-options:      -O0
