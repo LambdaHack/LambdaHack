@@ -64,17 +64,7 @@ nodeBenchCampaign:
 nodeBenchBattle:
 	node dist/build/LambdaHack/LambdaHack.jsexe/all.js --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 250 --automateAll --keepAutomated --gameMode battle --setDungeonRng 7 --setMainRng 7
 
-nodeBenchFrontendCampaign:
-	node dist/build/LambdaHack/LambdaHack.jsexe/all.js --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterFrames 500 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 7 --setMainRng 7 > /tmp/stdtest.log
-
-nodeBenchFrontendBattle:
-	node dist/build/LambdaHack/LambdaHack.jsexe/all.js --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterFrames 250 --automateAll --keepAutomated --gameMode battle --setDungeonRng 7 --setMainRng 7 > /tmp/stdtest.log
-
-nodeBenchNull: nodeBenchCampaign nodeBenchBattle
-
-nodeBenchFrontend: nodeBenchFrontendCampaign nodeBenchFrontendBattle
-
-nodeBench: nodeBenchCampaign nodeBenchFrontendCampaign nodeBenchBattle nodeBenchFrontendBattle
+nodeBench: nodeBenchCampaign nodeBenchBattle
 
 
 test-travis-short: test-short
