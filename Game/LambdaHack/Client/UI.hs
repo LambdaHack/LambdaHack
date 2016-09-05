@@ -64,21 +64,32 @@ queryUI = do
     if keyPressed then do
       discardPressedKey
       addPressedEsc
-      -- Regaining control of faction cancels @--stopAfter@.
+      -- Regaining control of faction cancels --stopAfter*.
       modifyClient $ \cli ->
-        cli {sdebugCli = (sdebugCli cli) {sstopAfter = Nothing}}
+        cli {sdebugCli = (sdebugCli cli) { sstopAfterSeconds = Nothing
+                                         , sstopAfterFrames = Nothing }}
       if fleaderMode (gplayer fact) /= LeaderNull then
         return (ReqUIAutomate, Nothing)  -- stop AI
       else return (ReqUINop, Nothing)  -- TODO: somehow stop? restart?
     else do
       -- As long as UI faction is under AI control, check, once per move,
-      -- for benchmark game stop, after a set time.
-      stopAfter <- getsClient $ sstopAfter . sdebugCli
-      case stopAfter of
-        Nothing -> return (ReqUINop, Nothing)
-        Just stopA -> do
-          exit <- elapsedSessionTimeGT stopA
-          if exit then do
+      -- for benchmark game stop.
+      stopAfterFrames <- getsClient $ sstopAfterFrames . sdebugCli
+      case stopAfterFrames of
+        Nothing -> do
+          stopAfterSeconds <- getsClient $ sstopAfterSeconds . sdebugCli
+          case stopAfterSeconds of
+            Nothing -> return (ReqUINop, Nothing)
+            Just stopS -> do
+              exit <- elapsedSessionTimeGT stopS
+              if exit then do
+                tellAllClipPS
+                return (ReqUIGameExit, Nothing)  -- ask server to exit
+              else return (ReqUINop, Nothing)
+        Just stopF -> do
+          allNframes <- getsSession sallNframes
+          gnframes <- getsSession snframes
+          if allNframes + gnframes >= stopF then do
             tellAllClipPS
             return (ReqUIGameExit, Nothing)  -- ask server to exit
           else return (ReqUINop, Nothing)

@@ -258,10 +258,11 @@ tellAllClipPS = do
         cps = fromIntegral (timeFit time timeClip) / diff :: Double
         fps = fromIntegral nframes / diff :: Double
     clientPrintUI $
-      "Session time:" <+> tshow diff <> "s."
+      "Session time:" <+> tshow diff <> "s; frames:" <+> tshow nframes <> "."
       <+> "Average clips per second:" <+> tshow cps <> "."
       <+> "Average FPS:" <+> tshow fps <> "."
 
+-- TODO: dedup
 tellGameClipPS :: MonadClientUI m => m ()
 tellGameClipPS = do
   bench <- getsClient $ sbenchmark . sdebugCli
@@ -277,7 +278,7 @@ tellGameClipPS = do
           fps = fromIntegral nframes / diff :: Double
       -- This means: "Game portion after last reload time:...".
       clientPrintUI $
-        "Game time:" <+> tshow diff <> "s."
+        "Game time:" <+> tshow diff <> "s; frames:" <+> tshow nframes <> "."
         <+> "Average clips per second:" <+> tshow cps <> "."
         <+> "Average FPS:" <+> tshow fps <> "."
 

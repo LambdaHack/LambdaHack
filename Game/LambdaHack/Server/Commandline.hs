@@ -70,9 +70,14 @@ debugArgs args = do
         in debugSer { scurDiffSer
                     , snewGameSer = True
                     , sdebugCli = (sdebugCli debugSer) {snewGameCli = True}}
-      parseArgs ("--stopAfter" : s : rest) =
+      parseArgs ("--stopAfterSeconds" : s : rest) =
         let debugSer = parseArgs rest
-        in debugSer {sdebugCli = (sdebugCli debugSer) {sstopAfter = Just $ read s}}
+        in debugSer {sdebugCli =
+             (sdebugCli debugSer) {sstopAfterSeconds = Just $ read s}}
+      parseArgs ("--stopAfterFrames" : s : rest) =
+        let debugSer = parseArgs rest
+        in debugSer {sdebugCli =
+             (sdebugCli debugSer) {sstopAfterFrames = Just $ read s}}
       parseArgs ("--benchmark" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {sbenchmark = True}}

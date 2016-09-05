@@ -12,37 +12,38 @@ import Data.Binary
 import GHC.Generics (Generic)
 
 data DebugModeCli = DebugModeCli
-  { sfontFamily     :: !(Maybe Text)
+  { sfontFamily       :: !(Maybe Text)
       -- ^ Font family to use for the main game window.
-  , sfontSize       :: !(Maybe Text)
+  , sfontSize         :: !(Maybe Text)
       -- ^ Font size to use for the main game window.
-  , scolorIsBold    :: !(Maybe Bool)
+  , scolorIsBold      :: !(Maybe Bool)
       -- ^ Whether to use bold attribute for colorful characters.
-  , smaxFps         :: !(Maybe Int)
+  , smaxFps           :: !(Maybe Int)
       -- ^ Maximal frames per second.
       -- This is better low and fixed, to avoid jerkiness and delays
       -- that tell the player there are many intelligent enemies on the level.
       -- That's better than scaling AI sofistication down based
       -- on the FPS setting and machine speed.
-  , sdisableAutoYes :: !Bool
+  , sdisableAutoYes   :: !Bool
       -- ^ Never auto-answer all prompts, even if under AI control.
-  , snoAnim         :: !(Maybe Bool)
+  , snoAnim           :: !(Maybe Bool)
       -- ^ Don't show any animations.
-  , snewGameCli     :: !Bool
+  , snewGameCli       :: !Bool
       -- ^ Start a new game, overwriting the save file.
-  , sbenchmark      :: !Bool
+  , sbenchmark        :: !Bool
       -- ^ Don't create directories and files and show time stats.
-  , stitle          :: !(Maybe Text)
-  , saddress        :: !(Maybe Text)
-  , ssavePrefixCli  :: !String
+  , stitle            :: !(Maybe Text)
+  , saddress          :: !(Maybe Text)
+  , ssavePrefixCli    :: !String
       -- ^ Prefix of the save game file name.
-  , sfrontendStd    :: !Bool
+  , sfrontendStd      :: !Bool
       -- ^ Whether to use the stdout/stdin frontend for all clients.
-  , sfrontendNull   :: !Bool
+  , sfrontendNull     :: !Bool
       -- ^ Whether to use void (no input/output) frontend for all clients.
-  , sdbgMsgCli      :: !Bool
+  , sdbgMsgCli        :: !Bool
       -- ^ Show clients' internal debug messages.
-  , sstopAfter      :: !(Maybe Int)
+  , sstopAfterSeconds :: !(Maybe Int)
+  , sstopAfterFrames  :: !(Maybe Int)
   }
   deriving (Show, Eq, Generic)
 
@@ -64,5 +65,6 @@ defDebugModeCli = DebugModeCli
   , sfrontendStd = False
   , sfrontendNull = False
   , sdbgMsgCli = False
-  , sstopAfter = Nothing
+  , sstopAfterSeconds = Nothing
+  , sstopAfterFrames = Nothing
   }
