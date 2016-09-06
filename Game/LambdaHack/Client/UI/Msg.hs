@@ -132,7 +132,7 @@ addReport !(History rb) !time (Report m') =
         _ -> History $ RB.cons (time, rep) rb
 
 lengthHistory :: History -> Int
-lengthHistory (History rs) = RB.rbLength rs
+lengthHistory (History rs) = RB.length rs
 
 linesHistory :: History -> [(Time, Report)]
 linesHistory (History rb) = RB.toList rb
