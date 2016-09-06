@@ -255,9 +255,8 @@ library
                       ExistentialQuantification, GADTs, StandaloneDeriving,
                       DataKinds, KindSignatures
 --, DeriveGeneric
-  ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
-  ghc-options:        -fno-warn-auto-orphans -fno-warn-implicit-prelude
-  ghc-options:        -fno-ignore-asserts -funbox-strict-fields
+  ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-unrecognised-pragmas
+  ghc-options:        -fno-warn-implicit-prelude -fno-ignore-asserts -funbox-strict-fields
   ghc-options:        -O2 -fno-ignore-asserts
 
   if impl(ghcjs) {
@@ -351,9 +350,8 @@ executable LambdaHack
   default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings
                       BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf
   other-extensions:   TemplateHaskell
-  ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
-  ghc-options:        -fno-warn-auto-orphans -fno-warn-implicit-prelude
-  ghc-options:        -fno-ignore-asserts -funbox-strict-fields
+  ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-unrecognised-pragmas
+  ghc-options:        -fno-warn-implicit-prelude -fno-ignore-asserts -funbox-strict-fields
   ghc-options:        -threaded "-with-rtsopts=-C0.005 -K1K" -rtsopts
   ghc-options:        -O2 -fno-ignore-asserts
 
@@ -404,9 +402,8 @@ test-suite test
   default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings
                       BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf
   other-extensions:   TemplateHaskell
-  ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
-  ghc-options:        -fno-warn-auto-orphans -fno-warn-implicit-prelude
-  ghc-options:        -fno-ignore-asserts -funbox-strict-fields
+  ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-unrecognised-pragmas
+  ghc-options:        -fno-warn-implicit-prelude -fno-ignore-asserts -funbox-strict-fields
   ghc-options:        -threaded "-with-rtsopts=-C0.005 -K1K" -rtsopts
   ghc-options:        -O2 -fno-ignore-asserts
 
