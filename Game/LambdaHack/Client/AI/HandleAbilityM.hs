@@ -106,8 +106,7 @@ actionStrategy aid = do
         deltaSerious (bcalmDelta body)
       actorMaxSk = aSkills ar
       abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
-      stratToFreq :: MonadStateRead m
-                  => Int -> m (Strategy RequestAnyAbility)
+      stratToFreq :: Int -> m (Strategy RequestAnyAbility)
                   -> m (Frequency RequestAnyAbility)
       stratToFreq scale mstrat = do
         st <- mstrat

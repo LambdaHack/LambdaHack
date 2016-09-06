@@ -588,12 +588,12 @@ reqGameSave = do
 
 -- * ReqTactic
 
-reqTactic :: (MonadAtomic m, MonadServer m) => FactionId -> Tactic -> m ()
+reqTactic :: MonadAtomic m => FactionId -> Tactic -> m ()
 reqTactic fid toT = do
   fromT <- getsState $ ftactic . gplayer . (EM.! fid) . sfactionD
   execUpdAtomic $ UpdTacticFaction fid toT fromT
 
 -- * ReqAutomate
 
-reqAutomate :: (MonadAtomic m, MonadServer m) => FactionId -> m ()
+reqAutomate :: MonadAtomic m => FactionId -> m ()
 reqAutomate fid = execUpdAtomic $ UpdAutoFaction fid True

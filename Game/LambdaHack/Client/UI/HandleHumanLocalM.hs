@@ -449,7 +449,7 @@ selectAidHuman leader = do
 
 -- * SelectNone
 
-selectNoneHuman :: (MonadClientUI m, MonadClient m) => m ()
+selectNoneHuman :: MonadClientUI m => m ()
 selectNoneHuman = do
   side <- getsClient sside
   lidV <- viewedLevelUI

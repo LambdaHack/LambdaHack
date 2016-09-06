@@ -209,13 +209,13 @@ mapWithKeyMA f Array{..} =
 
 -- | Yield the point coordinates of a minimum element of the array.
 -- The array may not be empty.
-minIndexA :: Enum c => Array c -> Point
+minIndexA :: Array c -> Point
 {-# INLINE minIndexA #-}
 minIndexA Array{..} = punindex axsize $ U.minIndex avector
 
 -- | Yield the point coordinates of the last minimum element of the array.
 -- The array may not be empty.
-minLastIndexA :: Enum c => Array c -> Point
+minLastIndexA :: Array c -> Point
 {-# INLINE minLastIndexA #-}
 minLastIndexA Array{..} =
   punindex axsize
@@ -226,7 +226,7 @@ minLastIndexA Array{..} =
 
 -- | Yield the point coordinates of all the minimum elements of the array.
 -- The array may not be empty.
-minIndexesA :: Enum c => Array c -> [Point]
+minIndexesA :: Array c -> [Point]
 {-# INLINE minIndexesA #-}
 minIndexesA Array{..} =
   map (punindex axsize)
@@ -238,13 +238,13 @@ minIndexesA Array{..} =
 
 -- | Yield the point coordinates of the first maximum element of the array.
 -- The array may not be empty.
-maxIndexA :: Enum c => Array c -> Point
+maxIndexA :: Array c -> Point
 {-# INLINE maxIndexA #-}
 maxIndexA Array{..} = punindex axsize $ U.maxIndex avector
 
 -- | Yield the point coordinates of the last maximum element of the array.
 -- The array may not be empty.
-maxLastIndexA :: Enum c => Array c -> Point
+maxLastIndexA :: Array c -> Point
 {-# INLINE maxLastIndexA #-}
 maxLastIndexA Array{..} =
   punindex axsize
@@ -254,7 +254,7 @@ maxLastIndexA Array{..} =
   imax (i, x) (j, y) = i `seq` j `seq` if x <= y then (j, y) else (i, x)
 
 -- | Force the array not to retain any extra memory.
-forceA :: Enum c => Array c -> Array c
+forceA :: Array c -> Array c
 {-# INLINE forceA #-}
 forceA Array{..} = Array{avector = U.force avector, ..}
 

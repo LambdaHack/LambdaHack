@@ -39,8 +39,7 @@ handleResponseAI cmd = case cmd of
     sendRequest cmdC
 
 handleSelfAI :: ( MonadClientSetup m
-                , MonadAtomic m
-                , MonadClientWriteRequest RequestAI m )
+                , MonadAtomic m )
              => UpdAtomic -> m ()
 handleSelfAI cmdA = do
   cmds <- cmdAtomicFilterCli cmdA
@@ -67,8 +66,7 @@ handleResponseUI cmd = case cmd of
 
 handleSelfUI :: ( MonadClientSetup m
                 , MonadClientUI m
-                , MonadAtomic m
-                , MonadClientWriteRequest RequestUI m )
+                , MonadAtomic m )
              => UpdAtomic -> m ()
 handleSelfUI cmdA = do
   cmds <- cmdAtomicFilterCli cmdA

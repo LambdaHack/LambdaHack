@@ -435,7 +435,7 @@ effectDominate recursiveCall source target = do
 
 -- ** Impress
 
-effectImpress :: (MonadAtomic m, MonadServer m)
+effectImpress :: MonadAtomic m
               => ActorId -> ActorId -> m Bool
 effectImpress source target = do
   sb <- getsState $ getActorBody source
@@ -1061,7 +1061,7 @@ effectActivateInv execSfx target symbol =
   effectTransformEqp execSfx target symbol CInv $ \iid _ ->
     applyItem target iid CInv
 
-effectTransformEqp :: forall m. (MonadAtomic m, MonadServer m)
+effectTransformEqp :: forall m. MonadAtomic m
                    => m () -> ActorId -> Char -> CStore
                    -> (ItemId -> ItemQuant -> m ())
                    -> m Bool
@@ -1082,7 +1082,7 @@ effectTransformEqp execSfx target symbol cstore m = do
 
 -- ** ApplyPerfume
 
-effectApplyPerfume :: (MonadAtomic m, MonadServer m)
+effectApplyPerfume :: MonadAtomic m
                    => m () -> ActorId -> m Bool
 effectApplyPerfume execSfx target = do
   tb <- getsState $ getActorBody target
@@ -1111,7 +1111,7 @@ effectOneOf recursiveCall l = do
 
 -- ** Recharging
 
-effectRecharging :: (MonadAtomic m, MonadServer m)
+effectRecharging :: MonadAtomic m
                  => (IK.Effect -> m Bool)
                  -> IK.Effect -> Bool
                  -> m Bool
@@ -1122,7 +1122,7 @@ effectRecharging recursiveCall e recharged =
 
 -- ** Temporary
 
-effectTemporary :: (MonadAtomic m, MonadServer m)
+effectTemporary :: MonadAtomic m
                 => m () -> ActorId -> ItemId
                 -> m Bool
 effectTemporary execSfx source iid = do

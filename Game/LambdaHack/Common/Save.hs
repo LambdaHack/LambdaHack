@@ -10,7 +10,6 @@ import Game.LambdaHack.Common.Prelude
 import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Exception as Ex hiding (handle)
-import Data.Binary
 import qualified Data.Char as Char
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -41,7 +40,7 @@ saveToChan toSave s = do
 -- All this is not needed if we bkp save each turn, but that's costly.
 
 -- | Repeatedly save a simple serialized version of the current state.
-loopSave :: Binary a => (FilePath -> IO ()) -> (FilePath -> a -> IO ())
+loopSave :: (FilePath -> IO ()) -> (FilePath -> a -> IO ())
          -> (a -> FilePath) -> ChanSave a -> IO ()
 loopSave tryCreateDir encodeEOF saveFile toSave =
   loop
@@ -59,7 +58,7 @@ loopSave tryCreateDir encodeEOF saveFile toSave =
         loop
       Nothing -> return ()  -- exit
 
-wrapInSaves :: Binary a => (FilePath -> IO ()) -> (FilePath -> a -> IO ())
+wrapInSaves :: (FilePath -> IO ()) -> (FilePath -> a -> IO ())
             -> (a -> FilePath) -> (ChanSave a -> IO ()) -> IO ()
 wrapInSaves tryCreateDir encodeEOF saveFile exe = do
   -- We don't merge this with the other calls to waitForChildren,
@@ -86,8 +85,7 @@ wrapInSaves tryCreateDir encodeEOF saveFile exe = do
 
 -- | Restore a saved game, if it exists. Initialize directory structure
 -- and copy over data files, if needed.
-restoreGame :: Binary a
-            => (FilePath -> IO ())
+restoreGame :: (FilePath -> IO ())
             -> (FilePath
                 -> (FilePath -> IO FilePath)
                 -> [(FilePath, FilePath)]
