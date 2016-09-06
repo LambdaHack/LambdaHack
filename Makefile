@@ -54,17 +54,17 @@ benchFrontendCampaign:
 benchFrontendBattle:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --benchmark --stopAfterFrames 2500 --automateAll --keepAutomated --gameMode battle --setDungeonRng 17 --setMainRng 17
 
-benchNull: benchCampaign benchBattle
+benchNull: benchBattle benchCampaign
 
-bench: benchCampaign benchFrontendCampaign benchBattle benchFrontendBattle
+bench:  benchBattle benchFrontendBattle benchCampaign benchFrontendCampaign
 
 nodeBenchCampaign:
-	node dist/build/LambdaHack/LambdaHack.jsexe/all.js --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 17 --setMainRng 17
+	node dist/build/LambdaHack/LambdaHack.jsexe/all.js --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 17 --setMainRng 17
 
 nodeBenchBattle:
-	node dist/build/LambdaHack/LambdaHack.jsexe/all.js --dbgMsgSer --newGame 4 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 500 --automateAll --keepAutomated --gameMode battle --setDungeonRng 17 --setMainRng 17
+	node dist/build/LambdaHack/LambdaHack.jsexe/all.js --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 250 --automateAll --keepAutomated --gameMode battle --setDungeonRng 17 --setMainRng 17
 
-nodeBench: nodeBenchCampaign nodeBenchBattle
+nodeBench: nodeBenchBattle nodeBenchCampaign
 
 
 test-travis-short: test-short
