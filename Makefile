@@ -58,6 +58,14 @@ benchNull: benchBattle benchCampaign
 
 bench:  benchBattle benchFrontendBattle benchCampaign benchFrontendCampaign
 
+nativeBenchCampaign:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 17 --setMainRng 17
+
+nativeBenchBattle:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 250 --automateAll --keepAutomated --gameMode battle --setDungeonRng 17 --setMainRng 17
+
+nativeBench: nativeBenchBattle nativeBenchCampaign
+
 nodeBenchCampaign:
 	node dist/build/LambdaHack/LambdaHack.jsexe/all.js --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 17 --setMainRng 17
 
