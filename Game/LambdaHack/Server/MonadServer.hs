@@ -99,24 +99,25 @@ dumpRngs = do
 
 -- TODO: refactor wrt Game.LambdaHack.Common.Save
 -- | Read the high scores dictionary. Return the empty table if no file.
-restoreScore :: MonadServer m => Kind.COps -> m HighScore.ScoreDict
+restoreScore :: forall m. MonadServer m => Kind.COps -> m HighScore.ScoreDict
 restoreScore Kind.COps{corule} = do
-  let stdRuleset = Kind.stdRuleset corule
-      scoresFile = rscoresFile stdRuleset
-  dataDir <- liftIO appDataDir
-  let path = dataDir </> scoresFile
-  configExists <- liftIO $ doesFileExist path
-  mscore <- liftIO $ do
-    res <- Ex.try $
+  bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
+  mscore <- if bench then return Nothing else do
+    let stdRuleset = Kind.stdRuleset corule
+        scoresFile = rscoresFile stdRuleset
+    dataDir <- liftIO appDataDir
+    let path = dataDir </> scoresFile
+    configExists <- liftIO $ doesFileExist path
+    res <- liftIO $ Ex.try $
       if configExists then do
         s <- strictDecodeEOF path
         return $ Just s
       else return Nothing
-    let handler :: Ex.SomeException -> IO (Maybe a)
+    let handler :: Ex.SomeException -> m (Maybe a)
         handler e = do
           let msg = "High score restore failed. The error message is:"
                     <+> (T.unwords . T.lines) (tshow e)
-          delayPrint msg
+          liftIO $ delayPrint msg
           return Nothing
     either handler return res
   maybe (return HighScore.empty) return mscore

@@ -37,7 +37,7 @@ import Game.LambdaHack.Server.State
 tieKnot :: [String] -> IO ()
 tieKnot args = do
   -- Options for the next game taken from the commandline.
-  sdebugNxt@DebugModeSer{sallClear} <- debugArgs args
+  sdebugNxt@DebugModeSer{sallClear, sdebugCli} <- debugArgs args
   let -- Common content operations, created from content definitions.
       -- Evaluated fully to discover errors ASAP and free memory.
       cotile = Kind.createOps Content.TileKind.cdefs
@@ -56,11 +56,11 @@ tieKnot args = do
       !copsClient = Content.KeyKind.standardKeys
   -- Parsed UI client configuration file.
   -- It is reloaded at each game executable start.
-  sconfig <- mkConfig cops
+  sconfig <- mkConfig cops sdebugCli
   -- Options for the clients modified with the configuration file.
   -- The client debug inside server debug only holds the client commandline
   -- options and is never updated with config options, etc.
-  let sdebugMode = applyConfigToDebug cops sconfig $ sdebugCli sdebugNxt
+  let sdebugMode = applyConfigToDebug cops sconfig sdebugCli
       -- Partially applied main loops of the clients.
       exeClientAI = executorCli cops ()
                     $ loopAI sdebugMode

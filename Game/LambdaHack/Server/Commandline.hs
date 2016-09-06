@@ -30,8 +30,9 @@ debugArgs args = do
         , "  --keepAutomated  keep factions automated after game over"
         , "  --newGame n  start a new game, overwriting the save file,"
         , "               with difficulty for all UI players set to n"
-        , "  --stopAfter n  exit this game session after around n seconds"
-        , "  --benchmark  print stats, limit saving and other file operations"
+        , "  --stopAfterSeconds n  exit game session after around n seconds"
+        , "  --stopAfterFrames n  exit game session after around n frames"
+        , "  --benchmark  restrict file IO, print stats"
         , "  --setDungeonRng s  set dungeon generation RNG seed to string s"
         , "  --setMainRng s  set the main game RNG seed to string s"
         , "  --dumpInitRngs  dump RNG states from the start of the game"
@@ -43,8 +44,8 @@ debugArgs args = do
         , "  --disableAutoYes  never auto-answer all prompts"
         , "  --noAnim  don't show any animations"
         , "  --savePrefix  prepend the text to all savefile names"
-        , "  --frontendStd  use the simple stdout/stdin frontend"
-        , "  --frontendNull  use no frontend at all (for AIvsAI benchmarks)"
+        , "  --frontendStd  use the dumb stdout/stdin frontend (for benchmarks)"
+        , "  --frontendNull  use no frontend at all (for benchmarks)"
         , "  --dbgMsgCli  let clients emit their internal debug messages"
         ]
       parseArgs [] = defDebugModeSer

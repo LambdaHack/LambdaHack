@@ -91,15 +91,15 @@ parseConfig cfg =
   in Config{..}
 
 -- | Read and parse UI config file.
-mkConfig :: Kind.COps -> IO Config
-mkConfig Kind.COps{corule} = do
+mkConfig :: Kind.COps -> DebugModeCli -> IO Config
+mkConfig Kind.COps{corule} sdebugCli = do
   let stdRuleset = Kind.stdRuleset corule
       cfgUIName = rcfgUIName stdRuleset
       sUIDefault = rcfgUIDefault stdRuleset
       cfgUIDefault = either (assert `failure`) id $ Ini.parse sUIDefault
   dataDir <- appDataDir
   let userPath = dataDir </> cfgUIName <.> "ini"
-  cfgUser <- do
+  cfgUser <- if sbenchmark sdebugCli then return Ini.emptyConfig else do
     cpExists <- doesFileExist userPath
     if not cpExists
       then return Ini.emptyConfig
