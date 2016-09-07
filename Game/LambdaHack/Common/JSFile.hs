@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
+-- {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 -- | Saving/loading with serialization and compression.
 module Game.LambdaHack.Common.JSFile
   ( encodeEOF, strictDecodeEOF, tryCreateDir, tryCopyDataFiles, appDataDir
