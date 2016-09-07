@@ -133,12 +133,19 @@ frameTimeoutThread delta fdelay RawFrontend{..} = do
 frontendName :: String
 frontendName = Chosen.frontendName
 
+lazyStartup :: IO RawFrontend
+lazyStartup = createRawFrontend (\_ -> return ()) (return ())
+
 nullStartup :: IO RawFrontend
-nullStartup = createRawFrontend (\_ -> return ()) (return ())
+nullStartup = do
+  let seqAttr attr = fromEnum attr `seq` return ()
+      seqFrame SingleFrame{singleFrame} = mapM_ seqAttr $ concat singleFrame
+  createRawFrontend seqFrame (return ())
 
 chanFrontendIO :: DebugModeCli -> IO ChanFrontend
 chanFrontendIO sdebugCli = do
   let startup | sfrontendNull sdebugCli = nullStartup
+              | sfrontendLazy sdebugCli = lazyStartup
               | sfrontendStd sdebugCli = Std.startup sdebugCli
               | otherwise = Chosen.startup sdebugCli
       maxFps = fromMaybe defaultMaxFps $ smaxFps sdebugCli

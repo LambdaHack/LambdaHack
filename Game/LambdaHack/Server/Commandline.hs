@@ -45,7 +45,8 @@ debugArgs args = do
         , "  --noAnim  don't show any animations"
         , "  --savePrefix  prepend the text to all savefile names"
         , "  --frontendStd  use the dumb stdout/stdin frontend (for benchmarks)"
-        , "  --frontendNull  use no frontend at all (for benchmarks)"
+        , "  --frontendNull  use frontend with no display (for benchmarks)"
+        , "  --frontendLazy  use frontend not even computing display (for benchmarks)"
         , "  --dbgMsgCli  let clients emit their internal debug messages"
         ]
       parseArgs [] = defDebugModeSer
@@ -121,6 +122,9 @@ debugArgs args = do
       parseArgs ("--frontendNull" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {sfrontendNull = True}}
+      parseArgs ("--frontendLazy" : rest) =
+        let debugSer = parseArgs rest
+        in debugSer {sdebugCli = (sdebugCli debugSer) {sfrontendLazy = True}}
       parseArgs ("--dbgMsgCli" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {sdbgMsgCli = True}}

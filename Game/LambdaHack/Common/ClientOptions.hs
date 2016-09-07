@@ -37,9 +37,11 @@ data DebugModeCli = DebugModeCli
   , ssavePrefixCli    :: !String
       -- ^ Prefix of the save game file name.
   , sfrontendStd      :: !Bool
-      -- ^ Whether to use the stdout/stdin frontend for all clients.
+      -- ^ Whether to use the stdout/stdin frontend.
   , sfrontendNull     :: !Bool
-      -- ^ Whether to use void (no input/output) frontend for all clients.
+      -- ^ Whether to use null (no input/output) frontend.
+  , sfrontendLazy     :: !Bool
+      -- ^ Whether to use lazy (output not even calculated) frontend.
   , sdbgMsgCli        :: !Bool
       -- ^ Show clients' internal debug messages.
   , sstopAfterSeconds :: !(Maybe Int)
@@ -64,6 +66,7 @@ defDebugModeCli = DebugModeCli
   , ssavePrefixCli = "save"
   , sfrontendStd = False
   , sfrontendNull = False
+  , sfrontendLazy = False
   , sdbgMsgCli = False
   , sstopAfterSeconds = Nothing
   , sstopAfterFrames = Nothing
