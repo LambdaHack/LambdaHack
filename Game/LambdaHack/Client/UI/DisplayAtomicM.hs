@@ -522,7 +522,6 @@ quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Actor -> Maybe Status -> m ()
 quitFactionUI fid mbody toSt = do
   Kind.COps{coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
-  isNoConfirms <- isNoConfirmsGame
   fact <- getsState $ (EM.! fid) . sfactionD
   let fidName = MU.Text $ gname fact
       horror = isHorrorFact fact
@@ -533,8 +532,8 @@ quitFactionUI fid mbody toSt = do
   let msgIfSide _ | fid /= side = Nothing
       msgIfSide s = Just s
       (startingPart, partingPart) = case toSt of
-        _ | isNoConfirms || horror ->
-          -- Ignore screensavers and summoned actors' factions.
+        _ | horror ->
+          -- Ignore summoned actors' factions.
           (Nothing, Nothing)
         Just Status{stOutcome=Killed} ->
           ( Just "be eliminated"
@@ -567,7 +566,8 @@ quitFactionUI fid mbody toSt = do
     Just sp -> promptAdd $ makeSentence [MU.SubjectVerbSg fidName sp]
   case (toSt, partingPart) of
     (Just status, Just pp) -> do
-      go <- displaySpaceEsc ColorFull ""
+      isNoConfirms <- isNoConfirmsGame
+      go <- if isNoConfirms then return False else displaySpaceEsc ColorFull ""
       recordHistory  -- we are going to exit or restart, so record and clear
       when go $ do
         lidV <- viewedLevelUI
@@ -646,8 +646,8 @@ quitFactionUI fid mbody toSt = do
           void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
           -- TODO: perhaps use a vertical animation instead, e.g., roll down
           -- and put it before item and score screens (on blank background)
-          unless (fmap stOutcome toSt == Just Camping) $
-            fadeOutOrIn True
+      unless (fmap stOutcome toSt == Just Camping) $
+        fadeOutOrIn True
     _ -> return ()
 
 discover :: MonadClientUI m
