@@ -28,9 +28,8 @@ handleResponseAI :: ( MonadClientSetup m
                     , MonadClientWriteRequest RequestAI m )
                  => ResponseAI -> m ()
 handleResponseAI cmd = case cmd of
-  RespUpdAtomicAI cmdA -> do
+  RespUpdAtomicAI cmdA ->
     handleSelfAI cmdA
-    sendRequest (ReqAINop, Nothing)
   RespQueryAI -> do
     cmdC <- queryAI
     sendRequest cmdC
@@ -53,13 +52,11 @@ handleResponseUI :: ( MonadClientSetup m
                     , MonadClientWriteRequest RequestUI m )
                  => ResponseUI -> m ()
 handleResponseUI cmd = case cmd of
-  RespUpdAtomicUI cmdA -> do
+  RespUpdAtomicUI cmdA ->
     handleSelfUI cmdA
-    sendRequest (ReqUINop, Nothing)
   RespSfxAtomicUI sfx -> do
     displayRespSfxAtomicUI False sfx
     storeUndo $ SfxAtomic sfx
-    sendRequest (ReqUINop, Nothing)
   RespQueryUI -> do
     cmdH <- queryUI
     sendRequest cmdH
