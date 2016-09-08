@@ -189,6 +189,7 @@ library
                       Game.LambdaHack.Content.RuleKind
                       Game.LambdaHack.Content.TileKind
                       Game.LambdaHack.SampleImplementation.SampleMonadClient
+                      Game.LambdaHack.SampleImplementation.SampleMonadClientAsThread
                       Game.LambdaHack.SampleImplementation.SampleMonadServer
                       Game.LambdaHack.Server
                       Game.LambdaHack.Server.Commandline
