@@ -352,17 +352,17 @@ executable LambdaHack
   other-extensions:   TemplateHaskell
   ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-unrecognised-pragmas
   ghc-options:        -fno-warn-implicit-prelude -fno-ignore-asserts -funbox-strict-fields
-  ghc-options:        -threaded -rtsopts "-with-rtsopts=-H24m"
-  ghc-options:        -O2 -fno-ignore-asserts
+  ghc-options:        -threaded -rtsopts -O2 -fno-ignore-asserts
 
   if impl(ghcjs) {
 -- This is the largest GHCJS_BUSY_YIELD value that does not cause dropped frames
 -- on my machine with default --maxFps.
     cpp-options:      -DGHCJS_BUSY_YIELD=50
+    ghc-options:      "-with-rtsopts=-H24m"
 --TODO:    js-sources: a drop-in replacement for zlib when there is one
   } else {
     build-depends:    zlib >= 0.5.3.1
-    ghc-options:      "-with-rtsopts=-K1K"
+    ghc-options:      "-with-rtsopts=-H24m -K1K"
   }
 
 test-suite test
@@ -405,12 +405,12 @@ test-suite test
   other-extensions:   TemplateHaskell
   ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-unrecognised-pragmas
   ghc-options:        -fno-warn-implicit-prelude -fno-ignore-asserts -funbox-strict-fields
-  ghc-options:        -threaded -rtsopts "-with-rtsopts=-H24m"
-  ghc-options:        -O2 -fno-ignore-asserts
+  ghc-options:        -threaded -rtsopts -O2 -fno-ignore-asserts
 
   if impl(ghcjs) {
     cpp-options:      -DGHCJS_BUSY_YIELD=50
+    ghc-options:      "-with-rtsopts=-H24m"
   } else {
     build-depends:    zlib >= 0.5.3.1
-    ghc-options:      "-with-rtsopts=-K1K"
+    ghc-options:      "-with-rtsopts=-H24m -K1K"
   }
