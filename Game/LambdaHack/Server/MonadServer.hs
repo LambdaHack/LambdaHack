@@ -5,14 +5,12 @@
 module Game.LambdaHack.Server.MonadServer
   ( -- * The server monad
     MonadServer( getServer, getsServer, modifyServer, putServer
-               , saveChanServer  -- exposed only to be implemented, not used
                , liftIO  -- exposed only to be implemented, not used
                )
     -- * Assorted primitives
   , debugPossiblyPrint, debugPossiblyPrintAndExit
-  , serverPrint, saveServer, saveName, dumpRngs
-  , restoreScore, registerScore
-  , tryRestore, rndToAction, getSetGen
+  , serverPrint, dumpRngs, restoreScore, registerScore
+  , rndToAction, getSetGen
   ) where
 
 import Prelude ()
@@ -38,11 +36,9 @@ import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Save
-import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
@@ -57,7 +53,6 @@ class MonadStateRead m => MonadServer m where
   -- We do not provide a MonadIO instance, so that outside
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO         :: IO a -> m a
-  saveChanServer :: m (Save.ChanSave (State, StateServer))
 
 debugPossiblyPrint :: MonadServer m => Text -> m ()
 debugPossiblyPrint t = do
@@ -78,16 +73,6 @@ serverPrint :: MonadServer m => Text -> m ()
 serverPrint t = liftIO $ do
   T.hPutStrLn stderr t
   hFlush stderr
-
-saveServer :: MonadServer m => m ()
-saveServer = do
-  s <- getState
-  ser <- getServer
-  toSave <- saveChanServer
-  liftIO $ Save.saveToChan toSave (s, ser)
-
-saveName :: String
-saveName = serverSaveName
 
 -- | Dumps RNG states from the start of the game to stderr.
 dumpRngs :: MonadServer m => m ()
@@ -173,21 +158,6 @@ registerScore status mbody fid = do
                            ourVictims theirVictims
                            (fhiCondPoly $ gplayer fact)
   outputScore registeredScore
-
-tryRestore :: MonadServer m
-           => Kind.COps -> DebugModeSer -> m (Maybe (State, StateServer))
-tryRestore Kind.COps{corule} sdebugSer = do
-  let bench = sbenchmark $ sdebugCli sdebugSer
-  if bench then return Nothing
-  else do
-    let stdRuleset = Kind.stdRuleset corule
-        scoresFile = rscoresFile stdRuleset
-        pathsDataFile = rpathsDataFile stdRuleset
-        prefix = ssavePrefixSer sdebugSer
-    let copies = [( "GameDefinition" </> scoresFile
-                  , scoresFile )]
-        name = prefix <.> saveName
-    liftIO $ Save.restoreGame tryCreateDir tryCopyDataFiles strictDecodeEOF name copies pathsDataFile
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadServer m => Rnd a -> m a

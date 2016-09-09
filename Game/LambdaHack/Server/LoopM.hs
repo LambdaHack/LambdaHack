@@ -64,18 +64,21 @@ loopSer :: (MonadAtomic m, MonadServerReadRequest m)
         -> (Kind.COps -> FactionId -> ChanServer ResponseAI RequestAI -> IO ())
              -- ^ the code to run for AI clients
         -> m ()
-loopSer sdebug copsClient sconfig sdebugCli
-        executorUI executorAI = do
+loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
   -- Recover states and launch clients.
   cops <- getsState scops
-  let updConn = updateConn False cops copsClient sconfig sdebugCli
+  let useTreadsForNewClients = False
+      updConn = updateConn useTreadsForNewClients
+                           cops copsClient sconfig sdebugCli
                            executorUI executorAI
   restored <- tryRestore cops sdebug
   case restored of
-    Just (sRaw, ser) | not $ snewGameSer sdebug -> do  -- run a restored game
+    Just (sRaw, ser, dict) | not $ snewGameSer sdebug -> do  -- a restored game
       -- First, set the previous cops, to send consistent info to clients.
-      let setPreviousCops = const cops
-      execUpdAtomic $ UpdResumeServer $ updateCOps setPreviousCops sRaw
+      execUpdAtomic $ UpdResumeServer $ updateCOps (const cops) sRaw
+      putDict dict
+      unless useTreadsForNewClients $  -- avoid duplicated computation
+        updateCopsDict copsClient sconfig sdebugCli
       putServer ser
       modifyServer $ \ser2 -> ser2 {sdebugNxt = sdebug}
       applyDebug
@@ -91,7 +94,7 @@ loopSer sdebug copsClient sconfig sdebugCli
     _ -> do  -- Starting the first new game for this savefile.
       -- Set up commandline debug mode
       let mrandom = case restored of
-            Just (_, ser) -> Just $ srandom ser
+            Just (_, ser, _) -> Just $ srandom ser
             Nothing -> Nothing
       s <- gameReset cops sdebug Nothing mrandom
       let debugBarRngs = sdebug {sdungeonRng = Nothing, smainRng = Nothing}

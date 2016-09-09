@@ -42,7 +42,7 @@ data SerState = SerState
   { serState  :: !State           -- ^ current global state
   , serServer :: !StateServer     -- ^ current server state
   , serDict   :: !ConnServerDict  -- ^ client-server connection information
-  , serToSave :: !(Save.ChanSave (State, StateServer))
+  , serToSave :: !(Save.ChanSave (State, StateServer, ConnServerDict))
                                   -- ^ connection to the save thread
   }
 
@@ -71,7 +71,6 @@ instance MonadServer SerImplementation where
   putServer    s = SerImplementation $ state $ \serS ->
     s `seq` ((), serS {serServer = s})
   liftIO         = SerImplementation . IO.liftIO
-  saveChanServer = SerImplementation $ gets serToSave
 
 instance MonadServerReadRequest SerImplementation where
   getDict      = SerImplementation $ gets serDict
@@ -81,6 +80,7 @@ instance MonadServerReadRequest SerImplementation where
     in ((), serS {serDict = newSerDict})
   putDict s = SerImplementation $ state $ \serS ->
     s `seq` ((), serS {serDict = s})
+  saveChanServer = SerImplementation $ gets serToSave
   liftIO = SerImplementation . IO.liftIO
 
 -- | The game-state semantics of atomic commands
@@ -110,7 +110,7 @@ handleAndBroadcastServer atomic = do
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: Kind.COps -> SerImplementation () -> IO ()
 executorSer cops m = do
-  let saveFile (_, ser) = ssavePrefixSer (sdebugSer ser) <.> saveName
+  let saveFile (_, ser, _) = ssavePrefixSer (sdebugSer ser) <.> saveName
       totalState serToSave = SerState
         { serState = emptyState cops
         , serServer = emptyStateServer

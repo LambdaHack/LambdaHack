@@ -2,7 +2,7 @@
 -- | The server definitions for the server-client communication protocol.
 module Game.LambdaHack.Server.ProtocolM
   ( -- * The communication channels
-    CliSerQueue, ChanServer(..)
+    CliSerQueue, ChanServer(..), updateCopsDict
   , ConnServerDict  -- exposed only to be implemented, not used
     -- * The server-client communication monad
   , MonadServerReadRequest
@@ -10,13 +10,14 @@ module Game.LambdaHack.Server.ProtocolM
       , getsDict  -- exposed only to be implemented, not used
       , modifyDict  -- exposed only to be implemented, not used
       , putDict  -- exposed only to be implemented, not used
+      , saveChanServer  -- exposed only to be implemented, not used
       , liftIO  -- exposed only to be implemented, not used
       )
     -- * Protocol
-  , sendUpdateAI, sendQueryAI, sendNonLeaderQueryAI
-  , sendUpdateUI, sendQueryUI
+  , sendUpdateAI, sendQueryAI, sendNonLeaderQueryAI, sendUpdateUI, sendQueryUI
     -- * Assorted
   , killAllClients, childrenServer, updateConn
+  , saveServer, saveName, tryRestore
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ConnServerFaction
@@ -29,9 +30,11 @@ import Game.LambdaHack.Common.Prelude
 
 import Control.Concurrent
 import Control.Concurrent.Async
+import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM, mapWithKeyM_)
 import Game.LambdaHack.Common.Thread
+import System.FilePath
 import System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Atomic
@@ -40,47 +43,84 @@ import Game.LambdaHack.Client.HandleResponseM
 import Game.LambdaHack.Client.LoopM
 import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Client.UI.Config
+import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
+import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
+import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.SampleImplementation.SampleMonadClient
 import Game.LambdaHack.Server.DebugM
+import Game.LambdaHack.Server.FileM
 import Game.LambdaHack.Server.MonadServer hiding (liftIO)
 import Game.LambdaHack.Server.State
 
 type CliSerQueue = MVar
 
 writeQueueAI :: MonadServerReadRequest m
-              => ResponseAI -> CliSerQueue ResponseAI -> m ()
+             => ResponseAI -> CliSerQueue ResponseAI -> m ()
 writeQueueAI cmd responseS = do
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponseAI cmd
   liftIO $ putMVar responseS cmd
 
 writeQueueUI :: MonadServerReadRequest m
-              => ResponseUI -> CliSerQueue ResponseUI -> m ()
+             => ResponseUI -> CliSerQueue ResponseUI -> m ()
 writeQueueUI cmd responseS = do
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponseUI cmd
   liftIO $ putMVar responseS cmd
 
 readQueueAI :: MonadServerReadRequest m
-             => CliSerQueue RequestAI -> m RequestAI
+            => CliSerQueue RequestAI -> m RequestAI
 readQueueAI requestS = liftIO $ takeMVar requestS
 
 readQueueUI :: MonadServerReadRequest m
-             => CliSerQueue RequestUI -> m RequestUI
+            => CliSerQueue RequestUI -> m RequestUI
 readQueueUI requestS = liftIO $ takeMVar requestS
 
 newQueue :: IO (CliSerQueue a)
 newQueue = newEmptyMVar
+
+saveServer :: MonadServerReadRequest m => m ()
+saveServer = do
+  s <- getState
+  ser <- getServer
+  dictAll <- getDict
+  let f (Nothing, FState{}) = True
+      f (Just FState{}, FState{}) = True
+      f _ = False
+      dictFState = EM.filter f dictAll
+  toSave <- saveChanServer
+  liftIO $ Save.saveToChan toSave (s, ser, dictFState)
+
+saveName :: String
+saveName = serverSaveName
+
+tryRestore :: MonadServerReadRequest m
+           => Kind.COps -> DebugModeSer
+           -> m (Maybe (State, StateServer, ConnServerDict))
+tryRestore Kind.COps{corule} sdebugSer = do
+  let bench = sbenchmark $ sdebugCli sdebugSer
+  if bench then return Nothing
+  else do
+    let stdRuleset = Kind.stdRuleset corule
+        scoresFile = rscoresFile stdRuleset
+        pathsDataFile = rpathsDataFile stdRuleset
+        prefix = ssavePrefixSer sdebugSer
+    let copies = [( "GameDefinition" </> scoresFile
+                  , scoresFile )]
+        name = prefix <.> saveName
+    liftIO $ Save.restoreGame tryCreateDir tryCopyDataFiles strictDecodeEOF name copies pathsDataFile
 
 -- | Connection channel between the server and a single client.
 data ChanServer resp req = ChanServer
@@ -91,6 +131,12 @@ data ChanServer resp req = ChanServer
 data FrozenClient sess resp req =
     FState !(CliState sess)
   | FThread !(ChanServer resp req)
+
+instance Binary sess => Binary (FrozenClient sess resp req) where
+  put (FState cliS) = put cliS
+  put FThread{} =
+    assert `failure` ("client thread connection cannot be saved" :: String)
+  get = FState <$> get
 
 -- | Connections to the human-controlled client of a faction and
 -- to the AI client for the same faction.
@@ -112,7 +158,27 @@ class MonadServer m => MonadServerReadRequest m where
   getsDict     :: (ConnServerDict -> a) -> m a
   modifyDict   :: (ConnServerDict -> ConnServerDict) -> m ()
   putDict      :: ConnServerDict -> m ()
+  saveChanServer :: m (Save.ChanSave (State, StateServer, ConnServerDict))
   liftIO       :: IO a -> m a
+
+updateCopsDict :: MonadServerReadRequest m => KeyKind -> Config -> DebugModeCli -> m ()
+updateCopsDict copsClient sconfig sdebugCli = do
+  cops <- getsState scops
+  schanF <- liftIO $ Frontend.chanFrontendIO sdebugCli
+  let sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
+      updFState :: (sess -> sess) -> CliState sess -> CliState sess
+      updFState updSess cliS =
+        cliS { cliState = updateCOps (const cops) $ cliState cliS
+             , cliSession = updSess $ cliSession cliS }
+      updFrozenClient :: (sess -> sess)
+                      -> FrozenClient sess resp req
+                      -> FrozenClient sess resp req
+      updFrozenClient updSess (FState cliS) = FState $ updFState updSess cliS
+      updFrozenClient _ (FThread conn) = FThread conn
+      updSession sess = sess {schanF, sbinding}
+      updUIAI (mcUI, cAI) =
+        (updFrozenClient updSession<$> mcUI, updFrozenClient id cAI)
+  modifyDict $ EM.map updUIAI
 
 sendUpdateAI :: MonadServerReadRequest m
              => FactionId -> ResponseAI -> m ()

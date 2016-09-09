@@ -30,10 +30,12 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
 
 initAI :: MonadClient m => DebugModeCli -> m ()
-initAI sdebugCli =
+initAI sdebugCli = do
   modifyClient $ \cli ->
     cli { sisAI = True
         , sdebugCli }
+  side <- getsClient sside
+  debugPossiblyPrint $ "AI client" <+> tshow side <+> "initializing."
 
 -- | The main game loop for an AI client.
 loopAI :: ( MonadClientSetup m
@@ -84,6 +86,8 @@ initUI copsClient sconfig sdebugCli = do
     cli { sisAI = False
         , sxhair = TVector $ Vector 1 1  -- a step south-east, less alarming
         , sdebugCli }
+  side <- getsClient sside
+  debugPossiblyPrint $ "UI client" <+> tshow side <+> "initializing."
   -- Start the frontend.
   schanF <- chanFrontend sdebugCli
   let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
