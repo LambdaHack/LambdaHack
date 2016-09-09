@@ -39,9 +39,8 @@ queryAI = do
       !_A = assert (isJust mleader) ()
   (aidToMove, bToMove) <- pickActorToMove refreshTarget
   req <- ReqAITimed <$> pickAction (aidToMove, bToMove)
-  mtgt2 <- getsClient $ fmap tapTgt . EM.lookup aidToMove . stargetD
-  if mleader /= Just (aidToMove, mtgt2)
-    then return (req, Just (aidToMove, mtgt2))
+  if mleader /= Just aidToMove
+    then return (req, Just aidToMove)
     else return (req, Nothing)
 
 nonLeaderQueryAI :: MonadClient m => ActorId -> m RequestAI

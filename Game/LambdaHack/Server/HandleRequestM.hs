@@ -59,8 +59,8 @@ import Game.LambdaHack.Server.State
 handleRequestAI :: (MonadAtomic m, MonadServer m)
                 => FactionId -> ActorId -> RequestAI -> m ()
 handleRequestAI fid aid (cmd, maidTgt) = case maidTgt of
-  Just (aidNew, mtgtNew) -> do
-    switchLeader fid aidNew mtgtNew
+  Just aidNew -> do
+    switchLeader fid aidNew
     handleReqAI fid aidNew cmd
   Nothing -> handleReqAI fid aid cmd
 
@@ -74,8 +74,8 @@ handleReqAI _fid aid cmd = case cmd of
 handleRequestUI :: (MonadAtomic m, MonadServer m)
                 => FactionId -> ActorId -> RequestUI -> m ()
 handleRequestUI fid aid (cmd, maidTgt) = case maidTgt of
-  Just (aidNew, mtgtNew) -> do
-    switchLeader fid aidNew mtgtNew
+  Just aidNew -> do
+    switchLeader fid aidNew
     handleReqUI fid aidNew cmd
   Nothing -> handleReqUI fid aid cmd
 
@@ -120,23 +120,22 @@ handleRequestTimedCases aid cmd = case cmd of
   ReqApply iid cstore -> reqApply aid iid cstore
   ReqTrigger mfeat -> reqTrigger aid mfeat
 
-switchLeader :: (MonadAtomic m, MonadServer m)
-             => FactionId -> ActorId -> Maybe Target -> m ()
-switchLeader fid aidNew mtgtNew = do
+switchLeader :: (MonadAtomic m, MonadServer m) => FactionId -> ActorId -> m ()
+switchLeader fid aidNew = do
   fact <- getsState $ (EM.! fid) . sfactionD
   bPre <- getsState $ getActorBody aidNew
   let mleader = gleader fact
-      actorChanged = fmap fst mleader /= Just aidNew
-  let !_A = assert (Just (aidNew, mtgtNew) /= mleader
+      actorChanged = mleader /= Just aidNew
+  let !_A = assert (Just aidNew /= mleader
                     && not (bproj bPre)
-                    `blame` (aidNew, mtgtNew, bPre, fid, fact)) ()
+                    `blame` (aidNew, bPre, fid, fact)) ()
   let !_A = assert (bfid bPre == fid
                     `blame` "client tries to move other faction actors"
-                    `twith` (aidNew, mtgtNew, bPre, fid, fact)) ()
+                    `twith` (aidNew, bPre, fid, fact)) ()
   let (autoDun, autoLvl) = autoDungeonLevel fact
   arena <- case mleader of
     Nothing -> return $! blid bPre
-    Just (leader, _) -> do
+    Just leader -> do
       b <- getsState $ getActorBody leader
       return $! blid b
   if | actorChanged && blid bPre /= arena && autoDun ->
@@ -144,7 +143,7 @@ switchLeader fid aidNew mtgtNew = do
      | actorChanged && autoLvl ->
        execFailure aidNew ReqWait{-hack-} NoChangeLvlLeader
      | otherwise -> do
-       execUpdAtomic $ UpdLeadFaction fid mleader (Just (aidNew, mtgtNew))
+       execUpdAtomic $ UpdLeadFaction fid mleader (Just aidNew)
        -- We exchange times of the old and new leader.
        -- This permits an abuse, because a slow tank can be moved fast
        -- by alternating between it and many fast actors (until all of them
@@ -158,7 +157,7 @@ switchLeader fid aidNew mtgtNew = do
        -- the time of the actor is different than when client prepared that
        -- action, so any client checks involving time should discount this.
        case mleader of
-         Just (aidOld, _) | aidOld /= aidNew -> swapTime aidOld aidNew
+         Just aidOld | aidOld /= aidNew -> swapTime aidOld aidNew
          _ -> return ()
 
 -- * ReqMove

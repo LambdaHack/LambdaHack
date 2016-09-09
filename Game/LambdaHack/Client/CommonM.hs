@@ -192,7 +192,7 @@ actorSkillsClient aid = do
              then getsClient _sleader
              else do
                fact <- getsState $ (EM.! bfid body) . sfactionD
-               return $! fst <$> gleader fact
+               return $! gleader fact
   getsState $ actorSkills mleader aid ar
 
 updateItemSlot :: MonadClient m

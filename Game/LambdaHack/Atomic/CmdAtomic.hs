@@ -80,8 +80,7 @@ data UpdAtomic =
   | UpdColorActor !ActorId !Color.Color !Color.Color
   -- Change faction attributes.
   | UpdQuitFaction !FactionId !(Maybe Actor) !(Maybe Status) !(Maybe Status)
-  | UpdLeadFaction !FactionId !(Maybe (ActorId, Maybe Target))
-                              !(Maybe (ActorId, Maybe Target))
+  | UpdLeadFaction !FactionId !(Maybe ActorId) !(Maybe ActorId)
   | UpdDiplFaction !FactionId !FactionId !Diplomacy !Diplomacy
   | UpdTacticFaction !FactionId !Tactic !Tactic
   | UpdAutoFaction !FactionId !Bool

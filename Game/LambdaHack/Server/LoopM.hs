@@ -116,7 +116,7 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
               case gleader fact of
                -- Even spawners need an active arena for their leader,
                -- or they start clogging stairs.
-               Just (leader, _) -> do
+               Just leader -> do
                   b <- getsState $ getActorBody leader
                   return $ Just $ blid b
                Nothing -> if fleaderMode (gplayer fact) == LeaderNull
@@ -229,7 +229,7 @@ handleActors lid = do
   let -- Actors of the same faction move together.
       notDead (_, b) = not $ actorDying b
       notProj (_, b) = not $ bproj b
-      notLeader (aid, b) = Just aid /= fmap fst (gleader (factionD EM.! bfid b))
+      notLeader (aid, b) = Just aid /= gleader (factionD EM.! bfid b)
       order = Ord.comparing $
         notDead &&& notProj &&& bfid . snd &&& notLeader &&& bsymbol . snd
       (atime, as) = EM.findMin lprio
@@ -257,7 +257,7 @@ handleActors lid = do
       let side = bfid body
           fact = factionD EM.! side
           mleader = gleader fact
-          aidIsLeader = fmap fst mleader == Just aid
+          aidIsLeader = mleader == Just aid
           mainUIactor = fhasUI (gplayer fact)
                         && (aidIsLeader
                             || fleaderMode (gplayer fact) == LeaderNull)

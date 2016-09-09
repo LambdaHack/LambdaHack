@@ -15,7 +15,6 @@ import Game.LambdaHack.Common.Prelude
 
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
@@ -35,7 +34,7 @@ data ReqAI =
   | ReqAINop
   deriving Show
 
-type RequestAI = (ReqAI, Maybe (ActorId, Maybe Target))
+type RequestAI = (ReqAI, Maybe ActorId)
 
 -- | Client-server requests sent by UI clients.
 data ReqUI =
@@ -48,7 +47,7 @@ data ReqUI =
   | ReqUINop
   deriving Show
 
-type RequestUI = (ReqUI, Maybe (ActorId, Maybe Target))
+type RequestUI = (ReqUI, Maybe ActorId)
 
 data RequestAnyAbility = forall a. RequestAnyAbility !(RequestTimed a)
 

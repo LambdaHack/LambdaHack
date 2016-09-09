@@ -91,7 +91,7 @@ handleAndBroadcast knowEvents sperFidOld checkSetPerValid doRecomputeCachePer
                   -- We take the new leader, from after cmd execution.
                   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
                   case (atomic2, mleader) of
-                    (UpdAtomic cmd, Just (leader, _)) -> do
+                    (UpdAtomic cmd, Just leader) -> do
                       body <- getsState $ getActorBody leader
                       loud <- loudUpdAtomic (blid body == lid) fid cmd
                       case loud of

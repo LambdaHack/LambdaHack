@@ -98,9 +98,8 @@ queryUI = do
         !_A = assert (isJust mleader) ()
     req <- humanCommand
     leader2 <- getLeaderUI
-    mtgt2 <- getsClient $ fmap tapTgt . EM.lookup leader2 . stargetD
-    if mleader /= Just (leader2, mtgt2)
-      then return (req, Just (leader2, mtgt2))
+    if mleader /= Just leader2
+      then return (req, Just leader2)
       else return (req, Nothing)
 
 -- | Let the human player issue commands until any command takes time.

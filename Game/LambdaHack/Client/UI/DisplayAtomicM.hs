@@ -190,7 +190,7 @@ displayRespUpdAtomicUI verbose oldDiscoKind oldDiscoAspect cmd = case cmd of
       animate (blid b) $ blinkColorActor (bpos b) (bsymbol b) fromCol toCol
   -- Change faction attributes.
   UpdQuitFaction fid mbody _ toSt -> quitFactionUI fid mbody toSt
-  UpdLeadFaction fid (Just (source, _)) (Just (target, _)) -> do
+  UpdLeadFaction fid (Just source) (Just target) -> do
     side <- getsClient sside
     when (fid == side) $ do
       fact <- getsState $ (EM.! side) . sfactionD
@@ -607,7 +607,7 @@ quitFactionUI fid mbody toSt = do
           Just b | fid == side -> bodyToItemSlides b
           _ -> case gleader factOur of
             Nothing -> return (EM.empty, emptySlideshow, 0)
-            Just (aid, _) -> do
+            Just aid -> do
               b <- getsState $ getActorBody aid
               bodyToItemSlides b
         arena <- getArenaUI

@@ -271,20 +271,13 @@ cmdAtomicSemCli cmd = case cmd of
     side <- getsClient sside
     when (side == fid) $ do
       mleader <- getsClient _sleader
-      let !_A = assert (mleader == fmap fst source
+      let !_A = assert (mleader == source
                           -- somebody changed the leader for us
-                        || mleader == fmap fst target
+                        || mleader == target
                           -- we changed the leader ourselves
                         `blame` "unexpected leader"
                         `twith` (cmd, mleader)) ()
-      modifyClient $ \cli -> cli {_sleader = fmap fst target}
-      case target of
-        Nothing -> return ()
-        Just (aid, mtgt) -> do
-          let addNoPath tapTgt = TgtAndPath{tapTgt, tapPath=NoPath}
-          modifyClient $ \cli ->
-            cli {stargetD = EM.alter (const $ addNoPath <$> mtgt)
-                                     aid (stargetD cli)}
+      modifyClient $ \cli -> cli {_sleader = target}
   UpdAutoFaction{} -> do
     -- @condBFS@ depends on the setting we change here.
     invalidateBfsAll

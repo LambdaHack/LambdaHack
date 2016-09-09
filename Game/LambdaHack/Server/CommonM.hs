@@ -217,14 +217,14 @@ anyActorsAlive fid maid = do
 electLeader :: MonadAtomic m => FactionId -> LevelId -> ActorId -> m ()
 electLeader fid lid aidDead = do
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
-  when (isNothing mleader || fmap fst mleader == Just aidDead) $ do
+  when (isNothing mleader || mleader == Just aidDead) $ do
     actorD <- getsState sactorD
     let ours (_, b) = bfid b == fid && not (bproj b)
         party = filter ours $ EM.assocs actorD
     onLevel <- getsState $ actorRegularIds (== fid) lid
     let mleaderNew = case filter (/= aidDead) $ onLevel ++ map fst party of
           [] -> Nothing
-          aid : _ -> Just (aid, Nothing)
+          aid : _ -> Just aid
     unless (mleader == mleaderNew) $
       execUpdAtomic $ UpdLeadFaction fid mleader mleaderNew
 
@@ -459,7 +459,7 @@ actorSkillsServer aid  = do
   ar <- getsServer $ (EM.! aid) . sactorAspect
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
-  let mleader = fst <$> gleader fact
+  let mleader = gleader fact
   getsState $ actorSkills mleader aid ar
 
 getCacheLucid :: MonadServer m => LevelId -> m FovLucid

@@ -519,7 +519,7 @@ effectSummon execSfx actorFreq nDm source target = do
           mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
           when (isNothing mleader) $
             execUpdAtomic
-            $ UpdLeadFaction (bfid b) Nothing (Just (aid, Nothing))
+            $ UpdLeadFaction (bfid b) Nothing (Just aid)
           return True
     return $! or bs
 
@@ -596,7 +596,7 @@ switchLevels1 (aid, bOld) = do
   mlead <-
     if not (bproj bOld) && isJust mleader then do
       execUpdAtomic $ UpdLeadFaction side mleader Nothing
-      return $ fst <$> mleader
+      return mleader
         -- outside of a client we don't know the real tgt of aid, hence fst
     else return Nothing
   -- Remove the actor from the old level.
@@ -644,7 +644,7 @@ switchLevels2 lidNew posNew (aid, bOld) mlead = do
   case mlead of
     Nothing -> return ()
     Just leader ->
-      execUpdAtomic $ UpdLeadFaction side Nothing (Just (leader, Nothing))
+      execUpdAtomic $ UpdLeadFaction side Nothing (Just leader)
 
 -- ** Escape
 

@@ -248,7 +248,7 @@ populateDungeon = do
                   mleader <- getsState $ gleader . (EM.! fid3) . sfactionD
                   when (isNothing mleader) $
                     execUpdAtomic
-                    $ UpdLeadFaction fid3 Nothing (Just (aid, Nothing))
+                    $ UpdLeadFaction fid3 Nothing (Just aid)
                   return True
           unless go $ assert `failure` "can't spawn initial actors"
                              `twith` (lid, (fid3, fact3))
@@ -271,7 +271,7 @@ recruitActors ps lid time fid = assert (not $ null ps) $ do
     aid : _ -> do
       mleader <- getsState $ gleader . (EM.! fid) . sfactionD  -- just changed
       when (isNothing mleader) $
-        execUpdAtomic $ UpdLeadFaction fid Nothing (Just (aid, Nothing))
+        execUpdAtomic $ UpdLeadFaction fid Nothing (Just aid)
       return True
 
 -- | Create a new monster on the level, at a given position

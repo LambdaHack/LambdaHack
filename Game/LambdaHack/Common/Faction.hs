@@ -40,8 +40,7 @@ data Faction = Faction
   , gplayer  :: !(Player Int)    -- ^ the player spec for this faction
   , gdipl    :: !Dipl            -- ^ diplomatic mode
   , gquit    :: !(Maybe Status)  -- ^ cause of game end/exit
-  , gleader  :: !(Maybe (ActorId, Maybe Target))
-                                 -- ^ the leader of the faction and his target
+  , gleader  :: !(Maybe ActorId) -- ^ the leader of the faction
   , gsha     :: !ItemBag         -- ^ faction's shared inventory
   , gvictims :: !(EM.EnumMap (Kind.Id ItemKind) Int)  -- ^ members killed
   }

@@ -323,14 +323,14 @@ updQuitFaction fid mbody fromSt toSt = do
 -- The previous leader is assumed to be alive.
 updLeadFaction :: MonadStateWrite m
                => FactionId
-               -> Maybe (ActorId, Maybe Target)
-               -> Maybe (ActorId, Maybe Target)
+               -> Maybe ActorId
+               -> Maybe ActorId
                -> m ()
 updLeadFaction fid source target = assert (source /= target) $ do
   fact <- getsState $ (EM.! fid) . sfactionD
   let !_A = assert (fleaderMode (gplayer fact) /= LeaderNull) ()
     -- @PosNone@ ensures this
-  mtb <- getsState $ \s -> flip getActorBody s . fst <$> target
+  mtb <- getsState $ \s -> flip getActorBody s <$> target
   let !_A = assert (maybe True (not . bproj) mtb
                     `blame` (fid, source, target, mtb, fact)) ()
   let !_A = assert (source == gleader fact

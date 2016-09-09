@@ -116,7 +116,7 @@ registerScore status mbody fid = do
     Just body -> getsState $ snd . calculateTotal body
     Nothing -> case gleader fact of
       Nothing -> return 0
-      Just (aid, _) -> do
+      Just aid -> do
         b <- getsState $ getActorBody aid
         getsState $ snd . calculateTotal b
   let stdRuleset = Kind.stdRuleset corule
