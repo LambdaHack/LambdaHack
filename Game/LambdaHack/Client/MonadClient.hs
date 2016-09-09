@@ -61,8 +61,8 @@ saveName side isAI =
      ++ if isAI then ".ai.sav" else ".ui.sav"
 
 tryRestore :: (Binary sess, MonadClient m)
-            => m (Maybe (State, StateClient, sess))
-tryRestore = do
+           => Bool -> m (Maybe (State, StateClient, sess))
+tryRestore isAI = do
   bench <- getsClient $ sbenchmark . sdebugCli
   if bench then return Nothing
   else do
@@ -71,7 +71,6 @@ tryRestore = do
         pathsDataFile = rpathsDataFile stdRuleset
         cfgUIName = rcfgUIName stdRuleset
     side <- getsClient sside
-    isAI <- getsClient sisAI
     prefix <- getsClient $ ssavePrefixCli . sdebugCli
     let copies = [( "GameDefinition" </> cfgUIName <.> "default"
                   , cfgUIName <.> "ini" )]

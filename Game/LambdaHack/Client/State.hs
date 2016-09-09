@@ -64,7 +64,6 @@ data StateClient = StateClient
                                    -- ^ current picked party leader
   , _sside       :: !FactionId     -- ^ faction controlled by the client
   , squit        :: !Bool          -- ^ exit the game loop
-  , sisAI        :: !Bool          -- ^ whether it's an AI client
   , scurDiff     :: !Int           -- ^ current game difficulty level
   , snxtDiff     :: !Int           -- ^ next game difficulty level
   , sslots       :: !ItemSlots     -- ^ map from slots to items
@@ -109,7 +108,6 @@ emptyStateClient _sside =
     , _sleader = Nothing  -- no heroes yet alive
     , _sside
     , squit = False
-    , sisAI = False
     , scurDiff = difficultyDefault
     , snxtDiff = difficultyDefault
     , sslots = ItemSlots EM.empty EM.empty
@@ -160,7 +158,6 @@ instance Binary StateClient where
     put (show srandom)
     put _sleader
     put _sside
-    put sisAI
     put scurDiff
     put snxtDiff
     put sslots
@@ -179,7 +176,6 @@ instance Binary StateClient where
     g <- get
     _sleader <- get
     _sside <- get
-    sisAI <- get
     scurDiff <- get
     snxtDiff <- get
     sslots <- get

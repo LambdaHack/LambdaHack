@@ -31,9 +31,7 @@ import Game.LambdaHack.Common.Vector
 
 initAI :: MonadClient m => DebugModeCli -> m ()
 initAI sdebugCli = do
-  modifyClient $ \cli ->
-    cli { sisAI = True
-        , sdebugCli }
+  modifyClient $ \cli -> cli {sdebugCli}
   side <- getsClient sside
   debugPossiblyPrint $ "AI client" <+> tshow side <+> "initializing."
 
@@ -49,7 +47,7 @@ loopAI sdebugCli = do
   -- and sper are empty.
   side <- getsClient sside
   cops <- getsState scops
-  restoredG <- tryRestore
+  restoredG <- tryRestore True
   restored <- case restoredG of
     Just (s, cli, ()) | not $ snewGameCli sdebugCli -> do  -- Restore game.
       let sCops = updateCOps (const cops) s
@@ -83,8 +81,7 @@ loopAI sdebugCli = do
 initUI :: MonadClientUI m => KeyKind -> Config -> DebugModeCli -> m ()
 initUI copsClient sconfig sdebugCli = do
   modifyClient $ \cli ->
-    cli { sisAI = False
-        , sxhair = TVector $ Vector 1 1  -- a step south-east, less alarming
+    cli { sxhair = TVector $ Vector 1 1  -- a step south-east, less alarming
         , sdebugCli }
   side <- getsClient sside
   debugPossiblyPrint $ "UI client" <+> tshow side <+> "initializing."
@@ -106,7 +103,7 @@ loopUI copsClient sconfig sdebugCli = do
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   cops <- getsState scops
-  restoredG <- tryRestore
+  restoredG <- tryRestore False
   restored <- case restoredG of
     Just (s, cli, sess) | not $ snewGameCli sdebugCli -> do
       -- Restore game.
