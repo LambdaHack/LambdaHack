@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, FlexibleInstances, GeneralizedNewtypeDeriving,
+{-# LANGUAGE FlexibleInstances, GeneralizedNewtypeDeriving,
              MultiParamTypeClasses #-}
 -- | The main game action monad type implementation. Just as any other
 -- component of the library, this implementation can be substituted.
@@ -18,8 +18,6 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict hiding (State)
-import Data.Binary
-import GHC.Generics (Generic)
 
 import Game.LambdaHack.Atomic.HandleAtomicWrite
 import Game.LambdaHack.Atomic.MonadAtomic
@@ -38,9 +36,6 @@ data CliState sess = CliState
   , cliClient  :: !StateClient  -- ^ current client state
   , cliSession :: !sess         -- ^ UI state, empty for AI clients
   }
-  deriving Generic
-
-instance Binary sess => Binary (CliState sess)
 
 -- | Client state transformation monad.
 newtype CliImplementation sess a = CliImplementation

@@ -41,6 +41,7 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.AI
 import Game.LambdaHack.Client.HandleResponseM
 import Game.LambdaHack.Client.LoopM
+import Game.LambdaHack.Client.State hiding (sdebugCli)
 import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Client.UI.Config
 import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
@@ -130,15 +131,15 @@ data ChanServer resp req = ChanServer
 -- | Either states or connections to the human-controlled client
 -- of a faction and to the AI client for the same faction.
 data FrozenClient =
-    FState !(Maybe (CliState SessionUI)) !(CliState ())
+    FState !(Maybe SessionUI) !State !StateClient
   | FThread !(Maybe (ChanServer ResponseUI RequestUI))
             !(ChanServer ResponseAI RequestAI)
 
 instance Binary FrozenClient where
-  put (FState mcliS cliS) = put mcliS >> put cliS
+  put (FState msess s cli) = put msess >> put s >> put cli
   put FThread{} =
     assert `failure` ("client thread connection cannot be saved" :: String)
-  get = FState <$> get <*> get
+  get = FState <$> get <*> get <*> get
 
 -- | Connection information for all factions, indexed by faction identifier.
 type ConnServerDict = EM.EnumMap FactionId FrozenClient
@@ -163,14 +164,11 @@ updateCopsDict copsClient sconfig sdebugCli = do
   cops <- getsState scops
   schanF <- liftIO $ Frontend.chanFrontendIO sdebugCli
   let sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
-      updFState :: (sess -> sess) -> CliState sess -> CliState sess
-      updFState updSess cliS =
-        cliS { cliState = updateCOps (const cops) $ cliState cliS
-             , cliSession = updSess $ cliSession cliS }
+      updState = updateCOps (const cops)
       updSession sess = sess {schanF, sbinding}
       updFrozenClient :: FrozenClient -> FrozenClient
-      updFrozenClient (FState mcUI cAI) =
-        FState (updFState updSession <$> mcUI) (updFState id cAI)
+      updFrozenClient (FState msess s cli) =
+        FState (updSession <$> msess) (updState s) cli
       updFrozenClient (FThread mconnUI connAI) = FThread mconnUI connAI
   modifyDict $ EM.map updFrozenClient
 
@@ -178,16 +176,16 @@ sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
 sendUpdate fid cmd = do
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
-    FState mfUI cliState -> do
-      let mAI = handleSelfAI cmd
-      ((), newCliStateAI) <- liftIO $ runCli mAI cliState
-      mnewCliStateUI <- case mfUI of
-        Nothing -> return Nothing
-        Just cliS -> do
-          let mUI = handleSelfUI cmd
-          ((), newCliState) <- liftIO $ runCli mUI cliS
-          return $ Just newCliState
-      modifyDict $ EM.insert fid (FState mnewCliStateUI newCliStateAI)
+    FState Nothing s cli -> do
+      let m = handleSelfAI cmd
+          cliState = CliState s cli ()
+      ((), CliState s' cli' ()) <- liftIO $ runCli m cliState
+      modifyDict $ EM.insert fid (FState Nothing s' cli')
+    FState (Just sess) s cli -> do
+      let m = handleSelfUI cmd
+          cliState = CliState s cli sess
+      ((), CliState s' cli' sess') <- liftIO $ runCli m cliState
+      modifyDict $ EM.insert fid (FState (Just sess') s' cli')
     FThread mconn conn -> do
       writeQueueAI (RespUpdAtomicAI cmd) $ responseS conn
       maybe (return ())
@@ -197,10 +195,11 @@ sendSfx :: MonadServerReadRequest m  => FactionId -> SfxAtomic -> m ()
 sendSfx fid sfx = do
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
-    FState (Just cliState) fAI -> do
+    FState (Just sess) s cli -> do
       let m = displayRespSfxAtomicUI False sfx
-      ((), newCliState) <- liftIO $ runCli m cliState
-      modifyDict $ EM.insert fid (FState (Just newCliState) fAI)
+          cliState = CliState s cli sess
+      ((), CliState s' cli' sess') <- liftIO $ runCli m cliState
+      modifyDict $ EM.insert fid (FState (Just sess') s' cli')
     FThread (Just conn) _ ->
       writeQueueUI (RespSfxAtomicUI sfx) $ responseS conn
     _ -> return ()
@@ -209,10 +208,11 @@ sendQueryAI :: MonadServerReadRequest m => FactionId -> ActorId -> m RequestAI
 sendQueryAI fid aid = do
   frozenClient <- getsDict $ (EM.! fid)
   req <- case frozenClient of
-    FState fUI cliState -> do
+    FState msess s cli -> do
       let m = queryAI
-      (req, newCliState) <- liftIO $ runCli m cliState
-      modifyDict $ EM.insert fid (FState fUI newCliState)
+          cliState = CliState s cli ()
+      (req, CliState s' cli' ()) <- liftIO $ runCli m cliState
+      modifyDict $ EM.insert fid (FState msess s' cli')
       return req
     FThread _ conn -> do
       writeQueueAI RespQueryAI $ responseS conn
@@ -226,10 +226,11 @@ sendNonLeaderQueryAI :: MonadServerReadRequest m
 sendNonLeaderQueryAI fid aid = do
   frozenClient <- getsDict $ (EM.! fid)
   req <- case frozenClient of
-    FState fUI cliState -> do
+    FState msess s cli -> do
       let m = nonLeaderQueryAI aid
-      (req, newCliState) <- liftIO $ runCli m cliState
-      modifyDict $ EM.insert fid (FState fUI newCliState)
+          cliState = CliState s cli ()
+      (req, CliState s' cli' ()) <- liftIO $ runCli m cliState
+      modifyDict $ EM.insert fid (FState msess s' cli')
       return req
     FThread _ conn -> do
       writeQueueAI (RespNonLeaderQueryAI aid) $ responseS conn
@@ -246,10 +247,11 @@ sendQueryUI :: (MonadAtomic m, MonadServerReadRequest m)
 sendQueryUI fid aid = do
   frozenClient <- getsDict $ (EM.! fid)
   req <- case frozenClient of
-    FState (Just cliState) fAI -> do
+    FState (Just sess) s cli -> do
       let m = queryUI
-      (req, newCliState) <- liftIO $ runCli m cliState
-      modifyDict $ EM.insert fid (FState (Just newCliState) fAI)
+          cliState = CliState s cli sess
+      (req, CliState s' cli' sess') <- liftIO $ runCli m cliState
+      modifyDict $ EM.insert fid (FState (Just sess') s' cli')
       return req
     FThread (Just conn) _ -> do
       writeQueueUI RespQueryUI $ responseS conn
@@ -311,16 +313,15 @@ updateConn useTreadsForNewClients cops copsClient sconfig sdebugCli
             connAI <- mkChanServer
             return $! FThread (Just connS) connAI
           else do
-            iUI <- initStateUI fid
-            iAI <- initStateAI fid
-            return $! FState (Just iUI) iAI
+            CliState s cli sess <- initStateUI fid
+            return $! FState (Just sess) s cli
         Nothing ->
           if useTreadsForNewClients then do
             connAI <- mkChanServer
             return $! FThread Nothing connAI
           else do
-            iAI <- initStateAI fid
-            return $! FState Nothing iAI
+            CliState s cli () <- initStateAI fid
+            return $! FState Nothing s cli
   factionD <- getsState sfactionD
   d <- liftIO $ mapWithKeyM addConn factionD
   let newD = d `EM.union` oldD  -- never kill old clients
