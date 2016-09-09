@@ -288,6 +288,7 @@ updateConn :: (MonadAtomic m, MonadServerReadRequest m)
                -> ChanServer ResponseAI RequestAI
                -> IO ())
            -> m ()
+{-# INLINE updateConn #-}
 updateConn useTreadsForNewClients cops copsClient sconfig sdebugCli
            executorUI executorAI = do
   -- Prepare connections based on factions.
@@ -326,17 +327,18 @@ updateConn useTreadsForNewClients cops copsClient sconfig sdebugCli
   d <- liftIO $ mapWithKeyM addConn factionD
   let newD = d `EM.union` oldD  -- never kill old clients
   putDict newD
-  -- Spawn client threads.
-  let toSpawn = newD EM.\\ oldD
-  let forkUI fid connS =
-        forkChild childrenServer $ executorUI cliSession cops fid connS
-      forkAI fid connS =
-        forkChild childrenServer $ executorAI cops fid connS
-      forkClient fid (FThread mconnUI connAI) = do
-        -- When a connection is reused, clients are not respawned,
-        -- even if UI usage changes, but it works OK thanks to UI faction
-        -- clients distinguished by positive FactionId numbers.
-        forkAI fid connAI  -- AI clients always needed, e.g., for auto-explore
-        maybe (return ()) (forkUI fid) mconnUI
-      forkClient _ FState{} = return ()
-  liftIO $ mapWithKeyM_ forkClient toSpawn
+  when useTreadsForNewClients $ do
+    -- Spawn client threads.
+    let toSpawn = newD EM.\\ oldD
+        forkUI fid connS =
+          forkChild childrenServer $ executorUI cliSession cops fid connS
+        forkAI fid connS =
+          forkChild childrenServer $ executorAI cops fid connS
+        forkClient fid (FThread mconnUI connAI) = do
+          -- When a connection is reused, clients are not respawned,
+          -- even if UI usage changes, but it works OK thanks to UI faction
+          -- clients distinguished by positive FactionId numbers.
+          forkAI fid connAI  -- AI clients always needed, e.g., for auto-explore
+          maybe (return ()) (forkUI fid) mconnUI
+        forkClient _ FState{} = return ()
+    liftIO $ mapWithKeyM_ forkClient toSpawn
