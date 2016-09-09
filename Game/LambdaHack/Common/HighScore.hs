@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | High score table operations.
 module Game.LambdaHack.Common.HighScore
   ( ScoreDict, ScoreTable
