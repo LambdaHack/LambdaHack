@@ -133,13 +133,13 @@ instance MonadAtomic (CliImplementation sess resp req) where
 -- | Init the client, then run an action, with a given session,
 -- state and history, in the @IO@ monad.
 executorCliAsThread :: Binary sess
-                    => Kind.COps
+                    => CliImplementation sess resp req ()
                     -> sess
-                    -> CliImplementation sess resp req ()
+                    -> Kind.COps
                     -> FactionId
                     -> ChanServer resp req
                     -> IO ()
-executorCliAsThread cops cliSession m fid cliDict =
+executorCliAsThread m cliSession cops fid cliDict =
   let saveFile (_, cli, _) =
         ssavePrefixCli (sdebugCli cli)
         <.> saveName (sside cli) (sisAI cli)

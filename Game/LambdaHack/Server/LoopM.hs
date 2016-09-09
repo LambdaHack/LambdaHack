@@ -20,6 +20,9 @@ import qualified Data.EnumSet as ES
 import qualified Data.Ord as Ord
 
 import Game.LambdaHack.Atomic
+import Game.LambdaHack.Client.UI.Config
+import Game.LambdaHack.Client.UI.Content.KeyKind
+import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
@@ -55,15 +58,18 @@ import Game.LambdaHack.Server.State
 -- communicating with the clients.
 loopSer :: (MonadAtomic m, MonadServerReadRequest m)
         => DebugModeSer  -- ^ server debug parameters
-        -> (FactionId -> ChanServer ResponseUI RequestUI -> IO ())
+        -> KeyKind -> Config -> DebugModeCli
+        -> (SessionUI -> Kind.COps -> FactionId -> ChanServer ResponseUI RequestUI -> IO ())
              -- ^ the code to run for UI clients
-        -> (FactionId -> ChanServer ResponseAI RequestAI -> IO ())
+        -> (Kind.COps -> FactionId -> ChanServer ResponseAI RequestAI -> IO ())
              -- ^ the code to run for AI clients
         -> m ()
-loopSer sdebug executorUI executorAI = do
+loopSer sdebug copsClient sconfig sdebugCli
+        executorUI executorAI = do
   -- Recover states and launch clients.
-  let updConn = updateConn executorUI executorAI
   cops <- getsState scops
+  let updConn = updateConn False cops copsClient sconfig sdebugCli
+                           executorUI executorAI
   restored <- tryRestore cops sdebug
   case restored of
     Just (sRaw, ser) | not $ snewGameSer sdebug -> do  -- run a restored game
@@ -253,7 +259,7 @@ handleActors lid = do
                         && (aidIsLeader
                             || fleaderMode (gplayer fact) == LeaderNull)
           mainUIunderAI = mainUIactor && isAIFact fact
-          queryUI = mainUIactor && not (isAIFact fact)
+          doQueryUI = mainUIactor && not (isAIFact fact)
       when mainUIunderAI $ do
         cmdS <- sendQueryUI side aid
         case fst cmdS of
@@ -272,7 +278,7 @@ handleActors lid = do
            unless (bproj b2 && actorDying b2) $ do
              advanceTime aid
              managePerTurn aid
-         | queryUI -> do
+         | doQueryUI -> do
            cmdS <- sendQueryUI side aid
            -- TODO: check that the command is legal first, report and reject,
            -- but do not crash (currently server asserts things and crashes)

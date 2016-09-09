@@ -20,7 +20,6 @@ import Game.LambdaHack.SampleImplementation.SampleMonadServer (executorSer)
 
 import Game.LambdaHack.Client
 import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.SessionUI
 import qualified Game.LambdaHack.Common.Kind as Kind
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Server
@@ -62,10 +61,9 @@ tieKnot args = do
   -- options and is never updated with config options, etc.
   let sdebugMode = applyConfigToDebug cops sconfig sdebugCli
       -- Partially applied main loops of the clients.
-      exeClientAI = executorCliAsThread cops ()
-                    $ loopAI sdebugMode
-      exeClientUI = executorCliAsThread cops (emptySessionUI sconfig)
-                    $ loopUI copsClient sconfig sdebugMode
+      exeClientAI = executorCliAsThread (loopAI sdebugMode) ()
+      exeClientUI = executorCliAsThread $ loopUI copsClient sconfig sdebugMode
   -- Wire together game content, the main loops of game clients
   -- and the game server loop.
-  executorSer cops $ loopSer sdebugNxt exeClientUI exeClientAI
+  executorSer cops $ loopSer sdebugNxt copsClient sconfig sdebugMode
+                             exeClientUI exeClientAI
