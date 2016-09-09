@@ -258,7 +258,7 @@ library
 --, DeriveGeneric
   ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-unrecognised-pragmas
   ghc-options:        -fno-warn-implicit-prelude -fno-ignore-asserts -funbox-strict-fields
-  ghc-options:        -O2 -fno-ignore-asserts
+  ghc-options:        -O1 -fno-ignore-asserts
 
   if impl(ghcjs) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
@@ -353,7 +353,7 @@ executable LambdaHack
   other-extensions:   TemplateHaskell
   ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-unrecognised-pragmas
   ghc-options:        -fno-warn-implicit-prelude -fno-ignore-asserts -funbox-strict-fields
-  ghc-options:        -threaded -rtsopts -O2 -fno-ignore-asserts
+  ghc-options:        -threaded -rtsopts -O1 -fno-ignore-asserts
 
   if impl(ghcjs) {
 -- This is the largest GHCJS_BUSY_YIELD value that does not cause dropped frames
@@ -406,7 +406,7 @@ test-suite test
   other-extensions:   TemplateHaskell
   ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-unrecognised-pragmas
   ghc-options:        -fno-warn-implicit-prelude -fno-ignore-asserts -funbox-strict-fields
-  ghc-options:        -threaded -rtsopts -O2 -fno-ignore-asserts
+  ghc-options:        -threaded -rtsopts -O1 -fno-ignore-asserts
 
   if impl(ghcjs) {
     cpp-options:      -DGHCJS_BUSY_YIELD=50
