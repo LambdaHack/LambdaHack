@@ -6,4 +6,7 @@ cabal-dev
 *.hi
 *.chi
 *.chs.h
+*.prof
+*.ps
+*.log
 .virthualenv
