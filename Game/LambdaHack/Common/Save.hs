@@ -1,6 +1,6 @@
 -- | Saving and restoring server game state.
 module Game.LambdaHack.Common.Save
-  ( ChanSave, saveToChan, wrapInSaves, restoreGame, delayPrint
+  ( ChanSave, saveToChan, wrapInSaves, restoreGame
   ) where
 
 import Prelude ()

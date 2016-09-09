@@ -38,7 +38,6 @@ import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
@@ -102,7 +101,7 @@ restoreScore Kind.COps{corule} = do
         handler e = do
           let msg = "High score restore failed. The error message is:"
                     <+> (T.unwords . T.lines) (tshow e)
-          liftIO $ delayPrint msg
+          serverPrint msg
           return Nothing
     either handler return res
   maybe (return HighScore.empty) return mscore

@@ -18,8 +18,10 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Control.Monad.Trans.State.Lazy as St
 import Data.Binary
+import qualified Data.Text.IO as T
 import System.Directory
 import System.FilePath
+import System.IO
 import qualified System.Random as R
 
 import Game.LambdaHack.Client.FileM
@@ -50,7 +52,9 @@ class MonadClient m => MonadClientSetup m where
 debugPossiblyPrint :: MonadClient m => Text -> m ()
 debugPossiblyPrint t = do
   sdbgMsgCli <- getsClient $ sdbgMsgCli . sdebugCli
-  when sdbgMsgCli $ liftIO $ Save.delayPrint t
+  when sdbgMsgCli $ liftIO $  do
+    T.hPutStrLn stderr t
+    hFlush stderr
 
 saveName :: FactionId -> Bool -> String
 saveName side isAI =
