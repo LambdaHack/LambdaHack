@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.MonadClient
                     )
     -- * Assorted primitives
   , debugPossiblyPrint, saveName, tryRestore, removeServerSave
-  , rndToAction
+  , rndToAction, rndToActionForget
   ) where
 
 import Prelude ()
@@ -99,3 +99,9 @@ rndToAction r = do
   let (gen1, gen2) = R.split gen
   modifyClient $ \ser -> ser {srandom = gen1}
   return $! St.evalState r gen2
+
+-- | Invoke pseudo-random computation, don't change generator kept in state.
+rndToActionForget :: MonadClient m => Rnd a -> m a
+rndToActionForget r = do
+  gen <- getsClient srandom
+  return $! St.evalState r gen

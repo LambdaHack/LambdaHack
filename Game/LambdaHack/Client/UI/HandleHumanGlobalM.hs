@@ -1100,7 +1100,7 @@ gameRestartHuman t = do
     Config{configHeroNames} <- getsSession sconfig
     return $ Right $ ReqUIGameRestart t snxtDiff configHeroNames
   else do
-    msg2 <- rndToAction $ oneOf
+    msg2 <- rndToActionForget $ oneOf
               [ "yea, would be a pity to leave them all to die"
               , "yea, a shame to get your team stranded" ]
     failWith msg2
