@@ -19,6 +19,7 @@ import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
+import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.FrameM
 import Game.LambdaHack.Client.UI.HandleHelperM
 import Game.LambdaHack.Client.UI.MonadClientUI
@@ -275,20 +276,37 @@ displayRespUpdAtomicUI verbose oldDiscoKind oldDiscoAspect cmd = case cmd of
   UpdCoverSeed{} -> return ()  -- don't spam when doing undo
   UpdPerception{} -> return ()
   UpdRestart fid _ _ _ _ _ -> do
+    sstart <- getsSession sstart
+    when (sstart == 0) $ resetSessionStart
+    history <- getsSession shistory
+    when (lengthHistory history == 0) $ do
+      Kind.COps{corule} <- getsState scops
+      let title = rtitle $ Kind.stdRuleset corule
+      msgAdd $ "Welcome to" <+> title <> "!"
+      -- Generate initial history. Only for UI clients.
+      sconfig <- getsSession sconfig
+      shistory <- defaultHistory $ configHistoryMax sconfig
+      modifySession $ \sess -> sess {shistory}
     mode <- getGameMode
     msgAdd $ "New game started in" <+> mname mode <+> "mode." <+> mdesc mode
     -- TODO: use a vertical animation instead, e.g., roll down,
     -- and reveal the first frame of a new game, not blank screen.
-    history <- getsSession shistory
     when (lengthHistory history > 1) $ fadeOutOrIn False
     fact <- getsState $ (EM.! fid) . sfactionD
     setFrontAutoYes $ isAIFact fact
   UpdRestartServer{} -> return ()
   UpdResume fid _ -> do
+    resetSessionStart
     fact <- getsState $ (EM.! fid) . sfactionD
     setFrontAutoYes $ isAIFact fact
+    unless (isAIFact fact) $ do
+      mode <- getGameMode
+      promptAdd $ mdesc mode <+> "Are you up for the challenge?"
+      slides <- reportToSlideshow [K.spaceKM, K.escKM]
+      km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
+      if km == K.escKM then addPressedEsc else promptAdd "Prove yourself!"
   UpdResumeServer{} -> return ()
-  UpdKillExit{} -> return ()
+  UpdKillExit{} -> frontendShutdown
   UpdWriteSave -> when verbose $ promptAdd "Saving backup."
   UpdMsgAll msg -> msgAdd msg
   UpdRecordHistory _ -> recordHistory

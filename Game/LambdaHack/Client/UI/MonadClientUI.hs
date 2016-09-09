@@ -291,7 +291,7 @@ elapsedSessionTimeGT stopAfter = do
 resetSessionStart :: MonadClientUI m => m ()
 resetSessionStart = do
   sstart <- liftIO getPOSIXTime
-  modifySession $ \cli -> cli {sstart}
+  modifySession $ \sess -> sess {sstart}
   resetGameStart
 
 resetGameStart :: MonadClientUI m => m ()
