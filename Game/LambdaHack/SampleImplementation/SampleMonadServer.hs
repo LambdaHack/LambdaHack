@@ -105,7 +105,7 @@ handleAndBroadcastServer atomic = do
                                 $ sperValidFid ser}
         return res
   handleAndBroadcast knowEvents sperFidOld checkSetPerValid recomputeCachePer
-                     sendUpdateAI sendUpdateUI atomic
+                     sendUpdate sendSfx atomic
 
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: Kind.COps -> SerImplementation () -> IO ()

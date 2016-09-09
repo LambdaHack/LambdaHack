@@ -14,7 +14,7 @@ module Game.LambdaHack.Server.ProtocolM
       , liftIO  -- exposed only to be implemented, not used
       )
     -- * Protocol
-  , sendUpdateAI, sendQueryAI, sendNonLeaderQueryAI, sendUpdateUI, sendQueryUI
+  , sendUpdate, sendSfx, sendQueryAI, sendNonLeaderQueryAI, sendQueryUI
     -- * Assorted
   , killAllClients, childrenServer, updateConn
   , saveServer, saveName, tryRestore
@@ -174,8 +174,7 @@ updateCopsDict copsClient sconfig sdebugCli = do
       updFrozenClient (FThread mconnUI connAI) = FThread mconnUI connAI
   modifyDict $ EM.map updFrozenClient
 
-sendUpdate :: MonadServerReadRequest m
-           => FactionId -> UpdAtomic -> m ()
+sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
 sendUpdate fid cmd = do
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
@@ -194,22 +193,19 @@ sendUpdate fid cmd = do
       maybe (return ())
             (\c -> writeQueueUI (RespUpdAtomicUI cmd) $ responseS c) mconn
 
-sendUpdateAI :: MonadServerReadRequest m
-             => FactionId -> ResponseAI -> m ()
-sendUpdateAI fid cmd = do
+sendSfx :: MonadServerReadRequest m  => FactionId -> SfxAtomic -> m ()
+sendSfx fid sfx = do
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
-    FState fUI cliState -> do
-      let m = case cmd of
-            RespUpdAtomicAI c -> handleSelfAI c
-            _ -> assert `failure` cmd
+    FState (Just cliState) fAI -> do
+      let m = displayRespSfxAtomicUI False sfx
       ((), newCliState) <- liftIO $ runCli m cliState
-      modifyDict $ EM.insert fid (FState fUI newCliState)
-    FThread _ conn ->
-      writeQueueAI cmd $ responseS conn
+      modifyDict $ EM.insert fid (FState (Just newCliState) fAI)
+    FThread (Just conn) _ ->
+      writeQueueUI (RespSfxAtomicUI sfx) $ responseS conn
+    _ -> return ()
 
-sendQueryAI :: MonadServerReadRequest m
-            => FactionId -> ActorId -> m RequestAI
+sendQueryAI :: MonadServerReadRequest m => FactionId -> ActorId -> m RequestAI
 sendQueryAI fid aid = do
   frozenClient <- getsDict $ (EM.! fid)
   req <- case frozenClient of
@@ -245,22 +241,6 @@ sendNonLeaderQueryAI fid aid = do
       when debug $ debugRequestAI aid req
       return cmd
 
-sendUpdateUI :: MonadServerReadRequest m
-             => FactionId -> ResponseUI -> m ()
-sendUpdateUI fid cmd = do
-  frozenClient <- getsDict $ (EM.! fid)
-  case frozenClient of
-    FState (Just cliState) fAI -> do
-      let m = case cmd of
-            RespUpdAtomicUI c -> handleSelfUI c
-            RespSfxAtomicUI sfx -> displayRespSfxAtomicUI False sfx
-            _ -> assert `failure` cmd
-      ((), newCliState) <- liftIO $ runCli m cliState
-      modifyDict $ EM.insert fid (FState (Just newCliState) fAI)
-    FThread (Just conn) _ ->
-      writeQueueUI cmd $ responseS conn
-    _ -> assert `failure` "no channel for faction" `twith` fid
-
 sendQueryUI :: (MonadAtomic m, MonadServerReadRequest m)
             => FactionId -> ActorId -> m RequestUI
 sendQueryUI fid aid = do
@@ -282,7 +262,7 @@ sendQueryUI fid aid = do
 killAllClients :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 killAllClients = do
   d <- getDict
-  let sendKill fid cs = do
+  let sendKill fid _ =
         -- We can't check in sfactionD, because client can be from an old game.
         sendUpdate fid $ UpdKillExit fid
   mapWithKeyM_ sendKill d

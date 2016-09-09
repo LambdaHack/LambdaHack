@@ -28,9 +28,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
-import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Content.ModeKind
 
 -- TODO: split into simpler pieces
 
@@ -52,12 +50,12 @@ handleAndBroadcast :: forall m. MonadStateWrite m
                    -> PerFid
                    -> (FactionId -> LevelId -> m Bool)
                    -> (FactionId -> LevelId -> m Perception)
-                   -> (FactionId -> ResponseAI -> m ())
-                   -> (FactionId -> ResponseUI -> m ())
+                   -> (FactionId -> UpdAtomic -> m ())
+                   -> (FactionId -> SfxAtomic -> m ())
                    -> CmdAtomic
                    -> m ()
 handleAndBroadcast knowEvents sperFidOld checkSetPerValid doRecomputeCachePer
-                   doSendUpdateAI doSendUpdateUI atomic = do
+                   doSendUpdate doSendSfx atomic = do
   -- Gather data from the old state.
   sOld <- getState
   factionDold <- getsState sfactionD
@@ -83,14 +81,8 @@ handleAndBroadcast knowEvents sperFidOld checkSetPerValid doRecomputeCachePer
   -- with deep equality these assertions can be expensive; optimize.
   --
   -- Send some actions to the clients, one faction at a time.
-  let sendUI fid cmdUI = when (fhasUI $ gplayer $ factionDold EM.! fid) $
-        doSendUpdateUI fid cmdUI
-      sendAI = doSendUpdateAI
-      sendA fid cmd = do
-        sendUI fid $ RespUpdAtomicUI cmd
-        sendAI fid $ RespUpdAtomicAI cmd
-      sendUpdate fid (UpdAtomic cmd) = sendA fid cmd
-      sendUpdate fid (SfxAtomic sfx) = sendUI fid $ RespSfxAtomicUI sfx
+  let sendUpdate fid (UpdAtomic cmd) = doSendUpdate fid cmd
+      sendUpdate fid (SfxAtomic sfx) = doSendSfx fid sfx
       breakSend lid fid perNew = do
         let send2 (atomic2, ps2) =
               if seenAtomicCli knowEvents fid perNew ps2
@@ -104,7 +96,7 @@ handleAndBroadcast knowEvents sperFidOld checkSetPerValid doRecomputeCachePer
                       loud <- loudUpdAtomic (blid body == lid) fid cmd
                       case loud of
                         Nothing -> return ()
-                        Just msg -> sendUpdate fid $ SfxAtomic $ SfxMsgAll msg
+                        Just msg -> doSendSfx fid $ SfxMsgAll msg
                     _ -> return ()
         mapM_ send2 $ zip atomicBroken psBroken
       anySend lid fid perOld perNew = do
@@ -125,7 +117,7 @@ handleAndBroadcast knowEvents sperFidOld checkSetPerValid doRecomputeCachePer
             then anySend lid fid perOld perOld
             else do
               unless knowEvents $ do  -- inconsistencies would quickly manifest
-                sendA fid $ UpdPerception lid outPer inPer
+                doSendUpdate fid $ UpdPerception lid outPer inPer
                 let remember = atomicRemember lid inPer sOld
                     seenNew = seenAtomicCli False fid perNew
                     seenOld = seenAtomicCli False fid perOld
@@ -134,7 +126,7 @@ handleAndBroadcast knowEvents sperFidOld checkSetPerValid doRecomputeCachePer
                 let !_A = assert (allB seenNew psRem) ()
                 -- Verify that we remember only new things.
                 let !_A = assert (allB (not . seenOld) psRem) ()
-                mapM_ (sendA fid) remember
+                mapM_ (doSendUpdate fid) remember
               anySend lid fid perOld perNew
       -- TODO: simplify; best after state-diffs approach tried
       send = case ps of
