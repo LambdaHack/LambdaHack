@@ -328,8 +328,7 @@ drawLeaderStatus :: MonadClient m => Int -> Int -> m AttrLine
 drawLeaderStatus waitT width = do
   mleader <- getsClient _sleader
   s <- getState
-  let addColor c t = map (Color.AttrChar $ Color.Attr c Color.defBG)
-                         (T.unpack t)
+  let addColor c t = map (Color.AttrChar $ Color.Attr c Color.defBG) t
       maxLeaderStatusWidth = 23  -- covers 3-digit HP and 2-digit Calm
       (calmHeaderText, hpHeaderText) = if width < maxLeaderStatusWidth
                                        then ("C", "H")
@@ -345,8 +344,8 @@ drawLeaderStatus waitT width = do
             let b@Actor{bhp, bcalm} = getActorBody leader s
             in ( not (actorInAmbient b s)
                , braced b, bhpDelta b, bcalmDelta b
-               , tshow $ max 0 $ aMaxHP ar, tshow (bhp `divUp` oneM)
-               , tshow $ max 0 $ aMaxCalm ar, tshow (bcalm `divUp` oneM))
+               , show $ max 0 $ aMaxHP ar, show (bhp `divUp` oneM)
+               , show $ max 0 $ aMaxCalm ar, show (bcalm `divUp` oneM))
           -- This is a valuable feedback for the otherwise hard to observe
           -- 'wait' command.
           slashes = ["/", "|", "\\", "|"]
@@ -356,7 +355,7 @@ drawLeaderStatus waitT width = do
               = addColor Color.BrRed  -- alarming news have priority
             | resCurrentTurn > 0 || resPreviousTurn > 0
               = addColor Color.BrGreen
-            | otherwise = textToAL  -- only if nothing at all noteworthy
+            | otherwise = stringToAL  -- only if nothing at all noteworthy
           calmAddAttr = checkDelta calmDelta
           darkPick | darkL   = "."
                    | otherwise = ":"
@@ -367,16 +366,16 @@ drawLeaderStatus waitT width = do
           hpAddAttr = checkDelta hpDelta
           hpHeader = hpAddAttr $ hpHeaderText <> bracePick
           hpText = bhpS <> (if bracedL then slashPick else "/") <> ahpS
-      return $! calmHeader <> textToAL (T.justifyRight 6 ' ' calmText <> " ")
-                <> hpHeader <> textToAL (T.justifyRight 6 ' ' hpText <> " ")
-    Nothing -> return $! textToAL $ calmHeaderText <> ": --/-- "
-                                  <> hpHeaderText <> ": --/-- "
+          justifyRight n t = replicate (n - length t) ' ' ++ t
+      return $! calmHeader <> stringToAL (justifyRight 6 calmText <> " ")
+                <> hpHeader <> stringToAL (justifyRight 6 hpText <> " ")
+    Nothing -> return $! stringToAL $ calmHeaderText <> ": --/-- "
+                                   <> hpHeaderText <> ": --/-- "
 
 drawLeaderDamage :: MonadClient m => Int -> m AttrLine
 drawLeaderDamage width = do
   mleader <- getsClient _sleader
-  let addColor t = map (Color.AttrChar $ Color.Attr Color.BrCyan Color.defBG)
-                   (T.unpack t)
+  let addColor s = map (Color.AttrChar $ Color.Attr Color.BrCyan Color.defBG) s
   stats <- case mleader of
     Just leader -> do
       allAssocsRaw <- fullAssocsClient leader [CEqp, COrgan]
@@ -397,18 +396,18 @@ drawLeaderDamage width = do
                     Nothing -> Nothing
                   tdice = case mdice of
                     Nothing -> "0"
-                    Just dice -> tshow dice
+                    Just dice -> show dice
                   bonus = aHurtMelee $ actorAspect EM.! leader
                   unknownBonus = unknownMelee $ map snd allAssocs
                   tbonus = if bonus == 0
                            then if unknownBonus then "+?" else ""
                            else (if bonus > 0 then "+" else "")
-                                <> tshow bonus
+                                <> show bonus
                                 <> if unknownBonus then "%?" else "%"
              in tdice <> tbonus
       return $! damage
     Nothing -> return ""
-  return $! if T.null stats || T.length stats >= width then []
+  return $! if null stats || length stats >= width then []
             else addColor $ stats <> " "
 
 -- TODO: colour some texts using the faction's colour
