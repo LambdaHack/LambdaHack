@@ -29,10 +29,9 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 type AttrLine = [Color.AttrChar]
 
 toAttrLine :: Text -> AttrLine
-toAttrLine t =
+toAttrLine !t =
   let f c l = let ac = Color.AttrChar Color.defAttr c in ac `seq` ac : l
-      al = T.foldr f [] t
-  in foldr (const id) () al `seq` al
+  in T.foldr f [] t
 
 infixr 6 <+:>  -- matches Monoid.<>
 (<+:>) :: AttrLine -> AttrLine -> AttrLine
