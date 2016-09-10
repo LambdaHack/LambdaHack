@@ -6,8 +6,7 @@ module Game.LambdaHack.Client.UI.DrawM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , targetDesc, targetDescXhair
-  , drawArenaStatus, drawLeaderStatus, drawLeaderDamage
-  , drawSelected, drawPlayerName
+  , drawArenaStatus, drawLeaderStatus, drawLeaderDamage, drawSelected
 #endif
   ) where
 
@@ -49,7 +48,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind (isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
@@ -278,9 +276,6 @@ drawBaseFrame dm drawnLevelId = do
                                    (widthStats - length selectedStatus)
   damageStatus <- drawLeaderDamage (widthStats - length leaderStatus
                                                - length selectedStatus)
-  nameStatus <- drawPlayerName (widthStats - length leaderStatus
-                                           - length selectedStatus
-                                           - length damageStatus)
   let tgtOrItem n = do
         let tgtBlurb = "Target:" <+> trimTgtDesc n tgtDesc
         case (sitemSel, mleader) of
@@ -302,8 +297,7 @@ drawBaseFrame dm drawnLevelId = do
           _ -> return $! tgtBlurb
       statusGap = emptyAttrLine (widthStats - length leaderStatus
                                             - length selectedStatus
-                                            - length damageStatus
-                                            - length nameStatus)
+                                            - length damageStatus)
       -- The indicators must fit, they are the actual information.
       pathTgt = displayPathText tgtPos mtargetHP
   targetText <- tgtOrItem $ widthTgt - T.length pathTgt - 8
@@ -312,8 +306,7 @@ drawBaseFrame dm drawnLevelId = do
       targetStatus = textToAL targetText ++ targetGap ++ textToAL pathTgt
       sfBottom =
         [ arenaStatus ++ xhairStatus
-        , selectedStatus ++ nameStatus ++ statusGap
-          ++ damageStatus ++ leaderStatus
+        , selectedStatus ++ statusGap ++ damageStatus ++ leaderStatus
           ++ targetStatus ]
       fLine y = map (\x -> dis $ Point x y) [0..lxsize-1]
       singleFrame = emptyAttrLine lxsize : map fLine [0..lysize-1] ++ sfBottom
@@ -424,7 +417,6 @@ drawSelected :: MonadClient m
 drawSelected drawnLevelId width selected = do
   mleader <- getsClient _sleader
   side <- getsClient sside
-  allOurs <- getsState $ filter ((== side) . bfid) . EM.elems . sactorD
   ours <- getsState $ filter (not . bproj . snd)
                       . actorAssocs (== side) drawnLevelId
   let viewOurs (aid, Actor{bsymbol, bcolor, bhp}) =
@@ -442,24 +434,4 @@ drawSelected drawnLevelId width selected = do
              in Color.AttrChar Color.defAttr{Color.fg} char
       viewed = map viewOurs $ take maxViewed
                $ sortBy (comparing keySelected) ours
-      -- Don't show anything if the only actor in the dungeon is the leader.
-      -- He's clearly highlighted on the level map, anyway.
-      party = if length allOurs == 1 && length ours == 1 || null ours
-              then []
-              else [star] ++ viewed ++ [Color.spaceAttr]
-  return $! party
-
-drawPlayerName :: MonadClient m => Int -> m AttrLine
-drawPlayerName width = do
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
-  let nameN n t =
-        let fitWords [] = []
-            fitWords l@(_ : rest) = if sum (map T.length l) + length l - 1 > n
-                                    then fitWords rest
-                                    else l
-        in T.unwords $ reverse $ fitWords $ reverse $ T.words t
-      ourName = nameN (width - 1) $ fname $ gplayer fact
-  return $! if T.null ourName || T.length ourName >= width
-            then []
-            else textToAL $ ourName <> " "
+  return $! [star] ++ viewed ++ [Color.spaceAttr]
