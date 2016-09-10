@@ -21,6 +21,7 @@ import Data.Binary.Orphans ()
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Client.UI.Overlay
+import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.RingBuffer as RB
 import Game.LambdaHack.Common.Time
@@ -90,7 +91,7 @@ renderReport (Report (x : xs)) =
 
 renderRepetition :: RepMsgN -> AttrLine
 renderRepetition (RepMsgN s 1) = msgLine s
-renderRepetition (RepMsgN s n) = msgLine s ++ toAttrLine ("<x" <> tshow n <> ">")
+renderRepetition (RepMsgN s n) = msgLine s ++ stringToAL ("<x" ++ show n ++ ">")
 
 findInReport :: (AttrLine -> Bool) -> Report -> Maybe Msg
 findInReport f (Report xns) = find (f . msgLine) $ map repMsg xns
@@ -122,6 +123,7 @@ addReport !(History rb) !time (Report m') =
     Nothing -> History $ RB.cons (time, rep) rb
     Just ((oldTime, Report h), hRest) ->
       case (reverse m, h) of
+        -- This and the previous @==@ almost fully evaluates history.
         (RepMsgN s1 n1 : rs, RepMsgN s2 n2 : hhs) | s1 == s2 ->
           let !rephh = Report $ RepMsgN s2 (n1 + n2) : hhs
               hist = RB.cons (oldTime, rephh) hRest
@@ -145,11 +147,11 @@ splitReportForHistory w (time, r) =
   -- TODO: display time fractions with granularity enough to differ
   -- from previous and next report, if possible.
   -- or perhaps here display up to 4 decimal points
-  let tturns = toAttrLine $ tshow $ time `timeFitUp` timeTurn
-      ts = splitAttrLine (w - 1) $ tturns ++ toAttrLine ": " ++ renderReport r
+  let tturns = stringToAL $ show $ time `timeFitUp` timeTurn
+      ts = splitAttrLine (w - 1) $ tturns ++ stringToAL ": " ++ renderReport r
       rep = case ts of
         [] -> []
-        hd : tl -> hd : map (toAttrLine " " ++) tl
+        hd : tl -> hd : map ([Color.spaceAttr] ++) tl
   in (tturns, rep)
 
 -- | Render history as many lines of text, wrapping if necessary.
@@ -159,5 +161,5 @@ renderHistory (History rb) =
         -- TODO: display time fractions with granularity enough to differ
         -- from previous and next report, if possible
         let turns = time `timeFitUp` timeTurn
-        in toAttrLine (tshow turns <> ": ") ++ renderReport r
+        in stringToAL (show turns ++ ": ") ++ renderReport r
   in map truncateForHistory $ RB.toList rb

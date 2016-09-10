@@ -146,7 +146,7 @@ keyHelp Binding{..} offset = assert (offset > 0) $
     lastHelpText = map fmts lastHelpBlurb
     coImage :: HumanCmd -> [K.KM]
     coImage cmd = M.findWithDefault (assert `failure` cmd) cmd brevMap
-    disp = T.concat . intersperse " or " . map K.showKM
+    disp = T.intercalate " or " . map (T.pack . K.showKM)
     keysN :: Int -> CmdCategory -> [(Either [K.KM] SlotChar, Text)]
     keysN n cat = [ (Left kms, fmt n (disp kms) desc)
                   | (_, (cats, desc, cmd)) <- bcmdList
@@ -160,7 +160,7 @@ keyHelp Binding{..} offset = assert (offset > 0) $
       let kst = keysN n cat
           f (ks, tkey) y = (ks, (y, 1, T.length tkey))
           kxs = zipWith f kst [offset + length header..]
-      in (map toAttrLine $ "" : header ++ map snd kst ++ footer, kxs)
+      in (map textToAL $ "" : header ++ map snd kst ++ footer, kxs)
     okxs = okxsN keyL
     keyM = 13
     keyB = 31
@@ -207,13 +207,13 @@ keyHelp Binding{..} offset = assert (offset > 0) $
           render (ca1, _, desc1) (_, _, desc2) =
             fmm (areaDescription ca1) desc1 desc2
           menu = zipWith render kst1 kst2
-      in (map toAttrLine $ "" : header ++ menu ++ footer, kxs)
+      in (map textToAL $ "" : header ++ menu ++ footer, kxs)
     adjoinOverlay (ov1, kxs1) (ov2, _) = (ov1 ++ ov2, kxs1)
   in
     [ ( ""  -- the first screen is for ItemMenu
       , okxs CmdItemMenu [keyCaption] [] )
     , ( casualDescription <+> "(1/2)."
-      , (map toAttrLine $ movText, []) )
+      , (map textToAL $ movText, []) )
     , ( casualDescription <+> "(2/2)."
       , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEndText )
     , ( "All terrain exploration and alteration commands."

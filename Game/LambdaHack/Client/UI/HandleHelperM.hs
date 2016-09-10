@@ -179,9 +179,9 @@ itemOverlay store lid bag = do
                 colorSymbol = uncurry (flip Color.AttrChar)
                                       (viewItem $ itemBase itemFull)
                 phrase = makePhrase [partItemWs k store localTime itemFull]
-                al = toAttrLine (slotLabel l)
+                al = textToAL (slotLabel l)
                      <+:> [colorSymbol]
-                     <+:> toAttrLine phrase
+                     <+:> textToAL phrase
                 kx = (Right l, (undefined, 0, length al))
             in Just ([al], kx)
       (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
@@ -227,7 +227,7 @@ statsOverlay aid = do
            | ab <- [minBound..maxBound] ]
       zipReslot = zipWith prSlot $ zip [0..] allZeroSlots
       (ts, kxs) = unzip $ zipReslot slotList
-  return (map toAttrLine ts, kxs)
+  return (map textToAL ts, kxs)
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
 pickNumber askNumber kAll = do

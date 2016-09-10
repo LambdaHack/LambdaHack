@@ -916,7 +916,7 @@ helpHuman cmdAction = do
   keyb <- getsSession sbinding
   let keyH = tail $ keyHelp keyb 1  -- the first screen is for ItemMenu
       splitHelp (t, okx) =
-        splitOKX lxsize (lysize + 3) (toAttrLine t) [K.spaceKM, K.escKM] okx
+        splitOKX lxsize (lysize + 3) (textToAL t) [K.spaceKM, K.escKM] okx
       sli = toSlideshow $ concat $ map splitHelp keyH
   (ekm, pointer) <-
     displayChoiceScreen ColorFull True menuIxHelp sli [K.spaceKM, K.escKM]
@@ -953,13 +953,13 @@ itemMenuHuman cmdAction = do
           foundText <- itemIsFound iid leader fromCStore
           let itemFull = itemToF iid kit
               attrLine = itemDesc fromCStore localTime itemFull
-              ov = splitAttrLine lxsize $ attrLine <+:> toAttrLine foundText
+              ov = splitAttrLine lxsize $ attrLine <+:> textToAL foundText
           report <- getReportUI
           keyb <- getsSession sbinding
           let (_, (ov0, kxs0)) = head $ keyHelp keyb (1 + length ov)
               t0 = makeSentence [ MU.SubjectVerbSg (partActor b) "choose"
                                 , "an object", MU.Text $ ppCStoreIn fromCStore ]
-              al1 = renderReport report <+:> toAttrLine t0
+              al1 = renderReport report <+:> textToAL t0
               splitHelp (al, okx) =
                 splitOKX lxsize (lysize + 1) al [K.spaceKM, K.escKM] okx
               sli = toSlideshow $ splitHelp (al1, (ov ++ ov0, kxs0))
@@ -1020,36 +1020,37 @@ mainMenuHuman cmdAction = do
       statusLen = 30
       bindingLen = 28
       gameName = makePhrase [MU.Capitalize $ MU.Text $ mname gameMode]
-      gameInfo = [ T.justifyLeft statusLen ' '
+      gameInfo = map T.unpack $
+                 [ T.justifyLeft statusLen ' '
                    $ "Current scenario:" <+> gameName
                  , T.justifyLeft statusLen ' '
                    $ "Current game difficulty:" <+> tshow scurDiff
                  , T.justifyLeft statusLen ' '
                    $ "Next game difficulty:" <+> tshow snxtDiff
                  , T.justifyLeft statusLen ' ' "" ]
-      emptyInfo = repeat $ T.justifyLeft bindingLen ' ' ""
+      emptyInfo = repeat $ replicate bindingLen ' '
       bindings =  -- key bindings to display
         let fmt (k, (d, _)) =
               ( Just k
-              , T.justifyLeft bindingLen ' '
-                  $ T.justifyLeft 3 ' ' (K.showKM k) <> " " <> d )
+              , T.unpack
+                $ T.justifyLeft bindingLen ' '
+                    $ T.justifyLeft 3 ' ' (T.pack $ K.showKM k) <> " " <> d )
         in map fmt kds
-      overwrite :: [(Int, String)] -> [(Text, Maybe KYX)]
+      overwrite :: [(Int, String)] -> [(String, Maybe KYX)]
       overwrite =  -- overwrite the art with key bindings and other lines
-        let over [] (_, line) = ([], (T.pack line, Nothing))
+        let over [] (_, line) = ([], (line, Nothing))
             over bs@((mkey, binding) : bsRest) (y, line) =
               let (prefix, lineRest) = break (=='{') line
                   (braces, suffix)   = span  (=='{') lineRest
               in if length braces >= bindingLen
                  then
-                   let lenB = T.length binding
-                       pre = T.pack prefix
-                       post = T.drop (lenB - length braces) (T.pack suffix)
-                       len = T.length pre
+                   let lenB = length binding
+                       post = drop (lenB - length braces) suffix
+                       len = length prefix
                        yxx key = (Left [key], (y, len, len + lenB))
                        myxx = yxx <$> mkey
-                   in (bsRest, (pre <> binding <> post, myxx))
-                 else (bs, (T.pack line, Nothing))
+                   in (bsRest, (prefix <> binding <> post, myxx))
+                 else (bs, (line, Nothing))
         in snd . mapAccumL over (zip (repeat Nothing) gameInfo
                                  ++ bindings
                                  ++ zip (repeat Nothing) emptyInfo)
@@ -1058,7 +1059,7 @@ mainMenuHuman cmdAction = do
       menuOverwritten = overwrite $ zip [0..] artWithVersion
       (menuOvLines, mkyxs) = unzip menuOverwritten
       kyxs = catMaybes mkyxs
-      ov = map toAttrLine menuOvLines
+      ov = map stringToAL menuOvLines
   isNoConfirms <- isNoConfirmsGame
   -- TODO: pick the first game that was not yet won
   menuIxMain <- if isNoConfirms then return 4 else getsSession smenuIxMain

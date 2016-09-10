@@ -171,7 +171,7 @@ chooseItemDialogMode c = do
           localTime <- getsState $ getLocalTime (blid b)
           foundText <- itemIsFound iid leader COrgan
           let attrLine = itemDesc COrgan localTime itemFull
-              ov = splitAttrLine lxsize $ attrLine <+:> toAttrLine foundText
+              ov = splitAttrLine lxsize $ attrLine <+:> textToAL foundText
           slides <-
             overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] (ov, [])
           km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
@@ -559,8 +559,8 @@ historyHuman = do
               [] -> assert `failure` histSlot
               tR : _ -> tR
             (tturns, ov0) = splitReportForHistory lxsize timeReport
-            prompt = toAttrLine "The full past message at time "
-                     ++ tturns ++ toAttrLine "."
+            prompt = stringToAL "The full past message at time "
+                     ++ tturns ++ stringToAL "."
         promptAddAttr prompt
         slides <-
           overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] (ov0, [])
@@ -623,30 +623,30 @@ settingsMenuHuman cmdAction = do
             | (km, ([HumanCmd.CmdSettingsMenu], desc, cmd)) <- bcmdList ]
       statusLen = 30
       bindingLen = 28
-      gameInfo = replicate 4 $ T.justifyLeft statusLen ' ' ""
-      emptyInfo = repeat $ T.justifyLeft bindingLen ' ' ""
+      gameInfo = replicate 4 $ replicate statusLen ' '
+      emptyInfo = repeat $ replicate bindingLen ' '
       bindings =  -- key bindings to display
         let fmt (k, (d, _)) =
               ( Just k
-              , T.justifyLeft bindingLen ' '
-                  $ T.justifyLeft 3 ' ' (K.showKM k) <> " " <> d )
+              , T.unpack
+                $ T.justifyLeft bindingLen ' '
+                    $ T.justifyLeft 3 ' ' (T.pack $ K.showKM k) <> " " <> d )
         in map fmt kds
-      overwrite :: [(Int, String)] -> [(Text, Maybe KYX)]
+      overwrite :: [(Int, String)] -> [(String, Maybe KYX)]
       overwrite =  -- overwrite the art with key bindings and other lines
-        let over [] (_, line) = ([], (T.pack line, Nothing))
+        let over [] (_, line) = ([], (line, Nothing))
             over bs@((mkey, binding) : bsRest) (y, line) =
               let (prefix, lineRest) = break (=='{') line
                   (braces, suffix)   = span  (=='{') lineRest
               in if length braces >= bindingLen
                  then
-                   let lenB = T.length binding
-                       pre = T.pack prefix
-                       post = T.drop (lenB - length braces) (T.pack suffix)
-                       len = T.length pre
+                   let lenB = length binding
+                       post = drop (lenB - length braces) suffix
+                       len = length prefix
                        yxx key = (Left [key], (y, len, len + lenB))
                        myxx = yxx <$> mkey
-                   in (bsRest, (pre <> binding <> post, myxx))
-                 else (bs, (T.pack line, Nothing))
+                   in (bsRest, (prefix <> binding <> post, myxx))
+                 else (bs, (line, Nothing))
         in snd . mapAccumL over (zip (repeat Nothing) gameInfo
                                  ++ bindings
                                  ++ zip (repeat Nothing) emptyInfo)
@@ -655,7 +655,7 @@ settingsMenuHuman cmdAction = do
       menuOverwritten = overwrite $ zip [0..] artWithVersion
       (menuOvLines, mkyxs) = unzip menuOverwritten
       kyxs = catMaybes mkyxs
-      ov = map toAttrLine menuOvLines
+      ov = map stringToAL menuOvLines
   menuIxSettings <- getsSession smenuIxSettings
   (ekm, pointer) <- displayChoiceScreen ColorFull True menuIxSettings
                                         (menuToSlideshow (ov, kyxs)) [K.escKM]

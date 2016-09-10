@@ -1,7 +1,7 @@
 -- | Screen overlays.
 module Game.LambdaHack.Client.UI.Overlay
   ( -- * AttrLine
-    AttrLine, toAttrLine, (<+:>), splitAttrLine, itemDesc
+    AttrLine, emptyAttrLine, textToAL, stringToAL, (<+:>), splitAttrLine, itemDesc
     -- * Overlay
   , Overlay, glueOverlay, updateOverlayLine
     -- * Misc
@@ -28,16 +28,22 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 
 type AttrLine = [Color.AttrChar]
 
-toAttrLine :: Text -> AttrLine
-toAttrLine !t =
+emptyAttrLine :: Int -> AttrLine
+emptyAttrLine xsize = replicate xsize Color.spaceAttr
+
+textToAL :: Text -> AttrLine
+textToAL !t =
   let f c l = let ac = Color.AttrChar Color.defAttr c in ac `seq` ac : l
   in T.foldr f [] t
+
+stringToAL :: String -> AttrLine
+stringToAL s = map (Color.AttrChar Color.defAttr) s
 
 infixr 6 <+:>  -- matches Monoid.<>
 (<+:>) :: AttrLine -> AttrLine -> AttrLine
 (<+:>) [] l2 = l2
 (<+:>) l1 [] = l1
-(<+:>) l1 l2 = l1 ++ toAttrLine " " ++ l2
+(<+:>) l1 l2 = l1 ++ [Color.spaceAttr] ++ l2
 
 -- | Split a string into lines. Avoids ending the line with a character
 -- other than whitespace or punctuation. Space characters are removed
@@ -86,7 +92,7 @@ itemDesc c localTime itemFull =
             then makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
             else ""
         <+> makeSentence ["First found on level", MU.Text $ tshow ln]
-  in colorSymbol : toAttrLine blurb
+  in colorSymbol : textToAL blurb
 
 -- * Overlay
 

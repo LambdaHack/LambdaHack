@@ -18,7 +18,6 @@ import Game.LambdaHack.Common.Prelude hiding (Alt, Left, Right)
 import Control.DeepSeq
 import Data.Binary
 import qualified Data.Char as Char
-import qualified Data.Text as T
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Vector
@@ -54,7 +53,7 @@ data Key =
   | LeftDblClick       -- ^ left mouse button double click
   | WheelNorth  -- ^ mouse wheel rotated north
   | WheelSouth  -- ^ mouse wheel rotated south
-  | Unknown !Text -- ^ an unknown key, registered to warn the user
+  | Unknown !String -- ^ an unknown key, registered to warn the user
   | DeadKey
   deriving (Ord, Eq, Generic)
 
@@ -83,10 +82,10 @@ instance Binary KM
 instance NFData KM
 
 instance Show KM where
-  show = T.unpack . showKM
+  show = showKM
 
 -- Common and terse names for keys.
-showKey :: Key -> Text
+showKey :: Key -> String
 showKey Esc      = "ESC"
 showKey Return   = "RET"
 showKey Space    = "SPACE"
@@ -104,9 +103,9 @@ showKey PgDn     = "PGDN"
 showKey Begin    = "BEGIN"
 showKey Insert   = "INS"
 showKey Delete   = "DELETE"
-showKey (KP c)   = "KP_" <> T.singleton c
-showKey (Char c) = T.singleton c
-showKey (Fun n) = "F" <> tshow n
+showKey (KP c)   = "KP_" ++ [c]
+showKey (Char c) = [c]
+showKey (Fun n) = "F" ++ show n
 showKey LeftButtonPress = "LMB-PRESS"
 showKey MiddleButtonPress = "MMB-PRESS"
 showKey RightButtonPress = "RMB-PRESS"
@@ -116,14 +115,14 @@ showKey RightButtonRelease = "RMB"
 showKey LeftDblClick = "LMB-DBLCLICK"
 showKey WheelNorth = "WHEEL-UP"
 showKey WheelSouth = "WHEEL-DN"
-showKey (Unknown s) = "'" <> s <> "'"
+showKey (Unknown s) = "'" ++ s ++ "'"
 showKey DeadKey      = "DEADKEY"
 
 -- | Show a key with a modifier, if any.
-showKM :: KM -> Text
-showKM KM{modifier=Shift, key} = "S-" <> showKey key
-showKM KM{modifier=Control, key} = "C-" <> showKey key
-showKM KM{modifier=Alt, key} = "A-" <> showKey key
+showKM :: KM -> String
+showKM KM{modifier=Shift, key} = "S-" ++ showKey key
+showKM KM{modifier=Control, key} = "C-" ++ showKey key
+showKM KM{modifier=Alt, key} = "A-" ++ showKey key
 showKM KM{modifier=NoModifier, key} = showKey key
 
 escKM :: KM
@@ -375,7 +374,7 @@ keyTranslate "VoidSymbol"       = DeadKey
 keyTranslate ['K','P','_',c] = KP c
 -- standard characters
 keyTranslate [c]             = Char c
-keyTranslate s               = Unknown $ T.pack s
+keyTranslate s               = Unknown s
 
 
 -- | Translate key from a Web API string description
@@ -435,4 +434,4 @@ keyTranslateWeb ['\r']       _ = Return
 keyTranslateWeb ['\t']       _ = Tab
 -- standard characters
 keyTranslateWeb [c]          _ = Char c
-keyTranslateWeb s            _ = Unknown $ T.pack s
+keyTranslateWeb s            _ = Unknown s

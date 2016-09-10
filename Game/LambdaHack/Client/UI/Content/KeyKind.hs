@@ -14,7 +14,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Char as Char
-import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Client.Key as K
@@ -33,7 +32,7 @@ data KeyKind = KeyKind
 evalKeyDef :: (String, CmdTriple) -> (K.KM, CmdTriple)
 evalKeyDef (t, triple@(cats, _, _)) =
   let km = if CmdInternal `elem` cats
-           then K.KM K.NoModifier $ K.Unknown $ T.pack t
+           then K.KM K.NoModifier $ K.Unknown t
            else K.mkKM t
   in (km, triple)
 

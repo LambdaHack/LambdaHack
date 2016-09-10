@@ -19,6 +19,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Ord
 import qualified Data.Text as T
+import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.BfsM
@@ -51,7 +52,6 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind (isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
-import qualified NLP.Miniutter.English as MU
 
 targetDesc :: MonadClientUI m => Maybe Target -> m (Text, Maybe Text)
 targetDesc target = do
@@ -267,9 +267,9 @@ drawBaseFrame dm drawnLevelId = do
         let n = widthTgt - T.length pathCsr - 8
         in (if isJust saimMode then "x-hair>" else "X-hair:")
            <+> trimTgtDesc n xhairDesc
-      xhairGap = T.replicate (widthTgt - T.length pathCsr
-                                        - T.length xhairText) " "
-      xhairStatus = toAttrLine $ xhairText <> xhairGap <> pathCsr
+      xhairGap = emptyAttrLine (widthTgt - T.length pathCsr
+                                         - T.length xhairText)
+      xhairStatus = textToAL xhairText ++ xhairGap ++ textToAL pathCsr
       minLeaderStatusWidth = 19  -- covers 3-digit HP
   selectedStatus <- drawSelected drawnLevelId
                                  (widthStats - minLeaderStatusWidth)
@@ -300,24 +300,23 @@ drawBaseFrame dm drawnLevelId = do
                           else [MU.CarWs k name, stats]
                 return $! "Object:" <+> trimTgtDesc n t
           _ -> return $! tgtBlurb
-      statusGap = toAttrLine $ T.replicate (widthStats - length leaderStatus
-                                                       - length selectedStatus
-                                                       - length damageStatus
-                                                       - length nameStatus) " "
+      statusGap = emptyAttrLine (widthStats - length leaderStatus
+                                            - length selectedStatus
+                                            - length damageStatus
+                                            - length nameStatus)
       -- The indicators must fit, they are the actual information.
       pathTgt = displayPathText tgtPos mtargetHP
   targetText <- tgtOrItem $ widthTgt - T.length pathTgt - 8
-  let targetGap = T.replicate (widthTgt - T.length pathTgt
-                                        - T.length targetText) " "
-      targetStatus = toAttrLine $ targetText <> targetGap <> pathTgt
+  let targetGap = emptyAttrLine (widthTgt - T.length pathTgt
+                                          - T.length targetText)
+      targetStatus = textToAL targetText ++ targetGap ++ textToAL pathTgt
       sfBottom =
         [ arenaStatus ++ xhairStatus
         , selectedStatus ++ nameStatus ++ statusGap
           ++ damageStatus ++ leaderStatus
           ++ targetStatus ]
       fLine y = map (\x -> dis $ Point x y) [0..lxsize-1]
-      emptyLine = toAttrLine $ T.replicate lxsize " "
-      singleFrame = emptyLine : map fLine [0..lysize-1] ++ sfBottom
+      singleFrame = emptyAttrLine lxsize : map fLine [0..lysize-1] ++ sfBottom
   return $! SingleFrame{..}
 
 -- Comfortably accomodates 3-digit level numbers and 25-character
@@ -329,8 +328,8 @@ drawArenaStatus explored Level{ldepth=AbsDepth ld, ldesc, lseen, lclear} width =
               | otherwise = T.justifyLeft 3 ' ' (tshow seenN <> "%")
       lvlN = T.justifyLeft 2 ' ' (tshow ld)
       seenStatus = "[" <> seenTxt <+> "seen] "
-  in toAttrLine $ T.justifyLeft width ' '
-                $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' ldesc) <+> seenStatus
+  in textToAL $ T.justifyLeft width ' '
+              $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' ldesc) <+> seenStatus
 
 drawLeaderStatus :: MonadClient m => Int -> Int -> m AttrLine
 drawLeaderStatus waitT width = do
@@ -364,7 +363,7 @@ drawLeaderStatus waitT width = do
               = addColor Color.BrRed  -- alarming news have priority
             | resCurrentTurn > 0 || resPreviousTurn > 0
               = addColor Color.BrGreen
-            | otherwise = toAttrLine  -- only if nothing at all noteworthy
+            | otherwise = textToAL  -- only if nothing at all noteworthy
           calmAddAttr = checkDelta calmDelta
           darkPick | darkL   = "."
                    | otherwise = ":"
@@ -375,10 +374,10 @@ drawLeaderStatus waitT width = do
           hpAddAttr = checkDelta hpDelta
           hpHeader = hpAddAttr $ hpHeaderText <> bracePick
           hpText = bhpS <> (if bracedL then slashPick else "/") <> ahpS
-      return $! calmHeader <> toAttrLine (T.justifyRight 6 ' ' calmText <> " ")
-                <> hpHeader <> toAttrLine (T.justifyRight 6 ' ' hpText <> " ")
-    Nothing -> return $! toAttrLine $ calmHeaderText <> ": --/-- "
-                                   <> hpHeaderText <> ": --/-- "
+      return $! calmHeader <> textToAL (T.justifyRight 6 ' ' calmText <> " ")
+                <> hpHeader <> textToAL (T.justifyRight 6 ' ' hpText <> " ")
+    Nothing -> return $! textToAL $ calmHeaderText <> ": --/-- "
+                                  <> hpHeaderText <> ": --/-- "
 
 drawLeaderDamage :: MonadClient m => Int -> m AttrLine
 drawLeaderDamage width = do
@@ -447,7 +446,7 @@ drawSelected drawnLevelId width selected = do
       -- He's clearly highlighted on the level map, anyway.
       party = if length allOurs == 1 && length ours == 1 || null ours
               then []
-              else [star] ++ viewed ++ toAttrLine " "
+              else [star] ++ viewed ++ [Color.spaceAttr]
   return $! party
 
 drawPlayerName :: MonadClient m => Int -> m AttrLine
@@ -463,4 +462,4 @@ drawPlayerName width = do
       ourName = nameN (width - 1) $ fname $ gplayer fact
   return $! if T.null ourName || T.length ourName >= width
             then []
-            else toAttrLine $ ourName <> " "
+            else textToAL $ ourName <> " "

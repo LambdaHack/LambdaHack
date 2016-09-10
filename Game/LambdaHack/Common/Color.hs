@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Color
     Color(..), defFG, defBG, isBright, legalBG, darkCol, brightCol, stdCol
   , colorToRGB
     -- * Text attributes and the screen
-  , Attr(..), defAttr, AttrChar(..)
+  , Attr(..), defAttr, AttrChar(..), spaceAttr
   ) where
 
 import Prelude ()
@@ -93,6 +93,9 @@ instance Enum AttrChar where
 instance Binary AttrChar where
   put = putWord32le . toEnum . fromEnum
   get = fmap (toEnum . fromEnum) getWord32le
+
+spaceAttr :: AttrChar
+spaceAttr = AttrChar defAttr ' '
 
 -- | A helper for the terminal frontends that display bright via bold.
 isBright :: Color -> Bool

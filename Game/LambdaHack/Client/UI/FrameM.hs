@@ -59,7 +59,7 @@ promptGetKey dm ov sfBlank frontKeyKeys = do
       stopPlayBack
       discardPressedKey
       let ov2 = ov `glueOverlay` if keyPressed
-                                 then [toAttrLine "*interrupted*"]
+                                 then [stringToAL "*interrupted*"]
                                  else []
       frontKeyFrame <- drawOverlay dm sfBlank ov2 lidV
       connFrontendFrontKey frontKeyKeys frontKeyFrame

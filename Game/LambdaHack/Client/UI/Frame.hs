@@ -8,8 +8,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.Text as T
-
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Misc
@@ -31,9 +29,8 @@ overlayFrame :: Overlay -> Maybe SingleFrame -> SingleFrame
 overlayFrame topTrunc msf =
   let lxsize = fst normalLevelBound + 1  -- TODO
       lysize = snd normalLevelBound + 1
-      emptyLine = toAttrLine $ T.replicate lxsize " "
       canvasLength = if isNothing msf then lysize + 3 else lysize + 1
-      canvas = maybe (replicate canvasLength emptyLine)
+      canvas = maybe (replicate canvasLength (emptyAttrLine lxsize))
                      singleFrame
                      msf
       topLayer = if length topTrunc <= canvasLength
@@ -41,7 +38,7 @@ overlayFrame topTrunc msf =
                                   then [[]]
                                   else []
                  else take (canvasLength - 1) topTrunc
-                      ++ [toAttrLine "--a portion of the text trimmed--"]
+                      ++ [stringToAL "--a portion of the text trimmed--"]
       f lenPrev lenNext layerLine canvasLine =
         let truncated = truncateAttrLine lxsize layerLine (max lenPrev lenNext)
         in truncated ++ drop (length truncated) canvasLine
@@ -62,6 +59,6 @@ truncateAttrLine w xs lenMax =
     EQ -> xs
     GT -> let xsSpace = if null xs || acChar (last xs) == ' '
                         then xs
-                        else xs ++ toAttrLine " "
+                        else xs ++ [spaceAttr]
               whiteN = max (40 - length xsSpace) (1 + lenMax - length xsSpace)
           in xsSpace ++ replicate whiteN (AttrChar defAttr ' ')

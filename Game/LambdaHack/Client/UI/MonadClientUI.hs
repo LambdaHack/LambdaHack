@@ -24,7 +24,6 @@ import qualified Data.Text.IO as T
 import Data.Time.Clock
 import Data.Time.Clock.POSIX
 import Data.Time.LocalTime
-import qualified NLP.Miniutter.English as MU
 import System.IO
 
 import Game.LambdaHack.Client.CommonM
@@ -44,7 +43,6 @@ import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
@@ -132,7 +130,7 @@ getReportUI = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
-      promptAI = toPrompt $ toAttrLine $ "[press any key for Main Menu]"
+      promptAI = toPrompt $ stringToAL "[press any key for Main Menu]"
   return $! if underAI then consReportNoScrub promptAI report else report
 
 getLeaderUI :: MonadClientUI m => m ActorId
@@ -224,10 +222,10 @@ scoreToSlideshow total status = do
                            ourVictims theirVictims
                            (fhiCondPoly $ gplayer fact)
       (msg, tts) = HighScore.highSlideshow ntable pos gameModeName tz
-      al = toAttrLine msg
+      al = textToAL msg
       splitScreen ts =
         splitOKX lxsize (lysize + 3) al [K.spaceKM, K.escKM] (ts, [])
-      sli = toSlideshow $ concat $ map (splitScreen . map toAttrLine) tts
+      sli = toSlideshow $ concat $ map (splitScreen . map textToAL) tts
   return $! if worthMentioning
             then sli
             else emptySlideshow
@@ -236,11 +234,11 @@ defaultHistory :: MonadClientUI m => Int -> m History
 defaultHistory configHistoryMax = liftIO $ do
   utcTime <- getCurrentTime
   timezone <- getTimeZone utcTime
-  let curDate = MU.Text $ tshow $ utcToLocalTime timezone utcTime
-  let emptyHist = emptyHistory configHistoryMax
+  let curDate = show $ utcToLocalTime timezone utcTime
+      emptyHist = emptyHistory configHistoryMax
   return $! addReport emptyHist timeZero
-         $ singletonReport $ toMsg $ toAttrLine
-         $ makeSentence ["Human history log started on", curDate]
+         $ singletonReport $ toMsg $ stringToAL
+         $ "Human history log started on " ++ curDate ++ "."
 
 tellAllClipPS :: MonadClientUI m => m ()
 tellAllClipPS = do

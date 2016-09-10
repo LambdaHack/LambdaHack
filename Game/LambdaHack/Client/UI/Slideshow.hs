@@ -10,12 +10,11 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.Text as T
-
 import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.Overlay
+import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Point
 
 type KYX = (Either [K.KM] SlotChar, (Y, X, X))
@@ -41,19 +40,19 @@ toSlideshow okxs = Slideshow $ addFooters okxs
  where
   addFooters [] = assert `failure` okxs
   addFooters [(als, [])] =
-    [( als ++ [toAttrLine tendMsg]
+    [( als ++ [stringToAL endMsg]
      , [(Left [K.safeSpaceKM], (length als, 0, 8))] )]
   addFooters [(als, kxs)] = [(als, kxs)]
   addFooters ((als, kxs) : rest) =
-    ( als ++ [toAttrLine tmoreMsg]
+    ( als ++ [stringToAL moreMsg]
     , kxs ++ [(Left [K.safeSpaceKM], (length als, 0, 8))] )
     : addFooters rest
 
-tmoreMsg :: Text
-tmoreMsg = "--more--  "
+moreMsg :: String
+moreMsg = "--more--  "
 
-tendMsg :: Text
-tendMsg = "--end--  "
+endMsg :: String
+endMsg = "--end--  "
 
 menuToSlideshow :: OKX -> Slideshow
 menuToSlideshow (als, kxs) =
@@ -61,15 +60,16 @@ menuToSlideshow (als, kxs) =
 
 keysOKX :: Y -> X -> X -> [K.KM] -> OKX
 keysOKX ystart xstart xBound keys =
-  let wrapB s = "[" <> s <> "]"
+  let wrapB s = "[" ++ s ++ "]"
       f ((y, x), (kL, kV, kX)) key =
         let ks = wrapB $ K.showKM key
-        in if x + T.length ks > xBound
+            len = length ks
+        in if x + len > xBound
            then f ((y + 1, 0), ([], kL : kV, kX)) key
-           else ( (y, x + T.length ks + 1)
-                , (ks : kL, kV, (Left [key], (y, x, x + T.length ks)) : kX) )
+           else ( (y, x + len + 1)
+                , (ks : kL, kV, (Left [key], (y, x, x + len)) : kX) )
       (kL1, kV1, kX1) = snd $ foldl' f ((ystart, xstart), ([], [], [])) keys
-      catL = toAttrLine . T.intercalate " " . reverse
+      catL = stringToAL . intercalate " " . reverse
   in (reverse $ map catL $ kL1 : kV1, reverse kX1)
 
 splitOverlay :: X -> Y -> Report -> [K.KM] -> OKX -> Slideshow
@@ -89,7 +89,7 @@ splitOKX lxsize yspace rrep keys (ls0, kxs0) =
       ((lsInit, kxsInit), (header, rkxs)) =
         -- Check whether most space taken by report and keys.
         if (length $ glueOverlay msgRaw lX0) * 2 > yspace
-        then (msgOkx, ([intercalate (toAttrLine " ") lX0 <+:> rrep], keysX0))
+        then (msgOkx, ([intercalate  [Color.spaceAttr] lX0 <+:> rrep], keysX0))
                -- will display "$" (unless has EOLs)
         else (([], []), msgOkx)
       renumber y (km, (y0, x1, x2)) = (km, (y0 + y, x1, x2))

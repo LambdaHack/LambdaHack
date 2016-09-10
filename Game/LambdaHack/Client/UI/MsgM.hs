@@ -17,12 +17,12 @@ import Game.LambdaHack.Common.State
 -- | Add a message to the current report.
 msgAdd :: MonadClientUI m => Text -> m ()
 msgAdd msg = modifySession $ \sess ->
-  sess {_sreport = snocReport (_sreport sess) (toMsg $ toAttrLine msg)}
+  sess {_sreport = snocReport (_sreport sess) (toMsg $ textToAL msg)}
 
 -- | Add a prompt to the current report.
 promptAdd :: MonadClientUI m => Text -> m ()
 promptAdd msg = modifySession $ \sess ->
-  sess {_sreport = snocReport (_sreport sess) (toPrompt $ toAttrLine msg)}
+  sess {_sreport = snocReport (_sreport sess) (toPrompt $ textToAL msg)}
 
 -- | Add a prompt to the current report.
 promptAddAttr :: MonadClientUI m => AttrLine -> m ()

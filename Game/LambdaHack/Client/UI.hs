@@ -26,6 +26,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
+import qualified Data.Text as T
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
@@ -152,7 +153,7 @@ humanCommand = do
                               else 0}
               cmdHumanSem cmd
             _ -> let msgKey = "unknown command <" <> K.showKM km <> ">"
-                 in weaveJust <$> failWith msgKey
+                 in weaveJust <$> failWith (T.pack msgKey)
         -- The command was failed or successful and if the latter,
         -- possibly took some time.
         case abortOrCmd of
