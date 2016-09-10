@@ -1,5 +1,7 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, TypeFamilies #-}
+#if __GLASGOW_HASKELL__ >= 800
 {-# OPTIONS_GHC -Wno-orphans #-}
+#endif
 -- | Hacks that haven't found their home yet.
 module Game.LambdaHack.Common.Misc
   ( -- * Game object identifiers

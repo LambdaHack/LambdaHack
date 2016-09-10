@@ -1,4 +1,6 @@
+#if __GLASGOW_HASKELL__ >= 800
 {-# OPTIONS_GHC -Wno-unused-do-bind #-}
+#endif
 -- | Text frontend based on Gtk.
 module Game.LambdaHack.Client.UI.Frontend.Gtk
   ( startup, frontendName
