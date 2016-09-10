@@ -268,14 +268,12 @@ drawBaseFrame dm drawnLevelId = do
       xhairGap = emptyAttrLine (widthTgt - T.length pathCsr
                                          - T.length xhairText)
       xhairStatus = textToAL xhairText ++ xhairGap ++ textToAL pathCsr
-      minLeaderStatusWidth = 19  -- covers 3-digit HP
-  selectedStatus <- drawSelected drawnLevelId
-                                 (widthStats - minLeaderStatusWidth)
-                                 sselected
+      leaderStatusWidth = 22
   leaderStatus <- drawLeaderStatus swaitTimes
-                                   (widthStats - length selectedStatus)
-  damageStatus <- drawLeaderDamage (widthStats - length leaderStatus
-                                               - length selectedStatus)
+  (selectedStatusWidth, selectedStatus)
+    <- drawSelected drawnLevelId (widthStats - leaderStatusWidth) sselected
+  damageStatus <- drawLeaderDamage (widthStats - leaderStatusWidth
+                                               - selectedStatusWidth)
   let tgtOrItem n = do
         let tgtBlurb = "Target:" <+> trimTgtDesc n tgtDesc
         case (sitemSel, mleader) of
@@ -295,8 +293,8 @@ drawBaseFrame dm drawnLevelId = do
                           else [MU.CarWs k name, stats]
                 return $! "Object:" <+> trimTgtDesc n t
           _ -> return $! tgtBlurb
-      statusGap = emptyAttrLine (widthStats - length leaderStatus
-                                            - length selectedStatus
+      statusGap = emptyAttrLine (widthStats - leaderStatusWidth
+                                            - selectedStatusWidth
                                             - length damageStatus)
       -- The indicators must fit, they are the actual information.
       pathTgt = displayPathText tgtPos mtargetHP
@@ -324,18 +322,15 @@ drawArenaStatus explored Level{ldepth=AbsDepth ld, ldesc, lseen, lclear} width =
   in textToAL $ T.justifyLeft width ' '
               $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' ldesc) <+> seenStatus
 
-drawLeaderStatus :: MonadClient m => Int -> Int -> m AttrLine
-drawLeaderStatus waitT width = do
+drawLeaderStatus :: MonadClient m => Int -> m AttrLine
+drawLeaderStatus waitT = do
+  let calmHeaderText = "Calm"
+      hpHeaderText = "HP"
   mleader <- getsClient _sleader
-  s <- getState
-  let addColor c t = map (Color.AttrChar $ Color.Attr c Color.defBG) t
-      maxLeaderStatusWidth = 23  -- covers 3-digit HP and 2-digit Calm
-      (calmHeaderText, hpHeaderText) = if width < maxLeaderStatusWidth
-                                       then ("C", "H")
-                                       else ("Calm", "HP")
   case mleader of
     Just leader -> do
       actorAspect <- getsClient sactorAspect
+      s <- getState
       let ar = case EM.lookup leader actorAspect of
             Just aspectRecord -> aspectRecord
             Nothing -> assert `failure`leader
@@ -350,6 +345,7 @@ drawLeaderStatus waitT width = do
           -- 'wait' command.
           slashes = ["/", "|", "\\", "|"]
           slashPick = slashes !! (max 0 (waitT - 1) `mod` length slashes)
+          addColor c t = map (Color.AttrChar $ Color.Attr c Color.defBG) t
           checkDelta ResDelta{..}
             | resCurrentTurn < 0 || resPreviousTurn < 0
               = addColor Color.BrRed  -- alarming news have priority
@@ -412,7 +408,7 @@ drawLeaderDamage width = do
 
 -- TODO: colour some texts using the faction's colour
 drawSelected :: MonadClient m
-             => LevelId -> Int -> ES.EnumSet ActorId -> m AttrLine
+             => LevelId -> Int -> ES.EnumSet ActorId -> m (Int, AttrLine)
 drawSelected drawnLevelId width selected = do
   mleader <- getsClient _sleader
   side <- getsClient sside
@@ -425,12 +421,13 @@ drawSelected drawnLevelId width selected = do
             sattr = Color.Attr {Color.fg = bcolor, bg}
         in Color.AttrChar sattr $ if bhp > 0 then bsymbol else '%'
       maxViewed = width - 2
+      len = length ours
       star = let fg = case ES.size selected of
                    0 -> Color.BrBlack
-                   n | n == length ours -> Color.BrWhite
+                   n | n == len -> Color.BrWhite
                    _ -> Color.defFG
-                 char = if length ours > maxViewed then '$' else '*'
+                 char = if len > maxViewed then '$' else '*'
              in Color.AttrChar Color.defAttr{Color.fg} char
       viewed = map viewOurs $ take maxViewed
                $ sortBy (comparing keySelected) ours
-  return $! [star] ++ viewed ++ [Color.spaceAttr]
+  return (len + 2, [star] ++ viewed ++ [Color.spaceAttr])
