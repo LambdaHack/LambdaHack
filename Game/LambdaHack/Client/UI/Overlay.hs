@@ -82,7 +82,7 @@ itemDesc c localTime itemFull =
           (tshow $ fromIntegral weight / (1000 :: Double), "kg")
         | otherwise = (tshow weight, "g")
       ln = abs $ fromEnum $ jlid (itemBase itemFull)
-      colorSymbol = uncurry (flip Color.AttrChar) (viewItem $ itemBase itemFull)
+      colorSymbol = viewItem $ itemBase itemFull
       blurb =
         " "
         <> nstats

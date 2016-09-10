@@ -140,14 +140,10 @@ drawFrameBody dm drawnLevelId = do
   actorsHere <- getsState $ actorAssocs (const True) drawnLevelId
   per <- getPerFid drawnLevelId
   let deleteXhair = maybe id (\xhair -> delete xhair) xhairPos
-      mpath = maybe Nothing
-                    (\(_, mp) -> if null bline
-                                 then Nothing
-                                 else case mp of
-                                   NoPath -> Nothing
-                                   AndPath {pathList} ->
-                                     Just $ deleteXhair pathList)
-                    bfsmpath
+      mpath = if null bline then []
+              else maybe [] (\(_, mp) -> case mp of
+                NoPath -> []
+                AndPath {pathList} -> deleteXhair pathList) bfsmpath
       xhairHere = find (\(_, m) -> xhairPos == Just (Actor.bpos m))
                         actorsHere
       shiftedBTrajectory = case xhairHere of
@@ -158,22 +154,20 @@ drawFrameBody dm drawnLevelId = do
         let tile = lvl `at` pos0
             tk = tokind tile
             floorBag = EM.findWithDefault EM.empty pos0 $ lfloor lvl
--- TODO: too costly right now
--- unless I add reverse itemSlots, to avoid latency in menus;
--- wait and see if there's latency in the browser due to that
---            (itemSlots, _) = sslots cli
---            bagItemSlots = EM.filter (`EM.member` floorBag) itemSlots
---            floorIids = EM.elems bagItemSlots  -- first slot will be shown
-            floorIids = reverse $ EM.keys floorBag  -- sorted by key order
+            floorIids = EM.toDescList floorBag  -- sorted by key order
             sml = EM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeDeltaToFrom` ltime
-            viewActor Actor{bsymbol, bcolor, bhp, bproj} =
-              (symbol, Color.Attr{fg=bcolor, bg=Color.defBG})
+            viewActor aid Actor{bsymbol, bcolor, bhp, bproj} =
+              Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
              where
               symbol | bhp <= 0 && not bproj = '%'
                      | otherwise = bsymbol
-            rainbow p = Color.defAttr {Color.fg =
-                                         toEnum $ fromEnum p `rem` 14 + 1}
+              bg | Just aid == mleader = Color.BrRed
+                 | aid `ES.member` sselected = Color.BrBlue
+                 | otherwise = Color.defBG
+            rainbow p =
+              Color.defAttr {Color.fg = toEnum $ fromEnum p `rem` 14 + 1}
+            vis = ES.member pos0 $ totalVisible per
             -- smarkSuspect is an optional overlay, so let's overlay it
             -- over both visible and invisible tiles.
             vcolor
@@ -189,36 +183,33 @@ drawFrameBody dm drawnLevelId = do
               (False, False) -> Color.Red
             atttrOnPathOrLine = Color.defAttr {Color.fg = fgOnPathOrLine}
             maidBody = find (\(_, m) -> pos0 == Actor.bpos m) actorsHere
-            (char, attr0) =
-              case snd <$> maidBody of
-                _ | isJust saimMode
-                    && (elem pos0 bline || elem pos0 shiftedBTrajectory) ->
-                  ('*', atttrOnPathOrLine)  -- line takes precedence over path
-                _ | isJust saimMode
-                    && maybe False (elem pos0) mpath ->
-                  (';', atttrOnPathOrLine)
-                Just m -> viewActor m
-                _ | smarkSmell && sml > ltime ->
-                  (timeDeltaToDigit smellTimeout smlt, rainbow pos0)
-                  | otherwise ->
-                  case floorIids of
-                    [] -> (TK.tsymbol tk, Color.defAttr {Color.fg=vcolor})
-                    iid : _ -> viewItem $ getItemBody iid s
-            vis = ES.member pos0 $ totalVisible per
-            maid = fst <$> maidBody
-            a = case dm of
-                  ColorBW -> Color.defAttr
-                  ColorFull -> if | mleader == maid && isJust maid ->
-                                    attr0 {Color.bg = Color.BrRed}
-                                  | Just pos0 == xhairPos ->
-                                    attr0 {Color.bg = Color.BrYellow}
-                                  | maybe False (`ES.member` sselected) maid ->
-                                    attr0 {Color.bg = Color.BrBlue}
-                                  | smarkVision && vis ->
-                                    attr0 {Color.bg = Color.Blue}
-                                  | otherwise ->
-                                    attr0
-        in Color.AttrChar a char
+            charAttr = case maidBody of
+              Just (aid, m) -> viewActor aid m
+              Nothing ->
+                if smarkSmell && sml > ltime
+                then Color.AttrChar (rainbow pos0)
+                                    (timeDeltaToDigit smellTimeout smlt)
+                else case floorIids of
+                  [] -> Color.AttrChar Color.defAttr {Color.fg=vcolor}
+                                       (TK.tsymbol tk)
+                  (iid, _) : _ -> viewItem $ getItemBody iid s
+            noAimCharAtrr = case dm of
+              ColorBW -> charAttr {Color.acAttr = Color.defAttr}
+              ColorFull | Just pos0 == xhairPos ->
+                charAttr {Color.acAttr =
+                            (Color.acAttr charAttr) {Color.bg = Color.BrYellow}}
+                        | smarkVision && vis && isNothing maidBody ->
+                charAttr {Color.acAttr =
+                            (Color.acAttr charAttr) {Color.bg = Color.Blue}}
+                        | otherwise ->
+                charAttr
+        in if isJust saimMode then
+             if | elem pos0 bline || elem pos0 shiftedBTrajectory ->
+                  Color.AttrChar atttrOnPathOrLine '*'
+                | elem pos0 mpath ->
+                  Color.AttrChar atttrOnPathOrLine ';'
+                | otherwise -> noAimCharAtrr
+           else noAimCharAtrr
       fLine y = map (\x -> dis $ Point x y) [0..lxsize-1]
   return $! emptyAttrLine lxsize : map fLine [0..lysize-1]
 

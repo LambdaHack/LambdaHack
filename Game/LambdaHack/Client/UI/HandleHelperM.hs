@@ -31,7 +31,6 @@ import Game.LambdaHack.Client.UI.Slideshow
 import Game.LambdaHack.Client.UI.SlideshowM
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
@@ -176,8 +175,7 @@ itemOverlay store lid bag = do
           Nothing -> Nothing
           Just kit@(k, _) ->
             let itemFull = itemToF iid kit
-                colorSymbol = uncurry (flip Color.AttrChar)
-                                      (viewItem $ itemBase itemFull)
+                colorSymbol = viewItem $ itemBase itemFull
                 phrase = makePhrase [partItemWs k store localTime itemFull]
                 al = textToAL (slotLabel l)
                      <+:> [colorSymbol]
