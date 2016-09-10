@@ -49,7 +49,6 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.TileKind (isUknownSpace)
-import qualified Game.LambdaHack.Content.TileKind as TK
 
 targetDesc :: MonadClientUI m => Maybe Target -> m (Text, Maybe Text)
 targetDesc target = do
@@ -116,7 +115,7 @@ targetDescXhair = do
 
 drawFrameBody :: MonadClientUI m => ColorMode -> LevelId -> m Overlay
 drawFrameBody dm drawnLevelId = do
-  Kind.COps{cotile=Kind.Ops{okind=tokind}, coTileSpeedup} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   SessionUI{sselected, saimMode, smarkVision, smarkSmell} <- getSession
   mleader <- getsClient _sleader
   xhairPos <- xhairToPos
@@ -124,9 +123,9 @@ drawFrameBody dm drawnLevelId = do
         -- if xhair invalid, e.g., on a wrong level; @draw@ ignores it later on
       bfsAndPathFromLeader leader = Just <$> getCacheBfsAndPath leader anyPos
       pathFromLeader leader = (Just . (,NoPath)) <$> getCacheBfs leader
-  bfsmpath <- if isJust saimMode
-              then maybe (return Nothing) bfsAndPathFromLeader mleader
-              else maybe (return Nothing) pathFromLeader mleader
+  bfsmpath <- if isNothing saimMode
+              then maybe (return Nothing) pathFromLeader mleader
+              else maybe (return Nothing) bfsAndPathFromLeader mleader
   s <- getState
   StateClient{seps, smarkSuspect} <- getClient
   lvl@Level{lxsize, lysize, lsmell, ltime} <- getLevel drawnLevelId
@@ -152,28 +151,13 @@ drawFrameBody dm drawnLevelId = do
         _ -> []
       dis pos0 =
         let tile = lvl `at` pos0
-            tk = tokind tile
             floorBag = EM.findWithDefault EM.empty pos0 $ lfloor lvl
             floorIids = EM.toDescList floorBag  -- sorted by key order
             sml = EM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeDeltaToFrom` ltime
-            viewActor aid Actor{bsymbol, bcolor, bhp, bproj} =
-              Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
-             where
-              symbol | bhp <= 0 && not bproj = '%'
-                     | otherwise = bsymbol
-              bg | Just aid == mleader = Color.BrRed
-                 | aid `ES.member` sselected = Color.BrBlue
-                 | otherwise = Color.defBG
             rainbow p =
               Color.defAttr {Color.fg = toEnum $ fromEnum p `rem` 14 + 1}
             vis = ES.member pos0 $ totalVisible per
-            -- smarkSuspect is an optional overlay, so let's overlay it
-            -- over both visible and invisible tiles.
-            vcolor
-              | smarkSuspect && Tile.isSuspect coTileSpeedup tile = Color.BrCyan
-              | vis = TK.tcolor tk
-              | otherwise = TK.tcolor2 tk
             fgOnPathOrLine = case (vis, Tile.isWalkable coTileSpeedup tile) of
               _ | isUknownSpace tile -> Color.BrBlack
               _ | Tile.isSuspect coTileSpeedup tile -> Color.BrCyan
@@ -183,18 +167,31 @@ drawFrameBody dm drawnLevelId = do
               (False, False) -> Color.Red
             atttrOnPathOrLine = Color.defAttr {Color.fg = fgOnPathOrLine}
             maidBody = find (\(_, m) -> pos0 == Actor.bpos m) actorsHere
+            viewActor aid Actor{bsymbol, bcolor, bhp, bproj} =
+              Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
+             where symbol | bhp <= 0 && not bproj = '%'
+                          | otherwise = bsymbol
+                   bg | Just aid == mleader = Color.BrRed
+                      | aid `ES.notMember` sselected = Color.defBG
+                      | otherwise = Color.BrBlue
+            viewTile = Color.AttrChar Color.defAttr {Color.fg} symbol
+             where symbol = Tile.symbol coTileSpeedup tile
+                   -- smarkSuspect is an optional overlay, so let's overlay it
+                   -- over both visible and invisible tiles.
+                   fg | smarkSuspect
+                        && Tile.isSuspect coTileSpeedup tile = Color.BrCyan
+                      | vis = Tile.color coTileSpeedup tile
+                      | otherwise = Tile.color2 coTileSpeedup tile
             charAttr = case maidBody of
-              Just (aid, m) -> viewActor aid m
               Nothing ->
-                if smarkSmell && sml > ltime
-                then Color.AttrChar (rainbow pos0)
-                                    (timeDeltaToDigit smellTimeout smlt)
-                else case floorIids of
-                  [] -> Color.AttrChar Color.defAttr {Color.fg=vcolor}
-                                       (TK.tsymbol tk)
+                if not smarkSmell || sml <= ltime
+                then case floorIids of
+                  [] -> viewTile
                   (iid, _) : _ -> viewItem $ getItemBody iid s
+                else Color.AttrChar (rainbow pos0)
+                                    (timeDeltaToDigit smellTimeout smlt)
+              Just (aid, m) -> viewActor aid m
             noAimCharAtrr = case dm of
-              ColorBW -> charAttr {Color.acAttr = Color.defAttr}
               ColorFull | Just pos0 == xhairPos ->
                 charAttr {Color.acAttr =
                             (Color.acAttr charAttr) {Color.bg = Color.BrYellow}}
@@ -203,13 +200,13 @@ drawFrameBody dm drawnLevelId = do
                             (Color.acAttr charAttr) {Color.bg = Color.Blue}}
                         | otherwise ->
                 charAttr
-        in if isJust saimMode then
+              ColorBW -> charAttr {Color.acAttr = Color.defAttr}
+        in if isNothing saimMode then noAimCharAtrr else
              if | elem pos0 bline || elem pos0 shiftedBTrajectory ->
                   Color.AttrChar atttrOnPathOrLine '*'
                 | elem pos0 mpath ->
                   Color.AttrChar atttrOnPathOrLine ';'
                 | otherwise -> noAimCharAtrr
-           else noAimCharAtrr
       fLine y = map (\x -> dis $ Point x y) [0..lxsize-1]
   return $! emptyAttrLine lxsize : map fLine [0..lysize-1]
 

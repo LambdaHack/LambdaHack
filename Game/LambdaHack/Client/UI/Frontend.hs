@@ -8,6 +8,10 @@ module Game.LambdaHack.Client.UI.Frontend
   , frontendName
     -- * Derived operations
   , chanFrontendIO
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , seqFrame
+#endif
   ) where
 
 import Prelude ()
@@ -137,10 +141,12 @@ lazyStartup :: IO RawFrontend
 lazyStartup = createRawFrontend (\_ -> return ()) (return ())
 
 nullStartup :: IO RawFrontend
-nullStartup = do
+nullStartup = createRawFrontend seqFrame (return ())
+
+seqFrame :: SingleFrame -> IO ()
+seqFrame SingleFrame{singleFrame} =
   let seqAttr attr = fromEnum attr `seq` return ()
-      seqFrame SingleFrame{singleFrame} = mapM_ seqAttr $ concat singleFrame
-  createRawFrontend seqFrame (return ())
+  in mapM_ seqAttr $ concat singleFrame
 
 chanFrontendIO :: DebugModeCli -> IO ChanFrontend
 chanFrontendIO sdebugCli = do

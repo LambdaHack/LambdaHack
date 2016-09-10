@@ -15,7 +15,7 @@
 -- Actors at normal speed (2 m/s) take one turn to move one tile (1 m by 1 m).
 module Game.LambdaHack.Common.Tile
   ( SmellTime
-  , kindHasFeature, hasFeature
+  , kindHasFeature, hasFeature, symbol, color, color2
   , isClear, isLit, isWalkable, isDoor, isSuspect
   , isExplorable, lookSimilar, speedup, alterMinSkill, alterMinWalk
   , openTo, closeTo, embedItems, causeEffects, revealAs, hideAs
@@ -33,6 +33,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Array.Unboxed as A
 import Data.Word
 
+import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Random
@@ -75,6 +76,18 @@ kindHasFeature f t = f `elem` TK.tfeature t
 hasFeature :: Kind.Ops TileKind -> TK.Feature -> Kind.Id TileKind -> Bool
 {-# INLINE hasFeature #-}
 hasFeature Kind.Ops{okind} f t = kindHasFeature f (okind t)
+
+symbol :: TileSpeedup -> Kind.Id TileKind -> Char
+{-# INLINE symbol #-}
+symbol TileSpeedup{symbolTab} = toEnum . fromIntegral . accessTab symbolTab
+
+color :: TileSpeedup -> Kind.Id TileKind -> Color.Color
+{-# INLINE color #-}
+color TileSpeedup{colorTab} = toEnum . fromIntegral . accessTab colorTab
+
+color2 :: TileSpeedup -> Kind.Id TileKind -> Color.Color
+{-# INLINE color2 #-}
+color2 TileSpeedup{color2Tab} = toEnum . fromIntegral . accessTab color2Tab
 
 -- | Whether a tile does not block vision.
 -- Essential for efficiency of "FOV", hence tabulated.
@@ -164,6 +177,9 @@ speedup allClear cotile =
         in any getTo $ TK.tfeature tk
       alterMinSkillTab = createTabWithKey cotile alterMinSkillKind
       alterMinWalkTab = createTabWithKey cotile alterMinWalkKind
+      symbolTab = createTab cotile $ fromIntegral . fromEnum . TK.tsymbol
+      colorTab = createTab cotile $ fromIntegral . fromEnum . TK.tcolor
+      color2Tab = createTab cotile $ fromIntegral . fromEnum . TK.tcolor2
   in TileSpeedup {..}
 
 -- Check that alter can be used, if not, @maxBound@.

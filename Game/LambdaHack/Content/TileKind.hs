@@ -84,6 +84,9 @@ data TileSpeedup = TileSpeedup
   , isChangeableTab  :: !(Tab Bool)
   , alterMinSkillTab :: !(Tab Word8)
   , alterMinWalkTab  :: !(Tab Word8)
+  , symbolTab        :: !(Tab Word8)
+  , colorTab         :: !(Tab Word8)
+  , color2Tab        :: !(Tab Word8)
   }
 
 newtype Tab a = Tab (A.UArray (KindOps.Id TileKind) a)
