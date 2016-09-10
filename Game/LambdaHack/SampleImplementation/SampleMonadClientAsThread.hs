@@ -8,7 +8,7 @@ module Game.LambdaHack.SampleImplementation.SampleMonadClientAsThread
   ( executorCliAsThread
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , CliImplementationAsThread
+  , CliImplementation
 #endif
   ) where
 

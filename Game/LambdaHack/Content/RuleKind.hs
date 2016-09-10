@@ -12,9 +12,6 @@ import Data.Version
 import Game.LambdaHack.Common.Misc
 
 -- TODO: very few rules are configurable yet, extend as needed.
--- TODO: in the future, in @raccessible@ check flying for chasms,
--- swimming for water, etc.
--- TODO: tweak other code to allow games with only cardinal direction moves
 
 -- | The type of game rule sets and assorted game data.
 --
