@@ -92,7 +92,7 @@ data Effect =
                           --   Periodic activation, unless Durable
   | Unique                -- ^ at most one copy can ever be generated
   | Periodic              -- ^ in eqp, triggered as often as @Timeout@ permits
-  deriving (Show, Read, Eq, Ord, Generic)
+  deriving (Show, Eq, Ord, Generic)
 
 instance NFData Effect
 
@@ -108,7 +108,7 @@ data TimerDice =
     TimerNone
   | TimerGameTurn !Dice.Dice
   | TimerActorTurn !Dice.Dice
-  deriving (Read, Eq, Ord, Generic)
+  deriving (Eq, Ord, Generic)
 
 instance Show TimerDice where
   show TimerNone = "0"
@@ -142,7 +142,7 @@ data ThrowMod = ThrowMod
   { throwVelocity :: !Int  -- ^ fly with this percentage of base throw speed
   , throwLinger   :: !Int  -- ^ fly for this percentage of 2 turns
   }
-  deriving (Show, Read, Eq, Ord, Generic)
+  deriving (Show, Eq, Ord, Generic)
 
 instance NFData ThrowMod
 
@@ -178,7 +178,7 @@ data EqpSlot =
   | EqpSlotAbAlter
   | EqpSlotAbProject
   | EqpSlotAbApply
-  deriving (Show, Read, Eq, Ord, Enum, Bounded, Generic)
+  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance NFData EqpSlot
 

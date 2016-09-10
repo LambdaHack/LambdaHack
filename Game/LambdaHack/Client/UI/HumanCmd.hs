@@ -177,7 +177,10 @@ data Trigger =
   | AlterFeature {verb :: !MU.Part, object :: !MU.Part, feature :: !TK.Feature}
   | TriggerFeature
       {verb :: !MU.Part, object :: !MU.Part, feature :: !TK.Feature}
-  deriving (Show, Read, Eq, Ord, Generic)
+  deriving (Show, Eq, Ord, Generic)
+
+instance Read Trigger where
+  readsPrec = assert `failure` "parsing of Trigger not implemented" `twith` ()
 
 instance NFData Trigger
 

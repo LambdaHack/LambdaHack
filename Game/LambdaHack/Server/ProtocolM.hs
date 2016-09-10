@@ -138,7 +138,7 @@ data FrozenClient =
 instance Binary FrozenClient where
   put (FState msess s cli) = put msess >> put s >> put cli
   put FThread{} =
-    assert `failure` ("client thread connection cannot be saved" :: String)
+    assert `failure` "client thread connection cannot be saved" `twith` ()
   get = FState <$> get <*> get <*> get
 
 -- | Connection information for all factions, indexed by faction identifier.

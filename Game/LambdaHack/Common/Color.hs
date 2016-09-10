@@ -2,7 +2,7 @@
 -- | Colours and text attributes.
 module Game.LambdaHack.Common.Color
   ( -- * Colours
-    Color(..), defBG, defFG, isBright, legalBG, darkCol, brightCol, stdCol
+    Color(..), defFG, defBG, isBright, legalBG, darkCol, brightCol, stdCol
   , colorToRGB
     -- * Text attributes and the screen
   , Attr(..), defAttr, AttrChar(..)
@@ -51,9 +51,9 @@ instance Binary Color where
 instance Hashable Color
 
 -- | The default colours, to optimize attribute setting.
-defBG, defFG :: Color
-defBG = Black
+defFG, defBG :: Color
 defFG = White
+defBG = Black
 
 -- | Text attributes: foreground and backgroud colors.
 data Attr = Attr

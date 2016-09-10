@@ -107,9 +107,8 @@ data Dice = Dice
   , diceLevel :: SimpleDice
   , diceMult  :: !Int
   }
-  deriving (Read, Eq, Ord, Generic)
+  deriving (Eq, Ord, Generic)
 
--- Read and Show should be inverses in this case.
 instance Show Dice where
   show Dice{..} = T.unpack $
     let rawMult = nameFrequency diceLevel

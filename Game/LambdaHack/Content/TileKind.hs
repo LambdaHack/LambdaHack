@@ -67,7 +67,7 @@ data Feature =
   | NoItem               -- ^ no items ever generated there
   | NoActor              -- ^ no actors nor stairs ever generated there
   | Trail                -- ^ used for visible trails throughout the level
-  deriving (Show, Read, Eq, Ord, Generic)
+  deriving (Show, Eq, Ord, Generic)
 
 instance Binary Feature
 

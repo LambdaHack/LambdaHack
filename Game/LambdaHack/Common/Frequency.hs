@@ -37,7 +37,7 @@ data Frequency a = Frequency
   , nameFrequency :: Text         -- ^ short description for debug, etc.;
                                   --   keep it lazy, because it's rarely used
   }
-  deriving (Show, Read, Eq, Ord, Foldable, Traversable, Generic)
+  deriving (Show, Eq, Ord, Foldable, Traversable, Generic)
 
 instance Monad Frequency where
   {-# INLINE return #-}
