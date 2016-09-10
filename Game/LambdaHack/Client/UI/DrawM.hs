@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.DrawM
   ( targetDescLeader, drawBaseFrame
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , targetDesc, targetDescXhair
+  , drawFrameBody, drawFrameStatus, targetDesc, targetDescXhair
   , drawArenaStatus, drawLeaderStatus, drawLeaderDamage, drawSelected
 #endif
   ) where
@@ -114,45 +114,32 @@ targetDescXhair = do
   sxhair <- getsClient sxhair
   targetDesc $ Just sxhair
 
--- TODO: split up and generally rewrite.
--- | Draw the whole screen: level map and status area.
--- Pass at most a single page if overlay of text unchanged
--- to the frontends to display separately or overlay over map,
--- depending on the frontend.
-drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m SingleFrame
-drawBaseFrame dm drawnLevelId = do
-  cops <- getsState scops
-  SessionUI{sselected, saimMode, smarkVision, smarkSmell, swaitTimes, sitemSel}
-    <- getSession
+drawFrameBody :: MonadClientUI m => ColorMode -> LevelId -> m Overlay
+drawFrameBody dm drawnLevelId = do
+  Kind.COps{cotile=Kind.Ops{okind=tokind}, coTileSpeedup} <- getsState scops
+  SessionUI{sselected, saimMode, smarkVision, smarkSmell} <- getSession
   mleader <- getsClient _sleader
-  tgtPos <- leaderTgtToPos
   xhairPos <- xhairToPos
   let anyPos = fromMaybe originPoint xhairPos
         -- if xhair invalid, e.g., on a wrong level; @draw@ ignores it later on
-      bfsAndpathFromLeader leader = Just <$> getCacheBfsAndPath leader anyPos
+      bfsAndPathFromLeader leader = Just <$> getCacheBfsAndPath leader anyPos
       pathFromLeader leader = (Just . (,NoPath)) <$> getCacheBfs leader
   bfsmpath <- if isJust saimMode
-              then maybe (return Nothing) bfsAndpathFromLeader mleader
+              then maybe (return Nothing) bfsAndPathFromLeader mleader
               else maybe (return Nothing) pathFromLeader mleader
-  (tgtDesc, mtargetHP) <-
-    maybe (return ("------", Nothing)) targetDescLeader mleader
-  (xhairDesc, mxhairHP) <- targetDescXhair
   s <- getState
-  StateClient{seps, sexplored, smarkSuspect} <- getClient
+  StateClient{seps, smarkSuspect} <- getClient
+  lvl@Level{lxsize, lysize, lsmell, ltime} <- getLevel drawnLevelId
+  bline <- case (xhairPos, mleader) of
+    (Just xhair, Just leader) -> do
+      Actor{bpos, blid} <- getsState $ getActorBody leader
+      return $! if blid /= drawnLevelId
+                then []
+                else maybe [] (delete xhair) $ bla lxsize lysize seps bpos xhair
+    _ -> return []
+  actorsHere <- getsState $ actorAssocs (const True) drawnLevelId
   per <- getPerFid drawnLevelId
-  let Kind.COps{cotile=Kind.Ops{okind=tokind}, coTileSpeedup} = cops
-      (lvl@Level{lxsize, lysize, lsmell, ltime}) = sdungeon s EM.! drawnLevelId
-      (bline, mblid, mbpos) = case (xhairPos, mleader) of
-        (Just xhair, Just leader) ->
-          let Actor{bpos, blid} = getActorBody leader s
-          in if blid /= drawnLevelId
-             then ( [], Just blid, Just bpos )
-             else ( maybe [] (delete xhair)
-                    $ bla lxsize lysize seps bpos xhair
-                  , Just blid
-                  , Just bpos )
-        _ -> ([], Nothing, Nothing)
-      deleteXhair = maybe id (\xhair -> delete xhair) xhairPos
+  let deleteXhair = maybe id (\xhair -> delete xhair) xhairPos
       mpath = maybe Nothing
                     (\(_, mp) -> if null bline
                                  then Nothing
@@ -161,7 +148,6 @@ drawBaseFrame dm drawnLevelId = do
                                    AndPath {pathList} ->
                                      Just $ deleteXhair pathList)
                     bfsmpath
-      actorsHere = actorAssocs (const True) drawnLevelId s
       xhairHere = find (\(_, m) -> xhairPos == Just (Actor.bpos m))
                         actorsHere
       shiftedBTrajectory = case xhairHere of
@@ -233,7 +219,33 @@ drawBaseFrame dm drawnLevelId = do
                                   | otherwise ->
                                     attr0
         in Color.AttrChar a char
-      widthX = 80
+      fLine y = map (\x -> dis $ Point x y) [0..lxsize-1]
+  return $! emptyAttrLine lxsize : map fLine [0..lysize-1]
+
+drawFrameStatus :: MonadClientUI m => LevelId -> m Overlay
+drawFrameStatus drawnLevelId = do
+  SessionUI{sselected, saimMode, swaitTimes, sitemSel} <- getSession
+  mleader <- getsClient _sleader
+  tgtPos <- leaderTgtToPos
+  xhairPos <- xhairToPos
+  let anyPos = fromMaybe originPoint xhairPos
+        -- if xhair invalid, e.g., on a wrong level; @draw@ ignores it later on
+      bfsAndPathFromLeader leader = Just <$> getCacheBfsAndPath leader anyPos
+      pathFromLeader leader = (Just . (,NoPath)) <$> getCacheBfs leader
+  bfsmpath <- if isJust saimMode
+              then maybe (return Nothing) bfsAndPathFromLeader mleader
+              else maybe (return Nothing) pathFromLeader mleader
+  (tgtDesc, mtargetHP) <-
+    maybe (return ("------", Nothing)) targetDescLeader mleader
+  (xhairDesc, mxhairHP) <- targetDescXhair
+  sexplored <- getsClient sexplored
+  lvl <- getLevel drawnLevelId
+  (mblid, mbpos) <- case mleader of
+    Just leader -> do
+      Actor{bpos, blid} <- getsState $ getActorBody leader
+      return (Just blid, Just bpos)
+    Nothing -> return (Nothing, Nothing)
+  let widthX = 80
       widthTgt = 39
       widthStats = widthX - widthTgt
       arenaStatus = drawArenaStatus (ES.member drawnLevelId sexplored) lvl
@@ -302,12 +314,20 @@ drawBaseFrame dm drawnLevelId = do
   let targetGap = emptyAttrLine (widthTgt - T.length pathTgt
                                           - T.length targetText)
       targetStatus = textToAL targetText ++ targetGap ++ textToAL pathTgt
-      sfBottom =
-        [ arenaStatus ++ xhairStatus
-        , selectedStatus ++ statusGap ++ damageStatus ++ leaderStatus
-          ++ targetStatus ]
-      fLine y = map (\x -> dis $ Point x y) [0..lxsize-1]
-      singleFrame = emptyAttrLine lxsize : map fLine [0..lysize-1] ++ sfBottom
+  return $! [ arenaStatus ++ xhairStatus
+            , selectedStatus ++ statusGap ++ damageStatus ++ leaderStatus
+              ++ targetStatus ]
+
+-- TODO: split up and generally rewrite.
+-- | Draw the whole screen: level map and status area.
+-- Pass at most a single page if overlay of text unchanged
+-- to the frontends to display separately or overlay over map,
+-- depending on the frontend.
+drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m SingleFrame
+drawBaseFrame dm drawnLevelId = do
+  frameBody <- drawFrameBody dm drawnLevelId
+  frameStatus <- drawFrameStatus drawnLevelId
+  let singleFrame = frameBody ++ frameStatus
   return $! SingleFrame{..}
 
 -- Comfortably accomodates 3-digit level numbers and 25-character
