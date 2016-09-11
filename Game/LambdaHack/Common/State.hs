@@ -60,6 +60,7 @@ unknownLevel Kind.COps{cotile=Kind.Ops{ouniqGroup}}
            , lprio = EM.empty
            , lfloor = EM.empty
            , lembed = EM.empty
+           , lactor = EM.empty
            , ltile = unknownTileMap outerId lxsize lysize
            , lxsize
            , lysize

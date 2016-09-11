@@ -3,7 +3,8 @@ module Game.LambdaHack.Atomic.MonadStateWrite
   ( MonadStateWrite(..)
   , updateLevel, updateActor, updateFaction
   , insertItemContainer, insertItemActor, deleteItemContainer, deleteItemActor
-  , updatePrio, updateFloor, updateTile, updateSmell
+  , updatePrio, updateFloor, updateActorMap, moveActorMap
+  , updateTile, updateSmell
   ) where
 
 import Prelude ()
@@ -38,6 +39,26 @@ updateFloor f lvl = lvl {lfloor = f (lfloor lvl)}
 -- | Update the items embedded in a tile on the level.
 updateEmbed :: (ItemFloor -> ItemFloor) -> Level -> Level
 updateEmbed f lvl = lvl {lembed = f (lembed lvl)}
+
+-- | Update the actors on the ground map.
+updateActorMap :: (ActorMap -> ActorMap) -> Level -> Level
+updateActorMap f lvl = lvl {lactor = f (lactor lvl)}
+
+moveActorMap :: MonadStateWrite m => ActorId -> Actor -> Actor -> m ()
+moveActorMap aid body newBody = do
+  let rmActor Nothing = assert `failure` "actor already removed"
+                               `twith` (aid, body)
+      rmActor (Just l) = assert (aid `elem` l `blame` "actor already removed"
+                                              `twith` (aid, body, l))
+                         $ let l2 = delete aid l
+                           in if null l2 then Nothing else Just l2
+      addActor Nothing = Just [aid]
+      addActor (Just l) = assert (aid `notElem` l `blame` "actor already added"
+                                                  `twith` (aid, body, l))
+                          $ Just $ aid : l
+      updActor = EM.alter addActor (bpos newBody)
+                 . EM.alter rmActor (bpos body)
+  updateLevel (blid body) $ updateActorMap updActor
 
 -- | Update the tile map.
 updateTile :: (TileMap -> TileMap) -> Level -> Level

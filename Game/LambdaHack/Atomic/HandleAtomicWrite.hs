@@ -125,7 +125,8 @@ updCreateActor aid body ais = do
       g (Just l) = assert (aid `notElem` l `blame` "actor already added"
                                            `twith` (aid, body, l))
                    $ Just $ aid : l
-  updateLevel (blid body) $ updatePrio $ EM.alter g (btime body)
+  updateLevel (blid body) $ updatePrio (EM.alter g (btime body))
+                          . updateActorMap (EM.alter g (bpos body))
   -- Actor's items may or may not be already present in @sitemD@,
   -- regardless if they are already present otherwise in the dungeon.
   -- We re-add them all to save time determining which really need it.
@@ -170,7 +171,8 @@ updDestroyActor aid body ais = do
                                         `twith` (aid, body, l))
                    $ let l2 = delete aid l
                      in if null l2 then Nothing else Just l2
-  updateLevel (blid body) $ updatePrio $ EM.alter g (btime body)
+  updateLevel (blid body) $ updatePrio (EM.alter g (btime body))
+                          . updateActorMap (EM.alter g (bpos body))
 
 -- | Create a few copies of an item that is already registered for the dungeon
 -- (in @sitemRev@ field of @StateServer@).
@@ -203,11 +205,13 @@ updDestroyItem iid item kit@(k, _) c = assert (k > 0) $ do
 
 updMoveActor :: MonadStateWrite m => ActorId -> Point -> Point -> m ()
 updMoveActor aid fromP toP = assert (fromP /= toP) $ do
-  b <- getsState $ getActorBody aid
-  let !_A = assert (fromP == bpos b
+  body <- getsState $ getActorBody aid
+  let !_A = assert (fromP == bpos body
                     `blame` "unexpected moved actor position"
-                    `twith` (aid, fromP, toP, bpos b, b)) ()
-  updateActor aid $ \body -> body {bpos = toP, boldpos = Just fromP}
+                    `twith` (aid, fromP, toP, bpos body, body)) ()
+      newBody = body {bpos = toP, boldpos = Just fromP}
+  updateActor aid $ const newBody
+  moveActorMap aid body newBody
 
 updWaitActor :: MonadStateWrite m => ActorId -> Bool -> m ()
 updWaitActor aid toWait = do
@@ -219,10 +223,16 @@ updWaitActor aid toWait = do
 
 updDisplaceActor :: MonadStateWrite m => ActorId -> ActorId -> m ()
 updDisplaceActor source target = assert (source /= target) $ do
-  spos <- getsState $ bpos . getActorBody source
-  tpos <- getsState $ bpos . getActorBody target
-  updateActor source $ \b -> b {bpos = tpos, boldpos = Just spos}
-  updateActor target $ \b -> b {bpos = spos, boldpos = Just tpos}
+  sbody <- getsState $ getActorBody source
+  tbody <- getsState $ getActorBody target
+  let spos = bpos sbody
+      tpos = bpos tbody
+      snewBody = sbody {bpos = tpos, boldpos = Just spos}
+      tnewBody = tbody {bpos = spos, boldpos = Just tpos}
+  updateActor source $ const snewBody
+  updateActor target $ const tnewBody
+  moveActorMap source sbody snewBody
+  moveActorMap target tbody tnewBody
 
 updMoveItem :: MonadStateWrite m
             => ItemId -> Int -> ActorId -> CStore -> CStore

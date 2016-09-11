@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.Level
   ( -- * Dungeon
     LevelId, AbsDepth, Dungeon, ascendInBranch
     -- * The @Level@ type and its components
-  , Level(..), ActorPrio, ItemFloor, TileMap, SmellMap
+  , Level(..), ActorPrio, ItemFloor, ActorMap, TileMap, SmellMap
     -- * Level query
   , at, accessible, accessibleUnknown, accessibleDir
   , knownLsecret, isSecretPos, hideTile, findPos, findPosTry
@@ -55,6 +55,9 @@ type ActorPrio = EM.EnumMap Time [ActorId]
 -- | Items located on map tiles.
 type ItemFloor = EM.EnumMap Point ItemBag
 
+-- | Items located on map tiles.
+type ActorMap = EM.EnumMap Point [ActorId]
+
 -- | Tile kinds on the map.
 type TileMap = PointArray.Array (Kind.Id TileKind)
 
@@ -68,6 +71,7 @@ data Level = Level
   , lprio       :: !ActorPrio  -- ^ remembered actor times on the level
   , lfloor      :: !ItemFloor  -- ^ remembered items lying on the floor
   , lembed      :: !ItemFloor  -- ^ items embedded in the tile
+  , lactor      :: !ActorMap   -- ^ seen actors at positions on the level
   , ltile       :: !TileMap    -- ^ remembered level map
   , lxsize      :: !X          -- ^ width of the level
   , lysize      :: !Y          -- ^ height of the level
@@ -94,6 +98,11 @@ assertSparseItems :: ItemFloor -> ItemFloor
 assertSparseItems m =
   assert (EM.null (EM.filter EM.null m)
           `blame` "null floors found" `twith` m) m
+
+assertSparseActors :: ActorMap -> ActorMap
+assertSparseActors m =
+  assert (EM.null (EM.filter null m)
+          `blame` "null actor lists found" `twith` m) m
 
 -- | Query for tile kinds on the map.
 at :: Level -> Point -> Kind.Id TileKind
@@ -181,6 +190,7 @@ instance Binary Level where
     put lprio
     put (assertSparseItems lfloor)
     put (assertSparseItems lembed)
+    put (assertSparseActors lactor)
     put ltile
     put lxsize
     put lysize
@@ -202,6 +212,7 @@ instance Binary Level where
     lprio <- get
     lfloor <- get
     lembed <- get
+    lactor <- get
     ltile <- get
     lxsize <- get
     lysize <- get

@@ -221,6 +221,7 @@ levelFromCaveKind Kind.COps{coTileSpeedup}
         , lprio = EM.empty
         , lfloor = EM.empty
         , lembed = EM.empty  -- is populated inside $MonadServer$
+        , lactor = EM.empty
         , ltile
         , lxsize = cxsize
         , lysize = cysize
