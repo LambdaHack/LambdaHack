@@ -85,7 +85,7 @@ keyTranslate n =
     (KChar c)
       | c `elem` ['1'..'9'] -> K.KP c  -- movement, not leader change
       | otherwise           -> K.Char c
-    _             -> K.Unknown (tshow n)
+    _             -> K.Unknown (show n)
 
 -- | Translates modifiers to our own encoding.
 modTranslate :: [Modifier] -> K.Modifier

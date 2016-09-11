@@ -135,9 +135,9 @@ keyTranslate e = (\(key, modifier) -> K.KM modifier key) $
         -- Movement keys are more important than leader picking,
         -- so disabling the latter and interpreting the keypad numbers
         -- as movement:
-      | c `elem` ['1'..'9'] -> (K.KP c,              K.NoModifier)
-      | otherwise           -> (K.Char c,            K.NoModifier)
-    _                       -> (K.Unknown (tshow e), K.NoModifier)
+      | c `elem` ['1'..'9'] -> (K.KP c, K.NoModifier)
+      | otherwise           -> (K.Char c, K.NoModifier)
+    _                       -> (K.Unknown (show e), K.NoModifier)
 
 toFColor :: Color.Color -> C.ForegroundColor
 toFColor Color.Black     = C.BlackF

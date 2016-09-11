@@ -60,7 +60,8 @@ menuToSlideshow (als, kxs) =
 
 keysOKX :: Y -> X -> X -> [K.KM] -> OKX
 keysOKX ystart xstart xBound keys =
-  let wrapB s = "[" ++ s ++ "]"
+  let wrapB :: String -> String
+      wrapB s = "[" ++ s ++ "]"
       f ((y, x), (kL, kV, kX)) key =
         let ks = wrapB $ K.showKM key
             len = length ks
