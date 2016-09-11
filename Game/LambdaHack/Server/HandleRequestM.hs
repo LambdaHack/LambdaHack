@@ -408,7 +408,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
   toC <- case toCStore of
     CGround -> pickDroppable aid b
     _ -> return $! CActor aid toCStore
-  bagBefore <- getsState $ getCBag toC
+  bagBefore <- getsState $ getContainerBag toC
   if
    | k < 1 || fromCStore == toCStore -> execFailure aid req ItemNothing
    | toCStore == CEqp && eqpOverfull b k ->
@@ -446,7 +446,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
       -- and via exact prediction of first timeout after equip.
       case mrndTimeout of
         Just rndT -> do
-          bagAfter <- getsState $ getCBag toC
+          bagAfter <- getsState $ getContainerBag toC
           let afterIt = case iid `EM.lookup` bagAfter of
                 Nothing -> assert `failure` (iid, bagAfter, toC)
                 Just (_, it2) -> it2
@@ -502,7 +502,7 @@ reqApply aid iid cstore = do
       calmE = calmEnough b ar
   if cstore == CSha && not calmE then execFailure aid req ItemNotCalm
   else do
-    bag <- getsState $ getActorBag aid cstore
+    bag <- getsState $ getBodyStoreBag b cstore
     case EM.lookup iid bag of
       Nothing -> execFailure aid req ApplyOutOfReach
       Just kit -> do

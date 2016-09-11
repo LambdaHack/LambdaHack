@@ -57,7 +57,7 @@ itemEffectAndDestroy :: (MonadAtomic m, MonadServer m)
                      => ActorId -> ActorId -> ItemId -> Container
                      -> m ()
 itemEffectAndDestroy source target iid c = do
-  bag <- getsState $ getCBag c
+  bag <- getsState $ getContainerBag c
   case iid `EM.lookup` bag of
     Nothing -> assert `failure` (source, target, iid, c)
     Just kit -> do
@@ -135,7 +135,7 @@ itemEffectCause :: (MonadAtomic m, MonadServer m)
 itemEffectCause aid tpos ef = do
   sb <- getsState $ getActorBody aid
   let c = CEmbed (blid sb) tpos
-  bag <- getsState $ getCBag c
+  bag <- getsState $ getEmbedBag (blid sb) tpos
   case EM.assocs bag of
     [(iid, kit)] -> do
       itemToF <- itemToFullServer
@@ -767,7 +767,7 @@ effectCreateItem target store grp tim = do
           actorTurn = ticksPerMeter $ bspeed tb ar
       return $! timeDeltaScale actorTurn k
   let c = CActor target store
-  bagBefore <- getsState $ getCBag c
+  bagBefore <- getsState $ getBodyStoreBag tb store
   let litemFreq = [(grp, 1)]
   -- Power depth of new items unaffected by number of spawned actors.
   m5 <- rollItem 0 (blid tb) litemFreq
@@ -790,7 +790,8 @@ effectCreateItem target store grp tim = do
       -- or no such items at all, so create some.
       iid <- registerItem itemFull itemKnown seed c True
       unless (tim == IK.TimerNone) $ do
-        bagAfter <- getsState $ getCBag c
+        tb2 <- getsState $ getActorBody target
+        bagAfter <- getsState $ getBodyStoreBag tb2 store
         localTime <- getsState $ getLocalTime (blid tb)
         let newTimer = localTime `timeShift` delta
             (afterK, afterIt) =
@@ -820,7 +821,7 @@ effectDropItem execSfx store grp hit target = do
             return $! maybe False (> 0) $ lookup grp $ IK.ifreq (okind kmKind)
           Nothing ->
             assert `failure` (target, grp, iid, item)
-  assocsCStore <- getsState $ EM.assocs . getActorBag target store
+  assocsCStore <- getsState $ EM.assocs . getBodyStoreBag b store
   is <- filterM hasGroup assocsCStore
   if null is
     then return False
@@ -1066,10 +1067,11 @@ effectTransformEqp :: forall m. MonadAtomic m
                    -> (ItemId -> ItemQuant -> m ())
                    -> m Bool
 effectTransformEqp execSfx target symbol cstore m = do
+  b <- getsState $ getActorBody target
   let hasSymbol (iid, _) = do
         item <- getsState $ getItemBody iid
         return $! jsymbol item == symbol
-  assocsCStore <- getsState $ EM.assocs . getActorBag target cstore
+  assocsCStore <- getsState $ EM.assocs . getBodyStoreBag b cstore
   is <- if symbol == ' '
         then return assocsCStore
         else filterM hasSymbol assocsCStore
@@ -1126,8 +1128,8 @@ effectTemporary :: MonadAtomic m
                 => m () -> ActorId -> ItemId
                 -> m Bool
 effectTemporary execSfx source iid = do
-  bag <- getsState $ getCBag $ CActor source COrgan
-  case iid `EM.lookup` bag of
+  b <- getsState $ getActorBody source
+  case iid `EM.lookup` borgan b of
     Just _ -> return ()  -- still some copies left of a multi-copy tmp item
     Nothing -> execSfx  -- last copy just destroyed
   return True

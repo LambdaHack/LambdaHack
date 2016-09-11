@@ -64,7 +64,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
   lvl <- getLevel lidV
   localTime <- getsState $ getLocalTime lidV
   subject <- partAidLeader aid
-  is <- getsState $ getCBag $ CFloor lidV pos
+  is <- getsState $ getFloorBag lidV pos
   let verb = MU.Text $ if | pos == bpos b -> "stand on"
                           | canSee -> "notice"
                           | otherwise -> "remember"

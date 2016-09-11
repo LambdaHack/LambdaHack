@@ -244,7 +244,8 @@ updMoveItem :: MonadStateWrite m
             => ItemId -> Int -> ActorId -> CStore -> CStore
             -> m ()
 updMoveItem iid k aid c1 c2 = assert (k > 0 && c1 /= c2) $ do
-  bag <- getsState $ getActorBag aid c1
+  b <- getsState $ getActorBody aid
+  bag <- getsState $ getBodyStoreBag b c1
   case iid `EM.lookup` bag of
     Nothing -> assert `failure` (iid, k, aid, c1, c2)
     Just (_, it) -> do
@@ -505,7 +506,7 @@ updTimeItem :: MonadStateWrite m
             => ItemId -> Container -> ItemTimer -> ItemTimer
             -> m ()
 updTimeItem iid c fromIt toIt = assert (fromIt /= toIt) $ do
-  bag <- getsState $ getCBag c
+  bag <- getsState $ getContainerBag c
   case iid `EM.lookup` bag of
     Just (k, it) -> do
       let !_A = assert (fromIt == it `blame` (k, it, iid, c, fromIt, toIt)) ()

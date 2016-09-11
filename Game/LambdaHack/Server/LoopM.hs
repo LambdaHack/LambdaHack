@@ -191,9 +191,10 @@ endClip arenas = do
 -- | Trigger periodic items for all actors on the given level.
 applyPeriodicLevel :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 applyPeriodicLevel lid = do
-  let applyPeriodicItem c aid iid = do
+  let applyPeriodicItem aid cstore iid = do
         -- Check if the item is still in the bag (previous items act!).
-        bag <- getsState $ getCBag c
+        b <- getsState $ getActorBody aid
+        bag <- getsState $ getBodyStoreBag b cstore
         case iid `EM.lookup` bag of
           Nothing -> return ()  -- item dropped
           Just kit -> do
@@ -203,13 +204,13 @@ applyPeriodicLevel lid = do
               Just ItemDisco {itemKind=IK.ItemKind{IK.ieffects}} ->
                 when (IK.Periodic `elem` ieffects) $ do
                   -- In periodic activation, consider *only* recharging effects.
-                  effectAndDestroy aid aid iid c True
+                  effectAndDestroy aid aid iid (CActor aid cstore) True
                                    (filterRecharging ieffects) itemFull
-              _ -> assert `failure` (lid, aid, c, iid)
+              _ -> assert `failure` (lid, aid, cstore, iid)
       applyPeriodicCStore aid cstore = do
-        let c = CActor aid cstore
-        bag <- getsState $ getCBag c
-        mapM_ (applyPeriodicItem c aid) $ EM.keys bag
+        b <- getsState $ getActorBody aid
+        bag <- getsState $ getBodyStoreBag b cstore
+        mapM_ (applyPeriodicItem aid cstore) $ EM.keys bag
       applyPeriodicActor aid = do
         applyPeriodicCStore aid COrgan
         applyPeriodicCStore aid CEqp

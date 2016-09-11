@@ -232,7 +232,7 @@ benAvailableItems aid permitted cstores = do
         , permitted (fst <$> benefit) itemFull b ar
           && (cstore /= CEqp || hind) ]
       benCStore cs = do
-        bag <- getsState $ getActorBag aid cs
+        bag <- getsState $ getBodyStoreBag b cs
         return $! ben cs bag
   perBag <- mapM benCStore cstores
   return $ concat perBag

@@ -194,5 +194,5 @@ itemToFullServer = do
 mapActorCStore_ :: MonadServer m
                 => CStore -> (ItemId -> ItemQuant -> m a) -> Actor ->  m ()
 mapActorCStore_ cstore f b = do
-  bag <- getsState $ getBodyActorBag b cstore
+  bag <- getsState $ getBodyStoreBag b cstore
   mapM_ (uncurry f) $ EM.assocs bag

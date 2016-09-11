@@ -547,14 +547,14 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
     Just (fromCStore, iid) | cLegalRaw /= [CGround]  -- not normal pickup
                              && fromCStore /= destCStore -> do  -- not vacuous
       leader <- getLeaderUI
-      bag <- getsState $ getActorBag leader fromCStore
+      b <- getsState $ getActorBody leader
+      bag <- getsState $ getBodyStoreBag b fromCStore
       case iid `EM.lookup` bag of
         Nothing -> do  -- used up
           modifySession $ \sess -> sess {sitemSel = Nothing}
           moveItemHuman cLegalRaw destCStore mverb auto
         Just (k, it) -> do
           itemToF <- itemToFullClient
-          b <- getsState $ getActorBody leader
           let eqpFree = eqpFreeN b
               kToPick | destCStore == CEqp = min eqpFree k
                       | otherwise = k
@@ -679,7 +679,8 @@ projectHuman ts = do
   case itemSel of
     Just (fromCStore, iid) -> do
       leader <- getLeaderUI
-      bag <- getsState $ getActorBag leader fromCStore
+      b <- getsState $ getActorBody leader
+      bag <- getsState $ getBodyStoreBag b fromCStore
       case iid `EM.lookup` bag of
         Nothing -> do  -- used up
           modifySession $ \sess -> sess {sitemSel = Nothing}
@@ -729,7 +730,8 @@ applyHuman ts = do
   case itemSel of
     Just (fromCStore, iid) -> do
       leader <- getLeaderUI
-      bag <- getsState $ getActorBag leader fromCStore
+      b <- getsState $ getActorBody leader
+      bag <- getsState $ getBodyStoreBag b fromCStore
       case iid `EM.lookup` bag of
         Nothing -> do  -- used up
           modifySession $ \sess -> sess {sitemSel = Nothing}
@@ -939,7 +941,7 @@ itemMenuHuman cmdAction = do
     Just (fromCStore, iid) -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
-      bag <- getsState $ getActorBag leader fromCStore
+      bag <- getsState $ getBodyStoreBag b fromCStore
       case iid `EM.lookup` bag of
         Nothing -> do  -- used up
           modifySession $ \sess -> sess {sitemSel = Nothing}

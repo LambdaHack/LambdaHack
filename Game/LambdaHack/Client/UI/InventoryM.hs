@@ -63,7 +63,8 @@ storeFromMode c = case c of
   MStats -> CGround  -- needed to decide display mode in textAllAE
 
 accessModeBag :: ActorId -> State -> ItemDialogMode -> ItemBag
-accessModeBag leader s (MStore cstore) = getActorBag leader cstore s
+accessModeBag leader s (MStore cstore) = let b = getActorBody leader s
+                                         in getBodyStoreBag b cstore s
 accessModeBag leader s MOwned = let fid = bfid $ getActorBody leader s
                                 in sharedAllOwnedFid False fid s
 accessModeBag _ _ MStats = EM.empty
@@ -168,7 +169,8 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
   side <- getsClient sside
   leader <- getLeaderUI
   let aidNotEmpty store aid = do
-        bag <- getsState $ getCBag (CActor aid store)
+        body <- getsState $ getActorBody aid
+        bag <- getsState $ getBodyStoreBag body store
         return $! not $ EM.null bag
       partyNotEmpty store = do
         as <- getsState $ fidActorNotProjAssocs side
@@ -181,7 +183,8 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
         SuitsSomething f -> f
   -- Move the first store that is non-empty for suitable items for this actor
   -- to the front, if any.
-  getCStoreBag <- getsState $ \s cstore -> getCBag (CActor leader cstore) s
+  b <- getsState $ getActorBody leader
+  getCStoreBag <- getsState $ \s cstore -> getBodyStoreBag b cstore s
   let hasThisActor = not . EM.null . getCStoreBag
   case filter hasThisActor cLegalAfterCalm of
     [] ->

@@ -311,7 +311,7 @@ targetStrategy aid = do
           explored <- getsClient sexplored
           let lidExplored = ES.member (blid b) explored
               allExplored = ES.size explored == EM.size dungeon
-          bag <- getsState $ getCBag $ CFloor lid pos
+          bag <- getsState $ getFloorBag lid pos
           let t = lvl `at` pos
           if lid /= blid b  -- wrong level
              -- Below we check the target could not be picked again in

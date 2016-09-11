@@ -8,9 +8,10 @@ module Game.LambdaHack.Common.ActorState
   , actorRegularAssocs, actorRegularList, actorRegularIds
   , bagAssocs, bagAssocsK, calculateTotal
   , mergeItemQuant, sharedAllOwnedFid, findIid
-  , getCBag, getActorBag, getBodyActorBag, mapActorItems_, getActorAssocs
+  , getContainerBag, getFloorBag, getEmbedBag, getBodyStoreBag
+  , mapActorItems_, getActorAssocs
   , nearbyFreePoints, whereTo, getCarriedAssocs, getCarriedIidCStore
-  , posToAidsAM, posToAidsLvl, posToAids, posToAssocs
+  , posToAidsLvl, posToAids, posToAssocs
   , getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, itemPrice, regenCalmDelta
   , actorInAmbient, actorSkills, dispEnemy, fullAssocs, itemToFull
@@ -97,10 +98,10 @@ bagAssocsK s bag =
   let iidItem (iid, kit) = (iid, (getItemBody iid s, kit))
   in map iidItem $ EM.assocs bag
 
-posToAidsAM :: Point -> ActorMap -> [ActorId]
-{-# INLINE posToAidsAM #-}
-posToAidsAM pos am =
-  let l = EM.findWithDefault [] pos am
+posToAidsLvl :: Point -> Level -> [ActorId]
+{-# INLINE posToAidsLvl #-}
+posToAidsLvl pos lvl =
+  let l = EM.findWithDefault [] pos $ lactor lvl
   in
 #ifdef WITH_EXPENSIVE_ASSERTIONS
      assert (length l <= 1 || all (bproj . snd) l
@@ -108,13 +109,7 @@ posToAidsAM pos am =
 #endif
     l
 
--- | Finds all actors at a position on the level.
-posToAidsLvl :: Point -> Level -> [ActorId]
-{-# INLINE posToAidsLvl #-}
-posToAidsLvl pos lvl = posToAidsAM pos $ lactor lvl
-
 posToAids :: Point -> LevelId -> State -> [ActorId]
-{-# INLINE posToAids #-}
 posToAids pos lid s = posToAidsLvl pos $ sdungeon s EM.! lid
 
 posToAssocs :: Point -> LevelId -> State -> [(ActorId, Actor)]
@@ -142,6 +137,7 @@ calculateTotal body s =
   in (bag, sum $ map itemPrice items)
 
 mergeItemQuant :: ItemQuant -> ItemQuant -> ItemQuant
+{-# INLINE mergeItemQuant #-}
 mergeItemQuant (k1, it1) (k2, it2) = (k1 + k2, it1 ++ it2)
 
 sharedInv :: Actor -> State -> ItemBag
@@ -176,7 +172,7 @@ findIid leader fid iid s =
   let actors = fidActorNotProjAssocs fid s
       itemsOfActor (aid, b) =
         let itemsOfCStore store =
-              let bag = getBodyActorBag b store s
+              let bag = getBodyStoreBag b store s
               in map (\iid2 -> (iid2, (aid, (b, store)))) (EM.keys bag)
             stores = [CInv, CEqp, COrgan] ++ [CSha | aid == leader]
         in concatMap itemsOfCStore stores
@@ -250,28 +246,26 @@ getCarriedIidCStore b =
   in concatMap bagCarried
                [(CInv, binv b), (CEqp, beqp b), (COrgan, borgan b)]
 
-getCBag :: Container -> State -> ItemBag
-{-# INLINE getCBag #-}
-getCBag c s = case c of
-  CFloor lid p -> EM.findWithDefault EM.empty p
-                  $ lfloor (sdungeon s EM.! lid)
-  CEmbed lid p -> EM.findWithDefault EM.empty p
-                  $ lembed (sdungeon s EM.! lid)
-  CActor aid cstore -> getActorBag aid cstore s
+getContainerBag :: Container -> State -> ItemBag
+getContainerBag c s = case c of
+  CFloor lid p -> getFloorBag lid p s
+  CEmbed lid p -> getEmbedBag lid p s
+  CActor aid cstore -> let b = getActorBody aid s
+                       in getBodyStoreBag b cstore s
   CTrunk{} -> assert `failure` c
 
-getActorBag :: ActorId -> CStore -> State -> ItemBag
-{-# INLINE getActorBag #-}
-getActorBag aid cstore s =
-  let b = getActorBody aid s
-  in getBodyActorBag b cstore s
+getFloorBag :: LevelId -> Point -> State -> ItemBag
+getFloorBag lid p s = EM.findWithDefault EM.empty p
+                      $ lfloor (sdungeon s EM.! lid)
 
-getBodyActorBag :: Actor -> CStore -> State -> ItemBag
-{-# INLINE getBodyActorBag #-}
-getBodyActorBag b cstore s =
+getEmbedBag :: LevelId -> Point -> State -> ItemBag
+getEmbedBag lid p s = EM.findWithDefault EM.empty p
+                      $ lembed (sdungeon s EM.! lid)
+
+getBodyStoreBag :: Actor -> CStore -> State -> ItemBag
+getBodyStoreBag b cstore s =
   case cstore of
-    CGround -> EM.findWithDefault EM.empty (bpos b)
-               $ lfloor (sdungeon s EM.! blid b)
+    CGround -> getFloorBag (blid b) (bpos b) s
     COrgan -> borgan b
     CEqp -> beqp b
     CInv -> binv b
@@ -285,15 +279,19 @@ mapActorItems_ f b s = do
   let notProcessed = [CGround]
       sts = [minBound..maxBound] \\ notProcessed
       g cstore = do
-        let bag = getBodyActorBag b cstore s
+        let bag = getBodyStoreBag b cstore s
         mapM_ (uncurry $ f cstore) $ EM.assocs bag
   mapM_ g sts
 
 getActorAssocs :: ActorId -> CStore -> State -> [(ItemId, Item)]
-getActorAssocs aid cstore s = bagAssocs s $ getActorBag aid cstore s
+getActorAssocs aid cstore s =
+  let b = getActorBody aid s
+  in bagAssocs s $ getBodyStoreBag b cstore s
 
 getActorAssocsK :: ActorId -> CStore -> State -> [(ItemId, (Item, ItemQuant))]
-getActorAssocsK aid cstore s = bagAssocsK s $ getActorBag aid cstore s
+getActorAssocsK aid cstore s =
+  let b = getActorBody aid s
+  in bagAssocsK s $ getBodyStoreBag b cstore s
 
 -- | Checks if the actor is present on the current level.
 -- The order of argument here and in other functions is set to allow

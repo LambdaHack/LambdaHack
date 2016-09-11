@@ -321,7 +321,7 @@ containerMoveItem :: MonadStateRead m
                   => ItemId -> Int -> Container -> Container
                   -> m [UpdAtomic]
 containerMoveItem iid k c1 c2 = do
-  bag <- getsState $ getCBag c1
+  bag <- getsState $ getContainerBag c1
   case iid `EM.lookup` bag of
     Nothing -> assert `failure` (iid, k, c1, c2)
     Just (_, it) -> do

@@ -247,7 +247,7 @@ projectFail source tpxy eps iid cstore isBlast = do
     Just [] -> assert `failure` "projecting from the edge of level"
                       `twith` (spos, tpxy)
     Just (pos : restUnlimited) -> do
-      bag <- getsState $ getActorBag source cstore
+      bag <- getsState $ getBodyStoreBag sb cstore
       case EM.lookup iid bag of
         Nothing ->  return $ Just ProjectOutOfReach
         Just kit -> do
@@ -299,7 +299,7 @@ projectBla source pos rest iid cstore isBlast = do
   let lid = blid sb
   localTime <- getsState $ getLocalTime lid
   unless isBlast $ execSfxAtomic $ SfxProject source iid cstore
-  bag <- getsState $ getActorBag source cstore
+  bag <- getsState $ getBodyStoreBag sb cstore
   case iid `EM.lookup` bag of
     Nothing -> assert `failure` (source, pos, rest, iid, cstore)
     Just kit@(_, it) -> do

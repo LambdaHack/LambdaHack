@@ -82,7 +82,7 @@ targetDesc target = do
       pointedText <-
         if lid == lidV && arena == lidV
         then do
-          bag <- getsState $ getCBag (CFloor lid p)
+          bag <- getsState $ getFloorBag lid p
           case EM.assocs bag of
             [] -> return $! "exact spot" <+> tshow p
             [(iid, kit@(k, _))] -> do
@@ -155,7 +155,7 @@ drawFrameBody dm drawnLevelId = do
                         && Tile.isSuspect coTileSpeedup tile = Color.BrCyan
                       | ES.member p0 totVisible = Tile.color coTileSpeedup tile
                       | otherwise = Tile.color2 coTileSpeedup tile
-            charAttr = case posToAidsAM p0 lactor of
+            charAttr = case EM.findWithDefault [] p0 lactor of
               [] -> case EM.lookup p0 lsmell of
                 Just sml | sml > ltime && smarkSmell -> viewSmell sml
                 _ -> case EM.lookup p0 lfloor of
@@ -293,11 +293,11 @@ drawFrameStatus drawnLevelId = do
         let tgtBlurb = "Target:" <+> trimTgtDesc n tgtDesc
         case (sitemSel, mleader) of
           (Just (fromCStore, iid), Just leader) -> do  -- TODO: factor out
-            bag <- getsState $ getActorBag leader fromCStore
+            b <- getsState $ getActorBody leader
+            bag <- getsState $ getBodyStoreBag b fromCStore
             case iid `EM.lookup` bag of
               Nothing -> return $! tgtBlurb
               Just kit@(k, _) -> do
-                b <- getsState $ getActorBody leader
                 localTime <- getsState $ getLocalTime (blid b)
                 itemToF <- itemToFullClient
                 let (_, name, stats) =

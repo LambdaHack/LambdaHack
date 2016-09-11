@@ -380,13 +380,13 @@ itemAidVerbMU :: MonadClientUI m
               -> ItemId -> Either (Maybe Int) Int -> CStore
               -> m ()
 itemAidVerbMU aid verb iid ek cstore = do
-  bag <- getsState $ getActorBag aid cstore
+  body <- getsState $ getActorBody aid
+  bag <- getsState $ getBodyStoreBag body cstore
   -- The item may no longer be in @c@, but it was
   case iid `EM.lookup` bag of
     Nothing -> assert `failure` (aid, verb, iid, cstore)
     Just kit@(k, _) -> do
       itemToF <- itemToFullClient
-      body <- getsState $ getActorBody aid
       let lid = blid body
       localTime <- getsState $ getLocalTime lid
       subject <- partAidLeader aid
@@ -680,7 +680,7 @@ discover c oldDiscoKind oldDiscoAspect iid = do
   discoKind <- getsClient sdiscoKind
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
-  bag <- getsState $ getCBag c
+  bag <- getsState $ getContainerBag c
   let kit = EM.findWithDefault (1, []) iid bag
       itemFull = itemToF iid kit
       knownName = partItemMediumAW cstore localTime itemFull
@@ -923,7 +923,7 @@ strike source target iid cstore hitStatus = assert (source /= target) $ do
   tpart <- partActorLeader target tb
   spronoun <- partPronounLeader source sb
   localTime <- getsState $ getLocalTime (blid sb)
-  bag <- getsState $ getActorBag source cstore
+  bag <- getsState $ getBodyStoreBag sb cstore
   let kit = EM.findWithDefault (1, []) iid bag
       itemFull = itemToF iid kit
       verb = case itemDisco itemFull of
