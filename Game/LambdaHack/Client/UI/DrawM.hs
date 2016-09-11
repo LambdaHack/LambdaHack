@@ -1,12 +1,12 @@
 {-# LANGUAGE TupleSections #-}
-{-# OPTIONS_GHC -fprof-auto #-}
+-- {-# OPTIONS_GHC -fprof-auto #-}
 -- | Display game data on the screen using one of the available frontends
 -- (determined at compile time with cabal flags).
 module Game.LambdaHack.Client.UI.DrawM
   ( targetDescLeader, drawBaseFrame
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , drawFrameBody, drawFrameStatus, targetDesc, targetDescXhair
+  , targetDesc, targetDescXhair, drawFrameBody, drawFrameStatus
   , drawArenaStatus, drawLeaderStatus, drawLeaderDamage, drawSelected
 #endif
   ) where
@@ -44,6 +44,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
@@ -119,40 +120,21 @@ drawFrameBody dm drawnLevelId = do
   Kind.COps{coTileSpeedup} <- getsState scops
   SessionUI{sselected, saimMode, smarkVision, smarkSmell} <- getSession
   mleader <- getsClient _sleader
-  xhairPos <- xhairToPos
-  let anyPos = fromMaybe originPoint xhairPos
-        -- if xhair invalid, e.g., on a wrong level; @draw@ ignores it later on
-      bfsAndPathFromLeader leader = Just <$> getCacheBfsAndPath leader anyPos
-      pathFromLeader leader = (Just . (,NoPath)) <$> getCacheBfs leader
-      notAimMode = isNothing saimMode
-  bfsmpath <- if notAimMode
-              then maybe (return Nothing) pathFromLeader mleader
-              else maybe (return Nothing) bfsAndPathFromLeader mleader
+  xhairPosRaw <- xhairToPos
+  let xhairPos = fromMaybe originPoint xhairPosRaw
   s <- getState
   StateClient{seps, smarkSuspect} <- getClient
-  lvl@Level{lxsize, lysize, lsmell, ltime, lfloor, lactor}
+  Level{lxsize, lysize, lsmell, ltime, lfloor, lactor, ltile}
     <- getLevel drawnLevelId
-  bline <- case (xhairPos, mleader) of
-    (Just xhair, Just leader) -> do
-      Actor{bpos, blid} <- getsState $ getActorBody leader
-      return $! if blid /= drawnLevelId
-                then []
-                else maybe [] (delete xhair) $ bla lxsize lysize seps bpos xhair
-    _ -> return []
   totVisible <- totalVisible <$> getPerFid drawnLevelId
-  let deleteXhair = maybe id (\xhair -> delete xhair) xhairPos
-      mpath = if null bline then []
-              else maybe [] (\(_, mp) -> case mp of
-                NoPath -> []
-                AndPath {pathList} -> deleteXhair pathList) bfsmpath
-      xhairHere = find (\(_, m) -> xhairPos == Just (bpos m))
-                       (actorAssocs (const True) drawnLevelId s)
-      shiftedBTrajectory = case xhairHere of
-        Just (_, Actor{btrajectory = Just p, bpos = prPos}) ->
-          deleteXhair $ trajectoryToPath prPos (fst p)
-        _ -> []
-      dis p0 =
-        let viewActor aid Actor{bsymbol, bcolor, bhp, bproj} =
+  -- The base drawing routine.
+  let dis !p0 =
+        let viewSmell sml =
+              let fg = toEnum $ fromEnum p0 `rem` 14 + 1
+                  smlt = sml `timeDeltaToFrom` ltime
+              in Color.AttrChar (Color.defAttr {Color.fg})
+                                (timeDeltaToDigit smellTimeout smlt)
+            viewActor aid Actor{bsymbol, bcolor, bhp, bproj} =
               Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
              where symbol | bhp > 0 || bproj = bsymbol
                           | otherwise = '%'
@@ -161,13 +143,11 @@ drawFrameBody dm drawnLevelId = do
                      _ -> if aid `ES.notMember` sselected
                           then Color.defBG
                           else Color.BrBlue
-            viewSmell sml =
-              let fg = toEnum $ fromEnum p0 `rem` 14 + 1
-                  smlt = sml `timeDeltaToFrom` ltime
-              in Color.AttrChar (Color.defAttr {Color.fg})
-                                (timeDeltaToDigit smellTimeout smlt)
+            viewItemBag floorBag = case EM.toDescList floorBag of
+              (iid, _) : _ -> viewItem $ getItemBody iid s
+              [] -> assert `failure` "lfloor not sparse" `twith` ()
             viewTile = Color.AttrChar Color.defAttr {Color.fg} symbol
-             where tile = lvl `at` p0
+             where tile = ltile PointArray.! p0
                    symbol = Tile.symbol coTileSpeedup tile
                    -- smarkSuspect is an optional overlay, so let's overlay it
                    -- over both visible and invisible tiles.
@@ -177,25 +157,44 @@ drawFrameBody dm drawnLevelId = do
                       | otherwise = Tile.color2 coTileSpeedup tile
             charAttr = case posToAidsAM p0 lactor of
               [] -> case EM.lookup p0 lsmell of
-                Nothing -> itemOrTileCharAttr
-                Just sml -> if sml <= ltime || not smarkSmell
-                            then itemOrTileCharAttr
-                            else viewSmell sml
+                Just sml | sml > ltime && smarkSmell -> viewSmell sml
+                _ -> case EM.lookup p0 lfloor of
+                  Nothing -> viewTile
+                  Just floorBag -> viewItemBag floorBag
               aid : _ -> viewActor aid (getActorBody aid s)
-            itemOrTileCharAttr = case EM.lookup p0 lfloor of
-              Nothing -> viewTile
-              Just floorBag -> case EM.toDescList floorBag of
-                (iid, _) : _ -> viewItem $ getItemBody iid s
-                [] -> assert `failure` "lfloor not sparse" `twith` ()
-        in if | Just p0 == xhairPos ->
-                charAttr {Color.acAttr =
+        in if p0 /= xhairPos then charAttr
+           else charAttr {Color.acAttr =
                             (Color.acAttr charAttr) {Color.bg = Color.BrYellow}}
-              | otherwise ->
-                charAttr
+  -- Aiming mode drawing routine.
+  bline <- case mleader of
+    Just leader -> do
+      Actor{bpos, blid} <- getsState $ getActorBody leader
+      return $! if blid /= drawnLevelId
+                then []
+                else maybe [] (delete xhairPos)
+                     $ bla lxsize lysize seps bpos xhairPos
+    _ -> return []
+  let bfsAndPathFromLeader leader = Just <$> getCacheBfsAndPath leader xhairPos
+      pathFromLeader leader = (Just . (,NoPath)) <$> getCacheBfs leader
+      notAimMode = isNothing saimMode
+  bfsmpath <- if notAimMode
+              then maybe (return Nothing) pathFromLeader mleader
+              else maybe (return Nothing) bfsAndPathFromLeader mleader
+  let deleteXhair = delete xhairPos
+      mpath = if null bline then []
+              else maybe [] (\(_, mp) -> case mp of
+                NoPath -> []
+                AndPath {pathList} -> deleteXhair pathList) bfsmpath
+      xhairHere = find (\(_, m) -> xhairPos == bpos m)
+                       (actorAssocs (const True) drawnLevelId s)
+      shiftedBTrajectory = case xhairHere of
+        Just (_, Actor{btrajectory = Just p, bpos = prPos}) ->
+          deleteXhair $ trajectoryToPath prPos (fst p)
+        _ -> []
       aimCharAtrr :: Point -> Color.AttrChar -> Color.AttrChar
-      aimCharAtrr p0 ac =
+      aimCharAtrr !p0 ac =
         let fgOnPathOrLine =
-              let tile = lvl `at` p0
+              let tile = ltile PointArray.! p0
               in case ( ES.member p0 totVisible
                       , Tile.isWalkable coTileSpeedup tile ) of
                 _ | isUknownSpace tile -> Color.BrBlack
@@ -212,7 +211,8 @@ drawFrameBody dm drawnLevelId = do
               | smarkVision && ES.member p0 totVisible ->
                 ac {Color.acAttr = (Color.acAttr ac) {Color.bg = Color.Blue}}
               | otherwise -> ac
-      fOverlay :: (Point -> Color.AttrChar -> Color.AttrChar) -> Overlay
+  -- The engine that puts it all together.
+  let fOverlay :: (Point -> Color.AttrChar -> Color.AttrChar) -> Overlay
       {-# INLINE fOverlay #-}
       fOverlay f =
         let fLine y = map (\x -> let p = Point x y in f p $ dis p) [0..lxsize-1]

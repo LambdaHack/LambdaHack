@@ -233,6 +233,7 @@ whereTo lid pos k dungeon = assert (k /= 0) $
 
 -- * The operations below disregard levels other than the current.
 
+-- Inlining slows it down.
 -- | Gets actor body from the current level. Error if not found.
 getActorBody :: ActorId -> State -> Actor
 getActorBody aid s =
