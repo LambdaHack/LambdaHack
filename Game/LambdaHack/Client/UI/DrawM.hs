@@ -114,7 +114,7 @@ targetDescXhair = do
   sxhair <- getsClient sxhair
   targetDesc $ Just sxhair
 
-drawFrameBody :: MonadClientUI m => ColorMode -> LevelId -> m Overlay
+drawFrameBody :: forall m. MonadClientUI m => ColorMode -> LevelId -> m Overlay
 drawFrameBody dm drawnLevelId = do
   Kind.COps{coTileSpeedup} <- getsState scops
   SessionUI{sselected, saimMode, smarkVision, smarkSmell} <- getSession
@@ -152,10 +152,7 @@ drawFrameBody dm drawnLevelId = do
           deleteXhair $ trajectoryToPath prPos (fst p)
         _ -> []
       dis p0 =
-        let vis :: Bool
-            {-# INLINE vis #-}
-            vis = ES.member p0 totVisible
-            viewActor aid Actor{bsymbol, bcolor, bhp, bproj} =
+        let viewActor aid Actor{bsymbol, bcolor, bhp, bproj} =
               Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
              where symbol | bhp > 0 || bproj = bsymbol
                           | otherwise = '%'
@@ -176,7 +173,7 @@ drawFrameBody dm drawnLevelId = do
                    -- over both visible and invisible tiles.
                    fg | smarkSuspect
                         && Tile.isSuspect coTileSpeedup tile = Color.BrCyan
-                      | vis = Tile.color coTileSpeedup tile
+                      | ES.member p0 totVisible = Tile.color coTileSpeedup tile
                       | otherwise = Tile.color2 coTileSpeedup tile
             charAttr = case posToAidsAM p0 lactor of
               [] -> case EM.lookup p0 lsmell of
@@ -190,34 +187,40 @@ drawFrameBody dm drawnLevelId = do
               Just floorBag -> case EM.toDescList floorBag of
                 (iid, _) : _ -> viewItem $ getItemBody iid s
                 [] -> assert `failure` "lfloor not sparse" `twith` ()
-            noAimCharAtrr = case dm of
-              ColorFull | Just p0 == xhairPos ->
+        in if | Just p0 == xhairPos ->
                 charAttr {Color.acAttr =
                             (Color.acAttr charAttr) {Color.bg = Color.BrYellow}}
-                        | smarkVision && vis && null (posToAidsAM p0 lactor) ->
-                charAttr {Color.acAttr =
-                            (Color.acAttr charAttr) {Color.bg = Color.Blue}}
-                        | otherwise ->
+              | otherwise ->
                 charAttr
-              ColorBW -> charAttr {Color.acAttr = Color.defAttr}
-        in if notAimMode then noAimCharAtrr else
-             let fgOnPathOrLine =
-                   let tile = lvl `at` p0
-                   in case (vis, Tile.isWalkable coTileSpeedup tile) of
-                     _ | isUknownSpace tile -> Color.BrBlack
-                     _ | Tile.isSuspect coTileSpeedup tile -> Color.BrCyan
-                     (True, True)   -> Color.BrGreen
-                     (True, False)  -> Color.BrRed
-                     (False, True)  -> Color.Green
-                     (False, False) -> Color.Red
-                 atttrOnPathOrLine = Color.defAttr {Color.fg = fgOnPathOrLine}
-             in if | elem p0 bline || elem p0 shiftedBTrajectory ->
-                     Color.AttrChar atttrOnPathOrLine '*'
-                   | elem p0 mpath ->
-                     Color.AttrChar atttrOnPathOrLine ';'
-                   | otherwise -> noAimCharAtrr
-      fLine y = map (\x -> dis $ Point x y) [0..lxsize-1]
-  return $! emptyAttrLine lxsize : map fLine [0..lysize-1]
+      aimCharAtrr :: Point -> Color.AttrChar -> Color.AttrChar
+      aimCharAtrr p0 ac =
+        let fgOnPathOrLine =
+              let tile = lvl `at` p0
+              in case ( ES.member p0 totVisible
+                      , Tile.isWalkable coTileSpeedup tile ) of
+                _ | isUknownSpace tile -> Color.BrBlack
+                _ | Tile.isSuspect coTileSpeedup tile -> Color.BrCyan
+                (True, True)   -> Color.BrGreen
+                (True, False)  -> Color.BrRed
+                (False, True)  -> Color.Green
+                (False, False) -> Color.Red
+            atttrOnPathOrLine = Color.defAttr {Color.fg = fgOnPathOrLine}
+        in if | elem p0 bline || elem p0 shiftedBTrajectory ->
+                Color.AttrChar atttrOnPathOrLine '*'
+              | elem p0 mpath ->
+                Color.AttrChar atttrOnPathOrLine ';'
+              | smarkVision && ES.member p0 totVisible ->
+                ac {Color.acAttr = (Color.acAttr ac) {Color.bg = Color.Blue}}
+              | otherwise -> ac
+      fOverlay :: (Point -> Color.AttrChar -> Color.AttrChar) -> Overlay
+      {-# INLINE fOverlay #-}
+      fOverlay f =
+        let fLine y = map (\x -> let p = Point x y in f p $ dis p) [0..lxsize-1]
+        in emptyAttrLine lxsize : map fLine [0..lysize-1]
+  return $! case dm of
+    ColorFull | notAimMode -> fOverlay $ \_ ac -> ac
+    ColorFull -> fOverlay aimCharAtrr
+    ColorBW -> fOverlay $ \_ ac -> ac {Color.acAttr = Color.defAttr}
 
 drawFrameStatus :: MonadClientUI m => LevelId -> m Overlay
 drawFrameStatus drawnLevelId = do
