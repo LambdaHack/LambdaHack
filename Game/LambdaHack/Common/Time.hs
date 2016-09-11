@@ -98,6 +98,7 @@ absoluteTimeNegate (Time t) = Time (-t)
 -- | Time time vector between the second and the first absolute times.
 -- The arguments are in the same order as in the underlying scalar subtraction.
 timeDeltaToFrom :: Time -> Time -> Delta Time
+{-# INLINE timeDeltaToFrom #-}
 timeDeltaToFrom (Time t1) (Time t2) = Delta $ Time (t1 - t2)
 
 -- | Time time vector between the second and the first absolute times.
@@ -116,6 +117,7 @@ timeDeltaDiv (Delta (Time t)) n = Delta (Time (t `div` fromIntegral n))
 -- | Represent the main 10 thresholds of a time range by digits,
 -- given the total length of the time range.
 timeDeltaToDigit :: Delta Time -> Delta Time -> Char
+{-# INLINE timeDeltaToDigit #-}
 timeDeltaToDigit (Delta (Time maxT)) (Delta (Time t)) =
   let k = 10 * t `div` maxT
       digit | k > 9     = '*'

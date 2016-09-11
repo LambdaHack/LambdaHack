@@ -29,6 +29,7 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 type AttrLine = [Color.AttrChar]
 
 emptyAttrLine :: Int -> AttrLine
+{-# INLINE emptyAttrLine #-}
 emptyAttrLine xsize = replicate xsize Color.spaceAttr
 
 textToAL :: Text -> AttrLine
@@ -37,6 +38,7 @@ textToAL !t =
   in T.foldr f [] t
 
 stringToAL :: String -> AttrLine
+{-# INLINE stringToAL #-}
 stringToAL s = map (Color.AttrChar Color.defAttr) s
 
 infixr 6 <+:>  -- matches Monoid.<>
