@@ -11,7 +11,6 @@ import Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.Reader (ask)
 import Data.Char (chr)
-import qualified Data.Text as T
 import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
                   webViewGetDomDocument)
 import GHCJS.DOM.CSSStyleDeclaration (removeProperty, setProperty)
@@ -159,7 +158,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
                                   -- until @key@ available in webkit DOM
     when (not $ null quirksN) $ do
       let !key = K.keyTranslateWeb quirksN False
-          _ks = T.unpack (K.showKey key)
+          _ks = K.showKey key
       -- IO.liftIO $ do
       --   putStrLn $ "keyId: " ++ keyId
       --   putStrLn $ "quirksN: " ++ quirksN
@@ -186,7 +185,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
           !key = K.keyTranslateWeb quirksN onKeyPad
           !modifierNoShift =  -- to prevent Shift-!, etc.
             if modifier == K.Shift then K.NoModifier else modifier
-          _ks = T.unpack (K.showKey key)
+          _ks = K.showKey key
       -- IO.liftIO $ do
       --   putStrLn $ "charCode: " ++ show charCode
       --   putStrLn $ "quirksN: " ++ quirksN
