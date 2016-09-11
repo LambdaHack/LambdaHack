@@ -294,6 +294,10 @@ displayRespUpdAtomicUI verbose oldDiscoKind oldDiscoAspect cmd = case cmd of
     when (lengthHistory history > 1) $ fadeOutOrIn False
     fact <- getsState $ (EM.! fid) . sfactionD
     setFrontAutoYes $ isAIFact fact
+    when (isAIFact fact) $ do
+      -- Prod the frontend to flush frames and start showing them continuously.
+      slides <- reportToSlideshow []
+      void $ getConfirms ColorFull [K.spaceKM, K.escKM] slides
   UpdRestartServer{} -> return ()
   UpdResume fid _ -> do
     resetSessionStart
