@@ -39,6 +39,7 @@ import Game.LambdaHack.Common.State
 
 handleCmdAtomicServer :: forall m. MonadStateWrite m
                       => PosAtomic -> CmdAtomic -> m ()
+{-# INLINE handleCmdAtomicServer #-}
 handleCmdAtomicServer posAtomic atomic =
   when (seenAtomicSer posAtomic) $
 --    storeUndo atomic
@@ -54,6 +55,7 @@ handleAndBroadcast :: forall m. MonadStateWrite m
                    -> (FactionId -> SfxAtomic -> m ())
                    -> CmdAtomic
                    -> m ()
+{-# INLINE handleAndBroadcast #-}
 handleAndBroadcast knowEvents sperFidOld checkSetPerValid doRecomputeCachePer
                    doSendUpdate doSendSfx atomic = do
   -- Gather data from the old state.
@@ -148,6 +150,7 @@ handleAndBroadcast knowEvents sperFidOld checkSetPerValid doRecomputeCachePer
   mapWithKeyM_ (\fid _ -> send fid) factionDold
 
 atomicRemember :: LevelId -> Perception -> State -> [UpdAtomic]
+{-# INLINE atomicRemember #-}
 atomicRemember lid inPer s =
   -- No @UpdLoseItem@ is sent for items that became out of sight.
   -- The client will create these atomic actions based on @outPer@,
