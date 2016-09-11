@@ -553,12 +553,12 @@ effectAscend recursiveCall execSfx k source target = do
              -- Move the actor to where the inhabitants were, if any.
              switchLevels2 lid2 pos2 (target, b1) mlead
              -- Verify only one non-projectile actor on every tile.
-             !_ <- getsState $ posToActors pos1 lid1  -- assertion is inside
-             !_ <- getsState $ posToActors pos2 lid2  -- assertion is inside
+             !_ <- getsState $ posToAssocs pos1 lid1  -- assertion is inside
+             !_ <- getsState $ posToAssocs pos2 lid2  -- assertion is inside
              return ()
        -- The actor will be added to the new level,
        -- but there can be other actors at his new position.
-       inhabitants <- getsState $ posToActors pos2 lid2
+       inhabitants <- getsState $ posToAssocs pos2 lid2
        case inhabitants of
          [] -> do
            switch1

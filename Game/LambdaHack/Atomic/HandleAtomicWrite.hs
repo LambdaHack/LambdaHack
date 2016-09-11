@@ -122,9 +122,12 @@ updCreateActor aid body ais = do
   modifyState $ updateActorD $ EM.alter f aid
   -- Add actor to @sprio@.
   let g Nothing = Just [aid]
-      g (Just l) = assert (aid `notElem` l `blame` "actor already added"
-                                           `twith` (aid, body, l))
-                   $ Just $ aid : l
+      g (Just l) =
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+        assert (aid `notElem` l `blame` "actor already added"
+                                `twith` (aid, body, l))
+#endif
+        (Just $ aid : l)
   updateLevel (blid body) $ updatePrio (EM.alter g (btime body))
                           . updateActorMap (EM.alter g (bpos body))
   -- Actor's items may or may not be already present in @sitemD@,
@@ -167,10 +170,13 @@ updDestroyActor aid body ais = do
   modifyState $ updateActorD $ EM.alter f aid
   -- Remove actor from @sprio@.
   let g Nothing = assert `failure` "actor already removed" `twith` (aid, body)
-      g (Just l) = assert (aid `elem` l `blame` "actor already removed"
-                                        `twith` (aid, body, l))
-                   $ let l2 = delete aid l
-                     in if null l2 then Nothing else Just l2
+      g (Just l) =
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+        assert (aid `elem` l `blame` "actor already removed"
+                             `twith` (aid, body, l))
+#endif
+        (let l2 = delete aid l
+         in if null l2 then Nothing else Just l2)
   updateLevel (blid body) $ updatePrio (EM.alter g (btime body))
                           . updateActorMap (EM.alter g (bpos body))
 
@@ -254,15 +260,21 @@ updAgeActor aid delta = assert (delta /= Delta timeZero) $ do
       -- Remove actor from @sprio@ at old time.
       rmPrio Nothing = assert `failure` "actor already removed"
                               `twith` (aid, body)
-      rmPrio (Just l) = assert (aid `elem` l `blame` "actor already removed"
-                                             `twith` (aid, body, l))
-                        $ let l2 = delete aid l
-                          in if null l2 then Nothing else Just l2
+      rmPrio (Just l) =
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+        assert (aid `elem` l `blame` "actor already removed"
+                             `twith` (aid, body, l))
+#endif
+        (let l2 = delete aid l
+         in if null l2 then Nothing else Just l2)
       -- Add actor to @sprio@ at new time.
       addPrio Nothing = Just [aid]
-      addPrio (Just l) = assert (aid `notElem` l `blame` "actor already added"
-                                                 `twith` (aid, body, l))
-                         $ Just $ aid : l
+      addPrio (Just l) =
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+        assert (aid `notElem` l `blame` "actor already added"
+                                `twith` (aid, body, l))
+#endif
+        (Just $ aid : l)
       updPrio = EM.alter addPrio (btime newBody) . EM.alter rmPrio (btime body)
   updateLevel (blid body) $ updatePrio updPrio
   -- Modify actor body in @sactorD@.

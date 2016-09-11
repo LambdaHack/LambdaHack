@@ -204,7 +204,7 @@ reqMove source dir = do
   let spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
   -- We start by checking actors at the the target position.
-  tgt <- getsState $ posToActors tpos lid
+  tgt <- getsState $ posToAssocs tpos lid
   case tgt of
     (target, tb) : _ | not (bproj sb && bproj tb) -> do  -- visible or not
       -- Projectiles are too small to hit each other.
@@ -302,9 +302,8 @@ reqDisplace source target = do
        let lid = blid sb
        lvl <- getLevel lid
        -- Displacing requires full access.
-       if accessible cops lvl tpos then do
-         tgts <- getsState $ posToActors tpos lid
-         case tgts of
+       if accessible cops lvl tpos then
+         case posToAidsLvl tpos lvl of
            [] -> assert `failure` (source, sb, target, tb)
            [_] -> execUpdAtomic $ UpdDisplaceActor source target
            _ -> execFailure source req DisplaceProjectiles

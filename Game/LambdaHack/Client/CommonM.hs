@@ -152,13 +152,12 @@ makeLine :: MonadClient m => Bool -> Actor -> Point -> Int -> m (Maybe Int)
 makeLine onlyFirst body fpos epsOld = do
   cops <- getsState scops
   lvl@Level{lxsize, lysize} <- getLevel (blid body)
-  bs <- getsState $ filter (not . bproj)
-                    . actorList (const True) (blid body)
+  posA <- getsState $ \s p -> posToAssocs p (blid body) s
   let dist = chessDist (bpos body) fpos
       calcScore eps = case bla lxsize lysize eps (bpos body) fpos of
         Just bl ->
           let blDist = take dist bl
-              noActor p = all ((/= p) . bpos) bs || p == fpos
+              noActor p = all (bproj . snd) (posA p) || p == fpos
               accessU = all noActor blDist
                         && all (accessibleUnknown cops lvl) blDist
               accessFirst | not onlyFirst = False

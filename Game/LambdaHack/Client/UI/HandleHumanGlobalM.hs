@@ -242,7 +242,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
   -- which gives a partial information (actors can be invisible),
   -- as opposed to accessibility (and items) which are always accurate
   -- (tiles can't be invisible).
-  tgts <- getsState $ posToActors tpos arena
+  tgts <- getsState $ posToAssocs tpos arena
   case tgts of
     [] -> do  -- move or search or alter
       runStopOrCmd <- moveSearchAlterAid leader dir
@@ -343,9 +343,8 @@ displaceAid target = do
        let lid = blid sb
        lvl <- getLevel lid
        -- Displacing requires full access.
-       if accessible cops lvl tpos then do
-         tgts <- getsState $ posToActors tpos lid
-         case tgts of
+       if accessible cops lvl tpos then
+         case posToAidsLvl tpos lvl of
            [] -> assert `failure` (leader, sb, target, tb)
            [_] -> return $ Right $ ReqDisplace target
            _ -> failSer DisplaceProjectiles
@@ -515,12 +514,12 @@ multiActorGoTo arena c paramOld =
           AndPath{pathList = p1 : _, pathSource} -> do
             let finalGoal = p1 == c
                 dir = towards pathSource p1
-            tgts <- getsState $ posToActors p1 arena
+            tgts <- getsState $ posToAids p1 arena
             case tgts of
               [] -> do
                 modifySession $ \sess -> sess {srunning = Just paramNew}
                 return $ Right (finalGoal, dir)
-              [(target, _)] | target `elem` rs || runWaiting <= length rs ->
+              [target] | target `elem` rs || runWaiting <= length rs ->
                 -- Let r wait until all others move. Mark it in runWaiting
                 -- to avoid cycles. When all wait for each other, fail.
                 multiActorGoTo arena c paramNew{runWaiting=runWaiting + 1}

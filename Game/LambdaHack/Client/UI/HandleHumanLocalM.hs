@@ -262,7 +262,7 @@ projectCheck tpos = do
       if not $ Tile.isWalkable coTileSpeedup t
         then return $ Just ProjectBlockTerrain
         else do
-          lab <- getsState $ posToActors pos lid
+          lab <- getsState $ posToAssocs pos lid
           if all (bproj . snd) lab
           then return Nothing
           else return $ Just ProjectBlockActor
@@ -739,7 +739,7 @@ doLook = do
       let p = fromMaybe (bpos b) xhairPos
           canSee = ES.member p (totalVisible per)
       inhabitants <- if canSee
-                     then getsState $ posToActors p lidV
+                     then getsState $ posToAssocs p lidV
                      else return []
       seps <- getsClient seps
       mnewEps <- makeLine False b p seps

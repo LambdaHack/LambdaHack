@@ -131,7 +131,7 @@ continueRunDir params = case params of
       lvl <- getLevel lid
       let posHere = bpos body
           posThere = posHere `shift` dir
-      actorsThere <- getsState $ posToActors posThere lid
+          actorsThere = posToAidsLvl posThere lvl
       let openableLast = Tile.isOpenable cotile (lvl `at` (posHere `shift` dir))
           check
             | not $ null actorsThere = return $ Left "actor in the way"
@@ -188,7 +188,7 @@ checkAndRun aid dir = do
   let posHere = bpos body
       posHasItems pos = EM.member pos $ lfloor lvl
       posThere = posHere `shift` dir
-  actorsThere <- getsState $ posToActors posThere lid
+      actorsThere = posToAidsLvl posThere lvl
   let posLast = fromMaybe (assert `failure` (aid, body)) (boldpos body)
       dirLast = posHere `vectorToFrom` posLast
       -- This is supposed to work on unit vectors --- diagonal, as well as,

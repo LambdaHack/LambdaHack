@@ -48,14 +48,20 @@ moveActorMap :: MonadStateWrite m => ActorId -> Actor -> Actor -> m ()
 moveActorMap aid body newBody = do
   let rmActor Nothing = assert `failure` "actor already removed"
                                `twith` (aid, body)
-      rmActor (Just l) = assert (aid `elem` l `blame` "actor already removed"
-                                              `twith` (aid, body, l))
-                         $ let l2 = delete aid l
-                           in if null l2 then Nothing else Just l2
+      rmActor (Just l) =
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+        assert (aid `elem` l `blame` "actor already removed"
+                             `twith` (aid, body, l))
+#endif
+        (let l2 = delete aid l
+         in if null l2 then Nothing else Just l2)
       addActor Nothing = Just [aid]
-      addActor (Just l) = assert (aid `notElem` l `blame` "actor already added"
-                                                  `twith` (aid, body, l))
-                          $ Just $ aid : l
+      addActor (Just l) =
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+        assert (aid `notElem` l `blame` "actor already added"
+                                `twith` (aid, body, l))
+#endif
+        (Just $ aid : l)
       updActor = EM.alter addActor (bpos newBody)
                  . EM.alter rmActor (bpos body)
   updateLevel (blid body) $ updateActorMap updActor

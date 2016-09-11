@@ -159,7 +159,7 @@ atomicRemember lid inPer s =
       lvl = sdungeon s EM.! lid
       -- Actors.
       carriedAssocs b = getCarriedAssocs b s
-      inPrio = concatMap (\p -> posToActors p lid s) inFov
+      inPrio = concatMap (\p -> posToAssocs p lid s) inFov
       fActor (aid, b) =
         let ais = carriedAssocs b
         in UpdSpotActor aid b ais

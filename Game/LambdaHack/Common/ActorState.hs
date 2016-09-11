@@ -10,7 +10,7 @@ module Game.LambdaHack.Common.ActorState
   , mergeItemQuant, sharedAllOwnedFid, findIid
   , getCBag, getActorBag, getBodyActorBag, mapActorItems_, getActorAssocs
   , nearbyFreePoints, whereTo, getCarriedAssocs, getCarriedIidCStore
-  , posToActors, getItemBody, memActor, getActorBody
+  , posToAidsLvl, posToAids, posToAssocs, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, itemPrice, regenCalmDelta
   , actorInAmbient, actorSkills, dispEnemy, fullAssocs, itemToFull
   , goesIntoEqp, goesIntoInv, goesIntoSha, eqpOverfull, eqpFreeN
@@ -96,17 +96,24 @@ bagAssocsK s bag =
   let iidItem (iid, kit) = (iid, (getItemBody iid s, kit))
   in map iidItem $ EM.assocs bag
 
--- | Finds all actors at a position on the current level.
-posToActors :: Point -> LevelId -> State -> [(ActorId, Actor)]
-posToActors pos lid s =
-  let f (_, b) = blid b == lid && bpos b == pos
-      l = filter f $ EM.assocs $ sactorD s
+-- | Finds all actors at a position on the level.
+posToAidsLvl :: Point -> Level -> [ActorId]
+posToAidsLvl pos lvl =
+  let l = EM.findWithDefault [] pos $ lactor lvl
   in
 #ifdef WITH_EXPENSIVE_ASSERTIONS
      assert (length l <= 1 || all (bproj . snd) l
              `blame` "many actors at the same position" `twith` l)
 #endif
-     l
+    l
+
+posToAids :: Point -> LevelId -> State -> [ActorId]
+posToAids pos lid s = posToAidsLvl pos $ sdungeon s EM.! lid
+
+posToAssocs :: Point -> LevelId -> State -> [(ActorId, Actor)]
+posToAssocs pos lid s =
+  let l = posToAidsLvl pos $ sdungeon s EM.! lid
+  in map (\aid -> (aid, getActorBody aid s)) l
 
 nearbyFreePoints :: Int
                  -> (Kind.Id TileKind -> Bool) -> Point -> LevelId -> State

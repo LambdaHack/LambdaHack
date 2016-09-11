@@ -29,7 +29,7 @@ import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
-import Game.LambdaHack.Common.Actor as Actor
+import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
@@ -136,15 +136,14 @@ drawFrameBody dm drawnLevelId = do
                 then []
                 else maybe [] (delete xhair) $ bla lxsize lysize seps bpos xhair
     _ -> return []
-  actorsHere <- getsState $ actorAssocs (const True) drawnLevelId
   per <- getPerFid drawnLevelId
   let deleteXhair = maybe id (\xhair -> delete xhair) xhairPos
       mpath = if null bline then []
               else maybe [] (\(_, mp) -> case mp of
                 NoPath -> []
                 AndPath {pathList} -> deleteXhair pathList) bfsmpath
-      xhairHere = find (\(_, m) -> xhairPos == Just (Actor.bpos m))
-                        actorsHere
+      xhairHere = find (\(_, m) -> xhairPos == Just (bpos m))
+                       (actorAssocs (const True) drawnLevelId s)
       shiftedBTrajectory = case xhairHere of
         Just (_, Actor{btrajectory = Just p, bpos = prPos}) ->
           deleteXhair $ trajectoryToPath prPos (fst p)
@@ -166,7 +165,7 @@ drawFrameBody dm drawnLevelId = do
               (False, True)  -> Color.Green
               (False, False) -> Color.Red
             atttrOnPathOrLine = Color.defAttr {Color.fg = fgOnPathOrLine}
-            maidBody = find (\(_, m) -> pos0 == Actor.bpos m) actorsHere
+            laid = posToAidsLvl pos0 lvl
             viewActor aid Actor{bsymbol, bcolor, bhp, bproj} =
               Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
              where symbol | bhp <= 0 && not bproj = '%'
@@ -182,20 +181,20 @@ drawFrameBody dm drawnLevelId = do
                         && Tile.isSuspect coTileSpeedup tile = Color.BrCyan
                       | vis = Tile.color coTileSpeedup tile
                       | otherwise = Tile.color2 coTileSpeedup tile
-            charAttr = case maidBody of
-              Nothing ->
+            charAttr = case laid of
+              [] ->
                 if not smarkSmell || sml <= ltime
                 then case floorIids of
                   [] -> viewTile
                   (iid, _) : _ -> viewItem $ getItemBody iid s
                 else Color.AttrChar (rainbow pos0)
                                     (timeDeltaToDigit smellTimeout smlt)
-              Just (aid, m) -> viewActor aid m
+              aid : _ -> viewActor aid (getActorBody aid s)
             noAimCharAtrr = case dm of
               ColorFull | Just pos0 == xhairPos ->
                 charAttr {Color.acAttr =
                             (Color.acAttr charAttr) {Color.bg = Color.BrYellow}}
-                        | smarkVision && vis && isNothing maidBody ->
+                        | smarkVision && vis && null laid ->
                 charAttr {Color.acAttr =
                             (Color.acAttr charAttr) {Color.bg = Color.Blue}}
                         | otherwise ->

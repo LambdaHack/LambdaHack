@@ -529,12 +529,11 @@ meleeBlocker aid = do
                | otherwise = Nothing  -- MeleeDistant
       lBlocker <- case maim of
         Nothing -> return []
-        Just aim -> getsState $ posToActors aim (blid b)
+        Just aim -> getsState $ posToAssocs aim (blid b)
       case lBlocker of
-        (aid2, _) : _ -> do
+        (aid2, body2) : _ -> do
           -- No problem if there are many projectiles at the spot. We just
           -- attack the first one.
-          body2 <- getsState $ getActorBody aid2
           if not (actorDying body2)  -- already dying
              && (not (bproj body2)  -- displacing saves a move
                  && isAtWar fact (bfid body2)  -- they at war with us
@@ -613,7 +612,7 @@ trigger aid fleeViaStairs = do
                 | not $ null $ lescape lvl = 0
                     -- all explored, stay on the escape level
                 | otherwise = 2  -- no escape, switch levels occasionally
-              actorsThere = posToActors pos2 lid2 s
+              actorsThere = posToAids pos2 lid2 s
           return $!
              if boldpos b == Just (bpos b)   -- probably used stairs last turn
                 && boldlid b == lid2  -- in the opposite direction
@@ -844,7 +843,7 @@ displaceTowards aid source target = do
   if boldpos b /= Just target -- avoid trivial loops
      && accessible cops lvl target then do  -- DisplaceAccess
     mleader <- getsClient _sleader
-    mBlocker <- getsState $ posToActors target (blid b)
+    mBlocker <- getsState $ posToAssocs target (blid b)
     case mBlocker of
       [] -> return reject
       [(aid2, b2)] | Just aid2 /= mleader -> do
@@ -950,7 +949,7 @@ moveOrRunAid run source dir = do
   -- which gives a partial information (actors can be invisible),
   -- as opposed to accessibility (and items) which are always accurate
   -- (tiles can't be invisible).
-  tgts <- getsState $ posToActors tpos lid
+  tgts <- getsState $ posToAssocs tpos lid
   case tgts of
     [(target, b2)] | run -> do
       -- @target@ can be a foe, as well as a friend.

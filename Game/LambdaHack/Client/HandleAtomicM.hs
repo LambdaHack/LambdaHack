@@ -186,7 +186,7 @@ cmdAtomicFilterCli cmd = case cmd of
     let seenNew = seenAtomicCli False fid perNew
         seenOld = seenAtomicCli False fid perOld
         outFov = totalVisible perOld ES.\\ totalVisible perNew
-        outPrio = concatMap (\p -> posToActors p lid s) $ ES.elems outFov
+        outPrio = concatMap (\p -> posToAssocs p lid s) $ ES.elems outFov
         fActor (aid, b) =
           let ps = posProjBody b
               -- Verify that we forget only previously seen actors.

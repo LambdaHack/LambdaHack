@@ -396,9 +396,8 @@ setTrajectory aid = do
         -- Non-projectiles displace, to make pushing in crowds less lethal
         -- and chaotic and to avoid hitting harpoons when pulled by them.
         let tpos = bpos b `shift` d  -- target position
-        tgt <- getsState $ posToActors tpos (blid b)
-        case tgt of
-          [(target, _)] | not (bproj b) -> reqDisplace aid target
+        case posToAidsLvl tpos lvl of
+          [target] | not (bproj b) -> reqDisplace aid target
           _ -> reqMove aid d
         b2 <- getsState $ getActorBody aid
         unless (btrajectory b2 == Just (lv, speed)) $  -- cleared in reqMelee
