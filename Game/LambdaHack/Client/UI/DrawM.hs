@@ -236,7 +236,7 @@ drawFrameStatus drawnLevelId = do
       widthTgt = 39
       widthStats = widthX - widthTgt
       arenaStatus = drawArenaStatus (ES.member drawnLevelId sexplored) lvl
-                                    widthStats
+                                    (widthStats - 1)
       displayPathText mp mt =
         let (plen, llen) = case (mp, bfsmpath, mbpos) of
               (Just target, Just (bfs, _), Just bpos)
@@ -267,13 +267,16 @@ drawFrameStatus drawnLevelId = do
       xhairGap = emptyAttrLine (widthTgt - T.length pathCsr
                                          - T.length xhairText)
       xhairStatus = textToAL xhairText ++ xhairGap ++ textToAL pathCsr
-      leaderStatusWidth = 22
+      leaderStatusWidth = 23
   leaderStatus <- drawLeaderStatus swaitTimes
   (selectedStatusWidth, selectedStatus)
     <- drawSelected drawnLevelId (widthStats - leaderStatusWidth) sselected
   damageStatus <- drawLeaderDamage (widthStats - leaderStatusWidth
                                                - selectedStatusWidth)
-  let tgtOrItem n = do
+  let statusGap = emptyAttrLine (widthStats - leaderStatusWidth
+                                            - selectedStatusWidth
+                                            - length damageStatus)
+      tgtOrItem n = do
         let tgtBlurb = "Target:" <+> trimTgtDesc n tgtDesc
         case (sitemSel, mleader) of
           (Just (fromCStore, iid), Just leader) -> do  -- TODO: factor out
@@ -292,18 +295,15 @@ drawFrameStatus drawnLevelId = do
                           else [MU.CarWs k name, stats]
                 return $! "Object:" <+> trimTgtDesc n t
           _ -> return $! tgtBlurb
-      statusGap = emptyAttrLine (widthStats - leaderStatusWidth
-                                            - selectedStatusWidth
-                                            - length damageStatus)
       -- The indicators must fit, they are the actual information.
       pathTgt = displayPathText tgtPos mtargetHP
   targetText <- tgtOrItem $ widthTgt - T.length pathTgt - 8
   let targetGap = emptyAttrLine (widthTgt - T.length pathTgt
                                           - T.length targetText)
       targetStatus = textToAL targetText ++ targetGap ++ textToAL pathTgt
-  return $! [ arenaStatus ++ xhairStatus
+  return $! [ arenaStatus <+:> xhairStatus
             , selectedStatus ++ statusGap ++ damageStatus ++ leaderStatus
-              ++ targetStatus ]
+              <+:> targetStatus ]
 
 -- TODO: split up and generally rewrite.
 -- | Draw the whole screen: level map and status area.
@@ -325,7 +325,7 @@ drawArenaStatus explored Level{ldepth=AbsDepth ld, ldesc, lseen, lclear} width =
       seenTxt | explored || seenN >= 100 = "all"
               | otherwise = T.justifyLeft 3 ' ' (tshow seenN <> "%")
       lvlN = T.justifyLeft 2 ' ' (tshow ld)
-      seenStatus = "[" <> seenTxt <+> "seen] "
+      seenStatus = "[" <> seenTxt <+> "seen]"
   in textToAL $ T.justifyLeft width ' '
               $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' ldesc) <+> seenStatus
 
@@ -370,10 +370,10 @@ drawLeaderStatus waitT = do
           hpHeader = hpAddAttr $ hpHeaderText <> bracePick
           hpText = bhpS <> (if bracedL then slashPick else "/") <> ahpS
           justifyRight n t = replicate (n - length t) ' ' ++ t
-      return $! calmHeader <> stringToAL (justifyRight 6 calmText <> " ")
-                <> hpHeader <> stringToAL (justifyRight 6 hpText <> " ")
-    Nothing -> return $! stringToAL $ calmHeaderText <> ": --/-- "
-                                   <> hpHeaderText <> ": --/-- "
+      return $! calmHeader <> stringToAL (justifyRight 6 calmText)
+                <+:> hpHeader <> stringToAL (justifyRight 7 hpText)
+    Nothing -> return $! stringToAL (calmHeaderText ++ ": --/--")
+                         <+:> stringToAL (hpHeaderText <> ":  --/--")
 
 drawLeaderDamage :: MonadClient m => Int -> m AttrLine
 drawLeaderDamage width = do
