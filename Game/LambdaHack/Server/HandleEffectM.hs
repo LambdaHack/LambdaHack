@@ -472,7 +472,7 @@ effectCallFriend execSfx nDm source target = do
     execUpdAtomic $ UpdRefillHP target deltaHP
     execSfx
     let validTile t = not $ Tile.hasFeature cotile TK.NoActor t
-    ps <- getsState $ nearbyFreePoints 25 validTile (bpos tb) (blid tb)
+    ps <- getsState $ nearbyFreePoints 50 validTile (bpos tb) (blid tb)
     localTime <- getsState $ getLocalTime (blid tb)
     -- We call target's friends so that AI monsters that test by throwing
     -- don't waste artifacts very valuable for heroes. Heroes should rather

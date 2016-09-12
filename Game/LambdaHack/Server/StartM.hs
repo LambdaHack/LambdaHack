@@ -259,7 +259,7 @@ populateDungeon = do
 recruitActors :: (MonadAtomic m, MonadServer m)
               => [Point] -> LevelId -> Time -> FactionId
               -> m Bool
-recruitActors ps lid time fid = assert (not $ null ps) $ do
+recruitActors ps lid time fid = do
   fact <- getsState $ (EM.! fid) . sfactionD
   let spawnName = fgroup $ gplayer fact
   laid <- forM ps $ \ p ->

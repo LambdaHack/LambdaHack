@@ -2,11 +2,10 @@
 # See the install-debug target below.
 
 install-debug:
-	cabal install --enable-library-profiling --enable-executable-profiling --ghc-options="-fprof-auto-calls" --disable-optimization
+	cabal install --enable-profiling --ghc-options="-fprof-auto-calls"
 
 configure-debug:
-	cabal configure --enable-library-profiling --enable-executable-profiling --ghc-options="-fprof-auto-calls" --disable-optimization
-
+	cabal configure --enable-profiling --ghc-options="-fprof-auto-calls"
 
 xcplay:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --dumpInitRngs
