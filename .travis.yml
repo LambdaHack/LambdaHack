@@ -103,7 +103,6 @@ install:
    else exit 7
    fi
 
-
  - sed -i -e '1,/^Resolving /d' installplan.txt; cat installplan.txt
 
 # check whether current requested install-plan matches cached package-db snapshot
@@ -133,7 +132,7 @@ install:
      elif [ $GTKVTY = "asserts" ]; then
        cabal install --constraint="transformers>=0.5" gtk2hs-buildtools;
        cabal install --only-dependencies --enable-tests --enable-benchmarks;
-     else exit 7
+     else exit 7;
      fi
    fi
 
