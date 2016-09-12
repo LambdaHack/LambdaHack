@@ -16,6 +16,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Ord as Ord
+import GHC.Exts (inline)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
@@ -27,7 +28,6 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind
 
 strengthEffect :: (Effect -> [b]) -> ItemFull -> [b]
-{-# INLINE strengthEffect #-}
 strengthEffect f itemFull =
   case itemDisco itemFull of
     Just ItemDisco{itemKind=ItemKind{ieffects}} ->
@@ -102,7 +102,7 @@ strengthFromEqpSlot eqpSlot itemFull =
     EqpSlotAddSpeed -> aSpeed
     EqpSlotAddSight -> aSight
     EqpSlotLightSource -> aShine
-    EqpSlotWeapon -> strMelee True maxBound itemFull
+    EqpSlotWeapon -> inline strMelee True maxBound itemFull
     EqpSlotMiscAbility ->
       EM.findWithDefault 0 Ability.AbWait aSkills
       + EM.findWithDefault 0 Ability.AbMoveItem aSkills
@@ -115,7 +115,6 @@ strengthFromEqpSlot eqpSlot itemFull =
     EqpSlotAbApply -> EM.findWithDefault 0 Ability.AbApply aSkills
 
 strMelee :: Bool -> Time -> ItemFull -> Int
-{-# INLINE strMelee #-}
 strMelee effectBonus localTime itemFull =
   let recharged = hasCharge localTime itemFull
       -- We assume extra weapon effects are useful and so such

@@ -17,7 +17,7 @@ module Game.LambdaHack.Common.Tile
   ( SmellTime
   , kindHasFeature, hasFeature, symbol, color, color2
   , isClear, isLit, isWalkable, isDoor, isSuspect
-  , isExplorable, lookSimilar, speedup, alterMinSkill, alterMinWalk
+  , isExplorable, speedup, alterMinSkill, alterMinWalk
   , openTo, closeTo, embedItems, causeEffects, revealAs, hideAs
   , isOpenable, isClosable, isChangeable, isEscape, isStair, ascendTo
 #ifdef EXPOSE_INTERNAL
@@ -141,18 +141,8 @@ alterMinWalk TileSpeedup{alterMinWalkTab} =
 -- Door status should not depend on whether they are open or not
 -- so that a foe opening a door doesn't force us to backtrack to explore it.
 isExplorable :: TileSpeedup -> Kind.Id TileKind -> Bool
-{-# INLINE isExplorable #-}
 isExplorable coTileSpeedup t =
   (isWalkable coTileSpeedup t || isClear coTileSpeedup t) && not (isDoor coTileSpeedup t)
-
--- | The player can't tell one tile from the other.
-lookSimilar :: TileKind -> TileKind -> Bool
-{-# INLINE lookSimilar #-}
-lookSimilar t u =
-  TK.tsymbol t == TK.tsymbol u &&
-  TK.tname   t == TK.tname   u &&
-  TK.tcolor  t == TK.tcolor  u &&
-  TK.tcolor2 t == TK.tcolor2 u
 
 speedup :: Bool -> Kind.Ops TileKind -> TileSpeedup
 speedup allClear cotile =

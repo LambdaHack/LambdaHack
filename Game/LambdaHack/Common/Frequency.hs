@@ -105,21 +105,21 @@ setFreq (Frequency xs name) x n =
 
 -- | Test if the frequency distribution is empty.
 nullFreq :: Frequency a -> Bool
-{-# INLINE nullFreq #-}
+{-# INLINABLE nullFreq #-}
 nullFreq (Frequency fs _) = null fs
 
 maxFreq :: Ord a => Frequency a -> Maybe a
-{-# INLINE maxFreq #-}
+{-# INLINABLE maxFreq #-}
 maxFreq fr = if nullFreq fr then Nothing else Just $ maximum fr
 
 minFreq :: Ord a => Frequency a -> Maybe a
-{-# INLINE minFreq #-}
+{-# INLINABLE minFreq #-}
 minFreq fr = if nullFreq fr then Nothing else Just $ minimum fr
 
 -- | Average value of an @Int@ distribution, rounded up to avoid truncating
 -- it in the other code higher up, which would equate 1d0 with 1d1.
 meanFreq :: Frequency Int -> Int
-{-# INLINE meanFreq #-}
+{-# INLINABLE meanFreq #-}
 meanFreq fr@(Frequency xs _) = case xs of
   [] -> assert `failure` fr
   _ -> let sumX = sum [ p * x | (p, x) <- xs ]

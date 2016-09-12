@@ -63,9 +63,7 @@ data Attr = Attr
   deriving (Show, Eq, Ord)
 
 instance Enum Attr where
-  {-# INLINE fromEnum #-}
   fromEnum Attr{..} = unsafeShiftL (fromEnum fg) 8 + fromEnum bg
-  {-# INLINE toEnum #-}
   toEnum n = Attr (toEnum $ unsafeShiftR n 8)
                   (toEnum $ n .&. (2 ^ (8 :: Int) - 1))
 
@@ -84,9 +82,7 @@ data AttrChar = AttrChar
   deriving (Show, Eq, Ord)
 
 instance Enum AttrChar where
-  {-# INLINE fromEnum #-}
   fromEnum AttrChar{..} = unsafeShiftL (fromEnum acAttr) 16 + fromEnum acChar
-  {-# INLINE toEnum #-}
   toEnum n = AttrChar (toEnum $ unsafeShiftR n 16)
                       (toEnum $ n .&. (2 ^ (16 :: Int) - 1))
 

@@ -41,7 +41,6 @@ instance Applicative Strategy where
 
 instance MonadPlus Strategy where
   mzero = Strategy []
-  {-# INLINE mplus #-}
   mplus (Strategy xs) (Strategy ys) = Strategy (xs ++ ys)
 
 instance Alternative Strategy where

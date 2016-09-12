@@ -61,6 +61,7 @@ instance Show (GroupName a) where
 instance NFData (GroupName a)
 
 toGroupName :: Text -> GroupName a
+{-# INLINE toGroupName #-}
 toGroupName = GroupName
 
 -- | For each group that the kind belongs to, denoted by a @GroupName@
@@ -196,28 +197,36 @@ instance (Enum k, Binary k) => Binary (ES.EnumSet k) where
 type instance Key (EM.EnumMap k) = k
 
 instance Zip (EM.EnumMap k) where
+  {-# INLINE zipWith #-}
   zipWith = EM.intersectionWith
 
 instance Enum k => ZipWithKey (EM.EnumMap k) where
+  {-# INLINE zipWithKey #-}
   zipWithKey = EM.intersectionWithKey
 
 instance Enum k => Keyed (EM.EnumMap k) where
+  {-# INLINE mapWithKey #-}
   mapWithKey = EM.mapWithKey
 
 instance Enum k => FoldableWithKey (EM.EnumMap k) where
+  {-# INLINE foldrWithKey #-}
   foldrWithKey = EM.foldrWithKey
 
 instance Enum k => TraversableWithKey (EM.EnumMap k) where
+  {-# INLINEABLE traverseWithKey #-}
   traverseWithKey f = fmap EM.fromDistinctAscList
                       . traverse (\(k, v) -> (,) k <$> f k v) . EM.toAscList
 
 instance Enum k => Indexable (EM.EnumMap k) where
+  {-# INLINE index #-}
   index = (EM.!)
 
 instance Enum k => Lookup (EM.EnumMap k) where
+  {-# INLINE lookup #-}
   lookup = EM.lookup
 
 instance Enum k => Adjustable (EM.EnumMap k) where
+  {-# INLINE adjust #-}
   adjust = EM.adjust
 
 -- Data.Hashable

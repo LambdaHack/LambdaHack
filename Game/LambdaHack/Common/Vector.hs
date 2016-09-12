@@ -39,10 +39,13 @@ instance Binary Vector where
 -- Note that the conversion is not monotonic wrt the natural @Ord@ instance,
 -- to keep it in sync with Point.
 instance Enum Vector where
-  {-# INLINE fromEnum #-}
-  fromEnum = fromEnumVector
-  {-# INLINE toEnum #-}
-  toEnum = toEnumVector
+  fromEnum (Vector vx vy) = vx + vy * (2 ^ maxLevelDimExponent)
+  toEnum n =
+    let (y, x) = n `quotRem` (2 ^ maxLevelDimExponent)
+        (vx, vy) | x > maxVectorDim = (x - 2 ^ maxLevelDimExponent, y + 1)
+                 | x < - maxVectorDim = (x + 2 ^ maxLevelDimExponent, y - 1)
+                 | otherwise = (x, y)
+    in Vector{..}
 
 instance NFData Vector
 
@@ -50,19 +53,6 @@ instance NFData Vector
 maxVectorDim :: Int
 {-# INLINE maxVectorDim #-}
 maxVectorDim = 2 ^ (maxLevelDimExponent - 1) - 1
-
-fromEnumVector :: Vector -> Int
-{-# INLINE fromEnumVector #-}
-fromEnumVector (Vector vx vy) = vx + vy * (2 ^ maxLevelDimExponent)
-
-toEnumVector :: Int -> Vector
-{-# INLINE toEnumVector #-}
-toEnumVector n =
-  let (y, x) = n `quotRem` (2 ^ maxLevelDimExponent)
-      (vx, vy) | x > maxVectorDim = (x - 2 ^ maxLevelDimExponent, y + 1)
-               | x < - maxVectorDim = (x + 2 ^ maxLevelDimExponent, y - 1)
-               | otherwise = (x, y)
-  in Vector{..}
 
 -- | Tells if a vector has length 1 in the chessboard metric.
 isUnit :: Vector -> Bool
@@ -83,7 +73,6 @@ neg (Vector vx vy) = Vector (-vx) (-vy)
 
 -- | Squared euclidean distance between two vectors.
 euclidDistSqVector :: Vector -> Vector -> Int
-{-# INLINE euclidDistSqVector #-}
 euclidDistSqVector (Vector x0 y0) (Vector x1 y1) =
   let square n = n ^ (2 :: Int)
   in square (x1 - x0) + square (y1 - y0)
@@ -97,7 +86,6 @@ chessDistVector (Vector x y) = max (abs x) (abs y)
 -- | Vectors of all unit moves in the chessboard metric,
 -- clockwise, starting north-west.
 moves :: [Vector]
-{-# NOINLINE moves #-}
 moves =
   map (uncurry Vector)
     [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
@@ -122,7 +110,6 @@ movesDiagonal = map (uncurry Vector) [(-1, -1), (1, -1), (1, 1), (-1, 1)]
 vicinity :: X -> Y   -- ^ limit the search to this area
          -> Point    -- ^ position to find neighbours of
          -> [Point]
-{-# INLINE vicinity #-}
 vicinity lxsize lysize p =
   if inside p (1, 1, lxsize - 2, lysize - 2)
   then vicinityUnsafe p
@@ -131,23 +118,20 @@ vicinity lxsize lysize p =
              , inside res (0, 0, lxsize - 1, lysize - 1) ]
 
 vicinityUnsafe :: Point -> [Point]
-{-# INLINE vicinityUnsafe #-}
-vicinityUnsafe p =
-  [ res | dxy <- moves
-        , let res = shift p dxy ]
+{-# INLINABLE vicinityUnsafe #-}
+vicinityUnsafe p = [ shift p dxy | dxy <- moves ]
 
 -- | All (4 at most) cardinal direction neighbours of a point within an area.
 vicinityCardinal :: X -> Y   -- ^ limit the search to this area
                  -> Point    -- ^ position to find neighbours of
                  -> [Point]
-{-# INLINE vicinityCardinal #-}
 vicinityCardinal lxsize lysize p =
   [ res | dxy <- movesCardinal
         , let res = shift p dxy
         , inside res (0, 0, lxsize - 1, lysize - 1) ]
 
 squareUnsafeSet :: Point -> ES.EnumSet Point
-{-# INLINE squareUnsafeSet #-}
+{-# INLINABLE squareUnsafeSet #-}
 squareUnsafeSet (Point x y) =
   ES.fromDistinctAscList $ map (uncurry Point)
     [ (x - 1, y - 1)
@@ -167,7 +151,6 @@ shift (Point x0 y0) (Vector x1 y1) = Point (x0 + x1) (y0 + y1)
 
 -- | Translate a point by a vector, but only if the result fits in an area.
 shiftBounded :: X -> Y -> Point -> Vector -> Point
-{-# INLINE shiftBounded #-}
 shiftBounded lxsize lysize pos v@(Vector xv yv) =
   if inside pos (-xv, -yv, lxsize - xv - 1, lysize - yv - 1)
   then shift pos v
@@ -197,7 +180,6 @@ vectorToFrom (Point x0 y0) (Point x1 y1) = Vector (x0 - x1) (y0 - y1)
 
 -- | A list of vectors between a list of points.
 pathToTrajectory :: [Point] -> [Vector]
-{-# INLINE pathToTrajectory #-}
 pathToTrajectory [] = []
 pathToTrajectory lp1@(_ : lp2) = zipWith vectorToFrom lp2 lp1
 

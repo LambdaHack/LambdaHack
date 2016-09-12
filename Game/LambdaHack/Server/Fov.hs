@@ -37,6 +37,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Int (Int64)
+import GHC.Exts (inline)
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -342,7 +343,7 @@ fullscan :: FovClear  -- ^ the array with clear points
 fullscan FovClear{fovClear} radius spectatorPos =
   if | radius <= 0 -> ES.empty
      | radius == 1 -> ES.singleton spectatorPos
-     | radius == 2 -> squareUnsafeSet spectatorPos
+     | radius == 2 -> inline squareUnsafeSet spectatorPos
      | otherwise ->
          mapTr (\B{..} -> trV   bx  (-by))  -- quadrant I
        $ mapTr (\B{..} -> trV   by    bx)   -- II (we rotate counter-clockwise)

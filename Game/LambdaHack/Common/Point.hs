@@ -50,10 +50,12 @@ instance NFData Point
 -- Consequently, one can use EM.fromAscList on @(1, 8)..(10, 8)@, but not on
 -- @(1, 7)..(10, 9)@.
 instance Enum Point where
-  {-# INLINE fromEnum #-}
-  fromEnum = fromEnumPoint
-  {-# INLINE toEnum #-}
-  toEnum = toEnumPoint
+  fromEnum (Point x y) =
+    assert (x >= 0 && y >= 0 && x <= maxLevelDim && y <= maxLevelDim
+            `blame` "invalid point coordinates"
+            `twith` (x, y))
+    $ x + unsafeShiftL y maxLevelDimExponent
+  toEnum n = Point (n .&. maxLevelDim) (unsafeShiftR n maxLevelDimExponent)
 
 -- | The maximum number of bits for level X and Y dimension (16).
 -- The value is chosen to support architectures with 32-bit Ints.
@@ -67,27 +69,12 @@ maxLevelDim :: Int
 {-# INLINE maxLevelDim #-}
 maxLevelDim = 2 ^ maxLevelDimExponent - 1
 
-fromEnumPoint :: Point -> Int
-{-# INLINE fromEnumPoint #-}
-fromEnumPoint (Point x y) =
-  assert (x >= 0 && y >= 0 && x <= maxLevelDim && y <= maxLevelDim
-          `blame` "invalid point coordinates"
-          `twith` (x, y))
-  $ x + unsafeShiftL y maxLevelDimExponent
-
-toEnumPoint :: Int -> Point
-{-# INLINE toEnumPoint #-}
-toEnumPoint n =
-  Point (n .&. maxLevelDim) (unsafeShiftR n maxLevelDimExponent)
-
 -- | The distance between two points in the chessboard metric.
 chessDist :: Point -> Point -> Int
-{-# INLINE chessDist #-}
 chessDist (Point x0 y0) (Point x1 y1) = max (abs (x1 - x0)) (abs (y1 - y0))
 
 -- | Squared euclidean distance between two points.
 euclidDistSq :: Point -> Point -> Int
-{-# INLINE euclidDistSq #-}
 euclidDistSq (Point x0 y0) (Point x1 y1) =
   let square n = n ^ (2 :: Int)
   in square (x1 - x0) + square (y1 - y0)
@@ -100,7 +87,6 @@ adjacent s t = chessDist s t == 1
 
 -- | Checks that a point belongs to an area.
 inside :: Point -> (X, Y, X, Y) -> Bool
-{-# INLINE inside #-}
 inside (Point x y) (x0, y0, x1, y1) = x1 >= x && x >= x0 && y1 >= y && y >= y0
 
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@
