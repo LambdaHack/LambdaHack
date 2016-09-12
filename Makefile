@@ -76,13 +76,13 @@ nodeBench: nodeBenchBattle nodeBenchCampaign
 
 test-travis-short: test-short
 
-test-travis-medium: test-short test-medium
+test-travis-medium: test-short test-medium benchNull
 
-test-travis-medium-no-safari: test-short test-medium-no-safari
+test-travis-medium-no-safari: test-short test-medium-no-safari benchNull
 
-test-travis-long: test-short test-long
+test-travis-long: test-short test-long benchNull
 
-test-travis-long-no-safari: test-short test-long-no-safari
+test-travis-long-no-safari: test-short test-long-no-safari benchNull
 
 test: test-short test-medium test-long benchNull
 
