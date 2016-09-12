@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 -- | Semantics of client commands.
 module Game.LambdaHack.Client.HandleResponseM
-  ( handleResponseAI, handleSelfAI, handleResponseUI, handleSelfUI
+  ( handleResponseAI, handleResponseUI
   ) where
 
 import Prelude ()
@@ -10,7 +10,6 @@ import Game.LambdaHack.Common.Prelude
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.AI
-import Game.LambdaHack.Client.HandleAtomicM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.ProtocolM
 import Game.LambdaHack.Client.State
@@ -37,16 +36,6 @@ handleResponseAI cmd = case cmd of
     cmdC <- nonLeaderQueryAI aid
     sendRequest cmdC
 
-handleSelfAI :: ( MonadClientSetup m
-                , MonadAtomic m )
-             => UpdAtomic -> m ()
-{-# INLINE handleSelfAI #-}
-handleSelfAI cmdA = do
-  cmds <- cmdAtomicFilterCli cmdA
-  mapM_ (\c -> cmdAtomicSemCli c
-               >> execUpdAtomic c) cmds
-  mapM_ (storeUndo . UpdAtomic) cmds
-
 handleResponseUI :: ( MonadClientSetup m
                     , MonadClientUI m
                     , MonadAtomic m
@@ -61,19 +50,3 @@ handleResponseUI cmd = case cmd of
   RespQueryUI -> do
     cmdH <- queryUI
     sendRequest cmdH
-
-handleSelfUI :: ( MonadClientSetup m
-                , MonadClientUI m
-                , MonadAtomic m )
-             => UpdAtomic -> m ()
-{-# INLINE handleSelfUI #-}
-handleSelfUI cmdA = do
-  cmds <- cmdAtomicFilterCli cmdA
-  let handle c = do
-        !oldDiscoKind <- getsClient sdiscoKind
-        !oldDiscoAspect <- getsClient sdiscoAspect
-        cmdAtomicSemCli c
-        execUpdAtomic c
-        displayRespUpdAtomicUI False oldDiscoKind oldDiscoAspect c
-  mapM_ handle cmds
-  mapM_ (storeUndo . UpdAtomic) cmds  -- TODO: only store cmdA?

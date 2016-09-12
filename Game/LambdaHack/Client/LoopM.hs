@@ -2,7 +2,7 @@
 -- | The main loop of the client, processing human and computer player
 -- moves turn by turn.
 module Game.LambdaHack.Client.LoopM
-  ( initAI, loopAI, initUI, loopUI
+  ( loopAI, loopUI
   ) where
 
 import Prelude ()
@@ -18,22 +18,12 @@ import Game.LambdaHack.Client.ProtocolM
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
-import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.ClientOptions
-import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Common.Vector
-
-initAI :: MonadClient m => DebugModeCli -> m ()
-initAI sdebugCli = do
-  modifyClient $ \cli -> cli {sdebugCli}
-  side <- getsClient sside
-  debugPossiblyPrint $ "AI client" <+> tshow side <+> "initializing."
 
 -- | The main game loop for an AI client.
 loopAI :: ( MonadClientSetup m
@@ -77,19 +67,6 @@ loopAI sdebugCli = do
     handleResponseAI cmd
     quit <- getsClient squit
     unless quit loop
-
-initUI :: MonadClientUI m => KeyKind -> Config -> DebugModeCli -> m ()
-initUI copsClient sconfig sdebugCli = do
-  modifyClient $ \cli ->
-    cli { sxhair = TVector $ Vector 1 1  -- a step south-east, less alarming
-        , sdebugCli }
-  side <- getsClient sside
-  debugPossiblyPrint $ "UI client" <+> tshow side <+> "initializing."
-  -- Start the frontend.
-  schanF <- chanFrontend sdebugCli
-  let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
-      sess = emptySessionUI sconfig
-  putSession sess {schanF, sbinding}
 
 -- | The main game loop for a UI client.
 loopUI :: ( MonadClientSetup m

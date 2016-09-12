@@ -64,12 +64,11 @@ loopSer :: (MonadAtomic m, MonadServerReadRequest m)
         -> (Kind.COps -> FactionId -> ChanServer ResponseAI RequestAI -> IO ())
              -- ^ the code to run for AI clients
         -> m ()
+{-# INLINE loopSer #-}
 loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
   -- Recover states and launch clients.
   cops <- getsState scops
-  let useTreadsForNewClients = False
-      updConn = updateConn useTreadsForNewClients
-                           cops copsClient sconfig sdebugCli
+  let updConn = updateConn cops copsClient sconfig sdebugCli
                            executorUI executorAI
   restored <- tryRestore cops sdebug
   case restored of
@@ -77,8 +76,10 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
       -- First, set the previous cops, to send consistent info to clients.
       execUpdAtomic $ UpdResumeServer $ updateCOps (const cops) sRaw
       putDict dict
-      unless useTreadsForNewClients $  -- avoid duplicated computation
-        updateCopsDict copsClient sconfig sdebugCli
+#ifndef CLIENTS_AS_THREADS
+      -- Avoid duplicated computation, if we do threaded clients.
+      updateCopsDict copsClient sconfig sdebugCli
+#endif
       putServer ser
       modifyServer $ \ser2 -> ser2 {sdebugNxt = sdebug}
       applyDebug

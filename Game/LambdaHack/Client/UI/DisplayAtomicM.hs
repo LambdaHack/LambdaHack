@@ -64,6 +64,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 displayRespUpdAtomicUI :: MonadClientUI m
                        => Bool -> DiscoveryKind -> DiscoveryAspect -> UpdAtomic
                        -> m ()
+{-# INLINE displayRespUpdAtomicUI #-}
 displayRespUpdAtomicUI verbose oldDiscoKind oldDiscoAspect cmd = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid body _ -> createActorUI True aid body

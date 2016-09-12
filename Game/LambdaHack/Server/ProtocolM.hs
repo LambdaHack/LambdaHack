@@ -33,14 +33,12 @@ import Control.Concurrent.Async
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM, mapWithKeyM_)
-import Game.LambdaHack.Common.Thread
 import System.FilePath
 import System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.AI
-import Game.LambdaHack.Client.HandleResponseM
-import Game.LambdaHack.Client.LoopM
+import Game.LambdaHack.Client.ProtocolM
 import Game.LambdaHack.Client.State hiding (sdebugCli)
 import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Client.UI.Config
@@ -64,6 +62,10 @@ import Game.LambdaHack.Server.DebugM
 import Game.LambdaHack.Server.FileM
 import Game.LambdaHack.Server.MonadServer hiding (liftIO)
 import Game.LambdaHack.Server.State
+
+#ifdef CLIENTS_AS_THREADS
+import Game.LambdaHack.Common.Thread
+#endif
 
 type CliSerQueue = MVar
 
@@ -278,8 +280,7 @@ childrenServer = unsafePerformIO (newMVar [])
 -- Connect to clients in old or newly spawned threads
 -- that read and write directly to the channels.
 updateConn :: (MonadAtomic m, MonadServerReadRequest m)
-           => Bool
-           -> Kind.COps
+           => Kind.COps
            -> KeyKind -> Config -> DebugModeCli
            -> (SessionUI -> Kind.COps -> FactionId
                -> ChanServer ResponseUI RequestUI
@@ -289,12 +290,12 @@ updateConn :: (MonadAtomic m, MonadServerReadRequest m)
                -> IO ())
            -> m ()
 {-# INLINE updateConn #-}
-updateConn useTreadsForNewClients cops copsClient sconfig sdebugCli
-           executorUI executorAI = do
+updateConn cops copsClient sconfig sdebugCli
+           _executorUI _executorAI = do
   -- Prepare connections based on factions.
   oldD <- getDict
-  let mkChanServer :: IO (ChanServer resp req)
-      mkChanServer = do
+  let _mkChanServer :: IO (ChanServer resp req)
+      _mkChanServer = do
         responseS <- newQueue
         requestS <- newQueue
         return $! ChanServer{..}
@@ -308,37 +309,40 @@ updateConn useTreadsForNewClients cops copsClient sconfig sdebugCli
       addConn :: FactionId -> Faction -> IO FrozenClient
       addConn fid fact = case EM.lookup fid oldD of
         Just conns -> return conns  -- share old conns and threads
-        Nothing | fhasUI $ gplayer fact ->
-          if useTreadsForNewClients then do
-            connS <- mkChanServer
-            connAI <- mkChanServer
-            return $! FThread (Just connS) connAI
-          else do
-            CliState s cli sess <- initStateUI fid
-            return $! FState (Just sess) s cli
-        Nothing ->
-          if useTreadsForNewClients then do
-            connAI <- mkChanServer
-            return $! FThread Nothing connAI
-          else do
-            CliState s cli () <- initStateAI fid
-            return $! FState Nothing s cli
+        Nothing | fhasUI $ gplayer fact -> do
+#ifdef CLIENTS_AS_THREADS
+          connS <- _mkChanServer
+          connAI <- _mkChanServer
+          return $! FThread (Just connS) connAI
+#else
+          CliState s cli sess <- initStateUI fid
+          return $! FState (Just sess) s cli
+#endif
+        Nothing -> do
+#ifdef CLIENTS_AS_THREADS
+          connAI <- _mkChanServer
+          return $! FThread Nothing connAI
+#else
+          CliState s cli () <- initStateAI fid
+          return $! FState Nothing s cli
+#endif
   factionD <- getsState sfactionD
   d <- liftIO $ mapWithKeyM addConn factionD
   let newD = d `EM.union` oldD  -- never kill old clients
   putDict newD
-  when useTreadsForNewClients $ do
-    -- Spawn client threads.
-    let toSpawn = newD EM.\\ oldD
-        forkUI fid connS =
-          forkChild childrenServer $ executorUI cliSession cops fid connS
-        forkAI fid connS =
-          forkChild childrenServer $ executorAI cops fid connS
-        forkClient fid (FThread mconnUI connAI) = do
-          -- When a connection is reused, clients are not respawned,
-          -- even if UI usage changes, but it works OK thanks to UI faction
-          -- clients distinguished by positive FactionId numbers.
-          forkAI fid connAI  -- AI clients always needed, e.g., for auto-explore
-          maybe (return ()) (forkUI fid) mconnUI
-        forkClient _ FState{} = return ()
-    liftIO $ mapWithKeyM_ forkClient toSpawn
+#ifdef CLIENTS_AS_THREADS
+  -- Spawn client threads.
+  let toSpawn = newD EM.\\ oldD
+      forkUI fid connS =
+        forkChild childrenServer $ _executorUI cliSession cops fid connS
+      forkAI fid connS =
+        forkChild childrenServer $ _executorAI cops fid connS
+      forkClient fid (FThread mconnUI connAI) = do
+        -- When a connection is reused, clients are not respawned,
+        -- even if UI usage changes, but it works OK thanks to UI faction
+        -- clients distinguished by positive FactionId numbers.
+        forkAI fid connAI  -- AI clients always needed, e.g., for auto-explore
+        maybe (return ()) (forkUI fid) mconnUI
+      forkClient _ FState{} = return ()
+  liftIO $ mapWithKeyM_ forkClient toSpawn
+#endif

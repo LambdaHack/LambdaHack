@@ -15,11 +15,8 @@ import qualified Content.ModeKind
 import qualified Content.PlaceKind
 import qualified Content.RuleKind
 import qualified Content.TileKind
-import Game.LambdaHack.SampleImplementation.SampleMonadClientAsThread (executorCliAsThread)
 import Game.LambdaHack.SampleImplementation.SampleMonadServer (executorSer)
 
-import Game.LambdaHack.Client
-import Game.LambdaHack.Client.UI.Config
 import qualified Game.LambdaHack.Common.Kind as Kind
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Server
@@ -36,7 +33,7 @@ import Game.LambdaHack.Server.State
 tieKnot :: [String] -> IO ()
 tieKnot args = do
   -- Options for the next game taken from the commandline.
-  sdebugNxt@DebugModeSer{sallClear, sdebugCli} <- debugArgs args
+  sdebugNxt@DebugModeSer{sallClear} <- debugArgs args
   let -- Common content operations, created from content definitions.
       -- Evaluated fully to discover errors ASAP and free memory.
       cotile = Kind.createOps Content.TileKind.cdefs
@@ -53,18 +50,6 @@ tieKnot args = do
       -- Client content operations containing default keypresses
       -- and command descriptions.
       !copsClient = Content.KeyKind.standardKeys
-  -- Parsed UI client configuration file.
-  -- It is reloaded at each game executable start.
-  sconfig <- mkConfig cops sdebugCli
-  -- Options for the clients modified with the configuration file.
-  -- The client debug inside server debug only holds the client commandline
-  -- options and is never updated with config options, etc.
-  let sdebugMode = applyConfigToDebug cops sconfig sdebugCli
-      -- Partially applied main loops of the clients.
-      exeClientAI = executorCliAsThread True (loopAI sdebugMode) ()
-      exeClientUI = executorCliAsThread False
-                    $ loopUI copsClient sconfig sdebugMode
   -- Wire together game content, the main loops of game clients
   -- and the game server loop.
-  executorSer cops $ loopSer sdebugNxt copsClient sconfig sdebugMode
-                             exeClientUI exeClientAI
+  executorSer cops copsClient sdebugNxt

@@ -87,6 +87,11 @@ flag with_expensive_assertions
   default:            False
   manual:             True
 
+flag clients_as_threads
+  description:        runs each client in a separate thread
+  default:            False
+  manual:             True
+
 flag release
   description:        prepare for a release (expose internal functions and types, etc.)
   default:            False
@@ -291,6 +296,9 @@ library
 
   if flag(with_expensive_assertions)
     cpp-options:      -DWITH_EXPENSIVE_ASSERTIONS
+
+  if flag(clients_as_threads)
+    cpp-options:      -DCLIENTS_AS_THREADS
 
   if flag(release) {
     cpp-options:      -DEXPOSE_INTERNAL

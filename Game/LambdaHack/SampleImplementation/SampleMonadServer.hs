@@ -26,17 +26,25 @@ import Game.LambdaHack.Atomic.BroadcastAtomicWrite
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Atomic.MonadStateWrite
+import Game.LambdaHack.Client.UI.Config
+import Game.LambdaHack.Client.UI.Content.KeyKind
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Thread
+import Game.LambdaHack.Server
 import Game.LambdaHack.Server.CommonM
 import Game.LambdaHack.Server.FileM
 import Game.LambdaHack.Server.HandleAtomicM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolM
 import Game.LambdaHack.Server.State
+
+#ifdef CLIENTS_AS_THREADS
+import Game.LambdaHack.Client
+import Game.LambdaHack.SampleImplementation.SampleMonadClientAsThread (executorCliAsThread)
+#endif
 
 data SerState = SerState
   { serState  :: !State           -- ^ current global state
@@ -107,10 +115,30 @@ handleAndBroadcastServer atomic = do
   handleAndBroadcast knowEvents sperFidOld checkSetPerValid recomputeCachePer
                      sendUpdate sendSfx atomic
 
+-- Don't inline this, to keep GHC hard work inside the library.
 -- | Run an action in the @IO@ monad, with undefined state.
-executorSer :: Kind.COps -> SerImplementation () -> IO ()
-{-# INLINE executorSer #-}
-executorSer cops m = do
+executorSer :: Kind.COps -> KeyKind -> DebugModeSer -> IO ()
+executorSer cops copsClient sdebugNxt@DebugModeSer{sdebugCli} = do
+  -- Parse UI client configuration file.
+  -- It is reloaded at each game executable start.
+  sconfig <- mkConfig cops sdebugCli
+  -- Options for the clients modified with the configuration file.
+  -- The client debug inside server debug only holds the client commandline
+  -- options and is never updated with config options, etc.
+  let sdebugMode = applyConfigToDebug cops sconfig sdebugCli
+      -- Partially applied main loops of the clients.
+#ifdef CLIENTS_AS_THREADS
+      exeClientAI = executorCliAsThread True (loopAI sdebugMode) ()
+      exeClientUI = executorCliAsThread False
+                    $ loopUI copsClient sconfig sdebugMode
+#else
+      exeClientAI = undefined
+      exeClientUI = undefined
+#endif
+  -- Wire together game content, the main loops of game clients
+  -- and the game server loop.
+  let m = loopSer sdebugNxt copsClient sconfig sdebugMode
+          exeClientUI exeClientAI
   let saveFile (_, ser, _) = ssavePrefixSer (sdebugSer ser) <.> saveName
       totalState serToSave = SerState
         { serState = emptyState cops
