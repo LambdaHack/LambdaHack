@@ -16,7 +16,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Control.Monad.Trans.State.Lazy as St
+import qualified Control.Monad.Trans.State.Strict as St
 import Data.Ratio
 import qualified System.Random as R
 
@@ -30,10 +30,12 @@ type Rnd a = St.State R.StdGen a
 
 -- | Get a random object within a range with a uniform distribution.
 randomR :: (R.Random a) => (a, a) -> Rnd a
-randomR range = St.state $ R.randomR range
+{-# INLINE randomR #-}
+randomR = St.state . R.randomR
 
 -- | Get a random object of a given type with a uniform distribution.
 random :: (R.Random a) => Rnd a
+{-# INLINE random #-}
 random = St.state R.random
 
 -- | Get any element of a list with equal probability.
@@ -45,7 +47,8 @@ oneOf xs = do
 
 -- | Gen an element according to a frequency distribution.
 frequency :: Show a => Frequency a -> Rnd a
-frequency fr = St.state $ rollFreq fr
+{-# INLINE frequency #-}
+frequency = St.state . rollFreq
 
 -- | Randomly choose an item according to the distribution.
 rollFreq :: Show a => Frequency a -> R.StdGen -> (a, R.StdGen)

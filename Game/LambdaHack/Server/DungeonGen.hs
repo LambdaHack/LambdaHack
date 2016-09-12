@@ -11,7 +11,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Control.Monad.Trans.State.Lazy as St
+import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
 import qualified System.Random as R

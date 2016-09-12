@@ -16,7 +16,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Control.Monad.Trans.State.Lazy as St
+import qualified Control.Monad.Trans.State.Strict as St
 import Data.Binary
 import qualified Data.Text.IO as T
 import System.Directory

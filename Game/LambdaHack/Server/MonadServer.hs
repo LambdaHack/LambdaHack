@@ -18,7 +18,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Control.Exception as Ex hiding (handle)
-import qualified Control.Monad.Trans.State.Lazy as St
+import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
