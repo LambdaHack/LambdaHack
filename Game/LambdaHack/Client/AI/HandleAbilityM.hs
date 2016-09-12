@@ -917,12 +917,15 @@ moveTowards aid source target goal relaxed = do
   if noFriends target && enterableHere target then
     return $! returN "moveTowards adjacent" $ target `vectorToFrom` source
   else do
+    -- TODO: this is slow, but optimize only after AI tactics overhauled
     let goesBack v = maybe False (\oldpos -> v == oldpos `vectorToFrom` source)
                            (boldpos b)
         nonincreasing p = chessDist source goal >= chessDist p goal
-        isSensible p = (relaxed || nonincreasing p)
-                       && noFriends p
-                       && enterableHere p
+        isSensible | relaxed = \p -> noFriends p
+                                     && enterableHere p
+                   | otherwise = \p -> nonincreasing p
+                                       && noFriends p
+                                       && enterableHere p
         sensible = [ ((goesBack v, chessDist p goal), v)
                    | v <- moves, let p = source `shift` v, isSensible p ]
         sorted = sortBy (comparing fst) sensible
