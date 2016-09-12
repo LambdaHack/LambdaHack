@@ -29,6 +29,7 @@ import Game.LambdaHack.Server.State
 endOrLoop :: (MonadAtomic m, MonadServer m)
           => m () -> (Maybe (GroupName ModeKind) -> m ()) -> m () -> m ()
           -> m ()
+{-# INLINE endOrLoop #-}
 endOrLoop loop restart gameExit gameSave = do
   factionD <- getsState sfactionD
   let inGame fact = case gquit fact of
