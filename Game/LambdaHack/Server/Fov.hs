@@ -351,10 +351,13 @@ fullscan FovClear{fovClear} radius spectatorPos =
        $ mapTr (\B{..} -> trV (-by) (-bx))  -- IV
        $ ES.singleton spectatorPos
  where
+  scanTr :: (Bump -> Point) -> [Bump]
+  {-# NOINLINE scanTr #-}
+  scanTr tr = scan (radius - 1) (isCl . tr)
+
   mapTr :: (Bump -> Point) -> ES.EnumSet Point -> ES.EnumSet Point
   {-# INLINE mapTr #-}
-  mapTr tr es1 =
-    foldl' (flip $ ES.insert . tr) es1 $ scan (radius - 1) (isCl . tr)
+  mapTr tr es1 = foldl' (flip $ ES.insert . tr) es1 $ scanTr tr
 
   isCl :: Point -> Bool
   {-# INLINE isCl #-}

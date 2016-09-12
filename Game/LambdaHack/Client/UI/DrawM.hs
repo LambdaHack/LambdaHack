@@ -211,7 +211,7 @@ drawFrameBody dm drawnLevelId = do
               | smarkVision && ES.member p0 totVisible ->
                 ac {Color.acAttr = (Color.acAttr ac) {Color.bg = Color.Blue}}
               | otherwise -> ac
-  -- The engine that puts it all together.
+  -- The engine that puts it all together. The inline really helps.
   let fOverlay :: (Point -> Color.AttrChar -> Color.AttrChar) -> Overlay
       {-# INLINE fOverlay #-}
       fOverlay f =
