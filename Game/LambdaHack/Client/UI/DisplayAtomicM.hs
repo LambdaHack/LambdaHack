@@ -709,6 +709,7 @@ discover c oldDiscoKind oldDiscoAspect iid = do
 
 -- | Display special effects (text, animation) sent to the client.
 displayRespSfxAtomicUI :: MonadClientUI m => Bool -> SfxAtomic -> m ()
+{-# INLINE displayRespSfxAtomicUI #-}
 displayRespSfxAtomicUI verbose sfx = case sfx of
   SfxStrike source target iid cstore b -> strike source target iid cstore b
   SfxRecoil source target _ _ _ -> do

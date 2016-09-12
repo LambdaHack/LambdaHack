@@ -40,6 +40,7 @@ handleResponseAI cmd = case cmd of
 handleSelfAI :: ( MonadClientSetup m
                 , MonadAtomic m )
              => UpdAtomic -> m ()
+{-# INLINE handleSelfAI #-}
 handleSelfAI cmdA = do
   cmds <- cmdAtomicFilterCli cmdA
   mapM_ (\c -> cmdAtomicSemCli c
@@ -65,6 +66,7 @@ handleSelfUI :: ( MonadClientSetup m
                 , MonadClientUI m
                 , MonadAtomic m )
              => UpdAtomic -> m ()
+{-# INLINE handleSelfUI #-}
 handleSelfUI cmdA = do
   cmds <- cmdAtomicFilterCli cmdA
   let handle c = do

@@ -5,7 +5,7 @@
 -- This module should not be imported anywhere except in 'Action'
 -- to expose the executor to any code using the library.
 module Game.LambdaHack.SampleImplementation.SampleMonadClient
-  ( executorCli, runCli, CliState(..), initialCliState
+  ( runCli, CliState(..), initialCliState
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , CliImplementation
@@ -110,15 +110,6 @@ initialCliState cops cliSession fid =
     , cliSession
     }
 
--- | Init the client, then run an action, with a given session,
--- state and history, in the @IO@ monad.
-executorCli :: Kind.COps
-            -> sess
-            -> CliImplementation sess ()
-            -> FactionId
-            -> IO ()
-executorCli cops cliSession m fid =
-  evalStateT (runCliImplementation m) $ initialCliState cops cliSession fid
-
 runCli :: CliImplementation sess a -> CliState sess -> IO (a, CliState sess)
+{-# INLINE runCli #-}
 runCli m = runStateT (runCliImplementation m)

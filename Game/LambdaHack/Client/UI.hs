@@ -55,6 +55,7 @@ import Game.LambdaHack.Content.ModeKind
 
 -- | Handle the move of a UI player.
 queryUI :: MonadClientUI m => m RequestUI
+{-# INLINE queryUI #-}
 queryUI = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD

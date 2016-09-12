@@ -32,6 +32,7 @@ import Game.LambdaHack.Common.State
 
 -- | Handle the move of an AI player.
 queryAI :: MonadClient m => m RequestAI
+{-# INLINE queryAI #-}
 queryAI = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -44,6 +45,7 @@ queryAI = do
     else return (req, Nothing)
 
 nonLeaderQueryAI :: MonadClient m => ActorId -> m RequestAI
+{-# INLINE nonLeaderQueryAI #-}
 nonLeaderQueryAI oldAid = do
   mleader <- getsClient _sleader
   let !_A = assert (mleader /= Just oldAid) ()

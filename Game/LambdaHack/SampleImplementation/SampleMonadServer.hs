@@ -109,6 +109,7 @@ handleAndBroadcastServer atomic = do
 
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: Kind.COps -> SerImplementation () -> IO ()
+{-# INLINE executorSer #-}
 executorSer cops m = do
   let saveFile (_, ser, _) = ssavePrefixSer (sdebugSer ser) <.> saveName
       totalState serToSave = SerState

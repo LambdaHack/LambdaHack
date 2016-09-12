@@ -38,6 +38,7 @@ import Game.LambdaHack.Content.ModeKind
 pickActorToMove :: MonadClient m
                 => ((ActorId, Actor) -> m TgtAndPath)
                 -> m (ActorId, Actor)
+{-# INLINE pickActorToMove #-}
 pickActorToMove refreshTarget = do
   Kind.COps{cotile} <- getsState scops
   actorAspect <- getsClient sactorAspect
@@ -239,6 +240,7 @@ useTactics :: MonadClient m
            => ((ActorId, Actor) -> m TgtAndPath)
            -> ActorId
            -> m ()
+{-# INLINE useTactics #-}
 useTactics refreshTarget oldAid = do
   mleader <- getsClient _sleader
   let !_A = assert (mleader /= Just oldAid) ()
