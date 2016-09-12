@@ -130,14 +130,8 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
         return $! EM.unions (map (digCorridors pickedCorTile) cs)
   lcorridors <- lcorridorsFun lgrid
   let doorMapFun lpl lcor = do
-        -- The hacks below are instead of unionWithKeyM, which is costly.
-        let mergeCor _ pl cor =
-              let hidden = Tile.hideAs cotile pl
-              in if hidden == pl then Nothing  -- boring tile, can't hide doors
-                                 else Just (hidden, cor)
-            intersectionWithKeyMaybe combine =
-              EM.mergeWithKey combine (const EM.empty) (const EM.empty)
-            interCor = intersectionWithKeyMaybe mergeCor lpl lcor  -- fast
+        let mergeCor pl cor = (Tile.hideAs cotile pl, cor)
+            interCor = EM.intersectionWith mergeCor lpl lcor  -- fast
         mapWithKeyM (pickOpening cops kc lplaces litCorTile)
                     interCor  -- very small
   doorMap <- doorMapFun lplaces lcorridors
@@ -170,11 +164,13 @@ pickOpening Kind.COps{cotile, coTileSpeedup}
   -- and doors have a certain chance to be open.
   rd <- chance cdoorChance
   if rd then do  -- door created
-    ro <- chance copenChance
     doorClosedId <- Tile.revealAs cotile hidden
-    if ro then Tile.openTo cotile doorClosedId
-          else return $! doorClosedId
-  else do  -- opening kept
+    ro <- chance copenChance
+    door <- if ro then Tile.openTo cotile doorClosedId
+            else return $! doorClosedId
+    -- In case the tile cannot hide a door, fallback to lit corridor.
+    return $! if Tile.isDoor coTileSpeedup door then door else litCorTile
+  else do  -- opening kept; we assume corridors are walkable
     if Tile.isLit coTileSpeedup cor then return cor
     else do
       -- If any cardinally adjacent room tile lit, make the opening lit.
