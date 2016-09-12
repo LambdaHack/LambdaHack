@@ -100,14 +100,7 @@ bagAssocsK s bag =
 
 posToAidsLvl :: Point -> Level -> [ActorId]
 {-# INLINE posToAidsLvl #-}
-posToAidsLvl pos lvl =
-  let l = EM.findWithDefault [] pos $ lactor lvl
-  in
-#ifdef WITH_EXPENSIVE_ASSERTIONS
-     assert (length l <= 1 || all (bproj . snd) l
-             `blame` "many actors at the same position" `twith` l)
-#endif
-    l
+posToAidsLvl pos lvl = EM.findWithDefault [] pos $ lactor lvl
 
 posToAids :: Point -> LevelId -> State -> [ActorId]
 posToAids pos lid s = posToAidsLvl pos $ sdungeon s EM.! lid
