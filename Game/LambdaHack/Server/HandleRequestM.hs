@@ -359,13 +359,12 @@ reqAlter source tpos mfeat = do
             TK.ChangeTo tgroup -> Just tgroup
             _ -> Nothing
         groupsToAlterTo = mapMaybe toAlter feats
-    as <- getsState $ actorList (const True) lid
     if null groupsToAlterTo && serverTile == freshClientTile then
       -- Neither searching nor altering possible; silly client.
       execFailure source req AlterNothing
     else
       if EM.notMember tpos $ lfloor lvl then
-        if unoccupied as tpos then do
+        if null (posToAidsLvl tpos lvl) then do
           when (serverTile /= freshClientTile) $
             -- Search, in case some actors (of other factions?)
             -- don't know this tile.

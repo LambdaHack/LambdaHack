@@ -801,7 +801,6 @@ alterTile ts dir = do
   b <- getsState $ getActorBody leader
   actorSk <- actorSkillsClient leader
   lvl <- getLevel $ blid b
-  as <- getsState $ actorList (const True) (blid b)
   let alterSkill = EM.findWithDefault 0 AbAlter actorSk
       tpos = bpos b `shift` dir
       t = lvl `at` tpos
@@ -816,7 +815,7 @@ alterTile ts dir = do
     [] -> failWith $ guessAlter cops alterFeats t
     feat : _ ->
       if EM.notMember tpos $ lfloor lvl then
-        if unoccupied as tpos then do
+        if null (posToAidsLvl tpos lvl) then do
           msgAdd msg
           return $ Right $ ReqAlter tpos $ Just feat
         else failSer AlterBlockActor

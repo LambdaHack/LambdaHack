@@ -181,15 +181,15 @@ instance Hashable Tactic
 -- Data.Binary
 
 instance (Enum k, Binary k, Binary e) => Binary (EM.EnumMap k e) where
-  {-# INLINEABLE put #-}
+  {-# INLINABLE put #-}
   put m = put (EM.size m) >> mapM_ put (EM.toAscList m)
-  {-# INLINEABLE get #-}
+  {-# INLINABLE get #-}
   get = liftM EM.fromDistinctAscList get
 
 instance (Enum k, Binary k) => Binary (ES.EnumSet k) where
-  {-# INLINEABLE put #-}
+  {-# INLINABLE put #-}
   put m = put (ES.size m) >> mapM_ put (ES.toAscList m)
-  {-# INLINEABLE get #-}
+  {-# INLINABLE get #-}
   get = liftM ES.fromDistinctAscList get
 
 -- Data.Key
@@ -213,7 +213,7 @@ instance Enum k => FoldableWithKey (EM.EnumMap k) where
   foldrWithKey = EM.foldrWithKey
 
 instance Enum k => TraversableWithKey (EM.EnumMap k) where
-  {-# INLINEABLE traverseWithKey #-}
+  {-# INLINABLE traverseWithKey #-}
   traverseWithKey f = fmap EM.fromDistinctAscList
                       . traverse (\(k, v) -> (,) k <$> f k v) . EM.toAscList
 
@@ -232,7 +232,7 @@ instance Enum k => Adjustable (EM.EnumMap k) where
 -- Data.Hashable
 
 instance (Enum k, Hashable k, Hashable e) => Hashable (EM.EnumMap k e) where
-  {-# INLINEABLE hashWithSalt #-}
+  {-# INLINABLE hashWithSalt #-}
   hashWithSalt s x = hashWithSalt s (EM.toAscList x)
 
 -- Control.DeepSeq

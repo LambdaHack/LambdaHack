@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Actor
     -- * The@ Acto@r type
   , Actor(..), ResDelta(..), ActorAspect
   , deltaSerious, deltaMild, xM, minusM, minusTwoM, oneM
-  , bspeed, actorTemplate, braced, waitedLastTurn, actorDying, unoccupied
+  , bspeed, actorTemplate, braced, waitedLastTurn, actorDying
   , hpTooLow, hpHuge, calmEnough, hpEnough
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
@@ -183,11 +183,6 @@ hpEnough :: Actor -> AspectRecord -> Bool
 hpEnough b AspectRecord{aMaxHP} =
   let hpMax = max 1 aMaxHP
   in xM hpMax <= 3 * bhp b && bhp b >= xM 10
-
--- | Checks for the presence of actors in a position.
--- Does not check if the tile is walkable.
-unoccupied :: [Actor] -> Point -> Bool
-unoccupied actors pos = all (\b -> bpos b /= pos) actors
 
 -- | How long until an actor's smell vanishes from a tile.
 smellTimeout :: Delta Time

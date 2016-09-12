@@ -106,9 +106,8 @@ rollSpawnPos :: Kind.COps -> ES.EnumSet Point
              -> Bool -> LevelId -> Level -> Faction -> State
              -> Rnd Point
 rollSpawnPos Kind.COps{cotile, coTileSpeedup} visible
-             mobile lid Level{ltile, lxsize, lysize} fact s = do
+             mobile lid lvl@Level{ltile, lxsize, lysize} fact s = do
   let inhabitants = actorRegularList (isAtWar fact) lid s
-      as = actorList (const True) lid s
       distantSo df p _ =
         all (\b -> df $ chessDist (bpos b) p) inhabitants
       middlePos = Point (lxsize `div` 2) (lysize `div` 2)
@@ -130,7 +129,7 @@ rollSpawnPos Kind.COps{cotile, coTileSpeedup} visible
   findPosTry (if mobile then 500 else 100) ltile
     ( \p t -> Tile.isWalkable coTileSpeedup t
               && not (Tile.hasFeature cotile TK.NoActor t)
-              && unoccupied as p)
+              && null (posToAidsLvl p lvl))
     (condList
      ++ [ distantSo (> 5)  -- otherwise actors in dark rooms are swarmed
         , distantSo (> 2)  -- otherwise actors can be hit on entering level

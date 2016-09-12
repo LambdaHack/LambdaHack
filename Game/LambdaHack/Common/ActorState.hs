@@ -122,10 +122,9 @@ nearbyFreePoints :: Int
                  -> [Point]
 nearbyFreePoints ntries f start lid s =
   let lvl@Level{lxsize, lysize} = sdungeon s EM.! lid
-      as = filter (\b -> blid b == lid) $ EM.elems $ sactorD s
       good p = f (lvl `at` p)
                && Tile.isWalkable (Kind.coTileSpeedup $ scops s) (lvl `at` p)
-               && unoccupied as p
+               && null (posToAidsLvl p lvl)
       ps = nub $ start : concatMap (vicinity lxsize lysize) ps
   in filter good $ take ntries ps
 

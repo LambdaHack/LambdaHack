@@ -23,6 +23,7 @@ import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 
+-- Not specialized, because no speedup, but huge JS code bloat.
 -- | Create content operations for type @a@ from definition of content
 -- of type @a@.
 createOps :: forall a. Show a => ContentDef a -> Ops a

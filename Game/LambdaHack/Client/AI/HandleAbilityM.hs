@@ -908,10 +908,10 @@ moveTowards aid source target goal relaxed = do
       !_B = assert (adjacent source target
                     `blame` (source, target, aid, b, goal)) ()
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  friends <- getsState $ actorList (not . isAtWar fact) $ blid b
   salter <- getsClient salter
+  let noF = isAtWar fact . bfid
+  noFriends <- getsState $ \s p -> all (noF . snd) $ posToAssocs p (blid b) s
   let lalter = salter EM.! blid b
-      noFriends = unoccupied friends
       -- Only actors with AbAlter can search for hidden doors, etc.
       enterableHere p = alterSkill >= fromEnum (lalter PointArray.! p)
   if noFriends target && enterableHere target then
