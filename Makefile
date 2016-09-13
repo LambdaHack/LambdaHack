@@ -1,6 +1,10 @@
 # The xc* tests assume a profiling build (for stack traces).
 # See the install-debug target below.
 
+play:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --dumpInitRngs
+
+
 install-debug:
 	cabal install --enable-profiling --ghc-options="-fprof-auto-calls"
 
@@ -10,9 +14,6 @@ configure-debug:
 xcplay:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --dumpInitRngs
 
-
-play:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --dumpInitRngs
 
 frontendCampaign:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 2 --maxFps 60 --dumpInitRngs --automateAll --gameMode campaign

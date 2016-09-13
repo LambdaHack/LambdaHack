@@ -28,7 +28,7 @@ import GHCJS.DOM.HTMLTableRowElement (HTMLTableRowElement,
 import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
                                 getKeyIdentifier, getKeyLocation, getMetaKey,
                                 getShiftKey)
-import GHCJS.DOM.Node (appendChild)
+import GHCJS.DOM.Node (appendChild, setTextContent)
 import GHCJS.DOM.RequestAnimationFrameCallback
 import GHCJS.DOM.Types (CSSStyleDeclaration, IsMouseEvent, castToHTMLDivElement)
 import GHCJS.DOM.UIEvent (getCharCode, getKeyCode, getWhich)
@@ -301,7 +301,11 @@ display DebugModeCli{scolorIsBold}
   let setChar :: (HTMLTableCellElement, Color.AttrChar) -> IO ()
       setChar (cell, Color.AttrChar{acAttr=acAttr@Color.Attr{..}, acChar}) = do
         let s = if acChar == ' ' then [chr 160] else [acChar]
-        setInnerHTML cell $ Just s
+        setTextContent cell $ Just s  -- very fast
+        -- fast: setInnerText cell $ Just s
+        -- *much* slower: setInnerHTML cell $ Just s
+        -- import GHCJS.DOM.HTMLElement (setInnerText)
+        -- doesn't work: setNodeValue cell $ Just s
         Just style <- getStyle cell
         if acAttr == Color.defAttr then do
           removeProp style "background-color"
