@@ -62,7 +62,8 @@ buildCave :: Kind.COps         -- ^ content definitions
           -> Kind.Id CaveKind  -- ^ cave kind to use for generation
           -> Rnd Cave
 buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
-                        , cocave=Kind.Ops{okind} }
+                        , cocave=Kind.Ops{okind}
+                        , coTileSpeedup }
           ldepth totalDepth dkind = do
   let kc@CaveKind{..} = okind dkind
   lgrid <- castDiceXY ldepth totalDepth cgrid
@@ -130,8 +131,13 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
         return $! EM.unions (map (digCorridors pickedCorTile) cs)
   lcorridors <- lcorridorsFun lgrid
   let doorMapFun lpl lcor = do
-        let mergeCor pl cor = (Tile.hideAs cotile pl, cor)
-            interCor = EM.intersectionWith mergeCor lpl lcor  -- fast
+        -- The hacks below are instead of unionWithKeyM, which is costly.
+        let mergeCor _ pl cor = if Tile.isWalkable coTileSpeedup pl
+                                then Nothing  -- tile already open
+                                else Just (Tile.hideAs cotile pl, cor)
+            intersectionWithKeyMaybe combine =
+              EM.mergeWithKey combine (const EM.empty) (const EM.empty)
+            interCor = intersectionWithKeyMaybe mergeCor lpl lcor  -- fast
         mapWithKeyM (pickOpening cops kc lplaces litCorTile)
                     interCor  -- very small
   doorMap <- doorMapFun lplaces lcorridors
@@ -160,28 +166,27 @@ pickOpening Kind.COps{cotile, coTileSpeedup}
             CaveKind{cxsize, cysize, cdoorChance, copenChance}
             lplaces litCorTile
             pos (hidden, cor) = do
-  -- Openings have a certain chance to be doors
-  -- and doors have a certain chance to be open.
+  let nicerCorridor =
+        if Tile.isLit coTileSpeedup cor then cor
+        else -- If any cardinally adjacent room tile lit, make the opening lit.
+             let roomTileLit p =
+                   case EM.lookup p lplaces of
+                     Nothing -> False
+                     Just tile -> Tile.isLit coTileSpeedup tile
+                 vic = vicinityCardinal cxsize cysize pos
+             in if any roomTileLit vic then litCorTile else cor
+  -- Openings have a certain chance to be doors and doors have a certain
+  -- chance to be open.
   rd <- chance cdoorChance
-  if rd then do  -- door created
+  if rd then do
     doorClosedId <- Tile.revealAs cotile hidden
-    ro <- chance copenChance
-    door <- if ro then Tile.openTo cotile doorClosedId
-            else return $! doorClosedId
-    -- In case the tile cannot hide a door, fallback to lit corridor.
-    return $! if Tile.isDoor coTileSpeedup door then door else litCorTile
-  else do  -- opening kept; we assume corridors are walkable
-    if Tile.isLit coTileSpeedup cor then return cor
-    else do
-      -- If any cardinally adjacent room tile lit, make the opening lit.
-      let roomTileLit p =
-            case EM.lookup p lplaces of
-              Nothing -> False
-              Just tile -> Tile.isLit coTileSpeedup tile
-          vic = vicinityCardinal cxsize cysize pos
-      if any roomTileLit vic
-      then return litCorTile
-      else return cor
+    -- Not all solid tiles can hide a door.
+    if Tile.isDoor coTileSpeedup doorClosedId then do  -- door created
+      ro <- chance copenChance
+      if ro then Tile.openTo cotile doorClosedId
+      else return $! doorClosedId
+    else return $! nicerCorridor
+  else return $! nicerCorridor
 
 digCorridors :: Kind.Id TileKind -> Corridor -> TileMapEM
 digCorridors tile (p1:p2:ps) =
