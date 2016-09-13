@@ -23,9 +23,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleModeKind
   , validateAll = validateAllModeKind
   , content = contentFromList
-      [campaign, raid, skirmish, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, boardgame, screensaverSafari, screensaverSkirmish]
+      [campaign, raid, skirmish, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, boardgame, screensaverSafari, screensaverRaid, screensaverSkirmish, screensaverAmbush]
   }
-campaign,        raid, skirmish, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, boardgame, screensaverSafari, screensaverSkirmish :: ModeKind
+campaign,        raid, skirmish, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, boardgame, screensaverSafari, screensaverRaid, screensaverSkirmish, screensaverAmbush :: ModeKind
 
 campaign = ModeKind
   { msymbol = 'c'
@@ -136,8 +136,7 @@ boardgame = ModeKind
   }
 
 screensaverSafari = safari
-  { mname   = "safari"
-  , mfreq   = [("starting", 1), ("no confirms", 1)]
+  { mfreq   = [("starting", 1), ("no confirms", 1)]
   , mroster = rosterSafari
       { rosterList = (head (rosterList rosterSafari))
                        -- changing leader by client needed, because of TFollow
@@ -147,13 +146,30 @@ screensaverSafari = safari
       }
   }
 
+screensaverRaid = raid
+  { mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
+  , mroster = rosterRaid
+      { rosterList = (head (rosterList rosterRaid))
+                       {fleaderMode = LeaderAI $ AutoLeader False False}
+                     : tail (rosterList rosterRaid)
+      }
+  }
+
 screensaverSkirmish = skirmish
-  { mname   = "skirmish"
-  , mfreq   = [("starting JS", 1), ("no confirms", 1)]
+  { mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
   , mroster = rosterSkirmish
       { rosterList = (head (rosterList rosterSkirmish))
                        {fleaderMode = LeaderAI $ AutoLeader False False}
                      : tail (rosterList rosterSkirmish)
+      }
+  }
+
+screensaverAmbush = ambush
+  { mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
+  , mroster = rosterAmbush
+      { rosterList = (head (rosterList rosterAmbush))
+                       {fleaderMode = LeaderAI $ AutoLeader False False}
+                     : tail (rosterList rosterAmbush)
       }
   }
 
