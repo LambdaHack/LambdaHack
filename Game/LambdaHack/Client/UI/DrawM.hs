@@ -212,15 +212,15 @@ drawFrameBody dm drawnLevelId = do
                 ac {Color.acAttr = (Color.acAttr ac) {Color.bg = Color.Blue}}
               | otherwise -> ac
   -- The engine that puts it all together. The inline really helps.
-  let fOverlay :: (Point -> Color.AttrChar -> Color.AttrChar) -> Overlay
+  let fOverlay :: (Point -> Color.AttrChar) -> Overlay
       {-# INLINE fOverlay #-}
       fOverlay f =
-        let fLine y = map (\x -> let p = Point x y in f p $ dis p) [0..lxsize-1]
+        let fLine y = map (\x -> f $ Point x y) [0..lxsize-1]
         in emptyAttrLine lxsize : map fLine [0..lysize-1]
   return $! case dm of
-    ColorFull | notAimMode -> fOverlay $ \_ ac -> ac
-    ColorFull -> fOverlay aimCharAtrr
-    ColorBW -> fOverlay $ \_ ac -> ac {Color.acAttr = Color.defAttr}
+    ColorFull | notAimMode -> fOverlay dis
+    ColorFull -> fOverlay $ \p -> aimCharAtrr p $ dis p
+    ColorBW -> fOverlay $ \p -> (dis p) {Color.acAttr = Color.defAttr}
 
 drawFrameStatus :: MonadClientUI m => LevelId -> m Overlay
 drawFrameStatus drawnLevelId = do
