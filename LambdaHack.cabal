@@ -300,12 +300,8 @@ library
   if flag(clients_as_threads)
     cpp-options:      -DCLIENTS_AS_THREADS
 
-  if flag(release) {
+  if flag(release) && !impl(ghcjs)
     cpp-options:      -DEXPOSE_INTERNAL
-  } else {
--- dummy:
-    ghc-options:      -fwarn-tabs
-  }
 
 executable LambdaHack
   hs-source-dirs:     GameDefinition
@@ -372,6 +368,9 @@ executable LambdaHack
     build-depends:    zlib >= 0.5.3.1
     ghc-options:      "-with-rtsopts=-A99m -K1K"
   }
+
+  if flag(release) && impl(ghcjs)
+    cpp-options:      -DGHCJS_BROWSER
 
 test-suite test
   type:               exitcode-stdio-1.0
