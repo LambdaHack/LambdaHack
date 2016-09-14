@@ -220,8 +220,13 @@ library
                       Game.LambdaHack.Server.ProtocolM
                       Game.LambdaHack.Server.StartM
                       Game.LambdaHack.Server.State
+-- temporary hack for JS: moving all TH from exe to lib:
+                      Content.RuleKind
   other-modules:      Paths_LambdaHack
   build-depends:
+-- temporary hack for JS: moving all TH from exe to lib:
+                      template-haskell >= 2.6,
+
                       array      >= 0.3.0.3,
                       assert-failure >= 0.1,
                       async      >= 2,
@@ -316,12 +321,14 @@ executable LambdaHack
                       Content.ModeKind,
                       Content.ModeKindPlayer,
                       Content.PlaceKind,
-                      Content.RuleKind,
+-- temporary hack for JS: moving all TH from exe to lib:
+--                      Content.RuleKind,
                       Content.TileKind,
                       TieKnot,
                       Paths_LambdaHack
   build-depends:      LambdaHack,
-                      template-haskell >= 2.6,
+-- temporary hack for JS: moving all TH from exe to lib:
+--                      template-haskell >= 2.6,
 
                       array      >= 0.3.0.3,
                       assert-failure >= 0.1,
@@ -377,7 +384,8 @@ test-suite test
   hs-source-dirs:     GameDefinition, test
   main-is:            test.hs
   build-depends:      LambdaHack,
-                      template-haskell >= 2.6,
+-- temporary hack for JS: moving all TH from exe to lib:
+--                      template-haskell >= 2.6,
 
                       array      >= 0.3.0.3,
                       assert-failure >= 0.1,
