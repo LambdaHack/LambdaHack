@@ -73,6 +73,7 @@ before_install:
  - unset CC
  - export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$PATH
  - export PATH=/opt/alex/3.1.4/bin:/opt/happy/1.19.5/bin:$PATH
+ - ld --version
 
 install:
  - cabal --version
