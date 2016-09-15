@@ -21,6 +21,7 @@ import qualified Data.EnumMap.Strict as EM
 import Data.IORef
 import qualified Data.Text as T
 import Graphics.UI.Gtk hiding (Point)
+import System.Exit (exitFailure)
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Frame
@@ -170,12 +171,17 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   -- Modify default colours.
   let black = Color minBound minBound minBound  -- Color.defBG == Color.Black
       white = Color 0xC500 0xBC00 0xB800        -- Color.defFG == Color.White
-  widgetModifyBase sview StateNormal black
-  widgetModifyText sview StateNormal white
+  widgetModifyBg sview StateNormal black
+  widgetModifyFg sview StateNormal white
   -- Set up the main window.
   w <- windowNew
   containerAdd w sview
-  onDestroy w (error "Window killed")
+  -- We assume it's intentional window kill by the player,
+  -- so game is not saved, unlike with assertion failure, etc.
+  w `on` deleteEvent $ IO.liftIO $ do
+    putStrLn "Window killed"
+    mainQuit
+    exitFailure
   widgetShowAll w
   mainGUI
 

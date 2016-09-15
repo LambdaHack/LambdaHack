@@ -282,8 +282,8 @@ library
     cpp-options:      -DUSE_CURSES
   } else {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk
-    build-depends:    gtk >= 0.12.1
-    pkgconfig-depends: gtk+-2.0
+    build-depends:    gtk3 >= 0.12.1
+    pkgconfig-depends: gthread-2.0, gtk+-3.0
   } } } }
 
   if impl(ghcjs) {
