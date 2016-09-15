@@ -1,18 +1,27 @@
-# The xc* tests assume a profiling build (for stack traces).
-# See the install-debug target below.
-
 play:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --dumpInitRngs
 
 
-install-debug:
-	cabal install --enable-profiling --ghc-options="-fprof-auto-calls"
+xcplay:
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --dumpInitRngs
 
 configure-debug:
 	cabal configure --enable-profiling --ghc-options="-fprof-auto-calls"
 
-xcplay:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --dumpInitRngs
+configure-prof:
+	cabal configure --enable-profiling --ghc-option=-fprof-auto-exported -frelease
+
+ghcjs-configure:
+	cabal configure --disable-library-profiling --disable-profiling --ghcjs --ghcjs-option=-dedupe -f-release
+
+prof-ghcjs:
+	cabal configure --enable-profiling --ghc-option=-fprof-auto-exported --ghcjs --ghcjs-option=-dedupe -frelease
+
+chrome-prof:
+	google-chrome --no-sandbox --js-flags="--logfile=%t.log --prof" --password-store=default dist/build/LambdaHack/LambdaHack.jsexe/index.html
+
+minific:
+	java -jar ~/Downloads/closure-compiler.jar dist/build/LambdaHack/LambdaHack.jsexe/all.js --compilation_level=ADVANCED_OPTIMIZATIONS > ~/Downloads/all.js
 
 
 frontendCampaign:

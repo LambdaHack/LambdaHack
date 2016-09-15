@@ -300,12 +300,8 @@ library
   if flag(clients_as_threads)
     cpp-options:      -DCLIENTS_AS_THREADS
 
-  if flag(release) {
+  if flag(release)
     cpp-options:      -DEXPOSE_INTERNAL
-  } else {
--- dummy:
-    ghc-options:      -fwarn-tabs
-  }
 
 executable LambdaHack
   hs-source-dirs:     GameDefinition
