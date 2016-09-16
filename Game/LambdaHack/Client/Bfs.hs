@@ -190,7 +190,9 @@ findPathBfs lalter pathSource pathGoal sepsRaw bfs@PointArray.Array{..} =
                             | otherwise -> minChild minP minAlter mvs
             -- @maxBound@ means not alterable, so some child will be lower
             !newPos = minChild pos{-dummy-} maxBound movesI
-            -- expensive: !_A = assert (minP /= pos) ()
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+            !_A = assert (minP /= pos) ()
+#endif
             !posP = PointArray.punindex axsize pos
         in track newPos dist (posP : suffix)
       !goalDist = accessI pathGoalI

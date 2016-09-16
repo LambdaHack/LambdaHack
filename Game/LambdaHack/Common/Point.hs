@@ -51,10 +51,12 @@ instance NFData Point
 -- @(1, 7)..(10, 9)@.
 instance Enum Point where
   fromEnum (Point x y) =
+#ifdef WITH_EXPENSIVE_ASSERTIONS
     assert (x >= 0 && y >= 0 && x <= maxLevelDim && y <= maxLevelDim
             `blame` "invalid point coordinates"
             `twith` (x, y))
-    $ x + unsafeShiftL y maxLevelDimExponent
+#endif
+    (x + unsafeShiftL y maxLevelDimExponent)
   toEnum n = Point (n .&. maxLevelDim) (unsafeShiftR n maxLevelDimExponent)
 
 -- | The maximum number of bits for level X and Y dimension (16).

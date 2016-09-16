@@ -194,10 +194,7 @@ cmdAtomicFilterCli cmd = case cmd of
           in -- We forget only currently invisible actors.
              if seenNew ps
              then Nothing
-             else -- Verify that we forget only previously seen actors.
-                  let !_A = assert (seenOld ps) ()
-                      ais = carriedAssocs b
-                  in Just $ UpdLoseActor aid b ais
+             else Just $ UpdLoseActor aid b $ carriedAssocs b
         outActor = mapMaybe fActor outPrio
     -- Wipe out remembered items on tiles that now came into view.
     lvl <- getLevel lid
