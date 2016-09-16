@@ -72,7 +72,7 @@ wrapInSaves tryCreateDir encodeEOF saveFile exe = do
         -- and tell the save thread to end.
         putMVar toSave Nothing
         -- Wait 0.5s to flush debug and then until the save thread ends.
-        threadDelay 50000000
+        threadDelay 500000
         wait a
   exe toSave `Ex.finally` fin
   -- The creation of, e.g., the initial client state, is outside the 'finally'
