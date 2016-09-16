@@ -29,6 +29,7 @@ import qualified Game.LambdaHack.Client.UI.Frontend.Chosen as Chosen
 import Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Frontend.Std as Std
 import Game.LambdaHack.Common.ClientOptions
+import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Point
 
 -- | The instructions sent by clients to the raw frontend.
@@ -145,7 +146,8 @@ nullStartup = createRawFrontend seqFrame (return ())
 
 seqFrame :: SingleFrame -> IO ()
 seqFrame SingleFrame{singleFrame} =
-  let seqAttr attr = fromEnum attr `seq` return ()
+  let seqAttr attr = Color.colorToRGB (Color.fg $ Color.acAttr attr)
+                     `seq` return ()
   in mapM_ seqAttr $ concat singleFrame
 
 chanFrontendIO :: DebugModeCli -> IO ChanFrontend
