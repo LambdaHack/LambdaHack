@@ -88,7 +88,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
         !modifier =
           let md = modTranslate mods
           in if md == K.Shift then K.NoModifier else md
-        !pointer = originPoint
+        !pointer = Point 0 0  -- FIXME: workaround for GHC 8.0.1 -- originPoint
     IO.liftIO $ saveKMP rf modifier key pointer
     return True
   -- Set the font specified in config, if any.
