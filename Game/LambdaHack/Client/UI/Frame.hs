@@ -53,12 +53,13 @@ truncateAttrLine :: X -> AttrLine -> X -> AttrLine
 truncateAttrLine w xs lenMax =
   case compare w (length xs) of
     LT -> let discarded = drop w xs
-          in if all ((== ' ') . acChar) discarded
+          in if all (== spaceAttrW32) discarded
              then take w xs
-             else take (w - 1) xs ++ [AttrChar (Attr BrBlack defBG) '$']
+             else take (w - 1) xs
+                  ++ [attrCharToW32 $ AttrChar (Attr BrBlack defBG) '$']
     EQ -> xs
-    GT -> let xsSpace = if null xs || acChar (last xs) == ' '
+    GT -> let xsSpace = if null xs || last xs == spaceAttrW32
                         then xs
-                        else xs ++ [spaceAttr]
+                        else xs ++ [spaceAttrW32]
               whiteN = max (40 - length xsSpace) (1 + lenMax - length xsSpace)
-          in xsSpace ++ replicate whiteN (AttrChar defAttr ' ')
+          in xsSpace ++ replicate whiteN spaceAttrW32

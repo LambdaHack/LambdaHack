@@ -90,7 +90,7 @@ splitOKX lxsize yspace rrep keys (ls0, kxs0) =
       ((lsInit, kxsInit), (header, rkxs)) =
         -- Check whether most space taken by report and keys.
         if (length $ glueOverlay msgRaw lX0) * 2 > yspace
-        then (msgOkx, ([intercalate  [Color.spaceAttr] lX0 <+:> rrep], keysX0))
+        then (msgOkx, ([intercalate  [Color.spaceAttrW32] lX0 <+:> rrep], keysX0))
                -- will display "$" (unless has EOLs)
         else (([], []), msgOkx)
       renumber y (km, (y0, x1, x2)) = (km, (y0 + y, x1, x2))

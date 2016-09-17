@@ -33,10 +33,10 @@ import Game.LambdaHack.Common.Time
 type UAttrLine = U.Vector Word32
 
 uToAttrLine :: UAttrLine -> AttrLine
-uToAttrLine v = map Color.attrCharFromW32 $ U.toList v
+uToAttrLine v = map Color.AttrCharW32 $ U.toList v
 
 attrLineToU :: AttrLine -> UAttrLine
-attrLineToU l = U.fromList $ map Color.attrCharToW32 l
+attrLineToU l = U.fromList $ map Color.attrCharW32 l
 
 -- * Msg
 
@@ -165,7 +165,7 @@ splitReportForHistory w l =
   let ts = splitAttrLine (w - 1) l
   in case ts of
     [] -> []
-    hd : tl -> hd : map ([Color.spaceAttr] ++) tl
+    hd : tl -> hd : map ([Color.spaceAttrW32] ++) tl
 
 -- | Render history as many lines of text, wrapping if necessary.
 renderHistory :: History -> Overlay

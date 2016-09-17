@@ -111,7 +111,8 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
               drawHighlight xs =
                 let (xs1, xsRest) = splitAt x1 xs
                     (xs2, xs3) = splitAt (x2 - x1) xsRest
-                in xs1 ++ map greyBG xs2 ++ xs3
+                    greyW32 = Color.attrCharToW32 . greyBG . Color.attrCharFromW32
+                in xs1 ++ map greyW32 xs2 ++ xs3
               ov1 = updateOverlayLine y drawHighlight ov
               ignoreKey = page pointer
               pageLen = length kyxs

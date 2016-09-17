@@ -1,11 +1,15 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Colours and text attributes.
 module Game.LambdaHack.Common.Color
   ( -- * Colours
     Color(..), defFG, defBG, isBright, legalBG, darkCol, brightCol, stdCol
   , colorToRGB
     -- * Text attributes and the screen
-  , Attr(..), defAttr, AttrChar(..), spaceAttr, attrCharToW32, attrCharFromW32
+  , Attr(..), defAttr
+  , AttrChar(..)
+  , AttrCharW32(AttrCharW32), attrCharW32
+  , attrCharToW32, attrCharFromW32, fgFromW32, bgFromW32, charFromW32
+  , spaceAttrW32, retAttrW32,
   ) where
 
 import Prelude ()
@@ -13,8 +17,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
-import Data.Binary.Get
-import Data.Binary.Put
 import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
 import qualified Data.Char as Char
 import Data.Hashable (Hashable)
@@ -79,23 +81,47 @@ data AttrChar = AttrChar
   }
   deriving (Show, Eq, Ord)
 
-attrCharToW32 :: AttrChar -> Word32
-attrCharToW32 AttrChar{acAttr=Attr{..}, acChar} = toEnum $
-  fromEnum fg + unsafeShiftL (fromEnum bg) 8
-  + unsafeShiftL (Char.ord acChar) 16
+newtype AttrCharW32 = AttrCharW32 {attrCharW32 :: Word32}
+  deriving (Show, Eq, Binary)
 
-attrCharFromW32 :: Word32 -> AttrChar
-attrCharFromW32 n =
-  AttrChar (Attr (toEnum $ fromEnum $ n .&. (2 ^ (8 :: Int) - 1))
-                 (toEnum $ fromEnum $ n .&. (2 ^ (16 :: Int) - 2 ^ (8 :: Int))))
-           (Char.chr $ fromEnum $ unsafeShiftR n 16)
+attrCharToW32 :: AttrChar -> AttrCharW32
+attrCharToW32 !AttrChar{acAttr=Attr{..}, acChar} = AttrCharW32 $ toEnum $
+  unsafeShiftL (fromEnum fg) 8 + fromEnum bg + unsafeShiftL (Char.ord acChar) 16
 
-instance Binary AttrChar where
-  put = putWord32le . attrCharToW32
-  get = fmap attrCharFromW32 getWord32le
+attrCharFromW32 :: AttrCharW32 -> AttrChar
+attrCharFromW32 !w =
+  AttrChar (Attr (toEnum $ fromEnum
+                  $ unsafeShiftR (attrCharW32 w) 8 .&. (2 ^ (8 :: Int) - 1))
+                 (toEnum $ fromEnum
+                  $ attrCharW32 w .&. (2 ^ (8 :: Int) - 1)))
+           (Char.chr $ fromEnum $ unsafeShiftR (attrCharW32 w) 16)
 
-spaceAttr :: AttrChar
-spaceAttr = AttrChar defAttr ' '
+{- surprisingly, this is slower:
+attrCharFromW32 :: AttrCharW32 -> AttrChar
+attrCharFromW32 !w =
+  AttrChar (Attr (fgFromW32 w) (bgFromW32 w)) (charFromW32 w)
+-}
+
+fgFromW32 :: AttrCharW32 -> Color
+{-# INLINE fgFromW32 #-}
+fgFromW32 w =
+  toEnum $ fromEnum $ unsafeShiftR (attrCharW32 w) 8 .&. (2 ^ (8 :: Int) - 1)
+
+bgFromW32 :: AttrCharW32 -> Color
+{-# INLINE bgFromW32 #-}
+bgFromW32 w =
+  toEnum $ fromEnum $ attrCharW32 w .&. (2 ^ (8 :: Int) - 1)
+
+charFromW32 :: AttrCharW32 -> Char
+{-# INLINE charFromW32 #-}
+charFromW32 w =
+  Char.chr $ fromEnum $ unsafeShiftR (attrCharW32 w) 16
+
+spaceAttrW32 :: AttrCharW32
+spaceAttrW32 = attrCharToW32 $ AttrChar defAttr ' '
+
+retAttrW32 :: AttrCharW32
+retAttrW32 = attrCharToW32 $ AttrChar defAttr '\n'
 
 -- | A helper for the terminal frontends that display bright via bold.
 isBright :: Color -> Bool

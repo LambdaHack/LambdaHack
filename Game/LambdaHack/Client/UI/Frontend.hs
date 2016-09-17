@@ -150,7 +150,7 @@ seqFrame SingleFrame{singleFrame} =
                      `seq` Color.colorToRGB (Color.bg $ Color.acAttr attr)
                      `seq` Color.acChar attr == ' '
                      `seq` return ()
-  in mapM_ seqAttr $ concat singleFrame
+  in mapM_ (seqAttr . Color.attrCharFromW32) $ concat singleFrame
 
 chanFrontendIO :: DebugModeCli -> IO ChanFrontend
 chanFrontendIO sdebugCli = do

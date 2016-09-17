@@ -19,7 +19,7 @@ import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 
-type AnimationDiff = EM.EnumMap Point AttrChar
+type AnimationDiff = EM.EnumMap Point AttrCharW32
 
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.
@@ -41,22 +41,22 @@ renderAnim basicFrame@SingleFrame{singleFrame = levelOld, ..} (Animation anim) =
         if am == amPrevious then Nothing else Just $ modifyFrame am
   in Just basicFrame : map modifyFrames (zip anim (EM.empty : anim))
 
-blank :: Maybe AttrChar
+blank :: Maybe AttrCharW32
 blank = Nothing
 
-cSym :: Color -> Char -> Maybe AttrChar
-cSym color symbol = Just $ AttrChar (Attr color defBG) symbol
+cSym :: Color -> Char -> Maybe AttrCharW32
+cSym color symbol = Just $ attrCharToW32 $ AttrChar (Attr color defBG) symbol
 
-mapPosToScreenPos :: (Point, AttrChar) -> (Point, AttrChar)
+mapPosToScreenPos :: (Point, AttrCharW32) -> (Point, AttrCharW32)
 mapPosToScreenPos (Point{..}, attr) = (Point{py = py + 1, ..}, attr)
 
-mzipSingleton :: Point -> Maybe AttrChar -> [(Point, AttrChar)]
+mzipSingleton :: Point -> Maybe AttrCharW32 -> [(Point, AttrCharW32)]
 mzipSingleton p1 mattr1 = map mapPosToScreenPos $
   let mzip (pos, mattr) = fmap (\attr -> (pos, attr)) mattr
   in catMaybes $ [mzip (p1, mattr1)]
 
-mzipPairs :: (Point, Point) -> (Maybe AttrChar, Maybe AttrChar)
-          -> [(Point, AttrChar)]
+mzipPairs :: (Point, Point) -> (Maybe AttrCharW32, Maybe AttrCharW32)
+          -> [(Point, AttrCharW32)]
 mzipPairs (p1, p2) (mattr1, mattr2) = map mapPosToScreenPos $
   let mzip (pos, mattr) = fmap (\attr -> (pos, attr)) mattr
   in catMaybes $ if p1 /= p2
@@ -222,7 +222,7 @@ fadeout out topRight step lxsize lysize = do
       rollFrame n = do
         r <- random
         let l = [ ( Point (if topRight then x else xbound - x) y
-                  , AttrChar defAttr $ fadeChar r n x y )
+                  , attrCharToW32 $ AttrChar defAttr $ fadeChar r n x y )
                 | x <- [0..xbound]
                 , y <- [max 0 (ybound - (n - x) `div` 2)..ybound]
                     ++ [0..min ybound ((n - xbound + x) `div` 2)]

@@ -12,7 +12,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Char
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
@@ -26,45 +25,46 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- * AttrLine
 
-type AttrLine = [Color.AttrChar]
+type AttrLine = [Color.AttrCharW32]
 
 emptyAttrLine :: Int -> AttrLine
-emptyAttrLine xsize = replicate xsize Color.spaceAttr
+emptyAttrLine xsize = replicate xsize Color.spaceAttrW32
 
 textToAL :: Text -> AttrLine
 textToAL !t =
-  let f c l = let ac = Color.AttrChar Color.defAttr c in ac `seq` ac : l
+  let f c l = let !ac = Color.attrCharToW32 $ Color.AttrChar Color.defAttr c
+              in ac : l
   in T.foldr f [] t
 
 stringToAL :: String -> AttrLine
-stringToAL s = map (Color.AttrChar Color.defAttr) s
+stringToAL s = map (Color.attrCharToW32 . Color.AttrChar Color.defAttr) s
 
 infixr 6 <+:>  -- matches Monoid.<>
 (<+:>) :: AttrLine -> AttrLine -> AttrLine
 (<+:>) [] l2 = l2
 (<+:>) l1 [] = l1
-(<+:>) l1 l2 = l1 ++ [Color.spaceAttr] ++ l2
+(<+:>) l1 l2 = l1 ++ [Color.spaceAttrW32] ++ l2
 
 -- | Split a string into lines. Avoids ending the line with a character
 -- other than whitespace or punctuation. Space characters are removed
 -- from the start, but never from the end of lines. Newlines are respected.
 splitAttrLine :: X -> AttrLine -> [AttrLine]
 splitAttrLine w l =
-  concatMap (splitAttrPhrase w . dropWhile (isSpace . Color.acChar))
+  concatMap (splitAttrPhrase w . dropWhile (== Color.spaceAttrW32))
   $ linesAttr l
 
 linesAttr :: AttrLine -> [AttrLine]
 linesAttr l | null l = []
             | otherwise = h : if null t then [] else linesAttr (tail t)
- where (h, t) = span ((/= '\n') . Color.acChar) l
+ where (h, t) = span (/= Color.retAttrW32) l
 
 splitAttrPhrase :: X -> AttrLine -> [AttrLine]
 splitAttrPhrase w xs
   | w >= length xs = [xs]  -- no problem, everything fits
   | otherwise =
       let (pre, post) = splitAt w xs
-          (ppre, ppost) = break ((== ' ') . Color.acChar) $ reverse pre
-          testPost = dropWhileEnd (isSpace . Color.acChar) ppost
+          (ppre, ppost) = break (== Color.spaceAttrW32) $ reverse pre
+          testPost = dropWhileEnd (== Color.spaceAttrW32) ppost
       in if null testPost
          then pre : splitAttrPhrase w post
          else reverse ppost : splitAttrPhrase w (reverse ppre ++ post)
@@ -92,7 +92,7 @@ itemDesc c localTime itemFull =
             then makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
             else ""
         <+> makeSentence ["First found on level", MU.Text $ tshow ln]
-  in colorSymbol : textToAL blurb
+  in Color.attrCharToW32 colorSymbol : textToAL blurb
 
 -- * Overlay
 

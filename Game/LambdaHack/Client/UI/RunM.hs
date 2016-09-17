@@ -25,10 +25,10 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
+import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
@@ -108,12 +108,13 @@ continueRunDir params = case params of
            , runMembers = aid : _
            , runInitial } -> do
     report <- getsSession _sreport -- TODO: check the message before it goes into history
-    let boringMsgs = [ "You hear a distant"
-                     , "reveals that the"
-                     , "Macro will be recorded"
-                     , "Macro activated"
-                     , "Voicing '" ]
-        boring l = any (`isInfixOf` map Color.acChar l) boringMsgs
+    let boringMsgs = map stringToAL
+          [ "You hear a distant"
+          , "reveals that the"
+          , "Macro will be recorded"
+          , "Macro activated"
+          , "Voicing '" ]  -- TODO: don't hardwire
+        boring l = any (`isInfixOf` l) boringMsgs
         -- TODO: use a regexp from the UI config instead
         -- or have symbolic messages and pattern-match
         msgShown  = isJust $ findInReport (not . boring) report

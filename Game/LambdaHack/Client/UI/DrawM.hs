@@ -215,7 +215,7 @@ drawFrameBody dm drawnLevelId = do
   let fOverlay :: (Point -> Color.AttrChar) -> Overlay
       {-# INLINE fOverlay #-}
       fOverlay f =
-        let fLine y = map (\x -> f $ Point x y) [0..lxsize-1]
+        let fLine y = map (\x -> Color.attrCharToW32 $ f $ Point x y) [0..lxsize-1]
         in emptyAttrLine lxsize : map fLine [0..lysize-1]
   return $! case dm of
     ColorFull | notAimMode -> fOverlay dis
@@ -365,7 +365,8 @@ drawLeaderStatus waitT = do
           -- 'wait' command.
           slashes = ["/", "|", "\\", "|"]
           slashPick = slashes !! (max 0 (waitT - 1) `mod` length slashes)
-          addColor c t = map (Color.AttrChar $ Color.Attr c Color.defBG) t
+          addColor c t =
+            map (Color.attrCharToW32 . Color.AttrChar (Color.Attr c Color.defBG)) t
           checkDelta ResDelta{..}
             | resCurrentTurn < 0 || resPreviousTurn < 0
               = addColor Color.BrRed  -- alarming news have priority
@@ -391,7 +392,8 @@ drawLeaderStatus waitT = do
 drawLeaderDamage :: MonadClient m => Int -> m AttrLine
 drawLeaderDamage width = do
   mleader <- getsClient _sleader
-  let addColor s = map (Color.AttrChar $ Color.Attr Color.BrCyan Color.defBG) s
+  let addColor s =
+        map (Color.attrCharToW32 . Color.AttrChar (Color.Attr Color.BrCyan Color.defBG)) s
   stats <- case mleader of
     Just leader -> do
       allAssocsRaw <- fullAssocsClient leader [CEqp, COrgan]
@@ -439,7 +441,7 @@ drawSelected drawnLevelId width selected = do
                     | ES.member aid selected -> Color.BrBlue
                     | otherwise -> Color.defBG
             sattr = Color.Attr {Color.fg = bcolor, bg}
-        in Color.AttrChar sattr $ if bhp > 0 then bsymbol else '%'
+        in Color.attrCharToW32 $ Color.AttrChar sattr $ if bhp > 0 then bsymbol else '%'
       maxViewed = width - 2
       len = length ours
       star = let fg = case ES.size selected of
@@ -447,7 +449,7 @@ drawSelected drawnLevelId width selected = do
                    n | n == len -> Color.BrWhite
                    _ -> Color.defFG
                  char = if len > maxViewed then '$' else '*'
-             in Color.AttrChar Color.defAttr{Color.fg} char
+             in Color.attrCharToW32 $ Color.AttrChar Color.defAttr{Color.fg} char
       viewed = map viewOurs $ take maxViewed
                $ sortBy (comparing keySelected) ours
-  return (len + 2, [star] ++ viewed ++ [Color.spaceAttr])
+  return (len + 2, [star] ++ viewed ++ [Color.spaceAttrW32])
