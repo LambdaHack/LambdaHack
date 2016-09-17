@@ -20,7 +20,9 @@ import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- No session data maintained by this frontend
 
@@ -51,8 +53,13 @@ shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
 display :: SingleFrame  -- ^ the screen frame to draw
         -> IO ()
 display SingleFrame{singleFrame} =
-  let bs = map (map Color.charFromW32) singleFrame ++ [""]
-  in mapM_ putStrLn bs
+  let f w l = Color.charFromW32 w : l
+      levelChar = chunk $ PointArray.foldrA f [] singleFrame
+      lxsize = fst normalLevelBound + 1  -- TODO
+      chunk [] = []
+      chunk l = let (ch, r) = splitAt lxsize l
+                in ch : chunk r
+  in putStrLn $ unlines levelChar
 
 keyTranslate :: Char -> K.KM
 keyTranslate e = (\(key, modifier) -> K.KM modifier key) $

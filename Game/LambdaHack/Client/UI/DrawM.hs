@@ -115,7 +115,7 @@ targetDescXhair = do
   sxhair <- getsClient sxhair
   targetDesc $ Just sxhair
 
-drawFrameBody :: forall m. MonadClientUI m => ColorMode -> LevelId -> m Overlay
+drawFrameBody :: forall m. MonadClientUI m => ColorMode -> LevelId -> m [AttrLine]
 drawFrameBody dm drawnLevelId = do
   Kind.COps{coTileSpeedup} <- getsState scops
   SessionUI{sselected, saimMode, smarkVision, smarkSmell} <- getSession
@@ -212,7 +212,7 @@ drawFrameBody dm drawnLevelId = do
                 ac {Color.acAttr = (Color.acAttr ac) {Color.bg = Color.Blue}}
               | otherwise -> ac
   -- The engine that puts it all together. The inline really helps.
-  let fOverlay :: (Point -> Color.AttrChar) -> Overlay
+  let fOverlay :: (Point -> Color.AttrChar) -> [AttrLine]
       {-# INLINE fOverlay #-}
       fOverlay f =
         let fLine y = map (\x -> Color.attrCharToW32 $ f $ Point x y) [0..lxsize-1]
@@ -222,7 +222,7 @@ drawFrameBody dm drawnLevelId = do
     ColorFull -> fOverlay $ \p -> aimCharAtrr p $ dis p
     ColorBW -> fOverlay $ \p -> (dis p) {Color.acAttr = Color.defAttr}
 
-drawFrameStatus :: MonadClientUI m => LevelId -> m Overlay
+drawFrameStatus :: MonadClientUI m => LevelId -> m [AttrLine]
 drawFrameStatus drawnLevelId = do
   SessionUI{sselected, saimMode, swaitTimes, sitemSel} <- getSession
   mleader <- getsClient _sleader
@@ -327,7 +327,11 @@ drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m SingleFrame
 drawBaseFrame dm drawnLevelId = do
   frameBody <- drawFrameBody dm drawnLevelId
   frameStatus <- drawFrameStatus drawnLevelId
-  let singleFrame = frameBody ++ frameStatus
+  let fr = frameBody ++ frameStatus
+      lxsize = fst normalLevelBound + 1  -- TODO
+      lysize = snd normalLevelBound + 1
+      canvasLength = lysize + 3
+      singleFrame = PointArray.fromListA lxsize canvasLength $ concat fr
   return $! SingleFrame{..}
 
 -- Comfortably accomodates 3-digit level numbers and 25-character

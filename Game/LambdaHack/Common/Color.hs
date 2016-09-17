@@ -83,7 +83,7 @@ data AttrChar = AttrChar
   deriving (Show, Eq, Ord)
 
 newtype AttrCharW32 = AttrCharW32 {attrCharW32 :: Word32}
-  deriving (Show, Eq, Binary)
+  deriving (Show, Eq, Enum, Binary)
 
 attrCharToW32 :: AttrChar -> AttrCharW32
 attrCharToW32 !AttrChar{acAttr=Attr{..}, acChar} = AttrCharW32 $ toEnum $

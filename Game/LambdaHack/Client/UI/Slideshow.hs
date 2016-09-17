@@ -19,7 +19,7 @@ import Game.LambdaHack.Common.Point
 
 type KYX = (Either [K.KM] SlotChar, (Y, X, X))
 
-type OKX = (Overlay, [KYX])
+type OKX = ([AttrLine], [KYX])
 
 -- May be empty, but both of each @OKX@ list have to be nonempty.
 -- Guaranteed by construction.
@@ -86,10 +86,10 @@ splitOKX lxsize yspace rrep keys (ls0, kxs0) =
                   | otherwise = keysOKX (length msgRaw - 1)
                                         (length (last msgRaw) + 1)
                                         lxsize keys
-      msgOkx = (glueOverlay msgRaw lX, keysX)
+      msgOkx = (glueLines msgRaw lX, keysX)
       ((lsInit, kxsInit), (header, rkxs)) =
         -- Check whether most space taken by report and keys.
-        if (length $ glueOverlay msgRaw lX0) * 2 > yspace
+        if (length $ glueLines msgRaw lX0) * 2 > yspace
         then (msgOkx, ([intercalate  [Color.spaceAttrW32] lX0 <+:> rrep], keysX0))
                -- will display "$" (unless has EOLs)
         else (([], []), msgOkx)

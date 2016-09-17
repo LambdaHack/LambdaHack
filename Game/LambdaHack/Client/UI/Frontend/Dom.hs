@@ -42,6 +42,7 @@ import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
@@ -331,7 +332,8 @@ display DebugModeCli{scolorIsBold}
             _ -> do
               setProp style "background-color" $ Color.colorToRGB bg
               setProp style "border-color" "transparent"
-      acs = concat singleFrame
+      acs = PointArray.foldrA (\w l ->
+              Color.attrCharFromW32 w : l) [] singleFrame
   -- Sync, no point mutitasking threads in the single-threaded JS
   callback <- newRequestAnimationFrameCallback $ \_ -> do
     mapM_ setChar $ zip scharCells acs

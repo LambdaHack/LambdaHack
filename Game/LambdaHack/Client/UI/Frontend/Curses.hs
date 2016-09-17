@@ -21,6 +21,7 @@ import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
@@ -76,9 +77,15 @@ display FrontendSession{..} SingleFrame{singleFrame} = do
   -- We need to remove the last character from the status line,
   -- because otherwise it would overflow a standard size xterm window,
   -- due to the curses historical limitations.
-  let level = init singleFrame ++ [init $ last singleFrame]
+  let sf = chunk $ map Color.attrCharFromW32
+                 $ PointArray.toListA singleFrame
+      level = init sf ++ [init $ last sf]
       nm = zip [0..] $ map (zip [0..]) level
-  sequence_ [ C.setStyle (EM.findWithDefault defaultStyle acAttr1 sstyles)
+      lxsize = fst normalLevelBound + 1  -- TODO
+      chunk [] = []
+      chunk l = let (ch, r) = splitAt lxsize l
+                in ch : chunk r
+  sequence_ [ C.setStyle (EM.findWithDefault defaultStyle acAttr2 sstyles)
               >> C.mvWAddStr swin y x [acChar]
             | (y, line) <- nm
             , (x, Color.AttrChar{acAttr=Color.Attr{..}, ..}) <- line
@@ -94,7 +101,7 @@ display FrontendSession{..} SingleFrame{singleFrame} = do
                       then (fg, Color.BrBlack)
                       else (fg, Color.defFG)
                     _ -> (fg, bg)
-                  acAttr1 = Color.Attr fg1 bg1 ]
+                  acAttr2= Color.Attr fg1 bg1 ]
   C.refresh
 
 keyTranslate :: C.Key -> K.KM

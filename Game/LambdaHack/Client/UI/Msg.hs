@@ -96,7 +96,7 @@ consReportNoScrub Msg{msgLine=[]} rep = rep
 consReportNoScrub y (Report r) = Report $ r ++ [RepMsgN y 1]
 
 -- | Render a report as a (possibly very long) 'AttrLine'.
-renderReport :: Report  -> AttrLine
+renderReport :: Report -> AttrLine
 renderReport (Report []) = []
 renderReport (Report (x : xs)) =
   renderReport (Report xs) <+:> renderRepetition x
@@ -168,6 +168,6 @@ splitReportForHistory w l =
     hd : tl -> hd : map ([Color.spaceAttrW32] ++) tl
 
 -- | Render history as many lines of text, wrapping if necessary.
-renderHistory :: History -> Overlay
+renderHistory :: History -> [AttrLine]
 renderHistory (History t r rb) =
   map uToAttrLine (RB.toList rb) ++ [renderTimeReport t r]

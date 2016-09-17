@@ -6,6 +6,7 @@ module Game.LambdaHack.Common.PointArray
   , foldrA, foldlA', ifoldrA, ifoldrA', ifoldlA', mapA, imapA, mapWithKeyMA
   , safeSetA, unsafeSetA, unsafeUpdateA, unsafeWriteA, unsafeWriteManyA
   , minIndexA, minLastIndexA, minIndexesA, maxIndexA, maxLastIndexA, forceA
+  , fromListA, toListA
   ) where
 
 import Prelude ()
@@ -260,6 +261,14 @@ maxLastIndexA Array{..} =
 forceA :: U.Unbox w => GArray w c -> GArray w c
 {-# INLINE forceA #-}
 forceA Array{..} = Array{avector = U.force avector, ..}
+
+fromListA :: (U.Unbox w, Enum w, Enum c) => X -> Y -> [c] -> GArray w c
+{-# INLINE fromListA #-}
+fromListA axsize aysize l = Array{avector = U.fromList $ map cnv l, ..}
+
+toListA :: (U.Unbox w, Enum w, Enum c) => GArray w c -> [c]
+{-# INLINE toListA #-}
+toListA Array{..} = map cnv $ U.toList avector
 
 instance (U.Unbox w, Binary w) => Binary (GArray w c) where
   put Array{..} = do

@@ -32,23 +32,23 @@ import Game.LambdaHack.Common.State
 -- If the overlay is high long, it's truncated.
 -- Similarly, for each line of the overlay, if it's too long, it's truncated.
 drawOverlay :: MonadClientUI m
-            => ColorMode -> Bool -> Overlay -> LevelId -> m SingleFrame
-drawOverlay dm sfBlank topTrunc lid = do
-  mbaseFrame <- if sfBlank
+            => ColorMode -> Bool -> [AttrLine] -> LevelId -> m SingleFrame
+drawOverlay dm onBlank topTrunc lid = do
+  mbaseFrame <- if onBlank
                 then return Nothing
                 else Just <$> drawBaseFrame dm lid
-  return $! overlayFrame topTrunc mbaseFrame
+  return $! overlayFrameWithLines topTrunc mbaseFrame
 
 promptGetKey :: MonadClientUI m
-             => ColorMode -> Overlay -> Bool -> [K.KM] -> m K.KM
-promptGetKey dm ov sfBlank frontKeyKeys = do
+             => ColorMode -> [AttrLine] -> Bool -> [K.KM] -> m K.KM
+promptGetKey dm ov onBlank frontKeyKeys = do
   lidV <- viewedLevelUI
   keyPressed <- anyKeyPressed
   lastPlayOld <- getsSession slastPlay
   km <- case lastPlayOld of
     km : kms | not keyPressed && (null frontKeyKeys
                                   || km `elem` frontKeyKeys) -> do
-      frontKeyFrame <- drawOverlay dm sfBlank ov lidV
+      frontKeyFrame <- drawOverlay dm onBlank ov lidV
       displayFrames lidV [Just frontKeyFrame]
       modifySession $ \sess -> sess {slastPlay = kms}
       Config{configRunStopMsgs} <- getsSession sconfig
@@ -58,13 +58,13 @@ promptGetKey dm ov sfBlank frontKeyKeys = do
       -- We can't continue playback, so wipe out old slastPlay, srunning, etc.
       stopPlayBack
       discardPressedKey
-      let ov2 = ov `glueOverlay` if keyPressed
+      let ov2 = ov `glueLines` if keyPressed
                                  then [stringToAL "*interrupted*"]
                                  else []
-      frontKeyFrame <- drawOverlay dm sfBlank ov2 lidV
+      frontKeyFrame <- drawOverlay dm onBlank ov2 lidV
       connFrontendFrontKey frontKeyKeys frontKeyFrame
     [] -> do
-      frontKeyFrame <- drawOverlay dm sfBlank ov lidV
+      frontKeyFrame <- drawOverlay dm onBlank ov lidV
       connFrontendFrontKey frontKeyKeys frontKeyFrame
   (seqCurrent, seqPrevious, k) <- getsSession slastRecord
   let slastRecord = (km : seqCurrent, seqPrevious, k)

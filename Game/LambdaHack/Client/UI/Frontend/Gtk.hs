@@ -20,6 +20,7 @@ import qualified Data.ByteString.Char8 as BS
 import qualified Data.EnumMap.Strict as EM
 import Data.IORef
 import qualified Data.Text as T
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Graphics.UI.Gtk hiding (Point)
 import System.Exit (exitFailure)
 
@@ -28,6 +29,7 @@ import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 
 -- | Session data maintained by the frontend.
@@ -244,9 +246,9 @@ setTo tb defAttr (ly, attr:attrs) = do
 
 evalFrame :: FrontendSession -> SingleFrame -> GtkFrame
 evalFrame FrontendSession{stags} SingleFrame{singleFrame} =
-  let f :: Color.Attr -> TextTag
+  let g :: Color.Attr -> [TextTag] -> [TextTag]
       {-# INLINE f #-}
-      f acAttr@Color.Attr{..} =
+      g acAttr@Color.Attr{..} l =
         let acAttr2 = case bg of
               Color.BrRed ->
                 Color.Attr Color.defBG Color.defFG  -- highlighted tile
@@ -259,8 +261,13 @@ evalFrame FrontendSession{stags} SingleFrame{singleFrame} =
                 then Color.Attr fg Color.BrBlack
                 else Color.Attr fg Color.defFG
               _ -> acAttr
-        in stags EM.! acAttr2
-      gfAttr = map (map (f . Color.attrFromW32)) singleFrame
-      levelChar = unlines $ map (map Color.charFromW32) singleFrame
-      gfChar = BS.pack $ init levelChar
+        in stags EM.! acAttr2 : l
+      gfAttr = chunk $ PointArray.foldrA (g . Color.attrFromW32) [] singleFrame
+      f w l = Color.charFromW32 w : l
+      levelChar = chunk $ PointArray.foldrA f [] singleFrame
+      gfChar = BS.pack $ init $ unlines levelChar
+      lxsize = fst normalLevelBound + 1  -- TODO
+      chunk [] = []
+      chunk l = let (ch, r) = splitAt lxsize l
+                in ch : chunk r
   in GtkFrame{..}

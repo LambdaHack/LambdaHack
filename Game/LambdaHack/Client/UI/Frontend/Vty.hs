@@ -17,6 +17,7 @@ import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
@@ -49,12 +50,16 @@ display :: FrontendSession    -- ^ frontend session data
         -> SingleFrame  -- ^ the screen frame to draw
         -> IO ()
 display FrontendSession{svty} SingleFrame{singleFrame} =
-  let img = (foldr (<->) emptyImage
-             . map (foldr (<|>) emptyImage
-                      . map (\Color.AttrChar{..} ->
-                               char (setAttr acAttr) acChar)))
-            singleFrame
+  let img = foldr (<->) emptyImage
+            . map (foldr (<|>) emptyImage
+                     . map (\w -> char (setAttr $ Color.attrFromW32 w)
+                                       (Color.charFromW32 w)))
+            $ chunk $ PointArray.toListA singleFrame
       pic = picForImage img
+      lxsize = fst normalLevelBound + 1  -- TODO
+      chunk [] = []
+      chunk l = let (ch, r) = splitAt lxsize l
+                in ch : chunk r
   in update svty pic
 
 -- TODO: use http://hackage.haskell.org/package/vty-5.4.0/docs/Graphics-Vty-Config.html to remap keys internally

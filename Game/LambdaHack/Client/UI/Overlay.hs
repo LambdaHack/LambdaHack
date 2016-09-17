@@ -1,9 +1,10 @@
 -- | Screen overlays.
 module Game.LambdaHack.Client.UI.Overlay
   ( -- * AttrLine
-    AttrLine, emptyAttrLine, textToAL, stringToAL, (<+:>), splitAttrLine, itemDesc
+    AttrLine, emptyAttrLine, textToAL, stringToAL
+  , (<+:>), splitAttrLine, itemDesc, glueLines, updateLines
     -- * Overlay
-  , Overlay, glueOverlay, updateOverlayLine
+  , Overlay
     -- * Misc
   , ColorMode(..)
   ) where
@@ -12,6 +13,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
@@ -94,27 +96,31 @@ itemDesc c localTime itemFull =
         <+> makeSentence ["First found on level", MU.Text $ tshow ln]
   in Color.attrCharToW32 colorSymbol : textToAL blurb
 
--- * Overlay
-
--- | A series of screen lines that either fit the width of the screen
--- or are intended for truncation when displayed. The length of overlay
--- may exceed the length of the screen, unlike in @SingleFrame@.
-type Overlay = [AttrLine]
-
-glueOverlay :: Overlay -> Overlay -> Overlay
-glueOverlay ov1 ov2 = reverse $ glue (reverse ov1) ov2
+glueLines :: [AttrLine] -> [AttrLine] -> [AttrLine]
+glueLines ov1 ov2 = reverse $ glue (reverse ov1) ov2
  where glue [] l = l
        glue m [] = m
        glue (mh : mt) (lh : lt) = reverse lt ++ (mh <+:> lh) : mt
 
 -- @f@ should not enlarge the line beyond screen width.
-updateOverlayLine :: Int -> (AttrLine -> AttrLine) -> Overlay -> Overlay
-updateOverlayLine n f ov =
+updateLines :: Int -> (AttrLine -> AttrLine) -> [AttrLine] -> [AttrLine]
+updateLines n f ov =
   let upd k (l : ls) = if k == 0
                        then f l : ls
                        else l : upd (k - 1) ls
       upd _ [] = []
   in upd n ov
+
+-- blurb about [AttrLine]:
+-- | A series of screen lines that either fit the width of the screen
+-- or are intended for truncation when displayed. The length of overlay
+-- may exceed the length of the screen, unlike in @SingleFrame@.
+-- An exception is lines generated from animation, which have to fit
+-- in either dimension.
+
+-- * Overlay
+
+type Overlay = EM.EnumMap Point Color.AttrCharW32
 
 -- * Misc
 

@@ -15,28 +15,22 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Client.UI.Frame
+import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 
-type AnimationDiff = EM.EnumMap Point AttrCharW32
-
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.
-newtype Animation = Animation [AnimationDiff]
+newtype Animation = Animation [Overlay]
   deriving (Eq, Show)
 
 -- | Render animations on top of a screen frame.
 renderAnim :: SingleFrame -> Animation -> Frames
-renderAnim basicFrame@SingleFrame{singleFrame = levelOld, ..} (Animation anim) =
-  let modifyFrame :: AnimationDiff -> SingleFrame
-      modifyFrame am =
-        let fLine (y, lineOld) =
-              let f (x, acOld) = EM.findWithDefault acOld (Point x y) am
-              in map f $ zip [0..] lineOld
-            singleFrame = map fLine $ zip [0..] levelOld
-        in SingleFrame{..}
-      modifyFrames :: (AnimationDiff, AnimationDiff) -> Maybe SingleFrame
+renderAnim basicFrame (Animation anim) =
+  let modifyFrame :: Overlay -> SingleFrame
+      modifyFrame am = overlayFrame am (Just basicFrame)
+      modifyFrames :: (Overlay, Overlay) -> Maybe SingleFrame
       modifyFrames (am, amPrevious) =
         if am == amPrevious then Nothing else Just $ modifyFrame am
   in Just basicFrame : map modifyFrames (zip anim (EM.empty : anim))

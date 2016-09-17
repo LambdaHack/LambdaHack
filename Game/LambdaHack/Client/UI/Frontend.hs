@@ -31,6 +31,7 @@ import qualified Game.LambdaHack.Client.UI.Frontend.Std as Std
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | The instructions sent by clients to the raw frontend.
 data FrontReq :: * -> * where
@@ -146,11 +147,11 @@ nullStartup = createRawFrontend seqFrame (return ())
 
 seqFrame :: SingleFrame -> IO ()
 seqFrame SingleFrame{singleFrame} =
-  let seqAttr attr = Color.colorToRGB (Color.fgFromW32 attr)
-                     `seq` Color.colorToRGB (Color.bgFromW32 attr)
-                     `seq` Color.charFromW32 attr == ' '
-                     `seq` return ()
-  in mapM_ seqAttr $ concat singleFrame
+  let seqAttr () attr = Color.colorToRGB (Color.fgFromW32 attr)
+                        `seq` Color.colorToRGB (Color.bgFromW32 attr)
+                        `seq` Color.charFromW32 attr == ' '
+                        `seq` ()
+  in return $! PointArray.foldlA' seqAttr () singleFrame
 
 chanFrontendIO :: DebugModeCli -> IO ChanFrontend
 chanFrontendIO sdebugCli = do
