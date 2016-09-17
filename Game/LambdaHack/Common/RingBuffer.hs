@@ -27,7 +27,9 @@ instance Binary a => Binary (RingBuffer a)
 
 -- Only takes O(log n)).
 empty :: Int -> a -> RingBuffer a
-empty rbMaxSize dummy = RingBuffer (Seq.replicate rbMaxSize dummy) rbMaxSize 0 0
+empty size dummy =
+  let rbMaxSize = max 1 size
+  in RingBuffer (Seq.replicate rbMaxSize dummy) rbMaxSize 0 0
 
 -- | Add element to the front of the buffer.
 cons :: a -> RingBuffer a -> RingBuffer a

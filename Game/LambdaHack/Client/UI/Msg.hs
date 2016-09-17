@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.UI.Msg
   , snocReport, consReportNoScrub
   , renderReport, findInReport, lastMsgOfReport
     -- * History
-  , History, emptyHistory, addReport, lengthHistory, linesHistory
+  , History, emptyHistory, addReport, lengthHistory
   , lastReportOfHistory, splitReportForHistory, renderHistory
   ) where
 
@@ -18,6 +18,8 @@ import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
 import Data.Binary.Orphans ()
+import qualified Data.Vector.Unboxed as U
+import Data.Word (Word32)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Client.UI.Overlay
@@ -26,12 +28,22 @@ import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.RingBuffer as RB
 import Game.LambdaHack.Common.Time
 
+-- * UAttrLine
+
+type UAttrLine = U.Vector Word32
+
+uToAttrLine :: UAttrLine -> AttrLine
+uToAttrLine v = map Color.attrCharFromW32 $ U.toList v
+
+attrLineToU :: AttrLine -> UAttrLine
+attrLineToU l = U.fromList $ map Color.attrCharToW32 l
+
 -- * Msg
 
 -- | The type of a single game message.
 data Msg = Msg
   { msgLine :: !AttrLine  -- ^ the colours and characters of the message
-  , msgHist :: !Bool      -- ^ whether the message should be recorded in history
+  , msgHist :: !Bool      -- ^ whether message should be recorded in history
   }
   deriving (Show, Eq, Generic)
 
@@ -107,59 +119,55 @@ lastMsgOfReport (Report rep) = case rep of
 -- * History
 
 -- | The history of reports. This is a ring buffer of the given length
-newtype History = History (RB.RingBuffer (Time, Report))
-  deriving (Show, Binary)
+data History = History !Time !Report !(RB.RingBuffer UAttrLine)
+  deriving (Show, Generic)
+
+instance Binary History
 
 -- | Empty history of reports of the given maximal length.
 emptyHistory :: Int -> History
-emptyHistory size = History $ RB.empty size (timeZero, Report [])
+emptyHistory size = History timeZero emptyReport $ RB.empty size U.empty
 
 -- | Add a report to history, handling repetitions.
 addReport :: History -> Time -> Report -> History
-addReport !(History rb) !time (Report m') =
-  let !rep@(Report m) = Report $ filter (msgHist . repMsg) m'
-  in case RB.uncons rb of
-    _ | null m -> History rb
-    Nothing -> History $ RB.cons (time, rep) rb
-    Just ((oldTime, Report h), hRest) ->
-      case (reverse m, h) of
-        -- This and the previous @==@ almost fully evaluates history.
-        (RepMsgN s1 n1 : rs, RepMsgN s2 n2 : hhs) | s1 == s2 ->
-          let !rephh = Report $ RepMsgN s2 (n1 + n2) : hhs
-              hist = RB.cons (oldTime, rephh) hRest
-          in History $ if null rs
-                       then hist
-                       else let !repr = Report $ reverse rs
-                            in RB.cons (time, repr) hist
-        _ -> History $ RB.cons (time, rep) rb
+addReport !histOld@(History oldT oldRep@(Report h) hRest) !time !(Report m') =
+  let rep@(Report m) = Report $ filter (msgHist . repMsg) m'
+  in if null m then histOld else
+    case (reverse m, h) of
+      -- This and the previous @==@ almost fully evaluates history.
+      (RepMsgN s1 n1 : rs, RepMsgN s2 n2 : hhs) | s1 == s2 ->
+        let rephh = Report $ RepMsgN s2 (n1 + n2) : hhs
+        in if null rs
+           then History oldT rephh hRest
+           else let repr = Report $ reverse rs
+                    !lU = attrLineToU $ renderTimeReport oldT rephh
+                in History time repr $ RB.cons lU hRest
+      (_, []) -> History time rep hRest
+      _ -> let !lU = attrLineToU $ renderTimeReport oldT oldRep
+           in History time rep $ RB.cons lU hRest
+
+-- TODO: display time fractions with granularity enough to differ
+-- from previous and next report, if possible.
+-- or perhaps here display up to 4 decimal points
+renderTimeReport :: Time -> Report -> AttrLine
+renderTimeReport !t !r =
+  let turns = t `timeFitUp` timeTurn
+  in stringToAL (show turns ++ ": ") ++ renderReport r
 
 lengthHistory :: History -> Int
-lengthHistory (History rs) = RB.length rs
+lengthHistory (History _ r rs) = RB.length rs + if nullReport r then 0 else 1
 
-linesHistory :: History -> [(Time, Report)]
-linesHistory (History rb) = RB.toList rb
+lastReportOfHistory :: History -> Report
+lastReportOfHistory (History _ r _) = r
 
-lastReportOfHistory :: History -> Maybe Report
-lastReportOfHistory (History rb) = snd . fst <$> RB.uncons rb
-
-splitReportForHistory :: X -> (Time, Report) -> (AttrLine, [AttrLine])
-splitReportForHistory w (time, r) =
-  -- TODO: display time fractions with granularity enough to differ
-  -- from previous and next report, if possible.
-  -- or perhaps here display up to 4 decimal points
-  let tturns = stringToAL $ show $ time `timeFitUp` timeTurn
-      ts = splitAttrLine (w - 1) $ tturns ++ stringToAL ": " ++ renderReport r
-      rep = case ts of
-        [] -> []
-        hd : tl -> hd : map ([Color.spaceAttr] ++) tl
-  in (tturns, rep)
+splitReportForHistory :: X -> AttrLine -> [AttrLine]
+splitReportForHistory w l =
+  let ts = splitAttrLine (w - 1) l
+  in case ts of
+    [] -> []
+    hd : tl -> hd : map ([Color.spaceAttr] ++) tl
 
 -- | Render history as many lines of text, wrapping if necessary.
 renderHistory :: History -> Overlay
-renderHistory (History rb) =
-  let truncateForHistory (time, r) =
-        -- TODO: display time fractions with granularity enough to differ
-        -- from previous and next report, if possible
-        let turns = time `timeFitUp` timeTurn
-        in stringToAL (show turns ++ ": ") ++ renderReport r
-  in map truncateForHistory $ RB.toList rb
+renderHistory (History t r rb) =
+  map uToAttrLine (RB.toList rb) ++ [renderTimeReport t r]

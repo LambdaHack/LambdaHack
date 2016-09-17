@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Color
     Color(..), defFG, defBG, isBright, legalBG, darkCol, brightCol, stdCol
   , colorToRGB
     -- * Text attributes and the screen
-  , Attr(..), defAttr, AttrChar(..), spaceAttr
+  , Attr(..), defAttr, AttrChar(..), spaceAttr, attrCharToW32, attrCharFromW32
   ) where
 
 import Prelude ()
@@ -16,7 +16,9 @@ import Data.Binary
 import Data.Binary.Get
 import Data.Binary.Put
 import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
+import qualified Data.Char as Char
 import Data.Hashable (Hashable)
+import Data.Word (Word32)
 import GHC.Generics (Generic)
 
 -- TODO: since this type may be essential to speed, consider implementing
@@ -67,10 +69,6 @@ instance Enum Attr where
   toEnum n = Attr (toEnum $ unsafeShiftR n 8)
                   (toEnum $ n .&. (2 ^ (8 :: Int) - 1))
 
-instance Binary Attr where
-  put = putWord16le . toEnum . fromEnum
-  get = fmap (toEnum . fromEnum) getWord16le
-
 -- | The default attribute, to optimize attribute setting.
 defAttr :: Attr
 defAttr = Attr defFG defBG
@@ -81,14 +79,20 @@ data AttrChar = AttrChar
   }
   deriving (Show, Eq, Ord)
 
-instance Enum AttrChar where
-  fromEnum AttrChar{..} = unsafeShiftL (fromEnum acAttr) 16 + fromEnum acChar
-  toEnum n = AttrChar (toEnum $ unsafeShiftR n 16)
-                      (toEnum $ n .&. (2 ^ (16 :: Int) - 1))
+attrCharToW32 :: AttrChar -> Word32
+attrCharToW32 AttrChar{acAttr=Attr{..}, acChar} = toEnum $
+  fromEnum fg + unsafeShiftL (fromEnum bg) 8
+  + unsafeShiftL (Char.ord acChar) 16
+
+attrCharFromW32 :: Word32 -> AttrChar
+attrCharFromW32 n =
+  AttrChar (Attr (toEnum $ fromEnum $ n .&. (2 ^ (8 :: Int) - 1))
+                 (toEnum $ fromEnum $ n .&. (2 ^ (16 :: Int) - 2 ^ (8 :: Int))))
+           (Char.chr $ fromEnum $ unsafeShiftR n 16)
 
 instance Binary AttrChar where
-  put = putWord32le . toEnum . fromEnum
-  get = fmap (toEnum . fromEnum) getWord32le
+  put = putWord32le . attrCharToW32
+  get = fmap attrCharFromW32 getWord32le
 
 spaceAttr :: AttrChar
 spaceAttr = AttrChar defAttr ' '

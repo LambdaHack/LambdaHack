@@ -418,7 +418,7 @@ msgDuplicateScrap = do
   let (lastMsg, repRest) = lastMsgOfReport report
       lastDup = isJust . findInReport (== lastMsg)
       lastDuplicated = lastDup repRest
-                       || maybe False lastDup (lastReportOfHistory history)
+                       || lastDup (lastReportOfHistory history)
   when lastDuplicated $
     modifySession $ \sess -> sess {_sreport = repRest}
 

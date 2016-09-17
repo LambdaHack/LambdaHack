@@ -531,7 +531,7 @@ historyHuman = do
   Level{lxsize, lysize} <- getLevel arena
   localTime <- getsState $ getLocalTime arena
   global <- getsState stime
-  let histLines = linesHistory history
+  let rh = renderHistory history
       turnsGlobal = global `timeFitUp` timeTurn
       turnsLocal = localTime `timeFitUp` timeTurn
       msg = makeSentence
@@ -539,7 +539,6 @@ historyHuman = do
         , MU.CarWs turnsGlobal "half-second turn"
         , "(this level:"
         , MU.Text (tshow turnsLocal) <> ")" ]
-      rh = renderHistory history
       kxs = [ (Right sn, (slotPrefix sn, 0, lxsize))
             | sn <- take (length rh) intSlots ]
   promptAdd msg
@@ -555,12 +554,12 @@ historyHuman = do
           Right SlotChar{..} | slotChar == 'a' -> displayOneReport slotPrefix
           _ -> assert `failure` ekm
       displayOneReport histSlot = do
-        let timeReport = case drop histSlot histLines of
+        let timeReport = case drop histSlot rh of
               [] -> assert `failure` histSlot
               tR : _ -> tR
-            (tturns, ov0) = splitReportForHistory lxsize timeReport
-            prompt = stringToAL "The full past message at time "
-                     ++ tturns ++ stringToAL "."
+            ov0 = splitReportForHistory lxsize timeReport
+            prompt = textToAL $ makeSentence
+              ["the", MU.Ordinal $ histSlot + 1, "record of all history follows"]
         promptAddAttr prompt
         slides <-
           overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] (ov0, [])
