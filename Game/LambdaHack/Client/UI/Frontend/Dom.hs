@@ -300,41 +300,39 @@ display DebugModeCli{scolorIsBold}
         FrontendSession{..}
         SingleFrame{singleFrame} = postGUISync $ do
   let setChar :: (HTMLTableCellElement, Color.AttrChar) -> IO ()
-      setChar (cell, Color.AttrChar{acAttr=acAttr@Color.Attr{..}, acChar}) = do
-        let s = if acChar == ' ' then [chr 160] else [acChar]
-        setTextContent cell $ Just s  -- very fast
-        -- fast: setInnerText cell $ Just s
-        -- *much* slower: setInnerHTML cell $ Just s
-        -- import GHCJS.DOM.HTMLElement (setInnerText)
-        -- doesn't work: setNodeValue cell $ Just s
+      setChar (cell, Color.AttrChar{acAttr=Color.Attr{..}, acChar}) = do
+        case acChar of
+          ' ' -> setTextContent cell $ Just [chr 160]
+          ch -> setTextContent cell $ Just [ch]
         Just style <- getStyle cell
-        if acAttr == Color.defAttr then do
-          removeProp style "background-color"
-          removeProp style "color"
-          removeProp style "font-weight"
-          setProp style "border-color" "transparent"
-        else do
-          when (scolorIsBold == Just True) $ setProp style "font-weight" "bold"
-          setProp style "color" $ Color.colorToRGB fg
-          case bg of
-            Color.BrRed -> do  -- highlighted tile
-              setProp style "border-color" $ Color.colorToRGB Color.Red
-              removeProp style "background-color"
-            Color.BrBlue -> do  -- blue highlighted tile
-              setProp style "border-color" $ Color.colorToRGB Color.Blue
-              removeProp style "background-color"
-            Color.BrYellow -> do  -- yellow highlighted tile
-              setProp style "border-color" $ Color.colorToRGB Color.BrYellow
-              removeProp style "background-color"
-            Color.Black -> do
-              removeProp style "background-color"
-              setProp style "border-color" "transparent"
-            _ -> do
-              setProp style "background-color" $ Color.colorToRGB bg
-              setProp style "border-color" "transparent"
+        case fg of
+          Color.White -> do
+            removeProp style "color"
+            when (scolorIsBold == Just True) $
+              removeProp style "font-weight"
+          c -> do
+            setProp style "color" $ Color.colorToRGB c
+            when (scolorIsBold == Just True) $
+              setProp style "font-weight" "bold"
+        case bg of
+          Color.Black -> do
+            setProp style "border-color" "transparent"
+            removeProp style "background-color"
+          Color.BrRed -> do  -- highlighted tile
+            setProp style "border-color" $ Color.colorToRGB Color.Red
+            removeProp style "background-color"
+          Color.BrBlue -> do  -- blue highlighted tile
+            setProp style "border-color" $ Color.colorToRGB Color.Blue
+            removeProp style "background-color"
+          Color.BrYellow -> do  -- yellow highlighted tile
+            setProp style "border-color" $ Color.colorToRGB Color.BrYellow
+            removeProp style "background-color"
+          c -> do
+            setProp style "border-color" "transparent"
+            setProp style "background-color" $ Color.colorToRGB c
       acs = PointArray.foldrA (\w l ->
               Color.attrCharFromW32 w : l) [] singleFrame
-  -- Sync, no point mutitasking threads in the single-threaded JS
+  -- Sync, no point mutitasking threads in the single-threaded JS.
   callback <- newRequestAnimationFrameCallback $ \_ -> do
     mapM_ setChar $ zip scharCells acs
   -- This ensure no frame redraws while callback executes.
