@@ -8,7 +8,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.EnumMap.Strict as EM
 import Data.Word (Word32)
 
 import Game.LambdaHack.Client.UI.Overlay
@@ -65,7 +64,7 @@ truncateAttrLine w xs lenMax =
 linesToOverlay :: [AttrLine] -> Overlay
 linesToOverlay al =
   let fLine y = zipWith (\x ac -> (Point x y, ac)) [0..]
-  in EM.fromList $ concat $ zipWith fLine [0..] al
+  in concat $ zipWith fLine [0..] al
 
 -- | Overlays either the game map only or the whole empty screen frame.
 -- We assume the lines of the overlay are not too long nor too many.
@@ -77,7 +76,7 @@ overlayFrame ov msf =
       canvas = case msf of
         Nothing -> PointArray.replicateA lxsize canvasLength spaceAttrW32
         Just SingleFrame{..} -> singleFrame
-  in SingleFrame $ canvas PointArray.// EM.assocs ov
+  in SingleFrame $ canvas PointArray.// ov
 
 overlayFrameWithLines :: [AttrLine] -> Maybe SingleFrame -> SingleFrame
 overlayFrameWithLines l msf =

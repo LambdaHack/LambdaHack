@@ -13,7 +13,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
@@ -120,7 +119,7 @@ updateLines n f ov =
 
 -- * Overlay
 
-type Overlay = EM.EnumMap Point Color.AttrCharW32
+type Overlay = [(Point, Color.AttrCharW32)]
 
 -- * Misc
 

@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.UI.Animation
-  ( Animation, renderAnim, restrictAnim
+  ( Animation, renderAnim
   , pushAndDelay, blinkColorActor, twirlSplash, blockHit, blockMiss
   , deathBody, actorX, swapPlaces, teleport, fadeout
   ) where
@@ -12,7 +12,6 @@ import Game.LambdaHack.Common.Prelude
 
 import Data.Bits
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Overlay
@@ -33,7 +32,7 @@ renderAnim basicFrame (Animation anim) =
       modifyFrames :: (Overlay, Overlay) -> Maybe SingleFrame
       modifyFrames (am, amPrevious) =
         if am == amPrevious then Nothing else Just $ modifyFrame am
-  in Just basicFrame : map modifyFrames (zip anim (EM.empty : anim))
+  in Just basicFrame : map modifyFrames (zip anim ([] : anim))
 
 blank :: Maybe AttrCharW32
 blank = Nothing
@@ -59,19 +58,12 @@ mzipPairs (p1, p2) (mattr1, mattr2) = map mapPosToScreenPos $
                       -- not the action.
                       [mzip (p1, mattr1)]
 
-restrictAnim :: ES.EnumSet Point -> Animation -> Animation
-restrictAnim vis (Animation as) =
-  let f imap =
-        let common = EM.intersection imap $ EM.fromSet (const ()) vis
-        in if EM.null common then Nothing else Just common
-  in Animation $ mapMaybe f as
-
 pushAndDelay :: Animation
-pushAndDelay = Animation [EM.empty]
+pushAndDelay = Animation [[]]
 
 blinkColorActor :: Point -> Char -> Color -> Color -> Animation
 blinkColorActor pos symbol fromCol toCol =
-  Animation $ map (EM.fromList . mzipSingleton pos)
+  Animation $ map (mzipSingleton pos)
   [ cSym fromCol symbol
   , cSym toCol symbol
   , cSym fromCol symbol
@@ -81,7 +73,7 @@ blinkColorActor pos symbol fromCol toCol =
 
 -- | Attack animation. A part of it also reused for self-damage and healing.
 twirlSplash :: (Point, Point) -> Color -> Color -> Animation
-twirlSplash poss c1 c2 = Animation $ map (EM.fromList . mzipPairs poss)
+twirlSplash poss c1 c2 = Animation $ map (mzipPairs poss)
   [ (blank           , cSym BrCyan '\'')
   , (blank           , cSym BrYellow '\'')
   , (blank           , cSym BrYellow '^')
@@ -99,7 +91,7 @@ twirlSplash poss c1 c2 = Animation $ map (EM.fromList . mzipPairs poss)
 
 -- | Attack that hits through a block.
 blockHit :: (Point, Point) -> Color -> Color -> Animation
-blockHit poss c1 c2 = Animation $ map (EM.fromList . mzipPairs poss)
+blockHit poss c1 c2 = Animation $ map (mzipPairs poss)
   [ (blank           , cSym BrCyan '\'')
   , (blank           , cSym BrYellow '\'')
   , (blank           , cSym BrYellow '^')
@@ -121,7 +113,7 @@ blockHit poss c1 c2 = Animation $ map (EM.fromList . mzipPairs poss)
 
 -- | Attack that is blocked.
 blockMiss :: (Point, Point) -> Animation
-blockMiss poss = Animation $ map (EM.fromList . mzipPairs poss)
+blockMiss poss = Animation $ map (mzipPairs poss)
   [ (blank           , cSym BrCyan '\'')
   , (blank           , cSym BrYellow '^')
   , (cSym BrBlue  '{', cSym BrYellow '\'')
@@ -135,7 +127,7 @@ blockMiss poss = Animation $ map (EM.fromList . mzipPairs poss)
 
 -- | Death animation for an organic body.
 deathBody :: Point -> Animation
-deathBody pos = Animation $ map (EM.fromList . mzipSingleton pos)
+deathBody pos = Animation $ map (mzipSingleton pos)
   [ cSym BrRed '\\'
   , cSym BrRed '\\'
   , cSym BrRed '|'
@@ -162,7 +154,7 @@ deathBody pos = Animation $ map (EM.fromList . mzipSingleton pos)
 
 -- | Mark actor location animation.
 actorX :: Point -> Animation
-actorX pos = Animation $ map (EM.fromList . mzipSingleton pos)
+actorX pos = Animation $ map (mzipSingleton pos)
   [ cSym BrRed 'X'
   , cSym BrRed 'X'
   , blank
@@ -171,7 +163,7 @@ actorX pos = Animation $ map (EM.fromList . mzipSingleton pos)
 
 -- | Actor teleport animation.
 teleport :: (Point, Point) -> Animation
-teleport poss = Animation $ map (EM.fromList . mzipPairs poss)
+teleport poss = Animation $ map (mzipPairs poss)
   [ (cSym BrMagenta 'o', cSym Magenta   '.')
   , (cSym BrMagenta 'O', cSym Magenta   '.')
   , (cSym Magenta   'o', cSym Magenta   'o')
@@ -183,7 +175,7 @@ teleport poss = Animation $ map (EM.fromList . mzipPairs poss)
 
 -- | Swap-places animation, both hostile and friendly.
 swapPlaces :: (Point, Point) -> Animation
-swapPlaces poss = Animation $ map (EM.fromList . mzipPairs poss)
+swapPlaces poss = Animation $ map (mzipPairs poss)
   [ (cSym BrMagenta 'o', cSym Magenta   'o')
   , (cSym BrMagenta 'd', cSym Magenta   'p')
   , (cSym BrMagenta '.', cSym Magenta   'p')
@@ -215,13 +207,12 @@ fadeout out topRight step lxsize lysize = do
         in EM.findWithDefault ' ' k edge
       rollFrame n = do
         r <- random
-        let l = [ ( Point (if topRight then x else xbound - x) y
-                  , attrCharToW32 $ AttrChar defAttr $ fadeChar r n x y )
-                | x <- [0..xbound]
-                , y <- [max 0 (ybound - (n - x) `div` 2)..ybound]
-                    ++ [0..min ybound ((n - xbound + x) `div` 2)]
-                ]
-        return $! EM.fromList l
+        return [ ( Point (if topRight then x else xbound - x) y
+                 , attrCharToW32 $ AttrChar defAttr $ fadeChar r n x y )
+               | x <- [0..xbound]
+               , y <- [max 0 (ybound - (n - x) `div` 2)..ybound]
+                   ++ [0..min ybound ((n - xbound + x) `div` 2)]
+               ]
       fs | out = [3, 3 + step .. lxsize - 14]
          | otherwise = [lxsize - 14, lxsize - 14 - step .. 1]
   Animation <$> mapM rollFrame fs
