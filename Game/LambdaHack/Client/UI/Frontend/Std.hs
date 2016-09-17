@@ -51,7 +51,7 @@ shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
 display :: SingleFrame  -- ^ the screen frame to draw
         -> IO ()
 display SingleFrame{singleFrame} =
-  let bs = map (map (Color.acChar . Color.attrCharFromW32)) singleFrame ++ [""]
+  let bs = map (map Color.charFromW32) singleFrame ++ [""]
   in mapM_ putStrLn bs
 
 keyTranslate :: Char -> K.KM

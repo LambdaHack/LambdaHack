@@ -8,8 +8,9 @@ module Game.LambdaHack.Common.Color
   , Attr(..), defAttr
   , AttrChar(..)
   , AttrCharW32(AttrCharW32), attrCharW32
-  , attrCharToW32, attrCharFromW32, fgFromW32, bgFromW32, charFromW32
-  , spaceAttrW32, retAttrW32,
+  , attrCharToW32, attrCharFromW32
+  , fgFromW32, bgFromW32, charFromW32, attrFromW32
+  , spaceAttrW32, retAttrW32
   ) where
 
 import Prelude ()
@@ -98,8 +99,7 @@ attrCharFromW32 !w =
 
 {- surprisingly, this is slower:
 attrCharFromW32 :: AttrCharW32 -> AttrChar
-attrCharFromW32 !w =
-  AttrChar (Attr (fgFromW32 w) (bgFromW32 w)) (charFromW32 w)
+attrCharFromW32 !w = AttrChar (attrFromW32 w) (charFromW32 w)
 -}
 
 fgFromW32 :: AttrCharW32 -> Color
@@ -116,6 +116,10 @@ charFromW32 :: AttrCharW32 -> Char
 {-# INLINE charFromW32 #-}
 charFromW32 w =
   Char.chr $ fromEnum $ unsafeShiftR (attrCharW32 w) 16
+
+attrFromW32 :: AttrCharW32 -> Attr
+{-# INLINE attrFromW32 #-}
+attrFromW32 w = Attr (fgFromW32 w) (bgFromW32 w)
 
 spaceAttrW32 :: AttrCharW32
 spaceAttrW32 = attrCharToW32 $ AttrChar defAttr ' '

@@ -244,8 +244,10 @@ setTo tb defAttr (ly, attr:attrs) = do
 
 evalFrame :: FrontendSession -> SingleFrame -> GtkFrame
 evalFrame FrontendSession{stags} SingleFrame{singleFrame} =
-  let f Color.AttrChar{acAttr=acAttr@Color.Attr{..}} =
-        let acAttr1 = case bg of
+  let f :: Color.Attr -> TextTag
+      {-# INLINE f #-}
+      f acAttr@Color.Attr{..} =
+        let acAttr2 = case bg of
               Color.BrRed ->
                 Color.Attr Color.defBG Color.defFG  -- highlighted tile
               Color.BrBlue ->  -- blue highlighted tile
@@ -257,9 +259,8 @@ evalFrame FrontendSession{stags} SingleFrame{singleFrame} =
                 then Color.Attr fg Color.BrBlack
                 else Color.Attr fg Color.defFG
               _ -> acAttr
-        in stags EM.! acAttr1
-      gfAttr = map (map (f . Color.attrCharFromW32)) singleFrame
-      levelChar =
-        unlines $ map (map (Color.acChar . Color.attrCharFromW32)) singleFrame
+        in stags EM.! acAttr2
+      gfAttr = map (map (f . Color.attrFromW32)) singleFrame
+      levelChar = unlines $ map (map Color.charFromW32) singleFrame
       gfChar = BS.pack $ init levelChar
   in GtkFrame{..}
