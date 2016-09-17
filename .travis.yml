@@ -196,8 +196,10 @@ script:
         cabal install "$SRC_TGZ";
       elif [ $GTKVTY = "vty" ]; then
         cabal install -fvty "$SRC_TGZ";
-      else
+      elif [ $GTKVTY = "curses" ]; then
         cabal install -fcurses "$SRC_TGZ";
+      else
+        cabal install "$SRC_TGZ";
       fi;
    else
       echo "expected '$SRC_TGZ' not found";
