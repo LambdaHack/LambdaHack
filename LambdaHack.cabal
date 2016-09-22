@@ -270,6 +270,10 @@ library
     cpp-options:      -DUSE_BROWSER -DUSE_JSFILE_CLIENT -DUSE_JSFILE_SERVER
   } else { if flag(webkit) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
+-- currently works only with
+-- cabal install ghcjs-dom-0.3.1.0 --reinstall -f-webkit --upgrade-dependencies
+-- TODO: when it works with ghcjs-dom-webkit, benchmark and compare speed
+-- with webkit and ghcjs
     build-depends:    ghcjs-dom >= 0.2
     cpp-options:      -DUSE_WEBKIT
   } else { if flag(vty) {

@@ -11,8 +11,8 @@ import Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.Reader (ask)
 import Data.Char (chr)
-import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
-                  webViewGetDomDocument)
+import GHCJS.DOM (WebView, currentDocument, currentWindow, enableInspector,
+                  postGUISync, runWebGUI)
 import GHCJS.DOM.CSSStyleDeclaration (removeProperty, setProperty)
 import GHCJS.DOM.Document (createElement, getBody, keyDown, keyPress)
 import GHCJS.DOM.Element (contextMenu, getStyle, mouseUp, setInnerHTML, wheel)
@@ -30,7 +30,8 @@ import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
                                 getShiftKey)
 import GHCJS.DOM.Node (appendChild, setTextContent)
 import GHCJS.DOM.RequestAnimationFrameCallback
-import GHCJS.DOM.Types (CSSStyleDeclaration, IsMouseEvent, castToHTMLDivElement)
+import GHCJS.DOM.Types (CSSStyleDeclaration, DOM, DOMContext, IsMouseEvent,
+                        askDOM, castToHTMLDivElement, runDOM)
 import GHCJS.DOM.UIEvent (getCharCode, getKeyCode, getWhich)
 import GHCJS.DOM.WheelEvent (getDeltaY)
 import GHCJS.DOM.Window (requestAnimationFrame)
@@ -46,9 +47,9 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { swebView   :: !WebView
-  , scharStyle :: !CSSStyleDeclaration
-  , scharCells :: ![HTMLTableCellElement]
+  { sdomContext :: !DOMContext
+  , scharStyle  :: !CSSStyleDeclaration
+  , scharCells  :: ![HTMLTableCellElement]
   }
 
 -- | The name of the frontend.
@@ -73,11 +74,12 @@ startup sdebugCli = do
 terrible error
 #endif
 
-runWeb :: DebugModeCli -> MVar RawFrontend -> WebView -> IO ()
-runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
+runWeb :: DebugModeCli -> MVar RawFrontend -> WebView -> DOM ()
+runWeb sdebugCli@DebugModeCli{..} rfMVar webView = do
   -- Init the document.
-  enableInspector swebView  -- enables Inspector in Webkit
-  Just doc <- webViewGetDomDocument swebView
+  enableInspector webView  -- enables Inspector in Webkit
+  sdomContext <- askDOM
+  Just doc <- currentDocument
   Just body <- getBody doc
   Just pageStyle <- getStyle body
   setProp pageStyle "background-color" (Color.colorToRGB Color.Black)
@@ -121,7 +123,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
   setInnerHTML tableElem $ Just rows
   scharCells <- flattenTable tableElem
   let sess = FrontendSession{..}
-  rf <- createRawFrontend (display sdebugCli sess) shutdown
+  rf <- IO.liftIO $ createRawFrontend (display sdebugCli sess) shutdown
   -- Handle keypresses. http://unixpapa.com/js/key.html
   -- A bunch of fauity hacks; @keyPress@ doesn't handle non-character keys
   -- while with @keyDown@ all of getKeyIdentifier, getWhich and getKeyCode
@@ -208,23 +210,24 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
   mapM_ setBorder scharCells
   -- Display at the end to avoid redraw
   void $ appendChild body (Just divBlock)
-  putMVar rfMVar rf  -- send to client only after the whole webpage is set up
-                     -- because there is no @mainGUI@ to start accepting
+  IO.liftIO $ putMVar rfMVar rf
+    -- send to client only after the whole webpage is set up
+    -- because there is no @mainGUI@ to start accepting
 
 shutdown :: IO ()
 shutdown = return () -- nothing to clean up
 
-setProp :: CSSStyleDeclaration -> Text -> Text -> IO ()
+setProp :: CSSStyleDeclaration -> Text -> Text -> DOM ()
 setProp style propRef propValue =
   setProperty style propRef (Just propValue) ("" :: Text)
 
-removeProp :: CSSStyleDeclaration -> Text -> IO ()
+removeProp :: CSSStyleDeclaration -> Text -> DOM ()
 removeProp style propRef = do
   (_t :: Maybe Text) <- removeProperty style propRef
   return ()
 
 -- | Let each table cell handle mouse events inside.
-handleMouse :: RawFrontend -> (HTMLTableCellElement, (Int, Int)) -> IO ()
+handleMouse :: RawFrontend -> (HTMLTableCellElement, (Int, Int)) -> DOM ()
 handleMouse rf (cell, (cx, cy)) = do
   let readMod :: IsMouseEvent e => EventM HTMLTableCellElement e K.Modifier
       readMod = do
@@ -236,32 +239,30 @@ handleMouse rf (cell, (cx, cy)) = do
       saveWheel = do
         wheelY <- ask >>= getDeltaY
         modifier <- readMod
-        IO.liftIO $ do
-          let mkey = if | wheelY < -0.01 -> Just K.WheelNorth
-                        | wheelY > 0.01 -> Just K.WheelSouth
-                        | otherwise -> Nothing  -- probably a glitch
-              pointer = Point cx cy
-          maybe (return ())
-                (\key -> IO.liftIO $ saveKMP rf modifier key pointer) mkey
+        let mkey = if | wheelY < -0.01 -> Just K.WheelNorth
+                      | wheelY > 0.01 -> Just K.WheelSouth
+                      | otherwise -> Nothing  -- probably a glitch
+            pointer = Point cx cy
+        maybe (return ())
+              (\key -> IO.liftIO $ saveKMP rf modifier key pointer) mkey
       saveMouse = do
         -- https://hackage.haskell.org/package/ghcjs-dom-0.2.1.0/docs/GHCJS-DOM-EventM.html
         but <- mouseButton
         modifier <- readMod
-        IO.liftIO $ do
       -- TODO: mdrawWin <- displayGetWindowAtPointer display
       -- let setCursor (drawWin, _, _) =
       --       drawWindowSetCursor drawWin (Just cursor)
       -- maybe (return ()) setCursor mdrawWin
-          let mkey = case but of
-                0 -> Just K.LeftButtonRelease
-                1 -> Just K.MiddleButtonRelease
-                2 -> Just K.RightButtonRelease  -- not handled in contextMenu
-                _ -> Nothing  -- probably a glitch
-              pointer = Point cx cy
+        let mkey = case but of
+              0 -> Just K.LeftButtonRelease
+              1 -> Just K.MiddleButtonRelease
+              2 -> Just K.RightButtonRelease  -- not handled in contextMenu
+              _ -> Nothing  -- probably a glitch
+            pointer = Point cx cy
           -- _ks = T.unpack (K.showKey key)
           -- IO.liftIO $ putStrLn $ "m: " ++ _ks ++ show modifier ++ show pointer
-          maybe (return ())
-                (\key -> IO.liftIO $ saveKMP rf modifier key pointer) mkey
+        maybe (return ())
+              (\key -> IO.liftIO $ saveKMP rf modifier key pointer) mkey
   void $ cell `on` wheel $ do
     saveWheel
     preventDefault
@@ -272,7 +273,7 @@ handleMouse rf (cell, (cx, cy)) = do
     preventDefault
 
 -- | Get the list of all cells of an HTML table.
-flattenTable :: HTMLTableElement -> IO [HTMLTableCellElement]
+flattenTable :: HTMLTableElement -> DOM [HTMLTableCellElement]
 flattenTable table = do
   let lxsize = fromIntegral $ fst normalLevelBound + 1
       lysize = fromIntegral $ snd normalLevelBound + 4
@@ -281,7 +282,7 @@ flattenTable table = do
         Just rowsItem <- item rows y
         castToHTMLTableRowElement rowsItem
   lrow <- mapM f [0..lysize-1]
-  let getC :: HTMLTableRowElement -> IO [HTMLTableCellElement]
+  let getC :: HTMLTableRowElement -> DOM [HTMLTableCellElement]
       getC row = do
         Just cells <- getCells row
         let g x = do
@@ -298,9 +299,8 @@ display :: DebugModeCli
         -> IO ()
 display DebugModeCli{scolorIsBold}
         FrontendSession{..}
-        SingleFrame{singleFrame} = postGUISync $ do
-  let setChar :: (HTMLTableCellElement, Color.AttrChar) -> IO ()
-      setChar (cell, Color.AttrChar{acAttr=Color.Attr{..}, acChar}) = do
+        SingleFrame{singleFrame} = flip runDOM sdomContext $ postGUISync $ do
+  let setChar (cell, Color.AttrChar{acAttr=Color.Attr{..}, acChar}) = do
         case acChar of
           ' ' -> setTextContent cell $ Just [chr 160]
           ch -> setTextContent cell $ Just [ch]
@@ -336,4 +336,5 @@ display DebugModeCli{scolorIsBold}
   callback <- newRequestAnimationFrameCallback $ \_ -> do
     mapM_ setChar $ zip scharCells acs
   -- This ensure no frame redraws while callback executes.
-  void $ requestAnimationFrame swebView (Just callback)
+  Just win <- currentWindow
+  void $ requestAnimationFrame win (Just callback)
