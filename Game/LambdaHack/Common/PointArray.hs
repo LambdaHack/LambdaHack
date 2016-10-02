@@ -71,9 +71,9 @@ punindex xsize n = let (y, x) = n `quotRem` xsize
 {-# INLINE (!) #-}
 (!) Array{..} p = cnv $ avector U.! pindex axsize p
 
-accessI :: (U.Unbox w, Enum w, Enum c) => GArray w c -> Int -> c
+accessI :: U.Unbox w => GArray w c -> Int -> w
 {-# INLINE accessI #-}
-accessI Array{..} p = cnv $ avector `U.unsafeIndex` p
+accessI Array{..} p = avector `U.unsafeIndex` p
 
 -- | Construct an array updated with the association list.
 (//) :: (U.Unbox w, Enum w, Enum c) => GArray w c -> [(Point, c)] -> GArray w c

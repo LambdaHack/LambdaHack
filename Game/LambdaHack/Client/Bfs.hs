@@ -74,14 +74,11 @@ fillBfs :: PointArray.Array Word8
         -> PointArray.Array BfsDistance   -- ^ initial array, with @apartBfs@
         -> ()
 {-# INLINE fillBfs #-}
-fillBfs lalter alterSkill source PointArray.Array{..} =
+fillBfs lalter alterSkill source arr@PointArray.Array{..} =
   let vToI (x, y) = PointArray.pindex axsize (Point x y)
       movesI :: [VectorI]
       movesI = map vToI
         [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
-      accessI :: Int -> BfsDistance
-      {-# INLINE accessI #-}
-      accessI p = BfsDistance $ avector `U.unsafeIndex` p
       unsafeWriteI :: Int -> BfsDistance -> ()
       {-# INLINE unsafeWriteI #-}
       unsafeWriteI p c = runST $ do
@@ -108,7 +105,8 @@ fillBfs lalter alterSkill source PointArray.Array{..} =
               let fKnown :: [PointI] -> VectorI -> [PointI]
                   fKnown !l !move =
                     let !p = pos + move
-                        visitedMove = accessI p /= apartBfs
+                        visitedMove =
+                          BfsDistance (arr `PointArray.accessI` p) /= apartBfs
                     in if visitedMove
                        then l
                        else let alter :: Word8
@@ -153,7 +151,7 @@ findPathBfs :: PointArray.Array Word8
             -> PointArray.Array BfsDistance
             -> AndPath
 {-# INLINE findPathBfs #-}
-findPathBfs lalter pathSource pathGoal sepsRaw bfs@PointArray.Array{..} =
+findPathBfs lalter pathSource pathGoal sepsRaw arr@PointArray.Array{..} =
   let !pathGoalI = PointArray.pindex axsize pathGoal
       !pathSourceI = PointArray.pindex axsize pathSource
       eps = sepsRaw `mod` 4
@@ -166,9 +164,6 @@ findPathBfs lalter pathSource pathGoal sepsRaw bfs@PointArray.Array{..} =
       vToI (x, y) = PointArray.pindex axsize (Point x y)
       movesI :: [VectorI]
       movesI = map vToI prefMoves
-      accessI :: Int -> BfsDistance
-      {-# INLINE accessI #-}
-      accessI p = BfsDistance $ avector `U.unsafeIndex` p
       track :: PointI -> BfsDistance -> [Point] -> [Point]
       track !pos !oldDist !suffix | oldDist == minKnownBfs =
         assert (pos == pathSourceI) suffix
@@ -180,7 +175,8 @@ findPathBfs lalter pathSource pathGoal sepsRaw bfs@PointArray.Array{..} =
             minChild !minP _ [] = minP
             minChild minP minAlter (mv : mvs) =
               let !p = pos + mv
-                  backtrackingMove = accessI p /= dist
+                  backtrackingMove =
+                    BfsDistance (arr `PointArray.accessI` p) /= dist
               in if backtrackingMove
                  then minChild minP minAlter mvs
                  else let alter = lalter `PointArray.accessI` p
@@ -195,8 +191,9 @@ findPathBfs lalter pathSource pathGoal sepsRaw bfs@PointArray.Array{..} =
 #endif
             !posP = PointArray.punindex axsize pos
         in track newPos dist (posP : suffix)
-      !goalDist = accessI pathGoalI
-  in assert (accessI pathSourceI == minKnownBfs) $
+      !goalDist = BfsDistance $ arr `PointArray.accessI` pathGoalI
+  in assert (BfsDistance (arr `PointArray.accessI` pathSourceI)
+             == minKnownBfs) $
      if goalDist /= apartBfs
      then let pathList = track pathGoalI (goalDist .|. minKnownBfs) []
               pathLen = fromEnum $ goalDist .&. complement minKnownBfs
@@ -216,7 +213,7 @@ findPathBfs lalter pathSource pathGoal sepsRaw bfs@PointArray.Array{..} =
                          _ -> acc
                        _ -> acc
               (pRes, dRes, chessRes) =
-                PointArray.ifoldlA' f (originPoint, apartBfs, maxBound) bfs
+                PointArray.ifoldlA' f (originPoint, apartBfs, maxBound) arr
           in if chessRes == maxBound
              then NoPath
              else let pathList = track (PointArray.pindex axsize pRes)
