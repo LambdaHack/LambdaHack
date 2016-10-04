@@ -115,12 +115,15 @@ tryRestore Kind.COps{corule} sdebugSer = do
   let bench = sbenchmark $ sdebugCli sdebugSer
   if bench then return Nothing
   else do
-    let stdRuleset = Kind.stdRuleset corule
-        pathsDataFile = rpathsDataFile stdRuleset
-        prefix = ssavePrefixSer sdebugSer
-    let copies = []
+    let prefix = ssavePrefixSer sdebugSer
         name = prefix <.> saveName
-    liftIO $ Save.restoreGame tryCreateDir tryCopyDataFiles strictDecodeEOF name copies pathsDataFile
+    res <- liftIO $ Save.restoreGame tryCreateDir strictDecodeEOF name
+    let stdRuleset = Kind.stdRuleset corule
+        cfgUIName = rcfgUIName stdRuleset
+        content = rcfgUIDefault stdRuleset
+    dataDir <- liftIO $ appDataDir
+    liftIO $ tryWriteFile (dataDir </> cfgUIName) content
+    return res
 
 -- | Connection channel between the server and a single client.
 data ChanServer resp req = ChanServer

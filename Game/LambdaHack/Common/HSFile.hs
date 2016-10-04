@@ -1,6 +1,6 @@
 -- | Saving/loading with serialization and compression.
 module Game.LambdaHack.Common.HSFile
-  ( encodeEOF, strictDecodeEOF, tryCreateDir, tryCopyDataFiles, appDataDir
+  ( encodeEOF, strictDecodeEOF, tryCreateDir, tryWriteFile, appDataDir
   ) where
 
 import Prelude ()
@@ -68,33 +68,15 @@ tryCreateDir dir = do
     Ex.handle (\(_ :: Ex.IOException) -> return ())
               (createDirectory dir)
 
--- | Try to copy over data files, if not already there. We catch exceptions
--- in case many clients try to do the same thing at the same time.
-tryCopyDataFiles :: FilePath
-                 -> (FilePath -> IO FilePath)
-                 -> [(FilePath, FilePath)]
-                 -> IO ()
-tryCopyDataFiles dataDir pathsDataFile files =
-  let cpFile (fin, fout) = do
-        mpathsDataIn <- do
-          pathsDataIn1 <- pathsDataFile fin
-          bIn1 <- doesFileExist pathsDataIn1
-          if bIn1 then return $ Just pathsDataIn1
-          else do
-            currentDir <- getCurrentDirectory
-            let pathsDataIn2 = currentDir </> fin
-            bIn2 <- doesFileExist pathsDataIn2
-            if bIn2 then return $ Just pathsDataIn2
-            else return Nothing
-        case mpathsDataIn of
-          Nothing -> return ()
-          Just pathsDataIn -> do
-            let pathsDataOut = dataDir </> fout
-            bOut <- doesFileExist pathsDataOut
-            unless bOut $
-              Ex.handle (\(_ :: Ex.IOException) -> return ())
-                        (copyFile pathsDataIn pathsDataOut)
-  in mapM_ cpFile files
+-- | Try to write a file, given content, if the file not already there.
+-- We catch exceptions in case many clients try to do the same thing
+-- at the same time.
+tryWriteFile :: FilePath -> String -> IO ()
+tryWriteFile path content = do
+  fileExists <- doesFileExist path
+  unless fileExists $
+    Ex.handle (\(_ :: Ex.IOException) -> return ())
+              (writeFile path content)
 
 -- | Personal data directory for the game. Depends on the OS and the game,
 -- e.g., for LambdaHack under Linux it's @~\/.LambdaHack\/@.

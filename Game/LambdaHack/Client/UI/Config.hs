@@ -98,7 +98,7 @@ mkConfig Kind.COps{corule} sdebugCli = do
       sUIDefault = rcfgUIDefault stdRuleset
       cfgUIDefault = either (assert `failure`) id $ Ini.parse sUIDefault
   dataDir <- appDataDir
-  let userPath = dataDir </> cfgUIName <.> "ini"
+  let userPath = dataDir </> cfgUIName
   cfgUser <- if sbenchmark sdebugCli then return Ini.emptyConfig else do
     cpExists <- doesFileExist userPath
     if not cpExists

@@ -12,7 +12,7 @@ import Language.Haskell.TH.Syntax
 import System.FilePath
 
 -- Cabal
-import qualified Paths_LambdaHack as Self (getDataFileName, version)
+import qualified Paths_LambdaHack as Self (version)
 
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Content.RuleKind
@@ -35,11 +35,10 @@ standard = RuleKind
   , rfreq          = [("standard", 100)]
   , rtitle         = "LambdaHack"
   , raddress       = "http://github.com/LambdaHack/LambdaHack/releases"
-  , rpathsDataFile = Self.getDataFileName
   , rpathsVersion  = Self.version
   -- The strings containing the default configuration file
   -- included from config.ui.default.
-  , rcfgUIName = "config.ui"
+  , rcfgUIName = "config.ui" <.> "ini"
   , rcfgUIDefault = $(do
       let path = "GameDefinition" </> "config.ui" <.> "default"
       qAddDependentFile path

@@ -86,18 +86,13 @@ wrapInSaves tryCreateDir encodeEOF saveFile exe = do
 -- | Restore a saved game, if it exists. Initialize directory structure
 -- and copy over data files, if needed.
 restoreGame :: (FilePath -> IO ())
-            -> (FilePath
-                -> (FilePath -> IO FilePath)
-                -> [(FilePath, FilePath)]
-                -> IO ())
             -> (FilePath -> IO a)
-            -> String -> [(FilePath, FilePath)] -> (FilePath -> IO FilePath)
+            -> String
             -> IO (Maybe a)
-restoreGame tryCreateDir tryCopyDataFiles strictDecodeEOF name copies pathsDataFile = do
+restoreGame tryCreateDir strictDecodeEOF name = do
   -- Create user data directory and copy files, if not already there.
   dataDir <- appDataDir
   tryCreateDir dataDir
-  tryCopyDataFiles dataDir pathsDataFile copies
   let saveFile = dataDir </> "saves" </> name
   saveExists <- doesFileExist saveFile
   -- If the savefile exists but we get IO or decoding errors,

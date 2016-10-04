@@ -70,17 +70,17 @@ tryRestore isAI = do
   bench <- getsClient $ sbenchmark . sdebugCli
   if bench then return Nothing
   else do
-    Kind.COps{corule} <- getsState scops
-    let stdRuleset = Kind.stdRuleset corule
-        pathsDataFile = rpathsDataFile stdRuleset
-        cfgUIName = rcfgUIName stdRuleset
     side <- getsClient sside
     prefix <- getsClient $ ssavePrefixCli . sdebugCli
-    let copies = [( "GameDefinition" </> cfgUIName <.> "default"
-                  , cfgUIName <.> "ini" )]
-        name = prefix <.> saveName side isAI
-    liftIO $ Save.restoreGame tryCreateDir tryCopyDataFiles strictDecodeEOF
-                              name copies pathsDataFile
+    let name = prefix <.> saveName side isAI
+    res <- liftIO $ Save.restoreGame tryCreateDir strictDecodeEOF name
+    Kind.COps{corule} <- getsState scops
+    let stdRuleset = Kind.stdRuleset corule
+        cfgUIName = rcfgUIName stdRuleset
+        content = rcfgUIDefault stdRuleset
+    dataDir <- liftIO $ appDataDir
+    liftIO $ tryWriteFile (dataDir </> cfgUIName) content
+    return res
 
 -- | Assuming the client runs on the same machine and for the same
 -- user as the server, move the server savegame out of the way.

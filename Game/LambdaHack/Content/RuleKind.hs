@@ -28,10 +28,8 @@ data RuleKind = RuleKind
   , rfreq           :: !(Freqs RuleKind)  -- ^ frequency within groups
   , rtitle          :: !Text      -- ^ the title of the game
   , raddress        :: !Text      -- ^ the homepage of the game
-  , rpathsDataFile  :: FilePath -> IO FilePath
-                                  -- ^ the path to data files
   , rpathsVersion   :: !Version   -- ^ the version of the game
-  , rcfgUIName      :: !FilePath  -- ^ base name of the UI config file
+  , rcfgUIName      :: !FilePath  -- ^ name of the UI config file
   , rcfgUIDefault   :: !String    -- ^ the default UI settings config file
   , rmainMenuArt    :: !Text      -- ^ the ASCII art for the Main Menu
   , rfirstDeathEnds :: !Bool      -- ^ whether first non-spawner actor death
