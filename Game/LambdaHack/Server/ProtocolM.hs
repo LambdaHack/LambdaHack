@@ -116,11 +116,9 @@ tryRestore Kind.COps{corule} sdebugSer = do
   if bench then return Nothing
   else do
     let stdRuleset = Kind.stdRuleset corule
-        scoresFile = rscoresFile stdRuleset
         pathsDataFile = rpathsDataFile stdRuleset
         prefix = ssavePrefixSer sdebugSer
-    let copies = [( "GameDefinition" </> scoresFile
-                  , scoresFile )]
+    let copies = []
         name = prefix <.> saveName
     liftIO $ Save.restoreGame tryCreateDir tryCopyDataFiles strictDecodeEOF name copies pathsDataFile
 
