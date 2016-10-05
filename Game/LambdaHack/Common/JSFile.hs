@@ -1,7 +1,7 @@
 -- | Saving/loading with serialization and compression.
 module Game.LambdaHack.Common.JSFile
   ( encodeEOF, strictDecodeEOF
-  , tryCreateDir, doesFileExist, tryWriteFile, readFile, appDataDir
+  , tryCreateDir, doesFileExist, tryWriteFile, readFile
   , domContextUnsafe
   ) where
 
@@ -96,12 +96,3 @@ readFile path =
     case mitem of
       Nothing -> error $ "Fatal error: no file " ++ path
       Just item -> return item
-
--- | Personal data directory for the game. Depends on the OS, the game, etc.;
--- e.g., for LambdaHack under Linux it's @~\/.LambdaHack\/@, but in the browser
--- it's yet different.
-appDataDir :: IO FilePath
-appDataDir = do
-  progName <- getProgName
-  let name = takeWhile Char.isAlphaNum progName
-  getAppUserDataDirectory name

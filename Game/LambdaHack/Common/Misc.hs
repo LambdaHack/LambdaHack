@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.Misc
     -- * Assorted
   , makePhrase, makeSentence
   , normalLevelBound, GroupName, toGroupName, Freqs, breturn
-  , serverSaveName, Rarity, validateRarity, Tactic(..)
+  , serverSaveName, Rarity, validateRarity, Tactic(..), appDataDir
   ) where
 
 import Prelude ()
@@ -20,6 +20,7 @@ import Game.LambdaHack.Common.Prelude
 
 import Control.DeepSeq
 import Data.Binary
+import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Function
@@ -30,6 +31,8 @@ import Data.String (IsString (..))
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
+import System.Directory (getAppUserDataDirectory)
+import System.Environment (getProgName)
 
 import Game.LambdaHack.Common.Point
 
@@ -242,3 +245,11 @@ instance NFData MU.Part
 instance NFData MU.Person
 
 instance NFData MU.Polarity
+
+-- | Personal data directory for the game. Depends on the OS and the game,
+-- e.g., for LambdaHack under Linux it's @~\/.LambdaHack\/@.
+appDataDir :: IO FilePath
+appDataDir = do
+  progName <- getProgName
+  let name = takeWhile Char.isAlphaNum progName
+  getAppUserDataDirectory name

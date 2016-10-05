@@ -7,14 +7,13 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import Game.LambdaHack.Common.Misc (appDataDir)
+
 import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Exception as Ex hiding (handle)
-import qualified Data.Char as Char
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import System.Directory (getAppUserDataDirectory)
-import System.Environment (getProgName)
 import System.FilePath
 import System.IO (hFlush, stderr)
 import qualified System.Random as R
@@ -120,12 +119,3 @@ delayPrint t = do
   threadDelay delay  -- try not to interleave saves with other clients
   T.hPutStrLn stderr t
   hFlush stderr
-
--- TODO: deduplicate
--- | Personal data directory for the game. Depends on the OS and the game,
--- e.g., for LambdaHack under Linux it's @~\/.LambdaHack\/@.
-appDataDir :: IO FilePath
-appDataDir = do
-  progName <- getProgName
-  let name = takeWhile Char.isAlphaNum progName
-  getAppUserDataDirectory name

@@ -1,7 +1,7 @@
 -- | Saving/loading with serialization and compression.
 module Game.LambdaHack.Common.HSFile
   ( encodeEOF, strictDecodeEOF
-  , tryCreateDir, doesFileExist, tryWriteFile, readFile, appDataDir
+  , tryCreateDir, doesFileExist, tryWriteFile, readFile
   ) where
 
 import Prelude ()
@@ -12,9 +12,7 @@ import qualified Codec.Compression.Zlib as Z
 import qualified Control.Exception as Ex
 import Data.Binary
 import qualified Data.ByteString.Lazy as LBS
-import qualified Data.Char as Char
 import System.Directory
-import System.Environment (getProgName)
 import System.FilePath
 import System.IO (IOMode (..), hClose, openBinaryFile, readFile, withBinaryFile,
                   writeFile)
@@ -78,11 +76,3 @@ tryWriteFile path content = do
   unless fileExists $
     Ex.handle (\(_ :: Ex.IOException) -> return ())
               (writeFile path content)
-
--- | Personal data directory for the game. Depends on the OS and the game,
--- e.g., for LambdaHack under Linux it's @~\/.LambdaHack\/@.
-appDataDir :: IO FilePath
-appDataDir = do
-  progName <- getProgName
-  let name = takeWhile Char.isAlphaNum progName
-  getAppUserDataDirectory name
