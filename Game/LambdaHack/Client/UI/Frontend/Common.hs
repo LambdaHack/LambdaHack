@@ -1,7 +1,7 @@
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.UI.Frontend.Common
   ( RawFrontend(..), KMP(..)
-  , startupAsync, startupBound, createRawFrontend, resetChanKey, saveKMP
+  , startupBound, createRawFrontend, resetChanKey, saveKMP
   , modifierTranslate
   ) where
 
@@ -26,13 +26,6 @@ data RawFrontend = RawFrontend
   , fshowNow  :: !(MVar ())
   , fchanKey  :: !(STM.TQueue KMP)
   }
-
-startupAsync :: (MVar RawFrontend -> IO ()) -> IO RawFrontend
-startupAsync k = do
-  rfMVar <- newEmptyMVar
-  a <- async $ k rfMVar
-  link a
-  takeMVar rfMVar
 
 startupBound :: (MVar RawFrontend -> IO ()) -> IO RawFrontend
 startupBound k = do

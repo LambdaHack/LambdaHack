@@ -162,7 +162,8 @@ class MonadServer m => MonadServerReadRequest m where
   saveChanServer :: m (Save.ChanSave (State, StateServer, ConnServerDict))
   liftIO       :: IO a -> m a
 
-updateCopsDict :: MonadServerReadRequest m => KeyKind -> Config -> DebugModeCli -> m ()
+updateCopsDict :: MonadServerReadRequest m
+               => KeyKind -> Config -> DebugModeCli -> m ()
 updateCopsDict copsClient sconfig sdebugCli = do
   cops <- getsState scops
   schanF <- liftIO $ Frontend.chanFrontendIO sdebugCli

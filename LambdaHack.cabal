@@ -292,7 +292,6 @@ library
 
   if impl(ghcjs) {
     other-modules:    Game.LambdaHack.Common.JSFile
---TODO:    js-sources: a drop-in replacement for zlib when there is one
   } else {
     other-modules:    Game.LambdaHack.Common.HSFile
     build-depends:    zlib >= 0.5.3.1
@@ -367,7 +366,6 @@ executable LambdaHack
 -- on my machine with default --maxFps.
     cpp-options:      -DGHCJS_BUSY_YIELD=50
     ghc-options:      "-with-rtsopts=-A9m"
---TODO:    js-sources: a drop-in replacement for zlib when there is one
   } else {
     build-depends:    zlib >= 0.5.3.1
     ghc-options:      "-with-rtsopts=-A99m -K100K"

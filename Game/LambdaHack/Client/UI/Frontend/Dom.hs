@@ -7,12 +7,15 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+#if USE_WEBKIT
+import GHCJS.DOM (enableInspector, runWebGUI)
+#endif
+
 import Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.Reader (ask)
 import Data.Char (chr)
-import GHCJS.DOM (WebView, currentDocument, currentWindow, enableInspector,
-                  postGUISync, runWebGUI)
+import GHCJS.DOM (currentDocument, currentWindow, postGUISync)
 import GHCJS.DOM.CSSStyleDeclaration (removeProperty, setProperty)
 import GHCJS.DOM.Document (createElement, getBody, keyDown, keyPress)
 import GHCJS.DOM.Element (contextMenu, getStyle, mouseUp, setInnerHTML, wheel)
@@ -41,6 +44,7 @@ import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
+import Game.LambdaHack.Common.JSFile (domContextUnsafe)
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -67,17 +71,20 @@ terrible error
 startup :: DebugModeCli -> IO RawFrontend
 startup sdebugCli = do
 #ifdef USE_BROWSER
-  startupAsync $ \rfMVar -> runWebGUI $ runWeb sdebugCli rfMVar
+  rfMVar <- newEmptyMVar
+  flip runDOM domContextUnsafe $ postGUISync $ runWeb sdebugCli rfMVar
+  takeMVar rfMVar
 #elif USE_WEBKIT
-  startupBound $ \rfMVar -> runWebGUI $ runWeb sdebugCli rfMVar
+  startupBound $ \rfMVar -> runWebGUI $ \webView -> do
+    enableInspector webView  -- enables Inspector in Webkit
+    runWeb sdebugCli rfMVar
 #else
 terrible error
 #endif
 
-runWeb :: DebugModeCli -> MVar RawFrontend -> WebView -> DOM ()
-runWeb sdebugCli@DebugModeCli{..} rfMVar webView = do
+runWeb :: DebugModeCli -> MVar RawFrontend -> DOM ()
+runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   -- Init the document.
-  enableInspector webView  -- enables Inspector in Webkit
   sdomContext <- askDOM
   Just doc <- currentDocument
   Just body <- getBody doc
