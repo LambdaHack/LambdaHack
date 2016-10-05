@@ -178,7 +178,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
       --   putStrLn $ "modifier: " ++ show modifier
       IO.liftIO $ saveKMP rf modifier key originPoint
       -- Pass through Ctrl-+ and others, disable Tab.
-      when (modifier `elem` [K.NoModifier, K.Shift]) preventDefault
+      when (modifier `elem` [K.NoModifier, K.Shift, K.Control]) preventDefault
   void $ doc `on` keyPress $ do
     keyLoc <- ask >>= getKeyLocation
     which <- ask >>= getWhich
@@ -205,7 +205,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
       --   putStrLn $ "modifier: " ++ show modifier
       IO.liftIO $ saveKMP rf modifierNoShift key originPoint
       -- Pass through Ctrl-+ and others, disable Tab.
-      when (modifier `elem` [K.NoModifier, K.Shift]) preventDefault
+      when (modifier `elem` [K.NoModifier, K.Shift, K.Control]) preventDefault
   -- Handle mouseclicks, per-cell.
   let xs = [0..lxsize - 1]
       ys = [0..lysize - 1]

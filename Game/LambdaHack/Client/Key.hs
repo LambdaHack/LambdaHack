@@ -430,7 +430,7 @@ keyTranslateWeb "Win"         _ = DeadKey
 keyTranslateWeb ['\ESC']     _ = Esc
 keyTranslateWeb [' ']        _ = Space
 keyTranslateWeb ['\n']       _ = Return
-keyTranslateWeb ['\r']       _ = Return
+keyTranslateWeb ['\r']       _ = DeadKey
 keyTranslateWeb ['\t']       _ = Tab
 -- standard characters
 keyTranslateWeb [c]          _ = Char c
