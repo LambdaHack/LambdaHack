@@ -14,7 +14,7 @@ module Game.LambdaHack.Common.Prelude
 
 import Prelude ()
 
-import Prelude.Compat
+import Prelude.Compat hiding (appendFile, readFile, writeFile)
 
 import Control.Monad.Compat
 import Data.List.Compat

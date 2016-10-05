@@ -19,9 +19,9 @@ import Game.LambdaHack.Common.Prelude
 import qualified Control.Monad.Trans.State.Strict as St
 import Data.Binary
 import qualified Data.Text.IO as T
-import System.Directory
+import System.Directory (renameFile)
 import System.FilePath
-import System.IO
+import System.IO (hFlush, stderr)
 import qualified System.Random as R
 
 import Game.LambdaHack.Client.FileM
@@ -73,7 +73,8 @@ tryRestore isAI = do
     side <- getsClient sside
     prefix <- getsClient $ ssavePrefixCli . sdebugCli
     let name = prefix <.> saveName side isAI
-    res <- liftIO $ Save.restoreGame tryCreateDir strictDecodeEOF name
+    res <-
+      liftIO $ Save.restoreGame tryCreateDir doesFileExist strictDecodeEOF name
     Kind.COps{corule} <- getsState scops
     let stdRuleset = Kind.stdRuleset corule
         cfgUIName = rcfgUIName stdRuleset

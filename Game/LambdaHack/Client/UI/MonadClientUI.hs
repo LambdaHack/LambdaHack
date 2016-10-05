@@ -24,7 +24,7 @@ import qualified Data.Text.IO as T
 import Data.Time.Clock
 import Data.Time.Clock.POSIX
 import Data.Time.LocalTime
-import System.IO
+import System.IO (hFlush, stderr)
 
 import Game.LambdaHack.Client.CommonM
 import qualified Game.LambdaHack.Client.Key as K

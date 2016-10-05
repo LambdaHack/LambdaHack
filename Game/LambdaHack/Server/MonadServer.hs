@@ -24,10 +24,10 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Time.Clock.POSIX
 import Data.Time.LocalTime
-import System.Directory
+import System.Directory ()
 import System.Exit (exitFailure)
 import System.FilePath
-import System.IO
+import System.IO (hFlush, stderr)
 import qualified System.Random as R
 
 import Game.LambdaHack.Common.Actor

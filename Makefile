@@ -18,7 +18,7 @@ prof-ghcjs:
 	cabal configure --enable-profiling --ghc-option=-fprof-auto-exported --ghcjs --ghcjs-option=-dedupe -frelease
 
 chrome-prof:
-	google-chrome --no-sandbox --js-flags="--logfile=%t.log --prof" --password-store=default dist/build/LambdaHack/LambdaHack.jsexe/index.html
+	google-chrome --no-sandbox --js-flags="--logfile=%t.log --prof" dist/build/LambdaHack/LambdaHack.jsexe/index.html
 
 minific:
 	java -jar ~/Downloads/closure-compiler.jar dist/build/LambdaHack/LambdaHack.jsexe/all.js --compilation_level=ADVANCED_OPTIMIZATIONS > ~/Downloads/all.js

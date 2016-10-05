@@ -10,6 +10,7 @@ import Game.LambdaHack.Common.Prelude
 
 import Language.Haskell.TH.Syntax
 import System.FilePath
+import System.IO (readFile)
 
 -- Cabal
 import qualified Paths_LambdaHack as Self (version)

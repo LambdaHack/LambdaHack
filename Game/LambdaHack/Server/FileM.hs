@@ -1,6 +1,7 @@
 -- | Saving/loading with serialization and compression.
 module Game.LambdaHack.Server.FileM
-  ( encodeEOF, strictDecodeEOF, tryCreateDir, tryWriteFile, appDataDir
+  ( encodeEOF, strictDecodeEOF
+  , tryCreateDir, doesFileExist, tryWriteFile, readFile, appDataDir
   ) where
 
 import Prelude ()

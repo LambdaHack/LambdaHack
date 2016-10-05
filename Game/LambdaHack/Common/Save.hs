@@ -13,10 +13,10 @@ import qualified Control.Exception as Ex hiding (handle)
 import qualified Data.Char as Char
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import System.Directory
-import System.Environment
+import System.Directory (getAppUserDataDirectory)
+import System.Environment (getProgName)
 import System.FilePath
-import System.IO
+import System.IO (hFlush, stderr)
 import qualified System.Random as R
 
 -- TODO: refactor all this somehow, preferably restricting the use
@@ -86,15 +86,16 @@ wrapInSaves tryCreateDir encodeEOF saveFile exe = do
 -- | Restore a saved game, if it exists. Initialize directory structure
 -- and copy over data files, if needed.
 restoreGame :: (FilePath -> IO ())
+            -> (FilePath -> IO Bool)
             -> (FilePath -> IO a)
             -> String
             -> IO (Maybe a)
-restoreGame tryCreateDir strictDecodeEOF name = do
+restoreGame tryCreateDir checkFileExist strictDecodeEOF name = do
   -- Create user data directory and copy files, if not already there.
   dataDir <- appDataDir
   tryCreateDir dataDir
   let saveFile = dataDir </> "saves" </> name
-  saveExists <- doesFileExist saveFile
+  saveExists <- checkFileExist saveFile
   -- If the savefile exists but we get IO or decoding errors,
   -- we show them and start a new game. If the savefile was randomly
   -- corrupted or made read-only, that should solve the problem.

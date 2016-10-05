@@ -1,6 +1,7 @@
 -- | Saving/loading with serialization and compression.
 module Game.LambdaHack.Client.FileM
-  ( encodeEOF, strictDecodeEOF, tryCreateDir, tryWriteFile, appDataDir
+  ( encodeEOF, strictDecodeEOF
+  , tryCreateDir, doesFileExist, tryWriteFile, readFile, appDataDir
   , fileOperationImplemented
   ) where
 
@@ -12,8 +13,9 @@ import Game.LambdaHack.Common.Prelude
 
 import Game.LambdaHack.Common.JSFile
 
+-- TODO: enable unconditionally if the speed and the 5MB limit proves acceptable
 fileOperationImplemented :: Bool
-fileOperationImplemented = False
+fileOperationImplemented = True
 
 #else
 

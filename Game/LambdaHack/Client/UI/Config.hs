@@ -17,7 +17,6 @@ import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Game.LambdaHack.Common.ClientOptions
 import GHC.Generics (Generic)
-import System.Directory
 import System.FilePath
 import Text.Read
 

@@ -117,7 +117,8 @@ tryRestore Kind.COps{corule} sdebugSer = do
   else do
     let prefix = ssavePrefixSer sdebugSer
         name = prefix <.> saveName
-    res <- liftIO $ Save.restoreGame tryCreateDir strictDecodeEOF name
+    res <-
+      liftIO $ Save.restoreGame tryCreateDir doesFileExist strictDecodeEOF name
     let stdRuleset = Kind.stdRuleset corule
         cfgUIName = rcfgUIName stdRuleset
         content = rcfgUIDefault stdRuleset
