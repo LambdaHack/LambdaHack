@@ -136,8 +136,8 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
   -- and repeat.
   let loop arenasStart [] = do
         arenas <- arenasForLoop
-        continue <- endClip arenasStart
-        when continue (loop arenas arenas)
+        endClip arenasStart
+        loop arenas arenas
       loop arenasStart (arena : rest) = do
         handleActors arena
         quit <- getsServer squit
@@ -156,7 +156,7 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
   loopNew
 
 endClip :: (MonadAtomic m, MonadServer m, MonadServerReadRequest m)
-        => [LevelId] -> m Bool
+        => [LevelId] -> m ()
 endClip arenas = do
   Kind.COps{corule} <- getsState scops
   let stdRuleset = Kind.stdRuleset corule
@@ -177,7 +177,7 @@ endClip arenas = do
     modifyServer $ \ser -> ser {swriteSave = False}
     writeSaveAll False
   when (clipN `mod` leadLevelClips == 0) leadLevelSwitch
-  if clipMod == 1 then do
+  when (clipMod == 1) $ do
     -- Periodic activation only once per turn, for speed,
     -- but on all active arenas.
     mapM_ applyPeriodicLevel arenas
@@ -186,8 +186,6 @@ endClip arenas = do
     -- e.g., spreading leaders across levels to bump monster generation.
     arena <- rndToAction $ oneOf arenas
     spawnMonster arena
-    return True
-  else return True
 
 -- | Trigger periodic items for all actors on the given level.
 applyPeriodicLevel :: (MonadAtomic m, MonadServer m) => LevelId -> m ()

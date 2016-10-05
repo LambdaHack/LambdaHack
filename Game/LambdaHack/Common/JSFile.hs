@@ -13,7 +13,6 @@ import Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import Data.Binary
 import qualified Data.ByteString.Lazy.Char8 as LBS
-import qualified Data.Char as Char
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
 import GHCJS.DOM (currentWindow, postGUISync, runWebGUI)
@@ -21,8 +20,6 @@ import GHCJS.DOM.Storage (getItem, setItem)
 import GHCJS.DOM.Types (DOMContext, runDOM)
 import GHCJS.DOM.Types (askDOM)
 import GHCJS.DOM.Window (getLocalStorage)
-import System.Directory (getAppUserDataDirectory)
-import System.Environment (getProgName)
 import System.IO.Unsafe (unsafePerformIO)
 
 domContextUnsafe :: DOMContext

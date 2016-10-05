@@ -39,7 +39,6 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.BfsM
 import Game.LambdaHack.Client.CommonM
-import Game.LambdaHack.Client.FileM
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
@@ -1109,18 +1108,17 @@ gameRestartHuman t = do
 
 -- * GameExit
 
-gameExitHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
-gameExitHuman =
-  if fileOperationImplemented
-  then return $ Right ReqUIGameExit
-  else failWith "aborted; file operations not implemented for this frontend"
+gameExitHuman :: MonadClientUI m => m ReqUI
+gameExitHuman = do
+  -- Announce before the saving started, since it can take a while.
+  promptAdd "Saving game. The program stops now."
+  return ReqUIGameExit
 
 -- * GameSave
 
 gameSaveHuman :: MonadClientUI m => m ReqUI
 gameSaveHuman = do
-  -- Announce before the saving started, since it can take some time
-  -- and may slow down the machine, even if not block the client.
+  -- Announce before the saving started, since it can take a while.
   promptAdd "Saving game backup."
   return ReqUIGameSave
 

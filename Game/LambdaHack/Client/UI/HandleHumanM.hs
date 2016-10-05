@@ -70,7 +70,7 @@ cmdAction cmd = case cmd of
   GameDifficultyIncr -> gameDifficultyIncr >> mainMenuHuman cmdAction
 
   GameRestart t -> weaveJust <$> gameRestartHuman t
-  GameExit -> weaveJust <$> gameExitHuman
+  GameExit -> weaveJust <$> fmap Right gameExitHuman
   GameSave -> weaveJust <$> fmap Right gameSaveHuman
   Tactic -> weaveJust <$> tacticHuman
   Automate -> weaveJust <$> automateHuman
