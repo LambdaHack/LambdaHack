@@ -44,6 +44,7 @@ data Config = Config
   , configMaxFps      :: !Int
   , configNoAnim      :: !Bool
   , configRunStopMsgs :: !Bool
+  , configCmdline     :: ![String]
   }
   deriving (Show, Generic)
 
@@ -88,18 +89,19 @@ parseConfig cfg =
       configMaxFps = max 1 $ getOption "maxFps"
       configNoAnim = getOption "noAnim"
       configRunStopMsgs = getOption "runStopMsgs"
+      configCmdline = words $ getOption "overrideCmdline"
   in Config{..}
 
 -- | Read and parse UI config file.
-mkConfig :: Kind.COps -> DebugModeCli -> IO Config
-mkConfig Kind.COps{corule} sdebugCli = do
+mkConfig :: Kind.COps -> Bool -> IO Config
+mkConfig Kind.COps{corule} benchmark = do
   let stdRuleset = Kind.stdRuleset corule
       cfgUIName = rcfgUIName stdRuleset
       sUIDefault = rcfgUIDefault stdRuleset
       cfgUIDefault = either (assert `failure`) id $ Ini.parse sUIDefault
   dataDir <- appDataDir
   let userPath = dataDir </> cfgUIName
-  cfgUser <- if sbenchmark sdebugCli then return Ini.emptyConfig else do
+  cfgUser <- if benchmark then return Ini.emptyConfig else do
     cpExists <- doesFileExist userPath
     if not cpExists
       then return Ini.emptyConfig

@@ -28,6 +28,7 @@ import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Atomic.MonadStateWrite
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Content.KeyKind
+import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
@@ -118,14 +119,17 @@ handleAndBroadcastServer atomic = do
 -- Don't inline this, to keep GHC hard work inside the library.
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: Kind.COps -> KeyKind -> DebugModeSer -> IO ()
-executorSer cops copsClient sdebugNxt@DebugModeSer{sdebugCli} = do
+executorSer cops copsClient sdebugNxtCmdline = do
   -- Parse UI client configuration file.
   -- It is reloaded at each game executable start.
-  sconfig <- mkConfig cops sdebugCli
+  sconfig <- mkConfig cops (sbenchmark $ sdebugCli sdebugNxtCmdline)
+  sdebugNxt <- case configCmdline sconfig of
+    [] -> return sdebugNxtCmdline
+    args -> debugArgs args
   -- Options for the clients modified with the configuration file.
   -- The client debug inside server debug only holds the client commandline
   -- options and is never updated with config options, etc.
-  let sdebugMode = applyConfigToDebug cops sconfig sdebugCli
+  let sdebugMode = applyConfigToDebug cops sconfig $ sdebugCli sdebugNxt
       -- Partially applied main loops of the clients.
 #ifdef CLIENTS_AS_THREADS
       exeClientAI = executorCliAsThread True (loopAI sdebugMode) ()
