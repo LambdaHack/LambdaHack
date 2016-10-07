@@ -7,15 +7,11 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-#if USE_WEBKIT
-import GHCJS.DOM (enableInspector, runWebGUI)
-#endif
-
 import Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.Reader (ask)
 import Data.Char (chr)
-import GHCJS.DOM (currentDocument, currentWindow, postGUISync)
+import GHCJS.DOM (currentDocument, currentWindow, syncAfter)
 import GHCJS.DOM.CSSStyleDeclaration (removeProperty, setProperty)
 import GHCJS.DOM.Document (createElement, getBody, keyDown, keyPress)
 import GHCJS.DOM.Element (contextMenu, getStyle, mouseUp, setInnerHTML, wheel)
@@ -44,10 +40,17 @@ import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Common.JSFile (domContextUnsafe)
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
+
+#ifdef USE_BROWSER
+import Game.LambdaHack.Common.JSFile (domContextUnsafe)
+#elif USE_WEBKIT
+import GHCJS.DOM (run, syncPoint)
+#else
+terrible error
+#endif
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
@@ -72,12 +75,15 @@ startup :: DebugModeCli -> IO RawFrontend
 startup sdebugCli = do
 #ifdef USE_BROWSER
   rfMVar <- newEmptyMVar
-  flip runDOM domContextUnsafe $ postGUISync $ runWeb sdebugCli rfMVar
+  flip runDOM domContextUnsafe $ runWeb sdebugCli rfMVar
   takeMVar rfMVar
 #elif USE_WEBKIT
-  startupBound $ \rfMVar -> runWebGUI $ \webView -> do
-    enableInspector webView  -- enables Inspector in Webkit
+  -- TODO: possibly doesn't need to be bound now
+  startupBound $ \rfMVar -> run 3708 $ do
     runWeb sdebugCli rfMVar
+    exitMVar <- IO.liftIO newEmptyMVar
+    syncPoint
+    IO.liftIO $ takeMVar exitMVar  -- TODO: fill on shutdown?
 #else
 terrible error
 #endif
@@ -306,7 +312,7 @@ display :: DebugModeCli
         -> IO ()
 display DebugModeCli{scolorIsBold}
         FrontendSession{..}
-        SingleFrame{singleFrame} = flip runDOM sdomContext $ postGUISync $ do
+        SingleFrame{singleFrame} = flip runDOM sdomContext $ syncAfter $ do
   let setChar (cell, Color.AttrChar{acAttr=Color.Attr{..}, acChar}) = do
         case acChar of
           ' ' -> setTextContent cell $ Just [chr 160]
