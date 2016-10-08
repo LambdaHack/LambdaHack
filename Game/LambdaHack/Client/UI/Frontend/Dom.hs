@@ -12,7 +12,7 @@ import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.Reader (ask)
 import Data.Char (chr)
 import GHCJS.DOM (currentDocument, currentWindow, syncAfter)
-import GHCJS.DOM.CSSStyleDeclaration (removeProperty, setProperty)
+import GHCJS.DOM.CSSStyleDeclaration (setProperty)
 import GHCJS.DOM.Document (createElement, getBody, keyDown, keyPress)
 import GHCJS.DOM.Element (contextMenu, getStyle, mouseUp, setInnerHTML, wheel)
 import GHCJS.DOM.EventM (EventM, mouseAltKey, mouseButton, mouseCtrlKey,
@@ -232,11 +232,6 @@ setProp :: CSSStyleDeclaration -> Text -> Text -> DOM ()
 setProp style propRef propValue =
   setProperty style propRef (Just propValue) ("" :: Text)
 
-removeProp :: CSSStyleDeclaration -> Text -> DOM ()
-removeProp style propRef = do
-  (_t :: Maybe Text) <- removeProperty style propRef
-  return ()
-
 -- | Let each table cell handle mouse events inside.
 handleMouse :: RawFrontend
             -> ((HTMLTableCellElement, CSSStyleDeclaration), (Int, Int))
@@ -322,31 +317,30 @@ display DebugModeCli{scolorIsBold}
         case acChar of
           ' ' -> setTextContent cell $ Just [chr 160]
           ch -> setTextContent cell $ Just [ch]
+        setProp style "color" $ Color.colorToRGB fg
         case fg of
-          Color.White -> do
-            removeProp style "color"
+          Color.White ->
             when (scolorIsBold == Just True) $
-              removeProp style "font-weight"
-          c -> do
-            setProp style "color" $ Color.colorToRGB c
+              setProp style "font-weight" "normal"
+          _ ->
             when (scolorIsBold == Just True) $
               setProp style "font-weight" "bold"
         case bg of
           Color.Black -> do
             setProp style "border-color" "transparent"
-            removeProp style "background-color"
+            setProp style "background-color" $ Color.colorToRGB Color.Black
           Color.BrRed -> do  -- highlighted tile
             setProp style "border-color" $ Color.colorToRGB Color.Red
-            removeProp style "background-color"
+            setProp style "background-color" $ Color.colorToRGB Color.Black
           Color.BrBlue -> do  -- blue highlighted tile
             setProp style "border-color" $ Color.colorToRGB Color.Blue
-            removeProp style "background-color"
+            setProp style "background-color" $ Color.colorToRGB Color.Black
           Color.BrYellow -> do  -- yellow highlighted tile
             setProp style "border-color" $ Color.colorToRGB Color.BrYellow
-            removeProp style "background-color"
-          c -> do
+            setProp style "background-color" $ Color.colorToRGB Color.Black
+          _ -> do
             setProp style "border-color" "transparent"
-            setProp style "background-color" $ Color.colorToRGB c
+            setProp style "background-color" $ Color.colorToRGB bg
       acs = PointArray.foldrA (\w l ->
               Color.attrCharFromW32 w : l) [] singleFrame
   -- Sync, no point mutitasking threads in the single-threaded JS.
