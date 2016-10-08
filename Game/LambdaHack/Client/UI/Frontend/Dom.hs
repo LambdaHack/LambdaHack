@@ -56,7 +56,7 @@ terrible error
 data FrontendSession = FrontendSession
   { sdomContext :: !DOMContext
   , scharStyle  :: !CSSStyleDeclaration
-  , scharCells  :: ![HTMLTableCellElement]
+  , scharCells  :: ![(HTMLTableCellElement, CSSStyleDeclaration)]
   }
 
 -- | The name of the frontend.
@@ -217,9 +217,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
       ys = [0..lysize - 1]
       xys = concat $ map (\y -> zip xs (repeat y)) ys
   mapM_ (handleMouse rf) $ zip scharCells xys
-  let setBorder tcell = do
-        Just style <- getStyle tcell
-        setProp style "border" "1px solid transparent"
+  let setBorder (_, style) = setProp style "border" "1px solid transparent"
   mapM_ setBorder scharCells
   -- Display at the end to avoid redraw
   void $ appendChild body (Just divBlock)
@@ -240,8 +238,10 @@ removeProp style propRef = do
   return ()
 
 -- | Let each table cell handle mouse events inside.
-handleMouse :: RawFrontend -> (HTMLTableCellElement, (Int, Int)) -> DOM ()
-handleMouse rf (cell, (cx, cy)) = do
+handleMouse :: RawFrontend
+            -> ((HTMLTableCellElement, CSSStyleDeclaration), (Int, Int))
+            -> DOM ()
+handleMouse rf ((cell, _), (cx, cy)) = do
   let readMod :: IsMouseEvent e => EventM HTMLTableCellElement e K.Modifier
       readMod = do
         modCtrl <- mouseCtrlKey
@@ -286,7 +286,8 @@ handleMouse rf (cell, (cx, cy)) = do
     preventDefault
 
 -- | Get the list of all cells of an HTML table.
-flattenTable :: HTMLTableElement -> DOM [HTMLTableCellElement]
+flattenTable :: HTMLTableElement
+             -> DOM [(HTMLTableCellElement, CSSStyleDeclaration)]
 flattenTable table = do
   let lxsize = fromIntegral $ fst normalLevelBound + 1
       lysize = fromIntegral $ snd normalLevelBound + 4
@@ -295,12 +296,15 @@ flattenTable table = do
         Just rowsItem <- item rows y
         castToHTMLTableRowElement rowsItem
   lrow <- mapM f [0..lysize-1]
-  let getC :: HTMLTableRowElement -> DOM [HTMLTableCellElement]
+  let getC :: HTMLTableRowElement
+           -> DOM [(HTMLTableCellElement, CSSStyleDeclaration)]
       getC row = do
         Just cells <- getCells row
         let g x = do
               Just cellsItem <- item cells x
-              castToHTMLTableCellElement cellsItem
+              cell <- castToHTMLTableCellElement cellsItem
+              Just style <- getStyle cell
+              return (cell, style)
         mapM g [0..lxsize-1]
   lrc <- mapM getC lrow
   return $! concat lrc
@@ -313,11 +317,11 @@ display :: DebugModeCli
 display DebugModeCli{scolorIsBold}
         FrontendSession{..}
         SingleFrame{singleFrame} = flip runDOM sdomContext $ syncAfter $ do
-  let setChar (cell, Color.AttrChar{acAttr=Color.Attr{..}, acChar}) = do
+  let setChar ( (cell, style)
+              , Color.AttrChar{acAttr=Color.Attr{..}, acChar} ) = do
         case acChar of
           ' ' -> setTextContent cell $ Just [chr 160]
           ch -> setTextContent cell $ Just [ch]
-        Just style <- getStyle cell
         case fg of
           Color.White -> do
             removeProp style "color"
