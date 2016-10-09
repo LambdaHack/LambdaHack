@@ -24,7 +24,7 @@ import qualified Data.Text.IO as T
 import Data.Time.Clock
 import Data.Time.Clock.POSIX
 import Data.Time.LocalTime
-import System.IO (hFlush, stderr)
+import System.IO (hFlush, stdout)
 
 import Game.LambdaHack.Client.CommonM
 import qualified Game.LambdaHack.Client.Key as K
@@ -53,8 +53,8 @@ import Game.LambdaHack.Content.ModeKind
 -- in a different terminal/window/machine.
 clientPrintUI :: MonadClientUI m => Text -> m ()
 clientPrintUI t = liftIO $ do
-  T.hPutStrLn stderr t
-  hFlush stderr
+  T.hPutStrLn stdout t
+  hFlush stdout
 
 -- | The row where the dungeon map starts.
 mapStartY :: Y

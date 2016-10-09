@@ -67,7 +67,7 @@ data Modifier =
   | Shift
   | Control
   | Alt
-  deriving (Ord, Eq, Generic)
+  deriving (Show, Ord, Eq, Generic)
 
 instance Binary Modifier
 

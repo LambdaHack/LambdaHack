@@ -173,11 +173,10 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
                                   -- until @key@ available in webkit DOM
     when (not $ null quirksN) $ do
       let !key = K.keyTranslateWeb quirksN False
-          _ks = K.showKey key
       -- IO.liftIO $ do
       --   putStrLn $ "keyId: " ++ keyId
       --   putStrLn $ "quirksN: " ++ quirksN
-      --   putStrLn $ "key: " ++ _ks
+      --   putStrLn $ "key: " ++ K.showKey key
       --   putStrLn $ "which: " ++ show which
       --   putStrLn $ "keyCode: " ++ show keyCode
       --   putStrLn $ "modifier: " ++ show modifier
@@ -200,11 +199,10 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
           !key = K.keyTranslateWeb quirksN onKeyPad
           !modifierNoShift =  -- to prevent Shift-!, etc.
             if modifier == K.Shift then K.NoModifier else modifier
-          _ks = K.showKey key
       -- IO.liftIO $ do
       --   putStrLn $ "charCode: " ++ show charCode
       --   putStrLn $ "quirksN: " ++ quirksN
-      --   putStrLn $ "key: " ++ _ks
+      --   putStrLn $ "key: " ++ K.showKey key
       --   putStrLn $ "which: " ++ show which
       --   putStrLn $ "keyCode: " ++ show keyCode
       --   putStrLn $ "modifier: " ++ show modifier
@@ -266,8 +264,8 @@ handleMouse rf ((cell, _), (cx, cy)) = do
               2 -> Just K.RightButtonRelease  -- not handled in contextMenu
               _ -> Nothing  -- probably a glitch
             pointer = Point cx cy
-          -- _ks = T.unpack (K.showKey key)
-          -- IO.liftIO $ putStrLn $ "m: " ++ _ks ++ show modifier ++ show pointer
+        -- IO.liftIO $ putStrLn $
+        --   "m: " ++ show but ++ show modifier ++ show pointer
         maybe (return ())
               (\key -> IO.liftIO $ saveKMP rf modifier key pointer) mkey
   void $ cell `on` wheel $ do
