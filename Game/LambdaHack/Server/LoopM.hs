@@ -76,10 +76,7 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
       -- First, set the previous cops, to send consistent info to clients.
       execUpdAtomic $ UpdResumeServer $ updateCOps (const cops) sRaw
       putDict dict
-#ifndef CLIENTS_AS_THREADS
-      -- Avoid duplicated computation, if we do threaded clients.
       updateCopsDict copsClient sconfig sdebugCli
-#endif
       putServer ser
       modifyServer $ \ser2 -> ser2 {sdebugNxt = sdebug}
       applyDebug

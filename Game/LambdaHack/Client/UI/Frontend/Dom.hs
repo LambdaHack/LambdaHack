@@ -55,7 +55,6 @@ terrible error
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
   { sdomContext :: !DOMContext
-  , scharStyle  :: !CSSStyleDeclaration
   , scharCells  :: ![(HTMLTableCellElement, CSSStyleDeclaration)]
   }
 
