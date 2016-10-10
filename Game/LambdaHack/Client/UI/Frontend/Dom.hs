@@ -11,7 +11,7 @@ import Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.Reader (ask)
 import Data.Char (chr)
-import GHCJS.DOM (currentDocument, currentWindow, syncAfter)
+import GHCJS.DOM (currentDocument, currentWindow)
 import GHCJS.DOM.CSSStyleDeclaration (setProperty)
 import GHCJS.DOM.Document (createElementUnchecked, getBodyUnchecked, keyDown,
                            keyPress)
@@ -32,12 +32,10 @@ import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
                                 getKeyIdentifier, getKeyLocation, getMetaKey,
                                 getShiftKey)
 import GHCJS.DOM.Node (appendChild_, setTextContent)
-import GHCJS.DOM.RequestAnimationFrameCallback
 import GHCJS.DOM.Types (CSSStyleDeclaration, DOM, DOMContext, IsMouseEvent,
                         Window, askDOM, castToHTMLDivElement, runDOM)
 import GHCJS.DOM.UIEvent (getCharCode, getKeyCode, getWhich)
 import GHCJS.DOM.WheelEvent (getDeltaY)
-import GHCJS.DOM.Window (requestAnimationFrame_)
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Frame
@@ -50,8 +48,10 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 #ifdef USE_BROWSER
 import Game.LambdaHack.Common.JSFile (domContextUnsafe)
+import GHCJS.DOM.RequestAnimationFrameCallback
+import GHCJS.DOM.Window (requestAnimationFrame_)
 #elif USE_WEBKIT
-import GHCJS.DOM (run, syncPoint)
+import GHCJS.DOM (nextAnimationFrame, run, syncPoint)
 #else
 terrible error
 #endif
@@ -69,8 +69,6 @@ frontendName :: String
 frontendName = "browser"
 #elif USE_WEBKIT
 frontendName = "webkit"
-#else
-terrible error
 #endif
 
 -- TODO: test if runWebGUI already starts the frontend in a bound thread
@@ -88,8 +86,6 @@ startup sdebugCli = do
     exitMVar <- IO.liftIO newEmptyMVar
     syncPoint
     IO.liftIO $ takeMVar exitMVar  -- TODO: fill on shutdown?
-#else
-terrible error
 #endif
 
 runWeb :: DebugModeCli -> MVar RawFrontend -> DOM ()
@@ -314,7 +310,7 @@ display :: DebugModeCli
         -> IO ()
 display DebugModeCli{scolorIsBold}
         FrontendSession{..}
-        SingleFrame{singleFrame} = flip runDOM sdomContext $ syncAfter $ do
+        SingleFrame{singleFrame} = flip runDOM sdomContext $ do
   let setChar ( (cell, style)
               , Color.AttrChar{acAttr=Color.Attr{..}, acChar} ) = do
         case acChar of
@@ -343,8 +339,12 @@ display DebugModeCli{scolorIsBold}
             setProp style "background-color" $ Color.colorToRGB bg
       acs = PointArray.foldrA (\w l ->
               Color.attrCharFromW32 w : l) [] singleFrame
+#ifdef USE_BROWSER
   -- Sync, no point mutitasking threads in the single-threaded JS.
-  callback <- newRequestAnimationFrameCallback $ \_ -> do
+  callback <- newRequestAnimationFrameCallback $ \_ ->
     mapM_ setChar $ zip scharCells acs
   -- This ensure no frame redraws while callback executes.
   requestAnimationFrame_ scurrentWindow (Just callback)
+#elif USE_WEBKIT
+  nextAnimationFrame $ \_ -> mapM_ setChar $ zip scharCells acs
+#endif
