@@ -13,27 +13,31 @@ import Control.Monad.Trans.Reader (ask)
 import Data.Char (chr)
 import GHCJS.DOM (currentDocument, currentWindow, syncAfter)
 import GHCJS.DOM.CSSStyleDeclaration (setProperty)
-import GHCJS.DOM.Document (createElement, getBody, keyDown, keyPress)
-import GHCJS.DOM.Element (contextMenu, getStyle, mouseUp, setInnerHTML, wheel)
+import GHCJS.DOM.Document (createElementUnchecked, getBodyUnchecked, keyDown,
+                           keyPress)
+import GHCJS.DOM.Element (contextMenu, getStyleUnchecked, mouseUp, setInnerHTML,
+                          wheel)
 import GHCJS.DOM.EventM (EventM, mouseAltKey, mouseButton, mouseCtrlKey,
-                         mouseMetaKey, mouseShiftKey, on, preventDefault)
-import GHCJS.DOM.HTMLCollection (item)
+                         mouseMetaKey, mouseShiftKey, on, on, preventDefault)
+import GHCJS.DOM.HTMLCollection (itemUnchecked)
 import GHCJS.DOM.HTMLTableCellElement (HTMLTableCellElement,
                                        castToHTMLTableCellElement)
 import GHCJS.DOM.HTMLTableElement (HTMLTableElement, castToHTMLTableElement,
-                                   getRows, setCellPadding, setCellSpacing)
+                                   getRowsUnchecked, setCellPadding,
+                                   setCellSpacing)
 import GHCJS.DOM.HTMLTableRowElement (HTMLTableRowElement,
-                                      castToHTMLTableRowElement, getCells)
+                                      castToHTMLTableRowElement,
+                                      getCellsUnchecked)
 import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
                                 getKeyIdentifier, getKeyLocation, getMetaKey,
                                 getShiftKey)
-import GHCJS.DOM.Node (appendChild, setTextContent)
+import GHCJS.DOM.Node (appendChild_, setTextContent)
 import GHCJS.DOM.RequestAnimationFrameCallback
 import GHCJS.DOM.Types (CSSStyleDeclaration, DOM, DOMContext, IsMouseEvent,
-                        askDOM, castToHTMLDivElement, runDOM)
+                        Window, askDOM, castToHTMLDivElement, runDOM)
 import GHCJS.DOM.UIEvent (getCharCode, getKeyCode, getWhich)
 import GHCJS.DOM.WheelEvent (getDeltaY)
-import GHCJS.DOM.Window (requestAnimationFrame)
+import GHCJS.DOM.Window (requestAnimationFrame_)
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Frame
@@ -54,8 +58,9 @@ terrible error
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { sdomContext :: !DOMContext
-  , scharCells  :: ![(HTMLTableCellElement, CSSStyleDeclaration)]
+  { sdomContext    :: !DOMContext
+  , scurrentWindow :: !Window
+  , scharCells     :: ![(HTMLTableCellElement, CSSStyleDeclaration)]
   }
 
 -- | The name of the frontend.
@@ -92,13 +97,14 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   -- Init the document.
   sdomContext <- askDOM
   Just doc <- currentDocument
-  Just body <- getBody doc
-  Just pageStyle <- getStyle body
+  Just scurrentWindow <- currentWindow
+  body <- getBodyUnchecked doc
+  pageStyle <- getStyleUnchecked body
   setProp pageStyle "background-color" (Color.colorToRGB Color.Black)
   setProp pageStyle "color" (Color.colorToRGB Color.White)
-  Just divBlockRaw <- createElement doc (Just ("div" :: Text))
+  divBlockRaw <- createElementUnchecked doc (Just ("div" :: Text))
   divBlock <- castToHTMLDivElement divBlockRaw
-  Just divStyle <- getStyle divBlock
+  divStyle <- getStyleUnchecked divBlock
   setProp divStyle "text-align" "center"
   case (saddress, stitle) of
     (Just address, Just title) -> do
@@ -111,10 +117,10 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
       cell = "<td>" ++ [chr 160]
       row = "<tr>" ++ concat (replicate lxsize cell)
       rows = concat (replicate lysize row)
-  Just tableElemRaw <- createElement doc (Just ("table" :: Text))
+  tableElemRaw <- createElementUnchecked doc (Just ("table" :: Text))
   tableElem <- castToHTMLTableElement tableElemRaw
-  void $ appendChild divBlock (Just tableElem)
-  Just scharStyle <- getStyle tableElem
+  appendChild_ divBlock (Just tableElem)
+  scharStyle <- getStyleUnchecked tableElem
   -- Speed: http://www.w3.org/TR/CSS21/tables.html#fixed-table-layout
   setProp scharStyle "table-layout" "fixed"
   -- Set the font specified in config, if any.
@@ -217,7 +223,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   let setBorder (_, style) = setProp style "border" "1px solid transparent"
   mapM_ setBorder scharCells
   -- Display at the end to avoid redraw
-  void $ appendChild body (Just divBlock)
+  appendChild_ body (Just divBlock)
   IO.liftIO $ putMVar rfMVar rf
     -- send to client only after the whole webpage is set up
     -- because there is no @mainGUI@ to start accepting
@@ -283,19 +289,19 @@ flattenTable :: HTMLTableElement
 flattenTable table = do
   let lxsize = fromIntegral $ fst normalLevelBound + 1
       lysize = fromIntegral $ snd normalLevelBound + 4
-  Just rows <- getRows table
+  rows <- getRowsUnchecked table
   let f y = do
-        Just rowsItem <- item rows y
+        rowsItem <- itemUnchecked rows y
         castToHTMLTableRowElement rowsItem
   lrow <- mapM f [0..lysize-1]
   let getC :: HTMLTableRowElement
            -> DOM [(HTMLTableCellElement, CSSStyleDeclaration)]
       getC row = do
-        Just cells <- getCells row
+        cells <- getCellsUnchecked row
         let g x = do
-              Just cellsItem <- item cells x
+              cellsItem <- itemUnchecked cells x
               cell <- castToHTMLTableCellElement cellsItem
-              Just style <- getStyle cell
+              style <- getStyleUnchecked cell
               return (cell, style)
         mapM g [0..lxsize-1]
   lrc <- mapM getC lrow
@@ -315,13 +321,10 @@ display DebugModeCli{scolorIsBold}
           ' ' -> setTextContent cell $ Just [chr 160]
           ch -> setTextContent cell $ Just [ch]
         setProp style "color" $ Color.colorToRGB fg
-        case fg of
-          Color.White ->
-            when (scolorIsBold == Just True) $
-              setProp style "font-weight" "normal"
-          _ ->
-            when (scolorIsBold == Just True) $
-              setProp style "font-weight" "bold"
+        when (scolorIsBold == Just True) $
+          case fg of
+            Color.White -> setProp style "font-weight" "normal"
+            _ -> setProp style "font-weight" "bold"
         case bg of
           Color.Black -> do
             setProp style "border-color" "transparent"
@@ -344,5 +347,4 @@ display DebugModeCli{scolorIsBold}
   callback <- newRequestAnimationFrameCallback $ \_ -> do
     mapM_ setChar $ zip scharCells acs
   -- This ensure no frame redraws while callback executes.
-  Just win <- currentWindow
-  void $ requestAnimationFrame win (Just callback)
+  requestAnimationFrame_ scurrentWindow (Just callback)
