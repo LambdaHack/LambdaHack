@@ -11,7 +11,6 @@ import Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.Reader (ask)
 import Data.Char (chr)
-import Game.LambdaHack.Common.JSFile (domContextUnsafe)
 import GHCJS.DOM (currentDocument, currentWindow)
 import GHCJS.DOM.CSSStyleDeclaration (setProperty)
 import GHCJS.DOM.Document (createElementUnchecked, getBodyUnchecked, keyDown,
@@ -34,8 +33,8 @@ import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
                                 getShiftKey)
 import GHCJS.DOM.Node (appendChild_, setTextContent)
 import GHCJS.DOM.RequestAnimationFrameCallback
-import GHCJS.DOM.Types (CSSStyleDeclaration, DOM, DOMContext, IsMouseEvent,
-                        Window, askDOM, castToHTMLDivElement, runDOM)
+import GHCJS.DOM.Types (CSSStyleDeclaration, DOM, IsMouseEvent, Window,
+                        castToHTMLDivElement, runDOM)
 import GHCJS.DOM.UIEvent (getCharCode, getKeyCode, getWhich)
 import GHCJS.DOM.WheelEvent (getDeltaY)
 import GHCJS.DOM.Window (requestAnimationFrame_)
@@ -51,8 +50,7 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { sdomContext    :: !DOMContext
-  , scurrentWindow :: !Window
+  { scurrentWindow :: !Window
   , scharCells     :: ![(HTMLTableCellElement, CSSStyleDeclaration)]
   }
 
@@ -64,13 +62,12 @@ frontendName = "browser"
 startup :: DebugModeCli -> IO RawFrontend
 startup sdebugCli = do
   rfMVar <- newEmptyMVar
-  flip runDOM domContextUnsafe $ runWeb sdebugCli rfMVar
+  flip runDOM undefined $ runWeb sdebugCli rfMVar
   takeMVar rfMVar
 
 runWeb :: DebugModeCli -> MVar RawFrontend -> DOM ()
 runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   -- Init the document.
-  sdomContext <- askDOM
   Just doc <- currentDocument
   Just scurrentWindow <- currentWindow
   body <- getBodyUnchecked doc
@@ -287,7 +284,7 @@ display :: DebugModeCli
         -> IO ()
 display DebugModeCli{scolorIsBold}
         FrontendSession{..}
-        SingleFrame{singleFrame} = flip runDOM sdomContext $ do
+        SingleFrame{singleFrame} = flip runDOM undefined $ do
   let setChar ( (cell, style)
               , Color.AttrChar{acAttr=Color.Attr{..}, acChar} ) = do
         case acChar of
