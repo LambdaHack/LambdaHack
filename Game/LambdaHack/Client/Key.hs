@@ -426,7 +426,7 @@ keyTranslateWeb "AltGraph"    _ = DeadKey
 keyTranslateWeb "Num_Lock"    _ = DeadKey
 keyTranslateWeb "CapsLock"    _ = DeadKey
 keyTranslateWeb "Win"         _ = DeadKey
--- browser/webkit quirks
+-- browser quirks
 keyTranslateWeb ['\ESC']     _ = Esc
 keyTranslateWeb [' ']        _ = Space
 keyTranslateWeb ['\n']       _ = Return

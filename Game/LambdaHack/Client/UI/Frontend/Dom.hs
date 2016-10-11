@@ -1,4 +1,4 @@
--- | Text frontend running in Browser or in Webkit.
+-- | Text frontend running in Browser.
 module Game.LambdaHack.Client.UI.Frontend.Dom
   ( startup, frontendName
   ) where
@@ -11,6 +11,7 @@ import Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.Reader (ask)
 import Data.Char (chr)
+import Game.LambdaHack.Common.JSFile (domContextUnsafe)
 import GHCJS.DOM (currentDocument, currentWindow)
 import GHCJS.DOM.CSSStyleDeclaration (setProperty)
 import GHCJS.DOM.Document (createElementUnchecked, getBodyUnchecked, keyDown,
@@ -32,10 +33,12 @@ import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
                                 getKeyIdentifier, getKeyLocation, getMetaKey,
                                 getShiftKey)
 import GHCJS.DOM.Node (appendChild_, setTextContent)
+import GHCJS.DOM.RequestAnimationFrameCallback
 import GHCJS.DOM.Types (CSSStyleDeclaration, DOM, DOMContext, IsMouseEvent,
                         Window, askDOM, castToHTMLDivElement, runDOM)
 import GHCJS.DOM.UIEvent (getCharCode, getKeyCode, getWhich)
 import GHCJS.DOM.WheelEvent (getDeltaY)
+import GHCJS.DOM.Window (requestAnimationFrame_)
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Frame
@@ -46,16 +49,6 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
-#ifdef USE_BROWSER
-import Game.LambdaHack.Common.JSFile (domContextUnsafe)
-import GHCJS.DOM.RequestAnimationFrameCallback
-import GHCJS.DOM.Window (requestAnimationFrame_)
-#elif USE_WEBKIT
-import GHCJS.DOM (nextAnimationFrame, run, syncPoint)
-#else
-terrible error
-#endif
-
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
   { sdomContext    :: !DOMContext
@@ -65,28 +58,14 @@ data FrontendSession = FrontendSession
 
 -- | The name of the frontend.
 frontendName :: String
-#ifdef USE_BROWSER
 frontendName = "browser"
-#elif USE_WEBKIT
-frontendName = "webkit"
-#endif
 
--- TODO: test if runWebGUI already starts the frontend in a bound thread
 -- | Starts the main program loop using the frontend input and output.
 startup :: DebugModeCli -> IO RawFrontend
 startup sdebugCli = do
-#ifdef USE_BROWSER
   rfMVar <- newEmptyMVar
   flip runDOM domContextUnsafe $ runWeb sdebugCli rfMVar
   takeMVar rfMVar
-#elif USE_WEBKIT
-  -- TODO: possibly doesn't need to be bound now
-  startupBound $ \rfMVar -> run 3708 $ do
-    runWeb sdebugCli rfMVar
-    exitMVar <- IO.liftIO newEmptyMVar
-    syncPoint
-    IO.liftIO $ takeMVar exitMVar  -- TODO: fill on shutdown?
-#endif
 
 runWeb :: DebugModeCli -> MVar RawFrontend -> DOM ()
 runWeb sdebugCli@DebugModeCli{..} rfMVar = do
@@ -142,9 +121,8 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   -- A bunch of fauity hacks; @keyPress@ doesn't handle non-character keys
   -- while with @keyDown@ all of getKeyIdentifier, getWhich and getKeyCode
   -- return absurd codes for, e.g., semicolon in Chromium.
-  -- The new standard might help on newer browsers
+  -- TODO: switch to the new standard
   -- http://www.w3schools.com/jsref/event_key_keycode.asp
-  -- but webkit doesn't give access to it yet.
   let readMod = do
         modCtrl <- ask >>= getCtrlKey
         modShift <- ask >>= getShiftKey
@@ -161,8 +139,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
     modifier <- readMod
     let keyIdBogus = keyId `elem` ["", "Unidentified"]
                      || take 2 keyId == "U+"
-        -- Handle browser quirks and webkit non-conformance to standards,
-        -- especially for ESC, etc.
+        -- Handle browser quirks, especially for ESC, etc.
         quirksN | which == 0 = ""
                 | charCode /= 0 = ""
                 | not keyIdBogus = keyId
@@ -339,12 +316,8 @@ display DebugModeCli{scolorIsBold}
             setProp style "background-color" $ Color.colorToRGB bg
       acs = PointArray.foldrA (\w l ->
               Color.attrCharFromW32 w : l) [] singleFrame
-#ifdef USE_BROWSER
   -- Sync, no point mutitasking threads in the single-threaded JS.
   callback <- newRequestAnimationFrameCallback $ \_ ->
     mapM_ setChar $ zip scharCells acs
   -- This ensure no frame redraws while callback executes.
   requestAnimationFrame_ scurrentWindow (Just callback)
-#elif USE_WEBKIT
-  nextAnimationFrame $ \_ -> mapM_ setChar $ zip scharCells acs
-#endif

@@ -67,11 +67,6 @@ source-repository head
   type:               git
   location:           git://github.com/LambdaHack/LambdaHack.git
 
-flag webkit
-  description:        switch to the webkit frontend
-  default:            False
-  manual:             True
-
 flag vty
   description:        switch to the vty frontend
   default:            False
@@ -268,14 +263,6 @@ library
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
     build-depends:    ghcjs-dom >= 0.2
     cpp-options:      -DUSE_BROWSER -DUSE_JSFILE_CLIENT -DUSE_JSFILE_SERVER
-  } else { if flag(webkit) {
-    other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
--- currently works only with
--- cabal install ghcjs-dom-0.3.1.0 --reinstall -f-webkit --upgrade-dependencies
--- TODO: when it works with ghcjs-dom-webkit, benchmark and compare speed
--- with webkit and ghcjs
-    build-depends:    ghcjs-dom >= 0.2
-    cpp-options:      -DUSE_WEBKIT
   } else { if flag(vty) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Vty
     build-depends:    vty >= 5
@@ -288,7 +275,7 @@ library
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk
     build-depends:    gtk3 >= 0.12.1
     pkgconfig-depends: gthread-2.0, gtk+-3.0
-  } } } }
+  } } }
 
   if impl(ghcjs) {
     other-modules:    Game.LambdaHack.Common.JSFile
@@ -366,15 +353,11 @@ executable LambdaHack
 -- on my machine with default --maxFps.
     cpp-options:      -DGHCJS_BUSY_YIELD=50
     ghc-options:      "-with-rtsopts=-A9m"
-  } else { if flag(webkit) {
-    build-depends:    zlib >= 0.5.3.1
-    ghc-options:      "-with-rtsopts=-A99m"
--- get back to -K100K when somebody plugs the stack leak in jsaddle
   } else {
     build-depends:    zlib >= 0.5.3.1
     ghc-options:      "-with-rtsopts=-A99m -K100K"
 -- get back to -K1K when I can use pretty-1.1.3.4 (TH depends on an old one)
-  } }
+  }
 
 test-suite test
   type:               exitcode-stdio-1.0
@@ -423,12 +406,8 @@ test-suite test
 -- on my machine with default --maxFps.
     cpp-options:      -DGHCJS_BUSY_YIELD=50
     ghc-options:      "-with-rtsopts=-A9m"
-  } else { if flag(webkit) {
-    build-depends:    zlib >= 0.5.3.1
-    ghc-options:      "-with-rtsopts=-A99m"
--- get back to -K100K when somebody plugs the stack leak in jsaddle
   } else {
     build-depends:    zlib >= 0.5.3.1
     ghc-options:      "-with-rtsopts=-A99m -K100K"
 -- get back to -K1K when I can use pretty-1.1.3.4 (TH depends on an old one)
-  } }
+  }

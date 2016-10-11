@@ -10,7 +10,7 @@ import Prelude ()
 import Game.LambdaHack.Client.UI.Frontend.Curses
 #elif USE_VTY
 import Game.LambdaHack.Client.UI.Frontend.Vty
-#elif (USE_BROWSER || USE_WEBKIT)
+#elif USE_BROWSER
 import Game.LambdaHack.Client.UI.Frontend.Dom
 #else
 import Game.LambdaHack.Client.UI.Frontend.Gtk
