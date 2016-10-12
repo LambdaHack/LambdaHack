@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.Frontend.Gtk
   ( startup, frontendName
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , startupFun, shutdown, doAttr, extraAttr, display, setTo, evalFrame
+  , startupFun, shutdown, doAttr, extraAttr, display
 #endif
   ) where
 
@@ -17,7 +17,7 @@ import Game.LambdaHack.Common.Prelude hiding (Alt)
 import Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import qualified Data.ByteString.Char8 as BS
-import qualified Data.EnumMap.Strict as EM
+import qualified Data.IntMap.Strict as IM
 import Data.IORef
 import qualified Data.Text as T
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -34,15 +34,9 @@ import Game.LambdaHack.Common.Point
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { sview :: !TextView                    -- ^ the widget to draw to
-  , stags :: !(EM.EnumMap Color.Attr TextTag)  -- ^ text color tags for fg/bg
+  { sview :: !TextView              -- ^ the widget to draw to
+  , stags :: !(IM.IntMap TextTag)  -- ^ text color tags for fg/bg
   }
-
-data GtkFrame = GtkFrame
-  { gfChar :: !BS.ByteString
-  , gfAttr :: ![[TextTag]]
-  }
-  deriving Eq
 
 -- | The name of the frontend.
 frontendName :: String
@@ -60,15 +54,29 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   -- Init GUI.
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
+  let emulateBox attr = case attr of
+        Color.Attr{bg=Color.BrRed} ->  -- highlighted tile
+          Color.Attr Color.defBG Color.defFG
+        Color.Attr{bg=Color.BrYellow,fg} ->  -- yellow highlighted tile
+          if fg /= Color.BrBlack
+          then Color.Attr fg Color.BrBlack
+          else Color.Attr fg Color.defFG
+        Color.Attr{bg=Color.BrBlue,fg} ->  -- blue highlighted tile
+          if fg /= Color.Blue
+          then Color.Attr fg Color.Blue
+          else Color.Attr fg Color.BrBlack
+        _ -> attr
+      legalBGplusHacks =
+        Color.legalBG ++ [Color.BrRed, Color.BrYellow, Color.BrBlue]
   ttt <- textTagTableNew
-  stags <- EM.fromDistinctAscList <$>
+  stags <- IM.fromDistinctAscList <$>
              mapM (\ak -> do
                       tt <- textTagNew Nothing
                       textTagTableAdd ttt tt
-                      doAttr sdebugCli tt ak
-                      return (ak, tt))
+                      doAttr sdebugCli tt (emulateBox ak)
+                      return (fromEnum ak, tt))
                [ Color.Attr{fg, bg}
-               | fg <- [minBound..maxBound], bg <- Color.legalBG ]
+               | fg <- [minBound..maxBound], bg <- legalBGplusHacks ]
   -- Text buffer.
   tb <- textBufferNew (Just ttt)
   -- Create text view. TODO: use GtkLayout or DrawingArea instead of TextView?
@@ -213,60 +221,34 @@ extraAttr DebugModeCli{scolorIsBold} =
 display :: FrontendSession  -- ^ frontend session data
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
-display sess@FrontendSession{..} frame = do
-  let !GtkFrame{..} = evalFrame sess frame
-      !defAttr = stags EM.! Color.defAttr
-      attrs = zip [0..] gfAttr
-  postGUISync $ do
-    tb <- textViewGetBuffer sview
-    textBufferSetByteString tb gfChar
-    mapM_ (setTo tb defAttr) attrs
-
-setTo :: TextBuffer -> TextTag -> (Int, [TextTag]) -> IO ()
-setTo _ _ (_,  []) = return ()
-setTo tb defAttr (ly, attr:attrs) = do
-  ib <- textBufferGetIterAtLineOffset tb ly 0
+display FrontendSession{..} SingleFrame{singleFrame} = postGUISync $ do
+  let lxsize = fst normalLevelBound + 1  -- TODO
+      f !w (!n, !l) = if n == -1
+                      then (lxsize - 2, Color.charFromW32 w : '\n' : l)
+                      else (n - 1, Color.charFromW32 w : l)
+      (_, levelChar) = PointArray.foldrA' f (lxsize - 1, []) singleFrame
+      gfChar = BS.pack levelChar
+  tb <- textViewGetBuffer sview
+  textBufferSetByteString tb gfChar
+  ib <- textBufferGetStartIter tb
   ie <- textIterCopy ib
-  let setIter :: TextTag -> Int -> [TextTag] -> IO ()
-      setIter previous repetitions [] = do
-        textIterForwardChars ie repetitions
-        when (previous /= defAttr) $
-          textBufferApplyTag tb previous ib ie
-      setIter previous repetitions (a:as)
-        | a == previous =
-            setIter a (repetitions + 1) as
-        | otherwise = do
-            textIterForwardChars ie repetitions
-            when (previous /= defAttr) $
-              textBufferApplyTag tb previous ib ie
-            textIterForwardChars ib repetitions
-            setIter a 1 as
-  setIter attr 1 attrs
-
-evalFrame :: FrontendSession -> SingleFrame -> GtkFrame
-evalFrame FrontendSession{stags} SingleFrame{singleFrame} =
-  let g :: Color.Attr -> [TextTag] -> [TextTag]
-      {-# INLINE f #-}
-      g acAttr@Color.Attr{..} l =
-        let acAttr2 = case bg of
-              Color.BrRed ->
-                Color.Attr Color.defBG Color.defFG  -- highlighted tile
-              Color.BrBlue ->  -- blue highlighted tile
-                if fg /= Color.Blue
-                then Color.Attr fg Color.Blue
-                else Color.Attr fg Color.BrBlack
-              Color.BrYellow ->  -- yellow highlighted tile
-                if fg /= Color.BrBlack
-                then Color.Attr fg Color.BrBlack
-                else Color.Attr fg Color.defFG
-              _ -> acAttr
-        in stags EM.! acAttr2 : l
-      gfAttr = chunk $ PointArray.foldrA (g . Color.attrFromW32) [] singleFrame
-      f w l = Color.charFromW32 w : l
-      levelChar = chunk $ PointArray.foldrA f [] singleFrame
-      gfChar = BS.pack $ init $ unlines levelChar
-      lxsize = fst normalLevelBound + 1  -- TODO
-      chunk [] = []
-      chunk l = let (ch, r) = splitAt lxsize l
-                in ch : chunk r
-  in GtkFrame{..}
+  let defEnum = fromEnum Color.defAttr
+      setTo :: (X, Int, Int) -> Color.AttrCharW32 -> IO (X, Int, Int)
+      setTo (!lx, !repetitions, !previous) !w | lx /= lxsize = do
+        let current :: Int
+            !current = Color.attrEnumFromW32 w
+        if current == previous
+        then return (lx + 1, repetitions + 1, previous)
+        else do
+          textIterForwardChars ie repetitions
+          when (previous /= defEnum) $
+            textBufferApplyTag tb (stags IM.! previous) ib ie
+          textIterForwardChars ib repetitions
+          return (lx + 1, 1, current)
+      setTo (_, repetitions, previous) w =
+        setTo (1, repetitions + 1, previous) w
+  (_, repetitions, previous) <-
+    PointArray.foldMA' setTo (0, 0, defEnum) singleFrame
+  textIterForwardChars ie repetitions
+  when (previous /= defEnum) $
+    textBufferApplyTag tb (stags IM.! previous) ib ie

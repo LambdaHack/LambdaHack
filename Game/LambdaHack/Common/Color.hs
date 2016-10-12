@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.Color
   , AttrChar(..)
   , AttrCharW32(AttrCharW32), attrCharW32
   , attrCharToW32, attrCharFromW32
-  , fgFromW32, bgFromW32, charFromW32, attrFromW32
+  , fgFromW32, bgFromW32, charFromW32, attrFromW32, attrEnumFromW32
   , spaceAttrW32, retAttrW32
   ) where
 
@@ -120,6 +120,9 @@ charFromW32 w =
 attrFromW32 :: AttrCharW32 -> Attr
 {-# INLINE attrFromW32 #-}
 attrFromW32 w = Attr (fgFromW32 w) (bgFromW32 w)
+
+attrEnumFromW32 :: AttrCharW32 -> Int
+attrEnumFromW32 !w = fromEnum (attrCharW32 w) .&. (2 ^ (16 :: Int) - 1)
 
 spaceAttrW32 :: AttrCharW32
 spaceAttrW32 = attrCharToW32 $ AttrChar defAttr ' '

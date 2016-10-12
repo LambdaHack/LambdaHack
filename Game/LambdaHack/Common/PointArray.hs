@@ -3,7 +3,8 @@ module Game.LambdaHack.Common.PointArray
   ( GArray(..), Array, pindex, punindex
   , (!), accessI, (//)
   , replicateA, replicateMA, generateA, generateMA, unfoldrNA, sizeA
-  , foldrA, foldlA', ifoldrA, ifoldrA', ifoldlA', mapA, imapA, mapWithKeyMA
+  , foldrA, foldrA', foldlA', ifoldrA, ifoldrA', ifoldlA', foldMA'
+  , mapA, imapA, mapWithKeyMA
   , safeSetA, unsafeSetA, unsafeUpdateA, unsafeWriteA, unsafeWriteManyA
   , minIndexA, minLastIndexA, minIndexesA, maxIndexA, maxLastIndexA, forceA
   , fromListA, toListA
@@ -149,6 +150,12 @@ foldrA :: (U.Unbox w, Enum w, Enum c) => (c -> a -> a) -> a -> GArray w c -> a
 foldrA f z0 Array{..} =
   U.foldr (\c a-> f (cnv c) a) z0 avector
 
+-- | Fold right strictly over an array.
+foldrA' :: (U.Unbox w, Enum w, Enum c) => (c -> a -> a) -> a -> GArray w c -> a
+{-# INLINE foldrA' #-}
+foldrA' f z0 Array{..} =
+  U.foldr' (\c a-> f (cnv c) a) z0 avector
+
 -- | Fold left strictly over an array.
 foldlA' :: (U.Unbox w, Enum w, Enum c) => (a -> c -> a) -> a -> GArray w c -> a
 {-# INLINE foldlA' #-}
@@ -175,6 +182,13 @@ ifoldrA' :: Enum c => (Point -> c -> a -> a) -> a -> Array c -> a
 {-# INLINE ifoldrA' #-}
 ifoldrA' f z0 Array{..} =
   U.ifoldr' (\n c a -> f (punindex axsize n) (cnv c) a) z0 avector
+
+-- | Fold monadically strictly over an array.
+foldMA' :: (Monad m, U.Unbox w, Enum w, Enum c)
+        => (a -> c -> m a) -> a -> GArray w c -> m a
+{-# INLINE foldMA' #-}
+foldMA' f z0 Array{..} =
+  U.foldM' (\a c -> f a (cnv c)) z0 avector
 
 -- | Map over an array.
 mapA :: (U.Unbox w, Enum w, Enum c, Enum d) => (c -> d) -> GArray w c -> GArray w d
