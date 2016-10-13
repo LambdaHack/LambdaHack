@@ -316,5 +316,5 @@ display DebugModeCli{scolorIsBold}
   -- Sync, no point mutitasking threads in the single-threaded JS.
   callback <- newRequestAnimationFrameCallback $ \_ ->
     mapM_ setChar $ zip scharCells acs
-  -- This ensure no frame redraws while callback executes.
+  -- This ensures no frame redraws while callback executes.
   requestAnimationFrame_ scurrentWindow (Just callback)

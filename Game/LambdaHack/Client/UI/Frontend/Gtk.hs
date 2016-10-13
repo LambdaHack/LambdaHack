@@ -16,7 +16,6 @@ import Game.LambdaHack.Common.Prelude hiding (Alt)
 
 import Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
-import qualified Data.ByteString.Char8 as BS
 import qualified Data.IntMap.Strict as IM
 import Data.IORef
 import qualified Data.Text as T
@@ -221,34 +220,33 @@ extraAttr DebugModeCli{scolorIsBold} =
 display :: FrontendSession  -- ^ frontend session data
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
-display FrontendSession{..} SingleFrame{singleFrame} = postGUISync $ do
+display FrontendSession{..} SingleFrame{singleFrame} = do
   let lxsize = fst normalLevelBound + 1  -- TODO
       f !w (!n, !l) = if n == -1
                       then (lxsize - 2, Color.charFromW32 w : '\n' : l)
                       else (n - 1, Color.charFromW32 w : l)
       (_, levelChar) = PointArray.foldrA' f (lxsize - 1, []) singleFrame
-      gfChar = BS.pack levelChar
-  tb <- textViewGetBuffer sview
-  textBufferSetByteString tb gfChar
-  ib <- textBufferGetStartIter tb
-  ie <- textIterCopy ib
-  let defEnum = fromEnum Color.defAttr
-      setTo :: (X, Int, Int) -> Color.AttrCharW32 -> IO (X, Int, Int)
-      setTo (!lx, !repetitions, !previous) !w | lx /= lxsize = do
-        let current :: Int
-            !current = Color.attrEnumFromW32 w
-        if current == previous
-        then return (lx + 1, repetitions + 1, previous)
-        else do
-          textIterForwardChars ie repetitions
-          when (previous /= defEnum) $
-            textBufferApplyTag tb (stags IM.! previous) ib ie
-          textIterForwardChars ib repetitions
-          return (lx + 1, 1, current)
-      setTo (_, repetitions, previous) w =
-        setTo (1, repetitions + 1, previous) w
-  (_, repetitions, previous) <-
-    PointArray.foldMA' setTo (0, 0, defEnum) singleFrame
-  textIterForwardChars ie repetitions
-  when (previous /= defEnum) $
-    textBufferApplyTag tb (stags IM.! previous) ib ie
+      !gfChar = T.pack levelChar
+  postGUISync $ do
+    tb <- textViewGetBuffer sview
+    textBufferSetText tb gfChar
+    ib <- textBufferGetStartIter tb
+    ie <- textIterCopy ib
+    let defEnum = fromEnum Color.defAttr
+        setTo :: (X, Int) -> Color.AttrCharW32 -> IO (X, Int)
+        setTo (!lx, !previous) !w | (lx + 1) `mod` lxsize /= 0 = do
+          let current :: Int
+              current = Color.attrEnumFromW32 w
+          if current == previous
+          then return (lx + 1, previous)
+          else do
+            textIterSetOffset ie lx
+            when (previous /= defEnum) $
+              textBufferApplyTag tb (stags IM.! previous) ib ie
+            textIterSetOffset ib lx
+            return (lx + 1, current)
+        setTo (lx, previous) w = setTo (lx + 1, previous) w
+    (lx, previous) <- PointArray.foldMA' setTo (-1, defEnum) singleFrame
+    textIterSetOffset ie lx
+    when (previous /= defEnum) $
+      textBufferApplyTag tb (stags IM.! previous) ib ie
