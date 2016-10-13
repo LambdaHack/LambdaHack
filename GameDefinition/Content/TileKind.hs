@@ -56,8 +56,8 @@ wall = TileKind
   { tsymbol  = ' '
   , tname    = "bedrock"
   , tfreq    = [("fillerWall", 1), ("legendLit", 100), ("legendDark", 100)]
-  , tcolor   = defBG
-  , tcolor2  = defBG
+  , tcolor   = defFG
+  , tcolor2  = defFG
   , talter   = 100
   , tfeature = [Dark]
       -- Bedrock being dark is bad for AI (forces it to backtrack to explore
@@ -77,8 +77,8 @@ hardRock = TileKind
   { tsymbol  = ' '
   , tname    = "impenetrable bedrock"
   , tfreq    = [("basic outer fence", 1)]
-  , tcolor   = BrWhite
-  , tcolor2  = BrWhite
+  , tcolor   = defFG
+  , tcolor2  = defFG
   , talter   = maxBound
   , tfeature = [Dark, Impenetrable]
   }

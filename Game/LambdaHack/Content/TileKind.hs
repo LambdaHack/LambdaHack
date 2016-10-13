@@ -131,7 +131,9 @@ validateAllTileKind lt =
         any (/= tname hd) (map tname tl)
         -- TODO: calculate actionFeatures only once for each tile kind
         || any (/= actionFeatures True hd) (map (actionFeatures True) tl)
-      confusions f = filter namesUnequal $ M.elems $ mapVis f
+      -- If symbol is ' ' then differences in tcolor are unseen anyway.
+      confusions f = filter (any ((' ' /=) . tsymbol))
+                     $ filter namesUnequal $ M.elems $ mapVis f
   in case confusions tcolor ++ confusions tcolor2 of
     [] -> []
     cfs -> ["tile confusions detected:" <+> tshow cfs]
