@@ -221,11 +221,11 @@ display :: FrontendSession  -- ^ frontend session data
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
 display FrontendSession{..} SingleFrame{singleFrame} = do
-  let lxsize = fst normalLevelBound + 1  -- TODO
+  let lxsize1 = fst normalLevelBound + 2  -- TODO
       f !w (!n, !l) = if n == -1
-                      then (lxsize - 2, Color.charFromW32 w : '\n' : l)
+                      then (lxsize1 - 3, Color.charFromW32 w : '\n' : l)
                       else (n - 1, Color.charFromW32 w : l)
-      (_, levelChar) = PointArray.foldrA' f (lxsize - 1, []) singleFrame
+      (_, levelChar) = PointArray.foldrA' f (lxsize1 - 2, []) singleFrame
       !gfChar = T.pack levelChar
   postGUISync $ do
     tb <- textViewGetBuffer sview
@@ -234,7 +234,7 @@ display FrontendSession{..} SingleFrame{singleFrame} = do
     ie <- textIterCopy ib
     let defEnum = fromEnum Color.defAttr
         setTo :: (X, Int) -> Color.AttrCharW32 -> IO (X, Int)
-        setTo (!lx, !previous) !w | (lx + 1) `mod` lxsize /= 0 = do
+        setTo (!lx, !previous) !w | (lx + 1) `mod` lxsize1 /= 0 = do
           let current :: Int
               current = Color.attrEnumFromW32 w
           if current == previous
