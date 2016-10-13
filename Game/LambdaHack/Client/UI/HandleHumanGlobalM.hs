@@ -237,7 +237,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
   -- this is not a problem, since runnning stops early enough).
   -- TODO: stop running at invisible actor
   let tpos = bpos sb `shift` dir
-  -- We start by checking actors at the the target position,
+  -- We start by checking actors at the target position,
   -- which gives a partial information (actors can be invisible),
   -- as opposed to accessibility (and items) which are always accurate
   -- (tiles can't be invisible).
@@ -277,7 +277,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
         RequestAnyAbility <$$> meleeAid target
     _ : _ -> failWith "actor in the way"
 
--- | Actor atttacks an enemy actor or his own projectile.
+-- | Actor attacks an enemy actor or his own projectile.
 meleeAid :: MonadClientUI m
          => ActorId -> m (FailOrCmd (RequestTimed 'AbMelee))
 meleeAid target = do

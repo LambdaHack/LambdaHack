@@ -1,5 +1,5 @@
 -- | Game action monads and basic building blocks for human and computer
--- player actions. Has no access to the the main action type.
+-- player actions. Has no access to the main action type.
 -- Does not export the @liftIO@ operation nor a few other implementation
 -- details.
 module Game.LambdaHack.Server.MonadServer

@@ -150,7 +150,7 @@ drawFrameBody dm drawnLevelId = do
              where tile = ltile PointArray.! p0
                    symbol = Tile.symbol coTileSpeedup tile
                    -- smarkSuspect is an optional overlay, so let's overlay it
-                   -- over both visible and invisible tiles.
+                   -- over both visible and remembered tiles.
                    fg | smarkSuspect
                         && Tile.isSuspect coTileSpeedup tile = Color.BrCyan
                       | ES.member p0 totVisible = Tile.color coTileSpeedup tile
@@ -203,11 +203,11 @@ drawFrameBody dm drawnLevelId = do
                 (True, False)  -> Color.BrRed
                 (False, True)  -> Color.Green
                 (False, False) -> Color.Red
-            atttrOnPathOrLine = Color.defAttr {Color.fg = fgOnPathOrLine}
+            attrOnPathOrLine = Color.defAttr {Color.fg = fgOnPathOrLine}
         in if | elem p0 bline || elem p0 shiftedBTrajectory ->
-                Color.AttrChar atttrOnPathOrLine '*'
+                Color.AttrChar attrOnPathOrLine '*'
               | elem p0 mpath ->
-                Color.AttrChar atttrOnPathOrLine ';'
+                Color.AttrChar attrOnPathOrLine ';'
               | smarkVision && ES.member p0 totVisible ->
                 ac {Color.acAttr = (Color.acAttr ac) {Color.bg = Color.Blue}}
               | otherwise -> ac

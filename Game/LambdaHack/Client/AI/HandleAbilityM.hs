@@ -948,7 +948,7 @@ moveOrRunAid run source dir = do
       spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos
-  -- We start by checking actors at the the target position,
+  -- We start by checking actors at the target position,
   -- which gives a partial information (actors can be invisible),
   -- as opposed to accessibility (and items) which are always accurate
   -- (tiles can't be invisible).

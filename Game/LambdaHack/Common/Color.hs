@@ -122,7 +122,7 @@ attrFromW32 :: AttrCharW32 -> Attr
 attrFromW32 w = Attr (fgFromW32 w) (bgFromW32 w)
 
 attrEnumFromW32 :: AttrCharW32 -> Int
-attrEnumFromW32 !w = fromEnum (attrCharW32 w) .&. (2 ^ (16 :: Int) - 1)
+attrEnumFromW32 !w = fromEnum $ attrCharW32 w .&. (2 ^ (16 :: Int) - 1)
 
 spaceAttrW32 :: AttrCharW32
 spaceAttrW32 = attrCharToW32 $ AttrChar defAttr ' '

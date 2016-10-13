@@ -203,7 +203,7 @@ reqMove source dir = do
   lvl <- getLevel lid
   let spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
-  -- We start by checking actors at the the target position.
+  -- We start by checking actors at the target position.
   tgt <- getsState $ posToAssocs tpos lid
   case tgt of
     (target, tb) : _ | not (bproj sb && bproj tb) -> do  -- visible or not
