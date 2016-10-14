@@ -37,26 +37,17 @@ encodeData path a = do
 encodeEOF :: Binary a => FilePath -> a -> IO ()
 encodeEOF path a = encodeData path (a, "OK" :: String)
 
--- | Read and decompress the serialized data.
-getSerialized :: FilePath -> IO LBS.ByteString
-getSerialized path =
-  withBinaryFile path ReadMode $ \ h -> do
-    c <- LBS.hGetContents h
-    return $! Z.decompress c
-
--- | Read, decompress and deserialize data.
-decodeData :: Binary a => FilePath -> IO a
-decodeData = fmap decode . getSerialized
-
 -- | Read, decompress and deserialize data with an EOF marker.
 -- The @OK@ EOF marker ensures any easily detectable file corruption
 -- is discovered and reported before the function returns.
 strictDecodeEOF :: Binary a => FilePath -> IO a
 strictDecodeEOF path = do
-  (a, n) <- decodeData path
-  if n == ("OK" :: String)
-    then return $! a
-    else error $ "Fatal error: corrupted file " ++ path
+  withBinaryFile path ReadMode $ \h -> do
+    c <- LBS.hGetContents h
+    let (a, n) = decode $ Z.decompress c
+    if n == ("OK" :: String)
+      then return $! a
+      else error $ "Fatal error: corrupted file " ++ path
 
 -- | Try to create a directory, if it doesn't exist. We catch exceptions
 -- in case many clients try to do the same thing at the same time.
