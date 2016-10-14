@@ -736,10 +736,7 @@ doLook = do
       per <- getPerFid lidV
       b <- getsState $ getActorBody leader
       let p = fromMaybe (bpos b) xhairPos
-          canSee = ES.member p (totalVisible per)
-      inhabitants <- if canSee
-                     then getsState $ posToAssocs p lidV
-                     else return []
+      inhabitants <- getsState $ posToAssocs p lidV
       seps <- getsClient seps
       mnewEps <- makeLine False b p seps
       itemToF <- itemToFullClient
@@ -759,6 +756,7 @@ doLook = do
                          Just ItemDisco{itemKind} -> IK.idesc itemKind
                      pdesc = if desc == "" then "" else "(" <> desc <> ")"
                  in makeSentence [MU.SubjectVerbSg subject verb] <+> pdesc
+          canSee = ES.member p (totalVisible per)
           vis | isUknownSpace $ lvl `at` p = "that is"
               | not canSee = "you remember"
               | not aims = "you are aware of"

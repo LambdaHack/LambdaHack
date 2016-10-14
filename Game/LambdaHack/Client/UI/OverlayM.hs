@@ -81,10 +81,8 @@ lookAt detailed tilePrefix canSee pos aid msg = do
                | otherwise = MU.AW $ MU.Text tileText
       tileDesc = [MU.Text tilePrefix, tilePart]
   if | not (null (Tile.causeEffects cotile tile)) ->
-       return $! makeSentence ("activable:" : tileDesc)
-                 <+> msg <+> isd
+       return $! makeSentence ("activable:" : tileDesc) <+> msg <+> isd
      | detailed ->
-       return $! makeSentence tileDesc
-                 <+> msg <+> isd
+       return $! makeSentence tileDesc <+> msg <+> isd
      | otherwise ->
        return $! msg <+> isd

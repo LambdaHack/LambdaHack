@@ -175,17 +175,9 @@ cmdAtomicFilterCli cmd = case cmd of
     fid <- getsClient sside
     s <- getState
     -- Wipe out actors that just became invisible due to changed FOV.
-    -- Worst case is many actors O(n) in an open room of large diameter O(m).
-    -- Then a step reveals many positions. Iterating over them via @posToActors@
-    -- takes O(m * n) and so is more cosly than interating over all actors
-    -- and for each checking inclusion in a set of positions O(n * log m).
-    -- OTOH, m is bounded by sight radius and n is unbounded, so we have
-    -- O(n) in both cases, especially with huge levels. To help there,
-    -- we'd need to keep a dictionary from positions to actors, which means
-    -- @posToActors@ is the right approach for now.
     let seenNew = seenAtomicCli False fid perNew
         seenOld = seenAtomicCli False fid perOld
-        outFov = totalVisible perOld ES.\\ totalVisible perNew
+        outFov = totalVisible outPer
         outPrio = concatMap (\p -> posToAssocs p lid s) $ ES.elems outFov
         fActor (aid, b) =
           let ps = posProjBody b
@@ -198,7 +190,7 @@ cmdAtomicFilterCli cmd = case cmd of
         outActor = mapMaybe fActor outPrio
     -- Wipe out remembered items on tiles that now came into view.
     lvl <- getLevel lid
-    let inFov = ES.elems $ totalVisible perNew ES.\\ totalVisible perOld
+    let inFov = ES.elems $ totalVisible inPer
         pMaybe p = maybe Nothing (\x -> Just (p, x))
         inContainer fc itemFloor =
           let inItem = mapMaybe (\p -> pMaybe p $ EM.lookup p itemFloor) inFov
@@ -210,7 +202,7 @@ cmdAtomicFilterCli cmd = case cmd of
         inEmbed = inContainer CEmbed (lembed lvl)
     -- Remembered map tiles not wiped out, due to optimization in @updSpotTile@.
     -- Wipe out remembered smell on tiles that now came into smell Fov.
-    let inSmellFov = totalSmelled perNew ES.\\ totalSmelled perOld
+    let inSmellFov = totalSmelled inPer
         inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p (lsmell lvl))
                         (ES.elems inSmellFov)
         inSmell = if null inSm then [] else [UpdLoseSmell lid inSm]
@@ -316,7 +308,7 @@ cmdAtomicSemCli cmd = case cmd of
   UpdCoverKind c iid ik -> coverKind c iid ik
   UpdDiscoverSeed c iid seed  ldepth -> discoverSeed c iid seed ldepth
   UpdCoverSeed c iid seed _ldepth -> coverSeed c iid seed
-  UpdPerception lid outPer inPer -> perception lid outPer inPer
+  -- UpdPerception lid outPer inPer -> perception lid outPer inPer
   UpdRestart side sdiscoKind sfper s d sdebugCli -> do
     snxtDiff <- getsClient snxtDiff
     let cli = emptyStateClient side
@@ -405,6 +397,7 @@ perception lid outPer inPer = do
   -- Note we assume, but do not check that @outPer@ is contained
   -- in current perception and @inPer@ has no common part with it.
   -- It would make the already very costly operation even more expensive.
+{-
   perOld <- getPerFid lid
   -- Check if new perception is already set in @cmdAtomicFilterCli@
   -- or if we are doing undo/redo, which does not involve filtering.
@@ -414,6 +407,7 @@ perception lid outPer inPer = do
       unset = maybe False ES.null (interAlready inPer)
               || maybe False (not . ES.null) (interAlready outPer)
   when unset $ do
+-}
     let adj Nothing = assert `failure` "no perception to alter" `twith` lid
         adj (Just per) = Just $ addPer (diffPer per outPer) inPer
         f = EM.alter adj lid
