@@ -92,7 +92,7 @@ data UpdAtomic =
   | UpdLearnSecrets !ActorId !Int !Int
   | UpdSpotTile !LevelId ![(Point, Kind.Id TileKind)]
   | UpdLoseTile !LevelId ![(Point, Kind.Id TileKind)]
-  | UpdAlterSmell !LevelId !Point !(Maybe Time) !(Maybe Time)
+  | UpdAlterSmell !LevelId !Point !Time !Time
   | UpdSpotSmell !LevelId ![(Point, Time)]
   | UpdLoseSmell !LevelId ![(Point, Time)]
   -- Assorted.

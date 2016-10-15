@@ -219,15 +219,11 @@ closestUnknown aid = do
 
 -- TODO: this is costly, because target has to be changed every
 -- turn when walking along trail. But inverting the sort and going
--- to the newest smell, while sometimes faster, may result in many
--- actors following the same trail, unless we wipe the trail as soon
--- as target is assigned (but then we don't know if we should keep the target
--- or not, because somebody already followed it). OTOH, trails are not
--- common and so if wiped they can't incur a large total cost.
--- TODO: remove targets where the smell is likely to get too old by the time
--- the actor gets there.
+-- to the newest smell doesn't help, because smell radius is 1
+-- and so only 1 smell ever visible, normally.
 -- | Finds smells closest to the actor, except under the actor.
-closestSmell :: MonadClient m => ActorId -> m [(Int, (Point, Tile.SmellTime))]
+-- Of the closest, prefers the newest smell.
+closestSmell :: MonadClient m => ActorId -> m [(Int, (Point, Time))]
 closestSmell aid = do
   body <- getsState $ getActorBody aid
   Level{lsmell, ltime} <- getLevel $ blid body
@@ -237,8 +233,7 @@ closestSmell aid = do
     _ -> do
       bfs <- getCacheBfs aid
       let ts = mapMaybe (\x@(p, _) -> fmap (,x) (accessBfs bfs p)) smells
-          ds = filter (\(d, _) -> d /= 0) ts  -- bpos of aid
-      return $! sortBy (comparing (fst &&& absoluteTimeNegate . snd . snd)) ds
+      return $! sortBy (comparing (fst &&& absoluteTimeNegate . snd . snd)) ts
 
 -- TODO: We assume linear dungeon in @unexploredD@,
 -- because otherwise we'd need to calculate shortest paths in a graph, etc.
@@ -259,7 +254,7 @@ closestTriggers onlyDir aid = do
   let allExplored = ES.size explored == EM.size dungeon
       -- If lid not explored, aid equips a weapon and so can leave level.
       lidExplored = ES.member (blid body) explored
-      f :: Point -> Kind.Id TileKind -> [(Int, Point)] ->[(Int, Point)]
+      f :: Point -> Kind.Id TileKind -> [(Int, Point)] -> [(Int, Point)]
       f p t acc =
         if Tile.isWalkable coTileSpeedup t && not (null $ Tile.causeEffects cotile t)
         then case Tile.ascendTo cotile t of

@@ -475,10 +475,11 @@ updLoseTile lid ts = assert (not $ null ts) $ do
           updateLevel lid $ \lvl -> lvl {lseen = lseen lvl - 1}
   mapM_ f ts
 
-updAlterSmell :: MonadStateWrite m
-            => LevelId -> Point -> Maybe Time -> Maybe Time -> m ()
-updAlterSmell lid p fromSm toSm = do
-  let alt sm = assert (sm == fromSm `blame` "unexpected tile smell"
+updAlterSmell :: MonadStateWrite m => LevelId -> Point -> Time -> Time -> m ()
+updAlterSmell lid p fromSm' toSm' = do
+  let fromSm = if fromSm' == timeZero then Nothing else Just fromSm'
+      toSm = if toSm' == timeZero then Nothing else Just toSm'
+      alt sm = assert (sm == fromSm `blame` "unexpected tile smell"
                                     `twith` (lid, p, fromSm, toSm, sm)) toSm
   updateLevel lid $ updateSmell $ EM.alter alt p
 

@@ -1090,7 +1090,7 @@ effectApplyPerfume execSfx target = do
   tb <- getsState $ getActorBody target
   Level{lsmell} <- getLevel $ blid tb
   let f p fromSm =
-        execUpdAtomic $ UpdAlterSmell (blid tb) p (Just fromSm) Nothing
+        execUpdAtomic $ UpdAlterSmell (blid tb) p fromSm timeZero
   mapWithKeyM_ f lsmell
   execSfx
   return True

@@ -14,7 +14,7 @@ module Game.LambdaHack.Server.HandleRequestM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , handleReqUI, setBWait, handleRequestTimed, handleRequestTimedCases
-  , switchLeader, addSmell, reqMelee, reqAlter, reqWait
+  , switchLeader, affectSmell, reqMelee, reqAlter, reqWait
   , reqMoveItems, reqMoveItem, computeRndTimeout, reqProject, reqApply
   , reqTrigger, triggerEffect, reqGameRestart, reqGameSave
   , reqTactic, reqAutomate
@@ -162,32 +162,28 @@ switchLeader fid aidNew = do
 
 -- * ReqMove
 
--- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour
--- and then remove the efficiency hack below that only heroes leave smell
--- | Add a smell trace for the actor to the level. For now, only heroes
--- leave smell. If smell already there and the actor can smell, remove smell.
-addSmell :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-addSmell aid = do
+-- | Add a smell trace for the actor to the level. For now, only actors
+-- with gender leave strong and unique enough smell. If smell already there
+-- and the actor can smell, remove smell. Projectiles are ignored.
+-- As long as an actor can smell, he doesn't leave any smell ever.
+affectSmell :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
+affectSmell aid = do
   b <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  actorAspect <- getsServer sactorAspect
-  let ar = actorAspect EM.! aid
-      smellRadius = aSmell ar
-      dumbMonster = not (fhasGender $ gplayer fact) && smellRadius <= 0
-  unless (bproj b || dumbMonster) $ do
-    -- TODO: right now only humans leave smell and content should not
-    -- give humans the ability to smell (dominated monsters are rare enough).
-    -- In the future smells should be marked by the faction that left them
-    -- and actors shold only follow enemy smells.
-    localTime <- getsState $ getLocalTime $ blid b
-    lvl <- getLevel $ blid b
-    let oldS = EM.lookup (bpos b) . lsmell $ lvl
-        newTime = timeShift localTime smellTimeout
-        newS = if smellRadius > 0
-               then Nothing       -- smelling monster or hero
-               else Just newTime  -- hero
-    when (oldS /= newS) $
-      execUpdAtomic $ UpdAlterSmell (blid b) (bpos b) oldS newS
+  unless (bproj b) $ do
+    fact <- getsState $ (EM.! bfid b) . sfactionD
+    actorAspect <- getsServer sactorAspect
+    let ar = actorAspect EM.! aid
+        smellRadius = aSmell ar
+    when (fhasGender (gplayer fact) || smellRadius > 0) $ do
+      localTime <- getsState $ getLocalTime $ blid b
+      lvl <- getLevel $ blid b
+      let oldS = fromMaybe timeZero $ EM.lookup (bpos b) . lsmell $ lvl
+          newTime = timeShift localTime smellTimeout
+          newS = if smellRadius > 0
+                 then timeZero
+                 else newTime
+      when (oldS /= newS) $
+        execUpdAtomic $ UpdAlterSmell (blid b) (bpos b) oldS newS
 
 -- | Actor moves or attacks.
 -- Note that client may not be able to see an invisible monster
@@ -218,7 +214,7 @@ reqMove source dir = do
       | accessible cops lvl tpos -> do
           -- Movement requires full access.
           execUpdAtomic $ UpdMoveActor source spos tpos
-          addSmell source
+          affectSmell source
       | otherwise ->
           -- Client foolishly tries to move into blocked, boring tile.
           execFailure source (ReqMove dir) MoveNothing

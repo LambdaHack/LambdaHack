@@ -14,8 +14,7 @@
 --
 -- Actors at normal speed (2 m/s) take one turn to move one tile (1 m by 1 m).
 module Game.LambdaHack.Common.Tile
-  ( SmellTime
-  , kindHasFeature, hasFeature, symbol, color, color2
+  ( kindHasFeature, hasFeature, symbol, color, color2
   , isClear, isLit, isWalkable, isDoor, isSuspect
   , isExplorable, speedup, alterMinSkill, alterMinWalk
   , openTo, closeTo, embedItems, causeEffects, revealAs, hideAs
@@ -37,16 +36,11 @@ import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.TileKind (TileKind, TileSpeedup (..),
                                          isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
-
--- | The last time a hero left a smell in a given tile. To be used
--- by monsters that hunt by smell.
-type SmellTime = Time
 
 createTab :: A.IArray A.UArray a
           => Kind.Ops TileKind -> (TileKind -> a)

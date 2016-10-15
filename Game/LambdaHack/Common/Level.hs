@@ -25,7 +25,6 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.Tile
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
@@ -62,7 +61,7 @@ type ActorMap = EM.EnumMap Point [ActorId]
 type TileMap = PointArray.Array (Kind.Id TileKind)
 
 -- | Current smell on map tiles.
-type SmellMap = EM.EnumMap Point SmellTime
+type SmellMap = EM.EnumMap Point Time
 
 -- | A view on single, inhabited dungeon level. "Remembered" fields
 -- carry a subset of the info in the client copies of levels.
