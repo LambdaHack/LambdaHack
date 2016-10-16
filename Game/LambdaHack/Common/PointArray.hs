@@ -278,7 +278,8 @@ forceA Array{..} = Array{avector = U.force avector, ..}
 
 fromListA :: (U.Unbox w, Enum w, Enum c) => X -> Y -> [c] -> GArray w c
 {-# INLINE fromListA #-}
-fromListA axsize aysize l = Array{avector = U.fromList $ map cnv l, ..}
+fromListA axsize aysize l =
+  Array{avector = U.fromListN (axsize * aysize) $ map cnv l, ..}
 
 toListA :: (U.Unbox w, Enum w, Enum c) => GArray w c -> [c]
 {-# INLINE toListA #-}

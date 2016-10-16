@@ -1,5 +1,5 @@
 {-# LANGUAGE TupleSections #-}
--- {-# OPTIONS_GHC -fprof-auto #-}
+{-# OPTIONS_GHC -fprof-auto #-}
 -- | Display game data on the screen using one of the available frontends
 -- (determined at compile time with cabal flags).
 module Game.LambdaHack.Client.UI.DrawM
@@ -19,6 +19,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Ord
 import qualified Data.Text as T
+import qualified Data.Vector.Unboxed as U
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.Bfs
@@ -39,6 +40,7 @@ import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
+import qualified Game.LambdaHack.Common.KindOps as KindOps
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
@@ -50,7 +52,8 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.TileKind (isUknownSpace)
+import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
+import qualified Game.LambdaHack.Content.TileKind as TK
 
 targetDesc :: MonadClientUI m => Maybe Target -> m (Text, Maybe Text)
 targetDesc target = do
@@ -115,27 +118,32 @@ targetDescXhair = do
   sxhair <- getsClient sxhair
   targetDesc $ Just sxhair
 
-drawFrameBody :: forall m. MonadClientUI m => ColorMode -> LevelId -> m [AttrLine]
+drawFrameBody :: forall m. MonadClientUI m => ColorMode -> LevelId -> m AttrLine
 drawFrameBody dm drawnLevelId = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  Kind.COps{coTileSpeedup, cotile=Kind.Ops{okind}} <- getsState scops
   SessionUI{sselected, saimMode, smarkVision, smarkSmell} <- getSession
+  StateClient{seps, smarkSuspect} <- getClient
+  Level{ lxsize, lysize, lsmell, ltime, lfloor, lactor
+       , ltile=PointArray.Array{avector} }
+    <- getLevel drawnLevelId
   mleader <- getsClient _sleader
   xhairPosRaw <- xhairToPos
   let xhairPos = fromMaybe originPoint xhairPosRaw
+      xhairPosi = PointArray.pindex lxsize xhairPos
   s <- getState
-  StateClient{seps, smarkSuspect} <- getClient
-  Level{lxsize, lysize, lsmell, ltime, lfloor, lactor, ltile}
-    <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
-  -- The base drawing routine.
-  let dis !p0 =
-        let viewSmell sml =
+  -- The basic drawing routine.
+  let dis !pI !tile =
+        let !p0 = PointArray.punindex lxsize pI
+            viewSmell sml =
               let fg = toEnum $ fromEnum p0 `rem` 14 + 1
                   smlt = sml `timeDeltaToFrom` ltime
-              in Color.AttrChar (Color.defAttr {Color.fg})
-                                (timeDeltaToDigit smellTimeout smlt)
+              in Color.attrCharToW32
+                 $ Color.AttrChar (Color.defAttr {Color.fg})
+                                  (timeDeltaToDigit smellTimeout smlt)
             viewActor aid Actor{bsymbol, bcolor, bhp, bproj} =
-              Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
+              Color.attrCharToW32
+              $ Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
              where symbol | bhp > 0 || bproj = bsymbol
                           | otherwise = '%'
                    bg = case mleader of
@@ -144,27 +152,25 @@ drawFrameBody dm drawnLevelId = do
                           then Color.defBG
                           else Color.BrBlue
             viewItemBag floorBag = case EM.toDescList floorBag of
-              (iid, _) : _ -> viewItem $ getItemBody iid s
+              (iid, _) : _ -> Color.attrCharToW32 $ viewItem $ getItemBody iid s
               [] -> assert `failure` "lfloor not sparse" `twith` ()
-            viewTile = Color.AttrChar Color.defAttr {Color.fg} symbol
-             where tile = ltile PointArray.! p0
-                   symbol = Tile.symbol coTileSpeedup tile
-                   -- smarkSuspect is an optional overlay, so let's overlay it
-                   -- over both visible and remembered tiles.
-                   fg | smarkSuspect
-                        && Tile.isSuspect coTileSpeedup tile = Color.BrCyan
-                      | ES.member p0 totVisible = Tile.color coTileSpeedup tile
-                      | otherwise = Tile.color2 coTileSpeedup tile
-            charAttr = case EM.findWithDefault [] p0 lactor of
-              [] -> case EM.lookup p0 lsmell of
-                Just sml | sml > ltime && smarkSmell -> viewSmell sml
-                _ -> case EM.lookup p0 lfloor of
-                  Nothing -> viewTile
-                  Just floorBag -> viewItemBag floorBag
-              aid : _ -> viewActor aid (getActorBody aid s)
-        in if p0 /= xhairPos then charAttr
-           else charAttr {Color.acAttr =
-                            (Color.acAttr charAttr) {Color.bg = Color.BrYellow}}
+            viewTile = case okind tile of
+              TK.TileKind{tsymbol, tcolor, tcolor2} ->
+                let -- smarkSuspect is an optional overlay, so let's overlay it
+                    -- over both visible and remembered tiles.
+                    fg | smarkSuspect
+                         && Tile.isSuspect coTileSpeedup tile = Color.BrCyan
+                       | ES.member p0 totVisible = tcolor
+                       | otherwise = tcolor2
+                in Color.attrCharToW32
+                   $ Color.AttrChar Color.defAttr {Color.fg} tsymbol
+        in case EM.findWithDefault [] p0 lactor of
+          [] -> case EM.lookup p0 lsmell of
+            Just sml | sml > ltime && smarkSmell -> viewSmell sml
+            _ -> case EM.lookup p0 lfloor of
+              Nothing -> viewTile
+              Just floorBag -> viewItemBag floorBag
+          aid : _ -> viewActor aid (getActorBody aid s)
   -- Aiming mode drawing routine.
   bline <- case mleader of
     Just leader -> do
@@ -191,11 +197,12 @@ drawFrameBody dm drawnLevelId = do
         Just (_, Actor{btrajectory = Just p, bpos = prPos}) ->
           deleteXhair $ trajectoryToPath prPos (fst p)
         _ -> []
-      aimCharAtrr :: Point -> Color.AttrChar -> Color.AttrChar
-      aimCharAtrr !p0 ac =
-        let fgOnPathOrLine =
-              let tile = ltile PointArray.! p0
-              in case ( ES.member p0 totVisible
+      aimCharAtrr :: Int -> Kind.Id TileKind -> Color.AttrCharW32
+                  -> Color.AttrCharW32
+      aimCharAtrr !pI !tile !ac =
+        let p0 = PointArray.punindex lxsize pI
+            fgOnPathOrLine =
+              case ( ES.member p0 totVisible
                       , Tile.isWalkable coTileSpeedup tile ) of
                 _ | isUknownSpace tile -> Color.BrBlack
                 _ | Tile.isSuspect coTileSpeedup tile -> Color.BrCyan
@@ -205,24 +212,35 @@ drawFrameBody dm drawnLevelId = do
                 (False, False) -> Color.Red
             attrOnPathOrLine = Color.defAttr {Color.fg = fgOnPathOrLine}
         in if | elem p0 bline || elem p0 shiftedBTrajectory ->
-                Color.AttrChar attrOnPathOrLine '*'
+                Color.attrCharToW32 $ Color.AttrChar attrOnPathOrLine '*'
               | elem p0 mpath ->
-                Color.AttrChar attrOnPathOrLine ';'
+                Color.attrCharToW32 $ Color.AttrChar attrOnPathOrLine ';'
               | smarkVision && ES.member p0 totVisible ->
-                ac {Color.acAttr = (Color.acAttr ac) {Color.bg = Color.Blue}}
+                case Color.attrCharFromW32 ac of
+                  Color.AttrChar (Color.Attr fg _) ch ->
+                    Color.attrCharToW32
+                    $ Color.AttrChar (Color.Attr fg Color.Blue) ch
               | otherwise -> ac
   -- The engine that puts it all together. The inline really helps.
-  let fOverlay :: (Point -> Color.AttrChar) -> [AttrLine]
+  let fOverlay :: (Int -> Kind.Id TileKind -> Color.AttrCharW32) -> AttrLine
       {-# INLINE fOverlay #-}
       fOverlay f =
-        let fLine y = map (\x -> Color.attrCharToW32 $ f $ Point x y) [0..lxsize-1]
-        in emptyAttrLine lxsize : map fLine [0..lysize-1]
+        let g !pI !tile l = if pI /= xhairPosi then f pI tile : l else
+              case Color.attrCharFromW32 $ f pI tile of
+                Color.AttrChar (Color.Attr fg _) ch ->
+                  Color.attrCharToW32
+                    (Color.AttrChar (Color.Attr fg Color.BrYellow) ch)
+                  : l
+        in U.ifoldr (\n c -> g n (KindOps.Id c)) [] avector
   return $! case dm of
     ColorFull | notAimMode -> fOverlay dis
-    ColorFull -> fOverlay $ \p -> aimCharAtrr p $ dis p
-    ColorBW -> fOverlay $ \p -> (dis p) {Color.acAttr = Color.defAttr}
+    ColorFull -> fOverlay $ \pI tile -> aimCharAtrr pI tile $ dis pI tile
+    ColorBW -> fOverlay $ \pI tile ->
+      case Color.attrCharFromW32 $ dis pI tile of
+        Color.AttrChar _ ch ->
+          Color.attrCharToW32 $ Color.AttrChar Color.defAttr ch
 
-drawFrameStatus :: MonadClientUI m => LevelId -> m [AttrLine]
+drawFrameStatus :: MonadClientUI m => LevelId -> m AttrLine
 drawFrameStatus drawnLevelId = do
   SessionUI{sselected, saimMode, swaitTimes, sitemSel} <- getSession
   mleader <- getsClient _sleader
@@ -314,11 +332,10 @@ drawFrameStatus drawnLevelId = do
   let targetGap = emptyAttrLine (widthTgt - T.length pathTgt
                                           - T.length targetText)
       targetStatus = textToAL targetText ++ targetGap ++ textToAL pathTgt
-  return $! [ arenaStatus <+:> xhairStatus
-            , selectedStatus ++ statusGap ++ damageStatus ++ leaderStatus
-              <+:> targetStatus ]
+  return $! concat [ arenaStatus <+:> xhairStatus
+                   , selectedStatus ++ statusGap ++ damageStatus ++ leaderStatus
+                     <+:> targetStatus ]
 
--- TODO: split up and generally rewrite.
 -- | Draw the whole screen: level map and status area.
 -- Pass at most a single page if overlay of text unchanged
 -- to the frontends to display separately or overlay over map,
@@ -327,11 +344,11 @@ drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m SingleFrame
 drawBaseFrame dm drawnLevelId = do
   frameBody <- drawFrameBody dm drawnLevelId
   frameStatus <- drawFrameStatus drawnLevelId
-  let fr = frameBody ++ frameStatus
-      lxsize = fst normalLevelBound + 1  -- TODO
+  let lxsize = fst normalLevelBound + 1  -- TODO
       lysize = snd normalLevelBound + 1
       canvasLength = lysize + 3
-      singleFrame = PointArray.fromListA lxsize canvasLength $ concat fr
+      fr = emptyAttrLine lxsize ++ frameBody ++ frameStatus
+      singleFrame = PointArray.fromListA lxsize canvasLength fr
   return $! SingleFrame{..}
 
 -- Comfortably accomodates 3-digit level numbers and 25-character

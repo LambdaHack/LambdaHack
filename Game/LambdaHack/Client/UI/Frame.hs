@@ -80,5 +80,5 @@ overlayFrame ov msf =
 
 overlayFrameWithLines :: [AttrLine] -> Maybe SingleFrame -> SingleFrame
 overlayFrameWithLines l msf =
-  let ov = linesToOverlay $ truncateLines  (isNothing msf) l
+  let ov = linesToOverlay $ truncateLines (isNothing msf) l
   in overlayFrame ov msf

@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, RankNTypes #-}
 -- | General content types and operations.
 module Game.LambdaHack.Common.KindOps
-  ( Id, Ops(..)
+  ( Id(Id), Ops(..)
   ) where
 
 import Prelude ()
