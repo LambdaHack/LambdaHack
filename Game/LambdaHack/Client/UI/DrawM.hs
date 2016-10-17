@@ -1,4 +1,4 @@
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE RankNTypes, TupleSections #-}
 {-# OPTIONS_GHC -fprof-auto #-}
 -- | Display game data on the screen using one of the available frontends
 -- (determined at compile time with cabal flags).
@@ -15,11 +15,16 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import Control.Monad.ST.Strict
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Ord
 import qualified Data.Text as T
+import qualified Data.Vector.Generic as G
+import qualified Data.Vector.Generic.New as New
 import qualified Data.Vector.Unboxed as U
+import qualified Data.Vector.Unboxed.Mutable as VM
+import Data.Word
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.Bfs
@@ -118,8 +123,10 @@ targetDescXhair = do
   sxhair <- getsClient sxhair
   targetDesc $ Just sxhair
 
-drawFrameBody :: forall m. MonadClientUI m => ColorMode -> LevelId -> m AttrLine
-drawFrameBody dm drawnLevelId = do
+drawFrameBody :: forall m. MonadClientUI m
+              => ColorMode -> LevelId -> New.New U.Vector Word32
+              -> m (New.New U.Vector Word32)
+drawFrameBody dm drawnLevelId new = do
   Kind.COps{coTileSpeedup, cotile=Kind.Ops{okind}} <- getsState scops
   SessionUI{sselected, saimMode, smarkVision, smarkSmell} <- getSession
   StateClient{seps, smarkSuspect} <- getClient
@@ -222,23 +229,28 @@ drawFrameBody dm drawnLevelId = do
                     $ Color.AttrChar (Color.Attr fg Color.Blue) ch
               | otherwise -> ac
   -- The engine that puts it all together. The inline really helps.
-  let fOverlay :: (Int -> Kind.Id TileKind -> Color.AttrCharW32) -> AttrLine
+  let fOverlay :: forall s. (Int -> Kind.Id TileKind -> Color.AttrCharW32)
+               -> (G.Mutable U.Vector s Word32 -> ST s ())
       {-# INLINE fOverlay #-}
-      fOverlay f =
-        let g !pI !tile l = if pI /= xhairPosi then f pI tile : l else
-              case Color.attrCharFromW32 $ f pI tile of
+      fOverlay f v =
+        let g :: Int -> Kind.Id TileKind -> ST s ()
+            g !pI !tile = VM.write v (pI + lxsize) $ Color.attrCharW32 $
+              if pI /= xhairPosi
+              then f pI tile
+              else case Color.attrCharFromW32 $ f pI tile of
                 Color.AttrChar (Color.Attr fg _) ch ->
                   Color.attrCharToW32
                     (Color.AttrChar (Color.Attr fg Color.BrYellow) ch)
-                  : l
-        in U.ifoldr (\n c -> g n (KindOps.Id c)) [] avector
-  return $! case dm of
-    ColorFull | notAimMode -> fOverlay dis
-    ColorFull -> fOverlay $ \pI tile -> aimCharAtrr pI tile $ dis pI tile
-    ColorBW -> fOverlay $ \pI tile ->
-      case Color.attrCharFromW32 $ dis pI tile of
-        Color.AttrChar _ ch ->
-          Color.attrCharToW32 $ Color.AttrChar Color.defAttr ch
+        in U.imapM_ (\n c -> g n (KindOps.Id c)) avector
+      frameBody :: forall s. G.Mutable U.Vector s Word32 -> ST s ()
+      frameBody = case dm of
+        ColorFull | notAimMode -> fOverlay dis
+        ColorFull -> fOverlay $ \pI tile -> aimCharAtrr pI tile $ dis pI tile
+        ColorBW -> fOverlay $ \pI tile ->
+          case Color.attrCharFromW32 $ dis pI tile of
+            Color.AttrChar _ ch ->
+              Color.attrCharToW32 $ Color.AttrChar Color.defAttr ch
+  return $! New.modify frameBody new
 
 drawFrameStatus :: MonadClientUI m => LevelId -> m AttrLine
 drawFrameStatus drawnLevelId = do
@@ -342,13 +354,17 @@ drawFrameStatus drawnLevelId = do
 -- depending on the frontend.
 drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m SingleFrame
 drawBaseFrame dm drawnLevelId = do
-  frameBody <- drawFrameBody dm drawnLevelId
-  frameStatus <- drawFrameStatus drawnLevelId
   let lxsize = fst normalLevelBound + 1  -- TODO
       lysize = snd normalLevelBound + 1
       canvasLength = lysize + 3
-      fr = emptyAttrLine lxsize ++ frameBody ++ frameStatus
-      singleFrame = PointArray.fromListA lxsize canvasLength fr
+      new = New.create $ VM.replicate (lxsize * canvasLength)
+                                      (Color.attrCharW32 Color.spaceAttrW32)
+  withBody <- drawFrameBody dm drawnLevelId new
+  frameStatus <- drawFrameStatus drawnLevelId
+  let f v (pI, ac32) = VM.write v pI (Color.attrCharW32 ac32)
+      l = zip [lxsize * (lysize + 1)..] frameStatus
+      withAll = New.modify (\v -> mapM_ (f v) l) withBody
+      singleFrame = PointArray.Array lxsize canvasLength (G.new withAll)
   return $! SingleFrame{..}
 
 -- Comfortably accomodates 3-digit level numbers and 25-character
