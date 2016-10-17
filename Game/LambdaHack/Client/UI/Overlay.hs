@@ -127,3 +127,4 @@ type Overlay = [(Point, Color.AttrCharW32)]
 data ColorMode =
     ColorFull  -- ^ normal, with full colours
   | ColorBW    -- ^ black+white only
+  deriving Eq

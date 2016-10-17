@@ -139,7 +139,8 @@ drawFrameBody dm drawnLevelId new = do
   s <- getState
   totVisible <- totalVisible <$> getPerFid drawnLevelId
   -- The basic drawing routine.
-  let dis !pI !tile =
+  let {-# NOINLINE dis #-}
+      dis !pI !tile =
         let !p0 = PointArray.punindex lxsize pI
             viewSmell sml =
               let fg = toEnum $ fromEnum p0 `rem` 14 + 1
@@ -189,10 +190,9 @@ drawFrameBody dm drawnLevelId new = do
     _ -> return []
   let bfsAndPathFromLeader leader = Just <$> getCacheBfsAndPath leader xhairPos
       pathFromLeader leader = (Just . (,NoPath)) <$> getCacheBfs leader
-      notAimMode = isNothing saimMode
-  bfsmpath <- if notAimMode
-              then maybe (return Nothing) pathFromLeader mleader
-              else maybe (return Nothing) bfsAndPathFromLeader mleader
+  bfsmpath <- if isJust saimMode
+              then maybe (return Nothing) bfsAndPathFromLeader mleader
+              else maybe (return Nothing) pathFromLeader mleader
   let deleteXhair = delete xhairPos
       mpath = if null bline then []
               else maybe [] (\(_, mp) -> case mp of
@@ -204,6 +204,7 @@ drawFrameBody dm drawnLevelId new = do
         Just (_, Actor{btrajectory = Just p, bpos = prPos}) ->
           deleteXhair $ trajectoryToPath prPos (fst p)
         _ -> []
+--      {-# NOINLINE aimCharAtrr #-}
       aimCharAtrr :: Int -> Kind.Id TileKind -> Color.AttrCharW32
                   -> Color.AttrCharW32
       aimCharAtrr !pI !tile !ac =
@@ -228,37 +229,51 @@ drawFrameBody dm drawnLevelId new = do
                     Color.attrCharToW32
                     $ Color.AttrChar (Color.Attr fg Color.Blue) ch
               | otherwise -> ac
-      writeXhair :: forall s. G.Mutable U.Vector s Word32 -> ST s ()
-      writeXhair v = case xhairPosRaw of
-        Nothing -> return ()
-        Just xhairP -> do
-          let xhairPi = PointArray.pindex lxsize xhairP
-          w0 <- VM.read v xhairPi
-          let w = case Color.attrCharFromW32 $ Color.AttrCharW32 w0 of
-                Color.AttrChar (Color.Attr fg _) ch ->
-                  Color.attrCharToW32
-                    (Color.AttrChar (Color.Attr fg Color.BrYellow) ch)
-          VM.write v xhairPi (Color.attrCharW32 w)
-  -- The engine that puts it all together. The inline really helps.
-  let fOverlay :: forall s. (Int -> Kind.Id TileKind -> Color.AttrCharW32)
-               -> (G.Mutable U.Vector s Word32 -> ST s ())
-      {-# INLINE fOverlay #-}
-      fOverlay f v = do
-        let g :: Int -> Kind.Id TileKind -> ST s ()
-            g !pI !tile =
-              VM.write v (pI + lxsize) $ Color.attrCharW32 $ f pI tile
-        U.imapM_ (\n c -> g n (KindOps.Id c)) avector
-      frameBody :: forall s. G.Mutable U.Vector s Word32 -> ST s ()
-      frameBody = case dm of
-        ColorFull | notAimMode -> fOverlay dis
-        ColorFull -> fOverlay $ \pI tile -> aimCharAtrr pI tile $ dis pI tile
-        ColorBW -> fOverlay $ \pI tile ->
-          case Color.attrCharFromW32 $ dis pI tile of
-            Color.AttrChar _ ch ->
-              Color.attrCharToW32 $ Color.AttrChar Color.defAttr ch
-      overXhair :: forall s. G.Mutable U.Vector s Word32 -> ST s ()
-      overXhair v = frameBody v >> writeXhair v
-  return $! New.modify overXhair new
+      writeXhair !(Color.AttrChar (Color.Attr fg _) ch) =
+        Color.AttrChar (Color.Attr fg Color.BrYellow) ch
+--      {-# NOINLINE turnBW #-}
+      turnBW !(Color.AttrChar _ ch) = Color.AttrChar Color.defAttr ch
+  let mapV :: forall s. (Color.AttrChar -> Color.AttrChar) -> [Int]
+           -> G.Mutable U.Vector s Word32 -> ST s ()
+      mapV !f !l !v = do
+        let g :: Int -> ST s ()
+            g !pI = do
+              w0 <- VM.read v pI
+              let w = Color.attrCharW32 . Color.attrCharToW32
+                      . f . Color.attrCharFromW32 . Color.AttrCharW32 $ w0
+              VM.write v pI w
+        mapM_ g l
+      mapVT :: forall s. (Int -> Kind.Id TileKind -> Color.AttrCharW32)
+            -> G.Mutable U.Vector s Word32 -> ST s ()
+      {-# INLINE mapVT #-}
+      mapVT f v = do
+        let g :: Int -> Word8 -> ST s ()
+            g !pI !tile = do
+              let w = Color.attrCharW32 $ f pI (KindOps.Id tile)
+              VM.write v (pI + lxsize) w
+        U.imapM_ g avector
+      mapVTA :: forall s. (Int -> Kind.Id TileKind -> Color.AttrCharW32
+                                                   -> Color.AttrCharW32)
+             -> G.Mutable U.Vector s Word32 -> ST s ()
+      {-# INLINE mapVTA #-}
+      mapVTA f v = do
+        let g :: Int -> Word8 -> ST s ()
+            g !pI !tile = do
+              w0 <- VM.read v pI
+              let w = Color.attrCharW32 $ f pI (KindOps.Id tile)
+                                        $ Color.AttrCharW32 w0
+              VM.write v (pI + lxsize) w
+        U.imapM_ g avector
+      lDungeon = [lxsize..lxsize * (lysize - 1)]
+      upd :: forall s. G.Mutable U.Vector s Word32 -> ST s ()
+      upd v = do
+        mapVT dis v
+        when (isJust saimMode) $ mapVTA aimCharAtrr v
+        when (dm == ColorBW) $ mapV turnBW lDungeon v
+        case xhairPosRaw of
+          Nothing -> return ()
+          Just xhairP -> mapV writeXhair [PointArray.pindex lxsize xhairP] v
+  return $! New.modify upd new
 
 drawFrameStatus :: MonadClientUI m => LevelId -> m AttrLine
 drawFrameStatus drawnLevelId = do
