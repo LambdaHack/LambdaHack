@@ -1,5 +1,5 @@
 {-# LANGUAGE RankNTypes, TupleSections #-}
-{-# OPTIONS_GHC -fprof-auto #-}
+-- {-# OPTIONS_GHC -fprof-auto #-}
 -- | Display game data on the screen using one of the available frontends
 -- (determined at compile time with cabal flags).
 module Game.LambdaHack.Client.UI.DrawM
@@ -136,7 +136,6 @@ drawFrameBody dm drawnLevelId new = do
   mleader <- getsClient _sleader
   xhairPosRaw <- xhairToPos
   let xhairPos = fromMaybe originPoint xhairPosRaw
-      xhairPosi = PointArray.pindex lxsize xhairPos
   s <- getState
   totVisible <- totalVisible <$> getPerFid drawnLevelId
   -- The basic drawing routine.
@@ -161,6 +160,7 @@ drawFrameBody dm drawnLevelId new = do
             viewItemBag floorBag = case EM.toDescList floorBag of
               (iid, _) : _ -> Color.attrCharToW32 $ viewItem $ getItemBody iid s
               [] -> assert `failure` "lfloor not sparse" `twith` ()
+            -- TODO: instead, write tiles first, then overwrite with others
             viewTile = case okind tile of
               TK.TileKind{tsymbol, tcolor, tcolor2} ->
                 let -- smarkSuspect is an optional overlay, so let's overlay it
@@ -228,20 +228,26 @@ drawFrameBody dm drawnLevelId new = do
                     Color.attrCharToW32
                     $ Color.AttrChar (Color.Attr fg Color.Blue) ch
               | otherwise -> ac
+      writeXhair :: forall s. G.Mutable U.Vector s Word32 -> ST s ()
+      writeXhair v = case xhairPosRaw of
+        Nothing -> return ()
+        Just xhairP -> do
+          let xhairPi = PointArray.pindex lxsize xhairP
+          w0 <- VM.read v xhairPi
+          let w = case Color.attrCharFromW32 $ Color.AttrCharW32 w0 of
+                Color.AttrChar (Color.Attr fg _) ch ->
+                  Color.attrCharToW32
+                    (Color.AttrChar (Color.Attr fg Color.BrYellow) ch)
+          VM.write v xhairPi (Color.attrCharW32 w)
   -- The engine that puts it all together. The inline really helps.
   let fOverlay :: forall s. (Int -> Kind.Id TileKind -> Color.AttrCharW32)
                -> (G.Mutable U.Vector s Word32 -> ST s ())
       {-# INLINE fOverlay #-}
-      fOverlay f v =
+      fOverlay f v = do
         let g :: Int -> Kind.Id TileKind -> ST s ()
-            g !pI !tile = VM.write v (pI + lxsize) $ Color.attrCharW32 $
-              if pI /= xhairPosi
-              then f pI tile
-              else case Color.attrCharFromW32 $ f pI tile of
-                Color.AttrChar (Color.Attr fg _) ch ->
-                  Color.attrCharToW32
-                    (Color.AttrChar (Color.Attr fg Color.BrYellow) ch)
-        in U.imapM_ (\n c -> g n (KindOps.Id c)) avector
+            g !pI !tile =
+              VM.write v (pI + lxsize) $ Color.attrCharW32 $ f pI tile
+        U.imapM_ (\n c -> g n (KindOps.Id c)) avector
       frameBody :: forall s. G.Mutable U.Vector s Word32 -> ST s ()
       frameBody = case dm of
         ColorFull | notAimMode -> fOverlay dis
@@ -250,7 +256,9 @@ drawFrameBody dm drawnLevelId new = do
           case Color.attrCharFromW32 $ dis pI tile of
             Color.AttrChar _ ch ->
               Color.attrCharToW32 $ Color.AttrChar Color.defAttr ch
-  return $! New.modify frameBody new
+      overXhair :: forall s. G.Mutable U.Vector s Word32 -> ST s ()
+      overXhair v = frameBody v >> writeXhair v
+  return $! New.modify overXhair new
 
 drawFrameStatus :: MonadClientUI m => LevelId -> m AttrLine
 drawFrameStatus drawnLevelId = do
