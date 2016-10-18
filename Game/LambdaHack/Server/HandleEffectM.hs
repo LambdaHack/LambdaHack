@@ -454,7 +454,7 @@ effectCallFriend :: (MonadAtomic m, MonadServer m)
                    -> m Bool
 effectCallFriend execSfx nDm source target = do
   -- Obvious effect, nothing announced.
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
@@ -471,7 +471,7 @@ effectCallFriend execSfx nDm source target = do
     let deltaHP = - xM 10
     execUpdAtomic $ UpdRefillHP target deltaHP
     execSfx
-    let validTile t = not $ Tile.hasFeature cotile TK.NoActor t
+    let validTile t = not $ Tile.isNoActor coTileSpeedup t
     ps <- getsState $ nearbyFreePoints 50 validTile (bpos tb) (blid tb)
     localTime <- getsState $ getLocalTime (blid tb)
     -- We call target's friends so that AI monsters that test by throwing
@@ -487,7 +487,7 @@ effectSummon :: (MonadAtomic m, MonadServer m)
              -> m Bool
 effectSummon execSfx actorFreq nDm source target = do
   -- Obvious effect, nothing announced.
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
@@ -504,7 +504,7 @@ effectSummon execSfx actorFreq nDm source target = do
     let deltaCalm = - xM 10
     unless (bproj tb) $ udpateCalm target deltaCalm
     execSfx
-    let validTile t = not $ Tile.hasFeature cotile TK.NoActor t
+    let validTile t = not $ Tile.isNoActor coTileSpeedup t
     ps <- getsState $ nearbyFreePoints 25 validTile (bpos tb) (blid tb)
     localTime <- getsState $ getLocalTime (blid tb)
     -- Make sure summoned actors start acting after the summoner.
@@ -707,7 +707,7 @@ effectInsertMove execSfx nDm target = do
 effectTeleport :: (MonadAtomic m, MonadServer m)
                => m () -> Dice.Dice -> ActorId -> ActorId -> m Bool
 effectTeleport execSfx nDm source target = do
-  Kind.COps{cotile, coTileSpeedup} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   range <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
   b <- getsState $ getActorBody target
@@ -721,7 +721,7 @@ effectTeleport execSfx nDm source target = do
   tpos <- rndToAction $ findPosTry 200 ltile
     (\p t -> Tile.isWalkable coTileSpeedup t
              && (not (dMinMax 9 p)  -- don't loop, very rare
-                 || not (Tile.hasFeature cotile TK.NoActor t)
+                 || not (Tile.isNoActor coTileSpeedup t)
                     && null (posToAidsLvl p lvl)))
     [ dist 1
     , dist $ 1 + range `div` 9
@@ -856,9 +856,9 @@ dropCStoreItem store aid b hit iid kit@(k, _) = do
 
 pickDroppable :: MonadStateRead m => ActorId -> Actor -> m Container
 pickDroppable aid b = do
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   lvl <- getLevel (blid b)
-  let validTile t = not $ Tile.hasFeature cotile TK.NoItem t
+  let validTile t = not $ Tile.isNoItem coTileSpeedup t
   if validTile $ lvl `at` bpos b
   then return $! CActor aid CGround
   else do

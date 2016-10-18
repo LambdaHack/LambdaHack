@@ -15,7 +15,8 @@
 -- Actors at normal speed (2 m/s) take one turn to move one tile (1 m by 1 m).
 module Game.LambdaHack.Common.Tile
   ( kindHasFeature, hasFeature, isClear, isLit, isWalkable, isDoor, isSuspect
-  , isExplorable, speedup, alterMinSkill, alterMinWalk
+  , isExplorable, isOftenItem, isOftenActor, isNoItem, isNoActor
+  , speedup, alterMinSkill, alterMinWalk
   , openTo, closeTo, embedItems, causeEffects, revealAs, hideAs
   , isOpenable, isClosable, isChangeable, isEscape, isStair, ascendTo
 #ifdef EXPOSE_INTERNAL
@@ -105,6 +106,22 @@ isChangeable :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isChangeable #-}
 isChangeable TileSpeedup{isChangeableTab} = accessTab isChangeableTab
 
+isOftenItem :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE isOftenItem #-}
+isOftenItem TileSpeedup{isOftenItemTab} = accessTab isOftenItemTab
+
+isOftenActor:: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE isOftenActor #-}
+isOftenActor TileSpeedup{isOftenActorTab} = accessTab isOftenActorTab
+
+isNoItem :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE isNoItem #-}
+isNoItem TileSpeedup{isNoItemTab} = accessTab isNoItemTab
+
+isNoActor :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE isNoActor #-}
+isNoActor TileSpeedup{isNoActorTab} = accessTab isNoActorTab
+
 alterMinSkill :: TileSpeedup -> Kind.Id TileKind -> Int
 {-# INLINE alterMinSkill #-}
 alterMinSkill TileSpeedup{alterMinSkillTab} =
@@ -145,6 +162,10 @@ speedup allClear cotile =
         let getTo TK.ChangeTo{} = True
             getTo _ = False
         in any getTo $ TK.tfeature tk
+      isOftenItemTab = createTab cotile $ kindHasFeature TK.OftenItem
+      isOftenActorTab = createTab cotile $ kindHasFeature TK.OftenActor
+      isNoItemTab = createTab cotile $ kindHasFeature TK.NoItem
+      isNoActorTab = createTab cotile $ kindHasFeature TK.NoActor
       alterMinSkillTab = createTabWithKey cotile alterMinSkillKind
       alterMinWalkTab = createTabWithKey cotile alterMinWalkKind
   in TileSpeedup {..}

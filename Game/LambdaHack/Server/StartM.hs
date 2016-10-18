@@ -38,7 +38,6 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
-import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.CommonM
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Server.Fov
@@ -189,7 +188,7 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
 -- Spawn initial actors. Clients should notice this, to set their leaders.
 populateDungeon :: (MonadAtomic m, MonadServer m) => m ()
 populateDungeon = do
-  cops@Kind.COps{cotile} <- getsState scops
+  cops@Kind.COps{coTileSpeedup} <- getsState scops
   placeItemsInDungeon
   embedItemsInDungeon
   dungeon <- getsState sdungeon
@@ -230,7 +229,7 @@ populateDungeon = do
         let clipInTurn = timeTurn `timeFit` timeClip
             nmult = 1 + timeOffset `mod` clipInTurn
             ntime = timeShift localTime (timeDeltaScale (Delta timeClip) nmult)
-            validTile t = not $ Tile.hasFeature cotile TK.NoActor t
+            validTile t = not $ Tile.isNoActor coTileSpeedup t
             ninitActors = finitialActors $ gplayer fact3
             ntries = 5 * (ninitActors + 5)  -- this many candidate positions
         psFree <- getsState $ nearbyFreePoints ntries validTile ppos lid
@@ -313,7 +312,7 @@ addHero bfid ppos lid heroNames mNumber time = do
 -- from each other. Place as many of the initial factions, as possible,
 -- over stairs and escapes.
 findEntryPoss :: Kind.COps -> LevelId -> Level -> Int -> Rnd [Point]
-findEntryPoss Kind.COps{cotile, coTileSpeedup}
+findEntryPoss Kind.COps{coTileSpeedup}
               lid Level{ltile, lxsize, lysize, lstair, lescape} k = do
   let factionDist = max lxsize lysize - 5
       dist poss cmin l _ = all (\pos -> chessDist l pos > cmin) poss
@@ -326,9 +325,9 @@ findEntryPoss Kind.COps{cotile, coTileSpeedup}
                  ]
         np <- findPosTry2 1000 ltile  -- try really hard, for skirmish fairness
                 (\_ t -> Tile.isWalkable coTileSpeedup t
-                         && not (Tile.hasFeature cotile TK.NoActor t))
+                         && not (Tile.isNoActor coTileSpeedup t))
                 ds
-                (\_p t -> Tile.hasFeature cotile TK.OftenActor t)
+                (\_p t -> Tile.isOftenActor coTileSpeedup t)
                 ds
         nps <- tryFind (np : ps) (n - 1)
         return $! np : nps

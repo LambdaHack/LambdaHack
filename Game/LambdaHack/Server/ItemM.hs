@@ -31,7 +31,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.TileKind (TileKind)
-import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
@@ -123,7 +122,7 @@ rollAndRegisterItem lid itemFreq container verbose mk = do
 
 placeItemsInDungeon :: forall m. (MonadAtomic m, MonadServer m) => m ()
 placeItemsInDungeon = do
-  Kind.COps{cotile, coTileSpeedup} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   let initialItems (lid, Level{lfloor, ltile, litemNum, lxsize, lysize}) = do
         let factionDist = max lxsize lysize - 5
             placeItems :: [Point] -> Int -> m ()
@@ -137,9 +136,9 @@ placeItemsInDungeon = do
                        , dist (factionDist `div` 12) ]
               pos <- rndToAction $ findPosTry2 500 ltile
                    (\_ t -> Tile.isWalkable coTileSpeedup t
-                            && not (Tile.hasFeature cotile TK.NoItem t))
+                            && not (Tile.isNoItem coTileSpeedup t))
                    ds
-                   (\_ t -> Tile.hasFeature cotile TK.OftenItem t)
+                   (\_ t -> Tile.isOftenItem coTileSpeedup t)
                    (ds ++ [dist 1, dist 0])
               createLevelItem pos lid
               placeItems (pos : lfloorKeys) (n - 1)

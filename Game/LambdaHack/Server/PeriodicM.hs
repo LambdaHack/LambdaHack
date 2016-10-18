@@ -33,7 +33,6 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
-import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.CommonM
 import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
@@ -105,7 +104,7 @@ addAnyActor actorFreq lid time mpos = do
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point
              -> Bool -> LevelId -> Level -> Faction -> State
              -> Rnd Point
-rollSpawnPos Kind.COps{cotile, coTileSpeedup} visible
+rollSpawnPos Kind.COps{coTileSpeedup} visible
              mobile lid lvl@Level{ltile, lxsize, lysize} fact s = do
   let inhabitants = actorRegularList (isAtWar fact) lid s
       distantSo df p _ = all (\b -> df $ chessDist (bpos b) p) inhabitants
@@ -127,7 +126,7 @@ rollSpawnPos Kind.COps{cotile, coTileSpeedup} visible
   -- which are easier to hide in crampy corridors that lit halls.
   findPosTry2 (if mobile then 500 else 100) ltile
     ( \p t -> Tile.isWalkable coTileSpeedup t
-              && not (Tile.hasFeature cotile TK.NoActor t)
+              && not (Tile.isNoActor coTileSpeedup t)
               && null (posToAidsLvl p lvl))
     condList
     (\p t -> distantSo (> 4) p t  -- otherwise actors in dark rooms swarmed
