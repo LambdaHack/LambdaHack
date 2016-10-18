@@ -729,6 +729,7 @@ effectTeleport execSfx nDm source target = do
     , dist $ 1 + range `div` 5
     , dist 5
     , dist 7
+    , dist 9
     ]
   if | braced b -> do
        execSfxAtomic $ SfxMsgFid (bfid sb)

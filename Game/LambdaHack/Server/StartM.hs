@@ -319,19 +319,17 @@ findEntryPoss Kind.COps{cotile, coTileSpeedup}
       dist poss cmin l _ = all (\pos -> chessDist l pos > cmin) poss
       tryFind _ 0 = return []
       tryFind ps n = do
+        let ds = [ dist ps $ factionDist `div` 3
+                 , dist ps $ factionDist `div` 4
+                 , dist ps $ factionDist `div` 5
+                 , dist ps $ factionDist `div` 7
+                 ]
         np <- findPosTry2 1000 ltile  -- try really hard, for skirmish fairness
                 (\_ t -> Tile.isWalkable coTileSpeedup t
                          && not (Tile.hasFeature cotile TK.NoActor t))
-                [ \p t -> dist ps (factionDist `div` 2) p t
-                , \p t -> dist ps (factionDist `div` 3) p t
-                , \p t -> dist ps (factionDist `div` 3) p t ]
+                ds
                 (\_p t -> Tile.hasFeature cotile TK.OftenActor t)
-                [ dist ps $ factionDist `div` 3
-                , dist ps $ factionDist `div` 4
-                , dist ps $ factionDist `div` 5
-                , dist ps $ factionDist `div` 7
-                , dist ps $ factionDist `div` 10
-                ]
+                ds
         nps <- tryFind (np : ps) (n - 1)
         return $! np : nps
       -- Prefer deeper stairs to avoid spawners ambushing explorers.
