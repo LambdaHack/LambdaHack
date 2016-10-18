@@ -136,17 +136,20 @@ placeItemsInDungeon = do
                    [ \p t -> Tile.hasFeature cotile TK.OftenItem t
                              && dist p > factionDist `div` 5
                    , \p t -> Tile.hasFeature cotile TK.OftenItem t
+                             && dist p > factionDist `div` 5
                              && dist p > factionDist `div` 7
                    , \p t -> Tile.hasFeature cotile TK.OftenItem t
+                             && dist p > factionDist `div` 5
                              && dist p > factionDist `div` 9
                    , \p t -> Tile.hasFeature cotile TK.OftenItem t
+                             && dist p > factionDist `div` 5
                              && dist p > factionDist `div` 12
                    , \p _ -> dist p > factionDist `div` 5
-                   , \p t -> Tile.hasFeature cotile TK.OftenItem t
+                   , \p t -> Tile.hasFeature cotile TK.OftenItem t && dist p > 1
                              || dist p > factionDist `div` 7
-                   , \p t -> Tile.hasFeature cotile TK.OftenItem t
+                   , \p t -> Tile.hasFeature cotile TK.OftenItem t && dist p > 1
                              || dist p > factionDist `div` 9
-                   , \p t -> Tile.hasFeature cotile TK.OftenItem t
+                   , \p t -> Tile.hasFeature cotile TK.OftenItem t && dist p > 1
                              || dist p > factionDist `div` 12
                    , \p _ -> dist p > 1
                    , \p _ -> dist p > 0

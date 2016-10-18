@@ -108,10 +108,12 @@ rollSpawnPos :: Kind.COps -> ES.EnumSet Point
 rollSpawnPos Kind.COps{cotile, coTileSpeedup} visible
              mobile lid lvl@Level{ltile, lxsize, lysize} fact s = do
   let inhabitants = actorRegularList (isAtWar fact) lid s
+      sane5 p = all (\b -> chessDist (bpos b) p > 5) inhabitants
+                && not (p `ES.member` visible)  -- surprise and plausibility
       distantSo df p _ =
-        all (\b -> df $ chessDist (bpos b) p) inhabitants
+        all (\b -> df (chessDist (bpos b) p) && sane5 p) inhabitants
       middlePos = Point (lxsize `div` 2) (lysize `div` 2)
-      distantMiddle d p _ = chessDist p middlePos < d
+      distantMiddle d p _ = chessDist p middlePos < d && sane5 p
       condList | mobile =
         [ distantSo (<= 10)  -- try hard to harass enemies
         , distantSo (<= 15)
@@ -131,9 +133,11 @@ rollSpawnPos Kind.COps{cotile, coTileSpeedup} visible
               && not (Tile.hasFeature cotile TK.NoActor t)
               && null (posToAidsLvl p lvl))
     (condList
-     ++ [ distantSo (> 5)  -- otherwise actors in dark rooms are swarmed
-        , distantSo (> 2)  -- otherwise actors can be hit on entering level
-        , \p _ -> not (p `ES.member` visible)  -- surprise and believability
+     ++ [ \p t -> distantSo (> 5) p t  -- otherwise actors in dark rooms swarmed
+                  && not (p `ES.member` visible)
+        , \p t -> distantSo (> 2) p t -- otherwise actors hit on entering level
+                  && not (p `ES.member` visible)
+        , \p _ -> not (p `ES.member` visible)
         ])
 
 dominateFidSfx :: (MonadAtomic m, MonadServer m)

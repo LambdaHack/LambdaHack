@@ -93,16 +93,20 @@ convertTileMaps Kind.COps{coTileSpeedup}
 placeStairs :: Kind.COps -> TileMap -> CaveKind -> [Point]
             -> Rnd Point
 placeStairs Kind.COps{cotile, coTileSpeedup} cmap CaveKind{..} ps = do
-  let dist cmin l _ = all (\pos -> chessDist l pos > cmin) ps
+  let dist cmin l = all (\pos -> chessDist l pos > cmin) ps
   findPosTry 1000 cmap
     (\p t -> Tile.isWalkable coTileSpeedup t
              && not (Tile.hasFeature cotile TK.NoActor t)
-             && dist 0 p t)  -- can't overwrite stairs with other stairs
-    [ dist cminStairDist
-    , dist $ cminStairDist `div` 2
-    , dist $ cminStairDist `div` 4
-    , const $ Tile.hasFeature cotile TK.OftenActor
-    , dist $ cminStairDist `div` 8
+             && dist 0 p)  -- can't overwrite stairs with other stairs
+    [ \p t -> dist cminStairDist p
+              && Tile.hasFeature cotile TK.OftenActor t
+    , \p t -> dist (cminStairDist `div` 2) p
+              && Tile.hasFeature cotile TK.OftenActor t
+    , \p t -> dist (cminStairDist `div` 4) p
+              && Tile.hasFeature cotile TK.OftenActor t
+    , \p t -> dist (cminStairDist `div` 8) p
+              && Tile.hasFeature cotile TK.OftenActor t
+    , \p _ -> dist (cminStairDist `div` 8) p
     ]
 
 -- | Create a level from a cave.

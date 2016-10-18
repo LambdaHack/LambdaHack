@@ -170,14 +170,14 @@ findPosTry :: Int                                  -- ^ the number of tries
            -> [Point -> Kind.Id TileKind -> Bool]  -- ^ optional predicates
            -> Rnd Point
 findPosTry _        ltile m []         = findPos ltile m
-findPosTry numTries ltile m l@(_ : tl) = assert (numTries > 0) $
+findPosTry numTries ltile m (hd : tl) = assert (numTries > 0) $
   let (x, y) = PointArray.sizeA ltile
       search 0 = findPosTry numTries ltile m tl
       search !k = do
         pxy <- randomR (0, (x - 1) * (y - 1))
         let tile = KindOps.Id $ ltile `PointArray.accessI` pxy
             pos = PointArray.punindex x pxy
-        if all (\p -> p pos tile) $ m : l
+        if m pos tile && hd pos tile
         then return $! pos
         else search (k - 1)
   in search numTries
