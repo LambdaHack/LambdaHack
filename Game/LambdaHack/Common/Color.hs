@@ -82,6 +82,8 @@ data AttrChar = AttrChar
   }
   deriving (Show, Eq, Ord)
 
+-- This implementation is faster than @Int@, because some vector updates
+-- can be done without going to and from @Int@.
 newtype AttrCharW32 = AttrCharW32 {attrCharW32 :: Word32}
   deriving (Show, Eq, Enum, Binary)
 

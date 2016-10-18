@@ -90,11 +90,11 @@ newtype Tab a = Tab (A.UArray (KindOps.Id TileKind) a)
 
 isUknownSpace :: KindOps.Id TileKind -> Bool
 {-# INLINE isUknownSpace #-}
-isUknownSpace tt = minBound == tt
+isUknownSpace tt = KindOps.Id 0 == tt
 
 unknownId :: KindOps.Id TileKind
 {-# INLINE unknownId #-}
-unknownId = minBound
+unknownId = KindOps.Id 0
 
 -- TODO: (spans multiple contents) check that all posible solid place
 -- fences have hidden counterparts.

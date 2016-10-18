@@ -15,7 +15,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.EnumMap.Strict as EM
+import qualified Data.Vector as V
 
 import Game.LambdaHack.Common.KindOps
 import Game.LambdaHack.Common.Misc
@@ -29,8 +29,8 @@ data ContentDef a = ContentDef
       -- ^ validate a content item and list all offences
   , validateAll    :: !([a] -> [Text])
       -- ^ validate the whole defined content of this type and list all offences
-  , content        :: !(EM.EnumMap (Id a) a)  -- ^ all content of this type
+  , content        :: !(V.Vector a)    -- ^ all content of this type
   }
 
-contentFromList :: [a] -> (EM.EnumMap (Id a) a)
-contentFromList = EM.fromDistinctAscList . zip [toEnum 0..]
+contentFromList :: [a] -> V.Vector a
+contentFromList = V.fromListN (fromEnum (maxBound :: Id a))
