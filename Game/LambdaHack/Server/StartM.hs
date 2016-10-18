@@ -319,16 +319,14 @@ findEntryPoss Kind.COps{cotile, coTileSpeedup}
       dist poss cmin l _ = all (\pos -> chessDist l pos > cmin) poss
       tryFind _ 0 = return []
       tryFind ps n = do
-        np <- findPosTry 1000 ltile  -- try really hard, for skirmish fairness
+        np <- findPosTry2 1000 ltile  -- try really hard, for skirmish fairness
                 (\_ t -> Tile.isWalkable coTileSpeedup t
                          && not (Tile.hasFeature cotile TK.NoActor t))
                 [ \p t -> dist ps (factionDist `div` 2) p t
-                          && Tile.hasFeature cotile TK.OftenActor t
                 , \p t -> dist ps (factionDist `div` 3) p t
-                          && Tile.hasFeature cotile TK.OftenActor t
-                , \p t -> dist ps (factionDist `div` 3) p t
-                          && Tile.hasFeature cotile TK.OftenActor t
-                , dist ps $ factionDist `div` 3
+                , \p t -> dist ps (factionDist `div` 3) p t ]
+                (\_p t -> Tile.hasFeature cotile TK.OftenActor t)
+                [ dist ps $ factionDist `div` 3
                 , dist ps $ factionDist `div` 4
                 , dist ps $ factionDist `div` 5
                 , dist ps $ factionDist `div` 7

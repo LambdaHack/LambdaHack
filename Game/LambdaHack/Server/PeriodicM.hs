@@ -108,12 +108,10 @@ rollSpawnPos :: Kind.COps -> ES.EnumSet Point
 rollSpawnPos Kind.COps{cotile, coTileSpeedup} visible
              mobile lid lvl@Level{ltile, lxsize, lysize} fact s = do
   let inhabitants = actorRegularList (isAtWar fact) lid s
-      sane5 p = all (\b -> chessDist (bpos b) p > 5) inhabitants
-                && not (p `ES.member` visible)  -- surprise and plausibility
       distantSo df p _ =
-        all (\b -> df (chessDist (bpos b) p) && sane5 p) inhabitants
+        all (\b -> df (chessDist (bpos b) p)) inhabitants
       middlePos = Point (lxsize `div` 2) (lysize `div` 2)
-      distantMiddle d p _ = chessDist p middlePos < d && sane5 p
+      distantMiddle d p _ = chessDist p middlePos < d
       condList | mobile =
         [ distantSo (<= 10)  -- try hard to harass enemies
         , distantSo (<= 15)
@@ -128,17 +126,19 @@ rollSpawnPos Kind.COps{cotile, coTileSpeedup} visible
         ]
   -- Not considering TK.OftenActor, because monsters emerge from hidden ducts,
   -- which are easier to hide in crampy corridors that lit halls.
-  findPosTry (if mobile then 500 else 100) ltile
+  findPosTry2 (if mobile then 500 else 100) ltile
     ( \p t -> Tile.isWalkable coTileSpeedup t
               && not (Tile.hasFeature cotile TK.NoActor t)
               && null (posToAidsLvl p lvl))
-    (condList
-     ++ [ \p t -> distantSo (> 5) p t  -- otherwise actors in dark rooms swarmed
-                  && not (p `ES.member` visible)
-        , \p t -> distantSo (> 2) p t -- otherwise actors hit on entering level
-                  && not (p `ES.member` visible)
-        , \p _ -> not (p `ES.member` visible)
-        ])
+    condList
+    (\p t -> distantSo (> 5) p t  -- otherwise actors in dark rooms swarmed
+             && not (p `ES.member` visible))
+    [ \p t -> distantSo (> 5) p t  -- otherwise actors in dark rooms swarmed
+              && not (p `ES.member` visible)
+    , \p t -> distantSo (> 2) p t -- otherwise actors hit on entering level
+              && not (p `ES.member` visible)
+    , \p _ -> not (p `ES.member` visible)
+    ]
 
 dominateFidSfx :: (MonadAtomic m, MonadServer m)
                => FactionId -> ActorId -> m Bool

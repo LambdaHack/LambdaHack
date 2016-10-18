@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Level
   , Level(..), ActorPrio, ItemFloor, ActorMap, TileMap, SmellMap
     -- * Level query
   , at, accessible, accessibleUnknown, accessibleDir
-  , knownLsecret, isSecretPos, hideTile, findPos, findPosTry
+  , knownLsecret, isSecretPos, hideTile, findPos, findPosTry, findPosTry2
   ) where
 
 import Prelude ()
@@ -169,18 +169,31 @@ findPosTry :: Int                                  -- ^ the number of tries
            -> (Point -> Kind.Id TileKind -> Bool)  -- ^ mandatory predicate
            -> [Point -> Kind.Id TileKind -> Bool]  -- ^ optional predicates
            -> Rnd Point
-findPosTry _        ltile m []         = findPos ltile m
-findPosTry numTries ltile m (hd : tl) = assert (numTries > 0) $
+findPosTry numTries ltile m l = findPosTry2 numTries ltile m [] undefined l
+
+findPosTry2 :: Int                                  -- ^ the number of tries
+            -> TileMap                              -- ^ look up in this map
+            -> (Point -> Kind.Id TileKind -> Bool)  -- ^ mandatory predicate
+            -> [Point -> Kind.Id TileKind -> Bool]  -- ^ optional predicates
+            -> (Point -> Kind.Id TileKind -> Bool)  -- ^ good to have predicate
+            -> [Point -> Kind.Id TileKind -> Bool]  -- ^ worst case predicates
+            -> Rnd Point
+findPosTry2 numTries ltile m0 l g r = assert (numTries > 0) $
   let (x, y) = PointArray.sizeA ltile
-      search 0 = findPosTry numTries ltile m tl
-      search !k = do
-        pxy <- randomR (0, (x - 1) * (y - 1))
-        let tile = KindOps.Id $ ltile `PointArray.accessI` pxy
-            pos = PointArray.punindex x pxy
-        if m pos tile && hd pos tile
-        then return $! pos
-        else search (k - 1)
-  in search numTries
+      accomodate fallback _ [] = fallback
+      accomodate fallback m (hd : tl) =
+        let search 0 = accomodate fallback m tl
+            search !k = do
+              pxy <- randomR (0, (x - 1) * (y - 1))
+              let tile = KindOps.Id $ ltile `PointArray.accessI` pxy
+                  pos = PointArray.punindex x pxy
+              if m pos tile && hd pos tile
+              then return $! pos
+              else search (k - 1)
+        in search numTries
+  in accomodate (accomodate (findPos ltile m0) m0 r)
+                (\pos tile -> m0 pos tile && g pos tile)
+                l
 
 instance Binary Level where
   put Level{..} = do
