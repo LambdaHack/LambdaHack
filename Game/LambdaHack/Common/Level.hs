@@ -21,6 +21,7 @@ import qualified Data.EnumMap.Strict as EM
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
+import qualified Game.LambdaHack.Common.KindOps as KindOps
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -149,13 +150,12 @@ findPos :: TileMap -> (Point -> Kind.Id TileKind -> Bool) -> Rnd Point
 findPos ltile p =
   let (x, y) = PointArray.sizeA ltile
       search = do
-        px <- randomR (0, x - 1)
-        py <- randomR (0, y - 1)
-        let pos = Point{..}
-            tile = ltile PointArray.! pos
+        pxy <- randomR (0, (x - 1) * (y - 1))
+        let tile = KindOps.Id $ ltile `PointArray.accessI` pxy
+            pos = PointArray.punindex x pxy
         if p pos tile
-          then return $! pos
-          else search
+        then return $! pos
+        else search
   in search
 
 -- | Try to find a random position on the map satisfying
@@ -173,14 +173,13 @@ findPosTry _        ltile m []         = findPos ltile m
 findPosTry numTries ltile m l@(_ : tl) = assert (numTries > 0) $
   let (x, y) = PointArray.sizeA ltile
       search 0 = findPosTry numTries ltile m tl
-      search k = do
-        px <- randomR (0, x - 1)
-        py <- randomR (0, y - 1)
-        let pos = Point{..}
-            tile = ltile PointArray.! pos
-        if m pos tile && all (\p -> p pos tile) l
-          then return $! pos
-          else search (k - 1)
+      search !k = do
+        pxy <- randomR (0, (x - 1) * (y - 1))
+        let tile = KindOps.Id $ ltile `PointArray.accessI` pxy
+            pos = PointArray.punindex x pxy
+        if all (\p -> p pos tile) $ m : l
+        then return $! pos
+        else search (k - 1)
   in search numTries
 
 instance Binary Level where
