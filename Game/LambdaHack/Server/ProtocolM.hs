@@ -178,7 +178,7 @@ updateCopsDict copsClient sconfig sdebugCli = do
   modifyDict $ EM.map updFrozenClient
 
 sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
-sendUpdate fid cmd = do
+sendUpdate !fid !cmd = do
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
     FState Nothing s cli -> do

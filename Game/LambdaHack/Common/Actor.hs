@@ -150,9 +150,9 @@ actorTemplate btrunk bsymbol bname bpronoun bcolor bhp bcalm
   in Actor{..}
 
 bspeed :: Actor -> AspectRecord -> Speed
-bspeed b AspectRecord{aSpeed} =
+bspeed !b AspectRecord{aSpeed} =
   case btrajectory b of
-    Nothing -> toSpeed $ max 1 aSpeed  -- avoid infinite wait
+    Nothing -> toSpeed aSpeed
     Just (_, speed) -> speed
 
 -- | Whether an actor is braced for combat this clip.

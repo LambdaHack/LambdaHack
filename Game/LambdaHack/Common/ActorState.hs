@@ -224,7 +224,7 @@ whereTo lid pos k dungeon = assert (k /= 0) $
 -- Inlining slows it down.
 -- | Gets actor body from the current level. Error if not found.
 getActorBody :: ActorId -> State -> Actor
-getActorBody aid s =
+getActorBody !aid !s =
   let assFail = assert `failure` "body not found" `twith` (aid, s)
   in EM.findWithDefault assFail aid $ sactorD s
 
@@ -295,7 +295,7 @@ memActor aid lid s =
 
 -- | Get current time from the dungeon data.
 getLocalTime :: LevelId -> State -> Time
-getLocalTime lid s = ltime $ sdungeon s EM.! lid
+getLocalTime !lid !s = ltime $ sdungeon s EM.! lid
 
 regenCalmDelta :: Actor -> AspectRecord -> State -> Int64
 regenCalmDelta b AspectRecord{aMaxCalm} s =

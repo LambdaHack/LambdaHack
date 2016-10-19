@@ -521,7 +521,7 @@ updTimeItem iid c fromIt toIt = assert (fromIt /= toIt) $ do
 -- even if the faction has no actors there, so show this on UI somewhere,
 -- e.g., in the @~@ menu of seen level indicate recent activity.
 updAgeGame :: MonadStateWrite m => Delta Time -> [LevelId] -> m ()
-updAgeGame delta lids = assert (delta /= Delta timeZero) $ do
+updAgeGame !delta !lids = assert (delta /= Delta timeZero) $ do
   modifyState $ updateTime $ flip timeShift delta
   mapM_ (ageLevel delta) lids
 

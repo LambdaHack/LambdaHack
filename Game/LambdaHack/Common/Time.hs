@@ -70,29 +70,35 @@ _ticksInSecond =
 -- | Absolute time addition, e.g., for summing the total game session time
 -- from the times of individual games.
 absoluteTimeAdd :: Time -> Time -> Time
+{-# INLINE absoluteTimeAdd #-}
 absoluteTimeAdd (Time t1) (Time t2) = Time (t1 + t2)
 
 -- | Shifting an absolute time by a time vector.
 timeShift :: Time -> Delta Time -> Time
+{-# INLINE timeShift #-}
 timeShift (Time t1) (Delta (Time t2)) = Time (t1 + t2)
 
 -- | How many time intervals of the latter kind fits in an interval
 -- of the former kind.
 timeFit :: Time -> Time -> Int
+{-# INLINE timeFit #-}
 timeFit (Time t1) (Time t2) = fromIntegral $ t1 `div` t2
 
 -- | How many time intervals of the latter kind cover an interval
 -- of the former kind (rounded up).
 timeFitUp :: Time -> Time -> Int
+{-# INLINE timeFitUp #-}
 timeFitUp (Time t1) (Time t2) = fromIntegral $ t1 `divUp` t2
 
 -- | Reverse a time vector.
 timeDeltaReverse :: Delta Time -> Delta Time
+{-# INLINE timeDeltaReverse #-}
 timeDeltaReverse (Delta (Time t)) = Delta (Time (-t))
 
 -- | Absolute time negation. To be used for reversing time flow,
 -- e.g., for comparing absolute times in the reverse order.
 absoluteTimeNegate :: Time -> Time
+{-# INLINE absoluteTimeNegate #-}
 absoluteTimeNegate (Time t) = Time (-t)
 
 -- | Time time vector between the second and the first absolute times.
@@ -104,14 +110,17 @@ timeDeltaToFrom (Time t1) (Time t2) = Delta $ Time (t1 - t2)
 -- | Time time vector between the second and the first absolute times.
 -- The arguments are in the same order as in the underlying scalar subtraction.
 timeDeltaSubtract :: Delta Time -> Delta Time -> Delta Time
+{-# INLINE timeDeltaSubtract #-}
 timeDeltaSubtract (Delta (Time t1)) (Delta (Time t2)) = Delta $ Time (t1 - t2)
 
 -- | Scale the time vector by an @Int@ scalar value.
 timeDeltaScale :: Delta Time -> Int -> Delta Time
+{-# INLINE timeDeltaScale #-}
 timeDeltaScale (Delta (Time t)) s = Delta (Time (t * fromIntegral s))
 
 -- | Divide a time vector.
 timeDeltaDiv :: Delta Time -> Int -> Delta Time
+{-# INLINE timeDeltaDiv #-}
 timeDeltaDiv (Delta (Time t)) n = Delta (Time (t `div` fromIntegral n))
 
 -- | Represent the main 10 thresholds of a time range by digits,
@@ -140,6 +149,7 @@ sInMs = 1000000
 
 -- | Constructor for content definitions.
 toSpeed :: Int -> Speed
+{-# INLINE toSpeed #-}
 toSpeed s = Speed $ fromIntegral s * sInMs `div` 10
 
 -- Can't be lower or actors would slow down (via tmp organs and weight),
@@ -149,6 +159,7 @@ minimalSpeed = sInMs `div` 10
 
 -- | Pretty-printing of speed in the format used in content definitions.
 fromSpeed :: Speed -> Int
+{-# INLINE fromSpeed #-}
 fromSpeed (Speed s) = fromIntegral $ s * 10 `div` sInMs
 
 -- | No movement possible at that speed.
@@ -161,18 +172,22 @@ speedNormal = Speed $ 2 * sInMs
 
 -- | Scale speed by an @Int@ scalar value.
 speedScale :: Rational -> Speed -> Speed
+{-# INLINE speedScale #-}
 speedScale s (Speed v) = Speed (round $ fromIntegral v * s)
 
 -- | Speed addition.
 speedAdd :: Speed -> Speed -> Speed
+{-# INLINE speedAdd #-}
 speedAdd (Speed s1) (Speed s2) = Speed (s1 + s2)
 
 -- | Speed negation.
 speedNegate :: Speed -> Speed
+{-# INLINE speedNegate #-}
 speedNegate (Speed n) = Speed (-n)
 
 -- | The number of time ticks it takes to walk 1 meter at the given speed.
 ticksPerMeter :: Speed -> Delta Time
+{-# INLINE ticksPerMeter #-}
 ticksPerMeter (Speed v) =
   Delta $ Time $ _ticksInSecond * sInMs `divUp` max minimalSpeed v
 
@@ -180,7 +195,7 @@ ticksPerMeter (Speed v) =
 -- and velocity percent modifier.
 -- See <https://github.com/LambdaHack/LambdaHack/wiki/Item-statistics>.
 speedFromWeight :: Int -> Int -> Speed
-speedFromWeight weight velocityPercent =
+speedFromWeight !weight !velocityPercent =
   let w = fromIntegral weight
       vp = fromIntegral velocityPercent
       mpMs | w <= 500 = sInMs * 16
@@ -203,10 +218,11 @@ speedFromWeight weight velocityPercent =
 -- With this formula, each projectile flies for at most 1 second,
 -- that is 2 turns, and then drops to the ground.
 rangeFromSpeed :: Speed -> Int
+{-# INLINE rangeFromSpeed #-}
 rangeFromSpeed (Speed v) = fromIntegral $ v `div` sInMs
 
 -- | Calculate maximum range taking into account the linger percentage.
 rangeFromSpeedAndLinger :: Speed -> Int -> Int
-rangeFromSpeedAndLinger speed linger =
+rangeFromSpeedAndLinger !speed !linger =
   let range = rangeFromSpeed speed
   in linger * range `divUp` 100

@@ -169,12 +169,11 @@ endClip arenas = do
   let clipN = time `timeFit` timeClip
       clipInTurn = let r = timeTurn `timeFit` timeClip
                    in assert (r > 2) r
-      clipMod = clipN `mod` clipInTurn
   when (clipN `mod` writeSaveClips == 0) $ do
     modifyServer $ \ser -> ser {swriteSave = False}
     writeSaveAll False
   when (clipN `mod` leadLevelClips == 0) leadLevelSwitch
-  when (clipMod == 1) $ do
+  when (clipN `mod` clipInTurn == 1) $ do
     -- Periodic activation only once per turn, for speed,
     -- but on all active arenas.
     mapM_ applyPeriodicLevel arenas

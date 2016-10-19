@@ -53,8 +53,8 @@ handleSelfAI :: ( MonadClientSetup m
 {-# INLINE handleSelfAI #-}
 handleSelfAI cmdA = do
   cmds <- cmdAtomicFilterCli cmdA
-  mapM_ (\c -> cmdAtomicSemCli c
-               >> execUpdAtomic c) cmds
+  mapM_ (\ !c -> cmdAtomicSemCli c
+                 >> execUpdAtomic c) cmds
   -- mapM_ (storeUndo . UpdAtomic) cmds
 
 handleSelfUI :: ( MonadClientSetup m
@@ -64,11 +64,11 @@ handleSelfUI :: ( MonadClientSetup m
 {-# INLINE handleSelfUI #-}
 handleSelfUI cmdA = do
   cmds <- cmdAtomicFilterCli cmdA
-  let handle c = do
-        !oldDiscoKind <- getsClient sdiscoKind
-        !oldDiscoAspect <- getsClient sdiscoAspect
+  let handle !c = do
+        -- Avoid leaking the whole client state.
+        !StateClient{sdiscoKind, sdiscoAspect} <- getClient
         cmdAtomicSemCli c
         execUpdAtomic c
-        displayRespUpdAtomicUI False oldDiscoKind oldDiscoAspect c
+        displayRespUpdAtomicUI False sdiscoKind sdiscoAspect c
   mapM_ handle cmds
   -- mapM_ (storeUndo . UpdAtomic) cmds  -- TODO: only store cmdA?
