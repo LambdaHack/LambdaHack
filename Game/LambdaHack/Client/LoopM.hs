@@ -41,7 +41,7 @@ loopAI sdebugCli = do
   restored <- case restoredG of
     Just (s, cli, ()) | not $ snewGameCli sdebugCli -> do  -- Restore game.
       let sCops = updateCOps (const cops) s
-      handleSelfAI $ UpdResumeServer sCops
+      handleResponseAI $ RespUpdAtomicAI $ UpdResumeServer sCops
       putClient cli {sdebugCli}
       return True
     _ -> return False
@@ -85,7 +85,7 @@ loopUI copsClient sconfig sdebugCli = do
     Just (s, cli, sess) | not $ snewGameCli sdebugCli -> do
       -- Restore game.
       let sCops = updateCOps (const cops) s
-      handleSelfUI $ UpdResumeServer sCops
+      handleResponseUI $ RespUpdAtomicUI $ UpdResumeServer sCops
       schanF <- getsSession schanF
       sbinding <- getsSession sbinding
       putSession sess {schanF, sbinding}
