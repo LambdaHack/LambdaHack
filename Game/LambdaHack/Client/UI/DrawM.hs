@@ -300,9 +300,9 @@ drawFrameStatus drawnLevelId = do
     Nothing -> return (Nothing, Nothing)
   let widthX = 80
       widthTgt = 39
-      widthStats = widthX - widthTgt
+      widthStats = widthX - widthTgt - 1
       arenaStatus = drawArenaStatus (ES.member drawnLevelId sexplored) lvl
-                                    (widthStats - 1)
+                                    widthStats
       displayPathText mp mt =
         let (plen, llen) = case (mp, bfsmpath, mbpos) of
               (Just target, Just (bfs, _), Just bpos)
@@ -385,6 +385,8 @@ drawBaseFrame dm drawnLevelId = do
   withBody <- drawFrameBody dm drawnLevelId new
   frameStatus <- drawFrameStatus drawnLevelId
   let f v (pI, ac32) = VM.write v pI (Color.attrCharW32 ac32)
+      !_A = assert (length frameStatus == 2 * lxsize
+                    `blame` map Color.charFromW32 frameStatus) ()
       l = zip [lxsize * (lysize + 1)..] frameStatus
       withAll = New.modify (\v -> mapM_ (f v) l) withBody
       singleFrame = PointArray.Array lxsize canvasLength (G.new withAll)
@@ -414,13 +416,15 @@ drawLeaderStatus waitT = do
       let ar = case EM.lookup leader actorAspect of
             Just aspectRecord -> aspectRecord
             Nothing -> assert `failure`leader
+          showTrunc :: Show a => a -> String
+          showTrunc = (\t -> if length t > 3 then "***" else t) . show
           (darkL, bracedL, hpDelta, calmDelta,
            ahpS, bhpS, acalmS, bcalmS) =
             let b@Actor{bhp, bcalm} = getActorBody leader s
             in ( not (actorInAmbient b s)
                , braced b, bhpDelta b, bcalmDelta b
-               , show $ max 0 $ aMaxHP ar, show (bhp `divUp` oneM)
-               , show $ max 0 $ aMaxCalm ar, show (bcalm `divUp` oneM))
+               , showTrunc $ aMaxHP ar, showTrunc (bhp `divUp` oneM)
+               , showTrunc $ aMaxCalm ar, showTrunc (bcalm `divUp` oneM))
           -- This is a valuable feedback for the otherwise hard to observe
           -- 'wait' command.
           slashes = ["/", "|", "\\", "|"]
@@ -444,9 +448,9 @@ drawLeaderStatus waitT = do
           hpHeader = hpAddAttr $ hpHeaderText <> bracePick
           hpText = bhpS <> (if bracedL then slashPick else "/") <> ahpS
           justifyRight n t = replicate (n - length t) ' ' ++ t
-      return $! calmHeader <> stringToAL (justifyRight 6 calmText)
+      return $! calmHeader <> stringToAL (justifyRight 7 calmText)
                 <+:> hpHeader <> stringToAL (justifyRight 7 hpText)
-    Nothing -> return $! stringToAL (calmHeaderText ++ ": --/--")
+    Nothing -> return $! stringToAL (calmHeaderText ++ ":  --/--")
                          <+:> stringToAL (hpHeaderText <> ":  --/--")
 
 drawLeaderDamage :: MonadClient m => Int -> m AttrLine
@@ -512,4 +516,4 @@ drawSelected drawnLevelId width selected = do
              in Color.attrCharToW32 $ Color.AttrChar Color.defAttr{Color.fg} char
       viewed = map viewOurs $ take maxViewed
                $ sortBy (comparing keySelected) ours
-  return (len + 2, [star] ++ viewed ++ [Color.spaceAttrW32])
+  return (min width (len + 2), [star] ++ viewed ++ [Color.spaceAttrW32])
