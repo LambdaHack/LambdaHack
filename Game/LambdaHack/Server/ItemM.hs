@@ -58,8 +58,7 @@ registerItem itemFull itemKnown@(_, aspectRecord) seed container verbose = do
         $ cmd icounter (itemBase itemFull) (itemK itemFull, []) container
       return $! icounter
 
-createLevelItem :: (MonadAtomic m, MonadServer m)
-                => Point -> LevelId -> m ()
+createLevelItem :: (MonadAtomic m, MonadServer m) => Point -> LevelId -> m ()
 createLevelItem pos lid = do
   Level{litemFreq} <- getLevel lid
   let container = CFloor lid pos
@@ -123,26 +122,26 @@ rollAndRegisterItem lid itemFreq container verbose mk = do
 placeItemsInDungeon :: forall m. (MonadAtomic m, MonadServer m) => m ()
 placeItemsInDungeon = do
   Kind.COps{coTileSpeedup} <- getsState scops
-  let initialItems (lid, Level{lfloor, ltile, litemNum, lxsize, lysize}) = do
-        let factionDist = max lxsize lysize - 5
-            placeItems :: [Point] -> Int -> m ()
-            placeItems _ 0 = return ()
-            placeItems lfloorKeys n = do
-              let dist d p _ =
-                    minimum (maxBound : map (chessDist p) lfloorKeys) > d
-                  ds = [ dist (factionDist `div` 5)
-                       , dist (factionDist `div` 7)
-                       , dist (factionDist `div` 9)
-                       , dist (factionDist `div` 12) ]
-              pos <- rndToAction $ findPosTry2 500 ltile
-                   (\_ t -> Tile.isWalkable coTileSpeedup t
-                            && not (Tile.isNoItem coTileSpeedup t))
-                   ds
-                   (\_ t -> Tile.isOftenItem coTileSpeedup t)
-                   (ds ++ [dist 1, dist 0])
+  let initialItems (lid, Level{ltile, litemNum, lxsize, lysize}) = do
+        let placeItems :: Int -> m ()
+            placeItems 0 = return ()
+            placeItems !n = do
+              Level{lfloor} <- getLevel lid
+              -- We ensure that there are no big regions without items at all.
+              let dist !p _ =
+                    let f !k _ b = chessDist p k > 8 && b
+                    in EM.foldrWithKey f True lfloor
+                  notM !p _ = p `EM.notMember` lfloor
+              pos <- rndToAction $ findPosTry2 100 ltile
+                (\_ !t -> Tile.isWalkable coTileSpeedup t
+                          && not (Tile.isNoItem coTileSpeedup t))
+                -- If there are very many items, some regions may be very rich.
+                ([dist | n * 100 < lxsize * lysize] ++ [notM])
+                (\_ !t -> Tile.isOftenItem coTileSpeedup t)
+                [notM]
               createLevelItem pos lid
-              placeItems (pos : lfloorKeys) (n - 1)
-        placeItems (EM.keys lfloor) litemNum
+              placeItems (n - 1)
+        placeItems litemNum
   dungeon <- getsState sdungeon
   -- Make sure items on easy levels are generated first, to avoid all
   -- artifacts on deep levels.

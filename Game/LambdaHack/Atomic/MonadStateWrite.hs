@@ -76,7 +76,7 @@ updateSmell f lvl = lvl {lsmell = f (lsmell lvl)}
 
 -- | Update a given level data within state.
 updateLevel :: MonadStateWrite m => LevelId -> (Level -> Level) -> m ()
-updateLevel lid f = modifyState $ updateDungeon $ EM.adjust f lid
+updateLevel !lid !f = modifyState $ updateDungeon $ EM.adjust f lid
 
 updateActor :: MonadStateWrite m => ActorId -> (Actor -> Actor) -> m ()
 updateActor aid f = do
