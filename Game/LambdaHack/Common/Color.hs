@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, MagicHash #-}
 -- | Colours and text attributes.
 module Game.LambdaHack.Common.Color
   ( -- * Colours
@@ -11,6 +11,7 @@ module Game.LambdaHack.Common.Color
   , attrCharToW32, attrCharFromW32
   , fgFromW32, bgFromW32, charFromW32, attrFromW32, attrEnumFromW32
   , spaceAttrW32, retAttrW32
+  , attrChar2ToW32
   ) where
 
 import Prelude ()
@@ -22,7 +23,10 @@ import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
 import qualified Data.Char as Char
 import Data.Hashable (Hashable)
 import Data.Word (Word32)
+import GHC.Exts (Int (I#))
 import GHC.Generics (Generic)
+import GHC.Prim (int2Word#)
+import GHC.Word (Word32 (W32#))
 
 -- TODO: since this type may be essential to speed, consider implementing
 -- it as an Int, with color numbered as they are on terminals, see
@@ -124,6 +128,7 @@ attrFromW32 :: AttrCharW32 -> Attr
 attrFromW32 w = Attr (fgFromW32 w) (bgFromW32 w)
 
 attrEnumFromW32 :: AttrCharW32 -> Int
+{-# INLINE attrEnumFromW32 #-}
 attrEnumFromW32 !w = fromEnum $ attrCharW32 w .&. (2 ^ (16 :: Int) - 1)
 
 spaceAttrW32 :: AttrCharW32
@@ -186,3 +191,12 @@ _olorToRGB BrBlue    = "#5555FF"
 _olorToRGB BrMagenta = "#FF55FF"
 _olorToRGB BrCyan    = "#55FFFF"
 _olorToRGB BrWhite   = "#FFFFFF"
+
+attrChar2ToW32 :: Color -> Char -> AttrCharW32
+{-# INLINABLE attrChar2ToW32 #-}
+attrChar2ToW32 fg acChar =
+  case unsafeShiftL (fromEnum fg) 8 + unsafeShiftL (Char.ord acChar) 16 of
+    I# i -> AttrCharW32 $ W32# (int2Word# i)
+{- the hacks save one allocation (before fits-in-32bits check) compared to
+  unsafeShiftL (fromEnum fg) 8 + unsafeShiftL (Char.ord acChar) 16
+-}

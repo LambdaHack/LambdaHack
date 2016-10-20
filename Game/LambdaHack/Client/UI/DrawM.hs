@@ -164,14 +164,15 @@ drawFrameBody dm drawnLevelId new = do
             -- TODO: instead, write tiles first, then overwrite with others
             viewTile = case okind tile of
               TK.TileKind{tsymbol, tcolor, tcolor2} ->
-                let -- smarkSuspect is an optional overlay, so let's overlay it
-                    -- over both visible and remembered tiles.
-                    fg | smarkSuspect
-                         && Tile.isSuspect coTileSpeedup tile = Color.BrCyan
-                       | ES.member p0 totVisible = tcolor
-                       | otherwise = tcolor2
-                in Color.attrCharToW32
-                   $ Color.AttrChar Color.defAttr {Color.fg} tsymbol
+                -- smarkSuspect can be turned off easily, so let's overlay it
+                -- over both visible and remembered tiles.
+                if | smarkSuspect
+                     && Tile.isSuspect coTileSpeedup tile ->
+                     Color.attrChar2ToW32 Color.BrCyan tsymbol
+                   | ES.member p0 totVisible ->
+                     Color.attrChar2ToW32 tcolor tsymbol
+                   | otherwise ->
+                     Color.attrChar2ToW32 tcolor2 tsymbol
         in case EM.findWithDefault [] p0 lactor of
           [] -> case EM.lookup p0 lsmell of
             Just sml | sml > ltime && smarkSmell -> viewSmell sml
