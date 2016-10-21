@@ -17,7 +17,6 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
-import qualified Data.Ix as Ix
 import qualified Data.Set as S
 
 import Game.LambdaHack.Common.Flavour
@@ -38,8 +37,8 @@ type ItemSeedDict = EM.EnumMap ItemId ItemSeed
 type UniqueSet = ES.EnumSet (Kind.Id ItemKind)
 
 serverDiscos :: Kind.COps -> Rnd (DiscoveryKind, DiscoveryKindRev)
-serverDiscos Kind.COps{coitem=Kind.Ops{obounds, ofoldlWithKey', okind}} = do
-  let ixs = map toEnum $ take (Ix.rangeSize obounds) [0..]
+serverDiscos Kind.COps{coitem=Kind.Ops{olength, ofoldlWithKey', okind}} = do
+  let ixs = [toEnum 0..toEnum (olength-1)]
       shuffle :: Eq a => [a] -> Rnd [a]
       shuffle [] = return []
       shuffle l = do

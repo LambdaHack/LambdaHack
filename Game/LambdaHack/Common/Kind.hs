@@ -84,7 +84,7 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
              _ -> assert `failure` "no group '" <> tshow cgroup
                                    <> "' among content that has groups"
                                    <+> tshow (M.keys kindFreq)
-       , obounds = (Id 0, toEnum $ V.length content - 1)
+       , olength = V.length content
        }
 
 -- | Operations for all content types, gathered together.

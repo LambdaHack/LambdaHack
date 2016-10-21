@@ -217,7 +217,6 @@ library
                       Game.LambdaHack.Server.State
   other-modules:      Paths_LambdaHack
   build-depends:
-                      array      >= 0.3.0.3,
                       assert-failure >= 0.1,
                       async      >= 2,
                       base       >= 4 && <= 10,
@@ -314,7 +313,6 @@ executable LambdaHack
   build-depends:      LambdaHack,
                       template-haskell >= 2.6,
 
-                      array      >= 0.3.0.3,
                       assert-failure >= 0.1,
                       async      >= 2,
                       base       >= 4 && <= 10,
@@ -368,7 +366,6 @@ test-suite test
   build-depends:      LambdaHack,
                       template-haskell >= 2.6,
 
-                      array      >= 0.3.0.3,
                       assert-failure >= 0.1,
                       async      >= 2,
                       base       >= 4 && <= 10,

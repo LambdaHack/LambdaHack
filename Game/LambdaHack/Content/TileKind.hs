@@ -11,11 +11,11 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Control.DeepSeq
-import qualified Data.Array.Unboxed as A
 import Data.Binary
 import Data.Hashable
 import qualified Data.IntSet as IS
 import qualified Data.Map.Strict as M
+import qualified Data.Vector.Unboxed as U
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Color
@@ -90,7 +90,11 @@ data TileSpeedup = TileSpeedup
   , alterMinWalkTab  :: !(Tab Word8)
   }
 
-newtype Tab a = Tab (A.UArray (KindOps.Id TileKind) a)
+-- Vectors of booleans can be slower than arrays, because they are not packed,
+-- but with growing cache sizes they may as well turn out faster at some point.
+-- The advantage of vectors are exposed internals, in particular unsafe
+-- indexing. Also, in JS bool arrays are obviously not packed.
+newtype Tab a = Tab (U.Vector a)  -- morally indexed by @Id a@
 
 isUknownSpace :: KindOps.Id TileKind -> Bool
 {-# INLINE isUknownSpace #-}

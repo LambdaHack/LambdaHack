@@ -29,7 +29,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.Array.Unboxed as A
+import qualified Data.Vector.Unboxed as U
 import Data.Word
 
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -41,24 +41,23 @@ import Game.LambdaHack.Content.TileKind (TileKind, TileSpeedup (..),
                                          isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
-createTab :: A.IArray A.UArray a
-          => Kind.Ops TileKind -> (TileKind -> a)
-          -> TK.Tab a
-createTab Kind.Ops{ofoldrWithKey, obounds} prop =
+createTab :: U.Unbox a => Kind.Ops TileKind -> (TileKind -> a) -> TK.Tab a
+createTab Kind.Ops{ofoldrWithKey, olength} prop =
   let f _ t acc = prop t : acc
-  in TK.Tab $ A.listArray obounds $ ofoldrWithKey f []
+  in TK.Tab $ U.fromListN (fromEnum olength) $ ofoldrWithKey f []
 
-createTabWithKey :: A.IArray A.UArray a
+createTabWithKey :: U.Unbox a
                  => Kind.Ops TileKind -> (Kind.Id TileKind -> TileKind -> a)
                  -> TK.Tab a
-createTabWithKey Kind.Ops{ofoldrWithKey, obounds} prop =
+createTabWithKey Kind.Ops{ofoldrWithKey, olength} prop =
   let f k t acc = prop k t : acc
-  in TK.Tab $ A.listArray obounds $ ofoldrWithKey f []
+  in TK.Tab $ U.fromListN (fromEnum olength) $ ofoldrWithKey f []
 
-accessTab :: A.IArray A.UArray a
-          => TK.Tab a -> Kind.Id TileKind -> a
+-- Unsafe indexing is pretty safe here, because we guard the vector
+-- with the newtype.
+accessTab :: U.Unbox a => TK.Tab a -> Kind.Id TileKind -> a
 {-# INLINE accessTab #-}
-accessTab (TK.Tab tab) ki = tab A.! ki
+accessTab (TK.Tab tab) ki = tab `U.unsafeIndex` fromEnum ki
 
 -- | Whether a tile kind has the given feature.
 kindHasFeature :: TK.Feature -> TileKind -> Bool
