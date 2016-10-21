@@ -130,9 +130,10 @@ drawFrameBody dm drawnLevelId new = do
   Kind.COps{coTileSpeedup, cotile=Kind.Ops{okind}} <- getsState scops
   SessionUI{sselected, saimMode, smarkVision, smarkSmell} <- getSession
   StateClient{seps, smarkSuspect} <- getClient
-  Level{ lxsize, lysize, lsmell, ltime, lfloor, lactor
+  Level{ lxsize, lysize, lsmell, ltime, lfloor, lactor, lhidden
        , ltile=PointArray.Array{avector} }
     <- getLevel drawnLevelId
+  let doMarkSuspect = smarkSuspect && lhidden > 0
   mleader <- getsClient _sleader
   xhairPosRaw <- xhairToPos
   let xhairPos = fromMaybe originPoint xhairPosRaw
@@ -166,7 +167,7 @@ drawFrameBody dm drawnLevelId new = do
               TK.TileKind{tsymbol, tcolor, tcolor2} ->
                 -- smarkSuspect can be turned off easily, so let's overlay it
                 -- over both visible and remembered tiles.
-                if | smarkSuspect
+                if | doMarkSuspect
                      && Tile.isSuspect coTileSpeedup tile ->
                      Color.attrChar2ToW32 Color.BrCyan tsymbol
                    | ES.member p0 totVisible ->
