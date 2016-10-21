@@ -126,6 +126,7 @@ targetDescXhair = do
 drawFrameBody :: forall m. MonadClientUI m
               => ColorMode -> LevelId -> New.New U.Vector Word32
               -> m (New.New U.Vector Word32)
+{-# NOINLINE drawFrameBody #-}
 drawFrameBody dm drawnLevelId new = do
   Kind.COps{coTileSpeedup, cotile=Kind.Ops{okind}} <- getsState scops
   SessionUI{sselected, saimMode, smarkVision, smarkSmell} <- getSession
@@ -140,7 +141,8 @@ drawFrameBody dm drawnLevelId new = do
   s <- getState
   totVisible <- totalVisible <$> getPerFid drawnLevelId
   -- The basic drawing routine.
-  let {-# NOINLINE dis #-}
+  let dis :: Int -> Kind.Id TileKind -> Color.AttrCharW32
+      {-# NOINLINE dis #-}
       dis !pI !tile =
         let !p0 = PointArray.punindex lxsize pI
             viewSmell sml =
@@ -206,7 +208,6 @@ drawFrameBody dm drawnLevelId new = do
         Just (_, Actor{btrajectory = Just p, bpos = prPos}) ->
           deleteXhair $ trajectoryToPath prPos (fst p)
         _ -> []
---      {-# NOINLINE aimCharAtrr #-}
       aimCharAtrr :: Int -> Kind.Id TileKind -> Color.AttrCharW32
                   -> Color.AttrCharW32
       aimCharAtrr !pI !tile !ac =
@@ -233,7 +234,6 @@ drawFrameBody dm drawnLevelId new = do
               | otherwise -> ac
       writeXhair !(Color.AttrChar (Color.Attr fg _) ch) =
         Color.AttrChar (Color.Attr fg Color.BrYellow) ch
---      {-# NOINLINE turnBW #-}
       turnBW !(Color.AttrChar _ ch) = Color.AttrChar Color.defAttr ch
   let mapV :: forall s. (Color.AttrChar -> Color.AttrChar) -> [Int]
            -> G.Mutable U.Vector s Word32 -> ST s ()
@@ -268,6 +268,7 @@ drawFrameBody dm drawnLevelId new = do
         U.imapM_ g avector
       lDungeon = [lxsize..lxsize * (lysize - 1)]
       upd :: forall s. G.Mutable U.Vector s Word32 -> ST s ()
+      {-# NOINLINE upd #-}
       upd v = do
         mapVT dis v
         when (isJust saimMode) $ mapVTA aimCharAtrr v
@@ -378,6 +379,7 @@ drawFrameStatus drawnLevelId = do
 -- to the frontends to display separately or overlay over map,
 -- depending on the frontend.
 drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m SingleFrame
+{-# NOINLINE drawBaseFrame #-}
 drawBaseFrame dm drawnLevelId = do
   let lxsize = fst normalLevelBound + 1  -- TODO
       lysize = snd normalLevelBound + 1
