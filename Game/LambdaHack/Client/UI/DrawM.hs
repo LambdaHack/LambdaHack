@@ -16,6 +16,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Control.Monad.ST.Strict
+import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Ord
@@ -124,23 +125,20 @@ targetDescXhair = do
   targetDesc $ Just sxhair
 
 drawFrameBody :: forall m. MonadClientUI m
-              => ColorMode -> LevelId -> New.New U.Vector Word32
+              => LevelId -> New.New U.Vector Word32
               -> m (New.New U.Vector Word32)
 {-# NOINLINE drawFrameBody #-}
-drawFrameBody dm drawnLevelId new = do
+drawFrameBody drawnLevelId new = do
   Kind.COps{coTileSpeedup, cotile=Kind.Ops{okind}} <- getsState scops
-  SessionUI{sselected, saimMode, smarkVision, smarkSmell} <- getSession
-  StateClient{seps, smarkSuspect} <- getClient
-  Level{ lxsize, lysize, lsmell, ltime, lfloor, lactor, lhidden
+  SessionUI{sselected, smarkSmell} <- getSession
+  StateClient{smarkSuspect} <- getClient
+  Level{ lxsize, lsmell, ltime, lfloor, lactor, lhidden
        , ltile=PointArray.Array{avector} }
     <- getLevel drawnLevelId
+  totVisible <- totalVisible <$> getPerFid drawnLevelId
   let doMarkSuspect = smarkSuspect && lhidden > 0
   mleader <- getsClient _sleader
-  xhairPosRaw <- xhairToPos
-  let xhairPos = fromMaybe originPoint xhairPosRaw
   s <- getState
-  totVisible <- totalVisible <$> getPerFid drawnLevelId
-  -- The basic drawing routine.
   let dis :: Int -> Kind.Id TileKind -> Color.AttrCharW32
       {-# NOINLINE dis #-}
       dis !pI !tile =
@@ -183,69 +181,7 @@ drawFrameBody dm drawnLevelId new = do
               Nothing -> viewTile
               Just floorBag -> viewItemBag floorBag
           aid : _ -> viewActor aid (getActorBody aid s)
-  -- Aiming mode drawing routine.
-  bline <- case mleader of
-    Just leader -> do
-      Actor{bpos, blid} <- getsState $ getActorBody leader
-      return $! if blid /= drawnLevelId
-                then []
-                else maybe [] (delete xhairPos)
-                     $ bla lxsize lysize seps bpos xhairPos
-    _ -> return []
-  let bfsAndPathFromLeader leader = Just <$> getCacheBfsAndPath leader xhairPos
-      pathFromLeader leader = (Just . (,NoPath)) <$> getCacheBfs leader
-  bfsmpath <- if isJust saimMode
-              then maybe (return Nothing) bfsAndPathFromLeader mleader
-              else maybe (return Nothing) pathFromLeader mleader
-  let deleteXhair = delete xhairPos
-      mpath = if null bline then []
-              else maybe [] (\(_, mp) -> case mp of
-                NoPath -> []
-                AndPath {pathList} -> deleteXhair pathList) bfsmpath
-      xhairHere = find (\(_, m) -> xhairPos == bpos m)
-                       (actorAssocs (const True) drawnLevelId s)
-      shiftedBTrajectory = case xhairHere of
-        Just (_, Actor{btrajectory = Just p, bpos = prPos}) ->
-          deleteXhair $ trajectoryToPath prPos (fst p)
-        _ -> []
-      aimCharAtrr :: Int -> Kind.Id TileKind -> Color.AttrCharW32
-                  -> Color.AttrCharW32
-      aimCharAtrr !pI !tile !ac =
-        let p0 = PointArray.punindex lxsize pI
-            fgOnPathOrLine =
-              case ( ES.member p0 totVisible
-                      , Tile.isWalkable coTileSpeedup tile ) of
-                _ | isUknownSpace tile -> Color.BrBlack
-                _ | Tile.isSuspect coTileSpeedup tile -> Color.BrCyan
-                (True, True)   -> Color.BrGreen
-                (True, False)  -> Color.BrRed
-                (False, True)  -> Color.Green
-                (False, False) -> Color.Red
-            attrOnPathOrLine = Color.defAttr {Color.fg = fgOnPathOrLine}
-        in if | elem p0 bline || elem p0 shiftedBTrajectory ->
-                Color.attrCharToW32 $ Color.AttrChar attrOnPathOrLine '*'
-              | elem p0 mpath ->
-                Color.attrCharToW32 $ Color.AttrChar attrOnPathOrLine ';'
-              | smarkVision && ES.member p0 totVisible ->
-                case Color.attrCharFromW32 ac of
-                  Color.AttrChar (Color.Attr fg _) ch ->
-                    Color.attrCharToW32
-                    $ Color.AttrChar (Color.Attr fg Color.Blue) ch
-              | otherwise -> ac
-      writeXhair !(Color.AttrChar (Color.Attr fg _) ch) =
-        Color.AttrChar (Color.Attr fg Color.BrYellow) ch
-      turnBW !(Color.AttrChar _ ch) = Color.AttrChar Color.defAttr ch
-  let mapV :: forall s. (Color.AttrChar -> Color.AttrChar) -> [Int]
-           -> G.Mutable U.Vector s Word32 -> ST s ()
-      mapV !f !l !v = do
-        let g :: Int -> ST s ()
-            g !pI = do
-              w0 <- VM.read v pI
-              let w = Color.attrCharW32 . Color.attrCharToW32
-                      . f . Color.attrCharFromW32 . Color.AttrCharW32 $ w0
-              VM.write v pI w
-        mapM_ g l
-      mapVT :: forall s. (Int -> Kind.Id TileKind -> Color.AttrCharW32)
+  let mapVT :: forall s. (Int -> Kind.Id TileKind -> Color.AttrCharW32)
             -> G.Mutable U.Vector s Word32 -> ST s ()
       {-# INLINE mapVT #-}
       mapVT f v = do
@@ -254,28 +190,105 @@ drawFrameBody dm drawnLevelId new = do
               let w = Color.attrCharW32 $ f pI (KindOps.Id tile)
               VM.write v (pI + lxsize) w
         U.imapM_ g avector
-      mapVTA :: forall s. (Int -> Kind.Id TileKind -> Color.AttrCharW32
-                                                   -> Color.AttrCharW32)
-             -> G.Mutable U.Vector s Word32 -> ST s ()
-      {-# INLINE mapVTA #-}
-      mapVTA f v = do
-        let g :: Int -> Word8 -> ST s ()
-            g !pI !tile = do
-              w0 <- VM.read v pI
-              let w = Color.attrCharW32 $ f pI (KindOps.Id tile)
-                                        $ Color.AttrCharW32 w0
-              VM.write v (pI + lxsize) w
-        U.imapM_ g avector
-      lDungeon = [lxsize..lxsize * (lysize - 1)]
       upd :: forall s. G.Mutable U.Vector s Word32 -> ST s ()
       {-# NOINLINE upd #-}
+      upd v = mapVT dis v
+  return $! New.modify upd new
+
+drawFrameExtra :: forall m. MonadClientUI m
+               => ColorMode -> LevelId -> New.New U.Vector Word32
+               -> m (New.New U.Vector Word32)
+drawFrameExtra dm drawnLevelId new = do
+  Kind.COps{coTileSpeedup} <- getsState scops
+  SessionUI{saimMode, smarkVision} <- getSession
+  StateClient{seps} <- getClient
+  Level{ lxsize, lysize, ltile=PointArray.Array{avector} }
+    <- getLevel drawnLevelId
+  totVisible <- totalVisible <$> getPerFid drawnLevelId
+  let visionMarks =
+        if smarkVision
+        then map (PointArray.pindex lxsize) $ ES.toList totVisible
+        else []
+  mleader <- getsClient _sleader
+  xhairPosRaw <- xhairToPos
+  let xhairPos = fromMaybe originPoint xhairPosRaw
+  s <- getState
+  bline <- case mleader of
+    Just leader -> do
+      Actor{bpos, blid} <- getsState $ getActorBody leader
+      return $! if blid /= drawnLevelId
+                then []
+                else fromMaybe [] $ bla lxsize lysize seps bpos xhairPos
+    _ -> return []
+  let bfsAndPathFromLeader leader = Just <$> getCacheBfsAndPath leader xhairPos
+      pathFromLeader leader = (Just . (,NoPath)) <$> getCacheBfs leader
+  bfsmpath <- if isJust saimMode
+              then maybe (return Nothing) bfsAndPathFromLeader mleader
+              else maybe (return Nothing) pathFromLeader mleader
+  let mpath = if null bline then []
+              else maybe [] (\(_, mp) -> case mp of
+                NoPath -> []
+                AndPath {pathList} -> pathList) bfsmpath
+      xhairHere = find (\(_, m) -> xhairPos == bpos m)
+                       (actorAssocs (const True) drawnLevelId s)
+      shiftedBTrajectory = case xhairHere of
+        Just (_, Actor{btrajectory = Just p, bpos = prPos}) ->
+          trajectoryToPath prPos (fst p)
+        _ -> []
+      shiftedLine = bline ++ shiftedBTrajectory
+      acOnPathOrLine :: Char.Char -> Point -> Kind.Id TileKind -> Color.AttrChar
+      acOnPathOrLine !ch !p0 !tile =
+        let fgOnPathOrLine =
+              case ( ES.member p0 totVisible
+                   , Tile.isWalkable coTileSpeedup tile ) of
+                _ | isUknownSpace tile -> Color.BrBlack
+                _ | Tile.isSuspect coTileSpeedup tile -> Color.BrCyan
+                (True, True)   -> Color.BrGreen
+                (True, False)  -> Color.BrRed
+                (False, True)  -> Color.Green
+                (False, False) -> Color.Red
+            attrOnPathOrLine = Color.defAttr {Color.fg = fgOnPathOrLine}
+        in Color.AttrChar attrOnPathOrLine ch
+      backlightVision :: Color.AttrChar -> Color.AttrChar
+      backlightVision ac = case ac of
+        Color.AttrChar (Color.Attr fg _) ch ->
+          Color.AttrChar (Color.Attr fg Color.Blue) ch
+      writeXhair !(Color.AttrChar (Color.Attr fg _) ch) =
+        Color.AttrChar (Color.Attr fg Color.BrYellow) ch
+      turnBW !(Color.AttrChar _ ch) = Color.AttrChar Color.defAttr ch
+  let mapVL :: forall s. (Color.AttrChar -> Color.AttrChar) -> [Int]
+           -> G.Mutable U.Vector s Word32 -> ST s ()
+      mapVL !f !l !v = do
+        let g :: Int -> ST s ()
+            g !pI = do
+              w0 <- VM.read v (pI + lxsize)
+              let w = Color.attrCharW32 . Color.attrCharToW32
+                      . f . Color.attrCharFromW32 . Color.AttrCharW32 $ w0
+              VM.write v (pI + lxsize) w
+        mapM_ g l
+      mapVTL :: forall s. (Point -> Kind.Id TileKind -> Color.AttrChar)
+             -> [Point]
+             -> G.Mutable U.Vector s Word32 -> ST s ()
+      mapVTL f l v = do
+        let g :: Point -> ST s ()
+            g !p0 = do
+              let pI = PointArray.pindex lxsize p0
+                  tile = avector U.! pI
+                  w = Color.attrCharW32 . Color.attrCharToW32
+                      $ f p0 (KindOps.Id tile)
+              VM.write v (pI + lxsize) w
+        mapM_ g l
+      lDungeon = [lxsize..lxsize * (lysize - 1)]
+      upd :: forall s. G.Mutable U.Vector s Word32 -> ST s ()
       upd v = do
-        mapVT dis v
-        when (isJust saimMode) $ mapVTA aimCharAtrr v
-        when (dm == ColorBW) $ mapV turnBW lDungeon v
+        when (isJust saimMode) $ do
+          mapVTL (acOnPathOrLine ';') mpath v
+          mapVTL (acOnPathOrLine '*') shiftedLine v  -- overwrites mpath
+          mapVL backlightVision visionMarks v
         case xhairPosRaw of
           Nothing -> return ()
-          Just xhairP -> mapV writeXhair [PointArray.pindex lxsize xhairP] v
+          Just xhairP -> mapVL writeXhair [PointArray.pindex lxsize xhairP] v
+        when (dm == ColorBW) $ mapVL turnBW lDungeon v
   return $! New.modify upd new
 
 drawFrameStatus :: MonadClientUI m => LevelId -> m AttrLine
@@ -386,13 +399,14 @@ drawBaseFrame dm drawnLevelId = do
       canvasLength = lysize + 3
       new = New.create $ VM.replicate (lxsize * canvasLength)
                                       (Color.attrCharW32 Color.spaceAttrW32)
-  withBody <- drawFrameBody dm drawnLevelId new
+  withBody <- drawFrameBody drawnLevelId new
+  withExtra <- drawFrameExtra dm drawnLevelId withBody
   frameStatus <- drawFrameStatus drawnLevelId
   let f v (pI, ac32) = VM.write v pI (Color.attrCharW32 ac32)
       !_A = assert (length frameStatus == 2 * lxsize
                     `blame` map Color.charFromW32 frameStatus) ()
       l = zip [lxsize * (lysize + 1)..] frameStatus
-      withAll = New.modify (\v -> mapM_ (f v) l) withBody
+      withAll = New.modify (\v -> mapM_ (f v) l) withExtra
       singleFrame = PointArray.Array lxsize canvasLength (G.new withAll)
   return $! SingleFrame{..}
 
