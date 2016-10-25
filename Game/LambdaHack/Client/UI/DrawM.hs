@@ -181,7 +181,7 @@ drawFrameBody drawnLevelId new = do
               Nothing -> viewTile
               Just floorBag -> viewItemBag floorBag
           aid : _ -> viewActor aid (getActorBody aid s)
-  let mapVT :: forall s. (Int -> Kind.Id TileKind -> Color.AttrCharW32)
+      mapVT :: forall s. (Int -> Kind.Id TileKind -> Color.AttrCharW32)
             -> G.Mutable U.Vector s Word32 -> ST s ()
       {-# INLINE mapVT #-}
       mapVT f v = do
@@ -195,20 +195,16 @@ drawFrameBody drawnLevelId new = do
       upd v = mapVT dis v
   return $! New.modify upd new
 
-drawFrameExtra :: forall m. MonadClientUI m
-               => ColorMode -> LevelId -> New.New U.Vector Word32
-               -> m (New.New U.Vector Word32)
-drawFrameExtra dm drawnLevelId new = do
+drawFramePath :: forall m. MonadClientUI m
+              => LevelId -> New.New U.Vector Word32
+              -> m (New.New U.Vector Word32)
+drawFramePath drawnLevelId new = do
   Kind.COps{coTileSpeedup} <- getsState scops
-  SessionUI{saimMode, smarkVision} <- getSession
+  SessionUI{saimMode} <- getSession
   StateClient{seps} <- getClient
   Level{ lxsize, lysize, ltile=PointArray.Array{avector} }
     <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
-  let visionMarks =
-        if smarkVision
-        then map (PointArray.pindex lxsize) $ ES.toList totVisible
-        else []
   mleader <- getsClient _sleader
   xhairPosRaw <- xhairToPos
   let xhairPos = fromMaybe originPoint xhairPosRaw
@@ -249,23 +245,6 @@ drawFrameExtra dm drawnLevelId new = do
                 (False, False) -> Color.Red
             attrOnPathOrLine = Color.defAttr {Color.fg = fgOnPathOrLine}
         in Color.AttrChar attrOnPathOrLine ch
-      backlightVision :: Color.AttrChar -> Color.AttrChar
-      backlightVision ac = case ac of
-        Color.AttrChar (Color.Attr fg _) ch ->
-          Color.AttrChar (Color.Attr fg Color.Blue) ch
-      writeXhair !(Color.AttrChar (Color.Attr fg _) ch) =
-        Color.AttrChar (Color.Attr fg Color.BrYellow) ch
-      turnBW !(Color.AttrChar _ ch) = Color.AttrChar Color.defAttr ch
-  let mapVL :: forall s. (Color.AttrChar -> Color.AttrChar) -> [Int]
-           -> G.Mutable U.Vector s Word32 -> ST s ()
-      mapVL !f !l !v = do
-        let g :: Int -> ST s ()
-            g !pI = do
-              w0 <- VM.read v (pI + lxsize)
-              let w = Color.attrCharW32 . Color.attrCharToW32
-                      . f . Color.attrCharFromW32 . Color.AttrCharW32 $ w0
-              VM.write v (pI + lxsize) w
-        mapM_ g l
       mapVTL :: forall s. (Point -> Kind.Id TileKind -> Color.AttrChar)
              -> [Point]
              -> G.Mutable U.Vector s Word32 -> ST s ()
@@ -278,13 +257,45 @@ drawFrameExtra dm drawnLevelId new = do
                       $ f p0 (KindOps.Id tile)
               VM.write v (pI + lxsize) w
         mapM_ g l
+      upd :: forall s. G.Mutable U.Vector s Word32 -> ST s ()
+      upd v = when (isJust saimMode) $ do
+        mapVTL (acOnPathOrLine ';') mpath v
+        mapVTL (acOnPathOrLine '*') shiftedLine v  -- overwrites mpath
+  return $! New.modify upd new
+
+drawFrameExtra :: forall m. MonadClientUI m
+               => ColorMode -> LevelId -> New.New U.Vector Word32
+               -> m (New.New U.Vector Word32)
+drawFrameExtra dm drawnLevelId new = do
+  SessionUI{saimMode, smarkVision} <- getSession
+  Level{lxsize, lysize} <- getLevel drawnLevelId
+  totVisible <- totalVisible <$> getPerFid drawnLevelId
+  xhairPosRaw <- xhairToPos
+  let visionMarks =
+        if smarkVision
+        then map (PointArray.pindex lxsize) $ ES.toList totVisible
+        else []
+      backlightVision :: Color.AttrChar -> Color.AttrChar
+      backlightVision ac = case ac of
+        Color.AttrChar (Color.Attr fg _) ch ->
+          Color.AttrChar (Color.Attr fg Color.Blue) ch
+      writeXhair !(Color.AttrChar (Color.Attr fg _) ch) =
+        Color.AttrChar (Color.Attr fg Color.BrYellow) ch
+      turnBW !(Color.AttrChar _ ch) = Color.AttrChar Color.defAttr ch
+      mapVL :: forall s. (Color.AttrChar -> Color.AttrChar) -> [Int]
+            -> G.Mutable U.Vector s Word32 -> ST s ()
+      mapVL !f !l !v = do
+        let g :: Int -> ST s ()
+            g !pI = do
+              w0 <- VM.read v (pI + lxsize)
+              let w = Color.attrCharW32 . Color.attrCharToW32
+                      . f . Color.attrCharFromW32 . Color.AttrCharW32 $ w0
+              VM.write v (pI + lxsize) w
+        mapM_ g l
       lDungeon = [lxsize..lxsize * (lysize - 1)]
       upd :: forall s. G.Mutable U.Vector s Word32 -> ST s ()
       upd v = do
-        when (isJust saimMode) $ do
-          mapVTL (acOnPathOrLine ';') mpath v
-          mapVTL (acOnPathOrLine '*') shiftedLine v  -- overwrites mpath
-          mapVL backlightVision visionMarks v
+        when (isJust saimMode) $ mapVL backlightVision visionMarks v
         case xhairPosRaw of
           Nothing -> return ()
           Just xhairP -> mapVL writeXhair [PointArray.pindex lxsize xhairP] v
@@ -400,7 +411,8 @@ drawBaseFrame dm drawnLevelId = do
       new = New.create $ VM.replicate (lxsize * canvasLength)
                                       (Color.attrCharW32 Color.spaceAttrW32)
   withBody <- drawFrameBody drawnLevelId new
-  withExtra <- drawFrameExtra dm drawnLevelId withBody
+  withPath <- drawFramePath drawnLevelId withBody
+  withExtra <- drawFrameExtra dm drawnLevelId withPath
   frameStatus <- drawFrameStatus drawnLevelId
   let f v (pI, ac32) = VM.write v pI (Color.attrCharW32 ac32)
       !_A = assert (length frameStatus == 2 * lxsize
