@@ -125,6 +125,8 @@ targetDescXhair = do
   sxhair <- getsClient sxhair
   targetDesc $ Just sxhair
 
+type FrameNew s = G.Mutable U.Vector s Word32 -> ST s ()
+
 drawFrameTerrain :: forall m. MonadClientUI m
                  => LevelId -> New.New U.Vector Word32
                  -> m (New.New U.Vector Word32)
@@ -143,17 +145,17 @@ drawFrameTerrain drawnLevelId new = do
           let p0 :: Point
               {-# INLINE p0 #-}
               p0 = PointArray.punindex lxsize pI
-              fg :: Color.Color
-              {-# INLINE fg #-}
               -- @smarkSuspect@ can be turned off easily, so let's overlay it
               -- over both visible and remembered tiles.
+              fg :: Color.Color
+              {-# INLINE fg #-}
               fg | doMarkSuspect
                    && Tile.isSuspect coTileSpeedup tile = Color.BrCyan
                  | ES.member p0 totVisible = tcolor
                  | otherwise = tcolor2
           in Color.attrChar2ToW32 fg tsymbol
       mapVT :: forall s. (Int -> Kind.Id TileKind -> Color.AttrCharW32)
-            -> G.Mutable U.Vector s Word32 -> ST s ()
+            -> FrameNew s
       {-# INLINE mapVT #-}
       mapVT f v = do
         let g :: Int -> Word8 -> ST s ()
@@ -161,8 +163,8 @@ drawFrameTerrain drawnLevelId new = do
               let w = Color.attrCharW32 $ f pI (KindOps.Id tile)
               VM.write v (pI + lxsize) w
         U.imapM_ g avector
-      upd :: forall s. G.Mutable U.Vector s Word32 -> ST s ()
-      {-# NOINLINE upd #-}
+      upd :: forall s. FrameNew s
+      {-# INLINE upd #-}
       upd v = mapVT dis v
   return $! New.modify upd new
 
@@ -198,22 +200,20 @@ drawFrameContent drawnLevelId new = do
                      else Color.BrBlue
           in Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
         [] -> assert `failure` "lactor not sparse" `twith` ()
-      mapVAL :: forall a s. (Point -> a -> Color.AttrChar)
-             -> [(Point, a)]
-             -> G.Mutable U.Vector s Word32 -> ST s ()
+      mapVAL :: forall a s. (Point -> a -> Color.AttrChar) -> [(Point, a)]
+             -> FrameNew s
       {-# INLINE mapVAL #-}
       mapVAL f l v = do
         let g :: (Point, a) -> ST s ()
             g (!p0, !a0) = do
               let pI = PointArray.pindex lxsize p0
-                  w = Color.attrCharW32 . Color.attrCharToW32
-                      $ f p0 a0
+                  w = Color.attrCharW32 . Color.attrCharToW32 $ f p0 a0
               VM.write v (pI + lxsize) w
         mapM_ g l
-      upd :: forall s. G.Mutable U.Vector s Word32 -> ST s ()
       -- TODO: on some frontends, write the characters on top of previous ones,
       -- e.g., actors over items or items over terrain
-      {-# NOINLINE upd #-}
+      upd :: forall s. FrameNew s
+      {-# INLINE upd #-}
       upd v = do
         mapVAL viewItemBag (EM.assocs lfloor) v
         when smarkSmell $
@@ -273,7 +273,7 @@ drawFramePath drawnLevelId new = do
         in Color.AttrChar attrOnPathOrLine ch
       mapVTL :: forall s. (Point -> Kind.Id TileKind -> Color.AttrChar)
              -> [Point]
-             -> G.Mutable U.Vector s Word32 -> ST s ()
+             -> FrameNew s
       mapVTL !f !l !v = do
         let g :: Point -> ST s ()
             g !p0 = do
@@ -283,7 +283,7 @@ drawFramePath drawnLevelId new = do
                       $ f p0 (KindOps.Id tile)
               VM.write v (pI + lxsize) w
         mapM_ g l
-      upd :: forall s. G.Mutable U.Vector s Word32 -> ST s ()
+      upd :: forall s. FrameNew s
       upd v = when (isJust saimMode) $ do
         mapVTL (acOnPathOrLine ';') mpath v
         mapVTL (acOnPathOrLine '*') shiftedLine v  -- overwrites mpath
@@ -309,7 +309,7 @@ drawFrameExtra dm drawnLevelId new = do
         Color.AttrChar (Color.Attr fg Color.BrYellow) ch
       turnBW !(Color.AttrChar _ ch) = Color.AttrChar Color.defAttr ch
       mapVL :: forall s. (Color.AttrChar -> Color.AttrChar) -> [Int]
-            -> G.Mutable U.Vector s Word32 -> ST s ()
+            -> FrameNew s
       mapVL !f !l !v = do
         let g :: Int -> ST s ()
             g !pI = do
@@ -319,7 +319,7 @@ drawFrameExtra dm drawnLevelId new = do
               VM.write v (pI + lxsize) w
         mapM_ g l
       lDungeon = [0..lxsize * lysize - 1]
-      upd :: forall s. G.Mutable U.Vector s Word32 -> ST s ()
+      upd :: forall s. FrameNew s
       upd v = do
         when (isJust saimMode) $ mapVL backlightVision visionMarks v
         case xhairPosRaw of
@@ -429,7 +429,6 @@ drawFrameStatus drawnLevelId = do
 -- to the frontends to display separately or overlay over map,
 -- depending on the frontend.
 drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m SingleFrame
-{-# NOINLINE drawBaseFrame #-}
 drawBaseFrame dm drawnLevelId = do
   let lxsize = fst normalLevelBound + 1  -- TODO
       lysize = snd normalLevelBound + 1
