@@ -127,10 +127,10 @@ targetDescXhair = do
 
 type FrameNew s = G.Mutable U.Vector s Word32 -> ST s ()
 
-drawFrameTerrain :: forall m. MonadClientUI m
-                 => LevelId -> New.New U.Vector Word32
-                 -> m (New.New U.Vector Word32)
-drawFrameTerrain drawnLevelId new = do
+newtype FrameForall = FrameForall {unFrameForall :: forall s. FrameNew s}
+
+drawFrameTerrain :: forall m. MonadClientUI m => LevelId -> m FrameForall
+drawFrameTerrain drawnLevelId = do
   Kind.COps{coTileSpeedup, cotile=Kind.Ops{okind}} <- getsState scops
   StateClient{smarkSuspect} <- getClient
   Level{lxsize, lhidden, ltile=PointArray.Array{avector}}
@@ -163,15 +163,13 @@ drawFrameTerrain drawnLevelId new = do
               let w = Color.attrCharW32 $ f pI (KindOps.Id tile)
               VM.write v (pI + lxsize) w
         U.imapM_ g avector
-      upd :: forall s. FrameNew s
+      upd :: FrameForall
       {-# INLINE upd #-}
-      upd v = mapVT dis v
-  return $! New.modify upd new
+      upd = FrameForall $ \v -> mapVT dis v  -- should be eta-expanded; lazy
+  return upd
 
-drawFrameContent :: forall m. MonadClientUI m
-                 => LevelId -> New.New U.Vector Word32
-                 -> m (New.New U.Vector Word32)
-drawFrameContent drawnLevelId new = do
+drawFrameContent :: forall m. MonadClientUI m => LevelId -> m FrameForall
+drawFrameContent drawnLevelId = do
   SessionUI{sselected, smarkSmell} <- getSession
   Level{lxsize, lsmell, ltime, lfloor, lactor} <- getLevel drawnLevelId
   mleader <- getsClient _sleader
@@ -212,19 +210,17 @@ drawFrameContent drawnLevelId new = do
         mapM_ g l
       -- TODO: on some frontends, write the characters on top of previous ones,
       -- e.g., actors over items or items over terrain
-      upd :: forall s. FrameNew s
+      upd :: FrameForall
       {-# INLINE upd #-}
-      upd v = do
+      upd = FrameForall $ \v -> do
         mapVAL viewItemBag (EM.assocs lfloor) v
         when smarkSmell $
           mapVAL viewSmell (filter ((> ltime) . snd) $ EM.assocs lsmell) v
         mapVAL viewActor (EM.assocs lactor) v
-  return $! New.modify upd new
+  return upd
 
-drawFramePath :: forall m. MonadClientUI m
-              => LevelId -> New.New U.Vector Word32
-              -> m (New.New U.Vector Word32)
-drawFramePath drawnLevelId new = do
+drawFramePath :: forall m. MonadClientUI m => LevelId -> m FrameForall
+drawFramePath drawnLevelId = do
   Kind.COps{coTileSpeedup} <- getsState scops
   SessionUI{saimMode} <- getSession
   StateClient{seps} <- getClient
@@ -274,7 +270,7 @@ drawFramePath drawnLevelId new = do
       mapVTL :: forall s. (Point -> Kind.Id TileKind -> Color.AttrChar)
              -> [Point]
              -> FrameNew s
-      mapVTL !f !l !v = do
+      mapVTL f l v = do
         let g :: Point -> ST s ()
             g !p0 = do
               let pI = PointArray.pindex lxsize p0
@@ -283,16 +279,15 @@ drawFramePath drawnLevelId new = do
                       $ f p0 (KindOps.Id tile)
               VM.write v (pI + lxsize) w
         mapM_ g l
-      upd :: forall s. FrameNew s
-      upd v = when (isJust saimMode) $ do
+      upd :: FrameForall
+      upd = FrameForall $ \v -> when (isJust saimMode) $ do
         mapVTL (acOnPathOrLine ';') mpath v
         mapVTL (acOnPathOrLine '*') shiftedLine v  -- overwrites mpath
-  return $! New.modify upd new
+  return upd
 
 drawFrameExtra :: forall m. MonadClientUI m
-               => ColorMode -> LevelId -> New.New U.Vector Word32
-               -> m (New.New U.Vector Word32)
-drawFrameExtra dm drawnLevelId new = do
+               => ColorMode -> LevelId -> m FrameForall
+drawFrameExtra dm drawnLevelId = do
   SessionUI{saimMode, smarkVision} <- getSession
   Level{lxsize, lysize} <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
@@ -310,7 +305,7 @@ drawFrameExtra dm drawnLevelId new = do
       turnBW !(Color.AttrChar _ ch) = Color.AttrChar Color.defAttr ch
       mapVL :: forall s. (Color.AttrChar -> Color.AttrChar) -> [Int]
             -> FrameNew s
-      mapVL !f !l !v = do
+      mapVL f l v = do
         let g :: Int -> ST s ()
             g !pI = do
               w0 <- VM.read v (pI + lxsize)
@@ -319,14 +314,14 @@ drawFrameExtra dm drawnLevelId new = do
               VM.write v (pI + lxsize) w
         mapM_ g l
       lDungeon = [0..lxsize * lysize - 1]
-      upd :: forall s. FrameNew s
-      upd v = do
+      upd :: FrameForall
+      upd = FrameForall $ \v -> do
         when (isJust saimMode) $ mapVL backlightVision visionMarks v
         case xhairPosRaw of
           Nothing -> return ()
           Just xhairP -> mapVL writeXhair [PointArray.pindex lxsize xhairP] v
         when (dm == ColorBW) $ mapVL turnBW lDungeon v
-  return $! New.modify upd new
+  return upd
 
 drawFrameStatus :: MonadClientUI m => LevelId -> m AttrLine
 drawFrameStatus drawnLevelId = do
@@ -433,18 +428,24 @@ drawBaseFrame dm drawnLevelId = do
   let lxsize = fst normalLevelBound + 1  -- TODO
       lysize = snd normalLevelBound + 1
       canvasLength = lysize + 3
-      new = New.create $ VM.replicate (lxsize * canvasLength)
-                                      (Color.attrCharW32 Color.spaceAttrW32)
-  withTerrain <- drawFrameTerrain drawnLevelId new
-  withContent <- drawFrameContent drawnLevelId withTerrain
-  withPath <- drawFramePath drawnLevelId withContent
-  withExtra <- drawFrameExtra dm drawnLevelId withPath
+  withTerrain <- drawFrameTerrain drawnLevelId
+  withContent <- drawFrameContent drawnLevelId
+  withPath <- drawFramePath drawnLevelId
+  withExtra <- drawFrameExtra dm drawnLevelId
+  let withBody = FrameForall $ \v -> do
+        unFrameForall withTerrain v
+        unFrameForall withContent v
+        unFrameForall withPath v
+        unFrameForall withExtra v
+      new1 = New.create $ VM.replicate (lxsize * canvasLength)
+                                       (Color.attrCharW32 Color.spaceAttrW32)
+      new2 = New.modify (unFrameForall withBody) new1
   frameStatus <- drawFrameStatus drawnLevelId
   let f v (pI, ac32) = VM.write v pI (Color.attrCharW32 ac32)
       !_A = assert (length frameStatus == 2 * lxsize
                     `blame` map Color.charFromW32 frameStatus) ()
       l = zip [lxsize * (lysize + 1)..] frameStatus
-      withAll = New.modify (\v -> mapM_ (f v) l) withExtra
+      withAll = New.modify (\v -> mapM_ (f v) l) new2
       singleFrame = PointArray.Array lxsize canvasLength (G.new withAll)
   return $! SingleFrame{..}
 
