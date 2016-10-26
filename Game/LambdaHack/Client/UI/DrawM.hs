@@ -433,12 +433,13 @@ drawBaseFrame dm drawnLevelId = do
   withPath <- drawFramePath drawnLevelId
   withExtra <- drawFrameExtra dm drawnLevelId
   let withBody = FrameForall $ \v -> do
+        mapM_ (\pI -> VM.write v pI (Color.attrCharW32 Color.spaceAttrW32))
+              [0 .. lxsize]
         unFrameForall withTerrain v
         unFrameForall withContent v
         unFrameForall withPath v
         unFrameForall withExtra v
-      new1 = New.create $ VM.replicate (lxsize * canvasLength)
-                                       (Color.attrCharW32 Color.spaceAttrW32)
+      new1 = New.create $ VM.new (lxsize * canvasLength)
       new2 = New.modify (unFrameForall withBody) new1
   frameStatus <- drawFrameStatus drawnLevelId
   let f v (pI, ac32) = VM.write v pI (Color.attrCharW32 ac32)
