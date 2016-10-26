@@ -6,7 +6,8 @@ module Game.LambdaHack.Client.UI.DrawM
   ( targetDescLeader, drawBaseFrame
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , targetDesc, targetDescXhair, drawFrameBody, drawFrameStatus
+  , targetDesc, targetDescXhair, drawFrameTerrain, drawFrameContent
+  , drawFramePath, drawFrameExtra, drawFrameStatus
   , drawArenaStatus, drawLeaderStatus, drawLeaderDamage, drawSelected
 #endif
   ) where
@@ -124,63 +125,33 @@ targetDescXhair = do
   sxhair <- getsClient sxhair
   targetDesc $ Just sxhair
 
-drawFrameBody :: forall m. MonadClientUI m
-              => LevelId -> New.New U.Vector Word32
-              -> m (New.New U.Vector Word32)
-{-# NOINLINE drawFrameBody #-}
-drawFrameBody drawnLevelId new = do
+drawFrameTerrain :: forall m. MonadClientUI m
+                 => LevelId -> New.New U.Vector Word32
+                 -> m (New.New U.Vector Word32)
+drawFrameTerrain drawnLevelId new = do
   Kind.COps{coTileSpeedup, cotile=Kind.Ops{okind}} <- getsState scops
-  SessionUI{sselected, smarkSmell} <- getSession
   StateClient{smarkSuspect} <- getClient
-  Level{ lxsize, lsmell, ltime, lfloor, lactor, lhidden
-       , ltile=PointArray.Array{avector} }
+  Level{lxsize, lhidden, ltile=PointArray.Array{avector}}
     <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
   let doMarkSuspect = smarkSuspect && lhidden > 0
-  mleader <- getsClient _sleader
-  s <- getState
-  let dis :: Int -> Kind.Id TileKind -> Color.AttrCharW32
-      {-# NOINLINE dis #-}
-      dis !pI !tile =
-        let !p0 = PointArray.punindex lxsize pI
-            viewSmell sml =
-              let fg = toEnum $ fromEnum p0 `rem` 14 + 1
-                  smlt = sml `timeDeltaToFrom` ltime
-              in Color.attrCharToW32
-                 $ Color.AttrChar (Color.defAttr {Color.fg})
-                                  (timeDeltaToDigit smellTimeout smlt)
-            viewActor aid Actor{bsymbol, bcolor, bhp, bproj} =
-              Color.attrCharToW32
-              $ Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
-             where symbol | bhp > 0 || bproj = bsymbol
-                          | otherwise = '%'
-                   bg = case mleader of
-                     Just leader | aid == leader -> Color.BrRed
-                     _ -> if aid `ES.notMember` sselected
-                          then Color.defBG
-                          else Color.BrBlue
-            viewItemBag floorBag = case EM.toDescList floorBag of
-              (iid, _) : _ -> Color.attrCharToW32 $ viewItem $ getItemBody iid s
-              [] -> assert `failure` "lfloor not sparse" `twith` ()
-            -- TODO: instead, write tiles first, then overwrite with others
-            viewTile = case okind tile of
-              TK.TileKind{tsymbol, tcolor, tcolor2} ->
-                -- smarkSuspect can be turned off easily, so let's overlay it
-                -- over both visible and remembered tiles.
-                if | doMarkSuspect
-                     && Tile.isSuspect coTileSpeedup tile ->
-                     Color.attrChar2ToW32 Color.BrCyan tsymbol
-                   | ES.member p0 totVisible ->
-                     Color.attrChar2ToW32 tcolor tsymbol
-                   | otherwise ->
-                     Color.attrChar2ToW32 tcolor2 tsymbol
-        in case EM.findWithDefault [] p0 lactor of
-          [] -> case EM.lookup p0 lsmell of
-            Just sml | sml > ltime && smarkSmell -> viewSmell sml
-            _ -> case EM.lookup p0 lfloor of
-              Nothing -> viewTile
-              Just floorBag -> viewItemBag floorBag
-          aid : _ -> viewActor aid (getActorBody aid s)
+      dis :: Int -> Kind.Id TileKind -> Color.AttrCharW32
+      {-# INLINE dis #-}
+      dis pI tile = case okind tile of
+        TK.TileKind{tsymbol, tcolor, tcolor2} ->
+          -- Passing @p0@ as arg in place of @pI@ is much more costly.
+          let p0 :: Point
+              {-# INLINE p0 #-}
+              p0 = PointArray.punindex lxsize pI
+              fg :: Color.Color
+              {-# INLINE fg #-}
+              -- @smarkSuspect@ can be turned off easily, so let's overlay it
+              -- over both visible and remembered tiles.
+              fg | doMarkSuspect
+                   && Tile.isSuspect coTileSpeedup tile = Color.BrCyan
+                 | ES.member p0 totVisible = tcolor
+                 | otherwise = tcolor2
+          in Color.attrChar2ToW32 fg tsymbol
       mapVT :: forall s. (Int -> Kind.Id TileKind -> Color.AttrCharW32)
             -> G.Mutable U.Vector s Word32 -> ST s ()
       {-# INLINE mapVT #-}
@@ -195,6 +166,61 @@ drawFrameBody drawnLevelId new = do
       upd v = mapVT dis v
   return $! New.modify upd new
 
+drawFrameContent :: forall m. MonadClientUI m
+                 => LevelId -> New.New U.Vector Word32
+                 -> m (New.New U.Vector Word32)
+drawFrameContent drawnLevelId new = do
+  SessionUI{sselected, smarkSmell} <- getSession
+  Level{lxsize, lsmell, ltime, lfloor, lactor} <- getLevel drawnLevelId
+  mleader <- getsClient _sleader
+  s <- getState
+  let {-# INLINE viewItemBag #-}
+      viewItemBag _ floorBag = case EM.toDescList floorBag of
+        (iid, _) : _ -> viewItem $ getItemBody iid s
+        [] -> assert `failure` "lfloor not sparse" `twith` ()
+      viewSmell :: Point -> Time -> Color.AttrChar
+      {-# INLINE viewSmell #-}
+      viewSmell p0 sml =
+        let fg = toEnum $ fromEnum p0 `rem` 14 + 1
+            smlt = sml `timeDeltaToFrom` ltime
+        in Color.AttrChar (Color.defAttr {Color.fg})
+                          (timeDeltaToDigit smellTimeout smlt)
+      {-# INLINE viewActor #-}
+      viewActor _ as = case as of
+        aid : _ ->
+          let Actor{bsymbol, bcolor, bhp, bproj} = getActorBody aid s
+              symbol | bhp > 0 || bproj = bsymbol
+                     | otherwise = '%'
+              bg = case mleader of
+                Just leader | aid == leader -> Color.BrRed
+                _ -> if aid `ES.notMember` sselected
+                     then Color.defBG
+                     else Color.BrBlue
+          in Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
+        [] -> assert `failure` "lactor not sparse" `twith` ()
+      mapVAL :: forall a s. (Point -> a -> Color.AttrChar)
+             -> [(Point, a)]
+             -> G.Mutable U.Vector s Word32 -> ST s ()
+      {-# INLINE mapVAL #-}
+      mapVAL f l v = do
+        let g :: (Point, a) -> ST s ()
+            g (!p0, !a0) = do
+              let pI = PointArray.pindex lxsize p0
+                  w = Color.attrCharW32 . Color.attrCharToW32
+                      $ f p0 a0
+              VM.write v (pI + lxsize) w
+        mapM_ g l
+      upd :: forall s. G.Mutable U.Vector s Word32 -> ST s ()
+      -- TODO: on some frontends, write the characters on top of previous ones,
+      -- e.g., actors over items or items over terrain
+      {-# NOINLINE upd #-}
+      upd v = do
+        mapVAL viewItemBag (EM.assocs lfloor) v
+        when smarkSmell $
+          mapVAL viewSmell (filter ((> ltime) . snd) $ EM.assocs lsmell) v
+        mapVAL viewActor (EM.assocs lactor) v
+  return $! New.modify upd new
+
 drawFramePath :: forall m. MonadClientUI m
               => LevelId -> New.New U.Vector Word32
               -> m (New.New U.Vector Word32)
@@ -202,7 +228,7 @@ drawFramePath drawnLevelId new = do
   Kind.COps{coTileSpeedup} <- getsState scops
   SessionUI{saimMode} <- getSession
   StateClient{seps} <- getClient
-  Level{ lxsize, lysize, ltile=PointArray.Array{avector} }
+  Level{lxsize, lysize, ltile=PointArray.Array{avector}}
     <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
   mleader <- getsClient _sleader
@@ -248,7 +274,7 @@ drawFramePath drawnLevelId new = do
       mapVTL :: forall s. (Point -> Kind.Id TileKind -> Color.AttrChar)
              -> [Point]
              -> G.Mutable U.Vector s Word32 -> ST s ()
-      mapVTL f l v = do
+      mapVTL !f !l !v = do
         let g :: Point -> ST s ()
             g !p0 = do
               let pI = PointArray.pindex lxsize p0
@@ -292,7 +318,7 @@ drawFrameExtra dm drawnLevelId new = do
                       . f . Color.attrCharFromW32 . Color.AttrCharW32 $ w0
               VM.write v (pI + lxsize) w
         mapM_ g l
-      lDungeon = [lxsize..lxsize * (lysize - 1)]
+      lDungeon = [0..lxsize * lysize - 1]
       upd :: forall s. G.Mutable U.Vector s Word32 -> ST s ()
       upd v = do
         when (isJust saimMode) $ mapVL backlightVision visionMarks v
@@ -410,8 +436,9 @@ drawBaseFrame dm drawnLevelId = do
       canvasLength = lysize + 3
       new = New.create $ VM.replicate (lxsize * canvasLength)
                                       (Color.attrCharW32 Color.spaceAttrW32)
-  withBody <- drawFrameBody drawnLevelId new
-  withPath <- drawFramePath drawnLevelId withBody
+  withTerrain <- drawFrameTerrain drawnLevelId new
+  withContent <- drawFrameContent drawnLevelId withTerrain
+  withPath <- drawFramePath drawnLevelId withContent
   withExtra <- drawFrameExtra dm drawnLevelId withPath
   frameStatus <- drawFrameStatus drawnLevelId
   let f v (pI, ac32) = VM.write v pI (Color.attrCharW32 ac32)

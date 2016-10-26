@@ -193,10 +193,10 @@ _olorToRGB BrCyan    = "#55FFFF"
 _olorToRGB BrWhite   = "#FFFFFF"
 
 attrChar2ToW32 :: Color -> Char -> AttrCharW32
-{-# INLINABLE attrChar2ToW32 #-}
+{-# INLINE attrChar2ToW32 #-}
 attrChar2ToW32 fg acChar =
   case unsafeShiftL (fromEnum fg) 8 + unsafeShiftL (Char.ord acChar) 16 of
     I# i -> AttrCharW32 $ W32# (int2Word# i)
-{- the hacks save one allocation (before fits-in-32bits check) compared to
+{- the hacks save one allocation (?) (before fits-in-32bits check) compared to
   unsafeShiftL (fromEnum fg) 8 + unsafeShiftL (Char.ord acChar) 16
 -}
