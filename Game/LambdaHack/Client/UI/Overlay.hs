@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.UI.Overlay
   , Overlay
     -- * Misc
   , ColorMode(..)
-  , FrameST, FrameForall(..),
+  , FrameST, FrameForall(..), writeLine
   ) where
 
 import Prelude ()
@@ -19,6 +19,7 @@ import Control.Monad.ST.Strict
 import qualified Data.Text as T
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
+import qualified Data.Vector.Unboxed.Mutable as VM
 import Data.Word
 import qualified NLP.Miniutter.English as MU
 
@@ -138,3 +139,11 @@ data ColorMode =
 type FrameST s = G.Mutable U.Vector s Word32 -> ST s ()
 
 newtype FrameForall = FrameForall {unFrameForall :: forall s. FrameST s}
+
+writeLine :: Int -> AttrLine -> FrameForall
+writeLine offset l = FrameForall $ \v -> do
+  let writeAt _ [] = return ()
+      writeAt off (ac32 : rest) = do
+        VM.write v off (Color.attrCharW32 ac32)
+        writeAt (off + 1) rest
+  writeAt offset l

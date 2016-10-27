@@ -431,9 +431,7 @@ drawBaseFrame dm drawnLevelId = do
         unFrameForall updContent v
         unFrameForall updPath v
         unFrameForall updExtra v
-        let f (!pI, !ac32) = VM.write v pI (Color.attrCharW32 ac32)
-            l = zip [lxsize * (lysize + 1) ..] frameStatus
-        mapM_ f l
+        unFrameForall (writeLine (lxsize * (lysize + 1)) frameStatus) v
   return upd
 
 -- Comfortably accomodates 3-digit level numbers and 25-character
