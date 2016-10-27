@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes, TupleSections #-}
+{-# LANGUAGE TupleSections #-}
 -- {-# OPTIONS_GHC -fprof-auto #-}
 -- | Display game data on the screen using one of the available frontends
 -- (determined at compile time with cabal flags).
@@ -22,8 +22,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Ord
 import qualified Data.Text as T
-import qualified Data.Vector.Generic as G
-import qualified Data.Vector.Generic.New as New
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
 import Data.Word
@@ -34,7 +32,6 @@ import Game.LambdaHack.Client.BfsM
 import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
@@ -125,10 +122,6 @@ targetDescXhair = do
   sxhair <- getsClient sxhair
   targetDesc $ Just sxhair
 
-type FrameNew s = G.Mutable U.Vector s Word32 -> ST s ()
-
-newtype FrameForall = FrameForall {unFrameForall :: forall s. FrameNew s}
-
 drawFrameTerrain :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameTerrain drawnLevelId = do
   Kind.COps{coTileSpeedup, cotile=Kind.Ops{okind}} <- getsState scops
@@ -155,7 +148,7 @@ drawFrameTerrain drawnLevelId = do
                  | otherwise = tcolor2
           in Color.attrChar2ToW32 fg tsymbol
       mapVT :: forall s. (Int -> Kind.Id TileKind -> Color.AttrCharW32)
-            -> FrameNew s
+            -> FrameST s
       {-# INLINE mapVT #-}
       mapVT f v = do
         let g :: Int -> Word8 -> ST s ()
@@ -199,7 +192,7 @@ drawFrameContent drawnLevelId = do
           in Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
         [] -> assert `failure` "lactor not sparse" `twith` ()
       mapVAL :: forall a s. (Point -> a -> Color.AttrChar) -> [(Point, a)]
-             -> FrameNew s
+             -> FrameST s
       {-# INLINE mapVAL #-}
       mapVAL f l v = do
         let g :: (Point, a) -> ST s ()
@@ -269,7 +262,7 @@ drawFramePath drawnLevelId = do
         in Color.AttrChar attrOnPathOrLine ch
       mapVTL :: forall s. (Point -> Kind.Id TileKind -> Color.AttrChar)
              -> [Point]
-             -> FrameNew s
+             -> FrameST s
       mapVTL f l v = do
         let g :: Point -> ST s ()
             g !p0 = do
@@ -304,7 +297,7 @@ drawFrameExtra dm drawnLevelId = do
         Color.AttrChar (Color.Attr fg Color.BrYellow) ch
       turnBW !(Color.AttrChar _ ch) = Color.AttrChar Color.defAttr ch
       mapVL :: forall s. (Color.AttrChar -> Color.AttrChar) -> [Int]
-            -> FrameNew s
+            -> FrameST s
       mapVL f l v = do
         let g :: Int -> ST s ()
             g !pI = do
@@ -423,32 +416,25 @@ drawFrameStatus drawnLevelId = do
 -- Pass at most a single page if overlay of text unchanged
 -- to the frontends to display separately or overlay over map,
 -- depending on the frontend.
-drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m SingleFrame
+drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m FrameForall
 drawBaseFrame dm drawnLevelId = do
-  let lxsize = fst normalLevelBound + 1  -- TODO
-      lysize = snd normalLevelBound + 1
-      canvasLength = lysize + 3
-  withTerrain <- drawFrameTerrain drawnLevelId
-  withContent <- drawFrameContent drawnLevelId
-  withPath <- drawFramePath drawnLevelId
-  withExtra <- drawFrameExtra dm drawnLevelId
+  Level{lxsize, lysize} <- getLevel drawnLevelId
+  updTerrain <- drawFrameTerrain drawnLevelId
+  updContent <- drawFrameContent drawnLevelId
+  updPath <- drawFramePath drawnLevelId
+  updExtra <- drawFrameExtra dm drawnLevelId
   frameStatus <- drawFrameStatus drawnLevelId
   let !_A = assert (length frameStatus == 2 * lxsize
                     `blame` map Color.charFromW32 frameStatus) ()
-      withBody = FrameForall $ \v -> do
-        mapM_ (\pI -> VM.write v pI (Color.attrCharW32 Color.spaceAttrW32))
-              [0 .. lxsize]
-        unFrameForall withTerrain v
-        unFrameForall withContent v
-        unFrameForall withPath v
-        unFrameForall withExtra v
+      upd = FrameForall $ \v -> do
+        unFrameForall updTerrain v
+        unFrameForall updContent v
+        unFrameForall updPath v
+        unFrameForall updExtra v
         let f (!pI, !ac32) = VM.write v pI (Color.attrCharW32 ac32)
             l = zip [lxsize * (lysize + 1) ..] frameStatus
         mapM_ f l
-      new = New.create $ VM.new (lxsize * canvasLength)
-      withAll = New.modify (unFrameForall withBody) new
-      singleFrame = PointArray.Array lxsize canvasLength (G.new withAll)
-  return $! SingleFrame{..}
+  return upd
 
 -- Comfortably accomodates 3-digit level numbers and 25-character
 -- level descriptions (currently enforced max).

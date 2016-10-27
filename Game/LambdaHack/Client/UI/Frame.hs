@@ -8,6 +8,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import qualified Data.Vector.Unboxed.Mutable as VM
 import Data.Word (Word32)
 
 import Game.LambdaHack.Client.UI.Overlay
@@ -24,7 +25,7 @@ newtype SingleFrame = SingleFrame
   deriving (Eq, Show)
 
 -- | Sequences of screen frames, including delays.
-type Frames = [Maybe SingleFrame]
+type Frames = [Maybe FrameForall]
 
 -- | Truncate the overlay: for each line, if it's too long, it's truncated
 -- and if there are too many lines, excess is dropped and warning is appended.
@@ -68,17 +69,18 @@ linesToOverlay al =
 
 -- | Overlays either the game map only or the whole empty screen frame.
 -- We assume the lines of the overlay are not too long nor too many.
-overlayFrame :: Overlay -> Maybe SingleFrame -> SingleFrame
-overlayFrame ov msf =
+overlayFrame :: Overlay -> FrameForall -> FrameForall
+overlayFrame ov ff =
   let lxsize = fst normalLevelBound + 1  -- TODO
-      lysize = snd normalLevelBound + 1
-      canvasLength = if isNothing msf then lysize + 3 else lysize + 1
-      canvas = case msf of
-        Nothing -> PointArray.replicateA lxsize canvasLength spaceAttrW32
-        Just SingleFrame{..} -> singleFrame
-  in SingleFrame $ canvas PointArray.// ov
+      upd = FrameForall $ \v -> do
+        unFrameForall ff v
+        let f (!p, !ac32) = do
+              let pI = PointArray.pindex lxsize p
+              VM.write v pI (attrCharW32 ac32)
+        mapM_ f ov
+  in upd
 
-overlayFrameWithLines :: [AttrLine] -> Maybe SingleFrame -> SingleFrame
-overlayFrameWithLines l msf =
-  let ov = linesToOverlay $ truncateLines (isNothing msf) l
+overlayFrameWithLines :: Bool -> [AttrLine] -> FrameForall -> FrameForall
+overlayFrameWithLines onBlank l msf =
+  let ov = linesToOverlay $ truncateLines onBlank l
   in overlayFrame ov msf

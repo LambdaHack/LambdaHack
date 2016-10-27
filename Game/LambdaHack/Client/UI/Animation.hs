@@ -25,11 +25,11 @@ newtype Animation = Animation [Overlay]
   deriving (Eq, Show)
 
 -- | Render animations on top of a screen frame.
-renderAnim :: SingleFrame -> Animation -> Frames
+renderAnim :: FrameForall -> Animation -> Frames
 renderAnim basicFrame (Animation anim) =
-  let modifyFrame :: Overlay -> SingleFrame
-      modifyFrame am = overlayFrame am (Just basicFrame)
-      modifyFrames :: (Overlay, Overlay) -> Maybe SingleFrame
+  let modifyFrame :: Overlay -> FrameForall
+      modifyFrame am = overlayFrame am basicFrame
+      modifyFrames :: (Overlay, Overlay) -> Maybe FrameForall
       modifyFrames (am, amPrevious) =
         if am == amPrevious then Nothing else Just $ modifyFrame am
   in Just basicFrame : map modifyFrames (zip anim ([] : anim))

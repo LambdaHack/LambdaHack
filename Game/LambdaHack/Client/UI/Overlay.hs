@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 -- | Screen overlays.
 module Game.LambdaHack.Client.UI.Overlay
   ( -- * AttrLine
@@ -7,13 +8,18 @@ module Game.LambdaHack.Client.UI.Overlay
   , Overlay
     -- * Misc
   , ColorMode(..)
+  , FrameST, FrameForall(..),
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import Control.Monad.ST.Strict
 import qualified Data.Text as T
+import qualified Data.Vector.Generic as G
+import qualified Data.Vector.Unboxed as U
+import Data.Word
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Color as Color
@@ -128,3 +134,7 @@ data ColorMode =
     ColorFull  -- ^ normal, with full colours
   | ColorBW    -- ^ black+white only
   deriving Eq
+
+type FrameST s = G.Mutable U.Vector s Word32 -> ST s ()
+
+newtype FrameForall = FrameForall {unFrameForall :: forall s. FrameST s}

@@ -74,7 +74,7 @@ connFrontend req = do
   ChanFrontend f <- getsSession schanF
   liftIO $ f req
 
-displayFrame :: MonadClientUI m => Maybe SingleFrame -> m ()
+displayFrame :: MonadClientUI m => Maybe FrameForall -> m ()
 displayFrame mf = do
   frame <- case mf of
     Nothing -> return $! FrontDelay 1
@@ -96,7 +96,7 @@ displayFrames lid frs = do
 
 -- | Write 'FrontKey' UI request to the frontend, read the reply,
 -- set pointer, return key.
-connFrontendFrontKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
+connFrontendFrontKey :: MonadClientUI m => [K.KM] -> FrameForall -> m K.KM
 connFrontendFrontKey frontKeyKeys frontKeyFrame = do
   kmp <- connFrontend $ FrontKey{..}
   modifySession $ \sess -> sess {spointer = kmpPointer kmp}

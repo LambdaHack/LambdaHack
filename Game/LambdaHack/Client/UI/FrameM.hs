@@ -29,15 +29,15 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
 
 -- | Draw the current level with the overlay on top.
--- If the overlay is high long, it's truncated.
--- Similarly, for each line of the overlay, if it's too long, it's truncated.
+-- If the overlay is too long, it's truncated.
+-- Similarly, for each line of the overlay, if it's too wide, it's truncated.
 drawOverlay :: MonadClientUI m
-            => ColorMode -> Bool -> [AttrLine] -> LevelId -> m SingleFrame
+            => ColorMode -> Bool -> [AttrLine] -> LevelId -> m FrameForall
 drawOverlay dm onBlank topTrunc lid = do
   mbaseFrame <- if onBlank
-                then return Nothing
-                else Just <$> drawBaseFrame dm lid
-  return $! overlayFrameWithLines topTrunc mbaseFrame
+                then return $ FrameForall $ \_v -> return ()
+                else drawBaseFrame dm lid
+  return $! overlayFrameWithLines onBlank topTrunc mbaseFrame
 
 promptGetKey :: MonadClientUI m
              => ColorMode -> [AttrLine] -> Bool -> [K.KM] -> m K.KM

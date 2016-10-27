@@ -21,26 +21,33 @@ import Game.LambdaHack.Common.Prelude
 import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
+import Control.Monad.ST.Strict
 import Data.IORef
+import qualified Data.Vector.Generic as G
+import qualified Data.Vector.Unboxed as U
+import qualified Data.Vector.Unboxed.Mutable as VM
+import Data.Word
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Frame
 import qualified Game.LambdaHack.Client.UI.Frontend.Chosen as Chosen
 import Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Frontend.Std as Std
+import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | The instructions sent by clients to the raw frontend.
 data FrontReq :: * -> * where
-  FrontFrame :: {frontFrame :: !SingleFrame} -> FrontReq ()
+  FrontFrame :: {frontFrame :: !FrameForall} -> FrontReq ()
     -- ^ show a frame
   FrontDelay :: !Int -> FrontReq ()
     -- ^ perform an explicit delay of the given length
   FrontKey :: { frontKeyKeys  :: ![K.KM]
-              , frontKeyFrame :: !SingleFrame } -> FrontReq KMP
+              , frontKeyFrame :: !FrameForall } -> FrontReq KMP
     -- ^ flush frames, display a frame and ask for a keypress
   FrontPressed :: FrontReq Bool
     -- ^ inspect the fkeyPressed MVar
@@ -65,7 +72,7 @@ data FSession = FSession
 
 -- | Display a prompt, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
-getKey :: DebugModeCli -> FSession -> RawFrontend -> [K.KM] -> SingleFrame
+getKey :: DebugModeCli -> FSession -> RawFrontend -> [K.KM] -> FrameForall
        -> IO KMP
 getKey sdebugCli fs rf@RawFrontend{fchanKey} keys frame = do
   autoYes <- readIORef $ fautoYesRef fs
@@ -98,10 +105,20 @@ fchanFrontend sdebugCli fs@FSession{..} rf =
       cancel fasyncTimeout
       fshutdown rf
 
-display :: RawFrontend -> SingleFrame -> IO ()
+display :: RawFrontend -> FrameForall -> IO ()
 display rf@RawFrontend{fshowNow} frontFrame = do
+  let lxsize = fst normalLevelBound + 1  -- TODO
+      lysize = snd normalLevelBound + 1
+      canvasLength = lysize + 3
+      new :: forall s. ST s (G.Mutable U.Vector s Word32)
+      new = do
+        v <- VM.replicate (lxsize * canvasLength)
+                          (Color.attrCharW32 Color.spaceAttrW32)
+        unFrameForall frontFrame v
+        return v
+      singleFrame = PointArray.Array lxsize canvasLength (U.create new)
   putMVar fshowNow () -- 1. wait for permission to display; 3. ack
-  fdisplay rf frontFrame
+  fdisplay rf $ SingleFrame singleFrame
 
 defaultMaxFps :: Int
 defaultMaxFps = 30
