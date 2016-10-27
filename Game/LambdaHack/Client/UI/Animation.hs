@@ -209,9 +209,9 @@ fadeout out topRight step lxsize lysize = do
         r <- random
         return [ ( Point (if topRight then x else xbound - x) y
                  , attrCharToW32 $ AttrChar defAttr $ fadeChar r n x y )
-               | x <- [0..xbound]
-               , y <- [max 0 (ybound - (n - x) `div` 2)..ybound]
-                   ++ [0..min ybound ((n - xbound + x) `div` 2)]
+               | y <- [0..ybound]
+               , x <- [max 0 (xbound - (n - 2 * y))..xbound]
+                   ++ [0..min xbound ((n - 2 * (ybound - y)))]
                ]
       fs | out = [3, 3 + step .. lxsize - 14]
          | otherwise = [lxsize - 14, lxsize - 14 - step .. 1]
