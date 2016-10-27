@@ -415,9 +415,9 @@ drawFrameStatus drawnLevelId = do
   let targetGap = emptyAttrLine (widthTgt - T.length pathTgt
                                           - T.length targetText)
       targetStatus = textToAL targetText ++ targetGap ++ textToAL pathTgt
-  return $! concat [ arenaStatus <+:> xhairStatus
-                   , selectedStatus ++ statusGap ++ damageStatus ++ leaderStatus
-                     <+:> targetStatus ]
+  return $! arenaStatus <+:> xhairStatus
+            <> selectedStatus ++ statusGap ++ damageStatus ++ leaderStatus
+               <+:> targetStatus
 
 -- | Draw the whole screen: level map and status area.
 -- Pass at most a single page if overlay of text unchanged
@@ -432,21 +432,21 @@ drawBaseFrame dm drawnLevelId = do
   withContent <- drawFrameContent drawnLevelId
   withPath <- drawFramePath drawnLevelId
   withExtra <- drawFrameExtra dm drawnLevelId
-  let withBody = FrameForall $ \v -> do
+  frameStatus <- drawFrameStatus drawnLevelId
+  let !_A = assert (length frameStatus == 2 * lxsize
+                    `blame` map Color.charFromW32 frameStatus) ()
+      withBody = FrameForall $ \v -> do
         mapM_ (\pI -> VM.write v pI (Color.attrCharW32 Color.spaceAttrW32))
               [0 .. lxsize]
         unFrameForall withTerrain v
         unFrameForall withContent v
         unFrameForall withPath v
         unFrameForall withExtra v
-      new1 = New.create $ VM.new (lxsize * canvasLength)
-      new2 = New.modify (unFrameForall withBody) new1
-  frameStatus <- drawFrameStatus drawnLevelId
-  let f v (pI, ac32) = VM.write v pI (Color.attrCharW32 ac32)
-      !_A = assert (length frameStatus == 2 * lxsize
-                    `blame` map Color.charFromW32 frameStatus) ()
-      l = zip [lxsize * (lysize + 1)..] frameStatus
-      withAll = New.modify (\v -> mapM_ (f v) l) new2
+        let f (!pI, !ac32) = VM.write v pI (Color.attrCharW32 ac32)
+            l = zip [lxsize * (lysize + 1) ..] frameStatus
+        mapM_ f l
+      new = New.create $ VM.new (lxsize * canvasLength)
+      withAll = New.modify (unFrameForall withBody) new
       singleFrame = PointArray.Array lxsize canvasLength (G.new withAll)
   return $! SingleFrame{..}
 
