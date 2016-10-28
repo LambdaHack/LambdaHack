@@ -11,6 +11,7 @@ import Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.Reader (ask)
 import Data.Char (chr)
+import Data.IORef
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
 import Data.Word (Word32)
@@ -55,6 +56,7 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 data FrontendSession = FrontendSession
   { scurrentWindow :: !Window
   , scharCells     :: !(V.Vector (HTMLTableCellElement, CSSStyleDeclaration))
+  , previousFrame  :: !(IORef SingleFrame)
   }
 
 -- | The name of the frontend.
@@ -115,6 +117,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   -- Create the session record.
   setInnerHTML tableElem $ Just rows
   scharCells <- flattenTable tableElem
+  previousFrame <- newIORef blankSingleFrame
   let sess = FrontendSession{..}
   rf <- IO.liftIO $ createRawFrontend (display sdebugCli sess) shutdown
   -- Handle keypresses. http://unixpapa.com/js/key.html
@@ -286,9 +289,9 @@ display :: DebugModeCli
         -> IO ()
 display DebugModeCli{scolorIsBold}
         FrontendSession{..}
-        SingleFrame{singleFrame} = flip runDOM undefined $ do
-  let setChar :: Int -> Word32 -> DOM ()
-      setChar i w = do
+        curFrame = flip runDOM undefined $ do
+  let setChar :: Int -> Word32 -> Word32 -> DOM ()
+      setChar i w wPrev = unless (w == wPrev) $ do
         let Color.AttrChar{acAttr=Color.Attr{..}, acChar} =
               Color.attrCharFromW32 $ Color.AttrCharW32 w
             (cell, style) = scharCells V.! i
@@ -316,8 +319,11 @@ display DebugModeCli{scolorIsBold}
           _ -> do
             setProp style "border-color" "transparent"
             setProp style "background-color" $ Color.colorToRGB bg
+  prevFrame <- readIORef previousFrame
+  writeIORef previousFrame curFrame
   -- Sync, no point mutitasking threads in the single-threaded JS.
   callback <- newRequestAnimationFrameCallback $ \_ ->
-    U.imapM_ setChar $ PointArray.avector singleFrame
+    U.izipWithM_ setChar (PointArray.avector $ singleFrame curFrame)
+                         (PointArray.avector $ singleFrame prevFrame)
   -- This ensures no frame redraws while callback executes.
   requestAnimationFrame_ scurrentWindow (Just callback)

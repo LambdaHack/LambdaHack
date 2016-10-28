@@ -1,7 +1,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Screen frames.
 module Game.LambdaHack.Client.UI.Frame
-  ( SingleFrame(..), Frames, overlayFrame, overlayFrameWithLines
+  ( SingleFrame(..), Frames
+  , blankSingleFrame, overlayFrame, overlayFrameWithLines
   ) where
 
 import Prelude ()
@@ -25,6 +26,12 @@ newtype SingleFrame = SingleFrame
 
 -- | Sequences of screen frames, including delays.
 type Frames = [Maybe FrameForall]
+
+blankSingleFrame :: SingleFrame
+blankSingleFrame =
+  let lxsize = fst normalLevelBound + 1  -- TODO
+      lysize = snd normalLevelBound + 4
+  in SingleFrame $ PointArray.replicateA lxsize lysize spaceAttrW32
 
 -- | Truncate the overlay: for each line, if it's too long, it's truncated
 -- and if there are too many lines, excess is dropped and warning is appended.
