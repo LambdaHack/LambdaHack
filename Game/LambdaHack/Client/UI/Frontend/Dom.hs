@@ -11,6 +11,9 @@ import Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.Reader (ask)
 import Data.Char (chr)
+import qualified Data.Vector as V
+import qualified Data.Vector.Unboxed as U
+import Data.Word (Word32)
 import GHCJS.DOM (currentDocument, currentWindow)
 import GHCJS.DOM.CSSStyleDeclaration (setProperty)
 import GHCJS.DOM.Document (createElementUnchecked, getBodyUnchecked, keyDown,
@@ -51,7 +54,7 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
   { scurrentWindow :: !Window
-  , scharCells     :: ![(HTMLTableCellElement, CSSStyleDeclaration)]
+  , scharCells     :: !(V.Vector (HTMLTableCellElement, CSSStyleDeclaration))
   }
 
 -- | The name of the frontend.
@@ -186,12 +189,11 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
       -- Pass through Ctrl-+ and others, disable Tab.
       when (modifier `elem` [K.NoModifier, K.Shift, K.Control]) preventDefault
   -- Handle mouseclicks, per-cell.
-  let xs = [0..lxsize - 1]
-      ys = [0..lysize - 1]
-      xys = concat $ map (\y -> zip xs (repeat y)) ys
-  mapM_ (handleMouse rf) $ zip scharCells xys
+  let setupMouse i a = let Point x y = PointArray.punindex lxsize i
+                       in handleMouse rf a x y
+  V.imapM_ setupMouse scharCells
   let setBorder (_, style) = setProp style "border" "1px solid transparent"
-  mapM_ setBorder scharCells
+  V.mapM_ setBorder scharCells
   -- Display at the end to avoid redraw
   appendChild_ body (Just divBlock)
   IO.liftIO $ putMVar rfMVar rf
@@ -207,9 +209,9 @@ setProp style propRef propValue =
 
 -- | Let each table cell handle mouse events inside.
 handleMouse :: RawFrontend
-            -> ((HTMLTableCellElement, CSSStyleDeclaration), (Int, Int))
+            -> (HTMLTableCellElement, CSSStyleDeclaration) -> Int -> Int
             -> DOM ()
-handleMouse rf ((cell, _), (cx, cy)) = do
+handleMouse rf (cell, _) cx cy = do
   let readMod :: IsMouseEvent e => EventM HTMLTableCellElement e K.Modifier
       readMod = do
         modCtrl <- mouseCtrlKey
@@ -255,15 +257,15 @@ handleMouse rf ((cell, _), (cx, cy)) = do
 
 -- | Get the list of all cells of an HTML table.
 flattenTable :: HTMLTableElement
-             -> DOM [(HTMLTableCellElement, CSSStyleDeclaration)]
+             -> DOM (V.Vector (HTMLTableCellElement, CSSStyleDeclaration))
 flattenTable table = do
-  let lxsize = fromIntegral $ fst normalLevelBound + 1
-      lysize = fromIntegral $ snd normalLevelBound + 4
+  let lxsize = fst normalLevelBound + 1
+      lysize = snd normalLevelBound + 4
   rows <- getRowsUnchecked table
   let f y = do
         rowsItem <- itemUnchecked rows y
         castToHTMLTableRowElement rowsItem
-  lrow <- mapM f [0..lysize-1]
+  lrow <- mapM f [0 .. toEnum (lysize-1)]
   let getC :: HTMLTableRowElement
            -> DOM [(HTMLTableCellElement, CSSStyleDeclaration)]
       getC row = do
@@ -273,9 +275,9 @@ flattenTable table = do
               cell <- castToHTMLTableCellElement cellsItem
               style <- getStyleUnchecked cell
               return (cell, style)
-        mapM g [0..lxsize-1]
+        mapM g [0 .. toEnum (lxsize-1)]
   lrc <- mapM getC lrow
-  return $! concat lrc
+  return $! V.fromListN (lxsize * lysize) $ concat lrc
 
 -- | Output to the screen via the frontend.
 display :: DebugModeCli
@@ -285,8 +287,11 @@ display :: DebugModeCli
 display DebugModeCli{scolorIsBold}
         FrontendSession{..}
         SingleFrame{singleFrame} = flip runDOM undefined $ do
-  let setChar ( (cell, style)
-              , Color.AttrChar{acAttr=Color.Attr{..}, acChar} ) = do
+  let setChar :: Int -> Word32 -> DOM ()
+      setChar i w = do
+        let Color.AttrChar{acAttr=Color.Attr{..}, acChar} =
+              Color.attrCharFromW32 $ Color.AttrCharW32 w
+            (cell, style) = scharCells V.! i
         case acChar of
           ' ' -> setTextContent cell $ Just [chr 160]
           ch -> setTextContent cell $ Just [ch]
@@ -311,10 +316,8 @@ display DebugModeCli{scolorIsBold}
           _ -> do
             setProp style "border-color" "transparent"
             setProp style "background-color" $ Color.colorToRGB bg
-      acs = PointArray.foldrA (\w l ->
-              Color.attrCharFromW32 w : l) [] singleFrame
   -- Sync, no point mutitasking threads in the single-threaded JS.
   callback <- newRequestAnimationFrameCallback $ \_ ->
-    mapM_ setChar $ zip scharCells acs
+    U.imapM_ setChar $ PointArray.avector singleFrame
   -- This ensures no frame redraws while callback executes.
   requestAnimationFrame_ scurrentWindow (Just callback)
