@@ -115,9 +115,8 @@ animate arena anim = do
 
 fadeOutOrIn :: MonadClientUI m => Bool -> m ()
 fadeOutOrIn out = do
-  let topRight = True
   arena <- getArenaUI
   Level{lxsize, lysize} <- getLevel arena
-  animMap <- rndToActionForget $ fadeout out topRight 2 lxsize lysize
+  animMap <- rndToActionForget $ fadeout out 2 lxsize lysize
   animFrs <- renderFrames arena animMap
   displayFrames arena (tail animFrs)  -- no basic frame between fadeout and in

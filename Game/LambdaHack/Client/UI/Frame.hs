@@ -8,7 +8,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.Vector.Unboxed.Mutable as VM
 import Data.Word (Word32)
 
 import Game.LambdaHack.Client.UI.Overlay
@@ -62,25 +61,16 @@ truncateAttrLine w xs lenMax =
               whiteN = max (40 - length xsSpace) (1 + lenMax - length xsSpace)
           in xsSpace ++ replicate whiteN spaceAttrW32
 
-linesToOverlay :: [AttrLine] -> Overlay
-linesToOverlay al =
-  let fLine y = zipWith (\x ac -> (Point x y, ac)) [0..]
-  in concat $ zipWith fLine [0..] al
-
 -- | Overlays either the game map only or the whole empty screen frame.
 -- We assume the lines of the overlay are not too long nor too many.
 overlayFrame :: Overlay -> FrameForall -> FrameForall
-overlayFrame ov ff =
-  let lxsize = fst normalLevelBound + 1  -- TODO
-      upd = FrameForall $ \v -> do
-        unFrameForall ff v
-        let f (!p, !ac32) = do
-              let pI = PointArray.pindex lxsize p
-              VM.write v pI (attrCharW32 ac32)
-        mapM_ f ov
-  in upd
+overlayFrame ov ff = FrameForall $ \v -> do
+  unFrameForall ff v
+  mapM_ (\(!offset, !l) -> unFrameForall (writeLine offset l) v) ov
 
 overlayFrameWithLines :: Bool -> [AttrLine] -> FrameForall -> FrameForall
 overlayFrameWithLines onBlank l msf =
-  let ov = linesToOverlay $ truncateLines onBlank l
+  let lxsize = fst normalLevelBound + 1  -- TODO
+      ov = map (\(!y, !al) -> (y * lxsize, al))
+           $ zip [0..] $ truncateLines onBlank l
   in overlayFrame ov msf

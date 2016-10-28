@@ -16,6 +16,7 @@ import qualified Data.EnumMap.Strict as EM
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.Color
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 
@@ -40,17 +41,19 @@ blank = Nothing
 cSym :: Color -> Char -> Maybe AttrCharW32
 cSym color symbol = Just $ attrCharToW32 $ AttrChar (Attr color defBG) symbol
 
-mapPosToScreenPos :: (Point, AttrCharW32) -> (Point, AttrCharW32)
-mapPosToScreenPos (Point{..}, attr) = (Point{py = py + 1, ..}, attr)
+mapPosToOffset :: (Point, AttrCharW32) -> (Int, [AttrCharW32])
+mapPosToOffset (Point{..}, attr) =
+  let lxsize = fst normalLevelBound + 1  -- TODO
+  in ((py + 1) * lxsize + px, [attr])
 
-mzipSingleton :: Point -> Maybe AttrCharW32 -> [(Point, AttrCharW32)]
-mzipSingleton p1 mattr1 = map mapPosToScreenPos $
+mzipSingleton :: Point -> Maybe AttrCharW32 -> Overlay
+mzipSingleton p1 mattr1 = map mapPosToOffset $
   let mzip (pos, mattr) = fmap (\attr -> (pos, attr)) mattr
   in catMaybes $ [mzip (p1, mattr1)]
 
 mzipPairs :: (Point, Point) -> (Maybe AttrCharW32, Maybe AttrCharW32)
-          -> [(Point, AttrCharW32)]
-mzipPairs (p1, p2) (mattr1, mattr2) = map mapPosToScreenPos $
+          -> Overlay
+mzipPairs (p1, p2) (mattr1, mattr2) = map mapPosToOffset $
   let mzip (pos, mattr) = fmap (\attr -> (pos, attr)) mattr
   in catMaybes $ if p1 /= p2
                  then [mzip (p1, mattr1), mzip (p2, mattr2)]
@@ -186,12 +189,12 @@ swapPlaces poss = Animation $ map (mzipPairs poss)
   , (blank             , blank)
   ]
 
-fadeout :: Bool -> Bool -> Int -> X -> Y -> Rnd Animation
-fadeout out topRight step lxsize lysize = do
+fadeout :: Bool -> Int -> X -> Y -> Rnd Animation
+fadeout out step lxsize lysize = do
   let xbound = lxsize - 1
       ybound = lysize + 2
       edge = EM.fromDistinctAscList $ zip [1..] ".%&%;:,."
-      fadeChar r n x y =
+      fadeChar !r !n !x !y =
         let d = x - 2 * y
             ndy = n - d - 2 * ybound
             ndx = n + d - xbound - 1  -- @-1@ for asymmetry
@@ -205,14 +208,21 @@ fadeout out topRight step lxsize lysize = do
               | (x + 3 * y + v3) `mod` 30 < 19 = mnx + 1
               | otherwise = mnx
         in EM.findWithDefault ' ' k edge
-      rollFrame n = do
+      rollFrame !n = do
         r <- random
-        return [ ( Point (if topRight then x else xbound - x) y
-                 , attrCharToW32 $ AttrChar defAttr $ fadeChar r n x y )
-               | y <- [0..ybound]
-               , x <- [max 0 (xbound - (n - 2 * y))..xbound]
-                   ++ [0..min xbound ((n - 2 * (ybound - y)))]
-               ]
+        -- TODO: use a simplification of attrChar2ToW32; and elsewhere
+        let fadeAttr !y !x =
+              attrCharToW32 $ AttrChar defAttr $ fadeChar r n x y
+            fadeLine !y =
+              let x1 :: Int
+                  {-# INLINE x1 #-}
+                  x1 = min xbound ((n - 2 * (ybound - y)))
+                  x2 :: Int
+                  {-# INLINE x2 #-}
+                  x2 = max 0 (xbound - (n - 2 * y))
+              in [ (y * lxsize, map (fadeAttr y) [0..x1])
+                 , (y * lxsize + x2, map (fadeAttr y) [x2..xbound]) ]
+        return $! concatMap fadeLine [0..ybound]
       fs | out = [3, 3 + step .. lxsize - 14]
          | otherwise = [lxsize - 14, lxsize - 14 - step .. 1]
   Animation <$> mapM rollFrame fs

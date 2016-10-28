@@ -126,7 +126,7 @@ updateLines n f ov =
 
 -- * Overlay
 
-type Overlay = [(Point, Color.AttrCharW32)]
+type Overlay = [(Int, AttrLine)]
 
 -- * Misc
 
