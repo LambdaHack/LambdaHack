@@ -31,7 +31,6 @@ import Game.LambdaHack.Client.UI.Slideshow
 import Game.LambdaHack.Client.UI.SlideshowM
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
@@ -179,7 +178,7 @@ itemOverlay store lid bag = do
                 colorSymbol = viewItem $ itemBase itemFull
                 phrase = makePhrase [partItemWs k store localTime itemFull]
                 al = textToAL (slotLabel l)
-                     <+:> [Color.attrCharToW32 colorSymbol]
+                     <+:> [colorSymbol]
                      <+:> textToAL phrase
                 kx = (Right l, (undefined, 0, length al))
             in Just ([al], kx)

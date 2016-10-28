@@ -39,7 +39,7 @@ blank :: Maybe AttrCharW32
 blank = Nothing
 
 cSym :: Color -> Char -> Maybe AttrCharW32
-cSym color symbol = Just $ attrCharToW32 $ AttrChar (Attr color defBG) symbol
+cSym color symbol = Just $ attrChar2ToW32 color symbol
 
 mapPosToOffset :: (Point, AttrCharW32) -> (Int, [AttrCharW32])
 mapPosToOffset (Point{..}, attr) =
@@ -211,8 +211,7 @@ fadeout out step lxsize lysize = do
       rollFrame !n = do
         r <- random
         -- TODO: use a simplification of attrChar2ToW32; and elsewhere
-        let fadeAttr !y !x =
-              attrCharToW32 $ AttrChar defAttr $ fadeChar r n x y
+        let fadeAttr !y !x = attrChar1ToW32 $ fadeChar r n x y
             fadeLine !y =
               let x1 :: Int
                   {-# INLINE x1 #-}

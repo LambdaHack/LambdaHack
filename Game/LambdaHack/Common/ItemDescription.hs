@@ -160,8 +160,7 @@ partItemWownW partA c localTime itemFull =
   let (_, name, stats) = partItemN 4 4 c localTime itemFull
   in MU.WownW partA $ MU.Phrase [name, stats]
 
-viewItem :: Item -> Color.AttrChar
+viewItem :: Item -> Color.AttrCharW32
 {-# INLINE viewItem #-}
 viewItem item =
-  Color.AttrChar Color.defAttr {Color.fg = flavourToColor $ jflavour item}
-                 (jsymbol item)
+  Color.attrChar2ToW32 (flavourToColor $ jflavour item) (jsymbol item)

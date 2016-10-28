@@ -10,7 +10,8 @@ module Game.LambdaHack.Client.UI.Frontend
   , chanFrontendIO
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , seqFrame
+  , getKey, fchanFrontend, display, defaultMaxFps, microInSec
+  , frameTimeoutThread, lazyStartup, nullStartup, seqFrame
 #endif
   ) where
 

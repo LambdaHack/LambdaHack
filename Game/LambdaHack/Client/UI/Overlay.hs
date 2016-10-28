@@ -40,12 +40,12 @@ emptyAttrLine xsize = replicate xsize Color.spaceAttrW32
 
 textToAL :: Text -> AttrLine
 textToAL !t =
-  let f c l = let !ac = Color.attrCharToW32 $ Color.AttrChar Color.defAttr c
+  let f c l = let !ac = Color.attrChar1ToW32 c
               in ac : l
   in T.foldr f [] t
 
 stringToAL :: String -> AttrLine
-stringToAL s = map (Color.attrCharToW32 . Color.AttrChar Color.defAttr) s
+stringToAL s = map Color.attrChar1ToW32 s
 
 infixr 6 <+:>  -- matches Monoid.<>
 (<+:>) :: AttrLine -> AttrLine -> AttrLine
@@ -100,7 +100,7 @@ itemDesc c localTime itemFull =
             then makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
             else ""
         <+> makeSentence ["First found on level", MU.Text $ tshow ln]
-  in Color.attrCharToW32 colorSymbol : textToAL blurb
+  in colorSymbol : textToAL blurb
 
 glueLines :: [AttrLine] -> [AttrLine] -> [AttrLine]
 glueLines ov1 ov2 = reverse $ glue (reverse ov1) ov2

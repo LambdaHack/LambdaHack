@@ -171,13 +171,12 @@ drawFrameContent drawnLevelId = do
       viewItemBag _ floorBag = case EM.toDescList floorBag of
         (iid, _) : _ -> viewItem $ getItemBody iid s
         [] -> assert `failure` "lfloor not sparse" `twith` ()
-      viewSmell :: Point -> Time -> Color.AttrChar
+      viewSmell :: Point -> Time -> Color.AttrCharW32
       {-# INLINE viewSmell #-}
       viewSmell p0 sml =
         let fg = toEnum $ fromEnum p0 `rem` 14 + 1
             smlt = sml `timeDeltaToFrom` ltime
-        in Color.AttrChar (Color.defAttr {Color.fg})
-                          (timeDeltaToDigit smellTimeout smlt)
+        in Color.attrChar2ToW32 fg (timeDeltaToDigit smellTimeout smlt)
       {-# INLINE viewActor #-}
       viewActor _ as = case as of
         aid : _ ->
@@ -189,16 +188,17 @@ drawFrameContent drawnLevelId = do
                 _ -> if aid `ES.notMember` sselected
                      then Color.defBG
                      else Color.BrBlue
-          in Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
+          in Color.attrCharToW32
+             $ Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
         [] -> assert `failure` "lactor not sparse" `twith` ()
-      mapVAL :: forall a s. (Point -> a -> Color.AttrChar) -> [(Point, a)]
+      mapVAL :: forall a s. (Point -> a -> Color.AttrCharW32) -> [(Point, a)]
              -> FrameST s
       {-# INLINE mapVAL #-}
       mapVAL f l v = do
         let g :: (Point, a) -> ST s ()
             g (!p0, !a0) = do
               let pI = PointArray.pindex lxsize p0
-                  w = Color.attrCharW32 . Color.attrCharToW32 $ f p0 a0
+                  w = Color.attrCharW32 $ f p0 a0
               VM.write v (pI + lxsize) w
         mapM_ g l
       -- TODO: on some frontends, write the characters on top of previous ones,
@@ -247,7 +247,8 @@ drawFramePath drawnLevelId = do
           trajectoryToPath prPos (fst p)
         _ -> []
       shiftedLine = bline ++ shiftedBTrajectory
-      acOnPathOrLine :: Char.Char -> Point -> Kind.Id TileKind -> Color.AttrChar
+      acOnPathOrLine :: Char.Char -> Point -> Kind.Id TileKind
+                     -> Color.AttrCharW32
       acOnPathOrLine !ch !p0 !tile =
         let fgOnPathOrLine =
               case ( ES.member p0 totVisible
@@ -258,9 +259,8 @@ drawFramePath drawnLevelId = do
                 (True, False)  -> Color.BrRed
                 (False, True)  -> Color.Green
                 (False, False) -> Color.Red
-            attrOnPathOrLine = Color.defAttr {Color.fg = fgOnPathOrLine}
-        in Color.AttrChar attrOnPathOrLine ch
-      mapVTL :: forall s. (Point -> Kind.Id TileKind -> Color.AttrChar)
+        in Color.attrChar2ToW32 fgOnPathOrLine ch
+      mapVTL :: forall s. (Point -> Kind.Id TileKind -> Color.AttrCharW32)
              -> [Point]
              -> FrameST s
       mapVTL f l v = do
@@ -268,8 +268,7 @@ drawFramePath drawnLevelId = do
             g !p0 = do
               let pI = PointArray.pindex lxsize p0
                   tile = avector U.! pI
-                  w = Color.attrCharW32 . Color.attrCharToW32
-                      $ f p0 (KindOps.Id tile)
+                  w = Color.attrCharW32 $ f p0 (KindOps.Id tile)
               VM.write v (pI + lxsize) w
         mapM_ g l
       upd :: FrameForall
@@ -471,8 +470,7 @@ drawLeaderStatus waitT = do
           -- 'wait' command.
           slashes = ["/", "|", "\\", "|"]
           slashPick = slashes !! (max 0 (waitT - 1) `mod` length slashes)
-          addColor c t =
-            map (Color.attrCharToW32 . Color.AttrChar (Color.Attr c Color.defBG)) t
+          addColor c t = map (Color.attrChar2ToW32 c) t
           checkDelta ResDelta{..}
             | resCurrentTurn < 0 || resPreviousTurn < 0
               = addColor Color.BrRed  -- alarming news have priority
@@ -498,8 +496,7 @@ drawLeaderStatus waitT = do
 drawLeaderDamage :: MonadClient m => Int -> m AttrLine
 drawLeaderDamage width = do
   mleader <- getsClient _sleader
-  let addColor s =
-        map (Color.attrCharToW32 . Color.AttrChar (Color.Attr Color.BrCyan Color.defBG)) s
+  let addColor s = map (Color.attrChar2ToW32 Color.BrCyan) s
   stats <- case mleader of
     Just leader -> do
       allAssocsRaw <- fullAssocsClient leader [CEqp, COrgan]
@@ -547,7 +544,8 @@ drawSelected drawnLevelId width selected = do
                     | ES.member aid selected -> Color.BrBlue
                     | otherwise -> Color.defBG
             sattr = Color.Attr {Color.fg = bcolor, bg}
-        in Color.attrCharToW32 $ Color.AttrChar sattr $ if bhp > 0 then bsymbol else '%'
+        in Color.attrCharToW32 $ Color.AttrChar sattr
+           $ if bhp > 0 then bsymbol else '%'
       maxViewed = width - 2
       len = length ours
       star = let fg = case ES.size selected of
@@ -555,7 +553,7 @@ drawSelected drawnLevelId width selected = do
                    n | n == len -> Color.BrWhite
                    _ -> Color.defFG
                  char = if len > maxViewed then '$' else '*'
-             in Color.attrCharToW32 $ Color.AttrChar Color.defAttr{Color.fg} char
+             in Color.attrChar2ToW32 fg char
       viewed = map viewOurs $ take maxViewed
                $ sortBy (comparing keySelected) ours
   return (min width (len + 2), [star] ++ viewed ++ [Color.spaceAttrW32])

@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.Color
   , attrCharToW32, attrCharFromW32
   , fgFromW32, bgFromW32, charFromW32, attrFromW32, attrEnumFromW32
   , spaceAttrW32, retAttrW32
-  , attrChar2ToW32
+  , attrChar2ToW32, attrChar1ToW32
   ) where
 
 import Prelude ()
@@ -200,3 +200,11 @@ attrChar2ToW32 fg acChar =
 {- the hacks save one allocation (?) (before fits-in-32bits check) compared to
   unsafeShiftL (fromEnum fg) 8 + unsafeShiftL (Char.ord acChar) 16
 -}
+
+attrChar1ToW32 :: Char -> AttrCharW32
+{-# INLINE attrChar1ToW32 #-}
+attrChar1ToW32 =
+  let fgNum = unsafeShiftL (fromEnum White) 8
+  in \acChar ->
+    case fgNum + unsafeShiftL (Char.ord acChar) 16 of
+      I# i -> AttrCharW32 $ W32# (int2Word# i)

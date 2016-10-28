@@ -52,8 +52,7 @@ truncateAttrLine w xs lenMax =
     LT -> let discarded = drop w xs
           in if all (== spaceAttrW32) discarded
              then take w xs
-             else take (w - 1) xs
-                  ++ [attrCharToW32 $ AttrChar (Attr BrBlack defBG) '$']
+             else take (w - 1) xs ++ [attrChar2ToW32 BrBlack '$']
     EQ -> xs
     GT -> let xsSpace = if null xs || last xs == spaceAttrW32
                         then xs
