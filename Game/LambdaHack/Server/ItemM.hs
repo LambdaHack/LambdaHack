@@ -64,6 +64,8 @@ createLevelItem pos lid = do
   let container = CFloor lid pos
   void $ rollAndRegisterItem lid litemFreq container True Nothing
 
+-- TODO: this is becoming costly; redo after Embed rethought
+-- perhaps keep such tiles in a map to avoid imap over all dungeon tiles
 embedItem :: (MonadAtomic m, MonadServer m)
           => LevelId -> Point -> Kind.Id TileKind -> m ()
 embedItem lid pos tk = do
@@ -151,8 +153,7 @@ placeItemsInDungeon = do
 
 embedItemsInDungeon :: (MonadAtomic m, MonadServer m) => m ()
 embedItemsInDungeon = do
-  let embedItems (lid, Level{ltile}) =
-        PointArray.mapWithKeyMA (embedItem lid) ltile
+  let embedItems (lid, Level{ltile}) = PointArray.imapMA_ (embedItem lid) ltile
   dungeon <- getsState sdungeon
   -- Make sure items on easy levels are generated first, to avoid all
   -- artifacts on deep levels.

@@ -159,17 +159,18 @@ findPos ltile p =
   in search
 
 -- | Try to find a random position on the map satisfying
--- the conjunction of the list of predicates.
+-- conjunction of the mandatory and an optional predicate.
 -- If the permitted number of attempts is not enough,
--- try again the same number of times without the first predicate,
--- then without the first two, etc., until only one predicate remains,
--- at which point try as many times, as needed.
+-- try again the same number of times without the next optional predicate,
+-- and fall back to trying as many times, as needed, with only the mandatory
+-- predicate.
 findPosTry :: Int                                  -- ^ the number of tries
            -> TileMap                              -- ^ look up in this map
            -> (Point -> Kind.Id TileKind -> Bool)  -- ^ mandatory predicate
            -> [Point -> Kind.Id TileKind -> Bool]  -- ^ optional predicates
            -> Rnd Point
-findPosTry numTries ltile m l = findPosTry2 numTries ltile m [] undefined l
+{-# INLINE findPosTry #-}
+findPosTry numTries ltile m r = findPosTry2 numTries ltile m [] undefined r
 
 findPosTry2 :: Int                                  -- ^ the number of tries
             -> TileMap                              -- ^ look up in this map
@@ -180,7 +181,7 @@ findPosTry2 :: Int                                  -- ^ the number of tries
             -> Rnd Point
 findPosTry2 numTries ltile m0 l g r = assert (numTries > 0) $
   let (x, y) = PointArray.sizeA ltile
-      accomodate fallback _ [] = fallback
+      accomodate fallback _ [] = fallback  -- fallback needs to be non-strict
       accomodate fallback m (hd : tl) =
         let search 0 = accomodate fallback m tl
             search !k = do
@@ -192,6 +193,7 @@ findPosTry2 numTries ltile m0 l g r = assert (numTries > 0) $
               else search (k - 1)
         in search numTries
   in accomodate (accomodate (findPos ltile m0) m0 r)
+                -- @pos@ or @tile@ not always needed, so not strict
                 (\pos tile -> m0 pos tile && g pos tile)
                 l
 

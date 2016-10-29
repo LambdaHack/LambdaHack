@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.PointArray
   , (!), accessI, (//)
   , replicateA, replicateMA, generateA, generateMA, unfoldrNA, sizeA
   , foldrA, foldrA', foldlA', ifoldrA, ifoldrA', ifoldlA', foldMA', ifoldMA'
-  , mapA, imapA, mapWithKeyMA
+  , mapA, imapA, imapMA_
   , safeSetA, unsafeSetA, unsafeUpdateA, unsafeWriteA, unsafeWriteManyA
   , minIndexA, minLastIndexA, minIndexesA, maxIndexA, maxLastIndexA, forceA
   , fromListA, toListA
@@ -228,10 +228,10 @@ safeSetA c Array{..} =
 
 -- | Map monadically over an array (function applied to each element
 -- and its index) and ignore the results.
-mapWithKeyMA :: (U.Unbox w, Enum w, Enum c, Monad m)
+imapMA_ :: (U.Unbox w, Enum w, Enum c, Monad m)
              => (Point -> c -> m ()) -> GArray w c -> m ()
-{-# INLINE mapWithKeyMA #-}
-mapWithKeyMA f Array{..} =
+{-# INLINE imapMA_ #-}
+imapMA_ f Array{..} =
   U.imapM_ (\n c -> f (punindex axsize n) (cnv c)) avector
 
 -- | Yield the point coordinates of a minimum element of the array.
