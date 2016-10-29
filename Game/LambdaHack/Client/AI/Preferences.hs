@@ -104,14 +104,14 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
 organBenefit :: GroupName ItemKind -> Kind.COps
              -> Actor -> AspectRecord -> Faction
              -> (Int, Int)
-organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}} b ar fact =
-  let f p _ kind (sacc, pacc) =
+organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} b ar fact =
+  let f (!sacc, !pacc) !p _ !kind =
         let paspect asp = p * aspectToBenefit cops b asp
             peffect eff = p * effectToBenefit cops b ar fact eff
         in ( sacc + sum (map paspect $ IK.iaspects kind)
                   + sum (map peffect $ IK.ieffects kind)
            , pacc + p )
-  in ofoldrGroup t f (0, 0)
+  in ofoldlGroup' t f (0, 0)
 
 -- | Return the value to add to effect value.
 aspectToBenefit :: Kind.COps -> Actor -> IK.Aspect -> Int

@@ -78,9 +78,9 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
           V.ifoldr (\i c a -> f (toEnum i) c a) z content
        , ofoldlWithKey' = \f z ->
           V.ifoldl' (\a i c -> f a (toEnum i) c) z content
-       , ofoldrGroup = \cgroup f z ->
+       , ofoldlGroup' = \cgroup f z ->
            case M.lookup cgroup kindFreq of
-             Just freq -> foldr (\(p, (i, a)) -> f p i a) z freq
+             Just freq -> foldl' (\acc (p, (i, a)) -> f acc p i a) z freq
              _ -> assert `failure` "no group '" <> tshow cgroup
                                    <> "' among content that has groups"
                                    <+> tshow (M.keys kindFreq)

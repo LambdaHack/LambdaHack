@@ -95,7 +95,7 @@ buildPlace :: Kind.COps         -- ^ the game content
            -> Area              -- ^ whole area of the place, fence included
            -> Rnd (TileMapEM, Place)
 buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
-                         , coplace=Kind.Ops{ofoldrGroup} }
+                         , coplace=Kind.Ops{ofoldlGroup'} }
            CaveKind{..} dnight darkCorTile litCorTile
            ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) r = do
   qFWall <- fromMaybe (assert `failure` cfillerTile)
@@ -103,11 +103,11 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
   dark <- chanceDice ldepth totalDepth cdarkChance
   -- TODO: factor out from here and newItem:
   let findInterval x1y1 [] = (x1y1, (11, 0))
-      findInterval x1y1 ((x, y) : rest) =
+      findInterval !x1y1 ((!x, !y) : rest) =
         if fromIntegral ld * 10 <= x * fromIntegral depth
         then (x1y1, (x, y))
         else findInterval (x, y) rest
-      linearInterpolation dataset =
+      linearInterpolation !dataset =
         -- We assume @dataset@ is sorted and between 0 and 10.
         let ((x1, y1), (x2, y2)) = findInterval (0, 0) dataset
         in ceiling
@@ -115,10 +115,10 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
              + fromIntegral (y2 - y1)
                * (fromIntegral ld * 10 - x1 * fromIntegral depth)
                / ((x2 - x1) * fromIntegral depth)
-  let f placeGroup q p pk kind acc =
+  let f !placeGroup !q !acc !p !pk !kind =
         let rarity = linearInterpolation (prarity kind)
         in (q * p * rarity, ((pk, kind), placeGroup)) : acc
-      g (placeGroup, q) = ofoldrGroup placeGroup (f placeGroup q) []
+      g (placeGroup, q) = ofoldlGroup' placeGroup (f placeGroup q) []
       placeFreq = concatMap g cplaceFreq
       checkedFreq = filter (\(_, ((_, kind), _)) -> placeCheck r kind) placeFreq
       freq = toFreq ("buildPlace" <+> tshow (map fst checkedFreq)) checkedFreq

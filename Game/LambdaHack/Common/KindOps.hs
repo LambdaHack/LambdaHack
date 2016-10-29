@@ -30,8 +30,8 @@ data Ops a = Ops
                                    -- ^ fold over all content elements of @a@
   , ofoldlWithKey' :: !(forall b. (b -> Id a -> a -> b) -> b -> b)
                                    -- ^ fold strictly over all content @a@
-  , ofoldrGroup   :: !(forall b.
-                     GroupName a -> (Int -> Id a -> a -> b -> b) -> b -> b)
+  , ofoldlGroup'  :: !(forall b.
+                     GroupName a -> (b -> Int -> Id a -> a -> b) -> b -> b)
                                    -- ^ fold over the given group only
   , olength       :: !Int          -- ^ size of content @a@
   }

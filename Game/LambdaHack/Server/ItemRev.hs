@@ -75,7 +75,7 @@ newItem :: Kind.COps -> FlavourMap -> DiscoveryKind -> DiscoveryKindRev -> Uniqu
         -> Freqs ItemKind -> Int -> LevelId -> AbsDepth -> AbsDepth
         -> Rnd (Maybe ( ItemKnown, ItemFull, ItemDisco
                       , ItemSeed, GroupName ItemKind ))
-newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
+newItem Kind.COps{coitem=Kind.Ops{ofoldlGroup'}}
         flavour disco discoRev uniqueSet itemFreq lvlSpawned jlid
         ldepth@(AbsDepth ldAbs) totalDepth@(AbsDepth depth) = do
   -- Effective generation depth of actors (not items) increases with spawns.
@@ -85,11 +85,11 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
                   $ min depth
                   $ ldAbs + numSpawnedCoeff - scaledDepth
       findInterval _ x1y1 [] = (x1y1, (11, 0))
-      findInterval ld x1y1 ((x, y) : rest) =
+      findInterval !ld !x1y1 ((!x, !y) : rest) =
         if fromIntegral ld * 10 <= x * fromIntegral depth
         then (x1y1, (x, y))
         else findInterval ld (x, y) rest
-      linearInterpolation ld dataset =
+      linearInterpolation !ld !dataset =
         -- We assume @dataset@ is sorted and between 0 and 10.
         let ((x1, y1), (x2, y2)) = findInterval ld (0, 0) dataset
         in ceiling
@@ -97,13 +97,13 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
              + fromIntegral (y2 - y1)
                * (fromIntegral ld * 10 - x1 * fromIntegral depth)
                / ((x2 - x1) * fromIntegral depth)
-      f _ _ _ ik _ acc | ik `ES.member` uniqueSet = acc
-      f itemGroup q p ik kind acc =
+      f _ _ acc _ ik _ | ik `ES.member` uniqueSet = acc
+      f !itemGroup !q !acc !p !ik !kind =
         -- Don't consider lvlSpawned for uniques.
         let ld = if IK.Unique `elem` IK.ieffects kind then ldAbs else ldSpawned
             rarity = linearInterpolation ld (IK.irarity kind)
         in (q * p * rarity, ((ik, kind), itemGroup)) : acc
-      g (itemGroup, q) = ofoldrGroup itemGroup (f itemGroup q) []
+      g (itemGroup, q) = ofoldlGroup' itemGroup (f itemGroup q) []
       freqDepth = concatMap g itemFreq
       freq = toFreq ("newItem ('" <> tshow ldSpawned <> ")") freqDepth
   if nullFreq freq then return Nothing
@@ -111,7 +111,7 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
     ((itemKindId, itemKind), itemGroup) <- frequency freq
     -- Number of new items/actors unaffected by number of spawned actors.
     itemN <- castDice ldepth totalDepth (IK.icount itemKind)
-    seed <- fmap toEnum random
+    seed <- toEnum <$> random
     let itemBase = buildItem flavour discoRev itemKindId itemKind jlid
         kindIx = jkindIx itemBase
         itemK = max 1 itemN
