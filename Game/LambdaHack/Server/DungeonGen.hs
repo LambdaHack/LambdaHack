@@ -34,11 +34,11 @@ import Game.LambdaHack.Server.DungeonGen.Area
 import Game.LambdaHack.Server.DungeonGen.Cave
 import Game.LambdaHack.Server.DungeonGen.Place
 
-convertTileMaps :: Kind.COps
+convertTileMaps :: Kind.COps -> Bool
                 -> Rnd (Kind.Id TileKind) -> Maybe (Rnd (Kind.Id TileKind))
                 -> Int -> Int -> TileMapEM
                 -> Rnd TileMap
-convertTileMaps Kind.COps{coTileSpeedup}
+convertTileMaps Kind.COps{coTileSpeedup} areAllWalkable
                 cdefTile mcdefTileWalkable cxsize cysize ltile = do
   let runCdefTile :: R.StdGen -> (Kind.Id TileKind, R.StdGen)
       runCdefTile = St.runState cdefTile
@@ -48,6 +48,7 @@ convertTileMaps Kind.COps{coTileSpeedup}
   converted0 <- St.state runUnfold
   let converted1 = converted0 PointArray.// EM.assocs ltile
   case mcdefTileWalkable of
+    _ | areAllWalkable -> return converted1  -- all walkable; passes OK
     Nothing -> return converted1  -- no walkable tiles for filling the map
     Just cdefTileWalkable -> do  -- some tiles walkable, so ensure connectivity
       -- TODO: perhaps checking connectivity with BFS would be better,
@@ -136,7 +137,10 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
         then Just
              $ fromMaybe (assert `failure` cdefTile) <$> opick cdefTile wcond
         else Nothing
-  cmap <- convertTileMaps cops pickDefTile mpickWalkable cxsize cysize dmap
+      nwcond kt = not (Tile.kindHasFeature TK.Walkable kt) && nightCond kt
+  areAllWalkable <- isNothing <$> opick cdefTile nwcond
+  cmap <- convertTileMaps cops areAllWalkable
+                          pickDefTile mpickWalkable cxsize cysize dmap
   -- We keep two-way stairs separately, in the last component.
   let makeStairs :: Bool -> Bool -> Bool
                  -> ( [(Point, Kind.Id TileKind)]
