@@ -345,26 +345,26 @@ fullscan FovClear{fovClear} radius spectatorPos =
      | radius == 1 -> ES.singleton spectatorPos
      | radius == 2 -> inline squareUnsafeSet spectatorPos
      | otherwise ->
-         mapTr (\B{..} -> trV   bx  (-by))  -- quadrant I
-       $ mapTr (\B{..} -> trV   by    bx)   -- II (we rotate counter-clockwise)
-       $ mapTr (\B{..} -> trV (-bx)   by)   -- III
-       $ mapTr (\B{..} -> trV (-by) (-bx))  -- IV
+         inline mapTr (\B{..} -> inline trV   bx  (-by))  -- quadrant I
+       $ inline mapTr (\B{..} -> inline trV   by    bx)   -- II (counter-clock)
+       $ inline mapTr (\B{..} -> inline trV (-bx)   by)   -- III
+       $ inline mapTr (\B{..} -> inline trV (-by) (-bx))  -- IV
        $ ES.singleton spectatorPos
  where
   scanTr :: (Bump -> Point) -> [Bump]
-  {-# NOINLINE scanTr #-}
-  scanTr tr = scan (radius - 1) (isCl . tr)
+  {-# INLINABLE scanTr #-}
+  scanTr tr = inline scan (radius - 1) (inline isCl . tr)
 
   mapTr :: (Bump -> Point) -> ES.EnumSet Point -> ES.EnumSet Point
-  {-# INLINE mapTr #-}
-  mapTr tr es1 = foldl' (flip $ ES.insert . tr) es1 $ scanTr tr
+  {-# INLINABLE mapTr #-}
+  mapTr tr es1 = foldl' (flip $ ES.insert . tr) es1 $ inline scanTr tr
 
   isCl :: Point -> Bool
-  {-# INLINE isCl #-}
+  {-# INLINABLE isCl #-}
   isCl = (fovClear PointArray.!)
 
   -- This function is cheap, so no problem it's called twice
   -- for each point: once with @isCl@, once via @concatMap@.
   trV :: X -> Y -> Point
-  {-# INLINE trV #-}
+  {-# INLINABLE trV #-}
   trV x y = shift spectatorPos $ Vector x y

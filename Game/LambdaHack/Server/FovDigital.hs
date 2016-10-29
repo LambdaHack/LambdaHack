@@ -56,7 +56,7 @@ type EdgeInterval = (Edge, Edge)
 scan :: Distance        -- ^ visiblity distance
      -> (Bump -> Bool)  -- ^ clear tile predicate
      -> [Bump]
-{-# INLINE scan #-}
+{-# INLINABLE scan #-}
 scan r isClear = assert (r > 0 `blame` r) $
   -- The scanned area is a square, which is a sphere in the chessboard metric.
   dscan 1 ( (Line (B 1 0) (B (-r) r), [B 0 0])
