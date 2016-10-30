@@ -63,8 +63,8 @@ scan r isClear = assert (r > 0 `blame` r) $
              , (Line (B 0 0) (B (r+1) r), [B 1 0]) )
  where
   dscan :: [Bump] -> Distance -> EdgeInterval -> [Bump]
-  dscan accDscan d ( s0@(sl{-shallow line-}, sHull0)
-                   , e@(el{-steep line-}, eHull) ) =
+  dscan !accDscan !d ( s0@(!sl{-shallow line-}, !sHull0)
+                     , e@(!el{-steep line-}, !eHull) ) =
 
     let !ps0 = let (n, k) = intersect sl d  -- minimal progress to consider
                in n `div` k
@@ -80,42 +80,49 @@ scan r isClear = assert (r > 0 `blame` r) $
           | isClear (B ps0 d) = mscanVisible inside s0 (ps0+1)  -- start visible
           | otherwise = mscanShadowed inside (ps0+1)          -- start in shadow
 
+        {-# INLINE findInInterval #-}
+        findInInterval f xstart xend =
+          let g !x | x > xend = Nothing
+                   | f x = Just x
+                   | otherwise = g (x + 1)
+          in g xstart
+
+        {-# INLINE bump #-}
+        bump px = B px d
+
         -- We're in a visible interval.
         mscanVisible :: [Bump] -> Edge -> Progress -> [Bump]
-        {-# INLINE mscanVisible #-}
-        mscanVisible acc s = go
-         where
-          go ps | ps > pe = dscan acc (d+1) (s, e)  -- reached end, scan next
-                | not $ isClear steepBump =         -- entering shadow
-                  let gte :: Bump -> Bump -> Bool
-                      {-# INLINE gte #-}
-                      gte = dsteeper steepBump
-                      nep = maximal gte (snd s)
-                      neHull = addHull gte steepBump eHull
-                      accNew =
-                        dscan acc (d+1) (s, (dline nep steepBump, neHull))
-                  in mscanShadowed accNew (ps+1)
-                | otherwise = go (ps+1)  -- continue in visible area
-           where
-            {-# INLINE steepBump #-}
-            steepBump = B ps d
+--        {-# INLINE mscanVisible #-}
+        mscanVisible !acc !s !ps =
+          case findInInterval (not . isClear . bump) ps pe of
+            Just px ->  -- entering shadow
+              let {-# INLINE steepBump #-}
+                  steepBump = bump px
+                  gte :: Bump -> Bump -> Bool
+                  {-# INLINE gte #-}
+                  gte = dsteeper steepBump
+                  nep = maximal gte (snd s)
+                  neHull = addHull gte steepBump eHull
+                  accNew = dscan acc (d+1) (s, (dline nep steepBump, neHull))
+              in mscanShadowed accNew (px+1)
+--                  accNew = mscanShadowed acc (px+1)
+--              in dscan accNew (d+1) (s, (dline nep steepBump, neHull))
+            Nothing -> dscan acc (d+1) (s, e)  -- reached end, scan next
 
         -- We're in a shadowed interval.
         mscanShadowed :: [Bump] -> Progress -> [Bump]
-        mscanShadowed acc = go
-         where
-          go ps | ps > pe = acc          -- reached end while in shadow
-                | isClear shallowBump =  -- moving out of shadow
-                  let gte :: Bump -> Bump -> Bool
-                      {-# INLINE gte #-}
-                      gte = flip $ dsteeper shallowBump
-                      nsp = maximal gte eHull
-                      nsHull = addHull gte shallowBump sHull0
-                  in mscanVisible acc (dline nsp shallowBump, nsHull) (ps+1)
-                | otherwise = go (ps+1)  -- continue in shadow
-           where
-            {-# INLINE shallowBump #-}
-            shallowBump = B ps d
+        mscanShadowed !acc !ps =
+          case findInInterval (isClear . bump) ps pe of
+            Just px ->  -- moving out of shadow
+              let {-# INLINE shallowBump #-}
+                  shallowBump = B px d
+                  gte :: Bump -> Bump -> Bool
+                  {-# INLINE gte #-}
+                  gte = flip $ dsteeper shallowBump
+                  nsp = maximal gte eHull
+                  nsHull = addHull gte shallowBump sHull0
+              in mscanVisible acc (dline nsp shallowBump, nsHull) (px+1)
+            Nothing -> acc  -- reached end while in shadow
 
     in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e,ps0,pe)) $
        outside
