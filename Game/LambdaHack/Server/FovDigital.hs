@@ -59,12 +59,12 @@ scan :: Distance        -- ^ visiblity distance
 {-# INLINABLE scan #-}
 scan r isClear = assert (r > 0 `blame` r) $
   -- The scanned area is a square, which is a sphere in the chessboard metric.
-  dscan 1 ( (Line (B 1 0) (B (-r) r), [B 0 0])
-          , (Line (B 0 0) (B (r+1) r), [B 1 0]) )
+  dscan [] 1 ( (Line (B 1 0) (B (-r) r), [B 0 0])
+             , (Line (B 0 0) (B (r+1) r), [B 1 0]) )
  where
-  dscan :: Distance -> EdgeInterval -> [Bump]
-  dscan d ( s0@(sl{-shallow line-}, sHull0)
-          , e@(el{-steep line-}, eHull) ) =
+  dscan :: [Bump] -> Distance -> EdgeInterval -> [Bump]
+  dscan accDscan d ( s0@(sl{-shallow line-}, sHull0)
+                   , e@(el{-steep line-}, eHull) ) =
 
     let !ps0 = let (n, k) = intersect sl d  -- minimal progress to consider
                in n `div` k
@@ -74,50 +74,51 @@ scan r isClear = assert (r > 0 `blame` r) $
                 -- so if its intersection with the line of diagonals is only
                 -- at a corner, choose the diamond leading to a smaller view.
               in -1 + n `divUp` k
-        inside = [B p d | p <- [ps0..pe]]
+        inside = [B p d | p <- [ps0..pe]] ++ accDscan
         outside
-          | d >= r = []
-          | isClear (B ps0 d) = mscanVisible s0 (ps0+1)  -- start visible
-          | otherwise = mscanShadowed (ps0+1)            -- start in shadow
+          | d >= r = inside
+          | isClear (B ps0 d) = mscanVisible inside s0 (ps0+1)  -- start visible
+          | otherwise = mscanShadowed inside (ps0+1)          -- start in shadow
 
         -- We're in a visible interval.
-        mscanVisible :: Edge -> Progress -> [Bump]
+        mscanVisible :: [Bump] -> Edge -> Progress -> [Bump]
         {-# INLINE mscanVisible #-}
-        mscanVisible s = go
+        mscanVisible acc s = go
          where
-          go ps | ps > pe = dscan (d+1) (s, e)  -- reached end, scan next
-                | not $ isClear steepBump =     -- entering shadow
+          go ps | ps > pe = dscan acc (d+1) (s, e)  -- reached end, scan next
+                | not $ isClear steepBump =         -- entering shadow
                   let gte :: Bump -> Bump -> Bool
                       {-# INLINE gte #-}
                       gte = dsteeper steepBump
                       nep = maximal gte (snd s)
                       neHull = addHull gte steepBump eHull
-                  in mscanShadowed (ps+1)
-                     ++ dscan (d+1) (s, (dline nep steepBump, neHull))
+                      accNew =
+                        dscan acc (d+1) (s, (dline nep steepBump, neHull))
+                  in mscanShadowed accNew (ps+1)
                 | otherwise = go (ps+1)  -- continue in visible area
            where
             {-# INLINE steepBump #-}
             steepBump = B ps d
 
         -- We're in a shadowed interval.
-        mscanShadowed :: Progress -> [Bump]
-        mscanShadowed = go
+        mscanShadowed :: [Bump] -> Progress -> [Bump]
+        mscanShadowed acc = go
          where
-          go ps | ps > pe = []           -- reached end while in shadow
+          go ps | ps > pe = acc          -- reached end while in shadow
                 | isClear shallowBump =  -- moving out of shadow
                   let gte :: Bump -> Bump -> Bool
                       {-# INLINE gte #-}
                       gte = flip $ dsteeper shallowBump
                       nsp = maximal gte eHull
                       nsHull = addHull gte shallowBump sHull0
-                  in mscanVisible (dline nsp shallowBump, nsHull) (ps+1)
+                  in mscanVisible acc (dline nsp shallowBump, nsHull) (ps+1)
                 | otherwise = go (ps+1)  -- continue in shadow
            where
             {-# INLINE shallowBump #-}
             shallowBump = B ps d
 
     in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e,ps0,pe)) $
-       inside ++ outside
+       outside
 
 -- | Maximal element of a non-empty list. Prefers elements from the rear,
 -- which is essential for PFOV, to avoid ill-defined lines.
