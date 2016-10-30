@@ -85,33 +85,36 @@ scan r isClear = assert (r > 0 `blame` r) $
         {-# INLINE mscanVisible #-}
         mscanVisible s = go
          where
-          go ps | ps > pe = dscan (d+1) (s, e)       -- reached end, scan next
-                | not $ isClear steepBump =          -- entering shadow
-                    mscanShadowed (ps+1)
-                    ++ dscan (d+1) (s, (dline nep steepBump, neHull))
+          go ps | ps > pe = dscan (d+1) (s, e)  -- reached end, scan next
+                | not $ isClear steepBump =     -- entering shadow
+                  let gte :: Bump -> Bump -> Bool
+                      {-# INLINE gte #-}
+                      gte = dsteeper steepBump
+                      nep = maximal gte (snd s)
+                      neHull = addHull gte steepBump eHull
+                  in mscanShadowed (ps+1)
+                     ++ dscan (d+1) (s, (dline nep steepBump, neHull))
                 | otherwise = go (ps+1)  -- continue in visible area
            where
+            {-# INLINE steepBump #-}
             steepBump = B ps d
-            gte :: Bump -> Bump -> Bool
-            {-# INLINE gte #-}
-            gte = dsteeper steepBump
-            nep = maximal gte (snd s)
-            neHull = addHull gte steepBump eHull
 
         -- We're in a shadowed interval.
         mscanShadowed :: Progress -> [Bump]
-        mscanShadowed ps
-          | ps > pe = []                       -- reached end while in shadow
-          | isClear shallowBump =              -- moving out of shadow
-              mscanVisible (dline nsp shallowBump, nsHull) (ps+1)
-          | otherwise = mscanShadowed (ps+1)   -- continue in shadow
+        mscanShadowed = go
          where
-          shallowBump = B ps d
-          gte :: Bump -> Bump -> Bool
-          {-# INLINE gte #-}
-          gte = flip $ dsteeper shallowBump
-          nsp = maximal gte eHull
-          nsHull = addHull gte shallowBump sHull0
+          go ps | ps > pe = []           -- reached end while in shadow
+                | isClear shallowBump =  -- moving out of shadow
+                  let gte :: Bump -> Bump -> Bool
+                      {-# INLINE gte #-}
+                      gte = flip $ dsteeper shallowBump
+                      nsp = maximal gte eHull
+                      nsHull = addHull gte shallowBump sHull0
+                  in mscanVisible (dline nsp shallowBump, nsHull) (ps+1)
+                | otherwise = go (ps+1)  -- continue in shadow
+           where
+            {-# INLINE shallowBump #-}
+            shallowBump = B ps d
 
     in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e,ps0,pe)) $
        inside ++ outside
