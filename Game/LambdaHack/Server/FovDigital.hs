@@ -12,7 +12,7 @@ module Game.LambdaHack.Server.FovDigital
     -- * Geometry in system @Bump@
   , Line(..), ConvexHull, Edge, EdgeInterval
     -- * Internal operations
-  , maximal, steeper, addHull
+  , steeper, addHull
   , dline, dsteeper, intersect, _debugSteeper, _debugLine
 #endif
   ) where
@@ -98,11 +98,11 @@ scan r isClear = assert (r > 0 `blame` r) $
             Just px ->  -- entering shadow
               let {-# INLINE steepBump #-}
                   steepBump = bump px
-                  gte :: Bump -> Bump -> Bool
-                  {-# INLINE gte #-}
-                  gte = dsteeper steepBump
-                  nep = maximal gte (snd s)
-                  neHull = addHull gte steepBump eHull
+                  cmp :: Bump -> Bump -> Ordering
+                  {-# INLINE cmp #-}
+                  cmp = flip $ dsteeper steepBump
+                  nep = maximumBy cmp (snd s)
+                  neHull = addHull cmp steepBump eHull
                   accNew = dscan acc (d+1) (s, (dline nep steepBump, neHull))
               in mscanShadowed accNew (px+1)
 --                  accNew = mscanShadowed acc (px+1)
@@ -116,43 +116,37 @@ scan r isClear = assert (r > 0 `blame` r) $
             Just px ->  -- moving out of shadow
               let {-# INLINE shallowBump #-}
                   shallowBump = B px d
-                  gte :: Bump -> Bump -> Bool
-                  {-# INLINE gte #-}
-                  gte = flip $ dsteeper shallowBump
-                  nsp = maximal gte eHull
-                  nsHull = addHull gte shallowBump sHull0
+                  cmp :: Bump -> Bump -> Ordering
+                  {-# INLINE cmp #-}
+                  cmp = dsteeper shallowBump
+                  nsp = maximumBy cmp eHull
+                  nsHull = addHull cmp shallowBump sHull0
               in mscanVisible acc (dline nsp shallowBump, nsHull) (px+1)
             Nothing -> acc  -- reached end while in shadow
 
     in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e,ps0,pe)) $
        outside
 
--- | Maximal element of a non-empty list. Prefers elements from the rear,
--- which is essential for PFOV, to avoid ill-defined lines.
-maximal :: (a -> a -> Bool) -> [a] -> a
-{-# INLINE maximal #-}
-maximal gte = foldl1' (\acc e -> if gte e acc then e else acc)
-
 -- | Check if the line from the second point to the first is more steep
 -- than the line from the third point to the first. This is related
 -- to the formal notion of gradient (or angle), but hacked wrt signs
 -- to work fast in this particular setup. Returns True for ill-defined lines.
-steeper :: Bump -> Bump -> Bump -> Bool
+steeper :: Bump -> Bump -> Bump -> Ordering
 {-# INLINE steeper #-}
 steeper (B xf yf) (B x1 y1) (B x2 y2) =
-  (yf - y1)*(xf - x2) >= (yf - y2)*(xf - x1)
+  compare ((yf - y2)*(xf - x1)) ((yf - y1)*(xf - x2))
 
 -- | Extends a convex hull of bumps with a new bump. Nothing needs to be done
 -- if the new bump already lies within the hull. The first argument is
 -- typically `steeper`, optionally negated, applied to the second argument.
-addHull :: (Bump -> Bump -> Bool)  -- ^ a comparison function
-        -> Bump                    -- ^ a new bump to consider
+addHull :: (Bump -> Bump -> Ordering)  -- ^ a comparison function
+        -> Bump                        -- ^ a new bump to consider
         -> ConvexHull  -- ^ a convex hull of bumps represented as a list
         -> ConvexHull
 {-# INLINE addHull #-}
-addHull gte new = (new :) . go
+addHull cmp new = (new :) . go
  where
-  go (a:b:cs) | gte a b = go (b:cs)
+  go (a:b:cs) | cmp b a /= GT = go (b:cs)
   go l = l
 
 -- | Create a line from two points. Debug: check if well-defined.
@@ -168,7 +162,7 @@ dline p1 p2 =
 
 -- | Compare steepness of @(p1, f)@ and @(p2, f)@.
 -- Debug: Verify that the results of 2 independent checks are equal.
-dsteeper :: Bump -> Bump -> Bump -> Bool
+dsteeper :: Bump -> Bump -> Bump -> Ordering
 {-# INLINE dsteeper #-}
 dsteeper f p1 p2 =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
@@ -219,13 +213,13 @@ cordinates coincide with the Bump coordinates, unlike in PFOV.
 -- | Debug functions for DFOV:
 
 -- | Debug: calculate steeper for DFOV in another way and compare results.
-_debugSteeper :: Bump -> Bump -> Bump -> Bool
+_debugSteeper :: Bump -> Bump -> Bump -> Ordering
 {-# INLINE _debugSteeper #-}
 _debugSteeper f@(B _xf yf) p1@(B _x1 y1) p2@(B _x2 y2) =
   assert (allB (>= 0) [yf, y1, y2]) $
   let (n1, k1) = intersect (Line p1 f) 0
       (n2, k2) = intersect (Line p2 f) 0
-  in n1 * k2 >= k1 * n2
+  in compare (k1 * n2) (n1 * k2)
 
 -- | Debug: check if a view border line for DFOV is legal.
 _debugLine :: Line -> (Bool, String)
