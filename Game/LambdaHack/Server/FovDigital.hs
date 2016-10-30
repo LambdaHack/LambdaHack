@@ -21,6 +21,11 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude hiding (intersect)
 
+import qualified Data.EnumSet as ES
+
+import Game.LambdaHack.Common.Point hiding (inside)
+import qualified Game.LambdaHack.Common.PointArray as PointArray
+
 -- | Distance from the (0, 0) point where FOV originates.
 type Distance = Int
 -- | Progress along an arc with a constant distance from (0, 0).
@@ -53,18 +58,23 @@ type EdgeInterval = (Edge, Edge)
 
 -- | Calculates the list of tiles, in @Bump@ coordinates, visible from (0, 0),
 -- within the given sight range.
-scan :: Distance        -- ^ visiblity distance
-     -> (Bump -> Bool)  -- ^ clear tile predicate
-     -> [Bump]
+scan :: ES.EnumSet Point
+     -> Distance         -- ^ visiblity distance
+     -> PointArray.Array Bool
+     -> (Bump -> Point)  -- ^ coordinate transformation
+     -> ES.EnumSet Point
 {-# INLINABLE scan #-}
-scan r isClear = assert (r > 0 `blame` r) $
+scan accScan r fovClear tr = assert (r > 0 `blame` r) $
   -- The scanned area is a square, which is a sphere in the chessboard metric.
-  dscan [] 1 ( (Line (B 1 0) (B (-r) r), [B 0 0])
-             , (Line (B 0 0) (B (r+1) r), [B 1 0]) )
+  dscan accScan 1 ( (Line (B 1 0) (B (-r) r), [B 0 0])
+                  , (Line (B 0 0) (B (r+1) r), [B 1 0]) )
  where
-  dscan :: [Bump] -> Distance -> EdgeInterval -> [Bump]
-  dscan !accDscan !d ( s0@(!sl{-shallow line-}, !sHull0)
-                     , e@(!el{-steep line-}, !eHull) ) =
+  isClear :: Point -> Bool
+  isClear = (fovClear PointArray.!)
+
+  dscan :: ES.EnumSet Point -> Distance -> EdgeInterval -> ES.EnumSet Point
+  dscan !accDscan !d ( s0@(!sl{-shallow line-}, !sHull)
+                     , e0@(!el{-steep line-}, !eHull) ) =
 
     let !ps0 = let (n, k) = intersect sl d  -- minimal progress to consider
                in n `div` k
@@ -74,57 +84,58 @@ scan r isClear = assert (r > 0 `blame` r) $
                 -- so if its intersection with the line of diagonals is only
                 -- at a corner, choose the diamond leading to a smaller view.
               in -1 + n `divUp` k
-        inside = [B p d | p <- [ps0..pe]] ++ accDscan
-        outside
-          | d >= r = inside
-          | isClear (B ps0 d) = mscanVisible inside s0 (ps0+1)  -- start visible
-          | otherwise = mscanShadowed inside (ps0+1)          -- start in shadow
-
-        {-# INLINE findInInterval #-}
-        findInInterval f xstart xend =
-          let g !x | x > xend = Nothing
-                   | f x = Just x
-                   | otherwise = g (x + 1)
-          in g xstart
+        outside =
+          if d < r
+          then let !trBump = bump ps0
+                   !accBump = ES.insert trBump accDscan
+               in if isClear trBump
+                  then mscanVisible accBump s0 (ps0+1)  -- start visible
+                  else mscanShadowed accBump (ps0+1)    -- start in shadow
+          else foldl' (\acc ps -> ES.insert (bump ps) acc) accDscan [ps0..pe]
 
         {-# INLINE bump #-}
-        bump px = B px d
+        bump px = tr $ B px d
 
         -- We're in a visible interval.
-        mscanVisible :: [Bump] -> Edge -> Progress -> [Bump]
---        {-# INLINE mscanVisible #-}
+        mscanVisible :: ES.EnumSet Point -> Edge -> Progress -> ES.EnumSet Point
         mscanVisible !acc !s !ps =
-          case findInInterval (not . isClear . bump) ps pe of
-            Just px ->  -- entering shadow
-              let {-# INLINE steepBump #-}
-                  steepBump = bump px
-                  cmp :: Bump -> Bump -> Ordering
-                  {-# INLINE cmp #-}
-                  cmp = flip $ dsteeper steepBump
-                  nep = maximumBy cmp (snd s)
-                  neHull = addHull cmp steepBump eHull
-                  accNew = dscan acc (d+1) (s, (dline nep steepBump, neHull))
-              in mscanShadowed accNew (px+1)
---                  accNew = mscanShadowed acc (px+1)
---              in dscan accNew (d+1) (s, (dline nep steepBump, neHull))
-            Nothing -> dscan acc (d+1) (s, e)  -- reached end, scan next
+          if ps <= pe
+          then let !trBump = bump ps
+                   !accBump = ES.insert trBump acc
+               in if isClear trBump  -- not entering shadow
+                  then mscanVisible accBump s (ps+1)
+                  else let {-# INLINE steepBump #-}
+                           steepBump = B ps d
+                           cmp :: Bump -> Bump -> Ordering
+                           {-# INLINE cmp #-}
+                           cmp = flip $ dsteeper steepBump
+                           nep = maximumBy cmp (snd s)
+                           neHull = addHull cmp steepBump eHull
+                           ne = (dline nep steepBump, neHull)
+                           accNew = dscan accBump (d+1) (s, ne)
+                       in mscanShadowed accNew (ps+1)
+          else dscan acc (d+1) (s, e0)  -- reached end, scan next
 
         -- We're in a shadowed interval.
-        mscanShadowed :: [Bump] -> Progress -> [Bump]
+        mscanShadowed :: ES.EnumSet Point -> Progress -> ES.EnumSet Point
         mscanShadowed !acc !ps =
-          case findInInterval (isClear . bump) ps pe of
-            Just px ->  -- moving out of shadow
-              let {-# INLINE shallowBump #-}
-                  shallowBump = B px d
-                  cmp :: Bump -> Bump -> Ordering
-                  {-# INLINE cmp #-}
-                  cmp = dsteeper shallowBump
-                  nsp = maximumBy cmp eHull
-                  nsHull = addHull cmp shallowBump sHull0
-              in mscanVisible acc (dline nsp shallowBump, nsHull) (px+1)
-            Nothing -> acc  -- reached end while in shadow
+          if ps <= pe
+          then let !trBump = bump ps
+                   !accBump = ES.insert trBump acc
+               in if not $ isClear trBump  -- not moving out of shadow
+                  then mscanShadowed accBump (ps+1)
+                  else let {-# INLINE shallowBump #-}
+                           shallowBump = B ps d
+                           cmp :: Bump -> Bump -> Ordering
+                           {-# INLINE cmp #-}
+                           cmp = dsteeper shallowBump
+                           nsp = maximumBy cmp eHull
+                           nsHull = addHull cmp shallowBump sHull
+                           ns = (dline nsp shallowBump, nsHull)
+                       in mscanVisible accBump ns (ps+1)
+          else acc  -- reached end while in shadow
 
-    in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e,ps0,pe)) $
+    in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e0,ps0,pe)) $
        outside
 
 -- | Check if the line from the second point to the first is more steep
