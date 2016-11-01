@@ -217,7 +217,7 @@ anyActorsAlive fid maid = do
 electLeader :: MonadAtomic m => FactionId -> LevelId -> ActorId -> m ()
 electLeader fid lid aidDead = do
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
-  when (isNothing mleader || mleader == Just aidDead) $ do
+  when (mleader == Just aidDead) $ do
     actorD <- getsState sactorD
     let ours (_, b) = bfid b == fid && not (bproj b)
         party = filter ours $ EM.assocs actorD
@@ -225,8 +225,7 @@ electLeader fid lid aidDead = do
     let mleaderNew = case filter (/= aidDead) $ onLevel ++ map fst party of
           [] -> Nothing
           aid : _ -> Just aid
-    unless (mleader == mleaderNew) $
-      execUpdAtomic $ UpdLeadFaction fid mleader mleaderNew
+    execUpdAtomic $ UpdLeadFaction fid mleader mleaderNew
 
 projectFail :: (MonadAtomic m, MonadServer m)
             => ActorId    -- ^ actor projecting the item (is on current lvl)
