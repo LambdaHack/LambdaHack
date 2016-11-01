@@ -37,10 +37,10 @@ nUI = do
   factionD <- getsState sfactionD
   return $! length $ filter (fhasUI . gplayer) $ EM.elems factionD
 
-posOfAid :: MonadStateRead m => ActorId -> m (LevelId, Point)
+posOfAid :: MonadStateRead m => ActorId -> m (LevelId, Point, FactionId)
 posOfAid aid = do
   b <- getsState $ getActorBody aid
-  return (blid b, bpos b)
+  return (blid b, bpos b, bfid b)
 
 factionCanEscape :: MonadStateRead m => FactionId -> m Bool
 factionCanEscape fid = do

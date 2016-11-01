@@ -116,8 +116,8 @@ posUpdAtomic cmd = case cmd of
   UpdAlterTile lid p _ _ -> return $! PosSight lid [p]
   UpdAlterClear{} -> return PosAll
   UpdSearchTile aid p _ _ -> do
-    (lid, pos) <- posOfAid aid
-    return $! PosSight lid [pos, p]
+    (lid, pos, fid) <- posOfAid aid
+    return $! PosFidAndSight [fid] lid [pos, p]
   UpdLearnSecrets aid _ _ -> singleAid aid
   UpdSpotTile lid ts -> do
     let ps = map fst ts
@@ -164,11 +164,11 @@ posSfxAtomic cmd = case cmd of
   SfxApply aid _ cstore -> singleContainer $ CActor aid cstore
   SfxCheck aid _ cstore -> singleContainer $ CActor aid cstore
   SfxTrigger aid p _ -> do
-    (lid, pa) <- posOfAid aid
-    return $! PosSight lid [pa, p]
+    (lid, pa, fid) <- posOfAid aid
+    return $! PosFidAndSight [fid] lid [pa, p]
   SfxShun aid p _ -> do
-    (lid, pa) <- posOfAid aid
-    return $! PosSight lid [pa, p]
+    (lid, pa, fid) <- posOfAid aid
+    return $! PosFidAndSight [fid] lid [pa, p]
   SfxEffect _ aid _ _ -> singleAid aid  -- sometimes we don't see source, OK
   SfxMsgFid fid _ -> return $! PosFid fid
   SfxMsgAll _ -> return PosAll
@@ -186,13 +186,15 @@ singleFidAndAid aid = do
 
 singleAid :: MonadStateRead m => ActorId -> m PosAtomic
 singleAid aid = do
-  (lid, p) <- posOfAid aid
-  return $! PosSight lid [p]
+  (lid, p, fid) <- posOfAid aid
+  return $! PosFidAndSight [fid] lid [p]
 
 doubleAid :: MonadStateRead m => ActorId -> ActorId -> m PosAtomic
 doubleAid source target = do
-  (slid, sp) <- posOfAid source
-  (tlid, tp) <- posOfAid target
+  (slid, sp, _) <- posOfAid source
+  (tlid, tp, _) <- posOfAid target
+  -- No @PosFidAndSight@ instead of @PosSight@, because both positions
+  -- need to be seen to have the enemy actor in client's state.
   return $! assert (slid == tlid) $ PosSight slid [sp, tp]
 
 singleContainer :: MonadStateRead m => Container -> m PosAtomic
@@ -202,8 +204,8 @@ singleContainer (CActor aid CSha) = do  -- shared stash is private
   b <- getsState $ getActorBody aid
   return $! PosFidAndSer (Just $ blid b) (bfid b)
 singleContainer (CActor aid _) = do
-  (lid, p) <- posOfAid aid
-  return $! PosSight lid [p]
+  (lid, p, fid) <- posOfAid aid
+  return $! PosFidAndSight [fid] lid [p]
 singleContainer (CTrunk fid lid p) = return $! PosFidAndSight [fid] lid [p]
 
 -- | Decompose an atomic action. The decomposed actions give reduced
