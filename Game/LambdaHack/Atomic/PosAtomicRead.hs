@@ -112,12 +112,12 @@ posUpdAtomic cmd = case cmd of
   UpdDiplFaction{} -> return PosAll
   UpdTacticFaction fid _ _ -> return $! PosFidAndSer Nothing fid
   UpdAutoFaction{} -> return PosAll
-  UpdRecordKill aid _ _ -> singleFidAndAid aid
+  UpdRecordKill aid _ _ -> singleAid aid
   UpdAlterTile lid p _ _ -> return $! PosSight lid [p]
   UpdAlterClear{} -> return PosAll
   UpdSearchTile aid p _ _ -> do
-    (lid, pos, fid) <- posOfAid aid
-    return $! PosFidAndSight [fid] lid [pos, p]
+    b <- getsState $ getActorBody aid
+    return $! PosFidAndSight [bfid b] (blid b) [bpos b, p]
   UpdLearnSecrets aid _ _ -> singleAid aid
   UpdSpotTile lid ts -> do
     let ps = map fst ts
@@ -164,11 +164,15 @@ posSfxAtomic cmd = case cmd of
   SfxApply aid _ cstore -> singleContainer $ CActor aid cstore
   SfxCheck aid _ cstore -> singleContainer $ CActor aid cstore
   SfxTrigger aid p _ -> do
-    (lid, pa, fid) <- posOfAid aid
-    return $! PosFidAndSight [fid] lid [pa, p]
+    body <- getsState $ getActorBody aid
+    if bproj body
+    then return $! PosSight (blid body) [bpos body, p]
+    else return $! PosFidAndSight [bfid body] (blid body) [bpos body, p]
   SfxShun aid p _ -> do
-    (lid, pa, fid) <- posOfAid aid
-    return $! PosFidAndSight [fid] lid [pa, p]
+    body <- getsState $ getActorBody aid
+    if bproj body
+    then return $! PosSight (blid body) [bpos body, p]
+    else return $! PosFidAndSight [bfid body] (blid body) [bpos body, p]
   SfxEffect _ aid _ _ -> singleAid aid  -- sometimes we don't see source, OK
   SfxMsgFid fid _ -> return $! PosFid fid
   SfxMsgAll _ -> return PosAll
@@ -179,23 +183,18 @@ posProjBody body =
   then PosSight (blid body) [bpos body]
   else PosFidAndSight [bfid body] (blid body) [bpos body]
 
-singleFidAndAid :: MonadStateRead m => ActorId -> m PosAtomic
-singleFidAndAid aid = do
-  body <- getsState $ getActorBody aid
-  return $! PosFidAndSight [bfid body] (blid body) [bpos body]
-
 singleAid :: MonadStateRead m => ActorId -> m PosAtomic
 singleAid aid = do
-  (lid, p, fid) <- posOfAid aid
-  return $! PosFidAndSight [fid] lid [p]
+  body <- getsState $ getActorBody aid
+  return $! posProjBody body
 
 doubleAid :: MonadStateRead m => ActorId -> ActorId -> m PosAtomic
 doubleAid source target = do
-  (slid, sp, _) <- posOfAid source
-  (tlid, tp, _) <- posOfAid target
+  sb <- getsState $ getActorBody source
+  tb <- getsState $ getActorBody target
   -- No @PosFidAndSight@ instead of @PosSight@, because both positions
   -- need to be seen to have the enemy actor in client's state.
-  return $! assert (slid == tlid) $ PosSight slid [sp, tp]
+  return $! assert (blid sb == blid tb) $ PosSight (blid sb) [bpos sb, bpos tb]
 
 singleContainer :: MonadStateRead m => Container -> m PosAtomic
 singleContainer (CFloor lid p) = return $! PosSight lid [p]
@@ -203,10 +202,9 @@ singleContainer (CEmbed lid p) = return $! PosSight lid [p]
 singleContainer (CActor aid CSha) = do  -- shared stash is private
   b <- getsState $ getActorBody aid
   return $! PosFidAndSer (Just $ blid b) (bfid b)
-singleContainer (CActor aid _) = do
-  (lid, p, fid) <- posOfAid aid
+singleContainer (CActor aid _) = singleAid aid
+singleContainer (CTrunk fid lid p) =
   return $! PosFidAndSight [fid] lid [p]
-singleContainer (CTrunk fid lid p) = return $! PosFidAndSight [fid] lid [p]
 
 -- | Decompose an atomic action. The decomposed actions give reduced
 -- information that still modifies client's state to match the server state

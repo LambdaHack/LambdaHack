@@ -2,7 +2,7 @@
 -- player actions. Has no access to the main action type.
 module Game.LambdaHack.Common.MonadStateRead
   ( MonadStateRead(..)
-  , getLevel, nUI, posOfAid, factionCanEscape
+  , getLevel, nUI, factionCanEscape
   , getGameMode, isNoConfirmsGame, getEntryArena, pickWeaponM
   ) where
 
@@ -20,7 +20,6 @@ import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
@@ -36,11 +35,6 @@ nUI :: MonadStateRead m => m Int
 nUI = do
   factionD <- getsState sfactionD
   return $! length $ filter (fhasUI . gplayer) $ EM.elems factionD
-
-posOfAid :: MonadStateRead m => ActorId -> m (LevelId, Point, FactionId)
-posOfAid aid = do
-  b <- getsState $ getActorBody aid
-  return (blid b, bpos b, bfid b)
 
 factionCanEscape :: MonadStateRead m => FactionId -> m Bool
 factionCanEscape fid = do
