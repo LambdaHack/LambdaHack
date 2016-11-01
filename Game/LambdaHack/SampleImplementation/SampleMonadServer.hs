@@ -22,7 +22,6 @@ import Control.Monad.Trans.State.Strict hiding (State)
 import qualified Data.EnumMap.Strict as EM
 import System.FilePath
 
-import Game.LambdaHack.Atomic.BroadcastAtomicWrite
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Atomic.MonadStateWrite
@@ -35,7 +34,7 @@ import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Thread
 import Game.LambdaHack.Server
-import Game.LambdaHack.Server.CommonM
+import Game.LambdaHack.Server.BroadcastAtomic
 import Game.LambdaHack.Server.FileM
 import Game.LambdaHack.Server.HandleAtomicM
 import Game.LambdaHack.Server.MonadServer
@@ -104,17 +103,7 @@ handleAndBroadcastServer atomic = do
   case atomic of
     UpdAtomic cmd -> cmdAtomicSemSer cmd
     SfxAtomic _sfx -> return ()
-  sperFidOld <- getsServer sperFid
-  knowEvents <- getsServer $ sknowEvents . sdebugSer
-  let checkSetPerValid fid lid = do
-        res <- getsServer $ (EM.! lid) . (EM.! fid) . sperValidFid
-        unless res $
-          modifyServer $ \ser ->
-            ser {sperValidFid = EM.adjust (EM.insert lid True) fid
-                                $ sperValidFid ser}
-        return res
-  handleAndBroadcast knowEvents sperFidOld checkSetPerValid recomputeCachePer
-                     sendUpdate sendSfx atomic
+  handleAndBroadcast atomic
 
 -- Don't inline this, to keep GHC hard work inside the library.
 -- | Run an action in the @IO@ monad, with undefined state.

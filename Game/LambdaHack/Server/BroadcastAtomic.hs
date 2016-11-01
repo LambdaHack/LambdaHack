@@ -1,7 +1,7 @@
 -- | Sending atomic commands to clients and executing them on the server.
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
-module Game.LambdaHack.Atomic.BroadcastAtomicWrite
+module Game.LambdaHack.Server.BroadcastAtomic
   ( handleAndBroadcast
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -29,6 +29,10 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Server.CommonM
+import Game.LambdaHack.Server.MonadServer
+import Game.LambdaHack.Server.ProtocolM
+import Game.LambdaHack.Server.State
 
 -- TODO: split into simpler pieces
 
@@ -37,7 +41,7 @@ import Game.LambdaHack.Common.State
 --  maybe skip (\a -> modifyServer $ \ser -> ser {sundo = a : sundo ser})
 --    $ Nothing   -- TODO: undoCmdAtomic atomic
 
-handleCmdAtomicServer :: forall m. MonadStateWrite m
+handleCmdAtomicServer :: MonadStateWrite m
                       => PosAtomic -> CmdAtomic -> m ()
 {-# INLINE handleCmdAtomicServer #-}
 handleCmdAtomicServer posAtomic atomic =
@@ -46,19 +50,19 @@ handleCmdAtomicServer posAtomic atomic =
     handleCmdAtomic atomic
 
 -- | Send an atomic action to all clients that can see it.
-handleAndBroadcast :: forall m. MonadStateWrite m
-                   => Bool
-                   -> PerFid
-                   -> (FactionId -> LevelId -> m Bool)
-                   -> (FactionId -> LevelId -> m Perception)
-                   -> (FactionId -> UpdAtomic -> m ())
-                   -> (FactionId -> SfxAtomic -> m ())
-                   -> CmdAtomic
-                   -> m ()
+handleAndBroadcast :: (MonadStateWrite m, MonadServerReadRequest m)
+                   => CmdAtomic -> m ()
 {-# INLINE handleAndBroadcast #-}
-handleAndBroadcast knowEvents sperFidOld checkSetPerValid doRecomputeCachePer
-                   doSendUpdate doSendSfx atomic = do
-  -- Gather data from the old state.
+handleAndBroadcast atomic = do
+  let checkSetPerValid fid lid = do
+        res <- getsServer $ (EM.! lid) . (EM.! fid) . sperValidFid
+        unless res $
+          modifyServer $ \ser ->
+            ser {sperValidFid = EM.adjust (EM.insert lid True) fid
+                                $ sperValidFid ser}
+        return res
+  knowEvents <- getsServer $ sknowEvents . sdebugSer
+  sperFidOld <- getsServer sperFid
   sOld <- getState
   factionDold <- getsState sfactionD
   (ps, atomicBroken, psBroken) <-
@@ -73,7 +77,8 @@ handleAndBroadcast knowEvents sperFidOld checkSetPerValid doRecomputeCachePer
         atomicBroken <- breakSfxAtomic sfx
         psBroken <- mapM posSfxAtomic atomicBroken
         return (ps, map SfxAtomic atomicBroken, psBroken)
-  -- Perform the action on the server.
+  -- Perform the action on the server. The only part that requires
+  -- @MonadStateWrite@.
   handleCmdAtomicServer ps atomic
   -- Invariant: if the various resets determine we do not need to update FOV,
   -- perception (@psight@ to be precise, @psmell@ is irrelevant)
@@ -83,12 +88,12 @@ handleAndBroadcast knowEvents sperFidOld checkSetPerValid doRecomputeCachePer
   -- with deep equality these assertions can be expensive; optimize.
   --
   -- Send some actions to the clients, one faction at a time.
-  let sendUpdate fid (UpdAtomic cmd) = doSendUpdate fid cmd
-      sendUpdate fid (SfxAtomic sfx) = doSendSfx fid sfx
+  let sendAtomic fid (UpdAtomic cmd) = sendUpdate fid cmd
+      sendAtomic fid (SfxAtomic sfx) = sendSfx fid sfx
       breakSend lid fid perNew = do
         let send2 (atomic2, ps2) =
               if seenAtomicCli knowEvents fid perNew ps2
-                then sendUpdate fid atomic2
+                then sendAtomic fid atomic2
                 else do
                   -- We take the new leader, from after cmd execution.
                   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
@@ -98,28 +103,28 @@ handleAndBroadcast knowEvents sperFidOld checkSetPerValid doRecomputeCachePer
                       loud <- loudUpdAtomic (blid body == lid) fid cmd
                       case loud of
                         Nothing -> return ()
-                        Just msg -> doSendSfx fid $ SfxMsgAll msg
+                        Just msg -> sendSfx fid $ SfxMsgAll msg
                     _ -> return ()
         mapM_ send2 $ zip atomicBroken psBroken
       anySend lid fid perOld perNew = do
         let startSeen = seenAtomicCli knowEvents fid perOld ps
             endSeen = seenAtomicCli knowEvents fid perNew ps
         if startSeen && endSeen
-          then sendUpdate fid atomic
+          then sendAtomic fid atomic
           else breakSend lid fid perNew
       posLevel lid fid = do
         let perOld = sperFidOld EM.! fid EM.! lid
         perValid <- checkSetPerValid fid lid
         if perValid then anySend lid fid perOld perOld
         else do
-          perNew <- doRecomputeCachePer fid lid
+          perNew <- recomputeCachePer fid lid
           let inPer = diffPer perNew perOld
               outPer = diffPer perOld perNew
           if nullPer outPer && nullPer inPer
             then anySend lid fid perOld perOld
             else do
               unless knowEvents $ do  -- inconsistencies would quickly manifest
-                doSendUpdate fid $ UpdPerception lid outPer inPer
+                sendUpdate fid $ UpdPerception lid outPer inPer
                 let remember = atomicRemember lid inPer sOld
                     seenNew = seenAtomicCli False fid perNew
                     seenOld = seenAtomicCli False fid perOld
@@ -128,7 +133,7 @@ handleAndBroadcast knowEvents sperFidOld checkSetPerValid doRecomputeCachePer
                 let !_A = assert (allB seenNew psRem) ()
                 -- Verify that we remember only new things.
                 let !_A = assert (allB (not . seenOld) psRem) ()
-                mapM_ (doSendUpdate fid) remember
+                mapM_ (sendUpdate fid) remember
               anySend lid fid perOld perNew
       -- TODO: simplify; best after state-diffs approach tried
       send = case ps of
@@ -141,11 +146,11 @@ handleAndBroadcast knowEvents sperFidOld checkSetPerValid doRecomputeCachePer
           let perOld = sperFidOld EM.! fid EM.! lid
           in anySend lid fid perOld perOld
         PosFid fid2 -> \fid ->
-          when (fid == fid2) $ sendUpdate fid atomic
+          when (fid == fid2) $ sendAtomic fid atomic
         PosFidAndSer Nothing fid2 -> \fid ->
-          when (fid == fid2) $ sendUpdate fid atomic
+          when (fid == fid2) $ sendAtomic fid atomic
         PosSer -> \_ -> return ()
-        PosAll -> \fid -> sendUpdate fid atomic
+        PosAll -> \fid -> sendAtomic fid atomic
         PosNone -> \_ -> return ()
   mapWithKeyM_ (\fid _ -> send fid) factionDold
 

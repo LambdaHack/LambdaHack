@@ -95,7 +95,6 @@ flag release
 library
   exposed-modules:    Game.LambdaHack.Atomic
                       Game.LambdaHack.Atomic.CmdAtomic
-                      Game.LambdaHack.Atomic.BroadcastAtomicWrite
                       Game.LambdaHack.Atomic.HandleAtomicWrite
                       Game.LambdaHack.Atomic.MonadAtomic
                       Game.LambdaHack.Atomic.MonadStateWrite
@@ -192,6 +191,7 @@ library
                       Game.LambdaHack.SampleImplementation.SampleMonadClientAsThread
                       Game.LambdaHack.SampleImplementation.SampleMonadServer
                       Game.LambdaHack.Server
+                      Game.LambdaHack.Server.BroadcastAtomic
                       Game.LambdaHack.Server.Commandline
                       Game.LambdaHack.Server.CommonM
                       Game.LambdaHack.Server.DebugM
