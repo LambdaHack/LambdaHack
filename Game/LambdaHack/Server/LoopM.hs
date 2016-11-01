@@ -73,7 +73,6 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
   restored <- tryRestore cops sdebug
   case restored of
     Just (sRaw, ser, dict) | not $ snewGameSer sdebug -> do  -- a restored game
-      -- First, set the previous cops, to send consistent info to clients.
       execUpdAtomic $ UpdResumeServer $ updateCOps (const cops) sRaw
       putDict dict
       updateCopsDict copsClient sconfig sdebugCli
@@ -84,8 +83,6 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
       initPer
       pers <- getsServer sperFid
       broadcastUpdAtomic $ \fid -> UpdResume fid (pers EM.! fid)
-      -- @sRaw@ is correct here, because none of the above changes State.
-      execUpdAtomic $ UpdResumeServer $ updateCOps (const cops) sRaw
       -- We dump RNG seeds here, in case the game wasn't run
       -- with --dumpInitRngs previously and we need to seeds.
       when (sdumpInitRngs sdebug) dumpRngs

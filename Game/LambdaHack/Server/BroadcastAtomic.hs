@@ -62,6 +62,10 @@ handleAndBroadcast atomic = do
                                 $ sperValidFid ser}
         return res
   sOld <- getState
+  -- This is calculated in the server State before action (simulating
+  -- current client State, because action has not been applied
+  -- on the client yet; the same in @atomicRemember@).
+  -- E.g., actor's position in @breakUpdAtomic@ is assumed to be post-action.
   (ps, atomicBroken, psBroken) <-
     case atomic of
       UpdAtomic cmd -> do
@@ -75,7 +79,7 @@ handleAndBroadcast atomic = do
         psBroken <- mapM posSfxAtomic atomicBroken
         return (ps, map SfxAtomic atomicBroken, psBroken)
   -- Perform the action on the server. The only part that requires
-  -- @MonadStateWrite@.
+  -- @MonadStateWrite@ and modifies server State.
   handleCmdAtomicServer ps atomic
   knowEvents <- getsServer $ sknowEvents . sdebugSer
   sperFidOld <- getsServer sperFid
@@ -118,6 +122,7 @@ handleAndBroadcast atomic = do
         perValid <- checkSetPerValid fid lid
         if perValid then anySend lid fid perOld
         else do
+          -- Performed in the State after action, e.g., with a new actor.
           perNew <- recomputeCachePer fid lid
           let inPer = diffPer perNew perOld
               outPer = diffPer perOld perNew

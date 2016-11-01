@@ -206,10 +206,7 @@ singleContainer (CActor aid _) = do
   return $! PosSight lid [p]
 singleContainer (CTrunk fid lid p) = return $! PosFidAndSight [fid] lid [p]
 
--- | Decompose an atomic action. The original action is visible
--- if it's positions are visible both before and after the action
--- (in between the FOV might have changed). The decomposed actions
--- are only tested vs the FOV after the action and they give reduced
+-- | Decompose an atomic action. The decomposed actions give reduced
 -- information that still modifies client's state to match the server state
 -- wrt the current FOV and the subset of @posUpdAtomic@ that is visible.
 -- The original actions give more information not only due to spanning
@@ -299,6 +296,7 @@ seenAtomicSer :: PosAtomic -> Bool
 seenAtomicSer posAtomic =
   case posAtomic of
     PosFid _ -> False
+    PosNone -> assert `failure` "no position possible" `twith` posAtomic
     _ -> True
 
 -- | Generate the atomic updates that jointly perform a given item move.
