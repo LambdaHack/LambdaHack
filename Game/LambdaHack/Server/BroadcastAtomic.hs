@@ -61,10 +61,7 @@ handleAndBroadcast atomic = do
             ser {sperValidFid = EM.adjust (EM.insert lid True) fid
                                 $ sperValidFid ser}
         return res
-  knowEvents <- getsServer $ sknowEvents . sdebugSer
-  sperFidOld <- getsServer sperFid
   sOld <- getState
-  factionDold <- getsState sfactionD
   (ps, atomicBroken, psBroken) <-
     case atomic of
       UpdAtomic cmd -> do
@@ -80,6 +77,8 @@ handleAndBroadcast atomic = do
   -- Perform the action on the server. The only part that requires
   -- @MonadStateWrite@.
   handleCmdAtomicServer ps atomic
+  knowEvents <- getsServer $ sknowEvents . sdebugSer
+  sperFidOld <- getsServer sperFid
   -- Invariant: if the various resets determine we do not need to update FOV,
   -- perception (@psight@ to be precise, @psmell@ is irrelevant)
   -- of any faction does not change upon full recomputation. Otherwise,
@@ -90,9 +89,9 @@ handleAndBroadcast atomic = do
   -- Send some actions to the clients, one faction at a time.
   let sendAtomic fid (UpdAtomic cmd) = sendUpdate fid cmd
       sendAtomic fid (SfxAtomic sfx) = sendSfx fid sfx
-      breakSend lid fid perNew = do
+      breakSend lid fid perFidLid = do
         let send2 (atomic2, ps2) =
-              if seenAtomicCli knowEvents fid perNew ps2
+              if seenAtomicCli knowEvents fid perFidLid ps2
                 then sendAtomic fid atomic2
                 else do
                   -- We take the new leader, from after cmd execution.
@@ -106,45 +105,45 @@ handleAndBroadcast atomic = do
                         Just msg -> sendSfx fid $ SfxMsgAll msg
                     _ -> return ()
         mapM_ send2 $ zip atomicBroken psBroken
-      anySend lid fid perOld perNew = do
-        let startSeen = seenAtomicCli knowEvents fid perOld ps
-            endSeen = seenAtomicCli knowEvents fid perNew ps
-        if startSeen && endSeen
-          then sendAtomic fid atomic
-          else breakSend lid fid perNew
+      -- We assume players perceive perception change before the action,
+      -- so the action is perceived in the new perception,
+      -- even though the new perception depends on the action's outcome
+      -- (e.g., new actor created).
+      anySend lid fid perFidLid =
+        if seenAtomicCli knowEvents fid perFidLid ps
+        then sendAtomic fid atomic
+        else breakSend lid fid perFidLid
       posLevel lid fid = do
         let perOld = sperFidOld EM.! fid EM.! lid
         perValid <- checkSetPerValid fid lid
-        if perValid then anySend lid fid perOld perOld
+        if perValid then anySend lid fid perOld
         else do
           perNew <- recomputeCachePer fid lid
           let inPer = diffPer perNew perOld
               outPer = diffPer perOld perNew
-          if nullPer outPer && nullPer inPer
-            then anySend lid fid perOld perOld
-            else do
-              unless knowEvents $ do  -- inconsistencies would quickly manifest
-                sendUpdate fid $ UpdPerception lid outPer inPer
-                let remember = atomicRemember lid inPer sOld
-                    seenNew = seenAtomicCli False fid perNew
-                    seenOld = seenAtomicCli False fid perOld
-                psRem <- mapM posUpdAtomic remember
-                -- Verify that we remember only currently seen things.
-                let !_A = assert (allB seenNew psRem) ()
-                -- Verify that we remember only new things.
-                let !_A = assert (allB (not . seenOld) psRem) ()
-                mapM_ (sendUpdate fid) remember
-              anySend lid fid perOld perNew
+          unless (nullPer outPer && nullPer inPer) $ do
+            unless knowEvents $ do  -- inconsistencies would quickly manifest
+              sendUpdate fid $ UpdPerception lid outPer inPer
+              let remember = atomicRemember lid inPer sOld
+                  seenNew = seenAtomicCli False fid perNew
+                  seenOld = seenAtomicCli False fid perOld
+              psRem <- mapM posUpdAtomic remember
+              -- Verify that we remember only currently seen things.
+              let !_A = assert (allB seenNew psRem) ()
+              -- Verify that we remember only new things.
+              let !_A = assert (allB (not . seenOld) psRem) ()
+              mapM_ (sendUpdate fid) remember
+          anySend lid fid perNew
       -- TODO: simplify; best after state-diffs approach tried
       send = case ps of
         PosSight lid _ -> posLevel lid
         PosFidAndSight _ lid _ -> posLevel lid
         PosFidAndSer (Just lid) _ -> posLevel lid
-        -- In the following cases, from the assertion above,
-        -- @resets@ is false here and broken atomic has the same ps.
+        -- In the following cases perception is unchanged and broken atomic
+        -- has the same ps.
         PosSmell lid _ -> \fid ->
           let perOld = sperFidOld EM.! fid EM.! lid
-          in anySend lid fid perOld perOld
+          in anySend lid fid perOld
         PosFid fid2 -> \fid ->
           when (fid == fid2) $ sendAtomic fid atomic
         PosFidAndSer Nothing fid2 -> \fid ->
@@ -152,7 +151,10 @@ handleAndBroadcast atomic = do
         PosSer -> \_ -> return ()
         PosAll -> \fid -> sendAtomic fid atomic
         PosNone -> \_ -> return ()
-  mapWithKeyM_ (\fid _ -> send fid) factionDold
+  -- Faction that are eliminated by the command are processed as well,
+  -- because they are not deleted from @sfactionD@.
+  factionD <- getsState sfactionD
+  mapWithKeyM_ (\fid _ -> send fid) factionD
 
 atomicRemember :: LevelId -> Perception -> State -> [UpdAtomic]
 {-# INLINE atomicRemember #-}
@@ -166,12 +168,10 @@ atomicRemember lid inPer s =
   let inFov = ES.elems $ totalVisible inPer
       lvl = sdungeon s EM.! lid
       -- Actors.
-      carriedAssocs b = getCarriedAssocs b s
-      inPrio = concatMap (\p -> posToAssocs p lid s) inFov
-      fActor (aid, b) =
-        let ais = carriedAssocs b
-        in UpdSpotActor aid b ais
-      inActor = map fActor inPrio
+      inAssocs = concatMap (\p -> posToAssocs p lid s) inFov
+      fActor (aid, b) = let ais = getCarriedAssocs b s
+                        in UpdSpotActor aid b ais
+      inActor = map fActor inAssocs
       -- Items.
       pMaybe p = maybe Nothing (\x -> Just (p, x))
       inContainer fc itemFloor =
