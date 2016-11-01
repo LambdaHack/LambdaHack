@@ -517,9 +517,7 @@ effectSummon execSfx actorFreq nDm source target = do
         Just aid -> do
           b <- getsState $ getActorBody aid
           mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
-          when (isNothing mleader) $
-            execUpdAtomic
-            $ UpdLeadFaction (bfid b) Nothing (Just aid)
+          when (isNothing mleader) $ supplantLeader (bfid b) aid
           return True
     return $! or bs
 
@@ -643,8 +641,7 @@ switchLevels2 lidNew posNew (aid, bOld) mlead = do
   execUpdAtomic $ UpdCreateActor aid bNew ais
   case mlead of
     Nothing -> return ()
-    Just leader ->
-      execUpdAtomic $ UpdLeadFaction side Nothing (Just leader)
+    Just leader -> supplantLeader side leader
 
 -- ** Escape
 

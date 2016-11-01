@@ -29,7 +29,6 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.ModeKind
 
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.
@@ -109,11 +108,7 @@ posUpdAtomic cmd = case cmd of
   UpdTrajectory aid _ _ -> singleAid aid
   UpdColorActor aid _ _ -> singleAid aid
   UpdQuitFaction{} -> return PosAll
-  UpdLeadFaction fid _ _ -> do
-    fact <- getsState $ (EM.! fid) . sfactionD
-    return $! if fleaderMode (gplayer fact) /= LeaderNull
-              then PosFidAndSer Nothing fid
-              else PosNone
+  UpdLeadFaction fid _ _ -> return $ PosFidAndSer Nothing fid
   UpdDiplFaction{} -> return PosAll
   UpdTacticFaction fid _ _ -> return $! PosFidAndSer Nothing fid
   UpdAutoFaction{} -> return PosAll
@@ -304,7 +299,6 @@ seenAtomicSer :: PosAtomic -> Bool
 seenAtomicSer posAtomic =
   case posAtomic of
     PosFid _ -> False
-    PosNone -> False
     _ -> True
 
 -- | Generate the atomic updates that jointly perform a given item move.

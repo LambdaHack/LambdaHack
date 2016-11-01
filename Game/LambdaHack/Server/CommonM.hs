@@ -2,7 +2,8 @@
 -- | Server operations common to many modules.
 module Game.LambdaHack.Server.CommonM
   ( execFailure, getPerFid
-  , revealItems, moveStores, deduceQuits, deduceKilled, electLeader
+  , revealItems, moveStores, deduceQuits, deduceKilled
+  , electLeader, supplantLeader
   , addActor, addActorIid, projectFail
   , pickWeaponServer, actorSkillsServer
   , recomputeCachePer
@@ -226,6 +227,12 @@ electLeader fid lid aidDead = do
           [] -> Nothing
           aid : _ -> Just aid
     execUpdAtomic $ UpdLeadFaction fid mleader mleaderNew
+
+supplantLeader :: MonadAtomic m => FactionId -> ActorId -> m ()
+supplantLeader fid aid = do
+  fact <- getsState $ (EM.! fid) . sfactionD
+  unless (fleaderMode (gplayer fact) == LeaderNull) $ do
+    execUpdAtomic $ UpdLeadFaction fid (gleader fact) (Just aid)
 
 projectFail :: (MonadAtomic m, MonadServer m)
             => ActorId    -- ^ actor projecting the item (is on current lvl)

@@ -60,8 +60,7 @@ spawnMonster lid = do
       Just aid -> do
         b <- getsState $ getActorBody aid
         mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
-        when (isNothing mleader) $
-          execUpdAtomic $ UpdLeadFaction (bfid b) Nothing (Just aid)
+        when (isNothing mleader) $ supplantLeader (bfid b) aid
 
 addAnyActor :: (MonadAtomic m, MonadServer m)
             => Freqs ItemKind -> LevelId -> Time -> Maybe Point
@@ -202,7 +201,7 @@ dominateFid fid target = do
       return $! Tile.isStair cotile $ lvl `at` bpos body
   unless keepLeader $
     -- Focus on the dominated actor, by making him a leader.
-    execUpdAtomic $ UpdLeadFaction fid mleaderOld (Just target)
+    supplantLeader fid target
 
 -- | Advance the move time for the given actor
 advanceTime :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
@@ -345,7 +344,6 @@ leadLevelSwitch = do
                 (lid, a) <- rndToAction $ frequency
                                         $ toFreq "leadLevel" freqList
                 unless (lid == blid body) $  -- flip levels rather than actors
-                  execUpdAtomic
-                  $ UpdLeadFaction (bfid body) (gleader fact) (Just a)
+                  supplantLeader (bfid body) a
   factionD <- getsState sfactionD
   mapM_ flipFaction $ EM.elems factionD
