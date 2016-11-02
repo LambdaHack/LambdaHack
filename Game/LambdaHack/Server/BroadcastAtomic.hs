@@ -54,6 +54,14 @@ handleAndBroadcast :: (MonadStateWrite m, MonadServerReadRequest m)
                    => CmdAtomic -> m ()
 {-# INLINE handleAndBroadcast #-}
 handleAndBroadcast atomic = do
+  let checkSetPerValid fid lid = do
+        res <- getsServer $ (EM.! lid) . (EM.! fid) . sperValidFid
+        unless res $
+          modifyServer $ \ser ->
+            ser {sperValidFid = EM.adjust (EM.insert lid True) fid
+                                $ sperValidFid ser}
+        return res
+  sOld <- getState
   -- This is calculated in the server State before action (simulating
   -- current client State, because action has not been applied
   -- on the client yet; the same in @atomicRemember@).
@@ -75,7 +83,11 @@ handleAndBroadcast atomic = do
   handleCmdAtomicServer ps atomic
   knowEvents <- getsServer $ sknowEvents . sdebugSer
   sperFidOld <- getsServer sperFid
-  -- TODO: assert that the sum of psBroken is equal to ps;
+  -- Invariant: if the various resets determine we do not need to update FOV,
+  -- perception (@psight@ to be precise, @psmell@ is irrelevant)
+  -- of any faction does not change upon full recomputation. Otherwise,
+  -- save/restore would change game state (see also the assertions in gameExit).
+  -- TODO: assert also that the sum of psBroken is equal to ps;
   -- with deep equality these assertions can be expensive; optimize.
   --
   -- Send some actions to the clients, one faction at a time.
@@ -97,20 +109,46 @@ handleAndBroadcast atomic = do
                         Just msg -> sendSfx fid $ SfxMsgAll msg
                     _ -> return ()
         mapM_ send2 $ zip atomicBroken psBroken
+      -- We assume players perceive perception change before the action,
+      -- so the action is perceived in the new perception,
+      -- even though the new perception depends on the action's outcome
+      -- (e.g., new actor created).
       anySend lid fid perFidLid =
         if seenAtomicCli knowEvents fid perFidLid ps
         then sendAtomic fid atomic
         else breakSend lid fid perFidLid
       posLevel lid fid = do
-        anySend lid fid $ sperFidOld EM.! fid EM.! lid
-        updatePer fid lid
+        let perOld = sperFidOld EM.! fid EM.! lid
+        perValid <- checkSetPerValid fid lid
+        if perValid then anySend lid fid perOld
+        else do
+          -- Performed in the State after action, e.g., with a new actor.
+          perNew <- recomputeCachePer fid lid
+          let inPer = diffPer perNew perOld
+              outPer = diffPer perOld perNew
+          unless (nullPer outPer && nullPer inPer) $ do
+            unless knowEvents $ do  -- inconsistencies would quickly manifest
+              sendUpdate fid $ UpdPerception lid outPer inPer
+              let remember = atomicRemember lid inPer sOld
+                  seenNew = seenAtomicCli False fid perNew
+                  seenOld = seenAtomicCli False fid perOld
+              psRem <- mapM posUpdAtomic remember
+              -- Verify that we remember only currently seen things.
+              let !_A = assert (allB seenNew psRem) ()
+              -- Verify that we remember only new things.
+              let !_A = assert (allB (not . seenOld) psRem) ()
+              mapM_ (sendUpdate fid) remember
+          anySend lid fid perNew
       -- TODO: simplify; best after state-diffs approach tried
       send = case ps of
         PosSight lid _ -> posLevel lid
         PosFidAndSight _ lid _ -> posLevel lid
         PosFidAndSer (Just lid) _ -> posLevel lid
-        -- In the following cases broken atomic has the same ps.
-        PosSmell lid _ -> posLevel lid
+        -- In the following cases perception is unchanged and broken atomic
+        -- has the same ps.
+        PosSmell lid _ -> \fid ->
+          let perOld = sperFidOld EM.! fid EM.! lid
+          in anySend lid fid perOld
         PosFid fid2 -> \fid ->
           when (fid == fid2) $ sendAtomic fid atomic
         PosFidAndSer Nothing fid2 -> \fid ->
@@ -122,36 +160,6 @@ handleAndBroadcast atomic = do
   -- because they are not deleted from @sfactionD@.
   factionD <- getsState sfactionD
   mapWithKeyM_ (\fid _ -> send fid) factionD
-
-updatePer :: MonadServerReadRequest m => FactionId -> LevelId -> m ()
-updatePer fid lid = do
-  perValid <- do
-    res <- getsServer $ (EM.! lid) . (EM.! fid) . sperValidFid
-    unless res $
-      modifyServer $ \ser ->
-        ser {sperValidFid = EM.adjust (EM.insert lid True) fid
-                            $ sperValidFid ser}
-    return res
-  unless perValid $ do
-    knowEvents <- getsServer $ sknowEvents . sdebugSer
-    sperFidOld <- getsServer sperFid
-    let perOld = sperFidOld EM.! fid EM.! lid
-    -- Performed in the State after action, e.g., with a new actor.
-    perNew <- recomputeCachePer fid lid
-    let inPer = diffPer perNew perOld
-        outPer = diffPer perOld perNew
-    unless (nullPer outPer && nullPer inPer) $ do
-      unless knowEvents $ do  -- inconsistencies would quickly manifest
-        sendUpdate fid $ UpdPerception lid outPer inPer
-        remember <- getsState $ atomicRemember lid inPer
-        let seenNew = seenAtomicCli False fid perNew
-            seenOld = seenAtomicCli False fid perOld
-        psRem <- mapM posUpdAtomic remember
-        -- Verify that we remember only currently seen things.
-        let !_A = assert (allB seenNew psRem) ()
-        -- Verify that we remember only new things.
---        let !_A = assert (allB (not . seenOld) psRem) ()
-        mapM_ (sendUpdate fid) remember
 
 atomicRemember :: LevelId -> Perception -> State -> [UpdAtomic]
 {-# INLINE atomicRemember #-}
