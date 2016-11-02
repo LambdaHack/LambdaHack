@@ -165,15 +165,16 @@ endClip arenas = do
   time <- getsState stime
   let clipN = time `timeFit` timeClip
       clipInTurn = let r = timeTurn `timeFit` timeClip
-                   in assert (r > 2) r
+                   in assert (r >= 5) r
   when (clipN `mod` writeSaveClips == 0) $ do
     modifyServer $ \ser -> ser {swriteSave = False}
     writeSaveAll False
   when (clipN `mod` leadLevelClips == 0) leadLevelSwitch
-  when (clipN `mod` clipInTurn == 1) $ do
+  when (clipN `mod` clipInTurn == 2) $
     -- Periodic activation only once per turn, for speed,
     -- but on all active arenas.
     mapM_ applyPeriodicLevel arenas
+  when (clipN `mod` clipInTurn == 4) $ do
     -- Add monsters each turn, not each clip.
     -- Do this on only one of the arenas to prevent micromanagement,
     -- e.g., spreading leaders across levels to bump monster generation.
@@ -295,6 +296,7 @@ gameExit = do
   -- debugPrint "Server kills clients"
   killAllClients
   -- Verify that the not saved caches are equal to future reconstructed.
+  -- Otherwise, save/restore would change game state.
   sperFid <- getsServer sperFid
   sperCacheFid <- getsServer sperCacheFid
   sperValidFid <- getsServer sperValidFid
