@@ -17,6 +17,7 @@ import Game.LambdaHack.Common.Prelude
 import Control.Arrow ((&&&))
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.Key (mapWithKeyM_)
 import qualified Data.Ord as Ord
 
 import Game.LambdaHack.Atomic
@@ -43,6 +44,7 @@ import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Server.BroadcastAtomic
 import Game.LambdaHack.Server.EndM
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.HandleEffectM
@@ -165,20 +167,29 @@ endClip arenas = do
   time <- getsState stime
   let clipN = time `timeFit` timeClip
       clipInTurn = let r = timeTurn `timeFit` timeClip
-                   in assert (r > 2) r
+                   in assert (r >= 5) r
+      middleOfTurn = clipInTurn `div` 2 + 1
   when (clipN `mod` writeSaveClips == 0) $ do
     modifyServer $ \ser -> ser {swriteSave = False}
     writeSaveAll False
   when (clipN `mod` leadLevelClips == 0) leadLevelSwitch
-  when (clipN `mod` clipInTurn == 1) $ do
+  when (clipN `mod` clipInTurn == 3) $
     -- Periodic activation only once per turn, for speed,
     -- but on all active arenas.
     mapM_ applyPeriodicLevel arenas
+  when (clipN `mod` clipInTurn == 4) $ do
     -- Add monsters each turn, not each clip.
     -- Do this on only one of the arenas to prevent micromanagement,
     -- e.g., spreading leaders across levels to bump monster generation.
     arena <- rndToAction $ oneOf arenas
     spawnMonster arena
+  when (clipN `mod` clipInTurn `elem` [1, middleOfTurn]) $ do
+    -- Update perception twice per turn on all active arenas.
+    -- If a non-leader, non-projectile actor moves faster than twice a turn
+    -- and he gets blocked --- tough luck.
+    factionD <- getsState sfactionD
+    mapWithKeyM_ (\fid _ -> mapM_ (updatePer fid) arenas) factionD
+    -- TODO: searching unknown, etc. will fail with monsters faster than 2 moves/turn (perhaps wait? or compute per then?); also, currently it will fail after game restore, because Fov is not computed at restored game's start, but a bit later; also possibly inactive arenas need to be updated sometimes before or after they are made active
 
 -- | Trigger periodic items for all actors on the given level.
 applyPeriodicLevel :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
@@ -256,6 +267,7 @@ handleActors lid = do
                             || fleaderMode (gplayer fact) == LeaderNull)
           mainUIunderAI = mainUIactor && isAIFact fact
           doQueryUI = mainUIactor && not (isAIFact fact)
+      when aidIsLeader $ updatePer side lid
       when mainUIunderAI $ do
         cmdS <- sendQueryUI side aid
         case fst cmdS of
@@ -295,6 +307,14 @@ gameExit = do
   -- debugPrint "Server kills clients"
   killAllClients
   -- Verify that the not saved caches are equal to future reconstructed.
+  -- Otherwise, save/restore would change game state (see also the assertions
+  -- in gameExit).
+  -- TODO: to make this hold, we have to update the caches, so we guarantee
+  -- that save/restore at most updates perception.
+  factionD <- getsState sfactionD
+  dungeon <- getsState sdungeon
+  mapWithKeyM_ (\fid _ ->
+    mapWithKeyM_ (\lid _ -> updatePer fid lid) dungeon) factionD
   sperFid <- getsServer sperFid
   sperCacheFid <- getsServer sperCacheFid
   sperValidFid <- getsServer sperValidFid

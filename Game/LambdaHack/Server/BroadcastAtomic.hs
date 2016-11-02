@@ -2,7 +2,7 @@
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Server.BroadcastAtomic
-  ( handleAndBroadcast
+  ( handleAndBroadcast, updatePer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , handleCmdAtomicServer, atomicRemember
@@ -101,9 +101,7 @@ handleAndBroadcast atomic = do
         if seenAtomicCli knowEvents fid perFidLid ps
         then sendAtomic fid atomic
         else breakSend lid fid perFidLid
-      posLevel lid fid = do
-        anySend lid fid $ sperFidOld EM.! fid EM.! lid
-        updatePer fid lid
+      posLevel lid fid = anySend lid fid $ sperFidOld EM.! fid EM.! lid
       -- TODO: simplify; best after state-diffs approach tried
       send = case ps of
         PosSight lid _ -> posLevel lid
@@ -122,17 +120,30 @@ handleAndBroadcast atomic = do
   -- because they are not deleted from @sfactionD@.
   factionD <- getsState sfactionD
   mapWithKeyM_ (\fid _ -> send fid) factionD
+  case atomic of
+    UpdAtomic cmd -> case cmd of
+      -- Creation of our actors impacts FOV a lot, so update FOV ASAP.
+      -- This includes ascending, domination, teleportation, etc.
+      UpdCreateActor _ b _ -> updatePer (bfid b) (blid b)
+      UpdSpotActor _ b _ -> updatePer (bfid b) (blid b)
+      -- Chain-displacing also modifies FOV a lot and then displaced
+      -- actor can still act, so his FOV should be updated.
+      UpdDisplaceActor _source target -> do
+        b <- getsState $ getActorBody target
+        updatePer (bfid b) (blid b)
+      -- Opening doors, etc., affect FOV greatly and is not common.
+      UpdAlterTile lid _ _ _ ->
+        mapWithKeyM_ (\fid _ -> updatePer fid lid) factionD
+      _ -> return ()
+    SfxAtomic _ -> return ()
 
 updatePer :: MonadServerReadRequest m => FactionId -> LevelId -> m ()
 updatePer fid lid = do
-  perValid <- do
-    res <- getsServer $ (EM.! lid) . (EM.! fid) . sperValidFid
-    unless res $
-      modifyServer $ \ser ->
-        ser {sperValidFid = EM.adjust (EM.insert lid True) fid
-                            $ sperValidFid ser}
-    return res
+  perValid <- getsServer $ (EM.! lid) . (EM.! fid) . sperValidFid
   unless perValid $ do
+    modifyServer $ \ser ->
+      ser {sperValidFid = EM.adjust (EM.insert lid True) fid
+                          $ sperValidFid ser}
     knowEvents <- getsServer $ sknowEvents . sdebugSer
     sperFidOld <- getsServer sperFid
     let perOld = sperFidOld EM.! fid EM.! lid
@@ -145,11 +156,13 @@ updatePer fid lid = do
         sendUpdate fid $ UpdPerception lid outPer inPer
         remember <- getsState $ atomicRemember lid inPer
         let seenNew = seenAtomicCli False fid perNew
-            seenOld = seenAtomicCli False fid perOld
+--            seenOld = seenAtomicCli False fid perOld
         psRem <- mapM posUpdAtomic remember
         -- Verify that we remember only currently seen things.
         let !_A = assert (allB seenNew psRem) ()
-        -- Verify that we remember only new things.
+        -- Verify that we remember only new things,
+        -- but now e.g., actors are added by actions before,
+        -- so they will not appear new. TODO; refine somehow
 --        let !_A = assert (allB (not . seenOld) psRem) ()
         mapM_ (sendUpdate fid) remember
 
