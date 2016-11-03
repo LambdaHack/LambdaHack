@@ -207,8 +207,8 @@ applyPeriodicLevel lid = do
       applyPeriodicActor aid = do
         applyPeriodicCStore aid COrgan
         applyPeriodicCStore aid CEqp
-  allActors <- getsState $ actorRegularIds (const True) lid
-  mapM_ applyPeriodicActor allActors
+  allActors <- getsServer $ (EM.! lid) . sactorTime
+  mapM_ applyPeriodicActor $ EM.keys allActors
 
 -- | Perform moves for individual actors, as long as there are actors
 -- with the next move time less or equal to the end of current cut-off.

@@ -229,7 +229,6 @@ advanceTime !aid = do
   -- faction's actors on the level. Effectively, this limits moves of
   -- a faction on a level to 10, regardless of the number of actors
   -- and their speeds.
-  -- TODO: use sactorTime for actorAssocs, etc.
   unless (bproj b || bwait b) $ do
     levelTime <- getsServer $ (EM.! blid b) . sactorTime
     s <- getState
