@@ -166,9 +166,6 @@ endClip arenas = do
   let clipN = time `timeFit` timeClip
       clipInTurn = let r = timeTurn `timeFit` timeClip
                    in assert (r >= 5) r
-  when (clipN `mod` writeSaveClips == 0) $ do
-    modifyServer $ \ser -> ser {swriteSave = False}
-    writeSaveAll False
   when (clipN `mod` leadLevelClips == 0) leadLevelSwitch
   when (clipN `mod` clipInTurn == 2) $
     -- Periodic activation only once per turn, for speed,
@@ -180,6 +177,9 @@ endClip arenas = do
     -- e.g., spreading leaders across levels to bump monster generation.
     arena <- rndToAction $ oneOf arenas
     spawnMonster arena
+  when (clipN `mod` writeSaveClips == 0) $ do
+    modifyServer $ \ser -> ser {swriteSave = False}
+    writeSaveAll False
 
 -- | Trigger periodic items for all actors on the given level.
 applyPeriodicLevel :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
