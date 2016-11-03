@@ -222,6 +222,13 @@ advanceTime !aid = do
             localPlusDelta = localTime `timeShift` delta
         in localPlusDelta `timeDeltaToFrom` btime b
   execUpdAtomic $ UpdAgeActor aid t  -- @t@ may be negative; that's OK
+  -- Add communication overhead time delta to all non-projectile, non-dying
+  -- faction's actors on the level. Effectively, this limits moves of
+  -- a faction on a level to 10, regardless of the number of actor
+  -- and their speeds.
+  unless (bproj b || bwait b) $ do
+    as <- getsState $ actorRegularIds (== bfid b) $ blid b
+    mapM_ (\aid2 -> execUpdAtomic $ UpdAgeActor aid2 $ Delta timeClip) as
 
 -- | Swap the relative move times of two actors (e.g., when switching
 -- a UI leader).
