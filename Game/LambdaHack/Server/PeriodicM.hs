@@ -225,18 +225,21 @@ advanceTime !aid = do
   -- @t@ may be negative; that's OK.
   modifyServer $ \ser ->
     ser {sactorTime = ageActor (blid b) aid t $ sactorTime ser}
-  -- Add communication overhead time delta to all non-projectile, non-dying
+  -- Add communication overhead time delta to all non-projectile
   -- faction's actors on the level. Effectively, this limits moves of
-  -- a faction on a level to 10, regardless of the number of actor
+  -- a faction on a level to 10, regardless of the number of actors
   -- and their speeds.
-  -- TODO: speed up
   -- TODO: use sactorTime for actorAssocs, etc.
   unless (bproj b || bwait b) $ do
-    as <- getsState $ actorRegularIds (== bfid b) $ blid b
-    let f aid2 = modifyServer $ \ser ->
-          ser {sactorTime = ageActor (blid b) aid2 (Delta timeClip)
-                            $ sactorTime ser}
-    mapM_ f as
+    levelTime <- getsServer $ (EM.! blid b) . sactorTime
+    s <- getState
+    let f !aid2 !time = let body = getActorBody aid2 s
+                        in if not (bproj body) && bfid body == bfid b
+                           then timeShift time (Delta timeClip)
+                           else time
+        levelTimeNew = EM.mapWithKey f levelTime
+    modifyServer $ \ser ->
+      ser {sactorTime = EM.insert (blid b) levelTimeNew $ sactorTime ser}
 
 -- | Swap the relative move times of two actors (e.g., when switching
 -- a UI leader).

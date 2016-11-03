@@ -100,11 +100,12 @@ instance Show RNGs where
 type ActorTime = EM.EnumMap LevelId (EM.EnumMap ActorId Time)
 
 updateActorTime :: LevelId -> ActorId -> Time -> ActorTime -> ActorTime
-updateActorTime lid aid time =
+updateActorTime !lid !aid !time =
   EM.insertWith EM.union lid (EM.singleton aid time)
 
 ageActor :: LevelId -> ActorId -> Delta Time -> ActorTime -> ActorTime
-ageActor lid aid delta = EM.adjust (EM.adjust (flip timeShift delta) aid) lid
+ageActor !lid !aid !delta =
+  EM.adjust (EM.adjust (flip timeShift delta) aid) lid
 
 -- | Initial, empty game server state.
 emptyStateServer :: StateServer
