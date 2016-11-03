@@ -178,11 +178,14 @@ dominateFid fid target = do
   ais <- getsState $ getCarriedAssocs tb
   actorAspect <- getsServer sactorAspect
   let ar = actorAspect EM.! target
+  btime <- getsServer $ (EM.! target) . (EM.! blid tb) . sactorTime
   execUpdAtomic $ UpdLoseActor target tb ais
   let bNew = tb { bfid = fid
                 , bfidImpressed = bfid tb
                 , bcalm = max 0 $ xM (aMaxCalm ar) `div` 2 }
   execUpdAtomic $ UpdSpotActor target bNew ais
+  modifyServer $ \ser ->
+    ser {sactorTime = updateActorTime (blid tb) target btime $ sactorTime ser}
   let discoverSeed (iid, cstore) = do
         seed <- getsServer $ (EM.! iid) . sitemSeedD
         item <- getsState $ getItemBody iid
@@ -229,7 +232,7 @@ advanceTime !aid = do
   -- faction's actors on the level. Effectively, this limits moves of
   -- a faction on a level to 10, regardless of the number of actors
   -- and their speeds.
-  unless (bproj b || bwait b) $ do
+  unless (bproj b || Just (bpos b) == boldpos b) $ do
     levelTime <- getsServer $ (EM.! blid b) . sactorTime
     s <- getState
     let f !aid2 !time =
