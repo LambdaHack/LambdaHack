@@ -57,7 +57,6 @@ unknownLevel Kind.COps{cotile=Kind.Ops{ouniqGroup}}
              lsecret lhidden lescape =
   let outerId = ouniqGroup "basic outer fence"
   in Level { ldepth
-           , lprio = EM.empty
            , lfloor = EM.empty
            , lembed = EM.empty
            , lactor = EM.empty

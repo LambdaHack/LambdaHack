@@ -216,22 +216,24 @@ handleActors :: (MonadAtomic m, MonadServerReadRequest m)
              => LevelId -> m ()
 handleActors lid = do
   localTime <- getsState $ getLocalTime lid
-  Level{lprio} <- getLevel lid
+  levelTime <- getsServer $ (EM.! lid) . sactorTime
   quit <- getsServer squit
   factionD <- getsState sfactionD
   s <- getState
   let -- Actors of the same faction move together.
-      notDead (_, b) = not $ actorDying b
+      notDying (_, b) = not $ actorDying b
       notProj (_, b) = not $ bproj b
-      notLeader (aid, b) = Just aid /= gleader (factionD EM.! bfid b)
+      notLeader ((aid, _), b) = Just aid /= gleader (factionD EM.! bfid b)
       order = Ord.comparing $
-        notDead &&& notProj &&& bfid . snd &&& notLeader &&& bsymbol . snd
-      (atime, as) = EM.findMin lprio
-      ams = map (\a -> (a, getActorBody a s)) as
-      mnext | EM.null lprio = Nothing  -- no actor alive, wait until it spawns
-            | otherwise = if atime > localTime
-                          then Nothing  -- no actor is ready for another move
-                          else Just $ minimumBy order ams
+        snd . fst &&& notDying &&& notProj &&& bfid . snd
+        &&& notLeader &&& bsymbol . snd
+      as = map (\(a, atime) -> ((a, atime), getActorBody a s))
+           $ EM.assocs levelTime
+      maa | null as = Nothing  -- no actor alive, wait until it spawns
+          | otherwise = Just $ minimumBy order as
+      mnext = case maa of
+        Just ((a, atime), b) | atime <= localTime -> Just (a, b)
+        _ -> Nothing  -- no actor is ready for another move
   case mnext of
     _ | quit -> return ()
     Nothing -> return ()

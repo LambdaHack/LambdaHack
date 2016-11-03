@@ -224,7 +224,6 @@ levelFromCaveKind Kind.COps{coTileSpeedup}
                   lsecret lescape =
   let lvl = Level
         { ldepth
-        , lprio = EM.empty
         , lfloor = EM.empty
         , lembed = EM.empty  -- is populated inside $MonadServer$
         , lactor = EM.empty

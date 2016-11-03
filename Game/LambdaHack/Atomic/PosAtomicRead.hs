@@ -101,7 +101,6 @@ posUpdAtomic cmd = case cmd of
     b <- getsState $ getActorBody aid
     return $! PosFidAndSer (Just $ blid b) (bfid b)
   UpdMoveItem _ _ aid _ _ -> singleAid aid
-  UpdAgeActor aid _ -> singleAid aid
   UpdRefillHP aid _ -> singleAid aid
   UpdRefillCalm aid _ -> singleAid aid
   UpdFidImpressedActor aid _ _ -> singleAid aid

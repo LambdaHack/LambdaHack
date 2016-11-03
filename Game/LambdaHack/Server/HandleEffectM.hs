@@ -543,13 +543,14 @@ effectAscend recursiveCall execSfx k source target = do
        -- We keep it useful even in shallow dungeons.
        recursiveCall $ IK.Teleport 30  -- powerful teleport
      | otherwise -> do
+       btime_bOld <- getsServer $ (EM.! target) . (EM.! lid1) . sactorTime
        let switch1 = void $ switchLevels1 (target, b1)
            switch2 = do
              -- Make the initiator of the stair move the leader,
              -- to let him clear the stairs for others to follow.
              let mlead = Just target
              -- Move the actor to where the inhabitants were, if any.
-             switchLevels2 lid2 pos2 (target, b1) mlead
+             switchLevels2 lid2 pos2 (target, b1) btime_bOld mlead
              -- Verify only one non-projectile actor on every tile.
              !_ <- getsState $ posToAssocs pos1 lid1  -- assertion is inside
              !_ <- getsState $ posToAssocs pos2 lid2  -- assertion is inside
@@ -578,8 +579,10 @@ effectAscend recursiveCall execSfx k source target = do
                  -- so possibly has nothing worhwhile to do on the new level
                  -- (and could try to switch back, if made a leader,
                  -- leading to a loop).
+                 btime_inh <-
+                   getsServer $ (EM.! fst inh) . (EM.! lid2) . sactorTime
                  inhMLead <- switchLevels1 inh
-                 switchLevels2 lid1 pos1 inh inhMLead
+                 switchLevels2 lid1 pos1 inh btime_inh inhMLead
            mapM_ moveInh inhabitants
            -- Move the actor to his destination.
            switch2
@@ -605,9 +608,9 @@ switchLevels1 (aid, bOld) = do
   return mlead
 
 switchLevels2 ::(MonadAtomic m, MonadServer m)
-              => LevelId -> Point -> (ActorId, Actor) -> Maybe ActorId
+              => LevelId -> Point -> (ActorId, Actor) -> Time -> Maybe ActorId
               -> m ()
-switchLevels2 lidNew posNew (aid, bOld) mlead = do
+switchLevels2 lidNew posNew (aid, bOld) btime_bOld mlead = do
   let lidOld = blid bOld
       side = bfid bOld
   let !_A = assert (lidNew /= lidOld `blame` "stairs looped" `twith` lidNew) ()
@@ -628,7 +631,6 @@ switchLevels2 lidNew posNew (aid, bOld) mlead = do
       setTimeout :: ItemBag -> ItemBag
       setTimeout = EM.map computeNewTimeout
       bNew = bOld { blid = lidNew
-                  , btime = shiftByDelta $ btime bOld
                   , bpos = posNew
                   , boldpos = Just posNew  -- new level, new direction
                   , boldlid = lidOld  -- record old level
@@ -639,6 +641,9 @@ switchLevels2 lidNew posNew (aid, bOld) mlead = do
   -- sees new surroundings and has to reset his perception.
   ais <- getsState $ getCarriedAssocs bOld
   execUpdAtomic $ UpdCreateActor aid bNew ais
+  let btime = shiftByDelta $ btime_bOld
+  modifyServer $ \ser ->
+    ser {sactorTime = updateActorTime lidNew aid btime $ sactorTime ser}
   case mlead of
     Nothing -> return ()
     Just leader -> supplantLeader side leader
@@ -676,7 +681,8 @@ effectParalyze execSfx nDm target = do
     then return False
     else do
       let t = timeDeltaScale (Delta timeClip) p
-      execUpdAtomic $ UpdAgeActor target t
+      modifyServer $ \ser ->
+        ser {sactorTime = ageActor (blid b) target t $ sactorTime ser}
       execSfx
       return True
 
@@ -693,7 +699,8 @@ effectInsertMove execSfx nDm target = do
   let ar = actorAspect EM.! target
   let tpm = ticksPerMeter $ bspeed b ar
       t = timeDeltaScale tpm (-p)
-  execUpdAtomic $ UpdAgeActor target t
+  modifyServer $ \ser ->
+    ser {sactorTime = ageActor (blid b) target t $ sactorTime ser}
   execSfx
   return True
 
@@ -998,7 +1005,9 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
               let ar = actorAspect EM.! target
                   tpm = ticksPerMeter $ bspeed tb ar
                   delta = timeDeltaScale tpm (-1)
-              execUpdAtomic $ UpdAgeActor target delta
+              modifyServer $ \ser ->
+                ser {sactorTime = ageActor (blid tb) target delta
+                                  $ sactorTime ser}
               execSfx
               return True
 

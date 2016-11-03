@@ -4,7 +4,7 @@
 -- TODO: Document an export list after it's rewritten according to #17.
 module Game.LambdaHack.Common.ActorState
   ( fidActorNotProjAssocs, fidActorNotProjList
-  , actorAssocs, actorList, actorIds
+  , actorAssocs, actorList
   , actorRegularAssocs, actorRegularList, actorRegularIds
   , bagAssocs, bagAssocsK, calculateTotal
   , mergeItemQuant, sharedAllOwnedFid, findIid
@@ -63,9 +63,6 @@ actorList :: (FactionId -> Bool) -> LevelId -> State -> [Actor]
 actorList p lid s =
   let f b = blid b == lid && p (bfid b)
   in filter f $ EM.elems $ sactorD s
-
-actorIds :: LevelId -> State -> [ActorId]
-actorIds lid s = concat $ EM.elems $ lprio $ sdungeon s EM.! lid
 
 actorRegularAssocs :: (FactionId -> Bool) -> LevelId -> State
                    -> [(ActorId, Actor)]

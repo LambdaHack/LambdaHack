@@ -7,7 +7,7 @@ module Game.LambdaHack.Atomic.HandleAtomicWrite
     -- * Internal operations
   , updCreateActor, updDestroyActor, updCreateItem, updDestroyItem
   , updMoveActor, updWaitActor, updDisplaceActor, updMoveItem
-  , updAgeActor, updRefillHP, updRefillCalm, updFidImpressedActor
+  , updRefillHP, updRefillCalm, updFidImpressedActor
   , updTrajectory, updColorActor, updQuitFaction, updLeadFaction
   , updDiplFaction, updTacticFaction, updAutoFaction, updRecordKill
   , updAlterTile, updAlterClear, updLearnSecrets, updSpotTile, updLoseTile
@@ -67,7 +67,6 @@ handleUpdAtomic cmd = case cmd of
   UpdWaitActor aid toWait -> updWaitActor aid toWait
   UpdDisplaceActor source target -> updDisplaceActor source target
   UpdMoveItem iid k aid c1 c2 -> updMoveItem iid k aid c1 c2
-  UpdAgeActor aid t -> updAgeActor aid t
   UpdRefillHP aid n -> updRefillHP aid n
   UpdRefillCalm aid n -> updRefillCalm aid n
   UpdFidImpressedActor aid fromFid toFid ->
@@ -128,8 +127,7 @@ updCreateActor aid body ais = do
                                 `twith` (aid, body, l))
 #endif
         (Just $ aid : l)
-  updateLevel (blid body) $ updatePrio (EM.alter g (btime body))
-                          . updateActorMap (EM.alter g (bpos body))
+  updateLevel (blid body) $ updateActorMap (EM.alter g (bpos body))
   -- Actor's items may or may not be already present in @sitemD@,
   -- regardless if they are already present otherwise in the dungeon.
   -- We re-add them all to save time determining which really need it.
@@ -177,8 +175,7 @@ updDestroyActor aid body ais = do
 #endif
         (let l2 = delete aid l
          in if null l2 then Nothing else Just l2)
-  updateLevel (blid body) $ updatePrio (EM.alter g (btime body))
-                          . updateActorMap (EM.alter g (bpos body))
+  updateLevel (blid body) $ updateActorMap (EM.alter g (bpos body))
 
 -- | Create a few copies of an item that is already registered for the dungeon
 -- (in @sitemRev@ field of @StateServer@).
@@ -251,35 +248,6 @@ updMoveItem iid k aid c1 c2 = assert (k > 0 && c1 /= c2) $ do
     Just (_, it) -> do
       deleteItemActor iid (k, take k it) aid c1
       insertItemActor iid (k, take k it) aid c2
-
--- This is equaivalent to (but much cheaper than) updDestroyActor
--- followed by updCreateActor.
-updAgeActor :: MonadStateWrite m => ActorId -> Delta Time -> m ()
-updAgeActor aid delta = assert (delta /= Delta timeZero) $ do
-  body <- getsState $ getActorBody aid
-  let newBody = body {btime = timeShift (btime body) delta}
-      -- Remove actor from @sprio@ at old time.
-      rmPrio Nothing = assert `failure` "actor already removed"
-                              `twith` (aid, body)
-      rmPrio (Just l) =
-#ifdef WITH_EXPENSIVE_ASSERTIONS
-        assert (aid `elem` l `blame` "actor already removed"
-                             `twith` (aid, body, l))
-#endif
-        (let l2 = delete aid l
-         in if null l2 then Nothing else Just l2)
-      -- Add actor to @sprio@ at new time.
-      addPrio Nothing = Just [aid]
-      addPrio (Just l) =
-#ifdef WITH_EXPENSIVE_ASSERTIONS
-        assert (aid `notElem` l `blame` "actor already added"
-                                `twith` (aid, body, l))
-#endif
-        (Just $ aid : l)
-      updPrio = EM.alter addPrio (btime newBody) . EM.alter rmPrio (btime body)
-  updateLevel (blid body) $ updatePrio updPrio
-  -- Modify actor body in @sactorD@.
-  modifyState $ updateActorD $ EM.insert aid newBody
 
 updRefillHP :: MonadStateWrite m => ActorId -> Int64 -> m ()
 updRefillHP aid n =

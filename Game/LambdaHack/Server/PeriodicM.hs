@@ -207,6 +207,7 @@ dominateFid fid target = do
 advanceTime :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 advanceTime !aid = do
   b <- getsState $ getActorBody aid
+  btime_b <- getsServer $ (EM.! aid) . (EM.! blid b) . sactorTime
   localTime <- getsState $ getLocalTime (blid b)
   actorAspect <- getsServer sactorAspect
   let ar = actorAspect EM.! aid
@@ -220,15 +221,22 @@ advanceTime !aid = do
         | otherwise =
         let delta = if bproj b then Delta timeZero else halfStandardTurn
             localPlusDelta = localTime `timeShift` delta
-        in localPlusDelta `timeDeltaToFrom` btime b
-  execUpdAtomic $ UpdAgeActor aid t  -- @t@ may be negative; that's OK
+        in localPlusDelta `timeDeltaToFrom` btime_b
+  -- @t@ may be negative; that's OK.
+  modifyServer $ \ser ->
+    ser {sactorTime = ageActor (blid b) aid t $ sactorTime ser}
   -- Add communication overhead time delta to all non-projectile, non-dying
   -- faction's actors on the level. Effectively, this limits moves of
   -- a faction on a level to 10, regardless of the number of actor
   -- and their speeds.
+  -- TODO: speed up
+  -- TODO: use sactorTime for actorAssocs, etc.
   unless (bproj b || bwait b) $ do
     as <- getsState $ actorRegularIds (== bfid b) $ blid b
-    mapM_ (\aid2 -> execUpdAtomic $ UpdAgeActor aid2 $ Delta timeClip) as
+    let f aid2 = modifyServer $ \ser ->
+          ser {sactorTime = ageActor (blid b) aid2 (Delta timeClip)
+                            $ sactorTime ser}
+    mapM_ f as
 
 -- | Swap the relative move times of two actors (e.g., when switching
 -- a UI leader).
@@ -238,22 +246,26 @@ swapTime source target = do
   tb <- getsState $ getActorBody target
   slvl <- getsState $ getLocalTime (blid sb)
   tlvl <- getsState $ getLocalTime (blid tb)
+  btime_sb <- getsServer $ (EM.! source) . (EM.! blid sb) . sactorTime
+  btime_tb <- getsServer $ (EM.! target) . (EM.! blid tb) . sactorTime
   let lvlDelta = slvl `timeDeltaToFrom` tlvl
-      bDelta = btime sb `timeDeltaToFrom` btime tb
+      bDelta = btime_sb `timeDeltaToFrom` btime_tb
       sdelta = timeDeltaSubtract lvlDelta bDelta
       tdelta = timeDeltaReverse sdelta
   -- Equivalent, for the assert:
-  let !_A = let sbodyDelta = btime sb `timeDeltaToFrom` slvl
-                tbodyDelta = btime tb `timeDeltaToFrom` tlvl
+  let !_A = let sbodyDelta = btime_sb `timeDeltaToFrom` slvl
+                tbodyDelta = btime_tb `timeDeltaToFrom` tlvl
                 sgoal = slvl `timeShift` tbodyDelta
                 tgoal = tlvl `timeShift` sbodyDelta
-                sdelta' = sgoal `timeDeltaToFrom` btime sb
-                tdelta' = tgoal `timeDeltaToFrom` btime tb
+                sdelta' = sgoal `timeDeltaToFrom` btime_sb
+                tdelta' = tgoal `timeDeltaToFrom` btime_tb
             in assert (sdelta == sdelta' && tdelta == tdelta'
-                      `blame` ( slvl, tlvl, btime sb, btime tb
+                      `blame` ( slvl, tlvl, btime_sb, btime_tb
                               , sdelta, sdelta', tdelta, tdelta' )) ()
-  when (sdelta /= Delta timeZero) $ execUpdAtomic $ UpdAgeActor source sdelta
-  when (tdelta /= Delta timeZero) $ execUpdAtomic $ UpdAgeActor target tdelta
+  when (sdelta /= Delta timeZero) $ modifyServer $ \ser ->
+    ser {sactorTime = ageActor (blid sb) source sdelta $ sactorTime ser}
+  when (tdelta /= Delta timeZero) $ modifyServer $ \ser ->
+    ser {sactorTime = ageActor (blid tb) target tdelta $ sactorTime ser}
 
 -- | Check if the given actor is dominated and update his calm.
 -- We don't update calm once per game turn (even though

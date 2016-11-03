@@ -72,7 +72,6 @@ data UpdAtomic =
   | UpdDisplaceActor !ActorId !ActorId
   | UpdMoveItem !ItemId !Int !ActorId !CStore !CStore
   -- Change actor attributes.
-  | UpdAgeActor !ActorId !(Delta Time)
   | UpdRefillHP !ActorId !Int64
   | UpdRefillCalm !ActorId !Int64
   | UpdFidImpressedActor !ActorId !FactionId !FactionId
@@ -155,7 +154,6 @@ undoUpdAtomic cmd = case cmd of
   UpdWaitActor aid toWait -> Just $ UpdWaitActor aid (not toWait)
   UpdDisplaceActor source target -> Just $ UpdDisplaceActor target source
   UpdMoveItem iid k aid c1 c2 -> Just $ UpdMoveItem iid k aid c2 c1
-  UpdAgeActor aid delta -> Just $ UpdAgeActor aid (timeDeltaReverse delta)
   UpdRefillHP aid n -> Just $ UpdRefillHP aid (-n)
   UpdRefillCalm aid n -> Just $ UpdRefillCalm aid (-n)
   UpdFidImpressedActor aid fromFid toFid ->

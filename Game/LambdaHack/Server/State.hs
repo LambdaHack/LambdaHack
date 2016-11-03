@@ -3,6 +3,7 @@ module Game.LambdaHack.Server.State
   ( StateServer(..), emptyStateServer
   , DebugModeSer(..), defDebugModeSer
   , RNGs(..)
+  , ActorTime, updateActorTime, ageActor
   ) where
 
 import Prelude ()
@@ -23,13 +24,15 @@ import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Perception
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ItemRev
 
 -- | Global, server state.
 data StateServer = StateServer
-  { sdiscoKind    :: !DiscoveryKind     -- ^ full item kind discoveries data
+  { sactorTime    :: !ActorTime         -- ^ absolute times of next actions
+  , sdiscoKind    :: !DiscoveryKind     -- ^ full item kind discoveries data
   , sdiscoKindRev :: !DiscoveryKindRev  -- ^ reverse map, used for item creation
   , suniqueSet    :: !UniqueSet         -- ^ already generated unique items
   , sdiscoAspect  :: !DiscoveryAspect   -- ^ full item aspect data
@@ -94,11 +97,21 @@ instance Show RNGs where
                        startingRandomGenerator ]
     in unwords args
 
+type ActorTime = EM.EnumMap LevelId (EM.EnumMap ActorId Time)
+
+updateActorTime :: LevelId -> ActorId -> Time -> ActorTime -> ActorTime
+updateActorTime lid aid time =
+  EM.insertWith EM.union lid (EM.singleton aid time)
+
+ageActor :: LevelId -> ActorId -> Delta Time -> ActorTime -> ActorTime
+ageActor lid aid delta = EM.adjust (EM.adjust (flip timeShift delta) aid) lid
+
 -- | Initial, empty game server state.
 emptyStateServer :: StateServer
 emptyStateServer =
   StateServer
-    { sdiscoKind = EM.empty
+    { sactorTime = EM.empty
+    , sdiscoKind = EM.empty
     , sdiscoKindRev = EM.empty
     , suniqueSet = ES.empty
     , sdiscoAspect = EM.empty
@@ -147,6 +160,7 @@ defDebugModeSer = DebugModeSer { sknowMap = False
 
 instance Binary StateServer where
   put StateServer{..} = do
+    put sactorTime
     put sdiscoKind
     put sdiscoKindRev
     put suniqueSet
@@ -163,6 +177,7 @@ instance Binary StateServer where
     put sheroNames
     put sdebugSer
   get = do
+    sactorTime <- get
     sdiscoKind <- get
     sdiscoKindRev <- get
     suniqueSet <- get

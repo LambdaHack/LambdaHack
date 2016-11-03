@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.Level
   ( -- * Dungeon
     LevelId, AbsDepth, Dungeon, ascendInBranch
     -- * The @Level@ type and its components
-  , Level(..), ActorPrio, ItemFloor, ActorMap, TileMap, SmellMap
+  , Level(..), ItemFloor, ActorMap, TileMap, SmellMap
     -- * Level query
   , at, accessible, accessibleUnknown, accessibleDir
   , knownLsecret, isSecretPos, hideTile, findPos, findPosTry, findPosTry2
@@ -49,9 +49,6 @@ ascendInBranch dungeon k lid =
     _ | ln == lid -> []
     _ -> ascendInBranch dungeon k ln  -- jump over gaps
 
--- | Actor time priority queue.
-type ActorPrio = EM.EnumMap Time [ActorId]
-
 -- | Items located on map tiles.
 type ItemFloor = EM.EnumMap Point ItemBag
 
@@ -68,7 +65,6 @@ type SmellMap = EM.EnumMap Point Time
 -- carry a subset of the info in the client copies of levels.
 data Level = Level
   { ldepth      :: !AbsDepth   -- ^ absolute depth of the level
-  , lprio       :: !ActorPrio  -- ^ remembered actor times on the level
   , lfloor      :: !ItemFloor  -- ^ remembered items lying on the floor
   , lembed      :: !ItemFloor  -- ^ items embedded in the tile
   , lactor      :: !ActorMap   -- ^ seen actors at positions on the level
@@ -200,7 +196,6 @@ findPosTry2 numTries ltile m0 l g r = assert (numTries > 0) $
 instance Binary Level where
   put Level{..} = do
     put ldepth
-    put lprio
     put (assertSparseItems lfloor)
     put (assertSparseItems lembed)
     put (assertSparseActors lactor)
@@ -222,7 +217,6 @@ instance Binary Level where
     put lescape
   get = do
     ldepth <- get
-    lprio <- get
     lfloor <- get
     lembed <- get
     lactor <- get

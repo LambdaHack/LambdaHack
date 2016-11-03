@@ -46,7 +46,6 @@ data Actor = Actor
   , bcolor        :: !Color.Color  -- ^ individual map color
 
     -- Resources
-  , btime         :: !Time         -- ^ absolute time of next action
   , bhp           :: !Int64        -- ^ current hit points * 1M
   , bhpDelta      :: !ResDelta     -- ^ HP delta this turn * 1M
   , bcalm         :: !Int64        -- ^ current calm * 1M
@@ -130,10 +129,10 @@ partPronoun b = MU.Text $ bpronoun b
 -- | A template for a new actor.
 actorTemplate :: ItemId -> Char -> Text -> Text
               -> Color.Color -> Int64 -> Int64
-              -> Point -> LevelId -> Time -> FactionId
+              -> Point -> LevelId -> FactionId
               -> Actor
 actorTemplate btrunk bsymbol bname bpronoun bcolor bhp bcalm
-              bpos blid btime bfid =
+              bpos blid bfid =
   let btrajectory = Nothing
       boldpos = Nothing
       boldlid = blid
@@ -241,7 +240,6 @@ instance Binary Actor where
     put beqp
     put binv
     put bweapon
-    put btime
     put bwait
     put bfid
     put bfidImpressed
@@ -266,7 +264,6 @@ instance Binary Actor where
     beqp <- get
     binv <- get
     bweapon <- get
-    btime <- get
     bwait <- get
     bfid <- get
     bfidImpressed <- get

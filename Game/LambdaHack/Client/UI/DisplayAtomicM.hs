@@ -138,7 +138,6 @@ displayRespUpdAtomicUI verbose oldDiscoKind oldDiscoAspect cmd = case cmd of
   UpdDisplaceActor source target -> displaceActorUI source target
   UpdMoveItem iid k aid c1 c2 -> moveItemUI iid k aid c1 c2
   -- Change actor attributes.
-  UpdAgeActor{} -> return ()
   UpdRefillHP _ 0 -> return ()
   UpdRefillHP aid n -> do
     when verbose $

@@ -3,7 +3,7 @@ module Game.LambdaHack.Atomic.MonadStateWrite
   ( MonadStateWrite(..)
   , updateLevel, updateActor, updateFaction
   , insertItemContainer, insertItemActor, deleteItemContainer, deleteItemActor
-  , updatePrio, updateFloor, updateActorMap, moveActorMap
+  , updateFloor, updateActorMap, moveActorMap
   , updateTile, updateSmell
   ) where
 
@@ -27,10 +27,6 @@ import Game.LambdaHack.Common.State
 class MonadStateRead m => MonadStateWrite m where
   modifyState :: (State -> State) -> m ()
   putState    :: State -> m ()
-
--- | Update the actor time priority queue.
-updatePrio :: (ActorPrio -> ActorPrio) -> Level -> Level
-updatePrio f lvl = lvl {lprio = f (lprio lvl)}
 
 -- | Update the items on the ground map.
 updateFloor :: (ItemFloor -> ItemFloor) -> Level -> Level
