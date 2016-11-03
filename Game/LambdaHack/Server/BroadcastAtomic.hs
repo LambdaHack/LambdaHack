@@ -81,21 +81,24 @@ handleAndBroadcast atomic = do
   let sendAtomic fid (UpdAtomic cmd) = sendUpdate fid cmd
       sendAtomic fid (SfxAtomic sfx) = sendSfx fid sfx
       breakSend lid fid perFidLid = do
-        let send2 (atomic2, ps2) =
+        let hear2 atomic2 = do
+              -- We take the new leader, from after cmd execution.
+              mleader <- getsState $ gleader . (EM.! fid) . sfactionD
+              case (atomic2, mleader) of
+                (UpdAtomic cmd, Just leader) -> do
+                  body <- getsState $ getActorBody leader
+                  loud <- loudUpdAtomic (blid body == lid) fid cmd
+                  case loud of
+                    Nothing -> return ()
+                    Just msg -> sendSfx fid $ SfxMsgAll msg
+                _ -> return ()
+            send2 (atomic2, ps2) =
               if seenAtomicCli knowEvents fid perFidLid ps2
                 then sendAtomic fid atomic2
-                else do
-                  -- We take the new leader, from after cmd execution.
-                  mleader <- getsState $ gleader . (EM.! fid) . sfactionD
-                  case (atomic2, mleader) of
-                    (UpdAtomic cmd, Just leader) -> do
-                      body <- getsState $ getActorBody leader
-                      loud <- loudUpdAtomic (blid body == lid) fid cmd
-                      case loud of
-                        Nothing -> return ()
-                        Just msg -> sendSfx fid $ SfxMsgAll msg
-                    _ -> return ()
-        mapM_ send2 $ zip atomicBroken psBroken
+                else hear2 atomic2
+        case psBroken of
+          _ : _ -> mapM_ send2 $ zip atomicBroken psBroken
+          [] -> hear2 atomic
       -- We assume players perceive perception change before the action,
       -- so the action is perceived in the new perception,
       -- even though the new perception depends on the action's outcome

@@ -243,7 +243,7 @@ breakUpdAtomic cmd = case cmd of
   -- he's left with a hidden tile, which doesn't cause any trouble
   -- (because the commands doesn't change @State@ and the client-side
   -- processing of the command is lenient).
-  _ -> return [cmd]
+  _ -> return []
 
 -- | Decompose an atomic special effect.
 breakSfxAtomic :: MonadStateRead m => SfxAtomic -> m [SfxAtomic]
@@ -254,7 +254,7 @@ breakSfxAtomic cmd = case cmd of
     return $! [ SfxEffect (bfid sb) source (IK.RefillCalm (-1)) 0
               | not $ bproj sb ]
               ++ [SfxEffect (bfid sb) target (IK.RefillHP (-1)) (-1)]
-  _ -> return [cmd]
+  _ -> return []
 
 -- | Messages for some unseen game object creation/destruction/alteration.
 loudUpdAtomic :: MonadStateRead m
