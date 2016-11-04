@@ -38,14 +38,15 @@ import Game.LambdaHack.Server.State
 registerItem :: (MonadAtomic m, MonadServer m)
              => ItemFull -> ItemKnown -> ItemSeed -> Container -> Bool
              -> m ItemId
-registerItem itemFull itemKnown@(_, aspectRecord) seed container verbose = do
+registerItem ItemFull{..} itemKnown@(_, aspectRecord)
+             seed container verbose = do
   itemRev <- getsServer sitemRev
   let cmd = if verbose then UpdCreateItem else UpdSpotItem
   case HM.lookup itemKnown itemRev of
     Just iid -> do
       -- TODO: try to avoid this case for createItems,
       -- to make items more interesting
-      execUpdAtomic $ cmd iid (itemBase itemFull) (itemK itemFull, []) container
+      execUpdAtomic $ cmd iid itemBase (itemK, itemTimer) container
       return iid
     Nothing -> do
       icounter <- getsServer sicounter
@@ -55,7 +56,7 @@ registerItem itemFull itemKnown@(_, aspectRecord) seed container verbose = do
             , sitemRev = HM.insert itemKnown icounter (sitemRev ser)
             , sicounter = succ icounter }
       execUpdAtomic
-        $ cmd icounter (itemBase itemFull) (itemK itemFull, []) container
+        $ cmd icounter itemBase (itemK, itemTimer) container
       return $! icounter
 
 createLevelItem :: (MonadAtomic m, MonadServer m) => Point -> LevelId -> m ()

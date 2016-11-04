@@ -219,7 +219,7 @@ deleteItemSha :: MonadStateWrite m => ItemId -> ItemQuant -> FactionId -> m ()
 deleteItemSha iid kit fid =
   updateFaction fid $ \fact -> fact {gsha = rmFromBag kit iid (gsha fact)}
 
--- Removing the part of the kit from the front of the list,
+-- Removing the part of the kit from the back of the list,
 -- so that @DestroyItem kit (CreateItem kit x) == x@.
 rmFromBag :: ItemQuant -> ItemId -> ItemBag -> ItemBag
 rmFromBag kit@(k, rmIt) iid bag =
@@ -231,5 +231,5 @@ rmFromBag kit@(k, rmIt) iid bag =
           EQ -> Nothing  -- TODO: assert as below
           GT -> assert (rmIt == take k it
                         `blame` (rmIt, take k it, n, kit, iid, bag))
-                $ Just (n - k, drop k it)
+                $ Just (n - k, take (n - k) it)
   in EM.alter rfb iid bag

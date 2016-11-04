@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# OPTIONS_GHC -fprof-auto #-}
 -- | The main loop of the server, processing human and computer player
 -- moves turn by turn.
 module Game.LambdaHack.Server.LoopM
@@ -184,7 +185,9 @@ endClip arenas = do
 -- | Trigger periodic items for all actors on the given level.
 applyPeriodicLevel :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 applyPeriodicLevel lid = do
-  let applyPeriodicItem aid cstore iid = do
+  let applyPeriodicItem _ _ (_, (_, [])) = return ()
+        -- periodic items always have at least one timer
+      applyPeriodicItem aid cstore (iid, _) = do
         -- Check if the item is still in the bag (previous items act!).
         b <- getsState $ getActorBody aid
         bag <- getsState $ getBodyStoreBag b cstore
@@ -203,7 +206,7 @@ applyPeriodicLevel lid = do
       applyPeriodicCStore aid cstore = do
         b <- getsState $ getActorBody aid
         bag <- getsState $ getBodyStoreBag b cstore
-        mapM_ (applyPeriodicItem aid cstore) $ EM.keys bag
+        mapM_ (applyPeriodicItem aid cstore) $ EM.assocs bag
       applyPeriodicActor aid = do
         applyPeriodicCStore aid COrgan
         applyPeriodicCStore aid CEqp

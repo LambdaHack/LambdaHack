@@ -127,7 +127,7 @@ calculateTotal body s =
 
 mergeItemQuant :: ItemQuant -> ItemQuant -> ItemQuant
 {-# INLINE mergeItemQuant #-}
-mergeItemQuant (k1, it1) (k2, it2) = (k1 + k2, it1 ++ it2)
+mergeItemQuant (k2, it2) (k1, it1) = (k1 + k2, it1 ++ it2)
 
 sharedInv :: Actor -> State -> ItemBag
 sharedInv body s =

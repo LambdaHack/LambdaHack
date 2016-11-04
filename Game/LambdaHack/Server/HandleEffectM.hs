@@ -72,34 +72,28 @@ effectAndDestroy :: (MonadAtomic m, MonadServer m)
                  => ActorId -> ActorId -> ItemId -> Container -> Bool
                  -> [IK.Effect] -> ItemFull
                  -> m ()
-effectAndDestroy source target iid c periodic effs ItemFull{..} = do
-  let (timeout, isPeriodic) = case itemDisco of
-        Just ItemDisco{itemKind, itemAspect=Just ar} ->
-          (aTimeout ar, IK.Periodic `elem` IK.ieffects itemKind)
+effectAndDestroy source target iid container periodic effs ItemFull{..} = do
+  let timeout = case itemDisco of
+        Just ItemDisco{itemAspect=Just ar} -> aTimeout ar
         _ -> assert `failure` itemDisco
-  lid <- getsState $ lidFromC c
+  lid <- getsState $ lidFromC container
   localTime <- getsState $ getLocalTime lid
   let it1 = let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
                 charging startT = timeShift startT timeoutTurns > localTime
             in filter charging itemTimer
       len = length it1
       recharged = len < itemK
-  let !_A = assert (len <= itemK `blame` (source, target, iid, c)) ()
-  -- If there is no Timeout, but there are Recharging,
+  -- TODO: if has timeout and not recharged and manually activated,
+  -- report failure to player
+  -- TODO: If there is no Timeout, but there are Recharging,
   -- then such effects are disabled whenever the item is affected
   -- by a Discharge attack (TODO).
-  it2 <- case timeout of
-    n | n /= 0 && recharged ->
-      return $ localTime : it1
-    _ ->
-      -- TODO: if has timeout and not recharged, report failure
-      return it1
+      it2 = if timeout /= 0 && recharged then localTime : it1 else itemTimer
+      !_A = assert (len <= itemK `blame` (source, target, iid, container)) ()
   -- We use up the charge even if eventualy every effect fizzles. Tough luck.
   -- At least we don't destroy the item in such case. Also, we ID it regardless.
-  it3 <- if itemTimer /= it2 && not (timeout == 0 && isPeriodic) then do  -- TODO: if the second condition is only an optimization, write so and/or check Temporary instead
-           execUpdAtomic $ UpdTimeItem iid c itemTimer it2
-           return it2
-         else return itemTimer
+  unless (itemTimer == it2) $
+    execUpdAtomic $ UpdTimeItem iid container itemTimer it2
   -- If the activation is not periodic, trigger at least the effects
   -- that are not recharging and so don't depend on @recharged@.
   when (not periodic || recharged) $ do
@@ -117,17 +111,18 @@ effectAndDestroy source target iid c periodic effs ItemFull{..} = do
                in find tmpEffect effs
     let durable = IK.Durable `elem` jfeature itemBase
         imperishable = durable || periodic && isNothing mtmp
-        kit = if isNothing mtmp || periodic then (1, take 1 it3) else (itemK, it3)
+        kit = if isNothing mtmp || periodic then (1, take 1 it2) else (itemK, it2)
     unless imperishable $
-      execUpdAtomic $ UpdLoseItem iid itemBase kit c
+      execUpdAtomic $ UpdLoseItem iid itemBase kit container
     -- At this point, the item is potentially no longer in container @c@,
     -- so we don't pass @c@ along.
-    triggered <- itemEffectDisco source target iid c recharged periodic effs
+    triggered <-
+      itemEffectDisco source target iid container recharged periodic effs
     -- If none of item's effects was performed, we try to recreate the item.
     -- Regardless, we don't rewind the time, because some info is gained
     -- (that the item does not exhibit any effects in the given context).
     unless (triggered || imperishable) $
-      execUpdAtomic $ UpdSpotItem iid itemBase kit c
+      execUpdAtomic $ UpdSpotItem iid itemBase kit container
 
 itemEffectCause :: (MonadAtomic m, MonadServer m)
                 => ActorId -> Point -> IK.Effect

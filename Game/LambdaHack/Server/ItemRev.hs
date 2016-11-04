@@ -25,6 +25,7 @@ import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
@@ -115,7 +116,9 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldlGroup'}}
     let itemBase = buildItem flavour discoRev itemKindId itemKind jlid
         kindIx = jkindIx itemBase
         itemK = max 1 itemN
-        itemTimer = []
+        itemTimer = if IK.Periodic `elem` IK.ieffects itemKind
+                    then [timeZero]  -- delay first discharge of single organs
+                    else []
         itemAspectMean = kmMean $ EM.findWithDefault (assert `failure` kindIx) kindIx disco
         itemDiscoData = ItemDisco { itemKindId, itemKind, itemAspectMean
                                   , itemAspect = Just aspectRecord }
