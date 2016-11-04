@@ -21,7 +21,7 @@ import Data.Binary
 import qualified Data.Text.IO as T
 import System.Directory (renameFile)
 import System.FilePath
-import System.IO (hFlush, stderr)
+import System.IO (hFlush, stdout)
 import qualified System.Random as R
 
 import Game.LambdaHack.Client.FileM
@@ -53,8 +53,8 @@ debugPossiblyPrint :: MonadClient m => Text -> m ()
 debugPossiblyPrint t = do
   sdbgMsgCli <- getsClient $ sdbgMsgCli . sdebugCli
   when sdbgMsgCli $ liftIO $  do
-    T.hPutStrLn stderr t
-    hFlush stderr
+    T.hPutStrLn stdout t
+    hFlush stdout
 
 saveName :: FactionId -> Bool -> String
 saveName side isAI =

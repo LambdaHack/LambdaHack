@@ -352,7 +352,7 @@ executable LambdaHack
 -- This is the largest GHCJS_BUSY_YIELD value that does not cause dropped frames
 -- on my machine with default --maxFps.
     cpp-options:      -DGHCJS_BUSY_YIELD=50
-    ghc-options:      "-with-rtsopts=-A9m"
+    ghc-options:      "-with-rtsopts=-A99m"
   } else {
     build-depends:    zlib >= 0.5.3.1
     ghc-options:      "-with-rtsopts=-A99m -K100K"
@@ -405,7 +405,7 @@ test-suite test
 -- This is the largest GHCJS_BUSY_YIELD value that does not cause dropped frames
 -- on my machine with default --maxFps.
     cpp-options:      -DGHCJS_BUSY_YIELD=50
-    ghc-options:      "-with-rtsopts=-A9m"
+    ghc-options:      "-with-rtsopts=-A99m"
   } else {
     build-depends:    zlib >= 0.5.3.1
     ghc-options:      "-with-rtsopts=-A99m -K100K"

@@ -15,7 +15,7 @@ import qualified Control.Exception as Ex hiding (handle)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import System.FilePath
-import System.IO (hFlush, stderr)
+import System.IO (hFlush, stdout)
 import qualified System.Random as R
 
 -- TODO: refactor all this somehow, preferably restricting the use
@@ -117,5 +117,5 @@ delayPrint :: Text -> IO ()
 delayPrint t = do
   delay <- R.randomRIO (0, 1000000)
   threadDelay delay  -- try not to interleave saves with other clients
-  T.hPutStrLn stderr t
-  hFlush stderr
+  T.hPutStrLn stdout t
+  hFlush stdout

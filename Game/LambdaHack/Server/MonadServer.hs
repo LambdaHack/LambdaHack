@@ -27,7 +27,7 @@ import Data.Time.LocalTime
 import System.Directory ()
 import System.Exit (exitFailure)
 import System.FilePath
-import System.IO (hFlush, stderr)
+import System.IO (hFlush, stdout)
 import qualified System.Random as R
 
 import Game.LambdaHack.Common.Actor
@@ -58,29 +58,29 @@ debugPossiblyPrint :: MonadServer m => Text -> m ()
 debugPossiblyPrint t = do
   debug <- getsServer $ sdbgMsgSer . sdebugSer
   when debug $ liftIO $ do
-    T.hPutStrLn stderr t
-    hFlush stderr
+    T.hPutStrLn stdout t
+    hFlush stdout
 
 debugPossiblyPrintAndExit :: MonadServer m => Text -> m ()
 debugPossiblyPrintAndExit t = do
   debug <- getsServer $ sdbgMsgSer . sdebugSer
   when debug $ liftIO $ do
-    T.hPutStrLn stderr t
-    hFlush stderr
+    T.hPutStrLn stdout t
+    hFlush stdout
     exitFailure
 
 serverPrint :: MonadServer m => Text -> m ()
 serverPrint t = liftIO $ do
-  T.hPutStrLn stderr t
-  hFlush stderr
+  T.hPutStrLn stdout t
+  hFlush stdout
 
--- | Dumps RNG states from the start of the game to stderr.
+-- | Dumps RNG states from the start of the game to stdout.
 dumpRngs :: MonadServer m => m ()
 dumpRngs = do
   rngs <- getsServer srngs
   liftIO $ do
-    T.hPutStrLn stderr $ tshow rngs
-    hFlush stderr
+    T.hPutStrLn stdout $ tshow rngs
+    hFlush stdout
 
 -- TODO: refactor wrt Game.LambdaHack.Common.Save
 -- | Read the high scores dictionary. Return the empty table if no file.
