@@ -231,12 +231,12 @@ handleActors lid = do
         snd . fst &&& notDying &&& notProj &&& bfid . snd
         &&& notLeader &&& bsymbol . snd
       as = map (\(a, atime) -> ((a, atime), getActorBody a s))
-           $ EM.assocs levelTime
-      maa | null as = Nothing  -- no actor alive, wait until it spawns
+           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
+      maa | null as = Nothing
           | otherwise = Just $ minimumBy order as
       mnext = case maa of
-        Just ((a, atime), b) | atime <= localTime -> Just (a, b)
-        _ -> Nothing  -- no actor is ready for another move
+        Just ((a, _atime), b) -> Just (a, b)
+        Nothing -> Nothing
   case mnext of
     _ | quit -> return ()
     Nothing -> return ()
