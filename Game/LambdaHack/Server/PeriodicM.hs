@@ -232,6 +232,9 @@ advanceTime !aid = do
   -- faction's actors on the level. Effectively, this limits moves of
   -- a faction on a level to 10, regardless of the number of actors
   -- and their speeds.
+  -- TODO: this and handleActors can be sped up by keeping it per lid
+  -- and per fid, in a map from times to list of actors, separately
+  -- map for projectiles and dying and a map for others. Complex.
   unless (bproj b || Just (bpos b) == boldpos b) $ do
     levelTime <- getsServer $ (EM.! blid b) . sactorTime
     s <- getState

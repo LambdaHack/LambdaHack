@@ -57,7 +57,7 @@ import Game.LambdaHack.Server.State
 
 -- | Start a game session, including the clients, and then loop,
 -- communicating with the clients.
-loopSer :: (MonadAtomic m, MonadServerReadRequest m)
+loopSer :: forall m. (MonadAtomic m, MonadServerReadRequest m)
         => DebugModeSer  -- ^ server debug parameters
         -> KeyKind -> Config -> DebugModeCli
         -> (SessionUI -> Kind.COps -> FactionId -> ChanServer ResponseUI RequestUI -> IO ())
@@ -121,18 +121,21 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
                           else Just <$> getEntryArena fact
         factionD <- getsState sfactionD
         marenas <- mapM factionArena $ EM.elems factionD
-        let arenas = ES.toList $ ES.fromList $ catMaybes marenas
-        let !_A = assert (not $ null arenas) ()  -- game over not caught earlier
+        let arenas = ES.fromList $ catMaybes marenas
+        let !_A = assert (not (ES.null arenas)
+                          `blame` "game over not caught earlier"
+                          `twith` factionD) ()
         return $! arenas
   -- Start a clip (a part of a turn for which one or more frames
   -- will be generated). Do whatever has to be done
   -- every fixed number of time units, e.g., monster generation.
   -- Run the leader and other actors moves. Eventually advance the time
   -- and repeat.
-  let loop arenasStart [] = do
+  let loop :: ES.EnumSet LevelId -> [LevelId] -> m ()
+      loop arenasStart [] = do
         arenas <- arenasForLoop
         endClip arenasStart
-        loop arenas arenas
+        loop arenas $ ES.toList arenas
       loop arenasStart (arena : rest) = do
         handleActors arena
         quit <- getsServer squit
@@ -147,11 +150,11 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
           loop arenasStart rest
       loopNew = do
         arenas <- arenasForLoop
-        loop arenas arenas
+        loop arenas $ ES.toList arenas
   loopNew
 
-endClip :: (MonadAtomic m, MonadServer m, MonadServerReadRequest m)
-        => [LevelId] -> m ()
+endClip :: (MonadAtomic m, MonadServerReadRequest m)
+        => ES.EnumSet LevelId -> m ()
 endClip arenas = do
   Kind.COps{corule} <- getsState scops
   let stdRuleset = Kind.stdRuleset corule
@@ -161,7 +164,7 @@ endClip arenas = do
   -- because I'd need to send also all arenas, which should be updated,
   -- and this is too expensive data for each, e.g., projectile move.
   -- I send even if nothing changes so that UI time display can progress.
-  execUpdAtomic $ UpdAgeGame (Delta timeClip) arenas
+  execUpdAtomic $ UpdAgeGame (Delta timeClip) $ ES.toList arenas
   -- Perform periodic dungeon maintenance.
   time <- getsState stime
   let clipN = time `timeFit` timeClip
@@ -171,20 +174,21 @@ endClip arenas = do
   when (clipN `mod` clipInTurn == 2) $
     -- Periodic activation only once per turn, for speed,
     -- but on all active arenas.
-    mapM_ applyPeriodicLevel arenas
+    applyPeriodicLevel arenas
   when (clipN `mod` clipInTurn == 4) $ do
     -- Add monsters each turn, not each clip.
     -- Do this on only one of the arenas to prevent micromanagement,
     -- e.g., spreading leaders across levels to bump monster generation.
-    arena <- rndToAction $ oneOf arenas
+    arena <- rndToAction $ oneOf $ ES.toList arenas
     spawnMonster arena
   when (clipN `mod` writeSaveClips == 0) $ do
     modifyServer $ \ser -> ser {swriteSave = False}
     writeSaveAll False
 
 -- | Trigger periodic items for all actors on the given level.
-applyPeriodicLevel :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
-applyPeriodicLevel lid = do
+applyPeriodicLevel :: (MonadAtomic m, MonadServer m)
+                   => ES.EnumSet LevelId -> m ()
+applyPeriodicLevel arenas = do
   let applyPeriodicItem _ _ (_, (_, [])) = return ()
         -- periodic items always have at least one timer
       applyPeriodicItem aid cstore (iid, _) = do
@@ -202,16 +206,13 @@ applyPeriodicLevel lid = do
                   -- In periodic activation, consider *only* recharging effects.
                   effectAndDestroy aid aid iid (CActor aid cstore) True
                                    (filterRecharging ieffects) itemFull
-              _ -> assert `failure` (lid, aid, cstore, iid)
-      applyPeriodicCStore aid cstore = do
-        b <- getsState $ getActorBody aid
-        bag <- getsState $ getBodyStoreBag b cstore
-        mapM_ (applyPeriodicItem aid cstore) $ EM.assocs bag
-      applyPeriodicActor aid = do
-        applyPeriodicCStore aid COrgan
-        applyPeriodicCStore aid CEqp
-  allActors <- getsServer $ (EM.! lid) . sactorTime
-  mapM_ applyPeriodicActor $ EM.keys allActors
+              _ -> assert `failure` (aid, cstore, iid)
+      applyPeriodicActor (aid, b) =
+        when (blid b `ES.member` arenas) $ do
+          mapM_ (applyPeriodicItem aid COrgan) $ EM.assocs $ borgan b
+          mapM_ (applyPeriodicItem aid CEqp) $ EM.assocs $ beqp b
+  allActors <- getsState sactorD
+  mapM_ applyPeriodicActor $ EM.assocs allActors
 
 -- | Perform moves for individual actors, as long as there are actors
 -- with the next move time less or equal to the end of current cut-off.
