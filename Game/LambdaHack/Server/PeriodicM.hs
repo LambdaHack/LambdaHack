@@ -244,8 +244,13 @@ advanceTime !aid = do
              then timeShift time (Delta timeClip)
              else time
         levelTimeNew = EM.mapWithKey f levelTime
+    mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
+    let g time = timeShift time (timeDeltaReverse $ Delta timeClip)
+        levelTimeLeader = case mleader of
+          Nothing -> levelTimeNew
+          Just leader -> EM.adjust g leader levelTimeNew
     modifyServer $ \ser ->
-      ser {sactorTime = EM.insert (blid b) levelTimeNew $ sactorTime ser}
+      ser {sactorTime = EM.insert (blid b) levelTimeLeader $ sactorTime ser}
 
 -- | Swap the relative move times of two actors (e.g., when switching
 -- a UI leader).
