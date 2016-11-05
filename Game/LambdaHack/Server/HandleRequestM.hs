@@ -377,7 +377,7 @@ reqAlter source tpos mfeat = do
 
 -- | Do nothing.
 --
--- Something is sometimes done in 'LoopAction.setBWait'.
+-- Something is sometimes done in 'setBWait'.
 reqWait :: MonadAtomic m => ActorId -> m ()
 reqWait _ = return ()
 
