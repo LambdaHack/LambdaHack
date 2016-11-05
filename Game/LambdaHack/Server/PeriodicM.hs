@@ -235,7 +235,7 @@ advanceTime !aid = do
   -- TODO: this and handleActors can be sped up by keeping it per lid
   -- and per fid, in a map from times to list of actors, separately
   -- map for projectiles and dying and a map for others. Complex.
-  unless (bproj b || Just (bpos b) == boldpos b) $ do
+  unless (bproj b || bwait b) $ do
     levelTime <- getsServer $ (EM.! blid b) . sactorTime
     s <- getState
     let f !aid2 !time =
