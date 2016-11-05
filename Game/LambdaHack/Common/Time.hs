@@ -2,7 +2,8 @@
 -- | Game time and speed.
 module Game.LambdaHack.Common.Time
   ( Time, timeZero, timeClip, timeTurn, timeEpsilon
-  , absoluteTimeAdd, absoluteTimeNegate, timeFit, timeFitUp
+  , absoluteTimeAdd, absoluteTimeSubtract, absoluteTimeNegate
+  , timeFit, timeFitUp
   , Delta(..), timeShift, timeDeltaToFrom
   , timeDeltaSubtract, timeDeltaReverse, timeDeltaScale
   , timeDeltaToDigit, ticksPerMeter
@@ -72,6 +73,10 @@ _ticksInSecond =
 absoluteTimeAdd :: Time -> Time -> Time
 {-# INLINE absoluteTimeAdd #-}
 absoluteTimeAdd (Time t1) (Time t2) = Time (t1 + t2)
+
+absoluteTimeSubtract :: Time -> Time -> Time
+{-# INLINE absoluteTimeSubtract #-}
+absoluteTimeSubtract (Time t1) (Time t2) = Time (t1 - t2)
 
 -- | Shifting an absolute time by a time vector.
 timeShift :: Time -> Delta Time -> Time

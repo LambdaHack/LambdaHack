@@ -2,7 +2,8 @@
 -- and related operations.
 module Game.LambdaHack.Server.PeriodicM
   ( spawnMonster, addAnyActor, dominateFidSfx
-  , advanceTime, swapTime, managePerTurn, leadLevelSwitch, udpateCalm
+  , advanceTime, overheadActorTime, swapTime, managePerTurn
+  , leadLevelSwitch, udpateCalm
   ) where
 
 import Prelude ()
@@ -228,29 +229,35 @@ advanceTime !aid = do
   -- @t@ may be negative; that's OK.
   modifyServer $ \ser ->
     ser {sactorTime = ageActor (blid b) aid t $ sactorTime ser}
-  -- Add communication overhead time delta to all non-projectile, non-dying
-  -- faction's actors on the level. Effectively, this limits moves of
-  -- a faction on a level to 10, regardless of the number of actors
+
+overheadActorTime :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
+overheadActorTime !aid = do
+  -- Add communication overhead time delta to all non-projectile,
+  -- non-dying faction's actors. Effectively, this limits moves of
+  -- a faction to 10, regardless of the number of actors
   -- and their speeds.
   -- TODO: this and handleActors can be sped up by keeping it per lid
   -- and per fid, in a map from times to list of actors, separately
   -- map for projectiles and dying and a map for others. Complex.
-  unless (bproj b || bwait b) $ do
-    levelTime <- getsServer $ (EM.! blid b) . sactorTime
-    s <- getState
-    let f !aid2 !time =
-          let body = getActorBody aid2 s
-          in if not (bproj body) && bfid body == bfid b && bhp body > 0
-             then timeShift time (Delta timeClip)
-             else time
-        levelTimeNew = EM.mapWithKey f levelTime
-    mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
-    let g time = timeShift time (timeDeltaReverse $ Delta timeClip)
-        levelTimeLeader = case mleader of
-          Nothing -> levelTimeNew
-          Just leader -> EM.adjust g leader levelTimeNew
-    modifyServer $ \ser ->
-      ser {sactorTime = EM.insert (blid b) levelTimeLeader $ sactorTime ser}
+  b <- getsState $ getActorBody aid
+  levelTime <- getsServer $ (EM.! blid b) . sactorTime
+  s <- getState
+  let f !aid2 !time =
+        let body = getActorBody aid2 s
+        in if isNothing (btrajectory body)
+              && bfid body == bfid b
+              && bhp body > 0
+           then timeShift time (Delta timeClip)
+           else time
+      levelTimeNew = EM.mapWithKey f levelTime
+  mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
+  let g time = timeShift time (timeDeltaReverse $ Delta timeClip)
+      levelTimeLeader = case mleader of
+        Nothing -> levelTimeNew
+        Just leader -> EM.adjust g leader levelTimeNew
+  modifyServer $ \ser ->
+    ser {sactorTime = EM.insert (blid b) levelTimeLeader
+                      $ sactorTime ser}
 
 -- | Swap the relative move times of two actors (e.g., when switching
 -- a UI leader).

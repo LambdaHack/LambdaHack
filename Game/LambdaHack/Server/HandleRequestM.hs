@@ -90,7 +90,7 @@ handleReqUI fid aid cmd = case cmd of
   ReqUIAutomate -> reqAutomate fid
   ReqUINop -> return ()
 
-setBWait :: (MonadAtomic m) => RequestTimed a -> ActorId -> m ()
+setBWait :: (MonadAtomic m) => RequestTimed a -> ActorId -> m Bool
 setBWait cmd aidNew = do
   let hasReqWait ReqWait{} = True
       hasReqWait _ = False
@@ -98,11 +98,13 @@ setBWait cmd aidNew = do
   bPre <- getsState $ getActorBody aidNew
   when (hasWait /= bwait bPre) $
     execUpdAtomic $ UpdWaitActor aidNew hasWait
+  return hasWait
 
 handleRequestTimed :: (MonadAtomic m, MonadServer m)
                    => ActorId -> RequestTimed a -> m ()
 handleRequestTimed aid cmd = do
-  setBWait cmd aid
+  hasWait <- setBWait cmd aid
+  unless hasWait $ overheadActorTime aid
   advanceTime aid
   handleRequestTimedCases aid cmd
   managePerTurn aid
