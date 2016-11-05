@@ -137,8 +137,9 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
         endClip arenasStart
         loop arenas $ ES.toList arenas
       loop arenasStart (arena : rest) = do
-        handleActors arena False
-        handleActors arena True
+        factionD <- getsState sfactionD
+        mapM_ (\fid -> handleActors arena False fid
+                       >> handleActors arena True fid) $ EM.keys factionD
         quit <- getsServer squit
         if quit then do
           -- In case of game save+exit or restart, don't age levels (endClip)
@@ -218,8 +219,8 @@ applyPeriodicLevel arenas = do
 -- | Perform moves for individual actors, as long as there are actors
 -- with the next move time less or equal to the end of current cut-off.
 handleActors :: (MonadAtomic m, MonadServerReadRequest m)
-             => LevelId -> Bool -> m ()
-handleActors lid proj = do
+             => LevelId -> Bool -> FactionId -> m ()
+handleActors lid proj fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . sactorTime
   quit <- getsServer squit
@@ -229,9 +230,10 @@ handleActors lid proj = do
       notDying (_, b) = not $ actorDying b
       notLeader ((aid, _), b) = Just aid /= gleader (factionD EM.! bfid b)
       order = Ord.comparing $
-        snd . fst &&& notDying &&& bfid . snd &&& notLeader &&& bsymbol . snd
-      -- TODO: separate projectiles in sactorTime
-      as = filter (\(_, b) -> if proj then bproj b else not (bproj b))
+        snd . fst &&& notDying &&& notLeader &&& bsymbol . snd
+      -- TODO: separate projectiles in sactorTime; also separate factions
+      as = filter (\(_, b) -> bfid b == fid
+                              && if proj then bproj b else not (bproj b))
            $ map (\(a, atime) -> ((a, atime), getActorBody a s))
            $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
       maa | null as = Nothing
@@ -246,14 +248,14 @@ handleActors lid proj = do
       -- A projectile drops to the ground due to obstacles or range.
       -- The carried item is not destroyed, but drops to the ground.
       dieSer aid b False
-      handleActors lid proj
+      handleActors lid proj fid
     Just (aid, b) | bhp b <= 0 -> do
       -- If @b@ is a projectile and it hits an actor,
       -- the carried item is destroyed and that's all.
       -- Otherwise, an actor dies, items drop to the ground
       -- and possibly a new leader is elected.
       dieSer aid b (bproj b)
-      handleActors lid proj
+      handleActors lid proj fid
     Just (aid, body) -> do
       let side = bfid body
           fact = factionD EM.! side
@@ -293,7 +295,7 @@ handleActors lid proj = do
          | otherwise -> do
            cmdN <- sendNonLeaderQueryAI side aid
            handleReqAI side aid cmdN
-      handleActors lid proj
+      handleActors lid proj fid
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 gameExit = do
