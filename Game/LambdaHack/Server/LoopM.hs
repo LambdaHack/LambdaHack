@@ -18,6 +18,7 @@ import Game.LambdaHack.Common.Prelude
 import Control.Arrow ((&&&))
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.Key (mapWithKeyM_)
 import qualified Data.Ord as Ord
 
 import Game.LambdaHack.Atomic
@@ -83,7 +84,9 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
       updConn
       initPer
       pers <- getsServer sperFid
-      broadcastUpdAtomic $ \fid -> UpdResume fid (pers EM.! fid)
+      factionD <- getsState sfactionD
+      mapWithKeyM_ (\fid _ ->
+       sendUpdate fid $ UpdResume fid (pers EM.! fid)) factionD
       -- We dump RNG seeds here, in case the game wasn't run
       -- with --dumpInitRngs previously and we need to seeds.
       when (sdumpInitRngs sdebug) dumpRngs

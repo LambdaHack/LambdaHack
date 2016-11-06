@@ -140,9 +140,9 @@ posUpdAtomic cmd = case cmd of
   UpdDiscoverSeed c _ _ _ -> singleContainer c
   UpdCoverSeed c _ _ _ -> singleContainer c
   UpdPerception{} -> return PosNone
-  UpdRestart fid _ _ _ _ _ -> return $! PosFid fid
+  UpdRestart _ _ _ _ _ _ -> return PosNone
   UpdRestartServer _ -> return PosSer
-  UpdResume fid _ -> return $! PosFid fid
+  UpdResume _ _ -> return PosNone
   UpdResumeServer _ -> return PosSer
   UpdKillExit fid -> return $! PosFid fid
   UpdWriteSave -> return PosAll
@@ -291,6 +291,7 @@ seenAtomicCli knowEvents fid per posAtomic =
     PosAll -> True
     PosNone -> assert `failure` "no position possible" `twith` fid
 
+-- Not needed ATM, but may be a coincidence.
 seenAtomicSer :: PosAtomic -> Bool
 seenAtomicSer posAtomic =
   case posAtomic of

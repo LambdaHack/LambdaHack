@@ -11,6 +11,7 @@ import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.Key (mapWithKeyM_)
 import qualified Data.Map.Strict as M
 import Data.Ord
 import qualified Data.Text as T
@@ -44,6 +45,7 @@ import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.MonadServer
+import Game.LambdaHack.Server.ProtocolM
 import Game.LambdaHack.Server.State
 
 initPer :: MonadServer m => m ()
@@ -56,7 +58,7 @@ initPer = do
     ser { sactorAspect, sfovLitLid, sfovClearLid, sfovLucidLid
         , sperValidFid, sperCacheFid, sperFid }
 
-reinitGame :: (MonadAtomic m, MonadServer m) => m ()
+reinitGame :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 reinitGame = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   pers <- getsServer sperFid
@@ -68,10 +70,13 @@ reinitGame = do
   let defLocal | sknowMap = s
                | otherwise = localFromGlobal s
   discoS <- getsServer sdiscoKind
-  let sdiscoKind = let f KindMean{kmKind} = IK.Identified `elem` IK.ifeature (okind kmKind)
-                   in EM.filter f discoS
-  broadcastUpdAtomic
-    $ \fid -> UpdRestart fid sdiscoKind (pers EM.! fid) defLocal scurDiffSer sdebugCli
+  let sdiscoKind =
+        let f KindMean{kmKind} = IK.Identified `elem` IK.ifeature (okind kmKind)
+        in EM.filter f discoS
+      updRestart fid = UpdRestart fid sdiscoKind (pers EM.! fid) defLocal
+                                  scurDiffSer sdebugCli
+  factionD <- getsState sfactionD
+  mapWithKeyM_ (\fid _ -> sendUpdate fid $ updRestart fid) factionD
   populateDungeon
 
 mapFromFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a

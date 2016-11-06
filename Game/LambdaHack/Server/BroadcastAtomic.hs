@@ -34,8 +34,6 @@ import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolM
 import Game.LambdaHack.Server.State
 
--- TODO: split into simpler pieces
-
 --storeUndo :: MonadServer m => CmdAtomic -> m ()
 --storeUndo _atomic =
 --  maybe skip (\a -> modifyServer $ \ser -> ser {sundo = a : sundo ser})
@@ -44,8 +42,10 @@ import Game.LambdaHack.Server.State
 handleCmdAtomicServer :: MonadStateWrite m
                       => PosAtomic -> CmdAtomic -> m ()
 {-# INLINE handleCmdAtomicServer #-}
-handleCmdAtomicServer posAtomic atomic =
-  when (seenAtomicSer posAtomic) $
+handleCmdAtomicServer _posAtomic atomic =
+-- Not needed ATM:
+--  when (seenAtomicSer posAtomic) $
+-- Not implemented ATM:
 --    storeUndo atomic
     handleCmdAtomic atomic
 
@@ -57,7 +57,7 @@ handleAndBroadcast atomic = do
   -- This is calculated in the server State before action (simulating
   -- current client State, because action has not been applied
   -- on the client yet; the same in @atomicRemember@).
-  -- E.g., actor's position in @breakUpdAtomic@ is assumed to be post-action.
+  -- E.g., actor's position in @breakUpdAtomic@ is assumed to be pre-action.
   (ps, atomicBroken, psBroken) <-
     case atomic of
       UpdAtomic cmd -> do
