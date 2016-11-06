@@ -230,34 +230,34 @@ advanceTime !aid = do
   modifyServer $ \ser ->
     ser {sactorTime = ageActor (blid b) aid t $ sactorTime ser}
 
-overheadActorTime :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-overheadActorTime !aid = do
+overheadActorTime :: (MonadAtomic m, MonadServer m)
+                  => ES.EnumSet LevelId -> FactionId -> ActorId -> m ()
+overheadActorTime !arenas !fid _aid = do
   -- Add communication overhead time delta to all non-projectile,
   -- non-dying faction's actors. Effectively, this limits moves of
   -- a faction to 10, regardless of the number of actors
   -- and their speeds.
+  -- To discourage distributing actors among active arenas, overhead
+  -- applies to all actors on active arenas.
   -- TODO: this and handleActors can be sped up by keeping it per lid
   -- and per fid, in a map from times to list of actors, separately
   -- map for projectiles and dying and a map for others. Complex.
-  b <- getsState $ getActorBody aid
-  levelTime <- getsServer $ (EM.! blid b) . sactorTime
+  actorTime <- getsServer sactorTime
   s <- getState
+  mleader <- getsState $ gleader . (EM.! fid) . sfactionD
   let f !aid2 !time =
         let body = getActorBody aid2 s
         in if isNothing (btrajectory body)
-              && bfid body == bfid b
+              && bfid body == fid
               && bhp body > 0
+              && Just aid2 /= mleader
            then timeShift time (Delta timeClip)
            else time
-      levelTimeNew = EM.mapWithKey f levelTime
-  mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
-  let g time = timeShift time (timeDeltaReverse $ Delta timeClip)
-      levelTimeLeader = case mleader of
-        Nothing -> levelTimeNew
-        Just leader -> EM.adjust g leader levelTimeNew
-  modifyServer $ \ser ->
-    ser {sactorTime = EM.insert (blid b) levelTimeLeader
-                      $ sactorTime ser}
+      g lid levelTime = if lid `ES.member` arenas
+                        then EM.mapWithKey f levelTime
+                        else levelTime
+      actorTimeNew = EM.mapWithKey g actorTime
+  modifyServer $ \ser -> ser {sactorTime = actorTimeNew}
 
 -- | Swap the relative move times of two actors (e.g., when switching
 -- a UI leader).
@@ -281,8 +281,8 @@ swapTime source target = do
                 sdelta' = sgoal `timeDeltaToFrom` btime_sb
                 tdelta' = tgoal `timeDeltaToFrom` btime_tb
             in assert (sdelta == sdelta' && tdelta == tdelta'
-                      `blame` ( slvl, tlvl, btime_sb, btime_tb
-                              , sdelta, sdelta', tdelta, tdelta' )) ()
+                       `blame` ( slvl, tlvl, btime_sb, btime_tb
+                               , sdelta, sdelta', tdelta, tdelta' )) ()
   when (sdelta /= Delta timeZero) $ modifyServer $ \ser ->
     ser {sactorTime = ageActor (blid sb) source sdelta $ sactorTime ser}
   when (tdelta /= Delta timeZero) $ modifyServer $ \ser ->

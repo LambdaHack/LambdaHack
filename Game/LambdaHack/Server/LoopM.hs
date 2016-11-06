@@ -289,13 +289,13 @@ handleActors arenas lid proj fid = do
            cmdS <- sendQueryUI side aid
            -- TODO: check that the command is legal first, report and reject,
            -- but do not crash (currently server asserts things and crashes)
-           handleRequestUI side aid cmdS
+           handleRequestUI arenas side aid cmdS
          | aidIsLeader -> do
            cmdS <- sendQueryAI side aid
-           handleRequestAI side aid cmdS
+           handleRequestAI arenas side aid cmdS
          | otherwise -> do
            cmdN <- sendNonLeaderQueryAI side aid
-           handleReqAI side aid cmdN
+           handleReqAI arenas side aid cmdN
       handleActors arenas lid proj fid
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
