@@ -3,7 +3,7 @@
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
-  , breakUpdAtomic, breakSfxAtomic, loudUpdAtomic
+  , breakUpdAtomic, loudUpdAtomic
   , seenAtomicCli, seenAtomicSer, generalMoveItem, posProjBody
   ) where
 
@@ -28,7 +28,6 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.
@@ -154,10 +153,10 @@ posSfxAtomic :: MonadStateRead m => SfxAtomic -> m PosAtomic
 posSfxAtomic cmd = case cmd of
   SfxStrike _ _ _ CSha _ ->  -- shared stash is private
     return PosNone  -- TODO: PosSerAndFidIfSight; but probably never used
-  SfxStrike source target _ _ _ -> doubleAid source target
+  SfxStrike _ target _ _ _ -> singleAid target
   SfxRecoil _ _ _ CSha _ ->  -- shared stash is private
     return PosNone  -- TODO: PosSerAndFidIfSight; but probably never used
-  SfxRecoil source target _ _ _ -> doubleAid source target
+  SfxRecoil _ target _ _ _ -> singleAid target
   SfxProject aid _ cstore -> singleContainer $ CActor aid cstore
   SfxCatch aid _ cstore -> singleContainer $ CActor aid cstore
   SfxApply aid _ cstore -> singleContainer $ CActor aid cstore
@@ -186,14 +185,6 @@ singleAid :: MonadStateRead m => ActorId -> m PosAtomic
 singleAid aid = do
   body <- getsState $ getActorBody aid
   return $! posProjBody body
-
-doubleAid :: MonadStateRead m => ActorId -> ActorId -> m PosAtomic
-doubleAid source target = do
-  sb <- getsState $ getActorBody source
-  tb <- getsState $ getActorBody target
-  -- No @PosFidAndSight@ instead of @PosSight@, because both positions
-  -- need to be seen to have the enemy actor in client's state.
-  return $! assert (blid sb == blid tb) $ PosSight (blid sb) [bpos sb, bpos tb]
 
 singleContainer :: MonadStateRead m => Container -> m PosAtomic
 singleContainer (CFloor lid p) = return $! PosSight lid [p]
@@ -242,17 +233,6 @@ breakUpdAtomic cmd = case cmd of
   -- he's left with a hidden tile, which doesn't cause any trouble
   -- (because the commands doesn't change @State@ and the client-side
   -- processing of the command is lenient).
-  _ -> return []
-
--- | Decompose an atomic special effect.
-breakSfxAtomic :: MonadStateRead m => SfxAtomic -> m [SfxAtomic]
-breakSfxAtomic cmd = case cmd of
-  SfxStrike source target _ _ _ -> do
-    -- Hack: make a fight detectable even if one of combatants not visible.
-    sb <- getsState $ getActorBody source
-    return $! [ SfxEffect (bfid sb) source (IK.RefillCalm (-1)) 0
-              | not $ bproj sb ]
-              ++ [SfxEffect (bfid sb) target (IK.RefillHP (-1)) (-1)]
   _ -> return []
 
 -- | Messages for some unseen game object creation/destruction/alteration.

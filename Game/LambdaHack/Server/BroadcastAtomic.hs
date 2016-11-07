@@ -67,10 +67,7 @@ handleAndBroadcast atomic = do
         return (ps, map UpdAtomic atomicBroken, psBroken)
       SfxAtomic sfx -> do
         ps <- posSfxAtomic sfx
-        atomicBroken <- breakSfxAtomic sfx
-        psBroken <- mapM posSfxAtomic atomicBroken
-        -- TODO: assert that the sum of psBroken is equal to ps.
-        return (ps, map SfxAtomic atomicBroken, psBroken)
+        return (ps, [], [])
   sOld <- getState
   -- Perform the action on the server. The only part that requires
   -- @MonadStateWrite@ and modifies server State.

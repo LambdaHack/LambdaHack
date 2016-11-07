@@ -917,52 +917,55 @@ setLastSlot aid iid cstore = do
 strike :: MonadClientUI m
        => ActorId -> ActorId -> ItemId -> CStore -> HitAtomic -> m ()
 strike source target iid cstore hitStatus = assert (source /= target) $ do
-  itemToF <- itemToFullClient
-  sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  spart <- partActorLeader source sb
-  tpart <- partActorLeader target tb
-  spronoun <- partPronounLeader source sb
-  localTime <- getsState $ getLocalTime (blid sb)
-  bag <- getsState $ getBodyStoreBag sb cstore
-  let kit = EM.findWithDefault (1, []) iid bag
-      itemFull = itemToF iid kit
-      verb = case itemDisco itemFull of
-        Nothing -> "hit"  -- not identified
-        Just ItemDisco{itemKind} -> IK.iverbHit itemKind
-      isOrgan = iid `EM.member` borgan sb
-      partItemChoice =
-        if isOrgan
-        then partItemWownW spronoun COrgan localTime
-        else partItemAW cstore localTime
-      msg HitClear = makeSentence $
-        [MU.SubjectVerbSg spart verb, tpart]
-        ++ if bproj sb
-           then []
-           else ["with", partItemChoice itemFull]
-      msg (HitBlock n) =
-        -- This sounds funny when the victim falls down immediately,
-        -- but there is no easy way to prevent that. And it's consistent.
-        -- If/when death blow instead sets HP to 1 and only the next below 1,
-        -- we can check here for HP==1; also perhaps actors with HP 1 should
-        -- not be able to block.
-        let sActs =
-              if bproj sb
-              then [ MU.SubjectVerbSg spart "connect" ]
-              else [ MU.SubjectVerbSg spart verb, tpart
-                   , "with", partItemChoice itemFull ]
-        in makeSentence [ MU.Phrase sActs <> ", but"
-                        , MU.SubjectVerbSg tpart "block"
-                        , if n > 1 then "doggedly" else "partly"
-                        ]
+  sourceSeen <- getsState $ memActor source (blid tb)
+  ps <- if sourceSeen then do
+    itemToF <- itemToFullClient
+    sb <- getsState $ getActorBody source
+    spart <- partActorLeader source sb
+    tpart <- partActorLeader target tb
+    spronoun <- partPronounLeader source sb
+    localTime <- getsState $ getLocalTime (blid tb)
+    bag <- getsState $ getBodyStoreBag sb cstore
+    let kit = EM.findWithDefault (1, []) iid bag
+        itemFull = itemToF iid kit
+        verb = case itemDisco itemFull of
+          Nothing -> "hit"  -- not identified
+          Just ItemDisco{itemKind} -> IK.iverbHit itemKind
+        isOrgan = iid `EM.member` borgan sb
+        partItemChoice =
+          if isOrgan
+          then partItemWownW spronoun COrgan localTime
+          else partItemAW cstore localTime
+        msg HitClear = makeSentence $
+          [MU.SubjectVerbSg spart verb, tpart]
+          ++ if bproj sb
+             then []
+             else ["with", partItemChoice itemFull]
+        msg (HitBlock n) =
+          -- This sounds funny when the victim falls down immediately,
+          -- but there is no easy way to prevent that. And it's consistent.
+          -- If/when death blow instead sets HP to 1 and only the next below 1,
+          -- we can check here for HP==1; also perhaps actors with HP 1 should
+          -- not be able to block.
+          let sActs =
+                if bproj sb
+                then [ MU.SubjectVerbSg spart "connect" ]
+                else [ MU.SubjectVerbSg spart verb, tpart
+                     , "with", partItemChoice itemFull ]
+          in makeSentence [ MU.Phrase sActs <> ", but"
+                          , MU.SubjectVerbSg tpart "block"
+                          , if n > 1 then "doggedly" else "partly"
+                          ]
 -- TODO: when other armor is in, etc.:
 --      msg HitSluggish =
 --        let adv = MU.Phrase ["sluggishly", verb]
 --        in makeSentence $ [MU.SubjectVerbSg spart adv, tpart]
 --                          ++ ["with", partItemChoice itemFull]
-  msgAdd $ msg hitStatus
-  let ps = (bpos tb, bpos sb)
-      anim HitClear = twirlSplash ps Color.BrRed Color.Red
+    msgAdd $ msg hitStatus
+    return (bpos tb, bpos sb)
+  else return (bpos tb, bpos tb)
+  let anim HitClear = twirlSplash ps Color.BrRed Color.Red
       anim (HitBlock 1) = blockHit ps Color.BrRed Color.Red
       anim (HitBlock _) = blockMiss ps
-  animate (blid sb) $ anim hitStatus
+  animate (blid tb) $ anim hitStatus
