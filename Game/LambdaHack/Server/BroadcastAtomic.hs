@@ -2,7 +2,7 @@
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Server.BroadcastAtomic
-  ( handleAndBroadcast
+  ( handleAndBroadcast, updatePer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , handleCmdAtomicServer, atomicRemember
@@ -71,7 +71,6 @@ handleAndBroadcast atomic = do
       SfxAtomic sfx -> do
         ps <- posSfxAtomic sfx
         return (ps, [], [])
-  sOld <- getState
   -- Perform the action on the server. The only part that requires
   -- @MonadStateWrite@ and modifies server State.
   handleCmdAtomicServer ps atomic
@@ -106,19 +105,13 @@ handleAndBroadcast atomic = do
         if seenAtomicCli knowEvents fid perFidLid ps
         then sendAtomic fid atomic
         else breakSend lid fid perFidLid
-      posLevel lid fid = do
-        perFidLid <- updatePer sOld fid lid
-        anySend lid fid perFidLid
+      posLevel lid fid = anySend lid fid $ sperFidOld EM.! fid EM.! lid
       -- TODO: simplify; best after state-diffs approach tried
       send = case ps of
         PosSight lid _ -> posLevel lid
         PosFidAndSight _ lid _ -> posLevel lid
         PosFidAndSer (Just lid) _ -> posLevel lid
-        -- In the following cases perception is unchanged and broken atomic
-        -- has the same ps.
-        PosSmell lid _ -> \fid ->
-          let perOld = sperFidOld EM.! fid EM.! lid
-          in anySend lid fid perOld
+        PosSmell lid _ -> posLevel lid
         PosFid fid2 -> \fid ->
           when (fid == fid2) $ sendAtomic fid atomic
         PosFidAndSer Nothing fid2 -> \fid ->
@@ -131,15 +124,13 @@ handleAndBroadcast atomic = do
   factionD <- getsState sfactionD
   mapWithKeyM_ (\fid _ -> send fid) factionD
 
-updatePer :: MonadServerReadRequest m
-          => State -> FactionId -> LevelId -> m Perception
+updatePer :: MonadServerReadRequest m => FactionId -> LevelId -> m ()
 {-# INLINE updatePer #-}
-updatePer sOld fid lid = do
+updatePer fid lid = do
   sperFidOld <- getsServer sperFid
   let perOld = sperFidOld EM.! fid EM.! lid
   perValid <- getsServer $ (EM.! lid) . (EM.! fid) . sperValidFid
-  if perValid then return perOld
-  else do
+  unless perValid $ do
     modifyServer $ \ser ->
       ser {sperValidFid = EM.adjust (EM.insert lid True) fid
                           $ sperValidFid ser}
@@ -151,16 +142,17 @@ updatePer sOld fid lid = do
     unless (nullPer outPer && nullPer inPer) $ do
       unless knowEvents $ do  -- inconsistencies would quickly manifest
         sendUpdate fid $ UpdPerception lid outPer inPer
-        let remember = atomicRemember lid inPer sOld
-            seenNew = seenAtomicCli False fid perNew
-            seenOld = seenAtomicCli False fid perOld
+        remember <- getsState $ atomicRemember lid inPer
+        let seenNew = seenAtomicCli False fid perNew
+--            seenOld = seenAtomicCli False fid perOld
         psRem <- mapM posUpdAtomic remember
         -- Verify that we remember only currently seen things.
         let !_A = assert (allB seenNew psRem) ()
         -- Verify that we remember only new things.
-        let !_A = assert (allB (not . seenOld) psRem) ()
+        -- but now e.g., actors are added by actions before,
+        -- so they will not appear new. TODO; refine somehow
+--        let !_A = assert (allB (not . seenOld) psRem) ()
         mapM_ (sendUpdate fid) remember
-    return perNew
 
 atomicRemember :: LevelId -> Perception -> State -> [UpdAtomic]
 {-# INLINE atomicRemember #-}

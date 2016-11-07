@@ -45,6 +45,7 @@ import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Server.BroadcastAtomic
 import Game.LambdaHack.Server.EndM
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.HandleEffectM
@@ -141,8 +142,9 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
         loop arenas $ ES.toList arenas
       loop arenasStart (arena : rest) = do
         factionD <- getsState sfactionD
-        mapM_ (\fid -> handleActors arenasStart arena False fid
-                       >> handleActors arenasStart arena True fid)
+        mapM_ (\fid -> handleActors arenasStart arena True fid
+                       >> updatePer fid arena
+                       >> handleActors arenasStart arena False fid)
               (EM.keys factionD)
         quit <- getsServer squit
         if quit then do
@@ -310,6 +312,12 @@ gameExit = do
   killAllClients
   -- Verify that the not saved caches are equal to future reconstructed.
   -- Otherwise, save/restore would change game state.
+  -- TODO: to make this hold, we have to update the caches, so we guarantee
+  -- that save/restore at most updates perception.
+  factionD <- getsState sfactionD
+  dungeon <- getsState sdungeon
+  mapWithKeyM_ (\fid _ ->
+    mapWithKeyM_ (\lid _ -> updatePer fid lid) dungeon) factionD
   sperFid <- getsServer sperFid
   sperCacheFid <- getsServer sperCacheFid
   sperValidFid <- getsServer sperValidFid

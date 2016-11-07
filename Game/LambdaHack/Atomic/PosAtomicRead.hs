@@ -84,15 +84,7 @@ posUpdAtomic cmd = case cmd of
               then PosSight (blid b) [fromP, toP]
               else PosFidAndSight [bfid b] (blid b) [fromP, toP]
   UpdWaitActor aid _ -> singleAid aid
-  UpdDisplaceActor source target -> do
-    sb <- getsState $ getActorBody source
-    tb <- getsState $ getActorBody target
-    let ps = [bpos sb, bpos tb]
-        lid = assert (blid sb == blid tb) $ blid sb
-    return $! if | bproj sb && bproj tb -> PosSight lid ps
-                 | bproj sb -> PosFidAndSight [bfid tb] lid ps
-                 | bproj tb -> PosFidAndSight [bfid sb] lid ps
-                 | otherwise -> PosFidAndSight [bfid sb, bfid tb] lid ps
+  UpdDisplaceActor source target -> doubleAid source target
   UpdMoveItem _ _ _ _ CSha -> assert `failure` cmd  -- shared stash is private
   UpdMoveItem _ _ _ CSha _ ->  assert `failure` cmd
   UpdMoveItem _ _ aid _ _ -> singleAid aid
@@ -181,6 +173,14 @@ singleAid :: MonadStateRead m => ActorId -> m PosAtomic
 singleAid aid = do
   body <- getsState $ getActorBody aid
   return $! posProjBody body
+
+doubleAid :: MonadStateRead m => ActorId -> ActorId -> m PosAtomic
+doubleAid source target = do
+  sb <- getsState $ getActorBody source
+  tb <- getsState $ getActorBody target
+  -- No @PosFidAndSight@ instead of @PosSight@, because both positions
+  -- need to be seen to have the enemy actor in client's state.
+  return $! assert (blid sb == blid tb) $ PosSight (blid sb) [bpos sb, bpos tb]
 
 singleContainer :: MonadStateRead m => Container -> m PosAtomic
 singleContainer (CFloor lid p) = return $! PosSight lid [p]
