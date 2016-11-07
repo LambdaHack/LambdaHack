@@ -58,6 +58,9 @@ handleAndBroadcast atomic = do
   -- current client State, because action has not been applied
   -- on the client yet; the same in @atomicRemember@).
   -- E.g., actor's position in @breakUpdAtomic@ is assumed to be pre-action.
+  -- To get rid of breakUpdAtomic we'd need to send only Spot and Lose
+  -- commands instead of Move and Displace (plus Sfx for Displace).
+  -- So this only makes sense when we switch to sending state diffs.
   (ps, atomicBroken, psBroken) <-
     case atomic of
       UpdAtomic cmd -> do
@@ -78,7 +81,7 @@ handleAndBroadcast atomic = do
   let sendAtomic fid (UpdAtomic cmd) = sendUpdate fid cmd
       sendAtomic fid (SfxAtomic sfx) = sendSfx fid sfx
       breakSend lid fid perFidLid = do
-        let hear2 atomic2 = do
+        let hear atomic2 = do
               -- We take the new leader, from after cmd execution.
               mleader <- getsState $ gleader . (EM.! fid) . sfactionD
               case (atomic2, mleader) of
@@ -90,12 +93,11 @@ handleAndBroadcast atomic = do
                     Just msg -> sendSfx fid $ SfxMsgAll msg
                 _ -> return ()
             send2 (atomic2, ps2) =
-              if seenAtomicCli knowEvents fid perFidLid ps2
-                then sendAtomic fid atomic2
-                else hear2 atomic2
+              when (seenAtomicCli knowEvents fid perFidLid ps2) $
+                sendAtomic fid atomic2
         case psBroken of
           _ : _ -> mapM_ send2 $ zip atomicBroken psBroken
-          [] -> hear2 atomic
+          [] -> hear atomic  -- broken commands are never loud
       -- We assume players perceive perception change before the action,
       -- so the action is perceived in the new perception,
       -- even though the new perception depends on the action's outcome

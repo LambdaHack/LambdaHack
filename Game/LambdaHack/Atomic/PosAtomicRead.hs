@@ -93,12 +93,8 @@ posUpdAtomic cmd = case cmd of
                  | bproj sb -> PosFidAndSight [bfid tb] lid ps
                  | bproj tb -> PosFidAndSight [bfid sb] lid ps
                  | otherwise -> PosFidAndSight [bfid sb, bfid tb] lid ps
-  UpdMoveItem _ _ aid _ CSha -> do  -- shared stash is private
-    b <- getsState $ getActorBody aid
-    return $! PosFidAndSer (Just $ blid b) (bfid b)
-  UpdMoveItem _ _ aid CSha _ -> do  -- shared stash is private
-    b <- getsState $ getActorBody aid
-    return $! PosFidAndSer (Just $ blid b) (bfid b)
+  UpdMoveItem _ _ _ _ CSha -> assert `failure` cmd  -- shared stash is private
+  UpdMoveItem _ _ _ CSha _ ->  assert `failure` cmd
   UpdMoveItem _ _ aid _ _ -> singleAid aid
   UpdRefillHP aid _ -> singleAid aid
   UpdRefillCalm aid _ -> singleAid aid
@@ -225,14 +221,6 @@ breakUpdAtomic cmd = case cmd of
            , UpdSpotActor target tb { bpos = bpos sb
                                     , boldpos = Just $ bpos tb } tais
            ]
-  UpdMoveItem iid k aid cstore1 cstore2 | cstore1 == CSha  -- CSha is private
-                                          || cstore2 == CSha ->
-    containerMoveItem iid k (CActor aid cstore1) (CActor aid cstore2)
-  -- No need to cover @UpdSearchTile@, because if an actor sees only
-  -- one of the positions and so doesn't notice the search results,
-  -- he's left with a hidden tile, which doesn't cause any trouble
-  -- (because the commands doesn't change @State@ and the client-side
-  -- processing of the command is lenient).
   _ -> return []
 
 -- | Messages for some unseen game object creation/destruction/alteration.
@@ -285,7 +273,9 @@ generalMoveItem :: MonadStateRead m
                 -> m [UpdAtomic]
 generalMoveItem iid k c1 c2 =
   case (c1, c2) of
-    (CActor aid1 cstore1, CActor aid2 cstore2) | aid1 == aid2 ->
+    (CActor aid1 cstore1, CActor aid2 cstore2) | aid1 == aid2
+                                                 && cstore1 /= CSha
+                                                 && cstore2 /= CSha ->
       return [UpdMoveItem iid k aid1 cstore1 cstore2]
     _ -> containerMoveItem iid k c1 c2
 

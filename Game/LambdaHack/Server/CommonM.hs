@@ -110,7 +110,10 @@ moveStores :: (MonadAtomic m, MonadServer m)
            => ActorId -> CStore -> CStore -> m ()
 moveStores aid fromStore toStore = do
   b <- getsState $ getActorBody aid
-  let g iid (k, _) = execUpdAtomic $ UpdMoveItem iid k aid fromStore toStore
+  let g iid (k, _) = do
+        move <- generalMoveItem iid k (CActor aid fromStore)
+                                      (CActor aid toStore)
+        mapM_ execUpdAtomic move
   mapActorCStore_ fromStore g b
 
 quitF :: (MonadAtomic m, MonadServer m)
