@@ -142,15 +142,22 @@ getLeaderUI = do
 
 getArenaUI :: MonadClientUI m => m LevelId
 getArenaUI = do
+  let fallback = do
+        side <- getsClient sside
+        fact <- getsState $ (EM.! side) . sfactionD
+        case gquit fact of
+          Just Status{stDepth} -> return $! toEnum stDepth
+          Nothing -> getEntryArena fact
   mleader <- getsClient _sleader
   case mleader of
-    Just leader -> getsState $ blid . getActorBody leader
-    Nothing -> do
-      side <- getsClient sside
-      fact <- getsState $ (EM.! side) . sfactionD
-      case gquit fact of
-        Just Status{stDepth} -> return $! toEnum stDepth
-        Nothing -> getEntryArena fact
+    Just leader -> do
+      -- The leader may just be teleporting (e.g., due to displace
+      -- over terrain not in FOV) so not existent momentarily.
+      mem <- getsState $ EM.member leader . sactorD
+      if mem
+      then getsState $ blid . getActorBody leader
+      else fallback
+    Nothing -> fallback
 
 viewedLevelUI :: MonadClientUI m => m LevelId
 viewedLevelUI = do
