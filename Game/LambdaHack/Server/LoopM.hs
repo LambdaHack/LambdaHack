@@ -18,7 +18,6 @@ import Game.LambdaHack.Common.Prelude
 import Control.Arrow ((&&&))
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Key (mapWithKeyM_)
 import qualified Data.Ord as Ord
 
 import Game.LambdaHack.Atomic
@@ -86,8 +85,8 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
       initPer
       pers <- getsServer sperFid
       factionD <- getsState sfactionD
-      mapWithKeyM_ (\fid _ ->
-       sendUpdate fid $ UpdResume fid (pers EM.! fid)) factionD
+      mapM_ (\fid -> sendUpdate fid $ UpdResume fid (pers EM.! fid))
+            (EM.keys factionD)
       -- We dump RNG seeds here, in case the game wasn't run
       -- with --dumpInitRngs previously and we need to seeds.
       when (sdumpInitRngs sdebug) dumpRngs
@@ -234,19 +233,26 @@ handleActors arenas lid proj fid = do
   s <- getState
   let -- Actors of the same faction move together.
       notDying (_, b) = not $ actorDying b
-      notLeader ((aid, _), b) = Just aid /= gleader (factionD EM.! bfid b)
-      order = Ord.comparing $
-        snd . fst &&& notDying &&& notLeader &&& bsymbol . snd
+      notLeader (aid, b) = Just aid /= gleader (factionD EM.! bfid b)
       -- TODO: separate projectiles in sactorTime; also separate factions
-      as = filter (\(_, b) -> bfid b == fid
-                              && if proj then bproj b else not (bproj b))
-           $ map (\(a, atime) -> ((a, atime), getActorBody a s))
-           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
-      maa | null as = Nothing
-          | otherwise = Just $ minimumBy order as
-      mnext = case maa of
-        Just ((a, _atime), b) -> Just (a, b)
-        Nothing -> Nothing
+      a1 | proj =
+           let order = Ord.comparing $ snd . fst &&& notDying &&& bsymbol . snd
+           in (\as ->
+                 if null as
+                 then Nothing
+                 else Just . (\((a, _), b) -> (a, b)) . minimumBy order $ as)
+              $ filter (\(_, b) -> bfid b == fid && bproj b)
+              $ map (\(a, atime) -> ((a, atime), getActorBody a s))
+              $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
+         | otherwise =
+           let order = Ord.comparing $ notLeader &&& notDying &&& bsymbol . snd
+           in (\as -> if null as
+                      then Nothing
+                      else Just . minimumBy order $ as)
+              $ filter (\(_, b) -> bfid b == fid && not (bproj b))
+              $ map (\(a, _) -> (a, getActorBody a s))
+              $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
+      mnext = a1
   case mnext of
     _ | quit -> return ()
     Nothing -> return ()
@@ -312,8 +318,8 @@ gameExit = do
 --  debugPossiblyPrint "Updating all perceptions."
   factionD <- getsState sfactionD
   dungeon <- getsState sdungeon
-  mapWithKeyM_ (\fid _ ->
-    mapWithKeyM_ (\lid _ -> updatePer fid lid) dungeon) factionD
+  mapM_ (\fid -> mapM_ (\lid -> updatePer fid lid) (EM.keys dungeon))
+        (EM.keys factionD)
 --  debugPossiblyPrint "Verifying all perceptions."
   sperFid <- getsServer sperFid
   sperCacheFid <- getsServer sperCacheFid
