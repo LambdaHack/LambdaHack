@@ -8,6 +8,8 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import qualified Data.EnumMap.Strict as EM
+import Data.Int (Int64)
 import qualified Data.Text as T
 import qualified Text.Show.Pretty as Show.Pretty
 
@@ -21,6 +23,7 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Server.MonadServer
+import Game.LambdaHack.Server.State
 
 -- We debug these on the server, not on the clients, because we want
 -- a single log, knowing the order in which the server received requests
@@ -76,19 +79,24 @@ data DebugAid a = DebugAid
   { label   :: !Text
   , cmd     :: !a
   , lid     :: !LevelId
+  , bHP     :: !Int64
+  , btime   :: !Time
   , time    :: !Time
   , aid     :: !ActorId
   , faction :: !FactionId
   }
   deriving Show
 
-debugAid :: (MonadStateRead m, Show a) => ActorId -> Text -> a -> m Text
+debugAid :: (MonadServer m, Show a) => ActorId -> Text -> a -> m Text
 debugAid aid label cmd = do
   b <- getsState $ getActorBody aid
   time <- getsState $ getLocalTime (blid b)
+  btime <- getsServer $ (EM.! aid) . (EM.! blid b) . sactorTime
   return $! debugShow DebugAid { label
                                , cmd
                                , lid = blid b
+                               , bHP = bhp b
+                               , btime
                                , time
                                , aid
                                , faction = bfid b }
