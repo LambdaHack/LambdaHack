@@ -110,18 +110,18 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
   -- of its opponents become overpowered and lead to micromanagement
   -- (make sure to kill all actors of the faction, go to a no-spawn
   -- level and heal fully with no risk nor cost).
-  let arenasForLoop = do
-        let factionArena fact =
-              case gleader fact of
-               -- Even spawners need an active arena for their leader,
-               -- or they start clogging stairs.
-               Just leader -> do
-                  b <- getsState $ getActorBody leader
-                  return $ Just $ blid b
-               Nothing -> if fleaderMode (gplayer fact) == LeaderNull
-                             || EM.null (gvictims fact)
-                          then return Nothing
-                          else Just <$> getEntryArena fact
+  let factionArena fact =
+        case gleader fact of
+         -- Even spawners need an active arena for their leader,
+         -- or they start clogging stairs.
+         Just leader -> do
+            b <- getsState $ getActorBody leader
+            return $ Just $ blid b
+         Nothing -> if fleaderMode (gplayer fact) == LeaderNull
+                       || EM.null (gvictims fact)  -- not in-between spawns
+                    then return Nothing
+                    else Just <$> getEntryArena fact
+      arenasForLoop = do
         factionD <- getsState sfactionD
         marenas <- mapM factionArena $ EM.elems factionD
         let arenas = ES.fromList $ catMaybes marenas
@@ -134,31 +134,40 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
   -- every fixed number of time units, e.g., monster generation.
   -- Run the leader and other actors moves. Eventually advance the time
   -- and repeat.
-  let loop :: ES.EnumSet LevelId -> [LevelId] -> m ()
-      loop arenasStart [] = do
-        arenas <- arenasForLoop
-        endClip arenasStart
-        loop arenas $ ES.toList arenas
-      loop arenasStart (arena : rest) = do
+  let handleFid :: ES.EnumSet LevelId -> (FactionId, Faction) -> m ()
+      handleFid allArenas (fid, fact) = do
+        fa <- factionArena fact
+        let arenas = case fa of
+              Just myArena -> myArena : delete myArena (ES.elems allArenas)
+              Nothing -> ES.elems allArenas
+        -- Projectiles are processed first, to get out of the way
+        -- and give info for deciding how to move actors.
+        mapM_ (\lid -> handleActors allArenas lid True fid) arenas
+        -- Update perception on all levels at once,
+        -- in case a leader is changed to actor on another
+        -- (possibly not currently active) level.
+        dungeon <- getsState sdungeon
+        mapM_ (\lid -> updatePer fid lid) (EM.keys dungeon)
+        -- Move an actor, starting with leader, if available.
+        mapM_ (\lid -> handleActors allArenas lid False fid) arenas
+      loop :: m ()
+      loop = do
+        allArenas <- arenasForLoop
+        endClip allArenas
         factionD <- getsState sfactionD
-        mapM_ (\fid -> handleActors arenasStart arena True fid
-                       >> updatePer fid arena
-                       >> handleActors arenasStart arena False fid)
+        mapM_ (handleFid allArenas) (EM.assocs factionD)
+        -- Update all perception for visual feedback and to make sure
+        -- saving a game doesn't affect gameplay (by updating perception).
+        dungeon <- getsState sdungeon
+        mapM_ (\fid -> mapM_ (\lid -> updatePer fid lid) (EM.keys dungeon))
               (EM.keys factionD)
         quit <- getsServer squit
         if quit then do
-          -- In case of game save+exit or restart, don't age levels (endClip)
-          -- since possibly not all actors have moved yet.
           modifyServer $ \ser -> ser {squit = False}
-          let loopAgain = loop arenasStart (arena : rest)
-          endOrLoop loopAgain
-                    (restartGame updConn loopNew) gameExit (writeSaveAll True)
+          endOrLoop loop (restartGame updConn loop) gameExit (writeSaveAll True)
         else
-          loop arenasStart rest
-      loopNew = do
-        arenas <- arenasForLoop
-        loop arenas $ ES.toList arenas
-  loopNew
+          loop
+  loop
 
 endClip :: (MonadAtomic m, MonadServerReadRequest m)
         => ES.EnumSet LevelId -> m ()
@@ -167,16 +176,19 @@ endClip arenas = do
   let stdRuleset = Kind.stdRuleset corule
       writeSaveClips = rwriteSaveClips stdRuleset
       leadLevelClips = rleadLevelClips stdRuleset
+  time <- getsState stime
+  let clipN = time `timeFit` timeClip
+      clipInTurn = let r = timeTurn `timeFit` timeClip
+                   in assert (r >= 5) r
+  when (clipN `mod` writeSaveClips == 0) $ do
+    modifyServer $ \ser -> ser {swriteSave = False}
+    writeSaveAll False
   -- I need to send time updates, because I can't add time to each command,
   -- because I'd need to send also all arenas, which should be updated,
   -- and this is too expensive data for each, e.g., projectile move.
   -- I send even if nothing changes so that UI time display can progress.
   execUpdAtomic $ UpdAgeGame (Delta timeClip) $ ES.toList arenas
   -- Perform periodic dungeon maintenance.
-  time <- getsState stime
-  let clipN = time `timeFit` timeClip
-      clipInTurn = let r = timeTurn `timeFit` timeClip
-                   in assert (r >= 5) r
   when (clipN `mod` leadLevelClips == 0) leadLevelSwitch
   when (clipN `mod` clipInTurn == 2) $
     -- Periodic activation only once per turn, for speed,
@@ -188,9 +200,6 @@ endClip arenas = do
     -- e.g., spreading leaders across levels to bump monster generation.
     arena <- rndToAction $ oneOf $ ES.toList arenas
     spawnMonster arena
-  when (clipN `mod` writeSaveClips == 0) $ do
-    modifyServer $ \ser -> ser {swriteSave = False}
-    writeSaveAll False
 
 -- | Trigger periodic items for all actors on the given level.
 applyPeriodicLevel :: (MonadAtomic m, MonadServer m)
@@ -313,13 +322,6 @@ gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 gameExit = do
   -- Verify that the not saved caches are equal to future reconstructed.
   -- Otherwise, save/restore would change game state.
-  -- TODO: to make this hold, we have to update the caches, so we guarantee
-  -- that save/restore at most updates perception.
---  debugPossiblyPrint "Updating all perceptions."
-  factionD <- getsState sfactionD
-  dungeon <- getsState sdungeon
-  mapM_ (\fid -> mapM_ (\lid -> updatePer fid lid) (EM.keys dungeon))
-        (EM.keys factionD)
 --  debugPossiblyPrint "Verifying all perceptions."
   sperFid <- getsServer sperFid
   sperCacheFid <- getsServer sperCacheFid
