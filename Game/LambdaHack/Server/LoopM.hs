@@ -305,19 +305,16 @@ handleActors arenas lid proj fid = do
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 gameExit = do
-  -- Kill all clients, including those that did not take part
-  -- in the current game.
-  -- Clients exit not now, but after they print all ending screens.
-  -- debugPrint "Server kills clients"
-  killAllClients
   -- Verify that the not saved caches are equal to future reconstructed.
   -- Otherwise, save/restore would change game state.
   -- TODO: to make this hold, we have to update the caches, so we guarantee
   -- that save/restore at most updates perception.
+--  debugPossiblyPrint "Updating all perceptions."
   factionD <- getsState sfactionD
   dungeon <- getsState sdungeon
   mapWithKeyM_ (\fid _ ->
     mapWithKeyM_ (\lid _ -> updatePer fid lid) dungeon) factionD
+--  debugPossiblyPrint "Verifying all perceptions."
   sperFid <- getsServer sperFid
   sperCacheFid <- getsServer sperCacheFid
   sperValidFid <- getsServer sperValidFid
@@ -350,6 +347,13 @@ gameExit = do
       !_A1 = assert (sperFid == perFid
                      `blame` "wrong accumulated perception"
                      `twith` (sperFid, perFid)) ()
+  -- Kill all clients, including those that did not take part
+  -- in the current game.
+  -- Clients exit not now, but after they print all ending screens.
+  -- debugPrint "Server kills clients"
+--  debugPossiblyPrint "Killing all clients."
+  killAllClients
+--  debugPossiblyPrint "All clients killed."
   return ()
 
 restartGame :: (MonadAtomic m, MonadServerReadRequest m)

@@ -22,6 +22,9 @@ import Control.Monad.Trans.State.Strict hiding (State)
 import qualified Data.EnumMap.Strict as EM
 import System.FilePath
 
+--import qualified Data.Text.IO as T
+--import System.IO (hFlush, stdout)
+
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Atomic.MonadStateWrite
@@ -147,7 +150,13 @@ executorSer cops copsClient sdebugNxtCmdline = do
   -- TODO: send them a message to tell users "server crashed"
   -- and then wait for them to exit normally.
   Ex.handle (\(ex :: Ex.SomeException) -> do
+--               T.hPutStrLn stdout "Server got exception, waiting for clients."
+--               hFlush stdout
                threadDelay 1000000  -- let clients report their errors
                Ex.throw ex)  -- crash eventually, which kills clients
             exeWithSaves
+--  T.hPutStrLn stdout "Server exiting, waiting for clients."
+--  hFlush stdout
   waitForChildren childrenServer  -- no crash, wait for clients indefinitely
+--  T.hPutStrLn stdout "Server exiting now."
+--  hFlush stdout

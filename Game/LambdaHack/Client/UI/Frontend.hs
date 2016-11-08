@@ -104,6 +104,8 @@ fchanFrontend sdebugCli fs@FSession{..} rf =
     FrontAutoYes b -> writeIORef fautoYesRef b
     FrontShutdown -> do
       cancel fasyncTimeout
+      -- In case the last frame display is pending:
+      void $ tryTakeMVar $ fshowNow rf
       fshutdown rf
 
 display :: RawFrontend -> FrameForall -> IO ()

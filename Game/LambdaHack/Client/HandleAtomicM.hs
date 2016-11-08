@@ -477,4 +477,7 @@ coverSeed c iid seed = do
   getState >>= createSactorAspect
 
 killExit :: MonadClient m => m ()
-killExit = modifyClient $ \cli -> cli {squit = True}
+killExit = do
+  side <- getsClient sside
+  debugPossiblyPrint $ "Client" <+> tshow side <+> "quitting."
+  modifyClient $ \cli -> cli {squit = True}
