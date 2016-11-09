@@ -148,8 +148,12 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
         -- (possibly not currently active) level.
         dungeon <- getsState sdungeon
         mapM_ (\lid -> updatePer fid lid) (EM.keys dungeon)
-        -- Move an actor, starting with leader, if available.
-        mapM_ (\lid -> handleActors allArenas lid fid) arenas
+        -- Move a single actor, starting on arena with leader, if available.
+        let handle [] = return ()
+            handle (lid : rest) = do
+              nonWaitMove <- handleActors allArenas lid fid
+              unless nonWaitMove $ handle rest
+        handle arenas
       loop :: m ()
       loop = do
         allArenas <- arenasForLoop
@@ -271,7 +275,7 @@ handleTrajectories arenas lid fid = do
       handleTrajectories arenas lid fid
 
 handleActors :: (MonadAtomic m, MonadServerReadRequest m)
-             => ES.EnumSet LevelId -> LevelId -> FactionId -> m ()
+             => ES.EnumSet LevelId -> LevelId -> FactionId -> m Bool
 handleActors arenas lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . sactorTime
@@ -290,8 +294,8 @@ handleActors arenas lid fid = do
               $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
       mnext = a1  -- at this point we know this actor is not @bproj@
   case mnext of
-    _ | quit -> return ()
-    Nothing -> return ()
+    _ | quit -> return False
+    Nothing -> return False
     Just (aid, b) | bhp b <= 0 -> do
       dieSer aid b False
       handleActors arenas lid fid
@@ -317,18 +321,19 @@ handleActors arenas lid fid = do
           _ -> assert `failure` cmdS  -- TODO: handle more
         -- Clear messages in the UI client, regardless if leaderless or not.
         execUpdAtomic $ UpdRecordHistory side
-      if | doQueryUI -> do
-           cmdS <- sendQueryUI side aid
-           -- TODO: check that the command is legal first, report and reject,
-           -- but do not crash (currently server asserts things and crashes)
-           handleRequestUI arenas side aid cmdS
-         | aidIsLeader -> do
-           cmdS <- sendQueryAI side aid
-           handleRequestAI arenas side aid cmdS
-         | otherwise -> do
-           cmdN <- sendNonLeaderQueryAI side aid
-           handleReqAI arenas side aid cmdN
-      handleActors arenas lid fid
+      nonWaitMove <-
+        if | doQueryUI -> do
+             cmdS <- sendQueryUI side aid
+             -- TODO: check that the command is legal first, report and reject,
+             -- but do not crash (currently server asserts things and crashes)
+             handleRequestUI arenas side aid cmdS
+           | aidIsLeader -> do
+             cmdS <- sendQueryAI side aid
+             handleRequestAI arenas side aid cmdS
+           | otherwise -> do
+             cmdN <- sendNonLeaderQueryAI side aid
+             handleReqAI arenas side aid cmdN
+      if nonWaitMove then return True else handleActors arenas lid fid
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 gameExit = do
