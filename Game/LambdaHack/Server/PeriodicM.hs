@@ -232,7 +232,7 @@ advanceTime !aid = do
 
 overheadActorTime :: (MonadAtomic m, MonadServer m)
                   => ES.EnumSet LevelId -> FactionId -> ActorId -> m ()
-overheadActorTime !arenas !fid _aid = do
+overheadActorTime !arenas !fid !aid = do
   -- Add communication overhead time delta to all non-projectile,
   -- non-dying faction's actors. Effectively, this limits moves of
   -- a faction to 10, regardless of the number of actors
@@ -250,7 +250,8 @@ overheadActorTime !arenas !fid _aid = do
         in if isNothing (btrajectory body)
               && bfid body == fid
               && bhp body > 0
-              && Just aid2 /= mleader
+              -- If the leader moves, he gets overhead; but not from others.
+              && (Just aid2 /= mleader || aid2 == aid)
            then timeShift time (Delta timeClip)
            else time
       g lid levelTime = if lid `ES.member` arenas
