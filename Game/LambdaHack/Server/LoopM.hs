@@ -142,14 +142,14 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
               Nothing -> ES.elems allArenas
         -- Projectiles are processed first, to get out of the way
         -- and give info for deciding how to move actors.
-        mapM_ (\lid -> handleActors allArenas lid True fid) arenas
+        mapM_ (\lid -> handleTrajectories allArenas lid fid) arenas
         -- Update perception on all levels at once,
         -- in case a leader is changed to actor on another
         -- (possibly not currently active) level.
         dungeon <- getsState sdungeon
         mapM_ (\lid -> updatePer fid lid) (EM.keys dungeon)
         -- Move an actor, starting with leader, if available.
-        mapM_ (\lid -> handleActors allArenas lid False fid) arenas
+        mapM_ (\lid -> handleActors allArenas lid fid) arenas
       loop :: m ()
       loop = do
         allArenas <- arenasForLoop
@@ -230,36 +230,21 @@ applyPeriodicLevel arenas = do
   allActors <- getsState sactorD
   mapM_ applyPeriodicActor $ EM.assocs allActors
 
--- | Perform moves for individual actors, as long as there are actors
--- with the next move time less or equal to the end of current cut-off.
-handleActors :: (MonadAtomic m, MonadServerReadRequest m)
-             => ES.EnumSet LevelId -> LevelId -> Bool -> FactionId -> m ()
-handleActors arenas lid proj fid = do
+handleTrajectories :: (MonadAtomic m, MonadServerReadRequest m)
+                   => ES.EnumSet LevelId -> LevelId -> FactionId -> m ()
+handleTrajectories arenas lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . sactorTime
   quit <- getsServer squit
-  factionD <- getsState sfactionD
   s <- getState
-  let -- Actors of the same faction move together.
-      notDying (_, b) = not $ actorDying b
-      notLeader (aid, b) = Just aid /= gleader (factionD EM.! bfid b)
-      -- TODO: separate projectiles in sactorTime; also separate factions
-      a1 | proj =
-           let order = Ord.comparing $ snd . fst &&& notDying &&& bsymbol . snd
+  let -- TODO: separate projectiles in sactorTime; also separate factions
+      a1 = let order = Ord.comparing $ snd . fst &&& bsymbol . snd
            in (\as ->
                  if null as
                  then Nothing
                  else Just . (\((a, _), b) -> (a, b)) . minimumBy order $ as)
               $ filter (\(_, b) -> bfid b == fid && isJust (btrajectory b))
               $ map (\(a, atime) -> ((a, atime), getActorBody a s))
-              $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
-         | otherwise =
-           let order = Ord.comparing $ notLeader &&& notDying &&& bsymbol . snd
-           in (\as -> if null as
-                      then Nothing
-                      else Just . minimumBy order $ as)
-              $ filter (\(_, b) -> bfid b == fid && isNothing (btrajectory b))
-              $ map (\(a, _) -> (a, getActorBody a s))
               $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
       mnext = a1
   case mnext of
@@ -269,14 +254,47 @@ handleActors arenas lid proj fid = do
       -- A projectile drops to the ground due to obstacles or range.
       -- The carried item is not destroyed, but drops to the ground.
       dieSer aid b False
-      handleActors arenas lid proj fid
+      handleTrajectories arenas lid fid
     Just (aid, b) | bhp b <= 0 -> do
       -- If @b@ is a projectile and it hits an actor,
       -- the carried item is destroyed and that's all.
       -- Otherwise, an actor dies, items drop to the ground
       -- and possibly a new leader is elected.
       dieSer aid b (bproj b)
-      handleActors arenas lid proj fid
+      handleTrajectories arenas lid fid
+    Just (aid, _) -> do
+      setTrajectory aid
+      b2 <- getsState $ getActorBody aid
+      unless (bproj b2 && actorDying b2) $ do
+        advanceTime aid
+        managePerTurn aid
+      handleTrajectories arenas lid fid
+
+handleActors :: (MonadAtomic m, MonadServerReadRequest m)
+             => ES.EnumSet LevelId -> LevelId -> FactionId -> m ()
+handleActors arenas lid fid = do
+  localTime <- getsState $ getLocalTime lid
+  levelTime <- getsServer $ (EM.! lid) . sactorTime
+  quit <- getsServer squit
+  factionD <- getsState sfactionD
+  s <- getState
+  let notDying (_, b) = not $ actorDying b
+      notLeader (aid, b) = Just aid /= gleader (factionD EM.! bfid b)
+      -- TODO: separate projectiles in sactorTime; also separate factions
+      a1 = let order = Ord.comparing $ notLeader &&& notDying &&& bsymbol . snd
+           in (\as -> if null as
+                      then Nothing
+                      else Just . minimumBy order $ as)
+              $ filter (\(_, b) -> bfid b == fid && isNothing (btrajectory b))
+              $ map (\(a, _) -> (a, getActorBody a s))
+              $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
+      mnext = a1  -- at this point we know this actor is not @bproj@
+  case mnext of
+    _ | quit -> return ()
+    Nothing -> return ()
+    Just (aid, b) | bhp b <= 0 -> do
+      dieSer aid b False
+      handleActors arenas lid fid
     Just (aid, body) -> do
       let side = bfid body
           fact = factionD EM.! side
@@ -299,13 +317,7 @@ handleActors arenas lid proj fid = do
           _ -> assert `failure` cmdS  -- TODO: handle more
         -- Clear messages in the UI client, regardless if leaderless or not.
         execUpdAtomic $ UpdRecordHistory side
-      if | isJust $ btrajectory body -> do
-           setTrajectory aid
-           b2 <- getsState $ getActorBody aid
-           unless (bproj b2 && actorDying b2) $ do
-             advanceTime aid
-             managePerTurn aid
-         | doQueryUI -> do
+      if | doQueryUI -> do
            cmdS <- sendQueryUI side aid
            -- TODO: check that the command is legal first, report and reject,
            -- but do not crash (currently server asserts things and crashes)
@@ -316,7 +328,7 @@ handleActors arenas lid proj fid = do
          | otherwise -> do
            cmdN <- sendNonLeaderQueryAI side aid
            handleReqAI arenas side aid cmdN
-      handleActors arenas lid proj fid
+      handleActors arenas lid fid
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 gameExit = do
