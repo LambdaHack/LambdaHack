@@ -250,7 +250,7 @@ handleActors arenas lid proj fid = do
                  if null as
                  then Nothing
                  else Just . (\((a, _), b) -> (a, b)) . minimumBy order $ as)
-              $ filter (\(_, b) -> bfid b == fid && bproj b)
+              $ filter (\(_, b) -> bfid b == fid && isJust (btrajectory b))
               $ map (\(a, atime) -> ((a, atime), getActorBody a s))
               $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
          | otherwise =
@@ -258,7 +258,7 @@ handleActors arenas lid proj fid = do
            in (\as -> if null as
                       then Nothing
                       else Just . minimumBy order $ as)
-              $ filter (\(_, b) -> bfid b == fid && not (bproj b))
+              $ filter (\(_, b) -> bfid b == fid && isNothing (btrajectory b))
               $ map (\(a, _) -> (a, getActorBody a s))
               $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
       mnext = a1
