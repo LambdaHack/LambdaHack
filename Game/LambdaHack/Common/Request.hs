@@ -38,13 +38,13 @@ type RequestAI = (ReqAI, Maybe ActorId)
 
 -- | Client-server requests sent by UI clients.
 data ReqUI =
-    ReqUITimed RequestAnyAbility
+    ReqUINop
+  | ReqUITimed RequestAnyAbility
   | ReqUIGameRestart !(GroupName ModeKind) !Int ![(Int, (Text, Text))]
   | ReqUIGameExit
   | ReqUIGameSave
   | ReqUITactic !Tactic
   | ReqUIAutomate
-  | ReqUINop
   deriving Show
 
 type RequestUI = (ReqUI, Maybe ActorId)

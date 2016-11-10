@@ -145,7 +145,7 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
         mapM_ (\lid -> handleTrajectories allArenas lid fid) arenas
         -- Update perception on all levels at once,
         -- in case a leader is changed to actor on another
-        -- (possibly not currently active) level.
+        -- (possibly not even currently active) level.
         dungeon <- getsState sdungeon
         mapM_ (\lid -> updatePer fid lid) (EM.keys dungeon)
         -- Move a single actor, starting on arena with leader, if available.
@@ -241,16 +241,15 @@ handleTrajectories arenas lid fid = do
   levelTime <- getsServer $ (EM.! lid) . sactorTime
   quit <- getsServer squit
   s <- getState
-  let -- TODO: separate projectiles in sactorTime; also separate factions
-      a1 = let order = Ord.comparing $ snd . fst &&& bsymbol . snd
-           in (\as ->
+  let order = Ord.comparing $ snd . fst
+      mnext = (\as ->
                  if null as
                  then Nothing
                  else Just . (\((a, _), b) -> (a, b)) . minimumBy order $ as)
-              $ filter (\(_, b) -> bfid b == fid && isJust (btrajectory b))
+              $ filter (\(_, b) -> bfid b == fid
+                                   && (bhp b <= 0 || isJust (btrajectory b)))
               $ map (\(a, atime) -> ((a, atime), getActorBody a s))
               $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
-      mnext = a1
   case mnext of
     _ | quit -> return ()
     Nothing -> return ()
@@ -269,7 +268,7 @@ handleTrajectories arenas lid fid = do
     Just (aid, _) -> do
       setTrajectory aid
       b2 <- getsState $ getActorBody aid
-      unless (bproj b2 && actorDying b2) $ do
+      unless (bproj b2 && maybe True (null . fst) (btrajectory b2)) $ do
         advanceTime aid
         managePerTurn aid
       handleTrajectories arenas lid fid
@@ -282,23 +281,19 @@ handleActors arenas lid fid = do
   quit <- getsServer squit
   factionD <- getsState sfactionD
   s <- getState
-  let notDying (_, b) = not $ actorDying b
-      notLeader (aid, b) = Just aid /= gleader (factionD EM.! bfid b)
-      -- TODO: separate projectiles in sactorTime; also separate factions
-      a1 = let order = Ord.comparing $ notLeader &&& notDying &&& bsymbol . snd
-           in (\as -> if null as
+  let notLeader (aid, b) = Just aid /= gleader (factionD EM.! bfid b)
+      order = Ord.comparing $ notLeader &&& bsymbol . snd
+      mnext = (\as -> if null as
                       then Nothing
                       else Just . minimumBy order $ as)
-              $ filter (\(_, b) -> bfid b == fid && isNothing (btrajectory b))
+              $ filter (\(_, b) -> bfid b == fid
+                                   && isNothing (btrajectory b)
+                                   && bhp b > 0)
               $ map (\(a, _) -> (a, getActorBody a s))
               $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
-      mnext = a1  -- at this point we know this actor is not @bproj@
   case mnext of
     _ | quit -> return False
     Nothing -> return False
-    Just (aid, b) | bhp b <= 0 -> do
-      dieSer aid b False
-      handleActors arenas lid fid
     Just (aid, body) -> do
       let side = bfid body
           fact = factionD EM.! side
@@ -312,8 +307,8 @@ handleActors arenas lid fid = do
       when mainUIunderAI $ do
         cmdS <- sendQueryUI side aid
         case fst cmdS of
-          ReqUIAutomate -> execUpdAtomic $ UpdAutoFaction side False
           ReqUINop -> return ()
+          ReqUIAutomate -> execUpdAtomic $ UpdAutoFaction side False
           ReqUIGameExit -> do
             reqGameExit aid
             -- This is not proper UI-forced save, but a timeout, so don't save.
