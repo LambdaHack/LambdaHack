@@ -76,7 +76,10 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
     Just (sRaw, ser, dict) | not $ snewGameSer sdebug -> do  -- a restored game
       execUpdAtomic $ UpdResumeServer $ updateCOps (const cops) sRaw
       putDict dict
+#ifndef CLIENTS_AS_THREADS
+      -- Avoid duplicated frontend init, if we do threaded clients.
       updateCopsDict copsClient sconfig sdebugCli
+#endif
       putServer ser
       modifyServer $ \ser2 -> ser2 {sdebugNxt = sdebug}
       applyDebug
