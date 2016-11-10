@@ -15,7 +15,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Arrow ((&&&))
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Ord as Ord
@@ -234,7 +233,7 @@ applyPeriodicLevel arenas = do
   allActors <- getsState sactorD
   mapM_ applyPeriodicActor $ EM.assocs allActors
 
-handleTrajectories :: (MonadAtomic m, MonadServerReadRequest m)
+handleTrajectories :: (MonadAtomic m, MonadServer m)
                    => LevelId -> FactionId -> m ()
 handleTrajectories lid fid = do
   localTime <- getsState $ getLocalTime lid
@@ -247,7 +246,7 @@ handleTrajectories lid fid = do
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
   mapM_ (hTrajectories . snd) l
 
-hTrajectories :: (MonadAtomic m, MonadServerReadRequest m)
+hTrajectories :: (MonadAtomic m, MonadServer m)
               => (ActorId, Actor) -> m ()
 hTrajectories (aid, b) =
   if | bproj b && maybe True (null . fst) (btrajectory b) -> do
@@ -282,7 +281,8 @@ handleActors arenas lid fid = do
   factionD <- getsState sfactionD
   s <- getState
   let notLeader (aid, b) = Just aid /= gleader (factionD EM.! bfid b)
-      l = sortBy (Ord.comparing $ notLeader &&& bsymbol . snd)
+      l = sortBy (Ord.comparing $ \(aid, b) ->
+                   (notLeader (aid, b), bsymbol b /= '@', bsymbol b, bcolor b))
           $ filter (\(_, b) -> bfid b == fid
                                && isNothing (btrajectory b)
                                && bhp b > 0)
