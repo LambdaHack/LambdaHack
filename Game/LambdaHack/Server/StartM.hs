@@ -39,6 +39,7 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Server.BroadcastAtomic
 import Game.LambdaHack.Server.CommonM
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Server.Fov
@@ -78,6 +79,9 @@ reinitGame = do
   factionD <- getsState sfactionD
   mapWithKeyM_ (\fid _ -> sendUpdate fid $ updRestart fid) factionD
   populateDungeon
+  dungeon <- getsState sdungeon
+  mapM_ (\fid -> mapM_ (\lid -> updatePer fid lid) (EM.keys dungeon))
+        (EM.keys factionD)
 
 mapFromFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a
 mapFromFuns =
