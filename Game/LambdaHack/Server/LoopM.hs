@@ -142,7 +142,7 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
               Nothing -> ES.elems allArenas
         -- Projectiles are processed first, to get out of the way
         -- and give info for deciding how to move actors.
-        mapM_ (\lid -> handleTrajectories allArenas lid fid) arenas
+        mapM_ (\lid -> handleTrajectories lid fid) arenas
         -- Update perception on all levels at once,
         -- in case a leader is changed to actor on another
         -- (possibly not even currently active) level.
@@ -235,43 +235,44 @@ applyPeriodicLevel arenas = do
   mapM_ applyPeriodicActor $ EM.assocs allActors
 
 handleTrajectories :: (MonadAtomic m, MonadServerReadRequest m)
-                   => ES.EnumSet LevelId -> LevelId -> FactionId -> m ()
-handleTrajectories arenas lid fid = do
+                   => LevelId -> FactionId -> m ()
+handleTrajectories lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . sactorTime
   s <- getState
-  let order = Ord.comparing $ snd . fst
-      mnext = (\as ->
-                 if null as
-                 then Nothing
-                 else Just . (\((a, _), b) -> (a, b)) . minimumBy order $ as)
-              $ filter (\(_, b) -> bfid b == fid
-                                   && (bhp b <= 0 || isJust (btrajectory b)))
-              $ map (\(a, atime) -> ((a, atime), getActorBody a s))
-              $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
-  case mnext of
-    Nothing -> return ()
-    Just (aid, b) | bproj b && maybe True (null . fst) (btrajectory b) -> do
-      -- A projectile drops to the ground due to obstacles or range.
-      -- The carried item is not destroyed, but drops to the ground.
-      dieSer aid b False
-      handleTrajectories arenas lid fid
-    Just (aid, b) | bhp b <= 0 -> do
-      -- If @b@ is a projectile and it hits an actor,
-      -- the carried item is destroyed and that's all.
-      -- Otherwise, an actor dies, items drop to the ground
-      -- and possibly a new leader is elected.
-      dieSer aid b (bproj b)
-      handleTrajectories arenas lid fid
-    Just (aid, _) -> do
-      setTrajectory aid
-      b2 <- getsState $ getActorBody aid
-      if bproj b2 && maybe True (null . fst) (btrajectory b2) then
-        dieSer aid b2 False
-      else do
-        advanceTime aid
-        managePerTurn aid
-      handleTrajectories arenas lid fid
+  let l = sortBy (Ord.comparing fst)
+          $ filter (\(_, (_, b)) -> bfid b == fid
+                                    && (bhp b <= 0 || isJust (btrajectory b)))
+          $ map (\(a, atime) -> (atime, (a, getActorBody a s)))
+          $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
+  mapM_ (hTrajectories . snd) l
+
+hTrajectories :: (MonadAtomic m, MonadServerReadRequest m)
+              => (ActorId, Actor) -> m ()
+hTrajectories (aid, b) =
+  if | bproj b && maybe True (null . fst) (btrajectory b) -> do
+       -- A projectile drops to the ground due to obstacles or range.
+       -- The carried item is not destroyed, but drops to the ground.
+       -- The body @b@ may be outdated by this time, so @dieSer@ gets another,
+       -- but we decide death based on the old one --- last moment rescue
+       -- from projectiles or pushed actors doesn't work; too late.
+       dieSer aid False
+     | bhp b <= 0 -> do
+       -- If @b@ is a projectile and it hits an actor,
+       -- the carried item is destroyed and that's all.
+       -- Otherwise, an actor dies, items drop to the ground
+       -- and possibly a new leader is elected.
+       dieSer aid (bproj b)
+     | otherwise -> do
+       -- Even if the actor got teleported to another level by this point,
+       -- we don't care, we set trajectory, etc.
+       setTrajectory aid
+       b2 <- getsState $ getActorBody aid
+       if bproj b2 && maybe True (null . fst) (btrajectory b2) then
+         dieSer aid False
+       else do
+         advanceTime aid
+         managePerTurn aid
 
 handleActors :: (MonadAtomic m, MonadServerReadRequest m)
              => ES.EnumSet LevelId -> LevelId -> FactionId -> m Bool
