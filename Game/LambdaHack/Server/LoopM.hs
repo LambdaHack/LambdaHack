@@ -228,7 +228,7 @@ applyPeriodicLevel arenas = do
                                    (filterRecharging ieffects) itemFull
               _ -> assert `failure` (aid, cstore, iid)
       applyPeriodicActor (aid, b) =
-        when (blid b `ES.member` arenas) $ do
+        when (not (bproj b) && blid b `ES.member` arenas) $ do
           mapM_ (applyPeriodicItem aid COrgan) $ EM.assocs $ borgan b
           mapM_ (applyPeriodicItem aid CEqp) $ EM.assocs $ beqp b
   allActors <- getsState sactorD
@@ -266,7 +266,9 @@ handleTrajectories arenas lid fid = do
     Just (aid, _) -> do
       setTrajectory aid
       b2 <- getsState $ getActorBody aid
-      unless (bproj b2 && maybe True (null . fst) (btrajectory b2)) $ do
+      if bproj b2 && maybe True (null . fst) (btrajectory b2) then
+        dieSer aid b2 False
+      else do
         advanceTime aid
         managePerTurn aid
       handleTrajectories arenas lid fid
@@ -420,9 +422,8 @@ setTrajectory aid = do
       then do
         -- Lose HP due to bumping into an obstacle.
         execUpdAtomic $ UpdRefillHP aid minusM
-        execUpdAtomic $ UpdTrajectory aid
-                                      (btrajectory b)
-                                      (Just ([], speed))
+        execUpdAtomic $ UpdTrajectory aid (btrajectory b)
+                                          (Just ([], speed))
       else do
         when (bproj b && null lv) $ do
           let toColor = Color.BrBlack
