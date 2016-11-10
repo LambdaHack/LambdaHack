@@ -282,52 +282,52 @@ handleActors arenas lid fid = do
   factionD <- getsState sfactionD
   s <- getState
   let notLeader (aid, b) = Just aid /= gleader (factionD EM.! bfid b)
-      order = Ord.comparing $ notLeader &&& bsymbol . snd
-      mnext = (\as -> if null as
-                      then Nothing
-                      else Just . minimumBy order $ as)
-              $ filter (\(_, b) -> bfid b == fid
-                                   && isNothing (btrajectory b)
-                                   && bhp b > 0)
-              $ map (\(a, _) -> (a, getActorBody a s))
-              $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
-  case mnext of
-    Nothing -> return False
-    Just (aid, body) -> do
-      let side = bfid body
-          fact = factionD EM.! side
-          mleader = gleader fact
-          aidIsLeader = mleader == Just aid
-          mainUIactor = fhasUI (gplayer fact)
-                        && (aidIsLeader
-                            || fleaderMode (gplayer fact) == LeaderNull)
-          mainUIunderAI = mainUIactor && isAIFact fact
-          doQueryUI = mainUIactor && not (isAIFact fact)
-      when mainUIunderAI $ do
-        cmdS <- sendQueryUI side aid
-        case fst cmdS of
-          ReqUINop -> return ()
-          ReqUIAutomate -> execUpdAtomic $ UpdAutoFaction side False
-          ReqUIGameExit -> do
-            reqGameExit aid
-            -- This is not proper UI-forced save, but a timeout, so don't save.
-            modifyServer $ \ser -> ser {swriteSave = False}
-          _ -> assert `failure` cmdS  -- TODO: handle more
-        -- Clear messages in the UI client, regardless if leaderless or not.
-        execUpdAtomic $ UpdRecordHistory side
-      nonWaitMove <-
-        if | doQueryUI -> do
-             cmdS <- sendQueryUI side aid
-             -- TODO: check that the command is legal first, report and reject,
-             -- but do not crash (currently server asserts things and crashes)
-             handleRequestUI arenas side aid cmdS
-           | aidIsLeader -> do
-             cmdS <- sendQueryAI side aid
-             handleRequestAI arenas side aid cmdS
-           | otherwise -> do
-             cmdN <- sendNonLeaderQueryAI side aid
-             handleReqAI arenas side aid cmdN
-      if nonWaitMove then return True else handleActors arenas lid fid
+      l = sortBy (Ord.comparing $ notLeader &&& bsymbol . snd)
+          $ filter (\(_, b) -> bfid b == fid
+                               && isNothing (btrajectory b)
+                               && bhp b > 0)
+          $ map (\(a, _) -> (a, getActorBody a s))
+          $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
+  hActors arenas fid l
+
+hActors :: (MonadAtomic m, MonadServerReadRequest m)
+        => ES.EnumSet LevelId -> FactionId -> [(ActorId, Actor)] -> m Bool
+hActors _ _ [] = return False
+hActors arenas fid ((aid, body) : rest) = do
+  let side = bfid body
+  fact <- getsState $ (EM.! side) . sfactionD
+  let mleader = gleader fact
+      aidIsLeader = mleader == Just aid
+      mainUIactor = fhasUI (gplayer fact)
+                    && (aidIsLeader
+                        || fleaderMode (gplayer fact) == LeaderNull)
+      mainUIunderAI = mainUIactor && isAIFact fact
+      doQueryUI = mainUIactor && not (isAIFact fact)
+  when mainUIunderAI $ do
+    cmdS <- sendQueryUI side aid
+    case fst cmdS of
+      ReqUINop -> return ()
+      ReqUIAutomate -> execUpdAtomic $ UpdAutoFaction side False
+      ReqUIGameExit -> do
+        reqGameExit aid
+        -- This is not proper UI-forced save, but a timeout, so don't save.
+        modifyServer $ \ser -> ser {swriteSave = False}
+      _ -> assert `failure` cmdS  -- TODO: handle more
+    -- Clear messages in the UI client, regardless if leaderless or not.
+    execUpdAtomic $ UpdRecordHistory side
+  nonWaitMove <-
+    if | doQueryUI -> do
+         cmdS <- sendQueryUI side aid
+         -- TODO: check that the command is legal first, report and reject,
+         -- but do not crash (currently server asserts things and crashes)
+         handleRequestUI arenas side aid cmdS
+       | aidIsLeader -> do
+         cmdS <- sendQueryAI side aid
+         handleRequestAI arenas side aid cmdS
+       | otherwise -> do
+         cmdN <- sendNonLeaderQueryAI side aid
+         handleReqAI arenas side aid cmdN
+  if nonWaitMove then return True else hActors arenas fid rest
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 gameExit = do
