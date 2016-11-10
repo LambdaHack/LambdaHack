@@ -296,12 +296,13 @@ hActors _ _ [] = return False
 hActors arenas fid ((aid, body) : rest) = do
   let side = bfid body
   fact <- getsState $ (EM.! side) . sfactionD
+  quit <- getsServer squit
   let mleader = gleader fact
       aidIsLeader = mleader == Just aid
       mainUIactor = fhasUI (gplayer fact)
                     && (aidIsLeader
                         || fleaderMode (gplayer fact) == LeaderNull)
-      mainUIunderAI = mainUIactor && isAIFact fact
+      mainUIunderAI = mainUIactor && isAIFact fact && not quit
       doQueryUI = mainUIactor && not (isAIFact fact)
   when mainUIunderAI $ do
     cmdS <- sendQueryUI side aid
