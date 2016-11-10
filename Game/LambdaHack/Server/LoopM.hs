@@ -239,7 +239,6 @@ handleTrajectories :: (MonadAtomic m, MonadServerReadRequest m)
 handleTrajectories arenas lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . sactorTime
-  quit <- getsServer squit
   s <- getState
   let order = Ord.comparing $ snd . fst
       mnext = (\as ->
@@ -251,7 +250,6 @@ handleTrajectories arenas lid fid = do
               $ map (\(a, atime) -> ((a, atime), getActorBody a s))
               $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
   case mnext of
-    _ | quit -> return ()
     Nothing -> return ()
     Just (aid, b) | bproj b && maybe True (null . fst) (btrajectory b) -> do
       -- A projectile drops to the ground due to obstacles or range.
@@ -278,7 +276,6 @@ handleActors :: (MonadAtomic m, MonadServerReadRequest m)
 handleActors arenas lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . sactorTime
-  quit <- getsServer squit
   factionD <- getsState sfactionD
   s <- getState
   let notLeader (aid, b) = Just aid /= gleader (factionD EM.! bfid b)
@@ -292,7 +289,6 @@ handleActors arenas lid fid = do
               $ map (\(a, _) -> (a, getActorBody a s))
               $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
   case mnext of
-    _ | quit -> return False
     Nothing -> return False
     Just (aid, body) -> do
       let side = bfid body
