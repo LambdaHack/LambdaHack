@@ -91,7 +91,7 @@ debugAid :: (MonadServer m, Show a) => ActorId -> Text -> a -> m Text
 debugAid aid label cmd = do
   b <- getsState $ getActorBody aid
   time <- getsState $ getLocalTime (blid b)
-  btime <- getsServer $ (EM.! aid) . (EM.! blid b) . sactorTime
+  btime <- getsServer $ (EM.! aid) . (EM.! blid b) . (EM.! bfid b) . sactorTime
   return $! debugShow DebugAid { label
                                , cmd
                                , lid = blid b

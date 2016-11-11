@@ -179,14 +179,16 @@ dominateFid fid target = do
   ais <- getsState $ getCarriedAssocs tb
   actorAspect <- getsServer sactorAspect
   let ar = actorAspect EM.! target
-  btime <- getsServer $ (EM.! target) . (EM.! blid tb) . sactorTime
+  btime <-
+    getsServer $ (EM.! target) . (EM.! blid tb) . (EM.! bfid tb) . sactorTime
   execUpdAtomic $ UpdLoseActor target tb ais
   let bNew = tb { bfid = fid
                 , bfidImpressed = bfid tb
                 , bcalm = max 0 $ xM (aMaxCalm ar) `div` 2 }
   execUpdAtomic $ UpdSpotActor target bNew ais
   modifyServer $ \ser ->
-    ser {sactorTime = updateActorTime (blid tb) target btime $ sactorTime ser}
+    ser {sactorTime = updateActorTime fid (blid tb) target btime
+                      $ sactorTime ser}
   let discoverSeed (iid, cstore) = do
         seed <- getsServer $ (EM.! iid) . sitemSeedD
         item <- getsState $ getItemBody iid
@@ -211,7 +213,7 @@ dominateFid fid target = do
 advanceTime :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 advanceTime !aid = do
   b <- getsState $ getActorBody aid
-  btime_b <- getsServer $ (EM.! aid) . (EM.! blid b) . sactorTime
+  btime_b <- getsServer $ (EM.! aid) . (EM.! blid b) . (EM.! bfid b) . sactorTime
   localTime <- getsState $ getLocalTime (blid b)
   actorAspect <- getsServer sactorAspect
   let ar = actorAspect EM.! aid
@@ -228,7 +230,7 @@ advanceTime !aid = do
         in localPlusDelta `timeDeltaToFrom` btime_b
   -- @t@ may be negative; that's OK.
   modifyServer $ \ser ->
-    ser {sactorTime = ageActor (blid b) aid t $ sactorTime ser}
+    ser {sactorTime = ageActor (bfid b) (blid b) aid t $ sactorTime ser}
 
 overheadActorTime :: (MonadAtomic m, MonadServer m)
                   => ES.EnumSet LevelId -> FactionId -> ActorId -> m ()
@@ -242,13 +244,12 @@ overheadActorTime !arenas !fid !aid = do
   -- TODO: this and handleActors can be sped up by keeping it per lid
   -- and per fid, in a map from times to list of actors, separately
   -- map for projectiles and dying and a map for others. Complex.
-  actorTime <- getsServer sactorTime
+  actorTime <- getsServer $ (EM.! fid) . sactorTime
   s <- getState
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
   let f !aid2 !time =
         let body = getActorBody aid2 s
         in if isNothing (btrajectory body)
-              && bfid body == fid
               && bhp body > 0
               -- If the leader moves, he gets overhead; but not from others.
               && (Just aid2 /= mleader || aid2 == aid)
@@ -258,7 +259,8 @@ overheadActorTime !arenas !fid !aid = do
                         then EM.mapWithKey f levelTime
                         else levelTime
       actorTimeNew = EM.mapWithKey g actorTime
-  modifyServer $ \ser -> ser {sactorTime = actorTimeNew}
+  modifyServer $ \ser ->
+    ser {sactorTime = EM.insert fid actorTimeNew $ sactorTime ser}
 
 -- | Swap the relative move times of two actors (e.g., when switching
 -- a UI leader).
@@ -268,8 +270,8 @@ swapTime source target = do
   tb <- getsState $ getActorBody target
   slvl <- getsState $ getLocalTime (blid sb)
   tlvl <- getsState $ getLocalTime (blid tb)
-  btime_sb <- getsServer $ (EM.! source) . (EM.! blid sb) . sactorTime
-  btime_tb <- getsServer $ (EM.! target) . (EM.! blid tb) . sactorTime
+  btime_sb <- getsServer $ (EM.! source) . (EM.! blid sb) . (EM.! bfid sb) . sactorTime
+  btime_tb <- getsServer $ (EM.! target) . (EM.! blid tb) . (EM.! bfid tb) . sactorTime
   let lvlDelta = slvl `timeDeltaToFrom` tlvl
       bDelta = btime_sb `timeDeltaToFrom` btime_tb
       sdelta = timeDeltaSubtract lvlDelta bDelta
@@ -285,9 +287,9 @@ swapTime source target = do
                        `blame` ( slvl, tlvl, btime_sb, btime_tb
                                , sdelta, sdelta', tdelta, tdelta' )) ()
   when (sdelta /= Delta timeZero) $ modifyServer $ \ser ->
-    ser {sactorTime = ageActor (blid sb) source sdelta $ sactorTime ser}
+    ser {sactorTime = ageActor (bfid sb) (blid sb) source sdelta $ sactorTime ser}
   when (tdelta /= Delta timeZero) $ modifyServer $ \ser ->
-    ser {sactorTime = ageActor (blid tb) target tdelta $ sactorTime ser}
+    ser {sactorTime = ageActor (bfid tb) (blid tb) target tdelta $ sactorTime ser}
 
 -- | Check if the given actor is dominated and update his calm.
 -- We don't update calm once per game turn (even though

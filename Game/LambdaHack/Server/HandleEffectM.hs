@@ -538,7 +538,7 @@ effectAscend recursiveCall execSfx k source target = do
        -- We keep it useful even in shallow dungeons.
        recursiveCall $ IK.Teleport 30  -- powerful teleport
      | otherwise -> do
-       btime_bOld <- getsServer $ (EM.! target) . (EM.! lid1) . sactorTime
+       btime_bOld <- getsServer $ (EM.! target) . (EM.! lid1) . (EM.! bfid b1) . sactorTime
        let switch1 = void $ switchLevels1 (target, b1)
            switch2 = do
              -- Make the initiator of the stair move the leader,
@@ -570,12 +570,12 @@ effectAscend recursiveCall execSfx k source target = do
            switch1
            -- Move the inhabitant out of the way and to where the actor was.
            let moveInh inh = do
-                 -- Preserve old the leader, since the actor is pushed,
+                 -- Preserve the old leader, since the actor is pushed,
                  -- so possibly has nothing worhwhile to do on the new level
                  -- (and could try to switch back, if made a leader,
                  -- leading to a loop).
                  btime_inh <-
-                   getsServer $ (EM.! fst inh) . (EM.! lid2) . sactorTime
+                   getsServer $ (EM.! fst inh) . (EM.! lid2) . (EM.! bfid (snd inh)) . sactorTime
                  inhMLead <- switchLevels1 inh
                  switchLevels2 lid1 pos1 inh btime_inh inhMLead
            mapM_ moveInh inhabitants
@@ -638,7 +638,7 @@ switchLevels2 lidNew posNew (aid, bOld) btime_bOld mlead = do
   execUpdAtomic $ UpdCreateActor aid bNew ais
   let btime = shiftByDelta $ btime_bOld
   modifyServer $ \ser ->
-    ser {sactorTime = updateActorTime lidNew aid btime $ sactorTime ser}
+    ser {sactorTime = updateActorTime (bfid bNew) lidNew aid btime $ sactorTime ser}
   case mlead of
     Nothing -> return ()
     Just leader -> supplantLeader side leader
@@ -677,7 +677,7 @@ effectParalyze execSfx nDm target = do
     else do
       let t = timeDeltaScale (Delta timeClip) p
       modifyServer $ \ser ->
-        ser {sactorTime = ageActor (blid b) target t $ sactorTime ser}
+        ser {sactorTime = ageActor (bfid b) (blid b) target t $ sactorTime ser}
       execSfx
       return True
 
@@ -695,7 +695,7 @@ effectInsertMove execSfx nDm target = do
   let tpm = ticksPerMeter $ bspeed b ar
       t = timeDeltaScale tpm (-p)
   modifyServer $ \ser ->
-    ser {sactorTime = ageActor (blid b) target t $ sactorTime ser}
+    ser {sactorTime = ageActor (bfid b) (blid b) target t $ sactorTime ser}
   execSfx
   return True
 
@@ -1001,7 +1001,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
                   tpm = ticksPerMeter $ bspeed tb ar
                   delta = timeDeltaScale tpm (-1)
               modifyServer $ \ser ->
-                ser {sactorTime = ageActor (blid tb) target delta
+                ser {sactorTime = ageActor (bfid tb) (blid tb) target delta
                                   $ sactorTime ser}
               execSfx
               return True

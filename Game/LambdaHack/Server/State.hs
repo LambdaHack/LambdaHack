@@ -97,15 +97,18 @@ instance Show RNGs where
                        startingRandomGenerator ]
     in unwords args
 
-type ActorTime = EM.EnumMap LevelId (EM.EnumMap ActorId Time)
+type ActorTime =
+  EM.EnumMap FactionId (EM.EnumMap LevelId (EM.EnumMap ActorId Time))
 
-updateActorTime :: LevelId -> ActorId -> Time -> ActorTime -> ActorTime
-updateActorTime !lid !aid !time =
-  EM.insertWith EM.union lid (EM.singleton aid time)
+updateActorTime :: FactionId -> LevelId -> ActorId -> Time -> ActorTime
+                -> ActorTime
+updateActorTime !fid !lid !aid !time =
+  EM.adjust (EM.adjust (EM.insert aid time) lid) fid
 
-ageActor :: LevelId -> ActorId -> Delta Time -> ActorTime -> ActorTime
-ageActor !lid !aid !delta =
-  EM.adjust (EM.adjust (flip timeShift delta) aid) lid
+ageActor :: FactionId -> LevelId -> ActorId -> Delta Time -> ActorTime
+         -> ActorTime
+ageActor !fid !lid !aid !delta =
+  EM.adjust (EM.adjust (EM.adjust (flip timeShift delta) aid) lid) fid
 
 -- | Initial, empty game server state.
 emptyStateServer :: StateServer

@@ -78,8 +78,10 @@ reinitGame = do
                                   scurDiffSer sdebugCli
   factionD <- getsState sfactionD
   mapWithKeyM_ (\fid _ -> sendUpdate fid $ updRestart fid) factionD
-  populateDungeon
   dungeon <- getsState sdungeon
+  let sactorTime = EM.map (const (EM.map (const EM.empty) dungeon)) factionD
+  modifyServer $ \ser -> ser {sactorTime}
+  populateDungeon
   mapM_ (\fid -> mapM_ (\lid -> updatePer fid lid) (EM.keys dungeon))
         (EM.keys factionD)
 

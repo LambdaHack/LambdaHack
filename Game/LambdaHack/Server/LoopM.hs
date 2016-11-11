@@ -240,11 +240,10 @@ handleTrajectories :: (MonadAtomic m, MonadServer m)
                    => LevelId -> FactionId -> m ()
 handleTrajectories lid fid = do
   localTime <- getsState $ getLocalTime lid
-  levelTime <- getsServer $ (EM.! lid) . sactorTime
+  levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
   s <- getState
   let l = sortBy (Ord.comparing fst)
-          $ filter (\(_, (_, b)) -> bfid b == fid
-                                    && (bhp b <= 0 || isJust (btrajectory b)))
+          $ filter (\(_, (_, b)) -> isJust (btrajectory b) || bhp b <= 0)
           $ map (\(a, atime) -> (atime, (a, getActorBody a s)))
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
   mapM_ (hTrajectories . snd) l
@@ -280,15 +279,13 @@ handleActors :: (MonadAtomic m, MonadServerReadRequest m)
              => ES.EnumSet LevelId -> LevelId -> FactionId -> m Bool
 handleActors arenas lid fid = do
   localTime <- getsState $ getLocalTime lid
-  levelTime <- getsServer $ (EM.! lid) . sactorTime
+  levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
   factionD <- getsState sfactionD
   s <- getState
   let notLeader (aid, b) = Just aid /= gleader (factionD EM.! bfid b)
       l = sortBy (Ord.comparing $ \(aid, b) ->
                    (notLeader (aid, b), bsymbol b /= '@', bsymbol b, bcolor b))
-          $ filter (\(_, b) -> bfid b == fid
-                               && isNothing (btrajectory b)
-                               && bhp b > 0)
+          $ filter (\(_, b) -> isNothing (btrajectory b) && bhp b > 0)
           $ map (\(a, _) -> (a, getActorBody a s))
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
   hActors arenas fid l
