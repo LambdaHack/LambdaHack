@@ -298,7 +298,7 @@ cmdAtomicSemCli cmd = case cmd of
   UpdLoseTile lid ts -> do
     updateSalter lid ts
     invalidateBfsLid lid  -- from known to unknown tiles
-  UpdAgeGame _ arenas ->
+  UpdAgeGame arenas ->
     -- This tweak is only needed in AI client, but it's fairly cheap.
     modifyClient $ \cli ->
       let f !ec@Left{} = ec

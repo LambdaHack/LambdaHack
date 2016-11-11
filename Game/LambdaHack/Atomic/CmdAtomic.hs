@@ -96,7 +96,8 @@ data UpdAtomic =
   | UpdLoseSmell !LevelId ![(Point, Time)]
   -- Assorted.
   | UpdTimeItem !ItemId !Container !ItemTimer !ItemTimer
-  | UpdAgeGame !(Delta Time) ![LevelId]
+  | UpdAgeGame ![LevelId]
+  | UpdUnAgeGame ![LevelId]
   | UpdDiscover !Container !ItemId !(Kind.Id ItemKind) !ItemSeed !AbsDepth
   | UpdCover !Container !ItemId !(Kind.Id ItemKind) !ItemSeed !AbsDepth
   | UpdDiscoverKind !Container !ItemId !(Kind.Id ItemKind)
@@ -179,7 +180,8 @@ undoUpdAtomic cmd = case cmd of
   UpdSpotSmell lid sms -> Just $ UpdLoseSmell lid sms
   UpdLoseSmell lid sms -> Just $ UpdSpotSmell lid sms
   UpdTimeItem iid c fromIt toIt -> Just $ UpdTimeItem iid c toIt fromIt
-  UpdAgeGame delta lids -> Just $ UpdAgeGame (timeDeltaReverse delta) lids
+  UpdAgeGame lids -> Just $ UpdUnAgeGame lids
+  UpdUnAgeGame lids -> Just $ UpdAgeGame lids
   UpdDiscover c iid ik seed ldepth -> Just $ UpdCover c iid ik seed ldepth
   UpdCover c iid ik seed ldepth -> Just $ UpdDiscover c iid ik seed ldepth
   UpdDiscoverKind c iid ik -> Just $ UpdCoverKind c iid ik

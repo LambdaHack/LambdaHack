@@ -11,8 +11,8 @@ module Game.LambdaHack.Atomic.HandleAtomicWrite
   , updTrajectory, updColorActor, updQuitFaction, updLeadFaction
   , updDiplFaction, updTacticFaction, updAutoFaction, updRecordKill
   , updAlterTile, updAlterClear, updLearnSecrets, updSpotTile, updLoseTile
-  , updAlterSmell, updSpotSmell, updLoseSmell, updTimeItem, updAgeGame
-  , updRestart, updRestartServer, updResumeServer
+  , updAlterSmell, updSpotSmell, updLoseSmell, updTimeItem
+  , updAgeGame, updUnAgeGame, updRestart, updRestartServer, updResumeServer
 #endif
   ) where
 
@@ -91,7 +91,8 @@ handleUpdAtomic cmd = case cmd of
   UpdSpotSmell lid sms -> updSpotSmell lid sms
   UpdLoseSmell lid sms -> updLoseSmell lid sms
   UpdTimeItem iid c fromIt toIt -> updTimeItem iid c fromIt toIt
-  UpdAgeGame t lids -> updAgeGame t lids
+  UpdAgeGame lids -> updAgeGame lids
+  UpdUnAgeGame lids -> updUnAgeGame lids
   UpdDiscover{} -> return ()      -- We can't keep dicovered data in State,
   UpdCover{} -> return ()         -- because server saves all atomic commands
   UpdDiscoverKind{} -> return ()  -- to apply their inverses for undo,
@@ -490,10 +491,15 @@ updTimeItem iid c fromIt toIt = assert (fromIt /= toIt) $ do
 -- TODO: It leaks information that there is activity on various level,
 -- even if the faction has no actors there, so show this on UI somewhere,
 -- e.g., in the @~@ menu of seen level indicate recent activity.
-updAgeGame :: MonadStateWrite m => Delta Time -> [LevelId] -> m ()
-updAgeGame !delta !lids = assert (delta /= Delta timeZero) $ do
-  modifyState $ updateTime $ flip timeShift delta
-  mapM_ (ageLevel delta) lids
+updAgeGame :: MonadStateWrite m => [LevelId] -> m ()
+updAgeGame !lids = do
+  modifyState $ updateTime $ flip timeShift (Delta timeClip)
+  mapM_ (ageLevel (Delta timeClip)) lids
+
+updUnAgeGame :: MonadStateWrite m => [LevelId] -> m ()
+updUnAgeGame !lids = do
+  modifyState $ updateTime $ flip timeShift (timeDeltaReverse $ Delta timeClip)
+  mapM_ (ageLevel (timeDeltaReverse $ Delta timeClip)) lids
 
 ageLevel :: MonadStateWrite m => Delta Time -> LevelId -> m ()
 ageLevel delta lid =

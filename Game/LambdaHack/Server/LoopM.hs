@@ -193,7 +193,7 @@ endClip arenas = do
   -- because I'd need to send also all arenas, which should be updated,
   -- and this is too expensive data for each, e.g., projectile move.
   -- I send even if nothing changes so that UI time display can progress.
-  execUpdAtomic $ UpdAgeGame (Delta timeClip) $ ES.toList arenas
+  execUpdAtomic $ UpdAgeGame $ ES.toList arenas
   -- Perform periodic dungeon maintenance.
   when (clipN `mod` leadLevelClips == 0) leadLevelSwitch
   when (clipN `mod` clipInTurn == 2) $

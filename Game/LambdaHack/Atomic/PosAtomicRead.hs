@@ -119,7 +119,8 @@ posUpdAtomic cmd = case cmd of
     let ps = map fst sms
     return $! PosSmell lid ps
   UpdTimeItem _ c _ _ -> singleContainer c
-  UpdAgeGame _ _ -> return PosAll
+  UpdAgeGame _ -> return PosAll
+  UpdUnAgeGame _ -> return PosAll
   UpdDiscover c _ _ _ _ -> singleContainer c
   UpdCover c _ _ _ _ -> singleContainer c
   UpdDiscoverKind c _ _ -> singleContainer c
