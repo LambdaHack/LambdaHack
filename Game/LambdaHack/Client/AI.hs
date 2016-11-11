@@ -13,7 +13,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.Text as T
 
 import Game.LambdaHack.Client.AI.ConditionM
 import Game.LambdaHack.Client.AI.HandleAbilityM
@@ -78,7 +77,7 @@ udpdateCondInMelee aid = do
 -- updates the target in the client state and returns the new target explicitly.
 refreshTarget :: MonadClient m
               => (ActorId, Actor)  -- ^ the actor to refresh
-              -> m TgtAndPath
+              -> m (Maybe TgtAndPath)
 refreshTarget (aid, body) = do
   side <- getsClient sside
   let !_A = assert (bfid body == side
@@ -88,24 +87,26 @@ refreshTarget (aid, body) = do
                     `blame` "AI gets to manually move its projectiles"
                     `twith` (aid, body, side)) ()
   stratTarget <- targetStrategy aid
-  tgtMPath <-
-    if nullStrategy stratTarget then  -- equiv to nullFreq
-      -- No sensible target; wrong; they should go in circles at worst.
-      assert `failure` stratTarget
-    else
-      -- Choose a target from those proposed by AI for the actor.
-      rndToAction $ frequency $ bestVariant stratTarget
-  oldTgt <- getsClient $ EM.lookup aid . stargetD
-  let _debug = T.unpack
-          $ "\nHandleAI symbol:"    <+> tshow (bsymbol body)
-          <> ", aid:"               <+> tshow aid
-          <> ", pos:"               <+> tshow (bpos body)
-          <> "\nHandleAI oldTgt:"   <+> tshow oldTgt
-          <> "\nHandleAI strTgt:"   <+> tshow stratTarget
-          <> "\nHandleAI target:"   <+> tshow tgtMPath
---  trace _debug skip
-  modifyClient $ \cli -> cli {stargetD = EM.insert aid tgtMPath (stargetD cli)}
-  return tgtMPath
+  if nullStrategy stratTarget then do
+    -- Melee in progress and the actor can't contribute
+    -- and would slow down others if he acted.
+    modifyClient $ \cli -> cli {stargetD = EM.delete aid (stargetD cli)}
+    return Nothing
+  else do
+    -- Choose a target from those proposed by AI for the actor.
+    tgtMPath <- rndToAction $ frequency $ bestVariant stratTarget
+    modifyClient $ \cli ->
+      cli {stargetD = EM.insert aid tgtMPath (stargetD cli)}
+    return $ Just tgtMPath
+  -- oldTgt <- getsClient $ EM.lookup aid . stargetD
+  -- let _debug = T.unpack
+  --         $ "\nHandleAI symbol:"    <+> tshow (bsymbol body)
+  --         <> ", aid:"               <+> tshow aid
+  --         <> ", pos:"               <+> tshow (bpos body)
+  --         <> "\nHandleAI oldTgt:"   <+> tshow oldTgt
+  --         <> "\nHandleAI strTgt:"   <+> tshow stratTarget
+  --         <> "\nHandleAI target:"   <+> tshow tgtMPath
+  --  trace _debug skip
 
 -- | Pick an action the actor will perform this turn.
 pickAction :: MonadClient m => (ActorId, Actor) -> m RequestAnyAbility

@@ -44,11 +44,15 @@ targetStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy TgtAndPath)
 targetStrategy aid = do
   cops@Kind.COps{corule, cotile} <- getsState scops
+  b <- getsState $ getActorBody aid
+  mleader <- getsClient _sleader
   condInMelee <- getsClient scondInMelee
-  let stdRuleset = Kind.stdRuleset corule
+  let (newCondInMelee, oldCondInMelee) = case condInMelee EM.! blid b of
+        Right conds -> if mleader == Just aid then (False, False) else conds
+        Left{} -> assert `failure` condInMelee
+      stdRuleset = Kind.stdRuleset corule
       nearby = rnearby stdRuleset
   itemToF <- itemToFullClient
-  b <- getsState $ getActorBody aid
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
   let stepAccesible :: AndPath -> Bool
       stepAccesible AndPath{pathList=q : _ : _} =  -- goal not adjacent
@@ -118,7 +122,8 @@ targetStrategy aid = do
   canEscape <- factionCanEscape (bfid b)
   let condNoUsableWeapon = bweapon b == 0
       canSmell = aSmell ar > 0
-      meleeNearby | canEscape = nearby `div` 2  -- not aggresive
+      meleeNearby | newCondInMelee = nearby `div` 4
+                  | canEscape = nearby `div` 2
                   | otherwise = nearby
       rangedNearby = 2 * meleeNearby
       -- Don't target nonmoving actors at all if bad melee,
@@ -143,7 +148,6 @@ targetStrategy aid = do
         tMelee <- targetableMelee aidE body
         return $! targetableRangedOrSpecial body || tMelee
   nearbyFoes <- filterM targetableEnemy allFoes
-  mleader <- getsClient _sleader
   let itemUsefulness itemFull =
         fst <$> totalUsefulness cops b ar fact itemFull
       desirableBag bag = any (\(iid, k) ->
@@ -184,6 +188,7 @@ targetStrategy aid = do
         cfoes <- closestFoes nearbyFoes aid
         case cfoes of
           (_, (aid2, _)) : _ -> setPath $ TEnemy aid2 False
+          [] | newCondInMelee -> return reject  -- don't slow down fighters
           [] -> do
             -- Tracking enemies is more important than exploring,
             -- and smelling actors are usually blind, so bad at exploring.
@@ -279,7 +284,7 @@ targetStrategy aid = do
       updateTgt tap@TgtAndPath{tapPath=AndPath{..},tapTgt} = case tapTgt of
         TEnemy a permit -> do
           body <- getsState $ getActorBody a
-          if | not focused  -- prefers closer foes
+          if | (not focused || newCondInMelee)  -- prefers closer foes
                && a `notElem` map fst nearbyFoes  -- old one not close enough
                || blid body /= blid b  -- wrong level
                || actorDying body  -- foe already dying
@@ -298,6 +303,7 @@ targetStrategy aid = do
                  NoPath -> pickNewTarget  -- enemy became unreachable
                  AndPath{pathLen=0} -> pickNewTarget  -- he is his own enemy
                  AndPath{} -> return $! returN "TEnemy" tap{tapPath=mpath}
+        _ | newCondInMelee && not oldCondInMelee -> pickNewTarget
         TEnemyPos _ lid p permit  -- chase last position even if foe hides
           | lid /= blid b  -- wrong level
             || chessDist (bpos b) p > aSight ar  -- not obscured due to my move

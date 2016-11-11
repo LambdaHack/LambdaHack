@@ -36,7 +36,7 @@ import Game.LambdaHack.Content.ModeKind
 -- Pick a new leader from among the actors on the current level.
 -- Refresh the target of the new leader, even if unchanged.
 pickActorToMove :: MonadClient m
-                => ((ActorId, Actor) -> m TgtAndPath)
+                => ((ActorId, Actor) -> m (Maybe TgtAndPath))
                 -> m (ActorId, Actor)
 {-# INLINE pickActorToMove #-}
 pickActorToMove refreshTarget = do
@@ -76,12 +76,12 @@ pickActorToMove refreshTarget = do
       -- (to make the AI appear more human-like and easier to observe).
       -- TODO: this also takes melee into account, but not shooting.
       let refresh aidBody = do
-            tgt <- refreshTarget aidBody
-            return (aidBody, tgt)
+            mtgt <- refreshTarget aidBody
+            return $ (\tgt -> (aidBody, tgt)) <$> mtgt
           goodGeneric (_, TgtAndPath{tapPath=NoPath}) = False
           goodGeneric ((aid, b), _) =
             not (aid == oldAid && waitedLastTurn b)  -- not stuck
-      oursTgt <- filter goodGeneric <$> mapM refresh ours
+      oursTgt <- filter goodGeneric . catMaybes <$> mapM refresh ours
       let actorVulnerable ((aid, body), _) = do
             let ar = case EM.lookup aid actorAspect of
                   Just aspectRecord -> aspectRecord
@@ -126,6 +126,10 @@ pickActorToMove refreshTarget = do
                       && null closeFoes  -- the enemy not visible; a trap!
           -- AI has to be prudent and not lightly waste leader for meleeing,
           -- even if his target is distant
+          -- TODO: actually determine if the leader melees or is just
+          -- adjacent and ignores the enemy; also, but even if he really melees
+          -- don't switch from him to an actor with no target or no path
+          -- because the actor would slow down the melee even if only 2 actors
           actorMeleeing ((aid, _), _) = condAnyFoeAdjM aid
           actorMeleeBad ((aid, _), _) = do
             threatDistL <- threatDistList aid
@@ -238,7 +242,7 @@ pickActorToMove refreshTarget = do
         _ -> return (oldAid, oldBody)
 
 useTactics :: MonadClient m
-           => ((ActorId, Actor) -> m TgtAndPath)
+           => ((ActorId, Actor) -> m (Maybe TgtAndPath))
            -> ActorId
            -> m ()
 {-# INLINE useTactics #-}
