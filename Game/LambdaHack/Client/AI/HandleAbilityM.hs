@@ -140,10 +140,11 @@ actionStrategy aid = do
             && abInMaxSkill AbMelee )
         , ( [AbMelee], (toAny :: ToAny 'AbMelee)
             <$> meleeBlocker aid  -- only melee target or blocker
-          , condAnyFoeAdj
-            || not (abInMaxSkill AbDisplace)  -- melee friends, not displace
+          , condAnyFoeAdj  -- if foes, don't displace, otherwise friends:
+            || not (abInMaxSkill AbDisplace)  -- displace friends, if possible
                && fleaderMode (gplayer fact) == LeaderNull  -- not restrained
-               && condAimEnemyPresent )  -- excited
+               && condAimEnemyPresent  -- excited
+               && not condAimEnemyAdjFriend )  -- don't incur overhead
         , ( [AbTrigger], (toAny :: ToAny 'AbTrigger)
             <$> trigger aid False
           , condOnTriggerable && not condDesirableFloorItem
@@ -517,11 +518,15 @@ unneeded cops condAnyFoeAdj condShineBetrays
 meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbMelee))
 meleeBlocker aid = do
   b <- getsState $ getActorBody aid
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   actorSk <- actorSkillsClient aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   case mtgtMPath of
-    Just TgtAndPath{tapPath=AndPath{pathList=q : _,pathGoal}} -> do
+    Just TgtAndPath{tapPath=AndPath{pathList=q : _, pathGoal}} -> do
       -- We prefer the goal (e.g., when no accessible, but adjacent),
       -- but accept @q@ even if it's only a blocking enemy position.
       let maim | adjacent (bpos b) pathGoal = Just pathGoal
@@ -532,19 +537,25 @@ meleeBlocker aid = do
         Just aim -> getsState $ posToAssocs aim (blid b)
       case lBlocker of
         (aid2, body2) : _ -> do
+          let ar2 = case EM.lookup aid2 actorAspect of
+                Just aspectRecord -> aspectRecord
+                Nothing -> assert `failure` aid
           -- No problem if there are many projectiles at the spot. We just
           -- attack the first one.
-          if not (actorDying body2)  -- already dying
-             && (not (bproj body2)  -- displacing saves a move
-                 && isAtWar fact (bfid body2)  -- they at war with us
-                 || EM.findWithDefault 0 AbDisplace actorSk <= 0  -- not disp.
-                    && fleaderMode (gplayer fact) == LeaderNull  -- no restrain
-                    && EM.findWithDefault 0 AbMove actorSk > 0  -- blocked move
-                    && bhp body2 < bhp b)  -- respect power
-            then do
-              mel <- maybeToList <$> pickWeaponClient aid aid2
-              return $! liftFrequency $ uniformFreq "melee in the way" mel
-            else return reject
+          if | actorDying body2
+               || bproj body2  -- displacing saves a move
+                  && EM.findWithDefault 0 AbDisplace actorSk <= 0 ->
+               return reject
+             | isAtWar fact (bfid body2)  -- at war with us, hit, not disp
+               || bfid body2 == bfid b  -- don't start a war
+                  && EM.findWithDefault 0 AbDisplace actorSk <= 0  -- can't disp
+                  && fleaderMode (gplayer fact) == LeaderNull  -- no restrain
+                  && EM.findWithDefault 0 AbMove actorSk > 0  -- blocked move
+                  && 3 * bhp body2 < bhp b  -- only get rid of weak friends
+                  && bspeed body2 ar2 <= bspeed b ar -> do
+               mel <- maybeToList <$> pickWeaponClient aid aid2
+               return $! liftFrequency $ uniformFreq "melee in the way" mel
+             | otherwise -> return reject
         [] -> return reject
     _ -> return reject  -- probably no path to the enemy, if any
 
