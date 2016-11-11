@@ -56,7 +56,7 @@ data StateClient = StateClient
   , sundo        :: ![CmdAtomic]   -- ^ atomic commands performed to date
   , sdiscoKind   :: !DiscoveryKind    -- ^ remembered item discoveries
   , sdiscoAspect :: !DiscoveryAspect  -- ^ remembered aspects of items
-  , sactorAspect :: !ActorAspect   -- ^ best known our actor aspect data
+  , sactorAspect :: !ActorAspect   -- ^ best known actor aspect data
   , sfper        :: !PerLid        -- ^ faction perception indexed by levels
   , salter       :: !AlterLid      -- ^ cached alter ability data for positions
   , srandom      :: !R.StdGen      -- ^ current random generator
@@ -70,6 +70,8 @@ data StateClient = StateClient
   , slastSlot    :: !SlotChar      -- ^ last used slot
   , slastStore   :: ![CStore]      -- ^ last used stores
   , smarkSuspect :: !Bool          -- ^ mark suspect features
+  , scondInMelee :: !(EM.EnumMap LevelId (Either Bool (Bool, Bool)))
+      -- ^ the old and (new, old) values of condInMelee condition
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }
   deriving Show
@@ -114,6 +116,7 @@ emptyStateClient _sside =
     , slastSlot = SlotChar 0 'Z'
     , slastStore = []
     , smarkSuspect = False
+    , scondInMelee = EM.empty
     , sdebugCli = defDebugModeCli
     }
 
@@ -164,6 +167,7 @@ instance Binary StateClient where
     put slastSlot
     put slastStore
     put smarkSuspect
+    put scondInMelee
     put sdebugCli  -- TODO: this is overwritten at once
   get = do
     sxhair <- get
@@ -182,6 +186,7 @@ instance Binary StateClient where
     slastSlot <- get
     slastStore <- get
     smarkSuspect <- get
+    scondInMelee <- get
     sdebugCli <- get
     let sbfsD = EM.empty
         sfper = EM.empty

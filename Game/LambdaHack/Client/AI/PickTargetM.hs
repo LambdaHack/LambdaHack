@@ -44,6 +44,7 @@ targetStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy TgtAndPath)
 targetStrategy aid = do
   cops@Kind.COps{corule, cotile} <- getsState scops
+  condInMelee <- getsClient scondInMelee
   let stdRuleset = Kind.stdRuleset corule
       nearby = rnearby stdRuleset
   itemToF <- itemToFullClient

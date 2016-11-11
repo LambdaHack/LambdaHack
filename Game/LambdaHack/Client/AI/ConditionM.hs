@@ -7,6 +7,7 @@ module Game.LambdaHack.Client.AI.ConditionM
   , condTgtNonmovingM
   , condAnyFoeAdjM
   , condNonProjFoeAdjM
+  , condInMeleeM
   , condHpTooLowM
   , condOnTriggerableM
   , condBlocksFriendsM
@@ -123,6 +124,18 @@ condNonProjFoeAdjM aid = do
   allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
   return $ any (adjacent (bpos b) . bpos) allFoes  -- keep it lazy
 
+-- | Require that any non-dying, non-projectile foe is dist-close
+-- to any of ours.
+-- Even if our actor can't melee, he's under melee attack, so has to flee,
+-- so full alert is justified as well.
+condInMeleeM :: MonadStateRead m => Int -> Actor -> m Bool
+condInMeleeM dist b = do
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
+  ours <- getsState $ actorRegularList (== bfid b) (blid b)
+  return $! any (\body -> any (\bFoe ->
+    chessDist (bpos bFoe) (bpos body) <= dist) allFoes) ours
+
 -- | Require the actor's HP is low enough.
 condHpTooLowM :: MonadClient m => ActorId -> m Bool
 condHpTooLowM aid = do
@@ -145,7 +158,7 @@ condOnTriggerableM aid = do
 -- | Produce the chess-distance-sorted list of non-low-HP foes on the level.
 -- We don't consider path-distance, because we are interested in how soon
 -- the foe can hit us, which can diverge greately from path distance
--- for short distances.
+-- for short distances, e.g., when terrain gets revealed.
 threatDistList :: MonadClient m => ActorId -> m [(Int, (ActorId, Actor))]
 threatDistList aid = do
   actorAspect <- getsClient sactorAspect

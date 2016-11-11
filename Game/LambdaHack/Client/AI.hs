@@ -15,6 +15,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
+import Game.LambdaHack.Client.AI.ConditionM
 import Game.LambdaHack.Client.AI.HandleAbilityM
 import Game.LambdaHack.Client.AI.PickActorM
 import Game.LambdaHack.Client.AI.PickTargetM
@@ -37,7 +38,10 @@ queryAI = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let mleader = gleader fact
-      !_A = assert (isJust mleader) ()
+      oldAid = case mleader of
+        Nothing -> assert `failure` fact
+        Just aid -> aid
+  udpdateCondInMelee oldAid
   (aidToMove, bToMove) <- pickActorToMove refreshTarget
   req <- ReqAITimed <$> pickAction (aidToMove, bToMove)
   if mleader /= Just aidToMove
@@ -49,10 +53,26 @@ nonLeaderQueryAI :: MonadClient m => ActorId -> m RequestAI
 nonLeaderQueryAI aid = do
   mleader <- getsClient _sleader
   let !_A = assert (mleader /= Just aid) ()
+  udpdateCondInMelee aid
   useTactics refreshTarget aid
   bToMove <- getsState $ getActorBody aid
   req <- ReqAITimed <$> pickAction (aid, bToMove)
   return (req, Nothing)
+
+udpdateCondInMelee :: MonadClient m => ActorId -> m ()
+udpdateCondInMelee aid = do
+  b <- getsState $ getActorBody aid
+  condInMelee <- getsClient $ (EM.! blid b) . scondInMelee
+  case condInMelee of
+    Right{} -> return ()  -- still up to date
+    Left oldCond -> do
+      -- Lag the chages, to to avoid frequent invalidation of targets, etc.
+      let dist = if oldCond then 3 else 1
+      newCond <- condInMeleeM dist b
+      modifyClient $ \cli ->
+        cli {scondInMelee =
+               EM.adjust (const $ Right (newCond, oldCond)) (blid b)
+                         (scondInMelee cli)}
 
 -- | Verify and possibly change the target of an actor. This function both
 -- updates the target in the client state and returns the new target explicitly.

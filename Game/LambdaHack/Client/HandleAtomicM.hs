@@ -298,6 +298,13 @@ cmdAtomicSemCli cmd = case cmd of
   UpdLoseTile lid ts -> do
     updateSalter lid ts
     invalidateBfsLid lid  -- from known to unknown tiles
+  UpdAgeGame _ arenas ->
+    -- This tweak is only needed in AI client, but it's fairly cheap.
+    modifyClient $ \cli ->
+      let f !ec@Left{} = ec
+          f (Right (c, _)) = Left c
+          g !em !lid = EM.adjust f lid em
+      in cli {scondInMelee = foldl' g (scondInMelee cli) arenas}
   UpdDiscover c iid ik seed ldepth -> do
     discoverKind c iid ik
     discoverSeed c iid seed ldepth
@@ -317,6 +324,7 @@ cmdAtomicSemCli cmd = case cmd of
                   -- , sundo = [UpdAtomic cmd]
                   , scurDiff = d
                   , snxtDiff
+                  , scondInMelee = EM.map (const $ Left False) (sdungeon s)
                   , sdebugCli }
     createSalter s
     createSactorAspect s  -- currently always void, because no actors yet

@@ -67,6 +67,7 @@ actionStrategy :: forall m. MonadClient m
 actionStrategy aid = do
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
+  condInMelee <- getsClient scondInMelee
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
   condAimEnemyAdjFriend <- condAimEnemyAdjFriendM aid
