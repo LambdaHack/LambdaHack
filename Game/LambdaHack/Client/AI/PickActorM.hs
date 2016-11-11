@@ -54,7 +54,8 @@ pickActorToMove refreshTarget = do
   let leaderStuck = waitedLastTurn oldBody
       t = lvl `at` bpos oldBody
   -- Find our actors on the current level only.
-  ours <- getsState $ actorRegularAssocs (== side) arena
+  ours <- getsState $ filter (isNothing . btrajectory . snd)
+                      . actorRegularAssocs (== side) arena
   let pickOld = do
         void $ refreshTarget (oldAid, oldBody)
         return (oldAid, oldBody)

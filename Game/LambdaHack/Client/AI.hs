@@ -46,13 +46,12 @@ queryAI = do
 
 nonLeaderQueryAI :: MonadClient m => ActorId -> m RequestAI
 {-# INLINE nonLeaderQueryAI #-}
-nonLeaderQueryAI oldAid = do
+nonLeaderQueryAI aid = do
   mleader <- getsClient _sleader
-  let !_A = assert (mleader /= Just oldAid) ()
-      aidToMove = oldAid
-  useTactics refreshTarget oldAid
-  bToMove <- getsState $ getActorBody aidToMove
-  req <- ReqAITimed <$> pickAction (aidToMove, bToMove)
+  let !_A = assert (mleader /= Just aid) ()
+  useTactics refreshTarget aid
+  bToMove <- getsState $ getActorBody aid
+  req <- ReqAITimed <$> pickAction (aid, bToMove)
   return (req, Nothing)
 
 -- | Verify and possibly change the target of an actor. This function both

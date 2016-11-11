@@ -399,13 +399,15 @@ fleeList aid = do
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
+  s <- getState
   let posFoes = map bpos allFoes
       myVic = vicinity lxsize lysize $ bpos b
-      dist p | null posFoes = assert `failure` b
+      dist p | null posFoes = 100
              | otherwise = minimum $ map (chessDist p) posFoes
       dVic = map (dist &&& id) myVic
-      -- Flee, if possible. Access required.
-      accVic = filter (accessible cops lvl . snd) dVic
+      -- Flee, if possible. Access required. Can't be occupied.
+      accUnocc p = accessible cops lvl p && null (posToAssocs p (blid b) s)
+      accVic = filter (accUnocc . snd) dVic
       gtVic = filter ((> dist (bpos b)) . fst) accVic
       eqVic = filter ((== dist (bpos b)) . fst) accVic
       ltVic = filter ((< dist (bpos b)) . fst) accVic
