@@ -269,7 +269,7 @@ projectFail source tpxy eps iid cstore isBlast = do
               forced = isBlast || bproj sb
               legal = permittedProject forced skill sb ar " " itemFull
           case legal of
-            Left reqFail ->  return $ Just reqFail
+            Left reqFail -> return $ Just reqFail
             Right _ -> do
               let fragile = IK.Fragile `elem` jfeature itemBase
                   rest = if fragile

@@ -71,6 +71,7 @@ actionStrategy aid = do
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
   condAimEnemyAdjFriend <- condAimEnemyAdjFriendM aid
   condAnyFoeAdj <- condAnyFoeAdjM aid
+  condNonProjFoeAdj <- condNonProjFoeAdjM aid
   threatDistL <- threatDistList aid
   condHpTooLow <- condHpTooLowM aid
   condOnTriggerable <- condOnTriggerableM aid
@@ -132,7 +133,7 @@ actionStrategy aid = do
                 || condMeleeBad && condThreatAdj) )
         , ( [AbDisplace]
           , displaceFoe aid  -- only swap with an enemy to expose him
-          , condBlocksFriends && condAnyFoeAdj
+          , condBlocksFriends && condNonProjFoeAdj
             && not condOnTriggerable && not condDesirableFloorItem )
         , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
             <$> pickup aid True

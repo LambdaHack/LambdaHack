@@ -65,7 +65,7 @@ refreshTarget (aid, body) = do
   let !_A = assert (bfid body == side
                     `blame` "AI tries to move an enemy actor"
                     `twith` (aid, body, side)) ()
-  let !_A = assert (not (bproj body)
+  let !_A = assert (isNothing (btrajectory body)
                     `blame` "AI gets to manually move its projectiles"
                     `twith` (aid, body, side)) ()
   stratTarget <- targetStrategy aid
@@ -88,7 +88,7 @@ refreshTarget (aid, body) = do
   modifyClient $ \cli -> cli {stargetD = EM.insert aid tgtMPath (stargetD cli)}
   return tgtMPath
 
--- | Pick an action the actor will perfrom this turn.
+-- | Pick an action the actor will perform this turn.
 pickAction :: MonadClient m => (ActorId, Actor) -> m RequestAnyAbility
 pickAction (aid, body) = do
   -- Pathing finished, randomize paths for next moves.
@@ -97,7 +97,7 @@ pickAction (aid, body) = do
   let !_A = assert (bfid body == side
                     `blame` "AI tries to move enemy actor"
                     `twith` (aid, bfid body, side)) ()
-  let !_A = assert (not (bproj body)
+  let !_A = assert (isNothing (btrajectory body)
                     `blame` "AI gets to manually move its projectiles"
                     `twith` (aid, bfid body, side)) ()
   stratAction <- actionStrategy aid

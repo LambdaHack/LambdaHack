@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.AI.ConditionM
   , condAimEnemyAdjFriendM
   , condTgtNonmovingM
   , condAnyFoeAdjM
+  , condNonProjFoeAdjM
   , condHpTooLowM
   , condOnTriggerableM
   , condBlocksFriendsM
@@ -97,9 +98,26 @@ condTgtNonmovingM aid = do
       return $! EM.findWithDefault 0 Ability.AbMove actorMaxSk <= 0
     _ -> return False
 
--- | Require that any non-dying foe is adjacent.
+-- | Require that any non-dying foe is adjacent, except projectiles
+-- that (possibly) explode upon contact.
 condAnyFoeAdjM :: MonadStateRead m => ActorId -> m Bool
 condAnyFoeAdjM aid = do
+  body <- getsState $ getActorBody aid
+  fact <- getsState $ (EM.! bfid body) . sfactionD
+  s <- getState
+  let isFragile bag = case EM.keys bag of
+        [iid] -> let itemBase = getItemBody iid s
+                 in IK.Fragile `elem` jfeature itemBase
+        _ -> assert `failure` bag
+      f b = blid b == blid body && isAtWar fact (bfid b) && bhp b > 0
+            && adjacent (bpos b) (bpos body)
+            && not (bproj b && isFragile (beqp b))
+  allAdjFoes <- getsState $ filter f . EM.elems . sactorD
+  return $! not $ null allAdjFoes
+
+-- | Require that any non-dying, non-projectile foe is adjacent.
+condNonProjFoeAdjM :: MonadStateRead m => ActorId -> m Bool
+condNonProjFoeAdjM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
