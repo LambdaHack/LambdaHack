@@ -59,7 +59,7 @@ display SingleFrame{singleFrame} =
       chunk [] = []
       chunk l = let (ch, r) = splitAt lxsize l
                 in ch : chunk r
-  in putStrLn $ unlines levelChar
+  in SIO.hPutStrLn SIO.stderr $ unlines levelChar
 
 keyTranslate :: Char -> K.KM
 keyTranslate e = (\(key, modifier) -> K.KM modifier key) $
