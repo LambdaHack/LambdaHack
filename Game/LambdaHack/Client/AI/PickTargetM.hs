@@ -122,7 +122,7 @@ targetStrategy aid = do
   canEscape <- factionCanEscape (bfid b)
   let condNoUsableWeapon = bweapon b == 0
       canSmell = aSmell ar > 0
-      meleeNearby | newCondInMelee = nearby `div` 4
+      meleeNearby | newCondInMelee = nearby `div` 6  -- x2 in targetableMelee
                   | canEscape = nearby `div` 2
                   | otherwise = nearby
       rangedNearby = 2 * meleeNearby
@@ -182,8 +182,6 @@ targetStrategy aid = do
         return $! returN "setPath" $ take7 tgtpath
       pickNewTarget :: m (Strategy TgtAndPath)
       pickNewTarget = do
-        -- This is mostly lazy and used between 0 and 3 times below.
-        ctriggers <- closestTriggers Nothing aid
         -- TODO: for foes, items, etc. consider a few nearby, not just one
         cfoes <- closestFoes nearbyFoes aid
         case cfoes of
@@ -198,6 +196,8 @@ targetStrategy aid = do
                      else return []
             case smpos of
               [] -> do
+                -- This is mostly lazy and used between 0 and 3 times below.
+                ctriggers <- closestTriggers Nothing aid
                 let ctriggersEarly =
                       if EM.findWithDefault 0 AbTrigger actorMaxSk > 0
                          && condEnoughGear
