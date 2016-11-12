@@ -67,7 +67,11 @@ actionStrategy :: forall m. MonadClient m
 actionStrategy aid = do
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
+  mleader <- getsClient _sleader
   condInMelee <- getsClient scondInMelee
+  let (newCondInMelee, _oldCondInMelee) = case condInMelee EM.! blid body of
+        Right conds -> if mleader == Just aid then (False, False) else conds
+        Left{} -> assert `failure` condInMelee
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
   condAimEnemyAdjFriend <- condAimEnemyAdjFriendM aid
@@ -146,7 +150,7 @@ actionStrategy aid = do
             || not (abInMaxSkill AbDisplace)  -- displace friends, if possible
                && fleaderMode (gplayer fact) == LeaderNull  -- not restrained
                && condAimEnemyPresent  -- excited
-               && not condAimEnemyAdjFriend )  -- don't incur overhead
+               && not newCondInMelee )  -- don't incur overhead
         , ( [AbTrigger], (toAny :: ToAny 'AbTrigger)
             <$> trigger aid False
           , condOnTriggerable && not condDesirableFloorItem
@@ -162,19 +166,22 @@ actionStrategy aid = do
             && condThreatAtHand )
         , ( [AbDisplace]  -- prevents some looping movement
           , displaceBlocker aid  -- fires up only when path blocked
-          , not condDesirableFloorItem )
+          , not condDesirableFloorItem
+            && not newCondInMelee )
         , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
             <$> equipItems aid  -- doesn't take long, very useful if safe
                                 -- only if calm enough, so high priority
           , not (condAnyFoeAdj
                  || condDesirableFloorItem
-                 || condNotCalmEnough) )
+                 || condNotCalmEnough)
+            && not newCondInMelee )
         ]
       -- Order doesn't matter, scaling does.
       distant :: [([Ability], m (Frequency RequestAnyAbility), Bool)]
       distant =
         [ ( [AbMoveItem]
-          , stratToFreq 20000 $ (toAny :: ToAny 'AbMoveItem)
+          , stratToFreq (if newCondInMelee then 2 else 20000)
+            $ (toAny :: ToAny 'AbMoveItem)
             <$> yieldUnneeded aid  -- 20000 to unequip ASAP, unless is thrown
           , True )
         , ( [AbProject]  -- for high-value target, shoot even in melee
@@ -197,8 +204,9 @@ actionStrategy aid = do
                               100)
             $ chase aid True (condMeleeBad && condThreatNearby
                               && not aInAmbient && not actorShines)
-          , (condAimEnemyPresent || condAimEnemyRemembered)
-            && not (condDesirableFloorItem && not condThreatAtHand)
+          , (condAimEnemyPresent
+             || condAimEnemyRemembered && not condOnTriggerable)
+            && not (condDesirableFloorItem && not newCondInMelee)
             && abInMaxSkill AbMelee
             && not condNoUsableWeapon )
         ]
@@ -211,11 +219,11 @@ actionStrategy aid = do
           , flee aid panicFleeL  -- ultimate panic mode, displaces foes
           , condAnyFoeAdj )
         , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
-            <$> pickup aid False
-          , not condThreatAtHand )  -- e.g., to give to other party members
+            <$> pickup aid False  -- e.g., to give to other party members
+          , not newCondInMelee )
         , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
             <$> unEquipItems aid  -- late, because these items not bad
-          , True )
+          , not newCondInMelee )
         , ( [AbMove]
           , chase aid True (condAimEnemyPresent
                             -- Don't keep hiding in darkness if hit right now,
@@ -225,9 +233,9 @@ actionStrategy aid = do
                                     && not condNoUsableWeapon)
                             && condMeleeBad && condThreatNearby
                             && not aInAmbient && not actorShines)
-          , not (condTgtNonmoving && condThreatAtHand) )
-
-            -- TODO: unless tgt can't melee
+          , not (condTgtNonmoving && condThreatAtHand)
+            && not newCondInMelee )
+              -- TODO: unless tgt can't melee
         ]
       fallback =
         [ ( [AbWait], (toAny :: ToAny 'AbWait)
