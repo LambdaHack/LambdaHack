@@ -265,33 +265,41 @@ handleTrajectories lid fid = do
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
   mapM_ (hTrajectories . snd) l
 
+-- The body @b@ may be outdated by this time
+-- (due to other actors following their trajectories)
+-- but we decide death inspecting it --- last moment rescue
+-- from projectiles or pushed actors doesn't work; too late.
+-- Even if the actor got teleported to another level by this point,
+-- we don't care, we set the trajectory, check death, etc.
 hTrajectories :: (MonadAtomic m, MonadServer m)
               => (ActorId, Actor) -> m ()
 {-# INLINE hTrajectories #-}
-hTrajectories (aid, b) =
-  if | bproj b && maybe True (null . fst) (btrajectory b) -> do
-       -- A projectile drops to the ground due to obstacles or range.
-       -- The carried item is not destroyed, but drops to the ground.
-       -- The body @b@ may be outdated by this time, so @dieSer@ gets another,
-       -- but we decide death based on the old one --- last moment rescue
-       -- from projectiles or pushed actors doesn't work; too late.
-       dieSer aid False
-     | bhp b <= 0 -> do
-       -- If @b@ is a projectile and it hits an actor,
-       -- the carried item is destroyed and that's all.
-       -- Otherwise, an actor dies, items drop to the ground
-       -- and possibly a new leader is elected.
-       dieSer aid (bproj b)
-     | otherwise -> do
-       -- Even if the actor got teleported to another level by this point,
-       -- we don't care, we set trajectory, etc.
-       setTrajectory aid
-       b2 <- getsState $ getActorBody aid
-       if bproj b2 && maybe True (null . fst) (btrajectory b2) then
-         dieSer aid False
-       else do
-         advanceTime aid
-         managePerTurn aid
+hTrajectories (aid, b) = do
+  if actorDying b then do
+    -- if bhp b <= 0:
+    -- If @b@ is a projectile and it hits an actor,
+    -- the carried item is destroyed and that's all.
+    -- Otherwise, an actor dies, items drop to the ground
+    -- and possibly a new leader is elected.
+    --
+    -- if btrajectory null:
+    -- A projectile drops to the ground due to obstacles or range.
+    -- The carried item is not destroyed, but drops to the ground.
+    --
+    -- If a projectile hits actor or is hit, it's destroyed,
+    -- as opposed to just bouncing off the wall or landing on the ground,
+    -- in which case it breaks only if the item is fragile.
+    dieSer aid b (bhp b <= 0 && bproj b)
+  else do
+    setTrajectory aid
+    b2 <- getsState $ getActorBody aid
+    if actorDying b2 then
+      -- Dispose of the actor with trajectory ASAP to make sure it doesn't
+      -- block movement of other actors.
+      hTrajectories (aid, b2)
+    else do
+      advanceTime aid
+      managePerTurn aid
 
 -- TODO: move somewhere?
 -- | Manage trajectory of a projectile.
