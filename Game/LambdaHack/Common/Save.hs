@@ -1,6 +1,10 @@
 -- | Saving and restoring server game state.
 module Game.LambdaHack.Common.Save
   ( ChanSave, saveToChan, wrapInSaves, restoreGame
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , loopSave
+#endif
   ) where
 
 import Prelude ()
@@ -59,6 +63,7 @@ loopSave tryCreateDir encodeEOF saveFile toSave =
 
 wrapInSaves :: (FilePath -> IO ()) -> (FilePath -> a -> IO ())
             -> (a -> FilePath) -> (ChanSave a -> IO ()) -> IO ()
+{-# INLINE wrapInSaves #-}
 wrapInSaves tryCreateDir encodeEOF saveFile exe = do
   -- We don't merge this with the other calls to waitForChildren,
   -- because, e.g., for server, we don't want to wait for clients to exit,

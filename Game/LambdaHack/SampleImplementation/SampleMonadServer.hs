@@ -7,7 +7,7 @@ module Game.LambdaHack.SampleImplementation.SampleMonadServer
   ( executorSer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , SerImplementation
+  , SerImplementation, handleAndBroadcastServer
 #endif
   ) where
 
