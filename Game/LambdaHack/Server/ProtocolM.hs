@@ -178,6 +178,7 @@ updateCopsDict copsClient sconfig sdebugCli = do
   modifyDict $ EM.map updFrozenClient
 
 sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
+{-# INLINABLE sendUpdate #-}
 sendUpdate !fid !cmd = do
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
@@ -197,6 +198,7 @@ sendUpdate !fid !cmd = do
             (\c -> writeQueueUI (RespUpdAtomicUI cmd) $ responseS c) mconn
 
 sendSfx :: MonadServerReadRequest m  => FactionId -> SfxAtomic -> m ()
+{-# INLINABLE sendSfx #-}
 sendSfx fid sfx = do
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
@@ -210,6 +212,7 @@ sendSfx fid sfx = do
     _ -> return ()
 
 sendQueryAI :: MonadServerReadRequest m => FactionId -> ActorId -> m RequestAI
+{-# INLINABLE sendQueryAI #-}
 sendQueryAI fid aid = do
   frozenClient <- getsDict $ (EM.! fid)
   req <- case frozenClient of
@@ -228,6 +231,7 @@ sendQueryAI fid aid = do
 
 sendNonLeaderQueryAI :: MonadServerReadRequest m
                      => FactionId -> ActorId -> m ReqAI
+{-# INLINABLE sendNonLeaderQueryAI #-}
 sendNonLeaderQueryAI fid aid = do
   frozenClient <- getsDict $ (EM.! fid)
   req <- case frozenClient of

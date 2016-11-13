@@ -40,6 +40,7 @@ import Game.LambdaHack.Server.State
 -- | Effect of atomic actions on server state is calculated
 -- with the global state from before the command is executed.
 cmdAtomicSemSer :: MonadServer m => UpdAtomic -> m ()
+{-# INLINE cmdAtomicSemSer #-}
 cmdAtomicSemSer cmd = case cmd of
   UpdCreateActor aid b _ -> do
     discoAspect <- getsServer sdiscoAspect

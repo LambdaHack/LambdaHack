@@ -43,6 +43,7 @@ import Game.LambdaHack.Server.State
 -- | Sapwn, possibly, a monster according to the level's actor groups.
 -- We assume heroes are never spawned.
 spawnMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
+{-# INLINE spawnMonster #-}
 spawnMonster lid = do
   totalDepth <- getsState stotalDepth
   -- TODO: eliminate the defeated and victorious faction from lactorFreq;
@@ -234,6 +235,7 @@ advanceTime !aid = do
 
 overheadActorTime :: (MonadAtomic m, MonadServer m)
                   => ES.EnumSet LevelId -> FactionId -> ActorId -> m ()
+{-# INLINE overheadActorTime #-}
 overheadActorTime !arenas !fid !aid = do
   -- Add communication overhead time delta to all non-projectile,
   -- non-dying faction's actors. Effectively, this limits moves of

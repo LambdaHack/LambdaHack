@@ -6,8 +6,9 @@ module Game.LambdaHack.Server.LoopM
   ( loopSer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , endClip, applyPeriodicLevel, handleActors, gameExit, restartGame
-  , writeSaveAll, setTrajectory
+  , factionArena, arenasForLoop, handleFid, loopUpd, endClip, applyPeriodicLevel
+  , handleTrajectories, hTrajectories, handleActors, hActors
+  , gameExit, restartGame, writeSaveAll, setTrajectory
 #endif
   ) where
 
@@ -57,7 +58,7 @@ import Game.LambdaHack.Server.State
 
 -- | Start a game session, including the clients, and then loop,
 -- communicating with the clients.
-loopSer :: forall m. (MonadAtomic m, MonadServerReadRequest m)
+loopSer :: (MonadAtomic m, MonadServerReadRequest m)
         => DebugModeSer  -- ^ server debug parameters
         -> KeyKind -> Config -> DebugModeCli
         -> (SessionUI -> Kind.COps -> FactionId -> ChanServer ResponseUI RequestUI -> IO ())
@@ -106,58 +107,70 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
       initPer
       reinitGame
       writeSaveAll False
+  loopUpd updConn
+
   -- Note that if a faction enters dungeon on a level with no spawners,
   -- the faction won't cause spawning on its active arena
   -- as long as it has no leader. This may cause regeneration items
   -- of its opponents become overpowered and lead to micromanagement
   -- (make sure to kill all actors of the faction, go to a no-spawn
   -- level and heal fully with no risk nor cost).
-  let factionArena fact =
-        case gleader fact of
-         -- Even spawners need an active arena for their leader,
-         -- or they start clogging stairs.
-         Just leader -> do
-            b <- getsState $ getActorBody leader
-            return $ Just $ blid b
-         Nothing -> if fleaderMode (gplayer fact) == LeaderNull
-                       || EM.null (gvictims fact)  -- not in-between spawns
-                    then return Nothing
-                    else Just <$> getEntryArena fact
-      arenasForLoop = do
-        factionD <- getsState sfactionD
-        marenas <- mapM factionArena $ EM.elems factionD
-        let arenas = ES.fromList $ catMaybes marenas
-        let !_A = assert (not (ES.null arenas)
-                          `blame` "game over not caught earlier"
-                          `twith` factionD) ()
-        return $! arenas
-  -- Start a clip (a part of a turn for which one or more frames
-  -- will be generated). Do whatever has to be done
-  -- every fixed number of time units, e.g., monster generation.
-  -- Run the leader and other actors moves. Eventually advance the time
-  -- and repeat.
-  let handleFid :: ES.EnumSet LevelId -> (FactionId, Faction) -> m ()
-      handleFid allArenas (fid, fact) = do
-        fa <- factionArena fact
-        let arenas = case fa of
-              Just myArena -> myArena : delete myArena (ES.elems allArenas)
-              Nothing -> ES.elems allArenas
-        -- Projectiles are processed first, to get out of the way
-        -- and give info for deciding how to move actors.
-        mapM_ (\lid -> handleTrajectories lid fid) arenas
-        -- Update perception on all levels at once,
-        -- in case a leader is changed to actor on another
-        -- (possibly not even currently active) level.
-        dungeon <- getsState sdungeon
-        mapM_ (\lid -> updatePer fid lid) (EM.keys dungeon)
-        -- Move a single actor, starting on arena with leader, if available.
-        let handle [] = return ()
-            handle (lid : rest) = do
-              nonWaitMove <- handleActors allArenas lid fid
-              unless nonWaitMove $ handle rest
-        handle arenas
-      loop :: m ()
-      loop = do
+factionArena :: MonadStateRead m => Faction -> m (Maybe LevelId)
+{-# INLINE factionArena #-}
+factionArena fact = case gleader fact of
+  -- Even spawners need an active arena for their leader,
+  -- or they start clogging stairs.
+  Just leader -> do
+     b <- getsState $ getActorBody leader
+     return $ Just $ blid b
+  Nothing -> if fleaderMode (gplayer fact) == LeaderNull
+                || EM.null (gvictims fact)  -- not in-between spawns
+             then return Nothing
+             else Just <$> getEntryArena fact
+
+arenasForLoop :: MonadStateRead m => m (ES.EnumSet LevelId)
+{-# INLINE arenasForLoop #-}
+arenasForLoop = do
+  factionD <- getsState sfactionD
+  marenas <- mapM factionArena $ EM.elems factionD
+  let arenas = ES.fromList $ catMaybes marenas
+  let !_A = assert (not (ES.null arenas)
+                    `blame` "game over not caught earlier"
+                    `twith` factionD) ()
+  return $! arenas
+
+-- Start a clip (a part of a turn for which one or more frames
+-- will be generated). Do whatever has to be done
+-- every fixed number of time units, e.g., monster generation.
+-- Run the leader and other actors moves. Eventually advance the time
+-- and repeat.
+handleFid :: (MonadAtomic m, MonadServerReadRequest m)
+          => ES.EnumSet LevelId -> (FactionId, Faction) -> m ()
+{-# INLINE handleFid #-}
+handleFid allArenas (fid, fact) = do
+  fa <- factionArena fact
+  let arenas = case fa of
+        Just myArena -> myArena : delete myArena (ES.elems allArenas)
+        Nothing -> ES.elems allArenas
+  -- Projectiles are processed first, to get out of the way
+  -- and give info for deciding how to move actors.
+  mapM_ (\lid -> handleTrajectories lid fid) arenas
+  -- Update perception on all levels at once,
+  -- in case a leader is changed to actor on another
+  -- (possibly not even currently active) level.
+  dungeon <- getsState sdungeon
+  mapM_ (\lid -> updatePer fid lid) (EM.keys dungeon)
+  -- Move a single actor, starting on arena with leader, if available.
+  let handle [] = return ()
+      handle (lid : rest) = do
+        nonWaitMove <- handleActors allArenas lid fid
+        unless nonWaitMove $ handle rest
+  handle arenas
+
+loopUpd :: (MonadAtomic m, MonadServerReadRequest m) => m () -> m ()
+{-# INLINE loopUpd #-}
+loopUpd updConn = do
+  let loopUpdConn = do
         allArenas <- arenasForLoop
         endClip allArenas
         factionD <- getsState sfactionD
@@ -170,13 +183,15 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
         quit <- getsServer squit
         if quit then do
           modifyServer $ \ser -> ser {squit = False}
-          endOrLoop loop (restartGame updConn loop) gameExit (writeSaveAll True)
+          endOrLoop loopUpdConn (restartGame updConn loopUpdConn)
+                    gameExit (writeSaveAll True)
         else
-          loop
-  loop
+          loopUpdConn
+  loopUpdConn
 
 endClip :: (MonadAtomic m, MonadServerReadRequest m)
         => ES.EnumSet LevelId -> m ()
+{-# INLINE endClip #-}
 endClip arenas = do
   Kind.COps{corule} <- getsState scops
   let stdRuleset = Kind.stdRuleset corule
@@ -210,6 +225,7 @@ endClip arenas = do
 -- | Trigger periodic items for all actors on the given level.
 applyPeriodicLevel :: (MonadAtomic m, MonadServer m)
                    => ES.EnumSet LevelId -> m ()
+{-# INLINE applyPeriodicLevel #-}
 applyPeriodicLevel arenas = do
   let applyPeriodicItem _ _ (_, (_, [])) = return ()
         -- periodic items always have at least one timer
@@ -238,6 +254,7 @@ applyPeriodicLevel arenas = do
 
 handleTrajectories :: (MonadAtomic m, MonadServer m)
                    => LevelId -> FactionId -> m ()
+{-# INLINE handleTrajectories #-}
 handleTrajectories lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
@@ -250,6 +267,7 @@ handleTrajectories lid fid = do
 
 hTrajectories :: (MonadAtomic m, MonadServer m)
               => (ActorId, Actor) -> m ()
+{-# INLINE hTrajectories #-}
 hTrajectories (aid, b) =
   if | bproj b && maybe True (null . fst) (btrajectory b) -> do
        -- A projectile drops to the ground due to obstacles or range.
@@ -275,8 +293,51 @@ hTrajectories (aid, b) =
          advanceTime aid
          managePerTurn aid
 
+-- TODO: move somewhere?
+-- | Manage trajectory of a projectile.
+--
+-- Colliding with a wall or actor doesn't take time, because
+-- the projectile does not move (the move is blocked).
+-- Not advancing time forces dead projectiles to be destroyed ASAP.
+-- Otherwise, with some timings, it can stay on the game map dead,
+-- blocking path of human-controlled actors and alarming the hapless human.
+setTrajectory :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
+{-# INLINE setTrajectory #-}
+setTrajectory aid = do
+  cops <- getsState scops
+  b <- getsState $ getActorBody aid
+  lvl <- getLevel $ blid b
+  case btrajectory b of
+    Just (d : lv, speed) ->
+      if not $ accessibleDir cops lvl (bpos b) d
+      then do
+        -- Lose HP due to bumping into an obstacle.
+        execUpdAtomic $ UpdRefillHP aid minusM
+        execUpdAtomic $ UpdTrajectory aid (btrajectory b)
+                                          (Just ([], speed))
+      else do
+        when (bproj b && null lv) $ do
+          let toColor = Color.BrBlack
+          when (bcolor b /= toColor) $
+            execUpdAtomic $ UpdColorActor aid (bcolor b) toColor
+        -- Hit clears trajectory of non-projectiles in reqMelee so no need here.
+        -- Non-projectiles displace, to make pushing in crowds less lethal
+        -- and chaotic and to avoid hitting harpoons when pulled by them.
+        let tpos = bpos b `shift` d  -- target position
+        case posToAidsLvl tpos lvl of
+          [target] | not (bproj b) -> reqDisplace aid target
+          _ -> reqMove aid d
+        b2 <- getsState $ getActorBody aid
+        unless (btrajectory b2 == Just (lv, speed)) $  -- cleared in reqMelee
+          execUpdAtomic $ UpdTrajectory aid (btrajectory b2) (Just (lv, speed))
+    Just ([], _) -> do  -- non-projectile actor stops flying
+      let !_A = assert (not $ bproj b) ()
+      execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
+    _ -> assert `failure` "Nothing trajectory" `twith` (aid, b)
+
 handleActors :: (MonadAtomic m, MonadServerReadRequest m)
              => ES.EnumSet LevelId -> LevelId -> FactionId -> m Bool
+{-# INLINE handleActors #-}
 handleActors arenas lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
@@ -292,6 +353,7 @@ handleActors arenas lid fid = do
 
 hActors :: (MonadAtomic m, MonadServerReadRequest m)
         => ES.EnumSet LevelId -> FactionId -> [(ActorId, Actor)] -> m Bool
+{-# INLINE hActors #-}
 hActors _ _ [] = return False
 hActors arenas fid ((aid, body) : rest) = do
   let side = bfid body
@@ -404,44 +466,3 @@ writeSaveAll uiRequested = do
   when (uiRequested || not bench) $ do
     execUpdAtomic UpdWriteSave
     saveServer
-
--- TODO: move somewhere?
--- | Manage trajectory of a projectile.
---
--- Colliding with a wall or actor doesn't take time, because
--- the projectile does not move (the move is blocked).
--- Not advancing time forces dead projectiles to be destroyed ASAP.
--- Otherwise, with some timings, it can stay on the game map dead,
--- blocking path of human-controlled actors and alarming the hapless human.
-setTrajectory :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-setTrajectory aid = do
-  cops <- getsState scops
-  b <- getsState $ getActorBody aid
-  lvl <- getLevel $ blid b
-  case btrajectory b of
-    Just (d : lv, speed) ->
-      if not $ accessibleDir cops lvl (bpos b) d
-      then do
-        -- Lose HP due to bumping into an obstacle.
-        execUpdAtomic $ UpdRefillHP aid minusM
-        execUpdAtomic $ UpdTrajectory aid (btrajectory b)
-                                          (Just ([], speed))
-      else do
-        when (bproj b && null lv) $ do
-          let toColor = Color.BrBlack
-          when (bcolor b /= toColor) $
-            execUpdAtomic $ UpdColorActor aid (bcolor b) toColor
-        -- Hit clears trajectory of non-projectiles in reqMelee so no need here.
-        -- Non-projectiles displace, to make pushing in crowds less lethal
-        -- and chaotic and to avoid hitting harpoons when pulled by them.
-        let tpos = bpos b `shift` d  -- target position
-        case posToAidsLvl tpos lvl of
-          [target] | not (bproj b) -> reqDisplace aid target
-          _ -> reqMove aid d
-        b2 <- getsState $ getActorBody aid
-        unless (btrajectory b2 == Just (lv, speed)) $  -- cleared in reqMelee
-          execUpdAtomic $ UpdTrajectory aid (btrajectory b2) (Just (lv, speed))
-    Just ([], _) -> do  -- non-projectile actor stops flying
-      let !_A = assert (not $ bproj b) ()
-      execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
-    _ -> assert `failure` "Nothing trajectory" `twith` (aid, b)
