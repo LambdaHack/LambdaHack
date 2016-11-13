@@ -43,7 +43,7 @@ cdefs = ContentDef
   }
 unknown,        wall, hardRock, pillar, pillarIce, pillarCache, lampPost, burningBush, bush, tree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsLit, stairsDownLit, escapeUpLit, escapeDownLit, floorCorridorLit, floorArenaLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorSmoke :: TileKind
 
-unknown = TileKind  -- needs to have index 0
+unknown = TileKind  -- needs to have index 0 and alter 1
   { tsymbol  = ' '
   , tname    = "unknown space"
   , tfreq    = [("unknown space", 1)]

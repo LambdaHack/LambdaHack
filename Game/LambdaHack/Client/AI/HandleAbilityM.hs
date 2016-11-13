@@ -196,7 +196,7 @@ actionStrategy aid = do
         , ( [AbMove]
           , stratToFreq (if | not condAimEnemyPresent ->
                               3  -- if enemy only remembered, investigate anyway
-                            | condTgtNonmoving ->
+                            | condTgtNonmoving && condMeleeBad ->
                               0
                             | condAimEnemyAdjFriend ->
                               1000  -- friends probably pummeled, go to help
@@ -205,7 +205,7 @@ actionStrategy aid = do
             $ chase aid True (condMeleeBad && condThreatNearby
                               && not aInAmbient && not actorShines)
           , (condAimEnemyPresent
-             || condAimEnemyRemembered && not condOnTriggerable)
+             || condAimEnemyRemembered && not newCondInMelee)
             && not (condDesirableFloorItem && not newCondInMelee)
             && abInMaxSkill AbMelee
             && not condNoUsableWeapon )
