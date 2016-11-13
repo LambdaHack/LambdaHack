@@ -448,6 +448,7 @@ gameExit = do
 
 restartGame :: (MonadAtomic m, MonadServerReadRequest m)
             => m () -> m () -> Maybe (GroupName ModeKind) ->  m ()
+{-# INLINE restartGame #-}
 restartGame updConn loop mgameMode = do
   cops <- getsState scops
   sdebugNxt <- getsServer sdebugNxt

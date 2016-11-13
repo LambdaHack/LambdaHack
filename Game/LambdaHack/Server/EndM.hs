@@ -53,11 +53,11 @@ endOrLoop loop restart gameExit gameSave = do
   when bkpSave $ do
     modifyServer $ \ser -> ser {swriteSave = False}
     gameSave
-  case (quitters, campers) of
-    (gameMode : _, _) -> restart $ Just gameMode
-    _ | gameOver -> restart Nothing
-    ([], []) -> loop  -- continue current game
-    ([], _ : _) -> gameExit  -- don't call @loop@, that is, quit the game loop
+  if gameOver || not (null quitters)
+  then restart (listToMaybe quitters)  -- start new game
+  else case campers of
+    [] -> loop  -- continue current game
+    _ : _ -> gameExit  -- don't call @loop@, that is, quit the game loop
 
 dieSer :: (MonadAtomic m, MonadServer m) => ActorId -> Actor -> Bool -> m ()
 {-# INLINE dieSer #-}
