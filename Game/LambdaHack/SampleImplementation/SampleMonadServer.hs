@@ -134,8 +134,8 @@ executorSer cops copsClient sdebugNxtCmdline = do
   -- Wire together game content, the main loops of game clients
   -- and the game server loop.
   let m = loopSer sdebugNxt copsClient sconfig sdebugMode
-          exeClientUI exeClientAI
-  let saveFile (_, ser, _) = ssavePrefixSer (sdebugSer ser) <.> saveName
+                  exeClientUI exeClientAI
+      saveFile (_, ser, _) = ssavePrefixSer (sdebugSer ser) <.> saveName
       totalState serToSave = SerState
         { serState = emptyState cops
         , serServer = emptyStateServer

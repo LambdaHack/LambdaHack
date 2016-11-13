@@ -119,8 +119,8 @@ targetStrategy aid = do
   -- (then we have to target, but keep the distance, we can do similarly for
   -- wounded or alone actors, perhaps only until they are shot first time,
   -- and only if they can shoot at the moment)
-  canEscape <- factionCanEscape (bfid b)
-  let condNoUsableWeapon = bweapon b == 0
+  let canEscape = fcanEscape (gplayer fact)
+      condNoUsableWeapon = bweapon b == 0
       canSmell = aSmell ar > 0
       meleeNearby | newCondInMelee = nearby `div` 6  -- x2 in targetableMelee
                   | canEscape = nearby `div` 2

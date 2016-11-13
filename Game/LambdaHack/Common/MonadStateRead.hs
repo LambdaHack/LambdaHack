@@ -2,7 +2,7 @@
 -- player actions. Has no access to the main action type.
 module Game.LambdaHack.Common.MonadStateRead
   ( MonadStateRead(..)
-  , getLevel, nUI, factionCanEscape
+  , getLevel, nUI
   , getGameMode, isNoConfirmsGame, getEntryArena, pickWeaponM
   ) where
 
@@ -35,13 +35,6 @@ nUI :: MonadStateRead m => m Int
 nUI = do
   factionD <- getsState sfactionD
   return $! length $ filter (fhasUI . gplayer) $ EM.elems factionD
-
-factionCanEscape :: MonadStateRead m => FactionId -> m Bool
-factionCanEscape fid = do
-  fact <- getsState $ (EM.! fid) . sfactionD
-  dungeon <- getsState sdungeon
-  let escape = any (not . null . lescape) $ EM.elems dungeon
-  return $! escape && fcanEscape (gplayer fact)
 
 getGameMode :: MonadStateRead m => m ModeKind
 getGameMode = do

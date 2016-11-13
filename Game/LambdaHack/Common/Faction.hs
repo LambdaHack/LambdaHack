@@ -46,7 +46,7 @@ data Faction = Faction
   }
   deriving (Show, Eq, Ord)
 
--- | Diplomacy states. Higher overwrite lower in case of assymetric content.
+-- | Diplomacy states. Higher overwrite lower in case of asymmetric content.
 data Diplomacy =
     Unknown
   | Neutral

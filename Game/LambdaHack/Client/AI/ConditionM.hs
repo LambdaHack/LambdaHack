@@ -57,6 +57,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import Game.LambdaHack.Content.ModeKind
 
 -- | Require that the target enemy is visible by the party.
 condAimEnemyPresentM :: MonadClient m => ActorId -> m Bool
@@ -320,9 +321,10 @@ benGroundItems :: MonadClient m
                      , (Int, CStore)), (ItemId, ItemFull) )]
 benGroundItems aid = do
   b <- getsState $ getActorBody aid
-  canEscape <- factionCanEscape (bfid b)
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  let canEsc = fcanEscape (gplayer fact)
   benAvailableItems aid (\use itemFull _ _ ->
-                           desirableItem canEscape use itemFull) [CGround]
+                           desirableItem canEsc use itemFull) [CGround]
 
 desirableItem :: Bool -> Maybe Int -> ItemFull -> Bool
 desirableItem canEsc use itemFull =

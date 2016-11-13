@@ -201,9 +201,11 @@ rosterRaid = Roster
 
 rosterSkirmish = Roster
   { rosterList = [ playerHero { fname = "White Haskell"
+                              , fcanEscape = False
                               , fhiCondPoly = hiDweller
                               , fentryLevel = -3 }
                  , playerAntiHero { fname = "Purple Agda"
+                                  , fcanEscape = False
                                   , fhiCondPoly = hiDweller
                                   , fentryLevel = -3 }
                  , playerHorror ]
@@ -214,10 +216,12 @@ rosterSkirmish = Roster
 
 rosterAmbush = Roster
   { rosterList = [ playerSniper { fname = "Yellow Idris"
+                                , fcanEscape = False
                                 , fhiCondPoly = hiDweller
                                 , fentryLevel = -5
                                 , finitialActors = 4 }
                  , playerAntiSniper { fname = "Blue Epigram"
+                                    , fcanEscape = False
                                     , fhiCondPoly = hiDweller
                                     , fentryLevel = -5
                                     , finitialActors = 4 }
@@ -228,7 +232,8 @@ rosterAmbush = Roster
   , rosterAlly = [] }
 
 rosterBattle = Roster
-  { rosterList = [ playerSoldier { fhiCondPoly = hiDweller
+  { rosterList = [ playerSoldier { fcanEscape = False
+                                 , fhiCondPoly = hiDweller
                                  , fentryLevel = -5
                                  , finitialActors = 5 }
                  , playerMobileMonster { fentryLevel = -5
@@ -242,7 +247,8 @@ rosterBattle = Roster
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
 rosterBattleSurvival = rosterBattle
-  { rosterList = [ playerSoldier { fhiCondPoly = hiDweller
+  { rosterList = [ playerSoldier { fcanEscape = False
+                                 , fhiCondPoly = hiDweller
                                  , fentryLevel = -5
                                  , finitialActors = 5
                                  , fleaderMode =
@@ -318,9 +324,11 @@ rosterSafariSurvival = rosterSafari
 
 rosterPvP = Roster
   { rosterList = [ playerAntiHero { fname = "Red"
+                                  , fcanEscape = False
                                   , fhiCondPoly = hiDweller
                                   , fentryLevel = -3 }
                  , playerHero { fname = "Blue"
+                              , fcanEscape = False
                               , fhiCondPoly = hiDweller
                               , fentryLevel = -3 }
                  , playerHorror ]
