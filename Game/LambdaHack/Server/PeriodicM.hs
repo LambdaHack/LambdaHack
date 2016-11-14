@@ -42,21 +42,25 @@ import Game.LambdaHack.Server.State
 -- TODO: civilians would have 'it' pronoun
 -- | Sapwn, possibly, a monster according to the level's actor groups.
 -- We assume heroes are never spawned.
-spawnMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
+spawnMonster :: (MonadAtomic m, MonadServer m) => m ()
 {-# INLINE spawnMonster #-}
-spawnMonster lid = do
+spawnMonster = do
+  arenas <- getsServer sarenas
+  -- Do this on only one of the arenas to prevent micromanagement,
+  -- e.g., spreading leaders across levels to bump monster generation.
+  arena <- rndToAction $ oneOf arenas
   totalDepth <- getsState stotalDepth
   -- TODO: eliminate the defeated and victorious faction from lactorFreq;
   -- then fcanEscape and fneverEmpty make sense for spawning factions
-  Level{ldepth, lactorCoeff, lactorFreq} <- getLevel lid
-  lvlSpawned <- getsServer $ fromMaybe 0 . EM.lookup lid . snumSpawned
+  Level{ldepth, lactorCoeff, lactorFreq} <- getLevel arena
+  lvlSpawned <- getsServer $ fromMaybe 0 . EM.lookup arena . snumSpawned
   rc <- rndToAction
         $ monsterGenChance ldepth totalDepth lvlSpawned lactorCoeff
   when rc $ do
     modifyServer $ \ser ->
-      ser {snumSpawned = EM.insert lid (lvlSpawned + 1) $ snumSpawned ser}
-    localTime <- getsState $ getLocalTime lid
-    maid <- addAnyActor lactorFreq lid localTime Nothing
+      ser {snumSpawned = EM.insert arena (lvlSpawned + 1) $ snumSpawned ser}
+    localTime <- getsState $ getLocalTime arena
+    maid <- addAnyActor lactorFreq arena localTime Nothing
     case maid of
       Nothing -> return ()
       Just aid -> do
@@ -234,9 +238,9 @@ advanceTime !aid = do
     ser {sactorTime = ageActor (bfid b) (blid b) aid t $ sactorTime ser}
 
 overheadActorTime :: (MonadAtomic m, MonadServer m)
-                  => ES.EnumSet LevelId -> FactionId -> ActorId -> m ()
+                  => FactionId -> ActorId -> m ()
 {-# INLINE overheadActorTime #-}
-overheadActorTime !arenas !fid !aid = do
+overheadActorTime !fid !aid = do
   -- Add communication overhead time delta to all non-projectile,
   -- non-dying faction's actors. Effectively, this limits moves of
   -- a faction to 10, regardless of the number of actors
@@ -249,6 +253,7 @@ overheadActorTime !arenas !fid !aid = do
   actorTime <- getsServer $ (EM.! fid) . sactorTime
   s <- getState
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
+  arenas <- getsServer sarenas
   let f !aid2 !time =
         let body = getActorBody aid2 s
         in if isNothing (btrajectory body)
@@ -257,10 +262,8 @@ overheadActorTime !arenas !fid !aid = do
               && (Just aid2 /= mleader || aid2 == aid)
            then timeShift time (Delta timeClip)
            else time
-      g lid levelTime = if lid `ES.member` arenas
-                        then EM.mapWithKey f levelTime
-                        else levelTime
-      actorTimeNew = EM.mapWithKey g actorTime
+      g acc lid = EM.adjust (EM.mapWithKey f) lid acc
+      actorTimeNew = foldl' g actorTime arenas
   modifyServer $ \ser ->
     ser {sactorTime = EM.insert fid actorTimeNew $ sactorTime ser}
 

@@ -34,7 +34,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
@@ -108,12 +107,6 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = {-# SCC loop
       writeSaveAll False
   loopUpd updConn
 
-  -- Note that if a faction enters dungeon on a level with no spawners,
-  -- the faction won't cause spawning on its active arena
-  -- as long as it has no leader. This may cause regeneration items
-  -- of its opponents become overpowered and lead to micromanagement
-  -- (make sure to kill all actors of the faction, go to a no-spawn
-  -- level and heal fully with no risk nor cost).
 factionArena :: MonadStateRead m => Faction -> m (Maybe LevelId)
 {-# INLINE factionArena #-}
 factionArena fact = {-# SCC factionArena #-} case gleader fact of
@@ -127,39 +120,40 @@ factionArena fact = {-# SCC factionArena #-} case gleader fact of
              then return Nothing
              else Just <$> getEntryArena fact
 
-arenasForLoop :: MonadStateRead m => m (ES.EnumSet LevelId)
+arenasForLoop :: MonadStateRead m => m [LevelId]
 {-# INLINE arenasForLoop #-}
 arenasForLoop = {-# SCC arenasForLoop #-} do
   factionD <- getsState sfactionD
   marenas <- mapM factionArena $ EM.elems factionD
-  let arenas = ES.fromList $ catMaybes marenas
-  let !_A = assert (not (ES.null arenas)
+  let arenas = ES.toList $ ES.fromList $ catMaybes marenas
+      !_A = assert (not (null arenas)
                     `blame` "game over not caught earlier"
                     `twith` factionD) ()
   return $! arenas
 
 handleFid :: (MonadAtomic m, MonadServerReadRequest m)
-          => ES.EnumSet LevelId -> (FactionId, Faction) -> m ()
+          => (FactionId, Faction) -> m ()
 {-# INLINE handleFid #-}
-handleFid allArenas (fid, fact) = {-# SCC handleFid #-} do
+handleFid (fid, fact) = {-# SCC handleFid #-} do
   fa <- factionArena fact
+  arenas <- getsServer sarenas
   -- Projectiles are processed first, to get out of the way
   -- and give info for deciding how to move actors.
-  mapM_ (\lid -> handleTrajectories lid fid) (ES.elems allArenas)
+  mapM_ (\lid -> handleTrajectories lid fid) arenas
   -- Update perception on all levels at once,
   -- in case a leader is changed to actor on another
   -- (possibly not even currently active) level.
   dungeon <- getsState sdungeon
   mapM_ (\lid -> updatePer fid lid) (EM.keys dungeon)
   -- Move a single actor, starting on arena with leader, if available.
-  let arenas = case fa of
-        Just myArena -> myArena : delete myArena (ES.elems allArenas)
-        Nothing -> ES.elems allArenas
-      handle [] = return ()
+  let handle [] = return ()
       handle (lid : rest) = do
-        nonWaitMove <- handleActors allArenas lid fid
+        nonWaitMove <- handleActors lid fid
         unless nonWaitMove $ handle rest
-  handle arenas
+      myArenas = case fa of
+        Just myArena -> myArena : delete myArena arenas
+        Nothing -> arenas
+  handle myArenas
 
 -- Start a clip (a part of a turn for which one or more frames
 -- will be generated). Do whatever has to be done
@@ -170,10 +164,9 @@ loopUpd :: (MonadAtomic m, MonadServerReadRequest m) => m () -> m ()
 {-# INLINE loopUpd #-}
 loopUpd updConn = {-# SCC loopUpd #-} do
   let loopUpdConn = do
-        allArenas <- arenasForLoop
-        endClip allArenas
+        endClip
         factionD <- getsState sfactionD
-        mapM_ (handleFid allArenas) (EM.assocs factionD)
+        mapM_ handleFid (EM.assocs factionD)
         -- Update all perception for visual feedback and to make sure
         -- saving a game doesn't affect gameplay (by updating perception).
         dungeon <- getsState sdungeon
@@ -188,10 +181,9 @@ loopUpd updConn = {-# SCC loopUpd #-} do
           loopUpdConn
   loopUpdConn
 
-endClip :: (MonadAtomic m, MonadServerReadRequest m)
-        => ES.EnumSet LevelId -> m ()
+endClip :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 {-# INLINE endClip #-}
-endClip arenas = {-# SCC endClip #-} do
+endClip = {-# SCC endClip #-} do
   Kind.COps{corule} <- getsState scops
   let RuleKind{rwriteSaveClips, rleadLevelClips} = Kind.stdRuleset corule
   time <- getsState stime
@@ -201,32 +193,35 @@ endClip arenas = {-# SCC endClip #-} do
   when (clipN `mod` rwriteSaveClips == 0) $ do
     modifyServer $ \ser -> ser {swriteSave = False}
     writeSaveAll False
+  validArenas <- getsServer svalidArenas
+  unless validArenas $ do
+    sarenas <- arenasForLoop
+    modifyServer $ \ser -> ser {sarenas, svalidArenas = True}
+  arenas <- getsServer sarenas
   -- I need to send time updates, because I can't add time to each command,
   -- because I'd need to send also all arenas, which should be updated,
   -- and this is too expensive data for each, e.g., projectile move.
   -- I send even if nothing changes so that UI time display can progress.
-  execUpdAtomic $ UpdAgeGame $ ES.toList arenas
+  execUpdAtomic $ UpdAgeGame arenas
   -- Perform periodic dungeon maintenance.
   when (clipN `mod` rleadLevelClips == 0) leadLevelSwitch
   case clipN `mod` clipInTurn of
-    2 -> do
+    2 ->
       -- Periodic activation only once per turn, for speed,
       -- but on all active arenas.
-      applyPeriodicLevel arenas
-    4 -> do
+      applyPeriodicLevel
+    4 ->
       -- Add monsters each turn, not each clip.
-      -- Do this on only one of the arenas to prevent micromanagement,
-      -- e.g., spreading leaders across levels to bump monster generation.
-      arena <- rndToAction $ oneOf $ ES.toList arenas
-      spawnMonster arena
+      spawnMonster
     _ -> return ()
 
 -- | Trigger periodic items for all actors on the given level.
-applyPeriodicLevel :: (MonadAtomic m, MonadServer m)
-                   => ES.EnumSet LevelId -> m ()
+applyPeriodicLevel :: (MonadAtomic m, MonadServer m) => m ()
 {-# INLINE applyPeriodicLevel #-}
-applyPeriodicLevel arenas = {-# SCC applyPeriodicLevel #-} do
-  let applyPeriodicItem _ _ _ (_, (_, [])) = return ()
+applyPeriodicLevel = {-# SCC applyPeriodicLevel #-} do
+  arenas <- getsServer sarenas
+  let arenasSet = ES.fromDistinctAscList arenas
+      applyPeriodicItem _ _ _ (_, (_, [])) = return ()
         -- periodic items always have at least one timer
       applyPeriodicItem aid cstore getStore (iid, _) = do
         -- Check if the item is still in the bag (previous items act!).
@@ -244,7 +239,7 @@ applyPeriodicLevel arenas = {-# SCC applyPeriodicLevel #-} do
                                    (filterRecharging ieffects) itemFull
               _ -> assert `failure` (aid, cstore, iid)
       applyPeriodicActor (aid, b) =
-        when (not (bproj b) && blid b `ES.member` arenas) $ do
+        when (not (bproj b) && blid b `ES.member` arenasSet) $ do
           mapM_ (applyPeriodicItem aid COrgan borgan) $ EM.assocs $ borgan b
           mapM_ (applyPeriodicItem aid CEqp beqp) $ EM.assocs $ beqp b
   allActors <- getsState sactorD
@@ -342,9 +337,9 @@ setTrajectory aid = {-# SCC setTrajectory #-} do
     _ -> assert `failure` "Nothing trajectory" `twith` (aid, b)
 
 handleActors :: (MonadAtomic m, MonadServerReadRequest m)
-             => ES.EnumSet LevelId -> LevelId -> FactionId -> m Bool
+             => LevelId -> FactionId -> m Bool
 {-# INLINE handleActors #-}
-handleActors arenas lid fid = {-# SCC handleActors #-} do
+handleActors lid fid = {-# SCC handleActors #-} do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
   factionD <- getsState sfactionD
@@ -355,13 +350,13 @@ handleActors arenas lid fid = {-# SCC handleActors #-} do
           $ filter (\(_, b) -> isNothing (btrajectory b) && bhp b > 0)
           $ map (\(a, _) -> (a, getActorBody a s))
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
-  hActors arenas fid l
+  hActors fid l
 
 hActors :: (MonadAtomic m, MonadServerReadRequest m)
-        => ES.EnumSet LevelId -> FactionId -> [(ActorId, Actor)] -> m Bool
+        => FactionId -> [(ActorId, Actor)] -> m Bool
 {-# INLINE hActors #-}
-hActors _ _ [] = return False
-hActors arenas fid ((aid, body) : rest) = {-# SCC hActors #-} do
+hActors _ [] = return False
+hActors fid ((aid, body) : rest) = {-# SCC hActors #-} do
   let side = bfid body
   fact <- getsState $ (EM.! side) . sfactionD
   quit <- getsServer squit
@@ -389,14 +384,14 @@ hActors arenas fid ((aid, body) : rest) = {-# SCC hActors #-} do
          cmdS <- sendQueryUI side aid
          -- TODO: check that the command is legal first, report and reject,
          -- but do not crash (currently server asserts things and crashes)
-         handleRequestUI arenas side aid cmdS
+         handleRequestUI side aid cmdS
        | aidIsLeader -> do
          cmdS <- sendQueryAI side aid
-         handleRequestAI arenas side aid cmdS
+         handleRequestAI side aid cmdS
        | otherwise -> do
          cmdN <- sendNonLeaderQueryAI side aid
-         handleReqAI arenas side aid cmdN
-  if nonWaitMove then return True else hActors arenas fid rest
+         handleReqAI side aid cmdN
+  if nonWaitMove then return True else hActors fid rest
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 gameExit = do

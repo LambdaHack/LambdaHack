@@ -154,12 +154,17 @@ cmdAtomicSemSer cmd = case cmd of
         radiusOld = boundSightByCalm aSight (bcalm body)
         radiusNew = boundSightByCalm aSight (bcalm body + n)
     when (radiusOld /= radiusNew) $ invalidatePerActor aid
+  UpdLeadFaction{} -> invalidateArenas
+  UpdRecordKill{} -> invalidateArenas
   UpdAlterTile lid pos fromTile toTile -> do
     clearChanged <- updateSclear lid pos fromTile toTile
     litChanged <- updateSlit lid pos fromTile toTile
     when (clearChanged || litChanged) $ invalidateLucidLid lid
     when clearChanged $ invalidatePerLid lid
   _ -> return ()
+
+invalidateArenas :: MonadServer m => m ()
+invalidateArenas = modifyServer $ \ser -> ser {svalidArenas = False}
 
 addItemToActor :: MonadServer m => ItemId -> Int -> ActorId -> m ()
 addItemToActor iid k aid = do

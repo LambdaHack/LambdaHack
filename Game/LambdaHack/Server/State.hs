@@ -50,6 +50,8 @@ data StateServer = StateServer
   , sfovLucidLid  :: !FovLucidLid   -- ^ ambient or shining light positions
   , sfovClearLid  :: !FovClearLid   -- ^ clear tiles positions
   , sfovLitLid    :: !FovLitLid     -- ^ ambient light positions
+  , sarenas       :: ![LevelId]     -- ^ active arenas
+  , svalidArenas  :: !Bool          -- ^ whether active arenas valid
   , srandom       :: !R.StdGen      -- ^ current random generator
   , srngs         :: !RNGs          -- ^ initial random generators
   , squit         :: !Bool          -- ^ exit the game loop
@@ -133,6 +135,8 @@ emptyStateServer =
     , sfovLucidLid = EM.empty
     , sfovClearLid = EM.empty
     , sfovLitLid = EM.empty
+    , sarenas = []
+    , svalidArenas = False
     , srandom = R.mkStdGen 42
     , srngs = RNGs { dungeonRandomGenerator = Nothing
                    , startingRandomGenerator = Nothing }
@@ -205,6 +209,8 @@ instance Binary StateServer where
         sfovLucidLid = EM.empty
         sfovClearLid = EM.empty
         sfovLitLid = EM.empty
+        sarenas = []
+        svalidArenas = False
         squit = False
         swriteSave = False
         sdebugNxt = defDebugModeSer  -- TODO: here difficulty level, etc. from the last session is wiped out

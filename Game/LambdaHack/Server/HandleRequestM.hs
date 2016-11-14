@@ -26,7 +26,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Atomic
 import qualified Game.LambdaHack.Common.Ability as Ability
@@ -58,34 +57,34 @@ import Game.LambdaHack.Server.State
 -- | The semantics of server commands.
 -- AI always takes time and so doesn't loop.
 handleRequestAI :: (MonadAtomic m, MonadServer m)
-                => ES.EnumSet LevelId -> FactionId -> ActorId -> RequestAI
+                => FactionId -> ActorId -> RequestAI
                 -> m Bool
-handleRequestAI arenas fid aid (cmd, maidTgt) = case maidTgt of
+handleRequestAI fid aid (cmd, maidTgt) = case maidTgt of
   Just aidNew -> do
     switchLeader fid aidNew
-    handleReqAI arenas fid aidNew cmd
-  Nothing -> handleReqAI arenas fid aid cmd
+    handleReqAI fid aidNew cmd
+  Nothing -> handleReqAI fid aid cmd
 
 handleReqAI :: (MonadAtomic m, MonadServer m)
-            => ES.EnumSet LevelId -> FactionId -> ActorId -> ReqAI -> m Bool
-handleReqAI arenas fid aid cmd = case cmd of
-  ReqAITimed (RequestAnyAbility cmdT) -> handleRequestTimed fid arenas aid cmdT
+            => FactionId -> ActorId -> ReqAI -> m Bool
+handleReqAI fid aid cmd = case cmd of
+  ReqAITimed (RequestAnyAbility cmdT) -> handleRequestTimed fid aid cmdT
   ReqAINop -> return False
 
 -- | The semantics of server commands. Only the first two cases take time.
 handleRequestUI :: (MonadAtomic m, MonadServer m)
-                => ES.EnumSet LevelId -> FactionId -> ActorId -> RequestUI
+                => FactionId -> ActorId -> RequestUI
                 -> m Bool
-handleRequestUI arenas fid aid (cmd, maidTgt) = case maidTgt of
+handleRequestUI fid aid (cmd, maidTgt) = case maidTgt of
   Just aidNew -> do
     switchLeader fid aidNew
-    handleReqUI arenas fid aidNew cmd
-  Nothing -> handleReqUI arenas fid aid cmd
+    handleReqUI fid aidNew cmd
+  Nothing -> handleReqUI fid aid cmd
 
 handleReqUI :: (MonadAtomic m, MonadServer m)
-            => ES.EnumSet LevelId -> FactionId -> ActorId -> ReqUI -> m Bool
-handleReqUI arenas fid aid cmd = case cmd of
-  ReqUITimed (RequestAnyAbility cmdT) -> handleRequestTimed fid arenas aid cmdT
+            => FactionId -> ActorId -> ReqUI -> m Bool
+handleReqUI fid aid cmd = case cmd of
+  ReqUITimed (RequestAnyAbility cmdT) -> handleRequestTimed fid aid cmdT
   ReqUIGameRestart t d names -> reqGameRestart aid t d names >> return False
   ReqUIGameExit -> reqGameExit aid >> return False
   ReqUIGameSave -> reqGameSave >> return False
@@ -104,11 +103,10 @@ setBWait cmd aidNew = do
   return hasWait
 
 handleRequestTimed :: (MonadAtomic m, MonadServer m)
-                   => FactionId -> ES.EnumSet LevelId
-                   -> ActorId -> RequestTimed a -> m Bool
-handleRequestTimed fid arenas aid cmd = do
+                   => FactionId -> ActorId -> RequestTimed a -> m Bool
+handleRequestTimed fid aid cmd = do
   hasWait <- setBWait cmd aid
-  unless hasWait $ overheadActorTime arenas fid aid
+  unless hasWait $ overheadActorTime fid aid
   advanceTime aid
   handleRequestTimedCases aid cmd
   managePerTurn aid
