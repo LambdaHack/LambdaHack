@@ -127,32 +127,29 @@ handleAndBroadcast atomic = {-# SCC handleAndBroadcast #-} do
 updatePer :: MonadServerReadRequest m => FactionId -> LevelId -> m ()
 {-# INLINE updatePer #-}
 updatePer fid lid = {-# SCC updatePer #-} do
+  modifyServer $ \ser ->
+    ser {sperValidFid = EM.adjust (EM.insert lid True) fid $ sperValidFid ser}
   sperFidOld <- getsServer sperFid
   let perOld = sperFidOld EM.! fid EM.! lid
-  perValid <- getsServer $ (EM.! lid) . (EM.! fid) . sperValidFid
-  unless perValid $ do
-    modifyServer $ \ser ->
-      ser {sperValidFid = EM.adjust (EM.insert lid True) fid
-                          $ sperValidFid ser}
-    knowEvents <- getsServer $ sknowEvents . sdebugSer
-    -- Performed in the State after action, e.g., with a new actor.
-    perNew <- recomputeCachePer fid lid
-    let inPer = diffPer perNew perOld
-        outPer = diffPer perOld perNew
-    unless (nullPer outPer && nullPer inPer) $ do
-      unless knowEvents $ do  -- inconsistencies would quickly manifest
-        sendUpdate fid $ UpdPerception lid outPer inPer
-        remember <- getsState $ atomicRemember lid inPer
-        let seenNew = seenAtomicCli False fid perNew
---            seenOld = seenAtomicCli False fid perOld
-        psRem <- mapM posUpdAtomic remember
-        -- Verify that we remember only currently seen things.
-        let !_A = assert (allB seenNew psRem) ()
-        -- Verify that we remember only new things.
-        -- but now e.g., actors are added by actions before,
-        -- so they will not appear new. TODO; refine somehow
+  knowEvents <- getsServer $ sknowEvents . sdebugSer
+  -- Performed in the State after action, e.g., with a new actor.
+  perNew <- recomputeCachePer fid lid
+  let inPer = diffPer perNew perOld
+      outPer = diffPer perOld perNew
+  unless (nullPer outPer && nullPer inPer) $ do
+    unless knowEvents $ do  -- inconsistencies would quickly manifest
+      sendUpdate fid $ UpdPerception lid outPer inPer
+      remember <- getsState $ atomicRemember lid inPer
+      let seenNew = seenAtomicCli False fid perNew
+--          seenOld = seenAtomicCli False fid perOld
+      psRem <- mapM posUpdAtomic remember
+      -- Verify that we remember only currently seen things.
+      let !_A = assert (allB seenNew psRem) ()
+      -- Verify that we remember only new things.
+      -- but now e.g., actors are added by actions before,
+      -- so they will not appear new. TODO; refine somehow
 --        let !_A = assert (allB (not . seenOld) psRem) ()
-        mapM_ (sendUpdate fid) remember
+      mapM_ (sendUpdate fid) remember
 
 atomicRemember :: LevelId -> Perception -> State -> [UpdAtomic]
 {-# INLINE atomicRemember #-}

@@ -5,7 +5,8 @@ module Game.LambdaHack.Server.LoopM
   ( loopSer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , factionArena, arenasForLoop, handleFid, loopUpd, endClip, applyPeriodicLevel
+  , factionArena, arenasForLoop, handleFidUpd, loopUpd, endClip
+  , applyPeriodicLevel
   , handleTrajectories, hTrajectories, handleActors, hActors
   , gameExit, restartGame, writeSaveAll, setTrajectory
 #endif
@@ -107,6 +108,7 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = {-# SCC loop
       writeSaveAll False
   loopUpd updConn
 
+-- TODO: the code is duplicated due to INLINE
 factionArena :: MonadStateRead m => Faction -> m (Maybe LevelId)
 {-# INLINE factionArena #-}
 factionArena fact = {-# SCC factionArena #-} case gleader fact of
@@ -131,10 +133,10 @@ arenasForLoop = {-# SCC arenasForLoop #-} do
                     `twith` factionD) ()
   return $! arenas
 
-handleFid :: (MonadAtomic m, MonadServerReadRequest m)
-          => (FactionId, Faction) -> m ()
-{-# INLINE handleFid #-}
-handleFid (fid, fact) = {-# SCC handleFid #-} do
+handleFidUpd :: (MonadAtomic m, MonadServerReadRequest m)
+             => (FactionId -> m ()) -> FactionId -> Faction -> m ()
+{-# INLINE handleFidUpd #-}
+handleFidUpd updatePerFid fid fact = {-# SCC handleFid #-} do
   fa <- factionArena fact
   arenas <- getsServer sarenas
   -- Projectiles are processed first, to get out of the way
@@ -143,8 +145,7 @@ handleFid (fid, fact) = {-# SCC handleFid #-} do
   -- Update perception on all levels at once,
   -- in case a leader is changed to actor on another
   -- (possibly not even currently active) level.
-  dungeon <- getsState sdungeon
-  mapM_ (\lid -> updatePer fid lid) (EM.keys dungeon)
+  updatePerFid fid
   -- Move a single actor, starting on arena with leader, if available.
   let handle [] = return ()
       handle (lid : rest) = do
@@ -160,18 +161,25 @@ handleFid (fid, fact) = {-# SCC handleFid #-} do
 -- every fixed number of time units, e.g., monster generation.
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
-loopUpd :: (MonadAtomic m, MonadServerReadRequest m) => m () -> m ()
+loopUpd :: forall m. (MonadAtomic m, MonadServerReadRequest m) => m () -> m ()
 {-# INLINE loopUpd #-}
 loopUpd updConn = {-# SCC loopUpd #-} do
-  let loopUpdConn = do
+  let updatePerFid :: FactionId -> m ()
+      {-# NOINLINE updatePerFid #-}
+      updatePerFid fid = do
+        perValid <- getsServer $ (EM.! fid) . sperValidFid
+        mapM_ (\(lid, valid) -> unless valid $ updatePer fid lid)
+              (EM.assocs perValid)
+      handleFid :: (FactionId, Faction) -> m ()
+      {-# NOINLINE handleFid #-}
+      handleFid (fid, fact) = handleFidUpd updatePerFid fid fact
+      loopUpdConn = do
         endClip
         factionD <- getsState sfactionD
         mapM_ handleFid (EM.assocs factionD)
         -- Update all perception for visual feedback and to make sure
         -- saving a game doesn't affect gameplay (by updating perception).
-        dungeon <- getsState sdungeon
-        mapM_ (\fid -> mapM_ (\lid -> updatePer fid lid) (EM.keys dungeon))
-              (EM.keys factionD)
+        mapM_ updatePerFid (EM.keys factionD)
         quit <- getsServer squit
         if quit then do
           modifyServer $ \ser -> ser {squit = False}
