@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fprof-auto #-}
 -- | Sending atomic commands to clients and executing them on the server.
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
@@ -43,7 +42,7 @@ import Game.LambdaHack.Server.State
 handleCmdAtomicServer :: MonadStateWrite m
                       => PosAtomic -> CmdAtomic -> m ()
 {-# INLINE handleCmdAtomicServer #-}
-handleCmdAtomicServer _posAtomic atomic =
+handleCmdAtomicServer _posAtomic atomic = {-# SCC handleCmdAtomicServer #-}
 -- Not needed ATM:
 --  when (seenAtomicSer posAtomic) $
 -- Not implemented ATM:
@@ -54,7 +53,7 @@ handleCmdAtomicServer _posAtomic atomic =
 handleAndBroadcast :: (MonadStateWrite m, MonadServerReadRequest m)
                    => CmdAtomic -> m ()
 {-# INLINE handleAndBroadcast #-}
-handleAndBroadcast atomic = do
+handleAndBroadcast atomic = {-# SCC handleAndBroadcast #-} do
   -- This is calculated in the server State before action (simulating
   -- current client State, because action has not been applied
   -- on the client yet; the same in @atomicRemember@).
@@ -127,7 +126,7 @@ handleAndBroadcast atomic = do
 
 updatePer :: MonadServerReadRequest m => FactionId -> LevelId -> m ()
 {-# INLINE updatePer #-}
-updatePer fid lid = do
+updatePer fid lid = {-# SCC updatePer #-} do
   sperFidOld <- getsServer sperFid
   let perOld = sperFidOld EM.! fid EM.! lid
   perValid <- getsServer $ (EM.! lid) . (EM.! fid) . sperValidFid
@@ -157,7 +156,7 @@ updatePer fid lid = do
 
 atomicRemember :: LevelId -> Perception -> State -> [UpdAtomic]
 {-# INLINE atomicRemember #-}
-atomicRemember lid inPer s =
+atomicRemember lid inPer s = {-# SCC atomicRemember #-}
   -- No @UpdLoseItem@ is sent for items that became out of sight.
   -- The client will create these atomic actions based on @outPer@,
   -- if required. Any client that remembers out of sight items, OTOH,

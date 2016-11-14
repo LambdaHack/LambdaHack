@@ -1,5 +1,4 @@
 {-# LANGUAGE GADTs #-}
-{-# OPTIONS_GHC -fprof-auto #-}
 -- | The main loop of the server, processing human and computer player
 -- moves turn by turn.
 module Game.LambdaHack.Server.LoopM
@@ -67,7 +66,7 @@ loopSer :: (MonadAtomic m, MonadServerReadRequest m)
              -- ^ the code to run for AI clients
         -> m ()
 {-# INLINE loopSer #-}
-loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
+loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = {-# SCC loopSer #-} do
   -- Recover states and launch clients.
   cops <- getsState scops
   let updConn = updateConn cops copsClient sconfig sdebugCli
@@ -117,7 +116,7 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
   -- level and heal fully with no risk nor cost).
 factionArena :: MonadStateRead m => Faction -> m (Maybe LevelId)
 {-# INLINE factionArena #-}
-factionArena fact = case gleader fact of
+factionArena fact = {-# SCC factionArena #-} case gleader fact of
   -- Even spawners need an active arena for their leader,
   -- or they start clogging stairs.
   Just leader -> do
@@ -130,7 +129,7 @@ factionArena fact = case gleader fact of
 
 arenasForLoop :: MonadStateRead m => m (ES.EnumSet LevelId)
 {-# INLINE arenasForLoop #-}
-arenasForLoop = do
+arenasForLoop = {-# SCC arenasForLoop #-} do
   factionD <- getsState sfactionD
   marenas <- mapM factionArena $ EM.elems factionD
   let arenas = ES.fromList $ catMaybes marenas
@@ -147,7 +146,7 @@ arenasForLoop = do
 handleFid :: (MonadAtomic m, MonadServerReadRequest m)
           => ES.EnumSet LevelId -> (FactionId, Faction) -> m ()
 {-# INLINE handleFid #-}
-handleFid allArenas (fid, fact) = do
+handleFid allArenas (fid, fact) = {-# SCC handleFid #-} do
   fa <- factionArena fact
   let arenas = case fa of
         Just myArena -> myArena : delete myArena (ES.elems allArenas)
@@ -169,7 +168,7 @@ handleFid allArenas (fid, fact) = do
 
 loopUpd :: (MonadAtomic m, MonadServerReadRequest m) => m () -> m ()
 {-# INLINE loopUpd #-}
-loopUpd updConn = do
+loopUpd updConn = {-# SCC loopUpd #-} do
   let loopUpdConn = do
         allArenas <- arenasForLoop
         endClip allArenas
@@ -192,7 +191,7 @@ loopUpd updConn = do
 endClip :: (MonadAtomic m, MonadServerReadRequest m)
         => ES.EnumSet LevelId -> m ()
 {-# INLINE endClip #-}
-endClip arenas = do
+endClip arenas = {-# SCC endClip #-} do
   Kind.COps{corule} <- getsState scops
   let stdRuleset = Kind.stdRuleset corule
       writeSaveClips = rwriteSaveClips stdRuleset
@@ -226,7 +225,7 @@ endClip arenas = do
 applyPeriodicLevel :: (MonadAtomic m, MonadServer m)
                    => ES.EnumSet LevelId -> m ()
 {-# INLINE applyPeriodicLevel #-}
-applyPeriodicLevel arenas = do
+applyPeriodicLevel arenas = {-# SCC applyPeriodicLevel #-} do
   let applyPeriodicItem _ _ (_, (_, [])) = return ()
         -- periodic items always have at least one timer
       applyPeriodicItem aid cstore (iid, _) = do
@@ -255,7 +254,7 @@ applyPeriodicLevel arenas = do
 handleTrajectories :: (MonadAtomic m, MonadServer m)
                    => LevelId -> FactionId -> m ()
 {-# INLINE handleTrajectories #-}
-handleTrajectories lid fid = do
+handleTrajectories lid fid = {-# SCC handleTrajectories #-} do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
   s <- getState
@@ -274,7 +273,7 @@ handleTrajectories lid fid = do
 hTrajectories :: (MonadAtomic m, MonadServer m)
               => (ActorId, Actor) -> m ()
 {-# INLINE hTrajectories #-}
-hTrajectories (aid, b) = do
+hTrajectories (aid, b) = {-# SCC hTrajectories #-} do
   if actorDying b then do
     -- if bhp b <= 0:
     -- If @b@ is a projectile and it hits an actor,
@@ -311,7 +310,7 @@ hTrajectories (aid, b) = do
 -- blocking path of human-controlled actors and alarming the hapless human.
 setTrajectory :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 {-# INLINE setTrajectory #-}
-setTrajectory aid = do
+setTrajectory aid = {-# SCC setTrajectory #-} do
   cops <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
@@ -346,7 +345,7 @@ setTrajectory aid = do
 handleActors :: (MonadAtomic m, MonadServerReadRequest m)
              => ES.EnumSet LevelId -> LevelId -> FactionId -> m Bool
 {-# INLINE handleActors #-}
-handleActors arenas lid fid = do
+handleActors arenas lid fid = {-# SCC handleActors #-} do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
   factionD <- getsState sfactionD
@@ -363,7 +362,7 @@ hActors :: (MonadAtomic m, MonadServerReadRequest m)
         => ES.EnumSet LevelId -> FactionId -> [(ActorId, Actor)] -> m Bool
 {-# INLINE hActors #-}
 hActors _ _ [] = return False
-hActors arenas fid ((aid, body) : rest) = do
+hActors arenas fid ((aid, body) : rest) = {-# SCC hActors #-} do
   let side = bfid body
   fact <- getsState $ (EM.! side) . sfactionD
   quit <- getsServer squit
@@ -449,7 +448,7 @@ gameExit = do
 restartGame :: (MonadAtomic m, MonadServerReadRequest m)
             => m () -> m () -> Maybe (GroupName ModeKind) ->  m ()
 {-# INLINE restartGame #-}
-restartGame updConn loop mgameMode = do
+restartGame updConn loop mgameMode = {-# SCC restartGame #-} do
   cops <- getsState scops
   sdebugNxt <- getsServer sdebugNxt
   srandom <- getsServer srandom
