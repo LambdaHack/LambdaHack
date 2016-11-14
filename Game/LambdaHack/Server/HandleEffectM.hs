@@ -103,15 +103,15 @@ effectAndDestroy source target iid container periodic effs ItemFull{..} = do
     -- This is OK, because we don't remove the item type from various
     -- item dictionaries, just an individual copy from the container,
     -- so, e.g., the item can be identified after it's removed.
-    let mtmp = let tmpEffect :: IK.Effect -> Bool
-                   tmpEffect IK.Temporary{} = True
-                   tmpEffect (IK.Recharging IK.Temporary{}) = True
-                   tmpEffect (IK.OnSmash IK.Temporary{}) = True
-                   tmpEffect _ = False
-               in find tmpEffect effs
+    let permanent = let tmpEffect :: IK.Effect -> Bool
+                        tmpEffect IK.Temporary{} = True
+                        tmpEffect (IK.Recharging IK.Temporary{}) = True
+                        tmpEffect (IK.OnSmash IK.Temporary{}) = True
+                        tmpEffect _ = False
+                    in not $ any tmpEffect effs
     let durable = IK.Durable `elem` jfeature itemBase
-        imperishable = durable || periodic && isNothing mtmp
-        kit = if isNothing mtmp || periodic then (1, take 1 it2) else (itemK, it2)
+        imperishable = durable || periodic && permanent
+        kit = if permanent || periodic then (1, take 1 it2) else (itemK, it2)
     unless imperishable $
       execUpdAtomic $ UpdLoseItem iid itemBase kit container
     -- At this point, the item is potentially no longer in container @c@,

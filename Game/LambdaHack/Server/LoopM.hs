@@ -120,8 +120,8 @@ factionArena fact = {-# SCC factionArena #-} case gleader fact of
   -- Even spawners need an active arena for their leader,
   -- or they start clogging stairs.
   Just leader -> do
-     b <- getsState $ getActorBody leader
-     return $ Just $ blid b
+    b <- getsState $ getActorBody leader
+    return $ Just $ blid b
   Nothing -> if fleaderMode (gplayer fact) == LeaderNull
                 || EM.null (gvictims fact)  -- not in-between spawns
              then return Nothing
@@ -138,34 +138,34 @@ arenasForLoop = {-# SCC arenasForLoop #-} do
                     `twith` factionD) ()
   return $! arenas
 
--- Start a clip (a part of a turn for which one or more frames
--- will be generated). Do whatever has to be done
--- every fixed number of time units, e.g., monster generation.
--- Run the leader and other actors moves. Eventually advance the time
--- and repeat.
 handleFid :: (MonadAtomic m, MonadServerReadRequest m)
           => ES.EnumSet LevelId -> (FactionId, Faction) -> m ()
 {-# INLINE handleFid #-}
 handleFid allArenas (fid, fact) = {-# SCC handleFid #-} do
   fa <- factionArena fact
-  let arenas = case fa of
-        Just myArena -> myArena : delete myArena (ES.elems allArenas)
-        Nothing -> ES.elems allArenas
   -- Projectiles are processed first, to get out of the way
   -- and give info for deciding how to move actors.
-  mapM_ (\lid -> handleTrajectories lid fid) arenas
+  mapM_ (\lid -> handleTrajectories lid fid) (ES.elems allArenas)
   -- Update perception on all levels at once,
   -- in case a leader is changed to actor on another
   -- (possibly not even currently active) level.
   dungeon <- getsState sdungeon
   mapM_ (\lid -> updatePer fid lid) (EM.keys dungeon)
   -- Move a single actor, starting on arena with leader, if available.
-  let handle [] = return ()
+  let arenas = case fa of
+        Just myArena -> myArena : delete myArena (ES.elems allArenas)
+        Nothing -> ES.elems allArenas
+      handle [] = return ()
       handle (lid : rest) = do
         nonWaitMove <- handleActors allArenas lid fid
         unless nonWaitMove $ handle rest
   handle arenas
 
+-- Start a clip (a part of a turn for which one or more frames
+-- will be generated). Do whatever has to be done
+-- every fixed number of time units, e.g., monster generation.
+-- Run the leader and other actors moves. Eventually advance the time
+-- and repeat.
 loopUpd :: (MonadAtomic m, MonadServerReadRequest m) => m () -> m ()
 {-# INLINE loopUpd #-}
 loopUpd updConn = {-# SCC loopUpd #-} do
@@ -193,14 +193,12 @@ endClip :: (MonadAtomic m, MonadServerReadRequest m)
 {-# INLINE endClip #-}
 endClip arenas = {-# SCC endClip #-} do
   Kind.COps{corule} <- getsState scops
-  let stdRuleset = Kind.stdRuleset corule
-      writeSaveClips = rwriteSaveClips stdRuleset
-      leadLevelClips = rleadLevelClips stdRuleset
+  let RuleKind{rwriteSaveClips, rleadLevelClips} = Kind.stdRuleset corule
   time <- getsState stime
   let clipN = time `timeFit` timeClip
       clipInTurn = let r = timeTurn `timeFit` timeClip
                    in assert (r >= 5) r
-  when (clipN `mod` writeSaveClips == 0) $ do
+  when (clipN `mod` rwriteSaveClips == 0) $ do
     modifyServer $ \ser -> ser {swriteSave = False}
     writeSaveAll False
   -- I need to send time updates, because I can't add time to each command,
@@ -209,29 +207,30 @@ endClip arenas = {-# SCC endClip #-} do
   -- I send even if nothing changes so that UI time display can progress.
   execUpdAtomic $ UpdAgeGame $ ES.toList arenas
   -- Perform periodic dungeon maintenance.
-  when (clipN `mod` leadLevelClips == 0) leadLevelSwitch
-  when (clipN `mod` clipInTurn == 2) $
-    -- Periodic activation only once per turn, for speed,
-    -- but on all active arenas.
-    applyPeriodicLevel arenas
-  when (clipN `mod` clipInTurn == 4) $ do
-    -- Add monsters each turn, not each clip.
-    -- Do this on only one of the arenas to prevent micromanagement,
-    -- e.g., spreading leaders across levels to bump monster generation.
-    arena <- rndToAction $ oneOf $ ES.toList arenas
-    spawnMonster arena
+  when (clipN `mod` rleadLevelClips == 0) leadLevelSwitch
+  case clipN `mod` clipInTurn of
+    2 -> do
+      -- Periodic activation only once per turn, for speed,
+      -- but on all active arenas.
+      applyPeriodicLevel arenas
+    4 -> do
+      -- Add monsters each turn, not each clip.
+      -- Do this on only one of the arenas to prevent micromanagement,
+      -- e.g., spreading leaders across levels to bump monster generation.
+      arena <- rndToAction $ oneOf $ ES.toList arenas
+      spawnMonster arena
+    _ -> return ()
 
 -- | Trigger periodic items for all actors on the given level.
 applyPeriodicLevel :: (MonadAtomic m, MonadServer m)
                    => ES.EnumSet LevelId -> m ()
 {-# INLINE applyPeriodicLevel #-}
 applyPeriodicLevel arenas = {-# SCC applyPeriodicLevel #-} do
-  let applyPeriodicItem _ _ (_, (_, [])) = return ()
+  let applyPeriodicItem _ _ _ (_, (_, [])) = return ()
         -- periodic items always have at least one timer
-      applyPeriodicItem aid cstore (iid, _) = do
+      applyPeriodicItem aid cstore getStore (iid, _) = do
         -- Check if the item is still in the bag (previous items act!).
-        b <- getsState $ getActorBody aid
-        bag <- getsState $ getBodyStoreBag b cstore
+        bag <- getsState $ getStore . getActorBody aid
         case iid `EM.lookup` bag of
           Nothing -> return ()  -- item dropped
           Just kit -> do
@@ -246,8 +245,8 @@ applyPeriodicLevel arenas = {-# SCC applyPeriodicLevel #-} do
               _ -> assert `failure` (aid, cstore, iid)
       applyPeriodicActor (aid, b) =
         when (not (bproj b) && blid b `ES.member` arenas) $ do
-          mapM_ (applyPeriodicItem aid COrgan) $ EM.assocs $ borgan b
-          mapM_ (applyPeriodicItem aid CEqp) $ EM.assocs $ beqp b
+          mapM_ (applyPeriodicItem aid COrgan borgan) $ EM.assocs $ borgan b
+          mapM_ (applyPeriodicItem aid CEqp beqp) $ EM.assocs $ beqp b
   allActors <- getsState sactorD
   mapM_ applyPeriodicActor $ EM.assocs allActors
 

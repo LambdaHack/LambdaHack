@@ -159,7 +159,7 @@ rollFlavourMap fullFlavSet rnd key ik =
        assert (not (S.null proper)
                `blame` "not enough flavours for items"
                `twith` (flavours, available, ik, availableMap)) $ do
-         flavour <- oneOf (S.toList proper)
+         flavour <- oneOf $ S.toList proper
          let availableReduced = S.delete flavour available
          return ( EM.insert key flavour assocs
                 , EM.insert (IK.isymbol ik) availableReduced availableMap)

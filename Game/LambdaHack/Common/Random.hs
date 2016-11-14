@@ -40,10 +40,11 @@ random = St.state R.random
 
 -- | Get any element of a list with equal probability.
 oneOf :: [a] -> Rnd a
+{-# INLINABLE oneOf #-}
 oneOf [] = assert `failure` "oneOf []" `twith` ()
 oneOf xs = do
   r <- randomR (0, length xs - 1)
-  return (xs !! r)
+  return $! xs !! r
 
 -- | Gen an element according to a frequency distribution.
 frequency :: Show a => Frequency a -> Rnd a
