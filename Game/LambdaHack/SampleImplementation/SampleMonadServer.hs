@@ -63,35 +63,50 @@ newtype SerImplementation a =
   deriving (Monad, Functor, Applicative)
 
 instance MonadStateRead SerImplementation where
+  {-# INLINE getState #-}
   getState    = SerImplementation $ gets serState
+  {-# INLINE getsState #-}
   getsState f = SerImplementation $ gets $ f . serState
 
 instance MonadStateWrite SerImplementation where
+  {-# INLINE modifyState #-}
   modifyState f = SerImplementation $ state $ \serS ->
     let !newSerState = f $ serState serS
     in ((), serS {serState = newSerState})
+  {-# INLINE putState #-}
   putState s = SerImplementation $ state $ \serS ->
     s `seq` ((), serS {serState = s})
 
 instance MonadServer SerImplementation where
+  {-# INLINE getServer #-}
   getServer      = SerImplementation $ gets serServer
+  {-# INLINE getsServer #-}
   getsServer   f = SerImplementation $ gets $ f . serServer
+  {-# INLINE modifyServer #-}
   modifyServer f = SerImplementation $ state $ \serS ->
     let !newSerServer = f $ serServer serS
     in ((), serS {serServer = newSerServer})
+  {-# INLINE putServer #-}
   putServer    s = SerImplementation $ state $ \serS ->
     s `seq` ((), serS {serServer = s})
+  {-# INLINE liftIO #-}
   liftIO         = SerImplementation . IO.liftIO
 
 instance MonadServerReadRequest SerImplementation where
+  {-# INLINE getDict #-}
   getDict      = SerImplementation $ gets serDict
+  {-# INLINE getsDict #-}
   getsDict   f = SerImplementation $ gets $ f . serDict
+  {-# INLINE modifyDict #-}
   modifyDict f = SerImplementation $ state $ \serS ->
     let !newSerDict = f $ serDict serS
     in ((), serS {serDict = newSerDict})
+  {-# INLINE putDict #-}
   putDict s = SerImplementation $ state $ \serS ->
     s `seq` ((), serS {serDict = s})
+  {-# INLINE saveChanServer #-}
   saveChanServer = SerImplementation $ gets serToSave
+  {-# INLINE liftIO #-}
   liftIO = SerImplementation . IO.liftIO
 
 -- | The game-state semantics of atomic commands
