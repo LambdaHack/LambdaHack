@@ -42,6 +42,7 @@ import Game.LambdaHack.Content.TileKind (isUknownSpace)
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy TgtAndPath)
+{-# INLINE targetStrategy #-}
 targetStrategy aid = do
   cops@Kind.COps{corule, cotile} <- getsState scops
   b <- getsState $ getActorBody aid

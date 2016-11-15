@@ -29,11 +29,8 @@ handleResponseAI :: ( MonadClientSetup m
 handleResponseAI cmd = case cmd of
   RespUpdAtomicAI cmdA ->
     handleSelfAI cmdA
-  RespQueryAI -> do
-    cmdC <- queryAI
-    sendRequest cmdC
-  RespNonLeaderQueryAI aid -> do
-    cmdC <- nonLeaderQueryAI aid
+  RespQueryAI aid -> do
+    cmdC <- queryAI aid
     sendRequest cmdC
 
 handleResponseUI :: ( MonadClientSetup m

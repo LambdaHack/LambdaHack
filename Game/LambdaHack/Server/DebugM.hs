@@ -39,9 +39,8 @@ debugResponseAI cmd = case cmd of
   RespUpdAtomicAI cmdA@UpdResume{} -> debugPlain cmd cmdA
   RespUpdAtomicAI cmdA@UpdSpotTile{} -> debugPlain cmd cmdA
   RespUpdAtomicAI cmdA -> debugPretty cmd cmdA
-  RespQueryAI -> serverPrint "RespQueryAI"
-  RespNonLeaderQueryAI aid -> do
-    d <- debugAid aid "RespNonLeaderQueryAI" cmd
+  RespQueryAI aid -> do
+    d <- debugAid aid "RespQueryAI" cmd
     serverPrint d
 
 debugResponseUI :: MonadServer m => ResponseUI -> m ()

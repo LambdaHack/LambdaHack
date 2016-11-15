@@ -1,7 +1,7 @@
 -- | Ways for the client to use AI to produce server requests, based on
 -- the client's view of the game state.
 module Game.LambdaHack.Client.AI
-  ( queryAI, nonLeaderQueryAI
+  ( queryAI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , refreshTarget, pickAction
@@ -23,42 +23,34 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
-import Game.LambdaHack.Common.State
 
 -- | Handle the move of an AI player.
-queryAI :: MonadClient m => m RequestAI
+queryAI :: forall m. MonadClient m => ActorId -> m RequestAI
 {-# INLINE queryAI #-}
-queryAI = do
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
-  let mleader = gleader fact
-      oldAid = case mleader of
-        Nothing -> assert `failure` fact
-        Just aid -> aid
-  udpdateCondInMelee oldAid
-  (aidToMove, bToMove) <- pickActorToMove refreshTarget
-  req <- ReqAITimed <$> pickAction (aidToMove, bToMove)
-  if mleader /= Just aidToMove
-    then return (req, Just aidToMove)
-    else return (req, Nothing)
-
-nonLeaderQueryAI :: MonadClient m => ActorId -> m RequestAI
-{-# INLINE nonLeaderQueryAI #-}
-nonLeaderQueryAI aid = do
-  mleader <- getsClient _sleader
-  let !_A = assert (mleader /= Just aid) ()
+queryAI aid = do
+  let refreshTarget :: (ActorId, Actor) -> m (Maybe TgtAndPath)
+      {-# NOINLINE refreshTarget #-}
+      refreshTarget (aid2, b2) = refreshTargetS aid2 b2
   udpdateCondInMelee aid
-  useTactics refreshTarget aid
-  bToMove <- getsState $ getActorBody aid
-  req <- ReqAITimed <$> pickAction (aid, bToMove)
-  return (req, Nothing)
+  mleader <- getsClient _sleader
+  (aidToMove, bToMove) <-
+    if mleader == Just aid
+    then pickActorToMove refreshTarget
+    else do
+      useTactics refreshTarget aid
+      b <- getsState $ getActorBody aid
+      return (aid, b)
+  req <- ReqAITimed <$> pickAction (aidToMove, bToMove)
+  if aidToMove /= aid
+  then return (req, Just aidToMove)
+  else return (req, Nothing)
 
 udpdateCondInMelee :: MonadClient m => ActorId -> m ()
+{-# INLINE udpdateCondInMelee #-}
 udpdateCondInMelee aid = do
   b <- getsState $ getActorBody aid
   condInMelee <- getsClient $ (EM.! blid b) . scondInMelee
@@ -75,10 +67,9 @@ udpdateCondInMelee aid = do
 
 -- | Verify and possibly change the target of an actor. This function both
 -- updates the target in the client state and returns the new target explicitly.
-refreshTarget :: MonadClient m
-              => (ActorId, Actor)  -- ^ the actor to refresh
-              -> m (Maybe TgtAndPath)
-refreshTarget (aid, body) = do
+refreshTargetS :: MonadClient m => ActorId -> Actor -> m (Maybe TgtAndPath)
+{-# INLINE refreshTargetS #-}
+refreshTargetS aid body = do
   side <- getsClient sside
   let !_A = assert (bfid body == side
                     `blame` "AI tries to move an enemy actor"
@@ -110,6 +101,7 @@ refreshTarget (aid, body) = do
 
 -- | Pick an action the actor will perform this turn.
 pickAction :: MonadClient m => (ActorId, Actor) -> m RequestAnyAbility
+{-# INLINE pickAction #-}
 pickAction (aid, body) = do
   -- Pathing finished, randomize paths for next moves.
   modifyClient $ \cli -> cli {seps = seps cli + 773}

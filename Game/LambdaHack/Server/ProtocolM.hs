@@ -14,7 +14,7 @@ module Game.LambdaHack.Server.ProtocolM
       , liftIO  -- exposed only to be implemented, not used
       )
     -- * Protocol
-  , sendUpdate, sendSfx, sendQueryAI, sendNonLeaderQueryAI, sendQueryUI
+  , sendUpdate, sendSfx, sendQueryAI, sendQueryUI
     -- * Assorted
   , killAllClients, childrenServer, updateConn
   , saveServer, saveName, tryRestore
@@ -217,42 +217,21 @@ sendQueryAI fid aid = do
   frozenClient <- getsDict $ (EM.! fid)
   req <- case frozenClient of
     FState msess s cli -> do
-      let m = queryAI
+      let m = queryAI aid
           cliState = CliState s cli ()
       (req, CliState s' cli' ()) <- liftIO $ runCli m cliState
       modifyDict $ EM.insert fid (FState msess s' cli')
       return req
     FThread _ conn -> do
-      writeQueueAI RespQueryAI $ responseS conn
+      writeQueueAI (RespQueryAI aid) $ responseS conn
       readQueueAI $ requestS conn
   debug <- getsServer $ sniffIn . sdebugSer
   when debug $ debugRequestAI aid req
   return req
 
-sendNonLeaderQueryAI :: MonadServerReadRequest m
-                     => FactionId -> ActorId -> m ReqAI
-{-# INLINABLE sendNonLeaderQueryAI #-}
-sendNonLeaderQueryAI fid aid = do
-  frozenClient <- getsDict $ (EM.! fid)
-  req <- case frozenClient of
-    FState msess s cli -> do
-      let m = nonLeaderQueryAI aid
-          cliState = CliState s cli ()
-      (req, CliState s' cli' ()) <- liftIO $ runCli m cliState
-      modifyDict $ EM.insert fid (FState msess s' cli')
-      return req
-    FThread _ conn -> do
-      writeQueueAI (RespNonLeaderQueryAI aid) $ responseS conn
-      readQueueAI $ requestS conn
-  case req of
-    (_, Just{}) -> assert `failure` req
-    (cmd, Nothing) -> do
-      debug <- getsServer $ sniffIn . sdebugSer
-      when debug $ debugRequestAI aid req
-      return cmd
-
 sendQueryUI :: (MonadAtomic m, MonadServerReadRequest m)
             => FactionId -> ActorId -> m RequestUI
+{-# INLINABLE sendQueryUI #-}
 sendQueryUI fid aid = do
   frozenClient <- getsDict $ (EM.! fid)
   req <- case frozenClient of

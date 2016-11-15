@@ -64,6 +64,7 @@ toAny strat = RequestAnyAbility <$> strat
 -- Never empty.
 actionStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy RequestAnyAbility)
+{-# INLINE actionStrategy #-}
 actionStrategy aid = do
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD

@@ -9,11 +9,12 @@
 -- influence the outcome of the evaluation.
 -- TODO: document
 module Game.LambdaHack.Server.HandleRequestM
-  ( handleRequestAI, handleReqAI, handleRequestUI
+  ( handleRequestAI, handleRequestUI
   , reqMove, reqDisplace, reqGameExit
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , handleReqUI, setBWait, handleRequestTimed, handleRequestTimedCases
+  , handleReqAI, handleReqUI, setBWait
+  , handleRequestTimed, handleRequestTimedCases
   , switchLeader, affectSmell, reqMelee, reqAlter, reqWait
   , reqMoveItems, reqMoveItem, computeRndTimeout, reqProject, reqApply
   , reqTrigger, triggerEffect, reqGameRestart, reqGameSave
