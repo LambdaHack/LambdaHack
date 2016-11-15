@@ -25,6 +25,7 @@ import Game.LambdaHack.Common.Point
 -- | Add current report to the overlay, split the result and produce,
 -- possibly, many slides.
 overlayToSlideshow :: MonadClientUI m => Y -> [K.KM] -> OKX -> m Slideshow
+{-# INLINABLE overlayToSlideshow #-}
 overlayToSlideshow y keys okx = do
   lidV <- viewedLevelUI
   Level{lxsize} <- getLevel lidV  -- TODO: screen length or viewLevel
@@ -33,6 +34,7 @@ overlayToSlideshow y keys okx = do
 
 -- | Split current report into a slideshow.
 reportToSlideshow :: MonadClientUI m => [K.KM] -> m Slideshow
+{-# INLINABLE reportToSlideshow #-}
 reportToSlideshow keys = do
   lidV <- viewedLevelUI
   Level{lysize} <- getLevel lidV
@@ -41,6 +43,7 @@ reportToSlideshow keys = do
 -- | Display a message. Return value indicates if the player tried to cancel.
 -- Feature: if many pages, only the last SPACE exits (but first ESC).
 displaySpaceEsc :: MonadClientUI m => ColorMode -> Text -> m Bool
+{-# INLINABLE displaySpaceEsc #-}
 displaySpaceEsc dm prompt = do
   promptAdd prompt
   -- Two frames drawn total (unless @prompt@ very long).
@@ -51,6 +54,7 @@ displaySpaceEsc dm prompt = do
 -- | Display a message. Ignore keypresses.
 -- Feature: if many pages, only the last SPACE exits (but first ESC).
 displayMore :: MonadClientUI m => ColorMode -> Text -> m ()
+{-# INLINABLE displayMore #-}
 displayMore dm prompt = do
   promptAdd prompt
   slides <- reportToSlideshow [K.spaceKM]
@@ -59,6 +63,7 @@ displayMore dm prompt = do
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
 displayYesNo :: MonadClientUI m => ColorMode -> Text -> m Bool
+{-# INLINABLE displayYesNo #-}
 displayYesNo dm prompt = do
   promptAdd prompt
   let yn = map K.mkChar ['y', 'n']
@@ -68,6 +73,7 @@ displayYesNo dm prompt = do
 
 getConfirms :: MonadClientUI m
             => ColorMode -> [K.KM] -> Slideshow -> m K.KM
+{-# INLINABLE getConfirms #-}
 getConfirms dm extraKeys slides = do
   (ekm, _) <- displayChoiceScreen dm False 0 slides extraKeys
   return $! either id (assert `failure` ekm) ekm
@@ -75,6 +81,7 @@ getConfirms dm extraKeys slides = do
 displayChoiceScreen :: forall m . MonadClientUI m
                     => ColorMode -> Bool -> Int -> Slideshow -> [K.KM]
                     -> m (Either K.KM SlotChar, Int)
+{-# INLINABLE displayChoiceScreen #-}
 displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
   let frs = slideshow frsX
       keys = concatMap (concatMap (either id (const []) . fst) . snd) frs

@@ -317,6 +317,7 @@ displayRespUpdAtomicUI verbose oldDiscoKind oldDiscoAspect cmd = case cmd of
   UpdRecordHistory _ -> recordHistory
 
 markDisplayNeeded :: MonadClientUI m => LevelId -> m ()
+{-# INLINABLE markDisplayNeeded #-}
 markDisplayNeeded lid = do
   lidV <- viewedLevelUI
   when (lidV == lid) $
@@ -324,6 +325,7 @@ markDisplayNeeded lid = do
 
 updateItemSlotSide :: MonadClient m
                    => CStore -> ActorId -> ItemId -> m SlotChar
+{-# INLINABLE updateItemSlotSide #-}
 updateItemSlotSide store aid iid = do
   side <- getsClient sside
   b <- getsState $ getActorBody aid
@@ -332,6 +334,7 @@ updateItemSlotSide store aid iid = do
   else updateItemSlot store Nothing iid
 
 lookAtMove :: MonadClientUI m => ActorId -> m ()
+{-# INLINABLE lookAtMove #-}
 lookAtMove aid = do
   body <- getsState $ getActorBody aid
   side <- getsClient sside
@@ -353,17 +356,20 @@ lookAtMove aid = do
 
 -- | Sentences such as \"Dog barks loudly.\".
 actorVerbMU :: MonadClientUI m => ActorId -> Actor -> MU.Part -> m ()
+{-# INLINABLE actorVerbMU #-}
 actorVerbMU aid b verb = do
   subject <- partActorLeader aid b
   msgAdd $ makeSentence [MU.SubjectVerbSg subject verb]
 
 aidVerbMU :: MonadClientUI m => ActorId -> MU.Part -> m ()
+{-# INLINABLE aidVerbMU #-}
 aidVerbMU aid verb = do
   b <- getsState $ getActorBody aid
   actorVerbMU aid b verb
 
 itemVerbMU :: MonadClientUI m
            => ItemId -> ItemQuant -> MU.Part -> Container -> m ()
+{-# INLINABLE itemVerbMU #-}
 itemVerbMU iid kit@(k, _) verb c = assert (k > 0) $ do
   lid <- getsState $ lidFromC c
   localTime <- getsState $ getLocalTime lid
@@ -380,6 +386,7 @@ itemAidVerbMU :: MonadClientUI m
               => ActorId -> MU.Part
               -> ItemId -> Either (Maybe Int) Int -> CStore
               -> m ()
+{-# INLINABLE itemAidVerbMU #-}
 itemAidVerbMU aid verb iid ek cstore = do
   body <- getsState $ getActorBody aid
   bag <- getsState $ getBodyStoreBag body cstore
@@ -412,6 +419,7 @@ itemAidVerbMU aid verb iid ek cstore = do
       msgAdd msg
 
 msgDuplicateScrap :: MonadClientUI m => m ()
+{-# INLINABLE msgDuplicateScrap #-}
 msgDuplicateScrap = do
   report <- getsSession _sreport
   history <- getsSession shistory
@@ -424,6 +432,7 @@ msgDuplicateScrap = do
 
 -- TODO: "XXX spots YYY"? or blink or show the changed xhair?
 createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
+{-# INLINABLE createActorUI #-}
 createActorUI born aid body = do
   side <- getsClient sside
   let verb = if born
@@ -456,6 +465,7 @@ createActorUI born aid body = do
   lookAtMove aid
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
+{-# INLINABLE destroyActorUI #-}
 destroyActorUI died aid body = do
   Kind.COps{corule} <- getsState scops
   side <- getsClient sside
@@ -479,6 +489,7 @@ destroyActorUI died aid body = do
 
 -- TODO: deduplicate wrt Server
 anyActorsAlive :: MonadClient m => FactionId -> Maybe ActorId -> m Bool
+{-# INLINABLE anyActorsAlive #-}
 anyActorsAlive fid maid = do
   fact <- getsState $ (EM.! fid) . sfactionD
   if fleaderMode (gplayer fact) /= LeaderNull
@@ -489,6 +500,7 @@ anyActorsAlive fid maid = do
       return $! not $ null $ maybe as (\aid -> filter ((/= aid) . fst) as) maid
 
 moveActor :: MonadClientUI m => ActorId -> Point -> Point -> m ()
+{-# INLINABLE moveActor #-}
 moveActor aid source target = do
   -- If source and target tile distant, assume it's a teleportation
   -- and display an animation. Note: jumps and pushes go through all
@@ -505,6 +517,7 @@ moveActor aid source target = do
   lookAtMove aid
 
 displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
+{-# INLINABLE displaceActorUI #-}
 displaceActorUI source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
@@ -521,6 +534,7 @@ displaceActorUI source target = do
 moveItemUI :: MonadClientUI m
            => ItemId -> Int -> ActorId -> CStore -> CStore
            -> m ()
+{-# INLINABLE moveItemUI #-}
 moveItemUI iid k aid cstore1 cstore2 = do
   let verb = verbCStore cstore2
   b <- getsState $ getActorBody aid
@@ -545,6 +559,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
 -- TODO: split into many top-level functions; factor out common parts
 quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Actor -> Maybe Status -> m ()
+{-# INLINABLE quitFactionUI #-}
 quitFactionUI fid mbody toSt = do
   Kind.COps{coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
   fact <- getsState $ (EM.! fid) . sfactionD
@@ -677,6 +692,7 @@ quitFactionUI fid mbody toSt = do
 
 discover :: MonadClientUI m
          => Container -> DiscoveryKind -> DiscoveryAspect -> ItemId -> m ()
+{-# INLINABLE discover #-}
 discover c oldDiscoKind oldDiscoAspect iid = do
   let cstore = storeFromC c
   lid <- getsState $ lidFromC c
@@ -906,6 +922,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
   SfxMsgAll msg -> msgAdd msg
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
+{-# INLINABLE setLastSlot #-}
 setLastSlot aid iid cstore = do
   mleader <- getsClient _sleader
   when (Just aid == mleader) $ do
@@ -919,6 +936,7 @@ setLastSlot aid iid cstore = do
 
 strike :: MonadClientUI m
        => ActorId -> ActorId -> ItemId -> CStore -> HitAtomic -> m ()
+{-# INLINABLE strike #-}
 strike source target iid cstore hitStatus = assert (source /= target) $ do
   tb <- getsState $ getActorBody target
   sourceSeen <- getsState $ memActor source (blid tb)

@@ -58,12 +58,15 @@ mergeMError (Just err1) (Just err2) =
 type FailOrCmd a = Either FailError a
 
 failWith :: MonadClientUI m => Text -> m (FailOrCmd a)
+{-# INLINABLE failWith #-}
 failWith err = assert (not $ T.null err) $ return $ Left $ FailError err
 
 failSer :: MonadClientUI m => ReqFailure -> m (FailOrCmd a)
+{-# INLINABLE failSer #-}
 failSer = failWith . showReqFailure
 
 failMsg :: MonadClientUI m => Text -> m MError
+{-# INLINABLE failMsg #-}
 failMsg err = assert (not $ T.null err) $ return $ Just $ FailError err
 
 weaveJust :: FailOrCmd a -> Either MError a
@@ -72,6 +75,7 @@ weaveJust (Right a) = Right a
 
 -- | Switches current member to the next on the level, if any, wrapping.
 memberCycle :: MonadClientUI m => Bool -> m MError
+{-# INLINABLE memberCycle #-}
 memberCycle verbose = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -90,6 +94,7 @@ memberCycle verbose = do
 
 -- | Switches current member to the previous in the whole dungeon, wrapping.
 memberBack :: MonadClientUI m => Bool -> m MError
+{-# INLINABLE memberBack #-}
 memberBack verbose = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -107,6 +112,7 @@ memberBack verbose = do
       return Nothing
 
 partyAfterLeader :: MonadStateRead m => ActorId -> m [(ActorId, Actor)]
+{-# INLINABLE partyAfterLeader #-}
 partyAfterLeader leader = do
   faction <- getsState $ bfid . getActorBody leader
   allA <- getsState $ EM.assocs . sactorD
@@ -119,6 +125,7 @@ partyAfterLeader leader = do
 
 -- | Select a faction leader. False, if nothing to do.
 pickLeader :: MonadClientUI m => Bool -> ActorId -> m Bool
+{-# INLINABLE pickLeader #-}
 pickLeader verbose aid = do
   leader <- getLeaderUI
   saimMode <- getsSession saimMode
@@ -147,6 +154,7 @@ pickLeader verbose aid = do
 
 -- TODO: deduplicate parts of the result sentence.
 itemIsFound :: MonadClientUI m => ItemId -> ActorId -> CStore -> m Text
+{-# INLINABLE itemIsFound #-}
 itemIsFound iid leader storeLeader = do
   b <- getsState $ getActorBody leader
   found <- getsState $ findIid leader (bfid b) iid
@@ -162,6 +170,7 @@ itemIsFound iid leader storeLeader = do
 
 -- | Create a list of item names.
 itemOverlay :: MonadClient m => CStore -> LevelId -> ItemBag -> m OKX
+{-# INLINABLE itemOverlay #-}
 itemOverlay store lid bag = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
@@ -187,6 +196,7 @@ itemOverlay store lid bag = do
   return (concat ts, zipWith renumber [0..] kxs)
 
 statsOverlay :: MonadClient m => ActorId -> m OKX
+{-# INLINABLE statsOverlay #-}
 statsOverlay aid = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
@@ -228,6 +238,7 @@ statsOverlay aid = do
   return (map textToAL ts, kxs)
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
+{-# INLINABLE pickNumber #-}
 pickNumber askNumber kAll = do
   let shownKeys = [ K.returnKM, K.mkChar '+', K.mkChar '-'
                   , K.spaceKM, K.escKM ]

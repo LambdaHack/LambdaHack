@@ -88,6 +88,7 @@ byAreaHuman :: MonadClientUI m
             => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
             -> [(HumanCmd.CmdArea, HumanCmd.HumanCmd)]
             -> m (Either MError ReqUI)
+{-# INLINABLE byAreaHuman #-}
 byAreaHuman cmdAction l = do
   pointer <- getsSession spointer
   let pointerInArea a = do
@@ -102,6 +103,7 @@ byAreaHuman cmdAction l = do
       cmdAction cmd
 
 areaToRectangles :: MonadClientUI m => HumanCmd.CmdArea -> m [(X, Y, X, Y)]
+{-# INLINABLE areaToRectangles #-}
 areaToRectangles ca = case ca of
   CaMessage -> return [(0, 0, fst normalLevelBound, 0)]
   CaMapLeader -> do  -- takes preference over @CaMapParty@ and @CaMap@
@@ -142,6 +144,7 @@ areaToRectangles ca = case ca of
 byAimModeHuman :: MonadClientUI m
                => m (Either MError ReqUI) -> m (Either MError ReqUI)
                -> m (Either MError ReqUI)
+{-# INLINABLE byAimModeHuman #-}
 byAimModeHuman cmdNotAimingM cmdAimingM = do
   aimMode <- getsSession saimMode
   if isNothing aimMode then cmdNotAimingM else cmdAimingM
@@ -152,6 +155,7 @@ byItemModeHuman :: MonadClientUI m
                 => m (Either MError ReqUI) -> m (Either MError ReqUI)
                 -> m (Either MError ReqUI)
 
+{-# INLINABLE byItemModeHuman #-}
 byItemModeHuman cmdNotChosenM cmdChosenM = do
   itemSel <- getsSession sitemSel
   if isNothing itemSel then cmdNotChosenM else cmdChosenM
@@ -161,6 +165,7 @@ byItemModeHuman cmdNotChosenM cmdChosenM = do
 composeIfLocalHuman :: MonadClientUI m
                     => m (Either MError ReqUI) -> m (Either MError ReqUI)
                     -> m (Either MError ReqUI)
+{-# INLINABLE composeIfLocalHuman #-}
 composeIfLocalHuman c1 c2 = do
   slideOrCmd1 <- c1
   case slideOrCmd1 of
@@ -176,6 +181,7 @@ composeIfLocalHuman c1 c2 = do
 composeUnlessErrorHuman :: MonadClientUI m
                         => m (Either MError ReqUI) -> m (Either MError ReqUI)
                         -> m (Either MError ReqUI)
+{-# INLINABLE composeUnlessErrorHuman #-}
 composeUnlessErrorHuman c1 c2 = do
   slideOrCmd1 <- c1
   case slideOrCmd1 of
@@ -187,6 +193,7 @@ composeUnlessErrorHuman c1 c2 = do
 loopOnNothingHuman :: MonadClientUI m
                    => m (Either MError ReqUI)
                    -> m (Either MError ReqUI)
+{-# INLINABLE loopOnNothingHuman #-}
 loopOnNothingHuman cmd = do
   res <- cmd
   case res of
@@ -197,6 +204,7 @@ loopOnNothingHuman cmd = do
 
 -- | Leader waits a turn (and blocks, etc.).
 waitHuman :: MonadClientUI m => m (RequestTimed 'AbWait)
+{-# INLINABLE waitHuman #-}
 waitHuman = do
   modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
   return ReqWait
@@ -206,6 +214,7 @@ waitHuman = do
 moveRunHuman :: MonadClientUI m
              => Bool -> Bool -> Bool -> Bool -> Vector
              -> m (FailOrCmd RequestAnyAbility)
+{-# INLINABLE moveRunHuman #-}
 moveRunHuman initialStep finalGoal run runAhead dir = do
   arena <- getArenaUI
   leader <- getLeaderUI
@@ -280,6 +289,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
 -- | Actor attacks an enemy actor or his own projectile.
 meleeAid :: MonadClientUI m
          => ActorId -> m (FailOrCmd (RequestTimed 'AbMelee))
+{-# INLINABLE meleeAid #-}
 meleeAid target = do
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
@@ -314,6 +324,7 @@ meleeAid target = do
 -- | Actor swaps position with another.
 displaceAid :: MonadClientUI m
             => ActorId -> m (FailOrCmd (RequestTimed 'AbDisplace))
+{-# INLINABLE displaceAid #-}
 displaceAid target = do
   cops <- getsState scops
   leader <- getLeaderUI
@@ -352,6 +363,7 @@ displaceAid target = do
 -- | Actor moves or searches or alters. No visible actor at the position.
 moveSearchAlterAid :: MonadClient m
                    => ActorId -> Vector -> m (Either Text RequestAnyAbility)
+{-# INLINABLE moveSearchAlterAid #-}
 moveSearchAlterAid source dir = do
   cops@Kind.COps{cotile, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -401,6 +413,7 @@ moveSearchAlterAid source dir = do
 -- * RunOnceAhead
 
 runOnceAheadHuman :: MonadClientUI m => m (Either MError ReqUI)
+{-# INLINABLE runOnceAheadHuman #-}
 runOnceAheadHuman = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -440,10 +453,12 @@ runOnceAheadHuman = do
 -- * MoveOnceToXhair
 
 moveOnceToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestAnyAbility)
+{-# INLINABLE moveOnceToXhairHuman #-}
 moveOnceToXhairHuman = goToXhair True False
 
 goToXhair :: MonadClientUI m
           => Bool -> Bool -> m (FailOrCmd RequestAnyAbility)
+{-# INLINABLE goToXhair #-}
 goToXhair initialStep run = do
   aimMode <- getsSession saimMode
   -- Movement is legal only outside aiming mode.
@@ -486,6 +501,7 @@ goToXhair initialStep run = do
 multiActorGoTo :: MonadClientUI m
                => LevelId -> Point -> RunParams
                -> m (Either Text (Bool, Vector))
+{-# INLINABLE multiActorGoTo #-}
 multiActorGoTo arena c paramOld =
   case paramOld of
     RunParams{runMembers = []} ->
@@ -528,11 +544,13 @@ multiActorGoTo arena c paramOld =
 -- * RunOnceToXhair
 
 runOnceToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestAnyAbility)
+{-# INLINABLE runOnceToXhairHuman #-}
 runOnceToXhairHuman = goToXhair True True
 
 -- * ContinueToXhair
 
 continueToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestAnyAbility)
+{-# INLINABLE continueToXhairHuman #-}
 continueToXhairHuman = goToXhair False False{-irrelevant-}
 
 -- * MoveItem
@@ -540,6 +558,7 @@ continueToXhairHuman = goToXhair False False{-irrelevant-}
 moveItemHuman :: forall m. MonadClientUI m
               => [CStore] -> CStore -> Maybe MU.Part -> Bool
               -> m (FailOrCmd (RequestTimed 'AbMoveItem))
+{-# INLINABLE moveItemHuman #-}
 moveItemHuman cLegalRaw destCStore mverb auto = do
   itemSel <- getsSession sitemSel
   case itemSel of
@@ -575,6 +594,7 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
 selectItemsToMove :: forall m. MonadClientUI m
                   => [CStore] -> CStore -> Maybe MU.Part -> Bool
                   -> m (FailOrCmd (CStore, [(ItemId, ItemFull)]))
+{-# INLINABLE selectItemsToMove #-}
 selectItemsToMove cLegalRaw destCStore mverb auto = do
   let !_A = assert (destCStore `notElem` cLegalRaw) ()
   let verb = fromMaybe (MU.Text $ verbCStore destCStore) mverb
@@ -614,6 +634,7 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
 moveItems :: forall m. MonadClientUI m
           => [CStore] -> (CStore, [(ItemId, ItemFull)]) -> CStore
           -> m (FailOrCmd (RequestTimed 'AbMoveItem))
+{-# INLINABLE moveItems #-}
 moveItems cLegalRaw (fromCStore, l) destCStore = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -673,6 +694,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
 
 projectHuman :: MonadClientUI m
              => [Trigger] -> m (FailOrCmd (RequestTimed 'AbProject))
+{-# INLINABLE projectHuman #-}
 projectHuman ts = do
   itemSel <- getsSession sitemSel
   case itemSel of
@@ -693,6 +715,7 @@ projectHuman ts = do
 projectItem :: MonadClientUI m
             => [Trigger] -> (CStore, (ItemId, ItemFull))
             -> m (FailOrCmd (RequestTimed 'AbProject))
+{-# INLINABLE projectItem #-}
 projectItem ts (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -724,6 +747,7 @@ projectItem ts (fromCStore, (iid, itemFull)) = do
 -- TODO: factor out item getting
 applyHuman :: MonadClientUI m
            => [Trigger] -> m (FailOrCmd (RequestTimed 'AbApply))
+{-# INLINABLE applyHuman #-}
 applyHuman ts = do
   itemSel <- getsSession sitemSel
   case itemSel of
@@ -744,6 +768,7 @@ applyHuman ts = do
 applyItem :: MonadClientUI m
           => [Trigger] -> (CStore, (ItemId, ItemFull))
           -> m (FailOrCmd (RequestTimed 'AbApply))
+{-# INLINABLE applyItem #-}
 applyItem ts (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -764,6 +789,7 @@ applyItem ts (fromCStore, (iid, itemFull)) = do
 -- | Ask for a direction and alter a tile, if possible.
 alterDirHuman :: MonadClientUI m
               => [Trigger] -> m (FailOrCmd (RequestTimed 'AbAlter))
+{-# INLINABLE alterDirHuman #-}
 alterDirHuman ts = do
   Config{configVi, configLaptop} <- getsSession sconfig
   let verb1 = case ts of
@@ -794,6 +820,7 @@ alterDirHuman ts = do
 -- | Player tries to alter a tile using a feature.
 alterTile :: MonadClientUI m
           => [Trigger] -> Vector -> m (FailOrCmd (RequestTimed 'AbAlter))
+{-# INLINABLE alterTile #-}
 alterTile ts dir = do
   cops@Kind.COps{cotile, coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
@@ -840,6 +867,7 @@ guessAlter _ _ _ = "never mind"
 -- | Leader tries to trigger the tile he's standing on.
 triggerTileHuman :: MonadClientUI m
                  => [Trigger] -> m (FailOrCmd (RequestTimed 'AbTrigger))
+{-# INLINABLE triggerTileHuman #-}
 triggerTileHuman ts = do
   cops@Kind.COps{cotile} <- getsState scops
   leader <- getLeaderUI
@@ -863,6 +891,7 @@ triggerFeatures (_ : ts) = triggerFeatures ts
 -- | Verify important feature triggers, such as fleeing the dungeon.
 verifyTrigger :: MonadClientUI m
               => ActorId -> TK.Feature -> m (FailOrCmd ())
+{-# INLINABLE verifyTrigger #-}
 verifyTrigger leader feat = case feat of
   TK.Cause IK.Escape{} -> do
     b <- getsState $ getActorBody leader
@@ -908,6 +937,7 @@ guessTrigger _ _ _ = "never mind"
 helpHuman :: MonadClientUI m
           => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
           -> m (Either MError ReqUI)
+{-# INLINABLE helpHuman #-}
 helpHuman cmdAction = do
   lidV <- viewedLevelUI
   Level{lxsize, lysize} <- getLevel lidV  -- TODO: screen length or viewLevel
@@ -933,6 +963,7 @@ helpHuman cmdAction = do
 itemMenuHuman :: MonadClientUI m
               => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
               -> m (Either MError ReqUI)
+{-# INLINABLE itemMenuHuman #-}
 itemMenuHuman cmdAction = do
   itemSel <- getsSession sitemSel
   case itemSel of
@@ -980,6 +1011,7 @@ chooseItemMenuHuman :: MonadClientUI m
                     => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
                     -> ItemDialogMode
                     -> m (Either MError ReqUI)
+{-# INLINABLE chooseItemMenuHuman #-}
 chooseItemMenuHuman cmdAction c = do
   (res, c2) <- chooseItemDialogMode c
   case res of
@@ -997,6 +1029,7 @@ chooseItemMenuHuman cmdAction c = do
 mainMenuHuman :: MonadClientUI m
               => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
               -> m (Either MError ReqUI)
+{-# INLINABLE mainMenuHuman #-}
 mainMenuHuman cmdAction = do
   Kind.COps{corule} <- getsState scops
   Binding{bcmdList} <- getsSession sbinding
@@ -1074,6 +1107,7 @@ mainMenuHuman cmdAction = do
 -- * GameDifficultyIncr
 
 gameDifficultyIncr :: MonadClientUI m => m ()
+{-# INLINABLE gameDifficultyIncr #-}
 gameDifficultyIncr = do
   let delta = 1
   snxtDiff <- getsClient snxtDiff
@@ -1086,6 +1120,7 @@ gameDifficultyIncr = do
 
 gameRestartHuman :: MonadClientUI m
                  => GroupName ModeKind -> m (FailOrCmd ReqUI)
+{-# INLINABLE gameRestartHuman #-}
 gameRestartHuman t = do
   isNoConfirms <- isNoConfirmsGame
   gameMode <- getGameMode
@@ -1109,6 +1144,7 @@ gameRestartHuman t = do
 -- * GameExit
 
 gameExitHuman :: MonadClientUI m => m ReqUI
+{-# INLINABLE gameExitHuman #-}
 gameExitHuman = do
   -- Announce before the saving started, since it can take a while.
   promptAdd "Saving game. The program stops now."
@@ -1117,6 +1153,7 @@ gameExitHuman = do
 -- * GameSave
 
 gameSaveHuman :: MonadClientUI m => m ReqUI
+{-# INLINABLE gameSaveHuman #-}
 gameSaveHuman = do
   -- Announce before the saving started, since it can take a while.
   promptAdd "Saving game backup."
@@ -1131,6 +1168,7 @@ gameSaveHuman = do
 -- and perhaps even factions with a leader should follow our leader
 -- and his target, not their leader.
 tacticHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
+{-# INLINABLE tacticHuman #-}
 tacticHuman = do
   fid <- getsClient sside
   fromT <- getsState $ ftactic . gplayer . (EM.! fid) . sfactionD
@@ -1146,6 +1184,7 @@ tacticHuman = do
 -- * Automate
 
 automateHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
+{-# INLINABLE automateHuman #-}
 automateHuman = do
   -- BFS is not updated while automated, which would lead to corruption.
   modifySession $ \sess -> sess {saimMode = Nothing}
