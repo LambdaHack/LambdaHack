@@ -136,7 +136,7 @@ arenasForLoop = {-# SCC arenasForLoop #-} do
 handleFidUpd :: (MonadAtomic m, MonadServerReadRequest m)
              => (FactionId -> m ()) -> FactionId -> Faction -> m ()
 {-# INLINE handleFidUpd #-}
-handleFidUpd updatePerFid fid fact = {-# SCC handleFid #-} do
+handleFidUpd updatePerFid fid fact = do
   fa <- factionArena fact
   arenas <- getsServer sarenas
   -- Projectiles are processed first, to get out of the way
@@ -166,13 +166,13 @@ loopUpd :: forall m. (MonadAtomic m, MonadServerReadRequest m) => m () -> m ()
 loopUpd updConn = {-# SCC loopUpd #-} do
   let updatePerFid :: FactionId -> m ()
       {-# NOINLINE updatePerFid #-}
-      updatePerFid fid = do
+      updatePerFid fid = {-# SCC updatePerFid #-} do
         perValid <- getsServer $ (EM.! fid) . sperValidFid
         mapM_ (\(lid, valid) -> unless valid $ updatePer fid lid)
               (EM.assocs perValid)
       handleFid :: (FactionId, Faction) -> m ()
       {-# NOINLINE handleFid #-}
-      handleFid (fid, fact) = handleFidUpd updatePerFid fid fact
+      handleFid (fid, fact) = {-# SCC handleFid #-} handleFidUpd updatePerFid fid fact
       loopUpdConn = do
         endClip
         factionD <- getsState sfactionD
@@ -360,7 +360,7 @@ handleActors lid fid = {-# SCC handleActors #-} do
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
   hActors fid l
 
-hActors :: (MonadAtomic m, MonadServerReadRequest m)
+hActors :: forall m. (MonadAtomic m, MonadServerReadRequest m)
         => FactionId -> [(ActorId, Actor)] -> m Bool
 {-# INLINE hActors #-}
 hActors _ [] = return False
@@ -387,15 +387,19 @@ hActors fid ((aid, body) : rest) = {-# SCC hActors #-} do
       _ -> assert `failure` cmdS  -- TODO: handle more
     -- Clear messages in the UI client, regardless if leaderless or not.
     execUpdAtomic $ UpdRecordHistory side
+  let mswitchLeader :: Maybe ActorId -> m ActorId
+      {-# NOINLINE mswitchLeader #-}
+      mswitchLeader (Just aidNew) = switchLeader side aidNew >> return aidNew
+      mswitchLeader Nothing = return aid
   (aidNew, mtimed) <-
     if doQueryUI then do
       (cmd, maid) <- sendQueryUI side aid
-      aidNew <- switchLeader side aid maid
+      aidNew <- mswitchLeader maid
       mtimed <- handleRequestUI side aidNew cmd
       return (aidNew, mtimed)
     else do
       (cmd, maid) <- sendQueryAI side aid
-      aidNew <- switchLeader side aid maid
+      aidNew <- mswitchLeader maid
       mtimed <- handleRequestAI side aidNew cmd
       return (aidNew, mtimed)
   nonWaitMove <- case mtimed of

@@ -126,7 +126,7 @@ handleAndBroadcast atomic = {-# SCC handleAndBroadcast #-} do
 
 updatePer :: MonadServerReadRequest m => FactionId -> LevelId -> m ()
 {-# INLINE updatePer #-}
-updatePer fid lid = {-# SCC updatePer #-} do
+updatePer fid lid = do
   modifyServer $ \ser ->
     ser {sperValidFid = EM.adjust (EM.insert lid True) fid $ sperValidFid ser}
   sperFidOld <- getsServer sperFid
