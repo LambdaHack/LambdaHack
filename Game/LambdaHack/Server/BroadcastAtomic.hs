@@ -41,7 +41,7 @@ import Game.LambdaHack.Server.State
 
 handleCmdAtomicServer :: MonadStateWrite m => PosAtomic -> UpdAtomic -> m ()
 {-# INLINE handleCmdAtomicServer #-}
-handleCmdAtomicServer _posAtomic cmd = {-# SCC handleCmdAtomicServer #-}
+handleCmdAtomicServer _posAtomic cmd =
 -- Not needed ATM:
 --  when (seenAtomicSer posAtomic) $
 -- Not implemented ATM:
@@ -52,7 +52,7 @@ handleCmdAtomicServer _posAtomic cmd = {-# SCC handleCmdAtomicServer #-}
 handleAndBroadcast :: (MonadStateWrite m, MonadServerReadRequest m)
                    => CmdAtomic -> m ()
 {-# INLINABLE handleAndBroadcast #-}
-handleAndBroadcast atomic = {-# SCC handleAndBroadcast #-} do
+handleAndBroadcast atomic = do
   -- This is calculated in the server State before action (simulating
   -- current client State, because action has not been applied
   -- on the client yet; the same in @atomicRemember@).
@@ -152,7 +152,7 @@ updatePer fid lid = do
 
 atomicRemember :: LevelId -> Perception -> State -> [UpdAtomic]
 {-# INLINE atomicRemember #-}
-atomicRemember lid inPer s = {-# SCC atomicRemember #-}
+atomicRemember lid inPer s =
   -- No @UpdLoseItem@ is sent for items that became out of sight.
   -- The client will create these atomic actions based on @outPer@,
   -- if required. Any client that remembers out of sight items, OTOH,

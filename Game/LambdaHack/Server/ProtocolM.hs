@@ -187,7 +187,7 @@ updateCopsDict copsClient sconfig sdebugCli = do
 
 sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
 {-# INLINABLE sendUpdate #-}
-sendUpdate !fid !cmd = {-# SCC sendUpdate #-} do
+sendUpdate !fid !cmd = do
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
     FState Nothing s cli -> do
@@ -207,7 +207,7 @@ sendUpdate !fid !cmd = {-# SCC sendUpdate #-} do
 
 sendSfx :: MonadServerReadRequest m  => FactionId -> SfxAtomic -> m ()
 {-# INLINABLE sendSfx #-}
-sendSfx fid sfx = {-# SCC sendSfx #-} do
+sendSfx fid sfx = do
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
     FState (Just sess) s cli -> do

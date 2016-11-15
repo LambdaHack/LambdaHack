@@ -66,7 +66,7 @@ loopSer :: (MonadAtomic m, MonadServerReadRequest m)
              -- ^ the code to run for AI clients
         -> m ()
 {-# INLINE loopSer #-}
-loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = {-# SCC loopSer #-} do
+loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
   -- Recover states and launch clients.
   cops <- getsState scops
   let updConn = updateConn cops copsClient sconfig sdebugCli
@@ -111,7 +111,7 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = {-# SCC loop
 -- TODO: the code is duplicated due to INLINE
 factionArena :: MonadStateRead m => Faction -> m (Maybe LevelId)
 {-# INLINE factionArena #-}
-factionArena fact = {-# SCC factionArena #-} case gleader fact of
+factionArena fact = case gleader fact of
   -- Even spawners need an active arena for their leader,
   -- or they start clogging stairs.
   Just leader -> do
@@ -124,7 +124,7 @@ factionArena fact = {-# SCC factionArena #-} case gleader fact of
 
 arenasForLoop :: MonadStateRead m => m [LevelId]
 {-# INLINE arenasForLoop #-}
-arenasForLoop = {-# SCC arenasForLoop #-} do
+arenasForLoop = do
   factionD <- getsState sfactionD
   marenas <- mapM factionArena $ EM.elems factionD
   let arenas = ES.toList $ ES.fromList $ catMaybes marenas
@@ -163,16 +163,16 @@ handleFidUpd updatePerFid fid fact = do
 -- and repeat.
 loopUpd :: forall m. (MonadAtomic m, MonadServerReadRequest m) => m () -> m ()
 {-# INLINE loopUpd #-}
-loopUpd updConn = {-# SCC loopUpd #-} do
+loopUpd updConn = do
   let updatePerFid :: FactionId -> m ()
       {-# NOINLINE updatePerFid #-}
-      updatePerFid fid = {-# SCC updatePerFid #-} do
+      updatePerFid fid = do  -- {-# SCC updatePerFid #-} do
         perValid <- getsServer $ (EM.! fid) . sperValidFid
         mapM_ (\(lid, valid) -> unless valid $ updatePer fid lid)
               (EM.assocs perValid)
       handleFid :: (FactionId, Faction) -> m ()
       {-# NOINLINE handleFid #-}
-      handleFid (fid, fact) = {-# SCC handleFid #-} handleFidUpd updatePerFid fid fact
+      handleFid (fid, fact) = handleFidUpd updatePerFid fid fact
       loopUpdConn = do
         endClip
         factionD <- getsState sfactionD
@@ -191,7 +191,7 @@ loopUpd updConn = {-# SCC loopUpd #-} do
 
 endClip :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 {-# INLINE endClip #-}
-endClip = {-# SCC endClip #-} do
+endClip = do
   Kind.COps{corule} <- getsState scops
   let RuleKind{rwriteSaveClips, rleadLevelClips} = Kind.stdRuleset corule
   time <- getsState stime
@@ -226,7 +226,7 @@ endClip = {-# SCC endClip #-} do
 -- | Trigger periodic items for all actors on the given level.
 applyPeriodicLevel :: (MonadAtomic m, MonadServer m) => m ()
 {-# INLINE applyPeriodicLevel #-}
-applyPeriodicLevel = {-# SCC applyPeriodicLevel #-} do
+applyPeriodicLevel = do
   arenas <- getsServer sarenas
   let arenasSet = ES.fromDistinctAscList arenas
       applyPeriodicItem _ _ _ (_, (_, [])) = return ()
@@ -256,7 +256,7 @@ applyPeriodicLevel = {-# SCC applyPeriodicLevel #-} do
 handleTrajectories :: (MonadAtomic m, MonadServer m)
                    => LevelId -> FactionId -> m ()
 {-# INLINE handleTrajectories #-}
-handleTrajectories lid fid = {-# SCC handleTrajectories #-} do
+handleTrajectories lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
   s <- getState
@@ -275,7 +275,7 @@ handleTrajectories lid fid = {-# SCC handleTrajectories #-} do
 hTrajectories :: (MonadAtomic m, MonadServer m)
               => (ActorId, Actor) -> m ()
 {-# INLINE hTrajectories #-}
-hTrajectories (aid, b) = {-# SCC hTrajectories #-} do
+hTrajectories (aid, b) = do
   if actorDying b then do
     -- if bhp b <= 0:
     -- If @b@ is a projectile and it hits an actor,
@@ -312,7 +312,7 @@ hTrajectories (aid, b) = {-# SCC hTrajectories #-} do
 -- blocking path of human-controlled actors and alarming the hapless human.
 setTrajectory :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 {-# INLINE setTrajectory #-}
-setTrajectory aid = {-# SCC setTrajectory #-} do
+setTrajectory aid = do
   cops <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
@@ -347,7 +347,7 @@ setTrajectory aid = {-# SCC setTrajectory #-} do
 handleActors :: (MonadAtomic m, MonadServerReadRequest m)
              => LevelId -> FactionId -> m Bool
 {-# INLINE handleActors #-}
-handleActors lid fid = {-# SCC handleActors #-} do
+handleActors lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
   factionD <- getsState sfactionD
@@ -364,7 +364,7 @@ hActors :: forall m. (MonadAtomic m, MonadServerReadRequest m)
         => FactionId -> [(ActorId, Actor)] -> m Bool
 {-# INLINE hActors #-}
 hActors _ [] = return False
-hActors fid ((aid, body) : rest) = {-# SCC hActors #-} do
+hActors fid ((aid, body) : rest) = do
   let side = bfid body
   fact <- getsState $ (EM.! side) . sfactionD
   quit <- getsServer squit
@@ -459,7 +459,7 @@ gameExit = do
 restartGame :: (MonadAtomic m, MonadServerReadRequest m)
             => m () -> m () -> Maybe (GroupName ModeKind) ->  m ()
 {-# INLINE restartGame #-}
-restartGame updConn loop mgameMode = {-# SCC restartGame #-} do
+restartGame updConn loop mgameMode = do
   cops <- getsState scops
   sdebugNxt <- getsServer sdebugNxt
   srandom <- getsServer srandom
