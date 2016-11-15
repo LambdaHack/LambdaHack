@@ -387,15 +387,22 @@ hActors fid ((aid, body) : rest) = {-# SCC hActors #-} do
       _ -> assert `failure` cmdS  -- TODO: handle more
     -- Clear messages in the UI client, regardless if leaderless or not.
     execUpdAtomic $ UpdRecordHistory side
-  nonWaitMove <-
+  (aidNew, mtimed) <-
     if doQueryUI then do
-      cmdS <- sendQueryUI side aid
-      -- TODO: check that the command is legal first, report and reject,
-      -- but do not crash (currently server asserts things and crashes)
-      handleRequestUI side aid cmdS
+      (cmd, maid) <- sendQueryUI side aid
+      aidNew <- switchLeader side aid maid
+      mtimed <- handleRequestUI side aidNew cmd
+      return (aidNew, mtimed)
     else do
-      cmdS <- sendQueryAI side aid
-      handleRequestAI side aid cmdS
+      (cmd, maid) <- sendQueryAI side aid
+      aidNew <- switchLeader side aid maid
+      mtimed <- handleRequestAI side aidNew cmd
+      return (aidNew, mtimed)
+  nonWaitMove <- case mtimed of
+    -- TODO: check that the command is legal first, report and reject,
+    -- but do not crash (currently server asserts things and crashes)
+    Just (RequestAnyAbility timed) -> handleRequestTimed side aidNew timed
+    Nothing -> return False
   if nonWaitMove then return True else hActors fid rest
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()

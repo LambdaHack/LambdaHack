@@ -9,13 +9,12 @@
 -- influence the outcome of the evaluation.
 -- TODO: document
 module Game.LambdaHack.Server.HandleRequestM
-  ( handleRequestAI, handleRequestUI
+  ( handleRequestAI, handleRequestUI, switchLeader, handleRequestTimed
   , reqMove, reqDisplace, reqGameExit
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , handleReqAI, handleReqUI, setBWait
-  , handleRequestTimed, handleRequestTimedCases
-  , switchLeader, affectSmell, reqMelee, reqAlter, reqWait
+  , setBWait, handleRequestTimedCases
+  , affectSmell, reqMelee, reqAlter, reqWait
   , reqMoveItems, reqMoveItem, computeRndTimeout, reqProject, reqApply
   , reqTrigger, triggerEffect, reqGameRestart, reqGameSave
   , reqTactic, reqAutomate
@@ -57,41 +56,25 @@ import Game.LambdaHack.Server.State
 
 -- | The semantics of server commands.
 -- AI always takes time and so doesn't loop.
-handleRequestAI :: (MonadAtomic m, MonadServer m)
-                => FactionId -> ActorId -> RequestAI
-                -> m Bool
-handleRequestAI fid aid (cmd, maidTgt) = case maidTgt of
-  Just aidNew -> do
-    switchLeader fid aidNew
-    handleReqAI fid aidNew cmd
-  Nothing -> handleReqAI fid aid cmd
-
-handleReqAI :: (MonadAtomic m, MonadServer m)
-            => FactionId -> ActorId -> ReqAI -> m Bool
-handleReqAI fid aid cmd = case cmd of
-  ReqAITimed (RequestAnyAbility cmdT) -> handleRequestTimed fid aid cmdT
-  ReqAINop -> return False
+handleRequestAI :: (MonadAtomic m)
+                => FactionId -> ActorId -> ReqAI
+                -> m (Maybe RequestAnyAbility)
+handleRequestAI _fid _aid cmd = case cmd of
+  ReqAITimed cmdT -> return $ Just cmdT
+  ReqAINop -> return Nothing
 
 -- | The semantics of server commands. Only the first two cases take time.
 handleRequestUI :: (MonadAtomic m, MonadServer m)
-                => FactionId -> ActorId -> RequestUI
-                -> m Bool
-handleRequestUI fid aid (cmd, maidTgt) = case maidTgt of
-  Just aidNew -> do
-    switchLeader fid aidNew
-    handleReqUI fid aidNew cmd
-  Nothing -> handleReqUI fid aid cmd
-
-handleReqUI :: (MonadAtomic m, MonadServer m)
-            => FactionId -> ActorId -> ReqUI -> m Bool
-handleReqUI fid aid cmd = case cmd of
-  ReqUITimed (RequestAnyAbility cmdT) -> handleRequestTimed fid aid cmdT
-  ReqUIGameRestart t d names -> reqGameRestart aid t d names >> return False
-  ReqUIGameExit -> reqGameExit aid >> return False
-  ReqUIGameSave -> reqGameSave >> return False
-  ReqUITactic toT -> reqTactic fid toT >> return False
-  ReqUIAutomate -> reqAutomate fid >> return False
-  ReqUINop -> return False
+                => FactionId -> ActorId -> ReqUI
+                -> m (Maybe RequestAnyAbility)
+handleRequestUI fid aid cmd = case cmd of
+  ReqUITimed cmdT -> return $ Just cmdT
+  ReqUIGameRestart t d names -> reqGameRestart aid t d names >> return Nothing
+  ReqUIGameExit -> reqGameExit aid >> return Nothing
+  ReqUIGameSave -> reqGameSave >> return Nothing
+  ReqUITactic toT -> reqTactic fid toT >> return Nothing
+  ReqUIAutomate -> reqAutomate fid >> return Nothing
+  ReqUINop -> return Nothing
 
 setBWait :: (MonadAtomic m) => RequestTimed a -> ActorId -> m Bool
 setBWait cmd aidNew = do
@@ -126,30 +109,32 @@ handleRequestTimedCases aid cmd = case cmd of
   ReqApply iid cstore -> reqApply aid iid cstore
   ReqTrigger mfeat -> reqTrigger aid mfeat
 
-switchLeader :: (MonadAtomic m, MonadServer m) => FactionId -> ActorId -> m ()
-switchLeader fid aidNew = do
-  fact <- getsState $ (EM.! fid) . sfactionD
-  bPre <- getsState $ getActorBody aidNew
-  let mleader = gleader fact
-      actorChanged = mleader /= Just aidNew
-  let !_A = assert (Just aidNew /= mleader
-                    && not (bproj bPre)
-                    `blame` (aidNew, bPre, fid, fact)) ()
-  let !_A = assert (bfid bPre == fid
-                    `blame` "client tries to move other faction actors"
-                    `twith` (aidNew, bPre, fid, fact)) ()
-  let (autoDun, autoLvl) = autoDungeonLevel fact
-  arena <- case mleader of
-    Nothing -> return $! blid bPre
-    Just leader -> do
-      b <- getsState $ getActorBody leader
-      return $! blid b
-  if | actorChanged && blid bPre /= arena && autoDun ->
-       execFailure aidNew ReqWait{-hack-} NoChangeDunLeader
-     | actorChanged && autoLvl ->
-       execFailure aidNew ReqWait{-hack-} NoChangeLvlLeader
-     | otherwise -> do
-       execUpdAtomic $ UpdLeadFaction fid mleader (Just aidNew)
+switchLeader :: (MonadAtomic m, MonadServer m)
+             => FactionId -> ActorId -> Maybe ActorId -> m ActorId
+switchLeader fid aid maid = case maid of
+  Just aidNew -> do
+    fact <- getsState $ (EM.! fid) . sfactionD
+    bPre <- getsState $ getActorBody aidNew
+    let mleader = gleader fact
+        actorChanged = mleader /= Just aidNew
+    let !_A = assert (Just aidNew /= mleader
+                      && not (bproj bPre)
+                      `blame` (aidNew, bPre, fid, fact)) ()
+    let !_A = assert (bfid bPre == fid
+                      `blame` "client tries to move other faction actors"
+                      `twith` (aidNew, bPre, fid, fact)) ()
+    let (autoDun, autoLvl) = autoDungeonLevel fact
+    arena <- case mleader of
+      Nothing -> return $! blid bPre
+      Just leader -> do
+        b <- getsState $ getActorBody leader
+        return $! blid b
+    if | actorChanged && blid bPre /= arena && autoDun ->
+         execFailure aidNew ReqWait{-hack-} NoChangeDunLeader
+       | actorChanged && autoLvl ->
+         execFailure aidNew ReqWait{-hack-} NoChangeLvlLeader
+       | otherwise -> do
+         execUpdAtomic $ UpdLeadFaction fid mleader (Just aidNew)
        -- We exchange times of the old and new leader.
        -- This permits an abuse, because a slow tank can be moved fast
        -- by alternating between it and many fast actors (until all of them
@@ -162,9 +147,11 @@ switchLeader fid aidNew = do
        -- Warning: when the action is performed on the server,
        -- the time of the actor is different than when client prepared that
        -- action, so any client checks involving time should discount this.
-       case mleader of
-         Just aidOld | aidOld /= aidNew -> swapTime aidOld aidNew
-         _ -> return ()
+         case mleader of
+           Just aidOld | aidOld /= aidNew -> swapTime aidOld aidNew
+           _ -> return ()
+    return aidNew
+  Nothing -> return aid
 
 -- * ReqMove
 
@@ -569,7 +556,7 @@ reqGameRestart aid groupName d configHeroNames = do
 -- * ReqGameExit
 
 reqGameExit :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-reqGameExit aid  = do
+reqGameExit aid = do
   b <- getsState $ getActorBody aid
   let fid = bfid b
   oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
