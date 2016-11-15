@@ -58,6 +58,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 type ToAny a = Strategy (RequestTimed a) -> Strategy RequestAnyAbility
 
 toAny :: ToAny a
+{-# INLINABLE toAny #-}
 toAny strat = RequestAnyAbility <$> strat
 
 -- | AI strategy based on actor's sight, smell, etc.
@@ -269,10 +270,12 @@ actionStrategy aid = do
 
 -- | A strategy to always just wait.
 waitBlockNow :: MonadClient m => m (Strategy (RequestTimed 'AbWait))
+{-# INLINABLE waitBlockNow #-}
 waitBlockNow = return $! returN "wait" ReqWait
 
 pickup :: MonadClient m
        => ActorId -> Bool -> m (Strategy (RequestTimed 'AbMoveItem))
+{-# INLINABLE pickup #-}
 pickup aid onlyWeapon = do
   benItemL <- benGroundItems aid
   b <- getsState $ getActorBody aid
@@ -308,6 +311,7 @@ pickup aid onlyWeapon = do
 
 equipItems :: MonadClient m
            => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
+{-# INLINABLE equipItems #-}
 equipItems aid = do
   cops <- getsState scops
   body <- getsState $ getActorBody aid
@@ -369,6 +373,7 @@ toShare _ = True
 
 yieldUnneeded :: MonadClient m
               => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
+{-# INLINABLE yieldUnneeded #-}
 yieldUnneeded aid = do
   cops <- getsState scops
   body <- getsState $ getActorBody aid
@@ -404,6 +409,7 @@ yieldUnneeded aid = do
 
 unEquipItems :: MonadClient m
              => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
+{-# INLINABLE unEquipItems #-}
 unEquipItems aid = do
   cops <- getsState scops
   body <- getsState $ getActorBody aid
@@ -527,6 +533,7 @@ unneeded cops condAnyFoeAdj condShineBetrays
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
 meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbMelee))
+{-# INLINABLE meleeBlocker #-}
 meleeBlocker aid = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
@@ -573,6 +580,7 @@ meleeBlocker aid = do
 -- Everybody melees in a pinch, skills and weapons allowing,
 -- even though some prefer ranged attacks.
 meleeAny :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbMelee))
+{-# INLINABLE meleeAny #-}
 meleeAny aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
@@ -594,6 +602,7 @@ meleeAny aid = do
 -- the actor doesn't target a visible enemy at this point.
 trigger :: MonadClient m
         => ActorId -> Bool -> m (Strategy (RequestTimed 'AbTrigger))
+{-# INLINABLE trigger #-}
 trigger aid fleeViaStairs = do
   cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
@@ -663,6 +672,7 @@ trigger aid fleeViaStairs = do
 
 projectItem :: MonadClient m
             => ActorId -> m (Strategy (RequestTimed 'AbProject))
+{-# INLINABLE projectItem #-}
 projectItem aid = do
   btarget <- getsClient $ getTarget aid
   b <- getsState $ getActorBody aid
@@ -733,6 +743,7 @@ data ApplyItemGroup = ApplyAll | ApplyFirstAid
 
 applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed 'AbApply))
+{-# INLINABLE applyItem #-}
 applyItem aid applyGroup = do
   actorSk <- actorSkillsClient aid
   b <- getsState $ getActorBody aid
@@ -813,6 +824,7 @@ applyItem aid applyGroup = do
 -- at path distance 2.
 flee :: MonadClient m
      => ActorId -> [(Int, Point)] -> m (Strategy RequestAnyAbility)
+{-# INLINABLE flee #-}
 flee aid fleeL = do
   b <- getsState $ getActorBody aid
   let vVic = map (second (`vectorToFrom` bpos b)) fleeL
@@ -820,6 +832,7 @@ flee aid fleeL = do
   mapStrategyM (moveOrRunAid True aid) str
 
 displaceFoe :: MonadClient m => ActorId -> m (Strategy RequestAnyAbility)
+{-# INLINABLE displaceFoe #-}
 displaceFoe aid = do
   cops <- getsState scops
   b <- getsState $ getActorBody aid
@@ -845,6 +858,7 @@ displaceFoe aid = do
   mapStrategyM (moveOrRunAid True aid) str
 
 displaceBlocker :: MonadClient m => ActorId -> m (Strategy RequestAnyAbility)
+{-# INLINABLE displaceBlocker #-}
 displaceBlocker aid = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   str <- case mtgtMPath of
@@ -857,6 +871,7 @@ displaceBlocker aid = do
 -- producing the strategy, even if it's a unique choice in this case.
 displaceTowards :: MonadClient m
                 => ActorId -> Point -> Point -> m (Strategy Vector)
+{-# INLINABLE displaceTowards #-}
 displaceTowards aid source target = do
   cops <- getsState scops
   b <- getsState $ getActorBody aid
@@ -898,6 +913,7 @@ displaceTowards aid source target = do
 
 chase :: MonadClient m
       => ActorId -> Bool -> Bool -> m (Strategy RequestAnyAbility)
+{-# INLINABLE chase #-}
 chase aid doDisplace avoidAmbient = do
   Kind.COps{coTileSpeedup} <- getsState scops
   body <- getsState $ getActorBody aid
@@ -921,6 +937,7 @@ chase aid doDisplace avoidAmbient = do
 -- TODO: rename source here and elsewhere, it's always an ActorId in the code
 moveTowards :: MonadClient m
             => ActorId -> Point -> Point -> Point -> Bool -> m (Strategy Vector)
+{-# INLINABLE moveTowards #-}
 moveTowards aid source target goal relaxed = do
   b <- getsState $ getActorBody aid
   actorSk <- actorSkillsClient aid
@@ -960,6 +977,7 @@ moveTowards aid source target goal relaxed = do
 -- when only one or two of the many cases can possibly occur.
 moveOrRunAid :: MonadClient m
              => Bool -> ActorId -> Vector -> m (Maybe RequestAnyAbility)
+{-# INLINABLE moveOrRunAid #-}
 moveOrRunAid run source dir = do
   cops@Kind.COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source

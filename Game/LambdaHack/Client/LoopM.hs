@@ -31,6 +31,7 @@ loopAI :: ( MonadClientSetup m
           , MonadClientReadResponse ResponseAI m
           , MonadClientWriteRequest RequestAI m )
        => DebugModeCli -> m ()
+{-# INLINABLE loopAI #-}
 loopAI sdebugCli = do
   initAI sdebugCli
   -- Warning: state and client state are invalid here, e.g., sdungeon
@@ -75,6 +76,7 @@ loopUI :: ( MonadClientSetup m
           , MonadClientReadResponse ResponseUI m
           , MonadClientWriteRequest RequestUI m )
        => KeyKind -> Config -> DebugModeCli -> m ()
+{-# INLINABLE loopUI #-}
 loopUI copsClient sconfig sdebugCli = do
   initUI copsClient sconfig sdebugCli
   -- Warning: state and client state are invalid here, e.g., sdungeon

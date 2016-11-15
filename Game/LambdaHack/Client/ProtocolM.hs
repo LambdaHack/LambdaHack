@@ -29,12 +29,14 @@ class MonadClient m => MonadClientWriteRequest req m | m -> req where
   sendRequest  :: req -> m ()
 
 initAI :: MonadClient m => DebugModeCli -> m ()
+{-# INLINABLE initAI #-}
 initAI sdebugCli = do
   modifyClient $ \cli -> cli {sdebugCli}
   side <- getsClient sside
   debugPossiblyPrint $ "AI client" <+> tshow side <+> "initializing."
 
 initUI :: MonadClientUI m => KeyKind -> Config -> DebugModeCli -> m ()
+{-# INLINABLE initUI #-}
 initUI copsClient sconfig sdebugCli = do
   modifyClient $ \cli ->
     cli { sxhair = TVector $ Vector 1 1  -- a step south-east, less alarming

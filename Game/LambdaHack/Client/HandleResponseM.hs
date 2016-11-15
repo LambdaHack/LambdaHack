@@ -18,6 +18,7 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 
 storeUndo :: MonadClient m => CmdAtomic -> m ()
+{-# INLINABLE storeUndo #-}
 storeUndo _atomic =
   maybe (return ()) (\a -> modifyClient $ \cli -> cli {sundo = a : sundo cli})
     Nothing   -- TODO: undoCmdAtomic atomic
@@ -26,6 +27,7 @@ handleResponseAI :: ( MonadClientSetup m
                     , MonadAtomic m
                     , MonadClientWriteRequest RequestAI m )
                  => ResponseAI -> m ()
+{-# INLINABLE handleResponseAI #-}
 handleResponseAI cmd = case cmd of
   RespUpdAtomicAI cmdA ->
     handleSelfAI cmdA
@@ -38,6 +40,7 @@ handleResponseUI :: ( MonadClientSetup m
                     , MonadAtomic m
                     , MonadClientWriteRequest RequestUI m )
                  => ResponseUI -> m ()
+{-# INLINABLE handleResponseUI #-}
 handleResponseUI cmd = case cmd of
   RespUpdAtomicUI cmdA ->
     handleSelfUI cmdA

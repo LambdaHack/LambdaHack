@@ -372,6 +372,7 @@ targetStrategy aid = do
   else return $! returN "NoMove" $ TgtAndPath (TEnemy aid True) $ NoPath
 
 createPath :: MonadClient m => ActorId -> Target -> m TgtAndPath
+{-# INLINABLE createPath #-}
 createPath aid tapTgt = do
   b <- getsState $ getActorBody aid
   mpos <- aidTgtToPos aid (blid b) (Just tapTgt)
