@@ -41,6 +41,7 @@ updateActorMap :: (ActorMap -> ActorMap) -> Level -> Level
 updateActorMap f lvl = lvl {lactor = f (lactor lvl)}
 
 moveActorMap :: MonadStateWrite m => ActorId -> Actor -> Actor -> m ()
+{-# INLINABLE moveActorMap #-}
 moveActorMap aid body newBody = do
   let rmActor Nothing = assert `failure` "actor already removed"
                                `twith` (aid, body)
@@ -72,15 +73,18 @@ updateSmell f lvl = lvl {lsmell = f (lsmell lvl)}
 
 -- | Update a given level data within state.
 updateLevel :: MonadStateWrite m => LevelId -> (Level -> Level) -> m ()
+{-# INLINABLE updateLevel #-}
 updateLevel !lid !f = modifyState $ updateDungeon $ EM.adjust f lid
 
 updateActor :: MonadStateWrite m => ActorId -> (Actor -> Actor) -> m ()
+{-# INLINABLE updateActor #-}
 updateActor aid f = do
   let alt Nothing = assert `failure` "no body to update" `twith` aid
       alt (Just b) = Just $ f b
   modifyState $ updateActorD $ EM.alter alt aid
 
 updateFaction :: MonadStateWrite m => FactionId -> (Faction -> Faction) -> m ()
+{-# INLINABLE updateFaction #-}
 updateFaction fid f = do
   let alt Nothing = assert `failure` "no faction to update" `twith` fid
       alt (Just fact) = Just $ f fact
@@ -88,6 +92,7 @@ updateFaction fid f = do
 
 insertItemContainer :: MonadStateWrite m
                     => ItemId -> ItemQuant -> Container -> m ()
+{-# INLINABLE insertItemContainer #-}
 insertItemContainer iid kit c = case c of
   CFloor lid pos -> insertItemFloor iid kit lid pos
   CEmbed lid pos -> insertItemEmbed iid kit lid pos
@@ -97,6 +102,7 @@ insertItemContainer iid kit c = case c of
 -- New @kit@ lands at the front of the list.
 insertItemFloor :: MonadStateWrite m
                 => ItemId -> ItemQuant -> LevelId -> Point -> m ()
+{-# INLINABLE insertItemFloor #-}
 insertItemFloor iid kit lid pos =
   let bag = EM.singleton iid kit
       mergeBag = EM.insertWith (EM.unionWith mergeItemQuant) pos bag
@@ -104,6 +110,7 @@ insertItemFloor iid kit lid pos =
 
 insertItemEmbed :: MonadStateWrite m
                 => ItemId -> ItemQuant -> LevelId -> Point -> m ()
+{-# INLINABLE insertItemEmbed #-}
 insertItemEmbed iid kit lid pos =
   let bag = EM.singleton iid kit
       mergeBag = EM.insertWith (EM.unionWith mergeItemQuant) pos bag
@@ -111,6 +118,7 @@ insertItemEmbed iid kit lid pos =
 
 insertItemActor :: MonadStateWrite m
                 => ItemId -> ItemQuant -> ActorId -> CStore -> m ()
+{-# INLINABLE insertItemActor #-}
 insertItemActor iid kit aid cstore = case cstore of
   CGround -> do
     b <- getsState $ getActorBody aid
@@ -124,6 +132,7 @@ insertItemActor iid kit aid cstore = case cstore of
 
 insertItemOrgan :: MonadStateWrite m
                 => ItemId -> ItemQuant -> ActorId -> m ()
+{-# INLINABLE insertItemOrgan #-}
 insertItemOrgan iid kit aid = do
   let bag = EM.singleton iid kit
       upd = EM.unionWith mergeItemQuant bag
@@ -134,6 +143,7 @@ insertItemOrgan iid kit aid = do
 
 insertItemEqp :: MonadStateWrite m
               => ItemId -> ItemQuant -> ActorId -> m ()
+{-# INLINABLE insertItemEqp #-}
 insertItemEqp iid kit aid = do
   let bag = EM.singleton iid kit
       upd = EM.unionWith mergeItemQuant bag
@@ -144,6 +154,7 @@ insertItemEqp iid kit aid = do
 
 insertItemInv :: MonadStateWrite m
               => ItemId -> ItemQuant -> ActorId -> m ()
+{-# INLINABLE insertItemInv #-}
 insertItemInv iid kit aid = do
   let bag = EM.singleton iid kit
       upd = EM.unionWith mergeItemQuant bag
@@ -151,6 +162,7 @@ insertItemInv iid kit aid = do
 
 insertItemSha :: MonadStateWrite m
               => ItemId -> ItemQuant -> FactionId -> m ()
+{-# INLINABLE insertItemSha #-}
 insertItemSha iid kit fid = do
   let bag = EM.singleton iid kit
       upd = EM.unionWith mergeItemQuant bag
@@ -158,6 +170,7 @@ insertItemSha iid kit fid = do
 
 deleteItemContainer :: MonadStateWrite m
                     => ItemId -> ItemQuant -> Container -> m ()
+{-# INLINABLE deleteItemContainer #-}
 deleteItemContainer iid kit c = case c of
   CFloor lid pos -> deleteItemFloor iid kit lid pos
   CEmbed lid pos -> deleteItemEmbed iid kit lid pos
@@ -166,6 +179,7 @@ deleteItemContainer iid kit c = case c of
 
 deleteItemFloor :: MonadStateWrite m
                 => ItemId -> ItemQuant -> LevelId -> Point -> m ()
+{-# INLINABLE deleteItemFloor #-}
 deleteItemFloor iid kit lid pos =
   let rmFromFloor (Just bag) =
         let nbag = rmFromBag kit iid bag
@@ -176,6 +190,7 @@ deleteItemFloor iid kit lid pos =
 
 deleteItemEmbed :: MonadStateWrite m
                 => ItemId -> ItemQuant -> LevelId -> Point -> m ()
+{-# INLINABLE deleteItemEmbed #-}
 deleteItemEmbed iid kit lid pos =
   let rmFromFloor (Just bag) =
         let nbag = rmFromBag kit iid bag
@@ -186,6 +201,7 @@ deleteItemEmbed iid kit lid pos =
 
 deleteItemActor :: MonadStateWrite m
                 => ItemId -> ItemQuant -> ActorId -> CStore -> m ()
+{-# INLINABLE deleteItemActor #-}
 deleteItemActor iid kit aid cstore = case cstore of
   CGround -> do
     b <- getsState $ getActorBody aid
@@ -198,6 +214,7 @@ deleteItemActor iid kit aid cstore = case cstore of
     deleteItemSha iid kit (bfid b)
 
 deleteItemOrgan :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
+{-# INLINABLE deleteItemOrgan #-}
 deleteItemOrgan iid kit aid = do
   item <- getsState $ getItemBody iid
   updateActor aid $ \b ->
@@ -205,6 +222,7 @@ deleteItemOrgan iid kit aid = do
       , bweapon = if isMelee item then bweapon b - 1 else bweapon b }
 
 deleteItemEqp :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
+{-# INLINABLE deleteItemEqp #-}
 deleteItemEqp iid kit aid = do
   item <- getsState $ getItemBody iid
   updateActor aid $ \b ->
@@ -212,10 +230,12 @@ deleteItemEqp iid kit aid = do
       , bweapon = if isMelee item then bweapon b - 1 else bweapon b }
 
 deleteItemInv :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
+{-# INLINABLE deleteItemInv #-}
 deleteItemInv iid kit aid =
   updateActor aid $ \b -> b {binv = rmFromBag kit iid (binv b)}
 
 deleteItemSha :: MonadStateWrite m => ItemId -> ItemQuant -> FactionId -> m ()
+{-# INLINABLE deleteItemSha #-}
 deleteItemSha iid kit fid =
   updateFaction fid $ \fact -> fact {gsha = rmFromBag kit iid (gsha fact)}
 

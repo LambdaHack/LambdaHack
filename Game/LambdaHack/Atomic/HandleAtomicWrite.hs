@@ -49,6 +49,7 @@ import Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 -- | The game-state semantics of atomic game commands.
 -- Special effects (@SfxAtomic@) don't modify state.
 handleUpdAtomic :: MonadStateWrite m => UpdAtomic -> m ()
+{-# INLINABLE handleUpdAtomic #-}
 handleUpdAtomic cmd = case cmd of
   UpdCreateActor aid body ais -> updCreateActor aid body ais
   UpdDestroyActor aid body ais -> updDestroyActor aid body ais
@@ -109,6 +110,7 @@ handleUpdAtomic cmd = case cmd of
 -- for the party should be elected (in case this actor is the only one alive).
 updCreateActor :: MonadStateWrite m
                => ActorId -> Actor -> [(ItemId, Item)] -> m ()
+{-# INLINABLE updCreateActor #-}
 updCreateActor aid body ais = do
  alreadyAdded <- getsState $ EM.member aid . sactorD
  unless alreadyAdded $ do
@@ -147,6 +149,7 @@ itemsMatch item1 item2 =
 -- | Kills an actor.
 updDestroyActor :: MonadStateWrite m
                 => ActorId -> Actor -> [(ItemId, Item)] -> m ()
+{-# INLINABLE updDestroyActor #-}
 updDestroyActor aid body ais = do
   -- If a leader dies, a new leader should be elected on the server
   -- before this command is executed.
@@ -179,6 +182,7 @@ updDestroyActor aid body ais = do
 -- (in @sitemRev@ field of @StateServer@).
 updCreateItem :: MonadStateWrite m
               => ItemId -> Item -> ItemQuant -> Container -> m ()
+{-# INLINABLE updCreateItem #-}
 updCreateItem iid item kit@(k, _) c = assert (k > 0) $ do
   -- The item may or may not be already present in @sitemD@,
   -- regardless if it's actually present in the dungeon.
@@ -192,6 +196,7 @@ updCreateItem iid item kit@(k, _) c = assert (k > 0) $ do
 -- | Destroy some copies (possibly not all) of an item.
 updDestroyItem :: MonadStateWrite m
                => ItemId -> Item -> ItemQuant -> Container -> m ()
+{-# INLINABLE updDestroyItem #-}
 updDestroyItem iid item kit@(k, _) c = assert (k > 0) $ do
   -- Do not remove the item from @sitemD@ nor from @sitemRev@,
   -- It's incredibly costly and not noticeable for the player.
@@ -205,6 +210,7 @@ updDestroyItem iid item kit@(k, _) c = assert (k > 0) $ do
   deleteItemContainer iid kit c
 
 updMoveActor :: MonadStateWrite m => ActorId -> Point -> Point -> m ()
+{-# INLINABLE updMoveActor #-}
 updMoveActor aid fromP toP = assert (fromP /= toP) $ do
   body <- getsState $ getActorBody aid
   let !_A = assert (fromP == bpos body
@@ -215,6 +221,7 @@ updMoveActor aid fromP toP = assert (fromP /= toP) $ do
   moveActorMap aid body newBody
 
 updWaitActor :: MonadStateWrite m => ActorId -> Bool -> m ()
+{-# INLINABLE updWaitActor #-}
 updWaitActor aid toWait = do
   b <- getsState $ getActorBody aid
   let !_A = assert (toWait /= bwait b
@@ -223,6 +230,7 @@ updWaitActor aid toWait = do
   updateActor aid $ \body -> body {bwait = toWait}
 
 updDisplaceActor :: MonadStateWrite m => ActorId -> ActorId -> m ()
+{-# INLINABLE updDisplaceActor #-}
 updDisplaceActor source target = assert (source /= target) $ do
   sbody <- getsState $ getActorBody source
   tbody <- getsState $ getActorBody target
@@ -238,6 +246,7 @@ updDisplaceActor source target = assert (source /= target) $ do
 updMoveItem :: MonadStateWrite m
             => ItemId -> Int -> ActorId -> CStore -> CStore
             -> m ()
+{-# INLINABLE updMoveItem #-}
 updMoveItem iid k aid c1 c2 = assert (k > 0 && c1 /= c2) $ do
   b <- getsState $ getActorBody aid
   bag <- getsState $ getBodyStoreBag b c1
@@ -248,6 +257,7 @@ updMoveItem iid k aid c1 c2 = assert (k > 0 && c1 /= c2) $ do
       insertItemActor iid (k, take k it) aid c2
 
 updRefillHP :: MonadStateWrite m => ActorId -> Int64 -> m ()
+{-# INLINABLE updRefillHP #-}
 updRefillHP aid n =
   updateActor aid $ \b ->
     b { bhp = bhp b + n
@@ -259,6 +269,7 @@ updRefillHP aid n =
       }
 
 updRefillCalm :: MonadStateWrite m => ActorId -> Int64 -> m ()
+{-# INLINABLE updRefillCalm #-}
 updRefillCalm aid n =
   updateActor aid $ \b ->
     b { bcalm = max 0 $ bcalm b + n
@@ -269,7 +280,9 @@ updRefillCalm aid n =
                         else oldD {resCurrentTurn = resCurrentTurn oldD + n}
       }
 
-updFidImpressedActor :: MonadStateWrite m => ActorId -> FactionId -> FactionId -> m ()
+updFidImpressedActor :: MonadStateWrite m
+                     => ActorId -> FactionId -> FactionId -> m ()
+{-# INLINABLE updFidImpressedActor #-}
 updFidImpressedActor aid fromFid toFid = assert (fromFid /= toFid) $
   updateActor aid $ \b ->
     assert (bfidImpressed b == fromFid `blame` (aid, fromFid, toFid, b))
@@ -280,6 +293,7 @@ updTrajectory :: MonadStateWrite m
               -> Maybe ([Vector], Speed)
               -> Maybe ([Vector], Speed)
               -> m ()
+{-# INLINABLE updTrajectory #-}
 updTrajectory aid fromT toT = assert (fromT /= toT) $ do
   body <- getsState $ getActorBody aid
   let !_A = assert (fromT == btrajectory body
@@ -289,6 +303,7 @@ updTrajectory aid fromT toT = assert (fromT /= toT) $ do
 
 updColorActor :: MonadStateWrite m
               => ActorId -> Color.Color -> Color.Color -> m ()
+{-# INLINABLE updColorActor #-}
 updColorActor aid fromCol toCol = assert (fromCol /= toCol) $ do
   body <- getsState $ getActorBody aid
   let !_A = assert (fromCol == bcolor body
@@ -299,6 +314,7 @@ updColorActor aid fromCol toCol = assert (fromCol /= toCol) $ do
 updQuitFaction :: MonadStateWrite m
                => FactionId -> Maybe Actor -> Maybe Status -> Maybe Status
                -> m ()
+{-# INLINABLE updQuitFaction #-}
 updQuitFaction fid mbody fromSt toSt = do
   let !_A = assert (fromSt /= toSt `blame` (fid, mbody, fromSt, toSt)) ()
   let !_A = assert (maybe True ((fid ==) . bfid) mbody) ()
@@ -315,6 +331,7 @@ updLeadFaction :: MonadStateWrite m
                -> Maybe ActorId
                -> Maybe ActorId
                -> m ()
+{-# INLINABLE updLeadFaction #-}
 updLeadFaction fid source target = assert (source /= target) $ do
   fact <- getsState $ (EM.! fid) . sfactionD
   let !_A = assert (fleaderMode (gplayer fact) /= LeaderNull) ()
@@ -330,6 +347,7 @@ updLeadFaction fid source target = assert (source /= target) $ do
 
 updDiplFaction :: MonadStateWrite m
                => FactionId -> FactionId -> Diplomacy -> Diplomacy -> m ()
+{-# INLINABLE updDiplFaction #-}
 updDiplFaction fid1 fid2 fromDipl toDipl =
   assert (fid1 /= fid2 && fromDipl /= toDipl) $ do
     fact1 <- getsState $ (EM.! fid1) . sfactionD
@@ -343,12 +361,14 @@ updDiplFaction fid1 fid2 fromDipl toDipl =
     updateFaction fid2 (adj fid1)
 
 updAutoFaction :: MonadStateWrite m => FactionId -> Bool -> m ()
+{-# INLINABLE updAutoFaction #-}
 updAutoFaction fid st =
   updateFaction fid (\fact ->
     assert (isAIFact fact == not st)
     $ fact {gplayer = automatePlayer st (gplayer fact)})
 
 updTacticFaction :: MonadStateWrite m => FactionId -> Tactic -> Tactic -> m ()
+{-# INLINABLE updTacticFaction #-}
 updTacticFaction fid toT fromT = do
   let adj fact =
         let player = gplayer fact
@@ -359,6 +379,7 @@ updTacticFaction fid toT fromT = do
 -- | Record a given number (usually just 1, or -1 for undo) of actor kills
 -- for score calculation.
 updRecordKill :: MonadStateWrite m => ActorId -> Kind.Id ItemKind -> Int -> m ()
+{-# INLINABLE updRecordKill #-}
 updRecordKill aid ikind k = do
   b <- getsState $ getActorBody aid
   let !_A = assert (not (bproj b) `blame` (aid, b))
@@ -373,6 +394,7 @@ updRecordKill aid ikind k = do
 updAlterTile :: MonadStateWrite m
              => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
              -> m ()
+{-# INLINABLE updAlterTile #-}
 updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
   Kind.COps{cotile, coTileSpeedup} <- getsState scops
   lvl <- getLevel lid
@@ -392,12 +414,14 @@ updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
     _ -> return ()
 
 updAlterClear :: MonadStateWrite m => LevelId -> Int -> m ()
+{-# INLINABLE updAlterClear #-}
 updAlterClear lid delta = assert (delta /= 0) $
   updateLevel lid $ \lvl -> lvl {lclear = lclear lvl + delta}
 
 -- TODO: use instead of revealing all secret positions initially, at once
 -- in Common/State.hs.
 updLearnSecrets :: MonadStateWrite m => ActorId -> Int -> Int -> m ()
+{-# INLINABLE updLearnSecrets #-}
 updLearnSecrets aid fromS toS = assert (fromS /= toS) $ do
   b <- getsState $ getActorBody aid
   updateLevel (blid b) $ \lvl -> assert (lsecret lvl == fromS)
@@ -411,6 +435,7 @@ updLearnSecrets aid fromS toS = assert (fromS /= toS) $ do
 -- field we don't assume the tiles were unknown previously.
 updSpotTile :: MonadStateWrite m
             => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
+{-# INLINABLE updSpotTile #-}
 updSpotTile lid ts = assert (not $ null ts) $ do
   Kind.COps{coTileSpeedup} <- getsState scops
   Level{ltile} <- getLevel lid
@@ -428,6 +453,7 @@ updSpotTile lid ts = assert (not $ null ts) $ do
 -- the state of the tiles before changing them.
 updLoseTile :: MonadStateWrite m
             => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
+{-# INLINABLE updLoseTile #-}
 updLoseTile lid ts = assert (not $ null ts) $ do
   Kind.COps{coTileSpeedup} <- getsState scops
   let matches _ [] = True
@@ -442,6 +468,7 @@ updLoseTile lid ts = assert (not $ null ts) $ do
   mapM_ f ts
 
 updAlterSmell :: MonadStateWrite m => LevelId -> Point -> Time -> Time -> m ()
+{-# INLINABLE updAlterSmell #-}
 updAlterSmell lid p fromSm' toSm' = do
   let fromSm = if fromSm' == timeZero then Nothing else Just fromSm'
       toSm = if toSm' == timeZero then Nothing else Just toSm'
@@ -450,6 +477,7 @@ updAlterSmell lid p fromSm' toSm' = do
   updateLevel lid $ updateSmell $ EM.alter alt p
 
 updSpotSmell :: MonadStateWrite m => LevelId -> [(Point, Time)] -> m ()
+{-# INLINABLE updSpotSmell #-}
 updSpotSmell lid sms = assert (not $ null sms) $ do
   let alt sm Nothing = Just sm
       alt sm (Just oldSm) = assert `failure` "smell already added"
@@ -459,6 +487,7 @@ updSpotSmell lid sms = assert (not $ null sms) $ do
   updateLevel lid $ updateSmell upd
 
 updLoseSmell :: MonadStateWrite m => LevelId -> [(Point, Time)] -> m ()
+{-# INLINABLE updLoseSmell #-}
 updLoseSmell lid sms = assert (not $ null sms) $ do
   let alt sm Nothing = assert `failure` "smell already removed"
                               `twith` (lid, sms, sm)
@@ -472,6 +501,7 @@ updLoseSmell lid sms = assert (not $ null sms) $ do
 updTimeItem :: MonadStateWrite m
             => ItemId -> Container -> ItemTimer -> ItemTimer
             -> m ()
+{-# INLINABLE updTimeItem #-}
 updTimeItem iid c fromIt toIt = assert (fromIt /= toIt) $ do
   bag <- getsState $ getContainerBag c
   case iid `EM.lookup` bag of
@@ -487,24 +517,30 @@ updTimeItem iid c fromIt toIt = assert (fromIt /= toIt) $ do
 -- even if the faction has no actors there, so show this on UI somewhere,
 -- e.g., in the @~@ menu of seen level indicate recent activity.
 updAgeGame :: MonadStateWrite m => [LevelId] -> m ()
+{-# INLINABLE updAgeGame #-}
 updAgeGame !lids = do
   modifyState $ updateTime $ flip timeShift (Delta timeClip)
   mapM_ (ageLevel (Delta timeClip)) lids
 
 updUnAgeGame :: MonadStateWrite m => [LevelId] -> m ()
+{-# INLINABLE updUnAgeGame #-}
 updUnAgeGame !lids = do
   modifyState $ updateTime $ flip timeShift (timeDeltaReverse $ Delta timeClip)
   mapM_ (ageLevel (timeDeltaReverse $ Delta timeClip)) lids
 
 ageLevel :: MonadStateWrite m => Delta Time -> LevelId -> m ()
+{-# INLINABLE ageLevel #-}
 ageLevel delta lid =
   updateLevel lid $ \lvl -> lvl {ltime = timeShift (ltime lvl) delta}
 
 updRestart :: MonadStateWrite m => State -> m ()
+{-# INLINABLE updRestart #-}
 updRestart = putState
 
 updRestartServer :: MonadStateWrite m => State -> m ()
+{-# INLINABLE updRestartServer #-}
 updRestartServer = putState
 
 updResumeServer :: MonadStateWrite m => State -> m ()
+{-# INLINABLE updResumeServer #-}
 updResumeServer = putState
