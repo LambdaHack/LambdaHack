@@ -410,6 +410,7 @@ hActors fid ((aid, body) : rest) = {-# SCC hActors #-} do
   if nonWaitMove then return True else hActors fid rest
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
+{-# INLINABLE gameExit #-}
 gameExit = do
   -- Verify that the not saved caches are equal to future reconstructed.
   -- Otherwise, save/restore would change game state.
@@ -479,6 +480,7 @@ restartGame updConn loop mgameMode = {-# SCC restartGame #-} do
 -- and when all report back, asking them to commit the save.
 -- | Save game on server and all clients.
 writeSaveAll :: (MonadAtomic m, MonadServerReadRequest m) => Bool -> m ()
+{-# INLINABLE writeSaveAll #-}
 writeSaveAll uiRequested = do
   bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
   when (uiRequested || not bench) $ do

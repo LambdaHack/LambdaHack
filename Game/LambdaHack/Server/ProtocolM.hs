@@ -71,6 +71,7 @@ type CliSerQueue = MVar
 
 writeQueueAI :: MonadServerReadRequest m
              => ResponseAI -> CliSerQueue ResponseAI -> m ()
+{-# INLINABLE writeQueueAI #-}
 writeQueueAI cmd responseS = do
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponseAI cmd
@@ -78,6 +79,7 @@ writeQueueAI cmd responseS = do
 
 writeQueueUI :: MonadServerReadRequest m
              => ResponseUI -> CliSerQueue ResponseUI -> m ()
+{-# INLINABLE writeQueueUI #-}
 writeQueueUI cmd responseS = do
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponseUI cmd
@@ -85,16 +87,20 @@ writeQueueUI cmd responseS = do
 
 readQueueAI :: MonadServerReadRequest m
             => CliSerQueue RequestAI -> m RequestAI
+{-# INLINABLE readQueueAI #-}
 readQueueAI requestS = liftIO $ takeMVar requestS
 
 readQueueUI :: MonadServerReadRequest m
             => CliSerQueue RequestUI -> m RequestUI
+{-# INLINABLE readQueueUI #-}
 readQueueUI requestS = liftIO $ takeMVar requestS
 
 newQueue :: IO (CliSerQueue a)
+{-# INLINE newQueue #-}
 newQueue = newEmptyMVar
 
 saveServer :: MonadServerReadRequest m => m ()
+{-# INLINABLE saveServer #-}
 saveServer = do
   s <- getState
   ser <- getServer
@@ -111,6 +117,7 @@ saveName = serverSaveName
 tryRestore :: MonadServerReadRequest m
            => Kind.COps -> DebugModeSer
            -> m (Maybe (State, StateServer, ConnServerDict))
+{-# INLINABLE tryRestore #-}
 tryRestore Kind.COps{corule} sdebugSer = do
   let bench = sbenchmark $ sdebugCli sdebugSer
   if bench then return Nothing
@@ -165,6 +172,7 @@ class MonadServer m => MonadServerReadRequest m where
 
 updateCopsDict :: MonadServerReadRequest m
                => KeyKind -> Config -> DebugModeCli -> m ()
+{-# INLINABLE updateCopsDict #-}
 updateCopsDict copsClient sconfig sdebugCli = do
   cops <- getsState scops
   schanF <- liftIO $ Frontend.chanFrontendIO sdebugCli
@@ -250,6 +258,7 @@ sendQueryUI fid aid = do
   return req
 
 killAllClients :: (MonadAtomic m, MonadServerReadRequest m) => m ()
+{-# INLINABLE killAllClients #-}
 killAllClients = do
   d <- getDict
   let sendKill fid _ =

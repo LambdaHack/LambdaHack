@@ -85,6 +85,7 @@ dieSer aid b hit = do
 -- | Drop all actor's items.
 dropAllItems :: (MonadAtomic m, MonadServer m)
              => ActorId -> Actor -> Bool -> m ()
+{-# INLINABLE dropAllItems #-}
 dropAllItems aid b hit = do
   mapActorCStore_ CInv (dropCStoreItem CInv aid b hit) b
   mapActorCStore_ CEqp (dropCStoreItem CEqp aid b hit) b
