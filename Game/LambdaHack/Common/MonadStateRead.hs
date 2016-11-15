@@ -29,25 +29,30 @@ class (Monad m, Functor m, Applicative m) => MonadStateRead m where
   getsState :: (State -> a) -> m a
 
 getLevel :: MonadStateRead m => LevelId -> m Level
+{-# INLINABLE getLevel #-}
 getLevel lid = getsState $ (EM.! lid) . sdungeon
 
 nUI :: MonadStateRead m => m Int
+{-# INLINABLE nUI #-}
 nUI = do
   factionD <- getsState sfactionD
   return $! length $ filter (fhasUI . gplayer) $ EM.elems factionD
 
 getGameMode :: MonadStateRead m => m ModeKind
+{-# INLINABLE getGameMode #-}
 getGameMode = do
   Kind.COps{comode=Kind.Ops{okind}} <- getsState scops
   t <- getsState sgameModeId
   return $! okind t
 
 isNoConfirmsGame :: MonadStateRead m => m Bool
+{-# INLINABLE isNoConfirmsGame #-}
 isNoConfirmsGame = do
   gameMode <- getGameMode
   return $! maybe False (> 0) $ lookup "no confirms" $ mfreq gameMode
 
 getEntryArena :: MonadStateRead m => Faction -> m LevelId
+{-# INLINABLE getEntryArena #-}
 getEntryArena fact = do
   dungeon <- getsState sdungeon
   let (minD, maxD) =
@@ -60,6 +65,7 @@ pickWeaponM :: MonadStateRead m
             => [(ItemId, ItemFull)] -> Ability.Skills -> ActorAspect
             -> ActorId -> Bool
             -> m [(Int, (ItemId, ItemFull))]
+{-# INLINABLE pickWeaponM #-}
 pickWeaponM allAssocs actorSk actorAspect source effectBonus = do
   sb <- getsState $ getActorBody source
   localTime <- getsState $ getLocalTime (blid sb)

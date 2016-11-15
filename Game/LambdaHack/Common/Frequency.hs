@@ -42,22 +42,26 @@ data Frequency a = Frequency
 instance Monad Frequency where
   {-# INLINE return #-}
   return x = Frequency [(1, x)] "return"
+  {-# INLINABLE (>>=) #-}
   Frequency xs name >>= f =
     Frequency [ (p * q, y) | (p, x) <- xs
                            , (q, y) <- runFrequency (f x) ]
               ("bind (" <> name <> ")")
 
 instance Functor Frequency where
+  {-# INLINABLE fmap #-}
   fmap f (Frequency xs name) = Frequency (map (second f) xs) name
 
 instance Applicative Frequency where
   pure  = return
+  {-# INLINABLE (<*>) #-}
   Frequency fs fname <*> Frequency ys yname =
     Frequency [ (p * q, f y) | (p, f) <- fs
                              , (q, y) <- ys ]
               ("(" <> fname <> ") <*> (" <> yname <> ")")
 
 instance MonadPlus Frequency where
+  {-# INLINABLE mplus #-}
   mplus (Frequency xs xname) (Frequency ys yname) =
     let name = case (xs, ys) of
           ([], []) -> "[]"
@@ -65,6 +69,7 @@ instance MonadPlus Frequency where
           (_,  []) -> xname
           _ -> "(" <> xname <> ") ++ (" <> yname <> ")"
     in Frequency (xs ++ ys) name
+  {-# INLINABLE mzero #-}
   mzero = Frequency [] "[]"
 
 instance Alternative Frequency where
@@ -79,26 +84,31 @@ instance NFData a => NFData (Frequency a)
 
 -- | Uniform discrete frequency distribution.
 uniformFreq :: Text -> [a] -> Frequency a
+{-# INLINABLE uniformFreq #-}
 uniformFreq name l = Frequency (map (\x -> (1, x)) l) name
 
 -- | Takes a name and a list of frequencies and items
 -- into the frequency distribution.
 toFreq :: Text -> [(Int, a)] -> Frequency a
+{-# INLINABLE toFreq #-}
 toFreq name l = Frequency (filter ((> 0 ) . fst) l) name
 
 -- | Scale frequency distribution, multiplying it
 -- by a positive integer constant.
 scaleFreq :: Show a => Int -> Frequency a -> Frequency a
+{-# INLINABLE scaleFreq #-}
 scaleFreq n (Frequency xs name) =
   assert (n > 0 `blame` "non-positive frequency scale" `twith` (name, n, xs)) $
   Frequency (map (first (* n)) xs) name
 
 -- | Change the description of the frequency.
 renameFreq :: Text -> Frequency a -> Frequency a
+{-# INLINABLE renameFreq #-}
 renameFreq newName fr = fr {nameFrequency = newName}
 
 -- | Set frequency of an element.
 setFreq :: Eq a => Frequency a -> a -> Int -> Frequency a
+{-# INLINABLE setFreq #-}
 setFreq (Frequency xs name) x n =
   let xsNew = [(n, x) | n <= 0] ++ filter ((/= x) . snd) xs
   in Frequency xsNew name

@@ -89,6 +89,7 @@ validateRarity rarity =
 
 -- | @breturn b a = [a | b]@
 breturn :: MonadPlus m => Bool -> a -> m a
+{-# INLINABLE breturn #-}
 breturn True a  = return a
 breturn False _ = mzero
 

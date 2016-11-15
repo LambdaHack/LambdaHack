@@ -53,6 +53,7 @@ frequency = St.state . rollFreq
 
 -- | Randomly choose an item according to the distribution.
 rollFreq :: Show a => Frequency a -> R.StdGen -> (a, R.StdGen)
+{-# INLINABLE rollFreq #-}
 rollFreq fr g = case runFrequency fr of
   [] -> assert `failure` "choice from an empty frequency"
                `twith` nameFrequency fr
@@ -75,6 +76,7 @@ type Chance = Rational
 
 -- | Give @True@, with probability determined by the fraction.
 chance :: Chance -> Rnd Bool
+{-# INLINABLE chance #-}
 chance r = do
   let n = numerator r
       d = denominator r
@@ -96,12 +98,14 @@ castDice (AbsDepth n) (AbsDepth depth) dice = do
 -- | Cast dice scaled with current level depth and return @True@
 -- if the results is greater than 50.
 chanceDice :: AbsDepth -> AbsDepth -> Dice.Dice -> Rnd Bool
+{-# INLINABLE chanceDice #-}
 chanceDice ldepth totalDepth dice = do
   c <- castDice ldepth totalDepth dice
   return $! c > 50
 
 -- | Cast dice, scaled with current level depth, for coordinates.
 castDiceXY :: AbsDepth -> AbsDepth -> Dice.DiceXY -> Rnd (Int, Int)
+{-# INLINABLE castDiceXY #-}
 castDiceXY ldepth totalDepth (Dice.DiceXY dx dy) = do
   x <- castDice ldepth totalDepth dx
   y <- castDice ldepth totalDepth dy
