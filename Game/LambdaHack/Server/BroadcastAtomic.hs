@@ -39,20 +39,19 @@ import Game.LambdaHack.Server.State
 --  maybe skip (\a -> modifyServer $ \ser -> ser {sundo = a : sundo ser})
 --    $ Nothing   -- TODO: undoCmdAtomic atomic
 
-handleCmdAtomicServer :: MonadStateWrite m
-                      => PosAtomic -> CmdAtomic -> m ()
+handleCmdAtomicServer :: MonadStateWrite m => PosAtomic -> UpdAtomic -> m ()
 {-# INLINE handleCmdAtomicServer #-}
-handleCmdAtomicServer _posAtomic atomic = {-# SCC handleCmdAtomicServer #-}
+handleCmdAtomicServer _posAtomic cmd = {-# SCC handleCmdAtomicServer #-}
 -- Not needed ATM:
 --  when (seenAtomicSer posAtomic) $
 -- Not implemented ATM:
 --    storeUndo atomic
-    handleCmdAtomic atomic
+    handleUpdAtomic cmd
 
 -- | Send an atomic action to all clients that can see it.
 handleAndBroadcast :: (MonadStateWrite m, MonadServerReadRequest m)
                    => CmdAtomic -> m ()
-{-# INLINE handleAndBroadcast #-}
+{-# INLINABLE handleAndBroadcast #-}
 handleAndBroadcast atomic = {-# SCC handleAndBroadcast #-} do
   -- This is calculated in the server State before action (simulating
   -- current client State, because action has not been applied
@@ -67,13 +66,13 @@ handleAndBroadcast atomic = {-# SCC handleAndBroadcast #-} do
         ps <- posUpdAtomic cmd
         atomicBroken <- breakUpdAtomic cmd
         psBroken <- mapM posUpdAtomic atomicBroken
-        return (ps, map UpdAtomic atomicBroken, psBroken)
+        -- Perform the action on the server. The only part that requires
+        -- @MonadStateWrite@ and modifies server State.
+        handleCmdAtomicServer ps cmd
+        return (ps, atomicBroken, psBroken)
       SfxAtomic sfx -> do
         ps <- posSfxAtomic sfx
         return (ps, [], [])
-  -- Perform the action on the server. The only part that requires
-  -- @MonadStateWrite@ and modifies server State.
-  handleCmdAtomicServer ps atomic
   knowEvents <- getsServer $ sknowEvents . sdebugSer
   sperFidOld <- getsServer sperFid
   -- Send some actions to the clients, one faction at a time.
@@ -91,9 +90,9 @@ handleAndBroadcast atomic = {-# SCC handleAndBroadcast #-} do
                     Nothing -> return ()
                     Just msg -> sendSfx fid $ SfxMsgAll msg
                 _ -> return ()
-            send2 (atomic2, ps2) =
+            send2 (cmd2, ps2) =
               when (seenAtomicCli knowEvents fid perFidLid ps2) $
-                sendAtomic fid atomic2
+                sendUpdate fid cmd2
         case psBroken of
           _ : _ -> mapM_ send2 $ zip atomicBroken psBroken
           [] -> hear atomic  -- broken commands are never loud

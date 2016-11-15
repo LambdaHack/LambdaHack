@@ -2,7 +2,7 @@
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.HandleAtomicWrite
-  ( handleCmdAtomic
+  ( handleUpdAtomic
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , updCreateActor, updDestroyActor, updCreateItem, updDestroyItem
@@ -48,11 +48,6 @@ import Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 
 -- | The game-state semantics of atomic game commands.
 -- Special effects (@SfxAtomic@) don't modify state.
-handleCmdAtomic :: MonadStateWrite m => CmdAtomic -> m ()
-handleCmdAtomic cmd = case cmd of
-  UpdAtomic upd -> handleUpdAtomic upd
-  SfxAtomic _ -> return ()
-
 handleUpdAtomic :: MonadStateWrite m => UpdAtomic -> m ()
 handleUpdAtomic cmd = case cmd of
   UpdCreateActor aid body ais -> updCreateActor aid body ais

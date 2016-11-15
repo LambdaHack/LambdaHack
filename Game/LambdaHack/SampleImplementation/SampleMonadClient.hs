@@ -97,7 +97,8 @@ instance MonadClientUI (CliImplementation SessionUI) where
 -- | The game-state semantics of atomic commands
 -- as computed on the client.
 instance MonadAtomic (CliImplementation sess) where
-  execAtomic = handleCmdAtomic
+  execUpdAtomic cmd = handleUpdAtomic cmd
+  execSfxAtomic _sfx = return ()
 
 initialCliState :: Kind.COps
                 -> sess

@@ -7,7 +7,7 @@ module Game.LambdaHack.SampleImplementation.SampleMonadServer
   ( executorSer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , SerImplementation, handleAndBroadcastServer
+  , SerImplementation
 #endif
   ) where
 
@@ -97,16 +97,8 @@ instance MonadServerReadRequest SerImplementation where
 -- | The game-state semantics of atomic commands
 -- as computed on the server.
 instance MonadAtomic SerImplementation where
-  execAtomic = handleAndBroadcastServer
-
--- | Send an atomic action to all clients that can see it.
-handleAndBroadcastServer :: (MonadStateWrite m, MonadServerReadRequest m)
-                         => CmdAtomic -> m ()
-handleAndBroadcastServer atomic = do
-  case atomic of
-    UpdAtomic cmd -> cmdAtomicSemSer cmd
-    SfxAtomic _sfx -> return ()
-  handleAndBroadcast atomic
+  execUpdAtomic cmd = cmdAtomicSemSer cmd >> handleAndBroadcast (UpdAtomic cmd)
+  execSfxAtomic sfx = handleAndBroadcast (SfxAtomic sfx)
 
 -- Don't inline this, to keep GHC hard work inside the library.
 -- | Run an action in the @IO@ monad, with undefined state.
