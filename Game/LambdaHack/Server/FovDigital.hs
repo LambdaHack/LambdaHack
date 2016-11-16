@@ -63,7 +63,7 @@ scan :: ES.EnumSet Point
      -> PointArray.Array Bool
      -> (Bump -> Point)  -- ^ coordinate transformation
      -> ES.EnumSet Point
-{-# INLINABLE scan #-}
+{-# NOINLINE scan #-}
 scan accScan r fovClear tr = assert (r > 0 `blame` r) $
   -- The scanned area is a square, which is a sphere in the chessboard metric.
   dscan accScan 1 ( (Line (B 1 0) (B (-r) r), [B 0 0])
@@ -175,12 +175,13 @@ dline p1 p2 =
 -- Debug: Verify that the results of 2 independent checks are equal.
 dsteeper :: Bump -> Bump -> Bump -> Ordering
 {-# INLINE dsteeper #-}
-dsteeper f p1 p2 =
+dsteeper = \f p1 p2 ->
+  let res = steeper f p1 p2
+  in
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-  assert (res == _debugSteeper f p1 p2)
+     assert (res == _debugSteeper f p1 p2)
 #endif
-    res
- where res = steeper f p1 p2
+     res
 
 -- | The X coordinate, represented as a fraction, of the intersection of
 -- a given line and the line of diagonals of diamonds at distance
