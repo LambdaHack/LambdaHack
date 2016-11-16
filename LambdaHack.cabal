@@ -115,7 +115,6 @@ library
                       Game.LambdaHack.Client.HandleResponseM
                       Game.LambdaHack.Client.ItemSlot
                       Game.LambdaHack.Client.Key
-                      Game.LambdaHack.Client.LoopM
                       Game.LambdaHack.Client.MonadClient
                       Game.LambdaHack.Client.ProtocolM
                       Game.LambdaHack.Client.State
@@ -187,8 +186,6 @@ library
                       Game.LambdaHack.Content.PlaceKind
                       Game.LambdaHack.Content.RuleKind
                       Game.LambdaHack.Content.TileKind
-                      Game.LambdaHack.SampleImplementation.SampleMonadClient
-                      Game.LambdaHack.SampleImplementation.SampleMonadClientAsThread
                       Game.LambdaHack.SampleImplementation.SampleMonadServer
                       Game.LambdaHack.Server
                       Game.LambdaHack.Server.BroadcastAtomic
@@ -215,6 +212,14 @@ library
                       Game.LambdaHack.Server.ProtocolM
                       Game.LambdaHack.Server.StartM
                       Game.LambdaHack.Server.State
+
+  if flag(clients_as_threads) {
+    exposed-modules:    Game.LambdaHack.Client.LoopM
+                        Game.LambdaHack.SampleImplementation.SampleMonadClientAsThread
+  } else {
+    exposed-modules:    Game.LambdaHack.SampleImplementation.SampleMonadClient
+  }
+
   other-modules:      Paths_LambdaHack
   build-depends:
                       assert-failure >= 0.1,

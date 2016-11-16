@@ -37,8 +37,6 @@ import System.FilePath
 import System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.AI
-import Game.LambdaHack.Client.ProtocolM
 import Game.LambdaHack.Client.State hiding (sdebugCli)
 import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Client.UI.Config
@@ -57,7 +55,6 @@ import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.SampleImplementation.SampleMonadClient
 import Game.LambdaHack.Server.DebugM
 import Game.LambdaHack.Server.FileM
 import Game.LambdaHack.Server.MonadServer hiding (liftIO)
@@ -65,6 +62,10 @@ import Game.LambdaHack.Server.State
 
 #ifdef CLIENTS_AS_THREADS
 import Game.LambdaHack.Common.Thread
+#else
+import Game.LambdaHack.Client.AI
+import Game.LambdaHack.Client.ProtocolM
+import Game.LambdaHack.SampleImplementation.SampleMonadClient
 #endif
 
 type CliSerQueue = MVar
@@ -190,6 +191,7 @@ sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
 sendUpdate !fid !cmd = do
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
+#ifndef CLIENTS_AS_THREADS
     FState Nothing s cli -> do
       let m = handleSelfAI cmd
           cliState = CliState s cli ()
@@ -200,6 +202,7 @@ sendUpdate !fid !cmd = do
           cliState = CliState s cli sess
       ((), CliState s' cli' sess') <- liftIO $ runCli m cliState
       modifyDict $ EM.insert fid (FState (Just sess') s' cli')
+#endif
     FThread mconn conn -> do
       writeQueueAI (RespUpdAtomicAI cmd) $ responseS conn
       maybe (return ())
@@ -210,11 +213,13 @@ sendSfx :: MonadServerReadRequest m => FactionId -> SfxAtomic -> m ()
 sendSfx !fid !sfx = do
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
+#ifndef CLIENTS_AS_THREADS
     FState (Just sess) s cli -> do
       let m = displayRespSfxAtomicUI False sfx
           cliState = CliState s cli sess
       ((), CliState s' cli' sess') <- liftIO $ runCli m cliState
       modifyDict $ EM.insert fid (FState (Just sess') s' cli')
+#endif
     FThread (Just conn) _ ->
       writeQueueUI (RespSfxAtomicUI sfx) $ responseS conn
     _ -> return ()
@@ -224,12 +229,14 @@ sendQueryAI :: MonadServerReadRequest m => FactionId -> ActorId -> m RequestAI
 sendQueryAI fid aid = do
   frozenClient <- getsDict $ (EM.! fid)
   req <- case frozenClient of
+#ifndef CLIENTS_AS_THREADS
     FState msess s cli -> do
       let m = queryAI aid
           cliState = CliState s cli ()
       (req, CliState s' cli' ()) <- liftIO $ runCli m cliState
       modifyDict $ EM.insert fid (FState msess s' cli')
       return req
+#endif
     FThread _ conn -> do
       writeQueueAI (RespQueryAI aid) $ responseS conn
       readQueueAI $ requestS conn
@@ -243,12 +250,14 @@ sendQueryUI :: (MonadAtomic m, MonadServerReadRequest m)
 sendQueryUI fid aid = do
   frozenClient <- getsDict $ (EM.! fid)
   req <- case frozenClient of
+#ifndef CLIENTS_AS_THREADS
     FState (Just sess) s cli -> do
       let m = queryUI
           cliState = CliState s cli sess
       (req, CliState s' cli' sess') <- liftIO $ runCli m cliState
       modifyDict $ EM.insert fid (FState (Just sess') s' cli')
       return req
+#endif
     FThread (Just conn) _ -> do
       writeQueueUI RespQueryUI $ responseS conn
       readQueueUI $ requestS conn
@@ -295,12 +304,14 @@ updateConn cops copsClient sconfig sdebugCli
         requestS <- newQueue
         return $! ChanServer{..}
       cliSession = emptySessionUI sconfig
+#ifndef CLIENTS_AS_THREADS
       initStateUI fid = do
         let initCli = initialCliState cops cliSession fid
         snd <$> runCli (initUI copsClient sconfig sdebugCli) initCli
       initStateAI fid = do
         let initCli = initialCliState cops () fid
         snd <$> runCli (initAI sdebugCli) initCli
+#endif
       addConn :: FactionId -> Faction -> IO FrozenClient
       addConn fid fact = case EM.lookup fid oldD of
         Just conns -> return conns  -- share old conns and threads
