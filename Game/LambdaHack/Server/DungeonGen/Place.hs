@@ -157,7 +157,7 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
 olegend :: Kind.COps -> GroupName TileKind
         -> Rnd (EM.EnumMap Char (Kind.Id TileKind))
 olegend Kind.COps{cotile=Kind.Ops{ofoldlWithKey', opick}} cgroup =
-  let getSymbols !acc _ tk =
+  let getSymbols !acc _ !tk =
         maybe acc (const $ ES.insert (TK.tsymbol tk) acc)
           (lookup cgroup $ TK.tfreq tk)
       symbols = ofoldlWithKey' getSymbols ES.empty

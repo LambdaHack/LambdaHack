@@ -221,7 +221,7 @@ dominateFid fid target = do
 -- | Advance the move time for the given actor
 advanceTime :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 {-# INLINABLE advanceTime #-}
-advanceTime !aid = do
+advanceTime aid = do
   b <- getsState $ getActorBody aid
   btime_b <- getsServer $ (EM.! aid) . (EM.! blid b) . (EM.! bfid b) . sactorTime
   localTime <- getsState $ getLocalTime (blid b)
@@ -245,7 +245,7 @@ advanceTime !aid = do
 overheadActorTime :: (MonadAtomic m, MonadServer m)
                   => FactionId -> ActorId -> m ()
 {-# INLINE overheadActorTime #-}
-overheadActorTime !fid !aid = do
+overheadActorTime fid aid = do
   -- Add communication overhead time delta to all non-projectile,
   -- non-dying faction's actors. Effectively, this limits moves of
   -- a faction to 10, regardless of the number of actors
@@ -267,7 +267,7 @@ overheadActorTime !fid !aid = do
               && (Just aid2 /= mleader || aid2 == aid)
            then timeShift time (Delta timeClip)
            else time
-      g acc lid = EM.adjust (EM.mapWithKey f) lid acc
+      g !acc !lid = EM.adjust (EM.mapWithKey f) lid acc
       actorTimeNew = foldl' g actorTime arenas
   modifyServer $ \ser ->
     ser {sactorTime = EM.insert fid actorTimeNew $ sactorTime ser}

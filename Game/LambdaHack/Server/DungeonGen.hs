@@ -280,7 +280,7 @@ dungeonGen cops caves = do
                         $ max 10 $ max (abs minD) (abs maxD)
   let gen :: (Int, [(LevelId, Level)]) -> (Int, (GroupName CaveKind, Maybe Bool))
           -> Rnd (Int, [(LevelId, Level)])
-      gen (nstairUp, l) (!n, !caveTB) = do
+      gen (!nstairUp, l) (!n, !caveTB) = do
         let ln = toEnum n
         lvl <- findGenerator cops ln minId maxId freshTotalDepth nstairUp caveTB
         -- nstairUp for the next level is nstairDown for the current level

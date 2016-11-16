@@ -60,7 +60,7 @@ rollFreq fr g = case runFrequency fr of
   [(n, x)] | n <= 0 -> assert `failure` "singleton void frequency"
                               `twith` (nameFrequency fr, n, x)
   [(_, x)] -> (x, g)  -- speedup
-  fs -> let sumf = foldl' (\ !acc (n, _) -> acc + n) 0 fs
+  fs -> let sumf = foldl' (\ !acc (!n, _) -> acc + n) 0 fs
             (r, ng) = R.randomR (1, sumf) g
             frec :: Int -> [(Int, a)] -> a
             frec !m [] = assert `failure` "impossible roll"

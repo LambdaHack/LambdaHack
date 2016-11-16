@@ -98,7 +98,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                         -> (Point, Area)
                         -> Rnd ( TileMapEM, [Place]
                                , EM.EnumMap Point (Area, Area) )
-            decidePlace (!m, !pls, !qls) (i, ar) = do
+            decidePlace (!m, !pls, !qls) (!i, !ar) = do
               -- Reserved for corridors and the global fence.
               let innerArea = fromMaybe (assert `failure` (i, ar)) $ shrink ar
               if i `elem` voidPlaces

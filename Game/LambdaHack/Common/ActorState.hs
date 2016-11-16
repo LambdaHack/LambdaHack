@@ -285,7 +285,8 @@ memActor aid lid s =
 
 -- | Get current time from the dungeon data.
 getLocalTime :: LevelId -> State -> Time
-getLocalTime !lid !s = ltime $ sdungeon s EM.! lid
+{-# INLINABLE getLocalTime #-}
+getLocalTime lid s = ltime $ sdungeon s EM.! lid
 
 regenCalmDelta :: Actor -> AspectRecord -> State -> Int64
 regenCalmDelta b AspectRecord{aMaxCalm} s =

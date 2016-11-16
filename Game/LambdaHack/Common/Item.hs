@@ -181,7 +181,7 @@ aspectRecordToList AspectRecord{..} =
 
 castAspect :: AbsDepth -> AbsDepth -> AspectRecord -> IK.Aspect
            -> Rnd AspectRecord
-castAspect ldepth totalDepth !ar asp =
+castAspect !ldepth !totalDepth !ar !asp =
   case asp of
     IK.Timeout d -> do
       n <- castDice ldepth totalDepth d
@@ -225,7 +225,7 @@ castAspect ldepth totalDepth !ar asp =
                                                 (aSkills ar)}
 
 addMeanAspect :: AspectRecord -> IK.Aspect -> AspectRecord
-addMeanAspect ar asp =
+addMeanAspect !ar !asp =
   case asp of
     IK.Timeout d ->
       let n = Dice.meanDice d

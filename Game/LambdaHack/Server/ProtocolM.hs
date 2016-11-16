@@ -207,7 +207,7 @@ sendUpdate !fid !cmd = do
 
 sendSfx :: MonadServerReadRequest m => FactionId -> SfxAtomic -> m ()
 {-# INLINABLE sendSfx #-}
-sendSfx fid sfx = do
+sendSfx !fid !sfx = do
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
     FState (Just sess) s cli -> do

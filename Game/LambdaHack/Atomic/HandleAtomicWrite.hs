@@ -518,13 +518,13 @@ updTimeItem iid c fromIt toIt = assert (fromIt /= toIt) $ do
 -- e.g., in the @~@ menu of seen level indicate recent activity.
 updAgeGame :: MonadStateWrite m => [LevelId] -> m ()
 {-# INLINABLE updAgeGame #-}
-updAgeGame !lids = do
+updAgeGame lids = do
   modifyState $ updateTime $ flip timeShift (Delta timeClip)
   mapM_ (ageLevel (Delta timeClip)) lids
 
 updUnAgeGame :: MonadStateWrite m => [LevelId] -> m ()
 {-# INLINABLE updUnAgeGame #-}
-updUnAgeGame !lids = do
+updUnAgeGame lids = do
   modifyState $ updateTime $ flip timeShift (timeDeltaReverse $ Delta timeClip)
   mapM_ (ageLevel (timeDeltaReverse $ Delta timeClip)) lids
 
