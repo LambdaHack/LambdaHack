@@ -159,11 +159,11 @@ condHpTooLowM aid = do
 condOnTriggerableM :: MonadStateRead m => ActorId -> m Bool
 {-# INLINABLE condOnTriggerableM #-}
 condOnTriggerableM aid = do
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
   let t = lvl `at` bpos b
-  return $! not $ null $ Tile.causeEffects cotile t
+  return $! Tile.hasCauses coTileSpeedup t
 
 -- | Produce the chess-distance-sorted list of non-low-HP foes on the level.
 -- We don't consider path-distance, because we are interested in how soon

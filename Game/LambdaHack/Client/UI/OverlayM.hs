@@ -59,7 +59,7 @@ lookAt :: MonadClientUI m
        -> m Text
 {-# INLINABLE lookAt #-}
 lookAt detailed tilePrefix canSee pos aid msg = do
-  cops@Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
+  cops@Kind.COps{cotile=Kind.Ops{okind}, coTileSpeedup} <- getsState scops
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
   lidV <- viewedLevelUI
@@ -82,7 +82,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
       tilePart | T.null tilePrefix = MU.Text tileText
                | otherwise = MU.AW $ MU.Text tileText
       tileDesc = [MU.Text tilePrefix, tilePart]
-  if | not (null (Tile.causeEffects cotile tile)) ->
+  if | Tile.hasCauses coTileSpeedup tile ->
        return $! makeSentence ("activable:" : tileDesc) <+> msg <+> isd
      | detailed ->
        return $! makeSentence tileDesc <+> msg <+> isd

@@ -269,7 +269,7 @@ closestTriggers onlyDir aid = do
       lidExplored = ES.member (blid body) explored
       f :: Point -> Kind.Id TileKind -> [(Int, Point)] -> [(Int, Point)]
       f p t acc =
-        if Tile.isWalkable coTileSpeedup t && not (null $ Tile.causeEffects cotile t)
+        if Tile.isWalkable coTileSpeedup t && Tile.hasCauses coTileSpeedup t
         then case Tile.ascendTo cotile t of
           [] ->
             -- Escape (or guard) only after exploring, for high score, etc.

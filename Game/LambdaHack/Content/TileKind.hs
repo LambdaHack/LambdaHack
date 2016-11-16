@@ -86,6 +86,7 @@ data TileSpeedup = TileSpeedup
   , isOftenActorTab  :: !(Tab Bool)
   , isNoItemTab      :: !(Tab Bool)
   , isNoActorTab     :: !(Tab Bool)
+  , hasCausesTab     :: !(Tab Bool)
   , alterMinSkillTab :: !(Tab Word8)
   , alterMinWalkTab  :: !(Tab Word8)
   }

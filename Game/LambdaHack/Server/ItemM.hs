@@ -73,13 +73,13 @@ embedItem :: (MonadAtomic m, MonadServer m)
           => LevelId -> Point -> Kind.Id TileKind -> m ()
 {-# INLINABLE embedItem #-}
 embedItem lid pos tk = do
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{cotile, coTileSpeedup} <- getsState scops
   let embeds = Tile.embedItems cotile tk
-      causes = Tile.causeEffects cotile tk
       -- TODO: unhack this, e.g., by turning each Cause into Embed
       itemFreq = zip embeds (repeat 1)
                  ++ -- Hack: the bag, not item, is relevant.
-                    [("hero", 1) | not (null causes) && null embeds]
+                    [("hero", 1) | Tile.hasCauses coTileSpeedup tk
+                                   && null embeds]
       container = CEmbed lid pos
   void $ rollAndRegisterItem lid itemFreq container False Nothing
 
