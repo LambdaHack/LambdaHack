@@ -57,10 +57,10 @@ import Game.LambdaHack.Server.State
 -- | The semantics of server commands.
 -- AI always takes time and so doesn't loop.
 handleRequestAI :: (MonadAtomic m)
-                => FactionId -> ActorId -> ReqAI
+                => ReqAI
                 -> m (Maybe RequestAnyAbility)
-{-# INLINE handleRequestAI #-}
-handleRequestAI _fid _aid cmd = case cmd of
+{-# INLINABLE handleRequestAI #-}
+handleRequestAI cmd = case cmd of
   ReqAITimed cmdT -> return $ Just cmdT
   ReqAINop -> return Nothing
 
@@ -68,7 +68,7 @@ handleRequestAI _fid _aid cmd = case cmd of
 handleRequestUI :: (MonadAtomic m, MonadServer m)
                 => FactionId -> ActorId -> ReqUI
                 -> m (Maybe RequestAnyAbility)
-{-# INLINE handleRequestUI #-}
+{-# INLINABLE handleRequestUI #-}
 handleRequestUI fid aid cmd = case cmd of
   ReqUITimed cmdT -> return $ Just cmdT
   ReqUIGameRestart t d names -> reqGameRestart aid t d names >> return Nothing
@@ -91,7 +91,7 @@ setBWait cmd aidNew = do
 
 handleRequestTimed :: (MonadAtomic m, MonadServer m)
                    => FactionId -> ActorId -> RequestTimed a -> m Bool
-{-# INLINE handleRequestTimed #-}
+{-# INLINABLE handleRequestTimed #-}
 handleRequestTimed fid aid cmd = do
   hasWait <- setBWait cmd aid
   unless hasWait $ overheadActorTime fid aid
@@ -102,7 +102,7 @@ handleRequestTimed fid aid cmd = do
 
 handleRequestTimedCases :: (MonadAtomic m, MonadServer m)
                         => ActorId -> RequestTimed a -> m ()
-{-# INLINE handleRequestTimedCases #-}
+{-# INLINABLE handleRequestTimedCases #-}
 handleRequestTimedCases aid cmd = case cmd of
   ReqMove target -> reqMove aid target
   ReqMelee target iid cstore -> reqMelee aid target iid cstore

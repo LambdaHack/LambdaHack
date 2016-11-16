@@ -65,7 +65,7 @@ loopSer :: (MonadAtomic m, MonadServerReadRequest m)
         -> (Kind.COps -> FactionId -> ChanServer ResponseAI RequestAI -> IO ())
              -- ^ the code to run for AI clients
         -> m ()
-{-# INLINE loopSer #-}
+{-# INLINABLE loopSer #-}
 loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
   -- Recover states and launch clients.
   cops <- getsState scops
@@ -108,9 +108,8 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
       writeSaveAll False
   loopUpd updConn
 
--- TODO: the code is duplicated due to INLINE
 factionArena :: MonadStateRead m => Faction -> m (Maybe LevelId)
-{-# INLINE factionArena #-}
+{-# INLINABLE factionArena #-}
 factionArena fact = case gleader fact of
   -- Even spawners need an active arena for their leader,
   -- or they start clogging stairs.
@@ -162,7 +161,7 @@ handleFidUpd updatePerFid fid fact = do
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
 loopUpd :: forall m. (MonadAtomic m, MonadServerReadRequest m) => m () -> m ()
-{-# INLINE loopUpd #-}
+{-# INLINABLE loopUpd #-}
 loopUpd updConn = do
   let updatePerFid :: FactionId -> m ()
       {-# NOINLINE updatePerFid #-}
@@ -190,7 +189,7 @@ loopUpd updConn = do
   loopUpdConn
 
 endClip :: (MonadAtomic m, MonadServerReadRequest m) => m ()
-{-# INLINE endClip #-}
+{-# INLINABLE endClip #-}
 endClip = do
   Kind.COps{corule} <- getsState scops
   let RuleKind{rwriteSaveClips, rleadLevelClips} = Kind.stdRuleset corule
@@ -225,7 +224,7 @@ endClip = do
 
 -- | Trigger periodic items for all actors on the given level.
 applyPeriodicLevel :: (MonadAtomic m, MonadServer m) => m ()
-{-# INLINE applyPeriodicLevel #-}
+{-# INLINABLE applyPeriodicLevel #-}
 applyPeriodicLevel = do
   arenas <- getsServer sarenas
   let arenasSet = ES.fromDistinctAscList arenas
@@ -255,7 +254,7 @@ applyPeriodicLevel = do
 
 handleTrajectories :: (MonadAtomic m, MonadServer m)
                    => LevelId -> FactionId -> m ()
-{-# INLINE handleTrajectories #-}
+{-# INLINABLE handleTrajectories #-}
 handleTrajectories lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
@@ -272,11 +271,20 @@ handleTrajectories lid fid = do
 -- from projectiles or pushed actors doesn't work; too late.
 -- Even if the actor got teleported to another level by this point,
 -- we don't care, we set the trajectory, check death, etc.
-hTrajectories :: (MonadAtomic m, MonadServer m)
-              => (ActorId, Actor) -> m ()
+hTrajectories :: (MonadAtomic m, MonadServer m) => (ActorId, Actor) -> m ()
 {-# INLINE hTrajectories #-}
 hTrajectories (aid, b) = do
-  if actorDying b then do
+  if not $ actorDying b then do
+    setTrajectory aid
+    b2 <- getsState $ getActorBody aid
+    if not $ actorDying b2 then do
+      advanceTime aid
+      managePerTurn aid
+    else do
+      -- Dispose of the actor with trajectory ASAP to make sure it doesn't
+      -- block movement of other actors.
+      dieSer aid b2 (bhp b2 <= 0 && bproj b2)
+  else do
     -- if bhp b <= 0:
     -- If @b@ is a projectile and it hits an actor,
     -- the carried item is destroyed and that's all.
@@ -291,16 +299,6 @@ hTrajectories (aid, b) = do
     -- as opposed to just bouncing off the wall or landing on the ground,
     -- in which case it breaks only if the item is fragile.
     dieSer aid b (bhp b <= 0 && bproj b)
-  else do
-    setTrajectory aid
-    b2 <- getsState $ getActorBody aid
-    if actorDying b2 then
-      -- Dispose of the actor with trajectory ASAP to make sure it doesn't
-      -- block movement of other actors.
-      hTrajectories (aid, b2)
-    else do
-      advanceTime aid
-      managePerTurn aid
 
 -- TODO: move somewhere?
 -- | Manage trajectory of a projectile.
@@ -318,13 +316,8 @@ setTrajectory aid = do
   lvl <- getLevel $ blid b
   case btrajectory b of
     Just (d : lv, speed) ->
-      if not $ accessibleDir cops lvl (bpos b) d
+      if accessibleDir cops lvl (bpos b) d
       then do
-        -- Lose HP due to bumping into an obstacle.
-        execUpdAtomic $ UpdRefillHP aid minusM
-        execUpdAtomic $ UpdTrajectory aid (btrajectory b)
-                                          (Just ([], speed))
-      else do
         when (bproj b && null lv) $ do
           let toColor = Color.BrBlack
           when (bcolor b /= toColor) $
@@ -339,6 +332,11 @@ setTrajectory aid = do
         b2 <- getsState $ getActorBody aid
         unless (btrajectory b2 == Just (lv, speed)) $  -- cleared in reqMelee
           execUpdAtomic $ UpdTrajectory aid (btrajectory b2) (Just (lv, speed))
+      else do
+        -- Lose HP due to bumping into an obstacle.
+        execUpdAtomic $ UpdRefillHP aid minusM
+        execUpdAtomic $ UpdTrajectory aid (btrajectory b)
+                                          (Just ([], speed))
     Just ([], _) -> do  -- non-projectile actor stops flying
       let !_A = assert (not $ bproj b) ()
       execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
@@ -346,7 +344,7 @@ setTrajectory aid = do
 
 handleActors :: (MonadAtomic m, MonadServerReadRequest m)
              => LevelId -> FactionId -> m Bool
-{-# INLINE handleActors #-}
+{-# INLINABLE handleActors #-}
 handleActors lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
@@ -362,7 +360,7 @@ handleActors lid fid = do
 
 hActors :: forall m. (MonadAtomic m, MonadServerReadRequest m)
         => FactionId -> [(ActorId, Actor)] -> m Bool
-{-# INLINE hActors #-}
+{-# INLINABLE hActors #-}
 hActors _ [] = return False
 hActors fid ((aid, body) : rest) = do
   let side = bfid body
@@ -374,7 +372,7 @@ hActors fid ((aid, body) : rest) = do
                     && (aidIsLeader
                         || fleaderMode (gplayer fact) == LeaderNull)
       mainUIunderAI = mainUIactor && isAIFact fact && not quit
-      doQueryUI = mainUIactor && not (isAIFact fact)
+      doQueryAI = not mainUIactor || isAIFact fact
   when mainUIunderAI $ do
     cmdS <- sendQueryUI side aid
     case fst cmdS of
@@ -392,15 +390,15 @@ hActors fid ((aid, body) : rest) = do
       mswitchLeader (Just aidNew) = switchLeader side aidNew >> return aidNew
       mswitchLeader Nothing = return aid
   (aidNew, mtimed) <-
-    if doQueryUI then do
+    if doQueryAI then do
+      (cmd, maid) <- sendQueryAI side aid
+      aidNew <- mswitchLeader maid
+      mtimed <- handleRequestAI cmd
+      return (aidNew, mtimed)
+    else do
       (cmd, maid) <- sendQueryUI side aid
       aidNew <- mswitchLeader maid
       mtimed <- handleRequestUI side aidNew cmd
-      return (aidNew, mtimed)
-    else do
-      (cmd, maid) <- sendQueryAI side aid
-      aidNew <- mswitchLeader maid
-      mtimed <- handleRequestAI side aidNew cmd
       return (aidNew, mtimed)
   nonWaitMove <- case mtimed of
     -- TODO: check that the command is legal first, report and reject,
@@ -457,8 +455,8 @@ gameExit = do
   return ()
 
 restartGame :: (MonadAtomic m, MonadServerReadRequest m)
-            => m () -> m () -> Maybe (GroupName ModeKind) ->  m ()
-{-# INLINE restartGame #-}
+            => m () -> m () -> Maybe (GroupName ModeKind) -> m ()
+{-# INLINABLE restartGame #-}
 restartGame updConn loop mgameMode = do
   cops <- getsState scops
   sdebugNxt <- getsServer sdebugNxt

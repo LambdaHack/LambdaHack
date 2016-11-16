@@ -43,7 +43,7 @@ import Game.LambdaHack.Server.State
 -- | Sapwn, possibly, a monster according to the level's actor groups.
 -- We assume heroes are never spawned.
 spawnMonster :: (MonadAtomic m, MonadServer m) => m ()
-{-# INLINE spawnMonster #-}
+{-# INLINABLE spawnMonster #-}
 spawnMonster = do
   arenas <- getsServer sarenas
   -- Do this on only one of the arenas to prevent micromanagement,
@@ -244,7 +244,7 @@ advanceTime aid = do
 
 overheadActorTime :: (MonadAtomic m, MonadServer m)
                   => FactionId -> ActorId -> m ()
-{-# INLINE overheadActorTime #-}
+{-# INLINABLE overheadActorTime #-}
 overheadActorTime fid aid = do
   -- Add communication overhead time delta to all non-projectile,
   -- non-dying faction's actors. Effectively, this limits moves of

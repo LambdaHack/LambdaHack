@@ -97,7 +97,6 @@ readQueueUI :: MonadServerReadRequest m
 readQueueUI requestS = liftIO $ takeMVar requestS
 
 newQueue :: IO (CliSerQueue a)
-{-# INLINE newQueue #-}
 newQueue = newEmptyMVar
 
 saveServer :: MonadServerReadRequest m => m ()
@@ -293,7 +292,7 @@ updateConn :: (MonadAtomic m, MonadServerReadRequest m)
                -> ChanServer ResponseAI RequestAI
                -> IO ())
            -> m ()
-{-# INLINE updateConn #-}
+{-# INLINABLE updateConn #-}
 updateConn cops copsClient sconfig sdebugCli
            _executorUI _executorAI = do
   -- Prepare connections based on factions.

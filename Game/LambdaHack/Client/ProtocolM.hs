@@ -52,7 +52,7 @@ initUI copsClient sconfig sdebugCli = do
 handleSelfAI :: ( MonadClientSetup m
                 , MonadAtomic m )
              => UpdAtomic -> m ()
-{-# INLINE handleSelfAI #-}
+{-# INLINABLE handleSelfAI #-}
 handleSelfAI cmdA = do
   cmds <- cmdAtomicFilterCli cmdA
   mapM_ (\ !c -> cmdAtomicSemCli c
@@ -63,7 +63,7 @@ handleSelfUI :: ( MonadClientSetup m
                 , MonadClientUI m
                 , MonadAtomic m )
              => UpdAtomic -> m ()
-{-# INLINE handleSelfUI #-}
+{-# INLINABLE handleSelfUI #-}
 handleSelfUI cmdA = do
   cmds <- cmdAtomicFilterCli cmdA
   let handle !c = do

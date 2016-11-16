@@ -29,7 +29,7 @@ import Game.LambdaHack.Server.State
 endOrLoop :: (MonadAtomic m, MonadServer m)
           => m () -> (Maybe (GroupName ModeKind) -> m ()) -> m () -> m ()
           -> m ()
-{-# INLINE endOrLoop #-}
+{-# INLINABLE endOrLoop #-}
 endOrLoop loop restart gameExit gameSave = do
   factionD <- getsState sfactionD
   let inGame fact = case gquit fact of
@@ -60,7 +60,7 @@ endOrLoop loop restart gameExit gameSave = do
     _ : _ -> gameExit  -- don't call @loop@, that is, quit the game loop
 
 dieSer :: (MonadAtomic m, MonadServer m) => ActorId -> Actor -> Bool -> m ()
-{-# INLINE dieSer #-}
+{-# INLINABLE dieSer #-}
 dieSer aid b hit = do
   -- TODO: clients don't see the death of their last standing actor;
   --       modify Draw.hs and Client.hs to handle that
