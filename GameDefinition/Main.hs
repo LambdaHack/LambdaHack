@@ -16,6 +16,7 @@ import TieKnot
 -- | Tie the LambdaHack engine client, server and frontend code
 -- with the game-specific content definitions, and run the game.
 main :: IO ()
+{-# INLINE main #-}
 main = do
   args <- getArgs
   a <- async $ tieKnot args
