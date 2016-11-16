@@ -31,7 +31,6 @@ import Game.LambdaHack.Server.State
 -- is different. Which of the frontends is run inside the UI client
 -- depends on the flags supplied when compiling the engine library.
 tieKnot :: [String] -> IO ()
-{-# INLINE tieKnot #-}
 tieKnot args = do
   -- Options for the next game taken from the commandline.
   sdebugNxt@DebugModeSer{sallClear} <- debugArgs args

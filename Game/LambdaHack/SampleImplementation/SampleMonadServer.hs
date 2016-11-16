@@ -118,7 +118,6 @@ instance MonadAtomic SerImplementation where
 -- Don't inline this, to keep GHC hard work inside the library.
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: Kind.COps -> KeyKind -> DebugModeSer -> IO ()
-{-# INLINE executorSer #-}
 executorSer cops copsClient sdebugNxtCmdline = do
   -- Parse UI client configuration file.
   -- It is reloaded at each game executable start.
