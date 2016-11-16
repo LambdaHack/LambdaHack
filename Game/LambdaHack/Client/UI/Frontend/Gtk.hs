@@ -93,11 +93,11 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   sview `on` keyPressEvent $ do
     n <- eventKeyName
     mods <- eventModifier
-    let !key = K.keyTranslate $ T.unpack n
-        !modifier =
+    let key = K.keyTranslate $ T.unpack n
+        modifier =
           let md = modTranslate mods
           in if md == K.Shift then K.NoModifier else md
-        !pointer = Point 0 0  -- FIXME: workaround for GHC 8.0.1 -- originPoint
+        pointer = originPoint
     IO.liftIO $ saveKMP rf modifier key pointer
     return True
   -- Set the font specified in config, if any.
@@ -113,7 +113,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
     scrollDir <- eventScrollDirection
     (wx, wy) <- eventCoordinates
     mods <- eventModifier
-    let !modifier = modTranslate mods  -- Shift included
+    let modifier = modTranslate mods  -- Shift included
     IO.liftIO $ do
       (bx, by) <-
         textViewWindowToBufferCoords sview TextWindowText
@@ -121,11 +121,11 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
       (iter, _) <- textViewGetIterAtPosition sview bx by
       cx <- textIterGetLineOffset iter
       cy <- textIterGetLine iter
-      let !key = case scrollDir of
+      let key = case scrollDir of
             ScrollUp -> K.WheelNorth
             ScrollDown -> K.WheelSouth
             _ -> K.Esc  -- probably a glitch
-          !pointer = Point cx cy
+          pointer = Point cx cy
       -- Store the mouse event coords in the keypress channel.
       saveKMP rf modifier key pointer
     return True  -- disable selection
@@ -139,7 +139,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
     but <- eventButton
     (wx, wy) <- eventCoordinates
     mods <- eventModifier
-    let !modifier = modTranslate mods  -- Shift included
+    let modifier = modTranslate mods  -- Shift included
     IO.liftIO $ do
       when (but == RightButton && modifier == K.Control) $ do
         fsd <- fontSelectionDialogNew ("Choose font" :: String)

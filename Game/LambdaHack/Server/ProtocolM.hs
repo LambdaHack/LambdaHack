@@ -205,7 +205,7 @@ sendUpdate !fid !cmd = do
       maybe (return ())
             (\c -> writeQueueUI (RespUpdAtomicUI cmd) $ responseS c) mconn
 
-sendSfx :: MonadServerReadRequest m  => FactionId -> SfxAtomic -> m ()
+sendSfx :: MonadServerReadRequest m => FactionId -> SfxAtomic -> m ()
 {-# INLINABLE sendSfx #-}
 sendSfx fid sfx = do
   frozenClient <- getsDict $ (EM.! fid)

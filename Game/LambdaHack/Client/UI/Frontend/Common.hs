@@ -54,7 +54,7 @@ resetChanKey fchanKey = do
   when (isJust res) $ resetChanKey fchanKey
 
 saveKMP :: RawFrontend -> K.Modifier -> K.Key -> Point -> IO ()
-saveKMP rf modifier key kmpPointer = do
+saveKMP !rf !modifier !key !kmpPointer = do
   -- Instantly show any frame waiting for display.
   void $ tryTakeMVar $ fshowNow rf
   let kmp = KMP{kmpKeyMod = K.KM{..}, kmpPointer}

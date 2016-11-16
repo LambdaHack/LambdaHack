@@ -154,7 +154,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
                 | otherwise = ""  -- TODO: translate from keyCode in FF and IE
                                   -- until @key@ available in webkit DOM
     when (not $ null quirksN) $ do
-      let !key = K.keyTranslateWeb quirksN False
+      let key = K.keyTranslateWeb quirksN False
       -- IO.liftIO $ do
       --   putStrLn $ "keyId: " ++ keyId
       --   putStrLn $ "quirksN: " ++ quirksN
@@ -175,11 +175,11 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
                 | otherwise = ""
     when (not $ null quirksN) $ do
       modifier <- readMod
-      let !onKeyPad = case keyLoc of
+      let onKeyPad = case keyLoc of
             3 {-KEY_LOCATION_NUMPAD-} -> True
             _ -> False
-          !key = K.keyTranslateWeb quirksN onKeyPad
-          !modifierNoShift =  -- to prevent Shift-!, etc.
+          key = K.keyTranslateWeb quirksN onKeyPad
+          modifierNoShift =  -- to prevent Shift-!, etc.
             if modifier == K.Shift then K.NoModifier else modifier
       -- IO.liftIO $ do
       --   putStrLn $ "charCode: " ++ show charCode
