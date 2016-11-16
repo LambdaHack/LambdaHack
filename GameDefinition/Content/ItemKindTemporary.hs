@@ -36,7 +36,7 @@ tmpAs name aspects = ItemKind
                aspects
   , ieffects = let tmp = Temporary $ "be no longer" <+> name
                in [Periodic, Recharging tmp, OnSmash tmp]
-  , ifeature = [Identified]
+  , ifeature = [Identified, Fragile, Durable]  -- hack: destroy on drop
   , idesc    = ""
   , ikit     = []
   }
@@ -70,10 +70,10 @@ tmpPoisoned =
 tmpSlow10Resistant =
   let tmp = tmpAs "slow resistant" []
   in tmp { icount = 7 + d 5
-         , ieffects = Recharging (DropItem COrgan "slow 10" True) : ieffects tmp
+         , ieffects = Recharging (DropItem COrgan "slow 10") : ieffects tmp
          }
 tmpPoisonResistant =
   let tmp = tmpAs "poison resistant" []
   in tmp { icount = 7 + d 5
-         , ieffects = Recharging (DropItem COrgan "poisoned" True) : ieffects tmp
+         , ieffects = Recharging (DropItem COrgan "poisoned") : ieffects tmp
          }

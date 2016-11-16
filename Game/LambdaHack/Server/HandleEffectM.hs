@@ -112,8 +112,9 @@ effectAndDestroy source target iid container periodic effs ItemFull{..} = do
                         tmpEffect (IK.OnSmash IK.Temporary{}) = True
                         tmpEffect _ = False
                     in not $ any tmpEffect effs
-    let durable = IK.Durable `elem` jfeature itemBase
-        imperishable = durable || periodic && permanent
+    let fragile = IK.Fragile `elem` jfeature itemBase
+        durable = IK.Durable `elem` jfeature itemBase
+        imperishable = durable && not fragile || periodic && permanent
         kit = if permanent || periodic then (1, take 1 it2) else (itemK, it2)
     unless imperishable $
       execUpdAtomic $ UpdLoseItem iid itemBase kit container
@@ -219,7 +220,7 @@ effectSem source target iid recharged effect = do
     IK.InsertMove p -> effectInsertMove execSfx p target
     IK.Teleport p -> effectTeleport execSfx p source target
     IK.CreateItem store grp tim -> effectCreateItem target store grp tim
-    IK.DropItem store grp hit -> effectDropItem execSfx store grp hit target
+    IK.DropItem store grp -> effectDropItem execSfx store grp target
     IK.PolyItem -> effectPolyItem execSfx source target
     IK.Identify -> effectIdentify execSfx iid source target
     IK.SendFlying tmod ->
@@ -830,14 +831,14 @@ effectCreateItem target store grp tim = do
 
 -- ** DropItem
 
--- | Make the target actor drop all items in his equiment with the given symbol
+-- | Make the target actor drop all items in a store from the given group
 -- (not just a random single item, or cluttering equipment with rubbish
 -- would be beneficial).
 effectDropItem :: (MonadAtomic m, MonadServer m)
-               => m () -> CStore -> GroupName ItemKind -> Bool -> ActorId
+               => m () -> CStore -> GroupName ItemKind -> ActorId
                -> m Bool
 {-# INLINABLE effectDropItem #-}
-effectDropItem execSfx store grp hit target = do
+effectDropItem execSfx store grp target = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   discoKind <- getsServer sdiscoKind
   b <- getsState $ getActorBody target
@@ -853,7 +854,7 @@ effectDropItem execSfx store grp hit target = do
   if null is
     then return False
     else do
-      mapM_ (uncurry (dropCStoreItem store target b hit)) is
+      mapM_ (uncurry (dropCStoreItem store target b)) is
       unless (store == COrgan) execSfx
       return True
 
@@ -862,15 +863,15 @@ effectDropItem execSfx store grp hit target = do
 -- (let's say, the multiple explosions interfere with each other or perhaps
 -- larger quantities of explosives tend to be packaged more safely).
 dropCStoreItem :: (MonadAtomic m, MonadServer m)
-               => CStore -> ActorId -> Actor -> Bool -> ItemId -> ItemQuant
-               -> m ()
+               => CStore -> ActorId -> Actor -> ItemId -> ItemQuant -> m ()
 {-# INLINABLE dropCStoreItem #-}
-dropCStoreItem store aid b hit iid kit@(k, _) = do
+dropCStoreItem store aid b iid kit@(k, _) = do
   item <- getsState $ getItemBody iid
   let c = CActor aid store
       fragile = IK.Fragile `elem` jfeature item
       durable = IK.Durable `elem` jfeature item
-      isDestroyed = hit && not durable || bproj b && fragile
+      isDestroyed = bproj b && (bhp b <= 0 && not durable || fragile)
+                    || fragile && durable  -- hack for tmp organs
   if isDestroyed then do
     itemToF <- itemToFullServer
     let itemFull = itemToF iid kit
@@ -1081,7 +1082,7 @@ effectDropBestWeapon execSfx target = do
   case strongestMelee False localTime allAssocs of
     (_, (iid, _)) : _ -> do
       let kit = beqp tb EM.! iid
-      dropCStoreItem CEqp target tb False iid kit
+      dropCStoreItem CEqp target tb iid kit
       execSfx
       return True
     [] ->

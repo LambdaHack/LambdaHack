@@ -140,7 +140,7 @@ net = ItemKind
   , iweight  = 1000
   , iaspects = [AddHurtRanged (1 + dl 2 |*| 20)]
   , ieffects = [ Hurt (d 1), toOrganGameTurn "slow 10" (3 + d 3)
-               , DropItem CEqp "torso armor" False ]
+               , DropItem CEqp "torso armor" ]
   , ifeature = [Identified]
   , idesc    = "A wide net with weights along the edges. Entangles armor and restricts movement."
   , ikit     = []
@@ -315,7 +315,7 @@ necklace2 = necklace
   , irarity  = [(1, 1)]
   , iaspects = [Timeout $ d 3 + 3 - dl 3 |*| 10]
   , ieffects = [ Recharging Impress
-               , Recharging (DropItem COrgan "temporary conditions" True)
+               , Recharging (DropItem COrgan "temporary conditions")
                , Recharging (Summon [("mobile animal", 1)] $ 1 + dl 2)
                , Recharging (Explode "waste") ]
                ++ ieffects necklace
@@ -498,12 +498,12 @@ potion2 = potion
   }
 potion3 = potion
   { irarity  = [(1, 10)]
-  , ieffects = [ RefillHP 5, DropItem COrgan "poisoned" True
+  , ieffects = [ RefillHP 5, DropItem COrgan "poisoned"
                , OnSmash (Explode "healing mist") ]
   }
 potion4 = potion
   { irarity  = [(10, 10)]
-  , ieffects = [ RefillHP 10, DropItem COrgan "poisoned" True
+  , ieffects = [ RefillHP 10, DropItem COrgan "poisoned"
                , OnSmash (Explode "healing mist 2") ]
   }
 potion5 = potion
@@ -530,12 +530,12 @@ potion6 = potion
   }
 potion7 = potion
   { irarity  = [(1, 15), (10, 5)]
-  , ieffects = [ DropItem COrgan "poisoned" True
+  , ieffects = [ DropItem COrgan "poisoned"
                , OnSmash (Explode "antidote mist") ]
   }
 potion8 = potion
   { irarity  = [(1, 5), (10, 15)]
-  , ieffects = [ DropItem COrgan "temporary conditions" True
+  , ieffects = [ DropItem COrgan "temporary conditions"
                , OnSmash (Explode "blast 10") ]
   }
 potion9 = potion
@@ -939,7 +939,7 @@ swordNullify = sword
   , iaspects = [Timeout $ d 4 + 5 - dl 4 |*| 2]
   , ieffects = ieffects sword
                ++ [ Unique
-                  , Recharging $ DropItem COrgan "temporary conditions" True
+                  , Recharging $ DropItem COrgan "temporary conditions"
                   , Recharging $ RefillHP (-2) ]
   , idesc    = "Cold, thin blade that pierces deeply and sends its victim into abrupt, sobering shock."
   }

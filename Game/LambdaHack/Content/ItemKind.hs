@@ -74,8 +74,7 @@ data Effect =
   | CreateItem !CStore !(GroupName ItemKind) !TimerDice
                           -- ^ create an item of the group and insert into
                           --   the store with the given random timer
-  | DropItem !CStore !(GroupName ItemKind) !Bool
-                          -- ^ @DropItem CGround x True@ means stomp on items
+  | DropItem !CStore !(GroupName ItemKind)
   | PolyItem
   | Identify
   | SendFlying !ThrowMod

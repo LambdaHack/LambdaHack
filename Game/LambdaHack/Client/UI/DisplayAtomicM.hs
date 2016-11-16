@@ -875,9 +875,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Teleport t | t > 9 -> actorVerbMU aid b "teleport"
         IK.Teleport{} -> actorVerbMU aid b "blink"
         IK.CreateItem{} -> return ()
-        IK.DropItem COrgan _ True -> return ()
-        IK.DropItem _ _ False -> actorVerbMU aid b "be stripped"  -- TODO
-        IK.DropItem _ _ True -> actorVerbMU aid b "be violently stripped"
+        IK.DropItem COrgan _ -> return ()
+        IK.DropItem _ _ -> actorVerbMU aid b "be stripped"  -- TODO
         IK.PolyItem -> do
           localTime <- getsState $ getLocalTime $ blid b
           allAssocs <- fullAssocsClient aid [CGround]

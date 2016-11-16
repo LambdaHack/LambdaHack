@@ -272,7 +272,7 @@ pupil = fist
   , iverbHit = "gaze at"
   , iaspects = [AddSight 10, Timeout $ 5 + d 5]
   , ieffects = [ Hurt (1 * d 1)
-               , Recharging (DropItem COrgan "temporary conditions" True)
+               , Recharging (DropItem COrgan "temporary conditions")
                , Recharging $ RefillHP (-2)
                ]
   , idesc    = ""

@@ -54,7 +54,7 @@ explosionBlast n = ItemKind
   , iaspects = [AddShine $ intToDice n]
   , ieffects = [RefillHP (- n `div` 2)]
                ++ [PushActor (ThrowMod (100 * (n `div` 5)) 50)]
-               ++ [DropItem COrgan "temporary conditions" True | n >= 10]
+               ++ [DropItem COrgan "temporary conditions" | n >= 10]
   , ifeature = [Fragile, toLinger 20, Identified]
   , idesc    = ""
   , ikit     = []
@@ -323,7 +323,7 @@ mistAntiSlow = ItemKind
   , iverbHit = "propel"
   , iweight  = 1
   , iaspects = []
-  , ieffects = [DropItem COrgan "slow 10" True]
+  , ieffects = [DropItem COrgan "slow 10"]
   , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
                , Fragile, Identified ]
   , idesc    = ""
@@ -339,7 +339,7 @@ mistAntidote = ItemKind
   , iverbHit = "cure"
   , iweight  = 1
   , iaspects = []
-  , ieffects = [DropItem COrgan "poisoned" True]
+  , ieffects = [DropItem COrgan "poisoned"]
   , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
                , Fragile, Identified ]
   , idesc    = ""

@@ -59,9 +59,9 @@ endOrLoop loop restart gameExit gameSave = do
     [] -> loop  -- continue current game
     _ : _ -> gameExit  -- don't call @loop@, that is, quit the game loop
 
-dieSer :: (MonadAtomic m, MonadServer m) => ActorId -> Actor -> Bool -> m ()
+dieSer :: (MonadAtomic m, MonadServer m) => ActorId -> Actor -> m ()
 {-# INLINABLE dieSer #-}
-dieSer aid b hit = do
+dieSer aid b = do
   -- TODO: clients don't see the death of their last standing actor;
   --       modify Draw.hs and Client.hs to handle that
   unless (bproj b) $ do
@@ -78,14 +78,14 @@ dieSer aid b hit = do
     -- would not see the actor that drops the stash, leading to a crash.
     -- But this is OK; projectiles can't be leaders, so stash dropped earlier.
     when (isNothing $ gleader fact) $ moveStores aid CSha CInv
-  dropAllItems aid b hit
+  dropAllItems aid b
   b2 <- getsState $ getActorBody aid
   execUpdAtomic $ UpdDestroyActor aid b2 []
 
 -- | Drop all actor's items.
 dropAllItems :: (MonadAtomic m, MonadServer m)
-             => ActorId -> Actor -> Bool -> m ()
+             => ActorId -> Actor -> m ()
 {-# INLINABLE dropAllItems #-}
-dropAllItems aid b hit = do
-  mapActorCStore_ CInv (dropCStoreItem CInv aid b hit) b
-  mapActorCStore_ CEqp (dropCStoreItem CEqp aid b hit) b
+dropAllItems aid b = do
+  mapActorCStore_ CInv (dropCStoreItem CInv aid b) b
+  mapActorCStore_ CEqp (dropCStoreItem CEqp aid b) b

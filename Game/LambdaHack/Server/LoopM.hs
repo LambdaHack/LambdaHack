@@ -274,17 +274,14 @@ handleTrajectories lid fid = do
 hTrajectories :: (MonadAtomic m, MonadServer m) => (ActorId, Actor) -> m ()
 {-# INLINE hTrajectories #-}
 hTrajectories (aid, b) = do
-  if not $ actorDying b then do
-    setTrajectory aid
-    b2 <- getsState $ getActorBody aid
-    if not $ actorDying b2 then do
-      advanceTime aid
-      managePerTurn aid
-    else do
-      -- Dispose of the actor with trajectory ASAP to make sure it doesn't
-      -- block movement of other actors.
-      dieSer aid b2 (bhp b2 <= 0 && bproj b2)
-  else do
+  b2 <- if not $ actorDying b then do
+          setTrajectory aid
+          getsState $ getActorBody aid
+        else return b
+  if not $ actorDying b2 then do
+    advanceTime aid
+    managePerTurn aid
+  else dieSer aid b2
     -- if bhp b <= 0:
     -- If @b@ is a projectile and it hits an actor,
     -- the carried item is destroyed and that's all.
@@ -298,7 +295,10 @@ hTrajectories (aid, b) = do
     -- If a projectile hits actor or is hit, it's destroyed,
     -- as opposed to just bouncing off the wall or landing on the ground,
     -- in which case it breaks only if the item is fragile.
-    dieSer aid b (bhp b <= 0 && bproj b)
+    --
+    -- if dying only after setTrajectory:
+    -- Dispose of the actor with trajectory ASAP to make sure it doesn't
+    -- block movement of other actors.
 
 -- TODO: move somewhere?
 -- | Manage trajectory of a projectile.

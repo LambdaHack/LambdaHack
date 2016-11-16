@@ -94,11 +94,9 @@ effectToSuffix effect =
     CreateItem _ grp _ ->
       let object = if grp == "useful" then "" else tshow grp
       in "of" <+> object <+> "uncovering"
-    DropItem COrgan grp True -> "of nullify" <+> tshow grp
-    DropItem _ grp hit ->
-      let grpText = tshow grp
-          hitText = if hit then "smash" else "drop"
-      in "of" <+> hitText <+> grpText  -- TMI: <+> ppCStore store
+    DropItem COrgan grp -> "of nullify" <+> tshow grp
+    DropItem _ grp ->
+      "of" <+> "drop" <+> tshow grp  -- TMI: <+> ppCStore store
     PolyItem -> "of repurpose on the ground"
     Identify -> "of identify on the ground"
     SendFlying tmod -> "of impact" <+> tmodToSuff "" tmod
