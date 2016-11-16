@@ -176,8 +176,6 @@ itemPrice (item, jcount) =
     '*' -> jcount * 100
     _   -> 0
 
--- * These few operations look at, potentially, all levels of the dungeon.
-
 -- | Tries to finds an actor body satisfying a predicate on any level.
 tryFindActor :: State -> (Actor -> Bool) -> Maybe (ActorId, Actor)
 tryFindActor s p =
@@ -216,14 +214,9 @@ whereTo lid pos k dungeon = assert (k /= 0) $
                              `twith` (lid, pos, k, ln, stairsDest, i)
                  else (ln, stairsDest !! i)
 
--- * The operations below disregard levels other than the current.
-
--- Inlining slows it down.
--- | Gets actor body from the current level. Error if not found.
 getActorBody :: ActorId -> State -> Actor
-getActorBody !aid !s =
-  let assFail = assert `failure` "body not found" `twith` (aid, s)
-  in EM.findWithDefault assFail aid $ sactorD s
+{-# INLINE getActorBody #-}
+getActorBody aid s = sactorD s EM.! aid
 
 getCarriedAssocs :: Actor -> State -> [(ItemId, Item)]
 getCarriedAssocs b s =
