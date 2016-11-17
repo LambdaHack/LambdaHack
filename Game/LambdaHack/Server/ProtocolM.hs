@@ -141,15 +141,15 @@ data ChanServer resp req = ChanServer
 -- | Either states or connections to the human-controlled client
 -- of a faction and to the AI client for the same faction.
 data FrozenClient =
-    FState !Bool !CliState
+    FState !CliState
   | FThread !(Maybe (ChanServer ResponseUI RequestUI))
             !(ChanServer ResponseAI RequestAI)
 
 instance Binary FrozenClient where
-  put (FState b cli) = put b >> put cli
+  put (FState cli) = put cli
   put FThread{} =
     assert `failure` "client thread connection cannot be saved" `twith` ()
-  get = FState <$> get <*> get
+  get = FState <$> get
 
 -- | Connection information for all factions, indexed by faction identifier.
 type ConnServerDict = EM.EnumMap FactionId FrozenClient
@@ -179,11 +179,9 @@ updateCopsDict copsClient sconfig sdebugCli = do
       updState = updateCOps (const cops)
       updSession sess = sess {schanF, sbinding}
       updFrozenClient :: FrozenClient -> FrozenClient
-      updFrozenClient (FState False cliS) =
-        FState False cliS {cliState = updState (cliState cliS)}
-      updFrozenClient (FState True cliS) =
-        FState True cliS { cliState = updState (cliState cliS)
-                         , cliSession = updSession <$> cliSession cliS }
+      updFrozenClient (FState cliS) =
+        FState cliS { cliState = updState (cliState cliS)
+                    , cliSession = updSession <$> cliSession cliS }
       updFrozenClient (FThread mconnUI connAI) = FThread mconnUI connAI
   modifyDict $ EM.map updFrozenClient
 
@@ -193,14 +191,14 @@ sendUpdate !fid !cmd = do
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
 #ifndef CLIENTS_AS_THREADS
-    FState False cliState -> do
+    FState cliState@CliState{cliSession=Nothing} -> do
       let m = handleSelfAI cmd
       ((), cliStateNew) <- liftIO $ runCli m cliState
-      modifyDict $ EM.insert fid (FState False cliStateNew)
-    FState True cliState -> do
+      modifyDict $ EM.insert fid (FState cliStateNew)
+    FState cliState -> do
       let m = handleSelfUI cmd
       ((), cliStateNew) <- liftIO $ runCli m cliState
-      modifyDict $ EM.insert fid (FState True cliStateNew)
+      modifyDict $ EM.insert fid (FState cliStateNew)
 #endif
     FThread mconn conn -> do
       writeQueueAI (RespUpdAtomicAI cmd) $ responseS conn
@@ -213,10 +211,10 @@ sendSfx !fid !sfx = do
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
 #ifndef CLIENTS_AS_THREADS
-    FState True cliState -> do
+    FState cliState@CliState{cliSession=Just{}} -> do
       let m = displayRespSfxAtomicUI False sfx
       ((), cliStateNew) <- liftIO $ runCli m cliState
-      modifyDict $ EM.insert fid (FState True cliStateNew)
+      modifyDict $ EM.insert fid (FState cliStateNew)
 #endif
     FThread (Just conn) _ ->
       writeQueueUI (RespSfxAtomicUI sfx) $ responseS conn
@@ -228,10 +226,10 @@ sendQueryAI fid aid = do
   frozenClient <- getsDict $ (EM.! fid)
   req <- case frozenClient of
 #ifndef CLIENTS_AS_THREADS
-    FState b cliState -> do
+    FState cliState -> do
       let m = queryAI aid
       (req, cliStateNew) <- liftIO $ runCli m cliState
-      modifyDict $ EM.insert fid (FState b cliStateNew)
+      modifyDict $ EM.insert fid (FState cliStateNew)
       return req
 #endif
     FThread _ conn -> do
@@ -248,10 +246,10 @@ sendQueryUI fid aid = do
   frozenClient <- getsDict $ (EM.! fid)
   req <- case frozenClient of
 #ifndef CLIENTS_AS_THREADS
-    FState True cliState -> do
+    FState cliState@CliState{cliSession=Just{}} -> do
       let m = queryUI
       (req, cliStateNew) <- liftIO $ runCli m cliState
-      modifyDict $ EM.insert fid (FState True cliStateNew)
+      modifyDict $ EM.insert fid (FState cliStateNew)
       return req
 #endif
     FThread (Just conn) _ -> do
@@ -318,7 +316,7 @@ updateConn cops copsClient sconfig sdebugCli
           return $! FThread (Just connS) connAI
 #else
           cliState <- initStateUI fid
-          return $! FState True cliState
+          return $! FState cliState
 #endif
         Nothing -> do
 #ifdef CLIENTS_AS_THREADS
@@ -326,7 +324,7 @@ updateConn cops copsClient sconfig sdebugCli
           return $! FThread Nothing connAI
 #else
           cliState <- initStateAI fid
-          return $! FState False cliState
+          return $! FState cliState
 #endif
   factionD <- getsState sfactionD
   d <- liftIO $ mapWithKeyM addConn factionD
