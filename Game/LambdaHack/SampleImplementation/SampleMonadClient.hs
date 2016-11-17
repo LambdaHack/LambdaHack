@@ -43,7 +43,7 @@ newtype CliImplementation sess a = CliImplementation
   deriving (Monad, Functor, Applicative)
 
 instance MonadStateRead (CliImplementation sess) where
-  {-# INLINE getState #-}
+  {-# INLINABLE getState #-}
   getState    = CliImplementation $ gets cliState
   {-# INLINE getsState #-}
   getsState f = CliImplementation $ gets $ f . cliState
@@ -53,12 +53,12 @@ instance MonadStateWrite (CliImplementation sess) where
   modifyState f = CliImplementation $ state $ \cliS ->
     let !newCliState = f $ cliState cliS
     in ((), cliS {cliState = newCliState})
-  {-# INLINE putState #-}
+  {-# INLINABLE putState #-}
   putState s = CliImplementation $ state $ \cliS ->
     s `seq` ((), cliS {cliState = s})
 
 instance MonadClient (CliImplementation sess) where
-  {-# INLINE getClient #-}
+  {-# INLINABLE getClient #-}
   getClient      = CliImplementation $ gets cliClient
   {-# INLINE getsClient #-}
   getsClient   f = CliImplementation $ gets $ f . cliClient
@@ -66,10 +66,10 @@ instance MonadClient (CliImplementation sess) where
   modifyClient f = CliImplementation $ state $ \cliS ->
     let !newCliState = f $ cliClient cliS
     in ((), cliS {cliClient = newCliState})
-  {-# INLINE putClient #-}
+  {-# INLINABLE putClient #-}
   putClient s = CliImplementation $ state $ \cliS ->
     s `seq` ((), cliS {cliClient = s})
-  {-# INLINE liftIO #-}
+  {-# INLINABLE liftIO #-}
   liftIO = CliImplementation . IO.liftIO
 
 instance MonadClientSetup (CliImplementation ()) where
@@ -94,7 +94,7 @@ instance MonadClientSetup (CliImplementation SessionUI) where
     in ((), cliS {cliSession = newSess})
 
 instance MonadClientUI (CliImplementation SessionUI) where
-  {-# INLINE getSession #-}
+  {-# INLINABLE getSession #-}
   getSession      = CliImplementation $ gets cliSession
   {-# INLINE getsSession #-}
   getsSession   f = CliImplementation $ gets $ f . cliSession
@@ -102,10 +102,10 @@ instance MonadClientUI (CliImplementation SessionUI) where
   modifySession f = CliImplementation $ state $ \cliS ->
     let !newCliSession = f $ cliSession cliS
     in ((), cliS {cliSession = newCliSession})
-  {-# INLINE putSession #-}
+  {-# INLINABLE putSession #-}
   putSession s = CliImplementation $ state $ \cliS ->
     s `seq` ((), cliS {cliSession = s})
-  {-# INLINE liftIO #-}
+  {-# INLINABLE liftIO #-}
   liftIO = CliImplementation . IO.liftIO
 
 -- | The game-state semantics of atomic commands
