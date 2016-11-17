@@ -19,6 +19,7 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Int (Int32)
+
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Point
@@ -73,9 +74,9 @@ neg (Vector vx vy) = Vector (-vx) (-vy)
 
 -- | Squared euclidean distance between two vectors.
 euclidDistSqVector :: Vector -> Vector -> Int
+{-# INLINABLE euclidDistSqVector #-}
 euclidDistSqVector (Vector x0 y0) (Vector x1 y1) =
-  let square n = n ^ (2 :: Int)
-  in square (x1 - x0) + square (y1 - y0)
+  (x1 - x0) ^ (2 :: Int) + (y1 - y0) ^ (2 :: Int)
 
 -- | The lenght of a vector in the chessboard metric,
 -- where diagonal moves cost 1.
@@ -146,7 +147,7 @@ squareUnsafeSet (Point x y) =
 
 -- | Translate a point by a vector.
 shift :: Point -> Vector -> Point
-{-# INLINE shift #-}
+{-# INLINABLE shift #-}
 shift (Point x0 y0) (Vector x1 y1) = Point (x0 + x1) (y0 + y1)
 
 -- | Translate a point by a vector, but only if the result fits in an area.

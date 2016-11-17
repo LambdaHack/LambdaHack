@@ -135,7 +135,6 @@ localFromGlobal State{..} =
 
 -- | Update dungeon data within state.
 updateDungeon :: (Dungeon -> Dungeon) -> State -> State
-{-# INLINE updateDungeon #-}
 updateDungeon f s = s {_sdungeon = f (_sdungeon s)}
 
 -- | Update dungeon depth.

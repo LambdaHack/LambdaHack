@@ -71,11 +71,16 @@ updateTile f lvl = lvl {ltile = f (ltile lvl)}
 updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
 updateSmell f lvl = lvl {lsmell = f (lsmell lvl)}
 
+-- INLIning offers no speedup, increases alloc and binary size.
+-- EM.alter not necessary, because levels not removed, so little risk
+-- of adjusting at absent index.
 -- | Update a given level data within state.
 updateLevel :: MonadStateWrite m => LevelId -> (Level -> Level) -> m ()
 {-# INLINABLE updateLevel #-}
 updateLevel lid f = modifyState $ updateDungeon $ EM.adjust f lid
 
+-- INLIning doesn't help despite probably canceling the alt indirection.
+-- perhaps it's applied automatically due to INLINABLE.
 updateActor :: MonadStateWrite m => ActorId -> (Actor -> Actor) -> m ()
 {-# INLINABLE updateActor #-}
 updateActor aid f = do
