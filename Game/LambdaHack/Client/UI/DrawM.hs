@@ -161,7 +161,6 @@ drawFrameTerrain drawnLevelId = do
               VM.write v (pI + lxsize) w
         U.imapM_ g avector
       upd :: FrameForall
-      {-# INLINE upd #-}
       upd = FrameForall $ \v -> mapVT dis v  -- should be eta-expanded; lazy
   return upd
 
@@ -209,7 +208,6 @@ drawFrameContent drawnLevelId = do
       -- TODO: on some frontends, write the characters on top of previous ones,
       -- e.g., actors over items or items over terrain
       upd :: FrameForall
-      {-# INLINE upd #-}
       upd = FrameForall $ \v -> do
         mapVAL viewItemBag (EM.assocs lfloor) v
         when smarkSmell $

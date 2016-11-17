@@ -72,11 +72,11 @@ truncateAttrLine w xs lenMax =
 overlayFrame :: Overlay -> FrameForall -> FrameForall
 overlayFrame ov ff = FrameForall $ \v -> do
   unFrameForall ff v
-  mapM_ (\(!offset, !l) -> unFrameForall (writeLine offset l) v) ov
+  mapM_ (\(offset, l) -> unFrameForall (writeLine offset l) v) ov
 
 overlayFrameWithLines :: Bool -> [AttrLine] -> FrameForall -> FrameForall
 overlayFrameWithLines onBlank l msf =
   let lxsize = fst normalLevelBound + 1  -- TODO
-      ov = map (\(!y, !al) -> (y * lxsize, al))
+      ov = map (\(y, al) -> (y * lxsize, al))
            $ zip [0..] $ truncateLines onBlank l
   in overlayFrame ov msf

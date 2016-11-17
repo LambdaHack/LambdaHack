@@ -141,6 +141,7 @@ type FrameST s = G.Mutable U.Vector s Word32 -> ST s ()
 newtype FrameForall = FrameForall {unFrameForall :: forall s. FrameST s}
 
 writeLine :: Int -> AttrLine -> FrameForall
+{-# INLINE writeLine #-}
 writeLine offset l = FrameForall $ \v -> do
   let writeAt _ [] = return ()
       writeAt off (ac32 : rest) = do
