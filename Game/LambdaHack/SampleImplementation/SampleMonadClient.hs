@@ -33,9 +33,9 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
 
 data CliState = CliState
-  { cliState   :: !State        -- ^ current global state
-  , cliClient  :: !StateClient  -- ^ current client state
-  , cliSession :: !SessionUI    -- ^ UI state, empty for AI clients
+  { cliState   :: !State              -- ^ current global state
+  , cliClient  :: !StateClient        -- ^ current client state
+  , cliSession :: !(Maybe SessionUI)  -- ^ UI state, empty for AI clients
   }
   deriving Generic
 
@@ -79,32 +79,34 @@ instance MonadClient CliImplementation where
 instance MonadClientSetup CliImplementation where
   saveClient = return ()
   restartClient  = CliImplementation $ state $ \cliS ->
-    let sess = cliSession cliS
-        !newSess = (emptySessionUI (sconfig sess))
-                     { schanF = schanF sess
-                     , sbinding = sbinding sess
-                     , shistory = shistory sess
-                     , _sreport = _sreport sess
-                     , sstart = sstart sess
-                     , sgstart = sgstart sess
-                     , sallTime = sallTime sess
-                     , snframes = snframes sess
-                     , sallNframes = sallNframes sess
-                     }
-    in ((), cliS {cliSession = newSess})
+    case cliSession cliS of
+      Just sess ->
+        let !newSess = (emptySessionUI (sconfig sess))
+                         { schanF = schanF sess
+                         , sbinding = sbinding sess
+                         , shistory = shistory sess
+                         , _sreport = _sreport sess
+                         , sstart = sstart sess
+                         , sgstart = sgstart sess
+                         , sallTime = sallTime sess
+                         , snframes = snframes sess
+                         , sallNframes = sallNframes sess
+                         }
+        in ((), cliS {cliSession = Just newSess})
+      Nothing -> ((), cliS)
 
 instance MonadClientUI CliImplementation where
   {-# INLINABLE getSession #-}
-  getSession      = CliImplementation $ gets cliSession
+  getSession      = CliImplementation $ gets $ fromJust . cliSession
   {-# INLINE getsSession #-}
-  getsSession   f = CliImplementation $ gets $ f . cliSession
+  getsSession   f = CliImplementation $ gets $ f . fromJust . cliSession
   {-# INLINE modifySession #-}
   modifySession f = CliImplementation $ state $ \cliS ->
-    let !newCliSession = f $ cliSession cliS
-    in ((), cliS {cliSession = newCliSession})
+    let !newCliSession = f $ fromJust $ cliSession cliS
+    in ((), cliS {cliSession = Just newCliSession})
   {-# INLINABLE putSession #-}
   putSession s = CliImplementation $ state $ \cliS ->
-    s `seq` ((), cliS {cliSession = s})
+    s `seq` ((), cliS {cliSession = Just s})
   {-# INLINABLE liftIO #-}
   liftIO = CliImplementation . IO.liftIO
 
@@ -115,7 +117,7 @@ instance MonadAtomic CliImplementation where
   execSfxAtomic _sfx = return ()
 
 initialCliState :: Kind.COps
-                -> SessionUI
+                -> Maybe SessionUI
                 -> FactionId
                 -> CliState
 initialCliState cops cliSession fid =

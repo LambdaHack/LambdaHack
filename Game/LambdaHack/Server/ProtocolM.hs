@@ -183,7 +183,7 @@ updateCopsDict copsClient sconfig sdebugCli = do
         FState False cliS {cliState = updState (cliState cliS)}
       updFrozenClient (FState True cliS) =
         FState True cliS { cliState = updState (cliState cliS)
-                        , cliSession = updSession (cliSession cliS) }
+                         , cliSession = updSession <$> cliSession cliS }
       updFrozenClient (FThread mconnUI connAI) = FThread mconnUI connAI
   modifyDict $ EM.map updFrozenClient
 
@@ -299,14 +299,13 @@ updateConn cops copsClient sconfig sdebugCli
         responseS <- newQueue
         requestS <- newQueue
         return $! ChanServer{..}
-      cliSession = emptySessionUI sconfig
-      dummySession = cliSession  -- TODO: make smaller
+      sess = emptySessionUI sconfig
 #ifndef CLIENTS_AS_THREADS
       initStateUI fid = do
-        let initCli = initialCliState cops cliSession fid
+        let initCli = initialCliState cops (Just sess) fid
         snd <$> runCli (initUI copsClient sconfig sdebugCli) initCli
       initStateAI fid = do
-        let initCli = initialCliState cops dummySession fid
+        let initCli = initialCliState cops Nothing fid
         snd <$> runCli (initAI sdebugCli) initCli
 #endif
       addConn :: FactionId -> Faction -> IO FrozenClient
