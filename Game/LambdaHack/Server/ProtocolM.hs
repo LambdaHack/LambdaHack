@@ -37,7 +37,6 @@ import System.FilePath
 import System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.State hiding (sdebugCli)
 import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Client.UI.Config
 import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
@@ -142,15 +141,15 @@ data ChanServer resp req = ChanServer
 -- | Either states or connections to the human-controlled client
 -- of a faction and to the AI client for the same faction.
 data FrozenClient =
-    FState !(Maybe SessionUI) !State !StateClient
+    FState !Bool !CliState
   | FThread !(Maybe (ChanServer ResponseUI RequestUI))
             !(ChanServer ResponseAI RequestAI)
 
 instance Binary FrozenClient where
-  put (FState msess s cli) = put msess >> put s >> put cli
+  put (FState b cli) = put b >> put cli
   put FThread{} =
     assert `failure` "client thread connection cannot be saved" `twith` ()
-  get = FState <$> get <*> get <*> get
+  get = FState <$> get <*> get
 
 -- | Connection information for all factions, indexed by faction identifier.
 type ConnServerDict = EM.EnumMap FactionId FrozenClient
@@ -180,8 +179,11 @@ updateCopsDict copsClient sconfig sdebugCli = do
       updState = updateCOps (const cops)
       updSession sess = sess {schanF, sbinding}
       updFrozenClient :: FrozenClient -> FrozenClient
-      updFrozenClient (FState msess s cli) =
-        FState (updSession <$> msess) (updState s) cli
+      updFrozenClient (FState False cliS) =
+        FState False cliS {cliState = updState (cliState cliS)}
+      updFrozenClient (FState True cliS) =
+        FState True cliS { cliState = updState (cliState cliS)
+                        , cliSession = updSession (cliSession cliS) }
       updFrozenClient (FThread mconnUI connAI) = FThread mconnUI connAI
   modifyDict $ EM.map updFrozenClient
 
@@ -191,16 +193,14 @@ sendUpdate !fid !cmd = do
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
 #ifndef CLIENTS_AS_THREADS
-    FState Nothing s cli -> do
+    FState False cliState -> do
       let m = handleSelfAI cmd
-          cliState = CliState s cli ()
-      ((), CliState s' cli' ()) <- liftIO $ runCli m cliState
-      modifyDict $ EM.insert fid (FState Nothing s' cli')
-    FState (Just sess) s cli -> do
+      ((), cliStateNew) <- liftIO $ runCli m cliState
+      modifyDict $ EM.insert fid (FState False cliStateNew)
+    FState True cliState -> do
       let m = handleSelfUI cmd
-          cliState = CliState s cli sess
-      ((), CliState s' cli' sess') <- liftIO $ runCli m cliState
-      modifyDict $ EM.insert fid (FState (Just sess') s' cli')
+      ((), cliStateNew) <- liftIO $ runCli m cliState
+      modifyDict $ EM.insert fid (FState True cliStateNew)
 #endif
     FThread mconn conn -> do
       writeQueueAI (RespUpdAtomicAI cmd) $ responseS conn
@@ -213,11 +213,10 @@ sendSfx !fid !sfx = do
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
 #ifndef CLIENTS_AS_THREADS
-    FState (Just sess) s cli -> do
+    FState True cliState -> do
       let m = displayRespSfxAtomicUI False sfx
-          cliState = CliState s cli sess
-      ((), CliState s' cli' sess') <- liftIO $ runCli m cliState
-      modifyDict $ EM.insert fid (FState (Just sess') s' cli')
+      ((), cliStateNew) <- liftIO $ runCli m cliState
+      modifyDict $ EM.insert fid (FState True cliStateNew)
 #endif
     FThread (Just conn) _ ->
       writeQueueUI (RespSfxAtomicUI sfx) $ responseS conn
@@ -229,11 +228,10 @@ sendQueryAI fid aid = do
   frozenClient <- getsDict $ (EM.! fid)
   req <- case frozenClient of
 #ifndef CLIENTS_AS_THREADS
-    FState msess s cli -> do
+    FState b cliState -> do
       let m = queryAI aid
-          cliState = CliState s cli ()
-      (req, CliState s' cli' ()) <- liftIO $ runCli m cliState
-      modifyDict $ EM.insert fid (FState msess s' cli')
+      (req, cliStateNew) <- liftIO $ runCli m cliState
+      modifyDict $ EM.insert fid (FState b cliStateNew)
       return req
 #endif
     FThread _ conn -> do
@@ -250,11 +248,10 @@ sendQueryUI fid aid = do
   frozenClient <- getsDict $ (EM.! fid)
   req <- case frozenClient of
 #ifndef CLIENTS_AS_THREADS
-    FState (Just sess) s cli -> do
+    FState True cliState -> do
       let m = queryUI
-          cliState = CliState s cli sess
-      (req, CliState s' cli' sess') <- liftIO $ runCli m cliState
-      modifyDict $ EM.insert fid (FState (Just sess') s' cli')
+      (req, cliStateNew) <- liftIO $ runCli m cliState
+      modifyDict $ EM.insert fid (FState True cliStateNew)
       return req
 #endif
     FThread (Just conn) _ -> do
@@ -303,12 +300,13 @@ updateConn cops copsClient sconfig sdebugCli
         requestS <- newQueue
         return $! ChanServer{..}
       cliSession = emptySessionUI sconfig
+      dummySession = cliSession  -- TODO: make smaller
 #ifndef CLIENTS_AS_THREADS
       initStateUI fid = do
         let initCli = initialCliState cops cliSession fid
         snd <$> runCli (initUI copsClient sconfig sdebugCli) initCli
       initStateAI fid = do
-        let initCli = initialCliState cops () fid
+        let initCli = initialCliState cops dummySession fid
         snd <$> runCli (initAI sdebugCli) initCli
 #endif
       addConn :: FactionId -> Faction -> IO FrozenClient
@@ -320,16 +318,16 @@ updateConn cops copsClient sconfig sdebugCli
           connAI <- _mkChanServer
           return $! FThread (Just connS) connAI
 #else
-          CliState s cli sess <- initStateUI fid
-          return $! FState (Just sess) s cli
+          cliState <- initStateUI fid
+          return $! FState True cliState
 #endif
         Nothing -> do
 #ifdef CLIENTS_AS_THREADS
           connAI <- _mkChanServer
           return $! FThread Nothing connAI
 #else
-          CliState s cli () <- initStateAI fid
-          return $! FState Nothing s cli
+          cliState <- initStateAI fid
+          return $! FState False cliState
 #endif
   factionD <- getsState sfactionD
   d <- liftIO $ mapWithKeyM addConn factionD

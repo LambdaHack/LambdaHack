@@ -1,5 +1,4 @@
-{-# LANGUAGE FlexibleInstances, GeneralizedNewtypeDeriving,
-             MultiParamTypeClasses #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | The main game action monad type implementation. Just as any other
 -- component of the library, this implementation can be substituted.
 -- This module should not be imported anywhere except in 'Action'
@@ -18,6 +17,8 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict hiding (State)
+import Data.Binary
+import GHC.Generics (Generic)
 
 import Game.LambdaHack.Atomic.HandleAtomicWrite
 import Game.LambdaHack.Atomic.MonadAtomic
@@ -31,24 +32,27 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
 
-data CliState sess = CliState
+data CliState = CliState
   { cliState   :: !State        -- ^ current global state
   , cliClient  :: !StateClient  -- ^ current client state
-  , cliSession :: !sess         -- ^ UI state, empty for AI clients
+  , cliSession :: !SessionUI    -- ^ UI state, empty for AI clients
   }
+  deriving Generic
+
+instance Binary CliState
 
 -- | Client state transformation monad.
-newtype CliImplementation sess a = CliImplementation
-  { runCliImplementation :: StateT (CliState sess) IO a }
+newtype CliImplementation a = CliImplementation
+  { runCliImplementation :: StateT CliState IO a }
   deriving (Monad, Functor, Applicative)
 
-instance MonadStateRead (CliImplementation sess) where
+instance MonadStateRead CliImplementation where
   {-# INLINABLE getState #-}
   getState    = CliImplementation $ gets cliState
   {-# INLINE getsState #-}
   getsState f = CliImplementation $ gets $ f . cliState
 
-instance MonadStateWrite (CliImplementation sess) where
+instance MonadStateWrite CliImplementation where
   {-# INLINE modifyState #-}
   modifyState f = CliImplementation $ state $ \cliS ->
     let !newCliState = f $ cliState cliS
@@ -57,7 +61,7 @@ instance MonadStateWrite (CliImplementation sess) where
   putState s = CliImplementation $ state $ \cliS ->
     s `seq` ((), cliS {cliState = s})
 
-instance MonadClient (CliImplementation sess) where
+instance MonadClient CliImplementation where
   {-# INLINABLE getClient #-}
   getClient      = CliImplementation $ gets cliClient
   {-# INLINE getsClient #-}
@@ -72,11 +76,7 @@ instance MonadClient (CliImplementation sess) where
   {-# INLINABLE liftIO #-}
   liftIO = CliImplementation . IO.liftIO
 
-instance MonadClientSetup (CliImplementation ()) where
-  saveClient = return ()
-  restartClient = return ()
-
-instance MonadClientSetup (CliImplementation SessionUI) where
+instance MonadClientSetup CliImplementation where
   saveClient = return ()
   restartClient  = CliImplementation $ state $ \cliS ->
     let sess = cliSession cliS
@@ -93,7 +93,7 @@ instance MonadClientSetup (CliImplementation SessionUI) where
                      }
     in ((), cliS {cliSession = newSess})
 
-instance MonadClientUI (CliImplementation SessionUI) where
+instance MonadClientUI CliImplementation where
   {-# INLINABLE getSession #-}
   getSession      = CliImplementation $ gets cliSession
   {-# INLINE getsSession #-}
@@ -110,14 +110,14 @@ instance MonadClientUI (CliImplementation SessionUI) where
 
 -- | The game-state semantics of atomic commands
 -- as computed on the client.
-instance MonadAtomic (CliImplementation sess) where
+instance MonadAtomic CliImplementation where
   execUpdAtomic cmd = handleUpdAtomic cmd
   execSfxAtomic _sfx = return ()
 
 initialCliState :: Kind.COps
-                -> sess
+                -> SessionUI
                 -> FactionId
-                -> CliState sess
+                -> CliState
 initialCliState cops cliSession fid =
   CliState
     { cliState = emptyState cops
@@ -125,6 +125,6 @@ initialCliState cops cliSession fid =
     , cliSession
     }
 
-runCli :: CliImplementation sess a -> CliState sess -> IO (a, CliState sess)
+runCli :: CliImplementation a -> CliState -> IO (a, CliState)
 {-# INLINE runCli #-}
 runCli m = runStateT (runCliImplementation m)
