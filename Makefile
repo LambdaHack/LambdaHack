@@ -74,18 +74,18 @@ benchNull: benchBattle benchAnimBattle benchCampaign
 bench:  benchBattle benchAnimBattle benchFrontendBattle benchCampaign benchFrontendCampaign
 
 nativeBenchCampaign:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 0 --setMainRng 0
+	dist/build/LambdaHack/LambdaHack                   --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 0 --setMainRng 0
 
 nativeBenchBattle:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 250 --automateAll --keepAutomated --gameMode battle --setDungeonRng 0 --setMainRng 0
+	dist/build/LambdaHack/LambdaHack                   --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode battle --setDungeonRng 0 --setMainRng 0
 
 nativeBench: nativeBenchBattle nativeBenchCampaign
 
 nodeBenchCampaign:
-	node dist/build/LambdaHack/LambdaHack.jsexe/all.js --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 0 --setMainRng 0
+	node dist/build/LambdaHack/LambdaHack.jsexe/all.js --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 0 --setMainRng 0
 
 nodeBenchBattle:
-	node dist/build/LambdaHack/LambdaHack.jsexe/all.js --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 250 --automateAll --keepAutomated --gameMode battle --setDungeonRng 0 --setMainRng 0
+	node dist/build/LambdaHack/LambdaHack.jsexe/all.js --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode battle --setDungeonRng 0 --setMainRng 0
 
 nodeBench: nodeBenchBattle nodeBenchCampaign
 
