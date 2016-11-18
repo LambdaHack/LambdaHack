@@ -150,7 +150,13 @@ executorSer cops copsClient sdebugNxtCmdline = do
         , serToSave
         }
       exe = evalStateT (runSerImplementation m) . totalState
-      exeWithSaves = Save.wrapInSaves tryCreateDir encodeEOF saveFile exe
+      encode =
+#ifdef CLIENTS_AS_THREADS
+        \path (x, y, _) -> encodeEOF path (x, y)
+#else
+        encodeEOF
+#endif
+      exeWithSaves = Save.wrapInSaves tryCreateDir encode saveFile exe
   -- Wait for clients to exit even in case of server crash
   -- (or server and client crash), which gives them time to save
   -- and report their own inconsistencies, if any.

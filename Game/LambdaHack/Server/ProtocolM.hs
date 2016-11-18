@@ -36,8 +36,6 @@ import System.IO.Unsafe (unsafePerformIO)
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Client.UI.Config
-import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
-import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ClientOptions
@@ -61,6 +59,8 @@ import Game.LambdaHack.Common.Thread
 #else
 import Game.LambdaHack.Client.AI
 import Game.LambdaHack.Client.ProtocolM
+import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
+import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.SampleImplementation.SampleMonadClient
 #endif
 
@@ -104,11 +104,7 @@ saveServer = do
   ser <- getServer
   dictAll <- getDict
   toSave <- saveChanServer
-#ifdef CLIENTS_AS_THREADS
-  liftIO $ Save.saveToChan toSave (s, ser)
-#else
   liftIO $ Save.saveToChan toSave (s, ser, dictAll)
-#endif
 
 saveName :: String
 saveName = serverSaveName
@@ -132,7 +128,8 @@ tryRestore Kind.COps{corule} sdebugSer = do
     liftIO $ tryWriteFile (dataDir </> cfgUIName) content
 #ifdef CLIENTS_AS_THREADS
     return $! case res of
-               (s, ser) -> (s, ser, EM.empty)
+                Just (s, ser) -> Just (s, ser, EM.empty)
+                Nothing -> Nothing
 #else
     return res
 #endif
@@ -174,17 +171,19 @@ updateCopsDict :: MonadServerReadRequest m
                => KeyKind -> Config -> DebugModeCli -> m ()
 {-# INLINABLE updateCopsDict #-}
 updateCopsDict copsClient sconfig sdebugCli = do
+#ifndef CLIENTS_AS_THREADS
   cops <- getsState scops
   schanF <- liftIO $ Frontend.chanFrontendIO sdebugCli
-  let sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
-      updState = updateCOps (const cops)
-      updSession sess = sess {schanF, sbinding}
-      updFrozenClient :: FrozenClient -> FrozenClient
+#endif
+  let updFrozenClient :: FrozenClient -> FrozenClient
 #ifdef CLIENTS_AS_THREADS
       updFrozenClient (FThread mconnUI connAI) = FThread mconnUI connAI
 #else
       updFrozenClient cliS = cliS { cliState = updState (cliState cliS)
                                  , cliSession = updSession <$> cliSession cliS }
+      sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
+      updState = updateCOps (const cops)
+      updSession sess = sess {schanF, sbinding}
 #endif
   modifyDict $ EM.map updFrozenClient
 
@@ -340,7 +339,7 @@ updateConn cops copsClient sconfig sdebugCli
   -- Spawn client threads.
   let toSpawn = newD EM.\\ oldD
       forkUI fid connS =
-        forkChild childrenServer $ _executorUI cliSession cops fid connS
+        forkChild childrenServer $ _executorUI sess cops fid connS
       forkAI fid connS =
         forkChild childrenServer $ _executorAI cops fid connS
       forkClient fid (FThread mconnUI connAI) = do
