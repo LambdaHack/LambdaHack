@@ -71,9 +71,6 @@ instance MonadStateWrite SerImplementation where
   modifyState f = SerImplementation $ state $ \serS ->
     let !newSerState = f $ serState serS
     in ((), serS {serState = newSerState})
-  {-# INLINABLE putState #-}
-  putState s = SerImplementation $ state $ \serS ->
-    s `seq` ((), serS {serState = s})
 
 instance MonadServer SerImplementation where
   {-# INLINE getsServer #-}
@@ -82,9 +79,6 @@ instance MonadServer SerImplementation where
   modifyServer f = SerImplementation $ state $ \serS ->
     let !newSerServer = f $ serServer serS
     in ((), serS {serServer = newSerServer})
-  {-# INLINABLE putServer #-}
-  putServer    s = SerImplementation $ state $ \serS ->
-    s `seq` ((), serS {serServer = s})
   {-# INLINABLE liftIO #-}
   liftIO         = SerImplementation . IO.liftIO
 
@@ -95,9 +89,6 @@ instance MonadServerReadRequest SerImplementation where
   modifyDict f = SerImplementation $ state $ \serS ->
     let !newSerDict = f $ serDict serS
     in ((), serS {serDict = newSerDict})
-  {-# INLINABLE putDict #-}
-  putDict s = SerImplementation $ state $ \serS ->
-    s `seq` ((), serS {serDict = s})
   {-# INLINABLE saveChanServer #-}
   saveChanServer = SerImplementation $ gets serToSave
   {-# INLINABLE liftIO #-}

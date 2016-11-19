@@ -1,14 +1,15 @@
 -- | Basic client monad and related operations.
 module Game.LambdaHack.Client.MonadClient
   ( -- * Basic client monad
-    MonadClient( getsClient, modifyClient, putClient
+    MonadClient( getsClient, modifyClient
                , liftIO  -- exposed only to be implemented, not used
                )
   , MonadClientSetup( saveClient
                     , restartClient
                     )
     -- * Assorted primitives
-  , getClient, debugPossiblyPrint, saveName, tryRestore, removeServerSave
+  , getClient, putClient
+  , debugPossiblyPrint, saveName, tryRestore, removeServerSave
   , rndToAction, rndToActionForget
   ) where
 
@@ -39,7 +40,6 @@ import Game.LambdaHack.Content.RuleKind
 class MonadStateRead m => MonadClient m where
   getsClient    :: (StateClient -> a) -> m a
   modifyClient  :: (StateClient -> StateClient) -> m ()
-  putClient     :: StateClient -> m ()
   -- We do not provide a MonadIO instance, so that outside
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO        :: IO a -> m a
@@ -51,6 +51,10 @@ class MonadClient m => MonadClientSetup m where
 getClient :: MonadClient m => m StateClient
 {-# INLINABLE getClient #-}
 getClient = getsClient id
+
+putClient :: MonadClient m => StateClient -> m ()
+{-# INLINABLE putClient #-}
+putClient s = modifyClient (const s)
 
 debugPossiblyPrint :: MonadClient m => Text -> m ()
 {-# INLINABLE debugPossiblyPrint #-}

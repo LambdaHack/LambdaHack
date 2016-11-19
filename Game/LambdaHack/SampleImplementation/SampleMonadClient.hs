@@ -55,9 +55,6 @@ instance MonadStateWrite CliImplementation where
   modifyState f = CliImplementation $ state $ \cliS ->
     let !newCliState = f $ cliState cliS
     in ((), cliS {cliState = newCliState})
-  {-# INLINABLE putState #-}
-  putState s = CliImplementation $ state $ \cliS ->
-    s `seq` ((), cliS {cliState = s})
 
 instance MonadClient CliImplementation where
   {-# INLINE getsClient #-}
@@ -66,9 +63,6 @@ instance MonadClient CliImplementation where
   modifyClient f = CliImplementation $ state $ \cliS ->
     let !newCliState = f $ cliClient cliS
     in ((), cliS {cliClient = newCliState})
-  {-# INLINABLE putClient #-}
-  putClient s = CliImplementation $ state $ \cliS ->
-    s `seq` ((), cliS {cliClient = s})
   {-# INLINABLE liftIO #-}
   liftIO = CliImplementation . IO.liftIO
 
@@ -98,9 +92,6 @@ instance MonadClientUI CliImplementation where
   modifySession f = CliImplementation $ state $ \cliS ->
     let !newCliSession = f $ fromJust $ cliSession cliS
     in ((), cliS {cliSession = Just newCliSession})
-  {-# INLINABLE putSession #-}
-  putSession s = CliImplementation $ state $ \cliS ->
-    s `seq` ((), cliS {cliSession = Just s})
   {-# INLINABLE liftIO #-}
   liftIO = CliImplementation . IO.liftIO
 

@@ -7,12 +7,11 @@ module Game.LambdaHack.Server.ProtocolM
   , MonadServerReadRequest
       ( getsDict  -- exposed only to be implemented, not used
       , modifyDict  -- exposed only to be implemented, not used
-      , putDict  -- exposed only to be implemented, not used
       , saveChanServer  -- exposed only to be implemented, not used
       , liftIO  -- exposed only to be implemented, not used
       )
     -- * Protocol
-  , sendUpdate, sendSfx, sendQueryAI, sendQueryUI
+  , putDict, sendUpdate, sendSfx, sendQueryAI, sendQueryUI
     -- * Assorted
   , killAllClients, childrenServer, updateConn
   , saveServer, saveName, tryRestore
@@ -161,13 +160,16 @@ type ConnServerDict = EM.EnumMap FactionId FrozenClient
 class MonadServer m => MonadServerReadRequest m where
   getsDict     :: (ConnServerDict -> a) -> m a
   modifyDict   :: (ConnServerDict -> ConnServerDict) -> m ()
-  putDict      :: ConnServerDict -> m ()
   saveChanServer :: m (Save.ChanSave (State, StateServer, ConnServerDict))
   liftIO       :: IO a -> m a
 
 getDict :: MonadServerReadRequest m => m ConnServerDict
 {-# INLINABLE getDict #-}
 getDict = getsDict id
+
+putDict :: MonadServerReadRequest m => ConnServerDict -> m ()
+{-# INLINABLE putDict #-}
+putDict s = modifyDict (const s)
 
 updateCopsDict :: MonadServerReadRequest m
                => KeyKind -> Config -> DebugModeCli -> m ()

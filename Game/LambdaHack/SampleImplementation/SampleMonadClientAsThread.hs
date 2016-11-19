@@ -61,16 +61,12 @@ instance MonadStateWrite (CliImplementation sess resp req) where
   modifyState f = CliImplementation $ state $ \cliS ->
     let !newCliState = f $ cliState cliS
     in ((), cliS {cliState = newCliState})
-  putState s = CliImplementation $ state $ \cliS ->
-    s `seq` ((), cliS {cliState = s})
 
 instance MonadClient (CliImplementation sess resp req) where
   getsClient   f = CliImplementation $ gets $ f . cliClient
   modifyClient f = CliImplementation $ state $ \cliS ->
     let !newCliState = f $ cliClient cliS
     in ((), cliS {cliClient = newCliState})
-  putClient s = CliImplementation $ state $ \cliS ->
-    s `seq` ((), cliS {cliClient = s})
   liftIO = CliImplementation . IO.liftIO
 
 instance MonadClientSetup (CliImplementation () resp req) where
@@ -108,8 +104,6 @@ instance MonadClientUI (CliImplementation SessionUI resp req) where
   modifySession f = CliImplementation $ state $ \cliS ->
     let !newCliSession = f $ cliSession cliS
     in ((), cliS {cliSession = newCliSession})
-  putSession s = CliImplementation $ state $ \cliS ->
-    s `seq` ((), cliS {cliSession = s})
   liftIO = CliImplementation . IO.liftIO
 
 instance MonadClientReadResponse resp (CliImplementation sess resp req) where

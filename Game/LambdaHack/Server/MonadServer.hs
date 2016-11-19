@@ -4,11 +4,11 @@
 -- details.
 module Game.LambdaHack.Server.MonadServer
   ( -- * The server monad
-    MonadServer( getsServer, modifyServer, putServer
+    MonadServer( getsServer, modifyServer
                , liftIO  -- exposed only to be implemented, not used
                )
     -- * Assorted primitives
-  , getServer, debugPossiblyPrint, debugPossiblyPrintAndExit
+  , getServer, putServer, debugPossiblyPrint, debugPossiblyPrintAndExit
   , serverPrint, dumpRngs, restoreScore, registerScore
   , rndToAction, getSetGen
   ) where
@@ -48,7 +48,6 @@ import Game.LambdaHack.Server.State
 class MonadStateRead m => MonadServer m where
   getsServer     :: (StateServer -> a) -> m a
   modifyServer   :: (StateServer -> StateServer) -> m ()
-  putServer      :: StateServer -> m ()
   -- We do not provide a MonadIO instance, so that outside
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO         :: IO a -> m a
@@ -56,6 +55,10 @@ class MonadStateRead m => MonadServer m where
 getServer :: MonadServer m => m StateServer
 {-# INLINABLE getServer #-}
 getServer = getsServer id
+
+putServer :: MonadServer m => StateServer -> m ()
+{-# INLINABLE putServer #-}
+putServer s = modifyServer (const s)
 
 debugPossiblyPrint :: MonadServer m => Text -> m ()
 {-# INLINABLE debugPossiblyPrint #-}

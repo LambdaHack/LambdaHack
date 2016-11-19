@@ -3,9 +3,9 @@
 -- of the game state.
 module Game.LambdaHack.Client.UI
   ( -- * Client UI monad
-    MonadClientUI(putSession)
+    MonadClientUI
     -- * Assorted UI operations
-  , queryUI
+  , putSession, queryUI
   , displayRespUpdAtomicUI, displayRespSfxAtomicUI
     -- * Startup
   , KeyKind, SessionUI(..)

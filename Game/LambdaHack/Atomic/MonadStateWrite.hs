@@ -1,7 +1,7 @@
 -- | The monad for writing to the game state and related operations.
 module Game.LambdaHack.Atomic.MonadStateWrite
   ( MonadStateWrite(..)
-  , updateLevel, updateActor, updateFaction
+  , putState, updateLevel, updateActor, updateFaction
   , insertItemContainer, insertItemActor, deleteItemContainer, deleteItemActor
   , updateFloor, updateActorMap, moveActorMap
   , updateTile, updateSmell
@@ -26,7 +26,10 @@ import Game.LambdaHack.Common.State
 
 class MonadStateRead m => MonadStateWrite m where
   modifyState :: (State -> State) -> m ()
-  putState    :: State -> m ()
+
+putState :: MonadStateWrite m => State -> m ()
+{-# INLINABLE putState #-}
+putState s = modifyState (const s)
 
 -- | Update the items on the ground map.
 updateFloor :: (ItemFloor -> ItemFloor) -> Level -> Level
