@@ -38,6 +38,8 @@ import Game.LambdaHack.Content.RuleKind
 
 class MonadStateRead m => MonadClient m where
   getClient     :: m StateClient
+  {-# INLINABLE getClient #-}
+  getClient = getsClient id
   getsClient    :: (StateClient -> a) -> m a
   modifyClient  :: (StateClient -> StateClient) -> m ()
   putClient     :: StateClient -> m ()

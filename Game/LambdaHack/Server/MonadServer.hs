@@ -47,6 +47,8 @@ import Game.LambdaHack.Server.State
 
 class MonadStateRead m => MonadServer m where
   getServer      :: m StateServer
+  {-# INLINABLE getServer #-}
+  getServer = getsServer id
   getsServer     :: (StateServer -> a) -> m a
   modifyServer   :: (StateServer -> StateServer) -> m ()
   putServer      :: StateServer -> m ()

@@ -161,6 +161,8 @@ type ConnServerDict = EM.EnumMap FactionId FrozenClient
 -- | The server monad with the ability to communicate with clients.
 class MonadServer m => MonadServerReadRequest m where
   getDict      :: m ConnServerDict
+  {-# INLINABLE getDict #-}
+  getDict = getsDict id
   getsDict     :: (ConnServerDict -> a) -> m a
   modifyDict   :: (ConnServerDict -> ConnServerDict) -> m ()
   putDict      :: ConnServerDict -> m ()

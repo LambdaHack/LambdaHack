@@ -63,8 +63,6 @@ newtype SerImplementation a =
   deriving (Monad, Functor, Applicative)
 
 instance MonadStateRead SerImplementation where
-  {-# INLINABLE getState #-}
-  getState    = SerImplementation $ gets serState
   {-# INLINE getsState #-}
   getsState f = SerImplementation $ gets $ f . serState
 
@@ -78,8 +76,6 @@ instance MonadStateWrite SerImplementation where
     s `seq` ((), serS {serState = s})
 
 instance MonadServer SerImplementation where
-  {-# INLINABLE getServer #-}
-  getServer      = SerImplementation $ gets serServer
   {-# INLINE getsServer #-}
   getsServer   f = SerImplementation $ gets $ f . serServer
   {-# INLINE modifyServer #-}
@@ -93,8 +89,6 @@ instance MonadServer SerImplementation where
   liftIO         = SerImplementation . IO.liftIO
 
 instance MonadServerReadRequest SerImplementation where
-  {-# INLINABLE getDict #-}
-  getDict      = SerImplementation $ gets serDict
   {-# INLINE getsDict #-}
   getsDict   f = SerImplementation $ gets $ f . serDict
   {-# INLINE modifyDict #-}

@@ -55,7 +55,6 @@ newtype CliImplementation sess resp req a = CliImplementation
   deriving (Monad, Functor, Applicative)
 
 instance MonadStateRead (CliImplementation sess resp req) where
-  getState    = CliImplementation $ gets cliState
   getsState f = CliImplementation $ gets $ f . cliState
 
 instance MonadStateWrite (CliImplementation sess resp req) where
@@ -66,7 +65,6 @@ instance MonadStateWrite (CliImplementation sess resp req) where
     s `seq` ((), cliS {cliState = s})
 
 instance MonadClient (CliImplementation sess resp req) where
-  getClient      = CliImplementation $ gets cliClient
   getsClient   f = CliImplementation $ gets $ f . cliClient
   modifyClient f = CliImplementation $ state $ \cliS ->
     let !newCliState = f $ cliClient cliS
@@ -106,7 +104,6 @@ instance MonadClientSetup (CliImplementation SessionUI resp req) where
     in ((), cliS {cliSession = newSess})
 
 instance MonadClientUI (CliImplementation SessionUI resp req) where
-  getSession      = CliImplementation $ gets cliSession
   getsSession   f = CliImplementation $ gets $ f . cliSession
   modifySession f = CliImplementation $ state $ \cliS ->
     let !newCliSession = f $ cliSession cliS

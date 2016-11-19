@@ -64,6 +64,8 @@ mapStartY = 1
 -- | The monad that gives the client access to UI operations.
 class MonadClient m => MonadClientUI m where
   getSession    :: m SessionUI
+  {-# INLINABLE getSession #-}
+  getSession = getsSession id
   getsSession   :: (SessionUI -> a) -> m a
   modifySession :: (SessionUI -> SessionUI) -> m ()
   putSession    :: SessionUI -> m ()

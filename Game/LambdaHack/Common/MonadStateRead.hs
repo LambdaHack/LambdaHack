@@ -26,6 +26,8 @@ import Game.LambdaHack.Content.ModeKind
 
 class (Monad m, Functor m, Applicative m) => MonadStateRead m where
   getState  :: m State
+  {-# INLINABLE getState #-}
+  getState = getsState id
   getsState :: (State -> a) -> m a
 
 getLevel :: MonadStateRead m => LevelId -> m Level

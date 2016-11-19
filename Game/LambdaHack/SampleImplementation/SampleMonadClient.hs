@@ -47,8 +47,6 @@ newtype CliImplementation a = CliImplementation
   deriving (Monad, Functor, Applicative)
 
 instance MonadStateRead CliImplementation where
-  {-# INLINABLE getState #-}
-  getState    = CliImplementation $ gets cliState
   {-# INLINE getsState #-}
   getsState f = CliImplementation $ gets $ f . cliState
 
@@ -62,8 +60,6 @@ instance MonadStateWrite CliImplementation where
     s `seq` ((), cliS {cliState = s})
 
 instance MonadClient CliImplementation where
-  {-# INLINABLE getClient #-}
-  getClient      = CliImplementation $ gets cliClient
   {-# INLINE getsClient #-}
   getsClient   f = CliImplementation $ gets $ f . cliClient
   {-# INLINE modifyClient #-}
@@ -96,8 +92,6 @@ instance MonadClientSetup CliImplementation where
       Nothing -> ((), cliS)
 
 instance MonadClientUI CliImplementation where
-  {-# INLINABLE getSession #-}
-  getSession      = CliImplementation $ gets $ fromJust . cliSession
   {-# INLINE getsSession #-}
   getsSession   f = CliImplementation $ gets $ f . fromJust . cliSession
   {-# INLINE modifySession #-}
