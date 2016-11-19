@@ -179,8 +179,9 @@ updateCopsDict copsClient sconfig sdebugCli = do
 #ifdef CLIENTS_AS_THREADS
       updFrozenClient (FThread mconnUI connAI) = FThread mconnUI connAI
 #else
-      updFrozenClient cliS = cliS { cliState = updState (cliState cliS)
-                                 , cliSession = updSession <$> cliSession cliS }
+      updFrozenClient cliS =
+        cliS { cliState = updState (cliState cliS)
+             , cliSession = updSession <$> cliSession cliS }
       sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
       updState = updateCOps (const cops)
       updSession sess = sess {schanF, sbinding}
@@ -198,12 +199,10 @@ sendUpdate !fid !cmd = do
       maybe (return ())
             (\c -> writeQueueUI (RespUpdAtomicUI cmd) $ responseS c) mconn
 #else
-    cliState@CliState{cliSession=Nothing} -> do
-      let m = handleSelfAI cmd
-      ((), cliStateNew) <- liftIO $ runCli m cliState
-      modifyDict $ EM.insert fid cliStateNew
     cliState -> do
-      let m = handleSelfUI cmd
+      let m = if isNothing $ cliSession cliState
+              then handleSelfAI cmd
+              else handleSelfUI cmd
       ((), cliStateNew) <- liftIO $ runCli m cliState
       modifyDict $ EM.insert fid cliStateNew
 #endif
@@ -255,13 +254,13 @@ sendQueryUI fid aid = do
       writeQueueUI RespQueryUI $ responseS conn
       readQueueUI $ requestS conn
 #else
-    cliState@CliState{cliSession=Just{}} -> do
-      let m = queryUI
+    cliState -> do
+      let !_A = assert (isJust $ cliSession cliState) ()
+          m = queryUI
       (req, cliStateNew) <- liftIO $ runCli m cliState
       modifyDict $ EM.insert fid cliStateNew
       return req
 #endif
-    _ -> assert `failure` "no channel for faction" `twith` fid
   debug <- getsServer $ sniffIn . sdebugSer
   when debug $ debugRequestUI aid req
   return req

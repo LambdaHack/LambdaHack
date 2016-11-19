@@ -55,7 +55,7 @@ handleAndBroadcast :: (MonadStateWrite m, MonadServerReadRequest m)
 handleAndBroadcast atomic = do
   -- This is calculated in the server State before action (simulating
   -- current client State, because action has not been applied
-  -- on the client yet; the same in @atomicRemember@).
+  -- on the client yet).
   -- E.g., actor's position in @breakUpdAtomic@ is assumed to be pre-action.
   -- To get rid of breakUpdAtomic we'd need to send only Spot and Lose
   -- commands instead of Move and Displace (plus Sfx for Displace).
@@ -78,10 +78,10 @@ handleAndBroadcast atomic = do
   -- Send some actions to the clients, one faction at a time.
   let sendAtomic fid (UpdAtomic cmd) = sendUpdate fid cmd
       sendAtomic fid (SfxAtomic sfx) = sendSfx fid sfx
-      breakSend lid fid perFidLid = do
+      breakSend lid fid fact perFidLid = do
         let hear atomic2 = do
               -- We take the new leader, from after cmd execution.
-              mleader <- getsState $ gleader . (EM.! fid) . sfactionD
+              let mleader = gleader fact
               case (atomic2, mleader) of
                 (UpdAtomic cmd, Just leader) -> do
                   body <- getsState $ getActorBody leader
@@ -100,28 +100,28 @@ handleAndBroadcast atomic = do
       -- so the action is perceived in the new perception,
       -- even though the new perception depends on the action's outcome
       -- (e.g., new actor created).
-      anySend lid fid perFidLid =
+      anySend lid fid fact perFidLid =
         if seenAtomicCli knowEvents fid perFidLid ps
         then sendAtomic fid atomic
-        else breakSend lid fid perFidLid
-      posLevel lid fid = anySend lid fid $ sperFidOld EM.! fid EM.! lid
+        else breakSend lid fid fact perFidLid
+      posLevel lid fid fact =
+        anySend lid fid fact $ sperFidOld EM.! fid EM.! lid
       -- TODO: simplify; best after state-diffs approach tried
-      send = case ps of
-        PosSight lid _ -> posLevel lid
-        PosFidAndSight _ lid _ -> posLevel lid
-        PosFidAndSer (Just lid) _ -> posLevel lid
-        PosSmell lid _ -> posLevel lid
-        PosFid fid2 -> \fid ->
+      send fid fact = case ps of
+        PosSight lid _ -> posLevel lid fid fact
+        PosFidAndSight _ lid _ -> posLevel lid fid fact
+        PosFidAndSer (Just lid) _ -> posLevel lid fid fact
+        PosSmell lid _ -> posLevel lid fid fact
+        PosFid fid2 -> when (fid == fid2) $ sendAtomic fid atomic
+        PosFidAndSer Nothing fid2 ->
           when (fid == fid2) $ sendAtomic fid atomic
-        PosFidAndSer Nothing fid2 -> \fid ->
-          when (fid == fid2) $ sendAtomic fid atomic
-        PosSer -> \_ -> return ()
-        PosAll -> \fid -> sendAtomic fid atomic
-        PosNone -> \fid -> assert `failure` (fid, atomic)
+        PosSer -> return ()
+        PosAll -> sendAtomic fid atomic
+        PosNone -> assert `failure` (fid, fact, atomic)
   -- Faction that are eliminated by the command are processed as well,
   -- because they are not deleted from @sfactionD@.
   factionD <- getsState sfactionD
-  mapWithKeyM_ (\fid _ -> send fid) factionD
+  mapWithKeyM_ (\fid fact -> send fid fact) factionD
 
 updatePer :: MonadServerReadRequest m => FactionId -> LevelId -> m ()
 {-# INLINE updatePer #-}
