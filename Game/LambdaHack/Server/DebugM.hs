@@ -1,6 +1,6 @@
 -- | Debug output for requests and responseQs.
 module Game.LambdaHack.Server.DebugM
-  ( debugResponseAI, debugResponseUI
+  ( debugResponse
   , debugRequestAI, debugRequestUI
   ) where
 
@@ -34,25 +34,17 @@ debugShow :: Show a => a -> Text
 {-# INLINABLE debugShow #-}
 debugShow = T.pack . Show.Pretty.ppShow
 
-debugResponseAI :: MonadServer m => ResponseAI -> m ()
-{-# INLINABLE debugResponseAI #-}
-debugResponseAI cmd = case cmd of
-  RespUpdAtomicAI cmdA@UpdPerception{} -> debugPlain cmd cmdA
-  RespUpdAtomicAI cmdA@UpdResume{} -> debugPlain cmd cmdA
-  RespUpdAtomicAI cmdA@UpdSpotTile{} -> debugPlain cmd cmdA
-  RespUpdAtomicAI cmdA -> debugPretty cmd cmdA
+debugResponse :: MonadServer m => Response -> m ()
+{-# INLINABLE debugResponse #-}
+debugResponse cmd = case cmd of
+  RespUpdAtomic cmdA@UpdPerception{} -> debugPlain cmd cmdA
+  RespUpdAtomic cmdA@UpdResume{} -> debugPlain cmd cmdA
+  RespUpdAtomic cmdA@UpdSpotTile{} -> debugPlain cmd cmdA
+  RespUpdAtomic cmdA -> debugPretty cmd cmdA
   RespQueryAI aid -> do
     d <- debugAid aid "RespQueryAI" cmd
     serverPrint d
-
-debugResponseUI :: MonadServer m => ResponseUI -> m ()
-{-# INLINABLE debugResponseUI #-}
-debugResponseUI cmd = case cmd of
-  RespUpdAtomicUI cmdA@UpdPerception{} -> debugPlain cmd cmdA
-  RespUpdAtomicUI cmdA@UpdResume{} -> debugPlain cmd cmdA
-  RespUpdAtomicUI cmdA@UpdSpotTile{} -> debugPlain cmd cmdA
-  RespUpdAtomicUI cmdA -> debugPretty cmd cmdA
-  RespSfxAtomicUI sfx -> do
+  RespSfxAtomic sfx -> do
     ps <- posSfxAtomic sfx
     serverPrint $ debugShow (cmd, ps)
   RespQueryUI -> serverPrint "RespQueryUI"

@@ -65,15 +65,10 @@ import Game.LambdaHack.SampleImplementation.SampleMonadClient
 type CliSerQueue = MVar
 
 #ifdef CLIENTS_AS_THREADS
-writeQueueAI :: MonadServerReadRequest m
-             => ResponseAI -> CliSerQueue ResponseAI -> m ()
-{-# INLINABLE writeQueueAI #-}
-writeQueueAI cmd responseS = liftIO $ putMVar responseS cmd
-
-writeQueueUI :: MonadServerReadRequest m
-             => ResponseUI -> CliSerQueue ResponseUI -> m ()
-{-# INLINABLE writeQueueUI #-}
-writeQueueUI cmd responseS = liftIO $ putMVar responseS cmd
+writeQueue :: MonadServerReadRequest m
+             => Response -> CliSerQueue Response -> m ()
+{-# INLINABLE writeQueue #-}
+writeQueue cmd responseS = liftIO $ putMVar responseS cmd
 
 readQueueAI :: MonadServerReadRequest m
             => CliSerQueue RequestAI -> m RequestAI
@@ -135,8 +130,8 @@ data ChanServer resp req = ChanServer
 -- | Either states or connections to the human-controlled client
 -- of a faction and to the AI client for the same faction.
 #ifdef CLIENTS_AS_THREADS
-data FrozenClient = FThread !(Maybe (ChanServer ResponseUI RequestUI))
-                            !(ChanServer ResponseAI RequestAI)
+data FrozenClient = FThread !(Maybe (ChanServer Response RequestUI))
+                            !(ChanServer Response RequestAI)
 #else
 type FrozenClient = CliState
 #endif
@@ -189,16 +184,16 @@ updateCopsDict copsClient sconfig sdebugCli = do
 sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
 {-# INLINABLE sendUpdate #-}
 sendUpdate !fid !cmd = do
-  let respAI = RespUpdAtomicAI cmd
+  let respAI = RespUpdAtomic cmd
   debug <- getsServer $ sniffOut . sdebugSer
-  when debug $ debugResponseAI respAI
+  when debug $ debugResponse respAI
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
 #ifdef CLIENTS_AS_THREADS
     FThread mconn conn -> do
-      writeQueueAI respAI $ responseS conn
+      writeQueue respAI $ responseS conn
       maybe (return ())
-            (\c -> writeQueueUI (RespUpdAtomicUI cmd) $ responseS c) mconn
+            (\c -> writeQueue (RespUpdAtomic cmd) $ responseS c) mconn
 #else
     cliState -> do
       let m = if isNothing $ cliSession cliState
@@ -211,14 +206,14 @@ sendUpdate !fid !cmd = do
 sendSfx :: MonadServerReadRequest m => FactionId -> SfxAtomic -> m ()
 {-# INLINABLE sendSfx #-}
 sendSfx !fid !sfx = do
-  let respUI = RespSfxAtomicUI sfx
+  let respUI = RespSfxAtomic sfx
   debug <- getsServer $ sniffOut . sdebugSer
-  when debug $ debugResponseUI respUI
+  when debug $ debugResponse respUI
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
 #ifdef CLIENTS_AS_THREADS
     FThread (Just conn) _ ->
-      writeQueueUI respUI $ responseS conn
+      writeQueue respUI $ responseS conn
 #else
     cliState@CliState{cliSession=Just{}} -> do
       let m = displayRespSfxAtomicUI False sfx
@@ -232,12 +227,12 @@ sendQueryAI :: MonadServerReadRequest m => FactionId -> ActorId -> m RequestAI
 sendQueryAI fid aid = do
   let respAI = RespQueryAI aid
   debug <- getsServer $ sniffOut . sdebugSer
-  when debug $ debugResponseAI respAI
+  when debug $ debugResponse respAI
   frozenClient <- getsDict $ (EM.! fid)
   req <- case frozenClient of
 #ifdef CLIENTS_AS_THREADS
     FThread _ conn -> do
-      writeQueueAI respAI $ responseS conn
+      writeQueue respAI $ responseS conn
       readQueueAI $ requestS conn
 #else
     cliState -> do
@@ -255,12 +250,12 @@ sendQueryUI :: (MonadAtomic m, MonadServerReadRequest m)
 sendQueryUI fid _aid = do
   let respUI = RespQueryUI
   debug <- getsServer $ sniffOut . sdebugSer
-  when debug $ debugResponseUI respUI
+  when debug $ debugResponse respUI
   frozenClient <- getsDict $ (EM.! fid)
   req <- case frozenClient of
 #ifdef CLIENTS_AS_THREADS
     FThread (Just conn) _ -> do
-      writeQueueUI respUI $ responseS conn
+      writeQueue respUI $ responseS conn
       readQueueUI $ requestS conn
 #else
     cliState -> do
@@ -294,10 +289,10 @@ updateConn :: (MonadAtomic m, MonadServerReadRequest m)
            => Kind.COps
            -> KeyKind -> Config -> DebugModeCli
            -> (SessionUI -> Kind.COps -> FactionId
-               -> ChanServer ResponseUI RequestUI
+               -> ChanServer Response RequestUI
                -> IO ())
            -> (Kind.COps -> FactionId
-               -> ChanServer ResponseAI RequestAI
+               -> ChanServer Response RequestAI
                -> IO ())
            -> m ()
 {-# INLINABLE updateConn #-}

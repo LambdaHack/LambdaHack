@@ -26,27 +26,29 @@ storeUndo _atomic =
 handleResponseAI :: ( MonadClientSetup m
                     , MonadAtomic m
                     , MonadClientWriteRequest RequestAI m )
-                 => ResponseAI -> m ()
+                 => Response -> m ()
 {-# INLINABLE handleResponseAI #-}
 handleResponseAI cmd = case cmd of
-  RespUpdAtomicAI cmdA ->
+  RespUpdAtomic cmdA ->
     handleSelfAI cmdA
   RespQueryAI aid -> do
     cmdC <- queryAI aid
     sendRequest cmdC
+  _ -> assert `failure` cmd
 
 handleResponseUI :: ( MonadClientSetup m
                     , MonadClientUI m
                     , MonadAtomic m
                     , MonadClientWriteRequest RequestUI m )
-                 => ResponseUI -> m ()
+                 => Response -> m ()
 {-# INLINABLE handleResponseUI #-}
 handleResponseUI cmd = case cmd of
-  RespUpdAtomicUI cmdA ->
+  RespUpdAtomic cmdA ->
     handleSelfUI cmdA
-  RespSfxAtomicUI sfx -> do
+  RespSfxAtomic sfx -> do
     displayRespSfxAtomicUI False sfx
     storeUndo $ SfxAtomic sfx
   RespQueryUI -> do
     cmdH <- queryUI
     sendRequest cmdH
+  _ -> assert `failure` cmd

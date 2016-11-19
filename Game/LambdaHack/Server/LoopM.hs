@@ -60,9 +60,9 @@ import Game.LambdaHack.Server.State
 loopSer :: (MonadAtomic m, MonadServerReadRequest m)
         => DebugModeSer  -- ^ server debug parameters
         -> KeyKind -> Config -> DebugModeCli
-        -> (SessionUI -> Kind.COps -> FactionId -> ChanServer ResponseUI RequestUI -> IO ())
+        -> (SessionUI -> Kind.COps -> FactionId -> ChanServer Response RequestUI -> IO ())
              -- ^ the code to run for UI clients
-        -> (Kind.COps -> FactionId -> ChanServer ResponseAI RequestAI -> IO ())
+        -> (Kind.COps -> FactionId -> ChanServer Response RequestAI -> IO ())
              -- ^ the code to run for AI clients
         -> m ()
 {-# INLINABLE loopSer #-}
