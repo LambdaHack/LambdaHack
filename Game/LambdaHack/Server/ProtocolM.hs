@@ -49,13 +49,13 @@ import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Server.DebugM
 import Game.LambdaHack.Server.FileM
 import Game.LambdaHack.Server.MonadServer hiding (liftIO)
 import Game.LambdaHack.Server.State
 
 #ifdef CLIENTS_AS_THREADS
 import Game.LambdaHack.Common.Thread
+import Game.LambdaHack.Server.DebugM
 #else
 import Game.LambdaHack.Client.AI
 import Game.LambdaHack.Client.ProtocolM
@@ -239,14 +239,16 @@ sendQueryAI fid aid = do
       modifyDict $ EM.insert fid cliStateNew
       return req
 #endif
+#ifdef CLIENTS_AS_THREADS
   debug <- getsServer $ sniffIn . sdebugSer
   when debug $ debugRequestAI aid req
+#endif
   return req
 
 sendQueryUI :: (MonadAtomic m, MonadServerReadRequest m)
             => FactionId -> ActorId -> m RequestUI
 {-# INLINABLE sendQueryUI #-}
-sendQueryUI fid aid = do
+sendQueryUI fid _aid = do
   frozenClient <- getsDict $ (EM.! fid)
   req <- case frozenClient of
 #ifdef CLIENTS_AS_THREADS
@@ -261,8 +263,10 @@ sendQueryUI fid aid = do
       modifyDict $ EM.insert fid cliStateNew
       return req
 #endif
+#ifdef CLIENTS_AS_THREADS
   debug <- getsServer $ sniffIn . sdebugSer
-  when debug $ debugRequestUI aid req
+  when debug $ debugRequestUI _aid req
+#endif
   return req
 
 killAllClients :: (MonadAtomic m, MonadServerReadRequest m) => m ()
