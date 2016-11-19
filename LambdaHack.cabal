@@ -191,6 +191,7 @@ library
                       Game.LambdaHack.Server.BroadcastAtomic
                       Game.LambdaHack.Server.Commandline
                       Game.LambdaHack.Server.CommonM
+                      Game.LambdaHack.Server.DebugM
                       Game.LambdaHack.Server.DungeonGen
                       Game.LambdaHack.Server.DungeonGen.Area
                       Game.LambdaHack.Server.DungeonGen.AreaRnd
@@ -215,7 +216,6 @@ library
   if flag(clients_as_threads) {
     exposed-modules:    Game.LambdaHack.Client.LoopM
                         Game.LambdaHack.SampleImplementation.SampleMonadClientAsThread
-                        Game.LambdaHack.Server.DebugM
   } else {
     exposed-modules:    Game.LambdaHack.SampleImplementation.SampleMonadClient
   }

@@ -47,13 +47,13 @@ import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Server.DebugM
 import Game.LambdaHack.Server.FileM
 import Game.LambdaHack.Server.MonadServer hiding (liftIO)
 import Game.LambdaHack.Server.State
 
 #ifdef CLIENTS_AS_THREADS
 import Game.LambdaHack.Common.Thread
-import Game.LambdaHack.Server.DebugM
 #else
 import Game.LambdaHack.Client.AI
 import Game.LambdaHack.Client.ProtocolM
@@ -68,18 +68,12 @@ type CliSerQueue = MVar
 writeQueueAI :: MonadServerReadRequest m
              => ResponseAI -> CliSerQueue ResponseAI -> m ()
 {-# INLINABLE writeQueueAI #-}
-writeQueueAI cmd responseS = do
-  debug <- getsServer $ sniffOut . sdebugSer
-  when debug $ debugResponseAI cmd
-  liftIO $ putMVar responseS cmd
+writeQueueAI cmd responseS = liftIO $ putMVar responseS cmd
 
 writeQueueUI :: MonadServerReadRequest m
              => ResponseUI -> CliSerQueue ResponseUI -> m ()
 {-# INLINABLE writeQueueUI #-}
-writeQueueUI cmd responseS = do
-  debug <- getsServer $ sniffOut . sdebugSer
-  when debug $ debugResponseUI cmd
-  liftIO $ putMVar responseS cmd
+writeQueueUI cmd responseS = liftIO $ putMVar responseS cmd
 
 readQueueAI :: MonadServerReadRequest m
             => CliSerQueue RequestAI -> m RequestAI
@@ -195,11 +189,14 @@ updateCopsDict copsClient sconfig sdebugCli = do
 sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
 {-# INLINABLE sendUpdate #-}
 sendUpdate !fid !cmd = do
+  let respAI = RespUpdAtomicAI cmd
+  debug <- getsServer $ sniffOut . sdebugSer
+  when debug $ debugResponseAI respAI
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
 #ifdef CLIENTS_AS_THREADS
     FThread mconn conn -> do
-      writeQueueAI (RespUpdAtomicAI cmd) $ responseS conn
+      writeQueueAI respAI $ responseS conn
       maybe (return ())
             (\c -> writeQueueUI (RespUpdAtomicUI cmd) $ responseS c) mconn
 #else
@@ -214,11 +211,14 @@ sendUpdate !fid !cmd = do
 sendSfx :: MonadServerReadRequest m => FactionId -> SfxAtomic -> m ()
 {-# INLINABLE sendSfx #-}
 sendSfx !fid !sfx = do
+  let respUI = RespSfxAtomicUI sfx
+  debug <- getsServer $ sniffOut . sdebugSer
+  when debug $ debugResponseUI respUI
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
 #ifdef CLIENTS_AS_THREADS
     FThread (Just conn) _ ->
-      writeQueueUI (RespSfxAtomicUI sfx) $ responseS conn
+      writeQueueUI respUI $ responseS conn
 #else
     cliState@CliState{cliSession=Just{}} -> do
       let m = displayRespSfxAtomicUI False sfx
@@ -230,11 +230,14 @@ sendSfx !fid !sfx = do
 sendQueryAI :: MonadServerReadRequest m => FactionId -> ActorId -> m RequestAI
 {-# INLINABLE sendQueryAI #-}
 sendQueryAI fid aid = do
+  let respAI = RespQueryAI aid
+  debug <- getsServer $ sniffOut . sdebugSer
+  when debug $ debugResponseAI respAI
   frozenClient <- getsDict $ (EM.! fid)
   req <- case frozenClient of
 #ifdef CLIENTS_AS_THREADS
     FThread _ conn -> do
-      writeQueueAI (RespQueryAI aid) $ responseS conn
+      writeQueueAI respAI $ responseS conn
       readQueueAI $ requestS conn
 #else
     cliState -> do
@@ -243,21 +246,21 @@ sendQueryAI fid aid = do
       modifyDict $ EM.insert fid cliStateNew
       return req
 #endif
-#ifdef CLIENTS_AS_THREADS
-  debug <- getsServer $ sniffIn . sdebugSer
   when debug $ debugRequestAI aid req
-#endif
   return req
 
 sendQueryUI :: (MonadAtomic m, MonadServerReadRequest m)
             => FactionId -> ActorId -> m RequestUI
 {-# INLINABLE sendQueryUI #-}
 sendQueryUI fid _aid = do
+  let respUI = RespQueryUI
+  debug <- getsServer $ sniffOut . sdebugSer
+  when debug $ debugResponseUI respUI
   frozenClient <- getsDict $ (EM.! fid)
   req <- case frozenClient of
 #ifdef CLIENTS_AS_THREADS
     FThread (Just conn) _ -> do
-      writeQueueUI RespQueryUI $ responseS conn
+      writeQueueUI respUI $ responseS conn
       readQueueUI $ requestS conn
 #else
     cliState -> do
@@ -267,10 +270,7 @@ sendQueryUI fid _aid = do
       modifyDict $ EM.insert fid cliStateNew
       return req
 #endif
-#ifdef CLIENTS_AS_THREADS
-  debug <- getsServer $ sniffIn . sdebugSer
   when debug $ debugRequestUI _aid req
-#endif
   return req
 
 killAllClients :: (MonadAtomic m, MonadServerReadRequest m) => m ()
