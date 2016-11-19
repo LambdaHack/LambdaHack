@@ -242,10 +242,9 @@ advanceTime aid = do
   modifyServer $ \ser ->
     ser {sactorTime = ageActor (bfid b) (blid b) aid t $ sactorTime ser}
 
-overheadActorTime :: (MonadAtomic m, MonadServer m)
-                  => FactionId -> ActorId -> m ()
+overheadActorTime :: (MonadAtomic m, MonadServer m) => FactionId -> m ()
 {-# INLINABLE overheadActorTime #-}
-overheadActorTime fid aid = do
+overheadActorTime fid = do
   -- Add communication overhead time delta to all non-projectile,
   -- non-dying faction's actors. Effectively, this limits moves of
   -- a faction to 10, regardless of the number of actors
@@ -259,12 +258,11 @@ overheadActorTime fid aid = do
   s <- getState
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
   arenas <- getsServer sarenas
-  let f !aid2 !time =
-        let body = getActorBody aid2 s
+  let f !aid !time =
+        let body = getActorBody aid s
         in if isNothing (btrajectory body)
               && bhp body > 0
-              -- If the leader moves, he gets overhead; but not from others.
-              && (Just aid2 /= mleader || aid2 == aid)
+              && Just aid /= mleader  -- leader fast, for UI to be fast
            then timeShift time (Delta timeClip)
            else time
       g !acc !lid = EM.adjust (EM.mapWithKey f) lid acc

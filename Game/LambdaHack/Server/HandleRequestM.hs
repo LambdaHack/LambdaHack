@@ -94,7 +94,7 @@ handleRequestTimed :: (MonadAtomic m, MonadServer m)
 {-# INLINABLE handleRequestTimed #-}
 handleRequestTimed fid aid cmd = do
   hasWait <- setBWait cmd aid
-  unless hasWait $ overheadActorTime fid aid
+  unless hasWait $ overheadActorTime fid
   advanceTime aid
   handleRequestTimedCases aid cmd
   managePerTurn aid
