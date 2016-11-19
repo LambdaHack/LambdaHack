@@ -1,11 +1,11 @@
 -- | Client monad for interacting with a human through UI.
 module Game.LambdaHack.Client.UI.MonadClientUI
   ( -- * Client UI monad
-    MonadClientUI( getSession, getsSession, modifySession, putSession
+    MonadClientUI( getsSession, modifySession, putSession
                  , liftIO  -- exposed only to be implemented, not used,
                  )
     -- * Assorted primitives
-  , clientPrintUI, mapStartY, displayFrames
+  , getSession, clientPrintUI, mapStartY, displayFrames
   , setFrontAutoYes, anyKeyPressed, discardPressedKey, addPressedEsc
   , connFrontendFrontKey, frontendShutdown, chanFrontend
   , getReportUI, getLeaderUI, getArenaUI, viewedLevelUI
@@ -63,13 +63,14 @@ mapStartY = 1
 
 -- | The monad that gives the client access to UI operations.
 class MonadClient m => MonadClientUI m where
-  getSession    :: m SessionUI
-  {-# INLINABLE getSession #-}
-  getSession = getsSession id
   getsSession   :: (SessionUI -> a) -> m a
   modifySession :: (SessionUI -> SessionUI) -> m ()
   putSession    :: SessionUI -> m ()
   liftIO        :: IO a -> m a
+
+getSession :: MonadClientUI m => m SessionUI
+{-# INLINABLE getSession #-}
+getSession = getsSession id
 
 -- | Write a UI request to the frontend and read a corresponding reply.
 connFrontend :: MonadClientUI m => FrontReq a -> m a

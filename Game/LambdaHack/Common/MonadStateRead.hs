@@ -2,7 +2,7 @@
 -- player actions. Has no access to the main action type.
 module Game.LambdaHack.Common.MonadStateRead
   ( MonadStateRead(..)
-  , getLevel, nUI
+  , getState, getLevel, nUI
   , getGameMode, isNoConfirmsGame, getEntryArena, pickWeaponM
   ) where
 
@@ -25,10 +25,11 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 
 class (Monad m, Functor m, Applicative m) => MonadStateRead m where
-  getState  :: m State
-  {-# INLINABLE getState #-}
-  getState = getsState id
   getsState :: (State -> a) -> m a
+
+getState :: MonadStateRead m => m State
+{-# INLINABLE getState #-}
+getState = getsState id
 
 getLevel :: MonadStateRead m => LevelId -> m Level
 {-# INLINABLE getLevel #-}

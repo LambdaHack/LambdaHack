@@ -1,14 +1,14 @@
 -- | Basic client monad and related operations.
 module Game.LambdaHack.Client.MonadClient
   ( -- * Basic client monad
-    MonadClient( getClient, getsClient, modifyClient, putClient
+    MonadClient( getsClient, modifyClient, putClient
                , liftIO  -- exposed only to be implemented, not used
                )
   , MonadClientSetup( saveClient
                     , restartClient
                     )
     -- * Assorted primitives
-  , debugPossiblyPrint, saveName, tryRestore, removeServerSave
+  , getClient, debugPossiblyPrint, saveName, tryRestore, removeServerSave
   , rndToAction, rndToActionForget
   ) where
 
@@ -37,9 +37,6 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.RuleKind
 
 class MonadStateRead m => MonadClient m where
-  getClient     :: m StateClient
-  {-# INLINABLE getClient #-}
-  getClient = getsClient id
   getsClient    :: (StateClient -> a) -> m a
   modifyClient  :: (StateClient -> StateClient) -> m ()
   putClient     :: StateClient -> m ()
@@ -50,6 +47,10 @@ class MonadStateRead m => MonadClient m where
 class MonadClient m => MonadClientSetup m where
   saveClient    :: m ()
   restartClient :: m ()
+
+getClient :: MonadClient m => m StateClient
+{-# INLINABLE getClient #-}
+getClient = getsClient id
 
 debugPossiblyPrint :: MonadClient m => Text -> m ()
 {-# INLINABLE debugPossiblyPrint #-}

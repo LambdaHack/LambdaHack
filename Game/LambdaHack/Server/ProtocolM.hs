@@ -5,8 +5,7 @@ module Game.LambdaHack.Server.ProtocolM
   , ConnServerDict  -- exposed only to be implemented, not used
     -- * The server-client communication monad
   , MonadServerReadRequest
-      ( getDict  -- exposed only to be implemented, not used
-      , getsDict  -- exposed only to be implemented, not used
+      ( getsDict  -- exposed only to be implemented, not used
       , modifyDict  -- exposed only to be implemented, not used
       , putDict  -- exposed only to be implemented, not used
       , saveChanServer  -- exposed only to be implemented, not used
@@ -160,14 +159,15 @@ type ConnServerDict = EM.EnumMap FactionId FrozenClient
 
 -- | The server monad with the ability to communicate with clients.
 class MonadServer m => MonadServerReadRequest m where
-  getDict      :: m ConnServerDict
-  {-# INLINABLE getDict #-}
-  getDict = getsDict id
   getsDict     :: (ConnServerDict -> a) -> m a
   modifyDict   :: (ConnServerDict -> ConnServerDict) -> m ()
   putDict      :: ConnServerDict -> m ()
   saveChanServer :: m (Save.ChanSave (State, StateServer, ConnServerDict))
   liftIO       :: IO a -> m a
+
+getDict :: MonadServerReadRequest m => m ConnServerDict
+{-# INLINABLE getDict #-}
+getDict = getsDict id
 
 updateCopsDict :: MonadServerReadRequest m
                => KeyKind -> Config -> DebugModeCli -> m ()
