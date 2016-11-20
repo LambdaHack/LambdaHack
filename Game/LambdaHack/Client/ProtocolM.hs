@@ -20,13 +20,15 @@ import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Request
+import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.Vector
 
-class MonadClient m => MonadClientReadResponse resp m | m -> resp where
-  receiveResponse  :: m resp
+class MonadClient m => MonadClientReadResponse m where
+  receiveResponse  :: m Response
 
-class MonadClient m => MonadClientWriteRequest req m | m -> req where
-  sendRequest  :: req -> m ()
+class MonadClient m => MonadClientWriteRequest m where
+  sendRequest  :: (Either RequestAI RequestUI) -> m ()
 
 initAI :: MonadClient m => DebugModeCli -> m ()
 {-# INLINABLE initAI #-}

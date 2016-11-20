@@ -36,7 +36,6 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Request
-import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
@@ -60,9 +59,9 @@ import Game.LambdaHack.Server.State
 loopSer :: (MonadAtomic m, MonadServerReadRequest m)
         => DebugModeSer  -- ^ server debug parameters
         -> KeyKind -> Config -> DebugModeCli
-        -> (SessionUI -> Kind.COps -> FactionId -> ChanServer Response RequestUI -> IO ())
+        -> (SessionUI -> Kind.COps -> FactionId -> ChanServer -> IO ())
              -- ^ the code to run for UI clients
-        -> (Kind.COps -> FactionId -> ChanServer Response RequestAI -> IO ())
+        -> (Kind.COps -> FactionId -> ChanServer -> IO ())
              -- ^ the code to run for AI clients
         -> m ()
 {-# INLINABLE loopSer #-}

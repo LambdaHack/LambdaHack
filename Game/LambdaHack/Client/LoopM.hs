@@ -21,15 +21,14 @@ import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
 
 -- | The main game loop for an AI client.
 loopAI :: ( MonadClientSetup m
           , MonadAtomic m
-          , MonadClientReadResponse Response m
-          , MonadClientWriteRequest RequestAI m )
+          , MonadClientReadResponse m
+          , MonadClientWriteRequest m )
        => DebugModeCli -> m ()
 {-# INLINABLE loopAI #-}
 loopAI sdebugCli = do
@@ -73,8 +72,8 @@ loopAI sdebugCli = do
 loopUI :: ( MonadClientSetup m
           , MonadClientUI m
           , MonadAtomic m
-          , MonadClientReadResponse Response m
-          , MonadClientWriteRequest RequestUI m )
+          , MonadClientReadResponse m
+          , MonadClientWriteRequest m )
        => KeyKind -> Config -> DebugModeCli -> m ()
 {-# INLINABLE loopUI #-}
 loopUI copsClient sconfig sdebugCli = do
