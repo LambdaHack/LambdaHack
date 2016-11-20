@@ -67,13 +67,13 @@ type CliSerQueue = MVar
 #ifdef CLIENTS_AS_THREADS
 writeQueue :: MonadServerReadRequest m
            => Response -> CliSerQueue Response -> m ()
-{-# INLINABLE writeQueue #-}
+{-# INLINE writeQueue #-}
 writeQueue cmd responseS = liftIO $ putMVar responseS cmd
 
 readQueue :: MonadServerReadRequest m
           => CliSerQueue (Either RequestAI RequestUI)
           -> m (Either RequestAI RequestUI)
-{-# INLINABLE readQueue #-}
+{-# INLINE readQueue #-}
 readQueue requestS = liftIO $ takeMVar requestS
 
 newQueue :: IO (CliSerQueue a)
@@ -153,16 +153,16 @@ class MonadServer m => MonadServerReadRequest m where
   liftIO       :: IO a -> m a
 
 getDict :: MonadServerReadRequest m => m ConnServerDict
-{-# INLINABLE getDict #-}
+{-# INLINE getDict #-}
 getDict = getsDict id
 
 putDict :: MonadServerReadRequest m => ConnServerDict -> m ()
-{-# INLINABLE putDict #-}
+{-# INLINE putDict #-}
 putDict s = modifyDict (const s)
 
 updateCopsDict :: MonadServerReadRequest m
                => KeyKind -> Config -> DebugModeCli -> m ()
-{-# INLINABLE updateCopsDict #-}
+{-# INLINE updateCopsDict #-}
 updateCopsDict copsClient sconfig sdebugCli = do
 #ifdef CLIENTS_AS_THREADS
   return ()
@@ -180,7 +180,7 @@ updateCopsDict copsClient sconfig sdebugCli = do
 #endif
 
 sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
-{-# INLINABLE sendUpdate #-}
+{-# INLINE sendUpdate #-}
 sendUpdate !fid !cmd = do
   let resp = RespUpdAtomic cmd
   debug <- getsServer $ sniffOut . sdebugSer
@@ -198,7 +198,7 @@ sendUpdate !fid !cmd = do
 #endif
 
 sendSfx :: MonadServerReadRequest m => FactionId -> SfxAtomic -> m ()
-{-# INLINABLE sendSfx #-}
+{-# INLINE sendSfx #-}
 sendSfx !fid !sfx = do
   let resp = RespSfxAtomic sfx
   debug <- getsServer $ sniffOut . sdebugSer
@@ -216,7 +216,7 @@ sendSfx !fid !sfx = do
     _ -> return ()
 
 sendQueryAI :: MonadServerReadRequest m => FactionId -> ActorId -> m RequestAI
-{-# INLINABLE sendQueryAI #-}
+{-# INLINE sendQueryAI #-}
 sendQueryAI fid aid = do
   let respAI = RespQueryAI aid
   debug <- getsServer $ sniffOut . sdebugSer
@@ -241,7 +241,7 @@ sendQueryAI fid aid = do
 
 sendQueryUI :: (MonadAtomic m, MonadServerReadRequest m)
             => FactionId -> ActorId -> m RequestUI
-{-# INLINABLE sendQueryUI #-}
+{-# INLINE sendQueryUI #-}
 sendQueryUI fid _aid = do
   let respUI = RespQueryUI
   debug <- getsServer $ sniffOut . sdebugSer
@@ -294,7 +294,7 @@ updateConn :: (MonadAtomic m, MonadServerReadRequest m)
                -> ChanServer
                -> IO ())
            -> m ()
-{-# INLINABLE updateConn #-}
+{-# INLINE updateConn #-}
 updateConn cops copsClient sconfig sdebugCli
            _executorUI _executorAI = do
   -- Prepare connections based on factions.

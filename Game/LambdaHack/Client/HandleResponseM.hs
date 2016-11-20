@@ -27,7 +27,7 @@ handleResponseAI :: ( MonadClientSetup m
                     , MonadAtomic m
                     , MonadClientWriteRequest m )
                  => Response -> m ()
-{-# INLINABLE handleResponseAI #-}
+{-# INLINE handleResponseAI #-}
 handleResponseAI cmd = case cmd of
   RespUpdAtomic cmdA ->
     handleSelfAI cmdA
@@ -41,7 +41,7 @@ handleResponseUI :: ( MonadClientSetup m
                     , MonadAtomic m
                     , MonadClientWriteRequest m )
                  => Response -> m ()
-{-# INLINABLE handleResponseUI #-}
+{-# INLINE handleResponseUI #-}
 handleResponseUI cmd = case cmd of
   RespUpdAtomic cmdA ->
     handleSelfUI cmdA

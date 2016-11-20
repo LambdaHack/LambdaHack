@@ -70,28 +70,28 @@ instance MonadClient (CliImplementation sess) where
   modifyClient f = CliImplementation $ state $ \cliS ->
     let !newCliState = f $ cliClient cliS
     in ((), cliS {cliClient = newCliState})
-  {-# INLINABLE liftIO #-}
+  {-# INLINE liftIO #-}
   liftIO = CliImplementation . IO.liftIO
 
 instance MonadClientSetup (CliImplementation ()) where
-  {-# INLINABLE saveClient #-}
+  {-# INLINE saveClient #-}
   saveClient = CliImplementation $ do
     toSave <- gets cliToSave
     s <- gets cliState
     cli <- gets cliClient
     IO.liftIO $ Save.saveToChan toSave (s, cli, ())
-  {-# INLINABLE restartClient #-}
+  {-# INLINE restartClient #-}
   restartClient = return ()
 
 instance MonadClientSetup (CliImplementation SessionUI) where
-  {-# INLINABLE saveClient #-}
+  {-# INLINE saveClient #-}
   saveClient = CliImplementation $ do
     toSave <- gets cliToSave
     s <- gets cliState
     cli <- gets cliClient
     sess <- gets cliSession
     IO.liftIO $ Save.saveToChan toSave (s, cli, sess)
-  {-# INLINABLE restartClient #-}
+  {-# INLINE restartClient #-}
   restartClient  = CliImplementation $ state $ \cliS ->
     let sess = cliSession cliS
         !newSess = (emptySessionUI (sconfig sess))
@@ -114,17 +114,17 @@ instance MonadClientUI (CliImplementation SessionUI) where
   modifySession f = CliImplementation $ state $ \cliS ->
     let !newCliSession = f $ cliSession cliS
     in ((), cliS {cliSession = newCliSession})
-  {-# INLINABLE liftIO #-}
+  {-# INLINE liftIO #-}
   liftIO = CliImplementation . IO.liftIO
 
 instance MonadClientReadResponse (CliImplementation sess) where
-  {-# INLINABLE receiveResponse #-}
+  {-# INLINE receiveResponse #-}
   receiveResponse = CliImplementation $ do
     ChanServer{responseS} <- gets cliDict
     IO.liftIO $ takeMVar responseS
 
 instance MonadClientWriteRequest (CliImplementation sess) where
-  {-# INLINABLE sendRequest #-}
+  {-# INLINE sendRequest #-}
   sendRequest scmd = CliImplementation $ do
     ChanServer{requestS} <- gets cliDict
     IO.liftIO $ putMVar requestS scmd
@@ -145,7 +145,7 @@ executorCliAsThread :: Binary sess
                     -> FactionId
                     -> ChanServer
                     -> IO ()
-{-# INLINABLE executorCliAsThread #-}
+{-# INLINE executorCliAsThread #-}
 executorCliAsThread isAI m cliSession cops fid cliDict =
   let saveFile (_, cli, _) =
         ssavePrefixCli (sdebugCli cli)

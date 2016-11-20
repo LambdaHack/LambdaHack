@@ -64,7 +64,7 @@ loopSer :: (MonadAtomic m, MonadServerReadRequest m)
         -> (Kind.COps -> FactionId -> ChanServer -> IO ())
              -- ^ the code to run for AI clients
         -> m ()
-{-# INLINABLE loopSer #-}
+{-# INLINE loopSer #-}
 loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
   -- Recover states and launch clients.
   cops <- getsState scops
@@ -108,7 +108,7 @@ loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
   loopUpd updConn
 
 factionArena :: MonadStateRead m => Faction -> m (Maybe LevelId)
-{-# INLINABLE factionArena #-}
+{-# INLINE factionArena #-}
 factionArena fact = case gleader fact of
   -- Even spawners need an active arena for their leader,
   -- or they start clogging stairs.
@@ -160,7 +160,7 @@ handleFidUpd updatePerFid fid fact = do
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
 loopUpd :: forall m. (MonadAtomic m, MonadServerReadRequest m) => m () -> m ()
-{-# INLINABLE loopUpd #-}
+{-# INLINE loopUpd #-}
 loopUpd updConn = do
   let updatePerFid :: FactionId -> m ()
       {-# NOINLINE updatePerFid #-}
@@ -188,7 +188,7 @@ loopUpd updConn = do
   loopUpdConn
 
 endClip :: (MonadAtomic m, MonadServerReadRequest m) => m ()
-{-# INLINABLE endClip #-}
+{-# INLINE endClip #-}
 endClip = do
   Kind.COps{corule} <- getsState scops
   let RuleKind{rwriteSaveClips, rleadLevelClips} = Kind.stdRuleset corule
@@ -223,7 +223,7 @@ endClip = do
 
 -- | Trigger periodic items for all actors on the given level.
 applyPeriodicLevel :: (MonadAtomic m, MonadServer m) => m ()
-{-# INLINABLE applyPeriodicLevel #-}
+{-# INLINE applyPeriodicLevel #-}
 applyPeriodicLevel = do
   arenas <- getsServer sarenas
   let arenasSet = ES.fromDistinctAscList arenas
@@ -253,7 +253,7 @@ applyPeriodicLevel = do
 
 handleTrajectories :: (MonadAtomic m, MonadServer m)
                    => LevelId -> FactionId -> m ()
-{-# INLINABLE handleTrajectories #-}
+{-# INLINE handleTrajectories #-}
 handleTrajectories lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
@@ -343,7 +343,7 @@ setTrajectory aid = do
 
 handleActors :: (MonadAtomic m, MonadServerReadRequest m)
              => LevelId -> FactionId -> m Bool
-{-# INLINABLE handleActors #-}
+{-# INLINE handleActors #-}
 handleActors lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime

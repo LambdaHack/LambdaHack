@@ -79,7 +79,7 @@ instance MonadServer SerImplementation where
   modifyServer f = SerImplementation $ state $ \serS ->
     let !newSerServer = f $ serServer serS
     in ((), serS {serServer = newSerServer})
-  {-# INLINABLE liftIO #-}
+  {-# INLINE liftIO #-}
   liftIO         = SerImplementation . IO.liftIO
 
 instance MonadServerReadRequest SerImplementation where
@@ -89,9 +89,9 @@ instance MonadServerReadRequest SerImplementation where
   modifyDict f = SerImplementation $ state $ \serS ->
     let !newSerDict = f $ serDict serS
     in ((), serS {serDict = newSerDict})
-  {-# INLINABLE saveChanServer #-}
+  {-# INLINE saveChanServer #-}
   saveChanServer = SerImplementation $ gets serToSave
-  {-# INLINABLE liftIO #-}
+  {-# INLINE liftIO #-}
   liftIO = SerImplementation . IO.liftIO
 
 -- | The game-state semantics of atomic commands
@@ -103,6 +103,7 @@ instance MonadAtomic SerImplementation where
 -- Don't inline this, to keep GHC hard work inside the library.
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: Kind.COps -> KeyKind -> DebugModeSer -> IO ()
+{-# INLINE executorSer #-}
 executorSer cops copsClient sdebugNxtCmdline = do
   -- Parse UI client configuration file.
   -- It is reloaded at each game executable start.
