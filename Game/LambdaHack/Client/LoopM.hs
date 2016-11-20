@@ -30,7 +30,7 @@ loopAI :: ( MonadClientSetup m
           , MonadClientReadResponse m
           , MonadClientWriteRequest m )
        => DebugModeCli -> m ()
-{-# INLINABLE loopAI #-}
+{-# INLINE loopAI #-}
 loopAI sdebugCli = do
   initAI sdebugCli
   -- Warning: state and client state are invalid here, e.g., sdungeon
@@ -62,7 +62,7 @@ loopAI sdebugCli = do
   loop
   debugPossiblyPrint $ "AI client" <+> tshow side <+> "stopped."
  where
-  loop = do
+  loop = {-# SCC loopAI #-} do
     cmd <- receiveResponse
     handleResponseAI cmd
     quit <- getsClient squit
@@ -75,7 +75,7 @@ loopUI :: ( MonadClientSetup m
           , MonadClientReadResponse m
           , MonadClientWriteRequest m )
        => KeyKind -> Config -> DebugModeCli -> m ()
-{-# INLINABLE loopUI #-}
+{-# INLINE loopUI #-}
 loopUI copsClient sconfig sdebugCli = do
   initUI copsClient sconfig sdebugCli
   -- Warning: state and client state are invalid here, e.g., sdungeon
@@ -117,7 +117,7 @@ loopUI copsClient sconfig sdebugCli = do
   loop
   debugPossiblyPrint $ "UI client" <+> tshow side <+> "stopped."
  where
-  loop = do
+  loop = {-# SCC loopUI #-} do
     cmd <- receiveResponse
     handleResponseUI cmd
     quit <- getsClient squit

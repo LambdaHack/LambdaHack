@@ -132,7 +132,9 @@ instance MonadClientWriteRequest (CliImplementation sess) where
 -- | The game-state semantics of atomic commands
 -- as computed on the client.
 instance MonadAtomic (CliImplementation sess) where
-  execUpdAtomic cmd = handleUpdAtomic cmd
+  {-# INLINE execUpdAtomic #-}
+  execUpdAtomic = handleUpdAtomic
+  {-# INLINE execSfxAtomic #-}
   execSfxAtomic _sfx = return ()
 
 -- | Init the client, then run an action, with a given session,

@@ -31,27 +31,27 @@ import Game.LambdaHack.Common.Request
 -- | Handle the move of an AI player.
 queryAI :: forall m. MonadClient m => ActorId -> m RequestAI
 {-# INLINABLE queryAI #-}
-queryAI aid = do
+queryAI aid = {-# SCC queryAI #-} do
   let refreshTarget :: (ActorId, Actor) -> m (Maybe TgtAndPath)
       {-# NOINLINE refreshTarget #-}
-      refreshTarget (aid2, b2) = refreshTargetS aid2 b2
+      refreshTarget (aid2, b2) = {-# SCC refreshTarget #-} refreshTargetS aid2 b2
   udpdateCondInMelee aid
   mleader <- getsClient _sleader
   (aidToMove, bToMove) <-
     if mleader == Just aid
-    then pickActorToMove refreshTarget
+    then {-# SCC pickActorToMoveAI #-} pickActorToMove refreshTarget
     else do
-      useTactics refreshTarget aid
+      {-# SCC useTacticsAI #-} useTactics refreshTarget aid
       b <- getsState $ getActorBody aid
       return (aid, b)
-  req <- ReqAITimed <$> pickAction (aidToMove, bToMove)
+  req <- ReqAITimed <$> {-# SCC pickActionAI #-} pickAction (aidToMove, bToMove)
   if aidToMove /= aid
   then return (req, Just aidToMove)
   else return (req, Nothing)
 
 udpdateCondInMelee :: MonadClient m => ActorId -> m ()
 {-# INLINE udpdateCondInMelee #-}
-udpdateCondInMelee aid = do
+udpdateCondInMelee aid = {-# SCC udpdateCondInMelee #-} do
   b <- getsState $ getActorBody aid
   condInMelee <- getsClient $ (EM.! blid b) . scondInMelee
   case condInMelee of

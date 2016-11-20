@@ -119,9 +119,9 @@ tryRestore Kind.COps{corule} sdebugSer = do
 
 -- | Connection channel between the server and a single client.
 data ChanServer = ChanServer
-  { isAI      :: !Bool
-  , responseS :: !(CliSerQueue Response)
+  { responseS :: !(CliSerQueue Response)
   , requestS  :: !(CliSerQueue (Either RequestAI RequestUI))
+  , isAI      :: !Bool
   }
 
 -- | Either states or connections to the human-controlled client
@@ -181,7 +181,7 @@ updateCopsDict copsClient sconfig sdebugCli = do
 
 sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
 {-# INLINE sendUpdate #-}
-sendUpdate !fid !cmd = do
+sendUpdate !fid !cmd = {-# SCC sendUpdate #-} do
   let resp = RespUpdAtomic cmd
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponse resp
@@ -199,7 +199,7 @@ sendUpdate !fid !cmd = do
 
 sendSfx :: MonadServerReadRequest m => FactionId -> SfxAtomic -> m ()
 {-# INLINE sendSfx #-}
-sendSfx !fid !sfx = do
+sendSfx !fid !sfx = {-# SCC sendSfx #-} do
   let resp = RespSfxAtomic sfx
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponse resp
@@ -217,7 +217,7 @@ sendSfx !fid !sfx = do
 
 sendQueryAI :: MonadServerReadRequest m => FactionId -> ActorId -> m RequestAI
 {-# INLINE sendQueryAI #-}
-sendQueryAI fid aid = do
+sendQueryAI fid aid = {-# SCC sendQueryAI #-} do
   let respAI = RespQueryAI aid
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponse respAI
@@ -242,7 +242,7 @@ sendQueryAI fid aid = do
 sendQueryUI :: (MonadAtomic m, MonadServerReadRequest m)
             => FactionId -> ActorId -> m RequestUI
 {-# INLINE sendQueryUI #-}
-sendQueryUI fid _aid = do
+sendQueryUI fid _aid = {-# SCC sendQueryUI #-} do
   let respUI = RespQueryUI
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponse respUI

@@ -55,7 +55,7 @@ handleSelfAI :: ( MonadClientSetup m
                 , MonadAtomic m )
              => UpdAtomic -> m ()
 {-# INLINABLE handleSelfAI #-}
-handleSelfAI cmdA = do
+handleSelfAI cmdA = {-# SCC handleSelfAI #-} do
   cmds <- cmdAtomicFilterCli cmdA
   mapM_ (\ !c -> cmdAtomicSemCli c
                  >> execUpdAtomic c) cmds

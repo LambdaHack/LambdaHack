@@ -28,7 +28,7 @@ handleResponseAI :: ( MonadClientSetup m
                     , MonadClientWriteRequest m )
                  => Response -> m ()
 {-# INLINE handleResponseAI #-}
-handleResponseAI cmd = case cmd of
+handleResponseAI cmd = {-# SCC handleResponseAI #-} case cmd of
   RespUpdAtomic cmdA ->
     handleSelfAI cmdA
   RespQueryAI aid -> do
@@ -42,7 +42,7 @@ handleResponseUI :: ( MonadClientSetup m
                     , MonadClientWriteRequest m )
                  => Response -> m ()
 {-# INLINE handleResponseUI #-}
-handleResponseUI cmd = case cmd of
+handleResponseUI cmd = {-# SCC handleResponseUI #-} case cmd of
   RespUpdAtomic cmdA ->
     handleSelfUI cmdA
   RespQueryAI aid -> do
