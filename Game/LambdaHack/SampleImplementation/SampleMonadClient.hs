@@ -78,8 +78,8 @@ instance MonadClientSetup CliImplementation where
     toSave <- gets cliToSave
     s <- gets cliState
     cli <- gets cliClient
-    sess <- gets cliSession
-    IO.liftIO $ Save.saveToChan toSave (s, cli, sess)
+    msess <- gets cliSession
+    IO.liftIO $ Save.saveToChan toSave (s, cli, msess)
   {-# INLINABLE restartClient #-}
   restartClient  = CliImplementation $ state $ \cliS ->
     case cliSession cliS of

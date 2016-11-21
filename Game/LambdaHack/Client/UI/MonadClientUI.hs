@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , leaderTgtToPos, leaderTgtAims, xhairToPos
   , scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
-  , resetSessionStart, resetGameStart
+  , resetSessionStart, resetGameStart, tryRestore
   ) where
 
 import Prelude ()
@@ -24,6 +24,7 @@ import qualified Data.Text.IO as T
 import Data.Time.Clock
 import Data.Time.Clock.POSIX
 import Data.Time.LocalTime
+import System.FilePath
 import System.IO (hFlush, stdout)
 
 import Game.LambdaHack.Client.CommonM
@@ -41,13 +42,18 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.HighScore as HighScore
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Content.RuleKind
 
 -- Assumes no interleaving with other clients, because each UI client
 -- in a different terminal/window/machine.
@@ -341,3 +347,21 @@ resetGameStart = do
         , sallTime = absoluteTimeAdd (sallTime cli) time
         , snframes = 0
         , sallNframes = sallNframes cli + nframes }
+
+tryRestore :: MonadClientUI m => m (Maybe (State, StateClient, Maybe SessionUI))
+{-# INLINABLE tryRestore #-}
+tryRestore = do
+  bench <- getsClient $ sbenchmark . sdebugCli
+  if bench then return Nothing
+  else do
+    side <- getsClient sside
+    prefix <- getsClient $ ssavePrefixCli . sdebugCli
+    let name = prefix <.> saveName side
+    res <- liftIO $ Save.restoreGame name
+    Kind.COps{corule} <- getsState scops
+    let stdRuleset = Kind.stdRuleset corule
+        cfgUIName = rcfgUIName stdRuleset
+        content = rcfgUIDefault stdRuleset
+    dataDir <- liftIO $ appDataDir
+    liftIO $ tryWriteFile (dataDir </> cfgUIName) content
+    return res

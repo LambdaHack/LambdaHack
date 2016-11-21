@@ -64,18 +64,19 @@ loopUI copsClient sconfig sdebugCli = do
   cops <- getsState scops
   restoredG <- tryRestore
   restored <- case restoredG of
-    Just (s, cli, sess) | not $ snewGameCli sdebugCli -> do
+    Just (s, cli, msess) | not $ snewGameCli sdebugCli -> do
       -- Restore game.
       let sCops = updateCOps (const cops) s
       handleResponse $ RespUpdAtomic $ UpdResumeServer sCops
       schanF <- getsSession schanF
       sbinding <- getsSession sbinding
-      putSession sess {schanF, sbinding}
+      maybe (return ()) (\sess -> putSession sess {schanF, sbinding}) msess
       putClient cli {sdebugCli}
       return True
-    Just (_, _, sessR) -> do
+    Just (_, _, msessR) -> do
       -- Preserve previous history, if any (--newGame).
-      modifySession $ \sess -> sess {shistory = shistory sessR}
+      maybe (return ()) (\sessR -> modifySession $ \sess ->
+        sess {shistory = shistory sessR}) msessR
       return False
     _ -> return False
   side <- getsClient sside
