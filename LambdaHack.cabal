@@ -111,7 +111,6 @@ library
                       Game.LambdaHack.Client.Key
                       Game.LambdaHack.Client.LoopM
                       Game.LambdaHack.Client.MonadClient
-                      Game.LambdaHack.Client.ProtocolM
                       Game.LambdaHack.Client.State
                       Game.LambdaHack.Client.UI
                       Game.LambdaHack.Client.UI.Animation

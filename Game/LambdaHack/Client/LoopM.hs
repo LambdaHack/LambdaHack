@@ -14,15 +14,39 @@ import qualified Data.Text as T
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.HandleResponseM
 import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.ProtocolM
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Client.UI.Config
+import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.ClientOptions
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Vector
+
+initAI :: MonadClient m => DebugModeCli -> m ()
+{-# INLINABLE initAI #-}
+initAI sdebugCli = do
+  modifyClient $ \cli -> cli {sdebugCli}
+  side <- getsClient sside
+  debugPossiblyPrint $ "AI client" <+> tshow side <+> "initializing."
+
+initUI :: MonadClientUI m => KeyKind -> Config -> DebugModeCli -> m ()
+{-# INLINABLE initUI #-}
+initUI copsClient sconfig sdebugCli = do
+  modifyClient $ \cli ->
+    cli { sxhair = TVector $ Vector 1 1  -- a step south-east, less alarming
+        , sdebugCli }
+  side <- getsClient sside
+  debugPossiblyPrint $ "UI client" <+> tshow side <+> "initializing."
+  -- Start the frontend.
+  schanF <- chanFrontend sdebugCli
+  let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
+      sess = emptySessionUI sconfig
+  putSession sess {schanF, sbinding}
 
 -- | The main game loop for an AI or UI client.
 loopUI :: ( MonadClientSetup m
@@ -50,7 +74,7 @@ loopUI copsClient sconfig sdebugCli = do
       putClient cli {sdebugCli}
       return True
     Just (_, _, sessR) -> do
-      -- Preserve the previous history, if any (--newGame).
+      -- Preserve previous history, if any (--newGame).
       modifySession $ \sess -> sess {shistory = shistory sessR}
       return False
     _ -> return False

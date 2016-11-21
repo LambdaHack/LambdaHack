@@ -1,8 +1,7 @@
 -- | The server definitions for the server-client communication protocol.
 module Game.LambdaHack.Server.ProtocolM
   ( -- * The communication channels
-    CliSerQueue, ChanServer(..)
-  , ConnServerDict  -- exposed only to be implemented, not used
+    CliSerQueue, ChanServer(..), ConnServerDict
     -- * The server-client communication monad
   , MonadServerReadRequest
       ( getsDict  -- exposed only to be implemented, not used

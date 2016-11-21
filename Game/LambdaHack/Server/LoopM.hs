@@ -80,7 +80,7 @@ loopSer sdebug sconfig executorClient = do
       mapM_ (\fid -> sendUpdate fid $ UpdResume fid (pers EM.! fid))
             (EM.keys factionD)
       -- We dump RNG seeds here, in case the game wasn't run
-      -- with --dumpInitRngs previously and we need to seeds.
+      -- with --dumpInitRngs previously and we need the seeds.
       when (sdumpInitRngs sdebug) dumpRngs
     _ -> do  -- Starting the first new game for this savefile.
       -- Set up commandline debug mode
