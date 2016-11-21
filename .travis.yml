@@ -27,9 +27,6 @@ matrix:
     - env: CABALVER=1.24 GHCVER=8.0.1 GTKVTY=opt2
       compiler: ": #GHC 8.0.1"
       addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
-    - env: CABALVER=1.24 GHCVER=8.0.1 GTKVTY=threads
-      compiler: ": #GHC 8.0.1"
-      addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
     - env: CABALVER=1.24 GHCVER=8.0.1 GTKVTY=asserts
       compiler: ": #GHC 8.0.1"
       addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
@@ -98,9 +95,6 @@ install:
    elif [ $GTKVTY = "opt2" ]; then
      cabal install --only-dependencies --enable-tests --enable-benchmarks --dry -v --constraint="transformers>=0.5" gtk2hs-buildtools > installplan.txt
      cabal install --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
-   elif [ $GTKVTY = "threads" ]; then
-     cabal install --only-dependencies --enable-tests --enable-benchmarks --dry -v --constraint="transformers>=0.5" gtk2hs-buildtools > installplan.txt
-     cabal install --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
    elif [ $GTKVTY = "asserts" ]; then
      cabal install --only-dependencies --enable-tests --enable-benchmarks --dry -v --constraint="transformers>=0.5" gtk2hs-buildtools > installplan.txt
      cabal install --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
@@ -131,9 +125,6 @@ install:
        cabal install --constraint="transformers>=0.5" gtk2hs-buildtools;
        cabal install --only-dependencies --enable-tests --enable-benchmarks;
      elif [ $GTKVTY = "opt2" ]; then
-       cabal install --constraint="transformers>=0.5" gtk2hs-buildtools;
-       cabal install --only-dependencies --enable-tests --enable-benchmarks;
-     elif [ $GTKVTY = "threads" ]; then
        cabal install --constraint="transformers>=0.5" gtk2hs-buildtools;
        cabal install --only-dependencies --enable-tests --enable-benchmarks;
      elif [ $GTKVTY = "asserts" ]; then
@@ -168,8 +159,6 @@ script:
      cabal configure --ghc-options="-O0 -fno-ignore-asserts" --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
    elif [ $GTKVTY = "opt2" ]; then
      cabal configure --ghc-options="-O2 -fno-ignore-asserts" --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
-   elif [ $GTKVTY = "threads" ]; then
-     cabal configure -fclients_as_threads --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
    elif [ $GTKVTY = "asserts" ]; then
      cabal configure -fwith_expensive_assertions --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
    else exit 7
