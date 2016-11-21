@@ -37,7 +37,7 @@ import Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Thread
-import Game.LambdaHack.SampleImplementation.SampleMonadClient (executorCliAsThread)
+import Game.LambdaHack.SampleImplementation.SampleMonadClient (executorCli)
 import Game.LambdaHack.Server
 import Game.LambdaHack.Server.BroadcastAtomic
 import Game.LambdaHack.Server.FileM
@@ -113,11 +113,11 @@ executorSer cops copsClient sdebugNxtCmdline = do
   -- options and is never updated with config options, etc.
   let sdebugMode = applyConfigToDebug cops sconfig $ sdebugCli sdebugNxt
       -- Partially applied main loops of the clients.
-      exeClientUI isAI msess =
-        executorCliAsThread (loopUI copsClient sconfig sdebugMode isAI) msess
+      executorClient msess =
+        executorCli (loopUI copsClient sconfig sdebugMode) msess
   -- Wire together game content, the main loops of game clients
   -- and the game server loop.
-  let m = loopSer sdebugNxt sconfig exeClientUI
+  let m = loopSer sdebugNxt sconfig executorClient
       saveFile (_, ser, _) = ssavePrefixSer (sdebugSer ser) <.> saveName
       totalState serToSave = SerState
         { serState = emptyState cops

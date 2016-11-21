@@ -5,7 +5,7 @@
 -- to expose the executor to any code using the library.
 module Game.LambdaHack.SampleImplementation.SampleMonadClient
   ( CliState(..)
-  , executorCliAsThread
+  , executorCli
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , CliImplementation
@@ -140,14 +140,14 @@ instance MonadAtomic CliImplementation where
 
 -- | Init the client, then run an action, with a given session,
 -- state and history, in the @IO@ monad.
-executorCliAsThread :: CliImplementation ()
-                    -> Maybe SessionUI
-                    -> Kind.COps
-                    -> FactionId
-                    -> ChanServer
-                    -> IO ()
-{-# INLINABLE executorCliAsThread #-}
-executorCliAsThread m cliSession cops fid cliDict =
+executorCli :: CliImplementation ()
+            -> Maybe SessionUI
+            -> Kind.COps
+            -> FactionId
+            -> ChanServer
+            -> IO ()
+{-# INLINABLE executorCli #-}
+executorCli m cliSession cops fid cliDict =
   let saveFile (_, cli, _) =
         ssavePrefixCli (sdebugCli cli)
         <.> saveName (sside cli)

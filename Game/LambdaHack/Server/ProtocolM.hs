@@ -212,28 +212,26 @@ childrenServer = unsafePerformIO (newMVar [])
 updateConn :: (MonadAtomic m, MonadServerReadRequest m)
            => Kind.COps
            -> Config
-           -> (Bool -> Maybe SessionUI -> Kind.COps -> FactionId
-               -> ChanServer
+           -> (Maybe SessionUI -> Kind.COps -> FactionId -> ChanServer
                -> IO ())
            -> m ()
 {-# INLINABLE updateConn #-}
-updateConn cops sconfig executorUI = do
+updateConn cops sconfig executorClient = do
   -- Prepare connections based on factions.
   oldD <- getDict
   let sess = emptySessionUI sconfig
-      mkChanServer :: Bool -> IO ChanServer
-      mkChanServer hasUI = do
+      mkChanServer :: Faction -> IO ChanServer
+      mkChanServer fact = do
         responseS <- newQueue
         requestAIS <- newQueue
-        requestUIS <- if hasUI then Just <$> newQueue else return Nothing
+        requestUIS <- if fhasUI $ gplayer fact
+                      then Just <$> newQueue
+                      else return Nothing
         return $! ChanServer{..}
       addConn :: FactionId -> Faction -> IO FrozenClient
       addConn fid fact = case EM.lookup fid oldD of
         Just conns -> return conns  -- share old conns and threads
-        Nothing | fhasUI $ gplayer fact ->
-          mkChanServer True
-        Nothing ->
-          mkChanServer False
+        Nothing -> mkChanServer fact
   factionD <- getsState sfactionD
   d <- liftIO $ mapWithKeyM addConn factionD
   let newD = d `EM.union` oldD  -- never kill old clients
@@ -241,9 +239,9 @@ updateConn cops sconfig executorUI = do
   -- Spawn client threads.
   let toSpawn = newD EM.\\ oldD
       forkUI fid connS =
-        forkChild childrenServer $ executorUI False (Just sess) cops fid connS
+        forkChild childrenServer $ executorClient (Just sess) cops fid connS
       forkAI fid connS =
-        forkChild childrenServer $ executorUI True Nothing cops fid connS
+        forkChild childrenServer $ executorClient Nothing cops fid connS
       forkClient fid conn@ChanServer{requestUIS=Nothing} =
         -- When a connection is reused, clients are not respawned,
         -- even if UI usage changes, but it works OK thanks to UI faction

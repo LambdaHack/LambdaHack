@@ -30,10 +30,11 @@ loopUI :: ( MonadClientSetup m
           , MonadAtomic m
           , MonadClientReadResponse m
           , MonadClientWriteRequest m )
-       => KeyKind -> Config -> DebugModeCli -> Bool -> m ()
+       => KeyKind -> Config -> DebugModeCli -> m ()
 {-# INLINABLE loopUI #-}
-loopUI copsClient sconfig sdebugCli isAI = do
-  if isAI then initAI sdebugCli else initUI copsClient sconfig sdebugCli
+loopUI copsClient sconfig sdebugCli = do
+  hasUI <- clientHasUI
+  if not hasUI then initAI sdebugCli else initUI copsClient sconfig sdebugCli
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   cops <- getsState scops
@@ -58,7 +59,7 @@ loopUI copsClient sconfig sdebugCli isAI = do
   case (restored, cmd1) of
     (True, RespUpdAtomic UpdResume{}) -> return ()
     (True, RespUpdAtomic UpdRestart{}) ->
-      unless isAI $ msgAdd $
+      when hasUI $ msgAdd $
         "Ignoring an old savefile and starting a new game."
     (False, RespUpdAtomic UpdResume{}) -> do
       removeServerSave
