@@ -84,7 +84,7 @@ flag with_expensive_assertions
 
 flag clients_as_threads
   description:        runs each client in a separate thread
-  default:            False
+  default:            True
   manual:             True
 
 flag release
