@@ -31,14 +31,14 @@ class MonadClient m => MonadClientWriteRequest m where
   sendRequest  :: (Either RequestAI RequestUI) -> m ()
 
 initAI :: MonadClient m => DebugModeCli -> m ()
-{-# INLINABLE initAI #-}
+{-# INLINE initAI #-}
 initAI sdebugCli = do
   modifyClient $ \cli -> cli {sdebugCli}
   side <- getsClient sside
   debugPossiblyPrint $ "AI client" <+> tshow side <+> "initializing."
 
 initUI :: MonadClientUI m => KeyKind -> Config -> DebugModeCli -> m ()
-{-# INLINABLE initUI #-}
+{-# INLINE initUI #-}
 initUI copsClient sconfig sdebugCli = do
   modifyClient $ \cli ->
     cli { sxhair = TVector $ Vector 1 1  -- a step south-east, less alarming
@@ -54,7 +54,7 @@ initUI copsClient sconfig sdebugCli = do
 handleSelfAI :: ( MonadClientSetup m
                 , MonadAtomic m )
              => UpdAtomic -> m ()
-{-# INLINABLE handleSelfAI #-}
+{-# INLINE handleSelfAI #-}
 handleSelfAI cmdA = {-# SCC handleSelfAI #-} do
   cmds <- cmdAtomicFilterCli cmdA
   mapM_ (\ !c -> cmdAtomicSemCli c
@@ -65,7 +65,7 @@ handleSelfUI :: ( MonadClientSetup m
                 , MonadClientUI m
                 , MonadAtomic m )
              => UpdAtomic -> m ()
-{-# INLINABLE handleSelfUI #-}
+{-# INLINE handleSelfUI #-}
 handleSelfUI cmdA = do
   cmds <- cmdAtomicFilterCli cmdA
   let handle !c = do
