@@ -37,10 +37,10 @@ debugShow = T.pack . Show.Pretty.ppShow
 debugResponse :: MonadServer m => Response -> m ()
 {-# INLINABLE debugResponse #-}
 debugResponse cmd = case cmd of
-  RespUpdAtomic _ cmdA@UpdPerception{} -> debugPlain cmd cmdA
-  RespUpdAtomic _ cmdA@UpdResume{} -> debugPlain cmd cmdA
-  RespUpdAtomic _ cmdA@UpdSpotTile{} -> debugPlain cmd cmdA
-  RespUpdAtomic _ cmdA -> debugPretty cmd cmdA
+  RespUpdAtomic cmdA@UpdPerception{} -> debugPlain cmd cmdA
+  RespUpdAtomic cmdA@UpdResume{} -> debugPlain cmd cmdA
+  RespUpdAtomic cmdA@UpdSpotTile{} -> debugPlain cmd cmdA
+  RespUpdAtomic cmdA -> debugPretty cmd cmdA
   RespQueryAI aid -> do
     d <- debugAid aid "RespQueryAI" cmd
     serverPrint d

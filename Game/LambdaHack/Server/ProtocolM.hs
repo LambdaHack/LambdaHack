@@ -89,7 +89,7 @@ saveName = serverSaveName
 
 tryRestore :: MonadServerReadRequest m
            => Kind.COps -> DebugModeSer
-           -> m (Maybe (State, StateServer, ConnServerDict))
+           -> m (Maybe (State, StateServer))
 {-# INLINABLE tryRestore #-}
 tryRestore Kind.COps{corule} sdebugSer = do
   let bench = sbenchmark $ sdebugCli sdebugSer
@@ -104,9 +104,7 @@ tryRestore Kind.COps{corule} sdebugSer = do
         content = rcfgUIDefault stdRuleset
     dataDir <- liftIO $ appDataDir
     liftIO $ tryWriteFile (dataDir </> cfgUIName) content
-    return $! case res of
-                Just (s, ser) -> Just (s, ser, EM.empty)
-                Nothing -> Nothing
+    return $! res
 
 -- | Connection channel between the server and a single client.
 data ChanServer = ChanServer
@@ -151,7 +149,7 @@ sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
 {-# INLINABLE sendUpdate #-}
 sendUpdate !fid !cmd = do
   frozenClient <- getsDict $ (EM.! fid)
-  let resp = RespUpdAtomic (isJust $ requestUIS frozenClient) cmd
+  let resp = RespUpdAtomic cmd
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponse resp
   writeQueue resp $ responseS frozenClient
@@ -217,12 +215,9 @@ updateConn :: (MonadAtomic m, MonadServerReadRequest m)
            -> (Bool -> Maybe SessionUI -> Kind.COps -> FactionId
                -> ChanServer
                -> IO ())
-           -> (Kind.COps -> FactionId
-               -> ChanServer
-               -> IO ())
            -> m ()
 {-# INLINABLE updateConn #-}
-updateConn cops sconfig executorUI executorAI = do
+updateConn cops sconfig executorUI = do
   -- Prepare connections based on factions.
   oldD <- getDict
   let sess = emptySessionUI sconfig

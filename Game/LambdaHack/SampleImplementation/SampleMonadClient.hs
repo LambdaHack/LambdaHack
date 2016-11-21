@@ -125,6 +125,10 @@ instance MonadClientWriteRequest CliImplementation where
   sendRequestUI scmd = CliImplementation $ do
     ChanServer{requestUIS} <- gets cliDict
     IO.liftIO $ putMVar (fromJust requestUIS) scmd
+  {-# INLINABLE clientHasUI #-}
+  clientHasUI = CliImplementation $ do
+    mSession <- gets cliSession
+    return $! isJust mSession
 
 -- | The game-state semantics of atomic commands
 -- as computed on the client.
@@ -136,18 +140,17 @@ instance MonadAtomic CliImplementation where
 
 -- | Init the client, then run an action, with a given session,
 -- state and history, in the @IO@ monad.
-executorCliAsThread :: Bool
-                    -> CliImplementation ()
+executorCliAsThread :: CliImplementation ()
                     -> Maybe SessionUI
                     -> Kind.COps
                     -> FactionId
                     -> ChanServer
                     -> IO ()
 {-# INLINABLE executorCliAsThread #-}
-executorCliAsThread isAI m cliSession cops fid cliDict =
+executorCliAsThread m cliSession cops fid cliDict =
   let saveFile (_, cli, _) =
         ssavePrefixCli (sdebugCli cli)
-        <.> saveName (sside cli) isAI
+        <.> saveName (sside cli)
       totalState cliToSave = CliState
         { cliState = emptyState cops
         , cliClient = emptyStateClient fid

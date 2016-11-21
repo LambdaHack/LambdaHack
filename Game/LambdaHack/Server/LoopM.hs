@@ -60,19 +60,16 @@ loopSer :: (MonadAtomic m, MonadServerReadRequest m)
         -> Config
         -> (Bool -> Maybe SessionUI -> Kind.COps -> FactionId -> ChanServer -> IO ())
              -- ^ the code to run for UI clients
-        -> (Kind.COps -> FactionId -> ChanServer -> IO ())
-             -- ^ the code to run for AI clients
         -> m ()
 {-# INLINABLE loopSer #-}
-loopSer sdebug sconfig executorUI executorAI = do
+loopSer sdebug sconfig executorUI = do
   -- Recover states and launch clients.
   cops <- getsState scops
-  let updConn = updateConn cops sconfig executorUI executorAI
+  let updConn = updateConn cops sconfig executorUI
   restored <- tryRestore cops sdebug
   case restored of
-    Just (sRaw, ser, dict) | not $ snewGameSer sdebug -> do  -- a restored game
+    Just (sRaw, ser) | not $ snewGameSer sdebug -> do  -- a restored game
       execUpdAtomic $ UpdResumeServer $ updateCOps (const cops) sRaw
-      putDict dict
       putServer ser
       modifyServer $ \ser2 -> ser2 {sdebugNxt = sdebug}
       applyDebug
@@ -88,7 +85,7 @@ loopSer sdebug sconfig executorUI executorAI = do
     _ -> do  -- Starting the first new game for this savefile.
       -- Set up commandline debug mode
       let mrandom = case restored of
-            Just (_, ser, _) -> Just $ srandom ser
+            Just (_, ser) -> Just $ srandom ser
             Nothing -> Nothing
       s <- gameReset cops sdebug Nothing mrandom
       let debugBarRngs = sdebug {sdungeonRng = Nothing, smainRng = Nothing}

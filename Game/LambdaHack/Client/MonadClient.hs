@@ -64,24 +64,24 @@ debugPossiblyPrint t = do
     T.hPutStrLn stdout t
     hFlush stdout
 
-saveName :: FactionId -> Bool -> String
-saveName side isAI =
+saveName :: FactionId -> String
+saveName side =
   let n = fromEnum side  -- we depend on the numbering hack to number saves
   in (if n > 0
       then "human_" ++ show n
       else "computer_" ++ show (-n))
-     ++ if isAI then ".ai.sav" else ".ui.sav"
+     ++ ".sav"
 
 tryRestore :: (Binary sess, MonadClient m)
-           => Bool -> m (Maybe (State, StateClient, sess))
+           => m (Maybe (State, StateClient, sess))
 {-# INLINABLE tryRestore #-}
-tryRestore isAI = do
+tryRestore = do
   bench <- getsClient $ sbenchmark . sdebugCli
   if bench then return Nothing
   else do
     side <- getsClient sside
     prefix <- getsClient $ ssavePrefixCli . sdebugCli
-    let name = prefix <.> saveName side isAI
+    let name = prefix <.> saveName side
     res <-
       liftIO $ Save.restoreGame tryCreateDir doesFileExist strictDecodeEOF name
     Kind.COps{corule} <- getsState scops

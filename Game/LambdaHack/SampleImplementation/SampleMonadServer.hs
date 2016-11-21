@@ -113,12 +113,11 @@ executorSer cops copsClient sdebugNxtCmdline = do
   -- options and is never updated with config options, etc.
   let sdebugMode = applyConfigToDebug cops sconfig $ sdebugCli sdebugNxt
       -- Partially applied main loops of the clients.
-      exeClientAI = executorCliAsThread True (loopAI sdebugMode) Nothing
-      exeClientUI isAI msess = executorCliAsThread False
-                    (loopUI copsClient sconfig sdebugMode isAI) msess
+      exeClientUI isAI msess =
+        executorCliAsThread (loopUI copsClient sconfig sdebugMode isAI) msess
   -- Wire together game content, the main loops of game clients
   -- and the game server loop.
-  let m = loopSer sdebugNxt sconfig exeClientUI exeClientAI
+  let m = loopSer sdebugNxt sconfig exeClientUI
       saveFile (_, ser, _) = ssavePrefixSer (sdebugSer ser) <.> saveName
       totalState serToSave = SerState
         { serState = emptyState cops

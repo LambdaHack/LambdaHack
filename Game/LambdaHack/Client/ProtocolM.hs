@@ -25,11 +25,12 @@ import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.Vector
 
 class MonadClient m => MonadClientReadResponse m where
-  receiveResponse  :: m Response
+  receiveResponse :: m Response
 
 class MonadClient m => MonadClientWriteRequest m where
-  sendRequestAI  :: RequestAI -> m ()
-  sendRequestUI  :: RequestUI -> m ()
+  sendRequestAI :: RequestAI -> m ()
+  sendRequestUI :: RequestUI -> m ()
+  clientHasUI   :: m Bool
 
 initAI :: MonadClient m => DebugModeCli -> m ()
 {-# INLINABLE initAI #-}

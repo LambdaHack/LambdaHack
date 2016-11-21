@@ -22,8 +22,9 @@ handleResponse :: ( MonadClientSetup m
                => Response -> m ()
 {-# INLINABLE handleResponse #-}
 handleResponse cmd = case cmd of
-  RespUpdAtomic noUI cmdA ->
-    if noUI then handleSelfAI cmdA else handleSelfUI cmdA
+  RespUpdAtomic cmdA -> do
+    hasUI <- clientHasUI
+    if not hasUI then handleSelfAI cmdA else handleSelfUI cmdA
   RespQueryAI aid -> do
     cmdC <- queryAI aid
     sendRequestAI cmdC
