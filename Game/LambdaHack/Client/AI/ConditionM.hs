@@ -81,7 +81,7 @@ condAimEnemyRememberedM aid = do
 -- | Require that the target enemy is adjacent to at least one friend.
 condAimEnemyAdjFriendM :: MonadClient m => ActorId -> m Bool
 {-# INLINABLE condAimEnemyAdjFriendM #-}
-condAimEnemyAdjFriendM aid = do
+condAimEnemyAdjFriendM aid = {-# SCC condAimEnemyAdjFriendM #-} do
   btarget <- getsClient $ getTarget aid
   case btarget of
     Just (TEnemy enemy _) -> do
@@ -108,7 +108,7 @@ condTgtNonmovingM aid = do
 -- that (possibly) explode upon contact.
 condAnyFoeAdjM :: MonadStateRead m => ActorId -> m Bool
 {-# INLINABLE condAnyFoeAdjM #-}
-condAnyFoeAdjM aid = do
+condAnyFoeAdjM aid = {-# SCC condAnyFoeAdjM #-} do
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   s <- getState
@@ -256,7 +256,7 @@ benAvailableItems :: MonadClient m
                   -> m [( (Maybe (Int, Int), (Int, CStore))
                         , (ItemId, ItemFull) )]
 {-# INLINABLE benAvailableItems #-}
-benAvailableItems aid permitted cstores = do
+benAvailableItems aid permitted cstores = {-# SCC benAvailableItems #-} do
   cops <- getsState scops
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
@@ -369,7 +369,7 @@ desirableItem canEsc use itemFull =
 -- | Require the actor is in a bad position to melee or can't melee at all.
 condMeleeBadM :: MonadClient m => ActorId -> m Bool
 {-# INLINABLE condMeleeBadM #-}
-condMeleeBadM aid = do
+condMeleeBadM aid = {-# SCC condMeleeBadM #-} do
   actorAspect <- getsClient sactorAspect
   b <- getsState $ getActorBody aid
   btarget <- getsClient $ getTarget aid

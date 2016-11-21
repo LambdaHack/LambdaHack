@@ -215,7 +215,7 @@ library
 
   if flag(clients_as_threads) {
     exposed-modules:    Game.LambdaHack.Client.LoopM
-                        Game.LambdaHack.SampleImplementation.SampleMonadClientAsThread
+                        Game.LambdaHack.SampleImplementation.SampleMonadClient
   } else {
     exposed-modules:    Game.LambdaHack.SampleImplementation.SampleMonadClient
   }

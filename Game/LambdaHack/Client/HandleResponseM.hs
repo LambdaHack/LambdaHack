@@ -28,13 +28,7 @@ handleResponseAI :: ( MonadClientSetup m
                     , MonadClientWriteRequest m )
                  => Response -> m ()
 {-# INLINE handleResponseAI #-}
-handleResponseAI cmd = {-# SCC handleResponseAI #-} case cmd of
-  RespUpdAtomic cmdA ->
-    handleSelfAI cmdA
-  RespQueryAI aid -> do
-    cmdC <- queryAI aid
-    sendRequest $ Left cmdC
-  _ -> assert `failure` cmd
+handleResponseAI _cmd = undefined
 
 handleResponseUI :: ( MonadClientSetup m
                     , MonadClientUI m
@@ -43,13 +37,13 @@ handleResponseUI :: ( MonadClientSetup m
                  => Response -> m ()
 {-# INLINE handleResponseUI #-}
 handleResponseUI cmd = {-# SCC handleResponseUI #-} case cmd of
-  RespUpdAtomic cmdA ->
-    handleSelfUI cmdA
+  RespUpdAtomic noUI cmdA ->
+    if noUI then handleSelfAI cmdA else handleSelfUI cmdA
   RespQueryAI aid -> do
-    cmdC <- queryAI aid
+    !cmdC <- queryAI aid
     sendRequest $ Left cmdC
   RespSfxAtomic sfx ->
     displayRespSfxAtomicUI False sfx
   RespQueryUI -> do
-    cmdH <- queryUI
+    !cmdH <- queryUI
     sendRequest $ Right cmdH

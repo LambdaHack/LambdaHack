@@ -4,7 +4,12 @@
 -- This module should not be imported anywhere except in 'Action'
 -- to expose the executor to any code using the library.
 module Game.LambdaHack.SampleImplementation.SampleMonadClient
-  ( runCli, CliState(..), initialCliState
+  ( CliState(..)
+#ifdef CLIENTS_AS_THREADS
+  , executorCliAsThread
+#else
+  , runCli, initialCliState
+#endif
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , CliImplementation
@@ -32,14 +37,32 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
 
+#ifdef CLIENTS_AS_THREADS
+import Control.Concurrent
+import System.FilePath
+
+import Game.LambdaHack.Client.FileM
+import Game.LambdaHack.Client.ProtocolM
+import Game.LambdaHack.Common.ClientOptions
+import qualified Game.LambdaHack.Common.Save as Save
+import Game.LambdaHack.Server.ProtocolM hiding (saveName)
+#endif
+
 data CliState = CliState
   { cliState   :: !State              -- ^ current global state
   , cliClient  :: !StateClient        -- ^ current client state
   , cliSession :: !(Maybe SessionUI)  -- ^ UI state, empty for AI clients
+#ifdef CLIENTS_AS_THREADS
+  , cliDict    :: !ChanServer   -- ^ this client connection information
+  , cliToSave  :: !(Save.ChanSave (State, StateClient, Maybe SessionUI))
+                                -- ^ connection to the save thread
+#endif
   }
   deriving Generic
 
+#ifndef CLIENTS_AS_THREADS
 instance Binary CliState
+#endif
 
 -- | Client state transformation monad.
 newtype CliImplementation a = CliImplementation
@@ -67,7 +90,16 @@ instance MonadClient CliImplementation where
   liftIO = CliImplementation . IO.liftIO
 
 instance MonadClientSetup CliImplementation where
+#ifdef CLIENTS_AS_THREADS
+  saveClient = CliImplementation $ do
+    toSave <- gets cliToSave
+    s <- gets cliState
+    cli <- gets cliClient
+    sess <- gets cliSession
+    IO.liftIO $ Save.saveToChan toSave (s, cli, sess)
+#else
   saveClient = return ()
+#endif
   restartClient  = CliImplementation $ state $ \cliS ->
     case cliSession cliS of
       Just sess ->
@@ -95,12 +127,53 @@ instance MonadClientUI CliImplementation where
   {-# INLINABLE liftIO #-}
   liftIO = CliImplementation . IO.liftIO
 
+#ifdef CLIENTS_AS_THREADS
+instance MonadClientReadResponse CliImplementation where
+  {-# INLINE receiveResponse #-}
+  receiveResponse = CliImplementation $ do
+    ChanServer{responseS} <- gets cliDict
+    IO.liftIO $ takeMVar responseS
+
+instance MonadClientWriteRequest CliImplementation where
+  {-# INLINE sendRequest #-}
+  sendRequest scmd = CliImplementation $ do
+    ChanServer{requestS} <- gets cliDict
+    IO.liftIO $ putMVar requestS scmd
+#endif
+
 -- | The game-state semantics of atomic commands
 -- as computed on the client.
 instance MonadAtomic CliImplementation where
+  {-# INLINE execUpdAtomic #-}
   execUpdAtomic cmd = handleUpdAtomic cmd
+  {-# INLINE execSfxAtomic #-}
   execSfxAtomic _sfx = return ()
 
+#ifdef CLIENTS_AS_THREADS
+-- | Init the client, then run an action, with a given session,
+-- state and history, in the @IO@ monad.
+executorCliAsThread :: Bool
+                    -> CliImplementation ()
+                    -> Maybe SessionUI
+                    -> Kind.COps
+                    -> FactionId
+                    -> ChanServer
+                    -> IO ()
+{-# INLINE executorCliAsThread #-}
+executorCliAsThread isAI m cliSession cops fid cliDict =
+  let saveFile (_, cli, _) =
+        ssavePrefixCli (sdebugCli cli)
+        <.> saveName (sside cli) isAI
+      totalState cliToSave = CliState
+        { cliState = emptyState cops
+        , cliClient = emptyStateClient fid
+        , cliDict
+        , cliToSave
+        , cliSession
+        }
+      exe = evalStateT (runCliImplementation m) . totalState
+  in Save.wrapInSaves tryCreateDir encodeEOF saveFile exe
+#else
 initialCliState :: Kind.COps
                 -> Maybe SessionUI
                 -> FactionId
@@ -115,3 +188,4 @@ initialCliState cops cliSession fid =
 runCli :: CliImplementation a -> CliState -> IO (a, CliState)
 {-# INLINE runCli #-}
 runCli m = runStateT (runCliImplementation m)
+#endif

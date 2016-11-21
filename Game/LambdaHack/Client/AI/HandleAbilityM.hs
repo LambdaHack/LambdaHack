@@ -66,7 +66,7 @@ toAny strat = RequestAnyAbility <$> strat
 actionStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy RequestAnyAbility)
 {-# INLINE actionStrategy #-}
-actionStrategy aid = do
+actionStrategy aid = {-# SCC actionStrategy #-} do
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   mleader <- getsClient _sleader
@@ -672,7 +672,7 @@ trigger aid fleeViaStairs = do
 
 projectItem :: MonadClient m
             => ActorId -> m (Strategy (RequestTimed 'AbProject))
-{-# INLINABLE projectItem #-}
+{-# INLINE projectItem #-}
 projectItem aid = do
   btarget <- getsClient $ getTarget aid
   b <- getsState $ getActorBody aid
@@ -743,7 +743,7 @@ data ApplyItemGroup = ApplyAll | ApplyFirstAid
 
 applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed 'AbApply))
-{-# INLINABLE applyItem #-}
+{-# INLINE applyItem #-}
 applyItem aid applyGroup = do
   actorSk <- actorSkillsClient aid
   b <- getsState $ getActorBody aid

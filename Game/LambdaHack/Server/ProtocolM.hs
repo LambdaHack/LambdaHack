@@ -182,10 +182,10 @@ updateCopsDict copsClient sconfig sdebugCli = do
 sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
 {-# INLINE sendUpdate #-}
 sendUpdate !fid !cmd = {-# SCC sendUpdate #-} do
-  let resp = RespUpdAtomic cmd
+  frozenClient <- getsDict $ (EM.! fid)
+  let resp = RespUpdAtomic (isAI frozenClient) cmd
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponse resp
-  frozenClient <- getsDict $ (EM.! fid)
 #ifdef CLIENTS_AS_THREADS
   writeQueue resp $ responseS frozenClient
 #else
@@ -219,8 +219,6 @@ sendQueryAI :: MonadServerReadRequest m => FactionId -> ActorId -> m RequestAI
 {-# INLINE sendQueryAI #-}
 sendQueryAI fid aid = {-# SCC sendQueryAI #-} do
   let respAI = RespQueryAI aid
-  debug <- getsServer $ sniffOut . sdebugSer
-  when debug $ debugResponse respAI
   frozenClient <- getsDict $ (EM.! fid)
   req <- do
 #ifdef CLIENTS_AS_THREADS
@@ -236,7 +234,6 @@ sendQueryAI fid aid = {-# SCC sendQueryAI #-} do
     modifyDict $ EM.insert fid cliStateNew
     return req
 #endif
-  when debug $ debugRequestAI aid req
   return req
 
 sendQueryUI :: (MonadAtomic m, MonadServerReadRequest m)
@@ -287,7 +284,7 @@ childrenServer = unsafePerformIO (newMVar [])
 updateConn :: (MonadAtomic m, MonadServerReadRequest m)
            => Kind.COps
            -> KeyKind -> Config -> DebugModeCli
-           -> (SessionUI -> Kind.COps -> FactionId
+           -> (Bool -> Maybe SessionUI -> Kind.COps -> FactionId
                -> ChanServer
                -> IO ())
            -> (Kind.COps -> FactionId
@@ -337,9 +334,9 @@ updateConn cops copsClient sconfig sdebugCli
   -- Spawn client threads.
   let toSpawn = newD EM.\\ oldD
       forkUI fid connS =
-        forkChild childrenServer $ _executorUI sess cops fid connS
+        forkChild childrenServer $ _executorUI False (Just sess) cops fid connS
       forkAI fid connS =
-        forkChild childrenServer $ _executorAI cops fid connS
+        forkChild childrenServer $ _executorUI True Nothing cops fid connS
       forkClient fid conn@ChanServer{isAI=True} =
         -- When a connection is reused, clients are not respawned,
         -- even if UI usage changes, but it works OK thanks to UI faction
