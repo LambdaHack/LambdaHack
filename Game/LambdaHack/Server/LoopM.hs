@@ -59,7 +59,7 @@ import Game.LambdaHack.Server.State
 loopSer :: (MonadAtomic m, MonadServerReadRequest m)
         => DebugModeSer  -- ^ server debug parameters
         -> KeyKind -> Config -> DebugModeCli
-        -> (SessionUI -> Kind.COps -> FactionId -> ChanServer -> IO ())
+        -> (Bool -> Maybe SessionUI -> Kind.COps -> FactionId -> ChanServer -> IO ())
              -- ^ the code to run for UI clients
         -> (Kind.COps -> FactionId -> ChanServer -> IO ())
              -- ^ the code to run for AI clients

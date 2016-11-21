@@ -14,7 +14,7 @@ import Game.LambdaHack.Common.Actor
 
 -- | Abstract syntax of client commands for both AI and UI clients.
 data Response =
-    RespUpdAtomic !UpdAtomic
+    RespUpdAtomic !Bool !UpdAtomic
   | RespQueryAI !ActorId
   | RespSfxAtomic !SfxAtomic
   | RespQueryUI

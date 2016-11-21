@@ -46,7 +46,7 @@ import Game.LambdaHack.Server.State
 
 #ifdef CLIENTS_AS_THREADS
 import Game.LambdaHack.Client
-import Game.LambdaHack.SampleImplementation.SampleMonadClientAsThread (executorCliAsThread)
+import Game.LambdaHack.SampleImplementation.SampleMonadClient (executorCliAsThread)
 #endif
 
 data SerState = SerState
@@ -103,6 +103,7 @@ instance MonadAtomic SerImplementation where
 -- Don't inline this, to keep GHC hard work inside the library.
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: Kind.COps -> KeyKind -> DebugModeSer -> IO ()
+{-# INLINABLE executorSer #-}
 executorSer cops copsClient sdebugNxtCmdline = do
   -- Parse UI client configuration file.
   -- It is reloaded at each game executable start.
@@ -116,9 +117,9 @@ executorSer cops copsClient sdebugNxtCmdline = do
   let sdebugMode = applyConfigToDebug cops sconfig $ sdebugCli sdebugNxt
       -- Partially applied main loops of the clients.
 #ifdef CLIENTS_AS_THREADS
-      exeClientAI = executorCliAsThread True (loopAI sdebugMode) ()
-      exeClientUI = executorCliAsThread False
-                    $ loopUI copsClient sconfig sdebugMode
+      exeClientAI = executorCliAsThread True (loopAI sdebugMode) Nothing
+      exeClientUI isAI msess = executorCliAsThread False
+                    (loopUI copsClient sconfig sdebugMode isAI) msess
 #else
       exeClientAI = undefined
       exeClientUI = undefined

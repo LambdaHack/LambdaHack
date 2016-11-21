@@ -26,6 +26,7 @@ import Game.LambdaHack.Common.State
 
 -- | The main game loop for an AI client.
 loopAI :: ( MonadClientSetup m
+          , MonadClientUI m
           , MonadAtomic m
           , MonadClientReadResponse m
           , MonadClientWriteRequest m )
@@ -41,22 +42,22 @@ loopAI sdebugCli = do
   restored <- case restoredG of
     Just (s, cli, ()) | not $ snewGameCli sdebugCli -> do  -- Restore game.
       let sCops = updateCOps (const cops) s
-      handleResponseAI $ RespUpdAtomic $ UpdResumeServer sCops
+      handleResponse $ RespUpdAtomic False $ UpdResumeServer sCops
       putClient cli {sdebugCli}
       return True
     _ -> return False
   cmd1 <- receiveResponse
   case (restored, cmd1) of
-    (True, RespUpdAtomic UpdResume{}) -> return ()
-    (True, RespUpdAtomic UpdRestart{}) -> return ()
-    (False, RespUpdAtomic UpdResume{}) -> do
+    (True, RespUpdAtomic _ UpdResume{}) -> return ()
+    (True, RespUpdAtomic _ UpdRestart{}) -> return ()
+    (False, RespUpdAtomic _ UpdResume{}) -> do
       removeServerSave
       error $ T.unpack $
         "Savefile of client" <+> tshow side
         <+> "not usable. Removing server savefile. Please restart now."
-    (False, RespUpdAtomic UpdRestart{}) -> return ()
+    (False, RespUpdAtomic _ UpdRestart{}) -> return ()
     _ -> assert `failure` "unexpected command" `twith` (side, restored, cmd1)
-  handleResponseAI cmd1
+  handleResponse cmd1
   -- State and client state now valid.
   debugPossiblyPrint $ "AI client" <+> tshow side <+> "started."
   loop
@@ -64,7 +65,7 @@ loopAI sdebugCli = do
  where
   loop = do
     cmd <- receiveResponse
-    handleResponseAI cmd
+    handleResponse cmd
     quit <- getsClient squit
     unless quit loop
 
@@ -74,10 +75,10 @@ loopUI :: ( MonadClientSetup m
           , MonadAtomic m
           , MonadClientReadResponse m
           , MonadClientWriteRequest m )
-       => KeyKind -> Config -> DebugModeCli -> m ()
+       => KeyKind -> Config -> DebugModeCli -> Bool -> m ()
 {-# INLINABLE loopUI #-}
-loopUI copsClient sconfig sdebugCli = do
-  initUI copsClient sconfig sdebugCli
+loopUI copsClient sconfig sdebugCli isAI = do
+  if isAI then initAI sdebugCli else initUI copsClient sconfig sdebugCli
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   cops <- getsState scops
@@ -86,7 +87,7 @@ loopUI copsClient sconfig sdebugCli = do
     Just (s, cli, sess) | not $ snewGameCli sdebugCli -> do
       -- Restore game.
       let sCops = updateCOps (const cops) s
-      handleResponseUI $ RespUpdAtomic $ UpdResumeServer sCops
+      handleResponse $ RespUpdAtomic True $ UpdResumeServer sCops
       schanF <- getsSession schanF
       sbinding <- getsSession sbinding
       putSession sess {schanF, sbinding}
@@ -100,18 +101,18 @@ loopUI copsClient sconfig sdebugCli = do
   side <- getsClient sside
   cmd1 <- receiveResponse
   case (restored, cmd1) of
-    (True, RespUpdAtomic UpdResume{}) -> return ()
-    (True, RespUpdAtomic UpdRestart{}) -> do
+    (True, RespUpdAtomic _ UpdResume{}) -> return ()
+    (True, RespUpdAtomic _ UpdRestart{}) -> do
       msgAdd $
         "Ignoring an old savefile and starting a new game."
-    (False, RespUpdAtomic UpdResume{}) -> do
+    (False, RespUpdAtomic _ UpdResume{}) -> do
       removeServerSave
       error $ T.unpack $
         "Savefile of client" <+> tshow side
         <+> "not usable. Removing server savefile. Please restart now."
-    (False, RespUpdAtomic UpdRestart{}) -> return ()
+    (False, RespUpdAtomic _ UpdRestart{}) -> return ()
     _ -> assert `failure` "unexpected command" `twith` (side, restored, cmd1)
-  handleResponseUI cmd1
+  handleResponse cmd1
   -- State and client state now valid.
   debugPossiblyPrint $ "UI client" <+> tshow side <+> "started."
   loop
@@ -119,6 +120,6 @@ loopUI copsClient sconfig sdebugCli = do
  where
   loop = do
     cmd <- receiveResponse
-    handleResponseUI cmd
+    handleResponse cmd
     quit <- getsClient squit
     unless quit loop

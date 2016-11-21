@@ -67,13 +67,13 @@ type CliSerQueue = MVar
 #ifdef CLIENTS_AS_THREADS
 writeQueue :: MonadServerReadRequest m
            => Response -> CliSerQueue Response -> m ()
-{-# INLINABLE writeQueue #-}
+{-# INLINE writeQueue #-}
 writeQueue cmd responseS = liftIO $ putMVar responseS cmd
 
 readQueue :: MonadServerReadRequest m
           => CliSerQueue (Either RequestAI RequestUI)
           -> m (Either RequestAI RequestUI)
-{-# INLINABLE readQueue #-}
+{-# INLINE readQueue #-}
 readQueue requestS = liftIO $ takeMVar requestS
 
 newQueue :: IO (CliSerQueue a)
@@ -119,9 +119,9 @@ tryRestore Kind.COps{corule} sdebugSer = do
 
 -- | Connection channel between the server and a single client.
 data ChanServer = ChanServer
-  { isAI      :: !Bool
-  , responseS :: !(CliSerQueue Response)
+  { responseS :: !(CliSerQueue Response)
   , requestS  :: !(CliSerQueue (Either RequestAI RequestUI))
+  , isAI      :: !Bool
   }
 
 -- | Either states or connections to the human-controlled client
@@ -162,7 +162,7 @@ putDict s = modifyDict (const s)
 
 updateCopsDict :: MonadServerReadRequest m
                => KeyKind -> Config -> DebugModeCli -> m ()
-{-# INLINABLE updateCopsDict #-}
+{-# INLINE updateCopsDict #-}
 updateCopsDict copsClient sconfig sdebugCli = do
 #ifdef CLIENTS_AS_THREADS
   return ()
@@ -182,11 +182,11 @@ updateCopsDict copsClient sconfig sdebugCli = do
 sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
 {-# INLINABLE sendUpdate #-}
 sendUpdate !fid !cmd = do
-  let resp = RespUpdAtomic cmd
-  debug <- getsServer $ sniffOut . sdebugSer
-  when debug $ debugResponse resp
   frozenClient <- getsDict $ (EM.! fid)
 #ifdef CLIENTS_AS_THREADS
+  let resp = RespUpdAtomic (isAI frozenClient) cmd
+  debug <- getsServer $ sniffOut . sdebugSer
+  when debug $ debugResponse resp
   writeQueue resp $ responseS frozenClient
 #else
   let cliState = frozenClient
@@ -287,7 +287,7 @@ childrenServer = unsafePerformIO (newMVar [])
 updateConn :: (MonadAtomic m, MonadServerReadRequest m)
            => Kind.COps
            -> KeyKind -> Config -> DebugModeCli
-           -> (SessionUI -> Kind.COps -> FactionId
+           -> (Bool -> Maybe SessionUI -> Kind.COps -> FactionId
                -> ChanServer
                -> IO ())
            -> (Kind.COps -> FactionId
@@ -337,9 +337,9 @@ updateConn cops copsClient sconfig sdebugCli
   -- Spawn client threads.
   let toSpawn = newD EM.\\ oldD
       forkUI fid connS =
-        forkChild childrenServer $ _executorUI sess cops fid connS
+        forkChild childrenServer $ _executorUI False (Just sess) cops fid connS
       forkAI fid connS =
-        forkChild childrenServer $ _executorAI cops fid connS
+        forkChild childrenServer $ _executorUI True Nothing cops fid connS
       forkClient fid conn@ChanServer{isAI=True} =
         -- When a connection is reused, clients are not respawned,
         -- even if UI usage changes, but it works OK thanks to UI faction

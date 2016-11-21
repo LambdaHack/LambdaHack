@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 -- | Semantics of client commands.
 module Game.LambdaHack.Client.HandleResponseM
-  ( handleResponseAI, handleResponseUI
+  ( handleResponse
   ) where
 
 import Prelude ()
@@ -15,36 +15,15 @@ import Game.LambdaHack.Client.ProtocolM
 import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Common.Response
 
-{-
-storeUndo :: MonadClient m => CmdAtomic -> m ()
-{-# INLINABLE storeUndo #-}
-storeUndo _atomic =
-  maybe (return ()) (\a -> modifyClient $ \cli -> cli {sundo = a : sundo cli})
-    Nothing   -- TODO: undoCmdAtomic atomic
--}
-
-handleResponseAI :: ( MonadClientSetup m
-                    , MonadAtomic m
-                    , MonadClientWriteRequest m )
-                 => Response -> m ()
-{-# INLINABLE handleResponseAI #-}
-handleResponseAI cmd = case cmd of
-  RespUpdAtomic cmdA ->
-    handleSelfAI cmdA
-  RespQueryAI aid -> do
-    cmdC <- queryAI aid
-    sendRequest $ Left cmdC
-  _ -> assert `failure` cmd
-
-handleResponseUI :: ( MonadClientSetup m
-                    , MonadClientUI m
-                    , MonadAtomic m
-                    , MonadClientWriteRequest m )
-                 => Response -> m ()
-{-# INLINABLE handleResponseUI #-}
-handleResponseUI cmd = case cmd of
-  RespUpdAtomic cmdA ->
-    handleSelfUI cmdA
+handleResponse :: ( MonadClientSetup m
+                  , MonadClientUI m
+                  , MonadAtomic m
+                  , MonadClientWriteRequest m )
+               => Response -> m ()
+{-# INLINABLE handleResponse #-}
+handleResponse cmd = case cmd of
+  RespUpdAtomic noUI cmdA ->
+    if noUI then handleSelfAI cmdA else handleSelfUI cmdA
   RespQueryAI aid -> do
     cmdC <- queryAI aid
     sendRequest $ Left cmdC
