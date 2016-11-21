@@ -250,7 +250,7 @@ library
                       DataKinds, KindSignatures
 --, DeriveGeneric
   ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-unrecognised-pragmas
-  ghc-options:        -fno-warn-implicit-prelude -fno-ignore-asserts
+  ghc-options:        -fno-warn-implicit-prelude -fno-ignore-asserts -fexpose-all-unfoldings
 
   if impl(ghcjs) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
@@ -335,7 +335,7 @@ executable LambdaHack
                       BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf
   other-extensions:   TemplateHaskell
   ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-unrecognised-pragmas
-  ghc-options:        -fno-warn-implicit-prelude -fno-ignore-asserts
+  ghc-options:        -fno-warn-implicit-prelude -fno-ignore-asserts -fexpose-all-unfoldings
   ghc-options:        -threaded -rtsopts
 
   if impl(ghcjs) {
@@ -388,7 +388,7 @@ test-suite test
                       BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf
   other-extensions:   TemplateHaskell
   ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-unrecognised-pragmas
-  ghc-options:        -fno-warn-implicit-prelude -fno-ignore-asserts
+  ghc-options:        -fno-warn-implicit-prelude -fno-ignore-asserts -fexpose-all-unfoldings
   ghc-options:        -threaded -rtsopts
 
   if impl(ghcjs) {
