@@ -80,9 +80,8 @@ saveServer :: MonadServerReadRequest m => m ()
 saveServer = do
   s <- getState
   ser <- getServer
-  dictAll <- getDict
   toSave <- saveChanServer
-  liftIO $ Save.saveToChan toSave (s, ser, dictAll)
+  liftIO $ Save.saveToChan toSave (s, ser)
 
 saveName :: String
 saveName = serverSaveName
@@ -134,7 +133,7 @@ type ConnServerDict = EM.EnumMap FactionId FrozenClient
 class MonadServer m => MonadServerReadRequest m where
   getsDict     :: (ConnServerDict -> a) -> m a
   modifyDict   :: (ConnServerDict -> ConnServerDict) -> m ()
-  saveChanServer :: m (Save.ChanSave (State, StateServer, ConnServerDict))
+  saveChanServer :: m (Save.ChanSave (State, StateServer))
   liftIO       :: IO a -> m a
 
 getDict :: MonadServerReadRequest m => m ConnServerDict

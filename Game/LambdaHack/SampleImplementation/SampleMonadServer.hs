@@ -50,7 +50,7 @@ data SerState = SerState
   { serState  :: !State           -- ^ current global state
   , serServer :: !StateServer     -- ^ current server state
   , serDict   :: !ConnServerDict  -- ^ client-server connection information
-  , serToSave :: !(Save.ChanSave (State, StateServer, ConnServerDict))
+  , serToSave :: !(Save.ChanSave (State, StateServer))
                                   -- ^ connection to the save thread
   }
 
@@ -94,16 +94,19 @@ instance MonadServerReadRequest SerImplementation where
 -- | The game-state semantics of atomic commands
 -- as computed on the server.
 instance MonadAtomic SerImplementation where
+  {-# INLINABLE execUpdAtomic #-}
   execUpdAtomic cmd = cmdAtomicSemSer cmd >> handleAndBroadcast (UpdAtomic cmd)
+  {-# INLINABLE execSfxAtomic #-}
   execSfxAtomic sfx = handleAndBroadcast (SfxAtomic sfx)
 
--- Don't inline this, to keep GHC hard work inside the library.
+-- Don't inline this, to keep GHC hard work inside the library
+-- for easy access of code analysis tools.
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: Kind.COps -> KeyKind -> DebugModeSer -> IO ()
 {-# INLINABLE executorSer #-}
 executorSer cops copsClient sdebugNxtCmdline = do
   -- Parse UI client configuration file.
-  -- It is reloaded at each game executable start.
+  -- It is reparsed at each start of the game executable.
   sconfig <- mkConfig cops (sbenchmark $ sdebugCli sdebugNxtCmdline)
   sdebugNxt <- case configCmdline sconfig of
     [] -> return sdebugNxtCmdline
@@ -112,13 +115,12 @@ executorSer cops copsClient sdebugNxtCmdline = do
   -- The client debug inside server debug only holds the client commandline
   -- options and is never updated with config options, etc.
   let sdebugMode = applyConfigToDebug cops sconfig $ sdebugCli sdebugNxt
-      -- Partially applied main loops of the clients.
-      executorClient msess =
-        executorCli (loopUI copsClient sconfig sdebugMode) msess
-  -- Wire together game content, the main loops of game clients
+      -- Partially applied main loop of the clients.
+      executorClient = executorCli (loopUI copsClient sconfig sdebugMode)
+  -- Wire together game content, the main loop of game clients
   -- and the game server loop.
   let m = loopSer sdebugNxt sconfig executorClient
-      saveFile (_, ser, _) = ssavePrefixSer (sdebugSer ser) <.> saveName
+      saveFile (_, ser) = ssavePrefixSer (sdebugSer ser) <.> saveName
       totalState serToSave = SerState
         { serState = emptyState cops
         , serServer = emptyStateServer
@@ -126,9 +128,7 @@ executorSer cops copsClient sdebugNxtCmdline = do
         , serToSave
         }
       exe = evalStateT (runSerImplementation m) . totalState
-      encode =
-        \path (x, y, _) -> encodeEOF path (x, y)
-      exeWithSaves = Save.wrapInSaves tryCreateDir encode saveFile exe
+      exeWithSaves = Save.wrapInSaves tryCreateDir encodeEOF saveFile exe
   -- Wait for clients to exit even in case of server crash
   -- (or server and client crash), which gives them time to save
   -- and report their own inconsistencies, if any.
