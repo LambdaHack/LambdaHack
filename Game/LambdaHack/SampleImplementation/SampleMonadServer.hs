@@ -28,6 +28,7 @@ import System.FilePath
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Atomic.MonadStateWrite
+import Game.LambdaHack.Client
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Common.ClientOptions
@@ -36,6 +37,7 @@ import Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Thread
+import Game.LambdaHack.SampleImplementation.SampleMonadClient (executorCliAsThread)
 import Game.LambdaHack.Server
 import Game.LambdaHack.Server.BroadcastAtomic
 import Game.LambdaHack.Server.FileM
@@ -43,11 +45,6 @@ import Game.LambdaHack.Server.HandleAtomicM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolM
 import Game.LambdaHack.Server.State
-
-#ifdef CLIENTS_AS_THREADS
-import Game.LambdaHack.Client
-import Game.LambdaHack.SampleImplementation.SampleMonadClient (executorCliAsThread)
-#endif
 
 data SerState = SerState
   { serState  :: !State           -- ^ current global state
@@ -116,18 +113,12 @@ executorSer cops copsClient sdebugNxtCmdline = do
   -- options and is never updated with config options, etc.
   let sdebugMode = applyConfigToDebug cops sconfig $ sdebugCli sdebugNxt
       -- Partially applied main loops of the clients.
-#ifdef CLIENTS_AS_THREADS
       exeClientAI = executorCliAsThread True (loopAI sdebugMode) Nothing
       exeClientUI isAI msess = executorCliAsThread False
                     (loopUI copsClient sconfig sdebugMode isAI) msess
-#else
-      exeClientAI = undefined
-      exeClientUI = undefined
-#endif
   -- Wire together game content, the main loops of game clients
   -- and the game server loop.
-  let m = loopSer sdebugNxt copsClient sconfig sdebugMode
-                  exeClientUI exeClientAI
+  let m = loopSer sdebugNxt sconfig exeClientUI exeClientAI
       saveFile (_, ser, _) = ssavePrefixSer (sdebugSer ser) <.> saveName
       totalState serToSave = SerState
         { serState = emptyState cops
@@ -137,11 +128,7 @@ executorSer cops copsClient sdebugNxtCmdline = do
         }
       exe = evalStateT (runSerImplementation m) . totalState
       encode =
-#ifdef CLIENTS_AS_THREADS
         \path (x, y, _) -> encodeEOF path (x, y)
-#else
-        encodeEOF
-#endif
       exeWithSaves = Save.wrapInSaves tryCreateDir encode saveFile exe
   -- Wait for clients to exit even in case of server crash
   -- (or server and client crash), which gives them time to save

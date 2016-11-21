@@ -22,7 +22,6 @@ import qualified Data.Ord as Ord
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -58,27 +57,22 @@ import Game.LambdaHack.Server.State
 -- communicating with the clients.
 loopSer :: (MonadAtomic m, MonadServerReadRequest m)
         => DebugModeSer  -- ^ server debug parameters
-        -> KeyKind -> Config -> DebugModeCli
+        -> Config
         -> (Bool -> Maybe SessionUI -> Kind.COps -> FactionId -> ChanServer -> IO ())
              -- ^ the code to run for UI clients
         -> (Kind.COps -> FactionId -> ChanServer -> IO ())
              -- ^ the code to run for AI clients
         -> m ()
 {-# INLINABLE loopSer #-}
-loopSer sdebug copsClient sconfig sdebugCli executorUI executorAI = do
+loopSer sdebug sconfig executorUI executorAI = do
   -- Recover states and launch clients.
   cops <- getsState scops
-  let updConn = updateConn cops copsClient sconfig sdebugCli
-                           executorUI executorAI
+  let updConn = updateConn cops sconfig executorUI executorAI
   restored <- tryRestore cops sdebug
   case restored of
     Just (sRaw, ser, dict) | not $ snewGameSer sdebug -> do  -- a restored game
       execUpdAtomic $ UpdResumeServer $ updateCOps (const cops) sRaw
       putDict dict
-#ifndef CLIENTS_AS_THREADS
-      -- Avoid duplicated frontend init, if we do threaded clients.
-      updateCopsDict copsClient sconfig sdebugCli
-#endif
       putServer ser
       modifyServer $ \ser2 -> ser2 {sdebugNxt = sdebug}
       applyDebug

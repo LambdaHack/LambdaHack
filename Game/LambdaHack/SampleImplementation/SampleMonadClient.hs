@@ -5,11 +5,7 @@
 -- to expose the executor to any code using the library.
 module Game.LambdaHack.SampleImplementation.SampleMonadClient
   ( CliState(..)
-#ifdef CLIENTS_AS_THREADS
   , executorCliAsThread
-#else
-  , runCli, initialCliState
-#endif
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , CliImplementation
@@ -20,49 +16,38 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict hiding (State)
-import Data.Binary
 import GHC.Generics (Generic)
+import System.FilePath
 
 import Game.LambdaHack.Atomic.HandleAtomicWrite
 import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Atomic.MonadStateWrite
+import Game.LambdaHack.Client.FileM
 import Game.LambdaHack.Client.MonadClient
+import Game.LambdaHack.Client.ProtocolM
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.SessionUI
+import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.State
-
-#ifdef CLIENTS_AS_THREADS
-import Control.Concurrent
-import System.FilePath
-
-import Game.LambdaHack.Client.FileM
-import Game.LambdaHack.Client.ProtocolM
-import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Save as Save
+import Game.LambdaHack.Common.State
 import Game.LambdaHack.Server.ProtocolM hiding (saveName)
-#endif
 
 data CliState = CliState
   { cliState   :: !State              -- ^ current global state
   , cliClient  :: !StateClient        -- ^ current client state
   , cliSession :: !(Maybe SessionUI)  -- ^ UI state, empty for AI clients
-#ifdef CLIENTS_AS_THREADS
   , cliDict    :: !ChanServer   -- ^ this client connection information
   , cliToSave  :: !(Save.ChanSave (State, StateClient, Maybe SessionUI))
                                 -- ^ connection to the save thread
-#endif
   }
   deriving Generic
-
-#ifndef CLIENTS_AS_THREADS
-instance Binary CliState
-#endif
 
 -- | Client state transformation monad.
 newtype CliImplementation a = CliImplementation
@@ -90,7 +75,6 @@ instance MonadClient CliImplementation where
   liftIO = CliImplementation . IO.liftIO
 
 instance MonadClientSetup CliImplementation where
-#ifdef CLIENTS_AS_THREADS
   {-# INLINABLE saveClient #-}
   saveClient = CliImplementation $ do
     toSave <- gets cliToSave
@@ -98,9 +82,6 @@ instance MonadClientSetup CliImplementation where
     cli <- gets cliClient
     sess <- gets cliSession
     IO.liftIO $ Save.saveToChan toSave (s, cli, sess)
-#else
-  saveClient = return ()
-#endif
   {-# INLINABLE restartClient #-}
   restartClient  = CliImplementation $ state $ \cliS ->
     case cliSession cliS of
@@ -129,7 +110,6 @@ instance MonadClientUI CliImplementation where
   {-# INLINABLE liftIO #-}
   liftIO = CliImplementation . IO.liftIO
 
-#ifdef CLIENTS_AS_THREADS
 instance MonadClientReadResponse CliImplementation where
   {-# INLINABLE receiveResponse #-}
   receiveResponse = CliImplementation $ do
@@ -141,7 +121,6 @@ instance MonadClientWriteRequest CliImplementation where
   sendRequest scmd = CliImplementation $ do
     ChanServer{requestS} <- gets cliDict
     IO.liftIO $ putMVar requestS scmd
-#endif
 
 -- | The game-state semantics of atomic commands
 -- as computed on the client.
@@ -151,7 +130,6 @@ instance MonadAtomic CliImplementation where
   {-# INLINE execSfxAtomic #-}
   execSfxAtomic _sfx = return ()
 
-#ifdef CLIENTS_AS_THREADS
 -- | Init the client, then run an action, with a given session,
 -- state and history, in the @IO@ monad.
 executorCliAsThread :: Bool
@@ -175,19 +153,3 @@ executorCliAsThread isAI m cliSession cops fid cliDict =
         }
       exe = evalStateT (runCliImplementation m) . totalState
   in Save.wrapInSaves tryCreateDir encodeEOF saveFile exe
-#else
-initialCliState :: Kind.COps
-                -> Maybe SessionUI
-                -> FactionId
-                -> CliState
-initialCliState cops cliSession fid =
-  CliState
-    { cliState = emptyState cops
-    , cliClient = emptyStateClient fid
-    , cliSession
-    }
-
-runCli :: CliImplementation a -> CliState -> IO (a, CliState)
-{-# INLINE runCli #-}
-runCli m = runStateT (runCliImplementation m)
-#endif
