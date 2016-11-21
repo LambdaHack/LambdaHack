@@ -3,16 +3,16 @@
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Server
-  ( -- * Re-exported from "Game.LambdaHack.Server.LoopServer"
+  ( -- * Re-exported from "Game.LambdaHack.Server.LoopM"
     loopSer
     -- * Re-exported from "Game.LambdaHack.Server.Commandline"
   , debugArgs
     -- * Re-exported from "Game.LambdaHack.Server.State"
-  , sdebugCli
+  , DebugModeSer(..)
   ) where
 
 import Prelude ()
 
-import Game.LambdaHack.Server.Commandline
-import Game.LambdaHack.Server.LoopM
-import Game.LambdaHack.Server.State
+import Game.LambdaHack.Server.Commandline (debugArgs)
+import Game.LambdaHack.Server.LoopM (loopSer)
+import Game.LambdaHack.Server.State (DebugModeSer (..))

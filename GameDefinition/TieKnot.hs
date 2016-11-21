@@ -8,6 +8,11 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import qualified Game.LambdaHack.Common.Kind as Kind
+import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.SampleImplementation.SampleMonadServer (executorSer)
+import Game.LambdaHack.Server
+
 import qualified Client.UI.Content.KeyKind as Content.KeyKind
 import qualified Content.CaveKind
 import qualified Content.ItemKind
@@ -15,12 +20,6 @@ import qualified Content.ModeKind
 import qualified Content.PlaceKind
 import qualified Content.RuleKind
 import qualified Content.TileKind
-import Game.LambdaHack.SampleImplementation.SampleMonadServer (executorSer)
-
-import qualified Game.LambdaHack.Common.Kind as Kind
-import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Server
-import Game.LambdaHack.Server.State
 
 -- | Tie the LambdaHack engine client, server and frontend code
 -- with the game-specific content definitions, and run the game.
@@ -35,7 +34,7 @@ tieKnot args = do
   -- Options for the next game taken from the commandline.
   sdebugNxt@DebugModeSer{sallClear} <- debugArgs args
   let -- Common content operations, created from content definitions.
-      -- Evaluated fully to discover errors ASAP and free memory.
+      -- Evaluated fully to discover errors ASAP and to free memory.
       cotile = Kind.createOps Content.TileKind.cdefs
       !cops = Kind.COps
         { cocave  = Kind.createOps Content.CaveKind.cdefs

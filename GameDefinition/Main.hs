@@ -18,5 +18,6 @@ import TieKnot
 main :: IO ()
 main = do
   args <- getArgs
+  -- Avoid the bound thread that would slow down the communication.
   a <- async $ tieKnot args
   wait a
