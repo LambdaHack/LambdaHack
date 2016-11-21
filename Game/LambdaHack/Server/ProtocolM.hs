@@ -60,11 +60,17 @@ writeQueue :: MonadServerReadRequest m
 {-# INLINE writeQueue #-}
 writeQueue cmd responseS = liftIO $ putMVar responseS cmd
 
-readQueue :: MonadServerReadRequest m
-          => CliSerQueue (Either RequestAI RequestUI)
-          -> m (Either RequestAI RequestUI)
-{-# INLINE readQueue #-}
-readQueue requestS = liftIO $ takeMVar requestS
+readQueueAI :: MonadServerReadRequest m
+            => CliSerQueue RequestAI
+            -> m RequestAI
+{-# INLINE readQueueAI #-}
+readQueueAI requestS = liftIO $ takeMVar requestS
+
+readQueueUI :: MonadServerReadRequest m
+            => CliSerQueue RequestUI
+            -> m RequestUI
+{-# INLINE readQueueUI #-}
+readQueueUI requestS = liftIO $ takeMVar requestS
 
 newQueue :: IO (CliSerQueue a)
 newQueue = newEmptyMVar
@@ -104,9 +110,9 @@ tryRestore Kind.COps{corule} sdebugSer = do
 
 -- | Connection channel between the server and a single client.
 data ChanServer = ChanServer
-  { responseS :: !(CliSerQueue Response)
-  , requestS  :: !(CliSerQueue (Either RequestAI RequestUI))
-  , isAI      :: !Bool
+  { responseS  :: !(CliSerQueue Response)
+  , requestAIS :: !(CliSerQueue RequestAI)
+  , requestUIS :: !(Maybe (CliSerQueue RequestUI))
   }
 
 -- | Either states or connections to the human-controlled client
@@ -145,7 +151,7 @@ sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
 {-# INLINABLE sendUpdate #-}
 sendUpdate !fid !cmd = do
   frozenClient <- getsDict $ (EM.! fid)
-  let resp = RespUpdAtomic (isAI frozenClient) cmd
+  let resp = RespUpdAtomic (isJust $ requestUIS frozenClient) cmd
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponse resp
   writeQueue resp $ responseS frozenClient
@@ -158,7 +164,7 @@ sendSfx !fid !sfx = do
   when debug $ debugResponse resp
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
-    ChanServer{isAI=False} -> writeQueue resp $ responseS frozenClient
+    ChanServer{requestUIS=Just{}} -> writeQueue resp $ responseS frozenClient
     _ -> return ()
 
 sendQueryAI :: MonadServerReadRequest m => FactionId -> ActorId -> m RequestAI
@@ -170,10 +176,7 @@ sendQueryAI fid aid = do
   frozenClient <- getsDict $ (EM.! fid)
   req <- do
     writeQueue respAI $ responseS frozenClient
-    ereq <- readQueue $ requestS frozenClient
-    case ereq of
-      Left req -> return req
-      Right _ -> assert `failure` (fid, ereq)
+    readQueueAI $ requestAIS frozenClient
   when debug $ debugRequestAI aid req
   return req
 
@@ -186,12 +189,8 @@ sendQueryUI fid _aid = do
   when debug $ debugResponse respUI
   frozenClient <- getsDict $ (EM.! fid)
   req <- do
-    let !_A = assert (not $ isAI frozenClient) ()
     writeQueue respUI $ responseS frozenClient
-    ereq <- readQueue $ requestS frozenClient
-    case ereq of
-      Left _ -> assert `failure` (fid, ereq)
-      Right req -> return req
+    readQueueUI $ fromJust $ requestUIS frozenClient
   when debug $ debugRequestUI _aid req
   return req
 
@@ -228,17 +227,18 @@ updateConn cops sconfig executorUI executorAI = do
   oldD <- getDict
   let sess = emptySessionUI sconfig
       mkChanServer :: Bool -> IO ChanServer
-      mkChanServer isAI = do
+      mkChanServer hasUI = do
         responseS <- newQueue
-        requestS <- newQueue
+        requestAIS <- newQueue
+        requestUIS <- if hasUI then Just <$> newQueue else return Nothing
         return $! ChanServer{..}
       addConn :: FactionId -> Faction -> IO FrozenClient
       addConn fid fact = case EM.lookup fid oldD of
         Just conns -> return conns  -- share old conns and threads
         Nothing | fhasUI $ gplayer fact ->
-          mkChanServer False
-        Nothing ->
           mkChanServer True
+        Nothing ->
+          mkChanServer False
   factionD <- getsState sfactionD
   d <- liftIO $ mapWithKeyM addConn factionD
   let newD = d `EM.union` oldD  -- never kill old clients
@@ -249,7 +249,7 @@ updateConn cops sconfig executorUI executorAI = do
         forkChild childrenServer $ executorUI False (Just sess) cops fid connS
       forkAI fid connS =
         forkChild childrenServer $ executorUI True Nothing cops fid connS
-      forkClient fid conn@ChanServer{isAI=True} =
+      forkClient fid conn@ChanServer{requestUIS=Nothing} =
         -- When a connection is reused, clients are not respawned,
         -- even if UI usage changes, but it works OK thanks to UI faction
         -- clients distinguished by positive FactionId numbers.

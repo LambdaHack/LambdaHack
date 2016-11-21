@@ -28,7 +28,8 @@ class MonadClient m => MonadClientReadResponse m where
   receiveResponse  :: m Response
 
 class MonadClient m => MonadClientWriteRequest m where
-  sendRequest  :: (Either RequestAI RequestUI) -> m ()
+  sendRequestAI  :: RequestAI -> m ()
+  sendRequestUI  :: RequestUI -> m ()
 
 initAI :: MonadClient m => DebugModeCli -> m ()
 {-# INLINABLE initAI #-}

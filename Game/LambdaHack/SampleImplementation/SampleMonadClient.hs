@@ -117,10 +117,14 @@ instance MonadClientReadResponse CliImplementation where
     IO.liftIO $ takeMVar responseS
 
 instance MonadClientWriteRequest CliImplementation where
-  {-# INLINABLE sendRequest #-}
-  sendRequest scmd = CliImplementation $ do
-    ChanServer{requestS} <- gets cliDict
-    IO.liftIO $ putMVar requestS scmd
+  {-# INLINABLE sendRequestAI #-}
+  sendRequestAI scmd = CliImplementation $ do
+    ChanServer{requestAIS} <- gets cliDict
+    IO.liftIO $ putMVar requestAIS scmd
+  {-# INLINABLE sendRequestUI #-}
+  sendRequestUI scmd = CliImplementation $ do
+    ChanServer{requestUIS} <- gets cliDict
+    IO.liftIO $ putMVar (fromJust requestUIS) scmd
 
 -- | The game-state semantics of atomic commands
 -- as computed on the client.

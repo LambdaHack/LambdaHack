@@ -26,9 +26,9 @@ handleResponse cmd = case cmd of
     if noUI then handleSelfAI cmdA else handleSelfUI cmdA
   RespQueryAI aid -> do
     cmdC <- queryAI aid
-    sendRequest $ Left cmdC
+    sendRequestAI cmdC
   RespSfxAtomic sfx ->
     displayRespSfxAtomicUI False sfx
   RespQueryUI -> do
     cmdH <- queryUI
-    sendRequest $ Right cmdH
+    sendRequestUI cmdH
