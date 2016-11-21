@@ -25,10 +25,10 @@ import System.FilePath
 import System.IO (hFlush, stdout)
 import qualified System.Random as R
 
-import Game.LambdaHack.Client.FileM
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
@@ -82,8 +82,7 @@ tryRestore = do
     side <- getsClient sside
     prefix <- getsClient $ ssavePrefixCli . sdebugCli
     let name = prefix <.> saveName side
-    res <-
-      liftIO $ Save.restoreGame tryCreateDir doesFileExist strictDecodeEOF name
+    res <- liftIO $ Save.restoreGame name
     Kind.COps{corule} <- getsState scops
     let stdRuleset = Kind.stdRuleset corule
         cfgUIName = rcfgUIName stdRuleset

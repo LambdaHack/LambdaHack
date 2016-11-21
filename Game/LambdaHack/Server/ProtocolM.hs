@@ -38,6 +38,7 @@ import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
@@ -49,7 +50,6 @@ import Game.LambdaHack.Common.Thread
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.DebugM
-import Game.LambdaHack.Server.FileM
 import Game.LambdaHack.Server.MonadServer hiding (liftIO)
 import Game.LambdaHack.Server.State
 
@@ -96,8 +96,7 @@ tryRestore Kind.COps{corule} sdebugSer = do
   else do
     let prefix = ssavePrefixSer sdebugSer
         name = prefix <.> saveName
-    res <-
-      liftIO $ Save.restoreGame tryCreateDir doesFileExist strictDecodeEOF name
+    res <- liftIO $ Save.restoreGame name
     let stdRuleset = Kind.stdRuleset corule
         cfgUIName = rcfgUIName stdRuleset
         content = rcfgUIDefault stdRuleset

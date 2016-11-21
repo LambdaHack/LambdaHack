@@ -4,11 +4,10 @@
 -- This module should not be imported anywhere except in 'Action'
 -- to expose the executor to any code using the library.
 module Game.LambdaHack.SampleImplementation.SampleMonadClient
-  ( CliState(..)
-  , executorCli
+  ( executorCli
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , CliImplementation
+  , CliState(..), CliImplementation(..)
 #endif
   ) where
 
@@ -25,7 +24,6 @@ import System.FilePath
 import Game.LambdaHack.Atomic.HandleAtomicWrite
 import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Atomic.MonadStateWrite
-import Game.LambdaHack.Client.FileM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.ProtocolM
 import Game.LambdaHack.Client.State
@@ -159,4 +157,4 @@ executorCli m cliSession cops fid cliDict =
         , cliSession
         }
       exe = evalStateT (runCliImplementation m) . totalState
-  in Save.wrapInSaves tryCreateDir encodeEOF saveFile exe
+  in Save.wrapInSaves saveFile exe

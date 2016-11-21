@@ -105,7 +105,6 @@ library
                       Game.LambdaHack.Client.Bfs
                       Game.LambdaHack.Client.BfsM
                       Game.LambdaHack.Client.CommonM
-                      Game.LambdaHack.Client.FileM
                       Game.LambdaHack.Client.HandleAtomicM
                       Game.LambdaHack.Client.HandleResponseM
                       Game.LambdaHack.Client.ItemSlot
@@ -151,6 +150,7 @@ library
                       Game.LambdaHack.Common.Dice
                       Game.LambdaHack.Common.EffectDescription
                       Game.LambdaHack.Common.Faction
+                      Game.LambdaHack.Common.File
                       Game.LambdaHack.Common.Flavour
                       Game.LambdaHack.Common.Frequency
                       Game.LambdaHack.Common.HighScore
@@ -195,7 +195,6 @@ library
                       Game.LambdaHack.Server.DungeonGen.Cave
                       Game.LambdaHack.Server.DungeonGen.Place
                       Game.LambdaHack.Server.EndM
-                      Game.LambdaHack.Server.FileM
                       Game.LambdaHack.Server.Fov
                       Game.LambdaHack.Server.FovDigital
                       Game.LambdaHack.Server.HandleAtomicM
@@ -257,7 +256,7 @@ library
   if impl(ghcjs) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
     build-depends:    ghcjs-dom >= 0.2
-    cpp-options:      -DUSE_BROWSER -DUSE_JSFILE_CLIENT -DUSE_JSFILE_SERVER
+    cpp-options:      -DUSE_BROWSER -DUSE_JSFILE
   } else { if flag(vty) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Vty
     build-depends:    vty >= 5

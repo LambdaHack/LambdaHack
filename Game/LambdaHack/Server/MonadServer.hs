@@ -34,6 +34,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
@@ -42,7 +43,6 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Server.FileM
 import Game.LambdaHack.Server.State
 
 class MonadStateRead m => MonadServer m where

@@ -20,9 +20,9 @@ import GHC.Generics (Generic)
 import System.FilePath
 import Text.Read
 
-import Game.LambdaHack.Client.FileM
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.HumanCmd
+import Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.RuleKind

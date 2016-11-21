@@ -40,7 +40,6 @@ import Game.LambdaHack.Common.Thread
 import Game.LambdaHack.SampleImplementation.SampleMonadClient (executorCli)
 import Game.LambdaHack.Server
 import Game.LambdaHack.Server.BroadcastAtomic
-import Game.LambdaHack.Server.FileM
 import Game.LambdaHack.Server.HandleAtomicM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolM
@@ -128,7 +127,7 @@ executorSer cops copsClient sdebugNxtCmdline = do
         , serToSave
         }
       exe = evalStateT (runSerImplementation m) . totalState
-      exeWithSaves = Save.wrapInSaves tryCreateDir encodeEOF saveFile exe
+      exeWithSaves = Save.wrapInSaves saveFile exe
   -- Wait for clients to exit even in case of server crash
   -- (or server and client crash), which gives them time to save
   -- and report their own inconsistencies, if any.
