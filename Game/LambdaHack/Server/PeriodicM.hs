@@ -242,18 +242,20 @@ advanceTime aid = do
   modifyServer $ \ser ->
     ser {sactorTime = ageActor (bfid b) (blid b) aid t $ sactorTime ser}
 
+-- Add communication overhead time delta to all non-projectile, non-dying
+-- faction's actors (except the leader). Effectively, this limits moves of
+-- a faction to 10, regardless of the number of actors and their speeds.
+-- To discourage micromanagement distributing actors among active arenas,
+-- overhead applies to all actors in active arenas.
+--
+-- Leader is immune from overhead and so he is faster than other faction
+-- members and of equal speed to leaders of other factions (of equal
+-- base speed) regardless how numerous the faction is.
+-- Thanks to this, there is no problem with leader of a numerous faction
+-- having very long UI turns, introducing UI lag.
 overheadActorTime :: (MonadAtomic m, MonadServer m) => FactionId -> m ()
 {-# INLINABLE overheadActorTime #-}
 overheadActorTime fid = do
-  -- Add communication overhead time delta to all non-projectile,
-  -- non-dying faction's actors. Effectively, this limits moves of
-  -- a faction to 10, regardless of the number of actors
-  -- and their speeds.
-  -- To discourage distributing actors among active arenas, overhead
-  -- applies to all actors on active arenas.
-  -- TODO: this and handleActors can be sped up by keeping it per lid
-  -- and per fid, in a map from times to list of actors, separately
-  -- map for projectiles and dying and a map for others. Complex.
   actorTime <- getsServer $ (EM.! fid) . sactorTime
   s <- getState
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD

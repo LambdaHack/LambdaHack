@@ -41,7 +41,7 @@ truncateLines onBlank l =
       lysize = snd normalLevelBound + 1
       canvasLength = if onBlank then lysize + 3 else lysize + 1
       topLayer = if length l <= canvasLength
-                 then l ++ if length l < canvasLength
+                 then l ++ if length l < canvasLength && length l > 3
                            then [[]]
                            else []
                  else take (canvasLength - 1) l
