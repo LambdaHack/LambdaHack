@@ -48,7 +48,7 @@ rectWindows = PlaceKind
 ruin = PlaceKind
   { psymbol  = 'R'
   , pname    = "ruin"
-  , pfreq    = [("ambush", 17), ("battle", 100), ("noise", 40)]
+  , pfreq    = [("ambush", 17), ("battle", 33), ("noise", 40)]
   , prarity  = [(1, 10), (10, 20)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -69,19 +69,19 @@ collapsed = PlaceKind
   , poverride = []
   }
 collapsed2 = collapsed
-  { pfreq    = [("noise", 100), ("battle", 50)]
+  { pfreq    = [("noise", 100), ("battle", 20)]
   , ptopLeft = [ "XXO"
                , "XOO"
                ]
   }
 collapsed3 = collapsed
-  { pfreq    = [("noise", 200), ("battle", 50)]
+  { pfreq    = [("noise", 200), ("battle", 20)]
   , ptopLeft = [ "XXXO"
                , "XOOO"
                ]
   }
 collapsed4 = collapsed
-  { pfreq    = [("noise", 400), ("battle", 200)]
+  { pfreq    = [("noise", 400), ("battle", 100)]
   , ptopLeft = [ "XXXO"
                , "XXXO"
                , "XOOO"
