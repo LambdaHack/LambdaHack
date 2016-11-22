@@ -69,7 +69,7 @@ udpdateCondInMelee aid = do
   case condInMelee of
     Right{} -> return ()  -- still up to date
     Left oldCond -> do
-      -- Lag the chages, to to avoid frequent invalidation of targets, etc.
+      -- Lag the chages, to avoid frequent invalidation of targets, etc.
       let dist = if oldCond then 3 else 1
       newCond <- condInMeleeM dist b
       modifyClient $ \cli ->
