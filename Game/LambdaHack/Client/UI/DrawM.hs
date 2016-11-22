@@ -297,8 +297,10 @@ drawFrameExtra dm drawnLevelId = do
       backlightVision ac = case ac of
         Color.AttrChar (Color.Attr fg _) ch ->
           Color.AttrChar (Color.Attr fg Color.Blue) ch
-      writeXhair !(Color.AttrChar (Color.Attr fg _) ch) =
-        Color.AttrChar (Color.Attr fg Color.BrYellow) ch
+      writeXhair !(Color.AttrChar (Color.Attr fg bg) ch) =
+        let yellowUnlessLeader | bg == Color.BrRed = bg
+                               | otherwise = Color.BrYellow
+        in Color.AttrChar (Color.Attr fg yellowUnlessLeader) ch
       turnBW !(Color.AttrChar _ ch) = Color.AttrChar Color.defAttr ch
       mapVL :: forall s. (Color.AttrChar -> Color.AttrChar) -> [Int]
             -> FrameST s
