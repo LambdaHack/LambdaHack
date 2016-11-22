@@ -78,13 +78,10 @@ memberCycle :: MonadClientUI m => Bool -> m MError
 {-# INLINABLE memberCycle #-}
 memberCycle verbose = do
   side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
-  let autoLvl = snd $ autoDungeonLevel fact
   case filter (\(_, b) -> blid b == blid body) hs of
-    _ | autoLvl -> failMsg $ showReqFailure NoChangeLvlLeader
     [] -> failMsg "cannot pick any other member on this level"
     (np, b) : _ -> do
       success <- pickLeader verbose np
@@ -100,10 +97,9 @@ memberBack verbose = do
   fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
   hs <- partyAfterLeader leader
-  let (autoDun, autoLvl) = autoDungeonLevel fact
+  let (autoDun, _) = autoDungeonLevel fact
   case reverse hs of
     _ | autoDun -> failMsg $ showReqFailure NoChangeDunLeader
-    _ | autoLvl -> failMsg $ showReqFailure NoChangeLvlLeader
     [] -> failMsg "no other member in the party"
     (np, b) : _ -> do
       success <- pickLeader verbose np

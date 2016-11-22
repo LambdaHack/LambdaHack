@@ -326,7 +326,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         EM.filterWithKey hasPrefixOpen suitableItemSlotsAll
       bagSuit = EM.fromList $ map (\iid -> (iid, bagAllSuit EM.! iid))
                                   (EM.elems suitableItemSlotsOpen)
-      (autoDun, autoLvl) = autoDungeonLevel fact
+      (autoDun, _) = autoDungeonLevel fact
       multipleSlots = if itemDialogState == IAll
                       then bagItemSlotsAll
                       else suitableItemSlotsAll
@@ -355,7 +355,6 @@ transition psuit prompt promptGeneric permitMulitple cLegal
           in (km, DefItemKey
            { defLabel = Right km
            , defCond = not (cCur == MOwned
-                            || autoLvl
                             || not (any (\(_, b) -> blid b == blid body) hs))
            , defAction = \_ -> do
                err <- memberCycle False

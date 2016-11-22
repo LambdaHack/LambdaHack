@@ -105,7 +105,6 @@ data ReqFailure =
   | ProjectOutOfReach
   | TriggerNothing
   | NoChangeDunLeader
-  | NoChangeLvlLeader
   deriving Show
 
 impossibleReqFailure :: ReqFailure -> Bool
@@ -144,7 +143,6 @@ impossibleReqFailure reqFailure = case reqFailure of
   ProjectOutOfReach -> True
   TriggerNothing -> True  -- terrain underneath always visibl
   NoChangeDunLeader -> True
-  NoChangeLvlLeader -> True
 
 showReqFailure :: ReqFailure -> Text
 showReqFailure reqFailure = case reqFailure of
@@ -182,7 +180,6 @@ showReqFailure reqFailure = case reqFailure of
   ProjectOutOfReach -> "cannot aim an item out of reach"
   TriggerNothing -> "wasting time on triggering nothing"
   NoChangeDunLeader -> "no manual level change for your team"
-  NoChangeLvlLeader -> "no manual leader change for your team"
 
 -- The item should not be applied nor thrown because it's too delicate
 -- to operate when not calm or becuse it's too precious to identify by use.

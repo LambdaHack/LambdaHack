@@ -128,7 +128,7 @@ switchLeader fid aidNew = do
   let !_A = assert (bfid bPre == fid
                     `blame` "client tries to move other faction actors"
                     `twith` (aidNew, bPre, fid, fact)) ()
-  let (autoDun, autoLvl) = autoDungeonLevel fact
+  let (autoDun, _) = autoDungeonLevel fact
   arena <- case mleader of
     Nothing -> return $! blid bPre
     Just leader -> do
@@ -136,8 +136,6 @@ switchLeader fid aidNew = do
       return $! blid b
   if | actorChanged && blid bPre /= arena && autoDun ->
        execFailure aidNew ReqWait{-hack-} NoChangeDunLeader
-     | actorChanged && autoLvl ->
-       execFailure aidNew ReqWait{-hack-} NoChangeLvlLeader
      | otherwise -> do
        execUpdAtomic $ UpdLeadFaction fid mleader (Just aidNew)
      -- We exchange times of the old and new leader.

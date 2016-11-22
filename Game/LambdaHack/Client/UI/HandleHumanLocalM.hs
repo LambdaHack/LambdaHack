@@ -380,14 +380,12 @@ pickLeaderHuman k = do
                  [] -> Nothing
                  aidb : _ -> Just aidb
       mchoice = mhero `mplus` mactor
-      (autoDun, autoLvl) = autoDungeonLevel fact
+      (autoDun, _) = autoDungeonLevel fact
   case mchoice of
     Nothing -> failMsg "no such member of the party"
     Just (aid, b)
       | blid b /= arena && autoDun ->
           failMsg $ showReqFailure NoChangeDunLeader
-      | autoLvl ->
-          failMsg $ showReqFailure NoChangeLvlLeader
       | otherwise -> do
           void $ pickLeader True aid
           return Nothing
@@ -405,12 +403,10 @@ pickLeaderWithPointerHuman = do
   ours <- getsState $ filter (not . bproj . snd)
                       . actorAssocs (== side) lidV
   let viewed = sortBy (comparing keySelected) ours
-      (autoDun, autoLvl) = autoDungeonLevel fact
+      (autoDun, _) = autoDungeonLevel fact
       pick (aid, b) =
         if | blid b /= arena && autoDun ->
                failMsg $ showReqFailure NoChangeDunLeader
-           | autoLvl ->
-               failMsg $ showReqFailure NoChangeLvlLeader
            | otherwise -> do
                void $ pickLeader True aid
                return Nothing

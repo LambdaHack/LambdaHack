@@ -115,12 +115,13 @@ data AutoLeader = AutoLeader
       --   and no other actor of the faction resides on his level,
       --   but the client (particularly UI) is expected to do changes as well
   , autoLevel   :: !Bool
-      -- ^ leader switching within a level is automatically done by the server
-      --   and client is not permitted to change leaders
-      --   (server is guaranteed to switch leader within a level very rarely,
-      --   e.g., when the old leader dies);
+      -- ^ client is discouraged from leader switching (e.g., because
+      --   non-leader actors have the same skills as leader);
+      --   server is guaranteed to switch leader within a level very rarely,
+      --   e.g., when the old leader dies;
       --   if the flag is @False@, server still does a subset
-      --   of the automatic switching, but the client is permitted to do more
+      --   of the automatic switching, but the client is expected to do more,
+      --   because it's advantageous for that kind of a faction
   }
   deriving (Show, Eq, Ord, Generic)
 

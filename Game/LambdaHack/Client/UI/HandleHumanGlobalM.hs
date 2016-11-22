@@ -273,14 +273,11 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
       -- attack the first one.
       -- We always see actors from our own faction.
       if bfid tb == bfid sb && not (bproj tb) then do
-        let autoLvl = snd $ autoDungeonLevel fact
-        if autoLvl then failSer NoChangeLvlLeader
-        else do
-          -- Select adjacent actor by bumping into him. Takes no time.
-          success <- pickLeader True target
-          let !_A = assert (success `blame` "bump self"
-                                    `twith` (leader, target, tb)) ()
-          failWith "by bumping"
+        -- Select adjacent actor by bumping into him. Takes no time.
+        success <- pickLeader True target
+        let !_A = assert (success `blame` "bump self"
+                                  `twith` (leader, target, tb)) ()
+        failWith "by bumping"
       else
         -- Attacking does not require full access, adjacency is enough.
         RequestAnyAbility <$$> meleeAid target
