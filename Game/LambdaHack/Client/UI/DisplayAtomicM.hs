@@ -62,10 +62,9 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- in the global state after the command is executed and after
 -- the client state is modified by the command.
 displayRespUpdAtomicUI :: MonadClientUI m
-                       => Bool -> DiscoveryKind -> DiscoveryAspect -> UpdAtomic
-                       -> m ()
+                       => Bool -> StateClient -> UpdAtomic -> m ()
 {-# INLINE displayRespUpdAtomicUI #-}
-displayRespUpdAtomicUI verbose oldDiscoKind oldDiscoAspect cmd = case cmd of
+displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid body _ -> createActorUI True aid body
   UpdDestroyActor aid body _ -> do
@@ -269,11 +268,11 @@ displayRespUpdAtomicUI verbose oldDiscoKind oldDiscoAspect cmd = case cmd of
       frame <- drawOverlay ColorFull False truncRep lidV
       displayFrames lidV [Just frame]
   UpdUnAgeGame{} -> return ()
-  UpdDiscover c iid _ _ _ -> discover c oldDiscoKind oldDiscoAspect iid
+  UpdDiscover c iid _ _ _ -> discover c oldCli iid
   UpdCover{} -> return ()  -- don't spam when doing undo
-  UpdDiscoverKind c iid _ -> discover c oldDiscoKind oldDiscoAspect iid
+  UpdDiscoverKind c iid _ -> discover c oldCli iid
   UpdCoverKind{} -> return ()  -- don't spam when doing undo
-  UpdDiscoverSeed c iid _ _ -> discover c oldDiscoKind oldDiscoAspect iid
+  UpdDiscoverSeed c iid _ _ -> discover c oldCli iid
   UpdCoverSeed{} -> return ()  -- don't spam when doing undo
   UpdPerception{} -> return ()
   UpdRestart fid _ _ _ _ _ -> do
@@ -690,11 +689,11 @@ quitFactionUI fid mbody toSt = do
         fadeOutOrIn True
     _ -> return ()
 
-discover :: MonadClientUI m
-         => Container -> DiscoveryKind -> DiscoveryAspect -> ItemId -> m ()
+discover :: MonadClientUI m => Container -> StateClient -> ItemId -> m ()
 {-# INLINABLE discover #-}
-discover c oldDiscoKind oldDiscoAspect iid = do
-  let cstore = storeFromC c
+discover c oldCli iid = do
+  let StateClient{sdiscoKind=oldDiscoKind, sdiscoAspect=oldDiscoAspect} = oldCli
+      cstore = storeFromC c
   lid <- getsState $ lidFromC c
   discoKind <- getsClient sdiscoKind
   localTime <- getsState $ getLocalTime lid

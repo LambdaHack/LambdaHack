@@ -39,7 +39,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- and add some of their own. The result of this function is the list
 -- of commands kept for each command received.
 cmdAtomicFilterCli :: MonadClient m => UpdAtomic -> m [UpdAtomic]
-{-# INLINABLE cmdAtomicFilterCli #-}
+{-# INLINE cmdAtomicFilterCli #-}
 cmdAtomicFilterCli cmd = case cmd of
   UpdAlterTile lid p fromTile toTile -> do
     Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
@@ -219,7 +219,7 @@ cmdAtomicFilterCli cmd = case cmd of
 -- | Effect of atomic actions on client state is calculated
 -- with the global state from before the command is executed.
 cmdAtomicSemCli :: MonadClientSetup m => UpdAtomic -> m ()
-{-# INLINABLE cmdAtomicSemCli #-}
+{-# INLINE cmdAtomicSemCli #-}
 cmdAtomicSemCli cmd = case cmd of
   UpdCreateActor aid b ais -> createActor aid b ais
   UpdDestroyActor aid b _ -> destroyActor aid b True
