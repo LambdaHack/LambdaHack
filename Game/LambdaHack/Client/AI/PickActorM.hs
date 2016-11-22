@@ -36,10 +36,10 @@ import Game.LambdaHack.Content.ModeKind
 -- Pick a new leader from among the actors on the current level.
 -- Refresh the target of the new leader, even if unchanged.
 pickActorToMove :: MonadClient m
-                => ((ActorId, Actor) -> m (Maybe TgtAndPath))
+                => Maybe ActorId -> ((ActorId, Actor) -> m (Maybe TgtAndPath))
                 -> m (ActorId, Actor)
 {-# INLINE pickActorToMove #-}
-pickActorToMove refreshTarget = do
+pickActorToMove maidToAvoid refreshTarget = do
   Kind.COps{cotile} <- getsState scops
   actorAspect <- getsClient sactorAspect
   mleader <- getsClient _sleader
@@ -60,8 +60,10 @@ pickActorToMove refreshTarget = do
         void $ refreshTarget (oldAid, oldBody)
         return (oldAid, oldBody)
   case ours of
-    _ | -- Keep the leader: the faction forbids client leader change on level.
-        snd (autoDungeonLevel fact)
+    _ | -- Keep the leader: faction discourages client leader change on level,
+        -- so will only be changed if waits (maidToAvoid)
+        -- to avoid wasting his higher mobility.
+        snd (autoDungeonLevel fact) && isNothing maidToAvoid
         -- Keep the leader: he is on stairs and not stuck
         -- and we don't want to clog stairs or get pushed to another level.
         || not leaderStuck && Tile.isStair cotile t
@@ -79,8 +81,12 @@ pickActorToMove refreshTarget = do
             mtgt <- refreshTarget aidBody
             return $ (\tgt -> (aidBody, tgt)) <$> mtgt
           goodGeneric (_, TgtAndPath{tapPath=NoPath}) = False
-          goodGeneric ((aid, b), _) =
-            not (aid == oldAid && waitedLastTurn b)  -- not stuck
+          goodGeneric ((aid, b), _) = case maidToAvoid of
+            Nothing ->  -- not the old leader that was stuck last turn
+                        -- because he is likely to be still stuck
+              not (aid == oldAid && waitedLastTurn b)
+            Just aidToAvoid ->  -- not an attempted leader stuck this turn
+              aid /= aidToAvoid
       oursTgt <- filter goodGeneric . catMaybes <$> mapM refresh ours
       let actorVulnerable ((aid, body), _) = do
             let ar = case EM.lookup aid actorAspect of

@@ -77,7 +77,6 @@ weaveJust (Right a) = Right a
 memberCycle :: MonadClientUI m => Bool -> m MError
 {-# INLINABLE memberCycle #-}
 memberCycle verbose = do
-  side <- getsClient sside
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader

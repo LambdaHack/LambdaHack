@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 -- | Ways for the client to use AI to produce server requests, based on
 -- the client's view of the game state.
 module Game.LambdaHack.Client.AI
@@ -39,15 +40,26 @@ queryAI aid = do
   mleader <- getsClient _sleader
   (aidToMove, bToMove) <-
     if mleader == Just aid
-    then pickActorToMove refreshTarget
+    then pickActorToMove Nothing refreshTarget
     else do
       useTactics refreshTarget aid
       b <- getsState $ getActorBody aid
       return (aid, b)
-  req <- ReqAITimed <$> pickAction (aidToMove, bToMove)
-  if aidToMove /= aid
-  then return (req, Just aidToMove)
-  else return (req, Nothing)
+  treq <- pickAction (aidToMove, bToMove)
+  (aidToMove2, treq2) <-
+    case treq of
+      RequestAnyAbility ReqWait | mleader == Just aid -> do
+        -- leader waits; a waste; try once to change leader
+        (aidToMove2, bToMove2) <- pickActorToMove (Just aidToMove) refreshTarget
+        if aidToMove2 /= aidToMove
+        then do
+          treq2 <- pickAction (aidToMove2, bToMove2)
+          return (aidToMove2, treq2)
+        else return (aidToMove, treq)  -- no luck; wait anyway
+      _ -> return (aidToMove, treq)
+  if aidToMove2 /= aid
+  then return (ReqAITimed treq2, Just aidToMove2)
+  else return (ReqAITimed treq2, Nothing)
 
 udpdateCondInMelee :: MonadClient m => ActorId -> m ()
 {-# INLINE udpdateCondInMelee #-}
