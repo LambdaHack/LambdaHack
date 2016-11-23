@@ -182,10 +182,9 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
     -- If color changed, make sure it's ever shown,
     -- e.g., before projectile dies.
     b <- getsState $ getActorBody aid
-    side <- getsClient sside
     arena <- getArenaUI
-    -- Ignore enemy projectiles and anything on other levels.
-    when (arena == blid b && (bfid b == side || not (bproj b))) $
+    -- Ignore actors on other levels.
+    when (arena == blid b) $
       animate (blid b) $ blinkColorActor (bpos b) (bsymbol b) fromCol toCol
   -- Change faction attributes.
   UpdQuitFaction fid mbody _ toSt -> quitFactionUI fid mbody toSt

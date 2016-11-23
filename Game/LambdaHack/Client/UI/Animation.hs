@@ -67,10 +67,9 @@ pushAndDelay = Animation [[]]
 blinkColorActor :: Point -> Char -> Color -> Color -> Animation
 blinkColorActor pos symbol fromCol toCol =
   Animation $ map (mzipSingleton pos)
-  [ cSym fromCol symbol
+  [ cSym toCol symbol
   , cSym toCol symbol
   , cSym fromCol symbol
-  , cSym toCol symbol
   , cSym fromCol symbol
   ]
 
