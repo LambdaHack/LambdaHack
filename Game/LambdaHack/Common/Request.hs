@@ -169,7 +169,7 @@ showReqFailure reqFailure = case reqFailure of
   ApplyOutOfReach -> "cannot apply an item out of reach"
   ApplyCharging -> "cannot apply an item that is still charging"
   ItemNothing -> "wasting time on void item manipulation"
-  ItemNotCalm -> "you are too alarmed to sort through the shared stash"
+  ItemNotCalm -> "you are too alarmed to use the shared stash"
   NotCalmPrecious -> "you are too alarmed to handle such an exquisite item"
   ProjectUnskilled -> "unskilled actors cannot aim"
   ProjectAimOnself -> "cannot aim at oneself"
