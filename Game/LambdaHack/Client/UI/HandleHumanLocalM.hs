@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 -- | Semantics of 'HumanCmd' client commands that do not return
 -- server commands. None of such commands takes game time.
 -- TODO: document
@@ -112,10 +111,10 @@ clearHuman = do
 -- chose one.
 chooseItemHuman :: MonadClientUI m => ItemDialogMode -> m MError
 {-# INLINABLE chooseItemHuman #-}
-chooseItemHuman c = fst <$> chooseItemDialogMode c
+chooseItemHuman c = either Just (const Nothing) <$> chooseItemDialogMode c
 
 chooseItemDialogMode :: MonadClientUI m
-                     => ItemDialogMode -> m (MError, ItemDialogMode)
+                     => ItemDialogMode -> m (FailOrCmd ItemDialogMode)
 {-# INLINABLE chooseItemDialogMode #-}
 chooseItemDialogMode c = do
   let subject = partActor
@@ -181,10 +180,10 @@ chooseItemDialogMode c = do
           km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
           if km == K.spaceKM
           then chooseItemDialogMode c2
-          else (, c2) <$> failMsg "never mind"
+          else failWith "never mind"
         MStore fromCStore -> do
           modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
-          return (Nothing, c2)
+          return $ Right c2
         MOwned -> do
           found <- getsState $ findIid leader (bfid b) iid
           let (newAid, bestStore) = case leader `lookup` found of
@@ -193,10 +192,17 @@ chooseItemDialogMode c = do
                   (aid, (_, store)) : _ -> (aid, store)
                   [] -> assert `failure` iid
           modifySession $ \sess -> sess {sitemSel = Just (bestStore, iid)}
-          void $ pickLeader True newAid
-          return (Nothing, c2)
+          arena <- getArenaUI
+          b2 <- getsState $ getActorBody newAid
+          fact <- getsState $ (EM.! bfid b2) . sfactionD
+          let (autoDun, _) = autoDungeonLevel fact
+          if | blid b2 /= arena && autoDun ->
+               failSer NoChangeDunLeader
+             | otherwise -> do
+               void $ pickLeader True newAid
+               return $ Right c2
         MStats -> assert `failure` ggi
-    Left err -> (, c) <$> failMsg err
+    Left err -> failWith err
 
 -- * ChooseItemProject
 

@@ -1010,14 +1010,14 @@ chooseItemMenuHuman :: MonadClientUI m
                     -> m (Either MError ReqUI)
 {-# INLINABLE chooseItemMenuHuman #-}
 chooseItemMenuHuman cmdAction c = do
-  (res, c2) <- chooseItemDialogMode c
+  res <- chooseItemDialogMode c
   case res of
-    Nothing -> do
+    Right c2 -> do
       res2 <- itemMenuHuman cmdAction
       case res2 of
         Left Nothing -> chooseItemMenuHuman cmdAction c2
         _ -> return res2
-    _ -> return $ Left $ res
+    Left err -> return $ Left $ Just err
 
 -- * MainMenu
 
