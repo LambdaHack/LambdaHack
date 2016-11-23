@@ -223,21 +223,9 @@ advanceTime :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 {-# INLINABLE advanceTime #-}
 advanceTime aid = do
   b <- getsState $ getActorBody aid
-  btime_b <- getsServer $ (EM.! aid) . (EM.! blid b) . (EM.! bfid b) . sactorTime
-  localTime <- getsState $ getLocalTime (blid b)
   actorAspect <- getsServer sactorAspect
   let ar = actorAspect EM.! aid
-      actorTurn = ticksPerMeter $ bspeed b ar
-      halfStandardTurn = timeDeltaDiv (Delta timeTurn) 2
-      -- Dead bodies stay around for only a half of standard turn,
-      -- even if paralyzed (that is, wrt local time).
-      -- Projectiles that hit actors or are hit by actors vanish at once
-      -- not to block actor's path, e.g., for Pull effect.
-      t | bhp b > 0 = actorTurn
-        | otherwise =
-        let delta = if bproj b then Delta timeZero else halfStandardTurn
-            localPlusDelta = localTime `timeShift` delta
-        in localPlusDelta `timeDeltaToFrom` btime_b
+      t = ticksPerMeter $ bspeed b ar
   -- @t@ may be negative; that's OK.
   modifyServer $ \ser ->
     ser {sactorTime = ageActor (bfid b) (blid b) aid t $ sactorTime ser}

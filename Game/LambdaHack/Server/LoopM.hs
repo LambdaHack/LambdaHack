@@ -290,7 +290,6 @@ hTrajectories (aid, b) = do
     -- Dispose of the actor with trajectory ASAP to make sure it doesn't
     -- block movement of other actors.
 
--- TODO: move somewhere?
 -- | Manage trajectory of a projectile.
 --
 -- Colliding with a wall or actor doesn't take time, because
