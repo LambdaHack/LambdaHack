@@ -140,8 +140,7 @@ screensaverSafari = safari
   , mroster = rosterSafari
       { rosterList = (head (rosterList rosterSafari))
                        -- changing leader by client needed, because of TFollow
-                       -- changing level by client enabled for UI
-                       {fleaderMode = LeaderAI $ AutoLeader False False}
+                       {fleaderMode = LeaderAI $ AutoLeader False True}
                      : tail (rosterList rosterSafari)
       }
   }
@@ -252,7 +251,7 @@ rosterBattleSurvival = rosterBattle
                                  , fentryLevel = -5
                                  , finitialActors = 5
                                  , fleaderMode =
-                                     LeaderAI $ AutoLeader True False
+                                     LeaderAI $ AutoLeader False False
                                  , fhasUI = False }
                  , playerMobileMonster { fentryLevel = -5
                                        , finitialActors = 35
@@ -284,7 +283,7 @@ playerAnimalMagnificent =
                      , fneverEmpty = True
                      , fentryLevel = -7
                      , finitialActors = 10
-                     , fleaderMode =  -- move away from stairs
+                     , fleaderMode =  -- False to move away from stairs
                          LeaderAI $ AutoLeader True False }
 
 playerAnimalExquisite =
@@ -313,11 +312,11 @@ rosterSafari = Roster
 
 rosterSafariSurvival = rosterSafari
   { rosterList = [ playerMonsterTourist
-                     { fleaderMode = LeaderAI $ AutoLeader True False
+                     { fleaderMode = LeaderAI $ AutoLeader True True
                      , fhasUI = False }
                  , playerHunamConvict
                  , playerAnimalMagnificent
-                     { fleaderMode = LeaderUI $ AutoLeader False False
+                     { fleaderMode = LeaderUI $ AutoLeader True False
                      , fhasUI = True }
                  , playerAnimalExquisite
                  ] }
@@ -342,7 +341,7 @@ rosterCoop = Roster
                  , playerAntiHero { fname = "Amber"
                                   , fleaderMode = LeaderNull }
                  , playerAnimal { fleaderMode =
-                                     LeaderUI $ AutoLeader False False
+                                     LeaderUI $ AutoLeader True True
                                 , fhasUI = True }
                  , playerAnimal
                  , playerMonster
