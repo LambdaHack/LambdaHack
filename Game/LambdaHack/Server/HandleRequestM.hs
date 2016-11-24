@@ -16,8 +16,7 @@ module Game.LambdaHack.Server.HandleRequestM
   , setBWait, handleRequestTimedCases
   , affectSmell, reqMelee, reqAlter, reqWait
   , reqMoveItems, reqMoveItem, computeRndTimeout, reqProject, reqApply
-  , reqTrigger, triggerEffect, reqGameRestart, reqGameSave
-  , reqTactic, reqAutomate
+  , reqGameRestart, reqGameSave, reqTactic, reqAutomate
 #endif
   ) where
 
@@ -112,7 +111,6 @@ handleRequestTimedCases aid cmd = case cmd of
   ReqMoveItems l -> reqMoveItems aid l
   ReqProject p eps iid cstore -> reqProject aid p eps iid cstore
   ReqApply iid cstore -> reqApply aid iid cstore
-  ReqTrigger mfeat -> reqTrigger aid mfeat
 
 switchLeader :: (MonadAtomic m, MonadServer m)
              => FactionId -> ActorId -> m ()
@@ -354,7 +352,8 @@ reqAlter source tpos mfeat = do
             TK.ChangeTo tgroup -> Just tgroup
             _ -> Nothing
         groupsToAlterTo = mapMaybe toAlter feats
-    if null groupsToAlterTo && serverTile == freshClientTile then
+        effs = Tile.listCauseEffects cotile serverTile
+    if null groupsToAlterTo && null effs && serverTile == freshClientTile then
       -- Neither searching nor altering possible; silly client.
       execFailure source req AlterNothing
     else
@@ -367,8 +366,8 @@ reqAlter source tpos mfeat = do
           when (alterSkill >= Tile.alterMinSkill coTileSpeedup serverTile) $ do
             maybe (return ()) changeTo $ listToMaybe groupsToAlterTo
               -- TODO: pick another, if the first one void
-            -- Perform an effect, if any permitted.
-            void $ triggerEffect source tpos feats
+            -- Perform effects, if any permitted.
+            mapM_ (itemEffectCause source tpos) effs
         else execFailure source req AlterBlockActor
       else execFailure source req AlterBlockItem
 
@@ -515,36 +514,6 @@ reqApply aid iid cstore = do
         case legal of
           Left reqFail -> execFailure aid req reqFail
           Right _ -> applyItem aid iid cstore
-
--- * ReqTrigger
-
--- | Perform the effect specified for the tile in case it's triggered.
-reqTrigger :: (MonadAtomic m, MonadServer m)
-           => ActorId -> TK.Feature -> m ()
-{-# INLINABLE reqTrigger #-}
-reqTrigger aid feat = do
-  Kind.COps{cotile} <- getsState scops
-  sb <- getsState $ getActorBody aid
-  let lid = blid sb
-  lvl <- getLevel lid
-  let tpos = bpos sb
-      serverTile = lvl `at` tpos
-      feats | Tile.hasFeature cotile feat serverTile = [feat]
-            | otherwise = []  -- client was wrong about tile features
-      req = ReqTrigger feat
-  go <- triggerEffect aid tpos feats
-  unless go $ execFailure aid req TriggerNothing
-
-triggerEffect :: (MonadAtomic m, MonadServer m)
-              => ActorId -> Point -> [TK.Feature] -> m Bool
-{-# INLINABLE triggerEffect #-}
-triggerEffect aid tpos feats = do
-  let triggerFeat feat =
-        case feat of
-          TK.Cause ef -> itemEffectCause aid tpos ef
-          _ -> return False
-  goes <- mapM triggerFeat feats
-  return $! or goes
 
 -- * ReqGameRestart
 

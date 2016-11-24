@@ -370,7 +370,7 @@ moveSearchAlterAid source dir = do
       spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos
-      alterMinWalk = Tile.alterMinWalk coTileSpeedup t
+      alterMinSkill = Tile.alterMinSkill coTileSpeedup t
       runStopOrCmd
         -- Movement requires full access.
         | accessible cops lvl tpos =
@@ -383,9 +383,9 @@ moveSearchAlterAid source dir = do
               || isSecretPos lvl tpos  -- possible secrets here
                  && (Tile.isSuspect coTileSpeedup t  -- not yet searched
                      || Tile.hideAs cotile t /= t)  -- search again
-              || alterMinWalk < 10
-              || alterMinWalk >= 10 && alterSkill >= alterMinWalk)
-          = if | alterSkill < Tile.alterMinWalk coTileSpeedup t ->
+              || alterMinSkill < 10
+              || alterMinSkill >= 10 && alterSkill >= alterMinSkill)
+          = if | alterSkill < alterMinSkill ->
                  Left $ showReqFailure AlterUnwalked
                | EM.member tpos $ lfloor lvl ->
                  Left $ showReqFailure AlterBlockItem
@@ -783,7 +783,7 @@ applyItem ts (fromCStore, (iid, itemFull)) = do
 
 -- * AlterDir
 
--- | Ask for a direction and alter a tile, if possible.
+-- | Ask for a direction and alter a tile in the specified way, if possible.
 alterDirHuman :: MonadClientUI m
               => [Trigger] -> m (FailOrCmd (RequestTimed 'AbAlter))
 {-# INLINABLE alterDirHuman #-}
@@ -814,7 +814,7 @@ alterDirHuman ts = do
         Nothing -> failWith "never mind"
         Just dir -> alterTile ts dir
 
--- | Player tries to alter a tile using a feature.
+-- | Try to alter a tile using a feature in the given direction.
 alterTile :: MonadClientUI m
           => [Trigger] -> Vector -> m (FailOrCmd (RequestTimed 'AbAlter))
 {-# INLINABLE alterTile #-}
@@ -833,7 +833,7 @@ alterTile ts dir = do
         tr : _ -> verb tr
       msg = makeSentence ["you", verb1, "towards", MU.Text $ compassText dir]
   case filter (\feat -> Tile.hasFeature cotile feat t) alterFeats of
-    _ | alterSkill < Tile.alterMinSkill coTileSpeedup t ->
+    _ : _ | alterSkill < Tile.alterMinSkill coTileSpeedup t ->
       failSer AlterUnskilled
     [] -> failWith $ guessAlter cops alterFeats t
     feat : _ ->
@@ -877,7 +877,7 @@ triggerTileHuman ts = do
     feat : _ -> do
       go <- verifyTrigger leader feat
       case go of
-        Right () -> return $ Right $ ReqTrigger feat
+        Right () -> return $ Right undefined
         Left err -> return $ Left err
 
 triggerFeatures :: [Trigger] -> [TK.Feature]

@@ -183,6 +183,7 @@ alterMinSkillKind _k tk =
   let getTo TK.OpenTo{} = True
       getTo TK.CloseTo{} = True
       getTo TK.ChangeTo{} = True
+      getTo TK.Cause{} = True
       getTo TK.Suspect = True
       getTo _ = False
   in if any getTo $ TK.tfeature tk then TK.talter tk else maxBound

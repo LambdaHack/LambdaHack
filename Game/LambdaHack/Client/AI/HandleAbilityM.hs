@@ -130,7 +130,7 @@ actionStrategy aid = do
             <$> applyItem aid ApplyFirstAid
           , condHpTooLow && not condAnyFoeAdj
             && not condOnTriggerable )  -- don't block stairs, perhaps ascend
-        , ( [AbTrigger], (toAny :: ToAny 'AbTrigger)
+        , ( [AbAlter], (toAny :: ToAny 'AbAlter)
             <$> trigger aid True
               -- flee via stairs, even if to wrong level
               -- may return via different stairs
@@ -153,7 +153,7 @@ actionStrategy aid = do
                && fleaderMode (gplayer fact) == LeaderNull  -- not restrained
                && condAimEnemyPresent  -- excited
                && not newCondInMelee )  -- don't incur overhead
-        , ( [AbTrigger], (toAny :: ToAny 'AbTrigger)
+        , ( [AbAlter], (toAny :: ToAny 'AbAlter)
             <$> trigger aid False
           , condOnTriggerable && not condDesirableFloorItem
             && (lidExplored || condEnoughGear)
@@ -601,7 +601,7 @@ meleeAny aid = do
 -- We don't verify the stairs are targeted by the actor, but at least
 -- the actor doesn't target a visible enemy at this point.
 trigger :: MonadClient m
-        => ActorId -> Bool -> m (Strategy (RequestTimed 'AbTrigger))
+        => ActorId -> Bool -> m (Strategy (RequestTimed 'AbAlter))
 {-# INLINABLE trigger #-}
 trigger aid fleeViaStairs = do
   cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
@@ -666,7 +666,7 @@ trigger aid fleeViaStairs = do
   benFeats <- mapM ben feats
   let benFeat = zip benFeats feats
   return $! liftFrequency $ toFreq "trigger"
-    [ (benefit, ReqTrigger feat)
+    [ (benefit, ReqAlter (bpos b) (Just feat))
     | (benefit, feat) <- benFeat
     , benefit > 0 ]
 

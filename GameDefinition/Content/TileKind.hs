@@ -19,7 +19,7 @@ import Game.LambdaHack.Content.TileKind
 -- Alter skill schema:
 -- 0  can be altered by everybody (currently no such thing)
 -- 1  unknown only
--- 2  openable and suspect
+-- 2  stairs and openable and suspect
 -- 3  closable
 -- 4  changeable (e.g., caches)
 -- 10  weak obstructions
@@ -37,11 +37,11 @@ cdefs = ContentDef
   , validateSingle = validateSingleTileKind
   , validateAll = validateAllTileKind
   , content = contentFromList $
-      [unknown, wall, hardRock, pillar, pillarIce, pillarCache, lampPost, burningBush, bush, tree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsLit, stairsDownLit, escapeUpLit, escapeDownLit, floorCorridorLit, floorArenaLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorSmoke]
-      ++ map makeDark [wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsLit, escapeUpLit, escapeDownLit, floorCorridorLit]
+      [unknown, wall, hardRock, pillar, pillarIce, pillarCache, lampPost, burningBush, bush, tree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsDownLit, escapeUpLit, escapeDownLit, floorCorridorLit, floorArenaLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorSmoke]
+      ++ map makeDark [wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, escapeUpLit, escapeDownLit, floorCorridorLit]
       ++ map makeDarkColor [stairsUpLit, stairsDownLit, floorArenaLit, floorActorLit, floorItemLit, floorActorItemLit]
   }
-unknown,        wall, hardRock, pillar, pillarIce, pillarCache, lampPost, burningBush, bush, tree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsLit, stairsDownLit, escapeUpLit, escapeDownLit, floorCorridorLit, floorArenaLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorSmoke :: TileKind
+unknown,        wall, hardRock, pillar, pillarIce, pillarCache, lampPost, burningBush, bush, tree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsDownLit, escapeUpLit, escapeDownLit, floorCorridorLit, floorArenaLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorSmoke :: TileKind
 
 unknown = TileKind  -- needs to have index 0 and alter 1
   { tsymbol  = ' '
@@ -253,19 +253,8 @@ stairsUpLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , talter   = maxBound
-  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ IK.Ascend 1]
-  }
-stairsLit = TileKind
-  { tsymbol  = '>'
-  , tname    = "staircase"
-  , tfreq    = [("legendLit", 100)]
-  , tcolor   = BrCyan
-  , tcolor2  = Cyan  -- TODO
-  , talter   = maxBound
-  , tfeature = [ Walkable, Clear, NoItem, NoActor
-               , Cause $ IK.Ascend 1
-               , Cause $ IK.Ascend (-1) ]
+  , talter   = 2
+  , tfeature = [Cause $ IK.Ascend 1]
   }
 stairsDownLit = TileKind
   { tsymbol  = '>'
@@ -273,8 +262,8 @@ stairsDownLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , talter   = maxBound
-  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ IK.Ascend (-1)]
+  , talter   = 2
+  , tfeature = [Cause $ IK.Ascend (-1)]
   }
 escapeUpLit = TileKind
   { tsymbol  = '<'
@@ -282,8 +271,8 @@ escapeUpLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
-  , talter   = maxBound
-  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ IK.Escape 1]
+  , talter   = 2
+  , tfeature = [Cause $ IK.Escape 1]
   }
 escapeDownLit = TileKind
   { tsymbol  = '>'
@@ -291,8 +280,8 @@ escapeDownLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
-  , talter   = maxBound
-  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ IK.Escape (-1)]
+  , talter   = 2
+  , tfeature = [Cause $ IK.Escape (-1)]
   }
 floorCorridorLit = TileKind
   { tsymbol  = '#'
