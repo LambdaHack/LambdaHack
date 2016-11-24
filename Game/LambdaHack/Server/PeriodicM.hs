@@ -159,7 +159,7 @@ dominateFidSfx fid target = do
       -- Check that the actor can move, also between levels and through doors.
       -- Otherwise, it's too awkward for human player to control.
       canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
-                && EM.findWithDefault 0 Ability.AbAlter actorMaxSk >= 2
+                && EM.findWithDefault 0 Ability.AbAlter actorMaxSk >= 3  -- TODO
   if canMove && not (bproj tb)
     then do
       let execSfx = execSfxAtomic

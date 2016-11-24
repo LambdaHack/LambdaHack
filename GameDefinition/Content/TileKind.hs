@@ -19,9 +19,10 @@ import Game.LambdaHack.Content.TileKind
 -- Alter skill schema:
 -- 0  can be altered by everybody (currently no such thing)
 -- 1  unknown only
--- 2  stairs and openable and suspect
--- 3  closable
--- 4  changeable (e.g., caches)
+-- 2  openable and suspect
+-- 3  stairs
+-- 4  closable
+-- 5  changeable (e.g., caches)
 -- 10  weak obstructions
 -- 50  considerable obstructions
 -- 100  walls
@@ -109,7 +110,7 @@ pillarCache = TileKind
                , ("legendLit", 100), ("legendDark", 100) ]
   , tcolor   = BrCyan
   , tcolor2  = Cyan
-  , talter   = 4
+  , talter   = 5
   , tfeature = [ Cause $ IK.CreateItem CGround "useful" IK.TimerNone
                , ChangeTo "cachable" ]
   }
@@ -193,7 +194,7 @@ doorOpenV = TileKind
   , tfreq    = [("vertical open door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , talter   = 3
+  , talter   = 4
   , tfeature = [ Walkable, Clear, NoItem, NoActor
                , CloseTo "vertical closed door Lit"
                ]
@@ -242,7 +243,7 @@ doorOpenH = TileKind
   , tfreq    = [("horizontal open door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , talter   = 3
+  , talter   = 4
   , tfeature = [ Walkable, Clear, NoItem, NoActor
                , CloseTo "horizontal closed door Lit"
                ]
@@ -253,7 +254,7 @@ stairsUpLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , talter   = 2
+  , talter   = 3
   , tfeature = [Cause $ IK.Ascend 1]
   }
 stairsDownLit = TileKind
@@ -262,7 +263,7 @@ stairsDownLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , talter   = 2
+  , talter   = 3
   , tfeature = [Cause $ IK.Ascend (-1)]
   }
 escapeUpLit = TileKind
@@ -271,7 +272,7 @@ escapeUpLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
-  , talter   = 2
+  , talter   = 3
   , tfeature = [Cause $ IK.Escape 1]
   }
 escapeDownLit = TileKind
@@ -280,7 +281,7 @@ escapeDownLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
-  , talter   = 2
+  , talter   = 3
   , tfeature = [Cause $ IK.Escape (-1)]
   }
 floorCorridorLit = TileKind

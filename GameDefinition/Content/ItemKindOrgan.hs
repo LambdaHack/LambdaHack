@@ -358,6 +358,7 @@ sapientBrain = armoredSkin
   , icount   = 1
   , iverbHit = "outbrain"
   , iaspects = [AddAbility ab 1 | ab <- [minBound..maxBound]]
+               ++ [AddAbility AbAlter 2]  -- can use stairs
   , idesc    = ""
   }
 animalBrain = armoredSkin
@@ -366,7 +367,7 @@ animalBrain = armoredSkin
   , icount   = 1
   , iverbHit = "blank"
   , iaspects = [AddAbility ab 1 | ab <- [minBound..maxBound]]
-               ++ [AddAbility AbAlter 1]
+               ++ [AddAbility AbAlter 2]  -- can use stairs
                ++ [ AddAbility ab (-1)
                   | ab <- [AbDisplace, AbMoveItem, AbProject, AbApply] ]
   , idesc    = ""
