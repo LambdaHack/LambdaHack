@@ -877,7 +877,8 @@ verifyAlter leader feat = case feat of
     side <- getsClient sside
     fact <- getsState $ (EM.! side) . sfactionD
     if not (fcanEscape $ gplayer fact)
-    then return $ Right ()
+    then failWith
+          "This is the way out, but where would you go in this alien world?"
     else do
       go <- displayYesNo ColorFull
               "This is the way out. Really leave now?"
