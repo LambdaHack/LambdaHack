@@ -24,6 +24,7 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
@@ -91,19 +92,23 @@ convertTileMaps Kind.COps{coTileSpeedup} areAllWalkable
             connect (not . yeven) blocksVertical walkable5 converted4
       return converted5
 
-placeStairs :: Kind.COps -> TileMap -> CaveKind -> [Point]
+placeStairs :: Kind.COps -> Bool -> TileMap -> CaveKind -> [Point]
             -> Rnd Point
-placeStairs Kind.COps{coTileSpeedup} cmap CaveKind{..} ps = do
-  let dist !cmin !p _ = all (\ !pos -> chessDist p pos > cmin) ps
+placeStairs Kind.COps{coTileSpeedup} moveUp cmap CaveKind{..} ps = do
+  let (xsize, ysize) = PointArray.sizeA cmap
+      yUpOffset = if moveUp then -1 else 1
+      dist !cmin !p _ = all (\ !pos -> chessDist p pos > cmin) ps
       ds = [ dist cminStairDist
            , dist (2 * (cminStairDist `div` 3))
            , dist (cminStairDist `div` 2)
            , dist (cminStairDist `div` 3)
            , dist (cminStairDist `div` 5) ]
+  -- We assume the border of the dungeon should not be excavated around stairs.
   findPosTry2 200 cmap
-    (\p !t -> Tile.isWalkable coTileSpeedup t
-             && not (Tile.isNoActor coTileSpeedup t)
-             && all (/= p) ps)  -- can't overwrite stairs with other stairs
+    (\p !t -> p `inside` (2, 3 + yUpOffset , xsize - 3, ysize - 4 + yUpOffset)
+              && Tile.isWalkable coTileSpeedup t
+              && not (Tile.isNoActor coTileSpeedup t)
+              && all (\p0 -> chessDist p p0 > 3) ps)
     ds
     (\_ !t -> Tile.isOftenActor coTileSpeedup t)
     ds
@@ -159,7 +164,7 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
                         && (not noDesc || not (descendable tk))
               stairsCur = up ++ down ++ upDown
               posCur = nub $ sort $ map fst stairsCur
-          spos <- placeStairs cops cmap kc posCur
+          spos <- placeStairs cops moveUp cmap kc posCur
           let legend = findLegend spos
           stairId <- fromMaybe (assert `failure` legend) <$> opick legend cond
           let st = (spos, stairId)
@@ -188,20 +193,24 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
   let !_A = assert (length stairsUpAndUpDown == nstairUp) ()
   let stairsTotal = stairsUpAndUpDown ++ stairsDown
       posTotal = nub $ sort $ map fst stairsTotal
-  epos <- placeStairs cops cmap kc posTotal
   escape <- case escapeFeature of
               Nothing -> return []
               Just True -> do
+                epos <- placeStairs cops True cmap kc posTotal
                 let legend = findLegend epos
                 upEscape <- fmap (fromMaybe $ assert `failure` legend)
                             $ opick legend $ hasEscape 1
                 return [(epos, upEscape)]
               Just False -> do
+                epos <- placeStairs cops False cmap kc posTotal
                 let legend = findLegend epos
                 downEscape <- fmap (fromMaybe $ assert `failure` legend)
                               $ opick legend $ hasEscape (-1)
                 return [(epos, downEscape)]
-  let exits = stairsTotal ++ escape
+  let addVicinity (p, k) = let vic = vicinityUnsafe p
+                               old = cmap PointArray.! p
+                           in (p, k) : map (\p0 -> (p0, old)) vic
+      exits = concatMap addVicinity $ stairsTotal ++ escape
       ltile = cmap PointArray.// exits
       -- We reverse the order in down stairs, to minimize long stair chains.
       lstair = ( map fst $ stairsUp ++ stairsUpDown
