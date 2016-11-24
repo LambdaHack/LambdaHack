@@ -344,7 +344,7 @@ reqAlter source tpos mfeat = do
         feats = case mfeat of
           Nothing -> TK.tfeature $ okind serverTile
           Just feat2 | Tile.hasFeature cotile feat2 serverTile -> [feat2]
-          Just _ -> []
+          Just _ -> []  -- client was wrong about tile features
         toAlter feat =
           case feat of
             TK.OpenTo tgroup -> Just tgroup

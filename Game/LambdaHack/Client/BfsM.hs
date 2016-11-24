@@ -249,7 +249,7 @@ closestSmell aid = do
 
 -- TODO: We assume linear dungeon in @unexploredD@,
 -- because otherwise we'd need to calculate shortest paths in a graph, etc.
--- | Closest (wrt paths) triggerable open tiles.
+-- | Closest (wrt paths) triggerable tiles.
 -- The level the actor is on is either explored or the actor already
 -- has a weapon equipped, so no need to explore further, he tries to find
 -- enemies on other levels.
@@ -267,9 +267,10 @@ closestTriggers onlyDir aid = do
   let allExplored = ES.size explored == EM.size dungeon
       -- If lid not explored, aid equips a weapon and so can leave level.
       lidExplored = ES.member (blid body) explored
+      -- Causable tiles are alterable, so they are in BFS (if skill permits).
       f :: Point -> Kind.Id TileKind -> [(Int, Point)] -> [(Int, Point)]
       f p t acc =
-        if Tile.isWalkable coTileSpeedup t && Tile.hasCauses coTileSpeedup t
+        if Tile.hasCauses coTileSpeedup t
         then case Tile.ascendTo cotile t of
           [] ->
             -- Escape (or guard) only after exploring, for high score, etc.
@@ -293,11 +294,11 @@ closestTriggers onlyDir aid = do
                  in map (,p) (filter g l) ++ acc
         else acc
       triggersAll = PointArray.ifoldrA f [] $ ltile lvl
-      -- Don't target stairs under the actor. Most of the time they
+      -- Don't target stairs adjacent to the actor. Most of the time they
       -- are blocked and stay so, so we seek other stairs, if any.
       -- If no other stairs in this direction, let's wait here,
       -- unless the actor has just returned via the very stairs.
-      triggers = filter ((/= bpos body) . snd) triggersAll
+      triggers = filter ((adjacent $ bpos body) . snd) triggersAll
   bfs <- getCacheBfs aid
   return $ if  -- keep lazy
     | null triggers -> mzero
@@ -339,6 +340,7 @@ closestItems aid = do
   body <- getsState $ getActorBody aid
   lvl@Level{lfloor} <- getLevel $ blid body
   let items = EM.assocs lfloor
+      -- Changeable tiles are alterable, so they are in BFS (if skill permits).
       f :: Point -> Kind.Id TileKind -> [Point] -> [Point]
       f p t acc = if Tile.isChangeable coTileSpeedup t
                   then p : acc

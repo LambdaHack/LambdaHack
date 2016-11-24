@@ -185,7 +185,7 @@ checkAndRun :: MonadClient m
             => ActorId -> Vector -> m (Either Text Vector)
 {-# INLINABLE checkAndRun #-}
 checkAndRun aid dir = do
-  Kind.COps{cotile=Kind.Ops{okind}, coTileSpeedup} <- getsState scops
+  Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   body <- getsState $ getActorBody aid
   smarkSuspect <- getsClient smarkSuspect
   let lid = blid body
@@ -223,10 +223,8 @@ checkAndRun aid dir = do
       leftForwardTileHere = lvl `at` leftForwardPosHere
       rightForwardTileHere = lvl `at` rightForwardPosHere
       featAt = TK.actionFeatures smarkSuspect . okind
-      terrainChangeMiddle = not (Tile.hasCauses coTileSpeedup tileThere)
-                              -- step into; will stop next turn due to message
-                            && featAt tileThere
-                               `notElem` map featAt [tileLast, tileHere]
+      terrainChangeMiddle =
+        featAt tileThere `notElem` map featAt [tileLast, tileHere]
       terrainChangeLeft = featAt leftForwardTileHere
                           `notElem` map featAt leftTilesLast
       terrainChangeRight = featAt rightForwardTileHere

@@ -195,6 +195,7 @@ alterMinWalkKind k tk =
   let getTo TK.OpenTo{} = True
       getTo TK.Suspect = True
       getTo TK.ChangeTo{} = True  -- TODO: needed until AI fixed
+      getTo TK.Cause{} = True  -- TODO: needed until AI fixed
       getTo _ = False
   in if | kindHasFeature TK.Walkable tk -> 0
         | isUknownSpace k -> TK.talter tk
