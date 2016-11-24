@@ -53,6 +53,12 @@ standardKeys = KeyKind
       , ("C", ([CmdSettingsMenu], "toggle smell clues", MarkSmell))
 
       -- Item use, 1st part
+      , ("g", addCmdCategory CmdItemMenu $ addCmdCategory CmdMinimal
+              $ grabItems "grab items")
+      , ("comma", addCmdCategory CmdNoHelp $ grabItems "")
+      , ("d", addCmdCategory CmdItemMenu $ addCmdCategory CmdMinimal
+              $ dropItems "drop items")
+      , ("period", addCmdCategory CmdNoHelp $ dropItems "")
       , ("f", addCmdCategory CmdItemMenu $ projectA flingTs)
       , ("CTRL-f", addCmdCategory CmdItemMenu
                    $ replaceDesc "fling without aiming" $ projectI flingTs)
@@ -62,14 +68,6 @@ standardKeys = KeyKind
                 , symbol = ' ' }])
 
       -- Terrain exploration and alteration
-      , ("g", addCmdCategory CmdItemMenu $ addCmdCategory CmdMinimal
-              $ grabItems "grab items")
-      , ("comma", addCmdCategory CmdNoHelp $ grabItems "")
-      , ("CTRL-<", ([CmdNoHelp], "ascend aim" , AimAscend 10))
-      , ("d", addCmdCategory CmdItemMenu $ addCmdCategory CmdMinimal
-              $ dropItems "drop items")
-      , ("period", addCmdCategory CmdNoHelp $ dropItems "")
-      , ("CTRL->", ([CmdNoHelp], "descend aim", AimAscend (-10)))
       , ("semicolon", ( [CmdMove]
                       , "go to crosshair for 100 steps"
                       , Macro ["CTRL-semicolon", "CTRL-period", "V"] ))
@@ -168,6 +166,10 @@ standardKeys = KeyKind
       , ("CTRL-}", ( [CmdAim]
                    , "set x-hair to nearest downstairs"
                    , XhairStair False ))
+      , ("<", ([CmdAim], "ascend aim" , AimAscend 1))
+      , ("CTRL-<", ([CmdNoHelp], "ascend aim 10 times" , AimAscend 10))
+      , (">", ([CmdAim], "descend aim", AimAscend (-1)))
+      , ("CTRL->", ([CmdNoHelp], "descend aim 10 times", AimAscend (-10)))
       , ( "BackSpace"
         , ([CmdAim], "clear target or chosen item", TgtClear) )
       , ("Escape", ( [CmdAim, CmdMinimal]
