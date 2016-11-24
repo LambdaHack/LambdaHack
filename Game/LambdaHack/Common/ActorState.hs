@@ -16,7 +16,7 @@ module Game.LambdaHack.Common.ActorState
   , tryFindHeroK, getLocalTime, itemPrice, regenCalmDelta
   , actorInAmbient, actorSkills, dispEnemy, fullAssocs, itemToFull
   , goesIntoEqp, goesIntoInv, goesIntoSha, eqpOverfull, eqpFreeN
-  , storeFromC, lidFromC, aidFromC
+  , storeFromC, lidFromC, posFromC, aidFromC
   ) where
 
 import Prelude ()
@@ -405,6 +405,12 @@ lidFromC (CFloor lid _) _ = lid
 lidFromC (CEmbed lid _) _ = lid
 lidFromC (CActor aid _) s = blid $ getActorBody aid s
 lidFromC c@CTrunk{} _ = assert `failure` c
+
+posFromC :: Container -> State -> Point
+posFromC (CFloor _ pos) _ = pos
+posFromC (CEmbed _ pos) _ = pos
+posFromC (CActor aid _) s = bpos $ getActorBody aid s
+posFromC c@CTrunk{} _ = assert `failure` c
 
 aidFromC :: Container -> Maybe ActorId
 aidFromC CFloor{} = Nothing

@@ -164,16 +164,16 @@ itemEffectDisco source target iid c recharged periodic effs = do
       Level{ldepth} <- getLevel $ jlid item
       -- TODO: we leak first depth the item was created at on the server
       execUpdAtomic $ UpdDiscover c iid kmKind seed ldepth
-      itemEffect source target iid recharged periodic effs
+      itemEffect source target iid c recharged periodic effs
     _ -> assert `failure` (source, target, iid, item)
 
 itemEffect :: (MonadAtomic m, MonadServer m)
-           => ActorId -> ActorId -> ItemId -> Bool -> Bool
+           => ActorId -> ActorId -> ItemId -> Container -> Bool -> Bool
            -> [IK.Effect]
            -> m Bool
 {-# INLINABLE itemEffect #-}
-itemEffect source target iid recharged periodic effects = do
-  trs <- mapM (effectSem source target iid recharged) effects
+itemEffect source target iid c recharged periodic effects = do
+  trs <- mapM (effectSem source target iid c recharged) effects
   let triggered = or trs
   sb <- getsState $ getActorBody source
   -- Announce no effect, which is rare and wastes time, so noteworthy.
@@ -191,12 +191,13 @@ itemEffect source target iid recharged periodic effects = do
 -- The boolean result indicates if the effect actually fired up,
 -- as opposed to fizzled.
 effectSem :: (MonadAtomic m, MonadServer m)
-          => ActorId -> ActorId -> ItemId -> Bool -> IK.Effect
+          => ActorId -> ActorId -> ItemId -> Container -> Bool -> IK.Effect
           -> m Bool
 {-# INLINABLE effectSem #-}
-effectSem source target iid recharged effect = do
-  let recursiveCall = effectSem source target iid recharged
+effectSem source target iid c recharged effect = do
+  let recursiveCall = effectSem source target iid c recharged
   sb <- getsState $ getActorBody source
+  pos <- getsState $ posFromC c
   -- @execSfx@ usually comes last in effect semantics, but not always
   -- and we are likely to introduce more variety.
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect 0
@@ -214,7 +215,7 @@ effectSem source target iid recharged effect = do
     IK.Impress -> effectImpress source target
     IK.CallFriend p -> effectCallFriend execSfx p source target
     IK.Summon freqs p -> effectSummon execSfx freqs p source target
-    IK.Ascend p -> effectAscend recursiveCall execSfx p source target
+    IK.Ascend p -> effectAscend recursiveCall execSfx p source target pos
     IK.Escape{} -> effectEscape source target
     IK.Paralyze p -> effectParalyze execSfx p target
     IK.InsertMove p -> effectInsertMove execSfx p target
@@ -540,39 +541,36 @@ effectSummon execSfx actorFreq nDm source target = do
 -- Note that projectiles can be teleported, too, for extra fun.
 effectAscend :: (MonadAtomic m, MonadServer m)
              => (IK.Effect -> m Bool)
-             -> m () -> Int -> ActorId -> ActorId
+             -> m () -> Int -> ActorId -> ActorId -> Point
              -> m Bool
 {-# INLINABLE effectAscend #-}
-effectAscend recursiveCall execSfx k source target = do
+effectAscend recursiveCall execSfx k source target pos = do
   b1 <- getsState $ getActorBody target
   let lid1 = blid b1
-      pos1 = bpos b1
-  (lid2, pos2) <- getsState $ whereTo lid1 pos1 k . sdungeon
+  (lid2, pos2) <- getsState $ whereTo lid1 pos k . sdungeon
   sb <- getsState $ getActorBody source
   if | braced b1 -> do
        execSfxAtomic $ SfxMsgFid (bfid sb)
                                  "Braced actors are immune to translocation."
        return False
-     | lid2 == lid1 && pos2 == pos1 -> do
+     | lid2 == lid1 && pos2 == pos -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) "No more levels in this direction."
        -- We keep it useful even in shallow dungeons.
        recursiveCall $ IK.Teleport 30  -- powerful teleport
      | otherwise -> do
-       btime_bOld <- getsServer $ (EM.! target) . (EM.! lid1) . (EM.! bfid b1) . sactorTime
+       btime_bOld <- getsServer $ (EM.! target) . (EM.! lid1)
+                       . (EM.! bfid b1) . sactorTime
+       pos3 <- findStairExit (k > 0) lid2 pos2
        let switch1 = void $ switchLevels1 (target, b1)
            switch2 = do
              -- Make the initiator of the stair move the leader,
              -- to let him clear the stairs for others to follow.
              let mlead = Just target
              -- Move the actor to where the inhabitants were, if any.
-             switchLevels2 lid2 pos2 (target, b1) btime_bOld mlead
-             -- Verify only one non-projectile actor on every tile.
-             !_ <- getsState $ posToAssocs pos1 lid1  -- assertion is inside
-             !_ <- getsState $ posToAssocs pos2 lid2  -- assertion is inside
-             return ()
+             switchLevels2 lid2 pos3 (target, b1) btime_bOld mlead
        -- The actor will be added to the new level,
        -- but there can be other actors at his new position.
-       inhabitants <- getsState $ posToAssocs pos2 lid2
+       inhabitants <- getsState $ posToAssocs pos3 lid2
        case inhabitants of
          [] -> do
            switch1
@@ -588,21 +586,35 @@ effectAscend recursiveCall execSfx k source target = do
            execSfxAtomic $ SfxMsgFid (bfid b2) msg2
            -- Move the actor out of the way.
            switch1
-           -- Move the inhabitant out of the way and to where the actor was.
+           -- Move the inhabitants out of the way and to where the actor was.
            let moveInh inh = do
                  -- Preserve the old leader, since the actor is pushed,
                  -- so possibly has nothing worhwhile to do on the new level
                  -- (and could try to switch back, if made a leader,
                  -- leading to a loop).
                  btime_inh <-
-                   getsServer $ (EM.! fst inh) . (EM.! lid2) . (EM.! bfid (snd inh)) . sactorTime
+                   getsServer $ (EM.! fst inh) . (EM.! lid2)
+                                . (EM.! bfid (snd inh)) . sactorTime
                  inhMLead <- switchLevels1 inh
-                 switchLevels2 lid1 pos1 inh btime_inh inhMLead
+                 switchLevels2 lid1 (bpos b1) inh btime_inh inhMLead
            mapM_ moveInh inhabitants
            -- Move the actor to his destination.
            switch2
        execSfx
        return True
+
+findStairExit :: MonadStateRead m => Bool -> LevelId -> Point -> m Point
+findStairExit moveUp lid pos = do
+  cops <- getsState scops
+  lvl <- getLevel lid
+  let defLanding = uncurry Vector $ if moveUp then (0, -1) else (0, 1)
+      (mvs2, mvs1) = break (== defLanding) moves
+      mvs = mvs1 ++ mvs2
+  unocc <- getsState $ \s p -> accessible cops lvl p
+                               && null (posToAssocs p lid s)
+  case find unocc $ map (shift pos) mvs of
+    Nothing -> return $! shift pos defLanding
+    Just posRes -> return posRes
 
 switchLevels1 :: MonadAtomic m => (ActorId, Actor) -> m (Maybe ActorId)
 {-# INLINABLE switchLevels1 #-}
