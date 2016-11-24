@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds, TupleSections #-}
 -- | Semantics of abilities in terms of actions and the AI procedure
 -- for picking the best action for an actor.
 module Game.LambdaHack.Client.AI.HandleAbilityM
@@ -618,9 +618,10 @@ trigger aid fleeViaStairs = do
   s <- getState
   let lidExplored = ES.member lid explored
       allExplored = ES.size explored == EM.size dungeon
-      t = lvl `at` bpos b
-      feats = TK.tfeature $ okind t
-      ben feat = case feat of
+      f pos = let t = lvl `at` pos
+              in map (pos,) $ TK.tfeature $ okind t
+      feats = concatMap f $ vicinityUnsafe (bpos b)
+      ben (_, feat) = case feat of
         TK.Cause (IK.Ascend k) -> do -- change levels sensibly, in teams
           (lid2, pos2) <- getsState $ whereTo lid (bpos b) k . sdungeon
           per <- getPerFid lid2
@@ -665,8 +666,8 @@ trigger aid fleeViaStairs = do
   benFeats <- mapM ben feats
   let benFeat = zip benFeats feats
   return $! liftFrequency $ toFreq "trigger"
-    [ (benefit, ReqAlter (bpos b) (Just feat))
-    | (benefit, feat) <- benFeat
+    [ (benefit, ReqAlter pos (Just feat))
+    | (benefit, (pos, feat)) <- benFeat
     , benefit > 0 ]
 
 projectItem :: MonadClient m
