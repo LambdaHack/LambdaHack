@@ -11,7 +11,6 @@ import Game.LambdaHack.Common.Prelude
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Common.Misc
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Description of default key-command bindings.
@@ -63,28 +62,14 @@ standardKeys = KeyKind
                 , symbol = ' ' }])
 
       -- Terrain exploration and alteration
-      , ("<", addCmdCategory CmdItemMenu $ addCmdCategory CmdMinimal
-              $ grabAscend "grab items or ascend")
-      , ("g", grabAscend "")
-      , ("comma", addCmdCategory CmdNoHelp $ grabAscend "")
-      , let triggerAscend10 =
-              [TriggerFeature { verb = "ascend"
-                              , object = "10 levels"
-                              , feature = TK.Cause (IK.Ascend 10) }]
-        in ("CTRL-<", ([CmdNoHelp], descTs triggerAscend10 , ByAimMode
-              { exploration = TriggerTile triggerAscend10
-              , aiming = AimAscend 10 }))
-      , (">", addCmdCategory CmdItemMenu $ addCmdCategory CmdMinimal
-              $ descendDrop "descend or drop items")
-      , ("d", descendDrop "")
-      , ("period", addCmdCategory CmdNoHelp $ descendDrop "")
-      , let triggerAscendMinus10 =
-              [TriggerFeature { verb = "descend"
-                              , object = "10 levels"
-                              , feature = TK.Cause (IK.Ascend (-10)) }]
-        in ("CTRL->", ([CmdNoHelp], descTs triggerAscendMinus10, ByAimMode
-             { exploration = TriggerTile triggerAscendMinus10
-             , aiming = AimAscend (-10) }))
+      , ("g", addCmdCategory CmdItemMenu $ addCmdCategory CmdMinimal
+              $ grabItems "grab items")
+      , ("comma", addCmdCategory CmdNoHelp $ grabItems "")
+      , ("CTRL-<", ([CmdNoHelp], "ascend aim" , AimAscend 10))
+      , ("d", addCmdCategory CmdItemMenu $ addCmdCategory CmdMinimal
+              $ dropItems "drop items")
+      , ("period", addCmdCategory CmdNoHelp $ dropItems "")
+      , ("CTRL->", ([CmdNoHelp], "descend aim", AimAscend (-10)))
       , ("semicolon", ( [CmdMove]
                       , "go to crosshair for 100 steps"
                       , Macro ["CTRL-semicolon", "CTRL-period", "V"] ))
@@ -259,14 +244,14 @@ standardKeys = KeyKind
                   , "accept target"
                   , Accept ))
       , ("safe11", ( [CmdInternal]
-                   , "grab items or ascend"
-                   , exploreGrabAscendCmd ))
+                   , "grab items"
+                   , exploreGrabCmd ))
       , ("safe12", ( [CmdInternal]
                    , "switch view to one level higher"
                    , AimAscend 1 ))
       , ("safe13", ( [CmdInternal]
-                   , "descend or drop items"
-                   , exploreDescendDropCmd ))
+                   , "drop items"
+                   , exploreDropCmd ))
       , ("safe14", ( [CmdInternal]
                    , "switch view to one level lower"
                    , AimAscend (-1) ))

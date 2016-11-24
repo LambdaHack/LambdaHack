@@ -103,7 +103,6 @@ data HumanCmd =
   | Project     ![Trigger]
   | Apply       ![Trigger]
   | AlterDir    ![Trigger]
-  | TriggerTile ![Trigger]
   | Help
   | ItemMenu
   | MainMenu
@@ -175,8 +174,6 @@ noRemoteHumanCmd cmd = case cmd of
 data Trigger =
     ApplyItem {verb :: !MU.Part, object :: !MU.Part, symbol :: !Char}
   | AlterFeature {verb :: !MU.Part, object :: !MU.Part, feature :: !TK.Feature}
-  | TriggerFeature
-      {verb :: !MU.Part, object :: !MU.Part, feature :: !TK.Feature}
   deriving (Show, Eq, Ord, Generic)
 
 instance Read Trigger where

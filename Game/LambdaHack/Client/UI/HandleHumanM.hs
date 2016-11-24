@@ -64,7 +64,6 @@ cmdAction cmd = case cmd of
   Project ts -> weaveJust <$> (timedToUI <$$> projectHuman ts)
   Apply ts -> weaveJust <$> (timedToUI <$$> applyHuman ts)
   AlterDir ts -> weaveJust <$> (timedToUI <$$> alterDirHuman ts)
-  TriggerTile ts -> weaveJust <$> (timedToUI <$$> triggerTileHuman ts)
   Help -> helpHuman cmdAction
   ItemMenu -> itemMenuHuman cmdAction
   ChooseItemMenu dialogMode -> chooseItemMenuHuman cmdAction dialogMode

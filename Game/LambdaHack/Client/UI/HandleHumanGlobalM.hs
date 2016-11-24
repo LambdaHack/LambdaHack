@@ -13,7 +13,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , waitHuman, moveRunHuman
   , runOnceAheadHuman, moveOnceToXhairHuman
   , runOnceToXhairHuman, continueToXhairHuman
-  , moveItemHuman, projectHuman, applyHuman, alterDirHuman, triggerTileHuman
+  , moveItemHuman, projectHuman, applyHuman, alterDirHuman
   , helpHuman, itemMenuHuman, chooseItemMenuHuman, mainMenuHuman
   , gameDifficultyIncr
     -- * Global commands that never take time
@@ -255,7 +255,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
     [] -> do  -- move or search or alter
       runStopOrCmd <- moveSearchAlterAid leader dir
       case runStopOrCmd of
-        Left stopMsg -> failWith stopMsg
+        Left stopMsg -> return $ Left stopMsg
         Right runCmd ->
           -- Don't check @initialStep@ and @finalGoal@
           -- and don't stop going to target: door opening is mundane enough.
@@ -358,11 +358,12 @@ displaceAid target = do
        else failSer DisplaceAccess
 
 -- | Actor moves or searches or alters. No visible actor at the position.
-moveSearchAlterAid :: MonadClient m
-                   => ActorId -> Vector -> m (Either Text RequestAnyAbility)
+moveSearchAlterAid :: MonadClientUI m
+                   => ActorId -> Vector -> m (FailOrCmd RequestAnyAbility)
 {-# INLINABLE moveSearchAlterAid #-}
 moveSearchAlterAid source dir = do
-  cops@Kind.COps{cotile, coTileSpeedup} <- getsState scops
+  cops@Kind.COps{ cotile=cotile@Kind.Ops{okind}
+                , coTileSpeedup } <- getsState scops
   sb <- getsState $ getActorBody source
   actorSk <- actorSkillsClient source
   lvl <- getLevel $ blid sb
@@ -371,26 +372,30 @@ moveSearchAlterAid source dir = do
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos
       alterMinSkill = Tile.alterMinSkill coTileSpeedup t
-      runStopOrCmd
-        -- Movement requires full access.
-        | accessible cops lvl tpos =
-            -- A potential invisible actor is hit. War started without asking.
-            Right $ RequestAnyAbility $ ReqMove dir
-        -- No access, so search and/or alter the tile. Non-walkability is
-        -- not implied by the lack of access.
-        | not (Tile.isWalkable coTileSpeedup t)
-          && (not (knownLsecret lvl)
-              || isSecretPos lvl tpos  -- possible secrets here
-                 && (Tile.isSuspect coTileSpeedup t  -- not yet searched
-                     || Tile.hideAs cotile t /= t)  -- search again
-              || alterMinSkill < 10
-              || alterMinSkill >= 10 && alterSkill >= alterMinSkill)
-          = if | alterSkill < alterMinSkill ->
-                 Left $ showReqFailure AlterUnwalked
-               | EM.member tpos $ lfloor lvl ->
-                 Left $ showReqFailure AlterBlockItem
-               | otherwise ->
-                 Right $ RequestAnyAbility $ ReqAlter tpos Nothing
+  runStopOrCmd <- do
+    -- Movement requires full access.
+    if | accessible cops lvl tpos ->
+         -- A potential invisible actor is hit. War started without asking.
+         return $ Right $ RequestAnyAbility $ ReqMove dir
+    -- No access, so search and/or alter the tile. Non-walkability is
+    -- not implied by the lack of access.
+       | not (Tile.isWalkable coTileSpeedup t)
+         && (not (knownLsecret lvl)
+             || isSecretPos lvl tpos  -- possible secrets here
+                && (Tile.isSuspect coTileSpeedup t  -- not yet searched
+                    || Tile.hideAs cotile t /= t)  -- search again
+             || alterMinSkill < 10
+             || alterMinSkill >= 10 && alterSkill >= alterMinSkill) ->
+         if | alterSkill < alterMinSkill -> failSer AlterUnwalked
+            | EM.member tpos $ lfloor lvl -> failSer AlterBlockItem
+            | otherwise -> do
+              let fs = TK.tfeature $ okind t
+              leader <- getLeaderUI
+              verAters <- verifyAlters leader fs
+              case verAters of
+                Right() ->
+                  return $ Right $ RequestAnyAbility $ ReqAlter tpos Nothing
+                Left err -> return $ Left err
             -- We don't use MoveSer, because we don't hit invisible actors.
             -- The potential invisible actor, e.g., in a wall or in
             -- an inaccessible doorway, is made known, taking a turn.
@@ -403,8 +408,8 @@ moveSearchAlterAid source dir = do
             -- about invisible pass-wall actors, but when an actor detected,
             -- it costs a turn and does not harm the invisible actors,
             -- so it's not so tempting.
-        -- Ignore a known boring, not accessible tile.
-        | otherwise = Left "never mind"
+    -- Ignore a known boring, not accessible tile.
+       | otherwise -> failWith "never mind"
   return $! runStopOrCmd
 
 -- * RunOnceAhead
@@ -836,11 +841,15 @@ alterTile ts dir = do
     _ : _ | alterSkill < Tile.alterMinSkill coTileSpeedup t ->
       failSer AlterUnskilled
     [] -> failWith $ guessAlter cops alterFeats t
-    feat : _ ->
+    fs@(feat : _) ->
       if EM.notMember tpos $ lfloor lvl then
         if null (posToAidsLvl tpos lvl) then do
-          msgAdd msg
-          return $ Right $ ReqAlter tpos $ Just feat
+          verAters <- verifyAlters leader fs
+          case verAters of
+            Right() -> do
+              msgAdd msg
+              return $ Right $ ReqAlter tpos $ Just feat
+            Left err -> return $ Left err
         else failSer AlterBlockActor
       else failSer AlterBlockItem
 
@@ -849,53 +858,26 @@ alterFeatures [] = []
 alterFeatures (AlterFeature{feature} : ts) = feature : alterFeatures ts
 alterFeatures (_ : ts) = alterFeatures ts
 
--- | Guess and report why the bump command failed.
-guessAlter :: Kind.COps -> [TK.Feature] -> Kind.Id TileKind -> Text
-guessAlter Kind.COps{cotile} (TK.OpenTo _ : _) t
-  | Tile.isClosable cotile t = "already open"
-guessAlter _ (TK.OpenTo _ : _) _ = "cannot be opened"
-guessAlter Kind.COps{cotile} (TK.CloseTo _ : _) t
-  | Tile.isOpenable cotile t = "already closed"
-guessAlter _ (TK.CloseTo _ : _) _ = "cannot be closed"
-guessAlter _ _ _ = "never mind"
+verifyAlters :: MonadClientUI m
+             => ActorId -> [TK.Feature] -> m (FailOrCmd ())
+{-# INLINABLE verifyAlters #-}
+verifyAlters leader fs = do
+  let f acc feat = case acc of
+        Right() -> verifyAlter leader feat
+        Left{} -> return acc
+  foldM f (Right ()) fs
 
--- * TriggerTile
-
--- | Leader tries to trigger the tile he's standing on.
-triggerTileHuman :: MonadClientUI m
-                 => [Trigger] -> m (FailOrCmd (RequestTimed 'AbTrigger))
-{-# INLINABLE triggerTileHuman #-}
-triggerTileHuman ts = do
-  cops@Kind.COps{cotile} <- getsState scops
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  lvl <- getLevel $ blid b
-  let t = lvl `at` bpos b
-      triggerFeats = triggerFeatures ts
-  case filter (\feat -> Tile.hasFeature cotile feat t) triggerFeats of
-    [] -> failWith $ guessTrigger cops triggerFeats t
-    feat : _ -> do
-      go <- verifyTrigger leader feat
-      case go of
-        Right () -> return $ Right undefined
-        Left err -> return $ Left err
-
-triggerFeatures :: [Trigger] -> [TK.Feature]
-triggerFeatures [] = []
-triggerFeatures (TriggerFeature{feature} : ts) = feature : triggerFeatures ts
-triggerFeatures (_ : ts) = triggerFeatures ts
-
--- | Verify important feature triggers, such as fleeing the dungeon.
-verifyTrigger :: MonadClientUI m
-              => ActorId -> TK.Feature -> m (FailOrCmd ())
-{-# INLINABLE verifyTrigger #-}
-verifyTrigger leader feat = case feat of
+-- | Verify important features, such as fleeing the dungeon.
+verifyAlter :: MonadClientUI m
+            => ActorId -> TK.Feature -> m (FailOrCmd ())
+{-# INLINABLE verifyAlter #-}
+verifyAlter leader feat = case feat of
   TK.Cause IK.Escape{} -> do
     b <- getsState $ getActorBody leader
     side <- getsClient sside
     fact <- getsState $ (EM.! side) . sfactionD
-    if not (fcanEscape $ gplayer fact) then failWith
-      "This is the way out, but where would you go in this alien world?"
+    if not (fcanEscape $ gplayer fact)
+    then return $ Right ()
     else do
       go <- displayYesNo ColorFull
               "This is the way out. Really leave now?"
@@ -916,17 +898,14 @@ verifyTrigger leader feat = case feat of
   _ -> return $ Right ()
 
 -- | Guess and report why the bump command failed.
-guessTrigger :: Kind.COps -> [TK.Feature] -> Kind.Id TileKind -> Text
-guessTrigger Kind.COps{cotile} fs@(TK.Cause (IK.Ascend k) : _) t
-  | Tile.hasFeature cotile (TK.Cause (IK.Ascend (-k))) t =
-    if | k > 0 -> "the way goes down, not up"
-       | k < 0 -> "the way goes up, not down"
-       | otherwise -> assert `failure` fs
-guessTrigger _ fs@(TK.Cause (IK.Ascend k) : _) _ =
-    if | k > 0 -> "cannot ascend"
-       | k < 0 -> "cannot descend"
-       | otherwise -> assert `failure` fs
-guessTrigger _ _ _ = "never mind"
+guessAlter :: Kind.COps -> [TK.Feature] -> Kind.Id TileKind -> Text
+guessAlter Kind.COps{cotile} (TK.OpenTo _ : _) t
+  | Tile.isClosable cotile t = "already open"
+guessAlter _ (TK.OpenTo _ : _) _ = "cannot be opened"
+guessAlter Kind.COps{cotile} (TK.CloseTo _ : _) t
+  | Tile.isOpenable cotile t = "already closed"
+guessAlter _ (TK.CloseTo _ : _) _ = "cannot be closed"
+guessAlter _ _ _ = "never mind"
 
 -- * Help
 
