@@ -81,7 +81,7 @@ actionStrategy aid = do
   condNonProjFoeAdj <- condNonProjFoeAdjM aid
   threatDistL <- threatDistList aid
   condHpTooLow <- condHpTooLowM aid
-  condOnTriggerable <- condOnTriggerableM aid
+  condAdjTriggerable <- condAdjTriggerableM aid
   condBlocksFriends <- condBlocksFriendsM aid
   condNoEqpWeapon <- condNoEqpWeaponM aid
   let condNoUsableWeapon = bweapon body == 0
@@ -129,19 +129,19 @@ actionStrategy aid = do
         [ ( [AbApply], (toAny :: ToAny 'AbApply)
             <$> applyItem aid ApplyFirstAid
           , condHpTooLow && not condAnyFoeAdj
-            && not condOnTriggerable )  -- don't block stairs, perhaps ascend
+            && not condAdjTriggerable )  -- don't block stairs, perhaps ascend
         , ( [AbAlter], (toAny :: ToAny 'AbAlter)
             <$> trigger aid True
               -- flee via stairs, even if to wrong level
               -- may return via different stairs
-          , condOnTriggerable
+          , condAdjTriggerable
             && ((condNotCalmEnough || condHpTooLow)
                 && condThreatNearby && not condAimEnemyPresent
                 || condMeleeBad && condThreatAdj) )
         , ( [AbDisplace]
           , displaceFoe aid  -- only swap with an enemy to expose him
           , condBlocksFriends && condNonProjFoeAdj
-            && not condOnTriggerable && not condDesirableFloorItem )
+            && not condDesirableFloorItem )
         , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
             <$> pickup aid True
           , condNoEqpWeapon && condFloorWeapon && not condHpTooLow
@@ -155,7 +155,7 @@ actionStrategy aid = do
                && not newCondInMelee )  -- don't incur overhead
         , ( [AbAlter], (toAny :: ToAny 'AbAlter)
             <$> trigger aid False
-          , condOnTriggerable && not condDesirableFloorItem
+          , condAdjTriggerable && not condDesirableFloorItem
             && (lidExplored || condEnoughGear)
             && not condAimEnemyPresent )
         , ( [AbMove]
@@ -189,12 +189,11 @@ actionStrategy aid = do
         , ( [AbProject]  -- for high-value target, shoot even in melee
           , stratToFreq 2 $ (toAny :: ToAny 'AbProject)
             <$> projectItem aid
-          , condAimEnemyPresent && condCanProject && not condOnTriggerable )
+          , condAimEnemyPresent && condCanProject )
         , ( [AbApply]
           , stratToFreq 2 $ (toAny :: ToAny 'AbApply)
             <$> applyItem aid ApplyAll  -- use any potion or scroll
-          , (condAimEnemyPresent || condThreatNearby)  -- can affect enemies
-            && not condOnTriggerable )
+          , (condAimEnemyPresent || condThreatNearby) )  -- can affect enemies
         , ( [AbMove]
           , stratToFreq (if | not condAimEnemyPresent ->
                               3  -- if enemy only remembered, investigate anyway

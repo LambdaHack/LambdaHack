@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.AI.ConditionM
   , condNonProjFoeAdjM
   , condInMeleeM
   , condHpTooLowM
-  , condOnTriggerableM
+  , condAdjTriggerableM
   , condBlocksFriendsM
   , condFloorWeaponM
   , condNoEqpWeaponM
@@ -161,15 +161,15 @@ condHpTooLowM aid = do
         Nothing -> assert `failure` aid
   return $! hpTooLow b ar
 
--- | Require the actor stands over a triggerable tile.
-condOnTriggerableM :: MonadStateRead m => ActorId -> m Bool
-{-# INLINABLE condOnTriggerableM #-}
-condOnTriggerableM aid = do
+-- | Require the actor stands adjacent to a triggerable tile (e.g., stairs).
+condAdjTriggerableM :: MonadStateRead m => ActorId -> m Bool
+{-# INLINABLE condAdjTriggerableM #-}
+condAdjTriggerableM aid = do
   Kind.COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
-  let t = lvl `at` bpos b
-  return $! Tile.hasCauses coTileSpeedup t
+  let hasTriggerable p = Tile.hasCauses coTileSpeedup $ lvl `at` p
+  return $! any hasTriggerable $ vicinityUnsafe $ bpos b
 
 -- | Produce the chess-distance-sorted list of non-low-HP foes on the level.
 -- We don't consider path-distance, because we are interested in how soon
