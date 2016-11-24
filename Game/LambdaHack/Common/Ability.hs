@@ -26,7 +26,6 @@ data Ability =
   | AbMoveItem
   | AbProject
   | AbApply
-  | AbTrigger
   deriving (Eq, Ord, Generic, Enum, Bounded)
 
 -- | Skill level in particular abilities.
@@ -72,7 +71,6 @@ instance Show Ability where
   show AbMoveItem = "manage items"
   show AbProject = "fling"
   show AbApply = "apply"
-  show AbTrigger = "trigger floor"
 
 instance NFData Ability
 

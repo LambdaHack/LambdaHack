@@ -164,7 +164,7 @@ torsor = ItemKind
   , iweight  = 80000
   , iaspects = [ AddMaxHP 300, AddMaxCalm 100, AddSpeed 10, AddNocto 2
                , AddAbility AbProject 2, AddAbility AbApply 1
-               , AddAbility AbAlter 3, AddAbility AbTrigger (-1) ]
+               , AddAbility AbAlter 3, AddAbility AbAlter (-1) ]
                    -- can't switch levels, a miniboss
   , ieffects = [Unique]
   , ifeature = [Durable, Identified]
@@ -352,7 +352,7 @@ rhinoceros = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 90, AddMaxCalm 60, AddSpeed 25, AddNocto 2
-               , AddAbility AbTrigger (-1) ]
+               , AddAbility AbAlter (-1) ]
                    -- can't switch levels, a miniboss
   , ieffects = [Unique]
   , ifeature = [Durable, Identified]

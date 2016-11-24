@@ -106,7 +106,6 @@ strengthFromEqpSlot eqpSlot itemFull =
     EqpSlotMiscAbility ->
       EM.findWithDefault 0 Ability.AbWait aSkills
       + EM.findWithDefault 0 Ability.AbMoveItem aSkills
-      + EM.findWithDefault 0 Ability.AbTrigger aSkills
     EqpSlotAbMove -> EM.findWithDefault 0 Ability.AbMove aSkills
     EqpSlotAbMelee -> EM.findWithDefault 0 Ability.AbMelee aSkills
     EqpSlotAbDisplace -> EM.findWithDefault 0 Ability.AbDisplace aSkills

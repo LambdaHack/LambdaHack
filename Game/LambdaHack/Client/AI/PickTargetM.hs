@@ -200,7 +200,7 @@ targetStrategy aid = do
                 -- This is mostly lazy and used between 0 and 3 times below.
                 ctriggers <- closestTriggers Nothing aid
                 let ctriggersEarly =
-                      if EM.findWithDefault 0 AbTrigger actorMaxSk > 0
+                      if EM.findWithDefault 0 AbAlter actorMaxSk >= 2
                          && condEnoughGear
                       then ctriggers
                       else mzero
@@ -248,7 +248,7 @@ targetStrategy aid = do
                                                == EM.size dungeon
                                 ctriggersMiddle =
                                   if EM.findWithDefault
-                                       0 AbTrigger actorMaxSk > 0
+                                       0 AbAlter actorMaxSk >= 2
                                      && not allExplored2
                                   then ctriggers
                                   else mzero
@@ -351,7 +351,7 @@ targetStrategy aid = do
                            -- (this changes with time), but allow the actor
                            -- to reach them and then retarget, unless he can't
                            -- trigger them at all.
-                           && (EM.findWithDefault 0 AbTrigger actorMaxSk <= 0
+                           && (EM.findWithDefault 0 AbAlter actorMaxSk < 2
                                || not (Tile.isStair cotile t))
                            -- The remaining case is furthestKnown. This is
                            -- always an unimportant target, so we forget it
