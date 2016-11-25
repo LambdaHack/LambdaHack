@@ -602,29 +602,34 @@ trigger :: MonadClient m
         => ActorId -> Bool -> m (Strategy (RequestTimed 'AbAlter))
 {-# INLINABLE trigger #-}
 trigger aid fleeViaStairs = do
-  cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
+  cops@Kind.COps{cotile} <- getsState scops
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
   b <- getsState $ getActorBody aid
+  actorSk <- actorSkillsClient aid
+  let alterSkill = EM.findWithDefault 0 AbAlter actorSk
   actorAspect <- getsClient sactorAspect
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  let lid = blid b
-  lvl <- getLevel lid
+  lvl <- getLevel (blid b)
   unexploredD <- unexploredDepth
-  let lidExplored = ES.member lid explored
+  salter <- getsClient salter
+  let lidExplored = ES.member (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
+      lalter = salter EM.! blid b
+      -- Only actors with hight enough AbAlter can use stairs.
+      enterableHere p = alterSkill >= fromEnum (lalter PointArray.! p)
       f pos = let t = lvl `at` pos
-              in map (pos,) $ TK.tfeature $ okind t
-      feats = concatMap f $ vicinityUnsafe (bpos b)
+              in map (pos,) $ Tile.listCauseEffects cotile t
+      feats = concatMap f $ filter enterableHere $ vicinityUnsafe (bpos b)
       ben (_, feat) = case feat of
-        TK.Cause (IK.Ascend k) -> do -- change levels sensibly, in teams
+        IK.Ascend k -> do -- change levels sensibly, in teams
           let aimless = ftactic (gplayer fact) `elem` [TRoam, TPatrol]
-              easier = signum k /= signum (fromEnum lid)
-              unexpForth = unexploredD (signum k) lid
-              unexpBack = unexploredD (- signum k) lid
+              easier = signum k /= signum (fromEnum (blid b))
+              unexpForth = unexploredD (signum k) (blid b)
+              unexpBack = unexploredD (- signum k) (blid b)
               eben
                 | aimless = 100  -- faction is not exploring, so switch at will
                 | unexpForth =
@@ -638,7 +643,7 @@ trigger aid fleeViaStairs = do
                 | not $ null $ lescape lvl = 0
                     -- all explored, stay on the escape level
                 | otherwise = 2  -- no escape, switch levels occasionally
-          (lid2, _) <- getsState $ whereTo lid (bpos b) k . sdungeon
+          (lid2, _) <- getsState $ whereTo (blid b) (bpos b) k . sdungeon
           return $!
              if boldpos b == Just (bpos b)  -- probably used stairs last turn
                 && boldlid b == lid2  -- in the opposite direction
@@ -646,20 +651,20 @@ trigger aid fleeViaStairs = do
              else if fleeViaStairs
                   then 1000 * eben + 1  -- strongly prefer correct direction
                   else eben
-        TK.Cause ef@IK.Escape{} -> return $  -- flee via this way, too
+        ef@IK.Escape{} -> return $  -- flee via this way, too
           -- Only some factions try to escape but they first explore all
           -- for high score.
           if not (fcanEscape $ gplayer fact) || not allExplored
           then 0
           else effectToBenefit cops b ar fact ef
-        TK.Cause ef | not fleeViaStairs ->
+        ef | not fleeViaStairs ->
           return $! effectToBenefit cops b ar fact ef
         _ -> return 0
   benFeats <- mapM ben feats
   let benFeat = zip benFeats feats
   return $! liftFrequency $ toFreq "trigger"
-    [ (benefit, ReqAlter pos (Just feat))
-    | (benefit, (pos, feat)) <- benFeat
+    [ (benefit, ReqAlter pos (Just $ TK.Cause eff))
+    | (benefit, (pos, eff)) <- benFeat
     , benefit > 0 ]
 
 projectItem :: MonadClient m
