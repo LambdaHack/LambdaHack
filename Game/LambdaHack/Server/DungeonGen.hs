@@ -96,9 +96,9 @@ condStairs :: Kind.COps -> TileMap -> [Point]-> Bool
            -> Bool
 condStairs Kind.COps{coTileSpeedup} cmap ps moveUp p !t =
   let (xsize, ysize) = PointArray.sizeA cmap
-      yUpOffset = if moveUp then -1 else 1
+      xUpOffset = if moveUp then -1 else 1
       -- The border of the dungeon should not be excavated around stairs.
-      area = (2, 3 + yUpOffset , xsize - 3, ysize - 4 + yUpOffset)
+      area = (3 + xUpOffset, 2, xsize - 4 + xUpOffset, ysize - 3)
       dist !cmin !p0 _ = all (\ !pos -> chessDist p0 pos > cmin) ps
   in p `inside` area
      && Tile.isWalkable coTileSpeedup t
@@ -182,10 +182,11 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
                     then ((spos, stairId) : up, down)
                     else (up, (spos, stairId) : down)
       condS ps moveUp p = condStairs cops cmap ps moveUp p (cmap PointArray.! p)
-      posDown Point{..} = Point px (py + 2)
+      posDown Point{..} = Point (px + 2) py
       consPair p = condS [] True p && condS [] False (posDown p)
   (stairsUp1, stairsDown1) <-
-    -- If all stairs can be continued, do that, otherwise shuffle all starcases.
+    -- If all stairs can be continued, do that, otherwise shuffle all starcases
+    -- (the levels are separated by a thick layer that mixes up exits).
     if not noDesc && all consPair lstairUp
     then do
       let f posUp = do

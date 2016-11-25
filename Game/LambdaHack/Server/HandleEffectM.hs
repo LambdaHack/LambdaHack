@@ -607,7 +607,7 @@ findStairExit :: MonadStateRead m => Bool -> LevelId -> Point -> m Point
 findStairExit moveUp lid pos = do
   cops <- getsState scops
   lvl <- getLevel lid
-  let defLanding = uncurry Vector $ if moveUp then (0, -1) else (0, 1)
+  let defLanding = uncurry Vector $ if moveUp then (-1, 0) else (1, 0)
       (mvs2, mvs1) = break (== defLanding) moves
       mvs = mvs1 ++ mvs2
   unocc <- getsState $ \s p -> accessible cops lvl p
