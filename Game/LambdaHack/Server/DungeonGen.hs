@@ -155,7 +155,7 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
                          , cocave=Kind.Ops{okind=cokind}
                          , coTileSpeedup}
            Cave{dkind, dplaces}
-           ln minD maxD totalDepth lstairUp escapeFeature cmap = do
+           ln minD maxD totalDepth lstairUpRaw escapeFeature cmap = do
   let kc@CaveKind{citemNum, clegendLitTile} = cokind dkind
       fitArea pos = inside pos . fromArea . qarea
       findLegend pos = maybe clegendLitTile qlegend
@@ -187,13 +187,16 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
                 && not (Tile.isNoActor coTileSpeedup (cmap PointArray.! p))
       posUp Point{..} = Point (px - 2) py
       posDown Point{..} = Point (px + 2) py
+      lstairUp = map posUp lstairUpRaw  -- prevent drift to the right
       condPair p = condS p || condS (posDown p)
   (stairsUp1, stairsDown1) <-
     -- If all stairs can be continued, do that, otherwise shuffle all starcases
     -- (the levels are separated by a thick layer that mixes up exits).
     if all condPair lstairUp
     then do
-      let f p = do
+      let f :: Point -> Rnd ( [(Point, Kind.Id TileKind)]
+                            , [(Point, Kind.Id TileKind)] )
+          f p = do
             let legend = findLegend p
             stairUpId <- fromMaybe (assert `failure` legend)
                          <$> opick legend ascendable
