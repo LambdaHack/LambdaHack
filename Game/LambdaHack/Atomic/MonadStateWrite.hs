@@ -256,7 +256,8 @@ rmFromBag kit@(k, rmIt) iid bag =
         case compare n k of
           LT -> assert `failure` "rm more than there is"
                        `twith` (n, kit, iid, bag)
-          EQ -> Nothing  -- TODO: assert as below
+          EQ -> assert (rmIt == it `blame` (rmIt, it, n, kit, iid, bag))
+                $ Nothing
           GT -> assert (rmIt == take k it
                         `blame` (rmIt, take k it, n, kit, iid, bag))
                 $ Just (n - k, take (n - k) it)

@@ -293,6 +293,9 @@ benAvailableItems aid permitted cstores = do
     -- keep it lazy
 
 -- TODO: also take into account dynamic lights *not* wielded by the actor
+-- They are in some Per cache, but unfortunately on the server, not client.
+-- Perhaps send not only Per, but Lit and use it somewhere else, too,
+-- e.g., to colour tiles or to describe them as lit.
 hinders :: Bool -> Bool -> Bool -> Bool -> Actor -> AspectRecord -> ItemFull
         -> Bool
 hinders condAnyFoeAdj condShineBetrays condAimEnemyPresent

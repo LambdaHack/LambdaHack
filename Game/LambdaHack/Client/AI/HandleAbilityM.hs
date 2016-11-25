@@ -119,7 +119,7 @@ actionStrategy aid = do
         st <- mstrat
         return $! if scale == 0
                   then mzero
-                  else scaleFreq scale $ bestVariant st  -- TODO: flatten instead?
+                  else scaleFreq scale $ bestVariant st -- TODO:flatten instead?
       -- Order matters within the list, because it's summed with .| after
       -- filtering. Also, the results of prefix, distant and suffix
       -- are summed with .| at the end.
@@ -241,8 +241,6 @@ actionStrategy aid = do
         [ ( [AbWait], (toAny :: ToAny 'AbWait)
             <$> waitBlockNow
             -- Wait until friends sidestep; ensures strategy is never empty.
-            -- TODO: try to switch leader away before that (we already
-            -- switch him afterwards)
           , True )
         ]
       -- TODO: don't msum not to evaluate until needed
@@ -513,8 +511,8 @@ harmful cops body ar fact itemFull =
   maybe False (\(u, _) -> u <= 0)
     (totalUsefulness cops body ar fact itemFull)
 
--- TODO: if noctovision radius higher than min sight light, turn all lights off,
--- (unless the level is lit by default)
+-- TODO: if noctovision radius higher than min sight light, turn all lights off
+-- (unless the level is lit by default or e.g. the same item give nocto and lit)
 unneeded :: Kind.COps -> Bool -> Bool -> Bool -> Bool
          -> Actor -> AspectRecord -> Faction -> ItemFull
          -> Bool
@@ -590,8 +588,8 @@ meleeAny aid = do
   return $! liftFrequency freq
 
 -- TODO: take charging status into account
--- TODO: make sure the stairs are specifically targetted and not
--- an item on them, etc., so that we don't leave level if items visible.
+-- TODO: make sure the stairs are specifically targetted,
+-- so that we don't leave level if items visible.
 -- When invalidating target, make sure the stairs should really be taken.
 -- | The level the actor is on is either explored or the actor already
 -- has a weapon equipped, so no need to explore further, he tries to find

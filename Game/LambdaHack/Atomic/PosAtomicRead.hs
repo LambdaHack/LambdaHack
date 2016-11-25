@@ -142,11 +142,9 @@ posUpdAtomic cmd = case cmd of
 posSfxAtomic :: MonadStateRead m => SfxAtomic -> m PosAtomic
 {-# INLINABLE posSfxAtomic #-}
 posSfxAtomic cmd = case cmd of
-  SfxStrike _ _ _ CSha _ ->  -- shared stash is private
-    return PosNone  -- TODO: PosSerAndFidIfSight; but probably never used
+  SfxStrike _ _ _ CSha _ -> return PosNone  -- shared stash is private
   SfxStrike _ target _ _ _ -> singleAid target
-  SfxRecoil _ _ _ CSha _ ->  -- shared stash is private
-    return PosNone  -- TODO: PosSerAndFidIfSight; but probably never used
+  SfxRecoil _ _ _ CSha _ -> return PosNone  -- shared stash is private
   SfxRecoil _ target _ _ _ -> singleAid target
   SfxProject aid _ cstore -> singleContainer $ CActor aid cstore
   SfxCatch aid _ cstore -> singleContainer $ CActor aid cstore

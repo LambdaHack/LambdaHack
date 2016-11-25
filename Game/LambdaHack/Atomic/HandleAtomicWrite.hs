@@ -152,14 +152,11 @@ updDestroyActor :: MonadStateWrite m
 {-# INLINABLE updDestroyActor #-}
 updDestroyActor aid body ais = do
   -- If a leader dies, a new leader should be elected on the server
-  -- before this command is executed.
-  -- TODO: check this only on the server (e.g., not in LoseActor):
-  -- fact <- getsState $ (EM.! bfid body) . sfactionD
-  -- assert (Just aid /= gleader fact `blame` (aid, body, fact)) skip
-  -- Assert that actor's items belong to @sitemD@. Do not remove those
-  -- that do not appear anywhere else, for simplicity and speed.
+  -- before this command is executed (not checked).
   itemD <- getsState sitemD
   let match (iid, item) = itemsMatch (itemD EM.! iid) item
+  -- Assert that actor's items belong to @sitemD@. Do not remove those
+  -- that do not appear anywhere else, for simplicity and speed.
   let !_A = assert (allB match ais `blame` "destroyed actor items not found"
                     `twith` (aid, body, ais, itemD)) ()
   -- Remove actor from @sactorD@.
@@ -511,11 +508,10 @@ updTimeItem iid c fromIt toIt = assert (fromIt /= toIt) $ do
       insertItemContainer iid (k, toIt) c
     Nothing -> assert `failure` (bag, iid, c, fromIt, toIt)
 
--- | Age the game.
---
--- TODO: It leaks information that there is activity on various level,
+-- TODO: It leaks information that there is activity on various levels,
 -- even if the faction has no actors there, so show this on UI somewhere,
--- e.g., in the @~@ menu of seen level indicate recent activity.
+-- e.g., in the @~@ menu of seen levels indicate recent activity.
+-- | Age the game.
 updAgeGame :: MonadStateWrite m => [LevelId] -> m ()
 {-# INLINABLE updAgeGame #-}
 updAgeGame lids = do
