@@ -30,6 +30,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -200,15 +201,11 @@ targetStrategy aid = do
                 -- This is mostly lazy and used between 0 and 3 times below.
                 ctriggers <- closestTriggers Nothing aid
                 let ctriggersEarly =
-                      if EM.findWithDefault 0 AbAlter actorMaxSk >= 3  -- TODO
-                         && condEnoughGear
+                      if condEnoughGear
                       then ctriggers
                       else mzero
                 if nullFreq ctriggersEarly then do
-                  citems <-
-                    if EM.findWithDefault 0 AbMoveItem actorMaxSk > 0
-                    then closestItems aid
-                    else return []
+                  citems <- closestItems aid
                   case filter desirable citems of
                     [] -> do
                       let vToTgt v0 = do
@@ -246,12 +243,9 @@ targetStrategy aid = do
                             explored2 <- getsClient sexplored
                             let allExplored2 = ES.size explored2
                                                == EM.size dungeon
-                                ctriggersMiddle =
-                                  if EM.findWithDefault
-                                       0 AbAlter actorMaxSk >= 3  -- TODO
-                                     && not allExplored2
-                                  then ctriggers
-                                  else mzero
+                                ctriggersMiddle = if not allExplored2
+                                                  then ctriggers
+                                                  else mzero
                             if nullFreq ctriggersMiddle then do
                               -- All stones turned, time to win or die.
                               afoes <- closestFoes allFoes aid
@@ -317,8 +311,10 @@ targetStrategy aid = do
           pickNewTarget  -- prefer close foes to anything
         TPoint lid pos -> do
           explored <- getsClient sexplored
+          salter <- getsClient salter
           let lidExplored = ES.member (blid b) explored
               allExplored = ES.size explored == EM.size dungeon
+              lalter = salter EM.! blid b
           bag <- getsState $ getFloorBag lid pos
           let t = lvl `at` pos
           if lid /= blid b  -- wrong level
@@ -351,7 +347,8 @@ targetStrategy aid = do
                            -- (this changes with time), but allow the actor
                            -- to reach them and then retarget, unless he can't
                            -- trigger them at all.
-                           && (EM.findWithDefault 0 AbAlter actorMaxSk < 3  --TODO
+                           && (EM.findWithDefault 0 AbAlter actorMaxSk
+                               < fromEnum (lalter PointArray.! pos)
                                || not (Tile.isStair cotile t))
                            -- The remaining case is furthestKnown. This is
                            -- always an unimportant target, so we forget it

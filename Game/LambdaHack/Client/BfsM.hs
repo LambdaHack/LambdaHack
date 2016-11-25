@@ -257,7 +257,15 @@ closestTriggers :: MonadClient m => Maybe Bool -> ActorId -> m (Frequency Point)
 {-# INLINABLE closestTriggers #-}
 closestTriggers onlyDir aid = do
   Kind.COps{cotile, coTileSpeedup} <- getsState scops
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
+      actorMaxSk = aSkills ar
   body <- getsState $ getActorBody aid
+  salter <- getsClient salter
+  let lalter = salter EM.! blid body
+      alterSkill = EM.findWithDefault 0 Ability.AbAlter actorMaxSk
   explored <- getsClient sexplored
   let lid = blid body
   lvl <- getLevel lid
@@ -271,6 +279,7 @@ closestTriggers onlyDir aid = do
       f :: Point -> Kind.Id TileKind -> [(Int, Point)] -> [(Int, Point)]
       f p t acc =
         if Tile.hasCauses coTileSpeedup t
+           && alterSkill >= fromEnum (lalter PointArray.! p)
         then case Tile.ascendTo cotile t of
           [] ->
             -- Escape (or guard) only after exploring, for high score, etc.
@@ -337,23 +346,37 @@ closestItems :: MonadClient m => ActorId -> m [(Int, (Point, Maybe ItemBag))]
 {-# INLINABLE closestItems #-}
 closestItems aid = do
   Kind.COps{coTileSpeedup} <- getsState scops
-  body <- getsState $ getActorBody aid
-  lvl@Level{lfloor} <- getLevel $ blid body
-  let items = EM.assocs lfloor
-      -- Changeable tiles are alterable, so they are in BFS (if skill permits).
-      f :: Point -> Kind.Id TileKind -> [Point] -> [Point]
-      f p t acc = if Tile.isChangeable coTileSpeedup t
-                  then p : acc
-                  else acc
-      changeable = PointArray.ifoldrA f [] $ ltile lvl
-  if null items && null changeable then return []
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
+      actorMaxSk = aSkills ar
+  if EM.findWithDefault 0 Ability.AbMoveItem actorMaxSk <= 0 then return []
   else do
-    bfs <- getCacheBfs aid
-    let is = mapMaybe (\(p, bag) ->
-                        fmap (, (p, Just bag)) (accessBfs bfs p)) items
-        cs = mapMaybe (\p ->
-                        fmap (, (p, Nothing)) (accessBfs bfs p)) changeable
-    return $! sortBy (comparing fst) $ is ++ cs
+    body <- getsState $ getActorBody aid
+    salter <- getsClient salter
+    let lalter = salter EM.! blid body
+        alterSkill = EM.findWithDefault 0 Ability.AbAlter actorMaxSk
+    lvl@Level{lfloor} <- getLevel $ blid body
+    let items = EM.assocs lfloor
+        -- Changeable tiles are alterable, so they are in BFS
+        --  (if skill permits).
+        -- We assume they may generate items, but the items are most useful
+        -- when picked up, so @AbMoveItem@ is necessary.
+        f :: Point -> Kind.Id TileKind -> [Point] -> [Point]
+        f p t acc = if Tile.isChangeable coTileSpeedup t
+                       && alterSkill >= fromEnum (lalter PointArray.! p)
+                    then p : acc
+                    else acc
+        changeable = PointArray.ifoldrA f [] $ ltile lvl
+    if null items && null changeable then return []
+    else do
+      bfs <- getCacheBfs aid
+      let is = mapMaybe (\(p, bag) ->
+                          fmap (, (p, Just bag)) (accessBfs bfs p)) items
+          cs = mapMaybe (\p ->
+                          fmap (, (p, Nothing)) (accessBfs bfs p)) changeable
+      return $! sortBy (comparing fst) $ is ++ cs
 
 -- | Closest (wrt paths) enemy actors.
 closestFoes :: MonadClient m
