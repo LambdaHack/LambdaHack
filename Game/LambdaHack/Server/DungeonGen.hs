@@ -11,6 +11,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import Control.Arrow ((***))
 import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
@@ -151,7 +152,8 @@ buildLevel :: Kind.COps -> Cave -> Int -> Int -> Int -> AbsDepth
            -> [Point] -> Maybe Bool -> TileMap
            -> Rnd Level
 buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
-                         , cocave=Kind.Ops{okind=cokind} }
+                         , cocave=Kind.Ops{okind=cokind}
+                         , coTileSpeedup}
            Cave{dkind, dplaces}
            ln minD maxD totalDepth lstairUp escapeFeature cmap = do
   let kc@CaveKind{citemNum, clegendLitTile} = cokind dkind
@@ -181,22 +183,26 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
           return $! if ascendable $ okind stairId
                     then ((spos, stairId) : up, down)
                     else (up, (spos, stairId) : down)
-      condS ps moveUp p = condStairs cops cmap ps moveUp p (cmap PointArray.! p)
+      condS p = Tile.isWalkable coTileSpeedup (cmap PointArray.! p)
+                && not (Tile.isNoActor coTileSpeedup (cmap PointArray.! p))
+      posUp Point{..} = Point (px - 2) py
       posDown Point{..} = Point (px + 2) py
-      consPair p = condS [] True p && condS [] False (posDown p)
+      condPair p = condS p || condS (posDown p)
   (stairsUp1, stairsDown1) <-
     -- If all stairs can be continued, do that, otherwise shuffle all starcases
     -- (the levels are separated by a thick layer that mixes up exits).
-    if not noDesc && all consPair lstairUp
+    if all condPair lstairUp
     then do
-      let f posUp = do
-            let legend = findLegend posUp
+      let f p = do
+            let legend = findLegend p
             stairUpId <- fromMaybe (assert `failure` legend)
                          <$> opick legend ascendable
-            stairDownId <- fromMaybe (assert `failure` legend)
-                           <$> opick legend descendable
-            return ((posUp, stairUpId), (posDown posUp, stairDownId))
-      unzip <$> mapM f lstairUp
+            if noDesc then return ([(p, stairUpId)], [])
+            else do
+              stairDownId <- fromMaybe (assert `failure` legend)
+                             <$> opick legend descendable
+              return ([(p, stairUpId)], [(posDown p, stairDownId)])
+      (concat *** concat) . unzip <$> mapM f lstairUp
     else return ([], [])
   -- If not too many, add extra stairs down.
   (stairsUp2, stairsDown2) <-
@@ -209,8 +215,7 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
     foldlM' (\sts _ -> makeStairs True sts)
             (stairsUp2, stairsDown2)
             [1 .. nstairUpLeft]
-  let stairsTotal = stairsUp ++ stairsDown
-      posTotal = map fst stairsTotal
+  let posTotal = map fst $ stairsUp ++ stairsDown
   escape <- case escapeFeature of
               Nothing -> return []
               Just True -> do
@@ -225,10 +230,18 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
                 downEscape <- fmap (fromMaybe $ assert `failure` legend)
                               $ opick legend $ hasEscape (-1)
                 return [(epos, downEscape)]
-  let addVicinity (p, k) = let vic = vicinityUnsafe p
-                               old = cmap PointArray.! p
-                           in (p, k) : map (\p0 -> (p0, old)) vic
-      exits = concatMap addVicinity $ stairsTotal ++ escape
+  let addVicinity moveUp (p, k) =
+        -- Strange, but OK; sometimes a single down stair has the vicinity tile
+        -- taken from @posUp@.
+        let pt = if | not moveUp && condS (posUp p) -> posUp p
+                    | condS p -> p
+                    | otherwise -> assert moveUp $ posDown p
+            old = cmap PointArray.! pt
+            vic = vicinityUnsafe p
+        in (p, k) : map (\p0 -> (p0, old)) vic
+      exits = concatMap (addVicinity True) stairsUp
+              ++ concatMap (addVicinity False) stairsDown
+              ++ concatMap (addVicinity True) escape
       ltile = cmap PointArray.// exits
       lstair = (map fst $ stairsUp, map fst $ stairsDown)
   -- A simple rule for now: level at level @ln@ has depth (difficulty) @abs ln@.
