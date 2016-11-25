@@ -189,7 +189,7 @@ tryFindHeroK fact k s =
                               && not (bproj body)
                               && bfid body == fact)
 
--- | Compute the level identifier and starting position on the level,
+-- | Compute the level identifier and stair position on the new level,
 -- after a level change.
 whereTo :: LevelId  -- ^ level of the stairs
         -> Point    -- ^ position of the stairs

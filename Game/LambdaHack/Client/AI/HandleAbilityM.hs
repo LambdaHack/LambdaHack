@@ -43,7 +43,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Request
@@ -615,7 +614,6 @@ trigger aid fleeViaStairs = do
   let lid = blid b
   lvl <- getLevel lid
   unexploredD <- unexploredDepth
-  s <- getState
   let lidExplored = ES.member lid explored
       allExplored = ES.size explored == EM.size dungeon
       f pos = let t = lvl `at` pos
@@ -623,14 +621,11 @@ trigger aid fleeViaStairs = do
       feats = concatMap f $ vicinityUnsafe (bpos b)
       ben (_, feat) = case feat of
         TK.Cause (IK.Ascend k) -> do -- change levels sensibly, in teams
-          (lid2, pos2) <- getsState $ whereTo lid (bpos b) k . sdungeon
-          per <- getPerFid lid2
-          let canSee = ES.member (bpos b) (totalVisible per)
-              aimless = ftactic (gplayer fact) `elem` [TRoam, TPatrol]
+          let aimless = ftactic (gplayer fact) `elem` [TRoam, TPatrol]
               easier = signum k /= signum (fromEnum lid)
               unexpForth = unexploredD (signum k) lid
               unexpBack = unexploredD (- signum k) lid
-              expBenefit
+              eben
                 | aimless = 100  -- faction is not exploring, so switch at will
                 | unexpForth =
                     if easier  -- alway try as easy level as possible
@@ -643,17 +638,14 @@ trigger aid fleeViaStairs = do
                 | not $ null $ lescape lvl = 0
                     -- all explored, stay on the escape level
                 | otherwise = 2  -- no escape, switch levels occasionally
-              actorsThere = posToAids pos2 lid2 s
+          (lid2, _) <- getsState $ whereTo lid (bpos b) k . sdungeon
           return $!
-             if boldpos b == Just (bpos b)   -- probably used stairs last turn
+             if boldpos b == Just (bpos b)  -- probably used stairs last turn
                 && boldlid b == lid2  -- in the opposite direction
              then 0  -- avoid trivial loops (pushing, being pushed, etc.)
-             else let eben = case actorsThere of
-                        [] | canSee -> expBenefit
-                        _ -> min 1 expBenefit  -- risk pushing
-                  in if fleeViaStairs
-                     then 1000 * eben + 1  -- strongly prefer correct direction
-                     else eben
+             else if fleeViaStairs
+                  then 1000 * eben + 1  -- strongly prefer correct direction
+                  else eben
         TK.Cause ef@IK.Escape{} -> return $  -- flee via this way, too
           -- Only some factions try to escape but they first explore all
           -- for high score.
