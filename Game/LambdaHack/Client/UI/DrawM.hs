@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.UI.DrawM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , targetDesc, targetDescXhair, drawFrameTerrain, drawFrameContent
-  , drawFramePath, drawFrameExtra, drawFrameStatus
+  , drawFramePath, drawFrameActor, drawFrameExtra, drawFrameStatus
   , drawArenaStatus, drawLeaderStatus, drawLeaderDamage, drawSelected
 #endif
   ) where
@@ -167,9 +167,8 @@ drawFrameTerrain drawnLevelId = do
 drawFrameContent :: forall m. MonadClientUI m => LevelId -> m FrameForall
 {-# INLINABLE drawFrameContent #-}
 drawFrameContent drawnLevelId = do
-  SessionUI{sselected, smarkSmell} <- getSession
-  Level{lxsize, lsmell, ltime, lfloor, lactor} <- getLevel drawnLevelId
-  mleader <- getsClient _sleader
+  SessionUI{smarkSmell} <- getSession
+  Level{lxsize, lsmell, ltime, lfloor} <- getLevel drawnLevelId
   s <- getState
   let {-# INLINE viewItemBag #-}
       viewItemBag _ floorBag = case EM.toDescList floorBag of
@@ -181,20 +180,6 @@ drawFrameContent drawnLevelId = do
         let fg = toEnum $ fromEnum p0 `rem` 14 + 1
             smlt = sml `timeDeltaToFrom` ltime
         in Color.attrChar2ToW32 fg (timeDeltaToDigit smellTimeout smlt)
-      {-# INLINE viewActor #-}
-      viewActor _ as = case as of
-        aid : _ ->
-          let Actor{bsymbol, bcolor, bhp, bproj} = getActorBody aid s
-              symbol | bhp > 0 || bproj = bsymbol
-                     | otherwise = '%'
-              bg = case mleader of
-                Just leader | aid == leader -> Color.BrRed
-                _ -> if aid `ES.notMember` sselected
-                     then Color.defBG
-                     else Color.BrBlue
-          in Color.attrCharToW32
-             $ Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
-        [] -> assert `failure` "lactor not sparse" `twith` ()
       mapVAL :: forall a s. (Point -> a -> Color.AttrCharW32) -> [(Point, a)]
              -> FrameST s
       {-# INLINE mapVAL #-}
@@ -212,7 +197,6 @@ drawFrameContent drawnLevelId = do
         mapVAL viewItemBag (EM.assocs lfloor) v
         when smarkSmell $
           mapVAL viewSmell (filter ((> ltime) . snd) $ EM.assocs lsmell) v
-        mapVAL viewActor (EM.assocs lactor) v
   return upd
 
 drawFramePath :: forall m. MonadClientUI m => LevelId -> m FrameForall
@@ -279,6 +263,44 @@ drawFramePath drawnLevelId = do
       upd = FrameForall $ \v -> when (isJust saimMode) $ do
         mapVTL (acOnPathOrLine ';') mpath v
         mapVTL (acOnPathOrLine '*') shiftedLine v  -- overwrites mpath
+  return upd
+
+drawFrameActor :: forall m. MonadClientUI m => LevelId -> m FrameForall
+{-# INLINABLE drawFrameActor #-}
+drawFrameActor drawnLevelId = do
+  SessionUI{sselected} <- getSession
+  Level{lxsize, lactor} <- getLevel drawnLevelId
+  mleader <- getsClient _sleader
+  s <- getState
+  let {-# INLINE viewActor #-}
+      viewActor _ as = case as of
+        aid : _ ->
+          let Actor{bsymbol, bcolor, bhp, bproj} = getActorBody aid s
+              symbol | bhp > 0 || bproj = bsymbol
+                     | otherwise = '%'
+              bg = case mleader of
+                Just leader | aid == leader -> Color.BrRed
+                _ -> if aid `ES.notMember` sselected
+                     then Color.defBG
+                     else Color.BrBlue
+          in Color.attrCharToW32
+             $ Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
+        [] -> assert `failure` "lactor not sparse" `twith` ()
+      mapVAL :: forall a s. (Point -> a -> Color.AttrCharW32) -> [(Point, a)]
+             -> FrameST s
+      {-# INLINE mapVAL #-}
+      mapVAL f l v = do
+        let g :: (Point, a) -> ST s ()
+            g (!p0, !a0) = do
+              let pI = PointArray.pindex lxsize p0
+                  w = Color.attrCharW32 $ f p0 a0
+              VM.write v (pI + lxsize) w
+        mapM_ g l
+      -- TODO: on some frontends, write the characters on top of previous ones,
+      -- e.g., actors over items or items over terrain
+      upd :: FrameForall
+      upd = FrameForall $ \v -> do
+        mapVAL viewActor (EM.assocs lactor) v
   return upd
 
 drawFrameExtra :: forall m. MonadClientUI m
@@ -430,6 +452,7 @@ drawBaseFrame dm drawnLevelId = do
   updTerrain <- drawFrameTerrain drawnLevelId
   updContent <- drawFrameContent drawnLevelId
   updPath <- drawFramePath drawnLevelId
+  updActor <- drawFrameActor drawnLevelId
   updExtra <- drawFrameExtra dm drawnLevelId
   frameStatus <- drawFrameStatus drawnLevelId
   let !_A = assert (length frameStatus == 2 * lxsize
@@ -438,6 +461,7 @@ drawBaseFrame dm drawnLevelId = do
         unFrameForall updTerrain v
         unFrameForall updContent v
         unFrameForall updPath v
+        unFrameForall updActor v
         unFrameForall updExtra v
         unFrameForall (writeLine (lxsize * (lysize + 1)) frameStatus) v
   return upd
