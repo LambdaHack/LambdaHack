@@ -91,10 +91,10 @@ convertTileMaps Kind.COps{coTileSpeedup} areAllWalkable
             connect (not . yeven) blocksVertical walkable5 converted4
       return converted5
 
-condStairs :: Kind.COps -> Bool -> TileMap -> [Point]
+condStairs :: Kind.COps -> TileMap -> [Point]-> Bool
            -> Point -> Kind.Id TileKind
            -> Bool
-condStairs Kind.COps{coTileSpeedup} moveUp cmap ps p !t =
+condStairs Kind.COps{coTileSpeedup} cmap ps moveUp p !t =
   let (xsize, ysize) = PointArray.sizeA cmap
       yUpOffset = if moveUp then -1 else 1
       -- The border of the dungeon should not be excavated around stairs.
@@ -116,7 +116,7 @@ placeStairs cops@Kind.COps{coTileSpeedup}
            , dist (cminStairDist `div` 3)
            , dist (cminStairDist `div` 5) ]
   findPosTry2 200 cmap
-    (condStairs cops moveUp cmap ps)
+    (condStairs cops cmap ps moveUp)
     ds
     (\_ !t -> Tile.isOftenActor coTileSpeedup t)
     ds
@@ -161,52 +161,40 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
       hasEscape p = Tile.kindHasFeature (TK.Cause $ IK.Escape p)
       ascendable  = Tile.kindHasFeature (TK.Cause $ IK.Ascend 1)
       descendable = Tile.kindHasFeature (TK.Cause $ IK.Ascend (-1))
-      -- We keep two-way stairs separately, in the last component.
-      makeStairs :: Bool -> Bool -> Bool
+      noAsc = ln == maxD
+      noDesc = ln == minD
+      makeStairs :: Bool
                  -> ( [(Point, Kind.Id TileKind)]
-                    , [(Point, Kind.Id TileKind)]
                     , [(Point, Kind.Id TileKind)] )
                  -> Rnd ( [(Point, Kind.Id TileKind)]
-                        , [(Point, Kind.Id TileKind)]
                         , [(Point, Kind.Id TileKind)] )
-      makeStairs moveUp noAsc noDesc (up, down, upDown) =
+      makeStairs moveUp (up, down) =
         if (if moveUp then noAsc else noDesc) then
-          return (up, down, upDown)
+          return (up, down)
         else do
-          let cond tk = (if moveUp then ascendable tk else descendable tk)
-                        && (not noAsc || not (ascendable tk))
-                        && (not noDesc || not (descendable tk))
-              stairsCur = up ++ down ++ upDown
-              posCur = nub $ sort $ map fst stairsCur
+          let cond tk = if moveUp then ascendable tk else descendable tk
+              stairsCur = up ++ down
+              posCur = map fst stairsCur
           spos <- placeStairs cops moveUp cmap kc posCur
           let legend = findLegend spos
           stairId <- fromMaybe (assert `failure` legend) <$> opick legend cond
-          let st = (spos, stairId)
-              asc = ascendable $ okind stairId
-              desc = descendable $ okind stairId
-          return $! case (asc, desc) of
-                     (True, False) -> (st : up, down, upDown)
-                     (False, True) -> (up, st : down, upDown)
-                     (True, True)  -> (up, down, st : upDown)
-                     (False, False) -> assert `failure` st
-  (stairsUp1, stairsDown1, stairsUpDown1) <-
-    makeStairs False (ln == maxD) (ln == minD) ([], [], [])
+          return $! if ascendable $ okind stairId
+                    then ((spos, stairId) : up, down)
+                    else (up, (spos, stairId) : down)
+  (stairsUp1, stairsDown1) <- makeStairs False ([], [])
   let !_A = assert (null stairsUp1) ()
-  let nstairUpLeft = length lstairUp - length stairsUpDown1
-  (stairsUp2, stairsDown2, stairsUpDown2) <-
-    foldlM' (\sts _ -> makeStairs True (ln == maxD) (ln == minD) sts)
-            (stairsUp1, stairsDown1, stairsUpDown1)
+  let nstairUpLeft = length lstairUp
+  (stairsUp2, stairsDown2) <-
+    foldlM' (\sts _ -> makeStairs True sts)
+            (stairsUp1, stairsDown1)
             [1 .. nstairUpLeft]
-  -- If only a single tile of up-and-down stairs, add one more stairs down.
-  (stairsUp, stairsDown, stairsUpDown) <-
-    if null (stairsUp2 ++ stairsDown2)
-    then makeStairs False True (ln == minD)
-           (stairsUp2, stairsDown2, stairsUpDown2)
-    else return (stairsUp2, stairsDown2, stairsUpDown2)
-  let stairsUpAndUpDown = stairsUp ++ stairsUpDown
-  let !_A = assert (length stairsUpAndUpDown == length lstairUp) ()
-  let stairsTotal = stairsUpAndUpDown ++ stairsDown
-      posTotal = nub $ sort $ map fst stairsTotal
+  -- Sometimes add one more stairs down.
+  (stairsUp, stairsDown) <-
+    if True  -- TODO
+    then makeStairs False (stairsUp2, stairsDown2)
+    else return (stairsUp2, stairsDown2)
+  let stairsTotal = stairsUp ++ stairsDown
+      posTotal = map fst stairsTotal
   escape <- case escapeFeature of
               Nothing -> return []
               Just True -> do
@@ -226,9 +214,7 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
                            in (p, k) : map (\p0 -> (p0, old)) vic
       exits = concatMap addVicinity $ stairsTotal ++ escape
       ltile = cmap PointArray.// exits
-      -- We reverse the order in down stairs, to minimize long stair chains.
-      lstair = ( map fst $ stairsUp ++ stairsUpDown
-               , map fst $ stairsUpDown ++ stairsDown )
+      lstair = (map fst $ stairsUp, map fst $ stairsDown)
   -- A simple rule for now: level at level @ln@ has depth (difficulty) @abs ln@.
       ldepth = AbsDepth $ abs ln
   -- traceShow (ln, nstairUp, (stairsUp, stairsDown, stairsUpDown)) (return ())
