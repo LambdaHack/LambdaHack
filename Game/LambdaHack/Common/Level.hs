@@ -105,25 +105,21 @@ at :: Level -> Point -> Kind.Id TileKind
 {-# INLINE at #-}
 at Level{ltile} p = ltile PointArray.! p
 
--- | Check whether one position is accessible from another,
--- using the formula from the standard ruleset.
+-- | Check whether one position is accessible from another.
 -- Precondition: the two positions are next to each other.
 accessible :: Kind.COps -> Level -> Point -> Bool
 accessible Kind.COps{coTileSpeedup} lvl tpos =
-  let tt = lvl `at` tpos
-  in Tile.isWalkable coTileSpeedup tt
+  Tile.isWalkable coTileSpeedup $ lvl `at` tpos
 
 -- | Check whether one position is accessible from another,
--- using the formula from the standard ruleset,
 -- but additionally treating unknown tiles as walkable.
 -- Precondition: the two positions are next to each other.
 accessibleUnknown :: Kind.COps -> Level -> Point -> Bool
 accessibleUnknown Kind.COps{coTileSpeedup} lvl tpos =
-    let tt = lvl `at` tpos
-    in (Tile.isWalkable coTileSpeedup tt || isUknownSpace tt)
+  let tt = lvl `at` tpos
+  in Tile.isWalkable coTileSpeedup tt || isUknownSpace tt
 
--- | Check whether actors can move from a position along a unit vector,
--- using the formula from the standard ruleset.
+-- | Check whether actors can move from a position along a unit vector.
 accessibleDir :: Kind.COps -> Level -> Point -> Vector -> Bool
 accessibleDir cops lvl spos dir = accessible cops lvl $ spos `shift` dir
 

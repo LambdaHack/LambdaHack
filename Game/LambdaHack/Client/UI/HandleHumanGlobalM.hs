@@ -377,15 +377,13 @@ moveSearchAlterAid source dir = do
     if | accessible cops lvl tpos ->
          -- A potential invisible actor is hit. War started without asking.
          return $ Right $ RequestAnyAbility $ ReqMove dir
-    -- No access, so search and/or alter the tile. Non-walkability is
-    -- not implied by the lack of access.
-       | not (Tile.isWalkable coTileSpeedup t)
-         && (not (knownLsecret lvl)
-             || isSecretPos lvl tpos  -- possible secrets here
-                && (Tile.isSuspect coTileSpeedup t  -- not yet searched
-                    || Tile.hideAs cotile t /= t)  -- search again
-             || alterMinSkill < 10
-             || alterMinSkill >= 10 && alterSkill >= alterMinSkill) ->
+       -- No access, so search and/or alter the tile.
+       | not (knownLsecret lvl)
+         || isSecretPos lvl tpos  -- possible secrets here
+            && (Tile.isSuspect coTileSpeedup t  -- not yet searched
+                || Tile.hideAs cotile t /= t)  -- search again
+         || alterMinSkill < 10
+         || alterMinSkill >= 10 && alterSkill >= alterMinSkill ->
          if | alterSkill < alterMinSkill -> failSer AlterUnwalked
             | EM.member tpos $ lfloor lvl -> failSer AlterBlockItem
             | otherwise -> do
@@ -397,8 +395,8 @@ moveSearchAlterAid source dir = do
                   return $ Right $ RequestAnyAbility $ ReqAlter tpos Nothing
                 Left err -> return $ Left err
             -- We don't use MoveSer, because we don't hit invisible actors.
-            -- The potential invisible actor, e.g., in a wall or in
-            -- an inaccessible doorway, is made known, taking a turn.
+            -- The potential invisible actor, e.g., in a wall,
+            -- making the player use a turn.
             -- If server performed an attack for free
             -- on the invisible actor anyway, the player (or AI)
             -- would be tempted to repeatedly hit random walls
@@ -408,7 +406,7 @@ moveSearchAlterAid source dir = do
             -- about invisible pass-wall actors, but when an actor detected,
             -- it costs a turn and does not harm the invisible actors,
             -- so it's not so tempting.
-    -- Ignore a known boring, not accessible tile.
+       -- Ignore a known boring, not accessible tile.
        | otherwise -> failWith "never mind"
   return $! runStopOrCmd
 

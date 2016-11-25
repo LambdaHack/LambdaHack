@@ -1023,13 +1023,8 @@ moveOrRunAid run source dir = do
        | alterSkill < Tile.alterMinWalk coTileSpeedup t ->
          assert `failure` "AI causes AlterUnwalked" `twith` (run, source, dir)
        | EM.member tpos $ lfloor lvl ->
-         -- This could be, e.g., inaccessible open door with an item in it,
-         -- but for this case to happen, it would also need to be unwalkable.
+         -- Only possible if items allowed inside unwalkable tiles.
          assert `failure` "AI causes AlterBlockItem" `twith` (run, source, dir)
-       | not (Tile.isWalkable coTileSpeedup t) ->  -- not implied
-         -- Not empty, but alter skill suffices, so search or alter the tile.
-         return $! Just $ RequestAnyAbility $ ReqAlter tpos Nothing
        | otherwise ->
-         -- Boring tile, no point bumping into it, do WaitSer if really idle.
-         assert `failure` "AI causes MoveNothing or AlterNothing"
-                `twith` (run, source, dir)
+         -- Not walkable, but alter skill suffices, so search or alter the tile.
+         return $! Just $ RequestAnyAbility $ ReqAlter tpos Nothing
