@@ -181,18 +181,33 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
           return $! if ascendable $ okind stairId
                     then ((spos, stairId) : up, down)
                     else (up, (spos, stairId) : down)
-  (stairsUp1, stairsDown1) <- makeStairs False ([], [])
-  let !_A = assert (null stairsUp1) ()
-  let nstairUpLeft = length lstairUp
+      condS ps moveUp p = condStairs cops cmap ps moveUp p (cmap PointArray.! p)
+      posDown Point{..} = Point px (py + 2)
+      consPair p = condS [] True p && condS [] False (posDown p)
+  (stairsUp1, stairsDown1) <-
+    -- If all stairs can be continued, do that, otherwise shuffle all starcases.
+    if not noDesc && all consPair lstairUp
+    then do
+      let f posUp = do
+            let legend = findLegend posUp
+            stairUpId <- fromMaybe (assert `failure` legend)
+                         <$> opick legend ascendable
+            stairDownId <- fromMaybe (assert `failure` legend)
+                           <$> opick legend descendable
+            return ((posUp, stairUpId), (posDown posUp, stairDownId))
+      unzip <$> mapM f lstairUp
+    else return ([], [])
+  -- If not too many, add extra stairs down.
   (stairsUp2, stairsDown2) <-
-    foldlM' (\sts _ -> makeStairs True sts)
-            (stairsUp1, stairsDown1)
-            [1 .. nstairUpLeft]
-  -- Sometimes add one more stairs down.
+    if length stairsDown1 < 3
+    then makeStairs False (stairsUp1, stairsDown1)
+    else return (stairsUp1, stairsDown1)
+  -- Fill up stairs up.
+  let nstairUpLeft = length lstairUp - length stairsUp2
   (stairsUp, stairsDown) <-
-    if True  -- TODO
-    then makeStairs False (stairsUp2, stairsDown2)
-    else return (stairsUp2, stairsDown2)
+    foldlM' (\sts _ -> makeStairs True sts)
+            (stairsUp2, stairsDown2)
+            [1 .. nstairUpLeft]
   let stairsTotal = stairsUp ++ stairsDown
       posTotal = map fst stairsTotal
   escape <- case escapeFeature of
