@@ -26,7 +26,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.CaveKind
-import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind (TileKind)
@@ -108,7 +107,8 @@ condStairs Kind.COps{coTileSpeedup} moveUp cmap ps p !t =
 
 placeStairs :: Kind.COps -> Bool -> TileMap -> CaveKind -> [Point]
             -> Rnd Point
-placeStairs cops@Kind.COps{coTileSpeedup} moveUp cmap CaveKind{..} ps = do
+placeStairs cops@Kind.COps{coTileSpeedup}
+            moveUp cmap CaveKind{cminStairDist} ps = do
   let dist !cmin !p _ = all (\ !pos -> chessDist p pos > cmin) ps
       ds = [ dist cminStairDist
            , dist (2 * (cminStairDist `div` 3))
@@ -121,21 +121,11 @@ placeStairs cops@Kind.COps{coTileSpeedup} moveUp cmap CaveKind{..} ps = do
     (\_ !t -> Tile.isOftenActor coTileSpeedup t)
     ds
 
--- | Create a level from a cave.
-buildLevel :: Kind.COps -> Cave
-           -> AbsDepth -> LevelId -> LevelId -> LevelId -> AbsDepth
-           -> Int -> Maybe Bool
-           -> Rnd Level
-buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
-                         , cocave=Kind.Ops{okind=cokind} }
-           Cave{..} ldepth ln minD maxD totalDepth nstairUp escapeFeature = do
-  let kc@CaveKind{..} = cokind dkind
-      fitArea pos = inside pos . fromArea . qarea
-      findLegend pos = maybe clegendLitTile qlegend
-                       $ find (fitArea pos) dplaces
-      hasEscape p = Tile.kindHasFeature (TK.Cause $ IK.Escape p)
-      ascendable  = Tile.kindHasFeature $ TK.Cause (IK.Ascend 1)
-      descendable = Tile.kindHasFeature $ TK.Cause (IK.Ascend (-1))
+buildTileMap :: Kind.COps -> Cave -> Rnd TileMap
+buildTileMap cops@Kind.COps{ cotile=Kind.Ops{opick}
+                           , cocave=Kind.Ops{okind=cokind} }
+             Cave{dkind, dmap, dnight} = do
+  let CaveKind{cxsize, cysize, cpassable, cdefTile} = cokind dkind
       nightCond kt = not (Tile.kindHasFeature TK.Clear kt)
                      || (if dnight then id else not)
                            (Tile.kindHasFeature TK.Dark kt)
@@ -153,17 +143,33 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
         else Nothing
       nwcond kt = not (Tile.kindHasFeature TK.Walkable kt) && nightCond kt
   areAllWalkable <- isNothing <$> opick cdefTile nwcond
-  cmap <- convertTileMaps cops areAllWalkable
-                          pickDefTile mpickWalkable cxsize cysize dmap
-  -- We keep two-way stairs separately, in the last component.
-  let makeStairs :: Bool -> Bool -> Bool
+  convertTileMaps cops areAllWalkable
+                  pickDefTile mpickWalkable cxsize cysize dmap
+
+-- | Create a level from a cave.
+buildLevel :: Kind.COps -> Cave -> Int -> Int -> Int -> AbsDepth
+           -> [Point] -> Maybe Bool -> TileMap
+           -> Rnd Level
+buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
+                         , cocave=Kind.Ops{okind=cokind} }
+           Cave{dkind, dplaces}
+           ln minD maxD totalDepth lstairUp escapeFeature cmap = do
+  let kc@CaveKind{citemNum, clegendLitTile} = cokind dkind
+      fitArea pos = inside pos . fromArea . qarea
+      findLegend pos = maybe clegendLitTile qlegend
+                       $ find (fitArea pos) dplaces
+      hasEscape p = Tile.kindHasFeature (TK.Cause $ IK.Escape p)
+      ascendable  = Tile.kindHasFeature (TK.Cause $ IK.Ascend 1)
+      descendable = Tile.kindHasFeature (TK.Cause $ IK.Ascend (-1))
+      -- We keep two-way stairs separately, in the last component.
+      makeStairs :: Bool -> Bool -> Bool
                  -> ( [(Point, Kind.Id TileKind)]
                     , [(Point, Kind.Id TileKind)]
                     , [(Point, Kind.Id TileKind)] )
                  -> Rnd ( [(Point, Kind.Id TileKind)]
                         , [(Point, Kind.Id TileKind)]
                         , [(Point, Kind.Id TileKind)] )
-      makeStairs moveUp noAsc noDesc (!up, !down, !upDown) =
+      makeStairs moveUp noAsc noDesc (up, down, upDown) =
         if (if moveUp then noAsc else noDesc) then
           return (up, down, upDown)
         else do
@@ -186,7 +192,7 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
   (stairsUp1, stairsDown1, stairsUpDown1) <-
     makeStairs False (ln == maxD) (ln == minD) ([], [], [])
   let !_A = assert (null stairsUp1) ()
-  let nstairUpLeft = nstairUp - length stairsUpDown1
+  let nstairUpLeft = length lstairUp - length stairsUpDown1
   (stairsUp2, stairsDown2, stairsUpDown2) <-
     foldlM' (\sts _ -> makeStairs True (ln == maxD) (ln == minD) sts)
             (stairsUp1, stairsDown1, stairsUpDown1)
@@ -198,7 +204,7 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
            (stairsUp2, stairsDown2, stairsUpDown2)
     else return (stairsUp2, stairsDown2, stairsUpDown2)
   let stairsUpAndUpDown = stairsUp ++ stairsUpDown
-  let !_A = assert (length stairsUpAndUpDown == nstairUp) ()
+  let !_A = assert (length stairsUpAndUpDown == length lstairUp) ()
   let stairsTotal = stairsUpAndUpDown ++ stairsDown
       posTotal = nub $ sort $ map fst stairsTotal
   escape <- case escapeFeature of
@@ -223,60 +229,63 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
       -- We reverse the order in down stairs, to minimize long stair chains.
       lstair = ( map fst $ stairsUp ++ stairsUpDown
                , map fst $ stairsUpDown ++ stairsDown )
-  -- traceShow (ln, nstairUp, (stairsUp, stairsDown, stairsUpDown)) skip
+  -- A simple rule for now: level at level @ln@ has depth (difficulty) @abs ln@.
+      ldepth = AbsDepth $ abs ln
+  -- traceShow (ln, nstairUp, (stairsUp, stairsDown, stairsUpDown)) (return ())
   litemNum <- castDice ldepth totalDepth citemNum
   lsecret <- randomR (1, maxBound)  -- 0 means unknown
   return $! levelFromCaveKind cops kc ldepth ltile lstair
-                              cactorCoeff cactorFreq litemNum citemFreq
-                              lsecret (map fst escape)
+                              litemNum lsecret (map fst escape)
 
 -- | Build rudimentary level from a cave kind.
 levelFromCaveKind :: Kind.COps
                   -> CaveKind -> AbsDepth -> TileMap -> ([Point], [Point])
-                  -> Int -> Freqs ItemKind -> Int -> Freqs ItemKind -> Int -> [Point]
+                  -> Int -> Int -> [Point]
                   -> Level
 levelFromCaveKind Kind.COps{coTileSpeedup}
-                  CaveKind{..}
-                  ldepth ltile lstair lactorCoeff lactorFreq litemNum litemFreq
-                  lsecret lescape =
-  let lvl = Level
-        { ldepth
-        , lfloor = EM.empty
-        , lembed = EM.empty  -- is populated inside $MonadServer$
-        , lactor = EM.empty
-        , ltile
-        , lxsize = cxsize
-        , lysize = cysize
-        , lsmell = EM.empty
-        , ldesc = cname
-        , lstair
-        , lseen = 0
-        , lclear = 0  -- calculated below
-        , ltime = timeZero
-        , lactorCoeff
-        , lactorFreq
-        , litemNum
-        , litemFreq
-        , lsecret
-        , lhidden = chidden
-        , lescape
-        }
-      f n t | Tile.isExplorable coTileSpeedup t = n + 1
+                  CaveKind{ cactorCoeff=lactorCoeff
+                          , cactorFreq=lactorFreq
+                          , citemFreq=litemFreq
+                          , ..
+                          }
+                  ldepth ltile lstair litemNum lsecret lescape =
+  let f n t | Tile.isExplorable coTileSpeedup t = n + 1
             | otherwise = n
       lclear = PointArray.foldlA' f 0 ltile
-  in lvl {lclear}
+  in Level
+       { ldepth
+       , lfloor = EM.empty
+       , lembed = EM.empty  -- is populated inside $MonadServer$
+       , lactor = EM.empty
+       , ltile
+       , lxsize = cxsize
+       , lysize = cysize
+       , lsmell = EM.empty
+       , ldesc = cname
+       , lstair
+       , lseen = 0
+       , lclear
+       , ltime = timeZero
+       , lactorCoeff
+       , lactorFreq
+       , litemNum
+       , litemFreq
+       , lsecret
+       , lhidden = chidden
+       , lescape
+       }
 
-findGenerator :: Kind.COps -> LevelId -> LevelId -> LevelId -> AbsDepth -> Int
-              -> (GroupName CaveKind, Maybe Bool)
-              -> Rnd Level
-findGenerator cops ln minD maxD totalDepth nstairUp
-              (genName, escapeFeature) = do
+findGenerator :: Kind.COps -> AbsDepth
+              -> Int -> (GroupName CaveKind, Maybe Bool)
+              -> Rnd (Int, TileMap, Cave, Maybe Bool)
+findGenerator cops totalDepth n (genName, escapeFeature) = do
   let Kind.COps{cocave=Kind.Ops{opick}} = cops
   ci <- fromMaybe (assert `failure` genName) <$> opick genName (const True)
   -- A simple rule for now: level at level @ln@ has depth (difficulty) @abs ln@.
-  let ldepth = AbsDepth $ abs $ fromEnum ln
+  let ldepth = AbsDepth $ abs n
   cave <- buildCave cops ldepth totalDepth ci
-  buildLevel cops cave ldepth ln minD maxD totalDepth nstairUp escapeFeature
+  cmap <- buildTileMap cops cave
+  return (n, cmap, cave, escapeFeature)
 
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
@@ -291,19 +300,21 @@ dungeonGen cops caves = do
         case (IM.minViewWithKey caves, IM.maxViewWithKey caves) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
           _ -> assert `failure` "no caves" `twith` caves
-      (minId, maxId) = (toEnum minD, toEnum maxD)
       freshTotalDepth = assert (signum minD == signum maxD)
                         $ AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)
-  let gen :: (Int, [(LevelId, Level)]) -> (Int, (GroupName CaveKind, Maybe Bool))
-          -> Rnd (Int, [(LevelId, Level)])
-      gen (!nstairUp, l) (!n, !caveTB) = do
-        let ln = toEnum n
-        lvl <- findGenerator cops ln minId maxId freshTotalDepth nstairUp caveTB
-        -- nstairUp for the next level is nstairDown for the current level
-        let nstairDown = length $ snd $ lstair lvl
-        return (nstairDown, (ln, lvl) : l)
-  (nstairUpLast, levels) <- foldlM' gen (0, []) $ reverse $ IM.assocs caves
-  let !_A = assert (nstairUpLast == 0) ()
+  tileMaps <- mapM (uncurry $ findGenerator cops freshTotalDepth)
+                   (IM.assocs caves)
+  let buildLvl :: ([Point], [(LevelId, Level)])
+               -> (Int, TileMap, Cave, Maybe Bool)
+               -> Rnd ([Point], [(LevelId, Level)])
+      buildLvl (lstairUp, l) (n, cmap, cave, escapeFeature) = do
+        lvl <- buildLevel cops cave n minD maxD freshTotalDepth
+               lstairUp escapeFeature cmap
+        -- lstairUp for the next level is lstairDown for the current level
+        let lstairDown = snd $ lstair lvl
+        return (lstairDown, (toEnum n, lvl) : l)
+  (lstairUpLast, levels) <- foldlM' buildLvl ([], []) $ reverse tileMaps
+  let !_A = assert (null lstairUpLast) ()
   let freshDungeon = EM.fromList levels
   return $! FreshDungeon{..}
