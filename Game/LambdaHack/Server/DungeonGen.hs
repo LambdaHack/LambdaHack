@@ -92,23 +92,31 @@ convertTileMaps Kind.COps{coTileSpeedup} areAllWalkable
             connect (not . yeven) blocksVertical walkable5 converted4
       return converted5
 
-placeStairs :: Kind.COps -> Bool -> TileMap -> CaveKind -> [Point]
-            -> Rnd Point
-placeStairs Kind.COps{coTileSpeedup} moveUp cmap CaveKind{..} ps = do
+condStairs :: Kind.COps -> Bool -> TileMap -> [Point]
+           -> Point -> Kind.Id TileKind
+           -> Bool
+condStairs Kind.COps{coTileSpeedup} moveUp cmap ps p !t =
   let (xsize, ysize) = PointArray.sizeA cmap
       yUpOffset = if moveUp then -1 else 1
-      dist !cmin !p _ = all (\ !pos -> chessDist p pos > cmin) ps
+      -- The border of the dungeon should not be excavated around stairs.
+      area = (2, 3 + yUpOffset , xsize - 3, ysize - 4 + yUpOffset)
+      dist !cmin !p0 _ = all (\ !pos -> chessDist p0 pos > cmin) ps
+  in p `inside` area
+     && Tile.isWalkable coTileSpeedup t
+     && not (Tile.isNoActor coTileSpeedup t)
+     && dist 3 p t
+
+placeStairs :: Kind.COps -> Bool -> TileMap -> CaveKind -> [Point]
+            -> Rnd Point
+placeStairs cops@Kind.COps{coTileSpeedup} moveUp cmap CaveKind{..} ps = do
+  let dist !cmin !p _ = all (\ !pos -> chessDist p pos > cmin) ps
       ds = [ dist cminStairDist
            , dist (2 * (cminStairDist `div` 3))
            , dist (cminStairDist `div` 2)
            , dist (cminStairDist `div` 3)
            , dist (cminStairDist `div` 5) ]
-  -- We assume the border of the dungeon should not be excavated around stairs.
   findPosTry2 200 cmap
-    (\p !t -> p `inside` (2, 3 + yUpOffset , xsize - 3, ysize - 4 + yUpOffset)
-              && Tile.isWalkable coTileSpeedup t
-              && not (Tile.isNoActor coTileSpeedup t)
-              && all (\p0 -> chessDist p p0 > 3) ps)
+    (condStairs cops moveUp cmap ps)
     ds
     (\_ !t -> Tile.isOftenActor coTileSpeedup t)
     ds
