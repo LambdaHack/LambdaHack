@@ -181,6 +181,9 @@ findPathBfs lalter pathSource pathGoal sepsRaw arr@PointArray.Array{..} =
                  then minChild minP minAlter mvs
                  else let alter = lalter `PointArray.accessI` p
                       -- Prefer paths through open tiles, etc.
+                      -- AI will still sometimes go through stairs, instead
+                      -- of around, but that's not a big deal. It can return
+                      -- and in this way really obtain a shortcut. :)
                       in if | alter == 0 -> p  -- shortcut
                             | alter < minAlter -> minChild p alter mvs
                             | otherwise -> minChild minP minAlter mvs

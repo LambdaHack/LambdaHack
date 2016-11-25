@@ -298,7 +298,7 @@ closestTriggers onlyDir aid = do
       -- are blocked and stay so, so we seek other stairs, if any.
       -- If no other stairs in this direction, let's wait here,
       -- unless the actor has just returned via the very stairs.
-      triggers = filter ((adjacent $ bpos body) . snd) triggersAll
+      triggers = filter (not . adjacent (bpos body) . snd) triggersAll
   bfs <- getCacheBfs aid
   return $ if  -- keep lazy
     | null triggers -> mzero
