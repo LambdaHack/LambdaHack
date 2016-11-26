@@ -296,8 +296,6 @@ drawFrameActor drawnLevelId = do
                   w = Color.attrCharW32 $ f p0 a0
               VM.write v (pI + lxsize) w
         mapM_ g l
-      -- TODO: on some frontends, write the characters on top of previous ones,
-      -- e.g., actors over items or items over terrain
       upd :: FrameForall
       upd = FrameForall $ \v -> do
         mapVAL viewActor (EM.assocs lactor) v

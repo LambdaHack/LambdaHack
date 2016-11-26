@@ -381,7 +381,6 @@ keyTranslate s               = Unknown s
 -- (https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key#Key_values)
 -- to our internal key type. To be used in web frontends.
 -- Currently only the "Key values on Linux (GTK)" table taken into account.
--- TODO: KEY_LOCATION_NUMPAD
 keyTranslateWeb :: String -> Bool -> Key
 keyTranslateWeb "Backspace"  _ = BackSpace
 keyTranslateWeb "Tab"        _ = Tab

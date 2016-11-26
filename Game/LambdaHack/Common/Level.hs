@@ -134,7 +134,7 @@ isSecretPos lvl (Point x y) =
 hideTile :: Kind.COps -> Level -> Point -> Kind.Id TileKind
 hideTile Kind.COps{cotile} lvl p =
   let t = lvl `at` p
-      ht = Tile.hideAs cotile t  -- TODO; tabulate with Speedup?
+      ht = Tile.hideAs cotile t
   in if isSecretPos lvl p then ht else t
 
 -- | Find a random position on the map satisfying a predicate.

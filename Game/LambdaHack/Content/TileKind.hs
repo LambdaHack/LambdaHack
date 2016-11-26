@@ -3,7 +3,7 @@
 module Game.LambdaHack.Content.TileKind
   ( TileKind(..), Feature(..)
   , validateSingleTileKind, validateAllTileKind, actionFeatures
-  , TileSpeedup(..), Tab(..), isUknownSpace, unknownId
+  , TileSpeedup(..), Tab(..), isUknownSpace, unknownId, talterForStairs
   ) where
 
 import Prelude ()
@@ -172,3 +172,20 @@ actionFeatures markSuspect t =
         NoItem -> Nothing
         NoActor -> Nothing
   in IS.fromList $ map hash $ mapMaybe f $ tfeature t
+
+talterForStairs :: Word8
+talterForStairs = 3
+
+-- Alter skill schema:
+-- 0  can be altered by everybody (currently no such thing)
+-- 1  unknown only
+-- 2  openable and suspect
+-- 3  stairs
+-- 4  closable
+-- 5  changeable (e.g., caches)
+-- 10  weak obstructions
+-- 50  considerable obstructions
+-- 100  walls
+-- maxBound  impenetrable walls, etc., can never be altered
+
+-- TODO: add OpenTo to walls, etc.

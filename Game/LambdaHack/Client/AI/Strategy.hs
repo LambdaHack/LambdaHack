@@ -19,7 +19,7 @@ import Game.LambdaHack.Common.Frequency as Frequency
 newtype Strategy a = Strategy { runStrategy :: [Frequency a] }
   deriving (Show, Foldable, Traversable)
 
--- | Strategy is a monad. TODO: Can we write this as a monad transformer?
+-- | Strategy is a monad.
 instance Monad Strategy where
   {-# INLINE return #-}
   return x = Strategy $ return $! uniformFreq "Strategy_return" [x]

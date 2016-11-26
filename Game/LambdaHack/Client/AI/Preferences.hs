@@ -132,7 +132,7 @@ aspectToBenefit _cops _b asp =
     IK.AddAbility _ p -> Dice.meanDice p * 5
 
 -- | Determine the total benefit from having an item in eqp or inv,
--- according to item type, and also the benefit confered by equipping the item
+-- according to item type, and also the benefit conferred by equipping the item
 -- and from meleeing with it or applying it or throwing it.
 totalUsefulness :: Kind.COps -> Actor -> AspectRecord -> Faction -> ItemFull
                 -> Maybe (Int, Int)

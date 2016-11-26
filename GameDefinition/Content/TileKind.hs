@@ -16,20 +16,6 @@ import Game.LambdaHack.Common.Misc
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.TileKind
 
--- Alter skill schema:
--- 0  can be altered by everybody (currently no such thing)
--- 1  unknown only
--- 2  openable and suspect
--- 3  stairs
--- 4  closable
--- 5  changeable (e.g., caches)
--- 10  weak obstructions
--- 50  considerable obstructions
--- 100  walls
--- maxBound  impenetrable walls, etc., can never be altered
-
--- TODO: add OpenTo for walls, etc.
-
 cdefs :: ContentDef TileKind
 cdefs = ContentDef
   { getSymbol = tsymbol
@@ -254,7 +240,7 @@ stairsUpLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , talter   = 3
+  , talter   = talterForStairs
   , tfeature = [Cause $ IK.Ascend 1]
   }
 stairsDownLit = TileKind
@@ -263,7 +249,7 @@ stairsDownLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , talter   = 3
+  , talter   = talterForStairs
   , tfeature = [Cause $ IK.Ascend (-1)]
   }
 escapeUpLit = TileKind
@@ -272,7 +258,7 @@ escapeUpLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
-  , talter   = 3
+  , talter   = talterForStairs
   , tfeature = [Cause $ IK.Escape 1]
   }
 escapeDownLit = TileKind
@@ -281,7 +267,7 @@ escapeDownLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
-  , talter   = 3
+  , talter   = talterForStairs
   , tfeature = [Cause $ IK.Escape (-1)]
   }
 floorCorridorLit = TileKind

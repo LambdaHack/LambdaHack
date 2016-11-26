@@ -206,11 +206,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
               object  = partActor sb
           msgAdd $ makeSentence [ MU.SubjectVerbSg subject "take command"
                                 , "from", object ]
-        _ ->
-          return ()
-          -- TODO: report when server changes spawner's leader;
-          -- perhaps don't switch _sleader in HandleAtomicClient,
-          -- compare here and switch here? too hacky? fails for AI?
+        _ -> return ()
   UpdLeadFaction{} -> return ()
   UpdDiplFaction fid1 fid2 _ toDipl -> do
     name1 <- getsState $ gname . (EM.! fid1) . sfactionD
@@ -288,8 +284,6 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
       modifySession $ \sess -> sess {shistory}
     mode <- getGameMode
     msgAdd $ "New game started in" <+> mname mode <+> "mode." <+> mdesc mode
-    -- TODO: use a vertical animation instead, e.g., roll down,
-    -- and reveal the first frame of a new game, not blank screen.
     when (lengthHistory history > 1) $ fadeOutOrIn False
     fact <- getsState $ (EM.! fid) . sfactionD
     setFrontAutoYes $ isAIFact fact

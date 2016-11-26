@@ -209,7 +209,6 @@ fadeout out step lxsize lysize = do
         in EM.findWithDefault ' ' k edge
       rollFrame !n = do
         r <- random
-        -- TODO: use a simplification of attrChar2ToW32; and elsewhere
         let fadeAttr !y !x = attrChar1ToW32 $ fadeChar r n x y
             fadeLine !y =
               let x1 :: Int

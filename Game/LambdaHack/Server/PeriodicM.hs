@@ -34,13 +34,14 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
+import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.CommonM
 import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
 -- TODO: civilians would have 'it' pronoun
--- | Sapwn, possibly, a monster according to the level's actor groups.
+-- | Spawn, possibly, a monster according to the level's actor groups.
 -- We assume heroes are never spawned.
 spawnMonster :: (MonadAtomic m, MonadServer m) => m ()
 {-# INLINABLE spawnMonster #-}
@@ -159,7 +160,8 @@ dominateFidSfx fid target = do
       -- Check that the actor can move, also between levels and through doors.
       -- Otherwise, it's too awkward for human player to control.
       canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
-                && EM.findWithDefault 0 Ability.AbAlter actorMaxSk >= 3  -- TODO
+                && EM.findWithDefault 0 Ability.AbAlter actorMaxSk
+                   >= fromEnum TK.talterForStairs
   if canMove && not (bproj tb)
     then do
       let execSfx = execSfxAtomic

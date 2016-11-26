@@ -58,8 +58,6 @@ standard = RuleKind
   -- are required, at most one per row, and all are overwritten
   -- with text that is flushed left and padded with spaces.
   -- The Main Menu is displayed dull white on black.
-  -- TODO: Show highlighted keybinding in inverse video or bright white on grey
-  -- background. The spaces that pad keybindings are not highlighted.
   , rmainMenuArt = $(do
       let path = "GameDefinition/MainMenu.ascii"
       qAddDependentFile path
