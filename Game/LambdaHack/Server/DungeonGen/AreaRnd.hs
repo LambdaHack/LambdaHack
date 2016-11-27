@@ -12,7 +12,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.Set as S
+import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
@@ -61,34 +61,34 @@ mkVoidRoom area = do
 -- there is only one connected component in the graph of all areas.
 connectGrid :: (X, Y) -> Rnd [(Point, Point)]
 connectGrid (nx, ny) = do
-  let unconnected = S.fromDistinctAscList [ Point x y
-                                          | x <- [0..nx-1], y <- [0..ny-1] ]
+  let unconnected = ES.fromDistinctAscList [ Point x y
+                                          | y <- [0..ny-1], x <- [0..nx-1] ]
   -- Candidates are neighbours that are still unconnected. We start with
   -- a random choice.
   rx <- randomR (0, nx-1)
   ry <- randomR (0, ny-1)
-  let candidates = S.fromDistinctAscList [Point rx ry]
+  let candidates = ES.singleton $ Point rx ry
   connectGrid' (nx, ny) unconnected candidates []
 
-connectGrid' :: (X, Y) -> S.Set Point -> S.Set Point
+connectGrid' :: (X, Y) -> ES.EnumSet Point -> ES.EnumSet Point
              -> [(Point, Point)]
              -> Rnd [(Point, Point)]
 connectGrid' (nx, ny) unconnected candidates acc
-  | S.null candidates = return $! map sortPoint acc
+  | ES.null candidates = return $! map sortPoint acc
   | otherwise = do
-      c <- oneOf (S.toList candidates)
+      c <- oneOf (ES.toList candidates)
       -- potential new candidates:
-      let ns = S.fromList $ vicinityCardinal nx ny c
-          nu = S.delete c unconnected  -- new unconnected
+      let ns = ES.fromList $ vicinityCardinal nx ny c
+          nu = ES.delete c unconnected  -- new unconnected
           -- (new candidates, potential connections):
-          (nc, ds) = S.partition (`S.member` nu) ns
-      new <- if S.null ds
+          (nc, ds) = ES.partition (`ES.member` nu) ns
+      new <- if ES.null ds
              then return id
              else do
-               d <- oneOf (S.toList ds)
+               d <- oneOf (ES.toList ds)
                return ((c, d) :)
       connectGrid' (nx, ny) nu
-        (S.delete c (candidates `S.union` nc)) (new acc)
+        (ES.delete c (candidates `ES.union` nc)) (new acc)
 
 -- | Sort the sequence of two points, in the derived lexicographic order.
 sortPoint :: (Point, Point) -> (Point, Point)
