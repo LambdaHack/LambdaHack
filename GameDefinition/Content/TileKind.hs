@@ -24,11 +24,17 @@ cdefs = ContentDef
   , validateSingle = validateSingleTileKind
   , validateAll = validateAllTileKind
   , content = contentFromList $
-      [unknown, wall, hardRock, pillar, pillarIce, pillarCache, lampPost, burningBush, bush, tree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsDownLit, escapeUpLit, escapeDownLit, floorCorridorLit, floorArenaLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorSmoke]
-      ++ map makeDark [wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, escapeUpLit, escapeDownLit, floorCorridorLit]
-      ++ map makeDarkColor [stairsUpLit, stairsDownLit, floorArenaLit, floorActorLit, floorItemLit, floorActorItemLit]
+      [unknown, wall, hardRock, pillar, pillarIce, pillarCache, lampPost, burningBush, bush, tree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsDownLit, escapeUp, escapeDown, floorCorridorLit, floorArenaLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorSmoke]
+      ++ map makeDark ldarkable
+      ++ map makeDarkColor ldarkColorable
   }
-unknown,        wall, hardRock, pillar, pillarIce, pillarCache, lampPost, burningBush, bush, tree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsDownLit, escapeUpLit, escapeDownLit, floorCorridorLit, floorArenaLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorSmoke :: TileKind
+unknown,        wall, hardRock, pillar, pillarIce, pillarCache, lampPost, burningBush, bush, tree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsDownLit, escapeUp, escapeDown, floorCorridorLit, floorArenaLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorSmoke :: TileKind
+
+ldarkable :: [TileKind]
+ldarkable = [wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, floorCorridorLit]
+
+ldarkColorable :: [TileKind]
+ldarkColorable = [stairsUpLit, stairsDownLit, floorArenaLit, floorActorLit, floorItemLit, floorActorItemLit]
 
 unknown = TileKind  -- needs to have index 0 and alter 1
   { tsymbol  = ' '
@@ -237,7 +243,7 @@ doorOpenH = TileKind
 stairsUpLit = TileKind
   { tsymbol  = '<'
   , tname    = "staircase up"
-  , tfreq    = [("legendLit", 100)]
+  , tfreq    = [("legendLit", 100), ("staircase up Lit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = talterForStairs
@@ -246,25 +252,25 @@ stairsUpLit = TileKind
 stairsDownLit = TileKind
   { tsymbol  = '>'
   , tname    = "staircase down"
-  , tfreq    = [("legendLit", 100)]
+  , tfreq    = [("legendLit", 100), ("staircase down Lit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = talterForStairs
   , tfeature = [Cause $ IK.Ascend (-1)]
   }
-escapeUpLit = TileKind
+escapeUp = TileKind
   { tsymbol  = '<'
   , tname    = "exit hatch up"
-  , tfreq    = [("legendLit", 100)]
+  , tfreq    = [("legendLit", 100), ("legendDark", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
   , talter   = talterForStairs
   , tfeature = [Cause $ IK.Escape 1]
   }
-escapeDownLit = TileKind
+escapeDown = TileKind
   { tsymbol  = '>'
   , tname    = "exit trapdoor down"
-  , tfreq    = [("legendLit", 100)]
+  , tfreq    = [("legendLit", 100), ("legendDark", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
   , talter   = talterForStairs
