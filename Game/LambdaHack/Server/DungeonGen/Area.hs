@@ -8,6 +8,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
+import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Common.Point
 
@@ -29,15 +30,32 @@ trivialArea (Point x y) = Area x y x y
 
 -- | Divide uniformly a larger area into the given number of smaller areas
 -- overlapping at the edges. The list is in ascending Enum-order of points.
-grid :: (X, Y) -> Area -> [(Point, Area)]
-grid (nx, ny) (Area x0 y0 x1 y1) =
-  let xd = x1 - x0  -- not +1, because we need overlap
-      yd = y1 - y0
-  in [ (Point x y, Area (x0 + xd * x `div` nx)
-                        (y0 + yd * y `div` ny)
-                        (x0 + xd * (x + 1) `div` nx)
-                        (y0 + yd * (y + 1) `div` ny))
-     | y <- [0..ny-1], x <- [0..nx-1] ]
+--
+-- When a list of fixed centers (some important points inside)
+-- of (non-overlapping) areas is given, incorporate those,
+-- with as little disruption, as possible.
+grid :: [Point] -> (X, Y) -> Area -> [(Point, Area)]
+grid fixedCenters (nx, ny) (Area x0 y0 x1 y1) =
+  let f z0 z1 n prev (c1 : c2 : rest) =
+        let len = c2 - c1 + 1
+            cn = len * n `div` (z1 - z0 + 1)
+        in if cn < 2
+           then let middle = (c1 + c2) `div` 2
+                in (prev, middle) : f z0 z1 n middle (c2 : rest)
+           else (prev, c1 + len * 1 `div` (2 * cn))
+                : [ ( c1 + len * (2 * z - 1) `div` (2 * cn)
+                    , c1 + len * (2 * z + 1) `div` (2 * cn) )
+                  | z <- [1 .. cn - 1] ]
+                ++ f z0 z1 n (c1 + len * (2 * cn - 1) `div` (2 * cn))
+                     (c2 : rest)
+      f _ z1 _ prev _ = [(prev, z1)]
+      xcs = ES.toList $ ES.fromList $ map px fixedCenters
+      xallCenters = zip [0..] $ f x0 x1 nx x0 xcs
+      ycs = ES.toList $ ES.fromList $ map py fixedCenters
+      yallCenters = zip [0..] $ f y0 y1 ny y0 ycs
+  in [ (Point x y, Area cx0 cy0 cx1 cy1)
+     | (y, (cy0, cy1)) <- yallCenters
+     , (x, (cx0, cx1)) <- xallCenters ]
 
 -- | Enlarge (or shrink) the given area on all fours sides by the amount.
 shrink :: Area -> Maybe Area

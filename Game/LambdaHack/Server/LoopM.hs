@@ -81,7 +81,8 @@ loopSer sdebug sconfig executorClient = do
             (EM.keys factionD)
       -- We dump RNG seeds here, in case the game wasn't run
       -- with --dumpInitRngs previously and we need the seeds.
-      when (sdumpInitRngs sdebug) dumpRngs
+      rngs <- getsServer srngs
+      when (sdumpInitRngs sdebug) $ dumpRngs rngs
     _ -> do  -- Starting the first new game for this savefile.
       -- Set up commandline debug mode
       let mrandom = case restored of

@@ -84,7 +84,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
         let area | gx * gy == 1
                    || couterFenceTile /= "basic outer fence" = subFullArea
                  | otherwise = fullArea
-            gs = grid lgr area
+            gs = grid [ Point 3 3, Point (cxsize - 4) (cysize - 4) ] lgr area
         minPlaceSize <- castDiceXY ldepth totalDepth cminPlaceSize
         maxPlaceSize <- castDiceXY ldepth totalDepth cmaxPlaceSize
         voidPlaces <-

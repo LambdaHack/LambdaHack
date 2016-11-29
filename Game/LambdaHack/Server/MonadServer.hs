@@ -84,10 +84,9 @@ serverPrint t = liftIO $ do
   hFlush stdout
 
 -- | Dumps RNG states from the start of the game to stdout.
-dumpRngs :: MonadServer m => m ()
+dumpRngs :: MonadServer m => RNGs -> m ()
 {-# INLINABLE dumpRngs #-}
-dumpRngs = do
-  rngs <- getsServer srngs
+dumpRngs rngs = do
   liftIO $ do
     T.hPutStrLn stdout $ tshow rngs
     hFlush stdout

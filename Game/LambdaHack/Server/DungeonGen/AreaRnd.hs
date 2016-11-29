@@ -36,8 +36,8 @@ mkRoom :: (X, Y)    -- ^ minimum size
        -> Rnd Area
 mkRoom (xm, ym) (xM, yM) area = do
   let (x0, y0, x1, y1) = fromArea area
-  let !_A = assert (xm <= x1 - x0 + 1 && ym <= y1 - y0 + 1) ()
-  let aW = (xm, ym, min xM (x1 - x0 + 1), min yM (y1 - y0 + 1))
+  let aW = ( min xm (x1 - x0 + 1), min ym (y1 - y0 + 1)
+           , min xM (x1 - x0 + 1), min yM (y1 - y0 + 1) )
       areaW = fromMaybe (assert `failure` aW) $ toArea aW
   Point xW yW <- xyInArea areaW  -- roll size
   let a1 = (x0, y0, max x0 (x1 - xW + 1), max y0 (y1 - yW + 1))

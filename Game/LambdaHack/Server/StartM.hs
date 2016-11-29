@@ -158,6 +158,8 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
           sdebug mGameMode mrandom = do
   dungeonSeed <- getSetGen $ sdungeonRng sdebug `mplus` mrandom
   srandom <- getSetGen $ smainRng sdebug `mplus` mrandom
+  let srngs = RNGs (Just dungeonSeed) (Just srandom)
+  when (sdumpInitRngs sdebug) $ dumpRngs srngs
   scoreTable <- if sfrontendNull $ sdebugCli sdebug then
                   return HighScore.empty
                 else
@@ -193,11 +195,9 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
                                 faction cops scoreTable modeKindId
       defSer = emptyStateServer { sheroNames
                                 , srandom
-                                , srngs = RNGs (Just dungeonSeed)
-                                               (Just srandom) }
+                                , srngs }
   putServer defSer
   modifyServer $ \ser -> ser {sdiscoKind, sdiscoKindRev, sflavour}
-  when (sdumpInitRngs sdebug) dumpRngs
   return $! defState
 
 -- Spawn initial actors. Clients should notice this, to set their leaders.
