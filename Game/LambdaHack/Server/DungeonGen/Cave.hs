@@ -66,7 +66,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                         , coTileSpeedup }
           ldepth totalDepth dkind = do
   let kc@CaveKind{..} = okind dkind
-  lgrid <- castDiceXY ldepth totalDepth cgrid
+  lgrid' <- castDiceXY ldepth totalDepth cgrid
   -- Make sure that in caves not filled with rock, there is a passage
   -- across the cave, even if a single room blocks most of the cave.
   -- Also, ensure fancy outer fences are not obstructed by room walls.
@@ -80,11 +80,12 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
   litCorTile <- fromMaybe (assert `failure` clitCorTile)
                 <$> opick clitCorTile (const True)
   dnight <- chanceDice ldepth totalDepth cnightChance
-  let createPlaces lgr@(gx, gy) = do
-        let area | gx * gy == 1
+  let createPlaces lgr'@(gx', gy') = do
+        let area | gx' * gy' == 1
                    || couterFenceTile /= "basic outer fence" = subFullArea
                  | otherwise = fullArea
-            gs = grid [ Point 3 3, Point (cxsize - 4) (cysize - 4) ] lgr area
+            (lgr@(gx, gy), gs) =
+                grid [Point 3 3, Point (cxsize - 4) (cysize - 4)] lgr' area
         minPlaceSize <- castDiceXY ldepth totalDepth cminPlaceSize
         maxPlaceSize <- castDiceXY ldepth totalDepth cmaxPlaceSize
         voidPlaces <-
@@ -113,8 +114,9 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                 return ( EM.union tmap m
                        , place : pls
                        , EM.insert i (shrinkPlace cops (r, place)) qls )
-        foldlM' decidePlace (EM.empty, [], EM.empty) gs
-  (lplaces, dplaces, qplaces) <- createPlaces lgrid
+        places <- foldlM' decidePlace (EM.empty, [], EM.empty) gs
+        return (lgr, places)
+  (lgrid, (lplaces, dplaces, qplaces)) <- createPlaces lgrid'
   let lcorridorsFun lgr@(gx, gy) = do
         addedConnects <-
           if gx * gy > 1 then do
