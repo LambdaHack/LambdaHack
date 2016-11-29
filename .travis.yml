@@ -56,12 +56,12 @@ matrix:
       compiler: ": #GHC 7.10.3"
       addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-7.10.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
 
-    - env: CABALVER=head GHCVER=head GTKVTY=gtk
+    - env: CABALVER=head GHCVER=head GTKVTY=gtk-v2
       compiler: ": #GHC head"
       addons: {apt: {packages: [libgtk-3-dev, cabal-install-head,ghc-head,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
 
   allow_failures:
-    - env: CABALVER=head GHCVER=head GTKVTY=gtk
+    - env: CABALVER=head GHCVER=head GTKVTY=gtk-v2
 
 before_install:
  - unset CC
@@ -83,6 +83,9 @@ install:
  - sed -i 's/^jobsColon/jobs:/' ${HOME}/.cabal/config
  - |
    if [ $GTKVTY = "gtk" ]; then
+     cabal install --only-dependencies --enable-tests --enable-benchmarks --dry -v --constraint="transformers>=0.5" gtk2hs-buildtools > installplan.txt
+     cabal install --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
+   elif [ $GTKVTY = "gtk-v2" ]; then
      cabal install --only-dependencies --enable-tests --enable-benchmarks --dry -v --constraint="transformers>=0.5" gtk2hs-buildtools > installplan.txt
      cabal install --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
    elif [ $GTKVTY = "vty" ]; then
@@ -117,6 +120,9 @@ install:
      if [ $GTKVTY = "gtk" ]; then
        cabal install --constraint="transformers>=0.5" gtk2hs-buildtools;
        cabal install --only-dependencies --enable-tests --enable-benchmarks;
+     elif [ $GTKVTY = "gtk-v2" ]; then
+       cabal install -v2 --constraint="transformers>=0.5" gtk2hs-buildtools;
+       cabal install -v2 --only-dependencies --enable-tests --enable-benchmarks;
      elif [ $GTKVTY = "vty" ]; then
        cabal install -fvty --only-dependencies --enable-tests --enable-benchmarks;
      elif [ $GTKVTY = "curses" ]; then
@@ -151,6 +157,8 @@ script:
  - |
    if [ $GTKVTY = "gtk" ]; then
      cabal configure --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
+   elif [ $GTKVTY = "gtk-v2" ]; then
+        cabal configure --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
    elif [ $GTKVTY = "vty" ]; then
      cabal configure -fvty --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
    elif [ $GTKVTY = "curses" ]; then
@@ -179,6 +187,8 @@ script:
    cd dist/;
    if [ -f "$SRC_TGZ" ]; then
       if [ $GTKVTY = "gtk" ]; then
+        cabal install "$SRC_TGZ";
+      elif [ $GTKVTY = "gtk-v2" ]; then
         cabal install "$SRC_TGZ";
       elif [ $GTKVTY = "vty" ]; then
         cabal install -fvty "$SRC_TGZ";
