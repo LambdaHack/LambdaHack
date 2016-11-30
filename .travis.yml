@@ -175,7 +175,11 @@ script:
    else exit 7
    fi
 
- - cabal build   # this builds our library and executables (including tests/benchmarks)
+ - cabal build --ghc-option=-fsimpl-tick-factor=5000  # this builds our library and executables (including tests/benchmarks)
+
+ - touch GameDefinition/Main.hs
+
+ - cabal build --ghc-option=-fsimpl-tick-factor=5000
 
  - (cabal test || exit 7);
 
@@ -190,13 +194,13 @@ script:
    cd dist/;
    if [ -f "$SRC_TGZ" ]; then
       if [ $GTKVTY = "gtk" ]; then
-        cabal install "$SRC_TGZ";
+        cabal install --ghc-option=-fsimpl-tick-factor=5000 "$SRC_TGZ";
       elif [ $GTKVTY = "vty" ]; then
-        cabal install -fvty "$SRC_TGZ";
+        cabal install --ghc-option=-fsimpl-tick-factor=5000 -fvty "$SRC_TGZ";
       elif [ $GTKVTY = "curses" ]; then
-        cabal install -fcurses "$SRC_TGZ";
+        cabal install --ghc-option=-fsimpl-tick-factor=5000 -fcurses "$SRC_TGZ";
       else
-        cabal install "$SRC_TGZ";
+        cabal install --ghc-option=-fsimpl-tick-factor=5000 "$SRC_TGZ";
       fi;
    else
       echo "expected '$SRC_TGZ' not found";
