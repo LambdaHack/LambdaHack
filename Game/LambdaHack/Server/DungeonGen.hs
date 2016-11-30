@@ -129,8 +129,8 @@ condStairs Kind.COps{coTileSpeedup} cmap ps p !t =
      && not (Tile.isNoActor coTileSpeedup t)
      && dist 3 p t
 
-placeStairs :: Kind.COps -> TileMap -> CaveKind -> [Point] -> Rnd Point
-placeStairs cops@Kind.COps{coTileSpeedup}
+placeStairs2 :: Kind.COps -> TileMap -> CaveKind -> [Point] -> Rnd Point
+placeStairs2 cops@Kind.COps{coTileSpeedup}
             cmap CaveKind{cminStairDist} ps = do
   let dist !cmin !p _ = all (\ !pos -> chessDist p pos > cmin) ps
       ds = [ dist cminStairDist
@@ -149,18 +149,17 @@ type Staircase = (Point, ( Maybe (Kind.Id TileKind)
 
 -- | Create a level from a cave.
 buildLevel :: Kind.COps -> Cave -> Int -> Int -> Int -> AbsDepth
-           -> [Point] -> Maybe Bool -> TileMap
+           -> [Point] -> [Point] -> TileMap
            -> Rnd Level
 buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick}
                          , cocave=Kind.Ops{okind=cokind}
                          , coTileSpeedup}
            Cave{dkind, dplaces}
-           ln minD maxD totalDepth lstairUpRaw escapeFeature cmap = do
+           ln minD maxD totalDepth lstairUpRaw lescape cmap = do
   let kc@CaveKind{citemNum, clegendLitTile} = cokind dkind
       fitArea pos = inside pos . fromArea . qarea
       findLegend pos = maybe clegendLitTile qlegend
                        $ find (fitArea pos) dplaces
-      hasEscape p = Tile.kindHasFeature (TK.Cause $ IK.Escape p)
       ascendable  = Tile.kindHasFeature (TK.Cause $ IK.Ascend 1)
       descendable = Tile.kindHasFeature (TK.Cause $ IK.Ascend (-1))
       noAsc = ln == maxD
@@ -172,7 +171,7 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick}
         else do
           let cond tk = if moveUp then ascendable tk else descendable tk
               posCur = map fst stairs
-          spos <- placeStairs cops cmap kc posCur
+          spos <- placeStairs2 cops cmap kc posCur
           let legend = findLegend spos
           stairId <- fromMaybe (assert `failure` legend) <$> opick legend cond
           return $! stairs ++ [(spos, if moveUp
@@ -211,21 +210,6 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick}
   let lenStairsUp2 = length $ catMaybes $ map (fst . snd) stairs2
       nstairUpLeft = length lstairUp - lenStairsUp2
   stairs3 <- foldlM' (\sts _ -> makeStairs True sts) stairs2 [1 .. nstairUpLeft]
-  let posTotal = map fst $ stairs3
-  escape <- case escapeFeature of
-              Nothing -> return []
-              Just True -> do
-                epos <- placeStairs cops cmap kc posTotal
-                let legend = findLegend epos
-                upEscape <- fmap (fromMaybe $ assert `failure` legend)
-                            $ opick legend $ hasEscape 1
-                return [(epos, (Just upEscape, Nothing))]
-              Just False -> do
-                epos <- placeStairs cops cmap kc posTotal
-                let legend = findLegend epos
-                downEscape <- fmap (fromMaybe $ assert `failure` legend)
-                              $ opick legend $ hasEscape (-1)
-                return [(epos, (Nothing, Just downEscape))]
   let vicMoves = map (uncurry Vector)
         [ (-2, -1), (-1, -1), (0, -1), (1, -1), (2, -1), (2, 0)
         , (2, 1), (1, 1), (0, 1), (-1, 1), (-2, 1), (-2, 0) ]
@@ -242,7 +226,7 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick}
         in [(posUp p, idUp) | idUp <- maybeToList mUp]
            ++ [(posDn p, idDn) | idDn <- maybeToList mDn]
            ++ map (\p0 -> (p0, old)) vic
-      exitTiles = concatMap addVicinity $ stairs3 ++ escape
+      exitTiles = concatMap addVicinity $ stairs3
       ltile = cmap PointArray.// exitTiles
       lstair = ( map (posUp . fst) $ filter (isJust . fst . snd) stairs3
                , map (posDn . fst) $ filter (isJust . snd . snd) stairs3 )
@@ -251,7 +235,7 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick}
   litemNum <- castDice ldepth totalDepth citemNum
   lsecret <- randomR (1, maxBound)  -- 0 means unknown
   return $! levelFromCaveKind cops kc ldepth ltile lstair
-                              litemNum lsecret (map fst escape)
+                              litemNum lsecret lescape
 
 -- | Build rudimentary level from a cave kind.
 levelFromCaveKind :: Kind.COps
@@ -291,17 +275,46 @@ levelFromCaveKind Kind.COps{coTileSpeedup}
        , lescape
        }
 
+placeStairs :: CaveKind -> [Point] -> Rnd Point
+placeStairs CaveKind{..} ps = do
+  let dist cmin p = all (\pos -> chessDist p pos > cmin) ps
+      distProj p = all (\pos -> px pos > px p + 4
+                                && px pos < px p - 4
+                                && py pos > py p + 4
+                                && py pos < py p - 4) ps
+      f p@Point{..} =
+        if p `inside` (8, 8, cxsize - 9, cysize - 9)
+        then if dist cminStairDist p && distProj p then Just p else Nothing
+        else let nx = if | px < 8 -> 3
+                         | px > cxsize - 9 -> cxsize - 4
+                         | otherwise -> px
+                 ny = if | py < 8 -> 3
+                         | py > cysize - 9 -> cysize - 4
+                         | otherwise -> py
+                 np = Point nx ny
+             in if dist 4 np then Just np else Nothing
+  findPoint (cxsize - 1) (cysize - 1) f
+
 findGenerator :: Kind.COps -> AbsDepth
               -> Int -> (GroupName CaveKind, Maybe Bool)
-              -> Rnd (Int, TileMap, Cave, Maybe Bool)
+              -> Rnd (Int, TileMap, Cave, [Point])
 findGenerator cops totalDepth n (genName, escapeFeature) = do
-  let Kind.COps{cocave=Kind.Ops{opick}} = cops
-  ci <- fromMaybe (assert `failure` genName) <$> opick genName (const True)
+  let Kind.COps{cocave=Kind.Ops{okind, opick}} = cops
+  dkind <- fromMaybe (assert `failure` genName) <$> opick genName (const True)
+  let ci = okind dkind
   -- A simple rule for now: level at level @ln@ has depth (difficulty) @abs ln@.
-  let ldepth = AbsDepth $ abs n
-  cave <- buildCave cops ldepth totalDepth ci
+      ldepth = AbsDepth $ abs n
+  fixedCenters <- case escapeFeature of
+                    Nothing -> return []
+                    Just b -> do
+                      epos <- placeStairs ci []
+                      let placeGroup = toGroupName $
+                            if b then "escape up" else "escape down"
+                      return [(epos, placeGroup)]
+  cave <- buildCave cops ldepth totalDepth dkind fixedCenters
   cmap <- buildTileMap cops cave
-  return (n, cmap, cave, escapeFeature)
+  let lescape = map fst fixedCenters
+  return (n, cmap, cave, lescape)
 
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
@@ -322,11 +335,11 @@ dungeonGen cops caves = do
   tileMaps <- mapM (uncurry $ findGenerator cops freshTotalDepth)
                    (IM.assocs caves)
   let buildLvl :: ([Point], [(LevelId, Level)])
-               -> (Int, TileMap, Cave, Maybe Bool)
+               -> (Int, TileMap, Cave, [Point])
                -> Rnd ([Point], [(LevelId, Level)])
-      buildLvl (lstairUp, l) (n, cmap, cave, escapeFeature) = do
+      buildLvl (lstairUp, l) (n, cmap, cave, lescape) = do
         lvl <- buildLevel cops cave n minD maxD freshTotalDepth
-               lstairUp escapeFeature cmap
+               lstairUp lescape cmap
         -- lstairUp for the next level is lstairDown for the current level
         let lstairDown = snd $ lstair lvl
         return (lstairDown, (toEnum n, lvl) : l)

@@ -12,6 +12,7 @@ import Data.Key (mapWithKeyM)
 
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -60,11 +61,12 @@ buildCave :: Kind.COps         -- ^ content definitions
           -> AbsDepth          -- ^ depth of the level to generate
           -> AbsDepth          -- ^ absolute depth
           -> Kind.Id CaveKind  -- ^ cave kind to use for generation
+          -> [(Point, GroupName PlaceKind)]  -- ^ position of stairs, etc.
           -> Rnd Cave
 buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                         , cocave=Kind.Ops{okind}
                         , coTileSpeedup }
-          ldepth totalDepth dkind = do
+          ldepth totalDepth dkind fixedCenters = do
   let kc@CaveKind{..} = okind dkind
   lgrid' <- castDiceXY ldepth totalDepth cgrid
   -- Make sure that in caves not filled with rock, there is a passage
@@ -85,7 +87,8 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                    || couterFenceTile /= "basic outer fence" = subFullArea
                  | otherwise = fullArea
             (lgr@(gx, gy), gs) =
-                grid [Point 3 3, Point (cxsize - 4) (cysize - 4)] lgr' area
+              grid (map fst fixedCenters
+                    ++ [Point 3 3, Point (cxsize - 4) (cysize - 4)]) lgr' area
         minPlaceSize <- castDiceXY ldepth totalDepth cminPlaceSize
         maxPlaceSize <- castDiceXY ldepth totalDepth cmaxPlaceSize
         voidPlaces <-

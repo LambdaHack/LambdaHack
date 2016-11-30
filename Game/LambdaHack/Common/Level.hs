@@ -7,7 +7,8 @@ module Game.LambdaHack.Common.Level
   , Level(..), ItemFloor, ActorMap, TileMap, SmellMap
     -- * Level query
   , at, accessible, accessibleUnknown, accessibleDir
-  , knownLsecret, isSecretPos, hideTile, findPos, findPosTry, findPosTry2
+  , knownLsecret, isSecretPos, hideTile
+  , findPoint, findPos, findPosTry, findPosTry2
   ) where
 
 import Prelude ()
@@ -136,6 +137,17 @@ hideTile Kind.COps{cotile} lvl p =
   let t = lvl `at` p
       ht = Tile.hideAs cotile t
   in if isSecretPos lvl p then ht else t
+
+-- | Find a random position on the map satisfying a predicate.
+findPoint :: X -> Y -> (Point -> Maybe Point) -> Rnd Point
+findPoint x y f =
+  let search = do
+        pxy <- randomR (0, (x - 1) * (y - 1))
+        let pos = PointArray.punindex x pxy
+        case f pos of
+          Just p -> return p
+          Nothing -> search
+  in search
 
 -- | Find a random position on the map satisfying a predicate.
 findPos :: TileMap -> (Point -> Kind.Id TileKind -> Bool) -> Rnd Point
