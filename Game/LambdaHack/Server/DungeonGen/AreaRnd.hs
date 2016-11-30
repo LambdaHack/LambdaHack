@@ -1,7 +1,7 @@
 -- | Operations on the 'Area' type that involve random numbers.
 module Game.LambdaHack.Server.DungeonGen.AreaRnd
   ( -- * Picking points inside areas
-    xyInArea, mkRoom, mkVoidRoom
+    xyInArea, mkVoidRoom, mkRoom, mkFixed
     -- * Choosing connections
   , connectGrid, randomConnection
     -- * Plotting corridors
@@ -36,8 +36,9 @@ mkRoom :: (X, Y)    -- ^ minimum size
        -> Rnd Area
 mkRoom (xm, ym) (xM, yM) area = do
   let (x0, y0, x1, y1) = fromArea area
-  let aW = ( min xm (x1 - x0 + 1), min ym (y1 - y0 + 1)
-           , min xM (x1 - x0 + 1), min yM (y1 - y0 + 1) )
+      xspan = x1 - x0 + 1
+      yspan = y1 - y0 + 1
+  let aW = ( min xm xspan, min ym yspan, min xM xspan, min yM yspan )
       areaW = fromMaybe (assert `failure` aW) $ toArea aW
   Point xW yW <- xyInArea areaW  -- roll size
   let a1 = (x0, y0, max x0 (x1 - xW + 1), max y0 (y1 - yW + 1))
@@ -46,6 +47,23 @@ mkRoom (xm, ym) (xM, yM) area = do
   let a3 = (rx1, ry1, rx1 + xW - 1, ry1 + yW - 1)
       area3 = fromMaybe (assert `failure` a3) $ toArea a3
   return $! area3
+
+mkFixed :: (X, Y)    -- ^ minimum size
+        -> (X, Y)    -- ^ maximum size
+        -> Area      -- ^ the containing area, not the room itself
+        -> Point     -- ^ the center point
+        -> Rnd Area
+mkFixed (xm, ym) (xM, yM) area Point{..} = do
+  let (x0, y0, x1, y1) = fromArea area
+      xspan = min (x1 - x0 + 1) $ 1 + 2 * min (px - x0) (x1 - px)
+      yspan = min (y1 - y0 + 1) $ 1 + 2 * min (py - y0) (y1 - py)
+  let aW = ( min xm xspan `div` 2, min ym yspan `div` 2
+           , min xM xspan `div` 2, min yM yspan `div` 2 )
+      areaW = fromMaybe (assert `failure` aW) $ toArea aW
+  Point xW yW <- xyInArea areaW  -- roll (half) size
+  let a2 = (px - xW, py - yW, px + xW, py + yW)
+      area2 = fromMaybe (assert `failure` a2) $ toArea a2
+  return $! area2
 
 -- | Create a void room, i.e., a single point area within the designated area.
 mkVoidRoom :: Area -> Rnd Area

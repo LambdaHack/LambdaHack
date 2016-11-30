@@ -93,11 +93,12 @@ buildPlace :: Kind.COps         -- ^ the game content
            -> AbsDepth          -- ^ current level depth
            -> AbsDepth          -- ^ absolute depth
            -> Area              -- ^ whole area of the place, fence included
+           -> Maybe (GroupName PlaceKind)  -- ^ optional fixed place group
            -> Rnd (TileMapEM, Place)
 buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
                          , coplace=Kind.Ops{ofoldlGroup'} }
            CaveKind{..} dnight darkCorTile litCorTile
-           ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) r = do
+           ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) r mplaceGroup = do
   qFWall <- fromMaybe (assert `failure` cfillerTile)
             <$> opick cfillerTile (const True)
   dark <- chanceDice ldepth totalDepth cdarkChance
@@ -119,7 +120,10 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
         let rarity = linearInterpolation (prarity kind)
         in (q * p * rarity, ((pk, kind), placeGroup)) : acc
       g (placeGroup, q) = ofoldlGroup' placeGroup (f placeGroup q) []
-      placeFreq = concatMap g cplaceFreq
+      pfreq = case mplaceGroup of
+        Nothing -> cplaceFreq
+        Just placeGroup -> [(placeGroup, 1)]
+      placeFreq = concatMap g pfreq
       checkedFreq = filter (\(_, ((_, kind), _)) -> placeCheck r kind) placeFreq
       freq = toFreq ("buildPlace" <+> tshow (map fst checkedFreq)) checkedFreq
   let !_A = assert (not (nullFreq freq) `blame` (placeFreq, checkedFreq, r)) ()

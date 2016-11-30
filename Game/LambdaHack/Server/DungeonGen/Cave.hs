@@ -105,18 +105,28 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
             decidePlace (!m, !pls, !qls) (!i, !ar) = do
               -- Reserved for corridors and the global fence.
               let innerArea = fromMaybe (assert `failure` (i, ar)) $ shrink ar
-              if i `elem` voidPlaces
-              then do
-                r <- mkVoidRoom innerArea
-                return (m, pls, EM.insert i (r, r) qls)
-              else do
-                r <- mkRoom minPlaceSize maxPlaceSize innerArea
-                (tmap, place) <-
-                  buildPlace cops kc dnight darkCorTile litCorTile
-                             ldepth totalDepth r
-                return ( EM.union tmap m
-                       , place : pls
-                       , EM.insert i (shrinkPlace cops (r, place)) qls )
+              case find (\(p, _) -> p `inside` fromArea ar) fixedCenters of
+                Nothing -> do
+                  if i `elem` voidPlaces
+                  then do
+                    r <- mkVoidRoom innerArea
+                    return (m, pls, EM.insert i (r, r) qls)
+                  else do
+                    r <- mkRoom minPlaceSize maxPlaceSize innerArea
+                    (tmap, place) <-
+                      buildPlace cops kc dnight darkCorTile litCorTile
+                                 ldepth totalDepth r Nothing
+                    return ( EM.union tmap m
+                           , place : pls
+                           , EM.insert i (shrinkPlace cops (r, place)) qls )
+                Just (p, placeGroup) -> do
+                    r <- mkFixed minPlaceSize maxPlaceSize innerArea p
+                    (tmap, place) <-
+                      buildPlace cops kc dnight darkCorTile litCorTile
+                                 ldepth totalDepth r (Just placeGroup)
+                    return ( EM.union tmap m
+                           , place : pls
+                           , EM.insert i (shrinkPlace cops (r, place)) qls )
         places <- foldlM' decidePlace (EM.empty, [], EM.empty) gs
         return (lgr, places)
   (lgrid, (lplaces, dplaces, qplaces)) <- createPlaces lgrid'
