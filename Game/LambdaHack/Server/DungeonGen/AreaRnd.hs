@@ -29,6 +29,14 @@ xyInArea area = do
   ry <- randomR (y0, y1)
   return $! Point rx ry
 
+-- | Create a void room, i.e., a single point area within the designated area.
+mkVoidRoom :: Area -> Rnd Area
+mkVoidRoom area = do
+  -- Pass corridors closer to the middle of the grid area, if possible.
+  let core = fromMaybe area $ shrink area
+  pxy <- xyInArea core
+  return $! trivialArea pxy
+
 -- | Create a random room according to given parameters.
 mkRoom :: (X, Y)    -- ^ minimum size
        -> (X, Y)    -- ^ maximum size
@@ -60,18 +68,13 @@ mkFixed (xm, ym) (xM, yM) area Point{..} = do
   let aW = ( min xm xspan `div` 2, min ym yspan `div` 2
            , min xM xspan `div` 2, min yM yspan `div` 2 )
       areaW = fromMaybe (assert `failure` aW) $ toArea aW
-  Point xW yW <- xyInArea areaW  -- roll (half) size
+  Point xW yW <- xyInArea areaW  -- roll (around half) size
+  -- The size may be one more than what minimal and maximal size hints request,
+  -- but this is safe (limited by area size) and makes up for the rigidity
+  -- of the fixed room sizes (e.g., that the size is always odd).
   let a2 = (px - xW, py - yW, px + xW, py + yW)
       area2 = fromMaybe (assert `failure` a2) $ toArea a2
   return $! area2
-
--- | Create a void room, i.e., a single point area within the designated area.
-mkVoidRoom :: Area -> Rnd Area
-mkVoidRoom area = do
-  -- Pass corridors closer to the middle of the grid area, if possible.
-  let core = fromMaybe area $ shrink area
-  pxy <- xyInArea core
-  return $! trivialArea pxy
 
 -- Choosing connections between areas in a grid
 
@@ -151,51 +154,46 @@ mkCorridor hv (Point x0 y0) (Point x1 y1) b = do
     Vert  -> [(x0, y0), (x0, ry), (x1, ry), (x1, y1)]
 
 -- | Try to connect two interiors of places with a corridor.
--- Choose entrances at least 4 or 3 tiles distant from the edges, if the place
+-- Choose entrances some steps away from the edges, if the place
 -- is big enough. Note that with @pfence == FNone@, the area considered
 -- is the strict interior of the place, without the outermost tiles.
+--
+-- The corridor connects the inner areas and the turning point
+-- of the corridor (if any) is outside the outer areas.
 connectPlaces :: (Area, Area) -> (Area, Area) -> Rnd Corridor
 connectPlaces (sa, so) (ta, to) = do
-  let (_, _, sx1, sy1) = fromArea sa
-      (_, _, sox1, soy1) = fromArea so
+  let (_, _, sx1, sy1) = fromArea sa    -- inner area
+      (_, _, sox1, soy1) = fromArea so  -- outer area
       (tx0, ty0, _, _) = fromArea ta
       (tox0, toy0, _, _) = fromArea to
   let !_A = assert (sx1 <= tx0  || sy1 <= ty0  `blame` (sa, ta)) ()
-  let !_A = assert (sx1 <= sox1 || sy1 <= soy1 `blame` (sa, so)) ()
-  let !_A = assert (tx0 >= tox0 || ty0 >= toy0 `blame` (ta, to)) ()
-  let trim area =
+      trim area =
         let (x0, y0, x1, y1) = fromArea area
-            trim4 (v0, v1) | v1 - v0 < 6 = (v0, v1)
-                           | v1 - v0 < 8 = (v0 + 3, v1 - 3)
-                           | otherwise = (v0 + 4, v1 - 4)
-            (nx0, nx1) = trim4 (x0, x1)
-            (ny0, ny1) = trim4 (y0, y1)
-        in fromMaybe (assert `failure` area) $ toArea (nx0, ny0, nx1, ny1)
+            dx = min 2 $ (x1 - x0) `div` 2
+            dy = min 2 $ (y1 - y0) `div` 2
+        in fromMaybe (assert `failure` area)
+           $ toArea (x0 + dx, y0 + dy, x1 - dx, y1 - dy)
   Point sx sy <- xyInArea $ trim so
   Point tx ty <- xyInArea $ trim to
-  let hva sarea tarea = do
+  let hva d sarea tarea = do
         let (_, _, zsx1, zsy1) = fromArea sarea
             (ztx0, zty0, _, _) = fromArea tarea
-            xa = (zsx1+2, min sy ty, ztx0-2, max sy ty)
-            ya = (min sx tx, zsy1+2, max sx tx, zty0-2)
-            xya = (zsx1+2, zsy1+2, ztx0-2, zty0-2)
+            xa = (zsx1+d, min sy ty, ztx0-d, max sy ty)
+            ya = (min sx tx, zsy1+d, max sx tx, zty0-d)
+            xya = (zsx1+d, zsy1+d, ztx0-d, zty0-d)
         case toArea xya of
-          Just xyarea -> fmap (\hv -> (hv, Just xyarea)) (oneOf [Horiz, Vert])
-          Nothing ->
-            case toArea xa of
-              Just xarea -> return (Horiz, Just xarea)
-              Nothing -> return (Vert, toArea ya) -- Vertical bias.
-  (hvOuter, areaOuter) <- hva so to
-  (hv, area) <- case areaOuter of
-    Just arenaOuter -> return (hvOuter, arenaOuter)
-    Nothing -> do
-      -- TODO: let mkCorridor only pick points on the floor fence
-      (hvInner, aInner) <- hva sa ta
-      let yell = assert `failure` (sa, so, ta, to, areaOuter, aInner)
-          areaInner = fromMaybe yell aInner
-      return (hvInner, areaInner)
-  -- We cross width one places completely with the corridor, for void
-  -- rooms and others (e.g., one-tile wall room then becomes a door, etc.).
+          Just xyarea -> Just ([Horiz, Vert], xyarea)
+          Nothing -> case toArea xa of
+            Just xarea -> Just ([Horiz], xarea) -- Horizontal bias.
+            Nothing -> case toArea ya of
+              Just yarea -> Just ([Vert], yarea)
+              Nothing -> Nothing
+      mhvsArea = hva 2 so to `mplus` hva 1 so to `mplus` hva 0 so to
+  (hv, area) <- case mhvsArea of
+     Nothing -> assert `failure` (sa, so, ta, to, sx, sy, tx, ty)
+     Just (hvs, area) -> do
+       hv <- oneOf hvs
+       return (hv, area)
   let (p0, p1) = case hv of
         Horiz -> (Point sox1 sy, Point tox0 ty)
         Vert  -> (Point sx soy1, Point tx toy0)

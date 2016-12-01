@@ -1,6 +1,6 @@
 -- | Rectangular areas of levels and their basic operations.
 module Game.LambdaHack.Server.DungeonGen.Area
-  ( Area, toArea, fromArea, trivialArea, grid, shrink
+  ( Area, toArea, fromArea, trivialArea, grid, shrink, expand
   ) where
 
 import Prelude ()
@@ -58,9 +58,12 @@ grid fixedCenters (nx, ny) (Area x0 y0 x1 y1) =
        | (y, (cy0, cy1)) <- yallCenters
        , (x, (cx0, cx1)) <- xallCenters ] )
 
--- | Enlarge (or shrink) the given area on all fours sides by the amount.
+-- | Shrink the given area on all fours sides by the amount.
 shrink :: Area -> Maybe Area
 shrink (Area x0 y0 x1 y1) = toArea (x0 + 1, y0 + 1, x1 - 1, y1 - 1)
+
+expand :: Area -> Area
+expand (Area x0 y0 x1 y1) = Area (x0 - 1) (y0 - 1) (x1 + 1) (y1 + 1)
 
 instance Binary Area where
   put (Area x0 y0 x1 y1) = do

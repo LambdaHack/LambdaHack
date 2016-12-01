@@ -118,7 +118,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                                  ldepth totalDepth r Nothing
                     return ( EM.union tmap m
                            , place : pls
-                           , EM.insert i (shrinkPlace cops (r, place)) qls )
+                           , EM.insert i (borderPlace cops place) qls )
                 Just (p, placeGroup) -> do
                     r <- mkFixed minPlaceSize maxPlaceSize innerArea p
                     (tmap, place) <-
@@ -126,7 +126,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                                  ldepth totalDepth r (Just placeGroup)
                     return ( EM.union tmap m
                            , place : pls
-                           , EM.insert i (shrinkPlace cops (r, place)) qls )
+                           , EM.insert i (borderPlace cops place) qls )
         places <- foldlM' decidePlace (EM.empty, [], EM.empty) gs
         return (lgr, places)
   (lgrid, (lplaces, dplaces, qplaces)) <- createPlaces lgrid'
@@ -160,19 +160,15 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
   let dmap = EM.unions [doorMap, lplaces, lcorridors, fence]  -- order matters
   return $! Cave {dkind, dmap, dplaces, dnight}
 
-shrinkPlace :: Kind.COps -> (Area, Place) -> (Area, Area)
-shrinkPlace Kind.COps{coplace=Kind.Ops{okind}} (r, Place{qkind}) =
-  case shrink r of
-    Nothing -> (r, r)  -- FNone place of x and/or y size 1
-    Just sr ->
-      if pfence (okind qkind) `elem` [FFloor, FGround]
-      then
-        -- Avoid corridors touching the floor fence,
-        -- but let them merge with the fence.
-        case shrink sr of
-          Nothing -> (sr, r)
-          Just mergeArea -> (mergeArea, r)
-      else (sr, sr)
+borderPlace :: Kind.COps -> Place -> (Area, Area)
+borderPlace Kind.COps{coplace=Kind.Ops{okind}} Place{..} =
+  case pfence (okind qkind) of
+    FWall -> (qarea, qarea)
+    FFloor  -> (qarea, expand qarea)
+    FGround -> (qarea, expand qarea)
+    FNone -> case shrink qarea of
+      Nothing -> (qarea, qarea)
+      Just sr -> (sr, qarea)
 
 pickOpening :: Kind.COps -> CaveKind -> TileMapEM -> Kind.Id TileKind
             -> Point -> (Kind.Id TileKind, Kind.Id TileKind)

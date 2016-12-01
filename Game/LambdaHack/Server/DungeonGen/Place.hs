@@ -52,8 +52,8 @@ type TileMapEM = EM.EnumMap Point (Kind.Id TileKind)
 placeCheck :: Area       -- ^ the area to fill
            -> PlaceKind  -- ^ the place kind to construct
            -> Bool
-placeCheck r PlaceKind{..} =
-  case interiorArea pfence r of
+placeCheck r pk@PlaceKind{..} =
+  case interiorArea pk r of
     Nothing -> False
     Just area ->
       let (x0, y0, x1, y1) = fromArea area
@@ -69,19 +69,36 @@ placeCheck r PlaceKind{..} =
                       wholeOverlapped dy dycorner
         CStretch   -> largeEnough
         CReflect   -> largeEnough
-        CVerbatim  -> dx >= dxcorner && dy >= dycorner
+        CVerbatim  -> True
 
 -- | Calculate interior room area according to fence type, based on the
 -- total area for the room and it's fence. This is used for checking
 -- if the room fits in the area, for digging up the place and the fence
 -- and for deciding if the room is dark or lit later in the dungeon
--- generation process (e.g., for stairs).
-interiorArea :: Fence -> Area -> Maybe Area
-interiorArea fence r = case fence of
-  FWall   -> shrink r
-  FFloor  -> shrink r
-  FGround -> shrink r
-  FNone   -> Just r
+-- generation process.
+interiorArea :: PlaceKind -> Area -> Maybe Area
+interiorArea kr r =
+  let requiredForFence = case pfence kr of
+        FWall   -> 1
+        FFloor  -> 1
+        FGround -> 1
+        FNone   -> 0
+  in case pcover kr of
+    CVerbatim ->
+      let (x0, y0, x1, y1) = fromArea r
+          dx = case ptopLeft kr of
+            [] -> assert `failure` kr
+            l : _ -> T.length l
+          dy = length $ ptopLeft kr
+          mx = (x1 - x0 + 1 - dx) `div` 2
+          my = (y1 - y0 + 1 - dy) `div` 2
+      in if mx < requiredForFence || my < requiredForFence
+         then Nothing
+         else toArea (x0 + mx, y0 + my, x0 + mx + dx - 1, y0 + my + dy - 1)
+    _ -> case requiredForFence of
+           0 -> Just r
+           1 -> shrink r
+           _ -> assert `failure` kr
 
 -- | Given a few parameters, roll and construct a 'Place' datastructure
 -- and fill a cave section acccording to it.
@@ -132,7 +149,7 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
       qFGround = if dnight then darkCorTile else litCorTile
       qlegend = if dark then clegendDarkTile else clegendLitTile
       qseen = False
-      qarea = fromMaybe (assert `failure` (kr, r)) $ interiorArea (pfence kr) r
+      qarea = fromMaybe (assert `failure` (kr, r)) $ interiorArea kr r
       place = Place {..}
   override <- ooverride cops (poverride kr)
   legend <- olegend cops qlegend
