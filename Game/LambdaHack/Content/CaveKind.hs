@@ -33,6 +33,7 @@ data CaveKind = CaveKind
   , cauxConnects    :: !Rational     -- ^ a proportion of extra connections
   , cmaxVoid        :: !Rational     -- ^ at most this proportion of rooms void
   , cminStairDist   :: !Int          -- ^ minimal distance between stairs
+  , cextraStairs    :: !Dice.Dice    -- ^ extra stairs on top of the mandatory
   , cdoorChance     :: !Chance       -- ^ the chance of a door in an opening
   , copenChance     :: !Chance       -- ^ if there's a door, is it open?
   , chidden         :: !Int          -- ^ if not open, hidden one in n times
