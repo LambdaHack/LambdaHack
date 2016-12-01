@@ -241,7 +241,7 @@ treeShade3 = treeShade
 staircase = PlaceKind
   { psymbol  = '|'
   , pname    = "staircase"
-  , pfreq    = [("staircase", 10)]
+  , pfreq    = [("staircase", 1)]
   , prarity  = [(1, 1)]
   , pcover   = CVerbatim
   , pfence   = FFloor
@@ -250,7 +250,7 @@ staircase = PlaceKind
   , poverride = [('<', "staircase up Lit"), ('>', "staircase down Lit")]
   }
 staircase2 = staircase
-  { pfreq    = [("staircase", 10)]
+  { pfreq    = [("staircase", 100)]
   , pfence   = FFloor
   , ptopLeft = [ "....."
                , ".<.>."
@@ -258,7 +258,7 @@ staircase2 = staircase
                ]
   }
 staircase3 = staircase
-  { pfreq    = [("staircase", 10)]
+  { pfreq    = [("staircase", 100)]
   , pfence   = FFloor
   , ptopLeft = [ "......."
                , "O.<.>.O"
@@ -266,7 +266,7 @@ staircase3 = staircase
                ]
   }
 staircase4 = staircase
-  { pfreq    = [("staircase", 10)]
+  { pfreq    = [("staircase", 100)]
   , pfence   = FFloor
   , ptopLeft = [ "O.......O"
                , ".O.<.>.O."
@@ -274,7 +274,7 @@ staircase4 = staircase
                ]
   }
 staircase5 = staircase
-  { pfreq    = [("staircase", 10)]
+  { pfreq    = [("staircase", 100)]
   , pfence   = FFloor
   , ptopLeft = [ "..........."
                , "O.O.<.>.O.O"
@@ -282,7 +282,7 @@ staircase5 = staircase
                ]
   }
 staircase6 = staircase
-  { pfreq    = [("staircase", 10)]
+  { pfreq    = [("staircase", 100)]
   , pfence   = FFloor
   , ptopLeft = [ "O.........O"
                , "..O.<.>.O.."
@@ -290,7 +290,7 @@ staircase6 = staircase
                ]
   }
 staircase7 = staircase
-  { pfreq    = [("staircase", 10)]
+  { pfreq    = [("staircase", 100)]
   , pfence   = FFloor
   , ptopLeft = [ "O.....O"
                , "..<.>.."
@@ -298,7 +298,7 @@ staircase7 = staircase
                ]
   }
 staircase8 = staircase
-  { pfreq    = [("staircase", 10)]
+  { pfreq    = [("staircase", 100)]
   , pfence   = FFloor
   , ptopLeft = [ "O.O.O.O"
                , "......."
@@ -308,7 +308,7 @@ staircase8 = staircase
                ]
   }
 staircase9 = staircase
-  { pfreq    = [("staircase", 10)]
+  { pfreq    = [("staircase", 100)]
   , pfence   = FFloor
   , ptopLeft = [ "XXO.OXX"
                , "O.....O"
@@ -318,7 +318,7 @@ staircase9 = staircase
                ]
   }
 staircase10 = staircase
-  { pfreq    = [("staircase", 10)]
+  { pfreq    = [("staircase", 100)]
   , pfence   = FNone
   , ptopLeft = [ "-------"
                , "|.....|"
@@ -328,7 +328,7 @@ staircase10 = staircase
                ]
   }
 staircase11 = staircase
-  { pfreq    = [("staircase", 10)]
+  { pfreq    = [("staircase", 100)]
   , pfence   = FNone
   , ptopLeft = [ "-----------"
                , "|.........|"
@@ -338,7 +338,7 @@ staircase11 = staircase
                ]
   }
 staircase12 = staircase
-  { pfreq    = [("staircase", 10)]
+  { pfreq    = [("staircase", 100)]
   , pfence   = FNone
   , ptopLeft = [ "---------------"
                , "|.............|"
@@ -348,7 +348,7 @@ staircase12 = staircase
                ]
   }
 staircase13 = staircase
-  { pfreq    = [("staircase", 10)]
+  { pfreq    = [("staircase", 100)]
   , pfence   = FNone
   , ptopLeft = [ "---------"
                , "|O.....O|"
@@ -358,7 +358,7 @@ staircase13 = staircase
                ]
   }
 staircase14 = staircase
-  { pfreq    = [("staircase", 10)]
+  { pfreq    = [("staircase", 100)]
   , pfence   = FNone
   , ptopLeft = [ "---------"
                , "|O......|"
@@ -370,7 +370,7 @@ staircase14 = staircase
 staircaseUp = PlaceKind
   { psymbol  = '<'
   , pname    = "staircase up"
-  , pfreq    = [("staircase up", 10)]
+  , pfreq    = [("staircase up", 1)]
   , prarity  = [(1, 1)]
   , pcover   = CVerbatim
   , pfence   = FFloor
@@ -379,7 +379,7 @@ staircaseUp = PlaceKind
   , poverride = [('<', "staircase up Lit")]
   }
 staircaseUp2 = staircaseUp
-  { pfreq    = [("staircase up", 10)]
+  { pfreq    = [("staircase up", 100)]
   , pfence   = FFloor
   , ptopLeft = [ "..."
                , ".<."
@@ -387,7 +387,7 @@ staircaseUp2 = staircaseUp
                ]
   }
 staircaseUp3 = staircaseUp
-  { pfreq    = [("staircase up", 10)]
+  { pfreq    = [("staircase up", 100)]
   , pfence   = FFloor
   , ptopLeft = [ "....."
                , "O.<.O"
@@ -395,7 +395,7 @@ staircaseUp3 = staircaseUp
                ]
   }
 staircaseUp4 = staircaseUp
-  { pfreq    = [("staircase up", 10)]
+  { pfreq    = [("staircase up", 100)]
   , pfence   = FFloor
   , ptopLeft = [ "O.....O"
                , ".O.<.O."
@@ -403,7 +403,7 @@ staircaseUp4 = staircaseUp
                ]
   }
 staircaseUp5 = staircaseUp
-  { pfreq    = [("staircase up", 10)]
+  { pfreq    = [("staircase up", 100)]
   , pfence   = FFloor
   , ptopLeft = [ "........."
                , "O.O.<.O.O"
@@ -411,7 +411,7 @@ staircaseUp5 = staircaseUp
                ]
   }
 staircaseUp6 = staircaseUp
-  { pfreq    = [("staircase up", 10)]
+  { pfreq    = [("staircase up", 100)]
   , pfence   = FFloor
   , ptopLeft = [ "O.......O"
                , "..O.<.O.."
@@ -419,7 +419,7 @@ staircaseUp6 = staircaseUp
                ]
   }
 staircaseUp7 = staircaseUp
-  { pfreq    = [("staircase up", 10)]
+  { pfreq    = [("staircase up", 100)]
   , pfence   = FFloor
   , ptopLeft = [ "O...O"
                , "..<.."
@@ -427,7 +427,7 @@ staircaseUp7 = staircaseUp
                ]
   }
 staircaseUp8 = staircaseUp
-  { pfreq    = [("staircase up", 10)]
+  { pfreq    = [("staircase up", 100)]
   , pfence   = FFloor
   , ptopLeft = [ "O.O.O"
                , "....."
@@ -437,7 +437,7 @@ staircaseUp8 = staircaseUp
                ]
   }
 staircaseUp9 = staircaseUp
-  { pfreq    = [("staircase up", 10)]
+  { pfreq    = [("staircase up", 100)]
   , pfence   = FFloor
   , ptopLeft = [ "XXOXX"
                , "O...O"
@@ -447,7 +447,7 @@ staircaseUp9 = staircaseUp
                ]
   }
 staircaseUp10 = staircaseUp
-  { pfreq    = [("staircase up", 10)]
+  { pfreq    = [("staircase up", 100)]
   , pfence   = FNone
   , ptopLeft = [ "-----"
                , "|...|"
@@ -457,7 +457,7 @@ staircaseUp10 = staircaseUp
                ]
   }
 staircaseUp11 = staircaseUp
-  { pfreq    = [("staircase up", 10)]
+  { pfreq    = [("staircase up", 100)]
   , pfence   = FNone
   , ptopLeft = [ "---------"
                , "|.......|"
@@ -467,7 +467,7 @@ staircaseUp11 = staircaseUp
                ]
   }
 staircaseUp12 = staircaseUp
-  { pfreq    = [("staircase up", 10)]
+  { pfreq    = [("staircase up", 100)]
   , pfence   = FNone
   , ptopLeft = [ "-------------"
                , "|...........|"
@@ -477,7 +477,7 @@ staircaseUp12 = staircaseUp
                ]
   }
 staircaseUp13 = staircaseUp
-  { pfreq    = [("staircase up", 10)]
+  { pfreq    = [("staircase up", 100)]
   , pfence   = FNone
   , ptopLeft = [ "-------"
                , "|O...O|"
@@ -487,7 +487,7 @@ staircaseUp13 = staircaseUp
                ]
   }
 staircaseUp14 = staircaseUp
-  { pfreq    = [("staircase up", 10)]
+  { pfreq    = [("staircase up", 100)]
   , pfence   = FNone
   , ptopLeft = [ "-------"
                , "|O....|"
@@ -508,7 +508,7 @@ escapeUp = PlaceKind
   , poverride = []
   }
 escapeUp2 = escapeUp
-  { pfreq    = [("escape up", 100)]
+  { pfreq    = [("escape up", 1000)]
   , pfence   = FFloor
   , ptopLeft = [ "O.O"
                , ".<."
@@ -516,7 +516,7 @@ escapeUp2 = escapeUp
                ]
   }
 escapeUp3 = escapeUp
-  { pfreq    = [("escape up", 200)]
+  { pfreq    = [("escape up", 1100)]
   , pfence   = FNone
   , ptopLeft = [ "-----"
                , "|O.O|"
@@ -537,7 +537,7 @@ escapeDown = PlaceKind
   , poverride = []
   }
 escapeDown2 = escapeDown
-  { pfreq    = [("escape down", 100)]
+  { pfreq    = [("escape down", 1000)]
   , pfence   = FFloor
   , ptopLeft = [ "O.O"
                , ".>."
@@ -545,7 +545,7 @@ escapeDown2 = escapeDown
                ]
   }
 escapeDown3 = escapeDown
-  { pfreq    = [("escape down", 200)]
+  { pfreq    = [("escape down", 1100)]
   , pfence   = FNone
   , ptopLeft = [ "-----"
                , "|O.O|"
