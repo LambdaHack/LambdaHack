@@ -148,14 +148,15 @@ type Staircase = (Point, ( Maybe (Kind.Id TileKind)
                          , Maybe (Kind.Id TileKind) ))
 
 -- | Create a level from a cave.
-buildLevel :: Kind.COps -> Cave -> Int -> Int -> Int -> AbsDepth
-           -> [Point] -> [Point] -> TileMap
+buildLevel :: Kind.COps -> Int -> (GroupName CaveKind, Maybe Bool)
+           -> Int -> Int -> AbsDepth -> [Point]
            -> Rnd Level
 buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick}
                          , cocave=Kind.Ops{okind=cokind}
-                         , coTileSpeedup}
-           Cave{dkind, dplaces}
-           ln minD maxD totalDepth lstairUpRaw lescape cmap = do
+                         , coTileSpeedup }
+           ln genEscape minD maxD totalDepth lstairUpRaw = do
+  (cmap, Cave{dkind, dplaces}, lescape)
+    <- findGenerator cops totalDepth ln genEscape
   let kc@CaveKind{citemNum, clegendLitTile} = cokind dkind
       fitArea pos = inside pos . fromArea . qarea
       findLegend pos = maybe clegendLitTile qlegend
@@ -297,7 +298,7 @@ placeStairs CaveKind{..} ps = do
 
 findGenerator :: Kind.COps -> AbsDepth
               -> Int -> (GroupName CaveKind, Maybe Bool)
-              -> Rnd (Int, TileMap, Cave, [Point])
+              -> Rnd (TileMap, Cave, [Point])
 findGenerator cops totalDepth n (genName, escapeFeature) = do
   let Kind.COps{cocave=Kind.Ops{okind, opick}} = cops
   dkind <- fromMaybe (assert `failure` genName) <$> opick genName (const True)
@@ -314,7 +315,7 @@ findGenerator cops totalDepth n (genName, escapeFeature) = do
   cave <- buildCave cops ldepth totalDepth dkind fixedCenters
   cmap <- buildTileMap cops cave
   let lescape = map fst fixedCenters
-  return (n, cmap, cave, lescape)
+  return (cmap, cave, lescape)
 
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
@@ -332,18 +333,16 @@ dungeonGen cops caves = do
       freshTotalDepth = assert (signum minD == signum maxD)
                         $ AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)
-  tileMaps <- mapM (uncurry $ findGenerator cops freshTotalDepth)
-                   (IM.assocs caves)
-  let buildLvl :: ([Point], [(LevelId, Level)])
-               -> (Int, TileMap, Cave, [Point])
-               -> Rnd ([Point], [(LevelId, Level)])
-      buildLvl (lstairUp, l) (n, cmap, cave, lescape) = do
-        lvl <- buildLevel cops cave n minD maxD freshTotalDepth
-               lstairUp lescape cmap
+      buildLvl :: [(LevelId, Level)]
+               -> (Int, (GroupName CaveKind, Maybe Bool))
+               -> Rnd [(LevelId, Level)]
+      buildLvl l (n, genEscape) = do
+        let lstairDown = case l of
+              [] -> []
+              (_, lvl) : _ -> snd $ lstair lvl
+        lvl <- buildLevel cops n genEscape minD maxD freshTotalDepth lstairDown
         -- lstairUp for the next level is lstairDown for the current level
-        let lstairDown = snd $ lstair lvl
-        return (lstairDown, (toEnum n, lvl) : l)
-  (lstairUpLast, levels) <- foldlM' buildLvl ([], []) $ reverse tileMaps
-  let !_A = assert (null lstairUpLast) ()
+        return $! (toEnum n, lvl) : l
+  levels <- foldlM' buildLvl [] $ reverse $ IM.assocs caves
   let freshDungeon = EM.fromList levels
   return $! FreshDungeon{..}
