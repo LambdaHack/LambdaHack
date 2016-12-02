@@ -126,15 +126,15 @@ buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
       posUp Point{..} = Point (px - 1) py
       posDn Point{..} = Point (px + 1) py
       lstairPrev = map posUp lstairPrevRaw
-  -- One stair going down is mandatory. Any stairs coming from above
-  -- are considered extra stairs and if they don't exceed @extraStairs@
-  -- the amount is filled up with downstairs.
+  -- Any stairs coming from above are considered extra stairs
+  -- and if they don't exceed @extraStairs@,
+  -- the amount is filled up with single downstairs.
+  -- If they do exceed @extraStairs@, some of them end here.
   extraStairs <- castDice ldepth totalDepth $ cextraStairs kc
   let (doubleStairs, singleStairsDown) =
         if ln == minD then (0, 0)
-        else let mandatoryDown = 1
-                 double = min (length lstairPrev) $ extraStairs + mandatoryDown
-                 single = max 0 $ extraStairs - 2 * double + mandatoryDown
+        else let double = min (length lstairPrev) $ extraStairs
+                 single = max 0 $ extraStairs - double
              in (double, single)
       (lstairsDouble, lstairsSingleUp) = splitAt doubleStairs lstairPrev
       allUpStairs = lstairsDouble ++ lstairsSingleUp
