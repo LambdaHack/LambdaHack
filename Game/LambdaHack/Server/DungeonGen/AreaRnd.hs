@@ -65,8 +65,8 @@ mkFixed (xm, ym) (xM, yM) area p@Point{..} = do
   let (x0, y0, x1, y1) = fromArea area
       xspan = min (x1 - x0 + 1) $ 1 + 2 * min (px - x0) (x1 - px)
       yspan = min (y1 - y0 + 1) $ 1 + 2 * min (py - y0) (y1 - py)
-  let aW = ( min xm xspan `div` 2, min ym yspan `div` 2
-           , min xM xspan `div` 2, min yM yspan `div` 2 )
+  let aW = ( min (xm + 1) xspan `div` 2, min (ym + 1) yspan `div` 2
+           , min (xM + 1) xspan `div` 2, min (yM + 1) yspan `div` 2 )
       areaW = fromMaybe (assert `failure` aW) $ toArea aW
   Point xW yW <- xyInArea areaW  -- roll (around half) size
   -- The size may be one more than what minimal and maximal size hints request,
