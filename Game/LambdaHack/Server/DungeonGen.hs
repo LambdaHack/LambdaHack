@@ -3,7 +3,7 @@ module Game.LambdaHack.Server.DungeonGen
   ( FreshDungeon(..), dungeonGen
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , convertTileMaps, placeDownStairs, buildLevel, levelFromCaveKind, findGenerator
+  , convertTileMaps, placeDownStairs, buildLevel, levelFromCaveKind
 #endif
   ) where
 
