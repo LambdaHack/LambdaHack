@@ -30,7 +30,7 @@ lstaircase = [staircase, staircase2, staircase3, staircase4, staircase5, stairca
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
   , pname    = "room"
-  , pfreq    = [("rogue", 100)]
+  , pfreq    = [("rogue", 100), ("arena", 100), ("empty", 100)]
   , prarity  = [(1, 10), (10, 8)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -97,7 +97,8 @@ collapsed4 = collapsed
 pillar = PlaceKind
   { psymbol  = 'p'
   , pname    = "pillar room"
-  , pfreq    = [("rogue", 1000), ("noise", 50)]
+  , pfreq    = [ ("rogue", 1000), ("arena", 1000), ("empty", 1000)
+               , ("noise", 50) ]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -139,7 +140,7 @@ pillar4 = pillar
 colonnade = PlaceKind
   { psymbol  = 'c'
   , pname    = "colonnade"
-  , pfreq    = [("rogue", 70), ("noise", 2000)]
+  , pfreq    = [("rogue", 70), ("arena", 70), ("noise", 2000)]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CAlternate
   , pfence   = FFloor
@@ -157,6 +158,7 @@ colonnade2 = colonnade
 colonnade3 = colonnade
   { prarity  = [(1, 2), (10, 2)]
   , pfence   = FGround
+  , pfreq    = [("rogue", 100)]
   , ptopLeft = [ ".."
                , ".O"
                ]

@@ -75,6 +75,7 @@ arena = rogue
   , cactorFreq    = [("monster", 30), ("animal", 70)]
   , citemNum      = 9 * d 2  -- few rooms
   , citemFreq     = [("useful", 20), ("treasure", 30), ("any scroll", 50)]
+  , cplaceFreq    = [("arena", 100)]
   , cpassable     = True
   , cdefTile      = "arenaSet"
   , cdarkCorTile  = "trailLit"  -- let trails give off light
@@ -103,6 +104,7 @@ empty = rogue
       -- abused, because they spawn less and less often and they don't heal over
       -- max HP.
   , citemNum      = 7 * d 2  -- few rooms
+  , cplaceFreq    = [("empty", 100)]
   , cpassable     = True
   , cdefTile      = "emptySet"
   , cdarkCorTile  = "floorArenaDark"
