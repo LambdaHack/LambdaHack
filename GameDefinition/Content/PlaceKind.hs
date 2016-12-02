@@ -248,7 +248,7 @@ staircase = PlaceKind
   , pfence   = FFloor
   , ptopLeft = [ "<.>"
                ]
-  , poverride = [('<', "staircase up Lit"), ('>', "staircase down Lit")]
+  , poverride = [('<', "staircase up"), ('>', "staircase down")]
   }
 staircase2 = staircase
   { pfreq    = [("staircase", 100)]
@@ -492,7 +492,7 @@ makeStaircaseUp s = s
  { psymbol   = '<'
  , pname     = "staircase up"
  , pfreq     = map (\(_, k) -> ("staircase up", k)) $ pfreq s
- , poverride = [('>', "stair terminal"), ('<', "staircase up Lit")]
+ , poverride = [('>', "stair terminal"), ('<', "staircase up")]
  }
 
 makeStaircaseDown :: PlaceKind -> PlaceKind
@@ -500,5 +500,5 @@ makeStaircaseDown s = s
  { psymbol   = '>'
  , pname     = "staircase down"
  , pfreq     = map (\(_, k) -> ("staircase down", k)) $ pfreq s
- , poverride = [('<', "stair terminal"), ('>', "staircase down Lit")]
+ , poverride = [('<', "stair terminal"), ('>', "staircase down")]
  }
