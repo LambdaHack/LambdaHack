@@ -132,7 +132,7 @@ buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
   -- If they do exceed @extraStairs@, some of them end here.
   extraStairs <- castDice ldepth totalDepth $ cextraStairs kc
   let (abandonedStairs, singleStairsDown) =
-        if ln == minD then (0, 0)
+        if ln == minD then (length lstairPrev, 0)
         else let double = min (length lstairPrev) $ extraStairs
                  single = max 0 $ extraStairs - double
              in (length lstairPrev - double, single)
