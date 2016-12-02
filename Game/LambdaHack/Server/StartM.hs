@@ -326,7 +326,7 @@ addHero bfid ppos lid heroNames mNumber time = do
 
 -- | Find starting postions for all factions. Try to make them distant
 -- from each other. Place as many of the initial factions, as possible,
--- over stairs and escapes.
+-- over stairs, but far from escapes (in case the goal is to excape ASAP).
 findEntryPoss :: Kind.COps -> LevelId -> Level -> Int -> Rnd [Point]
 {-# INLINABLE findEntryPoss #-}
 findEntryPoss Kind.COps{coTileSpeedup}
@@ -352,18 +352,13 @@ findEntryPoss Kind.COps{coTileSpeedup}
       (deeperStairs, shallowerStairs) =
         (if fromEnum lid > 0 then id else swap) lstair
       stairPoss = (deeperStairs \\ shallowerStairs)
-                  ++ lescape
                   ++ shallowerStairs
       middlePos = Point (lxsize `div` 2) (lysize `div` 2)
   let !_A = assert (k > 0 && factionDist > 0) ()
       onStairs = take k stairPoss
       nk = k - length onStairs
-  found <- case nk of
-    0 -> return []
-    1 -> tryFind onStairs nk
-    2 -> -- Make sure the first faction's pos is not chosen in the middle.
-         tryFind (if null onStairs then [middlePos] else onStairs) nk
-    _ -> tryFind onStairs nk
+  -- Starting in the middle is too easy.
+  found <- tryFind ([middlePos] ++ lescape ++ onStairs) nk
   return $! onStairs ++ found
 
 -- | Apply debug options that don't need a new game.
