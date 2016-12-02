@@ -40,8 +40,10 @@ grid fixedCenters (nx, ny) (Area x0 y0 x1 y1) =
         let len = c2 - c1 + 1
             cn = len * n `div` (z1 - z0 - 1)
         in if cn < 2
-           then let middle = (c1 + c2) `div` 2
-                in (prev, middle) : f z0 z1 n middle (c2 : rest)
+           then let mid1 = (c1 + c2) `div` 2
+                    mid2 = (c1 + c2) `divUp` 2
+                    mid = if mid1 - prev > 4 then mid1 else mid2
+                in (prev, mid) : f z0 z1 n mid (c2 : rest)
            else (prev, c1 + len `div` (2 * cn))
                 : [ ( c1 + len * (2 * z - 1) `div` (2 * cn)
                     , c1 + len * (2 * z + 1) `div` (2 * cn) )

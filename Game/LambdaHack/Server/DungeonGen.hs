@@ -178,13 +178,13 @@ placeDownStairs kc@CaveKind{..} ps = do
                    $ ps ++ bootFixedCenters kc
       minDist = if length ps >= 3 then 0 else cminStairDist
       f p@Point{..} =
-        if p `inside` (9, 6, cxsize - 10, cysize - 7)
+        if p `inside` (9, 8, cxsize - 10, cysize - 9)
         then if dist minDist p && distProj p then Just p else Nothing
         else let nx = if | px < 9 -> 4
                          | px > cxsize - 10 -> cxsize - 5
                          | otherwise -> px
-                 ny = if | py < 6 -> 3
-                         | py > cysize - 7 -> cysize - 4
+                 ny = if | py < 8 -> 3
+                         | py > cysize - 9 -> cysize - 4
                          | otherwise -> py
                  np = Point nx ny
              in if dist 0 np && distProj np then Just np else Nothing
