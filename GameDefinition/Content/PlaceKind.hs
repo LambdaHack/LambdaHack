@@ -245,14 +245,14 @@ staircase = PlaceKind
   , pfreq    = [("staircase", 1)]
   , prarity  = [(1, 1)]
   , pcover   = CVerbatim
-  , pfence   = FFloor
+  , pfence   = FGround
   , ptopLeft = [ "<.>"
                ]
   , poverride = [('<', "staircase up"), ('>', "staircase down")]
   }
 staircase2 = staircase
   { pfreq    = [("staircase", 100)]
-  , pfence   = FFloor
+  , pfence   = FGround
   , ptopLeft = [ "....."
                , ".<.>."
                , "....."
@@ -374,7 +374,7 @@ escapeUp = PlaceKind
   , pfreq    = [("escape up", 1)]
   , prarity  = [(1, 1)]
   , pcover   = CVerbatim
-  , pfence   = FFloor
+  , pfence   = FGround
   , ptopLeft = [ "<"
                ]
   , poverride = []
@@ -423,7 +423,7 @@ escapeDown = PlaceKind
   , pfreq    = [("escape down", 1)]
   , prarity  = [(1, 1)]
   , pcover   = CVerbatim
-  , pfence   = FFloor
+  , pfence   = FGround
   , ptopLeft = [ ">"
                ]
   , poverride = []
