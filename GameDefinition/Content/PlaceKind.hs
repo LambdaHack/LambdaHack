@@ -18,13 +18,14 @@ cdefs = ContentDef
   , validateSingle = validateSinglePlaceKind
   , validateAll = validateAllPlaceKind
   , content = contentFromList $
-      [rect, rectWindows, ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircaseUp, staircaseUp2, staircaseUp3, staircaseUp4, staircaseUp5, staircaseUp6, staircaseUp7, staircaseUp8, staircaseUp9, staircaseUp10, staircaseUp11, staircaseUp12, staircaseUp13, staircaseUp14, escapeUp, escapeUp2, escapeUp3, escapeDown, escapeDown2, escapeDown3, boardgame]
-      ++ map makeStaircaseDown lstaircaseUp
+      [rect, rectWindows, ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, boardgame]
+      ++ map makeStaircaseUp lstaircase
+      ++ map makeStaircaseDown lstaircase
   }
-rect,        rectWindows, ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircaseUp, staircaseUp2, staircaseUp3, staircaseUp4, staircaseUp5, staircaseUp6, staircaseUp7, staircaseUp8, staircaseUp9, staircaseUp10, staircaseUp11, staircaseUp12, staircaseUp13, staircaseUp14, escapeUp, escapeUp2, escapeUp3, escapeDown, escapeDown2, escapeDown3, boardgame :: PlaceKind
+rect,        rectWindows, ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, boardgame :: PlaceKind
 
-lstaircaseUp :: [PlaceKind]
-lstaircaseUp = [staircaseUp, staircaseUp2, staircaseUp3, staircaseUp4, staircaseUp5, staircaseUp6, staircaseUp7, staircaseUp8, staircaseUp9, staircaseUp10, staircaseUp11, staircaseUp12, staircaseUp13, staircaseUp14]
+lstaircase :: [PlaceKind]
+lstaircase = [staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14]
 
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
@@ -367,135 +368,6 @@ staircase14 = staircase
                , "---------"
                ]
   }
-staircaseUp = PlaceKind
-  { psymbol  = '<'
-  , pname    = "staircase up"
-  , pfreq    = [("staircase up", 1)]
-  , prarity  = [(1, 1)]
-  , pcover   = CVerbatim
-  , pfence   = FFloor
-  , ptopLeft = [ "<"
-               ]
-  , poverride = [('<', "staircase up Lit")]
-  }
-staircaseUp2 = staircaseUp
-  { pfreq    = [("staircase up", 100)]
-  , pfence   = FFloor
-  , ptopLeft = [ "..."
-               , ".<."
-               , "..."
-               ]
-  }
-staircaseUp3 = staircaseUp
-  { pfreq    = [("staircase up", 100)]
-  , pfence   = FFloor
-  , ptopLeft = [ "....."
-               , "O.<.O"
-               , "....."
-               ]
-  }
-staircaseUp4 = staircaseUp
-  { pfreq    = [("staircase up", 100)]
-  , pfence   = FFloor
-  , ptopLeft = [ "O.....O"
-               , ".O.<.O."
-               , "O.....O"
-               ]
-  }
-staircaseUp5 = staircaseUp
-  { pfreq    = [("staircase up", 100)]
-  , pfence   = FFloor
-  , ptopLeft = [ "........."
-               , "O.O.<.O.O"
-               , "........."
-               ]
-  }
-staircaseUp6 = staircaseUp
-  { pfreq    = [("staircase up", 100)]
-  , pfence   = FFloor
-  , ptopLeft = [ "O.......O"
-               , "..O.<.O.."
-               , "O.......O"
-               ]
-  }
-staircaseUp7 = staircaseUp
-  { pfreq    = [("staircase up", 100)]
-  , pfence   = FFloor
-  , ptopLeft = [ "O...O"
-               , "..<.."
-               , "O...O"
-               ]
-  }
-staircaseUp8 = staircaseUp
-  { pfreq    = [("staircase up", 100)]
-  , pfence   = FFloor
-  , ptopLeft = [ "O.O.O"
-               , "....."
-               , "O.<.O"
-               , "....."
-               , "O.O.O"
-               ]
-  }
-staircaseUp9 = staircaseUp
-  { pfreq    = [("staircase up", 100)]
-  , pfence   = FFloor
-  , ptopLeft = [ "XXOXX"
-               , "O...O"
-               , "..<.."
-               , "O...O"
-               , "XXOXX"
-               ]
-  }
-staircaseUp10 = staircaseUp
-  { pfreq    = [("staircase up", 100)]
-  , pfence   = FNone
-  , ptopLeft = [ "-----"
-               , "|...|"
-               , "|.<.|"
-               , "|...|"
-               , "-----"
-               ]
-  }
-staircaseUp11 = staircaseUp
-  { pfreq    = [("staircase up", 100)]
-  , pfence   = FNone
-  , ptopLeft = [ "---------"
-               , "|.......|"
-               , "|.O.<.O.|"
-               , "|.......|"
-               , "---------"
-               ]
-  }
-staircaseUp12 = staircaseUp
-  { pfreq    = [("staircase up", 100)]
-  , pfence   = FNone
-  , ptopLeft = [ "-------------"
-               , "|...........|"
-               , "|.O.O.<.O.O.|"
-               , "|...........|"
-               , "-------------"
-               ]
-  }
-staircaseUp13 = staircaseUp
-  { pfreq    = [("staircase up", 100)]
-  , pfence   = FNone
-  , ptopLeft = [ "-------"
-               , "|O...O|"
-               , "|..<..|"
-               , "|O...O|"
-               , "-------"
-               ]
-  }
-staircaseUp14 = staircaseUp
-  { pfreq    = [("staircase up", 100)]
-  , pfence   = FNone
-  , ptopLeft = [ "-------"
-               , "|O....|"
-               , "|..<..|"
-               , "|O...O|"
-               , "-------"
-               ]
-  }
 escapeUp = PlaceKind
   { psymbol  = '<'
   , pname    = "escape up"
@@ -523,6 +395,26 @@ escapeUp3 = escapeUp
                , "|.<.|"
                , "|O.O|"
                , "-----"
+               ]
+  }
+escapeUp4 = escapeUp
+  { pfreq    = [("escape up", 1100)]
+  , pfence   = FNone
+  , ptopLeft = [ "-----"
+               , "|O..|"
+               , "|.<.|"
+               , "|O.O|"
+               , "-----"
+               ]
+  }
+escapeUp5 = escapeUp
+  { pfreq    = [("escape up", 1100)]
+  , pfence   = FFloor
+  , ptopLeft = [ "XXOXX"
+               , "O...O"
+               , "..<.."
+               , "O...O"
+               , "XXOXX"
                ]
   }
 escapeDown = PlaceKind
@@ -554,6 +446,26 @@ escapeDown3 = escapeDown
                , "-----"
                ]
   }
+escapeDown4 = escapeDown
+  { pfreq    = [("escape down", 1100)]
+  , pfence   = FNone
+  , ptopLeft = [ "-----"
+               , "|O..|"
+               , "|.>.|"
+               , "|O.O|"
+               , "-----"
+               ]
+  }
+escapeDown5 = escapeDown
+  { pfreq    = [("escape down", 1100)]
+  , pfence   = FFloor
+  , ptopLeft = [ "XXOXX"
+               , "O...O"
+               , "..>.."
+               , "O...O"
+               , "XXOXX"
+               ]
+  }
 boardgame = PlaceKind
   { psymbol  = 'b'
   , pname    = "boardgame"
@@ -575,10 +487,18 @@ boardgame = PlaceKind
   , poverride = [('b', "trailChessLit")]
   }
 
+makeStaircaseUp :: PlaceKind -> PlaceKind
+makeStaircaseUp s = s
+ { psymbol   = '<'
+ , pname     = "staircase up"
+ , pfreq     = map (\(_, k) -> ("staircase up", k)) $ pfreq s
+ , poverride = [('>', "stair terminal"), ('<', "staircase up Lit")]
+ }
+
 makeStaircaseDown :: PlaceKind -> PlaceKind
 makeStaircaseDown s = s
  { psymbol   = '>'
  , pname     = "staircase down"
- , pfreq     = [("staircase down", 10)]
- , poverride = [('<', "staircase down Lit")]
+ , pfreq     = map (\(_, k) -> ("staircase down", k)) $ pfreq s
+ , poverride = [('<', "stair terminal"), ('>', "staircase down Lit")]
  }
