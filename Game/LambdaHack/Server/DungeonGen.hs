@@ -131,12 +131,12 @@ buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
   -- the amount is filled up with single downstairs.
   -- If they do exceed @extraStairs@, some of them end here.
   extraStairs <- castDice ldepth totalDepth $ cextraStairs kc
-  let (doubleStairs, singleStairsDown) =
+  let (abandonedStairs, singleStairsDown) =
         if ln == minD then (0, 0)
         else let double = min (length lstairPrev) $ extraStairs
                  single = max 0 $ extraStairs - double
-             in (double, single)
-      (lstairsDouble, lstairsSingleUp) = splitAt doubleStairs lstairPrev
+             in (length lstairPrev - double, single)
+      (lstairsSingleUp, lstairsDouble) = splitAt abandonedStairs lstairPrev
       allUpStairs = lstairsDouble ++ lstairsSingleUp
       addSingleDown acc 0 = return acc
       addSingleDown acc k = do
@@ -157,7 +157,7 @@ buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
   let lescape = map fst fixedEscape
       fixedCenters =
         fixedEscape ++ fixedStairsDouble ++ fixedStairsUp ++ fixedStairsDown
-      lstair = ( map posUp $ lstairsDouble ++ lstairsSingleUp
+      lstair = ( map posUp $ lstairsSingleUp ++ lstairsDouble
                , map posDn $ lstairsDouble ++ lstairsSingleDown )
   cave <- buildCave cops ldepth totalDepth dkind fixedCenters
   cmap <- buildTileMap cops cave
