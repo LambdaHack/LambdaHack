@@ -3,7 +3,7 @@ module Game.LambdaHack.Server.DungeonGen
   ( FreshDungeon(..), dungeonGen
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , convertTileMaps, placeStairs, buildLevel, levelFromCaveKind, findGenerator
+  , convertTileMaps, placeDownStairs, buildLevel, levelFromCaveKind, findGenerator
 #endif
   ) where
 
@@ -24,13 +24,10 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.CaveKind
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
-import Game.LambdaHack.Server.DungeonGen.Area
 import Game.LambdaHack.Server.DungeonGen.Cave
 import Game.LambdaHack.Server.DungeonGen.Place
 
@@ -116,127 +113,82 @@ buildTileMap cops@Kind.COps{ cotile=Kind.Ops{opick}
   convertTileMaps cops areAllWalkable
                   pickDefTile mpickWalkable cxsize cysize dmap
 
--- @ps@ and the result are the points in the middle of starcase
-condStairs :: Kind.COps -> TileMap -> [Point] -> Point -> Kind.Id TileKind
-           -> Bool
-condStairs Kind.COps{coTileSpeedup} cmap ps p !t =
-  let (xsize, ysize) = PointArray.sizeA cmap
-      -- The border of the dungeon should not be excavated around staircase.
-      area = (3, 2, xsize - 4, ysize - 3)
-      dist !cmin !p0 _ = all (\ !pos -> chessDist p0 pos > cmin) ps
-  in p `inside` area
-     && Tile.isWalkable coTileSpeedup t
-     && not (Tile.isNoActor coTileSpeedup t)
-     && dist 3 p t
-
-placeStairs2 :: Kind.COps -> TileMap -> CaveKind -> [Point] -> Rnd Point
-placeStairs2 cops@Kind.COps{coTileSpeedup}
-            cmap CaveKind{cminStairDist} ps = do
-  let dist !cmin !p _ = all (\ !pos -> chessDist p pos > cmin) ps
-      ds = [ dist cminStairDist
-           , dist (2 * (cminStairDist `div` 3))
-           , dist (cminStairDist `div` 2)
-           , dist (cminStairDist `div` 3)
-           , dist (cminStairDist `div` 5) ]
-  findPosTry2 200 cmap
-    (condStairs cops cmap ps)
-    ds
-    (\_ !t -> Tile.isOftenActor coTileSpeedup t)
-    ds
-
-type Staircase = (Point, ( Maybe (Kind.Id TileKind)
-                         , Maybe (Kind.Id TileKind) ))
-
 -- | Create a level from a cave.
 buildLevel :: Kind.COps -> Int -> (GroupName CaveKind, Maybe Bool)
-           -> Int -> Int -> AbsDepth -> [Point]
+           -> Int -> AbsDepth -> [Point]
            -> Rnd Level
-buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick}
-                         , cocave=Kind.Ops{okind=cokind}
-                         , coTileSpeedup }
-           ln genEscape minD maxD totalDepth lstairUpRaw = do
-  (cmap, Cave{dkind, dplaces}, lescape)
-    <- findGenerator cops totalDepth ln genEscape
-  let kc@CaveKind{citemNum, clegendLitTile} = cokind dkind
-      fitArea pos = inside pos . fromArea . qarea
-      findLegend pos = maybe clegendLitTile qlegend
-                       $ find (fitArea pos) dplaces
-      ascendable  = Tile.kindHasFeature (TK.Cause $ IK.Ascend 1)
-      descendable = Tile.kindHasFeature (TK.Cause $ IK.Ascend (-1))
-      noAsc = ln == maxD
-      noDesc = ln == minD
-      makeStairs :: Bool -> [Staircase] -> Rnd [Staircase]
-      makeStairs moveUp stairs =
-        if (if moveUp then noAsc else noDesc) then
-          return stairs
-        else do
-          let cond tk = if moveUp then ascendable tk else descendable tk
-              posCur = map fst stairs
-          spos <- placeStairs2 cops cmap kc posCur
-          let legend = findLegend spos
-          stairId <- fromMaybe (assert `failure` legend) <$> opick legend cond
-          return $! stairs ++ [(spos, if moveUp
-                                      then (Just stairId, Nothing)
-                                      else (Nothing, Just stairId))]
-      condS p = Tile.isWalkable coTileSpeedup (cmap PointArray.! p)
-                && not (Tile.isNoActor coTileSpeedup (cmap PointArray.! p))
+buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
+           ln (genName, escapeFeature) minD totalDepth lstairPrevRaw = do
+  dkind <- fromMaybe (assert `failure` genName) <$> opick genName (const True)
+  let kc = okind dkind
+      -- Simple rule for now: level @ln@ has depth (difficulty) @abs ln@.
+      ldepth = AbsDepth $ abs ln
       posUp Point{..} = Point (px - 1) py
       posDn Point{..} = Point (px + 1) py
-      lstairUp = map posUp lstairUpRaw  -- prevent drift to the right
-      condPair p = condS p || condS (posUp p) || condS (posDn p)
-  stairs1 <-
-    -- If all stairs can be continued, do that, otherwise shuffle all starcases
-    -- (then the levels are separated by a thick layer that mixes up exits).
-    -- These are kept first on the lstair, so they match up between levels.
-    if all condPair lstairUp
-    then do
-      let f :: Point -> Rnd Staircase
-          f p = do
-            let legend = findLegend p
-            stairUpId <- fromMaybe (assert `failure` legend)
-                         <$> opick legend ascendable
-            if noDesc then return (p, (Just stairUpId, Nothing))
-            else do
-              stairDownId <- fromMaybe (assert `failure` legend)
-                             <$> opick legend descendable
-              return (p, (Just stairUpId, Just stairDownId))
-      mapM f lstairUp
-    else return []
-  -- If not too many, add extra stairs down.
-  let lenStairsDown1 = length $ catMaybes $ map (snd . snd) stairs1
-  stairs2 <- if lenStairsDown1 < 3
-             then makeStairs False stairs1
-             else return stairs1
-  -- Fill up stairs up.
-  let lenStairsUp2 = length $ catMaybes $ map (fst . snd) stairs2
-      nstairUpLeft = length lstairUp - lenStairsUp2
-  stairs3 <- foldlM' (\sts _ -> makeStairs True sts) stairs2 [1 .. nstairUpLeft]
-  let vicMoves = map (uncurry Vector)
-        [ (-2, -1), (-1, -1), (0, -1), (1, -1), (2, -1), (2, 0)
-        , (2, 1), (1, 1), (0, 1), (-1, 1), (-2, 1), (-2, 0) ]
-      vicUnsafe :: Point -> [Point]
-      vicUnsafe p = [ shift p dxy | dxy <- vicMoves ]
-      addVicinity (p, (mUp, mDn)) =
-        let pt = if | condS p -> p
-                    | condS (posUp p) -> posUp p
-                    | otherwise -> assert (condS (posDn p)) $ posDn p
-            old = cmap PointArray.! pt
-            vic = p : vicUnsafe p
-                  ++ if isNothing mUp then [posUp p] else []
-                  ++ if isNothing mDn then [posDn p] else []
-        in [(posUp p, idUp) | idUp <- maybeToList mUp]
-           ++ [(posDn p, idDn) | idDn <- maybeToList mDn]
-           ++ map (\p0 -> (p0, old)) vic
-      exitTiles = concatMap addVicinity $ stairs3
-      ltile = cmap PointArray.// exitTiles
-      lstair = ( map (posUp . fst) $ filter (isJust . fst . snd) stairs3
-               , map (posDn . fst) $ filter (isJust . snd . snd) stairs3 )
-  -- A simple rule for now: level at level @ln@ has depth (difficulty) @abs ln@.
-      ldepth = AbsDepth $ abs ln
-  litemNum <- castDice ldepth totalDepth citemNum
+      lstairPrev = map posUp lstairPrevRaw
+  -- One stair going down is mandatory. Any stairs coming from above
+  -- are considered extra stairs and if they don't exceed @extraStairs@
+  -- the amount is filled up with downstairs.
+  extraStairs <- castDice ldepth totalDepth $ cextraStairs kc
+  let (doubleStairs, singleStairsDown) =
+        if ln == minD then (0, 0)
+        else let mandatoryDown = 1
+                 double = min (length lstairPrev) $ extraStairs + mandatoryDown
+                 single = max 0 $ extraStairs - 2 * double + mandatoryDown
+             in (double, single)
+      (lstairsDouble, lstairsSingleUp) = splitAt doubleStairs lstairPrev
+      allUpStairs = lstairsDouble ++ lstairsSingleUp
+      addSingleDown acc 0 = return acc
+      addSingleDown acc k = do
+        pos <- placeDownStairs kc $ acc ++ allUpStairs
+        addSingleDown (pos : acc) (k - 1)
+  lstairsSingleDown <- addSingleDown [] singleStairsDown
+  let fixedStairsDouble = map (\p -> (p, "staircase")) lstairsDouble
+      fixedStairsUp = map (\p -> (p, "staircase up")) lstairsSingleUp
+      fixedStairsDown = map (\p -> (p, "staircase down")) lstairsSingleDown
+      allStairs = allUpStairs ++ lstairsSingleDown
+  fixedEscape <- case escapeFeature of
+                   Nothing -> return []
+                   Just b -> do
+                     epos <- placeDownStairs kc allStairs
+                     let placeGroup = toGroupName $
+                           if b then "escape up" else "escape down"
+                     return [(epos, placeGroup)]
+  let lescape = map fst fixedEscape
+      fixedCenters =
+        fixedEscape ++ fixedStairsDouble ++ fixedStairsUp ++ fixedStairsDown
+      lstair = ( map posUp $ lstairsDouble ++ lstairsSingleUp
+               , map posDn $ lstairsDouble ++ lstairsSingleDown )
+  cave <- buildCave cops ldepth totalDepth dkind fixedCenters
+  cmap <- buildTileMap cops cave
+  litemNum <- castDice ldepth totalDepth $ citemNum kc
   lsecret <- randomR (1, maxBound)  -- 0 means unknown
-  return $! levelFromCaveKind cops kc ldepth ltile lstair
+  return $! levelFromCaveKind cops kc ldepth cmap lstair
                               litemNum lsecret lescape
+
+placeDownStairs :: CaveKind -> [Point] -> Rnd Point
+placeDownStairs kc@CaveKind{..} ps = do
+  let dist cmin p = all (\pos -> chessDist p pos > cmin) ps
+      distProj p = all (\pos -> (px pos == px p
+                                 || px pos > px p + 5
+                                 || px pos < px p - 5)
+                                && (py pos == py p
+                                    || py pos > py p + 3
+                                    || py pos < py p - 3))
+                   $ ps ++ bootFixedCenters kc
+      minDist = if length ps >= 3 then 0 else cminStairDist
+      f p@Point{..} =
+        if p `inside` (9, 6, cxsize - 10, cysize - 7)
+        then if dist minDist p && distProj p then Just p else Nothing
+        else let nx = if | px < 9 -> 4
+                         | px > cxsize - 10 -> cxsize - 5
+                         | otherwise -> px
+                 ny = if | py < 6 -> 3
+                         | py > cysize - 7 -> cysize - 4
+                         | otherwise -> py
+                 np = Point nx ny
+             in if dist 0 np && distProj np then Just np else Nothing
+  findPoint cxsize cysize f
 
 -- | Build rudimentary level from a cave kind.
 levelFromCaveKind :: Kind.COps
@@ -276,47 +228,6 @@ levelFromCaveKind Kind.COps{coTileSpeedup}
        , lescape
        }
 
-placeStairs :: CaveKind -> [Point] -> Rnd Point
-placeStairs CaveKind{..} ps = do
-  let dist cmin p = all (\pos -> chessDist p pos > cmin) ps
-      distProj p = all (\pos -> px pos > px p + 4
-                                && px pos < px p - 4
-                                && py pos > py p + 4
-                                && py pos < py p - 4) ps
-      f p@Point{..} =
-        if p `inside` (8, 8, cxsize - 9, cysize - 9)
-        then if dist cminStairDist p && distProj p then Just p else Nothing
-        else let nx = if | px < 8 -> 3
-                         | px > cxsize - 9 -> cxsize - 4
-                         | otherwise -> px
-                 ny = if | py < 8 -> 3
-                         | py > cysize - 9 -> cysize - 4
-                         | otherwise -> py
-                 np = Point nx ny
-             in if dist 4 np then Just np else Nothing
-  findPoint (cxsize - 1) (cysize - 1) f
-
-findGenerator :: Kind.COps -> AbsDepth
-              -> Int -> (GroupName CaveKind, Maybe Bool)
-              -> Rnd (TileMap, Cave, [Point])
-findGenerator cops totalDepth n (genName, escapeFeature) = do
-  let Kind.COps{cocave=Kind.Ops{okind, opick}} = cops
-  dkind <- fromMaybe (assert `failure` genName) <$> opick genName (const True)
-  let ci = okind dkind
-  -- A simple rule for now: level at level @ln@ has depth (difficulty) @abs ln@.
-      ldepth = AbsDepth $ abs n
-  fixedCenters <- case escapeFeature of
-                    Nothing -> return []
-                    Just b -> do
-                      epos <- placeStairs ci []
-                      let placeGroup = toGroupName $
-                            if b then "escape up" else "escape down"
-                      return [(epos, placeGroup)]
-  cave <- buildCave cops ldepth totalDepth dkind fixedCenters
-  cmap <- buildTileMap cops cave
-  let lescape = map fst fixedCenters
-  return (cmap, cave, lescape)
-
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
   { freshDungeon    :: !Dungeon   -- ^ maps for all levels
@@ -340,8 +251,8 @@ dungeonGen cops caves = do
         let lstairDown = case l of
               [] -> []
               (_, lvl) : _ -> snd $ lstair lvl
-        lvl <- buildLevel cops n genEscape minD maxD freshTotalDepth lstairDown
         -- lstairUp for the next level is lstairDown for the current level
+        lvl <- buildLevel cops n genEscape minD freshTotalDepth lstairDown
         return $! (toEnum n, lvl) : l
   levels <- foldlM' buildLvl [] $ reverse $ IM.assocs caves
   let freshDungeon = EM.fromList levels

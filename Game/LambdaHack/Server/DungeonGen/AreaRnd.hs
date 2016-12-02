@@ -61,7 +61,7 @@ mkFixed :: (X, Y)    -- ^ minimum size
         -> Area      -- ^ the containing area, not the room itself
         -> Point     -- ^ the center point
         -> Rnd Area
-mkFixed (xm, ym) (xM, yM) area Point{..} = do
+mkFixed (xm, ym) (xM, yM) area p@Point{..} = do
   let (x0, y0, x1, y1) = fromArea area
       xspan = min (x1 - x0 + 1) $ 1 + 2 * min (px - x0) (x1 - px)
       yspan = min (y1 - y0 + 1) $ 1 + 2 * min (py - y0) (y1 - py)
@@ -73,7 +73,8 @@ mkFixed (xm, ym) (xM, yM) area Point{..} = do
   -- but this is safe (limited by area size) and makes up for the rigidity
   -- of the fixed room sizes (e.g., that the size is always odd).
   let a2 = (px - xW, py - yW, px + xW, py + yW)
-      area2 = fromMaybe (assert `failure` a2) $ toArea a2
+      area2 = fromMaybe (assert `failure` (a2, xm, ym, xM, yM, area, p))
+              $ toArea a2
   return $! area2
 
 -- Choosing connections between areas in a grid
