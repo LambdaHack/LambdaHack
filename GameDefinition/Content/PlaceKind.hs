@@ -241,7 +241,7 @@ treeShade = PlaceKind
   , pname    = "tree shade"
   , pfreq    = [("skirmish", 100)]
   , prarity  = [(1, 10), (10, 10)]
-  , pcover   = CVerbatim
+  , pcover   = CMirror
   , pfence   = FNone
   , ptopLeft = [ "sss"
                , "XOs"
@@ -444,7 +444,8 @@ escapeUp3 = escapeUp
                ]
   }
 escapeUp4 = escapeUp
-  { pfreq    = [("escape up", 1100)]
+  { pfreq    = [("escape up", 2300)]
+  , pcover   = CMirror
   , pfence   = FNone
   , ptopLeft = [ "-----"
                , "|O..|"
@@ -493,7 +494,8 @@ escapeDown3 = escapeDown
                ]
   }
 escapeDown4 = escapeDown
-  { pfreq    = [("escape down", 1100)]
+  { pfreq    = [("escape down", 2200)]
+  , pcover   = CMirror
   , pfence   = FNone
   , ptopLeft = [ "-----"
                , "|O..|"

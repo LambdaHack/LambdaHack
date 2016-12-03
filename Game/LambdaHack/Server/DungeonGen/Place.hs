@@ -70,6 +70,7 @@ placeCheck r pk@PlaceKind{..} =
         CStretch   -> largeEnough
         CReflect   -> largeEnough
         CVerbatim  -> True
+        CMirror    -> True
 
 -- | Calculate interior room area according to fence type, based on the
 -- total area for the room and it's fence. This is used for checking
@@ -83,22 +84,21 @@ interiorArea kr r =
         FFloor  -> 1
         FGround -> 1
         FNone   -> 0
-  in case pcover kr of
-    CVerbatim ->
-      let (x0, y0, x1, y1) = fromArea r
-          dx = case ptopLeft kr of
-            [] -> assert `failure` kr
-            l : _ -> T.length l
-          dy = length $ ptopLeft kr
-          mx = (x1 - x0 + 1 - dx) `div` 2
-          my = (y1 - y0 + 1 - dy) `div` 2
-      in if mx < requiredForFence || my < requiredForFence
-         then Nothing
-         else toArea (x0 + mx, y0 + my, x0 + mx + dx - 1, y0 + my + dy - 1)
-    _ -> case requiredForFence of
-           0 -> Just r
-           1 -> shrink r
-           _ -> assert `failure` kr
+  in if pcover kr `elem` [CVerbatim, CMirror]
+     then let (x0, y0, x1, y1) = fromArea r
+              dx = case ptopLeft kr of
+                [] -> assert `failure` kr
+                l : _ -> T.length l
+              dy = length $ ptopLeft kr
+              mx = (x1 - x0 + 1 - dx) `div` 2
+              my = (y1 - y0 + 1 - dy) `div` 2
+          in if mx < requiredForFence || my < requiredForFence
+             then Nothing
+             else toArea (x0 + mx, y0 + my, x0 + mx + dx - 1, y0 + my + dy - 1)
+     else case requiredForFence of
+       0 -> Just r
+       1 -> shrink r
+       _ -> assert `failure` kr
 
 -- | Given a few parameters, roll and construct a 'Place' datastructure
 -- and fill a cave section acccording to it.
@@ -158,8 +158,8 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
   legendLit <- olegend cops clegendLitTile
   let xlegend = EM.union override legend
       xlegendLit = EM.union override legendLit
-      cmap = tilePlace qarea kr
-      fence = case pfence kr of
+  cmap <- tilePlace qarea kr
+  let fence = case pfence kr of
         FWall -> buildFence qFWall qarea
         FFloor -> buildFence qFFloor qarea
         FGround -> buildFence qFGround qarea
@@ -232,8 +232,8 @@ buildFenceRnd Kind.COps{cotile=Kind.Ops{opick}} couterFenceTile area = do
 -- | Create a place by tiling patterns.
 tilePlace :: Area                           -- ^ the area to fill
           -> PlaceKind                      -- ^ the place kind to construct
-          -> EM.EnumMap Point Char
-tilePlace area pl@PlaceKind{..} =
+          -> Rnd (EM.EnumMap Point Char)
+tilePlace area pl@PlaceKind{..} = do
   let (x0, y0, x1, y1) = fromArea area
       xwidth = x1 - x0 + 1
       ywidth = y1 - y0 + 1
@@ -244,39 +244,45 @@ tilePlace area pl@PlaceKind{..} =
                          `blame` (area, pl))
                         (xwidth, ywidth)
       fromX (x2, y2) = map (`Point` y2) [x2..]
-      fillInterior :: (forall a. Int -> [a] -> [a]) -> [(Point, Char)]
-      fillInterior f =
+      fillInterior :: (Int -> String -> String)
+                   -> (Int -> [String] -> [String])
+                   -> [(Point, Char)]
+      fillInterior f g =
         let tileInterior (y, row) =
               let fx = f dx row
                   xStart = x0 + ((xwidth - length fx) `div` 2)
               in filter ((/= 'X') . snd) $ zip (fromX (xStart, y)) fx
             reflected =
-              let fy = f dy $ map T.unpack ptopLeft
-                  yStart = y0 + ((ywidth - length fy) `div` 2)
-              in zip [yStart..] fy
+              let gy = g dy $ map T.unpack ptopLeft
+                  yStart = y0 + ((ywidth - length gy) `div` 2)
+              in zip [yStart..] gy
         in concatMap tileInterior reflected
       tileReflect :: Int -> [a] -> [a]
       tileReflect d pat =
         let lstart = take (d `divUp` 2) pat
             lend   = take (d `div`   2) pat
         in lstart ++ reverse lend
-      interior = case pcover of
-        CAlternate ->
-          let tile :: Int -> [a] -> [a]
-              tile _ []  = assert `failure` "nothing to tile" `twith` pl
-              tile d pat = take d (cycle $ init pat ++ init (reverse pat))
-          in fillInterior tile
-        CStretch ->
-          let stretch :: Int -> [a] -> [a]
-              stretch _ []  = assert `failure` "nothing to stretch" `twith` pl
-              stretch d pat = tileReflect d (pat ++ repeat (last pat))
-          in fillInterior stretch
-        CReflect ->
-          let reflect :: Int -> [a] -> [a]
-              reflect d pat = tileReflect d (cycle pat)
-          in fillInterior reflect
-        CVerbatim -> fillInterior $ curry snd
-  in EM.fromList interior
+  interior <- case pcover of
+    CAlternate -> do
+      let tile :: Int -> [a] -> [a]
+          tile _ []  = assert `failure` "nothing to tile" `twith` pl
+          tile d pat = take d (cycle $ init pat ++ init (reverse pat))
+      return $! fillInterior tile tile
+    CStretch -> do
+      let stretch :: Int -> [a] -> [a]
+          stretch _ []  = assert `failure` "nothing to stretch" `twith` pl
+          stretch d pat = tileReflect d (pat ++ repeat (last pat))
+      return $! fillInterior stretch stretch
+    CReflect -> do
+      let reflect :: Int -> [a] -> [a]
+          reflect d pat = tileReflect d (cycle pat)
+      return $! fillInterior reflect reflect
+    CVerbatim -> return $! fillInterior (flip const) (flip const)
+    CMirror -> do
+      mirror1 <- oneOf [id, reverse]
+      mirror2 <- oneOf [id, reverse]
+      return $! fillInterior (\_ l -> mirror1 l) (\_ l -> mirror2 l)
+  return $! EM.fromList interior
 
 instance Binary Place where
   put Place{..} = do

@@ -26,13 +26,15 @@ data PlaceKind = PlaceKind
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound
 
--- | A method of filling the whole area (except for CVerbatim, which is just
--- placed in the middle of the area) by transforming a given corner.
+-- | A method of filling the whole area (except for CVerbatim and CMirror,
+-- which are just placed in the middle of the area) by transforming
+-- a given corner.
 data Cover =
     CAlternate  -- ^ reflect every other corner, overlapping 1 row and column
   | CStretch    -- ^ fill symmetrically 4 corners and stretch their borders
   | CReflect    -- ^ tile separately and symmetrically quarters of the place
   | CVerbatim   -- ^ just build the given interior, without filling the area
+  | CMirror     -- ^ build the given interior in one of 4 mirrored variants
   deriving (Show, Eq)
 
 -- | The choice of a fence type for the place.
