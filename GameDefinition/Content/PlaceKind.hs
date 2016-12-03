@@ -18,11 +18,11 @@ cdefs = ContentDef
   , validateSingle = validateSinglePlaceKind
   , validateAll = validateAllPlaceKind
   , content = contentFromList $
-      [rect, rectWindows, ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, boardgame]
+      [rect, rectWindows, ruin, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, boardgame]
       ++ map makeStaircaseUp lstaircase
       ++ map makeStaircaseDown lstaircase
   }
-rect,        rectWindows, ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, boardgame :: PlaceKind
+rect,        rectWindows, ruin, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, boardgame :: PlaceKind
 
 lstaircase :: [PlaceKind]
 lstaircase = [staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17]
@@ -64,7 +64,7 @@ ruin = PlaceKind
                ]
   , poverride = []
   }
-collapsed = PlaceKind
+collapsed = PlaceKind  -- in a dark cave, they have little lights --- that's OK
   { psymbol  = 'c'
   , pname    = "collapsed cavern"
   , pfreq    = [("noise", 1)]
@@ -77,21 +77,41 @@ collapsed = PlaceKind
   }
 collapsed2 = collapsed
   { pfreq    = [("noise", 100), ("battle", 20)]
-  , ptopLeft = [ "XXO"
-               , "XOO"
+  , ptopLeft = [ "XO"
+               , "OO"
                ]
   }
 collapsed3 = collapsed
   { pfreq    = [("noise", 200), ("battle", 20)]
-  , ptopLeft = [ "XXXO"
-               , "XOOO"
+  , ptopLeft = [ "XXO"
+               , "OOO"
                ]
   }
 collapsed4 = collapsed
+  { pfreq    = [("noise", 200), ("battle", 20)]
+  , ptopLeft = [ "XXXO"
+               , "OOOO"
+               ]
+  }
+collapsed5 = collapsed
+  { pfreq    = [("noise", 300), ("battle", 50)]
+  , ptopLeft = [ "XXO"
+               , "XOO"
+               , "OOO"
+               ]
+  }
+collapsed6 = collapsed
   { pfreq    = [("noise", 400), ("battle", 100)]
   , ptopLeft = [ "XXXO"
-               , "XXXO"
                , "XOOO"
+               , "OOOO"
+               ]
+  }
+collapsed7 = collapsed
+  { pfreq    = [("noise", 400), ("battle", 100)]
+  , ptopLeft = [ "XXXO"
+               , "XXOO"
+               , "OOOO"
                ]
   }
 pillar = PlaceKind
@@ -120,16 +140,16 @@ pillar2 = pillar
                ]
   }
 pillar3 = pillar
-  { prarity  = [(1, 2), (10, 2)]
+  { prarity  = [(10, 5)]
   , ptopLeft = [ "-----"
-               , "|O..."
-               , "|..O."
-               , "|.O.."
+               , "|&.O."
+               , "|...."
+               , "|O.O."
                , "|...."
                ]
   }
 pillar4 = pillar
-  { prarity  = [(10, 10)]
+  { prarity  = [(10, 5)]
   , ptopLeft = [ "-----"
                , "|&.O."
                , "|...."

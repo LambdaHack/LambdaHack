@@ -138,7 +138,7 @@ shallow1rogue = rogue
   { csymbol       = 'D'
   , cname         = "Entrance to the dungeon"
   , cfreq         = [("shallow random 1", 100)]
-  , cdarkChance   = 0
+  , cdarkChance   = 0  -- all rooms lit, for a gentle start
   , cextraStairs  = 1
   , cactorFreq    = filter ((/= "monster") . fst) $ cactorFreq rogue
   , citemNum      = 15 * d 2  -- lure them in with loot
