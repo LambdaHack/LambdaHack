@@ -118,7 +118,6 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
            ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) r mplaceGroup = do
   qFWall <- fromMaybe (assert `failure` cfillerTile)
             <$> opick cfillerTile (const True)
-  dark <- chanceDice ldepth totalDepth cdarkChance
   -- TODO: factor out from here and newItem:
   let findInterval x1y1 [] = (x1y1, (11, 0))
       findInterval !x1y1 ((!x, !y) : rest) =
@@ -145,6 +144,9 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
       freq = toFreq ("buildPlace" <+> tshow (map fst checkedFreq)) checkedFreq
   let !_A = assert (not (nullFreq freq) `blame` (placeFreq, checkedFreq, r)) ()
   ((qkind, kr), _) <- frequency freq
+  dark <- if cpassable && pfence kr `elem` [FFloor, FGround]
+          then return dnight
+          else chanceDice ldepth totalDepth cdarkChance
   let qFFloor = if dark then darkCorTile else litCorTile
       qFGround = if dnight then darkCorTile else litCorTile
       qlegend = if dark then clegendDarkTile else clegendLitTile
