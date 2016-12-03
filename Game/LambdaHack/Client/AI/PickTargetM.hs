@@ -30,7 +30,6 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -38,14 +37,14 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Content.TileKind (isUknownSpace)
+import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy TgtAndPath)
 {-# INLINE targetStrategy #-}
 targetStrategy aid = do
-  cops@Kind.COps{corule, cotile} <- getsState scops
+  cops@Kind.COps{corule, cotile, coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   mleader <- getsClient _sleader
   condInMelee <- getsClient scondInMelee
@@ -311,12 +310,13 @@ targetStrategy aid = do
           pickNewTarget  -- prefer close foes to anything
         TPoint lid pos -> do
           explored <- getsClient sexplored
-          salter <- getsClient salter
           let lidExplored = ES.member (blid b) explored
               allExplored = ES.size explored == EM.size dungeon
-              lalter = salter EM.! blid b
           bag <- getsState $ getFloorBag lid pos
           let t = lvl `at` pos
+              alterMinSkill = Tile.alterMinSkill coTileSpeedup t
+              tileAdj :: (Kind.Id TileKind -> Bool) -> Point -> Bool
+              tileAdj f p = any (f . at lvl) $ vicinityUnsafe p
           if lid /= blid b  -- wrong level
              -- Below we check the target could not be picked again in
              -- pickNewTarget, and only in this case it is invalidated.
@@ -334,13 +334,14 @@ targetStrategy aid = do
                        in sml <= ltime lvl)
                    && if not lidExplored
                       then not (isUknownSpace t)  -- closestUnknown
-                           && not (condEnoughGear && Tile.isStair cotile t)
+                           && not (condEnoughGear
+                                   && tileAdj (Tile.isStair cotile) pos)
                       else  -- closestTriggers
                         -- Try to kill that very last enemy for his loot before
                         -- leaving the level or dungeon.
                         not (null allFoes)
                         || -- If all explored, escape/block escapes.
-                           (not (Tile.isEscape cotile t)
+                           (not (tileAdj (Tile.isEscape cotile) pos)
                             || not allExplored)
                            -- The next case is stairs in closestTriggers.
                            -- We don't determine if the stairs are interesting
@@ -348,8 +349,8 @@ targetStrategy aid = do
                            -- to reach them and then retarget, unless he can't
                            -- trigger them at all.
                            && (EM.findWithDefault 0 AbAlter actorMaxSk
-                               < fromEnum (lalter PointArray.! pos)
-                               || not (Tile.isStair cotile t))
+                               < fromEnum alterMinSkill
+                               || not (tileAdj (Tile.isStair cotile) pos))
                            -- The remaining case is furthestKnown. This is
                            -- always an unimportant target, so we forget it
                            -- if the actor is stuck (waits, though could move;

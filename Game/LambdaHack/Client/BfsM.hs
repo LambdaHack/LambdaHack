@@ -263,12 +263,11 @@ closestTriggers onlyDir aid = do
         Nothing -> assert `failure` aid
       actorMaxSk = aSkills ar
   body <- getsState $ getActorBody aid
-  salter <- getsClient salter
-  let lalter = salter EM.! blid body
-      alterSkill = EM.findWithDefault 0 Ability.AbAlter actorMaxSk
-  explored <- getsClient sexplored
   let lid = blid body
   lvl <- getLevel lid
+  let alterMinSkill p = Tile.alterMinSkill coTileSpeedup $ lvl `at` p
+      alterSkill = EM.findWithDefault 0 Ability.AbAlter actorMaxSk
+  explored <- getsClient sexplored
   dungeon <- getsState sdungeon
   let escape = any (not . null . lescape) $ EM.elems dungeon
   unexploredD <- unexploredDepth
@@ -279,7 +278,7 @@ closestTriggers onlyDir aid = do
       f :: Point -> Kind.Id TileKind -> [(Int, Point)] -> [(Int, Point)]
       f p t acc =
         if Tile.hasCauses coTileSpeedup t
-           && alterSkill >= fromEnum (lalter PointArray.! p)
+           && alterSkill >= fromEnum (alterMinSkill p)
         then case Tile.ascendTo cotile t of
           [] ->
             -- Escape (or guard) only after exploring, for high score, etc.
@@ -302,18 +301,22 @@ closestTriggers onlyDir aid = do
                        in maybe aiCond (\d -> d == (k > 0)) onlyDir
                  in map (,p) (filter g l) ++ acc
         else acc
-      triggersAll = PointArray.ifoldrA f [] $ ltile lvl
-      -- Don't target stairs adjacent to the actor. Most of the time they
-      -- are blocked and stay so, so we seek other stairs, if any.
-      -- If no other stairs in this direction, let's wait here,
-      -- unless the actor has just returned via the very stairs.
-      triggers = filter (not . adjacent (bpos body) . snd) triggersAll
+      triggers = PointArray.ifoldrA f [] $ ltile lvl
   bfs <- getCacheBfs aid
+  -- The advantage of only targeting the tiles in vicinity of triggers is that
+  -- triggers don't need to be pathable (and so AI doesn't bump into them
+  -- by chance while walking elsewhere) and that many accesses to the tiles
+  -- are more likely to be targeted by different AI actors (even starting
+  -- from the same location), so there is less risk of clogging stairs and,
+  -- OTOH, siege of stairs or escapes is more effective.
+  let vicTrigger (v, p0) = map (\p -> (v, p)) $ vicinityUnsafe p0
+      vicAll = concatMap vicTrigger triggers
+      vicNoDist = filter (isJust . accessBfs bfs . snd) vicAll
   return $ if  -- keep lazy
     | null triggers -> mzero
     | isNothing onlyDir && not escape && allExplored ->
       -- Distance also irrelevant, to ensure random wandering.
-      toFreq "closestTriggers when allExplored" triggers
+      toFreq "closestTriggers when allExplored" vicNoDist
     | otherwise ->
       -- Prefer stairs to easier levels.
       -- If exactly one escape, these stairs will all be in one direction.
@@ -324,7 +327,7 @@ closestTriggers onlyDir aid = do
                        - fromEnum apartBfs
                 v = (maxd * maxd * maxd) `div` ((dist + 1) * (dist + 1))
             in (depthDelta * v, p)
-          ds = mapMaybe (\(k, p) -> mix (k, p) <$> accessBfs bfs p) triggers
+          ds = mapMaybe (\(k, p) -> mix (k, p) <$> accessBfs bfs p) vicAll
       in toFreq "closestTriggers" ds
 
 unexploredDepth :: MonadClient m => m (Int -> LevelId -> Bool)
@@ -359,8 +362,7 @@ closestItems aid = do
         alterSkill = EM.findWithDefault 0 Ability.AbAlter actorMaxSk
     lvl@Level{lfloor} <- getLevel $ blid body
     let items = EM.assocs lfloor
-        -- Changeable tiles are alterable, so they are in BFS
-        --  (if skill permits).
+        -- Changeable tiles are alterable so they are in BFS (if skill permits).
         -- We assume they may generate items, but the items are most useful
         -- when picked up, so @AbMoveItem@ is necessary.
         f :: Point -> Kind.Id TileKind -> [Point] -> [Point]

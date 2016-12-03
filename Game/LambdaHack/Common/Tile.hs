@@ -194,8 +194,9 @@ alterMinWalkKind :: Kind.Id TileKind -> TileKind -> Word8
 alterMinWalkKind k tk =
   let getTo TK.OpenTo{} = True
       getTo TK.Suspect = True
-      getTo TK.ChangeTo{} = True  -- TODO: needed until AI fixed
-      getTo TK.Cause{} = True  -- TODO: needed until AI fixed
+      -- TODO: needed until AI fixed; but there is no harm from AI accidentally
+      -- bumping into a cache, as opposed to stair or escape.
+      getTo TK.ChangeTo{} = True
       getTo _ = False
   in if | kindHasFeature TK.Walkable tk -> 0
         | isUknownSpace k -> TK.talter tk

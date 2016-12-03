@@ -600,7 +600,7 @@ trigger :: MonadClient m
         => ActorId -> Bool -> m (Strategy (RequestTimed 'AbAlter))
 {-# INLINABLE trigger #-}
 trigger aid fleeViaStairs = do
-  cops@Kind.COps{cotile} <- getsState scops
+  cops@Kind.COps{cotile, coTileSpeedup} <- getsState scops
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
   b <- getsState $ getActorBody aid
@@ -613,12 +613,11 @@ trigger aid fleeViaStairs = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   lvl <- getLevel (blid b)
   unexploredD <- unexploredDepth
-  salter <- getsClient salter
-  let lidExplored = ES.member (blid b) explored
+  let alterMinSkill p = Tile.alterMinSkill coTileSpeedup $ lvl `at` p
+      lidExplored = ES.member (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
-      lalter = salter EM.! blid b
       -- Only actors with hight enough AbAlter can use stairs.
-      enterableHere p = alterSkill >= fromEnum (lalter PointArray.! p)
+      enterableHere p = alterSkill >= fromEnum (alterMinSkill p)
       f pos = let t = lvl `at` pos
               in map (pos,) $ Tile.listCauseEffects cotile t
       feats = concatMap f $ filter enterableHere $ vicinityUnsafe (bpos b)
