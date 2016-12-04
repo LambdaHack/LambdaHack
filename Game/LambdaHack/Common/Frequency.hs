@@ -17,7 +17,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Control.Applicative
-import Control.Arrow (first, second)
 import Control.DeepSeq
 import Data.Binary
 import Data.Hashable (Hashable)

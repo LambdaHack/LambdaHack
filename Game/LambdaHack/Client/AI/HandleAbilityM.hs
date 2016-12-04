@@ -17,7 +17,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Arrow (second)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Function

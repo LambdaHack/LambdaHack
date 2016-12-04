@@ -12,10 +12,8 @@ module Game.LambdaHack.Common.PointArray
 
 import Prelude ()
 
-import Control.Arrow (first)
 import Game.LambdaHack.Common.Prelude
 
-import Control.Arrow ((***))
 import Control.Monad.ST.Strict
 import Data.Binary
 import Data.Binary.Orphans ()

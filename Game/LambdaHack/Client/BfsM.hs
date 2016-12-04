@@ -14,7 +14,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Arrow ((&&&))
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Ord

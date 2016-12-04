@@ -10,12 +10,15 @@ module Game.LambdaHack.Common.Prelude
   , module Control.Exception.Assert.Sugar
 
   , Text, (<+>), tshow, divUp
+
+  , (***), (&&&), first, second
   ) where
 
 import Prelude ()
 
 import Prelude.Compat hiding (appendFile, readFile, writeFile)
 
+import Control.Arrow (first, second, (&&&), (***))
 import Control.Monad.Compat
 import Data.List.Compat
 import Data.Maybe

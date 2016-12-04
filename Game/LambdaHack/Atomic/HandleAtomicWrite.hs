@@ -20,7 +20,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Arrow (second)
 import qualified Data.EnumMap.Strict as EM
 import Data.Int (Int64)
 

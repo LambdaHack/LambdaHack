@@ -7,7 +7,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Arrow (first)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Color
