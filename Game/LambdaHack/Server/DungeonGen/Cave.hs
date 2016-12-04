@@ -126,8 +126,8 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                 Just (p, placeGroup) -> do
                   let !_A2 = assert (p `inside` fromArea (fromJust _A0)
                                `blame` (p, innerArea, gs, fixedCenters)) ()
-                  r <- mkFixed minPlaceSize maxPlaceSize innerArea p
-                  let !_A3 = assert (isJust (shrink r)
+                      r = mkFixed maxPlaceSize innerArea p
+                      !_A3 = assert (isJust (shrink r)
                                `blame` (r, p, innerArea, gs, fixedCenters)) ()
                   (tmap, place) <-
                     buildPlace cops kc dnight darkCorTile litCorTile

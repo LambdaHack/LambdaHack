@@ -46,7 +46,7 @@ mkRoom (xm, ym) (xM, yM) area = do
   let (x0, y0, x1, y1) = fromArea area
       xspan = x1 - x0 + 1
       yspan = y1 - y0 + 1
-  let aW = ( min xm xspan, min ym yspan, min xM xspan, min yM yspan )
+  let aW = (min xm xspan, min ym yspan, min xM xspan, min yM yspan)
       areaW = fromMaybe (assert `failure` aW) $ toArea aW
   Point xW yW <- xyInArea areaW  -- roll size
   let a1 = (x0, y0, max x0 (x1 - xW + 1), max y0 (y1 - yW + 1))
@@ -56,26 +56,21 @@ mkRoom (xm, ym) (xM, yM) area = do
       area3 = fromMaybe (assert `failure` a3) $ toArea a3
   return $! area3
 
-mkFixed :: (X, Y)    -- ^ minimum size
-        -> (X, Y)    -- ^ maximum size
+-- Doesn't respect minimum sizes, because staircases are specified verbatim,
+-- so can't be arbitrarily scaled up.
+-- The size may be one more than what maximal size hint requests,
+-- but this is safe (limited by area size) and makes up for the rigidity
+-- of the fixed room sizes (e.g., that the size is always odd).
+mkFixed :: (X, Y)    -- ^ maximum size
         -> Area      -- ^ the containing area, not the room itself
         -> Point     -- ^ the center point
-        -> Rnd Area
-mkFixed (xm, ym) (xM, yM) area p@Point{..} = do
+        -> Area
+mkFixed (xM, yM) area p@Point{..} =
   let (x0, y0, x1, y1) = fromArea area
-      xspan = min (x1 - x0 + 1) $ 1 + 2 * min (px - x0) (x1 - px)
-      yspan = min (y1 - y0 + 1) $ 1 + 2 * min (py - y0) (y1 - py)
-  let aW = ( min (xm + 1) xspan `div` 2, min (ym + 1) yspan `div` 2
-           , min (xM + 1) xspan `div` 2, min (yM + 1) yspan `div` 2 )
-      areaW = fromMaybe (assert `failure` aW) $ toArea aW
-  Point xW yW <- xyInArea areaW  -- roll (around half) size
-  -- The size may be one more than what minimal and maximal size hints request,
-  -- but this is safe (limited by area size) and makes up for the rigidity
-  -- of the fixed room sizes (e.g., that the size is always odd).
-  let a2 = (px - xW, py - yW, px + xW, py + yW)
-      area2 = fromMaybe (assert `failure` (a2, xm, ym, xM, yM, area, p))
-              $ toArea a2
-  return $! area2
+      xradius = min ((xM + 1) `div` 2) $ min (px - x0) (x1 - px)
+      yradius = min ((yM + 1) `div` 2) $ min (py - y0) (y1 - py)
+      a = (px - xradius, py - yradius, px + xradius, py + yradius)
+  in fromMaybe (assert `failure` (a, xM, yM, area, p)) $ toArea a
 
 -- Choosing connections between areas in a grid
 
@@ -84,7 +79,7 @@ mkFixed (xm, ym) (xM, yM) area p@Point{..} = do
 connectGrid :: (X, Y) -> Rnd [(Point, Point)]
 connectGrid (nx, ny) = do
   let unconnected = ES.fromDistinctAscList [ Point x y
-                                          | y <- [0..ny-1], x <- [0..nx-1] ]
+                                           | y <- [0..ny-1], x <- [0..nx-1] ]
   -- Candidates are neighbours that are still unconnected. We start with
   -- a random choice.
   rx <- randomR (0, nx-1)
