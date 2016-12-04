@@ -8,6 +8,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import Data.Key (mapWithKeyM)
 
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -64,7 +65,7 @@ buildCave :: Kind.COps         -- ^ content definitions
           -> AbsDepth          -- ^ depth of the level to generate
           -> AbsDepth          -- ^ absolute depth
           -> Kind.Id CaveKind  -- ^ cave kind to use for generation
-          -> [(Point, GroupName PlaceKind)]  -- ^ position of stairs, etc.
+          -> EM.EnumMap Point (GroupName PlaceKind)  -- ^ pos of stairs, etc.
           -> Rnd Cave
 buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                         , cocave=Kind.Ops{okind}
@@ -90,10 +91,10 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                    || couterFenceTile /= "basic outer fence" = subFullArea
                  | otherwise = fullArea
             (lgr@(gx, gy), gs) =
-              grid (map fst fixedCenters ++ bootFixedCenters kc) lgr' area
+              grid fixedCenters (bootFixedCenters kc) lgr' area
         minPlaceSize <- castDiceXY ldepth totalDepth cminPlaceSize
         maxPlaceSize <- castDiceXY ldepth totalDepth cmaxPlaceSize
-        voidPlaces <-
+        voidPlaces <- ES.fromList <$>
           if gx * gy > 1 then do
             let gridArea = fromMaybe (assert `failure` lgr)
                            $ toArea (0, 0, gx - 1, gy - 1)
@@ -109,9 +110,10 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
               let innerArea = fromMaybe (assert `failure` (i, ar)) $ shrink ar
                   !_A0 = shrink innerArea
                   !_A1 = assert (isJust _A0 `blame` (innerArea, gs)) ()
-              case find (\(p, _) -> p `inside` fromArea ar) fixedCenters of
+              case find (\(p, _) -> p `inside` fromArea ar)
+                        (EM.assocs fixedCenters) of
                 Nothing -> do
-                  if i `elem` voidPlaces
+                  if i `ES.member` voidPlaces
                   then do
                     r <- mkVoidRoom innerArea
                     return (m, pls, EM.insert i (r, r) qls)
@@ -135,7 +137,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                   return ( EM.union tmap m
                          , place : pls
                          , EM.insert i (borderPlace cops place) qls )
-        places <- foldlM' decidePlace (EM.empty, [], EM.empty) gs
+        places <- foldlM' decidePlace (EM.empty, [], EM.empty) $ EM.assocs gs
         return (lgr, places)
   (lgrid, (lplaces, dplaces, qplaces)) <- createPlaces lgrid'
   let lcorridorsFun lgr@(gx, gy) = do

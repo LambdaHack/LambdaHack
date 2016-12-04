@@ -155,7 +155,7 @@ buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
                            if b then "escape up" else "escape down"
                      return [(epos, placeGroup)]
   let lescape = map fst fixedEscape
-      fixedCenters =
+      fixedCenters = EM.fromList $
         fixedEscape ++ fixedStairsDouble ++ fixedStairsUp ++ fixedStairsDown
       lstair = ( map posUp $ lstairsSingleUp ++ lstairsDouble
                , map posDn $ lstairsDouble ++ lstairsSingleDown )

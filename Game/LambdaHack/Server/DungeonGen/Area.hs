@@ -8,9 +8,12 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntSet as IS
 
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Content.PlaceKind (PlaceKind)
 
 -- | The type of areas. The bottom left and the top right points.
 data Area = Area !X !Y !X !Y
@@ -29,13 +32,14 @@ trivialArea :: Point -> Area
 trivialArea (Point x y) = Area x y x y
 
 -- | Divide uniformly a larger area into the given number of smaller areas
--- overlapping at the edges. The list is in ascending Enum-order of points.
+-- overlapping at the edges.
 --
 -- When a list of fixed centers (some important points inside)
 -- of (non-overlapping) areas is given, incorporate those,
 -- with as little disruption, as possible.
-grid :: [Point] -> (X, Y) -> Area -> ((X, Y), [(Point, Area)])
-grid fixedCenters (nx, ny) (Area x0 y0 x1 y1) =
+grid :: EM.EnumMap Point (GroupName PlaceKind) -> [Point] -> (X, Y) -> Area
+     -> ((X, Y), EM.EnumMap Point Area)
+grid fixedCenters boot (nx, ny) (Area x0 y0 x1 y1) =
   let f z0 z1 n prev (c1 : c2 : rest) =
         let len = c2 - c1 + 1
             cn = len * n `div` (z1 - z0 - 1)
@@ -51,14 +55,15 @@ grid fixedCenters (nx, ny) (Area x0 y0 x1 y1) =
                 ++ f z0 z1 n (c1 + len * (2 * cn - 1) `div` (2 * cn))
                      (c2 : rest)
       f _ z1 _ prev _ = [(prev, z1)]
-      xcs = IS.toList $ IS.fromList $ map px fixedCenters
+      xcs = IS.toList $ IS.fromList $ map px $ EM.keys fixedCenters ++ boot
       xallCenters = zip [0..] $ f x0 x1 nx x0 xcs
-      ycs = IS.toList $ IS.fromList $ map py fixedCenters
+      ycs = IS.toList $ IS.fromList $ map py $ EM.keys fixedCenters ++ boot
       yallCenters = zip [0..] $ f y0 y1 ny y0 ycs
   in ( (length xallCenters, length yallCenters)
-     , [ (Point x y, Area cx0 cy0 cx1 cy1)
-       | (y, (cy0, cy1)) <- yallCenters
-       , (x, (cx0, cx1)) <- xallCenters ] )
+     , EM.fromDistinctAscList $
+         [ (Point x y, Area cx0 cy0 cx1 cy1)
+         | (y, (cy0, cy1)) <- yallCenters
+         , (x, (cx0, cx1)) <- xallCenters ] )
 
 -- | Shrink the given area on all fours sides by the amount.
 shrink :: Area -> Maybe Area
