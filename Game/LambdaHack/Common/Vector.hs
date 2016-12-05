@@ -4,7 +4,8 @@
 module Game.LambdaHack.Common.Vector
   ( Vector(..), isUnit, isDiagonal, neg, chessDistVector, euclidDistSqVector
   , moves, movesCardinal, movesDiagonal, compassText
-  , vicinity, vicinityUnsafe, vicinityCardinal, squareUnsafeSet
+  , vicinity, vicinityUnsafe, vicinityCardinal, vicinityCardinalUnsafe
+  , squareUnsafeSet
   , shift, shiftBounded, trajectoryToPath, trajectoryToPathBounded
   , vectorToFrom, pathToTrajectory
   , RadianAngle, rotate, towards
@@ -130,6 +131,9 @@ vicinityCardinal lxsize lysize p =
   [ res | dxy <- movesCardinal
         , let res = shift p dxy
         , inside res (0, 0, lxsize - 1, lysize - 1) ]
+
+vicinityCardinalUnsafe :: Point -> [Point]
+vicinityCardinalUnsafe p = [ shift p dxy | dxy <- movesCardinal ]
 
 squareUnsafeSet :: Point -> ES.EnumSet Point
 {-# INLINABLE squareUnsafeSet #-}

@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Generation of caves (not yet inhabited dungeon levels) from cave kinds.
 module Game.LambdaHack.Server.DungeonGen.Cave
   ( Cave(..), bootFixedCenters, buildCave
@@ -102,17 +103,17 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
             replicateM voidNum $ xyInArea gridArea  -- repetitions are OK
           else return []
         let decidePlace :: (TileMapEM, [Place], EM.EnumMap Point (Area, Area))
-                        -> (Point, Area)
+                        -> (Point, SpecialArea)
                         -> Rnd ( TileMapEM, [Place]
                                , EM.EnumMap Point (Area, Area) )
-            decidePlace (!m, !pls, !qls) (!i, !ar) = do
-              -- Reserved for corridors and the global fence.
-              let innerArea = fromMaybe (assert `failure` (i, ar)) $ shrink ar
-                  !_A0 = shrink innerArea
-                  !_A1 = assert (isJust _A0 `blame` (innerArea, gs)) ()
-              case find (\(p, _) -> p `inside` fromArea ar)
-                        (EM.assocs fixedCenters) of
-                Nothing -> do
+            decidePlace (!m, !pls, !qls) (!i, !special) = do
+              case special of
+                SpecialArea ar -> do
+                  -- Reserved for corridors and the global fence.
+                  let innerArea = fromMaybe (assert `failure` (i, ar))
+                                  $ shrink ar
+                      !_A0 = shrink innerArea
+                      !_A1 = assert (isJust _A0 `blame` (innerArea, gs)) ()
                   if i `ES.member` voidPlaces
                   then do
                     r <- mkVoidRoom innerArea
@@ -125,8 +126,13 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                     return ( EM.union tmap m
                            , place : pls
                            , EM.insert i (borderPlace cops place) qls )
-                Just (p, placeGroup) -> do
-                  let !_A2 = assert (p `inside` fromArea (fromJust _A0)
+                SpecialFixed p placeGroup ar -> do
+                  -- Reserved for corridors and the global fence.
+                  let innerArea = fromMaybe (assert `failure` (i, ar))
+                                  $ shrink ar
+                      !_A0 = shrink innerArea
+                      !_A1 = assert (isJust _A0 `blame` (innerArea, gs)) ()
+                      !_A2 = assert (p `inside` fromArea (fromJust _A0)
                                `blame` (p, innerArea, gs, fixedCenters)) ()
                       r = mkFixed maxPlaceSize innerArea p
                       !_A3 = assert (isJust (shrink r)
