@@ -132,7 +132,7 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
              + fromIntegral (y2 - y1)
                * (fromIntegral ld * 10 - x1 * fromIntegral depth)
                / ((x2 - x1) * fromIntegral depth)
-  let f !placeGroup !q !acc !p !pk !kind =
+      f !placeGroup !q !acc !p !pk !kind =
         let rarity = linearInterpolation (prarity kind)
         in (q * p * rarity, ((pk, kind), placeGroup)) : acc
       g (placeGroup, q) = ofoldlGroup' placeGroup (f placeGroup q) []

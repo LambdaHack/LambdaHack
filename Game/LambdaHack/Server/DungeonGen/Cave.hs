@@ -87,22 +87,46 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
   litCorTile <- fromMaybe (assert `failure` clitCorTile)
                 <$> opick clitCorTile (const True)
   dnight <- chanceDice ldepth totalDepth cnightChance
-  let createPlaces lgr'@(gx', gy') = do
-        let area | gx' * gy' == 1
-                   || couterFenceTile /= "basic outer fence" = subFullArea
+  -- TODO: factor that out:
+  let createPlaces lgr' = do
+        let area | couterFenceTile /= "basic outer fence" = subFullArea
                  | otherwise = fullArea
             (lgr@(gx, gy), gs) =
               grid fixedCenters (bootFixedCenters kc) lgr' area
         minPlaceSize <- castDiceXY ldepth totalDepth cminPlaceSize
         maxPlaceSize <- castDiceXY ldepth totalDepth cmaxPlaceSize
-        voidPlaces <- ES.fromList <$>
-          if gx * gy > 1 then do
-            let gridArea = fromMaybe (assert `failure` lgr)
-                           $ toArea (0, 0, gx - 1, gy - 1)
-                voidNum = fractionOfPlaces lgr cmaxVoid
-            replicateM voidNum $ xyInArea gridArea  -- repetitions are OK
-          else return []
-        let decidePlace :: (TileMapEM, [Place], EM.EnumMap Point (Area, Area))
+        voidPlaces <-
+          let gridArea = fromMaybe (assert `failure` lgr)
+                         $ toArea (0, 0, gx - 1, gy - 1)
+              voidNum = fractionOfPlaces lgr cmaxVoid
+          in ES.fromList <$> replicateM voidNum (xyInArea gridArea)
+               -- repetitions are OK
+        let mergeFixed :: EM.EnumMap Point SpecialArea
+                       -> (Point, SpecialArea)
+                       -> (EM.EnumMap Point SpecialArea)
+            mergeFixed !gs0 (!i, !special) =
+              case special of
+                SpecialArea{} -> gs0
+                SpecialFixed p placeGroup ar -> do
+                  let (x0, y0, x1, y1) = fromArea ar
+                      d = 3
+                      vics = [i {py = py i - 1} | py p - y0 < d]
+                             ++ [i {py = py i + 1} | y1 - py p < d]
+                             ++ [i {px = px i - 1} | px p - x0 < d + 1]
+                             ++ [i {px = px i + 1} | x1 - px p < d + 1]
+                  case vics of
+                    [p2] -> case EM.lookup p2 gs0 of
+                      Just (SpecialArea ar2) ->
+                        let aSum = sumAreas ar ar2
+                            sp = SpecialMerged
+                                   (SpecialFixed p placeGroup aSum) p2
+                        in EM.insert i sp $ EM.delete p2 gs0
+                      _ -> gs0
+                    _ -> gs0
+                SpecialMerged{} -> assert `failure` (gs, gs0, i)
+            gs2 = foldl' mergeFixed gs $ EM.assocs gs
+            decidePlace :: ( TileMapEM, [Place]
+                           , EM.EnumMap Point (Area, Area) )
                         -> (Point, SpecialArea)
                         -> Rnd ( TileMapEM, [Place]
                                , EM.EnumMap Point (Area, Area) )
@@ -113,7 +137,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                   let innerArea = fromMaybe (assert `failure` (i, ar))
                                   $ shrink ar
                       !_A0 = shrink innerArea
-                      !_A1 = assert (isJust _A0 `blame` (innerArea, gs)) ()
+                      !_A1 = assert (isJust _A0 `blame` (innerArea, gs2)) ()
                   if i `ES.member` voidPlaces
                   then do
                     r <- mkVoidRoom innerArea
@@ -126,38 +150,41 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                     return ( EM.union tmap m
                            , place : pls
                            , EM.insert i (borderPlace cops place) qls )
-                SpecialFixed p placeGroup ar -> do
+                SpecialFixed p@Point{..} placeGroup ar -> do
                   -- Reserved for corridors and the global fence.
                   let innerArea = fromMaybe (assert `failure` (i, ar))
                                   $ shrink ar
                       !_A0 = shrink innerArea
-                      !_A1 = assert (isJust _A0 `blame` (innerArea, gs)) ()
+                      !_A1 = assert (isJust _A0 `blame` (innerArea, gs2)) ()
                       !_A2 = assert (p `inside` fromArea (fromJust _A0)
-                               `blame` (p, innerArea, gs, fixedCenters)) ()
+                                     `blame` (p, innerArea, fixedCenters)) ()
                       r = mkFixed maxPlaceSize innerArea p
                       !_A3 = assert (isJust (shrink r)
-                               `blame` (r, p, innerArea, gs, fixedCenters)) ()
+                                     `blame` ( r, p, innerArea, ar
+                                             , gs2, qls, fixedCenters )) ()
                   (tmap, place) <-
                     buildPlace cops kc dnight darkCorTile litCorTile
                                ldepth totalDepth r (Just placeGroup)
                   return ( EM.union tmap m
                          , place : pls
                          , EM.insert i (borderPlace cops place) qls )
-        places <- foldlM' decidePlace (EM.empty, [], EM.empty) $ EM.assocs gs
+                SpecialMerged sp p2 -> do
+                  (lplaces, dplaces, qplaces) <-
+                    decidePlace (m, pls, qls) (i, sp)
+                  return ( lplaces, dplaces
+                         , EM.insert p2 (qplaces EM.! i) qplaces )
+        places <- foldlM' decidePlace (EM.empty, [], EM.empty) $ EM.assocs gs2
         return (lgr, places)
   (lgrid, (lplaces, dplaces, qplaces)) <- createPlaces lgrid'
-  let lcorridorsFun lgr@(gx, gy) = do
-        addedConnects <-
-          if gx * gy > 1 then do
-            let cauxNum = fractionOfPlaces lgr cauxConnects
-            replicateM cauxNum (randomConnection lgr)
-          else return []
+  let lcorridorsFun lgr = do
+        addedConnects <- let cauxNum = fractionOfPlaces lgr cauxConnects
+                         in replicateM cauxNum (randomConnection lgr)
         connects <- connectGrid lgr
         let allConnects = connects `union` addedConnects  -- duplicates removed
-            connectPos :: (Point, Point) -> Rnd Corridor
+            connectPos :: (Point, Point) -> Rnd (Maybe Corridor)
             connectPos (p0, p1) =
               connectPlaces (qplaces EM.! p0) (qplaces EM.! p1)
-        cs <- mapM connectPos allConnects
+        cs <- catMaybes <$> mapM connectPos allConnects
         let pickedCorTile = if dnight then darkCorTile else litCorTile
         return $! EM.unions (map (digCorridors pickedCorTile) cs)
   lcorridors <- lcorridorsFun lgrid

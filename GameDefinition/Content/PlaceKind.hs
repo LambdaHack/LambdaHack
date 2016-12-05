@@ -273,7 +273,7 @@ staircase = PlaceKind
   , poverride = [('<', "staircase up"), ('>', "staircase down")]
   }
 staircase2 = staircase
-  { pfreq    = [("staircase", 100)]
+  { pfreq    = [("staircase", 1000)]
   , pfence   = FFloor
   , ptopLeft = [ "O.O"
                , "..."
@@ -283,7 +283,7 @@ staircase2 = staircase
                ]
   }
 staircase3 = staircase
-  { pfreq    = [("staircase", 100)]
+  { pfreq    = [("staircase", 1000)]
   , pfence   = FFloor
   , ptopLeft = [ "O.O.O"
                , "....."
@@ -293,7 +293,7 @@ staircase3 = staircase
                ]
   }
 staircase4 = staircase
-  { pfreq    = [("staircase", 100)]
+  { pfreq    = [("staircase", 1000)]
   , pfence   = FFloor
   , ptopLeft = [ "O.O.O.O"
                , "......."
@@ -321,7 +321,7 @@ staircase7 = staircase
                ]
   }
 staircase8 = staircase
-  { pfreq    = [("staircase", 100)]
+  { pfreq    = [("staircase", 1000)]
   , pfence   = FFloor
   , ptopLeft = [ "O.....O"
                , "..<.>.."
@@ -329,7 +329,7 @@ staircase8 = staircase
                ]
   }
 staircase9 = staircase
-  { pfreq    = [("staircase", 100)]
+  { pfreq    = [("staircase", 1000)]
   , pfence   = FFloor
   , ptopLeft = [ "O.......O"
                , ".O.<.>.O."
@@ -337,7 +337,7 @@ staircase9 = staircase
                ]
   }
 staircase10 = staircase
-  { pfreq    = [("staircase", 100)]
+  { pfreq    = [("staircase", 1000)]
   , pfence   = FFloor
   , ptopLeft = [ "O.O.....O.O"
                , ".O..<.>..O."
@@ -345,7 +345,7 @@ staircase10 = staircase
                ]
   }
 staircase11 = staircase
-  { pfreq    = [("staircase", 100)]
+  { pfreq    = [("staircase", 1000)]
   , pfence   = FFloor
   , ptopLeft = [ "XXO.OXX"
                , "O.....O"
@@ -355,7 +355,7 @@ staircase11 = staircase
                ]
   }
 staircase12 = staircase
-  { pfreq    = [("staircase", 100)]
+  { pfreq    = [("staircase", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "-------"
                , "|.....|"
@@ -365,7 +365,7 @@ staircase12 = staircase
                ]
   }
 staircase13 = staircase
-  { pfreq    = [("staircase", 100)]
+  { pfreq    = [("staircase", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "---------"
                , "|.......|"
@@ -375,7 +375,7 @@ staircase13 = staircase
                ]
   }
 staircase14 = staircase
-  { pfreq    = [("staircase", 100)]
+  { pfreq    = [("staircase", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "-----------"
                , "|.........|"
@@ -385,7 +385,7 @@ staircase14 = staircase
                ]
   }
 staircase15 = staircase
-  { pfreq    = [("staircase", 100)]
+  { pfreq    = [("staircase", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "-------------"
                , "|...........|"
@@ -395,7 +395,7 @@ staircase15 = staircase
                ]
   }
 staircase16 = staircase
-  { pfreq    = [("staircase", 100)]
+  { pfreq    = [("staircase", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "---------"
                , "|O.....O|"
@@ -405,7 +405,7 @@ staircase16 = staircase
                ]
   }
 staircase17 = staircase
-  { pfreq    = [("staircase", 100)]
+  { pfreq    = [("staircase", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "-----------"
                , "|O.......O|"
@@ -434,7 +434,7 @@ escapeUp2 = escapeUp
                ]
   }
 escapeUp3 = escapeUp
-  { pfreq    = [("escape up", 1100)]
+  { pfreq    = [("escape up", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "-----"
                , "|O.O|"
@@ -444,7 +444,7 @@ escapeUp3 = escapeUp
                ]
   }
 escapeUp4 = escapeUp
-  { pfreq    = [("escape up", 2300)]
+  { pfreq    = [("escape up", 2000)]
   , pcover   = CMirror
   , pfence   = FNone
   , ptopLeft = [ "-----"
@@ -455,7 +455,7 @@ escapeUp4 = escapeUp
                ]
   }
 escapeUp5 = escapeUp
-  { pfreq    = [("escape up", 1100)]
+  { pfreq    = [("escape up", 1000)]
   , pfence   = FFloor
   , ptopLeft = [ "XXOXX"
                , "O...O"
@@ -484,7 +484,7 @@ escapeDown2 = escapeDown
                ]
   }
 escapeDown3 = escapeDown
-  { pfreq    = [("escape down", 1100)]
+  { pfreq    = [("escape down", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "-----"
                , "|O.O|"
@@ -494,7 +494,7 @@ escapeDown3 = escapeDown
                ]
   }
 escapeDown4 = escapeDown
-  { pfreq    = [("escape down", 2200)]
+  { pfreq    = [("escape down", 2000)]
   , pcover   = CMirror
   , pfence   = FNone
   , ptopLeft = [ "-----"
@@ -505,7 +505,7 @@ escapeDown4 = escapeDown
                ]
   }
 escapeDown5 = escapeDown
-  { pfreq    = [("escape down", 1100)]
+  { pfreq    = [("escape down", 1000)]
   , pfence   = FFloor
   , ptopLeft = [ "XXOXX"
                , "O...O"

@@ -46,7 +46,7 @@ mkRoom (xm, ym) (xM, yM) area = do
   let (x0, y0, x1, y1) = fromArea area
       xspan = x1 - x0 + 1
       yspan = y1 - y0 + 1
-  let aW = (min xm xspan, min ym yspan, min xM xspan, min yM yspan)
+      aW = (min xm xspan, min ym yspan, min xM xspan, min yM yspan)
       areaW = fromMaybe (assert `failure` aW) $ toArea aW
   Point xW yW <- xyInArea areaW  -- roll size
   let a1 = (x0, y0, max x0 (x1 - xW + 1), max y0 (y1 - yW + 1))
@@ -156,13 +156,14 @@ mkCorridor hv (Point x0 y0) (Point x1 y1) b = do
 --
 -- The corridor connects the inner areas and the turning point
 -- of the corridor (if any) is outside the outer areas.
-connectPlaces :: (Area, Area) -> (Area, Area) -> Rnd Corridor
+connectPlaces :: (Area, Area) -> (Area, Area) -> Rnd (Maybe Corridor)
+connectPlaces (sa, so) (ta, to) | sa == ta && so == to = return Nothing
 connectPlaces (sa, so) (ta, to) = do
   let (_, _, sx1, sy1) = fromArea sa    -- inner area
       (_, _, sox1, soy1) = fromArea so  -- outer area
       (tx0, ty0, _, _) = fromArea ta
       (tox0, toy0, _, _) = fromArea to
-  let !_A = assert (sx1 <= tx0  || sy1 <= ty0  `blame` (sa, ta)) ()
+  let !_A = assert (sx1 <= tx0  || sy1 <= ty0 `blame` (sa, ta)) ()
       trim area =
         let (x0, y0, x1, y1) = fromArea area
             dx = min 2 $ (x1 - x0) `div` 2
@@ -196,4 +197,4 @@ connectPlaces (sa, so) (ta, to) = do
   -- The condition imposed on mkCorridor are tricky: there might not always
   -- exist a good intermediate point if the places are allowed to be close
   -- together and then we let the intermediate part degenerate.
-  mkCorridor hv p0 p1 area
+  Just <$> mkCorridor hv p0 p1 area
