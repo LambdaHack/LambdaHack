@@ -112,7 +112,7 @@ buildPlace :: Kind.COps         -- ^ the game content
            -> Area              -- ^ whole area of the place, fence included
            -> Maybe (GroupName PlaceKind)  -- ^ optional fixed place group
            -> Rnd (TileMapEM, Place)
-buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
+buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick}
                          , coplace=Kind.Ops{ofoldlGroup'} }
            CaveKind{..} dnight darkCorTile litCorTile
            ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) r mplaceGroup = do

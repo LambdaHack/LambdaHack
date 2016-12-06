@@ -105,23 +105,48 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                        -> (Point, SpecialArea)
                        -> (EM.EnumMap Point SpecialArea)
             mergeFixed !gs0 (!i, !special) =
-              case special of
-                SpecialArea{} -> gs0
-                SpecialFixed p placeGroup ar -> do
+              let mergeSpecial ar p2 f =
+                    case EM.lookup p2 gs0 of
+                      Just (SpecialArea ar2) ->
+                        let aSum = sumAreas ar ar2
+                            sp = SpecialMerged (f aSum) p2
+                        in EM.insert i sp $ EM.delete p2 gs0
+                      _ -> gs0
+              in case special of
+                SpecialArea ar ->
+                  let (x0, y0, x1, y1) = fromArea ar
+                      tooNarrow = x1 - x0 - 3 < fst minPlaceSize
+                      tooShort = y1 - y0 - 3 < snd minPlaceSize
+                      noFixedAdj p0 =
+                        let adjs = vicinityCardinalUnsafe p0
+                            notFixed p = case EM.lookup p gs of
+                              Just SpecialFixed{} -> False
+                              _ -> True
+                        in p0 `EM.member` gs0 && all notFixed adjs
+                  in if (tooNarrow || tooShort) && noFixedAdj i then
+                       if | tooShort  -- a problem more often
+                            && noFixedAdj i{py = py i - 1} ->
+                            mergeSpecial ar i{py = py i - 1} SpecialArea
+                          | tooShort
+                            && noFixedAdj i{py = py i + 1} ->
+                            mergeSpecial ar i{py = py i + 1} SpecialArea
+                          | tooNarrow
+                            && noFixedAdj i{px = px i - 1} ->
+                            mergeSpecial ar i{px = px i - 1} SpecialArea
+                          | tooNarrow
+                            && noFixedAdj i{px = px i + 1} ->
+                            mergeSpecial ar i{px = px i + 1} SpecialArea
+                          | otherwise -> gs0
+                     else gs0
+                SpecialFixed p placeGroup ar ->
                   let (x0, y0, x1, y1) = fromArea ar
                       d = 3
                       vics = [i {py = py i - 1} | py p - y0 < d]
                              ++ [i {py = py i + 1} | y1 - py p < d]
                              ++ [i {px = px i - 1} | px p - x0 < d + 1]
                              ++ [i {px = px i + 1} | x1 - px p < d + 1]
-                  case vics of
-                    [p2] -> case EM.lookup p2 gs0 of
-                      Just (SpecialArea ar2) ->
-                        let aSum = sumAreas ar ar2
-                            sp = SpecialMerged
-                                   (SpecialFixed p placeGroup aSum) p2
-                        in EM.insert i sp $ EM.delete p2 gs0
-                      _ -> gs0
+                  in case vics of
+                    [p2] -> mergeSpecial ar p2 (SpecialFixed p placeGroup)
                     _ -> gs0
                 SpecialMerged{} -> assert `failure` (gs, gs0, i)
             gs2 = foldl' mergeFixed gs $ EM.assocs gs
@@ -177,9 +202,9 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
         return (lgr, places)
   (lgrid, (lplaces, dplaces, qplaces)) <- createPlaces lgrid'
   let lcorridorsFun lgr = do
+        connects <- connectGrid lgr
         addedConnects <- let cauxNum = fractionOfPlaces lgr cauxConnects
                          in replicateM cauxNum (randomConnection lgr)
-        connects <- connectGrid lgr
         let allConnects = connects `union` addedConnects  -- duplicates removed
             connectPos :: (Point, Point) -> Rnd (Maybe Corridor)
             connectPos (p0, p1) =
