@@ -112,32 +112,33 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                             sp = SpecialMerged (f aSum) p2
                         in EM.insert i sp $ EM.delete p2 gs0
                       _ -> gs0
+                  mergable :: Point -> Maybe HV
+                  mergable p0 = case EM.lookup p0 gs0 of
+                    Just (SpecialArea ar) ->
+                      let (x0, y0, x1, y1) = fromArea ar
+                          isFixed p = case EM.lookup p gs of
+                            Just SpecialFixed{} -> True
+                            _ -> False
+                      in if | any isFixed $ vicinityCardinalUnsafe p0 -> Nothing
+                              -- Bias: prefer extending vertically.
+                            | y1 - y0 - 1 < snd minPlaceSize -> Just Vert
+                            | x1 - x0 - 1 < fst minPlaceSize -> Just Horiz
+                            | otherwise -> Nothing
+                    _ -> Nothing
               in case special of
-                SpecialArea ar ->
-                  let (x0, y0, x1, y1) = fromArea ar
-                      tooNarrow = x1 - x0 - 1 < fst minPlaceSize
-                      tooShort = y1 - y0 - 1 < snd minPlaceSize
-                      noFixedAdj p0 =
-                        let adjs = vicinityCardinalUnsafe p0
-                            notFixed p = case EM.lookup p gs of
-                              Just SpecialFixed{} -> False
-                              _ -> True
-                        in p0 `EM.member` gs0 && all notFixed adjs
-                  in if (tooNarrow || tooShort) && noFixedAdj i then
-                       if | tooShort  -- a problem more often
-                            && noFixedAdj i{py = py i - 1} ->
-                            mergeSpecial ar i{py = py i - 1} SpecialArea
-                          | tooShort
-                            && noFixedAdj i{py = py i + 1} ->
-                            mergeSpecial ar i{py = py i + 1} SpecialArea
-                          | tooNarrow
-                            && noFixedAdj i{px = px i - 1} ->
+                SpecialArea ar -> case mergable i of
+                  Nothing -> gs0
+                  Just hv -> case hv of
+                    -- Bias; vertical minimal sizes are smaller.
+                    Vert | mergable i{py = py i - 1} == Just Vert ->
+                           mergeSpecial ar i{py = py i - 1} SpecialArea
+                    Vert | mergable i{py = py i + 1} == Just Vert ->
+                           mergeSpecial ar i{py = py i + 1} SpecialArea
+                    Horiz | mergable i{px = px i - 1} == Just Horiz ->
                             mergeSpecial ar i{px = px i - 1} SpecialArea
-                          | tooNarrow
-                            && noFixedAdj i{px = px i + 1} ->
+                    Horiz | mergable i{px = px i + 1} == Just Horiz ->
                             mergeSpecial ar i{px = px i + 1} SpecialArea
-                          | otherwise -> gs0
-                     else gs0
+                    _ -> gs0
                 SpecialFixed p placeGroup ar ->
                   let (x0, y0, x1, y1) = fromArea ar
                       d = 3

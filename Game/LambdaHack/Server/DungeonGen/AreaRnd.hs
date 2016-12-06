@@ -5,7 +5,7 @@ module Game.LambdaHack.Server.DungeonGen.AreaRnd
     -- * Choosing connections
   , connectGrid, randomConnection
     -- * Plotting corridors
-  , Corridor, connectPlaces
+  , HV(..), Corridor, connectPlaces
   ) where
 
 import Prelude ()
@@ -132,6 +132,7 @@ randomConnection (nx, ny) =
 
 -- | The choice of horizontal and vertical orientation.
 data HV = Horiz | Vert
+  deriving Eq
 
 -- | The coordinates of consecutive fields of a corridor.
 type Corridor = [Point]
