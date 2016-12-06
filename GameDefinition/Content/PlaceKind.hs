@@ -347,11 +347,11 @@ staircase10 = staircase
 staircase11 = staircase
   { pfreq    = [("staircase", 1000)]
   , pfence   = FFloor
-  , ptopLeft = [ "XXO.OXX"
+  , ptopLeft = [ "..O.O.."
                , "O.....O"
                , "..<.>.."
                , "O.....O"
-               , "XXO.OXX"
+               , "..O.O.."
                ]
   }
 staircase12 = staircase
@@ -457,11 +457,11 @@ escapeUp4 = escapeUp
 escapeUp5 = escapeUp
   { pfreq    = [("escape up", 1000)]
   , pfence   = FFloor
-  , ptopLeft = [ "XXOXX"
+  , ptopLeft = [ "..O.."
                , "O...O"
                , "..<.."
                , "O...O"
-               , "XXOXX"
+               , "..O.."
                ]
   }
 escapeDown = PlaceKind
@@ -507,11 +507,11 @@ escapeDown4 = escapeDown
 escapeDown5 = escapeDown
   { pfreq    = [("escape down", 1000)]
   , pfence   = FFloor
-  , ptopLeft = [ "XXOXX"
+  , ptopLeft = [ "..O.."
                , "O...O"
                , "..>.."
                , "O...O"
-               , "XXOXX"
+               , "..O.."
                ]
   }
 boardgame = PlaceKind
