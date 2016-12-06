@@ -26,7 +26,7 @@ data CaveKind = CaveKind
   , cxsize          :: !X            -- ^ X size of the whole cave
   , cysize          :: !Y            -- ^ Y size of the whole cave
   , cgrid           :: !Dice.DiceXY  -- ^ the dimensions of the grid of places
-  , cminPlaceSize   :: !Dice.DiceXY  -- ^ minimal size of places
+  , cminPlaceSize   :: !Dice.DiceXY  -- ^ minimal size of places; for merging
   , cmaxPlaceSize   :: !Dice.DiceXY  -- ^ maximal size of places
   , cdarkChance     :: !Dice.Dice    -- ^ the chance a place is dark
   , cnightChance    :: !Dice.Dice    -- ^ the chance the cave is dark
@@ -79,10 +79,10 @@ validateSingleCaveKind CaveKind{..} =
      ++ [ "minMinSizeY < 1" | minMinSizeY < 1 ]
      ++ [ "minMaxSizeX < maxMinSizeX" | minMaxSizeX < maxMinSizeX ]
      ++ [ "minMaxSizeY < maxMinSizeY" | minMaxSizeY < maxMinSizeY ]
-     ++ [ "cxsize too small"
-        | maxGridX * (maxMinSizeX + 1) + xborder >= cxsize ]
-     ++ [ "cysize too small"
-        | maxGridY * (maxMinSizeY + 1) + yborder >= cysize ]
+     ++ [ "cxsize too small"  -- we check that size one less would fit
+        | maxGridX * maxMinSizeX + xborder >= cxsize ]
+     ++ [ "cysize too small"  -- we check that size one less would fit
+        | maxGridY * maxMinSizeY + yborder >= cysize ]
 
 -- | Validate all cave kinds.
 -- Note that names don't have to be unique: we can have several variants

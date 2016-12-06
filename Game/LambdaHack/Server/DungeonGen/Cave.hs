@@ -115,8 +115,8 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
               in case special of
                 SpecialArea ar ->
                   let (x0, y0, x1, y1) = fromArea ar
-                      tooNarrow = x1 - x0 - 3 < fst minPlaceSize
-                      tooShort = y1 - y0 - 3 < snd minPlaceSize
+                      tooNarrow = x1 - x0 - 1 < fst minPlaceSize
+                      tooShort = y1 - y0 - 1 < snd minPlaceSize
                       noFixedAdj p0 =
                         let adjs = vicinityCardinalUnsafe p0
                             notFixed p = case EM.lookup p gs of

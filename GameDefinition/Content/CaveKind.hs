@@ -33,7 +33,7 @@ rogue = CaveKind
   , cxsize        = fst normalLevelBound + 1
   , cysize        = snd normalLevelBound + 1
   , cgrid         = DiceXY (3 * d 2) (d 2 + 2)
-  , cminPlaceSize = DiceXY (2 * d 2 + 2) 4
+  , cminPlaceSize = DiceXY (2 * d 2 + 3) 5
   , cmaxPlaceSize = DiceXY 15 10
   , cdarkChance   = d 54 + dl 20
   , cnightChance  = 51  -- always night
@@ -63,7 +63,7 @@ arena = rogue
   , cname         = "Underground library"
   , cfreq         = [("campaign random", 50), ("caveArena", 1)]
   , cgrid         = DiceXY (2 * d 2) (d 3)
-  , cminPlaceSize = DiceXY (2 * d 2 + 3) 5
+  , cminPlaceSize = DiceXY (2 * d 2 + 4) 6
   , cdarkChance   = d 100 - dl 50
   -- Trails provide enough light for fun stealth. Light is not too deadly,
   -- because not many obstructions, so foes visible from far away.
@@ -115,8 +115,8 @@ noise = rogue
   , cname         = "Leaky, burrowed sediment"
   , cfreq         = [("campaign random", 20), ("caveNoise", 1)]
   , cgrid         = DiceXY (2 + d 2) 3
-  , cminPlaceSize = DiceXY 12 5
-  , cmaxPlaceSize = DiceXY 24 12
+  , cminPlaceSize = DiceXY 12 6
+  , cmaxPlaceSize = DiceXY 24 10
   , cdarkChance   = 0  -- few rooms, so all lit
   -- Light is deadly, because nowhere to hide and pillars enable spawning
   -- very close to heroes, so deep down light should be rare.
