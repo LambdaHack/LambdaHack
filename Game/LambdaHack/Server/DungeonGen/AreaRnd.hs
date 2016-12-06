@@ -156,7 +156,7 @@ mkCorridor hv (Point x0 y0) (Point x1 y1) b = do
 -- is the strict interior of the place, without the outermost tiles.
 --
 -- The corridor connects the inner areas and the turning point
--- of the corridor (if any) is outside the outer areas.
+-- of the corridor (if any) is outside or on a border of the outer areas.
 connectPlaces :: (Area, Area) -> (Area, Area) -> Rnd (Maybe Corridor)
 connectPlaces (sa, so) (ta, to) | sa == ta && so == to = return Nothing
 connectPlaces (sa, so) (ta, to) = do
@@ -167,12 +167,22 @@ connectPlaces (sa, so) (ta, to) = do
   let !_A = assert (sx1 <= tx0  || sy1 <= ty0 `blame` (sa, ta)) ()
       trim area =
         let (x0, y0, x1, y1) = fromArea area
-            dx = min 2 $ (x1 - x0) `div` 2
-            dy = min 2 $ (y1 - y0) `div` 2
+            dx = case (x1 - x0) `div` 2 of
+              0 -> 0
+              1 -> 1
+              2 -> 1
+              3 -> 1
+              _ -> 3
+            dy = case (y1 - y0) `div` 2 of
+              0 -> 0
+              1 -> 1
+              2 -> 1
+              3 -> 1
+              _ -> 3
         in fromMaybe (assert `failure` area)
            $ toArea (x0 + dx, y0 + dy, x1 - dx, y1 - dy)
-  Point sx sy <- xyInArea $ trim so
-  Point tx ty <- xyInArea $ trim to
+  Point sx sy <- xyInArea $ trim sa
+  Point tx ty <- xyInArea $ trim ta
   let hva d sarea tarea = do
         let (_, _, zsx1, zsy1) = fromArea sarea
             (ztx0, zty0, _, _) = fromArea tarea
