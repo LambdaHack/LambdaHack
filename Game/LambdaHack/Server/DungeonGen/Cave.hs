@@ -9,7 +9,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
 import Data.Key (mapWithKeyM)
 
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -91,16 +90,9 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
   let createPlaces lgr' = do
         let area | couterFenceTile /= "basic outer fence" = subFullArea
                  | otherwise = fullArea
-            (lgr@(gx, gy), gs) =
-              grid fixedCenters (bootFixedCenters kc) lgr' area
+            (lgr, gs) = grid fixedCenters (bootFixedCenters kc) lgr' area
         minPlaceSize <- castDiceXY ldepth totalDepth cminPlaceSize
         maxPlaceSize <- castDiceXY ldepth totalDepth cmaxPlaceSize
-        voidPlaces <-
-          let gridArea = fromMaybe (assert `failure` lgr)
-                         $ toArea (0, 0, gx - 1, gy - 1)
-              voidNum = fractionOfPlaces lgr cmaxVoid
-          in ES.fromList <$> replicateM voidNum (xyInArea gridArea)
-               -- repetitions are OK
         let mergeFixed :: EM.EnumMap Point SpecialArea
                        -> (Point, SpecialArea)
                        -> (EM.EnumMap Point SpecialArea)
@@ -151,12 +143,13 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                     _ -> gs0
                 SpecialMerged{} -> assert `failure` (gs, gs0, i)
             gs2 = foldl' mergeFixed gs $ EM.assocs gs
-            decidePlace :: ( TileMapEM, [Place]
+            decidePlace :: Bool
+                        -> ( TileMapEM, [Place]
                            , EM.EnumMap Point (Area, Area) )
                         -> (Point, SpecialArea)
                         -> Rnd ( TileMapEM, [Place]
                                , EM.EnumMap Point (Area, Area) )
-            decidePlace (!m, !pls, !qls) (!i, !special) = do
+            decidePlace noVoid (!m, !pls, !qls) (!i, !special) = do
               case special of
                 SpecialArea ar -> do
                   -- Reserved for corridors and the global fence.
@@ -164,7 +157,10 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                                   $ shrink ar
                       !_A0 = shrink innerArea
                       !_A1 = assert (isJust _A0 `blame` (innerArea, gs2)) ()
-                  if i `ES.member` voidPlaces
+                  voidPlace <- if noVoid
+                               then return False
+                               else chance cvoidChance
+                  if voidPlace
                   then do
                     r <- mkVoidRoom innerArea
                     return (m, pls, EM.insert i (r, r) qls)
@@ -196,10 +192,11 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                          , EM.insert i (borderPlace cops place) qls )
                 SpecialMerged sp p2 -> do
                   (lplaces, dplaces, qplaces) <-
-                    decidePlace (m, pls, qls) (i, sp)
+                    decidePlace True (m, pls, qls) (i, sp)
                   return ( lplaces, dplaces
                          , EM.insert p2 (qplaces EM.! i) qplaces )
-        places <- foldlM' decidePlace (EM.empty, [], EM.empty) $ EM.assocs gs2
+        places <- foldlM' (decidePlace False) (EM.empty, [], EM.empty)
+                  $ EM.assocs gs2
         return (lgr, places)
   (lgrid, (lplaces, dplaces, qplaces)) <- createPlaces lgrid'
   let lcorridorsFun lgr = do
