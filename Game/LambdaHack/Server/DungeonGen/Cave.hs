@@ -145,10 +145,10 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
             gs2 = foldl' mergeFixed gs $ EM.assocs gs
             decidePlace :: Bool
                         -> ( TileMapEM, [Place]
-                           , EM.EnumMap Point (Area, Area) )
+                           , EM.EnumMap Point (Area, Area, Area) )
                         -> (Point, SpecialArea)
                         -> Rnd ( TileMapEM, [Place]
-                               , EM.EnumMap Point (Area, Area) )
+                               , EM.EnumMap Point (Area, Area, Area) )
             decidePlace noVoid (!m, !pls, !qls) (!i, !special) = do
               case special of
                 SpecialArea ar -> do
@@ -163,15 +163,16 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                   if voidPlace
                   then do
                     r <- mkVoidRoom innerArea
-                    return (m, pls, EM.insert i (r, r) qls)
+                    return (m, pls, EM.insert i (r, r, ar) qls)
                   else do
                     r <- mkRoom minPlaceSize maxPlaceSize innerArea
                     (tmap, place) <-
                       buildPlace cops kc dnight darkCorTile litCorTile
                                  ldepth totalDepth r Nothing
+                    let (sa, so) = borderPlace cops place
                     return ( EM.union tmap m
                            , place : pls
-                           , EM.insert i (borderPlace cops place) qls )
+                           , EM.insert i (sa, so, ar) qls )
                 SpecialFixed p@Point{..} placeGroup ar -> do
                   -- Reserved for corridors and the global fence.
                   let innerArea = fromMaybe (assert `failure` (i, ar))
@@ -187,9 +188,10 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                   (tmap, place) <-
                     buildPlace cops kc dnight darkCorTile litCorTile
                                ldepth totalDepth r (Just placeGroup)
+                  let (sa, so) = borderPlace cops place
                   return ( EM.union tmap m
                          , place : pls
-                         , EM.insert i (borderPlace cops place) qls )
+                         , EM.insert i (sa, so, ar) qls )
                 SpecialMerged sp p2 -> do
                   (lplaces, dplaces, qplaces) <-
                     decidePlace True (m, pls, qls) (i, sp)

@@ -139,9 +139,12 @@ type Corridor = [Point]
 
 -- | Create a corridor, either horizontal or vertical, with
 -- a possible intermediate part that is in the opposite direction.
+-- There might not always exist a good intermediate point
+-- if the places are allowed to be close together
+-- and then we let the intermediate part degenerate.
 mkCorridor :: HV            -- ^ orientation of the starting section
-           -> Point       -- ^ starting point
-           -> Point       -- ^ ending point
+           -> Point         -- ^ starting point
+           -> Point         -- ^ ending point
            -> Area          -- ^ the area containing the intermediate point
            -> Rnd Corridor  -- ^ straight sections of the corridor
 mkCorridor hv (Point x0 y0) (Point x1 y1) b = do
@@ -156,15 +159,24 @@ mkCorridor hv (Point x0 y0) (Point x1 y1) b = do
 -- is the strict interior of the place, without the outermost tiles.
 --
 -- The corridor connects the inner areas and the turning point
--- of the corridor (if any) is outside or on a border of the outer areas.
-connectPlaces :: (Area, Area) -> (Area, Area) -> Rnd (Maybe Corridor)
-connectPlaces (sa, so) (ta, to) | sa == ta && so == to = return Nothing
-connectPlaces (sa, so) (ta, to) = do
-  let (_, _, sx1, sy1) = fromArea sa    -- inner area
-      (_, _, sox1, soy1) = fromArea so  -- outer area
-      (tx0, ty0, _, _) = fromArea ta
+-- of the corridor (if any) is outside or on a border of the outer areas
+-- and inside the grid areas.
+connectPlaces :: (Area, Area, Area) -> (Area, Area, Area)
+              -> Rnd (Maybe Corridor)
+connectPlaces (_, _, sg) (_, _, tg) | sg == tg = return Nothing
+connectPlaces (sa, so, sg) (ta, to, tg) = do
+  let (_, _, sox1, soy1) = fromArea so  -- outer area
       (tox0, toy0, _, _) = fromArea to
-  let !_A = assert (sx1 <= tx0  || sy1 <= ty0 `blame` (sa, ta)) ()
+      sgf@(sgx0, sgy0, sgx1, sgy1) = fromArea sg  -- grid area
+      tgf@(tgx0, tgy0, tgx1, tgy1) = fromArea tg
+      projY p q = if | (p `inside` sgf || p `inside` tgf)
+                       && (q `inside` sgf || q `inside` tgf) -> p
+                     | sgx1 == tgx0 -> p {px = sgx1}
+                     | otherwise -> assert (sgx0 == tgx1) $ p {px = sgx0}
+      projX p q = if | (p `inside` sgf || p `inside` tgf)
+                       && (q `inside` sgf || q `inside` tgf) -> p
+                     | sgy1 == tgy0 -> p {py = sgy1}
+                     | otherwise -> assert (sgy0 == tgy1) $ p {py = sgy0}
       trim area =
         let (x0, y0, x1, y1) = fromArea area
             dx = case (x1 - x0) `div` 2 of
@@ -183,29 +195,23 @@ connectPlaces (sa, so) (ta, to) = do
            $ toArea (x0 + dx, y0 + dy, x1 - dx, y1 - dy)
   Point sx sy <- xyInArea $ trim sa
   Point tx ty <- xyInArea $ trim ta
-  let hva d sarea tarea = do
-        let (_, _, zsx1, zsy1) = fromArea sarea
-            (ztx0, zty0, _, _) = fromArea tarea
-            xa = (zsx1+d, min sy ty, ztx0-d, max sy ty)
-            ya = (min sx tx, zsy1+d, max sx tx, zty0-d)
-            xya = (zsx1+d, zsy1+d, ztx0-d, zty0-d)
-        case toArea xya of
-          Just xyarea -> Just ([Horiz, Vert], xyarea)
-          Nothing -> case toArea xa of
-            Just xarea -> Just ([Horiz], xarea) -- Horizontal bias.
-            Nothing -> case toArea ya of
-              Just yarea -> Just ([Vert], yarea)
-              Nothing -> Nothing
-      mhvsArea = hva 2 so to `mplus` hva 1 so to `mplus` hva 0 so to
-  (hv, area) <- case mhvsArea of
-     Nothing -> assert `failure` (sa, so, ta, to, sx, sy, tx, ty)
-     Just (hvs, area) -> do
-       hv <- oneOf hvs
-       return (hv, area)
-  let (p0, p1) = case hv of
-        Horiz -> (Point sox1 sy, Point tox0 ty)
-        Vert  -> (Point sx soy1, Point tx toy0)
-  -- The condition imposed on mkCorridor are tricky: there might not always
-  -- exist a good intermediate point if the places are allowed to be close
-  -- together and then we let the intermediate part degenerate.
+  let (hv, area, p0, p1)
+        | sgx1 <= tgx0 =
+          let (Point hx0 hy0, Point hx1 hy1) =
+                ( projY (Point (sox1 + 1) (min sy ty))
+                        (Point (sox1 + 1) (max sy ty))
+                , projY (Point (tox0 - 1) (max sy ty))
+                        (Point (tox0 - 1) (min sy ty)) )
+          in case toArea (hx0, hy0, hx1, hy1) of
+            Just xarea -> (Horiz, xarea, Point sox1 sy, Point tox0 ty)
+            Nothing -> assert `failure` (sa, so, sg, ta, to, tg, sx, sy, tx, ty)
+        | otherwise = assert (sgy1 <= tgy0) $
+          let (Point vx0 vy0, Point vx1 vy1) =
+                ( projX (Point (min sx tx) (soy1 + 1))
+                        (Point (max sx tx) (soy1 + 1))
+                , projX (Point (max sx tx) (toy0 - 1))
+                        (Point (min sx tx) (toy0 - 1)) )
+          in case toArea (vx0, vy0, vx1, vy1) of
+            Just yarea -> (Vert, yarea, Point sx soy1, Point tx toy0)
+            Nothing-> assert `failure` (sa, so, sg, ta, to, tg, sx, sy, tx, ty)
   Just <$> mkCorridor hv p0 p1 area
