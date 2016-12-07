@@ -165,19 +165,7 @@ connectPlaces :: (Area, Area, Area) -> (Area, Area, Area)
               -> Rnd (Maybe Corridor)
 connectPlaces (_, _, sg) (_, _, tg) | sg == tg = return Nothing
 connectPlaces (sa, so, sg) (ta, to, tg) = do
-  let (_, _, sox1, soy1) = fromArea so  -- outer area
-      (tox0, toy0, _, _) = fromArea to
-      sgf@(sgx0, sgy0, sgx1, sgy1) = fromArea sg  -- grid area
-      tgf@(tgx0, tgy0, tgx1, tgy1) = fromArea tg
-      projY p q = if | (p `inside` sgf || p `inside` tgf)
-                       && (q `inside` sgf || q `inside` tgf) -> p
-                     | sgx1 == tgx0 -> p {px = sgx1}
-                     | otherwise -> assert (sgx0 == tgx1) $ p {px = sgx0}
-      projX p q = if | (p `inside` sgf || p `inside` tgf)
-                       && (q `inside` sgf || q `inside` tgf) -> p
-                     | sgy1 == tgy0 -> p {py = sgy1}
-                     | otherwise -> assert (sgy0 == tgy1) $ p {py = sgy0}
-      trim area =
+  let trim area =
         let (x0, y0, x1, y1) = fromArea area
             dx = case (x1 - x0) `div` 2 of
               0 -> 0
@@ -195,23 +183,21 @@ connectPlaces (sa, so, sg) (ta, to, tg) = do
            $ toArea (x0 + dx, y0 + dy, x1 - dx, y1 - dy)
   Point sx sy <- xyInArea $ trim sa
   Point tx ty <- xyInArea $ trim ta
-  let (hv, area, p0, p1)
-        | sgx1 <= tgx0 =
-          let (Point hx0 hy0, Point hx1 hy1) =
-                ( projY (Point (sox1 + 1) (min sy ty))
-                        (Point (sox1 + 1) (max sy ty))
-                , projY (Point (tox0 - 1) (max sy ty))
-                        (Point (tox0 - 1) (min sy ty)) )
-          in case toArea (hx0, hy0, hx1, hy1) of
-            Just xarea -> (Horiz, xarea, Point sox1 sy, Point tox0 ty)
+  let (_, _, sox1, soy1) = fromArea so  -- outer area
+      (tox0, toy0, _, _) = fromArea to
+      (sgx0, sgy0, sgx1, sgy1) = fromArea sg  -- grid area
+      (tgx0, tgy0, tgx1, tgy1) = fromArea tg
+      (hv, area, p0, p1)
+        | sgx1 == tgx0 =
+          let x0 = if sgy0 <= ty && ty <= sgy1 then sox1 + 1 else sgx1
+              x1 = if tgy0 <= sy && sy <= tgy1 then tox0 - 1 else sgx1
+          in case toArea (x0, min sy ty, x1, max sy ty) of
+            Just a -> (Horiz, a, Point sox1 sy, Point tox0 ty)
             Nothing -> assert `failure` (sa, so, sg, ta, to, tg, sx, sy, tx, ty)
-        | otherwise = assert (sgy1 <= tgy0) $
-          let (Point vx0 vy0, Point vx1 vy1) =
-                ( projX (Point (min sx tx) (soy1 + 1))
-                        (Point (max sx tx) (soy1 + 1))
-                , projX (Point (max sx tx) (toy0 - 1))
-                        (Point (min sx tx) (toy0 - 1)) )
-          in case toArea (vx0, vy0, vx1, vy1) of
-            Just yarea -> (Vert, yarea, Point sx soy1, Point tx toy0)
-            Nothing-> assert `failure` (sa, so, sg, ta, to, tg, sx, sy, tx, ty)
+        | otherwise = assert (sgy1 == tgy0) $
+          let y0 = if sgx0 <= tx && tx <= sgx1 then soy1 + 1 else sgy1
+              y1 = if tgx0 <= sx && sx <= tgx1 then toy0 - 1 else sgy1
+          in case toArea (min sx tx, y0, max sx tx, y1) of
+            Just a -> (Vert, a, Point sx soy1, Point tx toy0)
+            Nothing -> assert `failure` (sa, so, sg, ta, to, tg, sx, sy, tx, ty)
   Just <$> mkCorridor hv p0 p1 area
