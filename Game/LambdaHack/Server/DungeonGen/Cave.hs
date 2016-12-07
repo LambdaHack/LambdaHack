@@ -105,31 +105,33 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                             sp = SpecialMerged (f aSum) p2
                         in EM.insert i sp $ EM.delete p2 gs0
                       _ -> gs0
-                  mergable :: Point -> Maybe HV
-                  mergable p0 = case EM.lookup p0 gs0 of
+                  mergable :: X -> Y -> Maybe HV
+                  mergable x y | x < 0 || y < 0 = Nothing
+                               | otherwise = case EM.lookup (Point x y) gs0 of
                     Just (SpecialArea ar) ->
                       let (x0, y0, x1, y1) = fromArea ar
-                          isFixed p = case EM.lookup p gs of
-                            Just SpecialFixed{} -> True
+                          isFixed p = case gs EM.! p of
+                            SpecialFixed{} -> True
                             _ -> False
-                      in if | any isFixed $ vicinityCardinalUnsafe p0 -> Nothing
+                      in if | any isFixed
+                              $ vicinityCardinal gx gy (Point x y) -> Nothing
                               -- Bias: prefer extending vertically.
                             | y1 - y0 - 1 < snd minPlaceSize -> Just Vert
                             | x1 - x0 - 1 < fst minPlaceSize -> Just Horiz
                             | otherwise -> Nothing
                     _ -> Nothing
               in case special of
-                SpecialArea ar -> case mergable i of
+                SpecialArea ar -> case mergable (px i) (py i) of
                   Nothing -> gs0
                   Just hv -> case hv of
                     -- Bias; vertical minimal sizes are smaller.
-                    Vert | mergable i{py = py i - 1} == Just Vert ->
+                    Vert | mergable (px i) (py i - 1) == Just Vert ->
                            mergeSpecial ar i{py = py i - 1} SpecialArea
-                    Vert | mergable i{py = py i + 1} == Just Vert ->
+                    Vert | mergable (px i) (py i + 1) == Just Vert ->
                            mergeSpecial ar i{py = py i + 1} SpecialArea
-                    Horiz | mergable i{px = px i - 1} == Just Horiz ->
+                    Horiz | mergable (px i - 1) (py i) == Just Horiz ->
                             mergeSpecial ar i{px = px i - 1} SpecialArea
-                    Horiz | mergable i{px = px i + 1} == Just Horiz ->
+                    Horiz | mergable (px i + 1) (py i) == Just Horiz ->
                             mergeSpecial ar i{px = px i + 1} SpecialArea
                     _ -> gs0
                 SpecialFixed p placeGroup ar ->
