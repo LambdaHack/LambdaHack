@@ -147,8 +147,9 @@ mkCorridor :: HV            -- ^ orientation of the starting section
            -> Point         -- ^ ending point
            -> Area          -- ^ the area containing the intermediate point
            -> Rnd Corridor  -- ^ straight sections of the corridor
-mkCorridor hv (Point x0 y0) (Point x1 y1) b = do
-  Point rx ry <- xyInArea b
+mkCorridor hv (Point x0 y0) (Point x1 y1) area = do
+  let a = fromMaybe area $ shrink area
+  Point rx ry <- xyInArea a
   return $! map (uncurry Point) $ case hv of
     Horiz -> [(x0, y0), (rx, y0), (rx, y1), (x1, y1)]
     Vert  -> [(x0, y0), (x0, ry), (x1, ry), (x1, y1)]
