@@ -205,7 +205,8 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
         connects <- connectGrid lgr
         addedConnects <- let cauxNum = fractionOfPlaces lgr cauxConnects
                          in replicateM cauxNum (randomConnection lgr)
-        let allConnects = connects `union` addedConnects  -- duplicates removed
+        let allConnects =
+              connects `union` nub (sort addedConnects)  -- duplicates removed
             connectPos :: (Point, Point) -> Rnd (Maybe Corridor)
             connectPos (p0, p1) =
               connectPlaces (qplaces EM.! p0) (qplaces EM.! p1)

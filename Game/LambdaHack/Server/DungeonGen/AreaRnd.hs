@@ -90,8 +90,8 @@ connectGrid (nx, ny) = do
 connectGrid' :: (X, Y) -> ES.EnumSet Point -> ES.EnumSet Point
              -> [(Point, Point)]
              -> Rnd [(Point, Point)]
-connectGrid' (nx, ny) unconnected candidates acc
-  | ES.null candidates = return $! map sortPoint acc
+connectGrid' (nx, ny) unconnected candidates !acc
+  | ES.null candidates = return acc
   | otherwise = do
       c <- oneOf (ES.toList candidates)
       -- potential new candidates:
@@ -103,7 +103,7 @@ connectGrid' (nx, ny) unconnected candidates acc
              then return id
              else do
                d <- oneOf (ES.toList ds)
-               return ((c, d) :)
+               return (sortPoint (c, d) :)
       connectGrid' (nx, ny) nu
         (ES.delete c (candidates `ES.union` nc)) (new acc)
 
