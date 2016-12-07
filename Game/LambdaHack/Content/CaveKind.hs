@@ -31,7 +31,7 @@ data CaveKind = CaveKind
   , cdarkChance     :: !Dice.Dice    -- ^ the chance a place is dark
   , cnightChance    :: !Dice.Dice    -- ^ the chance the cave is dark
   , cauxConnects    :: !Rational     -- ^ a proportion of extra connections
-  , cvoidChance     :: !Chance       -- ^ chance of eligible place becoming void
+  , cmaxVoid        :: !Rational     -- ^ at most this proportion of rooms void
   , cminStairDist   :: !Int          -- ^ minimal distance between stairs
   , cextraStairs    :: !Dice.Dice    -- ^ extra stairs on top of from above
   , cdoorChance     :: !Chance       -- ^ the chance of a door in an opening

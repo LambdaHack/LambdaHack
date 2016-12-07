@@ -9,6 +9,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import Data.Key (mapWithKeyM)
 
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -80,7 +81,6 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                  $ toArea (0, 0, cxsize - 1, cysize - 1)
       subFullArea = fromMaybe (assert `failure` kc)
                     $ toArea (1, 1, cxsize - 2, cysize - 2)
-      fractionOfPlaces (gx, gy) r = round $ r * fromIntegral (gx * gy)
   darkCorTile <- fromMaybe (assert `failure` cdarkCorTile)
                  <$> opick cdarkCorTile (const True)
   litCorTile <- fromMaybe (assert `failure` clitCorTile)
@@ -90,7 +90,8 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
   let createPlaces lgr' = do
         let area | couterFenceTile /= "basic outer fence" = subFullArea
                  | otherwise = fullArea
-            (lgr, gs) = grid fixedCenters (bootFixedCenters kc) lgr' area
+            (lgr@(gx, gy), gs) =
+              grid fixedCenters (bootFixedCenters kc) lgr' area
         minPlaceSize <- castDiceXY ldepth totalDepth cminPlaceSize
         maxPlaceSize <- castDiceXY ldepth totalDepth cmaxPlaceSize
         let mergeFixed :: EM.EnumMap Point SpecialArea
@@ -143,7 +144,13 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                     _ -> gs0
                 SpecialMerged{} -> assert `failure` (gs, gs0, i)
             gs2 = foldl' mergeFixed gs $ EM.assocs gs
-            decidePlace :: Bool
+        voidPlaces <-
+          let gridArea = fromMaybe (assert `failure` lgr)
+                         $ toArea (0, 0, gx - 1, gy - 1)
+              voidNum = round $ cmaxVoid * fromIntegral (EM.size gs2)
+          in ES.fromList <$> replicateM voidNum (xyInArea gridArea)
+                   -- repetitions are OK; variance is low anyway
+        let decidePlace :: Bool
                         -> ( TileMapEM, [Place]
                            , EM.EnumMap Point (Area, Area, Area) )
                         -> (Point, SpecialArea)
@@ -157,10 +164,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                                   $ shrink ar
                       !_A0 = shrink innerArea
                       !_A1 = assert (isJust _A0 `blame` (innerArea, gs2)) ()
-                  voidPlace <- if noVoid
-                               then return False
-                               else chance cvoidChance
-                  if voidPlace
+                  if not noVoid && i `ES.member` voidPlaces
                   then do
                     r <- mkVoidRoom innerArea
                     return (m, pls, EM.insert i (r, r, ar) qls)
@@ -203,8 +207,9 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
   (lgrid, (lplaces, dplaces, qplaces)) <- createPlaces lgrid'
   let lcorridorsFun lgr = do
         connects <- connectGrid lgr
-        addedConnects <- let cauxNum = fractionOfPlaces lgr cauxConnects
-                         in replicateM cauxNum (randomConnection lgr)
+        addedConnects <-
+          let cauxNum = round $ cauxConnects * fromIntegral (length dplaces)
+          in replicateM cauxNum (randomConnection lgr)
         let allConnects =
               connects `union` nub (sort addedConnects)  -- duplicates removed
             connectPos :: (Point, Point) -> Rnd (Maybe Corridor)
