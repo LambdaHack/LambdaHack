@@ -200,8 +200,7 @@ ooverride Kind.COps{cotile=Kind.Ops{opick}} poverride =
         tk <- fromMaybe (assert `failure` (cgroup, s))
               <$> opick cgroup (const True)  -- tile symbol ignored
         return $! EM.insert s tk m
-      legend = foldr getLegend (return EM.empty) poverride
-  in legend
+  in foldr getLegend (return EM.empty) poverride
 
 -- | Construct a fence around an area, with the given tile kind.
 buildFence :: Kind.Id TileKind -> Area -> TileMapEM

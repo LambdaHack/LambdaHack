@@ -216,11 +216,20 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
         addedConnects <- do
           let cauxNum =
                 round $ cauxConnects * fromIntegral (fst lgr * snd lgrid)
-          cns <- replicateM cauxNum (randomConnection lgr)
-          return $! filter (\(p, q) -> p `ES.notMember` voidPlaces
-                                       && q `ES.notMember` voidPlaces) cns
-        let allConnects =
-              connects `union` nub (sort addedConnects)  -- duplicates removed
+          cns <- nub . sort <$> replicateM cauxNum (randomConnection lgr)
+          -- This allows connections through a single void room,
+          -- if a non-void room on both ends.
+          let notDeadEnd (p, q) =
+                if | p `ES.member` voidPlaces ->
+                     q `ES.notMember` voidPlaces && sndInCns p
+                   | q `ES.member` voidPlaces -> fstInCns q
+                   | otherwise -> True
+              sndInCns p = any (\(p0, q0) ->
+                q0 == p && p0 `ES.notMember` voidPlaces) cns
+              fstInCns q = any (\(p0, q0) ->
+                p0 == q && q0 `ES.notMember` voidPlaces) cns
+          return $! filter notDeadEnd cns
+        let allConnects = connects `union` addedConnects
             connectPos :: (Point, Point) -> Rnd (Maybe Corridor)
             connectPos (p0, p1) =
               connectPlaces (qplaces EM.! p0) (qplaces EM.! p1)
