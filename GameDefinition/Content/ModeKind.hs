@@ -374,22 +374,22 @@ rosterBoardgame = Roster
 cavesCampaign, cavesRaid, cavesSkirmish, cavesAmbush, cavesBattle, cavesSafari, cavesBoardgame :: Caves
 
 cavesCampaign = IM.fromList
-                $ [ (-1, ("shallow random 1", Just True))
-                  , (-2, ("caveRogue", Nothing))
-                  , (-3, ("caveEmpty", Nothing)) ]
-                  ++ zip [-4, -5..(-9)] (repeat ("campaign random", Nothing))
-                  ++ [(-10, ("caveNoise", Nothing))]
+                $ [ (-1, "shallow random 1")
+                  , (-2, "caveRogue")
+                  , (-3, "caveEmpty") ]
+                  ++ zip [-4, -5..(-9)] (repeat "campaign random")
+                  ++ [(-10, "caveNoise")]
 
-cavesRaid = IM.fromList [(-4, ("caveRogueLit", Just True))]
+cavesRaid = IM.fromList [(-4, "caveRogueLit")]
 
-cavesSkirmish = IM.fromList [(-3, ("caveSkirmish", Nothing))]
+cavesSkirmish = IM.fromList [(-3, "caveSkirmish")]
 
-cavesAmbush = IM.fromList [(-5, ("caveAmbush", Nothing))]
+cavesAmbush = IM.fromList [(-5, "caveAmbush")]
 
-cavesBattle = IM.fromList [(-5, ("caveBattle", Nothing))]
+cavesBattle = IM.fromList [(-5, "caveBattle")]
 
-cavesSafari = IM.fromList [ (-4, ("caveSafari1", Nothing))
-                          , (-7, ("caveSafari2", Nothing))
-                          , (-10, ("caveSafari3", Just False)) ]
+cavesSafari = IM.fromList [ (-4, "caveSafari1")
+                          , (-7, "caveSafari2")
+                          , (-10, "caveSafari3") ]
 
-cavesBoardgame = IM.fromList [(-3, ("caveBoardgame", Nothing))]
+cavesBoardgame = IM.fromList [(-3, "caveBoardgame")]

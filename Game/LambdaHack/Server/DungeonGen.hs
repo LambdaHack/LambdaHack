@@ -114,11 +114,11 @@ buildTileMap cops@Kind.COps{ cotile=Kind.Ops{opick}
                   pickDefTile mpickWalkable cxsize cysize dmap
 
 -- | Create a level from a cave.
-buildLevel :: Kind.COps -> Int -> (GroupName CaveKind, Maybe Bool)
+buildLevel :: Kind.COps -> Int -> GroupName CaveKind
            -> Int -> AbsDepth -> [Point]
            -> Rnd Level
 buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
-           ln (genName, escapeFeature) minD totalDepth lstairPrevRaw = do
+           ln genName minD totalDepth lstairPrevRaw = do
   dkind <- fromMaybe (assert `failure` genName) <$> opick genName (const True)
   let kc = okind dkind
       -- Simple rule for now: level @ln@ has depth (difficulty) @abs ln@.
@@ -147,7 +147,7 @@ buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
       fixedStairsUp = map (\p -> (p, "staircase up")) lstairsSingleUp
       fixedStairsDown = map (\p -> (p, "staircase down")) lstairsSingleDown
       allStairs = allUpStairs ++ lstairsSingleDown
-  fixedEscape <- case escapeFeature of
+  fixedEscape <- case cescape kc of
                    Nothing -> return []
                    Just b -> do
                      epos <- placeDownStairs kc allStairs
@@ -245,14 +245,14 @@ dungeonGen cops caves = do
                         $ AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)
       buildLvl :: [(LevelId, Level)]
-               -> (Int, (GroupName CaveKind, Maybe Bool))
+               -> (Int, GroupName CaveKind)
                -> Rnd [(LevelId, Level)]
-      buildLvl l (n, genEscape) = do
+      buildLvl l (n, genName) = do
         let lstairDown = case l of
               [] -> []
               (_, lvl) : _ -> snd $ lstair lvl
         -- lstairUp for the next level is lstairDown for the current level
-        lvl <- buildLevel cops n genEscape minD freshTotalDepth lstairDown
+        lvl <- buildLevel cops n genName minD freshTotalDepth lstairDown
         return $! (toEnum n, lvl) : l
   levels <- foldlM' buildLvl [] $ reverse $ IM.assocs caves
   let freshDungeon = EM.fromList levels

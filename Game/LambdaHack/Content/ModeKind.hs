@@ -37,7 +37,7 @@ data ModeKind = ModeKind
 -- | Requested cave groups for particular levels. The second component
 -- is the @Escape@ feature on the level. @True@ means it's represented
 -- by @<@, @False@, by @>@.
-type Caves = IM.IntMap (GroupName CaveKind, Maybe Bool)
+type Caves = IM.IntMap (GroupName CaveKind)
 
 -- | The specification of players for the game mode.
 data Roster = Roster
