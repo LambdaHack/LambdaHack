@@ -205,13 +205,16 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                          , EM.insert p2 (qplaces EM.! i) qplaces )
         places <- foldlM' (decidePlace False) (EM.empty, [], EM.empty)
                   $ EM.assocs gs2
-        return (lgr, places)
-  (lgrid, (lplaces, dplaces, qplaces)) <- createPlaces lgrid'
+        return (voidPlaces, lgr, places)
+  (voidPlaces, lgrid, (lplaces, dplaces, qplaces)) <- createPlaces lgrid'
   let lcorridorsFun lgr = do
         connects <- connectGrid lgr
-        addedConnects <-
-          let cauxNum = round $ cauxConnects * fromIntegral (length dplaces)
-          in replicateM cauxNum (randomConnection lgr)
+        addedConnects <- do
+          let cauxNum =
+                round $ cauxConnects * fromIntegral (fst lgr * snd lgrid)
+          cns <- replicateM cauxNum (randomConnection lgr)
+          return $! filter (\(p, q) -> p `ES.notMember` voidPlaces
+                                       && q `ES.notMember` voidPlaces) cns
         let allConnects =
               connects `union` nub (sort addedConnects)  -- duplicates removed
             connectPos :: (Point, Point) -> Rnd (Maybe Corridor)

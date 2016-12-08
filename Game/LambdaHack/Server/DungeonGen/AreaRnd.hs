@@ -115,8 +115,7 @@ sortPoint (a, b) | a <= b    = (a, b)
 -- | Pick a single random connection between adjacent areas within a grid.
 randomConnection :: (X, Y) -> Rnd (Point, Point)
 randomConnection (nx, ny) =
-  assert (nx > 1 && ny > 0 || nx > 0 && ny > 1 `blame` "wrong connection"
-                                               `twith` (nx, ny)) $ do
+  assert (nx > 1 && ny > 0 || nx > 0 && ny > 1 `blame` (nx, ny)) $ do
   rb <- oneOf [False, True]
   if rb || ny <= 1
     then do
