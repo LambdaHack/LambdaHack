@@ -146,12 +146,16 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                     _ -> gs0
                 SpecialMerged{} -> assert `failure` (gs, gs0, i)
             gs2 = foldl' mergeFixed gs $ EM.assocs gs
-        voidPlaces <-
+        voidPlaces <- do
           let gridArea = fromMaybe (assert `failure` lgr)
                          $ toArea (0, 0, gx - 1, gy - 1)
               voidNum = round $ cmaxVoid * fromIntegral (EM.size gs2)
-          in ES.fromList <$> replicateM voidNum (xyInArea gridArea)
-                   -- repetitions are OK; variance is low anyway
+              notFixed p = case gs EM.! p of
+                SpecialArea{} -> True
+                _ -> False
+          reps <- replicateM voidNum (xyInArea gridArea)
+                    -- repetitions are OK; variance is low anyway
+          return $! ES.fromList $ filter notFixed reps
         let decidePlace :: Bool
                         -> ( TileMapEM, [Place]
                            , EM.EnumMap Point (Area, Area, Area) )
@@ -208,7 +212,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
         return (voidPlaces, lgr, places)
   (voidPlaces, lgrid, (lplaces, dplaces, qplaces)) <- createPlaces lgrid'
   let lcorridorsFun lgr = do
-        connects <- connectGrid lgr
+        connects <- connectGrid voidPlaces lgr
         addedConnects <- do
           let cauxNum =
                 round $ cauxConnects * fromIntegral (fst lgr * snd lgrid)

@@ -76,24 +76,27 @@ mkFixed (xM, yM) area p@Point{..} =
 
 -- | Pick a subset of connections between adjacent areas within a grid until
 -- there is only one connected component in the graph of all areas.
-connectGrid :: (X, Y) -> Rnd [(Point, Point)]
-connectGrid (nx, ny) = do
+connectGrid :: ES.EnumSet Point -> (X, Y) -> Rnd [(Point, Point)]
+connectGrid voidPlaces (nx, ny) = do
   let unconnected = ES.fromDistinctAscList [ Point x y
                                            | y <- [0..ny-1], x <- [0..nx-1] ]
   -- Candidates are neighbours that are still unconnected. We start with
   -- a random choice.
-  rx <- randomR (0, nx-1)
-  ry <- randomR (0, ny-1)
-  let candidates = ES.singleton $ Point rx ry
-  connectGrid' (nx, ny) unconnected candidates []
+  p <- oneOf $ ES.toList $ unconnected ES.\\ voidPlaces
+  let candidates = ES.singleton p
+  connectGrid' voidPlaces (nx, ny) unconnected candidates []
 
-connectGrid' :: (X, Y) -> ES.EnumSet Point -> ES.EnumSet Point
+connectGrid' :: ES.EnumSet Point -> (X, Y)
+             -> ES.EnumSet Point -> ES.EnumSet Point
              -> [(Point, Point)]
              -> Rnd [(Point, Point)]
-connectGrid' (nx, ny) unconnected candidates !acc
-  | ES.null candidates = return acc
+connectGrid' voidPlaces (nx, ny) unconnected candidates !acc
+  | unconnected `ES.isSubsetOf` voidPlaces = return acc
   | otherwise = do
-      c <- oneOf (ES.toList candidates)
+      let candidatesBest = candidates ES.\\ voidPlaces
+      c <- oneOf $ ES.toList $ if ES.null candidatesBest
+                               then candidates
+                               else candidatesBest
       -- potential new candidates:
       let ns = ES.fromList $ vicinityCardinal nx ny c
           nu = ES.delete c unconnected  -- new unconnected
@@ -104,7 +107,7 @@ connectGrid' (nx, ny) unconnected candidates !acc
              else do
                d <- oneOf (ES.toList ds)
                return (sortPoint (c, d) :)
-      connectGrid' (nx, ny) nu
+      connectGrid' voidPlaces (nx, ny) nu
         (ES.delete c (candidates `ES.union` nc)) (new acc)
 
 -- | Sort the sequence of two points, in the derived lexicographic order.
