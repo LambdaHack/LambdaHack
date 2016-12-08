@@ -63,9 +63,10 @@ data Feature =
   | Impenetrable         -- ^ can never be excavated nor seen through
 
   | OftenItem            -- ^ initial items often generated there
-  | OftenActor           -- ^ initial actors and stairs often generated there
+  | OftenActor           -- ^ initial actors often generated there
   | NoItem               -- ^ no items ever generated there
-  | NoActor              -- ^ no actors nor stairs ever generated there
+  | NoActor              -- ^ no actors ever generated there
+  | Indistinct           -- ^ is allowed to have the same look as another tile
   | Trail                -- ^ used for visible trails throughout the level
   deriving (Show, Eq, Ord, Generic)
 
@@ -131,15 +132,12 @@ validateAllTileKind lt =
                                 , [kt] ) ) lt
       mapVis :: (TileKind -> Color) -> M.Map (Char, Bool, Color) [TileKind]
       mapVis f = M.fromListWith (++) $ listVis f
-      namesUnequal [] = assert `failure` "no TileKind content" `twith` lt
-      namesUnequal (hd : tl) =
-        -- Catch if at least one is different.
-        any (/= tname hd) (map tname tl)
+      minorVariant [] = assert `failure` "no TileKind content" `twith` lt
+      minorVariant (hd : tl) =  -- probably just a dark variant of the tile
         -- TODO: calculate actionFeatures only once for each tile kind
-        || any (/= actionFeatures True hd) (map (actionFeatures True) tl)
-      -- If symbol is ' ' then differences in tcolor are unseen anyway.
-      confusions f = filter (any ((' ' /=) . tsymbol))
-                     $ filter namesUnequal $ M.elems $ mapVis f
+        all (== actionFeatures True hd) (map (actionFeatures True) tl)
+      confusions f = filter (any ((Indistinct `notElem`) . tfeature))
+                     $ filter (not . minorVariant) $ M.elems $ mapVis f
   in case confusions tcolor ++ confusions tcolor2 of
     [] -> []
     cfs -> ["tile confusions detected:" <+> tshow cfs]
@@ -171,6 +169,7 @@ actionFeatures markSuspect t =
         OftenActor -> Nothing
         NoItem -> Nothing
         NoActor -> Nothing
+        Indistinct -> Nothing
   in IS.fromList $ map hash $ mapMaybe f $ tfeature t
 
 talterForStairs :: Word8

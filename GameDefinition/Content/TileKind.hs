@@ -23,17 +23,17 @@ cdefs = ContentDef
   , validateSingle = validateSingleTileKind
   , validateAll = validateAllTileKind
   , content = contentFromList $
-      [unknown, wall, hardRock, pillar, pillarIce, pillarCache, lampPost, burningBush, bush, tree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUp, stairsDown, escapeUp, escapeDown, floorCorridorLit, floorArenaLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorSmoke]
+      [unknown, wall, hardRock, pillar, pillarIce, pillarCache, lampPost, burningBush, bush, tree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUp, stairsDown, escapeUp, escapeDown, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorSmoke]
       ++ map makeDark ldarkable
       ++ map makeDarkColor ldarkColorable
   }
-unknown,        wall, hardRock, pillar, pillarIce, pillarCache, lampPost, burningBush, bush, tree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUp, stairsDown, escapeUp, escapeDown, floorCorridorLit, floorArenaLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorSmoke :: TileKind
+unknown,        wall, hardRock, pillar, pillarIce, pillarCache, lampPost, burningBush, bush, tree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUp, stairsDown, escapeUp, escapeDown, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorSmoke :: TileKind
 
 ldarkable :: [TileKind]
 ldarkable = [wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, floorCorridorLit]
 
 ldarkColorable :: [TileKind]
-ldarkColorable = [floorArenaLit, floorActorLit, floorItemLit, floorActorItemLit]
+ldarkColorable = [floorArenaLit, floorNoiseLit, floorDirtLit, floorActorLit, floorItemLit, floorActorItemLit]
 
 unknown = TileKind  -- needs to have index 0 and alter 1
   { tsymbol  = ' '
@@ -42,7 +42,7 @@ unknown = TileKind  -- needs to have index 0 and alter 1
   , tcolor   = defFG
   , tcolor2  = defFG
   , talter   = 1
-  , tfeature = [Dark]
+  , tfeature = [Dark, Indistinct]
   }
 wall = TileKind
   { tsymbol  = ' '
@@ -51,7 +51,7 @@ wall = TileKind
   , tcolor   = defFG
   , tcolor2  = defFG
   , talter   = 100
-  , tfeature = [Dark]
+  , tfeature = [Dark, Indistinct]
       -- Bedrock being dark is bad for AI (forces it to backtrack to explore
       -- bedrock at corridor turns) and induces human micromanagement
       -- if there can be corridors joined diagonally (humans have to check
@@ -72,7 +72,7 @@ hardRock = TileKind
   , tcolor   = defFG
   , tcolor2  = defFG
   , talter   = maxBound
-  , tfeature = [Dark, Impenetrable]
+  , tfeature = [Dark, Impenetrable, Indistinct]
   }
 pillar = TileKind
   { tsymbol  = 'O'
@@ -148,7 +148,7 @@ wallV = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 100
-  , tfeature = [HideAs "suspect vertical wall Lit"]
+  , tfeature = [HideAs "suspect vertical wall Lit", Indistinct]
   }
 wallGlassV = TileKind
   { tsymbol  = '|'
@@ -166,7 +166,7 @@ wallSuspectV = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 2
-  , tfeature = [Suspect, RevealAs "vertical closed door Lit"]
+  , tfeature = [Suspect, RevealAs "vertical closed door Lit", Indistinct]
   }
 doorClosedV = TileKind
   { tsymbol  = '+'
@@ -177,6 +177,7 @@ doorClosedV = TileKind
   , talter   = 2
   , tfeature = [ OpenTo "vertical open door Lit"
                , HideAs "suspect vertical wall Lit"
+               , Indistinct
                ]
   }
 doorOpenV = TileKind
@@ -197,7 +198,7 @@ wallH = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 100
-  , tfeature = [HideAs "suspect horizontal wall Lit"]
+  , tfeature = [HideAs "suspect horizontal wall Lit", Indistinct]
   }
 wallGlassH = TileKind
   { tsymbol  = '-'
@@ -215,7 +216,7 @@ wallSuspectH = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 2
-  , tfeature = [Suspect, RevealAs "horizontal closed door Lit"]
+  , tfeature = [Suspect, RevealAs "horizontal closed door Lit", Indistinct]
   }
 doorClosedH = TileKind
   { tsymbol  = '+'
@@ -226,6 +227,7 @@ doorClosedH = TileKind
   , talter   = 2
   , tfeature = [ OpenTo "horizontal open door Lit"
                , HideAs "suspect horizontal wall Lit"
+               , Indistinct
                ]
   }
 doorOpenH = TileKind
@@ -282,15 +284,21 @@ floorCorridorLit = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = maxBound
-  , tfeature = [Walkable, Clear]
+  , tfeature = [Walkable, Clear, Indistinct]
   }
 floorArenaLit = floorCorridorLit
   { tsymbol  = '.'
   , tname    = "stone floor"
-  , tfreq    = [ ("floorArenaLit", 1)
-               , ("arenaSet", 1), ("emptySet", 99), ("noiseSet", 50)
-               , ("battleSet", 1000), ("skirmishSet", 100)
-               , ("ambushSet", 1000) ]
+  , tfreq    = [("floorArenaLit", 1), ("arenaSet", 1), ("emptySet", 99)]
+  , tfeature = Indistinct : tfeature floorCorridorLit
+  }
+floorNoiseLit = floorArenaLit
+  { tname    = "damp stone floor"
+  , tfreq    = [("noiseSet", 50)]
+  }
+floorDirtLit = floorArenaLit
+  { tname    = "dirt"
+  , tfreq    = [("battleSet", 1000), ("skirmishSet", 100), ("ambushSet", 1000)]
   }
 floorActorLit = floorArenaLit
   { tfreq    = []
@@ -305,17 +313,18 @@ floorActorItemLit = floorItemLit
   , tfeature = OftenActor : tfeature floorItemLit
   }
 floorArenaShade = floorActorLit
-  { tname    = "stone floor"  -- TODO: "shaded ground"
+  { tname    = "shaded ground"
   , tfreq    = [("treeShadeOrFogOver_s", 95)]
   , tcolor2  = BrBlack
   , tfeature = Dark : tfeature floorActorLit  -- no OftenItem
   }
-floorRedLit = floorArenaLit
-  { tname    = "brick pavement"
+floorRedLit = floorCorridorLit
+  { tsymbol  = '.'
+  , tname    = "brick pavement"
   , tfreq    = [("trailLit", 30), ("trailChessLit", 30)]
   , tcolor   = BrRed
   , tcolor2  = Red
-  , tfeature = Trail : tfeature floorArenaLit
+  , tfeature = Trail : tfeature floorCorridorLit  -- no Indistinct
   }
 floorBlueLit = floorRedLit
   { tname    = "cobblestone path"
