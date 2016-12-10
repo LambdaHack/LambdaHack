@@ -51,7 +51,7 @@ skirmish = ModeKind
   , mfreq   = [("skirmish", 1)]
   , mroster = rosterSkirmish
   , mcaves  = cavesSkirmish
-  , mdesc   = "Your type theory research teams disagreed about the premises of a relative completeness theorem and there's only one way to settle that."
+  , mdesc   = "Your engineering team disagreed over a drink with some gentelmen scientists about premises of a relative completeness theorem and there's only one way to settle that."
   }
 
 ambush = ModeKind
@@ -87,7 +87,7 @@ safari = ModeKind
   , mfreq   = [("safari", 1)]
   , mroster = rosterSafari
   , mcaves  = cavesSafari
-  , mdesc   = "In this simulation you'll discover the joys of hunting the most exquisite of Earth's flora and fauna, both animal and semi-intelligent (exit at the bottommost level)."
+  , mdesc   = "In this simulation you'll discover the joys of hunting the most exquisite of Earth's flora and fauna, both animal and semi-intelligent. Exit at the bottommost level. (VR recording recovered from monster nest debris)"
   }
 
 safariSurvival = ModeKind
@@ -123,7 +123,7 @@ defense = ModeKind
   , mfreq   = [("defense", 1)]
   , mroster = rosterDefense
   , mcaves  = cavesCampaign
-  , mdesc   = "Don't let the humans defile your abstract secrets and flee, like the vulgar, literal, base scoundrels that they are!"
+  , mdesc   = "Don't let human interlopers defile your abstract secrets and flee unpunished!"
   }
 
 boardgame = ModeKind
@@ -179,55 +179,55 @@ rosterCampaign = Roster
   { rosterList = [ playerHero
                  , playerMonster
                  , playerAnimal ]
-  , rosterEnemy = [ ("Adventurer Party", "Monster Hive")
-                  , ("Adventurer Party", "Animal Kingdom") ]
+  , rosterEnemy = [ ("Explorer Party", "Monster Hive")
+                  , ("Explorer Party", "Animal Kingdom") ]
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
 rosterRaid = Roster
-  { rosterList = [ playerHero { fname = "White Recursive"
+  { rosterList = [ playerHero { fname = "Explorer Party"
                               , fhiCondPoly = hiRaid
                               , fentryLevel = -4
                               , finitialActors = 1 }
-                 , playerAntiHero { fname = "Red Iterative"
+                 , playerAntiHero { fname = "Red Founder"
                                   , fhiCondPoly = hiRaid
                                   , fentryLevel = -4
                                   , finitialActors = 1 }
                  , playerAnimal { fentryLevel = -4
                                 , finitialActors = 2 } ]
-  , rosterEnemy = [ ("White Recursive", "Animal Kingdom")
-                  , ("Red Iterative", "Animal Kingdom") ]
+  , rosterEnemy = [ ("Explorer Party", "Animal Kingdom")
+                  , ("Red Founder", "Animal Kingdom") ]
   , rosterAlly = [] }
 
 rosterSkirmish = Roster
-  { rosterList = [ playerHero { fname = "White Haskell"
+  { rosterList = [ playerHero { fname = "Explorer Party"
                               , fcanEscape = False
                               , fhiCondPoly = hiDweller
                               , fentryLevel = -3 }
-                 , playerAntiHero { fname = "Purple Agda"
+                 , playerAntiHero { fname = "Indigo Research"
                                   , fcanEscape = False
                                   , fhiCondPoly = hiDweller
                                   , fentryLevel = -3 }
                  , playerHorror ]
-  , rosterEnemy = [ ("White Haskell", "Purple Agda")
-                  , ("White Haskell", "Horror Den")
-                  , ("Purple Agda", "Horror Den") ]
+  , rosterEnemy = [ ("Explorer Party", "Indigo Research")
+                  , ("Explorer Party", "Horror Den")
+                  , ("Indigo Research", "Horror Den") ]
   , rosterAlly = [] }
 
 rosterAmbush = Roster
-  { rosterList = [ playerSniper { fname = "Yellow Idris"
+  { rosterList = [ playerSniper { fname = "Explorer Party"
                                 , fcanEscape = False
                                 , fhiCondPoly = hiDweller
                                 , fentryLevel = -5
                                 , finitialActors = 4 }
-                 , playerAntiSniper { fname = "Blue Epigram"
+                 , playerAntiSniper { fname = "Blue Hijacker"
                                     , fcanEscape = False
                                     , fhiCondPoly = hiDweller
                                     , fentryLevel = -5
                                     , finitialActors = 4 }
                  , playerHorror {fentryLevel = -5} ]
-  , rosterEnemy = [ ("Yellow Idris", "Blue Epigram")
-                  , ("Yellow Idris", "Horror Den")
-                  , ("Blue Epigram", "Horror Den") ]
+  , rosterEnemy = [ ("Explorer Party", "Blue Hijacker")
+                  , ("Explorer Party", "Horror Den")
+                  , ("Blue Hijacker", "Horror Den") ]
   , rosterAlly = [] }
 
 rosterBattle = Roster
@@ -241,8 +241,8 @@ rosterBattle = Roster
                  , playerMobileAnimal { fentryLevel = -5
                                       , finitialActors = 30
                                       , fneverEmpty = True } ]
-  , rosterEnemy = [ ("Armed Adventurer Party", "Monster Hive")
-                  , ("Armed Adventurer Party", "Animal Kingdom") ]
+  , rosterEnemy = [ ("Explorer Party", "Monster Hive")
+                  , ("Explorer Party", "Animal Kingdom") ]
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
 rosterBattleSurvival = rosterBattle

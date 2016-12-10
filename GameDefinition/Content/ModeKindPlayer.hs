@@ -20,7 +20,7 @@ import Game.LambdaHack.Content.ModeKind
 playerHero, playerSoldier, playerSniper, playerAntiHero, playerAntiSniper, playerCivilian, playerMonster, playerMobileMonster, playerAntiMonster, playerAnimal, playerMobileAnimal, playerHorror :: Player Dice
 
 playerHero = Player
-  { fname = "Adventurer Party"
+  { fname = "Explorer Party"
   , fgroup = "hero"
   , fskillsOther = meleeAdjacent
   , fcanEscape = True
@@ -36,13 +36,11 @@ playerHero = Player
   }
 
 playerSoldier = playerHero
-  { fname = "Armed Adventurer Party"
-  , fgroup = "soldier"
+  { fgroup = "soldier"
   }
 
 playerSniper = playerHero
-  { fname = "Sniper Adventurer Party"
-  , fgroup = "sniper"
+  { fgroup = "sniper"
   }
 
 playerAntiHero = playerHero

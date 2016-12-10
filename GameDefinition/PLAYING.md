@@ -3,7 +3,7 @@ Playing LambdaHack
 
 LambdaHack is a small dungeon crawler illustrating the roguelike game engine
 of the same name. Playing the game involves exploring spooky dungeons,
-alone or in a party of fearless adventurers, setting up ambushes
+alone or in a party of fearless explorers, setting up ambushes
 for unwary creatures, hiding in shadows, bumping into unspeakable horrors,
 hidden passages and gorgeous magical treasure and making creative use
 of it all. The madness-inspiring abominations that multiply in the depths
@@ -28,7 +28,7 @@ The currently chosen party leader is highlighted on the screen
 and his attributes are displayed at the bottommost status line,
 which in its most complex form may look as follows.
 
-    *@12 Adventurer  4d1+5% Calm: 20/60 HP: 33/50 Target: basilisk  [**__]
+    *@12        4d1+5% Calm: 20/60 HP: 33/50 Target: basilisk  [**__]
 
 The line starts with the list of party members (unless there's only one member)
 and the shortened name of the team. Clicking on the list selects heroes and
