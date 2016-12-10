@@ -347,7 +347,7 @@ floorBrownLit = floorRedLit
 floorFog = TileKind
   { tsymbol  = '#'
   , tname    = "dense fog"
-  , tfreq    = [("emptySet", 1), ("treeShadeOrFogOver_s", 5)]
+  , tfreq    = [("emptySet", 1), ("labTrail", 30), ("treeShadeOrFogOver_s", 5)]
   , tcolor   = BrCyan
   , tcolor2  = Cyan
   , talter   = maxBound
@@ -355,7 +355,7 @@ floorFog = TileKind
   }
 floorSmoke = floorFog
   { tname    = "billowing smoke"
-  , tfreq    = [("battleSet", 5), ("stair terminal", 2)]
+  , tfreq    = [("battleSet", 5), ("labTrail", 70), ("stair terminal", 2)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
   , talter   = maxBound

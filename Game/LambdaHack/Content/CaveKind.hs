@@ -67,12 +67,8 @@ validateSingleCaveKind CaveKind{..} =
       -- If there is at most one room, we need extra borders for a passage,
       -- but if there may be more rooms, we have that space, anyway,
       -- because multiple rooms take more space than borders.
-      xborder = if maxGridX == 1 || couterFenceTile /= "basic outer fence"
-                then 2
-                else 0
-      yborder = if maxGridY == 1 || couterFenceTile /= "basic outer fence"
-                then 2
-                else 0
+      xborder = if couterFenceTile /= "basic outer fence" then 2 else 0
+      yborder = if couterFenceTile /= "basic outer fence" then 2 else 0
   in [ "cname longer than 25" | T.length cname > 25 ]
      ++ [ "cxsize < 7" | cxsize < 7 ]
      ++ [ "cysize < 7" | cysize < 7 ]
@@ -80,9 +76,9 @@ validateSingleCaveKind CaveKind{..} =
      ++ [ "minMinSizeY < 1" | minMinSizeY < 1 ]
      ++ [ "minMaxSizeX < maxMinSizeX" | minMaxSizeX < maxMinSizeX ]
      ++ [ "minMaxSizeY < maxMinSizeY" | minMaxSizeY < maxMinSizeY ]
-     ++ [ "cxsize too small"  -- we check that size one less would fit
-        | maxGridX * maxMinSizeX + xborder >= cxsize ]
-     ++ [ "cysize too small"  -- we check that size one less would fit
+     ++ [ "cxsize too small"
+        | maxGridX * (maxMinSizeX - 4) + xborder >= cxsize ]
+     ++ [ "cysize too small"
         | maxGridY * maxMinSizeY + yborder >= cysize ]
 
 -- | Validate all cave kinds.

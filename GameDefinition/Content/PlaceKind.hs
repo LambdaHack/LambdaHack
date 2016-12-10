@@ -117,7 +117,7 @@ collapsed7 = collapsed
 pillar = PlaceKind
   { psymbol  = 'p'
   , pname    = "pillar room"
-  , pfreq    = [ ("rogue", 1000), ("arena", 1000), ("empty", 1000)
+  , pfreq    = [ ("rogue", 500), ("arena", 1000), ("empty", 1000)
                , ("noise", 50) ]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CStretch
@@ -160,7 +160,7 @@ pillar4 = pillar
 colonnade = PlaceKind
   { psymbol  = 'c'
   , pname    = "colonnade"
-  , pfreq    = [("rogue", 70), ("arena", 70), ("noise", 2000)]
+  , pfreq    = [("rogue", 30), ("arena", 70), ("noise", 2000)]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CAlternate
   , pfence   = FFloor

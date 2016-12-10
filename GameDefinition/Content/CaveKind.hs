@@ -22,9 +22,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleCaveKind
   , validateAll = validateAllCaveKind
   , content = contentFromList
-      [rogue, arena, empty, noise, shallow1rogue, battle, brawl, ambush, safari1, safari2, safari3, rogueLit, boardgame]
+      [rogue, arena, laboratory, empty, noise, shallow1rogue, battle, brawl, ambush, safari1, safari2, safari3, rogueLit, boardgame]
   }
-rogue,        arena, empty, noise, shallow1rogue, battle, brawl, ambush, safari1, safari2, safari3, rogueLit, boardgame :: CaveKind
+rogue,        arena, laboratory, empty, noise, shallow1rogue, battle, brawl, ambush, safari1, safari2, safari3, rogueLit, boardgame :: CaveKind
 
 rogue = CaveKind
   { csymbol       = 'R'
@@ -32,8 +32,8 @@ rogue = CaveKind
   , cfreq         = [("default random", 100), ("caveRogue", 1)]
   , cxsize        = fst normalLevelBound + 1
   , cysize        = snd normalLevelBound + 1
-  , cgrid         = DiceXY (3 * d 2) (d 2 + 2)
-  , cminPlaceSize = DiceXY (2 * d 2 + 3) 5
+  , cgrid         = DiceXY (3 * d 2) 4
+  , cminPlaceSize = DiceXY (2 * d 2 + 4) 5
   , cmaxPlaceSize = DiceXY 15 10
   , cdarkChance   = d 54 + dl 20
   , cnightChance  = 51  -- always night
@@ -61,8 +61,8 @@ rogue = CaveKind
   }
 arena = rogue
   { csymbol       = 'A'
-  , cname         = "Underground library"
-  , cfreq         = [("default random", 50), ("caveArena", 1)]
+  , cname         = "Dusty underground library"
+  , cfreq         = [("default random", 40), ("caveArena", 1)]
   , cgrid         = DiceXY (2 * d 2) (d 3)
   , cminPlaceSize = DiceXY (2 * d 2 + 4) 6
   , cdarkChance   = d 100 - dl 50
@@ -81,6 +81,26 @@ arena = rogue
   , cdefTile      = "arenaSet"
   , cdarkCorTile  = "trailLit"  -- let trails give off light
   , clitCorTile   = "trailLit"
+  }
+laboratory = arena
+  { csymbol       = 'L'
+  , cname         = "Burnt laboratory"
+  , cfreq         = [("default random", 40), ("caveLaboratory", 1)]
+  , cgrid         = DiceXY 10 3
+  , cminPlaceSize = DiceXY 11 4
+  , cdarkChance   = 51  -- always dark, burnt
+  , cnightChance  = 51  -- always night
+  , cauxConnects  = 1%10
+  , cmaxVoid      = 1%10
+  , cextraStairs  = d 2
+  , chidden       = 7
+  , cactorCoeff   = 160  -- deadly enough due to unclear corridors
+  , citemNum      = 11 * d 2  -- reward difficulty
+  , citemFreq     = [("useful", 20), ("treasure", 30), ("any vial", 50)]
+  , cpassable     = False
+  , cdefTile      = "fillerWall"
+  , cdarkCorTile  = "labTrail"
+  , clitCorTile   = "labTrail"
   }
 empty = rogue
   { csymbol       = 'E'
@@ -114,7 +134,7 @@ empty = rogue
 noise = rogue
   { csymbol       = 'N'
   , cname         = "Leaky, burrowed sediment"
-  , cfreq         = [("default random", 20), ("caveNoise", 1)]
+  , cfreq         = [("caveNoise", 1)]
   , cgrid         = DiceXY (2 + d 2) 3
   , cminPlaceSize = DiceXY 10 6
   , cmaxPlaceSize = DiceXY 20 10
@@ -137,7 +157,7 @@ noise = rogue
   }
 shallow1rogue = rogue
   { csymbol       = 'D'
-  , cname         = "Entrance to the dungeon"
+  , cname         = "Cave entrance"
   , cfreq         = [("shallow random 1", 100)]
   , cdarkChance   = 0  -- all rooms lit, for a gentle start
   , cextraStairs  = 1
