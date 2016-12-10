@@ -19,6 +19,7 @@ import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.IntMap.Strict as IM
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
@@ -35,14 +36,17 @@ import Game.LambdaHack.Content.ModeKind
 type FactionDict = EM.EnumMap FactionId Faction
 
 data Faction = Faction
-  { gname    :: !Text            -- ^ individual name
-  , gcolor   :: !Color.Color     -- ^ color of actors or their frames
-  , gplayer  :: !(Player Int)    -- ^ the player spec for this faction
-  , gdipl    :: !Dipl            -- ^ diplomatic mode
-  , gquit    :: !(Maybe Status)  -- ^ cause of game end/exit
-  , gleader  :: !(Maybe ActorId) -- ^ the leader of the faction
-  , gsha     :: !ItemBag         -- ^ faction's shared inventory
-  , gvictims :: !(EM.EnumMap (Kind.Id ItemKind) Int)  -- ^ members killed
+  { gname     :: !Text            -- ^ individual name
+  , gcolor    :: !Color.Color     -- ^ color of actors or their frames
+  , gplayer   :: !(Player Int)    -- ^ the player spec for this faction
+  , gdipl     :: !Dipl            -- ^ diplomatic mode
+  , gquit     :: !(Maybe Status)  -- ^ cause of game end/exit
+  , gleader   :: !(Maybe ActorId) -- ^ the leader of the faction
+  , gsha      :: !ItemBag         -- ^ faction's shared inventory
+  , gvictims  :: !(EM.EnumMap (Kind.Id ItemKind) Int)  -- ^ members killed
+  , gvictimsD :: !(EM.EnumMap (Kind.Id ModeKind)
+                              (IM.IntMap (EM.EnumMap (Kind.Id ItemKind) Int)))
+      -- ^ members killed in the past, by game mode and difficulty level
   }
   deriving (Show, Eq, Ord)
 
@@ -164,6 +168,7 @@ instance Binary Faction where
     put gleader
     put gsha
     put gvictims
+    put gvictimsD
   get = do
     gname <- get
     gcolor <- get
@@ -173,6 +178,7 @@ instance Binary Faction where
     gleader <- get
     gsha <- get
     gvictims <- get
+    gvictimsD <- get
     return $! Faction{..}
 
 instance Binary Diplomacy where

@@ -11,6 +11,7 @@ import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.IntMap.Strict as IM
 import Data.Key (mapWithKeyM_)
 import qualified Data.Map.Strict as M
 import Data.Ord
@@ -95,9 +96,10 @@ mapFromFuns =
         in m2 `M.union` m1
   in foldr fromFun M.empty
 
-createFactions :: AbsDepth -> Roster -> Rnd FactionDict
-{-# INLINABLE createFactions #-}
-createFactions totalDepth players = do
+resetFactions :: FactionDict -> Kind.Id ModeKind -> Int -> AbsDepth -> Roster
+              -> Rnd FactionDict
+{-# INLINABLE resetFactions #-}
+resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
   let rawCreate Player{..} = do
         entryLevel <- castDice (AbsDepth 0) (AbsDepth 0) fentryLevel
         initialActors <- castDice (AbsDepth $ abs entryLevel) totalDepth
@@ -112,13 +114,26 @@ createFactions totalDepth players = do
               LeaderNull -> "Loose"
               LeaderAI _ -> "Autonomous"
               LeaderUI _ -> "Controlled"
-            (gcolor, gname) = case M.lookup nameoc cmap of
+            (gcolor, gnameNew) = case M.lookup nameoc cmap of
               Nothing -> (Color.BrWhite, prefix <+> fname)
               Just c -> (c, prefix <+> fname <+> "Team")
-        let gdipl = EM.empty  -- fixed below
+            -- TODO: currently the data is lost when faction no longer in play
+            -- (e.g., Autonomous faction takes over)
+            -- TODO: also record other data; use it somehow both on the
+            -- server (tune difficulty or AI strategy) and in UI, e.g., ~ menu
+            gvictimsDnew = case find (\fact -> gname fact == gnameNew)
+                                $ EM.elems factionDold of
+              Nothing -> EM.empty
+              Just fact ->
+                let sing = IM.singleton curDiffSerOld (gvictims fact)
+                    f = IM.unionWith (EM.unionWith (+))
+                in EM.insertWith f gameModeIdOld sing $ gvictimsD fact
+        let gname = gnameNew
+            gdipl = EM.empty  -- fixed below
             gquit = Nothing
             gleader = Nothing
             gvictims = EM.empty
+            gvictimsD = gvictimsDnew
             gsha = EM.empty
         return $! Faction{..}
   lUI <- mapM rawCreate $ filter fhasUI $ rosterList players
@@ -165,6 +180,9 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
                 else
                   restoreScore cops
   sheroNames <- getsServer sheroNames  -- copy over from previous game
+  factionDold <- getsState sfactionD
+  gameModeIdOld <- getsState sgameModeId
+  DebugModeSer{scurDiffSer} <- getsServer sdebugSer
 #ifdef USE_BROWSER
   -- TODO: implement as an commandline option and have a diff set of default
   -- options for browser
@@ -187,12 +205,16 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
         sflavour <- dungeonFlavourMap cops
         (sdiscoKind, sdiscoKindRev) <- serverDiscos cops
         freshDng <- DungeonGen.dungeonGen cops $ mcaves mode
-        faction <- createFactions (DungeonGen.freshTotalDepth freshDng) players
-        return (faction, sflavour, sdiscoKind, sdiscoKindRev, freshDng, modeKindId)
-  let (faction, sflavour, sdiscoKind, sdiscoKindRev, DungeonGen.FreshDungeon{..}, modeKindId) =
+        factionD <- resetFactions factionDold gameModeIdOld scurDiffSer
+                                  (DungeonGen.freshTotalDepth freshDng)
+                                  players
+        return ( factionD, sflavour, sdiscoKind
+               , sdiscoKindRev, freshDng, modeKindId )
+  let ( factionD, sflavour, sdiscoKind
+       ,sdiscoKindRev, DungeonGen.FreshDungeon{..}, modeKindId ) =
         St.evalState rnd dungeonSeed
       defState = defStateGlobal freshDungeon freshTotalDepth
-                                faction cops scoreTable modeKindId
+                                factionD cops scoreTable modeKindId
       defSer = emptyStateServer { sheroNames
                                 , srandom
                                 , srngs }
