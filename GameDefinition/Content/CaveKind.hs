@@ -22,9 +22,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleCaveKind
   , validateAll = validateAllCaveKind
   , content = contentFromList
-      [rogue, arena, empty, noise, shallow1rogue, battle, skirmish, ambush, safari1, safari2, safari3, rogueLit, boardgame]
+      [rogue, arena, empty, noise, shallow1rogue, battle, brawl, ambush, safari1, safari2, safari3, rogueLit, boardgame]
   }
-rogue,        arena, empty, noise, shallow1rogue, battle, skirmish, ambush, safari1, safari2, safari3, rogueLit, boardgame :: CaveKind
+rogue,        arena, empty, noise, shallow1rogue, battle, brawl, ambush, safari1, safari2, safari3, rogueLit, boardgame :: CaveKind
 
 rogue = CaveKind
   { csymbol       = 'R'
@@ -170,10 +170,10 @@ battle = rogue  -- few lights and many solids, to help the less numerous heroes
   , cdarkCorTile  = "trailLit"  -- let trails give off light
   , clitCorTile   = "trailLit"
   }
-skirmish = rogue  -- many random solid tiles, to break LOS, since it's a day
+brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
   { csymbol       = 'S'
   , cname         = "Sunny woodland"
-  , cfreq         = [("caveSkirmish", 1)]
+  , cfreq         = [("caveBrawl", 1)]
   , cgrid         = DiceXY (2 * d 2 + 2) (d 2 + 2)
   , cminPlaceSize = DiceXY 3 3
   , cmaxPlaceSize = DiceXY 7 5
@@ -186,9 +186,9 @@ skirmish = rogue  -- many random solid tiles, to break LOS, since it's a day
   , cactorFreq    = []
   , citemNum      = 20 * d 2
   , citemFreq     = [("useful", 100)]
-  , cplaceFreq    = [("skirmish", 60), ("rogue", 40)]
+  , cplaceFreq    = [("brawl", 60), ("rogue", 40)]
   , cpassable     = True
-  , cdefTile      = "skirmishSet"
+  , cdefTile      = "brawlSet"
   , cdarkCorTile  = "floorArenaLit"
   , clitCorTile   = "floorArenaLit"
   }
@@ -217,7 +217,7 @@ ambush = rogue  -- lots of lights, to give a chance to snipe
   }
 safari1 = ambush {cfreq = [("caveSafari1", 1)]}
 safari2 = battle {cfreq = [("caveSafari2", 1)]}
-safari3 = skirmish
+safari3 = brawl
   { cfreq = [("caveSafari3", 1)]
   , cescape       = Just False
   }

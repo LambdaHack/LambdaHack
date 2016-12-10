@@ -33,7 +33,7 @@ standardKeys = KeyKind
       , ("S", ([CmdMainMenu], "enter settings menu", SettingsMenu))
       , ("X", ([CmdMainMenu], "save and exit", GameExit))
       , ("r", gameRestartTriple "raid")
-      , ("s", gameRestartTriple "skirmish")
+      , ("s", gameRestartTriple "brawl")
       , ("a", gameRestartTriple "ambush")
       , ("b", gameRestartTriple "battle")
       , ("c", gameRestartTriple "campaign")

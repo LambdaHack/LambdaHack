@@ -23,9 +23,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleModeKind
   , validateAll = validateAllModeKind
   , content = contentFromList
-      [campaign, raid, skirmish, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, boardgame, screensaverSafari, screensaverRaid, screensaverSkirmish, screensaverAmbush]
+      [campaign, raid, brawl, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush]
   }
-campaign,        raid, skirmish, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, boardgame, screensaverSafari, screensaverRaid, screensaverSkirmish, screensaverAmbush :: ModeKind
+campaign,        raid, brawl, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush :: ModeKind
 
 campaign = ModeKind
   { msymbol = 'c'
@@ -45,13 +45,13 @@ raid = ModeKind
   , mdesc   = "An incredibly advanced typing machine worth 100 gold is buried at the other end of this maze. Be the first to claim it and fund a research team that makes typing accurate and dependable forever."
   }
 
-skirmish = ModeKind
+brawl = ModeKind
   { msymbol = 'k'
-  , mname   = "skirmish"
-  , mfreq   = [("skirmish", 1)]
-  , mroster = rosterSkirmish
-  , mcaves  = cavesSkirmish
-  , mdesc   = "Your engineering team disagreed over a drink with some gentelmen scientists about premises of a relative completeness theorem and there's only one way to settle that."
+  , mname   = "brawl"
+  , mfreq   = [("brawl", 1)]
+  , mroster = rosterBrawl
+  , mcaves  = cavesBrawl
+  , mdesc   = "Your engineering team disagreed over a drink with some gentlemen scientists about premises of a relative completeness theorem and there's only one way to settle that."
   }
 
 ambush = ModeKind
@@ -104,7 +104,7 @@ pvp = ModeKind
   , mname   = "PvP"
   , mfreq   = [("PvP", 1)]
   , mroster = rosterPvP
-  , mcaves  = cavesSkirmish
+  , mcaves  = cavesBrawl
   , mdesc   = "(Not really a multiplayer in this game version.) This is a fight to the death between two human-controlled teams."
   }
 
@@ -154,12 +154,12 @@ screensaverRaid = raid
       }
   }
 
-screensaverSkirmish = skirmish
+screensaverBrawl = brawl
   { mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
-  , mroster = rosterSkirmish
-      { rosterList = (head (rosterList rosterSkirmish))
+  , mroster = rosterBrawl
+      { rosterList = (head (rosterList rosterBrawl))
                        {fleaderMode = LeaderAI $ AutoLeader False False}
-                     : tail (rosterList rosterSkirmish)
+                     : tail (rosterList rosterBrawl)
       }
   }
 
@@ -173,7 +173,7 @@ screensaverAmbush = ambush
   }
 
 
-rosterCampaign, rosterRaid, rosterSkirmish, rosterAmbush, rosterBattle, rosterBattleSurvival, rosterSafari, rosterSafariSurvival, rosterPvP, rosterCoop, rosterDefense, rosterBoardgame:: Roster
+rosterCampaign, rosterRaid, rosterBrawl, rosterAmbush, rosterBattle, rosterBattleSurvival, rosterSafari, rosterSafariSurvival, rosterPvP, rosterCoop, rosterDefense, rosterBoardgame:: Roster
 
 rosterCampaign = Roster
   { rosterList = [ playerHero
@@ -198,7 +198,7 @@ rosterRaid = Roster
                   , ("Red Founder", "Animal Kingdom") ]
   , rosterAlly = [] }
 
-rosterSkirmish = Roster
+rosterBrawl = Roster
   { rosterList = [ playerHero { fname = "Explorer Party"
                               , fcanEscape = False
                               , fhiCondPoly = hiDweller
@@ -371,7 +371,7 @@ rosterBoardgame = Roster
                   , ("Red", "Horror Den") ]
   , rosterAlly = [] }
 
-cavesCampaign, cavesRaid, cavesSkirmish, cavesAmbush, cavesBattle, cavesSafari, cavesBoardgame :: Caves
+cavesCampaign, cavesRaid, cavesBrawl, cavesAmbush, cavesBattle, cavesSafari, cavesBoardgame :: Caves
 
 cavesCampaign = IM.fromList
                 $ [ (-1, "shallow random 1")
@@ -382,7 +382,7 @@ cavesCampaign = IM.fromList
 
 cavesRaid = IM.fromList [(-4, "caveRogueLit")]
 
-cavesSkirmish = IM.fromList [(-3, "caveSkirmish")]
+cavesBrawl = IM.fromList [(-3, "caveBrawl")]
 
 cavesAmbush = IM.fromList [(-5, "caveAmbush")]
 
