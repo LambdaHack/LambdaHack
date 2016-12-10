@@ -23,16 +23,16 @@ cdefs = ContentDef
   , validateSingle = validateSingleModeKind
   , validateAll = validateAllModeKind
   , content = contentFromList
-      [campaign, raid, brawl, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush]
+      [exploration, raid, brawl, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush]
   }
-campaign,        raid, brawl, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush :: ModeKind
+exploration,        raid, brawl, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush :: ModeKind
 
-campaign = ModeKind
+exploration = ModeKind
   { msymbol = 'c'
-  , mname   = "campaign"
-  , mfreq   = [("campaign", 1)]
-  , mroster = rosterCampaign
-  , mcaves  = cavesCampaign
+  , mname   = "exploration"
+  , mfreq   = [("exploration", 1)]
+  , mroster = rosterExploration
+  , mcaves  = cavesExploration
   , mdesc   = "Don't let wanton curiosity, greed and the creeping abstraction madness keep you down there in the darkness for too long!"
   }
 
@@ -113,7 +113,7 @@ coop = ModeKind
   , mname   = "Coop"
   , mfreq   = [("Coop", 1)]
   , mroster = rosterCoop
-  , mcaves  = cavesCampaign
+  , mcaves  = cavesExploration
   , mdesc   = "(This mode is intended solely for automated testing.)"
   }
 
@@ -122,7 +122,7 @@ defense = ModeKind
   , mname   = "defense"
   , mfreq   = [("defense", 1)]
   , mroster = rosterDefense
-  , mcaves  = cavesCampaign
+  , mcaves  = cavesExploration
   , mdesc   = "Don't let human interlopers defile your abstract secrets and flee unpunished!"
   }
 
@@ -173,9 +173,9 @@ screensaverAmbush = ambush
   }
 
 
-rosterCampaign, rosterRaid, rosterBrawl, rosterAmbush, rosterBattle, rosterBattleSurvival, rosterSafari, rosterSafariSurvival, rosterPvP, rosterCoop, rosterDefense, rosterBoardgame:: Roster
+rosterExploration, rosterRaid, rosterBrawl, rosterAmbush, rosterBattle, rosterBattleSurvival, rosterSafari, rosterSafariSurvival, rosterPvP, rosterCoop, rosterDefense, rosterBoardgame:: Roster
 
-rosterCampaign = Roster
+rosterExploration = Roster
   { rosterList = [ playerHero
                  , playerMonster
                  , playerAnimal ]
@@ -351,7 +351,7 @@ rosterCoop = Roster
                   , ("Amber", "Monster Hive") ]
   , rosterAlly = [ ("Coral", "Amber") ] }
 
-rosterDefense = rosterCampaign
+rosterDefense = rosterExploration
   { rosterList = [ playerAntiHero
                  , playerAntiMonster
                  , playerAnimal ] }
@@ -371,13 +371,13 @@ rosterBoardgame = Roster
                   , ("Red", "Horror Den") ]
   , rosterAlly = [] }
 
-cavesCampaign, cavesRaid, cavesBrawl, cavesAmbush, cavesBattle, cavesSafari, cavesBoardgame :: Caves
+cavesExploration, cavesRaid, cavesBrawl, cavesAmbush, cavesBattle, cavesSafari, cavesBoardgame :: Caves
 
-cavesCampaign = IM.fromList
+cavesExploration = IM.fromList
                 $ [ (-1, "shallow random 1")
                   , (-2, "caveRogue")
                   , (-3, "caveEmpty") ]
-                  ++ zip [-4, -5..(-9)] (repeat "campaign random")
+                  ++ zip [-4, -5..(-9)] (repeat "default random")
                   ++ [(-10, "caveNoise")]
 
 cavesRaid = IM.fromList [(-4, "caveRogueLit")]

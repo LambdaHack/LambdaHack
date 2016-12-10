@@ -36,7 +36,7 @@ standardKeys = KeyKind
       , ("s", gameRestartTriple "brawl")
       , ("a", gameRestartTriple "ambush")
       , ("b", gameRestartTriple "battle")
-      , ("c", gameRestartTriple "campaign")
+      , ("c", gameRestartTriple "exploration")
       , ("i", addCmdCategory CmdDebug $ gameRestartTriple "battle survival")
       , ("f", addCmdCategory CmdDebug $ gameRestartTriple "safari")
       , ("u", addCmdCategory CmdDebug $ gameRestartTriple "safari survival")

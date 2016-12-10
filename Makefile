@@ -24,8 +24,8 @@ minific:
 	java -jar ~/Downloads/closure-compiler.jar dist/build/LambdaHack/LambdaHack.jsexe/all.js --compilation_level=ADVANCED_OPTIMIZATIONS > ~/Downloads/all.js
 
 
-frontendCampaign:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 2 --maxFps 60 --dumpInitRngs --automateAll --gameMode campaign
+frontendExploration:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 2 --maxFps 60 --dumpInitRngs --automateAll --gameMode exploration
 
 frontendRaid:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 5 --maxFps 60 --dumpInitRngs --automateAll --gameMode raid
@@ -52,7 +52,7 @@ frontendDefense:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 8 --maxFps 60 --dumpInitRngs --automateAll --gameMode defense
 
 benchMemoryAnim:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --maxFps 100000 --benchmark --stopAfterFrames 33000 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 120 --setMainRng 47 --frontendNull --noAnim +RTS -s -A1M -RTS
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --maxFps 100000 --benchmark --stopAfterFrames 33000 --automateAll --keepAutomated --gameMode exploration --setDungeonRng 120 --setMainRng 47 --frontendNull --noAnim +RTS -s -A1M -RTS
 
 benchBattle:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1500 --automateAll --keepAutomated --gameMode battle --setDungeonRng 0 --setMainRng 0
@@ -63,31 +63,31 @@ benchAnimBattle:
 benchFrontendBattle:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --benchmark --stopAfterFrames 1500 --automateAll --keepAutomated --gameMode battle --setDungeonRng 0 --setMainRng 0
 
-benchCampaign:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 7000 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 0 --setMainRng 0
+benchExploration:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 7000 --automateAll --keepAutomated --gameMode exploration --setDungeonRng 0 --setMainRng 0
 
-benchFrontendCampaign:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --benchmark --stopAfterFrames 7000 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 0 --setMainRng 0
+benchFrontendExploration:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --benchmark --stopAfterFrames 7000 --automateAll --keepAutomated --gameMode exploration --setDungeonRng 0 --setMainRng 0
 
-benchNull: benchBattle benchAnimBattle benchCampaign
+benchNull: benchBattle benchAnimBattle benchExploration
 
-bench:  benchBattle benchAnimBattle benchFrontendBattle benchCampaign benchFrontendCampaign
+bench:  benchBattle benchAnimBattle benchFrontendBattle benchExploration benchFrontendExploration
 
-nativeBenchCampaign:
-	dist/build/LambdaHack/LambdaHack                   --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 0 --setMainRng 0
+nativeBenchExploration:
+	dist/build/LambdaHack/LambdaHack                   --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode exploration --setDungeonRng 0 --setMainRng 0
 
 nativeBenchBattle:
 	dist/build/LambdaHack/LambdaHack                   --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode battle --setDungeonRng 0 --setMainRng 0
 
-nativeBench: nativeBenchBattle nativeBenchCampaign
+nativeBench: nativeBenchBattle nativeBenchExploration
 
-nodeBenchCampaign:
-	node dist/build/LambdaHack/LambdaHack.jsexe/all.js --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 0 --setMainRng 0
+nodeBenchExploration:
+	node dist/build/LambdaHack/LambdaHack.jsexe/all.js --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode exploration --setDungeonRng 0 --setMainRng 0
 
 nodeBenchBattle:
 	node dist/build/LambdaHack/LambdaHack.jsexe/all.js --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode battle --setDungeonRng 0 --setMainRng 0
 
-nodeBench: nodeBenchBattle nodeBenchCampaign
+nodeBench: nodeBenchBattle nodeBenchExploration
 
 
 test-travis-short: test-short
@@ -104,19 +104,19 @@ test: test-short test-medium test-long benchNull
 
 test-short: test-short-new test-short-load
 
-test-medium: testCampaign-medium testRaid-medium testBrawl-medium testAmbush-medium testBattle-medium testBattleSurvival-medium testSafari-medium testSafariSurvival-medium testCoop-medium testDefense-medium
+test-medium: testExploration-medium testRaid-medium testBrawl-medium testAmbush-medium testBattle-medium testBattleSurvival-medium testSafari-medium testSafariSurvival-medium testCoop-medium testDefense-medium
 
-test-medium-no-safari: testCampaign-medium testRaid-medium testBrawl-medium testAmbush-medium testBattle-medium testBattleSurvival-medium testCoop-medium testDefense-medium
+test-medium-no-safari: testExploration-medium testRaid-medium testBrawl-medium testAmbush-medium testBattle-medium testBattleSurvival-medium testCoop-medium testDefense-medium
 
-test-long: testCampaign-long testRaid-medium testBrawl-medium testAmbush-medium testBattle-long testBattleSurvival-long testSafari-long testSafariSurvival-long testDefense-long
+test-long: testExploration-long testRaid-medium testBrawl-medium testAmbush-medium testBattle-long testBattleSurvival-long testSafari-long testSafariSurvival-long testDefense-long
 
-test-long-no-safari: testCampaign-long testRaid-medium testBrawl-medium testAmbush-medium testBattle-long testBattleSurvival-long testDefense-long
+test-long-no-safari: testExploration-long testRaid-medium testBrawl-medium testAmbush-medium testBattle-long testBattleSurvival-long testDefense-long
 
-testCampaign-long:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 500 --dumpInitRngs --automateAll --keepAutomated --gameMode campaign 2> /tmp/stdtest.log
+testExploration-long:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 500 --dumpInitRngs --automateAll --keepAutomated --gameMode exploration 2> /tmp/stdtest.log
 
-testCampaign-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 300 --dumpInitRngs --automateAll --keepAutomated --gameMode campaign 2> /tmp/stdtest.log
+testExploration-medium:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 300 --dumpInitRngs --automateAll --keepAutomated --gameMode exploration 2> /tmp/stdtest.log
 
 testRaid-long:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 60 --dumpInitRngs --automateAll --keepAutomated --gameMode raid 2> /tmp/stdtest.log
@@ -180,7 +180,7 @@ testDefense-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 8 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 300 --dumpInitRngs --automateAll --keepAutomated --gameMode defense 2> /tmp/stdtest.log
 
 test-short-new:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix campaign --dumpInitRngs --automateAll --keepAutomated --gameMode campaign --frontendStd --stopAfterSeconds 2 2> /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix exploration --dumpInitRngs --automateAll --keepAutomated --gameMode exploration --frontendStd --stopAfterSeconds 2 2> /tmp/stdtest.log
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix raid --dumpInitRngs --automateAll --keepAutomated --gameMode raid --frontendStd --stopAfterSeconds 2 2> /tmp/stdtest.log
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix brawl --dumpInitRngs --automateAll --keepAutomated --gameMode brawl --frontendStd --stopAfterSeconds 2 2> /tmp/stdtest.log
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix ambush --dumpInitRngs --automateAll --keepAutomated --gameMode ambush --frontendStd --stopAfterSeconds 2 2> /tmp/stdtest.log
@@ -193,7 +193,7 @@ test-short-new:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix defense --dumpInitRngs --automateAll --keepAutomated --gameMode defense --frontendStd --stopAfterSeconds 2 2> /tmp/stdtest.log
 
 test-short-load:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix campaign --dumpInitRngs --automateAll --keepAutomated --gameMode campaign --frontendStd --stopAfterSeconds 2 2> /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix exploration --dumpInitRngs --automateAll --keepAutomated --gameMode exploration --frontendStd --stopAfterSeconds 2 2> /tmp/stdtest.log
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix raid --dumpInitRngs --automateAll --keepAutomated --gameMode raid --frontendStd --stopAfterSeconds 2 2> /tmp/stdtest.log
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix brawl --dumpInitRngs --automateAll --keepAutomated --gameMode brawl --frontendStd --stopAfterSeconds 2 2> /tmp/stdtest.log
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix ambush --dumpInitRngs --automateAll --keepAutomated --gameMode ambush --frontendStd --stopAfterSeconds 2 2> /tmp/stdtest.log

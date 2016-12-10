@@ -90,6 +90,6 @@ validateSingleCaveKind CaveKind{..} =
 -- of a cave with a given name.
 validateAllCaveKind :: [CaveKind] -> [Text]
 validateAllCaveKind lk =
-  if any (maybe False (> 0) . lookup "campaign random" . cfreq) lk
+  if any (maybe False (> 0) . lookup "default random" . cfreq) lk
   then []
-  else ["no cave defined for \"campaign random\""]
+  else ["no cave defined for \"default random\""]
