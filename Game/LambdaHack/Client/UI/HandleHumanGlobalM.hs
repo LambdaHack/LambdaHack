@@ -31,7 +31,9 @@ import qualified Paths_LambdaHack as Self (version)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Functor.Infix ((<$$>))
+import qualified Data.IntMap.Strict as IM
 import qualified Data.Map.Strict as M
+import Data.Ord
 import qualified Data.Text as T
 import Data.Version
 import qualified NLP.Miniutter.English as MU
@@ -1006,7 +1008,7 @@ mainMenuHuman :: MonadClientUI m
               -> m (Either MError ReqUI)
 {-# INLINABLE mainMenuHuman #-}
 mainMenuHuman cmdAction = do
-  Kind.COps{corule} <- getsState scops
+  Kind.COps{comode=Kind.Ops{ouniqGroup}, corule} <- getsState scops
   Binding{bcmdList} <- getsSession sbinding
   gameMode <- getGameMode
   scurDiff <- getsClient scurDiff
@@ -1068,8 +1070,21 @@ mainMenuHuman cmdAction = do
       kyxs = catMaybes mkyxs
       ov = map stringToAL menuOvLines
   isNoConfirms <- isNoConfirmsGame
-  -- TODO: pick the first game that was not yet won
-  menuIxMain <- if isNoConfirms then return 4 else getsSession smenuIxMain
+  victories <- getsClient svictories
+  let getGameRestart (_km, (_desc, HumanCmd.GameRestart t)) = Just t
+      getGameRestart _ = Nothing
+      ixGameRestart = fromJust $ findIndex (isJust . getGameRestart) kds
+      modes = zip [0..] $ map ouniqGroup $ mapMaybe getGameRestart kds
+      f :: (Int, Kind.Id ModeKind) -> Int
+      f (_, mode) = case EM.lookup mode victories of
+        Nothing -> 0
+        Just im -> case IM.lookup snxtDiff im of
+          Nothing -> 0
+          Just k -> k
+      (offsetLeastWon, _) = minimumBy (comparing f) modes
+  menuIxMain <- if isNoConfirms
+                then return $! ixGameRestart + offsetLeastWon
+                else getsSession smenuIxMain
   (ekm, pointer) <- displayChoiceScreen ColorFull True menuIxMain
                                         (menuToSlideshow (ov, kyxs)) [K.escKM]
   modifySession $ \sess -> sess {smenuIxMain = pointer}
