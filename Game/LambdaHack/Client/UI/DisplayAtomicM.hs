@@ -607,7 +607,7 @@ quitFactionUI fid mbody toSt = do
           (Nothing, Nothing)  -- Wipe out the quit flag for the savegame files.
   case startingPart of
     Nothing -> return ()
-    Just sp -> promptAdd $ makeSentence [MU.SubjectVerbSg fidName sp]
+    Just sp -> msgAdd $ makeSentence [MU.SubjectVerbSg fidName sp]
   case (toSt, partingPart) of
     (Just status, Just pp) -> do
       isNoConfirms <- isNoConfirmsGame
