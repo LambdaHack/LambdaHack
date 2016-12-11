@@ -136,7 +136,8 @@ boardgame = ModeKind
   }
 
 screensaverSafari = safari
-  { mfreq   = [("starting", 1), ("no confirms", 1)]
+  { mname   = "Auto-Safari"
+  , mfreq   = [("starting", 1), ("no confirms", 1)]
   , mroster = rosterSafari
       { rosterList = (head (rosterList rosterSafari))
                        -- changing leader by client needed, because of TFollow
@@ -146,7 +147,8 @@ screensaverSafari = safari
   }
 
 screensaverRaid = raid
-  { mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
+  { mname   = "Auto-Raid"
+  , mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
   , mroster = rosterRaid
       { rosterList = (head (rosterList rosterRaid))
                        {fleaderMode = LeaderAI $ AutoLeader False False}
@@ -155,7 +157,8 @@ screensaverRaid = raid
   }
 
 screensaverBrawl = brawl
-  { mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
+  { mname   = "Auto-Brawl"
+  , mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
   , mroster = rosterBrawl
       { rosterList = (head (rosterList rosterBrawl))
                        {fleaderMode = LeaderAI $ AutoLeader False False}
@@ -164,7 +167,8 @@ screensaverBrawl = brawl
   }
 
 screensaverAmbush = ambush
-  { mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
+  { mname   = "Auto-Ambush"
+  , mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
   , mroster = rosterAmbush
       { rosterList = (head (rosterList rosterAmbush))
                        {fleaderMode = LeaderAI $ AutoLeader False False}
