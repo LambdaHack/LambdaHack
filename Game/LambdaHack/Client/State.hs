@@ -14,6 +14,7 @@ import Game.LambdaHack.Common.Prelude
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.IntMap.Strict as IM
 import GHC.Generics (Generic)
 import qualified System.Random as R
 
@@ -25,6 +26,7 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Perception
@@ -32,6 +34,7 @@ import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ModeKind (ModeKind)
 
 -- | Client state, belonging to a single faction.
 -- Some of the data, e.g, the history, carries over
@@ -72,6 +75,8 @@ data StateClient = StateClient
   , smarkSuspect :: !Bool          -- ^ mark suspect features
   , scondInMelee :: !(EM.EnumMap LevelId (Either Bool (Bool, Bool)))
       -- ^ the old and (new, old) values of condInMelee condition
+  , svictories   :: !(EM.EnumMap (Kind.Id ModeKind) (IM.IntMap Int))
+      -- ^ won games at particular difficulty levels
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }
   deriving Show
@@ -117,6 +122,7 @@ emptyStateClient _sside =
     , slastStore = []
     , smarkSuspect = False
     , scondInMelee = EM.empty
+    , svictories = EM.empty
     , sdebugCli = defDebugModeCli
     }
 
@@ -168,6 +174,7 @@ instance Binary StateClient where
     put slastStore
     put smarkSuspect
     put scondInMelee
+    put svictories
     put sdebugCli  -- TODO: this is overwritten at once
   get = do
     sxhair <- get
@@ -187,6 +194,7 @@ instance Binary StateClient where
     slastStore <- get
     smarkSuspect <- get
     scondInMelee <- get
+    svictories <- get
     sdebugCli <- get
     let sbfsD = EM.empty
         sfper = EM.empty

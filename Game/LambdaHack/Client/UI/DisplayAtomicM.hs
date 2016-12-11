@@ -9,6 +9,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.IntMap.Strict as IM
 import Data.Tuple
 import qualified NLP.Miniutter.English as MU
 
@@ -559,6 +560,17 @@ quitFactionUI fid mbody toSt = do
       horror = isHorrorFact fact
   side <- getsClient sside
   when (side == fid && maybe False ((/= Camping) . stOutcome) toSt) $ do
+    let won = case toSt of
+          Just Status{stOutcome=Conquer} -> True
+          Just Status{stOutcome=Escape} -> True
+          _ -> False
+    when won $ do
+      gameModeId <- getsState sgameModeId
+      scurDiff <- getsClient scurDiff
+      let sing = IM.singleton scurDiff 1
+          f = IM.unionWith (+)
+          g svictoriesOld = EM.insertWith f gameModeId sing svictoriesOld
+      modifyClient $ \cli -> cli {svictories = g $ svictories cli}
     tellGameClipPS
     resetGameStart
   let msgIfSide _ | fid /= side = Nothing

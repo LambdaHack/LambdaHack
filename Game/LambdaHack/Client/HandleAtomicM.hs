@@ -320,6 +320,7 @@ cmdAtomicSemCli cmd = case cmd of
   -- UpdPerception lid outPer inPer -> perception lid outPer inPer
   UpdRestart side sdiscoKind sfper s d sdebugCli -> do
     snxtDiff <- getsClient snxtDiff
+    svictories <- getsClient svictories
     let cli = emptyStateClient side
     putClient cli { sdiscoKind
                   , sfper
@@ -327,6 +328,7 @@ cmdAtomicSemCli cmd = case cmd of
                   , scurDiff = d
                   , snxtDiff
                   , scondInMelee = EM.map (const $ Left False) (sdungeon s)
+                  , svictories
                   , sdebugCli }
     createSalter s
     createSactorAspect s  -- currently always void, because no actors yet
