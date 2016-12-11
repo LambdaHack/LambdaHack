@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.Prelude
 
   , module Control.Exception.Assert.Sugar
 
-  , Text, (<+>), tshow, divUp
+  , Text, (<+>), tshow, divUp, (<$$>)
 
   , (***), (&&&), first, second
   ) where
@@ -44,3 +44,7 @@ infixl 7 `divUp`
 divUp :: Integral a => a -> a -> a
 {-# INLINE divUp #-}
 divUp n k = (n + k - 1) `div` k
+
+infixl 4 <$$>
+(<$$>) :: (Functor f, Functor g) => (a -> b) -> f (g a) -> f (g b)
+h <$$> m = fmap h <$> m

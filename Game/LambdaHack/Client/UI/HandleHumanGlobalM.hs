@@ -30,7 +30,6 @@ import qualified Paths_LambdaHack as Self (version)
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Functor.Infix ((<$$>))
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Map.Strict as M
 import Data.Ord

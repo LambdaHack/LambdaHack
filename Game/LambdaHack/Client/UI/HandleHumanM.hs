@@ -7,8 +7,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Functor.Infix ((<$$>))
-
 import Game.LambdaHack.Client.UI.HandleHelperM
 import Game.LambdaHack.Client.UI.HandleHumanGlobalM
 import Game.LambdaHack.Client.UI.HandleHumanLocalM
