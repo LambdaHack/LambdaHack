@@ -6,10 +6,10 @@ xcplay:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --dumpInitRngs
 
 configure-debug:
-	cabal configure --enable-profiling --ghc-options="-fprof-auto-calls"
+	cabal configure --enable-profiling --profiling-detail=all-functions --disable-optimization
 
 configure-prof:
-	cabal configure --enable-profiling --ghc-option=-fprof-auto-exported -frelease
+	cabal configure --enable-profiling --profiling-detail=exported-functions -frelease
 
 ghcjs-configure:
 	cabal configure --disable-library-profiling --disable-profiling --ghcjs --ghcjs-option=-dedupe -f-release
