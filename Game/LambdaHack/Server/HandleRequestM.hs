@@ -530,7 +530,8 @@ reqGameRestart aid groupName d configHeroNames = do
   let fid = bfid b
   oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
   modifyServer $ \ser ->
-    ser { squit = True  -- do this at once
+    ser { swriteSave = True  -- fake saving to abort turn
+        , squit = True  -- do this at once
         , sheroNames = EM.insert fid configHeroNames $ sheroNames ser }
   isNoConfirms <- isNoConfirmsGame
   unless isNoConfirms $ revealItems Nothing Nothing
@@ -545,8 +546,8 @@ reqGameExit aid = do
   b <- getsState $ getActorBody aid
   let fid = bfid b
   oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
-  modifyServer $ \ser -> ser {swriteSave = True}
-  modifyServer $ \ser -> ser {squit = True}  -- do this at once
+  modifyServer $ \ser -> ser { swriteSave = True
+                             , squit = True }  -- do this at once
   execUpdAtomic $ UpdQuitFaction fid (Just b) oldSt
                 $ Just $ Status Camping (fromEnum $ blid b) Nothing
 
@@ -555,8 +556,8 @@ reqGameExit aid = do
 reqGameSave :: MonadServer m => m ()
 {-# INLINABLE reqGameSave #-}
 reqGameSave = do
-  modifyServer $ \ser -> ser {swriteSave = True}
-  modifyServer $ \ser -> ser {squit = True}  -- do this at once
+  modifyServer $ \ser -> ser { swriteSave = True
+                             , squit = True }  -- do this at once
 
 -- * ReqTactic
 

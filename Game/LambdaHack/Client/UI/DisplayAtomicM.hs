@@ -603,8 +603,7 @@ quitFactionUI fid mbody toSt = do
                    else "Somebody couldn't stand the heat." )
         Just Status{stOutcome=Restart, stNewGame=Nothing} ->
           assert `failure` (fid, mbody, toSt)
-        Nothing ->
-          (Nothing, Nothing)  -- Wipe out the quit flag for the savegame files.
+        Nothing -> (Nothing, Nothing)  -- server wipes out Camping for savefile
   case startingPart of
     Nothing -> return ()
     Just sp -> msgAdd $ makeSentence [MU.SubjectVerbSg fidName sp]

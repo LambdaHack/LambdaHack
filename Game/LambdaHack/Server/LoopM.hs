@@ -124,33 +124,35 @@ arenasForLoop = do
   return $! arenas
 
 handleFidUpd :: (MonadAtomic m, MonadServerReadRequest m)
-             => (FactionId -> m ()) -> FactionId -> Faction -> m ()
+             => Bool -> (FactionId -> m ()) -> FactionId -> Faction -> m Bool
 {-# INLINE handleFidUpd #-}
-handleFidUpd updatePerFid fid fact = do
-  fa <- factionArena fact
-  arenas <- getsServer sarenas
-  -- Projectiles are processed first, to get out of the way
-  -- and give info for deciding how to move actors.
-  mapM_ (\lid -> handleTrajectories lid fid) arenas
+handleFidUpd True _ _ _ = return True
+handleFidUpd False updatePerFid fid fact = do
   -- Update perception on all levels at once,
   -- in case a leader is changed to actor on another
   -- (possibly not even currently active) level.
   updatePerFid fid
+  fa <- factionArena fact
+  arenas <- getsServer sarenas
   -- Move a single actor, starting on arena with leader, if available.
-  let handle [] = return ()
+  -- The boolean result says if turn was aborted (due to save, restart, etc.).
+  -- If the turn was aborted, we have the guarantee game state was not
+  -- changed and so we can save without risk of affecting gameplay.
+  let handle [] = return False
       handle (lid : rest) = do
         nonWaitMove <- handleActors lid fid
-        unless nonWaitMove $ handle rest
+        swriteSave <- getsServer swriteSave
+        if | nonWaitMove -> return False
+           | swriteSave -> return True
+           | otherwise -> handle rest
       myArenas = case fa of
         Just myArena -> myArena : delete myArena arenas
         Nothing -> arenas
   handle myArenas
 
--- Start a clip (a part of a turn for which one or more frames
--- will be generated). Do whatever has to be done
--- every fixed number of time units, e.g., monster generation.
--- Run the leader and other actors moves. Eventually advance the time
--- and repeat.
+-- | Handle a clip (a part of a turn for which one or more frames
+-- will be generated). Run the leader and other actors moves.
+-- Eventually advance the time and repeat.
 loopUpd :: forall m. (MonadAtomic m, MonadServerReadRequest m) => m () -> m ()
 {-# INLINABLE loopUpd #-}
 loopUpd updConn = do
@@ -160,16 +162,28 @@ loopUpd updConn = do
         perValid <- getsServer $ (EM.! fid) . sperValidFid
         mapM_ (\(lid, valid) -> unless valid $ updatePer fid lid)
               (EM.assocs perValid)
-      handleFid :: (FactionId, Faction) -> m ()
+      handleFid :: Bool -> (FactionId, Faction) -> m Bool
       {-# NOINLINE handleFid #-}
-      handleFid (fid, fact) = handleFidUpd updatePerFid fid fact
+      handleFid aborted (fid, fact) = handleFidUpd aborted updatePerFid fid fact
       loopUpdConn = do
-        endClip
         factionD <- getsState sfactionD
-        mapM_ handleFid (EM.assocs factionD)
-        -- Update all perception for visual feedback and to make sure
-        -- saving a game doesn't affect gameplay (by updating perception).
-        mapM_ updatePerFid (EM.keys factionD)
+        -- Start handling with the single UI faction, to safely save&exit.
+        -- Note that this hack fails if there are many UI factions
+        -- (when we reenable multiplayer). Then players will request
+        -- save&exit and others will vote on it and it will happen
+        -- after the turn has ended, not at the start.
+        aborted <- foldM handleFid False (EM.toDescList factionD)
+        unless aborted $ do
+          -- Projectiles are processed last, so that the UI leader
+          -- can save&exit before the state is changed and the turn
+          -- needs to be carried through.
+          arenas <- getsServer sarenas
+          mapM_ (\fid -> mapM_ (\lid ->
+            handleTrajectories lid fid) arenas) (EM.keys factionD)
+          -- Update all perception for visual feedback and to make sure
+          -- saving a game doesn't affect gameplay (by updating perception).
+          mapM_ updatePerFid (EM.keys factionD)
+          endClip  -- must be last, in case it performs a bkp save
         quit <- getsServer squit
         if quit then do
           modifyServer $ \ser -> ser {squit = False}
@@ -179,6 +193,9 @@ loopUpd updConn = do
           loopUpdConn
   loopUpdConn
 
+-- | Handle the end of every clip. Do whatever has to be done
+-- every fixed number of time units, e.g., monster generation.
+-- Advance time. Perform periodic saves, if applicable.
 endClip :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 {-# INLINABLE endClip #-}
 endClip = do
@@ -188,9 +205,6 @@ endClip = do
   let clipN = time `timeFit` timeClip
       clipInTurn = let r = timeTurn `timeFit` timeClip
                    in assert (r >= 5) r
-  when (clipN `mod` rwriteSaveClips == 0) $ do
-    modifyServer $ \ser -> ser {swriteSave = False}
-    writeSaveAll False
   validArenas <- getsServer svalidArenas
   unless validArenas $ do
     sarenas <- arenasForLoop
@@ -212,6 +226,8 @@ endClip = do
       -- Add monsters each turn, not each clip.
       spawnMonster
     _ -> return ()
+  -- Save needs to be at the end, so that restore can start at the beginning.
+  when (clipN `mod` rwriteSaveClips == 0) $ writeSaveAll False
 
 -- | Trigger periodic items for all actors on the given level.
 applyPeriodicLevel :: (MonadAtomic m, MonadServer m) => m ()
@@ -340,6 +356,7 @@ handleActors lid fid = do
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
   factionD <- getsState sfactionD
   s <- getState
+  -- Leader acts first, so that UI leader can save&exit before state changes.
   let notLeader (aid, b) = Just aid /= gleader (factionD EM.! bfid b)
       l = sortBy (Ord.comparing $ \(aid, b) ->
                    (notLeader (aid, b), bsymbol b /= '@', bsymbol b, bcolor b))
@@ -352,16 +369,17 @@ hActors :: forall m. (MonadAtomic m, MonadServerReadRequest m)
         => FactionId -> [(ActorId, Actor)] -> m Bool
 {-# INLINABLE hActors #-}
 hActors _ [] = return False
-hActors fid ((aid, body) : rest) = do
+hActors fid as@((aid, body) : rest) = do
   let side = bfid body
   fact <- getsState $ (EM.! side) . sfactionD
-  quit <- getsServer squit
+  squit <- getsServer squit
   let mleader = gleader fact
       aidIsLeader = mleader == Just aid
       mainUIactor = fhasUI (gplayer fact)
                     && (aidIsLeader
                         || fleaderMode (gplayer fact) == LeaderNull)
-      mainUIunderAI = mainUIactor && isAIFact fact && not quit
+      -- Checking squit, to avoid doubly setting faction status to Camping.
+      mainUIunderAI = mainUIactor && isAIFact fact && not squit
       doQueryAI = not mainUIactor || isAIFact fact
   when mainUIunderAI $ do
     cmdS <- sendQueryUI side aid
@@ -370,7 +388,8 @@ hActors fid ((aid, body) : rest) = do
       ReqUIAutomate -> execUpdAtomic $ UpdAutoFaction side False
       ReqUIGameExit -> do
         reqGameExit aid
-        -- This is not proper UI-forced save, but a timeout, so don't save.
+        -- This is not proper UI-forced save, but a timeout, so don't save
+        -- and no need to abort turn.
         modifyServer $ \ser -> ser {swriteSave = False}
       _ -> assert `failure` cmdS  -- TODO: handle more
     -- Clear messages in the UI client, regardless if leaderless or not.
@@ -390,12 +409,15 @@ hActors fid ((aid, body) : rest) = do
       aidNew <- mswitchLeader maid
       mtimed <- handleRequestUI side aidNew cmd
       return (aidNew, mtimed)
-  nonWaitMove <- case mtimed of
+  case mtimed of
     -- TODO: check that the command is legal first, report and reject,
     -- but do not crash (currently server asserts things and crashes)
-    Just (RequestAnyAbility timed) -> handleRequestTimed side aidNew timed
-    Nothing -> return False
-  if nonWaitMove then return True else hActors fid rest
+    Just (RequestAnyAbility timed) -> do
+      nonWaitMove <- handleRequestTimed side aidNew timed
+      if nonWaitMove then return True else hActors fid rest
+    Nothing -> do
+      swriteSave <- getsServer swriteSave
+      if swriteSave then return False else hActors fid as
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 {-# INLINABLE gameExit #-}

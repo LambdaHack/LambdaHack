@@ -41,23 +41,21 @@ endOrLoop loop restart gameExit gameSave = do
         Just Status{stOutcome=Restart, stNewGame} -> stNewGame
         _ -> Nothing
       quitters = mapMaybe getQuitter $ EM.elems factionD
+      restartNeeded = gameOver || not (null quitters)
   let isCamper fact = case gquit fact of
         Just Status{stOutcome=Camping} -> True
         _ -> False
       campers = filter (isCamper . snd) $ EM.assocs factionD
   -- Wipe out the quit flag for the savegame files.
   mapM_ (\(fid, fact) ->
-            execUpdAtomic
-            $ UpdQuitFaction fid Nothing (gquit fact) Nothing) campers
-  bkpSave <- getsServer swriteSave
-  when bkpSave $ do
+    execUpdAtomic $ UpdQuitFaction fid Nothing (gquit fact) Nothing) campers
+  swriteSave <- getsServer swriteSave
+  when (swriteSave && not restartNeeded) $ do
     modifyServer $ \ser -> ser {swriteSave = False}
     gameSave
-  if gameOver || not (null quitters)
-  then restart (listToMaybe quitters)  -- start new game
-  else case campers of
-    [] -> loop  -- continue current game
-    _ : _ -> gameExit  -- don't call @loop@, that is, quit the game loop
+  if | restartNeeded -> restart (listToMaybe quitters)
+     | not $ null campers -> gameExit  -- and @loop@ is not called
+     | otherwise -> loop  -- continue current game
 
 dieSer :: (MonadAtomic m, MonadServer m) => ActorId -> Actor -> m ()
 {-# INLINABLE dieSer #-}

@@ -142,9 +142,10 @@ quitF mbody status fid = do
         revealItems (Just fid) mbody
         registerScore status (snd <$> mbody) fid
       execUpdAtomic $ UpdQuitFaction fid (snd <$> mbody) oldSt $ Just status  -- TODO: send only aid to UpdQuitFaction and elsewhere --- aid is alive
-      modifyServer $ \ser -> ser {squit = True}  -- end turn ASAP
+      modifyServer $ \ser -> ser {squit = True}  -- check game over ASAP
 
--- Send any QuitFactionA actions that can be deduced from their current state.
+-- Send any UpdQuitFaction actions that can be deduced from factions'
+-- current state.
 deduceQuits :: (MonadAtomic m, MonadServer m)
             => FactionId -> Maybe (ActorId, Actor) -> Status -> m ()
 {-# INLINABLE deduceQuits #-}
