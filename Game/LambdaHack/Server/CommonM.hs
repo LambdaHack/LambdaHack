@@ -410,7 +410,7 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
                               (filter (`isAtWar` bfid) $ EM.elems factionD)
       diffHP | boostFact = hp * 2 ^ abs diffBonusCoeff
              | otherwise = hp
-      bonusHP = fromIntegral $ (diffHP - hp) `divUp` oneM
+      bonusHP = fromEnum $ (diffHP - hp) `divUp` oneM
       healthOrgans = [(Just bonusHP, ("bonus HP", COrgan)) | bonusHP /= 0]
       bsymbol = jsymbol itemBase
       bname = IK.iname trunkKind

@@ -87,13 +87,13 @@ timeShift (Time t1) (Delta (Time t2)) = Time (t1 + t2)
 -- of the former kind.
 timeFit :: Time -> Time -> Int
 {-# INLINE timeFit #-}
-timeFit (Time t1) (Time t2) = fromIntegral $ t1 `div` t2
+timeFit (Time t1) (Time t2) = fromEnum $ t1 `div` t2
 
 -- | How many time intervals of the latter kind cover an interval
 -- of the former kind (rounded up).
 timeFitUp :: Time -> Time -> Int
 {-# INLINE timeFitUp #-}
-timeFitUp (Time t1) (Time t2) = fromIntegral $ t1 `divUp` t2
+timeFitUp (Time t1) (Time t2) = fromEnum $ t1 `divUp` t2
 
 -- | Reverse a time vector.
 timeDeltaReverse :: Delta Time -> Delta Time
@@ -136,7 +136,7 @@ timeDeltaToDigit (Delta (Time maxT)) (Delta (Time t)) =
   let k = 10 * t `div` maxT
       digit | k > 9     = '*'
             | k < 0     = '-'
-            | otherwise = Char.intToDigit $ fromIntegral k
+            | otherwise = Char.intToDigit $ fromEnum k
   in digit
 
 -- | Speed in meters per 1 million seconds (m/Ms).
@@ -165,7 +165,7 @@ minimalSpeed = sInMs `div` 10
 -- | Pretty-printing of speed in the format used in content definitions.
 fromSpeed :: Speed -> Int
 {-# INLINE fromSpeed #-}
-fromSpeed (Speed s) = fromIntegral $ s * 10 `div` sInMs
+fromSpeed (Speed s) = fromEnum $ s * 10 `div` sInMs
 
 -- | No movement possible at that speed.
 speedZero :: Speed
@@ -224,7 +224,7 @@ speedFromWeight !weight !velocityPercent =
 -- that is 2 turns, and then drops to the ground.
 rangeFromSpeed :: Speed -> Int
 {-# INLINE rangeFromSpeed #-}
-rangeFromSpeed (Speed v) = fromIntegral $ v `div` sInMs
+rangeFromSpeed (Speed v) = fromEnum $ v `div` sInMs
 
 -- | Calculate maximum range taking into account the linger percentage.
 rangeFromSpeedAndLinger :: Speed -> Int -> Int

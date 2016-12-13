@@ -264,7 +264,7 @@ effectHurt nDm source target verboseEffectConstructor = do
       deltaHP | serious = -- if HP overfull, at least cut back to max HP
                           min rawDeltaHP (xM hpMax - bhp tb)
               | otherwise = rawDeltaHP
-      deltaDiv = fromIntegral $ deltaHP `divUp` oneM
+      deltaDiv = fromEnum $ deltaHP `divUp` oneM
   -- Damage the target.
   execUpdAtomic $ UpdRefillHP target deltaHP
   when serious $ halveCalm target

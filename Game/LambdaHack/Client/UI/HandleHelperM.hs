@@ -219,7 +219,7 @@ statsOverlay aid = do
         , (aSpeed, "speed", \t -> tshow (max 0 t) <> "m/10s")
         , (aSight, "sight radius", \t ->
             let tmax = max 0 t
-                tcapped = min (fromIntegral $ bcalm b `div` (5 * oneM)) tmax
+                tcapped = min (fromEnum $ bcalm b `div` (5 * oneM)) tmax
             in if tmax == tcapped
                then tshow tmax <> "m"
                else tshow tcapped <> "m (max" <+> tshow tmax <> "m)")

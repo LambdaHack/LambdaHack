@@ -157,7 +157,7 @@ perActorFromLevel perActorOld getActorB actorAspect fovClear =
 
 boundSightByCalm :: Int -> Int64 -> Int
 boundSightByCalm sight calm =
-  min (fromIntegral $ calm `div` (5 * oneM)) sight
+  min (fromEnum $ calm `div` (5 * oneM)) sight
 
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
