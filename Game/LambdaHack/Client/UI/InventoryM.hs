@@ -122,8 +122,7 @@ getAnyItems psuit prompt promptGeneric cLegalRaw cLegalAfterCalm askWhenLone ask
           getAnyItems psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
                       askWhenLone askNumber
         Left (Just err) -> return $ Left $ failError err
-        Right k ->
-          return $ Right ([(iid, itemFull{itemK=k})], c)
+        Right k -> return $ Right ([(iid, itemFull{itemK=k})], c)
     Right _ -> return soc
 
 -- | Display all items from a store and let the human player choose any
@@ -426,10 +425,8 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         }
       (bagFiltered, promptChosen) =
         case itemDialogState of
-          ISuitable   -> (bagSuit,
-                          prompt body ar cCur <> ":")
-          IAll        -> (bag,
-                          promptGeneric body ar cCur <> ":")
+          ISuitable -> (bagSuit, prompt body ar cCur <> ":")
+          IAll      -> (bag, promptGeneric body ar cCur <> ":")
   case cCur of
     MStats -> do
       io <- statsOverlay leader

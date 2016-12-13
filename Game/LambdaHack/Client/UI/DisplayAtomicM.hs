@@ -117,7 +117,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
       Nothing ->  -- never seen or would have a slot
         case c of
           CActor aid store ->
-            -- Enemy actor fetching an item from shared stash, most probably.
+            -- Most probably an actor putting item in or out of shared stash.
             void $ updateItemSlotSide store aid iid
           CEmbed{} -> return ()
           CFloor lid p -> do
@@ -131,6 +131,22 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
             stopPlayBack
           CTrunk{} -> return ()
       _ -> return ()  -- seen already (has a slot assigned)
+    case c of
+      CActor aid store | store /= CSha -> do
+        -- Actor fetching an item from shared stash, most probably.
+        b <- getsState $ getActorBody aid
+        subject <- partActorLeader aid b
+        let noun = MU.WownW subject (MU.Text $ snd $ ppCStore store)
+            verb = MU.Text $ makePhrase ["be added to", noun]
+        itemVerbMU iid kit verb c
+      _ -> return ()
+  UpdLoseItem iid _ kit c@(CActor aid store) | store /= CSha -> do
+    -- Actor putting an item into shared stash, most probably.
+    b <- getsState $ getActorBody aid
+    subject <- partActorLeader aid b
+    let noun = MU.WownW subject (MU.Text $ snd $ ppCStore store)
+        verb = MU.Text $ makePhrase ["be removed from", noun]
+    itemVerbMU iid kit verb c
   UpdLoseItem{} -> return ()
   -- Move actors and items.
   UpdMoveActor aid source target -> moveActor aid source target
