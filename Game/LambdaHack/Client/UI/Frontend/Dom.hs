@@ -162,6 +162,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
       --   putStrLn $ "which: " ++ show which
       --   putStrLn $ "keyCode: " ++ show keyCode
       --   putStrLn $ "modifier: " ++ show modifier
+      when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
       IO.liftIO $ saveKMP rf modifier key originPoint
       -- Pass through Ctrl-+ and others, disable Tab.
       when (modifier `elem` [K.NoModifier, K.Shift, K.Control]) preventDefault
@@ -188,6 +189,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
       --   putStrLn $ "which: " ++ show which
       --   putStrLn $ "keyCode: " ++ show keyCode
       --   putStrLn $ "modifier: " ++ show modifier
+      when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
       IO.liftIO $ saveKMP rf modifierNoShift key originPoint
       -- Pass through Ctrl-+ and others, disable Tab.
       when (modifier `elem` [K.NoModifier, K.Shift, K.Control]) preventDefault

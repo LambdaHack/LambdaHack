@@ -98,6 +98,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
           let md = modTranslate mods
           in if md == K.Shift then K.NoModifier else md
         pointer = originPoint
+    when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
     IO.liftIO $ saveKMP rf modifier key pointer
     return True
   -- Set the font specified in config, if any.
