@@ -177,7 +177,7 @@ screensaverAmbush = ambush
   }
 
 
-rosterExploration, rosterRaid, rosterBrawl, rosterAmbush, rosterBattle, rosterBattleSurvival, rosterSafari, rosterSafariSurvival, rosterPvP, rosterCoop, rosterDefense, rosterBoardgame:: Roster
+rosterExploration, rosterRaid, rosterBrawl, rosterAmbush, rosterBattle, rosterBattleSurvival, rosterSafari, rosterSafariSurvival, rosterPvP, rosterCoop, rosterDefense, rosterBoardgame :: Roster
 
 rosterExploration = Roster
   { rosterList = [ playerHero
@@ -188,8 +188,7 @@ rosterExploration = Roster
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
 rosterRaid = Roster
-  { rosterList = [ playerHero { fname = "Explorer Party"
-                              , fhiCondPoly = hiRaid
+  { rosterList = [ playerHero { fhiCondPoly = hiRaid
                               , fentryLevel = -4
                               , finitialActors = 1 }
                  , playerAntiHero { fname = "Red Founder"
@@ -203,8 +202,7 @@ rosterRaid = Roster
   , rosterAlly = [] }
 
 rosterBrawl = Roster
-  { rosterList = [ playerHero { fname = "Explorer Party"
-                              , fcanEscape = False
+  { rosterList = [ playerHero { fcanEscape = False
                               , fhiCondPoly = hiDweller
                               , fentryLevel = -3 }
                  , playerAntiHero { fname = "Indigo Research"
@@ -218,8 +216,7 @@ rosterBrawl = Roster
   , rosterAlly = [] }
 
 rosterAmbush = Roster
-  { rosterList = [ playerSniper { fname = "Explorer Party"
-                                , fcanEscape = False
+  { rosterList = [ playerSniper { fcanEscape = False
                                 , fhiCondPoly = hiDweller
                                 , fentryLevel = -5
                                 , finitialActors = 4 }
@@ -304,9 +301,9 @@ rosterSafari = Roster
                  ]
   , rosterEnemy = [ ("Monster Tourist Office", "Hunam Convict Pack")
                   , ( "Monster Tourist Office"
-                    , "Animal Magnificent Specimen Variety")
+                    , "Animal Magnificent Specimen Variety" )
                   , ( "Monster Tourist Office"
-                    , "Animal Exquisite Herds and Packs") ]
+                    , "Animal Exquisite Herds and Packs" ) ]
   , rosterAlly = [ ( "Animal Magnificent Specimen Variety"
                    , "Animal Exquisite Herds and Packs" )
                  , ( "Animal Magnificent Specimen Variety"
@@ -377,12 +374,12 @@ rosterBoardgame = Roster
 
 cavesExploration, cavesRaid, cavesBrawl, cavesAmbush, cavesBattle, cavesSafari, cavesBoardgame :: Caves
 
-cavesExploration = IM.fromList
-                $ [ (-1, "shallow random 1")
-                  , (-2, "caveRogue")
-                  , (-3, "caveEmpty") ]
-                  ++ zip [-4, -5..(-9)] (repeat "default random")
-                  ++ [(-10, "caveNoise")]
+cavesExploration = IM.fromList $
+  [ (-1, "shallow random 1")
+  , (-2, "caveRogue")
+  , (-3, "caveEmpty") ]
+  ++ zip [-4, -5..(-9)] (repeat "default random")
+  ++ [(-10, "caveNoise")]
 
 cavesRaid = IM.fromList [(-4, "caveRogueLit")]
 

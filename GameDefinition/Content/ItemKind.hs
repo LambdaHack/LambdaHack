@@ -26,7 +26,7 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validateSingle = validateSingleItemKind
   , validateAll = validateAllItemKind
-  , content =  contentFromList $
+  , content = contentFromList $
       items ++ organs ++ blasts ++ actors ++ temporaries
   }
 
@@ -206,7 +206,7 @@ motionScanner = ItemKind
   , iverbHit = "jingle"
   , iweight  = 300
   , iaspects = [ AddNocto 1
-               , AddHurtMelee (dl 5 - 10), AddArmorRanged (dl 10 - 20) ]
+               , AddArmorMelee (dl 5 - 10), AddArmorRanged (dl 10 - 20) ]
   , ieffects = [EqpSlot EqpSlotMiscBonus]
   , ifeature = [Identified, Equipable]
   , idesc    = "A silk flag with a bell for detecting sudden draft changes. May indicate a nearby corridor crossing or a fast enemy approaching in the dark. Is also very noisy."
@@ -367,7 +367,7 @@ necklace9 = necklace
 
 imageItensifier = ItemKind
   { isymbol  = symbolRing
-  , iname    = "Light Cone"
+  , iname    = "light cone"
   , ifreq    = [("treasure", 100)]
   , iflavour = zipFancy [BrYellow]
   , icount   = 1
@@ -1026,7 +1026,7 @@ gem4 = gem
   { iname    = "elixir"
   , iflavour = zipPlain [BrYellow]
   , irarity  = [(1, 40), (10, 40)]
-  , iaspects = []  -- TODO: is this needed for AI? remove
+  , iaspects = []
   , ieffects = [ELabel "of youth", OverfillCalm 5, OverfillHP 15]
   , ifeature = [Identified, Applicable, Precious]  -- TODO: only heal humans
   , idesc    = "A crystal vial of amber liquid, supposedly granting eternal youth and fetching 100 gold per piece. The main effect seems to be mild euphoria, but it admittedly heals minor ailments rather well."

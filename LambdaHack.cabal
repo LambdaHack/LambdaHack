@@ -52,7 +52,7 @@ homepage:      http://github.com/LambdaHack/LambdaHack
 bug-reports:   http://github.com/LambdaHack/LambdaHack/issues
 license:       BSD3
 license-file:  LICENSE
-tested-with:   GHC >= 7.8 && < 7.12
+tested-with:   GHC >= 7.8 && < 8.2
 data-files:    GameDefinition/config.ui.default
                GameDefinition/PLAYING.md, README.md, LICENSE, CREDITS,
                CHANGELOG.md
@@ -212,7 +212,7 @@ library
   build-depends:
                       assert-failure >= 0.1,
                       async      >= 2,
-                      base       >= 4 && <= 10,
+                      base       >= 4,
                       base-compat >= 0.8.0,
                       binary     >= 0.7,
                       binary-orphans >= 0.1,
@@ -304,7 +304,7 @@ executable LambdaHack
 
                       assert-failure >= 0.1,
                       async      >= 2,
-                      base       >= 4 && <= 10,
+                      base       >= 4,
                       base-compat >= 0.8.0,
                       binary     >= 0.7,
                       binary-orphans >= 0.1,
@@ -356,7 +356,7 @@ test-suite test
 
                       assert-failure >= 0.1,
                       async      >= 2,
-                      base       >= 4 && <= 10,
+                      base       >= 4,
                       base-compat >= 0.8.0,
                       binary     >= 0.7,
                       binary-orphans >= 0.1,

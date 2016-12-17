@@ -88,7 +88,7 @@ pillar = TileKind
   }
 pillarIce = pillar
   { tname    = "ice"
-  , tfreq    = [("noiseSet", 5), ("stair terminal", 5)]
+  , tfreq    = [("noiseSet", 5)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
@@ -290,7 +290,6 @@ floorArenaLit = floorCorridorLit
   { tsymbol  = '.'
   , tname    = "stone floor"
   , tfreq    = [("floorArenaLit", 1), ("arenaSet", 1), ("emptySet", 99)]
-  , tfeature = Indistinct : tfeature floorCorridorLit
   }
 floorNoiseLit = floorArenaLit
   { tname    = "damp stone floor"
