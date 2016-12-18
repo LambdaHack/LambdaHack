@@ -147,13 +147,11 @@ buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
       fixedStairsUp = map (\p -> (p, "staircase up")) lstairsSingleUp
       fixedStairsDown = map (\p -> (p, "staircase down")) lstairsSingleDown
       allStairs = allUpStairs ++ lstairsSingleDown
-  fixedEscape <- case cescape kc of
+  fixedEscape <- case cescapeGroup kc of
                    Nothing -> return []
-                   Just b -> do
+                   Just escapeGroup -> do
                      epos <- placeDownStairs kc allStairs
-                     let placeGroup = toGroupName $
-                           if b then "escape up" else "escape down"
-                     return [(epos, placeGroup)]
+                     return [(epos, escapeGroup)]
   let lescape = map fst fixedEscape
       fixedCenters = EM.fromList $
         fixedEscape ++ fixedStairsDouble ++ fixedStairsUp ++ fixedStairsDown

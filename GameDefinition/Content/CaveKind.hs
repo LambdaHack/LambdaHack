@@ -57,7 +57,7 @@ rogue = CaveKind
   , couterFenceTile = "basic outer fence"
   , clegendDarkTile = "legendDark"
   , clegendLitTile  = "legendLit"
-  , cescape         = Nothing
+  , cescapeGroup    = Nothing
   }
 arena = rogue
   { csymbol       = 'A'
@@ -168,7 +168,7 @@ shallow1rogue = rogue
   , cactorFreq    = filter ((/= "monster") . fst) $ cactorFreq rogue
   , citemNum      = 15 * d 2  -- lure them in with loot
   , citemFreq     = filter ((/= "treasure") . fst) $ citemFreq rogue
-  , cescape       = Just True
+  , cescapeGroup  = Just "escape up"
   }
 battle = rogue  -- few lights and many solids, to help the less numerous heroes
   { csymbol       = 'B'
@@ -243,7 +243,7 @@ safari1 = ambush {cfreq = [("caveSafari1", 1)]}
 safari2 = battle {cfreq = [("caveSafari2", 1)]}
 safari3 = brawl
   { cfreq = [("caveSafari3", 1)]
-  , cescape       = Just False
+  , cescapeGroup  = Just "escape outdoor down"
   }
 rogueLit = rogue
   { csymbol       = 'S'
@@ -255,7 +255,7 @@ rogueLit = rogue
   , cactorFreq    = [("animal", 100)]
   , citemNum      = 30 * d 2  -- just one level, hard enemies, treasure
   , citemFreq     = [("useful", 33), ("gem", 33), ("currency", 33)]
-  , cescape       = Just True
+  , cescapeGroup  = Just "escape up"
   }
 boardgame = CaveKind
   { csymbol       = 'B'
@@ -288,5 +288,5 @@ boardgame = CaveKind
   , couterFenceTile = "basic outer fence"
   , clegendDarkTile = "legendDark"
   , clegendLitTile  = "legendLit"
-  , cescape         = Nothing
+  , cescapeGroup    = Nothing
   }

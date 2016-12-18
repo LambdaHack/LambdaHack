@@ -52,7 +52,7 @@ data CaveKind = CaveKind
   , couterFenceTile :: !(GroupName TileKind)  -- ^ the outer fence wall
   , clegendDarkTile :: !(GroupName TileKind)  -- ^ the dark place plan legend
   , clegendLitTile  :: !(GroupName TileKind)  -- ^ the lit place plan legend
-  , cescape         :: !(Maybe Bool)          -- ^ direction of escape, if any
+  , cescapeGroup    :: !(Maybe (GroupName PlaceKind))  -- ^ escape, if any
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound
 
