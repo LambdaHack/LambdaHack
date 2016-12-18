@@ -116,7 +116,7 @@ buildTileMap cops@Kind.COps{ cotile=Kind.Ops{opick}
 -- | Create a level from a cave.
 buildLevel :: Kind.COps -> Int -> GroupName CaveKind
            -> Int -> AbsDepth -> [Point]
-           -> Rnd Level
+           -> Rnd (Level, [Point])
 buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
            ln genName minD totalDepth lstairPrevRaw = do
   dkind <- fromMaybe (assert `failure` genName) <$> opick genName (const True)
@@ -161,8 +161,9 @@ buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
   cmap <- buildTileMap cops cave
   litemNum <- castDice ldepth totalDepth $ citemNum kc
   lsecret <- randomR (1, maxBound)  -- 0 means unknown
-  return $! levelFromCaveKind cops kc ldepth cmap lstair
+  let lvl = levelFromCaveKind cops kc ldepth cmap lstair
                               litemNum lsecret lescape
+  return (lvl, snd lstair)
 
 placeDownStairs :: CaveKind -> [Point] -> Rnd Point
 placeDownStairs kc@CaveKind{..} ps = do
@@ -242,16 +243,13 @@ dungeonGen cops caves = do
       freshTotalDepth = assert (signum minD == signum maxD)
                         $ AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)
-      buildLvl :: [(LevelId, Level)]
+      buildLvl :: ([(LevelId, Level)], [Point])
                -> (Int, GroupName CaveKind)
-               -> Rnd [(LevelId, Level)]
-      buildLvl l (n, genName) = do
-        let lstairDown = case l of
-              [] -> []
-              (_, lvl) : _ -> snd $ lstair lvl
+               -> Rnd ([(LevelId, Level)], [Point])
+      buildLvl (l, ldown) (n, genName) = do
         -- lstairUp for the next level is lstairDown for the current level
-        lvl <- buildLevel cops n genName minD freshTotalDepth lstairDown
-        return $! (toEnum n, lvl) : l
-  levels <- foldlM' buildLvl [] $ reverse $ IM.assocs caves
+        (lvl, ldown2) <- buildLevel cops n genName minD freshTotalDepth ldown
+        return ((toEnum n, lvl) : l, ldown2)
+  (levels, _) <- foldlM' buildLvl ([], []) $ reverse $ IM.assocs caves
   let freshDungeon = EM.fromList levels
   return $! FreshDungeon{..}
