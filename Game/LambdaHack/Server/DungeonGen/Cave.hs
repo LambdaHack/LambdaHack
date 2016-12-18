@@ -255,7 +255,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
 borderPlace :: Kind.COps -> Place -> (Area, Area)
 borderPlace Kind.COps{coplace=Kind.Ops{okind}} Place{..} =
   case pfence (okind qkind) of
-    FWall -> (qarea, qarea)
+    FWall -> (qarea, expand qarea)
     FFloor  -> (qarea, expand qarea)
     FGround -> (qarea, expand qarea)
     FNone -> case shrink qarea of
