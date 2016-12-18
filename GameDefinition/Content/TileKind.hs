@@ -79,7 +79,7 @@ pillar = TileKind
   , tname    = "rock"
   , tfreq    = [ ("cachable", 70), ("stair terminal", 100)
                , ("legendLit", 100), ("legendDark", 100)
-               , ("noiseSet", 95), ("brawlSet", 5)
+               , ("noiseSet", 95), ("brawlSet", 50)
                , ("battleSet", 250) ]
   , tcolor   = BrCyan  -- not BrWhite, to tell from heroes
   , tcolor2  = Cyan
@@ -135,7 +135,7 @@ bush = TileKind
 tree = TileKind
   { tsymbol  = 'O'
   , tname    = "tree"
-  , tfreq    = [("brawlSet", 14), ("treeShadeOver_O", 1)]
+  , tfreq    = [("brawlSet", 140), ("treeShadeOver_O", 1)]
   , tcolor   = BrGreen
   , tcolor2  = Green
   , talter   = 50
@@ -301,7 +301,7 @@ floorNoiseLit = floorArenaLit
   }
 floorDirtLit = floorArenaLit
   { tname    = "dirt"
-  , tfreq    = [("battleSet", 1000), ("brawlSet", 100), ("ambushSet", 1000)]
+  , tfreq    = [("battleSet", 1000), ("brawlSet", 1000), ("ambushSet", 1000)]
   }
 floorActorLit = floorArenaLit
   { tfreq    = []

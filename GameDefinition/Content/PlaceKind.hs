@@ -18,11 +18,11 @@ cdefs = ContentDef
   , validateSingle = validateSinglePlaceKind
   , validateAll = validateAllPlaceKind
   , content = contentFromList $
-      [rect, rectWindows, ruin, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, escapeOutdoorDown, escapeOutdoorDown5, boardgame]
+      [rect, rectWindows, ruin, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, escapeOutdoorDown, boardgame]
       ++ map makeStaircaseUp lstaircase
       ++ map makeStaircaseDown lstaircase
   }
-rect,        rectWindows, ruin, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, escapeOutdoorDown, escapeOutdoorDown5, boardgame :: PlaceKind
+rect,        rectWindows, ruin, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, escapeOutdoorDown, boardgame :: PlaceKind
 
 lstaircase :: [PlaceKind]
 lstaircase = [staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17]
@@ -30,7 +30,7 @@ lstaircase = [staircase, staircase2, staircase3, staircase4, staircase5, stairca
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
   , pname    = "room"
-  , pfreq    = [("rogue", 100), ("arena", 100), ("empty", 100)]
+  , pfreq    = [("rogue", 100), ("arena", 50), ("empty", 10)]
   , prarity  = [(1, 10), (10, 8)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -160,8 +160,8 @@ pillar4 = pillar
 colonnade = PlaceKind
   { psymbol  = 'c'
   , pname    = "colonnade"
-  , pfreq    = [("rogue", 30), ("arena", 70), ("noise", 2000)]
-  , prarity  = [(1, 10), (10, 10)]
+  , pfreq    = [("rogue", 30), ("arena", 70), ("empty", 70), ("noise", 2000)]
+  , prarity  = [(1, 5), (10, 5)]
   , pcover   = CAlternate
   , pfence   = FFloor
   , ptopLeft = [ "O."
@@ -176,21 +176,21 @@ colonnade2 = colonnade
                ]
   }
 colonnade3 = colonnade
-  { prarity  = [(1, 2), (10, 2)]
-  , pfence   = FGround
-  , pfreq    = [("rogue", 100)]
-  , ptopLeft = [ ".."
-               , ".O"
+  { prarity  = [(1, 12), (10, 12)]
+  , ptopLeft = [ "..O"
+               , ".O."
+               , "O.."
                ]
   }
 colonnade4 = colonnade
-  { ptopLeft = [ "O.."
+  { prarity  = [(1, 12), (10, 12)]
+  , ptopLeft = [ "O.."
                , ".O."
                , "..O"
                ]
   }
 colonnade5 = colonnade
-  { prarity  = [(1, 4), (10, 4)]
+  { prarity  = [(1, 8), (10, 8)]
   , ptopLeft = [ "O.."
                , "..O"
                ]
@@ -434,6 +434,15 @@ escapeUp2 = escapeUp
                ]
   }
 escapeUp3 = escapeUp
+  { pfreq    = [("escape down", 2000)]
+  , pcover   = CMirror
+  , pfence   = FFloor
+  , ptopLeft = [ "O.."
+               , ".<."
+               , "O.O"
+               ]
+  }
+escapeUp4 = escapeUp
   { pfreq    = [("escape up", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "-----"
@@ -443,7 +452,7 @@ escapeUp3 = escapeUp
                , "-----"
                ]
   }
-escapeUp4 = escapeUp
+escapeUp5 = escapeUp
   { pfreq    = [("escape up", 2000)]
   , pcover   = CMirror
   , pfence   = FNone
@@ -452,16 +461,6 @@ escapeUp4 = escapeUp
                , "|.<.|"
                , "|O.O|"
                , "-----"
-               ]
-  }
-escapeUp5 = escapeUp
-  { pfreq    = [("escape up", 1000)]
-  , pfence   = FFloor
-  , ptopLeft = [ "..O.."
-               , "O...O"
-               , "..<.."
-               , "O...O"
-               , "..O.."
                ]
   }
 escapeDown = PlaceKind
@@ -484,6 +483,15 @@ escapeDown2 = escapeDown
                ]
   }
 escapeDown3 = escapeDown
+  { pfreq    = [("escape down", 2000)]
+  , pcover   = CMirror
+  , pfence   = FFloor
+  , ptopLeft = [ "O.."
+               , ".>."
+               , "O.O"
+               ]
+  }
+escapeDown4 = escapeDown
   { pfreq    = [("escape down", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "-----"
@@ -493,7 +501,7 @@ escapeDown3 = escapeDown
                , "-----"
                ]
   }
-escapeDown4 = escapeDown
+escapeDown5 = escapeDown
   { pfreq    = [("escape down", 2000)]
   , pcover   = CMirror
   , pfence   = FNone
@@ -504,22 +512,8 @@ escapeDown4 = escapeDown
                , "-----"
                ]
   }
-escapeDown5 = escapeDown
-  { pfreq    = [("escape down", 1000)]
-  , pfence   = FFloor
-  , ptopLeft = [ "..O.."
-               , "O...O"
-               , "..>.."
-               , "O...O"
-               , "..O.."
-               ]
-  }
 escapeOutdoorDown = escapeDown
   { pfreq     = [("escape outdoor down", 1)]
-  , poverride = [('>', "escape outdoor down")]
-  }
-escapeOutdoorDown5 = escapeDown5
-  { pfreq     = [("escape outdoor down", 1000)]
   , poverride = [('>', "escape outdoor down")]
   }
 boardgame = PlaceKind
