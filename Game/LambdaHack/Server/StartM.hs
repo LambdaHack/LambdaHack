@@ -373,8 +373,9 @@ findEntryPoss Kind.COps{coTileSpeedup}
       -- Prefer deeper stairs to avoid spawners ambushing explorers.
       (deeperStairs, shallowerStairs) =
         (if fromEnum lid > 0 then id else swap) lstair
-      stairPoss = (deeperStairs \\ shallowerStairs)
-                  ++ shallowerStairs
+      stairPoss = if length deeperStairs > length shallowerStairs
+                  then deeperStairs
+                  else shallowerStairs
       middlePos = Point (lxsize `div` 2) (lysize `div` 2)
   let !_A = assert (k > 0 && factionDist > 0) ()
       onStairs = take k stairPoss
