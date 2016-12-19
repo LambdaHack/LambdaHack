@@ -150,12 +150,12 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
           let gridArea = fromMaybe (assert `failure` lgr)
                          $ toArea (0, 0, gx - 1, gy - 1)
               voidNum = round $ cmaxVoid * fromIntegral (EM.size gs2)
-              notFixed p = case gs EM.! p of
-                SpecialArea{} -> True
+              isOrdinaryArea p = case p `EM.lookup` gs2 of
+                Just SpecialArea{} -> True
                 _ -> False
           reps <- replicateM voidNum (xyInArea gridArea)
                     -- repetitions are OK; variance is low anyway
-          return $! ES.fromList $ filter notFixed reps
+          return $! ES.fromList $ filter isOrdinaryArea reps
         let decidePlace :: Bool
                         -> ( TileMapEM, [Place]
                            , EM.EnumMap Point (Area, Area, Area) )
