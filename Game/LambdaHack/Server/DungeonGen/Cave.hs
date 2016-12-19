@@ -288,7 +288,7 @@ pickOpening Kind.COps{cotile, coTileSpeedup}
       ro <- chance copenChance
       if ro then Tile.openTo cotile doorClosedId
       else return $! doorClosedId
-    else return $! nicerCorridor
+    else return $! doorClosedId  -- assume this is what content enforces
   else return $! nicerCorridor
 
 digCorridors :: Kind.Id TileKind -> Corridor -> TileMapEM

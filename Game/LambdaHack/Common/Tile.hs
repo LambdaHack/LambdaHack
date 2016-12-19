@@ -250,7 +250,7 @@ hideAs Kind.Ops{okind, ouniqGroup} t =
   let getTo (TK.HideAs grp) _ = Just grp
       getTo _ acc = acc
   in case foldr getTo Nothing (TK.tfeature (okind t)) of
-       Nothing    -> t
+       Nothing -> t
        Just grp -> ouniqGroup grp
 
 -- | Whether a tile kind (specified by its id) has an OpenTo feature.
