@@ -14,8 +14,10 @@ import Game.LambdaHack.Common.Prelude
 import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
+import Data.Tuple
 import qualified System.Random as R
 
+import Game.LambdaHack.Common.Frequency
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -26,6 +28,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Content.PlaceKind (PlaceKind)
 import Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.DungeonGen.Cave
@@ -115,17 +118,14 @@ buildTileMap cops@Kind.COps{ cotile=Kind.Ops{opick}
 
 -- | Create a level from a cave.
 buildLevel :: Kind.COps -> Int -> GroupName CaveKind
-           -> Int -> AbsDepth -> [Point]
-           -> Rnd (Level, [Point])
+           -> Int -> AbsDepth -> [(Point, GroupName PlaceKind)]
+           -> Rnd (Level, [(Point, GroupName PlaceKind)])
 buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
-           ln genName minD totalDepth lstairPrevRaw = do
+           ln genName minD totalDepth lstairPrev = do
   dkind <- fromMaybe (assert `failure` genName) <$> opick genName (const True)
   let kc = okind dkind
       -- Simple rule for now: level @ln@ has depth (difficulty) @abs ln@.
       ldepth = AbsDepth $ abs ln
-      posUp Point{..} = Point (px - 1) py
-      posDn Point{..} = Point (px + 1) py
-      lstairPrev = map posUp lstairPrevRaw
   -- Any stairs coming from above are considered extra stairs
   -- and if they don't exceed @extraStairs@,
   -- the amount is filled up with single downstairs.
@@ -137,16 +137,23 @@ buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
                  single = max 0 $ extraStairs - double
              in (length lstairPrev - double, single)
       (lstairsSingleUp, lstairsDouble) = splitAt abandonedStairs lstairPrev
-      allUpStairs = lstairsDouble ++ lstairsSingleUp
+      allUpStairs = map fst $ lstairsDouble ++ lstairsSingleUp
+      addSingleDown :: [(Point, GroupName PlaceKind)] -> Int
+                    -> Rnd [(Point, GroupName PlaceKind)]
       addSingleDown acc 0 = return acc
       addSingleDown acc k = do
-        pos <- placeDownStairs kc $ acc ++ allUpStairs
-        addSingleDown (pos : acc) (k - 1)
+        pos <- placeDownStairs kc $ allUpStairs ++ map fst acc
+        let freq = toFreq ("buildLevel ('" <> tshow ln <> ")")
+                   $ map swap $ cstairFreq kc
+        stairGroup <- frequency freq
+        addSingleDown ((pos, stairGroup) : acc) (k - 1)
   lstairsSingleDown <- addSingleDown [] singleStairsDown
-  let fixedStairsDouble = map (\p -> (p, "staircase")) lstairsDouble
-      fixedStairsUp = map (\p -> (p, "staircase up")) lstairsSingleUp
-      fixedStairsDown = map (\p -> (p, "staircase down")) lstairsSingleDown
-      allStairs = allUpStairs ++ lstairsSingleDown
+  let fixedStairsDouble = lstairsDouble
+      fixedStairsUp = map (\(p, t) ->
+        (p, toGroupName $ tshow t <+> "up")) lstairsSingleUp
+      fixedStairsDown = map (\(p, t) ->
+        (p, toGroupName $ tshow t <+> "down")) lstairsSingleDown
+      allStairs = allUpStairs ++ map fst lstairsSingleDown
   fixedEscape <- case cescapeGroup kc of
                    Nothing -> return []
                    Just escapeGroup -> do
@@ -155,15 +162,17 @@ buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
   let lescape = map fst fixedEscape
       fixedCenters = EM.fromList $
         fixedEscape ++ fixedStairsDouble ++ fixedStairsUp ++ fixedStairsDown
-      lstair = ( map posUp $ lstairsSingleUp ++ lstairsDouble
-               , map posDn $ lstairsDouble ++ lstairsSingleDown )
+      posUp Point{..} = Point (px - 1) py
+      posDn Point{..} = Point (px + 1) py
+      lstair = ( map (posUp . fst) $ lstairsSingleUp ++ lstairsDouble
+               , map (posDn . fst) $ lstairsDouble ++ lstairsSingleDown )
   cave <- buildCave cops ldepth totalDepth dkind fixedCenters
   cmap <- buildTileMap cops cave
   litemNum <- castDice ldepth totalDepth $ citemNum kc
   lsecret <- randomR (1, maxBound)  -- 0 means unknown
   let lvl = levelFromCaveKind cops kc ldepth cmap lstair
                               litemNum lsecret lescape
-  return (lvl, snd lstair)
+  return (lvl, lstairsDouble ++ lstairsSingleDown)
 
 placeDownStairs :: CaveKind -> [Point] -> Rnd Point
 placeDownStairs kc@CaveKind{..} ps = do
@@ -243,9 +252,9 @@ dungeonGen cops caves = do
       freshTotalDepth = assert (signum minD == signum maxD)
                         $ AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)
-      buildLvl :: ([(LevelId, Level)], [Point])
+      buildLvl :: ([(LevelId, Level)], [(Point, GroupName PlaceKind)])
                -> (Int, GroupName CaveKind)
-               -> Rnd ([(LevelId, Level)], [Point])
+               -> Rnd ([(LevelId, Level)], [(Point, GroupName PlaceKind)])
       buildLvl (l, ldown) (n, genName) = do
         -- lstairUp for the next level is lstairDown for the current level
         (lvl, ldown2) <- buildLevel cops n genName minD freshTotalDepth ldown

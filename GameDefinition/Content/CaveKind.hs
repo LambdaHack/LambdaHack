@@ -58,6 +58,7 @@ rogue = CaveKind
   , clegendDarkTile = "legendDark"
   , clegendLitTile  = "legendLit"
   , cescapeGroup    = Nothing
+  , cstairFreq      = [("staircase", 100)]
   }
 arena = rogue
   { csymbol       = 'A'
@@ -239,11 +240,18 @@ ambush = rogue  -- lots of lights, to give a chance to snipe
   , cdarkCorTile  = "trailLit"  -- let trails give off light
   , clitCorTile   = "trailLit"
   }
-safari1 = ambush {cfreq = [("caveSafari1", 1)]}
-safari2 = battle {cfreq = [("caveSafari2", 1)]}
+safari1 = ambush
+  { cfreq = [("caveSafari1", 1)]
+  , cstairFreq = [("staircase outdoor", 1)]
+  }
+safari2 = battle
+  { cfreq = [("caveSafari2", 1)]
+  , cstairFreq = [("staircase outdoor", 1)]
+  }
 safari3 = brawl
   { cfreq = [("caveSafari3", 1)]
   , cescapeGroup  = Just "escape outdoor down"
+  , cstairFreq = [("staircase outdoor", 1)]
   }
 rogueLit = rogue
   { csymbol       = 'S'
@@ -289,4 +297,5 @@ boardgame = CaveKind
   , clegendDarkTile = "legendDark"
   , clegendLitTile  = "legendLit"
   , cescapeGroup    = Nothing
+  , cstairFreq      = []
   }

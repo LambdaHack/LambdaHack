@@ -53,6 +53,9 @@ data CaveKind = CaveKind
   , clegendDarkTile :: !(GroupName TileKind)  -- ^ the dark place plan legend
   , clegendLitTile  :: !(GroupName TileKind)  -- ^ the lit place plan legend
   , cescapeGroup    :: !(Maybe (GroupName PlaceKind))  -- ^ escape, if any
+  , cstairFreq      :: !(Freqs PlaceKind)
+      -- ^ place groups to consider for stairs; in this case the rarity
+      --   of items in the group does not affect group choice
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound
 
