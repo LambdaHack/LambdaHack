@@ -256,8 +256,8 @@ borderPlace :: Kind.COps -> Place -> (Area, Area)
 borderPlace Kind.COps{coplace=Kind.Ops{okind}} Place{..} =
   case pfence (okind qkind) of
     FWall -> (qarea, expand qarea)
-    FFloor  -> (qarea, expand qarea)
-    FGround -> (qarea, expand qarea)
+    FFloor  -> (qarea, qarea)
+    FGround -> (qarea, qarea)
     FNone -> case shrink qarea of
       Nothing -> (qarea, qarea)
       Just sr -> (sr, qarea)

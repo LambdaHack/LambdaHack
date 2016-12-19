@@ -146,12 +146,21 @@ type Corridor = [Point]
 -- and then we let the intermediate part degenerate.
 mkCorridor :: HV            -- ^ orientation of the starting section
            -> Point         -- ^ starting point
+           -> Bool          -- ^ starting is inside @FGround@ or @FFloor@
            -> Point         -- ^ ending point
+           -> Bool          -- ^ ending is inside @FGround@ or @FFloor@
            -> Area          -- ^ the area containing the intermediate point
            -> Rnd Corridor  -- ^ straight sections of the corridor
-mkCorridor hv (Point x0 y0) (Point x1 y1) area = do
-  let a = fromMaybe area $ shrink area
-  Point rx ry <- xyInArea a
+mkCorridor hv (Point x0 y0) p0floor (Point x1 y1) p1floor area = do
+  Point rxRaw ryRaw <- xyInArea area
+  let (sx0, sy0, sx1, sy1) = fromArea area
+      -- Avoid corridors that run along @FGround@ or @FFloor@ fence.
+      rx = if | rxRaw == sx0 + 1 && p0floor -> sx0
+              | rxRaw == sx1 - 1 && p1floor -> sx1
+              | otherwise -> rxRaw
+      ry = if | ryRaw == sy0 + 1 && p0floor -> sy0
+              | ryRaw == sy1 - 1 && p1floor -> sy1
+              | otherwise -> ryRaw
   return $! map (uncurry Point) $ case hv of
     Horiz -> [(x0, y0), (rx, y0), (rx, y1), (x1, y1)]
     Vert  -> [(x0, y0), (x0, ry), (x1, ry), (x1, y1)]
@@ -203,4 +212,4 @@ connectPlaces (sa, so, sg) (ta, to, tg) = do
           in case toArea (min sx tx, y0, max sx tx, y1) of
             Just a -> (Vert, a, Point sx soy1, Point tx toy0)
             Nothing -> assert `failure` (sa, so, sg, ta, to, tg, sx, sy, tx, ty)
-  Just <$> mkCorridor hv p0 p1 area
+  Just <$> mkCorridor hv p0 (sa == so) p1 (ta == to) area
