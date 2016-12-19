@@ -180,10 +180,7 @@ loopUpd updConn = do
           arenas <- getsServer sarenas
           mapM_ (\fid -> mapM_ (\lid ->
             handleTrajectories lid fid) arenas) (EM.keys factionD)
-          -- Update all perception for visual feedback and to make sure
-          -- saving a game doesn't affect gameplay (by updating perception).
-          mapM_ updatePerFid (EM.keys factionD)
-          endClip  -- must be last, in case it performs a bkp save
+          endClip updatePerFid  -- must be last, in case it performs a bkp save
         quit <- getsServer squit
         if quit then do
           modifyServer $ \ser -> ser {squit = False}
@@ -196,9 +193,10 @@ loopUpd updConn = do
 -- | Handle the end of every clip. Do whatever has to be done
 -- every fixed number of time units, e.g., monster generation.
 -- Advance time. Perform periodic saves, if applicable.
-endClip :: (MonadAtomic m, MonadServerReadRequest m) => m ()
-{-# INLINABLE endClip #-}
-endClip = do
+endClip :: forall m. (MonadAtomic m, MonadServerReadRequest m)
+        => (FactionId -> m ()) -> m ()
+{-# INLINE endClip #-}
+endClip updatePerFid = do
   Kind.COps{corule} <- getsState scops
   let RuleKind{rwriteSaveClips, rleadLevelClips} = Kind.stdRuleset corule
   time <- getsState stime
@@ -226,6 +224,10 @@ endClip = do
       -- Add monsters each turn, not each clip.
       spawnMonster
     _ -> return ()
+  -- Update all perception for visual feedback and to make sure
+  -- saving a game doesn't affect gameplay (by updating perception).
+  factionD <- getsState sfactionD
+  mapM_ updatePerFid (EM.keys factionD)
   -- Save needs to be at the end, so that restore can start at the beginning.
   when (clipN `mod` rwriteSaveClips == 0) $ writeSaveAll False
 
