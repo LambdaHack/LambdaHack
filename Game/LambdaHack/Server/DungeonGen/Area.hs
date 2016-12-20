@@ -1,6 +1,7 @@
 -- | Rectangular areas of levels and their basic operations.
 module Game.LambdaHack.Server.DungeonGen.Area
-  ( Area, toArea, fromArea, trivialArea, grid, shrink, expand, sumAreas
+  ( Area, toArea, fromArea, trivialArea, isTrivialArea
+  , grid, shrink, expand, sumAreas
   , SpecialArea(..)
   ) where
 
@@ -31,6 +32,9 @@ fromArea (Area x0 y0 x1 y1) = (x0, y0, x1, y1)
 
 trivialArea :: Point -> Area
 trivialArea (Point x y) = Area x y x y
+
+isTrivialArea :: Area -> Bool
+isTrivialArea (Area x0 y0 x1 y1) = x0 == x1 && y0 == y1
 
 data SpecialArea =
     SpecialArea !Area

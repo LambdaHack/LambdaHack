@@ -25,8 +25,7 @@ import Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.DungeonGen.Area
 
--- TODO: use more, rewrite as needed, document each field.
--- | The parameters of a place. Most are immutable and set
+-- | The parameters of a place. All are immutable and set
 -- at the time when a place is generated.
 data Place = Place
   { qkind    :: !(Kind.Id PlaceKind)

@@ -167,11 +167,11 @@ mkCorridor hv (Point x0 y0) p0floor (Point x1 y1) p1floor area = do
 
 -- | Try to connect two interiors of places with a corridor.
 -- Choose entrances some steps away from the edges, if the place
--- is big enough. Note that with @pfence == FNone@, the area considered
+-- is big enough. Note that with @pfence == FNone@, the inner area considered
 -- is the strict interior of the place, without the outermost tiles.
 --
--- The corridor connects the inner areas and the turning point
--- of the corridor (if any) is outside or on a border of the outer areas
+-- The corridor connects (touches) the inner areas and the turning point
+-- of the corridor (if any) is outside of the outer areas
 -- and inside the grid areas.
 connectPlaces :: (Area, Area, Area) -> (Area, Area, Area)
               -> Rnd (Maybe Corridor)
@@ -195,7 +195,18 @@ connectPlaces (sa, so, sg) (ta, to, tg) = do
            $ toArea (x0 + dx, y0 + dy, x1 - dx, y1 - dy)
   Point sx sy <- xyInArea $ trim sa
   Point tx ty <- xyInArea $ trim ta
-  let (_, _, sox1, soy1) = fromArea so  -- outer area
+  -- If the place (e.g., void place) is trivial (1-tile wide, even with fence),
+  -- overwrite it with corridor. The place may not even be built (e.g., void)
+  -- and the overwrite ensures connections through it are not broken.
+  let (_, _, sax1Raw, say1Raw) = fromArea sa  -- inner area
+      (sax1, say1) = if isTrivialArea so
+                     then (sax1Raw - 1, say1Raw - 1)
+                     else (sax1Raw, say1Raw)
+      (tax0Raw, tay0Raw, _, _) = fromArea ta
+      (tax0, tay0) = if isTrivialArea to
+                     then (tax0Raw + 1, tay0Raw + 1)
+                     else (tax0Raw, tay0Raw)
+      (_, _, sox1, soy1) = fromArea so  -- outer area
       (tox0, toy0, _, _) = fromArea to
       (sgx0, sgy0, sgx1, sgy1) = fromArea sg  -- grid area
       (tgx0, tgy0, tgx1, tgy1) = fromArea tg
@@ -204,12 +215,12 @@ connectPlaces (sa, so, sg) (ta, to, tg) = do
           let x0 = if sgy0 <= ty && ty <= sgy1 then sox1 + 1 else sgx1
               x1 = if tgy0 <= sy && sy <= tgy1 then tox0 - 1 else sgx1
           in case toArea (x0, min sy ty, x1, max sy ty) of
-            Just a -> (Horiz, a, Point sox1 sy, Point tox0 ty)
+            Just a -> (Horiz, a, Point (sax1 + 1) sy, Point (tax0 - 1) ty)
             Nothing -> assert `failure` (sa, so, sg, ta, to, tg, sx, sy, tx, ty)
         | otherwise = assert (sgy1 == tgy0) $
           let y0 = if sgx0 <= tx && tx <= sgx1 then soy1 + 1 else sgy1
               y1 = if tgx0 <= sx && sx <= tgx1 then toy0 - 1 else sgy1
           in case toArea (min sx tx, y0, max sx tx, y1) of
-            Just a -> (Vert, a, Point sx soy1, Point tx toy0)
+            Just a -> (Vert, a, Point sx (say1 + 1), Point tx (tay0 - 1))
             Nothing -> assert `failure` (sa, so, sg, ta, to, tg, sx, sy, tx, ty)
   Just <$> mkCorridor hv p0 (sa == so) p1 (ta == to) area
