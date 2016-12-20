@@ -23,9 +23,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleModeKind
   , validateAll = validateAllModeKind
   , content = contentFromList
-      [exploration, raid, brawl, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush]
+      [exploration, raid, brawl, ambush, battle, battleSurvival, safari, safariSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush]
   }
-exploration,        raid, brawl, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush :: ModeKind
+exploration,        raid, brawl, ambush, battle, battleSurvival, safari, safariSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush :: ModeKind
 
 exploration = ModeKind
   { msymbol = 'c'
@@ -99,24 +99,6 @@ safariSurvival = ModeKind
   , mdesc   = "In this simulation you'll discover the joys of being hunted among the most exquisite of Earth's flora and fauna, both animal and semi-intelligent."
   }
 
-pvp = ModeKind
-  { msymbol = 'v'
-  , mname   = "PvP"
-  , mfreq   = [("PvP", 1)]
-  , mroster = rosterPvP
-  , mcaves  = cavesBrawl
-  , mdesc   = "(Not really a multiplayer in this game version.) This is a fight to the death between two human-controlled teams."
-  }
-
-coop = ModeKind
-  { msymbol = 'o'
-  , mname   = "Coop"
-  , mfreq   = [("Coop", 1)]
-  , mroster = rosterCoop
-  , mcaves  = cavesExploration
-  , mdesc   = "(This mode is intended solely for automated testing.)"
-  }
-
 defense = ModeKind
   { msymbol = 'e'
   , mname   = "defense"
@@ -177,7 +159,7 @@ screensaverAmbush = ambush
   }
 
 
-rosterExploration, rosterRaid, rosterBrawl, rosterAmbush, rosterBattle, rosterBattleSurvival, rosterSafari, rosterSafariSurvival, rosterPvP, rosterCoop, rosterDefense, rosterBoardgame :: Roster
+rosterExploration, rosterRaid, rosterBrawl, rosterAmbush, rosterBattle, rosterBattleSurvival, rosterSafari, rosterSafariSurvival, rosterDefense, rosterBoardgame :: Roster
 
 rosterExploration = Roster
   { rosterList = [ playerHero
@@ -321,36 +303,6 @@ rosterSafariSurvival = rosterSafari
                      , fhasUI = True }
                  , playerAnimalExquisite
                  ] }
-
-rosterPvP = Roster
-  { rosterList = [ playerAntiHero { fname = "Red"
-                                  , fcanEscape = False
-                                  , fhiCondPoly = hiDweller
-                                  , fentryLevel = -3 }
-                 , playerHero { fname = "Blue"
-                              , fcanEscape = False
-                              , fhiCondPoly = hiDweller
-                              , fentryLevel = -3 }
-                 , playerHorror ]
-  , rosterEnemy = [ ("Red", "Blue")
-                  , ("Red", "Horror Den")
-                  , ("Blue", "Horror Den") ]
-  , rosterAlly = [] }
-
-rosterCoop = Roster
-  { rosterList = [ playerAntiHero { fname = "Coral" }
-                 , playerAntiHero { fname = "Amber"
-                                  , fleaderMode = LeaderNull }
-                 , playerAnimal { fleaderMode =
-                                     LeaderUI $ AutoLeader True True
-                                , fhasUI = True }
-                 , playerAnimal
-                 , playerMonster
-                 , playerMonster { fname = "Leaderless Monster Hive"
-                                 , fleaderMode = LeaderNull } ]
-  , rosterEnemy = [ ("Coral", "Monster Hive")
-                  , ("Amber", "Monster Hive") ]
-  , rosterAlly = [ ("Coral", "Amber") ] }
 
 rosterDefense = rosterExploration
   { rosterList = [ playerAntiHero
