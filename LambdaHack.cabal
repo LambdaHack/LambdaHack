@@ -212,7 +212,7 @@ library
   build-depends:
                       assert-failure >= 0.1,
                       async      >= 2,
-                      base       >= 4,
+                      base       >= 4 && < 99,
                       base-compat >= 0.8.0,
                       binary     >= 0.7,
                       binary-orphans >= 0.1,
@@ -304,7 +304,7 @@ executable LambdaHack
 
                       assert-failure >= 0.1,
                       async      >= 2,
-                      base       >= 4,
+                      base       >= 4 && < 99,
                       base-compat >= 0.8.0,
                       binary     >= 0.7,
                       binary-orphans >= 0.1,
@@ -356,7 +356,7 @@ test-suite test
 
                       assert-failure >= 0.1,
                       async      >= 2,
-                      base       >= 4,
+                      base       >= 4 && < 99,
                       base-compat >= 0.8.0,
                       binary     >= 0.7,
                       binary-orphans >= 0.1,
