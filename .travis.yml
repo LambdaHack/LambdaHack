@@ -59,12 +59,6 @@ matrix:
       compiler: ": #GHC 8.0.2"
       addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
 
-    - env: CABALVER=1.24 GHCVER=7.8.3 GTKVTY=curses
-      compiler: ": #GHC 7.8.3"
-      addons: {apt: {packages: [cabal-install-1.24,ghc-7.8.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
-    - env: CABALVER=1.24 GHCVER=7.8.4 GTKVTY=gtk
-      compiler: ": #GHC 7.8.4"
-      addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-7.8.4,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
     - env: CABALVER=1.24 GHCVER=7.10.1 GTKVTY=vty
       compiler: ": #GHC 7.10.1"
       addons: {apt: {packages: [cabal-install-1.24,ghc-7.10.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
