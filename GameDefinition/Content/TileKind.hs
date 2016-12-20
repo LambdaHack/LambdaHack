@@ -157,7 +157,7 @@ wallGlassV = TileKind
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
-  , tfeature = [Clear]
+  , tfeature = [Spice, Clear]
   }
 wallSuspectV = TileKind
   { tsymbol  = '|'
@@ -207,7 +207,7 @@ wallGlassH = TileKind
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
-  , tfeature = [Clear]
+  , tfeature = [Spice, Clear]
   }
 wallSuspectH = TileKind
   { tsymbol  = '-'
@@ -358,15 +358,15 @@ floorBrownLit = floorRedLit
 floorFog = TileKind
   { tsymbol  = '#'
   , tname    = "dense fog"
-  , tfreq    = [("emptySet", 1), ("labTrail", 30), ("treeShadeOrFogOver_s", 5)]
+  , tfreq    = [("emptySet", 1), ("treeShadeOrFogOver_s", 5)]
   , tcolor   = BrCyan
   , tcolor2  = Cyan
   , talter   = maxBound
-  , tfeature = [Walkable, Dark, NoItem]
+  , tfeature = [Spice, Walkable, Dark, NoItem]
   }
 floorSmoke = floorFog
   { tname    = "billowing smoke"
-  , tfreq    = [("battleSet", 5), ("labTrail", 70), ("stair terminal", 2)]
+  , tfreq    = [("battleSet", 5), ("labTrail", 1), ("stair terminal", 2)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
   , talter   = maxBound

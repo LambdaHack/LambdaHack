@@ -68,6 +68,7 @@ data Feature =
   | NoActor              -- ^ no actors ever generated there
   | Indistinct           -- ^ is allowed to have the same look as another tile
   | Trail                -- ^ used for visible trails throughout the level
+  | Spice                -- ^ in place override, don't roll only once per place
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary Feature
@@ -170,6 +171,7 @@ actionFeatures markSuspect t =
         NoItem -> Nothing
         NoActor -> Nothing
         Indistinct -> Nothing
+        Spice -> Nothing
   in IS.fromList $ map hash $ mapMaybe f $ tfeature t
 
 talterForStairs :: Word8
