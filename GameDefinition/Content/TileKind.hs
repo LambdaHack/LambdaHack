@@ -144,7 +144,7 @@ tree = TileKind
 wallV = TileKind
   { tsymbol  = '|'
   , tname    = "granite wall"
-  , tfreq    = [("legendLit", 100), ("verticalWallOrGlassOver_!_Lit", 90)]
+  , tfreq    = [("legendLit", 100), ("rectWindowsOver_!_Lit", 90)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 100
@@ -153,7 +153,7 @@ wallV = TileKind
 wallGlassV = TileKind
   { tsymbol  = '|'
   , tname    = "polished crystal wall"
-  , tfreq    = [("verticalWallOrGlassOver_!_Lit", 10)]
+  , tfreq    = [("rectWindowsOver_!_Lit", 10)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
@@ -194,7 +194,7 @@ doorOpenV = TileKind
 wallH = TileKind
   { tsymbol  = '-'
   , tname    = "granite wall"
-  , tfreq    = [("legendLit", 100), ("horizontalWallOrGlassOver_=_Lit", 90)]
+  , tfreq    = [("legendLit", 100), ("rectWindowsOver_=_Lit", 90)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 100
@@ -203,7 +203,7 @@ wallH = TileKind
 wallGlassH = TileKind
   { tsymbol  = '-'
   , tname    = "polished crystal wall"
-  , tfreq    = [("horizontalWallOrGlassOver_=_Lit", 10)]
+  , tfreq    = [("rectWindowsOver_=_Lit", 10)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
@@ -325,7 +325,7 @@ floorActorItemLit = floorItemLit
   }
 floorArenaShade = floorActorLit
   { tname    = "shaded ground"
-  , tfreq    = [("treeShadeOrFogOver_s", 95)]
+  , tfreq    = [("treeShadeOver_s", 95)]
   , tcolor2  = BrBlack
   , tfeature = Dark : tfeature floorActorLit  -- no OftenItem
   }
@@ -358,7 +358,7 @@ floorBrownLit = floorRedLit
 floorFog = TileKind
   { tsymbol  = '#'
   , tname    = "dense fog"
-  , tfreq    = [("emptySet", 1), ("treeShadeOrFogOver_s", 5)]
+  , tfreq    = [("emptySet", 1), ("treeShadeOver_s", 5)]
   , tcolor   = BrCyan
   , tcolor2  = Cyan
   , talter   = maxBound

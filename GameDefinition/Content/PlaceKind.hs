@@ -50,8 +50,7 @@ rectWindows = PlaceKind
   , ptopLeft = [ "-="
                , "!."
                ]
-  , poverride = [ ('=', "horizontalWallOrGlassOver_=_Lit")
-                , ('!', "verticalWallOrGlassOver_!_Lit") ]
+  , poverride = [('=', "rectWindowsOver_=_Lit"), ('!', "rectWindowsOver_!_Lit")]
   }
 ruin = PlaceKind
   { psymbol  = 'R'
@@ -248,7 +247,7 @@ treeShade = PlaceKind
                , "XOs"
                , "XXs"
                ]
-  , poverride = [('O', "treeShadeOver_O"), ('s', "treeShadeOrFogOver_s")]
+  , poverride = [('O', "treeShadeOver_O"), ('s', "treeShadeOver_s")]
   }
 treeShade2 = treeShade
   { ptopLeft = [ "sss"
