@@ -166,10 +166,10 @@ buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
       posDn Point{..} = Point (px + 1) py
       lstair = ( map (posUp . fst) $ lstairsSingleUp ++ lstairsDouble
                , map (posDn . fst) $ lstairsDouble ++ lstairsSingleDown )
-  cave <- buildCave cops ldepth totalDepth dkind fixedCenters
+  lsecret <- randomR (1, maxBound)  -- 0 means unknown
+  cave <- buildCave cops ldepth totalDepth lsecret dkind fixedCenters
   cmap <- buildTileMap cops cave
   litemNum <- castDice ldepth totalDepth $ citemNum kc
-  lsecret <- randomR (1, maxBound)  -- 0 means unknown
   let lvl = levelFromCaveKind cops kc ldepth cmap lstair
                               litemNum lsecret lescape
   return (lvl, lstairsDouble ++ lstairsSingleDown)

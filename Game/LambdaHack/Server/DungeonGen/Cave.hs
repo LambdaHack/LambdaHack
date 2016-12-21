@@ -65,13 +65,14 @@ as follows:
 buildCave :: Kind.COps         -- ^ content definitions
           -> AbsDepth          -- ^ depth of the level to generate
           -> AbsDepth          -- ^ absolute depth
+          -> Int               -- ^ secret tile seed
           -> Kind.Id CaveKind  -- ^ cave kind to use for generation
           -> EM.EnumMap Point (GroupName PlaceKind)  -- ^ pos of stairs, etc.
           -> Rnd Cave
 buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                         , cocave=Kind.Ops{okind}
                         , coTileSpeedup }
-          ldepth totalDepth dkind fixedCenters = do
+          ldepth totalDepth lsecret dkind fixedCenters = do
   let kc@CaveKind{..} = okind dkind
   lgrid' <- castDiceXY ldepth totalDepth cgrid
   -- Make sure that in caves not filled with rock, there is a passage
@@ -178,7 +179,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                     r <- mkRoom minPlaceSize maxPlaceSize innerArea
                     (tmap, place) <-
                       buildPlace cops kc dnight darkCorTile litCorTile
-                                 ldepth totalDepth r Nothing
+                                 ldepth totalDepth lsecret r Nothing
                     let (sa, so) = borderPlace cops place
                     return ( EM.union tmap m
                            , place : pls
@@ -197,7 +198,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                                              , gs2, qls, fixedCenters )) ()
                   (tmap, place) <-
                     buildPlace cops kc dnight darkCorTile litCorTile
-                               ldepth totalDepth r (Just placeGroup)
+                               ldepth totalDepth lsecret r (Just placeGroup)
                   let (sa, so) = borderPlace cops place
                   return ( EM.union tmap m
                          , place : pls

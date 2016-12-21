@@ -19,6 +19,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.TileKind (TileKind)
@@ -108,13 +109,15 @@ buildPlace :: Kind.COps         -- ^ the game content
            -> Kind.Id TileKind  -- ^ lit fence tile, if fence hollow
            -> AbsDepth          -- ^ current level depth
            -> AbsDepth          -- ^ absolute depth
+           -> Int               -- ^ secret tile seed
            -> Area              -- ^ whole area of the place, fence included
            -> Maybe (GroupName PlaceKind)  -- ^ optional fixed place group
            -> Rnd (TileMapEM, Place)
 buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick}
                          , coplace=Kind.Ops{ofoldlGroup'} }
            CaveKind{..} dnight darkCorTile litCorTile
-           ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) r mplaceGroup = do
+           ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) lsecret
+           r mplaceGroup = do
   qFWall <- fromMaybe (assert `failure` cfillerTile)
             <$> opick cfillerTile (const True)
   -- TODO: factor out from here and newItem:
@@ -152,11 +155,13 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick}
       qseen = False
       qarea = fromMaybe (assert `failure` (kr, r)) $ interiorArea kr r
       place = Place {..}
-  override <- ooverride cops (poverride kr)
-  legend <- olegend cops qlegend
-  legendLit <- olegend cops clegendLitTile
-  let xlegend = EM.union override legend
-      xlegendLit = EM.union override legendLit
+  (overrideOneIn, override) <- ooverride cops (poverride kr)
+  (legendOneIn, legend) <- olegend cops qlegend
+  (legendLitOneIn, legendLit) <- olegend cops clegendLitTile
+  let xlegend = ( EM.union overrideOneIn legendOneIn
+                , EM.union override legend )
+      xlegendLit = ( EM.union overrideOneIn legendLitOneIn
+                   , EM.union override legendLit )
   cmap <- tilePlace qarea kr
   let fence = case pfence kr of
         FWall -> buildFence qFWall qarea
@@ -165,41 +170,64 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick}
         FNone -> EM.empty
       (x0, y0, x1, y1) = fromArea qarea
       isEdge (Point x y) = x `elem` [x0, x1] || y `elem` [y0, y1]
-      digDay xy c | isEdge xy = xlegendLit EM.! c
-                  | otherwise = xlegend EM.! c
+      digDay xy c | isEdge xy = lookupOneIn xlegendLit xy c
+                  | otherwise = lookupOneIn xlegend xy c
+      lookupOneIn :: ( EM.EnumMap Char (Int, Kind.Id TileKind)
+                     , EM.EnumMap Char (Kind.Id TileKind) )
+                  -> Point -> Char
+                  -> Kind.Id TileKind
+      lookupOneIn (mOneIn, m) xy c = case EM.lookup c mOneIn of
+        Just (oneInChance, tk) ->
+          if isChancePos oneInChance lsecret xy
+          then tk
+          else EM.findWithDefault (assert `failure` (c, mOneIn, m)) c m
+        Nothing -> EM.findWithDefault (assert `failure` (c, mOneIn, m)) c m
       interior = case pfence kr of
         FNone | not dnight -> EM.mapWithKey digDay cmap
-        _ -> let lookupLegend x =
-                   EM.findWithDefault (assert `failure` (qlegend, x)) x xlegend
-             in EM.map lookupLegend cmap
-      tmap = EM.union interior fence
+        _ -> EM.mapWithKey (lookupOneIn xlegend) cmap
+  let tmap = EM.union interior fence
   return (tmap, place)
 
 -- | Roll a legend of a place plan: a map from plan symbols to tile kinds.
 olegend :: Kind.COps -> GroupName TileKind
-        -> Rnd (EM.EnumMap Char (Kind.Id TileKind))
-olegend Kind.COps{cotile=Kind.Ops{ofoldlWithKey', opick}} cgroup =
+        -> Rnd ( EM.EnumMap Char (Int, Kind.Id TileKind)
+               , EM.EnumMap Char (Kind.Id TileKind) )
+olegend Kind.COps{cotile=Kind.Ops{ofoldlWithKey', opick, okind}} cgroup =
   let getSymbols !acc _ !tk =
         maybe acc (const $ ES.insert (TK.tsymbol tk) acc)
-          (lookup cgroup $ TK.tfreq tk)
+              (lookup cgroup $ TK.tfreq tk)
       symbols = ofoldlWithKey' getSymbols ES.empty
       getLegend s !acc = do
-        m <- acc
+        (mOneIn, m) <- acc
+        let p f t = TK.tsymbol t == s && f (Tile.kindHasFeature TK.Spice t)
         tk <- fmap (fromMaybe $ assert `failure` (cgroup, s))
-              $ opick cgroup $ (== s) . TK.tsymbol
-        return $! EM.insert s tk m
-      legend = ES.foldr' getLegend (return EM.empty) symbols
+              $ opick cgroup (p not)
+        mtkSpice <- opick cgroup (p id)
+        return $! case mtkSpice of
+          Nothing -> (mOneIn, EM.insert s tk m)
+          Just tkSpice ->
+            let n = fromJust (lookup cgroup (TK.tfreq (okind tk)))
+                    `divUp` fromJust (lookup cgroup (TK.tfreq (okind tkSpice)))
+            in (EM.insert s (n, tkSpice) mOneIn, EM.insert s tk m)
+      legend = ES.foldr' getLegend (return (EM.empty, EM.empty)) symbols
   in legend
 
 ooverride :: Kind.COps -> [(Char, GroupName TileKind)]
-          -> Rnd (EM.EnumMap Char (Kind.Id TileKind))
-ooverride Kind.COps{cotile=Kind.Ops{opick}} poverride =
+          -> Rnd ( EM.EnumMap Char (Int, Kind.Id TileKind)
+                 , EM.EnumMap Char (Kind.Id TileKind) )
+ooverride Kind.COps{cotile=Kind.Ops{opick, okind}} poverride =
   let getLegend (s, cgroup) acc = do
-        m <- acc
+        (mOneIn, m) <- acc
         tk <- fromMaybe (assert `failure` (cgroup, s))
-              <$> opick cgroup (const True)  -- tile symbol ignored
-        return $! EM.insert s tk m
-  in foldr getLegend (return EM.empty) poverride
+              <$> opick cgroup (not . Tile.kindHasFeature TK.Spice)
+        mtkSpice <- opick cgroup (Tile.kindHasFeature TK.Spice)
+        return $! case mtkSpice of
+          Nothing -> (mOneIn, EM.insert s tk m)
+          Just tkSpice ->
+            let n = fromJust (lookup cgroup (TK.tfreq (okind tk)))
+                    `divUp` fromJust (lookup cgroup (TK.tfreq (okind tkSpice)))
+            in (EM.insert s (n, tkSpice) mOneIn, EM.insert s tk m)
+  in foldr getLegend (return (EM.empty, EM.empty)) poverride
 
 -- | Construct a fence around an area, with the given tile kind.
 buildFence :: Kind.Id TileKind -> Area -> TileMapEM

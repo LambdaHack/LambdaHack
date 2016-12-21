@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Level
   , Level(..), ItemFloor, ActorMap, TileMap, SmellMap
     -- * Level query
   , at, accessible, accessibleUnknown, accessibleDir
-  , knownLsecret, isSecretPos, hideTile
+  , knownLsecret, isSecretPos, isChancePos, hideTile
   , findPoint, findPos, findPosTry, findPosTry2
   ) where
 
@@ -129,8 +129,13 @@ knownLsecret lvl = lsecret lvl /= 0
 
 isSecretPos :: Level -> Point -> Bool
 isSecretPos lvl (Point x y) =
-  lhidden lvl /= 0
+  lhidden lvl > 0
   && (lsecret lvl `Bits.rotateR` x `Bits.xor` y + x) `mod` lhidden lvl == 0
+
+isChancePos :: Int -> Int -> Point -> Bool
+isChancePos oneInChance lsecret (Point x y) =
+  oneInChance > 0
+  && (lsecret `Bits.rotateR` x `Bits.xor` y + x) `mod` oneInChance == 0
 
 hideTile :: Kind.COps -> Level -> Point -> Kind.Id TileKind
 hideTile Kind.COps{cotile} lvl p =
