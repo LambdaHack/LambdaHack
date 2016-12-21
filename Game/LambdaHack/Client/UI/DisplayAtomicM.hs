@@ -132,7 +132,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
           CTrunk{} -> return ()
       _ -> return ()  -- seen already (has a slot assigned)
     case c of
-      CActor aid store | store /= CSha -> do
+      CActor aid store | store `elem` [CEqp, CInv] -> do
         -- Actor fetching an item from shared stash, most probably.
         b <- getsState $ getActorBody aid
         subject <- partActorLeader aid b
