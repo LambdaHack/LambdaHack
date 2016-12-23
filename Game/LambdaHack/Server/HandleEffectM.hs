@@ -538,6 +538,13 @@ effectSummon execSfx actorFreq nDm source target = do
 
 -- ** Ascend
 
+bracedImmuneMsg :: Actor -> Text
+bracedImmuneMsg b =
+  -- TODO: instead send to client as ReqFailure and then use partActorLeader
+  let subject = partActor b
+      verb = "be braced and so immune to translocation"
+  in makeSentence [MU.SubjectVerbSg subject verb]
+
 -- Note that projectiles can be teleported, too, for extra fun.
 effectAscend :: (MonadAtomic m, MonadServer m)
              => (IK.Effect -> m Bool)
@@ -550,8 +557,7 @@ effectAscend recursiveCall execSfx k source target pos = do
   (lid2, pos2) <- getsState $ whereTo lid1 pos k . sdungeon
   sb <- getsState $ getActorBody source
   if | braced b1 -> do
-       execSfxAtomic $ SfxMsgFid (bfid sb)
-                                 "Braced actors are immune to translocation."
+       execSfxAtomic $ SfxMsgFid (bfid sb) $ bracedImmuneMsg b1
        return False
      | lid2 == lid1 && pos2 == pos -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) "No more levels in this direction."
@@ -769,8 +775,7 @@ effectTeleport execSfx nDm source target = do
     , dist 9
     ]
   if | braced b -> do
-       execSfxAtomic $ SfxMsgFid (bfid sb)
-                                 "Braced actors are immune to translocation."
+       execSfxAtomic $ SfxMsgFid (bfid sb) $ bracedImmuneMsg b
        return False
      | not (dMinMax 9 tpos) -> do  -- very rare
        execSfxAtomic $ SfxMsgFid (bfid sb) "Translocation not possible."
@@ -1016,8 +1021,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
   let eps = 0
       fpos = bpos tb `shift` v
   if braced tb then do
-    execSfxAtomic $ SfxMsgFid (bfid sb)
-                              "Braced actors are immune to translocation."
+    execSfxAtomic $ SfxMsgFid (bfid sb) $ bracedImmuneMsg tb
     return False
   else case bla lxsize lysize eps (bpos tb) fpos of
     Nothing -> assert `failure` (fpos, tb)

@@ -534,6 +534,8 @@ reqGameRestart aid groupName d configHeroNames = do
         , squit = True  -- do this at once
         , sheroNames = EM.insert fid configHeroNames $ sheroNames ser }
   isNoConfirms <- isNoConfirmsGame
+  -- This call to `revealItems` is really needed, because the other
+  -- happens only at game conclusion, not at quitting.
   unless isNoConfirms $ revealItems Nothing Nothing
   execUpdAtomic $ UpdQuitFaction fid (Just b) oldSt
                 $ Just $ Status Restart (fromEnum $ blid b) (Just groupName)
