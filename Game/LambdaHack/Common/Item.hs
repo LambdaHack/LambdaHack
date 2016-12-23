@@ -103,10 +103,10 @@ emptyAspectRecord = AspectRecord
 sumAspectRecord :: [(AspectRecord, Int)] -> AspectRecord
 sumAspectRecord l = AspectRecord
   { aTimeout     = 0
-  , aHurtMelee   = sum $ mapScale aHurtMelee l
-  , aHurtRanged  = sum $ mapScale aHurtRanged l
-  , aArmorMelee  = sum $ mapScale aArmorMelee l
-  , aArmorRanged = sum $ mapScale aArmorRanged l
+  , aHurtMelee   = trim200 $ sum $ mapScale aHurtMelee l
+  , aHurtRanged  = trim200 $ sum $ mapScale aHurtRanged l
+  , aArmorMelee  = trim200 $ sum $ mapScale aArmorMelee l
+  , aArmorRanged = trim200 $ sum $ mapScale aArmorRanged l
   , aMaxHP       = sum $ mapScale aMaxHP l
   , aMaxCalm     = sum $ mapScale aMaxCalm l
   , aSpeed       = sum $ mapScale aSpeed l
@@ -119,6 +119,9 @@ sumAspectRecord l = AspectRecord
  where
   mapScale f = map (\(ar, k) -> f ar * k)
   mapScaleAbility = map (\(ar, k) -> Ability.scaleSkills k $ aSkills ar)
+
+trim200 :: Int -> Int
+trim200 x = min 200 $ max (-200) x
 
 -- | The map of item ids to item aspects.
 -- The full map is known by the server.
@@ -188,16 +191,16 @@ castAspect !ldepth !totalDepth !ar !asp =
       return $! assert (aTimeout ar == 0) $ ar {aTimeout = n}
     IK.AddHurtMelee d -> do  -- TODO: lenses would reduce duplication below
       n <- castDice ldepth totalDepth d
-      return $! ar {aHurtMelee = n + aHurtMelee ar}
+      return $! ar {aHurtMelee = trim200 $ n + aHurtMelee ar}
     IK.AddHurtRanged d -> do
       n <- castDice ldepth totalDepth d
-      return $! ar {aHurtRanged = n + aHurtRanged ar}
+      return $! ar {aHurtRanged = trim200 $ n + aHurtRanged ar}
     IK.AddArmorMelee d -> do
       n <- castDice ldepth totalDepth d
-      return $! ar {aArmorMelee = n + aArmorMelee ar}
+      return $! ar {aArmorMelee = trim200 $ n + aArmorMelee ar}
     IK.AddArmorRanged d -> do
       n <- castDice ldepth totalDepth d
-      return $! ar {aArmorRanged = n + aArmorRanged ar}
+      return $! ar {aArmorRanged = trim200 $ n + aArmorRanged ar}
     IK.AddMaxHP d -> do
       n <- castDice ldepth totalDepth d
       return $! ar {aMaxHP = n + aMaxHP ar}
@@ -232,16 +235,16 @@ addMeanAspect !ar !asp =
       in assert (aTimeout ar == 0) $ ar {aTimeout = n}
     IK.AddHurtMelee d ->
       let n = Dice.meanDice d
-      in ar {aHurtMelee = n + aHurtMelee ar}
+      in ar {aHurtMelee = trim200 $ n + aHurtMelee ar}
     IK.AddHurtRanged d ->
       let n = Dice.meanDice d
-      in ar {aHurtRanged = n + aHurtRanged ar}
+      in ar {aHurtRanged = trim200 $ n + aHurtRanged ar}
     IK.AddArmorMelee d ->
       let n = Dice.meanDice d
-      in ar {aArmorMelee = n + aArmorMelee ar}
+      in ar {aArmorMelee = trim200 $ n + aArmorMelee ar}
     IK.AddArmorRanged d ->
       let n = Dice.meanDice d
-      in ar {aArmorRanged = n + aArmorRanged ar}
+      in ar {aArmorRanged = trim200 $ n + aArmorRanged ar}
     IK.AddMaxHP d ->
       let n = Dice.meanDice d
       in ar {aMaxHP = n + aMaxHP ar}

@@ -291,7 +291,7 @@ armorHurtBonus source target = do
                   then aHurtRanged sar - aArmorRanged tar
                   else aHurtMelee sar - aArmorMelee tar
       block = braced tb
-  return $! itemBonus - if block then 50 else 0
+  return $! min 100 $ max (-100) $ itemBonus - if block then 50 else 0
 
 halveCalm :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 {-# INLINABLE halveCalm #-}
