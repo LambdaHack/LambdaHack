@@ -126,7 +126,7 @@ harpoon = ItemKind
   , irarity  = [(10, 10)]
   , iverbHit = "hook"
   , iweight  = 4000
-  , idamage  = toDmg $ 4 * d 1
+  , idamage  = [(99, 4 * d 1), (1, 8 * d 1)]
   , iaspects = [AddHurtRanged (d 2 + dl 5 |*| 20)]
   , ieffects = [PullActor (ThrowMod 200 50)]
   , ifeature = [Identified]
@@ -789,7 +789,7 @@ gloveFencing = ItemKind
   , irarity  = [(5, 9), (10, 9)]
   , iverbHit = "flap"
   , iweight  = 100
-  , idamage  = toDmg 0
+  , idamage  = toDmg $ 1 * d 1
   , iaspects = [ AddHurtMelee $ (d 2 + dl 10) |*| 3
                , AddArmorRanged $ d 2 |*| 5 ]
   , ieffects = [EqpSlot EqpSlotAddArmorRanged]
@@ -803,7 +803,7 @@ gloveGauntlet = gloveFencing
   , iflavour = zipPlain [BrCyan]
   , irarity  = [(1, 9), (10, 3)]
   , iweight  = 300
-  , idamage  = toDmg 0
+  , idamage  = toDmg $ 1 * d 1
   , iaspects = [ AddArmorMelee $ 1 + dl 2 |*| 5
                , AddArmorRanged $ dl 2 |*| 5 ]
   , ieffects = [EqpSlot EqpSlotAddArmorMelee]
@@ -814,7 +814,7 @@ gloveJousting = gloveFencing
   , iflavour = zipFancy [BrRed]
   , irarity  = [(1, 3), (10, 3)]
   , iweight  = 500
-  , idamage  = toDmg 0
+  , idamage  = toDmg $ 2 * d 1
   , iaspects = [ AddHurtMelee $ dl 4 - 6 |*| 3
                , AddArmorMelee $ 2 + dl 2 |*| 5
                , AddArmorRanged $ 1 + dl 2 |*| 5 ]
@@ -835,7 +835,7 @@ buckler = ItemKind
   , irarity  = [(4, 6)]
   , iverbHit = "bash"
   , iweight  = 2000
-  , idamage  = toDmg $ 1 * d 1  -- to display xdy everywhere
+  , idamage  = [(96, 1 * d 1), (3, 2 * d 1), (1, 4 * d 1)]  -- to display xdy
   , iaspects = [ AddArmorMelee 40
                , AddHurtMelee (-30)
                , Timeout $ d 3 + 3 - dl 3 |*| 2 ]
@@ -910,7 +910,7 @@ hammer = ItemKind
   , irarity  = [(5, 15)]
   , iverbHit = "club"
   , iweight  = 1500
-  , idamage  = toDmg $ 8 * d 1
+  , idamage  = [(96, 8 * d 1), (3, 12 * d 1), (1, 16 * d 1)]
   , iaspects = [ AddHurtMelee $ d 2 + dl 2 |*| 3
                , AddHurtRanged (-80) ]  -- as powerful as a dart
   , ieffects = [EqpSlot EqpSlotWeapon]
@@ -980,7 +980,7 @@ halberd = ItemKind
   , irarity  = [(7, 1), (10, 10)]
   , iverbHit = "impale"
   , iweight  = 3000
-  , idamage  = toDmg $ 12 * d 1
+  , idamage  = [(96, 12 * d 1), (3, 18 * d 1), (1, 24 * d 1)]
   , iaspects = [AddArmorMelee $ 1 + dl 3 |*| 5]
   , ieffects = [EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 5  -- not balanced
