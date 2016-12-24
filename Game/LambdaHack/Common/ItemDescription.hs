@@ -71,10 +71,9 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
           noEffect :: IK.Effect -> Bool
           noEffect IK.ELabel{} = True
           noEffect _ = False
-          hurtEffect :: IK.Effect -> Bool
-          hurtEffect (IK.Hurt _) = True
-          hurtEffect (IK.Burn _) = True
-          hurtEffect _ = False
+          rawDmgEffect :: IK.Effect -> Bool
+          rawDmgEffect (IK.Burn _) = True
+          rawDmgEffect _ = False
           notDetail :: IK.Effect -> Bool
           notDetail IK.Explode{} = fullInfo >= 6
           notDetail _ = True
@@ -89,7 +88,7 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                 mtimeout = find timeoutAspect aspects
                 mnoEffect = find noEffect effects
                 restAs = sort aspects
-                (hurtEs, restEs) = partition hurtEffect $ sort
+                (rawDmgEs, restEs) = partition rawDmgEffect $ sort
                                    $ filter notDetail effects
                 aes = if active
                       then map ppA restAs ++ map ppE restEs
@@ -122,10 +121,12 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                 noEff = case mnoEffect of
                   Just (IK.ELabel t) -> [t]
                   _ -> []
+                damage = "(" <> tshow (jdamage itemBase) <> ")"
             in noEff ++ if fullInfo >= 5 || fullInfo >= 2 && null noEff
-                        then [periodicOrTimeout] ++ map ppE hurtEs ++ aes
+                        then [periodicOrTimeout] ++ [damage]
+                             ++ map ppE rawDmgEs ++ aes
                              ++ [onSmash | fullInfo >= 7]
-                        else map ppE hurtEs
+                        else damage : map ppE rawDmgEs
           aets = case itemAspect of
             Just aspectRecord ->
               splitAE (aspectRecordToList aspectRecord) (IK.ieffects itemKind)

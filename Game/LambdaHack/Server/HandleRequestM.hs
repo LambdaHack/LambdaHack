@@ -228,7 +228,10 @@ reqMelee :: (MonadAtomic m, MonadServer m)
 reqMelee source target iid cstore = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  let adj = checkAdjacent sb tb
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! target
+      hpMax = aMaxHP ar
+      adj = checkAdjacent sb tb
       req = ReqMelee target iid cstore
   if source == target then execFailure source req MeleeSelf
   else if not adj then execFailure source req MeleeDistant
@@ -237,12 +240,26 @@ reqMelee source target iid cstore = do
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
     hurtBonus <- armorHurtBonus source target
-    let hitA | hurtBonus <= -50  -- e.g., braced and no hit bonus
-               = HitBlock 2
-             | hurtBonus <= -10  -- low bonus vs armor
-               = HitBlock 1
-             | otherwise = HitClear
-    execSfxAtomic $ SfxStrike source target iid cstore hitA
+    itemBase <- getsState $ getItemBody iid
+    n <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) $ jdamage itemBase
+    let mult = 100 + hurtBonus
+        rawDeltaHP | n <= 0 = 0
+                   | otherwise = - (max oneM  -- at least 1 HP taken
+                                        (fromIntegral mult * xM n `divUp` 100))
+        serious = rawDeltaHP < 0 && source /= target && not (bproj tb)
+        deltaHP | serious = -- if HP overfull, at least cut back to max HP
+                            min rawDeltaHP (xM hpMax - bhp tb)
+                | otherwise = rawDeltaHP
+    -- Damage the target.
+    when (rawDeltaHP < 0) $ do
+      execUpdAtomic $ UpdRefillHP target deltaHP
+      when serious $ halveCalm target
+      let hitA | hurtBonus <= -50  -- e.g., braced and no hit bonus
+                 = HitBlock 2
+               | hurtBonus <= -10  -- low bonus vs armor
+                 = HitBlock 1
+               | otherwise = HitClear
+      execSfxAtomic $ SfxStrike source target iid cstore hitA
     -- Deduct a hitpoint for a pierce of a projectile
     -- or due to a hurled actor colliding with another or a wall.
     case btrajectory sb of
@@ -265,6 +282,22 @@ reqMelee source target iid cstore = do
             || isAllied sfact tfid  -- allies never at war
             || sfid == tfid) $
       execUpdAtomic $ UpdDiplFaction sfid tfid fromDipl War
+
+armorHurtBonus :: (MonadAtomic m, MonadServer m)
+               => ActorId -> ActorId
+               -> m Int
+{-# INLINABLE armorHurtBonus #-}
+armorHurtBonus source target = do
+  sb <- getsState $ getActorBody source
+  tb <- getsState $ getActorBody target
+  actorAspect <- getsServer sactorAspect
+  let sar = actorAspect EM.! source
+      tar = actorAspect EM.! target
+      itemBonus = if bproj sb
+                  then aHurtRanged sar - aArmorRanged tar
+                  else aHurtMelee sar - aArmorMelee tar
+      block = braced tb
+  return $! min 100 $ max (-100) $ itemBonus - if block then 50 else 0
 
 -- * ReqDisplace
 

@@ -31,6 +31,7 @@ tmpAs name aspects = ItemKind
   , irarity  = [(1, 1)]
   , iverbHit = "affect"
   , iweight  = 0
+  , idamage  = toDmg 0
   , iaspects = -- timeout is 0; activates and vanishes soon,
                -- depending on initial timer setting
                aspects

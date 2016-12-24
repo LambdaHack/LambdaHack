@@ -31,7 +31,6 @@ effectToSuffix effect =
   case effect of
     ELabel _ -> ""  -- printed specially
     EqpSlot _ -> ""  -- more accurate data in aspects; here only AI summary
-    Hurt dice -> wrapInParens (tshow dice)
     Burn d -> wrapInParens (tshow d
                             <+> if d > 1 then "burns" else "burn")
     Explode t -> "of" <+> tshow t <+> "explosion"

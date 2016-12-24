@@ -2,7 +2,7 @@
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectM
   ( applyItem, itemEffectAndDestroy, effectAndDestroy, itemEffectCause
-  , dropCStoreItem, pickDroppable, armorHurtBonus
+  , dropCStoreItem, pickDroppable, halveCalm
   ) where
 
 import Prelude ()
@@ -204,7 +204,6 @@ effectSem source target iid c recharged effect = do
   case effect of
     IK.ELabel _ -> return False
     IK.EqpSlot _ -> return False
-    IK.Hurt nDm -> effectHurt nDm source target IK.RefillHP
     IK.Burn nDm -> effectBurn nDm source target
     IK.Explode t -> effectExplode execSfx t target
     IK.RefillHP p -> effectRefillHP False p source target
@@ -242,81 +241,32 @@ effectSem source target iid c recharged effect = do
 
 -- + Individual semantic functions for effects
 
--- ** Hurt
+-- ** Burn
 
--- Modified by armor. Can, exceptionally, add HP.
-effectHurt :: (MonadAtomic m, MonadServer m)
-           => Dice.Dice -> ActorId -> ActorId -> (Int -> IK.Effect)
+-- Damage from fire. Not affected by armor.
+effectBurn :: (MonadAtomic m, MonadServer m)
+           => Dice.Dice -> ActorId -> ActorId
            -> m Bool
-{-# INLINABLE effectHurt #-}
-effectHurt nDm source target verboseEffectConstructor = do
+{-# INLINABLE effectBurn #-}
+effectBurn nDm source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   actorAspect <- getsServer sactorAspect
   let ar = actorAspect EM.! target
       hpMax = aMaxHP ar
   n <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
-  hurtBonus <- armorHurtBonus source target
-  let mult = 100 + hurtBonus
-      rawDeltaHP = - (max oneM  -- at least 1 HP taken
-                          (fromIntegral mult * xM n `divUp` 100))
+  let rawDeltaHP = - (fromIntegral $ xM n)
       serious = source /= target && not (bproj tb)
       deltaHP | serious = -- if HP overfull, at least cut back to max HP
                           min rawDeltaHP (xM hpMax - bhp tb)
               | otherwise = rawDeltaHP
       deltaDiv = fromEnum $ deltaHP `divUp` oneM
   -- Damage the target.
-  execUpdAtomic $ UpdRefillHP target deltaHP
+  execUpdAtomic $ UpdRefillHP target deltaHP  -- TODO: also light on fire, etc.
   when serious $ halveCalm target
-  let reportedEffect =
-        if source == target
-        then verboseEffectConstructor deltaDiv
-               -- no SfxStrike, so treat as any heal/wound
-        else IK.Hurt (Dice.intToDice (- deltaDiv))
-               -- SfxStrike already sent, avoid spam
+  let reportedEffect = IK.Burn $ Dice.intToDice (- deltaDiv)
   execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
   return True
-
-armorHurtBonus :: (MonadAtomic m, MonadServer m)
-               => ActorId -> ActorId
-               -> m Int
-{-# INLINABLE armorHurtBonus #-}
-armorHurtBonus source target = do
-  sb <- getsState $ getActorBody source
-  tb <- getsState $ getActorBody target
-  actorAspect <- getsServer sactorAspect
-  let sar = actorAspect EM.! source
-      tar = actorAspect EM.! target
-      itemBonus = if bproj sb
-                  then aHurtRanged sar - aArmorRanged tar
-                  else aHurtMelee sar - aArmorMelee tar
-      block = braced tb
-  return $! min 100 $ max (-100) $ itemBonus - if block then 50 else 0
-
-halveCalm :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-{-# INLINABLE halveCalm #-}
-halveCalm target = do
-  tb <- getsState $ getActorBody target
-  actorAspect <- getsServer sactorAspect
-  let ar = actorAspect EM.! target
-      upperBound = if hpTooLow tb ar
-                   then 0  -- to trigger domination, etc.
-                   else max (xM $ aMaxCalm ar) (bcalm tb) `div` 2
-      deltaCalm = min minusTwoM (upperBound - bcalm tb)
-  -- HP loss decreases Calm by at least minusTwoM, to overcome Calm regen,
-  -- when far from shooting foe and to avoid "hears something",
-  -- which is emitted for decrease @minusM@.
-  udpateCalm target deltaCalm
-
--- ** Burn
-
--- Damage from both impact and fire. Modified by armor.
-effectBurn :: (MonadAtomic m, MonadServer m)
-           => Dice.Dice -> ActorId -> ActorId
-           -> m Bool
-{-# INLINABLE effectBurn #-}
-effectBurn nDm source target =
-  effectHurt nDm source target (\p -> IK.Burn $ Dice.intToDice (-p))
 
 -- ** Explode
 
@@ -403,6 +353,21 @@ effectRefillHP overfill power source target = do
       execSfxAtomic $ SfxEffect (bfid sb) target effect deltaHP
       when (deltaHP < 0 && serious) $ halveCalm target
       return True
+
+halveCalm :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
+{-# INLINABLE halveCalm #-}
+halveCalm target = do
+  tb <- getsState $ getActorBody target
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! target
+      upperBound = if hpTooLow tb ar
+                   then 0  -- to trigger domination, etc.
+                   else max (xM $ aMaxCalm ar) (bcalm tb) `div` 2
+      deltaCalm = min minusTwoM (upperBound - bcalm tb)
+  -- HP loss decreases Calm by at least minusTwoM, to overcome Calm regen,
+  -- when far from shooting foe and to avoid "hears something",
+  -- which is emitted for decrease @minusM@.
+  udpateCalm target deltaCalm
 
 -- ** RefillCalm
 

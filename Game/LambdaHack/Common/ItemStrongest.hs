@@ -120,7 +120,6 @@ strMelee effectBonus localTime itemFull =
       -- weapons are preferred over weapons with no effects.
       -- If the player doesn't like a particular weapon's extra effect,
       -- he has to manage this manually.
-      p (Hurt d) = [Dice.meanDice d]
       p (Burn d) = [Dice.meanDice d]
       p _ | not effectBonus = []
       p ELabel{} = []
@@ -136,7 +135,8 @@ strMelee effectBonus localTime itemFull =
       p Unique = []
       p Periodic = []
       p _ = [100]
-  in sum (strengthEffect p itemFull)
+      hurt = Dice.meanDice $ jdamage $ itemBase itemFull
+  in hurt + sum (strengthEffect p itemFull)
 
 hasCharge :: Time -> ItemFull -> Bool
 hasCharge localTime itemFull@ItemFull{..} =

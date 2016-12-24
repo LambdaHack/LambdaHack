@@ -38,7 +38,6 @@ import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
@@ -55,7 +54,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
@@ -540,17 +538,7 @@ drawLeaderDamage width = do
       let damage = case strongest of
             [] -> "0"
             (_averageDmg, (_, itemFull)) : _ ->
-              let getD :: IK.Effect -> Maybe Dice.Dice -> Maybe Dice.Dice
-                  getD (IK.Hurt dice) acc = Just $ dice + fromMaybe 0 acc
-                  getD (IK.Burn dice) acc = Just $ dice + fromMaybe 0 acc
-                  getD _ acc = acc
-                  mdice = case itemDisco itemFull of
-                    Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}} ->
-                      foldr getD Nothing ieffects
-                    Nothing -> Nothing
-                  tdice = case mdice of
-                    Nothing -> "0"
-                    Just dice -> show dice
+              let tdice = show $ jdamage $ itemBase itemFull
                   bonus = aHurtMelee $ actorAspect EM.! leader
                   unknownBonus = unknownMelee $ map snd allAssocs
                   tbonus = if bonus == 0

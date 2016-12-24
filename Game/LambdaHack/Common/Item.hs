@@ -159,6 +159,7 @@ data Item = Item
   , jflavour :: !Flavour       -- ^ flavour
   , jfeature :: ![IK.Feature]  -- ^ public properties
   , jweight  :: !Int           -- ^ weight in grams, obvious enough
+  , jdamage  :: !Dice.Dice     -- ^ impact damage of this particular weapon
   }
   deriving (Show, Eq, Generic)
 

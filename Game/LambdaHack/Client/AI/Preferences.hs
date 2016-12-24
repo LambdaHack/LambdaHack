@@ -29,7 +29,6 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
   in case eff of
     IK.ELabel _ -> 0
     IK.EqpSlot _ -> 0
-    IK.Hurt d -> -(min 150 $ 10 * Dice.meanDice d)
     IK.Burn d -> -(min 200 $ 15 * Dice.meanDice d)
                    -- often splash damage, etc.
     IK.Explode _ -> 0  -- depends on explosion
@@ -79,7 +78,7 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
       let (total, count) = organBenefit grp cops b ar fact
       in total `divUp` count  -- average over all matching grp; rarities ignored
     IK.CreateItem{} -> 30  -- TODO
-    IK.DropItem COrgan grp ->  -- calculated for future use, general pickup
+    IK.DropItem COrgan grp ->
       let (total, _) = organBenefit grp cops b ar fact
       in - total  -- sum over all matching grp; simplification: rarities ignored
     IK.DropItem _ _ -> -15
@@ -99,6 +98,8 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
     IK.Unique -> 0
     IK.Periodic -> 0
 
+-- We ignore the possibility of, e.g., temporary extra clawed limb, etc.,
+-- so we don't take into account idamage of the item kinds.
 -- TODO: calculating this for "temporary conditions" takes forever
 organBenefit :: GroupName ItemKind -> Kind.COps
              -> Actor -> AspectRecord -> Faction
@@ -138,7 +139,9 @@ totalUsefulness :: Kind.COps -> Actor -> AspectRecord -> Faction -> ItemFull
                 -> Maybe (Int, Int)
 totalUsefulness cops b ar fact itemFull =
   let ben effects aspects =
-        let effSum = sum $ map (effectToBenefit cops b ar fact) effects
+        let effSum = -(min 150
+                           (10 * Dice.meanDice (jdamage $ itemBase itemFull)))
+                     + sum (map (effectToBenefit cops b ar fact) effects)
             aspBens = map (aspectToBenefit cops b) $ aspectRecordToList aspects  -- TODO
             periodicEffBens = map (effectToBenefit cops b ar fact)
                                   (stripRecharging effects)

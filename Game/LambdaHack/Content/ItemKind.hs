@@ -6,7 +6,7 @@ module Game.LambdaHack.Content.ItemKind
   , Aspect(..), ThrowMod(..)
   , Feature(..), EqpSlot(..)
   , properEffect
-  , toVelocity, toLinger, toOrganGameTurn, toOrganActorTurn, toOrganNone
+  , toDmg, toVelocity, toLinger, toOrganGameTurn, toOrganActorTurn, toOrganNone
   , validateSingleItemKind, validateAllItemKind
   ) where
 
@@ -37,6 +37,7 @@ data ItemKind = ItemKind
   , irarity  :: !Rarity            -- ^ rarity on given depths
   , iverbHit :: !MU.Part           -- ^ the verb for applying and melee
   , iweight  :: !Int               -- ^ weight in grams
+  , idamage  :: ![(Int, Dice.Dice)]  -- ^ frequency of basic impact damage
   , iaspects :: ![Aspect]          -- ^ keep the aspect continuously
   , ieffects :: ![Effect]          -- ^ cause the effect when triggered
   , ifeature :: ![Feature]         -- ^ public properties
@@ -54,7 +55,6 @@ data Effect =
     -- Ordinary effects.
     ELabel !Text      -- ^ secret (learned as effect) label of the item
   | EqpSlot !EqpSlot  -- ^ AI and UI flag that leaks item properties
-  | Hurt !Dice.Dice
   | Burn !Dice.Dice   -- TODO: generalize to other elements? ignite terrain?
   | Explode !(GroupName ItemKind)
                       -- ^ explode, producing this group of blasts
@@ -204,6 +204,9 @@ instance Binary ThrowMod
 instance Binary Feature
 
 instance Binary EqpSlot
+
+toDmg :: Dice.Dice -> [(Int, Dice.Dice)]
+toDmg dmg = [(1, dmg)]
 
 toVelocity :: Int -> Feature
 toVelocity n = ToThrow $ ThrowMod n 100

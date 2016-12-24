@@ -75,8 +75,9 @@ dart = ItemKind
   , irarity  = [(1, 10), (10, 20)]
   , iverbHit = "nick"
   , iweight  = 50
+  , idamage  = toDmg $ 2 * d 1
   , iaspects = [AddHurtRanged (d 3 + dl 6 |*| 20)]
-  , ieffects = [Hurt (2 * d 1)]
+  , ieffects = []
   , ifeature = [Identified]
   , idesc    = "Little, but sharp and sturdy."  -- "Much inferior to arrows though, especially given the contravariance problems."  --- funny, but destroy the suspension of disbelief; this is supposed to be a Lovecraftian horror and any hilarity must ensue from the failures in making it so and not from actively trying to be funny; also, mundane objects are not supposed to be scary or transcendental; the scare is in horrors from the abstract dimension visiting our ordinary reality; without the contrast there's no horror and no wonder, so also the magical items must be contrasted with ordinary XIX century and antique items
   , ikit     = []
@@ -90,8 +91,9 @@ dart200 = ItemKind
   , irarity  = [(1, 20), (10, 10)]
   , iverbHit = "prick"
   , iweight  = 50
+  , idamage  = toDmg $ 1 * d 1
   , iaspects = [AddHurtRanged (d 3 + dl 6 |*| 20)]
-  , ieffects = [Hurt (1 * d 1)]
+  , ieffects = []
   , ifeature = [toVelocity 200, Identified]
   , idesc    = "Finely balanced for throws of great speed."
   , ikit     = []
@@ -108,8 +110,9 @@ paralizingProj = ItemKind
   , irarity  = [(5, 5), (10, 5)]
   , iverbHit = "entangle"
   , iweight  = 500
+  , idamage  = toDmg $ 2 * d 1
   , iaspects = [AddHurtRanged (1 + dl 2 |*| 20)]
-  , ieffects = [Hurt (2 * d 1), Paralyze (10 + 2 * d 5), DropBestWeapon]
+  , ieffects = [Paralyze (10 + 2 * d 5), DropBestWeapon]
   , ifeature = [Identified]
   , idesc    = "Wood balls tied with hemp rope. The target enemy is tripped and bound to drop the main weapon, while fighting for balance."
   , ikit     = []
@@ -123,8 +126,9 @@ harpoon = ItemKind
   , irarity  = [(10, 10)]
   , iverbHit = "hook"
   , iweight  = 4000
+  , idamage  = toDmg $ 4 * d 1
   , iaspects = [AddHurtRanged (d 2 + dl 5 |*| 20)]
-  , ieffects = [Hurt (4 * d 1), PullActor (ThrowMod 200 50)]
+  , ieffects = [PullActor (ThrowMod 200 50)]
   , ifeature = [Identified]
   , idesc    = "The cruel, barbed head lodges in its victim so painfully that the weakest tug of the thin line sends the victim flying."
   , ikit     = []
@@ -138,8 +142,9 @@ net = ItemKind
   , irarity  = [(3, 5), (10, 4)]
   , iverbHit = "entangle"
   , iweight  = 1000
+  , idamage  = toDmg $ 1 * d 1
   , iaspects = [AddHurtRanged (1 + dl 2 |*| 20)]
-  , ieffects = [ Hurt (d 1), toOrganGameTurn "slow 10" (3 + d 3)
+  , ieffects = [ toOrganGameTurn "slow 10" (3 + d 3)
                , DropItem CEqp "torso armor" ]
   , ifeature = [Identified]
   , idesc    = "A wide net with weights along the edges. Entangles armor and restricts movement."
@@ -157,6 +162,7 @@ jumpingPole = ItemKind
   , irarity  = [(1, 2)]
   , iverbHit = "prod"
   , iweight  = 10000
+  , idamage  = toDmg 0
   , iaspects = [Timeout $ d 2 + 2 - dl 2 |*| 10]
   , ieffects = [Recharging (toOrganActorTurn "fast 20" 1)]
   , ifeature = [Durable, Applicable, Identified]
@@ -172,6 +178,7 @@ sharpeningTool = ItemKind
   , irarity  = [(10, 10)]
   , iverbHit = "smack"
   , iweight  = 400
+  , idamage  = toDmg 0
   , iaspects = [AddHurtMelee $ d 10 |*| 3]
   , ieffects = [EqpSlot EqpSlotAddHurtMelee]
   , ifeature = [Identified, Equipable]
@@ -187,6 +194,7 @@ seeingItem = ItemKind
   , irarity  = [(1, 1)]
   , iverbHit = "gaze at"
   , iweight  = 100
+  , idamage  = toDmg 0
   , iaspects = [ AddSight 10, AddMaxCalm 60, AddShine 2
                , Timeout $ 1 + d 2 ]
   , ieffects = [ Periodic
@@ -205,6 +213,7 @@ motionScanner = ItemKind
   , irarity  = [(6, 2), (10, 2)]
   , iverbHit = "jingle"
   , iweight  = 300
+  , idamage  = toDmg 0
   , iaspects = [ AddNocto 1
                , AddArmorMelee (dl 5 - 10), AddArmorRanged (dl 10 - 20) ]
   , ieffects = [EqpSlot EqpSlotMiscBonus]
@@ -224,6 +233,7 @@ light1 = ItemKind
   , irarity  = [(1, 10)]
   , iverbHit = "scorch"
   , iweight  = 1200
+  , idamage  = toDmg 0
   , iaspects = [ AddShine 3       -- not only flashes, but also sparks
                , AddSight (-2) ]  -- unused by AI due to the mixed blessing
   , ieffects = [Burn 2, EqpSlot EqpSlotLightSource]
@@ -240,6 +250,7 @@ light2 = ItemKind
   , irarity  = [(6, 7)]
   , iverbHit = "burn"
   , iweight  = 1000
+  , idamage  = toDmg 0
   , iaspects = [AddShine 3, AddSight (-1)]
   , ieffects = [ Burn 3, Paralyze 6, OnSmash (Explode "burning oil 3")
                , EqpSlot EqpSlotLightSource ]
@@ -257,6 +268,7 @@ light3 = ItemKind
   , irarity  = [(10, 5)]
   , iverbHit = "burn"
   , iweight  = 2400
+  , idamage  = toDmg 0
   , iaspects = [AddShine 4, AddSight (-1)]
   , ieffects = [ Burn 4, Paralyze 8, OnSmash (Explode "burning oil 4")
                , EqpSlot EqpSlotLightSource ]
@@ -277,6 +289,7 @@ gorget = ItemKind
   , irarity  = [(4, 3), (10, 3)]  -- weak, shallow
   , iverbHit = "whip"
   , iweight  = 30
+  , idamage  = toDmg 0
   , iaspects = [ Timeout $ 1 + d 2
                , AddArmorMelee $ 2 + d 3
                , AddArmorRanged $ 2 + d 3 ]
@@ -296,6 +309,7 @@ necklace = ItemKind
   , irarity  = [(10, 2)]
   , iverbHit = "whip"
   , iweight  = 30
+  , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [Periodic, EqpSlot EqpSlotMiscBonus]
   , ifeature = [Precious, toVelocity 50, Equipable]  -- not dense enough
@@ -374,6 +388,7 @@ imageItensifier = ItemKind
   , irarity  = [(7, 2), (10, 2)]
   , iverbHit = "bang"
   , iweight  = 500
+  , idamage  = toDmg 0
   , iaspects = [AddNocto 1, AddSight (-1), AddArmorMelee $ 1 + dl 3 |*| 3]
   , ieffects = [EqpSlot EqpSlotMiscBonus]
   , ifeature = [Precious, Identified, Durable, Equipable]
@@ -389,6 +404,7 @@ sightSharpening = ItemKind
   , irarity  = [(7, 3), (10, 3)]  -- medium weak, medium shallow
   , iverbHit = "rap"
   , iweight  = 50
+  , idamage  = toDmg 0
   , iaspects = [AddSight $ 1 + d 2, AddHurtMelee $ d 2 |*| 3]
   , ieffects = [Unique, EqpSlot EqpSlotAddSight]
   , ifeature = [Precious, Identified, Durable, Equipable]
@@ -407,6 +423,7 @@ ring = ItemKind
   , irarity  = [(10, 3)]
   , iverbHit = "knock"
   , iweight  = 15
+  , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [Explode "blast 20"]
   , ifeature = [Precious, Identified, Equipable]
@@ -479,6 +496,7 @@ potion = ItemKind
   , irarity  = [(1, 12), (10, 9)]
   , iverbHit = "splash"
   , iweight  = 200
+  , idamage  = toDmg 0
   , iaspects = []
   , ieffects = []
   , ifeature = [ toVelocity 50  -- oily, bad grip
@@ -561,6 +579,7 @@ flask = ItemKind
   , irarity  = [(1, 9), (10, 6)]
   , iverbHit = "splash"
   , iweight  = 500
+  , idamage  = toDmg 0
   , iaspects = []
   , ieffects = []
   , ifeature = [ toVelocity 50  -- oily, bad grip
@@ -662,6 +681,7 @@ scroll = ItemKind
   , irarity  = [(1, 15), (10, 12)]
   , iverbHit = "thump"
   , iweight  = 50
+  , idamage  = toDmg 0
   , iaspects = []
   , ieffects = []
   , ifeature = [ toVelocity 25  -- bad shape, even rolled up
@@ -736,6 +756,7 @@ armorLeather = ItemKind
   , irarity  = [(1, 9), (10, 3)]
   , iverbHit = "thud"
   , iweight  = 7000
+  , idamage  = toDmg 0
   , iaspects = [ AddHurtMelee (-3)
                , AddArmorMelee $ 1 + d 2 + dl 2 |*| 5
                , AddArmorRanged $ d 2 + dl 2 |*| 5 ]
@@ -750,6 +771,7 @@ armorMail = armorLeather
   , iflavour = zipPlain [Cyan]
   , irarity  = [(6, 9), (10, 3)]
   , iweight  = 12000
+  , idamage  = toDmg 0
   , iaspects = [ AddHurtMelee (-3)
                , AddArmorMelee $ 1 + d 2 + dl 3 |*| 5
                , AddArmorRanged $ 2 + d 2 + dl 3 |*| 5 ]
@@ -767,6 +789,7 @@ gloveFencing = ItemKind
   , irarity  = [(5, 9), (10, 9)]
   , iverbHit = "flap"
   , iweight  = 100
+  , idamage  = toDmg 0
   , iaspects = [ AddHurtMelee $ (d 2 + dl 10) |*| 3
                , AddArmorRanged $ d 2 |*| 5 ]
   , ieffects = [EqpSlot EqpSlotAddArmorRanged]
@@ -780,6 +803,7 @@ gloveGauntlet = gloveFencing
   , iflavour = zipPlain [BrCyan]
   , irarity  = [(1, 9), (10, 3)]
   , iweight  = 300
+  , idamage  = toDmg 0
   , iaspects = [ AddArmorMelee $ 1 + dl 2 |*| 5
                , AddArmorRanged $ dl 2 |*| 5 ]
   , ieffects = [EqpSlot EqpSlotAddArmorMelee]
@@ -790,6 +814,7 @@ gloveJousting = gloveFencing
   , iflavour = zipFancy [BrRed]
   , irarity  = [(1, 3), (10, 3)]
   , iweight  = 500
+  , idamage  = toDmg 0
   , iaspects = [ AddHurtMelee $ dl 4 - 6 |*| 3
                , AddArmorMelee $ 2 + dl 2 |*| 5
                , AddArmorRanged $ 1 + dl 2 |*| 5 ]
@@ -810,11 +835,11 @@ buckler = ItemKind
   , irarity  = [(4, 6)]
   , iverbHit = "bash"
   , iweight  = 2000
+  , idamage  = toDmg $ 1 * d 1  -- to display xdy everywhere
   , iaspects = [ AddArmorMelee 40
                , AddHurtMelee (-30)
                , Timeout $ d 3 + 3 - dl 3 |*| 2 ]
-  , ieffects = [ Hurt (1 * d 1)  -- to display xdy everywhere in Hurt
-               , Recharging (PushActor (ThrowMod 200 50))
+  , ieffects = [ Recharging (PushActor (ThrowMod 200 50))
                , EqpSlot EqpSlotAddArmorMelee ]
   , ifeature = [ toVelocity 40  -- unwieldy to throw
                , Durable, Identified, Equipable, Meleeable ]
@@ -829,7 +854,7 @@ shield = buckler
   , iaspects = [ AddArmorMelee 80
                , AddHurtMelee (-70)
                , Timeout $ d 6 + 6 - dl 6 |*| 2 ]
-  , ieffects = [ Hurt (1 * d 1), Recharging (PushActor (ThrowMod 400 50))
+  , ieffects = [ Recharging (PushActor (ThrowMod 400 50))
                , EqpSlot EqpSlotAddArmorMelee ]
   , ifeature = [ toVelocity 30  -- unwieldy to throw
                , Durable, Identified, Equipable, Meleeable ]
@@ -847,10 +872,11 @@ dagger = ItemKind
   , irarity  = [(1, 20)]
   , iverbHit = "stab"
   , iweight  = 1000
+  , idamage  = toDmg $ 6 * d 1
   , iaspects = [ AddHurtMelee $ d 3 + dl 3 |*| 3
                , AddArmorMelee $ d 2 |*| 5
                , AddHurtRanged (-60) ]  -- as powerful as a dart
-  , ieffects = [Hurt (6 * d 1), EqpSlot EqpSlotWeapon]
+  , ieffects = [EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 40  -- ensuring it hits with the tip costs speed
                , Durable, Identified, Equipable, Meleeable ]
   , idesc    = "A short dagger for thrusting and parrying blows. Does not penetrate deeply, but is hard to block. Especially useful in conjunction with a larger weapon."
@@ -884,9 +910,10 @@ hammer = ItemKind
   , irarity  = [(5, 15)]
   , iverbHit = "club"
   , iweight  = 1500
+  , idamage  = toDmg $ 8 * d 1
   , iaspects = [ AddHurtMelee $ d 2 + dl 2 |*| 3
                , AddHurtRanged (-80) ]  -- as powerful as a dart
-  , ieffects = [Hurt (8 * d 1), EqpSlot EqpSlotWeapon]
+  , ieffects = [EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 20  -- ensuring it hits with the sharp tip costs
                , Durable, Identified, Equipable, Meleeable ]
   , idesc    = "It may not cause grave wounds, but neither does it glance off nor ricochet. Great sidearm for opportunistic blows against armored foes."
@@ -917,8 +944,9 @@ sword = ItemKind
   , irarity  = [(4, 1), (5, 15)]
   , iverbHit = "slash"
   , iweight  = 2000
+  , idamage  = toDmg $ 10 * d 1
   , iaspects = []
-  , ieffects = [Hurt (10 * d 1), EqpSlot EqpSlotWeapon]
+  , ieffects = [EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 5  -- ensuring it hits with the tip costs speed
                , Durable, Identified, Equipable, Meleeable ]
   , idesc    = "Difficult to master; deadly when used effectively. The steel is particularly hard and keen, but rusts quickly without regular maintenance."
@@ -952,8 +980,9 @@ halberd = ItemKind
   , irarity  = [(7, 1), (10, 10)]
   , iverbHit = "impale"
   , iweight  = 3000
+  , idamage  = toDmg $ 12 * d 1
   , iaspects = [AddArmorMelee $ 1 + dl 3 |*| 5]
-  , ieffects = [Hurt (12 * d 1), EqpSlot EqpSlotWeapon]
+  , ieffects = [EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 5  -- not balanced
                , Durable, Identified, Equipable, Meleeable ]
   , idesc    = "An improvised but deadly weapon made of a blade from a scythe attached to a long pole."
@@ -980,6 +1009,7 @@ wand = ItemKind
   , irarity  = []  -- TODO: add charges, etc.
   , iverbHit = "club"
   , iweight  = 300
+  , idamage  = toDmg 0
   , iaspects = [AddShine 1, AddSpeed (-1)]  -- pulsing with power, distracts
   , ieffects = []
   , ifeature = [ toVelocity 125  -- magic
@@ -1005,6 +1035,7 @@ gem = ItemKind
   , irarity  = []
   , iverbHit = "tap"
   , iweight  = 50
+  , idamage  = toDmg 0
   , iaspects = [AddShine 1, AddSpeed (-1)]
                  -- reflects strongly, distracts; so it glows in the dark,
                  -- is visible on dark floor, but not too tempting to wear
@@ -1040,6 +1071,7 @@ currency = ItemKind
   , irarity  = [(1, 25), (10, 10)]
   , iverbHit = "tap"
   , iweight  = 31
+  , idamage  = toDmg 0
   , iaspects = []
   , ieffects = []
   , ifeature = [Identified, Precious]

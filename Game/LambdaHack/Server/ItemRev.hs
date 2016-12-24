@@ -19,6 +19,7 @@ import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as S
 
+import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
@@ -57,9 +58,9 @@ serverDiscos Kind.COps{coitem=Kind.Ops{olength, ofoldlWithKey', okind}} = do
 
 -- | Build an item with the given stats.
 buildItem :: FlavourMap -> DiscoveryKindRev -> Kind.Id ItemKind -> ItemKind
-          -> LevelId
+          -> LevelId -> Dice.Dice
           -> Item
-buildItem (FlavourMap flavour) discoRev ikChosen kind jlid =
+buildItem (FlavourMap flavour) discoRev ikChosen kind jlid jdamage =
   let jkindIx  = discoRev EM.! ikChosen
       jsymbol  = IK.isymbol kind
       jname    = IK.iname kind
@@ -113,7 +114,8 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldlGroup'}}
     -- Number of new items/actors unaffected by number of spawned actors.
     itemN <- castDice ldepth totalDepth (IK.icount itemKind)
     seed <- toEnum <$> random
-    let itemBase = buildItem flavour discoRev itemKindId itemKind jlid
+    jdamage <- frequency $ toFreq "jdamage" $ IK.idamage itemKind
+    let itemBase = buildItem flavour discoRev itemKindId itemKind jlid jdamage
         kindIx = jkindIx itemBase
         itemK = max 1 itemN
         itemTimer = if IK.Periodic `elem` IK.ieffects itemKind
