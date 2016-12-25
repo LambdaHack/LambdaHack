@@ -83,9 +83,11 @@ itemDesc :: CStore -> Time -> ItemFull -> AttrLine
 itemDesc c localTime itemFull =
   let (_, name, stats) = partItemN 10 100 c localTime itemFull
       nstats = makePhrase [name, stats]
-      desc = case itemDisco itemFull of
-        Nothing -> "This item is as unremarkable as can be."
-        Just ItemDisco{itemKind} -> IK.idesc itemKind
+      (desc, featureSentences) = case itemDisco itemFull of
+        Nothing -> ("This item is as unremarkable as can be.", "")
+        Just ItemDisco{itemKind} ->
+          let sentences = mapMaybe featureToSentence (IK.ifeature itemKind)
+          in (IK.idesc itemKind, T.intercalate " " sentences)
       eqpSlotSentence = case strengthEqpSlot itemFull of
         Just es -> slotToSentence es
         Nothing -> ""
@@ -104,6 +106,7 @@ itemDesc c localTime itemFull =
         <+> (if weight > 0
              then makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
              else "")
+        <+> featureSentences
         <+> eqpSlotSentence
         <+> makeSentence ["First found on level", MU.Text $ tshow ln]
   in colorSymbol : textToAL blurb

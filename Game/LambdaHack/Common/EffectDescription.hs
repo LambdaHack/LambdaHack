@@ -1,7 +1,8 @@
 -- | Description of effects. No operation in this module
 -- involves state or monad types.
 module Game.LambdaHack.Common.EffectDescription
-  ( effectToSuffix, featureToSuff, kindAspectToSuffix, slotToSentence
+  ( effectToSuffix, featureToSuff, kindAspectToSuffix
+  , featureToSentence, slotToSentence
   ) where
 
 import Prelude ()
@@ -165,11 +166,24 @@ featureToSuff feat =
     Durable -> wrapInChevrons "durable"
     ToThrow tmod -> wrapInChevrons $ tmodToSuff "flies" tmod
     Identified -> ""
-    Applicable -> wrapInChevrons "meant to be applied"
+    Applicable -> ""
     Equipable -> ""
-    Meleeable -> wrapInChevrons "used for melee by default"
-    Precious -> wrapInChevrons "seems precious"
+    Meleeable -> ""
+    Precious -> ""
     Tactic tactics -> "overrides tactics to" <+> tshow tactics
+
+featureToSentence :: Feature -> Maybe Text
+featureToSentence feat =
+  case feat of
+    Fragile -> Nothing
+    Durable -> Nothing
+    ToThrow{} -> Nothing
+    Identified -> Nothing
+    Applicable -> Just "It is meant to be applied."
+    Equipable -> Nothing
+    Meleeable -> Just "It is used for melee by default."
+    Precious -> Just "It seems precious."
+    Tactic{}  -> Nothing
 
 affixBonus :: Int -> Text
 affixBonus p = case compare p 0 of
