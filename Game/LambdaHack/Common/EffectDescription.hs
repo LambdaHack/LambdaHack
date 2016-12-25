@@ -1,7 +1,7 @@
 -- | Description of effects. No operation in this module
 -- involves state or monad types.
 module Game.LambdaHack.Common.EffectDescription
-  ( effectToSuffix, featureToSuff, kindAspectToSuffix
+  ( effectToSuffix, featureToSuff, kindAspectToSuffix, slotToSentence
   ) where
 
 import Prelude ()
@@ -30,7 +30,7 @@ effectToSuffix :: Effect -> Text
 effectToSuffix effect =
   case effect of
     ELabel _ -> ""  -- printed specially
-    EqpSlot _ -> ""  -- more accurate data in aspects; here only AI summary
+    EqpSlot{} -> ""  -- used in @slotToSentence@ instead
     Burn d -> wrapInParens (tshow d
                             <+> if d > 1 then "burns" else "burn")
     Explode t -> "of" <+> tshow t <+> "explosion"
@@ -113,6 +113,25 @@ effectToSuffix effect =
     Unique -> ""  -- marked by capital letters in name
     Periodic -> ""  -- printed specially
 
+slotToSentence :: EqpSlot -> Text
+slotToSentence es = case es of
+  EqpSlotMiscBonus -> "Those that don't scorn minor bonuses may equip it."
+  EqpSlotAddHurtMelee -> "Veteran melee fighters are known to devote equipment slot to it."
+  EqpSlotAddArmorMelee -> "People in risk from melee damage wear it."
+  EqpSlotAddArmorRanged -> "People scared of shots in the dark wear it."
+  EqpSlotAddMaxHP -> "The frail wear it to increase their Hit Point capacity."
+  EqpSlotAddSpeed -> "The slughish equip it to speed up their whole life."
+  EqpSlotAddSight -> "Short-sighted wear it to spot their demise sooner."
+  EqpSlotLightSource -> "Explorers brave enough to highlight themselves put it in their equipment."
+  EqpSlotWeapon -> "Melee fighters consider it for their weapon combo."
+  EqpSlotMiscAbility -> "Those that don't scorn uncanny skills may equip it."
+  EqpSlotAbMove -> "Those unskilled in movement equip it."
+  EqpSlotAbMelee -> "Those unskilled in melee equip it."
+  EqpSlotAbDisplace -> "Those unskilled in displacing equip it."
+  EqpSlotAbAlter -> "Those unskilled in alteration equip it."
+  EqpSlotAbProject -> "Those unskilled in flinging equip it."
+  EqpSlotAbApply -> "Those unskilled in applying items equip it."
+
 tmodToSuff :: Text -> ThrowMod -> Text
 tmodToSuff verb ThrowMod{..} =
   let vSuff | throwVelocity == 100 = ""
@@ -146,9 +165,9 @@ featureToSuff feat =
     Durable -> wrapInChevrons "durable"
     ToThrow tmod -> wrapInChevrons $ tmodToSuff "flies" tmod
     Identified -> ""
-    Applicable -> wrapInChevrons "applied by default"
-    Equipable -> wrapInChevrons "equipped by default"
-    Meleeable -> wrapInChevrons "melee with by default"
+    Applicable -> wrapInChevrons "meant to be applied"
+    Equipable -> ""
+    Meleeable -> wrapInChevrons "used for melee by default"
     Precious -> wrapInChevrons "seems precious"
     Tactic tactics -> "overrides tactics to" <+> tshow tactics
 

@@ -24,8 +24,10 @@ import Data.Word
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Color as Color
+import Game.LambdaHack.Common.EffectDescription
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
+import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Time
@@ -84,6 +86,9 @@ itemDesc c localTime itemFull =
       desc = case itemDisco itemFull of
         Nothing -> "This item is as unremarkable as can be."
         Just ItemDisco{itemKind} -> IK.idesc itemKind
+      eqpSlotSentence = case strengthEqpSlot itemFull of
+        Just es -> slotToSentence es
+        Nothing -> ""
       weight = jweight (itemBase itemFull)
       (scaledWeight, unitWeight)
         | weight > 1000 =
@@ -96,9 +101,10 @@ itemDesc c localTime itemFull =
         <> nstats
         <> ":"
         <+> desc
-        <+> if weight > 0
-            then makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
-            else ""
+        <+> (if weight > 0
+             then makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
+             else "")
+        <+> eqpSlotSentence
         <+> makeSentence ["First found on level", MU.Text $ tshow ln]
   in colorSymbol : textToAL blurb
 

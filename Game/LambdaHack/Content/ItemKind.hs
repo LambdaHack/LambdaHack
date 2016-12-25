@@ -148,16 +148,17 @@ instance NFData ThrowMod
 -- | Features of item. Affect only the item in question, not the actor,
 -- and so not additive in any sense.
 data Feature =
-    Fragile                 -- ^ drop and break at target tile, even if no hit
-  | Durable                 -- ^ don't break even when hitting or applying
-  | ToThrow !ThrowMod       -- ^ parameters modifying a throw
-  | Identified              -- ^ the item starts identified
-  | Applicable              -- ^ AI and UI flag: consider applying
-  | Equipable               -- ^ AI and UI flag: consider equipping
-  | Meleeable               -- ^ AI and UI flag: consider meleeing with
-  | Precious                -- ^ AI and UI flag: don't risk identifying by use
-                            --   also, can't throw or apply if not calm enough;
-  | Tactic !Tactic          -- ^ overrides actor's tactic (TODO)
+    Fragile            -- ^ drop and break at target tile, even if no hit
+  | Durable            -- ^ don't break even when hitting or applying
+  | ToThrow !ThrowMod  -- ^ parameters modifying a throw
+  | Identified         -- ^ the item starts identified
+  | Applicable         -- ^ AI and UI flag: consider applying
+  | Equipable          -- ^ AI and UI flag: consider equipping (independent of
+                       -- ^ 'EqpSlot', e.g., in case of mixed blessings)
+  | Meleeable          -- ^ AI and UI flag: consider meleeing with
+  | Precious           -- ^ AI and UI flag: don't risk identifying by use
+                       --   also, can't throw or apply if not calm enough;
+  | Tactic !Tactic     -- ^ overrides actor's tactic (TODO)
   deriving (Show, Eq, Ord, Generic)
 
 data EqpSlot =
