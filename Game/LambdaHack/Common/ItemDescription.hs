@@ -121,7 +121,9 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                 noEff = case mnoEffect of
                   Just (IK.ELabel t) -> [t]
                   _ -> []
-                damage = "(" <> tshow (jdamage itemBase) <> ")"
+                damage = if jdamage itemBase <= 0
+                         then ""
+                         else "(" <> tshow (jdamage itemBase) <> ")"
             in noEff ++ if fullInfo >= 5 || fullInfo >= 2 && null noEff
                         then [periodicOrTimeout] ++ [damage]
                              ++ map ppE rawDmgEs ++ aes
