@@ -75,6 +75,7 @@ effectAndDestroy :: (MonadAtomic m, MonadServer m)
                  -> [IK.Effect] -> ItemFull
                  -> m ()
 {-# INLINABLE effectAndDestroy #-}
+effectAndDestroy _ _ _ _ _ [] _ = return ()
 effectAndDestroy source target iid container periodic effs ItemFull{..} = do
   let timeout = case itemDisco of
         Just ItemDisco{itemAspect=Just ar} -> aTimeout ar
