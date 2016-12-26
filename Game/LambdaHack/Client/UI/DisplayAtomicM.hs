@@ -492,7 +492,7 @@ destroyActorUI died aid body = do
     -- TODO; actually show the --more- prompt, but not between fadeout frames
     unless (fneverEmpty (gplayer fact)
             && (not actorsAlive || firstDeathEnds)) $
-      displayMore ColorBW ""
+      displayMore ColorBW "Alas!"
   -- If pushed, animate spotting again, to draw attention to pushing.
   when (isNothing $ btrajectory body) $
     modifySession $ \sess -> sess {slastLost = ES.insert aid $ slastLost sess}

@@ -46,6 +46,8 @@ import Game.LambdaHack.Client.UI.OverlayM
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.Slideshow
 import Game.LambdaHack.Client.UI.SlideshowM
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
@@ -141,6 +143,10 @@ humanCommand = do
                         | otherwise = ([], seqCurrent ++ seqPrevious, k - 1)
         modifySession $ \sess -> sess {slastRecord}
         lastPlay <- getsSession slastPlay
+        leader <- getLeaderUI
+        b <- getsState $ getActorBody leader
+        when (bhp b <= 0) $ displayMore ColorBW
+          "If you move, the exertion will kill you. Consider asking for first aid instead."
         km <- promptGetKey ColorFull over False []
         -- Messages shown, so update history and reset current report.
         when (null lastPlay) recordHistory
