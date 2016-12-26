@@ -42,7 +42,7 @@ registerItem :: (MonadAtomic m, MonadServer m)
 registerItem ItemFull{..} itemKnown@(_, aspectRecord)
              seed container verbose = do
   itemRev <- getsServer sitemRev
-  let cmd = if verbose then UpdCreateItem else UpdSpotItem
+  let cmd = if verbose then UpdCreateItem else UpdSpotItem False
   case HM.lookup itemKnown itemRev of
     Just iid -> do
       -- TODO: try to avoid this case for createItems,

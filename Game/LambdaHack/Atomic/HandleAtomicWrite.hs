@@ -56,8 +56,8 @@ handleUpdAtomic cmd = case cmd of
   UpdDestroyItem iid item kit c -> updDestroyItem iid item kit c
   UpdSpotActor aid body ais -> updCreateActor aid body ais
   UpdLoseActor aid body ais -> updDestroyActor aid body ais
-  UpdSpotItem iid item kit c -> updCreateItem iid item kit c
-  UpdLoseItem iid item kit c -> updDestroyItem iid item kit c
+  UpdSpotItem _ iid item kit c -> updCreateItem iid item kit c
+  UpdLoseItem _ iid item kit c -> updDestroyItem iid item kit c
   UpdMoveActor aid fromP toP -> updMoveActor aid fromP toP
   UpdWaitActor aid toWait -> updWaitActor aid toWait
   UpdDisplaceActor source target -> updDisplaceActor source target

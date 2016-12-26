@@ -196,7 +196,7 @@ cmdAtomicFilterCli cmd = case cmd of
         inContainer fc itemFloor =
           let inItem = mapMaybe (\p -> pMaybe p $ EM.lookup p itemFloor) inFov
               fItem p (iid, kit) =
-                UpdLoseItem iid (getItemBody iid s) kit (fc lid p)
+                UpdLoseItem True iid (getItemBody iid s) kit (fc lid p)
               fBag (p, bag) = map (fItem p) $ EM.assocs bag
           in concatMap fBag inItem
         inFloor = inContainer CFloor (lfloor lvl)
@@ -231,10 +231,10 @@ cmdAtomicSemCli cmd = case cmd of
     when (store `elem` [CEqp, COrgan]) $ addItemToActor iid itemBase (-k) aid
   UpdSpotActor aid b ais -> createActor aid b ais
   UpdLoseActor aid b _ -> destroyActor aid b False
-  UpdSpotItem iid itemBase (k, _) (CActor aid store) -> do
+  UpdSpotItem _ iid itemBase (k, _) (CActor aid store) -> do
     wipeBfsIfItemAffectsSkills [store] aid
     when (store `elem` [CEqp, COrgan]) $ addItemToActor iid itemBase k aid
-  UpdLoseItem iid itemBase (k, _) (CActor aid store) -> do
+  UpdLoseItem _ iid itemBase (k, _) (CActor aid store) -> do
     wipeBfsIfItemAffectsSkills [store] aid
     when (store `elem` [CEqp, COrgan]) $ addItemToActor iid itemBase (-k) aid
   UpdMoveActor aid _ _ -> invalidateBfsAid aid

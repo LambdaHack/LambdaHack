@@ -64,8 +64,8 @@ data UpdAtomic =
   | UpdDestroyItem !ItemId !Item !ItemQuant !Container
   | UpdSpotActor !ActorId !Actor ![(ItemId, Item)]
   | UpdLoseActor !ActorId !Actor ![(ItemId, Item)]
-  | UpdSpotItem !ItemId !Item !ItemQuant !Container
-  | UpdLoseItem !ItemId !Item !ItemQuant !Container
+  | UpdSpotItem !Bool !ItemId !Item !ItemQuant !Container
+  | UpdLoseItem !Bool !ItemId !Item !ItemQuant !Container
   -- Move actors and items.
   | UpdMoveActor !ActorId !Point !Point
   | UpdWaitActor !ActorId !Bool
@@ -149,8 +149,8 @@ undoUpdAtomic cmd = case cmd of
   UpdDestroyItem iid item k c -> Just $ UpdCreateItem iid item k c
   UpdSpotActor aid body ais -> Just $ UpdLoseActor aid body ais
   UpdLoseActor aid body ais -> Just $ UpdSpotActor aid body ais
-  UpdSpotItem iid item k c -> Just $ UpdLoseItem iid item k c
-  UpdLoseItem iid item k c -> Just $ UpdSpotItem iid item k c
+  UpdSpotItem verbose iid item k c -> Just $ UpdLoseItem verbose iid item k c
+  UpdLoseItem verbose iid item k c -> Just $ UpdSpotItem verbose iid item k c
   UpdMoveActor aid fromP toP -> Just $ UpdMoveActor aid toP fromP
   UpdWaitActor aid toWait -> Just $ UpdWaitActor aid (not toWait)
   UpdDisplaceActor source target -> Just $ UpdDisplaceActor target source

@@ -117,7 +117,7 @@ effectAndDestroy source target iid container periodic effs ItemFull{..} = do
         imperishable = durable && not fragile || periodic && permanent
         kit = if permanent || periodic then (1, take 1 it2) else (itemK, it2)
     unless imperishable $
-      execUpdAtomic $ UpdLoseItem iid itemBase kit container
+      execUpdAtomic $ UpdLoseItem False iid itemBase kit container
     -- At this point, the item is potentially no longer in container @c@,
     -- so we don't pass @c@ along.
     triggered <-
@@ -126,7 +126,7 @@ effectAndDestroy source target iid container periodic effs ItemFull{..} = do
     -- Regardless, we don't rewind the time, because some info is gained
     -- (that the item does not exhibit any effects in the given context).
     unless (triggered || imperishable) $
-      execUpdAtomic $ UpdSpotItem iid itemBase kit container
+      execUpdAtomic $ UpdSpotItem False iid itemBase kit container
 
 itemEffectCause :: (MonadAtomic m, MonadServer m)
                 => ActorId -> Point -> IK.Effect
@@ -276,7 +276,7 @@ effectExplode :: (MonadAtomic m, MonadServer m)
 effectExplode execSfx cgroup target = do
   tb <- getsState $ getActorBody target
   let itemFreq = [(cgroup, 1)]
-      container = CActor target CEqp
+      container = CActor target COrgan
   m2 <- rollAndRegisterItem (blid tb) itemFreq container False Nothing
   let (iid, (ItemFull{itemBase, itemK}, _)) = fromMaybe (assert `failure` cgroup) m2
       Point x y = bpos tb
@@ -306,8 +306,8 @@ effectExplode execSfx cgroup target = do
               else drop ((n + x + y + fromEnum iid * 7) `mod` 16)
                    $ cycle $ psAll ++ reverse psAll
         forM_ ps $ \tpxy -> do
-          let req = ReqProject tpxy k100 iid CEqp
-          mfail <- projectFail target tpxy k100 iid CEqp True
+          let req = ReqProject tpxy k100 iid COrgan
+          mfail <- projectFail target tpxy k100 iid COrgan True
           case mfail of
             Nothing -> return ()
             Just ProjectBlockTerrain -> return ()
@@ -315,13 +315,13 @@ effectExplode execSfx cgroup target = do
             Just failMsg -> execFailure target req failMsg
   -- All blasts bounce off obstacles many times before they destruct.
   forM_ [101..201] $ \k100 -> do
-    bag2 <- getsState $ beqp . getActorBody target
+    bag2 <- getsState $ borgan . getActorBody target
     let mn2 = EM.lookup iid bag2
     maybe (return ()) (projectN k100) mn2
-  bag3 <- getsState $ beqp . getActorBody target
+  bag3 <- getsState $ borgan . getActorBody target
   let mn3 = EM.lookup iid bag3
   maybe (return ()) (\kit -> execUpdAtomic
-                             $ UpdLoseItem iid itemBase kit container) mn3
+                             $ UpdLoseItem False iid itemBase kit container) mn3
   execSfx
   return True  -- we neglect verifying that at least one projectile got off
 

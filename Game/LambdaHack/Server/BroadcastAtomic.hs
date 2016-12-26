@@ -166,7 +166,7 @@ atomicRemember lid inPer s =
       inContainer fc itemFloor =
         let inItem = mapMaybe (\p -> pMaybe p $ EM.lookup p itemFloor) inFov
             fItem p (iid, kit) =
-              UpdSpotItem iid (getItemBody iid s) kit (fc lid p)
+              UpdSpotItem True iid (getItemBody iid s) kit (fc lid p)
             fBag (p, bag) = map (fItem p) $ EM.assocs bag
         in concatMap fBag inItem
       inFloor = inContainer CFloor (lfloor lvl)

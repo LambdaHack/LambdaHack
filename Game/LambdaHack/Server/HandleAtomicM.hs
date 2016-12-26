@@ -93,20 +93,20 @@ cmdAtomicSemSer cmd = case cmd of
     modifyServer $ \ser ->
       ser {sactorTime = EM.adjust (EM.adjust (EM.delete aid) (blid b)) (bfid b)
                         (sactorTime ser)}
-  UpdSpotItem iid _ _ (CFloor lid _) -> do
+  UpdSpotItem _ iid _ _ (CFloor lid _) -> do
     discoAspect <- getsServer sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
-  UpdSpotItem iid _ (k, _) (CActor aid store) -> do
+  UpdSpotItem _ iid _ (k, _) (CActor aid store) -> do
     discoAspect <- getsServer sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid [store]) $
       invalidateLucidAid aid
     when (store `elem` [CEqp, COrgan]) $ do
       addItemToActor iid k aid
       when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
-  UpdLoseItem iid _ _ (CFloor lid _) -> do
+  UpdLoseItem _ iid _ _ (CFloor lid _) -> do
     discoAspect <- getsServer sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
-  UpdLoseItem iid _ (k, _) (CActor aid store) -> do
+  UpdLoseItem _ iid _ (k, _) (CActor aid store) -> do
     discoAspect <- getsServer sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid [store]) $
       invalidateLucidAid aid

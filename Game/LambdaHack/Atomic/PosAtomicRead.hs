@@ -75,8 +75,8 @@ posUpdAtomic cmd = case cmd of
   UpdDestroyItem _ _ _ c -> singleContainer c
   UpdSpotActor _ body _ -> return $! posProjBody body
   UpdLoseActor _ body _ -> return $! posProjBody body
-  UpdSpotItem _ _ _ c -> singleContainer c
-  UpdLoseItem _ _ _ c -> singleContainer c
+  UpdSpotItem _ _ _ _ c -> singleContainer c
+  UpdLoseItem _ _ _ _ c -> singleContainer c
   UpdMoveActor aid fromP toP -> do
     b <- getsState $ getActorBody aid
     -- Non-projectile actors are never totally isolated from envirnoment;
@@ -296,5 +296,5 @@ containerMoveItem iid k c1 c2 = do
     Nothing -> assert `failure` (iid, k, c1, c2)
     Just (_, it) -> do
       item <- getsState $ getItemBody iid
-      return [ UpdLoseItem iid item (k, take k it) c1
-             , UpdSpotItem iid item (k, take k it) c2 ]
+      return [ UpdLoseItem True iid item (k, take k it) c1
+             , UpdSpotItem True iid item (k, take k it) c2 ]

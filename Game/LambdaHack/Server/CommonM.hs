@@ -328,7 +328,7 @@ projectBla source pos rest iid cstore isBlast = do
       let btime = absoluteTimeAdd timeEpsilon localTime
       addProjectile pos rest iid kit lid (bfid sb) btime isBlast
       let c = CActor source cstore
-      execUpdAtomic $ UpdLoseItem iid item (1, take 1 it) c
+      execUpdAtomic $ UpdLoseItem False iid item (1, take 1 it) c
 
 -- | Create a projectile actor containing the given missile.
 --
@@ -356,7 +356,7 @@ addProjectile bpos rest iid (_, it) blid bfid btime isBlast = do
                       , bproj = True
                       , btrajectory = Just (trajectory, speed)
                       , beqp = EM.singleton iid (1, take 1 it)
-                      , borgan = EM.empty}
+                      , borgan = EM.empty }  -- don't confer bonuses from trunk
       bpronoun = "it"
   void $ addActorIid iid itemFull
                      True bfid bpos blid tweakBody bpronoun btime

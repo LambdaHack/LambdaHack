@@ -109,7 +109,8 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
     markDisplayNeeded lid
   UpdSpotActor aid body _ -> createActorUI False aid body
   UpdLoseActor aid body _ -> destroyActorUI False aid body
-  UpdSpotItem iid _ kit c -> do
+  UpdSpotItem False _ _ _ _ -> return ()
+  UpdSpotItem True iid _ kit c -> do
     -- This is due to a move, or similar, which will be displayed,
     -- so no extra @markDisplayNeeded@ needed here and in similar places.
     ItemSlots itemSlots _ <- getsClient sslots
@@ -140,7 +141,8 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
             verb = MU.Text $ makePhrase ["be added to", noun]
         itemVerbMU iid kit verb c
       _ -> return ()
-  UpdLoseItem iid _ kit c@(CActor aid store) | store /= CSha -> do
+  UpdLoseItem False _ _ _ _ -> return ()
+  UpdLoseItem True iid _ kit c@(CActor aid store) | store /= CSha -> do
     -- Actor putting an item into shared stash, most probably.
     b <- getsState $ getActorBody aid
     subject <- partActorLeader aid b
