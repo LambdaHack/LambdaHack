@@ -161,9 +161,11 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
     when verbose $
       aidVerbMU aid $ MU.Text $ (if n > 0 then "heal" else "lose")
                                 <+> tshow (abs $ n `divUp` oneM) <> "HP"
+    b <- getsState $ getActorBody aid
+    when (resCurrentTurn (bhpDelta b) >= bhp b && bhp b > 0) $
+      actorVerbMU aid b "return from the brink of death"
     mleader <- getsClient _sleader
     when (Just aid == mleader) $ do
-      b <- getsState $ getActorBody aid
       actorAspect <- getsClient sactorAspect
       let ar = case EM.lookup aid actorAspect of
             Just aspectRecord -> aspectRecord
@@ -779,7 +781,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         isOurCharacter = fid == side && not (bproj b)
         isOurAlive = isOurCharacter && bhp b > 0
     if bhp b <= 0 && hpDelta < 0 && (isOurCharacter || arena == blid b) then do
-      -- We assume each non-projectile actor incapacitation is caused
+      -- We assume each non-projectile actor near-death is caused
       -- by some effect, and so we animate the event only here.
       let (firstFall, hurtExtra) = case (fid == side, bproj b) of
             (True, True) -> ("fall apart", "be reduced to dust")
