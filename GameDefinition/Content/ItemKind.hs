@@ -66,6 +66,7 @@ _symbolFood      = ','  -- too easy to miss?
 
 -- * Thrown weapons
 
+-- Identified, because shape (and name) says it all. Detailed stats id by use.
 dart = ItemKind
   { isymbol  = symbolProjectile
   , iname    = "dart"
@@ -300,6 +301,7 @@ gorget = ItemKind
   , idesc    = "Highly ornamental, cold, large, steel medallion on a chain. Unlikely to offer much protection as an armor piece, but the old, worn engraving reassures you."
   , ikit     = []
   }
+-- Not idenfified, because the id by use, e.g., vis periodic activations. Fun.
 necklace = ItemKind
   { isymbol  = symbolNecklace
   , iname    = "necklace"
@@ -414,6 +416,11 @@ sightSharpening = ItemKind
 -- Don't add standard effects to rings, because they go in and out
 -- of eqp and so activating them would require UI tedium: looking for
 -- them in eqp and inv or even activating a wrong item via letter by mistake.
+--
+-- Rings should have @Identified@, so that they fully identify upon picking up.
+-- Effects of many of the are seen in character sheet, so it would be silly
+-- not to identify them. Necklaces provide the fun of id-by-use, because they
+-- have effects and when they are triggered, they id.
 ring = ItemKind
   { isymbol  = symbolRing
   , iname    = "ring"
@@ -487,6 +494,7 @@ ring8 = ring
 
 -- * Ordinary exploding consumables, often intended to be thrown
 
+-- Not identified, because they are perfect for the id-by-use fun.
 potion = ItemKind
   { isymbol  = symbolPotion
   , iname    = "potion"
