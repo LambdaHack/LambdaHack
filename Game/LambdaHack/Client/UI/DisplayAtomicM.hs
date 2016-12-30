@@ -473,8 +473,6 @@ createActorUI born aid body = do
   else do
     actorVerbMU aid body verb
     animate (blid body) $ actorX (bpos body)
-    when (isNothing $ btrajectory body) $
-      modifySession $ \sess -> sess {slastLost = ES.insert aid $ slastLost sess}
   lookAtMove aid
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()

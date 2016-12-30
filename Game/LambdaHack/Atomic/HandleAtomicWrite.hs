@@ -111,8 +111,6 @@ updCreateActor :: MonadStateWrite m
                => ActorId -> Actor -> [(ItemId, Item)] -> m ()
 {-# INLINABLE updCreateActor #-}
 updCreateActor aid body ais = do
- alreadyAdded <- getsState $ EM.member aid . sactorD
- unless alreadyAdded $ do
   -- Add actor to @sactorD@.
   let f Nothing = Just body
       f (Just b) = assert `failure` "actor already added"
