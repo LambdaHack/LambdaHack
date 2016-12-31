@@ -326,7 +326,7 @@ setTrajectory aid = do
     Just (d : lv, speed) ->
       if accessibleDir cops lvl (bpos b) d
       then do
-        when (bproj b && null lv) $ do
+        when (bproj b && length lv <= 1) $ do
           let toColor = Color.BrBlack
           when (bcolor b /= toColor) $
             execUpdAtomic $ UpdColorActor aid (bcolor b) toColor

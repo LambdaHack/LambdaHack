@@ -199,14 +199,11 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
            "experience anxiety that weakens resolve and erodes loyalty"
 -- TODO     "inhale the sweet smell that weakens resolve and erodes loyalty"
   UpdTrajectory{} -> return ()  -- if projectile dies here, no display
-  UpdColorActor aid fromCol toCol -> do
+  UpdColorActor aid _ _ -> do
     -- If color changed, make sure it's ever shown,
     -- e.g., before projectile dies.
     b <- getsState $ getActorBody aid
-    arena <- getArenaUI
-    -- Ignore actors on other levels.
-    when (arena == blid b) $
-      animate (blid b) $ blinkColorActor (bpos b) (bsymbol b) fromCol toCol
+    markDisplayNeeded (blid b)
   -- Change faction attributes.
   UpdQuitFaction fid mbody _ toSt -> quitFactionUI fid mbody toSt
   UpdLeadFaction fid (Just source) (Just target) -> do
