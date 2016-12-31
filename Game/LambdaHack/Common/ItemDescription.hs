@@ -25,7 +25,7 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 -- of effects/aspects to show..
 partItemN :: Int -> Int -> CStore -> Time -> ItemFull
           -> (Bool, MU.Part, MU.Part)
-partItemN fullInfo n c localTime itemFull =
+partItemN fullInfo n cstore localTime itemFull =
   let genericName = jname $ itemBase itemFull
   in case itemDisco itemFull of
     Nothing ->
@@ -44,7 +44,7 @@ partItemN fullInfo n c localTime itemFull =
                 | otherwise = "(" <> tshow len <+> chargingAdj <> ")"
           skipRecharging = fullInfo <= 4 && len >= itemK itemFull
           effTs = filter (not . T.null)
-                  $ textAllAE fullInfo skipRecharging c itemFull
+                  $ textAllAE fullInfo skipRecharging cstore itemFull
           ts = take n effTs
                ++ ["(...)" | length effTs > n]
                ++ [timer]

@@ -718,6 +718,15 @@ discover c oldCli iid = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
   bag <- getsState $ getContainerBag c
+  side <- getsClient sside
+  nameWhere <- case c of
+    CActor aidOwner storeOwner -> do
+      bOwner <- getsState $ getActorBody aidOwner
+      if bproj bOwner || bfid bOwner == side
+      then return []
+      else return $!
+        [MU.WownW (partActor bOwner) (MU.Text $ snd $ ppCStore storeOwner)]
+    _ -> return []
   let kit = EM.findWithDefault (1, []) iid bag
       itemFull = itemToF iid kit
       knownName = partItemMediumAW cstore localTime itemFull
@@ -726,10 +735,9 @@ discover c oldCli iid = do
       -- "of many effects".
       itemSecret = itemNoDisco (itemBase itemFull, itemK itemFull)
       (_, secretName, secretAEText) = partItem cstore localTime itemSecret
+      namePhrase = MU.Phrase $ [secretName, secretAEText] ++ nameWhere
       msg = makeSentence
-        [ "the", MU.SubjectVerbSg (MU.Phrase [secretName, secretAEText])
-                                  "turn out to be"
-        , knownName ]
+        ["the", MU.SubjectVerbSg namePhrase "turn out to be", knownName]
       jix = jkindIx $ itemBase itemFull
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.
