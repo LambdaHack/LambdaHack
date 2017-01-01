@@ -198,7 +198,8 @@ statsOverlay aid = do
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
-      block n = n + if braced b then 50 else 0
+      tshow200 n = tshow $ min 200 $ max (-200) n
+      tshowBlock n = tshow200 $ n + if braced b then 50 else 0
       prSlot :: (Y, SlotChar) -> (AspectRecord -> Int, Text, Int -> Text)
              -> (Text, KYX)
       prSlot (y, c) (accessor, blurb, decorator) =
@@ -211,9 +212,9 @@ statsOverlay aid = do
         in (ft, (Right c, (y, 0, T.length ft)))
       -- Some values can be negative, for others 0 is equivalent but shorter.
       slotList =
-        [ (aHurtMelee, "to melee damage", \t -> tshow t <> "%")
-        , (aArmorMelee, "melee armor", \t -> "[" <> tshow (block t) <> "%]")
-        , (aArmorRanged, "ranged armor",  \t -> "{" <> tshow (block t) <> "%}")
+        [ (aHurtMelee, "to melee damage", \t -> tshow200 t <> "%")
+        , (aArmorMelee, "melee armor", \t -> "[" <> tshowBlock t <> "%]")
+        , (aArmorRanged, "ranged armor",  \t -> "{" <> tshowBlock t <> "%}")
         , (aMaxHP, "max HP", \t -> tshow $ max 0 t)
         , (aMaxCalm, "max Calm", \t -> tshow $ max 0 t)
         , (aSpeed, "speed", \t -> tshow (max 0 t) <> "m/10s")

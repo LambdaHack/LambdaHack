@@ -291,13 +291,14 @@ armorHurtBonus source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   actorAspect <- getsServer sactorAspect
-  let sar = actorAspect EM.! source
+  let trim200 n = min 200 $ max (-200) n
+      block200 n = min 200 $ max (-200) $ n + if braced tb then 50 else 0
+      sar = actorAspect EM.! source
       tar = actorAspect EM.! target
       itemBonus = if bproj sb
-                  then aHurtRanged sar - aArmorRanged tar
-                  else aHurtMelee sar - aArmorMelee tar
-      block = braced tb
-  return $! min 100 $ max (-100) $ itemBonus - if block then 50 else 0
+                  then trim200 (aHurtRanged sar) - block200 (aArmorRanged tar)
+                  else trim200 (aHurtMelee sar) - block200 (aArmorMelee tar)
+  return $! min 100 $ max (-100) itemBonus
 
 -- * ReqDisplace
 
