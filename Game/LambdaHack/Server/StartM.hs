@@ -269,8 +269,7 @@ populateDungeon = do
             ntime = timeShift localTime (timeDeltaScale (Delta timeClip) nmult)
             validTile t = not $ Tile.isNoActor coTileSpeedup t
             ninitActors = finitialActors $ gplayer fact3
-            ntries = 5 * (ninitActors + 5)  -- this many candidate positions
-        psFree <- getsState $ nearbyFreePoints ntries validTile ppos lid
+        psFree <- getsState $ nearbyFreePoints validTile ppos lid
         let ps = take ninitActors $ zip [0..] psFree
         forM_ ps $ \ (n, p) -> do
           go <-

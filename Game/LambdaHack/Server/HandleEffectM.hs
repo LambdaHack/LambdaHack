@@ -452,7 +452,7 @@ effectCallFriend execSfx nDm source target = do
     execUpdAtomic $ UpdRefillHP target deltaHP
     execSfx
     let validTile t = not $ Tile.isNoActor coTileSpeedup t
-    ps <- getsState $ nearbyFreePoints 50 validTile (bpos tb) (blid tb)
+    ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
     localTime <- getsState $ getLocalTime (blid tb)
     -- We call target's friends so that AI monsters that test by throwing
     -- don't waste artifacts very valuable for heroes. Heroes should rather
@@ -486,7 +486,7 @@ effectSummon execSfx actorFreq nDm source target = do
     unless (bproj tb) $ udpateCalm target deltaCalm
     execSfx
     let validTile t = not $ Tile.isNoActor coTileSpeedup t
-    ps <- getsState $ nearbyFreePoints 25 validTile (bpos tb) (blid tb)
+    ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
     localTime <- getsState $ getLocalTime (blid tb)
     -- Make sure summoned actors start acting after the summoner.
     let targetTime = timeShift localTime $ ticksPerMeter $ bspeed tb ar
@@ -874,7 +874,7 @@ pickDroppable aid b = do
   if validTile $ lvl `at` bpos b
   then return $! CActor aid CGround
   else do
-    ps <- getsState $ nearbyFreePoints 50 validTile (bpos b) (blid b)
+    ps <- getsState $ nearbyFreePoints validTile (bpos b) (blid b)
     return $! case ps of
       [] -> CActor aid CGround  -- fallback; still correct, though not ideal
       pos : _ -> CFloor (blid b) pos

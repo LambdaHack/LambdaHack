@@ -107,16 +107,15 @@ posToAssocs pos lid s =
   let l = posToAidsLvl pos $ sdungeon s EM.! lid
   in map (\aid -> (aid, getActorBody aid s)) l
 
-nearbyFreePoints :: Int
-                 -> (Kind.Id TileKind -> Bool) -> Point -> LevelId -> State
+nearbyFreePoints :: (Kind.Id TileKind -> Bool) -> Point -> LevelId -> State
                  -> [Point]
-nearbyFreePoints ntries f start lid s =
+nearbyFreePoints f start lid s =
   let lvl@Level{lxsize, lysize} = sdungeon s EM.! lid
       good p = f (lvl `at` p)
                && Tile.isWalkable (Kind.coTileSpeedup $ scops s) (lvl `at` p)
                && null (posToAidsLvl p lvl)
       ps = nub $ start : concatMap (vicinity lxsize lysize) ps
-  in filter good $ take ntries ps
+  in filter good ps
 
 -- | Calculate loot's worth for a faction of a given actor.
 calculateTotal :: Actor -> State -> (ItemBag, Int)
