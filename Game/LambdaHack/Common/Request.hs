@@ -89,6 +89,7 @@ data ReqFailure =
   | ApplyRead
   | ApplyOutOfReach
   | ApplyCharging
+  | ApplyNoEffects
   | ItemNothing
   | ItemNotCalm
   | NotCalmPrecious
@@ -127,6 +128,7 @@ impossibleReqFailure reqFailure = case reqFailure of
   ApplyRead -> False  -- unidentified skill items
   ApplyOutOfReach -> True
   ApplyCharging -> False  -- if aspects unknown, charging unknown
+  ApplyNoEffects -> False  -- if effects unknown, can't prevent it
   ItemNothing -> True
   ItemNotCalm -> False  -- unidentified skill items
   NotCalmPrecious -> False  -- unidentified skill items
@@ -164,6 +166,7 @@ showReqFailure reqFailure = case reqFailure of
   ApplyRead -> "activating this kind of items requires skill level 2"
   ApplyOutOfReach -> "cannot apply an item out of reach"
   ApplyCharging -> "cannot apply an item that is still charging"
+  ApplyNoEffects -> "cannot apply an item that produces no effects"
   ItemNothing -> "wasting time on void item manipulation"
   ItemNotCalm -> "you are too alarmed to use the shared stash"
   NotCalmPrecious -> "you are too alarmed to handle such an exquisite item"
@@ -225,20 +228,21 @@ permittedProject forced skill b ar
 permittedApply :: Time -> Int -> Actor -> AspectRecord -> [Char] -> ItemFull
                -> Either ReqFailure Bool
 permittedApply localTime skill b ar
-               triggerSyms itemFull@ItemFull{itemBase} =
-  let calmE = calmEnough b ar
-  in if
-    | skill < 1 -> Left ApplyUnskilled
-    | jsymbol itemBase == '?' && skill < 2 -> Left ApplyRead
-    -- We assume if the item has a timeout, all or most of interesting effects
-    -- are under Recharging, so no point activating if not recharged.
-    | not $ hasCharge localTime itemFull -> Left ApplyCharging
-    | otherwise ->
-     let legal = permittedPrecious calmE False itemFull
-     in case legal of
-       Left{} -> legal
-       Right False -> legal
-       Right True -> Right $
-         if ' ' `elem` triggerSyms
-         then IK.Applicable `elem` jfeature itemBase
-         else jsymbol itemBase `elem` triggerSyms
+               triggerSyms itemFull@ItemFull{..} =
+  if | skill < 1 -> Left ApplyUnskilled
+     | jsymbol itemBase == '?' && skill < 2 -> Left ApplyRead
+     -- We assume if the item has a timeout, all or most of interesting effects
+     -- are under Recharging, so no point activating if not recharged.
+     | not $ hasCharge localTime itemFull -> Left ApplyCharging
+     | otherwise -> case itemDisco of
+       Just ItemDisco{itemKind} | null $ IK.ieffects itemKind ->
+         Left ApplyNoEffects
+       _ -> let calmE = calmEnough b ar
+                legal = permittedPrecious calmE False itemFull
+            in case legal of
+              Left{} -> legal
+              Right False -> legal
+              Right True -> Right $
+                if ' ' `elem` triggerSyms
+                then IK.Applicable `elem` jfeature itemBase
+                else jsymbol itemBase `elem` triggerSyms
