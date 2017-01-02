@@ -155,11 +155,18 @@ byAimModeHuman cmdNotAimingM cmdAimingM = do
 byItemModeHuman :: MonadClientUI m
                 => m (Either MError ReqUI) -> m (Either MError ReqUI)
                 -> m (Either MError ReqUI)
-
 {-# INLINABLE byItemModeHuman #-}
 byItemModeHuman cmdNotChosenM cmdChosenM = do
   itemSel <- getsSession sitemSel
-  if isNothing itemSel then cmdNotChosenM else cmdChosenM
+  case itemSel of
+    Just (fromCStore, iid) -> do
+      leader <- getLeaderUI
+      b <- getsState $ getActorBody leader
+      bag <- getsState $ getBodyStoreBag b fromCStore
+      case iid `EM.lookup` bag of
+        Nothing -> cmdNotChosenM
+        Just _ -> cmdChosenM
+    Nothing -> cmdNotChosenM
 
 -- * ComposeIfLeft
 
@@ -569,16 +576,13 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
       b <- getsState $ getActorBody leader
       bag <- getsState $ getBodyStoreBag b fromCStore
       case iid `EM.lookup` bag of
-        Nothing -> do  -- used up
-          modifySession $ \sess -> sess {sitemSel = Nothing}
-          moveItemHuman cLegalRaw destCStore mverb auto
+        Nothing -> moveItemHuman cLegalRaw destCStore mverb auto
         Just (k, it) -> do
           itemToF <- itemToFullClient
           let eqpFree = eqpFreeN b
               kToPick | destCStore == CEqp = min eqpFree k
                       | otherwise = k
           socK <- pickNumber True kToPick
-          modifySession $ \sess -> sess {sitemSel = Nothing}
           case socK of
             Left Nothing -> moveItemHuman cLegalRaw destCStore mverb auto
             Left (Just err) -> return $ Left err
@@ -704,9 +708,7 @@ projectHuman ts = do
       b <- getsState $ getActorBody leader
       bag <- getsState $ getBodyStoreBag b fromCStore
       case iid `EM.lookup` bag of
-        Nothing -> do  -- used up
-          modifySession $ \sess -> sess {sitemSel = Nothing}
-          failWith "no item to fling"
+        Nothing -> failWith "no item to fling"
         Just kit -> do
           itemToF <- itemToFullClient
           let i = (fromCStore, (iid, itemToF iid kit))
@@ -757,9 +759,7 @@ applyHuman ts = do
       b <- getsState $ getActorBody leader
       bag <- getsState $ getBodyStoreBag b fromCStore
       case iid `EM.lookup` bag of
-        Nothing -> do  -- used up
-          modifySession $ \sess -> sess {sitemSel = Nothing}
-          failWith "no item to apply"
+        Nothing -> failWith "no item to apply"
         Just kit -> do
           itemToF <- itemToFullClient
           let i = (fromCStore, (iid, itemToF iid kit))
@@ -948,9 +948,7 @@ itemMenuHuman cmdAction = do
       b <- getsState $ getActorBody leader
       bag <- getsState $ getBodyStoreBag b fromCStore
       case iid `EM.lookup` bag of
-        Nothing -> do  -- used up
-          modifySession $ \sess -> sess {sitemSel = Nothing}
-          weaveJust <$> failWith "no object to open Item Menu for"
+        Nothing -> weaveJust <$> failWith "no object to open Item Menu for"
         Just kit -> do
           itemToF <- itemToFullClient
           lidV <- viewedLevelUI
