@@ -15,7 +15,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , runOnceToXhairHuman, continueToXhairHuman
   , moveItemHuman, projectHuman, applyHuman, alterDirHuman
   , helpHuman, itemMenuHuman, chooseItemMenuHuman, mainMenuHuman
-  , gameDifficultyIncr
+  , gameDifficultyIncr, gameScenarioIncr
     -- * Global commands that never take time
   , gameRestartHuman, gameExitHuman, gameSaveHuman
   , tacticHuman, automateHuman
@@ -30,9 +30,7 @@ import qualified Paths_LambdaHack as Self (version)
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.IntMap.Strict as IM
 import qualified Data.Map.Strict as M
-import Data.Ord
 import qualified Data.Text as T
 import Data.Version
 import qualified NLP.Miniutter.English as MU
@@ -1005,9 +1003,10 @@ mainMenuHuman :: MonadClientUI m
               -> m (Either MError ReqUI)
 {-# INLINABLE mainMenuHuman #-}
 mainMenuHuman cmdAction = do
-  Kind.COps{comode=Kind.Ops{ouniqGroup}, corule} <- getsState scops
+  cops@Kind.COps{corule} <- getsState scops
   Binding{bcmdList} <- getsSession sbinding
   gameMode <- getGameMode
+  snxtScenario <- getsClient snxtScenario
   scurDiff <- getsClient scurDiff
   snxtDiff <- getsClient snxtDiff
   let stripFrame t = tail . init $ T.lines t
@@ -1020,19 +1019,23 @@ mainMenuHuman cmdAction = do
                       ++ ") "
             versionLen = length version
         in init art ++ [take (80 - versionLen) (last art) ++ version]
+      tnextDiff = "new game difficulty:" <+> tshow snxtDiff
+      nxtGameName = mname $ nxtGameMode cops snxtScenario
+      tnextScenario = "new scenario:" <+> nxtGameName
       -- Key-description-command tuples.
-      kds = [ (km, (desc, cmd))
-            | (km, ([HumanCmd.CmdMainMenu], desc, cmd)) <- bcmdList ]
+      kds = [ (K.mkKM "s", (tnextScenario, HumanCmd.GameScenarioIncr))
+            , (K.mkKM "d", (tnextDiff, HumanCmd.GameDifficultyIncr)) ]
+            ++ [ (km, (desc, cmd))
+               | (km, ([HumanCmd.CmdMainMenu], desc, cmd)) <- bcmdList ]
       statusLen = 30
       bindingLen = 28
-      gameName = makePhrase [MU.Capitalize $ MU.Text $ mname gameMode]
+      gameName = mname gameMode
       gameInfo = map T.unpack $
-                 [ T.justifyLeft statusLen ' '
-                   $ "Current scenario:" <+> gameName
+                 [ T.justifyLeft statusLen ' ' ""
                  , T.justifyLeft statusLen ' '
-                   $ "Current game difficulty:" <+> tshow scurDiff
+                   $ "ongoing scenario:" <+> gameName
                  , T.justifyLeft statusLen ' '
-                   $ "Next game difficulty:" <+> tshow snxtDiff
+                   $ "ongoing game difficulty:" <+> tshow scurDiff
                  , T.justifyLeft statusLen ' ' "" ]
       emptyInfo = repeat $ replicate bindingLen ' '
       bindings =  -- key bindings to display
@@ -1066,22 +1069,7 @@ mainMenuHuman cmdAction = do
       (menuOvLines, mkyxs) = unzip menuOverwritten
       kyxs = catMaybes mkyxs
       ov = map stringToAL menuOvLines
-  isNoConfirms <- isNoConfirmsGame
-  victories <- getsClient svictories
-  let getGameRestart (_km, (_desc, HumanCmd.GameRestart t)) = Just t
-      getGameRestart _ = Nothing
-      ixGameRestart = fromJust $ findIndex (isJust . getGameRestart) kds
-      modes = zip [0..] $ map ouniqGroup $ mapMaybe getGameRestart kds
-      f :: (Int, Kind.Id ModeKind) -> Int
-      f (_, mode) = case EM.lookup mode victories of
-        Nothing -> 0
-        Just im -> case IM.lookup snxtDiff im of
-          Nothing -> 0
-          Just k -> k
-      (offsetLeastWon, _) = minimumBy (comparing f) modes
-  menuIxMain <- if isNoConfirms
-                then return $! ixGameRestart + offsetLeastWon
-                else getsSession smenuIxMain
+  menuIxMain <- getsSession smenuIxMain
   (ekm, pointer) <- displayChoiceScreen ColorFull True menuIxMain
                                         (menuToSlideshow (ov, kyxs)) [K.escKM]
   modifySession $ \sess -> sess {smenuIxMain = pointer}
@@ -1091,42 +1079,58 @@ mainMenuHuman cmdAction = do
       Nothing -> weaveJust <$> failWith "never mind"
     Right _slot -> assert `failure` ekm
 
+-- * GameScenarioIncr
+
+gameScenarioIncr :: MonadClientUI m => m ()
+{-# INLINABLE gameScenarioIncr #-}
+gameScenarioIncr =
+  modifyClient $ \cli -> cli {snxtScenario = snxtScenario cli + 1}
+
 -- * GameDifficultyIncr
 
 gameDifficultyIncr :: MonadClientUI m => m ()
 {-# INLINABLE gameDifficultyIncr #-}
 gameDifficultyIncr = do
-  let delta = 1
   snxtDiff <- getsClient snxtDiff
-  let d | snxtDiff + delta > difficultyBound = 1
+  let delta = 1
+      d | snxtDiff + delta > difficultyBound = 1
         | snxtDiff + delta < 1 = difficultyBound
         | otherwise = snxtDiff + delta
   modifyClient $ \cli -> cli {snxtDiff = d}
 
 -- * GameRestart
 
-gameRestartHuman :: MonadClientUI m
-                 => GroupName ModeKind -> m (FailOrCmd ReqUI)
+gameRestartHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 {-# INLINABLE gameRestartHuman #-}
-gameRestartHuman t = do
+gameRestartHuman = do
+  cops <- getsState scops
   isNoConfirms <- isNoConfirmsGame
   gameMode <- getGameMode
+  snxtScenario <- getsClient snxtScenario
+  let nxtGameName = mname $ nxtGameMode cops snxtScenario
   b <- if isNoConfirms
        then return True
        else displayYesNo ColorBW
-            $ "You just requested a new" <+> tshow t
-              <+> "game. The progress of the current" <+> mname gameMode
+            $ "You just requested a new" <+> nxtGameName
+              <+> "game. The progress of the ongoing" <+> mname gameMode
               <+> "game will be lost! Are you sure?"
   if b
   then do
     snxtDiff <- getsClient snxtDiff
     Config{configHeroNames} <- getsSession sconfig
-    return $ Right $ ReqUIGameRestart t snxtDiff configHeroNames
+    let nxtGameGroup = toGroupName nxtGameName  -- a tiny bit hacky
+    return $ Right $ ReqUIGameRestart nxtGameGroup snxtDiff configHeroNames
   else do
     msg2 <- rndToActionForget $ oneOf
               [ "yea, would be a pity to leave them all to die"
               , "yea, a shame to get your team stranded" ]
     failWith msg2
+
+nxtGameMode :: Kind.COps -> Int -> ModeKind
+nxtGameMode Kind.COps{comode=Kind.Ops{ofoldlGroup'}} snxtScenario =
+  let f acc _p _i a = a : acc
+      campaignModes = ofoldlGroup' "campaign scenario" f []
+  in campaignModes !! (snxtScenario `mod` length campaignModes)
 
 -- * GameExit
 

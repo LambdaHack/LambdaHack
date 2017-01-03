@@ -69,6 +69,7 @@ data StateClient = StateClient
   , squit        :: !Bool          -- ^ exit the game loop
   , scurDiff     :: !Int           -- ^ current game difficulty level
   , snxtDiff     :: !Int           -- ^ next game difficulty level
+  , snxtScenario :: !Int           -- ^ next game scenario number
   , sslots       :: !ItemSlots     -- ^ map from slots to items
   , slastSlot    :: !SlotChar      -- ^ last used slot
   , slastStore   :: ![CStore]      -- ^ last used stores
@@ -117,6 +118,7 @@ emptyStateClient _sside =
     , squit = False
     , scurDiff = difficultyDefault
     , snxtDiff = difficultyDefault
+    , snxtScenario = 0
     , sslots = ItemSlots EM.empty EM.empty
     , slastSlot = SlotChar 0 'Z'
     , slastStore = []
@@ -169,6 +171,7 @@ instance Binary StateClient where
     put _sside
     put scurDiff
     put snxtDiff
+    put snxtScenario
     put sslots
     put slastSlot
     put slastStore
@@ -189,6 +192,7 @@ instance Binary StateClient where
     _sside <- get
     scurDiff <- get
     snxtDiff <- get
+    snxtScenario <- get
     sslots <- get
     slastSlot <- get
     slastStore <- get

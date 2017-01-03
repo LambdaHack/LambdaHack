@@ -1,7 +1,7 @@
 -- | The type of key-command mappings to be used for the UI.
 module Game.LambdaHack.Client.UI.Content.KeyKind
   ( KeyKind(..), evalKeyDef
-  , addCmdCategory, replaceDesc, gameRestartTriple, moveItemTriple, repeatTriple
+  , addCmdCategory, replaceDesc, moveItemTriple, repeatTriple
   , mouseLMB, mouseMMB, mouseRMB
   , goToCmd, runToAllCmd, autoexploreCmd, autoexplore100Cmd
   , aimFlingCmd, projectI, projectA, flingTs, applyI
@@ -20,7 +20,6 @@ import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Common.Actor (verbCStore)
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Content.ModeKind
 
 -- | Key-command mappings to be used for the UI.
 data KeyKind = KeyKind
@@ -42,13 +41,6 @@ replaceDesc desc (cats, _, cmd) = (cats, desc, cmd)
 
 replaceCmd :: HumanCmd -> CmdTriple -> CmdTriple
 replaceCmd cmd (cats, desc, _) = (cats, desc, cmd)
-
--- TODO: use mname for the game mode instead of t
-gameRestartTriple :: GroupName ModeKind -> CmdTriple
-gameRestartTriple t =
-  ( [CmdMainMenu]
-  , makePhrase ["new", MU.Capitalize $ MU.Text $ tshow t, "game"]
-  , GameRestart t )
 
 moveItemTriple :: [CStore] -> CStore -> (Maybe MU.Part) -> MU.Part -> Bool
                -> CmdTriple

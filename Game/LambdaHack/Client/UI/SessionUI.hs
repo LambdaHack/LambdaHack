@@ -112,7 +112,7 @@ emptySessionUI sconfig =
     , swaitTimes = 0
     , smarkVision = False
     , smarkSmell = True
-    , smenuIxMain = 0
+    , smenuIxMain = 2
     , smenuIxSettings = 0
     , smenuIxHelp = 0
     , smenuIxHistory = 0
@@ -168,7 +168,7 @@ instance Binary SessionUI where
         slastPlay = []
         slastLost = ES.empty
         swaitTimes = 0
-        smenuIxMain = 0
+        smenuIxMain = 7
         skeysHintMode = KeysHintAbsent
         sstart = 0
         sgstart = 0

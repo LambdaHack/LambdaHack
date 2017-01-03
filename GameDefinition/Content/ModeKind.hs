@@ -23,23 +23,14 @@ cdefs = ContentDef
   , validateSingle = validateSingleModeKind
   , validateAll = validateAllModeKind
   , content = contentFromList
-      [exploration, raid, brawl, ambush, battle, battleSurvival, safari, safariSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush]
+      [raid, brawl, ambush, battle, exploration, battleSurvival, safari, safariSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush]
   }
-exploration,        raid, brawl, ambush, battle, battleSurvival, safari, safariSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush :: ModeKind
-
-exploration = ModeKind
-  { msymbol = 'c'
-  , mname   = "exploration"
-  , mfreq   = [("exploration", 1)]
-  , mroster = rosterExploration
-  , mcaves  = cavesExploration
-  , mdesc   = "Don't let wanton curiosity, greed and the creeping abstraction madness keep you down there in the darkness for too long!"
-  }
+raid,        brawl, ambush, battle, exploration, battleSurvival, safari, safariSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush :: ModeKind
 
 raid = ModeKind
   { msymbol = 'r'
   , mname   = "raid"
-  , mfreq   = [("raid", 1)]
+  , mfreq   = [("raid", 1), ("campaign scenario", 1)]
   , mroster = rosterRaid
   , mcaves  = cavesRaid
   , mdesc   = "An incredibly advanced typing machine worth 100 gold is buried at the other end of this maze. Be the first to claim it and fund a research team that makes typing accurate and dependable forever."
@@ -48,7 +39,7 @@ raid = ModeKind
 brawl = ModeKind
   { msymbol = 'k'
   , mname   = "brawl"
-  , mfreq   = [("brawl", 1)]
+  , mfreq   = [("brawl", 1), ("campaign scenario", 1)]
   , mroster = rosterBrawl
   , mcaves  = cavesBrawl
   , mdesc   = "Your engineering team disagreed over a drink with some gentlemen scientists about premises of a relative completeness theorem and there's only one way to settle that."
@@ -57,7 +48,7 @@ brawl = ModeKind
 ambush = ModeKind
   { msymbol = 'm'
   , mname   = "ambush"
-  , mfreq   = [("ambush", 1)]
+  , mfreq   = [("ambush", 1), ("campaign scenario", 1)]
   , mroster = rosterAmbush
   , mcaves  = cavesAmbush
   , mdesc   = "Surprising, striking ideas and fast execution are what makes or breaks a creative team!"
@@ -66,10 +57,19 @@ ambush = ModeKind
 battle = ModeKind
   { msymbol = 'b'
   , mname   = "battle"
-  , mfreq   = [("battle", 1)]
+  , mfreq   = [("battle", 1), ("campaign scenario", 1)]
   , mroster = rosterBattle
   , mcaves  = cavesBattle
   , mdesc   = "Odds are stacked against those that unleash the horrors of abstraction."
+  }
+
+exploration = ModeKind
+  { msymbol = 'c'
+  , mname   = "exploration"
+  , mfreq   = [("exploration", 1), ("campaign scenario", 1)]
+  , mroster = rosterExploration
+  , mcaves  = cavesExploration
+  , mdesc   = "Don't let wanton curiosity, greed and the creeping abstraction madness keep you down there in the darkness for too long!"
   }
 
 battleSurvival = ModeKind
@@ -118,7 +118,7 @@ boardgame = ModeKind
   }
 
 screensaverSafari = safari
-  { mname   = "Auto-Safari"
+  { mname   = "auto-safari"
   , mfreq   = [("starting", 1), ("no confirms", 1)]
   , mroster = rosterSafari
       { rosterList = (head (rosterList rosterSafari))
@@ -129,7 +129,7 @@ screensaverSafari = safari
   }
 
 screensaverRaid = raid
-  { mname   = "Auto-Raid"
+  { mname   = "auto-raid"
   , mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
   , mroster = rosterRaid
       { rosterList = (head (rosterList rosterRaid))
@@ -139,7 +139,7 @@ screensaverRaid = raid
   }
 
 screensaverBrawl = brawl
-  { mname   = "Auto-Brawl"
+  { mname   = "auto-brawl"
   , mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
   , mroster = rosterBrawl
       { rosterList = (head (rosterList rosterBrawl))
@@ -149,7 +149,7 @@ screensaverBrawl = brawl
   }
 
 screensaverAmbush = ambush
-  { mname   = "Auto-Ambush"
+  { mname   = "auto-ambush"
   , mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
   , mroster = rosterAmbush
       { rosterList = (head (rosterList rosterAmbush))
@@ -159,15 +159,7 @@ screensaverAmbush = ambush
   }
 
 
-rosterExploration, rosterRaid, rosterBrawl, rosterAmbush, rosterBattle, rosterBattleSurvival, rosterSafari, rosterSafariSurvival, rosterDefense, rosterBoardgame :: Roster
-
-rosterExploration = Roster
-  { rosterList = [ playerHero
-                 , playerMonster
-                 , playerAnimal ]
-  , rosterEnemy = [ ("Explorer Party", "Monster Hive")
-                  , ("Explorer Party", "Animal Kingdom") ]
-  , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
+rosterRaid, rosterBrawl, rosterAmbush, rosterBattle, rosterExploration, rosterBattleSurvival, rosterSafari, rosterSafariSurvival, rosterDefense, rosterBoardgame :: Roster
 
 rosterRaid = Roster
   { rosterList = [ playerHero { fhiCondPoly = hiRaid
@@ -224,6 +216,14 @@ rosterBattle = Roster
                  , playerMobileAnimal { fentryLevel = -5
                                       , finitialActors = 30
                                       , fneverEmpty = True } ]
+  , rosterEnemy = [ ("Explorer Party", "Monster Hive")
+                  , ("Explorer Party", "Animal Kingdom") ]
+  , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
+
+rosterExploration = Roster
+  { rosterList = [ playerHero
+                 , playerMonster
+                 , playerAnimal ]
   , rosterEnemy = [ ("Explorer Party", "Monster Hive")
                   , ("Explorer Party", "Animal Kingdom") ]
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
@@ -324,14 +324,7 @@ rosterBoardgame = Roster
                   , ("Red", "Horror Den") ]
   , rosterAlly = [] }
 
-cavesExploration, cavesRaid, cavesBrawl, cavesAmbush, cavesBattle, cavesSafari, cavesBoardgame :: Caves
-
-cavesExploration = IM.fromList $
-  [ (-1, "shallow random 1")
-  , (-2, "caveRogue")
-  , (-3, "caveEmpty") ]
-  ++ zip [-4, -5..(-9)] (repeat "default random")
-  ++ [(-10, "caveNoise")]
+cavesRaid, cavesBrawl, cavesAmbush, cavesBattle, cavesExploration, cavesSafari, cavesBoardgame :: Caves
 
 cavesRaid = IM.fromList [(-4, "caveRogueLit")]
 
@@ -340,6 +333,13 @@ cavesBrawl = IM.fromList [(-3, "caveBrawl")]
 cavesAmbush = IM.fromList [(-5, "caveAmbush")]
 
 cavesBattle = IM.fromList [(-5, "caveBattle")]
+
+cavesExploration = IM.fromList $
+  [ (-1, "shallow random 1")
+  , (-2, "caveRogue")
+  , (-3, "caveEmpty") ]
+  ++ zip [-4, -5..(-9)] (repeat "default random")
+  ++ [(-10, "caveNoise")]
 
 cavesSafari = IM.fromList [ (-4, "caveSafari1")
                           , (-7, "caveSafari2")

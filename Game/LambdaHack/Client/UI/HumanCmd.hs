@@ -18,7 +18,6 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 data CmdCategory =
@@ -106,9 +105,10 @@ data HumanCmd =
   | Help
   | ItemMenu
   | MainMenu
-  | GameDifficultyIncr
     -- Below this line, commands do not take time.
-  | GameRestart !(GroupName ModeKind)
+  | GameDifficultyIncr
+  | GameScenarioIncr
+  | GameRestart
   | GameExit
   | GameSave
   | Tactic

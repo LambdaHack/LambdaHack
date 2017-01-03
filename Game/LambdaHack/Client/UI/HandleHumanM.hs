@@ -67,8 +67,9 @@ cmdAction cmd = case cmd of
   ChooseItemMenu dialogMode -> chooseItemMenuHuman cmdAction dialogMode
   MainMenu -> mainMenuHuman cmdAction
   GameDifficultyIncr -> gameDifficultyIncr >> mainMenuHuman cmdAction
+  GameScenarioIncr -> gameScenarioIncr >> mainMenuHuman cmdAction
 
-  GameRestart t -> weaveJust <$> gameRestartHuman t
+  GameRestart -> weaveJust <$> gameRestartHuman
   GameExit -> weaveJust <$> fmap Right gameExitHuman
   GameSave -> weaveJust <$> fmap Right gameSaveHuman
   Tactic -> weaveJust <$> tacticHuman
