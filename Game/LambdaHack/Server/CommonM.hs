@@ -149,12 +149,17 @@ quitF mbody status fid = do
 deduceQuits :: (MonadAtomic m, MonadServer m)
             => FactionId -> Maybe (ActorId, Actor) -> Status -> m ()
 {-# INLINABLE deduceQuits #-}
-deduceQuits fid mbody status@Status{stOutcome}
+deduceQuits fid0 mbody status@Status{stOutcome}
   | stOutcome `elem` [Defeated, Camping, Restart, Conquer] =
-    assert `failure` "no quitting to deduce" `twith` (fid, mbody, status)
-deduceQuits fid mbody status = do
-  let mapQuitF statusF fids = mapM_ (quitF Nothing statusF) $ delete fid fids
-  quitF mbody status fid
+    assert `failure` "no quitting to deduce" `twith` (fid0, mbody, status)
+deduceQuits fid0 mbody status = do
+  let factHasUI = fhasUI . gplayer
+      mapQuitF outfids = do
+        let (withUI, withoutUI) = partition (factHasUI . snd . snd) outfids
+        mapM_ (\(stOutcome, (fid, _)) -> quitF Nothing status{stOutcome} fid)
+              (withoutUI ++ withUI)
+  fact0 <- getsState $ (EM.! fid0) . sfactionD
+  when (not $ factHasUI fact0) $ quitF mbody status fid0
   let inGameOutcome (_, fact) = case stOutcome <$> gquit fact of
         Just Killed -> False
         Just Defeated -> False
@@ -162,34 +167,33 @@ deduceQuits fid mbody status = do
         _ -> True
   factionD <- getsState sfactionD
   let assocsInGame = filter inGameOutcome $ EM.assocs factionD
-      keysInGame = map fst assocsInGame
       assocsKeepArena = filter (keepArenaFact . snd) assocsInGame
-      assocsUI = filter (fhasUI . gplayer . snd) assocsInGame
+      assocsUI = filter (factHasUI . snd) assocsInGame
       nonHorrorAIG = filter (not . isHorrorFact . snd) assocsInGame
       worldPeace =
         all (\(fid1, _) -> all (\(_, fact2) -> not $ isAtWar fact2 fid1)
                            nonHorrorAIG)
         nonHorrorAIG
+      othersInGame = filter ((/= fid0) . fst) assocsInGame
   if | null assocsUI ->
        -- Only non-UI players left in the game and they all win.
-       mapQuitF status{stOutcome=Conquer} keysInGame
+       mapQuitF $ zip (repeat Conquer) othersInGame
      | null assocsKeepArena ->
        -- Only leaderless and spawners remain (the latter may sometimes
        -- have no leader, just as the former), so they win,
        -- or we could get stuck in a state with no active arena
        -- and so no spawns.
-       mapQuitF status{stOutcome=Conquer} keysInGame
+       mapQuitF $ zip (repeat Conquer) othersInGame
      | worldPeace ->
        -- Nobody is at war any more, so all win (e.g., horrors, but never mind).
-       mapQuitF status{stOutcome=Conquer} keysInGame
+       mapQuitF $ zip (repeat Conquer) othersInGame
      | stOutcome status == Escape -> do
        -- Otherwise, in a game with many warring teams alive,
        -- only complete Victory matters, until enough of them die.
-       let (victors, losers) =
-             partition (flip isAllied fid . snd) assocsInGame
-       mapQuitF status{stOutcome=Escape} $ map fst victors
-       mapQuitF status{stOutcome=Defeated} $ map fst losers
+       let (victors, losers) = partition (flip isAllied fid0 . snd) othersInGame
+       mapQuitF $ zip (repeat Escape) victors ++ zip (repeat Defeated) losers
      | otherwise -> return ()
+  when (factHasUI fact0) $ quitF mbody status fid0
 
 -- | Tell whether a faction that we know is still in game, keeps arena.
 -- Keeping arena means, if the faction is still in game,
