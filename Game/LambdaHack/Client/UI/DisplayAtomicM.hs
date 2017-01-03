@@ -712,10 +712,11 @@ discover c oldCli iid = do
   nameWhere <- case c of
     CActor aidOwner storeOwner -> do
       bOwner <- getsState $ getActorBody aidOwner
+      let (preposition, noun) = ppCStore storeOwner
       if bproj bOwner || bfid bOwner == side
       then return []
-      else return $!
-        [MU.WownW (partActor bOwner) (MU.Text $ snd $ ppCStore storeOwner)]
+      else return [ MU.Text preposition
+                  , MU.WownW (partActor bOwner) (MU.Text noun) ]
     _ -> return []
   let kit = EM.findWithDefault (1, []) iid bag
       itemFull = itemToF iid kit
