@@ -146,20 +146,21 @@ quitF mbody status fid = do
 
 -- Send any UpdQuitFaction actions that can be deduced from factions'
 -- current state.
-deduceQuits :: (MonadAtomic m, MonadServer m)
-            => FactionId -> Maybe (ActorId, Actor) -> Status -> m ()
+deduceQuits :: (MonadAtomic m, MonadServer m) => ActorId -> Status -> m ()
 {-# INLINABLE deduceQuits #-}
-deduceQuits fid0 mbody status@Status{stOutcome}
+deduceQuits aid status@Status{stOutcome}
   | stOutcome `elem` [Defeated, Camping, Restart, Conquer] =
-    assert `failure` "no quitting to deduce" `twith` (fid0, mbody, status)
-deduceQuits fid0 mbody status = do
-  let factHasUI = fhasUI . gplayer
+    assert `failure` "no quitting to deduce" `twith` (aid, status)
+deduceQuits aid status = do
+  body <- getsState $ getActorBody aid
+  let fid0 = bfid body
+      factHasUI = fhasUI . gplayer
       mapQuitF outfids = do
         let (withUI, withoutUI) = partition (factHasUI . snd . snd) outfids
         mapM_ (\(stOutcome, (fid, _)) -> quitF Nothing status{stOutcome} fid)
               (withoutUI ++ withUI)
   fact0 <- getsState $ (EM.! fid0) . sfactionD
-  when (not $ factHasUI fact0) $ quitF mbody status fid0
+  when (not $ factHasUI fact0) $ quitF (Just (aid, body)) status fid0
   let inGameOutcome (_, fact) = case stOutcome <$> gquit fact of
         Just Killed -> False
         Just Defeated -> False
@@ -193,7 +194,7 @@ deduceQuits fid0 mbody status = do
        let (victors, losers) = partition (flip isAllied fid0 . snd) othersInGame
        mapQuitF $ zip (repeat Escape) victors ++ zip (repeat Defeated) losers
      | otherwise -> return ()
-  when (factHasUI fact0) $ quitF mbody status fid0
+  when (factHasUI fact0) $ quitF (Just (aid, body)) status fid0
 
 -- | Tell whether a faction that we know is still in game, keeps arena.
 -- Keeping arena means, if the faction is still in game,
@@ -217,8 +218,7 @@ deduceKilled aid = do
   when (fneverEmpty $ gplayer fact) $ do
     actorsAlive <- anyActorsAlive (bfid body) (Just aid)
     when (not actorsAlive || firstDeathEnds) $
-      deduceQuits (bfid body) (Just (aid, body))
-      $ Status Killed (fromEnum $ blid body) Nothing
+      deduceQuits aid $ Status Killed (fromEnum $ blid body) Nothing
 
 anyActorsAlive :: MonadServer m => FactionId -> Maybe ActorId -> m Bool
 {-# INLINABLE anyActorsAlive #-}
