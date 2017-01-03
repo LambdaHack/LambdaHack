@@ -79,11 +79,9 @@ getPerFid fid lid = do
       per = EM.findWithDefault failLvl lid fper
   return $! per
 
-revealItems :: (MonadAtomic m, MonadServer m)
-            => Maybe FactionId -> Maybe (ActorId, Actor) -> m ()
+revealItems :: (MonadAtomic m, MonadServer m) => Maybe FactionId -> m ()
 {-# INLINABLE revealItems #-}
-revealItems mfid mbody = do
-  let !_A = assert (maybe True (not . bproj . snd) mbody) ()
+revealItems mfid= do
   itemToF <- itemToFullServer
   let discover aid store iid k =
         let itemFull = itemToF iid k
@@ -93,7 +91,7 @@ revealItems mfid mbody = do
             seed <- getsServer $ (EM.! iid) . sitemSeedD
             Level{ldepth} <- getLevel $ jlid $ itemBase itemFull
             execUpdAtomic $ UpdDiscover c iid itemKindId seed ldepth
-          _ -> assert `failure` (mfid, mbody, c, iid, itemFull)
+          _ -> assert `failure` (mfid, c, iid, itemFull)
       f aid = do
         b <- getsState $ getActorBody aid
         let ourSide = maybe True (== bfid b) mfid
@@ -105,9 +103,6 @@ revealItems mfid mbody = do
           join $ getsState $ mapActorItems_ (discover aid) b
   as <- getsState $ EM.keys . sactorD
   mapM_ f as
-  maybe (return ())
-        (\(aid, b) -> join $ getsState $ mapActorItems_ (discover aid) b)
-        mbody
 
 moveStores :: (MonadAtomic m, MonadServer m)
            => ActorId -> CStore -> CStore -> m ()
@@ -139,7 +134,7 @@ quitF mbody status fid = do
               && fleaderMode (gplayer fact) /= LeaderNull
               && not keepAutomated) $
           execUpdAtomic $ UpdAutoFaction fid False
-        revealItems (Just fid) mbody
+        revealItems (Just fid)
         registerScore status (snd <$> mbody) fid
       execUpdAtomic $ UpdQuitFaction fid (snd <$> mbody) oldSt $ Just status  -- TODO: send only aid to UpdQuitFaction and elsewhere --- aid is alive
       modifyServer $ \ser -> ser {squit = True}  -- check game over ASAP
