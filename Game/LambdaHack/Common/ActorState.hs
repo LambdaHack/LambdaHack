@@ -117,32 +117,30 @@ nearbyFreePoints f start lid s =
       ps = nub $ start : concatMap (vicinity lxsize lysize) ps
   in filter good ps
 
--- | Calculate loot's worth for a faction of a given actor.
-calculateTotal :: Actor -> State -> (ItemBag, Int)
-calculateTotal body s =
-  let bag = sharedAllOwned body s
+-- | Calculate loot's worth for a given faction.
+calculateTotal :: FactionId -> State -> (ItemBag, Int)
+calculateTotal fid s =
+  let bag = sharedAllOwned fid s
       items = map (\(iid, (k, _)) -> (getItemBody iid s, k)) $ EM.assocs bag
   in (bag, sum $ map itemPrice items)
 
 mergeItemQuant :: ItemQuant -> ItemQuant -> ItemQuant
 mergeItemQuant (k2, it2) (k1, it1) = (k1 + k2, it1 ++ it2)
 
-sharedInv :: Actor -> State -> ItemBag
-sharedInv body s =
-  let bs = fidActorNotProjList (bfid body) s
-  in EM.unionsWith mergeItemQuant
-     $ map binv $ if null bs then [body] else bs
+sharedInv :: FactionId -> State -> ItemBag
+sharedInv fid s =
+  let bs = fidActorNotProjList fid s
+  in EM.unionsWith mergeItemQuant $ map binv bs
 
-sharedEqp :: Actor -> State -> ItemBag
-sharedEqp body s =
-  let bs = fidActorNotProjList (bfid body) s
-  in EM.unionsWith mergeItemQuant
-     $ map beqp $ if null bs then [body] else bs
+sharedEqp :: FactionId -> State -> ItemBag
+sharedEqp fid s =
+  let bs = fidActorNotProjList fid s
+  in EM.unionsWith mergeItemQuant $ map beqp bs
 
-sharedAllOwned :: Actor -> State -> ItemBag
-sharedAllOwned body s =
-  let shaBag = gsha $ sfactionD s EM.! bfid body
-  in EM.unionsWith mergeItemQuant [sharedEqp body s, sharedInv body s, shaBag]
+sharedAllOwned :: FactionId -> State -> ItemBag
+sharedAllOwned fid s =
+  let shaBag = gsha $ sfactionD s EM.! fid
+  in EM.unionsWith mergeItemQuant [sharedEqp fid s, sharedInv fid s, shaBag]
 
 sharedAllOwnedFid :: Bool -> FactionId -> State -> ItemBag
 sharedAllOwnedFid onlyOrgans fid s =

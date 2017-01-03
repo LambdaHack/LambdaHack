@@ -632,7 +632,7 @@ quitFactionUI fid mbody toSt = do
         let store = CGround  -- only matters for UI details; all items shown
             currencyName = MU.Text $ IK.iname $ okind $ ouniqGroup "currency"
             bodyToItemSlides b = do
-              (bag, tot) <- getsState $ calculateTotal b
+              (bag, tot) <- getsState $ calculateTotal side
               if EM.null bag then return (EM.empty, emptySlideshow, 0)
               else do
                 let spoilsMsg = makeSentence [ "Your spoils are worth"

@@ -135,7 +135,7 @@ quitF mbody status fid = do
               && not keepAutomated) $
           execUpdAtomic $ UpdAutoFaction fid False
         revealItems (Just fid)
-        registerScore status (snd <$> mbody) fid
+        registerScore status fid
       execUpdAtomic $ UpdQuitFaction fid (snd <$> mbody) oldSt $ Just status  -- TODO: send only aid to UpdQuitFaction and elsewhere --- aid is alive
       modifyServer $ \ser -> ser {squit = True}  -- check game over ASAP
 

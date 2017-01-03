@@ -394,8 +394,7 @@ moveSearchAlterAid source dir = do
             | EM.member tpos $ lfloor lvl -> failSer AlterBlockItem
             | otherwise -> do
               let fs = TK.tfeature $ okind t
-              leader <- getLeaderUI
-              verAters <- verifyAlters leader fs
+              verAters <- verifyAlters fs
               case verAters of
                 Right() ->
                   return $ Right $ RequestAnyAbility $ ReqAlter tpos Nothing
@@ -841,7 +840,7 @@ alterTile ts dir = do
     fs@(feat : _) ->
       if EM.notMember tpos $ lfloor lvl then
         if null (posToAidsLvl tpos lvl) then do
-          verAters <- verifyAlters leader fs
+          verAters <- verifyAlters fs
           case verAters of
             Right() -> do
               msgAdd msg
@@ -855,22 +854,19 @@ alterFeatures [] = []
 alterFeatures (AlterFeature{feature} : ts) = feature : alterFeatures ts
 alterFeatures (_ : ts) = alterFeatures ts
 
-verifyAlters :: MonadClientUI m
-             => ActorId -> [TK.Feature] -> m (FailOrCmd ())
+verifyAlters :: MonadClientUI m => [TK.Feature] -> m (FailOrCmd ())
 {-# INLINABLE verifyAlters #-}
-verifyAlters leader fs = do
+verifyAlters fs = do
   let f acc feat = case acc of
-        Right() -> verifyAlter leader feat
+        Right() -> verifyAlter feat
         Left{} -> return acc
   foldM f (Right ()) fs
 
 -- | Verify important features, such as fleeing the dungeon.
-verifyAlter :: MonadClientUI m
-            => ActorId -> TK.Feature -> m (FailOrCmd ())
+verifyAlter :: MonadClientUI m => TK.Feature -> m (FailOrCmd ())
 {-# INLINABLE verifyAlter #-}
-verifyAlter leader feat = case feat of
+verifyAlter feat = case feat of
   TK.Cause IK.Escape{} -> do
-    b <- getsState $ getActorBody leader
     side <- getsClient sside
     fact <- getsState $ (EM.! side) . sfactionD
     if not (fcanEscape $ gplayer fact)
@@ -881,7 +877,7 @@ verifyAlter leader feat = case feat of
               "This is the way out. Really leave now?"
       if not go then failWith "game resumed"
       else do
-        (_, total) <- getsState $ calculateTotal b
+        (_, total) <- getsState $ calculateTotal side
         if total == 0 then do
           -- The player can back off at each of these steps.
           go1 <- displaySpaceEsc ColorBW

@@ -30,7 +30,6 @@ import System.FilePath
 import System.IO (hFlush, stdout)
 import qualified System.Random as R
 
-import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
@@ -118,19 +117,12 @@ restoreScore Kind.COps{corule} = do
   maybe (return HighScore.empty) return mscore
 
 -- | Generate a new score, register it and save.
-registerScore :: MonadServer m => Status -> Maybe Actor -> FactionId -> m ()
+registerScore :: MonadServer m => Status -> FactionId -> m ()
 {-# INLINABLE registerScore #-}
-registerScore status mbody fid = do
+registerScore status fid = do
   cops@Kind.COps{corule} <- getsState scops
-  let !_A = assert (maybe True ((fid ==) . bfid) mbody) ()
   fact <- getsState $ (EM.! fid) . sfactionD
-  total <- case mbody of
-    Just body -> getsState $ snd . calculateTotal body
-    Nothing -> case gleader fact of
-      Nothing -> return 0
-      Just aid -> do
-        b <- getsState $ getActorBody aid
-        getsState $ snd . calculateTotal b
+  total <- getsState $ snd . calculateTotal fid
   let stdRuleset = Kind.stdRuleset corule
       scoresFile = rscoresFile stdRuleset
   dataDir <- liftIO appDataDir
