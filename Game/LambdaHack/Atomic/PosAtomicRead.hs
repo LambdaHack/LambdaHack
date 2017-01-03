@@ -275,26 +275,26 @@ seenAtomicSer posAtomic =
 
 -- | Generate the atomic updates that jointly perform a given item move.
 generalMoveItem :: MonadStateRead m
-                => ItemId -> Int -> Container -> Container
+                => Bool -> ItemId -> Int -> Container -> Container
                 -> m [UpdAtomic]
 {-# INLINABLE generalMoveItem #-}
-generalMoveItem iid k c1 c2 =
+generalMoveItem verbose iid k c1 c2 =
   case (c1, c2) of
     (CActor aid1 cstore1, CActor aid2 cstore2) | aid1 == aid2
                                                  && cstore1 /= CSha
                                                  && cstore2 /= CSha ->
       return [UpdMoveItem iid k aid1 cstore1 cstore2]
-    _ -> containerMoveItem iid k c1 c2
+    _ -> containerMoveItem verbose iid k c1 c2
 
 containerMoveItem :: MonadStateRead m
-                  => ItemId -> Int -> Container -> Container
+                  => Bool -> ItemId -> Int -> Container -> Container
                   -> m [UpdAtomic]
 {-# INLINABLE containerMoveItem #-}
-containerMoveItem iid k c1 c2 = do
+containerMoveItem verbose iid k c1 c2 = do
   bag <- getsState $ getContainerBag c1
   case iid `EM.lookup` bag of
     Nothing -> assert `failure` (iid, k, c1, c2)
     Just (_, it) -> do
       item <- getsState $ getItemBody iid
-      return [ UpdLoseItem True iid item (k, take k it) c1
-             , UpdSpotItem True iid item (k, take k it) c2 ]
+      return [ UpdLoseItem verbose iid item (k, take k it) c1
+             , UpdSpotItem verbose iid item (k, take k it) c2 ]

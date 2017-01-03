@@ -458,7 +458,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
           seed <- getsServer $ (EM.! iid) . sitemSeedD
           Level{ldepth} <- getLevel $ jlid itemBase
           execUpdAtomic $ UpdDiscoverSeed fromC iid seed ldepth
-    upds <- generalMoveItem iid k fromC toC
+    upds <- generalMoveItem True iid k fromC toC
     mapM_ execUpdAtomic upds
     -- Reset timeout for equipped periodic items.
     when (toCStore `elem` [CEqp, COrgan]

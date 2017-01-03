@@ -185,7 +185,7 @@ dominateFid fid target = do
   -- TODO: some messages after game over below? Compare with dieSer.
   fact <- getsState $ (EM.! bfid tb0) . sfactionD
   -- Prevent the faction's stash from being lost in case they are not spawners.
-  when (isNothing $ gleader fact) $ moveStores target CSha CInv
+  when (isNothing $ gleader fact) $ moveStores False target CSha CInv
   ais <- getsState $ getCarriedAssocs tb
   actorAspect <- getsServer sactorAspect
   let ar = actorAspect EM.! target

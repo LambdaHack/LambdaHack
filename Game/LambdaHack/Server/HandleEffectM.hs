@@ -862,7 +862,7 @@ dropCStoreItem store aid b iid kit@(k, _) = do
     effectAndDestroy aid aid iid c False effs itemFull
   else do
     cDrop <- pickDroppable aid b
-    mvCmd <- generalMoveItem iid k (CActor aid store) cDrop
+    mvCmd <- generalMoveItem True iid k (CActor aid store) cDrop
     mapM_ execUpdAtomic mvCmd
 
 pickDroppable :: MonadStateRead m => ActorId -> Actor -> m Container

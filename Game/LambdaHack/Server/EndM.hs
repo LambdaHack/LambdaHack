@@ -74,7 +74,7 @@ dieSer aid b = do
     -- Projectiles can't drop stash, because they are blind and so the faction
     -- would not see the actor that drops the stash, leading to a crash.
     -- But this is OK; projectiles can't be leaders, so stash dropped earlier.
-    when (isNothing $ gleader fact) $ moveStores aid CSha CInv
+    when (isNothing $ gleader fact) $ moveStores False aid CSha CInv
   dropAllItems aid b
   b2 <- getsState $ getActorBody aid
   execUpdAtomic $ UpdDestroyActor aid b2 []

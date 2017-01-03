@@ -105,13 +105,13 @@ revealItems mfid= do
   mapM_ f as
 
 moveStores :: (MonadAtomic m, MonadServer m)
-           => ActorId -> CStore -> CStore -> m ()
+           => Bool -> ActorId -> CStore -> CStore -> m ()
 {-# INLINABLE moveStores #-}
-moveStores aid fromStore toStore = do
+moveStores verbose aid fromStore toStore = do
   b <- getsState $ getActorBody aid
   let g iid (k, _) = do
-        move <- generalMoveItem iid k (CActor aid fromStore)
-                                      (CActor aid toStore)
+        move <- generalMoveItem verbose iid k (CActor aid fromStore)
+                                              (CActor aid toStore)
         mapM_ execUpdAtomic move
   mapActorCStore_ fromStore g b
 
