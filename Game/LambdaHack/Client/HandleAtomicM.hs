@@ -10,6 +10,8 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.IntMap.Strict as IM
+import Data.Ord
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
@@ -30,6 +32,7 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Content.ItemKind (ItemKind)
+import Game.LambdaHack.Content.ModeKind (ModeKind)
 import Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
@@ -325,14 +328,25 @@ cmdAtomicSemCli cmd = case cmd of
   UpdCoverSeed c iid seed _ldepth -> coverSeed c iid seed
   -- UpdPerception lid outPer inPer -> perception lid outPer inPer
   UpdRestart side sdiscoKind sfper s d sdebugCli -> do
+    Kind.COps{comode=Kind.Ops{ofoldlGroup'}} <- getsState scops
     snxtDiff <- getsClient snxtDiff
     svictories <- getsClient svictories
-    let cli = emptyStateClient side
+    let f acc _p i _a = i : acc
+        modes = zip [0..] $ ofoldlGroup' "campaign scenario" f []
+        g :: (Int, Kind.Id ModeKind) -> Int
+        g (_, mode) = case EM.lookup mode svictories of
+          Nothing -> 0
+          Just im -> case IM.lookup snxtDiff im of
+            Nothing -> 0
+            Just k -> k
+        (snxtScenario, _) = minimumBy (comparing g) modes
+        cli = emptyStateClient side
     putClient cli { sdiscoKind
                   , sfper
                   -- , sundo = [UpdAtomic cmd]
                   , scurDiff = d
                   , snxtDiff
+                  , snxtScenario
                   , scondInMelee = EM.map (const $ Left False) (sdungeon s)
                   , svictories
                   , sdebugCli }
