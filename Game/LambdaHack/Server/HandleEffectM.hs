@@ -667,7 +667,7 @@ effectEscape source target = do
                                  "This faction doesn't want to escape outside."
        return False
      | otherwise -> do
-       deduceQuits target $ Status Escape (fromEnum $ blid b) Nothing
+       deduceQuits (bfid b) $ Status Escape (fromEnum $ blid b) Nothing
        return True
 
 -- ** Paralyze

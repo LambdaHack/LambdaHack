@@ -78,7 +78,7 @@ data UpdAtomic =
   | UpdTrajectory !ActorId !(Maybe ([Vector], Speed)) !(Maybe ([Vector], Speed))
   | UpdColorActor !ActorId !Color.Color !Color.Color
   -- Change faction attributes.
-  | UpdQuitFaction !FactionId !(Maybe Actor) !(Maybe Status) !(Maybe Status)
+  | UpdQuitFaction !FactionId !(Maybe Status) !(Maybe Status)
   | UpdLeadFaction !FactionId !(Maybe ActorId) !(Maybe ActorId)
   | UpdDiplFaction !FactionId !FactionId !Diplomacy !Diplomacy
   | UpdTacticFaction !FactionId !Tactic !Tactic
@@ -161,7 +161,7 @@ undoUpdAtomic cmd = case cmd of
     Just $ UpdFidImpressedActor aid toFid fromFid
   UpdTrajectory aid fromT toT -> Just $ UpdTrajectory aid toT fromT
   UpdColorActor aid fromCol toCol -> Just $ UpdColorActor aid toCol fromCol
-  UpdQuitFaction fid mb fromSt toSt -> Just $ UpdQuitFaction fid mb toSt fromSt
+  UpdQuitFaction fid fromSt toSt -> Just $ UpdQuitFaction fid toSt fromSt
   UpdLeadFaction fid source target -> Just $ UpdLeadFaction fid target source
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->
     Just $ UpdDiplFaction fid1 fid2 toDipl fromDipl

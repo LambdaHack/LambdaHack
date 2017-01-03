@@ -561,17 +561,16 @@ reqGameRestart :: (MonadAtomic m, MonadServer m)
 reqGameRestart aid groupName d configHeroNames = do
   modifyServer $ \ser -> ser {sdebugNxt = (sdebugNxt ser) {scurDiffSer = d}}
   b <- getsState $ getActorBody aid
-  let fid = bfid b
-  oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
+  oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
   modifyServer $ \ser ->
     ser { swriteSave = True  -- fake saving to abort turn
         , squit = True  -- do this at once
-        , sheroNames = EM.insert fid configHeroNames $ sheroNames ser }
+        , sheroNames = EM.insert (bfid b) configHeroNames $ sheroNames ser }
   isNoConfirms <- isNoConfirmsGame
   -- This call to `revealItems` is really needed, because the other
   -- happens only at game conclusion, not at quitting.
   unless isNoConfirms $ revealItems Nothing
-  execUpdAtomic $ UpdQuitFaction fid (Just b) oldSt
+  execUpdAtomic $ UpdQuitFaction (bfid b) oldSt
                 $ Just $ Status Restart (fromEnum $ blid b) (Just groupName)
 
 -- * ReqGameExit
@@ -580,11 +579,10 @@ reqGameExit :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 {-# INLINABLE reqGameExit #-}
 reqGameExit aid = do
   b <- getsState $ getActorBody aid
-  let fid = bfid b
-  oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
+  oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
   modifyServer $ \ser -> ser { swriteSave = True
                              , squit = True }  -- do this at once
-  execUpdAtomic $ UpdQuitFaction fid (Just b) oldSt
+  execUpdAtomic $ UpdQuitFaction (bfid b) oldSt
                 $ Just $ Status Camping (fromEnum $ blid b) Nothing
 
 -- * ReqGameSave

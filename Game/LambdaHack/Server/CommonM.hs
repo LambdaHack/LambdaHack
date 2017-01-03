@@ -115,11 +115,9 @@ moveStores aid fromStore toStore = do
         mapM_ execUpdAtomic move
   mapActorCStore_ fromStore g b
 
-quitF :: (MonadAtomic m, MonadServer m)
-      => Maybe (ActorId, Actor) -> Status -> FactionId -> m ()
+quitF :: (MonadAtomic m, MonadServer m) =>  Status -> FactionId -> m ()
 {-# INLINABLE quitF #-}
-quitF mbody status fid = do
-  let !_A = assert (maybe True ((fid ==) . bfid . snd) mbody) ()
+quitF status fid = do
   fact <- getsState $ (EM.! fid) . sfactionD
   let oldSt = gquit fact
   case stOutcome <$> oldSt of
@@ -136,31 +134,33 @@ quitF mbody status fid = do
           execUpdAtomic $ UpdAutoFaction fid False
         revealItems (Just fid)
         registerScore status fid
-      execUpdAtomic $ UpdQuitFaction fid (snd <$> mbody) oldSt $ Just status  -- TODO: send only aid to UpdQuitFaction and elsewhere --- aid is alive
+      execUpdAtomic $ UpdQuitFaction fid oldSt $ Just status
       modifyServer $ \ser -> ser {squit = True}  -- check game over ASAP
 
 -- Send any UpdQuitFaction actions that can be deduced from factions'
 -- current state.
-deduceQuits :: (MonadAtomic m, MonadServer m) => ActorId -> Status -> m ()
+deduceQuits :: (MonadAtomic m, MonadServer m) => FactionId -> Status -> m ()
 {-# INLINABLE deduceQuits #-}
-deduceQuits aid status@Status{stOutcome}
+deduceQuits fid0 status@Status{stOutcome}
   | stOutcome `elem` [Defeated, Camping, Restart, Conquer] =
-    assert `failure` "no quitting to deduce" `twith` (aid, status)
-deduceQuits aid status = do
-  body <- getsState $ getActorBody aid
-  let fid0 = bfid body
-      factHasUI = fhasUI . gplayer
-      mapQuitF outfids = do
-        let (withUI, withoutUI) = partition (factHasUI . snd . snd) outfids
-        mapM_ (\(stOutcome, (fid, _)) -> quitF Nothing status{stOutcome} fid)
-              (withoutUI ++ withUI)
+    assert `failure` "no quitting to deduce" `twith` (fid0, status)
+deduceQuits fid0 status = do
   fact0 <- getsState $ (EM.! fid0) . sfactionD
-  when (not $ factHasUI fact0) $ quitF (Just (aid, body)) status fid0
-  let inGameOutcome (_, fact) = case stOutcome <$> gquit fact of
-        Just Killed -> False
-        Just Defeated -> False
-        Just Restart -> False  -- effectively, commits suicide
-        _ -> True
+  let factHasUI = fhasUI . gplayer
+      quitFaction (stOutcome, (fid, _)) = quitF status{stOutcome} fid
+      mapQuitF outfids = do
+        let (withUI, withoutUI) =
+              partition (factHasUI . snd . snd)
+                        ((stOutcome status, (fid0, fact0)) : outfids)
+        mapM_ quitFaction (withoutUI ++ withUI)
+      inGameOutcome (fid, fact) = do
+        let mout | fid == fid0 = Just $ stOutcome status
+                 | otherwise = stOutcome <$> gquit fact
+        case mout of
+          Just Killed -> False
+          Just Defeated -> False
+          Just Restart -> False  -- effectively, commits suicide
+          _ -> True
   factionD <- getsState sfactionD
   let assocsInGame = filter inGameOutcome $ EM.assocs factionD
       assocsKeepArena = filter (keepArenaFact . snd) assocsInGame
@@ -189,7 +189,6 @@ deduceQuits aid status = do
        let (victors, losers) = partition (flip isAllied fid0 . snd) othersInGame
        mapQuitF $ zip (repeat Escape) victors ++ zip (repeat Defeated) losers
      | otherwise -> return ()
-  when (factHasUI fact0) $ quitF (Just (aid, body)) status fid0
 
 -- | Tell whether a faction that we know is still in game, keeps arena.
 -- Keeping arena means, if the faction is still in game,
@@ -213,7 +212,7 @@ deduceKilled aid = do
   when (fneverEmpty $ gplayer fact) $ do
     actorsAlive <- anyActorsAlive (bfid body) (Just aid)
     when (not actorsAlive || firstDeathEnds) $
-      deduceQuits aid $ Status Killed (fromEnum $ blid body) Nothing
+      deduceQuits (bfid body) $ Status Killed (fromEnum $ blid body) Nothing
 
 anyActorsAlive :: MonadServer m => FactionId -> Maybe ActorId -> m Bool
 {-# INLINABLE anyActorsAlive #-}

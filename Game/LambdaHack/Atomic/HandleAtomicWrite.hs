@@ -68,7 +68,7 @@ handleUpdAtomic cmd = case cmd of
     updFidImpressedActor aid fromFid toFid
   UpdTrajectory aid fromT toT -> updTrajectory aid fromT toT
   UpdColorActor aid fromCol toCol -> updColorActor aid fromCol toCol
-  UpdQuitFaction fid mbody fromSt toSt -> updQuitFaction fid mbody fromSt toSt
+  UpdQuitFaction fid fromSt toSt -> updQuitFaction fid fromSt toSt
   UpdLeadFaction fid source target -> updLeadFaction fid source target
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->
     updDiplFaction fid1 fid2 fromDipl toDipl
@@ -306,12 +306,10 @@ updColorActor aid fromCol toCol = assert (fromCol /= toCol) $ do
   updateActor aid $ \b -> b {bcolor = toCol}
 
 updQuitFaction :: MonadStateWrite m
-               => FactionId -> Maybe Actor -> Maybe Status -> Maybe Status
-               -> m ()
+               => FactionId -> Maybe Status -> Maybe Status -> m ()
 {-# INLINABLE updQuitFaction #-}
-updQuitFaction fid mbody fromSt toSt = do
-  let !_A = assert (fromSt /= toSt `blame` (fid, mbody, fromSt, toSt)) ()
-  let !_A = assert (maybe True ((fid ==) . bfid) mbody) ()
+updQuitFaction fid fromSt toSt = do
+  let !_A = assert (fromSt /= toSt `blame` (fid, fromSt, toSt)) ()
   fact <- getsState $ (EM.! fid) . sfactionD
   let !_A = assert (fromSt == gquit fact
                     `blame` "unexpected actor quit status"

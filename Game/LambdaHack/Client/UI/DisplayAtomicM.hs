@@ -204,7 +204,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
     b <- getsState $ getActorBody aid
     markDisplayNeeded (blid b)
   -- Change faction attributes.
-  UpdQuitFaction fid mbody _ toSt -> quitFactionUI fid mbody toSt
+  UpdQuitFaction fid _ toSt -> quitFactionUI fid toSt
   UpdLeadFaction fid (Just source) (Just target) -> do
     side <- getsClient sside
     when (fid == side) $ do
@@ -564,10 +564,9 @@ moveItemUI iid k aid cstore1 cstore2 = do
     Nothing -> assert `failure` iid
 
 -- TODO: split into many top-level functions; factor out common parts
-quitFactionUI :: MonadClientUI m
-              => FactionId -> Maybe Actor -> Maybe Status -> m ()
+quitFactionUI :: MonadClientUI m => FactionId -> Maybe Status -> m ()
 {-# INLINABLE quitFactionUI #-}
-quitFactionUI fid mbody toSt = do
+quitFactionUI fid toSt = do
   Kind.COps{coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
   fact <- getsState $ (EM.! fid) . sfactionD
   let fidName = MU.Text $ gname fact
@@ -616,7 +615,7 @@ quitFactionUI fid mbody toSt = do
                    then "This time for real."
                    else "Somebody couldn't stand the heat." )
         Just Status{stOutcome=Restart, stNewGame=Nothing} ->
-          assert `failure` (fid, mbody, toSt)
+          assert `failure` (fid, toSt)
         Nothing -> (Nothing, Nothing)  -- server wipes out Camping for savefile
   case startingPart of
     Nothing -> return ()
@@ -631,25 +630,17 @@ quitFactionUI fid mbody toSt = do
         Level{lxsize, lysize} <- getLevel lidV
         let store = CGround  -- only matters for UI details; all items shown
             currencyName = MU.Text $ IK.iname $ okind $ ouniqGroup "currency"
-            bodyToItemSlides b = do
-              (bag, tot) <- getsState $ calculateTotal side
-              if EM.null bag then return (EM.empty, emptySlideshow, 0)
-              else do
-                let spoilsMsg = makeSentence [ "Your spoils are worth"
-                                             , MU.CarWs tot currencyName ]
-                promptAdd spoilsMsg
-                io <- itemOverlay store (blid b) bag
-                sli <- overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] io
-                return (bag, sli, tot)
-        factOur <- getsState $ (EM.! side) . sfactionD
-        (bag, itemSlides, total) <- case mbody of
-          Just b | fid == side -> bodyToItemSlides b
-          _ -> case gleader factOur of
-            Nothing -> return (EM.empty, emptySlideshow, 0)
-            Just aid -> do
-              b <- getsState $ getActorBody aid
-              bodyToItemSlides b
         arena <- getArenaUI
+        (bag, itemSlides, total) <- do
+          (bag, tot) <- getsState $ calculateTotal side
+          if EM.null bag then return (EM.empty, emptySlideshow, 0)
+          else do
+            let spoilsMsg = makeSentence [ "Your spoils are worth"
+                                         , MU.CarWs tot currencyName ]
+            promptAdd spoilsMsg
+            io <- itemOverlay store arena bag
+            sli <- overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] io
+            return (bag, sli, tot)
         localTime <- getsState $ getLocalTime arena
         itemToF <- itemToFullClient
         ItemSlots lSlots _ <- getsClient sslots
