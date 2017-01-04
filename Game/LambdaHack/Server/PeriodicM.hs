@@ -180,12 +180,12 @@ dominateFid fid target = do
   Kind.COps{cotile} <- getsState scops
   tb0 <- getsState $ getActorBody target
   electLeader (bfid tb0) (blid tb0) target
-  tb <- getsState $ getActorBody target
   deduceKilled target  -- the actor body exists and his items are not dropped
   -- TODO: some messages after game over below? Compare with dieSer.
   fact <- getsState $ (EM.! bfid tb0) . sfactionD
   -- Prevent the faction's stash from being lost in case they are not spawners.
   when (isNothing $ gleader fact) $ moveStores False target CSha CInv
+  tb <- getsState $ getActorBody target
   ais <- getsState $ getCarriedAssocs tb
   actorAspect <- getsServer sactorAspect
   let ar = actorAspect EM.! target

@@ -199,8 +199,8 @@ keepArenaFact :: Faction -> Bool
 keepArenaFact fact = fleaderMode (gplayer fact) /= LeaderNull
                      && fneverEmpty (gplayer fact)
 
--- We assume the actor in the second argument has HP <= 0 or is dominated
--- by this point. Even if the actor is to be dominated,
+-- We assume the actor in the second argument has HP <= 0 or is going to be
+-- dominated right now. Even if the actor is to be dominated,
 -- @bfid@ of the actor body is still the old faction.
 deduceKilled :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 {-# INLINABLE deduceKilled #-}
