@@ -72,7 +72,9 @@ cmdAction cmd = case cmd of
   GameRestart -> weaveJust <$> gameRestartHuman
   GameExit -> weaveJust <$> fmap Right gameExitHuman
   GameSave -> weaveJust <$> fmap Right gameSaveHuman
-  Tactic -> weaveJust <$> tacticHuman
+  Tactic -> weaveJust <$> tacticHuman  -- TODO:  >> settingsMenuHuman cmdAction
+  -- TODO: perhaps accumulate tactics and send to server with next command,
+  --       just as new leader and his target is sent?
   Automate -> weaveJust <$> automateHuman
 
   Clear -> addNoError clearHuman

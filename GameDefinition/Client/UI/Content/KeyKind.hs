@@ -35,13 +35,6 @@ standardKeys = KeyKind
       , ("?", ([CmdMainMenu], "see command Help", Help))
       , ("Escape", ([CmdMainMenu], "back to playing", Cancel))
 
-      -- Settings Menu  -- TODO: add some from ClientOptions
-      , ("Escape", ([CmdSettingsMenu], "back to Main Menu", MainMenu))
-      , ("T", ([CmdSettingsMenu], "cycle henchmen tactic", Tactic))
-      , ("S", ([CmdSettingsMenu], "toggle suspect terrain", MarkSuspect))
-      , ("V", ([CmdSettingsMenu], "toggle visible zone", MarkVision))
-      , ("C", ([CmdSettingsMenu], "toggle smell clues", MarkSmell))
-
       -- Item use, 1st part
       , ("g", addCmdCategory CmdItemMenu $ addCmdCategory CmdMinimal
               $ grabItems "grab items")

@@ -51,7 +51,6 @@ import Game.LambdaHack.Client.UI.HandleHelperM
 import Game.LambdaHack.Client.UI.HumanCmd (Trigger (..))
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import Game.LambdaHack.Client.UI.InventoryM
-import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgM
@@ -79,6 +78,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import qualified Game.LambdaHack.Content.ModeKind as MK
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind (isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
@@ -597,19 +597,13 @@ historyHuman = do
 
 markVisionHuman :: MonadClientUI m => m ()
 {-# INLINABLE markVisionHuman #-}
-markVisionHuman = do
-  modifySession toggleMarkVision
-  cur <- getsSession smarkVision
-  promptAdd $ "Visible area display toggled" <+> if cur then "on." else "off."
+markVisionHuman = modifySession toggleMarkVision
 
 -- * MarkSmell
 
 markSmellHuman :: MonadClientUI m => m ()
 {-# INLINABLE markSmellHuman #-}
-markSmellHuman = do
-  modifySession toggleMarkSmell
-  cur <- getsSession smarkSmell
-  promptAdd $ "Smell display toggled" <+> if cur then "on." else "off."
+markSmellHuman = modifySession toggleMarkSmell
 
 -- * MarkSuspect
 
@@ -619,14 +613,9 @@ markSuspectHuman = do
   -- @condBFS@ depends on the setting we change here.
   invalidateBfsAll
   modifyClient toggleMarkSuspect
-  cur <- getsClient smarkSuspect
-  promptAdd $
-    "Suspect terrain display toggled" <+> if cur then "on." else "off."
 
 -- * SettingsMenu
 
--- TODO: display "on"/"off" after Mark* commands
--- TODO: display tactics at the top; somehow return to this menu after Tactics
 -- | Display the settings menu.
 settingsMenuHuman :: MonadClientUI m
                   => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
@@ -634,7 +623,11 @@ settingsMenuHuman :: MonadClientUI m
 {-# INLINABLE settingsMenuHuman #-}
 settingsMenuHuman cmdAction = do
   Kind.COps{corule} <- getsState scops
-  Binding{bcmdList} <- getsSession sbinding
+  markSuspect <- getsClient smarkSuspect
+  markVision <- getsSession smarkVision
+  markSmell <- getsSession smarkSmell
+  side <- getsClient sside
+  factTactic <- getsState $ MK.ftactic . gplayer . (EM.! side) . sfactionD
   let stripFrame t = tail . init $ T.lines t
       pasteVersion :: [String] -> [String]
       pasteVersion art =  -- TODO: factor out
@@ -645,12 +638,24 @@ settingsMenuHuman cmdAction = do
                       ++ ") "
             versionLen = length version
         in init art ++ [take (80 - versionLen) (last art) ++ version]
+      onOff b = if b then "on" else "off"
+      tsuspect = "suspect terrain:" <+> onOff markSuspect
+      tvisible = "visible zone:" <+> onOff markVision
+      tsmell = "smell clues:" <+> onOff  markSmell
+      thenchmen = "tactic:" <+> tshow factTactic
       -- Key-description-command tuples.
-      kds = [ (km, (desc, cmd))
-            | (km, ([HumanCmd.CmdSettingsMenu], desc, cmd)) <- bcmdList ]
+      kds = [ (K.mkKM "s", (tsuspect, HumanCmd.MarkSuspect))
+            , (K.mkKM "v", (tvisible, HumanCmd.MarkVision))
+            , (K.mkKM "c", (tsmell, HumanCmd.MarkSmell))
+            , (K.mkKM "t", (thenchmen, HumanCmd.Tactic))
+            , (K.mkKM "Escape", ("back to main menu", HumanCmd.MainMenu)) ]
       statusLen = 30
       bindingLen = 28
-      gameInfo = replicate 4 $ replicate statusLen ' '
+      gameInfo = map T.unpack $
+                 [ T.justifyLeft statusLen ' ' ""
+                 , T.justifyLeft statusLen ' ' ""
+                 , T.justifyLeft statusLen ' ' "Game settings:"
+                 , T.justifyLeft statusLen ' ' "" ]
       emptyInfo = repeat $ replicate bindingLen ' '
       bindings =  -- key bindings to display
         let fmt (k, (d, _)) =

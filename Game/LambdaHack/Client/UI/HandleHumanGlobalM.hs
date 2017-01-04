@@ -1029,9 +1029,9 @@ mainMenuHuman cmdAction = do
       gameInfo = map T.unpack $
                  [ T.justifyLeft statusLen ' ' ""
                  , T.justifyLeft statusLen ' '
-                   $ "ongoing scenario:" <+> gameName
+                   $ "Ongoing scenario:" <+> gameName
                  , T.justifyLeft statusLen ' '
-                   $ "ongoing game difficulty:" <+> tshow scurDiff
+                   $ "Ongoing game difficulty:" <+> tshow scurDiff
                  , T.justifyLeft statusLen ' ' "" ]
       emptyInfo = repeat $ replicate bindingLen ' '
       bindings =  -- key bindings to display
@@ -1161,12 +1161,15 @@ tacticHuman = do
   fromT <- getsState $ ftactic . gplayer . (EM.! fid) . sfactionD
   let toT = if fromT == maxBound then minBound else succ fromT
   go <- displaySpaceEsc ColorFull
-        $ "Current tactic is '" <> tshow fromT
-          <> "'. Switching tactic to '" <> tshow toT
-          <> "'. (This clears targets.)"
+        $ "Current henchmen tactic is" <+> tshow fromT
+          <+> "(" <> describeTactic fromT <> ")."
+          <+> "Switching tactic to" <+> tshow toT
+          <+> "(" <> describeTactic toT <> ")."
+          <+> "This clears targets of all henchmen (non-leader teammates)."
+          <+> "New targets will be picked according to new tactic."
   if not go
-    then failWith "tactic change canceled"
-    else return $ Right $ ReqUITactic toT
+  then failWith "tactic change canceled"
+  else return $ Right $ ReqUITactic toT
 
 -- * Automate
 

@@ -11,7 +11,8 @@ module Game.LambdaHack.Common.Misc
     -- * Assorted
   , makePhrase, makeSentence
   , normalLevelBound, GroupName, toGroupName, Freqs, breturn
-  , serverSaveName, Rarity, validateRarity, Tactic(..), appDataDir
+  , serverSaveName, Rarity, validateRarity
+  , Tactic(..), describeTactic, appDataDir
   ) where
 
 import Prelude ()
@@ -169,14 +170,24 @@ data Tactic =
   deriving (Eq, Ord, Enum, Bounded, Generic)
 
 instance Show Tactic where
-  show TExplore = "explore unknown, chase targets"
-  show TFollow = "follow leader's target or position"
-  show TFollowNoItems = "follow leader's target or position, ignore items"
-  show TMeleeAndRanged = "only melee and perform ranged combat"
-  show TMeleeAdjacent = "only melee"
-  show TBlock = "only block and wait"
-  show TRoam = "roam freely, chase targets"
-  show TPatrol = "find and patrol an area (TODO)"
+  show TExplore        = "explore"
+  show TFollow         = "follow freely"
+  show TFollowNoItems  = "follow only"
+  show TMeleeAndRanged = "fight freely"
+  show TMeleeAdjacent  = "melee only"
+  show TBlock          = "block only"
+  show TRoam           = "roam freely"
+  show TPatrol         = "patrol area"
+
+describeTactic :: Tactic -> Text
+describeTactic TExplore = "explore unknown, chase targets"
+describeTactic TFollow = "follow leader's target or position, grab items"
+describeTactic TFollowNoItems = "follow leader's target or position, ignore items"
+describeTactic TMeleeAndRanged = "only engage in melee and ranged combat"
+describeTactic TMeleeAdjacent = "engage exclusively in melee"
+describeTactic TBlock = "only block and wait"
+describeTactic TRoam = "roam freely, chase targets"
+describeTactic TPatrol = "find and patrol an area (TODO)"
 
 instance Binary Tactic
 
