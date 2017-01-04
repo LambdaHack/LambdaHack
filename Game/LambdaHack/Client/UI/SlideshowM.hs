@@ -149,14 +149,13 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                     page (pointer + pageLen - ixOnPage)
                   _ | ikm `elem` keys ->
                     return (Left ikm, pointer)
-                  K.Up -> case findIndex xix $ reverse
-                               $ take ixOnPage kyxs of
-                    Nothing -> ignoreKey
+                  K.Up -> case findIndex xix $ reverse $ take ixOnPage kyxs of
+                    Nothing -> interpretKey ikm{K.key=K.Left}
                     Just ix -> page (max 0 (pointer - ix - 1))
                   K.Left -> if pointer == 0 then page maxIx
                             else page (max 0 (pointer - 1))
                   K.Down -> case findIndex xix $ drop (ixOnPage + 1) kyxs of
-                    Nothing -> ignoreKey
+                    Nothing -> interpretKey ikm{K.key=K.Right}
                     Just ix -> page (pointer + ix + 1)
                   K.Right -> if pointer == maxIx then page 0
                              else page (min maxIx (pointer + 1))
