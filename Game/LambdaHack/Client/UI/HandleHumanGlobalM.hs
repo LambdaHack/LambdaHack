@@ -394,8 +394,8 @@ moveSearchAlterAid source dir = do
             | EM.member tpos $ lfloor lvl -> failSer AlterBlockItem
             | otherwise -> do
               let fs = TK.tfeature $ okind t
-              verAters <- verifyAlters fs
-              case verAters of
+              verAlters <- verifyAlters fs
+              case verAlters of
                 Right() ->
                   return $ Right $ RequestAnyAbility $ ReqAlter tpos Nothing
                 Left err -> return $ Left err
@@ -840,8 +840,8 @@ alterTile ts dir = do
     fs@(feat : _) ->
       if EM.notMember tpos $ lfloor lvl then
         if null (posToAidsLvl tpos lvl) then do
-          verAters <- verifyAlters fs
-          case verAters of
+          verAlters <- verifyAlters fs
+          case verAlters of
             Right() -> do
               msgAdd msg
               return $ Right $ ReqAlter tpos $ Just feat
