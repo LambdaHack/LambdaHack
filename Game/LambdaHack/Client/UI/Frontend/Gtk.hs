@@ -33,7 +33,7 @@ import Game.LambdaHack.Common.Point
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { sview :: !TextView              -- ^ the widget to draw to
+  { sview :: !TextView             -- ^ the widget to draw to
   , stags :: !(IM.IntMap TextTag)  -- ^ text color tags for fg/bg
   }
 
@@ -82,6 +82,8 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   sview <- textViewNewWithBuffer tb
   textViewSetEditable sview False
   textViewSetCursorVisible sview False
+  widgetDelEvents sview [SmoothScrollMask, TouchMask]
+  widgetAddEvents sview [ScrollMask]
   let sess = FrontendSession{..}
   rf <- createRawFrontend (display sess) shutdown
   putMVar rfMVar rf
@@ -122,13 +124,13 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
       (iter, _) <- textViewGetIterAtPosition sview bx by
       cx <- textIterGetLineOffset iter
       cy <- textIterGetLine iter
-      let key = case scrollDir of
-            ScrollUp -> K.WheelNorth
-            ScrollDown -> K.WheelSouth
-            _ -> K.Esc  -- probably a glitch
-          pointer = Point cx cy
-      -- Store the mouse event coords in the keypress channel.
-      saveKMP rf modifier key pointer
+      let pointer = Point cx cy
+          -- Store the mouse event coords in the keypress channel.
+          storeK key = saveKMP rf modifier key pointer
+      case scrollDir of
+        ScrollUp -> storeK K.WheelNorth
+        ScrollDown -> storeK K.WheelSouth
+        _ -> return ()  -- ignore any fancy new gizmos
     return True  -- disable selection
   currentfont <- newIORef f
   Just defDisplay <- displayGetDefault
