@@ -313,7 +313,7 @@ necklace = ItemKind
   , iweight  = 30
   , idamage  = toDmg 0
   , iaspects = []
-  , ieffects = [Periodic, EqpSlot EqpSlotMiscBonus]
+  , ieffects = [Periodic]
   , ifeature = [Precious, toVelocity 50, Equipable]  -- not dense enough
   , idesc    = "Menacing Greek symbols shimmer with increasing speeds along a chain of fine encrusted links. After a tense build-up, a prismatic arc shoots towards the ground and the iridescence subdues, becomes ordered and resembles a harmless ornament again, for a time."
   , ikit     = []
@@ -321,7 +321,8 @@ necklace = ItemKind
 necklace1 = necklace
   { ifreq    = [("treasure", 100)]
   , iaspects = [Timeout $ d 3 + 4 - dl 3 |*| 10]
-  , ieffects = [Unique, ELabel "of Aromata", Recharging (RefillHP 1)]
+  , ieffects = [ Unique, ELabel "of Aromata", EqpSlot EqpSlotMiscBonus
+               , Recharging (RefillHP 1) ]
                ++ ieffects necklace
   , ifeature = Durable : ifeature necklace
   , idesc    = "A cord of freshly dried herbs and healing berries."
@@ -361,7 +362,7 @@ necklace7 = necklace  -- TODO: teach AI to wear only for fight
   , iaspects = [ AddMaxHP $ 10 + d 10
                , AddArmorMelee 20, AddArmorRanged 20
                , Timeout $ d 2 + 5 - dl 3 ]
-  , ieffects = [ Unique, ELabel "of Overdrive"
+  , ieffects = [ Unique, ELabel "of Overdrive", EqpSlot EqpSlotAddSpeed
                , Recharging (InsertMove $ 1 + d 2)
                , Recharging (RefillHP (-1))
                , Recharging (RefillCalm (-1)) ]
@@ -767,7 +768,7 @@ armorLeather = ItemKind
   , idamage  = toDmg 0
   , iaspects = [ AddHurtMelee (-3)
                , AddArmorMelee $ 1 + d 2 + dl 2 |*| 5
-               , AddArmorRanged $ d 2 + dl 2 |*| 5 ]
+               , AddArmorRanged $ 1 + dl 2 |*| 5 ]
   , ieffects = [EqpSlot EqpSlotAddArmorMelee]
   , ifeature = [ toVelocity 30  -- unwieldy to throw and blunt
                , Durable, Identified, Equipable ]
@@ -782,7 +783,7 @@ armorMail = armorLeather
   , idamage  = toDmg 0
   , iaspects = [ AddHurtMelee (-3)
                , AddArmorMelee $ 1 + d 2 + dl 3 |*| 5
-               , AddArmorRanged $ 2 + d 2 + dl 3 |*| 5 ]
+               , AddArmorRanged $ 3 + d 2 + dl 3 |*| 5 ]
   , ieffects = [EqpSlot EqpSlotAddArmorRanged]
   , ifeature = [ toVelocity 40  -- unwieldy to throw and blunt
                , Durable, Identified, Equipable ]
@@ -812,7 +813,7 @@ gloveGauntlet = gloveFencing
   , irarity  = [(1, 9), (10, 3)]
   , iweight  = 300
   , idamage  = toDmg $ 1 * d 1
-  , iaspects = [ AddArmorMelee $ 1 + dl 2 |*| 5
+  , iaspects = [ AddArmorMelee $ 2 + dl 2 |*| 5
                , AddArmorRanged $ dl 2 |*| 5 ]
   , ieffects = [EqpSlot EqpSlotAddArmorMelee]
   , idesc    = "Long leather gauntlet covered in overlapping steel plates."
@@ -824,8 +825,8 @@ gloveJousting = gloveFencing
   , iweight  = 500
   , idamage  = toDmg $ 2 * d 1
   , iaspects = [ AddHurtMelee $ dl 4 - 6 |*| 3
-               , AddArmorMelee $ 2 + dl 2 |*| 5
-               , AddArmorRanged $ 1 + dl 2 |*| 5 ]
+               , AddArmorMelee $ 2 + d 2 + dl 2 |*| 5
+               , AddArmorRanged $ dl 2 |*| 5 ]
   , ieffects = [Unique, EqpSlot EqpSlotAddArmorMelee]
   , idesc    = "Rigid, steel, jousting handgear. If only you had a lance. And a horse."
   }
