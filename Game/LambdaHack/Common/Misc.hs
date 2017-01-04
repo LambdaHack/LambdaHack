@@ -173,20 +173,22 @@ instance Show Tactic where
   show TExplore        = "explore"
   show TFollow         = "follow freely"
   show TFollowNoItems  = "follow only"
-  show TMeleeAndRanged = "fight freely"
+  show TMeleeAndRanged = "fight only"
   show TMeleeAdjacent  = "melee only"
   show TBlock          = "block only"
   show TRoam           = "roam freely"
   show TPatrol         = "patrol area"
 
 describeTactic :: Tactic -> Text
-describeTactic TExplore = "explore unknown, chase targets"
+describeTactic TExplore = "investigate unknown positions, chase targets"
 describeTactic TFollow = "follow leader's target or position, grab items"
-describeTactic TFollowNoItems = "follow leader's target or position, ignore items"
-describeTactic TMeleeAndRanged = "only engage in melee and ranged combat"
-describeTactic TMeleeAdjacent = "engage exclusively in melee"
-describeTactic TBlock = "only block and wait"
-describeTactic TRoam = "roam freely, chase targets"
+describeTactic TFollowNoItems =
+  "follow leader's target or position, ignore items"
+describeTactic TMeleeAndRanged =
+  "engage in both melee and ranged combat, don't move"
+describeTactic TMeleeAdjacent = "engage exclusively in melee, don't move"
+describeTactic TBlock = "block and wait, don't move"
+describeTactic TRoam = "move freely, chase targets"
 describeTactic TPatrol = "find and patrol an area (TODO)"
 
 instance Binary Tactic
