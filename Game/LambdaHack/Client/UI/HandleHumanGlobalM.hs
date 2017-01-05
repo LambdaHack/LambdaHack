@@ -913,7 +913,7 @@ helpHuman cmdAction = do
   Level{lxsize, lysize} <- getLevel lidV  -- TODO: screen length or viewLevel
   menuIxHelp <- getsSession smenuIxHelp
   keyb <- getsSession sbinding
-  let keyH = tail $ keyHelp keyb 1  -- the first screen is for ItemMenu
+  let keyH = keyHelp keyb 1
       splitHelp (t, okx) =
         splitOKX lxsize (lysize + 3) (textToAL t) [K.spaceKM, K.escKM] okx
       sli = toSlideshow $ concat $ map splitHelp keyH
@@ -954,7 +954,12 @@ itemMenuHuman cmdAction = do
               ov = splitAttrLine lxsize $ attrLine <+:> textToAL foundText
           report <- getReportUI
           keyb <- getsSession sbinding
-          let (_, (ov0, kxs0)) = head $ keyHelp keyb (1 + length ov)
+          let fmt n k h = " " <> T.justifyLeft n ' ' k <+> h
+              keyL = 11
+              keyCaption = fmt keyL "keys" "command"
+              offset = 1 + length ov
+              (ov0, kxs0) =
+                okxsN keyb offset keyL HumanCmd.CmdItemMenu [keyCaption] []
               t0 = makeSentence [ MU.SubjectVerbSg (partActor b) "choose"
                                 , "an object", MU.Text $ ppCStoreIn fromCStore ]
               al1 = renderReport report <+:> textToAL t0

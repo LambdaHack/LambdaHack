@@ -112,14 +112,16 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
       page pointer = assert (pointer >= 0) $ case findKYX pointer frs of
         Nothing -> assert `failure` "no menu keys" `twith` frs
         Just ((ov, kyxs), (ekm, (y, x1, x2)), ixOnPage) -> do
-          let greyBG x | Color.acAttr x /= Color.defAttr = x
-              greyBG x = x{Color.acAttr =
-                            (Color.acAttr x){Color.fg = Color.BrWhite}}
+          let highAttr x | Color.acAttr x /= Color.defAttr = x
+              highAttr x = x {Color.acAttr =
+                                (Color.acAttr x) {Color.fg = Color.BrWhite}}
               drawHighlight xs =
                 let (xs1, xsRest) = splitAt x1 xs
                     (xs2, xs3) = splitAt (x2 - x1) xsRest
-                    greyW32 = Color.attrCharToW32 . greyBG . Color.attrCharFromW32
-                in xs1 ++ map greyW32 xs2 ++ xs3
+                    highW32 = Color.attrCharToW32
+                              . highAttr
+                              . Color.attrCharFromW32
+                in xs1 ++ map highW32 xs2 ++ xs3
               ov1 = updateLines y drawHighlight ov
               ignoreKey = page pointer
               pageLen = length kyxs

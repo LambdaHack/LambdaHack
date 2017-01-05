@@ -1,7 +1,7 @@
 -- | Binding of keys to commands.
 -- No operation in this module involves the 'State' or 'Action' type.
 module Game.LambdaHack.Client.UI.KeyBindings
-  ( Binding(..), stdBinding, keyHelp
+  ( Binding(..), stdBinding, keyHelp, okxsN
   ) where
 
 import Prelude ()
@@ -71,7 +71,7 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
 
 -- | Produce a set of help screens from the key bindings.
 keyHelp :: Binding -> Int -> [(Text, OKX)]
-keyHelp Binding{..} offset = assert (offset > 0) $
+keyHelp keyb@Binding{..} offset = assert (offset > 0) $
   let
     movBlurb =
       [ ""
@@ -143,24 +143,9 @@ keyHelp Binding{..} offset = assert (offset > 0) $
     lastCategoryText = map fmts lastCategoryBlurb
     mouseBasicsText = map fmts mouseBasicsBlurb
     lastHelpText = map fmts lastHelpBlurb
-    coImage :: HumanCmd -> [K.KM]
-    coImage cmd = M.findWithDefault (assert `failure` cmd) cmd brevMap
-    disp = T.intercalate " or " . map (T.pack . K.showKM)
-    keysN :: Int -> CmdCategory -> [(Either [K.KM] SlotChar, Text)]
-    keysN n cat = [ (Left kms, fmt n (disp kms) desc)
-                  | (_, (cats, desc, cmd)) <- bcmdList
-                  , let kms = coImage cmd
-                  , cat `elem` cats
-                  , desc /= "" ]
     keyCaptionN n = fmt n "keys" "command"
     keyCaption = keyCaptionN keyL
-    okxsN :: Int -> CmdCategory -> [Text] -> [Text] -> OKX
-    okxsN n cat header footer =
-      let kst = keysN n cat
-          f (ks, tkey) y = (ks, (y, 1, T.length tkey))
-          kxs = zipWith f kst [offset + length header..]
-      in (map textToAL $ "" : header ++ map snd kst ++ footer, kxs)
-    okxs = okxsN keyL
+    okxs = okxsN keyb offset keyL
     keyM = 13
     keyB = 31
     truncatem b = if T.length b > keyB
@@ -209,9 +194,7 @@ keyHelp Binding{..} offset = assert (offset > 0) $
       in (map textToAL $ "" : header ++ menu ++ footer, kxs)
     adjoinOverlay (ov1, kxs1) (ov2, _) = (ov1 ++ ov2, kxs1)
   in
-    [ ( ""  -- the first screen is for ItemMenu
-      , okxs CmdItemMenu [keyCaption] [] )
-    , ( casualDescription <+> "(1/2)."
+    [ ( casualDescription <+> "(1/2)."
       , (map textToAL $ movText, []) )
     , ( casualDescription <+> "(2/2)."
       , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEndText )
@@ -232,3 +215,19 @@ keyHelp Binding{..} offset = assert (offset > 0) $
       , okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
             [areaCaption] lastHelpText )
     ]
+
+okxsN :: Binding -> Int -> Int -> CmdCategory -> [Text] -> [Text] -> OKX
+okxsN Binding{..} offset n cat header footer =
+  let fmt k h = " " <> T.justifyLeft n ' ' k <+> h
+      coImage :: HumanCmd -> [K.KM]
+      coImage cmd = M.findWithDefault (assert `failure` cmd) cmd brevMap
+      disp = T.intercalate " or " . map (T.pack . K.showKM)
+      keys :: [(Either [K.KM] SlotChar, Text)]
+      keys = [ (Left kms, fmt (disp kms) desc)
+             | (_, (cats, desc, cmd)) <- bcmdList
+             , let kms = coImage cmd
+             , cat `elem` cats
+             , desc /= "" ]
+      f (ks, tkey) y = (ks, (y, 1, T.length tkey))
+      kxs = zipWith f keys [offset + length header..]
+  in (map textToAL $ "" : header ++ map snd keys ++ footer, kxs)
