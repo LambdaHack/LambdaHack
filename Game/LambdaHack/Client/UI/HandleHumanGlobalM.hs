@@ -958,8 +958,8 @@ itemMenuHuman cmdAction = do
               keyL = 11
               keyCaption = fmt keyL "keys" "command"
               offset = 1 + length ov
-              (ov0, kxs0) =
-                okxsN keyb offset keyL HumanCmd.CmdItemMenu [keyCaption] []
+              (ov0, kxs0) = okxsN keyb offset keyL (const True)
+                                  HumanCmd.CmdItemMenu [keyCaption] []
               t0 = makeSentence [ MU.SubjectVerbSg (partActor b) "choose"
                                 , "an object", MU.Text $ ppCStoreIn fromCStore ]
               al1 = renderReport report <+:> textToAL t0

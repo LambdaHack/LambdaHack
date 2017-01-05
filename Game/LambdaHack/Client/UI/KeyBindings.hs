@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Binding of keys to commands.
 -- No operation in this module involves the 'State' or 'Action' type.
 module Game.LambdaHack.Client.UI.KeyBindings
@@ -18,6 +19,7 @@ import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.Slideshow
+import qualified Game.LambdaHack.Common.Color as Color
 
 -- | Bindings and other information about human player commands.
 data Binding = Binding
@@ -145,7 +147,7 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
     lastHelpText = map fmts lastHelpBlurb
     keyCaptionN n = fmt n "keys" "command"
     keyCaption = keyCaptionN keyL
-    okxs = okxsN keyb offset keyL
+    okxs = okxsN keyb offset keyL (const False)
     keyM = 13
     keyB = 31
     truncatem b = if T.length b > keyB
@@ -216,18 +218,21 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
             [areaCaption] lastHelpText )
     ]
 
-okxsN :: Binding -> Int -> Int -> CmdCategory -> [Text] -> [Text] -> OKX
-okxsN Binding{..} offset n cat header footer =
+okxsN :: Binding -> Int -> Int -> (HumanCmd -> Bool) -> CmdCategory
+      -> [Text] -> [Text] -> OKX
+okxsN Binding{..} offset n greyedOut cat header footer =
   let fmt k h = " " <> T.justifyLeft n ' ' k <+> h
       coImage :: HumanCmd -> [K.KM]
       coImage cmd = M.findWithDefault (assert `failure` cmd) cmd brevMap
       disp = T.intercalate " or " . map (T.pack . K.showKM)
-      keys :: [(Either [K.KM] SlotChar, Text)]
-      keys = [ (Left kms, fmt (disp kms) desc)
+      keys :: [(Either [K.KM] SlotChar, (Bool, Text))]
+      keys = [ (Left kms, (greyedOut cmd, fmt (disp kms) desc))
              | (_, (cats, desc, cmd)) <- bcmdList
              , let kms = coImage cmd
              , cat `elem` cats
              , desc /= "" ]
-      f (ks, tkey) y = (ks, (y, 1, T.length tkey))
+      f (ks, (_, tkey)) y = (ks, (y, 1, T.length tkey))
       kxs = zipWith f keys [offset + length header..]
-  in (map textToAL $ "" : header ++ map snd keys ++ footer, kxs)
+      ts = map (False,) ("" : header) ++ map snd keys ++ map (False,) footer
+      greyToAL (b, t) = if b then fgToAL Color.BrBlack t else textToAL t
+  in (map greyToAL ts, kxs)

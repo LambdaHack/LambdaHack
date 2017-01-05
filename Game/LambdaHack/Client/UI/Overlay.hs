@@ -2,7 +2,7 @@
 -- | Screen overlays.
 module Game.LambdaHack.Client.UI.Overlay
   ( -- * AttrLine
-    AttrLine, emptyAttrLine, textToAL, stringToAL
+    AttrLine, emptyAttrLine, textToAL, fgToAL, stringToAL
   , (<+:>), splitAttrLine, itemDesc, glueLines, updateLines
     -- * Overlay
   , Overlay
@@ -43,6 +43,12 @@ emptyAttrLine xsize = replicate xsize Color.spaceAttrW32
 textToAL :: Text -> AttrLine
 textToAL !t =
   let f c l = let !ac = Color.attrChar1ToW32 c
+              in ac : l
+  in T.foldr f [] t
+
+fgToAL :: Color.Color -> Text -> AttrLine
+fgToAL !fg !t =
+  let f c l = let !ac = Color.attrChar2ToW32 fg c
               in ac : l
   in T.foldr f [] t
 
