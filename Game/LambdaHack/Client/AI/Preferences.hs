@@ -119,8 +119,6 @@ aspectToBenefit _cops _b asp =
   case asp of
     IK.Timeout{} -> 0
     IK.AddHurtMelee p -> Dice.meanDice p
-    IK.AddHurtRanged p | p < 0 -> 0  -- TODO: don't ignore for missiles
-    IK.AddHurtRanged p -> Dice.meanDice p `divUp` 5  -- TODO: should be summed with damage
     IK.AddArmorMelee p -> Dice.meanDice p `divUp` 5
     IK.AddArmorRanged p -> Dice.meanDice p `divUp` 10
     IK.AddMaxHP p -> Dice.meanDice p

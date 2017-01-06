@@ -123,7 +123,6 @@ instance NFData TimerDice
 data Aspect =
     Timeout !Dice.Dice         -- ^ some effects disabled until item recharges
   | AddHurtMelee !Dice.Dice    -- ^ percentage damage bonus in melee
-  | AddHurtRanged !Dice.Dice   -- ^ percentage damage bonus in ranged
   | AddArmorMelee !Dice.Dice   -- ^ percentage armor bonus against melee
   | AddArmorRanged !Dice.Dice  -- ^ percentage armor bonus against ranged
   | AddMaxHP !Dice.Dice        -- ^ maximal hp

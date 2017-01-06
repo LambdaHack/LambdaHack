@@ -77,7 +77,7 @@ dart = ItemKind
   , iverbHit = "nick"
   , iweight  = 50
   , idamage  = toDmg $ 2 * d 1
-  , iaspects = [AddHurtRanged (d 3 + dl 6 |*| 20)]
+  , iaspects = [AddHurtMelee (d 3 + dl 6 |*| 20)]
   , ieffects = []
   , ifeature = [Identified]
   , idesc    = "Little, but sharp and sturdy."  -- "Much inferior to arrows though, especially given the contravariance problems."  --- funny, but destroy the suspension of disbelief; this is supposed to be a Lovecraftian horror and any hilarity must ensue from the failures in making it so and not from actively trying to be funny; also, mundane objects are not supposed to be scary or transcendental; the scare is in horrors from the abstract dimension visiting our ordinary reality; without the contrast there's no horror and no wonder, so also the magical items must be contrasted with ordinary XIX century and antique items
@@ -93,7 +93,7 @@ dart200 = ItemKind
   , iverbHit = "prick"
   , iweight  = 50
   , idamage  = toDmg $ 1 * d 1
-  , iaspects = [AddHurtRanged (d 3 + dl 6 |*| 20)]
+  , iaspects = [AddHurtMelee (d 3 + dl 6 |*| 20)]
   , ieffects = []
   , ifeature = [toVelocity 200, Identified]
   , idesc    = "Finely balanced for throws of great speed."
@@ -112,7 +112,7 @@ paralizingProj = ItemKind
   , iverbHit = "entangle"
   , iweight  = 500
   , idamage  = toDmg $ 2 * d 1
-  , iaspects = [AddHurtRanged (1 + dl 2 |*| 20)]
+  , iaspects = [AddHurtMelee (1 + dl 2 |*| 20)]
   , ieffects = [Paralyze (10 + 2 * d 5), DropBestWeapon]
   , ifeature = [Identified]
   , idesc    = "Wood balls tied with hemp rope. The target enemy is tripped and bound to drop the main weapon, while fighting for balance."
@@ -128,7 +128,7 @@ harpoon = ItemKind
   , iverbHit = "hook"
   , iweight  = 4000
   , idamage  = [(99, 4 * d 1), (1, 8 * d 1)]
-  , iaspects = [AddHurtRanged (d 2 + dl 5 |*| 20)]
+  , iaspects = [AddHurtMelee (d 2 + dl 5 |*| 20)]
   , ieffects = [PullActor (ThrowMod 200 50)]
   , ifeature = [Identified]
   , idesc    = "The cruel, barbed head lodges in its victim so painfully that the weakest tug of the thin line sends the victim flying."
@@ -144,7 +144,7 @@ net = ItemKind
   , iverbHit = "entangle"
   , iweight  = 1000
   , idamage  = toDmg $ 1 * d 1
-  , iaspects = [AddHurtRanged (1 + dl 2 |*| 20)]
+  , iaspects = [AddHurtMelee (1 + dl 2 |*| 20)]
   , ieffects = [ toOrganGameTurn "slow 10" (3 + d 3)
                , DropItem CEqp "torso armor" ]
   , ifeature = [Identified]
@@ -883,8 +883,7 @@ dagger = ItemKind
   , iweight  = 1000
   , idamage  = toDmg $ 6 * d 1
   , iaspects = [ AddHurtMelee $ d 3 + dl 3 |*| 3
-               , AddArmorMelee $ d 2 |*| 5
-               , AddHurtRanged (-60) ]  -- as powerful as a dart
+               , AddArmorMelee $ d 2 |*| 5 ]
   , ieffects = [EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 40  -- ensuring it hits with the tip costs speed
                , Durable, Identified, Equipable, Meleeable ]
@@ -903,8 +902,7 @@ daggerDropBestWeapon = dagger
   -- If the effect is very powerful and so the timeout has to be significant,
   -- let's make it really large, for the effect to occur only once in a fight:
   -- as soon as the item is equipped, or just on the first strike.
-  , iaspects = [ Timeout $ d 3 + 4 - dl 3 |*| 2
-               , AddHurtRanged (-60) ]  -- as powerful as a dart
+  , iaspects = [Timeout $ d 3 + 4 - dl 3 |*| 2]
   , ieffects = ieffects dagger
                ++ [ Unique
                   , Recharging DropBestWeapon, Recharging $ RefillCalm (-3) ]
@@ -920,8 +918,7 @@ hammer = ItemKind
   , iverbHit = "club"
   , iweight  = 1500
   , idamage  = [(96, 8 * d 1), (3, 12 * d 1), (1, 16 * d 1)]
-  , iaspects = [ AddHurtMelee $ d 2 + dl 2 |*| 3
-               , AddHurtRanged (-80) ]  -- as powerful as a dart
+  , iaspects = [AddHurtMelee $ d 2 + dl 2 |*| 3]
   , ieffects = [EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 20  -- ensuring it hits with the sharp tip costs
                , Durable, Identified, Equipable, Meleeable ]
@@ -932,16 +929,14 @@ hammerParalyze = hammer
   { iname    = "Concussion Hammer"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(5, 2), (10, 4)]
-  , iaspects = [ Timeout $ d 2 + 3 - dl 2 |*| 2
-               , AddHurtRanged (-80) ]  -- as powerful as a dart
+  , iaspects = [Timeout $ d 2 + 3 - dl 2 |*| 2]
   , ieffects = ieffects hammer ++ [Unique, Recharging $ Paralyze 10]
   }
 hammerSpark = hammer
   { iname    = "Grand Smithhammer"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(5, 2), (10, 4)]
-  , iaspects = [ Timeout $ d 4 + 4 - dl 4 |*| 2
-               , AddHurtRanged (-80) ]  -- as powerful as a dart
+  , iaspects = [Timeout $ d 4 + 4 - dl 4 |*| 2]
   , ieffects = ieffects hammer ++ [Unique, Recharging $ Explode "spark"]
   }
 sword = ItemKind

@@ -295,9 +295,9 @@ armorHurtBonus source target = do
       block200 n = min 200 $ max (-200) $ n + if braced tb then 50 else 0
       sar = actorAspect EM.! source
       tar = actorAspect EM.! target
-      itemBonus = if bproj sb
-                  then trim200 (aHurtRanged sar) - block200 (aArmorRanged tar)
-                  else trim200 (aHurtMelee sar) - block200 (aArmorMelee tar)
+      itemBonus = trim200 (aHurtMelee sar) - if bproj sb
+                                             then block200 (aArmorRanged tar)
+                                             else block200 (aArmorMelee tar)
   return $! min 100 $ max (-100) itemBonus
 
 -- * ReqDisplace

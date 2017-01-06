@@ -65,7 +65,6 @@ newtype ItemSeed = ItemSeed Int
 data AspectRecord = AspectRecord
   { aTimeout     :: !Int
   , aHurtMelee   :: !Int
-  , aHurtRanged  :: !Int
   , aArmorMelee  :: !Int
   , aArmorRanged :: !Int
   , aMaxHP       :: !Int
@@ -87,7 +86,6 @@ emptyAspectRecord :: AspectRecord
 emptyAspectRecord = AspectRecord
   { aTimeout     = 0
   , aHurtMelee   = 0
-  , aHurtRanged  = 0
   , aArmorMelee  = 0
   , aArmorRanged = 0
   , aMaxHP       = 0
@@ -104,7 +102,6 @@ sumAspectRecord :: [(AspectRecord, Int)] -> AspectRecord
 sumAspectRecord l = AspectRecord
   { aTimeout     = 0
   , aHurtMelee   = sum $ mapScale aHurtMelee l
-  , aHurtRanged  = sum $ mapScale aHurtRanged l
   , aArmorMelee  = sum $ mapScale aArmorMelee l
   , aArmorRanged = sum $ mapScale aArmorRanged l
   , aMaxHP       = sum $ mapScale aMaxHP l
@@ -168,7 +165,6 @@ aspectRecordToList :: AspectRecord -> [IK.Aspect]
 aspectRecordToList AspectRecord{..} =
   [IK.Timeout $ intToDice aTimeout | aTimeout /= 0]
   ++ [IK.AddHurtMelee $ intToDice aHurtMelee | aHurtMelee /= 0]
-  ++ [IK.AddHurtRanged $ intToDice aHurtRanged | aHurtRanged /= 0]
   ++ [IK.AddArmorMelee $ intToDice aArmorMelee | aArmorMelee /= 0]
   ++ [IK.AddArmorRanged $ intToDice aArmorRanged | aArmorRanged /= 0]
   ++ [IK.AddMaxHP $ intToDice aMaxHP | aMaxHP /= 0]
@@ -190,9 +186,6 @@ castAspect !ldepth !totalDepth !ar !asp =
     IK.AddHurtMelee d -> do  -- TODO: lenses would reduce duplication below
       n <- castDice ldepth totalDepth d
       return $! ar {aHurtMelee = n + aHurtMelee ar}
-    IK.AddHurtRanged d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aHurtRanged = n + aHurtRanged ar}
     IK.AddArmorMelee d -> do
       n <- castDice ldepth totalDepth d
       return $! ar {aArmorMelee = n + aArmorMelee ar}
@@ -234,9 +227,6 @@ addMeanAspect !ar !asp =
     IK.AddHurtMelee d ->
       let n = Dice.meanDice d
       in ar {aHurtMelee = n + aHurtMelee ar}
-    IK.AddHurtRanged d ->
-      let n = Dice.meanDice d
-      in ar {aHurtRanged = n + aHurtRanged ar}
     IK.AddArmorMelee d ->
       let n = Dice.meanDice d
       in ar {aArmorMelee = n + aArmorMelee ar}

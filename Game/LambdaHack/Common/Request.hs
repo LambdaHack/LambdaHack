@@ -97,7 +97,6 @@ data ReqFailure =
   | ProjectAimOnself
   | ProjectBlockTerrain
   | ProjectBlockActor
-  | ProjectNotRanged
   | ProjectFragile
   | ProjectOutOfReach
   | TriggerNothing
@@ -136,7 +135,6 @@ impossibleReqFailure reqFailure = case reqFailure of
   ProjectAimOnself -> True
   ProjectBlockTerrain -> True  -- adjacent terrain always visible
   ProjectBlockActor -> True  -- adjacent actor always visible
-  ProjectNotRanged -> False  -- unidentified skill items
   ProjectFragile -> False  -- unidentified skill items
   ProjectOutOfReach -> True
   TriggerNothing -> True  -- terrain underneath always visibl
@@ -174,7 +172,6 @@ showReqFailure reqFailure = case reqFailure of
   ProjectAimOnself -> "cannot aim at oneself"
   ProjectBlockTerrain -> "aiming obstructed by terrain"
   ProjectBlockActor -> "aiming blocked by an actor"
-  ProjectNotRanged -> "to fling a non-missile requires fling skill 2"
   ProjectFragile -> "to lob a fragile item requires fling skill 3"
   ProjectOutOfReach -> "cannot aim an item out of reach"
   TriggerNothing -> "wasting time on triggering nothing"
@@ -195,19 +192,14 @@ permittedProject :: Bool -> Int -> Actor -> AspectRecord -> [Char] -> ItemFull
                  -> Either ReqFailure Bool
 permittedProject forced skill b ar
                  triggerSyms itemFull@ItemFull{itemBase} =
-  let calmE = calmEnough b ar
-      hurtRanged = aHurtRanged $ aspectRecordFull itemFull
-  in if
-    | not forced
+ if | not forced
       && skill < 1 -> Left ProjectUnskilled
-    | not forced
-      && hurtRanged == 0
-      && skill < 2 -> Left ProjectNotRanged
     | not forced
       && IK.Fragile `elem` jfeature itemBase
       && skill < 3 -> Left ProjectFragile
     | otherwise ->
-      let legal = permittedPrecious calmE forced itemFull
+      let calmE = calmEnough b ar
+          legal = permittedPrecious calmE forced itemFull
       in case legal of
         Left{} -> legal
         Right False -> legal

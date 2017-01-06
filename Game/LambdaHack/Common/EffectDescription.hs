@@ -146,8 +146,7 @@ kindAspectToSuffix :: Aspect -> Text
 kindAspectToSuffix aspect =
   case aspect of
     Timeout{} -> ""  -- printed specially
-    AddHurtMelee t -> wrapInParens $ affixDice t <> "% melee"
-    AddHurtRanged t -> wrapInParens $ affixDice t <> "% ranged"
+    AddHurtMelee t -> wrapInParens $ affixDice t <> "% damage"
     AddArmorMelee t -> "[" <> affixDice t <> "%]"
     AddArmorRanged t -> "{" <> affixDice t <> "%}"
     AddMaxHP t -> wrapInParens $ affixDice t <+> "HP"
