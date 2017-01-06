@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Time
   , Delta(..), timeShift, timeDeltaToFrom
   , timeDeltaSubtract, timeDeltaReverse, timeDeltaScale
   , timeDeltaToDigit, ticksPerMeter
-  , Speed, toSpeed, fromSpeed, speedZero, speedNormal
+  , Speed, toSpeed, fromSpeed, speedZero, speedWalk, speedThrust
   , speedScale, timeDeltaDiv, speedAdd, speedNegate
   , speedFromWeight, rangeFromSpeed, rangeFromSpeedAndLinger
   ) where
@@ -171,9 +171,20 @@ fromSpeed (Speed s) = fromEnum $ s * 10 `div` sInMs
 speedZero :: Speed
 speedZero = Speed 0
 
--- | Normal speed (2 m/s) that suffices to move one tile in one turn.
-speedNormal :: Speed
-speedNormal = Speed $ 2 * sInMs
+-- | Fast walk speed (2 m/s) that suffices to move one tile in one turn.
+speedWalk :: Speed
+speedWalk = Speed $ 2 * sInMs
+
+-- | Sword thrust speed. Base weapon damages, both melee and ranged,
+-- are given assuming this speed and ranged damage is modified
+-- accordingly when projectile speeds differ. Differences in melee
+-- weapon swing speeds are captured in damage bonuses instead,
+-- since many other factors influence total damage.
+--
+-- Billiard ball is 25 m/s, sword swing at the tip is 35 m/s,
+-- medieval bow is 70 m/s, AK47 is 700 m/s.
+speedThrust :: Speed
+speedThrust = Speed $ 10 * sInMs
 
 -- | Scale speed by an @Int@ scalar value.
 speedScale :: Rational -> Speed -> Speed

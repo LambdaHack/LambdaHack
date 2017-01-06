@@ -304,7 +304,7 @@ hinders condAnyFoeAdj condShineBetrays condAimEnemyPresent
       itemShineBad = itemShine && condNotCalmEnough && not condAnyFoeAdj
   in -- Fast actors want to hide in darkness to ambush opponents and want
      -- to hit hard for the short span they get to survive melee.
-     bspeed body ar > speedNormal
+     bspeed body ar > speedWalk
      && (itemShineBad
          || 0 > aHurtMelee (aspectRecordFull itemFull))
      -- In the presence of enemies (seen, or unseen but distressing)

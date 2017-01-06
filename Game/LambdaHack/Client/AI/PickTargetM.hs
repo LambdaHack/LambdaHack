@@ -158,7 +158,7 @@ targetStrategy aid = do
       desirable (_, (_, Nothing)) = True
       desirable (_, (_, Just bag)) = desirableBag bag
       -- TODO: make more common when weak ranged foes preferred, etc.
-      focused = bspeed b ar < speedNormal || condHpTooLow
+      focused = bspeed b ar < speedWalk || condHpTooLow
       couldMoveLastTurn =
         let axtorSk = if mleader == Just aid then actorMaxSk else actorMinSk
         in EM.findWithDefault 0 AbMove axtorSk > 0
