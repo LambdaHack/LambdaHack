@@ -621,7 +621,8 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
       promptEqp = makePhrase ["What consumable to", verb]
       p :: CStore -> (Text, m Suitability)
       p cstore = if cstore `elem` [CEqp, CSha] && cLegalRaw /= [CGround]
-                 then (promptEqp, return $ SuitsSomething $ \itemFull -> goesIntoEqp $ itemBase itemFull)
+                 then (promptEqp, return $ SuitsSomething $ \itemFull ->
+                        goesIntoEqp $ itemBase itemFull)
                  else (prompt, return SuitsEverything)
       (promptGeneric, psuit) = p destCStore
   ggi <-

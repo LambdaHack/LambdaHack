@@ -181,7 +181,7 @@ featureToSentence feat =
     Identified -> Nothing
     Applicable -> Just "It is meant to be applied."
     Equipable -> Nothing
-    Meleeable -> Just "It is used for melee by default."
+    Meleeable -> Just "It is considered for melee strikes by default."
     Precious -> Just "It seems precious."
     Tactic{}  -> Nothing
 
