@@ -945,13 +945,17 @@ itemMenuHuman cmdAction = do
       case iid `EM.lookup` bag of
         Nothing -> weaveJust <$> failWith "no object to open Item Menu for"
         Just kit -> do
+          actorAspect <- getsClient sactorAspect
+          let ar = case EM.lookup leader actorAspect of
+                Just aspectRecord -> aspectRecord
+                Nothing -> assert `failure` leader
           itemToF <- itemToFullClient
           lidV <- viewedLevelUI
           Level{lxsize, lysize} <- getLevel lidV
           localTime <- getsState $ getLocalTime (blid b)
           foundText <- itemIsFound iid leader fromCStore
           let itemFull = itemToF iid kit
-              attrLine = itemDesc fromCStore localTime itemFull
+              attrLine = itemDesc (aHurtMelee ar) fromCStore localTime itemFull
               ov = splitAttrLine lxsize $ attrLine <+:> textToAL foundText
           report <- getReportUI
           keyb <- getsSession sbinding

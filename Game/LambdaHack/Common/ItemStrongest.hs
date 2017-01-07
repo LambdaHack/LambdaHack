@@ -3,7 +3,7 @@
 module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
     strengthOnSmash, strengthCreateOrgan, strengthDropOrgan
-  , strengthEqpSlot, strengthEffect, strongestSlot
+  , strengthEqpSlot, strengthToThrow, strengthEffect, strongestSlot
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
   , unknownMelee, filterRecharging, stripRecharging, stripOnSmash

@@ -16,6 +16,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Control.Monad.ST.Strict
+import Data.Int (Int64)
 import qualified Data.Text as T
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
@@ -23,7 +24,9 @@ import qualified Data.Vector.Unboxed.Mutable as VM
 import Data.Word
 import qualified NLP.Miniutter.English as MU
 
+import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.EffectDescription
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
@@ -85,25 +88,73 @@ splitAttrPhrase w xs
          then pre : splitAttrPhrase w post
          else reverse ppost : splitAttrPhrase w (reverse ppre ++ post)
 
-itemDesc :: CStore -> Time -> ItemFull -> AttrLine
-itemDesc c localTime itemFull =
-  let (_, name, stats) = partItemN 10 100 c localTime itemFull
+itemDesc :: Int -> CStore -> Time -> ItemFull -> AttrLine
+itemDesc aHurtMeleeOfOwner store localTime itemFull@ItemFull{itemBase} =
+  let (_, name, stats) = partItemN 10 100 store localTime itemFull
       nstats = makePhrase [name, stats]
-      (desc, featureSentences) = case itemDisco itemFull of
-        Nothing -> ("This item is as unremarkable as can be.", "")
-        Just ItemDisco{itemKind} ->
+      (desc, featureSentences, damageAnalysis) = case itemDisco itemFull of
+        Nothing -> ("This item is as unremarkable as can be.", "", "")
+        Just ItemDisco{itemKind, itemAspect} ->
           let sentences = mapMaybe featureToSentence (IK.ifeature itemKind)
-          in (IK.idesc itemKind, T.intercalate " " sentences)
+              hurtAspect :: IK.Aspect -> Bool
+              hurtAspect IK.AddHurtMelee{} = True
+              hurtAspect _ = False
+              aHurtMeleeOfItem = case itemAspect of
+                Just aspectRecord -> aHurtMelee aspectRecord
+                Nothing -> case find hurtAspect (IK.iaspects itemKind) of
+                  Just (IK.AddHurtMelee d) -> Dice.meanDice d
+                  _ -> 0
+              meanDmg = Dice.meanDice (jdamage itemBase)
+              dmgAnalysis = if meanDmg <= 0 then "" else
+                let oneDeltaHP | meanDmg <= 0 = 0
+                               | otherwise = max 1 meanDmg
+                    mult = 100 + aHurtMeleeOfOwner
+                           + if store `elem` [CEqp, COrgan]
+                             then 0
+                             else aHurtMeleeOfItem
+                    rawDeltaHP = fromIntegral mult * xM oneDeltaHP `divUp` 100
+                    pmult = 100 + aHurtMeleeOfItem
+                    prawDeltaHP = fromIntegral pmult * xM oneDeltaHP `divUp` 100
+                    IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemBase
+                    speed = speedFromWeight (jweight itemBase) throwVelocity
+                    pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
+                    show64With2 :: Int64 -> Text
+                    show64With2 n =
+                      let k = 100 * n `div` oneM
+                          l = k `div` 100
+                          x = k - l * 100
+                      in tshow l
+                         <> if | x == 0 -> ""
+                               | x < 10 -> ".0" <> tshow x
+                               | otherwise -> "." <> tshow x
+                in "When thrown, it flies with speed below"
+                   <+> tshow (fromSpeed speed `divUp` 10) <+> "m/s."
+                   <+> "You would inflict around"  -- rounding and non-id items
+                   <+> tshow oneDeltaHP
+                   <> "*" <> tshow mult <> "%"
+                   <> "=" <> show64With2 rawDeltaHP
+                   <+> "melee and"
+                   <+> tshow oneDeltaHP
+                   <> "*" <> tshow pmult <> "%"
+                   <> "*" <> "speed^2"
+                   <> "/" <> tshow (fromSpeed speedThrust `divUp` 10) <> "^2"
+                   <> "=" <> show64With2 pdeltaHP
+                   <+> "ranged damage against unarmored targets with it"
+                   <> if Dice.minDice (jdamage itemBase)
+                         == Dice.maxDice (jdamage itemBase)
+                      then "."
+                      else " on average."
+          in (IK.idesc itemKind, T.intercalate " " sentences, dmgAnalysis)
       eqpSlotSentence = case strengthEqpSlot itemFull of
         Just es -> slotToSentence es
         Nothing -> ""
-      weight = jweight (itemBase itemFull)
+      weight = jweight itemBase
       (scaledWeight, unitWeight)
         | weight > 1000 =
           (tshow $ fromIntegral weight / (1000 :: Double), "kg")
         | otherwise = (tshow weight, "g")
-      ln = abs $ fromEnum $ jlid (itemBase itemFull)
-      colorSymbol = viewItem $ itemBase itemFull
+      ln = abs $ fromEnum $ jlid itemBase
+      colorSymbol = viewItem itemBase
       blurb =
         " "
         <> nstats
@@ -115,6 +166,7 @@ itemDesc c localTime itemFull =
         <+> featureSentences
         <+> eqpSlotSentence
         <+> makeSentence ["First found on level", MU.Text $ tshow ln]
+        <+> damageAnalysis
   in colorSymbol : textToAL blurb
 
 glueLines :: [AttrLine] -> [AttrLine] -> [AttrLine]

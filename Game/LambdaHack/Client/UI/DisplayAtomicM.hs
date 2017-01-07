@@ -654,8 +654,14 @@ quitFactionUI fid toSt = do
                 Just iid -> case EM.lookup iid bag of
                   Nothing -> assert `failure` iid
                   Just kit@(k, _) -> do
-                    let itemFull = itemToF iid kit
-                        attrLine = itemDesc store localTime itemFull
+                    leader <- getLeaderUI
+                    actorAspect <- getsClient sactorAspect
+                    let ar = case EM.lookup leader actorAspect of
+                          Just aspectRecord -> aspectRecord
+                          Nothing -> assert `failure` leader
+                        itemFull = itemToF iid kit
+                        attrLine = itemDesc (aHurtMelee ar) store localTime
+                                            itemFull
                         ov = splitAttrLine lxsize attrLine
                         worth = itemPrice (itemBase itemFull, 1)
                         lootMsg = makeSentence $

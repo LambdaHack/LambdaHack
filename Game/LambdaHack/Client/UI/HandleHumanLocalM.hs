@@ -162,7 +162,11 @@ chooseItemDialogMode c = do
       b <- getsState $ getActorBody leader
       case c2 of
         MStore COrgan -> do
-          let symbol = jsymbol (itemBase itemFull)
+          actorAspect <- getsClient sactorAspect
+          let ar = case EM.lookup leader actorAspect of
+                Just aspectRecord -> aspectRecord
+                Nothing -> assert `failure` leader
+              symbol = jsymbol (itemBase itemFull)
               blurb | symbol == '+' = "temporary condition"
                     | otherwise = "organ"
               -- TODO: also forbid on the server, except in special cases.
@@ -173,7 +177,7 @@ chooseItemDialogMode c = do
           Level{lxsize, lysize} <- getLevel lidV
           localTime <- getsState $ getLocalTime (blid b)
           foundText <- itemIsFound iid leader COrgan
-          let attrLine = itemDesc COrgan localTime itemFull
+          let attrLine = itemDesc (aHurtMelee ar) COrgan localTime itemFull
               ov = splitAttrLine lxsize $ attrLine <+:> textToAL foundText
           slides <-
             overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] (ov, [])
