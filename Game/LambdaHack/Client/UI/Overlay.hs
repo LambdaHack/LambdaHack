@@ -92,8 +92,12 @@ itemDesc :: Int -> CStore -> Time -> ItemFull -> AttrLine
 itemDesc aHurtMeleeOfOwner store localTime itemFull@ItemFull{itemBase} =
   let (_, name, stats) = partItemN 10 100 store localTime itemFull
       nstats = makePhrase [name, stats]
+      IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemBase
+      speed = speedFromWeight (jweight itemBase) throwVelocity
+      tspeed = "When thrown, it flies with speed of"
+               <+> tshow (fromSpeed speed `divUp` 10) <+> "m/s."
       (desc, featureSentences, damageAnalysis) = case itemDisco itemFull of
-        Nothing -> ("This item is as unremarkable as can be.", "", "")
+        Nothing -> ("This item is as unremarkable as can be.", "", tspeed)
         Just ItemDisco{itemKind, itemAspect} ->
           let sentences = mapMaybe featureToSentence (IK.ifeature itemKind)
               hurtAspect :: IK.Aspect -> Bool
@@ -105,7 +109,7 @@ itemDesc aHurtMeleeOfOwner store localTime itemFull@ItemFull{itemBase} =
                   Just (IK.AddHurtMelee d) -> Dice.meanDice d
                   _ -> 0
               meanDmg = Dice.meanDice (jdamage itemBase)
-              dmgAnalysis = if meanDmg <= 0 then "" else
+              dmgAn = if meanDmg <= 0 then "" else
                 let oneDeltaHP | meanDmg <= 0 = 0
                                | otherwise = max 1 meanDmg
                     mult = 100 + aHurtMeleeOfOwner
@@ -115,8 +119,6 @@ itemDesc aHurtMeleeOfOwner store localTime itemFull@ItemFull{itemBase} =
                     rawDeltaHP = fromIntegral mult * xM oneDeltaHP `divUp` 100
                     pmult = 100 + aHurtMeleeOfItem
                     prawDeltaHP = fromIntegral pmult * xM oneDeltaHP `divUp` 100
-                    IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemBase
-                    speed = speedFromWeight (jweight itemBase) throwVelocity
                     pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
                     show64With2 :: Int64 -> Text
                     show64With2 n =
@@ -127,9 +129,7 @@ itemDesc aHurtMeleeOfOwner store localTime itemFull@ItemFull{itemBase} =
                          <> if | x == 0 -> ""
                                | x < 10 -> ".0" <> tshow x
                                | otherwise -> "." <> tshow x
-                in "When thrown, it flies with speed below"
-                   <+> tshow (fromSpeed speed `divUp` 10) <+> "m/s."
-                   <+> "You would inflict around"  -- rounding and non-id items
+                in "You would inflict around"  -- rounding and non-id items
                    <+> tshow oneDeltaHP
                    <> "*" <> tshow mult <> "%"
                    <> "=" <> show64With2 rawDeltaHP
@@ -144,7 +144,7 @@ itemDesc aHurtMeleeOfOwner store localTime itemFull@ItemFull{itemBase} =
                          == Dice.maxDice (jdamage itemBase)
                       then "."
                       else " on average."
-          in (IK.idesc itemKind, T.intercalate " " sentences, dmgAnalysis)
+          in (IK.idesc itemKind, T.intercalate " " sentences, tspeed <+> dmgAn)
       eqpSlotSentence = case strengthEqpSlot itemFull of
         Just es -> slotToSentence es
         Nothing -> ""
