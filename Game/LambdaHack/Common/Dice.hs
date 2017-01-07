@@ -131,7 +131,8 @@ instance Num Dice where
   (Dice dc1 dl1 ds1) + (Dice dc2 dl2 ds2) =
     Dice (scaleFreq ds1 dc1 + scaleFreq ds2 dc2)
          (scaleFreq ds1 dl1 + scaleFreq ds2 dl2)
-         1
+         (if ds1 == 1 && ds2 == 1 then 1 else
+            assert `failure` (ds1, ds2, "|*| must be at top level" :: Text))
   (Dice dc1 dl1 ds1) * (Dice dc2 dl2 ds2) =
     -- Hacky, but necessary (unless we forgo general multiplication and
     -- stick to multiplications by a scalar from the left and from the right).
@@ -149,11 +150,13 @@ instance Num Dice where
     Dice (scaleFreq ds1 dc1 * scaleFreq ds2 dc2)
          (scaleFreq ds1 dc1 * scaleFreq ds2 dl2
           + scaleFreq ds1 dl1 * scaleFreq ds2 dc2)
-         1
+         (if ds1 == 1 && ds2 == 1 then 1 else
+            assert `failure` (ds1, ds2, "|*| must be at top level" :: Text))
   (Dice dc1 dl1 ds1) - (Dice dc2 dl2 ds2) =
     Dice (scaleFreq ds1 dc1 - scaleFreq ds2 dc2)
          (scaleFreq ds1 dl1 - scaleFreq ds2 dl2)
-         1
+         (if ds1 == 1 && ds2 == 1 then 1 else
+            assert `failure` (ds1, ds2, "|*| must be at top level" :: Text))
   negate = affectBothDice negate
   abs = affectBothDice abs
   signum = affectBothDice signum
