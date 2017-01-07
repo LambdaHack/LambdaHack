@@ -67,8 +67,8 @@ dieSer aid b = do
     trunk <- getsState $ getItemBody $ btrunk b
     let KindMean{kmKind} = discoKind EM.! jkindIx trunk
     execUpdAtomic $ UpdRecordKill aid kmKind 1
-    electLeader (bfid b) (blid b) aid
     deduceKilled aid  -- the actor body exists and his items are not dropped
+    electLeader (bfid b) (blid b) aid
     fact <- getsState $ (EM.! bfid b) . sfactionD
     -- Prevent faction's stash from being lost in case they are not spawners.
     -- Projectiles can't drop stash, because they are blind and so the faction

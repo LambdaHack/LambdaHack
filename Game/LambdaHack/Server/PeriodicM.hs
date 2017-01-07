@@ -179,9 +179,9 @@ dominateFid :: (MonadAtomic m, MonadServer m)
 dominateFid fid target = do
   Kind.COps{cotile} <- getsState scops
   tb0 <- getsState $ getActorBody target
-  electLeader (bfid tb0) (blid tb0) target
   deduceKilled target  -- the actor body exists and his items are not dropped
   -- TODO: some messages after game over below? Compare with dieSer.
+  electLeader (bfid tb0) (blid tb0) target
   fact <- getsState $ (EM.! bfid tb0) . sfactionD
   -- Prevent the faction's stash from being lost in case they are not spawners.
   when (isNothing $ gleader fact) $ moveStores False target CSha CInv

@@ -7,7 +7,8 @@ module Game.LambdaHack.Common.Time
   , Delta(..), timeShift, timeDeltaToFrom
   , timeDeltaSubtract, timeDeltaReverse, timeDeltaScale
   , timeDeltaToDigit, ticksPerMeter
-  , Speed, toSpeed, fromSpeed, speedZero, speedWalk, speedThrust
+  , Speed, toSpeed, fromSpeed
+  , speedZero, speedWalk, speedThrust, modifyDamageBySpeed
   , speedScale, timeDeltaDiv, speedAdd, speedNegate
   , speedFromWeight, rangeFromSpeed, rangeFromSpeedAndLinger
   ) where
@@ -175,7 +176,7 @@ speedZero = Speed 0
 speedWalk :: Speed
 speedWalk = Speed $ 2 * sInMs
 
--- | Sword thrust speed. Base weapon damages, both melee and ranged,
+-- | Sword thrust speed (10 m/s). Base weapon damages, both melee and ranged,
 -- are given assuming this speed and ranged damage is modified
 -- accordingly when projectile speeds differ. Differences in melee
 -- weapon swing speeds are captured in damage bonuses instead,
@@ -185,6 +186,15 @@ speedWalk = Speed $ 2 * sInMs
 -- medieval bow is 70 m/s, AK47 is 700 m/s.
 speedThrust :: Speed
 speedThrust = Speed $ 10 * sInMs
+
+-- | Modify damage when projectiles is at a non-standard speed.
+-- Energy and so damage is proportional to the square of speed,
+-- hence the formula.
+modifyDamageBySpeed :: Int64 -> Speed -> Int64
+modifyDamageBySpeed dmg (Speed s) =
+  let Speed sThrust = speedThrust
+  in round (fromIntegral dmg * fromIntegral s ^ (2 :: Int)  -- overflows Int64
+            / fromIntegral sThrust ^ (2 :: Int) :: Double)
 
 -- | Scale speed by an @Int@ scalar value.
 speedScale :: Rational -> Speed -> Speed

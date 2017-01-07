@@ -242,16 +242,19 @@ reqMelee source target iid cstore = do
     hurtBonus <- armorHurtBonus source target
     itemBase <- getsState $ getItemBody iid
     n <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) $ jdamage itemBase
-    let mult = 100 + hurtBonus
-        rawDeltaHP | n <= 0 = 0
-                   | otherwise = - (max oneM  -- at least 1 HP taken
-                                        (fromIntegral mult * xM n `divUp` 100))
-        serious = rawDeltaHP < 0 && source /= target && not (bproj tb)
+    let oneDeltaHP | n <= 0 = 0
+                   | otherwise = max 1 n  -- at least 1 HP taken
+        mult = 100 + hurtBonus
+        rawDeltaHP = fromIntegral mult * xM oneDeltaHP `divUp` 100
+        speedDeltaHP = case btrajectory sb of
+          Just (_, speed) -> - modifyDamageBySpeed rawDeltaHP speed
+          Nothing -> - rawDeltaHP
+        serious = speedDeltaHP < 0 && source /= target && not (bproj tb)
         deltaHP | serious = -- if HP overfull, at least cut back to max HP
-                            min rawDeltaHP (xM hpMax - bhp tb)
-                | otherwise = rawDeltaHP
+                            min speedDeltaHP (xM hpMax - bhp tb)
+                | otherwise = speedDeltaHP
     -- Damage the target.
-    when (rawDeltaHP < 0) $ do
+    when (speedDeltaHP < 0) $ do
       execUpdAtomic $ UpdRefillHP target deltaHP
       when serious $ halveCalm target
       let hitA | hurtBonus <= -50  -- e.g., braced and no hit bonus
