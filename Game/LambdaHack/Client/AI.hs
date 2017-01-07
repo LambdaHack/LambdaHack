@@ -115,8 +115,6 @@ refreshTargetS aid body = do
 pickAction :: MonadClient m => (ActorId, Actor) -> m RequestAnyAbility
 {-# INLINE pickAction #-}
 pickAction (aid, body) = do
-  -- Pathing finished, randomize paths for next moves.
-  modifyClient $ \cli -> cli {seps = seps cli + 773}
   side <- getsClient sside
   let !_A = assert (bfid body == side
                     `blame` "AI tries to move enemy actor"
