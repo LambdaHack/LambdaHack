@@ -66,42 +66,42 @@ _symbolFood      = ','  -- too easy to miss?
 
 -- * Thrown weapons
 
--- Identified, because shape (and name) says it all. Detailed stats id by use.
 dart = ItemKind
   { isymbol  = symbolProjectile
-  , iname    = "dart"
+  , iname    = "spike"
   , ifreq    = [("useful", 100), ("any arrow", 100)]
   , iflavour = zipPlain [Cyan]
   , icount   = 4 * d 3
   , irarity  = [(1, 10), (10, 20)]
   , iverbHit = "nick"
-  , iweight  = 50
-  , idamage  = toDmg $ 2 * d 1
-  , iaspects = [AddHurtMelee (d 3 + dl 6 |*| 20)]
+  , iweight  = 150
+  , idamage  = toDmg $ 5 * d 1
+  , iaspects = [AddHurtMelee (-17 + d 3 + dl 4 |*| 5)]
   , ieffects = []
-  , ifeature = [Identified]
-  , idesc    = "Little, but sharp and sturdy."  -- "Much inferior to arrows though, especially given the contravariance problems."  --- funny, but destroy the suspension of disbelief; this is supposed to be a Lovecraftian horror and any hilarity must ensue from the failures in making it so and not from actively trying to be funny; also, mundane objects are not supposed to be scary or transcendental; the scare is in horrors from the abstract dimension visiting our ordinary reality; without the contrast there's no horror and no wonder, so also the magical items must be contrasted with ordinary XIX century and antique items
+  , ifeature = [toVelocity 70, Identified]  -- hitting with tip costs speed
+  , idesc    = "A cruel long nail with small head."  -- "Much inferior to arrows though, especially given the contravariance problems."  --- funny, but destroy the suspension of disbelief; this is supposed to be a Lovecraftian horror and any hilarity must ensue from the failures in making it so and not from actively trying to be funny; also, mundane objects are not supposed to be scary or transcendental; the scare is in horrors from the abstract dimension visiting our ordinary reality; without the contrast there's no horror and no wonder, so also the magical items must be contrasted with ordinary XIX century and antique items
   , ikit     = []
   }
 dart200 = ItemKind
   { isymbol  = symbolProjectile
-  , iname    = "fine dart"
+  , iname    = "dart"
   , ifreq    = [("useful", 100), ("any arrow", 50)]  -- TODO: until arrows added
   , iflavour = zipPlain [BrRed]
   , icount   = 4 * d 3
   , irarity  = [(1, 20), (10, 10)]
   , iverbHit = "prick"
-  , iweight  = 50
+  , iweight  = 40
   , idamage  = toDmg $ 1 * d 1
-  , iaspects = [AddHurtMelee (d 3 + dl 6 |*| 20)]
+  , iaspects = [AddHurtMelee (-17 + d 3 + dl 4 |*| 5)]
   , ieffects = []
-  , ifeature = [toVelocity 200, Identified]
-  , idesc    = "Finely balanced for throws of great speed."
+  , ifeature = [Identified]
+  , idesc    = "A sharp delicate dart with fins."
   , ikit     = []
   }
 
 -- * Exotic thrown weapons
 
+-- Identified, because shape (and name) says it all. Detailed stats id by use.
 paralizingProj = ItemKind
   { isymbol  = symbolProjectile
   , iname    = "bolas set"
@@ -111,8 +111,8 @@ paralizingProj = ItemKind
   , irarity  = [(5, 5), (10, 5)]
   , iverbHit = "entangle"
   , iweight  = 500
-  , idamage  = toDmg $ 2 * d 1
-  , iaspects = [AddHurtMelee (1 + dl 2 |*| 20)]
+  , idamage  = toDmg $ 1 * d 1
+  , iaspects = [AddHurtMelee (-16 |*| 5)]
   , ieffects = [Paralyze (10 + 2 * d 5), DropBestWeapon]
   , ifeature = [Identified]
   , idesc    = "Wood balls tied with hemp rope. The target enemy is tripped and bound to drop the main weapon, while fighting for balance."
@@ -126,9 +126,9 @@ harpoon = ItemKind
   , icount   = dl 5
   , irarity  = [(10, 10)]
   , iverbHit = "hook"
-  , iweight  = 4000
-  , idamage  = [(99, 4 * d 1), (1, 8 * d 1)]
-  , iaspects = [AddHurtMelee (d 2 + dl 5 |*| 20)]
+  , iweight  = 750
+  , idamage  = [(99, 5 * d 1), (1, 10 * d 1)]
+  , iaspects = [AddHurtMelee (-11 + d 3 + dl 4 |*| 5)]
   , ieffects = [PullActor (ThrowMod 200 50)]
   , ifeature = [Identified]
   , idesc    = "The cruel, barbed head lodges in its victim so painfully that the weakest tug of the thin line sends the victim flying."
@@ -143,8 +143,8 @@ net = ItemKind
   , irarity  = [(3, 5), (10, 4)]
   , iverbHit = "entangle"
   , iweight  = 1000
-  , idamage  = toDmg $ 1 * d 1
-  , iaspects = [AddHurtMelee (1 + dl 2 |*| 20)]
+  , idamage  = toDmg $ 2 * d 1
+  , iaspects = [AddHurtMelee (-16 |*| 5)]
   , ieffects = [ toOrganGameTurn "slow 10" (3 + d 3)
                , DropItem CEqp "torso armor" ]
   , ifeature = [Identified]
@@ -233,11 +233,11 @@ light1 = ItemKind
   , icount   = d 2
   , irarity  = [(1, 10)]
   , iverbHit = "scorch"
-  , iweight  = 1200
-  , idamage  = toDmg 0
+  , iweight  = 1000
+  , idamage  = toDmg $ 1 * d 1
   , iaspects = [ AddShine 3       -- not only flashes, but also sparks
                , AddSight (-2) ]  -- unused by AI due to the mixed blessing
-  , ieffects = [Burn 2, EqpSlot EqpSlotLightSource]
+  , ieffects = [Burn 1, EqpSlot EqpSlotLightSource]
   , ifeature = [Identified, Equipable]
   , idesc    = "A smoking, heavy wooden torch, burning in an unsteady glow."
   , ikit     = []
@@ -250,13 +250,12 @@ light2 = ItemKind
   , icount   = 1
   , irarity  = [(6, 7)]
   , iverbHit = "burn"
-  , iweight  = 1000
-  , idamage  = toDmg 0
+  , iweight  = 1500
+  , idamage  = toDmg $ 1 * d 1
   , iaspects = [AddShine 3, AddSight (-1)]
-  , ieffects = [ Burn 3, Paralyze 6, OnSmash (Explode "burning oil 3")
+  , ieffects = [ Burn 1, Paralyze 6, OnSmash (Explode "burning oil 3")
                , EqpSlot EqpSlotLightSource ]
-  , ifeature = [ toVelocity 70  -- hard not to spill the oil while throwing
-               , Fragile, Identified, Equipable ]
+  , ifeature = [Fragile, Identified, Equipable]
   , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
   , ikit     = []
   }
@@ -268,13 +267,12 @@ light3 = ItemKind
   , icount   = 1
   , irarity  = [(10, 5)]
   , iverbHit = "burn"
-  , iweight  = 2400
-  , idamage  = toDmg 0
+  , iweight  = 3000
+  , idamage  = toDmg $ 4 * d 1
   , iaspects = [AddShine 4, AddSight (-1)]
-  , ieffects = [ Burn 4, Paralyze 8, OnSmash (Explode "burning oil 4")
+  , ieffects = [ Burn 1, Paralyze 8, OnSmash (Explode "burning oil 4")
                , EqpSlot EqpSlotLightSource ]
-  , ifeature = [ toVelocity 70  -- hard to throw so that it opens and burns
-               , Fragile, Identified, Equipable ]
+  , ifeature = [Fragile, Identified, Equipable]
   , idesc    = "Very bright and very heavy brass lantern."
   , ikit     = []
   }
@@ -296,12 +294,11 @@ gorget = ItemKind
                , AddArmorRanged $ 2 + d 3 ]
   , ieffects = [ Unique, Periodic
                , Recharging (RefillCalm 1), EqpSlot EqpSlotMiscBonus ]
-  , ifeature = [ Durable, Precious, Identified
-               , toVelocity 50, Equipable ]  -- not dense enough
+  , ifeature = [Durable, Precious, Identified, Equipable]
   , idesc    = "Highly ornamental, cold, large, steel medallion on a chain. Unlikely to offer much protection as an armor piece, but the old, worn engraving reassures you."
   , ikit     = []
   }
--- Not idenfified, because the id by use, e.g., vis periodic activations. Fun.
+-- Not idenfified, because the id by use, e.g., via periodic activations. Fun.
 necklace = ItemKind
   { isymbol  = symbolNecklace
   , iname    = "necklace"
@@ -508,9 +505,8 @@ potion = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = []
-  , ifeature = [ toVelocity 50  -- oily, bad grip
-               , Applicable, Fragile ]
-  , idesc    = "A vial of bright, frothing concoction."  -- purely natural; no maths, no magic
+  , ifeature = [Applicable, Fragile, toVelocity 50]  -- oily, bad grip
+  , idesc    = "A vial of bright, frothing concoction. The best that nature has to offer."
   , ikit     = []
   }
 potion1 = potion
@@ -591,9 +587,8 @@ flask = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = []
-  , ifeature = [ toVelocity 50  -- oily, bad grip
-               , Applicable, Fragile ]
-  , idesc    = "A flask of oily liquid of a suspect color."
+  , ifeature = [Applicable, Fragile, toVelocity 50]  -- oily, bad grip
+  , idesc    = "A flask of oily liquid of a suspect color. Something seems to be moving inside."  -- not natural; maths, magic
   , ikit     = []
   }
 flask1 = flask
@@ -693,7 +688,7 @@ scroll = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = []
-  , ifeature = [ toVelocity 25  -- bad shape, even rolled up
+  , ifeature = [ toVelocity 30  -- bad shape, even rolled up
                , Applicable ]
   , idesc    = "Scraps of haphazardly scribbled mysteries from beyond. Is this equation an alchemical recipe? Is this diagram an extradimensional map? Is this formula a secret call sign?"
   , ikit     = []
@@ -770,8 +765,7 @@ armorLeather = ItemKind
                , AddArmorMelee $ 1 + d 2 + dl 2 |*| 5
                , AddArmorRanged $ 1 + dl 2 |*| 5 ]
   , ieffects = [EqpSlot EqpSlotAddArmorMelee]
-  , ifeature = [ toVelocity 30  -- unwieldy to throw and blunt
-               , Durable, Identified, Equipable ]
+  , ifeature = [Durable, Identified, Equipable]
   , idesc    = "A stiff jacket formed from leather boiled in bee wax. Protects from anything that is not too sharp. Smells much better than the rest of your garment."
   , ikit     = []
   }
@@ -785,8 +779,7 @@ armorMail = armorLeather
                , AddArmorMelee $ 1 + d 2 + dl 3 |*| 5
                , AddArmorRanged $ 3 + d 2 + dl 3 |*| 5 ]
   , ieffects = [EqpSlot EqpSlotAddArmorRanged]
-  , ifeature = [ toVelocity 40  -- unwieldy to throw and blunt
-               , Durable, Identified, Equipable ]
+  , ifeature = [Durable, Identified, Equipable]
   , idesc    = "A long shirt woven from iron rings that are hard to pierce through. Discourages foes from attacking your torso, making it harder for them to hit you."
   }
 gloveFencing = ItemKind
@@ -802,7 +795,7 @@ gloveFencing = ItemKind
   , iaspects = [ AddHurtMelee $ (d 2 + dl 10) |*| 3
                , AddArmorRanged $ d 2 |*| 5 ]
   , ieffects = [EqpSlot EqpSlotAddArmorRanged]
-  , ifeature = [ toVelocity 30  -- flaps and flutters
+  , ifeature = [ toVelocity 50  -- flaps and flutters
                , Durable, Identified, Equipable ]
   , idesc    = "A fencing glove from rough leather ensuring a good grip. Also quite effective in deflecting or even catching slow projectiles."
   , ikit     = []
@@ -812,7 +805,7 @@ gloveGauntlet = gloveFencing
   , iflavour = zipPlain [BrCyan]
   , irarity  = [(1, 9), (10, 3)]
   , iweight  = 300
-  , idamage  = toDmg $ 1 * d 1
+  , idamage  = toDmg $ 2 * d 1
   , iaspects = [ AddArmorMelee $ 2 + dl 2 |*| 5
                , AddArmorRanged $ dl 2 |*| 5 ]
   , ieffects = [EqpSlot EqpSlotAddArmorMelee]
@@ -823,7 +816,7 @@ gloveJousting = gloveFencing
   , iflavour = zipFancy [BrRed]
   , irarity  = [(1, 3), (10, 3)]
   , iweight  = 500
-  , idamage  = toDmg $ 2 * d 1
+  , idamage  = toDmg $ 4 * d 1
   , iaspects = [ AddHurtMelee $ dl 4 - 6 |*| 3
                , AddArmorMelee $ 2 + d 2 + dl 2 |*| 5
                , AddArmorRanged $ dl 2 |*| 5 ]
@@ -844,13 +837,13 @@ buckler = ItemKind
   , irarity  = [(4, 6)]
   , iverbHit = "bash"
   , iweight  = 2000
-  , idamage  = [(96, 1 * d 1), (3, 2 * d 1), (1, 4 * d 1)]  -- to display xdy
+  , idamage  = [(96, 1 * d 1), (3, 2 * d 1), (1, 4 * d 1)]
   , iaspects = [ AddArmorMelee 40
                , AddHurtMelee (-30)
                , Timeout $ d 3 + 3 - dl 3 |*| 2 ]
   , ieffects = [ Recharging (PushActor (ThrowMod 200 50))
                , EqpSlot EqpSlotAddArmorMelee ]
-  , ifeature = [ toVelocity 40  -- unwieldy to throw
+  , ifeature = [ toVelocity 50  -- unwieldy to throw
                , Durable, Identified, Equipable, Meleeable ]
   , idesc    = "Heavy and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too small to intercept projectiles with."
   , ikit     = []
@@ -865,7 +858,7 @@ shield = buckler
                , Timeout $ d 6 + 6 - dl 6 |*| 2 ]
   , ieffects = [ Recharging (PushActor (ThrowMod 400 50))
                , EqpSlot EqpSlotAddArmorMelee ]
-  , ifeature = [ toVelocity 30  -- unwieldy to throw
+  , ifeature = [ toVelocity 50  -- unwieldy to throw
                , Durable, Identified, Equipable, Meleeable ]
   , idesc    = "Large and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
   }
@@ -880,7 +873,7 @@ dagger = ItemKind
   , icount   = 1
   , irarity  = [(1, 20)]
   , iverbHit = "stab"
-  , iweight  = 1000
+  , iweight  = 800
   , idamage  = toDmg $ 6 * d 1
   , iaspects = [ AddHurtMelee $ d 3 + dl 3 |*| 3
                , AddArmorMelee $ d 2 |*| 5 ]
@@ -916,11 +909,11 @@ hammer = ItemKind
   , icount   = 1
   , irarity  = [(5, 15)]
   , iverbHit = "club"
-  , iweight  = 1500
+  , iweight  = 1600
   , idamage  = [(96, 8 * d 1), (3, 12 * d 1), (1, 16 * d 1)]
   , iaspects = [AddHurtMelee $ d 2 + dl 2 |*| 3]
   , ieffects = [EqpSlot EqpSlotWeapon]
-  , ifeature = [ toVelocity 20  -- ensuring it hits with the sharp tip costs
+  , ifeature = [ toVelocity 40  -- ensuring it hits with the tip costs speed
                , Durable, Identified, Equipable, Meleeable ]
   , idesc    = "It may not cause grave wounds, but neither does it glance off nor ricochet. Great sidearm for opportunistic blows against armored foes."
   , ikit     = []
@@ -951,7 +944,7 @@ sword = ItemKind
   , idamage  = toDmg $ 10 * d 1
   , iaspects = []
   , ieffects = [EqpSlot EqpSlotWeapon]
-  , ifeature = [ toVelocity 5  -- ensuring it hits with the tip costs speed
+  , ifeature = [ toVelocity 40  -- ensuring it hits with the tip costs speed
                , Durable, Identified, Equipable, Meleeable ]
   , idesc    = "Difficult to master; deadly when used effectively. The steel is particularly hard and keen, but rusts quickly without regular maintenance."
   , ikit     = []
@@ -987,7 +980,7 @@ halberd = ItemKind
   , idamage  = [(96, 12 * d 1), (3, 18 * d 1), (1, 24 * d 1)]
   , iaspects = [AddArmorMelee $ 1 + dl 3 |*| 5]
   , ieffects = [EqpSlot EqpSlotWeapon]
-  , ifeature = [ toVelocity 5  -- not balanced
+  , ifeature = [ toVelocity 20  -- not balanced
                , Durable, Identified, Equipable, Meleeable ]
   , idesc    = "An improvised but deadly weapon made of a blade from a scythe attached to a long pole."
   , ikit     = []
