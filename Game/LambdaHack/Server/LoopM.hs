@@ -273,6 +273,7 @@ handleTrajectories lid fid = do
           $ map (\(a, atime) -> (atime, (a, getActorBody a s)))
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
   mapM_ (hTrajectories . snd) l
+  unless (null l) $ handleTrajectories lid fid  -- for speeds > tile/clip
 
 -- The body @b@ may be outdated by this time
 -- (due to other actors following their trajectories)
@@ -338,7 +339,7 @@ setTrajectory aid = do
           [target] | not (bproj b) -> reqDisplace aid target
           _ -> reqMove aid d
         b2 <- getsState $ getActorBody aid
-        unless (btrajectory b2 == Just (lv, speed)) $  -- cleared in reqMelee
+        unless (btrajectory b2 == Just (lv, speed)) $  -- set in reqMelee
           execUpdAtomic $ UpdTrajectory aid (btrajectory b2) (Just (lv, speed))
       else do
         -- Lose HP due to bumping into an obstacle.
