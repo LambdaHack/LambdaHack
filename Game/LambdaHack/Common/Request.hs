@@ -204,18 +204,12 @@ permittedProject forced skill b ar
         Left{} -> legal
         Right False -> legal
         Right True -> Right $
-          let hasEffects = case itemDisco itemFull of
-                Just ItemDisco{itemKind=IK.ItemKind{ieffects}} ->
-                  not $ null $ filter IK.properEffect ieffects
-                _ -> True
-              permittedSlot =
-                if ' ' `elem` triggerSyms
-                then case strengthEqpSlot itemFull of
-                  Just IK.EqpSlotLightSource -> True
-                  Just _ -> False
-                  Nothing -> IK.Equipable `notElem` jfeature itemBase
-                else jsymbol itemBase `elem` triggerSyms
-          in hasEffects && permittedSlot
+          if ' ' `elem` triggerSyms
+          then case strengthEqpSlot itemFull of
+            Just IK.EqpSlotLightSource -> True
+            Just _ -> False
+            Nothing -> IK.Equipable `notElem` jfeature itemBase
+          else jsymbol itemBase `elem` triggerSyms
 
 permittedApply :: Time -> Int -> Actor -> AspectRecord -> [Char] -> ItemFull
                -> Either ReqFailure Bool
