@@ -224,9 +224,9 @@ speedFromWeight :: Int -> Int -> Speed
 speedFromWeight !weight !velocityPercent =
   let w = fromIntegral weight
       vp = fromIntegral velocityPercent
-      mpMs | w <= 500 = sInMs * 16
-           | w > 500 && w <= 2000 = sInMs * 16 * 1500 `div` (w + 1000)
-           | w < 16000 = sInMs * (18000 - w) `div` 1000
+      mpMs | w < 250 = sInMs * 20
+           | w < 1500 = sInMs * 20 * 1250 `div` (w + 1000)
+           | w < 10500 = sInMs * (11500 - w) `div` 1000
            | w < 200000 = sInMs  -- half a step per turn is the minimum
            | otherwise = minimalSpeed  -- unless _very_ heavy
                -- TODO: such high weight should also affect moving
