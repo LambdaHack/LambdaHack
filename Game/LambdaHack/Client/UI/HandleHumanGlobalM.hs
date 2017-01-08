@@ -966,7 +966,7 @@ itemMenuHuman cmdAction = do
           keyb <- getsSession sbinding
           let calmE = calmEnough b ar
               greyedOut cmd = not calmE && fromCStore == CSha || case cmd of
-                HumanCmd.MoveItem stores destCStore _ _ _ ->
+                HumanCmd.MoveItem stores destCStore _ _ ->
                   fromCStore `notElem` stores
                   || not calmE && CSha == destCStore
                   || destCStore == CEqp && eqpOverfull b 1

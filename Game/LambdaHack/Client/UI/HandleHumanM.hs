@@ -57,7 +57,7 @@ cmdAction cmd = case cmd of
   MoveOnceToXhair -> weaveJust <$> (ReqUITimed <$$> moveOnceToXhairHuman)
   RunOnceToXhair  -> weaveJust <$> (ReqUITimed <$$> runOnceToXhairHuman)
   ContinueToXhair -> weaveJust <$> (ReqUITimed <$$> continueToXhairHuman)
-  MoveItem cLegalRaw toCStore mverb _ auto ->
+  MoveItem cLegalRaw toCStore mverb auto ->
     weaveJust <$> (timedToUI <$$> moveItemHuman cLegalRaw toCStore mverb auto)
   Project ts -> weaveJust <$> (timedToUI <$$> projectHuman ts)
   Apply ts -> weaveJust <$> (timedToUI <$$> applyHuman ts)

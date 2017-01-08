@@ -97,7 +97,7 @@ data HumanCmd =
   | MoveOnceToXhair
   | RunOnceToXhair
   | ContinueToXhair
-  | MoveItem ![CStore] !CStore !(Maybe MU.Part) !MU.Part !Bool
+  | MoveItem ![CStore] !CStore !(Maybe MU.Part) !Bool
   | Project     ![Trigger]
   | Apply       ![Trigger]
   | AlterDir    ![Trigger]

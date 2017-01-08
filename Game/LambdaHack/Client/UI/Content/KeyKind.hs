@@ -42,12 +42,11 @@ replaceDesc desc (cats, _, cmd) = (cats, desc, cmd)
 replaceCmd :: HumanCmd -> CmdTriple -> CmdTriple
 replaceCmd cmd (cats, desc, _) = (cats, desc, cmd)
 
-moveItemTriple :: [CStore] -> CStore -> (Maybe MU.Part) -> MU.Part -> Bool
-               -> CmdTriple
-moveItemTriple stores1 store2 mverb object auto =
-  let verb = fromMaybe (MU.Text $ verbCStore store2) mverb
+moveItemTriple :: [CStore] -> CStore -> MU.Part -> Bool -> CmdTriple
+moveItemTriple stores1 store2 object auto =
+  let verb = MU.Text $ verbCStore store2
       desc = makePhrase [verb, object]
-  in ([CmdItem], desc, MoveItem stores1 store2 mverb object auto)
+  in ([CmdItem], desc, MoveItem stores1 store2 Nothing auto)
 
 repeatTriple :: Int -> CmdTriple
 repeatTriple n = ( [CmdMeta]
@@ -146,13 +145,13 @@ applyI ts = ([CmdItem], descTs ts, ByItemMode
   , chosen = Apply ts })
 
 exploreGrabCmd :: HumanCmd
-exploreGrabCmd = MoveItem [CGround] CEqp (Just "grab") "items" True
+exploreGrabCmd = MoveItem [CGround] CEqp (Just "grab") True
 
 grabItems :: Text -> CmdTriple
 grabItems t = ([CmdMove, CmdItem], t, exploreGrabCmd)
 
 exploreDropCmd :: HumanCmd
-exploreDropCmd = MoveItem [CEqp, CInv, CSha] CGround Nothing "item" False
+exploreDropCmd = MoveItem [CEqp, CInv, CSha] CGround Nothing False
 
 dropItems :: Text -> CmdTriple
 dropItems t = ([CmdMove, CmdItem], t, exploreDropCmd)

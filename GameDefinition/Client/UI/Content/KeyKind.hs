@@ -86,13 +86,13 @@ standardKeys = KeyKind
 
       -- Item use, continued
       , ("p", addCmdCategory CmdItemMenu
-              $ moveItemTriple [CGround, CEqp, CSha] CInv Nothing
+              $ moveItemTriple [CGround, CEqp, CSha] CInv
                                "item into inventory" False)
       , ("e", addCmdCategory CmdItemMenu
-              $ moveItemTriple [CGround, CInv, CSha] CEqp Nothing
+              $ moveItemTriple [CGround, CInv, CSha] CEqp
                                "item" False)
       , ("s", addCmdCategory CmdItemMenu
-              $ moveItemTriple [CGround, CInv, CEqp] CSha Nothing
+              $ moveItemTriple [CGround, CInv, CEqp] CSha
                                "and share item" False)
       , ("P", ( [CmdMinimal, CmdItem]
               , "manage inventory pack of leader"
