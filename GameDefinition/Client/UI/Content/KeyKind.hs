@@ -36,11 +36,9 @@ standardKeys = KeyKind
       , ("Escape", ([CmdMainMenu], "back to playing", Cancel))
 
       -- Item use, 1st part
-      , ("g", addCmdCategory CmdItemMenu $ addCmdCategory CmdMinimal
-              $ grabItems "grab items")
+      , ("g", addCmdCategory CmdItemMenu $ grabItems "grab items")
       , ("comma", addCmdCategory CmdNoHelp $ grabItems "")
-      , ("d", addCmdCategory CmdItemMenu $ addCmdCategory CmdMinimal
-              $ dropItems "drop items")
+      , ("d", addCmdCategory CmdItemMenu $ dropItems "drop items")
       , ("period", addCmdCategory CmdNoHelp $ dropItems "")
       , ("f", addCmdCategory CmdItemMenu $ projectA flingTs)
       , ("CTRL-f", addCmdCategory CmdItemMenu
