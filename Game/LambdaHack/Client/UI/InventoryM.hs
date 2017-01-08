@@ -103,16 +103,24 @@ getStoreItem :: MonadClientUI m
              -> m (Either Text ((ItemId, ItemFull), ItemDialogMode))
 {-# INLINABLE getStoreItem #-}
 getStoreItem prompt cInitial = do
-  let allCs = map MStore [CEqp, CInv, CSha]
-              ++ [MOwned]
-              ++ map MStore [CGround, COrgan]
-              ++ [MStats]
-      (pre, rest) = break (== cInitial) allCs
-      post = dropWhile (== cInitial) rest
+  leader <- getLeaderUI
+  body <- getsState $ getActorBody leader
+  s <- getState
+  let notEmptyC c = case c of
+        MStore store -> not $ EM.null $ getBodyStoreBag body store s
+        x -> assert `failure` x
+      itemCs = map MStore [CInv, CGround, CEqp, CSha]
+      allCs = itemCs ++ [MOwned, MStore COrgan, MStats]
+      firstC = if cInitial `notElem` itemCs then cInitial else
+        case find notEmptyC (cInitial : itemCs) of
+          Just fC -> fC
+          Nothing -> MOwned
+      (pre, rest) = break (== firstC) allCs
+      post = dropWhile (== firstC) rest
       remCs = post ++ pre
   soc <- getItem (return SuitsEverything)
-                 prompt prompt cInitial remCs
-                 True False (cInitial:remCs)
+                 prompt prompt firstC remCs
+                 True False (firstC : remCs)
   case soc of
     Left err -> return $ Left err
     Right ([(iid, itemFull)], c) -> return $ Right ((iid, itemFull), c)
