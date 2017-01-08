@@ -3,8 +3,8 @@
 -- TODO: document
 module Game.LambdaHack.Client.UI.InventoryM
   ( Suitability(..)
-  , getGroupItem, getAnyItems, getStoreItem
-  , storeFromMode, ppItemDialogMode
+  , getFull, getGroupItem, getStoreItem
+  , storeFromMode, ppItemDialogMode, ppItemDialogModeFrom
   ) where
 
 import Prelude ()
@@ -92,38 +92,6 @@ getGroupItem psuit prompt promptGeneric
     Left err -> return $ Left err
     Right ([(iid, itemFull)], c) -> return $ Right ((iid, itemFull), c)
     Right _ -> assert `failure` soc
-
--- | Let the human player choose any item from a list of items
--- and let him specify the number of items.
--- Used, e.g., for picking up and inventory manipulation.
-getAnyItems :: MonadClientUI m
-            => m Suitability
-                         -- ^ which items to consider suitable
-            -> Text      -- ^ specific prompt for only suitable items
-            -> Text      -- ^ generic prompt
-            -> [CStore]  -- ^ initial legal modes
-            -> [CStore]  -- ^ legal modes after Calm taken into account
-            -> Bool      -- ^ whether to ask, when the only item
-                         --   in the starting mode is suitable
-            -> Bool      -- ^ whether to ask for the number of items
-            -> m (Either Text ([(ItemId, ItemFull)], ItemDialogMode))
-{-# INLINABLE getAnyItems #-}
-getAnyItems psuit prompt promptGeneric cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
-  soc <- getFull psuit
-                 (\_ _ cCur -> prompt <+> ppItemDialogModeFrom cCur)
-                 (\_ _ cCur -> promptGeneric <+> ppItemDialogModeFrom cCur)
-                 cLegalRaw cLegalAfterCalm askWhenLone True
-  case soc of
-    Left _ -> return soc
-    Right ([(iid, itemFull)], c) -> do
-      socK <- pickNumber askNumber $ itemK itemFull
-      case socK of
-        Left Nothing ->
-          getAnyItems psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
-                      askWhenLone askNumber
-        Left (Just err) -> return $ Left $ failError err
-        Right k -> return $ Right ([(iid, itemFull{itemK=k})], c)
-    Right _ -> return soc
 
 -- | Display all items from a store and let the human player choose any
 -- or switch to any other store.

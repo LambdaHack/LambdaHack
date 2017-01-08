@@ -566,20 +566,22 @@ moveItemHuman :: forall m. MonadClientUI m
 {-# INLINABLE moveItemHuman #-}
 moveItemHuman cLegalRaw destCStore mverb auto = do
   itemSel <- getsSession sitemSel
+  modifySession $ \sess -> sess {sitemSel = Nothing}  -- prevent surprise
   case itemSel of
-    Just (fromCStore, iid) | cLegalRaw /= [CGround]  -- not normal pickup
-                             && fromCStore /= destCStore -> do  -- not vacuous
+    Just (fromCStore, _) | fromCStore == destCStore ->
+      failWith "already in place"
+    Just (fromCStore, iid) | cLegalRaw /= [CGround] -> do  -- not normal pickup
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       bag <- getsState $ getBodyStoreBag b fromCStore
       case iid `EM.lookup` bag of
-        Nothing -> moveItemHuman cLegalRaw destCStore mverb auto
+        Nothing -> moveItemHuman cLegalRaw destCStore mverb auto  -- used up
         Just (k, it) -> do
           itemToF <- itemToFullClient
           let eqpFree = eqpFreeN b
               kToPick | destCStore == CEqp = min eqpFree k
                       | otherwise = k
-          socK <- pickNumber True kToPick
+          socK <- pickNumber (not auto) kToPick
           case socK of
             Left Nothing -> moveItemHuman cLegalRaw destCStore mverb auto
             Left (Just err) -> return $ Left err
@@ -591,6 +593,9 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
       mis <- selectItemsToMove cLegalRaw destCStore mverb auto
       case mis of
         Left err -> return $ Left err
+        Right (fromCStore, [(iid, _)]) -> do
+          modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
+          moveItemHuman cLegalRaw destCStore mverb auto
         Right is -> moveItems cLegalRaw is destCStore
 
 selectItemsToMove :: forall m. MonadClientUI m
@@ -625,10 +630,10 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
                         goesIntoEqp $ itemBase itemFull)
                  else (prompt, return SuitsEverything)
       (promptGeneric, psuit) = p destCStore
-  ggi <-
-    if auto
-    then getAnyItems psuit prompt promptGeneric cLegalRaw cLegal False False
-    else getAnyItems psuit prompt promptGeneric cLegalRaw cLegal True True
+  ggi <- getFull psuit
+                 (\_ _ cCur -> prompt <+> ppItemDialogModeFrom cCur)
+                 (\_ _ cCur -> promptGeneric <+> ppItemDialogModeFrom cCur)
+                 cLegalRaw cLegal (not auto) True
   case ggi of
     Right (l, MStore fromCStore) -> return $ Right (fromCStore, l)
     Left err -> failWith err
