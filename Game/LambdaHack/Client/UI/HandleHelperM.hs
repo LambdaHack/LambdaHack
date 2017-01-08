@@ -210,6 +210,11 @@ statsOverlay aid = do
             valueText = decorator $ accessor ar
             ft = fullText valueText
         in (ft, (Right c, (y, 0, T.length ft)))
+      showIntWith1 :: Int -> Text
+      showIntWith1 k =
+        let l = k `div` 10
+            x = k - l * 10
+        in tshow l <> if x == 0 then "" else "." <> tshow x
       -- Some values can be negative, for others 0 is equivalent but shorter.
       slotList =
         [ (aHurtMelee, "to melee damage", \t -> tshow200 t <> "%")
@@ -217,7 +222,7 @@ statsOverlay aid = do
         , (aArmorRanged, "ranged armor",  \t -> "{" <> tshowBlock t <> "%}")
         , (aMaxHP, "max HP", \t -> tshow $ max 0 t)
         , (aMaxCalm, "max Calm", \t -> tshow $ max 0 t)
-        , (aSpeed, "speed", \t -> tshow (max 0 t) <> "m/10s")
+        , (aSpeed, "speed", \t -> showIntWith1 t <> "m/s")
         , (aSight, "sight radius", \t ->
             let tmax = max 0 t
                 tcapped = min (fromEnum $ bcalm b `div` (5 * oneM)) tmax
