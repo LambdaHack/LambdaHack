@@ -575,7 +575,7 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
       b <- getsState $ getActorBody leader
       bag <- getsState $ getBodyStoreBag b fromCStore
       case iid `EM.lookup` bag of
-        Nothing -> moveItemHuman cLegalRaw destCStore mverb auto  -- used up
+        Nothing -> failWith "no item to move"
         Just (k, it) -> do
           itemToF <- itemToFullClient
           let eqpFree = eqpFreeN b
@@ -964,11 +964,18 @@ itemMenuHuman cmdAction = do
               ov = splitAttrLine lxsize $ attrLine <+:> textToAL foundText
           report <- getReportUI
           keyb <- getsSession sbinding
-          let fmt n k h = " " <> T.justifyLeft n ' ' k <+> h
+          let calmE = calmEnough b ar
+              greyedOut cmd = not calmE && fromCStore == CSha || case cmd of
+                HumanCmd.MoveItem stores destCStore _ _ _ ->
+                  fromCStore `notElem` stores
+                  || not calmE && CSha == destCStore
+                  || destCStore == CEqp && eqpOverfull b 1
+                _ -> False  -- project and apply commands are too complex
+              fmt n k h = " " <> T.justifyLeft n ' ' k <+> h
               keyL = 11
               keyCaption = fmt keyL "keys" "command"
               offset = 1 + length ov
-              (ov0, kxs0) = okxsN keyb offset keyL (const True)
+              (ov0, kxs0) = okxsN keyb offset keyL greyedOut
                                   HumanCmd.CmdItemMenu [keyCaption] []
               t0 = makeSentence [ MU.SubjectVerbSg (partActor b) "choose"
                                 , "an object", MU.Text $ ppCStoreIn fromCStore ]
