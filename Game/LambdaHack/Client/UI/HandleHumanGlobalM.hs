@@ -593,7 +593,7 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
       mis <- selectItemsToMove cLegalRaw destCStore mverb auto
       case mis of
         Left err -> return $ Left err
-        Right (fromCStore, [(iid, _)]) -> do
+        Right (fromCStore, [(iid, _)]) | cLegalRaw /= [CGround] -> do
           modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
           moveItemHuman cLegalRaw destCStore mverb auto
         Right is -> moveItems cLegalRaw is destCStore
