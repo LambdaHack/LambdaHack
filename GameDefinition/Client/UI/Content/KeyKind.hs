@@ -85,30 +85,30 @@ standardKeys = KeyKind
                  , AlterDir triggerClose ))
 
       -- Item use, continued
-      , ("e", addCmdCategory CmdItemMenu
-              $ moveItemTriple [CGround, CInv, CSha] CEqp Nothing
-                               "item" False)
       , ("p", addCmdCategory CmdItemMenu
               $ moveItemTriple [CGround, CEqp, CSha] CInv Nothing
                                "item into inventory" False)
+      , ("e", addCmdCategory CmdItemMenu
+              $ moveItemTriple [CGround, CInv, CSha] CEqp Nothing
+                               "item" False)
       , ("s", addCmdCategory CmdItemMenu
               $ moveItemTriple [CGround, CInv, CEqp] CSha Nothing
                                "and share item" False)
-      , ("E", ( [CmdItem]
-              , "manage equipment of the leader"
-              , ChooseItemMenu (MStore CEqp) ))
       , ("P", ( [CmdMinimal, CmdItem]
               , "manage inventory pack of leader"
               , ChooseItemMenu (MStore CInv) ))
+      , ("G", ( [CmdItem]
+              , "manage items on the ground"
+              , ChooseItemMenu (MStore CGround) ))
+      , ("E", ( [CmdItem]
+              , "manage equipment of the leader"
+              , ChooseItemMenu (MStore CEqp) ))
       , ("S", ( [CmdItem]
               , "manage the shared party stash"
               , ChooseItemMenu (MStore CSha) ))
       , ("A", ( [CmdItem]
               , "manage all owned items"
               , ChooseItemMenu MOwned ))
-      , ("G", ( [CmdItem]
-              , "manage items on the ground"
-              , ChooseItemMenu (MStore CGround) ))
       , ("@", ( [CmdItem]
               , "describe organs of the leader"
               , ChooseItemMenu (MStore COrgan) ))
