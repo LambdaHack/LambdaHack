@@ -958,7 +958,7 @@ setLastSlot aid iid cstore = do
 strike :: MonadClientUI m
        => ActorId -> ActorId -> ItemId -> CStore -> Int -> m ()
 {-# INLINABLE strike #-}
-strike source target iid cstore hitStatus = assert (source /= target) $ do
+strike source target iid cstore hurtMult = assert (source /= target) $ do
   tb <- getsState $ getActorBody target
   sourceSeen <- getsState $ memActor source (blid tb)
   ps <- if sourceSeen then do
@@ -979,7 +979,7 @@ strike source target iid cstore hitStatus = assert (source /= target) $ do
           if isOrgan
           then partItemWownW spronoun COrgan localTime
           else partItemAW cstore localTime
-        msg | hitStatus > -10 = makeSentence $  -- minor or absent armor
+        msg | hurtMult > 90 = makeSentence $  -- minor or absent armor
           [MU.SubjectVerbSg spart verb, tpart]
           ++ if bproj sb
              then []
@@ -997,12 +997,12 @@ strike source target iid cstore hitStatus = assert (source /= target) $ do
                      , "with", partItemChoice itemFull ]
           in makeSentence [ MU.Phrase sActs <> ", but"
                           , MU.SubjectVerbSg tpart "block"
-                          , if | hitStatus > -50 ->  -- substantial armor
+                          , if | hurtMult > 50 ->  -- substantial armor
                                  "partly"
-                               | hitStatus > minBound ->  -- braced and armor
+                               | hurtMult > 1   ->  -- braced and/or big armor
                                  "doggedly"
-                               | otherwise ->  -- no damage got through
-                                 "completely"
+                               | otherwise ->    -- 1% got through, which can
+                                 "almost fully"  -- still be deadly, if speed
                           ]
 -- TODO: when other armor is in, etc.:
 --      msg HitSluggish =
@@ -1012,7 +1012,7 @@ strike source target iid cstore hitStatus = assert (source /= target) $ do
     msgAdd msg
     return (bpos tb, bpos sb)
   else return (bpos tb, bpos tb)
-  let anim | hitStatus > -10 = twirlSplash ps Color.BrRed Color.Red
-           | hitStatus > -50 = blockHit ps Color.BrRed Color.Red
+  let anim | hurtMult > 90 = twirlSplash ps Color.BrRed Color.Red
+           | hurtMult > 1 = blockHit ps Color.BrRed Color.Red
            | otherwise = blockMiss ps
   animate (blid tb) anim

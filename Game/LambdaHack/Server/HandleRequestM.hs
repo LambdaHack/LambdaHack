@@ -242,23 +242,20 @@ reqMelee source target iid cstore = do
     hurtBonus <- armorHurtBonus source target
     itemBase <- getsState $ getItemBody iid
     n <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) $ jdamage itemBase
-    let oneDeltaHP | n <= 0 = 0
-                   | otherwise = max 1 n  -- at least 1 HP taken
-        mult = 100 + hurtBonus
-        rawDeltaHP = fromIntegral mult * xM oneDeltaHP `divUp` 100
+    let hurtMult = max 1 $ 100 + hurtBonus  -- at least 1% of dmg gets through
+        rawDeltaHP = fromIntegral hurtMult * xM n `divUp` 100
         speedDeltaHP = case btrajectory sb of
           Just (_, speed) -> - modifyDamageBySpeed rawDeltaHP speed
           Nothing -> - rawDeltaHP
-        serious = speedDeltaHP < 0 && source /= target && not (bproj tb)
+        serious = speedDeltaHP <= - oneM && source /= target && not (bproj tb)
         deltaHP | serious = -- if HP overfull, at least cut back to max HP
                             min speedDeltaHP (xM hpMax - bhp tb)
                 | otherwise = speedDeltaHP
     -- Damage the target.
-    if (speedDeltaHP < 0) then do
+    when (speedDeltaHP < 0) $ do
       execUpdAtomic $ UpdRefillHP target deltaHP
       when serious $ halveCalm target
-      execSfxAtomic $ SfxStrike source target iid cstore hurtBonus
-    else execSfxAtomic $ SfxStrike source target iid cstore minBound
+    execSfxAtomic $ SfxStrike source target iid cstore hurtMult
     -- Deduct a hitpoint for a pierce of a projectile
     -- or due to a hurled actor colliding with another or a wall.
     case btrajectory sb of
