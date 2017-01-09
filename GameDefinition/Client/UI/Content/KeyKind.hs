@@ -36,7 +36,8 @@ standardKeys = KeyKind
       , ("Escape", ([CmdMainMenu], "back to playing", Cancel))
 
       -- Item use, 1st part
-      , ("g", addCmdCategory CmdItemMenu $ grabItems "grab items")
+      , ("g", addCmdCategory CmdMinimal
+              $ addCmdCategory CmdItemMenu $ grabItems "grab items")
       , ("comma", addCmdCategory CmdNoHelp $ grabItems "")
       , ("d", addCmdCategory CmdItemMenu $ dropItems "drop items")
       , ("period", addCmdCategory CmdNoHelp $ dropItems "")
@@ -161,7 +162,8 @@ standardKeys = KeyKind
                    , ByAimMode {exploration = Help, aiming = Accept} ))
 
       -- Assorted
-      , ("space", ([CmdMeta], "clear messages, display history", Clear))
+      , ("space", ( [CmdMinimal, CmdMeta]
+                  , "clear messages/display history", Clear) )
       , ("?", ([CmdMeta], "display Help", Help))
       , ("F1", ([CmdNoHelp], "", Help))
       , ("Tab", ( [CmdMeta]
@@ -170,7 +172,8 @@ standardKeys = KeyKind
       , ("ISO_Left_Tab", ( [CmdMeta, CmdMinimal]
                          , "cycle among all party members"
                          , MemberBack ))
-      , ("=", ([CmdMeta], "select (or deselect) party member", SelectActor))
+      , ("=", ( [CmdMinimal, CmdMeta]
+              , "select (or deselect) party member", SelectActor) )
       , ("_", ([CmdMeta], "deselect (or select) all on the level", SelectNone))
       , ("v", ([CmdMeta], "voice again the recorded commands", Repeat 1))
       , ("V", repeatTriple 100)

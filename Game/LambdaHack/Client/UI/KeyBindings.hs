@@ -92,19 +92,19 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
       , "In aiming mode (KEYPAD_* or !) the same keys (or mouse) move the crosshair."
       , "Press 'KEYPAD_5' (or 'i' or '.') to wait, bracing for blows, which reduces"
       , "any damage taken and makes it impossible for foes to displace you."
-      , "You displace enemies by running into them with SHIFT/CTRL or RMB."
-      , "Search, loot, open and attack by bumping into walls, doors and enemies."
+      , "You displace enemies by running into them with SHIFT/CTRL or RMB. Search, "
+      , "open, descend and attack by bumping into walls, doors, stairs and enemies. "
       , "The best item to attack with is automatically chosen from among"
       , "weapons in your personal equipment and your unwounded organs."
       , ""
       , "Press SPACE or scroll the mouse wheel to see the minimal command set."
       ]
     minimalBlurb =
-      [ "The following minimal command set lets you accomplish anything in the game,"
-      , "though not necessarily with the fewest number of keystrokes."
-      , "Most of the other commands are shorthands, defined as macros"
-      , "(with the exception of the advanced commands for assigning non-default"
-      , "tactics and targets to your autonomous henchmen, if you have any)."
+      [ "Together with the basic commands above, the following set lets you accomplish"
+      , "anything in the game, though not necessarily with the fewest number of"
+      , "keystrokes. You can also play the game exclusively with a mouse, or both"
+      , "mouse and keyboard. See the ending help screens for mouse commands."
+      , "Lastly, you can select a command directly from the help screens."
       , ""
       ]
     casualEndBlurb =
@@ -122,7 +122,7 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
     mouseBasicsBlurb =
       [ ""
       , "Screen area determines mouse click effect; see above and on the next page."
-      , "Below is general overview, includng not only left and right,"
+      , "Below is general overview, including not only left and right,"
       , "but also middle mouse button (MMB) and the mouse wheel."
       ]
     lastHelpBlurb =

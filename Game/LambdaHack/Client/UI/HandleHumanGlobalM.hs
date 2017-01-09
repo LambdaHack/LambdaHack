@@ -560,6 +560,10 @@ continueToXhairHuman = goToXhair False False{-irrelevant-}
 
 -- * MoveItem
 
+-- This cannot be structured as projecting or applying, with @ByItemMode@
+-- and @ChooseItemToMove@, because at least in case of grabbing items,
+-- more than one item is chosen, which doesn't fit @sitemSel@. Separating
+-- grabbing of multiple items as a distinct command is too high a proce.
 moveItemHuman :: forall m. MonadClientUI m
               => [CStore] -> CStore -> Maybe MU.Part -> Bool
               -> m (FailOrCmd (RequestTimed 'AbMoveItem))
