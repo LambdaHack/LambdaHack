@@ -210,19 +210,15 @@ deduceKilled aid = do
   let firstDeathEnds = rfirstDeathEnds $ Kind.stdRuleset corule
   fact <- getsState $ (EM.! bfid body) . sfactionD
   when (fneverEmpty $ gplayer fact) $ do
-    actorsAlive <- anyActorsAlive (bfid body) (Just aid)
+    actorsAlive <- anyActorsAlive (bfid body) aid
     when (not actorsAlive || firstDeathEnds) $
       deduceQuits (bfid body) $ Status Killed (fromEnum $ blid body) Nothing
 
-anyActorsAlive :: MonadServer m => FactionId -> Maybe ActorId -> m Bool
+anyActorsAlive :: MonadServer m => FactionId -> ActorId -> m Bool
 {-# INLINABLE anyActorsAlive #-}
-anyActorsAlive fid maid = do
-  fact <- getsState $ (EM.! fid) . sfactionD
-  if fleaderMode (gplayer fact) /= LeaderNull
-    then return $! isJust $ gleader fact
-    else do
-      as <- getsState $ fidActorNotProjAssocs fid
-      return $! not $ null $ maybe as (\aid -> filter ((/= aid) . fst) as) maid
+anyActorsAlive fid aid = do
+  as <- getsState $ fidActorNotProjAssocs fid
+  return $! map fst as /= [aid]
 
 electLeader :: MonadAtomic m => FactionId -> LevelId -> ActorId -> m ()
 {-# INLINABLE electLeader #-}
