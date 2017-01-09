@@ -956,7 +956,7 @@ setLastSlot aid iid cstore = do
       Nothing -> assert `failure` (iid, cstore, aid)
 
 strike :: MonadClientUI m
-       => ActorId -> ActorId -> ItemId -> CStore -> HitAtomic -> m ()
+       => ActorId -> ActorId -> ItemId -> CStore -> Int -> m ()
 {-# INLINABLE strike #-}
 strike source target iid cstore hitStatus = assert (source /= target) $ do
   tb <- getsState $ getActorBody target
@@ -979,12 +979,12 @@ strike source target iid cstore hitStatus = assert (source /= target) $ do
           if isOrgan
           then partItemWownW spronoun COrgan localTime
           else partItemAW cstore localTime
-        msg HitClear = makeSentence $
+        msg | hitStatus > -10 = makeSentence $  -- minor or absent armor
           [MU.SubjectVerbSg spart verb, tpart]
           ++ if bproj sb
              then []
              else ["with", partItemChoice itemFull]
-        msg (HitBlock n) =
+            | otherwise =
           -- This sounds funny when the victim falls down immediately,
           -- but there is no easy way to prevent that. And it's consistent.
           -- If/when death blow instead sets HP to 1 and only the next below 1,
@@ -997,17 +997,22 @@ strike source target iid cstore hitStatus = assert (source /= target) $ do
                      , "with", partItemChoice itemFull ]
           in makeSentence [ MU.Phrase sActs <> ", but"
                           , MU.SubjectVerbSg tpart "block"
-                          , if n > 1 then "doggedly" else "partly"
+                          , if | hitStatus > -50 ->  -- substantial armor
+                                 "partly"
+                               | hitStatus > minBound ->  -- braced and armor
+                                 "doggedly"
+                               | otherwise ->  -- no damage got through
+                                 "completely"
                           ]
 -- TODO: when other armor is in, etc.:
 --      msg HitSluggish =
 --        let adv = MU.Phrase ["sluggishly", verb]
 --        in makeSentence $ [MU.SubjectVerbSg spart adv, tpart]
 --                          ++ ["with", partItemChoice itemFull]
-    msgAdd $ msg hitStatus
+    msgAdd msg
     return (bpos tb, bpos sb)
   else return (bpos tb, bpos tb)
-  let anim HitClear = twirlSplash ps Color.BrRed Color.Red
-      anim (HitBlock 1) = blockHit ps Color.BrRed Color.Red
-      anim (HitBlock _) = blockMiss ps
-  animate (blid tb) $ anim hitStatus
+  let anim | hitStatus > -10 = twirlSplash ps Color.BrRed Color.Red
+           | hitStatus > -50 = blockHit ps Color.BrRed Color.Red
+           | otherwise = blockMiss ps
+  animate (blid tb) anim

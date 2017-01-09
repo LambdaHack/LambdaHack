@@ -254,15 +254,11 @@ reqMelee source target iid cstore = do
                             min speedDeltaHP (xM hpMax - bhp tb)
                 | otherwise = speedDeltaHP
     -- Damage the target.
-    when (speedDeltaHP < 0) $ do
+    if (speedDeltaHP < 0) then do
       execUpdAtomic $ UpdRefillHP target deltaHP
       when serious $ halveCalm target
-      let hitA | hurtBonus <= -50  -- e.g., braced and no hit bonus
-                 = HitBlock 2
-               | hurtBonus <= -10  -- low bonus vs armor
-                 = HitBlock 1
-               | otherwise = HitClear
-      execSfxAtomic $ SfxStrike source target iid cstore hitA
+      execSfxAtomic $ SfxStrike source target iid cstore hurtBonus
+    else execSfxAtomic $ SfxStrike source target iid cstore minBound
     -- Deduct a hitpoint for a pierce of a projectile
     -- or due to a hurled actor colliding with another or a wall.
     case btrajectory sb of

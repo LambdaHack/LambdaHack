@@ -13,7 +13,7 @@
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.CmdAtomic
-  ( CmdAtomic(..), UpdAtomic(..), SfxAtomic(..), HitAtomic(..)
+  ( CmdAtomic(..), UpdAtomic(..), SfxAtomic(..)
   , undoUpdAtomic, undoSfxAtomic, undoCmdAtomic
   ) where
 
@@ -120,8 +120,8 @@ instance Binary UpdAtomic
 -- | Abstract syntax of atomic special effects, that is, atomic commands
 -- that only display special effects and don't change the state.
 data SfxAtomic =
-    SfxStrike !ActorId !ActorId !ItemId !CStore !HitAtomic
-  | SfxRecoil !ActorId !ActorId !ItemId !CStore !HitAtomic
+    SfxStrike !ActorId !ActorId !ItemId !CStore !Int
+  | SfxRecoil !ActorId !ActorId !ItemId !CStore !Int
   | SfxProject !ActorId !ItemId !CStore
   | SfxCatch !ActorId !ItemId !CStore
   | SfxApply !ActorId !ItemId !CStore
@@ -134,12 +134,6 @@ data SfxAtomic =
   deriving (Show, Eq, Generic)
 
 instance Binary SfxAtomic
-
--- | Determine if a strike special effect should depict a block of an attack.
-data HitAtomic = HitClear | HitBlock !Int
-  deriving (Show, Eq, Generic)
-
-instance Binary HitAtomic
 
 undoUpdAtomic :: UpdAtomic -> Maybe UpdAtomic
 undoUpdAtomic cmd = case cmd of
@@ -200,8 +194,8 @@ undoUpdAtomic cmd = case cmd of
 
 undoSfxAtomic :: SfxAtomic -> SfxAtomic
 undoSfxAtomic cmd = case cmd of
-  SfxStrike source target iid cstore b -> SfxRecoil source target iid cstore b
-  SfxRecoil source target iid cstore b -> SfxStrike source target iid cstore b
+  SfxStrike source target iid cstore h -> SfxRecoil source target iid cstore h
+  SfxRecoil source target iid cstore h -> SfxStrike source target iid cstore h
   SfxProject aid iid cstore -> SfxCatch aid iid cstore
   SfxCatch aid iid cstore -> SfxProject aid iid cstore
   SfxApply aid iid cstore -> SfxCheck aid iid cstore
