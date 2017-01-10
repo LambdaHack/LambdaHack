@@ -148,10 +148,12 @@ standardKeys = KeyKind
       , ("CTRL-}", ( [CmdAim]
                    , "set x-hair to nearest downstairs"
                    , XhairStair False ))
-      , ("<", ([CmdAim], "ascend aim" , AimAscend 1))
-      , ("CTRL-<", ([CmdNoHelp], "ascend aim 10 times" , AimAscend 10))
-      , (">", ([CmdAim], "descend aim", AimAscend (-1)))
-      , ("CTRL->", ([CmdNoHelp], "descend aim 10 times", AimAscend (-10)))
+      , ("<", ([CmdAim], "switch view to one level higher" , AimAscend 1))
+      , ("CTRL-<", ( [CmdNoHelp], "switch view to 10 levels higher"
+                   , AimAscend 10) )
+      , (">", ([CmdAim], "switch view to one level lower", AimAscend (-1)))
+      , ("CTRL->", ( [CmdNoHelp], "switch view to 10 levels lower"
+                   , AimAscend (-10)) )
       , ( "BackSpace"
         , ([CmdAim], "clear target or chosen item", TgtClear) )
       , ("Escape", ( [CmdAim, CmdMinimal]
@@ -229,18 +231,6 @@ standardKeys = KeyKind
       , ("safe9", ( [CmdInternal]
                   , "accept target"
                   , Accept ))
-      , ("safe11", ( [CmdInternal]
-                   , "grab items"
-                   , exploreGrabCmd ))
-      , ("safe12", ( [CmdInternal]
-                   , "switch view to one level higher"
-                   , AimAscend 1 ))
-      , ("safe13", ( [CmdInternal]
-                   , "drop items"
-                   , exploreDropCmd ))
-      , ("safe14", ( [CmdInternal]
-                   , "switch view to one level lower"
-                   , AimAscend (-1) ))
       ]
       ++ map defaultHeroSelect [0..6]
   }
