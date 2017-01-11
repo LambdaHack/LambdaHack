@@ -497,7 +497,7 @@ goToXhair initialStep run = do
               _ | xhairMoused && isNothing (accessBfs bfs c) ->
                 failWith "no route to crosshair"
               NoPath -> failWith "no route to crosshair"
-              AndPath{pathList=[]} -> assert `failure` (leader, b, c)
+              AndPath{pathList=[]} -> failWith "almost there"
               AndPath{pathList = p1 : _, pathSource} -> do
                 let finalGoal = p1 == c
                     dir = towards pathSource p1

@@ -201,20 +201,22 @@ findPathBfs lalter pathSource pathGoal sepsRaw arr@PointArray.Array{..} =
       andPath = AndPath{..}
   in assert (BfsDistance (arr `PointArray.accessI` pathSourceI)
              == minKnownBfs) $
-     if goalDist /= apartBfs && pathLen < chessDist pathSource pathGoal + 5
+     if goalDist /= apartBfs && pathLen < chessDist pathSource pathGoal + 10
      then andPath
-     else let f :: (Point, BfsDistance, Int, Int) -> Point -> BfsDistance
-                -> (Point, BfsDistance, Int, Int)
+     else let f :: (Point, Int, Int, Int) -> Point -> BfsDistance
+                -> (Point, Int, Int, Int)
               f acc@(pAcc, dAcc, chessAcc, sumAcc) p d =
-                if d <= abortedUnknownBfs
-                then let !chessNew = chessDist p pathGoal
-                         !sumNew = chessNew + fromEnum d
-                         resNew = (p, d, chessNew, sumNew)
+                if d <= abortedUnknownBfs  -- works in visible secrets mode only
+                   || d /= apartBfs && adjacent p pathGoal  -- works for stairs
+                then let dist = fromEnum $ d .&. complement minKnownBfs
+                         chessNew = chessDist p pathGoal
+                         sumNew = chessNew + dist
+                         resNew = (p, dist, chessNew, sumNew)
                      in case compare sumNew sumAcc of
                        LT -> resNew
                        EQ -> case compare chessNew chessAcc of
                          LT -> resNew
-                         EQ -> case compare d dAcc of
+                         EQ -> case compare dist dAcc of
                            LT -> resNew
                            EQ | euclidDistSq p pathGoal
                                 < euclidDistSq pAcc pathGoal -> resNew
@@ -222,12 +224,13 @@ findPathBfs lalter pathSource pathGoal sepsRaw arr@PointArray.Array{..} =
                          _ -> acc
                        _ -> acc
                 else acc
-              initAcc = (originPoint, apartBfs, maxBound, maxBound)
+              initAcc = (originPoint, maxBound, maxBound, maxBound)
               (pRes, dRes, _, sumRes) = PointArray.ifoldlA' f initAcc arr
-          in if sumRes == maxBound || pathLen < sumRes + 5
+          in if sumRes == maxBound
+                || goalDist /= apartBfs && pathLen < sumRes + 10
              then if goalDist /= apartBfs then andPath else NoPath
              else let pathList2 = track (PointArray.pindex axsize pRes)
-                                        (dRes .|. minKnownBfs) []
+                                        (toEnum dRes .|. minKnownBfs) []
                   in AndPath{pathList = pathList2, pathLen = sumRes, ..}
 
 -- | Access a BFS array and interpret the looked up distance value.
