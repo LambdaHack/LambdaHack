@@ -181,11 +181,8 @@ findPathBfs lalter pathSource pathGoal sepsRaw arr@PointArray.Array{..} =
               in if backtrackingMove
                  then minChild minP minAlter mvs
                  else let alter = lalter `PointArray.accessI` p
-                      -- Prefer paths through open tiles, etc.
-                      -- AI will still sometimes go through stairs, instead
-                      -- of around, but that's not a big deal. It can return
-                      -- and in this way really obtain a shortcut. :)
-                      in if | alter == 0 -> p  -- shortcut
+                      -- Prefer paths through more easily open tiles.
+                      in if | alter == 0 -> p  -- speedup
                             | alter < minAlter -> minChild p alter mvs
                             | otherwise -> minChild minP minAlter mvs
             -- @maxBound@ means not alterable, so some child will be lower
@@ -201,7 +198,7 @@ findPathBfs lalter pathSource pathGoal sepsRaw arr@PointArray.Array{..} =
       andPath = AndPath{..}
   in assert (BfsDistance (arr `PointArray.accessI` pathSourceI)
              == minKnownBfs) $
-     if goalDist /= apartBfs && pathLen < chessDist pathSource pathGoal + 10
+     if goalDist /= apartBfs && pathLen < 2 * chessDist pathSource pathGoal
      then andPath
      else let f :: (Point, Int, Int, Int) -> Point -> BfsDistance
                 -> (Point, Int, Int, Int)
@@ -210,7 +207,7 @@ findPathBfs lalter pathSource pathGoal sepsRaw arr@PointArray.Array{..} =
                    || d /= apartBfs && adjacent p pathGoal  -- works for stairs
                 then let dist = fromEnum $ d .&. complement minKnownBfs
                          chessNew = chessDist p pathGoal
-                         sumNew = chessNew + dist
+                         sumNew = dist + 2 * chessNew
                          resNew = (p, dist, chessNew, sumNew)
                      in case compare sumNew sumAcc of
                        LT -> resNew
@@ -227,7 +224,7 @@ findPathBfs lalter pathSource pathGoal sepsRaw arr@PointArray.Array{..} =
               initAcc = (originPoint, maxBound, maxBound, maxBound)
               (pRes, dRes, _, sumRes) = PointArray.ifoldlA' f initAcc arr
           in if sumRes == maxBound
-                || goalDist /= apartBfs && pathLen < sumRes + 10
+                || goalDist /= apartBfs && pathLen < sumRes
              then if goalDist /= apartBfs then andPath else NoPath
              else let pathList2 = track (PointArray.pindex axsize pRes)
                                         (toEnum dRes .|. minKnownBfs) []
