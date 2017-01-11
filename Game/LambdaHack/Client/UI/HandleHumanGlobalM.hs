@@ -496,6 +496,9 @@ goToXhair initialStep run = do
             case mpath of
               _ | xhairMoused && isNothing (accessBfs bfs c) ->
                 failWith "no route to crosshair"
+              _ | initialStep && adjacent (bpos b) c -> do
+                let dir = towards (bpos b) c
+                moveRunHuman initialStep True run False dir
               NoPath -> failWith "no route to crosshair"
               AndPath{pathList=[]} -> failWith "almost there"
               AndPath{pathList = p1 : _, pathSource} -> do
