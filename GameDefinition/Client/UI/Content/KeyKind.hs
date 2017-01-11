@@ -51,18 +51,18 @@ standardKeys = KeyKind
 
       -- Terrain exploration and alteration
       , ("semicolon", ( [CmdMove]
-                      , "go to crosshair for 100 steps"
+                      , "go to crosshair for 25 steps"
                       , Macro ["CTRL-semicolon", "CTRL-period", "V"] ))
       , ("colon", ( [CmdMove]
-                  , "run to crosshair collectively for 100 steps"
+                  , "run to crosshair collectively for 25 steps"
                   , Macro ["CTRL-colon", "CTRL-period", "V"] ))
       , ("x", ( [CmdMove]
               , "explore nearest unknown spot"
               , autoexploreCmd ))
       , ("X", ( [CmdMove]
-              , "autoexplore 100 times"
-              , autoexplore100Cmd ))
-      , ("R", ([CmdMove], "rest (wait 100 times)", Macro ["KP_5", "V"]))
+              , "autoexplore 25 times"
+              , autoexplore25Cmd ))
+      , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_5", "V"]))
       , let triggerClose =
               [ AlterFeature { verb = "close"
                              , object = "door"
@@ -205,7 +205,7 @@ standardKeys = KeyKind
                         , ContinueToXhair ))
       , ("CTRL-comma", ([CmdNoHelp], "run once ahead", RunOnceAhead))
       , ("safe1", ( [CmdInternal]
-                  , "go to pointer for 100 steps"
+                  , "go to pointer for 25 steps"
                   , goToCmd ))
       , ("safe2", ( [CmdInternal]
                   , "run to pointer collectively"

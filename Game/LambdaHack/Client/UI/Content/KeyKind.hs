@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.UI.Content.KeyKind
   ( KeyKind(..), evalKeyDef
   , addCmdCategory, replaceDesc, moveItemTriple, repeatTriple
   , mouseLMB, mouseMMB, mouseRMB
-  , goToCmd, runToAllCmd, autoexploreCmd, autoexplore100Cmd
+  , goToCmd, runToAllCmd, autoexploreCmd, autoexplore25Cmd
   , aimFlingCmd, projectI, projectA, flingTs, applyI
   , exploreGrabCmd, grabItems, exploreDropCmd, dropItems
   , descTs, defaultHeroSelect
@@ -56,7 +56,7 @@ repeatTriple n = ( [CmdMeta]
 mouseLMB :: CmdTriple
 mouseLMB =
   ( [CmdMouse]
-  , "set aiming crosshair/go to pointer for 100 steps"
+  , "set aiming crosshair/go to pointer for 25 steps"
   , ByAimMode
       { exploration = ByArea $ common ++  -- exploration mode
           [ (CaMapLeader, exploreGrabCmd)
@@ -85,14 +85,14 @@ mouseMMB = ( [CmdMouse]
 mouseRMB :: CmdTriple
 mouseRMB =
   ( [CmdMouse]
-  , "set leader target/run to pointer collectively for 100 steps"
+  , "set leader target/run to pointer collectively for 25 steps"
   , ByAimMode
       { exploration = ByArea $ common ++
           [ (CaMapLeader, exploreDropCmd)
           , (CaMapParty, SelectWithPointer)
           , (CaMap, runToAllCmd)
           , (CaArenaName, Help)
-          , (CaPercentSeen, autoexplore100Cmd)
+          , (CaPercentSeen, autoexplore25Cmd)
           , (CaXhairDesc, projectICmd flingTs) ]
       , aiming = ByArea $ common ++
           [ (CaMapLeader, AimAscend (-1))
@@ -116,8 +116,8 @@ runToAllCmd = Macro ["MiddleButtonRelease", "CTRL-colon", "CTRL-period", "V"]
 autoexploreCmd :: HumanCmd
 autoexploreCmd = Macro ["CTRL-?", "CTRL-period", "V"]
 
-autoexplore100Cmd :: HumanCmd
-autoexplore100Cmd = Macro ["'", "CTRL-?", "CTRL-period", "'", "V"]
+autoexplore25Cmd :: HumanCmd
+autoexplore25Cmd = Macro ["'", "CTRL-?", "CTRL-period", "'", "V"]
 
 aimFlingCmd :: HumanCmd
 aimFlingCmd = ComposeIfLocal AimPointerEnemy (projectICmd flingTs)
