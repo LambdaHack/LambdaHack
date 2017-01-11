@@ -217,15 +217,12 @@ drawFramePath drawnLevelId = do
                 then []
                 else fromMaybe [] $ bla lxsize lysize seps bpos xhairPos
     _ -> return []
-  let bfsAndPathFromLeader leader = Just <$> getCacheBfsAndPath leader xhairPos
-      pathFromLeader leader = (Just . (,NoPath)) <$> getCacheBfs leader
-  bfsmpath <- if isJust saimMode
-              then maybe (return Nothing) bfsAndPathFromLeader mleader
-              else maybe (return Nothing) pathFromLeader mleader
-  let mpath = if null bline then []
-              else maybe [] (\(_, mp) -> case mp of
+  mpath <- maybe (return Nothing) (\aid ->
+    Just <$> getCachePath aid xhairPos) mleader
+  let lpath = if null bline || isNothing saimMode then []
+              else maybe [] (\mp -> case mp of
                 NoPath -> []
-                AndPath {pathList} -> pathList) bfsmpath
+                AndPath {pathList} -> pathList) mpath
       xhairHere = find (\(_, m) -> xhairPos == bpos m)
                        (actorAssocs (const True) drawnLevelId s)
       shiftedBTrajectory = case xhairHere of
@@ -259,8 +256,8 @@ drawFramePath drawnLevelId = do
         mapM_ g l
       upd :: FrameForall
       upd = FrameForall $ \v -> when (isJust saimMode) $ do
-        mapVTL (acOnPathOrLine ';') mpath v
-        mapVTL (acOnPathOrLine '*') shiftedLine v  -- overwrites mpath
+        mapVTL (acOnPathOrLine ';') lpath v
+        mapVTL (acOnPathOrLine '*') shiftedLine v  -- overwrites path
   return upd
 
 drawFrameActor :: forall m. MonadClientUI m => LevelId -> m FrameForall
@@ -345,15 +342,9 @@ drawFrameStatus :: MonadClientUI m => LevelId -> m AttrLine
 drawFrameStatus drawnLevelId = do
   SessionUI{sselected, saimMode, swaitTimes, sitemSel} <- getSession
   mleader <- getsClient _sleader
-  tgtPos <- leaderTgtToPos
   xhairPos <- xhairToPos
-  let anyPos = fromMaybe originPoint xhairPos
-        -- if xhair invalid, e.g., on a wrong level; @draw@ ignores it later on
-      bfsAndPathFromLeader leader = Just <$> getCacheBfsAndPath leader anyPos
-      pathFromLeader leader = (Just . (,NoPath)) <$> getCacheBfs leader
-  bfsmpath <- if isJust saimMode
-              then maybe (return Nothing) bfsAndPathFromLeader mleader
-              else maybe (return Nothing) pathFromLeader mleader
+  tgtPos <- leaderTgtToPos
+  mbfs <- maybe (return Nothing) (\aid -> Just <$> getCacheBfs aid) mleader
   (tgtDesc, mtargetHP) <-
     maybe (return ("------", Nothing)) targetDescLeader mleader
   (xhairDesc, mxhairHP) <- targetDescXhair
@@ -370,8 +361,8 @@ drawFrameStatus drawnLevelId = do
       arenaStatus = drawArenaStatus (ES.member drawnLevelId sexplored) lvl
                                     widthStats
       displayPathText mp mt =
-        let (plen, llen) = case (mp, bfsmpath, mbpos) of
-              (Just target, Just (bfs, _), Just bpos)
+        let (plen, llen) = case (mp, mbfs, mbpos) of
+              (Just target, Just bfs, Just bpos)
                 | mblid == Just drawnLevelId ->
                   (fromMaybe 0 (accessBfs bfs target), chessDist bpos target)
               _ -> (0, 0)

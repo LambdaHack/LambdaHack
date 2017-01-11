@@ -37,7 +37,8 @@ minKnownBfs :: BfsDistance
 minKnownBfs = toEnum $ (1 + fromEnum (maxBound :: BfsDistance)) `div` 2
 
 -- | The distance value that denotes no legal path between points,
--- either due to blocked tiles or pathfinding aborted at earlier tiles.
+-- either due to blocked tiles or pathfinding aborted at earlier tiles,
+-- e.g., due to unknown tiles.
 apartBfs :: BfsDistance
 apartBfs = pred minKnownBfs
 
@@ -143,7 +144,7 @@ instance Binary AndPath
 -- on the path or close enough to reveal them.
 -- Also, check if JPS can somehow optimize BFS or pathBfs.
 -- | Find a path, without the source position, with the smallest length.
--- The @eps@ coefficient determines which direction (or the closest
+-- The @eps@ coefficient determines which direction (of the closest
 -- directions available) that path should prefer, where 0 means north-west
 -- and 1 means north.
 findPathBfs :: PointArray.Array Word8
