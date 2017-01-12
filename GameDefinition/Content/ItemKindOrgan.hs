@@ -191,7 +191,7 @@ boilingFissure = fist
   , icount   = 5 + d 5
   , iverbHit = "hiss at"
   , idamage  = toDmg $ 1 * d 1
-  , ieffects = [Burn $ 1 * d 1]
+  , ieffects = [InsertMove $ 1 * d 3]
   , ifeature = [Identified, Meleeable]  -- not Durable
   , idesc    = ""
   }
@@ -199,13 +199,14 @@ arsenicFissure = boilingFissure
   { iname    = "fissure"
   , ifreq    = [("arsenic fissure", 100)]
   , icount   = 3 + d 3
-  , ieffects = [Burn $ 1 * d 1, toOrganGameTurn "weakened" (2 + d 2)]
+  , idamage  = toDmg $ 2 * d 1
+  , ieffects = [toOrganGameTurn "weakened" (2 + d 2)]
   }
 sulfurFissure = boilingFissure
   { iname    = "fissure"
   , ifreq    = [("sulfur fissure", 100)]
   , icount   = 2 + d 2
-  , ieffects = [Burn $ 1 * d 1, RefillHP 7]
+  , ieffects = [RefillHP 6]
   }
 beeSting = fist
   { iname    = "bee sting"
@@ -214,7 +215,7 @@ beeSting = fist
   , iverbHit = "sting"
   , idamage  = toDmg $ 1 * d 1
   , iaspects = [AddArmorMelee 90, AddArmorRanged 90]
-  , ieffects = [Burn $ 1 * d 1, Paralyze 6, RefillHP 5]
+  , ieffects = [Paralyze 6, RefillHP 5]
   , ifeature = [Identified, Meleeable]  -- not Durable
   , idesc    = "Painful, but beneficial."
   }
@@ -223,9 +224,9 @@ sting = fist
   , ifreq    = [("sting", 100)]
   , icount   = 1
   , iverbHit = "sting"
-  , idamage  = toDmg $ 1 * d 1
+  , idamage  = toDmg $ 2 * d 1
   , iaspects = [Timeout $ 1 + d 5]
-  , ieffects = [Burn $ 1 * d 1, Recharging (Paralyze 4)]
+  , ieffects = [Recharging (Paralyze 4)]
   , idesc    = "Painful, debilitating and harmful."
   }
 venomTooth = fist
