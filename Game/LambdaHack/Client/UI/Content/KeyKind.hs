@@ -62,11 +62,13 @@ mouseLMB =
           [ (CaMapLeader, exploreGrabCmd)
           , (CaMapParty, PickLeaderWithPointer)
           , (CaMap, goToCmd)
+          , (CaLevelNumber, AimAscend 1)
           , (CaArenaName, MainMenu)
           , (CaPercentSeen, autoexploreCmd) ]
       , aiming = ByArea $ common ++  -- aiming mode
           [ (CaMapLeader, AimAscend 1)
           , (CaMap, AimPointerEnemy)
+          , (CaLevelNumber, AimAscend 1)
           , (CaArenaName, Cancel)
           , (CaPercentSeen, XhairStair True) ] } )
  where
@@ -91,12 +93,14 @@ mouseRMB =
           [ (CaMapLeader, exploreDropCmd)
           , (CaMapParty, SelectWithPointer)
           , (CaMap, runToAllCmd)
+          , (CaLevelNumber, AimAscend (-1))
           , (CaArenaName, Help)
           , (CaPercentSeen, autoexplore25Cmd)
           , (CaXhairDesc, projectICmd flingTs) ]
       , aiming = ByArea $ common ++
           [ (CaMapLeader, AimAscend (-1))
           , (CaMap, aimFlingCmd)
+          , (CaLevelNumber, AimAscend (-1))
           , (CaArenaName, Accept)
           , (CaPercentSeen, XhairStair False)
           , (CaXhairDesc, AimFloor) ] } )

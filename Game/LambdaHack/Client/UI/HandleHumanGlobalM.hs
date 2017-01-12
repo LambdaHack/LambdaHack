@@ -118,9 +118,11 @@ areaToRectangles ca = case ca of
     return $! map (rectFromB . bpos) ours
   CaMap -> return
     [( 0, mapStartY, fst normalLevelBound, mapStartY + snd normalLevelBound )]
+  CaLevelNumber -> let y = snd normalLevelBound + 2
+                   in return [(0, y, 1, y)]
   CaArenaName -> let y = snd normalLevelBound + 2
                      x = fst normalLevelBound `div` 2 - 11
-                 in return [(0, y, x, y)]
+                 in return [(3, y, x, y)]
   CaPercentSeen -> let y = snd normalLevelBound + 2
                        x = fst normalLevelBound `div` 2
                    in return [(x - 9, y, x, y)]

@@ -50,6 +50,7 @@ data CmdArea =
   | CaMapLeader
   | CaMapParty
   | CaMap
+  | CaLevelNumber
   | CaArenaName
   | CaPercentSeen
   | CaXhairDesc
@@ -68,6 +69,7 @@ areaDescription ca = case ca of
   CaMapLeader ->    "leader on map"
   CaMapParty ->     "party on map"
   CaMap ->          "the map area"
+  CaLevelNumber ->  "level number"
   CaArenaName ->    "level caption"
   CaPercentSeen ->  "percent seen"
   CaXhairDesc ->    "x-hair info"
