@@ -23,9 +23,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleModeKind
   , validateAll = validateAllModeKind
   , content = contentFromList
-      [raid, brawl, ambush, battle, exploration, battleSurvival, safari, safariSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush]
+      [raid, brawl, shootout, ambush, battle, exploration, battleSurvival, safari, safariSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush]
   }
-raid,        brawl, ambush, battle, exploration, battleSurvival, safari, safariSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush :: ModeKind
+raid,        brawl, shootout, ambush, battle, exploration, battleSurvival, safari, safariSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush :: ModeKind
 
 raid = ModeKind
   { msymbol = 'r'
@@ -42,7 +42,16 @@ brawl = ModeKind
   , mfreq   = [("brawl", 1), ("campaign scenario", 1)]
   , mroster = rosterBrawl
   , mcaves  = cavesBrawl
-  , mdesc   = "Your engineering team disagreed over a drink with some gentlemen scientists about premises of a relative completeness theorem and there's only one way to settle that."
+  , mdesc   = "Your engineering team disagreed over a drink with some gentlemen scientists about premises of a relative completeness theorem and there's only one way to settle that. Remember to keep together so that neither team is tempted to gang upon a solitary disputant."
+  }
+
+shootout = ModeKind
+  { msymbol = 's'
+  , mname   = "shootout"
+  , mfreq   = [("shootout", 1), ("campaign scenario", 1)]
+  , mroster = rosterShootout
+  , mcaves  = cavesShootout
+  , mdesc   = "Whose arguments are most striking and whose ideas fly fastest? Let's scatter up, attack the problems from different angles and find out. To display the trajectory of any soaring entity, point it with the crosshair in aiming mode."
   }
 
 ambush = ModeKind
@@ -51,7 +60,7 @@ ambush = ModeKind
   , mfreq   = [("ambush", 1), ("campaign scenario", 1)]
   , mroster = rosterAmbush
   , mcaves  = cavesAmbush
-  , mdesc   = "Surprising, striking ideas and fast execution are what makes or breaks a creative team!"
+  , mdesc   = "Prevent highjacking of your ideas at all cost! Be stealthy, be aggresive. Fast execution is what makes or breaks a creative team."
   }
 
 battle = ModeKind
@@ -159,7 +168,7 @@ screensaverAmbush = ambush
   }
 
 
-rosterRaid, rosterBrawl, rosterAmbush, rosterBattle, rosterExploration, rosterBattleSurvival, rosterSafari, rosterSafariSurvival, rosterDefense, rosterBoardgame :: Roster
+rosterRaid, rosterBrawl, rosterShootout, rosterAmbush, rosterBattle, rosterExploration, rosterBattleSurvival, rosterSafari, rosterSafariSurvival, rosterDefense, rosterBoardgame :: Roster
 
 rosterRaid = Roster
   { rosterList = [ playerHero { fhiCondPoly = hiRaid
@@ -189,17 +198,31 @@ rosterBrawl = Roster
                   , ("Indigo Research", "Horror Den") ]
   , rosterAlly = [] }
 
+rosterShootout = Roster
+  { rosterList = [ playerHero { fcanEscape = False
+                              , fhiCondPoly = hiDweller
+                              , fentryLevel = -5 }
+                 , playerAntiHero { fname = "Indigo Research"
+                                  , fcanEscape = False
+                                  , fhiCondPoly = hiDweller
+                                  , fentryLevel = -5 }
+                 , playerHorror {fentryLevel = -5} ]
+  , rosterEnemy = [ ("Explorer Party", "Indigo Research")
+                  , ("Explorer Party", "Horror Den")
+                  , ("Indigo Research", "Horror Den") ]
+  , rosterAlly = [] }
+
 rosterAmbush = Roster
   { rosterList = [ playerSniper { fcanEscape = False
                                 , fhiCondPoly = hiDweller
-                                , fentryLevel = -5
+                                , fentryLevel = -8
                                 , finitialActors = 4 }
                  , playerAntiSniper { fname = "Blue Hijacker"
                                     , fcanEscape = False
                                     , fhiCondPoly = hiDweller
-                                    , fentryLevel = -5
+                                    , fentryLevel = -8
                                     , finitialActors = 4 }
-                 , playerHorror {fentryLevel = -5} ]
+                 , playerHorror {fentryLevel = -8} ]
   , rosterEnemy = [ ("Explorer Party", "Blue Hijacker")
                   , ("Explorer Party", "Horror Den")
                   , ("Blue Hijacker", "Horror Den") ]
@@ -324,13 +347,15 @@ rosterBoardgame = Roster
                   , ("Red", "Horror Den") ]
   , rosterAlly = [] }
 
-cavesRaid, cavesBrawl, cavesAmbush, cavesBattle, cavesExploration, cavesSafari, cavesBoardgame :: Caves
+cavesRaid, cavesBrawl, cavesShootout, cavesAmbush, cavesBattle, cavesExploration, cavesSafari, cavesBoardgame :: Caves
 
 cavesRaid = IM.fromList [(-4, "caveRogueLit")]
 
 cavesBrawl = IM.fromList [(-3, "caveBrawl")]
 
-cavesAmbush = IM.fromList [(-5, "caveAmbush")]
+cavesShootout = IM.fromList [(-5, "caveShootout")]
+
+cavesAmbush = IM.fromList [(-8, "caveAmbush")]
 
 cavesBattle = IM.fromList [(-5, "caveBattle")]
 

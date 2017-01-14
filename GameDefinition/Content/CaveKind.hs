@@ -22,9 +22,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleCaveKind
   , validateAll = validateAllCaveKind
   , content = contentFromList
-      [rogue, arena, laboratory, empty, noise, shallow1rogue, battle, brawl, ambush, safari1, safari2, safari3, rogueLit, boardgame]
+      [rogue, arena, laboratory, empty, noise, shallow1rogue, battle, brawl, shootout, ambush, safari1, safari2, safari3, rogueLit, boardgame]
   }
-rogue,        arena, laboratory, empty, noise, shallow1rogue, battle, brawl, ambush, safari1, safari2, safari3, rogueLit, boardgame :: CaveKind
+rogue,        arena, laboratory, empty, noise, shallow1rogue, battle, brawl, shootout, ambush, safari1, safari2, safari3, rogueLit, boardgame :: CaveKind
 
 rogue = CaveKind
   { csymbol       = 'R'
@@ -87,8 +87,8 @@ laboratory = arena
   { csymbol       = 'L'
   , cname         = "Burnt laboratory"
   , cfreq         = [("default random", 40), ("caveLaboratory", 1)]
-  , cgrid         = DiceXY 10 3
-  , cminPlaceSize = DiceXY 11 4
+  , cgrid         = DiceXY (2 * d 2 + 7) 3
+  , cminPlaceSize = DiceXY (3 * d 2 + 4) 5
   , cdarkChance   = 51  -- always dark, burnt
   , cnightChance  = 51  -- always night
   , cauxConnects  = 1%10
@@ -140,7 +140,7 @@ noise = rogue
   { csymbol       = 'N'
   , cname         = "Leaky, burrowed sediment"
   , cfreq         = [("caveNoise", 1)]
-  , cgrid         = DiceXY (2 + d 2) 3
+  , cgrid         = DiceXY (2 + d 3) 3
   , cminPlaceSize = DiceXY 10 6
   , cmaxPlaceSize = DiceXY 20 10
   , cdarkChance   = 0  -- few rooms, so all lit
@@ -196,10 +196,11 @@ battle = rogue  -- few lights and many solids, to help the less numerous heroes
   , clitCorTile   = "trailLit"
   }
 brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
-  { csymbol       = 'S'
+               -- and this scenario is not focused on ranged combat
+  { csymbol       = 'b'
   , cname         = "Sunny woodland"
   , cfreq         = [("caveBrawl", 1)]
-  , cgrid         = DiceXY (2 * d 2 + 2) (d 2 + 2)
+  , cgrid         = DiceXY (2 * d 2 + 2) 3
   , cminPlaceSize = DiceXY 3 3
   , cmaxPlaceSize = DiceXY 7 5
   , cdarkChance   = 100
@@ -217,11 +218,34 @@ brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
   , cdarkCorTile  = "floorArenaLit"
   , clitCorTile   = "floorArenaLit"
   }
+shootout = rogue  -- few random solid tiles, rather to duck behind, than to
+                  -- obstruct view, since this scenario is about ranged combat
+  { csymbol       = 'S'
+  , cname         = "Misty meadow"
+  , cfreq         = [("caveShootout", 1)]
+  , cgrid         = DiceXY (d 2 + 6) 3
+  , cminPlaceSize = DiceXY 3 3
+  , cmaxPlaceSize = DiceXY 3 4
+  , cdarkChance   = 100
+  , cnightChance  = 0
+  , cdoorChance   = 1
+  , copenChance   = 0
+  , chidden       = 0
+  , cactorFreq    = []
+  , citemNum      = 40 * d 2
+  , citemFreq     = [ ("useful", 30)
+                    , ("any arrow", 60), ("harpoon", 30), ("flask", 30) ]
+  , cplaceFreq    = [("shootout", 15), ("brawl", 85)]
+  , cpassable     = True
+  , cdefTile      = "shootoutSet"
+  , cdarkCorTile  = "floorArenaLit"
+  , clitCorTile   = "floorArenaLit"
+  }
 ambush = rogue  -- lots of lights, to give a chance to snipe
   { csymbol       = 'M'
-  , cname         = "Public garden at night"
+  , cname         = "Urban park at night"
   , cfreq         = [("caveAmbush", 1)]
-  , cgrid         = DiceXY (2 * d 2 + 3) (d 2 + 2)
+  , cgrid         = DiceXY (2 * d 2 + 3) 4  -- park, so lamps in lines
   , cminPlaceSize = DiceXY 3 3
   , cmaxPlaceSize = DiceXY 5 5
   , cdarkChance   = 0
