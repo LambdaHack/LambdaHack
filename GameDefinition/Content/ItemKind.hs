@@ -216,7 +216,7 @@ motionScanner = ItemKind
   , iweight  = 300
   , idamage  = toDmg 0
   , iaspects = [ AddNocto 1
-               , AddArmorMelee (dl 5 - 10), AddArmorRanged (dl 10 - 20) ]
+               , AddArmorMelee (dl 5 - 10), AddArmorRanged (dl 5 - 10) ]
   , ieffects = [EqpSlot EqpSlotMiscBonus]
   , ifeature = [Identified, Equipable]
   , idesc    = "A silk flag with a bell for detecting sudden draft changes. May indicate a nearby corridor crossing or a fast enemy approaching in the dark. Is also very noisy."
@@ -291,7 +291,7 @@ gorget = ItemKind
   , idamage  = toDmg 0
   , iaspects = [ Timeout $ 1 + d 2
                , AddArmorMelee $ 2 + d 3
-               , AddArmorRanged $ 2 + d 3 ]
+               , AddArmorRanged $ d 3 ]
   , ieffects = [ Unique, Periodic
                , Recharging (RefillCalm 1), EqpSlot EqpSlotMiscBonus ]
   , ifeature = [Durable, Precious, Identified, Equipable]
@@ -357,7 +357,7 @@ necklace6 = necklace
 necklace7 = necklace  -- TODO: teach AI to wear only for fight
   { ifreq    = [("treasure", 100)]
   , iaspects = [ AddMaxHP $ 10 + d 10
-               , AddArmorMelee 20, AddArmorRanged 20
+               , AddArmorMelee 20, AddArmorRanged 10
                , Timeout $ d 2 + 5 - dl 3 ]
   , ieffects = [ Unique, ELabel "of Overdrive", EqpSlot EqpSlotAddSpeed
                , Recharging (InsertMove $ 1 + d 2)
@@ -763,10 +763,10 @@ armorLeather = ItemKind
   , idamage  = toDmg 0
   , iaspects = [ AddHurtMelee (-3)
                , AddArmorMelee $ 1 + d 2 + dl 2 |*| 5
-               , AddArmorRanged $ 1 + dl 2 |*| 5 ]
+               , AddArmorRanged $ dl 2 |*| 3 ]
   , ieffects = [EqpSlot EqpSlotAddArmorMelee]
   , ifeature = [Durable, Identified, Equipable]
-  , idesc    = "A stiff jacket formed from leather boiled in bee wax. Protects from anything that is not too sharp. Smells much better than the rest of your garment."
+  , idesc    = "A stiff jacket formed from leather boiled in bee wax, padded linen and horse hair. Protects from anything that is not too sharp. Smells much better than the rest of your garment."
   , ikit     = []
   }
 armorMail = armorLeather
@@ -777,7 +777,7 @@ armorMail = armorLeather
   , idamage  = toDmg 0
   , iaspects = [ AddHurtMelee (-3)
                , AddArmorMelee $ 1 + d 2 + dl 3 |*| 5
-               , AddArmorRanged $ 3 + d 2 + dl 3 |*| 5 ]
+               , AddArmorRanged $ 1 + d 2 + dl 3 |*| 3 ]
   , ieffects = [EqpSlot EqpSlotAddArmorRanged]
   , ifeature = [Durable, Identified, Equipable]
   , idesc    = "A long shirt woven from iron rings that are hard to pierce through. Discourages foes from attacking your torso, making it harder for them to hit you."
@@ -793,8 +793,8 @@ gloveFencing = ItemKind
   , iweight  = 100
   , idamage  = toDmg $ 1 * d 1
   , iaspects = [ AddHurtMelee $ (d 2 + dl 10) |*| 3
-               , AddArmorRanged $ d 2 |*| 5 ]
-  , ieffects = [EqpSlot EqpSlotAddArmorRanged]
+               , AddArmorRanged $ dl 2 |*| 3 ]
+  , ieffects = [EqpSlot EqpSlotAddHurtMelee]
   , ifeature = [ toVelocity 50  -- flaps and flutters
                , Durable, Identified, Equipable ]
   , idesc    = "A fencing glove from rough leather ensuring a good grip. Also quite effective in deflecting or even catching slow projectiles."
@@ -807,7 +807,7 @@ gloveGauntlet = gloveFencing
   , iweight  = 300
   , idamage  = toDmg $ 2 * d 1
   , iaspects = [ AddArmorMelee $ 2 + dl 2 |*| 5
-               , AddArmorRanged $ dl 2 |*| 5 ]
+               , AddArmorRanged $ dl 1 |*| 3 ]
   , ieffects = [EqpSlot EqpSlotAddArmorMelee]
   , idesc    = "Long leather gauntlet covered in overlapping steel plates."
   }
@@ -819,7 +819,7 @@ gloveJousting = gloveFencing
   , idamage  = toDmg $ 4 * d 1
   , iaspects = [ AddHurtMelee $ dl 4 - 6 |*| 3
                , AddArmorMelee $ 2 + d 2 + dl 2 |*| 5
-               , AddArmorRanged $ dl 2 |*| 5 ]
+               , AddArmorRanged $ dl 2 |*| 3 ]
   , ieffects = [Unique, EqpSlot EqpSlotAddArmorMelee]
   , idesc    = "Rigid, steel, jousting handgear. If only you had a lance. And a horse."
   }

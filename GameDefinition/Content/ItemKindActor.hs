@@ -409,7 +409,7 @@ hornetSwarm = ItemKind
   , idamage  = toDmg 0
   , iaspects = [ AddMaxHP 8, AddMaxCalm 60, AddSpeed 30, AddNocto 2
                , AddAbility AbAlter (-2)  -- can't use stairs nor doors
-               , AddArmorMelee 80, AddArmorRanged 80 ]
+               , AddArmorMelee 80, AddArmorRanged 40 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -445,7 +445,7 @@ geyserBoiling = ItemKind
   , idamage  = toDmg 0
   , iaspects = [ AddMaxHP 10, AddMaxCalm 999, AddSpeed 10, AddNocto 2
                , AddAbility AbWait 1, AddAbility AbMelee 1
-               , AddArmorMelee 80, AddArmorRanged 80 ]
+               , AddArmorMelee 80, AddArmorRanged 40 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
