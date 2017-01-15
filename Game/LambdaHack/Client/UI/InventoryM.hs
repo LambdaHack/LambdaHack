@@ -130,8 +130,7 @@ getStoreItem prompt cInitial = do
 -- item from a list of items. Don't display stores empty for all actors.
 -- Start with a non-empty store.
 getFull :: MonadClientUI m
-        => m Suitability
-                            -- ^ which items to consider suitable
+        => m Suitability    -- ^ which items to consider suitable
         -> (Actor -> AspectRecord -> ItemDialogMode -> Text)
                             -- ^ specific prompt for only suitable items
         -> (Actor -> AspectRecord -> ItemDialogMode -> Text)
@@ -178,21 +177,13 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
       let suitsThisActor store =
             let bag = getCStoreBag store
             in any (\(iid, kit) -> psuitFun $ itemToF iid kit) $ EM.assocs bag
-          cThisActor cDef = fromMaybe cDef $ find suitsThisActor haveThis
+          firstStore = fromMaybe headThisActor $ find suitsThisActor haveThis
       -- Don't display stores totally empty for all actors.
       cLegal <- filterM partyNotEmpty cLegalRaw
       let breakStores cInit =
             let (pre, rest) = break (== cInit) cLegal
                 post = dropWhile (== cInit) rest
             in (MStore cInit, map MStore $ post ++ pre)
-      -- The last used store may go before even the first nonempty store.
-      !lastStoreList <- getsClient slastStore
-      let legalLast = intersect lastStoreList cLegalAfterCalm
-      firstStore <- case legalLast of
-        [] -> return $! cThisActor headThisActor
-        lastStore : _ -> return $! if cThisActor lastStore == CGround
-                                   then CGround
-                                   else lastStore
       let (modeFirst, modeRest) = breakStores firstStore
       getItem psuit prompt promptGeneric modeFirst modeRest
               askWhenLone permitMulitple (map MStore cLegal)
@@ -489,12 +480,8 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
     -- Remember item pointer, unless stats. Remember even if not moved,
     -- in case the initial position was a default.
     case drop pointer2 allOKX of
-      (Right newSlot, _) : _ | cCur /= MStats -> do
-        !lastStore <- getsClient slastStore
-        let store = storeFromMode cCur
-            newStore = store : delete store lastStore
-        modifyClient $ \cli -> cli { slastSlot = newSlot
-                                   , slastStore = newStore }
+      (Right slastSlot, _) : _ | cCur /= MStats ->
+        modifyClient $ \cli -> cli {slastSlot}
       _ -> return ()
     return okm
   case ekm of

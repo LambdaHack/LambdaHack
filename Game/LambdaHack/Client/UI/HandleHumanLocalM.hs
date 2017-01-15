@@ -221,7 +221,7 @@ chooseItemProjectHuman ts = do
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` leader
   let calmE = calmEnough b ar
-      cLegalRaw = [CGround, CInv, CEqp, CSha]
+      cLegalRaw = [CGround, CInv, CSha, CEqp]
       cLegal | calmE = cLegalRaw
              | otherwise = delete CSha cLegalRaw
       (verb1, object1) = case ts of
@@ -338,7 +338,7 @@ chooseItemApplyHuman ts = do
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` leader
   let calmE = calmEnough b ar
-      cLegalRaw = [CGround, CInv, CEqp, CSha]
+      cLegalRaw = [CGround, CInv, CSha, CEqp]
       cLegal | calmE = cLegalRaw
              | otherwise = delete CSha cLegalRaw
       (verb1, object1) = case ts of

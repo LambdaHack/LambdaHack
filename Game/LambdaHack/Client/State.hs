@@ -28,7 +28,6 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -72,7 +71,6 @@ data StateClient = StateClient
   , snxtScenario :: !Int           -- ^ next game scenario number
   , sslots       :: !ItemSlots     -- ^ map from slots to items
   , slastSlot    :: !SlotChar      -- ^ last used slot
-  , slastStore   :: ![CStore]      -- ^ last used stores
   , smarkSuspect :: !Bool          -- ^ mark suspect features
   , scondInMelee :: !(EM.EnumMap LevelId (Either Bool (Bool, Bool)))
       -- ^ the old and (new, old) values of condInMelee condition
@@ -121,7 +119,6 @@ emptyStateClient _sside =
     , snxtScenario = 0
     , sslots = ItemSlots EM.empty EM.empty
     , slastSlot = SlotChar 0 'Z'
-    , slastStore = []
     , smarkSuspect = False
     , scondInMelee = EM.empty
     , svictories = EM.empty
@@ -174,7 +171,6 @@ instance Binary StateClient where
     put snxtScenario
     put sslots
     put slastSlot
-    put slastStore
     put smarkSuspect
     put scondInMelee
     put svictories
@@ -195,7 +191,6 @@ instance Binary StateClient where
     snxtScenario <- get
     sslots <- get
     slastSlot <- get
-    slastStore <- get
     smarkSuspect <- get
     scondInMelee <- get
     svictories <- get

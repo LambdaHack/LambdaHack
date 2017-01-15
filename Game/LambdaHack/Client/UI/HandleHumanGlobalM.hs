@@ -633,12 +633,11 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
              | otherwise = delete CSha cLegalRaw
       prompt = makePhrase ["What to", verb]
       promptEqp = makePhrase ["What consumable to", verb]
-      p :: CStore -> (Text, m Suitability)
-      p cstore = if cstore `elem` [CEqp, CSha] && cLegalRaw /= [CGround]
-                 then (promptEqp, return $ SuitsSomething $ \itemFull ->
-                        goesIntoEqp $ itemBase itemFull)
-                 else (prompt, return SuitsEverything)
-      (promptGeneric, psuit) = p destCStore
+      (promptGeneric, psuit) =
+        if destCStore == CEqp && cLegalRaw /= [CGround]
+        then (promptEqp, return $ SuitsSomething $ \itemFull ->
+               goesIntoEqp $ itemBase itemFull)
+        else (prompt, return SuitsEverything)
   ggi <- getFull psuit
                  (\_ _ cCur -> prompt <+> ppItemDialogModeFrom cCur)
                  (\_ _ cCur -> promptGeneric <+> ppItemDialogModeFrom cCur)

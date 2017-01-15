@@ -76,7 +76,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
   UpdCreateItem iid _ kit c -> do
     case c of
       CActor aid store -> do
-        l <- updateItemSlotSide store aid iid
+        slastSlot <- updateItemSlotSide store aid iid
         case store of
           COrgan -> do
             let verb =
@@ -89,11 +89,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
           _ -> do
             itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
             mleader <- getsClient _sleader
-            when (Just aid == mleader) $ do
-              !lastStore <- getsClient slastStore
-              let newStore = store : delete store lastStore
-              modifyClient $ \cli -> cli { slastSlot = l
-                                         , slastStore = newStore }
+            when (Just aid == mleader) $ modifyClient $ \cli -> cli {slastSlot}
       CEmbed lid _ -> markDisplayNeeded lid
       CFloor lid _ -> do
         -- If you want an item to be assigned to @slastSlot@, create it
@@ -550,13 +546,8 @@ moveItemUI iid k aid cstore1 cstore2 = do
   mleader <- getsClient _sleader
   ItemSlots itemSlots _ <- getsClient sslots
   case lookup iid $ map swap $ EM.assocs itemSlots of
-    Just l -> do
-      when (Just aid == mleader) $ do
-        !lastStore <- getsClient slastStore
-        let newStore = cstore2 : cstore1
-                       : delete cstore2 (delete cstore1 lastStore)
-        modifyClient $ \cli -> cli { slastSlot = l
-                                   , slastStore = newStore }
+    Just slastSlot -> do
+      when (Just aid == mleader) $ modifyClient $ \cli -> cli {slastSlot}
       if cstore1 == CGround && Just aid == mleader && not underAI then
         itemAidVerbMU aid (MU.Text verb) iid (Right k) cstore2
       else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
@@ -948,11 +939,8 @@ setLastSlot aid iid cstore = do
   mleader <- getsClient _sleader
   when (Just aid == mleader) $ do
     ItemSlots itemSlots _ <- getsClient sslots
-    !lastStore <- getsClient slastStore
-    let newStore = cstore : delete cstore lastStore
     case lookup iid $ map swap $ EM.assocs itemSlots of
-      Just l -> modifyClient $ \cli -> cli { slastSlot = l
-                                           , slastStore = newStore }
+      Just slastSlot -> modifyClient $ \cli -> cli {slastSlot}
       Nothing -> assert `failure` (iid, cstore, aid)
 
 strike :: MonadClientUI m
