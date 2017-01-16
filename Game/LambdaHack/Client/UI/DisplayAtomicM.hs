@@ -784,11 +784,11 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
       subject <- partActorLeader aid b
       let msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
       msgAdd msgDie
-      let deathAct = if isOurCharacter
-                     then if alreadyDeadBefore
-                          then twirlSplash (bpos b, bpos b) Color.Red Color.Red
-                          else deathBody (bpos b)
-                     else pushAndDelay  -- if boring, at least display
+      let deathAct = if alreadyDeadBefore
+                     then twirlSplash (bpos b, bpos b) Color.Red Color.Red
+                     else if isOurCharacter
+                          then deathBody (bpos b)
+                          else shortDeathBody (bpos b)
       animate (blid b) deathAct
     else case effect of
         IK.ELabel{} -> return ()

@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.UI.Animation
   ( Animation, renderAnim
   , pushAndDelay, blinkColorActor, twirlSplash, blockHit, blockMiss
-  , deathBody, actorX, swapPlaces, teleport, fadeout
+  , deathBody, shortDeathBody, actorX, swapPlaces, teleport, fadeout
   ) where
 
 import Prelude ()
@@ -152,6 +152,21 @@ deathBody pos = Animation $ map (mzipSingleton pos)
   , cSym Red   ';'
   , cSym Red   ';'
   , cSym Red   ','
+  ]
+
+-- | Death animation for an organic body, short version (e.g., for enemies).
+shortDeathBody :: Point -> Animation
+shortDeathBody pos = Animation $ map (mzipSingleton pos)
+  [ cSym BrRed '\\'
+  , cSym BrRed '|'
+  , cSym BrRed '%'
+  , cSym BrRed '-'
+  , cSym BrRed '\\'
+  , cSym BrRed '|'
+  , cSym BrRed '%'
+  , cSym Red   '%'
+  , cSym Red   '%'
+  , cSym Red   ';'
   ]
 
 -- | Mark actor location animation.
