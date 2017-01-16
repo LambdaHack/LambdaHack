@@ -81,7 +81,7 @@ getPerFid fid lid = do
 
 revealItems :: (MonadAtomic m, MonadServer m) => Maybe FactionId -> m ()
 {-# INLINABLE revealItems #-}
-revealItems mfid= do
+revealItems mfid = do
   itemToF <- itemToFullServer
   let discover aid store iid k =
         let itemFull = itemToF iid k

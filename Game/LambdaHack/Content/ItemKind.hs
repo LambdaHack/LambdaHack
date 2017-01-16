@@ -99,6 +99,7 @@ properEffect :: Effect -> Bool
 properEffect eff = case eff of
   ELabel{} -> False
   EqpSlot{} -> False
+  Explode{} -> False  -- tentative; needed for rings to auto-identify
   Unique -> False
   Periodic -> False
   _ -> True

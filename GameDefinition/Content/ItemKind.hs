@@ -462,7 +462,7 @@ ring = ItemKind
   , iweight  = 15
   , idamage  = toDmg 0
   , iaspects = []
-  , ieffects = [Explode "blast 20"]
+  , ieffects = []
   , ifeature = [Precious, Identified, Equipable]
   , idesc    = "It looks like an ordinary object, but it's in fact a generator of exceptional effects: adding to some of your natural abilities and subtracting from others. You'd profit enormously if you could find a way to multiply such generators."
   , ikit     = []
@@ -476,18 +476,18 @@ ring1 = ring
 ring2 = ring
   { irarity  = [(10, 5)]
   , iaspects = [AddMaxHP $ 10 + dl 10, AddMaxCalm $ dl 5 - 20 - d 5]
-  , ieffects = [EqpSlot EqpSlotAddMaxHP]
+  , ieffects = [Explode "blast 20", EqpSlot EqpSlotAddMaxHP]
   }
 ring3 = ring
   { irarity  = [(10, 5)]
   , iaspects = [AddMaxCalm $ 29 + dl 10]
-  , ieffects = [EqpSlot EqpSlotMiscBonus]
+  , ieffects = [Explode "blast 20", EqpSlot EqpSlotMiscBonus]
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with solemn, strangely comforting, worn out words."
   }
 ring4 = ring
   { irarity  = [(3, 3), (10, 5)]
   , iaspects = [AddHurtMelee $ d 5 + dl 5 |*| 3, AddMaxHP $ dl 3 - 5 - d 3]
-  , ieffects = [EqpSlot EqpSlotAddHurtMelee]
+  , ieffects = [Explode "blast 20", EqpSlot EqpSlotAddHurtMelee]
   }
 ring5 = ring  -- by the time it's found, probably no space in eqp
   { irarity  = [(5, 0), (10, 2)]
