@@ -34,32 +34,32 @@ debugShow :: Show a => a -> Text
 {-# INLINABLE debugShow #-}
 debugShow = T.pack . Show.Pretty.ppShow
 
-debugResponse :: MonadServer m => Response -> m ()
+debugResponse :: MonadServer m => FactionId -> Response -> m ()
 {-# INLINABLE debugResponse #-}
-debugResponse cmd = case cmd of
-  RespUpdAtomic cmdA@UpdPerception{} -> debugPlain cmd cmdA
-  RespUpdAtomic cmdA@UpdResume{} -> debugPlain cmd cmdA
-  RespUpdAtomic cmdA@UpdSpotTile{} -> debugPlain cmd cmdA
-  RespUpdAtomic cmdA -> debugPretty cmd cmdA
+debugResponse fid cmd = case cmd of
+  RespUpdAtomic cmdA@UpdPerception{} -> debugPlain fid cmd cmdA
+  RespUpdAtomic cmdA@UpdResume{} -> debugPlain fid cmd cmdA
+  RespUpdAtomic cmdA@UpdSpotTile{} -> debugPlain fid cmd cmdA
+  RespUpdAtomic cmdA -> debugPretty fid cmd cmdA
   RespQueryAI aid -> do
     d <- debugAid aid "RespQueryAI" cmd
     serverPrint d
   RespSfxAtomic sfx -> do
     ps <- posSfxAtomic sfx
-    serverPrint $ debugShow (cmd, ps)
+    serverPrint $ debugShow (fid, cmd, ps)
   RespQueryUI -> serverPrint "RespQueryUI"
 
-debugPretty :: (MonadServer m, Show a) => a -> UpdAtomic -> m ()
+debugPretty :: (MonadServer m, Show a) => FactionId -> a -> UpdAtomic -> m ()
 {-# INLINABLE debugPretty #-}
-debugPretty cmd cmdA = do
+debugPretty fid cmd cmdA = do
   ps <- posUpdAtomic cmdA
-  serverPrint $ debugShow (cmd, ps)
+  serverPrint $ debugShow (fid, cmd, ps)
 
-debugPlain :: (MonadServer m, Show a) => a -> UpdAtomic -> m ()
+debugPlain :: (MonadServer m, Show a) => FactionId -> a -> UpdAtomic -> m ()
 {-# INLINABLE debugPlain #-}
-debugPlain cmd cmdA = do
+debugPlain fid cmd cmdA = do
   ps <- posUpdAtomic cmdA
-  serverPrint $ T.pack $ show (cmd, ps)  -- too large for pretty printing
+  serverPrint $ T.pack $ show (fid, cmd, ps)  -- too large for pretty printing
 
 debugRequestAI :: MonadServer m => ActorId -> RequestAI -> m ()
 {-# INLINABLE debugRequestAI #-}
@@ -75,13 +75,13 @@ debugRequestUI aid cmd = do
 
 data DebugAid a = DebugAid
   { label   :: !Text
+  , aid     :: !ActorId
   , cmd     :: !a
+  , faction :: !FactionId
   , lid     :: !LevelId
   , bHP     :: !Int64
   , btime   :: !Time
   , time    :: !Time
-  , aid     :: !ActorId
-  , faction :: !FactionId
   }
   deriving Show
 
@@ -92,10 +92,10 @@ debugAid aid label cmd = do
   time <- getsState $ getLocalTime (blid b)
   btime <- getsServer $ (EM.! aid) . (EM.! blid b) . (EM.! bfid b) . sactorTime
   return $! debugShow DebugAid { label
+                               , aid
                                , cmd
+                               , faction = bfid b
                                , lid = blid b
                                , bHP = bhp b
                                , btime
-                               , time
-                               , aid
-                               , faction = bfid b }
+                               , time }

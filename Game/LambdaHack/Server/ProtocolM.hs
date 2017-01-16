@@ -148,7 +148,7 @@ sendUpdate !fid !cmd = do
   frozenClient <- getsDict $ (EM.! fid)
   let resp = RespUpdAtomic cmd
   debug <- getsServer $ sniffOut . sdebugSer
-  when debug $ debugResponse resp
+  when debug $ debugResponse fid resp
   writeQueue resp $ responseS frozenClient
 
 sendSfx :: MonadServerReadRequest m => FactionId -> SfxAtomic -> m ()
@@ -156,7 +156,7 @@ sendSfx :: MonadServerReadRequest m => FactionId -> SfxAtomic -> m ()
 sendSfx !fid !sfx = do
   let resp = RespSfxAtomic sfx
   debug <- getsServer $ sniffOut . sdebugSer
-  when debug $ debugResponse resp
+  when debug $ debugResponse fid resp
   frozenClient <- getsDict $ (EM.! fid)
   case frozenClient of
     ChanServer{requestUIS=Just{}} -> writeQueue resp $ responseS frozenClient
@@ -167,7 +167,7 @@ sendQueryAI :: MonadServerReadRequest m => FactionId -> ActorId -> m RequestAI
 sendQueryAI fid aid = do
   let respAI = RespQueryAI aid
   debug <- getsServer $ sniffOut . sdebugSer
-  when debug $ debugResponse respAI
+  when debug $ debugResponse fid respAI
   frozenClient <- getsDict $ (EM.! fid)
   req <- do
     writeQueue respAI $ responseS frozenClient
@@ -181,7 +181,7 @@ sendQueryUI :: (MonadAtomic m, MonadServerReadRequest m)
 sendQueryUI fid _aid = do
   let respUI = RespQueryUI
   debug <- getsServer $ sniffOut . sdebugSer
-  when debug $ debugResponse respUI
+  when debug $ debugResponse fid respUI
   frozenClient <- getsDict $ (EM.! fid)
   req <- do
     writeQueue respUI $ responseS frozenClient
