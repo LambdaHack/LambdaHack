@@ -577,9 +577,8 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
   itemSel <- getsSession sitemSel
   modifySession $ \sess -> sess {sitemSel = Nothing}  -- prevent surprise
   case itemSel of
-    Just (fromCStore, _) | fromCStore == destCStore ->
-      failWith "already in place"
-    Just (fromCStore, iid) | cLegalRaw /= [CGround] -> do  -- not normal pickup
+    Just (fromCStore, iid) | fromCStore /= destCStore
+                             && fromCStore `elem` cLegalRaw -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       bag <- getsState $ getBodyStoreBag b fromCStore
@@ -634,6 +633,10 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
       prompt = makePhrase ["What to", verb]
       promptEqp = makePhrase ["What consumable to", verb]
       (promptGeneric, psuit) =
+        -- We prune item list only for eqp, because other stores don't have
+        -- so clear cut heuristics. So when picking up a stash, either grab
+        -- it to auto-store things, or equip first using the pruning
+        -- and then pack/stash the rest selectively or en masse.
         if destCStore == CEqp && cLegalRaw /= [CGround]
         then (promptEqp, return $ SuitsSomething $ \itemFull ->
                goesIntoEqp $ itemBase itemFull)

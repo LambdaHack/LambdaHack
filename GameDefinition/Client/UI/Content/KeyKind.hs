@@ -37,9 +37,9 @@ standardKeys = KeyKind
 
       -- Item use, 1st part
       , ("g", addCmdCategory CmdMinimal
-              $ addCmdCategory CmdItemMenu $ grabItems "grab items")
+              $ addCmdCategory CmdItemMenu $ grabItems "grab item(s)")
       , ("comma", addCmdCategory CmdNoHelp $ grabItems "")
-      , ("d", addCmdCategory CmdItemMenu $ dropItems "drop items")
+      , ("d", addCmdCategory CmdItemMenu $ dropItems "drop item(s)")
       , ("period", addCmdCategory CmdNoHelp $ dropItems "")
       , ("f", addCmdCategory CmdItemMenu $ projectA flingTs)
       , ("CTRL-f", addCmdCategory CmdItemMenu
