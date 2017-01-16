@@ -32,9 +32,9 @@ cdefs = ContentDef
 
 items :: [ItemKind]
 items =
-  [dart, dart200, paralizingProj, harpoon, net, jumpingPole, sharpeningTool, seeingItem, motionScanner, light1, light2, light3, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency]
+  [spike, dart, slingBullet, slingStone, paralizingProj, harpoon, net, jumpingPole, sharpeningTool, seeingItem, motionScanner, light1, light2, light3, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency]
 
-dart,    dart200, paralizingProj, harpoon, net, jumpingPole, sharpeningTool, seeingItem, motionScanner, light1, light2, light3, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency :: ItemKind
+spike,    dart, slingBullet, slingStone, paralizingProj, harpoon, net, jumpingPole, sharpeningTool, seeingItem, motionScanner, light1, light2, light3, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency :: ItemKind
 
 necklace, ring, potion, flask, scroll, wand, gem :: ItemKind  -- generic templates
 
@@ -66,36 +66,68 @@ _symbolFood      = ','  -- too easy to miss?
 
 -- * Thrown weapons
 
-dart = ItemKind
+spike = ItemKind
   { isymbol  = symbolProjectile
   , iname    = "spike"
-  , ifreq    = [("useful", 100), ("any arrow", 100)]
+  , ifreq    = [("useful", 100), ("any arrow", 50)]
   , iflavour = zipPlain [Cyan]
   , icount   = 4 * d 3
   , irarity  = [(1, 10), (10, 20)]
   , iverbHit = "nick"
   , iweight  = 150
   , idamage  = toDmg $ 5 * d 1
-  , iaspects = [AddHurtMelee (-17 + d 3 + dl 4 |*| 5)]
+  , iaspects = [AddHurtMelee (-15 + d 3 + dl 4 |*| 5)]
   , ieffects = []
   , ifeature = [toVelocity 70, Identified]  -- hitting with tip costs speed
   , idesc    = "A cruel long nail with small head."  -- "Much inferior to arrows though, especially given the contravariance problems."  --- funny, but destroy the suspension of disbelief; this is supposed to be a Lovecraftian horror and any hilarity must ensue from the failures in making it so and not from actively trying to be funny; also, mundane objects are not supposed to be scary or transcendental; the scare is in horrors from the abstract dimension visiting our ordinary reality; without the contrast there's no horror and no wonder, so also the magical items must be contrasted with ordinary XIX century and antique items
   , ikit     = []
   }
-dart200 = ItemKind
+dart = ItemKind
   { isymbol  = symbolProjectile
   , iname    = "dart"
-  , ifreq    = [("useful", 100), ("any arrow", 50)]  -- TODO: until arrows added
+  , ifreq    = [("useful", 100), ("any arrow", 50)]
   , iflavour = zipPlain [BrRed]
   , icount   = 4 * d 3
   , irarity  = [(1, 20), (10, 10)]
   , iverbHit = "prick"
   , iweight  = 40
   , idamage  = toDmg $ 1 * d 1
-  , iaspects = [AddHurtMelee (-17 + d 3 + dl 4 |*| 5)]
+  , iaspects = [AddHurtMelee (-15 + d 3 + dl 4 |*| 5)]
   , ieffects = []
   , ifeature = [Identified]
   , idesc    = "A sharp delicate dart with fins."
+  , ikit     = []
+  }
+slingBullet = ItemKind
+  { isymbol  = symbolProjectile
+  , iname    = "sling bullet"
+  , ifreq    = [("useful", 20), ("any arrow", 200)]
+  , iflavour = zipPlain [BrBlack]
+  , icount   = 6 * d 3
+  , irarity  = [(1, 1), (10, 10)]
+  , iverbHit = "hit"
+  , iweight  = 28
+  , idamage  = toDmg $ 1 * d 1
+  , iaspects = [AddHurtMelee (-15 + d 3 + dl 4 |*| 5)]
+  , ieffects = []
+  , ifeature = [toVelocity 200, Identified]
+  , idesc    = "Small almond-shaped leaden projectile than weighs more than the sling used to tie the bag. It doesn't drop out of the sling's pouch when swung and doesn't snag when released."
+  , ikit     = []
+  }
+slingStone = ItemKind
+  { isymbol  = symbolProjectile
+  , iname    = "sling stone"
+  , ifreq    = [("useful", 20), ("any arrow", 200)]
+  , iflavour = zipPlain [Blue]
+  , icount   = 3 * d 3
+  , irarity  = [(1, 1), (10, 10)]
+  , iverbHit = "hit"
+  , iweight  = 200
+  , idamage  = toDmg $ 2 * d 1
+  , iaspects = [AddHurtMelee (-15 + d 3 + dl 4 |*| 5)]
+  , ieffects = []
+  , ifeature = [toVelocity 150, Identified]
+  , idesc    = "A round stone, carefully sized and smoothed to fit the pouch of a standard string and cloth sling."
   , ikit     = []
   }
 
@@ -112,7 +144,7 @@ paralizingProj = ItemKind
   , iverbHit = "entangle"
   , iweight  = 500
   , idamage  = toDmg $ 1 * d 1
-  , iaspects = [AddHurtMelee (-16 |*| 5)]
+  , iaspects = [AddHurtMelee (-14 |*| 5)]
   , ieffects = [Paralyze (10 + 2 * d 5), DropBestWeapon]
   , ifeature = [Identified]
   , idesc    = "Wood balls tied with hemp rope. The target enemy is tripped and bound to drop the main weapon, while fighting for balance."
@@ -144,7 +176,7 @@ net = ItemKind
   , iverbHit = "entangle"
   , iweight  = 1000
   , idamage  = toDmg $ 2 * d 1
-  , iaspects = [AddHurtMelee (-16 |*| 5)]
+  , iaspects = [AddHurtMelee (-14 |*| 5)]
   , ieffects = [ toOrganGameTurn "slow 10" (3 + d 3)
                , DropItem CEqp "torso armor" ]
   , ifeature = [Identified]
@@ -905,7 +937,7 @@ hammer = ItemKind
   { isymbol  = symbolHafted
   , iname    = "war hammer"
   , ifreq    = [("useful", 100), ("starting weapon", 100)]
-  , iflavour = zipPlain [BrMagenta]
+  , iflavour = zipFancy [BrMagenta]  -- avoid "pink"
   , icount   = 1
   , irarity  = [(5, 15)]
   , iverbHit = "club"

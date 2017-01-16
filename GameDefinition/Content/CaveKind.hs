@@ -234,7 +234,7 @@ shootout = rogue  -- few random solid tiles, rather to duck behind, than to
   , cactorFreq    = []
   , citemNum      = 40 * d 2
   , citemFreq     = [ ("useful", 30)
-                    , ("any arrow", 60), ("harpoon", 30), ("flask", 30) ]
+                    , ("any arrow", 400), ("harpoon", 300), ("flask", 30) ]
   , cplaceFreq    = [("shootout", 15), ("brawl", 85)]
   , cpassable     = True
   , cdefTile      = "shootoutSet"
