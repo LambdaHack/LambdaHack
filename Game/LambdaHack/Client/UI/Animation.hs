@@ -87,8 +87,6 @@ twirlSplash poss c1 c2 = Animation $ map (mzipPairs poss)
   , (cSym c1      '\\',blank)
   , (cSym c2      '|', blank)
   , (cSym c2      '%', blank)
-  , (cSym c2      '%', blank)
-  , (cSym c2      '/', blank)
   ]
 
 -- | Attack that hits through a block.
@@ -130,43 +128,34 @@ blockMiss poss = Animation $ map (mzipPairs poss)
 -- | Death animation for an organic body.
 deathBody :: Point -> Animation
 deathBody pos = Animation $ map (mzipSingleton pos)
-  [ cSym BrRed '\\'
-  , cSym BrRed '\\'
-  , cSym BrRed '|'
-  , cSym BrRed '|'
-  , cSym BrRed '%'
-  , cSym BrRed '%'
-  , cSym BrRed '-'
-  , cSym BrRed '-'
-  , cSym BrRed '\\'
-  , cSym BrRed '\\'
-  , cSym BrRed '|'
-  , cSym BrRed '|'
-  , cSym BrRed '%'
-  , cSym BrRed '%'
-  , cSym BrRed '%'
-  , cSym Red   '%'
-  , cSym Red   '%'
-  , cSym Red   '%'
-  , cSym Red   '%'
-  , cSym Red   ';'
-  , cSym Red   ';'
-  , cSym Red   ','
+  [ cSym Red '%'
+  , cSym Red '-'
+  , cSym Red '-'
+  , cSym Red '\\'
+  , cSym Red '\\'
+  , cSym Red '|'
+  , cSym Red '|'
+  , cSym Red '%'
+  , cSym Red '%'
+  , cSym Red '%'
+  , cSym Red '%'
+  , cSym Red ';'
+  , cSym Red ';'
+  , cSym Red ','
   ]
 
 -- | Death animation for an organic body, short version (e.g., for enemies).
 shortDeathBody :: Point -> Animation
 shortDeathBody pos = Animation $ map (mzipSingleton pos)
-  [ cSym BrRed '\\'
-  , cSym BrRed '|'
-  , cSym BrRed '%'
-  , cSym BrRed '-'
-  , cSym BrRed '\\'
-  , cSym BrRed '|'
-  , cSym BrRed '%'
-  , cSym Red   '%'
-  , cSym Red   '%'
-  , cSym Red   ';'
+  [ cSym Red '%'
+  , cSym Red '-'
+  , cSym Red '\\'
+  , cSym Red '|'
+  , cSym Red '%'
+  , cSym Red '%'
+  , cSym Red '%'
+  , cSym Red ';'
+  , cSym Red ','
   ]
 
 -- | Mark actor location animation.
