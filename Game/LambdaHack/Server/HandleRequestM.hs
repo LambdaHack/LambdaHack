@@ -251,11 +251,11 @@ reqMelee source target iid cstore = do
         deltaHP | serious = -- if HP overfull, at least cut back to max HP
                             min speedDeltaHP (xM hpMax - bhp tb)
                 | otherwise = speedDeltaHP
+    execSfxAtomic $ SfxStrike source target iid cstore hurtMult
     -- Damage the target.
     when (speedDeltaHP < 0) $ do
       execUpdAtomic $ UpdRefillHP target deltaHP
       when serious $ halveCalm target
-    execSfxAtomic $ SfxStrike source target iid cstore hurtMult
     -- Deduct a hitpoint for a pierce of a projectile
     -- or due to a hurled actor colliding with another or a wall.
     case btrajectory sb of

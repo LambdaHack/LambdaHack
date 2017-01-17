@@ -139,10 +139,10 @@ itemEffectCause aid tpos ef = do
   bag <- getsState $ getEmbedBag (blid sb) tpos
   case EM.assocs bag of
     [(iid, kit)] -> do
-      itemToF <- itemToFullServer
-      let itemFull = itemToF iid kit
       -- No block against tile, hence unconditional.
       execSfxAtomic $ SfxTrigger aid tpos $ TK.Cause ef
+      itemToF <- itemToFullServer
+      let itemFull = itemToF iid kit
       effectAndDestroy aid aid iid c False [ef] itemFull
       return True
     ab -> assert `failure` (aid, tpos, ab)
@@ -261,11 +261,12 @@ effectBurn nDm source target = do
                           min rawDeltaHP (xM hpMax - bhp tb)
               | otherwise = rawDeltaHP
       deltaDiv = fromEnum $ deltaHP `divUp` oneM
+  -- Display the effect.
+  let reportedEffect = IK.Burn $ Dice.intToDice (- deltaDiv)
+  execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
   -- Damage the target.
   execUpdAtomic $ UpdRefillHP target deltaHP  -- TODO: also light on fire, etc.
   when serious $ halveCalm target
-  let reportedEffect = IK.Burn $ Dice.intToDice (- deltaDiv)
-  execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
   return True
 
 -- ** Explode
@@ -274,11 +275,13 @@ effectExplode :: (MonadAtomic m, MonadServer m)
               => m () -> GroupName ItemKind -> ActorId -> m Bool
 {-# INLINABLE effectExplode #-}
 effectExplode execSfx cgroup target = do
+  execSfx
   tb <- getsState $ getActorBody target
   let itemFreq = [(cgroup, 1)]
       container = CActor target COrgan
   m2 <- rollAndRegisterItem (blid tb) itemFreq container False Nothing
-  let (iid, (ItemFull{itemBase, itemK}, _)) = fromMaybe (assert `failure` cgroup) m2
+  let (iid, (ItemFull{itemBase, itemK}, _)) =
+        fromMaybe (assert `failure` cgroup) m2
       Point x y = bpos tb
       projectN k100 (n, _) = do
         -- We pick a point at the border, not inside, to have a uniform
@@ -322,7 +325,6 @@ effectExplode execSfx cgroup target = do
   let mn3 = EM.lookup iid bag3
   maybe (return ()) (\kit -> execUpdAtomic
                              $ UpdLoseItem False iid itemBase kit container) mn3
-  execSfx
   return True  -- we neglect verifying that at least one projectile got off
 
 -- ** RefillHP
@@ -346,11 +348,11 @@ effectRefillHP overfill power source target = do
   if deltaHP == 0
     then return False
     else do
-      execUpdAtomic $ UpdRefillHP target deltaHP
       sb <- getsState $ getActorBody source
       let effect | overfill = IK.OverfillHP power
                  | otherwise = IK.RefillHP power
       execSfxAtomic $ SfxEffect (bfid sb) target effect deltaHP
+      execUpdAtomic $ UpdRefillHP target deltaHP
       when (deltaHP < 0 && serious) $ halveCalm target
       return True
 
@@ -447,9 +449,9 @@ effectCallFriend execSfx nDm source target = do
       execSfxAtomic $ SfxMsgFid (bfid sb) msg
     return False
   else do
+    execSfx
     let deltaHP = - xM 10
     execUpdAtomic $ UpdRefillHP target deltaHP
-    execSfx
     let validTile t = not $ Tile.isNoActor coTileSpeedup t
     ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
     localTime <- getsState $ getLocalTime (blid tb)
@@ -481,9 +483,9 @@ effectSummon execSfx actorFreq nDm source target = do
       execSfxAtomic $ SfxMsgFid (bfid sb) msg
     return False
   else do
+    execSfx
     let deltaCalm = - xM 10
     unless (bproj tb) $ udpateCalm target deltaCalm
-    execSfx
     let validTile t = not $ Tile.isNoActor coTileSpeedup t
     ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
     localTime <- getsState $ getLocalTime (blid tb)
@@ -529,6 +531,7 @@ effectAscend recursiveCall execSfx k source target pos = do
        -- We keep it useful even in shallow dungeons.
        recursiveCall $ IK.Teleport 30  -- powerful teleport
      | otherwise -> do
+       execSfx
        btime_bOld <- getsServer $ (EM.! target) . (EM.! lid1)
                        . (EM.! bfid b1) . sactorTime
        pos3 <- findStairExit (k > 0) lid2 pos2
@@ -571,7 +574,6 @@ effectAscend recursiveCall execSfx k source target pos = do
            mapM_ moveInh inhabitants
            -- Move the actor to his destination.
            switch2
-       execSfx
        return True
 
 findStairExit :: MonadStateRead m => Bool -> LevelId -> Point -> m Point
@@ -682,10 +684,10 @@ effectParalyze execSfx nDm target = do
   if bproj b || bhp b <= 0
     then return False
     else do
+      execSfx
       let t = timeDeltaScale (Delta timeClip) p
       modifyServer $ \ser ->
         ser {sactorTime = ageActor (bfid b) (blid b) target t $ sactorTime ser}
-      execSfx
       return True
 
 -- ** InsertMove
@@ -696,6 +698,7 @@ effectInsertMove :: (MonadAtomic m, MonadServer m)
                  => m () -> Dice.Dice -> ActorId -> m Bool
 {-# INLINABLE effectInsertMove #-}
 effectInsertMove execSfx nDm target = do
+  execSfx
   p <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   b <- getsState $ getActorBody target
   actorAspect <- getsServer sactorAspect
@@ -704,7 +707,6 @@ effectInsertMove execSfx nDm target = do
       t = timeDeltaScale tpm (-p)
   modifyServer $ \ser ->
     ser {sactorTime = ageActor (bfid b) (blid b) target t $ sactorTime ser}
-  execSfx
   return True
 
 -- ** Teleport
@@ -746,8 +748,8 @@ effectTeleport execSfx nDm source target = do
        execSfxAtomic $ SfxMsgFid (bfid sb) "Translocation not possible."
        return False
      | otherwise -> do
-       execUpdAtomic $ UpdMoveActor target spos tpos
        execSfx
+       execUpdAtomic $ UpdMoveActor target spos tpos
        return True
 
 -- ** CreateItem
@@ -836,8 +838,8 @@ effectDropItem execSfx store grp target = do
   if null is
     then return False
     else do
-      mapM_ (uncurry (dropCStoreItem store target b)) is
       unless (store == COrgan) execSfx
+      mapM_ (uncurry (dropCStoreItem store target b)) is
       return True
 
 -- | Drop a single actor's item. Note that if there are multiple copies,
@@ -1007,6 +1009,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
              || throwVelocity <= 0 || throwLinger <= 0
             then return False  -- e.g., actor is too heavy; OK
             else do
+              execSfx
               execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
               -- Give the actor one extra turn and also let the push start ASAP.
               -- So, if the push lasts one (his) turn, he will not lose
@@ -1018,7 +1021,6 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
               modifyServer $ \ser ->
                 ser {sactorTime = ageActor (bfid tb) (blid tb) target delta
                                   $ sactorTime ser}
-              execSfx
               return True
 
 sendFlyingVector :: (MonadAtomic m, MonadServer m)
@@ -1062,9 +1064,9 @@ effectDropBestWeapon execSfx target = do
   localTime <- getsState $ getLocalTime (blid tb)
   case strongestMelee False localTime allAssocs of
     (_, (iid, _)) : _ -> do
+      execSfx
       let kit = beqp tb EM.! iid
       dropCStoreItem CEqp target tb iid kit
-      execSfx
       return True
     [] ->
       return False
@@ -1099,8 +1101,8 @@ effectTransformEqp execSfx target symbol cstore m = do
   if null is
     then return False
     else do
-      mapM_ (uncurry m) is
       execSfx
+      mapM_ (uncurry m) is
       return True
 
 -- ** ApplyPerfume
@@ -1109,12 +1111,12 @@ effectApplyPerfume :: MonadAtomic m
                    => m () -> ActorId -> m Bool
 {-# INLINABLE effectApplyPerfume #-}
 effectApplyPerfume execSfx target = do
+  execSfx
   tb <- getsState $ getActorBody target
   Level{lsmell} <- getLevel $ blid tb
   let f p fromSm =
         execUpdAtomic $ UpdAlterSmell (blid tb) p fromSm timeZero
   mapWithKeyM_ f lsmell
-  execSfx
   return True
 
 -- ** OneOf

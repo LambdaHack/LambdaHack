@@ -157,18 +157,41 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
       aidVerbMU aid $ MU.Text $ (if n > 0 then "heal" else "lose")
                                 <+> tshow (abs $ n `divUp` oneM) <> "HP"
     b <- getsState $ getActorBody aid
-    when (resCurrentTurn (bhpDelta b) >= bhp b && bhp b > 0) $
-      actorVerbMU aid b "return from the brink of death"
-    mleader <- getsClient _sleader
-    when (Just aid == mleader) $ do
-      actorAspect <- getsClient sactorAspect
-      let ar = case EM.lookup aid actorAspect of
-            Just aspectRecord -> aspectRecord
-            Nothing -> assert `failure` aid
-      when (bhp b >= xM (aMaxHP ar) && aMaxHP ar > 0
-            && resCurrentTurn (bhpDelta b) > 0) $ do
-        actorVerbMU aid b "recover your health fully"
-        stopPlayBack
+    arena <- getArenaUI
+    side <- getsClient sside
+    let hpDelta = resCurrentTurn (bhpDelta b)
+    -- We display death messages only if not dead already before this refill.
+    if bhp b <= 0 && hpDelta < 0
+       && (bfid b == side && not (bproj b) || arena == blid b) then do
+      let (firstFall, hurtExtra) = case (bfid b == side, bproj b) of
+            (True, True) -> ("fall apart", "be reduced to dust")
+            (True, False) -> ("fall down", "be stomped flat")
+            (False, True) -> ("break up", "be shattered into little pieces")
+            (False, False) -> ("collapse", "be reduced to a bloody pulp")
+          verbDie = if alreadyDeadBefore then hurtExtra else firstFall
+          alreadyDeadBefore = bhp b - hpDelta <= 0
+      subject <- partActorLeader aid b
+      let msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
+      msgAdd msgDie
+      let deathAct = if alreadyDeadBefore
+                     then twirlSplash (bpos b, bpos b) Color.Red Color.Red
+                     else if bfid b == side
+                          then deathBody (bpos b)
+                          else shortDeathBody (bpos b)
+      unless (bproj b) $ animate (blid b) deathAct
+    else do
+      when (hpDelta >= bhp b && bhp b > 0) $
+        actorVerbMU aid b "return from the brink of death"
+      mleader <- getsClient _sleader
+      when (Just aid == mleader) $ do
+        actorAspect <- getsClient sactorAspect
+        let ar = case EM.lookup aid actorAspect of
+              Just aspectRecord -> aspectRecord
+              Nothing -> assert `failure` aid
+        when (bhp b >= xM (aMaxHP ar) && aMaxHP ar > 0
+              && resCurrentTurn (bhpDelta b) > 0) $ do
+          actorVerbMU aid b "recover your health fully"
+          stopPlayBack
   UpdRefillCalm aid calmDelta ->
     when (calmDelta == minusM) $ do  -- lower deltas come from hits; obvious
       side <- getsClient sside
@@ -766,31 +789,11 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     when verbose $ aidVerbMU aid "shun"  -- TODO: shuns stairs down
   SfxEffect fidSource aid effect hpDelta -> do
     b <- getsState $ getActorBody aid
-    arena <- getArenaUI
     side <- getsClient sside
     let fid = bfid b
         isOurCharacter = fid == side && not (bproj b)
         isOurAlive = isOurCharacter && bhp b > 0
-    if bhp b <= 0 && hpDelta < 0 && (isOurCharacter || arena == blid b) then do
-      -- We assume each non-projectile actor near-death is caused
-      -- by some effect, and so we animate the event only here.
-      let (firstFall, hurtExtra) = case (fid == side, bproj b) of
-            (True, True) -> ("fall apart", "be reduced to dust")
-            (True, False) -> ("fall down", "be stomped flat")
-            (False, True) -> ("break up", "be shattered into little pieces")
-            (False, False) -> ("collapse", "be reduced to a bloody pulp")
-          verbDie = if alreadyDeadBefore then hurtExtra else firstFall
-          alreadyDeadBefore = bhp b - hpDelta <= 0
-      subject <- partActorLeader aid b
-      let msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
-      msgAdd msgDie
-      let deathAct = if alreadyDeadBefore
-                     then twirlSplash (bpos b, bpos b) Color.Red Color.Red
-                     else if isOurCharacter
-                          then deathBody (bpos b)
-                          else shortDeathBody (bpos b)
-      animate (blid b) deathAct
-    else case effect of
+    case effect of
         IK.ELabel{} -> return ()
         IK.EqpSlot{} -> return ()
         IK.Burn{} -> do
