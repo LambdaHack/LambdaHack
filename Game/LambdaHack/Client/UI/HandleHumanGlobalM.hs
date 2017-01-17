@@ -399,7 +399,7 @@ moveSearchAlterAid source dir = do
               verAlters <- verifyAlters fs
               case verAlters of
                 Right() ->
-                  return $ Right $ RequestAnyAbility $ ReqAlter tpos Nothing
+                  return $ Right $ RequestAnyAbility $ ReqAlter tpos
                 Left err -> return $ Left err
             -- We don't use MoveSer, because we don't hit invisible actors.
             -- The potential invisible actor, e.g., in a wall,
@@ -854,14 +854,14 @@ alterTile ts dir = do
     _ : _ | alterSkill < Tile.alterMinSkill coTileSpeedup t ->
       failSer AlterUnskilled
     [] -> failWith $ guessAlter cops alterFeats t
-    fs@(feat : _) ->
+    fs ->
       if EM.notMember tpos $ lfloor lvl then
         if null (posToAidsLvl tpos lvl) then do
           verAlters <- verifyAlters fs
           case verAlters of
             Right() -> do
               msgAdd msg
-              return $ Right $ ReqAlter tpos $ Just feat
+              return $ Right $ ReqAlter tpos
             Left err -> return $ Left err
         else failSer AlterBlockActor
       else failSer AlterBlockItem

@@ -115,7 +115,8 @@ validateSingleTileKind TileKind{..} =
   [ "suspect tile is walkable" | Walkable `elem` tfeature
                                  && Suspect `elem` tfeature ]
 
--- TODO: verify that OpenTo, CloseTo and ChangeTo are assigned as specified.
+-- TODO: verify that OpenTo, CloseTo and ChangeTo are assigned as specified;
+-- in particular, that at most one is present.
 -- TODO: verify that tile kind for "unknown space" has index 0 and talter is 1
 -- | Validate all tile kinds.
 --

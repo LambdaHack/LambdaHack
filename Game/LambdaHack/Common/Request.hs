@@ -23,7 +23,6 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
-import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Client-server requests sent by AI clients.
 data ReqAI =
@@ -58,7 +57,7 @@ data RequestTimed :: Ability -> * where
   ReqMove :: !Vector -> RequestTimed 'AbMove
   ReqMelee :: !ActorId -> !ItemId -> !CStore -> RequestTimed 'AbMelee
   ReqDisplace :: !ActorId -> RequestTimed 'AbDisplace
-  ReqAlter :: !Point -> !(Maybe TK.Feature) -> RequestTimed 'AbAlter
+  ReqAlter :: !Point -> RequestTimed 'AbAlter
   ReqWait :: RequestTimed 'AbWait
   ReqMoveItems :: ![(ItemId, Int, CStore, CStore)] -> RequestTimed 'AbMoveItem
   ReqProject :: !Point -> !Int -> !ItemId -> !CStore -> RequestTimed 'AbProject

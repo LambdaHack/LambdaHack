@@ -106,7 +106,7 @@ handleRequestTimedCases aid cmd = case cmd of
   ReqMove target -> reqMove aid target
   ReqMelee target iid cstore -> reqMelee aid target iid cstore
   ReqDisplace target -> reqDisplace aid target
-  ReqAlter tpos mfeat -> reqAlter aid tpos mfeat
+  ReqAlter tpos -> reqAlter aid tpos
   ReqWait -> reqWait aid
   ReqMoveItems l -> reqMoveItems aid l
   ReqProject p eps iid cstore -> reqProject aid p eps iid cstore
@@ -339,17 +339,16 @@ reqDisplace source target = do
 --
 -- Note that if @serverTile /= freshClientTile@, @freshClientTile@
 -- should not be alterable (but @serverTile@ may be).
-reqAlter :: (MonadAtomic m, MonadServer m)
-         => ActorId -> Point -> Maybe TK.Feature -> m ()
+reqAlter :: (MonadAtomic m, MonadServer m) => ActorId -> Point -> m ()
 {-# INLINABLE reqAlter #-}
-reqAlter source tpos mfeat = do
+reqAlter source tpos = do
   cops@Kind.COps{cotile=cotile@Kind.Ops{okind, opick}, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorSk <- actorSkillsServer source
   let alterSkill = EM.findWithDefault 0 Ability.AbAlter actorSk
       lid = blid sb
       spos = bpos sb
-      req = ReqAlter tpos mfeat
+      req = ReqAlter tpos
   lvl <- getLevel lid
   let serverTile = lvl `at` tpos
       freshClientTile = hideTile cops lvl tpos
@@ -371,10 +370,7 @@ reqAlter source tpos mfeat = do
               (False, True) -> execUpdAtomic $ UpdAlterClear lid 1
               (True, False) -> execUpdAtomic $ UpdAlterClear lid (-1)
               _ -> return ()
-        feats = case mfeat of
-          Nothing -> TK.tfeature $ okind serverTile
-          Just feat2 | Tile.hasFeature cotile feat2 serverTile -> [feat2]
-          Just _ -> []  -- client was wrong about tile features
+        feats = TK.tfeature $ okind serverTile
         toAlter feat =
           case feat of
             TK.OpenTo tgroup -> Just tgroup
@@ -394,9 +390,10 @@ reqAlter source tpos mfeat = do
             -- don't know this tile.
             execUpdAtomic $ UpdSearchTile source tpos freshClientTile serverTile
           when (alterSkill >= Tile.alterMinSkill coTileSpeedup serverTile) $ do
-            maybe (return ()) changeTo $ listToMaybe groupsToAlterTo
-              -- TODO: pick another, if the first one void
-            -- Perform effects, if any permitted.
+            case groupsToAlterTo of
+              [] -> return ()
+              [groupToAlterTo] -> changeTo groupToAlterTo
+              l -> assert `failure` "tile changeable in many ways" `twith` l
             mapM_ (itemEffectCause source tpos) effs
         else execFailure source req AlterBlockActor
       else execFailure source req AlterBlockItem

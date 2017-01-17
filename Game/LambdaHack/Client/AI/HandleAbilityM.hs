@@ -51,7 +51,6 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
-import qualified Game.LambdaHack.Content.TileKind as TK
 
 type ToAny a = Strategy (RequestTimed a) -> Strategy RequestAnyAbility
 
@@ -618,9 +617,12 @@ trigger aid fleeViaStairs = do
       -- Only actors with hight enough AbAlter can use stairs.
       enterableHere p = alterSkill >= fromEnum (alterMinSkill p)
       f pos = let t = lvl `at` pos
-              in map (pos,) $ Tile.listCauseEffects cotile t
+              in case Tile.listCauseEffects cotile t of
+                [] -> []
+                l -> [(pos, l)]
       feats = concatMap f $ filter enterableHere $ vicinityUnsafe (bpos b)
-      ben (_, feat) = case feat of
+      bens (_, fs) = sum <$> mapM ben fs
+      ben feat = case feat of
         IK.Ascend k -> do -- change levels sensibly, in teams
           let aimless = ftactic (gplayer fact) `elem` [TRoam, TPatrol]
               easier = signum k /= signum (fromEnum (blid b))
@@ -656,11 +658,11 @@ trigger aid fleeViaStairs = do
         ef | not fleeViaStairs ->
           return $! effectToBenefit cops b ar fact ef
         _ -> return 0
-  benFeats <- mapM ben feats
+  benFeats <- mapM bens feats
   let benFeat = zip benFeats feats
   return $! liftFrequency $ toFreq "trigger"
-    [ (benefit, ReqAlter pos (Just $ TK.Cause eff))
-    | (benefit, (pos, eff)) <- benFeat
+    [ (benefit, ReqAlter pos)
+    | (benefit, (pos, _)) <- benFeat
     , benefit > 0 ]
 
 projectItem :: MonadClient m
@@ -1023,4 +1025,4 @@ moveOrRunAid run source dir = do
          assert `failure` "AI causes AlterBlockItem" `twith` (run, source, dir)
        | otherwise ->
          -- Not walkable, but alter skill suffices, so search or alter the tile.
-         return $! Just $ RequestAnyAbility $ ReqAlter tpos Nothing
+         return $! Just $ RequestAnyAbility $ ReqAlter tpos
