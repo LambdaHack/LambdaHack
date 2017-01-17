@@ -92,11 +92,15 @@ moves =
   map (uncurry Vector)
     [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
 
-moveTexts :: [Text]
-moveTexts = ["NW", "N", "NE", "E", "SE", "S", "SW", "W"]
+_moveTexts :: [Text]
+_moveTexts = ["NW", "N", "NE", "E", "SE", "S", "SW", "W"]
+
+longMoveTexts :: [Text]
+longMoveTexts = [ "northwest", "north", "northeast", "east"
+                , "southeast", "south", "southwest", "west" ]
 
 compassText :: Vector -> Text
-compassText v = let m = EM.fromList $ zip moves moveTexts
+compassText v = let m = EM.fromList $ zip moves longMoveTexts
                     assFail = assert `failure` "not a unit vector" `twith` v
                 in EM.findWithDefault assFail v m
 

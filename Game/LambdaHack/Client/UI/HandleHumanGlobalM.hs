@@ -849,7 +849,8 @@ alterTile ts dir = do
       verb1 = case ts of
         [] -> "alter"
         tr : _ -> verb tr
-      msg = makeSentence ["you", verb1, "towards", MU.Text $ compassText dir]
+      msg = makeSentence
+              ["you", verb1, MU.Text $ compassText dir]
   case filter (\feat -> Tile.hasFeature cotile feat t) alterFeats of
     _ : _ | alterSkill < Tile.alterMinSkill coTileSpeedup t ->
       failSer AlterUnskilled
