@@ -839,7 +839,7 @@ effectDropItem execSfx store grp target = do
     then return False
     else do
       unless (store == COrgan) execSfx
-      mapM_ (uncurry (dropCStoreItem store target b)) is
+      mapM_ (uncurry (dropCStoreItem True store target b)) is
       return True
 
 -- | Drop a single actor's item. Note that if there are multiple copies,
@@ -847,9 +847,10 @@ effectDropItem execSfx store grp target = do
 -- (let's say, the multiple explosions interfere with each other or perhaps
 -- larger quantities of explosives tend to be packaged more safely).
 dropCStoreItem :: (MonadAtomic m, MonadServer m)
-               => CStore -> ActorId -> Actor -> ItemId -> ItemQuant -> m ()
+               => Bool -> CStore -> ActorId -> Actor -> ItemId -> ItemQuant
+               -> m ()
 {-# INLINABLE dropCStoreItem #-}
-dropCStoreItem store aid b iid kit@(k, _) = do
+dropCStoreItem verbose store aid b iid kit@(k, _) = do
   item <- getsState $ getItemBody iid
   let c = CActor aid store
       fragile = IK.Fragile `elem` jfeature item
@@ -863,7 +864,7 @@ dropCStoreItem store aid b iid kit@(k, _) = do
     effectAndDestroy aid aid iid c False effs itemFull
   else do
     cDrop <- pickDroppable aid b
-    mvCmd <- generalMoveItem True iid k (CActor aid store) cDrop
+    mvCmd <- generalMoveItem verbose iid k (CActor aid store) cDrop
     mapM_ execUpdAtomic mvCmd
 
 pickDroppable :: MonadStateRead m => ActorId -> Actor -> m Container
@@ -1066,7 +1067,7 @@ effectDropBestWeapon execSfx target = do
     (_, (iid, _)) : _ -> do
       execSfx
       let kit = beqp tb EM.! iid
-      dropCStoreItem CEqp target tb iid kit
+      dropCStoreItem True CEqp target tb iid kit
       return True
     [] ->
       return False

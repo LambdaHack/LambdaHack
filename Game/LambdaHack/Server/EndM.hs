@@ -84,5 +84,5 @@ dropAllItems :: (MonadAtomic m, MonadServer m)
              => ActorId -> Actor -> m ()
 {-# INLINABLE dropAllItems #-}
 dropAllItems aid b = do
-  mapActorCStore_ CInv (dropCStoreItem CInv aid b) b
-  mapActorCStore_ CEqp (dropCStoreItem CEqp aid b) b
+  mapActorCStore_ CInv (dropCStoreItem False CInv aid b) b
+  mapActorCStore_ CEqp (dropCStoreItem False CEqp aid b) b
