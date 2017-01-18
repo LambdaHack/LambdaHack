@@ -969,30 +969,32 @@ strike source target iid cstore hurtMult = assert (source /= target) $ do
           then partItemWownW spronoun COrgan localTime
           else partItemAW cstore localTime
         msg | hurtMult > 90 = makeSentence $  -- minor or absent armor
-          [MU.SubjectVerbSg spart verb, tpart]
-          ++ if bproj sb
-             then []
-             else ["with", partItemChoice itemFull]
+              [MU.SubjectVerbSg spart verb, tpart]
+              ++ if bproj sb
+                 then []
+                 else ["with", partItemChoice itemFull]
             | otherwise =
           -- This sounds funny when the victim falls down immediately,
           -- but there is no easy way to prevent that. And it's consistent.
           -- If/when death blow instead sets HP to 1 and only the next below 1,
           -- we can check here for HP==1; also perhaps actors with HP 1 should
           -- not be able to block.
-          let sActs =
-                if bproj sb
-                then [ MU.SubjectVerbSg spart "connect" ]
-                else [ MU.SubjectVerbSg spart verb, tpart
-                     , "with", partItemChoice itemFull ]
-          in makeSentence [ MU.Phrase sActs <> ", but"
-                          , MU.SubjectVerbSg tpart "block"
-                          , if | hurtMult > 50 ->  -- substantial armor
-                                 "partly"
-                               | hurtMult > 1   ->  -- braced and/or big armor
-                                 "doggedly"
-                               | otherwise ->    -- 1% got through, which can
-                                 "almost fully"  -- still be deadly, if speed
-                          ]
+          let sActs = if bproj sb
+                      then [ MU.SubjectVerbSg spart "connect" ]
+                      else [ MU.SubjectVerbSg spart verb, tpart
+                           , "with", partItemChoice itemFull ]
+              actionPhrase = MU.SubjectVerbSg tpart
+                             $ if braced tb then "block" else "shrug it off"
+          in makeSentence
+               [ MU.Phrase sActs <> ", but"
+               , actionPhrase
+               , if | hurtMult >= 50 ->  -- braced or big bonuses
+                      "partly"
+                    | hurtMult > 1 ->  -- braced and/or huge bonuses
+                      if braced tb then "doggedly" else "nonchalantly"
+                    | otherwise ->         -- 1% got through, which can
+                      "almost completely"  -- still be deadly, if fast missile
+               ]
 -- TODO: when other armor is in, etc.:
 --      msg HitSluggish =
 --        let adv = MU.Phrase ["sluggishly", verb]
