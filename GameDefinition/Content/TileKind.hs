@@ -328,7 +328,7 @@ floorArenaShade = floorActorLit
   { tname    = "shaded ground"
   , tfreq    = [("treeShadeOver_s", 95)]
   , tcolor2  = BrBlack
-  , tfeature = Dark : tfeature floorActorLit  -- no OftenItem
+  , tfeature = Dark : NoItem : tfeature floorActorLit  -- no OftenItem
   }
 floorRedLit = floorCorridorLit
   { tsymbol  = '.'
