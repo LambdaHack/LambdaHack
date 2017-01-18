@@ -155,9 +155,7 @@ itemIsFound iid leader storeLeader = do
   found <- getsState $ findIid leader (bfid b) iid
   let !_A = assert (not (null found) || storeLeader == CGround
                     `blame` (iid, leader)) ()
-      ppLoc (_, CSha) = MU.Text $ ppCStoreIn CSha <+> "of the party"
-      ppLoc (b2, store) = MU.Text $ ppCStoreIn store <+> "of"
-                                                     <+> bname b2
+      ppLoc (b2, store) = MU.Phrase $ ppCStoreWownW store $ partActor b2
       notObvious (aid, (_, store)) = aid /= leader || store /= storeLeader
       foundTexts = map (ppLoc . snd) $ filter notObvious found
   return $! if null foundTexts then ""

@@ -10,7 +10,7 @@ module Game.LambdaHack.Common.Actor
   , hpTooLow, hpHuge, calmEnough, hpEnough
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
-  , keySelected, ppContainer, ppCStore, ppCStoreIn, verbCStore
+  , keySelected, ppContainer, ppCStore, ppCStoreIn, ppCStoreWownW, verbCStore
   ) where
 
 import Prelude ()
@@ -212,6 +212,14 @@ ppCStore CSha = ("in", "shared stash")
 
 ppCStoreIn :: CStore -> Text
 ppCStoreIn c = let (tIn, t) = ppCStore c in tIn <+> t
+
+ppCStoreWownW :: CStore -> MU.Part -> [MU.Part]
+ppCStoreWownW store owner =
+  let (preposition, noun) = ppCStore store
+  in case store of
+    CGround -> [MU.Text preposition, MU.Text noun, "under", owner]
+    CSha -> [MU.Text preposition, MU.Text noun]
+    _ -> [MU.Text preposition, MU.WownW owner (MU.Text noun) ]
 
 verbCStore :: CStore -> Text
 verbCStore CGround = "drop"

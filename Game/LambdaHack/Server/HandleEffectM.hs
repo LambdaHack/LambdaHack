@@ -932,8 +932,7 @@ effectIdentify execSfx iidId source target = do
   let tryFull store as = case as of
         -- TODO: identify the scroll, but don't use up.
         [] -> do
-          let (tIn, t) = ppCStore store
-              msg = "Nothing to identify" <+> tIn <+> t <> "."
+          let msg = "Nothing to identify" <+> ppCStoreIn store <> "."
           execSfxAtomic $ SfxMsgFid (bfid sb) msg
           return False
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself

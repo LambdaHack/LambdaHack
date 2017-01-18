@@ -132,8 +132,8 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
         -- Actor fetching an item from shared stash, most probably.
         b <- getsState $ getActorBody aid
         subject <- partActorLeader aid b
-        let noun = MU.WownW subject (MU.Text $ snd $ ppCStore store)
-            verb = MU.Text $ makePhrase ["be added to", noun]
+        let ownW = ppCStoreWownW store subject
+            verb = MU.Text $ makePhrase $ "be added to" : ownW
         itemVerbMU iid kit verb c
       _ -> return ()
   UpdLoseItem False _ _ _ _ -> return ()
@@ -141,8 +141,8 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
     -- Actor putting an item into shared stash, most probably.
     b <- getsState $ getActorBody aid
     subject <- partActorLeader aid b
-    let noun = MU.WownW subject (MU.Text $ snd $ ppCStore store)
-        verb = MU.Text $ makePhrase ["be removed from", noun]
+    let ownW = ppCStoreWownW store subject
+        verb = MU.Text $ makePhrase $ "be removed from" : ownW
     itemVerbMU iid kit verb c
   UpdLoseItem{} -> return ()
   -- Move actors and items.
@@ -732,11 +732,9 @@ discover c oldCli iid = do
   nameWhere <- case c of
     CActor aidOwner storeOwner -> do
       bOwner <- getsState $ getActorBody aidOwner
-      let (preposition, noun) = ppCStore storeOwner
       if bproj bOwner || bfid bOwner == side
       then return []
-      else return [ MU.Text preposition
-                  , MU.WownW (partActor bOwner) (MU.Text noun) ]
+      else return $ ppCStoreWownW storeOwner (partActor bOwner)
     _ -> return []
   let kit = EM.findWithDefault (1, []) iid bag
       itemFull = itemToF iid kit
