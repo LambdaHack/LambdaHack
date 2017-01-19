@@ -284,31 +284,27 @@ handleTrajectories lid fid = do
 hTrajectories :: (MonadAtomic m, MonadServer m) => (ActorId, Actor) -> m ()
 {-# INLINE hTrajectories #-}
 hTrajectories (aid, b) = do
-  b2 <- if not $ actorDying b then do
+  b2 <- if actorDying b then return b else do
           setTrajectory aid
           getsState $ getActorBody aid
-        else return b
-  if not $ actorDying b2 then do
+  -- @setTrajectory@ might have affected @actorDying@, so we check again ASAP
+  -- to make sure the body of the projectile (or pushed actor)
+  -- doesn't block movement of other actors, but vanishes promptly.
+  -- Bodies of actors that die in place remain on the battlefied until
+  -- their natural next turn, to give them a chance of rescue.
+  if actorDying b2 then dieSer aid b2 else do
     advanceTime aid
     managePerTurn aid
-  else dieSer aid b2
-    -- if bhp b <= 0:
-    -- If @b@ is a projectile and it hits an actor,
-    -- the carried item is destroyed and that's all.
-    -- Otherwise, an actor dies, items drop to the ground
-    -- and possibly a new leader is elected.
-    --
-    -- if btrajectory null:
-    -- A projectile drops to the ground due to obstacles or range.
-    -- The carried item is not destroyed, but drops to the ground.
-    --
-    -- If a projectile hits actor or is hit, it's destroyed,
-    -- as opposed to just bouncing off the wall or landing on the ground,
-    -- in which case it breaks only if the item is fragile.
-    --
-    -- if dying only after setTrajectory:
-    -- Dispose of the actor with trajectory ASAP to make sure it doesn't
-    -- block movement of other actors.
+  -- if @actorDying@ due to @bhp b <= 0@:
+  -- If @b@ is a projectile, it means hits an actor or is hit by actor.
+  -- Then the carried item is destroyed and that's all.
+  -- If @b@ is not projectile, it dies, his items drop to the ground
+  -- and possibly a new leader is elected.
+  --
+  -- if @actorDying@ due to @btrajectory@ null:
+  -- A projectile drops to the ground due to obstacles or range.
+  -- The carried item is not destroyed, unless it's fragile,
+  -- but drops to the ground.
 
 -- | Manage trajectory of a projectile.
 --
@@ -344,11 +340,10 @@ setTrajectory aid = do
       else do
         -- Lose HP due to bumping into an obstacle.
         execUpdAtomic $ UpdRefillHP aid minusM
-        execUpdAtomic $ UpdTrajectory aid (btrajectory b)
-                                          (Just ([], speed))
-    Just ([], _) -> do  -- non-projectile actor stops flying
-      let !_A = assert (not $ bproj b) ()
-      execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
+        execUpdAtomic $ UpdTrajectory aid (btrajectory b) (Just ([], speed))
+    Just ([], _) ->  -- non-projectile actor stops flying (proj would be dead)
+      assert (not $ bproj b)
+      $ execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
     _ -> assert `failure` "Nothing trajectory" `twith` (aid, b)
 
 handleActors :: (MonadAtomic m, MonadServerReadRequest m)
