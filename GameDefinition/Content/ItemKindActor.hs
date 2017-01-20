@@ -38,7 +38,7 @@ warrior = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [ ("fist", COrgan), ("foot", COrgan), ("eye 5", COrgan)
+  , ikit     = [ ("fist", COrgan), ("foot", COrgan), ("eye 6", COrgan)
                , ("sapient brain", COrgan) ]
   }
 warrior2 = warrior
@@ -115,7 +115,7 @@ fastEye = ItemKind
   , ifeature = [Durable, Identified]
   , idesc    = "Hungers but never eats. Bites but never swallows. Burrows its own image through, but never carries anything back."  -- rather weak: not about injective objects, but puny, concrete, injective functions  --- where's the madness in that?
   , ikit     = [ ("tooth", COrgan), ("speed gland 10", COrgan)
-               , ("lip", COrgan), ("vision 4", COrgan)
+               , ("lip", COrgan), ("vision 5", COrgan)
                , ("sapient brain", COrgan) ]
   }
 nose = ItemKind  -- depends solely on smell
@@ -153,7 +153,7 @@ elbow = ItemKind
   , ifeature = [Durable, Identified]
   , idesc    = "An arm strung like a bow. A few edges, but none keen enough. A few points, but none piercing. Deadly objects zip out of the void."
   , ikit     = [ ("speed gland 4", COrgan), ("armored skin", COrgan)
-               , ("vision 14", COrgan)
+               , ("vision 16", COrgan)
                , ("any arrow", CSha), ("any arrow", CInv)
                , ("any arrow", CInv), ("any arrow", CInv)
                , ("sapient brain", COrgan) ]
@@ -202,7 +202,7 @@ goldenJackal = ItemKind  -- basically a much smaller and slower hyena
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [ ("small jaw", COrgan), ("eye 5", COrgan), ("nostril", COrgan)
+  , ikit     = [ ("small jaw", COrgan), ("eye 6", COrgan), ("nostril", COrgan)
                , ("animal brain", COrgan) ]
   }
 griffonVulture = ItemKind
@@ -221,7 +221,7 @@ griffonVulture = ItemKind
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [ ("screeching beak", COrgan)  -- in reality it grunts and hisses
-               , ("small claw", COrgan), ("eye 6", COrgan)
+               , ("small claw", COrgan), ("eye 7", COrgan)
                , ("animal brain", COrgan) ]
   }
 skunk = ItemKind
@@ -334,7 +334,7 @@ hyena = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [ ("jaw", COrgan), ("eye 5", COrgan), ("nostril", COrgan)
+  , ikit     = [ ("jaw", COrgan), ("eye 6", COrgan), ("nostril", COrgan)
                , ("animal brain", COrgan) ]
   }
 alligator = ItemKind
@@ -353,7 +353,7 @@ alligator = ItemKind
   , idesc    = ""
   , ikit     = [ ("large jaw", COrgan), ("large tail", COrgan)
                , ("small claw", COrgan)
-               , ("armored skin", COrgan), ("eye 5", COrgan)
+               , ("armored skin", COrgan), ("eye 6", COrgan)
                , ("animal brain", COrgan) ]
   }
 rhinoceros = ItemKind
@@ -413,7 +413,7 @@ hornetSwarm = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [ ("sting", COrgan), ("vision 4", COrgan)
+  , ikit     = [ ("sting", COrgan), ("vision 5", COrgan)
                , ("insect mortality", COrgan), ("animal brain", COrgan) ]
   }
 thornbush = ItemKind
