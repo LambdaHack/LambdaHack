@@ -214,6 +214,7 @@ statsOverlay aid = do
             x = k - l * 10
         in tshow l <> if x == 0 then "" else "." <> tshow x
       -- Some values can be negative, for others 0 is equivalent but shorter.
+      tshowRadius r = if r == 0 then "0m" else tshow (r - 1) <> ".5m"
       slotList =
         [ (aHurtMelee, "to melee damage", \t -> tshow200 t <> "%")
         , (aArmorMelee, "melee armor", \t -> "[" <> tshowBlock t <> "%]")
@@ -224,12 +225,12 @@ statsOverlay aid = do
         , (aSight, "sight radius", \t ->
             let tmax = max 0 t
                 tcapped = min (fromEnum $ bcalm b `div` (5 * oneM)) tmax
-            in if tmax == tcapped
-               then tshow tmax <> "m"
-               else tshow tcapped <> "m (max" <+> tshow tmax <> "m)")
-        , (aSmell, "smell radius", \t -> tshow (max 0 t) <> "m")
-        , (aShine, "shine radius", \t -> tshow (max 0 t) <> "m")
-        , (aNocto, "night vision radius", \t -> tshow (max 0 t) <> "m") ]
+            in tshowRadius tcapped <+> if tcapped == tmax
+                                       then ""
+                                       else "(max" <+> tshowRadius tmax <> ")")
+        , (aSmell, "smell radius", \t -> tshowRadius (max 0 t))
+        , (aShine, "shine radius", \t -> tshowRadius (max 0 t))
+        , (aNocto, "night vision radius", \t -> tshowRadius (max 0 t)) ]
         ++ [ (EM.findWithDefault 0 ab . aSkills, tshow ab <+> "ability", tshow)
            | ab <- [minBound..maxBound] ]
       zipReslot = zipWith prSlot $ zip [0..] allZeroSlots
