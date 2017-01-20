@@ -110,16 +110,16 @@ itemDesc aHurtMeleeOfOwner store localTime itemFull@ItemFull{itemBase} =
                   _ -> 0
               meanDmg = Dice.meanDice (jdamage itemBase)
               dmgAn = if meanDmg <= 0 then "" else
-                let oneDeltaHP | meanDmg <= 0 = 0
-                               | otherwise = max 1 meanDmg
-                    mult = 100 + aHurtMeleeOfOwner
+                let mult = 100 + min 99 (max (-99) aHurtMeleeOfOwner)
                            + if store `elem` [CEqp, COrgan]
                              then 0
-                             else aHurtMeleeOfItem
-                    rawDeltaHP = fromIntegral mult * xM oneDeltaHP `divUp` 100
-                    pmult = 100 + aHurtMeleeOfItem
-                    prawDeltaHP = fromIntegral pmult * xM oneDeltaHP `divUp` 100
+                             else min 99 (max (-99) aHurtMeleeOfItem)
+                    minDeltaHP = xM meanDmg `divUp` 100
+                    rawDeltaHP = fromIntegral mult * minDeltaHP
+                    pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
+                    prawDeltaHP = fromIntegral pmult * minDeltaHP
                     pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
+                    mDeltaHP = modifyDamageBySpeed minDeltaHP speed
                     show64With2 :: Int64 -> Text
                     show64With2 n =
                       let k = 100 * n `div` oneM
@@ -129,21 +129,24 @@ itemDesc aHurtMeleeOfOwner store localTime itemFull@ItemFull{itemBase} =
                          <> if | x == 0 -> ""
                                | x < 10 -> ".0" <> tshow x
                                | otherwise -> "." <> tshow x
-                in "You would inflict around"  -- rounding and non-id items
-                   <+> tshow oneDeltaHP
+                in "Against defenceless targets you would inflict around"
+                     -- rounding and non-id items
+                   <+> tshow meanDmg
                    <> "*" <> tshow mult <> "%"
                    <> "=" <> show64With2 rawDeltaHP
-                   <+> "melee and"
-                   <+> tshow oneDeltaHP
+                   <+> "melee damage (min" <+> show64With2 minDeltaHP
+                   <> ") and"
+                   <+> tshow meanDmg
                    <> "*" <> tshow pmult <> "%"
                    <> "*" <> "speed^2"
                    <> "/" <> tshow (fromSpeed speedThrust `divUp` 10) <> "^2"
                    <> "=" <> show64With2 pdeltaHP
-                   <+> "ranged damage against unarmored targets with it"
+                   <+> "ranged damage (min" <+> show64With2 mDeltaHP
+                   <> ") with it"
                    <> if Dice.minDice (jdamage itemBase)
                          == Dice.maxDice (jdamage itemBase)
                       then "."
-                      else " on average."
+                      else "on average."
           in (IK.idesc itemKind, T.intercalate " " sentences, tspeed <+> dmgAn)
       eqpSlotSentence = case strengthEqpSlot itemFull of
         Just es -> slotToSentence es

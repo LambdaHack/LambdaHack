@@ -242,7 +242,7 @@ reqMelee source target iid cstore = do
     hurtBonus <- armorHurtBonus source target
     itemBase <- getsState $ getItemBody iid
     n <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) $ jdamage itemBase
-    let hurtMult = max 1 $ 100 + hurtBonus  -- at least 1% of dmg gets through
+    let hurtMult = 100 + hurtBonus
         rawDeltaHP = fromIntegral hurtMult * xM n `divUp` 100
         speedDeltaHP = case btrajectory sb of
           Just (_, speed) -> - modifyDamageBySpeed rawDeltaHP speed
@@ -294,7 +294,7 @@ armorHurtBonus source target = do
       itemBonus = trim200 (aHurtMelee sar) - if bproj sb
                                              then block200 25 (aArmorRanged tar)
                                              else block200 50 (aArmorMelee tar)
-  return $! min 100 $ max (-100) itemBonus
+  return $! min 99 $ max (-99) itemBonus  -- at least 1% of dmg gets through
 
 -- * ReqDisplace
 
