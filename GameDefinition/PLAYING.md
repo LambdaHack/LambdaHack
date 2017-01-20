@@ -100,9 +100,10 @@ mouse buttons) move the crosshair (the white box). In exploration mode,
 `SHIFT` (or `CTRL`) and a movement key make the current party leader
 run in the indicated direction, until anything of interest is spotted.
 The `5` keypad key and the `i` and `.` keys consume a turn and make you
-brace for combat, which reduces any damage taken for a turn and makes it
-impossible for foes to displace you. You displace enemies or friends
-by bumping into them with `SHIFT` (or `CTRL`).
+brace for impact, which reduces any damage taken for a turn and makes it
+impossible for foes to displace you. When braced you block 50% of melee damage
+and deflect or duck behind any improvised cover avoiding 25% of ranged damage.
+You displace enemies or friends by bumping into them with `SHIFT` (or `CTRL`).
 
 Melee, searching for secret doors, looting and opening closed doors
 can be done by bumping into a monster, a wall and a door, respectively.
