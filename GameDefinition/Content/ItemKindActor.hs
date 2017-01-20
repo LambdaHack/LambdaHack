@@ -146,7 +146,7 @@ elbow = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 8, AddMaxCalm 90, AddSpeed 21, AddNocto 2
+  , iaspects = [ AddMaxHP 8, AddMaxCalm 80, AddSpeed 21, AddNocto 2
                , AddAbility AbProject 2, AddAbility AbApply 1
                , AddAbility AbAlter 2, AddAbility AbMelee (-1) ]
   , ieffects = []
@@ -215,7 +215,7 @@ griffonVulture = ItemKind
   , iverbHit = "thud"
   , iweight  = 13000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 12, AddMaxCalm 60, AddSpeed 20, AddNocto 2
+  , iaspects = [ AddMaxHP 12, AddMaxCalm 70, AddSpeed 20, AddNocto 2
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
   , ieffects = []
   , ifeature = [Durable, Identified]
