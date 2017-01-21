@@ -983,8 +983,11 @@ strike source target iid cstore hurtMult = assert (source /= target) $ do
                       then [ MU.SubjectVerbSg spart "connect" ]
                       else [ MU.SubjectVerbSg spart verb, tpart
                            , "with", partItemChoice itemFull ]
-              actionPhrase = MU.SubjectVerbSg tpart
-                             $ if braced tb then "block" else "shrug it off"
+              actionPhrase =
+                MU.SubjectVerbSg tpart
+                $ if bproj sb
+                  then if braced tb then "deflect it" else "shrug it off"
+                  else if braced tb then "block" else "ignore"
           in makeSentence
                [ MU.Phrase sActs <> ", but"
                , actionPhrase
