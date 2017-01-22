@@ -160,7 +160,6 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
     arena <- getArenaUI
     side <- getsClient sside
     let hpDelta = resCurrentTurn (bhpDelta b)
-    -- We display death messages only if not dead already before this refill.
     if bhp b <= 0 && hpDelta < 0
        && (bfid b == side && not (bproj b) || arena == blid b) then do
       let (firstFall, hurtExtra) = case (bfid b == side, bproj b) of
@@ -173,6 +172,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
       subject <- partActorLeader aid b
       let msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
       msgAdd msgDie
+      -- We show death anims only if not dead already before this refill.
       let deathAct = if alreadyDeadBefore
                      then twirlSplash (bpos b, bpos b) Color.Red Color.Red
                      else if bfid b == side

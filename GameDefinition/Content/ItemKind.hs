@@ -927,7 +927,7 @@ daggerDropBestWeapon = dagger
   -- If the effect is very powerful and so the timeout has to be significant,
   -- let's make it really large, for the effect to occur only once in a fight:
   -- as soon as the item is equipped, or just on the first strike.
-  , iaspects = [Timeout $ d 3 + 4 - dl 3 |*| 2]
+  , iaspects = iaspects dagger ++ [Timeout $ d 3 + 4 - dl 3 |*| 2]
   , ieffects = ieffects dagger
                ++ [ Unique
                   , Recharging DropBestWeapon, Recharging $ RefillCalm (-3) ]
@@ -954,14 +954,14 @@ hammerParalyze = hammer
   { iname    = "Concussion Hammer"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(5, 2), (10, 4)]
-  , iaspects = [Timeout $ d 2 + 3 - dl 2 |*| 2]
+  , iaspects = iaspects hammer ++ [Timeout $ d 2 + 3 - dl 2 |*| 2]
   , ieffects = ieffects hammer ++ [Unique, Recharging $ Paralyze 10]
   }
 hammerSpark = hammer
   { iname    = "Grand Smithhammer"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(5, 2), (10, 4)]
-  , iaspects = [Timeout $ d 4 + 4 - dl 4 |*| 2]
+  , iaspects = iaspects hammer ++ [Timeout $ d 4 + 4 - dl 4 |*| 2]
   , ieffects = ieffects hammer ++ [Unique, Recharging $ Explode "spark"]
   }
 sword = ItemKind
@@ -1021,7 +1021,7 @@ halberdPushActor = halberd
   { iname    = "Swiss Halberd"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(7, 1), (10, 4)]
-  , iaspects = [Timeout $ d 5 + 5 - dl 5 |*| 2]
+  , iaspects = iaspects halberd ++ [Timeout $ d 5 + 5 - dl 5 |*| 2]
   , ieffects = ieffects halberd
                ++ [Unique, Recharging (PushActor (ThrowMod 400 25))]
   , idesc    = "A versatile polearm, with great reach and leverage. Foes are held at a distance."
