@@ -1005,14 +1005,14 @@ swordNullify = sword
 halberd = ItemKind
   { isymbol  = symbolPolearm
   , iname    = "war scythe"
-  , ifreq    = [("useful", 100), ("starting weapon", 1)]
+  , ifreq    = [("useful", 100), ("starting weapon", 10)]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
   , irarity  = [(7, 1), (10, 10)]
   , iverbHit = "impale"
   , iweight  = 3000
   , idamage  = [(96, 12 * d 1), (3, 18 * d 1), (1, 24 * d 1)]
-  , iaspects = [AddArmorMelee $ 1 + dl 3 |*| 5]
+  , iaspects = [ AddHurtMelee (-20), AddArmorMelee $ 1 + dl 3 |*| 5 ]
   , ieffects = [EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 20  -- not balanced
                , Durable, Identified, Equipable, Meleeable ]
