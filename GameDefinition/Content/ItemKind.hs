@@ -954,6 +954,7 @@ hammerParalyze = hammer
   { iname    = "Concussion Hammer"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(5, 2), (10, 4)]
+  , idamage  = toDmg $ 8 * d 1
   , iaspects = iaspects hammer ++ [Timeout $ d 2 + 3 - dl 2 |*| 2]
   , ieffects = ieffects hammer ++ [Unique, Recharging $ Paralyze 10]
   }
@@ -961,6 +962,7 @@ hammerSpark = hammer
   { iname    = "Grand Smithhammer"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(5, 2), (10, 4)]
+  , idamage  = toDmg $ 8 * d 1
   , iaspects = iaspects hammer ++ [Timeout $ d 4 + 4 - dl 4 |*| 2]
   , ieffects = ieffects hammer ++ [Unique, Recharging $ Explode "spark"]
   }
@@ -1021,6 +1023,7 @@ halberdPushActor = halberd
   { iname    = "Swiss Halberd"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(7, 1), (10, 4)]
+  , idamage  = toDmg $ 12 * d 1
   , iaspects = iaspects halberd ++ [Timeout $ d 5 + 5 - dl 5 |*| 2]
   , ieffects = ieffects halberd
                ++ [Unique, Recharging (PushActor (ThrowMod 400 25))]
