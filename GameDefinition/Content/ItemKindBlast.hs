@@ -15,9 +15,9 @@ import Game.LambdaHack.Content.ItemKind
 
 blasts :: [ItemKind]
 blasts =
-  [burningOil2, burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, waste, glassPiece, smoke, boilingWater, glue, spark, mistAntiSlow, mistAntidote, mistStrength, mistWeakness, protectingBalm, vulnerabilityBalm, hasteSpray, slownessSpray, eyeDrop, eyeShine, smellyDroplet, whiskeySpray]
+  [burningOil2, burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, waste, glassPiece, smoke, boilingWater, glue, spark, mistAntiSlow, mistAntidote, mistStrength, mistWeakness, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, hasteSpray, slownessSpray, eyeDrop, eyeShine, smellyDroplet, whiskeySpray]
 
-burningOil2,    burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, waste, glassPiece, smoke, boilingWater, glue, spark, mistAntiSlow, mistAntidote, mistStrength, mistWeakness, protectingBalm, vulnerabilityBalm, hasteSpray, slownessSpray, eyeDrop, eyeShine, smellyDroplet, whiskeySpray :: ItemKind
+burningOil2,    burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, waste, glassPiece, smoke, boilingWater, glue, spark, mistAntiSlow, mistAntidote, mistStrength, mistWeakness, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, hasteSpray, slownessSpray, eyeDrop, eyeShine, smellyDroplet, whiskeySpray :: ItemKind
 
 -- * Parameterized immediate effect blasts
 
@@ -401,10 +401,10 @@ mistWeakness = ItemKind
   , idesc    = ""
   , ikit     = []
   }
-protectingBalm = ItemKind
+protectingBalmMelee = ItemKind
   { isymbol  = '\''
   , iname    = "balm droplet"
-  , ifreq    = [("protecting balm", 1)]
+  , ifreq    = [("protecting balm melee", 1)]
   , iflavour = zipPlain [Brown]
   , icount   = 13
   , irarity  = [(1, 1)]
@@ -412,7 +412,24 @@ protectingBalm = ItemKind
   , iweight  = 1
   , idamage  = toDmg 0
   , iaspects = []
-  , ieffects = [toOrganActorTurn "protected" (3 + d 3)]
+  , ieffects = [toOrganActorTurn "protected melee" (3 + d 3)]
+  , ifeature = [ toVelocity 13  -- the slowest that travels at least 2 steps
+               , Fragile, Identified ]
+  , idesc    = ""
+  , ikit     = []
+  }
+protectingBalmRanged = ItemKind
+  { isymbol  = '\''
+  , iname    = "balm droplet"
+  , ifreq    = [("protecting balm ranged", 1)]
+  , iflavour = zipPlain [BrYellow]
+  , icount   = 13
+  , irarity  = [(1, 1)]
+  , iverbHit = "balm"
+  , iweight  = 1
+  , idamage  = toDmg 0
+  , iaspects = []
+  , ieffects = [toOrganActorTurn "protected ranged" (3 + d 3)]
   , ifeature = [ toVelocity 13  -- the slowest that travels at least 2 steps
                , Fragile, Identified ]
   , idesc    = ""

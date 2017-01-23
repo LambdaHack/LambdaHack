@@ -15,9 +15,9 @@ import Game.LambdaHack.Content.ItemKind
 
 temporaries :: [ItemKind]
 temporaries =
-  [tmpStrengthened, tmpWeakened, tmpProtected, tmpVulnerable, tmpFast20, tmpSlow10, tmpFarSighted, tmpNoctovision, tmpKeenSmelling, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant]
+  [tmpStrengthened, tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpFast20, tmpSlow10, tmpFarSighted, tmpNoctovision, tmpKeenSmelling, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant]
 
-tmpStrengthened,    tmpWeakened, tmpProtected, tmpVulnerable, tmpFast20, tmpSlow10, tmpFarSighted, tmpNoctovision, tmpKeenSmelling, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant :: ItemKind
+tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpFast20, tmpSlow10, tmpFarSighted, tmpNoctovision, tmpKeenSmelling, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant :: ItemKind
 
 -- The @name@ is be used in item description, so it should be an adjective
 -- describing the temporary set of aspects.
@@ -44,10 +44,10 @@ tmpAs name aspects = ItemKind
 
 tmpStrengthened = tmpAs "strengthened" [AddHurtMelee 20]
 tmpWeakened = tmpAs "weakened" [AddHurtMelee (-20)]
-tmpProtected = tmpAs "protected" [ AddArmorMelee 30
-                                 , AddArmorRanged 30 ]
-tmpVulnerable = tmpAs "defenseless" [ AddArmorMelee (-30)
-                                    , AddArmorRanged (-30) ]
+tmpProtectedMelee = tmpAs "protected melee" [AddArmorMelee 50]
+tmpProtectedRanged = tmpAs "protected ranged" [AddArmorRanged 25]
+tmpVulnerable = tmpAs "defenseless" [ AddArmorMelee (-50)
+                                    , AddArmorRanged (-25) ]
 tmpFast20 = tmpAs "fast 20" [AddSpeed 20]
 tmpSlow10 = tmpAs "slow 10" [AddSpeed (-10)]
 tmpFarSighted = tmpAs "far-sighted" [AddSight 5]
@@ -56,7 +56,7 @@ tmpKeenSmelling = tmpAs "keen-smelling" [AddSmell 2]
 tmpDrunk = tmpAs "drunk" [ AddHurtMelee 30  -- fury
                          , AddArmorMelee (-20)
                          , AddArmorRanged (-20)
-                         , AddSight (-7)
+                         , AddSight (-8)
                          ]
 tmpRegenerating =
   let tmp = tmpAs "regenerating" []
