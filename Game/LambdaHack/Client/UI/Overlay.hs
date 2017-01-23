@@ -16,7 +16,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Control.Monad.ST.Strict
-import Data.Int (Int64)
 import qualified Data.Text as T
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
@@ -100,12 +99,12 @@ itemDesc aHurtMeleeOfOwner store localTime itemFull@ItemFull{itemBase} =
         Nothing -> ("This item is as unremarkable as can be.", "", tspeed)
         Just ItemDisco{itemKind, itemAspect} ->
           let sentences = mapMaybe featureToSentence (IK.ifeature itemKind)
-              hurtAspect :: IK.Aspect -> Bool
-              hurtAspect IK.AddHurtMelee{} = True
-              hurtAspect _ = False
+              hurtMeleeAspect :: IK.Aspect -> Bool
+              hurtMeleeAspect IK.AddHurtMelee{} = True
+              hurtMeleeAspect _ = False
               aHurtMeleeOfItem = case itemAspect of
                 Just aspectRecord -> aHurtMelee aspectRecord
-                Nothing -> case find hurtAspect (IK.iaspects itemKind) of
+                Nothing -> case find hurtMeleeAspect (IK.iaspects itemKind) of
                   Just (IK.AddHurtMelee d) -> Dice.meanDice d
                   _ -> 0
               meanDmg = Dice.meanDice (jdamage itemBase)
@@ -121,15 +120,6 @@ itemDesc aHurtMeleeOfOwner store localTime itemFull@ItemFull{itemBase} =
                     prawDeltaHP = fromIntegral pmult * minDeltaHP
                     pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
                     mDeltaHP = modifyDamageBySpeed minDeltaHP speed
-                    show64With2 :: Int64 -> Text
-                    show64With2 n =
-                      let k = 100 * n `div` oneM
-                          l = k `div` 100
-                          x = k - l * 100
-                      in tshow l
-                         <> if | x == 0 -> ""
-                               | x < 10 -> ".0" <> tshow x
-                               | otherwise -> "." <> tshow x
                 in "Against defenceless targets you would inflict around"
                      -- rounding and non-id items
                    <+> tshow meanDmg

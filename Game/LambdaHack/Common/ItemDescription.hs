@@ -1,16 +1,18 @@
 -- | Descripitons of items.
 module Game.LambdaHack.Common.ItemDescription
   ( partItemN, partItem, partItemWs, partItemAW, partItemMediumAW, partItemWownW
-  , viewItem
+  , viewItem, show64With2
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import Data.Int (Int64)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
+import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.EffectDescription
@@ -20,6 +22,16 @@ import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
+
+show64With2 :: Int64 -> Text
+show64With2 n =
+  let k = 100 * n `div` oneM
+      l = k `div` 100
+      x = k - l * 100
+  in tshow l
+     <> if | x == 0 -> ""
+           | x < 10 -> ".0" <> tshow x
+           | otherwise -> "." <> tshow x
 
 -- | The part of speech describing the item parameterized by the number
 -- of effects/aspects to show..
@@ -142,7 +154,25 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
               splitAE (aspectRecordToList aspectRecord) (IK.ieffects itemKind)
             Nothing ->
               splitAE (IK.iaspects itemKind) (IK.ieffects itemKind)
-      in aets ++ features
+          IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemBase
+          speed = speedFromWeight (jweight itemBase) throwVelocity
+          meanDmg = Dice.meanDice (jdamage itemBase)
+          minDeltaHP = xM meanDmg `divUp` 100
+          aHurtMeleeOfItem = case itemAspect of
+            Just aspectRecord -> aHurtMelee aspectRecord
+            Nothing -> case find hurtMeleeAspect (IK.iaspects itemKind) of
+              Just (IK.AddHurtMelee d) -> Dice.meanDice d
+              _ -> 0
+          pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
+          prawDeltaHP = fromIntegral pmult * minDeltaHP
+          pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
+          rangedDamage = if pdeltaHP == 0
+                         then []
+                         else ["{avg" <+> show64With2 pdeltaHP <+> "ranged}"]
+          -- Note that avg melee damage would be too complex to display here,
+          -- because in case of @MOwned@ the owner is different than leader,
+          -- so the value would be different than when viewing the item.
+      in aets ++ features ++ rangedDamage
 
 -- TODO: use kit
 partItemWs :: Int -> CStore -> Time -> ItemFull -> MU.Part
