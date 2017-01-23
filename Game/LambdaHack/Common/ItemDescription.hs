@@ -68,6 +68,9 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
       let timeoutAspect :: IK.Aspect -> Bool
           timeoutAspect IK.Timeout{} = True
           timeoutAspect _ = False
+          hurtMeleeAspect :: IK.Aspect -> Bool
+          hurtMeleeAspect IK.AddHurtMelee{} = True
+          hurtMeleeAspect _ = False
           noEffect :: IK.Effect -> Bool
           noEffect IK.ELabel{} = True
           noEffect _ = False
@@ -86,7 +89,6 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                 reduce_a = maybe "?" tshow . Dice.reduceDice
                 periodic = IK.Periodic `elem` IK.ieffects itemKind
                 mtimeout = find timeoutAspect aspects
-                mnoEffect = find noEffect effects
                 restAs = sort aspects
                 (rawDmgEs, restEs) = partition rawDmgEffect $ sort
                                    $ filter notDetail effects
@@ -118,12 +120,18 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                     _ -> ""
                 onSmash = if T.null onSmashTs then ""
                           else "(on smash:" <+> onSmashTs <> ")"
-                noEff = case mnoEffect of
+                noEff = case find noEffect effects of
                   Just (IK.ELabel t) -> [t]
                   _ -> []
-                damage = if jdamage itemBase <= 0
-                         then ""
-                         else "(" <> tshow (jdamage itemBase) <> ")"
+                damage = case find hurtMeleeAspect aspects of
+                  Just (IK.AddHurtMelee hurtMelee) ->
+                    (if jdamage itemBase <= 0
+                     then "0d0"
+                     else tshow (jdamage itemBase))
+                    <> affixDice hurtMelee <> "%"
+                  _ -> if jdamage itemBase <= 0
+                       then ""
+                       else tshow (jdamage itemBase)
             in noEff ++ if fullInfo >= 5 || fullInfo >= 2 && null noEff
                         then [periodicOrTimeout] ++ [damage]
                              ++ map ppE rawDmgEs ++ aes

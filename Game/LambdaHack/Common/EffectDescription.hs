@@ -2,7 +2,7 @@
 -- involves state or monad types.
 module Game.LambdaHack.Common.EffectDescription
   ( effectToSuffix, featureToSuff, kindAspectToSuffix
-  , featureToSentence, slotToSentence
+  , featureToSentence, slotToSentence, affixDice
   ) where
 
 import Prelude ()
@@ -146,7 +146,7 @@ kindAspectToSuffix :: Aspect -> Text
 kindAspectToSuffix aspect =
   case aspect of
     Timeout{} -> ""  -- printed specially
-    AddHurtMelee t -> wrapInParens $ affixDice t <> "% damage"
+    AddHurtMelee{} -> ""  -- printed together with dice, even if dice is zero
     AddArmorMelee t -> "[" <> affixDice t <> "%]"
     AddArmorRanged t -> "{" <> affixDice t <> "%}"
     AddMaxHP t -> wrapInParens $ affixDice t <+> "HP"
