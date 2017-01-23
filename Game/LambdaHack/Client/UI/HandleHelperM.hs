@@ -196,7 +196,8 @@ statsOverlay aid = do
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
-      tshow200 n = tshow $ min 200 $ max (-200) n
+      tshow200 n = let n200 = min 200 $ max (-200) n
+                   in tshow n200 <> if n200 /= n then "$" else ""
       tshowBlock n = tshow200 $ n + if braced b then 50 else 0
       prSlot :: (Y, SlotChar) -> (AspectRecord -> Int, Text, Int -> Text)
              -> (Text, KYX)
