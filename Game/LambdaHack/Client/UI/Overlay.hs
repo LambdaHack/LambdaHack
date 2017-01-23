@@ -110,10 +110,11 @@ itemDesc aHurtMeleeOfOwner store localTime itemFull@ItemFull{itemBase} =
                   _ -> 0
               meanDmg = Dice.meanDice (jdamage itemBase)
               dmgAn = if meanDmg <= 0 then "" else
-                let mult = 100 + min 99 (max (-99) aHurtMeleeOfOwner)
-                           + if store `elem` [CEqp, COrgan]
-                             then 0
-                             else min 99 (max (-99) aHurtMeleeOfItem)
+                let multRaw = aHurtMeleeOfOwner
+                              + if store `elem` [CEqp, COrgan]
+                                then 0
+                                else aHurtMeleeOfItem
+                    mult = 100 + min 99 (max (-99) multRaw)
                     minDeltaHP = xM meanDmg `divUp` 100
                     rawDeltaHP = fromIntegral mult * minDeltaHP
                     pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
