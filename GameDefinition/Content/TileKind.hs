@@ -79,7 +79,7 @@ pillar = TileKind
   , tname    = "rock"
   , tfreq    = [ ("cachable", 70), ("stair terminal", 100)
                , ("legendLit", 100), ("legendDark", 100)
-               , ("noiseSet", 95), ("brawlSet", 50), ("shootoutSet", 15)
+               , ("noiseSet", 95), ("brawlSet", 50), ("shootoutSet", 60)
                , ("battleSet", 250) ]
   , tcolor   = BrCyan  -- not BrWhite, to tell from heroes
   , tcolor2  = Cyan
@@ -126,7 +126,8 @@ burningBush = TileKind
 bush = TileKind
   { tsymbol  = 'O'
   , tname    = "bush"
-  , tfreq    = []
+  , tfreq    = [ ("shootoutSet", 20), ("bushClumpOver_f_Lit", 40)
+               , ("lit bush", 1)]
   , tcolor   = Green
   , tcolor2  = BrBlack
   , talter   = 10
@@ -139,7 +140,7 @@ bushDark = bush
 tree = TileKind
   { tsymbol  = 'O'
   , tname    = "tree"
-  , tfreq    = [("brawlSet", 140), ("shootoutSet", 75), ("treeShadeOver_O", 1)]
+  , tfreq    = [("brawlSet", 140), ("treeShadeOver_O", 1)]
   , tcolor   = BrGreen
   , tcolor2  = Green
   , talter   = 50
@@ -161,7 +162,7 @@ wallGlassV = TileKind
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
-  , tfeature = [Spice, Clear]
+  , tfeature = [HideAs "suspect vertical wall Lit", Spice, Clear]
   }
 wallSuspectV = TileKind
   { tsymbol  = '|'
@@ -211,7 +212,7 @@ wallGlassH = TileKind
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
-  , tfeature = [Spice, Clear]
+  , tfeature = [HideAs "suspect horizontal wall Lit", Spice, Clear]
   }
 wallSuspectH = TileKind
   { tsymbol  = '-'
@@ -305,7 +306,8 @@ floorCorridorLit = TileKind
 floorArenaLit = floorCorridorLit
   { tsymbol  = '.'
   , tname    = "stone floor"
-  , tfreq    = [("floorArenaLit", 1), ("arenaSet", 1), ("emptySet", 99)]
+  , tfreq    = [ ("floorArenaLit", 1), ("arenaSet", 1), ("emptySet", 99)
+               , ("fogClumpOver_f_Lit", 60), ("bushClumpOver_f_Lit", 60) ]
   }
 floorNoiseLit = floorArenaLit
   { tname    = "damp stone floor"
@@ -363,7 +365,10 @@ floorBrownLit = floorRedLit
 floorFog = TileKind
   { tsymbol  = '#'
   , tname    = "lit fog"
-  , tfreq    = []
+  , tfreq    = [("shootoutSet", 5), ("fogClumpOver_f_Lit", 40), ("lit fog", 1)]
+      -- lit fog is OK for shootout, because LOS is mutual, as opposed
+      -- to dark fog, and so camper has little advantage, especially
+      -- on big maps, where he doesn't know on which side of fog patch to hide
   , tcolor   = BrCyan
   , tcolor2  = Cyan
   , talter   = maxBound
@@ -371,7 +376,7 @@ floorFog = TileKind
   }
 floorFogDark = floorFog
   { tname    = "dense fog"
-  , tfreq    = [("emptySet", 1), ("shootoutSet", 3), ("treeShadeOver_s", 5)]
+  , tfreq    = [("emptySet", 1), ("treeShadeOver_s", 5)]
   , tfeature = Dark : tfeature floorFog
   }
 floorSmoke = TileKind

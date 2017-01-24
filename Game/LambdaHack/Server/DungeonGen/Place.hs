@@ -215,12 +215,12 @@ olegend Kind.COps{cotile=Kind.Ops{ofoldlWithKey', opick, okind}} cgroup =
 ooverride :: Kind.COps -> [(Char, GroupName TileKind)]
           -> Rnd ( EM.EnumMap Char (Int, Kind.Id TileKind)
                  , EM.EnumMap Char (Kind.Id TileKind) )
-ooverride Kind.COps{cotile=Kind.Ops{opick, okind}} poverride =
+ooverride Kind.COps{cotile=Kind.Ops{opick, ouniqGroup, okind}} poverride =
   let getLegend (s, cgroup) acc = do
         (mOneIn, m) <- acc
-        tk <- fromMaybe (assert `failure` (cgroup, s))
-              <$> opick cgroup (not . Tile.kindHasFeature TK.Spice)
         mtkSpice <- opick cgroup (Tile.kindHasFeature TK.Spice)
+        tk <- fromMaybe (ouniqGroup cgroup)  -- if only spicy, require unique
+              <$> opick cgroup (not . Tile.kindHasFeature TK.Spice)
         return $! case mtkSpice of
           Nothing -> (mOneIn, EM.insert s tk m)
           Just tkSpice ->

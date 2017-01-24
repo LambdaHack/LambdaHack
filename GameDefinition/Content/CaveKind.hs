@@ -228,6 +228,7 @@ shootout = rogue  -- few random solid tiles, rather to duck behind, than to
   , cmaxPlaceSize = DiceXY 3 4
   , cdarkChance   = 100
   , cnightChance  = 0
+  , cmaxVoid      = 1%5
   , cdoorChance   = 1
   , copenChance   = 0
   , chidden       = 0
@@ -241,7 +242,7 @@ shootout = rogue  -- few random solid tiles, rather to duck behind, than to
                       -- Many consumable buffs are needed in symmetric maps
                       -- so that aggresor prepares them in advance and camper
                       -- needs to waste initial turns to buff for the defence.
-  , cplaceFreq    = [("shootout", 15), ("brawl", 85)]
+  , cplaceFreq    = [("shootout", 100)]
   , cpassable     = True
   , cdefTile      = "shootoutSet"
   , cdarkCorTile  = "floorArenaLit"
