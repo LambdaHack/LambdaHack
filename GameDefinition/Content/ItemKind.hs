@@ -429,7 +429,7 @@ imageItensifier = ItemKind
   }
 sightSharpening = ItemKind
   { isymbol  = symbolRing
-  , iname    = "Sharp Monocle"
+  , iname    = "sharp monocle"
   , ifreq    = [("treasure", 20), ("add sight 1", 1)]
   , iflavour = zipPlain [White]
   , icount   = 1

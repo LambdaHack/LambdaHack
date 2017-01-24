@@ -939,11 +939,12 @@ effectIdentify execSfx iidId source target = do
           return False
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
         (iid, ItemFull{itemDisco=Just ItemDisco{..}}) : rest -> do
-          -- TODO: use this (but faster, via traversing effects with 999?)
-          -- also to prevent sending any other UpdDiscover.
+          -- We avoid identifying trivial items, but they may also be right
+          -- in the middle of bonus ranges, to if no other option, id them;
+          -- client will ignore them if really trivial.
           let ided = IK.Identified `elem` IK.ifeature itemKind
               statsObvious = Just itemAspectMean == itemAspect
-          if ided && statsObvious
+          if ided && statsObvious && not (null rest)
             then tryFull store rest
             else do
               let c = CActor target store

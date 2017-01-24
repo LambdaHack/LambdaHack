@@ -725,17 +725,19 @@ discover c oldCli iid = do
       cstore = storeFromC c
   lid <- getsState $ lidFromC c
   discoKind <- getsClient sdiscoKind
+  discoAspect <- getsClient sdiscoAspect
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
   bag <- getsState $ getContainerBag c
   side <- getsClient sside
-  nameWhere <- case c of
+  (isOurOrgan, nameWhere) <- case c of
     CActor aidOwner storeOwner -> do
       bOwner <- getsState $ getActorBody aidOwner
-      if bproj bOwner || bfid bOwner == side
-      then return []
-      else return $ ppCStoreWownW storeOwner (partActor bOwner)
-    _ -> return []
+      let name = if bproj bOwner || bfid bOwner == side
+                 then []
+                 else ppCStoreWownW storeOwner (partActor bOwner)
+      return (bfid bOwner == side && storeOwner == COrgan, name)
+    _ -> return (False, [])
   let kit = EM.findWithDefault (1, []) iid bag
       itemFull = itemToF iid kit
       knownName = partItemMediumAW cstore localTime itemFull
@@ -750,10 +752,13 @@ discover c oldCli iid = do
       jix = jkindIx $ itemBase itemFull
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.
-  when (EM.member jix discoKind /= EM.member jix oldDiscoKind
-        || case EM.lookup iid oldDiscoAspect of
-          Just _ -> False
-          Nothing -> isJust (itemDisco itemFull)) $
+  unless (isOurOrgan
+          || (EM.member jix discoKind == EM.member jix oldDiscoKind
+              && (EM.member iid discoAspect == EM.member iid oldDiscoAspect
+                  || discoAspect EM.! iid
+                     == seedToAspect (toEnum 0)  -- hack, but in UI it's OK
+                                     (itemKind $ fromJust $ itemDisco itemFull)
+                                     (AbsDepth 3) (AbsDepth 10)))) $
     msgAdd msg
 
 -- * RespSfxAtomicUI
