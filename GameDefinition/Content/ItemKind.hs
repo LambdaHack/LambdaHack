@@ -240,7 +240,7 @@ seeingItem = ItemKind
 motionScanner = ItemKind
   { isymbol  = symbolTool
   , iname    = "draft detector"
-  , ifreq    = [("useful", 100)]
+  , ifreq    = [("useful", 100), ("add nocto 1", 20)]
   , iflavour = zipPlain [BrRed]
   , icount   = 1
   , irarity  = [(6, 2), (10, 2)]
@@ -414,7 +414,7 @@ necklace9 = necklace
 imageItensifier = ItemKind
   { isymbol  = symbolRing
   , iname    = "light cone"
-  , ifreq    = [("treasure", 100)]
+  , ifreq    = [("treasure", 100), ("add nocto 1", 80)]
   , iflavour = zipFancy [BrYellow]
   , icount   = 1
   , irarity  = [(7, 2), (10, 2)]
@@ -430,15 +430,15 @@ imageItensifier = ItemKind
 sightSharpening = ItemKind
   { isymbol  = symbolRing
   , iname    = "Sharp Monocle"
-  , ifreq    = [("treasure", 100)]
+  , ifreq    = [("treasure", 20), ("add sight 1", 1)]
   , iflavour = zipPlain [White]
   , icount   = 1
-  , irarity  = [(7, 3), (10, 3)]  -- medium weak, medium shallow
+  , irarity  = [(7, 1), (10, 5)]  -- only 1 sight, not unique, medium rare
   , iverbHit = "rap"
   , iweight  = 50
   , idamage  = toDmg 0
-  , iaspects = [AddSight $ 1 + d 2, AddHurtMelee $ d 2 |*| 3]
-  , ieffects = [Unique, EqpSlot EqpSlotAddSight]
+  , iaspects = [AddSight 1, AddHurtMelee $ d 2 |*| 3]
+  , ieffects = [EqpSlot EqpSlotAddSight]
   , ifeature = [Precious, Identified, Durable, Equipable]
   , idesc    = "Let's you better focus your weaker eye."
   , ikit     = []
@@ -800,7 +800,7 @@ armorLeather = ItemKind
   , idamage  = toDmg 0
   , iaspects = [ AddHurtMelee (-3)
                , AddArmorMelee $ 1 + d 2 + dl 2 |*| 5
-               , AddArmorRanged $ dl 2 |*| 3 ]
+               , AddArmorRanged $ dl 3 |*| 3 ]
   , ieffects = [EqpSlot EqpSlotAddArmorMelee]
   , ifeature = [Durable, Identified, Equipable]
   , idesc    = "A stiff jacket formed from leather boiled in bee wax, padded linen and horse hair. Protects from anything that is not too sharp. Smells much better than the rest of your garment."
@@ -808,13 +808,14 @@ armorLeather = ItemKind
   }
 armorMail = armorLeather
   { iname    = "mail armor"
+  , ifreq    = [("useful", 100), ("torso armor", 1), ("armor ranged", 100) ]
   , iflavour = zipPlain [Cyan]
   , irarity  = [(6, 9), (10, 3)]
   , iweight  = 12000
   , idamage  = toDmg 0
   , iaspects = [ AddHurtMelee (-3)
-               , AddArmorMelee $ 1 + d 2 + dl 3 |*| 5
-               , AddArmorRanged $ 1 + d 2 + dl 3 |*| 3 ]
+               , AddArmorMelee $ 1 + d 2 + dl 2 |*| 5
+               , AddArmorRanged $ 2 + d 2 + dl 3 |*| 3 ]
   , ieffects = [EqpSlot EqpSlotAddArmorRanged]
   , ifeature = [Durable, Identified, Equipable]
   , idesc    = "A long shirt woven from iron rings that are hard to pierce through. Discourages foes from attacking your torso, making it harder for them to hit you."

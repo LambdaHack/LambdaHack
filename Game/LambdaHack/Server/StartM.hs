@@ -102,8 +102,10 @@ resetFactions :: FactionDict -> Kind.Id ModeKind -> Int -> AbsDepth -> Roster
 resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
   let rawCreate Player{..} = do
         entryLevel <- castDice (AbsDepth 0) (AbsDepth 0) fentryLevel
-        initialActors <- castDice (AbsDepth $ abs entryLevel) totalDepth
-                                  finitialActors
+        let castInitialActor (d, actorGroup) = do
+              n <- castDice (AbsDepth $ abs entryLevel) totalDepth d
+              return (n, actorGroup)
+        initialActors <- mapM castInitialActor finitialActors
         let gplayer = Player{ fentryLevel = entryLevel
                             , finitialActors = initialActors
                             , ..}
@@ -240,7 +242,7 @@ populateDungeon = do
       valuePlayer pl = (not $ fcanEscape pl, fname pl)
       -- Sorting, to keep games from similar game modes mutually reproducible.
       needInitialCrew = sortBy (comparing $ valuePlayer . gplayer . snd)
-                        $ filter ((> 0 ) . finitialActors . gplayer . snd)
+                        $ filter (not . null . finitialActors . gplayer . snd)
                         $ EM.assocs factionD
       getEntryLevel (_, fact) =
         max minD $ min maxD $ toEnum $ fentryLevel $ gplayer fact
@@ -268,16 +270,18 @@ populateDungeon = do
             nmult = 1 + timeOffset `mod` clipInTurn
             ntime = timeShift localTime (timeDeltaScale (Delta timeClip) nmult)
             validTile t = not $ Tile.isNoActor coTileSpeedup t
-            ninitActors = finitialActors $ gplayer fact3
+            initActors = finitialActors $ gplayer fact3
+            initGroups = concatMap (\(n, actorGroup) ->
+                                      replicate n actorGroup) initActors
         psFree <- getsState $ nearbyFreePoints validTile ppos lid
-        let ps = take ninitActors $ zip [0..] psFree
-        forM_ ps $ \ (n, p) -> do
+        let ps = zip3 initGroups [0..] psFree
+        forM_ ps $ \ (actorGroup, n, p) -> do
           go <-
             if not $ fhasNumbers $ gplayer fact3
-            then recruitActors [p] lid ntime fid3
+            then recruitActors actorGroup [p] lid ntime fid3
             else do
               let hNames = EM.findWithDefault [] fid3 sheroNames
-              maid <- addHero fid3 p lid hNames (Just n) ntime
+              maid <- addHero actorGroup fid3 p lid hNames (Just n) ntime
               case maid of
                 Nothing -> return False
                 Just aid -> do
@@ -291,16 +295,15 @@ populateDungeon = do
 -- | Spawn actors of any specified faction, friendly or not.
 -- To be used for initial dungeon population and for the summon effect.
 recruitActors :: (MonadAtomic m, MonadServer m)
-              => [Point] -> LevelId -> Time -> FactionId
+              => GroupName ItemKind -> [Point] -> LevelId -> Time -> FactionId
               -> m Bool
 {-# INLINABLE recruitActors #-}
-recruitActors ps lid time fid = do
+recruitActors actorGroup ps lid time fid = do
   fact <- getsState $ (EM.! fid) . sfactionD
-  let spawnName = fgroup $ gplayer fact
   laid <- forM ps $ \ p ->
     if fhasNumbers $ gplayer fact
-    then addHero fid p lid [] Nothing time
-    else addMonster spawnName fid p lid time
+    then addHero actorGroup fid p lid [] Nothing time
+    else addMonster actorGroup fid p lid time
   case catMaybes laid of
     [] -> return False
     aid : _ -> do
@@ -323,13 +326,12 @@ addMonster groupName bfid ppos lid time = do
 
 -- | Create a new hero on the current level, close to the given position.
 addHero :: (MonadAtomic m, MonadServer m)
-        => FactionId -> Point -> LevelId -> [(Int, (Text, Text))]
-        -> Maybe Int -> Time
+        => GroupName ItemKind -> FactionId -> Point -> LevelId
+        -> [(Int, (Text, Text))]-> Maybe Int -> Time
         -> m (Maybe ActorId)
 {-# INLINABLE addHero #-}
-addHero bfid ppos lid heroNames mNumber time = do
+addHero actorGroup bfid ppos lid heroNames mNumber time = do
   Faction{gcolor, gplayer} <- getsState $ (EM.! bfid) . sfactionD
-  let groupName = fgroup gplayer
   mhs <- mapM (getsState . tryFindHeroK bfid) [0..9]
   let freeHeroK = elemIndex Nothing mhs
       n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
@@ -343,7 +345,7 @@ addHero bfid ppos lid heroNames mNumber time = do
         let (nameN, pronounN) = nameFromNumber n
         in (fname gplayer <+> nameN, pronounN)
       tweakBody b = b {bsymbol, bname, bcolor = gcolor}
-  addActor groupName bfid ppos lid tweakBody pronoun time
+  addActor actorGroup bfid ppos lid tweakBody pronoun time
 
 -- | Find starting postions for all factions. Try to make them distant
 -- from each other. Place as many of the initial factions, as possible,

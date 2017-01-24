@@ -15,9 +15,9 @@ import Game.LambdaHack.Content.ItemKind
 
 actors :: [ItemKind]
 actors =
-  [warrior, warrior2, warrior3, warrior4, warrior5, soldier, sniper, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush, geyserBoiling, geyserArsenic, geyserSulfur]
+  [warrior, warrior2, warrior3, warrior4, warrior5, scout, soldier, sniper, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush, geyserBoiling, geyserArsenic, geyserSulfur]
 
-warrior,    warrior2, warrior3, warrior4, warrior5, soldier, sniper, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush, geyserBoiling, geyserArsenic, geyserSulfur :: ItemKind
+warrior,    warrior2, warrior3, warrior4, warrior5, scout, soldier, sniper, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush, geyserBoiling, geyserArsenic, geyserSulfur :: ItemKind
 
 -- * Hunams
 
@@ -49,7 +49,14 @@ warrior4 = warrior
   { iname    = "forester" }
 warrior5 = warrior
   { iname    = "scientist" }
-
+scout = warrior
+  { iname    = "scout"
+  , ifreq    = [("scout hero", 100), ("mobile", 1)]
+  , ikit     = ikit warrior
+               ++ [ ("add sight 1", CEqp)
+                  , ("armor ranged", CEqp)
+                  , ("add nocto 1", CInv) ]
+  }
 soldier = warrior
   { iname    = "soldier"
   , ifreq    = [("soldier", 100), ("mobile", 1)]
@@ -83,7 +90,8 @@ civilian5 = civilian
 eye = ItemKind
   { isymbol  = 'e'
   , iname    = "reducible eye"
-  , ifreq    = [("monster", 100), ("horror", 100), ("mobile monster", 100)]
+  , ifreq    = [ ("monster", 100), ("horror", 100)
+               , ("mobile monster", 100), ("scout monster", 10) ]
   , iflavour = zipFancy [BrRed]
   , icount   = 1
   , irarity  = [(1, 10), (10, 6)]
@@ -102,7 +110,8 @@ eye = ItemKind
 fastEye = ItemKind
   { isymbol  = 'j'
   , iname    = "injective jaw"
-  , ifreq    = [("monster", 100), ("horror", 100), ("mobile monster", 100)]
+  , ifreq    = [ ("monster", 100), ("horror", 100)
+               , ("mobile monster", 100), ("scout monster", 60) ]
   , iflavour = zipFancy [BrBlue]
   , icount   = 1
   , irarity  = [(5, 5), (10, 5)]
@@ -139,7 +148,8 @@ nose = ItemKind  -- depends solely on smell
 elbow = ItemKind
   { isymbol  = 'e'
   , iname    = "commutative elbow"
-  , ifreq    = [("monster", 100), ("horror", 100), ("mobile monster", 100)]
+  , ifreq    = [ ("monster", 100), ("horror", 100)
+               , ("mobile monster", 100), ("scout monster", 30) ]
   , iflavour = zipFancy [BrMagenta]
   , icount   = 1
   , irarity  = [(7, 1), (10, 5)]

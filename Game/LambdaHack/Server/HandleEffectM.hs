@@ -455,10 +455,12 @@ effectCallFriend execSfx nDm source target = do
     let validTile t = not $ Tile.isNoActor coTileSpeedup t
     ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
     localTime <- getsState $ getLocalTime (blid tb)
+    fact <- getsState $ (EM.! bfid tb) . sfactionD
+    let actorGroup = fgroup $ gplayer fact
     -- We call target's friends so that AI monsters that test by throwing
     -- don't waste artifacts very valuable for heroes. Heroes should rather
     -- not test scrolls by throwing.
-    recruitActors (take power ps) (blid tb) localTime (bfid tb)
+    recruitActors actorGroup (take power ps) (blid tb) localTime (bfid tb)
 
 -- ** Summon
 

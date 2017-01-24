@@ -173,13 +173,13 @@ rosterRaid, rosterBrawl, rosterShootout, rosterAmbush, rosterBattle, rosterExplo
 rosterRaid = Roster
   { rosterList = [ playerHero { fhiCondPoly = hiRaid
                               , fentryLevel = -4
-                              , finitialActors = 1 }
+                              , finitialActors = [(1, "hero")] }
                  , playerAntiHero { fname = "Red Founder"
                                   , fhiCondPoly = hiRaid
                                   , fentryLevel = -4
-                                  , finitialActors = 1 }
+                                  , finitialActors = [(1, "hero")] }
                  , playerAnimal { fentryLevel = -4
-                                , finitialActors = 2 } ]
+                                , finitialActors = [(2, "animal")] } ]
   , rosterEnemy = [ ("Explorer Party", "Animal Kingdom")
                   , ("Red Founder", "Animal Kingdom") ]
   , rosterAlly = [] }
@@ -198,14 +198,22 @@ rosterBrawl = Roster
                   , ("Indigo Research", "Horror Den") ]
   , rosterAlly = [] }
 
+-- Exactly one scout gets a sight boost, to help the aggressor, because he uses
+-- the scout for initial attack, while camper (on big enough maps)
+-- can't guess where the attack would come and so can't position his single
+-- scout to counter the stealthy advance.
 rosterShootout = Roster
   { rosterList = [ playerHero { fcanEscape = False
                               , fhiCondPoly = hiDweller
-                              , fentryLevel = -5 }
+                              , fentryLevel = -5
+                              , finitialActors =
+                                  [(2, "hero"), (1, "scout hero")] }
                  , playerAntiHero { fname = "Indigo Research"
                                   , fcanEscape = False
                                   , fhiCondPoly = hiDweller
-                                  , fentryLevel = -5 }
+                                  , fentryLevel = -5
+                                  , finitialActors =
+                                      [(2, "hero"), (1, "scout hero")] }
                  , playerHorror {fentryLevel = -5} ]
   , rosterEnemy = [ ("Explorer Party", "Indigo Research")
                   , ("Explorer Party", "Horror Den")
@@ -216,12 +224,12 @@ rosterAmbush = Roster
   { rosterList = [ playerSniper { fcanEscape = False
                                 , fhiCondPoly = hiDweller
                                 , fentryLevel = -8
-                                , finitialActors = 4 }
+                                , finitialActors = [(4, "hero")] }
                  , playerAntiSniper { fname = "Blue Hijacker"
                                     , fcanEscape = False
                                     , fhiCondPoly = hiDweller
                                     , fentryLevel = -8
-                                    , finitialActors = 4 }
+                                    , finitialActors = [(4, "hero")] }
                  , playerHorror {fentryLevel = -8} ]
   , rosterEnemy = [ ("Explorer Party", "Blue Hijacker")
                   , ("Explorer Party", "Horror Den")
@@ -232,13 +240,13 @@ rosterBattle = Roster
   { rosterList = [ playerSoldier { fcanEscape = False
                                  , fhiCondPoly = hiDweller
                                  , fentryLevel = -5
-                                 , finitialActors = 5 }
-                 , playerMobileMonster { fentryLevel = -5
-                                       , finitialActors = 35
-                                       , fneverEmpty = True }
-                 , playerMobileAnimal { fentryLevel = -5
-                                      , finitialActors = 30
-                                      , fneverEmpty = True } ]
+                                 , finitialActors = [(5, "hero")] }
+                 , playerMonster { fentryLevel = -5
+                                 , finitialActors = [(35, "mobile monster")]
+                                 , fneverEmpty = True }
+                 , playerAnimal { fentryLevel = -5
+                                , finitialActors = [(30, "mobile animal")]
+                                , fneverEmpty = True } ]
   , rosterEnemy = [ ("Explorer Party", "Monster Hive")
                   , ("Explorer Party", "Animal Kingdom") ]
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
@@ -255,17 +263,17 @@ rosterBattleSurvival = rosterBattle
   { rosterList = [ playerSoldier { fcanEscape = False
                                  , fhiCondPoly = hiDweller
                                  , fentryLevel = -5
-                                 , finitialActors = 5
+                                 , finitialActors = [(5, "hero")]
                                  , fleaderMode =
                                      LeaderAI $ AutoLeader False False
                                  , fhasUI = False }
-                 , playerMobileMonster { fentryLevel = -5
-                                       , finitialActors = 35
-                                       , fneverEmpty = True }
-                 , playerMobileAnimal { fentryLevel = -5
-                                      , finitialActors = 30
-                                      , fneverEmpty = True
-                                      , fhasUI = True } ] }
+                 , playerMonster { fentryLevel = -5
+                                 , finitialActors = [(35, "mobile monster")]
+                                 , fneverEmpty = True }
+                 , playerAnimal { fentryLevel = -5
+                                , finitialActors = [(30, "mobile animal")]
+                                , fneverEmpty = True
+                                , fhasUI = True } ] }
 
 playerMonsterTourist, playerHunamConvict, playerAnimalMagnificent, playerAnimalExquisite :: Player Dice
 
@@ -276,7 +284,7 @@ playerMonsterTourist =
                       -- Follow-the-guide, as tourists do.
                     , ftactic = TFollow
                     , fentryLevel = -4
-                    , finitialActors = 15
+                    , finitialActors = [(15, "monster")]
                     , fleaderMode =
                         LeaderUI $ AutoLeader False False }
 
@@ -285,18 +293,18 @@ playerHunamConvict =
                  , fentryLevel = -4 }
 
 playerAnimalMagnificent =
-  playerMobileAnimal { fname = "Animal Magnificent Specimen Variety"
-                     , fneverEmpty = True
-                     , fentryLevel = -7
-                     , finitialActors = 10
-                     , fleaderMode =  -- False to move away from stairs
-                         LeaderAI $ AutoLeader True False }
+  playerAnimal { fname = "Animal Magnificent Specimen Variety"
+               , fneverEmpty = True
+               , fentryLevel = -7
+               , finitialActors = [(10, "mobile animal")]
+               , fleaderMode =  -- False to move away from stairs
+                   LeaderAI $ AutoLeader True False }
 
 playerAnimalExquisite =
-  playerMobileAnimal { fname = "Animal Exquisite Herds and Packs"
-                     , fneverEmpty = True
-                     , fentryLevel = -10
-                     , finitialActors = 30 }
+  playerAnimal { fname = "Animal Exquisite Herds and Packs"
+               , fneverEmpty = True
+               , fentryLevel = -10
+               , finitialActors = [(30, "mobile animal")] }
 
 rosterSafari = Roster
   { rosterList = [ playerMonsterTourist
@@ -336,11 +344,11 @@ rosterBoardgame = Roster
   { rosterList = [ playerHero { fname = "Blue"
                               , fhiCondPoly = hiDweller
                               , fentryLevel = -3
-                              , finitialActors = 6 }
+                              , finitialActors = [(6, "hero")] }
                  , playerAntiHero { fname = "Red"
                                   , fhiCondPoly = hiDweller
                                   , fentryLevel = -3
-                                  , finitialActors = 6 }
+                                  , finitialActors = [(6, "hero")] }
                  , playerHorror ]
   , rosterEnemy = [ ("Blue", "Red")
                   , ("Blue", "Horror Den")

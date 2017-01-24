@@ -86,7 +86,8 @@ data Player a = Player
   , ftactic        :: !Tactic      -- ^ non-leader behave according to this
                                    --   tactic; can be changed during the game
   , fentryLevel    :: !a           -- ^ level where the initial members start
-  , finitialActors :: !a           -- ^ number of initial members
+  , finitialActors :: ![(a, GroupName ItemKind)]
+                                   -- ^ numbers and groups of initial members
   , fleaderMode    :: !LeaderMode  -- ^ the mode of switching the leader
   , fhasUI         :: !Bool        -- ^ does the faction have a UI client
                                    --   (for control or passive observation)

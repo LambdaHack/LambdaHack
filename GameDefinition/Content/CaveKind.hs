@@ -233,15 +233,23 @@ shootout = rogue  -- few random solid tiles, rather to duck behind, than to
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 40 * d 2
+                      -- less items in inventory, more to be picked up,
+                      -- to reward explorer and aggressor and punish camper
   , citemFreq     = [ ("useful", 30)
-                    , ("any arrow", 400), ("harpoon", 300), ("flask", 30) ]
+                    , ("any arrow", 400), ("harpoon", 300)
+                    , ("any vial", 60) ]
+                      -- Many consumable buffs are needed in symmetric maps
+                      -- so that aggresor prepares them in advance and camper
+                      -- needs to waste initial turns to buff for the defence.
   , cplaceFreq    = [("shootout", 15), ("brawl", 85)]
   , cpassable     = True
   , cdefTile      = "shootoutSet"
   , cdarkCorTile  = "floorArenaLit"
   , clitCorTile   = "floorArenaLit"
   }
-ambush = rogue  -- lots of lights, to give a chance to snipe
+ambush = rogue  -- lots of lights, to give a chance to snipe;
+                -- a crucial difference wrt shootout is that trajectories
+                -- of missiles are usually not seen, so enemy can't be guessed
   { csymbol       = 'M'
   , cname         = "Urban park at night"
   , cfreq         = [("caveAmbush", 1)]

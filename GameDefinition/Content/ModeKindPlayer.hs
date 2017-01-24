@@ -2,8 +2,7 @@
 module Content.ModeKindPlayer
   ( playerHero, playerSoldier, playerSniper
   , playerAntiHero, playerAntiSniper, playerCivilian
-  , playerMonster, playerMobileMonster, playerAntiMonster
-  , playerAnimal, playerMobileAnimal
+  , playerMonster, playerAntiMonster, playerAnimal
   , playerHorror
   , hiHero, hiDweller, hiRaid
   ) where
@@ -17,7 +16,7 @@ import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ModeKind
 
-playerHero, playerSoldier, playerSniper, playerAntiHero, playerAntiSniper, playerCivilian, playerMonster, playerMobileMonster, playerAntiMonster, playerAnimal, playerMobileAnimal, playerHorror :: Player Dice
+playerHero, playerSoldier, playerSniper, playerAntiHero, playerAntiSniper, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror :: Player Dice
 
 playerHero = Player
   { fname = "Explorer Party"
@@ -30,17 +29,19 @@ playerHero = Player
   , fhasGender = True
   , ftactic = TExplore
   , fentryLevel = -1
-  , finitialActors = 3
+  , finitialActors = [(3, "hero")]
   , fleaderMode = LeaderUI $ AutoLeader False False
   , fhasUI = True
   }
 
 playerSoldier = playerHero
   { fgroup = "soldier"
+  , finitialActors = [(3, "soldier")]
   }
 
 playerSniper = playerHero
   { fgroup = "sniper"
+  , finitialActors = [(3, "sniper")]
   }
 
 playerAntiHero = playerHero
@@ -64,7 +65,7 @@ playerCivilian = Player
   , fhasGender = True
   , ftactic = TPatrol
   , fentryLevel = -1
-  , finitialActors = d 2 + 1
+  , finitialActors = [(d 2 + 1, "civilian")]
   , fleaderMode = LeaderNull  -- unorganized
   , fhasUI = False
   }
@@ -80,15 +81,13 @@ playerMonster = Player
   , fhasGender = False
   , ftactic = TExplore
   , fentryLevel = -4
-  , finitialActors = 4  -- one of these most probably not nose, so will explore
+  , finitialActors = [(1, "scout monster"), (3, "monster")]
   , fleaderMode =
       -- No point changing leader on level, since all move and they
       -- don't follow the leader.
       LeaderAI $ AutoLeader True True
   , fhasUI = False
   }
-
-playerMobileMonster = playerMonster
 
 playerAntiMonster = playerMonster
   { fhasUI = True
@@ -106,13 +105,10 @@ playerAnimal = Player
   , fhasGender = False
   , ftactic = TRoam  -- can't pick up, so no point exploring
   , fentryLevel = -1  -- fun from the start to avoid empty initial level
-  , finitialActors = 1 + d 2
+  , finitialActors = [(1 + d 2, "animal")]
   , fleaderMode = LeaderNull
   , fhasUI = False
   }
-
-playerMobileAnimal = playerAnimal
-  { fgroup = "mobile animal" }
 
 -- | A special player, for summoned actors that don't belong to any
 -- of the main players of a given game. E.g., animals summoned during
@@ -131,7 +127,7 @@ playerHorror = Player
   , fhasGender = False
   , ftactic = TPatrol  -- disoriented
   , fentryLevel = -3
-  , finitialActors = 0
+  , finitialActors = []
   , fleaderMode = LeaderNull
   , fhasUI = False
   }
