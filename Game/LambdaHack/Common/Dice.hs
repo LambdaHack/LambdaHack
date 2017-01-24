@@ -192,21 +192,24 @@ infixl 5 |*|
 (|*|) :: Dice -> Int -> Dice
 Dice dc1 dl1 ds1 |*| s2 = Dice dc1 dl1 (ds1 * s2)
 
--- | Maximal value of dice. The scaled part taken assuming maximum level.
+-- | Maximal value of dice. The scaled part taken assuming median level.
 maxDice :: Dice -> Int
 maxDice Dice{..} = (fromMaybe 0 (maxFreq diceConst)
-                    + fromMaybe 0 (maxFreq diceLevel))
+                    + fromMaybe 0 (maxFreq diceLevel) `div` 2)
                    * diceMult
 
--- | Minimal value of dice. The scaled part ignored.
+-- | Minimal value of dice. The scaled part taken assuming median level.
 minDice :: Dice -> Int
-minDice Dice{..} = fromMaybe 0 (minFreq diceConst) * diceMult
+minDice Dice{..} = (fromMaybe 0 (minFreq diceConst)
+                    + fromMaybe 0 (minFreq diceLevel) `div` 2)
+                   * diceMult
 
--- | Mean value of dice. The level-dependent part is taken assuming
--- the highest level, because that's where the game is the hardest.
+-- | Mean value of dice. The scaled part taken assuming median level.
 -- Assumes the frequencies are not null.
 meanDice :: Dice -> Int
-meanDice Dice{..} = (meanFreq diceConst + meanFreq diceLevel) * diceMult
+meanDice Dice{..} = (meanFreq diceConst
+                     + meanFreq diceLevel `div` 2)
+                    * diceMult
 
 reduceDice :: Dice -> Maybe Int
 reduceDice de =
