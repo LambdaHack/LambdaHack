@@ -32,7 +32,7 @@ warrior = ItemKind
   , iweight  = 80000
   , idamage  = toDmg 0
   , iaspects = [ AddMaxHP 60  -- partially from clothes and assumed first aid
-               , AddMaxCalm 60, AddSpeed 20, AddNocto 2
+               , AddMaxCalm 70, AddSpeed 20, AddNocto 2
                , AddAbility AbProject 2, AddAbility AbApply 1
                , AddAbility AbAlter 2 ]
   , ieffects = []
@@ -98,7 +98,7 @@ eye = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 16, AddMaxCalm 60, AddSpeed 20, AddNocto 2
+  , iaspects = [ AddMaxHP 16, AddMaxCalm 70, AddSpeed 20, AddNocto 2
                , AddAbility AbProject 2, AddAbility AbApply 1
                , AddAbility AbAlter 2 ]
   , ieffects = []
@@ -118,7 +118,7 @@ fastEye = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 5, AddMaxCalm 60, AddSpeed 30, AddNocto 2
+  , iaspects = [ AddMaxHP 5, AddMaxCalm 70, AddSpeed 30, AddNocto 2
                , AddAbility AbAlter 2 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -208,7 +208,7 @@ goldenJackal = ItemKind  -- basically a much smaller and slower hyena
   , iverbHit = "thud"
   , iweight  = 13000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 12, AddMaxCalm 60, AddSpeed 22, AddNocto 2 ]
+  , iaspects = [ AddMaxHP 12, AddMaxCalm 70, AddSpeed 22, AddNocto 2 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -225,7 +225,7 @@ griffonVulture = ItemKind
   , iverbHit = "thud"
   , iweight  = 13000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 12, AddMaxCalm 70, AddSpeed 20, AddNocto 2
+  , iaspects = [ AddMaxHP 12, AddMaxCalm 80, AddSpeed 20, AddNocto 2
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -283,7 +283,7 @@ gilaMonster = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 12, AddMaxCalm 60, AddSpeed 15, AddNocto 2
+  , iaspects = [ AddMaxHP 12, AddMaxCalm 50, AddSpeed 15, AddNocto 2
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -340,7 +340,7 @@ hyena = ItemKind
   , iverbHit = "thud"
   , iweight  = 60000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 20, AddMaxCalm 60, AddSpeed 30, AddNocto 2 ]
+  , iaspects = [ AddMaxHP 20, AddMaxCalm 70, AddSpeed 30, AddNocto 2 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -357,7 +357,7 @@ alligator = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 41, AddMaxCalm 60, AddSpeed 15, AddNocto 2 ]
+  , iaspects = [ AddMaxHP 41, AddMaxCalm 70, AddSpeed 15, AddNocto 2 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -417,7 +417,7 @@ hornetSwarm = ItemKind
   , iverbHit = "thud"
   , iweight  = 1000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 8, AddMaxCalm 60, AddSpeed 30, AddNocto 2
+  , iaspects = [ AddMaxHP 8, AddMaxCalm 70, AddSpeed 30, AddNocto 2
                , AddAbility AbAlter (-2)  -- can't use stairs nor doors
                , AddArmorMelee 80, AddArmorRanged 40 ]
   , ieffects = []
