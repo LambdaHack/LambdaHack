@@ -137,13 +137,18 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
         itemVerbMU iid kit verb c
       _ -> return ()
   UpdLoseItem False _ _ _ _ -> return ()
+  -- The message is rather cryptic, so let's disable it until it's decided
+  -- if anemy inventories should be displayed, etc.
+  {-
   UpdLoseItem True iid _ kit c@(CActor aid store) | store /= CSha -> do
     -- Actor putting an item into shared stash, most probably.
+    side <- getsClient sside
     b <- getsState $ getActorBody aid
     subject <- partActorLeader aid b
     let ownW = ppCStoreWownW store subject
         verb = MU.Text $ makePhrase $ "be removed from" : ownW
-    itemVerbMU iid kit verb c
+    when (bfid b == side) $ itemVerbMU iid kit verb c
+  -}
   UpdLoseItem{} -> return ()
   -- Move actors and items.
   UpdMoveActor aid source target -> moveActor aid source target
