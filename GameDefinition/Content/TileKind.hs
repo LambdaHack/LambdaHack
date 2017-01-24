@@ -23,11 +23,11 @@ cdefs = ContentDef
   , validateSingle = validateSingleTileKind
   , validateAll = validateAllTileKind
   , content = contentFromList $
-      [unknown, wall, hardRock, pillar, pillarIce, pillarCache, lampPost, burningBush, bush, tree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUp, stairsOutdoorUp, stairsDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorSmoke]
+      [unknown, wall, hardRock, pillar, pillarIce, pillarCache, lampPost, burningBush, bush, bushDark, tree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUp, stairsOutdoorUp, stairsDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark]
       ++ map makeDark ldarkable
       ++ map makeDarkColor ldarkColorable
   }
-unknown,        wall, hardRock, pillar, pillarIce, pillarCache, lampPost, burningBush, bush, tree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUp, stairsOutdoorUp, stairsDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorSmoke :: TileKind
+unknown,        wall, hardRock, pillar, pillarIce, pillarCache, lampPost, burningBush, bush, bushDark,tree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUp, stairsOutdoorUp, stairsDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark :: TileKind
 
 ldarkable :: [TileKind]
 ldarkable = [wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, floorCorridorLit]
@@ -121,16 +121,20 @@ burningBush = TileKind
   , tcolor   = BrRed
   , tcolor2  = Red
   , talter   = 10
-  , tfeature = []
+  , tfeature = [Clear]
   }
 bush = TileKind
   { tsymbol  = 'O'
   , tname    = "bush"
-  , tfreq    = [("ambushSet", 100), ("battleSet", 30)]
+  , tfreq    = []
   , tcolor   = Green
   , tcolor2  = BrBlack
   , talter   = 10
-  , tfeature = [Dark]
+  , tfeature = [Clear]
+  }
+bushDark = bush
+  { tfreq    = [("ambushSet", 100), ("battleSet", 30)]
+  , tfeature = Dark : tfeature bush
   }
 tree = TileKind
   { tsymbol  = 'O'
@@ -358,20 +362,30 @@ floorBrownLit = floorRedLit
   }
 floorFog = TileKind
   { tsymbol  = '#'
-  , tname    = "dense fog"
-  , tfreq    = [("emptySet", 1), ("shootoutSet", 3), ("treeShadeOver_s", 5)]
+  , tname    = "lit fog"
+  , tfreq    = []
   , tcolor   = BrCyan
   , tcolor2  = Cyan
   , talter   = maxBound
-  , tfeature = [Spice, Walkable, Dark, NoItem]
+  , tfeature = [Spice, Walkable, NoItem, Indistinct]
   }
-floorSmoke = floorFog
-  { tname    = "billowing smoke"
+floorFogDark = floorFog
+  { tname    = "dense fog"
+  , tfreq    = [("emptySet", 1), ("shootoutSet", 3), ("treeShadeOver_s", 5)]
+  , tfeature = Dark : tfeature floorFog
+  }
+floorSmoke = TileKind
+  { tsymbol  = '#'
+  , tname    = "billowing smoke"
   , tfreq    = [("battleSet", 5), ("labTrail", 1), ("stair terminal", 2)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
   , talter   = maxBound
-  , tfeature = [Walkable, NoItem]  -- not dark, embers
+  , tfeature = [Walkable, NoItem, Indistinct]  -- not dark, embers
+  }
+floorSmokeDark = floorSmoke
+  { tname    = "lingering smoke"
+  , tfeature = Dark : tfeature floorSmoke
   }
 
 makeDark :: TileKind -> TileKind
