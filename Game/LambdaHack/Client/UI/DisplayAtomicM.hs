@@ -753,10 +753,7 @@ discover c oldCli iid = do
   when (EM.member jix discoKind /= EM.member jix oldDiscoKind
         || case EM.lookup iid oldDiscoAspect of
           Just _ -> False
-          Nothing -> case itemDisco itemFull of
-            Just ItemDisco{itemAspectMean, itemAspect=Just ar} ->
-              ar /= itemAspectMean
-            _ -> False) $
+          Nothing -> isJust (itemDisco itemFull)) $
     msgAdd msg
 
 -- * RespSfxAtomicUI
