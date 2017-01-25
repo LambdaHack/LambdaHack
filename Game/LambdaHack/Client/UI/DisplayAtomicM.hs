@@ -164,8 +164,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
     b <- getsState $ getActorBody aid
     arena <- getArenaUI
     side <- getsClient sside
-    let hpDelta = resCurrentTurn (bhpDelta b)
-    if bhp b <= 0 && hpDelta < 0
+    if bhp b <= 0 && n < 0
        && (bfid b == side && not (bproj b) || arena == blid b) then do
       let (firstFall, hurtExtra) = case (bfid b == side, bproj b) of
             (True, True) -> ("fall apart", "be reduced to dust")
@@ -173,7 +172,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
             (False, True) -> ("break up", "be shattered into little pieces")
             (False, False) -> ("collapse", "be reduced to a bloody pulp")
           verbDie = if alreadyDeadBefore then hurtExtra else firstFall
-          alreadyDeadBefore = bhp b - hpDelta <= 0
+          alreadyDeadBefore = bhp b - n <= 0
       subject <- partActorLeader aid b
       let msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
       msgAdd msgDie
@@ -185,7 +184,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
                           else shortDeathBody (bpos b)
       unless (bproj b) $ animate (blid b) deathAct
     else do
-      when (hpDelta >= bhp b && bhp b > 0) $
+      when (n >= bhp b && bhp b > 0) $
         actorVerbMU aid b "return from the brink of death"
       mleader <- getsClient _sleader
       when (Just aid == mleader) $ do
@@ -193,8 +192,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
         let ar = case EM.lookup aid actorAspect of
               Just aspectRecord -> aspectRecord
               Nothing -> assert `failure` aid
-        when (bhp b >= xM (aMaxHP ar) && aMaxHP ar > 0
-              && resCurrentTurn (bhpDelta b) > 0) $ do
+        when (bhp b >= xM (aMaxHP ar) && aMaxHP ar > 0 && n > 0) $ do
           actorVerbMU aid b "recover your health fully"
           stopPlayBack
   UpdRefillCalm aid calmDelta ->
