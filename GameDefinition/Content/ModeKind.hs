@@ -207,13 +207,13 @@ rosterShootout = Roster
                               , fhiCondPoly = hiDweller
                               , fentryLevel = -5
                               , finitialActors =
-                                  [(1, "scout hero"), (2, "hero") ] }
+                                  [(1, "scout hero"), (2, "ranger hero") ] }
                  , playerAntiHero { fname = "Indigo Research"
                                   , fcanEscape = False
                                   , fhiCondPoly = hiDweller
                                   , fentryLevel = -5
                                   , finitialActors =
-                                      [(1, "scout hero"), (2, "hero") ] }
+                                      [(1, "scout hero"), (2, "ranger hero") ] }
                  , playerHorror {fentryLevel = -5} ]
   , rosterEnemy = [ ("Explorer Party", "Indigo Research")
                   , ("Explorer Party", "Horror Den")
