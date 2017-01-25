@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Actor
     ActorId, monsterGenChance, partActor, partPronoun
     -- * The@ Acto@r type
   , Actor(..), ResDelta(..), ActorAspect
-  , deltaSerious, deltaMild, xM, minusM, minusTwoM1, oneM
+  , deltaSerious, deltaMild, xM, minusM, minusM1, oneM
   , bspeed, actorTemplate, braced, waitedLastTurn, actorDying
   , hpTooLow, hpHuge, calmEnough, hpEnough
     -- * Assorted
@@ -76,26 +76,29 @@ data Actor = Actor
   }
   deriving (Show, Eq)
 
+-- The resource changes in the tuple are negative and positive, respectively.
 data ResDelta = ResDelta
-  { resCurrentTurn  :: !Int64  -- ^ resource change this player turn
-  , resPreviousTurn :: !Int64  -- ^ resource change last player turn
+  { resCurrentTurn  :: !(Int64, Int64)  -- ^ resource change this player turn
+  , resPreviousTurn :: !(Int64, Int64)  -- ^ resource change last player turn
   }
   deriving (Show, Eq)
 
 type ActorAspect = EM.EnumMap ActorId AspectRecord
 
 deltaSerious :: ResDelta -> Bool
-deltaSerious ResDelta{..} = resCurrentTurn < minusM || resPreviousTurn < minusM
+deltaSerious ResDelta{..} = fst resCurrentTurn < minusM
+                            || fst resPreviousTurn < minusM
 
 deltaMild :: ResDelta -> Bool
-deltaMild ResDelta{..} = resCurrentTurn == minusM || resPreviousTurn == minusM
+deltaMild ResDelta{..} = fst resCurrentTurn == minusM
+                         || fst resPreviousTurn == minusM
 
 xM :: Int -> Int64
 xM k = fromIntegral k * 1000000
 
-minusM, minusTwoM1, oneM :: Int64
+minusM, minusM1, oneM :: Int64
 minusM = xM (-1)
-minusTwoM1 = xM (-2) + 1
+minusM1 = xM (-1) + 1
 oneM = xM 1
 
 -- | Chance that a new monster is generated. Currently depends on the
@@ -143,8 +146,8 @@ actorTemplate btrunk bsymbol bname bpronoun bcolor bhp bcalm
       bwait   = False
       bfidImpressed = bfid
       bfidOriginal = bfid
-      bhpDelta = ResDelta 0 0
-      bcalmDelta = ResDelta 0 0
+      bhpDelta = ResDelta (0, 0) (0, 0)
+      bcalmDelta = ResDelta (0, 0) (0, 0)
       bproj = False
   in Actor{..}
 

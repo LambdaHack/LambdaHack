@@ -256,10 +256,15 @@ updRefillHP aid n =
   updateActor aid $ \b ->
     b { bhp = bhp b + n
       , bhpDelta = let oldD = bhpDelta b
-                   in if n == 0
-                      then ResDelta { resCurrentTurn = 0
+                   in case compare n 0 of
+                     EQ -> ResDelta { resCurrentTurn = (0, 0)
                                     , resPreviousTurn = resCurrentTurn oldD }
-                      else oldD {resCurrentTurn = resCurrentTurn oldD + n}
+                     LT -> oldD {resCurrentTurn =
+                                   ( fst (resCurrentTurn oldD) + n
+                                   , snd (resCurrentTurn oldD) )}
+                     GT -> oldD {resCurrentTurn =
+                                   ( fst (resCurrentTurn oldD)
+                                   , snd (resCurrentTurn oldD) + n )}
       }
 
 updRefillCalm :: MonadStateWrite m => ActorId -> Int64 -> m ()
@@ -268,10 +273,15 @@ updRefillCalm aid n =
   updateActor aid $ \b ->
     b { bcalm = max 0 $ bcalm b + n
       , bcalmDelta = let oldD = bcalmDelta b
-                     in if n == 0
-                        then ResDelta { resCurrentTurn = 0
+                     in case compare n 0 of
+                       EQ -> ResDelta { resCurrentTurn = (0, 0)
                                       , resPreviousTurn = resCurrentTurn oldD }
-                        else oldD {resCurrentTurn = resCurrentTurn oldD + n}
+                       LT -> oldD {resCurrentTurn =
+                                     ( fst (resCurrentTurn oldD) + n
+                                     , snd (resCurrentTurn oldD) )}
+                       GT -> oldD {resCurrentTurn =
+                                     ( fst (resCurrentTurn oldD)
+                                     , snd (resCurrentTurn oldD) + n )}
       }
 
 updFidImpressedActor :: MonadStateWrite m

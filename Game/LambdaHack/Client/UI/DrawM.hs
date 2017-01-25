@@ -493,9 +493,9 @@ drawLeaderStatus waitT = do
           slashPick = slashes !! (max 0 (waitT - 1) `mod` length slashes)
           addColor c t = map (Color.attrChar2ToW32 c) t
           checkDelta ResDelta{..}
-            | resCurrentTurn < 0 || resPreviousTurn < 0
+            | fst resCurrentTurn < 0 || fst resPreviousTurn < 0
               = addColor Color.BrRed  -- alarming news have priority
-            | resCurrentTurn > 0 || resPreviousTurn > 0
+            | snd resCurrentTurn > 0 || snd resPreviousTurn > 0
               = addColor Color.BrGreen
             | otherwise = stringToAL  -- only if nothing at all noteworthy
           calmAddAttr = checkDelta calmDelta

@@ -324,10 +324,10 @@ managePerTurn aid = do
       unless (newCalmDelta == 0) $
         -- Update delta for the current player turn.
         udpateCalm aid newCalmDelta
-      unless (bcalmDelta b == ResDelta 0 0) $
+      unless (bcalmDelta b == ResDelta (0, 0) (0, 0)) $
         -- Clear delta for the next player turn.
         execUpdAtomic $ UpdRefillCalm aid clearMark
-      unless (bhpDelta b == ResDelta 0 0) $
+      unless (bhpDelta b == ResDelta (0, 0) (0, 0)) $
         -- Clear delta for the next player turn.
         execUpdAtomic $ UpdRefillHP aid clearMark
 
