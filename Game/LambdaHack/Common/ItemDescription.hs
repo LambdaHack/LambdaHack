@@ -1,6 +1,7 @@
 -- | Descripitons of items.
 module Game.LambdaHack.Common.ItemDescription
-  ( partItemN, partItem, partItemWs, partItemAW, partItemMediumAW, partItemWownW
+  ( partItemN, partItem, partItemWs, partItemWsRanged
+  , partItemAW, partItemMediumAW, partItemWownW
   , viewItem, show64With2
   ) where
 
@@ -35,9 +36,9 @@ show64With2 n =
 
 -- | The part of speech describing the item parameterized by the number
 -- of effects/aspects to show..
-partItemN :: Int -> Int -> CStore -> Time -> ItemFull
+partItemN :: Bool -> Int -> Int -> CStore -> Time -> ItemFull
           -> (Bool, MU.Part, MU.Part)
-partItemN fullInfo n cstore localTime itemFull =
+partItemN ranged fullInfo n cstore localTime itemFull =
   let genericName = jname $ itemBase itemFull
   in case itemDisco itemFull of
     Nothing ->
@@ -55,8 +56,10 @@ partItemN fullInfo n cstore localTime itemFull =
                 | itemK itemFull == 1 && len == 1 = "(" <> chargingAdj <> ")"
                 | otherwise = "(" <> tshow len <+> chargingAdj <> ")"
           skipRecharging = fullInfo <= 4 && len >= itemK itemFull
-          effTs = filter (not . T.null)
-                  $ textAllAE fullInfo skipRecharging cstore itemFull
+          (effTsRaw, rangedDamage) =
+            textAllAE fullInfo skipRecharging cstore itemFull
+          effTs = filter (not . T.null) effTsRaw
+                  ++ if ranged then rangedDamage else []
           ts = take n effTs
                ++ ["(...)" | length effTs > n]
                ++ [timer]
@@ -68,14 +71,14 @@ partItemN fullInfo n cstore localTime itemFull =
 
 -- | The part of speech describing the item.
 partItem :: CStore -> Time -> ItemFull -> (Bool, MU.Part, MU.Part)
-partItem = partItemN 5 4
+partItem = partItemN False 5 4
 
-textAllAE :: Int -> Bool -> CStore -> ItemFull -> [Text]
+textAllAE :: Int -> Bool -> CStore -> ItemFull -> ([Text], [Text])
 textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
   let features | fullInfo >= 9 = map featureToSuff $ sort $ jfeature itemBase
                | otherwise = []
   in case itemDisco of
-    Nothing -> features
+    Nothing -> (features, [])
     Just ItemDisco{itemKind, itemAspect} ->
       let timeoutAspect :: IK.Aspect -> Bool
           timeoutAspect IK.Timeout{} = True
@@ -172,7 +175,7 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
           -- Note that avg melee damage would be too complex to display here,
           -- because in case of @MOwned@ the owner is different than leader,
           -- so the value would be different than when viewing the item.
-      in aets ++ features ++ rangedDamage
+      in (aets ++ features, rangedDamage)
 
 -- TODO: use kit
 partItemWs :: Int -> CStore -> Time -> ItemFull -> MU.Part
@@ -182,23 +185,30 @@ partItemWs count c localTime itemFull =
      then MU.Phrase ["the", name, stats]
      else MU.Phrase [MU.CarWs count name, stats]
 
+partItemWsRanged :: Int -> CStore -> Time -> ItemFull -> MU.Part
+partItemWsRanged count c localTime itemFull =
+  let (unique, name, stats) = partItemN True 5 4 c localTime itemFull
+  in if unique && count == 1
+     then MU.Phrase ["the", name, stats]
+     else MU.Phrase [MU.CarWs count name, stats]
+
 partItemAW :: CStore -> Time -> ItemFull -> MU.Part
 partItemAW c localTime itemFull =
-  let (unique, name, stats) = partItemN 4 4 c localTime itemFull
+  let (unique, name, stats) = partItemN False 4 4 c localTime itemFull
   in if unique
      then MU.Phrase ["the", name, stats]
      else MU.AW $ MU.Phrase [name, stats]
 
 partItemMediumAW :: CStore -> Time -> ItemFull -> MU.Part
 partItemMediumAW c localTime itemFull =
-  let (unique, name, stats) = partItemN 5 100 c localTime itemFull
+  let (unique, name, stats) = partItemN False 5 100 c localTime itemFull
   in if unique
      then MU.Phrase ["the", name, stats]
      else MU.AW $ MU.Phrase [name, stats]
 
 partItemWownW :: MU.Part -> CStore -> Time -> ItemFull -> MU.Part
 partItemWownW partA c localTime itemFull =
-  let (_, name, stats) = partItemN 4 4 c localTime itemFull
+  let (_, name, stats) = partItemN False 4 4 c localTime itemFull
   in MU.WownW partA $ MU.Phrase [name, stats]
 
 viewItem :: Item -> Color.AttrCharW32

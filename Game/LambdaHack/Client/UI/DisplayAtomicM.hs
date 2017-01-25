@@ -908,7 +908,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
               let itemSecret = itemNoDisco (itemBase, itemK)
                   -- TODO: plural form of secretName? only when K > 1?
                   -- At this point we don't easily know how many consumed.
-                  (_, secretName, secretAEText) = partItem CGround localTime itemSecret
+                  (_, secretName, secretAEText) =
+                    partItem CGround localTime itemSecret
                   verb = "repurpose"
                   store = MU.Text $ ppCStoreIn CGround
               msgAdd $ makeSentence

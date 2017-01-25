@@ -178,7 +178,8 @@ itemOverlay store lid bag = do
           Just kit@(k, _) ->
             let itemFull = itemToF iid kit
                 colorSymbol = viewItem $ itemBase itemFull
-                phrase = makePhrase [partItemWs k store localTime itemFull]
+                phrase =
+                  makePhrase [partItemWsRanged k store localTime itemFull]
                 al = textToAL (slotLabel l)
                      <+:> [colorSymbol]
                      <+:> textToAL phrase

@@ -89,7 +89,7 @@ splitAttrPhrase w xs
 
 itemDesc :: Int -> CStore -> Time -> ItemFull -> AttrLine
 itemDesc aHurtMeleeOfOwner store localTime itemFull@ItemFull{itemBase} =
-  let (_, name, stats) = partItemN 10 100 store localTime itemFull
+  let (_, name, stats) = partItemN False 10 100 store localTime itemFull
       nstats = makePhrase [name, stats]
       IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemBase
       speed = speedFromWeight (jweight itemBase) throwVelocity
