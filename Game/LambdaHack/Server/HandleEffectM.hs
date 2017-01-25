@@ -340,6 +340,7 @@ effectRefillHP overfill power source target = do
       hpMax = aMaxHP ar
       overMax | overfill = xM hpMax * 10  -- arbitrary limit to scumming
               | otherwise = xM hpMax
+      -- We ignore light poison and similar -1HP per turn annoyances.
       serious = not (bproj tb) && source /= target && power > 1
       deltaHP | power > 0 = min (xM power) (max 0 $ overMax - bhp tb)
               | serious = -- if overfull, at least cut back to max

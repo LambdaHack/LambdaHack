@@ -247,13 +247,16 @@ reqMelee source target iid cstore = do
         speedDeltaHP = case btrajectory sb of
           Just (_, speed) -> - modifyDamageBySpeed rawDeltaHP speed
           Nothing -> - rawDeltaHP
-        serious = speedDeltaHP <= - oneM && source /= target && not (bproj tb)
+        -- Any amount of damage is serious, because next turn a stronger
+        -- projectile or melee weapon may be used and also it accumulates.
+        serious = speedDeltaHP < 0 && source /= target && not (bproj tb)
         deltaHP | serious = -- if HP overfull, at least cut back to max HP
                             min speedDeltaHP (xM hpMax - bhp tb)
                 | otherwise = speedDeltaHP
-    execSfxAtomic $ SfxStrike source target iid cstore hurtMult
-    -- Damage the target.
-    when (speedDeltaHP < 0) $ do
+    let hurtMultZero = if speedDeltaHP < 0 then hurtMult else 0
+    execSfxAtomic $ SfxStrike source target iid cstore hurtMultZero
+    -- Damage the target, never heal.
+    when (deltaHP < 0) $ do
       execUpdAtomic $ UpdRefillHP target deltaHP
       when serious $ halveCalm target
     -- Deduct a hitpoint for a pierce of a projectile

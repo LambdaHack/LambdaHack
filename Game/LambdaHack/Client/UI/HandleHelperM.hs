@@ -198,7 +198,7 @@ statsOverlay aid = do
         Nothing -> assert `failure` aid
       tshow200 n = let n200 = min 200 $ max (-200) n
                    in tshow n200 <> if n200 /= n then "$" else ""
-      tshowBlock n = tshow200 $ n + if braced b then 50 else 0
+      tshowBlock k n = tshow200 $ n + if braced b then k else 0
       prSlot :: (Y, SlotChar) -> (AspectRecord -> Int, Text, Int -> Text)
              -> (Text, KYX)
       prSlot (y, c) (accessor, blurb, decorator) =
@@ -218,8 +218,8 @@ statsOverlay aid = do
       tshowRadius r = if r == 0 then "0m" else tshow (r - 1) <> ".5m"
       slotList =
         [ (aHurtMelee, "to melee damage", \t -> tshow200 t <> "%")
-        , (aArmorMelee, "melee armor", \t -> "[" <> tshowBlock t <> "%]")
-        , (aArmorRanged, "ranged armor",  \t -> "{" <> tshowBlock t <> "%}")
+        , (aArmorMelee, "melee armor", \t -> "[" <> tshowBlock 50 t <> "%]")
+        , (aArmorRanged, "ranged armor",  \t -> "{" <> tshowBlock 25 t <> "%}")
         , (aMaxHP, "max HP", \t -> tshow $ max 0 t)
         , (aMaxCalm, "max Calm", \t -> tshow $ max 0 t)
         , (aSpeed, "speed", \t -> showIntWith1 t <> "m/s")

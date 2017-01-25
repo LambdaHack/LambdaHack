@@ -160,7 +160,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
   UpdRefillHP aid n -> do
     when verbose $
       aidVerbMU aid $ MU.Text $ (if n > 0 then "heal" else "lose")
-                                <+> tshow (abs $ n `divUp` oneM) <> "HP"
+                                <+> tshow (abs n `divUp` oneM) <> "HP"
     b <- getsState $ getActorBody aid
     arena <- getArenaUI
     side <- getsClient sside
@@ -1002,8 +1002,10 @@ strike source target iid cstore hurtMult = assert (source /= target) $ do
                       "partly"
                     | hurtMult > 1 ->  -- braced and/or huge bonuses
                       if braced tb then "doggedly" else "nonchalantly"
-                    | otherwise ->         -- 1% got through, which can
+                    | hurtMult > 0 ->      -- 1% got through, which can
                       "almost completely"  -- still be deadly, if fast missile
+                    | otherwise ->  -- apparently no damage; report
+                      "completely"
                ]
 -- TODO: when other armor is in, etc.:
 --      msg HitSluggish =
