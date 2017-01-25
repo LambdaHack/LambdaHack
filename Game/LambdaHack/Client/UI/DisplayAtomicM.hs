@@ -756,15 +756,13 @@ discover c oldCli iid = do
       msg = makeSentence
         ["the", MU.SubjectVerbSg namePhrase "turn out to be", knownName]
       jix = jkindIx $ itemBase itemFull
+      ik = itemKind $ fromJust $ itemDisco itemFull
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.
   unless (isOurOrgan
           || (EM.member jix discoKind == EM.member jix oldDiscoKind
               && (EM.member iid discoAspect == EM.member iid oldDiscoAspect
-                  || discoAspect EM.! iid
-                     == seedToAspect (toEnum 0)  -- hack, but in UI it's OK
-                                     (itemKind $ fromJust $ itemDisco itemFull)
-                                     (AbsDepth 3) (AbsDepth 10)))) $
+                  || not (aspectsRandom ik)))) $
     msgAdd msg
 
 -- * RespSfxAtomicUI
@@ -996,7 +994,7 @@ strike source target iid cstore hurtMult = assert (source /= target) $ do
                 MU.SubjectVerbSg tpart
                 $ if bproj sb
                   then if braced tb then "deflect it" else "shrug it off"
-                  else if braced tb then "block" else "ignore"
+                  else if braced tb then "block" else "ignore it"
           in makeSentence
                [ MU.Phrase sActs <> ", but"
                , actionPhrase

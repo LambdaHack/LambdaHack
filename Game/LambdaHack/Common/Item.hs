@@ -5,6 +5,7 @@ module Game.LambdaHack.Common.Item
   ( -- * The @Item@ type
     ItemId, Item(..)
   , seedToAspect, meanAspect, aspectRecordToList, aspectRecordFull
+  , aspectsRandom
     -- * Item discovery types
   , ItemKindIx, KindMean(..), DiscoveryKind, ItemSeed
   , AspectRecord(..), emptyAspectRecord, sumAspectRecord, DiscoveryAspect
@@ -264,6 +265,14 @@ seedToAspect (ItemSeed itemSeed) kind ldepth totalDepth =
   let rollM = foldlM' (castAspect ldepth totalDepth) emptyAspectRecord
                       (IK.iaspects kind)
   in St.evalState rollM (mkStdGen itemSeed)
+
+-- If @False@, aspects of this kind are most probably fixed, not random.
+aspectsRandom :: IK.ItemKind -> Bool
+aspectsRandom kind =
+  let rollM = foldlM' (castAspect (AbsDepth 10) (AbsDepth 10))
+                      emptyAspectRecord (IK.iaspects kind)
+      gen = mkStdGen 0
+  in show gen /= show (St.execState rollM gen)
 
 meanAspect :: IK.ItemKind -> AspectRecord
 meanAspect kind = foldl' addMeanAspect emptyAspectRecord (IK.iaspects kind)
