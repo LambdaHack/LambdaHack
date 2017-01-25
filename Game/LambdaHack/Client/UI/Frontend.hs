@@ -142,7 +142,7 @@ frameTimeoutThread delta fdelay RawFrontend{..} = do
                 modifyMVar_ fdelay $ return . subtract delay
                 delayLoop
         delayLoop
-        let waitForKeysUsed = do
+        let showFrameAndRepeatIfKeys = do
               -- @fshowNow@ is full at this point, unless @saveKM@ emptied it,
               -- in which case we wait below until @display@ fills it
               takeMVar fshowNow  -- 2. permit display
@@ -150,8 +150,10 @@ frameTimeoutThread delta fdelay RawFrontend{..} = do
               readMVar fshowNow  -- 4. wait for ack before starting delay
               -- @fshowNow@ is full at this point
               noKeysPending <- STM.atomically $ STM.isEmptyTQueue fchanKey
-              unless noKeysPending waitForKeysUsed
-        waitForKeysUsed
+              unless noKeysPending $ do
+                void $ swapMVar fdelay 0  -- cancel delays lest they accumulate
+                showFrameAndRepeatIfKeys
+        showFrameAndRepeatIfKeys
         loop
   loop
 
