@@ -500,23 +500,26 @@ destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 destroyActorUI died aid body = do
   Kind.COps{corule} <- getsState scops
   side <- getsClient sside
-  when (bfid body == side) $ do
-    let upd = ES.delete aid
-    modifySession $ \sess -> sess {sselected = upd $ sselected sess}
-  when (bfid body == side && died && not (bproj body)) $ do
-    let firstDeathEnds = rfirstDeathEnds $ Kind.stdRuleset corule
-        fid = bfid body
-    fact <- getsState $ (EM.! fid) . sfactionD
-    actorsAlive <- anyActorsAlive fid (Just aid)
-    -- TODO: deduplicate wrt Server
-    -- TODO; actually show the --more- prompt, but not between fadeout frames
-    unless (fneverEmpty (gplayer fact)
-            && (not actorsAlive || firstDeathEnds)) $
+  let firstDeathEnds = rfirstDeathEnds $ Kind.stdRuleset corule
+      fid = bfid body
+  fact <- getsState $ (EM.! fid) . sfactionD
+  actorsAlive <- anyActorsAlive fid (Just aid)
+  -- TODO: check game over more simply here and elsewhere
+  let gameOver = bfid body == side
+                 && fneverEmpty (gplayer fact)
+                 && (not actorsAlive || firstDeathEnds)
+  unless gameOver $ do
+    when (bfid body == side) $ do
+      let upd = ES.delete aid
+      modifySession $ \sess -> sess {sselected = upd $ sselected sess}
+    when (bfid body == side && died && not (bproj body)) $ do
+      -- TODO: deduplicate wrt Server
+      -- TODO; actually show the --more- prompt, but not between fadeout frames
       displayMore ColorBW "Alas!"
-  -- If pushed, animate spotting again, to draw attention to pushing.
-  when (isNothing $ btrajectory body) $
-    modifySession $ \sess -> sess {slastLost = ES.insert aid $ slastLost sess}
-  markDisplayNeeded (blid body)
+    -- If pushed, animate spotting again, to draw attention to pushing.
+    when (isNothing $ btrajectory body) $
+      modifySession $ \sess -> sess {slastLost = ES.insert aid $ slastLost sess}
+    markDisplayNeeded (blid body)
 
 -- TODO: deduplicate wrt Server
 anyActorsAlive :: MonadClient m => FactionId -> Maybe ActorId -> m Bool
