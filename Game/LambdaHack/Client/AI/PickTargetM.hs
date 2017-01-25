@@ -367,7 +367,7 @@ targetStrategy aid = do
   then case oldTgtUpdatedPath of
     Nothing -> pickNewTarget
     Just tap -> updateTgt tap
-  else return $! returN "NoMove" $ TgtAndPath (TEnemy aid True) $ NoPath
+  else return $! returN "NoMove" $ TgtAndPath (TEnemy aid True) NoPath
 
 createPath :: MonadClient m => ActorId -> Target -> m TgtAndPath
 {-# INLINABLE createPath #-}

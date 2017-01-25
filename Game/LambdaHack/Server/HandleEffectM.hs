@@ -366,8 +366,8 @@ halveCalm target = do
       upperBound = if hpTooLow tb ar
                    then 0  -- to trigger domination, etc.
                    else max (xM $ aMaxCalm ar) (bcalm tb) `div` 2
-      deltaCalm = min minusTwoM (upperBound - bcalm tb)
-  -- HP loss decreases Calm by at least minusTwoM, to overcome Calm regen,
+      deltaCalm = min minusTwoM1 (upperBound - bcalm tb)
+  -- HP loss decreases Calm by at least minusTwoM1, to overcome Calm regen,
   -- when far from shooting foe and to avoid "hears something",
   -- which is emitted for decrease @minusM@.
   udpateCalm target deltaCalm
