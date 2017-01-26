@@ -357,7 +357,7 @@ rosterBoardgame = Roster
 
 cavesRaid, cavesBrawl, cavesShootout, cavesAmbush, cavesBattle, cavesExploration, cavesSafari, cavesBoardgame :: Caves
 
-cavesRaid = IM.fromList [(-4, "caveRogueLit")]
+cavesRaid = IM.fromList [(-4, "caveRaid")]
 
 cavesBrawl = IM.fromList [(-3, "caveBrawl")]
 

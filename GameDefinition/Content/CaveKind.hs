@@ -22,9 +22,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleCaveKind
   , validateAll = validateAllCaveKind
   , content = contentFromList
-      [rogue, arena, laboratory, empty, noise, shallow1rogue, battle, brawl, shootout, ambush, safari1, safari2, safari3, rogueLit, boardgame]
+      [rogue, arena, laboratory, empty, noise, shallow1rogue, raid, brawl, shootout, ambush, battle, safari1, safari2, safari3, boardgame]
   }
-rogue,        arena, laboratory, empty, noise, shallow1rogue, battle, brawl, shootout, ambush, safari1, safari2, safari3, rogueLit, boardgame :: CaveKind
+rogue,        arena, laboratory, empty, noise, shallow1rogue, raid, brawl, shootout, ambush, battle, safari1, safari2, safari3, boardgame :: CaveKind
 
 rogue = CaveKind
   { csymbol       = 'R'
@@ -171,29 +171,17 @@ shallow1rogue = rogue
   , citemFreq     = filter ((/= "treasure") . fst) $ citemFreq rogue
   , cescapeGroup  = Just "escape up"
   }
-battle = rogue  -- few lights and many solids, to help the less numerous heroes
-  { csymbol       = 'B'
-  , cname         = "Old battle ground"
-  , cfreq         = [("caveBattle", 1)]
-  , cgrid         = DiceXY (2 * d 2 + 1) 3
-  , cminPlaceSize = DiceXY 4 4
-  , cmaxPlaceSize = DiceXY 9 7
+raid = rogue
+  { csymbol       = 'T'
+  , cname         = "Typing den"
+  , cfreq         = [("caveRaid", 1)]
   , cdarkChance   = 0
-  , cnightChance  = 51  -- always night
-  , cauxConnects  = 1%4
-  , cmaxVoid      = 1%20
-  , cdoorChance   = 2%10
-  , copenChance   = 9%10
-  , cextraStairs  = 1
-  , chidden       = 0
-  , cactorFreq    = []
-  , citemNum      = 20 * d 2
-  , citemFreq     = [("useful", 100), ("light source", 200)]
-  , cplaceFreq    = [("battle", 50), ("rogue", 50)]
-  , cpassable     = True
-  , cdefTile      = "battleSet"
-  , cdarkCorTile  = "trailLit"  -- let trails give off light
-  , clitCorTile   = "trailLit"
+  , cmaxVoid      = 1%10
+  , cactorCoeff   = 1000  -- deep level with no kit, so slow spawning
+  , cactorFreq    = [("animal", 100)]
+  , citemNum      = 30 * d 2  -- just one level, hard enemies, treasure
+  , citemFreq     = [("useful", 33), ("gem", 33), ("currency", 33)]
+  , cescapeGroup  = Just "escape up"
   }
 brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
                -- and this scenario is not focused on ranged combat
@@ -273,6 +261,30 @@ ambush = rogue  -- lots of lights, to give a chance to snipe;
   , cdarkCorTile  = "trailLit"  -- let trails give off light
   , clitCorTile   = "trailLit"
   }
+battle = rogue  -- few lights and many solids, to help the less numerous heroes
+  { csymbol       = 'B'
+  , cname         = "Old battle ground"
+  , cfreq         = [("caveBattle", 1)]
+  , cgrid         = DiceXY (2 * d 2 + 1) 3
+  , cminPlaceSize = DiceXY 4 4
+  , cmaxPlaceSize = DiceXY 9 7
+  , cdarkChance   = 0
+  , cnightChance  = 51  -- always night
+  , cauxConnects  = 1%4
+  , cmaxVoid      = 1%20
+  , cdoorChance   = 2%10
+  , copenChance   = 9%10
+  , cextraStairs  = 1
+  , chidden       = 0
+  , cactorFreq    = []
+  , citemNum      = 20 * d 2
+  , citemFreq     = [("useful", 100), ("light source", 200)]
+  , cplaceFreq    = [("battle", 50), ("rogue", 50)]
+  , cpassable     = True
+  , cdefTile      = "battleSet"
+  , cdarkCorTile  = "trailLit"  -- let trails give off light
+  , clitCorTile   = "trailLit"
+  }
 safari1 = ambush
   { cfreq = [("caveSafari1", 1)]
   , cstairFreq = [("staircase outdoor", 1)]
@@ -285,18 +297,6 @@ safari3 = brawl
   { cfreq = [("caveSafari3", 1)]
   , cescapeGroup  = Just "escape outdoor down"
   , cstairFreq = [("staircase outdoor", 1)]
-  }
-rogueLit = rogue
-  { csymbol       = 'S'
-  , cname         = "Typing den"
-  , cfreq         = [("caveRogueLit", 1)]
-  , cdarkChance   = 0
-  , cmaxVoid      = 1%10
-  , cactorCoeff   = 1000  -- deep level with no eqp, so slow spawning
-  , cactorFreq    = [("animal", 100)]
-  , citemNum      = 30 * d 2  -- just one level, hard enemies, treasure
-  , citemFreq     = [("useful", 33), ("gem", 33), ("currency", 33)]
-  , cescapeGroup  = Just "escape up"
   }
 boardgame = CaveKind
   { csymbol       = 'B'
