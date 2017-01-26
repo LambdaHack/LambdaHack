@@ -496,40 +496,19 @@ createActorUI born aid body = do
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 {-# INLINABLE destroyActorUI #-}
 destroyActorUI died aid body = do
-  Kind.COps{corule} <- getsState scops
   side <- getsClient sside
-  let firstDeathEnds = rfirstDeathEnds $ Kind.stdRuleset corule
-      fid = bfid body
-  fact <- getsState $ (EM.! fid) . sfactionD
-  actorsAlive <- anyActorsAlive fid (Just aid)
-  -- TODO: check game over more simply here and elsewhere
-  let gameOver = bfid body == side
-                 && fneverEmpty (gplayer fact)
-                 && (not actorsAlive || firstDeathEnds)
+  fact <- getsState $ (EM.! side) . sfactionD
+  let gameOver = isJust $ gquit fact
   unless gameOver $ do
     when (bfid body == side) $ do
       let upd = ES.delete aid
       modifySession $ \sess -> sess {sselected = upd $ sselected sess}
-    when (bfid body == side && died && not (bproj body)) $ do
-      -- TODO: deduplicate wrt Server
-      -- TODO; actually show the --more- prompt, but not between fadeout frames
+    when (bfid body == side && died && not (bproj body)) $
       displayMore ColorBW "Alas!"
     -- If pushed, animate spotting again, to draw attention to pushing.
     when (isNothing $ btrajectory body) $
       modifySession $ \sess -> sess {slastLost = ES.insert aid $ slastLost sess}
     markDisplayNeeded (blid body)
-
--- TODO: deduplicate wrt Server
-anyActorsAlive :: MonadClient m => FactionId -> Maybe ActorId -> m Bool
-{-# INLINABLE anyActorsAlive #-}
-anyActorsAlive fid maid = do
-  fact <- getsState $ (EM.! fid) . sfactionD
-  if fleaderMode (gplayer fact) /= LeaderNull
-    then -- Leader could be changed wrt the one in fact, but not removed.
-         return $! isJust $ gleader fact
-    else do
-      as <- getsState $ fidActorNotProjAssocs fid
-      return $! not $ null $ maybe as (\aid -> filter ((/= aid) . fst) as) maid
 
 moveActor :: MonadClientUI m => ActorId -> Point -> Point -> m ()
 {-# INLINABLE moveActor #-}
