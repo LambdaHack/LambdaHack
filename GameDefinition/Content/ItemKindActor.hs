@@ -15,9 +15,9 @@ import Game.LambdaHack.Content.ItemKind
 
 actors :: [ItemKind]
 actors =
-  [warrior, warrior2, warrior3, warrior4, warrior5, scout, ranger, soldier, sniper, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush, geyserBoiling, geyserArsenic, geyserSulfur]
+  [warrior, warrior2, warrior3, warrior4, warrior5, scout, ranger, ambusher, soldier, sniper, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush, geyserBoiling, geyserArsenic, geyserSulfur]
 
-warrior,    warrior2, warrior3, warrior4, warrior5, scout, ranger, soldier, sniper, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush, geyserBoiling, geyserArsenic, geyserSulfur :: ItemKind
+warrior,    warrior2, warrior3, warrior4, warrior5, scout, ranger, ambusher, soldier, sniper, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush, geyserBoiling, geyserArsenic, geyserSulfur :: ItemKind
 
 -- * Hunams
 
@@ -53,7 +53,7 @@ scout = warrior
   { iname    = "scout"
   , ifreq    = [("scout hero", 100), ("mobile", 1)]
   , ikit     = ikit warrior
-               ++ [ ("add sight 1", CEqp)
+               ++ [ ("add sight", CEqp)
                   , ("armor ranged", CEqp)
                   , ("add nocto 1", CInv) ]
   }
@@ -61,6 +61,15 @@ ranger = warrior
   { iname    = "ranger"
   , ifreq    = [("ranger hero", 100), ("mobile", 1)]
   , ikit     = ikit warrior ++ [("weak arrow", CInv)]
+  }
+ambusher = warrior
+  { iname    = "ambusher"
+  , ifreq    = [("ambusher hero", 100), ("mobile", 1)]
+  , ikit     = ikit warrior
+               ++ [ ("weak arrow", CInv)  -- dark, so more kit without exploring
+                  , ("add sight", CEqp)
+                  , ("flask", CEqp)
+                  , ("flask", CEqp) ]
   }
 soldier = warrior
   { iname    = "soldier"

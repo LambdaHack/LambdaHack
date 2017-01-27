@@ -430,7 +430,7 @@ imageItensifier = ItemKind
 sightSharpening = ItemKind
   { isymbol  = symbolRing
   , iname    = "sharp monocle"
-  , ifreq    = [("treasure", 10), ("add sight 1", 1)]  -- not unique, so v. rare
+  , ifreq    = [("treasure", 10), ("add sight", 1)]  -- not unique, so very rare
   , iflavour = zipPlain [White]
   , icount   = 1
   , irarity  = [(7, 1), (10, 5)]
@@ -666,13 +666,13 @@ flask7 = flask
 flask8 = flask  -- sight can be reduced from Calm, drunk, etc.
   { irarity  = [(10, 7)]
   , ieffects = [ ELabel "of eye drops"
-               , toOrganActorTurn "far-sighted" (20 + d 5)
+               , toOrganActorTurn "far-sighted" (40 + d 10)
                , OnSmash (Explode "blast 10") ]
   }
 flask9 = flask
   { irarity  = [(10, 3)]
   , ieffects = [ ELabel "of smelly concoction"
-               , toOrganActorTurn "keen-smelling" (20 + d 5)
+               , toOrganActorTurn "keen-smelling" (40 + d 10)
                , OnSmash (Explode "blast 10") ]
   }
 flask10 = flask

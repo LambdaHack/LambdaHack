@@ -209,13 +209,13 @@ rosterShootout = Roster
                               , fhiCondPoly = hiDweller
                               , fentryLevel = -5
                               , finitialActors =
-                                  [(1, "scout hero"), (2, "ranger hero") ] }
+                                  [(1, "scout hero"), (2, "ranger hero")] }
                  , playerAntiHero { fname = "Indigo Research"
                                   , fcanEscape = False
                                   , fhiCondPoly = hiDweller
                                   , fentryLevel = -5
                                   , finitialActors =
-                                      [(1, "scout hero"), (2, "ranger hero") ] }
+                                      [(1, "scout hero"), (2, "ranger hero")] }
                  , playerHorror {fentryLevel = -5} ]
   , rosterEnemy = [ ("Explorer Party", "Indigo Research")
                   , ("Explorer Party", "Horror Den")
@@ -226,12 +226,16 @@ rosterAmbush = Roster
   { rosterList = [ playerSniper { fcanEscape = False
                                 , fhiCondPoly = hiDweller
                                 , fentryLevel = -8
-                                , finitialActors = [(4, "hero")] }
+                                , finitialActors =
+                                    [ (1, "scout hero")
+                                    , (4, "ambusher hero") ] }
                  , playerAntiSniper { fname = "Blue Hijacker"
                                     , fcanEscape = False
                                     , fhiCondPoly = hiDweller
                                     , fentryLevel = -8
-                                    , finitialActors = [(4, "hero")] }
+                                    , finitialActors =
+                                        [ (1, "scout hero")
+                                        , (4, "ambusher hero") ] }
                  , playerHorror {fentryLevel = -8} ]
   , rosterEnemy = [ ("Explorer Party", "Blue Hijacker")
                   , ("Explorer Party", "Horror Den")
