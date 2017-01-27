@@ -129,7 +129,7 @@ pillar = PlaceKind
                , "|...."
                , "|...."
                ]
-  , poverride = []
+  , poverride = [('&', "cachable")]
   }
 pillar2 = pillar
   { ptopLeft = [ "-----"

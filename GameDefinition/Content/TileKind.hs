@@ -95,15 +95,15 @@ pillarIce = pillar
   , tfeature = [Clear]
   }
 pillarCache = TileKind
-  { tsymbol  = '&'
+  { tsymbol  = 'O'
   , tname    = "cache"
   , tfreq    = [ ("cachable", 30), ("stair terminal", 1)
                , ("legendLit", 100), ("legendDark", 100) ]
-  , tcolor   = BrCyan
-  , tcolor2  = Cyan
+  , tcolor   = BrYellow
+  , tcolor2  = BrBlack
   , talter   = 5
   , tfeature = [ Cause $ IK.CreateItem CGround "useful" IK.TimerNone
-               , ChangeTo "cachable" ]
+               , ChangeTo "cachable", Indistinct ]
   }
 lampPost = TileKind
   { tsymbol  = 'O'
@@ -112,10 +112,10 @@ lampPost = TileKind
   , tcolor   = BrYellow
   , tcolor2  = Brown
   , talter   = 100
-  , tfeature = []
+  , tfeature = [Indistinct]
   }
 bush = TileKind
-  { tsymbol  = 'O'
+  { tsymbol  = '&'
   , tname    = "bush"
   , tfreq    = [ ("lit bush", 1), ("shootoutSet", 20)
                , ("bushClumpOver_f_Lit", 1) ]
