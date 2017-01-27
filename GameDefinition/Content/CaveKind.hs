@@ -207,17 +207,18 @@ brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
   , cdarkCorTile  = "floorArenaLit"
   , clitCorTile   = "floorArenaLit"
   }
-shootout = rogue  -- few random solid tiles, rather to duck behind, than to
-                  -- obstruct view, since this scenario is about ranged combat
+shootout = rogue  -- no solid tiles, but only transulent tiles or walkable
+                  -- opaque tiles, to make scouting and sniping more interesting
+                  -- and to avoid obstructing view too much, since this
+                  -- scenario is about ranged combat at long range
   { csymbol       = 'S'
   , cname         = "Misty meadow"
   , cfreq         = [("caveShootout", 1)]
-  , cgrid         = DiceXY (d 2 + 6) 3
+  , cgrid         = DiceXY (d 2 + 7) 3
   , cminPlaceSize = DiceXY 3 3
   , cmaxPlaceSize = DiceXY 3 4
   , cdarkChance   = 100
   , cnightChance  = 0
-  , cmaxVoid      = 1%5
   , cdoorChance   = 1
   , copenChance   = 0
   , chidden       = 0
@@ -237,9 +238,11 @@ shootout = rogue  -- few random solid tiles, rather to duck behind, than to
   , cdarkCorTile  = "floorArenaLit"
   , clitCorTile   = "floorArenaLit"
   }
-ambush = rogue  -- lots of lights, to give a chance to snipe;
+ambush = rogue  -- dark, so obstacles are to hide from missiles, not view;
+                -- lots of small lights to cross, to give a chance to snipe;
                 -- a crucial difference wrt shootout is that trajectories
-                -- of missiles are usually not seen, so enemy can't be guessed
+                -- of missiles are usually not seen, so enemy can't be guessed;
+                -- obstacles lit, because stopped missiles are frustrating
   { csymbol       = 'M'
   , cname         = "Urban park at night"
   , cfreq         = [("caveAmbush", 1)]

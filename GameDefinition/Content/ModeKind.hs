@@ -45,6 +45,8 @@ brawl = ModeKind
   , mdesc   = "Your engineering team disagreed over a drink with some gentlemen scientists about premises of a relative completeness theorem and there's only one way to settle that. Remember to keep together so that neither team is tempted to gang upon a solitary disputant."
   }
 
+-- The trajectory tip is important because of tactics of scout looking from
+-- behind a bush and others hiding in mist.
 shootout = ModeKind
   { msymbol = 's'
   , mname   = "shootout"

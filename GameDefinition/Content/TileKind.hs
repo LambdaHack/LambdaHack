@@ -23,11 +23,11 @@ cdefs = ContentDef
   , validateSingle = validateSingleTileKind
   , validateAll = validateAllTileKind
   , content = contentFromList $
-      [unknown, wall, hardRock, pillar, pillarIce, pillarCache, lampPost, bush, bushDark, tree, burningTree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUp, stairsOutdoorUp, stairsDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark]
+      [unknown, wall, hardRock, pillar, pillarIce, pillarCache, lampPost, bush, bushDark, tree, burningTree, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, doorClosedH, doorOpenH, stairsUp, stairsOutdoorUp, stairsDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark]
       ++ map makeDark ldarkable
       ++ map makeDarkColor ldarkColorable
   }
-unknown,        wall, hardRock, pillar, pillarIce, pillarCache, lampPost, bush, bushDark, tree, burningTree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUp, stairsOutdoorUp, stairsDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark :: TileKind
+unknown,        wall, hardRock, pillar, pillarIce, pillarCache, lampPost, bush, bushDark, tree, burningTree, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, doorClosedH, doorOpenH, stairsUp, stairsOutdoorUp, stairsDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark :: TileKind
 
 ldarkable :: [TileKind]
 ldarkable = [wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, floorCorridorLit]
@@ -79,7 +79,7 @@ pillar = TileKind
   , tname    = "rock"
   , tfreq    = [ ("cachable", 70), ("stair terminal", 100)
                , ("legendLit", 100), ("legendDark", 100)
-               , ("noiseSet", 95), ("brawlSet", 50), ("shootoutSet", 60)
+               , ("noiseSet", 95), ("brawlSet", 50), ("shootoutSet", 10)
                , ("battleSet", 250) ]
   , tcolor   = BrCyan  -- not BrWhite, to tell from heroes
   , tcolor2  = Cyan
@@ -117,7 +117,7 @@ lampPost = TileKind
 bush = TileKind
   { tsymbol  = '&'
   , tname    = "bush"
-  , tfreq    = [ ("lit bush", 1), ("shootoutSet", 20)
+  , tfreq    = [ ("lit bush", 1), ("shootoutSet", 30)
                , ("bushClumpOver_f_Lit", 1) ]
   , tcolor   = Green
   , tcolor2  = BrBlack
@@ -159,11 +159,15 @@ wallV = TileKind
 wallGlassV = TileKind
   { tsymbol  = '|'
   , tname    = "polished crystal wall"
-  , tfreq    = [("rectWindowsOver_!_Lit", 10)]
+  , tfreq    = [("wallGlassV", 1)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
-  , tfeature = [HideAs "suspect vertical wall Lit", Spice, Clear]
+  , tfeature = [HideAs "suspect vertical wall Lit", Clear]
+  }
+wallGlassVSpice = wallGlassV
+  { tfreq    = [("rectWindowsOver_!_Lit", 10)]
+  , tfeature = Spice : tfeature wallGlassV
   }
 wallSuspectV = TileKind
   { tsymbol  = '|'
@@ -209,11 +213,15 @@ wallH = TileKind
 wallGlassH = TileKind
   { tsymbol  = '-'
   , tname    = "polished crystal wall"
-  , tfreq    = [("rectWindowsOver_=_Lit", 10)]
+  , tfreq    = [("wallGlassH", 1)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
-  , tfeature = [HideAs "suspect horizontal wall Lit", Spice, Clear]
+  , tfeature = [HideAs "suspect horizontal wall Lit", Clear]
+  }
+wallGlassHSpice = wallGlassH
+  { tfreq    = [("rectWindowsOver_=_Lit", 10)]
+  , tfeature = Spice : tfeature wallGlassH
   }
 wallSuspectH = TileKind
   { tsymbol  = '-'
@@ -370,7 +378,7 @@ floorBrownLit = floorRedLit
 floorFog = TileKind
   { tsymbol  = '#'
   , tname    = "lit fog"
-  , tfreq    = [("lit fog", 1), ("shootoutSet", 5), ("fogClumpOver_f_Lit", 2)]
+  , tfreq    = [("lit fog", 1), ("shootoutSet", 20), ("fogClumpOver_f_Lit", 2)]
       -- lit fog is OK for shootout, because LOS is mutual, as opposed
       -- to dark fog, and so camper has little advantage, especially
       -- on big maps, where he doesn't know on which side of fog patch to hide
