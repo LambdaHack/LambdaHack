@@ -32,9 +32,9 @@ cdefs = ContentDef
 
 items :: [ItemKind]
 items =
-  [spike, dart, slingBullet, slingStone, paralizingProj, harpoon, net, jumpingPole, sharpeningTool, seeingItem, motionScanner, light1, light2, light3, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency]
+  [spike, dart, slingBullet, slingStone, paralizingProj, harpoon, net, jumpingPole, sharpeningTool, seeingItem, motionScanner, light1, light2, light3, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency]
 
-spike,    dart, slingBullet, slingStone, paralizingProj, harpoon, net, jumpingPole, sharpeningTool, seeingItem, motionScanner, light1, light2, light3, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency :: ItemKind
+spike,    dart, slingBullet, slingStone, paralizingProj, harpoon, net, jumpingPole, sharpeningTool, seeingItem, motionScanner, light1, light2, light3, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency :: ItemKind
 
 necklace, ring, potion, flask, scroll, wand, gem :: ItemKind  -- generic templates
 
@@ -663,48 +663,61 @@ flask7 = flask
                , RefillCalm 3
                , OnSmash (Explode "slowness spray") ]
   }
-flask8 = flask  -- sight can be reduced from Calm, drunk, etc.
+flask8 = flask
   { irarity  = [(10, 7)]
   , ieffects = [ ELabel "of eye drops"
                , toOrganActorTurn "far-sighted" (40 + d 10)
                , OnSmash (Explode "blast 10") ]
   }
 flask9 = flask
+  { irarity  = [(10, 7)]
+  , ieffects = [ ELabel "of cat tears"
+               , toOrganActorTurn "shiny-eyed" (40 + d 10)
+               , OnSmash (Explode "blast 10") ]
+  }
+flask10 = flask
   { irarity  = [(10, 3)]
   , ieffects = [ ELabel "of smelly concoction"
                , toOrganActorTurn "keen-smelling" (40 + d 10)
                , OnSmash (Explode "blast 10") ]
   }
-flask10 = flask
+flask11 = flask
+  { irarity  = [(10, 10)]
+  , ieffects = [ ELabel "of resolution"
+               , toOrganActorTurn "resolute" (200 + d 50)
+                   -- long, for scouting and has to recharge
+               , OnSmash (Explode "blast 10") ]
+  }
+flask12 = flask
   { ieffects = [ ELabel "of bait cocktail"
                , toOrganActorTurn "drunk" (5 + d 5)
                , OnSmash (Summon [("mobile animal", 1)] $ 1 + dl 2)
                , OnSmash (Explode "waste") ]
   }
-flask11 = flask
+flask13 = flask
   { ieffects = [ ELabel "of whiskey"
                , toOrganActorTurn "drunk" (20 + d 5)
                , Impress, Burn 2, RefillHP 4
                , OnSmash (Explode "whiskey spray") ]
   }
-flask12 = flask
+flask14 = flask
   { irarity  = [(1, 20), (10, 10)]
   , ieffects = [ ELabel "of regeneration brew"
                , toOrganNone "regenerating"
                , OnSmash (Explode "healing mist") ]
   }
-flask13 = flask  -- but not flask of Calm depletion, since Calm reduced often
+flask15 = flask  -- but not flask of Calm depletion, since Calm reduced often
   { ieffects = [ ELabel "of poison"
                , toOrganNone "poisoned"
                , OnSmash (Explode "wounding mist") ]
   }
-flask14 = flask
+flask16 = flask
   { irarity  = [(10, 5)]
   , ieffects = [ ELabel "of slow resistance"
                , toOrganNone "slow resistant"
                , OnSmash (Explode "anti-slow mist") ]
   }
-flask15 = flask
+flask17 = flask
   { irarity  = [(10, 5)]
   , ieffects = [ ELabel "of poison resistance"
                , toOrganNone "poison resistant"
