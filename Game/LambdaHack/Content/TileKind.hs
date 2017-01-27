@@ -68,7 +68,11 @@ data Feature =
   | NoActor              -- ^ no actors ever generated there
   | Indistinct           -- ^ is allowed to have the same look as another tile
   | Trail                -- ^ used for visible trails throughout the level
-  | Spice                -- ^ in place override, don't roll only once per place
+  | Spice                -- ^ in place normal legend and in override,
+                         --   don't roll a tile kind only once per place,
+                         --   but roll for each position; one non-spicy and
+                         --   at most one spicy is rolled per place and then
+                         --   one of the two is rolled for each position
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary Feature

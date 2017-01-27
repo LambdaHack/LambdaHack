@@ -207,26 +207,28 @@ olegend Kind.COps{cotile=Kind.Ops{ofoldlWithKey', opick, okind}} cgroup =
           Nothing -> (mOneIn, EM.insert s tk m)
           Just tkSpice ->
             let n = fromJust (lookup cgroup (TK.tfreq (okind tk)))
-                    `divUp` fromJust (lookup cgroup (TK.tfreq (okind tkSpice)))
-            in (EM.insert s (n, tkSpice) mOneIn, EM.insert s tk m)
+                k = fromJust (lookup cgroup (TK.tfreq (okind tkSpice)))
+                oneIn = (n + k) `divUp` k
+            in (EM.insert s (oneIn, tkSpice) mOneIn, EM.insert s tk m)
       legend = ES.foldr' getLegend (return (EM.empty, EM.empty)) symbols
   in legend
 
 ooverride :: Kind.COps -> [(Char, GroupName TileKind)]
           -> Rnd ( EM.EnumMap Char (Int, Kind.Id TileKind)
                  , EM.EnumMap Char (Kind.Id TileKind) )
-ooverride Kind.COps{cotile=Kind.Ops{opick, ouniqGroup, okind}} poverride =
+ooverride Kind.COps{cotile=Kind.Ops{opick, okind}} poverride =
   let getLegend (s, cgroup) acc = do
         (mOneIn, m) <- acc
         mtkSpice <- opick cgroup (Tile.kindHasFeature TK.Spice)
-        tk <- fromMaybe (ouniqGroup cgroup)  -- if only spicy, require unique
+        tk <- fromMaybe (assert `failure` (s, cgroup, poverride))
               <$> opick cgroup (not . Tile.kindHasFeature TK.Spice)
         return $! case mtkSpice of
           Nothing -> (mOneIn, EM.insert s tk m)
           Just tkSpice ->
             let n = fromJust (lookup cgroup (TK.tfreq (okind tk)))
-                    `divUp` fromJust (lookup cgroup (TK.tfreq (okind tkSpice)))
-            in (EM.insert s (n, tkSpice) mOneIn, EM.insert s tk m)
+                k = fromJust (lookup cgroup (TK.tfreq (okind tkSpice)))
+                oneIn = (n + k) `divUp` k
+            in (EM.insert s (oneIn, tkSpice) mOneIn, EM.insert s tk m)
   in foldr getLegend (return (EM.empty, EM.empty)) poverride
 
 -- | Construct a fence around an area, with the given tile kind.

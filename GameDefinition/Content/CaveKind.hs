@@ -184,7 +184,8 @@ raid = rogue
   , cescapeGroup  = Just "escape up"
   }
 brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
-               -- and this scenario is not focused on ranged combat
+               -- and this scenario is not focused on ranged combat;
+               -- also, sanctuaries against missiles in shadow under trees
   { csymbol       = 'b'
   , cname         = "Sunny woodland"
   , cfreq         = [("caveBrawl", 1)]
