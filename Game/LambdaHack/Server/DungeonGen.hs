@@ -96,7 +96,8 @@ buildTileMap cops@Kind.COps{ cotile=Kind.Ops{opick}
                            , cocave=Kind.Ops{okind=cokind} }
              Cave{dkind, dmap, dnight} = do
   let CaveKind{cxsize, cysize, cpassable, cdefTile} = cokind dkind
-      nightCond kt = not (Tile.kindHasFeature TK.Clear kt)
+      nightCond kt = not (Tile.kindHasFeature TK.Walkable kt
+                          && Tile.kindHasFeature TK.Clear kt)
                      || (if dnight then id else not)
                            (Tile.kindHasFeature TK.Dark kt)
       dcond kt = (cpassable

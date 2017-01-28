@@ -43,7 +43,7 @@ rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
 rectWindows = PlaceKind
   { psymbol  = 'w'
   , pname    = "room"
-  , pfreq    = [("ambush", 10), ("noise", 200), ("empty", 1)]
+  , pfreq    = [("noise", 200), ("empty", 1)]
   , prarity  = [(1, 10), (10, 8)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -67,7 +67,7 @@ glasshouse = PlaceKind
 ruin = PlaceKind
   { psymbol  = 'R'
   , pname    = "ruin"
-  , pfreq    = [("ambush", 10), ("battle", 33), ("noise", 50)]
+  , pfreq    = [("battle", 33), ("noise", 50)]
   , prarity  = [(1, 10), (10, 20)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -172,7 +172,8 @@ pillar4 = pillar
 colonnade = PlaceKind
   { psymbol  = 'c'
   , pname    = "colonnade"
-  , pfreq    = [("rogue", 30), ("arena", 70), ("empty", 70), ("noise", 2000)]
+  , pfreq    = [ ("rogue", 30), ("arena", 70), ("empty", 70), ("noise", 2000)
+               , ("ambush", 150) ]
   , prarity  = [(1, 5), (10, 5)]
   , pcover   = CAlternate
   , pfence   = FFloor
@@ -216,7 +217,7 @@ colonnade6 = colonnade
 lampPost = PlaceKind
   { psymbol  = 'l'
   , pname    = "lamp post"
-  , pfreq    = [("ambush", 30), ("battle", 10)]
+  , pfreq    = [("ambush", 20), ("battle", 10)]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CVerbatim
   , pfence   = FNone
@@ -224,7 +225,7 @@ lampPost = PlaceKind
                , ".O."
                , "X.X"
                ]
-  , poverride = [('O', "lampPostOver_O")]
+  , poverride = [('O', "lampPostOver_O"), ('.', "floorActorLit")]
   }
 lampPost2 = lampPost
   { ptopLeft = [ "..."
@@ -233,7 +234,8 @@ lampPost2 = lampPost
                ]
   }
 lampPost3 = lampPost
-  { ptopLeft = [ "XX.XX"
+  { pfreq    = [("ambush", 300), ("battle", 110)]
+  , ptopLeft = [ "XX.XX"
                , "X...X"
                , "..O.."
                , "X...X"
@@ -241,7 +243,8 @@ lampPost3 = lampPost
                ]
   }
 lampPost4 = lampPost
-  { ptopLeft = [ "X...X"
+  { pfreq    = [("ambush", 300), ("battle", 60)]
+  , ptopLeft = [ "X...X"
                , "....."
                , "..O.."
                , "....."

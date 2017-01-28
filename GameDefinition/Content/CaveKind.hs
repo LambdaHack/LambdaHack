@@ -207,7 +207,8 @@ brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
   , cdarkCorTile  = "floorArenaLit"
   , clitCorTile   = "floorArenaLit"
   }
-shootout = rogue  -- no solid tiles, but only transulent tiles or walkable
+shootout = rogue  -- a scenario with strong missiles;
+                  -- no solid tiles, but only transulent tiles or walkable
                   -- opaque tiles, to make scouting and sniping more interesting
                   -- and to avoid obstructing view too much, since this
                   -- scenario is about ranged combat at long range
@@ -238,27 +239,33 @@ shootout = rogue  -- no solid tiles, but only transulent tiles or walkable
   , cdarkCorTile  = "floorArenaLit"
   , clitCorTile   = "floorArenaLit"
   }
-ambush = rogue  -- dark, so obstacles are to hide from missiles, not view;
+ambush = rogue  -- a scenario with strong missiles;
+                -- dark, so solid obstacles are to hide from missiles,
+                -- not view, and they are all lit, because stopped missiles
+                -- are frustrating, while a few LOS-only obstacles are not lit;
                 -- lots of small lights to cross, to give a chance to snipe;
                 -- a crucial difference wrt shootout is that trajectories
                 -- of missiles are usually not seen, so enemy can't be guessed;
-                -- obstacles lit, because stopped missiles are frustrating
+                -- camping doesn't pay off, because enemies can sneak and only
+                -- active scouting, throwing flares and shooting discovers them
   { csymbol       = 'M'
-  , cname         = "Urban park at night"
+  , cname         = "Burning metropolitan park"
   , cfreq         = [("caveAmbush", 1)]
-  , cgrid         = DiceXY (2 * d 2 + 3) 4  -- park, so lamps in lines
+  , cgrid         = DiceXY -- (2 * d 2 + 3) 4  -- park, so lamps in lines
+                           (2 * d 2 + 6) 3   -- for now, to fit larger places
   , cminPlaceSize = DiceXY 3 3
-  , cmaxPlaceSize = DiceXY 5 5
-  , cdarkChance   = 0
+  , cmaxPlaceSize = DiceXY 7 7  -- bias towards larger lamp areas
+  , cdarkChance   = 51  -- colonnade floors always dark
   , cnightChance  = 51  -- always night
   , cauxConnects  = 3%2
-  , cdoorChance   = 1%10
-  , copenChance   = 9%10
+  , cmaxVoid      = 1%20
   , cextraStairs  = 1
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 22 * d 2
-  , citemFreq     = [("useful", 100)]
+  , citemFreq     = [ ("useful", 30)
+                    , ("any arrow", 400), ("harpoon", 300)
+                    , ("any vial", 60) ]
   , cplaceFreq    = [("ambush", 100)]
   , cpassable     = True
   , cdefTile      = "ambushSet"
