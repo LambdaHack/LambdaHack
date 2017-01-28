@@ -1,7 +1,6 @@
 -- | Basic players definitions.
 module Content.ModeKindPlayer
-  ( playerHero, playerSoldier, playerSniper
-  , playerAntiHero, playerAntiSniper, playerCivilian
+  ( playerHero, playerAntiHero, playerCivilian
   , playerMonster, playerAntiMonster, playerAnimal
   , playerHorror
   , hiHero, hiDweller, hiRaid
@@ -16,7 +15,7 @@ import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ModeKind
 
-playerHero, playerSoldier, playerSniper, playerAntiHero, playerAntiSniper, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror :: Player Dice
+playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror :: Player Dice
 
 playerHero = Player
   { fname = "Explorer Party"
@@ -34,22 +33,7 @@ playerHero = Player
   , fhasUI = True
   }
 
-playerSoldier = playerHero
-  { fgroup = "soldier"
-  , finitialActors = [(3, "soldier")]
-  }
-
-playerSniper = playerHero
-  { fgroup = "sniper"
-  , finitialActors = [(3, "sniper")]
-  }
-
 playerAntiHero = playerHero
-  { fleaderMode = LeaderAI $ AutoLeader True False
-  , fhasUI = False
-  }
-
-playerAntiSniper = playerSniper
   { fleaderMode = LeaderAI $ AutoLeader True False
   , fhasUI = False
   }

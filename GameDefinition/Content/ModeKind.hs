@@ -223,19 +223,19 @@ rosterShootout = Roster
   , rosterAlly = [] }
 
 rosterAmbush = Roster
-  { rosterList = [ playerSniper { fcanEscape = False
-                                , fhiCondPoly = hiDweller
-                                , fentryLevel = -8
-                                , finitialActors =
-                                    [ (1, "scout hero")
-                                    , (4, "ambusher hero") ] }
-                 , playerAntiSniper { fname = "Blue Hijacker"
-                                    , fcanEscape = False
-                                    , fhiCondPoly = hiDweller
-                                    , fentryLevel = -8
-                                    , finitialActors =
-                                        [ (1, "scout hero")
-                                        , (4, "ambusher hero") ] }
+  { rosterList = [ playerHero { fcanEscape = False
+                              , fhiCondPoly = hiDweller
+                              , fentryLevel = -8
+                              , finitialActors =
+                                  [ (1, "scout hero")
+                                  , (4, "ambusher hero") ] }
+                 , playerAntiHero { fname = "Blue Hijacker"
+                                  , fcanEscape = False
+                                  , fhiCondPoly = hiDweller
+                                  , fentryLevel = -8
+                                  , finitialActors =
+                                      [ (1, "scout hero")
+                                      , (4, "ambusher hero") ] }
                  , playerHorror {fentryLevel = -8} ]
   , rosterEnemy = [ ("Explorer Party", "Blue Hijacker")
                   , ("Explorer Party", "Horror Den")
@@ -243,10 +243,10 @@ rosterAmbush = Roster
   , rosterAlly = [] }
 
 rosterBattle = Roster
-  { rosterList = [ playerSoldier { fcanEscape = False
-                                 , fhiCondPoly = hiDweller
-                                 , fentryLevel = -5
-                                 , finitialActors = [(5, "hero")] }
+  { rosterList = [ playerHero { fcanEscape = False
+                              , fhiCondPoly = hiDweller
+                              , fentryLevel = -5
+                              , finitialActors = [(5, "soldier hero")] }
                  , playerMonster { fentryLevel = -5
                                  , finitialActors = [(35, "mobile monster")]
                                  , fneverEmpty = True }
@@ -266,13 +266,12 @@ rosterExploration = Roster
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
 rosterBattleSurvival = rosterBattle
-  { rosterList = [ playerSoldier { fcanEscape = False
-                                 , fhiCondPoly = hiDweller
-                                 , fentryLevel = -5
-                                 , finitialActors = [(5, "hero")]
-                                 , fleaderMode =
-                                     LeaderAI $ AutoLeader False False
-                                 , fhasUI = False }
+  { rosterList = [ playerHero { fcanEscape = False
+                              , fhiCondPoly = hiDweller
+                              , fentryLevel = -5
+                              , finitialActors = [(5, "soldier hero")]
+                              , fleaderMode = LeaderAI $ AutoLeader False False
+                              , fhasUI = False }
                  , playerMonster { fentryLevel = -5
                                  , finitialActors = [(35, "mobile monster")]
                                  , fneverEmpty = True }
