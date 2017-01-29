@@ -226,13 +226,19 @@ shineFromLevel discoAspect actorAspect s lid lvl =
 
 floorLightSources :: DiscoveryAspect -> Level -> [(Point, Int)]
 floorLightSources discoAspect lvl =
-  let processIid shineAcc (iid, _) =
+  -- Not enough oxygen to have more than one light lit on a given tile.
+  -- Items obscuring or dousing off fire are not cumulative as well.
+  let processIid (accLight, accDouse) (iid, _) =
         let AspectRecord{aShine} = discoAspect EM.! iid
-        in max aShine shineAcc
+        in case compare aShine 0 of
+          EQ -> (accLight, accDouse)
+          GT -> (max aShine accLight, accDouse)
+          LT -> (accLight, min aShine accDouse)
       processBag bag acc = foldl' processIid acc $ EM.assocs bag
   in [ (p, radius)
      | (p, bag) <- EM.assocs $ lfloor lvl  -- lembed are hidden
-     , let radius = processBag bag 0
+     , let (maxLight, maxDouse) = processBag bag (0, 0)
+           radius = maxLight + maxDouse
      , radius > 0 ]
 
 -- | Compute all dynamically lit positions on a level, whether lit by actors
