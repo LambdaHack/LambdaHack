@@ -750,7 +750,7 @@ discover c oldCli iid = do
 displayRespSfxAtomicUI :: MonadClientUI m => Bool -> SfxAtomic -> m ()
 {-# INLINE displayRespSfxAtomicUI #-}
 displayRespSfxAtomicUI verbose sfx = case sfx of
-  SfxStrike source target iid cstore b -> strike source target iid cstore b
+  SfxStrike source target iid store mult -> strike source target iid store mult
   SfxRecoil source target _ _ _ -> do
     spart <- partAidLeader source
     tpart <- partAidLeader target

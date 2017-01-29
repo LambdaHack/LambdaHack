@@ -16,6 +16,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Key (mapWithKeyM_)
+import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.HandleAtomicWrite
@@ -24,12 +25,17 @@ import Game.LambdaHack.Atomic.PosAtomicRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Server.CommonM
+import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolM
 import Game.LambdaHack.Server.State
@@ -79,17 +85,17 @@ handleAndBroadcast atomic = do
   let sendAtomic fid (UpdAtomic cmd) = sendUpdate fid cmd
       sendAtomic fid (SfxAtomic sfx) = sendSfx fid sfx
       breakSend lid fid fact perFidLid = do
-        let hear atomic2 = do
-              -- We take the new leader, from after cmd execution.
-              let mleader = gleader fact
-              case (atomic2, mleader) of
-                (UpdAtomic cmd, Just leader) -> do
-                  body <- getsState $ getActorBody leader
-                  loud <- loudUpdAtomic (blid body == lid) cmd
-                  case loud of
-                    Nothing -> return ()
-                    Just msg -> sendSfx fid $ SfxMsgAll msg
-                _ -> return ()
+        -- We take the new leader, from after cmd execution.
+        let hear atomic2 = case gleader fact of
+              Just leader -> do
+                body <- getsState $ getActorBody leader
+                loud <- case atomic2 of
+                  UpdAtomic cmd -> loudUpdAtomic (blid body == lid) cmd
+                  SfxAtomic cmd -> loudSfxAtomic (blid body == lid) cmd
+                case loud of
+                  Nothing -> return ()
+                  Just msg -> sendSfx fid $ SfxMsgAll msg
+              _ -> return ()
             send2 (cmd2, ps2) =
               when (seenAtomicCli knowEvents fid perFidLid ps2) $
                 sendUpdate fid cmd2
@@ -122,6 +128,53 @@ handleAndBroadcast atomic = do
   -- because they are not deleted from @sfactionD@.
   factionD <- getsState sfactionD
   mapWithKeyM_ (\fid fact -> send fid fact) factionD
+
+-- | Messages for some unseen atomic commands.
+loudUpdAtomic :: MonadStateRead m => Bool -> UpdAtomic -> m (Maybe Text)
+{-# INLINABLE loudUpdAtomic #-}
+loudUpdAtomic local cmd = do
+  msound <- case cmd of
+    UpdDestroyActor _ body _ | not $ bproj body -> return $ Just "shriek"
+    UpdCreateItem _ _ _ (CActor _ CGround) -> return $ Just "clatter"
+    UpdTrajectory _ (Just (l, _)) Nothing | not (null l) && local ->
+      -- Projectile hits an non-walkable tile on leader's level.
+      return $ Just "thud"
+    UpdAlterTile _ _ fromTile _ -> do
+      Kind.COps{coTileSpeedup} <- getsState scops
+      if Tile.isDoor coTileSpeedup fromTile
+        then return $ Just "creaking sound"
+        else return $ Just "rumble"
+    _ -> return Nothing
+  let distant = if local then [] else ["distant"]
+      hear sound = makeSentence [ "you hear"
+                                , MU.AW $ MU.Phrase $ distant ++ [sound] ]
+  return $! hear <$> msound
+
+-- | Messages for some unseen sfx.
+loudSfxAtomic :: MonadServer m => Bool -> SfxAtomic -> m (Maybe Text)
+{-# INLINABLE loudSfxAtomic #-}
+loudSfxAtomic local cmd = do
+  msound <- case cmd of
+    SfxStrike source _ iid cstore hurtMult | local -> do
+      itemToF <- itemToFullServer
+      sb <- getsState $ getActorBody source
+      bag <- getsState $ getBodyStoreBag sb cstore
+      let kit = EM.findWithDefault (1, []) iid bag
+          itemFull = itemToF iid kit
+          verb = case itemDisco itemFull of
+            Nothing -> "hit"  -- not identified
+            Just ItemDisco{itemKind} -> IK.iverbHit itemKind
+          force = if | hurtMult > 90 -> "forceful"
+                     | hurtMult >= 50 -> "loud"
+                     | hurtMult > 1 -> ""  -- most common with projectiles
+                     | hurtMult > 0 -> "faint"
+                     | otherwise -> "barely audible"
+      return $ Just $ MU.Phrase [force, verb]
+    _ -> return Nothing
+  let distant = if local then [] else ["distant"]
+      hear sound = makeSentence [ "you hear"
+                                , MU.AW $ MU.Phrase $ distant ++ [sound] ]
+  return $! hear <$> msound
 
 updatePer :: MonadServerReadRequest m => FactionId -> LevelId -> m ()
 {-# INLINE updatePer #-}

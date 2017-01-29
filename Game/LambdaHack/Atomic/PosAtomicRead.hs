@@ -3,8 +3,7 @@
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
-  , breakUpdAtomic, loudUpdAtomic
-  , seenAtomicCli, seenAtomicSer, generalMoveItem, posProjBody
+  , breakUpdAtomic, seenAtomicCli, seenAtomicSer, generalMoveItem, posProjBody
   ) where
 
 import Prelude ()
@@ -13,21 +12,17 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.State
-import qualified Game.LambdaHack.Common.Tile as Tile
 
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.
@@ -227,27 +222,6 @@ breakUpdAtomic cmd = case cmd of
                                     , boldpos = Just $ bpos tb } tais
            ]
   _ -> return []
-
--- | Messages for some unseen game object creation/destruction/alteration.
-loudUpdAtomic :: MonadStateRead m => Bool -> UpdAtomic -> m (Maybe Text)
-{-# INLINABLE loudUpdAtomic #-}
-loudUpdAtomic local cmd = do
-  msound <- case cmd of
-    UpdDestroyActor _ body _ | not $ bproj body -> return $ Just "shriek"
-    UpdCreateItem _ _ _ (CActor _ CGround) -> return $ Just "clatter"
-    UpdTrajectory _ (Just (l, _)) Nothing | not (null l) && local ->
-      -- Projectile hits an non-walkable tile on leader's level.
-      return $ Just "thud"
-    UpdAlterTile _ _ fromTile _ -> do
-      Kind.COps{coTileSpeedup} <- getsState scops
-      if Tile.isDoor coTileSpeedup fromTile
-        then return $ Just "creaking sound"
-        else return $ Just "rumble"
-    _ -> return Nothing
-  let distant = if local then [] else ["distant"]
-      hear sound = makeSentence [ "you hear"
-                                , MU.AW $ MU.Phrase $ distant ++ [sound] ]
-  return $! hear <$> msound
 
 -- | Given the client, it's perception and an atomic command, determine
 -- if the client notices the command.
