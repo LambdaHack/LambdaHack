@@ -295,6 +295,7 @@ benAvailableItems aid permitted cstores = do
 -- They are in some Per cache, but unfortunately on the server, not client.
 -- Perhaps send not only Per, but Lit and use it somewhere else, too,
 -- e.g., to colour tiles or to describe them as lit.
+-- If a tile is dark and seen, it can be unlit, but my actor can use nocto.
 hinders :: Bool -> Bool -> Bool -> Bool -> Actor -> AspectRecord -> ItemFull
         -> Bool
 hinders condAnyFoeAdj condShineBetrays condAimEnemyPresent
