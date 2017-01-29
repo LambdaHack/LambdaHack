@@ -276,8 +276,8 @@ projectFail source tpxy eps iid cstore isBlast = do
           case legal of
             Left reqFail -> return $ Just reqFail
             Right _ -> do
-              let fragile = IK.Fragile `elem` jfeature itemBase
-                  rest = if fragile
+              let lobable = IK.Lobable `elem` jfeature itemBase
+                  rest = if lobable
                          then take (chessDist spos tpxy - 1) restUnlimited
                          else restUnlimited
                   t = lvl `at` pos

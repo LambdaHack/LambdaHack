@@ -267,10 +267,10 @@ light1 = ItemKind
   , iverbHit = "scorch"
   , iweight  = 1000
   , idamage  = toDmg $ 1 * d 1
-  , iaspects = [ AddShine 3       -- not only flashes, but also sparks
-               , AddSight (-2) ]  -- unused by AI due to the mixed blessing
+  , iaspects = [ AddShine 3       -- not only flashes, but also sparks,
+               , AddSight (-2) ]  -- so unused by AI due to the mixed blessing
   , ieffects = [Burn 1, EqpSlot EqpSlotLightSource]
-  , ifeature = [Identified, Equipable]
+  , ifeature = [Lobable, Identified, Equipable]  -- not Fragile; reusable flare
   , idesc    = "A smoking, heavy wooden torch, burning in an unsteady glow."
   , ikit     = []
   }
@@ -287,7 +287,7 @@ light2 = ItemKind
   , iaspects = [AddShine 3, AddSight (-1)]
   , ieffects = [ Burn 1, Paralyze 6, OnSmash (Explode "burning oil 3")
                , EqpSlot EqpSlotLightSource ]
-  , ifeature = [Fragile, Identified, Equipable]
+  , ifeature = [Lobable, Fragile, Identified, Equipable]
   , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
   , ikit     = []
   }
@@ -304,7 +304,7 @@ light3 = ItemKind
   , iaspects = [AddShine 4, AddSight (-1)]
   , ieffects = [ Burn 1, Paralyze 8, OnSmash (Explode "burning oil 4")
                , EqpSlot EqpSlotLightSource ]
-  , ifeature = [Fragile, Identified, Equipable]
+  , ifeature = [Lobable, Fragile, Identified, Equipable]
   , idesc    = "Very bright and very heavy brass lantern."
   , ikit     = []
   }
@@ -537,7 +537,7 @@ potion = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = []
-  , ifeature = [Applicable, Fragile, toVelocity 50]  -- oily, bad grip
+  , ifeature = [Applicable, Lobable, Fragile, toVelocity 50]  -- oily, bad grip
   , idesc    = "A vial of bright, frothing concoction. The best that nature has to offer."
   , ikit     = []
   }
@@ -619,7 +619,7 @@ flask = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = []
-  , ifeature = [Applicable, Fragile, toVelocity 50]  -- oily, bad grip
+  , ifeature = [Applicable, Lobable, Fragile, toVelocity 50]  -- oily, bad grip
   , idesc    = "A flask of oily liquid of a suspect color. Something seems to be moving inside."  -- not natural; maths, magic
   , ikit     = []
   }

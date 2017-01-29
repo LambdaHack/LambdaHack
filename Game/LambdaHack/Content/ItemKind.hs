@@ -149,6 +149,7 @@ instance NFData ThrowMod
 -- and so not additive in any sense.
 data Feature =
     Fragile            -- ^ drop and break at target tile, even if no hit
+  | Lobable            -- ^ drop at target tile, even if no hit
   | Durable            -- ^ don't break even when hitting or applying
   | ToThrow !ThrowMod  -- ^ parameters modifying a throw
   | Identified         -- ^ the item starts identified

@@ -162,6 +162,7 @@ featureToSuff :: Feature -> Text
 featureToSuff feat =
   case feat of
     Fragile -> wrapInChevrons "fragile"
+    Lobable -> wrapInChevrons "can be lobbed"
     Durable -> wrapInChevrons "durable"
     ToThrow tmod -> wrapInChevrons $ tmodToSuff "flies" tmod
     Identified -> ""
@@ -175,6 +176,7 @@ featureToSentence :: Feature -> Maybe Text
 featureToSentence feat =
   case feat of
     Fragile -> Nothing
+    Lobable -> Nothing
     Durable -> Nothing
     ToThrow{} -> Nothing
     Identified -> Nothing

@@ -96,7 +96,7 @@ data ReqFailure =
   | ProjectAimOnself
   | ProjectBlockTerrain
   | ProjectBlockActor
-  | ProjectFragile
+  | ProjectLobable
   | ProjectOutOfReach
   | TriggerNothing
   | NoChangeDunLeader
@@ -134,7 +134,7 @@ impossibleReqFailure reqFailure = case reqFailure of
   ProjectAimOnself -> True
   ProjectBlockTerrain -> True  -- adjacent terrain always visible
   ProjectBlockActor -> True  -- adjacent actor always visible
-  ProjectFragile -> False  -- unidentified skill items
+  ProjectLobable -> False  -- unidentified skill items
   ProjectOutOfReach -> True
   TriggerNothing -> True  -- terrain underneath always visibl
   NoChangeDunLeader -> True
@@ -171,7 +171,7 @@ showReqFailure reqFailure = case reqFailure of
   ProjectAimOnself -> "cannot aim at oneself"
   ProjectBlockTerrain -> "aiming obstructed by terrain"
   ProjectBlockActor -> "aiming blocked by an actor"
-  ProjectFragile -> "to lob a fragile item requires fling skill 3"
+  ProjectLobable -> "lobbing an item requires fling skill 3"
   ProjectOutOfReach -> "cannot aim an item out of reach"
   TriggerNothing -> "wasting time on triggering nothing"
   NoChangeDunLeader -> "no manual level change for your team"
@@ -194,8 +194,8 @@ permittedProject forced skill b ar
  if | not forced
       && skill < 1 -> Left ProjectUnskilled
     | not forced
-      && IK.Fragile `elem` jfeature itemBase
-      && skill < 3 -> Left ProjectFragile
+      && IK.Lobable `elem` jfeature itemBase
+      && skill < 3 -> Left ProjectLobable
     | otherwise ->
       let calmE = calmEnough b ar
           legal = permittedPrecious calmE forced itemFull
