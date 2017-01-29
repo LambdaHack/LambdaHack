@@ -229,16 +229,15 @@ breakUpdAtomic cmd = case cmd of
   _ -> return []
 
 -- | Messages for some unseen game object creation/destruction/alteration.
-loudUpdAtomic :: MonadStateRead m
-              => Bool -> FactionId -> UpdAtomic -> m (Maybe Text)
+loudUpdAtomic :: MonadStateRead m => Bool -> UpdAtomic -> m (Maybe Text)
 {-# INLINABLE loudUpdAtomic #-}
-loudUpdAtomic local fid cmd = do
+loudUpdAtomic local cmd = do
   msound <- case cmd of
-    UpdDestroyActor _ body _
-      -- Death of a party member does not need to be heard,
-      -- because it's seen.
-      | not $ fid == bfid body || bproj body -> return $ Just "shriek"
+    UpdDestroyActor _ body _ | not $ bproj body -> return $ Just "shriek"
     UpdCreateItem _ _ _ (CActor _ CGround) -> return $ Just "clatter"
+    UpdTrajectory _ (Just (l, _)) Nothing | not (null l) && local ->
+      -- Projectile hits an non-walkable tile on leader's level.
+      return $ Just "thud"
     UpdAlterTile _ _ fromTile _ -> do
       Kind.COps{coTileSpeedup} <- getsState scops
       if Tile.isDoor coTileSpeedup fromTile

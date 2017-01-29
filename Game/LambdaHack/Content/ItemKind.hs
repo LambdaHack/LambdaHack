@@ -35,7 +35,7 @@ data ItemKind = ItemKind
   , iflavour :: ![Flavour]         -- ^ possible flavours
   , icount   :: !Dice.Dice         -- ^ created in that quantity
   , irarity  :: !Rarity            -- ^ rarity on given depths
-  , iverbHit :: !MU.Part           -- ^ the verb for applying and melee
+  , iverbHit :: !MU.Part           -- ^ the verb&noun for applying and hit
   , iweight  :: !Int               -- ^ weight in grams
   , idamage  :: ![(Int, Dice.Dice)]  -- ^ frequency of basic impact damage
   , iaspects :: ![Aspect]          -- ^ keep the aspect continuously

@@ -340,7 +340,7 @@ setTrajectory aid = do
       else do
         -- Lose HP due to bumping into an obstacle.
         execUpdAtomic $ UpdRefillHP aid minusM
-        execUpdAtomic $ UpdTrajectory aid (btrajectory b) (Just ([], speed))
+        execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
     Just ([], _) ->  -- non-projectile actor stops flying (proj would be dead)
       assert (not $ bproj b)
       $ execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing

@@ -85,7 +85,7 @@ handleAndBroadcast atomic = do
               case (atomic2, mleader) of
                 (UpdAtomic cmd, Just leader) -> do
                   body <- getsState $ getActorBody leader
-                  loud <- loudUpdAtomic (blid body == lid) fid cmd
+                  loud <- loudUpdAtomic (blid body == lid) cmd
                   case loud of
                     Nothing -> return ()
                     Just msg -> sendSfx fid $ SfxMsgAll msg
