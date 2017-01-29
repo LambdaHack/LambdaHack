@@ -226,9 +226,9 @@ shineFromLevel discoAspect actorAspect s lid lvl =
 
 floorLightSources :: DiscoveryAspect -> Level -> [(Point, Int)]
 floorLightSources discoAspect lvl =
-  let processIid shineAcc (iid, (k, _)) =
+  let processIid shineAcc (iid, _) =
         let AspectRecord{aShine} = discoAspect EM.! iid
-        in k * aShine + shineAcc
+        in max aShine shineAcc
       processBag bag acc = foldl' processIid acc $ EM.assocs bag
   in [ (p, radius)
      | (p, bag) <- EM.assocs $ lfloor lvl  -- lembed are hidden
