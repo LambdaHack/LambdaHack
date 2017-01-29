@@ -259,16 +259,19 @@ reqMelee source target iid cstore = do
     when (deltaHP < 0) $ do
       execUpdAtomic $ UpdRefillHP target deltaHP
       when serious $ halveCalm target
-    -- Deduct a hitpoint for a pierce of a projectile
-    -- or due to a hurled actor colliding with another or a wall.
     case btrajectory sb of
-      Nothing -> return ()
-      Just (tra, speed) -> do
-        execUpdAtomic $ UpdRefillHP source minusM
-        unless (bproj sb || null tra) $
+      Just (tra, speed) | not $ null tra -> do
+        -- Deduct a hitpoint for a pierce of a projectile
+        -- or due to a hurled actor colliding with another.
+        -- Don't deduct if no pierce, to prevent spam.
+        when (not (bproj sb) || bhp sb > oneM) $
+          execUpdAtomic $ UpdRefillHP source minusM
+        when (not (bproj sb) || bhp sb <= oneM) $
           -- Non-projectiles can't pierce, so terminate their flight.
+          -- If projectile has too low HP to pierce, ditto.
           execUpdAtomic
           $ UpdTrajectory source (btrajectory sb) (Just ([], speed))
+      _ -> return ()
     let c = CActor source cstore
     -- Msgs inside itemEffect describe the target part.
     itemEffectAndDestroy source target iid c

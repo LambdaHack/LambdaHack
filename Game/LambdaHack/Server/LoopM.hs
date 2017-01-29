@@ -335,13 +335,16 @@ setTrajectory aid = do
           [target] | not (bproj b) -> reqDisplace aid target
           _ -> reqMove aid d
         b2 <- getsState $ getActorBody aid
-        unless (btrajectory b2 == Just (lv, speed)) $  -- set in reqMelee
+        unless ((fst <$> btrajectory b2) == Just []) $  -- set in reqMelee
           execUpdAtomic $ UpdTrajectory aid (btrajectory b2) (Just (lv, speed))
       else do
-        -- Lose HP due to bumping into an obstacle.
-        execUpdAtomic $ UpdRefillHP aid minusM
+        -- Lose HP due to flying into an obstacle.
+        unless (bproj b) $  -- prevent spam
+          execUpdAtomic $ UpdRefillHP aid minusM
+        -- Nothing from non-empty trajectories signifies obstacle hit.
         execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
-    Just ([], _) ->  -- non-projectile actor stops flying (proj would be dead)
+    Just ([], _) ->
+      -- Non-projectile actor stops flying.
       assert (not $ bproj b)
       $ execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
     _ -> assert `failure` "Nothing trajectory" `twith` (aid, b)
