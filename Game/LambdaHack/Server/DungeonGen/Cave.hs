@@ -71,6 +71,7 @@ buildCave :: Kind.COps         -- ^ content definitions
           -> Rnd Cave
 buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                         , cocave=Kind.Ops{okind}
+                        , coplace=Kind.Ops{okind=pokind}
                         , coTileSpeedup }
           ldepth totalDepth lsecret dkind fixedCenters = do
   let kc@CaveKind{..} = okind dkind
@@ -159,10 +160,10 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
           return $! ES.fromList $ filter isOrdinaryArea reps
         let decidePlace :: Bool
                         -> ( TileMapEM, [Place]
-                           , EM.EnumMap Point (Area, Area, Area) )
+                           , EM.EnumMap Point (Area, Fence, Area) )
                         -> (Point, SpecialArea)
                         -> Rnd ( TileMapEM, [Place]
-                               , EM.EnumMap Point (Area, Area, Area) )
+                               , EM.EnumMap Point (Area, Fence, Area) )
             decidePlace noVoid (!m, !pls, !qls) (!i, !special) = do
               case special of
                 SpecialArea ar -> do
@@ -174,16 +175,16 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                   if not noVoid && i `ES.member` voidPlaces
                   then do
                     r <- mkVoidRoom innerArea
-                    return (m, pls, EM.insert i (r, r, ar) qls)
+                    return (m, pls, EM.insert i (r, FNone, ar) qls)
                   else do
                     r <- mkRoom minPlaceSize maxPlaceSize innerArea
                     (tmap, place) <-
                       buildPlace cops kc dnight darkCorTile litCorTile
                                  ldepth totalDepth lsecret r Nothing
-                    let (sa, so) = borderPlace cops place
+                    let fence = pfence $ pokind $ qkind place
                     return ( EM.union tmap m
                            , place : pls
-                           , EM.insert i (sa, so, ar) qls )
+                           , EM.insert i (qarea place, fence, ar) qls )
                 SpecialFixed p@Point{..} placeGroup ar -> do
                   -- Reserved for corridors and the global fence.
                   let innerArea = fromMaybe (assert `failure` (i, ar))
@@ -199,10 +200,10 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                   (tmap, place) <-
                     buildPlace cops kc dnight darkCorTile litCorTile
                                ldepth totalDepth lsecret r (Just placeGroup)
-                  let (sa, so) = borderPlace cops place
+                  let fence = pfence $ pokind $ qkind place
                   return ( EM.union tmap m
                          , place : pls
-                         , EM.insert i (sa, so, ar) qls )
+                         , EM.insert i (qarea place, fence, ar) qls )
                 SpecialMerged sp p2 -> do
                   (lplaces, dplaces, qplaces) <-
                     decidePlace True (m, pls, qls) (i, sp)
@@ -252,16 +253,6 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
   fence <- buildFenceRnd cops couterFenceTile subFullArea
   let dmap = EM.unions [doorMap, lplaces, lcorridors, fence]  -- order matters
   return $! Cave {dkind, dmap, dplaces, dnight}
-
-borderPlace :: Kind.COps -> Place -> (Area, Area)
-borderPlace Kind.COps{coplace=Kind.Ops{okind}} Place{..} =
-  case pfence (okind qkind) of
-    FWall -> (qarea, expand qarea)
-    FFloor  -> (qarea, qarea)
-    FGround -> (qarea, qarea)
-    FNone -> case shrink qarea of
-      Nothing -> (qarea, qarea)
-      Just sr -> (sr, qarea)
 
 pickOpening :: Kind.COps -> CaveKind -> TileMapEM -> Kind.Id TileKind
             -> Point -> (Kind.Id TileKind, Kind.Id TileKind)

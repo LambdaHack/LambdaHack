@@ -17,6 +17,7 @@ import qualified Data.EnumSet as ES
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Server.DungeonGen.Area
 
 -- Picking random points inside areas
@@ -173,11 +174,13 @@ mkCorridor hv (Point x0 y0) p0floor (Point x1 y1) p1floor area = do
 -- The corridor connects (touches) the inner areas and the turning point
 -- of the corridor (if any) is outside of the outer areas
 -- and inside the grid areas.
-connectPlaces :: (Area, Area, Area) -> (Area, Area, Area)
+connectPlaces :: (Area, Fence, Area) -> (Area, Fence, Area)
               -> Rnd (Maybe Corridor)
 connectPlaces (_, _, sg) (_, _, tg) | sg == tg = return Nothing
-connectPlaces (sa, so, sg) (ta, to, tg) = do
-  let trim area =
+connectPlaces s3@(sqarea, spfence, sg) t3@(tqarea, tpfence, tg) = do
+  let (sa, so) = borderPlace sqarea spfence
+      (ta, to) = borderPlace tqarea tpfence
+      trim area =
         let (x0, y0, x1, y1) = fromArea area
             dx = case (x1 - x0) `div` 2 of
               0 -> 0
@@ -191,19 +194,21 @@ connectPlaces (sa, so, sg) (ta, to, tg) = do
               2 -> 1
               3 -> 1
               _ -> 3
-        in fromMaybe (assert `failure` area)
+        in fromMaybe (assert `failure` (area, s3, t3))
            $ toArea (x0 + dx, y0 + dy, x1 - dx, y1 - dy)
   Point sx sy <- xyInArea $ trim sa
   Point tx ty <- xyInArea $ trim ta
-  -- If the place (e.g., void place) is trivial (1-tile wide, even with fence),
+  -- If the place (e.g., void place) is trivial (1-tile wide, no fence),
   -- overwrite it with corridor. The place may not even be built (e.g., void)
   -- and the overwrite ensures connections through it are not broken.
   let (_, _, sax1Raw, say1Raw) = fromArea sa  -- inner area
-      (sax1, say1) = if isTrivialArea so
+      strivial = isTrivialArea sqarea && spfence == FNone
+      (sax1, say1) = if strivial
                      then (sax1Raw - 1, say1Raw - 1)
                      else (sax1Raw, say1Raw)
       (tax0Raw, tay0Raw, _, _) = fromArea ta
-      (tax0, tay0) = if isTrivialArea to
+      ttrivial = isTrivialArea tqarea && tpfence == FNone
+      (tax0, tay0) = if ttrivial
                      then (tax0Raw + 1, tay0Raw + 1)
                      else (tax0Raw, tay0Raw)
       (_, _, sox1, soy1) = fromArea so  -- outer area
@@ -216,11 +221,26 @@ connectPlaces (sa, so, sg) (ta, to, tg) = do
               x1 = if tgy0 <= sy && sy <= tgy1 then tox0 - 1 else sgx1
           in case toArea (x0, min sy ty, x1, max sy ty) of
             Just a -> (Horiz, a, Point (sax1 + 1) sy, Point (tax0 - 1) ty)
-            Nothing -> assert `failure` (sa, so, sg, ta, to, tg, sx, sy, tx, ty)
+            Nothing -> assert `failure` (sx, sy, tx, ty, s3, t3)
         | otherwise = assert (sgy1 == tgy0) $
           let y0 = if sgx0 <= tx && tx <= sgx1 then soy1 + 1 else sgy1
               y1 = if tgx0 <= sx && sx <= tgx1 then toy0 - 1 else sgy1
           in case toArea (min sx tx, y0, max sx tx, y1) of
             Just a -> (Vert, a, Point sx (say1 + 1), Point tx (tay0 - 1))
-            Nothing -> assert `failure` (sa, so, sg, ta, to, tg, sx, sy, tx, ty)
-  Just <$> mkCorridor hv p0 (sa == so) p1 (ta == to) area
+            Nothing -> assert `failure` (sx, sy, tx, ty, s3, t3)
+      nin p = not $ p `inside` fromArea sa || p `inside` fromArea ta
+      !_A = assert (strivial || ttrivial
+                    || allB nin [p0, p1]`blame` (sx, sy, tx, ty, s3, t3)) ()
+  cor <- mkCorridor hv p0 (sa == so) p1 (ta == to) area
+  let !_A2 = assert (strivial || ttrivial
+                     || allB nin cor `blame` (sx, sy, tx, ty, s3, t3)) ()
+  return $ Just cor
+
+borderPlace :: Area -> Fence -> (Area, Area)
+borderPlace qarea pfence = case pfence of
+  FWall -> (qarea, expand qarea)
+  FFloor  -> (qarea, qarea)
+  FGround -> (qarea, qarea)
+  FNone -> case shrink qarea of
+    Nothing -> (qarea, qarea)
+    Just sr -> (sr, qarea)
