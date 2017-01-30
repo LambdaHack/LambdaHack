@@ -3,7 +3,7 @@ module Content.ModeKindPlayer
   ( playerHero, playerAntiHero, playerCivilian
   , playerMonster, playerAntiMonster, playerAnimal
   , playerHorror
-  , hiHero, hiDweller, hiRaid
+  , hiHero, hiDweller, hiRaid, hiEscapist
   ) where
 
 import Prelude ()
@@ -119,7 +119,7 @@ playerHorror = Player
 victoryOutcomes :: [Outcome]
 victoryOutcomes = [Conquer, Escape]
 
-hiHero, hiDweller, hiRaid :: HiCondPoly
+hiHero, hiDweller, hiRaid, hiEscapist :: HiCondPoly
 
 -- Heroes rejoice in loot.
 hiHero = [ ( [(HiLoot, 1)]
@@ -145,3 +145,15 @@ hiRaid = [ ( [(HiLoot, 1)]
          , ( [(HiConst, 100)]
            , victoryOutcomes )
          ]
+
+hiEscapist = [ ( [(HiLoot, 1)]  -- loot matters a little bit
+               , [minBound..maxBound] )
+             , ( [(HiConst, 1000)]
+               , victoryOutcomes )
+             , ( [(HiConst, 1000), (HiLoss, -10)]
+               , victoryOutcomes )
+             , ( [(HiBlitz, -300)]  -- but speed matters most
+               , victoryOutcomes )
+             , ( [(HiSurvival, 100)]
+               , [minBound..maxBound] \\ victoryOutcomes )
+             ]

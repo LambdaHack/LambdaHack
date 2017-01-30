@@ -23,9 +23,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleModeKind
   , validateAll = validateAllModeKind
   , content = contentFromList
-      [raid, brawl, shootout, ambush, exploration, safari, safariSurvival, battle, battleSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush]
+      [raid, brawl, shootout, escape, ambush, exploration, safari, safariSurvival, battle, battleSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush]
   }
-raid,        brawl, shootout, ambush, exploration, safari, safariSurvival, battle, battleSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush :: ModeKind
+raid,        brawl, shootout, escape, ambush, exploration, safari, safariSurvival, battle, battleSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush :: ModeKind
 
 raid = ModeKind
   { msymbol = 'r'
@@ -46,7 +46,13 @@ brawl = ModeKind
   }
 
 -- The trajectory tip is important because of tactics of scout looking from
--- behind a bush and others hiding in mist.
+-- behind a bush and others hiding in mist. If no suitable bushes,
+-- fire once and flee into mist or behind cover. Then whomever is out of LOS
+-- range or inside mist can shoot at the last seen enemy locations,
+-- adjusting and according to ounds and incoming missile trajectories.
+-- If the scount can't find bushes or glass building to set a lookout,
+-- the other team member are more spotters and guardians than snipers
+-- and that's their only role, so a small party makes sense.
 shootout = ModeKind
   { msymbol = 's'
   , mname   = "shootout"
@@ -56,6 +62,19 @@ shootout = ModeKind
   , mdesc   = "Whose arguments are most striking and whose ideas fly fastest? Let's scatter up, attack the problems from different angles and find out. To display the trajectory of any soaring entity, point it with the crosshair in aiming mode."
   }
 
+escape = ModeKind
+  { msymbol = 'e'
+  , mname   = "escape"
+  , mfreq   = [("escape", 1), ("campaign scenario", 1)]
+  , mroster = rosterEscape
+  , mcaves  = cavesEscape
+  , mdesc   = "It's not safe dwelling into dark matters. Avoid over-curious disputants and send somebody to find an exit and bring back a larger team that will shed new light on the field."
+  }
+
+-- The tactic is to sneak in the dark, highlight enemy with thrown torches
+-- *and douse thrown enemy torches with blankets) and only if this fails,
+-- actually scout using extended noctovision.
+-- With reaction fire, larger team is more fun.
 ambush = ModeKind
   { msymbol = 'm'
   , mname   = "ambush"
@@ -170,7 +189,7 @@ screensaverAmbush = ambush
   }
 
 
-rosterRaid, rosterBrawl, rosterShootout, rosterAmbush, rosterExploration, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleSurvival, rosterDefense, rosterBoardgame :: Roster
+rosterRaid, rosterBrawl, rosterShootout, rosterEscape, rosterAmbush, rosterExploration, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleSurvival, rosterDefense, rosterBoardgame :: Roster
 
 rosterRaid = Roster
   { rosterList = [ playerHero { fhiCondPoly = hiRaid
@@ -180,7 +199,7 @@ rosterRaid = Roster
                                   , fhiCondPoly = hiRaid
                                   , fentryLevel = -4
                                   , finitialActors = [(1, "hero")] }
-                 , playerAnimal { fentryLevel = -4
+                 , playerAnimal { fentryLevel = -4  -- starting over escape
                                 , finitialActors = [(2, "animal")] } ]
   , rosterEnemy = [ ("Explorer Party", "Animal Kingdom")
                   , ("Red Founder", "Animal Kingdom") ]
@@ -222,20 +241,39 @@ rosterShootout = Roster
                   , ("Indigo Research", "Horror Den") ]
   , rosterAlly = [] }
 
+rosterEscape = Roster
+  { rosterList = [ playerHero { fhiCondPoly = hiEscapist
+                              , fentryLevel = -8
+                              , finitialActors =
+                                  [ (1, "scout hero")
+                                  , (2, "escapist hero") ] }
+                 , playerAntiHero { fname = "Blue Hijacker"  -- start on escape
+                                  , fcanEscape = False
+                                  , fhiCondPoly = hiDweller
+                                  , fentryLevel = -8
+                                  , finitialActors =
+                                      [ (1, "scout hero")
+                                      , (7, "ambusher hero") ] }
+                 , playerHorror {fentryLevel = -8} ]
+  , rosterEnemy = [ ("Explorer Party", "Blue Hijacker")
+                  , ("Explorer Party", "Horror Den")
+                  , ("Blue Hijacker", "Horror Den") ]
+  , rosterAlly = [] }
+
 rosterAmbush = Roster
   { rosterList = [ playerHero { fcanEscape = False
                               , fhiCondPoly = hiDweller
                               , fentryLevel = -8
                               , finitialActors =
                                   [ (1, "scout hero")
-                                  , (4, "ambusher hero") ] }
+                                  , (5, "ambusher hero") ] }
                  , playerAntiHero { fname = "Blue Hijacker"
                                   , fcanEscape = False
                                   , fhiCondPoly = hiDweller
                                   , fentryLevel = -8
                                   , finitialActors =
                                       [ (1, "scout hero")
-                                      , (4, "ambusher hero") ] }
+                                      , (5, "ambusher hero") ] }
                  , playerHorror {fentryLevel = -8} ]
   , rosterEnemy = [ ("Explorer Party", "Blue Hijacker")
                   , ("Explorer Party", "Horror Den")
@@ -285,7 +323,7 @@ rosterSafari = Roster
   { rosterList = [ playerMonsterTourist
                  , playerHunamConvict
                  , playerAnimalMagnificent
-                 , playerAnimalExquisite
+                 , playerAnimalExquisite  -- start on escape
                  ]
   , rosterEnemy = [ ("Monster Tourist Office", "Hunam Convict Pack")
                   , ( "Monster Tourist Office"
@@ -360,13 +398,15 @@ rosterBoardgame = Roster
                   , ("Red", "Horror Den") ]
   , rosterAlly = [] }
 
-cavesRaid, cavesBrawl, cavesShootout, cavesAmbush, cavesExploration, cavesSafari, cavesBattle, cavesBoardgame :: Caves
+cavesRaid, cavesBrawl, cavesShootout, cavesEscape, cavesAmbush, cavesExploration, cavesSafari, cavesBattle, cavesBoardgame :: Caves
 
 cavesRaid = IM.fromList [(-4, "caveRaid")]
 
 cavesBrawl = IM.fromList [(-3, "caveBrawl")]
 
 cavesShootout = IM.fromList [(-5, "caveShootout")]
+
+cavesEscape = IM.fromList [(-8, "caveEscape")]
 
 cavesAmbush = IM.fromList [(-8, "caveAmbush")]
 

@@ -175,6 +175,8 @@ buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
                               litemNum lsecret lescape
   return (lvl, lstairsDouble ++ lstairsSingleDown)
 
+-- | Places yet another staircase (or escape), taking into account only
+-- the already existing stairs.
 placeDownStairs :: CaveKind -> [Point] -> Rnd Point
 placeDownStairs kc@CaveKind{..} ps = do
   let dist cmin p = all (\pos -> chessDist p pos > cmin) ps

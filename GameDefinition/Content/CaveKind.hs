@@ -22,9 +22,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleCaveKind
   , validateAll = validateAllCaveKind
   , content = contentFromList
-      [rogue, arena, laboratory, empty, noise, shallow1rogue, raid, brawl, shootout, ambush, battle, safari1, safari2, safari3, boardgame]
+      [rogue, arena, laboratory, empty, noise, shallow1rogue, raid, brawl, shootout, escape, ambush, battle, safari1, safari2, safari3, boardgame]
   }
-rogue,        arena, laboratory, empty, noise, shallow1rogue, raid, brawl, shootout, ambush, battle, safari1, safari2, safari3, boardgame :: CaveKind
+rogue,        arena, laboratory, empty, noise, shallow1rogue, raid, brawl, shootout, escape, ambush, battle, safari1, safari2, safari3, boardgame :: CaveKind
 
 rogue = CaveKind
   { csymbol       = 'R'
@@ -238,6 +238,35 @@ shootout = rogue  -- a scenario with strong missiles;
   , cdefTile      = "shootoutSet"
   , cdarkCorTile  = "floorArenaLit"
   , clitCorTile   = "floorArenaLit"
+  }
+escape = rogue  -- a scenario with weak missiles, because heroes don't depend
+                -- on them; dark, so solid obstacles are to hide from missiles,
+                -- not view; obstacles are not lit, to frustrate the AI;
+                -- lots of small lights to cross, to have some risks
+  { csymbol       = 'E'
+  , cname         = "Metropolitan park at dusk"  -- "night" didn't fit
+  , cfreq         = [("caveEscape", 1)]
+  , cgrid         = DiceXY -- (2 * d 2 + 3) 4  -- park, so lamps in lines
+                           (2 * d 2 + 6) 3   -- for now, to fit larger places
+  , cminPlaceSize = DiceXY 3 3
+  , cmaxPlaceSize = DiceXY 7 7  -- bias towards larger lamp areas
+  , cdarkChance   = 51  -- colonnade floors always dark
+  , cnightChance  = 51  -- always night
+  , cauxConnects  = 3%2
+  , cmaxVoid      = 1%20
+  , cextraStairs  = 1
+  , chidden       = 0
+  , cactorFreq    = []
+  , citemNum      = 22 * d 2
+  , citemFreq     = [ ("useful", 30)
+                    , ("weak arrow", 400), ("harpoon", 300)
+                    , ("any vial", 60) ]
+  , cplaceFreq    = [("ambush", 100)]  -- the same rooms as ambush
+  , cpassable     = True
+  , cdefTile      = "escapeSet"  -- different tiles, not burning yet
+  , cdarkCorTile  = "trailLit"  -- let trails give off light
+  , clitCorTile   = "trailLit"
+  , cescapeGroup  = Just "escape outdoor down"
   }
 ambush = rogue  -- a scenario with strong missiles;
                 -- dark, so solid obstacles are to hide from missiles,

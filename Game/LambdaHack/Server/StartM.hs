@@ -348,8 +348,10 @@ addHero actorGroup bfid ppos lid heroNames mNumber time = do
   addActor actorGroup bfid ppos lid tweakBody pronoun time
 
 -- | Find starting postions for all factions. Try to make them distant
--- from each other. Place as many of the initial factions, as possible,
--- over stairs, but far from escapes (in case the goal is to excape ASAP).
+-- from each other. Place as many of the factions, as possible,
+-- over stairs, starting from the end of the list, including placing the last
+-- factions over escapes (we assume they are guardians of the escapes).
+-- This implies the inital factions (if any) start far from escapes.
 findEntryPoss :: Kind.COps -> LevelId -> Level -> Int -> Rnd [Point]
 {-# INLINABLE findEntryPoss #-}
 findEntryPoss Kind.COps{coTileSpeedup}
@@ -379,11 +381,11 @@ findEntryPoss Kind.COps{coTileSpeedup}
                   else shallowerStairs
       middlePos = Point (lxsize `div` 2) (lysize `div` 2)
   let !_A = assert (k > 0 && factionDist > 0) ()
-      onStairs = take k stairPoss
+      onStairs = reverse $ take k $ lescape ++ stairPoss
       nk = k - length onStairs
   -- Starting in the middle is too easy.
-  found <- tryFind ([middlePos] ++ lescape ++ onStairs) nk
-  return $! onStairs ++ found
+  found <- tryFind ([middlePos] ++ onStairs) nk
+  return $! found ++ onStairs
 
 -- | Apply debug options that don't need a new game.
 applyDebug :: MonadServer m => m ()
