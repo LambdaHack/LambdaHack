@@ -23,9 +23,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleModeKind
   , validateAll = validateAllModeKind
   , content = contentFromList
-      [raid, brawl, shootout, ambush, battle, exploration, battleSurvival, safari, safariSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush]
+      [raid, brawl, shootout, ambush, exploration, safari, safariSurvival, battle, battleSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush]
   }
-raid,        brawl, shootout, ambush, battle, exploration, battleSurvival, safari, safariSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush :: ModeKind
+raid,        brawl, shootout, ambush, exploration, safari, safariSurvival, battle, battleSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush :: ModeKind
 
 raid = ModeKind
   { msymbol = 'r'
@@ -65,15 +65,6 @@ ambush = ModeKind
   , mdesc   = "Prevent highjacking of your ideas at all cost! Be stealthy, be aggresive. Fast execution is what makes or breaks a creative team."
   }
 
-battle = ModeKind
-  { msymbol = 'b'
-  , mname   = "battle"
-  , mfreq   = [("battle", 1), ("campaign scenario", 1)]
-  , mroster = rosterBattle
-  , mcaves  = cavesBattle
-  , mdesc   = "Odds are stacked against those that unleash the horrors of abstraction."
-  }
-
 exploration = ModeKind
   { msymbol = 'c'
   , mname   = "exploration"
@@ -83,16 +74,7 @@ exploration = ModeKind
   , mdesc   = "Don't let wanton curiosity, greed and the creeping abstraction madness keep you down there in the darkness for too long!"
   }
 
-battleSurvival = ModeKind
-  { msymbol = 'i'
-  , mname   = "battle survival"
-  , mfreq   = [("battle survival", 1)]
-  , mroster = rosterBattleSurvival
-  , mcaves  = cavesBattle
-  , mdesc   = "Odds are stacked for those that breathe mathematics."
-  }
-
-safari = ModeKind
+safari = ModeKind  -- easter egg available only via screensaver
   { msymbol = 'f'
   , mname   = "safari"
   , mfreq   = [("safari", 1)]
@@ -101,7 +83,7 @@ safari = ModeKind
   , mdesc   = "\"In this simulation you'll discover the joys of hunting the most exquisite of Earth's flora and fauna, both animal and semi-intelligent. Exit at the bottommost level.\" This is a VR recording recovered from a monster nest debris."
   }
 
-safariSurvival = ModeKind
+safariSurvival = ModeKind  -- testing scenario
   { msymbol = 'u'
   , mname   = "safari survival"
   , mfreq   = [("safari survival", 1)]
@@ -110,7 +92,25 @@ safariSurvival = ModeKind
   , mdesc   = "In this simulation you'll discover the joys of being hunted among the most exquisite of Earth's flora and fauna, both animal and semi-intelligent."
   }
 
-defense = ModeKind
+battle = ModeKind  -- testing scenario
+  { msymbol = 'b'
+  , mname   = "battle"
+  , mfreq   = [("battle", 1)]
+  , mroster = rosterBattle
+  , mcaves  = cavesBattle
+  , mdesc   = "Odds are stacked against those that unleash the horrors of abstraction."
+  }
+
+battleSurvival = ModeKind  -- testing scenario
+  { msymbol = 'i'
+  , mname   = "battle survival"
+  , mfreq   = [("battle survival", 1)]
+  , mroster = rosterBattleSurvival
+  , mcaves  = cavesBattle
+  , mdesc   = "Odds are stacked for those that breathe mathematics."
+  }
+
+defense = ModeKind  -- testing scenario; perhaps real scenario in the future
   { msymbol = 'e'
   , mname   = "defense"
   , mfreq   = [("defense", 1)]
@@ -119,7 +119,7 @@ defense = ModeKind
   , mdesc   = "Don't let human interlopers defile your abstract secrets and flee unpunished!"
   }
 
-boardgame = ModeKind
+boardgame = ModeKind  -- future work
   { msymbol = 'g'
   , mname   = "boardgame"
   , mfreq   = [("boardgame", 1)]
@@ -170,7 +170,7 @@ screensaverAmbush = ambush
   }
 
 
-rosterRaid, rosterBrawl, rosterShootout, rosterAmbush, rosterBattle, rosterExploration, rosterBattleSurvival, rosterSafari, rosterSafariSurvival, rosterDefense, rosterBoardgame :: Roster
+rosterRaid, rosterBrawl, rosterShootout, rosterAmbush, rosterExploration, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleSurvival, rosterDefense, rosterBoardgame :: Roster
 
 rosterRaid = Roster
   { rosterList = [ playerHero { fhiCondPoly = hiRaid
@@ -242,21 +242,6 @@ rosterAmbush = Roster
                   , ("Blue Hijacker", "Horror Den") ]
   , rosterAlly = [] }
 
-rosterBattle = Roster
-  { rosterList = [ playerHero { fcanEscape = False
-                              , fhiCondPoly = hiDweller
-                              , fentryLevel = -5
-                              , finitialActors = [(5, "soldier hero")] }
-                 , playerMonster { fentryLevel = -5
-                                 , finitialActors = [(35, "mobile monster")]
-                                 , fneverEmpty = True }
-                 , playerAnimal { fentryLevel = -5
-                                , finitialActors = [(30, "mobile animal")]
-                                , fneverEmpty = True } ]
-  , rosterEnemy = [ ("Explorer Party", "Monster Hive")
-                  , ("Explorer Party", "Animal Kingdom") ]
-  , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
-
 rosterExploration = Roster
   { rosterList = [ playerHero
                  , playerMonster
@@ -264,21 +249,6 @@ rosterExploration = Roster
   , rosterEnemy = [ ("Explorer Party", "Monster Hive")
                   , ("Explorer Party", "Animal Kingdom") ]
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
-
-rosterBattleSurvival = rosterBattle
-  { rosterList = [ playerHero { fcanEscape = False
-                              , fhiCondPoly = hiDweller
-                              , fentryLevel = -5
-                              , finitialActors = [(5, "soldier hero")]
-                              , fleaderMode = LeaderAI $ AutoLeader False False
-                              , fhasUI = False }
-                 , playerMonster { fentryLevel = -5
-                                 , finitialActors = [(35, "mobile monster")]
-                                 , fneverEmpty = True }
-                 , playerAnimal { fentryLevel = -5
-                                , finitialActors = [(30, "mobile animal")]
-                                , fneverEmpty = True
-                                , fhasUI = True } ] }
 
 playerMonsterTourist, playerHunamConvict, playerAnimalMagnificent, playerAnimalExquisite :: Player Dice
 
@@ -340,6 +310,36 @@ rosterSafariSurvival = rosterSafari
                  , playerAnimalExquisite
                  ] }
 
+rosterBattle = Roster
+  { rosterList = [ playerHero { fcanEscape = False
+                              , fhiCondPoly = hiDweller
+                              , fentryLevel = -5
+                              , finitialActors = [(5, "soldier hero")] }
+                 , playerMonster { fentryLevel = -5
+                                 , finitialActors = [(35, "mobile monster")]
+                                 , fneverEmpty = True }
+                 , playerAnimal { fentryLevel = -5
+                                , finitialActors = [(30, "mobile animal")]
+                                , fneverEmpty = True } ]
+  , rosterEnemy = [ ("Explorer Party", "Monster Hive")
+                  , ("Explorer Party", "Animal Kingdom") ]
+  , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
+
+rosterBattleSurvival = rosterBattle
+  { rosterList = [ playerHero { fcanEscape = False
+                              , fhiCondPoly = hiDweller
+                              , fentryLevel = -5
+                              , finitialActors = [(5, "soldier hero")]
+                              , fleaderMode = LeaderAI $ AutoLeader False False
+                              , fhasUI = False }
+                 , playerMonster { fentryLevel = -5
+                                 , finitialActors = [(35, "mobile monster")]
+                                 , fneverEmpty = True }
+                 , playerAnimal { fentryLevel = -5
+                                , finitialActors = [(30, "mobile animal")]
+                                , fneverEmpty = True
+                                , fhasUI = True } ] }
+
 rosterDefense = rosterExploration
   { rosterList = [ playerAntiHero
                  , playerAntiMonster
@@ -360,7 +360,7 @@ rosterBoardgame = Roster
                   , ("Red", "Horror Den") ]
   , rosterAlly = [] }
 
-cavesRaid, cavesBrawl, cavesShootout, cavesAmbush, cavesBattle, cavesExploration, cavesSafari, cavesBoardgame :: Caves
+cavesRaid, cavesBrawl, cavesShootout, cavesAmbush, cavesExploration, cavesSafari, cavesBattle, cavesBoardgame :: Caves
 
 cavesRaid = IM.fromList [(-4, "caveRaid")]
 
@@ -369,8 +369,6 @@ cavesBrawl = IM.fromList [(-3, "caveBrawl")]
 cavesShootout = IM.fromList [(-5, "caveShootout")]
 
 cavesAmbush = IM.fromList [(-8, "caveAmbush")]
-
-cavesBattle = IM.fromList [(-5, "caveBattle")]
 
 cavesExploration = IM.fromList $
   [ (-1, "shallow random 1")
@@ -382,5 +380,7 @@ cavesExploration = IM.fromList $
 cavesSafari = IM.fromList [ (-4, "caveSafari1")
                           , (-7, "caveSafari2")
                           , (-10, "caveSafari3") ]
+
+cavesBattle = IM.fromList [(-5, "caveBattle")]
 
 cavesBoardgame = IM.fromList [(-3, "caveBoardgame")]
