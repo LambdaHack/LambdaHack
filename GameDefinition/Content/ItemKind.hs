@@ -541,7 +541,10 @@ ring8 = ring
 
 -- * Ordinary exploding consumables, often intended to be thrown
 
--- Not identified, because they are perfect for the id-by-use fun.
+-- Various configurations of effects.
+-- Not identified, because they are perfect for the id-by-use fun,
+-- due to effects.
+
 potion = ItemKind
   { isymbol  = symbolPotion
   , iname    = "potion"
@@ -598,7 +601,7 @@ potion6 = potion
                                 , Explode "wounding mist"
                                 , Explode "distressing odor"
                                 , Explode "haste spray"
-                                , Explode "slowness spray"
+                                , Explode "slowness mist"
                                 , Explode "fragrance"
                                 , Explode "blast 20" ]) ]
   }
@@ -639,7 +642,7 @@ flask = ItemKind
   , iaspects = []
   , ieffects = []
   , ifeature = [Applicable, Lobable, Fragile, toVelocity 50]  -- oily, bad grip
-  , idesc    = "A flask of oily liquid of a suspect color. Something seems to be moving inside."  -- not natural; maths, magic
+  , idesc    = "A flask of oily liquid of a suspect color. Something seems to be moving inside."  -- not natural; maths, magic, distillery  -- in reality, just all temporary effects, which in turn match all aspects
   , ikit     = []
   }
 flask1 = flask
@@ -670,65 +673,65 @@ flask5 = flask
                , OnSmash (Explode "PhD defense question") ]
   }
 flask6 = flask
-  { irarity  = [(10, 5)]
-  , ieffects = [ ELabel "of haste brew"
-               , toOrganActorTurn "fast 20" (20 + d 5)
-               , OnSmash (Explode "haste spray") ]
-  }
-flask7 = flask
-  { ieffects = [ ELabel "of lethargy brew"
-               , toOrganGameTurn "slow 10" (20 + d 5)
-               , toOrganNone "regenerating"
-               , RefillCalm 3
-               , OnSmash (Explode "slowness spray") ]
-  }
-flask8 = flask
-  { irarity  = [(10, 7)]
-  , ieffects = [ ELabel "of eye drops"
-               , toOrganActorTurn "far-sighted" (40 + d 10)
-               , OnSmash (Explode "eye drop") ]
-  }
-flask9 = flask
-  { irarity  = [(10, 3)]
-  , ieffects = [ ELabel "of smelly concoction"
-               , toOrganActorTurn "keen-smelling" (40 + d 10)
-               , OnSmash (Explode "smelly droplet") ]
-  }
-flask10 = flask
-  { irarity  = [(10, 7)]
-  , ieffects = [ ELabel "of cat tears"
-               , toOrganActorTurn "shiny-eyed" (40 + d 10)
-               , OnSmash (Explode "eye shine") ]
-  }
-flask11 = flask
   { irarity  = [(10, 10)]
   , ieffects = [ ELabel "of resolution"
                , toOrganActorTurn "resolute" (200 + d 50)
                    -- long, for scouting and has to recharge
                , OnSmash (Explode "resolution dust") ]
   }
-flask12 = flask
-  { ieffects = [ ELabel "of bait cocktail"
-               , toOrganActorTurn "drunk" (5 + d 5)
-               , OnSmash (Summon [("mobile animal", 1)] $ 1 + dl 2)
-               , OnSmash (Explode "waste") ]
+flask7 = flask
+  { irarity  = [(10, 5)]
+  , ieffects = [ ELabel "of haste brew"
+               , toOrganActorTurn "fast 20" (20 + d 5)
+               , OnSmash (Explode "haste spray") ]
   }
-flask13 = flask
+flask8 = flask
+  { ieffects = [ ELabel "of lethargy brew"
+               , toOrganGameTurn "slow 10" (20 + d 5)
+               , toOrganNone "regenerating"
+               , RefillCalm 3
+               , OnSmash (Explode "slowness mist") ]
+  }
+flask9 = flask
+  { irarity  = [(10, 7)]
+  , ieffects = [ ELabel "of eye drops"
+               , toOrganActorTurn "far-sighted" (40 + d 10)
+               , OnSmash (Explode "eye drop") ]
+  }
+flask10 = flask
+  { irarity  = [(10, 3)]
+  , ieffects = [ ELabel "of smelly concoction"
+               , toOrganActorTurn "keen-smelling" (40 + d 10)
+               , OnSmash (Explode "smelly droplet") ]
+  }
+flask11 = flask
+  { irarity  = [(10, 7)]
+  , ieffects = [ ELabel "of cat tears"
+               , toOrganActorTurn "shiny-eyed" (40 + d 10)
+               , OnSmash (Explode "eye shine") ]
+  }
+flask12 = flask
   { ieffects = [ ELabel "of whiskey"
                , toOrganActorTurn "drunk" (20 + d 5)
                , Impress, Burn 1, RefillHP 3
                , OnSmash (Explode "whiskey spray") ]
   }
+flask13 = flask
+  { ieffects = [ ELabel "of bait cocktail"
+               , toOrganActorTurn "drunk" (5 + d 5)
+               , OnSmash (Summon [("mobile animal", 1)] $ 1 + dl 2)
+               , OnSmash (Explode "waste") ]
+  }
 flask14 = flask
   { irarity  = [(1, 20), (10, 10)]
   , ieffects = [ ELabel "of regeneration brew"
                , toOrganNone "regenerating"
-               , OnSmash (Explode "healing mist") ]
+               , OnSmash (Explode "youth sprinkle") ]
   }
-flask15 = flask  -- but not flask of Calm depletion, since Calm reduced often
+flask15 = flask  -- but no flask of Calm depletion, since Calm reduced often
   { ieffects = [ ELabel "of poison"
                , toOrganNone "poisoned"
-               , OnSmash (Explode "wounding mist") ]
+               , OnSmash (Explode "poison cloud") ]
   }
 flask16 = flask
   { irarity  = [(10, 5)]
