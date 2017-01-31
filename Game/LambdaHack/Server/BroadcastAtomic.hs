@@ -164,16 +164,16 @@ loudSfxAtomic local cmd = do
           verb = case itemDisco itemFull of
             Nothing -> "hit"  -- not identified
             Just ItemDisco{itemKind} -> IK.iverbHit itemKind
-          force = if | hurtMult > 90 -> "forceful"
-                     | hurtMult >= 50 -> "loud"
-                     | hurtMult > 1 -> ""  -- most common with projectiles
-                     | hurtMult > 0 -> "faint"
-                     | otherwise -> "barely audible"
-      return $ Just $ MU.Phrase [force, verb]
+          adverb = if | hurtMult > 90 -> "loudly"
+                      | hurtMult >= 50 -> "distinctly"
+                      | hurtMult > 1 -> ""  -- most common with projectiles
+                      | hurtMult > 0 -> "faintly"
+                      | otherwise -> "barely"
+      return $ Just (verb, adverb)
     _ -> return Nothing
-  let distant = if local then [] else ["distant"]
-      hear sound = makeSentence [ "you hear"
-                                , MU.AW $ MU.Phrase $ distant ++ [sound] ]
+  let distant = if local then [] else ["far away"]
+      hear (verb, adverb) = makeSentence $
+        [ "you", adverb, "hear something", verb, "someone"] ++ distant
   return $! hear <$> msound
 
 updatePer :: MonadServerReadRequest m => FactionId -> LevelId -> m ()
