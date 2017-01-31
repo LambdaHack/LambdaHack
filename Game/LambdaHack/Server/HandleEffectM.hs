@@ -291,7 +291,7 @@ effectExplode execSfx cgroup target = do
         -- distribution for the points the line goes through at each distance
         -- from the source. Otherwise, e.g., the points on cardinal
         -- and diagonal lines from the source would be more common.
-        let fuzz = 2 + (k100 `xor` (itemK * n)) `mod` 9
+        let fuzz = 2 + (k100 `xor` (fromEnum (jkindIx itemBase) + n)) `mod` 9
             k | itemK >= 8 && n < 8 = 0
               | n < 8 && n >= 4 = 4
               | otherwise = n
@@ -319,13 +319,15 @@ effectExplode execSfx cgroup target = do
             Just ProjectBlockTerrain -> return ()
             Just ProjectBlockActor | not $ bproj tb -> return ()
             Just failMsg -> execFailure target req failMsg
-  -- All blasts bounce off obstacles many times before they destruct.
-  forM_ [101..201] $ \k100 -> do
+  -- Particles that fail to take off, bounce off obstacles 100 times in total
+  -- and try to fly in a different directions.
+  forM_ [101..201 + itemK] $ \k100 -> do
     bag2 <- getsState $ borgan . getActorBody target
     let mn2 = EM.lookup iid bag2
     maybe (return ()) (projectN k100) mn2
   bag3 <- getsState $ borgan . getActorBody target
   let mn3 = EM.lookup iid bag3
+  -- Give up and destroy the remaining particles, if any.
   maybe (return ()) (\kit -> execUpdAtomic
                              $ UpdLoseItem False iid itemBase kit container) mn3
   return True  -- we neglect verifying that at least one projectile got off

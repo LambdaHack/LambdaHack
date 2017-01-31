@@ -241,6 +241,8 @@ supplantLeader fid aid = do
   unless (fleaderMode (gplayer fact) == LeaderNull) $ do
     execUpdAtomic $ UpdLeadFaction fid (gleader fact) (Just aid)
 
+-- The missile item is removed from the store only if the projection
+-- went into effect (no failure occured).
 projectFail :: (MonadAtomic m, MonadServer m)
             => ActorId    -- ^ actor projecting the item (is on current lvl)
             -> Point      -- ^ target position of the projectile

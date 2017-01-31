@@ -285,7 +285,7 @@ light2 = ItemKind
   , iweight  = 1500
   , idamage  = toDmg $ 1 * d 1
   , iaspects = [AddShine 3, AddSight (-1)]
-  , ieffects = [ Burn 1, Paralyze 6, OnSmash (Explode "burning oil 3")
+  , ieffects = [ Burn 1, Paralyze 6, OnSmash (Explode "burning oil 2")
                , EqpSlot EqpSlotLightSource ]
   , ifeature = [Lobable, Fragile, Identified, Equipable]
   , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
@@ -302,7 +302,7 @@ light3 = ItemKind
   , iweight  = 3000
   , idamage  = toDmg $ 4 * d 1
   , iaspects = [AddShine 4, AddSight (-1)]
-  , ieffects = [ Burn 1, Paralyze 8, OnSmash (Explode "burning oil 4")
+  , ieffects = [ Burn 1, Paralyze 8, OnSmash (Explode "burning oil 3")
                , EqpSlot EqpSlotLightSource ]
   , ifeature = [Lobable, Fragile, Identified, Equipable]
   , idesc    = "Very bright and very heavy brass lantern."
