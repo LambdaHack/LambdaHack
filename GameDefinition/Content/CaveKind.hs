@@ -37,7 +37,7 @@ rogue = CaveKind
   , cmaxPlaceSize = DiceXY 15 10
   , cdarkChance   = d 54 + dl 20
   , cnightChance  = 51  -- always night
-  , cauxConnects  = 3%4
+  , cauxConnects  = 1%2
   , cmaxVoid      = 1%6
   , cminStairDist = 15
   , cextraStairs  = 1 + d 2
@@ -66,11 +66,11 @@ arena = rogue
   , cfreq         = [("default random", 40), ("caveArena", 1)]
   , cgrid         = DiceXY (2 * d 2) (d 3)
   , cminPlaceSize = DiceXY (2 * d 2 + 4) 6
+  , cmaxPlaceSize = DiceXY 12 8
   , cdarkChance   = d 100 - dl 50
   -- Trails provide enough light for fun stealth. Light is not too deadly,
   -- because not many obstructions, so foes visible from far away.
   , cnightChance  = d 50 + dl 50
-  , cmaxVoid      = 1%5
   , cextraStairs  = d 3
   , chidden       = 0
   , cactorCoeff   = 100
@@ -100,10 +100,11 @@ laboratory = arena
   , cactorCoeff   = 160  -- deadly enough due to unclear corridors
   , citemNum      = 11 * d 2  -- reward difficulty
   , citemFreq     = [("useful", 20), ("treasure", 30), ("any vial", 50)]
+  , cplaceFreq    = [("laboratory", 100)]
   , cpassable     = False
   , cdefTile      = "fillerWall"
-  , cdarkCorTile  = "labTrail"
-  , clitCorTile   = "labTrail"
+  , cdarkCorTile  = "labTrailLit"
+  , clitCorTile   = "labTrailDark"
   }
 empty = rogue
   { csymbol       = 'E'
@@ -111,11 +112,10 @@ empty = rogue
   , cfreq         = [("caveEmpty", 1)]
   , cgrid         = DiceXY (d 2) 1
   , cminPlaceSize = DiceXY 12 12
-  , cmaxPlaceSize = DiceXY 24 16
+  , cmaxPlaceSize = DiceXY 48 32  -- favour large rooms
   , cdarkChance   = d 80 + dl 80
   , cnightChance  = 0  -- always day
   , cauxConnects  = 3%2
-  , cmaxVoid      = 3%4
   , cminStairDist = 30
   , cextraStairs  = d 2
   , cdoorChance   = 0
@@ -208,7 +208,7 @@ brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
   , clitCorTile   = "floorArenaLit"
   }
 shootout = rogue  -- a scenario with strong missiles;
-                  -- no solid tiles, but only transulent tiles or walkable
+                  -- no solid tiles, but only tranlucent tiles or walkable
                   -- opaque tiles, to make scouting and sniping more interesting
                   -- and to avoid obstructing view too much, since this
                   -- scenario is about ranged combat at long range
@@ -222,6 +222,7 @@ shootout = rogue  -- a scenario with strong missiles;
   , cnightChance  = 0
   , cdoorChance   = 1
   , copenChance   = 0
+  , cextraStairs  = 1
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 40 * d 2
@@ -329,7 +330,7 @@ safari1 = ambush
   { cfreq = [("caveSafari1", 1)]
   , cstairFreq = [("staircase outdoor", 1)]
   }
-safari2 = battle
+safari2 = shootout
   { cfreq = [("caveSafari2", 1)]
   , cstairFreq = [("staircase outdoor", 1)]
   }

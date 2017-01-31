@@ -263,18 +263,18 @@ rosterEscape = Roster
 rosterAmbush = Roster
   { rosterList = [ playerHero { fcanEscape = False
                               , fhiCondPoly = hiDweller
-                              , fentryLevel = -8
+                              , fentryLevel = -10
                               , finitialActors =
                                   [ (1, "scout hero")
                                   , (5, "ambusher hero") ] }
                  , playerAntiHero { fname = "Blue Hijacker"
                                   , fcanEscape = False
                                   , fhiCondPoly = hiDweller
-                                  , fentryLevel = -8
+                                  , fentryLevel = -10
                                   , finitialActors =
                                       [ (1, "scout hero")
                                       , (5, "ambusher hero") ] }
-                 , playerHorror {fentryLevel = -8} ]
+                 , playerHorror {fentryLevel = -10} ]
   , rosterEnemy = [ ("Explorer Party", "Blue Hijacker")
                   , ("Explorer Party", "Horror Den")
                   , ("Blue Hijacker", "Horror Den") ]
@@ -408,7 +408,7 @@ cavesShootout = IM.fromList [(-5, "caveShootout")]
 
 cavesEscape = IM.fromList [(-8, "caveEscape")]
 
-cavesAmbush = IM.fromList [(-8, "caveAmbush")]
+cavesAmbush = IM.fromList [(-10, "caveAmbush")]
 
 cavesExploration = IM.fromList $
   [ (-1, "shallow random 1")

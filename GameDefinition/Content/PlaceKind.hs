@@ -19,11 +19,11 @@ cdefs = ContentDef
   , validateSingle = validateSinglePlaceKind
   , validateAll = validateAllPlaceKind
   , content = contentFromList $
-      [rect, rectWindows, glasshouse, ruin, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, fogClump, fogClump2, bushClump, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircaseOutdoor, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, escapeOutdoorDown, boardgame]
+      [rect, rectWindows, glasshouse, ruin, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, fogClump, fogClump2, smokeClumpFGround, bushClump, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircaseOutdoor, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, escapeOutdoorDown, boardgame]
       ++ map makeStaircaseUp lstaircase
       ++ map makeStaircaseDown lstaircase
   }
-rect,        rectWindows, glasshouse, ruin, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, fogClump, fogClump2, bushClump, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircaseOutdoor, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, escapeOutdoorDown, boardgame :: PlaceKind
+rect,        rectWindows, glasshouse, ruin, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, fogClump, fogClump2, smokeClumpFGround, bushClump, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircaseOutdoor, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, escapeOutdoorDown, boardgame :: PlaceKind
 
 lstaircase :: [PlaceKind]
 lstaircase = [staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircaseOutdoor]
@@ -31,7 +31,7 @@ lstaircase = [staircase, staircase2, staircase3, staircase4, staircase5, stairca
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
   , pname    = "room"
-  , pfreq    = [("rogue", 100), ("arena", 50)]
+  , pfreq    = [("rogue", 100), ("arena", 40), ("laboratory", 40)]
   , prarity  = [(1, 10), (10, 8)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -43,7 +43,7 @@ rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
 rectWindows = PlaceKind
   { psymbol  = 'w'
   , pname    = "room"
-  , pfreq    = [("noise", 200), ("empty", 1)]
+  , pfreq    = [("empty", 10)]
   , prarity  = [(1, 10), (10, 8)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -55,7 +55,7 @@ rectWindows = PlaceKind
 glasshouse = PlaceKind
   { psymbol  = 'g'
   , pname    = "glasshouse"
-  , pfreq    = [("shootout", 8)]
+  , pfreq    = [("shootout", 8), ("arena", 40)]
   , prarity  = [(1, 10), (10, 8)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -67,7 +67,7 @@ glasshouse = PlaceKind
 ruin = PlaceKind
   { psymbol  = 'R'
   , pname    = "ruin"
-  , pfreq    = [("battle", 33), ("noise", 50)]
+  , pfreq    = [("battle", 33), ("noise", 250)]
   , prarity  = [(1, 10), (10, 20)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -129,8 +129,8 @@ collapsed7 = collapsed
 pillar = PlaceKind
   { psymbol  = 'p'
   , pname    = "pillar room"
-  , pfreq    = [ ("rogue", 500), ("arena", 1000), ("empty", 1000)
-               , ("noise", 50) ]
+  , pfreq    = [ ("rogue", 500), ("arena", 1000), ("laboratory", 1000)
+               , ("empty", 1000) , ("noise", 50) ]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -172,8 +172,8 @@ pillar4 = pillar
 colonnade = PlaceKind
   { psymbol  = 'c'
   , pname    = "colonnade"
-  , pfreq    = [ ("rogue", 30), ("arena", 70), ("empty", 70), ("noise", 2000)
-               , ("ambush", 150) ]
+  , pfreq    = [ ("rogue", 30), ("arena", 70), ("laboratory", 70)
+               , ("empty", 70), ("noise", 2000), ("ambush", 150) ]
   , prarity  = [(1, 5), (10, 5)]
   , pcover   = CAlternate
   , pfence   = FFloor
@@ -279,7 +279,7 @@ fogClump = PlaceKind
   , poverride = [('f', "fogClumpOver_f_Lit"), ('#', "lit fog")]
   }
 fogClump2 = fogClump
-  { pfreq    = [("shootout", 400)]
+  { pfreq    = [("shootout", 400), ("empty", 10000)]
   , prarity  = [(1, 1)]
   , pcover   = CVerbatim
   , ptopLeft = [ "XfX"
@@ -287,6 +287,21 @@ fogClump2 = fogClump
                , "f#f"
                , "XfX"
                ]
+  }
+smokeClumpFGround = PlaceKind
+  { psymbol  = 's'
+  , pname    = "smoky patch"
+  , pfreq    = [("laboratory", 100)]
+  , prarity  = [(1, 1)]
+  , pcover   = CVerbatim
+  , pfence   = FGround
+  , ptopLeft = [ "#f#"
+               , "f.f"
+               , "f.f"
+               , "#f#"
+               ]
+  , poverride = [ ('f', "smokeClumpOver_f_Lit"), ('#', "lit smoke")
+                , ('.', "floorActorLit") ]
   }
 bushClump = PlaceKind
   { psymbol  = 'b'
