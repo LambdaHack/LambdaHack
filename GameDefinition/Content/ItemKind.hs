@@ -714,7 +714,7 @@ flask12 = flask
 flask13 = flask
   { ieffects = [ ELabel "of whiskey"
                , toOrganActorTurn "drunk" (20 + d 5)
-               , Impress, Burn 2, RefillHP 4
+               , Impress, Burn 1, RefillHP 3
                , OnSmash (Explode "whiskey spray") ]
   }
 flask14 = flask
@@ -1035,7 +1035,7 @@ swordNullify = sword
   , ieffects = ieffects sword
                ++ [ Unique
                   , Recharging $ DropItem COrgan "temporary conditions"
-                  , Recharging $ RefillHP (-2) ]
+                  , Recharging $ RefillCalm (-10) ]
   , idesc    = "Cold, thin blade that pierces deeply and sends its victim into abrupt, sobering shock."
   }
 halberd = ItemKind

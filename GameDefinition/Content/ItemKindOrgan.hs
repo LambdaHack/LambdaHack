@@ -279,7 +279,7 @@ pupil = fist
   , idamage  = toDmg $ 1 * d 1
   , iaspects = [AddSight 12, Timeout $ 5 + d 5]
   , ieffects = [ Recharging (DropItem COrgan "temporary conditions")
-               , Recharging $ RefillHP (-2)
+               , Recharging $ RefillCalm (-10)
                ]
   , idesc    = ""
   }

@@ -241,9 +241,9 @@ reqMelee source target iid cstore = do
     sfact <- getsState $ (EM.! sfid) . sfactionD
     hurtBonus <- armorHurtBonus source target
     itemBase <- getsState $ getItemBody iid
-    n <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) $ jdamage itemBase
+    dmg <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) $ jdamage itemBase
     let hurtMult = 100 + hurtBonus
-        rawDeltaHP = fromIntegral hurtMult * xM n `divUp` 100
+        rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
         speedDeltaHP = case btrajectory sb of
           Just (_, speed) -> - modifyDamageBySpeed rawDeltaHP speed
           Nothing -> - rawDeltaHP

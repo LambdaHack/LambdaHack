@@ -779,6 +779,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     case effect of
         IK.ELabel{} -> return ()
         IK.EqpSlot{} -> return ()
+        IK.Burn p | p <= 1 -> return ()  -- no spam for minor burns
         IK.Burn{} -> do
           if isOurAlive
           then actorVerbMU aid b "feel burned"

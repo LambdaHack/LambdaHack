@@ -249,25 +249,28 @@ effectBurn :: (MonadAtomic m, MonadServer m)
            -> m Bool
 {-# INLINABLE effectBurn #-}
 effectBurn nDm source target = do
-  sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   actorAspect <- getsServer sactorAspect
   let ar = actorAspect EM.! target
       hpMax = aMaxHP ar
   n <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   let rawDeltaHP = - (fromIntegral $ xM n)
-      serious = source /= target && not (bproj tb)
+      -- We ignore minor burns.
+      serious = not (bproj tb) && source /= target && n > 1
       deltaHP | serious = -- if HP overfull, at least cut back to max HP
                           min rawDeltaHP (xM hpMax - bhp tb)
               | otherwise = rawDeltaHP
-      deltaDiv = fromEnum $ deltaHP `divUp` oneM
-  -- Display the effect.
-  let reportedEffect = IK.Burn $ Dice.intToDice (- deltaDiv)
-  execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
-  -- Damage the target.
-  execUpdAtomic $ UpdRefillHP target deltaHP  -- TODO: also light on fire, etc.
-  when serious $ halveCalm target
-  return True
+  if deltaHP == 0
+  then return False
+  else do
+    sb <- getsState $ getActorBody source
+    -- Display the effect.
+    let reportedEffect = IK.Burn $ Dice.intToDice (- n)
+    execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
+    -- Damage the target.
+    execUpdAtomic $ UpdRefillHP target deltaHP  -- TODO: also light on fire, etc
+    when serious $ halveCalm target
+    return True
 
 -- ** Explode
 
@@ -341,21 +344,21 @@ effectRefillHP overfill power source target = do
       overMax | overfill = xM hpMax * 10  -- arbitrary limit to scumming
               | otherwise = xM hpMax
       -- We ignore light poison and similar -1HP per turn annoyances.
-      serious = not (bproj tb) && source /= target && power > 1
+      serious = not (bproj tb) && source /= target && abs power > 1
       deltaHP | power > 0 = min (xM power) (max 0 $ overMax - bhp tb)
               | serious = -- if overfull, at least cut back to max
                           min (xM power) (xM hpMax - bhp tb)
               | otherwise = xM power
   if deltaHP == 0
-    then return False
-    else do
-      sb <- getsState $ getActorBody source
-      let effect | overfill = IK.OverfillHP power
-                 | otherwise = IK.RefillHP power
-      execSfxAtomic $ SfxEffect (bfid sb) target effect deltaHP
-      execUpdAtomic $ UpdRefillHP target deltaHP
-      when (deltaHP < 0 && serious) $ halveCalm target
-      return True
+  then return False
+  else do
+    sb <- getsState $ getActorBody source
+    let reportedEffect | overfill = IK.OverfillHP power
+                       | otherwise = IK.RefillHP power
+    execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
+    execUpdAtomic $ UpdRefillHP target deltaHP
+    when (deltaHP < 0 && serious) $ halveCalm target
+    return True
 
 halveCalm :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 {-# INLINABLE halveCalm #-}
