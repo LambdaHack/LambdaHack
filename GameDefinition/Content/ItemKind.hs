@@ -581,10 +581,11 @@ potion4 = potion
 potion5 = potion
   { ieffects = [ OneOf [ OverfillHP 10, OverfillHP 5, Burn 5
                        , toOrganActorTurn "strengthened" (20 + d 5) ]
-               , OnSmash (OneOf [ Explode "healing mist"
-                                , Explode "wounding mist"
-                                , Explode "fragrance"
-                                , Explode "smelly droplet"
+               , OnSmash (OneOf [ Explode "dense shower"
+                                , Explode "sparse shower"
+                                , Explode "protecting balm melee"
+                                , Explode "protecting balm ranged"
+                                , Explode "PhD defense question"
                                 , Explode "blast 10" ]) ]
   }
 potion6 = potion
@@ -594,10 +595,11 @@ potion6 = potion
                        , OverfillHP 20, OverfillHP 10, Burn 10
                        , toOrganActorTurn "fast 20" (20 + d 5) ]
                , OnSmash (OneOf [ Explode "healing mist 2"
-                                , Explode "calming mist"
+                                , Explode "wounding mist"
                                 , Explode "distressing odor"
-                                , Explode "eye drop"
-                                , Explode "eye shine"
+                                , Explode "haste spray"
+                                , Explode "slowness spray"
+                                , Explode "fragrance"
                                 , Explode "blast 20" ]) ]
   }
 potion7 = potion
@@ -645,12 +647,12 @@ flask1 = flask
   , ieffects = [ ELabel "of strength brew"
                , toOrganActorTurn "strengthened" (20 + d 5)
                , toOrganNone "regenerating"
-               , OnSmash (Explode "strength mist") ]
+               , OnSmash (Explode "dense shower") ]
   }
 flask2 = flask
   { ieffects = [ ELabel "of weakness brew"
                , toOrganGameTurn "weakened" (20 + d 5)
-               , OnSmash (Explode "weakness mist") ]
+               , OnSmash (Explode "sparse shower") ]
   }
 flask3 = flask
   { ieffects = [ ELabel "of protective melee balm"
@@ -684,26 +686,26 @@ flask8 = flask
   { irarity  = [(10, 7)]
   , ieffects = [ ELabel "of eye drops"
                , toOrganActorTurn "far-sighted" (40 + d 10)
-               , OnSmash (Explode "blast 10") ]
+               , OnSmash (Explode "eye drop") ]
   }
 flask9 = flask
-  { irarity  = [(10, 7)]
-  , ieffects = [ ELabel "of cat tears"
-               , toOrganActorTurn "shiny-eyed" (40 + d 10)
-               , OnSmash (Explode "blast 10") ]
-  }
-flask10 = flask
   { irarity  = [(10, 3)]
   , ieffects = [ ELabel "of smelly concoction"
                , toOrganActorTurn "keen-smelling" (40 + d 10)
-               , OnSmash (Explode "blast 10") ]
+               , OnSmash (Explode "smelly droplet") ]
+  }
+flask10 = flask
+  { irarity  = [(10, 7)]
+  , ieffects = [ ELabel "of cat tears"
+               , toOrganActorTurn "shiny-eyed" (40 + d 10)
+               , OnSmash (Explode "eye shine") ]
   }
 flask11 = flask
   { irarity  = [(10, 10)]
   , ieffects = [ ELabel "of resolution"
                , toOrganActorTurn "resolute" (200 + d 50)
                    -- long, for scouting and has to recharge
-               , OnSmash (Explode "blast 10") ]
+               , OnSmash (Explode "resolution dust") ]
   }
 flask12 = flask
   { ieffects = [ ELabel "of bait cocktail"
