@@ -265,7 +265,7 @@ effectBurn nDm source target = do
   else do
     sb <- getsState $ getActorBody source
     -- Display the effect.
-    let reportedEffect = IK.Burn $ Dice.intToDice (- n)
+    let reportedEffect = IK.Burn $ Dice.intToDice n
     execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
     -- Damage the target.
     execUpdAtomic $ UpdRefillHP target deltaHP  -- TODO: also light on fire, etc
