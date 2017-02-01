@@ -293,29 +293,29 @@ effectExplode execSfx cgroup target = do
         -- from the source. Otherwise, e.g., the points on cardinal
         -- and diagonal lines from the source would be more common.
         let veryrandom = k100 `xor` (semirandom + n)
-            fuzz = 4 + veryrandom `mod` 7
+            fuzz = 5 + veryrandom `mod` 5
             k | itemK >= 8 && n < 4 = 0  -- speed up if only a handful remains
               | n < 16 && n >= 12 = 12
               | n < 12 && n >= 8 = 8
               | n < 8 && n >= 4 = 4
               | otherwise = 16  -- fire in groups of 16, including previous duds
             psAll =
-              [ Point (x - 12) $ y + fuzz
-              , Point (x + 12) $ y - fuzz
-              , Point (x - 12) $ y - fuzz
+              [ Point (x - 12) (y + 12)
+              , Point (x + 12) (y + 12)
+              , Point (x - 12) (y - 12)
+              , Point (x + 12) (y - 12)
+              , Point (x - 12) y
+              , Point (x + 12) y
+              , Point x (y + 12)
+              , Point x (y - 12)
+              , Point (x - 12) $ y + fuzz
               , Point (x + 12) $ y + fuzz
+              , Point (x - 12) $ y - fuzz
+              , Point (x + 12) $ y - fuzz
               , flip Point (y - 12) $ x + fuzz
-              , flip Point (y + 12) $ x - fuzz
-              , flip Point (y - 12) $ x - fuzz
               , flip Point (y + 12) $ x + fuzz
-              , Point (x - 12) $ y + fuzz - 2
-              , Point (x + 12) $ y - fuzz + 2
-              , Point (x - 12) $ y - fuzz + 2
-              , Point (x + 12) $ y + fuzz - 2
-              , flip Point (y - 12) $ x + fuzz - 2
-              , flip Point (y + 12) $ x - fuzz + 2
-              , flip Point (y - 12) $ x - fuzz + 2
-              , flip Point (y + 12) $ x + fuzz - 2
+              , flip Point (y - 12) $ x - fuzz
+              , flip Point (y + 12) $ x - fuzz
               ]
             ps = take k psAll
         forM_ ps $ \tpxy -> do
