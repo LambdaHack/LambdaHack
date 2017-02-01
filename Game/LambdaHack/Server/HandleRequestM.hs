@@ -253,7 +253,9 @@ reqMelee source target iid cstore = do
         deltaHP | serious = -- if HP overfull, at least cut back to max HP
                             min speedDeltaHP (xM hpMax - bhp tb)
                 | otherwise = speedDeltaHP
-    let hurtMultZero = if speedDeltaHP < 0 then hurtMult else 0
+    let hurtMultZero | speedDeltaHP < 0 = hurtMult
+                     | speedDeltaHP == 0 && dmg > 0 = 0
+                     | otherwise = 100  -- no blocking, because no initial dmg
     execSfxAtomic $ SfxStrike source target iid cstore hurtMultZero
     -- Damage the target, never heal.
     when (deltaHP < 0) $ do
