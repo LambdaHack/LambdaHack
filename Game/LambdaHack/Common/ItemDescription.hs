@@ -115,22 +115,24 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                             $ filter (not . T.null)
                             $ map ppE $ stripOnSmash restEs
                 durable = IK.Durable `elem` jfeature itemBase
-                periodicOrTimeout = case periodic of
-                  _ | skipRecharging || T.null rechargingTs -> ""
-                  True ->
-                    case mtimeout of
-                      Nothing | not durable ->
-                        "(each turn until gone:"
-                        <+> rechargingTs <> ")"
-                      Just (IK.Timeout t) ->
-                        "(every" <+> reduce_a t <> ":"
-                        <+> rechargingTs <> ")"
-                      _ -> ""
-                  _ -> case mtimeout of
-                    Just (IK.Timeout t) ->
-                      "(timeout" <+> reduce_a t <> ":"
-                      <+> rechargingTs <> ")"
-                    _ -> ""
+                fragile = IK.Fragile `elem` jfeature itemBase
+                periodicOrTimeout =
+                  if | skipRecharging || T.null rechargingTs -> ""
+                     | periodic -> case mtimeout of
+                         Nothing | durable && not fragile ->
+                           "(each turn:" <+> rechargingTs <> ")"
+                         Nothing ->
+                           "(each turn until gone:" <+> rechargingTs <> ")"
+                         Just (IK.Timeout t) ->
+                           "(every" <+> reduce_a t <> ":"
+                           <+> rechargingTs <> ")"
+                         _ -> assert `failure` mtimeout
+                     | otherwise -> case mtimeout of
+                         Nothing -> ""
+                         Just (IK.Timeout t) ->
+                           "(timeout" <+> reduce_a t <> ":"
+                           <+> rechargingTs <> ")"
+                         _ -> assert `failure` mtimeout
                 onSmash = if T.null onSmashTs then ""
                           else "(on smash:" <+> onSmashTs <> ")"
                 noEff = case find noEffect effects of
