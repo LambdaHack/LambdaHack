@@ -416,7 +416,7 @@ arsenicVent = armoredSkin
   , iflavour = zipPlain [Cyan]
   , iverbHit = "menace"
   , iaspects = [Timeout $ 2 + d 2 |*| 5]
-  , ieffects = [Periodic, Recharging (Explode "weakness mist")]
+  , ieffects = [Periodic, Recharging (Explode "sparse shower")]
   , idesc    = ""
   }
 sulfurVent = armoredSkin
@@ -425,7 +425,7 @@ sulfurVent = armoredSkin
   , iflavour = zipPlain [BrYellow]
   , iverbHit = "menace"
   , iaspects = [Timeout $ 2 + d 2 |*| 5]
-  , ieffects = [Periodic, Recharging (Explode "strength mist")]
+  , ieffects = [Periodic, Recharging (Explode "dense shower")]
   , idesc    = ""
   }
 bonusHP = armoredSkin

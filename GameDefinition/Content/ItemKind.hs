@@ -302,7 +302,7 @@ light3 = ItemKind
   , iweight  = 3000
   , idamage  = toDmg $ 4 * d 1
   , iaspects = [AddShine 4, AddSight (-1)]
-  , ieffects = [ Burn 1, Paralyze 8, OnSmash (Explode "burning oil 3")
+  , ieffects = [ Burn 1, Paralyze 8, OnSmash (Explode "burning oil 4")
                , EqpSlot EqpSlotLightSource ]
   , ifeature = [Lobable, Fragile, Identified, Equipable]
   , idesc    = "Very bright and very heavy brass lantern."
@@ -520,7 +520,7 @@ ring6 = ring
                , AddMaxCalm $ - 20 - d 20, AddMaxHP $ - 20 - d 20 ]
   , ieffects = [ Unique, ELabel "of Rush"  -- no explosion, because Durable
                , EqpSlot EqpSlotAddSpeed ]
-  , ifeature = ifeature ring ++ [Durable]
+  , ifeature = Durable : ifeature ring
   }
 ring7 = ring
   { ifreq    = [("useful", 100), ("ring of opportunity sniper", 1) ]
@@ -541,7 +541,8 @@ ring8 = ring
 
 -- * Ordinary exploding consumables, often intended to be thrown
 
--- Various configurations of effects.
+-- Various configurations of effects. Other effects are on scrolls
+-- and/or mechanical items. Some are shared.
 -- Not identified, because they are perfect for the id-by-use fun,
 -- due to effects.
 
