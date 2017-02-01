@@ -286,15 +286,19 @@ effectExplode execSfx cgroup target = do
   let (iid, (ItemFull{itemBase, itemK}, _)) =
         fromMaybe (assert `failure` cgroup) m2
       Point x y = bpos tb
+      semirandom = fromEnum (jkindIx itemBase)
       projectN k100 (n, _) = do
         -- We pick a point at the border, not inside, to have a uniform
         -- distribution for the points the line goes through at each distance
         -- from the source. Otherwise, e.g., the points on cardinal
         -- and diagonal lines from the source would be more common.
-        let fuzz = 2 + (k100 `xor` (fromEnum (jkindIx itemBase) + n)) `mod` 9
-            k | itemK >= 8 && n < 8 = 0
+        let veryrandom = k100 `xor` (semirandom + n)
+            fuzz = 4 + veryrandom `mod` 7
+            k | itemK >= 8 && n < 4 = 0  -- speed up if only a handful remains
+              | n < 16 && n >= 12 = 12
+              | n < 12 && n >= 8 = 8
               | n < 8 && n >= 4 = 4
-              | otherwise = n
+              | otherwise = 16  -- fire in groups of 16, including previous duds
             psAll =
               [ Point (x - 12) $ y + fuzz
               , Point (x + 12) $ y - fuzz
@@ -304,27 +308,36 @@ effectExplode execSfx cgroup target = do
               , flip Point (y + 12) $ x - fuzz
               , flip Point (y - 12) $ x - fuzz
               , flip Point (y + 12) $ x + fuzz
+              , Point (x - 12) $ y + fuzz - 2
+              , Point (x + 12) $ y - fuzz + 2
+              , Point (x - 12) $ y - fuzz + 2
+              , Point (x + 12) $ y + fuzz - 2
+              , flip Point (y - 12) $ x + fuzz - 2
+              , flip Point (y + 12) $ x - fuzz + 2
+              , flip Point (y - 12) $ x - fuzz + 2
+              , flip Point (y + 12) $ x + fuzz - 2
               ]
-            -- Keep full symmetry, but only if enough projectiles. Fall back
-            -- to random, on average, symmetry.
-            ps = take k $
-              if k >= 4 then psAll
-              else drop ((n + x + y + fromEnum iid * 7) `mod` 16)
-                   $ cycle $ psAll ++ reverse psAll
+            ps = take k psAll
         forM_ ps $ \tpxy -> do
-          let req = ReqProject tpxy k100 iid COrgan
-          mfail <- projectFail target tpxy k100 iid COrgan True
+          let req = ReqProject tpxy veryrandom iid COrgan
+          mfail <- projectFail target tpxy veryrandom iid COrgan True
           case mfail of
             Nothing -> return ()
             Just ProjectBlockTerrain -> return ()
             Just ProjectBlockActor | not $ bproj tb -> return ()
             Just failMsg -> execFailure target req failMsg
-  -- Particles that fail to take off, bounce off obstacles 100 times in total
-  -- and try to fly in a different directions.
-  forM_ [101..201 + itemK] $ \k100 -> do
-    bag2 <- getsState $ borgan . getActorBody target
-    let mn2 = EM.lookup iid bag2
-    maybe (return ()) (projectN k100) mn2
+      tryFlying 0 = return ()
+      tryFlying k100 = do
+        bag2 <- getsState $ borgan . getActorBody target
+        let mn2 = EM.lookup iid bag2
+        case mn2 of
+          Nothing -> return ()
+          Just n2 -> do
+            projectN k100 n2
+            tryFlying $ k100 - 1
+  -- Particles that fail to take off, bounce off obstacles up to 100 times
+  -- in total, trying to fly in different directions.
+  tryFlying 100
   bag3 <- getsState $ borgan . getActorBody target
   let mn3 = EM.lookup iid bag3
   -- Give up and destroy the remaining particles, if any.
