@@ -435,12 +435,13 @@ itemAidVerbMU aid verb iid ek cstore = do
               assert (n <= k `blame` (aid, verb, iid, cstore))
               $ partItemWs n cstore localTime itemFull
             Left Nothing ->
-              let (_, name, stats) = partItem cstore localTime itemFull
+              let (_, _, name, stats) = partItem cstore localTime itemFull
               in MU.Phrase [name, stats]
             Right n ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
               $ let itemSecret = itemNoDisco (itemBase itemFull, n)
-                    (_, secretName, secretAE) = partItem cstore localTime itemSecret
+                    (_, _, secretName, secretAE) =
+                      partItem cstore localTime itemSecret
                     name = MU.Phrase [secretName, secretAE]
                     nameList = if n == 1
                                then ["the", name]
@@ -730,7 +731,7 @@ discover c oldCli iid = do
       -- in the message differ even if, e.g., the item is described as
       -- "of many effects".
       itemSecret = itemNoDisco (itemBase itemFull, itemK itemFull)
-      (_, secretName, secretAEText) = partItem cstore localTime itemSecret
+      (_, _, secretName, secretAEText) = partItem cstore localTime itemSecret
       namePhrase = MU.Phrase $ [secretName, secretAEText] ++ nameWhere
       msg = makeSentence
         ["the", MU.SubjectVerbSg namePhrase "turn out to be", knownName]
@@ -887,7 +888,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
               let itemSecret = itemNoDisco (itemBase, itemK)
                   -- TODO: plural form of secretName? only when K > 1?
                   -- At this point we don't easily know how many consumed.
-                  (_, secretName, secretAEText) =
+                  (_, _, secretName, secretAEText) =
                     partItem CGround localTime itemSecret
                   verb = "repurpose"
                   store = MU.Text $ ppCStoreIn CGround

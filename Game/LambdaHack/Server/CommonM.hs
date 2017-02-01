@@ -341,8 +341,8 @@ addProjectile bpos rest iid (_, it) blid bfid btime isBlast = do
       adj | trange < 5 = "falling"
           | otherwise = "flying"
       -- Not much detail about a fast flying item.
-      (_, object1, object2) = partItem CInv localTime
-                                       (itemNoDisco (itemBase, 1))
+      (_, _, object1, object2) =
+        partItem CInv localTime (itemNoDisco (itemBase, 1))
       bname = makePhrase [MU.AW $ MU.Text adj, object1, object2]
       tweakBody b = b { bsymbol = if isBlast then bsymbol b else '*'
                       , bcolor = if isBlast then bcolor b else Color.BrWhite

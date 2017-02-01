@@ -94,7 +94,8 @@ targetDesc target = do
             [(iid, kit@(k, _))] -> do
               localTime <- getsState $ getLocalTime lid
               itemToF <- itemToFullClient
-              let (_, name, stats) = partItem CGround localTime (itemToF iid kit)
+              let (_, _, name, stats) =
+                    partItem CGround localTime (itemToF iid kit)
               return $! makePhrase $ if k == 1
                                      then [name, stats]  -- "a sword" too wordy
                                      else [MU.CarWs k name, stats]
@@ -410,7 +411,7 @@ drawFrameStatus drawnLevelId = do
               Just kit@(k, _) -> do
                 localTime <- getsState $ getLocalTime (blid b)
                 itemToF <- itemToFullClient
-                let (_, name, stats) =
+                let (_, _, name, stats) =
                       partItem fromCStore localTime (itemToF iid kit)
                     t = makePhrase
                         $ if k == 1

@@ -1,6 +1,6 @@
 -- | Descripitons of items.
 module Game.LambdaHack.Common.ItemDescription
-  ( partItemN, partItem, partItemWs, partItemWsRanged
+  ( partItem, partItemHigh, partItemWs, partItemWsRanged
   , partItemAW, partItemMediumAW, partItemWownW
   , viewItem, show64With2
   ) where
@@ -37,25 +37,25 @@ show64With2 n =
 -- | The part of speech describing the item parameterized by the number
 -- of effects/aspects to show..
 partItemN :: Bool -> Int -> Int -> CStore -> Time -> ItemFull
-          -> (Bool, MU.Part, MU.Part)
+          -> (Bool, Bool, MU.Part, MU.Part)
 partItemN ranged fullInfo n cstore localTime itemFull =
   let genericName = jname $ itemBase itemFull
   in case itemDisco itemFull of
     Nothing ->
       let flav = flavourToName $ jflavour $ itemBase itemFull
-      in (False, MU.Text $ flav <+> genericName, "")
+      in (False, False, MU.Text $ flav <+> genericName, "")
     Just iDisco ->
       let timeout = aTimeout $ aspectRecordFull itemFull
           timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
+          temporary = not (null $ itemTimer itemFull) && timeout == 0
           charging startT = timeShift startT timeoutTurns > localTime
           it1 = filter charging (itemTimer itemFull)
-          len = length it1
-          chargingAdj | timeout == 0 = "temporary"
-                      | otherwise = "charging"
-          timer | len == 0 = ""
-                | itemK itemFull == 1 && len == 1 = "(" <> chargingAdj <> ")"
-                | otherwise = "(" <> tshow len <+> chargingAdj <> ")"
-          skipRecharging = fullInfo <= 4 && len >= itemK itemFull
+          lenCh = length it1
+          timer | lenCh == 0 || temporary = ""
+                | itemK itemFull == 1 && lenCh == 1 = "(charging)"
+                | itemK itemFull == lenCh = "(all charging)"
+                | otherwise = "(" <> tshow lenCh <+> "charging)"
+          skipRecharging = fullInfo <= 4 && lenCh >= itemK itemFull
           (effTsRaw, rangedDamage) =
             textAllAE fullInfo skipRecharging cstore itemFull
           effTs = filter (not . T.null) effTsRaw
@@ -64,14 +64,12 @@ partItemN ranged fullInfo n cstore localTime itemFull =
                ++ ["(...)" | length effTs > n]
                ++ [timer]
           unique = IK.Unique `elem` IK.ieffects (itemKind iDisco)
+          name | temporary = "temporarily" <+> genericName
+               | otherwise = genericName
           capName = if unique
-                    then MU.Capitalize $ MU.Text genericName
-                    else MU.Text genericName
-      in (unique, capName, MU.Phrase $ map MU.Text ts)
-
--- | The part of speech describing the item.
-partItem :: CStore -> Time -> ItemFull -> (Bool, MU.Part, MU.Part)
-partItem = partItemN False 5 4
+                    then MU.Capitalize $ MU.Text name
+                    else MU.Text name
+      in (temporary, unique, capName, MU.Phrase $ map MU.Text ts)
 
 textAllAE :: Int -> Bool -> CStore -> ItemFull -> ([Text], [Text])
 textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
@@ -177,38 +175,46 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
           -- so the value would be different than when viewing the item.
       in (aets ++ features, rangedDamage)
 
+-- | The part of speech describing the item.
+partItem :: CStore -> Time -> ItemFull -> (Bool, Bool, MU.Part, MU.Part)
+partItem = partItemN False 5 4
+
+partItemHigh :: CStore -> Time -> ItemFull -> (Bool, Bool, MU.Part, MU.Part)
+partItemHigh = partItemN False 10 100
+
 -- TODO: use kit
+partItemWsR :: Bool -> Int -> CStore -> Time -> ItemFull -> MU.Part
+partItemWsR ranged count c localTime itemFull =
+  let (temporary, unique, name, stats) =
+        partItemN ranged 5 4 c localTime itemFull
+  in if | temporary && count == 1 -> MU.Phrase [name, stats]
+        | temporary -> MU.Phrase [MU.Text $ tshow count <> "-fold", name, stats]
+        | unique && count == 1 -> MU.Phrase ["the", name, stats]
+        | otherwise -> MU.Phrase [MU.CarWs count name, stats]
+
 partItemWs :: Int -> CStore -> Time -> ItemFull -> MU.Part
-partItemWs count c localTime itemFull =
-  let (unique, name, stats) = partItem c localTime itemFull
-  in if unique && count == 1
-     then MU.Phrase ["the", name, stats]
-     else MU.Phrase [MU.CarWs count name, stats]
+partItemWs = partItemWsR False
 
 partItemWsRanged :: Int -> CStore -> Time -> ItemFull -> MU.Part
-partItemWsRanged count c localTime itemFull =
-  let (unique, name, stats) = partItemN True 5 4 c localTime itemFull
-  in if unique && count == 1
-     then MU.Phrase ["the", name, stats]
-     else MU.Phrase [MU.CarWs count name, stats]
+partItemWsRanged = partItemWsR True
 
 partItemAW :: CStore -> Time -> ItemFull -> MU.Part
 partItemAW c localTime itemFull =
-  let (unique, name, stats) = partItemN False 4 4 c localTime itemFull
+  let (_, unique, name, stats) = partItemN False 4 4 c localTime itemFull
   in if unique
      then MU.Phrase ["the", name, stats]
      else MU.AW $ MU.Phrase [name, stats]
 
 partItemMediumAW :: CStore -> Time -> ItemFull -> MU.Part
 partItemMediumAW c localTime itemFull =
-  let (unique, name, stats) = partItemN False 5 100 c localTime itemFull
+  let (_, unique, name, stats) = partItemN False 5 100 c localTime itemFull
   in if unique
      then MU.Phrase ["the", name, stats]
      else MU.AW $ MU.Phrase [name, stats]
 
 partItemWownW :: MU.Part -> CStore -> Time -> ItemFull -> MU.Part
 partItemWownW partA c localTime itemFull =
-  let (_, name, stats) = partItemN False 4 4 c localTime itemFull
+  let (_, _, name, stats) = partItemN False 4 4 c localTime itemFull
   in MU.WownW partA $ MU.Phrase [name, stats]
 
 viewItem :: Item -> Color.AttrCharW32
