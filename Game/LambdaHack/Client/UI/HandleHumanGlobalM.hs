@@ -1215,7 +1215,7 @@ automateHuman = do
   -- BFS is not updated while automated, which would lead to corruption.
   modifySession $ \sess -> sess {saimMode = Nothing}
   go <- displaySpaceEsc ColorBW
-          "Ceding control to AI (press any key to regain)."
+          "Ceding control to AI (press ESC to regain)."
   if not go
     then failWith "automation canceled"
     else return $ Right ReqUIAutomate
