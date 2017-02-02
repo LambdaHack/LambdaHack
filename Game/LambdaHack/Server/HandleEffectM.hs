@@ -298,7 +298,7 @@ effectExplode execSfx cgroup target = do
               | n < 16 && n >= 12 = 12
               | n < 12 && n >= 8 = 8
               | n < 8 && n >= 4 = 4
-              | otherwise = 16  -- fire in groups of 16, including previous duds
+              | otherwise = min n 16  -- fire in groups of 16 including old duds
             psAll =
               [ Point (x - 12) (y + 12)
               , Point (x + 12) (y + 12)
