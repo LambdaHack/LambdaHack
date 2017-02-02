@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.UI.Slideshow
   ( KYX, OKX, Slideshow(slideshow)
   , emptySlideshow, unsnoc, toSlideshow, menuToSlideshow
-  , splitOverlay, splitOKX
+  , wrapOKX, splitOverlay, splitOKX
   ) where
 
 import Prelude ()
@@ -58,20 +58,24 @@ menuToSlideshow :: OKX -> Slideshow
 menuToSlideshow (als, kxs) =
   assert (not (null als || null kxs)) $ Slideshow [(als, kxs)]
 
+wrapOKX :: Y -> X -> X -> [(K.KM, String)] -> OKX
+wrapOKX ystart xstart xBound ks =
+  let f ((y, x), (kL, kV, kX)) (key, s) =
+        let len = length s
+        in if x + len > xBound
+           then f ((y + 1, 0), ([], kL : kV, kX)) (key, s)
+           else ( (y, x + len + 1)
+                , (s : kL, kV, (Left [key], (y, x, x + len)) : kX) )
+      (kL1, kV1, kX1) = snd $ foldl' f ((ystart, xstart), ([], [], [])) ks
+      catL = stringToAL . intercalate " " . reverse
+  in (reverse $ map catL $ kL1 : kV1, reverse kX1)
+
 keysOKX :: Y -> X -> X -> [K.KM] -> OKX
 keysOKX ystart xstart xBound keys =
   let wrapB :: String -> String
       wrapB s = "[" ++ s ++ "]"
-      f ((y, x), (kL, kV, kX)) key =
-        let ks = wrapB $ K.showKM key
-            len = length ks
-        in if x + len > xBound
-           then f ((y + 1, 0), ([], kL : kV, kX)) key
-           else ( (y, x + len + 1)
-                , (ks : kL, kV, (Left [key], (y, x, x + len)) : kX) )
-      (kL1, kV1, kX1) = snd $ foldl' f ((ystart, xstart), ([], [], [])) keys
-      catL = stringToAL . intercalate " " . reverse
-  in (reverse $ map catL $ kL1 : kV1, reverse kX1)
+      ks = map (\key -> (key, wrapB $ K.showKM key)) keys
+  in wrapOKX ystart xstart xBound ks
 
 splitOverlay :: X -> Y -> Report -> [K.KM] -> OKX -> Slideshow
 splitOverlay lxsize yspace report keys (ls0, kxs0) =
@@ -90,7 +94,8 @@ splitOKX lxsize yspace rrep keys (ls0, kxs0) =
       ((lsInit, kxsInit), (header, rkxs)) =
         -- Check whether most space taken by report and keys.
         if (length $ glueLines msgRaw lX0) * 2 > yspace
-        then (msgOkx, ([intercalate  [Color.spaceAttrW32] lX0 <+:> rrep], keysX0))
+        then (msgOkx, ( [intercalate [Color.spaceAttrW32] lX0 <+:> rrep]
+                      , keysX0 ))
                -- will display "$" (unless has EOLs)
         else (([], []), msgOkx)
       renumber y (km, (y0, x1, x2)) = (km, (y0 + y, x1, x2))

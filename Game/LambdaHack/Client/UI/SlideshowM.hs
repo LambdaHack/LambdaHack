@@ -30,6 +30,7 @@ overlayToSlideshow y keys okx = do
   lidV <- viewedLevelUI
   Level{lxsize} <- getLevel lidV  -- TODO: screen length or viewLevel
   report <- getReportUI
+  recordHistory  -- report will be shown soon, remove it to history
   return $! splitOverlay lxsize y report keys okx
 
 -- | Split current report into a slideshow.

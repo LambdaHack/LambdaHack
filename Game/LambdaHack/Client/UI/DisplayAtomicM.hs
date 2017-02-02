@@ -132,7 +132,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
         -- Actor fetching an item from shared stash, most probably.
         b <- getsState $ getActorBody aid
         subject <- partActorLeader aid b
-        let ownW = ppCStoreWownW store subject
+        let ownW = ppCStoreWownW True store subject
             verb = MU.Text $ makePhrase $ "be added to" : ownW
         itemVerbMU iid kit verb c
       _ -> return ()
@@ -721,7 +721,7 @@ discover c oldCli iid = do
       bOwner <- getsState $ getActorBody aidOwner
       let name = if bproj bOwner || bfid bOwner == side
                  then []
-                 else ppCStoreWownW storeOwner (partActor bOwner)
+                 else ppCStoreWownW True storeOwner (partActor bOwner)
       return (bfid bOwner == side && storeOwner == COrgan, name)
     _ -> return (False, [])
   let kit = EM.findWithDefault (1, []) iid bag

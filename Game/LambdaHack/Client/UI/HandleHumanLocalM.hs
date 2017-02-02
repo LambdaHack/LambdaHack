@@ -560,7 +560,8 @@ historyHuman = do
               tR : _ -> tR
             ov0 = splitReportForHistory lxsize timeReport
             prompt = textToAL $ makeSentence
-              ["the", MU.Ordinal $ histSlot + 1, "record of all history follows"]
+              [ "the", MU.Ordinal $ histSlot + 1
+              , "record of all history follows" ]
         promptAddAttr prompt
         slides <-
           overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] (ov0, [])

@@ -977,15 +977,23 @@ itemMenuHuman cmdAction = do
                             `blame` (iid, leader)) ()
               fAlt (aid, (_, store)) = aid /= leader || store /= fromCStore
               foundAlt = filter fAlt found
-              ppLoc (b2, store) = MU.Phrase $ ppCStoreWownW store $ partActor b2
+              foundKeys = map (K.KM K.NoModifier . K.Fun)
+                              [1 .. length foundAlt]  -- starting from 1!
+              ppLoc (b2, store) =
+                let phr = makePhrase $ ppCStoreWownW False store $ partActor b2
+                in "[" ++ T.unpack phr ++ "]"
               foundTexts = map (ppLoc . snd) foundAlt
               -- TODO: deduplicate parts of the result sentence.
-              foundText =
-                if null foundTexts then ""
-                else makeSentence ["The object is also", MU.WWandW foundTexts]
-          let itemFull = itemToF iid kit
-              attrLine = itemDesc (aHurtMelee ar) fromCStore localTime itemFull
-              ov = splitAttrLine lxsize $ attrLine <+:> textToAL foundText
+              foundPrefix = textToAL $
+                if null foundTexts then "" else "The object is also in:"
+              itemFull = itemToF iid kit
+              desc = itemDesc (aHurtMelee ar) fromCStore localTime itemFull
+              alPrefix = splitAttrLine lxsize $ desc <+:> foundPrefix
+              ystart = length alPrefix - 1
+              xstart = length (last alPrefix) + 1
+              ks = zip foundKeys $ map (ppLoc . snd) foundAlt
+              (ovFoundRaw, kxsFound) = wrapOKX ystart xstart lxsize ks
+              ovFound = glueLines alPrefix ovFoundRaw
           report <- getReportUI
           keyb <- getsSession sbinding
           let calmE = calmEnough b ar
@@ -998,7 +1006,7 @@ itemMenuHuman cmdAction = do
               fmt n k h = " " <> T.justifyLeft n ' ' k <+> h
               keyL = 11
               keyCaption = fmt keyL "keys" "command"
-              offset = 1 + length ov
+              offset = 1 + length ovFound
               (ov0, kxs0) = okxsN keyb offset keyL greyedOut
                                   HumanCmd.CmdItemMenu [keyCaption] []
               t0 = makeSentence [ MU.SubjectVerbSg (partActor b) "choose"
@@ -1006,15 +1014,29 @@ itemMenuHuman cmdAction = do
               al1 = renderReport report <+:> textToAL t0
               splitHelp (al, okx) =
                 splitOKX lxsize (lysize + 1) al [K.spaceKM, K.escKM] okx
-              sli = toSlideshow $ splitHelp (al1, (ov ++ ov0, kxs0))
-              ix = 1 + 1  -- TODO: length found
+              sli = toSlideshow
+                    $ splitHelp (al1, (ovFound ++ ov0, kxsFound ++ kxs0))
+              ix = 2 + length foundKeys
+              extraKeys = [K.spaceKM, K.escKM] ++ foundKeys
           recordHistory  -- report shown, remove it to history
-          (ekm, _) <-
-            displayChoiceScreen ColorFull False ix sli [K.spaceKM, K.escKM]
+          (ekm, _) <- displayChoiceScreen ColorFull False ix sli extraKeys
           case ekm of
             Left km -> case km `M.lookup` bcmdMap keyb of
               _ | km == K.escKM -> weaveJust <$> failWith "never mind"
               _ | km == K.spaceKM -> return $ Left Nothing
+              _ | km `elem` foundKeys -> case km of
+                K.KM{key=K.Fun n} -> do
+                  let (newAid, (bNew, newCStore)) = foundAlt !! (n - 1)
+                  fact <- getsState $ (EM.! bfid bNew) . sfactionD
+                  let (autoDun, _) = autoDungeonLevel fact
+                  if | blid bNew /= blid b && autoDun ->
+                       weaveJust <$> failSer NoChangeDunLeader
+                     | otherwise -> do
+                       void $ pickLeader True newAid
+                       modifySession $ \sess ->
+                         sess {sitemSel = Just (newCStore, iid)}
+                       itemMenuHuman cmdAction
+                _ -> assert `failure` km
               Just (_desc, _cats, cmd) -> cmdAction cmd
               Nothing -> weaveJust <$> failWith "never mind"
             Right _slot -> assert `failure` ekm

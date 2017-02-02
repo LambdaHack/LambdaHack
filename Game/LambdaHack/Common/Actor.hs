@@ -216,13 +216,14 @@ ppCStore CSha = ("in", "shared stash")
 ppCStoreIn :: CStore -> Text
 ppCStoreIn c = let (tIn, t) = ppCStore c in tIn <+> t
 
-ppCStoreWownW :: CStore -> MU.Part -> [MU.Part]
-ppCStoreWownW store owner =
+ppCStoreWownW :: Bool -> CStore -> MU.Part -> [MU.Part]
+ppCStoreWownW addPrepositions store owner =
   let (preposition, noun) = ppCStore store
-  in case store of
-    CGround -> [MU.Text preposition, MU.Text noun, "under", owner]
-    CSha -> [MU.Text preposition, MU.Text noun]
-    _ -> [MU.Text preposition, MU.WownW owner (MU.Text noun) ]
+      prep = [MU.Text preposition | addPrepositions]
+  in prep ++ case store of
+    CGround -> [MU.Text noun, "under", owner]
+    CSha -> [MU.Text noun]
+    _ -> [MU.WownW owner (MU.Text noun) ]
 
 verbCStore :: CStore -> Text
 verbCStore CGround = "drop"
