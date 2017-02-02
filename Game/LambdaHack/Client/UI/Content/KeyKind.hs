@@ -5,8 +5,7 @@ module Game.LambdaHack.Client.UI.Content.KeyKind
   , mouseLMB, mouseMMB, mouseRMB
   , goToCmd, runToAllCmd, autoexploreCmd, autoexplore25Cmd
   , aimFlingCmd, projectI, projectA, flingTs, applyI
-  , exploreGrabCmd, grabItems, exploreDropCmd, dropItems
-  , descTs, defaultHeroSelect
+  , grabItems, dropItems, descTs, defaultHeroSelect
   ) where
 
 import Prelude ()
@@ -59,7 +58,7 @@ mouseLMB =
   , "set aiming crosshair/go to pointer for 25 steps"
   , ByAimMode
       { exploration = ByArea $ common ++  -- exploration mode
-          [ (CaMapLeader, exploreGrabCmd)
+          [ (CaMapLeader, grabCmd)
           , (CaMapParty, PickLeaderWithPointer)
           , (CaMap, goToCmd)
           , (CaLevelNumber, AimAscend 1)
@@ -90,7 +89,7 @@ mouseRMB =
   , "set leader target/run to pointer collectively for 25 steps"
   , ByAimMode
       { exploration = ByArea $ common ++
-          [ (CaMapLeader, exploreDropCmd)
+          [ (CaMapLeader, dropCmd)
           , (CaMapParty, SelectWithPointer)
           , (CaMap, runToAllCmd)
           , (CaLevelNumber, AimAscend (-1))
@@ -148,17 +147,17 @@ applyI ts = ([CmdItem], descTs ts, ByItemMode
   { notChosen = ComposeUnlessError (ChooseItemApply ts) (Apply ts)
   , chosen = Apply ts })
 
-exploreGrabCmd :: HumanCmd
-exploreGrabCmd = MoveItem [CGround] CEqp (Just "grab") True
+grabCmd :: HumanCmd
+grabCmd = MoveItem [CGround] CEqp (Just "grab") True
 
 grabItems :: Text -> CmdTriple
-grabItems t = ([CmdMove, CmdItem], t, exploreGrabCmd)
+grabItems t = ([CmdMove, CmdItem], t, grabCmd)
 
-exploreDropCmd :: HumanCmd
-exploreDropCmd = MoveItem [CEqp, CInv, CSha] CGround Nothing False
+dropCmd :: HumanCmd
+dropCmd = MoveItem [CEqp, CInv, CSha] CGround Nothing False
 
 dropItems :: Text -> CmdTriple
-dropItems t = ([CmdMove, CmdItem], t, exploreDropCmd)
+dropItems t = ([CmdMove, CmdItem], t, dropCmd)
 
 descTs :: [Trigger] -> Text
 descTs [] = "trigger a thing"
