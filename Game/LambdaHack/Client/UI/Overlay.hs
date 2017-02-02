@@ -91,10 +91,14 @@ itemDesc :: Int -> CStore -> Time -> ItemFull -> AttrLine
 itemDesc aHurtMeleeOfOwner store localTime itemFull@ItemFull{itemBase} =
   let (_, _, name, stats) = partItemHigh store localTime itemFull
       nstats = makePhrase [name, stats]
-      IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemBase
+      IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = strengthToThrow itemBase
       speed = speedFromWeight (jweight itemBase) throwVelocity
+      range = rangeFromSpeedAndLinger speed throwLinger
       tspeed = "When thrown, it flies with speed of"
-               <+> tshow (fromSpeed speed `divUp` 10) <+> "m/s."
+               <+> tshow (fromSpeed speed `divUp` 10)
+               <> if throwLinger /= 100
+                  then " m/s and range" <+> tshow range <+> "m."
+                  else " m/s."
       (desc, featureSentences, damageAnalysis) = case itemDisco itemFull of
         Nothing -> ("This item is as unremarkable as can be.", "", tspeed)
         Just ItemDisco{itemKind, itemAspect} ->

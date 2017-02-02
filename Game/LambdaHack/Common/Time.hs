@@ -10,7 +10,7 @@ module Game.LambdaHack.Common.Time
   , Speed, toSpeed, fromSpeed
   , speedZero, speedWalk, speedThrust, modifyDamageBySpeed
   , speedScale, timeDeltaDiv, speedAdd, speedNegate
-  , speedFromWeight, rangeFromSpeed, rangeFromSpeedAndLinger
+  , speedFromWeight, rangeFromSpeedAndLinger
   ) where
 
 import Prelude ()
