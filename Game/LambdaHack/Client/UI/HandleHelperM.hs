@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   ( MError, FailOrCmd
   , failError  -- TODO: remove
   , showFailError, mergeMError, failWith, failSer, failMsg, weaveJust
-  , memberCycle, memberBack, partyAfterLeader, pickLeader
+  , memberCycle, memberBack, partyAfterLeader, pickLeader, pickLeaderWithPointer
   , itemIsFound, itemOverlay, statsOverlay, pickNumber
   ) where
 
@@ -34,6 +34,7 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
+import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
@@ -146,6 +147,36 @@ pickLeader verbose aid = do
       lookMsg <- lookAt False "" True (bpos pbody) aid ""
       when verbose $ msgAdd lookMsg
       return True
+
+pickLeaderWithPointer :: MonadClientUI m => m MError
+{-# INLINABLE pickLeaderWithPointer #-}
+pickLeaderWithPointer = do
+  lidV <- viewedLevelUI
+  Level{lysize} <- getLevel lidV
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  arena <- getArenaUI
+  ours <- getsState $ filter (not . bproj . snd)
+                      . actorAssocs (== side) lidV
+  let viewed = sortBy (comparing keySelected) ours
+      (autoDun, _) = autoDungeonLevel fact
+      pick (aid, b) =
+        if | blid b /= arena && autoDun ->
+               failMsg $ showReqFailure NoChangeDunLeader
+           | otherwise -> do
+               void $ pickLeader True aid
+               return Nothing
+  Point{..} <- getsSession spointer
+  -- Pick even if no space in status line for the actor's symbol.
+  if | py == lysize + 2 && px == 0 -> memberBack True
+     | py == lysize + 2 ->
+         case drop (px - 1) viewed of
+           [] -> return Nothing  -- relaxed, due to subtleties of selected display
+           aidb : _ -> pick aidb
+     | otherwise ->
+         case find (\(_, b) -> bpos b == Point px (py - mapStartY)) ours of
+           Nothing -> failMsg "not pointing at an actor"
+           Just aidb -> pick aidb
 
 -- TODO: deduplicate parts of the result sentence.
 itemIsFound :: MonadClientUI m => ItemId -> ActorId -> CStore -> m Text

@@ -404,33 +404,7 @@ pickLeaderHuman k = do
 
 pickLeaderWithPointerHuman :: MonadClientUI m => m MError
 {-# INLINABLE pickLeaderWithPointerHuman #-}
-pickLeaderWithPointerHuman = do
-  lidV <- viewedLevelUI
-  Level{lysize} <- getLevel lidV
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
-  arena <- getArenaUI
-  ours <- getsState $ filter (not . bproj . snd)
-                      . actorAssocs (== side) lidV
-  let viewed = sortBy (comparing keySelected) ours
-      (autoDun, _) = autoDungeonLevel fact
-      pick (aid, b) =
-        if | blid b /= arena && autoDun ->
-               failMsg $ showReqFailure NoChangeDunLeader
-           | otherwise -> do
-               void $ pickLeader True aid
-               return Nothing
-  Point{..} <- getsSession spointer
-  -- Pick even if no space in status line for the actor's symbol.
-  if | py == lysize + 2 && px == 0 -> memberBackHuman
-     | py == lysize + 2 ->
-         case drop (px - 1) viewed of
-           [] -> return Nothing  -- relaxed, due to subtleties of selected display
-           aidb : _ -> pick aidb
-     | otherwise ->
-         case find (\(_, b) -> bpos b == Point px (py - mapStartY)) ours of
-           Nothing -> failMsg "not pointing at an actor"
-           Just aidb -> pick aidb
+pickLeaderWithPointerHuman = pickLeaderWithPointer
 
 -- * MemberCycle
 

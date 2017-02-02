@@ -338,6 +338,14 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                recCall numPrefix cCurUpd cRestUpd itemDialogState
            })
+        , (K.KM K.NoModifier K.LeftButtonRelease, DefItemKey
+           { defLabel = Left ""
+           , defCond = True
+           , defAction = \_ -> do
+               void $ pickLeaderWithPointer  -- error ignored; update anyway
+               (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
+               recCall numPrefix cCurUpd cRestUpd itemDialogState
+           })
         , (K.escKM, DefItemKey
            { defLabel = Right K.escKM
            , defCond = True
