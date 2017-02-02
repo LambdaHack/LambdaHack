@@ -36,23 +36,26 @@ unsnoc Slideshow{slideshow} =
     okx : rest -> Just (Slideshow $ reverse rest, okx)
 
 toSlideshow :: [OKX] -> Slideshow
-toSlideshow okxs = Slideshow $ addFooters okxs
+toSlideshow okxs = Slideshow $ addFooters False okxs
  where
-  addFooters [] = assert `failure` okxs
-  addFooters [(als, [])] =
+  addFooters _ [] = assert `failure` okxs
+  addFooters _ [(als, [])] =
     [( als ++ [stringToAL endMsg]
-     , [(Left [K.safeSpaceKM], (length als, 0, 8))] )]
-  addFooters [(als, kxs)] = [(als, kxs)]
-  addFooters ((als, kxs) : rest) =
+     , [(Left [K.safeSpaceKM], (length als, 0, 15))] )]
+  addFooters False [(als, kxs)] = [(als, kxs)]
+  addFooters True [(als, kxs)] =
+    [( als ++ [stringToAL endMsg]
+     , kxs ++ [(Left [K.safeSpaceKM], (length als, 0, 15))] )]
+  addFooters _ ((als, kxs) : rest) =
     ( als ++ [stringToAL moreMsg]
     , kxs ++ [(Left [K.safeSpaceKM], (length als, 0, 8))] )
-    : addFooters rest
+    : addFooters True rest
 
 moreMsg :: String
 moreMsg = "--more--  "
 
 endMsg :: String
-endMsg = "--end--  "
+endMsg = "--back to top--  "
 
 menuToSlideshow :: OKX -> Slideshow
 menuToSlideshow (als, kxs) =

@@ -552,7 +552,8 @@ historyHuman = do
         case ekm of
           Left km | km == K.escKM ->
             promptAdd "Try to survive a few seconds more, if you can."
-          Right SlotChar{..} | slotChar == 'a' -> displayOneReport slotPrefix
+          Right SlotChar{..} | slotChar == 'a' ->
+            displayOneReport slotPrefix
           _ -> assert `failure` ekm
       displayOneReport histSlot = do
         let timeReport = case drop histSlot rh of
