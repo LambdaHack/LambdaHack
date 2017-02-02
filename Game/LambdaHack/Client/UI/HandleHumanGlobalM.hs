@@ -972,7 +972,17 @@ itemMenuHuman cmdAction = do
           lidV <- viewedLevelUI
           Level{lxsize, lysize} <- getLevel lidV
           localTime <- getsState $ getLocalTime (blid b)
-          foundText <- itemIsFound iid leader fromCStore
+          found <- getsState $ findIid leader (bfid b) iid
+          let !_A = assert (not (null found) || fromCStore == CGround
+                            `blame` (iid, leader)) ()
+              fAlt (aid, (_, store)) = aid /= leader || store /= fromCStore
+              foundAlt = filter fAlt found
+              ppLoc (b2, store) = MU.Phrase $ ppCStoreWownW store $ partActor b2
+              foundTexts = map (ppLoc . snd) foundAlt
+              -- TODO: deduplicate parts of the result sentence.
+              foundText =
+                if null foundTexts then ""
+                else makeSentence ["The object is also", MU.WWandW foundTexts]
           let itemFull = itemToF iid kit
               attrLine = itemDesc (aHurtMelee ar) fromCStore localTime itemFull
               ov = splitAttrLine lxsize $ attrLine <+:> textToAL foundText
@@ -997,9 +1007,10 @@ itemMenuHuman cmdAction = do
               splitHelp (al, okx) =
                 splitOKX lxsize (lysize + 1) al [K.spaceKM, K.escKM] okx
               sli = toSlideshow $ splitHelp (al1, (ov ++ ov0, kxs0))
+              ix = 1 + 1  -- TODO: length found
           recordHistory  -- report shown, remove it to history
           (ekm, _) <-
-            displayChoiceScreen ColorFull False 2 sli [K.spaceKM, K.escKM]
+            displayChoiceScreen ColorFull False ix sli [K.spaceKM, K.escKM]
           case ekm of
             Left km -> case km `M.lookup` bcmdMap keyb of
               _ | km == K.escKM -> weaveJust <$> failWith "never mind"

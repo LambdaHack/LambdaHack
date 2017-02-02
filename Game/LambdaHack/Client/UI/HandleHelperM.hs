@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , failError  -- TODO: remove
   , showFailError, mergeMError, failWith, failSer, failMsg, weaveJust
   , memberCycle, memberBack, partyAfterLeader, pickLeader, pickLeaderWithPointer
-  , itemIsFound, itemOverlay, statsOverlay, pickNumber
+  , itemOverlay, statsOverlay, pickNumber
   ) where
 
 import Prelude ()
@@ -177,20 +177,6 @@ pickLeaderWithPointer = do
          case find (\(_, b) -> bpos b == Point px (py - mapStartY)) ours of
            Nothing -> failMsg "not pointing at an actor"
            Just aidb -> pick aidb
-
--- TODO: deduplicate parts of the result sentence.
-itemIsFound :: MonadClientUI m => ItemId -> ActorId -> CStore -> m Text
-{-# INLINABLE itemIsFound #-}
-itemIsFound iid leader storeLeader = do
-  b <- getsState $ getActorBody leader
-  found <- getsState $ findIid leader (bfid b) iid
-  let !_A = assert (not (null found) || storeLeader == CGround
-                    `blame` (iid, leader)) ()
-      ppLoc (b2, store) = MU.Phrase $ ppCStoreWownW store $ partActor b2
-      notObvious (aid, (_, store)) = aid /= leader || store /= storeLeader
-      foundTexts = map (ppLoc . snd) $ filter notObvious found
-  return $! if null foundTexts then ""
-            else makeSentence ["The object is also", MU.WWandW foundTexts]
 
 -- | Create a list of item names.
 itemOverlay :: MonadClient m => CStore -> LevelId -> ItemBag -> m OKX

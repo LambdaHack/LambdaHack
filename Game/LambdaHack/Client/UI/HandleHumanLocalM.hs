@@ -176,9 +176,8 @@ chooseItemDialogMode c = do
           lidV <- viewedLevelUI
           Level{lxsize, lysize} <- getLevel lidV
           localTime <- getsState $ getLocalTime (blid b)
-          foundText <- itemIsFound iid leader COrgan
           let attrLine = itemDesc (aHurtMelee ar) COrgan localTime itemFull
-              ov = splitAttrLine lxsize $ attrLine <+:> textToAL foundText
+              ov = splitAttrLine lxsize attrLine
           slides <-
             overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] (ov, [])
           km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
