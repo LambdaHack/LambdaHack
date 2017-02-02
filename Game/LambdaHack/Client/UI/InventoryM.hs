@@ -340,7 +340,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
            })
         , (K.KM K.NoModifier K.LeftButtonRelease, DefItemKey
            { defLabel = Left ""
-           , defCond = True
+           , defCond = not (cCur == MOwned || null hs)
            , defAction = \_ -> do
                void $ pickLeaderWithPointer  -- error ignored; update anyway
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
