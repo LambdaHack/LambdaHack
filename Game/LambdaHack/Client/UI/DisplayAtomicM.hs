@@ -920,6 +920,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Unique -> assert `failure` sfx
         IK.Periodic -> assert `failure` sfx
   SfxMsgFid _ msg -> msgAdd msg
+  SfxMsgAll "SortSlots" -> sortSlots
   SfxMsgAll msg -> msgAdd msg
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()

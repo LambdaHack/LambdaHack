@@ -87,6 +87,7 @@ reinitGame = do
   populateDungeon
   mapM_ (\fid -> mapM_ (\lid -> updatePer fid lid) (EM.keys dungeon))
         (EM.keys factionD)
+  execSfxAtomic $ SfxMsgAll "SortSlots"  -- hack
 
 mapFromFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a
 mapFromFuns =
