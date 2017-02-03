@@ -109,7 +109,9 @@ clearHuman = do
 
 sortSlotsHuman :: MonadClientUI m => m ()
 {-# INLINABLE sortSlotsHuman #-}
-sortSlotsHuman = sortSlots
+sortSlotsHuman = do
+  sortSlots
+  promptAdd "Items sorted by kind and stats."
 
 -- * ChooseItem
 

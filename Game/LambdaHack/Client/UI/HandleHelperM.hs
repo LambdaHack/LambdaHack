@@ -14,6 +14,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
+import Data.Function
 import Data.Ord
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -77,7 +78,33 @@ weaveJust (Right a) = Right a
 
 sortSlots :: MonadClientUI m => m ()
 {-# INLINABLE sortSlots #-}
-sortSlots = undefined
+sortSlots = do
+  itemToF <- itemToFullClient
+  let itemListFromMap :: EM.EnumMap SlotChar ItemId -> [(ItemId, ItemFull)]
+      itemListFromMap em =
+        let f iid = (iid, itemToF iid (1, []))
+        in map f $ EM.elems em
+      -- If apperance the same, keep the order from before sort.
+      apperance ItemFull{itemBase} =
+        (jsymbol itemBase, jname itemBase, jflavour itemBase)
+      compareItemFull itemFull1 itemFull2 =
+        case (itemDisco itemFull1, itemDisco itemFull2) of
+          (Nothing, Nothing) -> comparing apperance itemFull1 itemFull2
+          (Nothing, Just{}) -> LT
+          (Just{}, Nothing) -> GT
+          (Just id1, Just id2) ->
+            case compare (itemKindId id1) (itemKindId id2) of
+              EQ -> comparing itemAspect id1 id2
+              ot -> ot
+      sortSlotMap :: EM.EnumMap SlotChar ItemId -> EM.EnumMap SlotChar ItemId
+      sortSlotMap em =
+        let l = itemListFromMap em
+            sortedItemIds = map fst $ sortBy (compareItemFull `on` snd) l
+            newSlots = concatMap allSlots [0..]
+        in EM.fromDistinctAscList $ zip newSlots sortedItemIds
+  ItemSlots itemSlots organSlots <- getsClient sslots
+  let newSlots = ItemSlots (sortSlotMap itemSlots) (sortSlotMap organSlots)
+  modifyClient $ \cli -> cli {sslots = newSlots}
 
 -- | Switches current member to the next on the level, if any, wrapping.
 memberCycle :: MonadClientUI m => Bool -> m MError
