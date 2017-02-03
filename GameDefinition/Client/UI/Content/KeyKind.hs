@@ -86,6 +86,7 @@ standardKeys = KeyKind
                  , AlterDir triggerClose ))
 
       -- Item use, continued
+      , ("^", ( [CmdItem], "sort items by kind and stats", SortSlots))
       , ("p", addCmdCategory CmdItemMenu
               $ moveItemTriple [CGround, CEqp, CSha] CInv
                                "item into inventory" False)

@@ -78,6 +78,7 @@ cmdAction cmd = case cmd of
   Automate -> weaveJust <$> automateHuman
 
   Clear -> addNoError clearHuman
+  SortSlots -> addNoError sortSlotsHuman
   ChooseItem dialogMode -> Left <$> chooseItemHuman dialogMode
   ChooseItemProject ts -> Left <$> chooseItemProjectHuman ts
   ChooseItemApply ts -> Left <$> chooseItemApplyHuman ts

@@ -116,6 +116,7 @@ data HumanCmd =
   | Automate
     -- Local. Below this line, commands do not notify the server.
   | Clear
+  | SortSlots
   | ChooseItem !ItemDialogMode
   | ChooseItemMenu !ItemDialogMode
   | ChooseItemProject ![Trigger]

@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   ( -- * Meta commands
     macroHuman
     -- * Local commands
-  , clearHuman, chooseItemHuman, chooseItemDialogMode
+  , clearHuman, sortSlotsHuman, chooseItemHuman, chooseItemDialogMode
   , chooseItemProjectHuman, chooseItemApplyHuman
   , psuitReq, triggerSymbols, permittedApplyClient
   , pickLeaderHuman, pickLeaderWithPointerHuman
@@ -104,6 +104,12 @@ clearHuman = do
   modifySession $ \sess -> sess {skeysHintMode =
     let n = fromEnum (skeysHintMode sess) + 1
     in toEnum $ if n > fromEnum (maxBound :: KeysHintMode) then 0 else n}
+
+-- * SortSlots
+
+sortSlotsHuman :: MonadClientUI m => m ()
+{-# INLINABLE sortSlotsHuman #-}
+sortSlotsHuman = sortSlots
 
 -- * ChooseItem
 

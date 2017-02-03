@@ -3,7 +3,8 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   ( MError, FailOrCmd
   , failError  -- TODO: remove
   , showFailError, mergeMError, failWith, failSer, failMsg, weaveJust
-  , memberCycle, memberBack, partyAfterLeader, pickLeader, pickLeaderWithPointer
+  , sortSlots, memberCycle, memberBack, partyAfterLeader
+  , pickLeader, pickLeaderWithPointer
   , itemOverlay, statsOverlay, pickNumber
   ) where
 
@@ -73,6 +74,10 @@ failMsg err = assert (not $ T.null err) $ return $ Just $ FailError err
 weaveJust :: FailOrCmd a -> Either MError a
 weaveJust (Left ferr) = Left $ Just ferr
 weaveJust (Right a) = Right a
+
+sortSlots :: MonadClientUI m => m ()
+{-# INLINABLE sortSlots #-}
+sortSlots = undefined
 
 -- | Switches current member to the next on the level, if any, wrapping.
 memberCycle :: MonadClientUI m => Bool -> m MError

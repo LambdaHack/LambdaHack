@@ -346,6 +346,14 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                recCall numPrefix cCurUpd cRestUpd itemDialogState
            })
+        , let km = revCmd (K.KM K.NoModifier $ K.Char '^') SortSlots
+          in (km, DefItemKey
+           { defLabel = Left ""
+           , defCond = True
+           , defAction = \_ -> do
+               sortSlots
+               recCall numPrefix cCur cRest itemDialogState
+           })
         , (K.escKM, DefItemKey
            { defLabel = Right K.escKM
            , defCond = True
