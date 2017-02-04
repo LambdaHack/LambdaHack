@@ -24,7 +24,7 @@ module Game.LambdaHack.Common.Perception
   , PerLid
   , PerFid
   , totalVisible, totalSmelled
-  , nullPer, addPer, diffPer
+  , emptyPer, nullPer, addPer, diffPer
   ) where
 
 import Prelude ()
@@ -75,8 +75,12 @@ totalVisible = pvisible . psight
 totalSmelled :: Perception -> ES.EnumSet Point
 totalSmelled = psmelled . psmell
 
+emptyPer :: Perception
+emptyPer = Perception { psight = PerVisible ES.empty
+                      , psmell = PerSmelled ES.empty }
+
 nullPer :: Perception -> Bool
-nullPer per = ES.null (totalVisible per) && ES.null (totalSmelled per)
+nullPer per = per == emptyPer
 
 addPer :: Perception -> Perception -> Perception
 addPer per1 per2 =

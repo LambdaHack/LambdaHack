@@ -891,6 +891,22 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
               msgAdd $ makeSentence
                 [ MU.SubjectVerbSg subject verb
                 , "an item", store ]
+        IK.Detect{} -> do
+          subject <- partActorLeader aid b
+          let verb = "perceive nearby area"
+          displayMore ColorFull $ makeSentence [MU.SubjectVerbSg subject verb]
+        IK.DetectActor{} -> do
+          subject <- partActorLeader aid b
+          let verb = "detect nearby actors"
+          displayMore ColorFull $ makeSentence [MU.SubjectVerbSg subject verb]
+        IK.DetectItem{} -> do
+          subject <- partActorLeader aid b
+          let verb = "detect nearby items"
+          displayMore ColorFull $ makeSentence [MU.SubjectVerbSg subject verb]
+        IK.DetectExit{} -> do
+          subject <- partActorLeader aid b
+          let verb = "detect nearby exits"
+          displayMore ColorFull $ makeSentence [MU.SubjectVerbSg subject verb]
         IK.SendFlying{} -> actorVerbMU aid b "be sent flying"
         IK.PushActor{} -> actorVerbMU aid b "be pushed"
         IK.PullActor{} -> actorVerbMU aid b "be pulled"

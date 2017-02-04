@@ -77,6 +77,10 @@ data Effect =
   | DropItem !CStore !(GroupName ItemKind)
   | PolyItem
   | Identify
+  | Detect !Int
+  | DetectActor !Int
+  | DetectItem !Int
+  | DetectExit !Int
   | SendFlying !ThrowMod
   | PushActor !ThrowMod
   | PullActor !ThrowMod

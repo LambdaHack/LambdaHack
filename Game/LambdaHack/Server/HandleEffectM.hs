@@ -11,6 +11,7 @@ import Game.LambdaHack.Common.Prelude
 
 import Data.Bits (xor)
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
 import Data.Key (mapWithKeyM_)
 import qualified NLP.Miniutter.English as MU
@@ -26,6 +27,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
@@ -216,6 +218,10 @@ effectSem source target iid c recharged effect = do
     IK.DropItem store grp -> effectDropItem execSfx store grp target
     IK.PolyItem -> effectPolyItem execSfx source target
     IK.Identify -> effectIdentify execSfx iid source target
+    IK.Detect radius -> effectDetect execSfx radius target
+    IK.DetectActor radius -> effectDetectActor execSfx radius target
+    IK.DetectItem radius -> effectDetectItem execSfx radius target
+    IK.DetectExit radius -> effectDetectExit execSfx radius target
     IK.SendFlying tmod ->
       effectSendFlying execSfx tmod source target Nothing
     IK.PushActor tmod ->
@@ -957,6 +963,67 @@ identifyIid execSfx iid c itemKindId = do
   item <- getsState $ getItemBody iid
   Level{ldepth} <- getLevel $ jlid item
   execUpdAtomic $ UpdDiscover c iid itemKindId seed ldepth
+
+-- ** Detect
+
+effectDetect :: (MonadAtomic m, MonadServer m)
+             => m () -> Int -> ActorId -> m Bool
+effectDetect execSfx radius target =
+  effectDetectX (const True) execSfx radius target
+
+effectDetectX :: (MonadAtomic m, MonadServer m)
+              => (Point -> Bool) -> m () -> Int -> ActorId -> m Bool
+effectDetectX f execSfx radius target = do
+  b <- getsState $ getActorBody target
+  Level{lxsize, lysize} <- getLevel $ blid b
+  sperFidOld <- getsServer sperFid
+  let perOld = sperFidOld EM.! bfid b EM.! blid b
+      Point x0 y0 = bpos b
+      perList = filter f $
+        [ Point x y
+        | y <- [max 0 (y0 - radius) .. min (lysize - 1) (y0 + radius)]
+        , x <- [max 0 (x0 - radius) .. min (lxsize - 1) (x0 + radius)]
+        ]
+      extraPer = emptyPer {psight = PerVisible $ ES.fromDistinctAscList perList}
+      inPer = diffPer extraPer perOld
+  if nullPer inPer then return False else do
+    -- Perception is modified on the server and sent to the client
+    -- together with all the revealed info. Upon the next routing
+    -- perception update, server will revert its and client state
+    -- to normal perception.
+    let perNew = addPer inPer perOld
+        fper = EM.adjust (EM.insert (blid b) perNew) (bfid b)
+    modifyServer $ \ser -> ser {sperFid = fper $ sperFid ser}
+    execSendPer (bfid b) (blid b) emptyPer inPer perNew
+    execSfx
+    return True
+
+-- ** DetectActo
+
+effectDetectActor :: (MonadAtomic m, MonadServer m)
+                  => m () -> Int -> ActorId -> m Bool
+effectDetectActor execSfx radius target = do
+  b <- getsState $ getActorBody target
+  Level{lactor} <- getLevel $ blid b
+  effectDetectX (`EM.member` lactor) execSfx radius target
+
+-- ** DetectItem
+
+effectDetectItem :: (MonadAtomic m, MonadServer m)
+                 => m () -> Int -> ActorId -> m Bool
+effectDetectItem execSfx radius target = do
+  b <- getsState $ getActorBody target
+  Level{lfloor} <- getLevel $ blid b
+  effectDetectX (`EM.member` lfloor) execSfx radius target
+
+-- ** DetectExit
+
+effectDetectExit :: (MonadAtomic m, MonadServer m)
+                 => m () -> Int -> ActorId -> m Bool
+effectDetectExit execSfx radius target = do
+  b <- getsState $ getActorBody target
+  Level{lstair=(ls1, ls2), lescape} <- getLevel $ blid b
+  effectDetectX (`elem` ls1 ++ ls2 ++ lescape) execSfx radius target
 
 -- ** SendFlying
 

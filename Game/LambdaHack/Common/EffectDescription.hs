@@ -99,6 +99,10 @@ effectToSuffix effect =
       "of" <+> "drop" <+> tshow grp  -- TMI: <+> ppCStore store
     PolyItem -> "of repurpose on the ground"
     Identify -> "of identify on the ground"
+    Detect radius -> "of radius" <+> tshow radius <+> "detection"
+    DetectActor radius -> "of radius" <+> tshow radius <+> "actor detection"
+    DetectItem radius -> "of radius" <+> tshow radius <+> "item detection"
+    DetectExit radius -> "of radius" <+> tshow radius <+> "exit detection"
     SendFlying tmod -> "of impact" <+> tmodToSuff "" tmod
     PushActor tmod -> "of pushing" <+> tmodToSuff "" tmod
     PullActor tmod -> "of pulling" <+> tmodToSuff "" tmod
