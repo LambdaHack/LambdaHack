@@ -84,10 +84,8 @@ effectToSuffix effect =
       in "of speed surge for" <+> moves
     Teleport dice | dice <= 0 ->
       assert `failure` effect
-    Teleport dice | dice <= 9 ->
-      "of blinking" <+> wrapInParens (tshow dice <+> "steps")
-    Teleport dice ->
-      "of teleport" <+> wrapInParens (tshow dice <+> "steps")
+    Teleport dice | dice <= 9 -> "of blinking" <+> wrapInParens (tshow dice)
+    Teleport dice -> "of teleport" <+> wrapInParens (tshow dice)
     CreateItem COrgan grp tim ->
       let stime = if tim == TimerNone then "" else "for" <+> tshow tim <> ":"
       in "(keep" <+> stime <+> tshow grp <> ")"
@@ -99,10 +97,10 @@ effectToSuffix effect =
       "of" <+> "drop" <+> tshow grp  -- TMI: <+> ppCStore store
     PolyItem -> "of repurpose on the ground"
     Identify -> "of identify on the ground"
-    Detect radius -> "of radius" <+> tshow radius <+> "detection"
-    DetectActor radius -> "of radius" <+> tshow radius <+> "actor detection"
-    DetectItem radius -> "of radius" <+> tshow radius <+> "item detection"
-    DetectExit radius -> "of radius" <+> tshow radius <+> "exit detection"
+    Detect radius -> "of detection" <+> wrapInParens (tshow radius)
+    DetectActor radius -> "of actor detection" <+> wrapInParens (tshow radius)
+    DetectItem radius -> "of item detection" <+> wrapInParens (tshow radius)
+    DetectExit radius -> "of exit detection" <+> wrapInParens (tshow radius)
     SendFlying tmod -> "of impact" <+> tmodToSuff "" tmod
     PushActor tmod -> "of pushing" <+> tmodToSuff "" tmod
     PullActor tmod -> "of pulling" <+> tmodToSuff "" tmod
