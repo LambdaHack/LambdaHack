@@ -189,7 +189,7 @@ loopUpd updConn = do
 -- | Handle the end of every clip. Do whatever has to be done
 -- every fixed number of time units, e.g., monster generation.
 -- Advance time. Perform periodic saves, if applicable.
-endClip :: forall m. (MonadAtomic m, MonadServerReadRequest m)
+endClip :: forall m. (MonadAtomic m, MonadServer m)
         => (FactionId -> m ()) -> m ()
 {-# INLINE endClip #-}
 endClip updatePerFid = do
@@ -458,7 +458,7 @@ gameExit = do
 --  debugPossiblyPrint "All clients killed."
   return ()
 
-restartGame :: (MonadAtomic m, MonadServerReadRequest m)
+restartGame :: (MonadAtomic m, MonadServer m)
             => m () -> m () -> Maybe (GroupName ModeKind) -> m ()
 restartGame updConn loop mgameMode = do
   cops <- getsState scops
@@ -480,7 +480,7 @@ restartGame updConn loop mgameMode = do
 -- a save (in this way checking they have permissions, enough space, etc.)
 -- and when all report back, asking them to commit the save.
 -- | Save game on server and all clients.
-writeSaveAll :: (MonadAtomic m, MonadServerReadRequest m) => Bool -> m ()
+writeSaveAll :: (MonadAtomic m, MonadServer m) => Bool -> m ()
 writeSaveAll uiRequested = do
   bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
   when (uiRequested || not bench) $ do
