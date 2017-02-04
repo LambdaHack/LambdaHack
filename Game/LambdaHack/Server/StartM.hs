@@ -1,6 +1,6 @@
 -- | Operations for starting and restarting the game.
 module Game.LambdaHack.Server.StartM
-  ( gameReset, reinitGame, initPer, recruitActors, applyDebug
+  ( gameReset, reinitGame, updatePer, initPer, recruitActors, applyDebug
   ) where
 
 import Prelude ()
@@ -32,6 +32,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
@@ -40,7 +41,6 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Server.BroadcastAtomic
 import Game.LambdaHack.Server.CommonM
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Server.Fov
@@ -85,6 +85,22 @@ reinitGame = do
   mapM_ (\fid -> mapM_ (\lid -> updatePer fid lid) (EM.keys dungeon))
         (EM.keys factionD)
   execSfxAtomic $ SfxMsgAll "SortSlots"  -- hack
+
+updatePer :: (MonadAtomic m, MonadServer m) => FactionId -> LevelId -> m ()
+{-# INLINE updatePer #-}
+updatePer fid lid = do
+  modifyServer $ \ser ->
+    ser {sperValidFid = EM.adjust (EM.insert lid True) fid $ sperValidFid ser}
+  sperFidOld <- getsServer sperFid
+  let perOld = sperFidOld EM.! fid EM.! lid
+  knowEvents <- getsServer $ sknowEvents . sdebugSer
+  -- Performed in the State after action, e.g., with a new actor.
+  perNew <- recomputeCachePer fid lid
+  let inPer = diffPer perNew perOld
+      outPer = diffPer perOld perNew
+  unless (nullPer outPer && nullPer inPer) $ do
+    unless knowEvents $  -- inconsistencies would quickly manifest
+      execSendPer fid lid outPer inPer perNew
 
 mapFromFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a
 mapFromFuns =

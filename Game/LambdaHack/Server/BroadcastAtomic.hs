@@ -2,7 +2,7 @@
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Server.BroadcastAtomic
-  ( handleAndBroadcast, updatePer, sendPer
+  ( handleAndBroadcast, sendPer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , handleCmdAtomicServer, atomicRemember
@@ -34,7 +34,6 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Server.CommonM
 import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolM
@@ -171,22 +170,6 @@ loudSfxAtomic local cmd = do
       hear (verb, adverb) = makeSentence $
         [ "you", adverb, "hear something", verb, "someone"] ++ distant
   return $! hear <$> msound
-
-updatePer :: (MonadAtomic m, MonadServer m) => FactionId -> LevelId -> m ()
-{-# INLINE updatePer #-}
-updatePer fid lid = do
-  modifyServer $ \ser ->
-    ser {sperValidFid = EM.adjust (EM.insert lid True) fid $ sperValidFid ser}
-  sperFidOld <- getsServer sperFid
-  let perOld = sperFidOld EM.! fid EM.! lid
-  knowEvents <- getsServer $ sknowEvents . sdebugSer
-  -- Performed in the State after action, e.g., with a new actor.
-  perNew <- recomputeCachePer fid lid
-  let inPer = diffPer perNew perOld
-      outPer = diffPer perOld perNew
-  unless (nullPer outPer && nullPer inPer) $ do
-    unless knowEvents $  -- inconsistencies would quickly manifest
-      execSendPer fid lid outPer inPer perNew
 
 sendPer :: MonadServerReadRequest m
         => FactionId -> LevelId
