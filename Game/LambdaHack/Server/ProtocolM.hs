@@ -6,14 +6,12 @@ module Game.LambdaHack.Server.ProtocolM
   , MonadServerReadRequest
       ( getsDict  -- exposed only to be implemented, not used
       , modifyDict  -- exposed only to be implemented, not used
-      , saveChanServer  -- exposed only to be implemented, not used
       , liftIO  -- exposed only to be implemented, not used
       )
     -- * Protocol
   , putDict, sendUpdate, sendSfx, sendQueryAI, sendQueryUI
     -- * Assorted
-  , killAllClients, childrenServer, updateConn
-  , saveServer, saveName, tryRestore
+  , killAllClients, childrenServer, updateConn, saveName, tryRestore
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
 #endif
@@ -74,13 +72,6 @@ readQueueUI requestS = liftIO $ takeMVar requestS
 newQueue :: IO (CliSerQueue a)
 newQueue = newEmptyMVar
 
-saveServer :: MonadServerReadRequest m => m ()
-saveServer = do
-  s <- getState
-  ser <- getServer
-  toSave <- saveChanServer
-  liftIO $ Save.saveToChan toSave (s, ser)
-
 saveName :: String
 saveName = serverSaveName
 
@@ -129,7 +120,6 @@ type ConnServerDict = EM.EnumMap FactionId FrozenClient
 class MonadServer m => MonadServerReadRequest m where
   getsDict     :: (ConnServerDict -> a) -> m a
   modifyDict   :: (ConnServerDict -> ConnServerDict) -> m ()
-  saveChanServer :: m (Save.ChanSave (State, StateServer))
   liftIO       :: IO a -> m a
 
 getDict :: MonadServerReadRequest m => m ConnServerDict

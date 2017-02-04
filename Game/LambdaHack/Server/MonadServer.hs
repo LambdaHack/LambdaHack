@@ -4,12 +4,14 @@
 -- details.
 module Game.LambdaHack.Server.MonadServer
   ( -- * The server monad
-    MonadServer( getsServer, modifyServer
+    MonadServer( getsServer
+               , modifyServer
+               , saveChanServer  -- exposed only to be implemented, not used
                , liftIO  -- exposed only to be implemented, not used
                )
     -- * Assorted primitives
   , getServer, putServer, debugPossiblyPrint, debugPossiblyPrintAndExit
-  , serverPrint, dumpRngs, restoreScore, registerScore
+  , serverPrint, saveServer, dumpRngs, restoreScore, registerScore
   , rndToAction, getSetGen
   ) where
 
@@ -39,6 +41,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Random
+import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
@@ -47,6 +50,7 @@ import Game.LambdaHack.Server.State
 class MonadStateRead m => MonadServer m where
   getsServer     :: (StateServer -> a) -> m a
   modifyServer   :: (StateServer -> StateServer) -> m ()
+  saveChanServer :: m (Save.ChanSave (State, StateServer))
   -- We do not provide a MonadIO instance, so that outside
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO         :: IO a -> m a
@@ -76,6 +80,13 @@ serverPrint :: MonadServer m => Text -> m ()
 serverPrint t = liftIO $ do
   T.hPutStrLn stdout t
   hFlush stdout
+
+saveServer :: MonadServer m => m ()
+saveServer = do
+  s <- getState
+  ser <- getServer
+  toSave <- saveChanServer
+  liftIO $ Save.saveToChan toSave (s, ser)
 
 -- | Dumps RNG states from the start of the game to stdout.
 dumpRngs :: MonadServer m => RNGs -> m ()

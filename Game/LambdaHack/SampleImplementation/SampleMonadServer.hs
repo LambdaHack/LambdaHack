@@ -75,6 +75,7 @@ instance MonadServer SerImplementation where
   modifyServer f = SerImplementation $ state $ \serS ->
     let !newSerServer = f $ serServer serS
     in ((), serS {serServer = newSerServer})
+  saveChanServer = SerImplementation $ gets serToSave
   liftIO         = SerImplementation . IO.liftIO
 
 instance MonadServerReadRequest SerImplementation where
@@ -84,7 +85,6 @@ instance MonadServerReadRequest SerImplementation where
   modifyDict f = SerImplementation $ state $ \serS ->
     let !newSerDict = f $ serDict serS
     in ((), serS {serDict = newSerDict})
-  saveChanServer = SerImplementation $ gets serToSave
   liftIO = SerImplementation . IO.liftIO
 
 -- | The game-state semantics of atomic commands
