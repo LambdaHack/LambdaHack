@@ -103,7 +103,9 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                 periodic = IK.Periodic `elem` IK.ieffects itemKind
                 mtimeout = find timeoutAspect aspects
                 restAs = sort aspects
-                (rawDmgEs, restEs) = partition rawDmgEffect $ sort
+                -- Effects are not sorted, because they fire in the order
+                -- specified.
+                (rawDmgEs, restEs) = partition rawDmgEffect
                                    $ filter notDetail effects
                 aes = if active
                       then map ppA restAs ++ map ppE restEs
