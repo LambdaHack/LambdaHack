@@ -301,6 +301,7 @@ flask4 = flask
 flask5 = flask
   { ieffects = [ ELabel "of PhD defense questions"
                , toOrganGameTurn "defenseless" (20 + d 5)
+               , DetectExit 20
                , OnSmash (Explode "PhD defense question") ]
   }
 flask6 = flask
@@ -320,7 +321,7 @@ flask8 = flask
   { ieffects = [ ELabel "of lethargy brew"
                , toOrganGameTurn "slow 10" (20 + d 5)
                , toOrganNone "regenerating"
-               , RefillCalm 3
+               , RefillCalm 5
                , OnSmash (Explode "slowness mist") ]
   }
 flask9 = flask
@@ -333,6 +334,7 @@ flask10 = flask
   { irarity  = [(10, 3)]
   , ieffects = [ ELabel "of smelly concoction"
                , toOrganActorTurn "keen-smelling" (40 + d 10)
+               , DetectActor 5
                , OnSmash (Explode "smelly droplet") ]
   }
 flask11 = flask
@@ -489,15 +491,16 @@ scroll1 = scroll
                , CallFriend 1, Summon standardSummon (2 + d 2) ]
   }
 scroll2 = scroll
-  { irarity  = []
-  , ieffects = []
+  { irarity  = [(1, 3)]
+  , ieffects = [ ELabel "of greed", DetectItem 10
+               , OverfillCalm (-100), Teleport 20 ]
   }
 scroll3 = scroll
   { irarity  = [(1, 5), (10, 3)]
   , ieffects = [Ascend (-1)]
   }
 scroll4 = scroll
-  { ieffects = [OneOf [ Teleport 5, RefillCalm 5, RefillCalm (-5)
+  { ieffects = [OneOf [ Teleport 5, RefillCalm 5, Detect 5
                       , InsertMove 5, Paralyze 20 ]]
   }
 scroll5 = scroll
@@ -505,7 +508,7 @@ scroll5 = scroll
   , ieffects = [ Impress
                , OneOf [ Teleport 20, Ascend (-1), Ascend 1
                        , Summon standardSummon 2, CallFriend 1
-                       , RefillCalm 5, OverfillCalm (-60)
+                       , Detect 10, OverfillCalm (-100)
                        , CreateItem CGround "useful" TimerNone ] ]
   }
 scroll6 = scroll
@@ -660,15 +663,17 @@ necklace2 = necklace
   { ifreq    = [("treasure", 100)]  -- just too nasty to call it useful
   , irarity  = [(1, 1)]
   , iaspects = [Timeout $ d 3 + 3 - dl 3 |*| 10]
-  , ieffects = [ Recharging Impress
-               , Recharging (DropItem COrgan "temporary conditions")
-               , Recharging (Summon [("mobile animal", 1)] $ 1 + dl 2)
-               , Recharging (Explode "waste") ]
+  , ieffects = [ Recharging (Summon [("mobile animal", 1)] $ 1 + dl 2)
+               , Recharging (Explode "waste")
+               , Recharging Impress
+               , Recharging (DropItem COrgan "temporary conditions") ]
                ++ ieffects necklace
   }
 necklace3 = necklace
-  { iaspects = [Timeout $ d 3 + 3 - dl 3 |*| 10]
-  , ieffects = [Recharging (Paralyze $ 10 + 2 * d 5 + 2 * dl 5)]
+  { iaspects = [Timeout $ d 3 + 4 - dl 3 |*| 5]
+  , ieffects = [ ELabel "of fearful listening"
+               , Recharging (DetectActor 10)
+               , Recharging (Paralyze $ 10 + 2 * d 5 + 2 * dl 5) ]
                ++ ieffects necklace
   }
 necklace4 = necklace
@@ -678,7 +683,9 @@ necklace4 = necklace
   }
 necklace5 = necklace
   { iaspects = [Timeout $ d 3 + 4 - dl 3 |*| 10]
-  , ieffects = [Recharging (Teleport $ 14 + d 3 * 3)]
+  , ieffects = [ ELabel "of escape"
+               , Recharging (DetectExit 20)
+               , Recharging (Teleport $ 14 + d 3 * 3) ]
                ++ ieffects necklace
   }
 necklace6 = necklace
@@ -1030,8 +1037,9 @@ swordImpress = sword
   , ifreq    = [("treasure", 20)]
   , irarity  = [(5, 1), (10, 4)]
   , iaspects = [Timeout $ d 4 + 5 - dl 4 |*| 2]
-  , ieffects = ieffects sword ++ [Unique, Recharging Impress]
-  , idesc    = "A particularly well-balance blade, lending itself to impressive shows of fencing skill."
+  , ieffects = ieffects sword
+               ++ [Unique, Recharging Impress, Recharging (DetectActor 3)]
+  , idesc    = "A particularly well-balance blade, lending itself to impressive shows of fencing skill. Master sees enemies reflected on its mirror-like surface."
   }
 swordNullify = sword
   { iname    = "Gutting Sword"
