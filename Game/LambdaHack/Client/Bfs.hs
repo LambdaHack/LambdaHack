@@ -232,7 +232,6 @@ findPathBfs lalter pathSource pathGoal sepsRaw arr@PointArray.Array{..} =
 
 -- | Access a BFS array and interpret the looked up distance value.
 accessBfs :: PointArray.Array BfsDistance -> Point -> Maybe Int
-{-# INLINABLE accessBfs #-}
 accessBfs bfs p =
   let dist = bfs PointArray.! p
   in if dist == apartBfs

@@ -58,7 +58,6 @@ import Game.LambdaHack.Content.RuleKind
 -- Assumes no interleaving with other clients, because each UI client
 -- in a different terminal/window/machine.
 clientPrintUI :: MonadClientUI m => Text -> m ()
-{-# INLINABLE clientPrintUI #-}
 clientPrintUI t = liftIO $ do
   T.hPutStrLn stdout t
   hFlush stdout
@@ -74,22 +73,18 @@ class MonadClient m => MonadClientUI m where
   liftIO        :: IO a -> m a
 
 getSession :: MonadClientUI m => m SessionUI
-{-# INLINABLE getSession #-}
 getSession = getsSession id
 
 putSession :: MonadClientUI m => SessionUI -> m ()
-{-# INLINABLE putSession #-}
 putSession s = modifySession (const s)
 
 -- | Write a UI request to the frontend and read a corresponding reply.
 connFrontend :: MonadClientUI m => FrontReq a -> m a
-{-# INLINABLE connFrontend #-}
 connFrontend req = do
   ChanFrontend f <- getsSession schanF
   liftIO $ f req
 
 displayFrame :: MonadClientUI m => Maybe FrameForall -> m ()
-{-# INLINABLE displayFrame #-}
 displayFrame mf = do
   frame <- case mf of
     Nothing -> return $! FrontDelay 1
@@ -101,7 +96,6 @@ displayFrame mf = do
 -- | Push frames or delays to the frame queue. The frames depict
 -- the @lid@ level.
 displayFrames :: MonadClientUI m => LevelId -> Frames -> m ()
-{-# INLINABLE displayFrames #-}
 displayFrames lid frs = do
   mapM_ displayFrame frs
   -- Can be different than @blid b@, e.g., when our actor is attacked
@@ -113,43 +107,34 @@ displayFrames lid frs = do
 -- | Write 'FrontKey' UI request to the frontend, read the reply,
 -- set pointer, return key.
 connFrontendFrontKey :: MonadClientUI m => [K.KM] -> FrameForall -> m K.KM
-{-# INLINABLE connFrontendFrontKey #-}
 connFrontendFrontKey frontKeyKeys frontKeyFrame = do
   kmp <- connFrontend $ FrontKey{..}
   modifySession $ \sess -> sess {spointer = kmpPointer kmp}
   return $! kmpKeyMod kmp
 
 setFrontAutoYes :: MonadClientUI m => Bool -> m ()
-{-# INLINABLE setFrontAutoYes #-}
 setFrontAutoYes b = connFrontend $ FrontAutoYes b
 
 anyKeyPressed :: MonadClientUI m => m Bool
-{-# INLINABLE anyKeyPressed #-}
 anyKeyPressed = connFrontend FrontPressed
 
 discardPressedKey :: MonadClientUI m => m ()
-{-# INLINABLE discardPressedKey #-}
 discardPressedKey = connFrontend FrontDiscard
 
 addPressedKey :: MonadClientUI m => KMP -> m ()
-{-# INLINABLE addPressedKey #-}
 addPressedKey = connFrontend . FrontAdd
 
 addPressedEsc :: MonadClientUI m => m ()
-{-# INLINABLE addPressedEsc #-}
 addPressedEsc = addPressedKey$ KMP { kmpKeyMod = K.escKM
                                    , kmpPointer = originPoint }
 
 frontendShutdown :: MonadClientUI m => m ()
-{-# INLINABLE frontendShutdown #-}
 frontendShutdown = connFrontend FrontShutdown
 
 chanFrontend :: MonadClientUI m => DebugModeCli -> m ChanFrontend
-{-# INLINABLE chanFrontend #-}
 chanFrontend = liftIO . Frontend.chanFrontendIO
 
 getReportUI :: MonadClientUI m => m Report
-{-# INLINABLE getReportUI #-}
 getReportUI = do
   report <- getsSession _sreport
   side <- getsClient sside
@@ -159,7 +144,6 @@ getReportUI = do
   return $! if underAI then consReportNoScrub promptAI report else report
 
 getLeaderUI :: MonadClientUI m => m ActorId
-{-# INLINABLE getLeaderUI #-}
 getLeaderUI = do
   cli <- getClient
   case _sleader cli of
@@ -167,7 +151,6 @@ getLeaderUI = do
     Just leader -> return leader
 
 getArenaUI :: MonadClientUI m => m LevelId
-{-# INLINABLE getArenaUI #-}
 getArenaUI = do
   let fallback = do
         side <- getsClient sside
@@ -187,14 +170,12 @@ getArenaUI = do
     Nothing -> fallback
 
 viewedLevelUI :: MonadClientUI m => m LevelId
-{-# INLINABLE viewedLevelUI #-}
 viewedLevelUI = do
   arena <- getArenaUI
   saimMode <- getsSession saimMode
   return $! maybe arena aimLevelId saimMode
 
 leaderTgtToPos :: MonadClientUI m => m (Maybe Point)
-{-# INLINABLE leaderTgtToPos #-}
 leaderTgtToPos = do
   lidV <- viewedLevelUI
   mleader <- getsClient _sleader
@@ -205,7 +186,6 @@ leaderTgtToPos = do
       aidTgtToPos aid lidV tgt
 
 leaderTgtAims :: MonadClientUI m => m (Either Text Int)
-{-# INLINABLE leaderTgtAims #-}
 leaderTgtAims = do
   lidV <- viewedLevelUI
   mleader <- getsClient _sleader
@@ -216,7 +196,6 @@ leaderTgtAims = do
       aidTgtAims aid lidV tgt
 
 xhairToPos :: MonadClientUI m => m (Maybe Point)
-{-# INLINABLE xhairToPos #-}
 xhairToPos = do
   lidV <- viewedLevelUI
   mleader <- getsClient _sleader
@@ -226,7 +205,6 @@ xhairToPos = do
     Just aid -> aidTgtToPos aid lidV $ Just sxhair
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
-{-# INLINABLE scoreToSlideshow #-}
 scoreToSlideshow total status = do
   lidV <- viewedLevelUI
   Level{lxsize, lysize} <- getLevel lidV
@@ -270,7 +248,6 @@ scoreToSlideshow total status = do
             else emptySlideshow
 
 defaultHistory :: MonadClientUI m => Int -> m History
-{-# INLINABLE defaultHistory #-}
 defaultHistory configHistoryMax = liftIO $ do
   utcTime <- getCurrentTime
   timezone <- getTimeZone utcTime
@@ -281,7 +258,6 @@ defaultHistory configHistoryMax = liftIO $ do
          $ "Human history log started on " ++ curDate ++ "."
 
 tellAllClipPS :: MonadClientUI m => m ()
-{-# INLINABLE tellAllClipPS #-}
 tellAllClipPS = do
   bench <- getsClient $ sbenchmark . sdebugCli
   when bench $ do
@@ -303,7 +279,6 @@ tellAllClipPS = do
 
 -- TODO: dedup
 tellGameClipPS :: MonadClientUI m => m ()
-{-# INLINABLE tellGameClipPS #-}
 tellGameClipPS = do
   bench <- getsClient $ sbenchmark . sdebugCli
   when bench $ do
@@ -323,21 +298,18 @@ tellGameClipPS = do
         <+> "Average FPS:" <+> tshow fps <> "."
 
 elapsedSessionTimeGT :: MonadClientUI m => Int -> m Bool
-{-# INLINABLE elapsedSessionTimeGT #-}
 elapsedSessionTimeGT stopAfter = do
   current <- liftIO getPOSIXTime
   sstartPOSIX <- getsSession sstart
   return $! fromIntegral stopAfter + sstartPOSIX <= current
 
 resetSessionStart :: MonadClientUI m => m ()
-{-# INLINABLE resetSessionStart #-}
 resetSessionStart = do
   sstart <- liftIO getPOSIXTime
   modifySession $ \sess -> sess {sstart}
   resetGameStart
 
 resetGameStart :: MonadClientUI m => m ()
-{-# INLINABLE resetGameStart #-}
 resetGameStart = do
   sgstart <- liftIO getPOSIXTime
   time <- getsState stime
@@ -349,7 +321,6 @@ resetGameStart = do
         , sallNframes = sallNframes cli + nframes }
 
 tryRestore :: MonadClientUI m => m (Maybe (State, StateClient, Maybe SessionUI))
-{-# INLINABLE tryRestore #-}
 tryRestore = do
   bench <- getsClient $ sbenchmark . sdebugCli
   if bench then return Nothing

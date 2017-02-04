@@ -52,15 +52,12 @@ class MonadStateRead m => MonadServer m where
   liftIO         :: IO a -> m a
 
 getServer :: MonadServer m => m StateServer
-{-# INLINABLE getServer #-}
 getServer = getsServer id
 
 putServer :: MonadServer m => StateServer -> m ()
-{-# INLINABLE putServer #-}
 putServer s = modifyServer (const s)
 
 debugPossiblyPrint :: MonadServer m => Text -> m ()
-{-# INLINABLE debugPossiblyPrint #-}
 debugPossiblyPrint t = do
   debug <- getsServer $ sdbgMsgSer . sdebugSer
   when debug $ liftIO $ do
@@ -68,7 +65,6 @@ debugPossiblyPrint t = do
     hFlush stdout
 
 debugPossiblyPrintAndExit :: MonadServer m => Text -> m ()
-{-# INLINABLE debugPossiblyPrintAndExit #-}
 debugPossiblyPrintAndExit t = do
   debug <- getsServer $ sdbgMsgSer . sdebugSer
   when debug $ liftIO $ do
@@ -77,14 +73,12 @@ debugPossiblyPrintAndExit t = do
     exitFailure
 
 serverPrint :: MonadServer m => Text -> m ()
-{-# INLINABLE serverPrint #-}
 serverPrint t = liftIO $ do
   T.hPutStrLn stdout t
   hFlush stdout
 
 -- | Dumps RNG states from the start of the game to stdout.
 dumpRngs :: MonadServer m => RNGs -> m ()
-{-# INLINABLE dumpRngs #-}
 dumpRngs rngs = do
   liftIO $ do
     T.hPutStrLn stdout $ tshow rngs
@@ -93,7 +87,6 @@ dumpRngs rngs = do
 -- TODO: refactor wrt Game.LambdaHack.Common.Save
 -- | Read the high scores dictionary. Return the empty table if no file.
 restoreScore :: forall m. MonadServer m => Kind.COps -> m HighScore.ScoreDict
-{-# INLINABLE restoreScore #-}
 restoreScore Kind.COps{corule} = do
   bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
   mscore <- if bench then return Nothing else do
@@ -118,7 +111,6 @@ restoreScore Kind.COps{corule} = do
 
 -- | Generate a new score, register it and save.
 registerScore :: MonadServer m => Status -> FactionId -> m ()
-{-# INLINABLE registerScore #-}
 registerScore status fid = do
   cops@Kind.COps{corule} <- getsState scops
   fact <- getsState $ (EM.! fid) . sfactionD
@@ -164,7 +156,6 @@ registerScore status fid = do
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadServer m => Rnd a -> m a
-{-# INLINABLE rndToAction #-}
 rndToAction r = do
   gen <- getsServer srandom
   let (gen1, gen2) = R.split gen
@@ -176,7 +167,6 @@ rndToAction r = do
 getSetGen :: MonadServer m
           => Maybe R.StdGen
           -> m R.StdGen
-{-# INLINABLE getSetGen #-}
 getSetGen mrng = case mrng of
   Just rnd -> return rnd
   Nothing -> liftIO R.newStdGen

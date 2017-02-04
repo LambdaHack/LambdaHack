@@ -51,7 +51,6 @@ import Game.LambdaHack.Server.ProtocolM
 import Game.LambdaHack.Server.State
 
 initPer :: MonadServer m => m ()
-{-# INLINABLE initPer #-}
 initPer = do
   discoAspect <- getsServer sdiscoAspect
   ( sactorAspect, sfovLitLid, sfovClearLid, sfovLucidLid
@@ -62,7 +61,6 @@ initPer = do
         , sperValidFid, sperCacheFid, sperFid }
 
 reinitGame :: (MonadAtomic m, MonadServerReadRequest m) => m ()
-{-# INLINABLE reinitGame #-}
 reinitGame = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   pers <- getsServer sperFid
@@ -99,7 +97,6 @@ mapFromFuns =
 
 resetFactions :: FactionDict -> Kind.Id ModeKind -> Int -> AbsDepth -> Roster
               -> Rnd FactionDict
-{-# INLINABLE resetFactions #-}
 resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
   let rawCreate Player{..} = do
         entryLevel <- castDice (AbsDepth 0) (AbsDepth 0) fentryLevel
@@ -171,7 +168,6 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
 gameReset :: MonadServer m
           => Kind.COps -> DebugModeSer -> Maybe (GroupName ModeKind)
           -> Maybe R.StdGen -> m State
-{-# INLINABLE gameReset #-}
 gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
           sdebug mGameMode mrandom = do
   dungeonSeed <- getSetGen $ sdungeonRng sdebug `mplus` mrandom
@@ -227,7 +223,6 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
 
 -- Spawn initial actors. Clients should notice this, to set their leaders.
 populateDungeon :: (MonadAtomic m, MonadServer m) => m ()
-{-# INLINABLE populateDungeon #-}
 populateDungeon = do
   cops@Kind.COps{coTileSpeedup} <- getsState scops
   placeItemsInDungeon
@@ -298,7 +293,6 @@ populateDungeon = do
 recruitActors :: (MonadAtomic m, MonadServer m)
               => GroupName ItemKind -> [Point] -> LevelId -> Time -> FactionId
               -> m Bool
-{-# INLINABLE recruitActors #-}
 recruitActors actorGroup ps lid time fid = do
   fact <- getsState $ (EM.! fid) . sfactionD
   laid <- forM ps $ \ p ->
@@ -317,7 +311,6 @@ recruitActors actorGroup ps lid time fid = do
 addMonster :: (MonadAtomic m, MonadServer m)
            => GroupName ItemKind -> FactionId -> Point -> LevelId -> Time
            -> m (Maybe ActorId)
-{-# INLINABLE addMonster #-}
 addMonster groupName bfid ppos lid time = do
   fact <- getsState $ (EM.! bfid) . sfactionD
   pronoun <- if fhasGender $ gplayer fact
@@ -330,7 +323,6 @@ addHero :: (MonadAtomic m, MonadServer m)
         => GroupName ItemKind -> FactionId -> Point -> LevelId
         -> [(Int, (Text, Text))]-> Maybe Int -> Time
         -> m (Maybe ActorId)
-{-# INLINABLE addHero #-}
 addHero actorGroup bfid ppos lid heroNames mNumber time = do
   Faction{gcolor, gplayer} <- getsState $ (EM.! bfid) . sfactionD
   mhs <- mapM (getsState . tryFindHeroK bfid) [0..9]
@@ -354,7 +346,6 @@ addHero actorGroup bfid ppos lid heroNames mNumber time = do
 -- factions over escapes (we assume they are guardians of the escapes).
 -- This implies the inital factions (if any) start far from escapes.
 findEntryPoss :: Kind.COps -> LevelId -> Level -> Int -> Rnd [Point]
-{-# INLINABLE findEntryPoss #-}
 findEntryPoss Kind.COps{coTileSpeedup}
               lid Level{ltile, lxsize, lysize, lstair, lescape} k = do
   let factionDist = max lxsize lysize - 10
@@ -390,7 +381,6 @@ findEntryPoss Kind.COps{coTileSpeedup}
 
 -- | Apply debug options that don't need a new game.
 applyDebug :: MonadServer m => m ()
-{-# INLINABLE applyDebug #-}
 applyDebug = do
   DebugModeSer{..} <- getsServer sdebugNxt
   modifyServer $ \ser ->

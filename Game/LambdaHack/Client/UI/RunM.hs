@@ -43,7 +43,6 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 continueRun :: MonadClientUI m
             => LevelId -> RunParams
             -> m (Either Text RequestAnyAbility)
-{-# INLINABLE continueRun #-}
 continueRun arena paramOld = case paramOld of
   RunParams{ runMembers = []
            , runStopMsg = Just stopMsg } -> return $ Left stopMsg
@@ -103,7 +102,6 @@ continueRun arena paramOld = case paramOld of
 -- to mark the item position as a goal of the next goto.
 continueRunDir :: MonadClientUI m
                => RunParams -> m (Either Text Vector)
-{-# INLINABLE continueRunDir #-}
 continueRunDir params = case params of
   RunParams{ runMembers = [] } -> assert `failure` params
   RunParams{ runLeader
@@ -155,7 +153,6 @@ continueRunDir params = case params of
 
 tryTurning :: MonadClient m
            => ActorId -> m (Either Text Vector)
-{-# INLINABLE tryTurning #-}
 tryTurning aid = do
   cops@Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
@@ -183,7 +180,6 @@ tryTurning aid = do
 -- and the same if from @continueRunDir@.
 checkAndRun :: MonadClient m
             => ActorId -> Vector -> m (Either Text Vector)
-{-# INLINABLE checkAndRun #-}
 checkAndRun aid dir = do
   Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   body <- getsState $ getActorBody aid

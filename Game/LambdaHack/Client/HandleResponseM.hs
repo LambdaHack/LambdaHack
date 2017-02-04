@@ -30,7 +30,6 @@ handleResponse :: ( MonadClientSetup m
                   , MonadAtomic m
                   , MonadClientWriteRequest m )
                => Response -> m ()
-{-# INLINABLE handleResponse #-}
 handleResponse cmd = case cmd of
   RespUpdAtomic cmdA -> do
     hasUI <- clientHasUI

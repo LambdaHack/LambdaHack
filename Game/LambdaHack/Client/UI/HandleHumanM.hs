@@ -20,7 +20,6 @@ import Game.LambdaHack.Common.Request
 -- invoked in aiming mode on a remote level (level different than
 -- the level of the leader).
 cmdHumanSem :: MonadClientUI m => HumanCmd -> m (Either MError ReqUI)
-{-# INLINABLE cmdHumanSem #-}
 cmdHumanSem cmd =
   if noRemoteHumanCmd cmd then do
     -- If in aiming mode, check if the current level is the same
@@ -35,7 +34,6 @@ cmdHumanSem cmd =
 
 -- | Compute the basic action for a command and mark whether it takes time.
 cmdAction :: MonadClientUI m => HumanCmd -> m (Either MError ReqUI)
-{-# INLINABLE cmdAction #-}
 cmdAction cmd = case cmd of
   Macro kms -> addNoError $ macroHuman kms
   ByArea l -> byAreaHuman cmdAction l
@@ -115,5 +113,4 @@ cmdAction cmd = case cmd of
   AimPointerEnemy -> addNoError aimPointerEnemyHuman
 
 addNoError :: Monad m => m () -> m (Either MError ReqUI)
-{-# INLINABLE addNoError #-}
 addNoError cmdCli = cmdCli >> return (Left Nothing)

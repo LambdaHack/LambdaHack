@@ -48,7 +48,6 @@ import Game.LambdaHack.Server.State
 
 applyItem :: (MonadAtomic m, MonadServer m)
           => ActorId -> ItemId -> CStore -> m ()
-{-# INLINABLE applyItem #-}
 applyItem aid iid cstore = do
   execSfxAtomic $ SfxApply aid iid cstore
   let c = CActor aid cstore
@@ -57,7 +56,6 @@ applyItem aid iid cstore = do
 itemEffectAndDestroy :: (MonadAtomic m, MonadServer m)
                      => ActorId -> ActorId -> ItemId -> Container
                      -> m ()
-{-# INLINABLE itemEffectAndDestroy #-}
 itemEffectAndDestroy source target iid c = do
   bag <- getsState $ getContainerBag c
   case iid `EM.lookup` bag of
@@ -74,7 +72,6 @@ effectAndDestroy :: (MonadAtomic m, MonadServer m)
                  => ActorId -> ActorId -> ItemId -> Container -> Bool
                  -> [IK.Effect] -> ItemFull
                  -> m ()
-{-# INLINABLE effectAndDestroy #-}
 effectAndDestroy _ _ _ _ _ [] _ = return ()
 effectAndDestroy source target iid container periodic effs ItemFull{..} = do
   let timeout = case itemDisco of
@@ -132,7 +129,6 @@ effectAndDestroy source target iid container periodic effs ItemFull{..} = do
 itemEffectCause :: (MonadAtomic m, MonadServer m)
                 => ActorId -> Point -> IK.Effect
                 -> m Bool
-{-# INLINABLE itemEffectCause #-}
 itemEffectCause aid tpos ef = do
   sb <- getsState $ getActorBody aid
   let c = CEmbed (blid sb) tpos
@@ -155,7 +151,6 @@ itemEffectDisco :: (MonadAtomic m, MonadServer m)
                 => ActorId -> ActorId -> ItemId -> Container -> Bool -> Bool
                 -> [IK.Effect]
                 -> m Bool
-{-# INLINABLE itemEffectDisco #-}
 itemEffectDisco source target iid c recharged periodic effs = do
   discoKind <- getsServer sdiscoKind
   item <- getsState $ getItemBody iid
@@ -172,7 +167,6 @@ itemEffect :: (MonadAtomic m, MonadServer m)
            => ActorId -> ActorId -> ItemId -> Container -> Bool -> Bool
            -> [IK.Effect]
            -> m Bool
-{-# INLINABLE itemEffect #-}
 itemEffect source target iid c recharged periodic effects = do
   trs <- mapM (effectSem source target iid c recharged) effects
   let triggered = or trs
@@ -193,7 +187,6 @@ itemEffect source target iid c recharged periodic effects = do
 effectSem :: (MonadAtomic m, MonadServer m)
           => ActorId -> ActorId -> ItemId -> Container -> Bool -> IK.Effect
           -> m Bool
-{-# INLINABLE effectSem #-}
 effectSem source target iid c recharged effect = do
   let recursiveCall = effectSem source target iid c recharged
   sb <- getsState $ getActorBody source
@@ -247,7 +240,6 @@ effectSem source target iid c recharged effect = do
 effectBurn :: (MonadAtomic m, MonadServer m)
            => Dice.Dice -> ActorId -> ActorId
            -> m Bool
-{-# INLINABLE effectBurn #-}
 effectBurn nDm source target = do
   tb <- getsState $ getActorBody target
   actorAspect <- getsServer sactorAspect
@@ -276,7 +268,6 @@ effectBurn nDm source target = do
 
 effectExplode :: (MonadAtomic m, MonadServer m)
               => m () -> GroupName ItemKind -> ActorId -> m Bool
-{-# INLINABLE effectExplode #-}
 effectExplode execSfx cgroup target = do
   execSfx
   tb <- getsState $ getActorBody target
@@ -350,7 +341,6 @@ effectExplode execSfx cgroup target = do
 -- Unaffected by armor.
 effectRefillHP :: (MonadAtomic m, MonadServer m)
                => Bool -> Int -> ActorId -> ActorId -> m Bool
-{-# INLINABLE effectRefillHP #-}
 effectRefillHP overfill power source target = do
   tb <- getsState $ getActorBody target
   actorAspect <- getsServer sactorAspect
@@ -376,7 +366,6 @@ effectRefillHP overfill power source target = do
     return True
 
 halveCalm :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-{-# INLINABLE halveCalm #-}
 halveCalm target = do
   tb <- getsState $ getActorBody target
   actorAspect <- getsServer sactorAspect
@@ -393,7 +382,6 @@ halveCalm target = do
 
 effectRefillCalm ::  (MonadAtomic m, MonadServer m)
                  => Bool -> m () -> Int -> ActorId -> ActorId -> m Bool
-{-# INLINABLE effectRefillCalm #-}
 effectRefillCalm overfill execSfx power source target = do
   tb <- getsState $ getActorBody target
   actorAspect <- getsServer sactorAspect
@@ -419,7 +407,6 @@ effectDominate :: (MonadAtomic m, MonadServer m)
                => (IK.Effect -> m Bool)
                -> ActorId -> ActorId
                -> m Bool
-{-# INLINABLE effectDominate #-}
 effectDominate recursiveCall source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
@@ -434,7 +421,6 @@ effectDominate recursiveCall source target = do
 
 effectImpress :: MonadAtomic m
               => ActorId -> ActorId -> m Bool
-{-# INLINABLE effectImpress #-}
 effectImpress source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
@@ -450,7 +436,6 @@ effectImpress source target = do
 effectCallFriend :: (MonadAtomic m, MonadServer m)
                    => m () -> Dice.Dice -> ActorId -> ActorId
                    -> m Bool
-{-# INLINABLE effectCallFriend #-}
 effectCallFriend execSfx nDm source target = do
   -- Obvious effect, nothing announced.
   Kind.COps{coTileSpeedup} <- getsState scops
@@ -486,7 +471,6 @@ effectCallFriend execSfx nDm source target = do
 effectSummon :: (MonadAtomic m, MonadServer m)
              => m () -> Freqs ItemKind -> Dice.Dice -> ActorId -> ActorId
              -> m Bool
-{-# INLINABLE effectSummon #-}
 effectSummon execSfx actorFreq nDm source target = do
   -- Obvious effect, nothing announced.
   Kind.COps{coTileSpeedup} <- getsState scops
@@ -537,7 +521,6 @@ effectAscend :: (MonadAtomic m, MonadServer m)
              => (IK.Effect -> m Bool)
              -> m () -> Int -> ActorId -> ActorId -> Point
              -> m Bool
-{-# INLINABLE effectAscend #-}
 effectAscend recursiveCall execSfx k source target pos = do
   b1 <- getsState $ getActorBody target
   let lid1 = blid b1
@@ -610,7 +593,6 @@ findStairExit moveUp lid pos = do
     Just posRes -> return posRes
 
 switchLevels1 :: MonadAtomic m => (ActorId, Actor) -> m (Maybe ActorId)
-{-# INLINABLE switchLevels1 #-}
 switchLevels1 (aid, bOld) = do
   let side = bfid bOld
   mleader <- getsState $ gleader . (EM.! side) . sfactionD
@@ -631,7 +613,6 @@ switchLevels1 (aid, bOld) = do
 switchLevels2 ::(MonadAtomic m, MonadServer m)
               => LevelId -> Point -> (ActorId, Actor) -> Time -> Maybe ActorId
               -> m ()
-{-# INLINABLE switchLevels2 #-}
 switchLevels2 lidNew posNew (aid, bOld) btime_bOld mlead = do
   let lidOld = blid bOld
       side = bfid bOld
@@ -674,7 +655,6 @@ switchLevels2 lidNew posNew (aid, bOld) btime_bOld mlead = do
 
 -- | The faction leaves the dungeon.
 effectEscape :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m Bool
-{-# INLINABLE effectEscape #-}
 effectEscape source target = do
   -- Obvious effect, nothing announced.
   sb <- getsState $ getActorBody source
@@ -697,7 +677,6 @@ effectEscape source target = do
 -- to hurt fast actors more.
 effectParalyze :: (MonadAtomic m, MonadServer m)
                => m () -> Dice.Dice -> ActorId -> m Bool
-{-# INLINABLE effectParalyze #-}
 effectParalyze execSfx nDm target = do
   p <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   b <- getsState $ getActorBody target
@@ -716,7 +695,6 @@ effectParalyze execSfx nDm target = do
 -- an absolute amount of time units, to benefit slow actors more.
 effectInsertMove :: (MonadAtomic m, MonadServer m)
                  => m () -> Dice.Dice -> ActorId -> m Bool
-{-# INLINABLE effectInsertMove #-}
 effectInsertMove execSfx nDm target = do
   execSfx
   p <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
@@ -735,7 +713,6 @@ effectInsertMove execSfx nDm target = do
 -- Note that projectiles can be teleported, too, for extra fun.
 effectTeleport :: (MonadAtomic m, MonadServer m)
                => m () -> Dice.Dice -> ActorId -> ActorId -> m Bool
-{-# INLINABLE effectTeleport #-}
 effectTeleport execSfx nDm source target = do
   Kind.COps{coTileSpeedup} <- getsState scops
   range <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
@@ -781,7 +758,6 @@ effectTeleport execSfx nDm source target = do
 effectCreateItem :: (MonadAtomic m, MonadServer m)
                   => ActorId -> CStore -> GroupName ItemKind -> IK.TimerDice
                   -> m Bool
-{-# INLINABLE effectCreateItem #-}
 effectCreateItem target store grp tim = do
   tb <- getsState $ getActorBody target
   delta <- case tim of
@@ -841,7 +817,6 @@ effectCreateItem target store grp tim = do
 effectDropItem :: (MonadAtomic m, MonadServer m)
                => m () -> CStore -> GroupName ItemKind -> ActorId
                -> m Bool
-{-# INLINABLE effectDropItem #-}
 effectDropItem execSfx store grp target = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   discoKind <- getsServer sdiscoKind
@@ -869,7 +844,6 @@ effectDropItem execSfx store grp target = do
 dropCStoreItem :: (MonadAtomic m, MonadServer m)
                => Bool -> CStore -> ActorId -> Actor -> ItemId -> ItemQuant
                -> m ()
-{-# INLINABLE dropCStoreItem #-}
 dropCStoreItem verbose store aid b iid kit@(k, _) = do
   item <- getsState $ getItemBody iid
   let c = CActor aid store
@@ -888,7 +862,6 @@ dropCStoreItem verbose store aid b iid kit@(k, _) = do
     mapM_ execUpdAtomic mvCmd
 
 pickDroppable :: MonadStateRead m => ActorId -> Actor -> m Container
-{-# INLINABLE pickDroppable #-}
 pickDroppable aid b = do
   Kind.COps{coTileSpeedup} <- getsState scops
   lvl <- getLevel (blid b)
@@ -906,7 +879,6 @@ pickDroppable aid b = do
 -- TODO: ask player for an item
 effectPolyItem :: (MonadAtomic m, MonadServer m)
                => m () -> ActorId -> ActorId -> m Bool
-{-# INLINABLE effectPolyItem #-}
 effectPolyItem execSfx source target = do
   sb <- getsState $ getActorBody source
   let cstore = CGround
@@ -946,7 +918,6 @@ effectPolyItem execSfx source target = do
 -- existential concerns are answered scientifitically".
 effectIdentify :: (MonadAtomic m, MonadServer m)
                => m () -> ItemId -> ActorId -> ActorId -> m Bool
-{-# INLINABLE effectIdentify #-}
 effectIdentify execSfx iidId source target = do
   sb <- getsState $ getActorBody source
   let tryFull store as = case as of
@@ -980,7 +951,6 @@ effectIdentify execSfx iidId source target = do
 identifyIid :: (MonadAtomic m, MonadServer m)
             => m () -> ItemId -> Container -> Kind.Id ItemKind
             -> m ()
-{-# INLINABLE identifyIid #-}
 identifyIid execSfx iid c itemKindId = do
   execSfx
   seed <- getsServer $ (EM.! iid) . sitemSeedD
@@ -999,7 +969,6 @@ effectSendFlying :: (MonadAtomic m, MonadServer m)
                  => m () -> IK.ThrowMod
                  -> ActorId -> ActorId -> Maybe Bool
                  -> m Bool
-{-# INLINABLE effectSendFlying #-}
 effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
   v <- sendFlyingVector source target modePush
   Kind.COps{coTileSpeedup} <- getsState scops
@@ -1046,7 +1015,6 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
 
 sendFlyingVector :: (MonadAtomic m, MonadServer m)
                  => ActorId -> ActorId -> Maybe Bool -> m Vector
-{-# INLINABLE sendFlyingVector #-}
 sendFlyingVector source target modePush = do
   sb <- getsState $ getActorBody source
   let boldpos_sb = fromMaybe originPoint (boldpos sb)
@@ -1078,7 +1046,6 @@ sendFlyingVector source target modePush = do
 -- | Make the target actor drop his best weapon (stack).
 effectDropBestWeapon :: (MonadAtomic m, MonadServer m)
                      => m () -> ActorId -> m Bool
-{-# INLINABLE effectDropBestWeapon #-}
 effectDropBestWeapon execSfx target = do
   tb <- getsState $ getActorBody target
   allAssocs <- fullAssocsServer target [CEqp]
@@ -1100,7 +1067,6 @@ effectDropBestWeapon execSfx target = do
 -- Only one item of each stack is activated (and possibly consumed).
 effectActivateInv :: (MonadAtomic m, MonadServer m)
                   => m () -> ActorId -> Char -> m Bool
-{-# INLINABLE effectActivateInv #-}
 effectActivateInv execSfx target symbol =
   effectTransformEqp execSfx target symbol CInv $ \iid _ ->
     applyItem target iid CInv
@@ -1109,7 +1075,6 @@ effectTransformEqp :: forall m. MonadAtomic m
                    => m () -> ActorId -> Char -> CStore
                    -> (ItemId -> ItemQuant -> m ())
                    -> m Bool
-{-# INLINABLE effectTransformEqp #-}
 effectTransformEqp execSfx target symbol cstore m = do
   b <- getsState $ getActorBody target
   let hasSymbol (iid, _) = do
@@ -1130,7 +1095,6 @@ effectTransformEqp execSfx target symbol cstore m = do
 
 effectApplyPerfume :: MonadAtomic m
                    => m () -> ActorId -> m Bool
-{-# INLINABLE effectApplyPerfume #-}
 effectApplyPerfume execSfx target = do
   execSfx
   tb <- getsState $ getActorBody target
@@ -1146,7 +1110,6 @@ effectOneOf :: (MonadAtomic m, MonadServer m)
             => (IK.Effect -> m Bool)
             -> [IK.Effect]
             -> m Bool
-{-# INLINABLE effectOneOf #-}
 effectOneOf recursiveCall l = do
   let call1 = do
         ef <- rndToAction $ oneOf l
@@ -1163,7 +1126,6 @@ effectRecharging :: MonadAtomic m
                  => (IK.Effect -> m Bool)
                  -> IK.Effect -> Bool
                  -> m Bool
-{-# INLINABLE effectRecharging #-}
 effectRecharging recursiveCall e recharged =
   if recharged
   then recursiveCall e
@@ -1174,7 +1136,6 @@ effectRecharging recursiveCall e recharged =
 effectTemporary :: MonadAtomic m
                 => m () -> ActorId -> ItemId
                 -> m Bool
-{-# INLINABLE effectTemporary #-}
 effectTemporary execSfx source iid = do
   b <- getsState $ getActorBody source
   case iid `EM.lookup` borgan b of

@@ -41,12 +41,10 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 
 invalidateBfsAid :: MonadClient m => ActorId -> m ()
-{-# INLINABLE invalidateBfsAid #-}
 invalidateBfsAid aid =
   modifyClient $ \cli -> cli {sbfsD = EM.insert aid BfsInvalid (sbfsD cli)}
 
 invalidateBfsLid :: MonadClient m => LevelId -> m ()
-{-# INLINABLE invalidateBfsLid #-}
 invalidateBfsLid lid = do
   side <- getsClient sside
   let f (_, b) = blid b == lid && bfid b == side && not (bproj b)
@@ -54,13 +52,11 @@ invalidateBfsLid lid = do
   mapM_ (invalidateBfsAid . fst) as
 
 invalidateBfsAll :: MonadClient m => m ()
-{-# INLINABLE invalidateBfsAll #-}
 invalidateBfsAll =
   modifyClient $ \cli -> cli {sbfsD = EM.map (const BfsInvalid) (sbfsD cli)}
 
 createBfs :: MonadClient m
           => Bool -> Word8 -> ActorId -> m (PointArray.Array BfsDistance)
-{-# INLINABLE createBfs #-}
 createBfs canMove alterSkill aid = do
   b <- getsState $ getActorBody aid
   let lid = blid b
@@ -78,7 +74,6 @@ createBfs canMove alterSkill aid = do
 updatePathFromBfs :: MonadClient m
                   => Bool -> BfsAndPath -> ActorId -> Point
                   -> m (PointArray.Array BfsDistance, AndPath)
-{-# INLINABLE updatePathFromBfs #-}
 updatePathFromBfs canMove bfsAndPathOld aid !target = do
   let (oldBfsArr, oldBfsPath) = case bfsAndPathOld of
         BfsAndPath{bfsArr, bfsPath} -> (bfsArr, bfsPath)
@@ -104,7 +99,6 @@ updatePathFromBfs canMove bfsAndPathOld aid !target = do
 getCacheBfsAndPath :: forall m. MonadClient m
                    => ActorId -> Point
                    -> m (PointArray.Array BfsDistance, AndPath)
-{-# INLINABLE getCacheBfsAndPath #-}
 getCacheBfsAndPath aid target = do
   mbfs <- getsClient $ EM.lookup aid . sbfsD
   case mbfs of
@@ -124,7 +118,6 @@ getCacheBfsAndPath aid target = do
 
 -- | Get cached BFS array or, if not stored, generate and store first.
 getCacheBfs :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
-{-# INLINABLE getCacheBfs #-}
 getCacheBfs aid = do
   mbfs <- getsClient $ EM.lookup aid . sbfsD
   case mbfs of
@@ -139,7 +132,6 @@ getCacheBfs aid = do
 
 -- | Get cached BFS path or, if not stored, generate and store first.
 getCachePath :: MonadClient m => ActorId -> Point -> m AndPath
-{-# INLINABLE getCachePath #-}
 getCachePath aid target = do
   b <- getsState $ getActorBody aid
   let source = bpos b
@@ -147,7 +139,6 @@ getCachePath aid target = do
      | otherwise -> snd <$> getCacheBfsAndPath aid target
 
 condBFS :: MonadClient m => ActorId -> m (Bool, Word8)
-{-# INLINABLE condBFS #-}
 condBFS aid = do
   side <- getsClient sside
   -- We assume the actor eventually becomes a leader (or has the same
@@ -178,7 +169,6 @@ condBFS aid = do
 
 -- | Furthest (wrt paths) known position.
 furthestKnown :: MonadClient m => ActorId -> m Point
-{-# INLINABLE furthestKnown #-}
 furthestKnown aid = do
   bfs <- getCacheBfs aid
   getMaxIndex <- rndToAction $ oneOf [ PointArray.maxIndexA
@@ -197,7 +187,6 @@ furthestKnown aid = do
 -- as a human that deduced the dungeon properties). Changing Bfs to accomodate
 -- all dungeon styles would be complex and would slow down the engine.
 closestUnknown :: MonadClient m => ActorId -> m (Maybe Point)
-{-# INLINABLE closestUnknown #-}
 closestUnknown aid = do
   body <- getsState $ getActorBody aid
   lvl <- getLevel $ blid body
@@ -234,7 +223,6 @@ closestUnknown aid = do
 -- | Finds smells closest to the actor, except under the actor.
 -- Of the closest, prefers the newest smell.
 closestSmell :: MonadClient m => ActorId -> m [(Int, (Point, Time))]
-{-# INLINABLE closestSmell #-}
 closestSmell aid = do
   body <- getsState $ getActorBody aid
   Level{lsmell, ltime} <- getLevel $ blid body
@@ -253,7 +241,6 @@ closestSmell aid = do
 -- has a weapon equipped, so no need to explore further, he tries to find
 -- enemies on other levels.
 closestTriggers :: MonadClient m => Maybe Bool -> ActorId -> m (Frequency Point)
-{-# INLINABLE closestTriggers #-}
 closestTriggers onlyDir aid = do
   Kind.COps{cotile, coTileSpeedup} <- getsState scops
   actorAspect <- getsClient sactorAspect
@@ -330,7 +317,6 @@ closestTriggers onlyDir aid = do
       in toFreq "closestTriggers" ds
 
 unexploredDepth :: MonadClient m => m (Int -> LevelId -> Bool)
-{-# INLINABLE unexploredDepth #-}
 unexploredDepth = do
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
@@ -345,7 +331,6 @@ unexploredDepth = do
 
 -- | Closest (wrt paths) items and changeable tiles (e.g., item caches).
 closestItems :: MonadClient m => ActorId -> m [(Int, (Point, Maybe ItemBag))]
-{-# INLINABLE closestItems #-}
 closestItems aid = do
   Kind.COps{coTileSpeedup} <- getsState scops
   actorAspect <- getsClient sactorAspect
@@ -382,7 +367,6 @@ closestItems aid = do
 -- | Closest (wrt paths) enemy actors.
 closestFoes :: MonadClient m
             => [(ActorId, Actor)] -> ActorId -> m [(Int, (ActorId, Actor))]
-{-# INLINABLE closestFoes #-}
 closestFoes foes aid =
   case foes of
     [] -> return []

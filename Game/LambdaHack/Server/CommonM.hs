@@ -50,7 +50,6 @@ import Game.LambdaHack.Server.State
 
 execFailure :: (MonadAtomic m, MonadServer m)
             => ActorId -> RequestTimed a -> ReqFailure -> m ()
-{-# INLINABLE execFailure #-}
 execFailure aid req failureSer = do
   -- Clients should rarely do that (only in case of invisible actors)
   -- so we report it to the client, but do not crash
@@ -70,7 +69,6 @@ execFailure aid req failureSer = do
   execSfxAtomic $ SfxMsgFid fid $ "Unexpected problem:" <+> msg <> "."
 
 getPerFid :: MonadServer m => FactionId -> LevelId -> m Perception
-{-# INLINABLE getPerFid #-}
 getPerFid fid lid = do
   pers <- getsServer sperFid
   let failFact = assert `failure` "no perception for faction" `twith` (lid, fid)
@@ -80,7 +78,6 @@ getPerFid fid lid = do
   return $! per
 
 revealItems :: (MonadAtomic m, MonadServer m) => Maybe FactionId -> m ()
-{-# INLINABLE revealItems #-}
 revealItems mfid = do
   itemToF <- itemToFullServer
   let discover aid store iid k =
@@ -106,7 +103,6 @@ revealItems mfid = do
 
 moveStores :: (MonadAtomic m, MonadServer m)
            => Bool -> ActorId -> CStore -> CStore -> m ()
-{-# INLINABLE moveStores #-}
 moveStores verbose aid fromStore toStore = do
   b <- getsState $ getActorBody aid
   let g iid (k, _) = do
@@ -116,7 +112,6 @@ moveStores verbose aid fromStore toStore = do
   mapActorCStore_ fromStore g b
 
 quitF :: (MonadAtomic m, MonadServer m) =>  Status -> FactionId -> m ()
-{-# INLINABLE quitF #-}
 quitF status fid = do
   fact <- getsState $ (EM.! fid) . sfactionD
   let oldSt = gquit fact
@@ -140,7 +135,6 @@ quitF status fid = do
 -- Send any UpdQuitFaction actions that can be deduced from factions'
 -- current state.
 deduceQuits :: (MonadAtomic m, MonadServer m) => FactionId -> Status -> m ()
-{-# INLINABLE deduceQuits #-}
 deduceQuits fid0 status@Status{stOutcome}
   | stOutcome `elem` [Defeated, Camping, Restart, Conquer] =
     assert `failure` "no quitting to deduce" `twith` (fid0, status)
@@ -203,7 +197,6 @@ keepArenaFact fact = fleaderMode (gplayer fact) /= LeaderNull
 -- dominated right now. Even if the actor is to be dominated,
 -- @bfid@ of the actor body is still the old faction.
 deduceKilled :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-{-# INLINABLE deduceKilled #-}
 deduceKilled aid = do
   Kind.COps{corule} <- getsState scops
   body <- getsState $ getActorBody aid
@@ -215,13 +208,11 @@ deduceKilled aid = do
       deduceQuits (bfid body) $ Status Killed (fromEnum $ blid body) Nothing
 
 anyActorsAlive :: MonadServer m => FactionId -> ActorId -> m Bool
-{-# INLINABLE anyActorsAlive #-}
 anyActorsAlive fid aid = do
   as <- getsState $ fidActorNotProjAssocs fid
   return $! map fst as /= [aid]
 
 electLeader :: MonadAtomic m => FactionId -> LevelId -> ActorId -> m ()
-{-# INLINABLE electLeader #-}
 electLeader fid lid aidDead = do
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
   when (mleader == Just aidDead) $ do
@@ -235,7 +226,6 @@ electLeader fid lid aidDead = do
     execUpdAtomic $ UpdLeadFaction fid mleader mleaderNew
 
 supplantLeader :: MonadAtomic m => FactionId -> ActorId -> m ()
-{-# INLINABLE supplantLeader #-}
 supplantLeader fid aid = do
   fact <- getsState $ (EM.! fid) . sfactionD
   unless (fleaderMode (gplayer fact) == LeaderNull) $ do
@@ -251,7 +241,6 @@ projectFail :: (MonadAtomic m, MonadServer m)
             -> CStore     -- ^ whether the items comes from floor or inventory
             -> Bool       -- ^ whether the item is a blast
             -> m (Maybe ReqFailure)
-{-# INLINABLE projectFail #-}
 projectFail source tpxy eps iid cstore isBlast = do
   Kind.COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -309,7 +298,6 @@ projectBla :: (MonadAtomic m, MonadServer m)
            -> CStore     -- ^ whether the items comes from floor or inventory
            -> Bool       -- ^ whether the item is a blast
            -> m ()
-{-# INLINABLE projectBla #-}
 projectBla source pos rest iid cstore isBlast = do
   sb <- getsState $ getActorBody source
   item <- getsState $ getItemBody iid
@@ -332,7 +320,6 @@ addProjectile :: (MonadAtomic m, MonadServer m)
               => Point -> [Point] -> ItemId -> ItemQuant -> LevelId
               -> FactionId -> Time -> Bool
               -> m ()
-{-# INLINABLE addProjectile #-}
 addProjectile bpos rest iid (_, it) blid bfid btime isBlast = do
   localTime <- getsState $ getLocalTime blid
   itemToF <- itemToFullServer
@@ -360,7 +347,6 @@ addActor :: (MonadAtomic m, MonadServer m)
          => GroupName ItemKind -> FactionId -> Point -> LevelId
          -> (Actor -> Actor) -> Text -> Time
          -> m (Maybe ActorId)
-{-# INLINABLE addActor #-}
 addActor actorGroup bfid pos lid tweakBody bpronoun time = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- contains the constant properties.
@@ -375,7 +361,6 @@ addActorIid :: (MonadAtomic m, MonadServer m)
             => ItemId -> ItemFull -> Bool -> FactionId -> Point -> LevelId
             -> (Actor -> Actor) -> Text -> Time
             -> m (Maybe ActorId)
-{-# INLINABLE addActorIid #-}
 addActorIid trunkId trunkFull@ItemFull{..} bproj
             bfid pos lid tweakBody bpronoun time = do
   let trunkKind = case itemDisco of
@@ -444,7 +429,6 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
 -- with some effects, though, so it leaks properties of completely
 -- unidentified items.
 pickWeaponServer :: MonadServer m => ActorId -> m (Maybe (ItemId, CStore))
-{-# INLINABLE pickWeaponServer #-}
 pickWeaponServer source = do
   eqpAssocs <- fullAssocsServer source [CEqp]
   bodyAssocs <- fullAssocsServer source [COrgan]
@@ -478,7 +462,6 @@ pickWeaponServer source = do
       return $ Just (iid, cstore)
 
 actorSkillsServer :: MonadServer m => ActorId -> m Ability.Skills
-{-# INLINABLE actorSkillsServer #-}
 actorSkillsServer aid  = do
   ar <- getsServer $ (EM.! aid) . sactorAspect
   body <- getsState $ getActorBody aid
@@ -487,7 +470,6 @@ actorSkillsServer aid  = do
   getsState $ actorSkills mleader aid ar
 
 getCacheLucid :: MonadServer m => LevelId -> m FovLucid
-{-# INLINABLE getCacheLucid #-}
 getCacheLucid lid = do
   discoAspect <- getsServer sdiscoAspect
   actorAspect <- getsServer sactorAspect
@@ -507,7 +489,6 @@ getCacheLucid lid = do
       return newLucid
 
 getCacheTotal :: MonadServer m => FactionId -> LevelId -> m CacheBeforeLucid
-{-# INLINABLE getCacheTotal #-}
 getCacheTotal fid lid = do
   sperCacheFidOld <- getsServer sperCacheFid
   let perCacheOld = sperCacheFidOld EM.! fid EM.! lid
@@ -530,7 +511,6 @@ getCacheTotal fid lid = do
       return total
 
 recomputeCachePer :: MonadServer m => FactionId -> LevelId -> m Perception
-{-# INLINABLE recomputeCachePer #-}
 recomputeCachePer fid lid = do
   total <- getCacheTotal fid lid
   fovLucid <- getCacheLucid lid

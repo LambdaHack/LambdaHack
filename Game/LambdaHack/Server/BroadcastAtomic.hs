@@ -57,7 +57,6 @@ handleCmdAtomicServer _posAtomic cmd =
 -- | Send an atomic action to all clients that can see it.
 handleAndBroadcast :: (MonadStateWrite m, MonadServerReadRequest m)
                    => CmdAtomic -> m ()
-{-# INLINABLE handleAndBroadcast #-}
 handleAndBroadcast atomic = do
   -- This is calculated in the server State before action (simulating
   -- current client State, because action has not been applied
@@ -131,7 +130,6 @@ handleAndBroadcast atomic = do
 
 -- | Messages for some unseen atomic commands.
 loudUpdAtomic :: MonadStateRead m => Bool -> UpdAtomic -> m (Maybe Text)
-{-# INLINABLE loudUpdAtomic #-}
 loudUpdAtomic local cmd = do
   msound <- case cmd of
     UpdDestroyActor _ body _ | not $ bproj body -> return $ Just "shriek"
@@ -152,7 +150,6 @@ loudUpdAtomic local cmd = do
 
 -- | Messages for some unseen sfx.
 loudSfxAtomic :: MonadServer m => Bool -> SfxAtomic -> m (Maybe Text)
-{-# INLINABLE loudSfxAtomic #-}
 loudSfxAtomic local cmd = do
   msound <- case cmd of
     SfxStrike source _ iid cstore hurtMult | local -> do

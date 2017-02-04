@@ -86,7 +86,6 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- * Macro
 
 macroHuman :: MonadClientUI m => [String] -> m ()
-{-# INLINABLE macroHuman #-}
 macroHuman kms = do
   modifySession $ \sess -> sess {slastPlay = map K.mkKM kms ++ slastPlay sess}
   Config{configRunStopMsgs} <- getsSession sconfig
@@ -97,7 +96,6 @@ macroHuman kms = do
 
 -- | Clear current messages, cycle key hints mode.
 clearHuman :: MonadClientUI m => m ()
-{-# INLINABLE clearHuman #-}
 clearHuman = do
   keysHintMode <- getsSession skeysHintMode
   when (keysHintMode == KeysHintPresent) $ historyHuman
@@ -108,7 +106,6 @@ clearHuman = do
 -- * SortSlots
 
 sortSlotsHuman :: MonadClientUI m => m ()
-{-# INLINABLE sortSlotsHuman #-}
 sortSlotsHuman = do
   sortSlots
   promptAdd "Items sorted by kind and stats."
@@ -118,12 +115,10 @@ sortSlotsHuman = do
 -- | Display items from a given container store and possibly let the user
 -- chose one.
 chooseItemHuman :: MonadClientUI m => ItemDialogMode -> m MError
-{-# INLINABLE chooseItemHuman #-}
 chooseItemHuman c = either Just (const Nothing) <$> chooseItemDialogMode c
 
 chooseItemDialogMode :: MonadClientUI m
                      => ItemDialogMode -> m (FailOrCmd ItemDialogMode)
-{-# INLINABLE chooseItemDialogMode #-}
 chooseItemDialogMode c = do
   let subject = partActor
       verbSha body ar = if calmEnough body ar
@@ -219,7 +214,6 @@ chooseItemDialogMode c = do
 
 chooseItemProjectHuman :: forall m. MonadClientUI m
                        => [Trigger] -> m MError
-{-# INLINABLE chooseItemProjectHuman #-}
 chooseItemProjectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -254,7 +248,6 @@ chooseItemProjectHuman ts = do
 
 permittedProjectClient :: MonadClientUI m
                        => [Char] -> m (ItemFull -> Either ReqFailure Bool)
-{-# INLINABLE permittedProjectClient #-}
 permittedProjectClient triggerSyms = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -267,7 +260,6 @@ permittedProjectClient triggerSyms = do
   return $ permittedProject False skill b ar triggerSyms
 
 projectCheck :: MonadClientUI m => Point -> m (Maybe ReqFailure)
-{-# INLINABLE projectCheck #-}
 projectCheck tpos = do
   Kind.COps{coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
@@ -292,7 +284,6 @@ projectCheck tpos = do
           else return $ Just ProjectBlockActor
 
 posFromXhair :: MonadClientUI m => m (Either Text Point)
-{-# INLINABLE posFromXhair #-}
 posFromXhair = do
   leader <- getLeaderUI
   lidV <- viewedLevelUI
@@ -314,7 +305,6 @@ posFromXhair = do
 psuitReq :: MonadClientUI m
          => [Trigger]
          -> m (Either Text (ItemFull -> Either ReqFailure (Point, Bool)))
-{-# INLINABLE psuitReq #-}
 psuitReq ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -336,7 +326,6 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 -- * ChooseItemApply
 
 chooseItemApplyHuman :: forall m. MonadClientUI m => [Trigger] -> m MError
-{-# INLINABLE chooseItemApplyHuman #-}
 chooseItemApplyHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -367,7 +356,6 @@ chooseItemApplyHuman ts = do
 
 permittedApplyClient :: MonadClientUI m
                      => [Char] -> m (ItemFull -> Either ReqFailure Bool)
-{-# INLINABLE permittedApplyClient #-}
 permittedApplyClient triggerSyms = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -383,7 +371,6 @@ permittedApplyClient triggerSyms = do
 -- * PickLeader
 
 pickLeaderHuman :: MonadClientUI m => Int -> m MError
-{-# INLINABLE pickLeaderHuman #-}
 pickLeaderHuman k = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -410,21 +397,18 @@ pickLeaderHuman k = do
 -- * PickLeaderWithPointer
 
 pickLeaderWithPointerHuman :: MonadClientUI m => m MError
-{-# INLINABLE pickLeaderWithPointerHuman #-}
 pickLeaderWithPointerHuman = pickLeaderWithPointer
 
 -- * MemberCycle
 
 -- | Switches current member to the next on the level, if any, wrapping.
 memberCycleHuman :: MonadClientUI m => m MError
-{-# INLINABLE memberCycleHuman #-}
 memberCycleHuman = memberCycle True
 
 -- * MemberBack
 
 -- | Switches current member to the previous in the whole dungeon, wrapping.
 memberBackHuman :: MonadClientUI m => m MError
-{-# INLINABLE memberBackHuman #-}
 memberBackHuman = memberBack True
 
 -- * SelectActor
@@ -432,13 +416,11 @@ memberBackHuman = memberBack True
 -- TODO: make the message (and for selectNoneHuman, pickLeader, etc.)
 -- optional, since they have a clear representation in the UI elsewhere.
 selectActorHuman :: MonadClientUI m => m ()
-{-# INLINABLE selectActorHuman #-}
 selectActorHuman = do
   leader <- getLeaderUI
   selectAidHuman leader
 
 selectAidHuman :: MonadClientUI m => ActorId -> m ()
-{-# INLINABLE selectAidHuman #-}
 selectAidHuman leader = do
   body <- getsState $ getActorBody leader
   wasMemeber <- getsSession $ ES.member leader . sselected
@@ -454,7 +436,6 @@ selectAidHuman leader = do
 -- * SelectNone
 
 selectNoneHuman :: MonadClientUI m => m ()
-{-# INLINABLE selectNoneHuman #-}
 selectNoneHuman = do
   side <- getsClient sside
   lidV <- viewedLevelUI
@@ -474,7 +455,6 @@ selectNoneHuman = do
 -- * SelectWithPointer
 
 selectWithPointerHuman :: MonadClientUI m => m MError
-{-# INLINABLE selectWithPointerHuman #-}
 selectWithPointerHuman = do
   lidV <- viewedLevelUI
   Level{lysize} <- getLevel lidV
@@ -500,7 +480,6 @@ selectWithPointerHuman = do
 -- because the player can really use a command that does not stop
 -- at terrain change or when walking over items.
 repeatHuman :: MonadClientUI m => Int -> m ()
-{-# INLINABLE repeatHuman #-}
 repeatHuman n = do
   (_, seqPrevious, k) <- getsSession slastRecord
   let macro = concat $ replicate n $ reverse seqPrevious
@@ -514,7 +493,6 @@ maxK = 100
 -- * Record
 
 recordHuman :: MonadClientUI m => m ()
-{-# INLINABLE recordHuman #-}
 recordHuman = do
   (_seqCurrent, seqPrevious, k) <- getsSession slastRecord
   case k of
@@ -533,7 +511,6 @@ recordHuman = do
 -- * History
 
 historyHuman :: MonadClientUI m => m ()
-{-# INLINABLE historyHuman #-}
 historyHuman = do
   history <- getsSession shistory
   arena <- getArenaUI
@@ -583,19 +560,16 @@ historyHuman = do
 -- * MarkVision
 
 markVisionHuman :: MonadClientUI m => m ()
-{-# INLINABLE markVisionHuman #-}
 markVisionHuman = modifySession toggleMarkVision
 
 -- * MarkSmell
 
 markSmellHuman :: MonadClientUI m => m ()
-{-# INLINABLE markSmellHuman #-}
 markSmellHuman = modifySession toggleMarkSmell
 
 -- * MarkSuspect
 
 markSuspectHuman :: MonadClientUI m => m ()
-{-# INLINABLE markSuspectHuman #-}
 markSuspectHuman = do
   -- @condBFS@ depends on the setting we change here.
   invalidateBfsAll
@@ -607,7 +581,6 @@ markSuspectHuman = do
 settingsMenuHuman :: MonadClientUI m
                   => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
                   -> m (Either MError ReqUI)
-{-# INLINABLE settingsMenuHuman #-}
 settingsMenuHuman cmdAction = do
   Kind.COps{corule} <- getsState scops
   markSuspect <- getsClient smarkSuspect
@@ -689,7 +662,6 @@ settingsMenuHuman cmdAction = do
 
 -- | End aiming mode, rejecting the current position.
 cancelHuman :: MonadClientUI m => m ()
-{-# INLINABLE cancelHuman #-}
 cancelHuman = do
   saimMode <- getsSession saimMode
   when (isJust saimMode) $ do
@@ -701,7 +673,6 @@ cancelHuman = do
 -- | Accept the current x-hair position as target, ending
 -- aiming mode, if active.
 acceptHuman :: MonadClientUI m => m ()
-{-# INLINABLE acceptHuman #-}
 acceptHuman = do
   endAiming
   endAimingMsg
@@ -709,14 +680,12 @@ acceptHuman = do
 
 -- | End aiming mode, accepting the current position.
 endAiming :: MonadClientUI m => m ()
-{-# INLINABLE endAiming #-}
 endAiming = do
   leader <- getLeaderUI
   sxhair <- getsClient sxhair
   modifyClient $ updateTarget leader $ const $ Just sxhair
 
 endAimingMsg :: MonadClientUI m => m ()
-{-# INLINABLE endAimingMsg #-}
 endAimingMsg = do
   leader <- getLeaderUI
   (targetMsg, _) <- targetDescLeader leader
@@ -727,7 +696,6 @@ endAimingMsg = do
 -- * TgtClear
 
 tgtClearHuman :: MonadClientUI m => m ()
-{-# INLINABLE tgtClearHuman #-}
 tgtClearHuman = do
   modifySession $ \sess -> sess {sitemSel = Nothing}
   leader <- getLeaderUI
@@ -749,7 +717,6 @@ tgtClearHuman = do
 -- | Perform look around in the current position of the xhair.
 -- Does nothing outside aiming mode.
 doLook :: MonadClientUI m => m ()
-{-# INLINABLE doLook #-}
 doLook = do
   saimMode <- getsSession saimMode
   case saimMode of
@@ -795,7 +762,6 @@ doLook = do
 
 -- | Move the xhair. Assumes aiming mode.
 moveXhairHuman :: MonadClientUI m => Vector -> Int -> m MError
-{-# INLINABLE moveXhairHuman #-}
 moveXhairHuman dir n = do
   leader <- getLeaderUI
   saimMode <- getsSession saimMode
@@ -818,7 +784,6 @@ moveXhairHuman dir n = do
     return Nothing
 
 lidOfTarget :: MonadClientUI m => Maybe Target -> m LevelId
-{-# INLINABLE lidOfTarget #-}
 lidOfTarget tgt = case tgt of
   Just (TEnemy a _) -> do
     body <- getsState $ getActorBody a
@@ -837,7 +802,6 @@ lidOfTarget tgt = case tgt of
 -- | Start aiming, setting xhair to personal leader' target.
 -- To be used in conjuction with other commands.
 aimTgtHuman :: MonadClientUI m => m MError
-{-# INLINABLE aimTgtHuman #-}
 aimTgtHuman = do
   -- (Re)start aiming at the current level.
   lidV <- viewedLevelUI
@@ -854,7 +818,6 @@ aimTgtHuman = do
 -- | Cycle aiming mode. Do not change position of the xhair,
 -- switch among things at that position.
 aimFloorHuman :: MonadClientUI m => m ()
-{-# INLINABLE aimFloorHuman #-}
 aimFloorHuman = do
   lidV <- viewedLevelUI
   leader <- getLeaderUI
@@ -885,7 +848,6 @@ aimFloorHuman = do
 -- * AimEnemy
 
 aimEnemyHuman :: MonadClientUI m => m ()
-{-# INLINABLE aimEnemyHuman #-}
 aimEnemyHuman = do
   lidV <- viewedLevelUI
   leader <- getLeaderUI
@@ -932,7 +894,6 @@ aimEnemyHuman = do
 -- | Change the displayed level in aiming mode to (at most)
 -- k levels shallower. Enters aiming mode, if not already in one.
 aimAscendHuman :: MonadClientUI m => Int -> m MError
-{-# INLINABLE aimAscendHuman #-}
 aimAscendHuman k = do
   Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
@@ -975,7 +936,6 @@ aimAscendHuman k = do
 
 -- | Tweak the @eps@ parameter of the aiming digital line.
 epsIncrHuman :: MonadClientUI m => Bool -> m ()
-{-# INLINABLE epsIncrHuman #-}
 epsIncrHuman b = do
   saimMode <- getsSession saimMode
   lidV <- viewedLevelUI
@@ -987,7 +947,6 @@ epsIncrHuman b = do
 
 --- Flash the aiming line and path.
 flashAiming :: MonadClientUI m => m ()
-{-# INLINABLE flashAiming #-}
 flashAiming = do
   lidV <- viewedLevelUI
   animate lidV pushAndDelay
@@ -995,7 +954,6 @@ flashAiming = do
 -- * XhairUnknown
 
 xhairUnknownHuman :: MonadClientUI m => m MError
-{-# INLINABLE xhairUnknownHuman #-}
 xhairUnknownHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -1011,7 +969,6 @@ xhairUnknownHuman = do
 -- * XhairItem
 
 xhairItemHuman :: MonadClientUI m => m MError
-{-# INLINABLE xhairItemHuman #-}
 xhairItemHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -1027,7 +984,6 @@ xhairItemHuman = do
 -- * XhairStair
 
 xhairStairHuman :: MonadClientUI m => Bool -> m MError
-{-# INLINABLE xhairStairHuman #-}
 xhairStairHuman up = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -1043,14 +999,12 @@ xhairStairHuman up = do
 -- * XhairPointerFloor
 
 xhairPointerFloorHuman :: MonadClientUI m => m ()
-{-# INLINABLE xhairPointerFloorHuman #-}
 xhairPointerFloorHuman = do
   saimMode <- getsSession saimMode
   xhairPointerFloor False
   modifySession $ \sess -> sess {saimMode}
 
 xhairPointerFloor :: MonadClientUI m => Bool -> m ()
-{-# INLINABLE xhairPointerFloor #-}
 xhairPointerFloor verbose = do
   lidV <- viewedLevelUI
   Level{lxsize, lysize} <- getLevel lidV
@@ -1071,14 +1025,12 @@ xhairPointerFloor verbose = do
 -- * XhairPointerEnemy
 
 xhairPointerEnemyHuman :: MonadClientUI m => m ()
-{-# INLINABLE xhairPointerEnemyHuman #-}
 xhairPointerEnemyHuman = do
   saimMode <- getsSession saimMode
   xhairPointerEnemy False
   modifySession $ \sess -> sess {saimMode}
 
 xhairPointerEnemy :: MonadClientUI m => Bool -> m ()
-{-# INLINABLE xhairPointerEnemy #-}
 xhairPointerEnemy verbose = do
   lidV <- viewedLevelUI
   Level{lxsize, lysize} <- getLevel lidV
@@ -1104,11 +1056,9 @@ xhairPointerEnemy verbose = do
 -- * AimPointerFloor
 
 aimPointerFloorHuman :: MonadClientUI m => m ()
-{-# INLINABLE aimPointerFloorHuman #-}
 aimPointerFloorHuman = xhairPointerFloor True
 
 -- * AimPointerEnemy
 
 aimPointerEnemyHuman :: MonadClientUI m => m ()
-{-# INLINABLE aimPointerEnemyHuman #-}
 aimPointerEnemyHuman = xhairPointerEnemy True

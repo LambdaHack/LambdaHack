@@ -58,7 +58,6 @@ import Game.LambdaHack.Server.State
 handleRequestAI :: (MonadAtomic m)
                 => ReqAI
                 -> m (Maybe RequestAnyAbility)
-{-# INLINABLE handleRequestAI #-}
 handleRequestAI cmd = case cmd of
   ReqAITimed cmdT -> return $ Just cmdT
   ReqAINop -> return Nothing
@@ -67,7 +66,6 @@ handleRequestAI cmd = case cmd of
 handleRequestUI :: (MonadAtomic m, MonadServer m)
                 => FactionId -> ActorId -> ReqUI
                 -> m (Maybe RequestAnyAbility)
-{-# INLINABLE handleRequestUI #-}
 handleRequestUI fid aid cmd = case cmd of
   ReqUITimed cmdT -> return $ Just cmdT
   ReqUIGameRestart t d names -> reqGameRestart aid t d names >> return Nothing
@@ -90,7 +88,6 @@ setBWait cmd aidNew = do
 
 handleRequestTimed :: (MonadAtomic m, MonadServer m)
                    => FactionId -> ActorId -> RequestTimed a -> m Bool
-{-# INLINABLE handleRequestTimed #-}
 handleRequestTimed fid aid cmd = do
   hasWait <- setBWait cmd aid
   unless hasWait $ overheadActorTime fid
@@ -101,7 +98,6 @@ handleRequestTimed fid aid cmd = do
 
 handleRequestTimedCases :: (MonadAtomic m, MonadServer m)
                         => ActorId -> RequestTimed a -> m ()
-{-# INLINABLE handleRequestTimedCases #-}
 handleRequestTimedCases aid cmd = case cmd of
   ReqMove target -> reqMove aid target
   ReqMelee target iid cstore -> reqMelee aid target iid cstore
@@ -159,7 +155,6 @@ switchLeader fid aidNew = do
 -- and the actor can smell, remove smell. Projectiles are ignored.
 -- As long as an actor can smell, he doesn't leave any smell ever.
 affectSmell :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-{-# INLINABLE affectSmell #-}
 affectSmell aid = do
   b <- getsState $ getActorBody aid
   unless (bproj b) $ do
@@ -185,7 +180,6 @@ affectSmell aid = do
 -- and it needs full context for that, e.g., the initial actor position
 -- to check if melee attack does not try to reach to a distant tile.
 reqMove :: (MonadAtomic m, MonadServer m) => ActorId -> Vector -> m ()
-{-# INLINABLE reqMove #-}
 reqMove source dir = do
   cops <- getsState scops
   sb <- getsState $ getActorBody source
@@ -224,7 +218,6 @@ reqMove source dir = do
 -- attack the one specified.
 reqMelee :: (MonadAtomic m, MonadServer m)
          => ActorId -> ActorId -> ItemId -> CStore -> m ()
-{-# INLINABLE reqMelee #-}
 reqMelee source target iid cstore = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
@@ -290,7 +283,6 @@ reqMelee source target iid cstore = do
 armorHurtBonus :: (MonadAtomic m, MonadServer m)
                => ActorId -> ActorId
                -> m Int
-{-# INLINABLE armorHurtBonus #-}
 armorHurtBonus source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
@@ -308,7 +300,6 @@ armorHurtBonus source target = do
 
 -- | Actor tries to swap positions with another.
 reqDisplace :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
-{-# INLINABLE reqDisplace #-}
 reqDisplace source target = do
   cops <- getsState scops
   sb <- getsState $ getActorBody source
@@ -348,7 +339,6 @@ reqDisplace source target = do
 -- Note that if @serverTile /= freshClientTile@, @freshClientTile@
 -- should not be alterable (but @serverTile@ may be).
 reqAlter :: (MonadAtomic m, MonadServer m) => ActorId -> Point -> m ()
-{-# INLINABLE reqAlter #-}
 reqAlter source tpos = do
   cops@Kind.COps{cotile=cotile@Kind.Ops{okind, opick}, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -419,7 +409,6 @@ reqWait _ = return ()
 
 reqMoveItems :: (MonadAtomic m, MonadServer m)
              => ActorId -> [(ItemId, Int, CStore, CStore)] -> m ()
-{-# INLINABLE reqMoveItems #-}
 reqMoveItems aid l = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsServer sactorAspect
@@ -431,7 +420,6 @@ reqMoveItems aid l = do
 
 reqMoveItem :: (MonadAtomic m, MonadServer m)
             => ActorId -> Bool -> (ItemId, Int, CStore, CStore) -> m ()
-{-# INLINABLE reqMoveItem #-}
 reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
   b <- getsState $ getActorBody aid
   let fromC = CActor aid fromCStore
@@ -487,7 +475,6 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
         Nothing -> return ()  -- no Periodic or Timeout aspect; don't touch
 
 computeRndTimeout :: Time -> ItemId -> ItemFull -> Rnd (Maybe Time)
-{-# INLINABLE computeRndTimeout #-}
 computeRndTimeout localTime iid ItemFull{..}= do
   case itemDisco of
     Just ItemDisco{itemKind, itemAspect=Just ar} ->
@@ -508,7 +495,6 @@ reqProject :: (MonadAtomic m, MonadServer m)
            -> ItemId     -- ^ the item to be projected
            -> CStore     -- ^ whether the items comes from floor or inventory
            -> m ()
-{-# INLINABLE reqProject #-}
 reqProject source tpxy eps iid cstore = do
   let req = ReqProject tpxy eps iid cstore
   b <- getsState $ getActorBody source
@@ -527,7 +513,6 @@ reqApply :: (MonadAtomic m, MonadServer m)
          -> ItemId   -- ^ the item to be applied
          -> CStore   -- ^ the location of the item
          -> m ()
-{-# INLINABLE reqApply #-}
 reqApply aid iid cstore = do
   let req = ReqApply iid cstore
   b <- getsState $ getActorBody aid
@@ -558,7 +543,6 @@ reqApply aid iid cstore = do
 reqGameRestart :: (MonadAtomic m, MonadServer m)
                => ActorId -> GroupName ModeKind -> Int -> [(Int, (Text, Text))]
                -> m ()
-{-# INLINABLE reqGameRestart #-}
 reqGameRestart aid groupName d configHeroNames = do
   modifyServer $ \ser -> ser {sdebugNxt = (sdebugNxt ser) {scurDiffSer = d}}
   b <- getsState $ getActorBody aid
@@ -577,7 +561,6 @@ reqGameRestart aid groupName d configHeroNames = do
 -- * ReqGameExit
 
 reqGameExit :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-{-# INLINABLE reqGameExit #-}
 reqGameExit aid = do
   b <- getsState $ getActorBody aid
   oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
@@ -589,7 +572,6 @@ reqGameExit aid = do
 -- * ReqGameSave
 
 reqGameSave :: MonadServer m => m ()
-{-# INLINABLE reqGameSave #-}
 reqGameSave = do
   modifyServer $ \ser -> ser { swriteSave = True
                              , squit = True }  -- do this at once
@@ -597,7 +579,6 @@ reqGameSave = do
 -- * ReqTactic
 
 reqTactic :: MonadAtomic m => FactionId -> Tactic -> m ()
-{-# INLINABLE reqTactic #-}
 reqTactic fid toT = do
   fromT <- getsState $ ftactic . gplayer . (EM.! fid) . sfactionD
   execUpdAtomic $ UpdTacticFaction fid toT fromT
@@ -605,5 +586,4 @@ reqTactic fid toT = do
 -- * ReqAutomate
 
 reqAutomate :: MonadAtomic m => FactionId -> m ()
-{-# INLINABLE reqAutomate #-}
 reqAutomate fid = execUpdAtomic $ UpdAutoFaction fid True

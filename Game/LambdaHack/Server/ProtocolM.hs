@@ -75,7 +75,6 @@ newQueue :: IO (CliSerQueue a)
 newQueue = newEmptyMVar
 
 saveServer :: MonadServerReadRequest m => m ()
-{-# INLINABLE saveServer #-}
 saveServer = do
   s <- getState
   ser <- getServer
@@ -88,7 +87,6 @@ saveName = serverSaveName
 tryRestore :: MonadServerReadRequest m
            => Kind.COps -> DebugModeSer
            -> m (Maybe (State, StateServer))
-{-# INLINABLE tryRestore #-}
 tryRestore Kind.COps{corule} sdebugSer = do
   let bench = sbenchmark $ sdebugCli sdebugSer
   if bench then return Nothing
@@ -135,15 +133,12 @@ class MonadServer m => MonadServerReadRequest m where
   liftIO       :: IO a -> m a
 
 getDict :: MonadServerReadRequest m => m ConnServerDict
-{-# INLINABLE getDict #-}
 getDict = getsDict id
 
 putDict :: MonadServerReadRequest m => ConnServerDict -> m ()
-{-# INLINABLE putDict #-}
 putDict s = modifyDict (const s)
 
 sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
-{-# INLINABLE sendUpdate #-}
 sendUpdate !fid !cmd = do
   frozenClient <- getsDict $ (EM.! fid)
   let resp = RespUpdAtomic cmd
@@ -152,7 +147,6 @@ sendUpdate !fid !cmd = do
   writeQueue resp $ responseS frozenClient
 
 sendSfx :: MonadServerReadRequest m => FactionId -> SfxAtomic -> m ()
-{-# INLINABLE sendSfx #-}
 sendSfx !fid !sfx = do
   let resp = RespSfxAtomic sfx
   debug <- getsServer $ sniffOut . sdebugSer
@@ -163,7 +157,6 @@ sendSfx !fid !sfx = do
     _ -> return ()
 
 sendQueryAI :: MonadServerReadRequest m => FactionId -> ActorId -> m RequestAI
-{-# INLINABLE sendQueryAI #-}
 sendQueryAI fid aid = do
   let respAI = RespQueryAI aid
   debug <- getsServer $ sniffOut . sdebugSer
@@ -177,7 +170,6 @@ sendQueryAI fid aid = do
 
 sendQueryUI :: (MonadAtomic m, MonadServerReadRequest m)
             => FactionId -> ActorId -> m RequestUI
-{-# INLINABLE sendQueryUI #-}
 sendQueryUI fid _aid = do
   let respUI = RespQueryUI
   debug <- getsServer $ sniffOut . sdebugSer
@@ -190,7 +182,6 @@ sendQueryUI fid _aid = do
   return req
 
 killAllClients :: (MonadAtomic m, MonadServerReadRequest m) => m ()
-{-# INLINABLE killAllClients #-}
 killAllClients = do
   d <- getDict
   let sendKill fid _ =
@@ -212,7 +203,6 @@ updateConn :: (MonadAtomic m, MonadServerReadRequest m)
            -> (Maybe SessionUI -> Kind.COps -> FactionId -> ChanServer
                -> IO ())
            -> m ()
-{-# INLINABLE updateConn #-}
 updateConn cops sconfig executorClient = do
   -- Prepare connections based on factions.
   oldD <- getDict

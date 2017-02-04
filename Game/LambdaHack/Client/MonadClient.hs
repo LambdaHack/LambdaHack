@@ -44,15 +44,12 @@ class MonadClient m => MonadClientSetup m where
   restartClient :: m ()
 
 getClient :: MonadClient m => m StateClient
-{-# INLINABLE getClient #-}
 getClient = getsClient id
 
 putClient :: MonadClient m => StateClient -> m ()
-{-# INLINABLE putClient #-}
 putClient s = modifyClient (const s)
 
 debugPossiblyPrint :: MonadClient m => Text -> m ()
-{-# INLINABLE debugPossiblyPrint #-}
 debugPossiblyPrint t = do
   sdbgMsgCli <- getsClient $ sdbgMsgCli . sdebugCli
   when sdbgMsgCli $ liftIO $  do
@@ -70,7 +67,6 @@ saveName side =
 -- | Assuming the client runs on the same machine and for the same
 -- user as the server, move the server savegame out of the way.
 removeServerSave :: MonadClient m => m ()
-{-# INLINABLE removeServerSave #-}
 removeServerSave = do
   -- Hack: assume the same prefix for client as for the server.
   prefix <- getsClient $ ssavePrefixCli . sdebugCli
@@ -84,7 +80,6 @@ removeServerSave = do
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a
-{-# INLINABLE rndToAction #-}
 rndToAction r = do
   gen <- getsClient srandom
   let (gen1, gen2) = R.split gen
@@ -93,7 +88,6 @@ rndToAction r = do
 
 -- | Invoke pseudo-random computation, don't change generator kept in state.
 rndToActionForget :: MonadClient m => Rnd a -> m a
-{-# INLINABLE rndToActionForget #-}
 rndToActionForget r = do
   gen <- getsClient srandom
   return $! St.evalState r gen

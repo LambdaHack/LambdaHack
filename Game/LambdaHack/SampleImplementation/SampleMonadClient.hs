@@ -69,18 +69,15 @@ instance MonadClient CliImplementation where
   modifyClient f = CliImplementation $ state $ \cliS ->
     let !newCliState = f $ cliClient cliS
     in ((), cliS {cliClient = newCliState})
-  {-# INLINABLE liftIO #-}
   liftIO = CliImplementation . IO.liftIO
 
 instance MonadClientSetup CliImplementation where
-  {-# INLINABLE saveClient #-}
   saveClient = CliImplementation $ do
     toSave <- gets cliToSave
     s <- gets cliState
     cli <- gets cliClient
     msess <- gets cliSession
     IO.liftIO $ Save.saveToChan toSave (s, cli, msess)
-  {-# INLINABLE restartClient #-}
   restartClient  = CliImplementation $ state $ \cliS ->
     case cliSession cliS of
       Just sess ->
@@ -105,25 +102,20 @@ instance MonadClientUI CliImplementation where
   modifySession f = CliImplementation $ state $ \cliS ->
     let !newCliSession = f $ fromJust $ cliSession cliS
     in ((), cliS {cliSession = Just newCliSession})
-  {-# INLINABLE liftIO #-}
   liftIO = CliImplementation . IO.liftIO
 
 instance MonadClientReadResponse CliImplementation where
-  {-# INLINABLE receiveResponse #-}
   receiveResponse = CliImplementation $ do
     ChanServer{responseS} <- gets cliDict
     IO.liftIO $ takeMVar responseS
 
 instance MonadClientWriteRequest CliImplementation where
-  {-# INLINABLE sendRequestAI #-}
   sendRequestAI scmd = CliImplementation $ do
     ChanServer{requestAIS} <- gets cliDict
     IO.liftIO $ putMVar requestAIS scmd
-  {-# INLINABLE sendRequestUI #-}
   sendRequestUI scmd = CliImplementation $ do
     ChanServer{requestUIS} <- gets cliDict
     IO.liftIO $ putMVar (fromJust requestUIS) scmd
-  {-# INLINABLE clientHasUI #-}
   clientHasUI = CliImplementation $ do
     mSession <- gets cliSession
     return $! isJust mSession
@@ -144,7 +136,6 @@ executorCli :: CliImplementation ()
             -> FactionId
             -> ChanServer
             -> IO ()
-{-# INLINABLE executorCli #-}
 executorCli m cliSession cops fid cliDict =
   let saveFile (_, cli, _) =
         ssavePrefixCli (sdebugCli cli)

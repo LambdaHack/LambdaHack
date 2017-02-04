@@ -31,7 +31,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 describeMainKeys :: MonadClientUI m => m Text
-{-# INLINABLE describeMainKeys #-}
 describeMainKeys = do
   saimMode <- getsSession saimMode
   Config{configVi, configLaptop} <- getsSession sconfig
@@ -57,7 +56,6 @@ lookAt :: MonadClientUI m
        -> ActorId    -- ^ the actor that looks
        -> Text       -- ^ an extra sentence to print
        -> m Text
-{-# INLINABLE lookAt #-}
 lookAt detailed tilePrefix canSee pos aid msg = do
   cops@Kind.COps{cotile=Kind.Ops{okind}, coTileSpeedup} <- getsState scops
   itemToF <- itemToFullClient

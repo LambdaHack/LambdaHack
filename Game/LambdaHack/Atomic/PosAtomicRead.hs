@@ -62,7 +62,6 @@ data PosAtomic =
 -- to @UpdSpotActor@ (which provides minimal information that does not
 -- contradict state) if the visibility is lower.
 posUpdAtomic :: MonadStateRead m => UpdAtomic -> m PosAtomic
-{-# INLINABLE posUpdAtomic #-}
 posUpdAtomic cmd = case cmd of
   UpdCreateActor _ body _ -> return $! posProjBody body
   UpdDestroyActor _ body _ -> return $! posProjBody body
@@ -135,7 +134,6 @@ posUpdAtomic cmd = case cmd of
 
 -- | Produce the positions where the atomic special effect takes place.
 posSfxAtomic :: MonadStateRead m => SfxAtomic -> m PosAtomic
-{-# INLINABLE posSfxAtomic #-}
 posSfxAtomic cmd = case cmd of
   SfxStrike _ _ _ CSha _ -> return PosNone  -- shared stash is private
   SfxStrike _ target _ _ _ -> singleAid target
@@ -166,13 +164,11 @@ posProjBody body =
   else PosFidAndSight [bfid body] (blid body) [bpos body]
 
 singleAid :: MonadStateRead m => ActorId -> m PosAtomic
-{-# INLINABLE singleAid #-}
 singleAid aid = do
   body <- getsState $ getActorBody aid
   return $! posProjBody body
 
 doubleAid :: MonadStateRead m => ActorId -> ActorId -> m PosAtomic
-{-# INLINABLE doubleAid #-}
 doubleAid source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
@@ -181,7 +177,6 @@ doubleAid source target = do
   return $! assert (blid sb == blid tb) $ PosSight (blid sb) [bpos sb, bpos tb]
 
 singleContainer :: MonadStateRead m => Container -> m PosAtomic
-{-# INLINABLE singleContainer #-}
 singleContainer (CFloor lid p) = return $! PosSight lid [p]
 singleContainer (CEmbed lid p) = return $! PosSight lid [p]
 singleContainer (CActor aid CSha) = do  -- shared stash is private
@@ -199,7 +194,6 @@ singleContainer (CTrunk fid lid p) =
 -- informs about the continued existence of the actor between
 -- moves, v.s., popping out of existence and then back in.
 breakUpdAtomic :: MonadStateRead m => UpdAtomic -> m [UpdAtomic]
-{-# INLINABLE breakUpdAtomic #-}
 breakUpdAtomic cmd = case cmd of
   UpdMoveActor aid _ toP -> do
     -- We assume other factions don't see leaders and we know the actor's
@@ -250,7 +244,6 @@ seenAtomicSer posAtomic =
 generalMoveItem :: MonadStateRead m
                 => Bool -> ItemId -> Int -> Container -> Container
                 -> m [UpdAtomic]
-{-# INLINABLE generalMoveItem #-}
 generalMoveItem verbose iid k c1 c2 =
   case (c1, c2) of
     (CActor aid1 cstore1, CActor aid2 cstore2) | aid1 == aid2
@@ -262,7 +255,6 @@ generalMoveItem verbose iid k c1 c2 =
 containerMoveItem :: MonadStateRead m
                   => Bool -> ItemId -> Int -> Container -> Container
                   -> m [UpdAtomic]
-{-# INLINABLE containerMoveItem #-}
 containerMoveItem verbose iid k c1 c2 = do
   bag <- getsState $ getContainerBag c1
   case iid `EM.lookup` bag of

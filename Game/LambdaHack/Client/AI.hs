@@ -31,7 +31,6 @@ import Game.LambdaHack.Common.Request
 
 -- | Handle the move of an AI player.
 queryAI :: forall m. MonadClient m => ActorId -> m RequestAI
-{-# INLINABLE queryAI #-}
 queryAI aid = do
   let refreshTarget :: (ActorId, Actor) -> m (Maybe TgtAndPath)
       {-# NOINLINE refreshTarget #-}

@@ -28,14 +28,12 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
 
 initAI :: MonadClient m => DebugModeCli -> m ()
-{-# INLINABLE initAI #-}
 initAI sdebugCli = do
   modifyClient $ \cli -> cli {sdebugCli}
   side <- getsClient sside
   debugPossiblyPrint $ "AI client" <+> tshow side <+> "initializing."
 
 initUI :: MonadClientUI m => KeyKind -> Config -> DebugModeCli -> m ()
-{-# INLINABLE initUI #-}
 initUI copsClient sconfig sdebugCli = do
   modifyClient $ \cli ->
     cli { sxhair = TVector $ Vector 1 1  -- a step south-east, less alarming
@@ -55,7 +53,6 @@ loopUI :: ( MonadClientSetup m
           , MonadClientReadResponse m
           , MonadClientWriteRequest m )
        => KeyKind -> Config -> DebugModeCli -> m ()
-{-# INLINABLE loopUI #-}
 loopUI copsClient sconfig sdebugCli = do
   hasUI <- clientHasUI
   if not hasUI then initAI sdebugCli else initUI copsClient sconfig sdebugCli

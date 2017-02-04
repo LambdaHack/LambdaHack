@@ -75,7 +75,6 @@ neg (Vector vx vy) = Vector (-vx) (-vy)
 
 -- | Squared euclidean distance between two vectors.
 euclidDistSqVector :: Vector -> Vector -> Int
-{-# INLINABLE euclidDistSqVector #-}
 euclidDistSqVector (Vector x0 y0) (Vector x1 y1) =
   (x1 - x0) ^ (2 :: Int) + (y1 - y0) ^ (2 :: Int)
 
@@ -124,7 +123,6 @@ vicinity lxsize lysize p =
              , inside res (0, 0, lxsize - 1, lysize - 1) ]
 
 vicinityUnsafe :: Point -> [Point]
-{-# INLINABLE vicinityUnsafe #-}
 vicinityUnsafe p = [ shift p dxy | dxy <- moves ]
 
 -- | All (4 at most) cardinal direction neighbours of a point within an area.
@@ -140,7 +138,6 @@ vicinityCardinalUnsafe :: Point -> [Point]
 vicinityCardinalUnsafe p = [ shift p dxy | dxy <- movesCardinal ]
 
 squareUnsafeSet :: Point -> ES.EnumSet Point
-{-# INLINABLE squareUnsafeSet #-}
 squareUnsafeSet (Point x y) =
   ES.fromDistinctAscList $ map (uncurry Point)
     [ (x - 1, y - 1)
@@ -155,7 +152,6 @@ squareUnsafeSet (Point x y) =
 
 -- | Translate a point by a vector.
 shift :: Point -> Vector -> Point
-{-# INLINABLE shift #-}
 shift (Point x0 y0) (Vector x1 y1) = Point (x0 + x1) (y0 + y1)
 
 -- | Translate a point by a vector, but only if the result fits in an area.

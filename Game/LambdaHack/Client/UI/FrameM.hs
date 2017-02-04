@@ -33,7 +33,6 @@ import Game.LambdaHack.Common.State
 -- Similarly, for each line of the overlay, if it's too wide, it's truncated.
 drawOverlay :: MonadClientUI m
             => ColorMode -> Bool -> [AttrLine] -> LevelId -> m FrameForall
-{-# INLINABLE drawOverlay #-}
 drawOverlay dm onBlank topTrunc lid = do
   mbaseFrame <- if onBlank
                 then return $ FrameForall $ \_v -> return ()
@@ -42,7 +41,6 @@ drawOverlay dm onBlank topTrunc lid = do
 
 promptGetKey :: MonadClientUI m
              => ColorMode -> [AttrLine] -> Bool -> [K.KM] -> m K.KM
-{-# INLINABLE promptGetKey #-}
 promptGetKey dm ov onBlank frontKeyKeys = do
   lidV <- viewedLevelUI
   keyPressed <- anyKeyPressed
@@ -75,7 +73,6 @@ promptGetKey dm ov onBlank frontKeyKeys = do
   return km
 
 stopPlayBack :: MonadClientUI m => m ()
-{-# INLINABLE stopPlayBack #-}
 stopPlayBack = do
   modifySession $ \sess -> sess
     { slastPlay = []
@@ -101,7 +98,6 @@ stopPlayBack = do
 -- TODO: restrict the animation to 'per' before drawing.
 -- | Render animations on top of the current screen frame.
 renderFrames :: MonadClientUI m => LevelId -> Animation -> m Frames
-{-# INLINABLE renderFrames #-}
 renderFrames arena anim = do
   report <- getReportUI
   let truncRep = [renderReport report]
@@ -113,13 +109,11 @@ renderFrames arena anim = do
 
 -- | Render and display animations on top of the current screen frame.
 animate :: MonadClientUI m => LevelId -> Animation -> m ()
-{-# INLINABLE animate #-}
 animate arena anim = do
   frames <- renderFrames arena anim
   displayFrames arena frames
 
 fadeOutOrIn :: MonadClientUI m => Bool -> m ()
-{-# INLINABLE fadeOutOrIn #-}
 fadeOutOrIn out = do
   arena <- getArenaUI
   Level{lxsize, lysize} <- getLevel arena

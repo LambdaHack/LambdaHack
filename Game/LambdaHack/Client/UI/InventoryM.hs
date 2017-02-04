@@ -81,7 +81,6 @@ getGroupItem :: MonadClientUI m
              -> [CStore]  -- ^ initial legal modes
              -> [CStore]  -- ^ legal modes after Calm taken into account
              -> m (Either Text ((ItemId, ItemFull), ItemDialogMode))
-{-# INLINABLE getGroupItem #-}
 getGroupItem psuit prompt promptGeneric
              cLegalRaw cLegalAfterCalm = do
   soc <- getFull psuit
@@ -101,7 +100,6 @@ getStoreItem :: MonadClientUI m
                                  -- ^ how to describe suitable items
              -> ItemDialogMode   -- ^ initial mode
              -> m (Either Text ((ItemId, ItemFull), ItemDialogMode))
-{-# INLINABLE getStoreItem #-}
 getStoreItem prompt cInitial = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
@@ -141,7 +139,6 @@ getFull :: MonadClientUI m
                             --   in the starting mode is suitable
         -> Bool             -- ^ whether to permit multiple items as a result
         -> m (Either Text ([(ItemId, ItemFull)], ItemDialogMode))
-{-# INLINABLE getFull #-}
 getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
         askWhenLone permitMulitple = do
   side <- getsClient sside
@@ -204,7 +201,6 @@ getItem :: MonadClientUI m
         -> Bool             -- ^ whether to permit multiple items as a result
         -> [ItemDialogMode] -- ^ all legal modes
         -> m (Either Text ([(ItemId, ItemFull)], ItemDialogMode))
-{-# INLINABLE getItem #-}
 getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
         cLegal = do
   leader <- getLeaderUI
@@ -242,7 +238,6 @@ transition :: forall m. MonadClientUI m
            -> [ItemDialogMode]
            -> ItemDialogState
            -> m (Either Text ([(ItemId, ItemFull)], ItemDialogMode))
-{-# INLINABLE transition #-}
 transition psuit prompt promptGeneric permitMulitple cLegal
            numPrefix cCur cRest itemDialogState = do
   let recCall = transition psuit prompt promptGeneric permitMulitple cLegal
@@ -445,7 +440,6 @@ legalWithUpdatedLeader :: MonadClientUI m
                        => ItemDialogMode
                        -> [ItemDialogMode]
                        -> m (ItemDialogMode, [ItemDialogMode])
-{-# INLINABLE legalWithUpdatedLeader #-}
 legalWithUpdatedLeader cCur cRest = do
   leader <- getLeaderUI
   let newLegal = cCur : cRest  -- not updated in any way yet
@@ -472,7 +466,6 @@ runDefItemKey :: MonadClientUI m
               -> Text
               -> ItemDialogMode
               -> m (Either Text ([(ItemId, ItemFull)], ItemDialogMode))
-{-# INLINABLE runDefItemKey #-}
 runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   let itemKeys = slotKeys ++ map fst keyDefs
       wrapB s = "[" <> s <> "]"

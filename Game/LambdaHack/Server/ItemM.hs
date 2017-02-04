@@ -38,7 +38,6 @@ import Game.LambdaHack.Server.State
 registerItem :: (MonadAtomic m, MonadServer m)
              => ItemFull -> ItemKnown -> ItemSeed -> Container -> Bool
              -> m ItemId
-{-# INLINABLE registerItem #-}
 registerItem ItemFull{..} itemKnown@(_, aspectRecord)
              seed container verbose = do
   itemRev <- getsServer sitemRev
@@ -61,7 +60,6 @@ registerItem ItemFull{..} itemKnown@(_, aspectRecord)
       return $! icounter
 
 createLevelItem :: (MonadAtomic m, MonadServer m) => Point -> LevelId -> m ()
-{-# INLINABLE createLevelItem #-}
 createLevelItem pos lid = do
   Level{litemFreq} <- getLevel lid
   let container = CFloor lid pos
@@ -71,7 +69,6 @@ createLevelItem pos lid = do
 -- perhaps keep such tiles in a map to avoid imap over all dungeon tiles
 embedItem :: (MonadAtomic m, MonadServer m)
           => LevelId -> Point -> Kind.Id TileKind -> m ()
-{-# INLINABLE embedItem #-}
 embedItem lid pos tk = do
   Kind.COps{cotile, coTileSpeedup} <- getsState scops
   let embeds = Tile.embedItems cotile tk
@@ -87,7 +84,6 @@ rollItem :: (MonadAtomic m, MonadServer m)
          => Int -> LevelId -> Freqs ItemKind
          -> m (Maybe ( ItemKnown, ItemFull, ItemDisco
                      , ItemSeed, GroupName ItemKind ))
-{-# INLINABLE rollItem #-}
 rollItem lvlSpawned lid itemFreq = do
   cops <- getsState scops
   flavour <- getsServer sflavour
@@ -110,7 +106,6 @@ rollAndRegisterItem :: (MonadAtomic m, MonadServer m)
                     => LevelId -> Freqs ItemKind -> Container -> Bool
                     -> Maybe Int
                     -> m (Maybe (ItemId, (ItemFull, GroupName ItemKind)))
-{-# INLINABLE rollAndRegisterItem #-}
 rollAndRegisterItem lid itemFreq container verbose mk = do
   -- Power depth of new items unaffected by number of spawned actors.
   m5 <- rollItem 0 lid itemFreq
@@ -128,7 +123,6 @@ rollAndRegisterItem lid itemFreq container verbose mk = do
       return $ Just (iid, (itemFull, itemGroup))
 
 placeItemsInDungeon :: forall m. (MonadAtomic m, MonadServer m) => m ()
-{-# INLINABLE placeItemsInDungeon #-}
 placeItemsInDungeon = do
   Kind.COps{coTileSpeedup} <- getsState scops
   let initialItems (lid, Level{ltile, litemNum, lxsize, lysize}) = do
@@ -159,7 +153,6 @@ placeItemsInDungeon = do
   mapM_ initialItems fromEasyToHard
 
 embedItemsInDungeon :: (MonadAtomic m, MonadServer m) => m ()
-{-# INLINABLE embedItemsInDungeon #-}
 embedItemsInDungeon = do
   let embedItems (lid, Level{ltile}) = PointArray.imapMA_ (embedItem lid) ltile
   dungeon <- getsState sdungeon
@@ -171,7 +164,6 @@ embedItemsInDungeon = do
 
 fullAssocsServer :: MonadServer m
                  => ActorId -> [CStore] -> m [(ItemId, ItemFull)]
-{-# INLINABLE fullAssocsServer #-}
 fullAssocsServer aid cstores = do
   cops <- getsState scops
   discoKind <- getsServer sdiscoKind
@@ -179,7 +171,6 @@ fullAssocsServer aid cstores = do
   getsState $ fullAssocs cops discoKind discoAspect aid cstores
 
 itemToFullServer :: MonadServer m => m (ItemId -> ItemQuant -> ItemFull)
-{-# INLINABLE itemToFullServer #-}
 itemToFullServer = do
   cops <- getsState scops
   discoKind <- getsServer sdiscoKind
@@ -192,7 +183,6 @@ itemToFullServer = do
 -- | Mapping over actor's items from a give store.
 mapActorCStore_ :: MonadServer m
                 => CStore -> (ItemId -> ItemQuant -> m a) -> Actor ->  m ()
-{-# INLINABLE mapActorCStore_ #-}
 mapActorCStore_ cstore f b = do
   bag <- getsState $ getBodyStoreBag b cstore
   mapM_ (uncurry f) $ EM.assocs bag

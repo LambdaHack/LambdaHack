@@ -41,7 +41,6 @@ import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 
 -- | Get the current perception of a client.
 getPerFid :: MonadClient m => LevelId -> m Perception
-{-# INLINABLE getPerFid #-}
 getPerFid lid = do
   fper <- getsClient sfper
   let assFail = assert `failure` "no perception at given level"
@@ -51,7 +50,6 @@ getPerFid lid = do
 -- | The part of speech describing the actor or "you" if a leader
 -- of the client's faction. The actor may be not present in the dungeon.
 partActorLeader :: MonadClient m => ActorId -> Actor -> m MU.Part
-{-# INLINABLE partActorLeader #-}
 partActorLeader aid b = do
   mleader <- getsClient _sleader
   return $! case mleader of
@@ -61,7 +59,6 @@ partActorLeader aid b = do
 -- | The part of speech with the actor's pronoun or "you" if a leader
 -- of the client's faction. The actor may be not present in the dungeon.
 partPronounLeader :: MonadClient m => ActorId -> Actor -> m MU.Part
-{-# INLINABLE partPronounLeader #-}
 partPronounLeader aid b = do
   mleader <- getsClient _sleader
   return $! case mleader of
@@ -72,7 +69,6 @@ partPronounLeader aid b = do
 -- and present in the dungeon) or a special name if a leader
 -- of the observer's faction.
 partAidLeader :: MonadClient m => ActorId -> m MU.Part
-{-# INLINABLE partAidLeader #-}
 partAidLeader aid = do
   b <- getsState $ getActorBody aid
   partActorLeader aid b
@@ -80,7 +76,6 @@ partAidLeader aid = do
 -- | Calculate the position of an actor's target.
 aidTgtToPos :: MonadClient m
             => ActorId -> LevelId -> Maybe Target -> m (Maybe Point)
-{-# INLINABLE aidTgtToPos #-}
 aidTgtToPos aid lidV tgt =
   case tgt of
     Just (TEnemy a _) -> do
@@ -114,7 +109,6 @@ aidTgtToPos aid lidV tgt =
 -- or be out of sight range, but in weapon range.
 aidTgtAims :: MonadClient m
            => ActorId -> LevelId -> Maybe Target -> m (Either Text Int)
-{-# INLINABLE aidTgtAims #-}
 aidTgtAims aid lidV tgt = do
   let findNewEps onlyFirst pos = do
         oldEps <- getsClient seps
@@ -154,7 +148,6 @@ aidTgtAims aid lidV tgt = do
 -- the first found eps for which the number reaches the distance between
 -- actor and target position, or Nothing if none can be found.
 makeLine :: MonadClient m => Bool -> Actor -> Point -> Int -> m (Maybe Int)
-{-# INLINABLE makeLine #-}
 makeLine onlyFirst body fpos epsOld = do
   cops <- getsState scops
   lvl@Level{lxsize, lysize} <- getLevel (blid body)
@@ -188,7 +181,6 @@ makeLine onlyFirst body fpos epsOld = do
                  tryLines (epsOld + 1) (Nothing, minBound)  -- generate best
 
 actorSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
-{-# INLINABLE actorSkillsClient #-}
 actorSkillsClient aid = do
   ar <- getsClient $ (EM.! aid) . sactorAspect
   body <- getsState $ getActorBody aid
@@ -203,7 +195,6 @@ actorSkillsClient aid = do
 
 updateItemSlot :: MonadClient m
                => CStore -> Maybe ActorId -> ItemId -> m SlotChar
-{-# INLINABLE updateItemSlot #-}
 updateItemSlot store maid iid = do
   slots@(ItemSlots itemSlots organSlots) <- getsClient sslots
   let onlyOrgans = store == COrgan
@@ -233,7 +224,6 @@ updateItemSlot store maid iid = do
 
 fullAssocsClient :: MonadClient m
                  => ActorId -> [CStore] -> m [(ItemId, ItemFull)]
-{-# INLINABLE fullAssocsClient #-}
 fullAssocsClient aid cstores = do
   cops <- getsState scops
   discoKind <- getsClient sdiscoKind
@@ -241,7 +231,6 @@ fullAssocsClient aid cstores = do
   getsState $ fullAssocs cops discoKind discoAspect aid cstores
 
 itemToFullClient :: MonadClient m => m (ItemId -> ItemQuant -> ItemFull)
-{-# INLINABLE itemToFullClient #-}
 itemToFullClient = do
   cops <- getsState scops
   discoKind <- getsClient sdiscoKind
@@ -256,7 +245,6 @@ itemToFullClient = do
 pickWeaponClient :: MonadClient m
                  => ActorId -> ActorId
                  -> m (Maybe (RequestTimed 'Ability.AbMelee))
-{-# INLINABLE pickWeaponClient #-}
 pickWeaponClient source target = do
   eqpAssocs <- fullAssocsClient source [CEqp]
   bodyAssocs <- fullAssocsClient source [COrgan]
@@ -275,7 +263,6 @@ pickWeaponClient source target = do
       return $ Just $ ReqMelee target iid cstore
 
 updateSalter :: MonadClient m => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
-{-# INLINABLE updateSalter #-}
 updateSalter lid pts = do
   Kind.COps{coTileSpeedup} <- getsState scops
   let pas = map (second $ toEnum . Tile.alterMinWalk coTileSpeedup) pts
@@ -283,7 +270,6 @@ updateSalter lid pts = do
   modifyClient $ \cli -> cli {salter = EM.adjust f lid $ salter cli}
 
 createSalter :: MonadClient m => State -> m ()
-{-# INLINABLE createSalter #-}
 createSalter s = do
   Kind.COps{coTileSpeedup} <- getsState scops
   let f Level{ltile} =
@@ -300,7 +286,6 @@ aspectRecordFromItem disco discoAspect iid itemBase =
         Nothing -> emptyAspectRecord
 
 aspectRecordFromItemClient :: MonadClient m => ItemId -> Item -> m AspectRecord
-{-# INLINABLE aspectRecordFromItemClient #-}
 aspectRecordFromItemClient iid itemBase = do
   disco <- getsClient sdiscoKind
   discoAspect <- getsClient sdiscoAspect
@@ -318,7 +303,6 @@ aspectRecordFromActorState disco discoAspect b s =
 
 aspectRecordFromActorClient :: MonadClient m
                             => Actor -> [(ItemId, Item)] -> m AspectRecord
-{-# INLINABLE aspectRecordFromActorClient #-}
 aspectRecordFromActorClient b ais = do
   disco <- getsClient sdiscoKind
   discoAspect <- getsClient sdiscoAspect
@@ -328,7 +312,6 @@ aspectRecordFromActorClient b ais = do
   return $! aspectRecordFromActorState disco discoAspect b sAis
 
 createSactorAspect :: MonadClient m => State -> m ()
-{-# INLINABLE createSactorAspect #-}
 createSactorAspect s = do
   disco <- getsClient sdiscoKind
   discoAspect <- getsClient sdiscoAspect
@@ -336,7 +319,6 @@ createSactorAspect s = do
   modifyClient $ \cli -> cli {sactorAspect = EM.map f $ sactorD s}
 
 enemyMaxAb :: MonadClient m => ActorId -> m Ability.Skills
-{-# INLINABLE enemyMaxAb #-}
 enemyMaxAb aid = do
   actorAspect <- getsClient sactorAspect
   case EM.lookup aid actorAspect of

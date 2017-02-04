@@ -44,7 +44,6 @@ import Game.LambdaHack.Server.State
 -- | Spawn, possibly, a monster according to the level's actor groups.
 -- We assume heroes are never spawned.
 spawnMonster :: (MonadAtomic m, MonadServer m) => m ()
-{-# INLINABLE spawnMonster #-}
 spawnMonster = do
   arenas <- getsServer sarenas
   -- Do this on only one of the arenas to prevent micromanagement,
@@ -72,7 +71,6 @@ spawnMonster = do
 addAnyActor :: (MonadAtomic m, MonadServer m)
             => Freqs ItemKind -> LevelId -> Time -> Maybe Point
             -> m (Maybe ActorId)
-{-# INLINABLE addAnyActor #-}
 addAnyActor actorFreq lid time mpos = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- contains the constant properties.
@@ -111,7 +109,6 @@ addAnyActor actorFreq lid time mpos = do
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point
              -> Bool -> LevelId -> Level -> Faction -> State
              -> Rnd Point
-{-# INLINABLE rollSpawnPos #-}
 rollSpawnPos Kind.COps{coTileSpeedup} visible
              mobile lid lvl@Level{ltile, lxsize, lysize} fact s = do
   let inhabitants = actorRegularList (isAtWar fact) lid s
@@ -148,7 +145,6 @@ rollSpawnPos Kind.COps{coTileSpeedup} visible
 
 dominateFidSfx :: (MonadAtomic m, MonadServer m)
                => FactionId -> ActorId -> m Bool
-{-# INLINABLE dominateFidSfx #-}
 dominateFidSfx fid target = do
   tb <- getsState $ getActorBody target
   -- Actors that don't move freely can't be dominated, for otherwise,
@@ -175,7 +171,6 @@ dominateFidSfx fid target = do
 
 dominateFid :: (MonadAtomic m, MonadServer m)
             => FactionId -> ActorId -> m ()
-{-# INLINABLE dominateFid #-}
 dominateFid fid target = do
   Kind.COps{cotile} <- getsState scops
   tb0 <- getsState $ getActorBody target
@@ -221,7 +216,6 @@ dominateFid fid target = do
 
 -- | Advance the move time for the given actor
 advanceTime :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-{-# INLINABLE advanceTime #-}
 advanceTime aid = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsServer sactorAspect
@@ -243,7 +237,6 @@ advanceTime aid = do
 -- Thanks to this, there is no problem with leader of a numerous faction
 -- having very long UI turns, introducing UI lag.
 overheadActorTime :: (MonadAtomic m, MonadServer m) => FactionId -> m ()
-{-# INLINABLE overheadActorTime #-}
 overheadActorTime fid = do
   actorTime <- getsServer $ (EM.! fid) . sactorTime
   s <- getState
@@ -264,7 +257,6 @@ overheadActorTime fid = do
 -- | Swap the relative move times of two actors (e.g., when switching
 -- a UI leader).
 swapTime :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
-{-# INLINABLE swapTime #-}
 swapTime source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
@@ -300,7 +292,6 @@ swapTime source target = do
 -- circumstances, non-max calm causes a consistent Calm regeneration
 -- UI indicator to be displayed each turn (not every few turns).
 managePerTurn :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-{-# INLINABLE managePerTurn #-}
 managePerTurn aid = do
   b <- getsState $ getActorBody aid
   unless (bproj b) $ do
@@ -332,7 +323,6 @@ managePerTurn aid = do
         execUpdAtomic $ UpdRefillHP aid clearMark
 
 udpateCalm :: (MonadAtomic m, MonadServer m) => ActorId -> Int64 -> m ()
-{-# INLINABLE udpateCalm #-}
 udpateCalm target deltaCalm = do
   tb <- getsState $ getActorBody target
   actorAspect <- getsServer sactorAspect
@@ -346,7 +336,6 @@ udpateCalm target deltaCalm = do
       UpdFidImpressedActor target (bfidImpressed tb) (bfidOriginal tb)
 
 leadLevelSwitch :: (MonadAtomic m, MonadServer m) => m ()
-{-# INLINABLE leadLevelSwitch #-}
 leadLevelSwitch = do
   Kind.COps{cotile} <- getsState scops
   let canSwitch fact = fst (autoDungeonLevel fact)

@@ -16,25 +16,21 @@ import Game.LambdaHack.Common.State
 
 -- | Add a message to the current report.
 msgAdd :: MonadClientUI m => Text -> m ()
-{-# INLINABLE msgAdd #-}
 msgAdd msg = modifySession $ \sess ->
   sess {_sreport = snocReport (_sreport sess) (toMsg $ textToAL msg)}
 
 -- | Add a prompt to the current report.
 promptAdd :: MonadClientUI m => Text -> m ()
-{-# INLINABLE promptAdd #-}
 promptAdd msg = modifySession $ \sess ->
   sess {_sreport = snocReport (_sreport sess) (toPrompt $ textToAL msg)}
 
 -- | Add a prompt to the current report.
 promptAddAttr :: MonadClientUI m => AttrLine -> m ()
-{-# INLINABLE promptAddAttr #-}
 promptAddAttr msg = modifySession $ \sess ->
   sess {_sreport = snocReport (_sreport sess) (toPrompt msg)}
 
 -- | Store current report in the history and reset report.
 recordHistory :: MonadClientUI m => m ()
-{-# INLINABLE recordHistory #-}
 recordHistory = do
   time <- getsState stime
   SessionUI{_sreport, shistory} <- getSession

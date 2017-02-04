@@ -61,7 +61,6 @@ loopSer :: (MonadAtomic m, MonadServerReadRequest m)
         -> (Maybe SessionUI -> Kind.COps -> FactionId -> ChanServer -> IO ())
              -- ^ the code to run for UI clients
         -> m ()
-{-# INLINABLE loopSer #-}
 loopSer sdebug sconfig executorClient = do
   -- Recover states and launch clients.
   cops <- getsState scops
@@ -100,7 +99,6 @@ loopSer sdebug sconfig executorClient = do
   loopUpd updConn
 
 factionArena :: MonadStateRead m => Faction -> m (Maybe LevelId)
-{-# INLINABLE factionArena #-}
 factionArena fact = case gleader fact of
   -- Even spawners need an active arena for their leader,
   -- or they start clogging stairs.
@@ -154,7 +152,6 @@ handleFidUpd False updatePerFid fid fact = do
 -- will be generated). Run the leader and other actors moves.
 -- Eventually advance the time and repeat.
 loopUpd :: forall m. (MonadAtomic m, MonadServerReadRequest m) => m () -> m ()
-{-# INLINABLE loopUpd #-}
 loopUpd updConn = do
   let updatePerFid :: FactionId -> m ()
       {-# NOINLINE updatePerFid #-}
@@ -233,7 +230,6 @@ endClip updatePerFid = do
 
 -- | Trigger periodic items for all actors on the given level.
 applyPeriodicLevel :: (MonadAtomic m, MonadServer m) => m ()
-{-# INLINABLE applyPeriodicLevel #-}
 applyPeriodicLevel = do
   arenas <- getsServer sarenas
   let arenasSet = ES.fromDistinctAscList arenas
@@ -263,7 +259,6 @@ applyPeriodicLevel = do
 
 handleTrajectories :: (MonadAtomic m, MonadServer m)
                    => LevelId -> FactionId -> m ()
-{-# INLINABLE handleTrajectories #-}
 handleTrajectories lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
@@ -351,7 +346,6 @@ setTrajectory aid = do
 
 handleActors :: (MonadAtomic m, MonadServerReadRequest m)
              => LevelId -> FactionId -> m Bool
-{-# INLINABLE handleActors #-}
 handleActors lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
@@ -368,7 +362,6 @@ handleActors lid fid = do
 
 hActors :: forall m. (MonadAtomic m, MonadServerReadRequest m)
         => FactionId -> [(ActorId, Actor)] -> m Bool
-{-# INLINABLE hActors #-}
 hActors _ [] = return False
 hActors fid as@((aid, body) : rest) = do
   let side = bfid body
@@ -421,7 +414,6 @@ hActors fid as@((aid, body) : rest) = do
       if swriteSave then return False else hActors fid as
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
-{-# INLINABLE gameExit #-}
 gameExit = do
   -- Verify that the not saved caches are equal to future reconstructed.
   -- Otherwise, save/restore would change game state.
@@ -469,7 +461,6 @@ gameExit = do
 
 restartGame :: (MonadAtomic m, MonadServerReadRequest m)
             => m () -> m () -> Maybe (GroupName ModeKind) -> m ()
-{-# INLINABLE restartGame #-}
 restartGame updConn loop mgameMode = do
   cops <- getsState scops
   sdebugNxt <- getsServer sdebugNxt
@@ -491,7 +482,6 @@ restartGame updConn loop mgameMode = do
 -- and when all report back, asking them to commit the save.
 -- | Save game on server and all clients.
 writeSaveAll :: (MonadAtomic m, MonadServerReadRequest m) => Bool -> m ()
-{-# INLINABLE writeSaveAll #-}
 writeSaveAll uiRequested = do
   bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
   when (uiRequested || not bench) $ do

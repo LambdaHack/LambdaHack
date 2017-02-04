@@ -58,7 +58,6 @@ import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 targetDesc :: MonadClientUI m => Maybe Target -> m (Text, Maybe Text)
-{-# INLINABLE targetDesc #-}
 targetDesc target = do
   arena <- getArenaUI
   lidV <- viewedLevelUI
@@ -113,19 +112,16 @@ targetDesc target = do
     Nothing -> return ("crosshair location", Nothing)
 
 targetDescLeader :: MonadClientUI m => ActorId -> m (Text, Maybe Text)
-{-# INLINABLE targetDescLeader #-}
 targetDescLeader leader = do
   tgt <- getsClient $ getTarget leader
   targetDesc tgt
 
 targetDescXhair :: MonadClientUI m => m (Text, Maybe Text)
-{-# INLINABLE targetDescXhair #-}
 targetDescXhair = do
   sxhair <- getsClient sxhair
   targetDesc $ Just sxhair
 
 drawFrameTerrain :: forall m. MonadClientUI m => LevelId -> m FrameForall
-{-# INLINABLE drawFrameTerrain #-}
 drawFrameTerrain drawnLevelId = do
   Kind.COps{coTileSpeedup, cotile=Kind.Ops{okind}} <- getsState scops
   StateClient{smarkSuspect} <- getClient
@@ -164,7 +160,6 @@ drawFrameTerrain drawnLevelId = do
   return upd
 
 drawFrameContent :: forall m. MonadClientUI m => LevelId -> m FrameForall
-{-# INLINABLE drawFrameContent #-}
 drawFrameContent drawnLevelId = do
   SessionUI{smarkSmell} <- getSession
   Level{lxsize, lsmell, ltime, lfloor} <- getLevel drawnLevelId
@@ -199,7 +194,6 @@ drawFrameContent drawnLevelId = do
   return upd
 
 drawFramePath :: forall m. MonadClientUI m => LevelId -> m FrameForall
-{-# INLINABLE drawFramePath #-}
 drawFramePath drawnLevelId = do
   Kind.COps{coTileSpeedup} <- getsState scops
   SessionUI{saimMode} <- getSession
@@ -262,7 +256,6 @@ drawFramePath drawnLevelId = do
   return upd
 
 drawFrameActor :: forall m. MonadClientUI m => LevelId -> m FrameForall
-{-# INLINABLE drawFrameActor #-}
 drawFrameActor drawnLevelId = do
   SessionUI{sselected} <- getSession
   Level{lxsize, lactor} <- getLevel drawnLevelId
@@ -299,7 +292,6 @@ drawFrameActor drawnLevelId = do
 
 drawFrameExtra :: forall m. MonadClientUI m
                => ColorMode -> LevelId -> m FrameForall
-{-# INLINABLE drawFrameExtra #-}
 drawFrameExtra dm drawnLevelId = do
   SessionUI{saimMode, smarkVision} <- getSession
   Level{lxsize, lysize} <- getLevel drawnLevelId
@@ -339,7 +331,6 @@ drawFrameExtra dm drawnLevelId = do
   return upd
 
 drawFrameStatus :: MonadClientUI m => LevelId -> m AttrLine
-{-# INLINABLE drawFrameStatus #-}
 drawFrameStatus drawnLevelId = do
   SessionUI{sselected, saimMode, swaitTimes, sitemSel} <- getSession
   mleader <- getsClient _sleader
@@ -434,7 +425,6 @@ drawFrameStatus drawnLevelId = do
 -- to the frontends to display separately or overlay over map,
 -- depending on the frontend.
 drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m FrameForall
-{-# INLINABLE drawBaseFrame #-}
 drawBaseFrame dm drawnLevelId = do
   Level{lxsize, lysize} <- getLevel drawnLevelId
   updTerrain <- drawFrameTerrain drawnLevelId
@@ -467,7 +457,6 @@ drawArenaStatus explored Level{ldepth=AbsDepth ld, ldesc, lseen, lclear} width =
               $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' ldesc) <+> seenStatus
 
 drawLeaderStatus :: MonadClient m => Int -> m AttrLine
-{-# INLINABLE drawLeaderStatus #-}
 drawLeaderStatus waitT = do
   let calmHeaderText = "Calm"
       hpHeaderText = "HP"
@@ -516,7 +505,6 @@ drawLeaderStatus waitT = do
                          <+:> stringToAL (hpHeaderText <> ":  --/--")
 
 drawLeaderDamage :: MonadClient m => Int -> m AttrLine
-{-# INLINABLE drawLeaderDamage #-}
 drawLeaderDamage width = do
   mleader <- getsClient _sleader
   let addColor s = map (Color.attrChar2ToW32 Color.BrCyan) s
@@ -549,7 +537,6 @@ drawLeaderDamage width = do
 -- TODO: colour some texts using the faction's colour
 drawSelected :: MonadClient m
              => LevelId -> Int -> ES.EnumSet ActorId -> m (Int, AttrLine)
-{-# INLINABLE drawSelected #-}
 drawSelected drawnLevelId width selected = do
   mleader <- getsClient _sleader
   side <- getsClient sside

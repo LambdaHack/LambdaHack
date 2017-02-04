@@ -364,7 +364,6 @@ cmdAtomicSemCli cmd = case cmd of
 
 -- For now, only checking the stores.
 wipeBfsIfItemAffectsSkills :: MonadClient m => [CStore] -> ActorId -> m ()
-{-# INLINABLE wipeBfsIfItemAffectsSkills #-}
 wipeBfsIfItemAffectsSkills stores aid =
   unless (null $ intersect stores [CEqp, COrgan]) $ invalidateBfsAid aid
 
@@ -376,7 +375,6 @@ tileChangeAffectsBfs Kind.COps{coTileSpeedup} fromTile toTile =
   /= Tile.alterMinWalk coTileSpeedup toTile
 
 createActor :: MonadClient m => ActorId -> Actor -> [(ItemId, Item)] -> m ()
-{-# INLINABLE createActor #-}
 createActor aid b ais = do
   let affect tgt = case tgt of
         TEnemyPos a _ _ permit | a == aid -> TEnemy a permit
@@ -391,7 +389,6 @@ createActor aid b ais = do
   modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
 
 destroyActor :: MonadClient m => ActorId -> Actor -> Bool -> m ()
-{-# INLINABLE destroyActor #-}
 destroyActor aid b destroy = do
   when destroy $ modifyClient $ updateTarget aid (const Nothing)  -- gc
   modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}  -- gc
@@ -417,7 +414,6 @@ destroyActor aid b destroy = do
   modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
 
 addItemToActor :: MonadClient m => ItemId -> Item -> Int -> ActorId -> m ()
-{-# INLINABLE addItemToActor #-}
 addItemToActor iid itemBase k aid = do
   arItem <- aspectRecordFromItemClient iid itemBase
   let g arActor = sumAspectRecord [(arActor, 1), (arItem, k)]
@@ -425,7 +421,6 @@ addItemToActor iid itemBase k aid = do
   modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
 
 perception :: MonadClient m => LevelId -> Perception -> Perception -> m ()
-{-# INLINABLE perception #-}
 perception lid outPer inPer = do
   -- Clients can't compute FOV on their own, because they don't know
   -- if unknown tiles are clear or not. Server would need to send
@@ -452,7 +447,6 @@ perception lid outPer inPer = do
 
 discoverKind :: MonadClient m
              => Container -> ItemId -> Kind.Id ItemKind -> m ()
-{-# INLINABLE discoverKind #-}
 discoverKind c iid kmKind = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
@@ -473,7 +467,6 @@ discoverKind c iid kmKind = do
 
 coverKind :: MonadClient m
           => Container -> ItemId -> Kind.Id ItemKind -> m ()
-{-# INLINABLE coverKind #-}
 coverKind c iid ik = do
   item <- getsState $ getItemBody iid
   let f Nothing = assert `failure` "already covered" `twith` (c, iid, ik)
@@ -486,7 +479,6 @@ coverKind c iid ik = do
 
 discoverSeed :: MonadClient m
              => Container -> ItemId -> ItemSeed -> AbsDepth -> m ()
-{-# INLINABLE discoverSeed #-}
 discoverSeed c iid seed ldepth = do
   -- Wipe out BFS, because the player could potentially learn that his items
   -- affect his actors' skills relevant to BFS.
@@ -510,7 +502,6 @@ discoverSeed c iid seed ldepth = do
 
 coverSeed :: MonadClient m
           => Container -> ItemId -> ItemSeed -> m ()
-{-# INLINABLE coverSeed #-}
 coverSeed c iid seed = do
   let f Nothing = assert `failure` "already covered" `twith` (c, iid, seed)
       f Just{} = Nothing  -- checking that old and new agree is too much work
@@ -518,7 +509,6 @@ coverSeed c iid seed = do
   getState >>= createSactorAspect
 
 killExit :: MonadClient m => m ()
-{-# INLINABLE killExit #-}
 killExit = do
   side <- getsClient sside
   debugPossiblyPrint $ "Client" <+> tshow side <+> "quitting."

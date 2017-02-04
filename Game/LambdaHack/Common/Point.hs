@@ -73,12 +73,10 @@ maxLevelDim = 2 ^ maxLevelDimExponent - 1
 
 -- | The distance between two points in the chessboard metric.
 chessDist :: Point -> Point -> Int
-{-# INLINABLE chessDist #-}
 chessDist (Point x0 y0) (Point x1 y1) = max (abs (x1 - x0)) (abs (y1 - y0))
 
 -- | Squared euclidean distance between two points.
 euclidDistSq :: Point -> Point -> Int
-{-# INLINABLE euclidDistSq #-}
 euclidDistSq (Point x0 y0) (Point x1 y1) =
   (x1 - x0) ^ (2 :: Int) + (y1 - y0) ^ (2 :: Int)
 
@@ -90,7 +88,6 @@ adjacent s t = chessDist s t == 1
 
 -- | Checks that a point belongs to an area.
 inside :: Point -> (X, Y, X, Y) -> Bool
-{-# INLINABLE inside #-}
 inside (Point x y) (x0, y0, x1, y1) = x1 >= x && x >= x0 && y1 >= y && y >= y0
 
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@

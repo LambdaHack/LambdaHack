@@ -31,11 +31,9 @@ import Game.LambdaHack.Server.State
 -- so their logs would be harder to interpret.
 
 debugShow :: Show a => a -> Text
-{-# INLINABLE debugShow #-}
 debugShow = T.pack . Show.Pretty.ppShow
 
 debugResponse :: MonadServer m => FactionId -> Response -> m ()
-{-# INLINABLE debugResponse #-}
 debugResponse fid cmd = case cmd of
   RespUpdAtomic cmdA@UpdPerception{} -> debugPlain fid cmd cmdA
   RespUpdAtomic cmdA@UpdResume{} -> debugPlain fid cmd cmdA
@@ -50,25 +48,21 @@ debugResponse fid cmd = case cmd of
   RespQueryUI -> serverPrint "RespQueryUI"
 
 debugPretty :: (MonadServer m, Show a) => FactionId -> a -> UpdAtomic -> m ()
-{-# INLINABLE debugPretty #-}
 debugPretty fid cmd cmdA = do
   ps <- posUpdAtomic cmdA
   serverPrint $ debugShow (fid, cmd, ps)
 
 debugPlain :: (MonadServer m, Show a) => FactionId -> a -> UpdAtomic -> m ()
-{-# INLINABLE debugPlain #-}
 debugPlain fid cmd cmdA = do
   ps <- posUpdAtomic cmdA
   serverPrint $ T.pack $ show (fid, cmd, ps)  -- too large for pretty printing
 
 debugRequestAI :: MonadServer m => ActorId -> RequestAI -> m ()
-{-# INLINABLE debugRequestAI #-}
 debugRequestAI aid cmd = do
   d <- debugAid aid "AI request" cmd
   serverPrint d
 
 debugRequestUI :: MonadServer m => ActorId -> RequestUI -> m ()
-{-# INLINABLE debugRequestUI #-}
 debugRequestUI aid cmd = do
   d <- debugAid aid "UI request" cmd
   serverPrint d
@@ -86,7 +80,6 @@ data DebugAid a = DebugAid
   deriving Show
 
 debugAid :: (MonadServer m, Show a) => ActorId -> Text -> a -> m Text
-{-# INLINABLE debugAid #-}
 debugAid aid label cmd = do
   b <- getsState $ getActorBody aid
   time <- getsState $ getLocalTime (blid b)

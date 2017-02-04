@@ -60,7 +60,6 @@ import Game.LambdaHack.Content.ModeKind
 
 -- | Require that the target enemy is visible by the party.
 condAimEnemyPresentM :: MonadClient m => ActorId -> m Bool
-{-# INLINABLE condAimEnemyPresentM #-}
 condAimEnemyPresentM aid = do
   btarget <- getsClient $ getTarget aid
   return $! case btarget of
@@ -69,7 +68,6 @@ condAimEnemyPresentM aid = do
 
 -- | Require that the target enemy is remembered on the actor's level.
 condAimEnemyRememberedM :: MonadClient m => ActorId -> m Bool
-{-# INLINABLE condAimEnemyRememberedM #-}
 condAimEnemyRememberedM aid = do
   b <- getsState $ getActorBody aid
   btarget <- getsClient $ getTarget aid
@@ -79,7 +77,6 @@ condAimEnemyRememberedM aid = do
 
 -- | Require that the target enemy is adjacent to at least one friend.
 condAimEnemyAdjFriendM :: MonadClient m => ActorId -> m Bool
-{-# INLINABLE condAimEnemyAdjFriendM #-}
 condAimEnemyAdjFriendM aid = do
   btarget <- getsClient $ getTarget aid
   case btarget of
@@ -94,7 +91,6 @@ condAimEnemyAdjFriendM aid = do
 
 -- | Check if the target is nonmoving.
 condTgtNonmovingM :: MonadClient m => ActorId -> m Bool
-{-# INLINABLE condTgtNonmovingM #-}
 condTgtNonmovingM aid = do
   btarget <- getsClient $ getTarget aid
   case btarget of
@@ -106,7 +102,6 @@ condTgtNonmovingM aid = do
 -- | Require that any non-dying foe is adjacent, except projectiles
 -- that (possibly) explode upon contact.
 condAnyFoeAdjM :: MonadStateRead m => ActorId -> m Bool
-{-# INLINABLE condAnyFoeAdjM #-}
 condAnyFoeAdjM aid = do
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
@@ -123,7 +118,6 @@ condAnyFoeAdjM aid = do
 
 -- | Require that any non-dying, non-projectile foe is adjacent.
 condNonProjFoeAdjM :: MonadStateRead m => ActorId -> m Bool
-{-# INLINABLE condNonProjFoeAdjM #-}
 condNonProjFoeAdjM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
@@ -136,7 +130,6 @@ condNonProjFoeAdjM aid = do
 -- Even if our actor can't melee, he's under melee attack, so has to flee,
 -- so full alert is justified as well.
 condInMeleeM :: MonadClient m => Int -> Actor -> m Bool
-{-# INLINABLE condInMeleeM #-}
 condInMeleeM dist b = do
   mleader <- getsClient _sleader
   let filterNotLeader = case mleader of
@@ -151,7 +144,6 @@ condInMeleeM dist b = do
 
 -- | Require the actor's HP is low enough.
 condHpTooLowM :: MonadClient m => ActorId -> m Bool
-{-# INLINABLE condHpTooLowM #-}
 condHpTooLowM aid = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
@@ -162,7 +154,6 @@ condHpTooLowM aid = do
 
 -- | Require the actor stands adjacent to a triggerable tile (e.g., stairs).
 condAdjTriggerableM :: MonadStateRead m => ActorId -> m Bool
-{-# INLINABLE condAdjTriggerableM #-}
 condAdjTriggerableM aid = do
   Kind.COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
@@ -175,7 +166,6 @@ condAdjTriggerableM aid = do
 -- the foe can hit us, which can diverge greately from path distance
 -- for short distances, e.g., when terrain gets revealed.
 threatDistList :: MonadClient m => ActorId -> m [(Int, (ActorId, Actor))]
-{-# INLINABLE threatDistList #-}
 threatDistList aid = do
   actorAspect <- getsClient sactorAspect
   b <- getsState $ getActorBody aid
@@ -192,7 +182,6 @@ threatDistList aid = do
 
 -- | Require the actor blocks the paths of any of his party members.
 condBlocksFriendsM :: MonadClient m => ActorId -> m Bool
-{-# INLINABLE condBlocksFriendsM #-}
 condBlocksFriendsM aid = do
   b <- getsState $ getActorBody aid
   ours <- getsState $ actorRegularIds (== bfid b) (blid b)
@@ -205,7 +194,6 @@ condBlocksFriendsM aid = do
 
 -- | Require the actor stands over a weapon that would be auto-equipped.
 condFloorWeaponM :: MonadClient m => ActorId -> m Bool
-{-# INLINABLE condFloorWeaponM #-}
 condFloorWeaponM aid = do
   floorAssocs <- getsState $ getActorAssocs aid CGround
   let lootIsWeapon = any (isMelee . snd) floorAssocs
@@ -213,7 +201,6 @@ condFloorWeaponM aid = do
 
 -- | Check whether the actor has no weapon in equipment.
 condNoEqpWeaponM :: MonadClient m => ActorId -> m Bool
-{-# INLINABLE condNoEqpWeaponM #-}
 condNoEqpWeaponM aid = do
   eqpAssocs <- getsState $ getActorAssocs aid CEqp
   return $ all (not . isMelee . snd) eqpAssocs  -- keep it lazy
@@ -222,7 +209,6 @@ condNoEqpWeaponM aid = do
 -- We assume weapons is equipment are better than any among organs
 -- or at least provide some essential diversity.
 condEnoughGearM :: MonadClient m => ActorId -> m Bool
-{-# INLINABLE condEnoughGearM #-}
 condEnoughGearM aid = do
   eqpAssocs <- getsState $ getActorAssocs aid CEqp
   invAssocs <- getsState $ getActorAssocs aid CInv
@@ -232,7 +218,6 @@ condEnoughGearM aid = do
 
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => Bool -> ActorId -> m Bool
-{-# INLINABLE condCanProjectM #-}
 condCanProjectM maxSkills aid = do
   actorSk <- if maxSkills
              then do
@@ -260,7 +245,6 @@ benAvailableItems :: MonadClient m
                   -> [CStore]
                   -> m [( (Maybe (Int, Int), (Int, CStore))
                         , (ItemId, ItemFull) )]
-{-# INLINABLE benAvailableItems #-}
 benAvailableItems aid permitted cstores = do
   cops <- getsState scops
   itemToF <- itemToFullClient
@@ -324,7 +308,6 @@ hinders condAnyFoeAdj condShineBetrays condAimEnemyPresent
 
 -- | Require the actor is not calm enough.
 condNotCalmEnoughM :: MonadClient m => ActorId -> m Bool
-{-# INLINABLE condNotCalmEnoughM #-}
 condNotCalmEnoughM aid = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
@@ -335,7 +318,6 @@ condNotCalmEnoughM aid = do
 
 -- | Require that the actor stands over a desirable item.
 condDesirableFloorItemM :: MonadClient m => ActorId -> m Bool
-{-# INLINABLE condDesirableFloorItemM #-}
 condDesirableFloorItemM aid = do
   benItemL <- benGroundItems aid
   return $ not $ null benItemL  -- keep it lazy
@@ -346,7 +328,6 @@ benGroundItems :: MonadClient m
                => ActorId
                -> m [( (Maybe (Int, Int)
                      , (Int, CStore)), (ItemId, ItemFull) )]
-{-# INLINABLE benGroundItems #-}
 benGroundItems aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
@@ -377,7 +358,6 @@ desirableItem canEsc use itemFull =
 
 -- | Require the actor is in a bad position to melee or can't melee at all.
 condMeleeBadM :: MonadClient m => ActorId -> m Bool
-{-# INLINABLE condMeleeBadM #-}
 condMeleeBadM aid = do
   actorAspect <- getsClient sactorAspect
   b <- getsState $ getActorBody aid
@@ -418,7 +398,6 @@ condMeleeBadM aid = do
 -- | Require that the actor stands in the dark, but is betrayed
 -- by his own equipped light,
 condShineBetraysM :: MonadClient m => ActorId -> m Bool
-{-# INLINABLE condShineBetraysM #-}
 condShineBetraysM aid = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
@@ -432,7 +411,6 @@ condShineBetraysM aid = do
 
 -- | Produce a list of acceptable adjacent points to flee to.
 fleeList :: MonadClient m => ActorId -> m ([(Int, Point)], [(Int, Point)])
-{-# INLINABLE fleeList #-}
 fleeList aid = do
   cops <- getsState scops
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD

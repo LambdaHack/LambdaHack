@@ -40,7 +40,6 @@ import Game.LambdaHack.Server.State
 -- | Effect of atomic actions on server state is calculated
 -- with the global state from before the command is executed.
 cmdAtomicSemSer :: MonadServer m => UpdAtomic -> m ()
-{-# INLINABLE cmdAtomicSemSer #-}
 cmdAtomicSemSer cmd = case cmd of
   UpdCreateActor aid b _ -> do
     discoAspect <- getsServer sdiscoAspect
@@ -164,11 +163,9 @@ cmdAtomicSemSer cmd = case cmd of
   _ -> return ()
 
 invalidateArenas :: MonadServer m => m ()
-{-# INLINABLE invalidateArenas #-}
 invalidateArenas = modifyServer $ \ser -> ser {svalidArenas = False}
 
 addItemToActor :: MonadServer m => ItemId -> Int -> ActorId -> m ()
-{-# INLINABLE addItemToActor #-}
 addItemToActor iid k aid = do
   discoAspect <- getsServer sdiscoAspect
   let arItem = discoAspect EM.! iid
@@ -178,7 +175,6 @@ addItemToActor iid k aid = do
 
 updateSclear :: MonadServer m
              => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind -> m Bool
-{-# INLINABLE updateSclear #-}
 updateSclear lid pos fromTile toTile = do
   Kind.COps{coTileSpeedup} <- getsState scops
   let fromClear = Tile.isClear coTileSpeedup fromTile
@@ -192,7 +188,6 @@ updateSclear lid pos fromTile toTile = do
 
 updateSlit :: MonadServer m
            => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind -> m Bool
-{-# INLINABLE updateSlit #-}
 updateSlit lid pos fromTile toTile = do
   Kind.COps{coTileSpeedup} <- getsState scops
   let fromLit = Tile.isLit coTileSpeedup fromTile
@@ -204,26 +199,22 @@ updateSlit lid pos fromTile toTile = do
     return True
 
 invalidateLucidLid :: MonadServer m => LevelId -> m ()
-{-# INLINABLE invalidateLucidLid #-}
 invalidateLucidLid lid =
   modifyServer $ \ser ->
     ser { sfovLucidLid = EM.insert lid FovInvalid $ sfovLucidLid ser
         , sperValidFid = EM.map (EM.insert lid False) $ sperValidFid ser }
 
 invalidateLucidAid :: MonadServer m => ActorId  -> m ()
-{-# INLINABLE invalidateLucidAid #-}
 invalidateLucidAid aid = do
   lid <- getsState $ blid . getActorBody aid
   invalidateLucidLid lid
 
 actorHasShine :: ActorAspect -> ActorId -> Bool
-{-# INLINABLE actorHasShine #-}
 actorHasShine actorAspect aid = case EM.lookup aid actorAspect of
   Just AspectRecord{aShine} -> aShine > 0
   Nothing -> assert `failure` aid
 
 itemAffectsShineRadius :: DiscoveryAspect -> ItemId -> [CStore] -> Bool
-{-# INLINABLE itemAffectsShineRadius #-}
 itemAffectsShineRadius discoAspect iid stores =
   (null stores || (not $ null $ intersect stores [CEqp, COrgan, CGround]))
   && case EM.lookup iid discoAspect of
@@ -231,7 +222,6 @@ itemAffectsShineRadius discoAspect iid stores =
     Nothing -> assert `failure` iid
 
 itemAffectsPerRadius :: DiscoveryAspect -> ItemId -> Bool
-{-# INLINABLE itemAffectsPerRadius #-}
 itemAffectsPerRadius discoAspect iid =
   case EM.lookup iid discoAspect of
     Just AspectRecord{aSight, aSmell, aNocto} ->
@@ -239,14 +229,12 @@ itemAffectsPerRadius discoAspect iid =
     Nothing -> assert `failure` iid
 
 addPerActor :: MonadServer m => ActorId -> Actor -> m ()
-{-# INLINABLE addPerActor #-}
 addPerActor aid b = do
   actorAspect <- getsServer sactorAspect
   let AspectRecord{..} = actorAspect EM.! aid
   unless (aSight <= 0 && aNocto <= 0 && aSmell <= 0) $ addPerActorAny aid b
 
 addPerActorAny :: MonadServer m => ActorId -> Actor -> m ()
-{-# INLINABLE addPerActorAny #-}
 addPerActorAny aid b = do
   let fid = bfid b
       lid = blid b
@@ -259,14 +247,12 @@ addPerActorAny aid b = do
                          $ sperValidFid ser }
 
 deletePerActor :: MonadServer m => ActorId -> Actor -> m ()
-{-# INLINABLE deletePerActor #-}
 deletePerActor aid b = do
   actorAspect <- getsServer sactorAspect
   let AspectRecord{..} = actorAspect EM.! aid
   unless (aSight <= 0 && aNocto <= 0 && aSmell <= 0) $ deletePerActorAny aid b
 
 deletePerActorAny :: MonadServer m => ActorId -> Actor -> m ()
-{-# INLINABLE deletePerActorAny #-}
 deletePerActorAny aid b = do
   let fid = bfid b
       lid = blid b
@@ -279,7 +265,6 @@ deletePerActorAny aid b = do
                          $ sperValidFid ser }
 
 invalidatePerActor :: MonadServer m => ActorId -> m ()
-{-# INLINABLE invalidatePerActor #-}
 invalidatePerActor aid = do
   actorAspect <- getsServer sactorAspect
   let AspectRecord{..} = actorAspect EM.! aid
@@ -288,7 +273,6 @@ invalidatePerActor aid = do
     addPerActorAny aid b
 
 reconsiderPerActor :: MonadServer m => ActorId -> m ()
-{-# INLINABLE reconsiderPerActor #-}
 reconsiderPerActor aid = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsServer sactorAspect
@@ -301,7 +285,6 @@ reconsiderPerActor aid = do
   else addPerActorAny aid b
 
 invalidatePerLid :: MonadServer m => LevelId -> m ()
-{-# INLINABLE invalidatePerLid #-}
 invalidatePerLid lid = do
   let f pc@PerceptionCache{perActor}
         | EM.null perActor = pc
