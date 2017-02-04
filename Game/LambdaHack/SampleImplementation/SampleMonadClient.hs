@@ -127,6 +127,8 @@ instance MonadAtomic CliImplementation where
   execUpdAtomic = handleUpdAtomic
   {-# INLINE execSfxAtomic #-}
   execSfxAtomic _sfx = return ()
+  {-# INLINE execSendPer #-}
+  execSendPer _ _ _ _ _ = return ()
 
 -- | Init the client, then run an action, with a given session,
 -- state and history, in the @IO@ monad.

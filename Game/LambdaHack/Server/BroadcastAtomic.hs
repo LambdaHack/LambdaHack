@@ -2,7 +2,7 @@
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Server.BroadcastAtomic
-  ( handleAndBroadcast, updatePer
+  ( handleAndBroadcast, updatePer, sendPer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , handleCmdAtomicServer, atomicRemember
@@ -18,7 +18,7 @@ import qualified Data.EnumSet as ES
 import Data.Key (mapWithKeyM_)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Atomic.CmdAtomic
+import Game.LambdaHack.Atomic
 import Game.LambdaHack.Atomic.HandleAtomicWrite
 import Game.LambdaHack.Atomic.MonadStateWrite
 import Game.LambdaHack.Atomic.PosAtomicRead
@@ -47,9 +47,8 @@ import Game.LambdaHack.Server.State
 
 handleCmdAtomicServer :: MonadStateWrite m => PosAtomic -> UpdAtomic -> m ()
 {-# INLINE handleCmdAtomicServer #-}
-handleCmdAtomicServer _posAtomic cmd =
--- Not needed ATM:
---  when (seenAtomicSer posAtomic) $
+handleCmdAtomicServer posAtomic cmd =
+  when (seenAtomicSer posAtomic) $
 -- Not implemented ATM:
 --    storeUndo atomic
     handleUpdAtomic cmd
@@ -173,7 +172,7 @@ loudSfxAtomic local cmd = do
         [ "you", adverb, "hear something", verb, "someone"] ++ distant
   return $! hear <$> msound
 
-updatePer :: MonadServerReadRequest m => FactionId -> LevelId -> m ()
+updatePer :: (MonadAtomic m, MonadServer m) => FactionId -> LevelId -> m ()
 {-# INLINE updatePer #-}
 updatePer fid lid = do
   modifyServer $ \ser ->
@@ -186,14 +185,21 @@ updatePer fid lid = do
   let inPer = diffPer perNew perOld
       outPer = diffPer perOld perNew
   unless (nullPer outPer && nullPer inPer) $ do
-    unless knowEvents $ do  -- inconsistencies would quickly manifest
-      sendUpdate fid $ UpdPerception lid outPer inPer
-      remember <- getsState $ atomicRemember lid inPer
-      let seenNew = seenAtomicCli False fid perNew
-      psRem <- mapM posUpdAtomic remember
-      -- Verify that we remember only currently seen things.
-      let !_A = assert (allB seenNew psRem) ()
-      mapM_ (sendUpdate fid) remember
+    unless knowEvents $  -- inconsistencies would quickly manifest
+      execSendPer fid lid outPer inPer perNew
+
+sendPer :: MonadServerReadRequest m
+        => FactionId -> LevelId
+        -> Perception -> Perception -> Perception -> m ()
+{-# INLINE sendPer #-}
+sendPer fid lid outPer inPer perNew = do
+  sendUpdate fid $ UpdPerception lid outPer inPer
+  remember <- getsState $ atomicRemember lid inPer
+  let seenNew = seenAtomicCli False fid perNew
+  psRem <- mapM posUpdAtomic remember
+  -- Verify that we remember only currently seen things.
+  let !_A = assert (allB seenNew psRem) ()
+  mapM_ (sendUpdate fid) remember
 
 atomicRemember :: LevelId -> Perception -> State -> [UpdAtomic]
 {-# INLINE atomicRemember #-}

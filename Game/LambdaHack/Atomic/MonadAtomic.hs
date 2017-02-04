@@ -6,7 +6,9 @@ module Game.LambdaHack.Atomic.MonadAtomic
 import Prelude ()
 
 import Game.LambdaHack.Atomic.CmdAtomic
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.Perception
 
 -- | The monad for executing atomic game state transformations.
 class MonadStateRead m => MonadAtomic m where
@@ -14,3 +16,5 @@ class MonadStateRead m => MonadAtomic m where
   execUpdAtomic :: UpdAtomic -> m ()
   -- | Execute an atomic command that only displays special effects.
   execSfxAtomic :: SfxAtomic -> m ()
+  execSendPer :: FactionId -> LevelId
+              -> Perception -> Perception -> Perception -> m ()

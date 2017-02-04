@@ -47,7 +47,6 @@ import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.MonadServer
-import Game.LambdaHack.Server.ProtocolM
 import Game.LambdaHack.Server.State
 
 initPer :: MonadServer m => m ()
@@ -60,7 +59,7 @@ initPer = do
     ser { sactorAspect, sfovLitLid, sfovClearLid, sfovLucidLid
         , sperValidFid, sperCacheFid, sperFid }
 
-reinitGame :: (MonadAtomic m, MonadServerReadRequest m) => m ()
+reinitGame :: (MonadAtomic m, MonadServer m) => m ()
 reinitGame = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   pers <- getsServer sperFid
@@ -78,7 +77,7 @@ reinitGame = do
       updRestart fid = UpdRestart fid sdiscoKind (pers EM.! fid) defLocal
                                   scurDiffSer sdebugCli
   factionD <- getsState sfactionD
-  mapWithKeyM_ (\fid _ -> sendUpdate fid $ updRestart fid) factionD
+  mapWithKeyM_ (\fid _ -> execUpdAtomic $ updRestart fid) factionD
   dungeon <- getsState sdungeon
   let sactorTime = EM.map (const (EM.map (const EM.empty) dungeon)) factionD
   modifyServer $ \ser -> ser {sactorTime}
