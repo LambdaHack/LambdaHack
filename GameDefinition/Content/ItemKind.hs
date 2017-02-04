@@ -93,7 +93,7 @@ spike = ItemKind
   , iweight  = 150
   , idamage  = toDmg $ 2 * d 1
   , iaspects = [AddHurtMelee (-10 + d 2 + dl 4 |*| 5)]  -- heavy vs armor
-  , ieffects = []
+  , ieffects = [OnSmash (Explode "single spark")]  -- shows both wall and foe
   , ifeature = [toVelocity 70, Identified]  -- hitting with tip costs speed
   , idesc    = "A cruel long nail with small head."  -- "Much inferior to arrows though, especially given the contravariance problems."  --- funny, but destroy the suspension of disbelief; this is supposed to be a Lovecraftian horror and any hilarity must ensue from the failures in making it so and not from actively trying to be funny; also, mundane objects are not supposed to be scary or transcendental; the scare is in horrors from the abstract dimension visiting our ordinary reality; without the contrast there's no horror and no wonder, so also the magical items must be contrasted with ordinary XIX century and antique items
   , ikit     = []
@@ -315,6 +315,7 @@ flask7 = flask
   { irarity  = [(10, 5)]
   , ieffects = [ ELabel "of haste brew"
                , toOrganActorTurn "fast 20" (20 + d 5)
+               , OnSmash (Explode "blast 20")
                , OnSmash (Explode "haste spray") ]
   }
 flask8 = flask
@@ -370,6 +371,7 @@ flask16 = flask
   { irarity  = [(10, 5)]
   , ieffects = [ ELabel "of slow resistance"
                , toOrganNone "slow resistant"
+               , OnSmash (Explode "blast 10")
                , OnSmash (Explode "anti-slow mist") ]
   }
 flask17 = flask
