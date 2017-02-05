@@ -1182,16 +1182,14 @@ gameSaveHuman = do
 -- Note that the difference between seek-target and follow-the-leader tactic
 -- can influence even a faction with passive actors. E.g., if a passive actor
 -- has an extra active skill from equipment, he moves every turn.
--- TODO: set tactic for allied passive factions, too or all allied factions
--- and perhaps even factions with a leader should follow our leader
--- and his target, not their leader.
 tacticHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 tacticHuman = do
   fid <- getsClient sside
   fromT <- getsState $ ftactic . gplayer . (EM.! fid) . sfactionD
   let toT = if fromT == maxBound then minBound else succ fromT
   go <- displaySpaceEsc ColorFull
-        $ "Current henchmen tactic is" <+> tshow fromT
+        $ "(Beware, work in progress!)"
+          <+> "Current henchmen tactic is" <+> tshow fromT
           <+> "(" <> describeTactic fromT <> ")."
           <+> "Switching tactic to" <+> tshow toT
           <+> "(" <> describeTactic toT <> ")."

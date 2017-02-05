@@ -74,7 +74,8 @@ type HiCondPoly = [HiSummand]
 -- | Properties of a particular player.
 data Player a = Player
   { fname          :: !Text        -- ^ name of the player
-  , fgroup         :: !(GroupName ItemKind)  -- ^ name of the monster group to control
+  , fgroup         :: !(GroupName ItemKind)
+                                   -- ^ name of the actor group to control
   , fskillsOther   :: !Skills      -- ^ fixed skill modifiers to the non-leader
                                    --   actors; also summed with skills implied
                                    --   by ftactic (which is not fixed)
