@@ -261,13 +261,13 @@ reqMelee source target iid cstore = do
       -- Pushed actor doesn't stop flight by catching the projectile
       -- nor does he lose 1HP.
       execSfxAtomic $ SfxSteal source target iid cstore hurtMultZero
-      damageTarget
       case EM.assocs $ beqp tb of
         [(iid2, (k, _))] -> do
           upds <- generalMoveItem True iid2 k (CActor target CEqp)
                                               (CActor source CInv)
           mapM_ execUpdAtomic upds
         err -> assert `failure` err
+      damageTarget
     else do
       -- Normal hit, with effects.
       execSfxAtomic $ SfxStrike source target iid cstore hurtMultZero
