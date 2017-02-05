@@ -139,8 +139,12 @@ posSfxAtomic cmd = case cmd of
   SfxStrike _ target _ _ _ -> singleAid target
   SfxRecoil _ _ _ CSha _ -> return PosNone  -- shared stash is private
   SfxRecoil _ target _ _ _ -> singleAid target
+  SfxSteal _ _ _ CSha _ -> return PosNone  -- shared stash is private
+  SfxSteal _ target _ _ _ -> singleAid target
+  SfxRelease _ _ _ CSha _ -> return PosNone  -- shared stash is private
+  SfxRelease _ target _ _ _ -> singleAid target
   SfxProject aid _ cstore -> singleContainer $ CActor aid cstore
-  SfxCatch aid _ cstore -> singleContainer $ CActor aid cstore
+  SfxReceive aid _ cstore -> singleContainer $ CActor aid cstore
   SfxApply aid _ cstore -> singleContainer $ CActor aid cstore
   SfxCheck aid _ cstore -> singleContainer $ CActor aid cstore
   SfxTrigger aid p _ -> do

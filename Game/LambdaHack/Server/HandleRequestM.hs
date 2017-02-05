@@ -246,39 +246,57 @@ reqMelee source target iid cstore = do
         deltaHP | serious = -- if HP overfull, at least cut back to max HP
                             min speedDeltaHP (xM hpMax - bhp tb)
                 | otherwise = speedDeltaHP
-    let hurtMultZero | speedDeltaHP < 0 = hurtMult
+        hurtMultZero | speedDeltaHP < 0 = hurtMult
                      | speedDeltaHP == 0 && dmg > 0 = 0
                      | otherwise = 100  -- no blocking, because no initial dmg
-    execSfxAtomic $ SfxStrike source target iid cstore hurtMultZero
-    -- Damage the target, never heal.
-    when (deltaHP < 0) $ do
-      execUpdAtomic $ UpdRefillHP target deltaHP
-      when serious $ halveCalm target
-    case btrajectory sb of
-      Just (tra, speed) | not $ null tra -> do
-        -- Deduct a hitpoint for a pierce of a projectile
-        -- or due to a hurled actor colliding with another.
-        -- Don't deduct if no pierce, to prevent spam.
-        when (not (bproj sb) || bhp sb > oneM) $
-          execUpdAtomic $ UpdRefillHP source minusM
-        when (not (bproj sb) || bhp sb <= oneM) $
-          -- Non-projectiles can't pierce, so terminate their flight.
-          -- If projectile has too low HP to pierce, ditto.
-          execUpdAtomic
-          $ UpdTrajectory source (btrajectory sb) (Just ([], speed))
-      _ -> return ()
-    let c = CActor source cstore
-    -- Msgs inside itemEffect describe the target part.
-    itemEffectAndDestroy source target iid c
-    -- The only way to start a war is to slap an enemy. Being hit by
-    -- and hitting projectiles count as unintentional friendly fire.
-    let friendlyFire = bproj sb || bproj tb
-        fromDipl = EM.findWithDefault Unknown tfid (gdipl sfact)
-    unless (friendlyFire
-            || isAtWar sfact tfid  -- already at war
-            || isAllied sfact tfid  -- allies never at war
-            || sfid == tfid) $
-      execUpdAtomic $ UpdDiplFaction sfid tfid fromDipl War
+        -- Damage the target, never heal.
+        damageTarget = when (deltaHP < 0) $ do
+          execUpdAtomic $ UpdRefillHP target deltaHP
+          when serious $ halveCalm target
+    if bproj tb && length (beqp tb) == 1
+       && cstore == COrgan && bhp tb + deltaHP <= 0 then do
+      -- Catching the projectile, that is, stealing the item from its eqp.
+      -- No effect from our weapon is applied to the projectile
+      -- and the weapon is never destroyed, even if not durable.
+      -- Pushed actor doesn't stop flight by catching the projectile
+      -- nor does he lose 1HP.
+      execSfxAtomic $ SfxSteal source target iid cstore hurtMultZero
+      damageTarget
+      case EM.assocs $ beqp tb of
+        [(iid2, (k, _))] -> do
+          upds <- generalMoveItem True iid2 k (CActor target CEqp)
+                                              (CActor source CInv)
+          mapM_ execUpdAtomic upds
+        err -> assert `failure` err
+    else do
+      -- Normal hit, with effects.
+      execSfxAtomic $ SfxStrike source target iid cstore hurtMultZero
+      damageTarget
+      case btrajectory sb of
+        Just (tra, speed) | not $ null tra -> do
+          -- Deduct a hitpoint for a pierce of a projectile
+          -- or due to a hurled actor colliding with another.
+          -- Don't deduct if no pierce, to prevent spam.
+          when (not (bproj sb) || bhp sb > oneM) $
+            execUpdAtomic $ UpdRefillHP source minusM
+          when (not (bproj sb) || bhp sb <= oneM) $
+            -- Non-projectiles can't pierce, so terminate their flight.
+            -- If projectile has too low HP to pierce, ditto.
+            execUpdAtomic
+            $ UpdTrajectory source (btrajectory sb) (Just ([], speed))
+        _ -> return ()
+      let c = CActor source cstore
+      -- Msgs inside itemEffect describe the target part.
+      itemEffectAndDestroy source target iid c
+      -- The only way to start a war is to slap an enemy. Being hit by
+      -- and hitting projectiles count as unintentional friendly fire.
+      let friendlyFire = bproj sb || bproj tb
+          fromDipl = EM.findWithDefault Unknown tfid (gdipl sfact)
+      unless (friendlyFire
+              || isAtWar sfact tfid  -- already at war
+              || isAllied sfact tfid  -- allies never at war
+              || sfid == tfid) $
+        execUpdAtomic $ UpdDiplFaction sfid tfid fromDipl War
 
 armorHurtBonus :: (MonadAtomic m, MonadServer m)
                => ActorId -> ActorId

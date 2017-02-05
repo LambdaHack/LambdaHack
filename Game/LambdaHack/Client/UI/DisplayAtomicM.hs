@@ -736,16 +736,23 @@ discover c oldCli iid = do
 displayRespSfxAtomicUI :: MonadClientUI m => Bool -> SfxAtomic -> m ()
 {-# INLINE displayRespSfxAtomicUI #-}
 displayRespSfxAtomicUI verbose sfx = case sfx of
-  SfxStrike source target iid store mult -> strike source target iid store mult
+  SfxStrike source target iid store mult ->
+    strike False source target iid store mult
   SfxRecoil source target _ _ _ -> do
     spart <- partAidLeader source
     tpart <- partAidLeader target
     msgAdd $ makeSentence [MU.SubjectVerbSg spart "shrink away from", tpart]
+  SfxSteal source target iid store mult ->
+    strike True source target iid store mult
+  SfxRelease source target _ _ _ -> do
+    spart <- partAidLeader source
+    tpart <- partAidLeader target
+    msgAdd $ makeSentence [MU.SubjectVerbSg spart "release", tpart]
   SfxProject aid iid cstore -> do
     setLastSlot aid iid cstore
     itemAidVerbMU aid "fling" iid (Left $ Just 1) cstore
-  SfxCatch aid iid cstore ->
-    itemAidVerbMU aid "catch" iid (Left $ Just 1) cstore
+  SfxReceive aid iid cstore ->
+    itemAidVerbMU aid "receive" iid (Left $ Just 1) cstore
   SfxApply aid iid cstore -> do
     setLastSlot aid iid cstore
     itemAidVerbMU aid "apply" iid (Left $ Just 1) cstore
@@ -934,8 +941,8 @@ setLastSlot aid iid cstore = do
       Nothing -> assert `failure` (iid, cstore, aid)
 
 strike :: MonadClientUI m
-       => ActorId -> ActorId -> ItemId -> CStore -> Int -> m ()
-strike source target iid cstore hurtMult = assert (source /= target) $ do
+       => Bool -> ActorId -> ActorId -> ItemId -> CStore -> Int -> m ()
+strike catch source target iid cstore hurtMult = assert (source /= target) $ do
   tb <- getsState $ getActorBody target
   sourceSeen <- getsState $ memActor source (blid tb)
   ps <- if sourceSeen then do
@@ -949,6 +956,7 @@ strike source target iid cstore hurtMult = assert (source /= target) $ do
     let kit = EM.findWithDefault (1, []) iid bag
         itemFull = itemToF iid kit
         verb = case itemDisco itemFull of
+          _ | catch -> "catch"
           Nothing -> "hit"  -- not identified
           Just ItemDisco{itemKind} -> IK.iverbHit itemKind
         isOrgan = iid `EM.member` borgan sb
@@ -976,8 +984,11 @@ strike source target iid cstore hurtMult = assert (source /= target) $ do
                 $ if bproj sb
                   then if braced tb then "deflect it" else "shrug it off"
                   else if braced tb then "block" else "ignore it"
+              butEvenThough = if | catch -> ", even though"
+                                 | bhp tb <= 0 -> "strongly enough, even though"
+                                 | otherwise -> ", but"
           in makeSentence
-               [ MU.Phrase sActs <> ", but"
+               [ MU.Phrase sActs <> butEvenThough
                , actionPhrase
                , if | hurtMult >= 50 ->  -- braced or big bonuses
                       "partly"

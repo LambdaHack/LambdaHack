@@ -122,8 +122,10 @@ instance Binary UpdAtomic
 data SfxAtomic =
     SfxStrike !ActorId !ActorId !ItemId !CStore !Int
   | SfxRecoil !ActorId !ActorId !ItemId !CStore !Int
+  | SfxSteal !ActorId !ActorId !ItemId !CStore !Int
+  | SfxRelease !ActorId !ActorId !ItemId !CStore !Int
   | SfxProject !ActorId !ItemId !CStore
-  | SfxCatch !ActorId !ItemId !CStore
+  | SfxReceive !ActorId !ItemId !CStore
   | SfxApply !ActorId !ItemId !CStore
   | SfxCheck !ActorId !ItemId !CStore
   | SfxTrigger !ActorId !Point !TK.Feature
@@ -196,8 +198,10 @@ undoSfxAtomic :: SfxAtomic -> SfxAtomic
 undoSfxAtomic cmd = case cmd of
   SfxStrike source target iid cstore h -> SfxRecoil source target iid cstore h
   SfxRecoil source target iid cstore h -> SfxStrike source target iid cstore h
-  SfxProject aid iid cstore -> SfxCatch aid iid cstore
-  SfxCatch aid iid cstore -> SfxProject aid iid cstore
+  SfxSteal source target iid cstore h -> SfxRelease source target iid cstore h
+  SfxRelease source target iid cstore h -> SfxSteal source target iid cstore h
+  SfxProject aid iid cstore -> SfxReceive aid iid cstore
+  SfxReceive aid iid cstore -> SfxProject aid iid cstore
   SfxApply aid iid cstore -> SfxCheck aid iid cstore
   SfxCheck aid iid cstore -> SfxApply aid iid cstore
   SfxTrigger aid p feat -> SfxShun aid p feat
