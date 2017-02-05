@@ -965,7 +965,7 @@ strike catch source target iid cstore hurtMult = assert (source /= target) $ do
           if isOrgan
           then partItemWownW spronoun COrgan localTime
           else partItemAW cstore localTime
-        msg | hurtMult > 90 = makeSentence $  -- minor or absent armor
+        msg | bhp tb <= 0 || hurtMult > 90 = makeSentence $  -- minor armor
               [MU.SubjectVerbSg spart verb, tpart]
               ++ if bproj sb
                  then []
@@ -985,9 +985,7 @@ strike catch source target iid cstore hurtMult = assert (source /= target) $ do
                 $ if bproj sb
                   then if braced tb then "deflect it" else "shrug it off"
                   else if braced tb then "block" else "ignore it"
-              butEvenThough = if | catch -> ", even though"
-                                 | bhp tb <= 0 -> "strongly enough, even though"
-                                 | otherwise -> ", but"
+              butEvenThough = if catch then ", even though" else ", but"
           in makeSentence
                [ MU.Phrase sActs <> butEvenThough
                , actionPhrase
