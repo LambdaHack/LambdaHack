@@ -60,7 +60,7 @@ scout = warrior
 ranger = warrior
   { iname    = "ranger"
   , ifreq    = [("ranger hero", 100), ("mobile", 1)]
-  , ikit     = ikit warrior ++ [("weak arrow", CInv)]
+  , ikit     = ikit warrior ++ [("weak arrow", CInv), ("armor ranged", CEqp)]
   }
 escapist = warrior
   { iname    = "escapist"
@@ -68,6 +68,7 @@ escapist = warrior
   , ikit     = ikit warrior
                ++ [ ("add sight", CEqp)
                   , ("weak arrow", CInv)  -- mostly for probing
+                  , ("armor ranged", CEqp)
                   , ("flask", CEqp)
                   , ("light source", CInv), ("light source", CSha) ]
   }
@@ -78,6 +79,7 @@ ambusher = warrior
                ++ [ ("ring of opportunity sniper", CEqp)
                   , ("add sight", CEqp)
                   , ("weak arrow", CInv), ("any arrow", CSha)
+                  , ("armor ranged", CEqp)
                   , ("flask", CEqp), ("flask", CSha)
                   , ("light source", CInv) ]
   }

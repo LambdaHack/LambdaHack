@@ -853,7 +853,7 @@ armorLeather = ItemKind
   }
 armorMail = armorLeather
   { iname    = "mail armor"
-  , ifreq    = [("useful", 100), ("torso armor", 1), ("armor ranged", 100) ]
+  , ifreq    = [("useful", 100), ("torso armor", 1), ("armor ranged", 30) ]
   , iflavour = zipPlain [Cyan]
   , irarity  = [(6, 9), (10, 3)]
   , iweight  = 12000
@@ -867,8 +867,8 @@ armorMail = armorLeather
   }
 gloveFencing = ItemKind
   { isymbol  = symbolMiscArmor
-  , iname    = "leather gauntlet"
-  , ifreq    = [("useful", 100)]
+  , iname    = "leather glove"
+  , ifreq    = [("useful", 100), ("armor ranged", 70)]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
   , irarity  = [(5, 9), (10, 9)]
