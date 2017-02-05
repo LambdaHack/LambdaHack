@@ -54,7 +54,7 @@ data KindMean = KindMean
 instance Binary KindMean
 
 -- | The map of item kind indexes to item kind ids.
--- The full map, as known by the server, is a bijection.
+-- The full map, as known by the server, is 1-1.
 type DiscoveryKind = EM.EnumMap ItemKindIx KindMean
 
 -- | A seed for rolling aspects of an item

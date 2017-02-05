@@ -38,7 +38,7 @@ import Game.LambdaHack.Server.State
 registerItem :: (MonadAtomic m, MonadServer m)
              => ItemFull -> ItemKnown -> ItemSeed -> Container -> Bool
              -> m ItemId
-registerItem ItemFull{..} itemKnown@(_, aspectRecord)
+registerItem ItemFull{..} itemKnown@(_, _, aspectRecord)
              seed container verbose = do
   itemRev <- getsServer sitemRev
   let cmd = if verbose then UpdCreateItem else UpdSpotItem False
