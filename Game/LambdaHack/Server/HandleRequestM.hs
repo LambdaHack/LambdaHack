@@ -75,26 +75,46 @@ handleRequestUI fid aid cmd = case cmd of
   ReqUIAutomate -> reqAutomate fid >> return Nothing
   ReqUINop -> return Nothing
 
+-- | This is a shorthand. Instead of setting @bwait@ in @ReqWait@
+-- and unsetting in all other requests, we call this once before
+-- executing a request.
 setBWait :: (MonadAtomic m) => RequestTimed a -> ActorId -> m Bool
 {-# INLINE setBWait #-}
-setBWait cmd aidNew = do
+setBWait cmd aid = do
   let hasReqWait ReqWait{} = True
       hasReqWait _ = False
       hasWait = hasReqWait cmd
-  bPre <- getsState $ getActorBody aidNew
+  bPre <- getsState $ getActorBody aid
   when (hasWait /= bwait bPre) $
-    execUpdAtomic $ UpdWaitActor aidNew hasWait
+    execUpdAtomic $ UpdWaitActor aid hasWait
   return hasWait
 
 handleRequestTimed :: (MonadAtomic m, MonadServer m)
                    => FactionId -> ActorId -> RequestTimed a -> m Bool
 handleRequestTimed fid aid cmd = do
   hasWait <- setBWait cmd aid
+  -- Note that only the ordinary 1-turn wait eliminates overhead.
+  -- The more fine-graned waits don't make actors braced and induce
+  -- overhead, so that they have some drawbacks in addition to the
+  -- benefit of seeing approaching danger up to almost a turn faster.
+  -- It may be too late to block then, but not too late to sidestep or attack.
   unless hasWait $ overheadActorTime fid
   advanceTime aid
   handleRequestTimedCases aid cmd
-  managePerTurn aid
+  managePerRequest aid
   return $ not hasWait
+
+-- | Clear deltas for Calm and HP for proper UI display and AI hints.
+managePerRequest :: MonadAtomic m => ActorId -> m ()
+managePerRequest aid = do
+  b <- getsState $ getActorBody aid
+  let clearMark = 0
+  unless (bcalmDelta b == ResDelta (0, 0) (0, 0)) $
+    -- Clear delta for the next player turn.
+    execUpdAtomic $ UpdRefillCalm aid clearMark
+  unless (bhpDelta b == ResDelta (0, 0) (0, 0)) $
+    -- Clear delta for the next player turn.
+    execUpdAtomic $ UpdRefillHP aid clearMark
 
 handleRequestTimedCases :: (MonadAtomic m, MonadServer m)
                         => ActorId -> RequestTimed a -> m ()

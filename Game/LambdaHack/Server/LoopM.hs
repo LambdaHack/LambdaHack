@@ -214,7 +214,8 @@ endClip updatePerFid = do
   case clipN `mod` clipInTurn of
     2 ->
       -- Periodic activation only once per turn, for speed,
-      -- but on all active arenas.
+      -- but on all active arenas. Calm updates and domination
+      -- happen there as well.
       applyPeriodicLevel
     4 ->
       -- Add monsters each turn, not each clip.
@@ -226,6 +227,26 @@ endClip updatePerFid = do
   mapM_ updatePerFid (EM.keys factionD)
   -- Save needs to be at the end, so that restore can start at the beginning.
   when (clipN `mod` rwriteSaveClips == 0) $ writeSaveAll False
+
+-- | Check if the given actor is dominated and update his calm.
+manageCalmAndDomination :: (MonadAtomic m, MonadServer m)
+                        => ActorId -> Actor -> m ()
+manageCalmAndDomination aid b = do
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  dominated <-
+    if bcalm b == 0
+       && bfidImpressed b /= bfid b
+       && fleaderMode (gplayer fact) /= LeaderNull
+            -- animals/robots never Calm-dominated
+    then dominateFidSfx (bfidImpressed b) aid
+    else return False
+  unless dominated $ do
+    actorAspect <- getsServer sactorAspect
+    let ar = actorAspect EM.! aid
+    newCalmDelta <- getsState $ regenCalmDelta b ar
+    unless (newCalmDelta == 0) $
+      -- Update delta for the current player turn.
+      udpateCalm aid newCalmDelta
 
 -- | Trigger periodic items for all actors on the given level.
 applyPeriodicLevel :: (MonadAtomic m, MonadServer m) => m ()
@@ -253,6 +274,8 @@ applyPeriodicLevel = do
         when (not (bproj b) && blid b `ES.member` arenasSet) $ do
           mapM_ (applyPeriodicItem aid COrgan borgan) $ EM.assocs $ borgan b
           mapM_ (applyPeriodicItem aid CEqp beqp) $ EM.assocs $ beqp b
+          -- While we are at it, also update their calm.
+          manageCalmAndDomination aid b
   allActors <- getsState sactorD
   mapM_ applyPeriodicActor $ EM.assocs allActors
 
@@ -286,9 +309,10 @@ hTrajectories (aid, b) = do
   -- doesn't block movement of other actors, but vanishes promptly.
   -- Bodies of actors that die in place remain on the battlefied until
   -- their natural next turn, to give them a chance of rescue.
-  if actorDying b2 then dieSer aid b2 else do
-    advanceTime aid
-    managePerTurn aid
+  -- Note that domination of pushed actors is not checked
+  -- nor is their calm updated. They are helpless wrt movement,
+  -- but also invulnerable in this repsect.
+  if actorDying b2 then dieSer aid b2 else advanceTime aid
   -- if @actorDying@ due to @bhp b <= 0@:
   -- If @b@ is a projectile, it means hits an actor or is hit by actor.
   -- Then the carried item is destroyed and that's all.

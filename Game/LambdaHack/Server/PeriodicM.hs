@@ -2,7 +2,7 @@
 -- and related operations.
 module Game.LambdaHack.Server.PeriodicM
   ( spawnMonster, addAnyActor, dominateFidSfx
-  , advanceTime, overheadActorTime, swapTime, managePerTurn
+  , advanceTime, overheadActorTime, swapTime
   , leadLevelSwitch, udpateCalm
   ) where
 
@@ -282,45 +282,6 @@ swapTime source target = do
     ser {sactorTime = ageActor (bfid sb) (blid sb) source sdelta $ sactorTime ser}
   when (tdelta /= Delta timeZero) $ modifyServer $ \ser ->
     ser {sactorTime = ageActor (bfid tb) (blid tb) target tdelta $ sactorTime ser}
-
--- | Check if the given actor is dominated and update his calm.
--- We don't update calm once per game turn (even though
--- it would make fast actors less overpowered),
--- beucase the effects of close enemies would sometimes manifest only after
--- a couple of player turns (or perhaps never at all, if the player and enemy
--- move away before that moment). A side effect is that under peaceful
--- circumstances, non-max calm causes a consistent Calm regeneration
--- UI indicator to be displayed each turn (not every few turns).
-managePerTurn :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-managePerTurn aid = do
-  b <- getsState $ getActorBody aid
-  unless (bproj b) $ do
-    fact <- getsState $ (EM.! bfid b) . sfactionD
-    dominated <-
-      -- We react one turn after bcalm reaches 0, to let it be
-      -- displayed first, to let the player panic in advance
-      -- and also to avoid the dramatic domination message
-      -- be swamped in other enemy turn messages.
-      if bcalm b == 0
-         && bfidImpressed b /= bfid b
-         && fleaderMode (gplayer fact) /= LeaderNull
-              -- animals/robots never Calm-dominated
-      then dominateFidSfx (bfidImpressed b) aid
-      else return False
-    unless dominated $ do
-      actorAspect <- getsServer sactorAspect
-      let ar = actorAspect EM.! aid
-      newCalmDelta <- getsState $ regenCalmDelta b ar
-      let clearMark = 0
-      unless (newCalmDelta == 0) $
-        -- Update delta for the current player turn.
-        udpateCalm aid newCalmDelta
-      unless (bcalmDelta b == ResDelta (0, 0) (0, 0)) $
-        -- Clear delta for the next player turn.
-        execUpdAtomic $ UpdRefillCalm aid clearMark
-      unless (bhpDelta b == ResDelta (0, 0) (0, 0)) $
-        -- Clear delta for the next player turn.
-        execUpdAtomic $ UpdRefillHP aid clearMark
 
 udpateCalm :: (MonadAtomic m, MonadServer m) => ActorId -> Int64 -> m ()
 udpateCalm target deltaCalm = do
