@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Time
   , absoluteTimeAdd, absoluteTimeSubtract, absoluteTimeNegate
   , timeFit, timeFitUp
   , Delta(..), timeShift, timeDeltaToFrom
-  , timeDeltaSubtract, timeDeltaReverse, timeDeltaScale
+  , timeDeltaSubtract, timeDeltaReverse, timeDeltaScale, timeDeltaPercent
   , timeDeltaToDigit, ticksPerMeter
   , Speed, toSpeed, fromSpeed
   , speedZero, speedWalk, speedThrust, modifyDamageBySpeed
@@ -123,6 +123,12 @@ timeDeltaSubtract (Delta (Time t1)) (Delta (Time t2)) = Delta $ Time (t1 - t2)
 timeDeltaScale :: Delta Time -> Int -> Delta Time
 {-# INLINE timeDeltaScale #-}
 timeDeltaScale (Delta (Time t)) s = Delta (Time (t * fromIntegral s))
+
+-- | Take the given percent of the time vector..
+timeDeltaPercent :: Delta Time -> Int -> Delta Time
+{-# INLINE timeDeltaPercent #-}
+timeDeltaPercent (Delta (Time t)) s =
+  Delta (Time (t * fromIntegral s `div` 100))
 
 -- | Divide a time vector.
 timeDeltaDiv :: Delta Time -> Int -> Delta Time

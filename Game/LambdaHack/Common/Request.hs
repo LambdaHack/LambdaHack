@@ -59,6 +59,7 @@ data RequestTimed :: Ability -> * where
   ReqDisplace :: !ActorId -> RequestTimed 'AbDisplace
   ReqAlter :: !Point -> RequestTimed 'AbAlter
   ReqWait :: RequestTimed 'AbWait
+  ReqWait10 :: RequestTimed 'AbWait
   ReqMoveItems :: ![(ItemId, Int, CStore, CStore)] -> RequestTimed 'AbMoveItem
   ReqProject :: !Point -> !Int -> !ItemId -> !CStore -> RequestTimed 'AbProject
   ReqApply :: !ItemId -> !CStore -> RequestTimed 'AbApply

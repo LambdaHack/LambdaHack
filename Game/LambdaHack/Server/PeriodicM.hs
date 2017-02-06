@@ -215,12 +215,12 @@ dominateFid fid target = do
     supplantLeader fid target
 
 -- | Advance the move time for the given actor
-advanceTime :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-advanceTime aid = do
+advanceTime :: (MonadAtomic m, MonadServer m) => ActorId -> Int -> m ()
+advanceTime aid percent = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsServer sactorAspect
   let ar = actorAspect EM.! aid
-      t = ticksPerMeter $ bspeed b ar
+      t = timeDeltaPercent (ticksPerMeter $ bspeed b ar) percent
   -- @t@ may be negative; that's OK.
   modifyServer $ \ser ->
     ser {sactorTime = ageActor (bfid b) (blid b) aid t $ sactorTime ser}

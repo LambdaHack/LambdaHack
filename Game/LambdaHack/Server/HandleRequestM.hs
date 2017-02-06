@@ -78,31 +78,32 @@ handleRequestUI fid aid cmd = case cmd of
 -- | This is a shorthand. Instead of setting @bwait@ in @ReqWait@
 -- and unsetting in all other requests, we call this once before
 -- executing a request.
-setBWait :: (MonadAtomic m) => RequestTimed a -> ActorId -> m Bool
+setBWait :: (MonadAtomic m) => RequestTimed a -> ActorId -> m (Maybe Bool)
 {-# INLINE setBWait #-}
 setBWait cmd aid = do
-  let hasReqWait ReqWait{} = True
-      hasReqWait _ = False
-      hasWait = hasReqWait cmd
+  let mwait = case cmd of
+        ReqWait -> Just True  -- true wait, with bracind, no overhead, etc.
+        ReqWait10 -> Just False  -- false wait, only one clip at a time
+        _ -> Nothing
   bPre <- getsState $ getActorBody aid
-  when (hasWait /= bwait bPre) $
-    execUpdAtomic $ UpdWaitActor aid hasWait
-  return hasWait
+  when ((mwait == Just True) /= bwait bPre) $
+    execUpdAtomic $ UpdWaitActor aid (mwait == Just True)
+  return mwait
 
 handleRequestTimed :: (MonadAtomic m, MonadServer m)
                    => FactionId -> ActorId -> RequestTimed a -> m Bool
 handleRequestTimed fid aid cmd = do
-  hasWait <- setBWait cmd aid
+  mwait <- setBWait cmd aid
   -- Note that only the ordinary 1-turn wait eliminates overhead.
   -- The more fine-graned waits don't make actors braced and induce
   -- overhead, so that they have some drawbacks in addition to the
   -- benefit of seeing approaching danger up to almost a turn faster.
   -- It may be too late to block then, but not too late to sidestep or attack.
-  unless hasWait $ overheadActorTime fid
-  advanceTime aid
+  unless (mwait == Just True) $ overheadActorTime fid
+  advanceTime aid (if mwait == Just False then 10 else 100)
   handleRequestTimedCases aid cmd
   managePerRequest aid
-  return $ not hasWait
+  return $! isNothing mwait  -- for speed, we report if @cmd@ harmless
 
 -- | Clear deltas for Calm and HP for proper UI display and AI hints.
 managePerRequest :: MonadAtomic m => ActorId -> m ()
@@ -124,6 +125,7 @@ handleRequestTimedCases aid cmd = case cmd of
   ReqDisplace target -> reqDisplace aid target
   ReqAlter tpos -> reqAlter aid tpos
   ReqWait -> reqWait aid
+  ReqWait10 -> reqWait aid  -- the differences are handled elsewhere
   ReqMoveItems l -> reqMoveItems aid l
   ReqProject p eps iid cstore -> reqProject aid p eps iid cstore
   ReqApply iid cstore -> reqApply aid iid cstore
