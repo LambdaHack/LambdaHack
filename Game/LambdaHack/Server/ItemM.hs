@@ -1,6 +1,6 @@
 -- | Server operations for items.
 module Game.LambdaHack.Server.ItemM
-  ( rollItem, rollAndRegisterItem, registerItem
+  ( rollItem, rollAndRegisterItem, onlyRegisterItem, registerItem
   , placeItemsInDungeon, embedItemsInDungeon, fullAssocsServer
   , itemToFullServer, mapActorCStore_
   ) where
@@ -35,18 +35,14 @@ import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
-registerItem :: (MonadAtomic m, MonadServer m)
-             => ItemFull -> ItemKnown -> ItemSeed -> Container -> Bool
-             -> m ItemId
-registerItem ItemFull{..} itemKnown@(_, _, aspectRecord)
-             seed container verbose = do
+onlyRegisterItem :: (MonadAtomic m, MonadServer m)
+                 => ItemFull -> ItemKnown -> ItemSeed -> m ItemId
+onlyRegisterItem ItemFull{..} itemKnown@(_, _, aspectRecord) seed = do
   itemRev <- getsServer sitemRev
-  let cmd = if verbose then UpdCreateItem else UpdSpotItem False
   case HM.lookup itemKnown itemRev of
-    Just iid -> do
+    Just iid ->
       -- TODO: try to avoid this case for createItems,
       -- to make items more interesting
-      execUpdAtomic $ cmd iid itemBase (itemK, itemTimer) container
       return iid
     Nothing -> do
       icounter <- getsServer sicounter
@@ -55,9 +51,16 @@ registerItem ItemFull{..} itemKnown@(_, _, aspectRecord)
             , sitemSeedD = EM.insert icounter seed (sitemSeedD ser)
             , sitemRev = HM.insert itemKnown icounter (sitemRev ser)
             , sicounter = succ icounter }
-      execUpdAtomic
-        $ cmd icounter itemBase (itemK, itemTimer) container
       return $! icounter
+
+registerItem :: (MonadAtomic m, MonadServer m)
+             => ItemFull -> ItemKnown -> ItemSeed -> Container -> Bool
+             -> m ItemId
+registerItem itemFull@ItemFull{..} itemKnown seed container verbose = do
+  iid <- onlyRegisterItem itemFull itemKnown seed
+  let cmd = if verbose then UpdCreateItem else UpdSpotItem False
+  execUpdAtomic $ cmd iid itemBase (itemK, itemTimer) container
+  return iid
 
 createLevelItem :: (MonadAtomic m, MonadServer m) => Point -> LevelId -> m ()
 createLevelItem pos lid = do

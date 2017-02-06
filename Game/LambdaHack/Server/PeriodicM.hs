@@ -167,10 +167,9 @@ dominateFidSfx fid target = do
   else
     return False
 
-dominateFid :: (MonadAtomic m, MonadServer m)
-            => FactionId -> ActorId -> m ()
+dominateFid :: (MonadAtomic m, MonadServer m) => FactionId -> ActorId -> m ()
 dominateFid fid target = do
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{coitem=Kind.Ops{okind}, cotile} <- getsState scops
   tb0 <- getsState $ getActorBody target
   deduceKilled target  -- the actor body exists and his items are not dropped
   -- TODO: some messages after game over below? Compare with dieSer.
@@ -181,12 +180,31 @@ dominateFid fid target = do
   tb <- getsState $ getActorBody target
   ais <- getsState $ getCarriedAssocs tb
   actorAspect <- getsServer sactorAspect
+  getItem <- getsState $ flip getItemBody
+  discoKind <- getsServer sdiscoKind
   let ar = actorAspect EM.! target
+      isImpression iid = case EM.lookup (jkindIx $ getItem iid) discoKind of
+        Just KindMean{kmKind} ->
+          let grp = "impressed"
+          in maybe False (> 0) $ lookup grp $ IK.ifreq (okind kmKind)
+        Nothing -> assert `failure` iid
+      dropAllImpressions = EM.filterWithKey (\iid _ -> not $ isImpression iid)
+      addImpression bag = do  -- add some nostalgia for old faction
+        let grp = toGroupName $ "impressed by" <+> gname fact
+            litemFreq = [(grp, 1)]
+        m5 <- rollItem 0 (blid tb) litemFreq
+        let (itemKnown, itemFull, _, seed, _) =
+              fromMaybe (assert `failure` (blid tb, litemFreq)) m5
+        iid <- onlyRegisterItem itemFull itemKnown seed
+        return $! EM.insert iid (1, []) bag
+      borganNoImpression = dropAllImpressions $ borgan tb
+  borgan <- addImpression borganNoImpression
   btime <-
     getsServer $ (EM.! target) . (EM.! blid tb) . (EM.! bfid tb) . sactorTime
   execUpdAtomic $ UpdLoseActor target tb ais
   let bNew = tb { bfid = fid
-                , bcalm = max 0 $ xM (aMaxCalm ar) `div` 2 }
+                , bcalm = max 0 $ xM (aMaxCalm ar) `div` 2
+                , borgan}
   execUpdAtomic $ UpdSpotActor target bNew ais
   modifyServer $ \ser ->
     ser {sactorTime = updateActorTime fid (blid tb) target btime

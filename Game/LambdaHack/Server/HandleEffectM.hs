@@ -206,7 +206,7 @@ effectSem source target iid c recharged effect = do
     IK.RefillCalm p -> effectRefillCalm False execSfx p source target
     IK.OverfillCalm p -> effectRefillCalm True execSfx p source target
     IK.Dominate -> effectDominate recursiveCall source target
-    IK.Impress -> effectImpress source target
+    IK.Impress -> effectImpress execSfx source target
     IK.CallFriend p -> effectCallFriend execSfx p source target
     IK.Summon freqs p -> effectSummon execSfx freqs p source target
     IK.Ascend p -> effectAscend recursiveCall execSfx p source target pos
@@ -215,7 +215,7 @@ effectSem source target iid c recharged effect = do
     IK.InsertMove p -> effectInsertMove execSfx p target
     IK.Teleport p -> effectTeleport execSfx p source target
     IK.CreateItem store grp tim -> effectCreateItem target store grp tim
-    IK.DropItem store grp -> effectDropItem execSfx store grp target
+    IK.DropItem store grp -> effectDropItem execSfx 999 store grp target
     IK.PolyItem -> effectPolyItem execSfx source target
     IK.Identify -> effectIdentify execSfx iid source target
     IK.Detect radius -> effectDetect execSfx radius target
@@ -425,24 +425,28 @@ effectDominate recursiveCall source target = do
 
 -- ** Impress
 
-effectImpress :: MonadAtomic m
-              => ActorId -> ActorId -> m Bool
-effectImpress source target = do
+effectImpress :: (MonadAtomic m, MonadServer m)
+              => m () -> ActorId -> ActorId -> m Bool
+effectImpress execSfx source target = do
   sb <- getsState $ getActorBody source
+  sfact <- getsState $ (EM.! bfid sb) . sfactionD
   tb <- getsState $ getActorBody target
-  if undefined {-bfidImpressed tb-} == bfid sb || bproj tb then
-    return False
-  else do
--- TODO: CreateItem COrgan grp TimerNone, where grp is "impressed by faction x"
---    execUpdAtomic $ UpdFidImpressedActor target (bfidImpressed tb) (bfid sb)
-    return True
+  if | bproj tb -> return False
+     | bfid sb == bfid tb -> do
+       -- Unimpress wrt others, but only once.
+       let grp = "impressed"
+       effectDropItem execSfx 1 COrgan grp target
+     | otherwise -> do
+       execSfx
+       let grp = toGroupName $ "impressed by" <+> gname sfact
+       effectCreateItem target COrgan grp IK.TimerNone
 
 -- ** CallFriend
 
 -- Note that the Calm expended doesn't depend on the number of actors called.
 effectCallFriend :: (MonadAtomic m, MonadServer m)
-                   => m () -> Dice.Dice -> ActorId -> ActorId
-                   -> m Bool
+                 => m () -> Dice.Dice -> ActorId -> ActorId
+                 -> m Bool
 effectCallFriend execSfx nDm source target = do
   -- Obvious effect, nothing announced.
   Kind.COps{coTileSpeedup} <- getsState scops
@@ -822,9 +826,9 @@ effectCreateItem target store grp tim = do
 -- (not just a random single item, or cluttering equipment with rubbish
 -- would be beneficial).
 effectDropItem :: (MonadAtomic m, MonadServer m)
-               => m () -> CStore -> GroupName ItemKind -> ActorId
+               => m () -> Int -> CStore -> GroupName ItemKind -> ActorId
                -> m Bool
-effectDropItem execSfx store grp target = do
+effectDropItem execSfx n store grp target = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   discoKind <- getsServer sdiscoKind
   b <- getsState $ getActorBody target
@@ -841,7 +845,7 @@ effectDropItem execSfx store grp target = do
     then return False
     else do
       unless (store == COrgan) execSfx
-      mapM_ (uncurry (dropCStoreItem True store target b)) is
+      mapM_ (uncurry (dropCStoreItem True store target b)) $ take n is
       return True
 
 -- | Drop a single actor's item. Note that if there are multiple copies,
