@@ -7,7 +7,7 @@ module Game.LambdaHack.Atomic.HandleAtomicWrite
     -- * Internal operations
   , updCreateActor, updDestroyActor, updCreateItem, updDestroyItem
   , updMoveActor, updWaitActor, updDisplaceActor, updMoveItem
-  , updRefillHP, updRefillCalm, updFidImpressedActor
+  , updRefillHP, updRefillCalm
   , updTrajectory, updColorActor, updQuitFaction, updLeadFaction
   , updDiplFaction, updTacticFaction, updAutoFaction, updRecordKill
   , updAlterTile, updAlterClear, updLearnSecrets, updSpotTile, updLoseTile
@@ -63,8 +63,6 @@ handleUpdAtomic cmd = case cmd of
   UpdMoveItem iid k aid c1 c2 -> updMoveItem iid k aid c1 c2
   UpdRefillHP aid n -> updRefillHP aid n
   UpdRefillCalm aid n -> updRefillCalm aid n
-  UpdFidImpressedActor aid fromFid toFid ->
-    updFidImpressedActor aid fromFid toFid
   UpdTrajectory aid fromT toT -> updTrajectory aid fromT toT
   UpdColorActor aid fromCol toCol -> updColorActor aid fromCol toCol
   UpdQuitFaction fid fromSt toSt -> updQuitFaction fid fromSt toSt
@@ -273,13 +271,6 @@ updRefillCalm aid n =
                                      , snd (resCurrentTurn oldD) + n )}
       }
 
-updFidImpressedActor :: MonadStateWrite m
-                     => ActorId -> FactionId -> FactionId -> m ()
-updFidImpressedActor aid fromFid toFid = assert (fromFid /= toFid) $
-  updateActor aid $ \b ->
-    assert (bfidImpressed b == fromFid `blame` (aid, fromFid, toFid, b))
-    $ b {bfidImpressed = toFid}
-
 updTrajectory :: MonadStateWrite m
               => ActorId
               -> Maybe ([Vector], Speed)
@@ -369,7 +360,12 @@ updRecordKill aid ikind k = do
                      in if n == 0 then Nothing else Just n
       adjFact fact = fact {gvictims = EM.alter alterKind ikind
                                       $ gvictims fact}
-  updateFaction (bfidOriginal b) adjFact
+  updateFaction (bfid b) adjFact
+    -- The death of a dominated actor counts as the dominating faction's loss
+    -- for score purposes, so human nor AI can't treat such actor as disposable,
+    -- which means domination will not be as cruel, as frustrating,
+    -- as it could be and there is a higher chance of getting back alive
+    -- the actor, the human player has grown attached to.
 
 -- | Alter an attribute (actually, the only, the defining attribute)
 -- of a visible tile. This is similar to e.g., @UpdTrajectory@.
@@ -389,7 +385,8 @@ updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
                        `twith` (lid, p, fromTile, toTile, ts PointArray.! p))
                $ ts PointArray.// [(p, toTile)]
   updateLevel lid $ updateTile adj
-  case (Tile.isExplorable coTileSpeedup fromTile, Tile.isExplorable coTileSpeedup toTile) of
+  case ( Tile.isExplorable coTileSpeedup fromTile
+       , Tile.isExplorable coTileSpeedup toTile ) of
     (False, True) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl + 1}
     (True, False) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl - 1}
     _ -> return ()

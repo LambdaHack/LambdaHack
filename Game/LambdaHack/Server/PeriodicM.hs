@@ -158,16 +158,14 @@ dominateFidSfx fid target = do
       canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
                 && EM.findWithDefault 0 Ability.AbAlter actorMaxSk
                    >= fromEnum TK.talterForStairs
-  if canMove && not (bproj tb)
-    then do
-      let execSfx = execSfxAtomic
-                    $ SfxEffect (bfidImpressed tb) target IK.Dominate 0
-      execSfx
-      dominateFid fid target
-      execSfx
-      return True
-    else
-      return False
+  if canMove && not (bproj tb) then do
+    let execSfx = execSfxAtomic $ SfxEffect fid target IK.Dominate 0
+    execSfx
+    dominateFid fid target
+    execSfx
+    return True
+  else
+    return False
 
 dominateFid :: (MonadAtomic m, MonadServer m)
             => FactionId -> ActorId -> m ()
@@ -188,7 +186,6 @@ dominateFid fid target = do
     getsServer $ (EM.! target) . (EM.! blid tb) . (EM.! bfid tb) . sactorTime
   execUpdAtomic $ UpdLoseActor target tb ais
   let bNew = tb { bfid = fid
-                , bfidImpressed = bfid tb
                 , bcalm = max 0 $ xM (aMaxCalm ar) `div` 2 }
   execUpdAtomic $ UpdSpotActor target bNew ais
   modifyServer $ \ser ->
@@ -291,10 +288,8 @@ udpateCalm target deltaCalm = do
       calmMax64 = xM $ aMaxCalm ar
   execUpdAtomic $ UpdRefillCalm target deltaCalm
   when (bcalm tb < calmMax64
-        && bcalm tb + deltaCalm >= calmMax64
-        && bfidImpressed tb /= bfidOriginal tb) $
-    execUpdAtomic $
-      UpdFidImpressedActor target (bfidImpressed tb) (bfidOriginal tb)
+        && bcalm tb + deltaCalm >= calmMax64) $
+    return ()  -- TODO: reset some mental afflictions, fears, when we have any
 
 leadLevelSwitch :: (MonadAtomic m, MonadServer m) => m ()
 leadLevelSwitch = do

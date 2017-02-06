@@ -74,7 +74,6 @@ data UpdAtomic =
   -- Change actor attributes.
   | UpdRefillHP !ActorId !Int64
   | UpdRefillCalm !ActorId !Int64
-  | UpdFidImpressedActor !ActorId !FactionId !FactionId
   | UpdTrajectory !ActorId !(Maybe ([Vector], Speed)) !(Maybe ([Vector], Speed))
   | UpdColorActor !ActorId !Color.Color !Color.Color
   -- Change faction attributes.
@@ -153,8 +152,6 @@ undoUpdAtomic cmd = case cmd of
   UpdMoveItem iid k aid c1 c2 -> Just $ UpdMoveItem iid k aid c2 c1
   UpdRefillHP aid n -> Just $ UpdRefillHP aid (-n)
   UpdRefillCalm aid n -> Just $ UpdRefillCalm aid (-n)
-  UpdFidImpressedActor aid fromFid toFid ->
-    Just $ UpdFidImpressedActor aid toFid fromFid
   UpdTrajectory aid fromT toT -> Just $ UpdTrajectory aid toT fromT
   UpdColorActor aid fromCol toCol -> Just $ UpdColorActor aid toCol fromCol
   UpdQuitFaction fid fromSt toSt -> Just $ UpdQuitFaction fid toSt fromSt

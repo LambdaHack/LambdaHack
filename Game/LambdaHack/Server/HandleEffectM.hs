@@ -430,10 +430,11 @@ effectImpress :: MonadAtomic m
 effectImpress source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  if bfidImpressed tb == bfid sb || bproj tb then
+  if undefined {-bfidImpressed tb-} == bfid sb || bproj tb then
     return False
   else do
-    execUpdAtomic $ UpdFidImpressedActor target (bfidImpressed tb) (bfid sb)
+-- TODO: CreateItem COrgan grp TimerNone, where grp is "impressed by faction x"
+--    execUpdAtomic $ UpdFidImpressedActor target (bfidImpressed tb) (bfid sb)
     return True
 
 -- ** CallFriend

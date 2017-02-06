@@ -37,42 +37,41 @@ import Game.LambdaHack.Common.Vector
 -- to the original value from @ActorKind@ over time. E.g., HP.
 data Actor = Actor
   { -- The trunk of the actor's body (present also in @borgan@ or @beqp@)
-    btrunk        :: !ItemId
+    btrunk      :: !ItemId
 
     -- Presentation
-  , bsymbol       :: !Char         -- ^ individual map symbol
-  , bname         :: !Text         -- ^ individual name
-  , bpronoun      :: !Text         -- ^ individual pronoun
-  , bcolor        :: !Color.Color  -- ^ individual map color
+  , bsymbol     :: !Char         -- ^ individual map symbol
+  , bname       :: !Text         -- ^ individual name
+  , bpronoun    :: !Text         -- ^ individual pronoun
+  , bcolor      :: !Color.Color  -- ^ individual map color
 
     -- Resources
-  , bhp           :: !Int64        -- ^ current hit points * 1M
-  , bhpDelta      :: !ResDelta     -- ^ HP delta this turn * 1M
-  , bcalm         :: !Int64        -- ^ current calm * 1M
-  , bcalmDelta    :: !ResDelta     -- ^ calm delta this turn * 1M
+  , bhp         :: !Int64        -- ^ current hit points * 1M
+  , bhpDelta    :: !ResDelta     -- ^ HP delta this turn * 1M
+  , bcalm       :: !Int64        -- ^ current calm * 1M
+  , bcalmDelta  :: !ResDelta     -- ^ calm delta this turn * 1M
 
     -- Location
-  , bpos          :: !Point        -- ^ current position
-  , boldpos       :: !(Maybe Point)  -- ^ previous position, if any
-  , blid          :: !LevelId      -- ^ current level
-  , boldlid       :: !LevelId      -- ^ previous level
-  , bfid          :: !FactionId    -- ^ faction the actor currently belongs to
-  , bfidImpressed :: !FactionId    -- ^ the faction actor is attracted to
-  , bfidOriginal  :: !FactionId    -- ^ the original faction of the actor
-  , btrajectory   :: !(Maybe ([Vector], Speed))
-                                   -- ^ trajectory the actor must
-                                   --   travel and his travel speed
+  , bpos        :: !Point        -- ^ current position
+  , boldpos     :: !(Maybe Point)
+                                 -- ^ previous position, if any
+  , blid        :: !LevelId      -- ^ current level
+  , boldlid     :: !LevelId      -- ^ previous level
+  , bfid        :: !FactionId    -- ^ faction the actor currently belongs to
+  , btrajectory :: !(Maybe ([Vector], Speed))
+                                 -- ^ trajectory the actor must
+                                 --   travel and his travel speed
 
     -- Items
-  , borgan        :: !ItemBag      -- ^ organs
-  , beqp          :: !ItemBag      -- ^ personal equipment
-  , binv          :: !ItemBag      -- ^ personal inventory
-  , bweapon       :: !Int          -- ^ number of weapons among eqp and organs
+  , borgan      :: !ItemBag      -- ^ organs
+  , beqp        :: !ItemBag      -- ^ personal equipment
+  , binv        :: !ItemBag      -- ^ personal inventory
+  , bweapon     :: !Int          -- ^ number of weapons among eqp and organs
 
     -- Assorted
-  , bwait         :: !Bool         -- ^ is the actor waiting right now?
-  , bproj         :: !Bool         -- ^ is a projectile? (shorthand only,
-                                   --   this can be deduced from bkind)
+  , bwait       :: !Bool         -- ^ is the actor waiting right now?
+  , bproj       :: !Bool         -- ^ is a projectile? (shorthand only,
+                                 --   this can be deduced from btrunk)
   }
   deriving (Show, Eq)
 
@@ -144,8 +143,6 @@ actorTemplate btrunk bsymbol bname bpronoun bcolor bhp bcalm
       binv    = EM.empty
       bweapon = 0
       bwait   = False
-      bfidImpressed = bfid
-      bfidOriginal = bfid
       bhpDelta = ResDelta (0, 0) (0, 0)
       bcalmDelta = ResDelta (0, 0) (0, 0)
       bproj = False
@@ -254,8 +251,6 @@ instance Binary Actor where
     put bweapon
     put bwait
     put bfid
-    put bfidImpressed
-    put bfidOriginal
     put bproj
   get = do
     btrunk <- get
@@ -278,8 +273,6 @@ instance Binary Actor where
     bweapon <- get
     bwait <- get
     bfid <- get
-    bfidImpressed <- get
-    bfidOriginal <- get
     bproj <- get
     return $! Actor{..}
 

@@ -208,18 +208,6 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
           aidVerbMU aid "hear something"
           msgDuplicateScrap
           stopPlayBack
-  UpdFidImpressedActor aid _fidOld fidNew -> do
-    b <- getsState $ getActorBody aid
-    actorVerbMU aid b $
-      if | fidNew == bfid b ->
-           "get calmed and refocused"
--- TODO: only show for liquids; for others say 'flash', etc.
---              "get refocused by the fragrant moisture"
-         | fidNew == bfidOriginal b ->
-           "remember forgone allegiance suddenly"
-         | otherwise ->
-           "experience anxiety that weakens resolve and erodes loyalty"
--- TODO     "inhale the sweet smell that weakens resolve and erodes loyalty"
   UpdTrajectory{} -> return ()  -- if projectile dies here, no display
   UpdColorActor aid _ _ -> do
     -- If color changed, make sure it's ever shown,

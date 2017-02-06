@@ -235,10 +235,10 @@ manageCalmAndDomination aid b = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   dominated <-
     if bcalm b == 0
-       && bfidImpressed b /= bfid b
+       && undefined {-bfidImpressed b-} /= bfid b
        && fleaderMode (gplayer fact) /= LeaderNull
             -- animals/robots never Calm-dominated
-    then dominateFidSfx (bfidImpressed b) aid
+    then dominateFidSfx (undefined) aid
     else return False
   unless dominated $ do
     actorAspect <- getsServer sactorAspect
