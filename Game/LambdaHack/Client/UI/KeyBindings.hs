@@ -36,19 +36,22 @@ stdBinding :: KeyKind  -- ^ default key bindings from the content
            -> Binding  -- ^ concrete binding
 stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
   let waitTriple = ([CmdMove], "", Wait)
+      wait10Triple = ([CmdMove], "", Wait10)
       moveXhairOr n cmd v = ByAimMode { exploration = cmd v
                                       , aiming = MoveXhair v n }
       cmdAll =
         rhumanCommands copsClient
         ++ configCommands
         ++ [ (K.mkKM "KP_Begin", waitTriple)
-           , (K.mkKM "CTRL-KP_Begin", waitTriple)
+           , (K.mkKM "CTRL-KP_Begin", wait10Triple)
            , (K.mkKM "KP_5", waitTriple)
-           , (K.mkKM "CTRL-KP_5", waitTriple) ]
+           , (K.mkKM "CTRL-KP_5", wait10Triple) ]
         ++ (if | configVi ->
-                 [ (K.mkKM "period", waitTriple) ]
+                 [ (K.mkKM "period", waitTriple)
+                 , (K.mkKM "CTRL-period", wait10Triple) ]
                | configLaptop ->
                  [ (K.mkKM "i", waitTriple)
+                 , (K.mkKM "CTRL-i", wait10Triple)
                  , (K.mkKM "I", waitTriple) ]
                | otherwise ->
                  [])

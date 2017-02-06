@@ -93,6 +93,7 @@ data HumanCmd =
     -- Global.
     -- These usually take time.
   | Wait
+  | Wait10
   | MoveDir !Vector
   | RunDir !Vector
   | RunOnceAhead
@@ -165,6 +166,7 @@ instance Binary HumanCmd
 noRemoteHumanCmd :: HumanCmd -> Bool
 noRemoteHumanCmd cmd = case cmd of
   Wait          -> True
+  Wait10        -> True
   MoveItem{}    -> True
   Apply{}       -> True
   AlterDir{}    -> True

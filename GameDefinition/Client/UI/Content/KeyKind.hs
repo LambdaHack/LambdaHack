@@ -63,6 +63,8 @@ standardKeys = KeyKind
               , "autoexplore 25 times"
               , autoexplore25Cmd ))
       , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_5", "V"]))
+      , ("CTRL-R", ( [CmdMove], "lurk (1/10th wait 100 times)"
+                   , Macro ["CTRL-KP_5", "V"]) )
       , let triggerClose =
               [ AlterFeature { verb = "close"
                              , object = "door"

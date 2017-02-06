@@ -49,6 +49,7 @@ cmdAction cmd = case cmd of
     loopOnNothingHuman (cmdAction cmd1)
 
   Wait -> weaveJust <$> Right <$> fmap timedToUI waitHuman
+  Wait10 -> weaveJust <$> Right <$> fmap timedToUI waitHuman10
   MoveDir v -> weaveJust <$> (ReqUITimed <$$> moveRunHuman True True False False v)
   RunDir v -> weaveJust <$> (ReqUITimed <$$> moveRunHuman True True True True v)
   RunOnceAhead -> runOnceAheadHuman

@@ -10,7 +10,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
     byAreaHuman, byAimModeHuman, byItemModeHuman
   , composeIfLocalHuman, composeUnlessErrorHuman, loopOnNothingHuman
     -- * Global commands that usually take time
-  , waitHuman, moveRunHuman
+  , waitHuman, waitHuman10, moveRunHuman
   , runOnceAheadHuman, moveOnceToXhairHuman
   , runOnceToXhairHuman, continueToXhairHuman
   , moveItemHuman, projectHuman, applyHuman, alterDirHuman
@@ -208,6 +208,14 @@ waitHuman :: MonadClientUI m => m (RequestTimed 'AbWait)
 waitHuman = do
   modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
   return ReqWait
+
+-- * Wait10
+
+-- | Leader waits a 1/10th of a turn (and doesn't block, etc.).
+waitHuman10 :: MonadClientUI m => m (RequestTimed 'AbWait)
+waitHuman10 = do
+  modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
+  return ReqWait10
 
 -- * MoveDir and RunDir
 
