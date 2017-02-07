@@ -93,7 +93,7 @@ itemDesc :: FactionId -> FactionDict -> Int -> CStore -> Time -> ItemFull
          -> AttrLine
 itemDesc side factionD aHurtMeleeOfOwner store localTime
          itemFull@ItemFull{itemBase} =
-  let (_, _, name, stats) = partItemHigh store localTime itemFull
+  let (_, _, name, stats) = partItemHigh side factionD store localTime itemFull
       nstats = makePhrase [name, stats]
       IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = strengthToThrow itemBase
       speed = speedFromWeight (jweight itemBase) throwVelocity

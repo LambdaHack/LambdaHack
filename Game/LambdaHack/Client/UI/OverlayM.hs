@@ -65,10 +65,13 @@ lookAt detailed tilePrefix canSee pos aid msg = do
   localTime <- getsState $ getLocalTime lidV
   subject <- partAidLeader aid
   is <- getsState $ getFloorBag lidV pos
+  side <- getsClient sside
+  factionD <- getsState sfactionD
   let verb = MU.Text $ if | pos == bpos b -> "stand on"
                           | canSee -> "notice"
                           | otherwise -> "remember"
-  let nWs (iid, kit@(k, _)) = partItemWs k CGround localTime (itemToF iid kit)
+  let nWs (iid, kit@(k, _)) =
+        partItemWs side factionD k CGround localTime (itemToF iid kit)
       isd = if EM.size is == 0 then ""
             else makeSentence [ MU.SubjectVerbSg subject verb
                               , MU.WWandW $ map nWs $ EM.assocs is]

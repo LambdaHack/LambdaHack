@@ -207,6 +207,8 @@ itemOverlay store lid bag = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
   ItemSlots itemSlots organSlots <- getsClient sslots
+  side <- getsClient sside
+  factionD <- getsState sfactionD
   let isOrgan = store == COrgan
       lSlots = if isOrgan then organSlots else itemSlots
       !_A = assert (all (`elem` EM.elems lSlots) (EM.keys bag)
@@ -218,7 +220,8 @@ itemOverlay store lid bag = do
             let itemFull = itemToF iid kit
                 colorSymbol = viewItem $ itemBase itemFull
                 phrase =
-                  makePhrase [partItemWsRanged k store localTime itemFull]
+                  makePhrase [partItemWsRanged side factionD
+                                               k store localTime itemFull]
                 al = textToAL (slotLabel l)
                      <+:> [colorSymbol]
                      <+:> textToAL phrase

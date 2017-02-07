@@ -388,7 +388,10 @@ itemVerbMU iid kit@(k, _) verb c = assert (k > 0) $ do
   lid <- getsState $ lidFromC c
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
-  let subject = partItemWs k (storeFromC c) localTime (itemToF iid kit)
+  side <- getsClient sside
+  factionD <- getsState sfactionD
+  let subject = partItemWs side factionD
+                                k (storeFromC c) localTime (itemToF iid kit)
       msg | k > 1 = makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   msgAdd msg
@@ -403,6 +406,8 @@ itemAidVerbMU :: MonadClientUI m
 itemAidVerbMU aid verb iid ek cstore = do
   body <- getsState $ getActorBody aid
   bag <- getsState $ getBodyStoreBag body cstore
+  side <- getsClient sside
+  factionD <- getsState sfactionD
   -- The item may no longer be in @c@, but it was
   case iid `EM.lookup` bag of
     Nothing -> assert `failure` (aid, verb, iid, cstore)
@@ -415,15 +420,16 @@ itemAidVerbMU aid verb iid ek cstore = do
           object = case ek of
             Left (Just n) ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
-              $ partItemWs n cstore localTime itemFull
+              $ partItemWs side factionD n cstore localTime itemFull
             Left Nothing ->
-              let (_, _, name, stats) = partItem cstore localTime itemFull
+              let (_, _, name, stats) =
+                    partItem side factionD cstore localTime itemFull
               in MU.Phrase [name, stats]
             Right n ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
               $ let itemSecret = itemNoDisco (itemBase itemFull, n)
                     (_, _, secretName, secretAE) =
-                      partItem cstore localTime itemSecret
+                      partItem side factionD cstore localTime itemSecret
                     name = MU.Phrase [secretName, secretAE]
                     nameList = if n == 1
                                then ["the", name]
@@ -691,6 +697,7 @@ discover c oldCli iid = do
   itemToF <- itemToFullClient
   bag <- getsState $ getContainerBag c
   side <- getsClient sside
+  factionD <- getsState sfactionD
   (isOurOrgan, nameWhere) <- case c of
     CActor aidOwner storeOwner -> do
       bOwner <- getsState $ getActorBody aidOwner
@@ -701,12 +708,13 @@ discover c oldCli iid = do
     _ -> return (False, [])
   let kit = EM.findWithDefault (1, []) iid bag
       itemFull = itemToF iid kit
-      knownName = partItemMediumAW cstore localTime itemFull
+      knownName = partItemMediumAW side factionD cstore localTime itemFull
       -- Wipe out the whole knowledge of the item to make sure the two names
       -- in the message differ even if, e.g., the item is described as
       -- "of many effects".
       itemSecret = itemNoDisco (itemBase itemFull, itemK itemFull)
-      (_, _, secretName, secretAEText) = partItem cstore localTime itemSecret
+      (_, _, secretName, secretAEText) =
+        partItem side factionD cstore localTime itemSecret
       namePhrase = MU.Phrase $ [secretName, secretAEText] ++ nameWhere
       msg = makeSentence
         ["the", MU.SubjectVerbSg namePhrase "turn out to be", knownName]
@@ -867,11 +875,12 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             [] -> return ()  -- invisible items?
             (_, ItemFull{..}) : _ -> do
               subject <- partActorLeader aid b
+              factionD <- getsState sfactionD
               let itemSecret = itemNoDisco (itemBase, itemK)
                   -- TODO: plural form of secretName? only when K > 1?
                   -- At this point we don't easily know how many consumed.
                   (_, _, secretName, secretAEText) =
-                    partItem CGround localTime itemSecret
+                    partItem side factionD CGround localTime itemSecret
                   verb = "repurpose"
                   store = MU.Text $ ppCStoreIn CGround
               msgAdd $ makeSentence
@@ -943,6 +952,8 @@ strike catch source target iid cstore hurtMult = assert (source /= target) $ do
     spronoun <- partPronounLeader source sb
     localTime <- getsState $ getLocalTime (blid tb)
     bag <- getsState $ getBodyStoreBag sb cstore
+    side <- getsClient sside
+    factionD <- getsState sfactionD
     let kit = EM.findWithDefault (1, []) iid bag
         itemFull = itemToF iid kit
         verb = case itemDisco itemFull of
@@ -952,8 +963,8 @@ strike catch source target iid cstore hurtMult = assert (source /= target) $ do
         isOrgan = iid `EM.member` borgan sb
         partItemChoice =
           if isOrgan
-          then partItemWownW spronoun COrgan localTime
-          else partItemAW cstore localTime
+          then partItemWownW side factionD spronoun COrgan localTime
+          else partItemAW side factionD cstore localTime
         msg | bhp tb <= 0 || hurtMult > 90 = makeSentence $  -- minor armor
               [MU.SubjectVerbSg spart verb, tpart]
               ++ if bproj sb

@@ -9,6 +9,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import qualified Data.EnumMap.Strict as EM
 import Data.Int (Int64)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -17,6 +18,7 @@ import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.EffectDescription
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -36,9 +38,10 @@ show64With2 n =
 
 -- | The part of speech describing the item parameterized by the number
 -- of effects/aspects to show..
-partItemN :: Bool -> Int -> Int -> CStore -> Time -> ItemFull
+partItemN :: FactionId -> FactionDict
+          -> Bool -> Int -> Int -> CStore -> Time -> ItemFull
           -> (Bool, Bool, MU.Part, MU.Part)
-partItemN ranged fullInfo n cstore localTime itemFull =
+partItemN side factionD ranged fullInfo n cstore localTime itemFull =
   let genericName = jname $ itemBase itemFull
   in case itemDisco itemFull of
     Nothing ->
@@ -60,7 +63,13 @@ partItemN ranged fullInfo n cstore localTime itemFull =
             textAllAE fullInfo skipRecharging cstore itemFull
           effTs = filter (not . T.null) effTsRaw
                   ++ if ranged then rangedDamage else []
-          ts = take n effTs
+          lsource = case jsource $ itemBase itemFull of
+            ItemSourceLevel{} -> []
+            ItemSourceFaction fid -> ["by" <+> if fid == side
+                                               then "us"
+                                               else gname (factionD EM.! fid)]
+          ts = lsource
+               ++ take n effTs
                ++ ["(...)" | length effTs > n]
                ++ [timer]
           unique = IK.Unique `elem` IK.ieffects (itemKind iDisco)
@@ -69,7 +78,8 @@ partItemN ranged fullInfo n cstore localTime itemFull =
           capName = if unique
                     then MU.Capitalize $ MU.Text name
                     else MU.Text name
-      in (temporary, unique, capName, MU.Phrase $ map MU.Text ts)
+      in ( not (null lsource) || temporary
+         , unique, capName, MU.Phrase $ map MU.Text ts )
 
 textAllAE :: Int -> Bool -> CStore -> ItemFull -> ([Text], [Text])
 textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
@@ -180,45 +190,56 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
       in (aets ++ features, rangedDamage)
 
 -- | The part of speech describing the item.
-partItem :: CStore -> Time -> ItemFull -> (Bool, Bool, MU.Part, MU.Part)
-partItem = partItemN False 5 4
+partItem :: FactionId -> FactionDict
+         -> CStore -> Time -> ItemFull -> (Bool, Bool, MU.Part, MU.Part)
+partItem side factionD = partItemN side factionD False 5 4
 
-partItemHigh :: CStore -> Time -> ItemFull -> (Bool, Bool, MU.Part, MU.Part)
-partItemHigh = partItemN False 10 100
+partItemHigh :: FactionId -> FactionDict
+             -> CStore -> Time -> ItemFull -> (Bool, Bool, MU.Part, MU.Part)
+partItemHigh side factionD = partItemN side factionD False 10 100
 
 -- TODO: use kit
-partItemWsR :: Bool -> Int -> CStore -> Time -> ItemFull -> MU.Part
-partItemWsR ranged count c localTime itemFull =
+partItemWsR :: FactionId -> FactionDict
+            -> Bool -> Int -> CStore -> Time -> ItemFull -> MU.Part
+partItemWsR side factionD ranged count c localTime itemFull =
   let (temporary, unique, name, stats) =
-        partItemN ranged 5 4 c localTime itemFull
+        partItemN side factionD ranged 5 4 c localTime itemFull
   in if | temporary && count == 1 -> MU.Phrase [name, stats]
         | temporary -> MU.Phrase [MU.Text $ tshow count <> "-fold", name, stats]
         | unique && count == 1 -> MU.Phrase ["the", name, stats]
         | otherwise -> MU.Phrase [MU.CarWs count name, stats]
 
-partItemWs :: Int -> CStore -> Time -> ItemFull -> MU.Part
-partItemWs = partItemWsR False
+partItemWs :: FactionId -> FactionDict
+           -> Int -> CStore -> Time -> ItemFull -> MU.Part
+partItemWs side factionD = partItemWsR side factionD False
 
-partItemWsRanged :: Int -> CStore -> Time -> ItemFull -> MU.Part
-partItemWsRanged = partItemWsR True
+partItemWsRanged :: FactionId -> FactionDict
+                 -> Int -> CStore -> Time -> ItemFull -> MU.Part
+partItemWsRanged side factionD = partItemWsR side factionD True
 
-partItemAW :: CStore -> Time -> ItemFull -> MU.Part
-partItemAW c localTime itemFull =
-  let (_, unique, name, stats) = partItemN False 4 4 c localTime itemFull
+partItemAW :: FactionId -> FactionDict
+           -> CStore -> Time -> ItemFull -> MU.Part
+partItemAW side factionD c localTime itemFull =
+  let (_, unique, name, stats) =
+        partItemN side factionD False 4 4 c localTime itemFull
   in if unique
      then MU.Phrase ["the", name, stats]
      else MU.AW $ MU.Phrase [name, stats]
 
-partItemMediumAW :: CStore -> Time -> ItemFull -> MU.Part
-partItemMediumAW c localTime itemFull =
-  let (_, unique, name, stats) = partItemN False 5 100 c localTime itemFull
+partItemMediumAW :: FactionId -> FactionDict
+                 -> CStore -> Time -> ItemFull -> MU.Part
+partItemMediumAW side factionD c localTime itemFull =
+  let (_, unique, name, stats) =
+        partItemN side factionD False 5 100 c localTime itemFull
   in if unique
      then MU.Phrase ["the", name, stats]
      else MU.AW $ MU.Phrase [name, stats]
 
-partItemWownW :: MU.Part -> CStore -> Time -> ItemFull -> MU.Part
-partItemWownW partA c localTime itemFull =
-  let (_, _, name, stats) = partItemN False 4 4 c localTime itemFull
+partItemWownW :: FactionId -> FactionDict
+              -> MU.Part -> CStore -> Time -> ItemFull -> MU.Part
+partItemWownW side factionD partA c localTime itemFull =
+  let (_, _, name, stats) =
+        partItemN side factionD False 4 4 c localTime itemFull
   in MU.WownW partA $ MU.Phrase [name, stats]
 
 viewItem :: Item -> Color.AttrCharW32
