@@ -887,7 +887,7 @@ dropCStoreItem verbose store aid b n iid kit@(k, _) = do
     effectAndDestroy aid aid iid c False effs itemFull
   else do
     cDrop <- pickDroppable aid b
-    mvCmd <- generalMoveItem verbose iid (max n k) (CActor aid store) cDrop
+    mvCmd <- generalMoveItem verbose iid (min n k) (CActor aid store) cDrop
     mapM_ execUpdAtomic mvCmd
 
 pickDroppable :: MonadStateRead m => ActorId -> Actor -> m Container
