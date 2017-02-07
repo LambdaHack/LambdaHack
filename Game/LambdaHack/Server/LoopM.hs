@@ -249,9 +249,12 @@ manageCalmAndDomination aid b = do
        && not (null impressions)
        && fleaderMode (gplayer fact) /= LeaderNull
             -- animals/robots never Calm-dominated
-    then case jsource $ getItem $ fst $ head $ EM.assocs impressions of
-      ItemSourceLevel{} -> assert `failure` impressions
-      ItemSourceFaction fid1 -> dominateFidSfx fid1 aid
+    then
+      let f (_, (k, _)) = k
+          maxImpression = maximumBy (Ord.comparing f) $ EM.assocs impressions
+      in case jsource $ getItem $ fst maxImpression of
+        ItemSourceLevel{} -> assert `failure` impressions
+        ItemSourceFaction fid1 -> dominateFidSfx fid1 aid
     else return False
   unless dominated $ do
     actorAspect <- getsServer sactorAspect
