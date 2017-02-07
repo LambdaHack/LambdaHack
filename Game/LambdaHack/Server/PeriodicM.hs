@@ -191,10 +191,15 @@ dominateFid fid target = do
       addImpression bag = do  -- add some nostalgia for old faction
         let litemFreq = [("impressed", 1)]
         m5 <- rollItem 0 (blid tb) litemFreq
-        let (itemKnown, itemFull, _, seed, _) =
+        let (itemKnownRaw, itemFullRaw, _, seed, _) =
               fromMaybe (assert `failure` (blid tb, litemFreq)) m5
+            (kindIx, damage, _, aspectRecord) = itemKnownRaw
+            jsource = ItemSourceFaction $ bfid tb
+            itemKnown = (kindIx, damage, jsource, aspectRecord)
+            itemFull = itemFullRaw {itemBase = (itemBase itemFullRaw) {jsource}}
+              -- no need to put @itemK = 10@ here
         iid <- onlyRegisterItem itemFull itemKnown seed
-        return $! EM.insert iid (1, []) bag
+        return $! EM.insert iid (10, []) bag
       borganNoImpression = dropAllImpressions $ borgan tb
   borgan <- addImpression borganNoImpression
   btime <-
