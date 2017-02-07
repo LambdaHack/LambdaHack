@@ -483,10 +483,9 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
                    Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}}}
           | not $ null $ filter IK.properEffect ieffects ->
           return ()  -- discover by use
-        ItemFull{itemBase} -> do
+        _ -> do
           seed <- getsServer $ (EM.! iid) . sitemSeedD
-          Level{ldepth} <- getLevel $ jlid itemBase
-          execUpdAtomic $ UpdDiscoverSeed fromC iid seed ldepth
+          execUpdAtomic $ UpdDiscoverSeed fromC iid seed
     upds <- generalMoveItem True iid k fromC toC
     mapM_ execUpdAtomic upds
     -- Reset timeout for equipped periodic items.

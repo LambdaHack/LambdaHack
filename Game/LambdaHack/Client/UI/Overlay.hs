@@ -16,6 +16,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Control.Monad.ST.Strict
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
@@ -27,6 +28,7 @@ import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.EffectDescription
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.ItemStrongest
@@ -87,8 +89,10 @@ splitAttrPhrase w xs
          then pre : splitAttrPhrase w post
          else reverse ppost : splitAttrPhrase w (reverse ppre ++ post)
 
-itemDesc :: Int -> CStore -> Time -> ItemFull -> AttrLine
-itemDesc aHurtMeleeOfOwner store localTime itemFull@ItemFull{itemBase} =
+itemDesc :: FactionId -> FactionDict -> Int -> CStore -> Time -> ItemFull
+         -> AttrLine
+itemDesc side factionD aHurtMeleeOfOwner store localTime
+         itemFull@ItemFull{itemBase} =
   let (_, _, name, stats) = partItemHigh store localTime itemFull
       nstats = makePhrase [name, stats]
       IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = strengthToThrow itemBase
@@ -151,7 +155,13 @@ itemDesc aHurtMeleeOfOwner store localTime itemFull@ItemFull{itemBase} =
         | weight > 1000 =
           (tshow $ fromIntegral weight / (1000 :: Double), "kg")
         | otherwise = (tshow weight, "g")
-      ln = abs $ fromEnum $ jlid itemBase
+      sourceDesc = case jsource itemBase of
+        ItemSourceLevel ln ->
+          "Created on level" <+> tshow (abs $ fromEnum ln) <> "."
+        ItemSourceFaction fid ->
+          if fid == side
+          then "Home-made."
+          else "Aquired from" <+> gname (factionD EM.! fid) <> "."
       colorSymbol = viewItem itemBase
       blurb =
         " "
@@ -163,7 +173,7 @@ itemDesc aHurtMeleeOfOwner store localTime itemFull@ItemFull{itemBase} =
              else "")
         <+> featureSentences
         <+> eqpSlotSentence
-        <+> makeSentence ["First found on level", MU.Text $ tshow ln]
+        <+> sourceDesc
         <+> damageAnalysis
   in colorSymbol : textToAL blurb
 

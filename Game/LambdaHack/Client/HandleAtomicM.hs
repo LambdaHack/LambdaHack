@@ -102,7 +102,7 @@ cmdAtomicFilterCli cmd = case cmd of
                                  || t /= Tile.hideAs cotile tClient)
         newTs = filter notKnown ts
     return $! if null newTs then [] else [UpdSpotTile lid newTs]
-  UpdDiscover c iid _ seed ldepth -> do
+  UpdDiscover c iid _ seed -> do
     itemD <- getsState sitemD
     case EM.lookup iid itemD of
       Nothing -> return []
@@ -113,9 +113,9 @@ cmdAtomicFilterCli cmd = case cmd of
             discoAspect <- getsClient sdiscoAspect
             if iid `EM.member` discoAspect
               then return []
-              else return [UpdDiscoverSeed c iid seed ldepth]
+              else return [UpdDiscoverSeed c iid seed]
           else return [cmd]
-  UpdCover c iid ik _ _ -> do
+  UpdCover c iid ik _ -> do
     itemD <- getsState sitemD
     case EM.lookup iid itemD of
       Nothing -> return []
@@ -146,7 +146,7 @@ cmdAtomicFilterCli cmd = case cmd of
         if jkindIx item `EM.notMember` discoKind
         then return []
         else return [cmd]
-  UpdDiscoverSeed _ iid _ _ -> do
+  UpdDiscoverSeed _ iid _ -> do
     itemD <- getsState sitemD
     case EM.lookup iid itemD of
       Nothing -> return []
@@ -159,7 +159,7 @@ cmdAtomicFilterCli cmd = case cmd of
           if iid `EM.member` discoAspect
             then return []
             else return [cmd]
-  UpdCoverSeed _ iid _ _ -> do
+  UpdCoverSeed _ iid _ -> do
     itemD <- getsState sitemD
     case EM.lookup iid itemD of
       Nothing -> return []
@@ -316,16 +316,16 @@ cmdAtomicSemCli cmd = case cmd of
           f (Right (c, _)) = Left c
           g !em !lid = EM.adjust f lid em
       in cli {scondInMelee = foldl' g (scondInMelee cli) arenas}
-  UpdDiscover c iid ik seed ldepth -> do
+  UpdDiscover c iid ik seed -> do
     discoverKind c iid ik
-    discoverSeed c iid seed ldepth
-  UpdCover c iid ik seed _ldepth -> do
+    discoverSeed c iid seed
+  UpdCover c iid ik seed -> do
     coverSeed c iid seed
     coverKind c iid ik
   UpdDiscoverKind c iid ik -> discoverKind c iid ik
   UpdCoverKind c iid ik -> coverKind c iid ik
-  UpdDiscoverSeed c iid seed  ldepth -> discoverSeed c iid seed ldepth
-  UpdCoverSeed c iid seed _ldepth -> coverSeed c iid seed
+  UpdDiscoverSeed c iid seed -> discoverSeed c iid seed
+  UpdCoverSeed c iid seed -> coverSeed c iid seed
   -- UpdPerception lid outPer inPer -> perception lid outPer inPer
   UpdRestart side sdiscoKind sfper s d sdebugCli -> do
     Kind.COps{comode=Kind.Ops{ofoldlGroup'}} <- getsState scops
@@ -445,8 +445,7 @@ perception lid outPer inPer = do
         f = EM.alter adj lid
     modifyClient $ \cli -> cli {sfper = f (sfper cli)}
 
-discoverKind :: MonadClient m
-             => Container -> ItemId -> Kind.Id ItemKind -> m ()
+discoverKind :: MonadClient m => Container -> ItemId -> Kind.Id ItemKind -> m ()
 discoverKind c iid kmKind = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
@@ -465,8 +464,7 @@ discoverKind c iid kmKind = do
   -- expensive to generate new sactorAspect. Optimize only after profiling.
   getState >>= createSactorAspect
 
-coverKind :: MonadClient m
-          => Container -> ItemId -> Kind.Id ItemKind -> m ()
+coverKind :: MonadClient m => Container -> ItemId -> Kind.Id ItemKind -> m ()
 coverKind c iid ik = do
   item <- getsState $ getItemBody iid
   let f Nothing = assert `failure` "already covered" `twith` (c, iid, ik)
@@ -477,9 +475,8 @@ coverKind c iid ik = do
     cli {sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)}
   getState >>= createSactorAspect
 
-discoverSeed :: MonadClient m
-             => Container -> ItemId -> ItemSeed -> AbsDepth -> m ()
-discoverSeed c iid seed ldepth = do
+discoverSeed :: MonadClient m => Container -> ItemId -> ItemSeed -> m ()
+discoverSeed c iid seed = do
   -- Wipe out BFS, because the player could potentially learn that his items
   -- affect his actors' skills relevant to BFS.
   invalidateBfsAll
@@ -491,6 +488,7 @@ discoverSeed c iid seed ldepth = do
     Nothing -> assert `failure` "kind not known"
                       `twith` (c, iid, seed)
     Just KindMean{kmKind} -> do
+      Level{ldepth} <- getLevel $ jlid item
       let kind = okind kmKind
           -- TODO: the $! just in case.
           f Nothing = Just $! seedToAspect seed kind ldepth totalDepth
@@ -500,8 +498,7 @@ discoverSeed c iid seed ldepth = do
         cli {sdiscoAspect = EM.alter f iid (sdiscoAspect cli)}
   getState >>= createSactorAspect
 
-coverSeed :: MonadClient m
-          => Container -> ItemId -> ItemSeed -> m ()
+coverSeed :: MonadClient m => Container -> ItemId -> ItemSeed -> m ()
 coverSeed c iid seed = do
   let f Nothing = assert `failure` "already covered" `twith` (c, iid, seed)
       f Just{} = Nothing  -- checking that old and new agree is too much work

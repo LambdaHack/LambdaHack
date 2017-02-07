@@ -179,7 +179,9 @@ chooseItemDialogMode c = do
           lidV <- viewedLevelUI
           Level{lxsize, lysize} <- getLevel lidV
           localTime <- getsState $ getLocalTime (blid b)
-          let attrLine = itemDesc (aHurtMelee ar) COrgan localTime itemFull
+          factionD <- getsState sfactionD
+          let attrLine = itemDesc (bfid b) factionD (aHurtMelee ar)
+                                  COrgan localTime itemFull
               ov = splitAttrLine lxsize attrLine
           slides <-
             overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] (ov, [])

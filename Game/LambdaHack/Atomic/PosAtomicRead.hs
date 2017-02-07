@@ -115,12 +115,12 @@ posUpdAtomic cmd = case cmd of
   UpdTimeItem _ c _ _ -> singleContainer c
   UpdAgeGame _ -> return PosAll
   UpdUnAgeGame _ -> return PosAll
-  UpdDiscover c _ _ _ _ -> singleContainer c
-  UpdCover c _ _ _ _ -> singleContainer c
+  UpdDiscover c _ _ _ -> singleContainer c
+  UpdCover c _ _ _ -> singleContainer c
   UpdDiscoverKind c _ _ -> singleContainer c
   UpdCoverKind c _ _ -> singleContainer c
-  UpdDiscoverSeed c _ _ _ -> singleContainer c
-  UpdCoverSeed c _ _ _ -> singleContainer c
+  UpdDiscoverSeed c _ _ -> singleContainer c
+  UpdCoverSeed c _ _ -> singleContainer c
   UpdPerception{} -> return PosNone
   UpdRestart fid _ _ _ _ _ -> return $! PosFid fid
   UpdRestartServer _ -> return PosSer

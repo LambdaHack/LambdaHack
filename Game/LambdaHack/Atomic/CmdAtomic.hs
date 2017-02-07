@@ -97,12 +97,12 @@ data UpdAtomic =
   | UpdTimeItem !ItemId !Container !ItemTimer !ItemTimer
   | UpdAgeGame ![LevelId]
   | UpdUnAgeGame ![LevelId]
-  | UpdDiscover !Container !ItemId !(Kind.Id ItemKind) !ItemSeed !AbsDepth
-  | UpdCover !Container !ItemId !(Kind.Id ItemKind) !ItemSeed !AbsDepth
+  | UpdDiscover !Container !ItemId !(Kind.Id ItemKind) !ItemSeed
+  | UpdCover !Container !ItemId !(Kind.Id ItemKind) !ItemSeed
   | UpdDiscoverKind !Container !ItemId !(Kind.Id ItemKind)
   | UpdCoverKind !Container !ItemId !(Kind.Id ItemKind)
-  | UpdDiscoverSeed !Container !ItemId !ItemSeed !AbsDepth
-  | UpdCoverSeed !Container !ItemId !ItemSeed !AbsDepth
+  | UpdDiscoverSeed !Container !ItemId !ItemSeed
+  | UpdCoverSeed !Container !ItemId !ItemSeed
   | UpdPerception !LevelId !Perception !Perception
   | UpdRestart !FactionId !DiscoveryKind !PerLid !State !Int !DebugModeCli
   | UpdRestartServer !State
@@ -175,12 +175,12 @@ undoUpdAtomic cmd = case cmd of
   UpdTimeItem iid c fromIt toIt -> Just $ UpdTimeItem iid c toIt fromIt
   UpdAgeGame lids -> Just $ UpdUnAgeGame lids
   UpdUnAgeGame lids -> Just $ UpdAgeGame lids
-  UpdDiscover c iid ik seed ldepth -> Just $ UpdCover c iid ik seed ldepth
-  UpdCover c iid ik seed ldepth -> Just $ UpdDiscover c iid ik seed ldepth
+  UpdDiscover c iid ik seed -> Just $ UpdCover c iid ik seed
+  UpdCover c iid ik seed -> Just $ UpdDiscover c iid ik seed
   UpdDiscoverKind c iid ik -> Just $ UpdCoverKind c iid ik
   UpdCoverKind c iid ik -> Just $ UpdDiscoverKind c iid ik
-  UpdDiscoverSeed c iid seed ldepth -> Just $ UpdCoverSeed c iid seed ldepth
-  UpdCoverSeed c iid seed ldepth -> Just $ UpdDiscoverSeed c iid seed ldepth
+  UpdDiscoverSeed c iid seed -> Just $ UpdCoverSeed c iid seed
+  UpdCoverSeed c iid seed -> Just $ UpdDiscoverSeed c iid seed
   UpdPerception lid outPer inPer -> Just $ UpdPerception lid inPer outPer
   UpdRestart{} -> Just cmd  -- here history ends; change direction
   UpdRestartServer{} -> Just cmd  -- here history ends; change direction

@@ -950,6 +950,7 @@ itemMenuHuman cmdAction = do
           Level{lxsize, lysize} <- getLevel lidV
           localTime <- getsState $ getLocalTime (blid b)
           found <- getsState $ findIid leader (bfid b) iid
+          factionD <- getsState sfactionD
           let !_A = assert (not (null found) || fromCStore == CGround
                             `blame` (iid, leader)) ()
               fAlt (aid, (_, store)) = aid /= leader || store /= fromCStore
@@ -964,7 +965,8 @@ itemMenuHuman cmdAction = do
               foundPrefix = textToAL $
                 if null foundTexts then "" else "The object is also in:"
               itemFull = itemToF iid kit
-              desc = itemDesc (aHurtMelee ar) fromCStore localTime itemFull
+              desc = itemDesc (bfid b) factionD  (aHurtMelee ar)
+                              fromCStore localTime itemFull
               alPrefix = splitAttrLine lxsize $ desc <+:> foundPrefix
               ystart = length alPrefix - 1
               xstart = length (last alPrefix) + 1

@@ -86,8 +86,7 @@ revealItems mfid = do
         in case itemDisco itemFull of
           Just ItemDisco{itemKindId} -> do
             seed <- getsServer $ (EM.! iid) . sitemSeedD
-            Level{ldepth} <- getLevel $ jlid $ itemBase itemFull
-            execUpdAtomic $ UpdDiscover c iid itemKindId seed ldepth
+            execUpdAtomic $ UpdDiscover c iid itemKindId seed
           _ -> assert `failure` (mfid, c, iid, itemFull)
       f aid = do
         b <- getsState $ getActorBody aid
@@ -418,10 +417,9 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
                   Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}}}, _))
         | not $ null $ filter IK.properEffect ieffects ->
         return ()  -- discover by use
-      Just (iid, (ItemFull{itemBase=itemBase2}, _)) -> do
+      Just (iid, _) -> do
         seed <- getsServer $ (EM.! iid) . sitemSeedD
-        Level{ldepth} <- getLevel $ jlid itemBase2
-        execUpdAtomic $ UpdDiscoverSeed container iid seed ldepth
+        execUpdAtomic $ UpdDiscoverSeed container iid seed
   return $ Just aid
 
 -- Server has to pick a random weapon or it could leak item discovery

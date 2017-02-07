@@ -291,11 +291,11 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
       frame <- drawOverlay ColorFull False truncRep lidV
       displayFrames lidV [Just frame]
   UpdUnAgeGame{} -> return ()
-  UpdDiscover c iid _ _ _ -> discover c oldCli iid
+  UpdDiscover c iid _ _ -> discover c oldCli iid
   UpdCover{} -> return ()  -- don't spam when doing undo
   UpdDiscoverKind c iid _ -> discover c oldCli iid
   UpdCoverKind{} -> return ()  -- don't spam when doing undo
-  UpdDiscoverSeed c iid _ _ -> discover c oldCli iid
+  UpdDiscoverSeed c iid _ -> discover c oldCli iid
   UpdCoverSeed{} -> return ()  -- don't spam when doing undo
   UpdPerception{} -> return ()
   UpdRestart fid _ _ _ _ _ -> do
@@ -631,12 +631,13 @@ quitFactionUI fid toSt = do
                   Just kit@(k, _) -> do
                     leader <- getLeaderUI
                     actorAspect <- getsClient sactorAspect
+                    factionD <- getsState sfactionD
                     let ar = case EM.lookup leader actorAspect of
                           Just aspectRecord -> aspectRecord
                           Nothing -> assert `failure` leader
                         itemFull = itemToF iid kit
-                        attrLine = itemDesc (aHurtMelee ar) store localTime
-                                            itemFull
+                        attrLine = itemDesc side factionD (aHurtMelee ar)
+                                            store localTime itemFull
                         ov = splitAttrLine lxsize attrLine
                         worth = itemPrice (itemBase itemFull, 1)
                         lootMsg = makeSentence $
