@@ -84,14 +84,19 @@ sortSlots = do
       apperance ItemFull{itemBase} =
         (jsymbol itemBase, jname itemBase, jflavour itemBase)
       compareItemFull itemFull1 itemFull2 =
-        case (itemDisco itemFull1, itemDisco itemFull2) of
-          (Nothing, Nothing) -> comparing apperance itemFull1 itemFull2
-          (Nothing, Just{}) -> LT
-          (Just{}, Nothing) -> GT
-          (Just id1, Just id2) ->
-            case compare (itemKindId id1) (itemKindId id2) of
-              EQ -> comparing itemAspect id1 id2
-              ot -> ot
+        case ( jsymbol (itemBase itemFull1)
+             , jsymbol (itemBase itemFull2) ) of
+          ('$', '$') -> EQ
+          ('$', _) -> LT
+          (_, '$') -> GT
+          _ -> case (itemDisco itemFull1, itemDisco itemFull2) of
+            (Nothing, Nothing) -> comparing apperance itemFull1 itemFull2
+            (Nothing, Just{}) -> LT
+            (Just{}, Nothing) -> GT
+            (Just id1, Just id2) ->
+              case compare (itemKindId id1) (itemKindId id2) of
+                EQ -> comparing itemAspect id1 id2
+                ot -> ot
       sortSlotMap :: EM.EnumMap SlotChar ItemId -> EM.EnumMap SlotChar ItemId
       sortSlotMap em =
         let l = itemListFromMap em
