@@ -797,9 +797,9 @@ effectCreateItem msource target store grp tim = do
     Just source -> do
       sb <- getsState $ getActorBody source
       let (kindIx, damage, _, ar) = itemKnownRaw
-          jsource = ItemSourceFaction $ bfid sb
-          itemKnown = (kindIx, damage, jsource, ar)
-          itemFull = itemFullRaw {itemBase = (itemBase itemFullRaw) {jsource}}
+          jfid = Just $ bfid sb
+          itemKnown = (kindIx, damage, jfid, ar)
+          itemFull = itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
       return (itemKnown, itemFull)
     Nothing -> return (itemKnownRaw, itemFullRaw)
   itemRev <- getsServer sitemRev

@@ -4,7 +4,7 @@
 module Game.LambdaHack.Common.Item
   ( -- * The @Item@ type
     ItemId, Item(..), ItemSource(..)
-  , jlid, seedToAspect, meanAspect, aspectRecordToList
+  , seedToAspect, meanAspect, aspectRecordToList
   , aspectRecordFull, aspectsRandom
     -- * Item discovery types
   , ItemKindIx, KindMean(..), DiscoveryKind, ItemSeed
@@ -148,7 +148,9 @@ itemNoDisco (itemBase, itemK) =
 -- through the @jkindIx@ index as soon as the item is identified.
 data Item = Item
   { jkindIx  :: !ItemKindIx    -- ^ index pointing to the kind of the item
-  , jsource  :: !ItemSource    -- ^ how the item was created
+  , jlid     :: !LevelId       -- ^ lowest leve the item was created at
+  , jfid     :: !(Maybe FactionId)
+                               -- ^ the faction that created the item, if any
   , jsymbol  :: !Char          -- ^ map symbol
   , jname    :: !Text          -- ^ generic name
   , jflavour :: !Flavour       -- ^ flavour
@@ -170,11 +172,6 @@ data ItemSource =
 instance Hashable ItemSource
 
 instance Binary ItemSource
-
-jlid :: Item -> LevelId
-jlid item = case jsource item of
-  ItemSourceLevel lid -> lid
-  ItemSourceFaction{} -> toEnum 0
 
 aspectRecordToList :: AspectRecord -> [IK.Aspect]
 aspectRecordToList AspectRecord{..} =

@@ -93,7 +93,8 @@ itemDesc :: FactionId -> FactionDict -> Int -> CStore -> Time -> ItemFull
          -> AttrLine
 itemDesc side factionD aHurtMeleeOfOwner store localTime
          itemFull@ItemFull{itemBase} =
-  let (_, _, name, stats) = partItemHigh side factionD store localTime itemFull
+  let (_, unique, name, stats) =
+        partItemHigh side factionD store localTime itemFull
       nstats = makePhrase [name, stats]
       IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = strengthToThrow itemBase
       speed = speedFromWeight (jweight itemBase) throwVelocity
@@ -155,13 +156,16 @@ itemDesc side factionD aHurtMeleeOfOwner store localTime
         | weight > 1000 =
           (tshow $ fromIntegral weight / (1000 :: Double), "kg")
         | otherwise = (tshow weight, "g")
-      sourceDesc = case jsource itemBase of
-        ItemSourceLevel ln ->
-          "Created on level" <+> tshow (abs $ fromEnum ln) <> "."
-        ItemSourceFaction fid ->
-          if fid == side
-          then "Home-made."
-          else "Aquired from" <+> gname (factionD EM.! fid) <> "."
+      onLevel = "on level" <+> tshow (abs $ fromEnum $ jlid itemBase) <> "."
+      sourceDesc =
+        case jfid itemBase of
+          Just fid -> "First created"
+                      <+> (if fid == side
+                           then "by us"
+                           else "by" <+> gname (factionD EM.! fid))
+                      <+> onLevel
+          Nothing -> (if unique then "Discovered" else "First seen")
+                     <+> onLevel
       colorSymbol = viewItem itemBase
       blurb =
         " "

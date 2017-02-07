@@ -123,7 +123,7 @@ slotToSentence :: EqpSlot -> Text
 slotToSentence es = case es of
   EqpSlotMiscBonus -> "Those that don't scorn minor bonuses may equip it."
   EqpSlotAddHurtMelee -> "Veteran melee fighters are known to devote equipment slot to it."
-  EqpSlotAddArmorMelee -> "People in risk from melee damage wear it."
+  EqpSlotAddArmorMelee -> "Worn by people in risk of melee wounds."
   EqpSlotAddArmorRanged -> "People scared of shots in the dark wear it."
   EqpSlotAddMaxHP -> "The frail wear it to increase their Hit Point capacity."
   EqpSlotAddSpeed -> "The slughish equip it to speed up their whole life."

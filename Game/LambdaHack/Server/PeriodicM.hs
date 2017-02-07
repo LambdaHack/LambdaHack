@@ -194,9 +194,9 @@ dominateFid fid target = do
         let (itemKnownRaw, itemFullRaw, _, seed, _) =
               fromMaybe (assert `failure` (blid tb, litemFreq)) m5
             (kindIx, damage, _, aspectRecord) = itemKnownRaw
-            jsource = ItemSourceFaction $ bfid tb
-            itemKnown = (kindIx, damage, jsource, aspectRecord)
-            itemFull = itemFullRaw {itemBase = (itemBase itemFullRaw) {jsource}}
+            jfid = Just $ bfid tb
+            itemKnown = (kindIx, damage, jfid, aspectRecord)
+            itemFull = itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
               -- no need to put @itemK = 10@ here
         iid <- onlyRegisterItem itemFull itemKnown seed
         return $! EM.insert iid (10, []) bag

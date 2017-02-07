@@ -63,11 +63,11 @@ partItemN side factionD ranged fullInfo n cstore localTime itemFull =
             textAllAE fullInfo skipRecharging cstore itemFull
           effTs = filter (not . T.null) effTsRaw
                   ++ if ranged then rangedDamage else []
-          lsource = case jsource $ itemBase itemFull of
-            ItemSourceLevel{} -> []
-            ItemSourceFaction fid -> ["by" <+> if fid == side
-                                               then "us"
-                                               else gname (factionD EM.! fid)]
+          lsource = case jfid $ itemBase itemFull of
+            Nothing -> []
+            Just fid -> ["by" <+> if fid == side
+                                  then "us"
+                                  else gname (factionD EM.! fid)]
           ts = lsource
                ++ take n effTs
                ++ ["(...)" | length effTs > n]
