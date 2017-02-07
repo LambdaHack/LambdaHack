@@ -346,7 +346,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
            { defLabel = Left ""
            , defCond = True
            , defAction = \_ -> do
-               sortSlots
+               sortSlots (bfid body) (Just body)
                recCall numPrefix cCur cRest itemDialogState
            })
         , (K.escKM, DefItemKey

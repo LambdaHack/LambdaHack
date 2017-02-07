@@ -107,7 +107,9 @@ clearHuman = do
 
 sortSlotsHuman :: MonadClientUI m => m ()
 sortSlotsHuman = do
-  sortSlots
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  sortSlots (bfid b) (Just b)
   promptAdd "Items sorted by kind and stats."
 
 -- * ChooseItem

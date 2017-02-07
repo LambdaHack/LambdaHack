@@ -14,6 +14,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import Data.Function
 import Data.Ord
 import qualified Data.Text as T
@@ -73,14 +74,11 @@ weaveJust :: FailOrCmd a -> Either MError a
 weaveJust (Left ferr) = Left $ Just ferr
 weaveJust (Right a) = Right a
 
-sortSlots :: MonadClientUI m => m ()
-sortSlots = do
+sortSlots :: MonadClientUI m => FactionId -> Maybe Actor -> m ()
+sortSlots fid mbody = do
   itemToF <- itemToFullClient
-  let itemListFromMap :: EM.EnumMap SlotChar ItemId -> [(ItemId, ItemFull)]
-      itemListFromMap em =
-        let f iid = (iid, itemToF iid (1, []))
-        in map f $ EM.elems em
-      -- If apperance the same, keep the order from before sort.
+  s <- getState
+  let -- If apperance the same, keep the order from before sort.
       apperance ItemFull{itemBase} =
         (jsymbol itemBase, jname itemBase, jflavour itemBase)
       compareItemFull itemFull1 itemFull2 =
@@ -97,14 +95,30 @@ sortSlots = do
               case compare (itemKindId id1) (itemKindId id2) of
                 EQ -> comparing itemAspect id1 id2
                 ot -> ot
-      sortSlotMap :: EM.EnumMap SlotChar ItemId -> EM.EnumMap SlotChar ItemId
-      sortSlotMap em =
-        let l = itemListFromMap em
-            sortedItemIds = map fst $ sortBy (compareItemFull `on` snd) l
+      sortSlotMap :: Bool -> EM.EnumMap SlotChar ItemId
+                  -> EM.EnumMap SlotChar ItemId
+      sortSlotMap onlyOrgans em =
+        let onPerson = sharedAllOwnedFid onlyOrgans fid s
+            onGround = maybe EM.empty
+                         -- consider floor only under the acting actor
+                       (\b -> getFloorBag (blid b) (bpos b) s)
+                       mbody
+            inBags = ES.unions $ map EM.keysSet
+                     $ onPerson : [ onGround | not onlyOrgans]
+            f = (`ES.member` inBags)
+            (nearItems, farItems) = partition f $ EM.elems em
+            g iid = (iid, itemToF iid (1, []))
+            sortItemIds l =
+              map fst $ sortBy (compareItemFull `on` snd) $ map g l
+            nearItemAsc = zip newSlots $ sortItemIds nearItems
+            farLen = if isNothing mbody then 0 else length allZeroSlots
+            farSlots = drop (length nearItemAsc + farLen) newSlots
+            farItemAsc = zip farSlots $ sortItemIds farItems
             newSlots = concatMap allSlots [0..]
-        in EM.fromDistinctAscList $ zip newSlots sortedItemIds
+        in EM.fromDistinctAscList $ nearItemAsc ++ farItemAsc
   ItemSlots itemSlots organSlots <- getsClient sslots
-  let newSlots = ItemSlots (sortSlotMap itemSlots) (sortSlotMap organSlots)
+  let newSlots = ItemSlots (sortSlotMap False itemSlots)
+                           (sortSlotMap True organSlots)
   modifyClient $ \cli -> cli {sslots = newSlots}
 
 -- | Switches current member to the next on the level, if any, wrapping.

@@ -543,7 +543,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
         itemAidVerbMU aid (MU.Text verb) iid (Right k) cstore2
       else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
         itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
-    Nothing -> assert `failure` iid
+    Nothing -> assert `failure` (iid, k, aid, cstore1, cstore2, itemSlots)
 
 -- TODO: split into many top-level functions; factor out common parts
 quitFactionUI :: MonadClientUI m => FactionId -> Maybe Status -> m ()
@@ -932,7 +932,9 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Unique -> assert `failure` sfx
         IK.Periodic -> assert `failure` sfx
   SfxMsgFid _ msg -> msgAdd msg
-  SfxMsgAll "SortSlots" -> sortSlots
+  SfxMsgAll "SortSlots" -> do
+    side <- getsClient sside
+    sortSlots side Nothing
   SfxMsgAll msg -> msgAdd msg
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
