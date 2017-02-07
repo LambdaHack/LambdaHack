@@ -212,7 +212,7 @@ effectSem source target iid c recharged effect = do
     IK.Paralyze p -> effectParalyze execSfx p target
     IK.InsertMove p -> effectInsertMove execSfx p target
     IK.Teleport p -> effectTeleport execSfx p source target
-    IK.CreateItem store grp tim -> effectCreateItem target store grp tim
+    IK.CreateItem store grp tim -> effectCreateItem Nothing target store grp tim
     IK.DropItem store grp -> effectDropItem execSfx 999 store grp target
     IK.PolyItem -> effectPolyItem execSfx source target
     IK.Identify -> effectIdentify execSfx iid source target
@@ -427,17 +427,14 @@ effectImpress :: (MonadAtomic m, MonadServer m)
               => m () -> ActorId -> ActorId -> m Bool
 effectImpress execSfx source target = do
   sb <- getsState $ getActorBody source
-  sfact <- getsState $ (EM.! bfid sb) . sfactionD
   tb <- getsState $ getActorBody target
   if | bproj tb -> return False
-     | bfid sb == bfid tb -> do
+     | bfid sb == bfid tb ->
        -- Unimpress wrt others, but only once.
-       let grp = "impressed"
-       effectDropItem execSfx 1 COrgan grp target
+       effectDropItem execSfx 1 COrgan "impressed" target
      | otherwise -> do
        execSfx
-       let grp = toGroupName $ "impressed by" <+> gname sfact
-       effectCreateItem target COrgan grp IK.TimerNone
+       effectCreateItem (Just source) target COrgan "impressed" IK.TimerNone
 
 -- ** CallFriend
 
@@ -765,9 +762,10 @@ effectTeleport execSfx nDm source target = do
 -- leading to attempts to do illegal actions (which the server then catches).
 -- This is in analogy to picking item from the ground, whereas it's IDed.
 effectCreateItem :: (MonadAtomic m, MonadServer m)
-                  => ActorId -> CStore -> GroupName ItemKind -> IK.TimerDice
+                  => Maybe ActorId -> ActorId -> CStore
+                  -> GroupName ItemKind -> IK.TimerDice
                   -> m Bool
-effectCreateItem target store grp tim = do
+effectCreateItem msource target store grp tim = do
   tb <- getsState $ getActorBody target
   delta <- case tim of
     IK.TimerNone -> return $ Delta timeZero
@@ -787,8 +785,17 @@ effectCreateItem target store grp tim = do
   let litemFreq = [(grp, 1)]
   -- Power depth of new items unaffected by number of spawned actors.
   m5 <- rollItem 0 (blid tb) litemFreq
-  let (itemKnown, itemFull, _, seed, _) =
+  let (itemKnownRaw, itemFullRaw, _, seed, _) =
         fromMaybe (assert `failure` (blid tb, litemFreq, c)) m5
+  (itemKnown, itemFull) <- case msource of
+    Just source -> do
+      sb <- getsState $ getActorBody source
+      let (kindIx, damage, _, ar) = itemKnownRaw
+          jsource = ItemSourceFaction $ bfid sb
+          itemKnown = (kindIx, damage, jsource, ar)
+          itemFull = itemFullRaw {itemBase = (itemBase itemFullRaw) {jsource}}
+      return (itemKnown, itemFull)
+    Nothing -> return (itemKnownRaw, itemFullRaw)
   itemRev <- getsServer sitemRev
   let mquant = case HM.lookup itemKnown itemRev of
         Nothing -> Nothing
@@ -915,7 +922,7 @@ effectPolyItem execSfx source target = do
                  kit = (maxCount, take maxCount itemTimer)
              identifyIid execSfx iid c itemKindId
              execUpdAtomic $ UpdDestroyItem iid itemBase kit c
-             effectCreateItem target cstore "useful" IK.TimerNone
+             effectCreateItem Nothing target cstore "useful" IK.TimerNone
       _ -> assert `failure` (target, iid, itemFull)
 
 -- ** Identify

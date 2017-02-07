@@ -236,30 +236,22 @@ manageCalmAndDomination aid b = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   getItem <- getsState $ flip getItemBody
   discoKind <- getsServer sdiscoKind
-  let isAltImpression iid = case EM.lookup (jkindIx $ getItem iid) discoKind of
-        Just KindMean{kmKind} ->
-          let grp = "impressed"
-              grpOur = toGroupName $ "impressed by" <+> gname fact
-              freq = IK.ifreq $ okind kmKind
-          in maybe False (> 0) (lookup grp freq)
-             && maybe True (<= 0) (lookup grpOur freq)
-        Nothing -> assert `failure` iid
+  let isAltImpression iid =
+        let item = getItem iid
+        in case EM.lookup (jkindIx item) discoKind of
+          Just KindMean{kmKind} ->
+            maybe False (> 0) (lookup "impressed" $ IK.ifreq $ okind kmKind)
+            && jsource item /= ItemSourceFaction (bfid b)
+          Nothing -> assert `failure` iid
       impressions = EM.filterWithKey (\iid _ -> isAltImpression iid) $ borgan b
   dominated <-
     if bcalm b == 0
        && not (null impressions)
        && fleaderMode (gplayer fact) /= LeaderNull
             -- animals/robots never Calm-dominated
-    then do
-      factionD <- getsState sfactionD
-      let ix = jkindIx $ getItem $ fst $ head $ EM.assocs impressions
-          freq = IK.ifreq $ okind $ kmKind $ discoKind EM.! ix
-          f (_, fact1) =
-            let grp1 = toGroupName $ "impressed by" <+> gname fact1
-            in maybe False (> 0) $ lookup grp1 freq
-      case find f $ EM.assocs factionD of
-        Just (fid1, _) -> dominateFidSfx fid1 aid
-        Nothing -> assert `failure` impressions
+    then case jsource $ getItem $ fst $ head $ EM.assocs impressions of
+      ItemSourceLevel{} -> assert `failure` impressions
+      ItemSourceFaction fid1 -> dominateFidSfx fid1 aid
     else return False
   unless dominated $ do
     actorAspect <- getsServer sactorAspect

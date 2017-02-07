@@ -185,13 +185,11 @@ dominateFid fid target = do
   let ar = actorAspect EM.! target
       isImpression iid = case EM.lookup (jkindIx $ getItem iid) discoKind of
         Just KindMean{kmKind} ->
-          let grp = "impressed"
-          in maybe False (> 0) $ lookup grp $ IK.ifreq (okind kmKind)
+          maybe False (> 0) $ lookup "impressed" $ IK.ifreq (okind kmKind)
         Nothing -> assert `failure` iid
       dropAllImpressions = EM.filterWithKey (\iid _ -> not $ isImpression iid)
       addImpression bag = do  -- add some nostalgia for old faction
-        let grp = toGroupName $ "impressed by" <+> gname fact
-            litemFreq = [(grp, 1)]
+        let litemFreq = [("impressed", 1)]
         m5 <- rollItem 0 (blid tb) litemFreq
         let (itemKnown, itemFull, _, seed, _) =
               fromMaybe (assert `failure` (blid tb, litemFreq)) m5
