@@ -414,12 +414,12 @@ effectDominate :: (MonadAtomic m, MonadServer m)
 effectDominate recursiveCall source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  if bfid tb == bfid sb then
-    -- Dominate is rather on projectiles than on items, so alternate effect
-    -- is useful to avoid boredom if domination can't happen.
-    recursiveCall IK.Impress
-  else
-    dominateFidSfx (bfid sb) target
+  if | bproj tb -> return False
+     | bfid tb == bfid sb ->
+       -- Dominate is rather on projectiles than on items, so alternate effect
+       -- is useful to avoid boredom if domination can't happen.
+       recursiveCall IK.Impress
+     | otherwise -> dominateFidSfx (bfid sb) target
 
 -- ** Impress
 
@@ -429,7 +429,7 @@ effectImpress execSfx source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   if | bproj tb -> return False
-     | bfid sb == bfid tb ->
+     | bfid tb == bfid sb ->
        -- Unimpress wrt others, but only once.
        effectDropItem execSfx 1 COrgan "impressed" target
      | otherwise -> do

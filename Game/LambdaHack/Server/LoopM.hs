@@ -236,14 +236,11 @@ manageCalmAndDomination aid b = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   getItem <- getsState $ flip getItemBody
   discoKind <- getsServer sdiscoKind
-  let isAltImpression iid =
-        let item = getItem iid
-        in case EM.lookup (jkindIx item) discoKind of
-          Just KindMean{kmKind} ->
-            maybe False (> 0) (lookup "impressed" $ IK.ifreq $ okind kmKind)
-            && jsource item /= ItemSourceFaction (bfid b)
-          Nothing -> assert `failure` iid
-      impressions = EM.filterWithKey (\iid _ -> isAltImpression iid) $ borgan b
+  let isImpression iid = case EM.lookup (jkindIx $ getItem iid) discoKind of
+        Just KindMean{kmKind} ->
+          maybe False (> 0) (lookup "impressed" $ IK.ifreq $ okind kmKind)
+        Nothing -> assert `failure` iid
+      impressions = EM.filterWithKey (\iid _ -> isImpression iid) $ borgan b
   dominated <-
     if bcalm b == 0
        && not (null impressions)
@@ -254,7 +251,8 @@ manageCalmAndDomination aid b = do
           maxImpression = maximumBy (Ord.comparing f) $ EM.assocs impressions
       in case jsource $ getItem $ fst maxImpression of
         ItemSourceLevel{} -> assert `failure` impressions
-        ItemSourceFaction fid1 -> dominateFidSfx fid1 aid
+        ItemSourceFaction fid1 -> assert (fid1 /= bfid b)
+                                  $ dominateFidSfx fid1 aid
     else return False
   unless dominated $ do
     actorAspect <- getsServer sactorAspect
