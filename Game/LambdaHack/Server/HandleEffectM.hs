@@ -429,8 +429,9 @@ effectImpress execSfx source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   if | bproj tb -> return False
-     | bfid tb == bfid sb ->
+     | bfid tb == bfid sb -> do
        -- Unimpress wrt others, but only once.
+       execSfx
        effectDropItem execSfx 1 COrgan "impressed" target
      | otherwise -> do
        execSfx
