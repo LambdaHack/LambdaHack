@@ -301,6 +301,7 @@ flask4 = flask
 flask5 = flask
   { ieffects = [ ELabel "of PhD defense questions"
                , toOrganGameTurn "defenseless" (20 + d 5)
+               , Impress
                , DetectExit 20
                , OnSmash (Explode "PhD defense question") ]
   }
@@ -347,13 +348,14 @@ flask11 = flask
 flask12 = flask
   { ieffects = [ ELabel "of whiskey"
                , toOrganActorTurn "drunk" (20 + d 5)
-               , Impress, Burn 1, RefillHP 3
+               , Burn 1, RefillHP 3
                , OnSmash (Explode "whiskey spray") ]
   }
 flask13 = flask
   { ieffects = [ ELabel "of bait cocktail"
                , toOrganActorTurn "drunk" (5 + d 5)
                , OnSmash (Summon [("mobile animal", 1)] $ 1 + dl 2)
+               , OnSmash Impress
                , OnSmash (Explode "waste") ]
   }
 flask14 = flask
@@ -405,7 +407,7 @@ potion = ItemKind
   , ikit     = []
   }
 potion1 = potion
-  { ieffects = [ ELabel "of rose water", Impress, RefillCalm (-3)
+  { ieffects = [ ELabel "of rose water", Impress, RefillCalm (-5)
                , OnSmash ApplyPerfume, OnSmash (Explode "fragrance") ]
   }
 potion2 = potion
