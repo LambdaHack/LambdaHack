@@ -92,9 +92,12 @@ effectToSuffix effect =
     CreateItem _ grp _ ->
       let object = if grp == "useful" then "" else tshow grp
       in "of" <+> object <+> "uncovering"
-    DropItem COrgan grp -> "of nullify" <+> tshow grp
-    DropItem _ grp ->
-      "of" <+> "drop" <+> tshow grp  -- TMI: <+> ppCStore store
+    DropItem n store grp ->
+      let ntxt = if | n == 1 -> ""
+                    | n == maxBound -> "all"
+                    | otherwise -> tshow n
+          verb = if store == COrgan then "nullify" else "drop"
+      in "of" <+> verb <+> ntxt <+> tshow grp  -- TMI: <+> ppCStore store
     PolyItem -> "of repurpose on the ground"
     Identify -> "of identify on the ground"
     Detect radius -> "of detection" <+> wrapInParens (tshow radius)

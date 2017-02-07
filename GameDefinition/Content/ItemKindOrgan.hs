@@ -278,7 +278,7 @@ pupil = fist
   , iverbHit = "gaze at"
   , idamage  = toDmg $ 1 * d 1
   , iaspects = [AddSight 12, Timeout $ 5 + d 5]
-  , ieffects = [ Recharging (DropItem COrgan "temporary conditions")
+  , ieffects = [ Recharging (DropItem 1 COrgan "temporary conditions")
                , Recharging $ RefillCalm (-10)
                ]
   , idesc    = ""

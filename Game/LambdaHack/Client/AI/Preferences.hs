@@ -78,10 +78,10 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
       let (total, count) = organBenefit grp cops b ar fact
       in total `divUp` count  -- average over all matching grp; rarities ignored
     IK.CreateItem{} -> 30  -- TODO
-    IK.DropItem COrgan grp ->
+    IK.DropItem _ COrgan grp ->
       let (total, _) = organBenefit grp cops b ar fact
       in - total  -- sum over all matching grp; simplification: rarities ignored
-    IK.DropItem _ _ -> -15
+    IK.DropItem _ _ _ -> -15
     IK.PolyItem -> 0  -- AI can't estimate item desirability vs average
     IK.Identify -> 0  -- AI doesn't know how to use
     IK.Detect radius -> radius

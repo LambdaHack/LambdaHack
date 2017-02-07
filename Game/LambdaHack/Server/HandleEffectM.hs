@@ -213,7 +213,7 @@ effectSem source target iid c recharged effect = do
     IK.InsertMove p -> effectInsertMove execSfx p target
     IK.Teleport p -> effectTeleport execSfx p source target
     IK.CreateItem store grp tim -> effectCreateItem Nothing target store grp tim
-    IK.DropItem store grp -> effectDropItem execSfx maxBound store grp target
+    IK.DropItem p store grp -> effectDropItem execSfx p store grp target
     IK.PolyItem -> effectPolyItem execSfx source target
     IK.Identify -> effectIdentify execSfx iid source target
     IK.Detect radius -> effectDetect execSfx radius target

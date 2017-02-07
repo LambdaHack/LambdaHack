@@ -49,8 +49,8 @@ strengthCreateOrgan =
 
 strengthDropOrgan :: ItemFull -> [GroupName ItemKind]
 strengthDropOrgan =
-  let p (DropItem COrgan grp) = [grp]
-      p (Recharging (DropItem COrgan grp)) = [grp]
+  let p (DropItem _ COrgan grp) = [grp]
+      p (Recharging (DropItem _ COrgan grp)) = [grp]
       p _ = []
   in strengthEffect p
 
