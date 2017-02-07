@@ -206,7 +206,8 @@ dominateFid fid target = do
     getsServer $ (EM.! target) . (EM.! blid tb) . (EM.! bfid tb) . sactorTime
   execUpdAtomic $ UpdLoseActor target tb ais
   let bNew = tb { bfid = fid
-                , bcalm = max 0 $ xM (aMaxCalm ar) `div` 2
+                , bcalm = max (xM 10) $ xM (aMaxCalm ar) `div` 2
+                , bhp = min (xM $ aMaxHP ar) $ bhp tb + xM 10
                 , borgan}
   execUpdAtomic $ UpdSpotActor target bNew ais
   modifyServer $ \ser ->
@@ -309,6 +310,10 @@ udpateCalm target deltaCalm = do
   when (bcalm tb < calmMax64
         && bcalm tb + deltaCalm >= calmMax64) $
     return ()  -- TODO: reset some mental afflictions, fears, when we have any
+    -- We don't dominate the actor here, because if so, players would
+    -- disengage after one of their actors is dominated and wait for him
+    -- to regenerate Calm. This is unnatural and boring. Better fight
+    -- and hope he gets his Calm again to 0 and them defects back.
 
 leadLevelSwitch :: (MonadAtomic m, MonadServer m) => m ()
 leadLevelSwitch = do
