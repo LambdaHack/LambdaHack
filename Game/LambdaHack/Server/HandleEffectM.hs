@@ -74,8 +74,15 @@ effectAndDestroy :: (MonadAtomic m, MonadServer m)
                  => ActorId -> ActorId -> ItemId -> Container -> Bool
                  -> [IK.Effect] -> ItemFull
                  -> m ()
-effectAndDestroy _ _ _ _ _ [] _ = return ()
-effectAndDestroy source target iid container periodic effs ItemFull{..} = do
+effectAndDestroy _ _ iid container periodic [] itemFull@ItemFull{..} =
+  if not periodic && jdamage itemBase > 0 then do
+    -- No effect triggered, but physical damage dealt.
+    let (imperishable, kit) = imperishableKit [] periodic itemTimer itemFull
+    unless imperishable $
+      execUpdAtomic $ UpdLoseItem False iid itemBase kit container
+  else return ()
+effectAndDestroy source target iid container periodic effs
+                 itemFull@ItemFull{..} = do
   let timeout = case itemDisco of
         Just ItemDisco{itemAspect=Just ar} -> aTimeout ar
         _ -> assert `failure` itemDisco
@@ -106,16 +113,7 @@ effectAndDestroy source target iid container periodic effs ItemFull{..} = do
     -- This is OK, because we don't remove the item type from various
     -- item dictionaries, just an individual copy from the container,
     -- so, e.g., the item can be identified after it's removed.
-    let permanent = let tmpEffect :: IK.Effect -> Bool
-                        tmpEffect IK.Temporary{} = True
-                        tmpEffect (IK.Recharging IK.Temporary{}) = True
-                        tmpEffect (IK.OnSmash IK.Temporary{}) = True
-                        tmpEffect _ = False
-                    in not $ any tmpEffect effs
-    let fragile = IK.Fragile `elem` jfeature itemBase
-        durable = IK.Durable `elem` jfeature itemBase
-        imperishable = durable && not fragile || periodic && permanent
-        kit = if permanent || periodic then (1, take 1 it2) else (itemK, it2)
+    let (imperishable, kit) = imperishableKit effs periodic it2 itemFull
     unless imperishable $
       execUpdAtomic $ UpdLoseItem False iid itemBase kit container
     -- At this point, the item is potentially no longer in container @c@,
@@ -127,6 +125,21 @@ effectAndDestroy source target iid container periodic effs ItemFull{..} = do
     -- (that the item does not exhibit any effects in the given context).
     unless (triggered || imperishable) $
       execUpdAtomic $ UpdSpotItem False iid itemBase kit container
+
+imperishableKit :: [IK.Effect] -> Bool -> ItemTimer -> ItemFull
+                -> (Bool, ItemQuant)
+imperishableKit effs periodic it2 ItemFull{..} =
+  let permanent = let tmpEffect :: IK.Effect -> Bool
+                      tmpEffect IK.Temporary{} = True
+                      tmpEffect (IK.Recharging IK.Temporary{}) = True
+                      tmpEffect (IK.OnSmash IK.Temporary{}) = True
+                      tmpEffect _ = False
+                  in not $ any tmpEffect effs
+      fragile = IK.Fragile `elem` jfeature itemBase
+      durable = IK.Durable `elem` jfeature itemBase
+      imperishable = durable && not fragile || periodic && permanent
+      kit = if permanent || periodic then (1, take 1 it2) else (itemK, it2)
+  in (imperishable, kit)
 
 itemEffectCause :: (MonadAtomic m, MonadServer m)
                 => ActorId -> Point -> IK.Effect
