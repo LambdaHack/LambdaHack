@@ -81,5 +81,5 @@ dieSer aid b = do
 dropAllItems :: (MonadAtomic m, MonadServer m)
              => ActorId -> Actor -> m ()
 dropAllItems aid b = do
-  mapActorCStore_ CInv (dropCStoreItem False CInv aid b) b
-  mapActorCStore_ CEqp (dropCStoreItem False CEqp aid b) b
+  mapActorCStore_ CInv (dropCStoreItem False CInv aid b maxBound) b
+  mapActorCStore_ CEqp (dropCStoreItem False CEqp aid b maxBound) b

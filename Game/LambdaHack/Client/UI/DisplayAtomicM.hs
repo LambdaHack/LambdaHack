@@ -832,7 +832,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Dominate -> do
           -- For subsequent messages use the proper name, never "you".
           let subject = partActor b
-          if fid /= fidSource then do  -- before domination
+          if fid /= fidSource then do
+            -- Before domination, possibly not seen if actor (yet) not ours.
             if | bcalm b == 0 ->  -- sometimes only a coincidence, but nm
                  aidVerbMU aid $ MU.Text "yield, under extreme pressure"
                | isOurAlive ->
@@ -845,6 +846,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
               [MU.SubjectVerbSg subject verb, MU.Text fidName]
             when isOurAlive $ displayMore ColorFull ""
           else do
+            -- After domination, possibly not seen, if actor (already) not ours.
             fidSourceName <- getsState $ gname . (EM.! fidSource) . sfactionD
             let verb = "be now under"
             msgAdd $ makeSentence

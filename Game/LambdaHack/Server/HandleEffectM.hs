@@ -213,7 +213,7 @@ effectSem source target iid c recharged effect = do
     IK.InsertMove p -> effectInsertMove execSfx p target
     IK.Teleport p -> effectTeleport execSfx p source target
     IK.CreateItem store grp tim -> effectCreateItem Nothing target store grp tim
-    IK.DropItem store grp -> effectDropItem execSfx 999 store grp target
+    IK.DropItem store grp -> effectDropItem execSfx maxBound store grp target
     IK.PolyItem -> effectPolyItem execSfx source target
     IK.Identify -> effectIdentify execSfx iid source target
     IK.Detect radius -> effectDetect execSfx radius target
@@ -431,8 +431,13 @@ effectImpress execSfx source target = do
   if | bproj tb -> return False
      | bfid tb == bfid sb -> do
        -- Unimpress wrt others, but only once.
-       execSfx
-       effectDropItem execSfx 1 COrgan "impressed" target
+       is <- allGroupItems COrgan "impressed" target
+       case is of
+         [] -> return False
+         (iid, kit) : _ -> do
+           execSfx
+           dropCStoreItem True COrgan target tb 1 iid kit
+           return True
      | otherwise -> do
        execSfx
        effectCreateItem (Just source) target COrgan "impressed" IK.TimerNone
@@ -835,6 +840,18 @@ effectDropItem :: (MonadAtomic m, MonadServer m)
                => m () -> Int -> CStore -> GroupName ItemKind -> ActorId
                -> m Bool
 effectDropItem execSfx n store grp target = do
+  b <- getsState $ getActorBody target
+  is <- allGroupItems store grp target
+  if null is then return False
+  else do
+    unless (store == COrgan) execSfx
+    mapM_ (uncurry (dropCStoreItem True store target b n)) is
+    return True
+
+allGroupItems :: (MonadAtomic m, MonadServer m)
+              => CStore -> GroupName ItemKind -> ActorId
+              -> m [(ItemId, ItemQuant)]
+allGroupItems store grp target = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   discoKind <- getsServer sdiscoKind
   b <- getsState $ getActorBody target
@@ -846,22 +863,17 @@ effectDropItem execSfx n store grp target = do
           Nothing ->
             assert `failure` (target, grp, iid, item)
   assocsCStore <- getsState $ EM.assocs . getBodyStoreBag b store
-  is <- filterM hasGroup assocsCStore
-  if null is
-    then return False
-    else do
-      unless (store == COrgan) execSfx
-      mapM_ (uncurry (dropCStoreItem True store target b)) $ take n is
-      return True
+  filterM hasGroup assocsCStore
 
 -- | Drop a single actor's item. Note that if there are multiple copies,
 -- at most one explodes to avoid excessive carnage and UI clutter
 -- (let's say, the multiple explosions interfere with each other or perhaps
 -- larger quantities of explosives tend to be packaged more safely).
 dropCStoreItem :: (MonadAtomic m, MonadServer m)
-               => Bool -> CStore -> ActorId -> Actor -> ItemId -> ItemQuant
+               => Bool -> CStore -> ActorId -> Actor -> Int
+               -> ItemId -> ItemQuant
                -> m ()
-dropCStoreItem verbose store aid b iid kit@(k, _) = do
+dropCStoreItem verbose store aid b n iid kit@(k, _) = do
   item <- getsState $ getItemBody iid
   let c = CActor aid store
       fragile = IK.Fragile `elem` jfeature item
@@ -875,7 +887,7 @@ dropCStoreItem verbose store aid b iid kit@(k, _) = do
     effectAndDestroy aid aid iid c False effs itemFull
   else do
     cDrop <- pickDroppable aid b
-    mvCmd <- generalMoveItem verbose iid k (CActor aid store) cDrop
+    mvCmd <- generalMoveItem verbose iid (max n k) (CActor aid store) cDrop
     mapM_ execUpdAtomic mvCmd
 
 pickDroppable :: MonadStateRead m => ActorId -> Actor -> m Container
@@ -921,7 +933,8 @@ effectPolyItem execSfx source target = do
            | otherwise -> do
              let c = CActor target cstore
                  kit = (maxCount, take maxCount itemTimer)
-             identifyIid execSfx iid c itemKindId
+             execSfx
+             identifyIid iid c itemKindId
              execUpdAtomic $ UpdDestroyItem iid itemBase kit c
              effectCreateItem Nothing target cstore "useful" IK.TimerNone
       _ -> assert `failure` (target, iid, itemFull)
@@ -954,7 +967,8 @@ effectIdentify execSfx iidId source target = do
             then tryFull store rest
             else do
               let c = CActor target store
-              identifyIid execSfx iid c itemKindId
+              execSfx
+              identifyIid iid c itemKindId
               return True
         _ -> assert `failure` (store, as)
       tryStore stores = case stores of
@@ -966,10 +980,8 @@ effectIdentify execSfx iidId source target = do
   tryStore [CGround]
 
 identifyIid :: (MonadAtomic m, MonadServer m)
-            => m () -> ItemId -> Container -> Kind.Id ItemKind
-            -> m ()
-identifyIid execSfx iid c itemKindId = do
-  execSfx
+            => ItemId -> Container -> Kind.Id ItemKind -> m ()
+identifyIid iid c itemKindId = do
   seed <- getsServer $ (EM.! iid) . sitemSeedD
   execUpdAtomic $ UpdDiscover c iid itemKindId seed
 
@@ -1130,7 +1142,7 @@ effectDropBestWeapon execSfx target = do
     (_, (iid, _)) : _ -> do
       execSfx
       let kit = beqp tb EM.! iid
-      dropCStoreItem True CEqp target tb iid kit
+      dropCStoreItem True CEqp target tb 1 iid kit  -- not the whole stack
       return True
     [] ->
       return False

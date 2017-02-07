@@ -160,9 +160,9 @@ dominateFidSfx fid target = do
                    >= fromEnum TK.talterForStairs
   if canMove && not (bproj tb) then do
     let execSfx = execSfxAtomic $ SfxEffect fid target IK.Dominate 0
-    execSfx
+    execSfx  -- if actor ours, possibly the last occasion to see him
     dominateFid fid target
-    execSfx
+    execSfx  -- see the actor as theirs, unless position not visible
     return True
   else
     return False
