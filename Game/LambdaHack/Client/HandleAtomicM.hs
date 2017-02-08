@@ -400,7 +400,6 @@ destroyActor aid b destroy = do
             TPoint (blid b) (bpos b)
           else
             -- If enemy only hides (or we stepped behind obstacle) find him.
-
             TEnemyPos a (blid b) (bpos b) permit
         _ -> tgt
       affect3 TgtAndPath{..} =

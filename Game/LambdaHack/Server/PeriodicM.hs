@@ -1,7 +1,7 @@
 -- | Server operations performed periodically in the game loop
 -- and related operations.
 module Game.LambdaHack.Server.PeriodicM
-  ( spawnMonster, addAnyActor, dominateFidSfx
+  ( spawnMonster, addAnyActor
   , advanceTime, overheadActorTime, swapTime
   , leadLevelSwitch, udpateCalm
   ) where
@@ -15,7 +15,6 @@ import qualified Data.EnumSet as ES
 import Data.Int (Int64)
 
 import Game.LambdaHack.Atomic
-import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -34,7 +33,6 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
-import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.CommonM
 import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
@@ -142,94 +140,6 @@ rollSpawnPos Kind.COps{coTileSpeedup} visible
               && not (p `ES.member` visible)
     , \p _ -> not (p `ES.member` visible)
     ]
-
-dominateFidSfx :: (MonadAtomic m, MonadServer m)
-               => FactionId -> ActorId -> m Bool
-dominateFidSfx fid target = do
-  tb <- getsState $ getActorBody target
-  -- Actors that don't move freely can't be dominated, for otherwise,
-  -- when they are the last survivors, they could get stuck
-  -- and the game wouldn't end.
-  actorAspect <- getsServer sactorAspect
-  let ar = actorAspect EM.! target
-      actorMaxSk = aSkills ar
-      -- Check that the actor can move, also between levels and through doors.
-      -- Otherwise, it's too awkward for human player to control.
-      canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
-                && EM.findWithDefault 0 Ability.AbAlter actorMaxSk
-                   >= fromEnum TK.talterForStairs
-  if canMove && not (bproj tb) then do
-    let execSfx = execSfxAtomic $ SfxEffect fid target IK.Dominate 0
-    execSfx  -- if actor ours, possibly the last occasion to see him
-    dominateFid fid target
-    execSfx  -- see the actor as theirs, unless position not visible
-    return True
-  else
-    return False
-
-dominateFid :: (MonadAtomic m, MonadServer m) => FactionId -> ActorId -> m ()
-dominateFid fid target = do
-  Kind.COps{coitem=Kind.Ops{okind}, cotile} <- getsState scops
-  tb0 <- getsState $ getActorBody target
-  deduceKilled target  -- the actor body exists and his items are not dropped
-  -- TODO: some messages after game over below? Compare with dieSer.
-  electLeader (bfid tb0) (blid tb0) target
-  fact <- getsState $ (EM.! bfid tb0) . sfactionD
-  -- Prevent the faction's stash from being lost in case they are not spawners.
-  when (isNothing $ gleader fact) $ moveStores False target CSha CInv
-  tb <- getsState $ getActorBody target
-  ais <- getsState $ getCarriedAssocs tb
-  actorAspect <- getsServer sactorAspect
-  getItem <- getsState $ flip getItemBody
-  discoKind <- getsServer sdiscoKind
-  let ar = actorAspect EM.! target
-      isImpression iid = case EM.lookup (jkindIx $ getItem iid) discoKind of
-        Just KindMean{kmKind} ->
-          maybe False (> 0) $ lookup "impressed" $ IK.ifreq (okind kmKind)
-        Nothing -> assert `failure` iid
-      dropAllImpressions = EM.filterWithKey (\iid _ -> not $ isImpression iid)
-      addImpression bag = do  -- add some nostalgia for old faction
-        let litemFreq = [("impressed", 1)]
-        m5 <- rollItem 0 (blid tb) litemFreq
-        let (itemKnownRaw, itemFullRaw, _, seed, _) =
-              fromMaybe (assert `failure` (blid tb, litemFreq)) m5
-            (kindIx, damage, _, aspectRecord) = itemKnownRaw
-            jfid = Just $ bfid tb
-            itemKnown = (kindIx, damage, jfid, aspectRecord)
-            itemFull = itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
-              -- no need to put @itemK = 10@ here
-        iid <- onlyRegisterItem itemFull itemKnown seed
-        return $! EM.insert iid (10, []) bag
-      borganNoImpression = dropAllImpressions $ borgan tb
-  borgan <- addImpression borganNoImpression
-  btime <-
-    getsServer $ (EM.! target) . (EM.! blid tb) . (EM.! bfid tb) . sactorTime
-  execUpdAtomic $ UpdLoseActor target tb ais
-  let bNew = tb { bfid = fid
-                , bcalm = max (xM 10) $ xM (aMaxCalm ar) `div` 2
-                , bhp = min (xM $ aMaxHP ar) $ bhp tb + xM 10
-                , borgan}
-  execUpdAtomic $ UpdSpotActor target bNew ais
-  modifyServer $ \ser ->
-    ser {sactorTime = updateActorTime fid (blid tb) target btime
-                      $ sactorTime ser}
-  let discoverSeed (iid, cstore) = do
-        seed <- getsServer $ (EM.! iid) . sitemSeedD
-        let c = CActor target cstore
-        execUpdAtomic $ UpdDiscoverSeed c iid seed
-      aic = getCarriedIidCStore tb
-  mapM_ discoverSeed aic
-  mleaderOld <- getsState $ gleader . (EM.! fid) . sfactionD
-  -- Keep the leader if he is on stairs. We don't want to clog stairs.
-  keepLeader <- case mleaderOld of
-    Nothing -> return False
-    Just leaderOld -> do
-      body <- getsState $ getActorBody leaderOld
-      lvl <- getLevel $ blid body
-      return $! Tile.isStair cotile $ lvl `at` bpos body
-  unless keepLeader $
-    -- Focus on the dominated actor, by making him a leader.
-    supplantLeader fid target
 
 -- | Advance the move time for the given actor
 advanceTime :: (MonadAtomic m, MonadServer m) => ActorId -> Int -> m ()

@@ -2,7 +2,7 @@
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectM
   ( applyItem, itemEffectAndDestroy, effectAndDestroy, itemEffectCause
-  , dropCStoreItem, pickDroppable, halveCalm
+  , dropCStoreItem, dominateFidSfx, pickDroppable, halveCalm
   ) where
 
 import Prelude ()
@@ -17,6 +17,7 @@ import Data.Key (mapWithKeyM_)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Dice as Dice
@@ -438,6 +439,85 @@ effectDominate recursiveCall source target = do
        recursiveCall IK.Impress
      | otherwise -> dominateFidSfx (bfid sb) target
 
+dominateFidSfx :: (MonadAtomic m, MonadServer m)
+               => FactionId -> ActorId -> m Bool
+dominateFidSfx fid target = do
+  tb <- getsState $ getActorBody target
+  -- Actors that don't move freely can't be dominated, for otherwise,
+  -- when they are the last survivors, they could get stuck
+  -- and the game wouldn't end.
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! target
+      actorMaxSk = aSkills ar
+      -- Check that the actor can move, also between levels and through doors.
+      -- Otherwise, it's too awkward for human player to control.
+      canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
+                && EM.findWithDefault 0 Ability.AbAlter actorMaxSk
+                   >= fromEnum TK.talterForStairs
+  if canMove && not (bproj tb) then do
+    let execSfx = execSfxAtomic $ SfxEffect fid target IK.Dominate 0
+    execSfx  -- if actor ours, possibly the last occasion to see him
+    dominateFid fid target
+    execSfx  -- see the actor as theirs, unless position not visible
+    return True
+  else
+    return False
+
+dominateFid :: (MonadAtomic m, MonadServer m) => FactionId -> ActorId -> m ()
+dominateFid fid target = do
+  Kind.COps{coitem=Kind.Ops{okind}, cotile} <- getsState scops
+  tb0 <- getsState $ getActorBody target
+  deduceKilled target  -- the actor body exists and his items are not dropped
+  -- TODO: some messages after game over below? Compare with dieSer.
+  electLeader (bfid tb0) (blid tb0) target
+  fact <- getsState $ (EM.! bfid tb0) . sfactionD
+  -- Prevent the faction's stash from being lost in case they are not spawners.
+  when (isNothing $ gleader fact) $ moveStores False target CSha CInv
+  tb <- getsState $ getActorBody target
+  ais <- getsState $ getCarriedAssocs tb
+  actorAspect <- getsServer sactorAspect
+  getItem <- getsState $ flip getItemBody
+  discoKind <- getsServer sdiscoKind
+  let ar = actorAspect EM.! target
+      isImpression iid = case EM.lookup (jkindIx $ getItem iid) discoKind of
+        Just KindMean{kmKind} ->
+          maybe False (> 0) $ lookup "impressed" $ IK.ifreq (okind kmKind)
+        Nothing -> assert `failure` iid
+      dropAllImpressions = EM.filterWithKey (\iid _ -> not $ isImpression iid)
+      borganNoImpression = dropAllImpressions $ borgan tb
+  btime <-
+    getsServer $ (EM.! target) . (EM.! blid tb) . (EM.! bfid tb) . sactorTime
+  execUpdAtomic $ UpdLoseActor target tb ais
+  let bNew = tb { bfid = fid
+                , bcalm = max (xM 10) $ xM (aMaxCalm ar) `div` 2
+                , bhp = min (xM $ aMaxHP ar) $ bhp tb + xM 10
+                , borgan = borganNoImpression}
+  aisNew <- getsState $ getCarriedAssocs bNew
+  execUpdAtomic $ UpdSpotActor target bNew aisNew
+  -- Add some nostalgia for the old faction.
+  void $ effectCreateItem (Just $ bfid tb) target COrgan
+                          "impressed 10" IK.TimerNone
+  modifyServer $ \ser ->
+    ser {sactorTime = updateActorTime fid (blid tb) target btime
+                      $ sactorTime ser}
+  let discoverSeed (iid, cstore) = do
+        seed <- getsServer $ (EM.! iid) . sitemSeedD
+        let c = CActor target cstore
+        execUpdAtomic $ UpdDiscoverSeed c iid seed
+      aic = getCarriedIidCStore tb
+  mapM_ discoverSeed aic
+  mleaderOld <- getsState $ gleader . (EM.! fid) . sfactionD
+  -- Keep the leader if he is on stairs. We don't want to clog stairs.
+  keepLeader <- case mleaderOld of
+    Nothing -> return False
+    Just leaderOld -> do
+      body <- getsState $ getActorBody leaderOld
+      lvl <- getLevel $ blid body
+      return $! Tile.isStair cotile $ lvl `at` bpos body
+  unless keepLeader $
+    -- Focus on the dominated actor, by making him a leader.
+    supplantLeader fid target
+
 -- ** Impress
 
 effectImpress :: (MonadAtomic m, MonadServer m)
@@ -457,7 +537,7 @@ effectImpress execSfx source target = do
            return True
      | otherwise -> do
        execSfx
-       effectCreateItem (Just source) target COrgan "impressed" IK.TimerNone
+       effectCreateItem (Just $ bfid sb) target COrgan "impressed" IK.TimerNone
 
 -- ** CallFriend
 
@@ -785,10 +865,10 @@ effectTeleport execSfx nDm source target = do
 -- leading to attempts to do illegal actions (which the server then catches).
 -- This is in analogy to picking item from the ground, whereas it's IDed.
 effectCreateItem :: (MonadAtomic m, MonadServer m)
-                  => Maybe ActorId -> ActorId -> CStore
+                  => Maybe FactionId -> ActorId -> CStore
                   -> GroupName ItemKind -> IK.TimerDice
                   -> m Bool
-effectCreateItem msource target store grp tim = do
+effectCreateItem mfidSource target store grp tim = do
   tb <- getsState $ getActorBody target
   delta <- case tim of
     IK.TimerNone -> return $ Delta timeZero
@@ -810,15 +890,13 @@ effectCreateItem msource target store grp tim = do
   m5 <- rollItem 0 (blid tb) litemFreq
   let (itemKnownRaw, itemFullRaw, _, seed, _) =
         fromMaybe (assert `failure` (blid tb, litemFreq, c)) m5
-  (itemKnown, itemFull) <- case msource of
-    Just source -> do
-      sb <- getsState $ getActorBody source
-      let (kindIx, damage, _, ar) = itemKnownRaw
-          jfid = Just $ bfid sb
-          itemKnown = (kindIx, damage, jfid, ar)
-          itemFull = itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
-      return (itemKnown, itemFull)
-    Nothing -> return (itemKnownRaw, itemFullRaw)
+      (itemKnown, itemFull) = case mfidSource of
+        Just fidSource ->
+          let (kindIx, damage, _, ar) = itemKnownRaw
+              jfid = Just fidSource
+          in ( (kindIx, damage, jfid, ar)
+             , itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}} )
+        Nothing -> (itemKnownRaw, itemFullRaw)
   itemRev <- getsServer sitemRev
   let mquant = case HM.lookup itemKnown itemRev of
         Nothing -> Nothing
