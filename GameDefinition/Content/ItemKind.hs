@@ -289,14 +289,14 @@ flask2 = flask
                , OnSmash (Explode "sparse shower") ]
   }
 flask3 = flask
-  { ieffects = [ ELabel "of protective melee balm"
-               , toOrganActorTurn "protected melee" (20 + d 5)
-               , OnSmash (Explode "protecting balm melee") ]
+  { ieffects = [ ELabel "of melee protective balm"
+               , toOrganActorTurn "protected from melee" (20 + d 5)
+               , OnSmash (Explode "melee protective balm") ]
   }
 flask4 = flask
-  { ieffects = [ ELabel "of protective ranged balm"
-               , toOrganActorTurn "protected ranged" (20 + d 5)
-               , OnSmash (Explode "protecting balm ranged") ]
+  { ieffects = [ ELabel "of ranged protective balm"
+               , toOrganActorTurn "protected from ranged" (20 + d 5)
+               , OnSmash (Explode "ranged protective balm") ]
   }
 flask5 = flask
   { ieffects = [ ELabel "of PhD defense questions"
@@ -431,8 +431,8 @@ potion5 = potion
                        , toOrganActorTurn "strengthened" (20 + d 5) ]
                , OnSmash (OneOf [ Explode "dense shower"
                                 , Explode "sparse shower"
-                                , Explode "protecting balm melee"
-                                , Explode "protecting balm ranged"
+                                , Explode "melee protective balm"
+                                , Explode "ranged protective balm"
                                 , Explode "PhD defense question"
                                 , Explode "blast 10" ]) ]
   }

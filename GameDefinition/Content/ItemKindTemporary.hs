@@ -48,8 +48,8 @@ tmpAs name aspects = ItemKind
 
 tmpStrengthened = tmpAs "strengthened" [AddHurtMelee 20]
 tmpWeakened = tmpAs "weakened" [AddHurtMelee (-20)]
-tmpProtectedMelee = tmpAs "protected melee" [AddArmorMelee 50]
-tmpProtectedRanged = tmpAs "protected ranged" [AddArmorRanged 25]
+tmpProtectedMelee = tmpAs "protected from melee" [AddArmorMelee 50]
+tmpProtectedRanged = tmpAs "protected from ranged" [AddArmorRanged 25]
 tmpVulnerable = tmpAs "defenseless" [ AddArmorMelee (-50)
                                     , AddArmorRanged (-25) ]
 tmpResolute = tmpAs "resolute" [AddMaxCalm 60]
