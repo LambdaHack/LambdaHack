@@ -15,9 +15,12 @@ import Game.LambdaHack.Content.ItemKind
 
 temporaries :: [ItemKind]
 temporaries =
-  [tmpStrengthened, tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpNoctovision, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant]
+  [tmpStrengthened, tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpNoctovision, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant, impressedMark1, impressedMark10]
 
-tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpNoctovision, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant :: ItemKind
+tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpNoctovision, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant, impressedMark1, impressedMark10 :: ItemKind
+
+tmpNoLonger :: Text -> Effect
+tmpNoLonger name = Temporary $ "be no longer" <+> name
 
 -- The @name@ is be used in item description, so it should be an adjective
 -- describing the temporary set of aspects.
@@ -35,8 +38,9 @@ tmpAs name aspects = ItemKind
   , iaspects = -- timeout is 0; activates and vanishes soon,
                -- depending on initial timer setting
                aspects
-  , ieffects = let tmp = Temporary $ "be no longer" <+> name
-               in [Periodic, Recharging tmp, OnSmash tmp]
+  , ieffects = [ Periodic
+               , Recharging $ tmpNoLonger name
+               , OnSmash $ tmpNoLonger name ]
   , ifeature = [Identified, Fragile, Durable]  -- hack: destroy on drop
   , idesc    = ""
   , ikit     = []
@@ -77,5 +81,19 @@ tmpSlow10Resistant =
 tmpPoisonResistant =
   let tmp = tmpAs "poison resistant" []
   in tmp { icount = 7 + d 5
-         , ieffects = Recharging (DropItem maxBound COrgan "poisoned") : ieffects tmp
+         , ieffects = Recharging (DropItem maxBound COrgan "poisoned")
+                      : ieffects tmp
+         }
+impressedMark1 =
+  let tmp = tmpAs "impressed" []
+  in tmp { isymbol = '!'
+         , ifreq = [("mark impressed 1", 1), ("impressed", 1)]
+         , ieffects = [OnSmash $ tmpNoLonger "impressed"]
+         }
+impressedMark10 =
+  let tmp = tmpAs "impressed" []
+  in tmp { isymbol = '!'
+         , icount = 10
+         , ifreq = [("mark impressed 10", 1), ("impressed", 1)]
+         , ieffects = [OnSmash $ tmpNoLonger "impressed"]  -- not @Periodic@
          }

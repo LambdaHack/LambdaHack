@@ -496,7 +496,7 @@ dominateFid fid target = do
   execUpdAtomic $ UpdSpotActor target bNew aisNew
   -- Add some nostalgia for the old faction.
   void $ effectCreateItem (Just $ bfid tb) target COrgan
-                          "impressed 10" IK.TimerNone
+                          "mark impressed 10" IK.TimerNone
   modifyServer $ \ser ->
     ser {sactorTime = updateActorTime fid (blid tb) target btime
                       $ sactorTime ser}
@@ -537,7 +537,8 @@ effectImpress execSfx source target = do
            return True
      | otherwise -> do
        execSfx
-       effectCreateItem (Just $ bfid sb) target COrgan "impressed" IK.TimerNone
+       effectCreateItem (Just $ bfid sb) target COrgan
+                        "mark impressed 1" IK.TimerNone
 
 -- ** CallFriend
 
