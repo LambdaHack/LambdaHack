@@ -104,7 +104,7 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
 
 -- We ignore the possibility of, e.g., temporary extra clawed limb, etc.,
 -- so we don't take into account idamage of the item kinds.
--- TODO: calculating this for "temporary conditions" takes forever
+-- TODO: calculating this for "temporary condition" takes forever
 organBenefit :: GroupName ItemKind -> Kind.COps
              -> Actor -> AspectRecord -> Faction
              -> (Int, Int)

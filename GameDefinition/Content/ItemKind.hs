@@ -457,7 +457,7 @@ potion7 = potion
   }
 potion8 = potion
   { irarity  = [(1, 5), (10, 15)]
-  , ieffects = [ DropItem 1 COrgan "temporary conditions"
+  , ieffects = [ DropItem 1 COrgan "temporary condition"
                , OnSmash (Explode "blast 10") ]
   }
 potion9 = potion
@@ -670,7 +670,7 @@ necklace2 = necklace
   , ieffects = [ Recharging (Summon [("mobile animal", 1)] $ 1 + dl 2)
                , Recharging (Explode "waste")
                , Recharging Impress
-               , Recharging (DropItem 1 COrgan "temporary conditions") ]
+               , Recharging (DropItem 1 COrgan "temporary condition") ]
                ++ ieffects necklace
   }
 necklace3 = necklace
@@ -1052,7 +1052,7 @@ swordNullify = sword
   , iaspects = [Timeout $ d 4 + 5 - dl 4 |*| 2]
   , ieffects = ieffects sword
                ++ [ Unique
-                  , Recharging $ DropItem 1 COrgan "temporary conditions"
+                  , Recharging $ DropItem 1 COrgan "temporary condition"
                   , Recharging $ RefillCalm (-10) ]
   , idesc    = "Cold, thin blade that pierces deeply and sends its victim into abrupt, sobering shock."
   }

@@ -25,7 +25,7 @@ tmpAs :: Text -> [Aspect] -> ItemKind
 tmpAs name aspects = ItemKind
   { isymbol  = '+'
   , iname    = name
-  , ifreq    = [(toGroupName name, 1), ("temporary conditions", 1)]
+  , ifreq    = [(toGroupName name, 1), ("temporary condition", 1)]
   , iflavour = zipPlain [BrWhite]
   , icount   = 1
   , irarity  = [(1, 1)]
