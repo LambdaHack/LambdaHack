@@ -495,8 +495,8 @@ dominateFid fid target = do
   aisNew <- getsState $ getCarriedAssocs bNew
   execUpdAtomic $ UpdSpotActor target bNew aisNew
   -- Add some nostalgia for the old faction.
-  void $ effectCreateItem (Just $ bfid tb) target COrgan
-                          "mark impressed 10" IK.TimerNone
+  void $ effectCreateItem (Just (bfid tb, 10)) target COrgan
+                          "impressed" IK.TimerNone
   modifyServer $ \ser ->
     ser {sactorTime = updateActorTime fid (blid tb) target btime
                       $ sactorTime ser}
@@ -537,8 +537,8 @@ effectImpress execSfx source target = do
            return True
      | otherwise -> do
        execSfx
-       effectCreateItem (Just $ bfid sb) target COrgan
-                        "mark impressed 1" IK.TimerNone
+       effectCreateItem (Just (bfid sb, 1)) target COrgan
+                        "impressed" IK.TimerNone
 
 -- ** CallFriend
 
@@ -866,9 +866,9 @@ effectTeleport execSfx nDm source target = do
 -- leading to attempts to do illegal actions (which the server then catches).
 -- This is in analogy to picking item from the ground, whereas it's IDed.
 effectCreateItem :: (MonadAtomic m, MonadServer m)
-                  => Maybe FactionId -> ActorId -> CStore
-                  -> GroupName ItemKind -> IK.TimerDice
-                  -> m Bool
+                 => Maybe (FactionId, Int) -> ActorId -> CStore
+                 -> GroupName ItemKind -> IK.TimerDice
+                 -> m Bool
 effectCreateItem mfidSource target store grp tim = do
   tb <- getsState $ getActorBody target
   delta <- case tim of
@@ -892,11 +892,12 @@ effectCreateItem mfidSource target store grp tim = do
   let (itemKnownRaw, itemFullRaw, _, seed, _) =
         fromMaybe (assert `failure` (blid tb, litemFreq, c)) m5
       (itemKnown, itemFull) = case mfidSource of
-        Just fidSource ->
+        Just (fidSource, k) ->
           let (kindIx, damage, _, ar) = itemKnownRaw
               jfid = Just fidSource
           in ( (kindIx, damage, jfid, ar)
-             , itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}} )
+             , itemFullRaw { itemBase = (itemBase itemFullRaw) {jfid}
+                           , itemK = k })
         Nothing -> (itemKnownRaw, itemFullRaw)
   itemRev <- getsServer sitemRev
   let mquant = case HM.lookup itemKnown itemRev of

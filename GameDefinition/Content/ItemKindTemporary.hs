@@ -15,9 +15,9 @@ import Game.LambdaHack.Content.ItemKind
 
 temporaries :: [ItemKind]
 temporaries =
-  [tmpStrengthened, tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpNoctovision, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant, impressedMark1, impressedMark10]
+  [tmpStrengthened, tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpNoctovision, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant, tmpImpressed]
 
-tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpNoctovision, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant, impressedMark1, impressedMark10 :: ItemKind
+tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpNoctovision, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant, tmpImpressed :: ItemKind
 
 tmpNoLonger :: Text -> Effect
 tmpNoLonger name = Temporary $ "be no longer" <+> name
@@ -84,16 +84,9 @@ tmpPoisonResistant =
          , ieffects = Recharging (DropItem maxBound COrgan "poisoned")
                       : ieffects tmp
          }
-impressedMark1 =
+tmpImpressed =
   let tmp = tmpAs "impressed" []
   in tmp { isymbol = '!'
-         , ifreq = [("mark impressed 1", 1), ("impressed", 1)]
-         , ieffects = [OnSmash $ tmpNoLonger "impressed"]
-         }
-impressedMark10 =
-  let tmp = tmpAs "impressed" []
-  in tmp { isymbol = '!'
-         , icount = 10
-         , ifreq = [("mark impressed 10", 1), ("impressed", 1)]
+         , ifreq = [("impressed", 1)]  -- no "temporary condition"
          , ieffects = [OnSmash $ tmpNoLonger "impressed"]  -- not @Periodic@
          }
