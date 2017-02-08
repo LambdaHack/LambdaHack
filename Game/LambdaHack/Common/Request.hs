@@ -219,6 +219,11 @@ permittedApply localTime skill b ar
      | jsymbol itemBase == '?' && skill < 2 -> Left ApplyRead
      -- We assume if the item has a timeout, all or most of interesting effects
      -- are under Recharging, so no point activating if not recharged.
+     -- Note that if client doesn't know the timeout, here we leak the fact
+     -- that the item is still charging, but the client risks destruction
+     -- if the item is, in fact, rechanrged and is not durable
+     -- (very likely in case of jewellery), so it's OK (the message may be
+     -- somewhat alarming though)..
      | not $ hasCharge localTime itemFull -> Left ApplyCharging
      | otherwise -> case itemDisco of
        Just ItemDisco{itemKind} | null $ IK.ieffects itemKind ->

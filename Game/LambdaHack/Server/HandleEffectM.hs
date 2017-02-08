@@ -162,6 +162,10 @@ itemEffectCause aid tpos ef = do
 -- If any of the effects fires up, the item gets identified. This function
 -- is mutually recursive with @effect@ and so it's a part of @Effect@
 -- semantics.
+--
+-- Note that if we activate a durable item, e.g., armor, from the ground,
+-- it will get identified, which is perfectly fine, until we wanto to add
+-- sticky armor that can't be easily taken off (and, e.g., has some maluses).
 itemEffectDisco :: (MonadAtomic m, MonadServer m)
                 => ActorId -> ActorId -> ItemId -> Container -> Bool -> Bool
                 -> [IK.Effect]
