@@ -231,7 +231,7 @@ effectSem source target iid c recharged effect = do
     IK.InsertMove p -> effectInsertMove execSfx p target
     IK.Teleport p -> effectTeleport execSfx p source target
     IK.CreateItem store grp tim -> effectCreateItem Nothing target store grp tim
-    IK.DropItem p store grp -> effectDropItem execSfx p store grp target
+    IK.DropItem n k store grp -> effectDropItem execSfx n k store grp target
     IK.PolyItem -> effectPolyItem execSfx source target
     IK.Identify -> effectIdentify execSfx iid source target
     IK.Detect radius -> effectDetect execSfx radius target
@@ -934,15 +934,15 @@ effectCreateItem mfidSource target store grp tim = do
 -- (not just a random single item, or cluttering equipment with rubbish
 -- would be beneficial).
 effectDropItem :: (MonadAtomic m, MonadServer m)
-               => m () -> Int -> CStore -> GroupName ItemKind -> ActorId
+               => m () -> Int ->Int ->  CStore -> GroupName ItemKind -> ActorId
                -> m Bool
-effectDropItem execSfx n store grp target = do
+effectDropItem execSfx n k store grp target = do
   b <- getsState $ getActorBody target
   is <- allGroupItems store grp target
   if null is then return False
   else do
     unless (store == COrgan) execSfx
-    mapM_ (uncurry (dropCStoreItem True store target b n)) is
+    mapM_ (uncurry (dropCStoreItem True store target b k)) $ take n is
     return True
 
 allGroupItems :: (MonadAtomic m, MonadServer m)
@@ -970,7 +970,7 @@ dropCStoreItem :: (MonadAtomic m, MonadServer m)
                => Bool -> CStore -> ActorId -> Actor -> Int
                -> ItemId -> ItemQuant
                -> m ()
-dropCStoreItem verbose store aid b n iid kit@(k, _) = do
+dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
   item <- getsState $ getItemBody iid
   let c = CActor aid store
       fragile = IK.Fragile `elem` jfeature item
@@ -984,7 +984,7 @@ dropCStoreItem verbose store aid b n iid kit@(k, _) = do
     effectAndDestroy aid aid iid c False effs itemFull
   else do
     cDrop <- pickDroppable aid b
-    mvCmd <- generalMoveItem verbose iid (min n k) (CActor aid store) cDrop
+    mvCmd <- generalMoveItem verbose iid (min kMax k) (CActor aid store) cDrop
     mapM_ execUpdAtomic mvCmd
 
 pickDroppable :: MonadStateRead m => ActorId -> Actor -> m Container

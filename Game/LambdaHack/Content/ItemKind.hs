@@ -74,7 +74,7 @@ data Effect =
   | CreateItem !CStore !(GroupName ItemKind) !TimerDice
                           -- ^ create an item of the group and insert into
                           --   the store with the given random timer
-  | DropItem !Int !CStore !(GroupName ItemKind)
+  | DropItem !Int !Int !CStore !(GroupName ItemKind)
   | PolyItem
   | Identify
   | Detect !Int
