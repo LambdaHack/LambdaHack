@@ -222,7 +222,7 @@ effectSem source target iid c recharged effect = do
     IK.RefillCalm p -> effectRefillCalm False execSfx p source target
     IK.OverfillCalm p -> effectRefillCalm True execSfx p source target
     IK.Dominate -> effectDominate recursiveCall source target
-    IK.Impress -> effectImpress execSfx source target
+    IK.Impress -> effectImpress recursiveCall execSfx source target
     IK.CallFriend p -> effectCallFriend execSfx p source target
     IK.Summon freqs p -> effectSummon execSfx freqs p source target
     IK.Ascend p -> effectAscend recursiveCall execSfx p source target pos
@@ -521,20 +521,16 @@ dominateFid fid target = do
 -- ** Impress
 
 effectImpress :: (MonadAtomic m, MonadServer m)
-              => m () -> ActorId -> ActorId -> m Bool
-effectImpress execSfx source target = do
+              => (IK.Effect -> m Bool) -> m () -> ActorId -> ActorId -> m Bool
+effectImpress recursiveCall execSfx source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   if | bproj tb -> return False
      | bfid tb == bfid sb -> do
        -- Unimpress wrt others, but only once.
-       is <- allGroupItems COrgan "impressed" target
-       case is of
-         [] -> return False
-         (iid, kit) : _ -> do
-           execSfx
-           dropCStoreItem True COrgan target tb 1 iid kit
-           return True
+       res <- recursiveCall $ IK.DropItem 1 1 COrgan "impressed"
+       when res execSfx
+       return res
      | otherwise -> do
        execSfx
        effectCreateItem (Just (bfid sb, 1)) target COrgan
