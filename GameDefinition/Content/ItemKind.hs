@@ -255,7 +255,18 @@ blanket = ItemKind
   , ikit     = []
   }
 
--- * Exploding consumables with temporary aspects, can be thrown
+-- * Exploding consumables, often intended to be thrown.
+
+-- Not identified, because they are perfect for the id-by-use fun,
+-- due to effects. They are fragile and upon hitting the ground explode
+-- for effects roughly corresponding to their normal effects.
+-- Whether to hit with them or explode them close to the tartget
+-- is intended to be an interesting tactical decision.
+
+-- Flasks are often not natural; maths, magic, distillery.
+-- In reality, they just cover all temporary effects, which in turn matches
+-- all aspects.
+
 -- TODO: dip projectiles in those
 -- TODO: add flavour and realism as in, e.g., "flask of whiskey",
 -- which is more flavourful and believable than "flask of strength"
@@ -273,7 +284,7 @@ flask = ItemKind
   , iaspects = []
   , ieffects = []
   , ifeature = [Applicable, Lobable, Fragile, toVelocity 50]  -- oily, bad grip
-  , idesc    = "A flask of oily liquid of a suspect color. Something seems to be moving inside."  -- not natural; maths, magic, distillery  -- in reality, just all temporary effects, which in turn match all aspects
+  , idesc    = "A flask of oily liquid of a suspect color. Something seems to be moving inside."
   , ikit     = []
   }
 flask1 = flask
@@ -383,12 +394,9 @@ flask17 = flask
                , OnSmash (Explode "antidote mist") ]
   }
 
--- * Ordinary exploding consumables, often intended to be thrown
-
--- Various configurations of effects. Other effects are on scrolls
--- and/or mechanical items. Some are shared.
--- Not identified, because they are perfect for the id-by-use fun,
--- due to effects.
+-- Potions are often natura. Various configurations of effects.
+-- A different class of effects is on scrolls and/or mechanical items.
+-- Some are shared.
 
 potion = ItemKind
   { isymbol  = symbolPotion
@@ -756,10 +764,16 @@ sightSharpening = ItemKind
   }
 -- Don't add standard effects to rings, because they go in and out
 -- of eqp and so activating them would require UI tedium: looking for
--- them in eqp and inv or even activating a wrong item via letter by mistake.
+-- them in eqp and inv or even activating a wrong item by mistake.
+--
+-- However, rings have the explosion effect.
+-- They explode on use (and throw), for the fun of hitting everything
+-- around without the risk of being hit. In case of teleportation explosion
+-- this can also be used to immediately teleport close friends, as opposed
+-- to throwing the ring, which takes time.
 --
 -- Rings should have @Identified@, so that they fully identify upon picking up.
--- Effects of many of the are seen in character sheet, so it would be silly
+-- Effects of many of them are seen in character sheet, so it would be silly
 -- not to identify them. Necklaces provide the fun of id-by-use, because they
 -- have effects and when they are triggered, they id.
 ring = ItemKind
