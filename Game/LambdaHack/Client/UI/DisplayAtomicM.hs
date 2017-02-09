@@ -990,8 +990,12 @@ strike catch source target iid cstore hurtMult = assert (source /= target) $ do
               actionPhrase =
                 MU.SubjectVerbSg tpart
                 $ if bproj sb
-                  then if braced tb then "deflect it" else "shrug it off"
-                  else if braced tb then "block" else "ignore it"
+                  then if braced tb
+                       then "deflect it"
+                       else "fend it off"  -- ward it off
+                  else if braced tb
+                       then "block"  -- parry
+                       else "dodge"  -- evade
               butEvenThough = if catch then ", even though" else ", but"
           in makeSentence
                [ MU.Phrase sActs <> butEvenThough
