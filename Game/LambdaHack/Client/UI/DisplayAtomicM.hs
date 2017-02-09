@@ -68,11 +68,7 @@ displayRespUpdAtomicUI :: MonadClientUI m
 displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid body _ -> createActorUI True aid body
-  UpdDestroyActor aid body _ -> do
-    destroyActorUI True aid body
-    side <- getsClient sside
-    when (bfid body == side && not (bproj body)) $
-      stopPlayBack
+  UpdDestroyActor aid body _ -> destroyActorUI True aid body
   UpdCreateItem iid _ kit c -> do
     case c of
       CActor aid store -> do
@@ -486,11 +482,11 @@ destroyActorUI died aid body = do
   fact <- getsState $ (EM.! side) . sfactionD
   let gameOver = isJust $ gquit fact
   unless gameOver $ do
-    when (bfid body == side) $ do
+    when (bfid body == side && not (bproj body)) $ do
+      stopPlayBack
       let upd = ES.delete aid
       modifySession $ \sess -> sess {sselected = upd $ sselected sess}
-    when (bfid body == side && died && not (bproj body)) $
-      displayMore ColorBW "Alas!"
+      when died $ displayMore ColorBW "Alas!"
     -- If pushed, animate spotting again, to draw attention to pushing.
     when (isNothing $ btrajectory body) $
       modifySession $ \sess -> sess {slastLost = ES.insert aid $ slastLost sess}
