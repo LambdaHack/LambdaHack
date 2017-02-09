@@ -893,9 +893,9 @@ effectCreateItem mfidSource target store grp tim = do
         fromMaybe (assert `failure` (blid tb, litemFreq, c)) m5
       (itemKnown, itemFull) = case mfidSource of
         Just (fidSource, k) ->
-          let (kindIx, damage, _, ar) = itemKnownRaw
+          let (kindIx, ar, damage, _) = itemKnownRaw
               jfid = Just fidSource
-          in ( (kindIx, damage, jfid, ar)
+          in ( (kindIx, ar, damage, jfid)
              , itemFullRaw { itemBase = (itemBase itemFullRaw) {jfid}
                            , itemK = k })
         Nothing -> (itemKnownRaw, itemFullRaw)

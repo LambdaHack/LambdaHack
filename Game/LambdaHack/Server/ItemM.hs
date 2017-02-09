@@ -37,7 +37,7 @@ import Game.LambdaHack.Server.State
 
 onlyRegisterItem :: (MonadAtomic m, MonadServer m)
                  => ItemKnown -> ItemSeed -> m ItemId
-onlyRegisterItem itemKnown@(_, _, _, aspectRecord) seed = do
+onlyRegisterItem itemKnown@(_, aspectRecord, _, _) seed = do
   itemRev <- getsServer sitemRev
   case HM.lookup itemKnown itemRev of
     Just iid ->
