@@ -203,7 +203,6 @@ rotate angle (Vector x' y') =
       dy = x * sin (-angle) + y * cos (-angle)
   in normalize dx dy
 
--- TODO: use bla for that
 -- | Given a vector of arbitrary non-zero length, produce a unit vector
 -- that points in the same direction (in the chessboard metric).
 -- Of several equally good directions it picks one of those that visually
@@ -232,10 +231,6 @@ normalizeVector v@(Vector vx vy) =
              `twith` (v, res))
      res
 
--- TODO: Perhaps produce all acceptable directions and let AI choose.
--- That would also eliminate the Doubles. Or only directions from bla?
--- Smart monster could really use all dirs to be less predictable,
--- but it wouldn't look as natural as bla, so for less smart bla is better.
 -- | Given two distinct positions, determine the direction (a unit vector)
 -- in which one should move from the first in order to get closer
 -- to the second. Ignores obstacles. Of several equally good directions

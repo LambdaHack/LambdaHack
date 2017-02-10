@@ -198,7 +198,8 @@ partItemHigh :: FactionId -> FactionDict
              -> CStore -> Time -> ItemFull -> (Bool, Bool, MU.Part, MU.Part)
 partItemHigh side factionD = partItemN side factionD False 10 100
 
--- TODO: use kit
+-- The @count@ can be different than @itemK@ in @ItemFull@, e.g., when picking
+-- a subset of items to drop.
 partItemWsR :: FactionId -> FactionDict
             -> Bool -> Int -> CStore -> Time -> ItemFull -> MU.Part
 partItemWsR side factionD ranged count c localTime itemFull =

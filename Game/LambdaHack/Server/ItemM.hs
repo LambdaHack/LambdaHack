@@ -40,10 +40,7 @@ onlyRegisterItem :: (MonadAtomic m, MonadServer m)
 onlyRegisterItem itemKnown@(_, aspectRecord, _, _) seed = do
   itemRev <- getsServer sitemRev
   case HM.lookup itemKnown itemRev of
-    Just iid ->
-      -- TODO: try to avoid this case for createItems,
-      -- to make items more interesting
-      return iid
+    Just iid -> return iid
     Nothing -> do
       icounter <- getsServer sicounter
       modifyServer $ \ser ->
@@ -68,14 +65,11 @@ createLevelItem pos lid = do
   let container = CFloor lid pos
   void $ rollAndRegisterItem lid litemFreq container True Nothing
 
--- TODO: this is becoming costly; redo after Embed rethought
--- perhaps keep such tiles in a map to avoid imap over all dungeon tiles
 embedItem :: (MonadAtomic m, MonadServer m)
           => LevelId -> Point -> Kind.Id TileKind -> m ()
 embedItem lid pos tk = do
   Kind.COps{cotile, coTileSpeedup} <- getsState scops
   let embeds = Tile.embedItems cotile tk
-      -- TODO: unhack this, e.g., by turning each Cause into Embed
       itemFreq = zip embeds (repeat 1)
                  ++ -- Hack: the bag, not item, is relevant.
                     [("hero", 1) | Tile.hasCauses coTileSpeedup tk

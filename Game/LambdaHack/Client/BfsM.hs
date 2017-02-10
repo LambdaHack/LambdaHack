@@ -156,8 +156,6 @@ condBFS aid = do
             (toEnum $ EM.findWithDefault 0 Ability.AbAlter actorMaxSk)
       canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
                 || EM.findWithDefault 0 Ability.AbDisplace actorMaxSk > 0
-                -- TODO: needed for now, because AI targets and shoots enemies
-                -- based on the path to them, not LOS to them.
                 || EM.findWithDefault 0 Ability.AbProject actorMaxSk > 0
   smarkSuspect <- getsClient smarkSuspect
   fact <- getsState $ (EM.! side) . sfactionD
@@ -216,10 +214,6 @@ closestUnknown aid = do
         cmp = comparing unknownAround
     return $ Just $ maximumBy cmp closestPoss
 
--- TODO: this is costly, because target has to be changed every
--- turn when walking along trail. But inverting the sort and going
--- to the newest smell doesn't help, because smell radius is 1
--- and so only 1 smell ever visible, normally.
 -- | Finds smells closest to the actor, except under the actor.
 -- Of the closest, prefers the newest smell.
 closestSmell :: MonadClient m => ActorId -> m [(Int, (Point, Time))]
@@ -234,8 +228,6 @@ closestSmell aid = do
       let ts = mapMaybe (\x@(p, _) -> fmap (,x) (accessBfs bfs p)) smells
       return $! sortBy (comparing (fst &&& absoluteTimeNegate . snd . snd)) ts
 
--- TODO: We assume linear dungeon in @unexploredD@,
--- because otherwise we'd need to calculate shortest paths in a graph, etc.
 -- | Closest (wrt paths) triggerable tiles.
 -- The level the actor is on is either explored or the actor already
 -- has a weapon equipped, so no need to explore further, he tries to find

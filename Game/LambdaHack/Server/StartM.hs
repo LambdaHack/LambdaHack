@@ -132,10 +132,6 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
             (gcolor, gnameNew) = case M.lookup nameoc cmap of
               Nothing -> (Color.BrWhite, prefix <+> fname)
               Just c -> (c, prefix <+> fname <+> "Team")
-            -- TODO: currently the data is lost when faction no longer in play
-            -- (e.g., Autonomous faction takes over)
-            -- TODO: also record other data; use it somehow both on the
-            -- server (tune difficulty or AI strategy) and in UI, e.g., ~ menu
             gvictimsDnew = case find (\fact -> gname fact == gnameNew)
                                 $ EM.elems factionDold of
               Nothing -> EM.empty
@@ -198,8 +194,6 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
   gameModeIdOld <- getsState sgameModeId
   DebugModeSer{scurDiffSer} <- getsServer sdebugSer
 #ifdef USE_BROWSER
-  -- TODO: implement as an commandline option and have a diff set of default
-  -- options for browser
   let startingModeName = "starting JS"
 #else
   let startingModeName = "starting"

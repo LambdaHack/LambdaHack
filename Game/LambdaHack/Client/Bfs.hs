@@ -138,11 +138,6 @@ data AndPath =
 
 instance Binary AndPath
 
--- TODO: Use http://harablog.wordpress.com/2011/09/07/jump-point-search/
--- to determine a few really different paths and compare them,
--- e.g., how many closed doors they pass, open doors, unknown tiles
--- on the path or close enough to reveal them.
--- Also, check if JPS can somehow optimize BFS or pathBfs.
 -- | Find a path, without the source position, with the smallest length.
 -- The @eps@ coefficient determines which direction (of the closest
 -- directions available) that path should prefer, where 0 means north-west
@@ -161,7 +156,6 @@ findPathBfs lalter pathSource pathGoal sepsRaw arr@PointArray.Array{..} =
       -- Prefer cardinal directions when closer to the target, so that
       -- the enemy can't easily disengage (open/unknown below overrides that).
       prefMoves = mc1 ++ reverse mc2 ++ md2 ++ reverse md1  -- fuzz
-      -- TODO: if ever a bottleneck, these can be put in client state
       vToI (x, y) = PointArray.pindex axsize (Point x y)
       movesI :: [VectorI]
       movesI = map vToI prefMoves

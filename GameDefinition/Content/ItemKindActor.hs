@@ -509,7 +509,7 @@ geyserSulfur = ItemKind
                , AddNocto 2, AddShine 3
                , AddAbility AbWait 1, AddAbility AbMelee 1 ]
   , ieffects = []
-  , ifeature = [Durable, Identified]  -- TODO: only heal humans
+  , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [("sulfur vent", COrgan), ("sulfur fissure", COrgan)]
   }

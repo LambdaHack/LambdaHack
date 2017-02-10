@@ -55,7 +55,7 @@ display :: SingleFrame  -- ^ the screen frame to draw
 display SingleFrame{singleFrame} =
   let f w l = Color.charFromW32 w : l
       levelChar = chunk $ PointArray.foldrA f [] singleFrame
-      lxsize = fst normalLevelBound + 1  -- TODO
+      lxsize = fst normalLevelBound + 1
       chunk [] = []
       chunk l = let (ch, r) = splitAt lxsize l
                 in ch : chunk r

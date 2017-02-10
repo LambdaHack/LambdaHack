@@ -116,7 +116,7 @@ actionStrategy aid = do
         st <- mstrat
         return $! if scale == 0
                   then mzero
-                  else scaleFreq scale $ bestVariant st -- TODO:flatten instead?
+                  else scaleFreq scale $ bestVariant st
       -- Order matters within the list, because it's summed with .| after
       -- filtering. Also, the results of prefix, distant and suffix
       -- are summed with .| at the end.
@@ -232,7 +232,6 @@ actionStrategy aid = do
                             && not aInAmbient && not actorShines)
           , not (condTgtNonmoving && condThreatAtHand)
             && not newCondInMelee )
-              -- TODO: unless tgt can't melee
         ]
       fallback =
         [ ( [AbWait], (toAny :: ToAny 'AbWait)
@@ -240,7 +239,6 @@ actionStrategy aid = do
             -- Wait until friends sidestep; ensures strategy is never empty.
           , True )
         ]
-      -- TODO: don't msum not to evaluate until needed
   -- Check current, not maximal skills, since this can be a non-leader action.
   actorSk <- actorSkillsClient aid
   let abInSkill ab = EM.findWithDefault 0 ab actorSk > 0
@@ -503,8 +501,6 @@ harmful cops body ar fact itemFull =
   maybe False (\(u, _) -> u <= 0)
     (totalUsefulness cops body ar fact itemFull)
 
--- TODO: if noctovision radius higher than min sight light, turn all lights off
--- (unless the level is lit by default or e.g. the same item give nocto and lit)
 unneeded :: Kind.COps -> Bool -> Bool -> Bool -> Bool
          -> Actor -> AspectRecord -> Faction -> ItemFull
          -> Bool
@@ -570,14 +566,9 @@ meleeAny aid = do
   allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   let adjFoes = filter (adjacent (bpos b) . bpos . snd) allFoes
   mels <- mapM (pickWeaponClient aid . fst) adjFoes
-      -- TODO: prioritize somehow
   let freq = uniformFreq "melee adjacent" $ catMaybes mels
   return $! liftFrequency freq
 
--- TODO: take charging status into account
--- TODO: make sure the stairs are specifically targetted,
--- so that we don't leave level if items visible.
--- When invalidating target, make sure the stairs should really be taken.
 -- | The level the actor is on is either explored or the actor already
 -- has a weapon equipped, so no need to explore further, he tries to find
 -- enemies on other levels.
@@ -731,7 +722,6 @@ applyItem aid applyGroup = do
   localTime <- getsState $ getLocalTime (blid b)
   let skill = EM.findWithDefault 0 AbApply actorSk
       q _ itemFull _ ar =
-        -- TODO: terrible hack to prevent the use of identified healing gems
         let freq = case itemDisco itemFull of
               Nothing -> []
               Just ItemDisco{itemKind} -> IK.ifreq itemKind
@@ -784,9 +774,7 @@ applyItem aid applyGroup = do
             benR = case mben of
                      Nothing -> 0
                        -- experimenting is fun, but it's better to risk
-                       -- foes' skin than ours -- TODO: when {applied}
-                       -- is implemented, enable this for items too heavy,
-                       -- etc. for throwing
+                       -- foes' skin than ours
                      Just (_, ben) -> ben
                    * (if not createOrganAgain then 1 else 0)
                    * (if not dropOrganVoid then 1 else 0)
@@ -845,8 +833,6 @@ displaceBlocker aid = do
     _ -> return reject  -- goal reached
   mapStrategyM (moveOrRunAid True aid) str
 
--- TODO: perhaps modify target when actually moving, not when
--- producing the strategy, even if it's a unique choice in this case.
 displaceTowards :: MonadClient m
                 => ActorId -> Point -> Point -> m (Strategy Vector)
 displaceTowards aid source target = do
@@ -910,7 +896,6 @@ chase aid doDisplace avoidAmbient = do
   -- this is meaningul.
   mapStrategyM (moveOrRunAid doDisplace aid) str
 
--- TODO: rename source here and elsewhere, it's always an ActorId in the code
 moveTowards :: MonadClient m
             => ActorId -> Point -> Point -> Point -> Bool -> m (Strategy Vector)
 moveTowards aid source target goal relaxed = do
@@ -931,7 +916,6 @@ moveTowards aid source target goal relaxed = do
   if noFriends target && enterableHere target then
     return $! returN "moveTowards adjacent" $ target `vectorToFrom` source
   else do
-    -- TODO: this is slow, but optimize only after AI tactics overhauled
     let goesBack v = maybe False (\oldpos -> v == oldpos `vectorToFrom` source)
                            (boldpos b)
         nonincreasing p = chessDist source goal >= chessDist p goal

@@ -31,7 +31,7 @@ import Data.Text (Text)
 import qualified Data.Text as T (pack)
 import qualified NLP.Miniutter.English as MU ((<+>))
 
-infixr 6 <+>  -- TODO: not needed when we require a very new minimorph
+infixr 6 <+>
 (<+>) :: Text -> Text -> Text
 (<+>) = (MU.<+>)
 

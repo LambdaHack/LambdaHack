@@ -129,15 +129,12 @@ data AutoLeader = AutoLeader
 
 instance Binary AutoLeader
 
--- TODO: (spans multiple contents) Check that caves with the given groups exist.
 -- | Catch invalid game mode kind definitions.
 validateSingleModeKind :: ModeKind -> [Text]
 validateSingleModeKind ModeKind{..} =
   [ "mname longer than 20" | T.length mname > 20 ]
   ++ validateSingleRoster mcaves mroster
 
--- TODO: if the diplomacy system stays in, check no teams are at once
--- in war and alliance, taking into account symmetry (but not transitvity)
 -- | Checks, in particular, that there is at least one faction with fneverEmpty
 -- or the game could get stuck when the dungeon is devoid of actors
 validateSingleRoster :: Caves -> Roster -> [Text]

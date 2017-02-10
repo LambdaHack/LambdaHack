@@ -106,8 +106,8 @@ targetStrategy aid = do
       actorMaxSk = aSkills ar
       canMove = EM.findWithDefault 0 AbMove actorMaxSk > 0
                 || EM.findWithDefault 0 AbDisplace actorMaxSk > 0
-                -- TODO: needed for now, because AI targets and shoots enemies
-                -- based on the path to them, not LOS to them.
+                -- Needed for now, because AI targets and shoots enemies
+                -- based on the path to them, not LOS to them:
                 || EM.findWithDefault 0 AbProject actorMaxSk > 0
   actorMinSk <- getsState $ actorSkills Nothing aid ar
   condCanProject <- condCanProjectM True aid
@@ -116,10 +116,6 @@ targetStrategy aid = do
   condMeleeBad <- condMeleeBadM aid
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
-  -- TODO: refine all this when some actors specialize in ranged attacks
-  -- (then we have to target, but keep the distance, we can do similarly for
-  -- wounded or alone actors, perhaps only until they are shot first time,
-  -- and only if they can shoot at the moment)
   let canEscape = fcanEscape (gplayer fact)
       condNoUsableWeapon = bweapon b == 0
       canSmell = aSmell ar > 0
@@ -157,7 +153,6 @@ targetStrategy aid = do
         in desirableItem canEscape use itemFull) $ EM.assocs bag
       desirable (_, (_, Nothing)) = True
       desirable (_, (_, Just bag)) = desirableBag bag
-      -- TODO: make more common when weak ranged foes preferred, etc.
       focused = bspeed b ar < speedWalk || condHpTooLow
       couldMoveLastTurn =
         let axtorSk = if mleader == Just aid then actorMaxSk else actorMinSk
@@ -183,7 +178,6 @@ targetStrategy aid = do
         return $! returN "setPath" $ take7 tgtpath
       pickNewTarget :: m (Strategy TgtAndPath)
       pickNewTarget = do
-        -- TODO: for foes, items, etc. consider a few nearby, not just one
         cfoes <- closestFoes nearbyFoes aid
         case cfoes of
           (_, (aid2, _)) : _ -> setPath $ TEnemy aid2 False
@@ -191,7 +185,6 @@ targetStrategy aid = do
           [] -> do
             -- Tracking enemies is more important than exploring,
             -- and smelling actors are usually blind, so bad at exploring.
-            -- TODO: prefer closer items to older smells
             smpos <- if canSmell
                      then closestSmell aid
                      else return []
@@ -375,8 +368,6 @@ createPath aid tapTgt = do
   mpos <- aidTgtToPos aid (blid b) (Just tapTgt)
   case mpos of
     Nothing -> return TgtAndPath{tapTgt, tapPath=NoPath}
--- TODO: for now, an extra turn at target is needed, e.g., to pick up items
---  Just p | p == bpos b -> return Nothing
     Just p -> do
       tapPath <- getCachePath aid p
       return $! TgtAndPath{..}

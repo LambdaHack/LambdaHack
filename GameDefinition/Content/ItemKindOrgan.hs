@@ -239,8 +239,6 @@ venomTooth = fist
   , ieffects = [Recharging (toOrganGameTurn "slow 10" (3 + d 3))]
   , idesc    = ""
   }
--- TODO: should also confer poison resistance, but current implementation
--- is too costly (poison removal each turn)
 venomFang = fist
   { iname    = "venom fang"
   , ifreq    = [("venom fang", 100)]
@@ -392,7 +390,7 @@ speedGland4 = speedGland 4
 speedGland6 = speedGland 6
 speedGland8 = speedGland 8
 speedGland10 = speedGland 10
-scentGland = armoredSkin  -- TODO: cone attack, 3m away, project? apply?
+scentGland = armoredSkin
   { iname    = "scent gland"
   , ifreq    = [("scent gland", 100)]
   , iverbHit = "spray at"

@@ -174,7 +174,7 @@ instance Binary StateClient where
     put smarkSuspect
     put scondInMelee
     put svictories
-    put sdebugCli  -- TODO: this is overwritten at once
+    put sdebugCli
   get = do
     sxhair <- get
     seps <- get

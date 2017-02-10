@@ -146,9 +146,6 @@ addReport !histOld@(History oldT oldRep@(Report h) hRest) !time !(Report m') =
       _ -> let !lU = attrLineToU $ renderTimeReport oldT oldRep
            in History time rep $ RB.cons lU hRest
 
--- TODO: display time fractions with granularity enough to differ
--- from previous and next report, if possible.
--- or perhaps here display up to 4 decimal points
 renderTimeReport :: Time -> Report -> AttrLine
 renderTimeReport !t !r =
   let turns = t `timeFitUp` timeTurn

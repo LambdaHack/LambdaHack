@@ -95,7 +95,6 @@ dumpRngs rngs = do
     T.hPutStrLn stdout $ tshow rngs
     hFlush stdout
 
--- TODO: refactor wrt Game.LambdaHack.Common.Save
 -- | Read the high scores dictionary. Return the empty table if no file.
 restoreScore :: forall m. MonadServer m => Kind.COps -> m HighScore.ScoreDict
 restoreScore Kind.COps{corule} = do

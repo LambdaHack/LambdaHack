@@ -42,7 +42,7 @@ import Game.LambdaHack.Server.State
 --storeUndo :: MonadServer m => CmdAtomic -> m ()
 --storeUndo _atomic =
 --  maybe skip (\a -> modifyServer $ \ser -> ser {sundo = a : sundo ser})
---    $ Nothing   -- TODO: undoCmdAtomic atomic
+--    $ Nothing   -- undoCmdAtomic atomic
 
 handleCmdAtomicServer :: MonadStateWrite m => PosAtomic -> UpdAtomic -> m ()
 {-# INLINE handleCmdAtomicServer #-}
@@ -109,7 +109,6 @@ handleAndBroadcast atomic = do
         else breakSend lid fid fact perFidLid
       posLevel lid fid fact =
         anySend lid fid fact $ sperFidOld EM.! fid EM.! lid
-      -- TODO: simplify; best after state-diffs approach tried
       send fid fact = case ps of
         PosSight lid _ -> posLevel lid fid fact
         PosFidAndSight _ lid _ -> posLevel lid fid fact

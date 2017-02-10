@@ -110,7 +110,7 @@ fchanFrontend sdebugCli fs@FSession{..} rf =
 
 display :: RawFrontend -> FrameForall -> IO ()
 display rf@RawFrontend{fshowNow} frontFrame = do
-  let lxsize = fst normalLevelBound + 1  -- TODO
+  let lxsize = fst normalLevelBound + 1
       lysize = snd normalLevelBound + 1
       canvasLength = lysize + 3
       new :: forall s. ST s (G.Mutable U.Vector s Word32)

@@ -111,17 +111,12 @@ unknownId :: KindOps.Id TileKind
 {-# INLINE unknownId #-}
 unknownId = KindOps.Id 0
 
--- TODO: (spans multiple contents) check that all posible solid place
--- fences have hidden counterparts.
 -- | Validate a single tile kind.
 validateSingleTileKind :: TileKind -> [Text]
 validateSingleTileKind TileKind{..} =
   [ "suspect tile is walkable" | Walkable `elem` tfeature
                                  && Suspect `elem` tfeature ]
 
--- TODO: verify that OpenTo, CloseTo and ChangeTo are assigned as specified;
--- in particular, that at most one is present.
--- TODO: verify that tile kind for "unknown space" has index 0 and talter is 1
 -- | Validate all tile kinds.
 --
 -- If tiles look the same on the map, the description and the substantial
@@ -140,7 +135,6 @@ validateAllTileKind lt =
       mapVis f = M.fromListWith (++) $ listVis f
       minorVariant [] = assert `failure` "no TileKind content" `twith` lt
       minorVariant (hd : tl) =  -- probably just a dark variant of the tile
-        -- TODO: calculate actionFeatures only once for each tile kind
         all (== actionFeatures True hd) (map (actionFeatures True) tl)
       confusions f = filter (any ((Indistinct `notElem`) . tfeature))
                      $ filter (not . minorVariant) $ M.elems $ mapVis f
@@ -193,5 +187,3 @@ talterForStairs = 3
 -- 50  considerable obstructions
 -- 100  walls
 -- maxBound  impenetrable walls, etc., can never be altered
-
--- TODO: add OpenTo to walls, etc.

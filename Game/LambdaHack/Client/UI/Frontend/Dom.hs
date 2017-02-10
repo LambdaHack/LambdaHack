@@ -111,9 +111,6 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   setProp scharStyle "border-collapse" "collapse"
   setProp scharStyle "margin-left" "auto"
   setProp scharStyle "margin-right" "auto"
-  -- TODO: for icons, in <td>
-  -- setProp "display" "block"
-  -- setProp "vertical-align" "bottom"
   -- Create the session record.
   setInnerHTML tableElem $ Just rows
   scharCells <- flattenTable tableElem
@@ -124,8 +121,6 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   -- A bunch of fauity hacks; @keyPress@ doesn't handle non-character keys
   -- while with @keyDown@ all of getKeyIdentifier, getWhich and getKeyCode
   -- return absurd codes for, e.g., semicolon in Chromium.
-  -- TODO: switch to the new standard
-  -- http://www.w3schools.com/jsref/event_key_keycode.asp
   let readMod = do
         modCtrl <- ask >>= getCtrlKey
         modShift <- ask >>= getShiftKey
@@ -151,8 +146,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
                   if modifier == K.Shift then "BackTab" else "Tab"
                 | keyCode == 27 = "Escape"
                 | keyCode == 46 = "Delete"
-                | otherwise = ""  -- TODO: translate from keyCode in FF and IE
-                                  -- until @key@ available in webkit DOM
+                | otherwise = ""
     when (not $ null quirksN) $ do
       let key = K.keyTranslateWeb quirksN False
       -- IO.liftIO $ do
@@ -237,10 +231,6 @@ handleMouse rf (cell, _) cx cy = do
         -- https://hackage.haskell.org/package/ghcjs-dom-0.2.1.0/docs/GHCJS-DOM-EventM.html
         but <- mouseButton
         modifier <- readMod
-      -- TODO: mdrawWin <- displayGetWindowAtPointer display
-      -- let setCursor (drawWin, _, _) =
-      --       drawWindowSetCursor drawWin (Just cursor)
-      -- maybe (return ()) setCursor mdrawWin
         let mkey = case but of
               0 -> Just K.LeftButtonRelease
               1 -> Just K.MiddleButtonRelease

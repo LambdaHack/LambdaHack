@@ -43,7 +43,7 @@ cSym color symbol = Just $ attrChar2ToW32 color symbol
 
 mapPosToOffset :: (Point, AttrCharW32) -> (Int, [AttrCharW32])
 mapPosToOffset (Point{..}, attr) =
-  let lxsize = fst normalLevelBound + 1  -- TODO
+  let lxsize = fst normalLevelBound + 1
   in ((py + 1) * lxsize + px, [attr])
 
 mzipSingleton :: Point -> Maybe AttrCharW32 -> Overlay

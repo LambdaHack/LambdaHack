@@ -157,7 +157,6 @@ showNearbyScores tz pos h height =
   else [showTable tz h 1 height,
         showTable tz h (max (height + 1) (pos - height `div` 2)) height]
 
--- TODO: split off into DisplayHi module
 -- | Generate a slideshow with the current and previous scores.
 highSlideshow :: ScoreTable -- ^ current score table
               -> Int        -- ^ position of the current score in the table
@@ -165,7 +164,7 @@ highSlideshow :: ScoreTable -- ^ current score table
               -> TimeZone   -- ^ the timezone where the game is run
               -> (Text, [[Text]])
 highSlideshow table pos gameModeName tz =
-  let (_, nlines) = normalLevelBound  -- TODO: query terminal size instead
+  let (_, nlines) = normalLevelBound
       height = nlines `div` 3
       posStatus = status $ getRecord pos table
       (efforts, person, msgUnless) =
@@ -177,8 +176,8 @@ highSlideshow table pos gameModeName tz =
           Defeated ->
             ("your futile efforts", MU.PlEtc, "(no bonus)")
           Camping ->
-            -- TODO: this is only according to the limited player knowledge;
-            -- the final score can be different; say this somewhere
+            -- This is only according to the limited player knowledge;
+            -- the final score can be different, which is fine:
             ("your valiant exploits", MU.PlEtc, "")
           Conquer ->
             ("your ruthless victory", MU.Sg3rd,

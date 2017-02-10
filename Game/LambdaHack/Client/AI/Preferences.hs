@@ -34,37 +34,28 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
     IK.Explode _ -> 0  -- depends on explosion
     IK.RefillHP p ->
          if p > 0
-         -- TODO: when picking up, always deem valuable; when drinking, only if
-         -- HP not maxxed.
-         then 10 * min p (max 0 $ fromEnum
-                          $ (xM aMaxHP - bhp b) `divUp` oneM)
+         then 10 * min p (max 0 $ fromEnum $ (xM aMaxHP - bhp b) `divUp` oneM)
          else max (-99) (11 * p)
     IK.OverfillHP p ->
          if p > 0
-         then 11 * min p (max 1 $ fromEnum
-                          $ (xM aMaxHP - bhp b) `divUp` oneM)
+         then 11 * min p (max 1 $ fromEnum $ (xM aMaxHP - bhp b) `divUp` oneM)
          else max (-99) (11 * p)
     IK.RefillCalm p ->
          if p > 0
-         then min p (max 0 $ fromEnum
-                     $ (xM aMaxCalm - bcalm b) `divUp` oneM)
+         then min p (max 0 $ fromEnum $ (xM aMaxCalm - bcalm b) `divUp` oneM)
          else max (-20) p
     IK.OverfillCalm p ->
          if p > 0
-         then min p (max 1 $ fromEnum
-                     $ (xM aMaxCalm - bcalm b) `divUp` oneM)
+         then min p (max 1 $ fromEnum $ (xM aMaxCalm - bcalm b) `divUp` oneM)
          else max (-20) p
     IK.Dominate -> -200
     IK.Impress -> -10
     IK.CallFriend d -> 100 * Dice.meanDice d
     IK.Summon _ d | dungeonDweller ->
       -- Probably summons friends or crazies.
-      -- TODO: should be Negative, to use Calm of enemy, but also positive
-      -- to use with own Calm, if needed.
       50 * Dice.meanDice d
     IK.Summon{} -> 0      -- probably generates enemies
     IK.Ascend{} -> 1      -- low, to only change levels sensibly, in teams
-                          -- TODO: use if low HP and enemies at hand
     IK.Escape{} -> 10000  -- AI wants to win; spawners to guard
     IK.Paralyze d -> -10 * Dice.meanDice d
     IK.InsertMove d -> 50 * Dice.meanDice d
@@ -74,10 +65,10 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
             && dungeonDweller  -- non-dwellers have to explore and escape ASAP
          then 1
          else -p  -- get rid of the foe
-    IK.CreateItem COrgan grp _ ->  -- TODO: use the timeout
+    IK.CreateItem COrgan grp _ ->
       let (total, count) = organBenefit grp cops b ar fact
       in total `divUp` count  -- average over all matching grp; rarities ignored
-    IK.CreateItem{} -> 30  -- TODO
+    IK.CreateItem{} -> 30
     IK.DropItem _ _ COrgan grp ->
       let (total, _) = organBenefit grp cops b ar fact
       in - total  -- sum over all matching grp; simplification: rarities ignored
@@ -104,7 +95,6 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
 
 -- We ignore the possibility of, e.g., temporary extra clawed limb, etc.,
 -- so we don't take into account idamage of the item kinds.
--- TODO: calculating this for "temporary condition" takes forever
 organBenefit :: GroupName ItemKind -> Kind.COps
              -> Actor -> AspectRecord -> Faction
              -> (Int, Int)
@@ -144,7 +134,7 @@ totalUsefulness cops b ar fact itemFull =
         let effSum = -(min 150
                            (10 * Dice.meanDice (jdamage $ itemBase itemFull)))
                      + sum (map (effectToBenefit cops b ar fact) effects)
-            aspBens = map (aspectToBenefit cops b) $ aspectRecordToList aspects  -- TODO
+            aspBens = map (aspectToBenefit cops b) $ aspectRecordToList aspects
             periodicEffBens = map (effectToBenefit cops b ar fact)
                                   (stripRecharging effects)
             timeout = aTimeout $ aspectRecordFull itemFull

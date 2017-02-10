@@ -47,7 +47,6 @@ data ItemKind = ItemKind
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound
 
--- TODO: document each constructor
 -- | Effects of items. Can be invoked by the item wielder to affect
 -- another actor or the wielder himself. Many occurences in the same item
 -- are possible. Constructors are sorted vs increasing impact/danger.
@@ -55,7 +54,7 @@ data Effect =
     -- Ordinary effects.
     ELabel !Text      -- ^ secret (learned as effect) label of the item
   | EqpSlot !EqpSlot  -- ^ AI and UI flag that leaks item properties
-  | Burn !Dice.Dice   -- TODO: generalize to other elements? ignite terrain?
+  | Burn !Dice.Dice
   | Explode !(GroupName ItemKind)
                       -- ^ explode, producing this group of blasts
   | RefillHP !Int
@@ -163,7 +162,7 @@ data Feature =
   | Meleeable          -- ^ AI and UI flag: consider meleeing with
   | Precious           -- ^ AI and UI flag: don't risk identifying by use
                        --   also, can't throw or apply if not calm enough;
-  | Tactic !Tactic     -- ^ overrides actor's tactic (TODO)
+  | Tactic !Tactic     -- ^ overrides actor's tactic
   deriving (Show, Eq, Ord, Generic)
 
 data EqpSlot =
@@ -229,8 +228,6 @@ toOrganActorTurn grp nDm = CreateItem COrgan grp (TimerActorTurn nDm)
 toOrganNone :: GroupName ItemKind -> Effect
 toOrganNone grp = CreateItem COrgan grp TimerNone
 
--- TODO: reject some other duplicates
--- TODO: reject aspects with dice 0
 -- | Catch invalid item kind definitions.
 validateSingleItemKind :: ItemKind -> [Text]
 validateSingleItemKind ItemKind{..} =
@@ -243,11 +240,6 @@ validateSingleItemKind ItemKind{..} =
          ts = filter timeoutAspect iaspects
      in ["more than one Timeout specification" | length ts > 1]
 
--- TODO: if "treasure" stays wired-in, assure there are some treasure items
--- TODO: (spans multiple contents) check that there is at least one item
--- in each ifreq group for each level (thought more precisely we'd need
--- to lookup caves and modes and only check at the levels the caves
--- can appear at).
 -- | Validate all item kinds.
 validateAllItemKind :: [ItemKind] -> [Text]
 validateAllItemKind content =

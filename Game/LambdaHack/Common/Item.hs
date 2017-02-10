@@ -195,7 +195,7 @@ castAspect !ldepth !totalDepth !ar !asp =
     IK.Timeout d -> do
       n <- castDice ldepth totalDepth d
       return $! assert (aTimeout ar == 0) $ ar {aTimeout = n}
-    IK.AddHurtMelee d -> do  -- TODO: lenses would reduce duplication below
+    IK.AddHurtMelee d -> do
       n <- castDice ldepth totalDepth d
       return $! ar {aHurtMelee = n + aHurtMelee ar}
     IK.AddArmorMelee d -> do

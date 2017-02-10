@@ -28,11 +28,6 @@ import GHC.Generics (Generic)
 import GHC.Prim (int2Word#)
 import GHC.Word (Word32 (W32#))
 
--- TODO: since this type may be essential to speed, consider implementing
--- it as an Int, with color numbered as they are on terminals, see
--- http://www.haskell.org/haskellwiki/Performance/Data_types#Enumerations
--- If we ever switch to 256 colours, the Int implementation or similar
--- will be more natural, anyway.
 -- | Colours supported by the major frontends.
 data Color =
     Black
@@ -141,7 +136,6 @@ retAttrW32 = attrCharToW32 $ AttrChar defAttr '\n'
 isBright :: Color -> Bool
 isBright c = c >= BrBlack
 
--- TODO: smart constructor for bg
 -- | Due to the limitation of the curses library used in the curses frontend,
 -- only these are legal backgrounds.
 legalBG :: [Color]

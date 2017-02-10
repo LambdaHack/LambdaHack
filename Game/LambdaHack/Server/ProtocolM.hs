@@ -103,18 +103,8 @@ data ChanServer = ChanServer
 -- of a faction and to the AI client for the same faction.
 type FrozenClient = ChanServer
 
--- For multiplayer, the AI client should be separate, as in
--- data FrozenClient = FThread !(Maybe (ChanServer Response RequestUI))
---                             !(ChanServer Response RequestAI)
-
 -- | Connection information for all factions, indexed by faction identifier.
 type ConnServerDict = EM.EnumMap FactionId FrozenClient
-
--- TODO: refactor so that the monad is split in 2 and looks analogously
--- to the Client monads. Restrict the Dict to implementation modules.
--- Then on top of that implement sendQueryAI, etc.
--- For now we call it MonadServerReadRequest
--- though it also has the functionality of MonadServerWriteResponse.
 
 -- | The server monad with the ability to communicate with clients.
 class MonadServer m => MonadServerReadRequest m where

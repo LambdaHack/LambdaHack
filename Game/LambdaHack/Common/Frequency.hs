@@ -22,7 +22,6 @@ import Data.Binary
 import Data.Hashable (Hashable)
 import GHC.Generics (Generic)
 
--- TODO: do not expose runFrequency
 -- | The frequency distribution type. Not normalized (operations may
 -- or may not group the same elements and sum their frequencies).
 -- However, elements with zero frequency are removed upon construction.

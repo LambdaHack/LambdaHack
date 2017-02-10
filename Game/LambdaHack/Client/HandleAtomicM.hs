@@ -175,9 +175,6 @@ cmdAtomicFilterCli cmd = case cmd of
   UpdPerception lid outPer inPer -> do
     -- Here we cheat by setting a new perception outright instead of
     -- in @cmdAtomicSemCli@, to avoid computing perception twice.
-    -- TODO: try to assert similar things as for @atomicRemember@:
-    -- that posUpdAtomic of all the Lose* commands was visible in old Per,
-    -- but is not visible any more.
     perOld <- getPerFid lid
     perception lid outPer inPer
     perNew <- getPerFid lid
@@ -489,8 +486,7 @@ discoverSeed c iid seed = do
     Just KindMean{kmKind} -> do
       Level{ldepth} <- getLevel $ jlid item
       let kind = okind kmKind
-          -- TODO: the $! just in case.
-          f Nothing = Just $! seedToAspect seed kind ldepth totalDepth
+          f Nothing = Just $ seedToAspect seed kind ldepth totalDepth
           f Just{} = assert `failure` "already discovered"
                             `twith` (c, iid, seed)
       modifyClient $ \cli ->

@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 -- | Inventory management and party cycling.
--- TODO: document
 module Game.LambdaHack.Client.UI.InventoryM
   ( Suitability(..)
   , getFull, getGroupItem, getStoreItem
@@ -379,7 +378,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         }
       prefixCmdDef d =
         (K.mkChar $ Char.intToDigit d, DefItemKey
-           { defLabel = Left ""  -- TODO: "digits", when defCond precise
+           { defLabel = Left ""
            , defCond = True
            , defAction = \_ ->
                recCall (10 * numPrefix + d) cCur cRest itemDialogState
@@ -421,7 +420,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                     _ -> assert `failure` "unexpected key:"
                                 `twith` K.showKey key
                   Right sl -> sl
-            in return $ Left "stats affect character actions"  -- TODO
+            in return $ Left "stats affect character actions"
             }
       runDefItemKey keyDefs statsDef io slotKeys promptChosen MStats
     _ -> do

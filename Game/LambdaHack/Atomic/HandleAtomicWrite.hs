@@ -395,8 +395,6 @@ updAlterClear :: MonadStateWrite m => LevelId -> Int -> m ()
 updAlterClear lid delta = assert (delta /= 0) $
   updateLevel lid $ \lvl -> lvl {lclear = lclear lvl + delta}
 
--- TODO: use instead of revealing all secret positions initially, at once
--- in Common/State.hs.
 updLearnSecrets :: MonadStateWrite m => ActorId -> Int -> Int -> m ()
 updLearnSecrets aid fromS toS = assert (fromS /= toS) $ do
   b <- getsState $ getActorBody aid
@@ -481,9 +479,6 @@ updTimeItem iid c fromIt toIt = assert (fromIt /= toIt) $ do
       insertItemContainer iid (k, toIt) c
     Nothing -> assert `failure` (bag, iid, c, fromIt, toIt)
 
--- TODO: It leaks information that there is activity on various levels,
--- even if the faction has no actors there, so show this on UI somewhere,
--- e.g., in the @~@ menu of seen levels indicate recent activity.
 -- | Age the game.
 updAgeGame :: MonadStateWrite m => [LevelId] -> m ()
 updAgeGame lids = do

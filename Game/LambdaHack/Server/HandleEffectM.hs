@@ -94,11 +94,6 @@ effectAndDestroy source target iid container periodic effs
             in filter charging itemTimer
       len = length it1
       recharged = len < itemK
-  -- TODO: if has timeout and not recharged and manually activated,
-  -- report failure to player
-  -- TODO: If there is no Timeout, but there are Recharging,
-  -- then such effects are disabled whenever the item is affected
-  -- by a Discharge attack (TODO).
       it2 = if timeout /= 0 && recharged then localTime : it1 else itemTimer
       !_A = assert (len <= itemK `blame` (source, target, iid, container)) ()
   -- We use up the charge even if eventualy every effect fizzles. Tough luck.
@@ -282,7 +277,7 @@ effectBurn nDm source target = do
     let reportedEffect = IK.Burn $ Dice.intToDice n
     execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
     -- Damage the target.
-    execUpdAtomic $ UpdRefillHP target deltaHP  -- TODO: also light on fire, etc
+    execUpdAtomic $ UpdRefillHP target deltaHP
     when serious $ halveCalm target
     return True
 
@@ -468,7 +463,6 @@ dominateFid fid target = do
   Kind.COps{coitem=Kind.Ops{okind}, cotile} <- getsState scops
   tb0 <- getsState $ getActorBody target
   deduceKilled target  -- the actor body exists and his items are not dropped
-  -- TODO: some messages after game over below? Compare with dieSer.
   electLeader (bfid tb0) (blid tb0) target
   fact <- getsState $ (EM.! bfid tb0) . sfactionD
   -- Prevent the faction's stash from being lost in case they are not spawners.
@@ -617,7 +611,6 @@ effectSummon execSfx actorFreq nDm source target = do
 
 bracedImmuneMsg :: Actor -> Text
 bracedImmuneMsg b =
-  -- TODO: instead send to client as ReqFailure and then use partActorLeader
   let subject = partActor b
       verb = "be braced and so immune to translocation"
   in makeSentence [MU.SubjectVerbSg subject verb]
@@ -731,10 +724,6 @@ switchLevels2 lidNew posNew (aid, bOld) btime_bOld mlead = do
   -- before, because the arena went inactive, so he moves now one more time.
   let delta = timeLastActive `timeDeltaToFrom` timeOld
       shiftByDelta = (`timeShift` delta)
-      -- TODO: only @borgan@ and @beqp@ items have translated timeouts.
-      -- Fix or comment why. Should items have reset timers when they enter
-      -- or leave other containers?
-      -- TODO: timeout in/out of sha should be reset or they can be huge.
       computeNewTimeout :: ItemQuant -> ItemQuant
       computeNewTimeout (k, it) = (k, map shiftByDelta it)
       setTimeout :: ItemBag -> ItemBag
@@ -857,10 +846,6 @@ effectTeleport execSfx nDm source target = do
 
 -- ** CreateItem
 
--- TODO: if the items is created not on the ground, perhaps it should
--- be IDed, so that there are no rings with unkown max Calm bonus
--- leading to attempts to do illegal actions (which the server then catches).
--- This is in analogy to picking item from the ground, whereas it's IDed.
 effectCreateItem :: (MonadAtomic m, MonadServer m)
                  => Maybe (FactionId, Int) -> ActorId -> CStore
                  -> GroupName ItemKind -> IK.TimerDice
@@ -906,7 +891,7 @@ effectCreateItem mfidSource target store grp tim = do
                       newTimer = timer `timeShift` halfTurns
                   in newTimer : rest
       when (afterIt /= newIt) $
-        execUpdAtomic $ UpdTimeItem iid c afterIt newIt  -- TODO: announce
+        execUpdAtomic $ UpdTimeItem iid c afterIt newIt
     _ -> do
       -- Multiple such items, so it's a periodic poison, etc., so just stack,
       -- or no such items at all, so create some.
@@ -998,7 +983,6 @@ pickDroppable aid b = do
 
 -- ** PolyItem
 
--- TODO: ask player for an item
 effectPolyItem :: (MonadAtomic m, MonadServer m)
                => m () -> ActorId -> ActorId -> m Bool
 effectPolyItem execSfx source target = do
@@ -1034,17 +1018,11 @@ effectPolyItem execSfx source target = do
 
 -- ** Identify
 
--- TODO: ask player for an item, because server doesn't know which
--- is already identified, it only knows which cannot ever be.
--- Perhaps refill Calm only when id successfull and scroll consumed,
--- id the scroll anyway. Explain the Calm gain: "your most pressing
--- existential concerns are answered scientifitically".
 effectIdentify :: (MonadAtomic m, MonadServer m)
                => m () -> ItemId -> ActorId -> ActorId -> m Bool
 effectIdentify execSfx iidId source target = do
   sb <- getsState $ getActorBody source
   let tryFull store as = case as of
-        -- TODO: identify the scroll, but don't use up.
         [] -> do
           let msg = "Nothing to identify" <+> ppCStoreIn store <> "."
           execSfxAtomic $ SfxMsgFid (bfid sb) msg

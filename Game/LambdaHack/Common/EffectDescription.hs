@@ -56,7 +56,7 @@ effectToSuffix effect =
     CallFriend 1 -> "of aid calling"
     CallFriend dice -> "of aid calling"
                        <+> wrapInParens (tshow dice <+> "friends")
-    Summon _freqs 1 -> "of summoning"  -- TODO
+    Summon _freqs 1 -> "of summoning"
     Summon _freqs dice -> "of summoning"
                           <+> wrapInParens (tshow dice <+> "actors")
     ApplyPerfume -> "of smell removal"

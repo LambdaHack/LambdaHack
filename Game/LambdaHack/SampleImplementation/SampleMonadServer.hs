@@ -126,8 +126,6 @@ executorSer cops copsClient sdebugNxtCmdline = do
   -- Wait for clients to exit even in case of server crash
   -- (or server and client crash), which gives them time to save
   -- and report their own inconsistencies, if any.
-  -- TODO: send them a message to tell users "server crashed"
-  -- and then wait for them to exit normally.
   Ex.handle (\(ex :: Ex.SomeException) -> do
 --               T.hPutStrLn stdout "Server got exception, waiting for clients."
 --               hFlush stdout

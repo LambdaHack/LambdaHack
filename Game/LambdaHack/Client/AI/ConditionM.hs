@@ -275,11 +275,6 @@ benAvailableItems aid permitted cstores = do
   return $ concat perBag
     -- keep it lazy
 
--- TODO: also take into account dynamic lights *not* wielded by the actor
--- They are in some Per cache, but unfortunately on the server, not client.
--- Perhaps send not only Per, but Lit and use it somewhere else, too,
--- e.g., to colour tiles or to describe them as lit.
--- If a tile is dark and seen, it can be unlit, but my actor can use nocto.
 hinders :: Bool -> Bool -> Bool -> Bool -> Actor -> AspectRecord -> ItemFull
         -> Bool
 hinders condAnyFoeAdj condShineBetrays condAimEnemyPresent
@@ -298,13 +293,6 @@ hinders condAnyFoeAdj condShineBetrays condAimEnemyPresent
               deltaSerious (bcalmDelta body)
         in itemShineBad && condShineBetrays
            && (heavilyDistressed || condAimEnemyPresent)
-  -- TODO:
-  -- teach AI to turn shields OFF (or stash) when ganging up on an enemy
-  -- (friends close, only one enemy close)
-  -- and turning on afterwards (AI plays for time, especially spawners
-  -- so shields are preferable by default;
-  -- also, turning on when no friends and enemies close is too late,
-  -- AI should flee or fire at such times, not muck around with eqp)
 
 -- | Require the actor is not calm enough.
 condNotCalmEnoughM :: MonadClient m => ActorId -> m Bool
@@ -352,8 +340,6 @@ desirableItem canEsc use itemFull =
        in use /= Just 0
           && not (isNothing use  -- needs resources to id
                   && preciousNotUseful)
-          -- TODO: terrible hack for the identified healing gems and normal
-          -- gems identified with a scroll
           && maybe True (<= 0) (lookup "gem" freq)
 
 -- | Require the actor is in a bad position to melee or can't melee at all.

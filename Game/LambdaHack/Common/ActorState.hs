@@ -1,7 +1,6 @@
 {-# LANGUAGE TupleSections #-}
 -- | Operations on the 'Actor' type that need the 'State' type,
--- but not the 'Action' type.
--- TODO: Document an export list after it's rewritten according to #17.
+-- but not our custom monad types.
 module Game.LambdaHack.Common.ActorState
   ( fidActorNotProjAssocs, fidActorNotProjList
   , actorAssocs, actorList

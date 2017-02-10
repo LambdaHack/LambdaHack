@@ -120,7 +120,6 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick}
            r mplaceGroup = do
   qFWall <- fromMaybe (assert `failure` cfillerTile)
             <$> opick cfillerTile (const True)
-  -- TODO: factor out from here and newItem:
   let findInterval x1y1 [] = (x1y1, (11, 0))
       findInterval !x1y1 ((!x, !y) : rest) =
         if fromIntegral ld * 10 <= x * fromIntegral depth
@@ -256,7 +255,6 @@ buildFenceRnd Kind.COps{cotile=Kind.Ops{opick}} couterFenceTile area = do
   fenceList <- mapM fenceIdRnd pointList
   return $! EM.fromList fenceList
 
--- TODO: use Text more instead of [Char]?
 -- | Create a place by tiling patterns.
 tilePlace :: Area                           -- ^ the area to fill
           -> PlaceKind                      -- ^ the place kind to construct

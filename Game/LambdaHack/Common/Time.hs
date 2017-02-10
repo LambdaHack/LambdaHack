@@ -235,7 +235,6 @@ speedFromWeight !weight !velocityPercent =
            | w < 10500 = sInMs * (11500 - w) `div` 1000
            | w < 200000 = sInMs  -- half a step per turn is the minimum
            | otherwise = minimalSpeed  -- unless _very_ heavy
-               -- TODO: such high weight should also affect moving
       v = mpMs * vp `div` 100
       -- We round down to the nearest multiple of 2M (unless the speed
       -- is very low), to ensure both turns of flight cover the same distance

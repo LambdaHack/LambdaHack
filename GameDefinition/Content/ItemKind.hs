@@ -267,10 +267,6 @@ blanket = ItemKind
 -- In reality, they just cover all temporary effects, which in turn matches
 -- all aspects.
 
--- TODO: dip projectiles in those
--- TODO: add flavour and realism as in, e.g., "flask of whiskey",
--- which is more flavourful and believable than "flask of strength"
-
 flask = ItemKind
   { isymbol  = symbolFlask
   , iname    = "flask"
@@ -533,13 +529,12 @@ scroll8 = scroll
   { irarity  = [(10, 3)]
   , ieffects = [InsertMove $ 1 + d 2 + dl 2]
   }
-scroll9 = scroll  -- TODO: remove Calm when server can tell if anything IDed
+scroll9 = scroll
   { irarity  = [(1, 15), (10, 10)]
   , ieffects = [ ELabel "of scientific explanation"
                , Identify, OverfillCalm 3 ]
   }
-scroll10 = scroll  -- TODO: firecracker only if an item really polymorphed?
-                   -- But currently server can't tell.
+scroll10 = scroll
   { irarity  = [(10, 10)]
   , ieffects = [ ELabel "transfiguration"
                , PolyItem, Explode "firecracker 7" ]
@@ -705,7 +700,7 @@ necklace6 = necklace
   , ieffects = [Recharging (PushActor (ThrowMod 100 50))]
                ++ ieffects necklace
   }
-necklace7 = necklace  -- TODO: teach AI to wear only for fight
+necklace7 = necklace
   { ifreq    = [("treasure", 100)]
   , iaspects = [ AddMaxHP $ 10 + d 10
                , AddArmorMelee 20, AddArmorRanged 10
@@ -1107,7 +1102,7 @@ wand = ItemKind
   , ifreq    = [("useful", 100)]
   , iflavour = zipFancy brightCol
   , icount   = 1
-  , irarity  = []  -- TODO: add charges, etc.
+  , irarity  = []
   , iverbHit = "club"
   , iweight  = 300
   , idamage  = toDmg 0
@@ -1115,11 +1110,11 @@ wand = ItemKind
   , ieffects = []
   , ifeature = [ toVelocity 125  -- magic
                , Applicable, Durable ]
-  , idesc    = "Buzzing with dazzling light that shines even through appendages that handle it."  -- TODO: add math flavour
+  , idesc    = "Buzzing with dazzling light that shines even through appendages that handle it."  -- will have math flavour
   , ikit     = []
   }
 wand1 = wand
-  { ieffects = []  -- TODO: emit a cone of sound shrapnel that makes enemy cover his ears and so drop '|' and '{'
+  { ieffects = []  -- will be: emit a cone of sound shrapnel that makes enemy cover his ears and so drop '|' and '{'
   }
 wand2 = wand
   { ieffects = []
@@ -1160,7 +1155,7 @@ gem4 = gem
   , irarity  = [(1, 40), (10, 40)]
   , iaspects = []
   , ieffects = [ELabel "of youth", OverfillCalm 5, OverfillHP 15]
-  , ifeature = [Identified, Applicable, Precious]  -- TODO: only heal humans
+  , ifeature = [Identified, Applicable, Precious]
   , idesc    = "A crystal vial of amber liquid, supposedly granting eternal youth and fetching 100 gold per piece. The main effect seems to be mild euphoria, but it admittedly heals minor ailments rather well."
   }
 currency = ItemKind

@@ -38,7 +38,6 @@ import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
--- TODO: civilians would have 'it' pronoun
 -- | Spawn, possibly, a monster according to the level's actor groups.
 -- We assume heroes are never spawned.
 spawnMonster :: (MonadAtomic m, MonadServer m) => m ()
@@ -48,8 +47,6 @@ spawnMonster = do
   -- e.g., spreading leaders across levels to bump monster generation.
   arena <- rndToAction $ oneOf arenas
   totalDepth <- getsState stotalDepth
-  -- TODO: eliminate the defeated and victorious faction from lactorFreq;
-  -- then fcanEscape and fneverEmpty make sense for spawning factions
   Level{ldepth, lactorCoeff, lactorFreq} <- getLevel arena
   lvlSpawned <- getsServer $ fromMaybe 0 . EM.lookup arena . snumSpawned
   rc <- rndToAction
@@ -219,7 +216,7 @@ udpateCalm target deltaCalm = do
   execUpdAtomic $ UpdRefillCalm target deltaCalm
   when (bcalm tb < calmMax64
         && bcalm tb + deltaCalm >= calmMax64) $
-    return ()  -- TODO: reset some mental afflictions, fears, when we have any
+    return ()
     -- We don't dominate the actor here, because if so, players would
     -- disengage after one of their actors is dominated and wait for him
     -- to regenerate Calm. This is unnatural and boring. Better fight

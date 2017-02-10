@@ -60,7 +60,6 @@ as follows:
     on the grid is connected, and a few more might be. It is not sufficient
     to always connect all adjacent rooms.
 -}
--- TODO: fix identifier naming and split, after the code grows some more
 -- | Cave generation by an algorithm inspired by the original Rogue,
 buildCave :: Kind.COps         -- ^ content definitions
           -> AbsDepth          -- ^ depth of the level to generate
@@ -88,7 +87,6 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
   litCorTile <- fromMaybe (assert `failure` clitCorTile)
                 <$> opick clitCorTile (const True)
   dnight <- chanceDice ldepth totalDepth cnightChance
-  -- TODO: factor that out:
   let createPlaces lgr' = do
         let area | couterFenceTile /= "basic outer fence" = subFullArea
                  | otherwise = fullArea

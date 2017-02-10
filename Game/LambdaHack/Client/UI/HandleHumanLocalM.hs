@@ -1,6 +1,5 @@
 -- | Semantics of 'HumanCmd' client commands that do not return
 -- server commands. None of such commands takes game time.
--- TODO: document
 module Game.LambdaHack.Client.UI.HandleHumanLocalM
   ( -- * Meta commands
     macroHuman
@@ -129,7 +128,7 @@ chooseItemDialogMode c = do
       prompt body ar c2 =
         let (tIn, t) = ppItemDialogMode c2
         in case c2 of
-        MStore CGround ->  -- TODO: variant for actors without (unwounded) feet
+        MStore CGround ->
           makePhrase
             [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "notice"
             , MU.Text "at"
@@ -174,7 +173,6 @@ chooseItemDialogMode c = do
               symbol = jsymbol (itemBase itemFull)
               blurb | symbol == '+' = "temporary condition"
                     | otherwise = "organ"
-              -- TODO: also forbid on the server, except in special cases.
               prompt2 = makeSentence [ partActor b, "can't choose"
                                      , MU.AW blurb ]
           promptAdd prompt2
@@ -417,8 +415,6 @@ memberBackHuman = memberBack True
 
 -- * SelectActor
 
--- TODO: make the message (and for selectNoneHuman, pickLeader, etc.)
--- optional, since they have a clear representation in the UI elsewhere.
 selectActorHuman :: MonadClientUI m => m ()
 selectActorHuman = do
   leader <- getLeaderUI
@@ -594,7 +590,7 @@ settingsMenuHuman cmdAction = do
   factTactic <- getsState $ MK.ftactic . gplayer . (EM.! side) . sfactionD
   let stripFrame t = tail . init $ T.lines t
       pasteVersion :: [String] -> [String]
-      pasteVersion art =  -- TODO: factor out
+      pasteVersion art =
         let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
             version = " Version " ++ showVersion pathsVersion
                       ++ " (frontend: " ++ frontendName

@@ -210,10 +210,6 @@ scoreToSlideshow total status = do
   Level{lxsize, lysize} <- getLevel lidV
   fid <- getsClient sside
   fact <- getsState $ (EM.! fid) . sfactionD
-  -- TODO: Re-read the table in case it's changed by a concurrent game.
-  -- TODO: we should do this, and make sure we do that after server
-  -- saved the updated score table, and not register, but read from it.
-  -- Otherwise the score is not accurate, e.g., the number of victims.
   scoreDict <- getsState shigh
   gameModeId <- getsState sgameModeId
   gameMode <- getGameMode
@@ -277,7 +273,6 @@ tellAllClipPS = do
       <+> "Average clips per second:" <+> tshow cps <> "."
       <+> "Average FPS:" <+> tshow fps <> "."
 
--- TODO: dedup
 tellGameClipPS :: MonadClientUI m => m ()
 tellGameClipPS = do
   bench <- getsClient $ sbenchmark . sdebugCli

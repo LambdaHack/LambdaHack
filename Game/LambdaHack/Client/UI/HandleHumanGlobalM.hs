@@ -4,7 +4,6 @@
 -- Here prompts and menus and displayed, but any feedback resulting
 -- from the commands (e.g., from inventory manipulation) is generated later on,
 -- for all clients that witness the results of the commands.
--- TODO: document
 module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   ( -- * Meta commands
     byAreaHuman, byAimModeHuman, byItemModeHuman
@@ -129,11 +128,10 @@ areaToRectangles ca = case ca of
                  in return [(x, y, fst normalLevelBound, y)]
   CaSelected -> let y = snd normalLevelBound + 3
                     x = fst normalLevelBound `div` 2
-                in return [(0, y, x - 22, y)]  -- TODO
+                in return [(0, y, x - 22, y)]
   CaLeaderStatus -> let y = snd normalLevelBound + 3
                         x = fst normalLevelBound `div` 2
                     in return [(x - 20, y, x, y)]
-                      -- TODO: calculate and share with ClientDraw
   CaTargetDesc -> let y = snd normalLevelBound + 3
                       x = fst normalLevelBound `div` 2 + 2
                   in return [(x, y, fst normalLevelBound, y)]
@@ -233,7 +231,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
   -- and still explicitly requests a run, knowing how it behaves.
   sel <- getsSession sselected
   let runMembers = if runAhead || noRunWithMulti fact
-                   then [leader]  -- TODO: warn?
+                   then [leader]
                    else ES.toList (ES.delete leader sel) ++ [leader]
       runParams = RunParams { runLeader = leader
                             , runMembers
@@ -251,7 +249,6 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
   -- so that running in the presence of roving invisible
   -- actors is equivalent to moving (with visible actors
   -- this is not a problem, since runnning stops early enough).
-  -- TODO: stop running at invisible actor
   let tpos = bpos sb `shift` dir
   -- We start by checking actors at the target position,
   -- which gives a partial information (actors can be invisible),
@@ -671,8 +668,6 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
           CEqp | eqpOverfull b (oldN + k) -> do
             -- If this stack doesn't fit, we don't equip any part of it,
             -- but we may equip a smaller stack later in the same pickup.
-            -- TODO: try to ask for a number of items, thus giving the player
-            -- the option of picking up a part.
             let fullWarn = if eqpOverfull b (oldN + 1)
                            then EqpOverfull
                            else EqpStackFull
@@ -748,7 +743,6 @@ projectItem ts (fromCStore, (iid, itemFull)) = do
 
 -- * Apply
 
--- TODO: factor out item getting
 applyHuman :: MonadClientUI m
            => [Trigger] -> m (FailOrCmd (RequestTimed 'AbApply))
 applyHuman ts = do
@@ -908,7 +902,7 @@ helpHuman :: MonadClientUI m
           -> m (Either MError ReqUI)
 helpHuman cmdAction = do
   lidV <- viewedLevelUI
-  Level{lxsize, lysize} <- getLevel lidV  -- TODO: screen length or viewLevel
+  Level{lxsize, lysize} <- getLevel lidV
   menuIxHelp <- getsSession smenuIxHelp
   keyb <- getsSession sbinding
   let keyH = keyHelp keyb 1
@@ -961,7 +955,6 @@ itemMenuHuman cmdAction = do
                 let phr = makePhrase $ ppCStoreWownW False store $ partActor b2
                 in "[" ++ T.unpack phr ++ "]"
               foundTexts = map (ppLoc . snd) foundAlt
-              -- TODO: deduplicate parts of the result sentence.
               foundPrefix = textToAL $
                 if null foundTexts then "" else "The object is also in:"
               itemFull = itemToF iid kit
@@ -1039,7 +1032,6 @@ chooseItemMenuHuman cmdAction c = do
 
 -- * MainMenu
 
--- TODO: avoid String
 -- | Display the main menu.
 mainMenuHuman :: MonadClientUI m
               => (HumanCmd.HumanCmd -> m (Either MError ReqUI))

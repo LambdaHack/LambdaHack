@@ -168,7 +168,6 @@ cacheBeforeLucidFromActor clearPs body AspectRecord{..} =
   let radius = boundSightByCalm aSight (bcalm body)
       creachable = PerReachable $ fullscan clearPs radius (bpos body)
       cnocto = PerVisible $ fullscan clearPs aNocto (bpos body)
-      -- TODO: until AI can handle/ignore it, only radius 2 used
       smellRadius = if aSmell >= 2 then 2 else 0
       csmell = PerSmelled $ fullscan clearPs smellRadius (bpos body)
   in CacheBeforeLucid{..}
@@ -187,7 +186,7 @@ totalFromPerActor perActor =
        , csmell = PerSmelled
                   $ ES.unions $ map (psmelled . csmell) as }
 
--- Update lights on the level. This is needed every (even enemy)
+-- | Update lights on the level. This is needed every (even enemy)
 -- actor move to show thrown torches.
 -- We need to update lights even if cmd doesn't change any perception,
 -- so that for next cmd that does, but doesn't change lights,
@@ -196,10 +195,6 @@ totalFromPerActor perActor =
 -- but it's rare that cmd changed them, but not the perception
 -- (e.g., earthquake in an uninhabited corner of the active arena,
 -- but the we'd probably want some feedback, at least sound).
--- TODO: if more speed needed, cache independently all actors
--- (not in CacheBeforeLucid, so that dark actors moving don't reset lucid)
--- and all floor positions, invalidate those that are changed,
--- recompute and union all afterwards.
 lucidFromLevel :: DiscoveryAspect -> ActorAspect -> FovClearLid -> FovLitLid
                -> State -> LevelId -> Level
                -> FovLucid

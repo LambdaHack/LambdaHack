@@ -39,7 +39,6 @@ frontendName = "curses"
 startup :: DebugModeCli -> IO RawFrontend
 startup _sdebugCli = do
   C.start
---  C.keypad C.stdScr False  -- TODO: may help to fix xterm keypad on Ubuntu
   void $ C.cursSet C.CursorInvisible
   let s = [ (Color.Attr{fg, bg}, C.Style (toFColor fg) (toBColor bg))
           | -- No more color combinations possible: 16*4, 64 is max.
@@ -82,7 +81,7 @@ display FrontendSession{..} SingleFrame{singleFrame} = do
                  $ PointArray.toListA singleFrame
       level = init sf ++ [init $ last sf]
       nm = zip [0..] $ map (zip [0..]) level
-      lxsize = fst normalLevelBound + 1  -- TODO
+      lxsize = fst normalLevelBound + 1
       chunk [] = []
       chunk l = let (ch, r) = splitAt lxsize l
                 in ch : chunk r
@@ -132,8 +131,6 @@ keyTranslate e = (\(key, modifier) -> K.KM modifier key) $
     C.KeyClear       -> (K.Begin,   K.NoModifier)
     C.KeyIC          -> (K.Insert,  K.NoModifier)
     -- No KP_ keys; see <https://github.com/skogsbaer/hscurses/issues/10>
-    -- TODO: try to get the Control modifier for keypad keys from the escape
-    -- gibberish and use Control-keypad for KP_ movement.
     C.KeyChar c
       -- This case needs to be considered after Tab, since, apparently,
       -- on some terminals ^i == Tab and Tab is more important for us.

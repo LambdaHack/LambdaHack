@@ -225,7 +225,7 @@ build-binary-i386:
 	cp README.md /tmp/LambdaHackTheGame
 	tar -czf /tmp/LambdaHack_x_ubuntu-12.04-i386.tar.gz -C /tmp LambdaHackTheGame
 
-# TODO: figure out why this must be so different from Linux
+# It's a pity this is so different from Linux
 build-binary-windows-i386:
 	wine cabal configure -frelease
 	wine cabal build exe:LambdaHack

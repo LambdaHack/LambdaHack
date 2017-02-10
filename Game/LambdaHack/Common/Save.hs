@@ -24,10 +24,6 @@ import qualified System.Random as R
 import Game.LambdaHack.Common.File
 import Game.LambdaHack.Common.Misc (appDataDir)
 
--- TODO: refactor all this somehow, preferably restricting the use
--- of IO and/or making these operations a part of the Client
--- and Server monads
-
 type ChanSave a = MVar (Maybe a)
 
 saveToChan :: ChanSave a -> a -> IO ()
@@ -35,14 +31,6 @@ saveToChan toSave s = do
   -- Wipe out previous candidates for saving.
   void $ tryTakeMVar toSave
   putMVar toSave $ Just s
-
--- TODO: to have crash saves, send state to server save channel each turn
--- and have another mvar, asking for a save with the last state;
--- this mvar is permanently true on clients, but only set on server
--- in finally and each time bkp save is requested; finally should also
--- send save request to all clients (using the last state from the save
--- channel for client connection data, etc.)
--- All this is not needed if we bkp save each turn, but that's costly.
 
 -- | Repeatedly save a simple serialized version of the current state.
 loopSave :: Binary a => (a -> FilePath) -> ChanSave a -> IO ()

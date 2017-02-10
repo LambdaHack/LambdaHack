@@ -95,7 +95,6 @@ stopPlayBack = do
         modifyClient $ updateLeader runLeader s
       modifySession (\sess -> sess {srunning = Nothing})
 
--- TODO: restrict the animation to 'per' before drawing.
 -- | Render animations on top of the current screen frame.
 renderFrames :: MonadClientUI m => LevelId -> Animation -> m Frames
 renderFrames arena anim = do

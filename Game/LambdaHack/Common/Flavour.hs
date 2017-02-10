@@ -28,7 +28,6 @@ instance Hashable FancyName
 
 instance Binary FancyName
 
--- TODO: add more variety, as the number of items increases
 -- | The type of item flavours.
 data Flavour = Flavour
   { fancyName :: !FancyName  -- ^ how fancy should the colour description be

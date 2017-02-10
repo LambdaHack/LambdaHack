@@ -58,8 +58,6 @@ endOrLoop loop restart gameExit gameSave = do
 
 dieSer :: (MonadAtomic m, MonadServer m) => ActorId -> Actor -> m ()
 dieSer aid b = do
-  -- TODO: clients don't see the death of their last standing actor;
-  --       modify Draw.hs and Client.hs to handle that
   unless (bproj b) $ do
     discoKind <- getsServer sdiscoKind
     trunk <- getsState $ getItemBody $ btrunk b

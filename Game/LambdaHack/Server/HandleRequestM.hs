@@ -7,7 +7,6 @@
 -- before the server command. Even if one or more atomic actions
 -- are already issued by the point an expression is evaluated, they do not
 -- influence the outcome of the evaluation.
--- TODO: document
 module Game.LambdaHack.Server.HandleRequestM
   ( handleRequestAI, handleRequestUI, switchLeader, handleRequestTimed
   , reqMove, reqDisplace, reqGameExit
@@ -576,9 +575,6 @@ reqApply aid iid cstore = do
 
 -- * ReqGameRestart
 
--- TODO: implement a handshake and send hero names there,
--- so that they are available in the first game too,
--- not only in subsequent, restarted, games.
 reqGameRestart :: (MonadAtomic m, MonadServer m)
                => ActorId -> GroupName ModeKind -> Int -> [(Int, (Text, Text))]
                -> m ()

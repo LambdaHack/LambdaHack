@@ -26,7 +26,6 @@ encodeEOF :: Binary a => FilePath -> a -> IO ()
 encodeEOF path a = flip runDOM undefined $ do
   Just win <- currentWindow
   storage <- getLocalStorageUnchecked win
-  -- TODO: probably very slow, too and wastes half the Local Storage space:
   setItem storage path $ decodeLatin1 $ LBS.toStrict
                        $ encode (a, "OK" :: String)
 
@@ -38,7 +37,6 @@ strictDecodeEOF path = flip runDOM undefined $ do
   Just win <- currentWindow
   storage <- getLocalStorageUnchecked win
   Just item <- getItem storage path
-  -- TODO: terribly slow:
   let (a, n) = decode $ LBS.pack $ T.unpack item
   if n == ("OK" :: String)
     then return $! a

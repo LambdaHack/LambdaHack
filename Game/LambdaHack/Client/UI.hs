@@ -61,8 +61,6 @@ queryUI = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   if isAIFact fact then do
-    -- TODO: allow any action that does not take time, e.g., changing
-    -- leaders, levels, moving xhair. Only ESC and mouse then stops AI.
     keyPressed <- anyKeyPressed
     if keyPressed then do
       discardPressedKey
@@ -73,7 +71,7 @@ queryUI = do
                                          , sstopAfterFrames = Nothing }}
       if fleaderMode (gplayer fact) /= LeaderNull then
         return (ReqUIAutomate, Nothing)  -- stop AI
-      else return (ReqUINop, Nothing)  -- TODO: somehow stop? restart?
+      else return (ReqUINop, Nothing)
     else do
       -- As long as UI faction is under AI control, check, once per move,
       -- for benchmark game stop.

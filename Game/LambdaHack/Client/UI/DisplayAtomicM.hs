@@ -50,15 +50,6 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * RespUpdAtomicUI
 
--- TODO: let user configure which messages are not created, which are
--- slightly hidden, which are shown and which flash and center screen
--- and perhaps highligh the related location/actor. Perhaps even
--- switch to the actor, changing HP displayed on screen, etc.
--- but it's too short a clip to read the numbers, so probably
--- highlighing should be enough.
--- TODO: for a start, flesh out the verbose variant and then add
--- a single client debug option that flips verbosity
---
 -- | Visualize atomic actions sent to the client. This is done
 -- in the global state after the command is executed and after
 -- the client state is modified by the command.
@@ -392,7 +383,6 @@ itemVerbMU iid kit@(k, _) verb c = assert (k > 0) $ do
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   msgAdd msg
 
--- TODO: split into 3 parts wrt ek and reuse somehow, e.g., the secret part
 -- We assume the item is inside the specified container.
 -- So, this function can't be used for, e.g., @UpdDestroyItem@.
 itemAidVerbMU :: MonadClientUI m
@@ -445,7 +435,6 @@ msgDuplicateScrap = do
   when lastDuplicated $
     modifySession $ \sess -> sess {_sreport = repRest}
 
--- TODO: "XXX spots YYY"? or blink or show the changed xhair?
 createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 createActorUI born aid body = do
   side <- getsClient sside
@@ -541,7 +530,6 @@ moveItemUI iid k aid cstore1 cstore2 = do
         itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
     Nothing -> assert `failure` (iid, k, aid, cstore1, cstore2, itemSlots)
 
--- TODO: split into many top-level functions; factor out common parts
 quitFactionUI :: MonadClientUI m => FactionId -> Maybe Status -> m ()
 quitFactionUI fid toSt = do
   Kind.COps{coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
@@ -668,16 +656,12 @@ quitFactionUI fid toSt = do
         when go3 $ do
           -- Show score for any UI client after any kind of game exit,
           -- even though it is saved only for human UI clients at game over.
-          -- TODO: click on score and get more details and highlight
-          -- current score
           scoreSlides <- scoreToSlideshow total status
           void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
           -- The last prompt stays onscreen during shutdown, etc.
           promptAdd pp
           partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
           void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
-          -- TODO: perhaps use a vertical animation instead, e.g., roll down
-          -- and put it before item and score screens (on blank background)
       unless (fmap stOutcome toSt == Just Camping) $
         fadeOutOrIn True
     _ -> return ()
@@ -753,10 +737,10 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
   SfxCheck aid iid cstore ->
     itemAidVerbMU aid "deapply" iid (Left $ Just 1) cstore
   SfxTrigger aid _p _feat ->
-    -- TODO: when more triggers that are not visible on the map, add msgs
+    -- So far triggering is visible, e.g., doors close, so no need for messages.
     when verbose $ aidVerbMU aid "trigger"
   SfxShun aid _p _ ->
-    when verbose $ aidVerbMU aid "shun"  -- TODO: shuns stairs down
+    when verbose $ aidVerbMU aid "shun"
   SfxEffect fidSource aid effect hpDelta -> do
     b <- getsState $ getActorBody aid
     side <- getsClient sside
@@ -855,9 +839,9 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.CallFriend{} -> do
           let verb = if bproj b then "attract" else "call forth"
           actorVerbMU aid b $ MU.Text $ verb <+> "friends"
-        IK.Summon{} -> do  -- TODO: if a singleton, use the freq?
+        IK.Summon{} -> do
           let verb = if bproj b then "lure" else "summon"
-          actorVerbMU aid b $ MU.Text $ verb <+> "nearby beasts"
+          actorVerbMU aid b $ MU.Text $ verb <+> "nearby horrors"
         IK.Ascend k | k > 0 -> actorVerbMU aid b "find a way upstairs"
         IK.Ascend k | k < 0 -> actorVerbMU aid b "find a way downstairs"
         IK.Ascend{} -> assert `failure` sfx
@@ -868,7 +852,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Teleport{} -> actorVerbMU aid b "blink"
         IK.CreateItem{} -> return ()
         IK.DropItem _ _ COrgan _ -> return ()
-        IK.DropItem _ _ _ _ -> actorVerbMU aid b "be stripped"  -- TODO
+        IK.DropItem _ _ _ _ -> actorVerbMU aid b "be stripped"
         IK.PolyItem -> do
           localTime <- getsState $ getLocalTime $ blid b
           allAssocs <- fullAssocsClient aid [CGround]
@@ -878,8 +862,6 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
               subject <- partActorLeader aid b
               factionD <- getsState sfactionD
               let itemSecret = itemNoDisco (itemBase, itemK)
-                  -- TODO: plural form of secretName? only when K > 1?
-                  -- At this point we don't easily know how many consumed.
                   (_, _, secretName, secretAEText) =
                     partItem side factionD CGround localTime itemSecret
                   verb = "repurpose"
@@ -1005,11 +987,6 @@ strike catch source target iid cstore hurtMult = assert (source /= target) $ do
                     | otherwise ->  -- apparently no damage; report
                       "completely"
                ]
--- TODO: when other armor is in, etc.:
---      msg HitSluggish =
---        let adv = MU.Phrase ["sluggishly", verb]
---        in makeSentence $ [MU.SubjectVerbSg spart adv, tpart]
---                          ++ ["with", partItemChoice itemFull]
     msgAdd msg
     return (bpos tb, bpos sb)
   else return (bpos tb, bpos tb)

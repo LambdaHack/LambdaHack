@@ -76,7 +76,6 @@ pickActorToMove maidToAvoid refreshTarget = do
       -- until we can't distinguish them any more, at which point we prefer
       -- the old leader, if he is among the best candidates
       -- (to make the AI appear more human-like and easier to observe).
-      -- TODO: this also takes melee into account, but not shooting.
       let refresh aidBody = do
             mtgt <- refreshTarget aidBody
             return $ (\tgt -> (aidBody, tgt)) <$> mtgt
@@ -117,7 +116,6 @@ pickActorToMove maidToAvoid refreshTarget = do
                          then condCanFlee && condMeleeBad
                               && not condFastThreatAdj
                          else heavilyDistressed  -- shot at
-                           -- TODO: modify when reaction fire is possible
           actorHearning (_, TgtAndPath{tapTgt=TEnemyPos{},tapPath=NoPath}) =
             return False
           actorHearning (_, TgtAndPath{ tapTgt=TEnemyPos{}
@@ -132,10 +130,6 @@ pickActorToMove maidToAvoid refreshTarget = do
                       && null closeFoes  -- the enemy not visible; a trap!
           -- AI has to be prudent and not lightly waste leader for meleeing,
           -- even if his target is distant
-          -- TODO: actually determine if the leader melees or is just
-          -- adjacent and ignores the enemy; also, but even if he really melees
-          -- don't switch from him to an actor with no target or no path
-          -- because the actor would slow down the melee even if only 2 actors
           actorMeleeing ((aid, _), _) = condAnyFoeAdjM aid
           actorMeleeBad ((aid, _), _) = do
             threatDistL <- threatDistList aid
@@ -145,7 +139,6 @@ pickActorToMove maidToAvoid refreshTarget = do
             return $! condThreatMedium && condMeleeBad
       oursVulnerable <- filterM actorVulnerable oursTgt
       oursSafe <- filterM (fmap not . actorVulnerable) oursTgt
-        -- TODO: partitionM
       oursMeleeing <- filterM actorMeleeing oursSafe
       oursNotMeleeing <- filterM (fmap not . actorMeleeing) oursSafe
       oursHearing <- filterM actorHearning oursNotMeleeing
@@ -164,11 +157,6 @@ pickActorToMove maidToAvoid refreshTarget = do
                   AndPath{pathList=[]} -> Nothing
                   AndPath{pathList=q : _} -> Just q
             in any ((== next) . Just . bpos . snd) ours
--- TODO: stuck actors are picked while others close could approach an enemy;
--- we should detect stuck actors (or one-sided stuck)
--- so far we only detect blocked and only in Other mode
---             && not (aid == oldAid && waitedLastTurn b time)  -- not stuck
--- this only prevents staying stuck
           (oursBlocked, oursPos) =
             partition targetBlocked $ oursOther ++ oursMeleeBad
           -- Lower overhead is better.
@@ -178,15 +166,12 @@ pickActorToMove maidToAvoid refreshTarget = do
           overheadOurs our@( (aid, b)
                            , TgtAndPath{tapPath=AndPath{pathLen=d,pathGoal}} ) =
             if targetTEnemy our then
-              -- TODO: take weapon, walk and fight speed, etc. into account
               ( d + if targetBlocked our then 2 else 0  -- possible delay, hacky
               , - 10 * fromEnum (bhp b `div` (10 * oneM))
               , aid /= oldAid )
             else
               -- Keep proper formation, not too dense, not to sparse.
               let
-                -- TODO: vary the parameters according to the stage of game,
-                -- enough equipment or not, game mode, level map, etc.
                 minSpread = 7
                 maxSpread = 12 * 2
                 dcaptain p =
@@ -206,11 +191,6 @@ pickActorToMove maidToAvoid refreshTarget = do
                   - if aid == oldAid then 3 else 0
                          | otherwise = 0
                 explorationValue = diffDist * (sumDist `div` 4)
--- TODO: this half is not yet ready:
--- instead spread targets between actors; moving many actors
--- to a single target and stopping and starting them
--- is very wasteful; also, pick targets not closest to the actor in hand,
--- but to the sum of captain and sergant or something
                 sumCoeff | sumDist > maxSpread = - explorationValue
                          | otherwise = 0
               in ( if d == 0 then d
@@ -297,4 +277,4 @@ useTactics refreshTarget oldAid = do
     TMeleeAdjacent -> explore  -- probably not needed, but may change
     TBlock -> return ()  -- no point refreshing target
     TRoam -> explore  -- @TRoam@ is checked again inside @explore@
-    TPatrol -> explore  -- TODO
+    TPatrol -> explore  -- WIP

@@ -45,12 +45,6 @@ data Fence =
   | FNone   -- ^ skip the fence and fill all with the place proper
   deriving (Show, Eq)
 
--- TODO: Verify that places are fully accessible from any entrace on the fence
--- that is at least 4 tiles distant from the edges, if the place is big enough,
--- (unless the place has FNone fence, in which case the entrance is
--- at the outer tiles of the place).
--- TODO: (spans multiple contents) Check that all symbols in place plans
--- are present in the legend.
 -- | Catch invalid place kind definitions. In particular, verify that
 -- the top-left corner map is rectangular and not empty.
 validateSinglePlaceKind :: PlaceKind -> [Text]

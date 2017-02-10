@@ -186,8 +186,6 @@ drawFrameContent drawnLevelId = do
                   w = Color.attrCharW32 $ f p0 a0
               VM.write v (pI + lxsize) w
         mapM_ g l
-      -- TODO: on some frontends, write the characters on top of previous ones,
-      -- e.g., actors over items or items over terrain
       upd :: FrameForall
       upd = FrameForall $ \v -> do
         mapVAL viewItemBag (EM.assocs lfloor) v
@@ -396,7 +394,7 @@ drawFrameStatus drawnLevelId = do
       tgtOrItem n = do
         let tgtBlurb = "Target:" <+> trimTgtDesc n tgtDesc
         case (sitemSel, mleader) of
-          (Just (fromCStore, iid), Just leader) -> do  -- TODO: factor out
+          (Just (fromCStore, iid), Just leader) -> do
             b <- getsState $ getActorBody leader
             bag <- getsState $ getBodyStoreBag b fromCStore
             case iid `EM.lookup` bag of
@@ -538,7 +536,6 @@ drawLeaderDamage width = do
   return $! if null stats || length stats >= width then []
             else addColor $ stats <> " "
 
--- TODO: colour some texts using the faction's colour
 drawSelected :: MonadClient m
              => LevelId -> Int -> ES.EnumSet ActorId -> m (Int, AttrLine)
 drawSelected drawnLevelId width selected = do

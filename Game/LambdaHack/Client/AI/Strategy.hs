@@ -97,7 +97,6 @@ renameStrategy newName (Strategy fs) = Strategy $ map (renameFreq newName) fs
 returN :: Text -> a -> Strategy a
 returN name x = Strategy $ return $! uniformFreq name [x]
 
--- TODO: express with traverse?
 mapStrategyM :: Monad m => (a -> m (Maybe b)) -> Strategy a -> m (Strategy b)
 mapStrategyM f s = do
   let mapFreq freq = do

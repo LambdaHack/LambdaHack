@@ -28,12 +28,6 @@ import qualified Data.Vector.Unboxed.Mutable as VM
 
 import Game.LambdaHack.Common.Point
 
--- TODO: for now, until there's support for GeneralizedNewtypeDeriving
--- for Unboxed, there's a lot of @Word8@ in place of @c@ here
--- and a constraint @Enum c@ instead of @Unbox c@.
--- see also https://hackage.haskell.org/package/vector-th-unbox
-
--- TODO: perhaps make them an instance of Data.Vector.Generic?
 -- | Arrays indexed by @Point@.
 data GArray w c = Array
   { axsize  :: !X

@@ -29,7 +29,7 @@ type Frames = [Maybe FrameForall]
 
 blankSingleFrame :: SingleFrame
 blankSingleFrame =
-  let lxsize = fst normalLevelBound + 1  -- TODO
+  let lxsize = fst normalLevelBound + 1
       lysize = snd normalLevelBound + 4
   in SingleFrame $ PointArray.replicateA lxsize lysize spaceAttrW32
 
@@ -37,7 +37,7 @@ blankSingleFrame =
 -- and if there are too many lines, excess is dropped and warning is appended.
 truncateLines :: Bool -> [AttrLine] -> [AttrLine]
 truncateLines onBlank l =
-  let lxsize = fst normalLevelBound + 1  -- TODO
+  let lxsize = fst normalLevelBound + 1
       lysize = snd normalLevelBound + 1
       canvasLength = if onBlank then lysize + 3 else lysize + 1
       topLayer = if length l <= canvasLength
@@ -76,7 +76,7 @@ overlayFrame ov ff = FrameForall $ \v -> do
 
 overlayFrameWithLines :: Bool -> [AttrLine] -> FrameForall -> FrameForall
 overlayFrameWithLines onBlank l msf =
-  let lxsize = fst normalLevelBound + 1  -- TODO
+  let lxsize = fst normalLevelBound + 1
       ov = map (\(y, al) -> (y * lxsize, al))
            $ zip [0..] $ truncateLines onBlank l
   in overlayFrame ov msf

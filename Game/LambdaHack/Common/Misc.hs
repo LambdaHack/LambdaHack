@@ -46,7 +46,7 @@ makeSentence = MU.makeSentence MU.defIrregular
 serverSaveName :: String
 serverSaveName = "server.sav"
 
--- | Level bounds. TODO: query terminal size instead and scroll view.
+-- | Level bounds.
 normalLevelBound :: (Int, Int)
 normalLevelBound = (79, 20)
 
@@ -143,12 +143,6 @@ newtype AbsDepth = AbsDepth Int
 newtype ActorId = ActorId Int
   deriving (Show, Eq, Ord, Enum, Binary)
 
--- TODO: there is already too many; express this somehow via skills;
--- also, we risk micromanagement; perhaps only have as many tactics
--- as needed for realistic AI behaviour in our game modes;
--- perhaps even expose only some of them to UI; perhaps define tactics
--- in rules content or in game mode defs; perhaps have skills corresponding
--- to exploration. following, etc.
 -- | Tactic of non-leader actors. Apart of determining AI operation,
 -- each tactic implies a skill modifier, that is added to the non-leader skills
 -- defined in 'fskillsOther' field of 'Player'.
@@ -164,8 +158,6 @@ data Tactic =
               --   to sight radius and fallback temporarily to @TRoam@
               --   when enemy is seen by the faction and is within
               --   the actor's sight radius
-              --   TODO (currently the same as TExplore; should it chase
-              --   targets too (TRoam) and only switch to TPatrol when none?)
   deriving (Eq, Ord, Enum, Bounded, Generic)
 
 instance Show Tactic where
@@ -188,7 +180,7 @@ describeTactic TMeleeAndRanged =
 describeTactic TMeleeAdjacent = "engage exclusively in melee, don't move"
 describeTactic TBlock = "block and wait, don't move"
 describeTactic TRoam = "move freely, chase targets"
-describeTactic TPatrol = "find and patrol an area (TODO)"
+describeTactic TPatrol = "find and patrol an area (WIP)"
 
 instance Binary Tactic
 

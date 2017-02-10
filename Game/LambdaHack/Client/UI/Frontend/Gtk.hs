@@ -78,7 +78,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
                | fg <- [minBound..maxBound], bg <- legalBGplusHacks ]
   -- Text buffer.
   tb <- textBufferNew (Just ttt)
-  -- Create text view. TODO: use GtkLayout or DrawingArea instead of TextView?
+  -- Create text view.
   sview <- textViewNewWithBuffer tb
   textViewSetEditable sview False
   textViewSetCursorVisible sview False
@@ -134,7 +134,6 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
     return True  -- disable selection
   currentfont <- newIORef f
   Just defDisplay <- displayGetDefault
-  -- TODO: change cursor depending on aiming mode, etc.; hard
   cursor <- cursorNewForDisplay defDisplay Tcross  -- Target Crosshair Arrow
   sview `on` buttonPressEvent $ return True  -- disable selection
   sview `on` buttonReleaseEvent $ do
@@ -197,7 +196,6 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   widgetShowAll w
   mainGUI
 
--- TODO: is postGUISync required?
 shutdown :: IO ()
 shutdown = postGUISync mainQuit
 
@@ -224,7 +222,7 @@ display :: FrontendSession  -- ^ frontend session data
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
 display FrontendSession{..} SingleFrame{singleFrame} = do
-  let lxsize1 = fst normalLevelBound + 2  -- TODO
+  let lxsize1 = fst normalLevelBound + 2
       f !w (!n, !l) = if n == -1
                       then (lxsize1 - 3, Color.charFromW32 w : '\n' : l)
                       else (n - 1, Color.charFromW32 w : l)

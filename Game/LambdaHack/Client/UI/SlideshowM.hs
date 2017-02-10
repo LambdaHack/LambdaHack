@@ -27,7 +27,7 @@ import Game.LambdaHack.Common.Point
 overlayToSlideshow :: MonadClientUI m => Y -> [K.KM] -> OKX -> m Slideshow
 overlayToSlideshow y keys okx = do
   lidV <- viewedLevelUI
-  Level{lxsize} <- getLevel lidV  -- TODO: screen length or viewLevel
+  Level{lxsize} <- getLevel lidV
   report <- getReportUI
   recordHistory  -- report will be shown soon, remove it to history
   return $! splitOverlay lxsize y report keys okx

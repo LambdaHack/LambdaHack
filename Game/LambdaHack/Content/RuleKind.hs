@@ -11,8 +11,6 @@ import Data.Version
 
 import Game.LambdaHack.Common.Misc
 
--- TODO: very few rules are configurable yet, extend as needed.
-
 -- | The type of game rule sets and assorted game data.
 --
 -- For now the rules are immutable througout the game, so there is
@@ -47,7 +45,6 @@ instance Show RuleKind where
   show _ = "The game ruleset specification."
 
 -- | Catch invalid rule kind definitions.
--- In particular, this validates the ASCII art format (TODO).
 validateSingleRuleKind :: RuleKind -> [Text]
 validateSingleRuleKind _ = []
 

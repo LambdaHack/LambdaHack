@@ -107,16 +107,14 @@ continueRunDir params = case params of
   RunParams{ runLeader
            , runMembers = aid : _
            , runInitial } -> do
-    report <- getsSession _sreport -- TODO: check the message before it goes into history
+    report <- getsSession _sreport
     let boringMsgs = map stringToAL
           [ "You hear a distant"
           , "reveals that the"
           , "Macro will be recorded"
           , "Macro activated"
-          , "Voicing '" ]  -- TODO: don't hardwire
+          , "Voicing '" ]
         boring l = any (`isInfixOf` l) boringMsgs
-        -- TODO: use a regexp from the UI config instead
-        -- or have symbolic messages and pattern-match
         msgShown  = isJust $ findInReport (not . boring) report
     if msgShown then return $ Left "message shown"
     else do
@@ -196,9 +194,9 @@ checkAndRun aid dir = do
       -- vertical and horizontal.
       anglePos :: Point -> Vector -> RadianAngle -> Point
       anglePos pos d angle = shift pos (rotate angle d)
-      -- We assume the tiles have not changes since last running step.
+      -- We assume the tiles have not changed since last running step.
       -- If they did, we don't care --- running should be stopped
-      -- because of the change of nearby tiles then (TODO).
+      -- because of the change of nearby tiles then.
       -- We don't take into account the two tiles at the rear of last
       -- surroundings, because the actor may have come from there
       -- (via a diagonal move) and if so, he may be interested in such tiles.

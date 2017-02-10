@@ -57,14 +57,12 @@ display FrontendSession{svty} SingleFrame{singleFrame} =
                                        (Color.charFromW32 w)))
             $ chunk $ PointArray.toListA singleFrame
       pic = picForImage img
-      lxsize = fst normalLevelBound + 1  -- TODO
+      lxsize = fst normalLevelBound + 1
       chunk [] = []
       chunk l = let (ch, r) = splitAt lxsize l
                 in ch : chunk r
   in update svty pic
 
--- TODO: use http://hackage.haskell.org/package/vty-5.4.0/docs/Graphics-Vty-Config.html to remap keys internally
--- TODO: Ctrl-m is RET
 keyTranslate :: Key -> K.Key
 keyTranslate n =
   case n of

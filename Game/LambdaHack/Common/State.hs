@@ -46,8 +46,6 @@ data State = State
   }
   deriving (Show, Eq)
 
--- TODO: add a flag 'fresh' and when saving levels, don't save
--- and when loading regenerate this level.
 unknownLevel :: Kind.COps -> AbsDepth -> X -> Y
              -> Text -> ([Point], [Point]) -> Int
              -> Int -> Int -> [Point]
@@ -115,7 +113,6 @@ emptyState _scops =
     , _sgameModeId = minBound  -- the initial value is unused
     }
 
--- TODO: make lstair secret until discovered
 -- | Local state created by removing secret information from global
 -- state components.
 localFromGlobal :: State -> State

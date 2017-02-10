@@ -421,7 +421,7 @@ hActors fid as@((aid, body) : rest) = do
         -- This is not proper UI-forced save, but a timeout, so don't save
         -- and no need to abort turn.
         modifyServer $ \ser -> ser {swriteSave = False}
-      _ -> assert `failure` cmdS  -- TODO: handle more
+      _ -> assert `failure` cmdS
     -- Clear messages in the UI client, regardless if leaderless or not.
     execUpdAtomic $ UpdRecordHistory side
   let mswitchLeader :: Maybe ActorId -> m ActorId
@@ -440,8 +440,6 @@ hActors fid as@((aid, body) : rest) = do
       mtimed <- handleRequestUI side aidNew cmd
       return (aidNew, mtimed)
   case mtimed of
-    -- TODO: check that the command is legal first, report and reject,
-    -- but do not crash (currently server asserts things and crashes)
     Just (RequestAnyAbility timed) -> do
       nonWaitMove <- handleRequestTimed side aidNew timed
       if nonWaitMove then return True else hActors fid rest
@@ -512,10 +510,6 @@ restartGame updConn loop mgameMode = do
   writeSaveAll False
   loop
 
--- TODO: This can be improved by adding a timeout
--- and by asking clients to prepare
--- a save (in this way checking they have permissions, enough space, etc.)
--- and when all report back, asking them to commit the save.
 -- | Save game on server and all clients.
 writeSaveAll :: (MonadAtomic m, MonadServer m) => Bool -> m ()
 writeSaveAll uiRequested = do

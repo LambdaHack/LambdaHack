@@ -153,7 +153,6 @@ strongestMelee effectBonus localTime is =
   let f ii@(_, itemFull) = (strMelee effectBonus localTime itemFull, ii)
   in sortBy (flip $ Ord.comparing fst) $ map f is
 
--- TODO: take into account inscriptions, when implemented
 isMelee :: Item -> Bool
 isMelee item = Meleeable `elem` jfeature item
 

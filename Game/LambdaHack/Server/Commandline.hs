@@ -13,8 +13,6 @@ import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Server.State
 
--- TODO: make more maintainable
-
 -- | Parse server debug parameters from commandline arguments.
 debugArgs :: [String] -> IO DebugModeSer
 debugArgs args = do

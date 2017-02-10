@@ -51,11 +51,6 @@ convertTileMaps Kind.COps{coTileSpeedup} areAllWalkable
     _ | areAllWalkable -> return converted1  -- all walkable; passes OK
     Nothing -> return converted1  -- no walkable tiles for filling the map
     Just cdefTileWalkable -> do  -- some tiles walkable, so ensure connectivity
-      -- TODO: perhaps checking connectivity with BFS would be better,
-      -- but it's still artibrary how we recover connectivity and we still
-      -- need ltile not to break rooms (unless that's a good idea,
-      -- but surely it's not for starship hull walls, vaults, fire pits, etc.,
-      -- so perhaps all but impenetrable walls is game).
       let passes p@Point{..} array =
             px >= 0 && px <= cxsize - 1
             && py >= 0 && py <= cysize - 1
