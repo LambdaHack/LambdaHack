@@ -14,6 +14,7 @@ import Game.LambdaHack.Common.Prelude hiding (Alt)
 import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Data.Char as Char
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
 import qualified SDL as SDL
@@ -32,11 +33,14 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
+type FontAtlas = EM.EnumMap Color.AttrCharW32 SDL.Texture
+
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
   { swindow   :: !SDL.Window
   , srenderer :: !SDL.Renderer
   , sfont     :: !TTF.TTFFont
+  , satlas    :: !(MVar FontAtlas)
   }
 
 -- | The name of the frontend.
@@ -74,6 +78,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   code <- TTF.init
   when (code /= 0) $ error $ "init of sdl2-ttf failed with: " ++ show code
   sfont <- TTF.openFont fontFile fontSize
+  satlas <- newMVar EM.empty
   let sess = FrontendSession{..}
   rf <- createRawFrontend (display sdebugCli sess) (shutdown sess)
   putMVar rfMVar rf
@@ -112,8 +117,7 @@ display :: DebugModeCli
         -> IO ()
 display DebugModeCli{..} FrontendSession{..} SingleFrame{singleFrame} = do
   SDL.clear srenderer
-  let level = chunk $ map Color.attrCharFromW32
-                    $ PointArray.toListA singleFrame
+  let level = chunk $ PointArray.toListA singleFrame
       nm = zip [0..] $ map (zip [0..]) level
       lxsize = fst normalLevelBound + 1
       fontSize = fromMaybe 16 sfontSize
@@ -121,17 +125,28 @@ display DebugModeCli{..} FrontendSession{..} SingleFrame{singleFrame} = do
       chunk [] = []
       chunk l = let (ch, r) = splitAt lxsize l
                 in ch : chunk r
-      render x y Color.AttrChar{acAttr=Color.Attr{..}, ..} = do
-        textSurface <-
-          TTF.renderUTF8Shaded sfont [acChar] (colorToRGBA fg) (colorToRGBA bg)
-        Vect.V2 vx vy <- SDL.surfaceDimensions textSurface
-        textTexture <- SDL.createTextureFromSurface srenderer textSurface
-        SDL.freeSurface textSurface
+      render x y ac = do
+        atlas <- takeMVar satlas
+        textTexture <- case EM.lookup ac atlas of
+          Nothing -> do
+            let Color.AttrChar{acAttr=Color.Attr{..}, ..} =
+                  Color.attrCharFromW32 ac
+            textSurface <-
+              TTF.renderUTF8Shaded sfont [acChar] (colorToRGBA fg)
+                                                  (colorToRGBA bg)
+            textTexture <- SDL.createTextureFromSurface srenderer textSurface
+            SDL.freeSurface textSurface
+            putMVar satlas $ EM.insert ac textTexture atlas
+            return textTexture
+          Just textTexture -> do
+            putMVar satlas atlas
+            return textTexture
+        ti <- SDL.queryTexture textTexture
         let loc = SDL.Rectangle (Vect.P $ Vect.V2 (toEnum $ x * boxSize)
                                                   (toEnum $ y * boxSize))
-                                (Vect.V2 vx vy)
+                                (Vect.V2 (SDL.textureWidth ti)
+                                         (SDL.textureHeight ti))
         SDL.copy srenderer textTexture Nothing (Just loc)
-        SDL.destroyTexture textTexture
   sequence_ [render x y ac | (y, line) <- nm, (x, ac) <- line]
   SDL.present srenderer
 
