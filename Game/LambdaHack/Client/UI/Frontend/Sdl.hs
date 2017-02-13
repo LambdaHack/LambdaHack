@@ -16,6 +16,7 @@ import Control.Concurrent.Async
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
+import qualified Data.Vector.Generic as G
 
 import qualified SDL as SDL
 import SDL.Input.Keyboard.Codes
@@ -72,7 +73,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
       ysize = snd normalLevelBound + 4
       windowConfig = SDL.defaultWindow
         {SDL.windowInitialSize =
-           SDL.V2 (toEnum $ xsize * boxSize) (toEnum $ ysize * boxSize)}
+           SDL.V2 (toEnum $ xsize * boxSize + 1) (toEnum $ ysize * boxSize + 1)}
   swindow <- SDL.createWindow title windowConfig
   srenderer <- SDL.createRenderer swindow (-1) SDL.defaultRenderer
   code <- TTF.init
@@ -116,6 +117,7 @@ display :: DebugModeCli
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
 display DebugModeCli{..} FrontendSession{..} SingleFrame{singleFrame} = do
+  SDL.rendererDrawColor srenderer SDL.$= SDL.V4 0 0 0 0
   SDL.clear srenderer
   let level = chunk $ PointArray.toListA singleFrame
       nm = zip [0..] $ map (zip [0..]) level
@@ -125,29 +127,56 @@ display DebugModeCli{..} FrontendSession{..} SingleFrame{singleFrame} = do
       chunk [] = []
       chunk l = let (ch, r) = splitAt lxsize l
                 in ch : chunk r
-      render x y ac = do
+      vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
+      drawHighlight x y color = do
+        let v4 = let Raw.Color r g b a = colorToRGBA color
+                 in SDL.V4 r g b a
+        SDL.rendererDrawColor srenderer SDL.$= v4
+        let bottomRight = vp ((x + 1) * boxSize - 1) ((y + 1) * boxSize)
+            topRight = vp ((x + 1) * boxSize - 1) (y * boxSize + 2)
+            bottomLeft = vp (x * boxSize + 1) ((y + 1) * boxSize)
+            bottomRight1 = vp ((x + 1) * boxSize) ((y + 1) * boxSize + 1)
+            topRight1 = vp ((x + 1) * boxSize) (y * boxSize + 2)
+            bottomLeft1 = vp (x * boxSize + 1) ((y + 1) * boxSize + 1)
+            v = G.fromList [ bottomRight, topRight, topRight1
+                           , bottomRight1, bottomLeft1, bottomLeft
+                           , bottomRight ]
+        SDL.drawLines srenderer v
+      render x y acRaw = do
         atlas <- takeMVar satlas
+        let Color.AttrChar{acAttr=Color.Attr{bg=bgRaw, ..}, ..} =
+              Color.attrCharFromW32 acRaw
+            normalizeBg color =
+              (Color.Black, Color.attrChar2ToW32 fg acChar, Just color)
+            (bg, ac, mlineColor) = case bgRaw of
+              Color.BrRed ->  -- highlighted tile
+                normalizeBg Color.Red
+              Color.BrBlue ->  -- blue highlighted tile
+                normalizeBg Color.Blue
+              Color.BrYellow ->  -- yellow highlighted tile
+                normalizeBg Color.BrYellow
+              _ -> (bgRaw, acRaw, Nothing)
         textTexture <- case EM.lookup ac atlas of
           Nothing -> do
-            let Color.AttrChar{acAttr=Color.Attr{..}, ..} =
-                  Color.attrCharFromW32 ac
+            -- https://github.com/rongcuid/sdl2-ttf/blob/master/src/SDL/TTF.hsc
+            -- http://www.libsdl.org/projects/SDL_ttf/docs/SDL_ttf_frame.html
             textSurface <-
               TTF.renderUTF8Shaded sfont [acChar] (colorToRGBA fg)
                                                   (colorToRGBA bg)
             textTexture <- SDL.createTextureFromSurface srenderer textSurface
             SDL.freeSurface textSurface
-            putMVar satlas $ EM.insert ac textTexture atlas
+            putMVar satlas $ EM.insert ac textTexture atlas  -- not @acRaw@
             return textTexture
           Just textTexture -> do
             putMVar satlas atlas
             return textTexture
         ti <- SDL.queryTexture textTexture
-        let loc = SDL.Rectangle (Vect.P $ Vect.V2 (toEnum $ x * boxSize)
-                                                  (toEnum $ y * boxSize))
+        let loc = SDL.Rectangle (vp (x * boxSize) (y * boxSize))
                                 (Vect.V2 (SDL.textureWidth ti)
                                          (SDL.textureHeight ti))
         SDL.copy srenderer textTexture Nothing (Just loc)
-  sequence_ [render x y ac | (y, line) <- nm, (x, ac) <- line]
+        maybe (return ()) (drawHighlight x y) mlineColor
+  sequence_ $ reverse $ [render x y ac | (y, line) <- nm, (x, ac) <- line]
   SDL.present srenderer
 
 -- | Translates modifiers to our own encoding.

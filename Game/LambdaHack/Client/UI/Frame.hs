@@ -20,6 +20,9 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 -- | An overlay that fits on the screen (or is meant to be truncated on display)
 -- and is padded to fill the whole screen
 -- and is displayed as a single game screen frame.
+--
+-- Note that we don't provide a list of color-highlighed positions separately,
+-- because overlays need to obscure not only map, but the highlights as well.
 newtype SingleFrame = SingleFrame
   {singleFrame :: PointArray.GArray Word32 AttrCharW32}
   deriving (Eq, Show)
