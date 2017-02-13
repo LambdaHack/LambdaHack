@@ -14,7 +14,7 @@ import GHC.Generics (Generic)
 data DebugModeCli = DebugModeCli
   { sfontFamily       :: !(Maybe Text)
       -- ^ Font family to use for the main game window.
-  , sfontSize         :: !(Maybe Text)
+  , sfontSize         :: !(Maybe Int)
       -- ^ Font size to use for the main game window.
   , scolorIsBold      :: !(Maybe Bool)
       -- ^ Whether to use bold attribute for colorful characters.

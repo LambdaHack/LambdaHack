@@ -38,7 +38,7 @@ data Config = Config
   , configVi          :: !Bool  -- ^ the option for Vi keys takes precendence
   , configLaptop      :: !Bool  -- ^ because the laptop keys are the default
   , configFontFamily  :: !Text
-  , configFontSize    :: !Text
+  , configFontSize    :: !Int
   , configColorIsBold :: !Bool
   , configHistoryMax  :: !Int
   , configMaxFps      :: !Int

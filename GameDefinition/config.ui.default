@@ -30,7 +30,7 @@ movementViKeys_hjklyubn = False
 movementLaptopKeys_uk8o79jl = True
 ; Monospace fonts that have fixed size regardless of boldness (on some OSes at least)
 fontFamily = "DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,FreeMono,Monospace"
-fontSize = "18px"
+fontSize = 16
 colorIsBold = True
 ; New historyMax takes effect after removal of savefiles.
 historyMax = 5000

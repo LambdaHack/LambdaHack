@@ -94,7 +94,7 @@ debugArgs args = do
         in debugSer {sdebugCli = (sdebugCli debugSer) {sfontFamily = Just $ T.pack s}}
       parseArgs ("--fontSize" : s : rest) =
         let debugSer = parseArgs rest
-        in debugSer {sdebugCli = (sdebugCli debugSer) {sfontSize = Just $ T.pack s}}
+        in debugSer {sdebugCli = (sdebugCli debugSer) {sfontSize = Just $ read s}}
       parseArgs ("--noColorIsBold" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli =

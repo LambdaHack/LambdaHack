@@ -291,9 +291,9 @@ keyTranslate "backslash"     = Char '\\'
 keyTranslate "asciicircum"   = Char '^'
 keyTranslate "underscore"    = Char '_'
 keyTranslate "minus"         = Char '-'
-keyTranslate "KP_Subtract"   = Char '-'
+keyTranslate "KP_Subtract"   = Char '-'  -- KP and normal are merged here
 keyTranslate "plus"          = Char '+'
-keyTranslate "KP_Add"        = Char '+'
+keyTranslate "KP_Add"        = Char '+'  -- KP and normal are merged here
 keyTranslate "equal"         = Char '='
 keyTranslate "bracketleft"   = Char '['
 keyTranslate "bracketright"  = Char ']'
