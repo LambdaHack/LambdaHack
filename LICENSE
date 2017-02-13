@@ -1,5 +1,5 @@
-Copyright (c) 2008--2015 Andres Loeh
-Copyright (c) 2010--2015 Mikolaj Konarski
+Copyright (c) 2008--2017 Andres Loeh
+Copyright (c) 2010--2017 Mikolaj Konarski
 
 All rights reserved.
 
@@ -26,3 +26,11 @@ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
 LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 SUCH DAMAGE.
+
+
+Fonts 16x16x.fon, 8x8x.fon and 8x8xb.fon are are taken from
+https://github.com/angband/angband, copyrighted by Leon Marrick,
+Sheldon Simms III and Nick McConnell and released by them under
+GNU GPL version 2. Any further modifications by authors of LambdaHack
+are also released under GNU GPL version 2. See http://www.gnu.org/licenses
+for the text of the license.
