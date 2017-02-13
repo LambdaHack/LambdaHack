@@ -15,8 +15,11 @@ import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
+import Data.IORef
 import qualified Data.Text as T
 import qualified Data.Vector.Generic as G
+import qualified Data.Vector.Unboxed as U
+import Data.Word (Word32)
 
 import qualified SDL as SDL
 import SDL.Input.Keyboard.Codes
@@ -38,10 +41,11 @@ type FontAtlas = EM.EnumMap Color.AttrCharW32 SDL.Texture
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { swindow   :: !SDL.Window
-  , srenderer :: !SDL.Renderer
-  , sfont     :: !TTF.TTFFont
-  , satlas    :: !(MVar FontAtlas)
+  { swindow        :: !SDL.Window
+  , srenderer      :: !SDL.Renderer
+  , sfont          :: !TTF.TTFFont
+  , satlas         :: !(IORef FontAtlas)
+  , spreviousFrame :: !(IORef SingleFrame)
   }
 
 -- | The name of the frontend.
@@ -76,10 +80,12 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
            SDL.V2 (toEnum $ xsize * boxSize + 1) (toEnum $ ysize * boxSize + 1)}
   swindow <- SDL.createWindow title windowConfig
   srenderer <- SDL.createRenderer swindow (-1) SDL.defaultRenderer
+  SDL.clear srenderer
   code <- TTF.init
   when (code /= 0) $ error $ "init of sdl2-ttf failed with: " ++ show code
   sfont <- TTF.openFont fontFile fontSize
-  satlas <- newMVar EM.empty
+  satlas <- newIORef EM.empty
+  spreviousFrame <- newIORef blankSingleFrame
   let sess = FrontendSession{..}
   rf <- createRawFrontend (display sdebugCli sess) (shutdown sess)
   putMVar rfMVar rf
@@ -116,17 +122,10 @@ display :: DebugModeCli
         -> FrontendSession  -- ^ frontend session data
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
-display DebugModeCli{..} FrontendSession{..} SingleFrame{singleFrame} = do
-  SDL.rendererDrawColor srenderer SDL.$= SDL.V4 0 0 0 0
-  SDL.clear srenderer
-  let level = chunk $ PointArray.toListA singleFrame
-      nm = zip [0..] $ map (zip [0..]) level
-      lxsize = fst normalLevelBound + 1
+display DebugModeCli{..} FrontendSession{..} curFrame = do
+  let lxsize = fst normalLevelBound + 1
       fontSize = fromMaybe 16 sfontSize
       boxSize = fontSize
-      chunk [] = []
-      chunk l = let (ch, r) = splitAt lxsize l
-                in ch : chunk r
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
       drawHighlight x y color = do
         let v4 = let Raw.Color r g b a = colorToRGBA color
@@ -142,9 +141,12 @@ display DebugModeCli{..} FrontendSession{..} SingleFrame{singleFrame} = do
                            , bottomRight1, bottomLeft1, bottomLeft
                            , bottomRight ]
         SDL.drawLines srenderer v
-      render x y acRaw = do
-        atlas <- takeMVar satlas
-        let Color.AttrChar{acAttr=Color.Attr{bg=bgRaw, ..}, ..} =
+  let setChar :: Int -> Word32 -> Word32 -> IO ()
+      setChar i w wPrev = unless (w == wPrev) $ do
+        atlas <- readIORef satlas
+        let (y, x) = i `divMod` lxsize
+            acRaw = Color.AttrCharW32 w
+            Color.AttrChar{acAttr=Color.Attr{bg=bgRaw, fg}, acChar} =
               Color.attrCharFromW32 acRaw
             normalizeBg color =
               (Color.Black, Color.attrChar2ToW32 fg acChar, Just color)
@@ -165,10 +167,10 @@ display DebugModeCli{..} FrontendSession{..} SingleFrame{singleFrame} = do
                                                   (colorToRGBA bg)
             textTexture <- SDL.createTextureFromSurface srenderer textSurface
             SDL.freeSurface textSurface
-            putMVar satlas $ EM.insert ac textTexture atlas  -- not @acRaw@
+            writeIORef satlas $ EM.insert ac textTexture atlas  -- not @acRaw@
             return textTexture
           Just textTexture -> do
-            putMVar satlas atlas
+            writeIORef satlas atlas
             return textTexture
         ti <- SDL.queryTexture textTexture
         let loc = SDL.Rectangle (vp (x * boxSize) (y * boxSize))
@@ -176,7 +178,10 @@ display DebugModeCli{..} FrontendSession{..} SingleFrame{singleFrame} = do
                                          (SDL.textureHeight ti))
         SDL.copy srenderer textTexture Nothing (Just loc)
         maybe (return ()) (drawHighlight x y) mlineColor
-  sequence_ $ reverse $ [render x y ac | (y, line) <- nm, (x, ac) <- line]
+  prevFrame <- readIORef spreviousFrame
+  writeIORef spreviousFrame curFrame
+  U.izipWithM_ setChar (PointArray.avector $ singleFrame curFrame)
+                       (PointArray.avector $ singleFrame prevFrame)
   SDL.present srenderer
 
 -- | Translates modifiers to our own encoding.

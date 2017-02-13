@@ -15,6 +15,7 @@ import Data.IORef
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
 import Data.Word (Word32)
+
 import GHCJS.DOM (currentDocument, currentWindow)
 import GHCJS.DOM.CSSStyleDeclaration (setProperty)
 import GHCJS.DOM.Document (createElementUnchecked, getBodyUnchecked, keyDown,
@@ -56,7 +57,7 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 data FrontendSession = FrontendSession
   { scurrentWindow :: !Window
   , scharCells     :: !(V.Vector (HTMLTableCellElement, CSSStyleDeclaration))
-  , previousFrame  :: !(IORef SingleFrame)
+  , spreviousFrame :: !(IORef SingleFrame)
   }
 
 -- | The name of the frontend.
@@ -114,7 +115,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   -- Create the session record.
   setInnerHTML tableElem $ Just rows
   scharCells <- flattenTable tableElem
-  previousFrame <- newIORef blankSingleFrame
+  spreviousFrame <- newIORef blankSingleFrame
   let sess = FrontendSession{..}
   rf <- IO.liftIO $ createRawFrontend (display sdebugCli sess) shutdown
   -- Handle keypresses. http://unixpapa.com/js/key.html
@@ -311,8 +312,8 @@ display DebugModeCli{scolorIsBold}
           _ -> do
             setProp style "border-color" "transparent"
             setProp style "background-color" $ Color.colorToRGB bg
-  prevFrame <- readIORef previousFrame
-  writeIORef previousFrame curFrame
+  prevFrame <- readIORef spreviousFrame
+  writeIORef spreviousFrame curFrame
   -- Sync, no point mutitasking threads in the single-threaded JS.
   callback <- newRequestAnimationFrameCallback $ \_ ->
     U.izipWithM_ setChar (PointArray.avector $ singleFrame curFrame)
