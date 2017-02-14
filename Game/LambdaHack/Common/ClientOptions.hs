@@ -12,8 +12,10 @@ import Data.Binary
 import GHC.Generics (Generic)
 
 data DebugModeCli = DebugModeCli
-  { sfontFamily       :: !(Maybe Text)
-      -- ^ Font family to use for the main game window.
+  { sgtkFontFamily    :: !(Maybe Text)
+      -- ^ Font family to use for the GTK main game window.
+  , sdlFontFile       :: !(Maybe Text)
+      -- ^ Font file to use for the SDL2 main game window.
   , sfontSize         :: !(Maybe Int)
       -- ^ Font size to use for the main game window.
   , scolorIsBold      :: !(Maybe Bool)
@@ -53,7 +55,8 @@ instance Binary DebugModeCli
 
 defDebugModeCli :: DebugModeCli
 defDebugModeCli = DebugModeCli
-  { sfontFamily = Nothing
+  { sgtkFontFamily = Nothing
+  , sdlFontFile = Nothing
   , sfontSize = Nothing
   , scolorIsBold = Nothing
   , smaxFps = Nothing

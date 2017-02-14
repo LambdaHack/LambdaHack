@@ -31,20 +31,21 @@ import Game.LambdaHack.Content.RuleKind
 -- is a part of a game client.
 data Config = Config
   { -- commands
-    configCommands    :: ![(K.KM, CmdTriple)]
+    configCommands      :: ![(K.KM, CmdTriple)]
     -- hero names
-  , configHeroNames   :: ![(Int, (Text, Text))]
+  , configHeroNames     :: ![(Int, (Text, Text))]
     -- ui
-  , configVi          :: !Bool  -- ^ the option for Vi keys takes precendence
-  , configLaptop      :: !Bool  -- ^ because the laptop keys are the default
-  , configFontFamily  :: !Text
-  , configFontSize    :: !Int
-  , configColorIsBold :: !Bool
-  , configHistoryMax  :: !Int
-  , configMaxFps      :: !Int
-  , configNoAnim      :: !Bool
-  , configRunStopMsgs :: !Bool
-  , configCmdline     :: ![String]
+  , configVi            :: !Bool  -- ^ the option for Vi keys takes precendence
+  , configLaptop        :: !Bool  -- ^ because the laptop keys are the default
+  , configGtkFontFamily :: !Text
+  , configSdlFontFile   :: !Text
+  , configFontSize      :: !Int
+  , configColorIsBold   :: !Bool
+  , configHistoryMax    :: !Int
+  , configMaxFps        :: !Int
+  , configNoAnim        :: !Bool
+  , configRunStopMsgs   :: !Bool
+  , configCmdline       :: ![String]
   }
   deriving (Show, Generic)
 
@@ -82,7 +83,8 @@ parseConfig cfg =
       -- The option for Vi keys takes precendence,
       -- because the laptop keys are the default.
       configLaptop = not configVi && getOption "movementLaptopKeys_uk8o79jl"
-      configFontFamily = getOption "fontFamily"
+      configGtkFontFamily = getOption "gtkFontFamily"
+      configSdlFontFile = getOption "sdlFontFile"
       configFontSize = getOption "fontSize"
       configColorIsBold = getOption "colorIsBold"
       configHistoryMax = getOption "historyMax"
@@ -116,8 +118,10 @@ mkConfig Kind.COps{corule} benchmark = do
 applyConfigToDebug :: Kind.COps -> Config -> DebugModeCli -> DebugModeCli
 applyConfigToDebug Kind.COps{corule} sconfig sdebugCli =
   let stdRuleset = Kind.stdRuleset corule
-  in (\dbg -> dbg {sfontFamily =
-        sfontFamily dbg `mplus` Just (configFontFamily sconfig)}) .
+  in (\dbg -> dbg {sgtkFontFamily =
+        sgtkFontFamily dbg `mplus` Just (configGtkFontFamily sconfig)}) .
+     (\dbg -> dbg {sdlFontFile =
+        sdlFontFile dbg `mplus` Just (configSdlFontFile sconfig)}) .
      (\dbg -> dbg {sfontSize =
         sfontSize dbg `mplus` Just (configFontSize sconfig)}) .
      (\dbg -> dbg {scolorIsBold =

@@ -53,7 +53,10 @@ bug-reports:   http://github.com/LambdaHack/LambdaHack/issues
 license:       BSD3
 license-file:  LICENSE
 tested-with:   GHC >= 7.10 && < 8.2
-data-files:    GameDefinition/config.ui.default
+data-files:    GameDefinition/config.ui.default,
+               GameDefinition/fonts/16x16x.fon,
+               GameDefinition/fonts/8x8xb.fon,
+               GameDefinition/fonts/8x8x.fon,
                GameDefinition/PLAYING.md, README.md, LICENSE, CREDITS,
                CHANGELOG.md
 extra-source-files: GameDefinition/MainMenu.ascii, Makefile

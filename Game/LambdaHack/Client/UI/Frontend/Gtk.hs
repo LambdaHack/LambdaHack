@@ -105,7 +105,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
     return True
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString
-       $ fromMaybe "Monospace" sfontFamily
+       $ fromMaybe "Monospace" sgtkFontFamily
          <+> maybe "16" tshow sfontSize <> "px"
   widgetModifyFont sview (Just f)
   IO.liftIO $ do

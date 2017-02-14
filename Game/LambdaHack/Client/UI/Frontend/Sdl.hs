@@ -11,6 +11,9 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude hiding (Alt)
 
+-- Cabal
+import qualified Paths_LambdaHack as Self (getDataFileName)
+
 import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Data.Char as Char
@@ -19,6 +22,7 @@ import Data.IORef
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import Data.Word (Word32)
+import System.FilePath
 
 import qualified SDL as SDL
 import SDL.Input.Keyboard.Codes
@@ -35,6 +39,8 @@ import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
+
+import Debug.Trace
 
 type FontAtlas = EM.EnumMap Color.AttrCharW32 SDL.Texture
 
@@ -70,8 +76,10 @@ startupFun :: DebugModeCli -> MVar RawFrontend -> IO ()
 startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   SDL.initialize [SDL.InitVideo, SDL.InitEvents]
   let title = fromJust stitle
-      fontFile = maybe "16x16x.fon" T.unpack sfontFamily
-      fontSize = fromMaybe 16 sfontSize
+      fontFileName =
+        "GameDefinition/fonts" </> maybe "16x16x.fon" T.unpack sdlFontFile
+  fontFile <- Self.getDataFileName fontFileName
+  let fontSize = trace fontFile $ fromMaybe 16 sfontSize
       boxSize = fontSize
       xsize = fst normalLevelBound + 1
       ysize = snd normalLevelBound + 4
@@ -128,7 +136,7 @@ display :: DebugModeCli
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
 display DebugModeCli{..} FrontendSession{..} curFrame = do
-  let lxsize = fst normalLevelBound + 1
+  let xsize = fst normalLevelBound + 1
       fontSize = fromMaybe 16 sfontSize
       boxSize = fontSize
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
@@ -142,7 +150,7 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
       setChar :: Int -> Word32 -> Word32 -> IO ()
       setChar i w wPrev = unless (w == wPrev) $ do
         atlas <- readIORef satlas
-        let (y, x) = i `divMod` lxsize
+        let (y, x) = i `divMod` xsize
             acRaw = Color.AttrCharW32 w
             Color.AttrChar{acAttr=Color.Attr{bg=bgRaw, fg}, acChar} =
               Color.attrCharFromW32 acRaw
@@ -167,9 +175,7 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
             SDL.freeSurface textSurface
             writeIORef satlas $ EM.insert ac textTexture atlas  -- not @acRaw@
             return textTexture
-          Just textTexture -> do
-            writeIORef satlas atlas
-            return textTexture
+          Just textTexture -> return textTexture
         ti <- SDL.queryTexture textTexture
         let loc = SDL.Rectangle (vp (x * boxSize) (y * boxSize))
                                 (Vect.V2 (SDL.textureWidth ti)
