@@ -122,7 +122,8 @@ display :: DebugModeCli
 display DebugModeCli{..} FrontendSession{..} SingleFrame{singleFrame} = do
   SDL.rendererDrawColor srenderer SDL.$= SDL.V4 0 0 0 0
   SDL.clear srenderer
-  let lxsize = fst normalLevelBound + 1
+  let xsize = fst normalLevelBound + 1
+      ysize = snd normalLevelBound + 4
       fontSize = fromMaybe 16 sfontSize
       boxSize = fontSize
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
@@ -143,7 +144,7 @@ display DebugModeCli{..} FrontendSession{..} SingleFrame{singleFrame} = do
   let setChar :: Int -> Word32 -> IO ()
       setChar i w = do
         atlas <- readIORef satlas
-        let (y, x) = i `divMod` lxsize
+        let (y, x) = (xsize * ysize - 1 - i) `divMod` xsize
             acRaw = Color.AttrCharW32 w
             Color.AttrChar{acAttr=Color.Attr{bg=bgRaw, fg}, acChar} =
               Color.attrCharFromW32 acRaw
@@ -177,7 +178,8 @@ display DebugModeCli{..} FrontendSession{..} SingleFrame{singleFrame} = do
                                          (SDL.textureHeight ti))
         SDL.copy srenderer textTexture Nothing (Just loc)
         maybe (return ()) (drawHighlight x y) mlineColor
-  U.imapM_ setChar (PointArray.avector singleFrame)
+  -- @reverse@ to prevent overwrite of highlights
+  U.imapM_ setChar (U.reverse $ PointArray.avector singleFrame)
   SDL.present srenderer
 
 -- | Translates modifiers to our own encoding.
