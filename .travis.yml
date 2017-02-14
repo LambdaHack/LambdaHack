@@ -237,7 +237,7 @@ script:
       elif [ $GTKVTY = "curses" ]; then
         cabal install -fcurses "$SRC_TGZ";
       else
-        cabal install "$SRC_TGZ";
+        cabal install -fgtk "$SRC_TGZ";
       fi;
    else
       echo "expected '$SRC_TGZ' not found";
