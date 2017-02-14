@@ -452,7 +452,6 @@ gameExit = do
   -- Verify that the not saved caches are equal to future reconstructed.
   -- Otherwise, save/restore would change game state.
 --  debugPossiblyPrint "Verifying all perceptions."
-  sperFid <- getsServer sperFid
   sperCacheFid <- getsServer sperCacheFid
   sperValidFid <- getsServer sperValidFid
   sactorAspect <- getsServer sactorAspect
@@ -461,7 +460,7 @@ gameExit = do
   sfovLitLid <- getsServer sfovLitLid
   discoAspect <- getsServer sdiscoAspect
   ( actorAspect, fovLitLid, fovClearLid, fovLucidLid
-   ,perValidFid, perCacheFid, perFid )
+   ,perValidFid, perCacheFid, _perFid )
     <- getsState $ perFidInDungeon discoAspect
   let !_A7 = assert (sfovLitLid == fovLitLid
                      `blame` "wrong accumulated sfovLitLid"

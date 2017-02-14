@@ -101,7 +101,8 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   let sess = FrontendSession{..}
   rf <- createRawFrontend (display sdebugCli sess) (shutdown sess)
   putMVar rfMVar rf
-  let pointTranslate (SDL.P (SDL.V2 x y)) = Point (fromEnum x) (fromEnum y)
+  let pointTranslate (SDL.P (SDL.V2 x y)) =
+        Point (fromEnum x `div` boxSize) (fromEnum y `div` boxSize)
       storeKeys :: IO ()
       storeKeys = do
         e <- SDL.waitEvent  -- blocks here, so no polling
@@ -115,6 +116,35 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
               p <- SDL.getAbsoluteMouseLocation
               when (key == K.Esc) $ resetChanKey (fchanKey rf)
               saveKMP rf modifier key (pointTranslate p)
+          SDL.MouseButtonEvent mouseButtonEvent
+            | SDL.mouseButtonEventMotion mouseButtonEvent == SDL.Released -> do
+              md <- modTranslate <$> SDL.getModState
+              let mkey = case SDL.mouseButtonEventButton mouseButtonEvent of
+                    SDL.ButtonLeft ->
+                      case SDL.mouseButtonEventClicks mouseButtonEvent of
+                        1 -> Just K.LeftButtonRelease
+                        _ -> Just K.LeftDblClick
+                    SDL.ButtonMiddle -> Just K.MiddleButtonRelease
+                    SDL.ButtonRight -> Just K.RightButtonRelease
+                    _ -> Nothing  -- probably a glitch
+                  modifier = if md == K.Shift then K.NoModifier else md
+                  p = SDL.mouseButtonEventPos mouseButtonEvent
+              maybe (return ())
+                    (\key -> saveKMP rf modifier key (pointTranslate p)) mkey
+          SDL.MouseWheelEvent mouseWheelEvent -> do
+            md <- modTranslate <$> SDL.getModState
+            let SDL.V2 _ y = SDL.mouseWheelEventPos mouseWheelEvent
+                mkey = case (compare y 0, SDL.mouseWheelEventDirection
+                                            mouseWheelEvent) of
+                  (EQ, _) -> Nothing
+                  (LT, SDL.ScrollNormal) -> Just K.WheelSouth
+                  (GT, SDL.ScrollNormal) -> Just K.WheelNorth
+                  (LT, SDL.ScrollFlipped) -> Just K.WheelSouth
+                  (GT, SDL.ScrollFlipped) -> Just K.WheelNorth
+                modifier = if md == K.Shift then K.NoModifier else md
+            p <- SDL.getAbsoluteMouseLocation
+            maybe (return ())
+                  (\key -> saveKMP rf modifier key (pointTranslate p)) mkey
           SDL.WindowClosedEvent{} -> exitFailure  -- @shutdown@ segfaults
           SDL.QuitEvent -> exitFailure
           _ -> return ()
