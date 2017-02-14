@@ -320,7 +320,7 @@ floorCorridorLit = TileKind
   , tfeature = [Walkable, Clear, Indistinct]
   }
 floorArenaLit = floorCorridorLit
-  { tsymbol  = '.'
+  { tsymbol  = floorSymbol
   , tname    = "stone floor"
   , tfreq    = [("floorArenaLit", 1), ("arenaSet", 1), ("emptySet", 97)]
   }
@@ -357,7 +357,7 @@ floorArenaShade = floorActorLit
   , tfeature = Dark : NoItem : tfeature floorActorLit  -- no OftenItem
   }
 floorRedLit = floorCorridorLit
-  { tsymbol  = '.'
+  { tsymbol  = floorSymbol
   , tname    = "brick pavement"
   , tfreq    = [("trailLit", 30), ("trailChessLit", 30)]
   , tcolor   = BrRed

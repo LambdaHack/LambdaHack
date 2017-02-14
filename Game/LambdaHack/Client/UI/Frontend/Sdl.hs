@@ -41,8 +41,6 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
-import Debug.Trace
-
 type FontAtlas = EM.EnumMap Color.AttrCharW32 SDL.Texture
 
 -- | Session data maintained by the frontend.
@@ -80,7 +78,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
       fontFileName =
         "GameDefinition/fonts" </> maybe "16x16x.fon" T.unpack sdlFontFile
   fontFile <- Self.getDataFileName fontFileName
-  let fontSize = trace fontFile $ fromMaybe 16 sfontSize
+  let fontSize = fromMaybe 16 sfontSize
       boxSize = fontSize
       xsize = fst normalLevelBound + 1
       ysize = snd normalLevelBound + 4
@@ -153,10 +151,10 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
         atlas <- readIORef satlas
         let (y, x) = i `divMod` xsize
             acRaw = Color.AttrCharW32 w
-            Color.AttrChar{acAttr=Color.Attr{bg=bgRaw, fg}, acChar} =
+            Color.AttrChar{acAttr=Color.Attr{bg=bgRaw, fg}, acChar=acCharRaw} =
               Color.attrCharFromW32 acRaw
             normalizeBg color =
-              (Color.Black, Color.attrChar2ToW32 fg acChar, Just color)
+              (Color.Black, Color.attrChar2ToW32 fg acCharRaw, Just color)
             (bg, ac, mlineColor) = case bgRaw of
               Color.BrRed ->  -- highlighted tile
                 normalizeBg Color.Red
@@ -169,6 +167,13 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
         -- https://www.libsdl.org/projects/SDL_ttf/docs/SDL_ttf_42.html#SEC42
         textTexture <- case EM.lookup ac atlas of
           Nothing -> do
+            -- Make all visible floors bold (no bold fold variant for 16x16x,
+            -- so only the dot can be bold).
+            let acChar = if fg > Color.BrBlack
+                            && acCharRaw == Char.chr 183
+                            && scolorIsBold == Just True  -- only dot but enough
+                         then Char.chr 149
+                         else acCharRaw
             textSurface <-
               TTF.renderUTF8Shaded sfont [acChar] (colorToRGBA fg)
                                                   (colorToRGBA bg)

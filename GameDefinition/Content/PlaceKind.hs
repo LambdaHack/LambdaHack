@@ -28,6 +28,7 @@ rect,        rectWindows, glasshouse, ruin, collapsed, collapsed2, collapsed3, c
 lstaircase :: [PlaceKind]
 lstaircase = [staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircaseOutdoor]
 
+-- The dots below are @Char.chr 183@, as defined in @TileKind.floorSymbol@.
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
   , pname    = "room"
@@ -36,7 +37,7 @@ rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   , pcover   = CStretch
   , pfence   = FNone
   , ptopLeft = [ "--"
-               , "|."
+               , "|·"
                ]
   , poverride = []
   }
@@ -48,7 +49,7 @@ rectWindows = PlaceKind
   , pcover   = CStretch
   , pfence   = FNone
   , ptopLeft = [ "-="
-               , "!."
+               , "!·"
                ]
   , poverride = [('=', "rectWindowsOver_=_Lit"), ('!', "rectWindowsOver_!_Lit")]
   }
@@ -60,7 +61,7 @@ glasshouse = PlaceKind
   , pcover   = CStretch
   , pfence   = FNone
   , ptopLeft = [ "=="
-               , "!."
+               , "!·"
                ]
   , poverride = [('=', "wallGlassH"), ('!', "wallGlassV")]
   }
@@ -136,37 +137,37 @@ pillar = PlaceKind
   , pfence   = FNone
   -- Larger rooms require support pillars.
   , ptopLeft = [ "-----"
-               , "|...."
-               , "|.O.."
-               , "|...."
-               , "|...."
+               , "|····"
+               , "|·O··"
+               , "|····"
+               , "|····"
                ]
   , poverride = [('&', "cachable")]
   }
 pillar2 = pillar
   { ptopLeft = [ "-----"
-               , "|O..."
-               , "|...."
-               , "|...."
-               , "|...."
+               , "|O···"
+               , "|····"
+               , "|····"
+               , "|····"
                ]
   }
 pillar3 = pillar
   { prarity  = [(10, 5)]
   , ptopLeft = [ "-----"
-               , "|&.O."
-               , "|...."
-               , "|O.O."
-               , "|...."
+               , "|&·O·"
+               , "|····"
+               , "|O·O·"
+               , "|····"
                ]
   }
 pillar4 = pillar
   { prarity  = [(10, 5)]
   , ptopLeft = [ "-----"
-               , "|&.O."
-               , "|...."
-               , "|O..."
-               , "|...."
+               , "|&·O·"
+               , "|····"
+               , "|O···"
+               , "|····"
                ]
   }
 colonnade = PlaceKind
@@ -177,41 +178,41 @@ colonnade = PlaceKind
   , prarity  = [(1, 5), (10, 5)]
   , pcover   = CAlternate
   , pfence   = FFloor
-  , ptopLeft = [ "O."
-               , ".O"
+  , ptopLeft = [ "O·"
+               , "·O"
                ]
   , poverride = []
   }
 colonnade2 = colonnade
   { prarity  = [(1, 4), (10, 4)]
-  , ptopLeft = [ "O."
-               , ".."
+  , ptopLeft = [ "O·"
+               , "··"
                ]
   }
 colonnade3 = colonnade
   { prarity  = [(1, 12), (10, 12)]
-  , ptopLeft = [ "..O"
-               , ".O."
-               , "O.."
+  , ptopLeft = [ "··O"
+               , "·O·"
+               , "O··"
                ]
   }
 colonnade4 = colonnade
   { prarity  = [(1, 12), (10, 12)]
-  , ptopLeft = [ "O.."
-               , ".O."
-               , "..O"
+  , ptopLeft = [ "O··"
+               , "·O·"
+               , "··O"
                ]
   }
 colonnade5 = colonnade
   { prarity  = [(1, 8), (10, 8)]
-  , ptopLeft = [ "O.."
-               , "..O"
+  , ptopLeft = [ "O··"
+               , "··O"
                ]
   }
 colonnade6 = colonnade
-  { ptopLeft = [ "O."
-               , ".."
-               , ".O"
+  { ptopLeft = [ "O·"
+               , "··"
+               , "·O"
                ]
   }
 lampPost = PlaceKind
@@ -221,34 +222,34 @@ lampPost = PlaceKind
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CVerbatim
   , pfence   = FNone
-  , ptopLeft = [ "X.X"
-               , ".O."
-               , "X.X"
+  , ptopLeft = [ "X·X"
+               , "·O·"
+               , "X·X"
                ]
-  , poverride = [('O', "lampPostOver_O"), ('.', "floorActorLit")]
+  , poverride = [('O', "lampPostOver_O"), ('·', "floorActorLit")]
   }
 lampPost2 = lampPost
-  { ptopLeft = [ "..."
-               , ".O."
-               , "..."
+  { ptopLeft = [ "···"
+               , "·O·"
+               , "···"
                ]
   }
 lampPost3 = lampPost
   { pfreq    = [("ambush", 300), ("battle", 110)]
-  , ptopLeft = [ "XX.XX"
-               , "X...X"
-               , "..O.."
-               , "X...X"
-               , "XX.XX"
+  , ptopLeft = [ "XX·XX"
+               , "X···X"
+               , "··O··"
+               , "X···X"
+               , "XX·XX"
                ]
   }
 lampPost4 = lampPost
   { pfreq    = [("ambush", 300), ("battle", 60)]
-  , ptopLeft = [ "X...X"
-               , "....."
-               , "..O.."
-               , "....."
-               , "X...X"
+  , ptopLeft = [ "X···X"
+               , "·····"
+               , "··O··"
+               , "·····"
+               , "X···X"
                ]
   }
 treeShade = PlaceKind
@@ -258,12 +259,12 @@ treeShade = PlaceKind
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CMirror
   , pfence   = FNone
-  , ptopLeft = [ "..s"
-               , "sO."
-               , "Xs."
+  , ptopLeft = [ "··s"
+               , "sO·"
+               , "Xs·"
                ]
   , poverride = [ ('O', "treeShadeOver_O_Lit"), ('s', "treeShadeOver_s_Lit")
-                , ('.', "shaded ground") ]
+                , ('·', "shaded ground") ]
   }
 fogClump = PlaceKind
   { psymbol  = 'f'
@@ -296,12 +297,12 @@ smokeClumpFGround = PlaceKind
   , pcover   = CVerbatim
   , pfence   = FGround
   , ptopLeft = [ "#f#"
-               , "f.f"
-               , "f.f"
+               , "f·f"
+               , "f·f"
                , "#f#"
                ]
   , poverride = [ ('f', "smokeClumpOver_f_Lit"), ('#', "lit smoke")
-                , ('.', "floorActorLit") ]
+                , ('·', "floorActorLit") ]
   }
 bushClump = PlaceKind
   { psymbol  = 'b'
@@ -323,99 +324,99 @@ staircase = PlaceKind
   , prarity  = [(1, 1)]
   , pcover   = CVerbatim
   , pfence   = FGround
-  , ptopLeft = [ "<.>"
+  , ptopLeft = [ "<·>"
                ]
   , poverride = [('<', "staircase up"), ('>', "staircase down")]
   }
 staircase2 = staircase
   { pfreq    = [("staircase", 1000)]
   , pfence   = FFloor
-  , ptopLeft = [ "O.O"
-               , "..."
-               , "<.>"
-               , "..."
-               , "O.O"
+  , ptopLeft = [ "O·O"
+               , "···"
+               , "<·>"
+               , "···"
+               , "O·O"
                ]
   }
 staircase3 = staircase
   { pfreq    = [("staircase", 1000)]
   , pfence   = FFloor
-  , ptopLeft = [ "O.O.O"
-               , "....."
-               , ".<.>."
-               , "....."
-               , "O.O.O"
+  , ptopLeft = [ "O·O·O"
+               , "·····"
+               , "·<·>·"
+               , "·····"
+               , "O·O·O"
                ]
   }
 staircase4 = staircase
   { pfreq    = [("staircase", 1000)]
   , pfence   = FFloor
-  , ptopLeft = [ "O.O.O.O"
-               , "......."
-               , "O.<.>.O"
-               , "......."
-               , "O.O.O.O"
+  , ptopLeft = [ "O·O·O·O"
+               , "·······"
+               , "O·<·>·O"
+               , "·······"
+               , "O·O·O·O"
                ]
   }
 staircase5 = staircase
   { pfreq    = [("staircase", 100)]
   , pfence   = FGround
-  , ptopLeft = [ "O.<.>.O"
+  , ptopLeft = [ "O·<·>·O"
                ]
   }
 staircase6 = staircase
   { pfreq    = [("staircase", 100)]
   , pfence   = FGround
-  , ptopLeft = [ "O..<.>..O"
+  , ptopLeft = [ "O··<·>··O"
                ]
   }
 staircase7 = staircase
   { pfreq    = [("staircase", 100)]
   , pfence   = FGround
-  , ptopLeft = [ "O.O.<.>.O.O"
+  , ptopLeft = [ "O·O·<·>·O·O"
                ]
   }
 staircase8 = staircase
   { pfreq    = [("staircase", 1000)]
   , pfence   = FFloor
-  , ptopLeft = [ "O.....O"
-               , "..<.>.."
-               , "O.....O"
+  , ptopLeft = [ "O·····O"
+               , "··<·>··"
+               , "O·····O"
                ]
   }
 staircase9 = staircase
   { pfreq    = [("staircase", 1000)]
   , pfence   = FFloor
-  , ptopLeft = [ "O.......O"
-               , ".O.<.>.O."
-               , "O.......O"
+  , ptopLeft = [ "O·······O"
+               , "·O·<·>·O·"
+               , "O·······O"
                ]
   }
 staircase10 = staircase
   { pfreq    = [("staircase", 1000)]
   , pfence   = FFloor
-  , ptopLeft = [ "O.O.....O.O"
-               , ".O..<.>..O."
-               , "O.O.....O.O"
+  , ptopLeft = [ "O·O·····O·O"
+               , "·O··<·>··O·"
+               , "O·O·····O·O"
                ]
   }
 staircase11 = staircase
   { pfreq    = [("staircase", 1000)]
   , pfence   = FFloor
-  , ptopLeft = [ "..O.O.."
-               , "O.....O"
-               , "..<.>.."
-               , "O.....O"
-               , "..O.O.."
+  , ptopLeft = [ "··O·O··"
+               , "O·····O"
+               , "··<·>··"
+               , "O·····O"
+               , "··O·O··"
                ]
   }
 staircase12 = staircase
   { pfreq    = [("staircase", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "-------"
-               , "|.....|"
-               , "|.<.>.|"
-               , "|.....|"
+               , "|·····|"
+               , "|·<·>·|"
+               , "|·····|"
                , "-------"
                ]
   }
@@ -423,9 +424,9 @@ staircase13 = staircase
   { pfreq    = [("staircase", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "---------"
-               , "|.......|"
-               , "|O.<.>.O|"
-               , "|.......|"
+               , "|·······|"
+               , "|O·<·>·O|"
+               , "|·······|"
                , "---------"
                ]
   }
@@ -433,9 +434,9 @@ staircase14 = staircase
   { pfreq    = [("staircase", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "-----------"
-               , "|.........|"
-               , "|.O.<.>.O.|"
-               , "|.........|"
+               , "|·········|"
+               , "|·O·<·>·O·|"
+               , "|·········|"
                , "-----------"
                ]
   }
@@ -443,9 +444,9 @@ staircase15 = staircase
   { pfreq    = [("staircase", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "-------------"
-               , "|...........|"
-               , "|O.O.<.>.O.O|"
-               , "|...........|"
+               , "|···········|"
+               , "|O·O·<·>·O·O|"
+               , "|···········|"
                , "-------------"
                ]
   }
@@ -453,9 +454,9 @@ staircase16 = staircase
   { pfreq    = [("staircase", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "---------"
-               , "|O.....O|"
-               , "|..<.>..|"
-               , "|O.....O|"
+               , "|O·····O|"
+               , "|··<·>··|"
+               , "|O·····O|"
                , "---------"
                ]
   }
@@ -463,9 +464,9 @@ staircase17 = staircase
   { pfreq    = [("staircase", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "-----------"
-               , "|O.......O|"
-               , "|.O.<.>.O.|"
-               , "|O.......O|"
+               , "|O·······O|"
+               , "|·O·<·>·O·|"
+               , "|O·······O|"
                , "-----------"
                ]
   }
@@ -488,27 +489,27 @@ escapeUp = PlaceKind
 escapeUp2 = escapeUp
   { pfreq    = [("escape up", 1000)]
   , pfence   = FFloor
-  , ptopLeft = [ "O.O"
-               , ".<."
-               , "O.O"
+  , ptopLeft = [ "O·O"
+               , "·<·"
+               , "O·O"
                ]
   }
 escapeUp3 = escapeUp
   { pfreq    = [("escape down", 2000)]
   , pcover   = CMirror
   , pfence   = FFloor
-  , ptopLeft = [ "O.."
-               , ".<."
-               , "O.O"
+  , ptopLeft = [ "O··"
+               , "·<·"
+               , "O·O"
                ]
   }
 escapeUp4 = escapeUp
   { pfreq    = [("escape up", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "-----"
-               , "|O.O|"
-               , "|.<.|"
-               , "|O.O|"
+               , "|O·O|"
+               , "|·<·|"
+               , "|O·O|"
                , "-----"
                ]
   }
@@ -517,9 +518,9 @@ escapeUp5 = escapeUp
   , pcover   = CMirror
   , pfence   = FNone
   , ptopLeft = [ "-----"
-               , "|O..|"
-               , "|.<.|"
-               , "|O.O|"
+               , "|O··|"
+               , "|·<·|"
+               , "|O·O|"
                , "-----"
                ]
   }
@@ -537,27 +538,27 @@ escapeDown = PlaceKind
 escapeDown2 = escapeDown
   { pfreq    = [("escape down", 1000)]
   , pfence   = FFloor
-  , ptopLeft = [ "O.O"
-               , ".>."
-               , "O.O"
+  , ptopLeft = [ "O·O"
+               , "·>·"
+               , "O·O"
                ]
   }
 escapeDown3 = escapeDown
   { pfreq    = [("escape down", 2000)]
   , pcover   = CMirror
   , pfence   = FFloor
-  , ptopLeft = [ "O.."
-               , ".>."
-               , "O.O"
+  , ptopLeft = [ "O··"
+               , "·>·"
+               , "O·O"
                ]
   }
 escapeDown4 = escapeDown
   { pfreq    = [("escape down", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "-----"
-               , "|O.O|"
-               , "|.>.|"
-               , "|O.O|"
+               , "|O·O|"
+               , "|·>·|"
+               , "|O·O|"
                , "-----"
                ]
   }
@@ -566,9 +567,9 @@ escapeDown5 = escapeDown
   , pcover   = CMirror
   , pfence   = FNone
   , ptopLeft = [ "-----"
-               , "|O..|"
-               , "|.>.|"
-               , "|O.O|"
+               , "|O··|"
+               , "|·>·|"
+               , "|O·O|"
                , "-----"
                ]
   }
@@ -584,14 +585,14 @@ boardgame = PlaceKind
   , pcover   = CVerbatim
   , pfence   = FNone
   , ptopLeft = [ "----------"
-               , "|.b.b.b.b|"
-               , "|b.b.b.b.|"
-               , "|.b.b.b.b|"
-               , "|b.b.b.b.|"
-               , "|.b.b.b.b|"
-               , "|b.b.b.b.|"
-               , "|.b.b.b.b|"
-               , "|b.b.b.b.|"
+               , "|·b·b·b·b|"
+               , "|b·b·b·b·|"
+               , "|·b·b·b·b|"
+               , "|b·b·b·b·|"
+               , "|·b·b·b·b|"
+               , "|b·b·b·b·|"
+               , "|·b·b·b·b|"
+               , "|b·b·b·b·|"
                , "----------"
                ]
   , poverride = [('b', "trailChessLit")]

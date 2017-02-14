@@ -3,7 +3,8 @@
 module Game.LambdaHack.Content.TileKind
   ( TileKind(..), Feature(..)
   , validateSingleTileKind, validateAllTileKind, actionFeatures
-  , TileSpeedup(..), Tab(..), isUknownSpace, unknownId, talterForStairs
+  , TileSpeedup(..), Tab(..), isUknownSpace, unknownId
+  , talterForStairs, floorSymbol
   ) where
 
 import Prelude ()
@@ -12,6 +13,7 @@ import Game.LambdaHack.Common.Prelude
 
 import Control.DeepSeq
 import Data.Binary
+import qualified Data.Char as Char
 import Data.Hashable
 import qualified Data.IntSet as IS
 import qualified Data.Map.Strict as M
@@ -175,6 +177,9 @@ actionFeatures markSuspect t =
 
 talterForStairs :: Word8
 talterForStairs = 3
+
+floorSymbol :: Char.Char
+floorSymbol = Char.chr 183
 
 -- Alter skill schema:
 -- 0  can be altered by everybody (currently no such thing)
