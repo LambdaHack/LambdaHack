@@ -45,6 +45,7 @@ data FrontendSession = FrontendSession
   , srenderer      :: !SDL.Renderer
   , sfont          :: !TTF.TTFFont
   , satlas         :: !(IORef FontAtlas)
+  , screenTexture  :: !SDL.Texture
   , spreviousFrame :: !(IORef SingleFrame)
   }
 
@@ -75,11 +76,16 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
       boxSize = fontSize
       xsize = fst normalLevelBound + 1
       ysize = snd normalLevelBound + 4
-      windowConfig = SDL.defaultWindow
-        {SDL.windowInitialSize =
-           SDL.V2 (toEnum $ xsize * boxSize + 1) (toEnum $ ysize * boxSize + 1)}
+      screenV2 = SDL.V2 (toEnum $ xsize * boxSize + 1)
+                        (toEnum $ ysize * boxSize + 1)
+      windowConfig = SDL.defaultWindow {SDL.windowInitialSize = screenV2}
+      rendererConfig = SDL.defaultRenderer {SDL.rendererTargetTexture = True}
   swindow <- SDL.createWindow title windowConfig
-  srenderer <- SDL.createRenderer swindow (-1) SDL.defaultRenderer
+  srenderer <- SDL.createRenderer swindow (-1) rendererConfig
+  screenTexture <- SDL.createTexture srenderer SDL.ARGB8888
+                                     SDL.TextureAccessTarget screenV2
+  SDL.rendererDrawBlendMode srenderer SDL.$= SDL.BlendNone
+  SDL.rendererRenderTarget srenderer SDL.$= Just screenTexture
   SDL.clear srenderer
   code <- TTF.init
   when (code /= 0) $ error $ "init of sdl2-ttf failed with: " ++ show code
@@ -141,7 +147,7 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
                            , bottomRight1, bottomLeft1, bottomLeft
                            , bottomRight ]
         SDL.drawLines srenderer v
-  let setChar :: Int -> Word32 -> Word32 -> IO ()
+      setChar :: Int -> Word32 -> Word32 -> IO ()
       setChar i w wPrev = unless (w == wPrev) $ do
         atlas <- readIORef satlas
         let (y, x) = i `divMod` lxsize
@@ -158,10 +164,10 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
               Color.BrYellow ->  -- yellow highlighted tile
                 normalizeBg Color.BrYellow
               _ -> (bgRaw, acRaw, Nothing)
+        -- https://github.com/rongcuid/sdl2-ttf/blob/master/src/SDL/TTF.hsc
+        -- https://www.libsdl.org/projects/SDL_ttf/docs/SDL_ttf_42.html#SEC42
         textTexture <- case EM.lookup ac atlas of
           Nothing -> do
-            -- https://github.com/rongcuid/sdl2-ttf/blob/master/src/SDL/TTF.hsc
-            -- http://www.libsdl.org/projects/SDL_ttf/docs/SDL_ttf_frame.html
             textSurface <-
               TTF.renderUTF8Shaded sfont [acChar] (colorToRGBA fg)
                                                   (colorToRGBA bg)
@@ -180,8 +186,11 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
         maybe (return ()) (drawHighlight x y) mlineColor
   prevFrame <- readIORef spreviousFrame
   writeIORef spreviousFrame curFrame
+  SDL.rendererRenderTarget srenderer SDL.$= Just screenTexture
   U.izipWithM_ setChar (PointArray.avector $ singleFrame curFrame)
                        (PointArray.avector $ singleFrame prevFrame)
+  SDL.rendererRenderTarget srenderer SDL.$= Nothing
+  SDL.copy srenderer screenTexture Nothing Nothing
   SDL.present srenderer
 
 -- | Translates modifiers to our own encoding.
