@@ -247,6 +247,6 @@ script:
    cd ..
 
  - touch /tmp/stdtest.log;
- - (make test-travis-medium || (tail -n 200 /tmp/stdtest.log ; exit 77));
+ - (make test-travis-medium || (tail -n 2000 /tmp/stdtest.log ; exit 77));
 
 # EOF
