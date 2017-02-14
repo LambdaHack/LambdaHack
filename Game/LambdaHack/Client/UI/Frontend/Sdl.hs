@@ -22,6 +22,7 @@ import Data.IORef
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import Data.Word (Word32)
+import System.Exit (exitFailure)
 import System.FilePath
 
 import qualified SDL as SDL
@@ -116,18 +117,18 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
               p <- SDL.getAbsoluteMouseLocation
               when (key == K.Esc) $ resetChanKey (fchanKey rf)
               saveKMP rf modifier key (pointTranslate p)
-          SDL.WindowClosedEvent{} -> shutdown sess
-          SDL.QuitEvent -> shutdown sess
+          SDL.WindowClosedEvent{} -> exitFailure  -- @shutdown@ segfaults
+          SDL.QuitEvent -> exitFailure
           _ -> return ()
         storeKeys
   storeKeys
 
 shutdown :: FrontendSession -> IO ()
 shutdown FrontendSession{..} = do
-  SDL.destroyRenderer srenderer
-  SDL.destroyWindow swindow
   TTF.closeFont sfont
   TTF.quit
+  SDL.destroyRenderer srenderer
+  SDL.destroyWindow swindow
   SDL.quit
 
 -- | Add a frame to be drawn.
