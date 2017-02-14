@@ -18,6 +18,7 @@ cache:
 before_cache:
   - rm -fv $HOME/.cabal/packages/hackage.haskell.org/build-reports.log
   - rm -fv $HOME/.cabal/packages/hackage.haskell.org/00-index.tar
+  - export SDL=gtk # was: sdl   disabled until travis has libsdl2
 
 matrix:
   include:
@@ -115,9 +116,9 @@ install:
      cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v gtk2hs-buildtools > installplan.txt
      cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
    elif [ $GTKVTY = "sdl" ]; then
-     cabal install -fsdl --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
+     cabal install -f$SDL --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
    elif [ $GTKVTY = "sdl-v2" ]; then
-     cabal install -fsdl --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
+     cabal install -f$SDL --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
    elif [ $GTKVTY = "vty" ]; then
      cabal install -fvty --only-dependencies --enable-tests --enable-benchmarks --dry -v > installplan.txt
    elif [ $GTKVTY = "curses" ]; then
@@ -154,9 +155,9 @@ install:
        cabal install -v2 gtk2hs-buildtools;
        cabal install -v2 -fgtk --only-dependencies --enable-tests --enable-benchmarks;
      elif [ $GTKVTY = "sdl" ]; then
-       cabal install -fsdl --only-dependencies --enable-tests --enable-benchmarks;
+       cabal install -f$SDL --only-dependencies --enable-tests --enable-benchmarks;
      elif [ $GTKVTY = "sdl-v2" ]; then
-       cabal install -v2 -fsdl --only-dependencies --enable-tests --enable-benchmarks;
+       cabal install -v2 -f$SDL --only-dependencies --enable-tests --enable-benchmarks;
      elif [ $GTKVTY = "vty" ]; then
        cabal install -fvty --only-dependencies --enable-tests --enable-benchmarks;
      elif [ $GTKVTY = "curses" ]; then
@@ -194,9 +195,9 @@ script:
    elif [ $GTKVTY = "gtk-v2" ]; then
      cabal configure -fgtk --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
    elif [ $GTKVTY = "sdl" ]; then
-     cabal configure -fsdl --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
+     cabal configure -f$SDL --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
    elif [ $GTKVTY = "sdl-v2" ]; then
-     cabal configure -fsdl --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
+     cabal configure -f$SDL --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
    elif [ $GTKVTY = "vty" ]; then
      cabal configure -fvty --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
    elif [ $GTKVTY = "curses" ]; then
@@ -229,9 +230,9 @@ script:
       elif [ $GTKVTY = "gtk-v2" ]; then
         cabal install -fgtk "$SRC_TGZ";
       elif [ $GTKVTY = "sdl" ]; then
-        cabal install -fsdl "$SRC_TGZ";
+        cabal install -f$SDL "$SRC_TGZ";
       elif [ $GTKVTY = "sdl-v2" ]; then
-        cabal install -fsdl "$SRC_TGZ";
+        cabal install -f$SDL "$SRC_TGZ";
       elif [ $GTKVTY = "vty" ]; then
         cabal install -fvty "$SRC_TGZ";
       elif [ $GTKVTY = "curses" ]; then
