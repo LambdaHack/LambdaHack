@@ -41,10 +41,11 @@ type FontAtlas = EM.EnumMap Color.AttrCharW32 SDL.Texture
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { swindow   :: !SDL.Window
-  , srenderer :: !SDL.Renderer
-  , sfont     :: !TTF.TTFFont
-  , satlas    :: !(IORef FontAtlas)
+  { swindow        :: !SDL.Window
+  , srenderer      :: !SDL.Renderer
+  , sfont          :: !TTF.TTFFont
+  , satlas         :: !(IORef FontAtlas)
+  , spreviousFrame :: !(IORef SingleFrame)
   }
 
 -- | The name of the frontend.
@@ -79,10 +80,12 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
            SDL.V2 (toEnum $ xsize * boxSize + 1) (toEnum $ ysize * boxSize + 1)}
   swindow <- SDL.createWindow title windowConfig
   srenderer <- SDL.createRenderer swindow (-1) SDL.defaultRenderer
+  SDL.clear srenderer
   code <- TTF.init
   when (code /= 0) $ error $ "init of sdl2-ttf failed with: " ++ show code
   sfont <- TTF.openFont fontFile fontSize
   satlas <- newIORef EM.empty
+  spreviousFrame <- newIORef blankSingleFrame
   let sess = FrontendSession{..}
   rf <- createRawFrontend (display sdebugCli sess) (shutdown sess)
   putMVar rfMVar rf
@@ -119,9 +122,7 @@ display :: DebugModeCli
         -> FrontendSession  -- ^ frontend session data
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
-display DebugModeCli{..} FrontendSession{..} SingleFrame{singleFrame} = do
-  SDL.rendererDrawColor srenderer SDL.$= SDL.V4 0 0 0 0
-  SDL.clear srenderer
+display DebugModeCli{..} FrontendSession{..} curFrame = do
   let lxsize = fst normalLevelBound + 1
       fontSize = fromMaybe 16 sfontSize
       boxSize = fontSize
@@ -140,8 +141,8 @@ display DebugModeCli{..} FrontendSession{..} SingleFrame{singleFrame} = do
                            , bottomRight1, bottomLeft1, bottomLeft
                            , bottomRight ]
         SDL.drawLines srenderer v
-  let setChar :: Int -> Word32 -> IO ()
-      setChar i w = do
+  let setChar :: Int -> Word32 -> Word32 -> IO ()
+      setChar i w wPrev = unless (w == wPrev) $ do
         atlas <- readIORef satlas
         let (y, x) = i `divMod` lxsize
             acRaw = Color.AttrCharW32 w
@@ -177,7 +178,10 @@ display DebugModeCli{..} FrontendSession{..} SingleFrame{singleFrame} = do
                                          (SDL.textureHeight ti))
         SDL.copy srenderer textTexture Nothing (Just loc)
         maybe (return ()) (drawHighlight x y) mlineColor
-  U.imapM_ setChar (PointArray.avector singleFrame)
+  prevFrame <- readIORef spreviousFrame
+  writeIORef spreviousFrame curFrame
+  U.izipWithM_ setChar (PointArray.avector $ singleFrame curFrame)
+                       (PointArray.avector $ singleFrame prevFrame)
   SDL.present srenderer
 
 -- | Translates modifiers to our own encoding.
