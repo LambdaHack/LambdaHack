@@ -481,9 +481,11 @@ gameExit = do
       !_A2 = assert (sperCacheFid == perCacheFid
                      `blame` "wrong accumulated sperCacheFid"
                      `twith` (sperCacheFid, perCacheFid)) ()
+{- Total perception can diverge momentarily due to a Detect effect.
       !_A1 = assert (sperFid == perFid
                      `blame` "wrong accumulated perception"
                      `twith` (sperFid, perFid)) ()
+-}
   -- Kill all clients, including those that did not take part
   -- in the current game.
   -- Clients exit not now, but after they print all ending screens.
