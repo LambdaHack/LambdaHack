@@ -71,11 +71,9 @@ targetDesc target = do
             Just aspectRecord -> aspectRecord
             Nothing -> assert `failure` aid
           percentage = 100 * bhp b `div` xM (max 5 $ aMaxHP ar)
-          stars | percentage < 20  = "[____]"
-                | percentage < 40  = "[*___]"
-                | percentage < 60  = "[**__]"
-                | percentage < 80  = "[***_]"
-                | otherwise        = "[****]"
+          chs n = "[" <> T.replicate n "*"
+                      <> T.replicate (4 - n) "_" <> "]"
+          stars = chs $ fromEnum $ min 4 $ percentage `div` 20
           hpIndicator = if bfid b == side then Nothing else Just stars
       return (bname b, hpIndicator)
     Just (TEnemyPos _ lid p _) -> do
