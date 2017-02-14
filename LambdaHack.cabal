@@ -285,9 +285,9 @@ library
     build-depends:    sdl2 >= 2, sdl2-ttf >= 1
     cpp-options:      -DUSE_SDL
   } else {
-    other-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk
-    build-depends:    gtk3 >= 0.12.1
-    cpp-options:      -DUSE_GTK
+    other-modules:    Game.LambdaHack.Client.UI.Frontend.Sdl
+    build-depends:    sdl2 >= 2, sdl2-ttf >= 1
+    cpp-options:      -DUSE_SDL
   } } } } }
 
   if impl(ghcjs) {
