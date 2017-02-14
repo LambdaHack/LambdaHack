@@ -10,6 +10,8 @@ import Prelude ()
 import Game.LambdaHack.Client.UI.Frontend.Curses
 #elif USE_VTY
 import Game.LambdaHack.Client.UI.Frontend.Vty
+#elif USE_GTK
+import Game.LambdaHack.Client.UI.Frontend.Gtk
 #elif USE_SDL
 import Game.LambdaHack.Client.UI.Frontend.Sdl
 #elif USE_BROWSER

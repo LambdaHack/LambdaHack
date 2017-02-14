@@ -80,6 +80,11 @@ flag curses
   default:            False
   manual:             True
 
+flag gtk
+  description:        switch to the GTK frontend
+  default:            False
+  manual:             True
+
 flag sdl
   description:        switch to the SDL2 frontend
   default:            False
@@ -271,6 +276,10 @@ library
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Curses
     build-depends:    hscurses >= 1.4.1
     cpp-options:      -DUSE_CURSES
+  } else { if flag(gtk) {
+    other-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk
+    build-depends:    gtk3 >= 0.12.1
+    cpp-options:      -DUSE_GTK
   } else { if flag(sdl) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Sdl
     build-depends:    sdl2 >= 2, sdl2-ttf >= 1
@@ -278,8 +287,8 @@ library
   } else {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk
     build-depends:    gtk3 >= 0.12.1
-    pkgconfig-depends: gthread-2.0, gtk+-3.0
-  } } } }
+    cpp-options:      -DUSE_GTK
+  } } } } }
 
   if impl(ghcjs) {
     other-modules:    Game.LambdaHack.Common.JSFile
