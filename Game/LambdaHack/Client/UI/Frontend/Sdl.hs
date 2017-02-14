@@ -17,7 +17,6 @@ import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import Data.IORef
 import qualified Data.Text as T
-import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import Data.Word (Word32)
 
@@ -76,8 +75,8 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
       boxSize = fontSize
       xsize = fst normalLevelBound + 1
       ysize = snd normalLevelBound + 4
-      screenV2 = SDL.V2 (toEnum $ xsize * boxSize + 1)
-                        (toEnum $ ysize * boxSize + 1)
+      screenV2 = SDL.V2 (toEnum $ xsize * boxSize)
+                        (toEnum $ ysize * boxSize)
       windowConfig = SDL.defaultWindow {SDL.windowInitialSize = screenV2}
       rendererConfig = SDL.defaultRenderer {SDL.rendererTargetTexture = True}
   swindow <- SDL.createWindow title windowConfig
@@ -137,16 +136,9 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
         let v4 = let Raw.Color r g b a = colorToRGBA color
                  in SDL.V4 r g b a
         SDL.rendererDrawColor srenderer SDL.$= v4
-        let bottomRight = vp ((x + 1) * boxSize - 1) ((y + 1) * boxSize)
-            topRight = vp ((x + 1) * boxSize - 1) (y * boxSize + 2)
-            bottomLeft = vp (x * boxSize + 1) ((y + 1) * boxSize)
-            bottomRight1 = vp ((x + 1) * boxSize) ((y + 1) * boxSize + 1)
-            topRight1 = vp ((x + 1) * boxSize) (y * boxSize + 2)
-            bottomLeft1 = vp (x * boxSize + 1) ((y + 1) * boxSize + 1)
-            v = G.fromList [ bottomRight, topRight, topRight1
-                           , bottomRight1, bottomLeft1, bottomLeft
-                           , bottomRight ]
-        SDL.drawLines srenderer v
+        let rect = SDL.Rectangle (vp (x * boxSize) (y * boxSize))
+                                 (Vect.V2 (toEnum boxSize) (toEnum boxSize))
+        SDL.drawRect srenderer $ Just rect
       setChar :: Int -> Word32 -> Word32 -> IO ()
       setChar i w wPrev = unless (w == wPrev) $ do
         atlas <- readIORef satlas
