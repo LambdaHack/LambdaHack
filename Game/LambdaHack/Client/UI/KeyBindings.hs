@@ -110,25 +110,35 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
       , "Lastly, you can select a command directly from the help screens."
       , ""
       ]
-    casualEndBlurb =
+    casualEnding =
       [ ""
       , "Press SPACE to see the detailed descriptions of all commands."
       ]
-    categoryBlurb =
+    categoryEnding =
       [ ""
       , "Press SPACE to see the next page of command descriptions."
       ]
-    lastCategoryBlurb =
+    lastCategoryEnding =
       [ ""
       , "Press SPACE to see mouse command descriptions."
       ]
     mouseBasicsBlurb =
-      [ ""
-      , "Screen area determines mouse click effect; see above and on the next page."
-      , "Below is general overview, including not only left and right,"
-      , "but also middle mouse button (MMB) and the mouse wheel."
+      [ "Screen area determines mouse click effect; see next two pages for details."
+      , "Below is a general overview, including not only left and right,"
+      , "but also the optional middle mouse button (MMB) and the mouse wheel."
+      , "For mice without RMB, one can use C-LMB (Control key and left mouse button)"
+      , "as well as double-click LMB."
+      , ""
       ]
-    lastHelpBlurb =
+    mouseBasicsEnding =
+      [ ""
+      , "Press SPACE to see mouse commands in aiming mode."
+      ]
+    mouseAimingModeEnding =
+      [ ""
+      , "Press SPACE to see mouse commands in explorations mode."
+      ]
+    lastHelpEnding =
       [ ""
       , "For more playing instructions see file PLAYING.md."
       , "Press PGUP or scroll the mouse wheel to return to previous pages"
@@ -143,11 +153,13 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
     fmts s = " " <> s
     movText = map fmts movBlurb
     minimalText = map fmts minimalBlurb
-    casualEndText = map fmts casualEndBlurb
-    categoryText = map fmts categoryBlurb
-    lastCategoryText = map fmts lastCategoryBlurb
+    casualEnd = map fmts casualEnding
+    categoryEnd = map fmts categoryEnding
+    lastCategoryEnd = map fmts lastCategoryEnding
     mouseBasicsText = map fmts mouseBasicsBlurb
-    lastHelpText = map fmts lastHelpBlurb
+    mouseBasicsEnd = map fmts mouseBasicsEnding
+    mouseAimingModeEnd = map fmts mouseAimingModeEnding
+    lastHelpEnd = map fmts lastHelpEnding
     keyCaptionN n = fmt n "keys" "command"
     keyCaption = keyCaptionN keyL
     okxs = okxsN keyb offset keyL (const False)
@@ -157,7 +169,8 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
                   then T.take (keyB - 1) b <> "$"
                   else b
     fmm a b c = fmt keyM a $ fmt keyB (truncatem b) (" " <> truncatem c)
-    areaCaption = fmm "area" "LMB" "RMB"
+    areaCaption = fmm "area" "LMB (left mouse button)"
+                             "RMB (right mouse button)"
     keySel :: ((HumanCmd, HumanCmd) -> HumanCmd) -> K.KM
            -> [(CmdArea, Either K.KM SlotChar, Text)]
     keySel sel key =
@@ -197,28 +210,29 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
             fmm (areaDescription ca1) desc1 desc2
           menu = zipWith render kst1 kst2
       in (map textToAL $ "" : header ++ menu ++ footer, kxs)
-    adjoinOverlay (ov1, kxs1) (ov2, _) = (ov1 ++ ov2, kxs1)
   in
     [ ( casualDescription <+> "(1/2)."
       , (map textToAL $ movText, []) )
     , ( casualDescription <+> "(2/2)."
-      , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEndText )
+      , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEnd )
     , ( "All terrain exploration and alteration commands."
-      , okxs CmdMove [keyCaption] categoryText )
+      , okxs CmdMove [keyCaption] categoryEnd )
     , ( categoryDescription CmdItem <> "."
-      , okxs CmdItem [keyCaption] categoryText )
+      , okxs CmdItem [keyCaption] [] )  -- no space: categoryEnd
     , ( categoryDescription CmdAim <> "."
-      , okxs CmdAim [keyCaption] categoryText )
+      , okxs CmdAim [keyCaption] categoryEnd )
     , ( categoryDescription CmdMeta <> "."
-      , okxs CmdMeta [keyCaption] (pickLeaderDescription ++ lastCategoryText) )
+      , okxs CmdMeta [keyCaption] (pickLeaderDescription ++ lastCategoryEnd) )
+    , ( "Mouse overview."
+      , let (ls, _) =
+              okxs CmdMouse (mouseBasicsText ++ [keyCaption]) mouseBasicsEnd
+        in (ls, []) )  -- don't capture mouse wheel, etc.
     , ( "Mouse in aiming mode."
       , okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
-            [areaCaption] mouseBasicsText
-        `adjoinOverlay`
-        okxs CmdMouse [keyCaption] [] )
+            [areaCaption] mouseAimingModeEnd )
     , ( "Mouse in exploration mode."
       , okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
-            [areaCaption] lastHelpText )
+            [areaCaption] lastHelpEnd )
     ]
 
 okxsN :: Binding -> Int -> Int -> (HumanCmd -> Bool) -> CmdCategory

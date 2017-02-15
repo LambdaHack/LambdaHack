@@ -188,7 +188,8 @@ standardKeys = KeyKind
 
       -- Mouse
       , ("LeftButtonRelease", mouseLMB)
-      , ("CTRL-LeftButtonRelease", mouseRMB)  -- Mac convention
+      , ( "CTRL-LeftButtonRelease"
+        , replaceDesc "" $ addCmdCategory CmdNoHelp mouseRMB)  -- Mac convention
       , ("RightButtonRelease", mouseRMB)
       , ("MiddleButtonRelease", mouseMMB)
       , ("WheelNorth", ([CmdMouse], "swerve the aiming line", Macro ["+"]))
