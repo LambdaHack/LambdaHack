@@ -181,18 +181,15 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
         atlas <- readIORef satlas
         let (y, x) = i `divMod` xsize
             acRaw = Color.AttrCharW32 w
-            Color.AttrChar{acAttr=Color.Attr{bg=bgRaw, fg}, acChar=acCharRaw} =
+            Color.AttrChar{acAttr=Color.Attr{..}, acChar=acCharRaw} =
               Color.attrCharFromW32 acRaw
-            normalizeBg color =
-              (Color.Black, Color.attrChar2ToW32 fg acCharRaw, Just color)
-            (bg, ac, mlineColor) = case bgRaw of
-              Color.BrRed ->  -- highlighted tile
-                normalizeBg Color.Red
-              Color.BrBlue ->  -- blue highlighted tile
-                normalizeBg Color.Blue
-              Color.BrYellow ->  -- yellow highlighted tile
-                normalizeBg Color.BrYellow
-              _ -> (bgRaw, acRaw, Nothing)
+            normalizeAc color = (Color.attrChar2ToW32 fg acCharRaw, Just color)
+            (ac, mlineColor) = case bg of
+              Color.HighlightNone -> (acRaw, Nothing)
+              Color.HighlightRed -> normalizeAc Color.Red
+              Color.HighlightBlue -> normalizeAc Color.Blue
+              Color.HighlightYellow -> normalizeAc Color.BrYellow
+              Color.HighlightGrey -> normalizeAc Color.BrBlack
         -- https://github.com/rongcuid/sdl2-ttf/blob/master/src/SDL/TTF.hsc
         -- https://www.libsdl.org/projects/SDL_ttf/docs/SDL_ttf_42.html#SEC42
         textTexture <- case EM.lookup ac atlas of
@@ -206,7 +203,7 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
                          else acCharRaw
             textSurface <-
               TTF.renderUTF8Shaded sfont [acChar] (colorToRGBA fg)
-                                                  (colorToRGBA bg)
+                                                  (colorToRGBA Color.Black)
             textTexture <- SDL.createTextureFromSurface srenderer textSurface
             SDL.freeSurface textSurface
             writeIORef satlas $ EM.insert ac textTexture atlas  -- not @acRaw@

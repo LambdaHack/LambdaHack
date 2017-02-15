@@ -170,7 +170,7 @@ nullStartup = createRawFrontend seqFrame (return ())
 seqFrame :: SingleFrame -> IO ()
 seqFrame SingleFrame{singleFrame} =
   let seqAttr () attr = Color.colorToRGB (Color.fgFromW32 attr)
-                        `seq` Color.colorToRGB (Color.bgFromW32 attr)
+                        `seq` Color.bgFromW32 attr
                         `seq` Color.charFromW32 attr == ' '
                         `seq` ()
   in return $! PointArray.foldlA' seqAttr () singleFrame

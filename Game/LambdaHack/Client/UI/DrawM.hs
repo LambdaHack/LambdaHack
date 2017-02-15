@@ -266,10 +266,10 @@ drawFrameActor drawnLevelId = do
               symbol | bhp > 0 || bproj = bsymbol
                      | otherwise = '%'
               bg = case mleader of
-                Just leader | aid == leader -> Color.BrRed
+                Just leader | aid == leader -> Color.HighlightRed
                 _ -> if aid `ES.notMember` sselected
-                     then Color.defBG
-                     else Color.BrBlue
+                     then Color.HighlightNone
+                     else Color.HighlightBlue
           in Color.attrCharToW32
              $ Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
         [] -> assert `failure` "lactor not sparse" `twith` ()
@@ -302,10 +302,10 @@ drawFrameExtra dm drawnLevelId = do
       backlightVision :: Color.AttrChar -> Color.AttrChar
       backlightVision ac = case ac of
         Color.AttrChar (Color.Attr fg _) ch ->
-          Color.AttrChar (Color.Attr fg Color.Blue) ch
+          Color.AttrChar (Color.Attr fg Color.HighlightGrey) ch
       writeXhair !(Color.AttrChar (Color.Attr fg bg) ch) =
-        let yellowUnlessLeader | bg == Color.BrRed = bg
-                               | otherwise = Color.BrYellow
+        let yellowUnlessLeader | bg == Color.HighlightRed = bg
+                               | otherwise = Color.HighlightYellow
         in Color.AttrChar (Color.Attr fg yellowUnlessLeader) ch
       turnBW !(Color.AttrChar _ ch) = Color.AttrChar Color.defAttr ch
       mapVL :: forall s. (Color.AttrChar -> Color.AttrChar) -> [Int]
@@ -542,9 +542,9 @@ drawSelected drawnLevelId width selected = do
   ours <- getsState $ filter (not . bproj . snd)
                       . actorAssocs (== side) drawnLevelId
   let viewOurs (aid, Actor{bsymbol, bcolor, bhp}) =
-        let bg = if | mleader == Just aid -> Color.BrRed
-                    | ES.member aid selected -> Color.BrBlue
-                    | otherwise -> Color.defBG
+        let bg = if | mleader == Just aid -> Color.HighlightRed
+                    | ES.member aid selected -> Color.HighlightBlue
+                    | otherwise -> Color.HighlightNone
             sattr = Color.Attr {Color.fg = bcolor, bg}
         in Color.attrCharToW32 $ Color.AttrChar sattr
            $ if bhp > 0 then bsymbol else '%'

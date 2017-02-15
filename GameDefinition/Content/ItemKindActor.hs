@@ -103,6 +103,8 @@ civilian5 = civilian
 
 -- * Monsters
 
+-- They have bright colours, because they are not natural.
+
 eye = ItemKind
   { isymbol  = 'e'
   , iname    = "reducible eye"
@@ -213,6 +215,8 @@ torsor = ItemKind
 
 -- They need rather strong melee, because they don't use items.
 -- Unless/until they level up.
+
+-- They have dull colors, except for yellow, because there is no dull variant.
 
 goldenJackal = ItemKind  -- basically a much smaller and slower hyena
   { isymbol  = 'j'

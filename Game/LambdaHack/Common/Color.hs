@@ -2,8 +2,9 @@
 -- | Colours and text attributes.
 module Game.LambdaHack.Common.Color
   ( -- * Colours
-    Color(..), defFG, defBG, isBright, legalBG, darkCol, brightCol, stdCol
+    Color(..), defFG, isBright, darkCol, brightCol, stdCol
   , colorToRGB
+  , Highlight (..)
     -- * Text attributes and the screen
   , Attr(..), defAttr
   , AttrChar(..)
@@ -55,14 +56,27 @@ instance Binary Color where
 instance Hashable Color
 
 -- | The default colours, to optimize attribute setting.
-defFG, defBG :: Color
+defFG :: Color
 defFG = White
-defBG = Black
+
+data Highlight =
+    HighlightNone
+  | HighlightRed
+  | HighlightBlue
+  | HighlightYellow
+  | HighlightGrey
+  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
+
+instance Binary Highlight where
+  put = putWord8 . toEnum . fromEnum
+  get = fmap (toEnum . fromEnum) getWord8
+
+instance Hashable Highlight
 
 -- | Text attributes: foreground and backgroud colors.
 data Attr = Attr
-  { fg :: !Color  -- ^ foreground colour
-  , bg :: !Color  -- ^ backgroud color
+  { fg :: !Color      -- ^ foreground colour
+  , bg :: !Highlight  -- ^ backgroud highlight
   }
   deriving (Show, Eq, Ord)
 
@@ -73,7 +87,7 @@ instance Enum Attr where
 
 -- | The default attribute, to optimize attribute setting.
 defAttr :: Attr
-defAttr = Attr defFG defBG
+defAttr = Attr defFG HighlightNone
 
 data AttrChar = AttrChar
   { acAttr :: !Attr
@@ -108,7 +122,7 @@ fgFromW32 :: AttrCharW32 -> Color
 fgFromW32 w =
   toEnum $ fromEnum $ unsafeShiftR (attrCharW32 w) 8 .&. (2 ^ (8 :: Int) - 1)
 
-bgFromW32 :: AttrCharW32 -> Color
+bgFromW32 :: AttrCharW32 -> Highlight
 {-# INLINE bgFromW32 #-}
 bgFromW32 w =
   toEnum $ fromEnum $ attrCharW32 w .&. (2 ^ (8 :: Int) - 1)
@@ -135,11 +149,6 @@ retAttrW32 = attrCharToW32 $ AttrChar defAttr '\n'
 -- | A helper for the terminal frontends that display bright via bold.
 isBright :: Color -> Bool
 isBright c = c >= BrBlack
-
--- | Due to the limitation of the curses library used in the curses frontend,
--- only these are legal backgrounds.
-legalBG :: [Color]
-legalBG = [Black, Blue, White, BrBlack]
 
 -- | Colour sets.
 darkCol, brightCol, stdCol :: [Color]
