@@ -72,7 +72,6 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind (TileKind)
@@ -363,8 +362,7 @@ displaceAid target = do
 moveSearchAlterAid :: MonadClientUI m
                    => ActorId -> Vector -> m (FailOrCmd RequestAnyAbility)
 moveSearchAlterAid source dir = do
-  cops@Kind.COps{ cotile=cotile@Kind.Ops{okind}
-                , coTileSpeedup } <- getsState scops
+  cops@Kind.COps{cotile, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorSk <- actorSkillsClient source
   lvl <- getLevel $ blid sb
@@ -388,8 +386,7 @@ moveSearchAlterAid source dir = do
          if | alterSkill < alterMinSkill -> failSer AlterUnwalked
             | EM.member tpos $ lfloor lvl -> failSer AlterBlockItem
             | otherwise -> do
-              let fs = TK.tfeature $ okind t
-              verAlters <- verifyAlters fs
+              verAlters <- verifyAlters (blid sb) tpos
               case verAlters of
                 Right() ->
                   return $ Right $ RequestAnyAbility $ ReqAlter tpos
@@ -832,10 +829,10 @@ alterTile ts dir = do
     _ : _ | alterSkill < Tile.alterMinSkill coTileSpeedup t ->
       failSer AlterUnskilled
     [] -> failWith $ guessAlter cops alterFeats t
-    fs ->
+    _ : _ ->
       if EM.notMember tpos $ lfloor lvl then
         if null (posToAidsLvl tpos lvl) then do
-          verAlters <- verifyAlters fs
+          verAlters <- verifyAlters (blid b) tpos
           case verAlters of
             Right() -> do
               msgAdd msg
@@ -849,40 +846,41 @@ alterFeatures [] = []
 alterFeatures (AlterFeature{feature} : ts) = feature : alterFeatures ts
 alterFeatures (_ : ts) = alterFeatures ts
 
-verifyAlters :: MonadClientUI m => [TK.Feature] -> m (FailOrCmd ())
-verifyAlters fs = do
-  let f acc feat = case acc of
-        Right() -> verifyAlter feat
-        Left{} -> return acc
-  foldM f (Right ()) fs
+-- | Verify important effects, such as fleeing the dungeon.
+--
+-- This is contrived for now, the embedded items are not analyzed,
+-- but only recognized by name.
+verifyAlters :: MonadClientUI m => LevelId -> Point -> m (FailOrCmd ())
+verifyAlters lid p = do
+  bag <- getsState $ getEmbedBag lid p
+  is <- mapM (\iid -> getsState $ getItemBody iid) $ EM.keys bag
+  let isE Item{jname} = jname == "escape"
+  if any isE is then verifyAlter else return $ Right ()
 
--- | Verify important features, such as fleeing the dungeon.
-verifyAlter :: MonadClientUI m => TK.Feature -> m (FailOrCmd ())
-verifyAlter feat = case feat of
-  TK.Cause IK.Escape{} -> do
-    side <- getsClient sside
-    fact <- getsState $ (EM.! side) . sfactionD
-    if not (fcanEscape $ gplayer fact)
-    then failWith
-          "This is the way out, but where would you go in this alien world?"
+verifyAlter :: MonadClientUI m => m (FailOrCmd ())
+verifyAlter = do
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  if not (fcanEscape $ gplayer fact)
+  then failWith
+        "This is the way out, but where would you go in this alien world?"
+  else do
+    go <- displayYesNo ColorFull
+            "This is the way out. Really leave now?"
+    if not go then failWith "game resumed"
     else do
-      go <- displayYesNo ColorFull
-              "This is the way out. Really leave now?"
-      if not go then failWith "game resumed"
-      else do
-        (_, total) <- getsState $ calculateTotal side
-        if total == 0 then do
-          -- The player can back off at each of these steps.
-          go1 <- displaySpaceEsc ColorBW
-                   "Afraid of the challenge? Leaving so soon and empty-handed?"
-          if not go1 then failWith "brave soul!"
-          else do
-             go2 <- displaySpaceEsc ColorBW
-                     "Next time try to grab some loot before escape!"
-             if not go2 then failWith "here's your chance!"
-             else return $ Right ()
-        else return $ Right ()
-  _ -> return $ Right ()
+      (_, total) <- getsState $ calculateTotal side
+      if total == 0 then do
+        -- The player can back off at each of these steps.
+        go1 <- displaySpaceEsc ColorBW
+                 "Afraid of the challenge? Leaving so soon and empty-handed?"
+        if not go1 then failWith "brave soul!"
+        else do
+           go2 <- displaySpaceEsc ColorBW
+                   "Next time try to grab some loot before escape!"
+           if not go2 then failWith "here's your chance!"
+           else return $ Right ()
+      else return $ Right ()
 
 -- | Guess and report why the bump command failed.
 guessAlter :: Kind.COps -> [TK.Feature] -> Kind.Id TileKind -> Text

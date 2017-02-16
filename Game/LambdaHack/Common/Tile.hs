@@ -15,10 +15,9 @@
 -- Actors at normal speed (2 m/s) take one turn to move one tile (1 m by 1 m).
 module Game.LambdaHack.Common.Tile
   ( kindHasFeature, hasFeature, isClear, isLit, isWalkable, isDoor, isSuspect
-  , isExplorable, isOftenItem, isOftenActor, isNoItem, isNoActor, hasCauses
-  , speedup, alterMinSkill, alterMinWalk
-  , openTo, closeTo, embedItems, listCauseEffects, revealAs, hideAs
-  , isOpenable, isClosable, isChangeable, isEscape, isStair, ascendTo
+  , isExplorable, isOftenItem, isOftenActor, isNoItem, isNoActor
+  , speedup, alterMinSkill, alterMinWalk, openTo, closeTo, embeddedItems
+  , revealAs, hideAs, isOpenable, isClosable, isChangeable
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , createTab, createTabWithKey, accessTab
@@ -30,13 +29,12 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Vector.Unboxed as U
-import Data.Word
+import Data.Word (Word8)
 
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.ItemKind (ItemKind)
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.TileKind (TileKind, TileSpeedup (..),
                                          isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
@@ -121,10 +119,6 @@ isNoActor :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isNoActor #-}
 isNoActor TileSpeedup{isNoActorTab} = accessTab isNoActorTab
 
-hasCauses :: TileSpeedup -> Kind.Id TileKind -> Bool
-{-# INLINE hasCauses #-}
-hasCauses TileSpeedup{hasCausesTab} = accessTab hasCausesTab
-
 alterMinSkill :: TileSpeedup -> Kind.Id TileKind -> Int
 {-# INLINE alterMinSkill #-}
 alterMinSkill TileSpeedup{alterMinSkillTab} =
@@ -169,10 +163,6 @@ speedup allClear cotile =
       isOftenActorTab = createTab cotile $ kindHasFeature TK.OftenActor
       isNoItemTab = createTab cotile $ kindHasFeature TK.NoItem
       isNoActorTab = createTab cotile $ kindHasFeature TK.NoActor
-      hasCausesTab = createTab cotile $ \tk ->
-        let getTo TK.Cause{} = True
-            getTo _ = False
-        in any getTo $ TK.tfeature tk
       alterMinSkillTab = createTabWithKey cotile alterMinSkillKind
       alterMinWalkTab = createTabWithKey cotile alterMinWalkKind
   in TileSpeedup {..}
@@ -183,7 +173,7 @@ alterMinSkillKind _k tk =
   let getTo TK.OpenTo{} = True
       getTo TK.CloseTo{} = True
       getTo TK.ChangeTo{} = True
-      getTo TK.Cause{} = True
+      getTo TK.Embed{} = True
       getTo TK.Suspect = True
       getTo _ = False
   in if any getTo $ TK.tfeature tk then TK.talter tk else maxBound
@@ -221,15 +211,9 @@ closeTo Kind.Ops{okind, opick} t = do
       grp <- oneOf groups
       fromMaybe (assert `failure` grp) <$> opick grp (const True)
 
-embedItems :: Kind.Ops TileKind -> Kind.Id TileKind -> [GroupName ItemKind]
-embedItems Kind.Ops{okind} t =
+embeddedItems :: Kind.Ops TileKind -> Kind.Id TileKind -> [GroupName ItemKind]
+embeddedItems Kind.Ops{okind} t =
   let getTo (TK.Embed eff) acc = eff : acc
-      getTo _ acc = acc
-  in foldr getTo [] $ TK.tfeature $ okind t
-
-listCauseEffects :: Kind.Ops TileKind -> Kind.Id TileKind -> [IK.Effect]
-listCauseEffects Kind.Ops{okind} t =
-  let getTo (TK.Cause eff) acc = eff : acc
       getTo _ acc = acc
   in foldr getTo [] $ TK.tfeature $ okind t
 
@@ -245,11 +229,11 @@ revealAs Kind.Ops{okind, opick} t = do
 
 hideAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Kind.Id TileKind
 hideAs Kind.Ops{okind, ouniqGroup} t =
-  let getTo (TK.HideAs grp) _ = Just grp
-      getTo _ acc = acc
-  in case foldr getTo Nothing (TK.tfeature (okind t)) of
-       Nothing -> t
-       Just grp -> ouniqGroup grp
+  let getTo TK.HideAs{} = True
+      getTo _ = False
+  in case find getTo $ TK.tfeature $ okind t of
+       Just (TK.HideAs grp) -> ouniqGroup grp
+       _ -> t
 
 -- | Whether a tile kind (specified by its id) has an OpenTo feature.
 isOpenable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
@@ -264,19 +248,3 @@ isClosable Kind.Ops{okind} t =
   let getTo TK.CloseTo{} = True
       getTo _ = False
   in any getTo $ TK.tfeature $ okind t
-
-isEscape :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-isEscape cotile t = let isEffectEscape IK.Escape{} = True
-                        isEffectEscape _ = False
-                    in any isEffectEscape $ listCauseEffects cotile t
-
-isStair :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-isStair cotile t = let isEffectAscend IK.Ascend{} = True
-                       isEffectAscend _ = False
-                   in any isEffectAscend $ listCauseEffects cotile t
-
-ascendTo :: Kind.Ops TileKind -> Kind.Id TileKind -> [Bool]
-ascendTo cotile t =
-  let getTo (IK.Ascend up) acc = up : acc
-      getTo _ acc = acc
-  in foldr getTo [] (listCauseEffects cotile t)

@@ -577,7 +577,7 @@ meleeAny aid = do
 trigger :: MonadClient m
         => ActorId -> Bool -> m (Strategy (RequestTimed 'AbAlter))
 trigger aid fleeViaStairs = do
-  cops@Kind.COps{cotile, coTileSpeedup} <- getsState scops
+  cops@Kind.COps{coTileSpeedup} <- getsState scops
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
   b <- getsState $ getActorBody aid
@@ -590,15 +590,20 @@ trigger aid fleeViaStairs = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   lvl <- getLevel (blid b)
   unexploredD <- unexploredDepth
+  itemToF <- itemToFullClient
   let alterMinSkill p = Tile.alterMinSkill coTileSpeedup $ lvl `at` p
       lidExplored = ES.member (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
       -- Only actors with hight enough AbAlter can use stairs.
       enterableHere p = alterSkill >= fromEnum (alterMinSkill p)
-      f pos = let t = lvl `at` pos
-              in case Tile.listCauseEffects cotile t of
-                [] -> []
-                l -> [(pos, l)]
+      iidToEffs (iid, kit) = case itemDisco $ itemToF iid kit of
+        Nothing -> []
+        Just ItemDisco{itemKind} -> IK.ieffects itemKind
+      -- Ignoring the number of items, because only one of each @iid@
+      -- is triggered at the same time, others are left to be used later on.
+      f pos = case EM.lookup pos $ lembed lvl of
+        Nothing -> []
+        Just bag -> [(pos, concatMap iidToEffs $ EM.assocs bag)]
       feats = concatMap f $ filter enterableHere $ vicinityUnsafe (bpos b)
       bens (p, fs) = sum <$> mapM (ben p) fs
       ben p feat = case feat of

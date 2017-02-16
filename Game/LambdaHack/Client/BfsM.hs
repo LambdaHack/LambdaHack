@@ -234,7 +234,7 @@ closestSmell aid = do
 -- enemies on other levels.
 closestTriggers :: MonadClient m => Maybe Bool -> ActorId -> m (Frequency Point)
 closestTriggers onlyDir aid = do
-  Kind.COps{cotile, coTileSpeedup} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   actorAspect <- getsClient sactorAspect
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
@@ -249,37 +249,38 @@ closestTriggers onlyDir aid = do
   dungeon <- getsState sdungeon
   let escape = any (not . null . lescape) $ EM.elems dungeon
   unexploredD <- unexploredDepth
+  mupIid <- getsState $ \s iid ->
+    -- Contrived, for now.
+    let Item{jname} = getItemBody iid s
+    in if | jname == "staircase up" -> Just True
+          | jname == "staircase down" -> Just False
+          | otherwise -> Nothing
   let allExplored = ES.size explored == EM.size dungeon
+      escapeOrGuard = isNothing onlyDir && allExplored
       -- If lid not explored, aid equips a weapon and so can leave level.
       lidExplored = ES.member (blid body) explored
       -- Causable tiles are alterable, so they are in BFS (if skill permits).
-      f :: Point -> Kind.Id TileKind -> [(Int, Point)] -> [(Int, Point)]
-      f p t acc =
-        if Tile.hasCauses coTileSpeedup t
-           && alterSkill >= fromEnum (alterMinSkill p)
-        then case Tile.ascendTo cotile t of
-          [] ->
+      f :: Point -> ItemBag -> [(Bool, Point)] -> [(Bool, Point)]
+      f p bag acc =
+        if alterSkill < fromEnum (alterMinSkill p) then acc else
+        case mapMaybe mupIid $ EM.keys bag of
+          [] ->  -- not stairs
             -- Escape (or guard) only after exploring, for high score, etc.
-            if isNothing onlyDir && allExplored
-            then (9999999, p) : acc  -- all from level congregate here
-            else acc
-          l ->
-            if not escape && allExplored
-            -- Direction irrelevant; wander randomly.
-            then map (\u -> (if u then 1 else (-1), p)) l ++ acc
-            else let g up =
-                       let easier = up /= (fromEnum lid > 0)
-                           unexpForth = unexploredD up lid
-                           unexpBack = unexploredD (not up) lid
-                           aiCond = if unexpForth
-                                    then easier
-                                         || not unexpBack && lidExplored
-                                    else not unexpBack && lidExplored
-                                         && null (lescape lvl)
-                       in fromMaybe aiCond onlyDir
-                 in map (\u -> (if u then 1 else (-1), p)) (filter g l) ++ acc
-        else acc
-      triggers = PointArray.ifoldrA f [] $ ltile lvl
+            let upDummy = True  -- direction ignored later on
+            in if escapeOrGuard then (upDummy, p) : acc else acc
+          up : _ ->  -- normally only one present, so just take the first
+            let easier = up /= (fromEnum lid > 0)
+                unexpForth = unexploredD up lid
+                unexpBack = unexploredD (not up) lid
+                aiCond = if unexpForth
+                         then easier || not unexpBack && lidExplored
+                         else not unexpBack && lidExplored
+                              && null (lescape lvl)
+                interesting = case onlyDir of
+                  Just d -> d == up
+                  Nothing -> not escape && allExplored || aiCond
+            in if interesting then (up, p) : acc else acc
+      triggers = EM.foldrWithKey f [] $ lembed lvl
   bfs <- getCacheBfs aid
   -- The advantage of only targeting the tiles in vicinity of triggers is that
   -- triggers don't need to be pathable (and so AI doesn't bump into them
@@ -287,26 +288,26 @@ closestTriggers onlyDir aid = do
   -- are more likely to be targeted by different AI actors (even starting
   -- from the same location), so there is less risk of clogging stairs and,
   -- OTOH, siege of stairs or escapes is more effective.
-  let vicTrigger (k, p0) = map (\p -> (k, p)) $ vicinityUnsafe p0
+  let vicTrigger (up, p0) = map (\p -> (up, p)) $ vicinityUnsafe p0
       vicAll = concatMap vicTrigger triggers
       vicNoDist = filter (isJust . accessBfs bfs . snd) vicAll
   return $ if  -- keep lazy
     | null triggers -> mzero
-    | isNothing onlyDir && not escape && allExplored ->
+    | escapeOrGuard ->
       -- Distance to stairs and direction irrelevant to ensure random wandering.
-      toFreq "closestTriggers when allExplored"
-      $ map (\(_, p) -> (1, p)) vicNoDist
+      -- High frequency to ensure all from the level congregate there.
+      toFreq "closestTriggers when escapeOrGuard"
+      $ map (\(_up, p) -> (9999999, p)) vicNoDist  -- @up@ ignored, as promised
     | otherwise ->
       -- Prefer stairs to easier levels.
-      -- If exactly one escape, these stairs will all be in one direction.
-      let mix (k, p) dist =
-            let easier = signum k /= signum (fromEnum lid)
+      let mix (up, p) dist =
+            let easier = up /= (fromEnum lid > 0)
                 depthDelta = if easier then 2 else 1
                 maxd = fromEnum (maxBound :: BfsDistance)
                        - fromEnum apartBfs
                 v = (maxd * maxd * maxd) `div` ((dist + 1) * (dist + 1))
             in (depthDelta * v, p)
-          ds = mapMaybe (\(k, p) -> mix (k, p) <$> accessBfs bfs p) vicAll
+          ds = mapMaybe (\(up, p) -> mix (up, p) <$> accessBfs bfs p) vicAll
       in toFreq "closestTriggers" ds
 
 unexploredDepth :: MonadClient m => m (Bool -> LevelId -> Bool)

@@ -24,7 +24,6 @@ import Game.LambdaHack.Common.Color
 import qualified Game.LambdaHack.Common.KindOps as KindOps
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ItemKind (ItemKind)
-import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | The type of kinds of terrain tiles. See @Tile.hs@ for explanation
 -- of the absence of a corresponding type @Tile@ that would hold
@@ -48,15 +47,19 @@ data TileKind = TileKind
 
 -- | All possible terrain tile features.
 data Feature =
-    Embed !(GroupName ItemKind)  -- ^ embed an item of this group, to cause effects (WIP)
-  | Cause !IK.Effect             -- ^ causes the effect when triggered;
-                                 --   more succint than @Embed@, but will
-                                 --   probably get supplanted by @Embed@
-  | OpenTo !(GroupName TileKind)    -- ^ goes from a closed to an open tile when altered
-  | CloseTo !(GroupName TileKind)   -- ^ goes from an open to a closed tile when altered
-  | ChangeTo !(GroupName TileKind)  -- ^ alters tile, but does not change walkability
-  | HideAs !(GroupName TileKind)    -- ^ when hidden, looks as a tile of the group
-  | RevealAs !(GroupName TileKind)  -- ^ if secret, can be revealed to belong to the group
+    Embed !(GroupName ItemKind)
+      -- ^ initially an item of this group is embedded;
+      --   we assume the item has effects and is supposed to be triggered
+  | OpenTo !(GroupName TileKind)
+      -- ^ goes from a closed to an open tile when altered
+  | CloseTo !(GroupName TileKind)
+      -- ^ goes from an open to a closed tile when altered
+  | ChangeTo !(GroupName TileKind)
+      -- ^ alters tile, but does not change walkability
+  | HideAs !(GroupName TileKind)
+      -- ^ when hidden, looks as a tile of the group
+  | RevealAs !(GroupName TileKind)
+      -- ^ if secret, can be revealed to belong to the group
 
   | Walkable             -- ^ actors can walk through
   | Clear                -- ^ actors can see through
@@ -94,7 +97,6 @@ data TileSpeedup = TileSpeedup
   , isOftenActorTab  :: !(Tab Bool)
   , isNoItemTab      :: !(Tab Bool)
   , isNoActorTab     :: !(Tab Bool)
-  , hasCausesTab     :: !(Tab Bool)
   , alterMinSkillTab :: !(Tab Word8)
   , alterMinWalkTab  :: !(Tab Word8)
   }
@@ -155,7 +157,6 @@ actionFeatures :: Bool -> TileKind -> IS.IntSet
 actionFeatures markSuspect t =
   let f feat = case feat of
         Embed{} -> Just feat
-        Cause{} -> Just feat
         OpenTo{} -> Just $ OpenTo ""  -- if needed, remove prefix/suffix
         CloseTo{} -> Just $ CloseTo ""
         ChangeTo{} -> Just $ ChangeTo ""

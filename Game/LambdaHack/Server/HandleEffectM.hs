@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectM
-  ( applyItem, itemEffectAndDestroy, effectAndDestroy, itemEffectCause
+  ( applyItem, itemEffectAndDestroy, effectAndDestroy, itemEffectEmbedded
   , dropCStoreItem, dominateFidSfx, pickDroppable, halveCalm
   ) where
 
@@ -137,22 +137,18 @@ imperishableKit effs periodic it2 ItemFull{..} =
       kit = if permanent || periodic then (1, take 1 it2) else (itemK, it2)
   in (imperishable, kit)
 
-itemEffectCause :: (MonadAtomic m, MonadServer m)
-                => ActorId -> Point -> IK.Effect
-                -> m Bool
-itemEffectCause aid tpos ef = do
+-- One item of each @iid@ is triggered at once. If there are more copies,
+-- they are left to be triggered next time.
+itemEffectEmbedded :: (MonadAtomic m, MonadServer m)
+                   => ActorId -> Point -> ItemBag -> m ()
+itemEffectEmbedded aid tpos bag = do
   sb <- getsState $ getActorBody aid
   let c = CEmbed (blid sb) tpos
-  bag <- getsState $ getEmbedBag (blid sb) tpos
-  case EM.assocs bag of
-    [(iid, kit)] -> do
-      -- No block against tile, hence unconditional.
-      execSfxAtomic $ SfxTrigger aid tpos $ TK.Cause ef
-      itemToF <- itemToFullServer
-      let itemFull = itemToF iid kit
-      effectAndDestroy aid aid iid c False [ef] itemFull
-      return True
-    ab -> assert `failure` (aid, tpos, ab)
+      f iid = do
+        -- No block against tile, hence unconditional.
+        execSfxAtomic $ SfxTrigger aid tpos
+        itemEffectAndDestroy aid aid iid c
+  mapM_ f $ EM.keys bag
 
 -- | The source actor affects the target actor, with a given item.
 -- If any of the effects fires up, the item gets identified. This function
@@ -460,7 +456,7 @@ dominateFidSfx fid target = do
 
 dominateFid :: (MonadAtomic m, MonadServer m) => FactionId -> ActorId -> m ()
 dominateFid fid target = do
-  Kind.COps{coitem=Kind.Ops{okind}, cotile} <- getsState scops
+  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   tb0 <- getsState $ getActorBody target
   deduceKilled target  -- the actor body exists and his items are not dropped
   electLeader (bfid tb0) (blid tb0) target
@@ -500,17 +496,8 @@ dominateFid fid target = do
         execUpdAtomic $ UpdDiscoverSeed c iid seed
       aic = getCarriedIidCStore tb
   mapM_ discoverSeed aic
-  mleaderOld <- getsState $ gleader . (EM.! fid) . sfactionD
-  -- Keep the leader if he is on stairs. We don't want to clog stairs.
-  keepLeader <- case mleaderOld of
-    Nothing -> return False
-    Just leaderOld -> do
-      body <- getsState $ getActorBody leaderOld
-      lvl <- getLevel $ blid body
-      return $! Tile.isStair cotile $ lvl `at` bpos body
-  unless keepLeader $
-    -- Focus on the dominated actor, by making him a leader.
-    supplantLeader fid target
+  -- Focus on the dominated actor, by making him a leader.
+  supplantLeader fid target
 
 -- ** Impress
 

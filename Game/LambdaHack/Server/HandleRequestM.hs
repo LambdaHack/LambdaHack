@@ -379,7 +379,7 @@ reqDisplace source target = do
 -- should not be alterable (but @serverTile@ may be).
 reqAlter :: (MonadAtomic m, MonadServer m) => ActorId -> Point -> m ()
 reqAlter source tpos = do
-  cops@Kind.COps{cotile=cotile@Kind.Ops{okind, opick}, coTileSpeedup} <- getsState scops
+  cops@Kind.COps{cotile=Kind.Ops{okind, opick}, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorSk <- actorSkillsServer source
   let alterSkill = EM.findWithDefault 0 Ability.AbAlter actorSk
@@ -415,8 +415,8 @@ reqAlter source tpos = do
             TK.ChangeTo tgroup -> Just tgroup
             _ -> Nothing
         groupsToAlterTo = mapMaybe toAlter feats
-        effs = Tile.listCauseEffects cotile serverTile
-    if null groupsToAlterTo && null effs && serverTile == freshClientTile then
+    embeds <- getsState $ getEmbedBag lid tpos
+    if null groupsToAlterTo && null embeds && serverTile == freshClientTile then
       -- Neither searching nor altering possible; silly client.
       execFailure source req AlterNothing
     else
@@ -431,7 +431,7 @@ reqAlter source tpos = do
               [] -> return ()
               [groupToAlterTo] -> changeTo groupToAlterTo
               l -> assert `failure` "tile changeable in many ways" `twith` l
-            mapM_ (itemEffectCause source tpos) effs
+            itemEffectEmbedded source tpos embeds
         else execFailure source req AlterBlockActor
       else execFailure source req AlterBlockItem
 

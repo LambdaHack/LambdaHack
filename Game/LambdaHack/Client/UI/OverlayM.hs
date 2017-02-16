@@ -27,7 +27,6 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
-import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 describeMainKeys :: MonadClientUI m => m Text
@@ -57,7 +56,7 @@ lookAt :: MonadClientUI m
        -> Text       -- ^ an extra sentence to print
        -> m Text
 lookAt detailed tilePrefix canSee pos aid msg = do
-  cops@Kind.COps{cotile=Kind.Ops{okind}, coTileSpeedup} <- getsState scops
+  cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
   lidV <- viewedLevelUI
@@ -83,9 +82,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
       tilePart | T.null tilePrefix = MU.Text tileText
                | otherwise = MU.AW $ MU.Text tileText
       tileDesc = [MU.Text tilePrefix, tilePart]
-  if | Tile.hasCauses coTileSpeedup tile ->
-       return $! makeSentence ("activable:" : tileDesc) <+> msg <+> isd
-     | detailed ->
+  if | detailed ->
        return $! makeSentence tileDesc <+> msg <+> isd
      | otherwise ->
        return $! msg <+> isd

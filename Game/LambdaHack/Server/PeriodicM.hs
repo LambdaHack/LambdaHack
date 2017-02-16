@@ -30,6 +30,7 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
@@ -224,7 +225,6 @@ udpateCalm target deltaCalm = do
 
 leadLevelSwitch :: (MonadAtomic m, MonadServer m) => m ()
 leadLevelSwitch = do
-  Kind.COps{cotile} <- getsState scops
   let canSwitch fact = fst (autoDungeonLevel fact)
                        -- a hack to help AI, until AI client can switch levels
                        || case fleaderMode (gplayer fact) of
@@ -237,12 +237,13 @@ leadLevelSwitch = do
           Nothing -> return ()
           Just leader -> do
             body <- getsState $ getActorBody leader
-            lvl2 <- getLevel $ blid body
+            isStairPos <- getsState $ \s p -> isStair (blid body) p s
             let leaderStuck = waitedLastTurn body
-                t = lvl2 `at` bpos body
-            -- Keep the leader: he is on stairs and not stuck
+                tileAdj :: (Point -> Bool) -> Point -> Bool
+                tileAdj f p = any f $ vicinityUnsafe p
+            -- Keep the leader: he is adjacent to stairs and not stuck
             -- and we don't want to clog stairs or get pushed to another level.
-            unless (not leaderStuck && Tile.isStair cotile t) $ do
+            unless (not leaderStuck && tileAdj isStairPos (bpos body)) $ do
               s <- getState
               let ourLvl (lid, lvl) =
                     ( lid

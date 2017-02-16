@@ -736,10 +736,10 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     itemAidVerbMU aid "apply" iid (Left $ Just 1) cstore
   SfxCheck aid iid cstore ->
     itemAidVerbMU aid "deapply" iid (Left $ Just 1) cstore
-  SfxTrigger aid _p _feat ->
+  SfxTrigger aid _p ->
     -- So far triggering is visible, e.g., doors close, so no need for messages.
     when verbose $ aidVerbMU aid "trigger"
-  SfxShun aid _p _ ->
+  SfxShun aid _p ->
     when verbose $ aidVerbMU aid "shun"
   SfxEffect fidSource aid effect hpDelta -> do
     b <- getsState $ getActorBody aid

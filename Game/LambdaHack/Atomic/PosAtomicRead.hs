@@ -146,12 +146,12 @@ posSfxAtomic cmd = case cmd of
   SfxReceive aid _ cstore -> singleContainer $ CActor aid cstore
   SfxApply aid _ cstore -> singleContainer $ CActor aid cstore
   SfxCheck aid _ cstore -> singleContainer $ CActor aid cstore
-  SfxTrigger aid p _ -> do
+  SfxTrigger aid p -> do
     body <- getsState $ getActorBody aid
     if bproj body
     then return $! PosSight (blid body) [bpos body, p]
     else return $! PosFidAndSight [bfid body] (blid body) [bpos body, p]
-  SfxShun aid p _ -> do
+  SfxShun aid p -> do
     body <- getsState $ getActorBody aid
     if bproj body
     then return $! PosSight (blid body) [bpos body, p]

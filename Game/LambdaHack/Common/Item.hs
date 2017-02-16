@@ -148,7 +148,7 @@ itemNoDisco (itemBase, itemK) =
 -- through the @jkindIx@ index as soon as the item is identified.
 data Item = Item
   { jkindIx  :: !ItemKindIx    -- ^ index pointing to the kind of the item
-  , jlid     :: !LevelId       -- ^ lowest leve the item was created at
+  , jlid     :: !LevelId       -- ^ lowest level the item was created at
   , jfid     :: !(Maybe FactionId)
                                -- ^ the faction that created the item, if any
   , jsymbol  :: !Char          -- ^ map symbol

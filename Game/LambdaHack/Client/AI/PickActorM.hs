@@ -22,14 +22,11 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
-import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 
@@ -40,7 +37,6 @@ pickActorToMove :: MonadClient m
                 -> m (ActorId, Actor)
 {-# INLINE pickActorToMove #-}
 pickActorToMove maidToAvoid refreshTarget = do
-  Kind.COps{cotile} <- getsState scops
   actorAspect <- getsClient sactorAspect
   mleader <- getsClient _sleader
   let oldAid = case mleader of
@@ -50,23 +46,24 @@ pickActorToMove maidToAvoid refreshTarget = do
   let side = bfid oldBody
       arena = blid oldBody
   fact <- getsState $ (EM.! side) . sfactionD
-  lvl <- getLevel arena
   let leaderStuck = waitedLastTurn oldBody
-      t = lvl `at` bpos oldBody
   -- Find our actors on the current level only.
   ours <- getsState $ filter (isNothing . btrajectory . snd)
                       . actorRegularAssocs (== side) arena
+  isStairPos <- getsState $ \s p -> isStair arena p s
   let pickOld = do
         void $ refreshTarget (oldAid, oldBody)
         return (oldAid, oldBody)
+      tileAdj :: (Point -> Bool) -> Point -> Bool
+      tileAdj f p = any f $ vicinityUnsafe p
   case ours of
     _ | -- Keep the leader: faction discourages client leader change on level,
         -- so will only be changed if waits (maidToAvoid)
         -- to avoid wasting his higher mobility.
         snd (autoDungeonLevel fact) && isNothing maidToAvoid
-        -- Keep the leader: he is on stairs and not stuck
+        -- Keep the leader: he is near stairs and not stuck
         -- and we don't want to clog stairs or get pushed to another level.
-        || not leaderStuck && Tile.isStair cotile t
+        || not leaderStuck && tileAdj isStairPos (bpos oldBody)
       -> pickOld
     [] -> assert `failure` (oldAid, oldBody)
     [_] -> pickOld  -- Keep the leader: he is alone on the level.

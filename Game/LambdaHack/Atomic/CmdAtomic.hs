@@ -41,7 +41,6 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.TileKind (TileKind)
-import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Abstract syntax of atomic commands, that is, atomic game state
 -- transformations.
@@ -127,8 +126,8 @@ data SfxAtomic =
   | SfxReceive !ActorId !ItemId !CStore
   | SfxApply !ActorId !ItemId !CStore
   | SfxCheck !ActorId !ItemId !CStore
-  | SfxTrigger !ActorId !Point !TK.Feature
-  | SfxShun !ActorId !Point !TK.Feature
+  | SfxTrigger !ActorId !Point
+  | SfxShun !ActorId !Point
   | SfxEffect !FactionId !ActorId !IK.Effect !Int64
   | SfxMsgFid !FactionId !Text
   | SfxMsgAll !Text
@@ -201,8 +200,8 @@ undoSfxAtomic cmd = case cmd of
   SfxReceive aid iid cstore -> SfxProject aid iid cstore
   SfxApply aid iid cstore -> SfxCheck aid iid cstore
   SfxCheck aid iid cstore -> SfxApply aid iid cstore
-  SfxTrigger aid p feat -> SfxShun aid p feat
-  SfxShun aid p feat -> SfxTrigger aid p feat
+  SfxTrigger aid p -> SfxShun aid p
+  SfxShun aid p -> SfxTrigger aid p
   SfxEffect{} -> cmd  -- not ideal?
   SfxMsgFid{} -> cmd
   SfxMsgAll{} -> cmd

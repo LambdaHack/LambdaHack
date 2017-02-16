@@ -15,7 +15,7 @@ module Game.LambdaHack.Common.ActorState
   , tryFindHeroK, getLocalTime, itemPrice, regenCalmDelta
   , actorInAmbient, actorSkills, dispEnemy, fullAssocs, itemToFull
   , goesIntoEqp, goesIntoInv, goesIntoSha, eqpOverfull, eqpFreeN
-  , storeFromC, lidFromC, posFromC, aidFromC
+  , storeFromC, lidFromC, posFromC, aidFromC, isEscape, isStair
   ) where
 
 import Prelude ()
@@ -417,3 +417,19 @@ aidFromC CFloor{} = Nothing
 aidFromC CEmbed{} = Nothing
 aidFromC (CActor aid _) = Just aid
 aidFromC c@CTrunk{} = assert `failure` c
+
+isEscape :: LevelId -> Point -> State -> Bool
+isEscape lid p s =
+  let bag = getEmbedBag lid p s
+      is = map (flip getItemBody s) $ EM.keys bag
+      -- Contrived, for now.
+      isE Item{jname} = jname == "escape"
+  in any isE is
+
+isStair :: LevelId -> Point -> State -> Bool
+isStair lid p s =
+  let bag = getEmbedBag lid p s
+      is = map (flip getItemBody s) $ EM.keys bag
+      -- Contrived, for now.
+      isE Item{jname} = jname == "staircase up" || jname == "staircase down"
+  in any isE is

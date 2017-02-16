@@ -12,7 +12,6 @@ import qualified Data.Text as T
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Misc
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.TileKind
 
 cdefs :: ContentDef TileKind
@@ -101,7 +100,7 @@ pillarCache = TileKind
   , tcolor   = BrYellow
   , tcolor2  = Brown
   , talter   = 5
-  , tfeature = [ Cause $ IK.CreateItem CGround "useful" IK.TimerNone
+  , tfeature = [ Embed "terrain cache"
                , ChangeTo "cachable", Indistinct ]
   }
 lampPost = TileKind
@@ -269,7 +268,7 @@ stairsUp = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = talterForStairs
-  , tfeature = [Cause $ IK.Ascend True]
+  , tfeature = [Embed "staircase up"]
   }
 stairsOutdoorUp = stairsUp
   { tname    = "signpost pointing backward"
@@ -282,7 +281,7 @@ stairsDown = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = talterForStairs
-  , tfeature = [Cause $ IK.Ascend False]
+  , tfeature = [Embed "staircase down"]
   }
 stairsOutdoorDown = stairsDown
   { tname    = "signpost pointing forward"
@@ -295,7 +294,7 @@ escapeUp = TileKind
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
   , talter   = talterForStairs
-  , tfeature = [Cause IK.Escape]
+  , tfeature = [Embed "escape"]
   }
 escapeDown = TileKind
   { tsymbol  = '>'
@@ -304,7 +303,7 @@ escapeDown = TileKind
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
   , talter   = talterForStairs
-  , tfeature = [Cause IK.Escape]
+  , tfeature = [Embed "escape"]
   }
 escapeOutdoorDown = escapeDown
   { tname    = "exit back to town"

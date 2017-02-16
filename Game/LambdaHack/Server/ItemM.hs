@@ -68,14 +68,11 @@ createLevelItem pos lid = do
 embedItem :: (MonadAtomic m, MonadServer m)
           => LevelId -> Point -> Kind.Id TileKind -> m ()
 embedItem lid pos tk = do
-  Kind.COps{cotile, coTileSpeedup} <- getsState scops
-  let embeds = Tile.embedItems cotile tk
-      itemFreq = zip embeds (repeat 1)
-                 ++ -- Hack: the bag, not item, is relevant.
-                    [("hero", 1) | Tile.hasCauses coTileSpeedup tk
-                                   && null embeds]
+  Kind.COps{cotile} <- getsState scops
+  let embeds = Tile.embeddedItems cotile tk
       container = CEmbed lid pos
-  void $ rollAndRegisterItem lid itemFreq container False Nothing
+      f grp = rollAndRegisterItem lid [(grp, 1)] container False Nothing
+  mapM_ f embeds
 
 rollItem :: (MonadAtomic m, MonadServer m)
          => Int -> LevelId -> Freqs ItemKind

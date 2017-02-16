@@ -45,14 +45,12 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
-import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
-import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
@@ -155,10 +153,9 @@ condHpTooLowM aid = do
 -- | Require the actor stands adjacent to a triggerable tile (e.g., stairs).
 condAdjTriggerableM :: MonadStateRead m => ActorId -> m Bool
 condAdjTriggerableM aid = do
-  Kind.COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
-  let hasTriggerable p = Tile.hasCauses coTileSpeedup $ lvl `at` p
+  let hasTriggerable p = p `EM.member` lembed lvl
   return $! any hasTriggerable $ vicinityUnsafe $ bpos b
 
 -- | Produce the chess-distance-sorted list of non-low-HP foes on the level.

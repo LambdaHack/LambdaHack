@@ -37,14 +37,14 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
+import Game.LambdaHack.Content.TileKind (isUknownSpace)
 
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy TgtAndPath)
 {-# INLINE targetStrategy #-}
 targetStrategy aid = do
-  cops@Kind.COps{corule, cotile, coTileSpeedup} <- getsState scops
+  cops@Kind.COps{corule, coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   mleader <- getsClient _sleader
   condInMelee <- getsClient scondInMelee
@@ -306,10 +306,12 @@ targetStrategy aid = do
           let lidExplored = ES.member (blid b) explored
               allExplored = ES.size explored == EM.size dungeon
           bag <- getsState $ getFloorBag lid pos
+          isEscapePos <- getsState $ \s p -> isEscape lid p s
+          isStairPos <- getsState $ \s p -> isStair lid p s
           let t = lvl `at` pos
               alterMinSkill = Tile.alterMinSkill coTileSpeedup t
-              tileAdj :: (Kind.Id TileKind -> Bool) -> Point -> Bool
-              tileAdj f p = any (f . at lvl) $ vicinityUnsafe p
+              tileAdj :: (Point -> Bool) -> Point -> Bool
+              tileAdj f p = any f $ vicinityUnsafe p
           if lid /= blid b  -- wrong level
              -- Below we check the target could not be picked again in
              -- pickNewTarget, and only in this case it is invalidated.
@@ -327,14 +329,13 @@ targetStrategy aid = do
                        in sml <= ltime lvl)
                    && if not lidExplored
                       then not (isUknownSpace t)  -- closestUnknown
-                           && not (condEnoughGear
-                                   && tileAdj (Tile.isStair cotile) pos)
+                           && not (condEnoughGear && tileAdj isStairPos pos)
                       else  -- closestTriggers
                         -- Try to kill that very last enemy for his loot before
                         -- leaving the level or dungeon.
                         not (null allFoes)
                         || -- If all explored, escape/block escapes.
-                           (not (tileAdj (Tile.isEscape cotile) pos)
+                           (not (tileAdj isEscapePos pos)
                             || not allExplored)
                            -- The next case is stairs in closestTriggers.
                            -- We don't determine if the stairs are interesting
@@ -343,7 +344,7 @@ targetStrategy aid = do
                            -- trigger them at all.
                            && (EM.findWithDefault 0 AbAlter actorMaxSk
                                < fromEnum alterMinSkill
-                               || not (tileAdj (Tile.isStair cotile) pos))
+                               || not (tileAdj isStairPos pos))
                            -- The remaining case is furthestKnown. This is
                            -- always an unimportant target, so we forget it
                            -- if the actor is stuck (waits, though could move;
