@@ -229,7 +229,7 @@ closestSmell aid = do
       return $! sortBy (comparing (fst &&& absoluteTimeNegate . snd . snd)) ts
 
 -- | Closest (wrt paths) triggerable tiles.
--- The level the actor is on is either explored or the actor already
+-- In AI, the level the actor is on is either explored or the actor already
 -- has a weapon equipped, so no need to explore further, he tries to find
 -- enemies on other levels.
 closestTriggers :: MonadClient m => Maybe Bool -> ActorId -> m (Frequency Point)
@@ -287,14 +287,15 @@ closestTriggers onlyDir aid = do
   -- are more likely to be targeted by different AI actors (even starting
   -- from the same location), so there is less risk of clogging stairs and,
   -- OTOH, siege of stairs or escapes is more effective.
-  let vicTrigger (v, p0) = map (\p -> (v, p)) $ vicinityUnsafe p0
+  let vicTrigger (k, p0) = map (\p -> (k, p)) $ vicinityUnsafe p0
       vicAll = concatMap vicTrigger triggers
       vicNoDist = filter (isJust . accessBfs bfs . snd) vicAll
   return $ if  -- keep lazy
     | null triggers -> mzero
     | isNothing onlyDir && not escape && allExplored ->
-      -- Distance also irrelevant, to ensure random wandering.
-      toFreq "closestTriggers when allExplored" vicNoDist
+      -- Distance to stairs and direction irrelevant to ensure random wandering.
+      toFreq "closestTriggers when allExplored"
+      $ map (\(_, p) -> (1, p)) vicNoDist
     | otherwise ->
       -- Prefer stairs to easier levels.
       -- If exactly one escape, these stairs will all be in one direction.
