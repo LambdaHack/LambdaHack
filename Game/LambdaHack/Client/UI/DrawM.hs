@@ -73,7 +73,7 @@ targetDesc target = do
           percentage = 100 * bhp b `div` xM (max 5 $ aMaxHP ar)
           chs n = "[" <> T.replicate n "*"
                       <> T.replicate (4 - n) "_" <> "]"
-          stars = chs $ fromEnum $ min 4 $ percentage `div` 20
+          stars = chs $ fromEnum $ max 0 $ min 4 $ percentage `div` 20
           hpIndicator = if bfid b == side then Nothing else Just stars
       return (bname b, hpIndicator)
     Just (TEnemyPos _ lid p _) -> do
@@ -364,7 +364,7 @@ drawFrameStatus drawnLevelId = do
         in if T.null text then "" else " " <> text
       -- The indicators must fit, they are the actual information.
       pathCsr = displayPathText xhairPos mxhairHP
-      trimTgtDesc n t = assert (not (T.null t) && n > 2) $
+      trimTgtDesc n t = assert (not (T.null t) && n > 2 `blame` (t, n)) $
         if T.length t <= n then t
         else let ellipsis = "..."
                  fitsPlusOne = T.take (n - T.length ellipsis + 1) t
