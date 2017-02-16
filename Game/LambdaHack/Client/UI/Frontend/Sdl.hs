@@ -110,9 +110,11 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
           SDL.KeyboardEvent keyboardEvent
             | SDL.keyboardEventKeyMotion keyboardEvent == SDL.Pressed -> do
               let sym = SDL.keyboardEventKeysym keyboardEvent
-                  md = modTranslate $ SDL.keysymModifier sym
-                  key = keyTranslate md $ SDL.keysymKeycode sym
-                  modifier = if md == K.Shift then K.NoModifier else md
+                  ksm = SDL.keysymModifier sym
+                  shiftPressed = SDL.keyModifierLeftShift ksm
+                                 || SDL.keyModifierRightShift ksm
+                  key = keyTranslate shiftPressed $ SDL.keysymKeycode sym
+                  modifier = modTranslate ksm
               p <- SDL.getAbsoluteMouseLocation
               when (key == K.Esc) $ resetChanKey (fchanKey rf)
               saveKMP rf modifier key (pointTranslate p)
@@ -224,24 +226,24 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
   SDL.copy srenderer screenTexture Nothing Nothing
   SDL.present srenderer
 
--- | Translates modifiers to our own encoding.
+-- | Translates modifiers to our own encoding, ignoring Shift.
 modTranslate :: SDL.KeyModifier -> K.Modifier
 modTranslate m =
   modifierTranslate
     (SDL.keyModifierLeftCtrl m || SDL.keyModifierRightCtrl m)
-    (SDL.keyModifierLeftShift m || SDL.keyModifierRightShift m)
+    False
     (SDL.keyModifierLeftAlt m
      || SDL.keyModifierRightAlt m
      || SDL.keyModifierAltGr m)
     False
 
-keyTranslate :: K.Modifier -> SDL.Keycode -> K.Key
-keyTranslate md n =
+keyTranslate :: Bool -> SDL.Keycode -> K.Key
+keyTranslate shiftPressed n =
   case n of
     KeycodeEscape     -> K.Esc
     KeycodeReturn     -> K.Return
     KeycodeBackspace  -> K.BackSpace
-    KeycodeTab        -> if md == K.Shift then K.BackTab else K.Tab
+    KeycodeTab        -> if shiftPressed then K.BackTab else K.Tab
     KeycodeSpace      -> K.Space
     KeycodeExclaim -> K.Char '!'
     KeycodeQuoteDbl -> K.Char '"'
@@ -249,38 +251,38 @@ keyTranslate md n =
     KeycodePercent -> K.Char '%'
     KeycodeDollar -> K.Char '$'
     KeycodeAmpersand -> K.Char '&'
-    KeycodeQuote -> if md == K.Shift then K.Char '"' else K.Char '\''
+    KeycodeQuote -> if shiftPressed then K.Char '"' else K.Char '\''
     KeycodeLeftParen -> K.Char '('
     KeycodeRightParen -> K.Char ')'
     KeycodeAsterisk -> K.Char '*'
     KeycodePlus -> K.Char '+'
-    KeycodeComma -> if md == K.Shift then K.Char '<' else K.Char ','
-    KeycodeMinus -> if md == K.Shift then K.Char '_' else K.Char '-'
-    KeycodePeriod -> if md == K.Shift then K.Char '>' else K.Char '.'
-    KeycodeSlash -> if md == K.Shift then K.Char '?' else K.Char '/'
-    Keycode1 -> if md == K.Shift then K.Char '!' else K.Char '1'
-    Keycode2 -> if md == K.Shift then K.Char '@' else K.Char '2'
-    Keycode3 -> if md == K.Shift then K.Char '#' else K.Char '3'
-    Keycode4 -> if md == K.Shift then K.Char '$' else K.Char '4'
-    Keycode5 -> if md == K.Shift then K.Char '%' else K.Char '5'
-    Keycode6 -> if md == K.Shift then K.Char '^' else K.Char '6'
-    Keycode7 -> if md == K.Shift then K.Char '&' else K.Char '7'
-    Keycode8 -> if md == K.Shift then K.Char '*' else K.Char '8'
-    Keycode9 -> if md == K.Shift then K.Char '(' else K.Char '9'
-    Keycode0 -> if md == K.Shift then K.Char ')' else K.Char '0'
+    KeycodeComma -> if shiftPressed then K.Char '<' else K.Char ','
+    KeycodeMinus -> if shiftPressed then K.Char '_' else K.Char '-'
+    KeycodePeriod -> if shiftPressed then K.Char '>' else K.Char '.'
+    KeycodeSlash -> if shiftPressed then K.Char '?' else K.Char '/'
+    Keycode1 -> if shiftPressed then K.Char '!' else K.Char '1'
+    Keycode2 -> if shiftPressed then K.Char '@' else K.Char '2'
+    Keycode3 -> if shiftPressed then K.Char '#' else K.Char '3'
+    Keycode4 -> if shiftPressed then K.Char '$' else K.Char '4'
+    Keycode5 -> if shiftPressed then K.Char '%' else K.Char '5'
+    Keycode6 -> if shiftPressed then K.Char '^' else K.Char '6'
+    Keycode7 -> if shiftPressed then K.Char '&' else K.Char '7'
+    Keycode8 -> if shiftPressed then K.Char '*' else K.Char '8'
+    Keycode9 -> if shiftPressed then K.Char '(' else K.Char '9'
+    Keycode0 -> if shiftPressed then K.Char ')' else K.Char '0'
     KeycodeColon -> K.Char ':'
-    KeycodeSemicolon -> if md == K.Shift then K.Char ':' else K.Char ';'
+    KeycodeSemicolon -> if shiftPressed then K.Char ':' else K.Char ';'
     KeycodeLess -> K.Char '<'
-    KeycodeEquals -> if md == K.Shift then K.Char '+' else K.Char '='
+    KeycodeEquals -> if shiftPressed then K.Char '+' else K.Char '='
     KeycodeGreater -> K.Char '>'
     KeycodeQuestion -> K.Char '?'
     KeycodeAt -> K.Char '@'
-    KeycodeLeftBracket -> if md == K.Shift then K.Char '{' else K.Char '['
-    KeycodeBackslash -> if md == K.Shift then K.Char '|' else K.Char '\\'
-    KeycodeRightBracket -> if md == K.Shift then K.Char '}' else K.Char ']'
+    KeycodeLeftBracket -> if shiftPressed then K.Char '{' else K.Char '['
+    KeycodeBackslash -> if shiftPressed then K.Char '|' else K.Char '\\'
+    KeycodeRightBracket -> if shiftPressed then K.Char '}' else K.Char ']'
     KeycodeCaret -> K.Char '^'
     KeycodeUnderscore -> K.Char '_'
-    KeycodeBackquote -> if md == K.Shift then K.Char '~' else K.Char '`'
+    KeycodeBackquote -> if shiftPressed then K.Char '~' else K.Char '`'
     KeycodeUp         -> K.Up
     KeycodeDown       -> K.Down
     KeycodeLeft       -> K.Left
@@ -297,16 +299,16 @@ keyTranslate md n =
     KeycodeKPPlus     -> K.Char '+'  -- KP and normal are merged here
     KeycodeKPEnter    -> K.Return
     KeycodeKPEquals   -> K.Return  -- in case of some funny layouts
-    KeycodeKP1 -> if md == K.Shift then K.KP '1' else K.End
-    KeycodeKP2 -> if md == K.Shift then K.KP '2' else K.Down
-    KeycodeKP3 -> if md == K.Shift then K.KP '3' else K.PgDn
-    KeycodeKP4 -> if md == K.Shift then K.KP '4' else K.Left
-    KeycodeKP5 -> if md == K.Shift then K.KP '5' else K.Begin
-    KeycodeKP6 -> if md == K.Shift then K.KP '6' else K.Right
-    KeycodeKP7 -> if md == K.Shift then K.KP '7' else K.Home
-    KeycodeKP8 -> if md == K.Shift then K.KP '8' else K.Up
-    KeycodeKP9 -> if md == K.Shift then K.KP '9' else K.PgUp
-    KeycodeKP0 -> if md == K.Shift then K.KP '0' else K.Insert
+    KeycodeKP1 -> if shiftPressed then K.KP '1' else K.End
+    KeycodeKP2 -> if shiftPressed then K.KP '2' else K.Down
+    KeycodeKP3 -> if shiftPressed then K.KP '3' else K.PgDn
+    KeycodeKP4 -> if shiftPressed then K.KP '4' else K.Left
+    KeycodeKP5 -> if shiftPressed then K.KP '5' else K.Begin
+    KeycodeKP6 -> if shiftPressed then K.KP '6' else K.Right
+    KeycodeKP7 -> if shiftPressed then K.KP '7' else K.Home
+    KeycodeKP8 -> if shiftPressed then K.KP '8' else K.Up
+    KeycodeKP9 -> if shiftPressed then K.KP '9' else K.PgUp
+    KeycodeKP0 -> if shiftPressed then K.KP '0' else K.Insert
     KeycodeKPPeriod -> K.Char '.'  -- KP and normal are merged here
     KeycodeKPComma  -> K.Char '.'  -- in case of some funny layouts
     KeycodeF1       -> K.Fun 1
@@ -333,7 +335,7 @@ keyTranslate md n =
     KeycodeUnknown  -> K.Unknown "KeycodeUnknown"
     _ -> let i = fromEnum $ unwrapKeycode n
          in if | 97 <= i && i <= 122
-                 && md == K.Shift -> K.Char $ Char.chr $ i - 32
+                 && shiftPressed -> K.Char $ Char.chr $ i - 32
                | 32 <= i && i <= 126 -> K.Char $ Char.chr i
                | otherwise -> K.Unknown $ show n
 
