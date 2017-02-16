@@ -309,8 +309,8 @@ keyTranslate shiftPressed n =
     KeycodeKP8 -> if shiftPressed then K.KP '8' else K.Up
     KeycodeKP9 -> if shiftPressed then K.KP '9' else K.PgUp
     KeycodeKP0 -> if shiftPressed then K.KP '0' else K.Insert
-    KeycodeKPPeriod -> K.Char '.'  -- KP and normal are merged here
-    KeycodeKPComma  -> K.Char '.'  -- in case of some funny layouts
+    KeycodeKPPeriod -> K.Char '.'  -- dot and comma are merged here
+    KeycodeKPComma  -> K.Char '.'  -- to sidestep national standards
     KeycodeF1       -> K.Fun 1
     KeycodeF2       -> K.Fun 2
     KeycodeF3       -> K.Fun 3

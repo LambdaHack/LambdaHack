@@ -11,7 +11,7 @@ import Game.LambdaHack.Common.Prelude
 
 import Control.Concurrent.Async
 import Data.Char (chr, ord)
-import qualified Data.EnumMap.Strict as EM
+import qualified Data.Map.Strict as M
 import qualified UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C
 
@@ -27,7 +27,7 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
   { swin    :: !C.Window  -- ^ the window to draw to
-  , sstyles :: !(EM.EnumMap Color.Attr C.CursesStyle)
+  , sstyles :: !(M.Map (Color.Color, Color.Color) C.CursesStyle)
       -- ^ map from fore/back colour pairs to defined curses styles
   }
 
@@ -40,17 +40,17 @@ startup :: DebugModeCli -> IO RawFrontend
 startup _sdebugCli = do
   C.start
   void $ C.cursSet C.CursorInvisible
-  let s = [ (Color.Attr{fg, bg}, C.Style (toFColor fg) (toBColor bg))
+  let s = [ ((fg, bg), C.Style (toFColor fg) (toBColor bg))
           | -- No more color combinations possible: 16*4, 64 is max.
             fg <- [minBound..maxBound]
-          , bg <- Color.legalBG ]
+          , bg <- [Color.Black, Color.Blue, Color.White, Color.BrBlack] ]
   nr <- C.colorPairs
   when (nr < length s) $
     C.end >> (assert `failure` "terminal has too few color pairs" `twith` nr)
   let (ks, vs) = unzip s
   ws <- C.convertStyles vs
   let swin = C.stdScr
-      sstyles = EM.fromDistinctAscList (zip ks ws)
+      sstyles = M.fromDistinctAscList (zip ks ws)
       sess = FrontendSession{..}
   rf <- createRawFrontend (display sess) shutdown
   let storeKeys :: IO ()
@@ -71,7 +71,7 @@ display :: FrontendSession    -- ^ frontend session data
 display FrontendSession{..} SingleFrame{singleFrame} = do
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
-  let defaultStyle = sstyles EM.! Color.defAttr
+  let defaultStyle = sstyles M.! (Color.defFG, Color.Black)
   C.erase
   C.setStyle defaultStyle
   -- We need to remove the last character from the status line,
@@ -85,23 +85,25 @@ display FrontendSession{..} SingleFrame{singleFrame} = do
       chunk [] = []
       chunk l = let (ch, r) = splitAt lxsize l
                 in ch : chunk r
-  sequence_ [ C.setStyle (EM.findWithDefault defaultStyle acAttr2 sstyles)
+  sequence_ [ C.setStyle (M.findWithDefault defaultStyle acAttr2 sstyles)
               >> C.mvWAddStr swin y x [acChar]
             | (y, line) <- nm
             , (x, Color.AttrChar{acAttr=Color.Attr{..}, ..}) <- line
-            , let (fg1, bg1) = case bg of
-                    Color.BrRed ->
-                      (Color.defBG, Color.defFG)  -- highlighted tile
-                    Color.BrBlue ->  -- blue highlighted tile
+            , let acAttr2 = case bg of
+                    Color.HighlightNone -> (Color.defFG, Color.Black)
+                    Color.HighlightRed -> (Color.Black, Color.defFG)
+                    Color.HighlightBlue ->
                       if fg /= Color.Blue
                       then (fg, Color.Blue)
                       else (fg, Color.BrBlack)
-                    Color.BrYellow ->  -- yellow highlighted tile
+                    Color.HighlightYellow ->
                       if fg /= Color.BrBlack
                       then (fg, Color.BrBlack)
                       else (fg, Color.defFG)
-                    _ -> (fg, bg)
-                  acAttr2= Color.Attr fg1 bg1 ]
+                    Color.HighlightGrey ->
+                      if fg /= Color.BrBlack
+                      then (fg, Color.BrBlack)
+                      else (fg, Color.defFG) ]
   C.refresh
 
 keyTranslate :: C.Key -> K.KM

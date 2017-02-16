@@ -102,8 +102,8 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   -- Speed: http://www.w3.org/TR/CSS21/tables.html#fixed-table-layout
   setProp scharStyle "table-layout" "fixed"
   -- Set the font specified in config, if any.
-  setProp scharStyle "font-family" $ fromMaybe "Monospace" sfontFamily
-  setProp scharStyle "font-size" $ fromMaybe "18px" sfontSize
+  setProp scharStyle "font-family" $ fromMaybe "Monospace" sgtkFontFamily
+  setProp scharStyle "font-size" $ maybe "16" tshow sfontSize <> "px"
   -- Get rid of table spacing. Tons of spurious hacks just in case.
   setCellPadding tableElem ("0" :: Text)
   setCellSpacing tableElem ("0" :: Text)
@@ -297,21 +297,16 @@ display DebugModeCli{scolorIsBold}
             Color.White -> setProp style "font-weight" "normal"
             _ -> setProp style "font-weight" "bold"
         case bg of
-          Color.Black -> do
+          Color.HighlightNone ->
             setProp style "border-color" "transparent"
-            setProp style "background-color" $ Color.colorToRGB Color.Black
-          Color.BrRed -> do  -- highlighted tile
+          Color.HighlightRed ->
             setProp style "border-color" $ Color.colorToRGB Color.Red
-            setProp style "background-color" $ Color.colorToRGB Color.Black
-          Color.BrBlue -> do  -- blue highlighted tile
+          Color.HighlightBlue ->
             setProp style "border-color" $ Color.colorToRGB Color.Blue
-            setProp style "background-color" $ Color.colorToRGB Color.Black
-          Color.BrYellow -> do  -- yellow highlighted tile
+          Color.HighlightYellow ->
             setProp style "border-color" $ Color.colorToRGB Color.BrYellow
-            setProp style "background-color" $ Color.colorToRGB Color.Black
-          _ -> do
-            setProp style "border-color" "transparent"
-            setProp style "background-color" $ Color.colorToRGB bg
+          Color.HighlightGrey ->
+            setProp style "border-color" $ Color.colorToRGB Color.BrBlack
   prevFrame <- readIORef spreviousFrame
   writeIORef spreviousFrame curFrame
   -- Sync, no point mutitasking threads in the single-threaded JS.

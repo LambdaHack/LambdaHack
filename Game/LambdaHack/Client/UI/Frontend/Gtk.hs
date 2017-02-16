@@ -54,19 +54,22 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
   let emulateBox attr = case attr of
-        Color.Attr{bg=Color.BrRed} ->  -- highlighted tile
-          Color.Attr Color.defBG Color.defFG
-        Color.Attr{bg=Color.BrYellow,fg} ->  -- yellow highlighted tile
-          if fg /= Color.BrBlack
-          then Color.Attr fg Color.BrBlack
-          else Color.Attr fg Color.defFG
-        Color.Attr{bg=Color.BrBlue,fg} ->  -- blue highlighted tile
+        Color.Attr{bg=Color.HighlightNone} ->
+          (Color.defFG, Color.Black)
+        Color.Attr{bg=Color.HighlightRed} ->
+          (Color.Black, Color.defFG)
+        Color.Attr{bg=Color.HighlightBlue,fg} ->
           if fg /= Color.Blue
-          then Color.Attr fg Color.Blue
-          else Color.Attr fg Color.BrBlack
-        _ -> attr
-      legalBGplusHacks =
-        Color.legalBG ++ [Color.BrRed, Color.BrYellow, Color.BrBlue]
+          then (fg, Color.Blue)
+          else (fg, Color.BrBlack)
+        Color.Attr{bg=Color.HighlightYellow,fg} ->
+          if fg /= Color.BrBlack
+          then (fg, Color.BrBlack)
+          else (fg, Color.defFG)
+        Color.Attr{bg=Color.HighlightGrey,fg} ->
+          if fg /= Color.Magenta
+          then (fg, Color.Magenta)
+          else (fg, Color.BrBlack)
   ttt <- textTagTableNew
   stags <- IM.fromDistinctAscList <$>
              mapM (\ak -> do
@@ -75,7 +78,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
                       doAttr sdebugCli tt (emulateBox ak)
                       return (fromEnum ak, tt))
                [ Color.Attr{fg, bg}
-               | fg <- [minBound..maxBound], bg <- legalBGplusHacks ]
+               | fg <- [minBound..maxBound], bg <- [minBound..maxBound] ]
   -- Text buffer.
   tb <- textBufferNew (Just ttt)
   -- Create text view.
@@ -200,12 +203,12 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
 shutdown :: IO ()
 shutdown = postGUISync mainQuit
 
-doAttr :: DebugModeCli -> TextTag -> Color.Attr -> IO ()
-doAttr sdebugCli tt attr@Color.Attr{fg, bg}
-  | attr == Color.defAttr = return ()
+doAttr :: DebugModeCli -> TextTag -> (Color.Color, Color.Color) -> IO ()
+doAttr sdebugCli tt (fg, bg)
+  | fg == Color.defFG && bg == Color.Black = return ()
   | fg == Color.defFG =
     set tt $ [textTagBackground := Color.colorToRGB bg]
-  | bg == Color.defBG =
+  | bg == Color.Black =
     set tt $ extraAttr sdebugCli
              ++ [textTagForeground := Color.colorToRGB fg]
   | otherwise =
