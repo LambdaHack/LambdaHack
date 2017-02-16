@@ -80,7 +80,6 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.ModeKind as MK
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind (isUknownSpace)
-import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * Macro
 
@@ -895,47 +894,19 @@ aimEnemyHuman = do
 -- k levels shallower. Enters aiming mode, if not already in one.
 aimAscendHuman :: MonadClientUI m => Int -> m MError
 aimAscendHuman k = do
-  Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
-  sxhairOld <- getsClient sxhair
-  xhairPos <- xhairToPos
   lidV <- viewedLevelUI
-  lvl <- getLevel lidV
   let up = k > 0
-      rightStairs = case xhairPos of
-        Just cpos | k `elem` [-1, 1] ->
-          let tile = lvl `at` cpos
-          in if Tile.hasFeature cotile (TK.Cause $ IK.Ascend up) tile
-             then Just cpos
-             else Nothing
-        _ -> Nothing
-  case rightStairs of
-    Just cpos -> do  -- stairs, in the right direction
-      (nln, npos) <- getsState $ whereTo lidV cpos Nothing . sdungeon
-      let !_A = assert (nln /= lidV `blame` "stairs looped" `twith` nln) ()
-      nlvl <- getLevel nln
-      -- Do not freely reveal the other end of the stairs.
-      let ascDesc (TK.Cause (IK.Ascend _)) = True
-          ascDesc _ = False
-          sxhair =
-            if any ascDesc $ TK.tfeature $ okind (nlvl `at` npos)
-            then TPoint nln npos  -- already known as an exit, focus on it
-            else sxhairOld  -- unknown, do not reveal
-      modifyClient $ \cli -> cli {sxhair}
-      modifySession $ \sess -> sess {saimMode = Just (AimMode nln)}
+  case ascendInBranch dungeon up lidV of
+    [] -> failMsg "no more levels in this direction"
+    _ : _ -> do
+      let ascendOne lid = case ascendInBranch dungeon up lid of
+            [] -> lid
+            nlid : _ -> nlid
+          lidK = iterate ascendOne lidV !! abs k
+      modifySession $ \sess -> sess {saimMode = Just (AimMode lidK)}
       doLook
       return Nothing
-    Nothing ->  -- no stairs in the right direction
-      case ascendInBranch dungeon up lidV of
-        [] -> failMsg "no more levels in this direction"
-        _ : _ -> do
-          let ascendOne lid = case ascendInBranch dungeon up lid of
-                [] -> lid
-                nlid : _ -> nlid
-              lidK = iterate ascendOne lidV !! abs k
-          modifySession $ \sess -> sess {saimMode = Just (AimMode lidK)}
-          doLook
-          return Nothing
 
 -- * EpsIncr
 
