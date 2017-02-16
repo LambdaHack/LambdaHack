@@ -269,7 +269,7 @@ stairsUp = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = talterForStairs
-  , tfeature = [Cause $ IK.Ascend 1]
+  , tfeature = [Cause $ IK.Ascend True]
   }
 stairsOutdoorUp = stairsUp
   { tname    = "signpost pointing backward"
@@ -282,7 +282,7 @@ stairsDown = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = talterForStairs
-  , tfeature = [Cause $ IK.Ascend (-1)]
+  , tfeature = [Cause $ IK.Ascend False]
   }
 stairsOutdoorDown = stairsDown
   { tname    = "signpost pointing forward"

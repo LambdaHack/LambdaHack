@@ -65,7 +65,7 @@ data Effect =
   | Impress
   | CallFriend !Dice.Dice
   | Summon !(Freqs ItemKind) !Dice.Dice
-  | Ascend !Int
+  | Ascend !Bool
   | Escape !Int           -- ^ the Int says if can be placed on last level, etc.
   | Paralyze !Dice.Dice
   | InsertMove !Dice.Dice

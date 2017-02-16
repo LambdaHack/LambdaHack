@@ -505,7 +505,7 @@ scroll2 = scroll
   }
 scroll3 = scroll
   { irarity  = [(1, 5), (10, 3)]
-  , ieffects = [Ascend (-1)]
+  , ieffects = [Ascend False]
   }
 scroll4 = scroll
   { ieffects = [OneOf [ Teleport 5, RefillCalm 5, Detect 5
@@ -514,7 +514,7 @@ scroll4 = scroll
 scroll5 = scroll
   { irarity  = [(10, 15)]
   , ieffects = [ Impress
-               , OneOf [ Teleport 20, Ascend (-1), Ascend 1
+               , OneOf [ Teleport 20, Ascend False, Ascend True
                        , Summon standardSummon 2, CallFriend 1
                        , Detect 10, OverfillCalm (-100)
                        , CreateItem CGround "useful" TimerNone ] ]

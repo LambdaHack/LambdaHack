@@ -60,13 +60,8 @@ effectToSuffix effect =
     Summon _freqs dice -> "of summoning"
                           <+> wrapInParens (tshow dice <+> "actors")
     ApplyPerfume -> "of smell removal"
-    Ascend 1 -> "of ascending"
-    Ascend p | p > 0 ->
-      "of ascending for" <+> tshow p <+> "levels"
-    Ascend 0 -> assert `failure` effect
-    Ascend (-1) -> "of descending"
-    Ascend p ->
-      "of descending for" <+> tshow (-p) <+> "levels"
+    Ascend True -> "of ascending"
+    Ascend False -> "of descending"
     Escape{} -> "of escaping"
     Paralyze dice ->
       let time = case Dice.reduceDice dice of

@@ -842,9 +842,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Summon{} -> do
           let verb = if bproj b then "lure" else "summon"
           actorVerbMU aid b $ MU.Text $ verb <+> "nearby horrors"
-        IK.Ascend k | k > 0 -> actorVerbMU aid b "find a way upstairs"
-        IK.Ascend k | k < 0 -> actorVerbMU aid b "find a way downstairs"
-        IK.Ascend{} -> assert `failure` sfx
+        IK.Ascend True -> actorVerbMU aid b "find a way upstairs"
+        IK.Ascend False -> actorVerbMU aid b "find a way downstairs"
         IK.Escape{} -> return ()
         IK.Paralyze{} -> actorVerbMU aid b "be paralyzed"
         IK.InsertMove{} -> actorVerbMU aid b "act with extreme speed"

@@ -600,13 +600,13 @@ trigger aid fleeViaStairs = do
                 [] -> []
                 l -> [(pos, l)]
       feats = concatMap f $ filter enterableHere $ vicinityUnsafe (bpos b)
-      bens (_, fs) = sum <$> mapM ben fs
-      ben feat = case feat of
-        IK.Ascend k -> do -- change levels sensibly, in teams
+      bens (p, fs) = sum <$> mapM (ben p) fs
+      ben p feat = case feat of
+        IK.Ascend up -> do -- change levels sensibly, in teams
           let aimless = ftactic (gplayer fact) `elem` [TRoam, TPatrol]
-              easier = signum k /= signum (fromEnum (blid b))
-              unexpForth = unexploredD (signum k) (blid b)
-              unexpBack = unexploredD (- signum k) (blid b)
+              easier = up /= (fromEnum (blid b) > 0)
+              unexpForth = unexploredD up (blid b)
+              unexpBack = unexploredD (not up) (blid b)
               eben
                 | aimless = 100  -- faction is not exploring, so switch at will
                 | unexpForth =
@@ -620,7 +620,7 @@ trigger aid fleeViaStairs = do
                 | not $ null $ lescape lvl = 0
                     -- all explored, stay on the escape level
                 | otherwise = 2  -- no escape, switch levels occasionally
-          (lid2, _) <- getsState $ whereTo (blid b) (bpos b) k . sdungeon
+          (lid2, _) <- getsState $ whereTo (blid b) p Nothing . sdungeon
           return $!
              if boldpos b == Just (bpos b)  -- probably used stairs last turn
                 && boldlid b == lid2  -- in the opposite direction

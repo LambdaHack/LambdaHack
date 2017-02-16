@@ -901,16 +901,17 @@ aimAscendHuman k = do
   xhairPos <- xhairToPos
   lidV <- viewedLevelUI
   lvl <- getLevel lidV
-  let rightStairs = case xhairPos of
-        Nothing -> Nothing
-        Just cpos ->
+  let up = k > 0
+      rightStairs = case xhairPos of
+        Just cpos | k `elem` [-1, 1] ->
           let tile = lvl `at` cpos
-          in if Tile.hasFeature cotile (TK.Cause $ IK.Ascend k) tile
+          in if Tile.hasFeature cotile (TK.Cause $ IK.Ascend up) tile
              then Just cpos
              else Nothing
+        _ -> Nothing
   case rightStairs of
     Just cpos -> do  -- stairs, in the right direction
-      (nln, npos) <- getsState $ whereTo lidV cpos k . sdungeon
+      (nln, npos) <- getsState $ whereTo lidV cpos Nothing . sdungeon
       let !_A = assert (nln /= lidV `blame` "stairs looped" `twith` nln) ()
       nlvl <- getLevel nln
       -- Do not freely reveal the other end of the stairs.
@@ -925,10 +926,14 @@ aimAscendHuman k = do
       doLook
       return Nothing
     Nothing ->  -- no stairs in the right direction
-      case ascendInBranch dungeon k lidV of
+      case ascendInBranch dungeon up lidV of
         [] -> failMsg "no more levels in this direction"
-        nln : _ -> do
-          modifySession $ \sess -> sess {saimMode = Just (AimMode nln)}
+        _ : _ -> do
+          let ascendOne lid = case ascendInBranch dungeon up lid of
+                [] -> lid
+                nlid : _ -> nlid
+              lidK = iterate ascendOne lidV !! abs k
+          modifySession $ \sess -> sess {saimMode = Just (AimMode lidK)}
           doLook
           return Nothing
 

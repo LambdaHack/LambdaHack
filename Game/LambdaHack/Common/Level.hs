@@ -37,18 +37,18 @@ import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 type Dungeon = EM.EnumMap LevelId Level
 
 -- | Levels in the current branch, @k@ levels shallower than the current.
-ascendInBranch :: Dungeon -> Int -> LevelId -> [LevelId]
-ascendInBranch dungeon k lid =
+ascendInBranch :: Dungeon -> Bool -> LevelId -> [LevelId]
+ascendInBranch dungeon up lid =
   -- Currently there is just one branch, so the computation is simple.
   let (minD, maxD) =
         case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
           _ -> assert `failure` "null dungeon" `twith` dungeon
-      ln = max minD $ min maxD $ toEnum $ fromEnum lid + k
+      ln = max minD $ min maxD $ toEnum $ fromEnum lid + if up then 1 else -1
   in case EM.lookup ln dungeon of
     Just _ | ln /= lid -> [ln]
     _ | ln == lid -> []
-    _ -> ascendInBranch dungeon k ln  -- jump over gaps
+    _ -> ascendInBranch dungeon up ln  -- jump over gaps
 
 -- | Items located on map tiles.
 type ItemFloor = EM.EnumMap Point ItemBag

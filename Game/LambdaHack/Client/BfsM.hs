@@ -266,18 +266,18 @@ closestTriggers onlyDir aid = do
           l ->
             if not escape && allExplored
             -- Direction irrelevant; wander randomly.
-            then map (,p) l ++ acc
-            else let g k =
-                       let easier = signum k /= signum (fromEnum lid)
-                           unexpForth = unexploredD (signum k) lid
-                           unexpBack = unexploredD (- signum k) lid
+            then map (\u -> (if u then 1 else (-1), p)) l ++ acc
+            else let g up =
+                       let easier = up /= (fromEnum lid > 0)
+                           unexpForth = unexploredD up lid
+                           unexpBack = unexploredD (not up) lid
                            aiCond = if unexpForth
                                     then easier
                                          || not unexpBack && lidExplored
                                     else not unexpBack && lidExplored
                                          && null (lescape lvl)
-                       in maybe aiCond (\d -> d == (k > 0)) onlyDir
-                 in map (,p) (filter g l) ++ acc
+                       in fromMaybe aiCond onlyDir
+                 in map (\u -> (if u then 1 else (-1), p)) (filter g l) ++ acc
         else acc
       triggers = PointArray.ifoldrA f [] $ ltile lvl
   bfs <- getCacheBfs aid
@@ -309,17 +309,17 @@ closestTriggers onlyDir aid = do
           ds = mapMaybe (\(k, p) -> mix (k, p) <$> accessBfs bfs p) vicAll
       in toFreq "closestTriggers" ds
 
-unexploredDepth :: MonadClient m => m (Int -> LevelId -> Bool)
+unexploredDepth :: MonadClient m => m (Bool -> LevelId -> Bool)
 unexploredDepth = do
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
   let allExplored = ES.size explored == EM.size dungeon
-      unexploredD p =
+      unexploredD up =
         let unex lid = allExplored
                        && not (null $ lescape $ dungeon EM.! lid)
                        || ES.notMember lid explored
-                       || unexploredD p lid
-        in any unex . ascendInBranch dungeon p
+                       || unexploredD up lid
+        in any unex . ascendInBranch dungeon up
   return unexploredD
 
 -- | Closest (wrt paths) items and changeable tiles (e.g., item caches).

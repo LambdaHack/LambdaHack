@@ -275,8 +275,8 @@ isStair cotile t = let isEffectAscend IK.Ascend{} = True
                        isEffectAscend _ = False
                    in any isEffectAscend $ listCauseEffects cotile t
 
-ascendTo :: Kind.Ops TileKind -> Kind.Id TileKind -> [Int]
+ascendTo :: Kind.Ops TileKind -> Kind.Id TileKind -> [Bool]
 ascendTo cotile t =
-  let getTo (IK.Ascend k) acc = k : acc
+  let getTo (IK.Ascend up) acc = up : acc
       getTo _ acc = acc
   in foldr getTo [] (listCauseEffects cotile t)

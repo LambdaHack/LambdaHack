@@ -187,26 +187,31 @@ tryFindHeroK fact k s =
 
 -- | Compute the level identifier and stair position on the new level,
 -- after a level change.
-whereTo :: LevelId  -- ^ level of the stairs
-        -> Point    -- ^ position of the stairs
-        -> Int      -- ^ jump up this many levels
-        -> Dungeon  -- ^ current game dungeon
+--
+-- We assume there is never a staircase up and down at the same position.
+whereTo :: LevelId    -- ^ level of the stairs
+        -> Point      -- ^ position of the stairs
+        -> Maybe Bool -- ^ optional forced direction
+        -> Dungeon    -- ^ current game dungeon
         -> (LevelId, Point)
-                    -- ^ destination level and the pos of its receiving stairs
-whereTo lid pos k dungeon = assert (k /= 0) $
+                      -- ^ destination level and the pos of its receiving stairs
+whereTo lid pos mup dungeon =
   let lvl = dungeon EM.! lid
-      stairs = (if k < 0 then snd else fst) (lstair lvl)
-      defaultStairs = 0  -- for ascending via, e.g., spells
-      mindex = elemIndex pos stairs
-      i = fromMaybe defaultStairs mindex
-  in case ascendInBranch dungeon k lid of
-    [] | isNothing mindex -> (lid, pos)  -- spell fizzles
-    [] -> assert `failure` "no dungeon level to go to" `twith` (lid, pos, k)
+      (up, i) = case elemIndex pos $ fst $ lstair lvl of
+        Just ifst -> (True, ifst)
+        Nothing -> case elemIndex pos $ snd $ lstair lvl of
+          Just isnd -> (False, isnd)
+          Nothing -> case mup of
+            Just forcedUp -> (forcedUp, 0)  -- for ascending via, e.g., spells
+            Nothing -> assert `failure` "no stairs at" `twith` (lid, pos)
+      !_A = assert (maybe True (== up) mup) ()
+  in case ascendInBranch dungeon up lid of
+    [] | isJust mup -> (lid, pos)  -- spell fizzles
+    [] -> assert `failure` "no dungeon level to go to" `twith` (lid, pos)
     ln : _ -> let lvlDest = dungeon EM.! ln
-                  stairsDest = (if k < 0 then fst else snd) (lstair lvlDest)
+                  stairsDest = (if up then snd else fst) (lstair lvlDest)
               in if length stairsDest < i + 1
-                 then assert `failure` "no stairs at index"
-                             `twith` (lid, pos, k, ln, stairsDest, i)
+                 then assert `failure` "no stairs at index" `twith` (lid, pos)
                  else (ln, stairsDest !! i)
 
 getActorBody :: ActorId -> State -> Actor

@@ -618,12 +618,12 @@ bracedImmuneMsg b =
 -- Note that projectiles can be teleported, too, for extra fun.
 effectAscend :: (MonadAtomic m, MonadServer m)
              => (IK.Effect -> m Bool)
-             -> m () -> Int -> ActorId -> ActorId -> Point
+             -> m () -> Bool -> ActorId -> ActorId -> Point
              -> m Bool
-effectAscend recursiveCall execSfx k source target pos = do
+effectAscend recursiveCall execSfx up source target pos = do
   b1 <- getsState $ getActorBody target
   let lid1 = blid b1
-  (lid2, pos2) <- getsState $ whereTo lid1 pos k . sdungeon
+  (lid2, pos2) <- getsState $ whereTo lid1 pos (Just up) . sdungeon
   sb <- getsState $ getActorBody source
   if | braced b1 -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) $ bracedImmuneMsg b1
@@ -636,7 +636,7 @@ effectAscend recursiveCall execSfx k source target pos = do
        execSfx
        btime_bOld <- getsServer $ (EM.! target) . (EM.! lid1)
                        . (EM.! bfid b1) . sactorTime
-       pos3 <- findStairExit (k > 0) lid2 pos2
+       pos3 <- findStairExit up lid2 pos2
        let switch1 = void $ switchLevels1 (target, b1)
            switch2 = do
              -- Make the initiator of the stair move the leader,
