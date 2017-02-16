@@ -43,15 +43,15 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
         rhumanCommands copsClient
         ++ configCommands
         ++ [ (K.mkKM "KP_Begin", waitTriple)
-           , (K.mkKM "CTRL-KP_Begin", wait10Triple)
+           , (K.mkKM "C-KP_Begin", wait10Triple)
            , (K.mkKM "KP_5", waitTriple)
-           , (K.mkKM "CTRL-KP_5", wait10Triple) ]
+           , (K.mkKM "C-KP_5", wait10Triple) ]
         ++ (if | configVi ->
                  [ (K.mkKM "period", waitTriple)
-                 , (K.mkKM "CTRL-period", wait10Triple) ]
+                 , (K.mkKM "C-period", wait10Triple) ]
                | configLaptop ->
                  [ (K.mkKM "i", waitTriple)
-                 , (K.mkKM "CTRL-i", wait10Triple)
+                 , (K.mkKM "C-i", wait10Triple)
                  , (K.mkKM "I", waitTriple) ]
                | otherwise ->
                  [])
@@ -83,7 +83,7 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
       , "Walk throughout a level with mouse or numeric keypad (left diagram)"
       , "or its compact laptop replacement (middle) or the Vi text editor keys"
       , "(right, also known as \"Rogue-like keys\"; can be enabled in config.ui.ini)."
-      , "Run, until disturbed, with SHIFT/CTRL and a movement key. Go-to with LMB"
+      , "Run, until disturbed, with Shift/Control and a movement key. Go-to with LMB"
       , "(left mouse button). Run collectively with RMB (right mouse button)."
       , ""
       , "               7 8 9          7 8 9          y k u"
@@ -95,7 +95,7 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
       , "In aiming mode (KEYPAD_* or !) the same keys (or mouse) move the crosshair."
       , "Press 'KEYPAD_5' (or 'i' or '.') to wait, bracing for impact, which reduces"
       , "any damage taken and makes it impossible for foes to displace you."
-      , "You displace enemies by running into them with SHIFT/CTRL or RMB. Search,"
+      , "You displace enemies by running into them with Shift/Control or RMB. Search,"
       , "open, descend and attack by bumping into walls, doors, stairs and enemies."
       , "The best item to attack with is automatically chosen from among"
       , "weapons in your personal equipment and your unwounded organs."

@@ -159,7 +159,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
       --   putStrLn $ "modifier: " ++ show modifier
       when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
       IO.liftIO $ saveKMP rf modifier key originPoint
-      -- Pass through Ctrl-+ and others, disable Tab.
+      -- Pass through C-+ and others, disable Tab.
       when (modifier `elem` [K.NoModifier, K.Shift, K.Control]) preventDefault
   void $ doc `on` keyPress $ do
     keyLoc <- ask >>= getKeyLocation
@@ -175,7 +175,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
             3 {-KEY_LOCATION_NUMPAD-} -> True
             _ -> False
           key = K.keyTranslateWeb quirksN onKeyPad
-          modifierNoShift =  -- to prevent Shift-!, etc.
+          modifierNoShift =  -- to prevent S-!, etc.
             if modifier == K.Shift then K.NoModifier else modifier
       -- IO.liftIO $ do
       --   putStrLn $ "charCode: " ++ show charCode
@@ -186,7 +186,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
       --   putStrLn $ "modifier: " ++ show modifier
       when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
       IO.liftIO $ saveKMP rf modifierNoShift key originPoint
-      -- Pass through Ctrl-+ and others, disable Tab.
+      -- Pass through C-+ and others, disable Tab.
       when (modifier `elem` [K.NoModifier, K.Shift, K.Control]) preventDefault
   -- Handle mouseclicks, per-cell.
   let setupMouse i a = let Point x y = PointArray.punindex lxsize i

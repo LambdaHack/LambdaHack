@@ -32,7 +32,7 @@ which in its most complex form may look as follows.
 
 The line starts with the list of party members (unless there's only one member)
 and the shortened name of the team. Clicking on the list selects heroes and
-the selected run together when `:` or `SHIFT`-left mouse button is pressed.
+the selected run together when `:` or `Shift`-left mouse button is pressed.
 
 Then comes the damage of the highest damage dice weapon the leader can use,
 then his current and maximum Calm (composure, focus, attentiveness), then
@@ -97,13 +97,14 @@ which have to be enabled in config.ui.ini).
 
 In aiming mode (`KEYPAD_*` or `\`) the same keys (or the middle and right
 mouse buttons) move the crosshair (the white box). In exploration mode,
-`SHIFT` (or `CTRL`) and a movement key make the current party leader
+`Shift` (or `Control`) and a movement key make the current party leader
 run in the indicated direction, until anything of interest is spotted.
 The `5` keypad key and the `i` and `.` keys consume a turn and make you
 brace for impact, which reduces any damage taken for a turn and makes it
 impossible for foes to displace you. When braced you block 50% of melee damage
 and deflect or duck behind any improvised cover avoiding 25% of ranged damage.
-You displace enemies or friends by bumping into them with `SHIFT` (or `CTRL`).
+You displace enemies or friends by bumping into them with `Shift`
+(or `Control`).
 
 Melee, searching for secret doors, looting and opening closed doors
 can be done by bumping into a monster, a wall and a door, respectively.
@@ -112,7 +113,7 @@ Few commands other than movement, 'g'etting an item from the floor,
 Some are provided only as specialized versions of the more general
 commands or as building blocks for more complex convenience macros.
 E.g., the autoexplore command (key `X`) could be defined
-by the player as a macro using `CTRL-?`, `CTRL-.` and `V`.
+by the player as a macro using `C-?`, `C-.` and `V`.
 
 The following minimal command set lets you accomplish almost anything
 in the game, though not necessarily with the fewest number of keystrokes.
@@ -130,13 +131,13 @@ from the Main Menu.
         +               swerve the aiming line
         D               display player diary
         T               toggle suspect terrain display
-        SHIFT-TAB       cycle among all party members
+        S-TAB           cycle among all party members
         ESC             cancel action, open Main Menu
 
 The only activity not possible with the commands above is the management
 of non-leader party members. You don't need it, unless your non-leader actors
 can move or fire opportunistically (via innate skills or rare equipment).
-If really needed, you can manually set party tactics with `CTRL-T`
+If really needed, you can manually set party tactics with `C-T`
 and you can assign individual targets to party members using the aiming
 commands listed below.
 
@@ -145,10 +146,10 @@ commands listed below.
         KEYPAD_/ or |   cycle aiming styles
         +               swerve the aiming line
         -               unswerve the aiming line
-        CTRL-?          set crosshair to the closest unknown spot
-        CTRL-I          set crosshair to the closest item
-        CTRL-{          set crosshair to the closest stairs up
-        CTRL-}          set crosshair to the closest stairs down
+        C-?             set crosshair to the closest unknown spot
+        C-I             set crosshair to the closest item
+        C-{             set crosshair to the closest stairs up
+        C-}             set crosshair to the closest stairs down
         BACKSPACE       reset target/crosshair
         RET or INSERT   accept target/choice
 
@@ -183,7 +184,7 @@ and all move at once, sometimes brutally colliding by accident.
 
 When the hero bumps into a monster or a monster attacks the hero,
 melee combat occurs. Heroes and monsters running into one another
-(with the `SHIFT` key) do not inflict damage, but change places.
+(with the `Shift` key) do not inflict damage, but change places.
 This gives the opponent a free blow, but can improve the tactical situation
 or aid escape. In some circumstances actors are immune to the displacing,
 e.g., when both parties form a continuous front-line.

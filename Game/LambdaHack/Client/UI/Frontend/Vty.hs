@@ -83,7 +83,7 @@ keyTranslate n =
     KBegin        -> K.Begin
     KCenter       -> K.Begin
     KIns          -> K.Insert
-    -- Ctrl-Home and Ctrl-End are the same in vty as Home and End
+    -- C-Home and C-End are the same in vty as Home and End
     -- on some terminals so we have to use 1--9 for movement instead of
     -- leader change.
     (KChar c)

@@ -238,7 +238,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
                             , runInitial = True
                             , runStopMsg = Nothing
                             , runWaiting = 0 }
-      macroRun25 = ["CTRL-comma", "CTRL-V"]
+      macroRun25 = ["C-comma", "C-V"]
   when (initialStep && run) $ do
     modifySession $ \cli ->
       cli {srunning = Just runParams}
