@@ -295,7 +295,7 @@ escapeUp = TileKind
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
   , talter   = talterForStairs
-  , tfeature = [Cause $ IK.Escape 1]
+  , tfeature = [Cause IK.Escape]
   }
 escapeDown = TileKind
   { tsymbol  = '>'
@@ -304,7 +304,7 @@ escapeDown = TileKind
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
   , talter   = talterForStairs
-  , tfeature = [Cause $ IK.Escape (-1)]
+  , tfeature = [Cause IK.Escape]
   }
 escapeOutdoorDown = escapeDown
   { tname    = "exit back to town"
