@@ -42,7 +42,7 @@ standardKeys = KeyKind
       , ("d", addCmdCategory CmdItemMenu $ dropItems "drop item(s)")
       , ("period", addCmdCategory CmdNoHelp $ dropItems "")
       , ("f", addCmdCategory CmdItemMenu $ projectA flingTs)
-      , ("CTRL-f", addCmdCategory CmdItemMenu
+      , ("C-f", addCmdCategory CmdItemMenu
                    $ replaceDesc "fling without aiming" $ projectI flingTs)
       , ("a", addCmdCategory CmdItemMenu $ applyI [ApplyItem
                 { verb = "apply"
@@ -52,10 +52,10 @@ standardKeys = KeyKind
       -- Terrain exploration and alteration
       , ("semicolon", ( [CmdMove]
                       , "go to crosshair for 25 steps"
-                      , Macro ["CTRL-semicolon", "CTRL-period", "V"] ))
+                      , Macro ["C-semicolon", "C-period", "V"] ))
       , ("colon", ( [CmdMove]
                   , "run to crosshair collectively for 25 steps"
-                  , Macro ["CTRL-colon", "CTRL-period", "V"] ))
+                  , Macro ["C-colon", "C-period", "V"] ))
       , ("x", ( [CmdMove]
               , "explore nearest unknown spot"
               , autoexploreCmd ))
@@ -63,8 +63,8 @@ standardKeys = KeyKind
               , "autoexplore 25 times"
               , autoexplore25Cmd ))
       , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_5", "V"]))
-      , ("CTRL-R", ( [CmdMove], "lurk (1/10th wait 100 times)"
-                   , Macro ["CTRL-KP_5", "V"]) )
+      , ("C-R", ( [CmdMove], "lurk (1/10th wait 100 times)"
+                   , Macro ["C-KP_5", "V"]) )
       , let triggerClose =
               [ AlterFeature { verb = "close"
                              , object = "door"
@@ -139,23 +139,23 @@ standardKeys = KeyKind
       , ("/", ([CmdAim], "", AimFloor))
       , ("+", ([CmdAim, CmdMinimal], "swerve the aiming line", EpsIncr True))
       , ("-", ([CmdAim], "unswerve the aiming line", EpsIncr False))
-      , ("CTRL-?", ( [CmdAim]
+      , ("C-?", ( [CmdAim]
                    , "set crosshair to nearest unknown spot"
                    , XhairUnknown ))
-      , ("CTRL-I", ( [CmdAim]
+      , ("C-I", ( [CmdAim]
                    , "set crosshair to nearest item"
                    , XhairItem ))
-      , ("CTRL-{", ( [CmdAim]
+      , ("C-{", ( [CmdAim]
                    , "set x-hair to nearest upstairs"
                    , XhairStair True ))
-      , ("CTRL-}", ( [CmdAim]
+      , ("C-}", ( [CmdAim]
                    , "set x-hair to nearest downstairs"
                    , XhairStair False ))
       , ("<", ([CmdAim], "switch view to one level higher" , AimAscend 1))
-      , ("CTRL-<", ( [CmdNoHelp], "switch view to 10 levels higher"
+      , ("C-<", ( [CmdNoHelp], "switch view to 10 levels higher"
                    , AimAscend 10) )
       , (">", ([CmdAim], "switch view to one level lower", AimAscend (-1)))
-      , ("CTRL->", ( [CmdNoHelp], "switch view to 10 levels lower"
+      , ("C->", ( [CmdNoHelp], "switch view to 10 levels lower"
                    , AimAscend (-10)) )
       , ( "BackSpace"
         , ([CmdAim], "clear target or chosen item", TgtClear) )
@@ -182,13 +182,13 @@ standardKeys = KeyKind
       , ("_", ([CmdMeta], "deselect (or select) all on the level", SelectNone))
       , ("v", ([CmdMeta], "voice again the recorded commands", Repeat 1))
       , ("V", repeatTriple 100)
-      , ("CTRL-v", repeatTriple 1000)
-      , ("CTRL-V", repeatTriple 25)
+      , ("C-v", repeatTriple 1000)
+      , ("C-V", repeatTriple 25)
       , ("'", ([CmdMeta], "start recording commands", Record))
 
       -- Mouse
       , ("LeftButtonRelease", mouseLMB)
-      , ( "CTRL-LeftButtonRelease"
+      , ( "C-LeftButtonRelease"
         , replaceDesc "" $ addCmdCategory CmdNoHelp mouseRMB)  -- Mac convention
       , ("RightButtonRelease", mouseRMB)
       , ("MiddleButtonRelease", mouseMMB)
@@ -198,17 +198,17 @@ standardKeys = KeyKind
         , replaceDesc "" $ addCmdCategory CmdNoHelp mouseRMB )
 
       -- Debug and others not to display in help screens
-      , ("CTRL-S", ([CmdDebug], "save game", GameSave))
-      , ("CTRL-semicolon", ( [CmdNoHelp]
+      , ("C-S", ([CmdDebug], "save game", GameSave))
+      , ("C-semicolon", ( [CmdNoHelp]
                            , "move one step towards the crosshair"
                            , MoveOnceToXhair ))
-      , ("CTRL-colon", ( [CmdNoHelp]
+      , ("C-colon", ( [CmdNoHelp]
                        , "run collectively one step towards the crosshair"
                        , RunOnceToXhair ))
-      , ("CTRL-period", ( [CmdNoHelp]
+      , ("C-period", ( [CmdNoHelp]
                         , "continue towards the crosshair"
                         , ContinueToXhair ))
-      , ("CTRL-comma", ([CmdNoHelp], "run once ahead", RunOnceAhead))
+      , ("C-comma", ([CmdNoHelp], "run once ahead", RunOnceAhead))
       , ("safe1", ( [CmdInternal]
                   , "go to pointer for 25 steps"
                   , goToCmd ))

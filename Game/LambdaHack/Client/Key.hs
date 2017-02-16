@@ -254,9 +254,9 @@ mkKM s = let mkKey sk =
                  Unknown _ -> assert `failure` "unknown key" `twith` s
                  key -> key
          in case s of
-           'S':'H':'I':'F':'T':'-':rest -> KM Shift (mkKey rest)
-           'C':'T':'R':'L':'-':rest -> KM Control (mkKey rest)
-           'A':'L':'T':'-':rest -> KM Alt (mkKey rest)
+           'S':'-':rest -> KM Shift (mkKey rest)
+           'C':'-':rest -> KM Control (mkKey rest)
+           'A':'-':rest -> KM Alt (mkKey rest)
            _ -> KM NoModifier (mkKey s)
 
 mkChar :: Char -> KM

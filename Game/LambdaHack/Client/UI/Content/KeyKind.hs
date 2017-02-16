@@ -111,16 +111,16 @@ mouseRMB =
     , (CaTargetDesc, ChooseItemMenu $ MStore CEqp) ]
 
 goToCmd :: HumanCmd
-goToCmd = Macro ["MiddleButtonRelease", "CTRL-semicolon", "CTRL-period", "V"]
+goToCmd = Macro ["MiddleButtonRelease", "C-semicolon", "C-period", "V"]
 
 runToAllCmd :: HumanCmd
-runToAllCmd = Macro ["MiddleButtonRelease", "CTRL-colon", "CTRL-period", "V"]
+runToAllCmd = Macro ["MiddleButtonRelease", "C-colon", "C-period", "V"]
 
 autoexploreCmd :: HumanCmd
-autoexploreCmd = Macro ["CTRL-?", "CTRL-period", "V"]
+autoexploreCmd = Macro ["C-?", "C-period", "V"]
 
 autoexplore25Cmd :: HumanCmd
-autoexplore25Cmd = Macro ["'", "CTRL-?", "CTRL-period", "'", "V"]
+autoexplore25Cmd = Macro ["'", "C-?", "C-period", "'", "V"]
 
 aimFlingCmd :: HumanCmd
 aimFlingCmd = ComposeIfLocal AimPointerEnemy (projectICmd flingTs)
