@@ -168,6 +168,8 @@ speedup allClear cotile =
   in TileSpeedup {..}
 
 -- Check that alter can be used, if not, @maxBound@.
+-- For now, we assume only items with @Embed@ may have embedded items,
+-- whether inserted at dungeon creation or later on.
 alterMinSkillKind :: Kind.Id TileKind -> TileKind -> Word8
 alterMinSkillKind _k tk =
   let getTo TK.OpenTo{} = True

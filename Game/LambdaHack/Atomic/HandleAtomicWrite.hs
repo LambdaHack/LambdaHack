@@ -369,6 +369,12 @@ updRecordKill aid ikind k = do
 
 -- | Alter an attribute (actually, the only, the defining attribute)
 -- of a visible tile. This is similar to e.g., @UpdTrajectory@.
+--
+-- For now, we don't remove embedded items when altering a tile
+-- and neither do we create fresh ones. It works fine, e.g., for tiles on fire
+-- that change into burnt out tile and then the fire item can no longer
+-- be triggered due to @alterMinSkillKind@ excluding items without @Embed@,
+-- even if the burnt tile has low enough @talter@.
 updAlterTile :: MonadStateWrite m
              => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
              -> m ()

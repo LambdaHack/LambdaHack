@@ -32,9 +32,9 @@ cdefs = ContentDef
 
 items :: [ItemKind]
 items =
-  [dart, spike, slingStone, slingBullet, paralizingProj, harpoon, net, light1, light2, light3, blanket, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency, stairsUp, stairsDown, escape, terrainCache, signpostExit, signpostMap]
+  [dart, spike, slingStone, slingBullet, paralizingProj, harpoon, net, light1, light2, light3, blanket, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency, stairsUp, stairsDown, escape, terrainCache, signpostExit, signpostMap, fireSmall, fireBig]
 
-dart,    spike, slingStone, slingBullet, paralizingProj, harpoon, net, light1, light2, light3, blanket, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency, stairsUp, stairsDown, escape, terrainCache, signpostExit, signpostMap :: ItemKind
+dart,    spike, slingStone, slingBullet, paralizingProj, harpoon, net, light1, light2, light3, blanket, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency, stairsUp, stairsDown, escape, terrainCache, signpostExit, signpostMap, fireSmall, fireBig :: ItemKind
 
 necklace, ring, potion, flask, scroll, wand, gem :: ItemKind  -- generic templates
 
@@ -189,7 +189,7 @@ net = ItemKind
 light1 = ItemKind
   { isymbol  = symbolLight
   , iname    = "wooden torch"
-  , ifreq    = [("useful", 100), ("light source", 100)]
+  , ifreq    = [("useful", 100), ("light source", 100), ("wooden torch", 1)]
   , iflavour = zipPlain [Brown]
   , icount   = d 2
   , irarity  = [(1, 10)]
@@ -1207,7 +1207,7 @@ escape = stairsUp
   }
 terrainCache = stairsUp
   { isymbol  = 'O'
-  , iname    = "terrain cache"
+  , iname    = "treasure cache"
   , ifreq    = [("terrain cache", 1)]
   , iflavour = zipPlain [BrYellow]
   , ieffects = [CreateItem CGround "useful" TimerNone]
@@ -1232,4 +1232,30 @@ signpostMap = signpostExit
   { iname    = "signpost with map"
   , ifreq    = [("signpost", 20)]
   , ieffects = [Detect 10]
+  }
+fireSmall = ItemKind
+  { isymbol  = '&'
+  , iname    = "small fire"
+  , ifreq    = [("small fire", 1)]
+  , iflavour = zipPlain [BrRed]
+  , icount   = 1
+  , irarity  = [(1, 1)]
+  , iverbHit = "burn"
+  , iweight  = 10000
+  , idamage  = toDmg 0
+  , iaspects = []
+  , ieffects = [Burn 1, Explode "single spark"]
+  , ifeature = [Identified, Durable]
+  , idesc    = ""
+  , ikit     = []
+  }
+fireBig = fireSmall
+  { isymbol  = 'O'
+  , iname    = "big fire"
+  , ifreq    = [("big fire", 1)]
+  , ieffects = [ Burn 2, Explode "spark"
+               , CreateItem CGround "wooden torch" TimerNone ]
+  , ifeature = [Identified, Durable]
+  , idesc    = ""
+  , ikit     = []
   }
