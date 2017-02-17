@@ -353,7 +353,8 @@ komodoDragon = ItemKind  -- bad hearing; regeneration makes it very powerful
 hyena = ItemKind
   { isymbol  = 'h'
   , iname    = "spotted hyena"
-  , ifreq    = [("animal", 100), ("horror", 100), ("mobile animal", 100), ("scavenger", 20)]
+  , ifreq    = [ ("animal", 100), ("horror", 100), ("mobile animal", 100)
+               , ("scavenger", 20) ]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
   , irarity  = [(4, 1), (10, 8)]

@@ -229,7 +229,7 @@ distortion = ItemKind
   , idesc    = ""
   , ikit     = []
   }
-glassPiece = ItemKind  -- when blowing up windows  -- unused
+glassPiece = ItemKind  -- when blowing up windows
   { isymbol  = '*'
   , iname    = "glass piece"
   , ifreq    = [("glass piece", 1)]
@@ -538,8 +538,8 @@ waste = ItemKind
   , iweight  = 50
   , idamage  = toDmg 0
   , iaspects = []
-  , ieffects = [RefillHP (-1)]
-  , ifeature = [toLinger 20, Fragile, Identified]  -- 4 steps, 1 turn
+  , ieffects = [Burn (-1)]
+  , ifeature = [toLinger 10, Fragile, Identified]
   , idesc    = ""
   , ikit     = []
   }

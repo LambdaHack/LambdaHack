@@ -51,9 +51,9 @@ data Feature =
       -- ^ initially an item of this group is embedded;
       --   we assume the item has effects and is supposed to be triggered
   | OpenTo !(GroupName TileKind)
-      -- ^ goes from a closed to an open tile when altered
+      -- ^ goes from a closed to an open or closed tile when altered
   | CloseTo !(GroupName TileKind)
-      -- ^ goes from an open to a closed tile when altered
+      -- ^ goes from an open to a closed or open tile when altered
   | ChangeTo !(GroupName TileKind)
       -- ^ alters tile, but does not change walkability
   | HideAs !(GroupName TileKind)
