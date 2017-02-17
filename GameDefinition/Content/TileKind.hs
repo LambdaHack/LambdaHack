@@ -22,11 +22,11 @@ cdefs = ContentDef
   , validateSingle = validateSingleTileKind
   , validateAll = validateAllTileKind
   , content = contentFromList $
-      [unknown, wall, hardRock, pillar, pillarIce, pillarCache, lampPost, bush, bushDark, bushBurning, tree, treeDark, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, doorClosedH, doorOpenH, stairsUp, stairsOutdoorUp, stairsDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark]
+      [unknown, wall, hardRock, pillar, pillarIce, pillarCache, lampPost, signpost, bush, bushDark, bushBurning, tree, treeDark, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, doorClosedH, doorOpenH, stairsUp, stairsOutdoorUp, stairsDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark]
       ++ map makeDark ldarkable
       ++ map makeDarkColor ldarkColorable
   }
-unknown,        wall, hardRock, pillar, pillarIce, pillarCache, lampPost, bush, bushDark, bushBurning, tree, treeDark, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, doorClosedH, doorOpenH, stairsUp, stairsOutdoorUp, stairsDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark :: TileKind
+unknown,        wall, hardRock, pillar, pillarIce, pillarCache, lampPost, signpost, bush, bushDark, bushBurning, tree, treeDark, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, doorClosedH, doorOpenH, stairsUp, stairsOutdoorUp, stairsDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark :: TileKind
 
 ldarkable :: [TileKind]
 ldarkable = [wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, floorCorridorLit]
@@ -111,6 +111,15 @@ lampPost = TileKind
   , tcolor2  = Brown
   , talter   = 100
   , tfeature = [Indistinct]
+  }
+signpost = TileKind
+  { tsymbol  = 'O'
+  , tname    = "signpost"
+  , tfreq    = [("signpost", 1)]
+  , tcolor   = BrMagenta
+  , tcolor2  = Magenta
+  , talter   = 5
+  , tfeature = [Embed "signpost"]
   }
 bush = TileKind
   { tsymbol  = '&'

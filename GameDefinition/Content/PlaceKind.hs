@@ -326,7 +326,8 @@ staircase = PlaceKind
   , pfence   = FGround
   , ptopLeft = [ "<·>"
                ]
-  , poverride = [('<', "staircase up"), ('>', "staircase down")]
+  , poverride = [ ('<', "staircase up"), ('>', "staircase down")
+                , ('I', "signpost") ]
   }
 staircase2 = staircase
   { pfreq    = [("staircase", 1000)]
@@ -341,7 +342,7 @@ staircase2 = staircase
 staircase3 = staircase
   { pfreq    = [("staircase", 1000)]
   , pfence   = FFloor
-  , ptopLeft = [ "O·O·O"
+  , ptopLeft = [ "O·I·O"
                , "·····"
                , "·<·>·"
                , "·····"
@@ -373,7 +374,7 @@ staircase6 = staircase
 staircase7 = staircase
   { pfreq    = [("staircase", 100)]
   , pfence   = FGround
-  , ptopLeft = [ "O·O·<·>·O·O"
+  , ptopLeft = [ "O·I·<·>·O·O"
                ]
   }
 staircase8 = staircase
@@ -445,7 +446,7 @@ staircase15 = staircase
   , pfence   = FNone
   , ptopLeft = [ "-------------"
                , "|···········|"
-               , "|O·O·<·>·O·O|"
+               , "|O·O·<·>·I·O|"
                , "|···········|"
                , "-------------"
                ]
@@ -603,7 +604,9 @@ makeStaircaseUp s = s
  { psymbol   = '<'
  , pname     = pname s <+> "up"
  , pfreq     = map (\(t, k) -> (toGroupName $ tshow t <+> "up", k)) $ pfreq s
- , poverride = [('>', "stair terminal"), ('<', toGroupName $ pname s <+> "up")]
+ , poverride = [ ('>', "stair terminal")
+               , ('<', toGroupName $ pname s <+> "up")
+               , ('I', "signpost") ]
  }
 
 makeStaircaseDown :: PlaceKind -> PlaceKind
@@ -611,5 +614,7 @@ makeStaircaseDown s = s
  { psymbol   = '>'
  , pname     = pname s <+> "down"
  , pfreq     = map (\(t, k) -> (toGroupName $ tshow t <+> "down", k)) $ pfreq s
- , poverride = [('<', "stair terminal"), ('>', toGroupName $ pname s <+> "down")]
+ , poverride = [ ('<', "stair terminal")
+               , ('>', toGroupName $ pname s <+> "down")
+               , ('I', "signpost") ]
  }
