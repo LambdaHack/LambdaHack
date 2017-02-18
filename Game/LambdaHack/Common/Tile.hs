@@ -183,6 +183,7 @@ alterMinSkillKind _k tk =
   let getTo TK.OpenTo{} = True
       getTo TK.CloseTo{} = True
       getTo TK.ChangeTo{} = True
+      getTo TK.HideAs{} = True  -- in case tile swapped, but server sends hidden
       getTo TK.Embed{} = True
       getTo TK.Suspect = True
       getTo _ = False

@@ -208,7 +208,7 @@ wallGlassVSpice = wallGlassV
   }
 wallSuspectV = TileKind  -- only on client
   { tsymbol  = '|'
-  , tname    = "moldy wall"
+  , tname    = "suspect moldy wall"
   , tfreq    = [("suspect vertical wall Lit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
@@ -220,11 +220,11 @@ wallSuspectV = TileKind  -- only on client
   }
 wallObscuredV = TileKind
   { tsymbol  = '|'
-  , tname    = "moldy wall"
+  , tname    = "granite moldy wall"
   , tfreq    = [("obscured vertical wall Lit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , talter   = 2
+  , talter   = 5
   , tfeature = [ HideAs "suspect vertical wall Lit"
                , Indistinct
                ]
@@ -288,7 +288,7 @@ wallGlassHSpice = wallGlassH
   }
 wallSuspectH = TileKind  -- only on client
   { tsymbol  = '-'
-  , tname    = "scratched wall"
+  , tname    = "suspect scratched wall"
   , tfreq    = [("suspect horizontal wall Lit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
@@ -299,12 +299,12 @@ wallSuspectH = TileKind  -- only on client
                , Indistinct ]
   }
 wallObscuredH = TileKind
-  { tsymbol  = '|'
-  , tname    = "scratched wall"
+  { tsymbol  = '-'
+  , tname    = "granite scratched wall"
   , tfreq    = [("obscured horizontal wall Lit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , talter   = 2
+  , talter   = 5
   , tfeature = [ HideAs "suspect horizontal wall Lit"
                , Indistinct
                ]

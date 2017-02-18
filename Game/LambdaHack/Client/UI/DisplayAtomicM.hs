@@ -254,8 +254,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
     let msg = makeSentence [ MU.SubjectVerbSg subject verb
                            , "that the"
                            , MU.SubjectVerbSg subject2 verb2
-                           , "a hidden"
-                           , MU.Text $ TK.tname $ okind toTile ]
+                           , MU.AW $ MU.Text $ TK.tname $ okind toTile ]
     msgAdd msg
   UpdSpotTile{} -> return ()
   UpdLoseTile{} -> return ()

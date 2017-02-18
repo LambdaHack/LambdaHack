@@ -69,19 +69,19 @@ standardKeys = KeyKind
               [ AlterFeature { verb = "close"
                              , object = "door"
                              , feature =
-                                 TK.CloseTo "vertical closed door Lit" }
+                                 TK.CloseTo "closed vertical door Lit" }
               , AlterFeature { verb = "close"
                              , object = "door"
                              , feature =
-                                 TK.CloseTo "horizontal closed door Lit" }
+                                 TK.CloseTo "closed horizontal door Lit" }
               , AlterFeature { verb = "close"
                              , object = "door"
                              , feature =
-                                 TK.CloseTo "vertical closed door Dark" }
+                                 TK.CloseTo "closed vertical door Dark" }
               , AlterFeature { verb = "close"
                              , object = "door"
                              , feature =
-                                 TK.CloseTo "horizontal closed door Dark" }
+                                 TK.CloseTo "closed horizontal door Dark" }
               ]
         in ("c", ( [CmdMove, CmdMinimal]
                  , descTs triggerClose
