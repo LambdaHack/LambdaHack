@@ -1223,8 +1223,7 @@ terrainCacheTrap = stairsUp
   , iweight  = 1000
   , idamage  = toDmg 0
   , iaspects = []
-  , ieffects = [OneOf [ toOrganActorTurn "poisoned" (10 + d 10)
-                      , Explode "glue"
+  , ieffects = [OneOf [ toOrganNone "poisoned", Explode "glue"
                       , ELabel "", ELabel "", ELabel ""
                       , ELabel "", ELabel "", ELabel ""
                       , ELabel "", ELabel "" ]]
