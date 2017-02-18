@@ -86,15 +86,14 @@ cmdAtomicFilterCli cmd = case cmd of
                                `twith` (aid, p, fromTile, toTile, b, t, cmd))
                   [cmd]  -- Already knows the tile fully, only confirm.
   UpdSpotTile lid ts -> do
-    Kind.COps{coTileSpeedup} <- getsState scops
+    Kind.COps{cotile} <- getsState scops
     lvl <- getLevel lid
     -- We ignore the server resending us hidden versions of the tiles
     -- (and resending us the same data we already got).
     -- If the tiles are changed to other variants of the hidden tile,
     -- we can still verify by searching.
     let notKnown (p, t) = let tClient = lvl `at` p
-                          in t /= tClient
-                             && (not (Tile.isSuspect coTileSpeedup t))
+                          in Tile.hideAs cotile tClient /= t
         newTs = filter notKnown ts
     return $! if null newTs then [] else [UpdSpotTile lid newTs]
   UpdDiscover c iid _ seed -> do

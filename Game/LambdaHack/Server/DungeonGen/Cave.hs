@@ -242,7 +242,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
         -- The hacks below are instead of unionWithKeyM, which is costly.
         let mergeCor _ pl cor = if Tile.isWalkable coTileSpeedup pl
                                 then Nothing  -- tile already open
-                                else Just (Tile.hideAs cotile pl, cor)
+                                else Just (Tile.builAs cotile pl, cor)
             intersectionWithKeyMaybe combine =
               EM.mergeWithKey combine (const EM.empty) (const EM.empty)
             interCor = intersectionWithKeyMaybe mergeCor lpl lcor  -- fast

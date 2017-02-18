@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Level
   , Level(..), ItemFloor, ActorMap, TileMap, SmellMap
     -- * Level query
   , at, accessible, accessibleUnknown, accessibleDir
-  , hideTile, findPoint, findPos, findPosTry, findPosTry2
+  , findPoint, findPos, findPosTry, findPosTry2
   ) where
 
 import Prelude ()
@@ -120,12 +120,6 @@ accessibleUnknown Kind.COps{coTileSpeedup} lvl tpos =
 -- | Check whether actors can move from a position along a unit vector.
 accessibleDir :: Kind.COps -> Level -> Point -> Vector -> Bool
 accessibleDir cops lvl spos dir = accessible cops lvl $ spos `shift` dir
-
-hideTile :: Kind.COps -> Level -> Point -> Kind.Id TileKind
-hideTile Kind.COps{cotile, coTileSpeedup} lvl p =
-  let t = lvl `at` p
-      ht = Tile.hideAs cotile t
-  in assert (ht == t || Tile.isSuspect coTileSpeedup ht) ht
 
 -- | Find a random position on the map satisfying a predicate.
 findPoint :: X -> Y -> (Point -> Maybe Point) -> Rnd Point

@@ -58,10 +58,14 @@ data Feature =
       -- ^ alters tile, but does not change walkability
   | HideAs !(GroupName TileKind)
       -- ^ when hidden, looks as a tile of the group
+
+  -- The following three are only used in dungeon generation.
+  | BuildAs !(GroupName TileKind)
+      -- ^ when generating cave, may be transfromed as the group indicates
   | RevealAs !(GroupName TileKind)
-      -- ^ when in opening, can be revealed to belong to the group
+      -- ^ when generating in opening, can be revealed to belong to the group
   | ObscureAs !(GroupName TileKind)
-      -- ^ when not in opening, can be revealed to belong to the group
+      -- ^ when generating in solid wall, can be revealed to belong to the group
 
   | Walkable             -- ^ actors can walk through
   | Clear                -- ^ actors can see through
@@ -169,6 +173,7 @@ actionFeatures markSuspect t =
         Impenetrable -> Just feat
         Trail -> Just feat  -- doesn't affect tile behaviour, but important
         HideAs{} -> Nothing
+        BuildAs{} -> Nothing
         RevealAs{} -> Nothing
         ObscureAs{} -> Nothing
         Dark -> Nothing  -- not important any longer, after FOV computed

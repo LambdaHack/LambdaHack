@@ -189,7 +189,7 @@ wallV = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 100
-  , tfeature = [ HideAs "suspect vertical wall Lit"  -- for dungeon gen
+  , tfeature = [ BuildAs "suspect vertical wall Lit"
                , Indistinct ]
   }
 wallGlassV = TileKind
@@ -199,7 +199,7 @@ wallGlassV = TileKind
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
-  , tfeature = [ HideAs "suspect vertical wall Lit"  -- for dungeon gen
+  , tfeature = [ BuildAs "suspect vertical wall Lit"
                , Clear ]
   }
 wallGlassVSpice = wallGlassV
@@ -214,8 +214,8 @@ wallSuspectV = TileKind  -- only on client
   , tcolor2  = defFG
   , talter   = 2
   , tfeature = [ Suspect
-               , RevealAs "trapped vertical door Lit"  -- for dungeon gen
-               , ObscureAs "obscured vertical wall Lit"  -- for dungeon gen
+               , RevealAs "trapped vertical door Lit"
+               , ObscureAs "obscured vertical wall Lit"
                , Indistinct ]
   }
 wallObscuredV = TileKind
@@ -269,7 +269,7 @@ wallH = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 100
-  , tfeature = [ HideAs "suspect horizontal wall Lit"  -- for dungeon gen
+  , tfeature = [ BuildAs "suspect horizontal wall Lit"
                , Indistinct ]
   }
 wallGlassH = TileKind
@@ -279,7 +279,7 @@ wallGlassH = TileKind
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
-  , tfeature = [ HideAs "suspect horizontal wall Lit"  -- for dungeon gen
+  , tfeature = [ BuildAs "suspect horizontal wall Lit"
                , Clear ]
   }
 wallGlassHSpice = wallGlassH
@@ -294,8 +294,8 @@ wallSuspectH = TileKind  -- only on client
   , tcolor2  = defFG
   , talter   = 2
   , tfeature = [ Suspect
-               , RevealAs "trapped horizontal door Lit"  -- for dungeon gen
-               , ObscureAs "obscured horizontal wall Lit"  -- for dungeon gen
+               , RevealAs "trapped horizontal door Lit"
+               , ObscureAs "obscured horizontal wall Lit"
                , Indistinct ]
   }
 wallObscuredH = TileKind
@@ -535,6 +535,7 @@ makeDark k = let darkText :: GroupName TileKind -> GroupName TileKind
                  darkFeat (CloseTo t) = Just $ CloseTo $ darkText t
                  darkFeat (ChangeTo t) = Just $ ChangeTo $ darkText t
                  darkFeat (HideAs t) = Just $ HideAs $ darkText t
+                 darkFeat (BuildAs t) = Just $ BuildAs $ darkText t
                  darkFeat (RevealAs t) = Just $ RevealAs $ darkText t
                  darkFeat (ObscureAs t) = Just $ ObscureAs $ darkText t
                  darkFeat OftenItem = Nothing  -- items not common in the dark

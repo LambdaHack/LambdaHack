@@ -379,8 +379,8 @@ reqDisplace source target = do
 -- should not be alterable (but @serverTile@ may be).
 reqAlter :: (MonadAtomic m, MonadServer m) => ActorId -> Point -> m ()
 reqAlter source tpos = do
-  cops@Kind.COps{ cotile=Kind.Ops{okind, opick}
-                , coTileSpeedup } <- getsState scops
+  Kind.COps{ cotile=cotile@Kind.Ops{okind, opick}
+           , coTileSpeedup } <- getsState scops
   sb <- getsState $ getActorBody source
   actorSk <- actorSkillsServer source
   let alterSkill = EM.findWithDefault 0 Ability.AbAlter actorSk
@@ -389,7 +389,7 @@ reqAlter source tpos = do
       req = ReqAlter tpos
   lvl <- getLevel lid
   let serverTile = lvl `at` tpos
-      freshClientTile = hideTile cops lvl tpos
+      freshClientTile = Tile.hideAs cotile serverTile
   -- Only actors with AbAlter > 1 can search for hidden doors, etc.
   if alterSkill <= 1
      || serverTile == freshClientTile  -- no searching needed

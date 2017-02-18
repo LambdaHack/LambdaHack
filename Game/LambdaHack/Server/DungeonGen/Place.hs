@@ -192,7 +192,7 @@ buildPlace cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
   -- for the player, it's enough that they search and open doors
   -- and so reveal them on server; al least keep walls a mystery.
   let obscure p t = if isChancePos chidden dsecret p
-                    then Tile.obscureAs cotile $ Tile.hideAs cotile t
+                    then Tile.obscureAs cotile $ Tile.builAs cotile t
                     else return t
   tmap <- mapWithKeyM obscure $ EM.union interior fence
   return (tmap, place)
