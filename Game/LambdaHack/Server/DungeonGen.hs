@@ -39,7 +39,7 @@ convertTileMaps :: Kind.COps -> Bool
                 -> Int -> Int -> TileMapEM
                 -> Rnd TileMap
 convertTileMaps Kind.COps{coTileSpeedup} areAllWalkable
-                cdefTile mcdefTileWalkable cxsize cysize ltile = do
+                cdefTile mpickPassable cxsize cysize ltile = do
   let runCdefTile :: R.StdGen -> (Kind.Id TileKind, R.StdGen)
       runCdefTile = St.runState cdefTile
       runUnfold gen =
@@ -47,10 +47,10 @@ convertTileMaps Kind.COps{coTileSpeedup} areAllWalkable
         in (PointArray.unfoldrNA cxsize cysize runCdefTile gen1, gen2)
   converted0 <- St.state runUnfold
   let converted1 = converted0 PointArray.// EM.assocs ltile
-  case mcdefTileWalkable of
+  case mpickPassable of
     _ | areAllWalkable -> return converted1  -- all walkable; passes OK
     Nothing -> return converted1  -- no walkable tiles for filling the map
-    Just cdefTileWalkable -> do  -- some tiles walkable, so ensure connectivity
+    Just pickPassable -> do  -- some tiles walkable, so ensure connectivity
       let passes p@Point{..} array =
             px >= 0 && px <= cxsize - 1
             && py >= 0 && py <= cysize - 1
@@ -69,19 +69,20 @@ convertTileMaps Kind.COps{coTileSpeedup} areAllWalkable
           connect included blocks walkableTile array =
             let g n c = if included n
                            && not (Tile.isWalkable coTileSpeedup c)
+                           && not (Tile.isEasyOpen coTileSpeedup c)
                            && n `EM.notMember` ltile
                            && blocks n array
                         then walkableTile
                         else c
             in PointArray.imapA g array
-      walkable2 <- cdefTileWalkable
+      walkable2 <- pickPassable
       let converted2 = connect xeven blocksHorizontal walkable2 converted1
-      walkable3 <- cdefTileWalkable
+      walkable3 <- pickPassable
       let converted3 = connect yeven blocksVertical walkable3 converted2
-      walkable4 <- cdefTileWalkable
+      walkable4 <- pickPassable
       let converted4 =
             connect (not . xeven) blocksHorizontal walkable4 converted3
-      walkable5 <- cdefTileWalkable
+      walkable5 <- pickPassable
       let converted5 =
             connect (not . yeven) blocksVertical walkable5 converted4
       return converted5
@@ -100,9 +101,10 @@ buildTileMap cops@Kind.COps{ cotile=Kind.Ops{opick}
                  && nightCond kt
       pickDefTile =
         fromMaybe (assert `failure` cdefTile) <$> opick cdefTile dcond
-      wcond kt = Tile.kindHasFeature TK.Walkable kt
+      wcond kt = (Tile.kindHasFeature TK.Walkable kt
+                  || Tile.isEasyOpenKind kt)
                  && nightCond kt
-      mpickWalkable =
+      mpickPassable =
         if cpassable
         then Just
              $ fromMaybe (assert `failure` cdefTile) <$> opick cdefTile wcond
@@ -110,7 +112,7 @@ buildTileMap cops@Kind.COps{ cotile=Kind.Ops{opick}
       nwcond kt = not (Tile.kindHasFeature TK.Walkable kt) && nightCond kt
   areAllWalkable <- isNothing <$> opick cdefTile nwcond
   convertTileMaps cops areAllWalkable
-                  pickDefTile mpickWalkable cxsize cysize dmap
+                  pickDefTile mpickPassable cxsize cysize dmap
 
 -- | Create a level from a cave.
 buildLevel :: Kind.COps -> Int -> GroupName CaveKind

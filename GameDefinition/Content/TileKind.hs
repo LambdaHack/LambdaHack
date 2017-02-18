@@ -78,7 +78,7 @@ pillar = TileKind
   , tname    = "rock"
   , tfreq    = [ ("cachable", 50), ("stair terminal", 100)
                , ("legendLit", 100), ("legendDark", 100)
-               , ("noiseSet", 90), ("brawlSet", 50), ("shootoutSet", 10)
+               , ("noiseSet", 70), ("brawlSet", 50), ("shootoutSet", 10)
                , ("battleSet", 250) ]
   , tcolor   = BrCyan  -- not BrWhite, to tell from heroes
   , tcolor2  = Cyan
@@ -87,7 +87,7 @@ pillar = TileKind
   }
 pillarIce = pillar
   { tname    = "ice"
-  , tfreq    = [("noiseSet", 10), ("ice", 1)]
+  , tfreq    = [("noiseSet", 30), ("ice", 1)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 5

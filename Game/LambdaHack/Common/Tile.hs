@@ -15,9 +15,9 @@
 -- Actors at normal speed (2 m/s) take one turn to move one tile (1 m by 1 m).
 module Game.LambdaHack.Common.Tile
   ( kindHasFeature, hasFeature, isClear, isLit, isWalkable, isDoor, isSuspect
-  , isExplorable, isOftenItem, isOftenActor, isNoItem, isNoActor
+  , isExplorable, isOftenItem, isOftenActor, isNoItem, isNoActor, isEasyOpen
   , speedup, alterMinSkill, alterMinWalk, openTo, closeTo, embeddedItems
-  , revealAs, hideAs, isOpenable, isClosable, isChangeable
+  , revealAs, hideAs, isEasyOpenKind, isOpenable, isClosable, isChangeable
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , createTab, createTabWithKey, accessTab
@@ -119,6 +119,12 @@ isNoActor :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isNoActor #-}
 isNoActor TileSpeedup{isNoActorTab} = accessTab isNoActorTab
 
+-- | Whether a tile kind (specified by its id) has an OpenTo feature
+-- and reasonable alter min skill.
+isEasyOpen :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE isEasyOpen #-}
+isEasyOpen TileSpeedup{isEasyOpenTab} = accessTab isEasyOpenTab
+
 alterMinSkill :: TileSpeedup -> Kind.Id TileKind -> Int
 {-# INLINE alterMinSkill #-}
 alterMinSkill TileSpeedup{alterMinSkillTab} =
@@ -163,6 +169,7 @@ speedup allClear cotile =
       isOftenActorTab = createTab cotile $ kindHasFeature TK.OftenActor
       isNoItemTab = createTab cotile $ kindHasFeature TK.NoItem
       isNoActorTab = createTab cotile $ kindHasFeature TK.NoActor
+      isEasyOpenTab = createTab cotile isEasyOpenKind
       alterMinSkillTab = createTabWithKey cotile alterMinSkillKind
       alterMinWalkTab = createTabWithKey cotile alterMinWalkKind
   in TileSpeedup {..}
@@ -236,6 +243,12 @@ hideAs Kind.Ops{okind, ouniqGroup} t =
   in case find getTo $ TK.tfeature $ okind t of
        Just (TK.HideAs grp) -> ouniqGroup grp
        _ -> t
+
+isEasyOpenKind :: TileKind -> Bool
+isEasyOpenKind tk =
+  let getTo TK.OpenTo{} = True
+      getTo _ = False
+  in TK.talter tk < 10 && any getTo (TK.tfeature tk)
 
 -- | Whether a tile kind (specified by its id) has an OpenTo feature.
 isOpenable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
