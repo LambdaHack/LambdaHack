@@ -76,7 +76,7 @@ hardRock = TileKind
 pillar = TileKind
   { tsymbol  = 'O'
   , tname    = "rock"
-  , tfreq    = [ ("cachable", 70), ("stair terminal", 100)
+  , tfreq    = [ ("cachable", 50), ("stair terminal", 100)
                , ("legendLit", 100), ("legendDark", 100)
                , ("noiseSet", 95), ("brawlSet", 50), ("shootoutSet", 10)
                , ("battleSet", 250) ]
@@ -96,11 +96,12 @@ pillarIce = pillar
 pillarCache = TileKind
   { tsymbol  = 'O'
   , tname    = "cache"
-  , tfreq    = [("cachable", 30), ("stair terminal", 1)]
+  , tfreq    = [("cachable", 50), ("stair terminal", 1)]
   , tcolor   = BrYellow
   , tcolor2  = Brown
   , talter   = 5
-  , tfeature = [Embed "terrain cache", ChangeTo "cachable", Indistinct]
+  , tfeature = [ Embed "terrain cache", Embed "terrain cache trap"
+               , ChangeTo "cachable", Indistinct ]
   }
 lampPost = TileKind
   { tsymbol  = 'O'

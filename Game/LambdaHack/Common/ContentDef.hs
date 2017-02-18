@@ -17,7 +17,6 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Vector as V
 
-import Game.LambdaHack.Common.KindOps
 import Game.LambdaHack.Common.Misc
 
 -- | The general type of a particular game content, e.g., item kinds.
@@ -33,4 +32,4 @@ data ContentDef a = ContentDef
   }
 
 contentFromList :: [a] -> V.Vector a
-contentFromList = V.fromListN (fromEnum (maxBound :: Id a))
+contentFromList = V.fromList

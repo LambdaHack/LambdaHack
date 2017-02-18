@@ -277,7 +277,7 @@ boilingWater = ItemKind
   , idesc    = ""
   , ikit     = []
   }
-glue = ItemKind  -- unused
+glue = ItemKind
   { isymbol  = '*'
   , iname    = "hoof glue"
   , ifreq    = [("glue", 1)]
