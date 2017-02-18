@@ -22,14 +22,14 @@ cdefs = ContentDef
   , validateSingle = validateSingleTileKind
   , validateAll = validateAllTileKind
   , content = contentFromList $
-      [unknown, wall, hardRock, pillar, pillarIce, pillarCache, lampPost, signpost, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, doorClosedH, doorOpenH, stairsUp, stairsOutdoorUp, stairsDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark]
+      [unknown, wall, hardRock, pillar, pillarIce, pillarCache, lampPost, signpost, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, doorClosedV, doorTrappedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, doorClosedH, doorTrappedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark]
       ++ map makeDark ldarkable
       ++ map makeDarkColor ldarkColorable
   }
-unknown,        wall, hardRock, pillar, pillarIce, pillarCache, lampPost, signpost, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, doorClosedH, doorOpenH, stairsUp, stairsOutdoorUp, stairsDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark :: TileKind
+unknown,        wall, hardRock, pillar, pillarIce, pillarCache, lampPost, signpost, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, doorClosedV, doorTrappedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, doorClosedH, doorTrappedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark :: TileKind
 
 ldarkable :: [TileKind]
-ldarkable = [wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, rubble, floorCorridorLit]
+ldarkable = [wallV, wallSuspectV, doorClosedV, doorTrappedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorTrappedH, doorOpenH, rubble, floorCorridorLit]
 
 ldarkColorable :: [TileKind]
 ldarkColorable = [floorArenaLit, floorNoiseLit, floorDirtLit, floorActorLit, floorItemLit, floorActorItemLit]
@@ -211,7 +211,7 @@ wallSuspectV = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 2
-  , tfeature = [Suspect, RevealAs "vertical closed door Lit", Indistinct]
+  , tfeature = [Suspect, RevealAs "vertical trapped door Lit", Indistinct]
   }
 doorClosedV = TileKind
   { tsymbol  = '+'
@@ -221,6 +221,19 @@ doorClosedV = TileKind
   , tcolor2  = BrBlack
   , talter   = 2
   , tfeature = [ OpenTo "vertical open door Lit"
+               , HideAs "suspect vertical wall Lit"
+               , Indistinct
+               ]
+  }
+doorTrappedV = TileKind
+  { tsymbol  = '+'
+  , tname    = "trapped door"
+  , tfreq    = [("vertical trapped door Lit", 1)]
+  , tcolor   = BrRed
+  , tcolor2  = Red
+  , talter   = 2
+  , tfeature = [ Embed "doorway trap"
+               , OpenTo "vertical open door Lit"
                , HideAs "suspect vertical wall Lit"
                , Indistinct
                ]
@@ -265,7 +278,7 @@ wallSuspectH = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 2
-  , tfeature = [Suspect, RevealAs "horizontal closed door Lit", Indistinct]
+  , tfeature = [Suspect, RevealAs "horizontal trapped door Lit", Indistinct]
   }
 doorClosedH = TileKind
   { tsymbol  = '+'
@@ -275,6 +288,19 @@ doorClosedH = TileKind
   , tcolor2  = BrBlack
   , talter   = 2
   , tfeature = [ OpenTo "horizontal open door Lit"
+               , HideAs "suspect horizontal wall Lit"
+               , Indistinct
+               ]
+  }
+doorTrappedH = TileKind
+  { tsymbol  = '+'
+  , tname    = "trapped door"
+  , tfreq    = [("horizontal trapped door Lit", 1)]
+  , tcolor   = BrRed
+  , tcolor2  = Red
+  , talter   = 2
+  , tfeature = [ Embed "doorway trap"
+               , OpenTo "horizontal open door Lit"
                , HideAs "suspect horizontal wall Lit"
                , Indistinct
                ]
@@ -293,11 +319,20 @@ doorOpenH = TileKind
 stairsUp = TileKind
   { tsymbol  = '<'
   , tname    = "staircase up"
-  , tfreq    = [("staircase up", 1)]
+  , tfreq    = [("staircase up", 9)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = talterForStairs
   , tfeature = [Embed "staircase up"]
+  }
+stairsTaintedUp = TileKind
+  { tsymbol  = '<'
+  , tname    = "tainted staircase up"
+  , tfreq    = [("staircase up", 1)]
+  , tcolor   = BrRed
+  , tcolor2  = Red
+  , talter   = talterForStairs
+  , tfeature = [Embed "staircase up", Embed "staircase trap"]
   }
 stairsOutdoorUp = stairsUp
   { tname    = "signpost pointing backward"
@@ -306,11 +341,20 @@ stairsOutdoorUp = stairsUp
 stairsDown = TileKind
   { tsymbol  = '>'
   , tname    = "staircase down"
-  , tfreq    = [("staircase down", 1)]
+  , tfreq    = [("staircase down", 9)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = talterForStairs
   , tfeature = [Embed "staircase down"]
+  }
+stairsTaintedDown = TileKind
+  { tsymbol  = '>'
+  , tname    = "tainted staircase down"
+  , tfreq    = [("staircase down", 1)]
+  , tcolor   = BrRed
+  , tcolor2  = Red
+  , talter   = talterForStairs
+  , tfeature = [Embed "staircase down", Embed "staircase trap"]
   }
 stairsOutdoorDown = stairsDown
   { tname    = "signpost pointing forward"
