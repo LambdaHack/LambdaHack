@@ -213,8 +213,7 @@ wallSuspectV = TileKind  -- only on client
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 2
-  , tfeature = [ Suspect
-               , RevealAs "trapped vertical door Lit"
+  , tfeature = [ RevealAs "trapped vertical door Lit"
                , ObscureAs "obscured vertical wall Lit"
                , Indistinct ]
   }
@@ -293,8 +292,7 @@ wallSuspectH = TileKind  -- only on client
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 2
-  , tfeature = [ Suspect
-               , RevealAs "trapped horizontal door Lit"
+  , tfeature = [ RevealAs "trapped horizontal door Lit"
                , ObscureAs "obscured horizontal wall Lit"
                , Indistinct ]
   }

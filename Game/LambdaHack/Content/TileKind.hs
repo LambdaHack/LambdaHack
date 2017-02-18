@@ -4,7 +4,7 @@ module Game.LambdaHack.Content.TileKind
   ( TileKind(..), Feature(..)
   , validateSingleTileKind, validateAllTileKind, actionFeatures
   , TileSpeedup(..), Tab(..), isUknownSpace, unknownId
-  , talterForStairs, floorSymbol
+  , isSuspectKind, talterForStairs, floorSymbol
   ) where
 
 import Prelude ()
@@ -70,7 +70,6 @@ data Feature =
   | Walkable             -- ^ actors can walk through
   | Clear                -- ^ actors can see through
   | Dark                 -- ^ is not lit with an ambient light
-  | Suspect              -- ^ may not be what it seems (clients only)
   | Impenetrable         -- ^ can never be excavated nor seen through
 
   | OftenItem            -- ^ initial items often generated there
@@ -124,9 +123,16 @@ unknownId = KindOps.Id 0
 
 -- | Validate a single tile kind.
 validateSingleTileKind :: TileKind -> [Text]
-validateSingleTileKind TileKind{..} =
+validateSingleTileKind t@TileKind{..} =
   [ "suspect tile is walkable" | Walkable `elem` tfeature
-                                 && Suspect `elem` tfeature ]
+                                 && isSuspectKind t ]
+
+isSuspectKind :: TileKind -> Bool
+isSuspectKind t =
+  let getTo RevealAs{} = True
+      getTo ObscureAs{} = True
+      getTo _ = False
+  in any getTo $ tfeature t
 
 -- | Validate all tile kinds.
 --
@@ -138,11 +144,10 @@ validateSingleTileKind TileKind{..} =
 validateAllTileKind :: [TileKind] -> [Text]
 validateAllTileKind lt =
   let listVis f = map (\kt -> ( ( tsymbol kt
-                                  , Suspect `elem` tfeature kt
                                   , f kt
                                   )
                                 , [kt] ) ) lt
-      mapVis :: (TileKind -> Color) -> M.Map (Char, Bool, Color) [TileKind]
+      mapVis :: (TileKind -> Color) -> M.Map (Char, Color) [TileKind]
       mapVis f = M.fromListWith (++) $ listVis f
       minorVariant [] = assert `failure` "no TileKind content" `twith` lt
       minorVariant (hd : tl) =  -- probably just a dark variant of the tile
@@ -169,13 +174,12 @@ actionFeatures markSuspect t =
         ChangeTo{} -> Just $ ChangeTo ""
         Walkable -> Just feat
         Clear -> Just feat
-        Suspect -> if markSuspect then Just feat else Nothing
         Impenetrable -> Just feat
         Trail -> Just feat  -- doesn't affect tile behaviour, but important
         HideAs{} -> Nothing
         BuildAs{} -> Nothing
-        RevealAs{} -> Nothing
-        ObscureAs{} -> Nothing
+        RevealAs{} -> if markSuspect then Just feat else Nothing
+        ObscureAs{} -> if markSuspect then Just feat else Nothing
         Dark -> Nothing  -- not important any longer, after FOV computed
         OftenItem -> Nothing
         OftenActor -> Nothing

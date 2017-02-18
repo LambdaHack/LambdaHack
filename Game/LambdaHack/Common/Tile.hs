@@ -161,7 +161,7 @@ speedup allClear cotile =
             getTo TK.CloseTo{} = True
             getTo _ = False
         in any getTo $ TK.tfeature tk
-      isSuspectTab = createTab cotile $ kindHasFeature TK.Suspect
+      isSuspectTab = createTab cotile TK.isSuspectKind
       isChangeableTab = createTab cotile $ \tk ->
         let getTo TK.ChangeTo{} = True
             getTo _ = False
@@ -184,8 +184,9 @@ alterMinSkillKind _k tk =
       getTo TK.CloseTo{} = True
       getTo TK.ChangeTo{} = True
       getTo TK.HideAs{} = True  -- in case tile swapped, but server sends hidden
+      getTo TK.RevealAs{} = True
+      getTo TK.ObscureAs{} = True
       getTo TK.Embed{} = True
-      getTo TK.Suspect = True
       getTo _ = False
   in if any getTo $ TK.tfeature tk then TK.talter tk else maxBound
 
@@ -194,7 +195,9 @@ alterMinSkillKind _k tk =
 alterMinWalkKind :: Kind.Id TileKind -> TileKind -> Word8
 alterMinWalkKind k tk =
   let getTo TK.OpenTo{} = True
-      getTo TK.Suspect = True
+      getTo TK.HideAs{} = True  -- in case tile swapped, but server sends hidden
+      getTo TK.RevealAs{} = True
+      getTo TK.ObscureAs{} = True
       getTo TK.ChangeTo{} = True
       getTo _ = False
   in if | kindHasFeature TK.Walkable tk -> 0
