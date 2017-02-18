@@ -78,7 +78,7 @@ pillar = TileKind
   , tname    = "rock"
   , tfreq    = [ ("cachable", 50), ("stair terminal", 100)
                , ("legendLit", 100), ("legendDark", 100)
-               , ("noiseSet", 95), ("brawlSet", 50), ("shootoutSet", 10)
+               , ("noiseSet", 90), ("brawlSet", 50), ("shootoutSet", 10)
                , ("battleSet", 250) ]
   , tcolor   = BrCyan  -- not BrWhite, to tell from heroes
   , tcolor2  = Cyan
@@ -87,11 +87,11 @@ pillar = TileKind
   }
 pillarIce = pillar
   { tname    = "ice"
-  , tfreq    = [("noiseSet", 5)]
+  , tfreq    = [("noiseSet", 10), ("ice", 1)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
-  , talter   = 10
-  , tfeature = [Clear]
+  , talter   = 5
+  , tfeature = [Clear, Embed "frost", OpenTo "damp stone floor"]
   }
 pillarCache = TileKind
   { tsymbol  = 'O'
@@ -365,7 +365,7 @@ floorArenaLit = floorCorridorLit
   }
 floorNoiseLit = floorArenaLit
   { tname    = "damp stone floor"
-  , tfreq    = [("noiseSet", 50)]
+  , tfreq    = [("noiseSet", 60), ("damp stone floor", 1)]
   }
 floorDirtLit = floorArenaLit
   { tname    = "dirt"
