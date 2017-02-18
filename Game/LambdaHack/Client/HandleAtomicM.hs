@@ -72,10 +72,12 @@ cmdAtomicFilterCli cmd = case cmd of
         return [ cmd  -- reveal the tile
                , UpdMsgAll msg  -- show the message
                ]
-  UpdSearchTile aid p fromTile toTile -> do
+  UpdSearchTile aid p toTile -> do
+    Kind.COps{cotile} <- getsState scops
     b <- getsState $ getActorBody aid
     lvl <- getLevel $ blid b
     let t = lvl `at` p
+        fromTile = Tile.hideAs cotile toTile
     return $!
       if t == fromTile
       then -- Fully ignorant. (No intermediate knowledge possible.)
@@ -85,6 +87,7 @@ cmdAtomicFilterCli cmd = case cmd of
       else assert (t == toTile `blame` "LoseTile fails to reset memory"
                                `twith` (aid, p, fromTile, toTile, b, t, cmd))
                   [cmd]  -- Already knows the tile fully, only confirm.
+  UpdHideTile{} -> return []  -- will be fleshed out when Undo completed
   UpdSpotTile lid ts -> do
     Kind.COps{cotile} <- getsState scops
     lvl <- getLevel lid

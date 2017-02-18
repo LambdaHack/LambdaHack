@@ -426,7 +426,7 @@ reqAlter source tpos = do
           when (serverTile /= freshClientTile) $
             -- Search, in case some actors (of other factions?)
             -- don't know this tile.
-            execUpdAtomic $ UpdSearchTile source tpos freshClientTile serverTile
+            execUpdAtomic $ UpdSearchTile source tpos serverTile
           when (alterSkill >= Tile.alterMinSkill coTileSpeedup serverTile) $ do
             case groupsToAlterTo of
               [] -> return ()

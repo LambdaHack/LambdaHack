@@ -85,7 +85,8 @@ data UpdAtomic =
   -- Alter map.
   | UpdAlterTile !LevelId !Point !(Kind.Id TileKind) !(Kind.Id TileKind)
   | UpdAlterClear !LevelId !Int
-  | UpdSearchTile !ActorId !Point !(Kind.Id TileKind) !(Kind.Id TileKind)
+  | UpdSearchTile !ActorId !Point !(Kind.Id TileKind)
+  | UpdHideTile !ActorId !Point !(Kind.Id TileKind)
   | UpdSpotTile !LevelId ![(Point, Kind.Id TileKind)]
   | UpdLoseTile !LevelId ![(Point, Kind.Id TileKind)]
   | UpdAlterSmell !LevelId !Point !Time !Time
@@ -162,8 +163,8 @@ undoUpdAtomic cmd = case cmd of
   UpdAlterTile lid p fromTile toTile ->
     Just $ UpdAlterTile lid p toTile fromTile
   UpdAlterClear lid delta -> Just $ UpdAlterClear lid (-delta)
-  UpdSearchTile aid p fromTile toTile ->
-    Just $ UpdSearchTile aid p toTile fromTile
+  UpdSearchTile aid p toTile -> Just $ UpdHideTile aid p toTile
+  UpdHideTile aid p toTile -> Just $ UpdSearchTile aid p toTile
   UpdSpotTile lid ts -> Just $ UpdLoseTile lid ts
   UpdLoseTile lid ts -> Just $ UpdSpotTile lid ts
   UpdAlterSmell lid p fromSm toSm -> Just $ UpdAlterSmell lid p toSm fromSm

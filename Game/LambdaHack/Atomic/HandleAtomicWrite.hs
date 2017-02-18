@@ -74,8 +74,8 @@ handleUpdAtomic cmd = case cmd of
   UpdRecordKill aid ikind k -> updRecordKill aid ikind k
   UpdAlterTile lid p fromTile toTile -> updAlterTile lid p fromTile toTile
   UpdAlterClear lid delta -> updAlterClear lid delta
-  UpdSearchTile _ _ fromTile toTile ->
-    assert (fromTile /= toTile) $ return ()  -- only for clients
+  UpdSearchTile _ _ _ -> return ()  -- only for clients
+  UpdHideTile _ _ _ -> return ()  -- only for clients
   UpdSpotTile lid ts -> updSpotTile lid ts
   UpdLoseTile lid ts -> updLoseTile lid ts
   UpdAlterSmell lid p fromSm toSm -> updAlterSmell lid p fromSm toSm

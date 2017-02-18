@@ -43,6 +43,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
@@ -241,12 +242,13 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
   UpdAlterClear _ k ->
     msgAdd $ if k > 0 then "You hear grinding noises."
                       else "You hear fizzing noises."
-  UpdSearchTile aid p fromTile toTile -> do
-    Kind.COps{cotile = Kind.Ops{okind}} <- getsState scops
+  UpdSearchTile aid p toTile -> do
+    Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsState scops
     b <- getsState $ getActorBody aid
     lvl <- getLevel $ blid b
     subject <- partAidLeader aid
     let t = lvl `at` p
+        fromTile = Tile.hideAs cotile toTile
         verb | t == toTile = "confirm"
              | otherwise = "reveal"
         subject2 = MU.Text $ TK.tname $ okind fromTile
@@ -256,6 +258,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
                            , MU.SubjectVerbSg subject2 verb2
                            , MU.AW $ MU.Text $ TK.tname $ okind toTile ]
     msgAdd msg
+  UpdHideTile{} -> return ()
   UpdSpotTile{} -> return ()
   UpdLoseTile{} -> return ()
   UpdAlterSmell{} -> return ()

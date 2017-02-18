@@ -95,7 +95,10 @@ posUpdAtomic cmd = case cmd of
   UpdRecordKill aid _ _ -> singleAid aid
   UpdAlterTile lid p _ _ -> return $! PosSight lid [p]
   UpdAlterClear{} -> return PosAll
-  UpdSearchTile aid p _ _ -> do
+  UpdSearchTile aid p _ -> do
+    b <- getsState $ getActorBody aid
+    return $! PosFidAndSight [bfid b] (blid b) [bpos b, p]
+  UpdHideTile aid p _ -> do
     b <- getsState $ getActorBody aid
     return $! PosFidAndSight [bfid b] (blid b) [bpos b, p]
   UpdSpotTile lid ts -> do
