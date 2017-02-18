@@ -242,7 +242,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
         -- The hacks below are instead of unionWithKeyM, which is costly.
         let mergeCor _ pl cor = if Tile.isWalkable coTileSpeedup pl
                                 then Nothing  -- tile already open
-                                else Just (Tile.builAs cotile pl, cor)
+                                else Just (Tile.buildAs cotile pl, cor)
             intersectionWithKeyMaybe combine =
               EM.mergeWithKey combine (const EM.empty) (const EM.empty)
             interCor = intersectionWithKeyMaybe mergeCor lpl lcor  -- fast
@@ -250,7 +250,16 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                     interCor  -- very small
   doorMap <- doorMapFun lplaces lcorridors
   fence <- buildFenceRnd cops couterFenceTile subFullArea
-  let dmap = EM.unions [doorMap, lplaces, lcorridors, fence]  -- order matters
+  -- The obscured tile, e.g., scratched wall, stays on the server forever.
+  -- We do not change wallObscuredV on the server to wallV or to wallV scratched
+  -- upon searching, because we don't want monsters to do all the searching
+  -- for the player, it's enough that they search and open doors
+  -- and so reveal them on server; al least keep walls a mystery.
+  let obscure p t = if isChancePos chidden dsecret p
+                    then Tile.obscureAs cotile $ Tile.buildAs cotile t
+                    else return t
+      umap = EM.unions [doorMap, lplaces, lcorridors, fence]  -- order matters
+  dmap <- mapWithKeyM obscure umap
   return $! Cave {dkind, dsecret, dmap, dplaces, dnight}
 
 pickOpening :: Kind.COps -> CaveKind -> TileMapEM -> Kind.Id TileKind

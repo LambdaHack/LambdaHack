@@ -12,7 +12,6 @@ import Data.Binary
 import qualified Data.Bits as Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Key (mapWithKeyM)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Frequency
@@ -115,7 +114,7 @@ buildPlace :: Kind.COps         -- ^ the game content
            -> Area              -- ^ whole area of the place, fence included
            -> Maybe (GroupName PlaceKind)  -- ^ optional fixed place group
            -> Rnd (TileMapEM, Place)
-buildPlace cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
+buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick}
                          , coplace=Kind.Ops{ofoldlGroup'} }
            CaveKind{..} dnight darkCorTile litCorTile
            ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) dsecret
@@ -186,16 +185,7 @@ buildPlace cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
       interior = case pfence kr of
         FNone | not dnight -> EM.mapWithKey digDay cmap
         _ -> EM.mapWithKey (lookupOneIn xlegend) cmap
-  -- The obscured tile, e.g., scratched wall, stays on the server forever.
-  -- We do not change wallObscuredV on the server to wallV or to wallV scratched
-  -- upon searching, because we don't want monsters to do all the searching
-  -- for the player, it's enough that they search and open doors
-  -- and so reveal them on server; al least keep walls a mystery.
-  let obscure p t = if isChancePos chidden dsecret p
-                    then Tile.obscureAs cotile $ Tile.builAs cotile t
-                    else return t
-  tmap <- mapWithKeyM obscure $ EM.union interior fence
-  return (tmap, place)
+  return (EM.union interior fence, place)
 
 isChancePos :: Int -> Int -> Point -> Bool
 isChancePos c dsecret (Point x y) =
