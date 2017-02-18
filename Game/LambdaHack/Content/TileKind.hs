@@ -59,7 +59,9 @@ data Feature =
   | HideAs !(GroupName TileKind)
       -- ^ when hidden, looks as a tile of the group
   | RevealAs !(GroupName TileKind)
-      -- ^ if secret, can be revealed to belong to the group
+      -- ^ when in opening, can be revealed to belong to the group
+  | ObscureAs !(GroupName TileKind)
+      -- ^ when not in opening, can be revealed to belong to the group
 
   | Walkable             -- ^ actors can walk through
   | Clear                -- ^ actors can see through
@@ -168,6 +170,7 @@ actionFeatures markSuspect t =
         Trail -> Just feat  -- doesn't affect tile behaviour, but important
         HideAs{} -> Nothing
         RevealAs{} -> Nothing
+        ObscureAs{} -> Nothing
         Dark -> Nothing  -- not important any longer, after FOV computed
         OftenItem -> Nothing
         OftenActor -> Nothing

@@ -29,6 +29,7 @@ import Game.LambdaHack.Server.DungeonGen.Place
 -- | The type of caves (not yet inhabited dungeon levels).
 data Cave = Cave
   { dkind   :: !(Kind.Id CaveKind)  -- ^ the kind of the cave
+  , dsecret :: !Int                 -- ^ secret tile seed
   , dmap    :: !TileMapEM           -- ^ tile kinds in the cave
   , dplaces :: ![Place]             -- ^ places generated in the cave
   , dnight  :: !Bool                -- ^ whether the cave is dark
@@ -72,7 +73,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                         , cocave=Kind.Ops{okind}
                         , coplace=Kind.Ops{okind=pokind}
                         , coTileSpeedup }
-          ldepth totalDepth csecret dkind fixedCenters = do
+          ldepth totalDepth dsecret dkind fixedCenters = do
   let kc@CaveKind{..} = okind dkind
   lgrid' <- castDiceXY ldepth totalDepth cgrid
   -- Make sure that in caves not filled with rock, there is a passage
@@ -178,7 +179,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                     r <- mkRoom minPlaceSize maxPlaceSize innerArea
                     (tmap, place) <-
                       buildPlace cops kc dnight darkCorTile litCorTile
-                                 ldepth totalDepth csecret r Nothing
+                                 ldepth totalDepth dsecret r Nothing
                     let fence = pfence $ pokind $ qkind place
                     return ( EM.union tmap m
                            , place : pls
@@ -197,7 +198,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                                              , gs2, qls, fixedCenters )) ()
                   (tmap, place) <-
                     buildPlace cops kc dnight darkCorTile litCorTile
-                               ldepth totalDepth csecret r (Just placeGroup)
+                               ldepth totalDepth dsecret r (Just placeGroup)
                   let fence = pfence $ pokind $ qkind place
                   return ( EM.union tmap m
                          , place : pls
@@ -245,19 +246,19 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
             intersectionWithKeyMaybe combine =
               EM.mergeWithKey combine (const EM.empty) (const EM.empty)
             interCor = intersectionWithKeyMaybe mergeCor lpl lcor  -- fast
-        mapWithKeyM (pickOpening cops kc lplaces litCorTile)
+        mapWithKeyM (pickOpening cops kc lplaces litCorTile dsecret)
                     interCor  -- very small
   doorMap <- doorMapFun lplaces lcorridors
   fence <- buildFenceRnd cops couterFenceTile subFullArea
   let dmap = EM.unions [doorMap, lplaces, lcorridors, fence]  -- order matters
-  return $! Cave {dkind, dmap, dplaces, dnight}
+  return $! Cave {dkind, dsecret, dmap, dplaces, dnight}
 
 pickOpening :: Kind.COps -> CaveKind -> TileMapEM -> Kind.Id TileKind
-            -> Point -> (Kind.Id TileKind, Kind.Id TileKind)
+            -> Int -> Point -> (Kind.Id TileKind, Kind.Id TileKind)
             -> Rnd (Kind.Id TileKind)
 pickOpening Kind.COps{cotile, coTileSpeedup}
-            CaveKind{cxsize, cysize, cdoorChance, copenChance}
-            lplaces litCorTile
+            CaveKind{cxsize, cysize, cdoorChance, copenChance, chidden}
+            lplaces litCorTile dsecret
             pos (hidden, cor) = do
   let nicerCorridor =
         if Tile.isLit coTileSpeedup cor then cor
@@ -272,13 +273,19 @@ pickOpening Kind.COps{cotile, coTileSpeedup}
   -- chance to be open.
   rd <- chance cdoorChance
   if rd then do
-    doorClosedId <- Tile.revealAs cotile hidden
-    -- Not all solid tiles can hide a door.
-    if Tile.isDoor coTileSpeedup doorClosedId then do  -- door created
+    doorTrappedId <- Tile.revealAs cotile hidden
+    -- Not all solid tiles can hide a door, so @doorTrappedId@ may in fact
+    -- not be a door at all, hence the check.
+    if Tile.isDoor coTileSpeedup doorTrappedId then do  -- door created
       ro <- chance copenChance
-      if ro then Tile.openTo cotile doorClosedId
-      else return $! doorClosedId
-    else return $! doorClosedId  -- assume this is what content enforces
+      if ro
+      then Tile.openTo cotile doorTrappedId
+      else if isChancePos chidden dsecret pos
+           then return $! doorTrappedId  -- will become hidden
+           else do
+             doorOpenId <- Tile.openTo cotile doorTrappedId
+             Tile.closeTo cotile doorOpenId
+    else return $! doorTrappedId  -- assume this is what content enforces
   else return $! nicerCorridor
 
 digCorridors :: Kind.Id TileKind -> Corridor -> TileMapEM

@@ -22,14 +22,14 @@ cdefs = ContentDef
   , validateSingle = validateSingleTileKind
   , validateAll = validateAllTileKind
   , content = contentFromList $
-      [unknown, wall, hardRock, pillar, pillarIce, pillarCache, lampPost, signpost, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, doorClosedV, doorTrappedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, doorClosedH, doorTrappedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark]
+      [unknown, wall, hardRock, pillar, pillarIce, pillarCache, lampPost, signpost, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, wallObscuredV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark]
       ++ map makeDark ldarkable
       ++ map makeDarkColor ldarkColorable
   }
-unknown,        wall, hardRock, pillar, pillarIce, pillarCache, lampPost, signpost, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, doorClosedV, doorTrappedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, doorClosedH, doorTrappedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark :: TileKind
+unknown,        wall, hardRock, pillar, pillarIce, pillarCache, lampPost, signpost, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, wallObscuredV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark :: TileKind
 
 ldarkable :: [TileKind]
-ldarkable = [wallV, wallSuspectV, doorClosedV, doorTrappedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorTrappedH, doorOpenH, rubble, floorCorridorLit]
+ldarkable = [wallV, wallSuspectV, wallObscuredV, doorClosedV, doorTrappedV, doorOpenV, wallH, wallSuspectH, wallObscuredH, doorClosedH, doorTrappedH, doorOpenH, rubble, floorCorridorLit]
 
 ldarkColorable :: [TileKind]
 ldarkColorable = [floorArenaLit, floorNoiseLit, floorDirtLit, floorActorLit, floorItemLit, floorActorItemLit]
@@ -189,7 +189,8 @@ wallV = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 100
-  , tfeature = [HideAs "suspect vertical wall Lit", Indistinct]
+  , tfeature = [ HideAs "suspect vertical wall Lit"  -- for dungeon gen
+               , Indistinct ]
   }
 wallGlassV = TileKind
   { tsymbol  = '|'
@@ -198,55 +199,67 @@ wallGlassV = TileKind
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
-  , tfeature = [HideAs "suspect vertical wall Lit", Clear]
+  , tfeature = [ HideAs "suspect vertical wall Lit"  -- for dungeon gen
+               , Clear ]
   }
 wallGlassVSpice = wallGlassV
   { tfreq    = [("rectWindowsOver_!_Lit", 10)]
   , tfeature = Spice : tfeature wallGlassV
   }
-wallSuspectV = TileKind
+wallSuspectV = TileKind  -- only on client
   { tsymbol  = '|'
   , tname    = "moldy wall"
   , tfreq    = [("suspect vertical wall Lit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 2
-  , tfeature = [Suspect, RevealAs "vertical trapped door Lit", Indistinct]
+  , tfeature = [ Suspect
+               , RevealAs "trapped vertical door Lit"  -- for dungeon gen
+               , ObscureAs "obscured vertical wall Lit"  -- for dungeon gen
+               , Indistinct ]
   }
-doorClosedV = TileKind
-  { tsymbol  = '+'
-  , tname    = "closed door"
-  , tfreq    = [("vertical closed door Lit", 1)]
-  , tcolor   = Brown
-  , tcolor2  = BrBlack
+wallObscuredV = TileKind
+  { tsymbol  = '|'
+  , tname    = "moldy wall"
+  , tfreq    = [("obscured vertical wall Lit", 1)]
+  , tcolor   = BrWhite
+  , tcolor2  = defFG
   , talter   = 2
-  , tfeature = [ OpenTo "vertical open door Lit"
-               , HideAs "suspect vertical wall Lit"
+  , tfeature = [ HideAs "suspect vertical wall Lit"
                , Indistinct
                ]
   }
 doorTrappedV = TileKind
   { tsymbol  = '+'
   , tname    = "trapped door"
-  , tfreq    = [("vertical trapped door Lit", 1)]
+  , tfreq    = [("trapped vertical door Lit", 1)]
   , tcolor   = BrRed
   , tcolor2  = Red
   , talter   = 2
   , tfeature = [ Embed "doorway trap"
-               , OpenTo "vertical open door Lit"
+               , OpenTo "open vertical door Lit"
                , HideAs "suspect vertical wall Lit"
                , Indistinct
                ]
   }
+doorClosedV = TileKind
+  { tsymbol  = '+'
+  , tname    = "closed door"
+  , tfreq    = [("closed vertical door Lit", 1)]
+  , tcolor   = Brown
+  , tcolor2  = BrBlack
+  , talter   = 2
+  , tfeature = [OpenTo "open vertical door Lit", Indistinct]  -- never hidden
+  }
 doorOpenV = TileKind
   { tsymbol  = '-'
   , tname    = "open door"
-  , tfreq    = [("vertical open door Lit", 1)]
+  , tfreq    = [("open vertical door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
   , talter   = 4
   , tfeature = [ Walkable, Clear, NoItem, NoActor
-               , CloseTo "vertical closed door Lit"
+               , CloseTo "closed vertical door Lit"
                ]
   }
 wallH = TileKind
@@ -256,7 +269,8 @@ wallH = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 100
-  , tfeature = [HideAs "suspect horizontal wall Lit", Indistinct]
+  , tfeature = [ HideAs "suspect horizontal wall Lit"  -- for dungeon gen
+               , Indistinct ]
   }
 wallGlassH = TileKind
   { tsymbol  = '-'
@@ -265,55 +279,67 @@ wallGlassH = TileKind
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
-  , tfeature = [HideAs "suspect horizontal wall Lit", Clear]
+  , tfeature = [ HideAs "suspect horizontal wall Lit"  -- for dungeon gen
+               , Clear ]
   }
 wallGlassHSpice = wallGlassH
   { tfreq    = [("rectWindowsOver_=_Lit", 10)]
   , tfeature = Spice : tfeature wallGlassH
   }
-wallSuspectH = TileKind
+wallSuspectH = TileKind  -- only on client
   { tsymbol  = '-'
   , tname    = "scratched wall"
   , tfreq    = [("suspect horizontal wall Lit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 2
-  , tfeature = [Suspect, RevealAs "horizontal trapped door Lit", Indistinct]
+  , tfeature = [ Suspect
+               , RevealAs "trapped horizontal door Lit"  -- for dungeon gen
+               , ObscureAs "obscured horizontal wall Lit"  -- for dungeon gen
+               , Indistinct ]
   }
-doorClosedH = TileKind
-  { tsymbol  = '+'
-  , tname    = "closed door"
-  , tfreq    = [("horizontal closed door Lit", 1)]
-  , tcolor   = Brown
-  , tcolor2  = BrBlack
+wallObscuredH = TileKind
+  { tsymbol  = '|'
+  , tname    = "scratched wall"
+  , tfreq    = [("obscured horizontal wall Lit", 1)]
+  , tcolor   = BrWhite
+  , tcolor2  = defFG
   , talter   = 2
-  , tfeature = [ OpenTo "horizontal open door Lit"
-               , HideAs "suspect horizontal wall Lit"
+  , tfeature = [ HideAs "suspect horizontal wall Lit"
                , Indistinct
                ]
   }
 doorTrappedH = TileKind
   { tsymbol  = '+'
   , tname    = "trapped door"
-  , tfreq    = [("horizontal trapped door Lit", 1)]
+  , tfreq    = [("trapped horizontal door Lit", 1)]
   , tcolor   = BrRed
   , tcolor2  = Red
   , talter   = 2
   , tfeature = [ Embed "doorway trap"
-               , OpenTo "horizontal open door Lit"
+               , OpenTo "open horizontal door Lit"
                , HideAs "suspect horizontal wall Lit"
                , Indistinct
                ]
   }
+doorClosedH = TileKind
+  { tsymbol  = '+'
+  , tname    = "closed door"
+  , tfreq    = [("closed horizontal door Lit", 1)]
+  , tcolor   = Brown
+  , tcolor2  = BrBlack
+  , talter   = 2
+  , tfeature = [OpenTo "open horizontal door Lit", Indistinct]  -- never hidden
+  }
 doorOpenH = TileKind
   { tsymbol  = '|'
   , tname    = "open door"
-  , tfreq    = [("horizontal open door Lit", 1)]
+  , tfreq    = [("open horizontal door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
   , talter   = 4
   , tfeature = [ Walkable, Clear, NoItem, NoActor
-               , CloseTo "horizontal closed door Lit"
+               , CloseTo "closed horizontal door Lit"
                ]
   }
 stairsUp = TileKind
@@ -510,6 +536,7 @@ makeDark k = let darkText :: GroupName TileKind -> GroupName TileKind
                  darkFeat (ChangeTo t) = Just $ ChangeTo $ darkText t
                  darkFeat (HideAs t) = Just $ HideAs $ darkText t
                  darkFeat (RevealAs t) = Just $ RevealAs $ darkText t
+                 darkFeat (ObscureAs t) = Just $ ObscureAs $ darkText t
                  darkFeat OftenItem = Nothing  -- items not common in the dark
                  darkFeat feat = Just feat
              in k { tfreq    = darkFrequency

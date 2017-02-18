@@ -17,7 +17,8 @@ module Game.LambdaHack.Common.Tile
   ( kindHasFeature, hasFeature, isClear, isLit, isWalkable, isDoor, isSuspect
   , isExplorable, isOftenItem, isOftenActor, isNoItem, isNoActor, isEasyOpen
   , speedup, alterMinSkill, alterMinWalk, openTo, closeTo, embeddedItems
-  , revealAs, hideAs, isEasyOpenKind, isOpenable, isClosable, isChangeable
+  , revealAs, obscureAs, hideAs
+  , isEasyOpenKind, isOpenable, isClosable, isChangeable
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , createTab, createTabWithKey, accessTab
@@ -229,6 +230,16 @@ embeddedItems Kind.Ops{okind} t =
 revealAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 revealAs Kind.Ops{okind, opick} t = do
   let getTo (TK.RevealAs grp) acc = grp : acc
+      getTo _ acc = acc
+  case foldr getTo [] $ TK.tfeature $ okind t of
+    [] -> return t
+    groups -> do
+      grp <- oneOf groups
+      fromMaybe (assert `failure` grp) <$> opick grp (const True)
+
+obscureAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
+obscureAs Kind.Ops{okind, opick} t = do
+  let getTo (TK.ObscureAs grp) acc = grp : acc
       getTo _ acc = acc
   case foldr getTo [] $ TK.tfeature $ okind t of
     [] -> return t
