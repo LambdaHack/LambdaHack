@@ -157,6 +157,7 @@ noise = rogue
   , cpassable     = True
   , cplaceFreq    = [("noise", 100)]
   , cdefTile      = "noiseSet"
+  , couterFenceTile = "noise fence"  -- ensures no cut-off parts from collapsed
   , cdarkCorTile  = "floorArenaDark"
   , clitCorTile   = "floorArenaLit"
   }

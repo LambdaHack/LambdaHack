@@ -68,7 +68,7 @@ glasshouse = PlaceKind
 ruin = PlaceKind
   { psymbol  = 'R'
   , pname    = "ruin"
-  , pfreq    = [("battle", 33), ("noise", 250)]
+  , pfreq    = [("battle", 33), ("noise", 50)]
   , prarity  = [(1, 10), (10, 20)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -131,7 +131,7 @@ pillar = PlaceKind
   { psymbol  = 'p'
   , pname    = "pillar room"
   , pfreq    = [ ("rogue", 500), ("arena", 1000), ("laboratory", 1000)
-               , ("empty", 1000) , ("noise", 50) ]
+               , ("empty", 1000) , ("noise", 1000) ]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -174,7 +174,7 @@ colonnade = PlaceKind
   { psymbol  = 'c'
   , pname    = "colonnade"
   , pfreq    = [ ("rogue", 30), ("arena", 70), ("laboratory", 70)
-               , ("empty", 70), ("noise", 2000), ("ambush", 150) ]
+               , ("empty", 70), ("noise", 4000), ("ambush", 150) ]
   , prarity  = [(1, 5), (10, 5)]
   , pcover   = CAlternate
   , pfence   = FFloor

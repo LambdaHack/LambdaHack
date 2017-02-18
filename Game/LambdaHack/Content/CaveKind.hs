@@ -67,9 +67,6 @@ validateSingleCaveKind CaveKind{..} =
       (minMinSizeX, minMinSizeY) = Dice.minDiceXY cminPlaceSize
       (maxMinSizeX, maxMinSizeY) = Dice.maxDiceXY cminPlaceSize
       (minMaxSizeX, minMaxSizeY) = Dice.minDiceXY cmaxPlaceSize
-      -- If there is at most one room, we need extra borders for a passage,
-      -- but if there may be more rooms, we have that space, anyway,
-      -- because multiple rooms take more space than borders.
       xborder = if couterFenceTile /= "basic outer fence" then 2 else 0
       yborder = if couterFenceTile /= "basic outer fence" then 2 else 0
   in [ "cname longer than 25" | T.length cname > 25 ]
