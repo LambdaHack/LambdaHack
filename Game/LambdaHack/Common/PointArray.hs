@@ -165,14 +165,16 @@ ifoldlA' f z0 Array{..} =
 
 -- | Fold right over an array
 -- (function applied to each element and its index).
-ifoldrA :: (U.Unbox w, Enum w, Enum c) => (Point -> c -> a -> a) -> a -> GArray w c -> a
+ifoldrA :: (U.Unbox w, Enum w, Enum c)
+        => (Point -> c -> a -> a) -> a -> GArray w c -> a
 {-# INLINE ifoldrA #-}
 ifoldrA f z0 Array{..} =
   U.ifoldr (\n c a -> f (punindex axsize n) (cnv c) a) z0 avector
 
 -- | Fold right strictly over an array
 -- (function applied to each element and its index).
-ifoldrA' :: Enum c => (Point -> c -> a -> a) -> a -> Array c -> a
+ifoldrA' :: (U.Unbox w, Enum w, Enum c)
+         => (Point -> c -> a -> a) -> a -> GArray w c -> a
 {-# INLINE ifoldrA' #-}
 ifoldrA' f z0 Array{..} =
   U.ifoldr' (\n c a -> f (punindex axsize n) (cnv c) a) z0 avector
@@ -193,12 +195,14 @@ ifoldMA' f z0 Array{..} =
   U.ifoldM' (\a n c -> f a (punindex axsize n) (cnv c)) z0 avector
 
 -- | Map over an array.
-mapA :: (U.Unbox w, Enum w, Enum c, Enum d) => (c -> d) -> GArray w c -> GArray w d
+mapA :: (U.Unbox w1, Enum w1, U.Unbox w2, Enum w2, Enum c, Enum d)
+     => (c -> d) -> GArray w1 c -> GArray w2 d
 {-# INLINE mapA #-}
 mapA f Array{..} = Array{avector = U.map (cnv . f . cnv) avector, ..}
 
 -- | Map over an array (function applied to each element and its index).
-imapA :: (U.Unbox w, Enum w, Enum c, Enum d) => (Point -> c -> d) -> GArray w c -> GArray w d
+imapA :: (U.Unbox w1, Enum w1, U.Unbox w2, Enum w2, Enum c, Enum d)
+      => (Point -> c -> d) -> GArray w1 c -> GArray w2 d
 {-# INLINE imapA #-}
 imapA f Array{..} =
   let v = U.imap (\n c -> cnv $ f (punindex axsize n) (cnv c)) avector

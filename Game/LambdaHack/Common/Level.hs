@@ -57,7 +57,7 @@ type ItemFloor = EM.EnumMap Point ItemBag
 type ActorMap = EM.EnumMap Point [ActorId]
 
 -- | Tile kinds on the map.
-type TileMap = PointArray.Array (Kind.Id TileKind)
+type TileMap = PointArray.GArray Word16 (Kind.Id TileKind)
 
 -- | Current smell on map tiles.
 type SmellMap = EM.EnumMap Point Time

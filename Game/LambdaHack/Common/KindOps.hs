@@ -14,7 +14,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Random
 
 -- | Content identifiers for the content type @c@.
-newtype Id c = Id Word8
+newtype Id c = Id Word16
   deriving (Show, Eq, Ord, Enum, Bounded, Binary)
 
 -- | Content operations for the content of type @a@.

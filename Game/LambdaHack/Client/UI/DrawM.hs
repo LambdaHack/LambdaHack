@@ -24,7 +24,7 @@ import Data.Ord
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
-import Data.Word
+import Data.Word (Word16)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.Bfs
@@ -150,7 +150,7 @@ drawFrameTerrain drawnLevelId = do
             -> FrameST s
       {-# INLINE mapVT #-}
       mapVT f v = do
-        let g :: Int -> Word8 -> ST s ()
+        let g :: Int -> Word16 -> ST s ()
             g !pI !tile = do
               let w = Color.attrCharW32 $ f pI (KindOps.Id tile)
               VM.write v (pI + lxsize) w
