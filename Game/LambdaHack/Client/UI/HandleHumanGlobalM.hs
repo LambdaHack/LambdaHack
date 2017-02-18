@@ -377,10 +377,8 @@ moveSearchAlterAid source dir = do
          -- A potential invisible actor is hit. War started without asking.
          return $ Right $ RequestAnyAbility $ ReqMove dir
        -- No access, so search and/or alter the tile.
-       | not (knownLsecret lvl)
-         || isSecretPos lvl tpos  -- possible secrets here
-            && (Tile.isSuspect coTileSpeedup t  -- not yet searched
-                || Tile.hideAs cotile t /= t)  -- search again
+       | Tile.isSuspect coTileSpeedup t  -- not yet searched
+         || Tile.hideAs cotile t /= t  -- search again, could be swapped
          || alterMinSkill < 10
          || alterMinSkill >= 10 && alterSkill >= alterMinSkill ->
          if | alterSkill < alterMinSkill -> failSer AlterUnwalked

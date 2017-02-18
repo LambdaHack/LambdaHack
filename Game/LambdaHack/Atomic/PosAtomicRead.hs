@@ -98,7 +98,6 @@ posUpdAtomic cmd = case cmd of
   UpdSearchTile aid p _ _ -> do
     b <- getsState $ getActorBody aid
     return $! PosFidAndSight [bfid b] (blid b) [bpos b, p]
-  UpdLearnSecrets aid _ _ -> singleAid aid
   UpdSpotTile lid ts -> do
     let ps = map fst ts
     return $! PosSight lid ps

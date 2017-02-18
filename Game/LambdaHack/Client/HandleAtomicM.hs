@@ -85,21 +85,16 @@ cmdAtomicFilterCli cmd = case cmd of
       else assert (t == toTile `blame` "LoseTile fails to reset memory"
                                `twith` (aid, p, fromTile, toTile, b, t, cmd))
                   [cmd]  -- Already knows the tile fully, only confirm.
-  UpdLearnSecrets aid fromS _toS -> do
-    b <- getsState $ getActorBody aid
-    lvl <- getLevel $ blid b
-    return $! [cmd | lsecret lvl == fromS]  -- secrets not revealed previously
   UpdSpotTile lid ts -> do
-    Kind.COps{cotile} <- getsState scops
+    Kind.COps{coTileSpeedup} <- getsState scops
     lvl <- getLevel lid
     -- We ignore the server resending us hidden versions of the tiles
     -- (and resending us the same data we already got).
     -- If the tiles are changed to other variants of the hidden tile,
-    -- we can still verify by searching, and the UI warns us "obscured".
+    -- we can still verify by searching.
     let notKnown (p, t) = let tClient = lvl `at` p
                           in t /= tClient
-                             && (not (knownLsecret lvl && isSecretPos lvl p)
-                                 || t /= Tile.hideAs cotile tClient)
+                             && (not (Tile.isSuspect coTileSpeedup t))
         newTs = filter notKnown ts
     return $! if null newTs then [] else [UpdSpotTile lid newTs]
   UpdDiscover c iid _ seed -> do

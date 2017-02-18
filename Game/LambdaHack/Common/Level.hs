@@ -7,8 +7,7 @@ module Game.LambdaHack.Common.Level
   , Level(..), ItemFloor, ActorMap, TileMap, SmellMap
     -- * Level query
   , at, accessible, accessibleUnknown, accessibleDir
-  , knownLsecret, isSecretPos, isChancePos, hideTile
-  , findPoint, findPos, findPosTry, findPosTry2
+  , hideTile, findPoint, findPos, findPosTry, findPosTry2
   ) where
 
 import Prelude ()
@@ -16,7 +15,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
-import qualified Data.Bits as Bits
 import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Common.Actor
@@ -85,7 +83,6 @@ data Level = Level
   , litemNum    :: !Int        -- ^ number of initial items, 0 for clients
   , litemFreq   :: !(Freqs ItemKind)
                                -- ^ frequency of initial items; [] for clients
-  , lsecret     :: !Int        -- ^ secret tile seed
   , lhidden     :: !Int        -- ^ secret tile density
   , lescape     :: ![Point]    -- ^ positions of IK.Escape tiles
   }
@@ -124,24 +121,11 @@ accessibleUnknown Kind.COps{coTileSpeedup} lvl tpos =
 accessibleDir :: Kind.COps -> Level -> Point -> Vector -> Bool
 accessibleDir cops lvl spos dir = accessible cops lvl $ spos `shift` dir
 
-knownLsecret :: Level -> Bool
-knownLsecret lvl = lsecret lvl /= 0
-
-isSecretPos :: Level -> Point -> Bool
-isSecretPos lvl (Point x y) =
-  lhidden lvl > 0
-  && (lsecret lvl `Bits.rotateR` x `Bits.xor` y + x) `mod` lhidden lvl == 0
-
-isChancePos :: Int -> Int -> Point -> Bool
-isChancePos oneInChance lsecret (Point x y) =
-  oneInChance > 0
-  && (lsecret `Bits.rotateR` x `Bits.xor` y + x) `mod` oneInChance == 0
-
 hideTile :: Kind.COps -> Level -> Point -> Kind.Id TileKind
-hideTile Kind.COps{cotile} lvl p =
+hideTile Kind.COps{cotile, coTileSpeedup} lvl p =
   let t = lvl `at` p
       ht = Tile.hideAs cotile t
-  in if isSecretPos lvl p then ht else t
+  in assert (ht == t || Tile.isSuspect coTileSpeedup ht) ht
 
 -- | Find a random position on the map satisfying a predicate.
 findPoint :: X -> Y -> (Point -> Maybe Point) -> Rnd Point
@@ -225,7 +209,6 @@ instance Binary Level where
     put lactorFreq
     put litemNum
     put litemFreq
-    put lsecret
     put lhidden
     put lescape
   get = do
@@ -246,7 +229,6 @@ instance Binary Level where
     lactorFreq <- get
     litemNum <- get
     litemFreq <- get
-    lsecret <- get
     lhidden <- get
     lescape <- get
     return $! Level{..}

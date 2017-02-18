@@ -56,7 +56,7 @@ lookAt :: MonadClientUI m
        -> Text       -- ^ an extra sentence to print
        -> m Text
 lookAt detailed tilePrefix canSee pos aid msg = do
-  cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
+  Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
   lidV <- viewedLevelUI
@@ -75,10 +75,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
             else makeSentence [ MU.SubjectVerbSg subject verb
                               , MU.WWandW $ map nWs $ EM.assocs is]
       tile = lvl `at` pos
-      obscured | knownLsecret lvl
-                 && tile /= hideTile cops lvl pos = "partially obscured"
-               | otherwise = ""
-      tileText = obscured <+> TK.tname (okind tile)
+      tileText = TK.tname (okind tile)
       tilePart | T.null tilePrefix = MU.Text tileText
                | otherwise = MU.AW $ MU.Text tileText
       tileDesc = [MU.Text tilePrefix, tilePart]

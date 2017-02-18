@@ -72,7 +72,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                         , cocave=Kind.Ops{okind}
                         , coplace=Kind.Ops{okind=pokind}
                         , coTileSpeedup }
-          ldepth totalDepth lsecret dkind fixedCenters = do
+          ldepth totalDepth csecret dkind fixedCenters = do
   let kc@CaveKind{..} = okind dkind
   lgrid' <- castDiceXY ldepth totalDepth cgrid
   -- Make sure that in caves not filled with rock, there is a passage
@@ -178,7 +178,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                     r <- mkRoom minPlaceSize maxPlaceSize innerArea
                     (tmap, place) <-
                       buildPlace cops kc dnight darkCorTile litCorTile
-                                 ldepth totalDepth lsecret r Nothing
+                                 ldepth totalDepth csecret r Nothing
                     let fence = pfence $ pokind $ qkind place
                     return ( EM.union tmap m
                            , place : pls
@@ -197,7 +197,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                                              , gs2, qls, fixedCenters )) ()
                   (tmap, place) <-
                     buildPlace cops kc dnight darkCorTile litCorTile
-                               ldepth totalDepth lsecret r (Just placeGroup)
+                               ldepth totalDepth csecret r (Just placeGroup)
                   let fence = pfence $ pokind $ qkind place
                   return ( EM.union tmap m
                          , place : pls

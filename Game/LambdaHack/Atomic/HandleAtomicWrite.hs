@@ -10,7 +10,7 @@ module Game.LambdaHack.Atomic.HandleAtomicWrite
   , updRefillHP, updRefillCalm
   , updTrajectory, updColorActor, updQuitFaction, updLeadFaction
   , updDiplFaction, updTacticFaction, updAutoFaction, updRecordKill
-  , updAlterTile, updAlterClear, updLearnSecrets, updSpotTile, updLoseTile
+  , updAlterTile, updAlterClear, updSpotTile, updLoseTile
   , updAlterSmell, updSpotSmell, updLoseSmell, updTimeItem
   , updAgeGame, updUnAgeGame, updRestart, updRestartServer, updResumeServer
 #endif
@@ -76,7 +76,6 @@ handleUpdAtomic cmd = case cmd of
   UpdAlterClear lid delta -> updAlterClear lid delta
   UpdSearchTile _ _ fromTile toTile ->
     assert (fromTile /= toTile) $ return ()  -- only for clients
-  UpdLearnSecrets aid fromS toS -> updLearnSecrets aid fromS toS
   UpdSpotTile lid ts -> updSpotTile lid ts
   UpdLoseTile lid ts -> updLoseTile lid ts
   UpdAlterSmell lid p fromSm toSm -> updAlterSmell lid p fromSm toSm
@@ -400,12 +399,6 @@ updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
 updAlterClear :: MonadStateWrite m => LevelId -> Int -> m ()
 updAlterClear lid delta = assert (delta /= 0) $
   updateLevel lid $ \lvl -> lvl {lclear = lclear lvl + delta}
-
-updLearnSecrets :: MonadStateWrite m => ActorId -> Int -> Int -> m ()
-updLearnSecrets aid fromS toS = assert (fromS /= toS) $ do
-  b <- getsState $ getActorBody aid
-  updateLevel (blid b) $ \lvl -> assert (lsecret lvl == fromS)
-                                 $ lvl {lsecret = toS}
 
 -- Notice previously invisible tiles. This is similar to @UpdSpotActor@,
 -- but done in bulk, because it often involves dozens of tiles pers move.

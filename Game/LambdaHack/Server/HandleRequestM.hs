@@ -379,7 +379,8 @@ reqDisplace source target = do
 -- should not be alterable (but @serverTile@ may be).
 reqAlter :: (MonadAtomic m, MonadServer m) => ActorId -> Point -> m ()
 reqAlter source tpos = do
-  cops@Kind.COps{cotile=Kind.Ops{okind, opick}, coTileSpeedup} <- getsState scops
+  cops@Kind.COps{ cotile=Kind.Ops{okind, opick}
+                , coTileSpeedup } <- getsState scops
   sb <- getsState $ getActorBody source
   actorSk <- actorSkillsServer source
   let alterSkill = EM.findWithDefault 0 Ability.AbAlter actorSk

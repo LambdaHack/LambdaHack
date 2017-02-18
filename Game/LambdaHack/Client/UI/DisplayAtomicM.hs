@@ -257,7 +257,6 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
                            , "a hidden"
                            , MU.Text $ TK.tname $ okind toTile ]
     msgAdd msg
-  UpdLearnSecrets{} -> return ()
   UpdSpotTile{} -> return ()
   UpdLoseTile{} -> return ()
   UpdAlterSmell{} -> return ()

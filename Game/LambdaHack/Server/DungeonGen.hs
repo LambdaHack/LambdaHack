@@ -164,12 +164,11 @@ buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
       posDn Point{..} = Point (px + 1) py
       lstair = ( map (posUp . fst) $ lstairsSingleUp ++ lstairsDouble
                , map (posDn . fst) $ lstairsDouble ++ lstairsSingleDown )
-  lsecret <- randomR (1, maxBound)  -- 0 means unknown
-  cave <- buildCave cops ldepth totalDepth lsecret dkind fixedCenters
+  csecret <- randomR (1, maxBound)  -- 0 means unknown
+  cave <- buildCave cops ldepth totalDepth csecret dkind fixedCenters
   cmap <- buildTileMap cops cave
   litemNum <- castDice ldepth totalDepth $ citemNum kc
-  let lvl = levelFromCaveKind cops kc ldepth cmap lstair
-                              litemNum lsecret lescape
+  let lvl = levelFromCaveKind cops kc ldepth cmap lstair litemNum lescape
   return (lvl, lstairsDouble ++ lstairsSingleDown)
 
 -- | Places yet another staircase (or escape), taking into account only
@@ -201,7 +200,7 @@ placeDownStairs kc@CaveKind{..} ps = do
 -- | Build rudimentary level from a cave kind.
 levelFromCaveKind :: Kind.COps
                   -> CaveKind -> AbsDepth -> TileMap -> ([Point], [Point])
-                  -> Int -> Int -> [Point]
+                  -> Int -> [Point]
                   -> Level
 levelFromCaveKind Kind.COps{coTileSpeedup}
                   CaveKind{ cactorCoeff=lactorCoeff
@@ -209,7 +208,7 @@ levelFromCaveKind Kind.COps{coTileSpeedup}
                           , citemFreq=litemFreq
                           , ..
                           }
-                  ldepth ltile lstair litemNum lsecret lescape =
+                  ldepth ltile lstair litemNum lescape =
   let f n t | Tile.isExplorable coTileSpeedup t = n + 1
             | otherwise = n
       lclear = PointArray.foldlA' f 0 ltile
@@ -231,7 +230,6 @@ levelFromCaveKind Kind.COps{coTileSpeedup}
        , lactorFreq
        , litemNum
        , litemFreq
-       , lsecret
        , lhidden = chidden
        , lescape
        }

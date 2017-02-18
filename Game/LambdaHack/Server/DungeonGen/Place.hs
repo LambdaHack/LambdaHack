@@ -9,6 +9,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
+import qualified Data.Bits as Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Text as T
@@ -116,7 +117,7 @@ buildPlace :: Kind.COps         -- ^ the game content
 buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick}
                          , coplace=Kind.Ops{ofoldlGroup'} }
            CaveKind{..} dnight darkCorTile litCorTile
-           ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) lsecret
+           ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) csecret
            r mplaceGroup = do
   qFWall <- fromMaybe (assert `failure` cfillerTile)
             <$> opick cfillerTile (const True)
@@ -177,7 +178,7 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick}
                   -> Kind.Id TileKind
       lookupOneIn (mOneIn, m) xy c = case EM.lookup c mOneIn of
         Just (oneInChance, tk) ->
-          if isChancePos oneInChance lsecret xy
+          if isChancePos oneInChance csecret xy
           then tk
           else EM.findWithDefault (assert `failure` (c, mOneIn, m)) c m
         Nothing -> EM.findWithDefault (assert `failure` (c, mOneIn, m)) c m
@@ -186,6 +187,11 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick}
         _ -> EM.mapWithKey (lookupOneIn xlegend) cmap
   let tmap = EM.union interior fence
   return (tmap, place)
+
+isChancePos :: Int -> Int -> Point -> Bool
+isChancePos oneInChance csecret (Point x y) =
+  oneInChance > 0
+  && (csecret `Bits.rotateR` x `Bits.xor` y + x) `mod` oneInChance == 0
 
 -- | Roll a legend of a place plan: a map from plan symbols to tile kinds.
 olegend :: Kind.COps -> GroupName TileKind
