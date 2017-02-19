@@ -178,6 +178,7 @@ speedup allClear cotile =
 -- Check that alter can be used, if not, @maxBound@.
 -- For now, we assume only items with @Embed@ may have embedded items,
 -- whether inserted at dungeon creation or later on.
+-- This is used by AI, UI and server to validate (sensibility of) altering.
 alterMinSkillKind :: Kind.Id TileKind -> TileKind -> Word8
 alterMinSkillKind _k tk =
   let getTo TK.OpenTo{} = True
@@ -191,11 +192,15 @@ alterMinSkillKind _k tk =
   in if any getTo $ TK.tfeature tk then TK.talter tk else maxBound
 
 -- How high alter skill is needed to make it walkable. If already
--- walkable, put @0@, if can't, put @maxBound@.
+-- walkable, put @0@, if can't, put @maxBound@. Used only be AI and Bfs
+-- We don't include @HideAs@, because it's very unlikely anybody swapped
+-- the tile while AI was not looking so AI can assume it's still uninteresting.
+-- Pathfinding in UI will also not show such tile as passable, which is OK.
+-- If a human player has a suspicion the tile was swapped, he can check
+-- it manually, disregarding the displayed path hints.
 alterMinWalkKind :: Kind.Id TileKind -> TileKind -> Word8
 alterMinWalkKind k tk =
   let getTo TK.OpenTo{} = True
-      getTo TK.HideAs{} = True  -- in case tile swapped, but server sends hidden
       getTo TK.RevealAs{} = True
       getTo TK.ObscureAs{} = True
       getTo TK.ChangeTo{} = True
