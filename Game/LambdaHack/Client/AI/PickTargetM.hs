@@ -337,7 +337,9 @@ targetStrategy aid = do
                         || -- If all explored, escape/block escapes.
                            (not (tileAdj isEscapePos pos)
                             || not allExplored)
-                           -- The next case is stairs in closestTriggers.
+                           -- The next case is stairs in @closestTriggers@
+                           -- and embedded items ('aiAlterMinSkill' permits
+                           -- (single) use of such items, see its comments).
                            -- We don't determine if the stairs are interesting
                            -- (this changes with time), but allow the actor
                            -- to reach them and then retarget, unless he can't

@@ -125,7 +125,7 @@ signpostUnread = TileKind  -- client only, indicates never used by this faction
   , tcolor   = BrMagenta
   , tcolor2  = Magenta
   , talter   = 5
-  , tfeature = [Embed "signpost"]
+  , tfeature = [Embed "signpost", ConsideredByAI]
   }
 signpostRead = TileKind  -- after first use revealed to be this one
   { tsymbol  = 'O'
@@ -364,7 +364,7 @@ stairsUp = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = talterForStairs
-  , tfeature = [Embed "staircase up"]
+  , tfeature = [Embed "staircase up", ConsideredByAI]
   }
 stairsTaintedUp = TileKind
   { tsymbol  = '<'
@@ -387,7 +387,7 @@ stairsDown = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = talterForStairs
-  , tfeature = [Embed "staircase down"]
+  , tfeature = [Embed "staircase down", ConsideredByAI]
   }
 stairsTaintedDown = TileKind
   { tsymbol  = '>'
@@ -411,7 +411,7 @@ escapeUp = TileKind
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
   , talter   = talterForStairs
-  , tfeature = [Embed "escape"]
+  , tfeature = [Embed "escape", ConsideredByAI]
   }
 escapeDown = TileKind
   { tsymbol  = '>'
@@ -420,7 +420,7 @@ escapeDown = TileKind
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
   , talter   = talterForStairs
-  , tfeature = [Embed "escape"]
+  , tfeature = [Embed "escape", ConsideredByAI]
   }
 escapeOutdoorDown = escapeDown
   { tname    = "exit back to town"

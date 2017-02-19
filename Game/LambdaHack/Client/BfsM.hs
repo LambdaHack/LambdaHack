@@ -259,7 +259,6 @@ closestTriggers onlyDir aid = do
       escapeOrGuard = isNothing onlyDir && allExplored
       -- If lid not explored, aid equips a weapon and so can leave level.
       lidExplored = ES.member (blid body) explored
-      -- Causable tiles are alterable, so they are in BFS (if skill permits).
       f :: Point -> ItemBag -> [(Bool, Point)] -> [(Bool, Point)]
       f p bag acc =
         if alterSkill < fromEnum (aiAlterMinSkill p) then acc else

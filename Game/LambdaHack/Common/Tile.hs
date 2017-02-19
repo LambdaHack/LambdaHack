@@ -195,11 +195,14 @@ alterMinSkillKind _k tk =
       getTo TK.RevealAs{} = True
       getTo TK.ObscureAs{} = True
       getTo TK.Embed{} = True
+      getTo TK.ConsideredByAI = True
       getTo _ = False
   in if any getTo $ TK.tfeature tk then TK.talter tk else maxBound
 
 -- Check that alter should be used by AI, if not, @maxBound@.
--- Also use in Bfs, and and so shown in UI, but human may ignore it.
+-- This is a cheap upper bound --- sometimes a tile will
+-- not be triggered anyway, depending on context and properties
+-- of the embedded item, if any.
 -- We assume AI is best off using most embedded items only once
 -- and we assume most tiles change after first activation
 -- (cache being an exception).
@@ -212,6 +215,7 @@ aiAlterMinSkillKind _k tk =
       getTo TK.ChangeTo{} = True
       getTo TK.RevealAs{} = True
       getTo TK.ObscureAs{} = True
+      getTo TK.ConsideredByAI = True
       getTo _ = False
   in if any getTo $ TK.tfeature tk then TK.talter tk else maxBound
 

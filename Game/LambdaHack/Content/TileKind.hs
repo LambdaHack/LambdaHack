@@ -77,6 +77,8 @@ data Feature =
   | NoItem               -- ^ no items ever generated there
   | NoActor              -- ^ no actors ever generated there
   | Indistinct           -- ^ is allowed to have the same look as another tile
+  | ConsideredByAI       -- ^ even if otherwise uninteresting, taken into
+                         --   account for triggering by AI
   | Trail                -- ^ used for visible trails throughout the level
   | Spice                -- ^ in place normal legend and in override,
                          --   don't roll a tile kind only once per place,
@@ -176,7 +178,6 @@ actionFeatures markSuspect t =
         Walkable -> Just feat
         Clear -> Just feat
         Impenetrable -> Just feat
-        Trail -> Just feat  -- doesn't affect tile behaviour, but important
         HideAs{} -> Nothing
         BuildAs{} -> Nothing
         RevealAs{} -> if markSuspect then Just feat else Nothing
@@ -187,6 +188,8 @@ actionFeatures markSuspect t =
         NoItem -> Nothing
         NoActor -> Nothing
         Indistinct -> Nothing
+        ConsideredByAI -> Just feat
+        Trail -> Just feat  -- doesn't affect tile behaviour, but important
         Spice -> Nothing
   in IS.fromList $ map hash $ mapMaybe f $ tfeature t
 
