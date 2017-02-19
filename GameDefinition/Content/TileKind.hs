@@ -224,7 +224,8 @@ wallObscuredV = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 5
-  , tfeature = [ HideAs "suspect vertical wall Lit"
+  , tfeature = [ Embed "mold on wall"
+               , HideAs "suspect vertical wall Lit"
                , Indistinct
                ]
   }
@@ -303,7 +304,8 @@ wallObscuredH = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 5
-  , tfeature = [ HideAs "suspect horizontal wall Lit"
+  , tfeature = [ Embed "scratch on wall"
+               , HideAs "suspect horizontal wall Lit"
                , Indistinct
                ]
   }
