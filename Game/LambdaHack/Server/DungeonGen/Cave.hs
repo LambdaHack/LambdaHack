@@ -107,8 +107,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                         in EM.insert i sp $ EM.delete p2 gs0
                       _ -> gs0
                   mergable :: X -> Y -> Maybe HV
-                  mergable x y | x < 0 || y < 0 = Nothing
-                               | otherwise = case EM.lookup (Point x y) gs0 of
+                  mergable x y = case EM.lookup (Point x y) gs0 of
                     Just (SpecialArea ar) ->
                       let (x0, y0, x1, y1) = fromArea ar
                           isFixed p = case gs EM.! p of
@@ -126,22 +125,30 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                   Nothing -> gs0
                   Just hv -> case hv of
                     -- Bias; vertical minimal sizes are smaller.
-                    Vert | mergable (px i) (py i - 1) == Just Vert ->
+                    Vert | py i - 1 >= 0
+                           && mergable (px i) (py i - 1) == Just Vert ->
                            mergeSpecial ar i{py = py i - 1} SpecialArea
-                    Vert | mergable (px i) (py i + 1) == Just Vert ->
+                    Vert | py i + 1 < gy
+                           && mergable (px i) (py i + 1) == Just Vert ->
                            mergeSpecial ar i{py = py i + 1} SpecialArea
-                    Horiz | mergable (px i - 1) (py i) == Just Horiz ->
+                    Horiz | px i - 1 >= 0
+                            && mergable (px i - 1) (py i) == Just Horiz ->
                             mergeSpecial ar i{px = px i - 1} SpecialArea
-                    Horiz | mergable (px i + 1) (py i) == Just Horiz ->
+                    Horiz | px i + 1 < gx
+                            && mergable (px i + 1) (py i) == Just Horiz ->
                             mergeSpecial ar i{px = px i + 1} SpecialArea
                     _ -> gs0
                 SpecialFixed p placeGroup ar ->
                   let (x0, y0, x1, y1) = fromArea ar
                       d = 3
-                      vics = [i {py = py i - 1} | py p - y0 < d]
-                             ++ [i {py = py i + 1} | y1 - py p < d]
-                             ++ [i {px = px i - 1} | px p - x0 < d + 1]
-                             ++ [i {px = px i + 1} | x1 - px p < d + 1]
+                      vics = [ i {py = py i - 1}
+                             | py p - y0 < d && py i - 1 >= 0 ]
+                             ++ [ i {py = py i + 1}
+                                | y1 - py p < d && py i + 1 < gy ]
+                             ++ [ i {px = px i - 1}
+                                | px p - x0 < d + 1 && px i - 1 >= 0 ]
+                             ++ [ i {px = px i + 1}
+                                | x1 - px p < d + 1 && px i + 1 < gx ]
                   in case vics of
                     [p2] -> mergeSpecial ar p2 (SpecialFixed p placeGroup)
                     _ -> gs0
