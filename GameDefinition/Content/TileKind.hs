@@ -343,7 +343,7 @@ doorOpenH = TileKind
 stairsUp = TileKind
   { tsymbol  = '<'
   , tname    = "staircase up"
-  , tfreq    = [("staircase up", 9)]
+  , tfreq    = [("staircase up", 9), ("ordinary staircase up", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = talterForStairs
@@ -356,7 +356,8 @@ stairsTaintedUp = TileKind
   , tcolor   = BrRed
   , tcolor2  = Red
   , talter   = talterForStairs
-  , tfeature = [Embed "staircase up", Embed "staircase trap"]
+  , tfeature = [ Embed "staircase up", Embed "staircase trap up"
+               , ChangeTo "ordinary staircase up" ]
   }
 stairsOutdoorUp = stairsUp
   { tname    = "signpost pointing backward"
@@ -365,7 +366,7 @@ stairsOutdoorUp = stairsUp
 stairsDown = TileKind
   { tsymbol  = '>'
   , tname    = "staircase down"
-  , tfreq    = [("staircase down", 9)]
+  , tfreq    = [("staircase down", 9), ("ordinary staircase down", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = talterForStairs
@@ -378,8 +379,10 @@ stairsTaintedDown = TileKind
   , tcolor   = BrRed
   , tcolor2  = Red
   , talter   = talterForStairs
-  , tfeature = [Embed "staircase down", Embed "staircase trap"]
+  , tfeature = [ Embed "staircase down", Embed "staircase trap down"
+               , ChangeTo "ordinary staircase down" ]
   }
+
 stairsOutdoorDown = stairsDown
   { tname    = "signpost pointing forward"
   , tfreq    = [("staircase outdoor down", 1)]
