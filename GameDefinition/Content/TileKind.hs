@@ -22,17 +22,23 @@ cdefs = ContentDef
   , validateSingle = validateSingleTileKind
   , validateAll = validateAllTileKind
   , content = contentFromList $
-      [unknown, wall, hardRock, pillar, pillarIce, pillarCache, lampPost, signpost, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, wallObscuredV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark]
+      [unknown, wall, hardRock, pillar, pillarIce, pillarCache, lampPost, signpostUnread, signpostRead, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, wallObscuredV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark]
       ++ map makeDark ldarkable
       ++ map makeDarkColor ldarkColorable
   }
-unknown,        wall, hardRock, pillar, pillarIce, pillarCache, lampPost, signpost, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, wallObscuredV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark :: TileKind
+unknown,        wall, hardRock, pillar, pillarIce, pillarCache, lampPost, signpostUnread, signpostRead, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, wallObscuredV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark :: TileKind
 
 ldarkable :: [TileKind]
 ldarkable = [wallV, wallSuspectV, wallObscuredV, doorClosedV, doorTrappedV, doorOpenV, wallH, wallSuspectH, wallObscuredH, doorClosedH, doorTrappedH, doorOpenH, rubble, floorCorridorLit]
 
 ldarkColorable :: [TileKind]
 ldarkColorable = [floorArenaLit, floorNoiseLit, floorDirtLit, floorActorLit, floorItemLit, floorActorItemLit]
+
+-- Note that for AI hints and UI comfort, most multiple-use @Embed@ tiles
+-- should have a variant, which after first use transforms into a different
+-- colour tile without @ChangeTo@ and similar (which then AI no longer touches).
+-- If a tile is supposed to be repeatedly activated by AI (e.g., cache),
+-- it should keep @ChangeTo@ for the whole time.
 
 unknown = TileKind  -- needs to have index 0 and alter 1
   { tsymbol  = ' '
@@ -83,7 +89,7 @@ pillar = TileKind
   , tcolor   = BrCyan  -- not BrWhite, to tell from heroes
   , tcolor2  = Cyan
   , talter   = 100
-  , tfeature = []
+  , tfeature = [Indistinct]
   }
 pillarIce = pillar
   { tname    = "ice"
@@ -112,14 +118,23 @@ lampPost = TileKind
   , talter   = 100
   , tfeature = [Indistinct]
   }
-signpost = TileKind
+signpostUnread = TileKind  -- client only, indicates never used by this faction
   { tsymbol  = 'O'
   , tname    = "signpost"
-  , tfreq    = [("signpost", 1)]
+  , tfreq    = [("signpost unread", 1)]
   , tcolor   = BrMagenta
   , tcolor2  = Magenta
   , talter   = 5
   , tfeature = [Embed "signpost"]
+  }
+signpostRead = TileKind  -- after first use revealed to be this one
+  { tsymbol  = 'O'
+  , tname    = "signpost"
+  , tfreq    = [("signpost", 1)]
+  , tcolor   = BrCyan
+  , tcolor2  = Cyan
+  , talter   = 5
+  , tfeature = [Embed "signpost", HideAs "signpost unread", Indistinct]
   }
 bush = TileKind
   { tsymbol  = '&'

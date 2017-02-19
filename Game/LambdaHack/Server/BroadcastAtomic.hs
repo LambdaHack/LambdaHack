@@ -210,10 +210,8 @@ atomicRemember lid inPer s =
       inFloor = inContainer CFloor (lfloor lvl)
       inEmbed = inContainer CEmbed (lembed lvl)
       -- Tiles.
-      Kind.COps{cotile, coTileSpeedup} = scops s
-      hideTile p = let t = lvl `at` p
-                       ht = Tile.hideAs cotile t
-                   in assert (ht == t || Tile.isSuspect coTileSpeedup ht) ht
+      Kind.COps{cotile} = scops s
+      hideTile p = Tile.hideAs cotile $ lvl `at` p
       inTileMap = map (\p -> (p, hideTile p)) inFov
       atomicTile = if null inTileMap then [] else [UpdSpotTile lid inTileMap]
       -- Smells.

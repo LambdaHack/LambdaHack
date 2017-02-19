@@ -309,7 +309,7 @@ targetStrategy aid = do
           isEscapePos <- getsState $ \s p -> isEscape lid p s
           isStairPos <- getsState $ \s p -> isStair lid p s
           let t = lvl `at` pos
-              alterMinSkill = Tile.alterMinSkill coTileSpeedup t
+              aiAlterMinSkill = Tile.aiAlterMinSkill coTileSpeedup t
               tileAdj :: (Point -> Bool) -> Point -> Bool
               tileAdj f p = any f $ vicinityUnsafe p
           if lid /= blid b  -- wrong level
@@ -343,7 +343,7 @@ targetStrategy aid = do
                            -- to reach them and then retarget, unless he can't
                            -- trigger them at all.
                            && (EM.findWithDefault 0 AbAlter actorMaxSk
-                               < fromEnum alterMinSkill
+                               < fromEnum aiAlterMinSkill
                                || not (tileAdj isStairPos pos))
                            -- The remaining case is furthestKnown. This is
                            -- always an unimportant target, so we forget it

@@ -243,7 +243,7 @@ closestTriggers onlyDir aid = do
   body <- getsState $ getActorBody aid
   let lid = blid body
   lvl <- getLevel lid
-  let alterMinSkill p = Tile.alterMinSkill coTileSpeedup $ lvl `at` p
+  let aiAlterMinSkill p = Tile.aiAlterMinSkill coTileSpeedup $ lvl `at` p
       alterSkill = EM.findWithDefault 0 Ability.AbAlter actorMaxSk
   explored <- getsClient sexplored
   dungeon <- getsState sdungeon
@@ -262,7 +262,7 @@ closestTriggers onlyDir aid = do
       -- Causable tiles are alterable, so they are in BFS (if skill permits).
       f :: Point -> ItemBag -> [(Bool, Point)] -> [(Bool, Point)]
       f p bag acc =
-        if alterSkill < fromEnum (alterMinSkill p) then acc else
+        if alterSkill < fromEnum (aiAlterMinSkill p) then acc else
         case mapMaybe mupIid $ EM.keys bag of
           [] ->  -- not stairs
             -- Escape (or guard) only after exploring, for high score, etc.

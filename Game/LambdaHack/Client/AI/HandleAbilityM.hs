@@ -591,11 +591,11 @@ trigger aid fleeViaStairs = do
   lvl <- getLevel (blid b)
   unexploredD <- unexploredDepth
   itemToF <- itemToFullClient
-  let alterMinSkill p = Tile.alterMinSkill coTileSpeedup $ lvl `at` p
+  let aiAlterMinSkill p = Tile.aiAlterMinSkill coTileSpeedup $ lvl `at` p
       lidExplored = ES.member (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
       -- Only actors with hight enough AbAlter can use stairs.
-      enterableHere p = alterSkill >= fromEnum (alterMinSkill p)
+      enterableHere p = alterSkill >= fromEnum (aiAlterMinSkill p)
       iidToEffs (iid, kit) = case itemDisco $ itemToF iid kit of
         Nothing -> []
         Just ItemDisco{itemKind} -> IK.ieffects itemKind
