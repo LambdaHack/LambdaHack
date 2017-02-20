@@ -99,7 +99,6 @@ data TileSpeedup = TileSpeedup
   , isWalkableTab      :: !(Tab Bool)
   , isDoorTab          :: !(Tab Bool)
   , isSuspectTab       :: !(Tab Bool)
-  , isChangeableTab    :: !(Tab Bool)
   , isOftenItemTab     :: !(Tab Bool)
   , isOftenActorTab    :: !(Tab Bool)
   , isNoItemTab        :: !(Tab Bool)
@@ -200,7 +199,7 @@ floorSymbol :: Char.Char
 floorSymbol = Char.chr 183
 
 -- Alter skill schema:
--- 0  can be altered by everybody (currently no such thing)
+-- 0  can be altered by everybody (escape)
 -- 1  unknown only
 -- 2  openable and suspect
 -- 3  stairs

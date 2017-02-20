@@ -410,7 +410,7 @@ escapeUp = TileKind
   , tfreq    = [("legendLit", 1), ("legendDark", 1)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
-  , talter   = talterForStairs
+  , talter   = 0  -- anybody can escape (or guard escape)
   , tfeature = [Embed "escape", ConsideredByAI]
   }
 escapeDown = TileKind
@@ -419,7 +419,7 @@ escapeDown = TileKind
   , tfreq    = [("legendLit", 1), ("legendDark", 1)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
-  , talter   = talterForStairs
+  , talter   = 0  -- anybody can escape (or guard escape)
   , tfeature = [Embed "escape", ConsideredByAI]
   }
 escapeOutdoorDown = escapeDown

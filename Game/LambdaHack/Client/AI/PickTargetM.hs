@@ -32,7 +32,6 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
-import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
@@ -44,7 +43,7 @@ targetStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy TgtAndPath)
 {-# INLINE targetStrategy #-}
 targetStrategy aid = do
-  cops@Kind.COps{corule, coTileSpeedup} <- getsState scops
+  cops@Kind.COps{corule} <- getsState scops
   b <- getsState $ getActorBody aid
   mleader <- getsClient _sleader
   condInMelee <- getsClient scondInMelee
@@ -151,7 +150,7 @@ targetStrategy aid = do
         let itemFull = itemToF iid k
             use = itemUsefulness itemFull
         in desirableItem canEscape use itemFull) $ EM.assocs bag
-      desirable (_, (_, Nothing)) = True
+      desirable (_, (_, Nothing)) = False
       desirable (_, (_, Just bag)) = desirableBag bag
       focused = bspeed b ar < speedWalk || condHpTooLow
       couldMoveLastTurn =
@@ -306,15 +305,16 @@ targetStrategy aid = do
           let lidExplored = ES.member (blid b) explored
               allExplored = ES.size explored == EM.size dungeon
           bag <- getsState $ getFloorBag lid pos
-          isEscapePos <- getsState $ \s p -> isEscape lid p s
           isStairPos <- getsState $ \s p -> isStair lid p s
+          isEmbedPos <- getsState $ \s p ->
+            p `EM.member` lembed (sdungeon s EM.! lid)
           let t = lvl `at` pos
-              aiAlterMinSkill = Tile.aiAlterMinSkill coTileSpeedup t
               tileAdj :: (Point -> Bool) -> Point -> Bool
               tileAdj f p = any f $ vicinityUnsafe p
           if lid /= blid b  -- wrong level
              -- Below we check the target could not be picked again in
-             -- pickNewTarget, and only in this case it is invalidated.
+             -- pickNewTarget (e.g., an item got picked up by our teammate)
+             -- and only in this case it is invalidated.
              -- This ensures targets are eventually reached (unless a foe
              -- shows up) and not changed all the time mid-route
              -- to equally interesting, but perhaps a bit closer targets,
@@ -334,19 +334,15 @@ targetStrategy aid = do
                         -- Try to kill that very last enemy for his loot before
                         -- leaving the level or dungeon.
                         not (null allFoes)
-                        || -- If all explored, escape/block escapes.
-                           (not (tileAdj isEscapePos pos)
-                            || not allExplored)
-                           -- The next case is stairs in @closestTriggers@
-                           -- and embedded items ('aiAlterMinSkill' permits
-                           -- (single) use of such items, see its comments).
+                        || -- Now stairs and embedded items in @closestTriggers@
+                           -- where we don't check skills, because they normally
+                           -- don't change or we can put some equipment back
+                           -- and because we don't know which tile we aim at,
+                           -- only that it's adjacent.
                            -- We don't determine if the stairs are interesting
                            -- (this changes with time), but allow the actor
-                           -- to reach them and then retarget, unless he can't
-                           -- trigger them at all.
-                           && (EM.findWithDefault 0 AbAlter actorMaxSk
-                               < fromEnum aiAlterMinSkill
-                               || not (tileAdj isStairPos pos))
+                           -- to reach them and then retarget.
+                           (not (tileAdj isEmbedPos pos))
                            -- The remaining case is furthestKnown. This is
                            -- always an unimportant target, so we forget it
                            -- if the actor is stuck (waits, though could move;

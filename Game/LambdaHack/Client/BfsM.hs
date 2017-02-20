@@ -38,7 +38,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
+import Game.LambdaHack.Content.TileKind (isUknownSpace)
 
 invalidateBfsAid :: MonadClient m => ActorId -> m ()
 invalidateBfsAid aid =
@@ -228,10 +228,14 @@ closestSmell aid = do
       let ts = mapMaybe (\x@(p, _) -> fmap (,x) (accessBfs bfs p)) smells
       return $! sortBy (comparing (fst &&& absoluteTimeNegate . snd . snd)) ts
 
--- | Closest (wrt paths) triggerable tiles.
+data TriggerClass = TriggerUp | TriggerDown | TriggerEscape | TriggerOther
+  deriving Eq
+
+-- | Closest (wrt paths) AI-triggerable tiles with embedded items.
 -- In AI, the level the actor is on is either explored or the actor already
 -- has a weapon equipped, so no need to explore further, he tries to find
--- enemies on other levels.
+-- enemies on other levels, but before that, he triggers other tiles
+-- in hope of some loot or beneficial effect to enter next level with.
 closestTriggers :: MonadClient m => Maybe Bool -> ActorId -> m (Frequency Point)
 closestTriggers onlyDir aid = do
   Kind.COps{coTileSpeedup} <- getsState scops
@@ -249,26 +253,34 @@ closestTriggers onlyDir aid = do
   dungeon <- getsState sdungeon
   let escape = any (not . null . lescape) $ EM.elems dungeon
   unexploredD <- unexploredDepth
-  mupIid <- getsState $ \s iid ->
+  classIid <- getsState $ \s iid ->
     -- Contrived, for now.
     let Item{jname} = getItemBody iid s
-    in if | jname == "staircase up" -> Just True
-          | jname == "staircase down" -> Just False
-          | otherwise -> Nothing
+    in if | jname == "staircase up" -> TriggerUp
+          | jname == "staircase down" -> TriggerDown
+          | jname == "escape" -> TriggerEscape
+          | otherwise -> TriggerOther
   let allExplored = ES.size explored == EM.size dungeon
       escapeOrGuard = isNothing onlyDir && allExplored
       -- If lid not explored, aid equips a weapon and so can leave level.
       lidExplored = ES.member (blid body) explored
-      f :: Point -> ItemBag -> [(Bool, Point)] -> [(Bool, Point)]
+      f :: Point -> ItemBag -> [(TriggerClass, Point)]
+        -> [(TriggerClass, Point)]
       f p bag acc =
         if alterSkill < fromEnum (aiAlterMinSkill p) then acc else
-        case mapMaybe mupIid $ EM.keys bag of
-          [] ->  -- not stairs
+        case map classIid $ EM.keys bag of
+          [] -> acc
+          l | all (== TriggerOther) l ->
+            -- Neither stairs nor escape, so explore if close enough.
+            if Tile.isSuspect coTileSpeedup $ lvl `at` p
+            then acc  -- assume secrets have no loot
+            else (TriggerOther, p) : acc
+          TriggerEscape : _ ->  -- normally only one present, so just take first
             -- Escape (or guard) only after exploring, for high score, etc.
-            let upDummy = True  -- direction ignored later on
-            in if escapeOrGuard then (upDummy, p) : acc else acc
-          up : _ ->  -- normally only one present, so just take the first
-            let easier = up /= (fromEnum lid > 0)
+            if escapeOrGuard then (TriggerEscape, p) : acc else acc
+          cid : _ ->
+            let up = cid == TriggerUp
+                easier = up /= (fromEnum lid > 0)
                 unexpForth = unexploredD up lid
                 unexpBack = unexploredD (not up) lid
                 aiCond = if unexpForth
@@ -278,36 +290,31 @@ closestTriggers onlyDir aid = do
                 interesting = case onlyDir of
                   Just d -> d == up
                   Nothing -> not escape && allExplored || aiCond
-            in if interesting then (up, p) : acc else acc
+            in if interesting then (cid, p) : acc else acc
       triggers = EM.foldrWithKey f [] $ lembed lvl
-  bfs <- getCacheBfs aid
   -- The advantage of only targeting the tiles in vicinity of triggers is that
   -- triggers don't need to be pathable (and so AI doesn't bump into them
   -- by chance while walking elsewhere) and that many accesses to the tiles
   -- are more likely to be targeted by different AI actors (even starting
   -- from the same location), so there is less risk of clogging stairs and,
   -- OTOH, siege of stairs or escapes is more effective.
-  let vicTrigger (up, p0) = map (\p -> (up, p)) $ vicinityUnsafe p0
+  bfs <- getCacheBfs aid
+  let vicTrigger (cid, p0) = map (\p -> (cid, p)) $ vicinityUnsafe p0
       vicAll = concatMap vicTrigger triggers
-      vicNoDist = filter (isJust . accessBfs bfs . snd) vicAll
-  return $ if  -- keep lazy
-    | null triggers -> mzero
-    | escapeOrGuard ->
-      -- Distance to stairs and direction irrelevant to ensure random wandering.
-      -- High frequency to ensure all from the level congregate there.
-      toFreq "closestTriggers when escapeOrGuard"
-      $ map (\(_up, p) -> (9999999, p)) vicNoDist  -- @up@ ignored, as promised
-    | otherwise ->
-      -- Prefer stairs to easier levels.
-      let mix (up, p) dist =
-            let easier = up /= (fromEnum lid > 0)
-                depthDelta = if easier then 2 else 1
-                maxd = fromEnum (maxBound :: BfsDistance)
-                       - fromEnum apartBfs
-                v = (maxd * maxd * maxd) `div` ((dist + 1) * (dist + 1))
-            in (depthDelta * v, p)
-          ds = mapMaybe (\(up, p) -> mix (up, p) <$> accessBfs bfs p) vicAll
-      in toFreq "closestTriggers" ds
+  return $  -- keep lazy
+    let mix (cid, p) dist =
+          -- Prefer stairs to easier levels. Prefer loot over stairs.
+          let depthDelta = case cid of
+                TriggerUp -> if fromEnum lid > 0 then 1 else 2
+                TriggerDown -> if fromEnum lid > 0 then 2 else 1
+                TriggerEscape -> 10  -- congregate at escape
+                TriggerOther -> 4
+              maxd = fromEnum (maxBound :: BfsDistance)
+                     - fromEnum apartBfs
+              v = (maxd * maxd * maxd) `div` ((dist + 1) * (dist + 1))
+          in (depthDelta * v, p)
+        ds = mapMaybe (\(cid, p) -> mix (cid, p) <$> accessBfs bfs p) vicAll
+    in toFreq "closestTriggers" ds
 
 unexploredDepth :: MonadClient m => m (Bool -> LevelId -> Bool)
 unexploredDepth = do
@@ -322,10 +329,9 @@ unexploredDepth = do
         in any unex . ascendInBranch dungeon up
   return unexploredD
 
--- | Closest (wrt paths) items and changeable tiles (e.g., item caches).
+-- | Closest (wrt paths) items.
 closestItems :: MonadClient m => ActorId -> m [(Int, (Point, Maybe ItemBag))]
 closestItems aid = do
-  Kind.COps{coTileSpeedup} <- getsState scops
   actorAspect <- getsClient sactorAspect
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
@@ -334,28 +340,12 @@ closestItems aid = do
   if EM.findWithDefault 0 Ability.AbMoveItem actorMaxSk <= 0 then return []
   else do
     body <- getsState $ getActorBody aid
-    salter <- getsClient salter
-    let lalter = salter EM.! blid body
-        alterSkill = EM.findWithDefault 0 Ability.AbAlter actorMaxSk
-    lvl@Level{lfloor} <- getLevel $ blid body
-    let items = EM.assocs lfloor
-        -- Changeable tiles are alterable so they are in BFS (if skill permits).
-        -- We assume they may generate items, but the items are most useful
-        -- when picked up, so @AbMoveItem@ is necessary.
-        f :: Point -> Kind.Id TileKind -> [Point] -> [Point]
-        f p t acc = if Tile.isChangeable coTileSpeedup t
-                       && alterSkill >= fromEnum (lalter PointArray.! p)
-                    then p : acc
-                    else acc
-        changeable = PointArray.ifoldrA f [] $ ltile lvl
-    if null items && null changeable then return []
-    else do
+    Level{lfloor} <- getLevel $ blid body
+    if EM.null lfloor then return [] else do
       bfs <- getCacheBfs aid
-      let is = mapMaybe (\(p, bag) ->
-                          fmap (, (p, Just bag)) (accessBfs bfs p)) items
-          cs = mapMaybe (\p ->
-                          fmap (, (p, Nothing)) (accessBfs bfs p)) changeable
-      return $! sortBy (comparing fst) $ is ++ cs
+      let is = mapMaybe (\(p, bag) -> fmap (, (p, Just bag)) (accessBfs bfs p))
+                        (EM.assocs lfloor)
+      return $! sortBy (comparing fst) is
 
 -- | Closest (wrt paths) enemy actors.
 closestFoes :: MonadClient m

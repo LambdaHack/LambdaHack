@@ -18,7 +18,7 @@ module Game.LambdaHack.Common.Tile
   , isExplorable, isOftenItem, isOftenActor, isNoItem, isNoActor, isEasyOpen
   , speedup, alterMinSkill, aiAlterMinSkill, alterMinWalk
   , openTo, closeTo, embeddedItems, revealAs, obscureAs, hideAs, buildAs
-  , isEasyOpenKind, isOpenable, isClosable, isChangeable
+  , isEasyOpenKind, isOpenable, isClosable
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , createTab, createTabWithKey, accessTab
@@ -98,12 +98,6 @@ isSuspect :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isSuspect #-}
 isSuspect TileSpeedup{isSuspectTab} = accessTab isSuspectTab
 
--- | Whether a tile kind (specified by its id) has a ChangeTo feature.
--- Essential for efficiency of pathfinding, hence tabulated.
-isChangeable :: TileSpeedup -> Kind.Id TileKind -> Bool
-{-# INLINE isChangeable #-}
-isChangeable TileSpeedup{isChangeableTab} = accessTab isChangeableTab
-
 isOftenItem :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isOftenItem #-}
 isOftenItem TileSpeedup{isOftenItemTab} = accessTab isOftenItemTab
@@ -167,10 +161,6 @@ speedup allClear cotile =
             getTo _ = False
         in any getTo $ TK.tfeature tk
       isSuspectTab = createTab cotile TK.isSuspectKind
-      isChangeableTab = createTab cotile $ \tk ->
-        let getTo TK.ChangeTo{} = True
-            getTo _ = False
-        in any getTo $ TK.tfeature tk
       isOftenItemTab = createTab cotile $ kindHasFeature TK.OftenItem
       isOftenActorTab = createTab cotile $ kindHasFeature TK.OftenActor
       isNoItemTab = createTab cotile $ kindHasFeature TK.NoItem
