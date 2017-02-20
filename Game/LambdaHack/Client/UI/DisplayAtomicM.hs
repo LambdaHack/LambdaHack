@@ -109,8 +109,10 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
             sxhairOld <- getsClient sxhair
             case sxhairOld of
               TEnemy{} -> return ()  -- probably too important to overwrite
-              TEnemyPos{} -> return ()
-              _ -> modifyClient $ \cli -> cli {sxhair = TPoint lid p}
+              TPoint TEnemyPos{} _ _ -> return ()
+              _ -> do
+                bag <- getsState $ getFloorBag lid p
+                modifyClient $ \cli -> cli {sxhair = TPoint (TItem bag) lid p}
             itemVerbMU iid kit "be spotted" c
             stopPlayBack
           CTrunk{} -> return ()

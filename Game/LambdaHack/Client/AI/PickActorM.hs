@@ -113,9 +113,10 @@ pickActorToMove maidToAvoid refreshTarget = do
                          then condCanFlee && condMeleeBad
                               && not condFastThreatAdj
                          else heavilyDistressed  -- shot at
-          actorHearning (_, TgtAndPath{tapTgt=TEnemyPos{},tapPath=NoPath}) =
+          actorHearning (_, TgtAndPath{ tapTgt=TPoint TEnemyPos{} _ _
+                                      , tapPath=NoPath }) =
             return False
-          actorHearning (_, TgtAndPath{ tapTgt=TEnemyPos{}
+          actorHearning (_, TgtAndPath{ tapTgt=TPoint TEnemyPos{} _ _
                                       , tapPath=AndPath{pathLen} })
             | pathLen <= 2 =
             return False  -- noise probably due to fleeing target
@@ -143,7 +144,7 @@ pickActorToMove maidToAvoid refreshTarget = do
       oursMeleeBad <- filterM actorMeleeBad oursNotHearing
       oursNotMeleeBad <- filterM (fmap not . actorMeleeBad) oursNotHearing
       let targetTEnemy (_, TgtAndPath{tapTgt=TEnemy{}}) = True
-          targetTEnemy (_, TgtAndPath{tapTgt=TEnemyPos{}}) = True
+          targetTEnemy (_, TgtAndPath{tapTgt=TPoint TEnemyPos{} _ _}) = True
           targetTEnemy _ = False
           (oursTEnemy, oursOther) = partition targetTEnemy oursNotMeleeBad
           -- These are not necessarily stuck (perhaps can go around),

@@ -83,9 +83,7 @@ aidTgtToPos aid lidV tgt =
       return $! if blid body == lidV
                 then Just (bpos body)
                 else Nothing
-    Just (TEnemyPos _ lid p _) ->
-      return $! if lid == lidV then Just p else Nothing
-    Just (TPoint lid p) ->
+    Just (TPoint _ lid p) ->
       return $! if lid == lidV then Just p else Nothing
     Just (TVector v) -> do
       b <- getsState $ getActorBody aid
@@ -99,8 +97,10 @@ aidTgtToPos aid lidV tgt =
       aidTgtToPos aid lidV $ Just sxhair
 
 -- | Check whether one is permitted to aim at a target
--- (this is only checked for actors; positions let player
--- shoot at obstacles, e.g., to destroy them).
+-- (this is only checked for actors so that the player doesn't miss
+-- enemy getting out of sight; but for positions we let player
+-- shoot at obstacles, e.g., to destroy them, and shoot at a lying item
+-- and then at its posision, after enemy picked up the item).
 -- This assumes @aidTgtToPos@ does not return @Nothing@.
 -- Returns a different @seps@, if needed to reach the target actor.
 --
@@ -127,8 +127,9 @@ aidTgtAims aid lidV tgt = do
       if blid body == lidV
       then findNewEps False pos
       else return $ Left "selected opponent not on this level"
-    Just TEnemyPos{} -> return $ Left "selected opponent not visible"
-    Just (TPoint lid pos) ->
+    Just (TPoint TEnemyPos{} _ _) ->
+      return $ Left "selected opponent not visible"
+    Just (TPoint _ lid pos) ->
       if lid == lidV
       then findNewEps True pos
       else return $ Left "selected position not on this level"

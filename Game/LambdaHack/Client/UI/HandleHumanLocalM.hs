@@ -707,8 +707,8 @@ tgtClearHuman = do
       b <- getsState $ getActorBody leader
       let sxhair = case sxhairOld of
             TEnemy _ permit -> TEnemy leader permit
-            TEnemyPos _ _ _ permit -> TEnemy leader permit
-            TPoint{} -> TPoint (blid b) (bpos b)
+            TPoint (TEnemyPos _ permit) _ _ -> TEnemy leader permit
+            TPoint{} -> TPoint TAny (blid b) (bpos b)
             TVector{} -> TVector (Vector 0 0)
       modifyClient $ \cli -> cli {sxhair}
       doLook
@@ -777,7 +777,7 @@ moveXhairHuman dir n = do
   else do
     let tgt = case sxhair of
           TVector{} -> TVector $ newPos `vectorToFrom` lpos
-          _ -> TPoint lidV newPos
+          _ -> TPoint TAny lidV newPos
     modifyClient $ \cli -> cli {sxhair = tgt}
     doLook
     return Nothing
@@ -787,8 +787,7 @@ lidOfTarget tgt = case tgt of
   Just (TEnemy a _) -> do
     body <- getsState $ getActorBody a
     return $! blid body
-  Just (TEnemyPos _ lid _ _) -> return lid
-  Just (TPoint lid _) -> return lid
+  Just (TPoint _ lid _) -> return lid
   Just (TVector _) -> do
     leader <- getLeaderUI
     getsState $ blid . getActorBody leader
@@ -830,8 +829,7 @@ aimFloorHuman = do
         _ | isNothing saimMode ->  -- first key press: keep target
           sxhair
         TEnemy a True -> TEnemy a False
-        TEnemy{} -> TPoint lidV xhair
-        TEnemyPos{} -> TPoint lidV xhair
+        TEnemy{} -> TPoint TAny lidV xhair
         TPoint{} -> TVector $ xhair `vectorToFrom` lpos
         TVector{} ->
           -- For projectiles, we pick here the first that would be picked
@@ -839,7 +837,7 @@ aimFloorHuman = do
           -- without any intervening actors from other tiles.
           case find (\(_, m) -> Just (bpos m) == xhairPos) bsAll of
             Just (im, _) -> TEnemy im True
-            Nothing -> TPoint lidV xhair
+            Nothing -> TPoint TAny lidV xhair
   modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
   modifyClient $ \cli -> cli {sxhair = tgt}
   doLook
@@ -870,7 +868,7 @@ aimEnemyHuman = do
         TEnemy a permit ->  -- first key press, retarget old enemy
           let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
           in (permit, splitAt i dbs)
-        TEnemyPos _ _ _ permit -> (permit, pickUnderXhair)
+        TPoint (TEnemyPos _ permit) _ _ -> (permit, pickUnderXhair)
         _ -> (False, pickUnderXhair)  -- the sensible default is only-foes
       gtlt = gt ++ lt
       isEnemy b = isAtWar fact (bfid b)
@@ -937,7 +935,7 @@ xhairUnknownHuman = do
   case mpos of
     Nothing -> failMsg "no more unknown spots left"
     Just p -> do
-      let tgt = TPoint (blid b) p
+      let tgt = TPoint TUnknown (blid b) p
       modifyClient $ \cli -> cli {sxhair = tgt}
       doLook
       return Nothing
@@ -951,8 +949,8 @@ xhairItemHuman = do
   items <- closestItems leader
   case items of
     [] -> failMsg "no more items remembered or visible"
-    (_, (p, _)) : _ -> do
-      let tgt = TPoint (blid b) p
+    (_, (p, bag)) : _ -> do
+      let tgt = TPoint (TItem bag) (blid b) p
       modifyClient $ \cli -> cli {sxhair = tgt}
       doLook
       return Nothing
@@ -966,8 +964,8 @@ xhairStairHuman up = do
   stairs <- closestTriggers (Just up) leader
   case sortBy (flip compare) $ runFrequency stairs of
     [] -> failMsg $ "no stairs" <+> if up then "up" else "down"
-    (_, p) : _ -> do
-      let tgt = TPoint (blid b) p
+    (_, (p, bag)) : _ -> do
+      let tgt = TPoint (TEmbed bag) (blid b) p
       modifyClient $ \cli -> cli {sxhair = tgt}
       doLook
       return Nothing
@@ -989,7 +987,7 @@ xhairPointerFloor verbose = do
      && px < lxsize && py - mapStartY < lysize
   then do
     oldXhair <- getsClient sxhair
-    let sxhair = TPoint lidV $ Point px (py - mapStartY)
+    let sxhair = TPoint TAny lidV $ Point px (py - mapStartY)
         sxhairMoused = sxhair /= oldXhair
     modifySession $ \sess ->
       sess { saimMode = Just $ AimMode lidV
@@ -1020,7 +1018,7 @@ xhairPointerEnemy verbose = do
         sxhair =
           case find (\(_, m) -> bpos m == newPos) bsAll of
             Just (im, _) -> TEnemy im True
-            Nothing -> TPoint lidV newPos
+            Nothing -> TPoint TAny lidV newPos
         sxhairMoused = sxhair /= oldXhair
     modifySession $ \sess ->
       sess { saimMode = Just $ AimMode lidV

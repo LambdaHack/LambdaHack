@@ -302,7 +302,7 @@ meleeAid target = do
             -- Set personal target to the enemy position,
             -- to easily him with a ranged attack when he flees.
             let f (Just (TEnemy _ b)) = Just $ TEnemy target b
-                f (Just (TEnemyPos _ _ _ b)) = Just $ TEnemy target b
+                f (Just (TPoint (TEnemyPos _ b) _ _)) = Just $ TEnemy target b
                 f _ = Just $ TEnemy target False
             modifyClient $ updateTarget leader f
             return $ Right wp

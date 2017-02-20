@@ -70,7 +70,7 @@ condAimEnemyRememberedM aid = do
   b <- getsState $ getActorBody aid
   btarget <- getsClient $ getTarget aid
   return $! case btarget of
-    Just (TEnemyPos _ lid _ permit) | lid == blid b -> not permit
+    Just (TPoint (TEnemyPos _ permit) lid _) | lid == blid b -> not permit
     _ -> False
 
 -- | Require that the target enemy is adjacent to at least one friend.
@@ -399,7 +399,6 @@ fleeList aid = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   let tgtPath = case mtgtMPath of  -- prefer fleeing along the path to target
         Just TgtAndPath{tapTgt=TEnemy{}} -> []  -- don't flee towards an enemy
-        Just TgtAndPath{tapTgt=TEnemyPos{}} -> []
         Just TgtAndPath{tapPath=AndPath{pathList}} -> pathList
         _ -> []
   b <- getsState $ getActorBody aid

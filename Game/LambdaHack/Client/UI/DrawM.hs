@@ -76,31 +76,33 @@ targetDesc target = do
           stars = chs $ fromEnum $ max 0 $ min 4 $ percentage `div` 20
           hpIndicator = if bfid b == side then Nothing else Just stars
       return (bname b, hpIndicator)
-    Just (TEnemyPos _ lid p _) -> do
-      let hotText = if lid == lidV && arena == lidV
-                    then "hot spot" <+> tshow p
-                    else "a hot spot on level" <+> tshow (abs $ fromEnum lid)
-      return (hotText, Nothing)
-    Just (TPoint lid p) -> do
-      pointedText <-
-        if lid == lidV && arena == lidV
-        then do
-          bag <- getsState $ getFloorBag lid p
-          case EM.assocs bag of
-            [] -> return $! "exact spot" <+> tshow p
-            [(iid, kit@(k, _))] -> do
-              localTime <- getsState $ getLocalTime lid
-              itemToF <- itemToFullClient
-              side <- getsClient sside
-              factionD <- getsState sfactionD
-              let (_, _, name, stats) =
-                    partItem side factionD CGround localTime (itemToF iid kit)
-              return $! makePhrase $ if k == 1
-                                     then [name, stats]  -- "a sword" too wordy
-                                     else [MU.CarWs k name, stats]
-            _ -> return $! "many items at" <+> tshow p
-        else return $! "an exact spot on level" <+> tshow (abs $ fromEnum lid)
-      return (pointedText, Nothing)
+    Just (TPoint tgoal lid p) -> case tgoal of
+      TEnemyPos{} -> do
+        let hotText = if lid == lidV && arena == lidV
+                      then "hot spot" <+> tshow p
+                      else "a hot spot on level" <+> tshow (abs $ fromEnum lid)
+        return (hotText, Nothing)
+      _ -> do  -- the other goals can be invalidated by now anyway and it's
+               -- better to say what there is rather than what there isn't
+        pointedText <-
+          if lid == lidV && arena == lidV
+          then do
+            bag <- getsState $ getFloorBag lid p
+            case EM.assocs bag of
+              [] -> return $! "exact spot" <+> tshow p
+              [(iid, kit@(k, _))] -> do
+                localTime <- getsState $ getLocalTime lid
+                itemToF <- itemToFullClient
+                side <- getsClient sside
+                factionD <- getsState sfactionD
+                let (_, _, name, stats) =
+                      partItem side factionD CGround localTime (itemToF iid kit)
+                return $! makePhrase $ if k == 1
+                                       then [name, stats]  -- "a sword" too wordy
+                                       else [MU.CarWs k name, stats]
+              _ -> return $! "many items at" <+> tshow p
+          else return $! "an exact spot on level" <+> tshow (abs $ fromEnum lid)
+        return (pointedText, Nothing)
     Just TVector{} ->
       case mleader of
         Nothing -> return ("a relative shift", Nothing)

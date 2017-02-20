@@ -236,7 +236,8 @@ data TriggerClass = TriggerUp | TriggerDown | TriggerEscape | TriggerOther
 -- has a weapon equipped, so no need to explore further, he tries to find
 -- enemies on other levels, but before that, he triggers other tiles
 -- in hope of some loot or beneficial effect to enter next level with.
-closestTriggers :: MonadClient m => Maybe Bool -> ActorId -> m (Frequency Point)
+closestTriggers :: MonadClient m => Maybe Bool -> ActorId
+                -> m (Frequency (Point, ItemBag))
 closestTriggers onlyDir aid = do
   Kind.COps{coTileSpeedup} <- getsState scops
   actorAspect <- getsClient sactorAspect
@@ -263,8 +264,8 @@ closestTriggers onlyDir aid = do
   let allExplored = ES.size explored == EM.size dungeon
       -- If lid not explored, aid equips a weapon and so can leave level.
       lidExplored = ES.member (blid body) explored
-      f :: Point -> ItemBag -> [(TriggerClass, Point)]
-        -> [(TriggerClass, Point)]
+      f :: Point -> ItemBag -> [(TriggerClass, (Point, ItemBag))]
+        -> [(TriggerClass, (Point, ItemBag))]
       f p bag acc =
         if alterSkill < fromEnum (aiAlterMinSkill p) then acc else
         let classes = map classIid $ EM.keys bag
@@ -275,11 +276,11 @@ closestTriggers onlyDir aid = do
             -- Neither stairs nor escape, so explore if close enough.
             if isJust onlyDir || Tile.isSuspect coTileSpeedup (lvl `at` p)
             then acc  -- assume secrets have no loot
-            else (TriggerOther, p) : acc
+            else (TriggerOther, (p, bag)) : acc
           TriggerEscape : _ ->  -- normally only one present, so just take first
             -- Escape (or guard) only after exploring, for high score, etc.
             if isNothing onlyDir && allExplored
-            then (TriggerEscape, p) : acc
+            then (TriggerEscape, (p, bag)) : acc
             else acc
           cid : _ ->  -- normally only one present, so just take first
             let up = cid == TriggerUp
@@ -293,7 +294,7 @@ closestTriggers onlyDir aid = do
                 interesting = case onlyDir of
                   Just d -> d == up
                   Nothing -> not escape && allExplored || aiCond
-            in if interesting then (cid, p) : acc else acc
+            in if interesting then (cid, (p, bag)) : acc else acc
       triggers = EM.foldrWithKey f [] $ lembed lvl
   -- The advantage of only targeting the tiles in vicinity of triggers is that
   -- triggers don't need to be pathable (and so AI doesn't bump into them
@@ -302,10 +303,11 @@ closestTriggers onlyDir aid = do
   -- from the same location), so there is less risk of clogging stairs and,
   -- OTOH, siege of stairs or escapes is more effective.
   bfs <- getCacheBfs aid
-  let vicTrigger (cid, p0) = map (\p -> (cid, p)) $ vicinityUnsafe p0
+  let vicTrigger (cid, (p0, bag)) =
+        map (\p -> (cid, (p, bag))) $ vicinityUnsafe p0
       vicAll = concatMap vicTrigger triggers
   return $  -- keep lazy
-    let mix (cid, p) dist =
+    let mix (cid, pbag) dist =
           -- Prefer stairs to easier levels. Prefer loot over stairs.
           let depthDelta = case cid of
                 TriggerUp -> if fromEnum lid > 0 then 1 else 2
@@ -315,8 +317,9 @@ closestTriggers onlyDir aid = do
               maxd = fromEnum (maxBound :: BfsDistance)
                      - fromEnum apartBfs
               v = (maxd * maxd * maxd) `div` ((dist + 1) * (dist + 1))
-          in (depthDelta * v, p)
-        ds = mapMaybe (\(cid, p) -> mix (cid, p) <$> accessBfs bfs p) vicAll
+          in (depthDelta * v, pbag)
+        ds = mapMaybe (\(cid, (p, bag)) ->
+               mix (cid, (p, bag)) <$> accessBfs bfs p) vicAll
     in toFreq "closestTriggers" ds
 
 unexploredDepth :: MonadClient m => m (Bool -> LevelId -> Bool)
@@ -333,7 +336,7 @@ unexploredDepth = do
   return unexploredD
 
 -- | Closest (wrt paths) items.
-closestItems :: MonadClient m => ActorId -> m [(Int, (Point, Maybe ItemBag))]
+closestItems :: MonadClient m => ActorId -> m [(Int, (Point, ItemBag))]
 closestItems aid = do
   actorAspect <- getsClient sactorAspect
   let ar = case EM.lookup aid actorAspect of
@@ -346,7 +349,7 @@ closestItems aid = do
     Level{lfloor} <- getLevel $ blid body
     if EM.null lfloor then return [] else do
       bfs <- getCacheBfs aid
-      let is = mapMaybe (\(p, bag) -> fmap (, (p, Just bag)) (accessBfs bfs p))
+      let is = mapMaybe (\(p, bag) -> fmap (, (p, bag)) (accessBfs bfs p))
                         (EM.assocs lfloor)
       return $! sortBy (comparing fst) is
 

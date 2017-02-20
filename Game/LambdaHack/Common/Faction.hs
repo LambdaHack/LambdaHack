@@ -3,7 +3,7 @@
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Status(..)
-  , Target(..), tgtKindDescription
+  , Target(..), TGoal(..), tgtKindDescription
   , isHorrorFact
   , noRunWithMulti, isAIFact, autoDungeonLevel, automatePlayer
   , isAtWar, isAllied
@@ -81,20 +81,29 @@ instance Binary Status
 data Target =
     TEnemy !ActorId !Bool
     -- ^ target an actor; cycle only trough seen foes, unless the flag is set
-  | TEnemyPos !ActorId !LevelId !Point !Bool
-    -- ^ last seen position of the targeted actor
-  | TPoint !LevelId !Point  -- ^ target a concrete spot
+  | TPoint !TGoal !LevelId !Point  -- ^ target a concrete spot
   | TVector !Vector         -- ^ target position relative to actor
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary Target
 
+data TGoal =
+    TEnemyPos !ActorId !Bool
+    -- ^ last seen position of the targeted actor
+  | TEmbed !ItemBag
+  | TItem !ItemBag
+  | TSmell
+  | TUnknown
+  | TKnown
+  | TAny
+  deriving (Show, Eq, Ord, Generic)
+
+instance Binary TGoal
+
 tgtKindDescription :: Target -> Text
 tgtKindDescription tgt = case tgt of
   TEnemy _ True -> "at actor"
   TEnemy _ False -> "at enemy"
-  TEnemyPos _ _ _ True -> "at actor"
-  TEnemyPos _ _ _ False -> "at enemy"
   TPoint{} -> "at position"
   TVector{} -> "with a vector"
 

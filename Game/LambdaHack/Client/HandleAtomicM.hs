@@ -371,10 +371,11 @@ tileChangeAffectsBfs Kind.COps{coTileSpeedup} fromTile toTile =
 createActor :: MonadClient m => ActorId -> Actor -> [(ItemId, Item)] -> m ()
 createActor aid b ais = do
   let affect tgt = case tgt of
-        TEnemyPos a _ _ permit | a == aid -> TEnemy a permit
+        TPoint (TEnemyPos a permit) _ _ | a == aid -> TEnemy a permit
         _ -> tgt
       affect3 tap@TgtAndPath{..} = case tapTgt of
-        TEnemyPos a _ _ permit | a == aid -> TgtAndPath (TEnemy a permit) NoPath
+        TPoint (TEnemyPos a permit) _ _ | a == aid ->
+          TgtAndPath (TEnemy a permit) NoPath
         _ -> tap
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   modifyClient $ \cli -> cli {sxhair = affect $ sxhair cli}
@@ -391,10 +392,10 @@ destroyActor aid b destroy = do
           if destroy then
             -- If *really* nothing more interesting, the actor will
             -- go to last known location to perhaps find other foes.
-            TPoint (blid b) (bpos b)
+            TPoint TAny (blid b) (bpos b)
           else
             -- If enemy only hides (or we stepped behind obstacle) find him.
-            TEnemyPos a (blid b) (bpos b) permit
+            TPoint (TEnemyPos a permit) (blid b) (bpos b)
         _ -> tgt
       affect3 TgtAndPath{..} =
         let newMPath = case tapPath of
