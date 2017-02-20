@@ -261,24 +261,27 @@ closestTriggers onlyDir aid = do
           | jname == "escape" -> TriggerEscape
           | otherwise -> TriggerOther
   let allExplored = ES.size explored == EM.size dungeon
-      escapeOrGuard = isNothing onlyDir && allExplored
       -- If lid not explored, aid equips a weapon and so can leave level.
       lidExplored = ES.member (blid body) explored
       f :: Point -> ItemBag -> [(TriggerClass, Point)]
         -> [(TriggerClass, Point)]
       f p bag acc =
         if alterSkill < fromEnum (aiAlterMinSkill p) then acc else
-        case map classIid $ EM.keys bag of
+        let classes = map classIid $ EM.keys bag
+            allOther = all (== TriggerOther) classes
+        in case filter (/= TriggerOther) classes of
           [] -> acc
-          l | all (== TriggerOther) l ->
+          _ | allOther ->
             -- Neither stairs nor escape, so explore if close enough.
-            if Tile.isSuspect coTileSpeedup $ lvl `at` p
+            if isJust onlyDir || Tile.isSuspect coTileSpeedup (lvl `at` p)
             then acc  -- assume secrets have no loot
             else (TriggerOther, p) : acc
           TriggerEscape : _ ->  -- normally only one present, so just take first
             -- Escape (or guard) only after exploring, for high score, etc.
-            if escapeOrGuard then (TriggerEscape, p) : acc else acc
-          cid : _ ->
+            if isNothing onlyDir && allExplored
+            then (TriggerEscape, p) : acc
+            else acc
+          cid : _ ->  -- normally only one present, so just take first
             let up = cid == TriggerUp
                 easier = up /= (fromEnum lid > 0)
                 unexpForth = unexploredD up lid
