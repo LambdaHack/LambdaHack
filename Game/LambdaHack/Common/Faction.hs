@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | Factions taking part in the game: e.g., two human players controlling
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Common.Faction
@@ -20,6 +21,7 @@ import Game.LambdaHack.Common.Prelude
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
+import GHC.Generics (Generic)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
@@ -48,7 +50,9 @@ data Faction = Faction
                               (IM.IntMap (EM.EnumMap (Kind.Id ItemKind) Int)))
       -- ^ members killed in the past, by game mode and difficulty level
   }
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Generic)
+
+instance Binary Faction
 
 -- | Diplomacy states. Higher overwrite lower in case of asymmetric content.
 data Diplomacy =
@@ -56,7 +60,9 @@ data Diplomacy =
   | Neutral
   | Alliance
   | War
-  deriving (Show, Eq, Ord, Enum)
+  deriving (Show, Eq, Ord, Enum, Generic)
+
+instance Binary Diplomacy
 
 type Dipl = EM.EnumMap FactionId Diplomacy
 
@@ -67,7 +73,9 @@ data Status = Status
   , stNewGame :: !(Maybe (GroupName ModeKind))
                            -- ^ new game group to start, if any
   }
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Generic)
+
+instance Binary Status
 
 -- | The type of na actor target.
 data Target =
@@ -77,7 +85,9 @@ data Target =
     -- ^ last seen position of the targeted actor
   | TPoint !LevelId !Point  -- ^ target a concrete spot
   | TVector !Vector         -- ^ target position relative to actor
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Generic)
+
+instance Binary Target
 
 tgtKindDescription :: Target -> Text
 tgtKindDescription tgt = case tgt of
@@ -157,56 +167,3 @@ difficultyCoeff n = difficultyDefault - n
 -- The function is its own inverse.
 difficultyInverse :: Int -> Int
 difficultyInverse n = difficultyBound + 1 - n
-
-instance Binary Faction where
-  put Faction{..} = do
-    put gname
-    put gcolor
-    put gplayer
-    put gdipl
-    put gquit
-    put gleader
-    put gsha
-    put gvictims
-    put gvictimsD
-  get = do
-    gname <- get
-    gcolor <- get
-    gplayer <- get
-    gdipl <- get
-    gquit <- get
-    gleader <- get
-    gsha <- get
-    gvictims <- get
-    gvictimsD <- get
-    return $! Faction{..}
-
-instance Binary Diplomacy where
-  put = putWord8 . toEnum . fromEnum
-  get = fmap (toEnum . fromEnum) getWord8
-
-instance Binary Status where
-  put Status{..} = do
-    put stOutcome
-    put stDepth
-    put stNewGame
-  get = do
-    stOutcome <- get
-    stDepth <- get
-    stNewGame <- get
-    return $! Status{..}
-
-instance Binary Target where
-  put (TEnemy a permit) = putWord8 0 >> put a >> put permit
-  put (TEnemyPos a lid p permit) =
-    putWord8 1 >> put a >> put lid >> put p >> put permit
-  put (TPoint lid p) = putWord8 2 >> put lid >> put p
-  put (TVector v) = putWord8 3 >> put v
-  get = do
-    tag <- getWord8
-    case tag of
-      0 -> liftM2 TEnemy get get
-      1 -> liftM4 TEnemyPos get get get get
-      2 -> liftM2 TPoint get get
-      3 -> liftM TVector get
-      _ -> fail "no parse (Target)"
