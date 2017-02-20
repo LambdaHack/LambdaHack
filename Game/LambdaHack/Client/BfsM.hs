@@ -237,7 +237,7 @@ data TriggerClass = TriggerUp | TriggerDown | TriggerEscape | TriggerOther
 -- enemies on other levels, but before that, he triggers other tiles
 -- in hope of some loot or beneficial effect to enter next level with.
 closestTriggers :: MonadClient m => Maybe Bool -> ActorId
-                -> m (Frequency (Point, ItemBag))
+                -> m (Frequency (Point, (Point, ItemBag)))
 closestTriggers onlyDir aid = do
   Kind.COps{coTileSpeedup} <- getsState scops
   actorAspect <- getsClient sactorAspect
@@ -304,7 +304,7 @@ closestTriggers onlyDir aid = do
   -- OTOH, siege of stairs or escapes is more effective.
   bfs <- getCacheBfs aid
   let vicTrigger (cid, (p0, bag)) =
-        map (\p -> (cid, (p, bag))) $ vicinityUnsafe p0
+        map (\p -> (cid, (p, (p0, bag)))) $ vicinityUnsafe p0
       vicAll = concatMap vicTrigger triggers
   return $  -- keep lazy
     let mix (cid, pbag) dist =
@@ -318,8 +318,8 @@ closestTriggers onlyDir aid = do
                      - fromEnum apartBfs
               v = (maxd * maxd * maxd) `div` ((dist + 1) * (dist + 1))
           in (depthDelta * v, pbag)
-        ds = mapMaybe (\(cid, (p, bag)) ->
-               mix (cid, (p, bag)) <$> accessBfs bfs p) vicAll
+        ds = mapMaybe (\(cid, (p, pbag)) ->
+               mix (cid, (p, pbag)) <$> accessBfs bfs p) vicAll
     in toFreq "closestTriggers" ds
 
 unexploredDepth :: MonadClient m => m (Bool -> LevelId -> Bool)

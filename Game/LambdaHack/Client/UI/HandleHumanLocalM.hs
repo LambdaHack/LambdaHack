@@ -964,8 +964,8 @@ xhairStairHuman up = do
   stairs <- closestTriggers (Just up) leader
   case sortBy (flip compare) $ runFrequency stairs of
     [] -> failMsg $ "no stairs" <+> if up then "up" else "down"
-    (_, (p, bag)) : _ -> do
-      let tgt = TPoint (TEmbed bag) (blid b) p
+    (_, (p, (p0, bag))) : _ -> do
+      let tgt = TPoint (TEmbed bag p0) (blid b) p
       modifyClient $ \cli -> cli {sxhair = tgt}
       doLook
       return Nothing

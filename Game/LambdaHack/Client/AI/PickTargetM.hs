@@ -144,7 +144,11 @@ targetStrategy aid = do
         tMelee <- targetableMelee aidE body
         return $! targetableRangedOrSpecial body || tMelee
   nearbyFoes <- filterM targetableEnemy allFoes
-  let itemUsefulness itemFull =
+  explored <- getsClient sexplored
+  isStairPos <- getsState $ \s lid p -> isStair lid p s
+  let lidExplored = ES.member (blid b) explored
+      allExplored = ES.size explored == EM.size dungeon
+      itemUsefulness itemFull =
         fst <$> totalUsefulness cops b ar fact itemFull
       desirableBag bag = any (\(iid, k) ->
         let itemFull = itemToF iid k
@@ -223,11 +227,9 @@ targetStrategy aid = do
                          && accessible cops lvl pNew
                       then vToTgt vOld
                       else do
-                        explored <- getsClient sexplored
-                        let lidExplored = ES.member (blid b) explored
                         upos <- if lidExplored
                                 then return Nothing
-                                else closestUnknown aid
+                                else closestUnknown aid -- modifies sexplored
                         case upos of
                           Nothing -> do
                             explored2 <- getsClient sexplored
@@ -247,17 +249,18 @@ targetStrategy aid = do
                                     furthest <- furthestKnown aid
                                     setPath $ TPoint TKnown (blid b) furthest
                                   else do
-                                    (p, bag) <-
+                                    (p, (p0, bag)) <-
                                       rndToAction $ frequency ctriggers
-                                    setPath $ TPoint (TEmbed bag) (blid b) p
+                                    setPath $ TPoint (TEmbed bag p0) (blid b) p
                             else do
-                              (p, bag) <- rndToAction $ frequency ctriggers
-                              setPath $ TPoint (TEmbed bag) (blid b) p
+                              (p, (p0, bag)) <-
+                                rndToAction $ frequency ctriggers
+                              setPath $ TPoint (TEmbed bag p0) (blid b) p
                           Just p -> setPath $ TPoint TUnknown (blid b) p
                     (_, (p, bag)) : _ -> setPath $ TPoint (TItem bag) (blid b) p
                 else do
-                  (p, bag) <- rndToAction $ frequency ctriggers
-                  setPath $ TPoint (TEmbed bag) (blid b) p
+                  (p, (p0, bag)) <- rndToAction $ frequency ctriggers
+                  setPath $ TPoint (TEmbed bag p0) (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint TSmell (blid b) p
       tellOthersNothingHere pos = do
         let f TgtAndPath{tapTgt} = case tapTgt of
@@ -265,6 +268,8 @@ targetStrategy aid = do
               _ -> True
         modifyClient $ \cli -> cli {stargetD = EM.filter f (stargetD cli)}
         pickNewTarget
+      tileAdj :: (Point -> Bool) -> Point -> Bool
+      tileAdj f p = any f $ vicinityUnsafe p
       updateTgt :: TgtAndPath -> m (Strategy TgtAndPath)
       updateTgt TgtAndPath{tapPath=NoPath} = pickNewTarget
       updateTgt tap@TgtAndPath{tapPath=AndPath{..},tapTgt} = case tapTgt of
@@ -290,70 +295,58 @@ targetStrategy aid = do
                  AndPath{pathLen=0} -> pickNewTarget  -- he is his own enemy
                  AndPath{} -> return $! returN "TEnemy" tap{tapPath=mpath}
         _ | newCondInMelee && not oldCondInMelee -> pickNewTarget
+        TPoint _ lid _ | lid /= blid b -> pickNewTarget  -- wrong level
+        TPoint _ _ pos | pos == bpos b -> tellOthersNothingHere pos
         TPoint tgoal lid pos -> case tgoal of
           TEnemyPos _ permit  -- chase last position even if foe hides
-            | lid /= blid b  -- wrong level
-              || chessDist (bpos b) pos > aSight ar
-                    -- not obscured due to my move
-              || permit  -- never follow a friend more than 1 step
-              -> pickNewTarget
-            | pos == bpos b -> tellOthersNothingHere pos
-            | otherwise ->
-                return $! returN "TEnemyPos" tap
+            | permit -> pickNewTarget  -- never follow a friend more than 1 step
+            | otherwise -> return $! returN "TEnemyPos" tap
           _ | not $ null nearbyFoes ->
-            pickNewTarget  -- prefer close foes to anything
-          _ -> do
-            explored <- getsClient sexplored
-            let lidExplored = ES.member (blid b) explored
-                allExplored = ES.size explored == EM.size dungeon
-            bag <- getsState $ getFloorBag lid pos
-            isStairPos <- getsState $ \s p -> isStair lid p s
-            isEmbedPos <- getsState $ \s p ->
-              p `EM.member` lembed (sdungeon s EM.! lid)
-            let t = lvl `at` pos
-                tileAdj :: (Point -> Bool) -> Point -> Bool
-                tileAdj f p = any f $ vicinityUnsafe p
-            if lid /= blid b  -- wrong level
-               -- Below we check the target could not be picked again in
-               -- pickNewTarget (e.g., an item got picked up by our teammate)
-               -- and only in this case it is invalidated.
-               -- This ensures targets are eventually reached (unless a foe
-               -- shows up) and not changed all the time mid-route
-               -- to equally interesting, but perhaps a bit closer targets,
-               -- most probably already targeted by other actors.
-               ||
-                 (EM.findWithDefault 0 AbMoveItem actorMaxSk <= 0
-                  || not (desirableBag bag))  -- closestItems
-                 &&
-                 (pos == bpos b
-                  || (not canSmell  -- closestSmell
-                      || let sml = EM.findWithDefault timeZero pos (lsmell lvl)
-                         in sml <= ltime lvl)
-                     && if not lidExplored
-                        then not (isUknownSpace t)  -- closestUnknown
-                             && not (condEnoughGear && tileAdj isStairPos pos)
-                        else  -- closestTriggers
-                          -- Try to kill that very last enemy for his loot before
-                          -- leaving the level or dungeon.
-                          not (null allFoes)
-                          || -- Now stairs and embedded items in @closestTriggers@
-                             -- where we don't check skills, because they normally
-                             -- don't change or we can put some equipment back
-                             -- and because we don't know which tile we aim at,
-                             -- only that it's adjacent.
-                             -- We don't determine if the stairs are interesting
-                             -- (this changes with time), but allow the actor
-                             -- to reach them and then retarget.
-                             (not (tileAdj isEmbedPos pos))
-                             -- The remaining case is furthestKnown. This is
-                             -- always an unimportant target, so we forget it
-                             -- if the actor is stuck (waits, though could move;
-                             -- or has zeroed individual moving skill,
-                             -- but then should change targets often anyway).
-                             && (isStuck
-                                 || not allExplored))
+            pickNewTarget  -- prefer close foes to anything else
+          -- Below we check the target could not be picked again in
+          -- pickNewTarget (e.g., an item got picked up by our teammate)
+          -- and only in this case it is invalidated.
+          -- This ensures targets are eventually reached (unless a foe
+          -- shows up) and not changed all the time mid-route
+          -- to equally interesting, but perhaps a bit closer targets,
+          -- most probably already targeted by other actors.
+          TEmbed bag p -> assert (adjacent pos p) $ do
+            -- We start with stairs and embedded items from @closestTriggers@.
+            -- We don't check skills, because they normally don't change
+            -- or we can put some equipment back and recover them.
+            -- We don't determine if the stairs are interesting
+            -- (this changes with time), but allow the actor
+            -- to reach them and then retarget. The only thing we check
+            -- is whether the embedded bag is still there, or used up.
+            bag2 <- getsState $ getEmbedBag lid p  -- not @pos@
+            if bag /= bag2
             then pickNewTarget
-            else return $! returN "TPoint" tap
+            else return $! returN "TEmbed" tap
+          TItem bag -> do
+            -- We don't check skill nor desirability of the bag,
+            -- because the skill and the bag were OK when target was set.
+            bag2 <- getsState $ getFloorBag lid pos
+            if bag /= bag2
+            then pickNewTarget
+            else return $! returN "TItem" tap
+          TSmell ->
+            if not canSmell
+               || let sml = EM.findWithDefault timeZero pos (lsmell lvl)
+                  in sml <= ltime lvl
+            then pickNewTarget
+            else return $! returN "TSmell" tap
+          TUnknown ->
+            let t = lvl `at` pos
+            in if lidExplored
+                  || not (isUknownSpace t)
+                  || condEnoughGear && tileAdj (isStairPos lid) pos
+               then pickNewTarget
+               else return $! returN "TUnknown" tap
+          TKnown ->
+            if isStuck || not allExplored  -- new levels created, etc.
+            then pickNewTarget
+            else return $! returN "TKnown" tap
+          TAny -> pickNewTarget  -- reset elsewhere or carried over from UI
         TVector{} -> if pathLen > 1
                      then return $! returN "TVector" tap
                      else pickNewTarget

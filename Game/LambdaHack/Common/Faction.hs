@@ -90,7 +90,9 @@ instance Binary Target
 data TGoal =
     TEnemyPos !ActorId !Bool
     -- ^ last seen position of the targeted actor
-  | TEmbed !ItemBag
+  | TEmbed !ItemBag !Point
+    -- ^ in @TPoint (TEmbed bag p) _ q@ usually @bag@ is embbedded in @p@
+    -- and @q@ is an adjacent open tile
   | TItem !ItemBag
   | TSmell
   | TUnknown
