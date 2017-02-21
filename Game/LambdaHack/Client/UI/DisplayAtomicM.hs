@@ -255,11 +255,12 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
              | otherwise = "reveal"
         subject2 = MU.Text $ TK.tname $ okind fromTile
         verb2 = "be"
+        object = MU.Text $ TK.tname $ okind toTile
     let msg = makeSentence [ MU.SubjectVerbSg subject verb
                            , "that the"
                            , MU.SubjectVerbSg subject2 verb2
-                           , MU.AW $ MU.Text $ TK.tname $ okind toTile ]
-    msgAdd msg
+                           , MU.AW object ]
+    unless (subject2 == object) $ msgAdd msg
   UpdHideTile{} -> return ()
   UpdSpotTile{} -> return ()
   UpdLoseTile{} -> return ()
