@@ -26,7 +26,6 @@ import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -237,7 +236,7 @@ data TriggerClass = TriggerUp | TriggerDown | TriggerEscape | TriggerOther
 -- enemies on other levels, but before that, he triggers other tiles
 -- in hope of some loot or beneficial effect to enter next level with.
 closestTriggers :: MonadClient m => Maybe Bool -> ActorId
-                -> m (Frequency (Point, (Point, ItemBag)))
+                -> m [(Int, (Point, (Point, ItemBag)))]
 closestTriggers onlyDir aid = do
   Kind.COps{coTileSpeedup} <- getsState scops
   actorAspect <- getsClient sactorAspect
@@ -318,9 +317,8 @@ closestTriggers onlyDir aid = do
                      - fromEnum apartBfs
               v = (maxd * maxd * maxd) `div` ((dist + 1) * (dist + 1))
           in (depthDelta * v, pbag)
-        ds = mapMaybe (\(cid, (p, pbag)) ->
-               mix (cid, (p, pbag)) <$> accessBfs bfs p) vicAll
-    in toFreq "closestTriggers" ds
+    in mapMaybe (\(cid, (p, pbag)) ->
+         mix (cid, (p, pbag)) <$> accessBfs bfs p) vicAll
 
 unexploredDepth :: MonadClient m => m (Bool -> LevelId -> Bool)
 unexploredDepth = do

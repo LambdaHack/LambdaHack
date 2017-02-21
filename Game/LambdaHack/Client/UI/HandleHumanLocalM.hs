@@ -62,7 +62,6 @@ import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -962,7 +961,7 @@ xhairStairHuman up = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   stairs <- closestTriggers (Just up) leader
-  case sortBy (flip compare) $ runFrequency stairs of
+  case sortBy (flip compare) stairs of
     [] -> failMsg $ "no stairs" <+> if up then "up" else "down"
     (_, (p, (p0, bag))) : _ -> do
       let tgt = TPoint (TEmbed bag p0) (blid b) p

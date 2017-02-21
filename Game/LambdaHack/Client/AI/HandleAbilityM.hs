@@ -991,6 +991,22 @@ moveOrRunAid run source dir = do
        | EM.member tpos $ lfloor lvl ->
          -- Only possible if items allowed inside unwalkable tiles.
          assert `failure` "AI causes AlterBlockItem" `twith` (run, source, dir)
-       | otherwise ->
+       | otherwise -> do
          -- Not walkable, but alter skill suffices, so search or alter the tile.
-         return $! Just $ RequestAnyAbility $ ReqAlter tpos
+         itemToF <- itemToFullClient
+         actorAspect <- getsClient sactorAspect
+         let ar = case EM.lookup source actorAspect of
+               Just aspectRecord -> aspectRecord
+               Nothing -> assert `failure` source
+         fact <- getsState $ (EM.! bfid sb) . sfactionD
+         bag <- getsState $ getEmbedBag lid tpos
+         let itemUsefulness itemFull =
+               fst <$> totalUsefulness cops sb ar fact itemFull
+             desirableBagEmbed = any (\(iid, k) ->
+               let itemFull = itemToF iid k
+                   use = itemUsefulness itemFull
+               in maybe False (> 0) use) $ EM.assocs bag  -- mixed blessing OK
+             activate = EM.null bag || desirableBagEmbed
+         return $! if activate
+                   then Just $ RequestAnyAbility $ ReqAlter tpos
+                   else Nothing

@@ -150,15 +150,20 @@ targetStrategy aid = do
       allExplored = ES.size explored == EM.size dungeon
       itemUsefulness itemFull =
         fst <$> totalUsefulness cops b ar fact itemFull
-      desirableBag bag = any (\(iid, k) ->
+      desirableBagFloor bag = any (\(iid, k) ->
         let itemFull = itemToF iid k
             use = itemUsefulness itemFull
         in desirableItem canEscape use itemFull) $ EM.assocs bag
-      desirable (_, (_, bag)) = desirableBag bag
+      desirableBagEmbed bag = any (\(iid, k) ->
+        let itemFull = itemToF iid k
+            use = itemUsefulness itemFull
+        in maybe False (> 0) use) $ EM.assocs bag  -- mixed blessing OK; caches
+      desirableFloor (_, (_, bag)) = desirableBagFloor bag
+      desirableEmbed (_, (_, (_, bag))) = desirableBagEmbed bag
       focused = bspeed b ar < speedWalk || condHpTooLow
       couldMoveLastTurn =
-        let axtorSk = if mleader == Just aid then actorMaxSk else actorMinSk
-        in EM.findWithDefault 0 AbMove axtorSk > 0
+        let actorSk = if mleader == Just aid then actorMaxSk else actorMinSk
+        in EM.findWithDefault 0 AbMove actorSk > 0
       isStuck = waitedLastTurn b && couldMoveLastTurn
       slackTactic =
         ftactic (gplayer fact)
@@ -193,15 +198,14 @@ targetStrategy aid = do
             case smpos of
               [] -> do
                 -- This is mostly lazy and used between 0 and 3 times below.
-                ctriggers <- closestTriggers Nothing aid
-                let ctriggersEarly =
-                      if condEnoughGear
-                      then ctriggers
-                      else mzero
-                if nullFreq ctriggersEarly then do
-                  citems <- closestItems aid
-                  case filter desirable citems of
-                    [] -> do
+                ctriggersRaw <- closestTriggers Nothing aid
+                let ctriggers = toFreq "closestTriggers"
+                                $ filter desirableEmbed ctriggersRaw
+                if not condEnoughGear || nullFreq ctriggers then do
+                  citemsRaw <- closestItems aid
+                  let citems = toFreq "closestItems"
+                               $ filter desirableFloor citemsRaw
+                  if nullFreq citems then do
                       let vToTgt v0 = do
                             let vFreq = toFreq "vFreq"
                                         $ (20, v0) : map (1,) moves
@@ -235,10 +239,7 @@ targetStrategy aid = do
                             explored2 <- getsClient sexplored
                             let allExplored2 = ES.size explored2
                                                == EM.size dungeon
-                                ctriggersMiddle = if not allExplored2
-                                                  then ctriggers
-                                                  else mzero
-                            if nullFreq ctriggersMiddle then do
+                            if allExplored2 || nullFreq ctriggers then do
                               -- All stones turned, time to win or die.
                               afoes <- closestFoes allFoes aid
                               case afoes of
@@ -257,7 +258,9 @@ targetStrategy aid = do
                                 rndToAction $ frequency ctriggers
                               setPath $ TPoint (TEmbed bag p0) (blid b) p
                           Just p -> setPath $ TPoint TUnknown (blid b) p
-                    (_, (p, bag)) : _ -> setPath $ TPoint (TItem bag) (blid b) p
+                    else do
+                      (p, bag) <- rndToAction $ frequency citems
+                      setPath $ TPoint (TItem bag) (blid b) p
                 else do
                   (p, (p0, bag)) <- rndToAction $ frequency ctriggers
                   setPath $ TPoint (TEmbed bag p0) (blid b) p

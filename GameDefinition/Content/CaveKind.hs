@@ -104,7 +104,7 @@ laboratory = arena
   , cpassable     = False
   , cdefTile      = "fillerWall"
   , cdarkCorTile  = "labTrailLit"
-  , clitCorTile   = "labTrailDark"
+  , clitCorTile   = "labTrailLit"
   }
 empty = rogue
   { csymbol       = 'E'

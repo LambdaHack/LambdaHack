@@ -221,7 +221,6 @@ alterMinWalkKind k tk =
   let getTo TK.OpenTo{} = True
       getTo TK.RevealAs{} = True
       getTo TK.ObscureAs{} = True
-      getTo TK.ChangeTo{} = True
       getTo _ = False
   in if | kindHasFeature TK.Walkable tk -> 0
         | isUknownSpace k -> TK.talter tk
