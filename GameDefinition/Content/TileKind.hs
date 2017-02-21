@@ -122,10 +122,11 @@ signpostUnread = TileKind  -- client only, indicates never used by this faction
   { tsymbol  = 'O'
   , tname    = "signpost"
   , tfreq    = [("signpost unread", 1)]
-  , tcolor   = BrMagenta
-  , tcolor2  = Magenta
+  , tcolor   = BrCyan
+  , tcolor2  = Cyan
   , talter   = 5
-  , tfeature = [Embed "signpost", ConsideredByAI]
+  , tfeature = [ Embed "signpost", ConsideredByAI
+               , RevealAs "dummy, treated as suspect", Indistinct ]
   }
 signpostRead = TileKind  -- after first use revealed to be this one
   { tsymbol  = 'O'

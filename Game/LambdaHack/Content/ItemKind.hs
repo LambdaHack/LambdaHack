@@ -52,11 +52,11 @@ data ItemKind = ItemKind
 -- are possible. Constructors are sorted vs increasing impact/danger.
 data Effect =
     -- Ordinary effects.
-    ELabel !Text      -- ^ secret (learned as effect) label of the item
-  | EqpSlot !EqpSlot  -- ^ AI and UI flag that leaks item properties
+    ELabel !Text        -- ^ secret (learned as effect) label of the item
+  | EqpSlot !EqpSlot    -- ^ AI and UI flag that leaks item properties
   | Burn !Dice.Dice
   | Explode !(GroupName ItemKind)
-                      -- ^ explode, producing this group of blasts
+      -- ^ explode, producing this group of blasts
   | RefillHP !Int
   | OverfillHP !Int
   | RefillCalm !Int
@@ -71,8 +71,8 @@ data Effect =
   | InsertMove !Dice.Dice
   | Teleport !Dice.Dice
   | CreateItem !CStore !(GroupName ItemKind) !TimerDice
-                          -- ^ create an item of the group and insert into
-                          --   the store with the given random timer
+      -- ^ create an item of the group and insert into the store with the given
+      --   random timer
   | DropItem !Int !Int !CStore !(GroupName ItemKind)
   | PolyItem
   | Identify
@@ -84,19 +84,19 @@ data Effect =
   | PushActor !ThrowMod
   | PullActor !ThrowMod
   | DropBestWeapon
-  | ActivateInv !Char     -- ^ symbol @' '@ means all
+  | ActivateInv !Char   -- ^ symbol @' '@ means all
   | ApplyPerfume
     -- Exotic effects follow.
   | OneOf ![Effect]
-  | OnSmash !Effect       -- ^ trigger if item smashed (not applied nor meleed)
-  | Recharging !Effect    -- ^ this effect inactive until timeout passes
-  | Temporary !Text       -- ^ the item is temporary, vanishes at even void
-                          --   Periodic activation, unless Durable
-                          --   and not Fragile, and shows message with
-                          --   this verb at last copy activation
-                          --   or at each activation unless Durable and Fragile
-  | Unique                -- ^ at most one copy can ever be generated
-  | Periodic              -- ^ in eqp, triggered as often as @Timeout@ permits
+  | OnSmash !Effect     -- ^ trigger if item smashed (not applied nor meleed)
+  | Recharging !Effect  -- ^ this effect inactive until timeout passes
+  | Temporary !Text
+      -- ^ the item is temporary, vanishes at even void Periodic activation,
+      --   unless Durable and not Fragile, and shows message with
+      --   this verb at last copy activation or at each activation
+      --   unless Durable and Fragile
+  | Unique              -- ^ at most one copy can ever be generated
+  | Periodic            -- ^ in eqp, triggered as often as @Timeout@ permits
   deriving (Show, Eq, Ord, Generic)
 
 instance NFData Effect

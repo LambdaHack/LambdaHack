@@ -144,7 +144,7 @@ drawFrameTerrain drawnLevelId = do
               fg :: Color.Color
               {-# INLINE fg #-}
               fg | doMarkSuspect
-                   && Tile.isSuspect coTileSpeedup tile = Color.BrCyan
+                   && Tile.isSuspect coTileSpeedup tile = Color.BrMagenta
                  | ES.member p0 totVisible = tcolor
                  | otherwise = tcolor2
           in Color.attrChar2ToW32 fg tsymbol
@@ -232,7 +232,7 @@ drawFramePath drawnLevelId = do
               case ( ES.member p0 totVisible
                    , Tile.isWalkable coTileSpeedup tile ) of
                 _ | isUknownSpace tile -> Color.BrBlack
-                _ | Tile.isSuspect coTileSpeedup tile -> Color.BrCyan
+                _ | Tile.isSuspect coTileSpeedup tile -> Color.BrMagenta
                 (True, True)   -> Color.BrGreen
                 (True, False)  -> Color.BrRed
                 (False, True)  -> Color.Green
