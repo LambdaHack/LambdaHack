@@ -259,9 +259,11 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
   fence <- buildFenceRnd cops couterFenceTile subFullArea
   -- The obscured tile, e.g., scratched wall, stays on the server forever,
   -- only the suspect variant on client gets replaced by this upon searching.
-  let obscure p t = if isChancePos chidden dsecret p
+  let obscure p t = if isChancePos chidden dsecret p && likelySecret p
                     then Tile.obscureAs cotile $ Tile.buildAs cotile t
                     else return t
+      likelySecret Point{..} = px > 2 && px < cxsize - 3
+                               && py > 2 && py < cysize - 3
       umap = EM.unions [doorMap, lplaces, lcorridors, fence]  -- order matters
   dmap <- mapWithKeyM obscure umap
   return $! Cave {dkind, dsecret, dmap, dplaces, dnight}
