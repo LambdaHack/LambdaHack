@@ -1328,16 +1328,18 @@ staircaseTrapUp = ItemKind
   , iweight  = 10000
   , idamage  = toDmg 0
   , iaspects = []
-  , ieffects = [OneOf [Teleport 20, toOrganActorTurn "drunk" (20 + d 5)]]
+  , ieffects = [Temporary "be caught in an updraft", Teleport 20]
   , ifeature = [Identified]  -- not Durable, springs at most once
   , idesc    = ""
   , ikit     = []
   }
 -- Needs to be separate from staircaseTrapUp, to make sure the item is
 -- registered after up staircase (not only after down staircase)
--- so that effects are invoked in the proper order and teleport works.
+-- so that effects are invoked in the proper order and, e.g., teleport works.
 staircaseTrapDown = staircaseTrapUp
   { ifreq    = [("staircase trap down", 1)]
+  , ieffects = [ Temporary "tumble down the stairwell"
+               , toOrganActorTurn "drunk" (20 + d 5) ]
   }
 doorwayTrap = ItemKind
   { isymbol  = '^'
@@ -1368,7 +1370,8 @@ moldOnWall = ItemKind
   , iweight  = 1000
   , idamage  = toDmg 0
   , iaspects = []
-  , ieffects = [RefillCalm (-20)]  -- the mold is sticky and disgusting
+  , ieffects = [ Temporary "recoil at the touch of the sticky mold"
+               , RefillCalm (-20) ]
   , ifeature = [Identified, Durable]
   , idesc    = ""
   , ikit     = []
@@ -1384,7 +1387,7 @@ scratchOnWall = ItemKind
   , iweight  = 1
   , idamage  = toDmg 0
   , iaspects = []
-  , ieffects = [DetectItem 3]  -- the scratches on the wall start making sense
+  , ieffects = [Temporary "start making sense of the scratches", DetectItem 3]
   , ifeature = [Identified, Durable]
   , idesc    = ""
   , ikit     = []

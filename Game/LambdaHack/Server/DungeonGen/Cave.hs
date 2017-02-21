@@ -257,11 +257,8 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                     interCor  -- very small
   doorMap <- doorMapFun lplaces lcorridors
   fence <- buildFenceRnd cops couterFenceTile subFullArea
-  -- The obscured tile, e.g., scratched wall, stays on the server forever.
-  -- We do not change wallObscuredV on the server to wallV or to wallV scratched
-  -- upon searching, because we don't want monsters to do all the searching
-  -- for the player, it's enough that they search and open doors
-  -- and so reveal them on server; al least keep walls a mystery.
+  -- The obscured tile, e.g., scratched wall, stays on the server forever,
+  -- only the suspect variant on client gets replaced by this upon searching.
   let obscure p t = if isChancePos chidden dsecret p
                     then Tile.obscureAs cotile $ Tile.buildAs cotile t
                     else return t

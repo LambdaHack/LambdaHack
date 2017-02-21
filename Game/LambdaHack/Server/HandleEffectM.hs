@@ -241,7 +241,7 @@ effectSem source target iid c recharged effect = do
     IK.OneOf l -> effectOneOf recursiveCall l
     IK.OnSmash _ -> return False  -- ignored under normal circumstances
     IK.Recharging e -> effectRecharging recursiveCall e recharged
-    IK.Temporary _ -> effectTemporary execSfx source iid
+    IK.Temporary _ -> effectTemporary execSfx source iid c
     IK.Unique -> return False
     IK.Periodic -> return False
 
@@ -1280,11 +1280,15 @@ effectRecharging recursiveCall e recharged =
 -- ** Temporary
 
 effectTemporary :: MonadAtomic m
-                => m () -> ActorId -> ItemId
-                -> m Bool
-effectTemporary execSfx source iid = do
-  b <- getsState $ getActorBody source
-  case iid `EM.lookup` borgan b of
-    Just _ -> return ()  -- still some copies left of a multi-copy tmp item
-    Nothing -> execSfx  -- last copy just destroyed
-  return True
+                => m () -> ActorId -> ItemId -> Container -> m Bool
+effectTemporary execSfx source iid c = do
+  case c of
+    CActor _ COrgan -> do
+      b <- getsState $ getActorBody source
+      case iid `EM.lookup` borgan b of
+        Just _ -> return ()  -- still some copies left of a multi-copy tmp organ
+        Nothing -> execSfx  -- last copy just destroyed
+      return True
+    _ -> do
+      execSfx
+      return False  -- just a message

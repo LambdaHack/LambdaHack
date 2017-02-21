@@ -92,6 +92,9 @@ data Effect =
   | Recharging !Effect    -- ^ this effect inactive until timeout passes
   | Temporary !Text       -- ^ the item is temporary, vanishes at even void
                           --   Periodic activation, unless Durable
+                          --   and not Fragile, and shows message with
+                          --   this verb at last copy activation
+                          --   or at each activation unless Durable and Fragile
   | Unique                -- ^ at most one copy can ever be generated
   | Periodic              -- ^ in eqp, triggered as often as @Timeout@ permits
   deriving (Show, Eq, Ord, Generic)

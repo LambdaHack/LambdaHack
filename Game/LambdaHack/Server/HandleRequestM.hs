@@ -424,7 +424,7 @@ reqAlter source tpos = do
       if EM.notMember tpos $ lfloor lvl then
         if null (posToAidsLvl tpos lvl) then do
           when (serverTile /= freshClientTile) $
-            -- Search, in case some actors (of other factions?)
+            -- Search, in case some actors present (e.g., of other factions)
             -- don't know this tile.
             execUpdAtomic $ UpdSearchTile source tpos serverTile
           when (alterSkill >= Tile.alterMinSkill coTileSpeedup serverTile) $ do
