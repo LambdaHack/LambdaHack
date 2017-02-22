@@ -22,7 +22,6 @@ import Data.IORef
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import Data.Word (Word32)
-import System.Exit (exitFailure)
 import System.FilePath
 
 import qualified SDL as SDL
@@ -51,6 +50,7 @@ data FrontendSession = FrontendSession
   , satlas         :: !(IORef FontAtlas)
   , screenTexture  :: !SDL.Texture
   , spreviousFrame :: !(IORef SingleFrame)
+  , squitSDL       :: !(IORef Bool)
   }
 
 -- | The name of the frontend.
@@ -98,6 +98,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   sfont <- TTF.openFont fontFile fontSize
   satlas <- newIORef EM.empty
   spreviousFrame <- newIORef blankSingleFrame
+  squitSDL <- newIORef False
   let sess = FrontendSession{..}
   rf <- createRawFrontend (display sdebugCli sess) (shutdown sess)
   putMVar rfMVar rf
@@ -147,19 +148,20 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
             p <- SDL.getAbsoluteMouseLocation
             maybe (return ())
                   (\key -> saveKMP rf modifier key (pointTranslate p)) mkey
-          SDL.WindowClosedEvent{} -> exitFailure  -- @shutdown@ segfaults
-          SDL.QuitEvent -> exitFailure
+          SDL.WindowClosedEvent{} -> shutdown sess
+          SDL.QuitEvent -> shutdown sess
           _ -> return ()
-        storeKeys
+        quitSDL <- readIORef squitSDL
+        unless quitSDL storeKeys
   storeKeys
-
-shutdown :: FrontendSession -> IO ()
-shutdown FrontendSession{..} = do
   TTF.closeFont sfont
   TTF.quit
   SDL.destroyRenderer srenderer
   SDL.destroyWindow swindow
   SDL.quit
+
+shutdown :: FrontendSession -> IO ()
+shutdown FrontendSession{squitSDL} = writeIORef squitSDL True
 
 -- | Add a frame to be drawn.
 display :: DebugModeCli
