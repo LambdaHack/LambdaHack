@@ -22,14 +22,14 @@ cdefs = ContentDef
   , validateSingle = validateSingleTileKind
   , validateAll = validateAllTileKind
   , content = contentFromList $
-      [unknown, wall, hardRock, pillar, pillarIce, pulpit, pillarCache, lampPost, signpostUnread, signpostRead, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, wallObscuredV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark]
+      [unknown, wall, hardRock, pillar, pillarIce, pulpit, pillarCache, lampPost, signpostUnread, signpostRead, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, wallObscuredDefacedV, wallObscuredFrescoedV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark]
       ++ map makeDark ldarkable
       ++ map makeDarkColor ldarkColorable
   }
-unknown,        wall, hardRock, pillar, pillarIce, pulpit, pillarCache, lampPost, signpostUnread, signpostRead, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, wallObscuredV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark :: TileKind
+unknown,        wall, hardRock, pillar, pillarIce, pulpit, pillarCache, lampPost, signpostUnread, signpostRead, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, wallObscuredDefacedV, wallObscuredFrescoedV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark :: TileKind
 
 ldarkable :: [TileKind]
-ldarkable = [wallV, wallSuspectV, wallObscuredV, doorClosedV, doorTrappedV, doorOpenV, wallH, wallSuspectH, wallObscuredH, doorClosedH, doorTrappedH, doorOpenH, rubble, floorCorridorLit]
+ldarkable = [wallV, wallSuspectV, wallObscuredDefacedV, wallObscuredFrescoedV, doorClosedV, doorTrappedV, doorOpenV, wallH, wallSuspectH, wallObscuredH, doorClosedH, doorTrappedH, doorOpenH, rubble, floorCorridorLit]
 
 ldarkColorable :: [TileKind]
 ldarkColorable = [floorArenaLit, floorNoiseLit, floorDirtLit, floorActorLit, floorItemLit, floorActorItemLit]
@@ -234,7 +234,7 @@ wallGlassVSpice = wallGlassV
   }
 wallSuspectV = TileKind  -- only on client
   { tsymbol  = '|'
-  , tname    = "suspect moldy wall"
+  , tname    = "suspect painted wall"
   , tfreq    = [("suspect vertical wall Lit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
@@ -243,14 +243,26 @@ wallSuspectV = TileKind  -- only on client
                , ObscureAs "obscured vertical wall Lit"
                , Indistinct ]
   }
-wallObscuredV = TileKind
+wallObscuredDefacedV = TileKind
   { tsymbol  = '|'
-  , tname    = "granite moldy wall"
-  , tfreq    = [("obscured vertical wall Lit", 1)]
+  , tname    = "defaced wall"
+  , tfreq    = [("obscured vertical wall Lit", 90)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 5
-  , tfeature = [ Embed "mold on wall"
+  , tfeature = [ Embed "obscene pictograms"
+               , HideAs "suspect vertical wall Lit"
+               , Indistinct
+               ]
+  }
+wallObscuredFrescoedV = TileKind
+  { tsymbol  = '|'
+  , tname    = "frescoed wall"
+  , tfreq    = [("obscured vertical wall Lit", 10)]
+  , tcolor   = BrWhite
+  , tcolor2  = defFG
+  , talter   = 5
+  , tfeature = [ Embed "subtle fresco"
                , HideAs "suspect vertical wall Lit"
                , Indistinct
                ]
@@ -314,7 +326,7 @@ wallGlassHSpice = wallGlassH
   }
 wallSuspectH = TileKind  -- only on client
   { tsymbol  = '-'
-  , tname    = "suspect scratched wall"
+  , tname    = "suspect uneven wall"
   , tfreq    = [("suspect horizontal wall Lit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
@@ -325,7 +337,7 @@ wallSuspectH = TileKind  -- only on client
   }
 wallObscuredH = TileKind
   { tsymbol  = '-'
-  , tname    = "granite scratched wall"
+  , tname    = "scratched wall"
   , tfreq    = [("obscured horizontal wall Lit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
