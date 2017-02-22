@@ -406,7 +406,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
           IAll      -> (bag, promptGeneric body ar cCur <> ":")
   case cCur of
     MStats -> do
-      io <- statsOverlay leader
+      (io, slotBlurbs) <- statsOverlay leader
       let slotLabels = map fst $ snd io
           slotKeys = mapMaybe (keyOfEKM numPrefix) slotLabels
           statsDef :: DefItemKey m
@@ -414,13 +414,11 @@ transition psuit prompt promptGeneric permitMulitple cLegal
             { defLabel = Left ""
             , defCond = True
             , defAction = \ekm ->
-            let _slot = case ekm of
-                  Left K.KM{key} -> case key of
-                    K.Char l -> SlotChar numPrefix l
-                    _ -> assert `failure` "unexpected key:"
-                                `twith` K.showKey key
+            let slot = case ekm of
                   Right sl -> sl
-            in return $ Left "stats affect character actions"
+                  Left{} -> assert `failure` ekm
+                blurb = fromJust $ lookup slot slotBlurbs
+            in return $ Left blurb
             }
       runDefItemKey keyDefs statsDef io slotKeys promptChosen MStats
     _ -> do

@@ -249,7 +249,7 @@ itemOverlay store lid bag = do
       renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
   return (concat ts, zipWith renumber [0..] kxs)
 
-statsOverlay :: MonadClient m => ActorId -> m OKX
+statsOverlay :: MonadClient m => ActorId -> m (OKX, [(SlotChar, Text)])
 statsOverlay aid = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
@@ -259,16 +259,16 @@ statsOverlay aid = do
       tshow200 n = let n200 = min 200 $ max (-200) n
                    in tshow n200 <> if n200 /= n then "$" else ""
       tshowBlock k n = tshow200 $ n + if braced b then k else 0
-      prSlot :: (Y, SlotChar) -> (AspectRecord -> Int, Text, Int -> Text)
-             -> (Text, KYX)
-      prSlot (y, c) (accessor, blurb, decorator) =
+      prSlot :: (Y, SlotChar) -> (AspectRecord -> Int, Text, Text, Int -> Text)
+             -> (Text, KYX, (SlotChar, Text))
+      prSlot (y, c) (accessor, statName, statBlurb, decorator) =
         let fullText t =
               makePhrase [ MU.Text $ slotLabel c
-                         , MU.Text $ T.justifyLeft 22 ' ' blurb
+                         , MU.Text $ T.justifyLeft 22 ' ' statName
                          , MU.Text t ]
             valueText = decorator $ accessor ar
             ft = fullText valueText
-        in (ft, (Right c, (y, 0, T.length ft)))
+        in (ft, (Right c, (y, 0, T.length ft)), (c, statBlurb <> statName))
       showIntWith1 :: Int -> Text
       showIntWith1 k =
         let l = k `div` 10
@@ -276,27 +276,63 @@ statsOverlay aid = do
         in tshow l <> if x == 0 then "" else "." <> tshow x
       -- Some values can be negative, for others 0 is equivalent but shorter.
       tshowRadius r = if r == 0 then "0m" else tshow (r - 1) <> ".5m"
-      slotList =
-        [ (aHurtMelee, "to melee damage", \t -> tshow200 t <> "%")
-        , (aArmorMelee, "melee armor", \t -> "[" <> tshowBlock 50 t <> "%]")
-        , (aArmorRanged, "ranged armor",  \t -> "{" <> tshowBlock 25 t <> "%}")
-        , (aMaxHP, "max HP", \t -> tshow $ max 0 t)
-        , (aMaxCalm, "max Calm", \t -> tshow $ max 0 t)
-        , (aSpeed, "speed", \t -> showIntWith1 t <> "m/s")
-        , (aSight, "sight radius", \t ->
-            let tmax = max 0 t
-                tcapped = min (fromEnum $ bcalm b `div` (5 * oneM)) tmax
-            in tshowRadius tcapped <+> if tcapped == tmax
-                                       then ""
-                                       else "(max" <+> tshowRadius tmax <> ")")
-        , (aSmell, "smell radius", \t -> tshowRadius (max 0 t))
-        , (aShine, "shine radius", \t -> tshowRadius (max 0 t))
-        , (aNocto, "night vision radius", \t -> tshowRadius (max 0 t)) ]
-        ++ [ (EM.findWithDefault 0 ab . aSkills, tshow ab <+> "ability", tshow)
-           | ab <- [minBound..maxBound] ]
+      aspectSlotList =
+        [ ( aHurtMelee
+          , "to melee damage"
+          , "blurb"
+          , \t -> tshow200 t <> "%" )
+        , ( aArmorMelee
+          , "melee armor"
+          , "blurb"
+          , \t -> "[" <> tshowBlock 50 t <> "%]" )
+        , ( aArmorRanged
+          , "ranged armor"
+          , "blurb"
+          , \t -> "{" <> tshowBlock 25 t <> "%}" )
+        , ( aMaxHP
+          , "max HP"
+          , "blurb"
+          , \t -> tshow $ max 0 t )
+        , ( aMaxCalm
+          , "max Calm"
+          , "blurb"
+          , \t -> tshow $ max 0 t )
+        , ( aSpeed
+          , "speed"
+          , "blurb"
+          , \t -> showIntWith1 t <> "m/s" )
+        , ( aSight
+          , "sight radius"
+          , "blurb"
+          , \t ->
+              let tmax = max 0 t
+                  tcapped = min (fromEnum $ bcalm b `div` (5 * oneM)) tmax
+              in tshowRadius tcapped
+                 <+> if tcapped == tmax
+                     then ""
+                     else "(max" <+> tshowRadius tmax <> ")" )
+        , ( aSmell
+          , "smell radius"
+          , "blurb"
+          , \t -> tshowRadius (max 0 t) )
+        , ( aShine
+          , "shine radius"
+          , "blurb"
+          , \t -> tshowRadius (max 0 t) )
+        , ( aNocto
+          , "night vision radius"
+          , "blurb"
+          , \t -> tshowRadius (max 0 t) ) ]
+      abilitySlotList =
+        [ ( EM.findWithDefault 0 ab . aSkills
+          , tshow ab <+> "ability"
+          , "blurb"
+          , tshow )
+        | ab <- [minBound..maxBound] ]
+      slotList = aspectSlotList ++ abilitySlotList
       zipReslot = zipWith prSlot $ zip [0..] allZeroSlots
-      (ts, kxs) = unzip $ zipReslot slotList
-  return (map textToAL ts, kxs)
+      (ts, kxs, slotBlurbs) = unzip3 $ zipReslot slotList
+  return ((map textToAL ts, kxs), slotBlurbs)
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
 pickNumber askNumber kAll = do
