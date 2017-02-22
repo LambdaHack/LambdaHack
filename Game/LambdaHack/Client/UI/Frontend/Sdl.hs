@@ -44,13 +44,14 @@ type FontAtlas = EM.EnumMap Color.AttrCharW32 SDL.Texture
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { swindow        :: !SDL.Window
-  , srenderer      :: !SDL.Renderer
-  , sfont          :: !TTF.TTFFont
-  , satlas         :: !(IORef FontAtlas)
-  , screenTexture  :: !SDL.Texture
-  , spreviousFrame :: !(IORef SingleFrame)
-  , squitSDL       :: !(IORef Bool)
+  { swindow           :: !SDL.Window
+  , srenderer         :: !SDL.Renderer
+  , sfont             :: !TTF.TTFFont
+  , satlas            :: !(IORef FontAtlas)
+  , screenTexture     :: !SDL.Texture
+  , spreviousFrame    :: !(IORef SingleFrame)
+  , squitSDL          :: !(IORef Bool)
+  , sdisplayPermitted :: !(MVar ())
   }
 
 -- | The name of the frontend.
@@ -99,6 +100,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   satlas <- newIORef EM.empty
   spreviousFrame <- newIORef blankSingleFrame
   squitSDL <- newIORef False
+  sdisplayPermitted <- newMVar ()
   let sess = FrontendSession{..}
   rf <- createRawFrontend (display sdebugCli sess) (shutdown sess)
   putMVar rfMVar rf
@@ -161,7 +163,9 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   SDL.quit
 
 shutdown :: FrontendSession -> IO ()
-shutdown FrontendSession{squitSDL} = writeIORef squitSDL True
+shutdown FrontendSession{..} = do
+  takeMVar sdisplayPermitted
+  writeIORef squitSDL True
 
 -- | Add a frame to be drawn.
 display :: DebugModeCli
@@ -219,6 +223,7 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
                                          (SDL.textureHeight ti))
         SDL.copy srenderer textTexture Nothing (Just loc)
         maybe (return ()) (drawHighlight x y) mlineColor
+  takeMVar sdisplayPermitted
   prevFrame <- readIORef spreviousFrame
   writeIORef spreviousFrame curFrame
   SDL.rendererRenderTarget srenderer SDL.$= Just screenTexture
@@ -227,6 +232,7 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
   SDL.rendererRenderTarget srenderer SDL.$= Nothing
   SDL.copy srenderer screenTexture Nothing Nothing
   SDL.present srenderer
+  putMVar sdisplayPermitted ()
 
 -- | Translates modifiers to our own encoding, ignoring Shift.
 modTranslate :: SDL.KeyModifier -> K.Modifier
