@@ -112,6 +112,11 @@ strengthFromEqpSlot eqpSlot itemFull =
     EqpSlotAbAlter -> EM.findWithDefault 0 Ability.AbAlter aSkills
     EqpSlotAbProject -> EM.findWithDefault 0 Ability.AbProject aSkills
     EqpSlotAbApply -> EM.findWithDefault 0 Ability.AbApply aSkills
+    EqpSlotAddMaxCalm -> aMaxCalm
+    EqpSlotAddSmell -> aSmell
+    EqpSlotAddNocto -> aNocto
+    EqpSlotAbWait -> EM.findWithDefault 0 Ability.AbWait aSkills
+    EqpSlotAbMoveItem -> EM.findWithDefault 0 Ability.AbMoveItem aSkills
 
 strMelee :: Bool -> Time -> ItemFull -> Int
 strMelee effectBonus localTime itemFull =
