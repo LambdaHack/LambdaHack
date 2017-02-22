@@ -571,7 +571,7 @@ markSuspectHuman :: MonadClientUI m => m ()
 markSuspectHuman = do
   -- @condBFS@ depends on the setting we change here.
   invalidateBfsAll
-  modifyClient toggleMarkSuspect
+  modifyClient cycleMarkSuspect
 
 -- * SettingsMenu
 
@@ -596,10 +596,15 @@ settingsMenuHuman cmdAction = do
                       ++ ") "
             versionLen = length version
         in init art ++ [take (80 - versionLen) (last art) ++ version]
-      onOff b = if b then "on" else "off"
-      tsuspect = "suspect terrain:" <+> onOff markSuspect
-      tvisible = "visible zone:" <+> onOff markVision
-      tsmell = "smell clues:" <+> onOff  markSmell
+      offOn b = if b then "on" else "off"
+      offOnAll n = case n of
+        0 -> "off"
+        1 -> "on"
+        2 -> "all"
+        _ -> assert `failure` n
+      tsuspect = "suspect terrain:" <+> offOnAll markSuspect
+      tvisible = "visible zone:" <+> offOn markVision
+      tsmell = "smell clues:" <+> offOn  markSmell
       thenchmen = "tactic:" <+> tshow factTactic
       -- Key-description-command tuples.
       kds = [ (K.mkKM "s", (tsuspect, HumanCmd.MarkSuspect))

@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.State
   ( StateClient(..), emptyStateClient
   , AlterLid
   , updateTarget, getTarget, updateLeader, sside
-  , BfsAndPath(..), TgtAndPath(..), toggleMarkSuspect
+  , BfsAndPath(..), TgtAndPath(..), cycleMarkSuspect
   ) where
 
 import Prelude ()
@@ -71,7 +71,7 @@ data StateClient = StateClient
   , snxtScenario :: !Int           -- ^ next game scenario number
   , sslots       :: !ItemSlots     -- ^ map from slots to items
   , slastSlot    :: !SlotChar      -- ^ last used slot
-  , smarkSuspect :: !Bool          -- ^ mark suspect features
+  , smarkSuspect :: !Int           -- ^ mark suspect features
   , scondInMelee :: !(EM.EnumMap LevelId (Either Bool (Bool, Bool)))
       -- ^ the old and (new, old) values of condInMelee condition
   , svictories   :: !(EM.EnumMap (Kind.Id ModeKind) (IM.IntMap Int))
@@ -119,15 +119,15 @@ emptyStateClient _sside =
     , snxtScenario = 0
     , sslots = ItemSlots EM.empty EM.empty
     , slastSlot = SlotChar 0 'Z'
-    , smarkSuspect = False
+    , smarkSuspect = 0
     , scondInMelee = EM.empty
     , svictories = EM.empty
     , sdebugCli = defDebugModeCli
     }
 
-toggleMarkSuspect :: StateClient -> StateClient
-toggleMarkSuspect s@StateClient{smarkSuspect} =
-  s {smarkSuspect = not smarkSuspect}
+cycleMarkSuspect :: StateClient -> StateClient
+cycleMarkSuspect s@StateClient{smarkSuspect} =
+  s {smarkSuspect = (smarkSuspect + 1) `mod` 3}
 
 -- | Update target parameters within client state.
 updateTarget :: ActorId -> (Maybe Target -> Maybe Target) -> StateClient

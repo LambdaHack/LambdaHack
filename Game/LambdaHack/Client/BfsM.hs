@@ -159,7 +159,7 @@ condBFS aid = do
   smarkSuspect <- getsClient smarkSuspect
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
-      enterSuspect = smarkSuspect || underAI
+      enterSuspect = smarkSuspect > 0 || underAI
       skill | enterSuspect = alterSkill  -- dig and search at will
             | otherwise = 0  -- only walkable tiles
   return (canMove, skill)

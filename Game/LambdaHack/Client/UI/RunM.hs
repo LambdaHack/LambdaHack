@@ -216,7 +216,7 @@ checkAndRun aid dir = do
       rightTilesLast = map (lvl `at`) rightPsLast
       leftForwardTileHere = lvl `at` leftForwardPosHere
       rightForwardTileHere = lvl `at` rightForwardPosHere
-      featAt = TK.actionFeatures smarkSuspect . okind
+      featAt = TK.actionFeatures (smarkSuspect > 0) . okind
       terrainChangeMiddle =
         featAt tileThere `notElem` map featAt [tileLast, tileHere]
       terrainChangeLeft = featAt leftForwardTileHere

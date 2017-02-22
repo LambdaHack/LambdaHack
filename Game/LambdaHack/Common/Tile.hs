@@ -14,8 +14,9 @@
 --
 -- Actors at normal speed (2 m/s) take one turn to move one tile (1 m by 1 m).
 module Game.LambdaHack.Common.Tile
-  ( kindHasFeature, hasFeature, isClear, isLit, isWalkable, isDoor, isSuspect
-  , isExplorable, isOftenItem, isOftenActor, isNoItem, isNoActor, isEasyOpen
+  ( kindHasFeature, hasFeature, isClear, isLit, isWalkable, isDoor
+  , isSuspect, isHideAs, isExplorable
+  , isOftenItem, isOftenActor, isNoItem, isNoActor, isEasyOpen
   , speedup, alterMinSkill, aiAlterMinSkill, alterMinWalk
   , openTo, closeTo, embeddedItems, revealAs, obscureAs, hideAs, buildAs
   , isEasyOpenKind, isOpenable, isClosable
@@ -98,6 +99,10 @@ isSuspect :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isSuspect #-}
 isSuspect TileSpeedup{isSuspectTab} = accessTab isSuspectTab
 
+isHideAs :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE isHideAs #-}
+isHideAs TileSpeedup{isHideAsTab} = accessTab isHideAsTab
+
 isOftenItem :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isOftenItem #-}
 isOftenItem TileSpeedup{isOftenItemTab} = accessTab isOftenItemTab
@@ -161,6 +166,10 @@ speedup allClear cotile =
             getTo _ = False
         in any getTo $ TK.tfeature tk
       isSuspectTab = createTab cotile TK.isSuspectKind
+      isHideAsTab = createTab cotile $ \tk ->
+        let getTo TK.HideAs{} = True
+            getTo _ = False
+        in any getTo $ TK.tfeature tk
       isOftenItemTab = createTab cotile $ kindHasFeature TK.OftenItem
       isOftenActorTab = createTab cotile $ kindHasFeature TK.OftenActor
       isNoItemTab = createTab cotile $ kindHasFeature TK.NoItem

@@ -130,8 +130,7 @@ drawFrameTerrain drawnLevelId = do
   Level{lxsize, lhidden, ltile=PointArray.Array{avector}}
     <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
-  let doMarkSuspect = smarkSuspect && lhidden > 0
-      dis :: Int -> Kind.Id TileKind -> Color.AttrCharW32
+  let dis :: Int -> Kind.Id TileKind -> Color.AttrCharW32
       {-# INLINE dis #-}
       dis pI tile = case okind tile of
         TK.TileKind{tsymbol, tcolor, tcolor2} ->
@@ -143,8 +142,10 @@ drawFrameTerrain drawnLevelId = do
               -- over both visible and remembered tiles.
               fg :: Color.Color
               {-# INLINE fg #-}
-              fg | doMarkSuspect
+              fg | smarkSuspect > 0 && lhidden > 0
                    && Tile.isSuspect coTileSpeedup tile = Color.BrMagenta
+                 | smarkSuspect > 1 && lhidden > 0
+                   && Tile.isHideAs coTileSpeedup tile = Color.Magenta
                  | ES.member p0 totVisible = tcolor
                  | otherwise = tcolor2
           in Color.attrChar2ToW32 fg tsymbol
