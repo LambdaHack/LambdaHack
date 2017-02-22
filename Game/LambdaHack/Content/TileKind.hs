@@ -100,6 +100,7 @@ data TileSpeedup = TileSpeedup
   , isDoorTab          :: !(Tab Bool)
   , isSuspectTab       :: !(Tab Bool)
   , isHideAsTab        :: !(Tab Bool)
+  , consideredByAITab  :: !(Tab Bool)
   , isOftenItemTab     :: !(Tab Bool)
   , isOftenActorTab    :: !(Tab Bool)
   , isNoItemTab        :: !(Tab Bool)

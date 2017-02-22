@@ -273,8 +273,10 @@ closestTriggers onlyDir aid = do
           [] -> acc
           _ | allOther ->
             -- Neither stairs nor escape, so explore if close enough.
-            if isJust onlyDir || Tile.isSuspect coTileSpeedup (lvl `at` p)
-            then acc  -- assume secrets have no loot
+            if isJust onlyDir
+               || Tile.isSuspect coTileSpeedup (lvl `at` p)
+                  && not (Tile.consideredByAI coTileSpeedup (lvl `at` p))
+            then acc  -- assume secrets have no loot, unless ConsideredByAI
             else (TriggerOther, (p, bag)) : acc
           TriggerEscape : _ ->  -- normally only one present, so just take first
             -- Escape (or guard) only after exploring, for high score, etc.

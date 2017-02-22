@@ -15,7 +15,7 @@
 -- Actors at normal speed (2 m/s) take one turn to move one tile (1 m by 1 m).
 module Game.LambdaHack.Common.Tile
   ( kindHasFeature, hasFeature, isClear, isLit, isWalkable, isDoor
-  , isSuspect, isHideAs, isExplorable
+  , isSuspect, isHideAs, consideredByAI, isExplorable
   , isOftenItem, isOftenActor, isNoItem, isNoActor, isEasyOpen
   , speedup, alterMinSkill, aiAlterMinSkill, alterMinWalk
   , openTo, closeTo, embeddedItems, revealAs, obscureAs, hideAs, buildAs
@@ -103,6 +103,10 @@ isHideAs :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isHideAs #-}
 isHideAs TileSpeedup{isHideAsTab} = accessTab isHideAsTab
 
+consideredByAI :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE consideredByAI #-}
+consideredByAI TileSpeedup{consideredByAITab} = accessTab consideredByAITab
+
 isOftenItem :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isOftenItem #-}
 isOftenItem TileSpeedup{isOftenItemTab} = accessTab isOftenItemTab
@@ -168,6 +172,10 @@ speedup allClear cotile =
       isSuspectTab = createTab cotile TK.isSuspectKind
       isHideAsTab = createTab cotile $ \tk ->
         let getTo TK.HideAs{} = True
+            getTo _ = False
+        in any getTo $ TK.tfeature tk
+      consideredByAITab = createTab cotile $ \tk ->
+        let getTo TK.ConsideredByAI = True
             getTo _ = False
         in any getTo $ TK.tfeature tk
       isOftenItemTab = createTab cotile $ kindHasFeature TK.OftenItem

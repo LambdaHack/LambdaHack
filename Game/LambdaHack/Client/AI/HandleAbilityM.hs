@@ -1006,7 +1006,9 @@ moveOrRunAid run source dir = do
                let itemFull = itemToF iid k
                    use = itemUsefulness itemFull
                in maybe False (> 0) use) $ EM.assocs bag  -- mixed blessing OK
-             activate = EM.null bag || desirableBagEmbed
+             activate = Tile.isSuspect coTileSpeedup t
+                        || EM.null bag
+                        || desirableBagEmbed
          return $! if activate
                    then Just $ RequestAnyAbility $ ReqAlter tpos
                    else Nothing
