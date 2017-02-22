@@ -33,15 +33,18 @@ import Game.LambdaHack.Client.UI.Slideshow
 import Game.LambdaHack.Client.UI.SlideshowM
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.EffectDescription
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
+import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Content.ItemKind as IK
 
 newtype FailError = FailError {failError :: Text}
   deriving Show
@@ -256,82 +259,18 @@ statsOverlay aid = do
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
-      tshow200 n = let n200 = min 200 $ max (-200) n
-                   in tshow n200 <> if n200 /= n then "$" else ""
-      tshowBlock k n = tshow200 $ n + if braced b then k else 0
-      prSlot :: (Y, SlotChar) -> (AspectRecord -> Int, Text, Text, Int -> Text)
-             -> (Text, KYX, (SlotChar, Text))
-      prSlot (y, c) (accessor, statName, statBlurb, decorator) =
-        let fullText t =
+      prSlot :: (Y, SlotChar) -> IK.EqpSlot -> (Text, KYX, (SlotChar, Text))
+      prSlot (y, c) eqpSlot =
+        let statName = slotToName eqpSlot
+            fullText t =
               makePhrase [ MU.Text $ slotLabel c
                          , MU.Text $ T.justifyLeft 22 ' ' statName
                          , MU.Text t ]
-            valueText = decorator $ accessor ar
+            valueText = slotToDecorator eqpSlot b $ prEqpSlot eqpSlot ar
             ft = fullText valueText
-        in (ft, (Right c, (y, 0, T.length ft)), (c, statBlurb <> statName))
-      showIntWith1 :: Int -> Text
-      showIntWith1 k =
-        let l = k `div` 10
-            x = k - l * 10
-        in tshow l <> if x == 0 then "" else "." <> tshow x
-      -- Some values can be negative, for others 0 is equivalent but shorter.
-      tshowRadius r = if r == 0 then "0m" else tshow (r - 1) <> ".5m"
-      aspectSlotList =
-        [ ( aHurtMelee
-          , "to melee damage"
-          , "blurb"
-          , \t -> tshow200 t <> "%" )
-        , ( aArmorMelee
-          , "melee armor"
-          , "blurb"
-          , \t -> "[" <> tshowBlock 50 t <> "%]" )
-        , ( aArmorRanged
-          , "ranged armor"
-          , "blurb"
-          , \t -> "{" <> tshowBlock 25 t <> "%}" )
-        , ( aMaxHP
-          , "max HP"
-          , "blurb"
-          , \t -> tshow $ max 0 t )
-        , ( aMaxCalm
-          , "max Calm"
-          , "blurb"
-          , \t -> tshow $ max 0 t )
-        , ( aSpeed
-          , "speed"
-          , "blurb"
-          , \t -> showIntWith1 t <> "m/s" )
-        , ( aSight
-          , "sight radius"
-          , "blurb"
-          , \t ->
-              let tmax = max 0 t
-                  tcapped = min (fromEnum $ bcalm b `div` (5 * oneM)) tmax
-              in tshowRadius tcapped
-                 <+> if tcapped == tmax
-                     then ""
-                     else "(max" <+> tshowRadius tmax <> ")" )
-        , ( aSmell
-          , "smell radius"
-          , "blurb"
-          , \t -> tshowRadius (max 0 t) )
-        , ( aShine
-          , "shine radius"
-          , "blurb"
-          , \t -> tshowRadius (max 0 t) )
-        , ( aNocto
-          , "night vision radius"
-          , "blurb"
-          , \t -> tshowRadius (max 0 t) ) ]
-      abilitySlotList =
-        [ ( EM.findWithDefault 0 ab . aSkills
-          , tshow ab <+> "ability"
-          , "blurb"
-          , tshow )
-        | ab <- [minBound..maxBound] ]
-      slotList = aspectSlotList ++ abilitySlotList
+        in (ft, (Right c, (y, 0, T.length ft)), (c, slotToDesc eqpSlot))
       zipReslot = zipWith prSlot $ zip [0..] allZeroSlots
-      (ts, kxs, slotBlurbs) = unzip3 $ zipReslot slotList
+      (ts, kxs, slotBlurbs) = unzip3 $ zipReslot statSlots
   return ((map textToAL ts, kxs), slotBlurbs)
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)

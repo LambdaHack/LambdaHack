@@ -13,6 +13,7 @@ module Game.LambdaHack.Common.Misc
   , normalLevelBound, GroupName, toGroupName, Freqs, breturn
   , serverSaveName, Rarity, validateRarity
   , Tactic(..), describeTactic, appDataDir
+  , xM, minusM, minusM1, oneM
   ) where
 
 import Prelude ()
@@ -26,6 +27,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Function
 import Data.Hashable
+import Data.Int (Int64)
 import Data.Key
 import Data.Ord
 import Data.String (IsString (..))
@@ -252,3 +254,11 @@ appDataDir = do
   progName <- getProgName
   let name = takeWhile Char.isAlphaNum progName
   getAppUserDataDirectory name
+
+xM :: Int -> Int64
+xM k = fromIntegral k * 1000000
+
+minusM, minusM1, oneM :: Int64
+minusM = xM (-1)
+minusM1 = xM (-1) + 1
+oneM = xM 1

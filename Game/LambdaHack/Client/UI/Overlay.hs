@@ -24,7 +24,6 @@ import qualified Data.Vector.Unboxed.Mutable as VM
 import Data.Word
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.EffectDescription

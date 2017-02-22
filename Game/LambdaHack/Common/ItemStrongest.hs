@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.ItemStrongest
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
   , unknownMelee, filterRecharging, stripRecharging, stripOnSmash
-  , hasCharge, strongestMelee, isMelee
+  , hasCharge, strongestMelee, isMelee, prEqpSlot
   ) where
 
 import Prelude ()
@@ -87,10 +87,9 @@ itemTrajectory item path =
 totalRange :: Item -> Int
 totalRange item = snd $ snd $ itemTrajectory item []
 
-strengthFromEqpSlot :: EqpSlot -> ItemFull -> Int
-strengthFromEqpSlot eqpSlot itemFull =
-  let AspectRecord{..} = aspectRecordFull itemFull
-  in case eqpSlot of
+prEqpSlot :: EqpSlot -> AspectRecord -> Int
+prEqpSlot eqpSlot ar@AspectRecord{..} =
+  case eqpSlot of
     EqpSlotMiscBonus ->
       aTimeout  -- usually better items have longer timeout
       + aMaxCalm + aSmell
@@ -102,7 +101,7 @@ strengthFromEqpSlot eqpSlot itemFull =
     EqpSlotAddSpeed -> aSpeed
     EqpSlotAddSight -> aSight
     EqpSlotLightSource -> aShine
-    EqpSlotWeapon -> inline strMelee True maxBound itemFull
+    EqpSlotWeapon -> assert `failure` ar
     EqpSlotMiscAbility ->
       EM.findWithDefault 0 Ability.AbWait aSkills
       + EM.findWithDefault 0 Ability.AbMoveItem aSkills
@@ -117,6 +116,12 @@ strengthFromEqpSlot eqpSlot itemFull =
     EqpSlotAddNocto -> aNocto
     EqpSlotAbWait -> EM.findWithDefault 0 Ability.AbWait aSkills
     EqpSlotAbMoveItem -> EM.findWithDefault 0 Ability.AbMoveItem aSkills
+
+strengthFromEqpSlot :: EqpSlot -> ItemFull -> Int
+strengthFromEqpSlot eqpSlot itemFull =
+   case eqpSlot of
+     EqpSlotWeapon -> inline strMelee True maxBound itemFull
+     _ -> prEqpSlot eqpSlot $ aspectRecordFull itemFull
 
 strMelee :: Bool -> Time -> ItemFull -> Int
 strMelee effectBonus localTime itemFull =

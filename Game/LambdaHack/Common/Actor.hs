@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Actor
     ActorId, monsterGenChance, partActor, partPronoun
     -- * The@ Acto@r type
   , Actor(..), ResDelta(..), ActorAspect
-  , deltaSerious, deltaMild, xM, minusM, minusM1, oneM
+  , deltaSerious, deltaMild
   , bspeed, actorTemplate, braced, waitedLastTurn, actorDying
   , hpTooLow, hpHuge, calmEnough, hpEnough
     -- * Assorted
@@ -91,14 +91,6 @@ deltaSerious ResDelta{..} = fst resCurrentTurn < minusM
 deltaMild :: ResDelta -> Bool
 deltaMild ResDelta{..} = fst resCurrentTurn == minusM
                          || fst resPreviousTurn == minusM
-
-xM :: Int -> Int64
-xM k = fromIntegral k * 1000000
-
-minusM, minusM1, oneM :: Int64
-minusM = xM (-1)
-minusM1 = xM (-1) + 1
-oneM = xM 1
 
 -- | Chance that a new monster is generated. Currently depends on the
 -- number of monsters already present, and on the level. In the future,

@@ -1,8 +1,9 @@
 -- | Description of effects. No operation in this module
 -- involves state or monad types.
 module Game.LambdaHack.Common.EffectDescription
-  ( effectToSuffix, featureToSuff, kindAspectToSuffix
-  , featureToSentence, slotToSentence, affixDice
+  ( effectToSuffix, featureToSuff, kindAspectToSuffix, affixDice
+  , featureToSentence, slotToSentence
+  , slotToName, slotToDesc, slotToDecorator, statSlots
   ) where
 
 import Prelude ()
@@ -12,6 +13,8 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
+import Game.LambdaHack.Common.Ability
+import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Time
@@ -136,6 +139,95 @@ slotToSentence es = case es of
   EqpSlotAbProject -> "Those unskilled in flinging equip it."
   EqpSlotAbApply -> "Those unskilled in applying items equip it."
   _ -> assert `failure` "should not be used in content" `twith` es
+
+slotToName :: EqpSlot -> Text
+slotToName eqpSlot =
+  case eqpSlot of
+    EqpSlotMiscBonus -> "misc bonuses"
+    EqpSlotAddHurtMelee -> "to melee damage"
+    EqpSlotAddArmorMelee -> "melee armor"
+    EqpSlotAddArmorRanged -> "ranged armor"
+    EqpSlotAddMaxHP -> "max HP"
+    EqpSlotAddSpeed -> "speed"
+    EqpSlotAddSight -> "sight radius"
+    EqpSlotLightSource -> "shine radius"
+    EqpSlotWeapon -> "weapon power"
+    EqpSlotMiscAbility -> "misc abilities"
+    EqpSlotAbMove -> tshow AbMove <+> "ability"
+    EqpSlotAbMelee -> tshow AbMelee <+> "ability"
+    EqpSlotAbDisplace -> tshow AbDisplace <+> "ability"
+    EqpSlotAbAlter -> tshow AbAlter <+> "ability"
+    EqpSlotAbProject -> tshow AbProject <+> "ability"
+    EqpSlotAbApply -> tshow AbApply <+> "ability"
+    EqpSlotAddMaxCalm -> "max Calm"
+    EqpSlotAddSmell -> "smell radius"
+    EqpSlotAddNocto -> "night vision radius"
+    EqpSlotAbWait -> tshow AbWait <+> "ability"
+    EqpSlotAbMoveItem -> tshow AbMoveItem <+> "ability"
+
+slotToDesc :: EqpSlot -> Text
+slotToDesc eqpSlot = "blurb"
+
+slotToDecorator :: EqpSlot -> Actor -> Int -> Text
+slotToDecorator eqpSlot b t =
+  let tshow200 n = let n200 = min 200 $ max (-200) n
+                   in tshow n200 <> if n200 /= n then "$" else ""
+      -- Some values can be negative, for others 0 is equivalent but shorter.
+      tshowRadius r = if r == 0 then "0m" else tshow (r - 1) <> ".5m"
+      tshowBlock k n = tshow200 $ n + if braced b then k else 0
+      showIntWith1 :: Int -> Text
+      showIntWith1 k =
+        let l = k `div` 10
+            x = k - l * 10
+        in tshow l <> if x == 0 then "" else "." <> tshow x
+  in case eqpSlot of
+    EqpSlotMiscBonus -> tshow t
+    EqpSlotAddHurtMelee -> tshow200 t <> "%"
+    EqpSlotAddArmorMelee -> "[" <> tshowBlock 50 t <> "%]"
+    EqpSlotAddArmorRanged -> "{" <> tshowBlock 25 t <> "%}"
+    EqpSlotAddMaxHP -> tshow $ max 0 t
+    EqpSlotAddSpeed -> showIntWith1 t <> "m/s"
+    EqpSlotAddSight ->
+      let tmax = max 0 t
+          tcapped = min (fromEnum $ bcalm b `div` (5 * oneM)) tmax
+      in tshowRadius tcapped
+         <+> if tcapped == tmax
+             then ""
+             else "(max" <+> tshowRadius tmax <> ")"
+    EqpSlotLightSource -> tshowRadius (max 0 t)
+    EqpSlotWeapon -> tshow t
+    EqpSlotMiscAbility -> tshow t
+    EqpSlotAbMove -> tshow t
+    EqpSlotAbMelee -> tshow t
+    EqpSlotAbDisplace -> tshow t
+    EqpSlotAbAlter -> tshow t
+    EqpSlotAbProject -> tshow t
+    EqpSlotAbApply -> tshow t
+    EqpSlotAddMaxCalm -> tshow $ max 0 t
+    EqpSlotAddSmell -> tshowRadius (max 0 t)
+    EqpSlotAddNocto -> tshowRadius (max 0 t)
+    EqpSlotAbWait -> tshow t
+    EqpSlotAbMoveItem -> tshow t
+
+statSlots :: [EqpSlot]
+statSlots = [ EqpSlotAddHurtMelee
+            , EqpSlotAddArmorMelee
+            , EqpSlotAddArmorRanged
+            , EqpSlotAddMaxHP
+            , EqpSlotAddMaxCalm
+            , EqpSlotAddSpeed
+            , EqpSlotAddSight
+            , EqpSlotAddSmell
+            , EqpSlotLightSource
+            , EqpSlotAddNocto
+            , EqpSlotAbMove
+            , EqpSlotAbMelee
+            , EqpSlotAbDisplace
+            , EqpSlotAbAlter
+            , EqpSlotAbWait
+            , EqpSlotAbMoveItem
+            , EqpSlotAbProject
+            , EqpSlotAbApply ]
 
 tmodToSuff :: Text -> ThrowMod -> Text
 tmodToSuff verb ThrowMod{..} =
