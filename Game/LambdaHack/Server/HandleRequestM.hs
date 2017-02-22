@@ -399,8 +399,17 @@ reqAlter source tpos = do
   else do
     let changeTo tgroup = do
           -- No @SfxAlter@, because the effect is obvious (e.g., opened door).
-          toTile <- rndToAction $ fromMaybe (assert `failure` tgroup)
-                                  <$> opick tgroup (const True)
+          let nightCond kt = not (Tile.kindHasFeature TK.Walkable kt
+                                  && Tile.kindHasFeature TK.Clear kt)
+                             || (if lnight lvl then id else not)
+                                  (Tile.kindHasFeature TK.Dark kt)
+          -- Sometimes the tile is determined precisely by the ambient light
+          -- of the source tiles. If not, default to cave day/night condition.
+          mtoTile <- rndToAction $ opick tgroup nightCond
+          toTile <- maybe (rndToAction $ fromMaybe (assert `failure` tgroup)
+                                         <$> opick tgroup (const True))
+                          return
+                          mtoTile
           unless (toTile == serverTile) $ do
             execUpdAtomic $ UpdAlterTile lid tpos serverTile toTile
             case (Tile.isExplorable coTileSpeedup serverTile,

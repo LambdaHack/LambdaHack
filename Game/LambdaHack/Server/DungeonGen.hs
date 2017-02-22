@@ -169,6 +169,7 @@ buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
   cmap <- buildTileMap cops cave
   litemNum <- castDice ldepth totalDepth $ citemNum kc
   let lvl = levelFromCaveKind cops kc ldepth cmap lstair litemNum lescape
+                              (dnight cave)
   return (lvl, lstairsDouble ++ lstairsSingleDown)
 
 -- | Places yet another staircase (or escape), taking into account only
@@ -200,7 +201,7 @@ placeDownStairs kc@CaveKind{..} ps = do
 -- | Build rudimentary level from a cave kind.
 levelFromCaveKind :: Kind.COps
                   -> CaveKind -> AbsDepth -> TileMap -> ([Point], [Point])
-                  -> Int -> [Point]
+                  -> Int -> [Point] -> Bool
                   -> Level
 levelFromCaveKind Kind.COps{coTileSpeedup}
                   CaveKind{ cactorCoeff=lactorCoeff
@@ -208,7 +209,7 @@ levelFromCaveKind Kind.COps{coTileSpeedup}
                           , citemFreq=litemFreq
                           , ..
                           }
-                  ldepth ltile lstair litemNum lescape =
+                  ldepth ltile lstair litemNum lescape lnight =
   let f n t | Tile.isExplorable coTileSpeedup t = n + 1
             | otherwise = n
       lclear = PointArray.foldlA' f 0 ltile
@@ -232,6 +233,7 @@ levelFromCaveKind Kind.COps{coTileSpeedup}
        , litemFreq
        , lhidden = chidden
        , lescape
+       , lnight
        }
 
 -- | Freshly generated and not yet populated dungeon.

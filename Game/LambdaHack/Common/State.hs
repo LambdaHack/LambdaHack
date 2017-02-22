@@ -47,10 +47,10 @@ data State = State
   deriving (Show, Eq)
 
 unknownLevel :: Kind.COps -> AbsDepth -> X -> Y
-             -> Text -> ([Point], [Point]) -> Int -> Int -> [Point]
+             -> Text -> ([Point], [Point]) -> Int -> Int -> [Point] -> Bool
              -> Level
 unknownLevel Kind.COps{cotile=Kind.Ops{ouniqGroup}}
-             ldepth lxsize lysize ldesc lstair lclear lhidden lescape =
+             ldepth lxsize lysize ldesc lstair lclear lhidden lescape lnight =
   let outerId = ouniqGroup "basic outer fence"
   in Level { ldepth
            , lfloor = EM.empty
@@ -71,6 +71,7 @@ unknownLevel Kind.COps{cotile=Kind.Ops{ouniqGroup}}
            , litemFreq = []
            , lhidden
            , lescape
+           , lnight
            }
 
 unknownTileMap :: Kind.Id TileKind -> Int -> Int -> TileMap
@@ -118,7 +119,7 @@ localFromGlobal State{..} =
     { _sdungeon =
       EM.map (\Level{..} ->
               unknownLevel _scops ldepth lxsize lysize ldesc lstair lclear
-                           lhidden lescape)
+                           lhidden lescape lnight)
              _sdungeon
     , ..
     }

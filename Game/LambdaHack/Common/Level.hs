@@ -85,6 +85,7 @@ data Level = Level
                                -- ^ frequency of initial items; [] for clients
   , lhidden     :: !Int        -- ^ secret tile density
   , lescape     :: ![Point]    -- ^ positions of IK.Escape tiles
+  , lnight      :: !Bool
   }
   deriving (Show, Eq)
 
@@ -205,6 +206,7 @@ instance Binary Level where
     put litemFreq
     put lhidden
     put lescape
+    put lnight
   get = do
     ldepth <- get
     lfloor <- get
@@ -225,4 +227,5 @@ instance Binary Level where
     litemFreq <- get
     lhidden <- get
     lescape <- get
+    lnight <- get
     return $! Level{..}
