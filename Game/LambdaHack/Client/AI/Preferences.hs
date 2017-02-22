@@ -75,10 +75,11 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
     IK.DropItem _ _ _ _ -> -15
     IK.PolyItem -> 0  -- AI can't estimate item desirability vs average
     IK.Identify -> 0  -- AI doesn't know how to use
-    IK.Detect radius -> radius
+    IK.Detect radius -> radius * 2
     IK.DetectActor radius -> radius
     IK.DetectItem radius -> radius
     IK.DetectExit radius -> radius
+    IK.DetectHidden radius -> radius
     IK.SendFlying _ -> -10  -- but useful on self sometimes, too
     IK.PushActor _ -> -10  -- but useful on self sometimes, too
     IK.PullActor _ -> -10

@@ -100,6 +100,8 @@ effectToSuffix effect =
     DetectActor radius -> "of actor detection" <+> wrapInParens (tshow radius)
     DetectItem radius -> "of item detection" <+> wrapInParens (tshow radius)
     DetectExit radius -> "of exit detection" <+> wrapInParens (tshow radius)
+    DetectHidden radius ->
+      "of secrets detection" <+> wrapInParens (tshow radius)
     SendFlying tmod -> "of impact" <+> tmodToSuff "" tmod
     PushActor tmod -> "of pushing" <+> tmodToSuff "" tmod
     PullActor tmod -> "of pulling" <+> tmodToSuff "" tmod

@@ -80,6 +80,7 @@ data Effect =
   | DetectActor !Int
   | DetectItem !Int
   | DetectExit !Int
+  | DetectHidden !Int
   | SendFlying !ThrowMod
   | PushActor !ThrowMod
   | PullActor !ThrowMod

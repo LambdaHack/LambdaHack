@@ -362,7 +362,7 @@ displaceAid target = do
 moveSearchAlterAid :: MonadClientUI m
                    => ActorId -> Vector -> m (FailOrCmd RequestAnyAbility)
 moveSearchAlterAid source dir = do
-  cops@Kind.COps{cotile, coTileSpeedup} <- getsState scops
+  cops@Kind.COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorSk <- actorSkillsClient source
   lvl <- getLevel $ blid sb
@@ -378,7 +378,7 @@ moveSearchAlterAid source dir = do
          return $ Right $ RequestAnyAbility $ ReqMove dir
        -- No access, so search and/or alter the tile.
        | Tile.isSuspect coTileSpeedup t  -- not yet searched
-         || Tile.hideAs cotile t /= t  -- search again, could be swapped
+         || Tile.isHideAs coTileSpeedup t  -- search again, could be swapped
          || alterMinSkill < 10
          || alterMinSkill >= 10 && alterSkill >= alterMinSkill ->
          if | alterSkill < alterMinSkill -> failSer AlterUnwalked

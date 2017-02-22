@@ -379,7 +379,7 @@ reqDisplace source target = do
 -- should not be alterable (but @serverTile@ may be).
 reqAlter :: (MonadAtomic m, MonadServer m) => ActorId -> Point -> m ()
 reqAlter source tpos = do
-  Kind.COps{ cotile=cotile@Kind.Ops{okind, opick}
+  Kind.COps{ cotile=Kind.Ops{okind, opick}
            , coTileSpeedup } <- getsState scops
   sb <- getsState $ getActorBody source
   actorSk <- actorSkillsServer source
@@ -389,10 +389,10 @@ reqAlter source tpos = do
       req = ReqAlter tpos
   lvl <- getLevel lid
   let serverTile = lvl `at` tpos
-      freshClientTile = Tile.hideAs cotile serverTile
+      hidden = Tile.isHideAs coTileSpeedup serverTile
   -- Only actors with AbAlter > 1 can search for hidden doors, etc.
   if alterSkill <= 1
-     || serverTile == freshClientTile  -- no searching needed
+     || not hidden  -- no searching needed
         && alterSkill < Tile.alterMinSkill coTileSpeedup serverTile
   then execFailure source req AlterUnskilled
   else if not $ adjacent spos tpos then execFailure source req AlterDistant
@@ -417,13 +417,13 @@ reqAlter source tpos = do
             _ -> Nothing
         groupsToAlterTo = mapMaybe toAlter feats
     embeds <- getsState $ getEmbedBag lid tpos
-    if null groupsToAlterTo && null embeds && serverTile == freshClientTile then
+    if null groupsToAlterTo && null embeds && not hidden then
       -- Neither searching nor altering possible; silly client.
       execFailure source req AlterNothing
     else
       if EM.notMember tpos $ lfloor lvl then
         if null (posToAidsLvl tpos lvl) then do
-          when (serverTile /= freshClientTile) $
+          when hidden $
             -- Search, in case some actors present (e.g., of other factions)
             -- don't know this tile.
             execUpdAtomic $ UpdSearchTile source tpos serverTile
