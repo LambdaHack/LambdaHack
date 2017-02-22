@@ -135,8 +135,9 @@ standardKeys = KeyKind
       -- Aiming
       , ("KP_Multiply", ([CmdAim], "cycle x-hair among enemies", AimEnemy))
       , ("!", ([CmdAim], "", AimEnemy))
-      , ("KP_Divide", ([CmdAim], "cycle aiming styles", AimFloor))
-      , ("/", ([CmdAim], "", AimFloor))
+      , ("\\", ([CmdAim], "cycle aiming styles", AimFloor))
+      , ("KP_Divide", ([CmdAim], "cycle x-hair among items", AimItem))
+      , ("/", ([CmdAim], "", AimItem))
       , ("+", ([CmdAim, CmdMinimal], "swerve the aiming line", EpsIncr True))
       , ("-", ([CmdAim], "unswerve the aiming line", EpsIncr False))
       , ("C-?", ( [CmdAim]

@@ -144,6 +144,7 @@ data HumanCmd =
   | AimTgt
   | AimFloor
   | AimEnemy
+  | AimItem
   | AimAscend !Int
   | EpsIncr !Bool
   | XhairUnknown

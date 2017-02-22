@@ -14,7 +14,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , markVisionHuman, markSmellHuman, markSuspectHuman, settingsMenuHuman
     -- * Commands specific to aiming
   , cancelHuman, acceptHuman, tgtClearHuman
-  , moveXhairHuman, aimTgtHuman, aimFloorHuman, aimEnemyHuman
+  , moveXhairHuman, aimTgtHuman, aimFloorHuman, aimEnemyHuman, aimItemHuman
   , aimAscendHuman, epsIncrHuman
   , xhairUnknownHuman, xhairItemHuman, xhairStairHuman
   , xhairPointerFloorHuman, xhairPointerEnemyHuman
@@ -885,6 +885,40 @@ aimEnemyHuman = do
           | otherwise = case lf of
         (a, _) : _ -> TEnemy a False
         [] -> sxhair  -- no seen foes in sight, stick to last target
+  -- Register the chosen enemy, to pick another on next invocation.
+  modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
+  modifyClient $ \cli -> cli {sxhair = tgt}
+  doLook
+
+-- * AimItem
+
+aimItemHuman :: MonadClientUI m => m ()
+aimItemHuman = do
+  lidV <- viewedLevelUI
+  leader <- getLeaderUI
+  lpos <- getsState $ bpos . getActorBody leader
+  xhairPos <- xhairToPos
+  sxhair <- getsClient sxhair
+  saimMode <- getsSession saimMode
+  bsAll <- getsState $ EM.keys . lfloor . (EM.! lidV) . sdungeon
+  let ordPos p = (chessDist lpos p, p)
+      dbs = sortBy (comparing ordPos) bsAll
+      pickUnderXhair =  -- switch to the item under xhair, if any
+        let i = fromMaybe (-1)
+                $ findIndex ((== xhairPos) . Just) dbs
+        in splitAt i dbs
+      (lt, gt) = case sxhair of
+        TPoint _ lid pos | isJust saimMode && lid == lidV ->  -- pick next item
+          let i = fromMaybe (-1) $ findIndex (== pos) dbs
+          in splitAt (i + 1) dbs
+        TPoint _ lid pos | lid == lidV ->  -- first key press, retarget old item
+          let i = fromMaybe (-1) $ findIndex (== pos) dbs
+          in splitAt i dbs
+        _ -> pickUnderXhair
+      gtlt = gt ++ lt
+      tgt = case gtlt of
+        p : _ -> TPoint TAny lidV p
+        [] -> sxhair  -- no items remembered, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
   modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
   modifyClient $ \cli -> cli {sxhair = tgt}
