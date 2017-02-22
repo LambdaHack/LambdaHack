@@ -340,7 +340,7 @@ staircase = PlaceKind
   , ptopLeft = [ "<·>"
                ]
   , poverride = [ ('<', "staircase up"), ('>', "staircase down")
-                , ('I', "signpost") ]
+                , ('I', "signboard") ]
   }
 staircase2 = staircase
   { pfreq    = [("staircase", 1000)]
@@ -619,7 +619,7 @@ makeStaircaseUp s = s
  , pfreq     = map (\(t, k) -> (toGroupName $ tshow t <+> "up", k)) $ pfreq s
  , poverride = [ ('>', "stair terminal")
                , ('<', toGroupName $ pname s <+> "up")
-               , ('I', "signpost") ]
+               , ('I', "signboard") ]
  }
 
 makeStaircaseDown :: PlaceKind -> PlaceKind
@@ -629,5 +629,5 @@ makeStaircaseDown s = s
  , pfreq     = map (\(t, k) -> (toGroupName $ tshow t <+> "down", k)) $ pfreq s
  , poverride = [ ('<', "stair terminal")
                , ('>', toGroupName $ pname s <+> "down")
-               , ('I', "signpost") ]
+               , ('I', "signboard") ]
  }
