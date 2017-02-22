@@ -123,10 +123,10 @@ sortSlots fid mbody = do
 -- | Switches current member to the next on the level, if any, wrapping.
 memberCycle :: MonadClientUI m => Bool -> m MError
 memberCycle verbose = do
+  lidV <- viewedLevelUI
   leader <- getLeaderUI
-  body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
-  case filter (\(_, b) -> blid b == blid body) hs of
+  case filter (\(_, b) -> blid b == lidV) hs of
     [] -> failMsg "cannot pick any other member on this level"
     (np, b) : _ -> do
       success <- pickLeader verbose np

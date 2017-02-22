@@ -401,7 +401,7 @@ pickLeaderWithPointerHuman = pickLeaderWithPointer
 
 -- * MemberCycle
 
--- | Switches current member to the next on the level, if any, wrapping.
+-- | Switches current member to the next on the viewed level, if any, wrapping.
 memberCycleHuman :: MonadClientUI m => m MError
 memberCycleHuman = memberCycle True
 
