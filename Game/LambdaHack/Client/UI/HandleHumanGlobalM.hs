@@ -628,7 +628,7 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
                  (\_ _ cCur -> promptGeneric <+> ppItemDialogModeFrom cCur)
                  cLegalRaw cLegal (not auto) True
   case ggi of
-    Right (l, MStore fromCStore) -> return $ Right (fromCStore, l)
+    Right (l, (MStore fromCStore, _)) -> return $ Right (fromCStore, l)
     Left err -> failWith err
     _ -> assert `failure` ggi
 

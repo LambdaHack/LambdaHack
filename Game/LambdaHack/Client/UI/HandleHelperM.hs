@@ -252,14 +252,14 @@ itemOverlay store lid bag = do
       renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
   return (concat ts, zipWith renumber [0..] kxs)
 
-statsOverlay :: MonadClient m => ActorId -> m (OKX, [(SlotChar, Text)])
+statsOverlay :: MonadClient m => ActorId -> m OKX
 statsOverlay aid = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
-      prSlot :: (Y, SlotChar) -> IK.EqpSlot -> (Text, KYX, (SlotChar, Text))
+      prSlot :: (Y, SlotChar) -> IK.EqpSlot -> (Text, KYX)
       prSlot (y, c) eqpSlot =
         let statName = slotToName eqpSlot
             fullText t =
@@ -268,10 +268,9 @@ statsOverlay aid = do
                          , MU.Text t ]
             valueText = slotToDecorator eqpSlot b $ prEqpSlot eqpSlot ar
             ft = fullText valueText
-        in (ft, (Right c, (y, 0, T.length ft)), (c, slotToDesc eqpSlot))
-      zipReslot = zipWith prSlot $ zip [0..] allZeroSlots
-      (ts, kxs, slotBlurbs) = unzip3 $ zipReslot statSlots
-  return ((map textToAL ts, kxs), slotBlurbs)
+        in (ft, (Right c, (y, 0, T.length ft)))
+      (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allZeroSlots) statSlots
+  return (map textToAL ts, kxs)
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
 pickNumber askNumber kAll = do

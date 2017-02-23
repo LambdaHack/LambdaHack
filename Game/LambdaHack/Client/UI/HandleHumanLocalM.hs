@@ -61,6 +61,7 @@ import Game.LambdaHack.Client.UI.SlideshowM
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.EffectDescription
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -159,7 +160,7 @@ chooseItemDialogMode c = do
   ggi <- getStoreItem prompt c
   recordHistory  -- object chosen, wipe out already shown msgs
   case ggi of
-    Right ((iid, itemFull), c2) -> do
+    (Right (iid, itemFull), (c2, _)) -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       case c2 of
@@ -208,7 +209,26 @@ chooseItemDialogMode c = do
                void $ pickLeader True newAid
                return $ Right c2
         MStats -> assert `failure` ggi
-    Left err -> failWith err
+    (Left _, (MStats, ekm)) -> case ekm of
+      Right slot -> do
+        let eqpSlot = statSlots !! fromJust (elemIndex slot allZeroSlots)
+        leader <- getLeaderUI
+        b <- getsState $ getActorBody leader
+        actorAspect <- getsClient sactorAspect
+        let ar = case EM.lookup leader actorAspect of
+              Just aspectRecord -> aspectRecord
+              Nothing -> assert `failure` leader
+            valueText = slotToDecorator eqpSlot b $ prEqpSlot eqpSlot ar
+            prompt2 = makeSentence
+              [ MU.WownW (partActor b) (MU.Text $ slotToName eqpSlot)
+              , "is", MU.Text valueText ]
+              <+> slotToDesc eqpSlot
+        go <- displaySpaceEsc ColorFull prompt2
+        if go
+        then chooseItemDialogMode MStats
+        else failWith "never mind"
+      Left _ -> failWith "never mind"
+    (Left err, _) -> failWith err
 
 -- * ChooseItemProject
 
@@ -240,7 +260,7 @@ chooseItemProjectHuman ts = do
       promptGeneric = "What to fling"
   ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
   case ggi of
-    Right ((iid, _itemFull), MStore fromCStore) -> do
+    Right ((iid, _itemFull), (MStore fromCStore, _)) -> do
       modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
       return Nothing
     Left err -> failMsg err
@@ -348,7 +368,7 @@ chooseItemApplyHuman ts = do
         return $ SuitsSomething $ either (const False) id . mp
   ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
   case ggi of
-    Right ((iid, _itemFull), MStore fromCStore) -> do
+    Right ((iid, _itemFull), (MStore fromCStore, _)) -> do
       modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
       return Nothing
     Left err -> failMsg err

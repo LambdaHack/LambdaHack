@@ -39,7 +39,7 @@ reportToSlideshow keys = do
   Level{lysize} <- getLevel lidV
   overlayToSlideshow (lysize + 1) keys ([], [])
 
--- | Display a message. Return value indicates if the player tried to cancel.
+-- | Display a message. Return value indicates if the player wants to continue.
 -- Feature: if many pages, only the last SPACE exits (but first ESC).
 displaySpaceEsc :: MonadClientUI m => ColorMode -> Text -> m Bool
 displaySpaceEsc dm prompt = do
