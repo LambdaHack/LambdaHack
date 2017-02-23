@@ -74,6 +74,7 @@ updatePathFromBfs :: MonadClient m
                   => Bool -> BfsAndPath -> ActorId -> Point
                   -> m (PointArray.Array BfsDistance, AndPath)
 updatePathFromBfs canMove bfsAndPathOld aid !target = do
+  Kind.COps{coTileSpeedup} <- getsState scops
   let (oldBfsArr, oldBfsPath) = case bfsAndPathOld of
         BfsAndPath{bfsArr, bfsPath} -> (bfsArr, bfsPath)
         BfsOnly{bfsArr} -> (bfsArr, EM.empty)
@@ -86,9 +87,11 @@ updatePathFromBfs canMove bfsAndPathOld aid !target = do
     let lid = blid b
     seps <- getsClient seps
     salter <- getsClient salter
+    lvl <- getLevel lid
     let !lalter = salter EM.! lid
+        fovLit p = Tile.isLit coTileSpeedup $ lvl `at` p
         !source = bpos b
-        !mpath = findPathBfs lalter source target seps bfsArr
+        !mpath = findPathBfs lalter fovLit source target seps bfsArr
         !bfsPath = EM.insert target mpath oldBfsPath
         bap = BfsAndPath{..}
     modifyClient $ \cli -> cli {sbfsD = EM.insert aid bap $ sbfsD cli}

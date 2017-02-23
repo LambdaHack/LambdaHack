@@ -142,12 +142,13 @@ instance Binary AndPath
 -- The @eps@ coefficient determines which direction (of the closest
 -- directions available) that path should prefer, where 0 means north-west
 -- and 1 means north.
-findPathBfs :: PointArray.Array Word8
+findPathBfs :: PointArray.Array Word8 -> (Point -> Bool)
             -> Point -> Point -> Int
             -> PointArray.Array BfsDistance
             -> AndPath
 {-# INLINE findPathBfs #-}
-findPathBfs lalter pathSource pathGoal sepsRaw arr@PointArray.Array{..} =
+findPathBfs lalter fovLit pathSource pathGoal sepsRaw
+            arr@PointArray.Array{..} =
   let !pathGoalI = PointArray.pindex axsize pathGoal
       !pathSourceI = PointArray.pindex axsize pathSource
       eps = sepsRaw `mod` 4
@@ -167,20 +168,24 @@ findPathBfs lalter pathSource pathGoal sepsRaw arr@PointArray.Array{..} =
         in posP : suffix  -- avoid calculating minP and dist for the last call
       track pos oldDist suffix =
         let !dist = pred oldDist
-            minChild !minP _ [] = minP
-            minChild minP minAlter (mv : mvs) =
+            minChild !minP _ _ [] = minP
+            minChild minP maxDark minAlter (mv : mvs) =
               let !p = pos + mv
                   backtrackingMove =
                     BfsDistance (arr `PointArray.accessI` p) /= dist
               in if backtrackingMove
-                 then minChild minP minAlter mvs
+                 then minChild minP maxDark minAlter mvs
                  else let alter = lalter `PointArray.accessI` p
-                      -- Prefer paths through more easily open tiles.
-                      in if | alter == 0 -> p  -- speedup
-                            | alter < minAlter -> minChild p alter mvs
-                            | otherwise -> minChild minP minAlter mvs
+                          dark = not $ fovLit $ PointArray.punindex axsize p
+                      -- Prefer paths through more easily opened tiles
+                      -- and in the ambient dark (even if light carried,
+                      -- because it can be taken off at any moment).
+                      in if | alter == 0 && dark >= maxDark -> p  -- speedup
+                            | alter < minAlter -> minChild p dark alter mvs
+                            | dark > maxDark -> minChild p dark alter mvs
+                            | otherwise -> minChild minP maxDark minAlter mvs
             -- @maxBound@ means not alterable, so some child will be lower
-            !newPos = minChild pos{-dummy-} maxBound movesI
+            !newPos = minChild pos{-dummy-} False maxBound movesI
 #ifdef WITH_EXPENSIVE_ASSERTIONS
             !_A = assert (newPos /= pos) ()
 #endif
