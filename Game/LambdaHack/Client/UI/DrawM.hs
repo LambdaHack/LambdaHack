@@ -97,9 +97,10 @@ targetDesc target = do
                 factionD <- getsState sfactionD
                 let (_, _, name, stats) =
                       partItem side factionD CGround localTime (itemToF iid kit)
-                return $! makePhrase $ if k == 1
-                                       then [name, stats]  -- "a sword" too wordy
-                                       else [MU.CarWs k name, stats]
+                return $! makePhrase
+                          $ if k == 1
+                            then [name, stats]  -- "a sword" too wordy
+                            else [MU.CarWs k name, stats]
               _ -> return $! "many items at" <+> tshow p
           else return $! "an exact spot on level" <+> tshow (abs $ fromEnum lid)
         return (pointedText, Nothing)

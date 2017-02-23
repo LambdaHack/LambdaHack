@@ -67,7 +67,7 @@ pickActorToMove maidToAvoid refreshTarget = do
       -> pickOld
     [] -> assert `failure` (oldAid, oldBody)
     [_] -> pickOld  -- Keep the leader: he is alone on the level.
-    (captain, captainBody) : (sergeant, sergeantBody) : _ -> do
+    _ -> do
       -- At this point we almost forget who the old leader was
       -- and treat all party actors the same, eliminating candidates
       -- until we can't distinguish them any more, at which point we prefer
@@ -151,52 +151,38 @@ pickActorToMove maidToAvoid refreshTarget = do
           -- but their current path is blocked by friends.
           targetBlocked (_, TgtAndPath{tapPath}) =
             let next = case tapPath of
-                  NoPath -> Nothing
-                  AndPath{pathList=[]} -> Nothing
-                  AndPath{pathList=q : _} -> Just q
+                  AndPath{pathList= q : _} -> Just q
+                  _ -> Nothing
             in any ((== next) . Just . bpos . snd) ours
           (oursBlocked, oursPos) =
             partition targetBlocked $ oursOther ++ oursMeleeBad
           -- Lower overhead is better.
-          overheadOurs :: ((ActorId, Actor), TgtAndPath)
-                       -> (Int, Int, Bool)
-          overheadOurs (_, TgtAndPath{tapPath=NoPath}) = (1000, 0, False)
-          overheadOurs our@( (aid, b)
+          overheadOurs :: ((ActorId, Actor), TgtAndPath) -> (Int, Bool)
+          overheadOurs ((aid, _), TgtAndPath{tapPath=NoPath}) =
+            (1000, aid /= oldAid)
+          overheadOurs abt@( (aid, b)
                            , TgtAndPath{tapPath=AndPath{pathLen=d,pathGoal}} ) =
-            if targetTEnemy our then
-              ( d + if targetBlocked our then 2 else 0  -- possible delay, hacky
-              , - 10 * fromEnum (bhp b `div` (10 * oneM))
-              , aid /= oldAid )
-            else
-              -- Keep proper formation, not too dense, not to sparse.
-              let
-                minSpread = 7
-                maxSpread = 12 * 2
-                dcaptain p =
-                  chessDistVector $ bpos captainBody `vectorToFrom` p
-                dsergeant p =
-                  chessDistVector $ bpos sergeantBody `vectorToFrom` p
-                minDist | aid == captain = dsergeant (bpos b)
-                        | aid == sergeant = dcaptain (bpos b)
-                        | otherwise = dsergeant (bpos b)
-                                      `min` dcaptain (bpos b)
-                pDist p = dcaptain p + dsergeant p
-                sumDist = pDist (bpos b)
-                -- Positive, if the goal gets us closer to the party.
-                diffDist = sumDist - pDist pathGoal
-                minCoeff | minDist < minSpread =
-                  (minDist - minSpread) `div` 3
-                  - if aid == oldAid then 3 else 0
-                         | otherwise = 0
-                explorationValue = diffDist * (sumDist `div` 4)
-                sumCoeff | sumDist > maxSpread = - explorationValue
-                         | otherwise = 0
-              in ( if d == 0 then d
-                   else max 1 $ minCoeff + if d < 10
-                                           then 3 + d `div` 4
-                                           else 9 + d `div` 10
-                 , sumCoeff
-                 , aid /= oldAid )
+            -- Keep proper formation. Too dense and exploration takes
+            -- too long; too sparse and actors fight alone.
+            -- Note that right now, while we set targets separately for each
+            -- hero, perhaps on opposite borders of the map,
+            -- we can't help that sometimes heroes are separated.
+            let maxSpread = 3 + length ours
+                pDist p = minimum [ chessDist (bpos b2) p
+                                  | (aid2, b2) <- ours, aid2 /= aid]
+                aidDist = pDist (bpos b)
+                -- Negative, if the goal gets us closer to the party.
+                diffDist = pDist pathGoal - aidDist
+                formationValue =
+                  signum diffDist * (abs diffDist `max` maxSpread)
+                  * (aidDist `max` maxSpread) ^ (2 :: Int)
+                fightValue | targetTEnemy abt =
+                  - fromEnum (bhp b `div` (10 * oneM))
+                           | otherwise = 0
+            in ( formationValue `div` 3 + fightValue
+                 + (if targetBlocked abt then 10 else 0)
+                 + if d < 8 then d `div` 4 else 2 + d `div` 10
+               , aid /= oldAid )
           sortOurs = sortBy $ comparing overheadOurs
           goodTEnemy ((_aid, b), TgtAndPath{ tapTgt=TEnemy{}
                                            , tapPath=AndPath{pathGoal} }) =

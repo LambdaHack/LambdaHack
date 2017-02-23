@@ -65,7 +65,7 @@ standard = RuleKind
       lift x)
   , rfirstDeathEnds = False
   , rwriteSaveClips = 1000
-  , rleadLevelClips = 200
+  , rleadLevelClips = 50
   , rscoresFile = "scores"
   , rnearby = 20
   }
