@@ -166,7 +166,31 @@ slotToName eqpSlot =
     EqpSlotAbMoveItem -> tshow AbMoveItem <+> "ability"
 
 slotToDesc :: EqpSlot -> Text
-slotToDesc eqpSlot = "blurb"
+slotToDesc eqpSlot =
+  let statName = slotToName eqpSlot
+      capName = "The '" <> statName <> "' stat"
+  in capName <+> case eqpSlot of
+    EqpSlotMiscBonus -> "represent the total power of assorted stat bonuses for the character."
+    EqpSlotAddHurtMelee -> "is a percentage of addtional damage dealt by the actor (either a character or a missile) with any weapon. The value is capped at 200%, then the armor percentage of the defender is subtracted from it and the resulting total is capped at 99%."
+    EqpSlotAddArmorMelee -> "is a percentage of melee damage avoided by the actor. The value is capped at 200%, then the extra melee damage percentage of the attacker is subtracted from it and the resulting total is capped at 99% (always at least 1% of damage gets through). It includes 50% bonus from being braced for combat, if applicable."
+    EqpSlotAddArmorRanged ->  "is a percentage of ranged damage avoided by the actor. The value is capped at 200%, then the extra melee damage percentage of the attacker is subtracted from it and the resulting total is capped at 99% (always at least 1% of damage gets through). It includes 25% bonus from being braced for combat, if applicable."
+    EqpSlotAddMaxHP -> "is a cap on HP of the actor, except for some rare effects able to overfill HP. At any direct enemy damage (but not, e.g., incremental poisoning damage or wounds inflicted by mishandling a device) HP is cut back to the cap."
+    EqpSlotAddSpeed -> "is expressed in meters per second, which corresponds to map location (1m by 1m) per two standard turns (0.5s each). Thus actor at standard speed of 2m/s moves one location per standard turn."
+    EqpSlotAddSight -> "is the limit of visibility in light. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
+    EqpSlotLightSource -> "determines the maximal area lit by the actor. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
+    EqpSlotWeapon -> "represents the total power of weapons equipped by the character."
+    EqpSlotMiscAbility -> "represent the total power of assorted ability bonuses for the character."
+    EqpSlotAbMove -> "determines whether the character can move. Actors not capable of movement can't be dominated."
+    EqpSlotAbMelee -> "determines whether the character can melee. Actors that can't melee can still cause damage by flinging missiles or by ramming (being pushed) at opponents."
+    EqpSlotAbDisplace -> "determines whether the character can displace adjacent actors. In some cases displacing is not possible regardless of ability: when the target is braced, dying, has no move ability or when both actors are supported by adjacent friendly units. Missiles can be displaced always, unless more than one occupies the map location."
+    EqpSlotAbAlter -> "determines which kinds of terrain can be altered or triggered by the character. Opening doors and searching suspect tiles require ability 2, stairs require 3, closing doors requires 4, some others require 5. Actors not smart enough to be capable of using stairs can't be dominated."
+    EqpSlotAbProject -> "determines which kinds of items the character can propel. Items that can be lobbed to explode at a precise location, such as flasks, require ability 3. Other items travel until they meet an obstacle and ability 1 is enough to fling them. In some cases, e.g., of too intricate or two awkward items at low Calm, throwing is not possible regardless of the ability value."
+    EqpSlotAbApply -> "determines which kinds of items the character can activate. Items that assume literacy require ability 2, others can be used already at ability 1. In some cases, e.g., when the item needs recharging, has no possible effects or is too intricate for the character Calm level, applying may not be possible."
+    EqpSlotAddMaxCalm -> "is a cap on Calm of the actor, except for some rare effects able to overfill Calm. At any direct enemy damage (but not, e.g., incremental poisoning damage or wounds inflicted by mishandling a device) Calm is lowered, sometimes very significantly and always at least back down to the cap."
+    EqpSlotAddSmell -> "determines the maximal area smelled by the actor. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
+    EqpSlotAddNocto -> "is the limit of visibility in dark. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
+    EqpSlotAbWait -> "determines whether the character can wait, bracing for comat and potentially blocking the effects of some attacks."
+    EqpSlotAbMoveItem -> "determines whether the character can pick up items and manage inventory."
 
 slotToDecorator :: EqpSlot -> Actor -> Int -> Text
 slotToDecorator eqpSlot b t =
