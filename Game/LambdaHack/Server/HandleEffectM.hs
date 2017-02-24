@@ -1069,9 +1069,7 @@ effectDetectX predicate action execSfx radius target = do
       inPer = diffPer extraPer perOld
   perModified <- if nullPer inPer then return False else do
     -- Perception is modified on the server and sent to the client
-    -- together with all the revealed info. Upon the next routing
-    -- perception update, server will revert its and client state
-    -- to normal perception.
+    -- together with all the revealed info.
     let perNew = addPer inPer perOld
         fper = EM.adjust (EM.insert (blid b) perNew) (bfid b)
     modifyServer $ \ser -> ser {sperFid = fper $ sperFid ser}
@@ -1080,6 +1078,11 @@ effectDetectX predicate action execSfx radius target = do
   pointsModified <- action perList
   if perModified || pointsModified then do
     execSfx
+    -- Perception is reverted. This is necessary to ensure save and restore
+    -- doesn't change game state.
+    when perModified $ do
+      modifyServer $ \ser -> ser {sperFid = sperFidOld}
+      execSendPer (bfid b) (blid b) inPer emptyPer perOld
     return True
   else
     return False

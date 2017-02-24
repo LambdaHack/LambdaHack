@@ -132,11 +132,11 @@ targetStrategy aid = do
             n = if attacksFriends then rangedNearby else meleeNearby
             nonmoving = EM.findWithDefault 0 AbMove actorMaxSkE <= 0
         return {-keep lazy-} $
-           chessDist (bpos body) (bpos b) < n
-           && not condNoUsableWeapon
-           && EM.findWithDefault 0 AbMelee actorMaxSk > 0
-           && not (hpTooLow b ar)
-           && not (nonmoving && condMeleeBad)
+          chessDist (bpos body) (bpos b) < n
+          && not condNoUsableWeapon
+          && EM.findWithDefault 0 AbMelee actorMaxSk > 0
+          && not (hpTooLow b ar)
+          && not (nonmoving && condMeleeBad)
       targetableRangedOrSpecial body =
         chessDist (bpos body) (bpos b) < rangedNearby
         && condCanProject

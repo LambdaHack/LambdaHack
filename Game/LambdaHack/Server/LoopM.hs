@@ -458,9 +458,10 @@ gameExit = do
   sfovLucidLid <- getsServer sfovLucidLid
   sfovClearLid <- getsServer sfovClearLid
   sfovLitLid <- getsServer sfovLitLid
+  sperFid <- getsServer sperFid
   discoAspect <- getsServer sdiscoAspect
   ( actorAspect, fovLitLid, fovClearLid, fovLucidLid
-   ,perValidFid, perCacheFid, _perFid )
+   ,perValidFid, perCacheFid, perFid )
     <- getsState $ perFidInDungeon discoAspect
   let !_A7 = assert (sfovLitLid == fovLitLid
                      `blame` "wrong accumulated sfovLitLid"
@@ -480,11 +481,9 @@ gameExit = do
       !_A2 = assert (sperCacheFid == perCacheFid
                      `blame` "wrong accumulated sperCacheFid"
                      `twith` (sperCacheFid, perCacheFid)) ()
-{- Total perception can diverge momentarily due to a Detect effect.
       !_A1 = assert (sperFid == perFid
                      `blame` "wrong accumulated perception"
                      `twith` (sperFid, perFid)) ()
--}
   -- Kill all clients, including those that did not take part
   -- in the current game.
   -- Clients exit not now, but after they print all ending screens.
