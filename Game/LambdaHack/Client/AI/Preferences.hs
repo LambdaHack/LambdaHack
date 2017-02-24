@@ -88,7 +88,7 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
     IK.ActivateInv _ -> -50
     IK.ApplyPerfume -> 0  -- depends on the smell sense of friends and foes
     IK.OneOf _ -> 1  -- usually a mixed blessing, but slightly beneficial
-    IK.OnSmash _ -> 0  -- TOOD: can be beneficial or not; analyze explosions
+    IK.OnSmash _ -> 0  -- can be beneficial; we'd need to analyze explosions
     IK.Recharging e -> effectToBenefit cops b ar fact e  -- for weapons
     IK.Temporary _ -> 0
     IK.Unique -> 0

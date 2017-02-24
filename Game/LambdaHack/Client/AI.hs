@@ -95,20 +95,20 @@ refreshTargetS aid body = do
     modifyClient $ \cli -> cli {stargetD = EM.delete aid (stargetD cli)}
     return Nothing
   else do
+    -- _debugoldTgt <- getsClient $ EM.lookup aid . stargetD
     -- Choose a target from those proposed by AI for the actor.
     tgtMPath <- rndToAction $ frequency $ bestVariant stratTarget
     modifyClient $ \cli ->
       cli {stargetD = EM.insert aid tgtMPath (stargetD cli)}
     return $ Just tgtMPath
-  -- oldTgt <- getsClient $ EM.lookup aid . stargetD
-  -- let _debug = T.unpack
-  --         $ "\nHandleAI symbol:"    <+> tshow (bsymbol body)
-  --         <> ", aid:"               <+> tshow aid
-  --         <> ", pos:"               <+> tshow (bpos body)
-  --         <> "\nHandleAI oldTgt:"   <+> tshow oldTgt
-  --         <> "\nHandleAI strTgt:"   <+> tshow stratTarget
-  --         <> "\nHandleAI target:"   <+> tshow tgtMPath
-  --  trace _debug skip
+    -- let _debug = T.unpack
+    --       $ "\nHandleAI symbol:"    <+> tshow (bsymbol body)
+    --       <> ", aid:"               <+> tshow aid
+    --       <> ", pos:"               <+> tshow (bpos body)
+    --       <> "\nHandleAI oldTgt:"   <+> tshow _debugoldTgt
+    --       <> "\nHandleAI strTgt:"   <+> tshow stratTarget
+    --       <> "\nHandleAI target:"   <+> tshow tgtMPath
+    -- trace _debug $ return $ Just tgtMPath
 
 -- | Pick an action the actor will perform this turn.
 pickAction :: MonadClient m => (ActorId, Actor) -> m RequestAnyAbility

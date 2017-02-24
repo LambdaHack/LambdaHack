@@ -197,15 +197,15 @@ targetStrategy aid = do
                      else return []
             case smpos of
               [] -> do
-                -- This is mostly lazy and used between 0 and 3 times below.
-                ctriggersRaw <- closestTriggers Nothing aid
-                let ctriggers = toFreq "closestTriggers"
-                                $ filter desirableEmbed ctriggersRaw
-                if not condEnoughGear || nullFreq ctriggers then do
-                  citemsRaw <- closestItems aid
-                  let citems = toFreq "closestItems"
-                               $ filter desirableFloor citemsRaw
-                  if nullFreq citems then do
+                citemsRaw <- closestItems aid
+                let citems = toFreq "closestItems"
+                             $ filter desirableFloor citemsRaw
+                if nullFreq citems then do
+                  -- This is mostly lazy and referred to a few times below.
+                  ctriggersRaw <- closestTriggers Nothing aid
+                  let ctriggers = toFreq "closestTriggers"
+                                  $ filter desirableEmbed ctriggersRaw
+                  if not condEnoughGear || nullFreq ctriggers then do
                       let vToTgt v0 = do
                             let vFreq = toFreq "vFreq"
                                         $ (20, v0) : map (1,) moves
@@ -259,11 +259,11 @@ targetStrategy aid = do
                               setPath $ TPoint (TEmbed bag p0) (blid b) p
                           Just p -> setPath $ TPoint TUnknown (blid b) p
                     else do
-                      (p, bag) <- rndToAction $ frequency citems
-                      setPath $ TPoint (TItem bag) (blid b) p
-                else do
-                  (p, (p0, bag)) <- rndToAction $ frequency ctriggers
-                  setPath $ TPoint (TEmbed bag p0) (blid b) p
+                      (p, (p0, bag)) <- rndToAction $ frequency ctriggers
+                      setPath $ TPoint (TEmbed bag p0) (blid b) p
+                  else do
+                    (p, bag) <- rndToAction $ frequency citems
+                    setPath $ TPoint (TItem bag) (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint TSmell (blid b) p
       tellOthersNothingHere pos = do
         let f TgtAndPath{tapTgt} = case tapTgt of

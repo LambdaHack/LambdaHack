@@ -314,7 +314,7 @@ closestTriggers onlyDir aid = do
         map (\p -> (cid, (p, (p0, bag)))) $ vicinityUnsafe p0
       vicAll = concatMap vicTrigger triggers
   return $  -- keep lazy
-    let mix (cid, pbag) dist =
+    let mix (cid, ppbag) dist =
           -- Prefer stairs to easier levels. Prefer loot over stairs.
           let depthDelta = case cid of
                 TriggerUp -> if fromEnum lid > 0 then 1 else 2
@@ -324,7 +324,7 @@ closestTriggers onlyDir aid = do
               maxd = fromEnum (maxBound :: BfsDistance)
                      - fromEnum apartBfs
               v = (maxd * maxd * maxd) `div` ((dist + 1) * (dist + 1))
-          in (depthDelta * v, pbag)
+          in (depthDelta * v, ppbag)
     in mapMaybe (\(cid, (p, pbag)) ->
          mix (cid, (p, pbag)) <$> accessBfs bfs p) vicAll
 
@@ -355,9 +355,13 @@ closestItems aid = do
     Level{lfloor} <- getLevel $ blid body
     if EM.null lfloor then return [] else do
       bfs <- getCacheBfs aid
-      let is = mapMaybe (\(p, bag) -> fmap (, (p, bag)) (accessBfs bfs p))
-                        (EM.assocs lfloor)
-      return $! sortBy (comparing fst) is
+      let mix pbag dist =
+            let maxd = fromEnum (maxBound :: BfsDistance)
+                       - fromEnum apartBfs
+                v = (maxd * maxd * maxd) `div` ((dist + 1) * (dist + 1))
+            in (v, pbag)
+      return $! mapMaybe (\(p, bag) ->
+        mix (p, bag) <$> accessBfs bfs p) (EM.assocs lfloor)
 
 -- | Closest (wrt paths) enemy actors.
 closestFoes :: MonadClient m
