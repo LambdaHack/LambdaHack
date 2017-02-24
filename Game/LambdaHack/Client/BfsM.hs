@@ -219,13 +219,15 @@ closestUnknown aid = do
         cmp = comparing unknownAround
     return $ Just $ maximumBy cmp closestPoss
 
--- | Finds smells closest to the actor, except under the actor.
+-- | Finds smells closest to the actor, except under the actor,
+-- because actors consume smell only moving over them, not standing.
 -- Of the closest, prefers the newest smell.
 closestSmell :: MonadClient m => ActorId -> m [(Int, (Point, Time))]
 closestSmell aid = do
   body <- getsState $ getActorBody aid
   Level{lsmell, ltime} <- getLevel $ blid body
-  let smells = filter ((> ltime) . snd) $ EM.assocs lsmell
+  let smells = filter (\(p, sm) -> sm > ltime && p /= bpos body)
+                      (EM.assocs lsmell)
   case smells of
     [] -> return []
     _ -> do

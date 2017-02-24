@@ -352,7 +352,7 @@ reqDisplace source target = do
   let ar = actorAspect EM.! target
   dEnemy <- getsState $ dispEnemy source target $ aSkills ar
   if | not adj -> execFailure source req DisplaceDistant
-     | atWar && not dEnemy -> do
+     | atWar && not dEnemy -> do  -- if not at war, can displace
        mweapon <- pickWeaponServer source
        case mweapon of
          Nothing -> reqWait source
@@ -365,7 +365,13 @@ reqDisplace source target = do
        if accessible cops lvl tpos then
          case posToAidsLvl tpos lvl of
            [] -> assert `failure` (source, sb, target, tb)
-           [_] -> execUpdAtomic $ UpdDisplaceActor source target
+           [_] -> do
+             execUpdAtomic $ UpdDisplaceActor source target
+             -- We leave or wipe out smell, for consistency, but it's not
+             -- absolute consistency, e.g., blinking doesn't touch smell,
+             -- so sometimes smellers will backtrack once to wipe smell. OK.
+             affectSmell source
+             affectSmell target
            _ -> execFailure source req DisplaceProjectiles
        else
          -- Client foolishly tries to displace an actor without access.

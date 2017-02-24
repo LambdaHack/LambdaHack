@@ -804,6 +804,7 @@ flee aid fleeL = do
       str = liftFrequency $ toFreq "flee" vVic
   mapStrategyM (moveOrRunAid True aid) str
 
+-- We assume @aid@ is a foe and so @dispEnemy@ is binding.
 displaceFoe :: MonadClient m => ActorId -> m (Strategy RequestAnyAbility)
 displaceFoe aid = do
   cops <- getsState scops
