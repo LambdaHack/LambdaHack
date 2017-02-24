@@ -63,6 +63,7 @@ pickActorToMove maidToAvoid refreshTarget = do
         snd (autoDungeonLevel fact) && isNothing maidToAvoid
         -- Keep the leader: he is near stairs and not stuck
         -- and we don't want to clog stairs or get pushed to another level.
+        -- (The side effect is, at game start initial actor moves first.)
         || not leaderStuck && tileAdj isStairPos (bpos oldBody)
       -> pickOld
     [] -> assert `failure` (oldAid, oldBody)
@@ -157,9 +158,9 @@ pickActorToMove maidToAvoid refreshTarget = do
           (oursBlocked, oursPos) =
             partition targetBlocked $ oursOther ++ oursMeleeBad
           -- Lower overhead is better.
-          overheadOurs :: ((ActorId, Actor), TgtAndPath) -> (Int, Bool)
+          overheadOurs :: ((ActorId, Actor), TgtAndPath) -> Int
           overheadOurs ((aid, _), TgtAndPath{tapPath=NoPath}) =
-            (1000, aid /= oldAid)
+            1000 + if aid == oldAid then 1 else 0
           overheadOurs abt@( (aid, b)
                            , TgtAndPath{tapPath=AndPath{pathLen=d,pathGoal}} ) =
             -- Keep proper formation. Too dense and exploration takes
@@ -173,16 +174,18 @@ pickActorToMove maidToAvoid refreshTarget = do
                 aidDist = pDist (bpos b)
                 -- Negative, if the goal gets us closer to the party.
                 diffDist = pDist pathGoal - aidDist
+                -- If actor already at goal, count it as getting closer.
+                sign = if diffDist <= 0 then -1 else 1
                 formationValue =
-                  signum diffDist * (abs diffDist `max` maxSpread)
+                  sign * (abs diffDist `max` maxSpread)
                   * (aidDist `max` maxSpread) ^ (2 :: Int)
                 fightValue | targetTEnemy abt =
                   - fromEnum (bhp b `div` (10 * oneM))
                            | otherwise = 0
-            in ( formationValue `div` 3 + fightValue
-                 + (if targetBlocked abt then 10 else 0)
-                 + if d < 8 then d `div` 4 else 2 + d `div` 10
-               , aid /= oldAid )
+            in formationValue `div` 3 + fightValue
+               + (if targetBlocked abt then 10 else 0)
+               + (if d < 8 then d `div` 4 else 2 + d `div` 10)
+               + if aid == oldAid then 1 else 0
           sortOurs = sortBy $ comparing overheadOurs
           goodTEnemy ((_aid, b), TgtAndPath{ tapTgt=TEnemy{}
                                            , tapPath=AndPath{pathGoal} }) =
