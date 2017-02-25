@@ -518,13 +518,30 @@ killExit = do
   -- Otherwise, save/restore would change game state.
   sactorAspect <- getsClient sactorAspect
   salter <- getsClient salter
+  sbfsD <- getsClient sbfsD
   s <- getState
   let alter = createSalter s
   actorAspect <- createSactorAspect s
+  let f aid = do
+        (canMove, alterSkill) <- condBFS aid
+        bfsArr <- createBfs canMove alterSkill aid
+        return (aid, BfsOnly{bfsArr})
+  actorD <- getsState sactorD
+  lbfsD <- mapM f $ EM.keys actorD
+  -- Some freshly generated bfses are not used for comparison, but at least
+  -- we check they don't violate internal assertions themselves. Hence the bang.
+  let bfsD = EM.fromDistinctAscList lbfsD
+      g BfsInvalid !_ = True
+      g _ BfsInvalid = False
+      g bap1 bap2 = bfsArr bap1 == bfsArr bap2
+      subBfs = EM.isSubmapOfBy g
   let !_A1 = assert (salter == alter
-                     `blame` ("wrong accumulated alter on" <+> tshow side)
+                     `blame` ("wrong accumulated salter on" <+> tshow side)
                      `twith` (salter, alter)) ()
       !_A2 = assert (sactorAspect == actorAspect
                      `blame` ("wrong accumulated sactorAspect" <+> tshow side)
                      `twith` (sactorAspect, actorAspect)) ()
+      !_A3 = assert (sbfsD `subBfs` bfsD
+                     `blame` ("wrong accumulated sbfsD" <+> tshow side)
+                     `twith` (sbfsD, bfsD)) ()
   return ()
