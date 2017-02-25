@@ -344,14 +344,17 @@ cmdAtomicSemCli cmd = case cmd of
                   , scondInMelee = EM.map (const $ Left False) (sdungeon s)
                   , svictories
                   , sdebugCli }
-    createSalter s
-    createSactorAspect s  -- currently always void, because no actors yet
+    modifyClient $ \cli1 -> cli1 {salter = createSalter s}
+    -- Currently always void, because no actors yet:
+    sactorAspect <- createSactorAspect s
+    modifyClient $ \cli1 -> cli1 {sactorAspect}
     restartClient
   UpdResume _fid sfper -> do
     modifyClient $ \cli -> cli {sfper}
     s <- getState
-    createSalter s
-    createSactorAspect s
+    modifyClient $ \cli -> cli {salter = createSalter s}
+    sactorAspect <- createSactorAspect s
+    modifyClient $ \cli -> cli {sactorAspect}
   UpdKillExit _fid -> killExit
   UpdWriteSave -> saveClient
   _ -> return ()
@@ -456,7 +459,9 @@ discoverKind c iid kmKind = do
   -- the iid looked up, e.g., if it wasn't in old discoKind, but is in new,
   -- and then aspect record updated, so it's simpler and not much more
   -- expensive to generate new sactorAspect. Optimize only after profiling.
-  getState >>= createSactorAspect
+  s <- getState
+  sactorAspect <- createSactorAspect s
+  modifyClient $ \cli -> cli {sactorAspect}
 
 coverKind :: MonadClient m => Container -> ItemId -> Kind.Id ItemKind -> m ()
 coverKind c iid ik = do
@@ -467,7 +472,9 @@ coverKind c iid ik = do
                              `twith` (ik, kmKind)) Nothing
   modifyClient $ \cli ->
     cli {sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)}
-  getState >>= createSactorAspect
+  s <- getState
+  sactorAspect <- createSactorAspect s
+  modifyClient $ \cli -> cli {sactorAspect}
 
 discoverSeed :: MonadClient m => Container -> ItemId -> ItemSeed -> m ()
 discoverSeed c iid seed = do
@@ -489,17 +496,35 @@ discoverSeed c iid seed = do
                             `twith` (c, iid, seed)
       modifyClient $ \cli ->
         cli {sdiscoAspect = EM.alter f iid (sdiscoAspect cli)}
-  getState >>= createSactorAspect
+  s <- getState
+  sactorAspect <- createSactorAspect s
+  modifyClient $ \cli -> cli {sactorAspect}
 
 coverSeed :: MonadClient m => Container -> ItemId -> ItemSeed -> m ()
 coverSeed c iid seed = do
   let f Nothing = assert `failure` "already covered" `twith` (c, iid, seed)
       f Just{} = Nothing  -- checking that old and new agree is too much work
   modifyClient $ \cli -> cli {sdiscoAspect = EM.alter f iid (sdiscoAspect cli)}
-  getState >>= createSactorAspect
+  s <- getState
+  sactorAspect <- createSactorAspect s
+  modifyClient $ \cli -> cli {sactorAspect}
 
 killExit :: MonadClient m => m ()
 killExit = do
   side <- getsClient sside
   debugPossiblyPrint $ "Client" <+> tshow side <+> "quitting."
   modifyClient $ \cli -> cli {squit = True}
+  -- Verify that the not saved caches are equal to future reconstructed.
+  -- Otherwise, save/restore would change game state.
+  sactorAspect <- getsClient sactorAspect
+  salter <- getsClient salter
+  s <- getState
+  let alter = createSalter s
+  actorAspect <- createSactorAspect s
+  let !_A1 = assert (salter == alter
+                     `blame` ("wrong accumulated alter on" <+> tshow side)
+                     `twith` (salter, alter)) ()
+      !_A2 = assert (sactorAspect == actorAspect
+                     `blame` ("wrong accumulated sactorAspect" <+> tshow side)
+                     `twith` (sactorAspect, actorAspect)) ()
+  return ()

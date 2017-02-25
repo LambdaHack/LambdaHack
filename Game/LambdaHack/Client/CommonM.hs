@@ -270,12 +270,12 @@ updateSalter lid pts = do
       f = (PointArray.// pas)
   modifyClient $ \cli -> cli {salter = EM.adjust f lid $ salter cli}
 
-createSalter :: MonadClient m => State -> m ()
-createSalter s = do
-  Kind.COps{coTileSpeedup} <- getsState scops
-  let f Level{ltile} =
+createSalter :: State -> AlterLid
+createSalter s =
+  let Kind.COps{coTileSpeedup} = scops s
+      f Level{ltile} =
         PointArray.mapA (toEnum . Tile.alterMinWalk coTileSpeedup) ltile
-  modifyClient $ \cli -> cli {salter = EM.map f $ sdungeon s}
+  in EM.map f $ sdungeon s
 
 aspectRecordFromItem :: DiscoveryKind -> DiscoveryAspect -> ItemId -> Item
                      -> AspectRecord
@@ -312,12 +312,12 @@ aspectRecordFromActorClient b ais = do
       sAis = updateItemD (\itemD -> foldr f itemD ais) s
   return $! aspectRecordFromActorState disco discoAspect b sAis
 
-createSactorAspect :: MonadClient m => State -> m ()
+createSactorAspect :: MonadClient m => State -> m ActorAspect
 createSactorAspect s = do
   disco <- getsClient sdiscoKind
   discoAspect <- getsClient sdiscoAspect
   let f b = aspectRecordFromActorState disco discoAspect b s
-  modifyClient $ \cli -> cli {sactorAspect = EM.map f $ sactorD s}
+  return $! EM.map f $ sactorD s
 
 enemyMaxAb :: MonadClient m => ActorId -> m Ability.Skills
 enemyMaxAb aid = do

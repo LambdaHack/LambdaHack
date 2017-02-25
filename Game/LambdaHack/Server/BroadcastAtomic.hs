@@ -120,7 +120,7 @@ handleAndBroadcast atomic = do
         PosSer -> return ()
         PosAll -> sendAtomic fid atomic
         PosNone -> assert `failure` (fid, fact, atomic)
-  -- Faction that are eliminated by the command are processed as well,
+  -- Factions that are eliminated by the command are processed as well,
   -- because they are not deleted from @sfactionD@.
   factionD <- getsState sfactionD
   mapWithKeyM_ (\fid fact -> send fid fact) factionD
