@@ -855,22 +855,12 @@ displaceTowards aid source target = do
       [(aid2, b2)] | Just aid2 /= mleader -> do
         mtgtMPath <- getsClient $ EM.lookup aid2 . stargetD
         case mtgtMPath of
-          Just tap@TgtAndPath{tapPath=
-                 AndPath{pathSource,pathList=q : rest,pathGoal,pathLen}}
-            | q == source && pathSource == target
-              || waitedLastTurn b2 -> do
-              let newTgt =
-                    if q == source && pathSource == target
-                    then Just tap{tapPath=AndPath{ pathSource = q
-                                                 , pathList = rest
-                                                 , pathGoal
-                                                 , pathLen = pathLen - 1}}
-                    else Nothing
-              modifyClient $ \cli ->
-                cli {stargetD = EM.alter (const newTgt) aid (stargetD cli)}
+          Just TgtAndPath{tapPath=AndPath{pathList=q : _}}
+            | q == source  -- friend wants to swap
+              || waitedLastTurn b2 -> do  -- he had no progress anyway
               return $! returN "displace friend" $ target `vectorToFrom` source
           Just _ -> return reject
-          Nothing -> do
+          Nothing -> do  -- an enemy or disorented friend --- swap
             tfact <- getsState $ (EM.! bfid b2) . sfactionD
             actorMaxSk <- enemyMaxAb aid2
             dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
