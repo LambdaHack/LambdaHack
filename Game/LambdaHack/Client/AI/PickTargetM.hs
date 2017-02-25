@@ -57,7 +57,7 @@ targetStrategy aid = do
   let stepAccesible :: AndPath -> Bool
       stepAccesible AndPath{pathList=q : _ : _} =  -- goal not adjacent
         accessible cops lvl q  -- non-goal has to be accessible
-      stepAccesible AndPath{} = True  -- ok if goal inaccessible, e.g., suspect
+      stepAccesible AndPath{} = True  -- ok if goal inaccessible
       stepAccesible NoPath = False
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   oldTgtUpdatedPath <- case mtgtMPath of

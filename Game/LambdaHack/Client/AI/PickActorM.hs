@@ -174,7 +174,7 @@ pickActorToMove maidToAvoid refreshTarget = do
                 aidDist = pDist (bpos b)
                 -- Negative, if the goal gets us closer to the party.
                 diffDist = pDist pathGoal - aidDist
-                -- If actor already at goal, count it as getting closer.
+                -- If actor already at goal or equidistant, count it as closer.
                 sign = if diffDist <= 0 then -1 else 1
                 formationValue =
                   sign * (abs diffDist `max` maxSpread)
@@ -183,7 +183,7 @@ pickActorToMove maidToAvoid refreshTarget = do
                   - fromEnum (bhp b `div` (10 * oneM))
                            | otherwise = 0
             in formationValue `div` 3 + fightValue
-               + (if targetBlocked abt then 10 else 0)
+               + (if targetBlocked abt then 1000 else 0)
                + (if d < 8 then d `div` 4 else 2 + d `div` 10)
                + if aid == oldAid then 1 else 0
           sortOurs = sortBy $ comparing overheadOurs
