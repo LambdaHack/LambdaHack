@@ -175,6 +175,9 @@ instance Binary StateClient where
     put scondInMelee
     put svictories
     put sdebugCli
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+    put sfper
+#endif
   get = do
     sxhair <- get
     seps <- get
@@ -196,9 +199,13 @@ instance Binary StateClient where
     svictories <- get
     sdebugCli <- get
     let sbfsD = EM.empty
-        sfper = EM.empty
         sactorAspect = EM.empty
         salter = EM.empty
         srandom = read g
         squit = False
+#ifndef WITH_EXPENSIVE_ASSERTIONS
+        sfper = EM.empty
+#else
+    sfper <- get
+#endif
     return $! StateClient{..}

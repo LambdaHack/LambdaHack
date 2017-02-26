@@ -349,8 +349,12 @@ cmdAtomicSemCli cmd = case cmd of
     sactorAspect <- createSactorAspect s
     modifyClient $ \cli1 -> cli1 {sactorAspect}
     restartClient
-  UpdResume _fid sfper -> do
-    modifyClient $ \cli -> cli {sfper}
+  UpdResume _fid sfperNew -> do
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+    sfperOld <- getsClient sfper
+    let !_A = assert (sfperNew == sfperOld `blame` (sfperNew, sfperOld)) ()
+#endif
+    modifyClient $ \cli -> cli {sfper=sfperNew}
     s <- getState
     modifyClient $ \cli -> cli {salter = createSalter s}
     sactorAspect <- createSactorAspect s
