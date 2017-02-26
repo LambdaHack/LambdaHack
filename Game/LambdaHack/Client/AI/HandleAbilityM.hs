@@ -834,10 +834,11 @@ displaceFoe aid = do
 
 displaceBlocker :: MonadClient m => ActorId -> m (Strategy RequestAnyAbility)
 displaceBlocker aid = do
+  b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   str <- case mtgtMPath of
-    Just TgtAndPath{tapPath=AndPath{pathSource,pathList=q : _}} ->
-      displaceTowards aid pathSource q
+    Just TgtAndPath{tapPath=AndPath{pathList=q : _}} ->
+      displaceTowards aid (bpos b) q
     _ -> return reject  -- goal reached
   mapStrategyM (moveOrRunAid True aid) str
 
@@ -885,8 +886,7 @@ chase aid doDisplace avoidAmbient = do
     Just TgtAndPath{tapPath=AndPath{pathList=q : _, ..}}
       | not $ avoidAmbient && isAmbient q ->
       -- With no leader, the goal is vague, so permit arbitrary detours.
-      moveTowards aid pathSource q pathGoal
-                  (fleaderMode (gplayer fact) == LeaderNull)
+      moveTowards aid q pathGoal (fleaderMode (gplayer fact) == LeaderNull)
     _ -> return reject  -- goal reached
   -- If @doDisplace@: don't pick fights, assuming the target is more important.
   -- We'd normally melee the target earlier on via @AbMelee@, but for
@@ -895,11 +895,12 @@ chase aid doDisplace avoidAmbient = do
   mapStrategyM (moveOrRunAid doDisplace aid) str
 
 moveTowards :: MonadClient m
-            => ActorId -> Point -> Point -> Point -> Bool -> m (Strategy Vector)
-moveTowards aid source target goal relaxed = do
+            => ActorId -> Point -> Point -> Bool -> m (Strategy Vector)
+moveTowards aid target goal relaxed = do
   b <- getsState $ getActorBody aid
   actorSk <- actorSkillsClient aid
-  let alterSkill = EM.findWithDefault 0 AbAlter actorSk
+  let source = bpos b
+      alterSkill = EM.findWithDefault 0 AbAlter actorSk
       !_A = assert (source == bpos b
                     `blame` (source, bpos b, aid, b, goal)) ()
       !_B = assert (adjacent source target

@@ -77,8 +77,7 @@ targetStrategy aid = do
                then mtgtMPath  -- no move or sidestep last turn
                else Nothing
              | bpos b == q ->
-               let newPath = AndPath{ pathSource = q
-                                    , pathList = rest
+               let newPath = AndPath{ pathList = rest
                                     , pathGoal
                                     , pathLen = pathLen - 1 }
                in if stepAccesible newPath

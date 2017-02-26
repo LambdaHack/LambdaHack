@@ -135,7 +135,7 @@ getCachePath :: MonadClient m => ActorId -> Point -> m AndPath
 getCachePath aid target = do
   b <- getsState $ getActorBody aid
   let source = bpos b
-  if | source == target -> return $! AndPath source [] target 0  -- speedup
+  if | source == target -> return $! AndPath [] target 0  -- speedup
      | otherwise -> snd <$> getCacheBfsAndPath aid target
 
 condBFS :: MonadClient m => ActorId -> m (Bool, Word8)

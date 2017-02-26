@@ -488,9 +488,9 @@ goToXhair initialStep run = do
                 moveRunHuman initialStep True run False dir
               NoPath -> failWith "no route to crosshair"
               AndPath{pathList=[]} -> failWith "almost there"
-              AndPath{pathList = p1 : _, pathSource} -> do
+              AndPath{pathList = p1 : _} -> do
                 let finalGoal = p1 == c
-                    dir = towards pathSource p1
+                    dir = towards (bpos b) p1
                 moveRunHuman initialStep finalGoal run False dir
 
 multiActorGoTo :: MonadClientUI m
@@ -511,6 +511,7 @@ multiActorGoTo arena c paramOld =
         let runMembersNew = rs ++ [r]
             paramNew = paramOld { runMembers = runMembersNew
                                 , runWaiting = 0}
+        b <- getsState $ getActorBody r
         (bfs, mpath) <- getCacheBfsAndPath r c
         xhairMoused <- getsSession sxhairMoused
         case mpath of
@@ -520,9 +521,9 @@ multiActorGoTo arena c paramOld =
           AndPath{pathList=[]} ->
             -- This actor already at goal; will be caught in goToXhair.
             return $ Left ""
-          AndPath{pathList = p1 : _, pathSource} -> do
+          AndPath{pathList = p1 : _} -> do
             let finalGoal = p1 == c
-                dir = towards pathSource p1
+                dir = towards (bpos b) p1
             tgts <- getsState $ posToAids p1 arena
             case tgts of
               [] -> do
