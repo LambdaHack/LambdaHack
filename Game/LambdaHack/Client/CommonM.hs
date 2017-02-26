@@ -74,27 +74,23 @@ partAidLeader aid = do
   partActorLeader aid b
 
 -- | Calculate the position of an actor's target.
-aidTgtToPos :: MonadClient m
-            => ActorId -> LevelId -> Maybe Target -> m (Maybe Point)
+aidTgtToPos :: MonadClient m => ActorId -> LevelId -> Target -> m (Maybe Point)
 aidTgtToPos aid lidV tgt =
   case tgt of
-    Just (TEnemy a _) -> do
+    TEnemy a _ -> do
       body <- getsState $ getActorBody a
       return $! if blid body == lidV
                 then Just (bpos body)
                 else Nothing
-    Just (TPoint _ lid p) ->
+    TPoint _ lid p ->
       return $! if lid == lidV then Just p else Nothing
-    Just (TVector v) -> do
+    TVector v -> do
       b <- getsState $ getActorBody aid
       Level{lxsize, lysize} <- getLevel lidV
       let shifted = shiftBounded lxsize lysize (bpos b) v
       return $! if shifted == bpos b && v /= Vector 0 0
                 then Nothing
                 else Just shifted
-    Nothing -> do
-      sxhair <- getsClient sxhair
-      aidTgtToPos aid lidV $ Just sxhair
 
 -- | Check whether one is permitted to aim at a target
 -- (this is only checked for actors so that the player doesn't miss
@@ -108,7 +104,7 @@ aidTgtToPos aid lidV tgt =
 -- because the target actor can be obscured by a glass wall
 -- or be out of sight range, but in weapon range.
 aidTgtAims :: MonadClient m
-           => ActorId -> LevelId -> Maybe Target -> m (Either Text Int)
+           => ActorId -> LevelId -> Target -> m (Either Text Int)
 aidTgtAims aid lidV tgt = do
   let findNewEps onlyFirst pos = do
         oldEps <- getsClient seps
@@ -121,28 +117,25 @@ aidTgtAims aid lidV tgt = do
                    $ if onlyFirst then "aiming blocked at the first step"
                      else "aiming line to the opponent blocked somewhere"
   case tgt of
-    Just (TEnemy a _) -> do
+    TEnemy a _ -> do
       body <- getsState $ getActorBody a
       let pos = bpos body
       if blid body == lidV
       then findNewEps False pos
       else return $ Left "selected opponent not on this level"
-    Just (TPoint TEnemyPos{} _ _) ->
+    TPoint TEnemyPos{} _ _ ->
       return $ Left "selected opponent not visible"
-    Just (TPoint _ lid pos) ->
+    TPoint _ lid pos ->
       if lid == lidV
       then findNewEps True pos
       else return $ Left "selected position not on this level"
-    Just (TVector v) -> do
+    TVector v -> do
       b <- getsState $ getActorBody aid
       Level{lxsize, lysize} <- getLevel lidV
       let shifted = shiftBounded lxsize lysize (bpos b) v
       if shifted == bpos b && v /= Vector 0 0
       then return $ Left "selected translation is void"
       else findNewEps True shifted
-    Nothing -> do
-      sxhair <- getsClient sxhair
-      aidTgtAims aid lidV $ Just sxhair
 
 -- | Counts the number of steps until the projectile would hit
 -- an actor or obstacle. Starts searching with the given eps and returns

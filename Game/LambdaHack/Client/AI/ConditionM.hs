@@ -351,7 +351,9 @@ condMeleeBadM aid = do
   actorAspect <- getsClient sactorAspect
   b <- getsState $ getActorBody aid
   btarget <- getsClient $ getTarget aid
-  mtgtPos <- aidTgtToPos aid (blid b) btarget
+  mtgtPos <- case btarget of
+    Nothing -> return Nothing
+    Just target -> aidTgtToPos aid (blid b) target
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
   fact <- getsState $ (EM.! bfid b) . sfactionD

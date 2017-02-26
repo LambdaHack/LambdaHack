@@ -58,11 +58,11 @@ import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 targetDesc :: MonadClientUI m => Maybe Target -> m (Text, Maybe Text)
-targetDesc target = do
+targetDesc mtarget = do
   arena <- getArenaUI
   lidV <- viewedLevelUI
   mleader <- getsClient _sleader
-  case target of
+  case mtarget of
     Just (TEnemy aid _) -> do
       side <- getsClient sside
       b <- getsState $ getActorBody aid
@@ -104,7 +104,7 @@ targetDesc target = do
               _ -> return $! "many items at" <+> tshow p
           else return $! "an exact spot on level" <+> tshow (abs $ fromEnum lid)
         return (pointedText, Nothing)
-    Just TVector{} ->
+    Just target@TVector{} ->
       case mleader of
         Nothing -> return ("a relative shift", Nothing)
         Just aid -> do
@@ -121,7 +121,7 @@ targetDescLeader leader = do
 
 targetDescXhair :: MonadClientUI m => m (Text, Maybe Text)
 targetDescXhair = do
-  sxhair <- getsClient sxhair
+  sxhair <- getsSession sxhair
   targetDesc $ Just sxhair
 
 drawFrameTerrain :: forall m. MonadClientUI m => LevelId -> m FrameForall

@@ -32,7 +32,6 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind (ModeKind)
 
 -- | Client state, belonging to a single faction.
@@ -46,8 +45,7 @@ import Game.LambdaHack.Content.ModeKind (ModeKind)
 --
 -- Data invariant: if @_sleader@ is @Nothing@ then so is @srunning@.
 data StateClient = StateClient
-  { sxhair       :: !Target        -- ^ the common xhair
-  , seps         :: !Int           -- ^ a parameter of the aiming digital line
+  { seps         :: !Int           -- ^ a parameter of the aiming digital line
   , stargetD     :: !(EM.EnumMap ActorId TgtAndPath)
                                    -- ^ targets of our actors in the dungeon
   , sexplored    :: !(ES.EnumSet LevelId)
@@ -99,8 +97,7 @@ type AlterLid = EM.EnumMap LevelId (PointArray.Array Word8)
 emptyStateClient :: FactionId -> StateClient
 emptyStateClient _sside =
   StateClient
-    { sxhair = TVector $ Vector 30000 30000  -- invalid; AI recomputes ASAP
-    , seps = fromEnum _sside
+    { seps = fromEnum _sside
     , stargetD = EM.empty
     , sexplored = ES.empty
     , sbfsD = EM.empty
@@ -156,7 +153,6 @@ sside = _sside
 
 instance Binary StateClient where
   put StateClient{..} = do
-    put sxhair
     put seps
     put stargetD
     put sexplored
@@ -179,7 +175,6 @@ instance Binary StateClient where
     put sfper
 #endif
   get = do
-    sxhair <- get
     seps <- get
     stargetD <- get
     sexplored <- get

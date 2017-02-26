@@ -307,12 +307,13 @@ posFromXhair :: MonadClientUI m => m (Either Text Point)
 posFromXhair = do
   leader <- getLeaderUI
   lidV <- viewedLevelUI
-  canAim <- aidTgtAims leader lidV Nothing
+  sxhair <- getsSession sxhair
+  canAim <- aidTgtAims leader lidV sxhair
   case canAim of
     Right newEps -> do
       -- Modify @seps@, permanently.
       modifyClient $ \cli -> cli {seps = newEps}
-      mpos <- aidTgtToPos leader lidV Nothing
+      mpos <- aidTgtToPos leader lidV sxhair
       case mpos of
         Nothing -> assert `failure` (leader, lidV)
         Just pos -> do
@@ -705,7 +706,7 @@ acceptHuman = do
 endAiming :: MonadClientUI m => m ()
 endAiming = do
   leader <- getLeaderUI
-  sxhair <- getsClient sxhair
+  sxhair <- getsSession sxhair
   modifyClient $ updateTarget leader $ const $ Just sxhair
 
 endAimingMsg :: MonadClientUI m => m ()
@@ -727,14 +728,14 @@ tgtClearHuman = do
     Just _ -> do
       modifyClient $ updateTarget leader (const Nothing)
     Nothing -> do
-      sxhairOld <- getsClient sxhair
+      sxhairOld <- getsSession sxhair
       b <- getsState $ getActorBody leader
       let sxhair = case sxhairOld of
             TEnemy _ permit -> TEnemy leader permit
             TPoint (TEnemyPos _ permit) _ _ -> TEnemy leader permit
             TPoint{} -> TPoint TAny (blid b) (bpos b)
             TVector{} -> TVector (Vector 0 0)
-      modifyClient $ \cli -> cli {sxhair}
+      modifySession $ \sess -> sess {sxhair}
       doLook
 
 -- | Perform look around in the current position of the xhair.
@@ -791,9 +792,9 @@ moveXhairHuman dir n = do
   let lidV = maybe (assert `failure` leader) aimLevelId saimMode
   Level{lxsize, lysize} <- getLevel lidV
   lpos <- getsState $ bpos . getActorBody leader
-  sxhair <- getsClient sxhair
-  lidTgt <- lidOfTarget $ Just sxhair  -- hack to get valid pos from invalid tgt
-  xhairPos <- aidTgtToPos leader lidTgt $ Just sxhair
+  sxhair <- getsSession sxhair
+  lidTgt <- lidOfTarget sxhair
+  xhairPos <- aidTgtToPos leader lidTgt sxhair
   let cpos = fromMaybe lpos xhairPos
       shiftB pos = shiftBounded lxsize lysize pos dir
       newPos = iterate shiftB cpos !! n
@@ -802,22 +803,19 @@ moveXhairHuman dir n = do
     let tgt = case sxhair of
           TVector{} -> TVector $ newPos `vectorToFrom` lpos
           _ -> TPoint TAny lidV newPos
-    modifyClient $ \cli -> cli {sxhair = tgt}
+    modifySession $ \sess -> sess {sxhair = tgt}
     doLook
     return Nothing
 
-lidOfTarget :: MonadClientUI m => Maybe Target -> m LevelId
+lidOfTarget :: MonadClientUI m => Target -> m LevelId
 lidOfTarget tgt = case tgt of
-  Just (TEnemy a _) -> do
+  TEnemy a _ -> do
     body <- getsState $ getActorBody a
     return $! blid body
-  Just (TPoint _ lid _) -> return lid
-  Just (TVector _) -> do
+  TPoint _ lid _ -> return lid
+  TVector _ -> do
     leader <- getLeaderUI
     getsState $ blid . getActorBody leader
-  Nothing -> do
-    sxhair <- getsClient sxhair
-    lidOfTarget $ Just sxhair
 
 -- * AimTgt
 
@@ -831,7 +829,7 @@ aimTgtHuman = do
   -- Set xhair to the personal target, permanently.
   leader <- getLeaderUI
   tgt <- getsClient $ getTarget leader
-  modifyClient $ \cli -> cli {sxhair = fromMaybe (sxhair cli) tgt}
+  modifySession $ \sess -> sess {sxhair = fromMaybe (sxhair sess) tgt}
   doLook
   failMsg "aiming started"
 
@@ -845,7 +843,7 @@ aimFloorHuman = do
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
   xhairPos <- xhairToPos
-  sxhair <- getsClient sxhair
+  sxhair <- getsSession sxhair
   saimMode <- getsSession saimMode
   bsAll <- getsState $ actorAssocs (const True) lidV
   let xhair = fromMaybe lpos xhairPos
@@ -863,7 +861,7 @@ aimFloorHuman = do
             Just (im, _) -> TEnemy im True
             Nothing -> TPoint TAny lidV xhair
   modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
-  modifyClient $ \cli -> cli {sxhair = tgt}
+  modifySession $ \sess -> sess {sxhair = tgt}
   doLook
 
 -- * AimEnemy
@@ -874,7 +872,7 @@ aimEnemyHuman = do
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
   xhairPos <- xhairToPos
-  sxhair <- getsClient sxhair
+  sxhair <- getsSession sxhair
   saimMode <- getsSession saimMode
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -907,7 +905,7 @@ aimEnemyHuman = do
         [] -> sxhair  -- no seen foes in sight, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
   modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
-  modifyClient $ \cli -> cli {sxhair = tgt}
+  modifySession $ \sess -> sess {sxhair = tgt}
   doLook
 
 -- * AimItem
@@ -918,7 +916,7 @@ aimItemHuman = do
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
   xhairPos <- xhairToPos
-  sxhair <- getsClient sxhair
+  sxhair <- getsSession sxhair
   saimMode <- getsSession saimMode
   bsAll <- getsState $ EM.keys . lfloor . (EM.! lidV) . sdungeon
   let ordPos p = (chessDist lpos p, p)
@@ -941,7 +939,7 @@ aimItemHuman = do
         [] -> sxhair  -- no items remembered, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
   modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
-  modifyClient $ \cli -> cli {sxhair = tgt}
+  modifySession $ \sess -> sess {sxhair = tgt}
   doLook
 
 -- * AimAscend
@@ -993,8 +991,8 @@ xhairUnknownHuman = do
   case mpos of
     Nothing -> failMsg "no more unknown spots left"
     Just p -> do
-      let tgt = TPoint TUnknown (blid b) p
-      modifyClient $ \cli -> cli {sxhair = tgt}
+      let sxhair = TPoint TUnknown (blid b) p
+      modifySession $ \sess -> sess {sxhair}
       doLook
       return Nothing
 
@@ -1008,8 +1006,8 @@ xhairItemHuman = do
   case items of
     [] -> failMsg "no more items remembered or visible"
     (_, (p, bag)) : _ -> do
-      let tgt = TPoint (TItem bag) (blid b) p
-      modifyClient $ \cli -> cli {sxhair = tgt}
+      let sxhair = TPoint (TItem bag) (blid b) p
+      modifySession $ \sess -> sess {sxhair}
       doLook
       return Nothing
 
@@ -1023,8 +1021,8 @@ xhairStairHuman up = do
   case sortBy (flip compare) stairs of
     [] -> failMsg $ "no stairs" <+> if up then "up" else "down"
     (_, (p, (p0, bag))) : _ -> do
-      let tgt = TPoint (TEmbed bag p0) (blid b) p
-      modifyClient $ \cli -> cli {sxhair = tgt}
+      let sxhair = TPoint (TEmbed bag p0) (blid b) p
+      modifySession $ \sess -> sess {sxhair}
       doLook
       return Nothing
 
@@ -1044,13 +1042,13 @@ xhairPointerFloor verbose = do
   if px >= 0 && py - mapStartY >= 0
      && px < lxsize && py - mapStartY < lysize
   then do
-    oldXhair <- getsClient sxhair
+    oldXhair <- getsSession sxhair
     let sxhair = TPoint TAny lidV $ Point px (py - mapStartY)
         sxhairMoused = sxhair /= oldXhair
     modifySession $ \sess ->
       sess { saimMode = Just $ AimMode lidV
            , sxhairMoused }
-    modifyClient $ \cli -> cli {sxhair}
+    modifySession $ \sess -> sess {sxhair}
     if verbose then doLook else flashAiming
   else stopPlayBack
 
@@ -1071,7 +1069,7 @@ xhairPointerEnemy verbose = do
      && px < lxsize && py - mapStartY < lysize
   then do
     bsAll <- getsState $ actorAssocs (const True) lidV
-    oldXhair <- getsClient sxhair
+    oldXhair <- getsSession sxhair
     let newPos = Point px (py - mapStartY)
         sxhair =
           case find (\(_, m) -> bpos m == newPos) bsAll of
@@ -1081,7 +1079,7 @@ xhairPointerEnemy verbose = do
     modifySession $ \sess ->
       sess { saimMode = Just $ AimMode lidV
            , sxhairMoused }
-    modifyClient $ \cli -> cli {sxhair}
+    modifySession $ \sess -> sess {sxhair}
     if verbose then doLook else flashAiming
   else stopPlayBack
 

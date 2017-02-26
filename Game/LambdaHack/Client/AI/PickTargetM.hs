@@ -68,7 +68,7 @@ targetStrategy aid = do
       -- as long as the target stays the same at least for a moment.
       Just <$> createPath aid tapTgt
     Just tap@TgtAndPath{..} -> do
-      mvalidPos <- aidTgtToPos aid (blid b) (Just tapTgt)
+      mvalidPos <- aidTgtToPos aid (blid b) tapTgt
       if isNothing mvalidPos then return Nothing  -- wrong level
       else return $! case tapPath of
         AndPath{pathSource=p,pathList=q : rest,..} ->
@@ -362,7 +362,7 @@ targetStrategy aid = do
 createPath :: MonadClient m => ActorId -> Target -> m TgtAndPath
 createPath aid tapTgt = do
   b <- getsState $ getActorBody aid
-  mpos <- aidTgtToPos aid (blid b) (Just tapTgt)
+  mpos <- aidTgtToPos aid (blid b) tapTgt
   case mpos of
     Nothing -> return TgtAndPath{tapTgt, tapPath=NoPath}
     Just p -> do

@@ -106,13 +106,14 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
           CEmbed{} -> return ()
           CFloor lid p -> do
             void $ updateItemSlot CGround Nothing iid
-            sxhairOld <- getsClient sxhair
+            sxhairOld <- getsSession sxhair
             case sxhairOld of
               TEnemy{} -> return ()  -- probably too important to overwrite
               TPoint TEnemyPos{} _ _ -> return ()
               _ -> do
                 bag <- getsState $ getFloorBag lid p
-                modifyClient $ \cli -> cli {sxhair = TPoint (TItem bag) lid p}
+                modifySession $ \sess ->
+                  sess {sxhair = TPoint (TItem bag) lid p}
             itemVerbMU iid kit "be spotted" c
             stopPlayBack
           CTrunk{} -> return ()
@@ -456,7 +457,7 @@ createActorUI born aid body = do
       -- technically very hard to check aimability here, because we are
       -- in-between turns and, e.g., leader's move has not yet been taken
       -- into account.
-      modifyClient $ \cli -> cli {sxhair = TEnemy aid False}
+      modifySession $ \sess -> sess {sxhair = TEnemy aid False}
     stopPlayBack
   -- Don't spam if the actor was already visible (but, e.g., on a tile that is
   -- invisible this turn (in that case move is broken down to lose+spot)
@@ -470,20 +471,31 @@ createActorUI born aid body = do
   lookAtMove aid
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
-destroyActorUI died aid body = do
+destroyActorUI destroy aid b = do
+  let affect tgt = case tgt of
+        TEnemy a permit | a == aid ->
+          if destroy then
+            -- If *really* nothing more interesting, the actor will
+            -- go to last known location to perhaps find other foes.
+            TPoint TAny (blid b) (bpos b)
+          else
+            -- If enemy only hides (or we stepped behind obstacle) find him.
+            TPoint (TEnemyPos a permit) (blid b) (bpos b)
+        _ -> tgt
+  modifySession $ \sess -> sess {sxhair = affect $ sxhair sess}
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let gameOver = isJust $ gquit fact
   unless gameOver $ do
-    when (bfid body == side && not (bproj body)) $ do
+    when (bfid b == side && not (bproj b)) $ do
       stopPlayBack
       let upd = ES.delete aid
       modifySession $ \sess -> sess {sselected = upd $ sselected sess}
-      when died $ displayMore ColorBW "Alas!"
+      when destroy $ displayMore ColorBW "Alas!"
     -- If pushed, animate spotting again, to draw attention to pushing.
-    when (isNothing $ btrajectory body) $
+    when (isNothing $ btrajectory b) $
       modifySession $ \sess -> sess {slastLost = ES.insert aid $ slastLost sess}
-    markDisplayNeeded (blid body)
+    markDisplayNeeded (blid b)
 
 moveActor :: MonadClientUI m => ActorId -> Point -> Point -> m ()
 moveActor aid source target = do

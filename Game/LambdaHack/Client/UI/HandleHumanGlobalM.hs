@@ -730,7 +730,7 @@ projectItem ts (fromCStore, (iid, itemFull)) = do
             -- Set personal target to the aim position, to easily repeat.
             mposTgt <- leaderTgtToPos
             unless (Just pos == mposTgt) $ do
-              sxhair <- getsClient sxhair
+              sxhair <- getsSession sxhair
               modifyClient $ updateTarget leader (const $ Just sxhair)
             -- Project.
             eps <- getsClient seps

@@ -9,8 +9,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , setFrontAutoYes, anyKeyPressed, discardPressedKey, addPressedEsc
   , connFrontendFrontKey, frontendShutdown, chanFrontend
   , getReportUI, getLeaderUI, getArenaUI, viewedLevelUI
-  , leaderTgtToPos, leaderTgtAims, xhairToPos
-  , scoreToSlideshow, defaultHistory
+  , leaderTgtToPos, xhairToPos, scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
   , resetSessionStart, resetGameStart, tryRestore
   ) where
@@ -182,27 +181,19 @@ leaderTgtToPos = do
   case mleader of
     Nothing -> return Nothing
     Just aid -> do
-      tgt <- getsClient $ getTarget aid
-      aidTgtToPos aid lidV tgt
-
-leaderTgtAims :: MonadClientUI m => m (Either Text Int)
-leaderTgtAims = do
-  lidV <- viewedLevelUI
-  mleader <- getsClient _sleader
-  case mleader of
-    Nothing -> return $ Left "no leader to aim with"
-    Just aid -> do
-      tgt <- getsClient $ getTarget aid
-      aidTgtAims aid lidV tgt
+      mtgt <- getsClient $ getTarget aid
+      case mtgt of
+        Nothing -> return Nothing
+        Just tgt -> aidTgtToPos aid lidV tgt
 
 xhairToPos :: MonadClientUI m => m (Maybe Point)
 xhairToPos = do
   lidV <- viewedLevelUI
   mleader <- getsClient _sleader
-  sxhair <- getsClient sxhair
+  sxhair <- getsSession sxhair
   case mleader of
     Nothing -> return Nothing
-    Just aid -> aidTgtToPos aid lidV $ Just sxhair
+    Just aid -> aidTgtToPos aid lidV sxhair
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do

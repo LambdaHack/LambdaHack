@@ -21,18 +21,21 @@ import Game.LambdaHack.Client.UI.Frontend
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Common.Vector
 
 -- | The information that is used across a client playing session,
 -- including many consecutive games in a single session.
 -- Some of it is save, some is reset when a new playing session starts.
 -- An important component is a frontend session.
 data SessionUI = SessionUI
-  { schanF          :: !ChanFrontend       -- ^ connection with the frontend
+  { sxhair          :: !Target             -- ^ the common xhair
+  , schanF          :: !ChanFrontend       -- ^ connection with the frontend
   , sbinding        :: !Binding            -- ^ binding of keys to commands
   , sconfig         :: !Config
   , saimMode        :: !(Maybe AimMode)    -- ^ aiming mode
@@ -95,7 +98,8 @@ data KeysHintMode =
 emptySessionUI :: Config -> SessionUI
 emptySessionUI sconfig =
   SessionUI
-    { schanF = ChanFrontend $ const $ error "emptySessionUI: ChanFrontend "
+    { sxhair = TVector $ Vector 30000 30000  -- invalid; AI recomputes ASAP
+    , schanF = ChanFrontend $ const $ error "emptySessionUI: ChanFrontend "
     , sbinding = Binding M.empty [] M.empty
     , sconfig
     , saimMode = Nothing
@@ -133,6 +137,7 @@ toggleMarkSmell s@SessionUI{smarkSmell} = s {smarkSmell = not smarkSmell}
 
 instance Binary SessionUI where
   put SessionUI{..} = do
+    put sxhair
     put sconfig
     put saimMode
     put sitemSel
@@ -147,6 +152,7 @@ instance Binary SessionUI where
     put smenuIxHistory
     put sdisplayNeeded
   get = do
+    sxhair <- get
     sconfig <- get
     saimMode <- get
     sitemSel <- get

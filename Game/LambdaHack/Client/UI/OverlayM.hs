@@ -33,7 +33,7 @@ describeMainKeys :: MonadClientUI m => m Text
 describeMainKeys = do
   saimMode <- getsSession saimMode
   Config{configVi, configLaptop} <- getsSession sconfig
-  xhair <- getsClient sxhair
+  xhair <- getsSession sxhair
   let moveKeys | configVi = "keypad or hjklyubn"
                | configLaptop = "keypad or uk8o79jl"
                | otherwise = "keypad"

@@ -35,16 +35,17 @@ initAI sdebugCli = do
 
 initUI :: MonadClientUI m => KeyKind -> Config -> DebugModeCli -> m ()
 initUI copsClient sconfig sdebugCli = do
-  modifyClient $ \cli ->
-    cli { sxhair = TVector $ Vector 1 1  -- a step south-east, less alarming
-        , sdebugCli }
+  modifyClient $ \cli -> cli {sdebugCli}
   side <- getsClient sside
   debugPossiblyPrint $ "UI client" <+> tshow side <+> "initializing."
   -- Start the frontend.
   schanF <- chanFrontend sdebugCli
   let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
       sess = emptySessionUI sconfig
-  putSession sess {schanF, sbinding}
+  putSession sess { schanF
+                  , sbinding
+                  , sxhair = TVector $ Vector 1 1 }
+                      -- a step south-east, less alarming
 
 -- | The main game loop for an AI or UI client.
 loopUI :: ( MonadClientSetup m

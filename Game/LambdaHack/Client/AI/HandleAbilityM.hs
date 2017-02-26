@@ -654,7 +654,9 @@ projectItem :: MonadClient m
 projectItem aid = do
   btarget <- getsClient $ getTarget aid
   b <- getsState $ getActorBody aid
-  mfpos <- aidTgtToPos aid (blid b) btarget
+  mfpos <- case btarget of
+    Nothing -> return Nothing
+    Just target -> aidTgtToPos aid (blid b) target
   seps <- getsClient seps
   case (btarget, mfpos) of
     (_, Just fpos) | chessDist (bpos b) fpos == 1 -> return reject

@@ -378,15 +378,11 @@ tileChangeAffectsBfs Kind.COps{coTileSpeedup} fromTile toTile =
 
 createActor :: MonadClient m => ActorId -> Actor -> [(ItemId, Item)] -> m ()
 createActor aid b ais = do
-  let affect tgt = case tgt of
-        TPoint (TEnemyPos a permit) _ _ | a == aid -> TEnemy a permit
-        _ -> tgt
-      affect3 tap@TgtAndPath{..} = case tapTgt of
+  let affect3 tap@TgtAndPath{..} = case tapTgt of
         TPoint (TEnemyPos a permit) _ _ | a == aid ->
           TgtAndPath (TEnemy a permit) NoPath
         _ -> tap
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
-  modifyClient $ \cli -> cli {sxhair = affect $ sxhair cli}
   aspectRecord <- aspectRecordFromActorClient b ais
   let f = EM.insert aid aspectRecord
   modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
@@ -411,7 +407,6 @@ destroyActor aid b destroy = do
               _ -> tapPath  -- foe slow enough, so old path good
         in TgtAndPath (affect tapTgt) newMPath
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
-  modifyClient $ \cli -> cli {sxhair = affect $ sxhair cli}
   let f = EM.delete aid
   modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
 
