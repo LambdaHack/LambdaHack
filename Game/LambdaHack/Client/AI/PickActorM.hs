@@ -27,7 +27,6 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 
 -- Pick a new leader from among the actors on the current level.
@@ -46,25 +45,17 @@ pickActorToMove maidToAvoid refreshTarget = do
   let side = bfid oldBody
       arena = blid oldBody
   fact <- getsState $ (EM.! side) . sfactionD
-  let leaderStuck = waitedLastTurn oldBody
   -- Find our actors on the current level only.
   ours <- getsState $ filter (isNothing . btrajectory . snd)
                       . actorRegularAssocs (== side) arena
-  isStairPos <- getsState $ \s p -> isStair arena p s
   let pickOld = do
         void $ refreshTarget (oldAid, oldBody)
         return (oldAid, oldBody)
-      tileAdj :: (Point -> Bool) -> Point -> Bool
-      tileAdj f p = any f $ vicinityUnsafe p
   case ours of
     _ | -- Keep the leader: faction discourages client leader change on level,
         -- so will only be changed if waits (maidToAvoid)
         -- to avoid wasting his higher mobility.
         snd (autoDungeonLevel fact) && isNothing maidToAvoid
-        -- Keep the leader: he is near stairs and not stuck
-        -- and we don't want to clog stairs or get pushed to another level.
-        -- (The side effect is, at game start initial actor moves first.)
-        || not leaderStuck && tileAdj isStairPos (bpos oldBody)
       -> pickOld
     [] -> assert `failure` (oldAid, oldBody)
     [_] -> pickOld  -- Keep the leader: he is alone on the level.
