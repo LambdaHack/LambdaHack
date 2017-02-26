@@ -80,7 +80,6 @@ data StateClient = StateClient
 
 data BfsAndPath =
     BfsInvalid
-  | BfsOnly {bfsArr :: !(PointArray.Array BfsDistance)}
   | BfsAndPath { bfsArr  :: !(PointArray.Array BfsDistance)
                , bfsPath :: !(EM.EnumMap Point AndPath)
                }

@@ -525,7 +525,8 @@ killExit = do
   let f aid = do
         (canMove, alterSkill) <- condBFS aid
         bfsArr <- createBfs canMove alterSkill aid
-        return (aid, BfsOnly{bfsArr})
+        let bfsPath = EM.empty
+        return (aid, BfsAndPath{..})
   actorD <- getsState sactorD
   lbfsD <- mapM f $ EM.keys actorD
   -- Some freshly generated bfses are not used for comparison, but at least
@@ -539,9 +540,10 @@ killExit = do
                      `blame` ("wrong accumulated salter on" <+> tshow side)
                      `twith` (salter, alter)) ()
       !_A2 = assert (sactorAspect == actorAspect
-                     `blame` ("wrong accumulated sactorAspect" <+> tshow side)
+                     `blame` ("wrong accumulated sactorAspect on"
+                              <+> tshow side)
                      `twith` (sactorAspect, actorAspect)) ()
       !_A3 = assert (sbfsD `subBfs` bfsD
-                     `blame` ("wrong accumulated sbfsD" <+> tshow side)
+                     `blame` ("wrong accumulated sbfsD on" <+> tshow side)
                      `twith` (sbfsD, bfsD)) ()
   return ()

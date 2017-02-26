@@ -78,7 +78,6 @@ updatePathFromBfs canMove bfsAndPathOld aid !target = do
   Kind.COps{coTileSpeedup} <- getsState scops
   let (oldBfsArr, oldBfsPath) = case bfsAndPathOld of
         BfsAndPath{bfsArr, bfsPath} -> (bfsArr, bfsPath)
-        BfsOnly{bfsArr} -> (bfsArr, EM.empty)
         BfsInvalid -> assert `failure` (bfsAndPathOld, aid, target)
   let bfsArr = oldBfsArr
   if not canMove
@@ -111,13 +110,11 @@ getCacheBfsAndPath aid target = do
           (!canMove, _) <- condBFS aid
           updatePathFromBfs canMove bap aid target
         Just mpath -> return (bfsArr, mpath)
-    Just bap@BfsOnly{} -> do
-      (!canMove, _) <- condBFS aid
-      updatePathFromBfs canMove bap aid target
     _ -> do
       (!canMove, !alterSkill) <- condBFS aid
       !bfsArr <- createBfs canMove alterSkill aid
-      updatePathFromBfs canMove BfsOnly{bfsArr} aid target
+      let bfsPath = EM.empty
+      updatePathFromBfs canMove BfsAndPath{..} aid target
 
 -- | Get cached BFS array or, if not stored, generate and store first.
 getCacheBfs :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
@@ -125,12 +122,12 @@ getCacheBfs aid = do
   mbfs <- getsClient $ EM.lookup aid . sbfsD
   case mbfs of
     Just BfsAndPath{bfsArr} -> return bfsArr
-    Just BfsOnly{bfsArr} -> return bfsArr
     _ -> do
       (!canMove, !alterSkill) <- condBFS aid
       !bfsArr <- createBfs canMove alterSkill aid
+      let bfsPath = EM.empty
       modifyClient $ \cli ->
-        cli {sbfsD = EM.insert aid BfsOnly{bfsArr} (sbfsD cli)}
+        cli {sbfsD = EM.insert aid BfsAndPath{..} (sbfsD cli)}
       return bfsArr
 
 -- | Get cached BFS path or, if not stored, generate and store first.
