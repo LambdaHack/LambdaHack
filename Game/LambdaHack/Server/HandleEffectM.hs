@@ -2,7 +2,7 @@
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectM
   ( applyItem, itemEffectAndDestroy, effectAndDestroy, itemEffectEmbedded
-  , dropCStoreItem, dominateFidSfx, pickDroppable, halveCalm
+  , dropCStoreItem, dominateFidSfx, pickDroppable, cutCalm
   ) where
 
 import Prelude ()
@@ -275,7 +275,7 @@ effectBurn nDm source target = do
     execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
     -- Damage the target.
     execUpdAtomic $ UpdRefillHP target deltaHP
-    when serious $ halveCalm target
+    when serious $ cutCalm target
     return True
 
 -- ** Explode
@@ -376,17 +376,17 @@ effectRefillHP overfill power source target = do
                        | otherwise = IK.RefillHP power
     execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
     execUpdAtomic $ UpdRefillHP target deltaHP
-    when (deltaHP < 0 && serious) $ halveCalm target
+    when (deltaHP < 0 && serious) $ cutCalm target
     return True
 
-halveCalm :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-halveCalm target = do
+cutCalm :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
+cutCalm target = do
   tb <- getsState $ getActorBody target
   actorAspect <- getsServer sactorAspect
   let ar = actorAspect EM.! target
       upperBound = if hpTooLow tb ar
                    then 0  -- to trigger domination, etc.
-                   else max (xM $ aMaxCalm ar) (bcalm tb) `div` 2
+                   else xM $ aMaxCalm ar
       deltaCalm = min minusM1 (upperBound - bcalm tb)
   -- HP loss decreases Calm by at least @minusM1@ to avoid "hears something",
   -- which is emitted when decreasing Calm by @minusM@.

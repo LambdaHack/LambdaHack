@@ -273,7 +273,7 @@ reqMelee source target iid cstore = do
         -- Damage the target, never heal.
         damageTarget = when (deltaHP < 0) $ do
           execUpdAtomic $ UpdRefillHP target deltaHP
-          when serious $ halveCalm target
+          when serious $ cutCalm target
     if bproj tb && length (beqp tb) == 1
        && cstore == COrgan && bhp tb + deltaHP <= 0 then do
       -- Catching the projectile, that is, stealing the item from its eqp.
