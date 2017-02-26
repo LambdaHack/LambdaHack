@@ -101,6 +101,7 @@ actionStrategy aid = do
       condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
       condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
       condThreatNearby = not $ null $ takeWhile ((<= 9) . fst) threatDistL
+      condThreatInRange = not $ null $ takeWhile ((<= 12) . fst) threatDistL
       speed1_5 = speedScale (3%2) (bspeed body ar)
       condFastThreatAdj = any (\(_, (aid2, b2)) ->
                                 let ar2 = actorAspect EM.! aid2
@@ -156,12 +157,19 @@ actionStrategy aid = do
             && not condAimEnemyPresent )
         , ( [AbMove]
           , flee aid fleeL
-          , condMeleeBad && not condFastThreatAdj
-            -- Don't keep fleeing if was just hit, unless can't melee at all.
-            && not (heavilyDistressed
-                    && abInMaxSkill AbMelee
-                    && not condNoUsableWeapon)
-            && condThreatAtHand )
+          , -- Flee either from melee, if our melee is bad and enemy close
+            -- or from missiles, if hit and enemies are only far away,
+            -- can fling at us and we can't well fling at them nor well melee.
+            not condFastThreatAdj
+            && if condThreatAtHand
+               then condMeleeBad
+                    -- Don't keep fleeing if just hit, unless can't melee.
+                    && not (heavilyDistressed
+                            && abInMaxSkill AbMelee
+                            && not condNoUsableWeapon)
+               else heavilyDistressed && condThreatInRange
+                    && not condCanProject
+                    && (condMeleeBad || not condNotCalmEnough))
         , ( [AbDisplace]  -- prevents some looping movement
           , displaceBlocker aid  -- fires up only when path blocked
           , not condDesirableFloorItem
