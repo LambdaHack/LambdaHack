@@ -272,9 +272,10 @@ cmdAtomicSemCli cmd = case cmd of
                         `blame` "unexpected leader"
                         `twith` (cmd, mleader)) ()
       modifyClient $ \cli -> cli {_sleader = target}
-  UpdAutoFaction{} -> do
-    -- @condBFS@ depends on the setting we change here.
+  UpdAutoFaction{} ->
+    -- @condBFS@ depends on the setting we change here (e.g., smarkSuspect).
     invalidateBfsAll
+  UpdTacticFaction{} -> do
     -- Clear all targets except the leader's.
     mleader <- getsClient _sleader
     mtgt <- case mleader of
