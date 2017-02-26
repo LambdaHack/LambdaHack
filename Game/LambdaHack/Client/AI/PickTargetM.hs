@@ -71,10 +71,11 @@ targetStrategy aid = do
       mvalidPos <- aidTgtToPos aid (blid b) tapTgt
       if isNothing mvalidPos then return Nothing  -- wrong level
       else return $! case tapPath of
-        AndPath{pathSource=p,pathList=q : rest,..} ->
-          if | bpos b == p -> if stepAccesible tapPath
-                              then mtgtMPath  -- no move last turn
-                              else Nothing
+        AndPath{pathList=q : rest,..} ->
+          if | adjacent (bpos b) q ->
+               if stepAccesible tapPath
+               then mtgtMPath  -- no move or sidestep last turn
+               else Nothing
              | bpos b == q ->
                let newPath = AndPath{ pathSource = q
                                     , pathList = rest
@@ -85,7 +86,7 @@ targetStrategy aid = do
                   else Nothing
              | otherwise -> Nothing  -- veered off the path
         AndPath{pathList=[],..}->
-          if pathSource == pathGoal && bpos b == pathSource then
+          if bpos b == pathGoal then
             mtgtMPath  -- goal reached; stay there picking up items
           else
             Nothing  -- somebody pushed us off the goal or the path to the goal
