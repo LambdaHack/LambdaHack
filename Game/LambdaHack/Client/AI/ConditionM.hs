@@ -45,12 +45,14 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
@@ -403,7 +405,7 @@ condShineBetraysM aid = do
 -- | Produce a list of acceptable adjacent points to flee to.
 fleeList :: MonadClient m => ActorId -> m ([(Int, Point)], [(Int, Point)])
 fleeList aid = do
-  cops <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   let tgtPath = case mtgtMPath of  -- prefer fleeing along the path to target
         Just TgtAndPath{tapTgt=TEnemy{}} -> []  -- don't flee towards an enemy
@@ -419,8 +421,10 @@ fleeList aid = do
       dist p | null posFoes = 100
              | otherwise = minimum $ map (chessDist p) posFoes
       dVic = map (dist &&& id) myVic
-      -- Flee, if possible. Access required. Can't be occupied.
-      accUnocc p = accessible cops lvl p && null (posToAssocs p (blid b) s)
+      -- Flee, if possible. Direct access required; not enough time to open.
+      -- Can't be occupied.
+      accUnocc p = Tile.isWalkable coTileSpeedup (lvl `at` p)
+                   && null (posToAssocs p (blid b) s)
       accVic = filter (accUnocc . snd) dVic
       gtVic = filter ((> dist (bpos b)) . fst) accVic
       eqVic = filter ((== dist (bpos b)) . fst) accVic

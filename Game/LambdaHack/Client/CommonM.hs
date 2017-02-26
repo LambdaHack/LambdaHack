@@ -143,7 +143,7 @@ aidTgtAims aid lidV tgt = do
 -- actor and target position, or Nothing if none can be found.
 makeLine :: MonadClient m => Bool -> Actor -> Point -> Int -> m (Maybe Int)
 makeLine onlyFirst body fpos epsOld = do
-  cops <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   lvl@Level{lxsize, lysize} <- getLevel (blid body)
   posA <- getsState $ \s p -> posToAssocs p (blid body) s
   let dist = chessDist (bpos body) fpos
@@ -151,12 +151,15 @@ makeLine onlyFirst body fpos epsOld = do
         Just bl ->
           let blDist = take dist bl
               noActor p = all (bproj . snd) (posA p) || p == fpos
+              accessibleUnknown tpos =
+                let tt = lvl `at` tpos
+                in Tile.isWalkable coTileSpeedup tt || isUknownSpace tt
               accessU = all noActor blDist
-                        && all (accessibleUnknown cops lvl) blDist
+                        && all accessibleUnknown blDist
               accessFirst | not onlyFirst = False
                           | otherwise =
                 all noActor (take 1 blDist)
-                && all (accessibleUnknown cops lvl) (take 1 blDist)
+                && all accessibleUnknown (take 1 blDist)
               nUnknown = length $ filter (isUknownSpace . (lvl `at`)) blDist
           in if | accessU -> - nUnknown
                 | accessFirst -> -10000

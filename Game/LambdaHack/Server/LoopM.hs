@@ -36,6 +36,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
@@ -347,12 +348,12 @@ hTrajectories (aid, b) = do
 setTrajectory :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 {-# INLINE setTrajectory #-}
 setTrajectory aid = do
-  cops <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
   case btrajectory b of
     Just (d : lv, speed) ->
-      if accessibleDir cops lvl (bpos b) d
+      if Tile.isWalkable coTileSpeedup $ lvl `at` (bpos b `shift` d)
       then do
         when (bproj b && length lv <= 1) $ do
           let toColor = Color.BrBlack

@@ -32,6 +32,7 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
@@ -43,7 +44,7 @@ targetStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy TgtAndPath)
 {-# INLINE targetStrategy #-}
 targetStrategy aid = do
-  cops@Kind.COps{corule} <- getsState scops
+  cops@Kind.COps{corule, coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   mleader <- getsClient _sleader
   condInMelee <- getsClient scondInMelee
@@ -55,7 +56,8 @@ targetStrategy aid = do
   itemToF <- itemToFullClient
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
   let stepAccesible :: AndPath -> Bool
-      stepAccesible AndPath{pathList=q : _} = accessible cops lvl q
+      stepAccesible AndPath{pathList=q : _} =
+        Tile.isWalkable coTileSpeedup $ lvl `at`  q
       stepAccesible _ = False
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   oldTgtUpdatedPath <- case mtgtMPath of
@@ -226,7 +228,8 @@ targetStrategy aid = do
                           pNew = shiftBounded lxsize lysize (bpos b) vOld
                       if slackTactic && not isStuck
                          && isUnit vOld && bpos b /= pNew
-                         && accessible cops lvl pNew
+                         && Tile.isWalkable coTileSpeedup (lvl `at` pNew)
+                              -- if initial altering, consider carefully below
                       then vToTgt vOld
                       else do
                         upos <- if lidExplored

@@ -6,8 +6,7 @@ module Game.LambdaHack.Common.Level
     -- * The @Level@ type and its components
   , Level(..), ItemFloor, ActorMap, TileMap, SmellMap
     -- * Level query
-  , at, accessible, accessibleUnknown, accessibleDir
-  , findPoint, findPos, findPosTry, findPosTry2
+  , at, findPoint, findPos, findPosTry, findPosTry2
   ) where
 
 import Prelude ()
@@ -25,11 +24,9 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Random
-import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind (ItemKind)
-import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
+import Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | The complete dungeon is a map from level names to levels.
 type Dungeon = EM.EnumMap LevelId Level
@@ -103,24 +100,6 @@ assertSparseActors m =
 at :: Level -> Point -> Kind.Id TileKind
 {-# INLINE at #-}
 at Level{ltile} p = ltile PointArray.! p
-
--- | Check whether one position is accessible from another.
--- Precondition: the two positions are next to each other.
-accessible :: Kind.COps -> Level -> Point -> Bool
-accessible Kind.COps{coTileSpeedup} lvl tpos =
-  Tile.isWalkable coTileSpeedup $ lvl `at` tpos
-
--- | Check whether one position is accessible from another,
--- but additionally treating unknown tiles as walkable.
--- Precondition: the two positions are next to each other.
-accessibleUnknown :: Kind.COps -> Level -> Point -> Bool
-accessibleUnknown Kind.COps{coTileSpeedup} lvl tpos =
-  let tt = lvl `at` tpos
-  in Tile.isWalkable coTileSpeedup tt || isUknownSpace tt
-
--- | Check whether actors can move from a position along a unit vector.
-accessibleDir :: Kind.COps -> Level -> Point -> Vector -> Bool
-accessibleDir cops lvl spos dir = accessible cops lvl $ spos `shift` dir
 
 -- | Find a random position on the map satisfying a predicate.
 findPoint :: X -> Y -> (Point -> Maybe Point) -> Rnd Point

@@ -135,7 +135,7 @@ continueRunDir params = case params of
           check
             | not $ null actorsThere = return $ Left "actor in the way"
                 -- don't displace actors, except with leader in step 0
-            | accessibleDir cops lvl posHere dir =
+            | enterableDir cops lvl posHere dir =
                 if runInitial && aid /= runLeader
                 then return $ Right dir  -- zeroth step always OK
                 else checkAndRun aid dir
@@ -149,6 +149,10 @@ continueRunDir params = case params of
                 tryTurning aid
       check
 
+enterableDir :: Kind.COps -> Level -> Point -> Vector -> Bool
+enterableDir Kind.COps{coTileSpeedup} lvl spos dir =
+  Tile.isWalkable coTileSpeedup $ lvl `at` (spos `shift` dir)
+
 tryTurning :: MonadClient m
            => ActorId -> m (Either Text Vector)
 tryTurning aid = do
@@ -160,7 +164,7 @@ tryTurning aid = do
       posLast = fromMaybe (assert `failure` (aid, body)) (boldpos body)
       dirLast = posHere `vectorToFrom` posLast
   let openableDir dir = Tile.isOpenable cotile (lvl `at` (posHere `shift` dir))
-      dirEnterable dir = accessibleDir cops lvl posHere dir || openableDir dir
+      dirEnterable dir = enterableDir cops lvl posHere dir || openableDir dir
       dirNearby dir1 dir2 = euclidDistSqVector dir1 dir2 `elem` [1, 2]
       dirSimilar dir = dirNearby dirLast dir && dirEnterable dir
       dirsSimilar = filter dirSimilar moves
@@ -168,7 +172,7 @@ tryTurning aid = do
     [] -> return $ Left "dead end"
     d1 : ds | all (dirNearby d1) ds ->  -- only one or two directions possible
       case sortBy (compare `on` euclidDistSqVector dirLast)
-           $ filter (accessibleDir cops lvl posHere) $ d1 : ds of
+           $ filter (enterableDir cops lvl posHere) $ d1 : ds of
         [] ->
           return $ Left "blocked and all similar directions are closed doors"
         d : _ -> checkAndRun aid d

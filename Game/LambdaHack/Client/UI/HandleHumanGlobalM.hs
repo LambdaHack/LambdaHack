@@ -324,7 +324,7 @@ meleeAid target = do
 displaceAid :: MonadClientUI m
             => ActorId -> m (FailOrCmd (RequestTimed 'AbDisplace))
 displaceAid target = do
-  cops <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
   tb <- getsState $ getActorBody target
@@ -351,7 +351,7 @@ displaceAid target = do
        let lid = blid sb
        lvl <- getLevel lid
        -- Displacing requires full access.
-       if accessible cops lvl tpos then
+       if Tile.isWalkable coTileSpeedup $ lvl `at` tpos then
          case posToAidsLvl tpos lvl of
            [] -> assert `failure` (leader, sb, target, tb)
            [_] -> return $ Right $ ReqDisplace target
@@ -362,7 +362,7 @@ displaceAid target = do
 moveSearchAlterAid :: MonadClientUI m
                    => ActorId -> Vector -> m (FailOrCmd RequestAnyAbility)
 moveSearchAlterAid source dir = do
-  cops@Kind.COps{coTileSpeedup} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorSk <- actorSkillsClient source
   lvl <- getLevel $ blid sb
@@ -373,7 +373,7 @@ moveSearchAlterAid source dir = do
       alterMinSkill = Tile.alterMinSkill coTileSpeedup t
   runStopOrCmd <- do
     -- Movement requires full access.
-    if | accessible cops lvl tpos ->
+    if | Tile.isWalkable coTileSpeedup t ->
          -- A potential invisible actor is hit. War started without asking.
          return $ Right $ RequestAnyAbility $ ReqMove dir
        -- No access, so search and/or alter the tile.

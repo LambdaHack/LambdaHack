@@ -202,7 +202,7 @@ affectSmell aid = do
 -- to check if melee attack does not try to reach to a distant tile.
 reqMove :: (MonadAtomic m, MonadServer m) => ActorId -> Vector -> m ()
 reqMove source dir = do
-  cops <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
   lvl <- getLevel lid
@@ -220,7 +220,7 @@ reqMove source dir = do
         Nothing -> reqWait source
         Just (wp, cstore) -> reqMelee source target wp cstore
     _
-      | accessible cops lvl tpos -> do
+      | Tile.isWalkable coTileSpeedup $ lvl `at` tpos -> do
           -- Movement requires full access.
           execUpdAtomic $ UpdMoveActor source spos tpos
           affectSmell source
@@ -340,7 +340,7 @@ armorHurtBonus source target = do
 -- | Actor tries to swap positions with another.
 reqDisplace :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
 reqDisplace source target = do
-  cops <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
@@ -362,7 +362,7 @@ reqDisplace source target = do
        let lid = blid sb
        lvl <- getLevel lid
        -- Displacing requires full access.
-       if accessible cops lvl tpos then
+       if Tile.isWalkable coTileSpeedup $ lvl `at` tpos then
          case posToAidsLvl tpos lvl of
            [] -> assert `failure` (source, sb, target, tb)
            [_] -> do
