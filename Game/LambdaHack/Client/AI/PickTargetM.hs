@@ -55,10 +55,8 @@ targetStrategy aid = do
   itemToF <- itemToFullClient
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
   let stepAccesible :: AndPath -> Bool
-      stepAccesible AndPath{pathList=q : _ : _} =  -- goal not adjacent
-        accessible cops lvl q  -- non-goal has to be accessible
-      stepAccesible AndPath{} = True  -- ok if goal inaccessible
-      stepAccesible NoPath = False
+      stepAccesible AndPath{pathList=q : _} = accessible cops lvl q
+      stepAccesible _ = False
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   oldTgtUpdatedPath <- case mtgtMPath of
     Just TgtAndPath{tapTgt,tapPath=NoPath} ->
@@ -71,19 +69,19 @@ targetStrategy aid = do
       mvalidPos <- aidTgtToPos aid (blid b) tapTgt
       if isNothing mvalidPos then return Nothing  -- wrong level
       else return $! case tapPath of
-        AndPath{pathList=q : rest,..} ->
-          if | adjacent (bpos b) q ->
-               if stepAccesible tapPath
-               then mtgtMPath  -- no move or sidestep last turn
+        AndPath{pathList=q : rest,..} -> case chessDist (bpos b) q of
+          0 ->  -- step along path
+            let newPath = AndPath{ pathList = rest
+                                 , pathGoal
+                                 , pathLen = pathLen - 1 }
+            in if stepAccesible newPath
+               then Just tap{tapPath=newPath}
                else Nothing
-             | bpos b == q ->
-               let newPath = AndPath{ pathList = rest
-                                    , pathGoal
-                                    , pathLen = pathLen - 1 }
-               in if stepAccesible newPath
-                  then Just tap{tapPath=newPath}  -- step along path
-                  else Nothing
-             | otherwise -> Nothing  -- veered off the path
+          1 ->  -- no move or a sidestep last turn
+            if stepAccesible tapPath
+            then mtgtMPath
+            else Nothing
+          _ -> Nothing  -- veered off the path
         AndPath{pathList=[],..}->
           if bpos b == pathGoal then
             mtgtMPath  -- goal reached; stay there picking up items
