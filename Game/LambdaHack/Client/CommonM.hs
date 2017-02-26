@@ -14,7 +14,6 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import Data.Tuple
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.ItemSlot
@@ -32,6 +31,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State

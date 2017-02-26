@@ -30,6 +30,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -48,24 +49,34 @@ targetStrategy aid = do
   b <- getsState $ getActorBody aid
   mleader <- getsClient _sleader
   condInMelee <- getsClient scondInMelee
+  salter <- getsClient salter
+  -- We assume the actor eventually becomes a leader (or has the same
+  -- set of abilities as the leader, anyway) and set his target accordingly.
+  actorAspect <- getsClient sactorAspect
   let (newCondInMelee, oldCondInMelee) = case condInMelee EM.! blid b of
         Right conds -> if mleader == Just aid then (False, False) else conds
         Left{} -> assert `failure` condInMelee
       stdRuleset = Kind.stdRuleset corule
       nearby = rnearby stdRuleset
+      ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
+      actorMaxSk = aSkills ar
+      alterSkill = EM.findWithDefault 0 AbAlter actorMaxSk
   itemToF <- itemToFullClient
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
   let stepAccesible :: AndPath -> Bool
       stepAccesible AndPath{pathList=q : _} =
-        Tile.isWalkable coTileSpeedup $ lvl `at`  q
+        -- Effectively, only @alterMinWalk@ is checked, because real altering
+        -- is not done via target path, but action after end of path.
+        let lalter = salter EM.! blid b
+        in alterSkill >= fromEnum (lalter PointArray.! q)
       stepAccesible _ = False
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   oldTgtUpdatedPath <- case mtgtMPath of
     Just TgtAndPath{tapTgt,tapPath=NoPath} ->
       -- This case is especially for TEnemyPos that would be lost otherwise.
-      -- This is also triggered by @UpdLeadFaction@. The recreated path can be
-      -- different than on the other client (AI or UI), but we don't care
-      -- as long as the target stays the same at least for a moment.
+      -- This is also triggered by @UpdLeadFaction@.
       Just <$> createPath aid tapTgt
     Just tap@TgtAndPath{..} -> do
       mvalidPos <- aidTgtToPos aid (blid b) tapTgt
@@ -96,14 +107,7 @@ targetStrategy aid = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   dungeon <- getsState sdungeon
-  -- We assume the actor eventually becomes a leader (or has the same
-  -- set of abilities as the leader, anyway) and set his target accordingly.
-  actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
-      actorMaxSk = aSkills ar
-      canMove = EM.findWithDefault 0 AbMove actorMaxSk > 0
+  let canMove = EM.findWithDefault 0 AbMove actorMaxSk > 0
                 || EM.findWithDefault 0 AbDisplace actorMaxSk > 0
                 -- Needed for now, because AI targets and shoots enemies
                 -- based on the path to them, not LOS to them:
