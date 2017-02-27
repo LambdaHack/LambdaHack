@@ -874,10 +874,8 @@ effectCreateItem mfidSource target store grp tim = do
         Just iid -> (iid,) <$> iid `EM.lookup` bagBefore
   case mquant of
     Just (iid, (1, afterIt@(timer : rest))) | tim /= IK.TimerNone -> do
-      -- Already has such an item, so only increase the timer by half delta.
-      let newIt = let halfTurns = delta `timeDeltaDiv` 2
-                      newTimer = timer `timeShift` halfTurns
-                  in newTimer : rest
+      -- Already has such an item, so only increase the timer by the amount.
+      let newIt = timer `timeShift` delta : rest
       when (afterIt /= newIt) $
         execUpdAtomic $ UpdTimeItem iid c afterIt newIt
     _ -> do
