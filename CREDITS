@@ -4,3 +4,11 @@ Some of the contributors are listed below, in chronological order.
 Andres Loeh
 Mikolaj Konarski
 Tuukka Turto
+
+
+Fonts 16x16x.fon, 8x8x.fon and 8x8xb.fon are are taken from
+https://github.com/angband/angband, copyrighted by Leon Marrick,
+Sheldon Simms III and Nick McConnell and released by them under
+GNU GPL version 2. Any further modifications by authors of LambdaHack
+are also released under GNU GPL version 2. See http://www.gnu.org/licenses
+for the text of the license.
