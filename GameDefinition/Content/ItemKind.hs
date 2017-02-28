@@ -240,10 +240,10 @@ light3 = ItemKind
 blanket = ItemKind
   { isymbol  = symbolLight
   , iname    = "wool blanket"
-  , ifreq    = [("useful", 100), ("light source", 100)]
+  , ifreq    = [("useful", 100), ("light source", 100), ("blanket", 1)]
   , iflavour = zipPlain [BrBlack]
   , icount   = 1
-  , irarity  = [(1, 3)]
+  , irarity  = [(1, 5)]
   , iverbHit = "swoosh"
   , iweight  = 1000
   , idamage  = toDmg 0
@@ -500,8 +500,8 @@ scroll1 = scroll
   }
 scroll2 = scroll
   { irarity  = [(1, 3)]
-  , ieffects = [ ELabel "of greed", DetectItem 10
-               , OverfillCalm (-100), Teleport 20 ]
+  , ieffects = [ ELabel "of greed", Teleport 20, DetectItem 10
+               , OverfillCalm (-100) ]
   }
 scroll3 = scroll
   { irarity  = [(1, 5), (10, 3)]
@@ -694,8 +694,8 @@ necklace4 = necklace
 necklace5 = necklace
   { iaspects = [Timeout $ d 3 + 4 - dl 3 |*| 10]
   , ieffects = [ ELabel "of escape"
-               , Recharging (DetectExit 20)
-               , Recharging (Teleport $ 14 + d 3 * 3) ]
+               , Recharging (Teleport $ 14 + d 3 * 3)
+               , Recharging (DetectExit 20) ]
                ++ ieffects necklace
   }
 necklace6 = necklace
@@ -867,7 +867,7 @@ armorLeather = ItemKind
   }
 armorMail = armorLeather
   { iname    = "mail armor"
-  , ifreq    = [("useful", 100), ("torso armor", 1), ("armor ranged", 30) ]
+  , ifreq    = [("useful", 100), ("torso armor", 1), ("armor ranged", 50) ]
   , iflavour = zipPlain [Cyan]
   , irarity  = [(6, 9), (10, 3)]
   , iweight  = 12000
@@ -882,7 +882,7 @@ armorMail = armorLeather
 gloveFencing = ItemKind
   { isymbol  = symbolMiscArmor
   , iname    = "leather glove"
-  , ifreq    = [("useful", 100), ("armor ranged", 70)]
+  , ifreq    = [("useful", 100), ("armor ranged", 50)]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
   , irarity  = [(5, 9), (10, 9)]
@@ -899,6 +899,7 @@ gloveFencing = ItemKind
   }
 gloveGauntlet = gloveFencing
   { iname    = "steel gauntlet"
+  , ifreq    = [("useful", 100)]
   , iflavour = zipPlain [BrCyan]
   , irarity  = [(1, 9), (10, 3)]
   , iweight  = 300
@@ -910,6 +911,7 @@ gloveGauntlet = gloveFencing
   }
 gloveJousting = gloveFencing
   { iname    = "Tournament Gauntlet"
+  , ifreq    = [("useful", 100)]
   , iflavour = zipFancy [BrRed]
   , irarity  = [(1, 3), (10, 3)]
   , iweight  = 500

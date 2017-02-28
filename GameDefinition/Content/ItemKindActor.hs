@@ -70,7 +70,8 @@ escapist = warrior
                   , ("weak arrow", CInv)  -- mostly for probing
                   , ("armor ranged", CEqp)
                   , ("flask", CEqp)
-                  , ("light source", CInv), ("light source", CSha) ]
+                  , ("light source", CInv)
+                  , ("blanket", CInv) ]
   }
 ambusher = warrior
   { iname    = "ambusher"
@@ -79,7 +80,6 @@ ambusher = warrior
                ++ [ ("ring of opportunity sniper", CEqp)
                   , ("add sight", CEqp)
                   , ("weak arrow", CInv), ("any arrow", CSha)
-                  , ("armor ranged", CEqp)
                   , ("flask", CEqp), ("flask", CSha)
                   , ("light source", CInv) ]
   }

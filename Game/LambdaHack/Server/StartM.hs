@@ -194,11 +194,12 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
   gameModeIdOld <- getsState sgameModeId
   DebugModeSer{scurDiffSer} <- getsServer sdebugSer
 #ifdef USE_BROWSER
-  let startingModeName = "starting JS"
+  let startingModeGroup = "starting JS"
 #else
-  let startingModeName = "starting"
+  let startingModeGroup = "starting"
 #endif
-      gameMode = fromMaybe startingModeName $ mGameMode `mplus` sgameMode sdebug
+      gameMode = fromMaybe startingModeGroup
+                 $ mGameMode `mplus` sgameMode sdebug
       rnd :: Rnd (FactionDict, FlavourMap, DiscoveryKind, DiscoveryKindRev,
                   DungeonGen.FreshDungeon, Kind.Id ModeKind)
       rnd = do

@@ -68,7 +68,7 @@ escape = ModeKind
   , mfreq   = [("escape", 1), ("campaign scenario", 1)]
   , mroster = rosterEscape
   , mcaves  = cavesEscape
-  , mdesc   = "It's not safe dwelling into dark matters. Avoid over-curious disputants and send somebody to find an exit and bring back a larger team that will shed new light on the field."
+  , mdesc   = "Dwelling into dark matters is dangerous. Avoid over-curious disputants and send somebody to find an exit and bring back a larger team to shed new light on the field."
   }
 
 -- The tactic is to sneak in the dark, highlight enemy with thrown torches
@@ -86,8 +86,8 @@ ambush = ModeKind
 
 exploration = ModeKind
   { msymbol = 'c'
-  , mname   = "exploration"
-  , mfreq   = [("exploration", 1), ("campaign scenario", 1)]
+  , mname   = "crawl (long)"
+  , mfreq   = [("crawl (long)", 1), ("campaign scenario", 1)]
   , mroster = rosterExploration
   , mcaves  = cavesExploration
   , mdesc   = "Don't let wanton curiosity, greed and the creeping abstraction madness keep you down there in the darkness for too long!"
