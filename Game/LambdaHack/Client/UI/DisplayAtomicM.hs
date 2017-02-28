@@ -971,8 +971,8 @@ strike catch source target iid cstore hurtMult = assert (source /= target) $ do
         isOrgan = iid `EM.member` borgan sb
         partItemChoice =
           if isOrgan
-          then partItemWownW side factionD spronoun COrgan localTime
-          else partItemAW side factionD cstore localTime
+          then partItemShortWownW side factionD spronoun COrgan localTime
+          else partItemShortAW side factionD cstore localTime
         msg | bhp tb <= 0 || hurtMult > 90 = makeSentence $  -- minor armor
               [MU.SubjectVerbSg spart verb, tpart]
               ++ if bproj sb

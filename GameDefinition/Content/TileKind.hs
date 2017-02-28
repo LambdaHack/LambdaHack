@@ -534,7 +534,7 @@ floorBrownLit = floorRedLit
   }
 floorFog = TileKind
   { tsymbol  = '#'
-  , tname    = "lit fog"
+  , tname    = "faint fog"
   , tfreq    = [ ("lit fog", 1), ("emptySet", 3), ("shootoutSet", 20)
                , ("fogClumpOver_f_Lit", 2) ]
       -- lit fog is OK for shootout, because LOS is mutual, as opposed
@@ -546,7 +546,7 @@ floorFog = TileKind
   , tfeature = [Walkable, NoItem, Indistinct]
   }
 floorFogDark = floorFog
-  { tname    = "dense fog"
+  { tname    = "thick fog"
   , tfreq    = [("noiseSet", 10), ("escapeSet", 60)]
   , tfeature = Dark : tfeature floorFog
   }

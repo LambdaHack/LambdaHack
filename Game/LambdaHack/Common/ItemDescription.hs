@@ -1,7 +1,7 @@
 -- | Descripitons of items.
 module Game.LambdaHack.Common.ItemDescription
   ( partItem, partItemHigh, partItemWs, partItemWsRanged
-  , partItemAW, partItemMediumAW, partItemWownW
+  , partItemShortAW, partItemMediumAW, partItemShortWownW
   , viewItem, show64With2
   ) where
 
@@ -217,14 +217,14 @@ partItemWsRanged :: FactionId -> FactionDict
                  -> Int -> CStore -> Time -> ItemFull -> MU.Part
 partItemWsRanged side factionD = partItemWsR side factionD True
 
-partItemAW :: FactionId -> FactionDict
+partItemShortAW :: FactionId -> FactionDict
            -> CStore -> Time -> ItemFull -> MU.Part
-partItemAW side factionD c localTime itemFull =
-  let (_, unique, name, stats) =
+partItemShortAW side factionD c localTime itemFull =
+  let (_, unique, name, _) =
         partItemN side factionD False 4 4 c localTime itemFull
   in if unique
-     then MU.Phrase ["the", name, stats]
-     else MU.AW $ MU.Phrase [name, stats]
+     then MU.Phrase ["the", name]
+     else MU.AW name
 
 partItemMediumAW :: FactionId -> FactionDict
                  -> CStore -> Time -> ItemFull -> MU.Part
@@ -235,12 +235,12 @@ partItemMediumAW side factionD c localTime itemFull =
      then MU.Phrase ["the", name, stats]
      else MU.AW $ MU.Phrase [name, stats]
 
-partItemWownW :: FactionId -> FactionDict
+partItemShortWownW :: FactionId -> FactionDict
               -> MU.Part -> CStore -> Time -> ItemFull -> MU.Part
-partItemWownW side factionD partA c localTime itemFull =
-  let (_, _, name, stats) =
+partItemShortWownW side factionD partA c localTime itemFull =
+  let (_, _, name, _) =
         partItemN side factionD False 4 4 c localTime itemFull
-  in MU.WownW partA $ MU.Phrase [name, stats]
+  in MU.WownW partA name
 
 viewItem :: Item -> Color.AttrCharW32
 {-# INLINE viewItem #-}
