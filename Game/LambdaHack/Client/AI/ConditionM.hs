@@ -263,13 +263,15 @@ benAvailableItems aid permitted cstores = do
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
+      heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
+        deltaSerious (bcalmDelta b)
       ben cstore bag =
         [ ((benefit, (k, cstore)), (iid, itemFull))
         | (iid, kit@(k, _)) <- EM.assocs bag
         , let itemFull = itemToF iid kit
               benefit = totalUsefulness cops b ar fact itemFull
-              hind = hinders condAnyFoeAdj condShineBetrays
-                             condAimEnemyPresent condNotCalmEnough
+              hind = hinders condAnyFoeAdj condShineBetrays condAimEnemyPresent
+                             heavilyDistressed condNotCalmEnough
                              b ar itemFull
         , permitted (fst <$> benefit) itemFull b ar
           && (cstore /= CEqp || hind) ]
@@ -280,13 +282,15 @@ benAvailableItems aid permitted cstores = do
   return $ concat perBag
     -- keep it lazy
 
-hinders :: Bool -> Bool -> Bool -> Bool -> Actor -> AspectRecord -> ItemFull
+hinders :: Bool -> Bool -> Bool -> Bool -> Bool
+        -> Actor -> AspectRecord -> ItemFull
         -> Bool
 hinders condAnyFoeAdj condShineBetrays condAimEnemyPresent
-        condNotCalmEnough  -- perhaps enemies don't have projectiles
+        heavilyDistressed condNotCalmEnough
+          -- guess that enemies have projectiles and used them now or recently
         body ar itemFull =
   let itemShine = 0 < aShine (aspectRecordFull itemFull)
-      itemShineBad = itemShine && condNotCalmEnough && not condAnyFoeAdj
+      itemShineBad = itemShine && condShineBetrays && not condAnyFoeAdj
   in -- Fast actors want to hide in darkness to ambush opponents and want
      -- to hit hard for the short span they get to survive melee.
      bspeed body ar > speedWalk
@@ -294,10 +298,8 @@ hinders condAnyFoeAdj condShineBetrays condAimEnemyPresent
          || 0 > aHurtMelee (aspectRecordFull itemFull))
      -- In the presence of enemies (seen, or unseen but distressing)
      -- actors want to hide in the dark.
-     || let heavilyDistressed =  -- actor hit by a proj or similarly distressed
-              deltaSerious (bcalmDelta body)
-        in itemShineBad && condShineBetrays
-           && (heavilyDistressed || condAimEnemyPresent)
+     || itemShineBad
+        && (heavilyDistressed || condNotCalmEnough || condAimEnemyPresent)
 
 -- | Require the actor is not calm enough.
 condNotCalmEnoughM :: MonadClient m => ActorId -> m Bool

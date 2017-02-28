@@ -179,7 +179,8 @@ actionStrategy aid = do
                                 -- only if calm enough, so high priority
           , not (condAnyFoeAdj
                  || condDesirableFloorItem
-                 || condNotCalmEnough)
+                 || condNotCalmEnough
+                 || heavilyDistressed)
             && not newCondInMelee )
         ]
       -- Order doesn't matter, scaling does.
@@ -339,12 +340,14 @@ equipItems aid = do
               && (vInv > vEqp || not (toShare slot)) ->
                 (n, (iidInv, 1, fromCStore, CEqp) : l4)
           _ -> (oldN, l4)
+      heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
+        deltaSerious (bcalmDelta body)
       -- We filter out unneeded items. In particular, we ignore them in eqp
       -- when comparing to items we may want to equip. Anyway, the unneeded
       -- items should be removed in yieldUnneeded earlier or soon after.
       filterNeeded (_, itemFull) =
         not $ unneeded cops condAnyFoeAdj condShineBetrays
-                       condAimEnemyPresent (not calmE)
+                       condAimEnemyPresent heavilyDistressed (not calmE)
                        body ar fact itemFull
       bestThree = bestByEqpSlot (filter filterNeeded eqpAssocs)
                                 (filter filterNeeded invAssocs)
@@ -388,12 +391,14 @@ yieldUnneeded aid = do
       -- doesn't lose much fun. Additionally, if AI learns alchemy later on,
       -- they can repair the ring, wield it, drop at death and it's
       -- in play again.
-  let yieldSingleUnneeded (iidEqp, itemEqp) =
+  let heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
+        deltaSerious (bcalmDelta body)
+      yieldSingleUnneeded (iidEqp, itemEqp) =
         let csha = if calmE then CSha else CInv
         in if | harmful cops body ar fact itemEqp ->
                 [(iidEqp, itemK itemEqp, CEqp, CInv)]
               | hinders condAnyFoeAdj condShineBetrays
-                        condAimEnemyPresent (not calmE)
+                        condAimEnemyPresent heavilyDistressed (not calmE)
                         body ar itemEqp ->
                 [(iidEqp, itemK itemEqp, CEqp, csha)]
               | otherwise -> []
@@ -457,9 +462,11 @@ unEquipItems aid = do
       betterThanSha vEOrI ((vSha, _) : _) = vEOrI > vSha
       worseThanSha _ [] = False
       worseThanSha vEOrI ((vSha, _) : _) = vEOrI < vSha
+      heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
+        deltaSerious (bcalmDelta body)
       filterNeeded (_, itemFull) =
         not $ unneeded cops condAnyFoeAdj condShineBetrays
-                       condAimEnemyPresent (not calmE)
+                       condAimEnemyPresent heavilyDistressed (not calmE)
                        body ar fact itemFull
       bestThree =
         bestByEqpSlot eqpAssocs invAssocs (filter filterNeeded shaAssocs)
@@ -509,15 +516,15 @@ harmful cops body ar fact itemFull =
   maybe False (\(u, _) -> u <= 0)
     (totalUsefulness cops body ar fact itemFull)
 
-unneeded :: Kind.COps -> Bool -> Bool -> Bool -> Bool
+unneeded :: Kind.COps -> Bool -> Bool -> Bool -> Bool -> Bool
          -> Actor -> AspectRecord -> Faction -> ItemFull
          -> Bool
 unneeded cops condAnyFoeAdj condShineBetrays
-         condAimEnemyPresent condNotCalmEnough
+         condAimEnemyPresent heavilyDistressed condNotCalmEnough
          body ar fact itemFull =
   harmful cops body ar fact itemFull
   || hinders condAnyFoeAdj condShineBetrays
-             condAimEnemyPresent condNotCalmEnough
+             condAimEnemyPresent heavilyDistressed condNotCalmEnough
              body ar itemFull
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
