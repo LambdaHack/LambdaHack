@@ -82,7 +82,8 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
       keys = concatMap (concatMap (either id (const []) . fst) . snd) frs
              ++ extraKeys
       !_A = assert (K.escKM `elem` extraKeys) ()
-      navigationKeys = [ K.leftButtonReleaseKM, K.returnKM, K.spaceKM
+      navigationKeys = [ K.leftButtonReleaseKM, K.rightButtonReleaseKM
+                       , K.returnKM, K.spaceKM
                        , K.upKM, K.leftKM, K.downKM, K.rightKM
                        , K.pgupKM, K.pgdnKM, K.wheelNorthKM, K.wheelSouthKM
                        , K.homeKM, K.endKM ]
@@ -136,11 +137,17 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                           cy == py && cx1 <= px && cx2 > px
                     case find onChoice kyxs of
                       Nothing | ikm `elem` keys -> return (Left ikm, pointer)
-                      Nothing -> ignoreKey
+                      Nothing -> if K.spaceKM `elem` keys
+                                 then return (Left K.spaceKM, pointer)
+                                 else ignoreKey
                       Just (ckm, _) -> case ckm of
                         Left (km : _) -> interpretKey km
                         Left [] -> assert `failure` ikm
                         Right c  -> return (Right c, pointer)
+                  K.RightButtonRelease ->
+                    if | ikm `elem` keys -> return (Left ikm, pointer)
+                       | K.escKM `elem` keys -> return (Left K.escKM, pointer)
+                       | otherwise -> ignoreKey
                   K.Space | pointer + pageLen - ixOnPage <= maxIx ->
                     page (pointer + pageLen - ixOnPage)
                   K.Unknown "SAFE_SPACE" ->
