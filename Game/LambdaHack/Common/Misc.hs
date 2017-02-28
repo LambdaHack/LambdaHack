@@ -260,5 +260,5 @@ xM k = fromIntegral k * 1000000
 
 minusM, minusM1, oneM :: Int64
 minusM = xM (-1)
-minusM1 = xM (-1) + 1
+minusM1 = xM (-1) - 1
 oneM = xM 1
