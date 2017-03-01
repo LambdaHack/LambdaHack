@@ -68,11 +68,11 @@ escape = ModeKind
   , mfreq   = [("escape", 1), ("campaign scenario", 1)]
   , mroster = rosterEscape
   , mcaves  = cavesEscape
-  , mdesc   = "Dwelling into dark matters is dangerous. Avoid over-curious disputants and send somebody to find an exit and bring back a larger team to shed new light on the field."
+  , mdesc   = "Dwelling into dark matters is dangerous. Avoid the crowd of firebrand disputants, catch any gems of thought, find a way out and bring back a larger team to shed new light on the field."
   }
 
 -- The tactic is to sneak in the dark, highlight enemy with thrown torches
--- *and douse thrown enemy torches with blankets) and only if this fails,
+-- (and douse thrown enemy torches with blankets) and only if this fails,
 -- actually scout using extended noctovision.
 -- With reaction fire, larger team is more fun.
 ambush = ModeKind

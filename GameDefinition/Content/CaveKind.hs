@@ -260,9 +260,8 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 22 * d 2
-  , citemFreq     = [ ("useful", 30)
-                    , ("weak arrow", 400), ("harpoon", 300)
-                    , ("any vial", 60) ]
+  , citemFreq     = [ ("useful", 30), ("treasure", 30), ("gem", 100)
+                    , ("weak arrow", 500), ("harpoon", 400) ]
   , cplaceFreq    = [("ambush", 100)]  -- the same rooms as ambush
   , cpassable     = True
   , cdefTile      = "escapeSet"  -- different tiles, not burning yet

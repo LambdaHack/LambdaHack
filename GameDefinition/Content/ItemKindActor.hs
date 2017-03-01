@@ -69,7 +69,7 @@ escapist = warrior
                ++ [ ("add sight", CEqp)
                   , ("weak arrow", CInv)  -- mostly for probing
                   , ("armor ranged", CEqp)
-                  , ("flask", CEqp)
+                  , ("flask", CInv)
                   , ("light source", CInv)
                   , ("blanket", CInv) ]
   }
@@ -80,7 +80,7 @@ ambusher = warrior
                ++ [ ("ring of opportunity sniper", CEqp)
                   , ("add sight", CEqp)
                   , ("weak arrow", CInv), ("any arrow", CSha)
-                  , ("flask", CEqp), ("flask", CSha)
+                  , ("flask", CInv), ("flask", CSha)
                   , ("light source", CInv) ]
   }
 soldier = warrior
