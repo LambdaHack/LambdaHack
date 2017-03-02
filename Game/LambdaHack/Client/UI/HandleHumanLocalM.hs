@@ -529,7 +529,7 @@ recordHuman = do
 
 -- * History
 
-historyHuman :: MonadClientUI m => m ()
+historyHuman :: forall m. MonadClientUI m => m ()
 historyHuman = do
   history <- getsSession shistory
   arena <- getArenaUI
@@ -559,21 +559,27 @@ historyHuman = do
           Right SlotChar{..} | slotChar == 'a' ->
             displayOneReport slotPrefix
           _ -> assert `failure` ekm
+      displayOneReport :: Int -> m ()
       displayOneReport histSlot = do
         let timeReport = case drop histSlot rh of
               [] -> assert `failure` histSlot
               tR : _ -> tR
             ov0 = splitReportForHistory lxsize timeReport
-            prompt = textToAL $ makeSentence
+            prompt = makeSentence
               [ "the", MU.Ordinal $ histSlot + 1
               , "record of all history follows" ]
-        promptAddAttr prompt
-        slides <-
-          overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] (ov0, [])
-        km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
-        if km == K.spaceKM
-        then displayAllHistory
-        else promptAdd "Try to learn from your previous mistakes."
+            histBound = lengthHistory history - 1
+            keys = [K.spaceKM, K.escKM] ++ [K.upKM | histSlot /= 0]
+                                        ++ [K.downKM | histSlot /= histBound]
+        promptAdd prompt
+        slides <- overlayToSlideshow (lysize + 1) keys (ov0, [])
+        km <- getConfirms ColorFull keys slides
+        case K.key km of
+          K.Space -> displayAllHistory
+          K.Up -> displayOneReport $ histSlot - 1
+          K.Down -> displayOneReport $ histSlot + 1
+          K.Esc -> promptAdd "Try to learn from your previous mistakes."
+          _ -> assert `failure` km
   displayAllHistory
 
 -- * MarkVision
