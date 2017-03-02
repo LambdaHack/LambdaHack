@@ -87,7 +87,8 @@ ambush = ModeKind
 exploration = ModeKind
   { msymbol = 'c'
   , mname   = "crawl (long)"
-  , mfreq   = [("crawl (long)", 1), ("campaign scenario", 1)]
+  , mfreq   = [ ("crawl (long)", 1), ("exploration", 1)
+              , ("campaign scenario", 1) ]
   , mroster = rosterExploration
   , mcaves  = cavesExploration
   , mdesc   = "Don't let wanton curiosity, greed and the creeping abstraction madness keep you down there in the darkness for too long!"
