@@ -78,10 +78,8 @@ ambusher = warrior
   , ifreq    = [("ambusher hero", 100), ("mobile", 1)]
   , ikit     = ikit warrior  -- dark and numerous, so more kit without exploring
                ++ [ ("ring of opportunity sniper", CEqp)
-                  , ("add sight", CEqp)
-                  , ("weak arrow", CInv), ("any arrow", CSha)
-                  , ("flask", CInv), ("flask", CSha)
-                  , ("light source", CInv) ]
+                  , ("light source", CEqp), ("wooden torch", CInv)
+                  , ("weak arrow", CInv), ("any arrow", CSha), ("flask", CSha) ]
   }
 soldier = warrior
   { iname    = "soldier"

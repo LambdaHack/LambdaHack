@@ -32,7 +32,7 @@ lstaircase = [staircase, staircase2, staircase3, staircase4, staircase5, stairca
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
   , pname    = "room"
-  , pfreq    = [("rogue", 100), ("arena", 40), ("laboratory", 40)]
+  , pfreq    = [("rogue", 100), ("arena", 40), ("laboratory", 40), ("zoo", 10)]
   , prarity  = [(1, 10), (10, 8)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -56,7 +56,7 @@ rectWindows = PlaceKind
 glasshouse = PlaceKind
   { psymbol  = 'g'
   , pname    = "glasshouse"
-  , pfreq    = [("shootout", 8), ("arena", 40)]
+  , pfreq    = [("shootout", 8), ("arena", 40), ("zoo", 30)]
   , prarity  = [(1, 10), (10, 8)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -231,7 +231,7 @@ colonnade6 = colonnade
 lampPost = PlaceKind
   { psymbol  = 'l'
   , pname    = "lamp post"
-  , pfreq    = [("ambush", 20), ("battle", 10)]
+  , pfreq    = [("ambush", 20), ("zoo", 20), ("battle", 10)]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CVerbatim
   , pfence   = FNone
@@ -248,7 +248,7 @@ lampPost2 = lampPost
                ]
   }
 lampPost3 = lampPost
-  { pfreq    = [("ambush", 300), ("battle", 110)]
+  { pfreq    = [("ambush", 300), ("zoo", 300), ("battle", 110)]
   , ptopLeft = [ "XX·XX"
                , "X···X"
                , "··O··"
@@ -257,7 +257,7 @@ lampPost3 = lampPost
                ]
   }
 lampPost4 = lampPost
-  { pfreq    = [("ambush", 300), ("battle", 60)]
+  { pfreq    = [("ambush", 300), ("zoo", 300), ("battle", 60)]
   , ptopLeft = [ "X···X"
                , "·····"
                , "··O··"

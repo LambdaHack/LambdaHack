@@ -22,9 +22,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleCaveKind
   , validateAll = validateAllCaveKind
   , content = contentFromList
-      [rogue, arena, laboratory, empty, noise, shallow1rogue, raid, brawl, shootout, escape, ambush, battle, safari1, safari2, safari3, boardgame]
+      [rogue, arena, laboratory, empty, noise, shallow1rogue, raid, brawl, shootout, escape, zoo, ambush, battle, safari1, safari2, safari3, boardgame]
   }
-rogue,        arena, laboratory, empty, noise, shallow1rogue, raid, brawl, shootout, escape, ambush, battle, safari1, safari2, safari3, boardgame :: CaveKind
+rogue,        arena, laboratory, empty, noise, shallow1rogue, raid, brawl, shootout, escape, zoo, ambush, battle, safari1, safari2, safari3, boardgame :: CaveKind
 
 rogue = CaveKind
   { csymbol       = 'R'
@@ -269,6 +269,30 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , clitCorTile   = "trailLit"
   , cescapeGroup  = Just "escape outdoor down"
   }
+zoo = rogue  -- few lights and many solids, to help the less numerous heroes
+  { csymbol       = 'Z'
+  , cname         = "Menagerie in flames"
+  , cfreq         = [("caveZoo", 1)]
+  , cgrid         = DiceXY (2 * d 2 + 6) 3
+  , cminPlaceSize = DiceXY 4 4
+  , cmaxPlaceSize = DiceXY 7 7
+  , cdarkChance   = 51  -- always dark rooms
+  , cnightChance  = 51  -- always night
+  , cauxConnects  = 1%4
+  , cmaxVoid      = 1%20
+  , cdoorChance   = 2%10
+  , copenChance   = 9%10
+  , cextraStairs  = 1
+  , chidden       = 0
+  , cactorFreq    = []
+  , citemNum      = 30 * d 2
+  , citemFreq     = [("useful", 100), ("light source", 1000)]
+  , cplaceFreq    = [("zoo", 50)]
+  , cpassable     = True
+  , cdefTile      = "zooSet"
+  , cdarkCorTile  = "trailLit"  -- let trails give off light
+  , clitCorTile   = "trailLit"
+  }
 ambush = rogue  -- a scenario with strong missiles;
                 -- dark, so solid obstacles are to hide from missiles,
                 -- not view, and they are all lit, because stopped missiles
@@ -293,9 +317,7 @@ ambush = rogue  -- a scenario with strong missiles;
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 22 * d 2
-  , citemFreq     = [ ("useful", 30)
-                    , ("any arrow", 400), ("harpoon", 300)
-                    , ("any vial", 60) ]
+  , citemFreq     = [("useful", 30), ("any arrow", 400), ("harpoon", 300)]
   , cplaceFreq    = [("ambush", 100)]
   , cpassable     = True
   , cdefTile      = "ambushSet"

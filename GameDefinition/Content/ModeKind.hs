@@ -23,11 +23,24 @@ cdefs = ContentDef
   , validateSingle = validateSingleModeKind
   , validateAll = validateAllModeKind
   , content = contentFromList
-      [raid, brawl, shootout, escape, ambush, exploration, safari, safariSurvival, battle, battleSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush]
+      [raid, brawl, shootout, escape, zoo, ambush, exploration, safari, safariSurvival, battle, battleSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush]
   }
-raid,        brawl, shootout, escape, ambush, exploration, safari, safariSurvival, battle, battleSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush :: ModeKind
+raid,        brawl, shootout, escape, zoo, ambush, exploration, safari, safariSurvival, battle, battleSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush :: ModeKind
 
-raid = ModeKind
+-- What other symmetric (two only-one-moves factions) and asymmetric vs crowd
+-- scenarios make sense (e.g., are good for a tutorial or for standalone
+-- extreme fun or are impossible as part of a crawl)?
+-- sparse melee at night: no, shade ambush in brawl is enough
+-- dense melee: no, keeping big party together is a chore and big enemy
+--   party is less fun than huge enemy party
+-- crowd melee in daylight: no, possible in crawl and at night is more fun
+-- sparse ranged at night: no, less fun than dense and if no reaction fire,
+--   just a camp fest or firing blindly
+-- dense ranged in daylight: no, less fun than at night with flares
+-- crowd ranged: no, fish in a barel, less predictable and more fun inside
+--   crawl, even without reaction fire
+
+raid = ModeKind  -- mini-crawl
   { msymbol = 'r'
   , mname   = "raid"
   , mfreq   = [("raid", 1), ("campaign scenario", 1)]
@@ -36,7 +49,7 @@ raid = ModeKind
   , mdesc   = "An incredibly advanced typing machine worth 100 gold is buried at the other end of this maze. Be the first to claim it and fund a research team that makes typing accurate and dependable forever."
   }
 
-brawl = ModeKind
+brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
   { msymbol = 'k'
   , mname   = "brawl"
   , mfreq   = [("brawl", 1), ("campaign scenario", 1)]
@@ -53,7 +66,7 @@ brawl = ModeKind
 -- If the scount can't find bushes or glass building to set a lookout,
 -- the other team member are more spotters and guardians than snipers
 -- and that's their only role, so a small party makes sense.
-shootout = ModeKind
+shootout = ModeKind  -- sparse ranged in daylight
   { msymbol = 's'
   , mname   = "shootout"
   , mfreq   = [("shootout", 1), ("campaign scenario", 1)]
@@ -62,7 +75,7 @@ shootout = ModeKind
   , mdesc   = "Whose arguments are most striking and whose ideas fly fastest? Let's scatter up, attack the problems from different angles and find out. To display the trajectory of any soaring entity, point it with the crosshair in aiming mode."
   }
 
-escape = ModeKind
+escape = ModeKind  -- asymmetric ranged and stealth race at night
   { msymbol = 'e'
   , mname   = "escape"
   , mfreq   = [("escape", 1), ("campaign scenario", 1)]
@@ -71,11 +84,24 @@ escape = ModeKind
   , mdesc   = "Dwelling into dark matters is dangerous. Avoid the crowd of firebrand disputants, catch any gems of thought, find a way out and bring back a larger team to shed new light on the field."
   }
 
+zoo = ModeKind  -- asymmetric crowd melee at night
+  { msymbol = 'b'
+  , mname   = "zoo"
+  , mfreq   = [("zoo", 1), ("campaign scenario", 1)]
+  , mroster = rosterZoo
+  , mcaves  = cavesZoo
+  , mdesc   = "The heat of the dispute reached the nearby Wonders of Science and Nature exhibition, igniting greenery, nets and cages. Crazed animals must be prevented from ruining precious scentific equipment and setting back the fruitful exchange of ideas."
+  }
+
 -- The tactic is to sneak in the dark, highlight enemy with thrown torches
 -- (and douse thrown enemy torches with blankets) and only if this fails,
 -- actually scout using extended noctovision.
 -- With reaction fire, larger team is more fun.
-ambush = ModeKind
+--
+-- For now, while we have no shooters with timeout, massive ranged battles
+-- without reaction fire don't make sense, because then usually only one hero
+-- shoots (and often also scouts) and others just gather ammo.
+ambush = ModeKind  -- dense ranged with reaction fire at night
   { msymbol = 'm'
   , mname   = "ambush"
   , mfreq   = [("ambush", 1), ("campaign scenario", 1)]
@@ -102,6 +128,8 @@ safari = ModeKind  -- easter egg available only via screensaver
   , mcaves  = cavesSafari
   , mdesc   = "\"In this simulation you'll discover the joys of hunting the most exquisite of Earth's flora and fauna, both animal and semi-intelligent. Exit at the bottommost level.\" This is a VR recording recovered from a monster nest debris."
   }
+
+-- * Testing modes
 
 safariSurvival = ModeKind  -- testing scenario
   { msymbol = 'u'
@@ -148,6 +176,8 @@ boardgame = ModeKind  -- future work
   , mdesc   = "Small room, no exits. Who will prevail?"
   }
 
+-- * Screensaver modes
+
 screensaverSafari = safari
   { mname   = "auto-safari"
   , mfreq   = [("starting", 1), ("no confirms", 1)]
@@ -190,7 +220,7 @@ screensaverAmbush = ambush
   }
 
 
-rosterRaid, rosterBrawl, rosterShootout, rosterEscape, rosterAmbush, rosterExploration, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleSurvival, rosterDefense, rosterBoardgame :: Roster
+rosterRaid, rosterBrawl, rosterShootout, rosterEscape, rosterZoo, rosterAmbush, rosterExploration, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleSurvival, rosterDefense, rosterBoardgame :: Roster
 
 rosterRaid = Roster
   { rosterList = [ playerHero { fhiCondPoly = hiRaid
@@ -248,17 +278,28 @@ rosterEscape = Roster
                               , finitialActors =
                                   [ (1, "scout hero")
                                   , (2, "escapist hero") ] }
-                 , playerAntiHero { fname = "Blue Hijacker"  -- start on escape
-                                  , fcanEscape = False
+                 , playerAntiHero { fname = "Indigo Research"
+                                  , fcanEscape = False  -- start on escape
                                   , fhiCondPoly = hiDweller
                                   , fentryLevel = -8
                                   , finitialActors =
                                       [ (1, "scout hero")
                                       , (7, "ambusher hero") ] }
                  , playerHorror {fentryLevel = -8} ]
-  , rosterEnemy = [ ("Explorer Party", "Blue Hijacker")
+  , rosterEnemy = [ ("Explorer Party", "Indigo Research")
                   , ("Explorer Party", "Horror Den")
-                  , ("Blue Hijacker", "Horror Den") ]
+                  , ("Indigo Research", "Horror Den") ]
+  , rosterAlly = [] }
+
+rosterZoo = Roster
+  { rosterList = [ playerHero { fcanEscape = False
+                              , fhiCondPoly = hiDweller
+                              , fentryLevel = -5
+                              , finitialActors = [(5, "soldier hero")] }
+                 , playerAnimal { fentryLevel = -5
+                                , finitialActors = [(100, "mobile animal")]
+                                , fneverEmpty = True } ]
+  , rosterEnemy = [("Explorer Party", "Animal Kingdom")]
   , rosterAlly = [] }
 
 rosterAmbush = Roster
@@ -268,7 +309,7 @@ rosterAmbush = Roster
                               , finitialActors =
                                   [ (1, "scout hero")
                                   , (5, "ambusher hero") ] }
-                 , playerAntiHero { fname = "Blue Hijacker"
+                 , playerAntiHero { fname = "Indigo Research"
                                   , fcanEscape = False
                                   , fhiCondPoly = hiDweller
                                   , fentryLevel = -10
@@ -276,9 +317,9 @@ rosterAmbush = Roster
                                       [ (1, "scout hero")
                                       , (5, "ambusher hero") ] }
                  , playerHorror {fentryLevel = -10} ]
-  , rosterEnemy = [ ("Explorer Party", "Blue Hijacker")
+  , rosterEnemy = [ ("Explorer Party", "Indigo Research")
                   , ("Explorer Party", "Horror Den")
-                  , ("Blue Hijacker", "Horror Den") ]
+                  , ("Indigo Research", "Horror Den") ]
   , rosterAlly = [] }
 
 rosterExploration = Roster
@@ -399,7 +440,7 @@ rosterBoardgame = Roster
                   , ("Red", "Horror Den") ]
   , rosterAlly = [] }
 
-cavesRaid, cavesBrawl, cavesShootout, cavesEscape, cavesAmbush, cavesExploration, cavesSafari, cavesBattle, cavesBoardgame :: Caves
+cavesRaid, cavesBrawl, cavesShootout, cavesEscape, cavesZoo, cavesAmbush, cavesExploration, cavesSafari, cavesBattle, cavesBoardgame :: Caves
 
 cavesRaid = IM.fromList [(-4, "caveRaid")]
 
@@ -408,6 +449,8 @@ cavesBrawl = IM.fromList [(-3, "caveBrawl")]
 cavesShootout = IM.fromList [(-5, "caveShootout")]
 
 cavesEscape = IM.fromList [(-8, "caveEscape")]
+
+cavesZoo = IM.fromList [(-5, "caveZoo")]
 
 cavesAmbush = IM.fromList [(-10, "caveAmbush")]
 
