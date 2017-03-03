@@ -309,6 +309,7 @@ executable LambdaHack
   other-modules:      Client.UI.Content.KeyKind,
                       Content.CaveKind,
                       Content.ItemKind,
+                      Content.ItemKindEmbed,
                       Content.ItemKindActor,
                       Content.ItemKindOrgan,
                       Content.ItemKindBlast,
