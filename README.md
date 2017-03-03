@@ -92,27 +92,33 @@ Compilation from source
 If you want to compile your own binaries from the source code,
 use Cabal (already a part of your OS distribution, or available within
 [The Haskell Platform] [7]), which also takes care of all the dependencies.
-You also need the GTK libraries for your OS. On Linux, remember to install
-the -dev versions as well. On Windows follow [the same steps as for Wine] [13].
-On OSX, if you encounter problems, you may want to
-[compile the GTK libraries from sources] [14].
 
-The latest official version of the library can be downloaded,
+The recommended frontend for LambdaHack is based SDL2, so you need the SDL2
+libraries for your OS. On Linux, remember to install the -dev versions as well,
+e.g., libsdl2-dev and libsdl2-ttf-dev on Ubuntu Linux 16.04.
+
+The latest official version of the LambdaHack library can be downloaded,
 compiled and installed automatically by Cabal from [Hackage] [3] as follows
 
     cabal update
-    cabal install gtk2hs-buildtools LambdaHack
+    cabal install LambdaHack
 
 For a newer snapshot, download source from a development branch
 at [github] [5] and run Cabal from the main directory
 
-    cabal install gtk2hs-buildtools .
+    cabal install
 
-For the example game, the best frontend (wrt keyboard support and colours)
-is the default gtk. To compile with one of the terminal frontends,
+To compile with one of the rudimentary terminal frontends,
 use Cabal flags, e.g,
 
     cabal install -fvty
+
+To compile with GTK2 (deprecated but supported), you need GTK libraries
+for your OS. On Windows follow [the same steps as for Wine] [13].
+On OSX, if you encounter problems, you may want to
+[compile the GTK libraries from sources] [14]. Invoke Cabal as follows
+
+    cabal install -fgtk gtk2hs-buildtools .
 
 
 Compatibility notes
