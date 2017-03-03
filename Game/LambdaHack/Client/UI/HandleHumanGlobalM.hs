@@ -854,10 +854,12 @@ verifyAlters lid p = do
   bag <- getsState $ getEmbedBag lid p
   is <- mapM (\iid -> getsState $ getItemBody iid) $ EM.keys bag
   let isE Item{jname} = jname == "escape"
-  if any isE is then verifyAlter else return $ Right ()
+  if | any isE is -> verifyEscape
+     | null is -> failWith "never mind"
+     | otherwise -> return $ Right ()
 
-verifyAlter :: MonadClientUI m => m (FailOrCmd ())
-verifyAlter = do
+verifyEscape :: MonadClientUI m => m (FailOrCmd ())
+verifyEscape = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   if not (fcanEscape $ gplayer fact)
