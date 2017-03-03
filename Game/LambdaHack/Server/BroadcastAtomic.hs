@@ -139,6 +139,8 @@ loudUpdAtomic local cmd = do
       if Tile.isDoor coTileSpeedup fromTile
         then return $ Just "creaking sound"
         else return $ Just "rumble"
+    UpdAlterClear _ k -> return $ Just $ if k > 0 then "grinding noise"
+                                                  else "fizzing noise"
     _ -> return Nothing
   let distant = if local then [] else ["distant"]
       hear sound = makeSentence [ "you hear"

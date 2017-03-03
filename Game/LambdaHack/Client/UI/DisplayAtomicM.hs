@@ -247,9 +247,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
   UpdRecordKill{} -> return ()
   -- Alter map.
   UpdAlterTile lid _ _ _ -> markDisplayNeeded lid
-  UpdAlterClear _ k ->
-    msgAdd $ if k > 0 then "You hear grinding noises."
-                      else "You hear fizzing noises."
+  UpdAlterClear{} -> return ()
   UpdSearchTile aid p toTile -> do
     Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsState scops
     b <- getsState $ getActorBody aid
