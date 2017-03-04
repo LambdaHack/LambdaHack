@@ -274,18 +274,18 @@ rosterShootout = Roster
 
 rosterEscape = Roster
   { rosterList = [ playerHero { fhiCondPoly = hiEscapist
-                              , fentryLevel = -8
+                              , fentryLevel = -7
                               , finitialActors =
                                   [ (1, "scout hero")
                                   , (2, "escapist hero") ] }
                  , playerAntiHero { fname = "Indigo Research"
                                   , fcanEscape = False  -- start on escape
                                   , fhiCondPoly = hiDweller
-                                  , fentryLevel = -8
+                                  , fentryLevel = -7
                                   , finitialActors =
                                       [ (1, "scout hero")
                                       , (7, "ambusher hero") ] }
-                 , playerHorror {fentryLevel = -8} ]
+                 , playerHorror {fentryLevel = -7} ]
   , rosterEnemy = [ ("Explorer Party", "Indigo Research")
                   , ("Explorer Party", "Horror Den")
                   , ("Indigo Research", "Horror Den") ]
@@ -294,9 +294,9 @@ rosterEscape = Roster
 rosterZoo = Roster
   { rosterList = [ playerHero { fcanEscape = False
                               , fhiCondPoly = hiDweller
-                              , fentryLevel = -5
+                              , fentryLevel = -8
                               , finitialActors = [(5, "soldier hero")] }
-                 , playerAnimal { fentryLevel = -5
+                 , playerAnimal { fentryLevel = -8
                                 , finitialActors = [(100, "mobile animal")]
                                 , fneverEmpty = True } ]
   , rosterEnemy = [("Explorer Party", "Animal Kingdom")]
@@ -305,18 +305,18 @@ rosterZoo = Roster
 rosterAmbush = Roster
   { rosterList = [ playerHero { fcanEscape = False
                               , fhiCondPoly = hiDweller
-                              , fentryLevel = -10
+                              , fentryLevel = -9
                               , finitialActors =
                                   [ (1, "scout hero")
                                   , (5, "ambusher hero") ] }
                  , playerAntiHero { fname = "Indigo Research"
                                   , fcanEscape = False
                                   , fhiCondPoly = hiDweller
-                                  , fentryLevel = -10
+                                  , fentryLevel = -9
                                   , finitialActors =
                                       [ (1, "scout hero")
                                       , (5, "ambusher hero") ] }
-                 , playerHorror {fentryLevel = -10} ]
+                 , playerHorror {fentryLevel = -9} ]
   , rosterEnemy = [ ("Explorer Party", "Indigo Research")
                   , ("Explorer Party", "Horror Den")
                   , ("Indigo Research", "Horror Den") ]
@@ -448,11 +448,11 @@ cavesBrawl = IM.fromList [(-3, "caveBrawl")]
 
 cavesShootout = IM.fromList [(-5, "caveShootout")]
 
-cavesEscape = IM.fromList [(-8, "caveEscape")]
+cavesEscape = IM.fromList [(-7, "caveEscape")]
 
-cavesZoo = IM.fromList [(-5, "caveZoo")]
+cavesZoo = IM.fromList [(-8, "caveZoo")]
 
-cavesAmbush = IM.fromList [(-10, "caveAmbush")]
+cavesAmbush = IM.fromList [(-9, "caveAmbush")]
 
 cavesExploration = IM.fromList $
   [ (-1, "shallow random 1")

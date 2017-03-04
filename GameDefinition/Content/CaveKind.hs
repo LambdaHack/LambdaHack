@@ -348,8 +348,9 @@ battle = rogue  -- few lights and many solids, to help the less numerous heroes
   , cdarkCorTile  = "trailLit"  -- let trails give off light
   , clitCorTile   = "trailLit"
   }
-safari1 = ambush
+safari1 = escape
   { cfreq = [("caveSafari1", 1)]
+  , cescapeGroup = Nothing
   , cstairFreq = [("staircase outdoor", 1)]
   }
 safari2 = shootout
@@ -358,7 +359,7 @@ safari2 = shootout
   }
 safari3 = brawl
   { cfreq = [("caveSafari3", 1)]
-  , cescapeGroup  = Just "escape outdoor down"
+  , cescapeGroup = Just "escape outdoor down"
   , cstairFreq = [("staircase outdoor", 1)]
   }
 boardgame = CaveKind
