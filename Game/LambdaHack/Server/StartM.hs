@@ -277,8 +277,9 @@ populateDungeon = do
             ntime = timeShift localTime (timeDeltaScale (Delta timeClip) nmult)
             validTile t = not $ Tile.isNoActor coTileSpeedup t
             initActors = finitialActors $ gplayer fact3
-            initGroups = concatMap (\(_, n, actorGroup) ->
-                                      replicate n actorGroup) initActors
+            initGroups = concat [ replicate n actorGroup
+                                | ln3@(_, n, actorGroup) <- initActors
+                                , g ln3 == lid ]
         psFree <- getsState $ nearbyFreePoints validTile ppos lid
         let ps = zip3 initGroups [0..] psFree
         forM_ ps $ \ (actorGroup, n, p) -> do
