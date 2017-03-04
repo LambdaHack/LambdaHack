@@ -452,7 +452,10 @@ escapeOutdoorDown = escapeDown
 rubble = TileKind
   { tsymbol  = ';'
   , tname    = "rubble"
-  , tfreq    = [("floorCorridorLit", 1)]
+  , tfreq    = []  -- [("floorCorridorLit", 1)]
+                   -- disabled while it's all or nothing per cave and per room;
+                   -- we need a new mechanism, Spice is not enough, because
+                   -- we don't want multicolor trailLit corridors
       -- ("rubbleOrNotLit", 70)
       -- until we can sync change of tile and activation, it always takes 1 turn
   , tcolor   = BrWhite
