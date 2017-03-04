@@ -274,16 +274,13 @@ closestTriggers onlyDir aid = do
       f p bag acc =
         if alterSkill < fromEnum (aiAlterMinSkill p) then acc else
         let classes = map classIid $ EM.keys bag
-            allOther = all (== TriggerOther) classes
         in case filter (/= TriggerOther) classes of
-          [] -> acc
-          _ | allOther ->
-            -- Neither stairs nor escape, so explore if close enough.
-            if isJust onlyDir
-               || Tile.isSuspect coTileSpeedup (lvl `at` p)
-                  && not (Tile.consideredByAI coTileSpeedup (lvl `at` p))
-            then acc  -- assume secrets have no loot, unless ConsideredByAI
-            else (TriggerOther, (p, bag)) : acc
+          [] -> -- Neither stairs nor escape, so explore if close enough.
+                if isJust onlyDir
+                   || Tile.isSuspect coTileSpeedup (lvl `at` p)
+                      && not (Tile.consideredByAI coTileSpeedup (lvl `at` p))
+                then acc  -- assume secrets have no loot, unless ConsideredByAI
+                else (TriggerOther, (p, bag)) : acc
           TriggerEscape : _ ->  -- normally only one present, so just take first
             -- Escape (or guard) only after exploring, for high score, etc.
             if isNothing onlyDir && allExplored
@@ -303,7 +300,7 @@ closestTriggers onlyDir aid = do
                   Nothing -> not escape && allExplored || aiCond
             in if interesting then (cid, (p, bag)) : acc else acc
       triggers = EM.foldrWithKey f [] $ lembed lvl
-  -- The advantage of only targeting the tiles in vicinity of triggers is that
+  -- The advantage of targeting the tiles in vicinity of triggers is that
   -- triggers don't need to be pathable (and so AI doesn't bump into them
   -- by chance while walking elsewhere) and that many accesses to the tiles
   -- are more likely to be targeted by different AI actors (even starting

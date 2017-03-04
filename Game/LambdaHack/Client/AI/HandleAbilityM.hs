@@ -129,12 +129,15 @@ actionStrategy aid = do
             && not condAdjTriggerable )  -- don't block stairs, perhaps ascend
         , ( [AbAlter], (toAny :: ToAny 'AbAlter)
             <$> trigger aid True
-              -- flee via stairs, even if to wrong level
+              -- flee via stairs, even if to wrong level;
               -- may return via different stairs
           , condAdjTriggerable
             && ((condNotCalmEnough || condHpTooLow)
                 && condThreatNearby && not condAimEnemyPresent
-                || condMeleeBad && condThreatAdj) )
+                || condMeleeBad && condThreatAdj
+                || (lidExplored || condEnoughGear)
+                   && not condDesirableFloorItem
+                   && not condAimEnemyPresent) )
         , ( [AbDisplace]
           , displaceFoe aid  -- only swap with an enemy to expose him
           , condBlocksFriends && condNonProjFoeAdj
@@ -151,9 +154,9 @@ actionStrategy aid = do
                && condAimEnemyPresent  -- excited
                && not newCondInMelee )  -- don't incur overhead
         , ( [AbAlter], (toAny :: ToAny 'AbAlter)
-            <$> trigger aid False
-          , condAdjTriggerable && not condDesirableFloorItem
-            && (lidExplored || condEnoughGear)
+            <$> trigger aid False  -- don't use stairs
+          , condAdjTriggerable
+            && not condDesirableFloorItem
             && not condAimEnemyPresent )
         , ( [AbMove]
           , flee aid fleeL
@@ -609,7 +612,7 @@ trigger aid fleeViaStairs = do
   let aiAlterMinSkill p = Tile.aiAlterMinSkill coTileSpeedup $ lvl `at` p
       lidExplored = ES.member (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
-      -- Only actors with hight enough AbAlter can use stairs.
+      -- Only actors with high enough AbAlter can use stairs.
       enterableHere p = alterSkill >= fromEnum (aiAlterMinSkill p)
       iidToEffs (iid, kit) = case itemDisco $ itemToF iid kit of
         Nothing -> []
@@ -620,9 +623,13 @@ trigger aid fleeViaStairs = do
         Nothing -> []
         Just bag -> [(pos, concatMap iidToEffs $ EM.assocs bag)]
       feats = concatMap f $ filter enterableHere $ vicinityUnsafe (bpos b)
-      bens (p, fs) = sum <$> mapM (ben p) fs
+      bens (p, fs) = do
+        bs <- mapM (ben p) fs
+        return $! if any (< -10) bs
+                  then 0  -- mixed blessing
+                  else sum bs
       ben p feat = case feat of
-        IK.Ascend up -> do -- change levels sensibly, in teams
+        IK.Ascend up | fleeViaStairs -> do -- change levels sensibly, in teams
           let aimless = ftactic (gplayer fact) `elem` [TRoam, TPatrol]
               easier = up /= (fromEnum (blid b) > 0)
               unexpForth = unexploredD up (blid b)
@@ -645,9 +652,7 @@ trigger aid fleeViaStairs = do
              if boldpos b == Just (bpos b)  -- probably used stairs last turn
                 && boldlid b == lid2  -- in the opposite direction
              then 0  -- avoid trivial loops (pushing, being pushed, etc.)
-             else if fleeViaStairs
-                  then 1000 * eben + 1  -- strongly prefer correct direction
-                  else eben
+             else 1000 * eben + 1  -- strongly prefer correct direction stairs
         ef@IK.Escape{} -> return $  -- flee via this way, too
           -- Only some factions try to escape but they first explore all
           -- for high score.

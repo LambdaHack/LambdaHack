@@ -25,7 +25,7 @@ import Game.LambdaHack.Content.ModeKind
 effectToBenefit :: Kind.COps -> Actor -> AspectRecord -> Faction -> IK.Effect
                 -> Int
 effectToBenefit cops b ar@AspectRecord{..} fact eff =
-  let dungeonDweller = not $ fcanEscape $ gplayer fact
+  let dungeonDweller = not $ fhasGender $ gplayer fact  -- crude, for now
   in case eff of
     IK.ELabel _ -> 0
     IK.EqpSlot _ -> 0
@@ -54,7 +54,7 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
     IK.Summon _ d | dungeonDweller ->
       -- Probably summons friends or crazies.
       50 * Dice.meanDice d
-    IK.Summon{} -> 0      -- probably generates enemies
+    IK.Summon{} -> -11    -- probably generates enemies
     IK.Ascend{} -> 1      -- low, to only change levels sensibly, in teams
     IK.Escape{} -> 10000  -- AI wants to win; spawners to guard
     IK.Paralyze d -> -10 * Dice.meanDice d
@@ -87,7 +87,10 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
     IK.ActivateInv ' ' -> -100
     IK.ActivateInv _ -> -50
     IK.ApplyPerfume -> 0  -- depends on the smell sense of friends and foes
-    IK.OneOf _ -> 1  -- usually a mixed blessing, but slightly beneficial
+    IK.OneOf efs -> let bs = map (effectToBenefit cops b ar fact) efs
+                    in if any (< -10) bs
+                       then 0  -- mixed blessing
+                       else sum bs `divUp` length bs
     IK.OnSmash _ -> 0  -- can be beneficial; we'd need to analyze explosions
     IK.Recharging e -> effectToBenefit cops b ar fact e  -- for weapons
     IK.Temporary _ -> 0

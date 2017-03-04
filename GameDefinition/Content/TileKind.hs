@@ -135,8 +135,8 @@ signboardUnread = TileKind  -- client only, indicates never used by this faction
   , tcolor   = BrCyan
   , tcolor2  = Cyan
   , talter   = 5
-  , tfeature = [ Embed "signboard", ConsideredByAI
-               , RevealAs "dummy, treated as suspect", Indistinct ]
+  , tfeature = [ Embed "signboard", ConsideredByAI, Indistinct
+               , RevealAs "dummy, treated as suspect" ]
   }
 signboardRead = TileKind  -- after first use revealed to be this one
   { tsymbol  = 'O'
@@ -388,6 +388,7 @@ stairsUp = TileKind
   , tcolor2  = defFG
   , talter   = talterForStairs
   , tfeature = [Embed "staircase up", ConsideredByAI]
+                 -- marked for AI to enable targeting in @closestTriggers@
   }
 stairsTaintedUp = TileKind
   { tsymbol  = '<'
@@ -397,7 +398,7 @@ stairsTaintedUp = TileKind
   , tcolor2  = Red
   , talter   = talterForStairs
   , tfeature = [ Embed "staircase up", Embed "staircase trap up"
-               , ChangeTo "ordinary staircase up" ]
+               , ConsideredByAI, ChangeTo "ordinary staircase up" ]
   }
 stairsOutdoorUp = stairsUp
   { tname    = "signpost pointing backward"
@@ -425,7 +426,7 @@ stairsTaintedDown = TileKind
   , tcolor2  = Red
   , talter   = talterForStairs
   , tfeature = [ Embed "staircase down", Embed "staircase trap down"
-               , ChangeTo "ordinary staircase down" ]
+               , ConsideredByAI, ChangeTo "ordinary staircase down" ]
   }
 stairsOutdoorDown = stairsDown
   { tname    = "signpost pointing forward"
@@ -470,7 +471,9 @@ rubble = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 5
-  , tfeature = [OpenTo "rubbleOrNotLit", Embed "rubble", Indistinct]
+  , tfeature = [ OpenTo "rubbleOrNotLit", Embed "rubble", Indistinct
+               , RevealAs "dummy, prevents AI trigger, unless in the way" ]
+                 -- AI doesn't go out of its way to clear the way for heroes
   }
 rubblePlace = TileKind
   { tsymbol  = ';'
@@ -480,7 +483,9 @@ rubblePlace = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 5
-  , tfeature = [Spice, OpenTo "rubblePlaceOrNotLit", Embed "rubble", Indistinct]
+  , tfeature = [ Spice
+               , OpenTo "rubblePlaceOrNotLit", Embed "rubble", Indistinct
+               , RevealAs "dummy, prevents AI trigger, unless in the way" ]
   }
 floorCorridorLit = TileKind
   { tsymbol  = '#'
