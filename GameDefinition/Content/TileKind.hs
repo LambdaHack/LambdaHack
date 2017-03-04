@@ -22,11 +22,11 @@ cdefs = ContentDef
   , validateSingle = validateSingleTileKind
   , validateAll = validateAllTileKind
   , content = contentFromList $
-      [unknown, wall, hardRock, pillar, pillarIce, pulpit, pillarCache, lampPost, signboardUnread, signboardRead, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, wallObscuredDefacedV, wallObscuredFrescoedV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, rubblePlace, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark]
+      [unknown, wall, hardRock, pillar, pillarIce, pulpit, pillarCache, lampPost, signboardUnread, signboardRead, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, wallObscuredDefacedV, wallObscuredFrescoedV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, rubblePlace, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark]
       ++ map makeDark ldarkable
       ++ map makeDarkColor ldarkColorable
   }
-unknown,        wall, hardRock, pillar, pillarIce, pulpit, pillarCache, lampPost, signboardUnread, signboardRead, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, wallObscuredDefacedV, wallObscuredFrescoedV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, rubblePlace, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark :: TileKind
+unknown,        wall, hardRock, pillar, pillarIce, pulpit, pillarCache, lampPost, signboardUnread, signboardRead, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, wallObscuredDefacedV, wallObscuredFrescoedV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, rubblePlace, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark :: TileKind
 
 ldarkable :: [TileKind]
 ldarkable = [wallV, wallSuspectV, wallObscuredDefacedV, wallObscuredFrescoedV, doorClosedV, doorTrappedV, doorOpenV, wallH, wallSuspectH, wallObscuredH, doorClosedH, doorTrappedH, doorOpenH, rubble, rubblePlace, floorCorridorLit]
@@ -403,6 +403,11 @@ stairsOutdoorUp = stairsUp
   { tname    = "signpost pointing backward"
   , tfreq    = [("staircase outdoor up", 1)]
   }
+stairsGatedUp = stairsUp
+  { tname    = "gated staircase up"
+  , tfreq    = [("gated staircase up", 1)]
+  , talter   = talterForStairs + 1  -- animals and bosses can't use
+  }
 stairsDown = TileKind
   { tsymbol  = '>'
   , tname    = "staircase down"
@@ -422,10 +427,14 @@ stairsTaintedDown = TileKind
   , tfeature = [ Embed "staircase down", Embed "staircase trap down"
                , ChangeTo "ordinary staircase down" ]
   }
-
 stairsOutdoorDown = stairsDown
   { tname    = "signpost pointing forward"
   , tfreq    = [("staircase outdoor down", 1)]
+  }
+stairsGatedDown = stairsDown
+  { tname    = "gated staircase down"
+  , tfreq    = [("gated staircase down", 1)]
+  , talter   = talterForStairs + 1  -- animals and bosses can't use
   }
 escapeUp = TileKind
   { tsymbol  = '<'
