@@ -475,11 +475,12 @@ rubble = TileKind
 rubblePlace = TileKind
   { tsymbol  = ';'
   , tname    = "rubble"
-  , tfreq    = [("stair terminal", 1), ("zooSet", 100)]
+  , tfreq    = [ ("stair terminal", 1), ("smokeClumpOver_f_Lit", 1)
+               , ("noiseSet", 5), ("zooSet", 100) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 5
-  , tfeature = [OpenTo "rubblePlaceOrNotLit", Embed "rubble", Indistinct]
+  , tfeature = [Spice, OpenTo "rubblePlaceOrNotLit", Embed "rubble", Indistinct]
   }
 floorCorridorLit = TileKind
   { tsymbol  = '#'
