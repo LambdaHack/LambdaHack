@@ -851,11 +851,16 @@ alterFeatures (_ : ts) = alterFeatures ts
 -- but only recognized by name.
 verifyAlters :: MonadClientUI m => LevelId -> Point -> m (FailOrCmd ())
 verifyAlters lid p = do
+  Kind.COps{coTileSpeedup} <- getsState scops
+  lvl <- getLevel lid
+  let t = lvl `at` p
   bag <- getsState $ getEmbedBag lid p
   is <- mapM (\iid -> getsState $ getItemBody iid) $ EM.keys bag
   let isE Item{jname} = jname == "escape"
   if | any isE is -> verifyEscape
-     | null is -> failWith "never mind"
+     | null is && not (Tile.isDoor coTileSpeedup t
+                       || Tile.isChangable coTileSpeedup t) ->
+         failWith "never mind"
      | otherwise -> return $ Right ()
 
 verifyEscape :: MonadClientUI m => m (FailOrCmd ())

@@ -98,6 +98,7 @@ data TileSpeedup = TileSpeedup
   , isLitTab           :: !(Tab Bool)
   , isWalkableTab      :: !(Tab Bool)
   , isDoorTab          :: !(Tab Bool)
+  , isChangableTab     :: !(Tab Bool)
   , isSuspectTab       :: !(Tab Bool)
   , isHideAsTab        :: !(Tab Bool)
   , consideredByAITab  :: !(Tab Bool)

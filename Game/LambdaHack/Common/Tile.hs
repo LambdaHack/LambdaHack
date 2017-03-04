@@ -14,7 +14,7 @@
 --
 -- Actors at normal speed (2 m/s) take one turn to move one tile (1 m by 1 m).
 module Game.LambdaHack.Common.Tile
-  ( kindHasFeature, hasFeature, isClear, isLit, isWalkable, isDoor
+  ( kindHasFeature, hasFeature, isClear, isLit, isWalkable, isDoor, isChangable
   , isSuspect, isHideAs, consideredByAI, isExplorable
   , isOftenItem, isOftenActor, isNoItem, isNoActor, isEasyOpen
   , speedup, alterMinSkill, aiAlterMinSkill, alterMinWalk
@@ -93,6 +93,11 @@ isDoor :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isDoor #-}
 isDoor TileSpeedup{isDoorTab} = accessTab isDoorTab
 
+-- | Whether a tile is changable.
+isChangable :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE isChangable #-}
+isChangable TileSpeedup{isChangableTab} = accessTab isChangableTab
+
 -- | Whether a tile is suspect.
 -- Essential for efficiency of pathfinding, hence tabulated.
 isSuspect :: TileSpeedup -> Kind.Id TileKind -> Bool
@@ -167,6 +172,10 @@ speedup allClear cotile =
       isDoorTab = createTab cotile $ \tk ->
         let getTo TK.OpenTo{} = True
             getTo TK.CloseTo{} = True
+            getTo _ = False
+        in any getTo $ TK.tfeature tk
+      isChangableTab = createTab cotile $ \tk ->
+        let getTo TK.ChangeTo{} = True
             getTo _ = False
         in any getTo $ TK.tfeature tk
       isSuspectTab = createTab cotile TK.isSuspectKind
