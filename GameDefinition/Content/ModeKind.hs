@@ -23,9 +23,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleModeKind
   , validateAll = validateAllModeKind
   , content = contentFromList
-      [raid, brawl, shootout, escape, zoo, ambush, exploration, safari, safariSurvival, battle, battleSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush]
+      [raid, brawl, shootout, escape, zoo, ambush, exploration, safari, safariSurvival, battle, battleSurvival, defense, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush]
   }
-raid,        brawl, shootout, escape, zoo, ambush, exploration, safari, safariSurvival, battle, battleSurvival, defense, boardgame, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush :: ModeKind
+raid,        brawl, shootout, escape, zoo, ambush, exploration, safari, safariSurvival, battle, battleSurvival, defense, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush :: ModeKind
 
 -- What other symmetric (two only-one-moves factions) and asymmetric vs crowd
 -- scenarios make sense (e.g., are good for a tutorial or for standalone
@@ -167,15 +167,6 @@ defense = ModeKind  -- testing scenario; perhaps real scenario in the future
   , mdesc   = "Don't let human interlopers defile your abstract secrets and flee unpunished!"
   }
 
-boardgame = ModeKind  -- future work
-  { msymbol = 'g'
-  , mname   = "boardgame"
-  , mfreq   = [("boardgame", 1)]
-  , mroster = rosterBoardgame
-  , mcaves  = cavesBoardgame
-  , mdesc   = "Small room, no exits. Who will prevail?"
-  }
-
 -- * Screensaver modes
 
 screensaverSafari = safari
@@ -220,7 +211,7 @@ screensaverAmbush = ambush
   }
 
 
-rosterRaid, rosterBrawl, rosterShootout, rosterEscape, rosterZoo, rosterAmbush, rosterExploration, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleSurvival, rosterDefense, rosterBoardgame :: Roster
+rosterRaid, rosterBrawl, rosterShootout, rosterEscape, rosterZoo, rosterAmbush, rosterExploration, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleSurvival, rosterDefense :: Roster
 
 rosterRaid = Roster
   { rosterList = [ playerHero { fhiCondPoly = hiRaid
@@ -418,20 +409,7 @@ rosterDefense = rosterExploration
                      {finitialActors = [ (-1, 1 + d 2, "animal")
                                        , (-10, 100, "mobile animal") ]} ] }
 
-rosterBoardgame = Roster
-  { rosterList = [ playerHero { fname = "Blue"
-                              , fhiCondPoly = hiDweller
-                              , finitialActors = [(-3, 6, "hero")] }
-                 , playerAntiHero { fname = "Red"
-                                  , fhiCondPoly = hiDweller
-                                  , finitialActors = [(-3, 6, "hero")] }
-                 , playerHorror ]
-  , rosterEnemy = [ ("Blue", "Red")
-                  , ("Blue", "Horror Den")
-                  , ("Red", "Horror Den") ]
-  , rosterAlly = [] }
-
-cavesRaid, cavesBrawl, cavesShootout, cavesEscape, cavesZoo, cavesAmbush, cavesExploration, cavesSafari, cavesBattle, cavesBoardgame :: Caves
+cavesRaid, cavesBrawl, cavesShootout, cavesEscape, cavesZoo, cavesAmbush, cavesExploration, cavesSafari, cavesBattle :: Caves
 
 cavesRaid = IM.fromList [(-2, "caveRaid")]
 
@@ -457,5 +435,3 @@ cavesSafari = IM.fromList [ (-4, "caveSafari1")
                           , (-10, "caveSafari3") ]
 
 cavesBattle = IM.fromList [(-5, "caveBattle")]
-
-cavesBoardgame = IM.fromList [(-3, "caveBoardgame")]
