@@ -108,7 +108,7 @@ monsterGenChance (AbsDepth n) (AbsDepth totalDepth) lvlSpawned actorCoeff =
         numSpawnedCoeff = lvlSpawned `div` 2
     in chance $ 1%(fromIntegral
                      ((actorCoeff * (numSpawnedCoeff - scaledDepth))
-                      `max` 1))
+                      `max` 1))  -- monsters up to level depth spawned at once
 
 -- | The part of speech describing the actor.
 partActor :: Actor -> MU.Part

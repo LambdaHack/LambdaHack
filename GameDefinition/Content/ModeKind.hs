@@ -224,13 +224,13 @@ rosterRaid, rosterBrawl, rosterShootout, rosterEscape, rosterZoo, rosterAmbush, 
 
 rosterRaid = Roster
   { rosterList = [ playerHero { fhiCondPoly = hiRaid
-                              , fentryLevel = -4
+                              , fentryLevel = -2
                               , finitialActors = [(1, "hero")] }
                  , playerAntiHero { fname = "Red Founder"
                                   , fhiCondPoly = hiRaid
-                                  , fentryLevel = -4
+                                  , fentryLevel = -2
                                   , finitialActors = [(1, "hero")] }
-                 , playerAnimal { fentryLevel = -4  -- starting over escape
+                 , playerAnimal { fentryLevel = -2  -- starting over escape
                                 , finitialActors = [(2, "animal")] } ]
   , rosterEnemy = [ ("Explorer Party", "Animal Kingdom")
                   , ("Red Founder", "Animal Kingdom") ]
@@ -442,7 +442,7 @@ rosterBoardgame = Roster
 
 cavesRaid, cavesBrawl, cavesShootout, cavesEscape, cavesZoo, cavesAmbush, cavesExploration, cavesSafari, cavesBattle, cavesBoardgame :: Caves
 
-cavesRaid = IM.fromList [(-4, "caveRaid")]
+cavesRaid = IM.fromList [(-2, "caveRaid")]
 
 cavesBrawl = IM.fromList [(-3, "caveBrawl")]
 
