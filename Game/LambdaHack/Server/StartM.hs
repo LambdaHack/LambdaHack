@@ -114,14 +114,11 @@ resetFactions :: FactionDict -> Kind.Id ModeKind -> Int -> AbsDepth -> Roster
               -> Rnd FactionDict
 resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
   let rawCreate Player{..} = do
-        entryLevel <- castDice (AbsDepth 0) (AbsDepth 0) fentryLevel
-        let castInitialActor (d, actorGroup) = do
-              n <- castDice (AbsDepth $ abs entryLevel) totalDepth d
-              return (n, actorGroup)
+        let castInitialActor (ln, d, actorGroup) = do
+              n <- castDice (AbsDepth $ abs ln) totalDepth d
+              return (ln, n, actorGroup)
         initialActors <- mapM castInitialActor finitialActors
-        let gplayer = Player{ fentryLevel = entryLevel
-                            , finitialActors = initialActors
-                            , ..}
+        let gplayer = Player{finitialActors = initialActors, ..}
             cmap = mapFromFuns
                      [colorToTeamName, colorToPlainName, colorToFancyName]
             nameoc = T.toLower $ head $ T.words fname
@@ -250,12 +247,15 @@ populateDungeon = do
       needInitialCrew = sortBy (comparing $ valuePlayer . gplayer . snd)
                         $ filter (not . null . finitialActors . gplayer . snd)
                         $ EM.assocs factionD
-      getEntryLevel (_, fact) =
-        max minD $ min maxD $ toEnum $ fentryLevel $ gplayer fact
-      arenas = ES.toList $ ES.fromList $ map getEntryLevel needInitialCrew
+      g (ln, _, _) = max minD . min maxD . toEnum $ ln
+      getEntryLevels (_, fact) = map g $ finitialActors $ gplayer fact
+      arenas = ES.toList $ ES.fromList
+               $ concatMap getEntryLevels needInitialCrew
+      hasActorsOnArena lid (_, fact) =
+        any ((== lid) . g) $ finitialActors $ gplayer fact
       initialActors lid = do
         lvl <- getLevel lid
-        let arenaFactions = filter ((== lid) . getEntryLevel) needInitialCrew
+        let arenaFactions = filter (hasActorsOnArena lid) needInitialCrew
             indexff (fid, _) = findIndex ((== fid) . fst) arenaFactions
             representsAlliance ff2@(_, fact2) =
               not $ any (\ff3@(fid3, _) ->
@@ -277,7 +277,7 @@ populateDungeon = do
             ntime = timeShift localTime (timeDeltaScale (Delta timeClip) nmult)
             validTile t = not $ Tile.isNoActor coTileSpeedup t
             initActors = finitialActors $ gplayer fact3
-            initGroups = concatMap (\(n, actorGroup) ->
+            initGroups = concatMap (\(_, n, actorGroup) ->
                                       replicate n actorGroup) initActors
         psFree <- getsState $ nearbyFreePoints validTile ppos lid
         let ps = zip3 initGroups [0..] psFree

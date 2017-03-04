@@ -86,9 +86,9 @@ data Player a = Player
   , fhasGender     :: !Bool        -- ^ whether actors have gender
   , ftactic        :: !Tactic      -- ^ non-leader behave according to this
                                    --   tactic; can be changed during the game
-  , fentryLevel    :: !a           -- ^ level where the initial members start
-  , finitialActors :: ![(a, GroupName ItemKind)]
-                                   -- ^ numbers and groups of initial members
+  , finitialActors :: ![(Int, a, GroupName ItemKind)]
+                                   -- ^ levels, numbers and groups of initial
+                                   --   members
   , fleaderMode    :: !LeaderMode  -- ^ the mode of switching the leader
   , fhasUI         :: !Bool        -- ^ does the faction have a UI client
                                    --   (for control or passive observation)
@@ -160,10 +160,9 @@ validateSinglePlayer caves Player{..} =
      | not fhasUI && case fleaderMode of
                        LeaderUI _ -> True
                        _ -> False ]
-  ++ [ "fentryLevel value not among cave numbers:" <+> fname
-     | any (`notElem` IM.keys caves)
-           [Dice.minDice fentryLevel
-            .. Dice.maxDice fentryLevel] ]  -- simplification
+  ++ [ "finitialActors levels not among caves:" <+> fname
+     | let f (ln, _, _) = ln `notElem` IM.keys caves
+       in any f finitialActors ]
   ++ [ "fskillsOther not negative:" <+> fname
      | any (>= 0) $ EM.elems fskillsOther ]
 

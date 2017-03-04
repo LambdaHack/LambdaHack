@@ -27,8 +27,7 @@ playerHero = Player
   , fhasNumbers = True
   , fhasGender = True
   , ftactic = TExplore
-  , fentryLevel = -1
-  , finitialActors = [(3, "hero")]
+  , finitialActors = []
   , fleaderMode = LeaderUI $ AutoLeader False False
   , fhasUI = True
   }
@@ -48,8 +47,7 @@ playerCivilian = Player
   , fhasNumbers = False
   , fhasGender = True
   , ftactic = TPatrol
-  , fentryLevel = -1
-  , finitialActors = [(d 2 + 1, "civilian")]
+  , finitialActors = []
   , fleaderMode = LeaderNull  -- unorganized
   , fhasUI = False
   }
@@ -64,8 +62,7 @@ playerMonster = Player
   , fhasNumbers = False
   , fhasGender = False
   , ftactic = TExplore
-  , fentryLevel = -4
-  , finitialActors = [(1, "scout monster"), (3, "monster")]
+  , finitialActors = []
   , fleaderMode =
       -- No point changing leader on level, since all move and they
       -- don't follow the leader.
@@ -88,8 +85,7 @@ playerAnimal = Player
   , fhasNumbers = False
   , fhasGender = False
   , ftactic = TRoam  -- can't pick up, so no point exploring
-  , fentryLevel = -1  -- fun from the start to avoid empty initial level
-  , finitialActors = [(1 + d 2, "animal")]
+  , finitialActors = []
   , fleaderMode = LeaderNull
   , fhasUI = False
   }
@@ -110,7 +106,6 @@ playerHorror = Player
   , fhasNumbers = False
   , fhasGender = False
   , ftactic = TPatrol  -- disoriented
-  , fentryLevel = -3
   , finitialActors = []
   , fleaderMode = LeaderNull
   , fhasUI = False
