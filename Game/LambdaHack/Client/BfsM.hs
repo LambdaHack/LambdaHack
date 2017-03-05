@@ -298,7 +298,7 @@ closestTriggers onlyDir aid = do
                 aiCond = if unexpForth
                          then easier && condEnoughGear
                               || (not unexpBack || easier) && lidExplored
-                         else allExplored && null (lescape lvl)
+                         else easier && allExplored && null (lescape lvl)
                 interesting = case onlyDir of
                   Just d -> d == up
                   Nothing -> aiCond

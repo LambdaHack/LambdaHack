@@ -632,15 +632,17 @@ trigger aid fleeViaStairs = do
           let easier = up /= (fromEnum (blid b) > 0)
               unexpForth = unexploredD up (blid b)
               unexpBack = unexploredD (not up) (blid b)
+              -- Forbid loops via peeking at unexplored and getting back.
               aiCond = if unexpForth
                        then easier && condEnoughGear
                             || (not unexpBack || easier) && lidExplored
-                       else allExplored && null (lescape lvl)
-              eben = if aiCond then 1000 else 0
+                       else easier && allExplored && null (lescape lvl)
+              -- Prefer one direction of stairs, to team up.
+              eben = if aiCond then if easier then 2 else 1 else 0
           return $!
              if fleeViaStairs  -- don't flee prematurely
-             then 1000 * eben  -- strongly prefer correct direction stairs
-             else 0  -- avoid trivial loops (pushing, being pushed, etc.)
+             then 10000 * eben
+             else 0
         ef@IK.Escape{} -> return $  -- flee via this way, too
           -- Only some factions try to escape but they first explore all
           -- for high score.
