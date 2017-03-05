@@ -116,8 +116,8 @@ buildTileMap cops@Kind.COps{ cotile=Kind.Ops{opick}
 
 -- | Create a level from a cave.
 buildLevel :: Kind.COps -> Int -> GroupName CaveKind
-           -> Int -> AbsDepth -> [(Point, GroupName PlaceKind)]
-           -> Rnd (Level, [(Point, GroupName PlaceKind)])
+           -> Int -> AbsDepth -> [Point]
+           -> Rnd (Level, [Point])
 buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
            ln genName minD totalDepth lstairPrev = do
   dkind <- fromMaybe (assert `failure` genName) <$> opick genName (const True)
@@ -129,41 +129,44 @@ buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
   -- the amount is filled up with single downstairs.
   -- If they do exceed @extraStairs@, some of them end here.
   extraStairs <- castDice ldepth totalDepth $ cextraStairs kc
-  let (abandonedStairs, singleStairsDown) =
+  let (abandonedStairs, remainingStairsDown) =
         if ln == minD then (length lstairPrev, 0)
         else let double = min (length lstairPrev) $ extraStairs
                  single = max 0 $ extraStairs - double
              in (length lstairPrev - double, single)
       (lstairsSingleUp, lstairsDouble) = splitAt abandonedStairs lstairPrev
-      allUpStairs = map fst $ lstairsDouble ++ lstairsSingleUp
+      lallUpStairs = lstairsDouble ++ lstairsSingleUp
+      freq = toFreq ("buildLevel" <+> tshow ln) $ map swap $ cstairFreq kc
       addSingleDown :: [(Point, GroupName PlaceKind)] -> Int
                     -> Rnd [(Point, GroupName PlaceKind)]
       addSingleDown acc 0 = return acc
       addSingleDown acc k = do
-        pos <- placeDownStairs kc $ allUpStairs ++ map fst acc
-        let freq = toFreq ("buildLevel ('" <> tshow ln <> ")")
-                   $ map swap $ cstairFreq kc
+        pos <- placeDownStairs kc $ lallUpStairs ++ map fst acc
         stairGroup <- frequency freq
         addSingleDown ((pos, stairGroup) : acc) (k - 1)
-  lstairsSingleDown <- addSingleDown [] singleStairsDown
-  let fixedStairsDouble = lstairsDouble
-      fixedStairsUp = map (\(p, t) ->
-        (p, toGroupName $ tshow t <+> "up")) lstairsSingleUp
-      fixedStairsDown = map (\(p, t) ->
-        (p, toGroupName $ tshow t <+> "down")) lstairsSingleDown
-      allStairs = allUpStairs ++ map fst lstairsSingleDown
+  stairsSingleDown <- addSingleDown [] remainingStairsDown
+  let lstairsSingleDown = map fst stairsSingleDown
+  fixedStairsDouble <- mapM (\p -> do
+    stairGroup <- frequency freq
+    return (p, stairGroup)) lstairsDouble
+  fixedStairsUp <- mapM (\p -> do
+    stairGroup <- frequency freq
+    return (p, toGroupName $ tshow stairGroup <+> "up")) lstairsSingleUp
+  let fixedStairsDown = map (\(p, t) ->
+        (p, toGroupName $ tshow t <+> "down")) stairsSingleDown
+      lallStairs = lallUpStairs ++ lstairsSingleDown
   fixedEscape <- case cescapeGroup kc of
                    Nothing -> return []
                    Just escapeGroup -> do
-                     epos <- placeDownStairs kc allStairs
+                     epos <- placeDownStairs kc lallStairs
                      return [(epos, escapeGroup)]
   let lescape = map fst fixedEscape
       fixedCenters = EM.fromList $
         fixedEscape ++ fixedStairsDouble ++ fixedStairsUp ++ fixedStairsDown
       posUp Point{..} = Point (px - 1) py
       posDn Point{..} = Point (px + 1) py
-      lstair = ( map (posUp . fst) $ lstairsSingleUp ++ lstairsDouble
-               , map (posDn . fst) $ lstairsDouble ++ lstairsSingleDown )
+      lstair = ( map posUp $ lstairsSingleUp ++ lstairsDouble
+               , map posDn $ lstairsDouble ++ lstairsSingleDown )
   dsecret <- randomR (1, maxBound)
   cave <- buildCave cops ldepth totalDepth dsecret dkind fixedCenters
   cmap <- buildTileMap cops cave
@@ -252,9 +255,9 @@ dungeonGen cops caves = do
       freshTotalDepth = assert (signum minD == signum maxD)
                         $ AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)
-      buildLvl :: ([(LevelId, Level)], [(Point, GroupName PlaceKind)])
+      buildLvl :: ([(LevelId, Level)], [Point])
                -> (Int, GroupName CaveKind)
-               -> Rnd ([(LevelId, Level)], [(Point, GroupName PlaceKind)])
+               -> Rnd ([(LevelId, Level)], [Point])
       buildLvl (l, ldown) (n, genName) = do
         -- lstairUp for the next level is lstairDown for the current level
         (lvl, ldown2) <- buildLevel cops n genName minD freshTotalDepth ldown

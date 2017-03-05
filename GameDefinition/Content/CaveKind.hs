@@ -160,7 +160,7 @@ noise = rogue
   , couterFenceTile = "noise fence"  -- ensures no cut-off parts from collapsed
   , cdarkCorTile  = "floorArenaDark"
   , clitCorTile   = "floorArenaLit"
-  , cstairFreq      = [("gated staircase", 100)]
+  , cstairFreq    = [("gated staircase", 100)]
   }
 shallow1rogue = rogue
   { csymbol       = 'D'
