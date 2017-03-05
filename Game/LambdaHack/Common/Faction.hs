@@ -92,7 +92,7 @@ data TGoal =
     -- ^ last seen position of the targeted actor
   | TEmbed !ItemBag !Point
     -- ^ in @TPoint (TEmbed bag p) _ q@ usually @bag@ is embbedded in @p@
-    -- and @q@ is an adjacent open tile
+    --   and @q@ is an adjacent open tile
   | TItem !ItemBag
   | TSmell
   | TUnknown

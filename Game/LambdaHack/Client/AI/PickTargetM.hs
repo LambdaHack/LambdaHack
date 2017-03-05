@@ -209,7 +209,7 @@ targetStrategy aid = do
                   ctriggersRaw <- closestTriggers Nothing aid
                   let ctriggers = toFreq "closestTriggers"
                                   $ filter desirableEmbed ctriggersRaw
-                  if not condEnoughGear || nullFreq ctriggers then do
+                  if nullFreq ctriggers then do
                       let vToTgt v0 = do
                             let vFreq = toFreq "vFreq"
                                         $ (20, v0) : map (1,) moves
@@ -263,12 +263,12 @@ targetStrategy aid = do
                                 rndToAction $ frequency ctriggers
                               setPath $ TPoint (TEmbed bag p0) (blid b) p
                           Just p -> setPath $ TPoint TUnknown (blid b) p
-                    else do
-                      (p, (p0, bag)) <- rndToAction $ frequency ctriggers
-                      setPath $ TPoint (TEmbed bag p0) (blid b) p
                   else do
-                    (p, bag) <- rndToAction $ frequency citems
-                    setPath $ TPoint (TItem bag) (blid b) p
+                    (p, (p0, bag)) <- rndToAction $ frequency ctriggers
+                    setPath $ TPoint (TEmbed bag p0) (blid b) p
+                else do
+                  (p, bag) <- rndToAction $ frequency citems
+                  setPath $ TPoint (TItem bag) (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint TSmell (blid b) p
       tellOthersNothingHere pos = do
         let f TgtAndPath{tapTgt} = case tapTgt of

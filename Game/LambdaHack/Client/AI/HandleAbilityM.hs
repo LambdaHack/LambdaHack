@@ -131,13 +131,11 @@ actionStrategy aid = do
             <$> trigger aid True
               -- flee via stairs, even if to wrong level;
               -- may return via different stairs
-          , condAdjTriggerable
-            && ((condNotCalmEnough || condHpTooLow)
-                && condThreatNearby && not condAimEnemyPresent
-                || condMeleeBad && condThreatAdj
-                || (lidExplored || condEnoughGear)
-                   && not condDesirableFloorItem
-                   && not condAimEnemyPresent) )
+          , condAdjTriggerable && not condAimEnemyPresent
+            && if (condNotCalmEnough || condHpTooLow) && condMeleeBad
+               then condThreatAdj  -- stairs risky, if weak use only to flee
+               else (lidExplored || condEnoughGear)
+                    && not condDesirableFloorItem )
         , ( [AbDisplace]
           , displaceFoe aid  -- only swap with an enemy to expose him
           , condBlocksFriends && condNonProjFoeAdj
@@ -608,6 +606,7 @@ trigger aid fleeViaStairs = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   lvl <- getLevel (blid b)
   unexploredD <- unexploredDepth
+  condEnoughGear <- condEnoughGearM aid
   itemToF <- itemToFullClient
   let aiAlterMinSkill p = Tile.aiAlterMinSkill coTileSpeedup $ lvl `at` p
       lidExplored = ES.member (blid b) explored
@@ -623,36 +622,25 @@ trigger aid fleeViaStairs = do
         Nothing -> []
         Just bag -> [(pos, concatMap iidToEffs $ EM.assocs bag)]
       feats = concatMap f $ filter enterableHere $ vicinityUnsafe (bpos b)
-      bens (p, fs) = do
-        bs <- mapM (ben p) fs
+      bens (_, fs) = do
+        bs <- mapM ben fs
         return $! if any (< -10) bs
                   then 0  -- mixed blessing
                   else sum bs
-      ben p feat = case feat of
-        IK.Ascend up | fleeViaStairs -> do -- change levels sensibly, in teams
-          let aimless = ftactic (gplayer fact) `elem` [TRoam, TPatrol]
-              easier = up /= (fromEnum (blid b) > 0)
+      ben feat = case feat of
+        IK.Ascend up -> do  -- change levels sensibly, in teams
+          let easier = up /= (fromEnum (blid b) > 0)
               unexpForth = unexploredD up (blid b)
               unexpBack = unexploredD (not up) (blid b)
-              eben
-                | aimless = 100  -- faction is not exploring, so switch at will
-                | unexpForth =
-                    if easier  -- alway try as easy level as possible
-                       || not unexpBack
-                          && lidExplored -- no other choice for exploration
-                    then 1000
-                    else 0
-                | not lidExplored = 0  -- fully explore current
-                | unexpBack = 0  -- wait for stairs in the opposite direciton
-                | not $ null $ lescape lvl = 0
-                    -- all explored, stay on the escape level
-                | otherwise = 2  -- no escape, switch levels occasionally
-          (lid2, _) <- getsState $ whereTo (blid b) p Nothing . sdungeon
+              aiCond = if unexpForth
+                       then easier && condEnoughGear
+                            || (not unexpBack || easier) && lidExplored
+                       else allExplored && null (lescape lvl)
+              eben = if aiCond then 1000 else 0
           return $!
-             if boldpos b == Just (bpos b)  -- probably used stairs last turn
-                && boldlid b == lid2  -- in the opposite direction
-             then 0  -- avoid trivial loops (pushing, being pushed, etc.)
-             else 1000 * eben + 1  -- strongly prefer correct direction stairs
+             if fleeViaStairs  -- don't flee prematurely
+             then 1000 * eben  -- strongly prefer correct direction stairs
+             else 0  -- avoid trivial loops (pushing, being pushed, etc.)
         ef@IK.Escape{} -> return $  -- flee via this way, too
           -- Only some factions try to escape but they first explore all
           -- for high score.

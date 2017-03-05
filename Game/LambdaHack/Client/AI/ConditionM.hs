@@ -13,7 +13,6 @@ module Game.LambdaHack.Client.AI.ConditionM
   , condBlocksFriendsM
   , condFloorWeaponM
   , condNoEqpWeaponM
-  , condEnoughGearM
   , condCanProjectM
   , condNotCalmEnoughM
   , condDesirableFloorItemM
@@ -203,23 +202,6 @@ condNoEqpWeaponM :: MonadClient m => ActorId -> m Bool
 condNoEqpWeaponM aid = do
   eqpAssocs <- getsState $ getActorAssocs aid CEqp
   return $ all (not . isMelee . snd) eqpAssocs  -- keep it lazy
-
--- | Check whether the actor has enough gear to go look for enemies.
--- We assume weapons in equipment are better than any among organs
--- or at least provide some essential diversity.
--- Disable if, due to tactic, actors follow leader and so would
--- repeatedly move towards and away form stairs at leader change,
--- depending on current leader's gear.
-condEnoughGearM :: MonadClient m => ActorId -> m Bool
-condEnoughGearM aid = do
-  b <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  let followTactic = ftactic (gplayer fact) `elem` [TFollow, TFollowNoItems]
-  eqpAssocs <- getsState $ getActorAssocs aid CEqp
-  invAssocs <- getsState $ getActorAssocs aid CInv
-  return $ not followTactic  -- keep it lazy
-           && (any (isMelee . snd) eqpAssocs
-               || length (eqpAssocs ++ invAssocs) >= 5)
 
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => Bool -> ActorId -> m Bool

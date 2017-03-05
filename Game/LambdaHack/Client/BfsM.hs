@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.BfsM
   , unexploredDepth
   , closestUnknown, closestSmell, furthestKnown
   , closestTriggers, closestItems, closestFoes
+  , condEnoughGearM
 #ifdef EXPOSE_INTERNAL
   , updatePathFromBfs
 #endif
@@ -28,8 +29,10 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -38,6 +41,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind (isUknownSpace)
 
 invalidateBfsAid :: MonadClient m => ActorId -> m ()
@@ -257,8 +261,8 @@ closestTriggers onlyDir aid = do
       alterSkill = EM.findWithDefault 0 Ability.AbAlter actorMaxSk
   explored <- getsClient sexplored
   dungeon <- getsState sdungeon
-  let escape = any (not . null . lescape) $ EM.elems dungeon
   unexploredD <- unexploredDepth
+  condEnoughGear <- condEnoughGearM aid
   classIid <- getsState $ \s iid ->
     -- Contrived, for now.
     let Item{jname} = getItemBody iid s
@@ -292,12 +296,12 @@ closestTriggers onlyDir aid = do
                 unexpForth = unexploredD up lid
                 unexpBack = unexploredD (not up) lid
                 aiCond = if unexpForth
-                         then easier || not unexpBack && lidExplored
-                         else not unexpBack && lidExplored
-                              && null (lescape lvl)
+                         then easier && condEnoughGear
+                              || (not unexpBack || easier) && lidExplored
+                         else allExplored && null (lescape lvl)
                 interesting = case onlyDir of
                   Just d -> d == up
-                  Nothing -> not escape && allExplored || aiCond
+                  Nothing -> aiCond
             in if interesting then (cid, (p, bag)) : acc else acc
       triggers = EM.foldrWithKey f [] $ lembed lvl
   -- The advantage of targeting the tiles in vicinity of triggers is that
@@ -324,6 +328,23 @@ closestTriggers onlyDir aid = do
           in (depthDelta * v, ppbag)
     in mapMaybe (\(cid, (p, pbag)) ->
          mix (cid, (p, pbag)) <$> accessBfs bfs p) vicAll
+
+-- | Check whether the actor has enough gear to go look for enemies.
+-- We assume weapons in equipment are better than any among organs
+-- or at least provide some essential diversity.
+-- Disable if, due to tactic, actors follow leader and so would
+-- repeatedly move towards and away form stairs at leader change,
+-- depending on current leader's gear.
+condEnoughGearM :: MonadClient m => ActorId -> m Bool
+condEnoughGearM aid = do
+  b <- getsState $ getActorBody aid
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  let followTactic = ftactic (gplayer fact) `elem` [TFollow, TFollowNoItems]
+  eqpAssocs <- getsState $ getActorAssocs aid CEqp
+  invAssocs <- getsState $ getActorAssocs aid CInv
+  return $ not followTactic  -- keep it lazy
+           && (any (isMelee . snd) eqpAssocs
+               || length (eqpAssocs ++ invAssocs) >= 5)
 
 unexploredDepth :: MonadClient m => m (Bool -> LevelId -> Bool)
 unexploredDepth = do
