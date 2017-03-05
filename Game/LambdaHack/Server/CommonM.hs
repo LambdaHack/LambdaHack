@@ -181,7 +181,7 @@ deduceQuits fid0 status = do
        -- only complete Victory matters, until enough of them die.
        let (victors, losers) = partition (flip isAllied fid0 . snd) othersInGame
        mapQuitF $ zip (repeat Escape) victors ++ zip (repeat Defeated) losers
-     | otherwise -> return ()
+     | otherwise -> quitF status fid0
 
 -- | Tell whether a faction that we know is still in game, keeps arena.
 -- Keeping arena means, if the faction is still in game,

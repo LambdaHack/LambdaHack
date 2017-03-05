@@ -348,6 +348,7 @@ battle = rogue  -- few lights and many solids, to help the less numerous heroes
   , cdefTile      = "battleSet"
   , cdarkCorTile  = "trailLit"  -- let trails give off light
   , clitCorTile   = "trailLit"
+  , couterFenceTile = "noise fence"  -- ensures no cut-off parts from collapsed
   }
 safari1 = escape
   { cfreq = [("caveSafari1", 1)]
