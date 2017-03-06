@@ -177,11 +177,12 @@ findPathBfs lalter fovLit pathSource pathGoal sepsRaw
                  else let alter = lalter `PointArray.accessI` p
                           dark = not $ fovLit $ PointArray.punindex axsize p
                       -- Prefer paths through more easily opened tiles
-                      -- and in the ambient dark (even if light carried,
-                      -- because it can be taken off at any moment).
-                      in if | alter == 0 && dark >= maxDark -> p  -- speedup
+                      -- and, secondly, in the ambient dark (even if light
+                      -- carried, because it can be taken off at any moment).
+                      in if | alter == 0 && dark -> p  -- speedup
                             | alter < minAlter -> minChild p dark alter mvs
-                            | dark > maxDark -> minChild p dark alter mvs
+                            | dark > maxDark && alter == minAlter ->
+                              minChild p dark alter mvs
                             | otherwise -> minChild minP maxDark minAlter mvs
             -- @maxBound@ means not alterable, so some child will be lower
             !newPos = minChild pos{-dummy-} False maxBound movesI
