@@ -338,7 +338,7 @@ playerHunamConvict =
 playerAnimalMagnificent =
   playerAnimal { fname = "Animal Magnificent Specimen Variety"
                , fneverEmpty = True
-               , finitialActors = [(-7, 10, "mobile animal")]
+               , finitialActors = [(-7, 20, "mobile animal")]
                , fleaderMode =  -- False to move away from stairs
                    LeaderAI $ AutoLeader True False }
 
