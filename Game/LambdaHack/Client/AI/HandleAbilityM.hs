@@ -323,7 +323,7 @@ equipItems aid = do
   invAssocs <- fullAssocsClient aid [CInv]
   shaAssocs <- fullAssocsClient aid [CSha]
   condAnyFoeAdj <- condAnyFoeAdjM aid
-  condShineBetrays <- condShineBetraysM aid
+  condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   let improve :: CStore
               -> (Int, [(ItemId, Int, CStore, CStore)])
@@ -347,7 +347,7 @@ equipItems aid = do
       -- when comparing to items we may want to equip. Anyway, the unneeded
       -- items should be removed in yieldUnneeded earlier or soon after.
       filterNeeded (_, itemFull) =
-        not $ unneeded cops condAnyFoeAdj condShineBetrays
+        not $ unneeded cops condAnyFoeAdj condShineWouldBetray
                        condAimEnemyPresent heavilyDistressed (not calmE)
                        body ar fact itemFull
       bestThree = bestByEqpSlot (filter filterNeeded eqpAssocs)
@@ -384,7 +384,7 @@ yieldUnneeded aid = do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   eqpAssocs <- fullAssocsClient aid [CEqp]
   condAnyFoeAdj <- condAnyFoeAdjM aid
-  condShineBetrays <- condShineBetraysM aid
+  condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
       -- Here AI hides from the human player the Ring of Speed And Bleeding,
       -- which is a bit harsh, but fair. However any subsequent such
@@ -398,7 +398,7 @@ yieldUnneeded aid = do
         let csha = if calmE then CSha else CInv
         in if | harmful cops body ar fact itemEqp ->
                 [(iidEqp, itemK itemEqp, CEqp, CInv)]
-              | hinders condAnyFoeAdj condShineBetrays
+              | hinders condAnyFoeAdj condShineWouldBetray
                         condAimEnemyPresent heavilyDistressed (not calmE)
                         body ar itemEqp ->
                 [(iidEqp, itemK itemEqp, CEqp, csha)]
@@ -423,7 +423,7 @@ unEquipItems aid = do
   invAssocs <- fullAssocsClient aid [CInv]
   shaAssocs <- fullAssocsClient aid [CSha]
   condAnyFoeAdj <- condAnyFoeAdjM aid
-  condShineBetrays <- condShineBetraysM aid
+  condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
       -- Here AI hides from the human player the Ring of Speed And Bleeding,
       -- which is a bit harsh, but fair. However any subsequent such
@@ -466,7 +466,7 @@ unEquipItems aid = do
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltaSerious (bcalmDelta body)
       filterNeeded (_, itemFull) =
-        not $ unneeded cops condAnyFoeAdj condShineBetrays
+        not $ unneeded cops condAnyFoeAdj condShineWouldBetray
                        condAimEnemyPresent heavilyDistressed (not calmE)
                        body ar fact itemFull
       bestThree =
@@ -520,11 +520,11 @@ harmful cops body ar fact itemFull =
 unneeded :: Kind.COps -> Bool -> Bool -> Bool -> Bool -> Bool
          -> Actor -> AspectRecord -> Faction -> ItemFull
          -> Bool
-unneeded cops condAnyFoeAdj condShineBetrays
+unneeded cops condAnyFoeAdj condShineWouldBetray
          condAimEnemyPresent heavilyDistressed condNotCalmEnough
          body ar fact itemFull =
   harmful cops body ar fact itemFull
-  || hinders condAnyFoeAdj condShineBetrays
+  || hinders condAnyFoeAdj condShineWouldBetray
              condAimEnemyPresent heavilyDistressed condNotCalmEnough
              body ar itemFull
 

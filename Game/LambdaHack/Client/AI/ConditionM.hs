@@ -17,7 +17,7 @@ module Game.LambdaHack.Client.AI.ConditionM
   , condNotCalmEnoughM
   , condDesirableFloorItemM
   , condMeleeBadM
-  , condShineBetraysM
+  , condShineWouldBetrayM
   , benAvailableItems
   , hinders
   , benGroundItems
@@ -238,7 +238,7 @@ benAvailableItems aid permitted cstores = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   condAnyFoeAdj <- condAnyFoeAdjM aid
-  condShineBetrays <- condShineBetraysM aid
+  condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condNotCalmEnough <- condNotCalmEnoughM aid
   actorAspect <- getsClient sactorAspect
@@ -252,7 +252,8 @@ benAvailableItems aid permitted cstores = do
         | (iid, kit@(k, _)) <- EM.assocs bag
         , let itemFull = itemToF iid kit
               benefit = totalUsefulness cops b ar fact itemFull
-              hind = hinders condAnyFoeAdj condShineBetrays condAimEnemyPresent
+              hind = hinders condAnyFoeAdj condShineWouldBetray
+                             condAimEnemyPresent
                              heavilyDistressed condNotCalmEnough
                              b ar itemFull
         , permitted (fst <$> benefit) itemFull b ar
@@ -267,12 +268,12 @@ benAvailableItems aid permitted cstores = do
 hinders :: Bool -> Bool -> Bool -> Bool -> Bool
         -> Actor -> AspectRecord -> ItemFull
         -> Bool
-hinders condAnyFoeAdj condShineBetrays condAimEnemyPresent
+hinders condAnyFoeAdj condShineWouldBetray condAimEnemyPresent
         heavilyDistressed condNotCalmEnough
           -- guess that enemies have projectiles and used them now or recently
         body ar itemFull =
   let itemShine = 0 < aShine (aspectRecordFull itemFull)
-      itemShineBad = itemShine && condShineBetrays && not condAnyFoeAdj
+      itemShineBad = itemShine && condShineWouldBetray && not condAnyFoeAdj
   in -- Fast actors want to hide in darkness to ambush opponents and want
      -- to hit hard for the short span they get to survive melee.
      bspeed body ar > speedWalk
@@ -372,19 +373,13 @@ condMeleeBadM aid = do
            || noFriendlyHelp  -- still not getting friends' help
     -- no $!; keep it lazy
 
--- | Require that the actor stands in the dark, but is betrayed
+-- | Require that the actor stands in the dark and so would be betrayed
 -- by his own equipped light,
-condShineBetraysM :: MonadClient m => ActorId -> m Bool
-condShineBetraysM aid = do
+condShineWouldBetrayM :: MonadClient m => ActorId -> m Bool
+condShineWouldBetrayM aid = do
   b <- getsState $ getActorBody aid
-  actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
-  let actorShines = aShine ar > 0
   aInAmbient <- getsState $ actorInAmbient b
   return $! not aInAmbient  -- tile is dark, so actor could hide
-            && actorShines  -- but actor betrayed by his eqp or organ light
 
 -- | Produce a list of acceptable adjacent points to flee to.
 fleeList :: MonadClient m => ActorId -> m ([(Int, Point)], [(Int, Point)])
