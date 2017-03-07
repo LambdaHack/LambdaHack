@@ -201,9 +201,9 @@ partItemHigh side factionD = partItemN side factionD False 10 100
 -- a subset of items to drop.
 partItemWsR :: FactionId -> FactionDict
             -> Bool -> Int -> CStore -> Time -> ItemFull -> MU.Part
-partItemWsR side factionD ranged count c localTime itemFull =
+partItemWsR side factionD ranged count cstore localTime itemFull =
   let (temporary, unique, name, stats) =
-        partItemN side factionD ranged 5 4 c localTime itemFull
+        partItemN side factionD ranged 5 4 cstore localTime itemFull
   in if | temporary && count == 1 -> MU.Phrase [name, stats]
         | temporary -> MU.Phrase [MU.Text $ tshow count <> "-fold", name, stats]
         | unique && count == 1 -> MU.Phrase ["the", name, stats]

@@ -3,7 +3,10 @@
 module Game.LambdaHack.Client.UI.InventoryM
   ( Suitability(..)
   , getFull, getGroupItem, getStoreItem
-  , storeFromMode, ppItemDialogMode, ppItemDialogModeFrom
+  , ppItemDialogMode, ppItemDialogModeFrom
+#ifdef EXPOSE_INTERNAL
+  , storeFromMode
+#endif
   ) where
 
 import Prelude ()
@@ -49,6 +52,8 @@ ppItemDialogMode :: ItemDialogMode -> (Text, Text)
 ppItemDialogMode (MStore cstore) = ppCStore cstore
 ppItemDialogMode MOwned = ("in", "our possession")
 ppItemDialogMode MStats = ("among", "strenghts")
+ppItemDialogMode MLoreItem = ("among", "item lore")
+ppItemDialogMode MLoreOrgan = ("among", "organ lore")
 
 ppItemDialogModeIn :: ItemDialogMode -> Text
 ppItemDialogModeIn c = let (tIn, t) = ppItemDialogMode c in tIn <+> t
@@ -60,7 +65,9 @@ storeFromMode :: ItemDialogMode -> CStore
 storeFromMode c = case c of
   MStore cstore -> cstore
   MOwned -> CGround  -- needed to decide display mode in textAllAE
-  MStats -> CGround  -- needed to decide display mode in textAllAE
+  MStats -> CGround
+  MLoreItem -> CGround
+  MLoreOrgan -> COrgan
 
 accessModeBag :: ActorId -> State -> ItemDialogMode -> ItemBag
 accessModeBag leader s (MStore cstore) = let b = getActorBody leader s
@@ -68,6 +75,8 @@ accessModeBag leader s (MStore cstore) = let b = getActorBody leader s
 accessModeBag leader s MOwned = let fid = bfid $ getActorBody leader s
                                 in sharedAllOwnedFid False fid s
 accessModeBag _ _ MStats = EM.empty
+accessModeBag _ s MLoreItem = EM.map (const (1, [])) $ sitemD s
+accessModeBag _ s MLoreOrgan = EM.map (const (1, [])) $ sitemD s
 
 -- | Let a human player choose any item from a given group.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -110,7 +119,8 @@ getStoreItem prompt cInitial = do
         MStore store -> not $ EM.null $ getBodyStoreBag body store s
         x -> assert `failure` x
       itemCs = map MStore [CInv, CGround, CEqp, CSha]
-      allCs = itemCs ++ [MOwned, MStore COrgan, MStats]
+      allCs | cInitial `elem` [MLoreItem, MLoreOrgan] = [MLoreItem, MLoreOrgan]
+            | otherwise = itemCs ++ [MOwned, MStore COrgan, MStats]
       firstC = if cInitial `notElem` itemCs then cInitial else
         case find notEmptyC (cInitial : itemCs) of
           Just fC -> fC
@@ -218,7 +228,7 @@ getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
     ([], [(iid, k)]) | not askWhenLone -> do
       itemToF <- itemToFullClient
       ItemSlots itemSlots organSlots <- getsClient sslots
-      let isOrgan = cCur == MStore COrgan
+      let isOrgan = cCur `elem` [MStore COrgan, MLoreOrgan]
           lSlots = if isOrgan then organSlots else itemSlots
           slotChar = fromMaybe (assert `failure` (iid, lSlots))
                      $ lookup iid $ map swap $ EM.assocs lSlots
@@ -287,7 +297,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
       getMultResult ekm iids = (Right $ map getSingleResult iids, (cCur, ekm))
       filterP iid kit = psuitFun $ itemToF iid kit
       bagAllSuit = EM.filterWithKey filterP bagAll
-      isOrgan = cCur == MStore COrgan
+      isOrgan = cCur `elem` [MStore COrgan, MLoreOrgan]
       lSlots = if isOrgan then organSlots else itemSlots
       bagItemSlotsAll = EM.filter (`EM.member` bagAll) lSlots
       -- Predicate for slot matching the current prefix, unless the prefix
@@ -500,15 +510,16 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
     let allOKX = concatMap snd $ slideshow okxs
         pointer =
           case findIndex ((== Right lastSlot) . fst) allOKX of
-            Just p | cCur /= MStats -> p
+            Just p | cCur `notElem` [MStats, MLoreItem, MLoreOrgan] -> p
             _ -> case findIndex (isRight . fst) allOKX of
               Just p -> p
               _ -> 0
     (okm, pointer2) <- displayChoiceScreen ColorFull False pointer okxs itemKeys
-    -- Remember item pointer, unless stats. Remember even if not moved,
-    -- in case the initial position was a default.
+    -- Remember item pointer, unless not a proper item container. Remember
+    -- even if not moved, in case the initial position was a default.
     case drop pointer2 allOKX of
-      (Right slastSlot, _) : _ | cCur /= MStats ->
+      (Right slastSlot, _) : _
+        | cCur `notElem` [MStats, MLoreItem, MLoreOrgan] ->
         modifyClient $ \cli -> cli {slastSlot}
       _ -> return ()
     return okm

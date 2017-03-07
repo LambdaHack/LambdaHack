@@ -119,7 +119,7 @@ instance Hashable CStore
 
 instance NFData CStore
 
-data ItemDialogMode = MStore CStore | MOwned | MStats
+data ItemDialogMode = MStore CStore | MOwned | MStats | MLoreItem | MLoreOrgan
   deriving (Show, Read, Eq, Ord, Generic)
 
 instance NFData ItemDialogMode

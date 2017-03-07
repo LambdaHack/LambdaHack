@@ -113,6 +113,9 @@ standardKeys = KeyKind
       , ("A", ( [CmdItem]
               , "manage all owned items"
               , ChooseItemMenu MOwned ))
+      , ("~", ( [CmdItem]
+              , "display known lore"
+              , ChooseItemMenu MLoreItem ))
       , ("@", ( [CmdItem]
               , "describe organs of the leader"
               , ChooseItemMenu (MStore COrgan) ))

@@ -152,6 +152,14 @@ chooseItemDialogMode c = do
           makePhrase
             [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "estimate"
             , MU.WownW (MU.Text $ bpronoun body) $ MU.Text t ]
+        MLoreItem ->
+          makePhrase
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "recall"
+            , MU.WownW (MU.Text $ bpronoun body) $ MU.Text t ]
+        MLoreOrgan ->
+          makePhrase
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "recall"
+            , MU.WownW (MU.Text $ bpronoun body) $ MU.Text t ]
         _ ->
           makePhrase
             [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"
@@ -163,31 +171,33 @@ chooseItemDialogMode c = do
     (Right (iid, itemFull), (c2, _)) -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
+      let displayLore store prompt2 = do
+            promptAdd prompt2
+            lidV <- viewedLevelUI
+            Level{lxsize, lysize} <- getLevel lidV
+            localTime <- getsState $ getLocalTime (blid b)
+            factionD <- getsState sfactionD
+            actorAspect <- getsClient sactorAspect
+            let ar = case EM.lookup leader actorAspect of
+                  Just aspectRecord -> aspectRecord
+                  Nothing -> assert `failure` leader
+                attrLine = itemDesc (bfid b) factionD (aHurtMelee ar)
+                                    store localTime itemFull
+                ov = splitAttrLine lxsize attrLine
+            slides <-
+              overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] (ov, [])
+            km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
+            if km == K.spaceKM
+            then chooseItemDialogMode c2
+            else failWith "never mind"
       case c2 of
         MStore COrgan -> do
-          actorAspect <- getsClient sactorAspect
-          let ar = case EM.lookup leader actorAspect of
-                Just aspectRecord -> aspectRecord
-                Nothing -> assert `failure` leader
-              symbol = jsymbol (itemBase itemFull)
+          let symbol = jsymbol (itemBase itemFull)
               blurb | symbol == '+' = "temporary condition"
                     | otherwise = "organ"
               prompt2 = makeSentence [ partActor b, "can't choose"
                                      , MU.AW blurb ]
-          promptAdd prompt2
-          lidV <- viewedLevelUI
-          Level{lxsize, lysize} <- getLevel lidV
-          localTime <- getsState $ getLocalTime (blid b)
-          factionD <- getsState sfactionD
-          let attrLine = itemDesc (bfid b) factionD (aHurtMelee ar)
-                                  COrgan localTime itemFull
-              ov = splitAttrLine lxsize attrLine
-          slides <-
-            overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] (ov, [])
-          km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
-          if km == K.spaceKM
-          then chooseItemDialogMode c2
-          else failWith "never mind"
+          displayLore COrgan prompt2
         MStore fromCStore -> do
           modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
           return $ Right c2
@@ -209,6 +219,12 @@ chooseItemDialogMode c = do
                void $ pickLeader True newAid
                return $ Right c2
         MStats -> assert `failure` ggi
+        MLoreItem -> displayLore CGround
+          (makeSentence [ MU.SubjectVerbSg (partActor b) "remember"
+                        , "item lore" ])
+        MLoreOrgan -> displayLore COrgan
+          (makeSentence [ MU.SubjectVerbSg (partActor b) "remember"
+                        , "organ lore" ])
     (Left _, (MStats, ekm)) -> case ekm of
       Right slot -> do
         let eqpSlot = statSlots !! fromJust (elemIndex slot allZeroSlots)
