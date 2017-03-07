@@ -220,9 +220,12 @@ rosterRaid = Roster
                                   , fhiCondPoly = hiRaid
                                   , finitialActors = [(-2, 1, "hero")] }
                  , playerAnimal { -- starting over escape
-                                  finitialActors = [(-2, 2, "animal")] } ]
+                                  finitialActors = [(-2, 2, "animal")] }
+                 , playerHorror ]  -- for summoned monsters
   , rosterEnemy = [ ("Explorer Party", "Animal Kingdom")
-                  , ("Red Founder", "Animal Kingdom") ]
+                  , ("Red Founder", "Animal Kingdom")
+                  , ("Explorer Party", "Horror Den")
+                  , ("Red Founder", "Horror Den") ]
   , rosterAlly = [] }
 
 rosterBrawl = Roster
@@ -283,8 +286,10 @@ rosterZoo = Roster
                               , fhiCondPoly = hiDweller
                               , finitialActors = [(-8, 5, "soldier hero")] }
                  , playerAnimal { finitialActors = [(-8, 100, "mobile animal")]
-                                , fneverEmpty = True } ]
-  , rosterEnemy = [("Explorer Party", "Animal Kingdom")]
+                                , fneverEmpty = True }
+                 , playerHorror ]  -- for summoned monsters
+  , rosterEnemy = [ ("Explorer Party", "Animal Kingdom")
+                  , ("Explorer Party", "Horror Den") ]
   , rosterAlly = [] }
 
 rosterAmbush = Roster
@@ -347,6 +352,7 @@ playerAnimalExquisite =
                , fneverEmpty = True
                , finitialActors = [(-10, 30, "mobile animal")] }
 
+-- No horrors faction needed, because spawned heroes land in civilian faction.
 rosterSafari = Roster
   { rosterList = [ playerMonsterTourist
                  , playerHunamConvict
