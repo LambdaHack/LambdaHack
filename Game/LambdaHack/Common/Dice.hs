@@ -6,7 +6,7 @@
 module Game.LambdaHack.Common.Dice
   ( -- * Frequency distribution for casting dice scaled with level depth
     Dice, diceConst, diceLevel, diceMult, (|*|)
-  , d, ds, dl, intToDice
+  , d, dl, intToDice
   , maxDice, minDice, meanDice, reduceDice
     -- * Dice for rolling a pair of integer parameters representing coordinates.
   , DiceXY(..), maxDiceXY, minDiceXY, meanDiceXY
@@ -87,7 +87,7 @@ zdieSimple :: Int -> SimpleDice
 zdieSimple n = uniformFreq ("z" <> tshow n) [0..n-1]
 
 dieLevelSimple :: Int -> SimpleDice
-dieLevelSimple n = uniformFreq ("ds" <> tshow n) [1..n]
+dieLevelSimple n = uniformFreq ("dl" <> tshow n) [1..n]
 
 zdieLevelSimple :: Int -> SimpleDice
 zdieLevelSimple n = uniformFreq ("zl" <> tshow n) [0..n-1]
@@ -168,11 +168,8 @@ d :: Int -> Dice
 d n = Dice (dieSimple n) 0 1
 
 -- | Dice scaled with level.
-ds :: Int -> Dice
-ds n = Dice 0 (dieLevelSimple n) 1
-
 dl :: Int -> Dice
-dl = ds
+dl n = Dice 0 (dieLevelSimple n) 1
 
 -- Not exposed to save on documentation.
 _z :: Int -> Dice
