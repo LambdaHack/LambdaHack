@@ -135,7 +135,7 @@ strMelee effectBonus localTime itemFull =
       p ELabel{} = []
       p OnSmash{} = []
       -- Hackish extra bonus to force Summon as first effect used
-      -- before Calm of enemy is depleted.
+      -- before Calm is depleted due to the fight.
       p (Recharging Summon{}) = [999 | recharged]
       -- We assume the weapon is still worth using, even if some effects
       -- are charging; in particular, we assume Hurt or Burn are not

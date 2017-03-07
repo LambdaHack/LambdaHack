@@ -516,7 +516,7 @@ scroll5 = scroll
   { irarity  = [(10, 15)]
   , ieffects = [ Impress
                , OneOf [ Teleport 20, Ascend False, Ascend True
-                       , Summon "mobile animal" 2, Summon "hero" 1
+                       , Summon "hero" 1, Summon "mobile animal" 2
                        , Detect 10, OverfillCalm (-100)
                        , CreateItem CGround "useful" TimerNone ] ]
   }
@@ -593,7 +593,7 @@ seeingItem = ItemKind
   , iverbHit = "gaze at"
   , iweight  = 100
   , idamage  = toDmg 0
-  , iaspects = [ AddSight 10, AddMaxCalm 60, AddShine 2
+  , iaspects = [ AddSight 10, AddMaxCalm 30, AddShine 2
                , Timeout $ 1 + d 2 ]
   , ieffects = [ Periodic
                , Recharging (toOrganNone "poisoned")

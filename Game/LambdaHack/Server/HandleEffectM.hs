@@ -176,7 +176,7 @@ itemEffect :: (MonadAtomic m, MonadServer m)
            -> [IK.Effect]
            -> m Bool
 itemEffect source target iid c recharged periodic effects = do
-  trs <- mapM (effectSem source target iid c recharged) effects
+  trs <- mapM (effectSem source target iid c recharged periodic) effects
   let triggered = or trs
   sb <- getsState $ getActorBody source
   -- Announce no effect, which is rare and wastes time, so noteworthy.
@@ -193,10 +193,11 @@ itemEffect source target iid c recharged periodic effects = do
 -- The boolean result indicates if the effect actually fired up,
 -- as opposed to fizzled.
 effectSem :: (MonadAtomic m, MonadServer m)
-          => ActorId -> ActorId -> ItemId -> Container -> Bool -> IK.Effect
+          => ActorId -> ActorId -> ItemId -> Container -> Bool -> Bool
+          -> IK.Effect
           -> m Bool
-effectSem source target iid c recharged effect = do
-  let recursiveCall = effectSem source target iid c recharged
+effectSem source target iid c recharged periodic effect = do
+  let recursiveCall = effectSem source target iid c recharged periodic
   sb <- getsState $ getActorBody source
   pos <- getsState $ posFromC c
   -- @execSfx@ usually comes last in effect semantics, but not always
@@ -213,7 +214,7 @@ effectSem source target iid c recharged effect = do
     IK.OverfillCalm p -> effectRefillCalm True execSfx p source target
     IK.Dominate -> effectDominate recursiveCall source target
     IK.Impress -> effectImpress recursiveCall execSfx source target
-    IK.Summon grp p -> effectSummon execSfx grp p source target
+    IK.Summon grp p -> effectSummon execSfx grp p source target periodic
     IK.Ascend p -> effectAscend recursiveCall execSfx p source target pos
     IK.Escape{} -> effectEscape source target
     IK.Paralyze p -> effectParalyze execSfx p target
@@ -521,30 +522,34 @@ effectImpress recursiveCall execSfx source target = do
 -- Note that the Calm expended doesn't depend on the number of actors summoned.
 effectSummon :: (MonadAtomic m, MonadServer m)
              => m () -> GroupName ItemKind -> Dice.Dice -> ActorId -> ActorId
+             -> Bool
              -> m Bool
-effectSummon execSfx grp nDm source target = do
+effectSummon execSfx grp nDm source target periodic = do
   -- Obvious effect, nothing announced.
   Kind.COps{coTileSpeedup} <- getsState scops
   power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   actorAspect <- getsServer sactorAspect
-  let ar = actorAspect EM.! target
-  if not $ calmEnough tb ar then do
-    unless (bproj tb) $ do
-      let subject = partActor tb
-          verb = "lack enough Calm to summon"
+  let ar = actorAspect EM.! source
+  -- Verify Calm only at periodic activations. Otherwise summon uses up
+  -- the item, which prevent summoning getting out of control
+  -- (unless the item is durable, so normally it shouldn't be).
+  if periodic && not (bproj sb) && not (calmEnough sb ar) then do
+    unless (bproj sb) $ do
+      let subject = partActor sb
+          verb = "lack Calm to summon"
           msg = makeSentence [MU.SubjectVerbSg subject verb]
       execSfxAtomic $ SfxMsgFid (bfid sb) msg
     return False
   else do
     execSfx
-    let deltaCalm = - xM 10
-    unless (bproj tb) $ udpateCalm target deltaCalm
+    let deltaCalm = - xM 30
+    unless (bproj sb) $ udpateCalm source deltaCalm
     let validTile t = not $ Tile.isNoActor coTileSpeedup t
     ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
     localTime <- getsState $ getLocalTime (blid tb)
-    -- Make sure summoned actors start acting after the summoner.
+    -- Make sure summoned actors start acting after the victim.
     let targetTime = timeShift localTime $ ticksPerMeter $ bspeed tb ar
         afterTime = timeShift targetTime $ Delta timeClip
     bs <- forM (take power ps) $ \p -> do
