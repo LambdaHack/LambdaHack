@@ -2,7 +2,8 @@
 module Content.ModeKindPlayer
   ( playerHero, playerAntiHero, playerCivilian
   , playerMonster, playerAntiMonster, playerAnimal
-  , playerHorror
+  , playerHorror, playerMonsterTourist, playerHunamConvict
+  , playerAnimalMagnificent, playerAnimalExquisite
   , hiHero, hiDweller, hiRaid, hiEscapist
   ) where
 
@@ -11,12 +12,11 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Game.LambdaHack.Common.Ability
-import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ModeKind
 
-playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror :: Player Dice
+playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror, playerMonsterTourist, playerHunamConvict, playerAnimalMagnificent, playerAnimalExquisite :: Player
 
 playerHero = Player
   { fname = "Explorer Party"
@@ -28,7 +28,6 @@ playerHero = Player
   , fhasNumbers = True
   , fhasGender = True
   , ftactic = TExplore
-  , finitialActors = []
   , fleaderMode = LeaderUI $ AutoLeader False False
   , fhasUI = True
   }
@@ -48,7 +47,6 @@ playerCivilian = Player
   , fhasNumbers = False
   , fhasGender = True
   , ftactic = TPatrol
-  , finitialActors = []
   , fleaderMode = LeaderNull  -- unorganized
   , fhasUI = False
   }
@@ -63,7 +61,6 @@ playerMonster = Player
   , fhasNumbers = False
   , fhasGender = False
   , ftactic = TExplore
-  , finitialActors = []
   , fleaderMode =
       -- No point changing leader on level, since all move and they
       -- don't follow the leader.
@@ -86,7 +83,6 @@ playerAnimal = Player
   , fhasNumbers = False
   , fhasGender = False
   , ftactic = TRoam  -- can't pick up, so no point exploring
-  , finitialActors = []
   , fleaderMode = LeaderNull
   , fhasUI = False
   }
@@ -106,10 +102,29 @@ playerHorror = Player
   , fhasNumbers = False
   , fhasGender = False
   , ftactic = TPatrol  -- disoriented
-  , finitialActors = []
   , fleaderMode = LeaderNull
   , fhasUI = False
   }
+
+playerMonsterTourist =
+  playerAntiMonster { fname = "Monster Tourist Office"
+                    , fcanEscape = True
+                    , fneverEmpty = True  -- no spawning
+                    , ftactic = TFollow  -- follow-the-guide, as tourists do
+                    , fleaderMode = LeaderUI $ AutoLeader False False }
+
+playerHunamConvict =
+  playerCivilian {fname = "Hunam Convict Pack"}
+
+playerAnimalMagnificent =
+  playerAnimal { fname = "Animal Magnificent Specimen Variety"
+               , fneverEmpty = True
+               , fleaderMode = -- False to move away from stairs
+                               LeaderAI $ AutoLeader True False }
+
+playerAnimalExquisite =
+  playerAnimal { fname = "Animal Exquisite Herds and Packs"
+               , fneverEmpty = True }
 
 victoryOutcomes :: [Outcome]
 victoryOutcomes = [Conquer, Escape]

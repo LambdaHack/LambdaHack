@@ -58,7 +58,7 @@ getEntryArena fact = do
           _ -> assert `failure` "empty dungeon" `twith` dungeon
       f [] = 0
       f ((ln, _, _) : _) = ln
-  return $! max minD $ min maxD $ toEnum $ f $ finitialActors $ gplayer fact
+  return $! max minD $ min maxD $ toEnum $ f $ ginitial fact
 
 pickWeaponM :: MonadStateRead m
             => [(ItemId, ItemFull)] -> Ability.Skills -> ActorAspect

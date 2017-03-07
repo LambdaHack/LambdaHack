@@ -7,6 +7,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import Control.Arrow (first)
 import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
@@ -113,13 +114,12 @@ mapFromFuns =
 resetFactions :: FactionDict -> Kind.Id ModeKind -> Int -> AbsDepth -> Roster
               -> Rnd FactionDict
 resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
-  let rawCreate Player{..} = do
-        let castInitialActor (ln, d, actorGroup) = do
+  let rawCreate (gplayer@Player{..}, initialActors) = do
+        let castInitialActors (ln, d, actorGroup) = do
               n <- castDice (AbsDepth $ abs ln) totalDepth d
               return (ln, n, actorGroup)
-        initialActors <- mapM castInitialActor finitialActors
-        let gplayer = Player{finitialActors = initialActors, ..}
-            cmap = mapFromFuns
+        ginitial <- mapM castInitialActors initialActors
+        let cmap = mapFromFuns
                      [colorToTeamName, colorToPlainName, colorToFancyName]
             nameoc = T.toLower $ head $ T.words fname
             prefix = case fleaderMode of
@@ -144,11 +144,11 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
             gvictimsD = gvictimsDnew
             gsha = EM.empty
         return $! Faction{..}
-  lUI <- mapM rawCreate $ filter fhasUI $ rosterList players
+  lUI <- mapM rawCreate $ filter (fhasUI . fst) $ rosterList players
   let !_A = assert (length lUI <= 1
                     `blame` "currently, at most one faction may have a UI"
                     `twith` lUI) ()
-  lnoUI <- mapM rawCreate $ filter (not . fhasUI) $ rosterList players
+  lnoUI <- mapM rawCreate $ filter (not . fhasUI . fst) $ rosterList players
   let lFs = reverse (zip [toEnum (-1), toEnum (-2)..] lnoUI)  -- sorted
             ++ zip [toEnum 1..] lUI
       swapIx l =
@@ -204,7 +204,7 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
                       <$> opick gameMode (const True)
         let mode = okind modeKindId
             automatePS ps = ps {rosterList =
-                                  map (automatePlayer True) $ rosterList ps}
+              map (first $ automatePlayer True) $ rosterList ps}
             players = if sautomateAll sdebug
                       then automatePS $ mroster mode
                       else mroster mode
@@ -245,14 +245,14 @@ populateDungeon = do
       valuePlayer pl = (not $ fcanEscape pl, fname pl)
       -- Sorting, to keep games from similar game modes mutually reproducible.
       needInitialCrew = sortBy (comparing $ valuePlayer . gplayer . snd)
-                        $ filter (not . null . finitialActors . gplayer . snd)
+                        $ filter (not . null . ginitial . snd)
                         $ EM.assocs factionD
       g (ln, _, _) = max minD . min maxD . toEnum $ ln
-      getEntryLevels (_, fact) = map g $ finitialActors $ gplayer fact
+      getEntryLevels (_, fact) = map g $ ginitial fact
       arenas = ES.toList $ ES.fromList
                $ concatMap getEntryLevels needInitialCrew
       hasActorsOnArena lid (_, fact) =
-        any ((== lid) . g) $ finitialActors $ gplayer fact
+        any ((== lid) . g) $ ginitial fact
       initialActors lid = do
         lvl <- getLevel lid
         let arenaFactions = filter (hasActorsOnArena lid) needInitialCrew
@@ -276,7 +276,7 @@ populateDungeon = do
             nmult = 1 + timeOffset `mod` clipInTurn
             ntime = timeShift localTime (timeDeltaScale (Delta timeClip) nmult)
             validTile t = not $ Tile.isNoActor coTileSpeedup t
-            initActors = finitialActors $ gplayer fact3
+            initActors = ginitial fact3
             initGroups = concat [ replicate n actorGroup
                                 | ln3@(_, n, actorGroup) <- initActors
                                 , g ln3 == lid ]

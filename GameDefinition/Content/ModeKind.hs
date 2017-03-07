@@ -12,7 +12,6 @@ import qualified Data.IntMap.Strict as IM
 import Content.ModeKindPlayer
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Dice
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ModeKind
 
 cdefs :: ContentDef ModeKind
@@ -169,59 +168,50 @@ defense = ModeKind  -- testing scenario; perhaps real scenario in the future
 
 -- * Screensaver modes
 
+screensave :: AutoLeader -> Roster -> Roster
+screensave auto r =
+  let f [] = []
+      f ((player, initial) : rest) =
+        (player {fleaderMode = LeaderAI auto}, initial) : rest
+  in r {rosterList = f $ rosterList r}
+
 screensaverSafari = safari
   { mname   = "auto-safari"
   , mfreq   = [("starting", 1), ("no confirms", 1)]
-  , mroster = rosterSafari
-      { rosterList = (head (rosterList rosterSafari))
-                       -- changing leader by client needed, because of TFollow
-                       {fleaderMode = LeaderAI $ AutoLeader False True}
-                     : tail (rosterList rosterSafari)
-      }
+  , mroster = -- changing leader by client needed, because of TFollow
+              screensave (AutoLeader False True) rosterSafari
   }
 
 screensaverRaid = raid
   { mname   = "auto-raid"
   , mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
-  , mroster = rosterRaid
-      { rosterList = (head (rosterList rosterRaid))
-                       {fleaderMode = LeaderAI $ AutoLeader False False}
-                     : tail (rosterList rosterRaid)
-      }
+  , mroster = screensave (AutoLeader False False) rosterRaid
   }
 
 screensaverBrawl = brawl
   { mname   = "auto-brawl"
   , mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
-  , mroster = rosterBrawl
-      { rosterList = (head (rosterList rosterBrawl))
-                       {fleaderMode = LeaderAI $ AutoLeader False False}
-                     : tail (rosterList rosterBrawl)
-      }
+  , mroster = screensave (AutoLeader False False) rosterBrawl
   }
 
 screensaverAmbush = ambush
   { mname   = "auto-ambush"
   , mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
-  , mroster = rosterAmbush
-      { rosterList = (head (rosterList rosterAmbush))
-                       {fleaderMode = LeaderAI $ AutoLeader False False}
-                     : tail (rosterList rosterAmbush)
-      }
+  , mroster = screensave (AutoLeader False False) rosterAmbush
   }
 
 
 rosterRaid, rosterBrawl, rosterShootout, rosterEscape, rosterZoo, rosterAmbush, rosterExploration, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleSurvival, rosterDefense :: Roster
 
 rosterRaid = Roster
-  { rosterList = [ playerHero { fhiCondPoly = hiRaid
-                              , finitialActors = [(-2, 1, "hero")] }
-                 , playerAntiHero { fname = "Red Founder"
-                                  , fhiCondPoly = hiRaid
-                                  , finitialActors = [(-2, 1, "hero")] }
-                 , playerAnimal { -- starting over escape
-                                  finitialActors = [(-2, 2, "animal")] }
-                 , playerHorror ]  -- for summoned monsters
+  { rosterList = [ ( playerHero {fhiCondPoly = hiRaid}
+                   , [(-2, 1, "hero")] )
+                 , ( playerAntiHero { fname = "Red Founder"
+                                    , fhiCondPoly = hiRaid }
+                   , [(-2, 1, "hero")] )
+                 , ( playerAnimal  -- starting over escape
+                   , [(-2, 2, "animal")] )
+                 , (playerHorror, []) ]  -- for summoned monsters
   , rosterEnemy = [ ("Explorer Party", "Animal Kingdom")
                   , ("Red Founder", "Animal Kingdom")
                   , ("Explorer Party", "Horror Den")
@@ -229,14 +219,14 @@ rosterRaid = Roster
   , rosterAlly = [] }
 
 rosterBrawl = Roster
-  { rosterList = [ playerHero { fcanEscape = False
-                              , fhiCondPoly = hiDweller
-                              , finitialActors = [(-3, 3, "hero")] }
-                 , playerAntiHero { fname = "Indigo Research"
-                                  , fcanEscape = False
-                                  , fhiCondPoly = hiDweller
-                                  , finitialActors = [(-3, 3, "hero")] }
-                 , playerHorror ]
+  { rosterList = [ ( playerHero { fcanEscape = False
+                                , fhiCondPoly = hiDweller }
+                   , [(-3, 3, "hero")] )
+                 , ( playerAntiHero { fname = "Indigo Research"
+                                    , fcanEscape = False
+                                    , fhiCondPoly = hiDweller }
+                   , [(-3, 3, "hero")] )
+                 , (playerHorror, []) ]
   , rosterEnemy = [ ("Explorer Party", "Indigo Research")
                   , ("Explorer Party", "Horror Den")
                   , ("Indigo Research", "Horror Den") ]
@@ -247,118 +237,81 @@ rosterBrawl = Roster
 -- can't guess where the attack would come and so can't position his single
 -- scout to counter the stealthy advance.
 rosterShootout = Roster
-  { rosterList = [ playerHero { fcanEscape = False
-                              , fhiCondPoly = hiDweller
-                              , finitialActors =
-                                  [ (-5, 1, "scout hero")
-                                  , (-5, 2, "ranger hero") ] }
-                 , playerAntiHero { fname = "Indigo Research"
-                                  , fcanEscape = False
-                                  , fhiCondPoly = hiDweller
-                                  , finitialActors =
-                                      [ (-5, 1, "scout hero")
-                                      , (-5, 2, "ranger hero") ] }
-                 , playerHorror ]
+  { rosterList = [ ( playerHero { fcanEscape = False
+                                , fhiCondPoly = hiDweller }
+                   , [(-5, 1, "scout hero"), (-5, 2, "ranger hero")] )
+                 , ( playerAntiHero { fname = "Indigo Research"
+                                    , fcanEscape = False
+                                    , fhiCondPoly = hiDweller }
+                   , [(-5, 1, "scout hero"), (-5, 2, "ranger hero")] )
+                 , (playerHorror, []) ]
   , rosterEnemy = [ ("Explorer Party", "Indigo Research")
                   , ("Explorer Party", "Horror Den")
                   , ("Indigo Research", "Horror Den") ]
   , rosterAlly = [] }
 
 rosterEscape = Roster
-  { rosterList = [ playerHero { fhiCondPoly = hiEscapist
-                              , finitialActors =
-                                  [ (-7, 1, "scout hero")
-                                  , (-7, 2, "escapist hero") ] }
-                 , playerAntiHero { fname = "Indigo Research"
-                                  , fcanEscape = False  -- start on escape
-                                  , fhiCondPoly = hiDweller
-                                  , finitialActors =
-                                      [ (-7, 1, "scout hero")
-                                      , (-7, 7, "ambusher hero") ] }
-                 , playerHorror ]
+  { rosterList = [ ( playerHero {fhiCondPoly = hiEscapist}
+                   , [(-7, 1, "scout hero"), (-7, 2, "escapist hero")] )
+                 , ( playerAntiHero { fname = "Indigo Research"
+                                    , fcanEscape = False  -- start on escape
+                                    , fhiCondPoly = hiDweller }
+                   , [(-7, 1, "scout hero"), (-7, 7, "ambusher hero")] )
+                 , (playerHorror, []) ]
   , rosterEnemy = [ ("Explorer Party", "Indigo Research")
                   , ("Explorer Party", "Horror Den")
                   , ("Indigo Research", "Horror Den") ]
   , rosterAlly = [] }
 
 rosterZoo = Roster
-  { rosterList = [ playerHero { fcanEscape = False
-                              , fhiCondPoly = hiDweller
-                              , finitialActors = [(-8, 5, "soldier hero")] }
-                 , playerAnimal { finitialActors = [(-8, 100, "mobile animal")]
-                                , fneverEmpty = True }
-                 , playerHorror ]  -- for summoned monsters
+  { rosterList = [ ( playerHero { fcanEscape = False
+                                , fhiCondPoly = hiDweller }
+                   , [(-8, 5, "soldier hero")] )
+                 , ( playerAnimal {fneverEmpty = True}
+                   , [(-8, 100, "mobile animal")] )
+                 , (playerHorror, []) ]  -- for summoned monsters
   , rosterEnemy = [ ("Explorer Party", "Animal Kingdom")
                   , ("Explorer Party", "Horror Den") ]
   , rosterAlly = [] }
 
 rosterAmbush = Roster
-  { rosterList = [ playerHero { fcanEscape = False
-                              , fhiCondPoly = hiDweller
-                              , finitialActors =
-                                  [ (-9, 1, "scout hero")
-                                  , (-9, 5, "ambusher hero") ] }
-                 , playerAntiHero { fname = "Indigo Research"
-                                  , fcanEscape = False
-                                  , fhiCondPoly = hiDweller
-                                  , finitialActors =
-                                      [ (-9, 1, "scout hero")
-                                      , (-9, 5, "ambusher hero") ] }
-                 , playerHorror ]
+  { rosterList = [ ( playerHero { fcanEscape = False
+                                , fhiCondPoly = hiDweller }
+                   , [(-9, 1, "scout hero"), (-9, 5, "ambusher hero")] )
+                 , ( playerAntiHero { fname = "Indigo Research"
+                                    , fcanEscape = False
+                                    , fhiCondPoly = hiDweller }
+                   , [(-9, 1, "scout hero"), (-9, 5, "ambusher hero")] )
+                 , (playerHorror, []) ]
   , rosterEnemy = [ ("Explorer Party", "Indigo Research")
                   , ("Explorer Party", "Horror Den")
                   , ("Indigo Research", "Horror Den") ]
   , rosterAlly = [] }
 
 rosterExploration = Roster
-  { rosterList = [ playerHero {finitialActors = [(-1, 3, "hero")]}
-                 , playerMonster
-                     {finitialActors =
-                        [(-4, 1, "scout monster"), (-4, 3, "monster")]}
-                 , playerAnimal
-                     -- Fun from the start to avoid empty initial level:
-                     {finitialActors = [ (-1, 1 + d 2, "animal")
+  { rosterList = [ ( playerHero
+                   , [(-1, 3, "hero")] )
+                 , ( playerMonster
+                   , [(-4, 1, "scout monster"), (-4, 3, "monster")] )
+                 , ( playerAnimal
+                   , -- Fun from the start to avoid empty initial level:
+                     [ (-1, 1 + d 2, "animal")
                      -- Huge battle at the end:
-                                       , (-10, 100, "mobile animal") ]} ]
+                     , (-10, 100, "mobile animal") ] ) ]
   , rosterEnemy = [ ("Explorer Party", "Monster Hive")
                   , ("Explorer Party", "Animal Kingdom") ]
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
-playerMonsterTourist, playerHunamConvict, playerAnimalMagnificent, playerAnimalExquisite :: Player Dice
-
-playerMonsterTourist =
-  playerAntiMonster { fname = "Monster Tourist Office"
-                    , fcanEscape = True
-                    , fneverEmpty = True  -- no spawning
-                      -- Follow-the-guide, as tourists do.
-                    , ftactic = TFollow
-                    , finitialActors = [(-4, 15, "monster")]
-                    , fleaderMode =
-                        LeaderUI $ AutoLeader False False }
-
-playerHunamConvict =
-  playerCivilian { fname = "Hunam Convict Pack"
-                 , finitialActors = [(-4, 3, "hero")] }
-
-playerAnimalMagnificent =
-  playerAnimal { fname = "Animal Magnificent Specimen Variety"
-               , fneverEmpty = True
-               , finitialActors = [(-7, 20, "mobile animal")]
-               , fleaderMode =  -- False to move away from stairs
-                   LeaderAI $ AutoLeader True False }
-
-playerAnimalExquisite =
-  playerAnimal { fname = "Animal Exquisite Herds and Packs"
-               , fneverEmpty = True
-               , finitialActors = [(-10, 30, "mobile animal")] }
-
 -- No horrors faction needed, because spawned heroes land in civilian faction.
 rosterSafari = Roster
-  { rosterList = [ playerMonsterTourist
-                 , playerHunamConvict
-                 , playerAnimalMagnificent
-                 , playerAnimalExquisite  -- start on escape
-                 ]
+  { rosterList = [ ( playerMonsterTourist
+                   , [(-4, 15, "monster")] )
+                 , ( playerHunamConvict
+                   , [(-4, 3, "hero")] )
+                 , ( playerAnimalMagnificent
+                   , [(-7, 20, "mobile animal")] )
+                 , ( playerAnimalExquisite  -- start on escape
+                   , [(-10, 30, "mobile animal")] ) ]
   , rosterEnemy = [ ("Monster Tourist Office", "Hunam Convict Pack")
                   , ( "Monster Tourist Office"
                     , "Animal Magnificent Specimen Variety" )
@@ -372,48 +325,52 @@ rosterSafari = Roster
                    , "Animal Exquisite Herds and Packs" ) ] }
 
 rosterSafariSurvival = rosterSafari
-  { rosterList = [ playerMonsterTourist
-                     { fleaderMode = LeaderAI $ AutoLeader True True
-                     , fhasUI = False }
-                 , playerHunamConvict
-                 , playerAnimalMagnificent
+  { rosterList = [ ( playerMonsterTourist
+                       { fleaderMode = LeaderAI $ AutoLeader True True
+                       , fhasUI = False }
+                   , [(-4, 15, "monster")] )
+                 , ( playerHunamConvict
+                   , [(-4, 3, "hero")] )
+                 , ( playerAnimalMagnificent
                      { fleaderMode = LeaderUI $ AutoLeader True False
                      , fhasUI = True }
-                 , playerAnimalExquisite
-                 ] }
+                   , [(-7, 20, "mobile animal")] )
+                 , ( playerAnimalExquisite
+                   , [(-10, 30, "mobile animal")] ) ] }
 
 rosterBattle = Roster
-  { rosterList = [ playerHero { fcanEscape = False
-                              , fhiCondPoly = hiDweller
-                              , finitialActors = [(-5, 5, "soldier hero")] }
-                 , playerMonster { finitialActors = [(-5, 35, "mobile monster")]
-                                 , fneverEmpty = True }
-                 , playerAnimal { finitialActors = [(-5, 30, "mobile animal")]
-                                , fneverEmpty = True } ]
+  { rosterList = [ ( playerHero { fcanEscape = False
+                                , fhiCondPoly = hiDweller }
+                   , [(-5, 5, "soldier hero")] )
+                 , ( playerMonster {fneverEmpty = True}
+                   , [(-5, 35, "mobile monster")] )
+                 , ( playerAnimal {fneverEmpty = True}
+                   , [(-5, 30, "mobile animal")] ) ]
   , rosterEnemy = [ ("Explorer Party", "Monster Hive")
                   , ("Explorer Party", "Animal Kingdom") ]
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
 rosterBattleSurvival = rosterBattle
-  { rosterList = [ playerHero { fcanEscape = False
-                              , fhiCondPoly = hiDweller
-                              , finitialActors = [(-5, 5, "soldier hero")]
-                              , fleaderMode = LeaderAI $ AutoLeader False False
-                              , fhasUI = False }
-                 , playerMonster { finitialActors = [(-5, 35, "mobile monster")]
-                                 , fneverEmpty = True }
-                 , playerAnimal { finitialActors = [(-5, 30, "mobile animal")]
-                                , fneverEmpty = True
-                                , fhasUI = True } ] }
+  { rosterList = [ ( playerHero { fcanEscape = False
+                                , fhiCondPoly = hiDweller
+                                , fleaderMode =
+                                    LeaderAI $ AutoLeader False False
+                                , fhasUI = False }
+                   , [(-5, 5, "soldier hero")] )
+                 , ( playerMonster {fneverEmpty = True}
+                   , [(-5, 35, "mobile monster")] )
+                 , ( playerAnimal { fneverEmpty = True
+                                  , fhasUI = True }
+                   , [(-5, 30, "mobile animal")] ) ] }
 
 rosterDefense = rosterExploration
-  { rosterList = [ playerAntiHero {finitialActors = [(-1, 3, "hero")]}
-                 , playerAntiMonster
-                     {finitialActors =
-                        [(-4, 1, "scout monster"), (-4, 3, "monster")]}
-                 , playerAnimal
-                     {finitialActors = [ (-1, 1 + d 2, "animal")
-                                       , (-10, 100, "mobile animal") ]} ] }
+  { rosterList = [ ( playerAntiHero
+                   , [(-1, 3, "hero")] )
+                 , ( playerAntiMonster
+                   , [(-4, 1, "scout monster"), (-4, 3, "monster")] )
+                 , ( playerAnimal
+                   , [ (-1, 1 + d 2, "animal")
+                     , (-10, 100, "mobile animal") ] ) ] }
 
 cavesRaid, cavesBrawl, cavesShootout, cavesEscape, cavesZoo, cavesAmbush, cavesExploration, cavesSafari, cavesBattle :: Caves
 

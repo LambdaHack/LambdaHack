@@ -40,7 +40,8 @@ type FactionDict = EM.EnumMap FactionId Faction
 data Faction = Faction
   { gname     :: !Text            -- ^ individual name
   , gcolor    :: !Color.Color     -- ^ color of actors or their frames
-  , gplayer   :: !(Player Int)    -- ^ the player spec for this faction
+  , gplayer   :: !Player          -- ^ the player spec for this faction
+  , ginitial  :: ![(Int, Int, GroupName ItemKind)]  -- ^ initial actors
   , gdipl     :: !Dipl            -- ^ diplomatic mode
   , gquit     :: !(Maybe Status)  -- ^ cause of game end/exit
   , gleader   :: !(Maybe ActorId) -- ^ the leader of the faction
@@ -152,7 +153,7 @@ autoDungeonLevel fact = case fleaderMode (gplayer fact) of
                           LeaderAI AutoLeader{..} -> (autoDungeon, autoLevel)
                           LeaderUI AutoLeader{..} -> (autoDungeon, autoLevel)
 
-automatePlayer :: Bool -> Player a -> Player a
+automatePlayer :: Bool -> Player -> Player
 automatePlayer st pl =
   let autoLeader False Player{fleaderMode=LeaderAI auto} = LeaderUI auto
       autoLeader True Player{fleaderMode=LeaderUI auto} = LeaderAI auto

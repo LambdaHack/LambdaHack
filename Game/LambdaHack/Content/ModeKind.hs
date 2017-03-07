@@ -41,9 +41,11 @@ type Caves = IM.IntMap (GroupName CaveKind)
 
 -- | The specification of players for the game mode.
 data Roster = Roster
-  { rosterList  :: ![Player Dice.Dice]  -- ^ players in the particular team
-  , rosterEnemy :: ![(Text, Text)]      -- ^ the initial enmity matrix
-  , rosterAlly  :: ![(Text, Text)]      -- ^ the initial aliance matrix
+  { rosterList  :: ![(Player, [(Int, Dice.Dice, GroupName ItemKind)])]
+      -- ^ players in the particular team and levels, numbers and groups
+      --   of their initial members
+  , rosterEnemy :: ![(Text, Text)]  -- ^ the initial enmity matrix
+  , rosterAlly  :: ![(Text, Text)]  -- ^ the initial aliance matrix
   }
   deriving (Show, Eq)
 
@@ -72,30 +74,27 @@ type HiSummand = (HiPolynomial, [Outcome])
 type HiCondPoly = [HiSummand]
 
 -- | Properties of a particular player.
-data Player a = Player
-  { fname          :: !Text        -- ^ name of the player
-  , fgroup         :: !(GroupName ItemKind)
-                                   -- ^ name of the actor group to control
-  , fskillsOther   :: !Skills      -- ^ fixed skill modifiers to the non-leader
-                                   --   actors; also summed with skills implied
-                                   --   by ftactic (which is not fixed)
-  , fcanEscape     :: !Bool        -- ^ the player can escape the dungeon
-  , fneverEmpty    :: !Bool        -- ^ the faction declared killed if no actors
-  , fhiCondPoly    :: !HiCondPoly  -- ^ score polynomial for the player
-  , fhasNumbers    :: !Bool        -- ^ whether actors have numbers, not symbols
-  , fhasGender     :: !Bool        -- ^ whether actors have gender
-  , ftactic        :: !Tactic      -- ^ non-leader behave according to this
-                                   --   tactic; can be changed during the game
-  , finitialActors :: ![(Int, a, GroupName ItemKind)]
-                                   -- ^ levels, numbers and groups of initial
-                                   --   members
-  , fleaderMode    :: !LeaderMode  -- ^ the mode of switching the leader
-  , fhasUI         :: !Bool        -- ^ does the faction have a UI client
-                                   --   (for control or passive observation)
+data Player = Player
+  { fname        :: !Text        -- ^ name of the player
+  , fgroup       :: !(GroupName ItemKind)
+                                 -- ^ name of the actor group to spawn from
+  , fskillsOther :: !Skills      -- ^ fixed skill modifiers to the non-leader
+                                 --   actors; also summed with skills implied
+                                 --   by ftactic (which is not fixed)
+  , fcanEscape   :: !Bool        -- ^ the player can escape the dungeon
+  , fneverEmpty  :: !Bool        -- ^ the faction declared killed if no actors
+  , fhiCondPoly  :: !HiCondPoly  -- ^ score polynomial for the player
+  , fhasNumbers  :: !Bool        -- ^ whether actors have numbers, not symbols
+  , fhasGender   :: !Bool        -- ^ whether actors have gender
+  , ftactic      :: !Tactic      -- ^ non-leader behave according to this
+                                 --   tactic; can be changed during the game
+  , fleaderMode  :: !LeaderMode  -- ^ the mode of switching the leader
+  , fhasUI       :: !Bool        -- ^ does the faction have a UI client
+                                 --   (for control or passive observation)
   }
   deriving (Show, Eq, Ord, Generic)
 
-instance Binary a => Binary (Player a)
+instance Binary Player
 
 -- | If a faction with @LeaderUI@ and @LeaderAI@ has any actor, it has a leader.
 data LeaderMode =
@@ -139,20 +138,27 @@ validateSingleModeKind ModeKind{..} =
 -- or the game could get stuck when the dungeon is devoid of actors
 validateSingleRoster :: Caves -> Roster -> [Text]
 validateSingleRoster caves Roster{..} =
-  [ "no player keeps the dungeon alive" | all (not . fneverEmpty) rosterList ]
-  ++ concatMap (validateSinglePlayer caves) rosterList
+  [ "no player keeps the dungeon alive"
+  | all (not . fneverEmpty . fst) rosterList ]
+  ++ concatMap (validateSinglePlayer . fst) rosterList
   ++ let checkPl field pl =
            [ pl <+> "is not a player name in" <+> field
-           | all ((/= pl) . fname) rosterList ]
+           | all ((/= pl) . fname . fst) rosterList ]
          checkDipl field (pl1, pl2) =
            [ "self-diplomacy in" <+> field | pl1 == pl2 ]
            ++ checkPl field pl1
            ++ checkPl field pl2
      in concatMap (checkDipl "rosterEnemy") rosterEnemy
         ++ concatMap (checkDipl "rosterAlly") rosterAlly
+  ++ let f (_, l) = concatMap g l
+         g i3@(ln, _, _) =
+           if ln `elem` IM.keys caves
+           then []
+           else ["initial actor levels not among caves:" <+> tshow i3]
+     in concatMap f rosterList
 
-validateSinglePlayer :: Caves -> Player Dice.Dice -> [Text]
-validateSinglePlayer caves Player{..} =
+validateSinglePlayer :: Player -> [Text]
+validateSinglePlayer  Player{..} =
   [ "fname empty:" <+> fname | T.null fname ]
   ++ [ "first word of fname longer than 15:" <+> fname
      | T.length (head $ T.words fname) > 15 ]
@@ -160,9 +166,6 @@ validateSinglePlayer caves Player{..} =
      | not fhasUI && case fleaderMode of
                        LeaderUI _ -> True
                        _ -> False ]
-  ++ [ "finitialActors levels not among caves:" <+> fname
-     | let f (ln, _, _) = ln `notElem` IM.keys caves
-       in any f finitialActors ]
   ++ [ "fskillsOther not negative:" <+> fname
      | any (>= 0) $ EM.elems fskillsOther ]
 
