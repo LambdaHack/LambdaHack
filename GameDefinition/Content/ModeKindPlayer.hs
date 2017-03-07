@@ -39,7 +39,7 @@ playerAntiHero = playerHero
 
 playerCivilian = Player
   { fname = "Civilian Crowd"
-  , fgroups = ["civilian"]
+  , fgroups = ["hero", "civilian"]
   , fskillsOther = zeroSkills  -- not coordinated by any leadership
   , fcanEscape = False
   , fneverEmpty = True
