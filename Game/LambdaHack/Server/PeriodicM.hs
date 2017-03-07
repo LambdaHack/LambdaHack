@@ -83,15 +83,17 @@ addAnyActor actorFreq lid time mpos = do
           f fact = fgroup (gplayer fact)
           factNames = map f $ EM.elems factionD
           fidName = case freqNames `intersect` factNames of
-            [] -> head factNames  -- fall back to an arbitrary faction
+            [] -> nameOfHorrorFact  -- fall back
             fName : _ -> fName
           g (_, fact) = fgroup (gplayer fact) == fidName
           mfid = find g $ EM.assocs factionD
-          fid = fst $ fromMaybe (assert `failure` (factionD, fidName)) mfid
+          fid = maybe (assert `failure` (factionD, fidName)) fst mfid
       pers <- getsServer sperFid
       let allPers = ES.unions $ map (totalVisible . (EM.! lid))
                     $ EM.elems $ EM.delete fid pers  -- expensive :(
-          mobile = any (`elem` freqNames) ["mobile", "horror"]
+          -- Checking skill would be more accurate, but skills can be
+          -- inside organs, equipment, tmp organs, created organs, etc.
+          mobile = "mobile" `elem` freqNames
       pos <- case mpos of
         Just pos -> return pos
         Nothing -> do

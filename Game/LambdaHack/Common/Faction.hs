@@ -4,7 +4,7 @@
 module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Status(..)
   , Target(..), TGoal(..), tgtKindDescription
-  , isHorrorFact
+  , isHorrorFact, nameOfHorrorFact
   , noRunWithMulti, isAIFact, autoDungeonLevel, automatePlayer
   , isAtWar, isAllied
   , difficultyBound, difficultyDefault, difficultyCoeff, difficultyInverse
@@ -116,9 +116,11 @@ tgtKindDescription tgt = case tgt of
 -- a skirmish game between two hero factions land in the horror faction.
 -- In every game, either all factions for which summoning items exist
 -- should be present or a horror player should be added to host them.
--- Actors that can be summoned should have "horror" in their @ifreq@ set.
 isHorrorFact :: Faction -> Bool
-isHorrorFact fact = fgroup (gplayer fact) == "horror"
+isHorrorFact fact = fgroup (gplayer fact) == nameOfHorrorFact
+
+nameOfHorrorFact :: GroupName ItemKind
+nameOfHorrorFact = toGroupName "horror"
 
 -- A faction where other actors move at once or where some of leader change
 -- is automatic can't run with multiple actors at once. That would be

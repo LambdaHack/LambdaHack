@@ -12,6 +12,7 @@ import Game.LambdaHack.Common.Prelude
 
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Dice
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ModeKind
 
@@ -95,10 +96,9 @@ playerAnimal = Player
 -- a brawl game between two hero factions land in the horror faction.
 -- In every game, either all factions for which summoning items exist
 -- should be present or a horror player should be added to host them.
--- Actors that can be summoned should have "horror" in their @ifreq@ set.
 playerHorror = Player
   { fname = "Horror Den"
-  , fgroup = "horror"
+  , fgroup = nameOfHorrorFact
   , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False
