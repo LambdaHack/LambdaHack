@@ -67,6 +67,7 @@ data StateServer = StateServer
 data DebugModeSer = DebugModeSer
   { sknowMap       :: !Bool
   , sknowEvents    :: !Bool
+  , sknowItems     :: !Bool
   , sniffIn        :: !Bool
   , sniffOut       :: !Bool
   , sallClear      :: !Bool
@@ -150,6 +151,7 @@ emptyStateServer =
 defDebugModeSer :: DebugModeSer
 defDebugModeSer = DebugModeSer { sknowMap = False
                                , sknowEvents = False
+                               , sknowItems = False
                                , sniffIn = False
                                , sniffOut = False
                                , sallClear = False
@@ -220,6 +222,7 @@ instance Binary DebugModeSer where
   put DebugModeSer{..} = do
     put sknowMap
     put sknowEvents
+    put sknowItems
     put sniffIn
     put sniffOut
     put sallClear
@@ -233,6 +236,7 @@ instance Binary DebugModeSer where
   get = do
     sknowMap <- get
     sknowEvents <- get
+    sknowItems <- get
     sniffIn <- get
     sniffOut <- get
     sallClear <- get

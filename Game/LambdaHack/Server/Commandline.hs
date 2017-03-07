@@ -20,6 +20,7 @@ debugArgs args = do
         [ "Configure debug options here, gameplay options in config.rules.ini."
         , "  --knowMap  reveal map for all clients in the next game"
         , "  --knowEvents  show all events in the next game (needs --knowMap)"
+        , "  --knowItems  auto-identify all items in the next game (needs --knowEvents)"
         , "  --sniffIn  display all incoming commands on console "
         , "  --sniffOut  display all outgoing commands on console "
         , "  --allClear  let all map tiles be translucent"
@@ -52,6 +53,8 @@ debugArgs args = do
         (parseArgs rest) {sknowMap = True}
       parseArgs ("--knowEvents" : rest) =
         (parseArgs rest) {sknowEvents = True}
+      parseArgs ("--knowItems" : rest) =
+        (parseArgs rest) {sknowItems = True}
       parseArgs ("--sniffIn" : rest) =
         (parseArgs rest) {sniffIn = True}
       parseArgs ("--sniffOut" : rest) =

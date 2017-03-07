@@ -57,6 +57,12 @@ registerItem ItemFull{..} itemKnown seed container verbose = do
   iid <- onlyRegisterItem itemKnown seed
   let cmd = if verbose then UpdCreateItem else UpdSpotItem False
   execUpdAtomic $ cmd iid itemBase (itemK, itemTimer) container
+  knowItems <- getsServer $ sknowItems . sdebugSer
+  when knowItems $ case container of
+    CTrunk{} -> return ()
+    _ -> do
+      let ItemDisco{itemKindId} = fromJust itemDisco
+      execUpdAtomic $ UpdDiscover container iid itemKindId seed
   return iid
 
 createLevelItem :: (MonadAtomic m, MonadServer m) => Point -> LevelId -> m ()
