@@ -56,9 +56,6 @@ effectToSuffix effect =
     OverfillCalm p -> "of dismaying" <+> wrapInParens (affixBonus p)
     Dominate -> "of domination"
     Impress -> "of impression"
-    CallFriend 1 -> "of aid calling"
-    CallFriend dice -> "of aid calling"
-                       <+> wrapInParens (tshow dice <+> "friends")
     Summon grp p -> makePhrase
       [ "of summoning"
       , if p == 1 then "" else MU.Text $ tshow p

@@ -44,7 +44,6 @@ import Game.LambdaHack.Server.CommonM
 import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.PeriodicM
-import Game.LambdaHack.Server.StartM
 import Game.LambdaHack.Server.State
 
 -- + Semantics of effects
@@ -214,7 +213,6 @@ effectSem source target iid c recharged effect = do
     IK.OverfillCalm p -> effectRefillCalm True execSfx p source target
     IK.Dominate -> effectDominate recursiveCall source target
     IK.Impress -> effectImpress recursiveCall execSfx source target
-    IK.CallFriend p -> effectCallFriend execSfx p source target
     IK.Summon grp p -> effectSummon execSfx grp p source target
     IK.Ascend p -> effectAscend recursiveCall execSfx p source target pos
     IK.Escape{} -> effectEscape source target
@@ -517,41 +515,6 @@ effectImpress recursiveCall execSfx source target = do
        execSfx
        effectCreateItem (Just (bfid sb, 1)) target COrgan
                         "impressed" IK.TimerNone
-
--- ** CallFriend
-
--- Note that the HP expended doesn't depend on the number of actors called.
-effectCallFriend :: (MonadAtomic m, MonadServer m)
-                 => m () -> Dice.Dice -> ActorId -> ActorId
-                 -> m Bool
-effectCallFriend execSfx nDm source target = do
-  -- Obvious effect, nothing announced.
-  Kind.COps{coTileSpeedup} <- getsState scops
-  power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
-  sb <- getsState $ getActorBody source
-  tb <- getsState $ getActorBody target
-  actorAspect <- getsServer sactorAspect
-  let ar = actorAspect EM.! target
-  if not $ hpEnough tb ar then do
-    unless (bproj tb) $ do
-      let subject = partActor tb
-          verb = "lack enough HP to call aid"
-          msg = makeSentence [MU.SubjectVerbSg subject verb]
-      execSfxAtomic $ SfxMsgFid (bfid sb) msg
-    return False
-  else do
-    execSfx
-    let deltaHP = - xM 10
-    execUpdAtomic $ UpdRefillHP target deltaHP
-    let validTile t = not $ Tile.isNoActor coTileSpeedup t
-    ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
-    localTime <- getsState $ getLocalTime (blid tb)
-    fact <- getsState $ (EM.! bfid tb) . sfactionD
-    let actorGroup = fgroup $ gplayer fact
-    -- We call target's friends so that AI monsters that test by throwing
-    -- don't waste artifacts very valuable for heroes. Heroes should rather
-    -- not test scrolls by throwing.
-    recruitActors actorGroup (take power ps) (blid tb) localTime (bfid tb)
 
 -- ** Summon
 

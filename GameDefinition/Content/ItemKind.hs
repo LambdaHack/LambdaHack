@@ -497,7 +497,7 @@ scroll1 = scroll
   { ifreq    = [("treasure", 100)]
   , irarity  = [(5, 10), (10, 10)]  -- mixed blessing, so available early
   , ieffects = [ Unique, ELabel "of Reckless Beacon"
-               , CallFriend 1, Summon "mobile animal" (2 + d 2) ]
+               , Summon "hero" 1, Summon "mobile animal" (2 + d 2) ]
   }
 scroll2 = scroll
   { irarity  = [(1, 3)]
@@ -516,7 +516,7 @@ scroll5 = scroll
   { irarity  = [(10, 15)]
   , ieffects = [ Impress
                , OneOf [ Teleport 20, Ascend False, Ascend True
-                       , Summon "mobile animal" 2, CallFriend 1
+                       , Summon "mobile animal" 2, Summon "hero" 1
                        , Detect 10, OverfillCalm (-100)
                        , CreateItem CGround "useful" TimerNone ] ]
   }
@@ -543,7 +543,7 @@ scroll10 = scroll
 scroll11 = scroll
   { ifreq    = [("treasure", 100)]
   , irarity  = [(6, 10), (10, 10)]
-  , ieffects = [Unique, ELabel "of Prisoner Release", CallFriend 1]
+  , ieffects = [Unique, ELabel "of Prisoner Release", Summon "hero" 1]
   }
 scroll12 = scroll
   { ieffects = [DetectHidden 10]

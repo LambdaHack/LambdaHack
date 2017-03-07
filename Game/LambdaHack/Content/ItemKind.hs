@@ -63,7 +63,6 @@ data Effect =
   | OverfillCalm !Int
   | Dominate
   | Impress
-  | CallFriend !Dice.Dice
   | Summon !(GroupName ItemKind) !Dice.Dice
   | Ascend !Bool
   | Escape

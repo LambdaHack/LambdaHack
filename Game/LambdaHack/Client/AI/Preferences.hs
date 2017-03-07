@@ -49,7 +49,6 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
          else max (-20) p
     IK.Dominate -> -200
     IK.Impress -> -10
-    IK.CallFriend d -> 100 * Dice.meanDice d
     IK.Summon grp d ->  -- contrived by not taking into account alliances
       Dice.meanDice d * 50 * if grp == fgroup (gplayer fact) then 1 else -1
     IK.Ascend{} -> 1      -- low, to only change levels sensibly, in teams
