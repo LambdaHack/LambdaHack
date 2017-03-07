@@ -118,7 +118,7 @@ tgtKindDescription tgt = case tgt of
 -- In every game, either all factions for which summoning items exist
 -- should be present or a horror player should be added to host them.
 isHorrorFact :: Faction -> Bool
-isHorrorFact fact = fgroup (gplayer fact) == nameOfHorrorFact
+isHorrorFact fact = nameOfHorrorFact `elem` fgroups (gplayer fact)
 
 nameOfHorrorFact :: GroupName ItemKind
 nameOfHorrorFact = toGroupName "horror"

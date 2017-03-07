@@ -50,7 +50,8 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
     IK.Dominate -> -200
     IK.Impress -> -10
     IK.Summon grp d ->  -- contrived by not taking into account alliances
-      Dice.meanDice d * 50 * if grp == fgroup (gplayer fact) then 1 else -1
+                        -- and not checking if enemies also control that group
+      Dice.meanDice d * 50 * if grp `elem` fgroups (gplayer fact) then 1 else -1
     IK.Ascend{} -> 1      -- low, to only change levels sensibly, in teams
     IK.Escape{} -> 10000  -- AI wants to win; spawners to guard
     IK.Paralyze d -> -10 * Dice.meanDice d

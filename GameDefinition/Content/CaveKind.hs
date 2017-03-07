@@ -122,7 +122,7 @@ empty = rogue
   , copenChance   = 0
   , chidden       = 0
   , cactorCoeff   = 3
-  , cactorFreq    = [("monster", 2), ("animal", 8), ("immobile vents", 90)]
+  , cactorFreq    = [("monster", 2), ("animal", 8), ("immobile animal", 90)]
       -- The healing geysers on lvl 3 act like HP resets. They are needed to avoid
       -- cascading failure, if the particular starting conditions were
       -- very hard. The items are not reset, even if the are bad, which provides

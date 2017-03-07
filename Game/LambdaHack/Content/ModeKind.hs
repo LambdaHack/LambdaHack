@@ -76,8 +76,10 @@ type HiCondPoly = [HiSummand]
 -- | Properties of a particular player.
 data Player = Player
   { fname        :: !Text        -- ^ name of the player
-  , fgroup       :: !(GroupName ItemKind)
-                                 -- ^ name of the actor group to spawn from
+  , fgroups      :: ![GroupName ItemKind]
+                                 -- ^ names of actor groups that may naturally
+                                 --   fall under player's control, e.g., upon
+                                 --   spawning or summoning
   , fskillsOther :: !Skills      -- ^ fixed skill modifiers to the non-leader
                                  --   actors; also summed with skills implied
                                  --   by ftactic (which is not fixed)

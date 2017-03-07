@@ -20,7 +20,7 @@ playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, pl
 
 playerHero = Player
   { fname = "Explorer Party"
-  , fgroup = "hero"
+  , fgroups = ["hero"]
   , fskillsOther = meleeAdjacent
   , fcanEscape = True
   , fneverEmpty = True
@@ -39,7 +39,7 @@ playerAntiHero = playerHero
 
 playerCivilian = Player
   { fname = "Civilian Crowd"
-  , fgroup = "civilian"
+  , fgroups = ["civilian"]
   , fskillsOther = zeroSkills  -- not coordinated by any leadership
   , fcanEscape = False
   , fneverEmpty = True
@@ -53,7 +53,7 @@ playerCivilian = Player
 
 playerMonster = Player
   { fname = "Monster Hive"
-  , fgroup = "monster"
+  , fgroups = ["monster", "mobile monster", "immobile monster"]
   , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False
@@ -75,7 +75,7 @@ playerAntiMonster = playerMonster
 
 playerAnimal = Player
   { fname = "Animal Kingdom"
-  , fgroup = "animal"
+  , fgroups = ["animal", "mobile animal", "immobile animal", "scavenger"]
   , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False
@@ -94,7 +94,7 @@ playerAnimal = Player
 -- should be present or a horror player should be added to host them.
 playerHorror = Player
   { fname = "Horror Den"
-  , fgroup = nameOfHorrorFact
+  , fgroups = [nameOfHorrorFact]
   , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False

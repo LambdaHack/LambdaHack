@@ -80,14 +80,16 @@ addAnyActor actorFreq lid time mpos = do
     Just (itemKnown, trunkFull, itemDisco, seed, _) -> do
       let ik = itemKind itemDisco
           freqNames = map fst $ IK.ifreq ik
-          f fact = fgroup (gplayer fact)
-          factNames = map f $ EM.elems factionD
-          fidName = case freqNames `intersect` factNames of
-            [] -> nameOfHorrorFact  -- fall back
-            fName : _ -> fName
-          g (_, fact) = fgroup (gplayer fact) == fidName
-          mfid = find g $ EM.assocs factionD
-          fid = maybe (assert `failure` (factionD, fidName)) fst mfid
+          f fact = fgroups (gplayer fact)
+          factGroups = concatMap f $ EM.elems factionD
+          fidNames = case freqNames `intersect` factGroups of
+            [] -> [nameOfHorrorFact]  -- fall back
+            l -> l
+      fidName <- rndToAction $ oneOf fidNames
+      let g (_, fact) = fidName `elem` fgroups (gplayer fact)
+          nameFids = map fst $ filter g $ EM.assocs factionD
+          !_A = assert (not (null nameFids) `blame` (factionD, fidName)) ()
+      fid <- rndToAction $ oneOf nameFids
       pers <- getsServer sperFid
       let allPers = ES.unions $ map (totalVisible . (EM.! lid))
                     $ EM.elems $ EM.delete fid pers  -- expensive :(
