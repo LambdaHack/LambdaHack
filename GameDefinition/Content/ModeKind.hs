@@ -117,7 +117,7 @@ exploration = ModeKind
               , ("campaign scenario", 1) ]
   , mroster = rosterExploration
   , mcaves  = cavesExploration
-  , mdesc   = "Don't let wanton curiosity, greed and the creeping abstraction madness keep you down there in the darkness for too long!"
+  , mdesc   = "Don't let wanton curiosity, greed and the creeping abstraction madness keep you down there for too long!"
   }
 
 safari = ModeKind  -- easter egg available only via screensaver

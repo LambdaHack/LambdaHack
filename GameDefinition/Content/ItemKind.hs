@@ -362,7 +362,7 @@ flask12 = flask
 flask13 = flask
   { ieffects = [ ELabel "of bait cocktail"
                , toOrganActorTurn "drunk" (5 + d 5)
-               , OnSmash (Summon [("mobile animal", 1)] $ 1 + dl 2)
+               , OnSmash (Summon "mobile animal" $ 1 + dl 2)
                , OnSmash Impress
                , OnSmash (Explode "waste") ]
   }
@@ -497,7 +497,7 @@ scroll1 = scroll
   { ifreq    = [("treasure", 100)]
   , irarity  = [(5, 10), (10, 10)]  -- mixed blessing, so available early
   , ieffects = [ Unique, ELabel "of Reckless Beacon"
-               , CallFriend 1, Summon standardSummon (2 + d 2) ]
+               , CallFriend 1, Summon "mobile animal" (2 + d 2) ]
   }
 scroll2 = scroll
   { irarity  = [(1, 3)]
@@ -516,7 +516,7 @@ scroll5 = scroll
   { irarity  = [(10, 15)]
   , ieffects = [ Impress
                , OneOf [ Teleport 20, Ascend False, Ascend True
-                       , Summon standardSummon 2, CallFriend 1
+                       , Summon "mobile animal" 2, CallFriend 1
                        , Detect 10, OverfillCalm (-100)
                        , CreateItem CGround "useful" TimerNone ] ]
   }
@@ -548,9 +548,6 @@ scroll11 = scroll
 scroll12 = scroll
   { ieffects = [DetectHidden 10]
   }
-
-standardSummon :: Freqs ItemKind
-standardSummon = [("mobile monster", 30), ("mobile animal", 70)]
 
 -- * Assorted tools
 
@@ -600,7 +597,7 @@ seeingItem = ItemKind
                , Timeout $ 1 + d 2 ]
   , ieffects = [ Periodic
                , Recharging (toOrganNone "poisoned")
-               , Recharging (Summon [("mobile monster", 1)] 1) ]
+               , Recharging (Summon "mobile monster" 1) ]
   , ifeature = [Identified]
   , idesc    = "A slimy, dilated green pupil torn out from some giant eye. Clear and focused, as if still alive."
   , ikit     = []
@@ -674,7 +671,7 @@ necklace2 = necklace
   { ifreq    = [("treasure", 100)]  -- just too nasty to call it useful
   , irarity  = [(1, 1)]
   , iaspects = [Timeout $ d 3 + 3 - dl 3 |*| 10]
-  , ieffects = [ Recharging (Summon [("mobile animal", 1)] $ 1 + dl 2)
+  , ieffects = [ Recharging (Summon "mobile animal" $ 1 + dl 2)
                , Recharging (Explode "waste")
                , Recharging Impress
                , Recharging (DropItem 1 maxBound COrgan "temporary condition") ]

@@ -64,7 +64,7 @@ data Effect =
   | Dominate
   | Impress
   | CallFriend !Dice.Dice
-  | Summon !(Freqs ItemKind) !Dice.Dice
+  | Summon !(GroupName ItemKind) !Dice.Dice
   | Ascend !Bool
   | Escape
   | Paralyze !Dice.Dice

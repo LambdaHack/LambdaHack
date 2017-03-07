@@ -215,7 +215,7 @@ effectSem source target iid c recharged effect = do
     IK.Dominate -> effectDominate recursiveCall source target
     IK.Impress -> effectImpress recursiveCall execSfx source target
     IK.CallFriend p -> effectCallFriend execSfx p source target
-    IK.Summon freqs p -> effectSummon execSfx freqs p source target
+    IK.Summon grp p -> effectSummon execSfx grp p source target
     IK.Ascend p -> effectAscend recursiveCall execSfx p source target pos
     IK.Escape{} -> effectEscape source target
     IK.Paralyze p -> effectParalyze execSfx p target
@@ -520,7 +520,7 @@ effectImpress recursiveCall execSfx source target = do
 
 -- ** CallFriend
 
--- Note that the Calm expended doesn't depend on the number of actors called.
+-- Note that the HP expended doesn't depend on the number of actors called.
 effectCallFriend :: (MonadAtomic m, MonadServer m)
                  => m () -> Dice.Dice -> ActorId -> ActorId
                  -> m Bool
@@ -557,9 +557,9 @@ effectCallFriend execSfx nDm source target = do
 
 -- Note that the Calm expended doesn't depend on the number of actors summoned.
 effectSummon :: (MonadAtomic m, MonadServer m)
-             => m () -> Freqs ItemKind -> Dice.Dice -> ActorId -> ActorId
+             => m () -> GroupName ItemKind -> Dice.Dice -> ActorId -> ActorId
              -> m Bool
-effectSummon execSfx actorFreq nDm source target = do
+effectSummon execSfx grp nDm source target = do
   -- Obvious effect, nothing announced.
   Kind.COps{coTileSpeedup} <- getsState scops
   power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
@@ -585,9 +585,9 @@ effectSummon execSfx actorFreq nDm source target = do
     let targetTime = timeShift localTime $ ticksPerMeter $ bspeed tb ar
         afterTime = timeShift targetTime $ Delta timeClip
     bs <- forM (take power ps) $ \p -> do
-      maid <- addAnyActor actorFreq (blid tb) afterTime (Just p)
+      maid <- addAnyActor [(grp, 1)] (blid tb) afterTime (Just p)
       case maid of
-        Nothing -> return False  -- actorFreq is null; content writers...
+        Nothing -> return False  -- not enough space in dungeon?
         Just aid -> do
           b <- getsState $ getActorBody aid
           mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD

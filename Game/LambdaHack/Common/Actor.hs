@@ -168,7 +168,7 @@ hpHuge b = bhp b > xM 40
 calmEnough :: Actor -> AspectRecord -> Bool
 calmEnough b AspectRecord{aMaxCalm} =
   let calmMax = max 1 aMaxCalm
-  in 2 * xM calmMax <= 3 * bcalm b && bcalm b >= xM 10
+  in 2 * xM calmMax <= 3 * bcalm b && bcalm b > xM 10
 
 hpEnough :: Actor -> AspectRecord -> Bool
 hpEnough b AspectRecord{aMaxHP} =

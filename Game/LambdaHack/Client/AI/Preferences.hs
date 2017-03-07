@@ -25,8 +25,7 @@ import Game.LambdaHack.Content.ModeKind
 effectToBenefit :: Kind.COps -> Actor -> AspectRecord -> Faction -> IK.Effect
                 -> Int
 effectToBenefit cops b ar@AspectRecord{..} fact eff =
-  let dungeonDweller = not $ fhasGender $ gplayer fact  -- crude, for now
-  in case eff of
+  case eff of
     IK.ELabel _ -> 0
     IK.EqpSlot _ -> 0
     IK.Burn d -> -(min 200 $ 15 * Dice.meanDice d)
@@ -51,10 +50,8 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
     IK.Dominate -> -200
     IK.Impress -> -10
     IK.CallFriend d -> 100 * Dice.meanDice d
-    IK.Summon _ d | dungeonDweller ->
-      -- Probably summons friends or crazies.
-      50 * Dice.meanDice d
-    IK.Summon{} -> -11    -- probably generates enemies
+    IK.Summon grp d ->  -- contrived by not taking into account alliances
+      Dice.meanDice d * 50 * if grp == fgroup (gplayer fact) then 1 else -1
     IK.Ascend{} -> 1      -- low, to only change levels sensibly, in teams
     IK.Escape{} -> 10000  -- AI wants to win; spawners to guard
     IK.Paralyze d -> -10 * Dice.meanDice d
@@ -62,7 +59,6 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
     IK.Teleport d ->
       let p = Dice.meanDice d
       in if p <= 8  -- blink to shoot at foe
-            && dungeonDweller  -- non-dwellers have to explore and escape ASAP
          then 1
          else -p  -- get rid of the foe
     IK.CreateItem COrgan grp _ ->

@@ -857,9 +857,12 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.CallFriend{} -> do
           let verb = if bproj b then "attract" else "call forth"
           actorVerbMU aid b $ MU.Text $ verb <+> "friends"
-        IK.Summon{} -> do
+        IK.Summon grp p -> do
           let verb = if bproj b then "lure" else "summon"
-          actorVerbMU aid b $ MU.Text $ verb <+> "nearby horrors"
+              object = if p == 1
+                       then [MU.Text $ tshow grp]
+                       else [MU.Text $ tshow p, MU.Ws $ MU.Text $ tshow grp]
+          actorVerbMU aid b $ MU.Phrase $ verb : object
         IK.Ascend True -> actorVerbMU aid b "find a way upstairs"
         IK.Ascend False -> actorVerbMU aid b "find a way downstairs"
         IK.Escape{} -> return ()

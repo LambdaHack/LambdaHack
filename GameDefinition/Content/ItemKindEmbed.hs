@@ -150,7 +150,7 @@ rubble = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [OneOf [ Explode "glass piece", Explode "waste"
-                      , Summon [("animal", 1)] 1
+                      , Summon "animal" 1
                       , CreateItem CGround "useful" TimerNone
                       , ELabel "", ELabel "", ELabel ""
                       , ELabel "", ELabel "", ELabel ""

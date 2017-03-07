@@ -59,9 +59,10 @@ effectToSuffix effect =
     CallFriend 1 -> "of aid calling"
     CallFriend dice -> "of aid calling"
                        <+> wrapInParens (tshow dice <+> "friends")
-    Summon _freqs 1 -> "of summoning"
-    Summon _freqs dice -> "of summoning"
-                          <+> wrapInParens (tshow dice <+> "actors")
+    Summon grp p -> makePhrase
+      [ "of summoning"
+      , if p == 1 then "" else MU.Text $ tshow p
+      , MU.Ws $ MU.Text $ tshow grp ]
     ApplyPerfume -> "of smell removal"
     Ascend True -> "of ascending"
     Ascend False -> "of descending"
