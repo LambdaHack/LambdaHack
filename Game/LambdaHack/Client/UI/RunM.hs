@@ -115,7 +115,7 @@ continueRunDir params = case params of
           , "Macro activated"
           , "Voicing '" ]
         boring l = any (`isInfixOf` l) boringMsgs
-        msgShown  = isJust $ findInReport (not . boring) report
+        msgShown = isJust $ findInReport (not . boring) report
     if msgShown then return $ Left "message shown"
     else do
       cops@Kind.COps{cotile} <- getsState scops

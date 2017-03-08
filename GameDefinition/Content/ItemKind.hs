@@ -146,7 +146,7 @@ paralizingProj = ItemKind
   , iweight  = 500
   , idamage  = toDmg $ 1 * d 1
   , iaspects = [AddHurtMelee (-14 |*| 5)]
-  , ieffects = [Paralyze (10 + 2 * d 5), DropBestWeapon]
+  , ieffects = [Paralyze 15, DropBestWeapon]
   , ifeature = [Identified]
   , idesc    = "Wood balls tied with hemp rope. The target enemy is tripped and bound to drop the main weapon, while fighting for balance."
   , ikit     = []
@@ -681,7 +681,7 @@ necklace3 = necklace
   { iaspects = [Timeout $ d 3 + 4 - dl 3 |*| 5]
   , ieffects = [ ELabel "of fearful listening"
                , Recharging (DetectActor 10)
-               , Recharging (Paralyze $ 10 + 2 * d 5 + 2 * dl 5) ]
+               , Recharging (Paralyze 20) ]
                ++ ieffects necklace
   }
 necklace4 = necklace

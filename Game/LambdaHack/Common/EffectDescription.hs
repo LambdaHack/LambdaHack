@@ -66,7 +66,7 @@ effectToSuffix effect =
     Escape{} -> "of escaping"
     Paralyze dice ->
       let time = case Dice.reduceDice dice of
-            Nothing -> tshow dice
+            Nothing -> tshow dice <+> "* 0.05s"
             Just p ->
               let clipInTurn = timeTurn `timeFit` timeClip
                   seconds =
