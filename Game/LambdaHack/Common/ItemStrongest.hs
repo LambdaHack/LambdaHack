@@ -76,7 +76,7 @@ computeTrajectory :: Int -> Int -> Int -> [Point] -> ([Vector], (Speed, Int))
 computeTrajectory weight throwVelocity throwLinger path =
   let speed = speedFromWeight weight throwVelocity
       trange = rangeFromSpeedAndLinger speed throwLinger
-      btrajectory = take trange $ pathToTrajectory path
+      btrajectory = pathToTrajectory $ take trange path
   in (btrajectory, (speed, trange))
 
 itemTrajectory :: Item -> [Point] -> ([Vector], (Speed, Int))
