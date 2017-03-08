@@ -75,7 +75,8 @@ effectAndDestroy :: (MonadAtomic m, MonadServer m)
                  -> [IK.Effect] -> ItemFull
                  -> m ()
 effectAndDestroy _ _ iid container periodic [] itemFull@ItemFull{..} =
-  if not periodic && jdamage itemBase > 0 then do
+  -- This case is a speedup only.
+  if not periodic && jdamage itemBase /= 0 then do
     -- No effect triggered, but physical damage dealt.
     let (imperishable, kit) = imperishableKit [] periodic itemTimer itemFull
     unless imperishable $
@@ -113,8 +114,9 @@ effectAndDestroy source target iid container periodic effs
       execUpdAtomic $ UpdLoseItem False iid itemBase kit container
     -- At this point, the item is potentially no longer in container @c@,
     -- so we don't pass @c@ along.
-    triggered <-
+    triggeredEffect <-
       itemEffectDisco source target iid container recharged periodic effs
+    let triggered = triggeredEffect || jdamage itemBase /= 0
     -- If none of item's effects was performed, we try to recreate the item.
     -- Regardless, we don't rewind the time, because some info is gained
     -- (that the item does not exhibit any effects in the given context).

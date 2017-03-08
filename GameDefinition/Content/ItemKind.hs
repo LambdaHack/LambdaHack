@@ -94,7 +94,8 @@ spike = ItemKind
   , iweight  = 150
   , idamage  = toDmg $ 2 * d 1
   , iaspects = [AddHurtMelee (-10 + d 2 + dl 4 |*| 5)]  -- heavy vs armor
-  , ieffects = [OnSmash (Explode "single spark")]  -- shows both wall and foe
+  , ieffects = [ Explode "single spark"  -- when hitting enemy
+               , OnSmash (Explode "single spark") ]  -- at wall hit
   , ifeature = [toVelocity 70, Identified]  -- hitting with tip costs speed
   , idesc    = "A cruel long nail with small head."  -- "Much inferior to arrows though, especially given the contravariance problems."  --- funny, but destroy the suspension of disbelief; this is supposed to be a Lovecraftian horror and any hilarity must ensue from the failures in making it so and not from actively trying to be funny; also, mundane objects are not supposed to be scary or transcendental; the scare is in horrors from the abstract dimension visiting our ordinary reality; without the contrast there's no horror and no wonder, so also the magical items must be contrasted with ordinary XIX century and antique items
   , ikit     = []
@@ -196,7 +197,7 @@ light1 = ItemKind
   , irarity  = [(1, 10)]
   , iverbHit = "scorch"
   , iweight  = 1000
-  , idamage  = toDmg $ 1 * d 1
+  , idamage  = toDmg 0
   , iaspects = [ AddShine 3       -- not only flashes, but also sparks,
                , AddSight (-2) ]  -- so unused by AI due to the mixed blessing
   , ieffects = [Burn 1, EqpSlot EqpSlotLightSource]

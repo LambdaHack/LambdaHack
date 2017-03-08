@@ -371,8 +371,7 @@ setTrajectory aid = do
           execUpdAtomic $ UpdTrajectory aid (btrajectory b2) (Just (lv, speed))
       else do
         -- Lose HP due to flying into an obstacle.
-        unless (bproj b) $  -- prevent spam
-          execUpdAtomic $ UpdRefillHP aid minusM
+        execUpdAtomic $ UpdRefillHP aid minusM
         -- Nothing from non-empty trajectories signifies obstacle hit.
         execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
     Just ([], _) ->
