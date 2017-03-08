@@ -39,14 +39,14 @@ reportToSlideshow keys = do
   Level{lysize} <- getLevel lidV
   overlayToSlideshow (lysize + 1) keys ([], [])
 
--- | Split current report into a slideshow.
+-- | Split current report into a slideshow. Keep report unchanged.
 reportToSlideshowKeep :: MonadClientUI m => [K.KM] -> m Slideshow
 reportToSlideshowKeep keys = do
   lidV <- viewedLevelUI
   Level{lxsize, lysize} <- getLevel lidV
   report <- getReportUI
   -- Don't do @recordHistory@, it will be done later on, after running
-  -- inspected messages to decide if stopping is needed.
+  -- inspects messages to decide if stopping is needed.
   return $! splitOverlay lxsize (lysize + 1) report keys ([], [])
 
 -- | Display a message. Return value indicates if the player wants to continue.

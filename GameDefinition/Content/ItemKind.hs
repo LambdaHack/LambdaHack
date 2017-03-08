@@ -681,7 +681,7 @@ necklace3 = necklace
   { iaspects = [Timeout $ d 3 + 4 - dl 3 |*| 5]
   , ieffects = [ ELabel "of fearful listening"
                , Recharging (DetectActor 10)
-               , Recharging (Paralyze 20) ]
+               , Recharging (RefillCalm (-20)) ]
                ++ ieffects necklace
   }
 necklace4 = necklace
