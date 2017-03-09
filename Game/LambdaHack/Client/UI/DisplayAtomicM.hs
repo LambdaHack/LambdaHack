@@ -80,7 +80,9 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
             -- which is useful, because it shows "charging".
             itemAidVerbMU aid verb iid (Left Nothing) COrgan
           _ -> do
-            itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
+            ownerFun <- partActorLeaderFun
+            let wown = ppContainerWownW ownerFun True c
+            itemVerbMU iid kit (MU.Text $ makePhrase $ "appear" : wown) c
             mleader <- getsClient _sleader
             when (Just aid == mleader) $ modifyClient $ \cli -> cli {slastSlot}
       CEmbed lid _ -> markDisplayNeeded lid
@@ -123,7 +125,9 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
                   bag <- getsState $ getFloorBag lid p
                   modifySession $ \sess ->
                     sess {sxhair = TPoint (TItem bag) lidV p}
-            itemVerbMU iid kit "be spotted" c
+            ownerFun <- partActorLeaderFun
+            let wown = ppContainerWownW ownerFun True c
+            itemVerbMU iid kit (MU.Text $ makePhrase $ "be spotted" : wown) c
             stopPlayBack
           CTrunk{} -> return ()
       _ -> return ()  -- seen already (has a slot assigned)

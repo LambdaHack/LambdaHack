@@ -10,7 +10,8 @@ module Game.LambdaHack.Common.Actor
   , hpTooLow, hpHuge, calmEnough, hpEnough
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
-  , keySelected, ppContainer, ppCStore, ppCStoreIn, ppCStoreWownW, verbCStore
+  , keySelected, ppContainer, ppCStore, ppCStoreIn, ppCStoreWownW
+  , ppContainerWownW, verbCStore
   ) where
 
 import Prelude ()
@@ -213,6 +214,14 @@ ppCStoreWownW addPrepositions store owner =
     CGround -> [MU.Text noun, "under", owner]
     CSha -> [MU.Text noun]
     _ -> [MU.WownW owner (MU.Text noun) ]
+
+ppContainerWownW :: (ActorId -> MU.Part) -> Bool -> Container -> [MU.Part]
+ppContainerWownW ownerFun addPrepositions c = case c of
+  CFloor{} -> ["nearby"]
+  CEmbed{} -> ["embedded nearby"]
+  CActor aid store -> let owner = ownerFun aid
+                      in ppCStoreWownW addPrepositions store owner
+  CTrunk{} -> assert `failure` c
 
 verbCStore :: CStore -> Text
 verbCStore CGround = "drop"

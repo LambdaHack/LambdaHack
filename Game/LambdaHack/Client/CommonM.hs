@@ -2,7 +2,7 @@
 -- | Common client monad operations.
 module Game.LambdaHack.Client.CommonM
   ( getPerFid, aidTgtToPos, makeLine
-  , partAidLeader, partActorLeader, partPronounLeader
+  , partAidLeader, partActorLeader, partActorLeaderFun, partPronounLeader
   , actorSkillsClient, updateItemSlot, fullAssocsClient
   , itemToFullClient, pickWeaponClient, enemyMaxAb, updateSalter, createSalter
   , aspectRecordFromItemClient, aspectRecordFromActorClient, createSactorAspect
@@ -55,6 +55,15 @@ partActorLeader aid b = do
   return $! case mleader of
     Just leader | aid == leader -> "you"
     _ -> partActor b
+
+partActorLeaderFun :: MonadClient m => m (ActorId -> MU.Part)
+partActorLeaderFun = do
+  mleader <- getsClient _sleader
+  s <- getState
+  return $! \aid ->
+    if mleader == Just aid
+    then "you"
+    else partActor $ getActorBody aid s
 
 -- | The part of speech with the actor's pronoun or "you" if a leader
 -- of the client's faction. The actor may be not present in the dungeon.
