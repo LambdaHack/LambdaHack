@@ -210,7 +210,7 @@ treeBurning = tree
   }
 wallV = TileKind
   { tsymbol  = '|'
-  , tname    = "granite wall"
+  , tname    = "sandstone wall"
   , tfreq    = [("legendLit", 100), ("rectWindowsOver_!_Lit", 90)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
