@@ -213,9 +213,9 @@ obscenePictograms = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [ Temporary "enter destructive rage at the sight of obscene pictograms"
-               , RefillCalm (-20)
-               , toOrganActorTurn "strengthened" (3 + d 3)
-               , CreateItem CInv "sandstone rock" TimerNone ]
+               , OneOf [ RefillCalm (-20)
+                       , toOrganActorTurn "strengthened" (3 + d 3)
+                       , CreateItem CInv "sandstone rock" TimerNone ] ]
   , ifeature = [Identified, Durable]
   , idesc    = ""
   , ikit     = []
