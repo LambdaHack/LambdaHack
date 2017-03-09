@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 -- | Common client monad operations.
 module Game.LambdaHack.Client.CommonM
-  ( getPerFid, aidTgtToPos, aidTgtAims, makeLine
+  ( getPerFid, aidTgtToPos, makeLine
   , partAidLeader, partActorLeader, partPronounLeader
   , actorSkillsClient, updateItemSlot, fullAssocsClient
   , itemToFullClient, pickWeaponClient, enemyMaxAb, updateSalter, createSalter
@@ -91,51 +91,6 @@ aidTgtToPos aid lidV tgt =
       return $! if shifted == bpos b && v /= Vector 0 0
                 then Nothing
                 else Just shifted
-
--- | Check whether one is permitted to aim at a target
--- (this is only checked for actors so that the player doesn't miss
--- enemy getting out of sight; but for positions we let player
--- shoot at obstacles, e.g., to destroy them, and shoot at a lying item
--- and then at its posision, after enemy picked up the item).
--- This assumes @aidTgtToPos@ does not return @Nothing@.
--- Returns a different @seps@, if needed to reach the target actor.
---
--- Note: Perception is not enough for the check,
--- because the target actor can be obscured by a glass wall
--- or be out of sight range, but in weapon range.
-aidTgtAims :: MonadClient m
-           => ActorId -> LevelId -> Target -> m (Either Text Int)
-aidTgtAims aid lidV tgt = do
-  let findNewEps onlyFirst pos = do
-        oldEps <- getsClient seps
-        b <- getsState $ getActorBody aid
-        mnewEps <- makeLine onlyFirst b pos oldEps
-        case mnewEps of
-          Just newEps -> return $ Right newEps
-          Nothing ->
-            return $ Left
-                   $ if onlyFirst then "aiming blocked at the first step"
-                     else "aiming line to the opponent blocked somewhere"
-  case tgt of
-    TEnemy a _ -> do
-      body <- getsState $ getActorBody a
-      let pos = bpos body
-      if blid body == lidV
-      then findNewEps False pos
-      else return $ Left "selected opponent not on this level"
-    TPoint TEnemyPos{} _ _ ->
-      return $ Left "selected opponent not visible"
-    TPoint _ lid pos ->
-      if lid == lidV
-      then findNewEps True pos
-      else return $ Left "selected position not on this level"
-    TVector v -> do
-      b <- getsState $ getActorBody aid
-      Level{lxsize, lysize} <- getLevel lidV
-      let shifted = shiftBounded lxsize lysize (bpos b) v
-      if shifted == bpos b && v /= Vector 0 0
-      then return $ Left "selected translation is void"
-      else findNewEps True shifted
 
 -- | Counts the number of steps until the projectile would hit
 -- an actor or obstacle. Starts searching with the given eps and returns

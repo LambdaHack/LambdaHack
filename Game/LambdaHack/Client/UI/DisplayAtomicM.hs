@@ -116,9 +116,13 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
               TEnemy{} -> return ()  -- probably too important to overwrite
               TPoint TEnemyPos{} _ _ -> return ()
               _ -> do
-                bag <- getsState $ getFloorBag lid p
-                modifySession $ \sess ->
-                  sess {sxhair = TPoint (TItem bag) lid p}
+                -- Don't steal xhair if it's only an item on another level.
+                -- For enemies, OTOH, capture xhair to alarm player.
+                lidV <- viewedLevelUI
+                when (lid == lidV) $ do
+                  bag <- getsState $ getFloorBag lid p
+                  modifySession $ \sess ->
+                    sess {sxhair = TPoint (TItem bag) lidV p}
             itemVerbMU iid kit "be spotted" c
             stopPlayBack
           CTrunk{} -> return ()
@@ -491,13 +495,14 @@ destroyActorUI destroy aid b = do
   let gameOver = isJust $ gquit fact
   unless gameOver $ do
     when (bfid b == side && not (bproj b)) $ do
-      -- This is especially handy when the dead actor was a leader
-      -- on a different level than the new one:
-      modifySession $ \sess -> sess {saimMode = Nothing}
       stopPlayBack
       let upd = ES.delete aid
       modifySession $ \sess -> sess {sselected = upd $ sselected sess}
-      when destroy $ displayMore ColorBW "Alas!"
+      when destroy $ do
+        displayMore ColorBW "Alas!"
+        -- This is especially handy when the dead actor was a leader
+        -- on a different level than the new one:
+        clearAimMode
     -- If pushed, animate spotting again, to draw attention to pushing.
     when (isNothing $ btrajectory b) $
       modifySession $ \sess -> sess {slastLost = ES.insert aid $ slastLost sess}

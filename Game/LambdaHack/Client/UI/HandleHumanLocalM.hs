@@ -248,8 +248,7 @@ chooseItemDialogMode c = do
 
 -- * ChooseItemProject
 
-chooseItemProjectHuman :: forall m. MonadClientUI m
-                       => [Trigger] -> m MError
+chooseItemProjectHuman :: forall m. MonadClientUI m => [Trigger] -> m MError
 chooseItemProjectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -264,23 +263,22 @@ chooseItemProjectHuman ts = do
       (verb1, object1) = case ts of
         [] -> ("aim", "item")
         tr : _ -> (verb tr, object tr)
-      psuit :: m Suitability
-      psuit = do
-        mpsuitReq <- psuitReq ts
-        case mpsuitReq of
-          -- If xhair aim invalid, no item is considered a (suitable) missile.
-          Left err -> return $ SuitsNothing err
-          Right psuitReqFun ->
-            return $ SuitsSomething $ either (const False) snd . psuitReqFun
-      prompt = makePhrase ["What", object1, "to", verb1]
-      promptGeneric = "What to fling"
-  ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
-  case ggi of
-    Right ((iid, _itemFull), (MStore fromCStore, _)) -> do
-      modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
-      return Nothing
+  mpsuitReq <- psuitReq ts
+  case mpsuitReq of
+    -- If xhair aim invalid, no item is considered a (suitable) missile.
     Left err -> failMsg err
-    _ -> assert `failure` ggi
+    Right psuitReqFun -> do
+      let psuit =
+            return $ SuitsSomething $ either (const False) snd . psuitReqFun
+          prompt = makePhrase ["What", object1, "to", verb1]
+          promptGeneric = "What to fling"
+      ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
+      case ggi of
+        Right ((iid, _itemFull), (MStore fromCStore, _)) -> do
+          modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
+          return Nothing
+        Left err -> failMsg err
+        _ -> assert `failure` ggi
 
 permittedProjectClient :: MonadClientUI m
                        => [Char] -> m (ItemFull -> Either ReqFailure Bool)
@@ -319,19 +317,64 @@ projectCheck tpos = do
           then return Nothing
           else return $ Just ProjectBlockActor
 
+-- | Check whether one is permitted to aim (for projecting) at a target
+-- (this is only checked for actor targets so that the player doesn't miss
+-- enemy getting out of sight; but for positions we let player
+-- shoot at obstacles, e.g., to destroy them, and shoot at a lying item
+-- and then at its posision, after enemy picked up the item).
+-- Returns a different @seps@ if needed to reach the target actor.
+--
+-- Note: Perception is not enough for the check,
+-- because the target actor can be obscured by a glass wall
+-- or be out of sight range, but in weapon range.
+xhairLegalEps :: MonadClientUI m => m (Either Text Int)
+xhairLegalEps = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  lidV <- viewedLevelUI
+  let !_A = assert (lidV == blid b) ()
+      findNewEps onlyFirst pos = do
+        oldEps <- getsClient seps
+        mnewEps <- makeLine onlyFirst b pos oldEps
+        case mnewEps of
+          Just newEps -> return $ Right newEps
+          Nothing ->
+            return $ Left
+                   $ if onlyFirst
+                     then "aiming blocked at the first step"
+                     else "aiming line to the opponent blocked somewhere"
+  xhair <- getsSession sxhair
+  case xhair of
+    TEnemy a _ -> do
+      body <- getsState $ getActorBody a
+      let pos = bpos body
+      if blid body == lidV
+      then findNewEps False pos
+      else assert `failure` (xhair, body, lidV)
+    TPoint TEnemyPos{} _ _ ->
+      return $ Left "selected opponent not visible"
+    TPoint _ lid pos ->
+      if lid == lidV
+      then findNewEps True pos
+      else assert `failure` (xhair, lidV)
+    TVector v -> do
+      Level{lxsize, lysize} <- getLevel lidV
+      let shifted = shiftBounded lxsize lysize (bpos b) v
+      if shifted == bpos b && v /= Vector 0 0
+      then return $ Left "selected translation is void"
+      else findNewEps True shifted
+
 posFromXhair :: MonadClientUI m => m (Either Text Point)
 posFromXhair = do
-  leader <- getLeaderUI
-  lidV <- viewedLevelUI
-  sxhair <- getsSession sxhair
-  canAim <- aidTgtAims leader lidV sxhair
+  canAim <- xhairLegalEps
   case canAim of
     Right newEps -> do
       -- Modify @seps@, permanently.
       modifyClient $ \cli -> cli {seps = newEps}
-      mpos <- aidTgtToPos leader lidV sxhair
+      sxhair <- getsSession sxhair
+      mpos <- xhairToPos
       case mpos of
-        Nothing -> assert `failure` (leader, lidV)
+        Nothing -> assert `failure` sxhair
         Just pos -> do
           munit <- projectCheck pos
           case munit of
@@ -345,15 +388,20 @@ psuitReq :: MonadClientUI m
 psuitReq ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  mpos <- posFromXhair
-  p <- permittedProjectClient $ triggerSymbols ts
-  case mpos of
-    Left err -> return $ Left err
-    Right pos -> return $ Right $ \itemFull@ItemFull{itemBase} ->
-      case p itemFull of
-        Left err -> Left err
-        Right False -> Right (pos, False)
-        Right True -> Right (pos, totalRange itemBase >= chessDist (bpos b) pos)
+  lidV <- viewedLevelUI
+  if lidV /= blid b
+  then return $ Left "can't project on remote levels"
+  else do
+    mpos <- posFromXhair
+    p <- permittedProjectClient $ triggerSymbols ts
+    case mpos of
+      Left err -> return $ Left err
+      Right pos -> return $ Right $ \itemFull@ItemFull{itemBase} ->
+        case p itemFull of
+          Left err -> Left err
+          Right False -> Right (pos, False)
+          Right True ->
+            Right (pos, totalRange itemBase >= chessDist (bpos b) pos)
 
 triggerSymbols :: [Trigger] -> [Char]
 triggerSymbols [] = []
@@ -711,7 +759,7 @@ cancelHuman :: MonadClientUI m => m ()
 cancelHuman = do
   saimMode <- getsSession saimMode
   when (isJust saimMode) $ do
-    modifySession $ \sess -> sess {saimMode = Nothing}
+    clearAimMode
     promptAdd "Target not set."
 
 -- * Accept
@@ -722,7 +770,7 @@ acceptHuman :: MonadClientUI m => m ()
 acceptHuman = do
   endAiming
   endAimingMsg
-  modifySession $ \sess -> sess {saimMode = Nothing}
+  clearAimMode
 
 -- | End aiming mode, accepting the current position.
 endAiming :: MonadClientUI m => m ()
@@ -750,14 +798,7 @@ tgtClearHuman = do
     Just _ -> do
       modifyClient $ updateTarget leader (const Nothing)
     Nothing -> do
-      sxhairOld <- getsSession sxhair
-      b <- getsState $ getActorBody leader
-      let sxhair = case sxhairOld of
-            TEnemy _ permit -> TEnemy leader permit
-            TPoint (TEnemyPos _ permit) _ _ -> TEnemy leader permit
-            TPoint{} -> TPoint TAny (blid b) (bpos b)
-            TVector{} -> TVector (Vector 0 0)
-      modifySession $ \sess -> sess {sxhair}
+      clearXhair
       doLook
 
 -- | Perform look around in the current position of the xhair.
@@ -815,8 +856,7 @@ moveXhairHuman dir n = do
   Level{lxsize, lysize} <- getLevel lidV
   lpos <- getsState $ bpos . getActorBody leader
   sxhair <- getsSession sxhair
-  lidTgt <- lidOfTarget sxhair
-  xhairPos <- aidTgtToPos leader lidTgt sxhair
+  xhairPos <- xhairToPos
   let cpos = fromMaybe lpos xhairPos
       shiftB pos = shiftBounded lxsize lysize pos dir
       newPos = iterate shiftB cpos !! n
@@ -829,29 +869,14 @@ moveXhairHuman dir n = do
     doLook
     return Nothing
 
-lidOfTarget :: MonadClientUI m => Target -> m LevelId
-lidOfTarget tgt = case tgt of
-  TEnemy a _ -> do
-    body <- getsState $ getActorBody a
-    return $! blid body
-  TPoint _ lid _ -> return lid
-  TVector _ -> do
-    leader <- getLeaderUI
-    getsState $ blid . getActorBody leader
-
 -- * AimTgt
 
--- | Start aiming, setting xhair to personal leader' target.
--- To be used in conjuction with other commands.
+-- | Start aiming.
 aimTgtHuman :: MonadClientUI m => m MError
 aimTgtHuman = do
   -- (Re)start aiming at the current level.
   lidV <- viewedLevelUI
   modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
-  -- Set xhair to the personal target, permanently.
-  leader <- getLeaderUI
-  tgt <- getsClient $ getTarget leader
-  modifySession $ \sess -> sess {sxhair = fromMaybe (sxhair sess) tgt}
   doLook
   failMsg "aiming started"
 
@@ -980,7 +1005,13 @@ aimAscendHuman k = do
             [] -> lid
             nlid : _ -> nlid
           lidK = iterate ascendOne lidV !! abs k
-      modifySession $ \sess -> sess {saimMode = Just (AimMode lidK)}
+      leader <- getLeaderUI
+      lpos <- getsState $ bpos . getActorBody leader
+      xhairPos <- xhairToPos
+      let cpos = fromMaybe lpos xhairPos
+          tgt = TPoint TAny lidK cpos
+      modifySession $ \sess -> sess { saimMode = Just (AimMode lidK)
+                                    , sxhair = tgt }
       doLook
       return Nothing
 
@@ -1069,8 +1100,8 @@ xhairPointerFloor verbose = do
         sxhairMoused = sxhair /= oldXhair
     modifySession $ \sess ->
       sess { saimMode = Just $ AimMode lidV
+           , sxhair
            , sxhairMoused }
-    modifySession $ \sess -> sess {sxhair}
     if verbose then doLook else flashAiming
   else stopPlayBack
 

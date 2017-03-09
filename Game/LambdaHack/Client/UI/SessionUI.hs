@@ -98,7 +98,7 @@ data KeysHintMode =
 emptySessionUI :: Config -> SessionUI
 emptySessionUI sconfig =
   SessionUI
-    { sxhair = TVector $ Vector 30000 30000  -- invalid; AI recomputes ASAP
+    { sxhair = TVector $ Vector 1 1
     , schanF = ChanFrontend $ const $ error "emptySessionUI: ChanFrontend "
     , sbinding = Binding M.empty [] M.empty
     , sconfig

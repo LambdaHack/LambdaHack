@@ -9,7 +9,8 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , setFrontAutoYes, anyKeyPressed, discardPressedKey, addPressedEsc
   , connFrontendFrontKey, frontendShutdown, chanFrontend
   , getReportUI, getLeaderUI, getArenaUI, viewedLevelUI
-  , leaderTgtToPos, xhairToPos, scoreToSlideshow, defaultHistory
+  , leaderTgtToPos, xhairToPos, clearXhair, clearAimMode
+  , scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
   , resetSessionStart, resetGameStart, tryRestore
   ) where
@@ -192,8 +193,33 @@ xhairToPos = do
   mleader <- getsClient _sleader
   sxhair <- getsSession sxhair
   case mleader of
-    Nothing -> return Nothing
-    Just aid -> aidTgtToPos aid lidV sxhair
+    Nothing -> return Nothing  -- e.g., when game start and no leader yet
+    Just aid -> aidTgtToPos aid lidV sxhair  -- e.g., xhair on another level
+
+-- Reset xhair and move it to viewed level.
+clearXhair :: MonadClientUI m => m ()
+clearXhair = do
+  leader <- getLeaderUI
+  lpos <- getsState $ bpos . getActorBody leader
+  xhairPos <- xhairToPos
+  lidV <- viewedLevelUI  -- don't assume aiming mode is or will be off
+  let cpos = fromMaybe lpos xhairPos
+      tgt = TPoint TAny lidV cpos
+  modifySession $ \sess -> sess {sxhair = tgt}
+
+-- If aim mode is exited, usually the player had the opportunity to deal
+-- with xhair on a foe spotted on another level, so now move xhair
+-- back to the leader level.
+clearAimMode :: MonadClientUI m => m ()
+clearAimMode = do
+  leader <- getLeaderUI
+  lpos <- getsState $ bpos . getActorBody leader
+  xhairPos <- xhairToPos  -- computed while still in aiming mode
+  modifySession $ \sess -> sess {saimMode = Nothing}
+  lidV <- viewedLevelUI  -- not in aiming mode at this point
+  let cpos = fromMaybe lpos xhairPos
+      tgt = TPoint TAny lidV cpos
+  modifySession $ \sess -> sess {sxhair = tgt}
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do

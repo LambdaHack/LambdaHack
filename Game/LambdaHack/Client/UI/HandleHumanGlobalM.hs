@@ -1210,7 +1210,7 @@ tacticHuman = do
 automateHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 automateHuman = do
   -- BFS is not updated while automated, which would lead to corruption.
-  modifySession $ \sess -> sess {saimMode = Nothing}
+  clearAimMode
   go <- displaySpaceEsc ColorBW
           "Ceding control to AI (press ESC to regain)."
   if not go
