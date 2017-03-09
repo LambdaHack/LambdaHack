@@ -299,7 +299,16 @@ drawFrameExtra dm drawnLevelId = do
   SessionUI{saimMode, smarkVision} <- getSession
   Level{lxsize, lysize} <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
-  xhairPosRaw <- xhairToPos
+  mxhairPos <- xhairToPos
+  mtgtPos <- do
+    mleader <- getsClient _sleader
+    case mleader of
+      Nothing -> return Nothing
+      Just leader -> do
+        mtgt <- getsClient $ getTarget leader
+        case mtgt of
+          Nothing -> return Nothing
+          Just tgt -> aidTgtToPos leader drawnLevelId tgt
   let visionMarks =
         if smarkVision
         then map (PointArray.pindex lxsize) $ ES.toList totVisible
@@ -308,10 +317,10 @@ drawFrameExtra dm drawnLevelId = do
       backlightVision ac = case ac of
         Color.AttrChar (Color.Attr fg _) ch ->
           Color.AttrChar (Color.Attr fg Color.HighlightGrey) ch
-      writeXhair !(Color.AttrChar (Color.Attr fg bg) ch) =
-        let yellowUnlessLeader | bg == Color.HighlightRed = bg
-                               | otherwise = Color.HighlightYellow
-        in Color.AttrChar (Color.Attr fg yellowUnlessLeader) ch
+      writeSquare !hi !(Color.AttrChar (Color.Attr fg bg) ch) =
+        let hiUnlessLeader | bg == Color.HighlightRed = bg
+                           | otherwise = hi
+        in Color.AttrChar (Color.Attr fg hiUnlessLeader) ch
       turnBW !(Color.AttrChar _ ch) = Color.AttrChar Color.defAttr ch
       mapVL :: forall s. (Color.AttrChar -> Color.AttrChar) -> [Int]
             -> FrameST s
@@ -327,9 +336,14 @@ drawFrameExtra dm drawnLevelId = do
       upd :: FrameForall
       upd = FrameForall $ \v -> do
         when (isJust saimMode) $ mapVL backlightVision visionMarks v
-        case xhairPosRaw of
+        case mtgtPos of
           Nothing -> return ()
-          Just xhairP -> mapVL writeXhair [PointArray.pindex lxsize xhairP] v
+          Just p -> mapVL (writeSquare Color.HighlightGrey)
+                          [PointArray.pindex lxsize p] v
+        case mxhairPos of  -- overwrites target
+          Nothing -> return ()
+          Just p -> mapVL (writeSquare Color.HighlightYellow)
+                          [PointArray.pindex lxsize p] v
         when (dm == ColorBW) $ mapVL turnBW lDungeon v
   return upd
 
