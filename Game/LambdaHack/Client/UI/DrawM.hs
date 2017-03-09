@@ -16,6 +16,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import Control.Arrow (first)
 import Control.Monad.ST.Strict
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
@@ -57,7 +58,7 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
-targetDesc :: MonadClientUI m => Maybe Target -> m (Text, Maybe Text)
+targetDesc :: MonadClientUI m => Maybe Target -> m (Maybe Text, Maybe Text)
 targetDesc mtarget = do
   arena <- getArenaUI
   lidV <- viewedLevelUI
@@ -75,13 +76,13 @@ targetDesc mtarget = do
                       <> T.replicate (4 - n) "_" <> "]"
           stars = chs $ fromEnum $ max 0 $ min 4 $ percentage `div` 20
           hpIndicator = if bfid b == side then Nothing else Just stars
-      return (bname b, hpIndicator)
+      return (Just $ bname b, hpIndicator)
     Just (TPoint tgoal lid p) -> case tgoal of
       TEnemyPos{} -> do
         let hotText = if lid == lidV && arena == lidV
                       then "hot spot" <+> tshow p
                       else "a hot spot on level" <+> tshow (abs $ fromEnum lid)
-        return (hotText, Nothing)
+        return (Just hotText, Nothing)
       _ -> do  -- the other goals can be invalidated by now anyway and it's
                -- better to say what there is rather than what there isn't
         pointedText <-
@@ -103,18 +104,18 @@ targetDesc mtarget = do
                             else [MU.CarWs k name, stats]
               _ -> return $! "many items at" <+> tshow p
           else return $! "an exact spot on level" <+> tshow (abs $ fromEnum lid)
-        return (pointedText, Nothing)
+        return (Just pointedText, Nothing)
     Just target@TVector{} ->
       case mleader of
-        Nothing -> return ("a relative shift", Nothing)
+        Nothing -> return (Just "a relative shift", Nothing)
         Just aid -> do
           tgtPos <- aidTgtToPos aid lidV target
           let invalidMsg = "an invalid relative shift"
               validMsg p = "shift to" <+> tshow p
-          return (maybe invalidMsg validMsg tgtPos, Nothing)
-    Nothing -> return ("crosshair location", Nothing)
+          return (Just $ maybe invalidMsg validMsg tgtPos, Nothing)
+    Nothing -> return (Nothing, Nothing)
 
-targetDescLeader :: MonadClientUI m => ActorId -> m (Text, Maybe Text)
+targetDescLeader :: MonadClientUI m => ActorId -> m (Maybe Text, Maybe Text)
 targetDescLeader leader = do
   tgt <- getsClient $ getTarget leader
   targetDesc tgt
@@ -122,7 +123,7 @@ targetDescLeader leader = do
 targetDescXhair :: MonadClientUI m => m (Text, Maybe Text)
 targetDescXhair = do
   sxhair <- getsSession sxhair
-  targetDesc $ Just sxhair
+  first fromJust <$> targetDesc (Just sxhair)
 
 drawFrameTerrain :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameTerrain drawnLevelId = do
@@ -339,8 +340,8 @@ drawFrameStatus drawnLevelId = do
   xhairPos <- xhairToPos
   tgtPos <- leaderTgtToPos
   mbfs <- maybe (return Nothing) (\aid -> Just <$> getCacheBfs aid) mleader
-  (tgtDesc, mtargetHP) <-
-    maybe (return ("------", Nothing)) targetDescLeader mleader
+  (mtgtDesc, mtargetHP) <-
+    maybe (return (Nothing, Nothing)) targetDescLeader mleader
   (xhairDesc, mxhairHP) <- targetDescXhair
   sexplored <- getsClient sexplored
   lvl <- getLevel drawnLevelId
@@ -394,7 +395,7 @@ drawFrameStatus drawnLevelId = do
                                             - selectedStatusWidth
                                             - length damageStatus)
       tgtOrItem n = do
-        let tgtBlurb = "Target:" <+> trimTgtDesc n tgtDesc
+        let tgtBlurb = maybe "" (\t -> "Target:" <+> trimTgtDesc n t) mtgtDesc
         case (sitemSel, mleader) of
           (Just (fromCStore, iid), Just leader) -> do
             b <- getsState $ getActorBody leader

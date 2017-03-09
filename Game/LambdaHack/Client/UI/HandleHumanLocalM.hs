@@ -782,7 +782,8 @@ endAiming = do
 endAimingMsg :: MonadClientUI m => m ()
 endAimingMsg = do
   leader <- getLeaderUI
-  (targetMsg, _) <- targetDescLeader leader
+  (mtargetMsg, _) <- targetDescLeader leader
+  let targetMsg = fromJust mtargetMsg
   subject <- partAidLeader leader
   promptAdd $
     makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
