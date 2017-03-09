@@ -167,7 +167,6 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
   mpsuit <- psuit
   let psuitFun = case mpsuit of
         SuitsEverything -> const True
-        SuitsNothing _ -> const False
         SuitsSomething f -> f
   -- Move the first store that is non-empty for suitable items for this actor
   -- to the front, if any.
@@ -247,7 +246,6 @@ data DefItemKey m = DefItemKey
 
 data Suitability =
     SuitsEverything
-  | SuitsNothing Text
   | SuitsSomething (ItemFull -> Bool)
 
 transition :: forall m. MonadClientUI m
@@ -280,11 +278,8 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   mpsuit <- psuit  -- when throwing, this sets eps and checks xhair validity
   psuitFun <- case mpsuit of
     SuitsEverything -> return $ const True
-    SuitsNothing err -> do
-      displayMore ColorFull err
-      return $ const False
-    -- When throwing, this function takes missile range into accout.
     SuitsSomething f -> return f
+      -- When throwing, this function takes missile range into accout.
   let getSingleResult :: ItemId -> (ItemId, ItemFull)
       getSingleResult iid = (iid, itemToF iid (bagAll EM.! iid))
       getResult :: Either K.KM SlotChar -> ItemId
