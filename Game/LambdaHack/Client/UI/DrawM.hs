@@ -345,11 +345,11 @@ drawFrameStatus drawnLevelId = do
   (xhairDesc, mxhairHP) <- targetDescXhair
   sexplored <- getsClient sexplored
   lvl <- getLevel drawnLevelId
-  (mblid, mbpos) <- case mleader of
+  (mblid, mbpos, mbody) <- case mleader of
     Just leader -> do
-      Actor{bpos, blid} <- getsState $ getActorBody leader
-      return (Just blid, Just bpos)
-    Nothing -> return (Nothing, Nothing)
+      body@Actor{bpos, blid} <- getsState $ getActorBody leader
+      return (Just blid, Just bpos, Just body)
+    Nothing -> return (Nothing, Nothing, Nothing)
   let widthX = 80
       widthTgt = 39
       widthStats = widthX - widthTgt - 1
@@ -395,7 +395,9 @@ drawFrameStatus drawnLevelId = do
                                             - selectedStatusWidth
                                             - length damageStatus)
       tgtOrItem n = do
-        let tgtBlurb = maybe "" (\t -> "Target:" <+> trimTgtDesc n t) mtgtDesc
+        let leaderName = maybe "" (\body -> "Leader:" <+> bname body) mbody
+            tgtBlurb = maybe leaderName (\t ->
+              "Target:" <+> trimTgtDesc n t) mtgtDesc
         case (sitemSel, mleader) of
           (Just (fromCStore, iid), Just leader) -> do
             b <- getsState $ getActorBody leader
