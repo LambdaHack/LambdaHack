@@ -491,6 +491,9 @@ destroyActorUI destroy aid b = do
   let gameOver = isJust $ gquit fact
   unless gameOver $ do
     when (bfid b == side && not (bproj b)) $ do
+      -- This is especially handy when the dead actor was a leader
+      -- on a different level than the new one:
+      modifySession $ \sess -> sess {saimMode = Nothing}
       stopPlayBack
       let upd = ES.delete aid
       modifySession $ \sess -> sess {sselected = upd $ sselected sess}
