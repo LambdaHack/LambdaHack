@@ -203,9 +203,13 @@ clearXhair = do
   lpos <- getsState $ bpos . getActorBody leader
   xhairPos <- xhairToPos
   lidV <- viewedLevelUI  -- don't assume aiming mode is or will be off
+  sxhairOld <- getsSession sxhair
   let cpos = fromMaybe lpos xhairPos
-      tgt = TPoint TAny lidV cpos
-  modifySession $ \sess -> sess {sxhair = tgt}
+      sxhair = case sxhairOld of
+        TEnemy{} -> sxhairOld
+        TVector{} -> sxhairOld
+        _ -> TPoint TAny lidV cpos
+  modifySession $ \sess -> sess {sxhair}
 
 -- If aim mode is exited, usually the player had the opportunity to deal
 -- with xhair on a foe spotted on another level, so now move xhair
@@ -217,9 +221,13 @@ clearAimMode = do
   xhairPos <- xhairToPos  -- computed while still in aiming mode
   modifySession $ \sess -> sess {saimMode = Nothing}
   lidV <- viewedLevelUI  -- not in aiming mode at this point
+  sxhairOld <- getsSession sxhair
   let cpos = fromMaybe lpos xhairPos
-      tgt = TPoint TAny lidV cpos
-  modifySession $ \sess -> sess {sxhair = tgt}
+      sxhair = case sxhairOld of
+        TEnemy{} -> sxhairOld
+        TVector{} -> sxhairOld
+        _ -> TPoint TAny lidV cpos
+  modifySession $ \sess -> sess {sxhair}
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do
