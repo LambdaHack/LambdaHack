@@ -125,9 +125,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
                   bag <- getsState $ getFloorBag lid p
                   modifySession $ \sess ->
                     sess {sxhair = TPoint (TItem bag) lidV p}
-            ownerFun <- partActorLeaderFun
-            let wown = ppContainerWownW ownerFun True c
-            itemVerbMU iid kit (MU.Text $ makePhrase $ "be spotted" : wown) c
+            itemVerbMU iid kit "be spotted" c
             stopPlayBack
           CTrunk{} -> return ()
       _ -> return ()  -- seen already (has a slot assigned)
