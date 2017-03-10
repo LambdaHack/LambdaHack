@@ -100,7 +100,7 @@ actionStrategy aid = do
       actorShines = aShine ar > 0
       condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
       condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
-      condThreatHalfRange = not $ null $ takeWhile ((<= 6) . fst) threatDistL
+      condThreatAt n = not $ null $ takeWhile ((<= n) . fst) threatDistL
       condThreatNearby = not $ null $ takeWhile ((<= 9) . fst) threatDistL
       condThreatInRange = not $ null $ takeWhile ((<= 12) . fst) threatDistL
       speed1_5 = speedScale (3%2) (bspeed body ar)
@@ -163,7 +163,8 @@ actionStrategy aid = do
             -- or from missiles, if hit and enemies are only far away,
             -- can fling at us and we can't well fling at them nor well melee.
             not condFastThreatAdj
-            && if | condThreatAtHand ->
+            && if | condThreatAtHand
+                    || condThreatAt 5 && aInAmbient && not actorShines ->
                     condMeleeBad
                     -- Don't keep fleeing if just hit, because too close
                     -- to enemy to get out of his range, most likely,
@@ -171,8 +172,9 @@ actionStrategy aid = do
                     && not (heavilyDistressed
                             && abInMaxSkill AbMelee
                             && not condNoUsableWeapon)
-                  | condThreatHalfRange ->
-                    -- Too far to flee from melee, too close from ranged; stay.
+                  | condThreatAt 5 ->
+                    -- Too far to flee from melee, too close from ranged,
+                    -- not in ambient, so no point fleeing into dark; stay.
                     False
                   | condThreatInRange ->
                     -- Too far to close in for melee; can't shoot; flee from
@@ -218,8 +220,9 @@ actionStrategy aid = do
                               1000  -- friends probably pummeled, go to help
                             | otherwise ->
                               100)
-            $ chase aid True (condMeleeBad && condThreatNearby
-                              && not aInAmbient && not actorShines)
+            $ chase aid True (condThreatAt 5
+                              && not aInAmbient && not actorShines
+                              && condMeleeBad)
           , (condAimEnemyPresent
              || condAimEnemyRemembered && not newCondInMelee)
             && not (condDesirableFloorItem && not newCondInMelee)
@@ -241,14 +244,14 @@ actionStrategy aid = do
             <$> unEquipItems aid  -- late, because these items not bad
           , not newCondInMelee )
         , ( [AbMove]
-          , chase aid True (condAimEnemyPresent
-                            -- Don't keep hiding in darkness if hit right now,
+          , chase aid True (-- Don't keep hiding in darkness if hit right now,
                             -- unless can't melee at all.
+                            condThreatAt 5
+                            && not aInAmbient && not actorShines
+                            && condMeleeBad
                             && not (heavilyDistressed
                                     && abInMaxSkill AbMelee
-                                    && not condNoUsableWeapon)
-                            && condMeleeBad && condThreatNearby
-                            && not aInAmbient && not actorShines)
+                                    && not condNoUsableWeapon))
           , not (condTgtNonmoving && condThreatAtHand)
             && not newCondInMelee )
         ]
