@@ -86,8 +86,9 @@ data ResDelta = ResDelta
 type ActorAspect = EM.EnumMap ActorId AspectRecord
 
 deltaSerious :: ResDelta -> Bool
-deltaSerious ResDelta{..} = fst resCurrentTurn < minusM
-                            || fst resPreviousTurn < minusM
+deltaSerious ResDelta{..} =
+  fst resCurrentTurn < 0 && fst resCurrentTurn /= minusM
+  || fst resPreviousTurn < 0 && fst resCurrentTurn /= minusM
 
 deltaMild :: ResDelta -> Bool
 deltaMild ResDelta{..} = fst resCurrentTurn == minusM
