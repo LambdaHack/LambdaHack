@@ -122,6 +122,7 @@ aspectToBenefit _cops _b asp =
     IK.AddSmell p -> Dice.meanDice p * 10
     IK.AddShine p -> Dice.meanDice p * 10
     IK.AddNocto p -> Dice.meanDice p * 50
+    IK.AddAggression{} -> 0
     IK.AddAbility _ p -> Dice.meanDice p * 5
 
 -- | Determine the total benefit from having an item in eqp or inv,

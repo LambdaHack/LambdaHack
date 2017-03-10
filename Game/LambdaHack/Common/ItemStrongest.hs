@@ -114,6 +114,7 @@ prEqpSlot eqpSlot ar@AspectRecord{..} =
     EqpSlotAddMaxCalm -> aMaxCalm
     EqpSlotAddSmell -> aSmell
     EqpSlotAddNocto -> aNocto
+    EqpSlotAddAggression -> aAggression
     EqpSlotAbWait -> EM.findWithDefault 0 Ability.AbWait aSkills
     EqpSlotAbMoveItem -> EM.findWithDefault 0 Ability.AbMoveItem aSkills
 

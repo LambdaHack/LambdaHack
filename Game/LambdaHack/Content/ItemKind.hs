@@ -139,6 +139,7 @@ data Aspect =
   | AddSmell !Dice.Dice        -- ^ smell radius, where 1 means a single tile
   | AddShine !Dice.Dice        -- ^ shine radius, where 1 means a single tile
   | AddNocto !Dice.Dice        -- ^ noctovision radius, where 1 is single tile
+  | AddAggression !Dice.Dice   -- ^ aggresion, especially closing in for melee
   | AddAbility !Ability.Ability !Dice.Dice  -- ^ bonus to an ability
   deriving (Show, Eq, Ord, Generic)
 
@@ -189,6 +190,7 @@ data EqpSlot =
   | EqpSlotAddMaxCalm
   | EqpSlotAddSmell
   | EqpSlotAddNocto
+  | EqpSlotAddAggression
   | EqpSlotAbWait
   | EqpSlotAbMoveItem
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)

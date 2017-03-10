@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Actor
   , Actor(..), ResDelta(..), ActorAspect
   , deltaSerious, deltaMild
   , bspeed, actorTemplate, braced, waitedLastTurn, actorDying
-  , hpTooLow, hpHuge, calmEnough, hpEnough
+  , hpTooLow, calmEnough, hpEnough
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
   , keySelected, ppContainer, ppCStore, ppCStoreIn, ppCStoreWownW
@@ -162,9 +162,6 @@ actorDying b = bhp b <= 0
 hpTooLow :: Actor -> AspectRecord -> Bool
 hpTooLow b AspectRecord{aMaxHP} =
   bhp b <= oneM || 5 * bhp b < xM aMaxHP && bhp b <= xM 10
-
-hpHuge :: Actor -> Bool
-hpHuge b = bhp b > xM 40
 
 calmEnough :: Actor -> AspectRecord -> Bool
 calmEnough b AspectRecord{aMaxCalm} =

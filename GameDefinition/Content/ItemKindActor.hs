@@ -115,6 +115,7 @@ eye = ItemKind
   , iweight  = 80000
   , idamage  = toDmg 0
   , iaspects = [ AddMaxHP 16, AddMaxCalm 70, AddSpeed 20, AddNocto 2
+               , AddAggression 1
                , AddAbility AbProject 2, AddAbility AbApply 1
                , AddAbility AbAlter 2 ]
   , ieffects = []
@@ -135,6 +136,7 @@ fastEye = ItemKind
   , iweight  = 80000
   , idamage  = toDmg 0
   , iaspects = [ AddMaxHP 5, AddMaxCalm 70, AddSpeed 30, AddNocto 2
+               , AddAggression 1
                , AddAbility AbAlter 2 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -154,6 +156,7 @@ nose = ItemKind  -- depends solely on smell
   , iweight  = 80000
   , idamage  = toDmg 0
   , iaspects = [ AddMaxHP 30, AddMaxCalm 30, AddSpeed 18, AddNocto 2
+               , AddAggression 1
                , AddAbility AbProject (-1), AddAbility AbAlter 2 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -195,6 +198,7 @@ torsor = ItemKind
   , iweight  = 80000
   , idamage  = toDmg 0
   , iaspects = [ AddMaxHP 300, AddMaxCalm 100, AddSpeed 10, AddNocto 2
+               , AddAggression 3
                , AddAbility AbProject 2, AddAbility AbApply 1 ]
   , ieffects = [Unique]
   , ifeature = [Durable, Identified]
@@ -397,6 +401,7 @@ rhinoceros = ItemKind
   , iweight  = 80000
   , idamage  = toDmg 0
   , iaspects = [ AddMaxHP 90, AddMaxCalm 60, AddSpeed 25, AddNocto 2
+               , AddAggression 2
                , AddAbility AbAlter (-1) ]  -- can't switch levels, a miniboss
   , ieffects = [Unique]
   , ifeature = [Durable, Identified]

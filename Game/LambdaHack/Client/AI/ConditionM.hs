@@ -346,6 +346,7 @@ condMeleeBadM aid = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let condNoUsableWeapon = bweapon b == 0
       friendlyFid fid = fid == bfid b || isAllied fact fid
+      ar = actorAspect EM.! aid
   friends <- getsState $ actorRegularAssocs friendlyFid (blid b)
   let closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
                        in dist > 0 && (dist <= 2 || approaching b2)
@@ -356,17 +357,17 @@ condMeleeBadM aid = do
         _ -> const False
       closeFriends = filter (closeEnough . snd) friends
       strongActor (aid2, b2) =
-        let ar = actorAspect EM.! aid2
-            actorMaxSk2 = aSkills ar
+        let ar2 = actorAspect EM.! aid2
+            actorMaxSk2 = aSkills ar2
             condUsableWeapon2 = bweapon b >= 0
             canMelee2 = EM.findWithDefault 0 Ability.AbMelee actorMaxSk2 > 0
-            hpGood = not $ hpTooLow b2 ar
+            hpGood = not $ hpTooLow b2 ar2
         in hpGood && condUsableWeapon2 && canMelee2
       strongCloseFriends = filter strongActor closeFriends
       noFriendlyHelp = length closeFriends < 3
                        && null strongCloseFriends
                        && length friends > 1  -- solo fighters aggresive
-                       && not (hpHuge b)  -- uniques, etc., aggresive
+                       && aAggression ar < 2
       actorMaxSk = aSkills $ actorAspect EM.! aid
   return $ condNoUsableWeapon
            || EM.findWithDefault 0 Ability.AbMelee actorMaxSk <= 0

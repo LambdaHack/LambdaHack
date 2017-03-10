@@ -160,6 +160,7 @@ slotToName eqpSlot =
     EqpSlotAddMaxCalm -> "max Calm"
     EqpSlotAddSmell -> "smell radius"
     EqpSlotAddNocto -> "night vision radius"
+    EqpSlotAddAggression -> "aggresion level"
     EqpSlotAbWait -> tshow AbWait <+> "ability"
     EqpSlotAbMoveItem -> tshow AbMoveItem <+> "ability"
 
@@ -187,6 +188,7 @@ slotToDesc eqpSlot =
     EqpSlotAddMaxCalm -> "is a cap on Calm of the actor, except for some rare effects able to overfill Calm. At any direct enemy damage (but not, e.g., incremental poisoning damage or wounds inflicted by mishandling a device) Calm is lowered, sometimes very significantly and always at least back down to the cap."
     EqpSlotAddSmell -> "determines the maximal area smelled by the actor. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
     EqpSlotAddNocto -> "is the limit of visibility in dark. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
+    EqpSlotAddAggression -> "represents the willingness of the actor to engage in combat, especially close quarters, and conversly, to break engagement when overpowered."
     EqpSlotAbWait -> "determines whether the character can wait, bracing for comat and potentially blocking the effects of some attacks."
     EqpSlotAbMoveItem -> "determines whether the character can pick up items and manage inventory."
 
@@ -228,6 +230,7 @@ slotToDecorator eqpSlot b t =
     EqpSlotAddMaxCalm -> tshow $ max 0 t
     EqpSlotAddSmell -> tshowRadius (max 0 t)
     EqpSlotAddNocto -> tshowRadius (max 0 t)
+    EqpSlotAddAggression -> tshow t
     EqpSlotAbWait -> tshow t
     EqpSlotAbMoveItem -> tshow t
 
@@ -242,6 +245,7 @@ statSlots = [ EqpSlotAddHurtMelee
             , EqpSlotAddSmell
             , EqpSlotLightSource
             , EqpSlotAddNocto
+            , EqpSlotAddAggression
             , EqpSlotAbMove
             , EqpSlotAbMelee
             , EqpSlotAbDisplace
@@ -274,6 +278,7 @@ kindAspectToSuffix aspect =
     AddSmell t -> wrapInParens $ affixDice t <+> "smell"
     AddShine t -> wrapInParens $ affixDice t <+> "shine"
     AddNocto t -> wrapInParens $ affixDice t <+> "night vision"
+    AddAggression t -> wrapInParens $ affixDice t <+> "aggression"
     AddAbility ab t -> wrapInParens $ affixDice t <+> tshow ab
 
 featureToSuff :: Feature -> Text

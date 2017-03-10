@@ -75,6 +75,7 @@ data AspectRecord = AspectRecord
   , aSmell       :: !Int
   , aShine       :: !Int
   , aNocto       :: !Int
+  , aAggression  :: !Int
   , aSkills      :: !Ability.Skills
   }
   deriving (Show, Eq, Ord, Generic)
@@ -96,6 +97,7 @@ emptyAspectRecord = AspectRecord
   , aSmell       = 0
   , aShine       = 0
   , aNocto       = 0
+  , aAggression  = 0
   , aSkills      = Ability.zeroSkills
   }
 
@@ -112,6 +114,7 @@ sumAspectRecord l = AspectRecord
   , aSmell       = sum $ mapScale aSmell l
   , aShine       = sum $ mapScale aShine l
   , aNocto       = sum $ mapScale aNocto l
+  , aAggression  = sum $ mapScale aAggression l
   , aSkills      = EM.unionsWith (+) $ mapScaleAbility l
   }
  where
@@ -186,6 +189,7 @@ aspectRecordToList AspectRecord{..} =
   ++ [IK.AddSmell $ intToDice aSmell | aSmell /= 0]
   ++ [IK.AddShine $ intToDice aShine | aShine /= 0]
   ++ [IK.AddNocto $ intToDice aNocto | aNocto /= 0]
+  ++ [IK.AddAggression $ intToDice aAggression | aAggression /= 0]
   ++ [IK.AddAbility ab $ intToDice n | (ab, n) <- EM.assocs aSkills, n /= 0]
 
 castAspect :: AbsDepth -> AbsDepth -> AspectRecord -> IK.Aspect
@@ -225,6 +229,9 @@ castAspect !ldepth !totalDepth !ar !asp =
     IK.AddNocto d -> do
       n <- castDice ldepth totalDepth d
       return $! ar {aNocto = n + aNocto ar}
+    IK.AddAggression d -> do
+      n <- castDice ldepth totalDepth d
+      return $! ar {aAggression = n + aAggression ar}
     IK.AddAbility ab d -> do
       n <- castDice ldepth totalDepth d
       return $! ar {aSkills = Ability.addSkills (EM.singleton ab n)
@@ -266,6 +273,9 @@ addMeanAspect !ar !asp =
     IK.AddNocto d ->
       let n = Dice.meanDice d
       in ar {aNocto = n + aNocto ar}
+    IK.AddAggression d ->
+      let n = Dice.meanDice d
+      in ar {aAggression = n + aAggression ar}
     IK.AddAbility ab d ->
       let n = Dice.meanDice d
       in ar {aSkills = Ability.addSkills (EM.singleton ab n)
