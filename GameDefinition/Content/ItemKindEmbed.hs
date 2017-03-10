@@ -211,11 +211,12 @@ obscenePictograms = ItemKind
   , iverbHit = "infuriate"
   , iweight  = 1000
   , idamage  = toDmg 0
-  , iaspects = []
+  , iaspects = [Timeout 7]
   , ieffects = [ Temporary "enter destructive rage at the sight of obscene pictograms"
-               , OneOf [ RefillCalm (-20)
-                       , toOrganActorTurn "strengthened" (3 + d 3)
-                       , CreateItem CInv "sandstone rock" TimerNone ] ]
+               , RefillCalm (-20)
+               , Recharging $ OneOf
+                   [ toOrganActorTurn "strengthened" (3 + d 3)
+                   , CreateItem CInv "sandstone rock" TimerNone ] ]
   , ifeature = [Identified, Durable]
   , idesc    = ""
   , ikit     = []
@@ -230,10 +231,11 @@ subtleFresco = ItemKind
   , iverbHit = ""
   , iweight  = 1000
   , idamage  = toDmg 0
-  , iaspects = []
+  , iaspects = [Timeout 7]
   , ieffects = [ Temporary "feel refreshed by the subtle fresco"
-               , toOrganActorTurn "far-sighted" (3 + d 3)
-               , toOrganActorTurn "keen-smelling" (3 + d 3) ]
+               , RefillCalm 2
+               , Recharging $ toOrganActorTurn "far-sighted" (3 + d 3)
+               , Recharging $ toOrganActorTurn "keen-smelling" (3 + d 3) ]
   , ifeature = [Identified, Durable]
   , idesc    = ""
   , ikit     = []
