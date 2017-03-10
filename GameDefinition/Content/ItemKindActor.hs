@@ -142,7 +142,7 @@ fastEye = ItemKind
   , ifeature = [Durable, Identified]
   , idesc    = "Hungers but never eats. Bites but never swallows. Burrows its own image through, but never carries anything back."  -- rather weak: not about injective objects, but puny, concrete, injective functions  --- where's the madness in that?
   , ikit     = [ ("tooth", COrgan), ("speed gland 10", COrgan)
-               , ("lip", COrgan), ("vision 5", COrgan)
+               , ("lip", COrgan), ("vision 6", COrgan)
                , ("sapient brain", COrgan) ]
   }
 nose = ItemKind  -- depends solely on smell
@@ -274,7 +274,7 @@ skunk = ItemKind
   , idesc    = ""
   , ikit     = [ ("scent gland", COrgan)
                , ("small claw", COrgan), ("snout", COrgan)
-               , ("nostril", COrgan), ("eye 2", COrgan)
+               , ("nostril", COrgan), ("eye 3", COrgan)
                , ("animal brain", COrgan) ]
   }
 armadillo = ItemKind
@@ -293,7 +293,7 @@ armadillo = ItemKind
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [ ("claw", COrgan), ("snout", COrgan), ("armored skin", COrgan)
-               , ("nostril", COrgan), ("eye 2", COrgan)
+               , ("nostril", COrgan), ("eye 3", COrgan)
                , ("animal brain", COrgan) ]
   }
 gilaMonster = ItemKind
@@ -312,7 +312,7 @@ gilaMonster = ItemKind
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [ ("venom tooth", COrgan), ("small claw", COrgan)
-               , ("eye 2", COrgan), ("nostril", COrgan)
+               , ("eye 3", COrgan), ("nostril", COrgan)
                , ("animal brain", COrgan) ]
   }
 rattlesnake = ItemKind
@@ -331,7 +331,7 @@ rattlesnake = ItemKind
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [ ("venom fang", COrgan)
-               , ("eye 3", COrgan), ("nostril", COrgan)
+               , ("eye 4", COrgan), ("nostril", COrgan)
                , ("animal brain", COrgan) ]
   }
 komodoDragon = ItemKind  -- bad hearing; regeneration makes it very powerful
@@ -350,7 +350,7 @@ komodoDragon = ItemKind  -- bad hearing; regeneration makes it very powerful
   , idesc    = ""
   , ikit     = [ ("large tail", COrgan), ("jaw", COrgan), ("claw", COrgan)
                , ("speed gland 4", COrgan), ("armored skin", COrgan)
-               , ("eye 2", COrgan), ("nostril", COrgan)
+               , ("eye 3", COrgan), ("nostril", COrgan)
                , ("animal brain", COrgan) ]
   }
 hyena = ItemKind
@@ -406,7 +406,7 @@ rhinoceros = ItemKind
   , ieffects = [Unique]
   , ifeature = [Durable, Identified]
   , idesc    = "The last of its kind. Blind with rage. Charges at deadly speed."
-  , ikit     = [ ("armored skin", COrgan), ("eye 2", COrgan)
+  , ikit     = [ ("armored skin", COrgan), ("eye 3", COrgan)
                , ("horn", COrgan), ("snout", COrgan)
                , ("animal brain", COrgan) ]
   }
@@ -429,7 +429,7 @@ beeSwarm = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [ ("bee sting", COrgan), ("vision 4", COrgan)
+  , ikit     = [ ("bee sting", COrgan), ("vision 6", COrgan)
                , ("insect mortality", COrgan), ("animal brain", COrgan) ]
   }
 hornetSwarm = ItemKind
@@ -448,7 +448,7 @@ hornetSwarm = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [ ("sting", COrgan), ("vision 5", COrgan)
+  , ikit     = [ ("sting", COrgan), ("vision 8", COrgan)
                , ("insect mortality", COrgan), ("animal brain", COrgan) ]
   }
 thornbush = ItemKind
