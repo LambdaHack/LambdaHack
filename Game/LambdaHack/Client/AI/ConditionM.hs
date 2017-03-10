@@ -361,13 +361,12 @@ condMeleeBadM aid = do
             actorMaxSk2 = aSkills ar2
             condUsableWeapon2 = bweapon b >= 0
             canMelee2 = EM.findWithDefault 0 Ability.AbMelee actorMaxSk2 > 0
-            hpGood = not $ hpTooLow b2 ar2
-        in hpGood && condUsableWeapon2 && canMelee2
+            hpGood2 = not $ hpTooLow b2 ar2
+        in hpGood2 && condUsableWeapon2 && canMelee2
       strongCloseFriends = filter strongActor closeFriends
-      noFriendlyHelp = length closeFriends < 3
+      noFriendlyHelp = length closeFriends < 3 - 2 * aAggression ar
                        && null strongCloseFriends
                        && length friends > 1  -- solo fighters aggresive
-                       && aAggression ar < 2
       actorMaxSk = aSkills $ actorAspect EM.! aid
   return $ condNoUsableWeapon
            || EM.findWithDefault 0 Ability.AbMelee actorMaxSk <= 0

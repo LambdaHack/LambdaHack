@@ -100,6 +100,7 @@ actionStrategy aid = do
       actorShines = aShine ar > 0
       condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
       condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
+      condThreatHalfRange = not $ null $ takeWhile ((<= 6) . fst) threatDistL
       condThreatNearby = not $ null $ takeWhile ((<= 9) . fst) threatDistL
       condThreatInRange = not $ null $ takeWhile ((<= 12) . fst) threatDistL
       speed1_5 = speedScale (3%2) (bspeed body ar)
@@ -162,15 +163,23 @@ actionStrategy aid = do
             -- or from missiles, if hit and enemies are only far away,
             -- can fling at us and we can't well fling at them nor well melee.
             not condFastThreatAdj
-            && if condThreatAtHand
-               then condMeleeBad
-                    -- Don't keep fleeing if just hit, unless can't melee.
+            && if | condThreatAtHand ->
+                    condMeleeBad
+                    -- Don't keep fleeing if just hit, because too close
+                    -- to enemy to get out of his range, most likely,
+                    -- and so melee him instead, unless can't melee at all.
                     && not (heavilyDistressed
                             && abInMaxSkill AbMelee
                             && not condNoUsableWeapon)
-               else heavilyDistressed && condThreatInRange
+                  | condThreatHalfRange ->
+                    -- Too far to flee from melee, too close from ranged; stay.
+                    False
+                  | condThreatInRange ->
+                    -- Too far to close in for melee; can't shoot; flee from
+                    -- ranged attack and prepare ambush for later on.
+                    heavilyDistressed
                     && not condCanProject
-                    && (condMeleeBad || not condNotCalmEnough))
+                  | otherwise -> False ) -- not threats in range; don't flee
         , ( [AbDisplace]  -- prevents some looping movement
           , displaceBlocker aid  -- fires up only when path blocked
           , not condDesirableFloorItem
@@ -899,7 +908,7 @@ chase aid doDisplace avoidAmbient = do
       | not $ avoidAmbient && isAmbient q ->
       -- With no leader, the goal is vague, so permit arbitrary detours.
       moveTowards aid q pathGoal (fleaderMode (gplayer fact) == LeaderNull)
-    _ -> return reject  -- goal reached
+    _ -> return reject  -- goal reached or banned ambient lit tile
   -- If @doDisplace@: don't pick fights, assuming the target is more important.
   -- We'd normally melee the target earlier on via @AbMelee@, but for
   -- actors that don't have this ability (and so melee only when forced to),
