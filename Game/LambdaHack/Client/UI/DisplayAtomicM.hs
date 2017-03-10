@@ -502,9 +502,11 @@ destroyActorUI destroy aid b = do
       modifySession $ \sess -> sess {sselected = upd $ sselected sess}
       when destroy $ do
         displayMore ColorBW "Alas!"
-        -- This is especially handy when the dead actor was a leader
-        -- on a different level than the new one:
-        clearAimMode
+        mleader <- getsClient _sleader
+        when (isJust mleader) $
+          -- This is especially handy when the dead actor was a leader
+          -- on a different level than the new one:
+          clearAimMode
     -- If pushed, animate spotting again, to draw attention to pushing.
     when (isNothing $ btrajectory b) $
       modifySession $ \sess -> sess {slastLost = ES.insert aid $ slastLost sess}
