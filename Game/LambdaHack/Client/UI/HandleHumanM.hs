@@ -40,7 +40,7 @@ cmdAction cmd = case cmd of
   ByAimMode{..} ->
     byAimModeHuman (cmdAction exploration) (cmdAction aiming)
   ByItemMode{..} ->
-    byItemModeHuman (cmdAction notChosen) (cmdAction chosen)
+    byItemModeHuman ts (cmdAction notChosen) (cmdAction chosen)
   ComposeIfLocal cmd1 cmd2 ->
     composeIfLocalHuman (cmdAction cmd1) (cmdAction cmd2)
   ComposeUnlessError cmd1 cmd2 ->

@@ -147,18 +147,22 @@ byAimModeHuman cmdNotAimingM cmdAimingM = do
 -- * ByItemMode
 
 byItemModeHuman :: MonadClientUI m
-                => m (Either MError ReqUI) -> m (Either MError ReqUI)
+                => [Trigger]
+                -> m (Either MError ReqUI) -> m (Either MError ReqUI)
                 -> m (Either MError ReqUI)
-byItemModeHuman cmdNotChosenM cmdChosenM = do
+byItemModeHuman ts cmdNotChosenM cmdChosenM = do
   itemSel <- getsSession sitemSel
+  let triggerSyms = triggerSymbols ts
   case itemSel of
     Just (fromCStore, iid) -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       bag <- getsState $ getBodyStoreBag b fromCStore
+      itemBase <- getsState $ getItemBody iid
       case iid `EM.lookup` bag of
-        Nothing -> cmdNotChosenM
-        Just _ -> cmdChosenM
+        Just _ | ' ' `elem` triggerSyms
+                 || jsymbol itemBase `elem` triggerSyms -> cmdChosenM
+        _ -> cmdNotChosenM
     Nothing -> cmdNotChosenM
 
 -- * ComposeIfLeft

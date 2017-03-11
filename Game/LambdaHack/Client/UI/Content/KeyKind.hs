@@ -127,7 +127,8 @@ aimFlingCmd = ComposeIfLocal AimPointerEnemy (projectICmd flingTs)
 
 projectICmd :: [Trigger] -> HumanCmd
 projectICmd ts = ByItemMode
-  { notChosen = ComposeUnlessError (ChooseItemProject ts) (Project ts)
+  { ts
+  , notChosen = ComposeUnlessError (ChooseItemProject ts) (Project ts)
   , chosen = Project ts }
 
 projectI :: [Trigger] -> CmdTriple
@@ -144,7 +145,8 @@ flingTs = [ApplyItem { verb = "fling"
 
 applyI :: [Trigger] -> CmdTriple
 applyI ts = ([CmdItem], descTs ts, ByItemMode
-  { notChosen = ComposeUnlessError (ChooseItemApply ts) (Apply ts)
+  { ts
+  , notChosen = ComposeUnlessError (ChooseItemApply ts) (Apply ts)
   , chosen = Apply ts })
 
 grabCmd :: HumanCmd

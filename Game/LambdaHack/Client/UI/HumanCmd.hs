@@ -86,7 +86,7 @@ data HumanCmd =
     Macro ![String]
   | ByArea ![(CmdArea, HumanCmd)]  -- if outside the areas, do nothing
   | ByAimMode {exploration :: !HumanCmd, aiming :: !HumanCmd}
-  | ByItemMode {notChosen :: !HumanCmd, chosen :: !HumanCmd}
+  | ByItemMode {ts :: ![Trigger], notChosen :: !HumanCmd, chosen :: !HumanCmd}
   | ComposeIfLocal !HumanCmd !HumanCmd
   | ComposeUnlessError !HumanCmd !HumanCmd
   | LoopOnNothing !HumanCmd
@@ -101,9 +101,9 @@ data HumanCmd =
   | RunOnceToXhair
   | ContinueToXhair
   | MoveItem ![CStore] !CStore !(Maybe MU.Part) !Bool
-  | Project     ![Trigger]
-  | Apply       ![Trigger]
-  | AlterDir    ![Trigger]
+  | Project ![Trigger]
+  | Apply ![Trigger]
+  | AlterDir ![Trigger]
   | Help
   | ItemMenu
   | MainMenu
