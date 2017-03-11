@@ -23,9 +23,9 @@ warrior,    warrior2, warrior3, warrior4, warrior5, scout, ranger, escapist, amb
 
 warrior = ItemKind
   { isymbol  = '@'
-  , iname    = "warrior"  -- modified if in hero faction
+  , iname    = "warrior"  -- modified if initial actors in hero faction
   , ifreq    = [("hero", 100), ("mobile", 1)]
-  , iflavour = zipPlain [BrBlack]  -- modified if in hero faction
+  , iflavour = zipPlain [BrWhite]
   , icount   = 1
   , irarity  = [(1, 5)]
   , iverbHit = "thud"
@@ -89,7 +89,8 @@ soldier = warrior
 
 civilian = warrior
   { iname    = "clerk"
-  , ifreq    = [("civilian", 100), ("mobile", 1)] }
+  , ifreq    = [("civilian", 100), ("mobile", 1)]
+  , iflavour = zipPlain [BrBlack] }
 civilian2 = civilian
   { iname    = "hairdresser" }
 civilian3 = civilian
