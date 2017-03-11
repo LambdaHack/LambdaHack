@@ -951,7 +951,7 @@ buckler = ItemKind
   , irarity  = [(4, 6)]
   , iverbHit = "bash"
   , iweight  = 2000
-  , idamage  = [(96, 1 * d 1), (3, 2 * d 1), (1, 4 * d 1)]
+  , idamage  = [(96, 2 * d 1), (3, 4 * d 1), (1, 8 * d 1)]
   , iaspects = [ AddArmorMelee 40
                , AddHurtMelee (-30)
                , Timeout $ d 3 + 3 - dl 3 |*| 2 ]
@@ -967,6 +967,7 @@ shield = buckler
   , irarity  = [(8, 3)]
   , iflavour = zipPlain [Green]
   , iweight  = 3000
+  , idamage  = [(96, 4 * d 1), (3, 8 * d 1), (1, 16 * d 1)]
   , iaspects = [ AddArmorMelee 80
                , AddHurtMelee (-70)
                , Timeout $ d 6 + 6 - dl 6 |*| 2 ]
