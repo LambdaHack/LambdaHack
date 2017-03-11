@@ -1,6 +1,6 @@
 -- | Operations for starting and restarting the game.
 module Game.LambdaHack.Server.StartM
-  ( gameReset, reinitGame, updatePer, initPer, recruitActors, applyDebug
+  ( gameReset, reinitGame, updatePer, initPer, applyDebug
   ) where
 
 import Prelude ()
@@ -9,7 +9,6 @@ import Game.LambdaHack.Common.Prelude
 
 import Control.Arrow (first)
 import qualified Control.Monad.Trans.State.Strict as St
-import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.IntMap.Strict as IM
@@ -186,7 +185,6 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
                   return HighScore.empty
                 else
                   restoreScore cops
-  sheroNames <- getsServer sheroNames  -- copy over from previous game
   factionDold <- getsState sfactionD
   gameModeIdOld <- getsState sgameModeId
   DebugModeSer{scurDiffSer} <- getsServer sdebugSer
@@ -221,8 +219,7 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
         St.evalState rnd dungeonSeed
       defState = defStateGlobal freshDungeon freshTotalDepth
                                 factionD cops scoreTable modeKindId
-      defSer = emptyStateServer { sheroNames
-                                , srandom
+      defSer = emptyStateServer { srandom
                                 , srngs }
   putServer defSer
   modifyServer $ \ser -> ser {sdiscoKind, sdiscoKindRev, sflavour}
@@ -236,7 +233,6 @@ populateDungeon = do
   embedItemsInDungeon
   dungeon <- getsState sdungeon
   factionD <- getsState sfactionD
-  sheroNames <- getsServer sheroNames
   let (minD, maxD) =
         case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
@@ -281,41 +277,17 @@ populateDungeon = do
                                 | ln3@(_, n, actorGroup) <- initActors
                                 , g ln3 == lid ]
         psFree <- getsState $ nearbyFreePoints validTile ppos lid
-        let ps = zip3 initGroups [0..] psFree
-        forM_ ps $ \ (actorGroup, n, p) -> do
-          go <-
-            if not $ fhasNumbers $ gplayer fact3
-            then recruitActors actorGroup [p] lid ntime fid3
-            else do
-              let hNames = EM.findWithDefault [] fid3 sheroNames
-              maid <- addHero actorGroup fid3 p lid hNames (Just n) ntime
-              case maid of
-                Nothing -> return False
-                Just aid -> do
-                  mleader <- getsState $ gleader . (EM.! fid3) . sfactionD
-                  when (isNothing mleader) $ supplantLeader fid3 aid
-                  return True
-          unless go $ assert `failure` "can't spawn initial actors"
-                             `twith` (lid, (fid3, fact3))
+        let ps = zip initGroups psFree
+        forM_ ps $ \ (actorGroup, p) -> do
+          maid <- addMonster actorGroup fid3 p lid ntime
+          case maid of
+            Nothing -> assert `failure` "can't spawn initial actors"
+                              `twith` (lid, (fid3, fact3))
+            Just aid -> do
+              mleader <- getsState $ gleader . (EM.! fid3) . sfactionD
+              when (isNothing mleader) $ supplantLeader fid3 aid
+              return True
   mapM_ initialActors arenas
-
--- | Spawn actors of any specified faction, friendly or not.
--- To be used for initial dungeon population and for the summon effect.
-recruitActors :: (MonadAtomic m, MonadServer m)
-              => GroupName ItemKind -> [Point] -> LevelId -> Time -> FactionId
-              -> m Bool
-recruitActors actorGroup ps lid time fid = do
-  fact <- getsState $ (EM.! fid) . sfactionD
-  laid <- forM ps $ \ p ->
-    if fhasNumbers $ gplayer fact
-    then addHero actorGroup fid p lid [] Nothing time
-    else addMonster actorGroup fid p lid time
-  case catMaybes laid of
-    [] -> return False
-    aid : _ -> do
-      mleader <- getsState $ gleader . (EM.! fid) . sfactionD  -- just changed
-      when (isNothing mleader) $ supplantLeader fid aid
-      return True
 
 -- | Create a new monster on the level, at a given position
 -- and with a given actor kind and HP.
@@ -328,29 +300,6 @@ addMonster groupName bfid ppos lid time = do
              then rndToAction $ oneOf ["he", "she"]
              else return "it"
   addActor groupName bfid ppos lid id pronoun time
-
--- | Create a new hero on the current level, close to the given position.
-addHero :: (MonadAtomic m, MonadServer m)
-        => GroupName ItemKind -> FactionId -> Point -> LevelId
-        -> [(Int, (Text, Text))]-> Maybe Int -> Time
-        -> m (Maybe ActorId)
-addHero actorGroup bfid ppos lid heroNames mNumber time = do
-  Faction{gcolor, gplayer} <- getsState $ (EM.! bfid) . sfactionD
-  s <- getState
-  let mhs = map (\k -> tryFindHeroK bfid k s) [0..]
-      freeHeroK = elemIndex Nothing mhs
-      n = fromMaybe (fromMaybe (assert `failure` take 20 mhs) freeHeroK) mNumber
-      bsymbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
-      nameFromNumber 0 = ("Captain", "he")
-      nameFromNumber k | k `mod` 7 == 0 = ("Heroine" <+> tshow k, "she")
-      nameFromNumber k = ("Hero" <+> tshow k, "he")
-      (bname, pronoun) | gcolor == Color.BrWhite =
-        fromMaybe (nameFromNumber n) $ lookup n heroNames
-                       | otherwise =
-        let (nameN, pronounN) = nameFromNumber n
-        in (fname gplayer <+> nameN, pronounN)
-      tweakBody b = b {bsymbol, bname, bcolor = gcolor}
-  addActor actorGroup bfid ppos lid tweakBody pronoun time
 
 -- | Find starting postions for all factions. Try to make them distant
 -- from each other. Place as many of the factions, as possible,

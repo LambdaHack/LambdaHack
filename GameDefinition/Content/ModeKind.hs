@@ -206,16 +206,16 @@ rosterRaid, rosterBrawl, rosterShootout, rosterEscape, rosterZoo, rosterAmbush, 
 rosterRaid = Roster
   { rosterList = [ ( playerHero {fhiCondPoly = hiRaid}
                    , [(-2, 1, "hero")] )
-                 , ( playerAntiHero { fname = "Red Founder"
+                 , ( playerAntiHero { fname = "Indigo Founder"
                                     , fhiCondPoly = hiRaid }
                    , [(-2, 1, "hero")] )
                  , ( playerAnimal  -- starting over escape
                    , [(-2, 2, "animal")] )
                  , (playerHorror, []) ]  -- for summoned monsters
   , rosterEnemy = [ ("Explorer Party", "Animal Kingdom")
-                  , ("Red Founder", "Animal Kingdom")
+                  , ("Indigo Founder", "Animal Kingdom")
                   , ("Explorer Party", "Horror Den")
-                  , ("Red Founder", "Horror Den") ]
+                  , ("Indigo Founder", "Horror Den") ]
   , rosterAlly = [] }
 
 rosterBrawl = Roster
@@ -307,7 +307,7 @@ rosterSafari = Roster
   { rosterList = [ ( playerMonsterTourist
                    , [(-4, 15, "monster")] )
                  , ( playerHunamConvict
-                   , [(-4, 3, "hero")] )
+                   , [(-4, 3, "civilian")] )
                  , ( playerAnimalMagnificent
                    , [(-7, 20, "mobile animal")] )
                  , ( playerAnimalExquisite  -- start on escape
@@ -330,7 +330,7 @@ rosterSafariSurvival = rosterSafari
                        , fhasUI = False }
                    , [(-4, 15, "monster")] )
                  , ( playerHunamConvict
-                   , [(-4, 3, "hero")] )
+                   , [(-4, 3, "civilian")] )
                  , ( playerAnimalMagnificent
                      { fleaderMode = LeaderUI $ AutoLeader True False
                      , fhasUI = True }

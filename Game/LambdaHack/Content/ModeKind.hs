@@ -86,7 +86,6 @@ data Player = Player
   , fcanEscape   :: !Bool        -- ^ the player can escape the dungeon
   , fneverEmpty  :: !Bool        -- ^ the faction declared killed if no actors
   , fhiCondPoly  :: !HiCondPoly  -- ^ score polynomial for the player
-  , fhasNumbers  :: !Bool        -- ^ whether actors have numbers, not symbols
   , fhasGender   :: !Bool        -- ^ whether actors have gender
   , ftactic      :: !Tactic      -- ^ non-leader behave according to this
                                  --   tactic; can be changed during the game

@@ -56,8 +56,6 @@ data StateServer = StateServer
   , srngs         :: !RNGs          -- ^ initial random generators
   , squit         :: !Bool          -- ^ exit the game loop
   , swriteSave    :: !Bool          -- ^ write savegame to a file now
-  , sheroNames    :: !(EM.EnumMap FactionId [(Int, (Text, Text))])
-                                    -- ^ hero names sent by clients
   , sdebugSer     :: !DebugModeSer  -- ^ current debugging mode
   , sdebugNxt     :: !DebugModeSer  -- ^ debugging mode for the next game
   }
@@ -143,7 +141,6 @@ emptyStateServer =
                    , startingRandomGenerator = Nothing }
     , squit = False
     , swriteSave = False
-    , sheroNames = EM.empty
     , sdebugSer = defDebugModeSer
     , sdebugNxt = defDebugModeSer
     }
@@ -184,7 +181,6 @@ instance Binary StateServer where
     put sundo
     put (show srandom)
     put srngs
-    put sheroNames
     put sdebugSer
   get = do
     sactorTime <- get
@@ -201,7 +197,6 @@ instance Binary StateServer where
     sundo <- get
     g <- get
     srngs <- get
-    sheroNames <- get
     sdebugSer <- get
     let srandom = read g
         sperFid = EM.empty

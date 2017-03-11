@@ -36,7 +36,7 @@ type RequestAI = (ReqAI, Maybe ActorId)
 data ReqUI =
     ReqUINop
   | ReqUITimed RequestAnyAbility
-  | ReqUIGameRestart !(GroupName ModeKind) !Int ![(Int, (Text, Text))]
+  | ReqUIGameRestart !(GroupName ModeKind) !Int
   | ReqUIGameExit
   | ReqUIGameSave
   | ReqUITactic !Tactic

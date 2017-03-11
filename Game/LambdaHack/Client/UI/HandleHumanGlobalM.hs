@@ -1156,9 +1156,8 @@ gameRestartHuman = do
   if b
   then do
     snxtDiff <- getsClient snxtDiff
-    Config{configHeroNames} <- getsSession sconfig
     let nxtGameGroup = toGroupName nxtGameName  -- a tiny bit hacky
-    return $ Right $ ReqUIGameRestart nxtGameGroup snxtDiff configHeroNames
+    return $ Right $ ReqUIGameRestart nxtGameGroup snxtDiff
   else do
     msg2 <- rndToActionForget $ oneOf
               [ "yea, would be a pity to leave them all to die"

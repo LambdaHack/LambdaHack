@@ -67,7 +67,7 @@ handleRequestUI :: (MonadAtomic m, MonadServer m)
                 -> m (Maybe RequestAnyAbility)
 handleRequestUI fid aid cmd = case cmd of
   ReqUITimed cmdT -> return $ Just cmdT
-  ReqUIGameRestart t d names -> reqGameRestart aid t d names >> return Nothing
+  ReqUIGameRestart t d -> reqGameRestart aid t d >> return Nothing
   ReqUIGameExit -> reqGameExit aid >> return Nothing
   ReqUIGameSave -> reqGameSave >> return Nothing
   ReqUITactic toT -> reqTactic fid toT >> return Nothing
@@ -592,16 +592,15 @@ reqApply aid iid cstore = do
 -- * ReqGameRestart
 
 reqGameRestart :: (MonadAtomic m, MonadServer m)
-               => ActorId -> GroupName ModeKind -> Int -> [(Int, (Text, Text))]
+               => ActorId -> GroupName ModeKind -> Int
                -> m ()
-reqGameRestart aid groupName d configHeroNames = do
+reqGameRestart aid groupName d = do
   modifyServer $ \ser -> ser {sdebugNxt = (sdebugNxt ser) {scurDiffSer = d}}
   b <- getsState $ getActorBody aid
   oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
   modifyServer $ \ser ->
     ser { swriteSave = True  -- fake saving to abort turn
-        , squit = True  -- do this at once
-        , sheroNames = EM.insert (bfid b) configHeroNames $ sheroNames ser }
+        , squit = True }  -- do this at once
   isNoConfirms <- isNoConfirmsGame
   -- This call to `revealItems` is really needed, because the other
   -- happens only at game conclusion, not at quitting.
