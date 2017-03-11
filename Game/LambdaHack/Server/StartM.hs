@@ -336,9 +336,10 @@ addHero :: (MonadAtomic m, MonadServer m)
         -> m (Maybe ActorId)
 addHero actorGroup bfid ppos lid heroNames mNumber time = do
   Faction{gcolor, gplayer} <- getsState $ (EM.! bfid) . sfactionD
-  mhs <- mapM (getsState . tryFindHeroK bfid) [0..9]
-  let freeHeroK = elemIndex Nothing mhs
-      n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
+  s <- getState
+  let mhs = map (\k -> tryFindHeroK bfid k s) [0..]
+      freeHeroK = elemIndex Nothing mhs
+      n = fromMaybe (fromMaybe (assert `failure` take 20 mhs) freeHeroK) mNumber
       bsymbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
       nameFromNumber 0 = ("Captain", "he")
       nameFromNumber k | k `mod` 7 == 0 = ("Heroine" <+> tshow k, "she")
