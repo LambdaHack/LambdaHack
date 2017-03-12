@@ -104,7 +104,7 @@ addAnyActor actorFreq lid time mpos = do
           rndToAction rollPos
       let container = CTrunk fid lid pos
       trunkId <- registerItem trunkFull itemKnown seed container False
-      addActorIid trunkId trunkFull False fid pos lid id "it" time
+      addActorIid trunkId trunkFull False fid pos lid id time
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point
              -> Bool -> LevelId -> Level -> Faction -> State

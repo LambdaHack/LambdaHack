@@ -339,15 +339,13 @@ addProjectile bpos rest iid (_, it) blid bfid btime isBlast = do
                       , btrajectory = Just (trajectory, speed)
                       , beqp = EM.singleton iid (1, take 1 it)
                       , borgan = EM.empty }  -- don't confer bonuses from trunk
-      bpronoun = "it"
-  void $ addActorIid iid itemFull
-                     True bfid bpos blid tweakBody bpronoun btime
+  void $ addActorIid iid itemFull True bfid bpos blid tweakBody btime
 
 addActor :: (MonadAtomic m, MonadServer m)
          => GroupName ItemKind -> FactionId -> Point -> LevelId
-         -> (Actor -> Actor) -> Text -> Time
+         -> (Actor -> Actor) -> Time
          -> m (Maybe ActorId)
-addActor actorGroup bfid pos lid tweakBody bpronoun time = do
+addActor actorGroup bfid pos lid tweakBody time = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- contains the constant properties.
   let trunkFreq = [(actorGroup, 1)]
@@ -355,14 +353,14 @@ addActor actorGroup bfid pos lid tweakBody bpronoun time = do
   case m2 of
     Nothing -> return Nothing
     Just (trunkId, (trunkFull, _)) ->
-      addActorIid trunkId trunkFull False bfid pos lid tweakBody bpronoun time
+      addActorIid trunkId trunkFull False bfid pos lid tweakBody time
 
 addActorIid :: (MonadAtomic m, MonadServer m)
             => ItemId -> ItemFull -> Bool -> FactionId -> Point -> LevelId
-            -> (Actor -> Actor) -> Text -> Time
+            -> (Actor -> Actor) -> Time
             -> m (Maybe ActorId)
 addActorIid trunkId trunkFull@ItemFull{..} bproj
-            bfid pos lid tweakBody bpronoun time = do
+            bfid pos lid tweakBody time = do
   let trunkKind = case itemDisco of
         Just ItemDisco{itemKind} -> itemKind
         Nothing -> assert `failure` trunkFull
@@ -372,7 +370,9 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
       calm = xM $ max 1 $ aMaxCalm (aspectRecordFull trunkFull)
   -- Create actor.
   factionD <- getsState sfactionD
-  let factMine = factionD EM.! bfid
+  let fact = factionD EM.! bfid
+      bpronoun | not bproj && fhasGender (gplayer fact) = "he"
+               | otherwise = "it"
   DebugModeSer{scurDiffSer} <- getsServer sdebugSer
   nU <- nUI
   -- If difficulty is below standard, HP is added to the UI factions,
@@ -383,7 +383,7 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
         fhasUI gplayer || nU == 0 && fcanEscape gplayer
       boostFact = not bproj
                   && if diffBonusCoeff > 0
-                     then hasUIorEscapes factMine
+                     then hasUIorEscapes fact
                           || any hasUIorEscapes
                                  (filter (`isAllied` bfid) $ EM.elems factionD)
                      else any hasUIorEscapes

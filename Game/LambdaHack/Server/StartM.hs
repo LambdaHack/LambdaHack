@@ -20,7 +20,6 @@ import Data.Tuple (swap)
 import qualified System.Random as R
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
@@ -38,7 +37,6 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.CommonM
@@ -279,7 +277,7 @@ populateDungeon = do
         psFree <- getsState $ nearbyFreePoints validTile ppos lid
         let ps = zip initGroups psFree
         forM_ ps $ \ (actorGroup, p) -> do
-          maid <- addMonster actorGroup fid3 p lid ntime
+          maid <- addActor actorGroup fid3 p lid id ntime
           case maid of
             Nothing -> assert `failure` "can't spawn initial actors"
                               `twith` (lid, (fid3, fact3))
@@ -288,18 +286,6 @@ populateDungeon = do
               when (isNothing mleader) $ supplantLeader fid3 aid
               return True
   mapM_ initialActors arenas
-
--- | Create a new monster on the level, at a given position
--- and with a given actor kind and HP.
-addMonster :: (MonadAtomic m, MonadServer m)
-           => GroupName ItemKind -> FactionId -> Point -> LevelId -> Time
-           -> m (Maybe ActorId)
-addMonster groupName bfid ppos lid time = do
-  fact <- getsState $ (EM.! bfid) . sfactionD
-  pronoun <- if fhasGender $ gplayer fact
-             then rndToAction $ oneOf ["he", "she"]
-             else return "it"
-  addActor groupName bfid ppos lid id pronoun time
 
 -- | Find starting postions for all factions. Try to make them distant
 -- from each other. Place as many of the factions, as possible,
