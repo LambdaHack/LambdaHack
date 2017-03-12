@@ -160,7 +160,6 @@ posSfxAtomic cmd = case cmd of
     else return $! PosFidAndSight [bfid body] (blid body) [bpos body, p]
   SfxEffect _ aid _ _ -> singleAid aid  -- sometimes we don't see source, OK
   SfxMsgFid fid _ -> return $! PosFid fid
-  SfxMsgAll _ -> return PosAll
 
 posProjBody :: Actor -> PosAtomic
 posProjBody body =

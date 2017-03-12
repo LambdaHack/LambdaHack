@@ -82,7 +82,7 @@ reinitGame = do
   populateDungeon
   mapM_ (\fid -> mapM_ (\lid -> updatePer fid lid) (EM.keys dungeon))
         (EM.keys factionD)
-  execSfxAtomic $ SfxMsgAll "SortSlots"  -- hack
+  execUpdAtomic $ UpdMsgAll "SortSlots"  -- hack
 
 updatePer :: (MonadAtomic m, MonadServer m) => FactionId -> LevelId -> m ()
 {-# INLINE updatePer #-}

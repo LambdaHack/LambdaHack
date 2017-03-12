@@ -334,6 +334,9 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> frontendShutdown
   UpdWriteSave -> when verbose $ promptAdd "Saving backup."
+  UpdMsgAll "SortSlots" -> do  -- hack
+    side <- getsClient sside
+    sortSlots side Nothing
   UpdMsgAll msg -> msgAdd msg
   UpdRecordHistory _ -> recordHistory
 
@@ -943,10 +946,6 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Unique -> assert `failure` sfx
         IK.Periodic -> assert `failure` sfx
   SfxMsgFid _ msg -> msgAdd msg
-  SfxMsgAll "SortSlots" -> do
-    side <- getsClient sside
-    sortSlots side Nothing
-  SfxMsgAll msg -> msgAdd msg
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
 setLastSlot aid iid cstore = do

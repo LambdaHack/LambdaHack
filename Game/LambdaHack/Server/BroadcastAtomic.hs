@@ -91,7 +91,7 @@ handleAndBroadcast atomic = do
                   SfxAtomic cmd -> loudSfxAtomic (blid body == lid) cmd
                 case loud of
                   Nothing -> return ()
-                  Just msg -> sendSfx fid $ SfxMsgAll msg
+                  Just msg -> sendSfx fid $ SfxMsgFid fid msg
               _ -> return ()
             send2 (cmd2, ps2) =
               when (seenAtomicCli knowEvents fid perFidLid ps2) $
