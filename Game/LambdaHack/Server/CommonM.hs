@@ -394,7 +394,9 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
       healthOrgans = [(Just bonusHP, ("bonus HP", COrgan)) | bonusHP /= 0]
       bsymbol = jsymbol itemBase
       bname = IK.iname trunkKind
-      bcolor = flavourToColor $ jflavour itemBase
+      baseColor = flavourToColor $ jflavour itemBase
+      bcolor | baseColor == Color.BrWhite = gcolor fact
+             | otherwise = baseColor
       b = actorTemplate trunkId bsymbol bname bpronoun bcolor diffHP calm
                         pos lid bfid
       -- Insert the trunk as the actor's organ.
