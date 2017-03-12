@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | Actors in the game: heroes, monsters, etc. No operation in this module
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Common.Actor
@@ -22,6 +23,7 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Int (Int64)
 import Data.Ratio
+import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Color as Color
@@ -74,14 +76,18 @@ data Actor = Actor
   , bproj       :: !Bool         -- ^ is a projectile? (shorthand only,
                                  --   this can be deduced from btrunk)
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance Binary Actor
 
 -- The resource changes in the tuple are negative and positive, respectively.
 data ResDelta = ResDelta
   { resCurrentTurn  :: !(Int64, Int64)  -- ^ resource change this player turn
   , resPreviousTurn :: !(Int64, Int64)  -- ^ resource change last player turn
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance Binary ResDelta
 
 type ActorAspect = EM.EnumMap ActorId AspectRecord
 
@@ -227,59 +233,3 @@ verbCStore COrgan = "implant"
 verbCStore CEqp = "equip"
 verbCStore CInv = "pack"
 verbCStore CSha = "stash"
-
-instance Binary Actor where
-  put Actor{..} = do
-    put btrunk
-    put bsymbol
-    put bname
-    put bpronoun
-    put bcolor
-    put bhp
-    put bhpDelta
-    put bcalm
-    put bcalmDelta
-    put btrajectory
-    put bpos
-    put boldpos
-    put blid
-    put boldlid
-    put borgan
-    put beqp
-    put binv
-    put bweapon
-    put bwait
-    put bfid
-    put bproj
-  get = do
-    btrunk <- get
-    bsymbol <- get
-    bname <- get
-    bpronoun <- get
-    bcolor <- get
-    bhp <- get
-    bhpDelta <- get
-    bcalm <- get
-    bcalmDelta <- get
-    btrajectory <- get
-    bpos <- get
-    boldpos <- get
-    blid <- get
-    boldlid <- get
-    borgan <- get
-    beqp <- get
-    binv <- get
-    bweapon <- get
-    bwait <- get
-    bfid <- get
-    bproj <- get
-    return $! Actor{..}
-
-instance Binary ResDelta where
-  put ResDelta{..} = do
-    put resCurrentTurn
-    put resPreviousTurn
-  get = do
-    resCurrentTurn <- get
-    resPreviousTurn <- get
-    return $! ResDelta{..}
