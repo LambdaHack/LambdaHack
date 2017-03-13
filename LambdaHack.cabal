@@ -126,6 +126,7 @@ library
                       Game.LambdaHack.Client.MonadClient
                       Game.LambdaHack.Client.State
                       Game.LambdaHack.Client.UI
+                      Game.LambdaHack.Client.UI.ActorUI
                       Game.LambdaHack.Client.UI.Animation
                       Game.LambdaHack.Client.UI.Config
                       Game.LambdaHack.Client.UI.Content.KeyKind

@@ -34,6 +34,7 @@ import Game.LambdaHack.Client.CommonM
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.UI.ActorUI
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend
 import qualified Game.LambdaHack.Client.UI.Frontend as Frontend

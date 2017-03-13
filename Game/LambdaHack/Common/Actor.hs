@@ -11,8 +11,6 @@ module Game.LambdaHack.Common.Actor
   , hpTooLow, calmEnough, hpEnough
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
-  , ppContainer, ppCStore, ppCStoreIn, ppCStoreWownW
-  , ppContainerWownW, verbCStore
   ) where
 
 import Prelude ()
@@ -24,7 +22,6 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Int (Int64)
 import Data.Ratio
 import GHC.Generics (Generic)
-import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Misc
@@ -171,43 +168,3 @@ type ActorDict = EM.EnumMap ActorId Actor
 
 checkAdjacent :: Actor -> Actor -> Bool
 checkAdjacent sb tb = blid sb == blid tb && adjacent (bpos sb) (bpos tb)
-
-ppContainer :: Container -> Text
-ppContainer CFloor{} = "nearby"
-ppContainer CEmbed{} = "embedded nearby"
-ppContainer (CActor _ cstore) = ppCStoreIn cstore
-ppContainer c@CTrunk{} = assert `failure` c
-
-ppCStore :: CStore -> (Text, Text)
-ppCStore CGround = ("on", "the ground")
-ppCStore COrgan = ("among", "organs")
-ppCStore CEqp = ("in", "equipment")
-ppCStore CInv = ("in", "pack")
-ppCStore CSha = ("in", "shared stash")
-
-ppCStoreIn :: CStore -> Text
-ppCStoreIn c = let (tIn, t) = ppCStore c in tIn <+> t
-
-ppCStoreWownW :: Bool -> CStore -> MU.Part -> [MU.Part]
-ppCStoreWownW addPrepositions store owner =
-  let (preposition, noun) = ppCStore store
-      prep = [MU.Text preposition | addPrepositions]
-  in prep ++ case store of
-    CGround -> [MU.Text noun, "under", owner]
-    CSha -> [MU.Text noun]
-    _ -> [MU.WownW owner (MU.Text noun) ]
-
-ppContainerWownW :: (ActorId -> MU.Part) -> Bool -> Container -> [MU.Part]
-ppContainerWownW ownerFun addPrepositions c = case c of
-  CFloor{} -> ["nearby"]
-  CEmbed{} -> ["embedded nearby"]
-  CActor aid store -> let owner = ownerFun aid
-                      in ppCStoreWownW addPrepositions store owner
-  CTrunk{} -> assert `failure` c
-
-verbCStore :: CStore -> Text
-verbCStore CGround = "drop"
-verbCStore COrgan = "implant"
-verbCStore CEqp = "equip"
-verbCStore CInv = "pack"
-verbCStore CSha = "stash"

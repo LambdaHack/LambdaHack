@@ -33,6 +33,7 @@ import Game.LambdaHack.Client.BfsM
 import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.UI.ActorUI
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI

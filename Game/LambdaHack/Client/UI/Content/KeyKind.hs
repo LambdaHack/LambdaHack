@@ -16,8 +16,8 @@ import qualified Data.Char as Char
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Client.Key as K
+import Game.LambdaHack.Client.UI.ActorUI (verbCStore)
 import Game.LambdaHack.Client.UI.HumanCmd
-import Game.LambdaHack.Common.Actor (verbCStore)
 import Game.LambdaHack.Common.Misc
 
 -- | Key-command mappings to be used for the UI.
