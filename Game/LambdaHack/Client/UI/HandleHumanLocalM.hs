@@ -45,6 +45,7 @@ import Game.LambdaHack.Client.UI.ActorUI
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.DrawM
+import Game.LambdaHack.Client.UI.EffectDescription
 import Game.LambdaHack.Client.UI.FrameM
 import Game.LambdaHack.Client.UI.Frontend (frontendName)
 import Game.LambdaHack.Client.UI.HandleHelperM
@@ -62,7 +63,6 @@ import Game.LambdaHack.Client.UI.SlideshowM
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.EffectDescription
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest

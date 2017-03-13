@@ -1,5 +1,5 @@
 -- | Descripitons of items.
-module Game.LambdaHack.Common.ItemDescription
+module Game.LambdaHack.Client.UI.ItemDescription
   ( partItem, partItemHigh, partItemWs, partItemWsRanged
   , partItemShortAW, partItemMediumAW, partItemShortWownW
   , viewItem, show64With2
@@ -14,9 +14,9 @@ import Data.Int (Int64)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
+import Game.LambdaHack.Client.UI.EffectDescription
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.EffectDescription
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Item

@@ -24,12 +24,12 @@ import qualified Data.Vector.Unboxed.Mutable as VM
 import Data.Word
 import qualified NLP.Miniutter.English as MU
 
+import Game.LambdaHack.Client.UI.EffectDescription
+import Game.LambdaHack.Client.UI.ItemDescription
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.EffectDescription
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point

@@ -1,6 +1,6 @@
 -- | Description of effects. No operation in this module
 -- involves state or monad types.
-module Game.LambdaHack.Common.EffectDescription
+module Game.LambdaHack.Client.UI.EffectDescription
   ( effectToSuffix, featureToSuff, kindAspectToSuffix, affixDice
   , featureToSentence, slotToSentence
   , slotToName, slotToDesc, slotToDecorator, statSlots

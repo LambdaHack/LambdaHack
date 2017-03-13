@@ -132,6 +132,7 @@ library
                       Game.LambdaHack.Client.UI.Content.KeyKind
                       Game.LambdaHack.Client.UI.DrawM
                       Game.LambdaHack.Client.UI.DisplayAtomicM
+                      Game.LambdaHack.Client.UI.EffectDescription
                       Game.LambdaHack.Client.UI.Frame
                       Game.LambdaHack.Client.UI.FrameM
                       Game.LambdaHack.Client.UI.Frontend
@@ -144,6 +145,7 @@ library
                       Game.LambdaHack.Client.UI.HandleHumanM
                       Game.LambdaHack.Client.UI.HumanCmd
                       Game.LambdaHack.Client.UI.InventoryM
+                      Game.LambdaHack.Client.UI.ItemDescription
                       Game.LambdaHack.Client.UI.KeyBindings
                       Game.LambdaHack.Client.UI.MonadClientUI
                       Game.LambdaHack.Client.UI.Msg
@@ -161,14 +163,12 @@ library
                       Game.LambdaHack.Common.Color
                       Game.LambdaHack.Common.ContentDef
                       Game.LambdaHack.Common.Dice
-                      Game.LambdaHack.Common.EffectDescription
                       Game.LambdaHack.Common.Faction
                       Game.LambdaHack.Common.File
                       Game.LambdaHack.Common.Flavour
                       Game.LambdaHack.Common.Frequency
                       Game.LambdaHack.Common.HighScore
                       Game.LambdaHack.Common.Item
-                      Game.LambdaHack.Common.ItemDescription
                       Game.LambdaHack.Common.ItemStrongest
                       Game.LambdaHack.Common.Kind
                       Game.LambdaHack.Common.KindOps
