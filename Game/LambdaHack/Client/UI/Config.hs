@@ -20,7 +20,7 @@ import GHC.Generics (Generic)
 import System.FilePath
 import Text.Read
 
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.Kind as Kind

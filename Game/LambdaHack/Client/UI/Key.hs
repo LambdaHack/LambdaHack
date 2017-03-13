@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Frontend-independent keyboard input operations.
-module Game.LambdaHack.Client.Key
+module Game.LambdaHack.Client.UI.Key
   ( Key(..), showKey, handleDir, dirAllKey
   , moveBinding, mkKM, mkChar, mkKP, keyTranslate, keyTranslateWeb
   , Modifier(..), KM(..), showKM

@@ -9,7 +9,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.FrameM
 import Game.LambdaHack.Client.UI.ItemSlot
 import Game.LambdaHack.Client.UI.MonadClientUI

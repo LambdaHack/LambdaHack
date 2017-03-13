@@ -16,11 +16,11 @@ import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import Data.Time.Clock.POSIX
 
-import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.ActorUI
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Frontend
 import Game.LambdaHack.Client.UI.ItemSlot
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Actor
@@ -39,8 +39,8 @@ import Game.LambdaHack.Common.Vector
 data SessionUI = SessionUI
   { sxhair          :: !Target             -- ^ the common xhair
   , sactorUI        :: !ActorDictUI        -- ^ assigned actor UI presentations
-  , sslots          :: !ItemSlots     -- ^ map from slots to items
-  , slastSlot       :: !SlotChar      -- ^ last used slot
+  , sslots          :: !ItemSlots          -- ^ map from slots to items
+  , slastSlot       :: !SlotChar           -- ^ last used slot
   , schanF          :: !ChanFrontend       -- ^ connection with the frontend
   , sbinding        :: !Binding            -- ^ binding of keys to commands
   , sconfig         :: !Config

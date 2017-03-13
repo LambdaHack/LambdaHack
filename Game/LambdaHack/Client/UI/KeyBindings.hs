@@ -12,7 +12,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.HumanCmd

@@ -13,7 +13,7 @@ import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
 
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Common.Point
 

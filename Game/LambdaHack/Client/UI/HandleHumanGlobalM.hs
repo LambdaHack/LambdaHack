@@ -37,7 +37,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.BfsM
 import Game.LambdaHack.Client.CommonM
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.ActorUI

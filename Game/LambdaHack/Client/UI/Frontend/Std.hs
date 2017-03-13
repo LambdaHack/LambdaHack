@@ -15,7 +15,7 @@ import Control.Concurrent.Async
 import Data.Char (chr, ord)
 import qualified System.IO as SIO
 
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions

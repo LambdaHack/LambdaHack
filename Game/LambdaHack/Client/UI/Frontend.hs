@@ -29,7 +29,7 @@ import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
 import Data.Word
 
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Frame
 import qualified Game.LambdaHack.Client.UI.Frontend.Chosen as Chosen
 import Game.LambdaHack.Client.UI.Frontend.Common

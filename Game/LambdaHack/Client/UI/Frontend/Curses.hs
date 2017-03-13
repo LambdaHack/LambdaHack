@@ -15,7 +15,7 @@ import qualified Data.Map.Strict as M
 import qualified UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C
 
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions

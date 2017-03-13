@@ -44,7 +44,7 @@ import GHCJS.DOM.UIEvent (getCharCode, getKeyCode, getWhich)
 import GHCJS.DOM.WheelEvent (getDeltaY)
 import GHCJS.DOM.Window (requestAnimationFrame_)
 
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions

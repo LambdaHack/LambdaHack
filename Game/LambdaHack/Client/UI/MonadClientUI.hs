@@ -31,7 +31,7 @@ import System.FilePath
 import System.IO (hFlush, stdout)
 
 import Game.LambdaHack.Client.CommonM
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.ActorUI

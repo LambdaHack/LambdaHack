@@ -23,7 +23,7 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Graphics.UI.Gtk hiding (Point)
 import System.Exit (exitFailure)
 
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions

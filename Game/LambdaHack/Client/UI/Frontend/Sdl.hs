@@ -31,7 +31,7 @@ import qualified SDL.TTF as TTF
 import qualified SDL.TTF.FFI as TTF (TTFFont)
 import qualified SDL.Vect as Vect
 
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
