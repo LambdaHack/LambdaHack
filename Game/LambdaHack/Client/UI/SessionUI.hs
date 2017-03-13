@@ -179,15 +179,14 @@ partPronoun b = MU.Text $ bpronoun b
 tryFindActor :: State -> (ActorId -> Actor -> Bool) -> Maybe (ActorId, Actor)
 tryFindActor s p = find (uncurry p) $ EM.assocs $ sactorD s
 
-tryFindHeroK :: FactionId -> Int -> ActorDictUI -> State
+tryFindHeroK :: ActorDictUI -> FactionId -> Int -> State
              -> Maybe (ActorId, Actor)
-tryFindHeroK fact k d s =
+tryFindHeroK d fid k s =
   let c | k == 0          = '@'
         | k > 0 && k < 10 = Char.intToDigit k
         | otherwise       = assert `failure` "no digit" `twith` k
   in tryFindActor s (\aid body -> c == maybe ' ' bsymbol (EM.lookup aid d)
-                                  && not (bproj body)
-                                  && bfid body == fact)
+                                  && bfid body == fid)
 
 instance Binary SessionUI where
   put SessionUI{..} = do

@@ -7,6 +7,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.IntMap.Strict as IM
@@ -462,9 +463,17 @@ createActorUI born aid body = do
       factionD <- getsState sfactionD
       localTime <- getsState $ getLocalTime $ blid body
       let isBlast = jsymbol trunk `elem` ['\'', '*']  -- good enough approx.
-          bsymbol | bproj body = if isBlast then jsymbol trunk else '*'
-                  | otherwise = jsymbol trunk
-          bname =
+          baseColor = flavourToColor $ jflavour trunk
+      bsymbol <-
+        if | bproj body -> return $! if isBlast then jsymbol trunk else '*'
+           | baseColor /= Color.BrWhite -> return $! jsymbol trunk
+           | otherwise -> do
+             sactorUI <- getsSession sactorUI
+             s <- getState
+             let mhs = map (\k -> tryFindHeroK sactorUI (bfid body) k s) [0..]
+                 n = fromJust $ elemIndex Nothing mhs
+             return $! if n < 1 || n > 9 then '@' else Char.intToDigit n
+      let bname =
             if bproj body
             then let adj | length (btrajectory body) < 5 = "falling"
                          | otherwise = "flying"
@@ -474,7 +483,6 @@ createActorUI born aid body = do
                                 (itemNoDisco (trunk, 1))
                  in makePhrase [MU.AW $ MU.Text adj, object1, object2]
             else jname trunk
-          baseColor = flavourToColor $ jflavour trunk
           bpronoun | not (bproj body) && fhasGender (gplayer fact) = "he"
                    | otherwise = "it"
           bcolor | bproj body = if isBlast then baseColor else Color.BrWhite

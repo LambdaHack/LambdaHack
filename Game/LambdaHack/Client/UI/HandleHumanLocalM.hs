@@ -463,7 +463,7 @@ pickLeaderHuman k = do
   fact <- getsState $ (EM.! side) . sfactionD
   arena <- getArenaUI
   sactorUI <- getsSession sactorUI
-  mhero <- getsState $ tryFindHeroK side k sactorUI
+  mhero <- getsState $ tryFindHeroK sactorUI side k
   allA <- getsState $ EM.assocs . sactorD  -- not only on one level
   let allOurs = filter (\(_, body) ->
         not (bproj body) && bfid body == side) allA
