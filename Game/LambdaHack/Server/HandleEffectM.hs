@@ -14,7 +14,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
 import Data.Key (mapWithKeyM_)
-import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
 import qualified Game.LambdaHack.Common.Ability as Ability
@@ -186,7 +185,7 @@ itemEffect source target iid c recharged periodic effects = do
           || periodic  -- don't spam from fizzled periodic effects
           || bproj sb  -- don't spam, projectiles can be very numerous
           || null (filter IK.properEffect effects)) $
-    execSfxAtomic $ SfxMsgFid (bfid sb) "It flashes and fizzles."
+    execSfxAtomic $ SfxMsgFid (bfid sb) SfxFizzles
   return triggered
 
 -- | The source actor affects the target actor, with a given effect and power.
@@ -539,10 +538,7 @@ effectSummon execSfx grp nDm source target periodic = do
   -- (unless the item is durable, so normally it shouldn't be).
   if periodic && not (bproj sb) && not (calmEnough sb ar) then do
     unless (bproj sb) $ do
-      let subject = partActor sb
-          verb = "lack Calm to summon"
-          msg = makeSentence [MU.SubjectVerbSg subject verb]
-      execSfxAtomic $ SfxMsgFid (bfid sb) msg
+      execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonLackCalm source
     return False
   else do
     execSfx
@@ -567,12 +563,6 @@ effectSummon execSfx grp nDm source target periodic = do
 
 -- ** Ascend
 
-bracedImmuneMsg :: Actor -> Text
-bracedImmuneMsg b =
-  let subject = partActor b
-      verb = "be braced and so immune to translocation"
-  in makeSentence [MU.SubjectVerbSg subject verb]
-
 -- Note that projectiles can be teleported, too, for extra fun.
 effectAscend :: (MonadAtomic m, MonadServer m)
              => (IK.Effect -> m Bool)
@@ -584,10 +574,10 @@ effectAscend recursiveCall execSfx up source target pos = do
   (lid2, pos2) <- getsState $ whereTo lid1 pos (Just up) . sdungeon
   sb <- getsState $ getActorBody source
   if | braced b1 -> do
-       execSfxAtomic $ SfxMsgFid (bfid sb) $ bracedImmuneMsg b1
+       execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
        return False
      | lid2 == lid1 && pos2 == pos -> do
-       execSfxAtomic $ SfxMsgFid (bfid sb) "No more levels in this direction."
+       execSfxAtomic $ SfxMsgFid (bfid sb) SfxLevelNoMore
        -- We keep it useful even in shallow dungeons.
        recursiveCall $ IK.Teleport 30  -- powerful teleport
      | otherwise -> do
@@ -611,13 +601,9 @@ effectAscend recursiveCall execSfx up source target pos = do
            switch2
          (_, b2) : _ -> do
            -- Alert about the switch.
-           let subjects = map (partActor . snd) inhabitants
-               subject = MU.WWandW subjects
-               verb = "be pushed to another level"
-               msg2 = makeSentence [MU.SubjectVerbSg subject verb]
            -- Only tell one player, even if many actors, because then
            -- they are projectiles, so not too important.
-           execSfxAtomic $ SfxMsgFid (bfid b2) msg2
+           execSfxAtomic $ SfxMsgFid (bfid b2) SfxLevelPushed
            -- Move the actor out of the way.
            switch1
            -- Move the inhabitants out of the way and to where the actor was.
@@ -717,8 +703,7 @@ effectEscape source target = do
   if | bproj b ->
        return False
      | not (fcanEscape $ gplayer fact) -> do
-       execSfxAtomic $ SfxMsgFid (bfid sb)
-                                 "This faction doesn't want to escape outside."
+       execSfxAtomic $ SfxMsgFid (bfid sb) SfxEscapeImpossible
        return False
      | otherwise -> do
        deduceQuits (bfid b) $ Status Escape (fromEnum $ blid b) Nothing
@@ -792,10 +777,10 @@ effectTeleport execSfx nDm source target = do
     , dist 9
     ]
   if | braced b -> do
-       execSfxAtomic $ SfxMsgFid (bfid sb) $ bracedImmuneMsg b
+       execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
        return False
      | not (dMinMax 9 tpos) -> do  -- very rare
-       execSfxAtomic $ SfxMsgFid (bfid sb) "Translocation not possible."
+       execSfxAtomic $ SfxMsgFid (bfid sb) SfxTransImpossible
        return False
      | otherwise -> do
        execSfx
@@ -947,21 +932,17 @@ effectPolyItem execSfx source target = do
   allAssocs <- fullAssocsServer target [cstore]
   case allAssocs of
     [] -> do
-      execSfxAtomic $ SfxMsgFid (bfid sb) $
-        "The purpose of repurpose cannot be availed without an item"
-        <+> ppCStoreIn cstore <> "."
+      execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxPurposeNothing cstore
       return False
     (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
       Just ItemDisco{itemKind, itemKindId} -> do
         let maxCount = Dice.maxDice $ IK.icount itemKind
         if | itemK < maxCount -> do
-             execSfxAtomic $ SfxMsgFid (bfid sb) $
-               "The purpose of repurpose is served by" <+> tshow maxCount
-               <+> "pieces of this item, not by" <+> tshow itemK <> "."
+             execSfxAtomic $ SfxMsgFid (bfid sb)
+                           $ SfxPurposeTooFew maxCount itemK
              return False
            | IK.Unique `elem` IK.ieffects itemKind -> do
-             execSfxAtomic $ SfxMsgFid (bfid sb)
-               "Unique items can't be repurposed."
+             execSfxAtomic $ SfxMsgFid (bfid sb) SfxPurposeUnique
              return False
            | otherwise -> do
              let c = CActor target cstore
@@ -980,8 +961,7 @@ effectIdentify execSfx iidId source target = do
   sb <- getsState $ getActorBody source
   let tryFull store as = case as of
         [] -> do
-          let msg = "Nothing to identify" <+> ppCStoreIn store <> "."
-          execSfxAtomic $ SfxMsgFid (bfid sb) msg
+          execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxIdentifyNothing store
           return False
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
         (iid, ItemFull{itemDisco=Just ItemDisco{..}}) : rest -> do
@@ -1121,7 +1101,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
   let eps = 0
       fpos = bpos tb `shift` v
   if braced tb then do
-    execSfxAtomic $ SfxMsgFid (bfid sb) $ bracedImmuneMsg tb
+    execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
     return False
   else case bla lxsize lysize eps (bpos tb) fpos of
     Nothing -> assert `failure` (fpos, tb)

@@ -13,7 +13,7 @@
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.CmdAtomic
-  ( CmdAtomic(..), UpdAtomic(..), SfxAtomic(..)
+  ( CmdAtomic(..), UpdAtomic(..), SfxAtomic(..), SfxMsg(..)
   , undoUpdAtomic, undoSfxAtomic, undoCmdAtomic
   ) where
 
@@ -35,6 +35,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
@@ -129,10 +130,29 @@ data SfxAtomic =
   | SfxTrigger !ActorId !Point
   | SfxShun !ActorId !Point
   | SfxEffect !FactionId !ActorId !IK.Effect !Int64
-  | SfxMsgFid !FactionId !Text
+  | SfxMsgFid !FactionId !SfxMsg
   deriving (Show, Eq, Generic)
 
 instance Binary SfxAtomic
+
+data SfxMsg =
+    SfxUnexpected !ReqFailure
+  | SfxLoudUpd !Bool !UpdAtomic
+  | SfxLoudStrike !Bool !(Kind.Id ItemKind) ! Int
+  | SfxFizzles
+  | SfxSummonLackCalm !ActorId
+  | SfxLevelNoMore
+  | SfxLevelPushed
+  | SfxBracedImmune !ActorId
+  | SfxEscapeImpossible
+  | SfxTransImpossible
+  | SfxIdentifyNothing !CStore
+  | SfxPurposeNothing !CStore
+  | SfxPurposeTooFew !Int !Int
+  | SfxPurposeUnique
+  deriving (Show, Eq, Generic)
+
+instance Binary SfxMsg
 
 undoUpdAtomic :: UpdAtomic -> Maybe UpdAtomic
 undoUpdAtomic cmd = case cmd of

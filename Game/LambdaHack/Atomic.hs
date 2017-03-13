@@ -6,7 +6,7 @@ module Game.LambdaHack.Atomic
   ( -- * Re-exported from "Game.LambdaHack.Atomic.MonadAtomic"
     MonadAtomic(..)
     -- * Re-exported from "Game.LambdaHack.Atomic.CmdAtomic"
-  , CmdAtomic(..), UpdAtomic(..), SfxAtomic(..)
+  , CmdAtomic(..), UpdAtomic(..), SfxAtomic(..), SfxMsg(..)
     -- * Re-exported from "Game.LambdaHack.Atomic.PosAtomicRead"
   , PosAtomic(..), posUpdAtomic, posSfxAtomic, seenAtomicCli, generalMoveItem
   , posProjBody

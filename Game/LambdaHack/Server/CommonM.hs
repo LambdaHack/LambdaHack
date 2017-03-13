@@ -66,7 +66,7 @@ execFailure aid req failureSer = do
   possiblyAlarm $
     "execFailure:" <+> msg <> "\n"
     <> debugShow body <> "\n" <> debugShow req <> "\n" <> debugShow failureSer
-  execSfxAtomic $ SfxMsgFid fid $ "Unexpected problem:" <+> msg <> "."
+  execSfxAtomic $ SfxMsgFid fid $ SfxUnexpected failureSer
 
 getPerFid :: MonadServer m => FactionId -> LevelId -> m Perception
 getPerFid fid lid = do

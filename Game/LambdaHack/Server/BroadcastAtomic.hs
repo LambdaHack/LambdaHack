@@ -16,7 +16,6 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Key (mapWithKeyM_)
-import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Atomic.HandleAtomicWrite
@@ -33,7 +32,6 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolM
@@ -126,51 +124,32 @@ handleAndBroadcast atomic = do
   mapWithKeyM_ (\fid fact -> send fid fact) factionD
 
 -- | Messages for some unseen atomic commands.
-loudUpdAtomic :: MonadStateRead m => Bool -> UpdAtomic -> m (Maybe Text)
+loudUpdAtomic :: MonadStateRead m => Bool -> UpdAtomic -> m (Maybe SfxMsg)
 loudUpdAtomic local cmd = do
-  msound <- case cmd of
-    UpdDestroyActor _ body _ | not $ bproj body -> return $ Just "shriek"
-    UpdCreateItem _ _ _ (CActor _ CGround) -> return $ Just "clatter"
+  mcmd <- case cmd of
+    UpdDestroyActor _ body _ | not $ bproj body -> return $ Just cmd
+    UpdCreateItem _ _ _ (CActor _ CGround) -> return $ Just cmd
     UpdTrajectory _ (Just (l, _)) Nothing | not (null l) && local ->
       -- Projectile hits an non-walkable tile on leader's level.
-      return $ Just "thud"
-    UpdAlterTile _ _ fromTile _ -> do
-      Kind.COps{coTileSpeedup} <- getsState scops
-      if Tile.isDoor coTileSpeedup fromTile
-        then return $ Just "creaking sound"
-        else return $ Just "rumble"
-    UpdAlterClear _ k -> return $ Just $ if k > 0 then "grinding noise"
-                                                  else "fizzing noise"
+      return $ Just cmd
+    UpdAlterTile{} -> return $ Just cmd
+    UpdAlterClear{} -> return $ Just cmd
     _ -> return Nothing
-  let distant = if local then [] else ["distant"]
-      hear sound = makeSentence [ "you hear"
-                                , MU.AW $ MU.Phrase $ distant ++ [sound] ]
-  return $! hear <$> msound
+  return $! SfxLoudUpd local <$> mcmd
 
 -- | Messages for some unseen sfx.
-loudSfxAtomic :: MonadServer m => Bool -> SfxAtomic -> m (Maybe Text)
+loudSfxAtomic :: MonadServer m => Bool -> SfxAtomic -> m (Maybe SfxMsg)
 loudSfxAtomic local cmd = do
-  msound <- case cmd of
-    SfxStrike source _ iid cstore hurtMult | local -> do
+  case cmd of
+    SfxStrike source _ iid cstore hurtMult -> do
       itemToF <- itemToFullServer
       sb <- getsState $ getActorBody source
       bag <- getsState $ getBodyStoreBag sb cstore
       let kit = EM.findWithDefault (1, []) iid bag
           itemFull = itemToF iid kit
-          verb = case itemDisco itemFull of
-            Nothing -> "hit"  -- not identified
-            Just ItemDisco{itemKind} -> IK.iverbHit itemKind
-          adverb = if | hurtMult > 90 -> "loudly"
-                      | hurtMult >= 50 -> "distinctly"
-                      | hurtMult > 1 -> ""  -- most common with projectiles
-                      | hurtMult > 0 -> "faintly"
-                      | otherwise -> "barely"
-      return $ Just (verb, adverb)
+          ik = itemKindId $ fromJust $ itemDisco itemFull
+      return $ Just $ SfxLoudStrike local ik hurtMult
     _ -> return Nothing
-  let distant = if local then [] else ["far away"]
-      hear (verb, adverb) = makeSentence $
-        [ "you", adverb, "hear something", verb, "someone"] ++ distant
-  return $! hear <$> msound
 
 sendPer :: MonadServerReadRequest m
         => FactionId -> LevelId

@@ -42,6 +42,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.ItemKind as IK
@@ -945,7 +946,75 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Temporary t -> actorVerbMU aid b $ MU.Text t
         IK.Unique -> assert `failure` sfx
         IK.Periodic -> assert `failure` sfx
-  SfxMsgFid _ msg -> msgAdd msg
+  SfxMsgFid _ sfxMsg -> do
+    msg <- ppSfxMsg sfxMsg
+    msgAdd msg
+
+ppSfxMsg :: MonadClientUI m => SfxMsg -> m Text
+ppSfxMsg sfxMsg = case sfxMsg of
+  SfxUnexpected reqFailure -> return $!
+    "Unexpected problem:" <+> showReqFailure reqFailure <> "."
+  SfxLoudUpd local cmd -> do
+    Kind.COps{coTileSpeedup} <- getsState scops
+    let sound = case cmd of
+          UpdDestroyActor{} -> "shriek"
+          UpdCreateItem{} -> "clatter"
+          UpdTrajectory{} ->
+            -- Projectile hits an non-walkable tile on leader's level.
+            "thud"
+          UpdAlterTile _ _ fromTile _ -> do
+            if Tile.isDoor coTileSpeedup fromTile
+            then "creaking sound"
+            else "rumble"
+          UpdAlterClear _ k -> if k > 0 then "grinding noise"
+                                        else "fizzing noise"
+          _ -> assert `failure` cmd
+        distant = if local then [] else ["distant"]
+        msg = makeSentence [ "you hear"
+                           , MU.AW $ MU.Phrase $ distant ++ [sound] ]
+    return $! msg
+  SfxLoudStrike local ik hurtMult -> do
+    Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+    let verb = IK.iverbHit $ okind ik
+        adverb = if | hurtMult > 90 -> "loudly"
+                    | hurtMult >= 50 -> "distinctly"
+                    | hurtMult > 1 -> ""  -- most common with projectiles
+                    | hurtMult > 0 -> "faintly"
+                    | otherwise -> "barely"
+        distant = if local then [] else ["far away"]
+        msg = makeSentence $
+          [ "you", adverb, "hear something", verb, "someone"] ++ distant
+    return $! msg
+  SfxFizzles -> return "It flashes and fizzles."
+  SfxSummonLackCalm aid -> do
+    msb <- getsState $ EM.lookup aid . sactorD
+    case msb of
+      Nothing -> return ""
+      Just sb -> do
+        let subject = partActor sb
+            verb = "lack Calm to summon"
+        return $! makeSentence [MU.SubjectVerbSg subject verb]
+  SfxLevelNoMore -> return "No more levels in this direction."
+  SfxLevelPushed -> return "You notice somebody pushed to another level."
+  SfxBracedImmune aid -> do
+    msb <- getsState $ EM.lookup aid . sactorD
+    case msb of
+      Nothing -> return ""
+      Just sb -> do
+        let subject = partActor sb
+            verb = "be braced and so immune to translocation"
+        return $! makeSentence [MU.SubjectVerbSg subject verb]
+  SfxEscapeImpossible -> return "This faction doesn't want to escape outside."
+  SfxTransImpossible -> return "Translocation not possible."
+  SfxIdentifyNothing store -> return $!
+    "Nothing to identify" <+> ppCStoreIn store <> "."
+  SfxPurposeNothing store -> return $!
+    "The purpose of repurpose cannot be availed without an item"
+    <+> ppCStoreIn store <> "."
+  SfxPurposeTooFew maxCount itemK -> return $!
+    "The purpose of repurpose is served by" <+> tshow maxCount
+    <+> "pieces of this item, not by" <+> tshow itemK <> "."
+  SfxPurposeUnique -> return "Unique items can't be repurposed."
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
 setLastSlot aid iid cstore = do

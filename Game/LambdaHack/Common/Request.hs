@@ -1,4 +1,5 @@
-{-# LANGUAGE DataKinds, GADTs, KindSignatures, StandaloneDeriving #-}
+{-# LANGUAGE DataKinds, DeriveGeneric, GADTs, KindSignatures, StandaloneDeriving
+             #-}
 -- | Abstract syntax of server commands.
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
@@ -12,6 +13,9 @@ module Game.LambdaHack.Common.Request
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
+
+import Data.Binary
+import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
@@ -101,7 +105,9 @@ data ReqFailure =
   | ProjectOutOfReach
   | TriggerNothing
   | NoChangeDunLeader
-  deriving Show
+  deriving (Show, Eq, Generic)
+
+instance Binary ReqFailure
 
 impossibleReqFailure :: ReqFailure -> Bool
 impossibleReqFailure reqFailure = case reqFailure of
