@@ -16,7 +16,6 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.CommonM
-import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
@@ -26,6 +25,7 @@ import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.FrameM
 import Game.LambdaHack.Client.UI.HandleHelperM
 import Game.LambdaHack.Client.UI.ItemDescription
+import Game.LambdaHack.Client.UI.ItemSlot
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgM
@@ -88,7 +88,8 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
             let wown = ppContainerWownW ownerFun True c
             itemVerbMU iid kit (MU.Text $ makePhrase $ "appear" : wown) c
             mleader <- getsClient _sleader
-            when (Just aid == mleader) $ modifyClient $ \cli -> cli {slastSlot}
+            when (Just aid == mleader) $
+              modifySession $ \sess -> sess {slastSlot}
       CEmbed lid _ -> markDisplayNeeded lid
       CFloor lid _ -> do
         -- If you want an item to be assigned to @slastSlot@, create it
@@ -107,7 +108,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
   UpdSpotItem v iid _ kit c -> do
     -- This is due to a move, or similar, which will be displayed,
     -- so no extra @markDisplayNeeded@ needed here and in similar places.
-    ItemSlots itemSlots _ <- getsClient sslots
+    ItemSlots itemSlots _ <- getsSession sslots
     case lookup iid $ map swap $ EM.assocs itemSlots of
       Nothing ->  -- never seen or would have a slot
         case c of
@@ -341,13 +342,42 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
   UpdMsgAll msg -> msgAdd msg
   UpdRecordHistory _ -> recordHistory
 
+updateItemSlot :: MonadClientUI m
+               => CStore -> Maybe ActorId -> ItemId -> m SlotChar
+updateItemSlot store maid iid = do
+  slots@(ItemSlots itemSlots organSlots) <- getsSession sslots
+  let onlyOrgans = store == COrgan
+      lSlots = if onlyOrgans then organSlots else itemSlots
+      incrementPrefix m l iid2 = EM.insert l iid2 $
+        case EM.lookup l m of
+          Nothing -> m
+          Just iidOld ->
+            let lNew = SlotChar (slotPrefix l + 1) (slotChar l)
+            in incrementPrefix m lNew iidOld
+  case lookup iid $ map swap $ EM.assocs lSlots of
+    Nothing -> do
+      side <- getsClient sside
+      item <- getsState $ getItemBody iid
+      lastSlot <- getsSession slastSlot
+      mb <- maybe (return Nothing) (fmap Just . getsState . getActorBody) maid
+      l <- getsState $ assignSlot store item side mb slots lastSlot
+      let newSlots | onlyOrgans = ItemSlots
+                                    itemSlots
+                                    (incrementPrefix organSlots l iid)
+                   | otherwise = ItemSlots
+                                   (incrementPrefix itemSlots l iid)
+                                   organSlots
+      modifySession $ \sess -> sess {sslots = newSlots}
+      return l
+    Just l -> return l  -- slot already assigned; a letter or a number
+
 markDisplayNeeded :: MonadClientUI m => LevelId -> m ()
 markDisplayNeeded lid = do
   lidV <- viewedLevelUI
   when (lidV == lid) $
      modifySession $ \sess -> sess {sdisplayNeeded = True}
 
-updateItemSlotSide :: MonadClient m
+updateItemSlotSide :: MonadClientUI m
                    => CStore -> ActorId -> ItemId -> m SlotChar
 updateItemSlotSide store aid iid = do
   side <- getsClient sside
@@ -605,10 +635,10 @@ moveItemUI iid k aid cstore1 cstore2 = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let underAI = isAIFact fact
   mleader <- getsClient _sleader
-  ItemSlots itemSlots _ <- getsClient sslots
+  ItemSlots itemSlots _ <- getsSession sslots
   case lookup iid $ map swap $ EM.assocs itemSlots of
     Just slastSlot -> do
-      when (Just aid == mleader) $ modifyClient $ \cli -> cli {slastSlot}
+      when (Just aid == mleader) $ modifySession $ \sess -> sess {slastSlot}
       if cstore1 == CGround && Just aid == mleader && not underAI then
         itemAidVerbMU aid (MU.Text verb) iid (Right k) cstore2
       else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
@@ -693,7 +723,7 @@ quitFactionUI fid toSt = do
             return (bag, sli, tot)
         localTime <- getsState $ getLocalTime arena
         itemToF <- itemToFullClient
-        ItemSlots lSlots _ <- getsClient sslots
+        ItemSlots lSlots _ <- getsSession sslots
         let keyOfEKM (Left km) = km
             keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
             allOKX = concatMap snd $ slideshow itemSlides
@@ -1072,9 +1102,9 @@ setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
 setLastSlot aid iid cstore = do
   mleader <- getsClient _sleader
   when (Just aid == mleader) $ do
-    ItemSlots itemSlots _ <- getsClient sslots
+    ItemSlots itemSlots _ <- getsSession sslots
     case lookup iid $ map swap $ EM.assocs itemSlots of
-      Just slastSlot -> modifyClient $ \cli -> cli {slastSlot}
+      Just slastSlot -> modifySession $ \sess -> sess {slastSlot}
       Nothing -> assert `failure` (iid, cstore, aid)
 
 strike :: MonadClientUI m

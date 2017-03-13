@@ -120,7 +120,6 @@ library
                       Game.LambdaHack.Client.CommonM
                       Game.LambdaHack.Client.HandleAtomicM
                       Game.LambdaHack.Client.HandleResponseM
-                      Game.LambdaHack.Client.ItemSlot
                       Game.LambdaHack.Client.Key
                       Game.LambdaHack.Client.LoopM
                       Game.LambdaHack.Client.MonadClient
@@ -146,6 +145,7 @@ library
                       Game.LambdaHack.Client.UI.HumanCmd
                       Game.LambdaHack.Client.UI.InventoryM
                       Game.LambdaHack.Client.UI.ItemDescription
+                      Game.LambdaHack.Client.UI.ItemSlot
                       Game.LambdaHack.Client.UI.KeyBindings
                       Game.LambdaHack.Client.UI.MonadClientUI
                       Game.LambdaHack.Client.UI.Msg

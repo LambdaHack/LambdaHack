@@ -1,5 +1,5 @@
 -- | Item slots for UI and AI item collections.
-module Game.LambdaHack.Client.ItemSlot
+module Game.LambdaHack.Client.UI.ItemSlot
   ( ItemSlots(..), SlotChar(..)
   , allSlots, allZeroSlots, intSlots, slotLabel, assignSlot
   ) where

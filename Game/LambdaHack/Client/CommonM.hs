@@ -2,7 +2,7 @@
 -- | Common client monad operations.
 module Game.LambdaHack.Client.CommonM
   ( getPerFid, aidTgtToPos, makeLine
-  , actorSkillsClient, updateItemSlot, fullAssocsClient
+  , actorSkillsClient, fullAssocsClient
   , itemToFullClient, pickWeaponClient, enemyMaxAb, updateSalter, createSalter
   , aspectRecordFromItemClient, aspectRecordFromActorClient, createSactorAspect
   ) where
@@ -12,9 +12,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import Data.Tuple
 
-import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Common.Ability as Ability
@@ -116,35 +114,6 @@ actorSkillsClient aid = do
                fact <- getsState $ (EM.! bfid body) . sfactionD
                return $! gleader fact
   getsState $ actorSkills mleader aid ar
-
-updateItemSlot :: MonadClient m
-               => CStore -> Maybe ActorId -> ItemId -> m SlotChar
-updateItemSlot store maid iid = do
-  slots@(ItemSlots itemSlots organSlots) <- getsClient sslots
-  let onlyOrgans = store == COrgan
-      lSlots = if onlyOrgans then organSlots else itemSlots
-      incrementPrefix m l iid2 = EM.insert l iid2 $
-        case EM.lookup l m of
-          Nothing -> m
-          Just iidOld ->
-            let lNew = SlotChar (slotPrefix l + 1) (slotChar l)
-            in incrementPrefix m lNew iidOld
-  case lookup iid $ map swap $ EM.assocs lSlots of
-    Nothing -> do
-      side <- getsClient sside
-      item <- getsState $ getItemBody iid
-      lastSlot <- getsClient slastSlot
-      mb <- maybe (return Nothing) (fmap Just . getsState . getActorBody) maid
-      l <- getsState $ assignSlot store item side mb slots lastSlot
-      let newSlots | onlyOrgans = ItemSlots
-                                    itemSlots
-                                    (incrementPrefix organSlots l iid)
-                   | otherwise = ItemSlots
-                                   (incrementPrefix itemSlots l iid)
-                                   organSlots
-      modifyClient $ \cli -> cli {sslots = newSlots}
-      return l
-    Just l -> return l  -- slot already assigned; a letter or a number
 
 fullAssocsClient :: MonadClient m
                  => ActorId -> [CStore] -> m [(ItemId, ItemFull)]

@@ -20,7 +20,6 @@ import qualified System.Random as R
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.Bfs
-import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
@@ -67,8 +66,6 @@ data StateClient = StateClient
   , scurDiff     :: !Int           -- ^ current game difficulty level
   , snxtDiff     :: !Int           -- ^ next game difficulty level
   , snxtScenario :: !Int           -- ^ next game scenario number
-  , sslots       :: !ItemSlots     -- ^ map from slots to items
-  , slastSlot    :: !SlotChar      -- ^ last used slot
   , smarkSuspect :: !Int           -- ^ mark suspect features
   , scondInMelee :: !(EM.EnumMap LevelId (Either Bool (Bool, Bool)))
       -- ^ the old and (new, old) values of condInMelee condition
@@ -113,8 +110,6 @@ emptyStateClient _sside =
     , scurDiff = difficultyDefault
     , snxtDiff = difficultyDefault
     , snxtScenario = 0
-    , sslots = ItemSlots EM.empty EM.empty
-    , slastSlot = SlotChar 0 'Z'
     , smarkSuspect = 1
     , scondInMelee = EM.empty
     , svictories = EM.empty
@@ -164,8 +159,6 @@ instance Binary StateClient where
     put scurDiff
     put snxtDiff
     put snxtScenario
-    put sslots
-    put slastSlot
     put smarkSuspect
     put scondInMelee
     put svictories
@@ -186,8 +179,6 @@ instance Binary StateClient where
     scurDiff <- get
     snxtDiff <- get
     snxtScenario <- get
-    sslots <- get
-    slastSlot <- get
     smarkSuspect <- get
     scondInMelee <- get
     svictories <- get

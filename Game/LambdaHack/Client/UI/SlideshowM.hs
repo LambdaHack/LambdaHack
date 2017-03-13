@@ -9,9 +9,9 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.FrameM
+import Game.LambdaHack.Client.UI.ItemSlot
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgM
 import Game.LambdaHack.Client.UI.Overlay

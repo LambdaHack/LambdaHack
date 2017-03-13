@@ -22,13 +22,13 @@ import Data.Tuple (swap)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.CommonM
-import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.ActorUI
 import Game.LambdaHack.Client.UI.HandleHelperM
 import Game.LambdaHack.Client.UI.HumanCmd
+import Game.LambdaHack.Client.UI.ItemSlot
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgM
@@ -227,7 +227,7 @@ getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
   case (cRest, allAssocs) of
     ([], [(iid, k)]) | not askWhenLone -> do
       itemToF <- itemToFullClient
-      ItemSlots itemSlots organSlots <- getsClient sslots
+      ItemSlots itemSlots organSlots <- getsSession sslots
       let isOrgan = cCur `elem` [MStore COrgan, MLoreOrgan]
           lSlots = if isOrgan then organSlots else itemSlots
           slotChar = fromMaybe (assert `failure` (iid, lSlots))
@@ -264,7 +264,7 @@ transition :: forall m. MonadClientUI m
 transition psuit prompt promptGeneric permitMulitple cLegal
            numPrefix cCur cRest itemDialogState = do
   let recCall = transition psuit prompt promptGeneric permitMulitple cLegal
-  ItemSlots itemSlots organSlots <- getsClient sslots
+  ItemSlots itemSlots organSlots <- getsSession sslots
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   bodyUI <- getsSession $ getActorUI leader
@@ -503,7 +503,7 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   Level{lysize} <- getLevel lidV
   ekm <- do
     okxs <- overlayToSlideshow (lysize + 1) keys okx
-    !lastSlot <- getsClient slastSlot
+    !lastSlot <- getsSession slastSlot
     let allOKX = concatMap snd $ slideshow okxs
         pointer =
           case findIndex ((== Right lastSlot) . fst) allOKX of
@@ -517,7 +517,7 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
     case drop pointer2 allOKX of
       (Right slastSlot, _) : _
         | cCur `notElem` [MStats, MLoreItem, MLoreOrgan] ->
-        modifyClient $ \cli -> cli {slastSlot}
+        modifySession $ \sess -> sess {slastSlot}
       _ -> return ()
     return okm
   case ekm of

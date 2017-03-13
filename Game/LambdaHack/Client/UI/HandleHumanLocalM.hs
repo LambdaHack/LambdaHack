@@ -37,7 +37,6 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsM
 import Game.LambdaHack.Client.CommonM
-import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
@@ -52,6 +51,7 @@ import Game.LambdaHack.Client.UI.HandleHelperM
 import Game.LambdaHack.Client.UI.HumanCmd (Trigger (..))
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import Game.LambdaHack.Client.UI.InventoryM
+import Game.LambdaHack.Client.UI.ItemSlot
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgM

@@ -20,13 +20,13 @@ import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.CommonM
-import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.ActorUI
 import Game.LambdaHack.Client.UI.EffectDescription
 import Game.LambdaHack.Client.UI.ItemDescription
+import Game.LambdaHack.Client.UI.ItemSlot
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgM
 import Game.LambdaHack.Client.UI.Overlay
@@ -119,10 +119,10 @@ sortSlots fid mbody = do
             farItemAsc = zip farSlots $ sortItemIds farItems
             newSlots = concatMap allSlots [0..]
         in EM.fromDistinctAscList $ nearItemAsc ++ farItemAsc
-  ItemSlots itemSlots organSlots <- getsClient sslots
+  ItemSlots itemSlots organSlots <- getsSession sslots
   let newSlots = ItemSlots (sortSlotMap False itemSlots)
                            (sortSlotMap True organSlots)
-  modifyClient $ \cli -> cli {sslots = newSlots}
+  modifySession $ \sess -> sess {sslots = newSlots}
 
 -- | Switches current member to the next on the level, if any, wrapping.
 memberCycle :: MonadClientUI m => Bool -> m MError
@@ -235,11 +235,11 @@ pickLeaderWithPointer = do
            Just (aid, b, _) -> pick (aid, b)
 
 -- | Create a list of item names.
-itemOverlay :: MonadClient m => CStore -> LevelId -> ItemBag -> m OKX
+itemOverlay :: MonadClientUI m => CStore -> LevelId -> ItemBag -> m OKX
 itemOverlay store lid bag = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
-  ItemSlots itemSlots organSlots <- getsClient sslots
+  ItemSlots itemSlots organSlots <- getsSession sslots
   side <- getsClient sside
   factionD <- getsState sfactionD
   let isOrgan = store == COrgan
