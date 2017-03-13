@@ -212,11 +212,6 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
           msgDuplicateScrap
           stopPlayBack
   UpdTrajectory{} -> return ()  -- if projectile dies here, no display
-  UpdColorActor aid _ _ -> do
-    -- If color changed, make sure it's ever shown,
-    -- e.g., before projectile dies.
-    b <- getsState $ getActorBody aid
-    markDisplayNeeded (blid b)
   -- Change faction attributes.
   UpdQuitFaction fid _ toSt -> quitFactionUI fid toSt
   UpdLeadFaction fid (Just source) (Just target) -> do

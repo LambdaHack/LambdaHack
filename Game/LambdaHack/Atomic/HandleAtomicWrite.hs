@@ -8,7 +8,7 @@ module Game.LambdaHack.Atomic.HandleAtomicWrite
   , updCreateActor, updDestroyActor, updCreateItem, updDestroyItem
   , updMoveActor, updWaitActor, updDisplaceActor, updMoveItem
   , updRefillHP, updRefillCalm
-  , updTrajectory, updColorActor, updQuitFaction, updLeadFaction
+  , updTrajectory, updQuitFaction, updLeadFaction
   , updDiplFaction, updTacticFaction, updAutoFaction, updRecordKill
   , updAlterTile, updAlterClear, updSpotTile, updLoseTile
   , updAlterSmell, updSpotSmell, updLoseSmell, updTimeItem
@@ -27,7 +27,6 @@ import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.MonadStateWrite
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -64,7 +63,6 @@ handleUpdAtomic cmd = case cmd of
   UpdRefillHP aid n -> updRefillHP aid n
   UpdRefillCalm aid n -> updRefillCalm aid n
   UpdTrajectory aid fromT toT -> updTrajectory aid fromT toT
-  UpdColorActor aid fromCol toCol -> updColorActor aid fromCol toCol
   UpdQuitFaction fid fromSt toSt -> updQuitFaction fid fromSt toSt
   UpdLeadFaction fid source target -> updLeadFaction fid source target
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->
@@ -281,15 +279,6 @@ updTrajectory aid fromT toT = assert (fromT /= toT) $ do
                     `blame` "unexpected actor trajectory"
                     `twith` (aid, fromT, toT, body)) ()
   updateActor aid $ \b -> b {btrajectory = toT}
-
-updColorActor :: MonadStateWrite m
-              => ActorId -> Color.Color -> Color.Color -> m ()
-updColorActor aid fromCol toCol = assert (fromCol /= toCol) $ do
-  body <- getsState $ getActorBody aid
-  let !_A = assert (fromCol == bcolor body
-                    `blame` "unexpected actor color"
-                    `twith` (aid, fromCol, toCol, body)) ()
-  updateActor aid $ \b -> b {bcolor = toCol}
 
 updQuitFaction :: MonadStateWrite m
                => FactionId -> Maybe Status -> Maybe Status -> m ()

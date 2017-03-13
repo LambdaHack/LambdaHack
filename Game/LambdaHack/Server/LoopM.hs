@@ -26,7 +26,6 @@ import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
-import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -355,10 +354,6 @@ setTrajectory aid = do
     Just (d : lv, speed) ->
       if Tile.isWalkable coTileSpeedup $ lvl `at` (bpos b `shift` d)
       then do
-        when (bproj b && length lv <= 1) $ do
-          let toColor = Color.BrBlack
-          when (bcolor b /= toColor) $
-            execUpdAtomic $ UpdColorActor aid (bcolor b) toColor
         -- Hit clears trajectory of non-projectiles in reqMelee so no need here.
         -- Non-projectiles displace, to make pushing in crowds less lethal
         -- and chaotic and to avoid hitting harpoons when pulled by them.

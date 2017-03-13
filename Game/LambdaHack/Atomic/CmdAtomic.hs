@@ -27,7 +27,6 @@ import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ClientOptions
-import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -75,7 +74,6 @@ data UpdAtomic =
   | UpdRefillHP !ActorId !Int64
   | UpdRefillCalm !ActorId !Int64
   | UpdTrajectory !ActorId !(Maybe ([Vector], Speed)) !(Maybe ([Vector], Speed))
-  | UpdColorActor !ActorId !Color.Color !Color.Color
   -- Change faction attributes.
   | UpdQuitFaction !FactionId !(Maybe Status) !(Maybe Status)
   | UpdLeadFaction !FactionId !(Maybe ActorId) !(Maybe ActorId)
@@ -171,7 +169,6 @@ undoUpdAtomic cmd = case cmd of
   UpdRefillHP aid n -> Just $ UpdRefillHP aid (-n)
   UpdRefillCalm aid n -> Just $ UpdRefillCalm aid (-n)
   UpdTrajectory aid fromT toT -> Just $ UpdTrajectory aid toT fromT
-  UpdColorActor aid fromCol toCol -> Just $ UpdColorActor aid toCol fromCol
   UpdQuitFaction fid fromSt toSt -> Just $ UpdQuitFaction fid toSt fromSt
   UpdLeadFaction fid source target -> Just $ UpdLeadFaction fid target source
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->
