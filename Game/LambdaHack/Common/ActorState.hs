@@ -12,7 +12,7 @@ module Game.LambdaHack.Common.ActorState
   , nearbyFreePoints, whereTo, getCarriedAssocs, getCarriedIidCStore
   , posToAidsLvl, posToAids, posToAssocs
   , getItemBody, memActor, getActorBody
-  , tryFindHeroK, getLocalTime, itemPrice, regenCalmDelta
+  , getLocalTime, itemPrice, regenCalmDelta
   , actorInAmbient, actorSkills, dispEnemy, fullAssocs, itemToFull
   , goesIntoEqp, goesIntoInv, goesIntoSha, eqpOverfull, eqpFreeN
   , storeFromC, lidFromC, posFromC, aidFromC, isEscape, isStair
@@ -22,7 +22,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import Data.Int (Int64)
 
@@ -170,20 +169,6 @@ itemPrice (item, jcount) =
     '$' -> jcount
     '*' -> jcount * 100
     _   -> 0
-
--- | Tries to finds an actor body satisfying a predicate on any level.
-tryFindActor :: State -> (Actor -> Bool) -> Maybe (ActorId, Actor)
-tryFindActor s p =
-  find (p . snd) $ EM.assocs $ sactorD s
-
-tryFindHeroK :: FactionId -> Int -> State -> Maybe (ActorId, Actor)
-tryFindHeroK fact k s =
-  let c | k == 0          = '@'
-        | k > 0 && k < 10 = Char.intToDigit k
-        | otherwise       = assert `failure` "no digit" `twith` k
-  in tryFindActor s (\body -> bsymbol body == c
-                              && not (bproj body)
-                              && bfid body == fact)
 
 -- | Compute the level identifier and stair position on the new level,
 -- after a level change.

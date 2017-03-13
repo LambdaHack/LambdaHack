@@ -12,7 +12,9 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , leaderTgtToPos, xhairToPos, clearXhair, clearAimMode
   , scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
-  , resetSessionStart, resetGameStart, tryRestore
+  , resetSessionStart, resetGameStart
+  , partAidLeader, partActorLeader, partActorLeaderFun, partPronounLeader
+  , tryRestore
   ) where
 
 import Prelude ()
@@ -24,6 +26,7 @@ import qualified Data.Text.IO as T
 import Data.Time.Clock
 import Data.Time.Clock.POSIX
 import Data.Time.LocalTime
+import qualified NLP.Miniutter.English as MU
 import System.FilePath
 import System.IO (hFlush, stdout)
 
@@ -339,6 +342,41 @@ resetGameStart = do
         , sallTime = absoluteTimeAdd (sallTime cli) time
         , snframes = 0
         , sallNframes = sallNframes cli + nframes }
+
+-- | The part of speech describing the actor or "you" if a leader
+-- of the client's faction. The actor may be not present in the dungeon.
+partActorLeader :: MonadClientUI m => ActorId -> ActorUI -> m MU.Part
+partActorLeader aid b = do
+  mleader <- getsClient _sleader
+  return $! case mleader of
+    Just leader | aid == leader -> "you"
+    _ -> partActor b
+
+partActorLeaderFun :: MonadClientUI m => m (ActorId -> MU.Part)
+partActorLeaderFun = do
+  mleader <- getsClient _sleader
+  sess <- getSession
+  return $! \aid ->
+    if mleader == Just aid
+    then "you"
+    else partActor $ getActorUI aid sess
+
+-- | The part of speech with the actor's pronoun or "you" if a leader
+-- of the client's faction. The actor may be not present in the dungeon.
+partPronounLeader :: MonadClient m => ActorId -> ActorUI -> m MU.Part
+partPronounLeader aid b = do
+  mleader <- getsClient _sleader
+  return $! case mleader of
+    Just leader | aid == leader -> "you"
+    _ -> partPronoun b
+
+-- | The part of speech describing the actor (designated by actor id
+-- and present in the dungeon) or a special name if a leader
+-- of the observer's faction.
+partAidLeader :: MonadClientUI m => ActorId -> m MU.Part
+partAidLeader aid = do
+  b <- getsSession $ getActorUI aid
+  partActorLeader aid b
 
 tryRestore :: MonadClientUI m => m (Maybe (State, StateClient, Maybe SessionUI))
 tryRestore = do

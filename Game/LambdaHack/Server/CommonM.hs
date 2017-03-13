@@ -15,18 +15,14 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
-import qualified NLP.Miniutter.English as MU
 import qualified Text.Show.Pretty as Show.Pretty
 
 import Game.LambdaHack.Atomic
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -319,22 +315,11 @@ addProjectile :: (MonadAtomic m, MonadServer m)
               => Point -> [Point] -> ItemId -> ItemQuant -> LevelId
               -> FactionId -> Time -> Bool
               -> m ()
-addProjectile bpos rest iid (_, it) blid bfid btime isBlast = do
-  localTime <- getsState $ getLocalTime blid
+addProjectile bpos rest iid (_, it) blid bfid btime _isBlast = do
   itemToF <- itemToFullServer
-  factionD <- getsState sfactionD
   let itemFull@ItemFull{itemBase} = itemToF iid (1, take 1 it)
-      (trajectory, (speed, trange)) = itemTrajectory itemBase (bpos : rest)
-      adj | trange < 5 = "falling"
-          | otherwise = "flying"
-      -- Not much detail about a fast flying item.
-      (_, _, object1, object2) =
-        partItem bfid factionD CInv localTime (itemNoDisco (itemBase, 1))
-      bname = makePhrase [MU.AW $ MU.Text adj, object1, object2]
-      tweakBody b = b { bsymbol = if isBlast then bsymbol b else '*'
-                      , bcolor = if isBlast then bcolor b else Color.BrWhite
-                      , bname
-                      , bhp = oneM
+      (trajectory, (speed, _)) = itemTrajectory itemBase (bpos : rest)
+      tweakBody b = b { bhp = oneM
                       , bproj = True
                       , btrajectory = Just (trajectory, speed)
                       , beqp = EM.singleton iid (1, take 1 it)
@@ -371,8 +356,6 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
   -- Create actor.
   factionD <- getsState sfactionD
   let fact = factionD EM.! bfid
-      bpronoun | not bproj && fhasGender (gplayer fact) = "he"
-               | otherwise = "it"
   DebugModeSer{scurDiffSer} <- getsServer sdebugSer
   nU <- nUI
   -- If difficulty is below standard, HP is added to the UI factions,
@@ -392,13 +375,7 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
              | otherwise = hp
       bonusHP = fromEnum $ (diffHP - hp) `divUp` oneM
       healthOrgans = [(Just bonusHP, ("bonus HP", COrgan)) | bonusHP /= 0]
-      bsymbol = jsymbol itemBase
-      bname = IK.iname trunkKind
-      baseColor = flavourToColor $ jflavour itemBase
-      bcolor | baseColor == Color.BrWhite = gcolor fact
-             | otherwise = baseColor
-      b = actorTemplate trunkId bsymbol bname bpronoun bcolor diffHP calm
-                        pos lid bfid
+      b = actorTemplate trunkId diffHP calm pos lid bfid
       -- Insert the trunk as the actor's organ.
       withTrunk = b { borgan = EM.singleton trunkId (itemK, itemTimer)
                     , bweapon = if isMelee itemBase then 1 else 0 }

@@ -2,7 +2,6 @@
 -- | Common client monad operations.
 module Game.LambdaHack.Client.CommonM
   ( getPerFid, aidTgtToPos, makeLine
-  , partAidLeader, partActorLeader, partActorLeaderFun, partPronounLeader
   , actorSkillsClient, updateItemSlot, fullAssocsClient
   , itemToFullClient, pickWeaponClient, enemyMaxAb, updateSalter, createSalter
   , aspectRecordFromItemClient, aspectRecordFromActorClient, createSactorAspect
@@ -14,7 +13,6 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import Data.Tuple
-import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Client.MonadClient
@@ -46,41 +44,6 @@ getPerFid lid = do
   let assFail = assert `failure` "no perception at given level"
                        `twith` (lid, fper)
   return $! EM.findWithDefault assFail lid fper
-
--- | The part of speech describing the actor or "you" if a leader
--- of the client's faction. The actor may be not present in the dungeon.
-partActorLeader :: MonadClient m => ActorId -> Actor -> m MU.Part
-partActorLeader aid b = do
-  mleader <- getsClient _sleader
-  return $! case mleader of
-    Just leader | aid == leader -> "you"
-    _ -> partActor b
-
-partActorLeaderFun :: MonadClient m => m (ActorId -> MU.Part)
-partActorLeaderFun = do
-  mleader <- getsClient _sleader
-  s <- getState
-  return $! \aid ->
-    if mleader == Just aid
-    then "you"
-    else partActor $ getActorBody aid s
-
--- | The part of speech with the actor's pronoun or "you" if a leader
--- of the client's faction. The actor may be not present in the dungeon.
-partPronounLeader :: MonadClient m => ActorId -> Actor -> m MU.Part
-partPronounLeader aid b = do
-  mleader <- getsClient _sleader
-  return $! case mleader of
-    Just leader | aid == leader -> "you"
-    _ -> partPronoun b
-
--- | The part of speech describing the actor (designated by actor id
--- and present in the dungeon) or a special name if a leader
--- of the observer's faction.
-partAidLeader :: MonadClient m => ActorId -> m MU.Part
-partAidLeader aid = do
-  b <- getsState $ getActorBody aid
-  partActorLeader aid b
 
 -- | Calculate the position of an actor's target.
 aidTgtToPos :: MonadClient m => ActorId -> LevelId -> Target -> m (Maybe Point)

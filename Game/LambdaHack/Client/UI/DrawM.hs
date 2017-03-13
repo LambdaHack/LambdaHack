@@ -67,6 +67,7 @@ targetDesc mtarget = do
     Just (TEnemy aid _) -> do
       side <- getsClient sside
       b <- getsState $ getActorBody aid
+      bUI <- getsSession $ getActorUI aid
       actorAspect <- getsClient sactorAspect
       let ar = case EM.lookup aid actorAspect of
             Just aspectRecord -> aspectRecord
@@ -76,7 +77,7 @@ targetDesc mtarget = do
                       <> T.replicate (4 - n) "_" <> "]"
           stars = chs $ fromEnum $ max 0 $ min 4 $ percentage `div` 20
           hpIndicator = if bfid b == side then Nothing else Just stars
-      return (Just $ bname b, hpIndicator)
+      return (Just $ bname bUI, hpIndicator)
     Just (TPoint tgoal lid p) -> case tgoal of
       TEnemyPos{} -> do
         let hotText = if lid == lidV && arena == lidV
@@ -264,10 +265,12 @@ drawFrameActor drawnLevelId = do
   Level{lxsize, lactor} <- getLevel drawnLevelId
   mleader <- getsClient _sleader
   s <- getState
+  sactorUI <- getsSession sactorUI
   let {-# INLINE viewActor #-}
       viewActor _ as = case as of
         aid : _ ->
-          let Actor{bsymbol, bcolor, bhp, bproj} = getActorBody aid s
+          let Actor{bhp, bproj} = getActorBody aid s
+              ActorUI{bsymbol, bcolor} = sactorUI EM.! aid
               symbol | bhp > 0 || bproj = bsymbol
                      | otherwise = '%'
               bg = case mleader of
@@ -359,10 +362,11 @@ drawFrameStatus drawnLevelId = do
   (xhairDesc, mxhairHP) <- targetDescXhair
   sexplored <- getsClient sexplored
   lvl <- getLevel drawnLevelId
-  (mblid, mbpos, mbody) <- case mleader of
+  (mblid, mbpos, mbodyUI) <- case mleader of
     Just leader -> do
-      body@Actor{bpos, blid} <- getsState $ getActorBody leader
-      return (Just blid, Just bpos, Just body)
+      Actor{bpos, blid} <- getsState $ getActorBody leader
+      bodyUI <- getsSession $ getActorUI leader
+      return (Just blid, Just bpos, Just bodyUI)
     Nothing -> return (Nothing, Nothing, Nothing)
   let widthX = 80
       widthTgt = 39
@@ -409,7 +413,7 @@ drawFrameStatus drawnLevelId = do
                                             - selectedStatusWidth
                                             - length damageStatus)
       tgtOrItem n = do
-        let leaderName = maybe "" (\body -> "Leader:" <+> bname body) mbody
+        let leaderName = maybe "" (\body -> "Leader:" <+> bname body) mbodyUI
             tgtBlurb = maybe leaderName (\t ->
               "Target:" <+> trimTgtDesc n t) mtgtDesc
         case (sitemSel, mleader) of
@@ -555,14 +559,16 @@ drawLeaderDamage width = do
   return $! if null stats || length stats >= width then []
             else addColor $ stats <> " "
 
-drawSelected :: MonadClient m
+drawSelected :: MonadClientUI m
              => LevelId -> Int -> ES.EnumSet ActorId -> m (Int, AttrLine)
 drawSelected drawnLevelId width selected = do
   mleader <- getsClient _sleader
   side <- getsClient sside
+  sactorUI <- getsSession sactorUI
   ours <- getsState $ filter (not . bproj . snd)
                       . actorAssocs (== side) drawnLevelId
-  let viewOurs (aid, Actor{bsymbol, bcolor, bhp}) =
+  let oursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) ours
+      viewOurs (aid, Actor{bhp}, ActorUI{bsymbol, bcolor}) =
         let bg = if | mleader == Just aid -> Color.HighlightRed
                     | ES.member aid selected -> Color.HighlightBlue
                     | otherwise -> Color.HighlightNone
@@ -570,7 +576,7 @@ drawSelected drawnLevelId width selected = do
         in Color.attrCharToW32 $ Color.AttrChar sattr
            $ if bhp > 0 then bsymbol else '%'
       maxViewed = width - 2
-      len = length ours
+      len = length oursUI
       star = let fg = case ES.size selected of
                    0 -> Color.BrBlack
                    n | n == len -> Color.BrWhite
@@ -578,5 +584,5 @@ drawSelected drawnLevelId width selected = do
                  char = if len > maxViewed then '$' else '*'
              in Color.attrChar2ToW32 fg char
       viewed = map viewOurs $ take maxViewed
-               $ sortBy (comparing keySelected) ours
+               $ sortBy (comparing keySelected) oursUI
   return (min width (len + 2), [star] ++ viewed ++ [Color.spaceAttrW32])

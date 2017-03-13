@@ -94,8 +94,8 @@ getGroupItem :: MonadClientUI m
 getGroupItem psuit prompt promptGeneric
              cLegalRaw cLegalAfterCalm = do
   soc <- getFull psuit
-                 (\_ _ cCur -> prompt <+> ppItemDialogModeFrom cCur)
-                 (\_ _ cCur -> promptGeneric <+> ppItemDialogModeFrom cCur)
+                 (\_ _ _ cCur -> prompt <+> ppItemDialogModeFrom cCur)
+                 (\_ _ _ cCur -> promptGeneric <+> ppItemDialogModeFrom cCur)
                  cLegalRaw cLegalAfterCalm True False
   case soc of
     Left err -> return $ Left err
@@ -106,7 +106,7 @@ getGroupItem psuit prompt promptGeneric
 -- or switch to any other store.
 -- Used, e.g., for viewing inventory and item descriptions.
 getStoreItem :: MonadClientUI m
-             => (Actor -> AspectRecord -> ItemDialogMode -> Text)
+             => (Actor -> ActorUI -> AspectRecord -> ItemDialogMode -> Text)
                                  -- ^ how to describe suitable items
              -> ItemDialogMode   -- ^ initial mode
              -> m ( Either Text (ItemId, ItemFull)
@@ -141,9 +141,9 @@ getStoreItem prompt cInitial = do
 -- Start with a non-empty store.
 getFull :: MonadClientUI m
         => m Suitability    -- ^ which items to consider suitable
-        -> (Actor -> AspectRecord -> ItemDialogMode -> Text)
+        -> (Actor -> ActorUI -> AspectRecord -> ItemDialogMode -> Text)
                             -- ^ specific prompt for only suitable items
-        -> (Actor -> AspectRecord -> ItemDialogMode -> Text)
+        -> (Actor -> ActorUI -> AspectRecord -> ItemDialogMode -> Text)
                             -- ^ generic prompt
         -> [CStore]         -- ^ initial legal modes
         -> [CStore]         -- ^ legal modes with Calm taken into account
@@ -205,9 +205,9 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
 getItem :: MonadClientUI m
         => m Suitability
                             -- ^ which items to consider suitable
-        -> (Actor -> AspectRecord -> ItemDialogMode -> Text)
+        -> (Actor -> ActorUI -> AspectRecord -> ItemDialogMode -> Text)
                             -- ^ specific prompt for only suitable items
-        -> (Actor -> AspectRecord -> ItemDialogMode -> Text)
+        -> (Actor -> ActorUI -> AspectRecord -> ItemDialogMode -> Text)
                             -- ^ generic prompt
         -> ItemDialogMode   -- ^ first mode, legal or not
         -> [ItemDialogMode] -- ^ the (rest of) legal modes
@@ -250,8 +250,8 @@ data Suitability =
 
 transition :: forall m. MonadClientUI m
            => m Suitability
-           -> (Actor -> AspectRecord -> ItemDialogMode -> Text)
-           -> (Actor -> AspectRecord -> ItemDialogMode -> Text)
+           -> (Actor -> ActorUI -> AspectRecord -> ItemDialogMode -> Text)
+           -> (Actor -> ActorUI -> AspectRecord -> ItemDialogMode -> Text)
            -> Bool
            -> [ItemDialogMode]
            -> Int
@@ -266,6 +266,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   ItemSlots itemSlots organSlots <- getsClient sslots
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
+  bodyUI <- getsSession $ getActorUI leader
   actorAspect <- getsClient sactorAspect
   let ar = case EM.lookup leader actorAspect of
         Just aspectRecord -> aspectRecord
@@ -339,7 +340,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
           in (km, DefItemKey
            { defLabel = Right km
            , defCond = not (cCur == MOwned
-                            || not (any (\(_, b) -> blid b == blid body) hs))
+                            || not (any (\(_, b, _) -> blid b == blid body) hs))
            , defAction = \_ -> do
                err <- memberCycle False
                let !_A = assert (isNothing err `blame` err) ()
@@ -426,8 +427,8 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         }
       (bagFiltered, promptChosen) =
         case itemDialogState of
-          ISuitable -> (bagSuit, prompt body ar cCur <> ":")
-          IAll      -> (bag, promptGeneric body ar cCur <> ":")
+          ISuitable -> (bagSuit, prompt body bodyUI ar cCur <> ":")
+          IAll      -> (bag, promptGeneric body bodyUI ar cCur <> ":")
   case cCur of
     MStats -> do
       io <- statsOverlay leader

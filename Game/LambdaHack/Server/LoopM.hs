@@ -384,8 +384,7 @@ handleActors lid fid = do
   s <- getState
   -- Leader acts first, so that UI leader can save&exit before state changes.
   let notLeader (aid, b) = Just aid /= gleader (factionD EM.! bfid b)
-      l = sortBy (Ord.comparing $ \(aid, b) ->
-                   (notLeader (aid, b), bsymbol b /= '@', bsymbol b, bcolor b))
+      l = sortBy (Ord.comparing notLeader)
           $ filter (\(_, b) -> isNothing (btrajectory b) && bhp b > 0)
           $ map (\(a, _) -> (a, getActorBody a s))
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime

@@ -133,11 +133,11 @@ memberCycle verbose = do
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
   let (autoDun, _) = autoDungeonLevel fact
-  case filter (\(_, b) -> blid b == lidV) hs of
+  case filter (\(_, b, _) -> blid b == lidV) hs of
     _ | autoDun && lidV /= blid body ->
       failMsg $ showReqFailure NoChangeDunLeader
     [] -> failMsg "cannot pick any other member on this level"
-    (np, b) : _ -> do
+    (np, b, _) : _ -> do
       success <- pickLeader verbose np
       let !_A = assert (success `blame` "same leader"
                                 `twith` (leader, np, b)) ()
@@ -154,20 +154,22 @@ memberBack verbose = do
   case reverse hs of
     _ | autoDun -> failMsg $ showReqFailure NoChangeDunLeader
     [] -> failMsg "no other member in the party"
-    (np, b) : _ -> do
+    (np, b, _) : _ -> do
       success <- pickLeader verbose np
       let !_A = assert (success `blame` "same leader"
                                 `twith` (leader, np, b)) ()
       return Nothing
 
-partyAfterLeader :: MonadStateRead m => ActorId -> m [(ActorId, Actor)]
+partyAfterLeader :: MonadClientUI m => ActorId -> m [(ActorId, Actor, ActorUI)]
 partyAfterLeader leader = do
-  faction <- getsState $ bfid . getActorBody leader
-  allA <- getsState $ EM.assocs . sactorD
-  let factionA = filter (\(_, body) ->
-        not (bproj body) && bfid body == faction) allA
-      hs = sortBy (comparing keySelected) factionA
-      i = fromMaybe (-1) $ findIndex ((== leader) . fst) hs
+  side <- getsState $ bfid . getActorBody leader
+  sactorUI <- getsSession sactorUI
+  allA <- getsState $ EM.assocs . sactorD  -- not only on one level
+  let allOurs = filter (\(_, body) ->
+        not (bproj body) && bfid body == side) allA
+      allOursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) allOurs
+      hs = sortBy (comparing keySelected) allOursUI
+      i = fromMaybe (-1) $ findIndex (\(aid, _, _) -> aid == leader) hs
       (lt, gt) = (take i hs, drop (i + 1) hs)
   return $! gt ++ lt
 
@@ -179,12 +181,13 @@ pickLeader verbose aid = do
   if leader == aid
     then return False -- already picked
     else do
-      pbody <- getsState $ getActorBody aid
-      let !_A = assert (not (bproj pbody)
+      body <- getsState $ getActorBody aid
+      bodyUI <- getsSession $ getActorUI aid
+      let !_A = assert (not (bproj body)
                         `blame` "projectile chosen as the leader"
-                        `twith` (aid, pbody)) ()
+                        `twith` (aid, body)) ()
       -- Even if it's already the leader, give his proper name, not 'you'.
-      let subject = partActor pbody
+      let subject = partActor bodyUI
       when verbose $ msgAdd $ makeSentence [subject, "picked as a leader"]
       -- Update client state.
       s <- getState
@@ -193,9 +196,9 @@ pickLeader verbose aid = do
       case saimMode of
         Nothing -> return ()
         Just _ ->
-          modifySession $ \sess -> sess {saimMode = Just $ AimMode $ blid pbody}
+          modifySession $ \sess -> sess {saimMode = Just $ AimMode $ blid body}
       -- Inform about items, etc.
-      lookMsg <- lookAt False "" True (bpos pbody) aid ""
+      lookMsg <- lookAt False "" True (bpos body) aid ""
       when verbose $ msgAdd lookMsg
       return True
 
@@ -206,9 +209,11 @@ pickLeaderWithPointer = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   arena <- getArenaUI
+  sactorUI <- getsSession sactorUI
   ours <- getsState $ filter (not . bproj . snd)
                       . actorAssocs (== side) lidV
-  let viewed = sortBy (comparing keySelected) ours
+  let oursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) ours
+      viewed = sortBy (comparing keySelected) oursUI
       (autoDun, _) = autoDungeonLevel fact
       pick (aid, b) =
         if | blid b /= arena && autoDun ->
@@ -222,11 +227,11 @@ pickLeaderWithPointer = do
      | py == lysize + 2 ->
          case drop (px - 1) viewed of
            [] -> return Nothing  -- relaxed, due to subtleties of selected display
-           aidb : _ -> pick aidb
+           (aid, b, _) : _ -> pick (aid, b)
      | otherwise ->
-         case find (\(_, b) -> bpos b == Point px (py - mapStartY)) ours of
+         case find (\(_, b, _) -> bpos b == Point px (py - mapStartY)) oursUI of
            Nothing -> failMsg "not pointing at an actor"
-           Just aidb -> pick aidb
+           Just (aid, b, _) -> pick (aid, b)
 
 -- | Create a list of item names.
 itemOverlay :: MonadClient m => CStore -> LevelId -> ItemBag -> m OKX

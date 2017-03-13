@@ -1,9 +1,11 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
   ( SessionUI(..), emptySessionUI
   , AimMode(..), RunParams(..), LastRecord, KeysHintMode(..)
   , toggleMarkVision, toggleMarkSmell
+  , ActorUI(..), ActorDictUI
+  , getActorUI, keySelected, partActor, partPronoun, tryFindHeroK
   ) where
 
 import Prelude ()
@@ -11,9 +13,13 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
+import qualified Data.Char as Char
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import Data.Time.Clock.POSIX
+import GHC.Generics (Generic)
+import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Config
@@ -21,20 +27,23 @@ import Game.LambdaHack.Client.UI.Frontend
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Actor
+import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 
 -- | The information that is used across a client playing session,
 -- including many consecutive games in a single session.
--- Some of it is save, some is reset when a new playing session starts.
+-- Some of it is saved, some is reset when a new playing session starts.
 -- An important component is a frontend session.
 data SessionUI = SessionUI
   { sxhair          :: !Target             -- ^ the common xhair
+  , sactorUI        :: !ActorDictUI        -- ^ assigned actor UI presentations
   , schanF          :: !ChanFrontend       -- ^ connection with the frontend
   , sbinding        :: !Binding            -- ^ binding of keys to commands
   , sconfig         :: !Config
@@ -94,11 +103,24 @@ data KeysHintMode =
   | KeysHintPresent
   deriving (Eq, Enum, Bounded)
 
+data ActorUI = ActorUI
+  { bsymbol  :: !Char         -- ^ individual map symbol
+  , bname    :: !Text         -- ^ individual name
+  , bpronoun :: !Text         -- ^ individual pronoun
+  , bcolor   :: !Color.Color  -- ^ individual map color
+  }
+  deriving (Show, Eq, Generic)
+
+instance Binary ActorUI
+
+type ActorDictUI = EM.EnumMap ActorId ActorUI
+
 -- | Initial empty game client state.
 emptySessionUI :: Config -> SessionUI
 emptySessionUI sconfig =
   SessionUI
     { sxhair = TVector $ Vector 1 1
+    , sactorUI = EM.empty
     , schanF = ChanFrontend $ const $ error "emptySessionUI: ChanFrontend "
     , sbinding = Binding M.empty [] M.empty
     , sconfig
@@ -135,9 +157,42 @@ toggleMarkVision s@SessionUI{smarkVision} = s {smarkVision = not smarkVision}
 toggleMarkSmell :: SessionUI -> SessionUI
 toggleMarkSmell s@SessionUI{smarkSmell} = s {smarkSmell = not smarkSmell}
 
+getActorUI :: ActorId -> SessionUI -> ActorUI
+getActorUI aid sess =
+  EM.findWithDefault (assert `failure` (aid, sactorUI sess)) aid
+  $ sactorUI sess
+
+keySelected :: (ActorId, Actor, ActorUI)
+            -> (Bool, Bool, Char, Color.Color, ActorId)
+keySelected (aid, Actor{bhp}, ActorUI{bsymbol, bcolor}) =
+  (bhp > 0, bsymbol /= '@', bsymbol, bcolor, aid)
+
+-- | The part of speech describing the actor.
+partActor :: ActorUI -> MU.Part
+partActor b = MU.Text $ bname b
+
+-- | The part of speech containing the actor pronoun.
+partPronoun :: ActorUI -> MU.Part
+partPronoun b = MU.Text $ bpronoun b
+
+-- | Tries to finds an actor body satisfying a predicate on any level.
+tryFindActor :: State -> (ActorId -> Actor -> Bool) -> Maybe (ActorId, Actor)
+tryFindActor s p = find (uncurry p) $ EM.assocs $ sactorD s
+
+tryFindHeroK :: FactionId -> Int -> ActorDictUI -> State
+             -> Maybe (ActorId, Actor)
+tryFindHeroK fact k d s =
+  let c | k == 0          = '@'
+        | k > 0 && k < 10 = Char.intToDigit k
+        | otherwise       = assert `failure` "no digit" `twith` k
+  in tryFindActor s (\aid body -> c == maybe ' ' bsymbol (EM.lookup aid d)
+                                  && not (bproj body)
+                                  && bfid body == fact)
+
 instance Binary SessionUI where
   put SessionUI{..} = do
     put sxhair
+    put sactorUI
     put sconfig
     put saimMode
     put sitemSel
@@ -153,6 +208,7 @@ instance Binary SessionUI where
     put sdisplayNeeded
   get = do
     sxhair <- get
+    sactorUI <- get
     sconfig <- get
     saimMode <- get
     sitemSel <- get

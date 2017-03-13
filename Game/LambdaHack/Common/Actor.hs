@@ -3,7 +3,7 @@
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Common.Actor
   ( -- * Actor identifiers and related operations
-    ActorId, monsterGenChance, partActor, partPronoun
+    ActorId, monsterGenChance
     -- * The@ Acto@r type
   , Actor(..), ResDelta(..), ActorAspect
   , deltaSerious, deltaMild
@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.Actor
   , hpTooLow, calmEnough, hpEnough
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
-  , keySelected, ppContainer, ppCStore, ppCStoreIn, ppCStoreWownW
+  , ppContainer, ppCStore, ppCStoreIn, ppCStoreWownW
   , ppContainerWownW, verbCStore
   ) where
 
@@ -26,7 +26,6 @@ import Data.Ratio
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
-import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
@@ -41,12 +40,6 @@ import Game.LambdaHack.Common.Vector
 data Actor = Actor
   { -- The trunk of the actor's body (present also in @borgan@ or @beqp@)
     btrunk      :: !ItemId
-
-    -- Presentation
-  , bsymbol     :: !Char         -- ^ individual map symbol
-  , bname       :: !Text         -- ^ individual name
-  , bpronoun    :: !Text         -- ^ individual pronoun
-  , bcolor      :: !Color.Color  -- ^ individual map color
 
     -- Resources
   , bhp         :: !Int64        -- ^ current hit points * 1M
@@ -118,23 +111,12 @@ monsterGenChance (AbsDepth n) (AbsDepth totalDepth) lvlSpawned actorCoeff =
                      ((actorCoeff * (numSpawnedCoeff - scaledDepth))
                       `max` 1))  -- monsters up to level depth spawned at once
 
--- | The part of speech describing the actor.
-partActor :: Actor -> MU.Part
-partActor b = MU.Text $ bname b
-
--- | The part of speech containing the actor pronoun.
-partPronoun :: Actor -> MU.Part
-partPronoun b = MU.Text $ bpronoun b
-
 -- Actor operations
 
 -- | A template for a new actor.
-actorTemplate :: ItemId -> Char -> Text -> Text
-              -> Color.Color -> Int64 -> Int64
-              -> Point -> LevelId -> FactionId
+actorTemplate :: ItemId -> Int64 -> Int64 -> Point -> LevelId -> FactionId
               -> Actor
-actorTemplate btrunk bsymbol bname bpronoun bcolor bhp bcalm
-              bpos blid bfid =
+actorTemplate btrunk bhp bcalm bpos blid bfid =
   let btrajectory = Nothing
       boldpos = Nothing
       boldlid = blid
@@ -189,10 +171,6 @@ type ActorDict = EM.EnumMap ActorId Actor
 
 checkAdjacent :: Actor -> Actor -> Bool
 checkAdjacent sb tb = blid sb == blid tb && adjacent (bpos sb) (bpos tb)
-
-keySelected :: (ActorId, Actor) -> (Bool, Bool, Char, Color.Color, ActorId)
-keySelected (aid, Actor{bsymbol, bcolor, bhp}) =
-  (bhp > 0, bsymbol /= '@', bsymbol, bcolor, aid)
 
 ppContainer :: Container -> Text
 ppContainer CFloor{} = "nearby"

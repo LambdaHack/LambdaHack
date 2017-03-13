@@ -14,7 +14,6 @@ import qualified Data.EnumSet as ES
 import Data.Function
 import qualified Data.HashMap.Strict as HM
 import Data.Ord
-import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
@@ -111,14 +110,9 @@ rollAndRegisterItem lid itemFreq container verbose mk = do
   m5 <- rollItem 0 lid itemFreq
   case m5 of
     Nothing -> return Nothing
-    Just (itemKnown, itemFullRaw, itemDisco, seed, itemGroup) -> do
-      let item = itemBase itemFullRaw
-          trunkName = makePhrase [MU.WownW (MU.Text $ jname item) "trunk"]
-          itemTrunk = if null $ IK.ikit $ itemKind itemDisco
-                      then item
-                      else item {jname = trunkName}
-          itemFull = itemFullRaw { itemK = fromMaybe (itemK itemFullRaw) mk
-                                 , itemBase = itemTrunk }
+    Just (itemKnown, itemFullRaw, _, seed, itemGroup) -> do
+      let itemFull = itemFullRaw { itemK = fromMaybe (itemK itemFullRaw) mk
+                                 , itemBase = itemBase itemFullRaw }
       iid <- registerItem itemFull itemKnown seed container verbose
       return $ Just (iid, (itemFull, itemGroup))
 

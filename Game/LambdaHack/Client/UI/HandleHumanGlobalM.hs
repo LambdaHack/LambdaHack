@@ -629,8 +629,8 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
                goesIntoEqp $ itemBase itemFull)
         else (prompt, return SuitsEverything)
   ggi <- getFull psuit
-                 (\_ _ cCur -> prompt <+> ppItemDialogModeFrom cCur)
-                 (\_ _ cCur -> promptGeneric <+> ppItemDialogModeFrom cCur)
+                 (\_ _ _ cCur -> prompt <+> ppItemDialogModeFrom cCur)
+                 (\_ _ _ cCur -> promptGeneric <+> ppItemDialogModeFrom cCur)
                  cLegalRaw cLegal (not auto) True
   case ggi of
     Right (l, (MStore fromCStore, _)) -> return $ Right (fromCStore, l)
@@ -939,6 +939,7 @@ itemMenuHuman cmdAction = do
     Just (fromCStore, iid) -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
+      bUI <- getsSession $ getActorUI leader
       bag <- getsState $ getBodyStoreBag b fromCStore
       case iid `EM.lookup` bag of
         Nothing -> weaveJust <$> failWith "no object to open Item Menu for"
@@ -953,16 +954,21 @@ itemMenuHuman cmdAction = do
           localTime <- getsState $ getLocalTime (blid b)
           found <- getsState $ findIid leader (bfid b) iid
           factionD <- getsState sfactionD
+          sactorUI <- getsSession sactorUI
           let !_A = assert (not (null found) || fromCStore == CGround
                             `blame` (iid, leader)) ()
               fAlt (aid, (_, store)) = aid /= leader || store /= fromCStore
               foundAlt = filter fAlt found
+              foundUI = map (\(aid, bs) ->
+                               (aid, bs, sactorUI EM.! aid)) foundAlt
               foundKeys = map (K.KM K.NoModifier . K.Fun)
-                              [1 .. length foundAlt]  -- starting from 1!
-              ppLoc (b2, store) =
-                let phr = makePhrase $ ppCStoreWownW False store $ partActor b2
+                              [1 .. length foundUI]  -- starting from 1!
+              ppLoc bUI2 store =
+                let phr = makePhrase $ ppCStoreWownW False store
+                                     $ partActor bUI2
                 in "[" ++ T.unpack phr ++ "]"
-              foundTexts = map (ppLoc . snd) foundAlt
+              foundTexts = map (\(_, (_, store), bUI2) ->
+                                  ppLoc bUI2 store) foundUI
               foundPrefix = textToAL $
                 if null foundTexts then "" else "The object is also in:"
               itemFull = itemToF iid kit
@@ -971,7 +977,8 @@ itemMenuHuman cmdAction = do
               alPrefix = splitAttrLine lxsize $ desc <+:> foundPrefix
               ystart = length alPrefix - 1
               xstart = length (last alPrefix) + 1
-              ks = zip foundKeys $ map (ppLoc . snd) foundAlt
+              ks = zip foundKeys $ map (\(_, (_, store), bUI2) ->
+                                          ppLoc bUI2 store) foundUI
               (ovFoundRaw, kxsFound) = wrapOKX ystart xstart lxsize ks
               ovFound = glueLines alPrefix ovFoundRaw
           report <- getReportUI
@@ -989,7 +996,7 @@ itemMenuHuman cmdAction = do
               offset = 1 + length ovFound
               (ov0, kxs0) = okxsN keyb offset keyL greyedOut
                                   HumanCmd.CmdItemMenu [keyCaption] []
-              t0 = makeSentence [ MU.SubjectVerbSg (partActor b) "choose"
+              t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"
                                 , "an object", MU.Text $ ppCStoreIn fromCStore ]
               al1 = renderReport report <+:> textToAL t0
               splitHelp (al, okx) =

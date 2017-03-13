@@ -124,53 +124,54 @@ chooseItemDialogMode c = do
       verbSha body ar = if calmEnough body ar
                         then "notice"
                         else "paw distractedly"
-      prompt body ar c2 =
+      prompt body bodyUI ar c2 =
         let (tIn, t) = ppItemDialogMode c2
         in case c2 of
         MStore CGround ->
           makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "notice"
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "notice"
             , MU.Text "at"
-            , MU.WownW (MU.Text $ bpronoun body) $ MU.Text "feet" ]
+            , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text "feet" ]
         MStore CSha ->
           makePhrase
             [ MU.Capitalize
-              $ MU.SubjectVerbSg (subject body) (verbSha body ar)
+              $ MU.SubjectVerbSg (subject bodyUI) (verbSha body ar)
             , MU.Text tIn
             , MU.Text t ]
         MStore COrgan ->
           makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "feel"
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "feel"
             , MU.Text tIn
-            , MU.WownW (MU.Text $ bpronoun body) $ MU.Text t ]
+            , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
         MOwned ->
           makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "recall"
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "recall"
             , MU.Text tIn
             , MU.Text t ]
         MStats ->
           makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "estimate"
-            , MU.WownW (MU.Text $ bpronoun body) $ MU.Text t ]
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "estimate"
+            , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
         MLoreItem ->
           makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "recall"
-            , MU.WownW (MU.Text $ bpronoun body) $ MU.Text t ]
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "recall"
+            , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
         MLoreOrgan ->
           makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "recall"
-            , MU.WownW (MU.Text $ bpronoun body) $ MU.Text t ]
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "recall"
+            , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
         _ ->
           makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "see"
             , MU.Text tIn
-            , MU.WownW (MU.Text $ bpronoun body) $ MU.Text t ]
+            , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
   ggi <- getStoreItem prompt c
   recordHistory  -- object chosen, wipe out already shown msgs
   case ggi of
     (Right (iid, itemFull), (c2, _)) -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
+      bUI <- getsSession $ getActorUI leader
       let displayLore store prompt2 = do
             promptAdd prompt2
             lidV <- viewedLevelUI
@@ -195,7 +196,7 @@ chooseItemDialogMode c = do
           let symbol = jsymbol (itemBase itemFull)
               blurb | symbol == '+' = "temporary condition"
                     | otherwise = "organ"
-              prompt2 = makeSentence [ partActor b, "can't choose"
+              prompt2 = makeSentence [ partActor bUI, "can't choose"
                                      , MU.AW blurb ]
           displayLore COrgan prompt2
         MStore fromCStore -> do
@@ -220,23 +221,24 @@ chooseItemDialogMode c = do
                return $ Right c2
         MStats -> assert `failure` ggi
         MLoreItem -> displayLore CGround
-          (makeSentence [ MU.SubjectVerbSg (partActor b) "remember"
+          (makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
                         , "item lore" ])
         MLoreOrgan -> displayLore COrgan
-          (makeSentence [ MU.SubjectVerbSg (partActor b) "remember"
+          (makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
                         , "organ lore" ])
     (Left _, (MStats, ekm)) -> case ekm of
       Right slot -> do
         let eqpSlot = statSlots !! fromJust (elemIndex slot allZeroSlots)
         leader <- getLeaderUI
         b <- getsState $ getActorBody leader
+        bUI <- getsSession $ getActorUI leader
         actorAspect <- getsClient sactorAspect
         let ar = case EM.lookup leader actorAspect of
               Just aspectRecord -> aspectRecord
               Nothing -> assert `failure` leader
             valueText = slotToDecorator eqpSlot b $ prEqpSlot eqpSlot ar
             prompt2 = makeSentence
-              [ MU.WownW (partActor b) (MU.Text $ slotToName eqpSlot)
+              [ MU.WownW (partActor bUI) (MU.Text $ slotToName eqpSlot)
               , "is", MU.Text valueText ]
               <+> slotToDesc eqpSlot
         go <- displaySpaceEsc ColorFull prompt2
@@ -460,14 +462,16 @@ pickLeaderHuman k = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   arena <- getArenaUI
-  mhero <- getsState $ tryFindHeroK side k
-  allA <- getsState $ EM.assocs . sactorD
-  let mactor = let factionA = filter (\(_, body) ->
-                     not (bproj body) && bfid body == side) allA
-                   hs = sortBy (comparing keySelected) factionA
-               in case drop k hs of
+  sactorUI <- getsSession sactorUI
+  mhero <- getsState $ tryFindHeroK side k sactorUI
+  allA <- getsState $ EM.assocs . sactorD  -- not only on one level
+  let allOurs = filter (\(_, body) ->
+        not (bproj body) && bfid body == side) allA
+      allOursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) allOurs
+      hs = sortBy (comparing keySelected) allOursUI
+      mactor = case drop k hs of
                  [] -> Nothing
-                 aidb : _ -> Just aidb
+                 (aid, b, _) : _ -> Just (aid, b)
       mchoice = mhero `mplus` mactor
       (autoDun, _) = autoDungeonLevel fact
   case mchoice of
@@ -505,13 +509,13 @@ selectActorHuman = do
 
 selectAidHuman :: MonadClientUI m => ActorId -> m ()
 selectAidHuman leader = do
-  body <- getsState $ getActorBody leader
+  bodyUI <- getsSession $ getActorUI leader
   wasMemeber <- getsSession $ ES.member leader . sselected
   let upd = if wasMemeber
             then ES.delete leader  -- already selected, deselect instead
             else ES.insert leader
   modifySession $ \sess -> sess {sselected = upd $ sselected sess}
-  let subject = partActor body
+  let subject = partActor bodyUI
   promptAdd $ makeSentence [subject, if wasMemeber
                                      then "deselected"
                                      else "selected"]
@@ -544,14 +548,16 @@ selectWithPointerHuman = do
   side <- getsClient sside
   ours <- getsState $ filter (not . bproj . snd)
                       . actorAssocs (== side) lidV
-  let viewed = sortBy (comparing keySelected) ours
+  sactorUI <- getsSession sactorUI
+  let oursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) ours
+      viewed = sortBy (comparing keySelected) oursUI
   Point{..} <- getsSession spointer
   -- Select even if no space in status line for the actor's symbol.
   if | py == lysize + 2 && px == 0 -> selectNoneHuman >> return Nothing
      | py == lysize + 2 ->
          case drop (px - 1) viewed of
            [] -> failMsg "not pointing at an actor"
-           (aid, _) : _ -> selectAidHuman aid >> return Nothing
+           (aid, _, _) : _ -> selectAidHuman aid >> return Nothing
      | otherwise ->
          case find (\(_, b) -> bpos b == Point px (py - mapStartY)) ours of
            Nothing -> failMsg "not pointing at an actor"
@@ -818,6 +824,9 @@ doLook = do
       b <- getsState $ getActorBody leader
       let p = fromMaybe (bpos b) xhairPos
       inhabitants <- getsState $ posToAssocs p lidV
+      sactorUI <- getsSession sactorUI
+      let inhabitantsUI =
+            map (\(aid2, b2) -> (aid2, b2, sactorUI EM.! aid2)) inhabitants
       seps <- getsClient seps
       mnewEps <- makeLine False b p seps
       itemToF <- itemToFullClient
@@ -826,7 +835,8 @@ doLook = do
             [] -> ""
             (_, body) : rest ->
                  -- Even if it's the leader, give his proper name, not 'you'.
-                 let subjects = map (partActor . snd) inhabitants
+                 let subjects = map (\(_, _, bUI) ->
+                       partActor bUI) inhabitantsUI
                      subject = MU.WWandW subjects
                      verb = "be here"
                      desc =
