@@ -460,31 +460,38 @@ createActorUI born aid body = do
     Just bUI -> return bUI
     Nothing -> do
       trunk <- getsState $ getItemBody $ btrunk body
-      factionD <- getsState sfactionD
-      localTime <- getsState $ getLocalTime $ blid body
       let isBlast = jsymbol trunk `elem` ['\'', '*']  -- good enough approx.
           baseColor = flavourToColor $ jflavour trunk
-      bsymbol <-
-        if | bproj body -> return $! if isBlast then jsymbol trunk else '*'
-           | baseColor /= Color.BrWhite -> return $! jsymbol trunk
+          basePronoun | not (bproj body) && fhasGender (gplayer fact) = "he"
+                      | otherwise = "it"
+      (n, bsymbol) <-
+        if | bproj body -> return $ (0, if isBlast then jsymbol trunk else '*')
+           | baseColor /= Color.BrWhite -> return $ (0, jsymbol trunk)
            | otherwise -> do
              sactorUI <- getsSession sactorUI
              s <- getState
              let mhs = map (\k -> tryFindHeroK sactorUI (bfid body) k s) [0..]
                  n = fromJust $ elemIndex Nothing mhs
-             return $! if n < 1 || n > 9 then '@' else Char.intToDigit n
-      let bname =
-            if bproj body
-            then let adj | length (btrajectory body) < 5 = "falling"
+             return $! (n, if n < 1 || n > 9 then '@' else Char.intToDigit n)
+      factionD <- getsState sfactionD
+      localTime <- getsState $ getLocalTime $ blid body
+      Config{configHeroNames} <- getsSession sconfig
+      let nameFromNumber = if n == 0 then "Captain" else "Hero" <+> tshow n
+          (bname, bpronoun) =
+            if | bproj body ->
+                 let adj | length (btrajectory body) < 5 = "falling"
                          | otherwise = "flying"
                      -- Not much detail about a fast flying item.
                      (_, _, object1, object2) =
                        partItem (bfid body) factionD CInv localTime
                                 (itemNoDisco (trunk, 1))
-                 in makePhrase [MU.AW $ MU.Text adj, object1, object2]
-            else jname trunk
-          bpronoun | not (bproj body) && fhasGender (gplayer fact) = "he"
-                   | otherwise = "it"
+                 in ( makePhrase [MU.AW $ MU.Text adj, object1, object2]
+                    , basePronoun )
+               | baseColor /= Color.BrWhite -> (jname trunk, basePronoun)
+               | gcolor fact /= Color.BrWhite ->
+                 (fname (gplayer fact) <+> nameFromNumber, "he")
+               | otherwise ->
+                 fromMaybe (nameFromNumber, "he") $ lookup n configHeroNames
           bcolor | bproj body = if isBlast then baseColor else Color.BrWhite
                  | baseColor == Color.BrWhite = gcolor fact
                  | otherwise = baseColor
