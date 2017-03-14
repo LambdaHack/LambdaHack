@@ -549,8 +549,7 @@ scroll8 = scroll
   }
 scroll9 = scroll
   { irarity  = [(1, 15), (10, 10)]
-  , ieffects = [ ELabel "of scientific explanation"
-               , Identify, OverfillCalm 3 ]
+  , ieffects = [ELabel "of scientific explanation", Identify]
   }
 scroll10 = scroll
   { irarity  = [(10, 10)]

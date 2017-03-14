@@ -45,7 +45,7 @@ raid = ModeKind  -- mini-crawl
   , mfreq   = [("raid", 1), ("campaign scenario", 1)]
   , mroster = rosterRaid
   , mcaves  = cavesRaid
-  , mdesc   = "An incredibly advanced typing machine worth 100 gold is buried at the other end of this maze. Be the first to claim it and fund a research team that makes typing accurate and dependable forever."
+  , mdesc   = "An incredibly advanced typing machine worth 100 gold is buried at the exit of this maze. Be the first to claim it and fund a research team that makes typing accurate and dependable forever."
   }
 
 brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
