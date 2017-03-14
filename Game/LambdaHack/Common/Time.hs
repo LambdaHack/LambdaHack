@@ -140,9 +140,9 @@ timeDeltaDiv (Delta (Time t)) n = Delta (Time (t `div` fromIntegral n))
 timeDeltaToDigit :: Delta Time -> Delta Time -> Char
 {-# INLINE timeDeltaToDigit #-}
 timeDeltaToDigit (Delta (Time maxT)) (Delta (Time t)) =
-  let k = 10 * t `div` maxT
+  let k = 1 + 9 * t `div` maxT
       digit | k > 9     = '*'
-            | k < 0     = '-'
+            | k < 1     = '-'
             | otherwise = Char.intToDigit $ fromEnum k
   in digit
 
