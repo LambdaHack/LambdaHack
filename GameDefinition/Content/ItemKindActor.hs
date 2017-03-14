@@ -185,7 +185,7 @@ elbow = ItemKind
   , ikit     = [ ("speed gland 4", COrgan), ("armored skin", COrgan)
                , ("vision 16", COrgan)
                , ("any arrow", CSha), ("any arrow", CInv)
-               , ("any arrow", CInv), ("any arrow", CInv)
+               , ("weak arrow", CInv), ("weak arrow", CInv)
                , ("sapient brain", COrgan) ]
   }
 torsor = ItemKind
