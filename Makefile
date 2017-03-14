@@ -104,15 +104,11 @@ test-travis-short: test-short
 
 test-travis-medium: test-short test-medium benchNull
 
-test-travis-long: test-short test-long benchNull
-
-test: test-short test-medium test-long benchNull
+test: test-short test-medium benchNull
 
 test-short: test-short-new test-short-load
 
 test-medium: testRaid-medium testBrawl-medium testShootout-medium testEscape-medium testZoo-medium testAmbush-medium testExploration-medium testSafari-medium testSafariSurvival-medium testBattle-medium testBattleSurvival-medium testDefense-medium
-
-test-long: testRaid-medium testBrawl-medium testShootout-medium testEscape-medium testZoo-medium testAmbush-medium testExploration-long testSafari-long testSafariSurvival-long testBattle-long testBattleSurvival-long testDefense-long
 
 testRaid-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 20 --dumpInitRngs --automateAll --keepAutomated --gameMode raid 2> /tmp/stdtest.log
@@ -132,38 +128,20 @@ testZoo-medium:
 testAmbush-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 20 --dumpInitRngs --automateAll --keepAutomated --gameMode ambush 2> /tmp/stdtest.log
 
-testExploration-long:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 1 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 500 --dumpInitRngs --automateAll --keepAutomated --gameMode exploration 2> /tmp/stdtest.log
-
 testExploration-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 1 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 300 --dumpInitRngs --automateAll --keepAutomated --gameMode exploration 2> /tmp/stdtest.log
-
-testSafari-long:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 500 --dumpInitRngs --automateAll --keepAutomated --gameMode safari 2> /tmp/stdtest.log
 
 testSafari-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 300 --dumpInitRngs --automateAll --keepAutomated --gameMode safari 2> /tmp/stdtest.log
 
-testSafariSurvival-long:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 8 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 200 --dumpInitRngs --automateAll --keepAutomated --gameMode "safari survival" 2> /tmp/stdtest.log
-
 testSafariSurvival-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 8 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 100 --dumpInitRngs --automateAll --keepAutomated --gameMode "safari survival" 2> /tmp/stdtest.log
-
-testBattle-long:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 60 --dumpInitRngs --automateAll --keepAutomated --gameMode battle 2> /tmp/stdtest.log
 
 testBattle-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 20 --dumpInitRngs --automateAll --keepAutomated --gameMode battle 2> /tmp/stdtest.log
 
-testBattleSurvival-long:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 7 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 60 --dumpInitRngs --automateAll --keepAutomated --gameMode "battle survival" 2> /tmp/stdtest.log
-
 testBattleSurvival-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 7 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 20 --dumpInitRngs --automateAll --keepAutomated --gameMode "battle survival" 2> /tmp/stdtest.log
-
-testDefense-long:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 9 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 700 --dumpInitRngs --automateAll --keepAutomated --gameMode defense 2> /tmp/stdtest.log
 
 testDefense-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 9 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfterSeconds 500 --dumpInitRngs --automateAll --keepAutomated --gameMode defense 2> /tmp/stdtest.log
