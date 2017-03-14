@@ -141,7 +141,7 @@ loudUpdAtomic local cmd = do
 loudSfxAtomic :: MonadServer m => Bool -> SfxAtomic -> m (Maybe SfxMsg)
 loudSfxAtomic local cmd = do
   case cmd of
-    SfxStrike source _ iid cstore hurtMult -> do
+    SfxStrike source _ iid cstore hurtMult | local -> do
       itemToF <- itemToFullServer
       sb <- getsState $ getActorBody source
       bag <- getsState $ getBodyStoreBag sb cstore
