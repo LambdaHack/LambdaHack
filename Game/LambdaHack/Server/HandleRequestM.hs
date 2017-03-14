@@ -319,9 +319,7 @@ reqMelee source target iid cstore = do
               || sfid == tfid) $
         execUpdAtomic $ UpdDiplFaction sfid tfid fromDipl War
 
-armorHurtBonus :: (MonadAtomic m, MonadServer m)
-               => ActorId -> ActorId
-               -> m Int
+armorHurtBonus :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m Int
 armorHurtBonus source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target

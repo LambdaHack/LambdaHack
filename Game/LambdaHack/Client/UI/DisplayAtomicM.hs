@@ -176,9 +176,9 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
        | bhp b <= 0 && n < 0
          && (bfid b == side && not (bproj b) || arena == blid b) -> do
          let (firstFall, hurtExtra) = case (bfid b == side, bproj b) of
-               (True, True) -> ("fall apart", "be reduced to dust")
-               (True, False) -> ("fall down", "be stomped flat")
-               (False, True) -> ("break up", "be shattered into little pieces")
+               (True, True) -> ("drop down", "tumble down")
+               (True, False) -> ("fall down", "fall to pieces")
+               (False, True) -> ("plummet", "crash")
                (False, False) -> ("collapse", "be reduced to a bloody pulp")
              verbDie = if alreadyDeadBefore then hurtExtra else firstFall
              alreadyDeadBefore = bhp b - n <= 0
