@@ -13,7 +13,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , repeatHuman, recordHuman, historyHuman
   , markVisionHuman, markSmellHuman, markSuspectHuman, settingsMenuHuman
     -- * Commands specific to aiming
-  , cancelHuman, acceptHuman, tgtClearHuman
+  , cancelHuman, acceptHuman, tgtClearHuman, objectClearHuman
   , moveXhairHuman, aimTgtHuman, aimFloorHuman, aimEnemyHuman, aimItemHuman
   , aimAscendHuman, epsIncrHuman
   , xhairUnknownHuman, xhairItemHuman, xhairStairHuman
@@ -37,7 +37,6 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsM
 import Game.LambdaHack.Client.CommonM
-import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.ActorUI
@@ -52,6 +51,7 @@ import Game.LambdaHack.Client.UI.HumanCmd (Trigger (..))
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import Game.LambdaHack.Client.UI.InventoryM
 import Game.LambdaHack.Client.UI.ItemSlot
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgM
@@ -799,7 +799,6 @@ endAimingMsg = do
 
 tgtClearHuman :: MonadClientUI m => m ()
 tgtClearHuman = do
-  modifySession $ \sess -> sess {sitemSel = Nothing}
   leader <- getLeaderUI
   tgt <- getsClient $ getTarget leader
   case tgt of
@@ -808,6 +807,12 @@ tgtClearHuman = do
     Nothing -> do
       clearXhair
       doLook
+
+-- * ObjectClear
+
+objectClearHuman :: MonadClientUI m => m ()
+objectClearHuman = do
+  modifySession $ \sess -> sess {sitemSel = Nothing}
 
 -- | Perform look around in the current position of the xhair.
 -- Does nothing outside aiming mode.

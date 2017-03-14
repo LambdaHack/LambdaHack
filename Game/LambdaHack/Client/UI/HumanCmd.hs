@@ -89,6 +89,7 @@ data HumanCmd =
   | ByItemMode {ts :: ![Trigger], notChosen :: !HumanCmd, chosen :: !HumanCmd}
   | ComposeIfLocal !HumanCmd !HumanCmd
   | ComposeUnlessError !HumanCmd !HumanCmd
+  | Compose2ndLocal !HumanCmd !HumanCmd
   | LoopOnNothing !HumanCmd
     -- Global.
     -- These usually take time.
@@ -140,6 +141,7 @@ data HumanCmd =
   | Cancel
   | Accept
   | TgtClear
+  | ObjectClear
   | MoveXhair !Vector !Int
   | AimTgt
   | AimFloor

@@ -7,7 +7,8 @@
 module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   ( -- * Meta commands
     byAreaHuman, byAimModeHuman, byItemModeHuman
-  , composeIfLocalHuman, composeUnlessErrorHuman, loopOnNothingHuman
+  , composeIfLocalHuman, composeUnlessErrorHuman, compose2ndLocalHuman
+  , loopOnNothingHuman
     -- * Global commands that usually take time
   , waitHuman, waitHuman10, moveRunHuman
   , runOnceAheadHuman, moveOnceToXhairHuman
@@ -37,7 +38,6 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.BfsM
 import Game.LambdaHack.Client.CommonM
-import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.ActorUI
@@ -49,6 +49,7 @@ import Game.LambdaHack.Client.UI.HandleHumanLocalM
 import Game.LambdaHack.Client.UI.HumanCmd (CmdArea (..), Trigger (..))
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import Game.LambdaHack.Client.UI.InventoryM
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
@@ -191,6 +192,23 @@ composeUnlessErrorHuman c1 c2 = do
   case slideOrCmd1 of
     Left Nothing -> c2
     _ -> return slideOrCmd1
+
+-- * Compose2ndLocal
+
+compose2ndLocalHuman :: MonadClientUI m
+                     => m (Either MError ReqUI) -> m (Either MError ReqUI)
+                     -> m (Either MError ReqUI)
+compose2ndLocalHuman c1 c2 = do
+  slideOrCmd1 <- c1
+  case slideOrCmd1 of
+    Left merr1 -> do
+      slideOrCmd2 <- c2
+      case slideOrCmd2 of
+        Left merr2 -> return $ Left $ mergeMError merr1 merr2
+        _ -> return slideOrCmd1  -- ignore second request, keep effect
+    req -> do
+      void c2  -- ignore second request, keep effect
+      return req
 
 -- * LoopOnNothing
 

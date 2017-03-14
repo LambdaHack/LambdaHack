@@ -45,6 +45,8 @@ cmdAction cmd = case cmd of
     composeIfLocalHuman (cmdAction cmd1) (cmdAction cmd2)
   ComposeUnlessError cmd1 cmd2 ->
     composeUnlessErrorHuman (cmdAction cmd1) (cmdAction cmd2)
+  Compose2ndLocal cmd1 cmd2 ->
+    compose2ndLocalHuman (cmdAction cmd1) (cmdAction cmd2)
   LoopOnNothing cmd1 ->
     loopOnNothingHuman (cmdAction cmd1)
 
@@ -97,6 +99,7 @@ cmdAction cmd = case cmd of
   Cancel -> addNoError cancelHuman
   Accept -> addNoError acceptHuman
   TgtClear -> addNoError tgtClearHuman
+  ObjectClear -> addNoError objectClearHuman
   MoveXhair v k -> Left <$> moveXhairHuman v k
   AimTgt -> Left <$> aimTgtHuman
   AimFloor -> addNoError aimFloorHuman

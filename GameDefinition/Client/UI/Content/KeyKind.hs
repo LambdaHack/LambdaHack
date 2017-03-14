@@ -48,6 +48,11 @@ standardKeys = KeyKind
                 { verb = "apply"
                 , object = "consumable"
                 , symbol = ' ' }])
+      , ("C-a", addCmdCategory CmdItemMenu
+                $ replaceDesc "apply and keep object" $ applyIK [ApplyItem
+                  { verb = "apply"
+                  , object = "consumable"
+                  , symbol = ' ' }])
 
       -- Terrain exploration and alteration
       , ("semicolon", ( [CmdMove]
@@ -161,8 +166,9 @@ standardKeys = KeyKind
       , (">", ([CmdAim], "switch view to one level lower", AimAscend (-1)))
       , ("C->", ( [CmdNoHelp], "switch view to 10 levels lower"
                    , AimAscend (-10)) )
-      , ( "BackSpace"
-        , ([CmdAim], "clear target or chosen item", TgtClear) )
+      , ("BackSpace" , ( [CmdAim]
+                       , "clear chosen object and target"
+                       , ComposeUnlessError ObjectClear TgtClear ))
       , ("Escape", ( [CmdAim, CmdMinimal]
                    , "cancel aiming/open Main Menu"
                    , ByAimMode {exploration = MainMenu, aiming = Cancel} ))

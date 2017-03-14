@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.Content.KeyKind
   , addCmdCategory, replaceDesc, moveItemTriple, repeatTriple
   , mouseLMB, mouseMMB, mouseRMB
   , goToCmd, runToAllCmd, autoexploreCmd, autoexplore25Cmd
-  , aimFlingCmd, projectI, projectA, flingTs, applyI
+  , aimFlingCmd, projectI, projectA, flingTs, applyI, applyIK
   , grabItems, dropItems, descTs, defaultHeroSelect
   ) where
 
@@ -15,9 +15,9 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Char as Char
 import qualified NLP.Miniutter.English as MU
 
-import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.ActorUI (verbCStore)
 import Game.LambdaHack.Client.UI.HumanCmd
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Common.Misc
 
 -- | Key-command mappings to be used for the UI.
@@ -143,11 +143,21 @@ flingTs = [ApplyItem { verb = "fling"
                      , object = "projectile"
                      , symbol = ' ' }]
 
+applyIK :: [Trigger] -> CmdTriple
+applyIK ts =
+  let apply = Apply ts
+  in ([CmdItem], descTs ts, ByItemMode
+       { ts
+       , notChosen = ComposeUnlessError (ChooseItemApply ts) apply
+       , chosen = apply })
+
 applyI :: [Trigger] -> CmdTriple
-applyI ts = ([CmdItem], descTs ts, ByItemMode
-  { ts
-  , notChosen = ComposeUnlessError (ChooseItemApply ts) (Apply ts)
-  , chosen = Apply ts })
+applyI ts =
+  let apply = Compose2ndLocal (Apply ts) ObjectClear
+  in ([CmdItem], descTs ts, ByItemMode
+       { ts
+       , notChosen = ComposeUnlessError (ChooseItemApply ts) apply
+       , chosen = apply })
 
 grabCmd :: HumanCmd
 grabCmd = MoveItem [CGround] CEqp (Just "grab") True
