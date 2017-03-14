@@ -172,7 +172,8 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
     bUI <- getsSession $ getActorUI aid
     arena <- getArenaUI
     side <- getsClient sside
-    if | bproj b && length (beqp b) == 0 -> return ()  -- ignore caught proj
+    if | bproj b && (length (beqp b) == 0 || isNothing (btrajectory b)) ->
+           return ()  -- ignore caught proj or one hitting a wall
        | bhp b <= 0 && n < 0
          && (bfid b == side && not (bproj b) || arena == blid b) -> do
          let (firstFall, hurtExtra) = case (bfid b == side, bproj b) of

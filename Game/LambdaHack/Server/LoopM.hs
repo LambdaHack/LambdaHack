@@ -365,10 +365,10 @@ setTrajectory aid = do
         unless ((fst <$> btrajectory b2) == Just []) $  -- set in reqMelee
           execUpdAtomic $ UpdTrajectory aid (btrajectory b2) (Just (lv, speed))
       else do
-        -- Lose HP due to flying into an obstacle.
-        execUpdAtomic $ UpdRefillHP aid minusM
         -- Nothing from non-empty trajectories signifies obstacle hit.
         execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
+        -- Lose HP due to flying into an obstacle.
+        execUpdAtomic $ UpdRefillHP aid minusM
     Just ([], _) ->
       -- Non-projectile actor stops flying.
       assert (not $ bproj b)
