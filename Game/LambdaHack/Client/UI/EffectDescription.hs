@@ -160,7 +160,7 @@ slotToName eqpSlot =
     EqpSlotAddMaxCalm -> "max Calm"
     EqpSlotAddSmell -> "smell radius"
     EqpSlotAddNocto -> "night vision radius"
-    EqpSlotAddAggression -> "aggresion level"
+    EqpSlotAddAggression -> "aggression level"
     EqpSlotAbWait -> tshow AbWait <+> "ability"
     EqpSlotAbMoveItem -> tshow AbMoveItem <+> "ability"
 
@@ -245,7 +245,7 @@ statSlots = [ EqpSlotAddHurtMelee
             , EqpSlotAddSmell
             , EqpSlotLightSource
             , EqpSlotAddNocto
-            , EqpSlotAddAggression
+-- WIP:           , EqpSlotAddAggression
             , EqpSlotAbMove
             , EqpSlotAbMelee
             , EqpSlotAbDisplace
