@@ -405,7 +405,9 @@ boilingVent = armoredSkin
   , iflavour = zipPlain [Blue]
   , iverbHit = "menace"
   , iaspects = [Timeout $ 2 + d 2 |*| 5]
-  , ieffects = [Periodic, Recharging (Explode "boiling water")]
+  , ieffects = [Periodic
+               , Recharging (Explode "boiling water")
+               , Recharging (RefillHP 2) ]
   , idesc    = ""
   }
 arsenicVent = armoredSkin
@@ -414,7 +416,9 @@ arsenicVent = armoredSkin
   , iflavour = zipPlain [Cyan]
   , iverbHit = "menace"
   , iaspects = [Timeout $ 2 + d 2 |*| 5]
-  , ieffects = [Periodic, Recharging (Explode "sparse shower")]
+  , ieffects = [ Periodic
+               , Recharging (Explode "sparse shower")
+               , Recharging (RefillHP 2) ]
   , idesc    = ""
   }
 sulfurVent = armoredSkin
@@ -423,7 +427,9 @@ sulfurVent = armoredSkin
   , iflavour = zipPlain [BrYellow]
   , iverbHit = "menace"
   , iaspects = [Timeout $ 2 + d 2 |*| 5]
-  , ieffects = [Periodic, Recharging (Explode "dense shower")]
+  , ieffects = [ Periodic
+               , Recharging (Explode "dense shower")
+               , Recharging (RefillHP 2) ]
   , idesc    = ""
   }
 bonusHP = armoredSkin
