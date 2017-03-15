@@ -46,7 +46,7 @@ rogue = CaveKind
   , chidden       = 7
   , cactorCoeff   = 130  -- the maze requires time to explore
   , cactorFreq    = [("monster", 60), ("animal", 40)]
-  , citemNum      = 10 * d 2
+  , citemNum      = 8 * d 2
   , citemFreq     = [("useful", 50), ("treasure", 50)]
   , cplaceFreq    = [("rogue", 100)]
   , cpassable     = False
@@ -75,7 +75,7 @@ arena = rogue
   , chidden       = 0
   , cactorCoeff   = 100
   , cactorFreq    = [("monster", 30), ("animal", 70)]
-  , citemNum      = 9 * d 2  -- few rooms
+  , citemNum      = 7 * d 2  -- few rooms
   , citemFreq     = [("useful", 20), ("treasure", 30), ("any scroll", 50)]
   , cplaceFreq    = [("arena", 100)]
   , cpassable     = True
@@ -98,7 +98,7 @@ laboratory = arena
   , copenChance   = 1%2
   , chidden       = 7
   , cactorCoeff   = 160  -- deadly enough due to unclear corridors
-  , citemNum      = 11 * d 2  -- reward difficulty
+  , citemNum      = 10 * d 2  -- reward difficulty
   , citemFreq     = [("useful", 20), ("treasure", 30), ("any vial", 50)]
   , cplaceFreq    = [("laboratory", 100)]
   , cpassable     = False
@@ -129,7 +129,7 @@ empty = rogue
       -- enough of a continuity. Gyesers on lvl 3 are not OP and can't be
       -- abused, because they spawn less and less often and they don't heal over
       -- max HP.
-  , citemNum      = 7 * d 2  -- few rooms
+  , citemNum      = 5 * d 2  -- few rooms and geysers are the boon
   , cplaceFreq    = [("empty", 100)]
   , cpassable     = True
   , cdefTile      = "emptySet"
@@ -153,7 +153,7 @@ noise = rogue
   , chidden       = 0
   , cactorCoeff   = 160  -- the maze requires time to explore
   , cactorFreq    = [("monster", 80), ("animal", 20)]
-  , citemNum      = 12 * d 2  -- an incentive to explore the labyrinth
+  , citemNum      = 10 * d 2  -- an incentive to explore the labyrinth
   , cpassable     = True
   , cplaceFreq    = [("noise", 100)]
   , cdefTile      = "noiseSet"
@@ -169,7 +169,7 @@ shallow1rogue = rogue
   , cdarkChance   = 0  -- all rooms lit, for a gentle start
   , cextraStairs  = 1
   , cactorFreq    = filter ((/= "monster") . fst) $ cactorFreq rogue
-  , citemNum      = 15 * d 2  -- lure them in with loot
+  , citemNum      = 13 * d 2  -- lure them in with loot
   , citemFreq     = filter ((/= "treasure") . fst) $ citemFreq rogue
   , cescapeGroup  = Just "escape up"
   }
@@ -181,7 +181,7 @@ raid = rogue
   , cmaxVoid      = 1%10
   , cactorCoeff   = 1000  -- deep level with no kit, so slow spawning
   , cactorFreq    = [("animal", 100)]
-  , citemNum      = 30 * d 2  -- just one level, hard enemies, treasure
+  , citemNum      = 20 * d 2  -- just one level, hard enemies, treasure
   , citemFreq     = [("useful", 33), ("gem", 33), ("currency", 33)]
   , cescapeGroup  = Just "escape up"
   }
