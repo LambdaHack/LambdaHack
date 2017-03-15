@@ -15,9 +15,9 @@ import Game.LambdaHack.Content.ItemKind
 
 temporaries :: [ItemKind]
 temporaries =
-  [tmpStrengthened, tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpNoctovision, tmpDrunk, tmpRegenerating, tmpWeaklyRegenerating, tmpPoisoned, tmpWeaklyPoisoned, tmpSlow10Resistant, tmpPoisonResistant, tmpImpressed]
+  [tmpStrengthened, tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpNoctovision, tmpDrunk, tmpRegenerating, tmpWeaklyRegenerating, tmpPoisoned, tmpWeaklyPoisoned, tmpSlow10Resistant, tmpPoisonResistant, tmpImpressed]
 
-tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpNoctovision, tmpDrunk, tmpRegenerating, tmpWeaklyRegenerating, tmpPoisoned, tmpWeaklyPoisoned, tmpSlow10Resistant, tmpPoisonResistant, tmpImpressed :: ItemKind
+tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpNoctovision, tmpDrunk, tmpRegenerating, tmpWeaklyRegenerating, tmpPoisoned, tmpWeaklyPoisoned, tmpSlow10Resistant, tmpPoisonResistant, tmpImpressed :: ItemKind
 
 tmpNoLonger :: Text -> Effect
 tmpNoLonger name = Temporary $ "be no longer" <+> name
@@ -56,6 +56,7 @@ tmpResolute = tmpAs "resolute" [AddMaxCalm 60]
 tmpFast20 = tmpAs "fast 20" [AddSpeed 20]
 tmpSlow10 = tmpAs "slow 10" [AddSpeed (-10)]
 tmpFarSighted = tmpAs "far-sighted" [AddSight 5]
+tmpBlind = tmpAs "blind" [AddSight (-99)]
 tmpKeenSmelling = tmpAs "keen-smelling" [AddSmell 2]
 tmpNoctovision = tmpAs "shiny-eyed" [AddNocto 2]
 tmpDrunk = tmpAs "drunk" [ AddHurtMelee 30  -- fury

@@ -33,9 +33,9 @@ cdefs = ContentDef
 
 items :: [ItemKind]
 items =
-  [sandstoneRock, dart, spike, slingStone, slingBullet, paralizingProj, harpoon, net, light1, light2, light3, blanket, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency]
+  [sandstoneRock, dart, spike, slingStone, slingBullet, paralizingProj, harpoon, net, light1, light2, light3, blanket, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, flask18, flask19, flask20, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency]
 
-sandstoneRock,    dart, spike, slingStone, slingBullet, paralizingProj, harpoon, net, light1, light2, light3, blanket, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency :: ItemKind
+sandstoneRock,    dart, spike, slingStone, slingBullet, paralizingProj, harpoon, net, light1, light2, light3, blanket, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, flask18, flask19, flask20, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency :: ItemKind
 
 necklace, ring, potion, flask, scroll, wand, gem :: ItemKind  -- generic templates
 
@@ -280,18 +280,20 @@ blanket = ItemKind
 -- for effects roughly corresponding to their normal effects.
 -- Whether to hit with them or explode them close to the tartget
 -- is intended to be an interesting tactical decision.
-
+--
 -- Flasks are often not natural; maths, magic, distillery.
 -- In reality, they just cover all temporary effects, which in turn matches
 -- all aspects.
-
+--
+-- No flask nor temporary organ of Calm depletion, since Calm reduced often.
 flask = ItemKind
   { isymbol  = symbolFlask
   , iname    = "flask"
   , ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
   , iflavour = zipLiquid darkCol ++ zipPlain darkCol ++ zipFancy darkCol
+               ++ zipLiquid brightCol
   , icount   = 1
-  , irarity  = [(1, 9), (10, 6)]
+  , irarity  = [(1, 8), (10, 5)]
   , iverbHit = "splash"
   , iweight  = 500
   , idamage  = toDmg 0
@@ -352,7 +354,7 @@ flask8 = flask
                , OnSmash (Explode "slowness mist") ]
   }
 flask9 = flask
-  { irarity  = [(10, 7)]
+  { irarity  = [(10, 5)]
   , ieffects = [ ELabel "of eye drops"
                , toOrganActorTurn "far-sighted" (40 + d 10)
                , OnSmash (Explode "eye drop") ]
@@ -365,7 +367,7 @@ flask10 = flask
                , OnSmash (Explode "smelly droplet") ]
   }
 flask11 = flask
-  { irarity  = [(10, 7)]
+  { irarity  = [(10, 5)]
   , ieffects = [ ELabel "of cat tears"
                , toOrganActorTurn "shiny-eyed" (40 + d 10)
                , OnSmash (Explode "eye shine") ]
@@ -384,28 +386,46 @@ flask13 = flask
                , OnSmash (Explode "waste") ]
   }
 flask14 = flask
-  { irarity  = [(1, 20), (10, 10)]
+  { irarity  = [(1, 15), (10, 5)]
   , ieffects = [ ELabel "of regeneration brew"
                , toOrganNone "regenerating"
                , OnSmash (Explode "youth sprinkle") ]
   }
-flask15 = flask  -- but no flask of Calm depletion, since Calm reduced often
+flask15 = flask
   { ieffects = [ ELabel "of poison"
                , toOrganNone "poisoned"
                , OnSmash (Explode "poison cloud") ]
   }
 flask16 = flask
+  { irarity  = [(1, 15), (10, 5)]
+  , ieffects = [ ELabel "of weak poison"
+               , toOrganNone "weakly poisoned"
+               , OnSmash (Explode "poison cloud") ]
+  }
+flask17 = flask
   { irarity  = [(10, 5)]
   , ieffects = [ ELabel "of slow resistance"
                , toOrganNone "slow resistant"
                , OnSmash (Explode "blast 10")
                , OnSmash (Explode "anti-slow mist") ]
   }
-flask17 = flask
+flask18 = flask
   { irarity  = [(10, 5)]
   , ieffects = [ ELabel "of poison resistance"
                , toOrganNone "poison resistant"
                , OnSmash (Explode "antidote mist") ]
+  }
+flask19 = flask
+  { ieffects = [ ELabel "of blindness"
+               , toOrganGameTurn "blind" (40 + d 10)
+               , OnSmash (Explode "iron filing") ]
+  }
+flask20 = flask
+  { ieffects = [ ELabel "of calamity"
+               , toOrganNone "weakly poisoned"
+               , toOrganGameTurn "weakened" (20 + d 5)
+               , toOrganGameTurn "defenseless" (20 + d 5)
+               , OnSmash (Explode "poison cloud") ]
   }
 
 -- Potions are often natura. Various configurations of effects.
@@ -418,7 +438,7 @@ potion = ItemKind
   , ifreq    = [("useful", 100), ("any vial", 100)]
   , iflavour = zipLiquid brightCol ++ zipPlain brightCol ++ zipFancy brightCol
   , icount   = 1
-  , irarity  = [(1, 12), (10, 9)]
+  , irarity  = [(1, 11), (10, 8)]
   , iverbHit = "splash"
   , iweight  = 200
   , idamage  = toDmg 0
@@ -473,16 +493,21 @@ potion6 = potion
                                 , Explode "blast 20" ]) ]
   }
 potion7 = potion
-  { irarity  = [(1, 15), (10, 5)]
+  { irarity  = [(1, 12), (10, 5)]
   , ieffects = [ DropItem 1 maxBound COrgan "poisoned"
                , OnSmash (Explode "antidote mist") ]
   }
 potion8 = potion
-  { irarity  = [(1, 5), (10, 15)]
+  { irarity  = [(1, 10)]
   , ieffects = [ DropItem 1 maxBound COrgan "temporary condition"
                , OnSmash (Explode "blast 10") ]
   }
 potion9 = potion
+  { irarity  = [(10, 10)]
+  , ieffects = [ DropItem maxBound maxBound COrgan "temporary condition"
+               , OnSmash (Explode "blast 20") ]
+  }
+potion10 = potion
   { ifreq    = [("treasure", 100)]
   , irarity  = [(10, 5)]
   , ieffects = [ Unique, ELabel "of Love", OverfillHP 60
@@ -526,15 +551,15 @@ scroll3 = scroll
   , ieffects = [Ascend False]
   }
 scroll4 = scroll
-  { ieffects = [OneOf [ Teleport 5, RefillCalm 5, Detect 5
-                      , InsertMove 5, Paralyze 20 ]]
+  { ieffects = [OneOf [ Teleport 5, RefillCalm 5, InsertMove 5
+                      , DetectActor 10, DetectItem 10 ]]
   }
 scroll5 = scroll
   { irarity  = [(10, 15)]
   , ieffects = [ Impress
                , OneOf [ Teleport 20, Ascend False, Ascend True
                        , Summon "hero" 1, Summon "mobile animal" 2
-                       , Detect 10, OverfillCalm (-100)
+                       , Detect 20, OverfillCalm (-100)
                        , CreateItem CGround "useful" TimerNone ] ]
   }
 scroll6 = scroll
