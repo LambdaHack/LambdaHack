@@ -602,7 +602,7 @@ sharpeningTool = ItemKind
 seeingItem = ItemKind
   { isymbol  = '%'
   , iname    = "pupil"
-  , ifreq    = [("useful", 100)]
+  , ifreq    = [("useful", 30)]  -- spooky and wierd, so rare
   , iflavour = zipPlain [Red]
   , icount   = 1
   , irarity  = [(1, 1)]
@@ -709,11 +709,12 @@ necklace5 = necklace
   { iaspects = [Timeout $ d 3 + 4 - dl 3 |*| 10]
   , ieffects = [ ELabel "of escape"
                , Recharging (Teleport $ 14 + d 3 * 3)
-               , Recharging (DetectExit 20) ]
+               , Recharging (DetectExit 20)
+               , Recharging (RefillHP (-2)) ]  -- prevent micromanagement
                ++ ieffects necklace
   }
 necklace6 = necklace
-  { iaspects = [Timeout $ d 4 |*| 10]
+  { iaspects = [Timeout $ d 3 + 1 |*| 2]
   , ieffects = [Recharging (PushActor (ThrowMod 100 50))]
                ++ ieffects necklace
   }
