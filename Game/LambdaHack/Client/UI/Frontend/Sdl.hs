@@ -22,6 +22,7 @@ import Data.IORef
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import Data.Word (Word32)
+import System.Directory
 import System.FilePath
 
 import qualified SDL as SDL
@@ -31,9 +32,9 @@ import qualified SDL.TTF as TTF
 import qualified SDL.TTF.FFI as TTF (TTFFont)
 import qualified SDL.Vect as Vect
 
-import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend.Common
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
@@ -78,7 +79,11 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   let title = fromJust stitle
       fontFileName =
         "GameDefinition/fonts" </> maybe "16x16x.fon" T.unpack sdlFontFile
-  fontFile <- Self.getDataFileName fontFileName
+  fontFile <- if isRelative fontFileName
+              then Self.getDataFileName fontFileName
+              else return fontFileName
+  fontFileExists <- doesFileExist fontFile
+  unless fontFileExists $ error $ "Font file does not exist: " ++ fontFile
   let fontSize = fromMaybe 16 sfontSize
       boxSize = fontSize
       xsize = fst normalLevelBound + 1
