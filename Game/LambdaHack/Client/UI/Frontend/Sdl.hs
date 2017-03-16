@@ -189,6 +189,8 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
         let rect = SDL.Rectangle (vp (x * boxSize) (y * boxSize))
                                  (Vect.V2 (toEnum boxSize) (toEnum boxSize))
         SDL.drawRect srenderer $ Just rect
+      fonFile = "fon" `isSuffixOf` maybe (error "sdlFontFile empty")
+                                         T.unpack sdlFontFile
       setChar :: Int -> Word32 -> Word32 -> IO ()
       setChar i w wPrev = unless (w == wPrev) $ do
         atlas <- readIORef satlas
@@ -209,10 +211,12 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
           Nothing -> do
             -- Make all visible floors bold (no bold fold variant for 16x16x,
             -- so only the dot can be bold).
-            let acChar = if fg > Color.BrBlack
-                            && acCharRaw == Char.chr 183
+            let acChar = if fg <= Color.BrBlack
+                            && acCharRaw == Char.chr 183  -- 0xb7
                             && scolorIsBold == Just True  -- only dot but enough
-                         then Char.chr 149
+                         then Char.chr $ if fonFile
+                                         then 7   -- hack
+                                         else 8901  -- 0x22c5
                          else acCharRaw
             textSurface <-
               TTF.renderUTF8Shaded sfont [acChar] (colorToRGBA fg)
