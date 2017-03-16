@@ -173,7 +173,7 @@ instance Binary SessionUI where
     sactorUI <- get
     sslots <- get
     slastSlot <- get
-    sconfig <- get
+    sconfig <- get  -- is overwritten ASAP, but useful for, e.g., crash debug
     saimMode <- get
     sitemSel <- get
     sselected <- get

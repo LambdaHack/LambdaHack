@@ -68,7 +68,8 @@ loopUI copsClient sconfig sdebugCli = do
       handleResponse $ RespUpdAtomic $ UpdResumeServer sCops
       schanF <- getsSession schanF
       sbinding <- getsSession sbinding
-      maybe (return ()) (\sess -> putSession sess {schanF, sbinding}) msess
+      maybe (return ()) (\sess ->
+        putSession sess {schanF, sbinding, sconfig}) msess
       putClient cli {sdebugCli}
       return True
     Just (_, _, msessR) -> do
