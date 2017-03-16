@@ -85,8 +85,11 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   fontFileExists <- doesFileExist fontFile
   unless fontFileExists $ error $ "Font file does not exist: " ++ fontFile
   let fontSize = fromMaybe 16 sfontSize
-      boxSize = fontSize
-      xsize = fst normalLevelBound + 1
+  code <- TTF.init
+  when (code /= 0) $ error $ "init of sdl2-ttf failed with: " ++ show code
+  sfont <- TTF.openFont fontFile fontSize
+  boxSize <- TTF.getFontHeight sfont
+  let xsize = fst normalLevelBound + 1
       ysize = snd normalLevelBound + 4
       screenV2 = SDL.V2 (toEnum $ xsize * boxSize)
                         (toEnum $ ysize * boxSize)
@@ -99,9 +102,6 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   SDL.rendererDrawBlendMode srenderer SDL.$= SDL.BlendNone
   SDL.rendererRenderTarget srenderer SDL.$= Just screenTexture
   SDL.clear srenderer
-  code <- TTF.init
-  when (code /= 0) $ error $ "init of sdl2-ttf failed with: " ++ show code
-  sfont <- TTF.openFont fontFile fontSize
   satlas <- newIORef EM.empty
   spreviousFrame <- newIORef blankSingleFrame
   squitSDL <- newIORef False
@@ -109,7 +109,8 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   let sess = FrontendSession{..}
   rf <- createRawFrontend (display sdebugCli sess) (shutdown sess)
   putMVar rfMVar rf
-  let pointTranslate (SDL.P (SDL.V2 x y)) =
+  let pointTranslate :: forall i. (Enum i) => Vect.Point Vect.V2 i -> Point
+      pointTranslate (SDL.P (SDL.V2 x y)) =
         Point (fromEnum x `div` boxSize) (fromEnum y `div` boxSize)
       storeKeys :: IO ()
       storeKeys = do
@@ -178,9 +179,8 @@ display :: DebugModeCli
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
 display DebugModeCli{..} FrontendSession{..} curFrame = do
+  boxSize <- TTF.getFontHeight sfont
   let xsize = fst normalLevelBound + 1
-      fontSize = fromMaybe 16 sfontSize
-      boxSize = fontSize
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
       drawHighlight x y color = do
         let v4 = let Raw.Color r g b a = colorToRGBA color
