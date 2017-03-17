@@ -10,12 +10,16 @@ games of arbitrary theme, size and complexity. You specify the content
 to be procedurally generated, including game rules and AI behaviour.
 The library lets you compile a ready-to-play game binary, using either
 the supplied or a custom-made main loop. Several frontends are available
-(GTK is the default) and many other generic engine components
-are easily overridden, but the fundamental source of flexibility lies
-in the strict and type-safe separation of code and content and of clients
-(human and AI-controlled) and server. Long-term goals for LambdaHack include
-support for multiplayer tactical squad combat, in-game content creation,
-auto-balancing and persistent content modification based on player behaviour.
+(SDL2 is the default for desktop and DOM is the default for browser)
+and many other generic engine components are easily overridden,
+but the fundamental source of flexibility lies
+in the strict and type-safe separation of code from the content
+and of clients (human and AI-controlled) from the server.
+Please see the changelog file for recent improvements
+and the issue tracker for short-term plans. Long term vision
+revolves around procedural content generation and includes
+in-game content creation, auto-balancing and persistent
+content modification based on player behaviour.
 
 The engine comes with a sample code for a little dungeon crawler,
 called LambdaHack and described in [PLAYING.md](GameDefinition/PLAYING.md).
@@ -65,14 +69,19 @@ Screen and keyboard configuration
 The game UI can be configured via a config file.
 A file with the default settings, the same as built into the binary, is in
 [GameDefinition/config.ui.default](GameDefinition/config.ui.default).
-When the game is run for the first time, the file is copied to the official
-location, which is `~/.LambdaHack/config.ui.ini` on Linux and
-`C:\Users\<username>\AppData\Roaming\LambdaHack\config.ui.ini`
-(or `C:\Documents And Settings\user\Application Data\LambdaHack\config.ui.ini`
+When the game is run for the first time, the file is copied to the default
+user data folder, which is `~/.LambdaHack/` on Linux and
+`C:\Users\<username>\AppData\Roaming\LambdaHack\`
+(or `C:\Documents And Settings\user\Application Data\LambdaHack\`
 or something else altogether) on Windows.
 
 Screen font can be changed and enlarged by editing the config file
-at its official location or by Control-right-clicking on the game window.
+in the user data folder. For a small game window, the highly optimized
+bitmap fonts 16x16x.fon, 8x8x.fon and 8x8xb.fon are the best,
+but for larger window sizes or if you require international characters
+(e.g. to give custom names to player characters), a scalable ttf font
+is the only option. The game winow automatically scales according
+to the specified font size.
 
 If you use the numeric keypad, use the NumLock key on your keyboard
 to toggle the game keyboard mode. With NumLock off, you walk with the numeric
@@ -89,26 +98,30 @@ or you can enable the Vi keys (aka roguelike keys) in the config file.
 Compilation from source
 -----------------------
 
-If you want to compile your own binaries from the source code,
+If you want to compile your own native binaries from the source code,
 use Cabal (already a part of your OS distribution, or available within
 [The Haskell Platform] [7]), which also takes care of all the dependencies.
 
-The recommended frontend for LambdaHack is based SDL2, so you need the SDL2
+The recommended frontend for LambdaHack is based on SDL2, so you need the SDL2
 libraries for your OS. On Linux, remember to install the -dev versions as well,
 e.g., libsdl2-dev and libsdl2-ttf-dev on Ubuntu Linux 16.04.
 
 The latest official version of the LambdaHack library can be downloaded,
-compiled and installed automatically by Cabal from [Hackage] [3] as follows
+compiled for SDL2 and installed automatically by Cabal from [Hackage] [3]
+as follows
 
     cabal update
     cabal install LambdaHack
 
-For a newer snapshot, download source from a development branch
-at [github] [5] and run Cabal from the main directory
+For a newer snapshot, download source of LambdaHack from [github] [5]
+and run Cabal from the main directory
 
     cabal install
 
-To compile with one of the rudimentary terminal frontends,
+There is a line terminal frontend, suitable for teletype terminals
+or a keyboard and a printer, but it's going to use a lot of paper,
+unless you disable animations with `--noAnim`. To compile with this
+or one of the less rudimentary, whole screen terminal frontends,
 use Cabal flags, e.g,
 
     cabal install -fvty
@@ -132,8 +145,8 @@ Control-keypad keys for running seem to work OK, but on rxvt they do not.
 The commands that require pressing Control and Shift together won't
 work either, but fortunately they are not crucial to gameplay.
 For movement, laptop (uk8o79jl) and Vi keys (hjklyubn, if enabled
-in config.ui.ini) should work everywhere. GTK works fine, too, both
-with numeric keypad and with mouse.
+in config.ui.ini) should work everywhere. SDL2 works fine, too, both
+regarding numeric keypad and mouse.
 
 
 Testing and debugging
@@ -141,10 +154,10 @@ Testing and debugging
 
 The [Makefile](Makefile) contains many sample test commands.
 Numerous tests that use the screensaver game modes (AI vs. AI)
-and the dumb `stdout` frontend are gathered in `make test`.
-Of these, travis runs `test-travis-*` on each push to the repo.
+and the teletype frontend are gathered in `make test`.
+Of these, travis runs `test-travis-medium` on each push to the repo.
 Test commands with prefix `frontend` start AI vs. AI games
-with the standard, user-friendly gtk frontend.
+with the standard, user-friendly SDL2 frontend.
 
 Run `LambdaHack --help` to see a brief description of all debug options.
 Of these, `--sniffIn` and `--sniffOut` are very useful (though verbose
@@ -154,9 +167,8 @@ though they mostly overlap with commandline options (and will be totally
 merged at some point).
 
 You can use HPC with the game as follows (details vary according
-to HPC version). A quick manual playing session
-after the automated tests would be in order, as well, since the tests don't
-touch the topmost UI layer.
+to HPC version). A quick manual playing session after the automated tests
+would be in order, as well, since the tests don't touch the topmost UI layer.
 
     cabal clean
     cabal install --enable-coverage
@@ -164,9 +176,9 @@ touch the topmost UI layer.
     hpc report --hpcdir=dist/hpc/dyn/mix/LambdaHack --hpcdir=dist/hpc/dyn/mix/LambdaHack-xxx/ LambdaHack
     hpc markup --hpcdir=dist/hpc/dyn/mix/LambdaHack --hpcdir=dist/hpc/dyn/mix/LambdaHack-xxx/ LambdaHack
 
-Note that debug option `--stopAfter` is required to cleanly terminate
-any automated test. This is needed to gather any HPC info, because HPC
-requires a clean exit to save data files.
+Note that a debug option of the form `--stopAfter*` is required to cleanly
+terminate any automated test. This is needed to gather any HPC info,
+because HPC requires a clean exit to save data files.
 
 
 Further information
@@ -189,7 +201,6 @@ Have fun!
 [7]: http://www.haskell.org/platform
 [8]: https://github.com/tuturto/space-privateers
 [9]: https://github.com/LambdaHack/LambdaHack/wiki/Sample-dungeon-crawler
-
 [10]: https://github.com/AllureOfTheStars/Allure
 [11]: https://github.com/LambdaHack/LambdaHack/releases/latest
 [12]: http://hydra.cryp.to/search?query=LambdaHack

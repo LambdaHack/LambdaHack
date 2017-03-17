@@ -18,7 +18,8 @@ description:   LambdaHack is a game engine library for roguelike games
                on top of the generic content-independent rules
                and compile a ready-to-play game binary, using either
                the supplied or a custom-made main loop.
-               Several frontends are available (GTK is the default)
+               Several frontends are available (SDL2 is the default
+               for desktop and DOM is the default for browser)
                and many other generic engine components are easily overridden,
                but the fundamental source of flexibility lies
                in the strict and type-safe separation of code from the content
@@ -52,7 +53,7 @@ homepage:      http://github.com/LambdaHack/LambdaHack
 bug-reports:   http://github.com/LambdaHack/LambdaHack/issues
 license:       BSD3
 license-file:  LICENSE
-tested-with:   GHC >= 7.10 && < 8.2
+tested-with:   GHC >= 7.10 && <= 8.2
 data-files:    GameDefinition/config.ui.default,
                GameDefinition/fonts/16x16x.fon,
                GameDefinition/fonts/8x8xb.fon,
@@ -60,8 +61,9 @@ data-files:    GameDefinition/config.ui.default,
                GameDefinition/fonts/LICENSE.16x16x,
                GameDefinition/fonts/Fix15Mono-Bold.ttf,
                GameDefinition/fonts/LICENSE.Fix15Mono-Bold,
-               GameDefinition/PLAYING.md, README.md, LICENSE, CREDITS,
-               CHANGELOG.md
+               GameDefinition/PLAYING.md,
+               README.md, CHANGELOG.md,
+               LICENSE, CREDITS
 extra-source-files: GameDefinition/MainMenu.ascii, Makefile
 author:        Andres Loeh, Mikolaj Konarski
 maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>
