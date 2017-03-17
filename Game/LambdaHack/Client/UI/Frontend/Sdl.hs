@@ -22,6 +22,7 @@ import Data.IORef
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import Data.Word (Word32)
+import Foreign.C.Types (CInt)
 import System.Directory
 import System.FilePath
 
@@ -179,8 +180,12 @@ display :: DebugModeCli
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
 display DebugModeCli{..} FrontendSession{..} curFrame = do
+  let v4black = let Raw.Color r g b a = colorToRGBA Color.Black
+                in SDL.V4 r g b a
+  SDL.rendererDrawColor srenderer SDL.$= v4black
   boxSize <- TTF.getFontHeight sfont
   let xsize = fst normalLevelBound + 1
+      vp :: Int -> Int -> Vect.Point Vect.V2 CInt
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
       drawHighlight x y color = do
         let v4 = let Raw.Color r g b a = colorToRGBA color
@@ -189,6 +194,7 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
         let rect = SDL.Rectangle (vp (x * boxSize) (y * boxSize))
                                  (Vect.V2 (toEnum boxSize) (toEnum boxSize))
         SDL.drawRect srenderer $ Just rect
+        SDL.rendererDrawColor srenderer SDL.$= v4black  -- reset back to black
       fonFile = "fon" `isSuffixOf` maybe (error "sdlFontFile empty")
                                          T.unpack sdlFontFile
       setChar :: Int -> Word32 -> Word32 -> IO ()
@@ -227,11 +233,14 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
             return textTexture
           Just textTexture -> return textTexture
         ti <- SDL.queryTexture textTexture
-        let xoff = (boxSize - fromEnum (SDL.textureWidth ti)) `div` 2
+        let box = SDL.Rectangle (vp (x * boxSize) (y * boxSize))
+                                (Vect.V2 (toEnum boxSize) (toEnum boxSize))
+            xoff = (boxSize - fromEnum (SDL.textureWidth ti)) `div` 2
             yoff = (boxSize - fromEnum (SDL.textureHeight ti)) `div` 2
             loc = SDL.Rectangle (vp (x * boxSize + xoff) (y * boxSize + yoff))
                                 (Vect.V2 (SDL.textureWidth ti)
                                          (SDL.textureHeight ti))
+        SDL.fillRect srenderer $ Just box
         SDL.copy srenderer textTexture Nothing (Just loc)
         maybe (return ()) (drawHighlight x y) mlineColor
   takeMVar sdisplayPermitted
