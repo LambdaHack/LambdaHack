@@ -227,7 +227,9 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
             return textTexture
           Just textTexture -> return textTexture
         ti <- SDL.queryTexture textTexture
-        let loc = SDL.Rectangle (vp (x * boxSize) (y * boxSize))
+        let xoff = (boxSize - fromEnum (SDL.textureWidth ti)) `div` 2
+            yoff = (boxSize - fromEnum (SDL.textureHeight ti)) `div` 2
+            loc = SDL.Rectangle (vp (x * boxSize + xoff) (y * boxSize + yoff))
                                 (Vect.V2 (SDL.textureWidth ti)
                                          (SDL.textureHeight ti))
         SDL.copy srenderer textTexture Nothing (Just loc)
