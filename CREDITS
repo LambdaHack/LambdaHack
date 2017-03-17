@@ -10,8 +10,8 @@ Fonts 16x16x.fon, 8x8x.fon and 8x8xb.fon are are taken from
 https://github.com/angband/angband, copyrighted by Leon Marrick,
 Sheldon Simms III and Nick McConnell and released by them under
 GNU GPL version 2. Any further modifications by authors of LambdaHack
-are also released under GNU GPL version 2. See http://www.gnu.org/licenses
-for the text of the license.
+are also released under GNU GPL version 2. The licence file is at
+GameDefinition/fonts/LICENSE.16x16x
 
 Font Fix15Mono-Bold.ttf is a modified version of
 https://github.com/mozilla/Fira/blob/master/ttf/FiraMono-Bold.ttf
