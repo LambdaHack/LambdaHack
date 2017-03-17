@@ -102,7 +102,9 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
                                      SDL.TextureAccessTarget screenV2
   SDL.rendererDrawBlendMode srenderer SDL.$= SDL.BlendNone
   SDL.rendererRenderTarget srenderer SDL.$= Just screenTexture
-  SDL.clear srenderer
+  SDL.clear srenderer  -- clear the texture
+  SDL.rendererRenderTarget srenderer SDL.$= Nothing
+  SDL.copy srenderer screenTexture Nothing Nothing  -- clear the backbuffer
   satlas <- newIORef EM.empty
   spreviousFrame <- newIORef blankSingleFrame
   squitSDL <- newIORef False
