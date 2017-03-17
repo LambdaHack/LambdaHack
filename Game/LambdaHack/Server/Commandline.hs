@@ -43,9 +43,9 @@ debugArgs args = do
         , "  --disableAutoYes  never auto-answer all prompts"
         , "  --noAnim  don't show any animations"
         , "  --savePrefix  prepend the text to all savefile names"
-        , "  --frontendStd  use the dumb stdout/stdin frontend (for benchmarks)"
+        , "  --frontendTeletype  use the line terminal frontend (for tests)"
         , "  --frontendNull  use frontend with no display (for benchmarks)"
-        , "  --frontendLazy  use frontend not even computing display (for benchmarks)"
+        , "  --frontendLazy  use frontend that not even computes frames (for benchmarks)"
         , "  --dbgMsgCli  let clients emit their internal debug messages"
         ]
       parseArgs [] = defDebugModeSer
@@ -123,9 +123,10 @@ debugArgs args = do
         in debugSer { ssavePrefixSer = s
                     , sdebugCli =
                         (sdebugCli debugSer) {ssavePrefixCli = s}}
-      parseArgs ("--frontendStd" : rest) =
+      parseArgs ("--frontendTeletype" : rest) =
         let debugSer = parseArgs rest
-        in debugSer {sdebugCli = (sdebugCli debugSer) {sfrontendStd = True}}
+        in debugSer {sdebugCli = (sdebugCli debugSer)
+                                    {sfrontendTeletype = True}}
       parseArgs ("--frontendNull" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {sfrontendNull = True}}

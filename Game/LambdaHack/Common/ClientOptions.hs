@@ -38,7 +38,7 @@ data DebugModeCli = DebugModeCli
   , saddress          :: !(Maybe Text)
   , ssavePrefixCli    :: !String
       -- ^ Prefix of the save game file name.
-  , sfrontendStd      :: !Bool
+  , sfrontendTeletype :: !Bool
       -- ^ Whether to use the stdout/stdin frontend.
   , sfrontendNull     :: !Bool
       -- ^ Whether to use null (no input/output) frontend.
@@ -67,7 +67,7 @@ defDebugModeCli = DebugModeCli
   , stitle = Nothing
   , saddress = Nothing
   , ssavePrefixCli = "save"
-  , sfrontendStd = False
+  , sfrontendTeletype = False
   , sfrontendNull = False
   , sfrontendLazy = False
   , sdbgMsgCli = False

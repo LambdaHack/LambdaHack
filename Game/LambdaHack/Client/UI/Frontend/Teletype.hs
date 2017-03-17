@@ -1,5 +1,6 @@
--- | Text frontend based on stdin/stdout, intended for bots.
-module Game.LambdaHack.Client.UI.Frontend.Std
+-- | Line terimanl text frontend based on stdin/stdout, intended for logging
+-- tests, but may be used for a teletype terminal, or keyboard and printer.
+module Game.LambdaHack.Client.UI.Frontend.Teletype
   ( startup, frontendName
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -15,9 +16,9 @@ import Control.Concurrent.Async
 import Data.Char (chr, ord)
 import qualified System.IO as SIO
 
-import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend.Common
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
@@ -28,7 +29,7 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | The name of the frontend.
 frontendName :: String
-frontendName = "std"
+frontendName = "teletype"
 
 -- | Set up the frontend input and output.
 startup :: DebugModeCli -> IO RawFrontend

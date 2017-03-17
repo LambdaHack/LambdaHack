@@ -29,11 +29,11 @@ import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
 import Data.Word
 
-import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Frame
 import qualified Game.LambdaHack.Client.UI.Frontend.Chosen as Chosen
 import Game.LambdaHack.Client.UI.Frontend.Common
-import qualified Game.LambdaHack.Client.UI.Frontend.Std as Std
+import qualified Game.LambdaHack.Client.UI.Frontend.Teletype as Teletype
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
@@ -179,7 +179,7 @@ chanFrontendIO :: DebugModeCli -> IO ChanFrontend
 chanFrontendIO sdebugCli = do
   let startup | sfrontendNull sdebugCli = nullStartup
               | sfrontendLazy sdebugCli = lazyStartup
-              | sfrontendStd sdebugCli = Std.startup sdebugCli
+              | sfrontendTeletype sdebugCli = Teletype.startup sdebugCli
               | otherwise = Chosen.startup sdebugCli
       maxFps = fromMaybe defaultMaxFps $ smaxFps sdebugCli
       delta = max 1 $ microInSec `div` maxFps

@@ -141,7 +141,7 @@ library
                       Game.LambdaHack.Client.UI.Frontend
                       Game.LambdaHack.Client.UI.Frontend.Chosen
                       Game.LambdaHack.Client.UI.Frontend.Common
-                      Game.LambdaHack.Client.UI.Frontend.Std
+                      Game.LambdaHack.Client.UI.Frontend.Teletype
                       Game.LambdaHack.Client.UI.HandleHelperM
                       Game.LambdaHack.Client.UI.HandleHumanGlobalM
                       Game.LambdaHack.Client.UI.HandleHumanLocalM
