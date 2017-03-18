@@ -52,33 +52,30 @@ repeatTriple n = ( [CmdMeta]
                  , "voice recorded commands" <+> tshow n <+> "times"
                  , Repeat n )
 
+-- @AimFloor@ is not there, but @AimEnemy@ and @AimItem@ almost make up for it.
 mouseLMB :: CmdTriple
 mouseLMB =
   ( [CmdMouse]
-  , "set x-hair/go to pointer for 25 steps"
+  , "set x-hair to enemy/go to pointer for 25 steps"
   , ByAimMode
       { exploration = ByArea $ common ++  -- exploration mode
           [ (CaMapLeader, grabCmd)
           , (CaMapParty, PickLeaderWithPointer)
           , (CaMap, goToCmd)
-          , (CaLevelNumber, AimAscend 1)
-          , (CaArenaName, MainMenu)
-          , (CaPercentSeen, autoexploreCmd)
-          , (CaCalmGauge, ChooseItemMenu MStats)
-          , (CaHPGauge, Wait) ]
+          , (CaArenaName, Help)
+          , (CaPercentSeen, autoexploreCmd) ]
       , aiming = ByArea $ common ++  -- aiming mode
-          [ (CaMapLeader, grabCmd)
-          , (CaMap, AimPointerEnemy)
-          , (CaLevelNumber, AimAscend 1)
-          , (CaArenaName, Cancel)
-          , (CaPercentSeen, XhairStair True)
-          , (CaCalmGauge, ChooseItemMenu MStats)
-          , (CaHPGauge, Wait) ] } )
+          [ (CaMap, AimPointerEnemy)
+          , (CaArenaName, Accept)
+          , (CaPercentSeen, XhairStair True) ] } )
  where
   common =
     [ (CaMessage, Clear)
+    , (CaLevelNumber, AimAscend 1)
     , (CaXhairDesc, AimEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
+    , (CaCalmGauge, Macro ["KP_5", "C-V"])
+    , (CaHPGauge, Wait)
     , (CaTargetDesc, ChooseItemMenu $ MStore CInv) ]
 
 mouseMMB :: CmdTriple
@@ -89,32 +86,28 @@ mouseMMB = ( [CmdMouse]
 mouseRMB :: CmdTriple
 mouseRMB =
   ( [CmdMouse]
-  , "set leader target/run to pointer collectively for 25 steps"
+  , "fling at enemy/run to pointer collectively for 25 steps"
   , ByAimMode
       { exploration = ByArea $ common ++
           [ (CaMapLeader, dropCmd)
           , (CaMapParty, SelectWithPointer)
           , (CaMap, runToAllCmd)
-          , (CaLevelNumber, AimAscend (-1))
-          , (CaArenaName, Help)
+          , (CaArenaName, MainMenu)
           , (CaPercentSeen, autoexplore25Cmd)
-          , (CaXhairDesc, projectICmd flingTs)
-          , (CaCalmGauge, ChooseItemMenu MLoreItem)
-          , (CaHPGauge, Wait10) ]
+          , (CaTargetDesc, projectICmd flingTs) ]
       , aiming = ByArea $ common ++
-          [ (CaMapLeader, dropCmd)
-          , (CaMap, aimFlingCmd)
-          , (CaLevelNumber, AimAscend (-1))
-          , (CaArenaName, Accept)
+          [ (CaMap, aimFlingCmd)
+          , (CaArenaName, Cancel)
           , (CaPercentSeen, XhairStair False)
-          , (CaXhairDesc, AimFloor)
-          , (CaCalmGauge, ChooseItemMenu MLoreItem)
-          , (CaHPGauge, Wait10) ] } )
+          , (CaTargetDesc, ComposeUnlessError ObjectClear TgtClear) ] } )
  where
   common =
-    [ (CaMessage, Macro ["KP_5", "C-V"])
+    [ (CaMessage, ChooseItemMenu MLoreItem)
+    , (CaLevelNumber, AimAscend (-1))
+    , (CaXhairDesc, AimItem)
     , (CaSelected, SelectWithPointer)
-    , (CaTargetDesc, ChooseItemMenu $ MStore CEqp) ]
+    , (CaCalmGauge, Macro ["C-KP_5", "V"])
+    , (CaHPGauge, Wait10) ]
 
 goToCmd :: HumanCmd
 goToCmd = Macro ["MiddleButtonRelease", "C-semicolon", "C-period", "C-V"]

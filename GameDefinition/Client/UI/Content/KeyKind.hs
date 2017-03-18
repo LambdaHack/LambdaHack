@@ -67,7 +67,7 @@ standardKeys = KeyKind
               , "autoexplore 25 times"
               , autoexplore25Cmd ))
       , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_5", "C-V"]))
-      , ("C-R", ( [CmdMove], "lurk (wait 0.1 of a turn 100 times)"
+      , ("C-R", ( [CmdMove], "lurk (wait 0.1 turn 100 times)"
                 , Macro ["C-KP_5", "V"] ))
       , let triggerClose =
               [ AlterFeature { verb = "close"
@@ -162,11 +162,11 @@ standardKeys = KeyKind
       , ("C-}", ( [CmdAim]
                 , "set x-hair to nearest downstairs"
                 , XhairStair False ))
-      , ("<", ([CmdAim], "switch aiming one level higher" , AimAscend 1))
-      , ("C-<", ( [CmdNoHelp], "switch aiming 10 levels higher"
+      , ("<", ([CmdAim], "move aiming one level higher" , AimAscend 1))
+      , ("C-<", ( [CmdNoHelp], "move aiming 10 levels higher"
                 , AimAscend 10) )
-      , (">", ([CmdAim], "switch aiming one level lower", AimAscend (-1)))
-      , ("C->", ( [CmdNoHelp], "switch aiming 10 levels lower"
+      , (">", ([CmdAim], "move aiming one level lower", AimAscend (-1)))
+      , ("C->", ( [CmdNoHelp], "move aiming 10 levels lower"
                 , AimAscend (-10)) )
       , ("BackSpace" , ( [CmdAim]
                      , "clear chosen object and target"
