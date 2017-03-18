@@ -57,17 +57,17 @@ standardKeys = KeyKind
       -- Terrain exploration and alteration
       , ("semicolon", ( [CmdMove]
                       , "go to crosshair for 25 steps"
-                      , Macro ["C-semicolon", "C-period", "V"] ))
+                      , Macro ["C-semicolon", "C-period", "C-V"] ))
       , ("colon", ( [CmdMove]
                   , "run to crosshair collectively for 25 steps"
-                  , Macro ["C-colon", "C-period", "V"] ))
+                  , Macro ["C-colon", "C-period", "C-V"] ))
       , ("x", ( [CmdMove]
               , "explore nearest unknown spot"
               , autoexploreCmd ))
       , ("X", ( [CmdMove]
               , "autoexplore 25 times"
               , autoexplore25Cmd ))
-      , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_5", "V"]))
+      , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_5", "C-V"]))
       , ("C-R", ( [CmdMove], "lurk (wait 0.1 of a turn 100 times)"
                 , Macro ["C-KP_5", "V"] ))
       , let triggerClose =

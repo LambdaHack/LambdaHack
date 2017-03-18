@@ -105,22 +105,22 @@ mouseRMB =
           , (CaXhairDesc, AimFloor) ] } )
  where
   common =
-    [ (CaMessage, Macro ["KP_5", "V"])
+    [ (CaMessage, Macro ["KP_5", "C-V"])
     , (CaSelected, SelectWithPointer)
     , (CaLeaderStatus, ChooseItemMenu MStats)
     , (CaTargetDesc, ChooseItemMenu $ MStore CEqp) ]
 
 goToCmd :: HumanCmd
-goToCmd = Macro ["MiddleButtonRelease", "C-semicolon", "C-period", "V"]
+goToCmd = Macro ["MiddleButtonRelease", "C-semicolon", "C-period", "C-V"]
 
 runToAllCmd :: HumanCmd
-runToAllCmd = Macro ["MiddleButtonRelease", "C-colon", "C-period", "V"]
+runToAllCmd = Macro ["MiddleButtonRelease", "C-colon", "C-period", "C-V"]
 
 autoexploreCmd :: HumanCmd
-autoexploreCmd = Macro ["C-?", "C-period", "V"]
+autoexploreCmd = Macro ["C-?", "C-period", "C-V"]
 
 autoexplore25Cmd :: HumanCmd
-autoexplore25Cmd = Macro ["'", "C-?", "C-period", "'", "V"]
+autoexplore25Cmd = Macro ["'", "C-?", "C-period", "'", "C-V"]
 
 aimFlingCmd :: HumanCmd
 aimFlingCmd = ComposeIfLocal AimPointerEnemy (projectICmd flingTs)
