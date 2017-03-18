@@ -32,9 +32,9 @@ instance Binary CmdCategory
 
 categoryDescription :: CmdCategory -> Text
 categoryDescription CmdMainMenu = "Main Menu"
-categoryDescription CmdItemMenu = "Item Manipulation Menu"
+categoryDescription CmdItemMenu = "Item Menu commands"
 categoryDescription CmdMove = "Terrain exploration and alteration"
-categoryDescription CmdItem = "Item use"
+categoryDescription CmdItem = "Remaining item-related commands"
 categoryDescription CmdAim = "Aiming"
 categoryDescription CmdMeta = "Assorted"
 categoryDescription CmdMouse = "Mouse"

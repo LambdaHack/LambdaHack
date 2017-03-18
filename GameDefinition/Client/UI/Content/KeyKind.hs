@@ -36,10 +36,9 @@ standardKeys = KeyKind
       , ("Escape", ([CmdMainMenu], "back to playing", Cancel))
 
       -- Item use, 1st part
-      , ("g", addCmdCategory CmdMinimal
-              $ addCmdCategory CmdItemMenu $ grabItems "grab item(s)")
+      , ("g", addCmdCategory CmdMinimal $ grabItems "grab item(s)")
       , ("comma", grabItems "")
-      , ("d", addCmdCategory CmdItemMenu $ dropItems "drop item(s)")
+      , ("d", dropItems "drop item(s)")
       , ("period", dropItems "")
       , ("f", addCmdCategory CmdItemMenu $ projectA flingTs)
       , ("C-f", addCmdCategory CmdItemMenu
@@ -56,10 +55,10 @@ standardKeys = KeyKind
 
       -- Terrain exploration and alteration
       , ("semicolon", ( [CmdMove]
-                      , "go to crosshair for 25 steps"
+                      , "go to x-hair for 25 steps"
                       , Macro ["C-semicolon", "C-period", "C-V"] ))
       , ("colon", ( [CmdMove]
-                  , "run to crosshair collectively for 25 steps"
+                  , "run to x-hair collectively for 25 steps"
                   , Macro ["C-colon", "C-period", "C-V"] ))
       , ("x", ( [CmdMove]
               , "explore nearest unknown spot"
@@ -94,15 +93,12 @@ standardKeys = KeyKind
 
       -- Item use, continued
       , ("^", ( [CmdItem], "sort items by kind and stats", SortSlots))
-      , ("p", addCmdCategory CmdItemMenu
-              $ moveItemTriple [CGround, CEqp, CSha] CInv
-                               "item into inventory" False)
-      , ("e", addCmdCategory CmdItemMenu
-              $ moveItemTriple [CGround, CInv, CSha] CEqp
-                               "item" False)
-      , ("s", addCmdCategory CmdItemMenu
-              $ moveItemTriple [CGround, CInv, CEqp] CSha
-                               "and share item" False)
+      , ("p", moveItemTriple [CGround, CEqp, CSha] CInv
+                             "item into inventory" False)
+      , ("e", moveItemTriple [CGround, CInv, CSha] CEqp
+                             "item" False)
+      , ("s", moveItemTriple [CGround, CInv, CEqp] CSha
+                             "and share item" False)
       , ("P", ( [CmdMinimal, CmdItem]
               , "manage inventory pack of leader"
               , ChooseItemMenu (MStore CInv) ))
@@ -127,15 +123,18 @@ standardKeys = KeyKind
       , ("~", ( [CmdItem]
               , "display known lore"
               , ChooseItemMenu MLoreItem ))
-      , ("q", applyI [ApplyItem { verb = "quaff"
-                                , object = "potion"
-                                , symbol = '!' }])
-      , ("r", applyI [ApplyItem { verb = "read"
-                                , object = "scroll"
-                                , symbol = '?' }])
-      , ("t", projectA [ApplyItem { verb = "throw"
-                                  , object = "missile"
-                                  , symbol = '|' }])
+      , ("q", addCmdCategory CmdItem $ applyI [ApplyItem
+                { verb = "quaff"
+                , object = "potion"
+                , symbol = '!' }])
+      , ("r", addCmdCategory CmdItem $ applyI [ApplyItem
+                { verb = "read"
+                , object = "scroll"
+                , symbol = '?' }])
+      , ("t", addCmdCategory CmdItem $ projectA [ApplyItem
+                { verb = "throw"
+                , object = "missile"
+                , symbol = '|' }])
 --      , ("z", projectA [ApplyItem { verb = "zap"
 --                                  , object = "wand"
 --                                  , symbol = '/' }])
@@ -144,16 +143,16 @@ standardKeys = KeyKind
       , ("KP_Multiply", ( [CmdAim, CmdMinimal]
                         , "cycle x-hair among enemies", AimEnemy ))
       , ("!", ([CmdAim], "", AimEnemy))
-      , ("\\", ([CmdAim], "cycle aiming styles", AimFloor))
       , ("KP_Divide", ([CmdAim], "cycle x-hair among items", AimItem))
       , ("/", ([CmdAim], "", AimItem))
+      , ("\\", ([CmdAim], "cycle aiming modes", AimFloor))
       , ("+", ([CmdAim, CmdMinimal], "swerve the aiming line", EpsIncr True))
       , ("-", ([CmdAim], "unswerve the aiming line", EpsIncr False))
       , ("C-?", ( [CmdAim]
-                , "set crosshair to nearest unknown spot"
+                , "set x-hair to nearest unknown spot"
                 , XhairUnknown ))
       , ("C-I", ( [CmdAim]
-                , "set crosshair to nearest item"
+                , "set x-hair to nearest item"
                 , XhairItem ))
       , ("C-{", ( [CmdAim]
                 , "set x-hair to nearest upstairs"
@@ -161,11 +160,11 @@ standardKeys = KeyKind
       , ("C-}", ( [CmdAim]
                 , "set x-hair to nearest downstairs"
                 , XhairStair False ))
-      , ("<", ([CmdAim], "switch view to one level higher" , AimAscend 1))
-      , ("C-<", ( [CmdNoHelp], "switch view to 10 levels higher"
+      , ("<", ([CmdAim], "switch aiming to one level higher" , AimAscend 1))
+      , ("C-<", ( [CmdNoHelp], "switch aiming to 10 levels higher"
                 , AimAscend 10) )
-      , (">", ([CmdAim], "switch view to one level lower", AimAscend (-1)))
-      , ("C->", ( [CmdNoHelp], "switch view to 10 levels lower"
+      , (">", ([CmdAim], "switch aiming to one level lower", AimAscend (-1)))
+      , ("C->", ( [CmdNoHelp], "switch aiming to 10 levels lower"
                 , AimAscend (-10)) )
       , ("BackSpace" , ( [CmdAim]
                      , "clear chosen object and target"
@@ -211,13 +210,13 @@ standardKeys = KeyKind
       -- Debug and others not to display in help screens
       , ("C-S", ([CmdDebug], "save game", GameSave))
       , ("C-semicolon", ( [CmdNoHelp]
-                        , "move one step towards the crosshair"
+                        , "move one step towards the x-hair"
                         , MoveOnceToXhair ))
       , ("C-colon", ( [CmdNoHelp]
-                    , "run collectively one step towards the crosshair"
+                    , "run collectively one step towards the x-hair"
                     , RunOnceToXhair ))
       , ("C-period", ( [CmdNoHelp]
-                     , "continue towards the crosshair"
+                     , "continue towards the x-hair"
                      , ContinueToXhair ))
       , ("C-comma", ([CmdNoHelp], "run once ahead", RunOnceAhead))
       , ("safe1", ( [CmdInternal]
@@ -233,7 +232,7 @@ standardKeys = KeyKind
                   , "select party member on screen"
                   , SelectWithPointer ))
       , ("safe5", ( [CmdInternal]
-                  , "set crosshair to enemy"
+                  , "set x-hair to enemy"
                   , AimPointerEnemy ))
       , ("safe6", ( [CmdInternal]
                   , "fling at enemy under pointer"

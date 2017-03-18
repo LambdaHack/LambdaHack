@@ -45,7 +45,7 @@ moveItemTriple :: [CStore] -> CStore -> MU.Part -> Bool -> CmdTriple
 moveItemTriple stores1 store2 object auto =
   let verb = MU.Text $ verbCStore store2
       desc = makePhrase [verb, object]
-  in ([CmdItem], desc, MoveItem stores1 store2 Nothing auto)
+  in ([CmdItemMenu], desc, MoveItem stores1 store2 Nothing auto)
 
 repeatTriple :: Int -> CmdTriple
 repeatTriple n = ( [CmdMeta]
@@ -55,7 +55,7 @@ repeatTriple n = ( [CmdMeta]
 mouseLMB :: CmdTriple
 mouseLMB =
   ( [CmdMouse]
-  , "set aiming crosshair/go to pointer for 25 steps"
+  , "set x-hair/go to pointer for 25 steps"
   , ByAimMode
       { exploration = ByArea $ common ++  -- exploration mode
           [ (CaMapLeader, grabCmd)
@@ -80,7 +80,7 @@ mouseLMB =
 
 mouseMMB :: CmdTriple
 mouseMMB = ( [CmdMouse]
-           , "snap aiming crosshair to floor under pointer"
+           , "snap x-hair to floor under pointer"
            , XhairPointerFloor )
 
 mouseRMB :: CmdTriple
@@ -132,7 +132,7 @@ projectICmd ts = ByItemMode
   , chosen = Project ts }
 
 projectI :: [Trigger] -> CmdTriple
-projectI ts = ([CmdItem], descTs ts, projectICmd ts)
+projectI ts = ([], descTs ts, projectICmd ts)
 
 projectA :: [Trigger] -> CmdTriple
 projectA ts = replaceCmd (ByAimMode { exploration = AimTgt
@@ -146,7 +146,7 @@ flingTs = [ApplyItem { verb = "fling"
 applyIK :: [Trigger] -> CmdTriple
 applyIK ts =
   let apply = Apply ts
-  in ([CmdItem], descTs ts, ByItemMode
+  in ([], descTs ts, ByItemMode
        { ts
        , notChosen = ComposeUnlessError (ChooseItemApply ts) apply
        , chosen = apply })
@@ -154,7 +154,7 @@ applyIK ts =
 applyI :: [Trigger] -> CmdTriple
 applyI ts =
   let apply = Compose2ndLocal (Apply ts) ObjectClear
-  in ([CmdItem], descTs ts, ByItemMode
+  in ([], descTs ts, ByItemMode
        { ts
        , notChosen = ComposeUnlessError (ChooseItemApply ts) apply
        , chosen = apply })
@@ -163,13 +163,13 @@ grabCmd :: HumanCmd
 grabCmd = MoveItem [CGround] CEqp (Just "grab") True
 
 grabItems :: Text -> CmdTriple
-grabItems t = ([CmdMove, CmdItem], t, grabCmd)
+grabItems t = ([CmdMove, CmdItemMenu], t, grabCmd)
 
 dropCmd :: HumanCmd
 dropCmd = MoveItem [CEqp, CInv, CSha] CGround Nothing False
 
 dropItems :: Text -> CmdTriple
-dropItems t = ([CmdMove, CmdItem], t, dropCmd)
+dropItems t = ([CmdMove, CmdItemMenu], t, dropCmd)
 
 descTs :: [Trigger] -> Text
 descTs [] = "trigger a thing"

@@ -94,7 +94,7 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
       , "                /|\\            /|\\            /|\\"
       , "               1 2 3          j k l          b j n"
       , ""
-      , "In aiming mode, the same keys (and mouse) move the x-hair (crosshair)."
+      , "In aiming mode, the same keys (and mouse) move the x-hair (aiming crosshair)."
       , "Press 'KP_5' ('5' on keypad, if present) to wait, bracing for impact,"
       , "which reduces any damage taken and prevents displacing by foes. Press"
       , "'C-KP_5' (the same key with Control) to wait 0.1 of a turn, without bracing."
@@ -221,8 +221,10 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
       , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEnd )
     , ( "All terrain exploration and alteration commands."
       , okxs CmdMove [keyCaption] categoryEnd )
+    , ( categoryDescription CmdItemMenu <> "."
+      , okxs CmdItemMenu [keyCaption] categoryEnd )
     , ( categoryDescription CmdItem <> "."
-      , okxs CmdItem [keyCaption] [] )  -- no space: categoryEnd
+      , okxs CmdItem [keyCaption] categoryEnd )
     , ( categoryDescription CmdAim <> "."
       , okxs CmdAim [keyCaption] categoryEnd )
     , ( categoryDescription CmdMeta <> "."
