@@ -40,7 +40,10 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
       moveXhairOr n cmd v = ByAimMode { exploration = cmd v
                                       , aiming = MoveXhair v n }
       cmdAll =
-        rhumanCommands copsClient
+        (if configVi
+         then filter (\(k, _) ->
+           k `notElem` [K.mkKM "period", K.mkKM "C-period"])
+         else id) (rhumanCommands copsClient)
         ++ configCommands
         ++ [ (K.mkKM "KP_Begin", waitTriple)
            , (K.mkKM "C-KP_Begin", wait10Triple)
@@ -93,7 +96,7 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
       , "               1 2 3          j k l          b j n"
       , ""
       , "In aiming mode ('KP_*' or '!') the same keys (and mouse) move the crosshair."
-      , "Press 'KP_5' ('5' on keypad; or 'i' or '.') to wait, bracing for impact,"
+      , "Press 'KP_5' ('5' on keypad, if present) to wait, bracing for impact,"
       , "which reduces any damage taken and prevents displacing by foes."
       , "You displace enemies by running into them with Shift/Control or RMB. Search,"
       , "open, descend and attack by bumping into walls, doors, stairs and enemies."
