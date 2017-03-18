@@ -52,7 +52,8 @@ cmdAction cmd = case cmd of
 
   Wait -> weaveJust <$> Right <$> fmap timedToUI waitHuman
   Wait10 -> weaveJust <$> Right <$> fmap timedToUI waitHuman10
-  MoveDir v -> weaveJust <$> (ReqUITimed <$$> moveRunHuman True True False False v)
+  MoveDir v ->
+    weaveJust <$> (ReqUITimed <$$> moveRunHuman True True False False v)
   RunDir v -> weaveJust <$> (ReqUITimed <$$> moveRunHuman True True True True v)
   RunOnceAhead -> runOnceAheadHuman
   MoveOnceToXhair -> weaveJust <$> (ReqUITimed <$$> moveOnceToXhairHuman)
@@ -63,6 +64,7 @@ cmdAction cmd = case cmd of
   Project ts -> weaveJust <$> (timedToUI <$$> projectHuman ts)
   Apply ts -> weaveJust <$> (timedToUI <$$> applyHuman ts)
   AlterDir ts -> weaveJust <$> (timedToUI <$$> alterDirHuman ts)
+  AlterWithPointer ts -> weaveJust <$> (timedToUI <$$> alterWithPointerHuman ts)
   Help -> helpHuman cmdAction
   ItemMenu -> itemMenuHuman cmdAction
   ChooseItemMenu dialogMode -> chooseItemMenuHuman cmdAction dialogMode

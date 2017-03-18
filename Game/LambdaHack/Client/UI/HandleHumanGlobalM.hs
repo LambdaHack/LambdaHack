@@ -13,7 +13,8 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , waitHuman, waitHuman10, moveRunHuman
   , runOnceAheadHuman, moveOnceToXhairHuman
   , runOnceToXhairHuman, continueToXhairHuman
-  , moveItemHuman, projectHuman, applyHuman, alterDirHuman
+  , moveItemHuman, projectHuman, applyHuman
+  , alterDirHuman, alterWithPointerHuman
   , helpHuman, itemMenuHuman, chooseItemMenuHuman, mainMenuHuman
   , gameDifficultyIncr, gameScenarioIncr
     -- * Global commands that never take time
@@ -836,40 +837,42 @@ alterDirHuman ts = do
 alterTile :: MonadClientUI m
           => [Trigger] -> Vector -> m (FailOrCmd (RequestTimed 'AbAlter))
 alterTile ts dir = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  let tpos = bpos b `shift` dir
+      pText = compassText dir
+  alterTileAtPos ts tpos pText
+
+-- | Try to alter a tile using a feature in at the given position.
+alterTileAtPos :: MonadClientUI m
+               => [Trigger] -> Point -> Text
+               -> m (FailOrCmd (RequestTimed 'AbAlter))
+alterTileAtPos ts tpos pText = do
   cops@Kind.COps{cotile, coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorSk <- actorSkillsClient leader
   lvl <- getLevel $ blid b
   let alterSkill = EM.findWithDefault 0 AbAlter actorSk
-      tpos = bpos b `shift` dir
       t = lvl `at` tpos
-      alterFeats = alterFeatures ts
-      verb1 = case ts of
-        [] -> "alter"
-        tr : _ -> verb tr
-      msg = makeSentence
-              ["you", verb1, MU.Text $ compassText dir]
-  case filter (\feat -> Tile.hasFeature cotile feat t) alterFeats of
+      hasFeat AlterFeature{feature} = Tile.hasFeature cotile feature t
+      hasFeat _ = False
+  case filter hasFeat ts of
     _ : _ | alterSkill < Tile.alterMinSkill coTileSpeedup t ->
       failSer AlterUnskilled
-    [] -> failWith $ guessAlter cops alterFeats t
-    _ : _ ->
+    [] -> failWith $ guessAlter cops ts t
+    tr : _ ->
       if EM.notMember tpos $ lfloor lvl then
         if null (posToAidsLvl tpos lvl) then do
           verAlters <- verifyAlters (blid b) tpos
           case verAlters of
             Right() -> do
+              let msg = makeSentence ["you", verb tr, MU.Text pText]
               msgAdd msg
               return $ Right $ ReqAlter tpos
             Left err -> return $ Left err
         else failSer AlterBlockActor
       else failSer AlterBlockItem
-
-alterFeatures :: [Trigger] -> [TK.Feature]
-alterFeatures [] = []
-alterFeatures (AlterFeature{feature} : ts) = feature : alterFeatures ts
-alterFeatures (_ : ts) = alterFeatures ts
 
 -- | Verify important effects, such as fleeing the dungeon.
 --
@@ -915,14 +918,32 @@ verifyEscape = do
       else return $ Right ()
 
 -- | Guess and report why the bump command failed.
-guessAlter :: Kind.COps -> [TK.Feature] -> Kind.Id TileKind -> Text
-guessAlter Kind.COps{cotile} (TK.OpenTo _ : _) t
+guessAlter :: Kind.COps -> [Trigger] -> Kind.Id TileKind -> Text
+guessAlter Kind.COps{cotile} (AlterFeature{feature=TK.OpenTo _} : _) t
   | Tile.isClosable cotile t = "already open"
-guessAlter _ (TK.OpenTo _ : _) _ = "cannot be opened"
-guessAlter Kind.COps{cotile} (TK.CloseTo _ : _) t
+guessAlter _ (AlterFeature{feature=TK.OpenTo _} : _) _ = "cannot be opened"
+guessAlter Kind.COps{cotile} (AlterFeature{feature=TK.CloseTo _} : _) t
   | Tile.isOpenable cotile t = "already closed"
-guessAlter _ (TK.CloseTo _ : _) _ = "cannot be closed"
+guessAlter _ (AlterFeature{feature=TK.CloseTo _} : _) _ = "cannot be closed"
 guessAlter _ _ _ = "never mind"
+
+-- * AlterWithPointer
+
+-- | Try to alter a tile using a feature under the pointer.
+alterWithPointerHuman :: MonadClientUI m
+                      => [Trigger] -> m (FailOrCmd (RequestTimed 'AbAlter))
+alterWithPointerHuman ts = do
+  lidV <- viewedLevelUI
+  Level{lxsize, lysize} <- getLevel lidV
+  Point{..} <- getsSession spointer
+  if px >= 0 && py - mapStartY >= 0
+     && px < lxsize && py - mapStartY < lysize
+  then do
+    let tpos = Point px (py - mapStartY)
+    alterTileAtPos ts tpos "the door"
+  else do
+    stopPlayBack
+    failWith "never mind"
 
 -- * Help
 

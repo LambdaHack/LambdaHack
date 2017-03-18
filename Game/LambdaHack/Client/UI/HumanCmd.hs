@@ -107,6 +107,7 @@ data HumanCmd =
   | Project ![Trigger]
   | Apply ![Trigger]
   | AlterDir ![Trigger]
+  | AlterWithPointer ![Trigger]
   | Help
   | ItemMenu
   | MainMenu
@@ -165,9 +166,10 @@ instance NFData HumanCmd
 instance Binary HumanCmd
 
 -- | Commands that are forbidden on a remote level, because they
--- would usually take time when invoked on one.
--- Note that some commands that take time are not included,
--- because they don't take time in aiming mode.
+-- would usually take time when invoked on one, but not necessarily do
+-- what the player expects. Note that some commands that normally take time
+-- are not included, because they don't take time in aiming mode
+-- or their individual sanity conditions include a remote level check.
 noRemoteHumanCmd :: HumanCmd -> Bool
 noRemoteHumanCmd cmd = case cmd of
   Wait          -> True
@@ -175,10 +177,11 @@ noRemoteHumanCmd cmd = case cmd of
   MoveItem{}    -> True
   Apply{}       -> True
   AlterDir{}    -> True
+  AlterWithPointer{} -> True
   MoveOnceToXhair -> True
-  RunOnceToXhair  -> True
+  RunOnceToXhair -> True
   ContinueToXhair -> True
-  _             -> False
+  _ -> False
 
 data Trigger =
     ApplyItem {verb :: !MU.Part, object :: !MU.Part, symbol :: !Char}

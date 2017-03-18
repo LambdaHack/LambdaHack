@@ -131,7 +131,7 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
       , "Below is a general overview, including not only left and right,"
       , "but also the optional middle mouse button (MMB) and the mouse wheel."
       , "For mice without RMB, one can use C-LMB (Control key and left mouse button)"
-      , "as well as double-click of LMB (SDL2 frontend)."
+      , "as well as double-click of LMB (SDL2 frontend only)."
       , ""
       ]
     mouseBasicsEnding =
@@ -148,7 +148,7 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
       , "Press PGUP or scroll the mouse wheel to return to previous pages"
       , "and press SPACE or ESC to see the map again."
       ]
-    keyL = 11
+    keyL = 12
     pickLeaderDescription =
       [ fmt keyL "0, 1 ... 6" "pick a particular actor as the new leader"
       ]
