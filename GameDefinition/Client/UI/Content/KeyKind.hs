@@ -11,7 +11,6 @@ import Game.LambdaHack.Common.Prelude
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Common.Misc
-import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Description of default key-command bindings.
 --
@@ -69,27 +68,9 @@ standardKeys = KeyKind
       , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_5", "C-V"]))
       , ("C-R", ( [CmdMove], "lurk (wait 0.1 turn 100 times)"
                 , Macro ["C-KP_5", "V"] ))
-      , let triggerClose =
-              [ AlterFeature { verb = "close"
-                             , object = "door"
-                             , feature =
-                                 TK.CloseTo "closed vertical door Lit" }
-              , AlterFeature { verb = "close"
-                             , object = "door"
-                             , feature =
-                                 TK.CloseTo "closed horizontal door Lit" }
-              , AlterFeature { verb = "close"
-                             , object = "door"
-                             , feature =
-                                 TK.CloseTo "closed vertical door Dark" }
-              , AlterFeature { verb = "close"
-                             , object = "door"
-                             , feature =
-                                 TK.CloseTo "closed horizontal door Dark" }
-              ]
-        in ("c", ( [CmdMove, CmdMinimal]
-                 , descTs triggerClose
-                 , AlterDir triggerClose ))
+      , ("c", ( [CmdMove, CmdMinimal]
+              , descTs closeDoorTriggers
+              , AlterDir closeDoorTriggers ))
 
       -- Item use, continued
       , ("^", ( [CmdItem], "sort items by kind and stats", SortSlots))
@@ -200,9 +181,12 @@ standardKeys = KeyKind
 
       -- Mouse
       , ("LeftButtonRelease", mouseLMB)
-      , ( "C-LeftButtonRelease"
-        , replaceDesc "" $ addCmdCategory CmdNoHelp mouseRMB)  -- Mac convention
       , ("RightButtonRelease", mouseRMB)
+      , ("C-LeftButtonRelease", replaceDesc "" $ mouseRMB)  -- Mac convention
+      , ( "C-RightButtonRelease"
+        , ( [CmdMouse]
+          , "open or close door"
+          , AlterWithPointer $ closeDoorTriggers ++ openDoorTriggers ) )
       , ("MiddleButtonRelease", mouseMMB)
       , ("WheelNorth", ([CmdMouse], "swerve the aiming line", Macro ["+"]))
       , ("WheelSouth", ([CmdMouse], "unswerve the aiming line", Macro ["-"]))
