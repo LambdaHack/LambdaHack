@@ -237,13 +237,18 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
         ti <- SDL.queryTexture textTexture
         let box = SDL.Rectangle (vp (x * boxSize) (y * boxSize))
                                 (Vect.V2 (toEnum boxSize) (toEnum boxSize))
-            xoff = (boxSize - fromEnum (SDL.textureWidth ti)) `div` 2
-            yoff = (boxSize - fromEnum (SDL.textureHeight ti)) `div` 2
-            loc = SDL.Rectangle (vp (x * boxSize + xoff) (y * boxSize + yoff))
-                                (Vect.V2 (SDL.textureWidth ti)
-                                         (SDL.textureHeight ti))
+            width = min boxSize $ fromEnum $ SDL.textureWidth ti
+            height = min boxSize $ fromEnum $ SDL.textureHeight ti
+            xsrc = max 0 (fromEnum (SDL.textureWidth ti) - width) `divUp` 2
+            ysrc = max 0 (fromEnum (SDL.textureHeight ti) - height) `div` 2
+            srcR = SDL.Rectangle (vp xsrc ysrc)
+                                 (Vect.V2 (toEnum width) (toEnum height))
+            xtgt = (boxSize - width) `div` 2
+            ytgt = (boxSize - height) `div` 2
+            tgtR = SDL.Rectangle (vp (x * boxSize + xtgt) (y * boxSize + ytgt))
+                                 (Vect.V2 (toEnum width) (toEnum height))
         SDL.fillRect srenderer $ Just box
-        SDL.copy srenderer textTexture Nothing (Just loc)
+        SDL.copy srenderer textTexture (Just srcR) (Just tgtR)
         maybe (return ()) (drawHighlight x y) mlineColor
   takeMVar sdisplayPermitted
   prevFrame <- readIORef spreviousFrame
