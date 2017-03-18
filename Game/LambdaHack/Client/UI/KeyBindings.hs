@@ -12,11 +12,11 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 
-import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.ItemSlot
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.Slideshow
 import qualified Game.LambdaHack.Common.Color as Color
@@ -92,9 +92,9 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
       , "                /|\\            /|\\            /|\\"
       , "               1 2 3          j k l          b j n"
       , ""
-      , "In aiming mode (KEYPAD_* or !) the same keys (or mouse) move the crosshair."
-      , "Press 'KEYPAD_5' (or 'i' or '.') to wait, bracing for impact, which reduces"
-      , "any damage taken and makes it impossible for foes to displace you."
+      , "In aiming mode ('KP_*' or '!') the same keys (and mouse) move the crosshair."
+      , "Press 'KP_5' ('5' on keypad; or 'i' or '.') to wait, bracing for impact,"
+      , "which reduces any damage taken and prevents displacing by foes."
       , "You displace enemies by running into them with Shift/Control or RMB. Search,"
       , "open, descend and attack by bumping into walls, doors, stairs and enemies."
       , "The best item to attack with is automatically chosen from among"
@@ -103,11 +103,12 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
       , "Press SPACE or scroll the mouse wheel to see the minimal command set."
       ]
     minimalBlurb =
-      [ "Together with the basic commands above, the following set lets you accomplish"
-      , "anything in the game, though not necessarily with the fewest number of"
-      , "keystrokes. You can also play the game exclusively with a mouse, or both"
-      , "mouse and keyboard. See the ending help screens for mouse commands."
-      , "Lastly, you can select a command directly from the help screens."
+      [ "The following commands, joined with the basic set above, let you accomplish"
+      , "anything in the game, though not necessarily with the fewest keystrokes."
+      , "You can also play the game exclusively with a mouse, or both mouse and"
+      , "keyboard. See the ending help screens for mouse commands."
+      , "Lastly, you can select a command with arrows or mouse directly from a help"
+      , "screen and execute it on the spot."
       , ""
       ]
     casualEnding =

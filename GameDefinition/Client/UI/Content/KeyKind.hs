@@ -38,9 +38,9 @@ standardKeys = KeyKind
       -- Item use, 1st part
       , ("g", addCmdCategory CmdMinimal
               $ addCmdCategory CmdItemMenu $ grabItems "grab item(s)")
-      , ("comma", addCmdCategory CmdNoHelp $ grabItems "")
+      , ("comma", grabItems "")
       , ("d", addCmdCategory CmdItemMenu $ dropItems "drop item(s)")
-      , ("period", addCmdCategory CmdNoHelp $ dropItems "")
+      , ("period", dropItems "")
       , ("f", addCmdCategory CmdItemMenu $ projectA flingTs)
       , ("C-f", addCmdCategory CmdItemMenu
                    $ replaceDesc "fling without aiming" $ projectI flingTs)
@@ -49,7 +49,7 @@ standardKeys = KeyKind
                 , object = "consumable"
                 , symbol = ' ' }])
       , ("C-a", addCmdCategory CmdItemMenu
-                $ replaceDesc "apply and keep object" $ applyIK [ApplyItem
+                $ replaceDesc "apply and keep choice" $ applyIK [ApplyItem
                   { verb = "apply"
                   , object = "consumable"
                   , symbol = ' ' }])
@@ -69,7 +69,7 @@ standardKeys = KeyKind
               , autoexplore25Cmd ))
       , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_5", "V"]))
       , ("C-R", ( [CmdMove], "lurk (1/10th wait 100 times)"
-                   , Macro ["C-KP_5", "V"]) )
+                , Macro ["C-KP_5", "V"] ))
       , let triggerClose =
               [ AlterFeature { verb = "close"
                              , object = "door"
@@ -118,15 +118,15 @@ standardKeys = KeyKind
       , ("A", ( [CmdItem]
               , "manage all owned items"
               , ChooseItemMenu MOwned ))
-      , ("~", ( [CmdItem]
-              , "display known lore"
-              , ChooseItemMenu MLoreItem ))
       , ("@", ( [CmdItem]
               , "describe organs of the leader"
               , ChooseItemMenu (MStore COrgan) ))
       , ("#", ( [CmdItem]
               , "show stat summary of the leader"
               , ChooseItemMenu MStats ))
+      , ("~", ( [CmdItem]
+              , "display known lore"
+              , ChooseItemMenu MLoreItem ))
       , ("q", applyI [ApplyItem { verb = "quaff"
                                 , object = "potion"
                                 , symbol = '!' }])
@@ -178,15 +178,15 @@ standardKeys = KeyKind
 
       -- Assorted
       , ("space", ( [CmdMinimal, CmdMeta]
-                  , "clear messages/display history", Clear) )
+                  , "clear messages/display history", Clear ))
       , ("?", ([CmdMeta], "display Help", Help))
-      , ("F1", ([CmdNoHelp], "", Help))
+      , ("F1", ([CmdMeta], "", Help))
       , ("Tab", ( [CmdMeta]
                 , "cycle among party members on the level"
                 , MemberCycle ))
-      , ("ISO_Left_Tab", ( [CmdMeta, CmdMinimal]
-                         , "cycle among all party members"
-                         , MemberBack ))
+      , ("BackTab", ( [CmdMeta, CmdMinimal]
+                  , "cycle among all party members"
+                  , MemberBack ))
       , ("=", ( [CmdMinimal, CmdMeta]
               , "select (or deselect) party member", SelectActor) )
       , ("_", ([CmdMeta], "deselect (or select) all on the level", SelectNone))

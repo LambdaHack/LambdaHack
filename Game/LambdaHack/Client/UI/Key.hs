@@ -314,6 +314,7 @@ keyTranslate "space"         = Space
 keyTranslate "SPACE"         = Space
 keyTranslate "Tab"           = Tab
 keyTranslate "TAB"           = Tab
+keyTranslate "BackTab"       = BackTab
 keyTranslate "ISO_Left_Tab"  = BackTab
 keyTranslate "BackSpace"     = BackSpace
 keyTranslate "BACKSPACE"     = BackSpace
