@@ -20,8 +20,8 @@ import GHC.Generics (Generic)
 import System.FilePath
 import Text.Read
 
-import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.HumanCmd
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
@@ -39,6 +39,8 @@ data Config = Config
   , configLaptop        :: !Bool  -- ^ because the laptop keys are the default
   , configGtkFontFamily :: !Text
   , configSdlFontFile   :: !Text
+  , configSdlTtfSizeAdd :: !Int
+  , configSdlFonSizeAdd :: !Int
   , configFontSize      :: !Int
   , configColorIsBold   :: !Bool
   , configHistoryMax    :: !Int
@@ -85,6 +87,8 @@ parseConfig cfg =
       configLaptop = not configVi && getOption "movementLaptopKeys_uk8o79jl"
       configGtkFontFamily = getOption "gtkFontFamily"
       configSdlFontFile = getOption "sdlFontFile"
+      configSdlTtfSizeAdd = getOption "sdlTtfSizeAdd"
+      configSdlFonSizeAdd = getOption "sdlFonSizeAdd"
       configFontSize = getOption "fontSize"
       configColorIsBold = getOption "colorIsBold"
       configHistoryMax = getOption "historyMax"
@@ -122,6 +126,10 @@ applyConfigToDebug Kind.COps{corule} sconfig sdebugCli =
         sgtkFontFamily dbg `mplus` Just (configGtkFontFamily sconfig)}) .
      (\dbg -> dbg {sdlFontFile =
         sdlFontFile dbg `mplus` Just (configSdlFontFile sconfig)}) .
+     (\dbg -> dbg {sdlTtfSizeAdd =
+        sdlTtfSizeAdd dbg `mplus` Just (configSdlTtfSizeAdd sconfig)}) .
+     (\dbg -> dbg {sdlFonSizeAdd =
+        sdlFonSizeAdd dbg `mplus` Just (configSdlFonSizeAdd sconfig)}) .
      (\dbg -> dbg {sfontSize =
         sfontSize dbg `mplus` Just (configFontSize sconfig)}) .
      (\dbg -> dbg {scolorIsBold =

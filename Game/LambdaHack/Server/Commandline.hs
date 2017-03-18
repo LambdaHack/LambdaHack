@@ -36,9 +36,12 @@ debugArgs args = do
         , "  --setMainRng s  set the main game RNG seed to string s"
         , "  --dumpInitRngs  dump RNG states from the start of the game"
         , "  --dbgMsgSer  let the server emit its internal debug messages"
-        , "  --fontFamily s  use the given font family for the main game window"
+        , "  --gtkFontFamily s  use the given font family for the main game window in GTK"
+        , "  --sdlFontFile s  use the given font file for the main game window in SDL2"
+        , "  --sdlTtfSizeAdd s  enlarge map cells on top of .ttf font max height in SDL2"
+        , "  --sdlFonSizeAdd s  enlarge map cells on top of .fon font max height in SDL2"
         , "  --fontSize s  use the given font size for the main game window"
-        , "  --noColorIsBold  don't use bold attribute for colorful characters"
+        , "  --noColorIsBold  refrain from making some bright color characters bolder"
         , "  --maxFps n  display at most n frames per second"
         , "  --disableAutoYes  never auto-answer all prompts"
         , "  --noAnim  don't show any animations"
@@ -100,6 +103,14 @@ debugArgs args = do
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {sdlFontFile =
                                                          Just $ T.pack s}}
+      parseArgs ("--sdlTtfSizeAdd" : s : rest) =
+        let debugSer = parseArgs rest
+        in debugSer {sdebugCli = (sdebugCli debugSer) {sdlTtfSizeAdd =
+                                                         Just $ read s}}
+      parseArgs ("--sdlFonSizeAdd" : s : rest) =
+        let debugSer = parseArgs rest
+        in debugSer {sdebugCli = (sdebugCli debugSer) {sdlFonSizeAdd =
+                                                         Just $ read s}}
       parseArgs ("--fontSize" : s : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {sfontSize =

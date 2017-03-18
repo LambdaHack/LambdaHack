@@ -16,6 +16,10 @@ data DebugModeCli = DebugModeCli
       -- ^ Font family to use for the GTK main game window.
   , sdlFontFile       :: !(Maybe Text)
       -- ^ Font file to use for the SDL2 main game window.
+  , sdlTtfSizeAdd     :: !(Maybe Int)
+      -- ^ Pixels to add to map cells on top of .ttf font max glyph height.
+  , sdlFonSizeAdd     :: !(Maybe Int)
+      -- ^ Pixels to add to map cells on top of .fon font max glyph height.
   , sfontSize         :: !(Maybe Int)
       -- ^ Font size to use for the main game window.
   , scolorIsBold      :: !(Maybe Bool)
@@ -57,6 +61,8 @@ defDebugModeCli :: DebugModeCli
 defDebugModeCli = DebugModeCli
   { sgtkFontFamily = Nothing
   , sdlFontFile = Nothing
+  , sdlTtfSizeAdd = Nothing
+  , sdlFonSizeAdd = Nothing
   , sfontSize = Nothing
   , scolorIsBold = Nothing
   , smaxFps = Nothing

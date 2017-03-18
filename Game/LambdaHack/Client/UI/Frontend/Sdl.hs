@@ -89,7 +89,10 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   code <- TTF.init
   when (code /= 0) $ error $ "init of sdl2-ttf failed with: " ++ show code
   sfont <- TTF.openFont fontFile fontSize
-  boxSize <- TTF.getFontHeight sfont
+  let fonFile = "fon" `isSuffixOf` maybe "16x16x.fon" T.unpack sdlFontFile
+      sdlSizeAdd = fromMaybe 0
+                   $ if fonFile then sdlFonSizeAdd else sdlTtfSizeAdd
+  boxSize <- (+ sdlSizeAdd) <$> TTF.getFontHeight sfont
   let xsize = fst normalLevelBound + 1
       ysize = snd normalLevelBound + 4
       screenV2 = SDL.V2 (toEnum $ xsize * boxSize)
@@ -182,10 +185,13 @@ display :: DebugModeCli
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
 display DebugModeCli{..} FrontendSession{..} curFrame = do
-  let v4black = let Raw.Color r g b a = colorToRGBA Color.Black
+  let fonFile = "fon" `isSuffixOf` maybe "16x16x.fon" T.unpack sdlFontFile
+      sdlSizeAdd = fromMaybe 0
+                   $ if fonFile then sdlFonSizeAdd else sdlTtfSizeAdd
+      v4black = let Raw.Color r g b a = colorToRGBA Color.Black
                 in SDL.V4 r g b a
   SDL.rendererDrawColor srenderer SDL.$= v4black
-  boxSize <- TTF.getFontHeight sfont
+  boxSize <- (+ sdlSizeAdd) <$> TTF.getFontHeight sfont
   let xsize = fst normalLevelBound + 1
       vp :: Int -> Int -> Vect.Point Vect.V2 CInt
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
@@ -197,8 +203,6 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
                                  (Vect.V2 (toEnum boxSize) (toEnum boxSize))
         SDL.drawRect srenderer $ Just rect
         SDL.rendererDrawColor srenderer SDL.$= v4black  -- reset back to black
-      fonFile = "fon" `isSuffixOf` maybe (error "sdlFontFile empty")
-                                         T.unpack sdlFontFile
       setChar :: Int -> Word32 -> Word32 -> IO ()
       setChar i w wPrev = unless (w == wPrev) $ do
         atlas <- readIORef satlas
@@ -239,11 +243,11 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
                                 (Vect.V2 (toEnum boxSize) (toEnum boxSize))
             width = min boxSize $ fromEnum $ SDL.textureWidth ti
             height = min boxSize $ fromEnum $ SDL.textureHeight ti
-            xsrc = max 0 (fromEnum (SDL.textureWidth ti) - width) `divUp` 2
+            xsrc = max 0 (fromEnum (SDL.textureWidth ti) - width) `div` 2
             ysrc = max 0 (fromEnum (SDL.textureHeight ti) - height) `div` 2
             srcR = SDL.Rectangle (vp xsrc ysrc)
                                  (Vect.V2 (toEnum width) (toEnum height))
-            xtgt = (boxSize - width) `div` 2
+            xtgt = (boxSize - width) `divUp` 2
             ytgt = (boxSize - height) `div` 2
             tgtR = SDL.Rectangle (vp (x * boxSize + xtgt) (y * boxSize + ytgt))
                                  (Vect.V2 (toEnum width) (toEnum height))
