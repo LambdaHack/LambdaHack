@@ -43,7 +43,7 @@ standardKeys = KeyKind
       , ("period", dropItems "")
       , ("f", addCmdCategory CmdItemMenu $ projectA flingTs)
       , ("C-f", addCmdCategory CmdItemMenu
-                   $ replaceDesc "fling without aiming" $ projectI flingTs)
+                $ replaceDesc "fling without aiming" $ projectI flingTs)
       , ("a", addCmdCategory CmdItemMenu $ applyI [ApplyItem
                 { verb = "apply"
                 , object = "consumable"
@@ -68,7 +68,7 @@ standardKeys = KeyKind
               , "autoexplore 25 times"
               , autoexplore25Cmd ))
       , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_5", "V"]))
-      , ("C-R", ( [CmdMove], "lurk (1/10th wait 100 times)"
+      , ("C-R", ( [CmdMove], "lurk (wait 0.1 of a turn 100 times)"
                 , Macro ["C-KP_5", "V"] ))
       , let triggerClose =
               [ AlterFeature { verb = "close"
@@ -141,7 +141,8 @@ standardKeys = KeyKind
 --                                  , symbol = '/' }])
 
       -- Aiming
-      , ("KP_Multiply", ([CmdAim], "cycle x-hair among enemies", AimEnemy))
+      , ("KP_Multiply", ( [CmdAim, CmdMinimal]
+                        , "cycle x-hair among enemies", AimEnemy ))
       , ("!", ([CmdAim], "", AimEnemy))
       , ("\\", ([CmdAim], "cycle aiming styles", AimFloor))
       , ("KP_Divide", ([CmdAim], "cycle x-hair among items", AimItem))
@@ -149,26 +150,26 @@ standardKeys = KeyKind
       , ("+", ([CmdAim, CmdMinimal], "swerve the aiming line", EpsIncr True))
       , ("-", ([CmdAim], "unswerve the aiming line", EpsIncr False))
       , ("C-?", ( [CmdAim]
-                   , "set crosshair to nearest unknown spot"
-                   , XhairUnknown ))
+                , "set crosshair to nearest unknown spot"
+                , XhairUnknown ))
       , ("C-I", ( [CmdAim]
-                   , "set crosshair to nearest item"
-                   , XhairItem ))
+                , "set crosshair to nearest item"
+                , XhairItem ))
       , ("C-{", ( [CmdAim]
-                   , "set x-hair to nearest upstairs"
-                   , XhairStair True ))
+                , "set x-hair to nearest upstairs"
+                , XhairStair True ))
       , ("C-}", ( [CmdAim]
-                   , "set x-hair to nearest downstairs"
-                   , XhairStair False ))
+                , "set x-hair to nearest downstairs"
+                , XhairStair False ))
       , ("<", ([CmdAim], "switch view to one level higher" , AimAscend 1))
       , ("C-<", ( [CmdNoHelp], "switch view to 10 levels higher"
-                   , AimAscend 10) )
+                , AimAscend 10) )
       , (">", ([CmdAim], "switch view to one level lower", AimAscend (-1)))
       , ("C->", ( [CmdNoHelp], "switch view to 10 levels lower"
-                   , AimAscend (-10)) )
+                , AimAscend (-10)) )
       , ("BackSpace" , ( [CmdAim]
-                       , "clear chosen object and target"
-                       , ComposeUnlessError ObjectClear TgtClear ))
+                     , "clear chosen object and target"
+                     , ComposeUnlessError ObjectClear TgtClear ))
       , ("Escape", ( [CmdAim, CmdMinimal]
                    , "cancel aiming/open Main Menu"
                    , ByAimMode {exploration = MainMenu, aiming = Cancel} ))
@@ -210,14 +211,14 @@ standardKeys = KeyKind
       -- Debug and others not to display in help screens
       , ("C-S", ([CmdDebug], "save game", GameSave))
       , ("C-semicolon", ( [CmdNoHelp]
-                           , "move one step towards the crosshair"
-                           , MoveOnceToXhair ))
+                        , "move one step towards the crosshair"
+                        , MoveOnceToXhair ))
       , ("C-colon", ( [CmdNoHelp]
-                       , "run collectively one step towards the crosshair"
-                       , RunOnceToXhair ))
+                    , "run collectively one step towards the crosshair"
+                    , RunOnceToXhair ))
       , ("C-period", ( [CmdNoHelp]
-                        , "continue towards the crosshair"
-                        , ContinueToXhair ))
+                     , "continue towards the crosshair"
+                     , ContinueToXhair ))
       , ("C-comma", ([CmdNoHelp], "run once ahead", RunOnceAhead))
       , ("safe1", ( [CmdInternal]
                   , "go to pointer for 25 steps"
