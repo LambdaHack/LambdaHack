@@ -129,10 +129,13 @@ areaToRectangles ca = case ca of
                  in return [(x, y, fst normalLevelBound, y)]
   CaSelected -> let y = snd normalLevelBound + 3
                     x = fst normalLevelBound `div` 2
-                in return [(0, y, x - 22, y)]
-  CaLeaderStatus -> let y = snd normalLevelBound + 3
-                        x = fst normalLevelBound `div` 2
-                    in return [(x - 20, y, x, y)]
+                in return [(0, y, x - 24, y)]
+  CaCalmGauge -> let y = snd normalLevelBound + 3
+                     x = fst normalLevelBound `div` 2
+                 in return [(x - 22, y, x - 11, y)]
+  CaHPGauge -> let y = snd normalLevelBound + 3
+                   x = fst normalLevelBound `div` 2
+               in return [(x - 9, y, x, y)]
   CaTargetDesc -> let y = snd normalLevelBound + 3
                       x = fst normalLevelBound `div` 2 + 2
                   in return [(x, y, fst normalLevelBound, y)]

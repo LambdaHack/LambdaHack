@@ -63,19 +63,22 @@ mouseLMB =
           , (CaMap, goToCmd)
           , (CaLevelNumber, AimAscend 1)
           , (CaArenaName, MainMenu)
-          , (CaPercentSeen, autoexploreCmd) ]
+          , (CaPercentSeen, autoexploreCmd)
+          , (CaCalmGauge, ChooseItemMenu MStats)
+          , (CaHPGauge, Wait) ]
       , aiming = ByArea $ common ++  -- aiming mode
-          [ (CaMapLeader, AimAscend 1)
+          [ (CaMapLeader, grabCmd)
           , (CaMap, AimPointerEnemy)
           , (CaLevelNumber, AimAscend 1)
           , (CaArenaName, Cancel)
-          , (CaPercentSeen, XhairStair True) ] } )
+          , (CaPercentSeen, XhairStair True)
+          , (CaCalmGauge, ChooseItemMenu MStats)
+          , (CaHPGauge, Wait) ] } )
  where
   common =
     [ (CaMessage, Clear)
     , (CaXhairDesc, AimEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
-    , (CaLeaderStatus, ChooseItemMenu $ MStore COrgan)
     , (CaTargetDesc, ChooseItemMenu $ MStore CInv) ]
 
 mouseMMB :: CmdTriple
@@ -95,19 +98,22 @@ mouseRMB =
           , (CaLevelNumber, AimAscend (-1))
           , (CaArenaName, Help)
           , (CaPercentSeen, autoexplore25Cmd)
-          , (CaXhairDesc, projectICmd flingTs) ]
+          , (CaXhairDesc, projectICmd flingTs)
+          , (CaCalmGauge, ChooseItemMenu MLoreItem)
+          , (CaHPGauge, Wait10) ]
       , aiming = ByArea $ common ++
-          [ (CaMapLeader, AimAscend (-1))
+          [ (CaMapLeader, dropCmd)
           , (CaMap, aimFlingCmd)
           , (CaLevelNumber, AimAscend (-1))
           , (CaArenaName, Accept)
           , (CaPercentSeen, XhairStair False)
-          , (CaXhairDesc, AimFloor) ] } )
+          , (CaXhairDesc, AimFloor)
+          , (CaCalmGauge, ChooseItemMenu MLoreItem)
+          , (CaHPGauge, Wait10) ] } )
  where
   common =
     [ (CaMessage, Macro ["KP_5", "C-V"])
     , (CaSelected, SelectWithPointer)
-    , (CaLeaderStatus, ChooseItemMenu MStats)
     , (CaTargetDesc, ChooseItemMenu $ MStore CEqp) ]
 
 goToCmd :: HumanCmd

@@ -142,6 +142,8 @@ standardKeys = KeyKind
       -- Aiming
       , ("KP_Multiply", ( [CmdAim, CmdMinimal]
                         , "cycle x-hair among enemies", AimEnemy ))
+          -- not really minimal, because flinging from Item Menu enters aiming
+          -- mode, first screen mentions aiming mode not in fling context
       , ("!", ([CmdAim], "", AimEnemy))
       , ("KP_Divide", ([CmdAim], "cycle x-hair among items", AimItem))
       , ("/", ([CmdAim], "", AimItem))
@@ -160,11 +162,11 @@ standardKeys = KeyKind
       , ("C-}", ( [CmdAim]
                 , "set x-hair to nearest downstairs"
                 , XhairStair False ))
-      , ("<", ([CmdAim], "switch aiming to one level higher" , AimAscend 1))
-      , ("C-<", ( [CmdNoHelp], "switch aiming to 10 levels higher"
+      , ("<", ([CmdAim], "switch aiming one level higher" , AimAscend 1))
+      , ("C-<", ( [CmdNoHelp], "switch aiming 10 levels higher"
                 , AimAscend 10) )
-      , (">", ([CmdAim], "switch aiming to one level lower", AimAscend (-1)))
-      , ("C->", ( [CmdNoHelp], "switch aiming to 10 levels lower"
+      , (">", ([CmdAim], "switch aiming one level lower", AimAscend (-1)))
+      , ("C->", ( [CmdNoHelp], "switch aiming 10 levels lower"
                 , AimAscend (-10)) )
       , ("BackSpace" , ( [CmdAim]
                      , "clear chosen object and target"
@@ -246,6 +248,12 @@ standardKeys = KeyKind
       , ("safe9", ( [CmdInternal]
                   , "accept target"
                   , Accept ))
+      , ("safe10", ( [CmdInternal]
+                   , "wait a turn, bracing for impact"
+                   , Wait ))
+      , ("safe11", ( [CmdInternal]
+                   , "wait 0.1 of a turn"
+                   , Wait10 ))
       ]
       ++ map defaultHeroSelect [0..6]
   }

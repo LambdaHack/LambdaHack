@@ -55,7 +55,8 @@ data CmdArea =
   | CaPercentSeen
   | CaXhairDesc
   | CaSelected
-  | CaLeaderStatus
+  | CaCalmGauge
+  | CaHPGauge
   | CaTargetDesc
   deriving (Show, Read, Eq, Ord, Generic)
 
@@ -74,7 +75,8 @@ areaDescription ca = case ca of
   CaPercentSeen ->  "percent seen"
   CaXhairDesc ->    "x-hair info"
   CaSelected ->     "party roster"
-  CaLeaderStatus -> "leader status"
+  CaCalmGauge ->    "Calm gauge"
+  CaHPGauge ->      "HP gauge"
   CaTargetDesc ->   "target info"
   --                 1234567890123
 
