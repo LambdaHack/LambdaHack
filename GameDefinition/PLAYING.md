@@ -69,23 +69,32 @@ Dungeon
 
 The dungeon of any particular scenario may consist of one or many
 levels and each level consists of a large number of tiles.
-The basic tile kinds are as follows.
-
-               dungeon terrain type               on-screen symbol
-               ground                             .
-               corridor, smoke or fog             #
-               open door                          | and -
-               closed door                        +
-               rubble                             ;
-               wall (horizontal and vertical)     - and |
-               tree or rock or man-made pillar    O
-               bush                               &
-               stairs or exit up                  <
-               stairs or exit down                >
-               bedrock                            blank
-
 The game world is persistent, i.e., every time the player visits a level
 during a single game, its layout is the same.
+The basic tile kinds are as follows.
+
+    dungeon terrain type                   on-screen symbol
+    wall (horizontal and vertical)         - and |
+    tree or rock or man-made pillar        O
+    rubble                                 ;
+    bush                                   &
+    closed door                            +
+    open door (horizontal and vertical)    | and -
+    corridor, smoke or fog                 #
+    ground                                 .
+    stairs or exit up                      <
+    stairs or exit down                    >
+    bedrock                                blank
+
+So, for example, the following map shows a room with a closed door
+connected by a corridor with a room with an open door, a pillar,
+staircase down and rubble that obscures one of the corners.
+
+    ----       ----
+    |..|       |..;;
+    |..+#######-.O.>;|
+    |..|       |.....|
+    ----       -------
 
 
 Basic Commands
@@ -118,7 +127,7 @@ weapons in your personal equipment and your unwounded organs.
 The following commands, joined with the basic set above, let you accomplish
 anything in the game, though not necessarily with the fewest keystrokes.
 You can also play the game exclusively with a mouse, or both mouse and
-keyboard. See the ending help screens for mouse commands.
+keyboard. See the ending in-game help screens for mouse commands.
 Lastly, you can select a command with arrows or mouse directly from a help
 screen and execute it on the spot.
 
@@ -142,9 +151,12 @@ For ranged attacks, setting the aiming crosshair beforehand is not mandatory,
 because x-hair is set automatically as soon as a monster comes into view
 and can still be adjusted for as long as the missile to fling is not chosen.
 However, sometimes you want to examine the level map tile by tile
-or assign persistent personal targets to party members.
-The latter is essential in the rare cases when your non-leader actors
-can move or fire opportunistically (via innate skills or rare equipment).
+or assign persistent personal targets to party members. The latter
+is essential in the rare cases when your henchmen (non-leader actors) can move
+autonomously or fire opportunistically (via innate skills or rare equipment).
+Also, if your henchman is adjacent to more than one enemy, setting his target
+is makes him melee a particular foe.
+
 You can enter the detailed aiming mode with the `*` keypad key that selects
 enemies or the `/` keypad key that cycles among items on the floor
 and marks a tile underneath an item. You can move x-hair with direction keys
@@ -154,7 +166,7 @@ are described in the status lines at the bottom of the screen,
 as explained in section #heroes above.
 
 Commands for saving and exiting the current game, starting a new game,
-setting options and changing henchmen (non-leader actors) tactics, etc.,
+setting options and changing henchmen tactics, etc.,
 are listed in the Main Menu, brought up by the `ESC` key.
 Game difficulty setting affects hitpoints at birth for any actors
 of any UI-using faction. For a person new to roguelikes, the `raid` scenario
@@ -203,6 +215,12 @@ figures in the calculation. You may propel any item in your inventory
 (by default you are offered only the appropriate items; press `?`to cycle
 item menu modes). Only items of a few kinds inflict any damage, but some
 have other effects, beneficial, detrimental or mixed.
+
+In-game detailed item descriptions contain melee and ranged damage estimates.
+They do not take into account damage from effects and, if bonuses are not
+known, they are guessed based on average bonuses for that kind of item.
+The displayed figures are rounded, but the game internally keeps track
+of minute fractions of HP.
 
 Whenever the monster's or hero's hit points reach zero, the combatant dies.
 When the last hero dies, the scenario ends in defeat.
