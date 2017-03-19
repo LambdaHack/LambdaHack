@@ -371,6 +371,7 @@ keyTranslate shiftPressed n =
     KeycodeRAlt     -> K.DeadKey
     KeycodeRGUI     -> K.DeadKey
     KeycodeMode     -> K.DeadKey
+    KeycodeNumLockClear -> K.DeadKey
     KeycodeUnknown  -> K.Unknown "KeycodeUnknown"
     _ -> let i = fromEnum $ unwrapKeycode n
          in if | 97 <= i && i <= 122

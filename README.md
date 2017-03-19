@@ -83,16 +83,9 @@ but for larger window sizes or if you require international characters
 is the only option. The game winow automatically scales according
 to the specified font size.
 
-If you use the numeric keypad, use the NumLock key on your keyboard
-to toggle the game keyboard mode. With NumLock off, you walk with the numeric
-keys and run with Shift (or Control) and the keys. This mode is probably
-the best if you use mouse for running. When you turn NumLock on,
-the reversed key setup enforces good playing habits by setting as the default
-the run command (which automatically stops at threats, keeping you safe)
-and requiring Shift (or Control) for the error-prone step by step walking.
-
-If you don't have the numeric keypad, you can use laptop keys (uk8o79jl)
-or you can enable the Vi keys (aka roguelike keys) in the config file.
+If you don't have the numeric keypad, you can use mouse or laptop
+keys (uk8o79jl) or you can enable the Vi keys (aka roguelike keys)
+in the config file.
 
 
 Compilation from source
