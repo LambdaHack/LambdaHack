@@ -11,9 +11,9 @@ import Control.Concurrent.Async
 import Graphics.Vty
 import qualified Graphics.Vty as Vty
 
-import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend.Common
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
@@ -110,19 +110,19 @@ setAttr Color.Attr{..} =
 --  then def_attr
 --  else
   let (fg1, bg1) = case bg of
-        Color.HighlightNone -> (Color.defFG, Color.Black)
+        Color.HighlightNone -> (fg, Color.Black)
         Color.HighlightRed -> (Color.Black, Color.defFG)
         Color.HighlightBlue ->
           if fg /= Color.Blue
           then (fg, Color.Blue)
           else (fg, Color.BrBlack)
         Color.HighlightYellow ->
-          if fg /= Color.BrBlack
-          then (fg, Color.BrBlack)
+          if fg /= Color.Brown
+          then (fg, Color.Brown)
           else (fg, Color.defFG)
         Color.HighlightGrey ->
-          if fg /= Color.Magenta
-          then (fg, Color.Magenta)
+          if fg /= Color.BrBlack
+          then (fg, Color.BrBlack)
           else (fg, Color.defFG)
   in hack fg1 $ hack bg1 $
        defAttr { attrForeColor = SetTo (aToc fg1)
