@@ -23,9 +23,9 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Graphics.UI.Gtk hiding (Point)
 import System.Exit (exitFailure)
 
-import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend.Common
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
@@ -55,7 +55,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   -- Text attributes.
   let emulateBox attr = case attr of
         Color.Attr{bg=Color.HighlightNone} ->
-          (Color.defFG, Color.Black)
+          (fg, Color.Black)
         Color.Attr{bg=Color.HighlightRed} ->
           (Color.Black, Color.defFG)
         Color.Attr{bg=Color.HighlightBlue,fg} ->
@@ -63,13 +63,13 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
           then (fg, Color.Blue)
           else (fg, Color.BrBlack)
         Color.Attr{bg=Color.HighlightYellow,fg} ->
+          if fg /= Color.Brown
+          then (fg, Color.Brown)
+          else (fg, Color.defFG)
+        Color.Attr{bg=Color.HighlightGrey,fg} ->
           if fg /= Color.BrBlack
           then (fg, Color.BrBlack)
           else (fg, Color.defFG)
-        Color.Attr{bg=Color.HighlightGrey,fg} ->
-          if fg /= Color.Magenta
-          then (fg, Color.Magenta)
-          else (fg, Color.BrBlack)
   ttt <- textTagTableNew
   stags <- IM.fromDistinctAscList <$>
              mapM (\ak -> do

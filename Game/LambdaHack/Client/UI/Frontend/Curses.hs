@@ -15,9 +15,9 @@ import qualified Data.Map.Strict as M
 import qualified UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C
 
-import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend.Common
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
@@ -90,15 +90,15 @@ display FrontendSession{..} SingleFrame{singleFrame} = do
             | (y, line) <- nm
             , (x, Color.AttrChar{acAttr=Color.Attr{..}, ..}) <- line
             , let acAttr2 = case bg of
-                    Color.HighlightNone -> (Color.defFG, Color.Black)
+                    Color.HighlightNone -> (fg, Color.Black)
                     Color.HighlightRed -> (Color.Black, Color.defFG)
                     Color.HighlightBlue ->
                       if fg /= Color.Blue
                       then (fg, Color.Blue)
                       else (fg, Color.BrBlack)
                     Color.HighlightYellow ->
-                      if fg /= Color.BrBlack
-                      then (fg, Color.BrBlack)
+                      if fg /= Color.Brown
+                      then (fg, Color.Brown)
                       else (fg, Color.defFG)
                     Color.HighlightGrey ->
                       if fg /= Color.BrBlack
