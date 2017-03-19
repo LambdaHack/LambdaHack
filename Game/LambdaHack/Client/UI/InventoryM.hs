@@ -22,13 +22,13 @@ import Data.Tuple (swap)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.CommonM
-import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.ActorUI
 import Game.LambdaHack.Client.UI.HandleHelperM
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.ItemSlot
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgM
@@ -368,7 +368,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
            })
         , let km = revCmd (K.KM K.NoModifier $ K.Char '^') SortSlots
           in (km, DefItemKey
-           { defLabel = Left ""
+           { defLabel = if cCur == MOwned then Right km else Left ""
            , defCond = True
            , defAction = \_ -> do
                sortSlots (bfid body) (Just body)
