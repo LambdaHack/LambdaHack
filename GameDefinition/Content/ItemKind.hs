@@ -385,11 +385,15 @@ flask13 = flask
                , OnSmash Impress
                , OnSmash (Explode "waste") ]
   }
+-- The player has full control over throwing the flask at his party,
+-- so he can milk the explosion, so it has to be much weaker, so a weak
+-- healing effect is enough. OTOH, throwing a harmful flask at many enemies
+-- at once is not easy to arrange, so these explostions can stay powerful.
 flask14 = flask
   { irarity  = [(1, 15), (10, 5)]
   , ieffects = [ ELabel "of regeneration brew"
                , toOrganNone "regenerating"
-               , OnSmash (Explode "youth sprinkle") ]
+               , OnSmash (Explode "healing mist") ]
   }
 flask15 = flask
   { ieffects = [ ELabel "of poison"
