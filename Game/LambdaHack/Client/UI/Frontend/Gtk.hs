@@ -54,7 +54,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
   let emulateBox attr = case attr of
-        Color.Attr{bg=Color.HighlightNone} ->
+        Color.Attr{bg=Color.HighlightNone,fg} ->
           (fg, Color.Black)
         Color.Attr{bg=Color.HighlightRed} ->
           (Color.Black, Color.defFG)
