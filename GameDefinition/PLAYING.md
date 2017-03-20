@@ -48,7 +48,7 @@ if none are available, just display the current leader name. Weapon damage
 and other item stats are displayed using the dice notation `XdY`,
 which means `X` rolls of `Y`-sided dice. A variant denoted `XdlY`
 is additionally scaled by the level depth in proportion to the maximal
-dungeon depth. Section #monsters below describes combat resolution in detail.
+dungeon depth. Section [#monsters] below describes combat resolution in detail.
 
 The second, upper status line describes the current level in relation
 to the party.
@@ -163,7 +163,7 @@ and marks a tile underneath an item. You can move x-hair with direction keys
 and assign a personal target to the leader with `RET` key (Return, Enter).
 The details of the shared x-hair position and of the personal target
 are described in the status lines at the bottom of the screen,
-as explained in section #heroes above.
+as explained in section [#heroes] above.
 
 Commands for saving and exiting the current game, starting a new game,
 setting options and changing henchmen tactics, etc.,
