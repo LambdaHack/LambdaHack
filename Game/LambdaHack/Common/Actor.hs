@@ -58,7 +58,7 @@ data Actor = Actor
     -- Items
   , borgan      :: !ItemBag      -- ^ organs
   , beqp        :: !ItemBag      -- ^ personal equipment
-  , binv        :: !ItemBag      -- ^ personal inventory
+  , binv        :: !ItemBag      -- ^ personal inventory pack
   , bweapon     :: !Int          -- ^ number of weapons among eqp and organs
 
     -- Assorted

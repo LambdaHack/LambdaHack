@@ -75,13 +75,13 @@ standardKeys = KeyKind
       -- Item use, continued
       , ("^", ( [CmdItem], "sort items by kind and stats", SortSlots))
       , ("p", moveItemTriple [CGround, CEqp, CSha] CInv
-                             "item into inventory" False)
+                             "item" False)
       , ("e", moveItemTriple [CGround, CInv, CSha] CEqp
                              "item" False)
       , ("s", moveItemTriple [CGround, CInv, CEqp] CSha
                              "and share item" False)
       , ("P", ( [CmdMinimal, CmdItem]
-              , "manage inventory pack of leader"
+              , "manage item pack of the leader"
               , ChooseItemMenu (MStore CInv) ))
       , ("G", ( [CmdItem]
               , "manage items on the ground"
@@ -150,8 +150,8 @@ standardKeys = KeyKind
       , ("C->", ( [CmdNoHelp], "move aiming 10 levels lower"
                 , AimAscend (-10)) )
       , ("BackSpace" , ( [CmdAim]
-                     , "clear chosen object and target"
-                     , ComposeUnlessError ObjectClear TgtClear ))
+                     , "clear chosen item and target"
+                     , ComposeUnlessError ItemClear TgtClear ))
       , ("Escape", ( [CmdAim, CmdMinimal]
                    , "cancel aiming/open Main Menu"
                    , ByAimMode {exploration = MainMenu, aiming = Cancel} ))

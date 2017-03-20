@@ -69,6 +69,7 @@ type VectorI = Int
 -- When computing move cost, we assume doors openable at no cost,
 -- because other actors use them, too, so the cost is shared and the extra
 -- visiblity is valuable, too. We treat unknown tiles specially.
+-- Whether suspect tiles are considered openable depends on @smarkSuspect@.
 fillBfs :: PointArray.Array Word8
         -> Word8
         -> Point                          -- ^ starting position

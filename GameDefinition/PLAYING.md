@@ -134,7 +134,7 @@ screen and execute it on the spot.
     keys         command
     g or ,       grab item(s)
     c            close door
-    P            manage inventory pack of leader
+    P            manage item pack of the leader
     KP_* or !    cycle x-hair among enemies
     +            swerve the aiming line
     ESC          cancel aiming/open Main Menu
@@ -151,11 +151,11 @@ For ranged attacks, setting the aiming crosshair beforehand is not mandatory,
 because x-hair is set automatically as soon as a monster comes into view
 and can still be adjusted for as long as the missile to fling is not chosen.
 However, sometimes you want to examine the level map tile by tile
-or assign persistent personal targets to party members. The latter
-is essential in the rare cases when your henchmen (non-leader actors) can move
-autonomously or fire opportunistically (via innate skills or rare equipment).
-Also, if your henchman is adjacent to more than one enemy, setting his target
-is makes him melee a particular foe.
+or assign persistent personal targets to party members.
+The latter is essential in the rare cases when your henchmen
+(non-leader characters) can move autonomously or fire opportunistically
+(via innate skills or rare equipment). Also, if your henchman is adjacent
+to more than one enemy, setting his target is makes him melee a particular foe.
 
 You can enter the detailed aiming mode with the `*` keypad key that selects
 enemies or the `/` keypad key that cycles among items on the floor
@@ -211,7 +211,7 @@ In ranged combat, the missile is assumed to be attacking the defender
 in melee, using itself as the weapon, with the usual dice and damage bonus.
 This time, the ranged armor stat of the defender is taken into account
 and, additionally, the speed of the missile (based on shape and weight)
-figures in the calculation. You may propel any item in your inventory
+figures in the calculation. You may propel any item from your inventory
 (by default you are offered only the appropriate items; press `?`to cycle
 item menu modes). Only items of a few kinds inflict any damage, but some
 have other effects, beneficial, detrimental or mixed.

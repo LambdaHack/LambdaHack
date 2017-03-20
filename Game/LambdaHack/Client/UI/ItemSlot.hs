@@ -59,7 +59,7 @@ allZeroSlots = allSlots 0
 intSlots :: [SlotChar]
 intSlots = map (flip SlotChar 'a') [0..]
 
--- | Assigns a slot to an item, for inclusion in the inventory or equipment
+-- | Assigns a slot to an item, for inclusion in the inventory
 -- of a hero. Tries to to use the requested slot, if any.
 assignSlot :: CStore -> Item -> FactionId -> Maybe Actor -> ItemSlots
            -> SlotChar -> State

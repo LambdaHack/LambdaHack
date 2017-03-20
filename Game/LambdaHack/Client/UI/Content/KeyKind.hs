@@ -101,7 +101,7 @@ mouseRMB =
           [ (CaMap, aimFlingCmd)
           , (CaArenaName, Cancel)
           , (CaPercentSeen, XhairStair False)
-          , (CaTargetDesc, ComposeUnlessError ObjectClear TgtClear) ] } )
+          , (CaTargetDesc, ComposeUnlessError ItemClear TgtClear) ] } )
  where
   common =
     [ (CaMessage, ChooseItemMenu MLoreItem)
@@ -154,7 +154,7 @@ applyIK ts =
 
 applyI :: [Trigger] -> CmdTriple
 applyI ts =
-  let apply = Compose2ndLocal (Apply ts) ObjectClear
+  let apply = Compose2ndLocal (Apply ts) ItemClear
   in ([], descTs ts, ByItemMode
        { ts
        , notChosen = ComposeUnlessError (ChooseItemApply ts) apply

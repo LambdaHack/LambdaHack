@@ -13,7 +13,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , repeatHuman, recordHuman, historyHuman
   , markVisionHuman, markSmellHuman, markSuspectHuman, settingsMenuHuman
     -- * Commands specific to aiming
-  , cancelHuman, acceptHuman, tgtClearHuman, objectClearHuman
+  , cancelHuman, acceptHuman, tgtClearHuman, itemClearHuman
   , moveXhairHuman, aimTgtHuman, aimFloorHuman, aimEnemyHuman, aimItemHuman
   , aimAscendHuman, epsIncrHuman
   , xhairUnknownHuman, xhairItemHuman, xhairStairHuman
@@ -167,7 +167,7 @@ chooseItemDialogMode c = do
             , MU.Text tIn
             , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
   ggi <- getStoreItem prompt c
-  recordHistory  -- object chosen, wipe out already shown msgs
+  recordHistory  -- item chosen, wipe out already shown msgs
   case ggi of
     (Right (iid, itemFull), (c2, _)) -> do
       leader <- getLeaderUI
@@ -808,10 +808,10 @@ tgtClearHuman = do
       clearXhair
       doLook
 
--- * ObjectClear
+-- * ItemClear
 
-objectClearHuman :: MonadClientUI m => m ()
-objectClearHuman = do
+itemClearHuman :: MonadClientUI m => m ()
+itemClearHuman = do
   modifySession $ \sess -> sess {sitemSel = Nothing}
 
 -- | Perform look around in the current position of the xhair.

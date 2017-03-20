@@ -107,7 +107,7 @@ effectToSuffix effect =
     PushActor tmod -> "of pushing" <+> tmodToSuff "" tmod
     PullActor tmod -> "of pulling" <+> tmodToSuff "" tmod
     DropBestWeapon -> "of disarming"
-    ActivateInv ' ' -> "of inventory burst"
+    ActivateInv ' ' -> "of item pack burst"
     ActivateInv symbol -> "of burst '" <> T.singleton symbol <> "'"
     OneOf l ->
       let subject = if length l <= 5 then "marvel" else "wonder"

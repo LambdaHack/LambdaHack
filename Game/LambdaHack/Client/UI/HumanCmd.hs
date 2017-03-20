@@ -144,7 +144,7 @@ data HumanCmd =
   | Cancel
   | Accept
   | TgtClear
-  | ObjectClear
+  | ItemClear
   | MoveXhair !Vector !Int
   | AimTgt
   | AimFloor

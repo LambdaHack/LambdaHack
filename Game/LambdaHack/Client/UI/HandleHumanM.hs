@@ -101,7 +101,7 @@ cmdAction cmd = case cmd of
   Cancel -> addNoError cancelHuman
   Accept -> addNoError acceptHuman
   TgtClear -> addNoError tgtClearHuman
-  ObjectClear -> addNoError objectClearHuman
+  ItemClear -> addNoError itemClearHuman
   MoveXhair v k -> Left <$> moveXhairHuman v k
   AimTgt -> Left <$> aimTgtHuman
   AimFloor -> addNoError aimFloorHuman

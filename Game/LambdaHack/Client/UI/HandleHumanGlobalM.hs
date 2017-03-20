@@ -985,7 +985,7 @@ itemMenuHuman cmdAction = do
       bUI <- getsSession $ getActorUI leader
       bag <- getsState $ getBodyStoreBag b fromCStore
       case iid `EM.lookup` bag of
-        Nothing -> weaveJust <$> failWith "no object to open Item Menu for"
+        Nothing -> weaveJust <$> failWith "no item to open Item Menu for"
         Just kit -> do
           actorAspect <- getsClient sactorAspect
           let ar = case EM.lookup leader actorAspect of
@@ -1013,7 +1013,7 @@ itemMenuHuman cmdAction = do
               foundTexts = map (\(_, (_, store), bUI2) ->
                                   ppLoc bUI2 store) foundUI
               foundPrefix = textToAL $
-                if null foundTexts then "" else "The object is also in:"
+                if null foundTexts then "" else "The item is also in:"
               itemFull = itemToF iid kit
               desc = itemDesc (bfid b) factionD (aHurtMelee ar)
                               fromCStore localTime itemFull
@@ -1040,7 +1040,7 @@ itemMenuHuman cmdAction = do
               (ov0, kxs0) = okxsN keyb offset keyL greyedOut
                                   HumanCmd.CmdItemMenu [keyCaption] []
               t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"
-                                , "an object", MU.Text $ ppCStoreIn fromCStore ]
+                                , "an item", MU.Text $ ppCStoreIn fromCStore ]
               al1 = renderReport report <+:> textToAL t0
               splitHelp (al, okx) =
                 splitOKX lxsize (lysize + 1) al [K.spaceKM, K.escKM] okx
@@ -1070,7 +1070,7 @@ itemMenuHuman cmdAction = do
               Just (_desc, _cats, cmd) -> cmdAction cmd
               Nothing -> weaveJust <$> failWith "never mind"
             Right _slot -> assert `failure` ekm
-    Nothing -> weaveJust <$> failWith "no object to open Item Menu for"
+    Nothing -> weaveJust <$> failWith "no item to open Item Menu for"
 
 -- * ChooseItemMenu
 
