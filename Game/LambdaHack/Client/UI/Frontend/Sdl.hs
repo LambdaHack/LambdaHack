@@ -143,7 +143,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
                         _ -> Just K.LeftDblClick
                     SDL.ButtonMiddle -> Just K.MiddleButtonRelease
                     SDL.ButtonRight -> Just K.RightButtonRelease
-                    _ -> Nothing  -- probably a glitch
+                    _ -> Just K.LeftButtonRelease  -- any other is spare left
                   modifier = if md == K.Shift then K.NoModifier else md
                   p = SDL.mouseButtonEventPos mouseButtonEvent
               maybe (return ())

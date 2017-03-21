@@ -44,9 +44,9 @@ import GHCJS.DOM.UIEvent (getCharCode, getKeyCode, getWhich)
 import GHCJS.DOM.WheelEvent (getDeltaY)
 import GHCJS.DOM.Window (requestAnimationFrame_)
 
-import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend.Common
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
@@ -236,7 +236,7 @@ handleMouse rf (cell, _) cx cy = do
               0 -> Just K.LeftButtonRelease
               1 -> Just K.MiddleButtonRelease
               2 -> Just K.RightButtonRelease  -- not handled in contextMenu
-              _ -> Nothing  -- probably a glitch
+              _ -> Just K.LeftButtonRelease  -- any other is alternate left
             pointer = Point cx cy
         -- IO.liftIO $ putStrLn $
         --   "m: " ++ show but ++ show modifier ++ show pointer
