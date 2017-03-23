@@ -130,8 +130,7 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
       [ "Screen area determines mouse click effect; see next two pages for details."
       , "Below is a general overview, including not only left and right,"
       , "but also the optional middle mouse button (MMB) and the mouse wheel."
-      , "For mice without RMB, one can use C-LMB (Control key and left mouse button)"
-      , "as well as double-click of LMB (SDL2 frontend only)."
+      , "For mice without RMB, one can use C-LMB (Control key and left mouse button)."
       , ""
       ]
     mouseBasicsEnding =

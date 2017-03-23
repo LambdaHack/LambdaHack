@@ -136,18 +136,14 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
           SDL.MouseButtonEvent mouseButtonEvent
             | SDL.mouseButtonEventMotion mouseButtonEvent == SDL.Released -> do
               md <- modTranslate <$> SDL.getModState
-              let mkey = case SDL.mouseButtonEventButton mouseButtonEvent of
-                    SDL.ButtonLeft ->
-                      case SDL.mouseButtonEventClicks mouseButtonEvent of
-                        1 -> Just K.LeftButtonRelease
-                        _ -> Just K.LeftDblClick
-                    SDL.ButtonMiddle -> Just K.MiddleButtonRelease
-                    SDL.ButtonRight -> Just K.RightButtonRelease
-                    _ -> Just K.LeftButtonRelease  -- any other is spare left
+              let key = case SDL.mouseButtonEventButton mouseButtonEvent of
+                    SDL.ButtonLeft -> K.LeftButtonRelease
+                    SDL.ButtonMiddle -> K.MiddleButtonRelease
+                    SDL.ButtonRight -> K.RightButtonRelease
+                    _ -> K.LeftButtonRelease  -- any other is spare left
                   modifier = if md == K.Shift then K.NoModifier else md
                   p = SDL.mouseButtonEventPos mouseButtonEvent
-              maybe (return ())
-                    (\key -> saveKMP rf modifier key (pointTranslate p)) mkey
+              saveKMP rf modifier key (pointTranslate p)
           SDL.MouseWheelEvent mouseWheelEvent -> do
             md <- modTranslate <$> SDL.getModState
             let SDL.V2 _ y = SDL.mouseWheelEventPos mouseWheelEvent

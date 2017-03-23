@@ -50,7 +50,6 @@ data Key =
   | LeftButtonRelease    -- ^ left mouse button released
   | MiddleButtonRelease  -- ^ middle mouse button released
   | RightButtonRelease   -- ^ right mouse button released
-  | LeftDblClick       -- ^ left mouse button double click
   | WheelNorth  -- ^ mouse wheel rotated north
   | WheelSouth  -- ^ mouse wheel rotated south
   | Unknown !String -- ^ an unknown key, registered to warn the user
@@ -112,7 +111,6 @@ showKey RightButtonPress = "RMB-PRESS"
 showKey LeftButtonRelease = "LMB"
 showKey MiddleButtonRelease = "MMB"
 showKey RightButtonRelease = "RMB"
-showKey LeftDblClick = "LMB-DBLCLICK"
 showKey WheelNorth = "WHEEL-UP"
 showKey WheelSouth = "WHEEL-DN"
 showKey (Unknown s) = "'" ++ s ++ "'"
@@ -384,8 +382,6 @@ keyTranslate "MiddleButtonRelease" = MiddleButtonRelease
 keyTranslate "MMB" = MiddleButtonRelease
 keyTranslate "RightButtonRelease" = RightButtonRelease
 keyTranslate "RMB" = RightButtonRelease
-keyTranslate "LeftDblClick"  = LeftDblClick
-keyTranslate "LMB-DBLCLICK"  = LeftDblClick
 keyTranslate "WheelNorth"    = WheelNorth
 keyTranslate "WHEEL-UP"      = WheelNorth
 keyTranslate "WheelSouth"    = WheelSouth

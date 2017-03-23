@@ -190,8 +190,6 @@ standardKeys = KeyKind
       , ("MiddleButtonRelease", mouseMMB)
       , ("WheelNorth", ([CmdMouse], "swerve the aiming line", Macro ["+"]))
       , ("WheelSouth", ([CmdMouse], "unswerve the aiming line", Macro ["-"]))
-      , ( "LeftDblClick"
-        , replaceDesc "" $ addCmdCategory CmdNoHelp mouseRMB )
 
       -- Debug and others not to display in help screens
       , ("C-S", ([CmdDebug], "save game", GameSave))
