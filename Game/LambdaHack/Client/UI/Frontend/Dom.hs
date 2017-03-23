@@ -23,7 +23,8 @@ import GHCJS.DOM.Document (createElementUnchecked, getBodyUnchecked, keyDown,
 import GHCJS.DOM.Element (contextMenu, getStyleUnchecked, mouseUp, setInnerHTML,
                           wheel)
 import GHCJS.DOM.EventM (EventM, mouseAltKey, mouseButton, mouseCtrlKey,
-                         mouseMetaKey, mouseShiftKey, on, on, preventDefault)
+                         mouseMetaKey, mouseShiftKey, on, on, preventDefault,
+                         stopPropagation)
 import GHCJS.DOM.HTMLCollection (itemUnchecked)
 import GHCJS.DOM.HTMLTableCellElement (HTMLTableCellElement,
                                        castToHTMLTableCellElement)
@@ -161,7 +162,9 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
       when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
       IO.liftIO $ saveKMP rf modifier key originPoint
       -- Pass through C-+ and others, disable Tab.
-      when (modifier `elem` [K.NoModifier, K.Shift, K.Control]) preventDefault
+      when (modifier `elem` [K.NoModifier, K.Shift, K.Control]) $ do
+        preventDefault
+        stopPropagation
   void $ doc `on` keyPress $ do
     keyLoc <- ask >>= getKeyLocation
     which <- ask >>= getWhich
@@ -188,7 +191,9 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
       when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
       IO.liftIO $ saveKMP rf modifierNoShift key originPoint
       -- Pass through C-+ and others, disable Tab.
-      when (modifier `elem` [K.NoModifier, K.Shift, K.Control]) preventDefault
+      when (modifier `elem` [K.NoModifier, K.Shift, K.Control]) $ do
+        preventDefault
+        stopPropagation
   -- Handle mouseclicks, per-cell.
   let setupMouse i a = let Point x y = PointArray.punindex lxsize i
                        in handleMouse rf a x y
@@ -245,11 +250,14 @@ handleMouse rf (cell, _) cx cy = do
   void $ cell `on` wheel $ do
     saveWheel
     preventDefault
-  void $ cell `on` contextMenu $
+    stopPropagation
+  void $ cell `on` contextMenu $ do
     preventDefault
+    stopPropagation
   void $ cell `on` mouseUp $ do
     saveMouse
     preventDefault
+    stopPropagation
 
 -- | Get the list of all cells of an HTML table.
 flattenTable :: HTMLTableElement
