@@ -288,7 +288,7 @@ permittedProjectClient :: MonadClientUI m
 permittedProjectClient triggerSyms = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorSk <- actorSkillsClient leader
+  actorSk <- leaderSkillsClientUI
   let skill = EM.findWithDefault 0 AbProject actorSk
   actorAspect <- getsClient sactorAspect
   let ar = case EM.lookup leader actorAspect of
@@ -447,7 +447,7 @@ permittedApplyClient :: MonadClientUI m
 permittedApplyClient triggerSyms = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorSk <- actorSkillsClient leader
+  actorSk <- leaderSkillsClientUI
   let skill = EM.findWithDefault 0 AbApply actorSk
   actorAspect <- getsClient sactorAspect
   let ar = case EM.lookup leader actorAspect of

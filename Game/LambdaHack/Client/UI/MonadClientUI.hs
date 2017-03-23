@@ -14,7 +14,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
   , resetSessionStart, resetGameStart
   , partAidLeader, partActorLeader, partActorLeaderFun, partPronounLeader
-  , tryRestore
+  , tryRestore, leaderSkillsClientUI
   ) where
 
 import Prelude ()
@@ -31,23 +31,25 @@ import System.FilePath
 import System.IO (hFlush, stdout)
 
 import Game.LambdaHack.Client.CommonM
-import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.ActorUI
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend
 import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.Slideshow
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.HighScore as HighScore
+import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -395,3 +397,9 @@ tryRestore = do
     dataDir <- liftIO $ appDataDir
     liftIO $ tryWriteFile (dataDir </> cfgUIName) content
     return res
+
+leaderSkillsClientUI :: MonadClientUI m => m Ability.Skills
+leaderSkillsClientUI = do
+  leader <- getLeaderUI
+  ar <- getsClient $ (EM.! leader) . sactorAspect
+  return $! aSkills ar

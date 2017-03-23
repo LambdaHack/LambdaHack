@@ -283,7 +283,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
   tgts <- getsState $ posToAssocs tpos arena
   case tgts of
     [] -> do  -- move or search or alter
-      runStopOrCmd <- moveSearchAlterAid leader dir
+      runStopOrCmd <- moveSearchAlter dir
       case runStopOrCmd of
         Left stopMsg -> return $ Left stopMsg
         Right runCmd ->
@@ -385,13 +385,13 @@ displaceAid target = do
            _ -> failSer DisplaceProjectiles
        else failSer DisplaceAccess
 
--- | Actor moves or searches or alters. No visible actor at the position.
-moveSearchAlterAid :: MonadClientUI m
-                   => ActorId -> Vector -> m (FailOrCmd RequestAnyAbility)
-moveSearchAlterAid source dir = do
+-- | Leader moves or searches or alters. No visible actor at the position.
+moveSearchAlter :: MonadClientUI m => Vector -> m (FailOrCmd RequestAnyAbility)
+moveSearchAlter dir = do
   Kind.COps{coTileSpeedup} <- getsState scops
-  sb <- getsState $ getActorBody source
-  actorSk <- actorSkillsClient source
+  leader <- getLeaderUI
+  sb <- getsState $ getActorBody leader
+  actorSk <- leaderSkillsClientUI
   lvl <- getLevel $ blid sb
   let alterSkill = EM.findWithDefault 0 AbAlter actorSk
       spos = bpos sb           -- source position
@@ -851,7 +851,7 @@ alterTileAtPos ts tpos pText = do
   cops@Kind.COps{cotile, coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorSk <- actorSkillsClient leader
+  actorSk <- leaderSkillsClientUI
   lvl <- getLevel $ blid b
   let alterSkill = EM.findWithDefault 0 AbAlter actorSk
       t = lvl `at` tpos

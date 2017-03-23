@@ -530,7 +530,7 @@ drawLeaderStatus waitT = do
     Nothing -> return $! stringToAL (calmHeaderText ++ ":  --/--")
                          <+:> stringToAL (hpHeaderText <> ":  --/--")
 
-drawLeaderDamage :: MonadClient m => Int -> m AttrLine
+drawLeaderDamage :: MonadClientUI m => Int -> m AttrLine
 drawLeaderDamage width = do
   mleader <- getsClient _sleader
   let addColor s = map (Color.attrChar2ToW32 Color.BrCyan) s
@@ -538,7 +538,7 @@ drawLeaderDamage width = do
     Just leader -> do
       allAssocsRaw <- fullAssocsClient leader [CEqp, COrgan]
       let allAssocs = filter (isMelee . itemBase . snd) allAssocsRaw
-      actorSk <- actorSkillsClient leader
+      actorSk <- leaderSkillsClientUI
       actorAspect <- getsClient sactorAspect
       strongest <- pickWeaponM allAssocs actorSk actorAspect leader False
       let damage = case strongest of

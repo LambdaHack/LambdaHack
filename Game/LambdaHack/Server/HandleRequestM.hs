@@ -136,20 +136,19 @@ switchLeader fid aidNew = do
   fact <- getsState $ (EM.! fid) . sfactionD
   bPre <- getsState $ getActorBody aidNew
   let mleader = gleader fact
-      actorChanged = mleader /= Just aidNew
-  let !_A = assert (Just aidNew /= mleader
-                    && not (bproj bPre)
-                    `blame` (aidNew, bPre, fid, fact)) ()
-  let !_A = assert (bfid bPre == fid
-                    `blame` "client tries to move other faction actors"
-                    `twith` (aidNew, bPre, fid, fact)) ()
+      !_A1 = assert (Just aidNew /= mleader
+                     && not (bproj bPre)
+                     `blame` (aidNew, bPre, fid, fact)) ()
+      !_A2 = assert (bfid bPre == fid
+                     `blame` "client tries to move other faction actors"
+                     `twith` (aidNew, bPre, fid, fact)) ()
   let (autoDun, _) = autoDungeonLevel fact
   arena <- case mleader of
     Nothing -> return $! blid bPre
     Just leader -> do
       b <- getsState $ getActorBody leader
       return $! blid b
-  if | actorChanged && blid bPre /= arena && autoDun ->
+  if | blid bPre /= arena && autoDun ->
        execFailure aidNew ReqWait{-hack-} NoChangeDunLeader
      | otherwise -> do
        execUpdAtomic $ UpdLeadFaction fid mleader (Just aidNew)

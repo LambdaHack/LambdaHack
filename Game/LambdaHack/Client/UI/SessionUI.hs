@@ -105,9 +105,9 @@ emptySessionUI :: Config -> SessionUI
 emptySessionUI sconfig =
   SessionUI
     { sxhair = TVector $ Vector 1 1
+    , sactorUI = EM.empty
     , sslots = ItemSlots EM.empty EM.empty
     , slastSlot = SlotChar 0 'Z'
-    , sactorUI = EM.empty
     , schanF = ChanFrontend $ const $ error "emptySessionUI: ChanFrontend "
     , sbinding = Binding M.empty [] M.empty
     , sconfig
