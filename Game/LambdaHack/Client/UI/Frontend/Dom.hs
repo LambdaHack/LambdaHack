@@ -10,7 +10,7 @@ import Game.LambdaHack.Common.Prelude
 import Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.Reader (ask)
-import Data.Char (chr)
+import qualified Data.Char as Char
 import Data.IORef
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
@@ -93,7 +93,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
     _ -> return ()
   let lxsize = fst normalLevelBound + 1
       lysize = snd normalLevelBound + 4
-      cell = "<td>" ++ [chr 160]
+      cell = "<td>" ++ [Char.chr 160]
       row = "<tr>" ++ concat (replicate lxsize cell)
       rows = concat (replicate lysize row)
   tableElemRaw <- createElementUnchecked doc (Just ("table" :: Text))
@@ -105,6 +105,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   -- Set the font specified in config, if any.
   setProp scharStyle "font-family" $ fromMaybe "Monospace" sgtkFontFamily
   setProp scharStyle "font-size" $ maybe "16" tshow sfontSize <> "px"
+  setProp scharStyle "font-weight" "bold"
   -- Get rid of table spacing. Tons of spurious hacks just in case.
   setCellPadding tableElem ("0" :: Text)
   setCellSpacing tableElem ("0" :: Text)
@@ -120,7 +121,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   let sess = FrontendSession{..}
   rf <- IO.liftIO $ createRawFrontend (display sdebugCli sess) shutdown
   -- Handle keypresses. http://unixpapa.com/js/key.html
-  -- A bunch of fauity hacks; @keyPress@ doesn't handle non-character keys
+  -- A bunch of faulty hacks; @keyPress@ doesn't handle non-character keys
   -- while with @keyDown@ all of getKeyIdentifier, getWhich and getKeyCode
   -- return absurd codes for, e.g., semicolon in Chromium.
   let readMod = do
@@ -170,8 +171,8 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
     which <- ask >>= getWhich
     keyCode <- ask >>= getKeyCode
     charCode <- ask >>= getCharCode
-    let quirksN | which == 0 = [chr keyCode]  -- old IE
-                | charCode /= 0 = [chr which]  -- all others
+    let quirksN | which == 0 = [Char.chr keyCode]  -- old IE
+                | charCode /= 0 = [Char.chr which]  -- all others
                 | otherwise = ""
     when (not $ null quirksN) $ do
       modifier <- readMod
@@ -296,14 +297,12 @@ display DebugModeCli{scolorIsBold}
         let Color.AttrChar{acAttr=Color.Attr{..}, acChar} =
               Color.attrCharFromW32 $ Color.AttrCharW32 w
             (cell, style) = scharCells V.! i
-        case acChar of
-          ' ' -> setTextContent cell $ Just [chr 160]
-          ch -> setTextContent cell $ Just [ch]
+        case Char.ord acChar of
+          32 -> setTextContent cell $ Just [Char.chr 160]
+          183 | fg <= Color.BrBlack && scolorIsBold == Just True ->
+            setTextContent cell $ Just [Char.chr 8901]
+          _  -> setTextContent cell $ Just [acChar]
         setProp style "color" $ Color.colorToRGB fg
-        when (scolorIsBold == Just True) $
-          case fg of
-            Color.White -> setProp style "font-weight" "normal"
-            _ -> setProp style "font-weight" "bold"
         case bg of
           Color.HighlightNone ->
             setProp style "border-color" "transparent"

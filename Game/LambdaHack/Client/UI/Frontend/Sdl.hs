@@ -220,7 +220,7 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
             -- Make all visible floors bold (no bold fold variant for 16x16x,
             -- so only the dot can be bold).
             let acChar = if fg <= Color.BrBlack
-                            && acCharRaw == Char.chr 183  -- 0xb7
+                            && Char.ord acCharRaw == 183  -- 0xb7
                             && scolorIsBold == Just True  -- only dot but enough
                          then Char.chr $ if fonFile
                                          then 7   -- hack
