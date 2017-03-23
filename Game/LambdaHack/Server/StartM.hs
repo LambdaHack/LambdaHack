@@ -136,7 +136,7 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
         let gname = gnameNew
             gdipl = EM.empty  -- fixed below
             gquit = Nothing
-            gleader = Nothing
+            _gleader = Nothing
             gvictims = EM.empty
             gvictimsD = gvictimsDnew
             gsha = EM.empty
@@ -282,7 +282,7 @@ populateDungeon = do
             Nothing -> assert `failure` "can't spawn initial actors"
                               `twith` (lid, (fid3, fact3))
             Just aid -> do
-              mleader <- getsState $ gleader . (EM.! fid3) . sfactionD
+              mleader <- getsState $ _gleader . (EM.! fid3) . sfactionD
               when (isNothing mleader) $ supplantLeader fid3 aid
               return True
   mapM_ initialActors arenas

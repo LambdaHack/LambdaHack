@@ -463,7 +463,7 @@ dominateFid fid target = do
   electLeader (bfid tb0) (blid tb0) target
   fact <- getsState $ (EM.! bfid tb0) . sfactionD
   -- Prevent the faction's stash from being lost in case they are not spawners.
-  when (isNothing $ gleader fact) $ moveStores False target CSha CInv
+  when (isNothing $ _gleader fact) $ moveStores False target CSha CInv
   tb <- getsState $ getActorBody target
   ais <- getsState $ getCarriedAssocs tb
   actorAspect <- getsServer sactorAspect
@@ -556,7 +556,7 @@ effectSummon execSfx grp nDm source target periodic = do
         Nothing -> return False  -- not enough space in dungeon?
         Just aid -> do
           b <- getsState $ getActorBody aid
-          mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
+          mleader <- getsState $ _gleader . (EM.! bfid b) . sfactionD
           when (isNothing mleader) $ supplantLeader (bfid b) aid
           return True
     return $! or bs
@@ -638,7 +638,7 @@ findStairExit moveUp lid pos = do
 switchLevels1 :: MonadAtomic m => (ActorId, Actor) -> m (Maybe ActorId)
 switchLevels1 (aid, bOld) = do
   let side = bfid bOld
-  mleader <- getsState $ gleader . (EM.! side) . sfactionD
+  mleader <- getsState $ _gleader . (EM.! side) . sfactionD
   -- Prevent leader pointing to a non-existing actor.
   mlead <-
     if not (bproj bOld) && isJust mleader then do

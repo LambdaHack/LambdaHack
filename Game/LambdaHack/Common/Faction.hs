@@ -44,7 +44,8 @@ data Faction = Faction
   , ginitial  :: ![(Int, Int, GroupName ItemKind)]  -- ^ initial actors
   , gdipl     :: !Dipl            -- ^ diplomatic mode
   , gquit     :: !(Maybe Status)  -- ^ cause of game end/exit
-  , gleader   :: !(Maybe ActorId) -- ^ the leader of the faction
+  , _gleader  :: !(Maybe ActorId) -- ^ the leader of the faction; don't use
+                                  --   in place of _sleader on clients!
   , gsha      :: !ItemBag         -- ^ faction's shared inventory
   , gvictims  :: !(EM.EnumMap (Kind.Id ItemKind) Int)  -- ^ members killed
   , gvictimsD :: !(EM.EnumMap (Kind.Id ModeKind)

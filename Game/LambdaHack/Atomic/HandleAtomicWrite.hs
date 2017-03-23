@@ -304,10 +304,10 @@ updLeadFaction fid source target = assert (source /= target) $ do
   mtb <- getsState $ \s -> flip getActorBody s <$> target
   let !_A = assert (maybe True (not . bproj) mtb
                     `blame` (fid, source, target, mtb, fact)) ()
-  let !_A = assert (source == gleader fact
+  let !_A = assert (source == _gleader fact
                     `blame` "unexpected actor leader"
                     `twith` (fid, source, target, mtb, fact)) ()
-  let adj fa = fa {gleader = target}
+  let adj fa = fa {_gleader = target}
   updateFaction fid adj
 
 updDiplFaction :: MonadStateWrite m

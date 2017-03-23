@@ -135,7 +135,7 @@ switchLeader :: (MonadAtomic m, MonadServer m)
 switchLeader fid aidNew = do
   fact <- getsState $ (EM.! fid) . sfactionD
   bPre <- getsState $ getActorBody aidNew
-  let mleader = gleader fact
+  let mleader = _gleader fact
       !_A1 = assert (Just aidNew /= mleader
                      && not (bproj bPre)
                      `blame` (aidNew, bPre, fid, fact)) ()

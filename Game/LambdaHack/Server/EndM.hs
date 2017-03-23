@@ -70,7 +70,7 @@ dieSer aid b = do
     -- Projectiles can't drop stash, because they are blind and so the faction
     -- would not see the actor that drops the stash, leading to a crash.
     -- But this is OK; projectiles can't be leaders, so stash dropped earlier.
-    when (isNothing $ gleader fact) $ moveStores False aid CSha CInv
+    when (isNothing $ _gleader fact) $ moveStores False aid CSha CInv
   -- If the actor was a projectile and no effect was triggered by hitting
   -- an enemy, the item still exists and @OnSmash@ effects will be triggered:
   dropAllItems aid b

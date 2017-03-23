@@ -209,7 +209,7 @@ anyActorsAlive fid aid = do
 
 electLeader :: MonadAtomic m => FactionId -> LevelId -> ActorId -> m ()
 electLeader fid lid aidDead = do
-  mleader <- getsState $ gleader . (EM.! fid) . sfactionD
+  mleader <- getsState $ _gleader . (EM.! fid) . sfactionD
   when (mleader == Just aidDead) $ do
     actorD <- getsState sactorD
     let ours (_, b) = bfid b == fid && not (bproj b)
@@ -224,7 +224,7 @@ supplantLeader :: MonadAtomic m => FactionId -> ActorId -> m ()
 supplantLeader fid aid = do
   fact <- getsState $ (EM.! fid) . sfactionD
   unless (fleaderMode (gplayer fact) == LeaderNull) $ do
-    execUpdAtomic $ UpdLeadFaction fid (gleader fact) (Just aid)
+    execUpdAtomic $ UpdLeadFaction fid (_gleader fact) (Just aid)
 
 -- The missile item is removed from the store only if the projection
 -- went into effect (no failure occured).
@@ -444,7 +444,7 @@ actorSkillsServer aid  = do
   ar <- getsServer $ (EM.! aid) . sactorAspect
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
-  let mleader = gleader fact
+  let mleader = _gleader fact
   getsState $ actorSkills mleader aid ar
 
 getCacheLucid :: MonadServer m => LevelId -> m FovLucid

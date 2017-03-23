@@ -81,7 +81,7 @@ handleAndBroadcast atomic = do
       sendAtomic fid (SfxAtomic sfx) = sendSfx fid sfx
       breakSend lid fid fact perFidLid = do
         -- We take the new leader, from after cmd execution.
-        let hear atomic2 = case gleader fact of
+        let hear atomic2 = case _gleader fact of
               Just leader -> do
                 body <- getsState $ getActorBody leader
                 loud <- case atomic2 of

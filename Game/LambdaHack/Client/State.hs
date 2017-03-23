@@ -60,7 +60,8 @@ data StateClient = StateClient
   , salter       :: !AlterLid      -- ^ cached alter ability data for positions
   , srandom      :: !R.StdGen      -- ^ current random generator
   , _sleader     :: !(Maybe ActorId)
-                                   -- ^ current picked party leader
+                                   -- ^ candidate new leader of the faction;
+                                   --   Faction._gleader is the old leader
   , _sside       :: !FactionId     -- ^ faction controlled by the client
   , squit        :: !Bool          -- ^ exit the game loop
   , scurDiff     :: !Int           -- ^ current game difficulty level

@@ -28,7 +28,6 @@ import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 
-import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Content.KeyKind
@@ -37,6 +36,7 @@ import Game.LambdaHack.Client.UI.FrameM
 import Game.LambdaHack.Client.UI.Frontend
 import Game.LambdaHack.Client.UI.HandleHelperM
 import Game.LambdaHack.Client.UI.HandleHumanM
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
@@ -95,7 +95,7 @@ queryUI = do
             return (ReqUIGameExit, Nothing)  -- ask server to exit
           else return (ReqUINop, Nothing)
   else do
-    let mleader = gleader fact
+    let mleader = _gleader fact
         !_A = assert (isJust mleader) ()
     req <- humanCommand
     leader2 <- getLeaderUI
