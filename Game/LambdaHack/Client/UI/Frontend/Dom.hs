@@ -145,6 +145,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
                 | keyCode == 8 = "Backspace"
                 | keyCode == 9 =
                   if modifier == K.Shift then "BackTab" else "Tab"
+                | keyCode == 13 = "Enter"
                 | keyCode == 27 = "Escape"
                 | keyCode == 46 = "Delete"
                 | otherwise = ""
@@ -232,16 +233,15 @@ handleMouse rf (cell, _) cx cy = do
         -- https://hackage.haskell.org/package/ghcjs-dom-0.2.1.0/docs/GHCJS-DOM-EventM.html
         but <- mouseButton
         modifier <- readMod
-        let mkey = case but of
-              0 -> Just K.LeftButtonRelease
-              1 -> Just K.MiddleButtonRelease
-              2 -> Just K.RightButtonRelease  -- not handled in contextMenu
-              _ -> Just K.LeftButtonRelease  -- any other is alternate left
+        let key = case but of
+              0 -> K.LeftButtonRelease
+              1 -> K.MiddleButtonRelease
+              2 -> K.RightButtonRelease  -- not handled in contextMenu
+              _ -> K.LeftButtonRelease  -- any other is alternate left
             pointer = Point cx cy
         -- IO.liftIO $ putStrLn $
         --   "m: " ++ show but ++ show modifier ++ show pointer
-        maybe (return ())
-              (\key -> IO.liftIO $ saveKMP rf modifier key pointer) mkey
+        IO.liftIO $ saveKMP rf modifier key pointer
   void $ cell `on` wheel $ do
     saveWheel
     preventDefault
