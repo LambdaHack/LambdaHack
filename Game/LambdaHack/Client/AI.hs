@@ -49,6 +49,7 @@ queryAI aid = do
     case treq of
       RequestAnyAbility ReqWait | mleader == Just aid -> do
         -- leader waits; a waste; try once to change leader
+        modifyClient $ \cli -> cli {_sleader = mleader}  -- undo previous choice
         (aidToMove2, bToMove2) <- pickActorToMove (Just aidToMove) refreshTarget
         if aidToMove2 /= aidToMove
         then do
