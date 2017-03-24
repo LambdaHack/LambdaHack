@@ -17,7 +17,7 @@ data DebugModeCli = DebugModeCli
   , sdlFontFile       :: !(Maybe Text)
       -- ^ Font file to use for the SDL2 main game window.
   , sdlTtfSizeAdd     :: !(Maybe Int)
-      -- ^ Pixels to add to map cells on top of .ttf font max glyph height.
+      -- ^ Pixels to add to map cells on top of scalable font max glyph height.
   , sdlFonSizeAdd     :: !(Maybe Int)
       -- ^ Pixels to add to map cells on top of .fon font max glyph height.
   , sfontSize         :: !(Maybe Int)

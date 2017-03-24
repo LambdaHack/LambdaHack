@@ -38,7 +38,7 @@ debugArgs args = do
         , "  --dbgMsgSer  let the server emit its internal debug messages"
         , "  --gtkFontFamily s  use the given font family for the main game window in GTK"
         , "  --sdlFontFile s  use the given font file for the main game window in SDL2"
-        , "  --sdlTtfSizeAdd s  enlarge map cells on top of .ttf font max height in SDL2"
+        , "  --sdlTtfSizeAdd s  enlarge map cells over scalable font max height in SDL2"
         , "  --sdlFonSizeAdd s  enlarge map cells on top of .fon font max height in SDL2"
         , "  --fontSize s  use the given font size for the main game window"
         , "  --noColorIsBold  refrain from making some bright color characters bolder"

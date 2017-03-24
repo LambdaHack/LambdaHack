@@ -79,7 +79,7 @@ Screen font can be changed and enlarged by editing the config file
 in the user data folder. For a small game window, the highly optimized
 bitmap fonts 16x16x.fon, 8x8x.fon and 8x8xb.fon are the best,
 but for larger window sizes or if you require international characters
-(e.g. to give custom names to player characters), a scalable ttf font
+(e.g. to give custom names to player characters), a scalable font
 is the only option. The game winow automatically scales according
 to the specified font size.
 
