@@ -186,14 +186,6 @@ actionStrategy aid = do
           , displaceBlocker aid  -- fires up only when path blocked
           , not condDesirableFloorItem
             && not newCondInMelee )
-        , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
-            <$> equipItems aid  -- doesn't take long, very useful if safe
-                                -- only if calm enough, so high priority
-          , not (condAnyFoeAdj
-                 || condDesirableFloorItem
-                 || condNotCalmEnough
-                 || heavilyDistressed)
-            && not newCondInMelee )
         ]
       -- Order doesn't matter, scaling does.
       distant :: [([Ability], m (Frequency RequestAnyAbility), Bool)]
@@ -203,6 +195,14 @@ actionStrategy aid = do
             $ (toAny :: ToAny 'AbMoveItem)
             <$> yieldUnneeded aid  -- 20000 to unequip ASAP, unless is thrown
           , True )
+        , ( [AbMoveItem]
+          , stratToFreq 1$ (toAny :: ToAny 'AbMoveItem)
+            <$> equipItems aid  -- doesn't take long, very useful if safe
+          , not (condAnyFoeAdj
+                 || condDesirableFloorItem
+                 || condNotCalmEnough
+                 || heavilyDistressed
+                 || newCondInMelee) )
         , ( [AbProject]  -- for high-value target, shoot even in melee
           , stratToFreq 2 $ (toAny :: ToAny 'AbProject)
             <$> projectItem aid

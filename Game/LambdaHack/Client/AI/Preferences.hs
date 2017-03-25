@@ -120,7 +120,7 @@ aspectToBenefit _cops _b asp =
     IK.AddSpeed p -> Dice.meanDice p * 10000
     IK.AddSight p -> Dice.meanDice p * 10
     IK.AddSmell p -> Dice.meanDice p * 10
-    IK.AddShine p -> Dice.meanDice p * 10
+    IK.AddShine p -> Dice.meanDice p
     IK.AddNocto p -> Dice.meanDice p * 50
     IK.AddAggression{} -> 0
     IK.AddAbility _ p -> Dice.meanDice p * 5
