@@ -56,6 +56,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.ModeKind as MK
 import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
@@ -410,11 +411,17 @@ drawFrameStatus drawnLevelId = do
     <- drawSelected drawnLevelId (widthStats - leaderStatusWidth) sselected
   damageStatus <- drawLeaderDamage (widthStats - leaderStatusWidth
                                                - selectedStatusWidth)
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
   let statusGap = emptyAttrLine (widthStats - leaderStatusWidth
                                             - selectedStatusWidth
                                             - length damageStatus)
       tgtOrItem n = do
-        let leaderName = maybe "" (\body -> "Leader:" <+> bname body) mbodyUI
+        let fallback = if MK.fleaderMode (gplayer fact) == MK.LeaderNull
+                       then "This faction never has a leader"
+                       else "Waiting for a team member to spawn"
+            leaderName =
+              maybe fallback (\body -> "Leader:" <+> bname body) mbodyUI
             tgtBlurb = maybe leaderName (\t ->
               "Target:" <+> trimTgtDesc n t) mtgtDesc
         case (sitemSel, mleader) of
@@ -434,7 +441,7 @@ drawFrameStatus drawnLevelId = do
                         $ if k == 1
                           then [name, stats]  -- "a sword" too wordy
                           else [MU.CarWs k name, stats]
-                return $! "Object:" <+> trimTgtDesc n t
+                return $! "Item:" <+> trimTgtDesc n t
           _ -> return $! tgtBlurb
       -- The indicators must fit, they are the actual information.
       pathTgt = displayPathText tgtPos mtargetHP
