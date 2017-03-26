@@ -486,6 +486,7 @@ msgDuplicateScrap = do
 
 createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 createActorUI born aid body = do
+  side <- getsClient sside
   fact <- getsState $ (EM.! bfid body) . sfactionD
   mbUI <- getsSession $ EM.lookup aid . sactorUI
   bUI <- case mbUI of
@@ -502,9 +503,16 @@ createActorUI born aid body = do
            | otherwise -> do
              sactorUI <- getsSession sactorUI
              s <- getState
-             let mhs = map (\k -> tryFindHeroK sactorUI (bfid body) k s) [0..]
-                 n = fromJust $ elemIndex Nothing mhs
-             return $! (n, if n < 1 || n > 9 then '@' else Char.intToDigit n)
+             let symbol k = if k < 1 || k > 9 then '@' else Char.intToDigit k
+                 hasSymbolK k bUI = bsymbol bUI == symbol k
+                                    && bcolor bUI == gcolor fact
+                 findHeroK =
+                   if side == bfid body  -- my faction, so I can see all
+                   then \k -> isJust $ tryFindHeroK sactorUI (bfid body) k s
+                   else \k -> isJust $ find (hasSymbolK k) (EM.elems sactorUI)
+                 mhs = map findHeroK [0..]
+                 n = fromJust $ elemIndex False mhs
+             return (n, symbol n)
       factionD <- getsState sfactionD
       localTime <- getsState $ getLocalTime $ blid body
       Config{configHeroNames} <- getsSession sconfig
@@ -531,7 +539,6 @@ createActorUI born aid body = do
       modifySession $ \sess ->
         sess {sactorUI = EM.insert aid bUI $ sactorUI sess}
       return bUI
-  side <- getsClient sside
   let verb = if born
              then MU.Text $ "appear"
                             <+> if bfid body == side then "" else "suddenly"
@@ -560,10 +567,10 @@ createActorUI born aid body = do
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 destroyActorUI destroy aid b = do
-  bUI <- getsSession $ getActorUI aid
-  unless (bcolor bUI == Color.BrWhite) $  -- keep setup for heroes, etc.
+  trunk <- getsState $ getItemBody $ btrunk b
+  let baseColor = flavourToColor $ jflavour trunk
+  unless (baseColor == Color.BrWhite) $  -- keep setup for heroes, etc.
     modifySession $ \sess -> sess {sactorUI = EM.delete aid $ sactorUI sess}
-  -- if BrWhite, don't delete
   let affect tgt = case tgt of
         TEnemy a permit | a == aid ->
           if destroy then
