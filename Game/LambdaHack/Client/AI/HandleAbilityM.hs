@@ -130,8 +130,8 @@ actionStrategy aid = do
             && not condAdjTriggerable )  -- don't block stairs, perhaps ascend
         , ( [AbAlter], (toAny :: ToAny 'AbAlter)
             <$> trigger aid True
-              -- flee via stairs, even if to wrong level;
-              -- may return via different stairs
+              -- explore next or flee via stairs, even if to wrong level;
+              -- in the latter case, may return via different stairs later on
           , condAdjTriggerable && not condAimEnemyPresent
             && if (condNotCalmEnough || condHpTooLow) && condMeleeBad
                then condThreatAdj  -- stairs risky, if weak use only to flee
