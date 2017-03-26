@@ -1031,9 +1031,9 @@ effectDetectX predicate action execSfx radius target = do
     when perModified $ do
       modifyServer $ \ser -> ser {sperFid = sperFidOld}
       execSendPer (bfid b) (blid b) inPer emptyPer perOld
-    return True
   else
-    return False
+    execSfxAtomic $ SfxMsgFid (bfid b) SfxVoidDetection
+  return True  -- even if nothing spotted, in itself it's still useful data
 
 -- ** DetectActor
 

@@ -1069,6 +1069,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
           [ "you", adverb, "hear something", verb, "someone"] ++ distant
     return $! msg
   SfxFizzles -> return "It flashes and fizzles."
+  SfxVoidDetection -> return "Nothing new detected."
   SfxSummonLackCalm aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
     case msbUI of

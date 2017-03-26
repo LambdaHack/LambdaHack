@@ -138,6 +138,7 @@ data SfxMsg =
   | SfxLoudUpd !Bool !UpdAtomic
   | SfxLoudStrike !Bool !(Kind.Id ItemKind) ! Int
   | SfxFizzles
+  | SfxVoidDetection
   | SfxSummonLackCalm !ActorId
   | SfxLevelNoMore
   | SfxLevelPushed
