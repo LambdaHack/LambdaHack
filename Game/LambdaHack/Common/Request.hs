@@ -210,12 +210,13 @@ permittedProject forced skill b ar
         Left{} -> legal
         Right False -> legal
         Right True -> Right $
-          if ' ' `elem` triggerSyms
-          then case strengthEqpSlot itemFull of
-            Just IK.EqpSlotLightSource -> True
-            Just _ -> False
-            Nothing -> IK.Equipable `notElem` jfeature itemBase
-          else jsymbol itemBase `elem` triggerSyms
+          if | null triggerSyms -> True
+             | ' ' `elem` triggerSyms ->
+               case strengthEqpSlot itemFull of
+                 Just IK.EqpSlotLightSource -> True
+                 Just _ -> False
+                 Nothing -> IK.Equipable `notElem` jfeature itemBase
+             | otherwise -> jsymbol itemBase `elem` triggerSyms
 
 permittedApply :: Time -> Int -> Actor -> AspectRecord -> [Char] -> ItemFull
                -> Either ReqFailure Bool

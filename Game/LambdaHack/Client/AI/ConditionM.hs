@@ -218,7 +218,7 @@ condCanProjectM maxSkills aid = do
   let skill = EM.findWithDefault 0 Ability.AbProject actorSk
       q _ itemFull b ar =
         either (const False) id
-        $ permittedProject False skill b ar " " itemFull
+        $ permittedProject False skill b ar "" itemFull
   benList <- benAvailableItems aid q [CEqp, CInv, CGround]
   let missiles = filter (maybe True ((< 0) . snd) . fst . fst) benList
   return $ not (null missiles)

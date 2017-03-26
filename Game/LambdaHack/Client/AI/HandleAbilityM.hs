@@ -689,10 +689,10 @@ projectItem aid = do
           actorSk <- actorSkillsClient aid
           let skill = EM.findWithDefault 0 AbProject actorSk
           -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
-          -- and no actors or obstracles along the path.
+          -- and no actors or obstacles along the path.
           let q _ itemFull b2 ar =
                 either (const False) id
-                $ permittedProject False skill b2 ar " " itemFull
+                $ permittedProject False skill b2 ar "" itemFull
           actorAspect <- getsClient sactorAspect
           let ar = case EM.lookup aid actorAspect of
                 Just aspectRecord -> aspectRecord
