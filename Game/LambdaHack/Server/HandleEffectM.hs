@@ -535,7 +535,10 @@ effectSummon execSfx grp nDm source target periodic = do
   let ar = actorAspect EM.! source
   -- Verify Calm only at periodic activations. Otherwise summon uses up
   -- the item, which prevent summoning getting out of control
-  -- (unless the item is durable, so normally it shouldn't be).
+  -- (unless the item is durable, but normally it shouldn't be).
+  -- I don't verify Calm otherwise, to prevent an exploit via draining
+  -- one's calm on purpose when an item with good activation has a nasty
+  -- summoning side-effect.
   if periodic && not (bproj sb) && not (calmEnough sb ar) then do
     unless (bproj sb) $ do
       execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonLackCalm source

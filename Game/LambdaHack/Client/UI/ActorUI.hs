@@ -97,6 +97,7 @@ tryFindHeroK :: ActorDictUI -> FactionId -> Int -> State
 tryFindHeroK d fid k s =
   let c | k == 0          = '@'
         | k > 0 && k < 10 = Char.intToDigit k
-        | otherwise       = assert `failure` "no digit" `twith` k
-  in tryFindActor s (\aid body -> c == maybe ' ' bsymbol (EM.lookup aid d)
-                                  && bfid body == fid)
+        | otherwise       = ' '  -- no hero with such symbol
+  in tryFindActor s (\aid body ->
+       maybe False ((== c) . bsymbol) (EM.lookup aid d)
+       && bfid body == fid)
