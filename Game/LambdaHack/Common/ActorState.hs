@@ -15,7 +15,7 @@ module Game.LambdaHack.Common.ActorState
   , getLocalTime, itemPrice, regenCalmDelta
   , actorInAmbient, actorSkills, dispEnemy, fullAssocs, itemToFull
   , goesIntoEqp, goesIntoInv, goesIntoSha, eqpOverfull, eqpFreeN
-  , storeFromC, lidFromC, posFromC, aidFromC, isEscape, isStair
+  , storeFromC, lidFromC, posFromC, aidFromC, isEscape, isStair, anyFoeAdj
   ) where
 
 import Prelude ()
@@ -418,3 +418,19 @@ isStair lid p s =
       -- Contrived, for now.
       isE Item{jname} = jname == "staircase up" || jname == "staircase down"
   in any isE is
+
+-- | Require that any non-dying foe is adjacent, except projectiles
+-- that (possibly) explode upon contact.
+anyFoeAdj :: ActorId -> State -> Bool
+anyFoeAdj aid s =
+  let body = getActorBody aid s
+      fact = (EM.! bfid body) . sfactionD $ s
+      isFragile bag = case EM.keys bag of
+        [iid] -> let itemBase = getItemBody iid s
+                 in IK.Fragile `elem` jfeature itemBase
+        _ -> assert `failure` bag
+      f b = blid b == blid body && isAtWar fact (bfid b) && bhp b > 0
+            && adjacent (bpos b) (bpos body)
+            && not (bproj b && isFragile (beqp b))
+      allAdjFoes = filter f . EM.elems . sactorD $ s
+  in not $ null allAdjFoes

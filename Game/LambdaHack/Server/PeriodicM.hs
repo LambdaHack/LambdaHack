@@ -15,6 +15,7 @@ import qualified Data.EnumSet as ES
 import Data.Int (Int64)
 
 import Game.LambdaHack.Atomic
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -30,7 +31,6 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
@@ -241,36 +241,40 @@ leadLevelSwitch = do
           Nothing -> return ()
           Just leader -> do
             body <- getsState $ getActorBody leader
-            isStairPos <- getsState $ \s p -> isStair (blid body) p s
+            s <- getState
+            actorAspect <- getsServer sactorAspect
             let leaderStuck = waitedLastTurn body
-                tileAdj :: (Point -> Bool) -> Point -> Bool
-                tileAdj f p = any f $ vicinityUnsafe p
-            -- Keep the leader: he is adjacent to stairs and not stuck
-            -- and we don't want to clog stairs or get pushed to another level.
-            unless (not leaderStuck && tileAdj isStairPos (bpos body)) $ do
-              s <- getState
-              let ourLvl (lid, lvl) =
-                    ( lid
-                    , EM.size (lfloor lvl)
-                    , -- Drama levels skipped, hence @Regular@.
-                      actorRegularIds (== bfid body) lid s )
-              ours <- getsState $ map ourLvl . EM.assocs . sdungeon
-              -- Non-humans, being born in the dungeon, have a rough idea of
-              -- the number of items left on the level and will focus
-              -- on levels they started exploring and that have few items
-              -- left. This is to to explore them completely, leave them
-              -- once and for all and concentrate forces on another level.
-              -- In addition, sole stranded actors tend to become leaders
-              -- so that they can join the main force ASAP.
-              let freqList = [ (k, (lid, a))
-                             | (lid, itemN, a : rest) <- ours
-                             , not leaderStuck || lid /= blid body
-                             , let len = 1 + min 10 (length rest)
-                                   k = 1000000 `div` (3 * itemN + len) ]
-              unless (null freqList) $ do
-                (lid, a) <- rndToAction $ frequency
-                                        $ toFreq "leadLevel" freqList
-                unless (lid == blid body) $  -- flip levels rather than actors
-                  supplantLeader (bfid body) a
+                actorMaxSk = aSkills $ actorAspect EM.! leader
+                leaderMelees =
+                  anyFoeAdj leader s
+                  && bweapon body > 0
+                  && EM.findWithDefault 0 Ability.AbMelee actorMaxSk > 0
+                ourLvl (lid, lvl) =
+                  ( lid
+                  , EM.size (lfloor lvl)
+                  , -- Drama levels skipped, hence @Regular@.
+                    actorRegularIds (== bfid body) lid s )
+            ours <- getsState $ map ourLvl . EM.assocs . sdungeon
+            -- Non-humans, being born in the dungeon, have a rough idea of
+            -- the number of items left on the level and will focus
+            -- on levels they started exploring and that have few items
+            -- left. This is to to explore them completely, leave them
+            -- once and for all and concentrate forces on another level.
+            -- In addition, sole stranded actors tend to become leaders
+            -- so that they can join the main force ASAP.
+            -- Also, if leader melees, he may be alone or there is huge battle,
+            -- so switch elsewhere to send him backup.
+            let freqList = [ (k, (lid, a))
+                           | (lid, itemN, a : rest) <- ours
+                           , lid /= blid body
+                             || not leaderStuck && not leaderMelees
+                           , let len = 1 + min 10 (length rest)
+                                 divisor = 3 * itemN + len
+                                 k = 1000000 `div` divisor ]
+            unless (null freqList) $ do
+              (lid, a) <- rndToAction $ frequency
+                                      $ toFreq "leadLevel" freqList
+              unless (lid == blid body) $  -- flip levels rather than actors
+                supplantLeader (bfid body) a
   factionD <- getsState sfactionD
   mapM_ flipFaction $ EM.elems factionD

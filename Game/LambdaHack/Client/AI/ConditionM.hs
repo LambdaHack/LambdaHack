@@ -102,18 +102,8 @@ condTgtNonmovingM aid = do
 -- that (possibly) explode upon contact.
 condAnyFoeAdjM :: MonadStateRead m => ActorId -> m Bool
 condAnyFoeAdjM aid = do
-  body <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid body) . sfactionD
   s <- getState
-  let isFragile bag = case EM.keys bag of
-        [iid] -> let itemBase = getItemBody iid s
-                 in IK.Fragile `elem` jfeature itemBase
-        _ -> assert `failure` bag
-      f b = blid b == blid body && isAtWar fact (bfid b) && bhp b > 0
-            && adjacent (bpos b) (bpos body)
-            && not (bproj b && isFragile (beqp b))
-  allAdjFoes <- getsState $ filter f . EM.elems . sactorD
-  return $! not $ null allAdjFoes
+  return $! anyFoeAdj aid s
 
 -- | Require that any non-dying, non-projectile foe is adjacent.
 condNonProjFoeAdjM :: MonadStateRead m => ActorId -> m Bool
@@ -125,7 +115,7 @@ condNonProjFoeAdjM aid = do
 
 -- | Check if any non-dying, non-projectile foe is dist-close
 -- to any of ours, except for our leader (he can cope alone and is not
--- harmed by communication overhead of movement of others)..
+-- harmed by communication overhead of movement of others).
 -- Even if our actor can't melee, he's under melee attack, so has to flee,
 -- so full alert is justified as well.
 condInMeleeM :: MonadClient m => Int -> Actor -> m Bool
