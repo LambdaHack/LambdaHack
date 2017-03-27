@@ -319,17 +319,19 @@ targetStrategy aid = do
           -- to equally interesting, but perhaps a bit closer targets,
           -- most probably already targeted by other actors.
           TEmbed bag p -> assert (adjacent pos p) $ do
-            -- We start with stairs and embedded items from @closestTriggers@.
+            -- First, stairs and embedded items from @closestTriggers@.
             -- We don't check skills, because they normally don't change
             -- or we can put some equipment back and recover them.
             -- We don't determine if the stairs are interesting
             -- (this changes with time), but allow the actor
-            -- to reach them and then retarget. The only thing we check
-            -- is whether the embedded bag is still there, or used up.
+            -- to reach them and then retarget. The two thing we check
+            -- is whether the embedded bag is still there, or used up
+            -- and whether we happend to be already adjecent to @p@,
+            -- even though not at @pos@.
             bag2 <- getsState $ getEmbedBag lid p  -- not @pos@
-            if bag /= bag2
-            then pickNewTarget
-            else return $! returN "TEmbed" tap
+            if | bag /= bag2 -> pickNewTarget
+               | adjacent (bpos b) p -> setPath $ TPoint tgoal lid (bpos b)
+               | otherwise -> return $! returN "TEmbed" tap
           TItem bag -> do
             -- We don't check skill nor desirability of the bag,
             -- because the skill and the bag were OK when target was set.
