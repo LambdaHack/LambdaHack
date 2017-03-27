@@ -479,9 +479,9 @@ geyserBoiling = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 10, AddMaxCalm 999, AddSpeed 10, AddNocto 2
+  , iaspects = [ AddMaxHP 20, AddMaxCalm 999, AddSpeed 10, AddNocto 2
                , AddAbility AbWait 1, AddAbility AbMelee 1
-               , AddArmorMelee 80, AddArmorRanged 40 ]
+               , AddArmorMelee 40, AddArmorRanged 40 ]  -- hard rock
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
