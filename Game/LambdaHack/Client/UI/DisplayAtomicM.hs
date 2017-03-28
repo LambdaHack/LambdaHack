@@ -493,33 +493,31 @@ createActorUI born aid body = do
     Just bUI -> return bUI
     Nothing -> do
       trunk <- getsState $ getItemBody $ btrunk body
+      Config{configHeroNames} <- getsSession sconfig
       let isBlast = jsymbol trunk `elem` ['\'', '*']  -- good enough approx.
           baseColor = flavourToColor $ jflavour trunk
           basePronoun | not (bproj body) && fhasGender (gplayer fact) = "he"
                       | otherwise = "it"
+          nameFromNumber k = if k == 0 then "Captain" else "Hero" <+> tshow k
+          heroNamePronoun k =
+            if gcolor fact /= Color.BrWhite
+            then (fname (gplayer fact) <+> nameFromNumber k, "he")
+            else fromMaybe (nameFromNumber k, "he")
+                 $ lookup k configHeroNames
       (n, bsymbol) <-
         if | bproj body -> return $ (0, if isBlast then jsymbol trunk else '*')
            | baseColor /= Color.BrWhite -> return $ (0, jsymbol trunk)
            | otherwise -> do
              sactorUI <- getsSession sactorUI
-             s <- getState
-             let symbol 0 = '@'
-                 symbol k | 0 < k || k < 10 = Char.intToDigit k
-                 symbol _ = ' '
-                 hasSymbolK k bUI = bsymbol bUI == symbol k
-                                    && bcolor bUI == gcolor fact
-                 findHeroK =
-                   if side == bfid body  -- my faction, so I can see all
-                   then \k -> isJust $ tryFindHeroK sactorUI (bfid body) k s
-                   else \k -> isJust $ find (hasSymbolK k) (EM.elems sactorUI)
+             let hasNameK k bUI = bname bUI == fst (heroNamePronoun k)
+                                  && bcolor bUI == gcolor fact
+                 findHeroK k = isJust $ find (hasNameK k) (EM.elems sactorUI)
                  mhs = map findHeroK [0..]
                  n = fromJust $ elemIndex False mhs
-             return (n, if n < 10 then symbol n else '@')
+             return (n, if 0 < n && n < 10 then Char.intToDigit n else '@')
       factionD <- getsState sfactionD
       localTime <- getsState $ getLocalTime $ blid body
-      Config{configHeroNames} <- getsSession sconfig
-      let nameFromNumber = if n == 0 then "Captain" else "Hero" <+> tshow n
-          (bname, bpronoun) =
+      let (bname, bpronoun) =
             if | bproj body ->
                  let adj | length (btrajectory body) < 5 = "falling"
                          | otherwise = "flying"
@@ -530,10 +528,7 @@ createActorUI born aid body = do
                  in ( makePhrase [MU.AW $ MU.Text adj, object1, object2]
                     , basePronoun )
                | baseColor /= Color.BrWhite -> (jname trunk, basePronoun)
-               | gcolor fact /= Color.BrWhite ->
-                 (fname (gplayer fact) <+> nameFromNumber, "he")
-               | otherwise ->
-                 fromMaybe (nameFromNumber, "he") $ lookup n configHeroNames
+               | otherwise -> heroNamePronoun n
           bcolor | bproj body = if isBlast then baseColor else Color.BrWhite
                  | baseColor == Color.BrWhite = gcolor fact
                  | otherwise = baseColor

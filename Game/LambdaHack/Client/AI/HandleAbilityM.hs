@@ -829,6 +829,8 @@ flee aid fleeL = do
   mapStrategyM (moveOrRunAid True aid) str
 
 -- We assume @aid@ is a foe and so @dispEnemy@ is binding.
+-- The result of all these conditions is that AI displaces rarely,
+-- but it can't be helped as long as the enemy is smart enough to form fronts.
 displaceFoe :: MonadClient m => ActorId -> m (Strategy RequestAnyAbility)
 displaceFoe aid = do
   Kind.COps{coTileSpeedup} <- getsState scops
@@ -849,8 +851,8 @@ displaceFoe aid = do
           -- DisplaceDying, DisplaceBraced, DisplaceImmobile, DisplaceSupported
         let nFr = nFriends body2
         return $! if displaceable body2 && dEnemy && nFr < nFrHere
-          then Just (nFr * nFr, bpos body2 `vectorToFrom` bpos b)
-          else Nothing
+                  then Just (nFr * nFr, bpos body2 `vectorToFrom` bpos b)
+                  else Nothing
   vFoes <- mapM qualifyActor allFoes
   let str = liftFrequency $ toFreq "displaceFoe" $ catMaybes vFoes
   mapStrategyM (moveOrRunAid True aid) str
