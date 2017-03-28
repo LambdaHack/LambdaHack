@@ -503,7 +503,9 @@ createActorUI born aid body = do
            | otherwise -> do
              sactorUI <- getsSession sactorUI
              s <- getState
-             let symbol k = if k < 1 || k > 9 then '@' else Char.intToDigit k
+             let symbol 0 = '@'
+                 symbol k | 0 < k || k < 10 = Char.intToDigit k
+                 symbol _ = ' '
                  hasSymbolK k bUI = bsymbol bUI == symbol k
                                     && bcolor bUI == gcolor fact
                  findHeroK =
@@ -512,7 +514,7 @@ createActorUI born aid body = do
                    else \k -> isJust $ find (hasSymbolK k) (EM.elems sactorUI)
                  mhs = map findHeroK [0..]
                  n = fromJust $ elemIndex False mhs
-             return (n, symbol n)
+             return (n, if n < 10 then symbol n else '@')
       factionD <- getsState sfactionD
       localTime <- getsState $ getLocalTime $ blid body
       Config{configHeroNames} <- getsSession sconfig
