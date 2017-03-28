@@ -49,7 +49,6 @@ data Actor = Actor
   , boldpos     :: !(Maybe Point)
                                  -- ^ previous position, if any
   , blid        :: !LevelId      -- ^ current level
-  , boldlid     :: !LevelId      -- ^ previous level
   , bfid        :: !FactionId    -- ^ faction the actor currently belongs to
   , btrajectory :: !(Maybe ([Vector], Speed))
                                  -- ^ trajectory the actor must
@@ -116,7 +115,6 @@ actorTemplate :: ItemId -> Int64 -> Int64 -> Point -> LevelId -> FactionId
 actorTemplate btrunk bhp bcalm bpos blid bfid =
   let btrajectory = Nothing
       boldpos = Nothing
-      boldlid = blid
       borgan  = EM.empty
       beqp    = EM.empty
       binv    = EM.empty

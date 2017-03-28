@@ -678,7 +678,6 @@ switchLevels2 lidNew posNew (aid, bOld) btime_bOld mlead = do
       bNew = bOld { blid = lidNew
                   , bpos = posNew
                   , boldpos = Just posNew  -- new level, new direction
-                  , boldlid = lidOld  -- record old level
                   , borgan = setTimeout $ borgan bOld
                   , beqp = setTimeout $ beqp bOld }
   -- Materialize the actor at the new location.
