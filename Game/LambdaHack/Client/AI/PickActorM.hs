@@ -175,9 +175,11 @@ pickActorToMove maidToAvoid refreshTarget = do
                            | otherwise = 0
             in formationValue `div` 3 + fightValue
                + (if targetBlocked abt then 1000 else 0)
-               + (if d < 8 then d `div` 4 else 2 + d `div` 10)
+               + (case d of
+                    0 -> -400 -- do your thing ASAP and retarget
+                    1 -> -200 -- prevent others from occupying the tile
+                    _ -> if d < 8 then d `div` 4 else 2 + d `div` 10)
                + (if aid == oldAid then 1 else 0)
-               - if d == 0 then 100 else 0  -- do your thing ASAP and retarget
           sortOurs = sortBy $ comparing overheadOurs
           goodTEnemy ((_aid, b), TgtAndPath{ tapTgt=TEnemy{}
                                            , tapPath=AndPath{pathGoal} }) =
