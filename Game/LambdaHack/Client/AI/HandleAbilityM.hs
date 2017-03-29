@@ -133,10 +133,10 @@ actionStrategy aid = do
               -- explore next or flee via stairs, even if to wrong level;
               -- in the latter case, may return via different stairs later on
           , condAdjTriggerable && not condAimEnemyPresent
-            && if (condNotCalmEnough || condHpTooLow) && condMeleeBad
-               then condThreatAdj  -- stairs risky, if weak use only to flee
-               else (lidExplored || condEnoughGear)
-                    && not condDesirableFloorItem )
+            && ((condNotCalmEnough || condHpTooLow)  -- flee
+                && condMeleeBad && condThreatAdj
+                || (lidExplored || condEnoughGear)  -- explore
+                   && not condDesirableFloorItem) )
         , ( [AbDisplace]
           , displaceFoe aid  -- only swap with an enemy to expose him
           , condBlocksFriends && condNonProjFoeAdj
