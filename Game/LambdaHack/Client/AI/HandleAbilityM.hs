@@ -213,13 +213,13 @@ actionStrategy aid = do
           , (condAimEnemyPresent || condThreatNearby) )  -- can affect enemies
         , ( [AbMove]
           , stratToFreq (if | not condAimEnemyPresent ->
-                              3  -- if enemy only remembered, investigate anyway
+                              2  -- if enemy only remembered, investigate anyway
                             | condTgtNonmoving && condMeleeBad ->
                               0
                             | condAimEnemyAdjFriend ->
                               1000  -- friends probably pummeled, go to help
                             | otherwise ->
-                              100)
+                              50)
             $ chase aid True (condThreatAt 5
                               && not aInAmbient && not actorShines
                               && condMeleeBad)
@@ -725,7 +725,7 @@ projectItem aid = do
                     benR = durableBonus
                            * coeff cstore
                            * case mben of
-                               Nothing -> -1  -- experiment if no options
+                               Nothing -> -10  -- experiment if no options
                                Just (_, ben) -> ben
                            * (if recharged then 1 else 0)
                 in if -- Melee weapon is usually needed in hand.
