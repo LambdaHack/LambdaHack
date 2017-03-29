@@ -910,6 +910,7 @@ chase aid doDisplace avoidAmbient = do
   let isAmbient pos = Tile.isLit coTileSpeedup (lvl `at` pos)
   str <- case mtgtMPath of
     Just TgtAndPath{tapPath=AndPath{pathList=q : _, ..}}
+      | pathGoal == bpos body -> return reject  -- shortcut and just to be sure
       | not $ avoidAmbient && isAmbient q ->
       -- With no leader, the goal is vague, so permit arbitrary detours.
       moveTowards aid q pathGoal (fleaderMode (gplayer fact) == LeaderNull)

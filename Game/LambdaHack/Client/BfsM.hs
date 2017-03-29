@@ -324,7 +324,7 @@ closestTriggers onlyDir aid = do
                 TriggerOther -> 4
               maxd = fromEnum (maxBound :: BfsDistance)
                      - fromEnum apartBfs
-              v | dist == 0 = maxd * maxd * 10000  -- if already adjacent, keep
+              v | dist == 0 = maxd * maxd * 100000  -- if already adjacent, keep
                 | otherwise = (maxd * maxd * 100) `div` (dist * dist)
           in (depthDelta * v, ppbag)
     in mapMaybe (\(cid, (p, pbag)) ->
