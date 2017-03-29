@@ -268,7 +268,7 @@ leadLevelSwitch = do
                            | (lid, itemN, a : rest) <- ours
                            , lid /= blid body
                              || not leaderStuck && not leaderMelees
-                           , let len = 1 + min 10 (length rest)
+                           , let len = 1 + min 7 (length rest)
                                  divisor = 3 * itemN + len
                                  k = 1000000 `div` divisor ]
             unless (null freqList) $ do

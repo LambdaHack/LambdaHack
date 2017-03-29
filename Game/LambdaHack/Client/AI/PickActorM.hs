@@ -176,8 +176,8 @@ pickActorToMove maidToAvoid refreshTarget = do
             in formationValue `div` 3 + fightValue
                + (if targetBlocked abt then 1000 else 0)
                + (case d of
-                    0 -> -400 -- do your thing ASAP and retarget
-                    1 -> -200 -- prevent others from occupying the tile
+                    0 -> -4000 -- do your thing ASAP and retarget
+                    1 -> -2000 -- prevent others from occupying the tile
                     _ -> if d < 8 then d `div` 4 else 2 + d `div` 10)
                + (if aid == oldAid then 1 else 0)
           sortOurs = sortBy $ comparing overheadOurs
