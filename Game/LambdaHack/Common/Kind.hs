@@ -95,7 +95,6 @@ data COps = COps
   , coplace       :: !(Ops PlaceKind)    -- server only, so far
   , corule        :: !(Ops RuleKind)
   , cotile        :: !(Ops TileKind)
-  , coClear       :: !Bool
   , coTileSpeedup :: !TileSpeedup
   }
 

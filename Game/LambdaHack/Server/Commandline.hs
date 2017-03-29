@@ -24,6 +24,7 @@ debugArgs args = do
         , "  --sniffIn  display all incoming commands on console "
         , "  --sniffOut  display all outgoing commands on console "
         , "  --allClear  let all map tiles be translucent"
+        , "  --boostRandomItem  pick a random item and make it very common"
         , "  --gameMode m  start next game in the given mode"
         , "  --automateAll  give control of all UI teams to computer"
         , "  --keepAutomated  keep factions automated after game over"
@@ -64,6 +65,8 @@ debugArgs args = do
         (parseArgs rest) {sniffOut = True}
       parseArgs ("--allClear" : rest) =
         (parseArgs rest) {sallClear = True}
+      parseArgs ("--boostRandomItem" : rest) =
+        (parseArgs rest) {sboostRandomItem = True}
       parseArgs ("--gameMode" : s : rest) =
         (parseArgs rest) {sgameMode = Just $ toGroupName (T.pack s)}
       parseArgs ("--automateAll" : rest) =

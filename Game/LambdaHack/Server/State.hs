@@ -63,23 +63,24 @@ data StateServer = StateServer
 
 -- | Debug commands. See 'Server.debugArgs' for the descriptions.
 data DebugModeSer = DebugModeSer
-  { sknowMap       :: !Bool
-  , sknowEvents    :: !Bool
-  , sknowItems     :: !Bool
-  , sniffIn        :: !Bool
-  , sniffOut       :: !Bool
-  , sallClear      :: !Bool
-  , sgameMode      :: !(Maybe (GroupName ModeKind))
-  , sautomateAll   :: !Bool
-  , skeepAutomated :: !Bool
-  , sdungeonRng    :: !(Maybe R.StdGen)
-  , smainRng       :: !(Maybe R.StdGen)
-  , snewGameSer    :: !Bool
-  , scurDiffSer    :: !Int
-  , sdumpInitRngs  :: !Bool
-  , ssavePrefixSer :: !String
-  , sdbgMsgSer     :: !Bool
-  , sdebugCli      :: !DebugModeCli
+  { sknowMap         :: !Bool
+  , sknowEvents      :: !Bool
+  , sknowItems       :: !Bool
+  , sniffIn          :: !Bool
+  , sniffOut         :: !Bool
+  , sallClear        :: !Bool
+  , sboostRandomItem :: !Bool
+  , sgameMode        :: !(Maybe (GroupName ModeKind))
+  , sautomateAll     :: !Bool
+  , skeepAutomated   :: !Bool
+  , sdungeonRng      :: !(Maybe R.StdGen)
+  , smainRng         :: !(Maybe R.StdGen)
+  , snewGameSer      :: !Bool
+  , scurDiffSer      :: !Int
+  , sdumpInitRngs    :: !Bool
+  , ssavePrefixSer   :: !String
+  , sdbgMsgSer       :: !Bool
+  , sdebugCli        :: !DebugModeCli
       -- The client debug inside server debug only holds the client commandline
       -- options and is never updated with config options, etc.
   }
@@ -152,6 +153,7 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , sniffIn = False
                                , sniffOut = False
                                , sallClear = False
+                               , sboostRandomItem = False
                                , sgameMode = Nothing
                                , sautomateAll = False
                                , skeepAutomated = False
@@ -221,6 +223,7 @@ instance Binary DebugModeSer where
     put sniffIn
     put sniffOut
     put sallClear
+    put sboostRandomItem
     put sgameMode
     put sautomateAll
     put skeepAutomated
@@ -235,6 +238,7 @@ instance Binary DebugModeSer where
     sniffIn <- get
     sniffOut <- get
     sallClear <- get
+    sboostRandomItem <- get
     sgameMode <- get
     sautomateAll <- get
     skeepAutomated <- get

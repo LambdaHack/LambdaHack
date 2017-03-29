@@ -1,6 +1,6 @@
 -- | Item and treasure definitions.
 module Content.ItemKind
-  ( cdefs
+  ( cdefs, items, otherItemContent
   ) where
 
 import Prelude ()
@@ -27,9 +27,11 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validateSingle = validateSingleItemKind
   , validateAll = validateAllItemKind
-  , content = contentFromList $
-      items ++ embeds ++ actors ++ organs ++ blasts ++ temporaries
+  , content = contentFromList []
   }
+
+otherItemContent :: [ItemKind]
+otherItemContent = embeds ++ actors ++ organs ++ blasts ++ temporaries
 
 items :: [ItemKind]
 items =

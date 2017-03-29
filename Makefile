@@ -25,40 +25,40 @@ minific:
 
 
 frontendRaid:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode raid
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode raid
 
 frontendBrawl:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode brawl
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode brawl
 
 frontendShootout:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode shootout
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode shootout
 
 frontendEscape:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 3 --dumpInitRngs --automateAll --gameMode escape
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix test --newGame 3 --dumpInitRngs --automateAll --gameMode escape
 
 frontendZoo:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 2 --dumpInitRngs --automateAll --gameMode zoo
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix test --newGame 2 --dumpInitRngs --automateAll --gameMode zoo
 
 frontendAmbush:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode ambush
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode ambush
 
 frontendExploration:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 1 --dumpInitRngs --automateAll --gameMode exploration
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix test --newGame 1 --dumpInitRngs --automateAll --gameMode exploration
 
 frontendSafari:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 2 --dumpInitRngs --automateAll --gameMode safari
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix test --newGame 2 --dumpInitRngs --automateAll --gameMode safari
 
 frontendSafariSurvival:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode "safari survival"
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode "safari survival"
 
 frontendBattle:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode battle
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode battle
 
 frontendBattleSurvival:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode "battle survival"
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode "battle survival"
 
 frontendDefense:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 9 --dumpInitRngs --automateAll --gameMode defense
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix test --newGame 9 --dumpInitRngs --automateAll --gameMode defense
 
 
 benchMemoryAnim:
@@ -111,68 +111,68 @@ test-short: test-short-new test-short-load
 test-medium: testRaid-medium testBrawl-medium testShootout-medium testEscape-medium testZoo-medium testAmbush-medium testExploration-medium testSafari-medium testSafariSurvival-medium testBattle-medium testBattleSurvival-medium testDefense-medium
 
 testRaid-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 20 --dumpInitRngs --automateAll --keepAutomated --gameMode raid 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 20 --dumpInitRngs --automateAll --keepAutomated --gameMode raid 2> /tmp/teletypetest.log
 
 testBrawl-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 20 --dumpInitRngs --automateAll --keepAutomated --gameMode brawl 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 20 --dumpInitRngs --automateAll --keepAutomated --gameMode brawl 2> /tmp/teletypetest.log
 
 testShootout-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 20 --dumpInitRngs --automateAll --keepAutomated --gameMode shootout 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 20 --dumpInitRngs --automateAll --keepAutomated --gameMode shootout 2> /tmp/teletypetest.log
 
 testEscape-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 3 --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 40 --dumpInitRngs --automateAll --keepAutomated --gameMode escape 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 3 --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 40 --dumpInitRngs --automateAll --keepAutomated --gameMode escape 2> /tmp/teletypetest.log
 
 testZoo-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 100 --dumpInitRngs --automateAll --keepAutomated --gameMode zoo 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 2 --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 100 --dumpInitRngs --automateAll --keepAutomated --gameMode zoo 2> /tmp/teletypetest.log
 
 testAmbush-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 20 --dumpInitRngs --automateAll --keepAutomated --gameMode ambush 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 20 --dumpInitRngs --automateAll --keepAutomated --gameMode ambush 2> /tmp/teletypetest.log
 
 testExploration-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 1 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 200 --dumpInitRngs --automateAll --keepAutomated --gameMode exploration 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 1 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 200 --dumpInitRngs --automateAll --keepAutomated --gameMode exploration 2> /tmp/teletypetest.log
 
 testSafari-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 100 --dumpInitRngs --automateAll --keepAutomated --gameMode safari 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 2 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 100 --dumpInitRngs --automateAll --keepAutomated --gameMode safari 2> /tmp/teletypetest.log
 
 testSafariSurvival-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 8 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 60 --dumpInitRngs --automateAll --keepAutomated --gameMode "safari survival" 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 8 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 60 --dumpInitRngs --automateAll --keepAutomated --gameMode "safari survival" 2> /tmp/teletypetest.log
 
 testBattle-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 20 --dumpInitRngs --automateAll --keepAutomated --gameMode battle 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 3 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 20 --dumpInitRngs --automateAll --keepAutomated --gameMode battle 2> /tmp/teletypetest.log
 
 testBattleSurvival-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 7 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 60 --dumpInitRngs --automateAll --keepAutomated --gameMode "battle survival" 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 7 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 60 --dumpInitRngs --automateAll --keepAutomated --gameMode "battle survival" 2> /tmp/teletypetest.log
 
 testDefense-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 9 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 500 --dumpInitRngs --automateAll --keepAutomated --gameMode defense 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 9 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 500 --dumpInitRngs --automateAll --keepAutomated --gameMode defense 2> /tmp/teletypetest.log
 
 test-short-new:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix raid --dumpInitRngs --automateAll --keepAutomated --gameMode raid --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix brawl --dumpInitRngs --automateAll --keepAutomated --gameMode brawl --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix shootout --dumpInitRngs --automateAll --keepAutomated --gameMode shootout --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix escape --dumpInitRngs --automateAll --keepAutomated --gameMode escape --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix zoo --dumpInitRngs --automateAll --keepAutomated --gameMode zoo --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix ambush --dumpInitRngs --automateAll --keepAutomated --gameMode ambush --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix exploration --dumpInitRngs --automateAll --keepAutomated --gameMode exploration --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix safari --dumpInitRngs --automateAll --keepAutomated --gameMode safari --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix safariSurvival --dumpInitRngs --automateAll --keepAutomated --gameMode "safari survival" --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix battle --dumpInitRngs --automateAll --keepAutomated --gameMode battle --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix battleSurvival --dumpInitRngs --automateAll --keepAutomated --gameMode "battle survival" --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix defense --dumpInitRngs --automateAll --keepAutomated --gameMode defense --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --savePrefix raid --dumpInitRngs --automateAll --keepAutomated --gameMode raid --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --savePrefix brawl --dumpInitRngs --automateAll --keepAutomated --gameMode brawl --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --savePrefix shootout --dumpInitRngs --automateAll --keepAutomated --gameMode shootout --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --savePrefix escape --dumpInitRngs --automateAll --keepAutomated --gameMode escape --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --savePrefix zoo --dumpInitRngs --automateAll --keepAutomated --gameMode zoo --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --savePrefix ambush --dumpInitRngs --automateAll --keepAutomated --gameMode ambush --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --savePrefix exploration --dumpInitRngs --automateAll --keepAutomated --gameMode exploration --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --savePrefix safari --dumpInitRngs --automateAll --keepAutomated --gameMode safari --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --savePrefix safariSurvival --dumpInitRngs --automateAll --keepAutomated --gameMode "safari survival" --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --savePrefix battle --dumpInitRngs --automateAll --keepAutomated --gameMode battle --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --savePrefix battleSurvival --dumpInitRngs --automateAll --keepAutomated --gameMode "battle survival" --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --savePrefix defense --dumpInitRngs --automateAll --keepAutomated --gameMode defense --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
 
 test-short-load:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix raid --dumpInitRngs --automateAll --keepAutomated --gameMode raid --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix brawl --dumpInitRngs --automateAll --keepAutomated --gameMode brawl --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix shootout --dumpInitRngs --automateAll --keepAutomated --gameMode shootouti --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix escape --dumpInitRngs --automateAll --keepAutomated --gameMode escape --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix zoo --dumpInitRngs --automateAll --keepAutomated --gameMode zoo --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix ambush --dumpInitRngs --automateAll --keepAutomated --gameMode ambush --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix exploration --dumpInitRngs --automateAll --keepAutomated --gameMode exploration --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix safari --dumpInitRngs --automateAll --keepAutomated --gameMode safari --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix safariSurvival --dumpInitRngs --automateAll --keepAutomated --gameMode "safari survival" --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix battle --dumpInitRngs --automateAll --keepAutomated --gameMode battle --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix battleSurvival --dumpInitRngs --automateAll --keepAutomated --gameMode "battle survival" --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix defense --dumpInitRngs --automateAll --keepAutomated --gameMode defense --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix raid --dumpInitRngs --automateAll --keepAutomated --gameMode raid --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix brawl --dumpInitRngs --automateAll --keepAutomated --gameMode brawl --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix shootout --dumpInitRngs --automateAll --keepAutomated --gameMode shootouti --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix escape --dumpInitRngs --automateAll --keepAutomated --gameMode escape --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix zoo --dumpInitRngs --automateAll --keepAutomated --gameMode zoo --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix ambush --dumpInitRngs --automateAll --keepAutomated --gameMode ambush --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix exploration --dumpInitRngs --automateAll --keepAutomated --gameMode exploration --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix safari --dumpInitRngs --automateAll --keepAutomated --gameMode safari --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix safariSurvival --dumpInitRngs --automateAll --keepAutomated --gameMode "safari survival" --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix battle --dumpInitRngs --automateAll --keepAutomated --gameMode battle --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix battleSurvival --dumpInitRngs --automateAll --keepAutomated --gameMode "battle survival" --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix defense --dumpInitRngs --automateAll --keepAutomated --gameMode defense --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
 
 
 build-binary:
