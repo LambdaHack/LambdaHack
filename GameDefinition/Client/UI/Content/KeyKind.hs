@@ -66,7 +66,7 @@ standardKeys = KeyKind
               , "autoexplore 25 times"
               , autoexplore25Cmd ))
       , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_5", "C-V"]))
-      , ("C-R", ( [CmdMove], "lurk (wait 0.1 turn 100 times)"
+      , ("C-R", ( [CmdMove], "lurk (wait 0.1 turns 100 times)"
                 , Macro ["C-KP_5", "V"] ))
       , ("c", ( [CmdMove, CmdMinimal]
               , descTs closeDoorTriggers

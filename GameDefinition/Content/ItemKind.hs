@@ -875,8 +875,8 @@ ring6 = ring
   , ifeature = Durable : ifeature ring
   }
 ring7 = ring
-  { ifreq    = [("useful", 100), ("ring of opportunity sniper", 1) ]
-  , irarity  = [(1, 1)]
+  { ifreq    = [("useful", 10), ("ring of opportunity sniper", 1) ]
+  , irarity  = [(10, 5)]
   , iaspects = [AddAbility AbProject 8]
   , ieffects = [ ELabel "of opportunity sniper"
                , Explode "distortion"  -- strong magic

@@ -31,7 +31,7 @@ warrior = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 60  -- partially from clothes and assumed first aid
+  , iaspects = [ AddMaxHP 80  -- partially from clothes and assumed first aid
                , AddMaxCalm 70, AddSpeed 20, AddNocto 2
                , AddAbility AbProject 2, AddAbility AbApply 1
                , AddAbility AbAlter 2 ]
