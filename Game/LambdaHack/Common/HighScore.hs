@@ -37,7 +37,7 @@ data ScoreRecord = ScoreRecord
   , negTime      :: !Time       -- ^ game time spent (negated, so less better)
   , date         :: !POSIXTime  -- ^ date of the last game interruption
   , status       :: !Status     -- ^ reason of the game interruption
-  , difficulty   :: !Int        -- ^ difficulty of the game
+  , challenge    :: !Challenge  -- ^ challenge setup of the game
   , gplayerName  :: !Text       -- ^ name of the faction's gplayer
   , ourVictims   :: !(EM.EnumMap (Kind.Id ItemKind) Int)  -- ^ allies lost
   , theirVictims :: !(EM.EnumMap (Kind.Id ItemKind) Int)  -- ^ foes killed
@@ -74,7 +74,7 @@ showScore tz (pos, score) =
       victims = let nkilled = sum $ EM.elems $ theirVictims score
                     nlost = sum $ EM.elems $ ourVictims score
                 in "killed" <+> tshow nkilled <> ", lost" <+> tshow nlost
-      diff = difficulty score
+      diff = cdiff $ challenge score
       diffText | diff == difficultyDefault = ""
                | otherwise = "difficulty" <+> tshow diff <> ", "
       tturns = makePhrase [MU.CarWs turns "turn"]
@@ -110,13 +110,13 @@ register :: ScoreTable  -- ^ old table
          -> Time        -- ^ game time spent
          -> Status      -- ^ reason of the game interruption
          -> POSIXTime   -- ^ current date
-         -> Int         -- ^ difficulty level
+         -> Challenge   -- ^ challenge setup
          -> Text        -- ^ name of the faction's gplayer
          -> EM.EnumMap (Kind.Id ItemKind) Int  -- ^ allies lost
          -> EM.EnumMap (Kind.Id ItemKind) Int  -- ^ foes killed
          -> HiCondPoly
          -> (Bool, (ScoreTable, Int))
-register table total time status@Status{stOutcome} date difficulty gplayerName
+register table total time status@Status{stOutcome} date challenge gplayerName
          ourVictims theirVictims hiCondPoly =
   let turnsSpent = fromIntegral $ timeFitUp time timeTurn
       hiInValue (hi, c) = case hi of
@@ -134,9 +134,10 @@ register table total time status@Status{stOutcome} date difficulty gplayerName
         then max 0 (hiPolynomialValue hiPoly)
         else 0
       hiCondValue = sum . map hiSummandValue
+      -- Other challenges than HP difficulty are not reflected in score.
       points = (ceiling :: Double -> Int)
                $ hiCondValue hiCondPoly
-                 * 1.5 ^^ (- (difficultyCoeff difficulty))
+                 * 1.5 ^^ (- (difficultyCoeff (cdiff challenge)))
       negTime = absoluteTimeNegate time
       score = ScoreRecord{..}
   in (points > 0, insertPos score table)

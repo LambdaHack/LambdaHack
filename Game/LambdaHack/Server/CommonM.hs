@@ -356,12 +356,12 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
   -- Create actor.
   factionD <- getsState sfactionD
   let fact = factionD EM.! bfid
-  DebugModeSer{scurDiffSer} <- getsServer sdebugSer
+  curChalSer <- getsServer $ scurChalSer . sdebugSer
   nU <- nUI
   -- If difficulty is below standard, HP is added to the UI factions,
   -- otherwise HP is added to their enemies.
   -- If no UI factions, their role is taken by the escapees (for testing).
-  let diffBonusCoeff = difficultyCoeff scurDiffSer
+  let diffBonusCoeff = difficultyCoeff $ cdiff curChalSer
       hasUIorEscapes Faction{gplayer} =
         fhasUI gplayer || nU == 0 && fcanEscape gplayer
       boostFact = not bproj

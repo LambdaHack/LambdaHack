@@ -10,7 +10,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.IntMap.Strict as IM
+import qualified Data.Map.Strict as M
 import Data.Tuple
 import qualified NLP.Miniutter.English as MU
 
@@ -664,9 +664,9 @@ quitFactionUI fid toSt = do
           _ -> False
     when won $ do
       gameModeId <- getsState sgameModeId
-      scurDiff <- getsClient scurDiff
-      let sing = IM.singleton scurDiff 1
-          f = IM.unionWith (+)
+      scurChal <- getsClient scurChal
+      let sing = M.singleton scurChal 1
+          f = M.unionWith (+)
           g svictoriesOld = EM.insertWith f gameModeId sing svictoriesOld
       modifyClient $ \cli -> cli {svictories = g $ svictories cli}
     tellGameClipPS

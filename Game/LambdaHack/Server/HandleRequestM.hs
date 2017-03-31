@@ -589,10 +589,10 @@ reqApply aid iid cstore = do
 -- * ReqGameRestart
 
 reqGameRestart :: (MonadAtomic m, MonadServer m)
-               => ActorId -> GroupName ModeKind -> Int
+               => ActorId -> GroupName ModeKind -> Challenge
                -> m ()
-reqGameRestart aid groupName d = do
-  modifyServer $ \ser -> ser {sdebugNxt = (sdebugNxt ser) {scurDiffSer = d}}
+reqGameRestart aid groupName scurChalSer = do
+  modifyServer $ \ser -> ser {sdebugNxt = (sdebugNxt ser) {scurChalSer}}
   b <- getsState $ getActorBody aid
   oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
   modifyServer $ \ser ->

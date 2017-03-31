@@ -61,7 +61,7 @@ reinitGame :: (MonadAtomic m, MonadServer m) => m ()
 reinitGame = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   pers <- getsServer sperFid
-  DebugModeSer{scurDiffSer, sknowMap, sdebugCli} <- getsServer sdebugSer
+  DebugModeSer{scurChalSer, sknowMap, sdebugCli} <- getsServer sdebugSer
   -- This state is quite small, fit for transmition to the client.
   -- The biggest part is content, which needs to be updated
   -- at this point to keep clients in sync with server improvements.
@@ -73,7 +73,7 @@ reinitGame = do
         let f KindMean{kmKind} = IK.Identified `elem` IK.ifeature (okind kmKind)
         in EM.filter f discoS
       updRestart fid = UpdRestart fid sdiscoKind (pers EM.! fid) defLocal
-                                  scurDiffSer sdebugCli
+                                  scurChalSer sdebugCli
   factionD <- getsState sfactionD
   mapWithKeyM_ (\fid _ -> execUpdAtomic $ updRestart fid) factionD
   dungeon <- getsState sdungeon
@@ -185,7 +185,7 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
                   restoreScore cops
   factionDold <- getsState sfactionD
   gameModeIdOld <- getsState sgameModeId
-  DebugModeSer{scurDiffSer} <- getsServer sdebugSer
+  curChalSer <- getsServer $ scurChalSer . sdebugSer
 #ifdef USE_BROWSER
   let startingModeGroup = "starting JS"
 #else
@@ -207,7 +207,8 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
         sflavour <- dungeonFlavourMap cops
         (sdiscoKind, sdiscoKindRev) <- serverDiscos cops
         freshDng <- DungeonGen.dungeonGen cops $ mcaves mode
-        factionD <- resetFactions factionDold gameModeIdOld scurDiffSer
+        factionD <- resetFactions factionDold gameModeIdOld
+                                  (cdiff curChalSer)
                                   (DungeonGen.freshTotalDepth freshDng)
                                   players
         return ( factionD, sflavour, sdiscoKind

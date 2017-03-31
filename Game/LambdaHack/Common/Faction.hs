@@ -3,11 +3,12 @@
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Status(..)
-  , Target(..), TGoal(..), tgtKindDescription
+  , Target(..), TGoal(..), Challenge(..), tgtKindDescription
   , isHorrorFact, nameOfHorrorFact
   , noRunWithMulti, isAIFact, autoDungeonLevel, automatePlayer
   , isAtWar, isAllied
   , difficultyBound, difficultyDefault, difficultyCoeff, difficultyInverse
+  , defaultChallenge
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , Dipl
@@ -104,6 +105,15 @@ data TGoal =
 
 instance Binary TGoal
 
+data Challenge = Challenge
+  { cdiff :: !Int   -- ^ game difficulty level (HP bonus or malus)
+  , cwolf :: !Bool  -- ^ lone wolf challenge (only one starting character)
+  , cfish :: !Bool  -- ^ cold fish challenge (no healing from enemies)
+  }
+  deriving (Show, Eq, Ord, Generic)
+
+instance Binary Challenge
+
 tgtKindDescription :: Target -> Text
 tgtKindDescription tgt = case tgt of
   TEnemy _ True -> "at actor"
@@ -182,3 +192,8 @@ difficultyCoeff n = difficultyDefault - n
 -- The function is its own inverse.
 difficultyInverse :: Int -> Int
 difficultyInverse n = difficultyBound + 1 - n
+
+defaultChallenge :: Challenge
+defaultChallenge = Challenge { cdiff = difficultyDefault
+                             , cwolf = False
+                             , cfish = False }

@@ -113,6 +113,8 @@ data HumanCmd =
   | MainMenu
     -- Below this line, commands do not take time.
   | GameDifficultyIncr
+  | GameWolfToggle
+  | GameFishToggle
   | GameScenarioIncr
   | GameRestart
   | GameExit

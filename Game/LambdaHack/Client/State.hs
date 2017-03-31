@@ -14,7 +14,7 @@ import Game.LambdaHack.Common.Prelude
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.IntMap.Strict as IM
+import qualified Data.Map.Strict as M
 import GHC.Generics (Generic)
 import qualified System.Random as R
 
@@ -64,13 +64,13 @@ data StateClient = StateClient
                                    --   Faction._gleader is the old leader
   , _sside       :: !FactionId     -- ^ faction controlled by the client
   , squit        :: !Bool          -- ^ exit the game loop
-  , scurDiff     :: !Int           -- ^ current game difficulty level
-  , snxtDiff     :: !Int           -- ^ next game difficulty level
+  , scurChal     :: !Challenge     -- ^ current game challenge setup
+  , snxtChal     :: !Challenge     -- ^ next game challenge setup
   , snxtScenario :: !Int           -- ^ next game scenario number
   , smarkSuspect :: !Int           -- ^ mark suspect features
   , scondInMelee :: !(EM.EnumMap LevelId (Either Bool (Bool, Bool)))
       -- ^ the old and (new, old) values of condInMelee condition
-  , svictories   :: !(EM.EnumMap (Kind.Id ModeKind) (IM.IntMap Int))
+  , svictories   :: !(EM.EnumMap (Kind.Id ModeKind) (M.Map Challenge Int))
       -- ^ won games at particular difficulty levels
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }
@@ -108,8 +108,8 @@ emptyStateClient _sside =
     , _sleader = Nothing  -- no heroes yet alive
     , _sside
     , squit = False
-    , scurDiff = difficultyDefault
-    , snxtDiff = difficultyDefault
+    , scurChal = defaultChallenge
+    , snxtChal = defaultChallenge
     , snxtScenario = 0
     , smarkSuspect = 1
     , scondInMelee = EM.empty
@@ -157,8 +157,8 @@ instance Binary StateClient where
     put (show srandom)
     put _sleader
     put _sside
-    put scurDiff
-    put snxtDiff
+    put scurChal
+    put snxtChal
     put snxtScenario
     put smarkSuspect
     put scondInMelee
@@ -177,8 +177,8 @@ instance Binary StateClient where
     g <- get
     _sleader <- get
     _sside <- get
-    scurDiff <- get
-    snxtDiff <- get
+    scurChal <- get
+    snxtChal <- get
     snxtScenario <- get
     smarkSuspect <- get
     scondInMelee <- get

@@ -76,7 +76,7 @@ data DebugModeSer = DebugModeSer
   , sdungeonRng      :: !(Maybe R.StdGen)
   , smainRng         :: !(Maybe R.StdGen)
   , snewGameSer      :: !Bool
-  , scurDiffSer      :: !Int
+  , scurChalSer      :: !Challenge
   , sdumpInitRngs    :: !Bool
   , ssavePrefixSer   :: !String
   , sdbgMsgSer       :: !Bool
@@ -160,7 +160,7 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , sdungeonRng = Nothing
                                , smainRng = Nothing
                                , snewGameSer = False
-                               , scurDiffSer = difficultyDefault
+                               , scurChalSer = defaultChallenge
                                , sdumpInitRngs = False
                                , ssavePrefixSer = "save"
                                , sdbgMsgSer = False
@@ -227,7 +227,7 @@ instance Binary DebugModeSer where
     put sgameMode
     put sautomateAll
     put skeepAutomated
-    put scurDiffSer
+    put scurChalSer
     put ssavePrefixSer
     put sdbgMsgSer
     put sdebugCli
@@ -242,7 +242,7 @@ instance Binary DebugModeSer where
     sgameMode <- get
     sautomateAll <- get
     skeepAutomated <- get
-    scurDiffSer <- get
+    scurChalSer <- get
     ssavePrefixSer <- get
     sdbgMsgSer <- get
     sdebugCli <- get

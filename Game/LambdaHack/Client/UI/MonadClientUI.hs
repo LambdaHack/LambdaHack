@@ -247,12 +247,13 @@ scoreToSlideshow total status = do
   time <- getsState stime
   date <- liftIO getPOSIXTime
   tz <- liftIO $ getTimeZone $ posixSecondsToUTCTime date
-  scurDiff <- getsClient scurDiff
+  curChalSer <- getsClient scurChal
   factionD <- getsState sfactionD
   let table = HighScore.getTable gameModeId scoreDict
       gameModeName = mname gameMode
-      diff | fhasUI $ gplayer fact = scurDiff
-           | otherwise = difficultyInverse scurDiff
+      chal | fhasUI $ gplayer fact = curChalSer
+           | otherwise = curChalSer
+                           {cdiff = difficultyInverse (cdiff curChalSer)}
       theirVic (fi, fa) | isAtWar fact fi
                           && not (isHorrorFact fa) = Just $ gvictims fa
                         | otherwise = Nothing
@@ -261,7 +262,7 @@ scoreToSlideshow total status = do
                       | otherwise = Nothing
       ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
       (worthMentioning, (ntable, pos)) =
-        HighScore.register table total time status date diff
+        HighScore.register table total time status date chal
                            (fname $ gplayer fact)
                            ourVictims theirVictims
                            (fhiCondPoly $ gplayer fact)

@@ -10,6 +10,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.ClientOptions
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Server.State
 
@@ -75,8 +76,8 @@ debugArgs args = do
         (parseArgs rest) {skeepAutomated = True}
       parseArgs ("--newGame" : s : rest) =
         let debugSer = parseArgs rest
-            scurDiffSer = read s
-        in debugSer { scurDiffSer
+            cdiff = read s
+        in debugSer { scurChalSer = (scurChalSer debugSer) {cdiff}
                     , snewGameSer = True
                     , sdebugCli = (sdebugCli debugSer) {snewGameCli = True}}
       parseArgs ("--stopAfterSeconds" : s : rest) =

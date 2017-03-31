@@ -69,7 +69,9 @@ cmdAction cmd = case cmd of
   ItemMenu -> itemMenuHuman cmdAction
   ChooseItemMenu dialogMode -> chooseItemMenuHuman cmdAction dialogMode
   MainMenu -> mainMenuHuman cmdAction
-  GameDifficultyIncr -> gameDifficultyIncr >> mainMenuHuman cmdAction
+  GameDifficultyIncr -> gameDifficultyIncr >> challengesMenuHuman cmdAction
+  GameWolfToggle -> gameWolfToggle >> challengesMenuHuman cmdAction
+  GameFishToggle -> gameFishToggle >> challengesMenuHuman cmdAction
   GameScenarioIncr -> gameScenarioIncr >> mainMenuHuman cmdAction
 
   GameRestart -> weaveJust <$> gameRestartHuman

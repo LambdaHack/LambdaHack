@@ -10,7 +10,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.IntMap.Strict as IM
+import qualified Data.Map.Strict as M
 import Data.Ord
 import qualified NLP.Miniutter.English as MU
 
@@ -322,16 +322,16 @@ cmdAtomicSemCli cmd = case cmd of
   UpdDiscoverSeed c iid seed -> discoverSeed c iid seed
   UpdCoverSeed c iid seed -> coverSeed c iid seed
   -- UpdPerception lid outPer inPer -> perception lid outPer inPer
-  UpdRestart side sdiscoKind sfper s d sdebugCli -> do
+  UpdRestart side sdiscoKind sfper s scurChal sdebugCli -> do
     Kind.COps{comode=Kind.Ops{ofoldlGroup'}} <- getsState scops
-    snxtDiff <- getsClient snxtDiff
+    snxtChal <- getsClient snxtChal
     svictories <- getsClient svictories
     let f acc _p i _a = i : acc
         modes = zip [0..] $ ofoldlGroup' "campaign scenario" f []
         g :: (Int, Kind.Id ModeKind) -> Int
         g (_, mode) = case EM.lookup mode svictories of
           Nothing -> 0
-          Just im -> case IM.lookup snxtDiff im of
+          Just cm -> case M.lookup snxtChal cm of
             Nothing -> 0
             Just k -> k
         (snxtScenario, _) = minimumBy (comparing g) modes
@@ -339,8 +339,8 @@ cmdAtomicSemCli cmd = case cmd of
     putClient cli { sdiscoKind
                   , sfper
                   -- , sundo = [UpdAtomic cmd]
-                  , scurDiff = d
-                  , snxtDiff
+                  , scurChal
+                  , snxtChal
                   , snxtScenario
                   , scondInMelee = EM.map (const $ Left False) (sdungeon s)
                   , svictories

@@ -17,7 +17,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , alterDirHuman, alterWithPointerHuman
   , helpHuman, itemMenuHuman, chooseItemMenuHuman
   , mainMenuHuman, challengesMenuHuman
-  , gameDifficultyIncr, gameScenarioIncr
+  , gameDifficultyIncr, gameWolfToggle, gameFishToggle, gameScenarioIncr
     -- * Global commands that never take time
   , gameRestartHuman, gameExitHuman, gameSaveHuman
   , tacticHuman, automateHuman
@@ -1173,8 +1173,8 @@ challengesMenuHuman :: MonadClientUI m
                     -> m (Either MError ReqUI)
 challengesMenuHuman cmdAction = do
   Kind.COps{corule} <- getsState scops
-  scurDiff <- getsClient scurDiff
-  snxtDiff <- getsClient snxtDiff
+  curChal <- getsClient scurChal
+  nxtChal <- getsClient snxtChal
   let stripFrame t = tail . init $ T.lines t
       pasteVersion :: [String] -> [String]
       pasteVersion art =
@@ -1185,18 +1185,32 @@ challengesMenuHuman cmdAction = do
                       ++ ") "
             versionLen = length version
         in init art ++ [take (80 - versionLen) (last art) ++ version]
-      tnextDiff = "difficulty:" <+> tshow snxtDiff
-      tcurDiff = "    difficulty:" <+> tshow scurDiff
+      offOn b = if b then "on" else "off"
+      tcurDiff = "-   difficulty:" <+> tshow (cdiff curChal)
+      tnextDiff = "difficulty:" <+> tshow (cdiff nxtChal)
+      tcurWolf = "-   lone wolf:"
+                 <+> offOn (cwolf curChal)
+      tnextWolf = "lone wolf:"
+                  <+> offOn (cwolf nxtChal)
+      tcurFish = "-   cold fish:"
+                 <+> offOn (cfish curChal)
+      tnextFish = "cold fish:"
+                  <+> offOn (cfish nxtChal)
       -- Key-description-command tuples.
       kds = [ (K.mkKM "d", (tnextDiff, HumanCmd.GameDifficultyIncr))
+            , (K.mkKM "w", (tnextWolf, HumanCmd.GameWolfToggle))
+            , (K.mkKM "f", (tnextFish, HumanCmd.GameFishToggle))
             , (K.mkKM "Escape", ("back to main menu", HumanCmd.MainMenu)) ]
       bindingLen = 30
       gameInfo = map T.unpack $
-                 [ T.justifyLeft bindingLen ' ' ""
-                 , T.justifyLeft bindingLen ' ' "Current challenges:"
-                 , T.justifyLeft bindingLen ' ' tcurDiff
+                 [ T.justifyLeft bindingLen ' ' "Current challenges:"
                  , T.justifyLeft bindingLen ' ' ""
-                 , T.justifyLeft bindingLen ' ' "New game challenges:" ]
+                 , T.justifyLeft bindingLen ' ' tcurDiff
+                 , T.justifyLeft bindingLen ' ' tcurWolf
+                 , T.justifyLeft bindingLen ' ' tcurFish
+                 , T.justifyLeft bindingLen ' ' ""
+                 , T.justifyLeft bindingLen ' ' "New game challenges:"
+                 , T.justifyLeft bindingLen ' ' "" ]
       emptyInfo = repeat $ replicate bindingLen ' '
       bindings =  -- key bindings to display
         let fmt (k, (d, _)) =
@@ -1249,12 +1263,26 @@ gameScenarioIncr =
 
 gameDifficultyIncr :: MonadClientUI m => m ()
 gameDifficultyIncr = do
-  snxtDiff <- getsClient snxtDiff
+  nxtDiff <- getsClient $ cdiff . snxtChal
   let delta = 1
-      d | snxtDiff + delta > difficultyBound = 1
-        | snxtDiff + delta < 1 = difficultyBound
-        | otherwise = snxtDiff + delta
-  modifyClient $ \cli -> cli {snxtDiff = d}
+      d | nxtDiff + delta > difficultyBound = 1
+        | nxtDiff + delta < 1 = difficultyBound
+        | otherwise = nxtDiff + delta
+  modifyClient $ \cli -> cli {snxtChal = (snxtChal cli) {cdiff = d} }
+
+-- * GameWolfToggle
+
+gameWolfToggle :: MonadClientUI m => m ()
+gameWolfToggle =
+  modifyClient $ \cli ->
+    cli {snxtChal = (snxtChal cli) {cwolf = not (cwolf (snxtChal cli))} }
+
+-- * GameFishToggle
+
+gameFishToggle :: MonadClientUI m => m ()
+gameFishToggle =
+    modifyClient $ \cli ->
+    cli {snxtChal = (snxtChal cli) {cfish = not (cfish (snxtChal cli))} }
 
 -- * GameRestart
 
@@ -1273,9 +1301,9 @@ gameRestartHuman = do
               <+> "game will be lost! Are you sure?"
   if b
   then do
-    snxtDiff <- getsClient snxtDiff
+    snxtChal <- getsClient snxtChal
     let nxtGameGroup = toGroupName nxtGameName  -- a tiny bit hacky
-    return $ Right $ ReqUIGameRestart nxtGameGroup snxtDiff
+    return $ Right $ ReqUIGameRestart nxtGameGroup snxtChal
   else do
     msg2 <- rndToActionForget $ oneOf
               [ "yea, would be a pity to leave them all to die"

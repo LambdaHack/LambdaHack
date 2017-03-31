@@ -19,6 +19,7 @@ import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
@@ -40,7 +41,7 @@ type RequestAI = (ReqAI, Maybe ActorId)
 data ReqUI =
     ReqUINop
   | ReqUITimed RequestAnyAbility
-  | ReqUIGameRestart !(GroupName ModeKind) !Int
+  | ReqUIGameRestart !(GroupName ModeKind) !Challenge
   | ReqUIGameExit
   | ReqUIGameSave
   | ReqUITactic !Tactic
