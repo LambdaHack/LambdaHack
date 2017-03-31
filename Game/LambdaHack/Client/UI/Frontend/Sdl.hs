@@ -79,19 +79,18 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   SDL.initialize [SDL.InitVideo, SDL.InitEvents]
   let title = fromJust stitle
       fontFileName =
-        "GameDefinition/fonts" </> maybe "16x16x.fon" T.unpack sdlFontFile
+        "GameDefinition/fonts" </> T.unpack (fromJust sdlFontFile)
   fontFile <- if isRelative fontFileName
               then Self.getDataFileName fontFileName
               else return fontFileName
   fontFileExists <- doesFileExist fontFile
   unless fontFileExists $ error $ "Font file does not exist: " ++ fontFile
-  let fontSize = fromMaybe 16 sfontSize
+  let fontSize = fromJust sfontSize
   code <- TTF.init
   when (code /= 0) $ error $ "init of sdl2-ttf failed with: " ++ show code
   sfont <- TTF.openFont fontFile fontSize
-  let fonFile = "fon" `isSuffixOf` maybe "16x16x.fon" T.unpack sdlFontFile
-      sdlSizeAdd = fromMaybe 0
-                   $ if fonFile then sdlFonSizeAdd else sdlTtfSizeAdd
+  let fonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
+      sdlSizeAdd = fromJust $ if fonFile then sdlFonSizeAdd else sdlTtfSizeAdd
   boxSize <- (+ sdlSizeAdd) <$> TTF.getFontHeight sfont
   let xsize = fst normalLevelBound + 1
       ysize = snd normalLevelBound + 4
@@ -181,9 +180,8 @@ display :: DebugModeCli
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
 display DebugModeCli{..} FrontendSession{..} curFrame = do
-  let fonFile = "fon" `isSuffixOf` maybe "16x16x.fon" T.unpack sdlFontFile
-      sdlSizeAdd = fromMaybe 0
-                   $ if fonFile then sdlFonSizeAdd else sdlTtfSizeAdd
+  let fonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
+      sdlSizeAdd = fromJust $ if fonFile then sdlFonSizeAdd else sdlTtfSizeAdd
       v4black = let Raw.Color r g b a = colorToRGBA Color.Black
                 in SDL.V4 r g b a
   SDL.rendererDrawColor srenderer SDL.$= v4black

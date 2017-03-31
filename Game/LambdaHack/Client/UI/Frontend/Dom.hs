@@ -103,7 +103,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   -- Speed: http://www.w3.org/TR/CSS21/tables.html#fixed-table-layout
   setProp scharStyle "table-layout" "fixed"
   setProp scharStyle "font-family" "lambdaHackFont"
-  setProp scharStyle "font-size" $ maybe "16" tshow sfontSize <> "px"
+  setProp scharStyle "font-size" $ tshow (fromJust sfontSize) <> "px"
   setProp scharStyle "font-weight" "bold"
   -- Get rid of table spacing. Tons of spurious hacks just in case.
   setCellPadding tableElem ("0" :: Text)
