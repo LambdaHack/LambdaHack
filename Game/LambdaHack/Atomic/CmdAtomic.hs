@@ -149,6 +149,7 @@ data SfxMsg =
   | SfxPurposeNothing !CStore
   | SfxPurposeTooFew !Int !Int
   | SfxPurposeUnique
+  | SfxColdFish
   deriving (Show, Eq, Generic)
 
 instance Binary SfxMsg

@@ -1111,6 +1111,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
     "The purpose of repurpose is served by" <+> tshow maxCount
     <+> "pieces of this item, not by" <+> tshow itemK <> "."
   SfxPurposeUnique -> return "Unique items can't be repurposed."
+  SfxColdFish -> return "Healing attempt from another faction is thwarted by your cold fish attitude."
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
 setLastSlot aid iid cstore = do

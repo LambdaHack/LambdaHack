@@ -356,6 +356,7 @@ effectExplode execSfx cgroup target = do
 effectRefillHP :: (MonadAtomic m, MonadServer m)
                => Bool -> Int -> ActorId -> ActorId -> m Bool
 effectRefillHP overfill power source target = do
+  sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   actorAspect <- getsServer sactorAspect
   let ar = actorAspect EM.! target
@@ -368,16 +369,19 @@ effectRefillHP overfill power source target = do
               | serious = -- if overfull, at least cut back to max
                           min (xM power) (xM hpMax - bhp tb)
               | otherwise = xM power
-  if deltaHP == 0
-  then return False
-  else do
-    sb <- getsState $ getActorBody source
-    let reportedEffect | overfill = IK.OverfillHP power
-                       | otherwise = IK.RefillHP power
-    execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
-    execUpdAtomic $ UpdRefillHP target deltaHP
-    when (deltaHP < 0 && serious) $ cutCalm target
-    return True
+  curChalSer <- getsServer $ scurChalSer . sdebugSer
+  fact <- getsState $ (EM.! bfid tb) . sfactionD
+  if | cfish curChalSer && fhasUI (gplayer fact) && bfid sb /= bfid tb -> do
+       execSfxAtomic $ SfxMsgFid (bfid tb) SfxColdFish
+       return False
+     | deltaHP == 0 -> return False
+     | otherwise -> do
+       let reportedEffect | overfill = IK.OverfillHP power
+                          | otherwise = IK.RefillHP power
+       execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
+       execUpdAtomic $ UpdRefillHP target deltaHP
+       when (deltaHP < 0 && serious) $ cutCalm target
+       return True
 
 cutCalm :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 cutCalm target = do
