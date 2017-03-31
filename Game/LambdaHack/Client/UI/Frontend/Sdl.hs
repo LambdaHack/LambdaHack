@@ -117,6 +117,9 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   let pointTranslate :: forall i. (Enum i) => Vect.Point Vect.V2 i -> Point
       pointTranslate (SDL.P (SDL.V2 x y)) =
         Point (fromEnum x `div` boxSize) (fromEnum y `div` boxSize)
+      redraw = do
+        prevFrame <- readIORef spreviousFrame
+        display sdebugCli sess prevFrame
       storeKeys :: IO ()
       storeKeys = do
         e <- SDL.waitEvent  -- blocks here, so no polling
@@ -159,6 +162,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
                   (\key -> saveKMP rf modifier key (pointTranslate p)) mkey
           SDL.WindowClosedEvent{} -> shutdown sess
           SDL.QuitEvent -> shutdown sess
+          SDL.WindowRestoredEvent{} -> redraw
           _ -> return ()
         quitSDL <- readIORef squitSDL
         unless quitSDL storeKeys
