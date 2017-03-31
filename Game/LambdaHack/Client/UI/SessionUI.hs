@@ -37,41 +37,42 @@ import Game.LambdaHack.Common.Vector
 -- Some of it is saved, some is reset when a new playing session starts.
 -- An important component is a frontend session.
 data SessionUI = SessionUI
-  { sxhair          :: !Target             -- ^ the common xhair
-  , sactorUI        :: !ActorDictUI        -- ^ assigned actor UI presentations
-  , sslots          :: !ItemSlots          -- ^ map from slots to items
-  , slastSlot       :: !SlotChar           -- ^ last used slot
-  , schanF          :: !ChanFrontend       -- ^ connection with the frontend
-  , sbinding        :: !Binding            -- ^ binding of keys to commands
-  , sconfig         :: !Config
-  , saimMode        :: !(Maybe AimMode)    -- ^ aiming mode
-  , sxhairMoused    :: !Bool               -- ^ last mouse aiming not vacuus
-  , sitemSel        :: !(Maybe (CStore, ItemId))  -- ^ selected item, if any
-  , sselected       :: !(ES.EnumSet ActorId)
+  { sxhair         :: !Target             -- ^ the common xhair
+  , sactorUI       :: !ActorDictUI        -- ^ assigned actor UI presentations
+  , sslots         :: !ItemSlots          -- ^ map from slots to items
+  , slastSlot      :: !SlotChar           -- ^ last used slot
+  , schanF         :: !ChanFrontend       -- ^ connection with the frontend
+  , sbinding       :: !Binding            -- ^ binding of keys to commands
+  , sconfig        :: !Config
+  , saimMode       :: !(Maybe AimMode)    -- ^ aiming mode
+  , sxhairMoused   :: !Bool               -- ^ last mouse aiming not vacuus
+  , sitemSel       :: !(Maybe (CStore, ItemId))  -- ^ selected item, if any
+  , sselected      :: !(ES.EnumSet ActorId)
                                       -- ^ the set of currently selected actors
-  , srunning        :: !(Maybe RunParams)
+  , srunning       :: !(Maybe RunParams)
                                       -- ^ parameters of the current run, if any
-  , _sreport        :: !Report        -- ^ current messages
-  , shistory        :: !History       -- ^ history of messages
-  , spointer        :: !Point         -- ^ mouse pointer position
-  , slastRecord     :: !LastRecord    -- ^ state of key sequence recording
-  , slastPlay       :: ![K.KM]        -- ^ state of key sequence playback
-  , slastLost       :: !(ES.EnumSet ActorId)
+  , _sreport       :: !Report        -- ^ current messages
+  , shistory       :: !History       -- ^ history of messages
+  , spointer       :: !Point         -- ^ mouse pointer position
+  , slastRecord    :: !LastRecord    -- ^ state of key sequence recording
+  , slastPlay      :: ![K.KM]        -- ^ state of key sequence playback
+  , slastLost      :: !(ES.EnumSet ActorId)
                                       -- ^ actors that just got out of sight
-  , swaitTimes      :: !Int           -- ^ player just waited this many times
-  , smarkVision     :: !Bool          -- ^ mark leader and party FOV
-  , smarkSmell      :: !Bool          -- ^ mark smell, if the leader can smell
-  , smenuIxMain     :: !Int           -- ^ index of last used Main Menu item
-  , smenuIxSettings :: !Int           -- ^ index of last used Settings Menu item
-  , smenuIxHelp     :: !Int           -- ^ index of last used Help Menu item
-  , smenuIxHistory  :: !Int           -- ^ index of last used History Menu item
-  , sdisplayNeeded  :: !Bool          -- ^ something to display on current level
-  , skeysHintMode   :: !KeysHintMode  -- ^ how to show keys hints when no messages
-  , sstart          :: !POSIXTime     -- ^ this session start time
-  , sgstart         :: !POSIXTime     -- ^ this game start time
-  , sallTime        :: !Time          -- ^ clips from start of session to current game start
-  , snframes        :: !Int           -- ^ this game current frame count
-  , sallNframes     :: !Int           -- ^ frame count from start of session to current game start
+  , swaitTimes     :: !Int           -- ^ player just waited this many times
+  , smarkVision    :: !Bool          -- ^ mark leader and party FOV
+  , smarkSmell     :: !Bool          -- ^ mark smell, if the leader can smell
+  , smenuIxMain    :: !Int           -- ^ index of last used Main Menu item
+  , smenuIxSet     :: !Int           -- ^ index of last used Settings Menu item
+  , smenuIxChal    :: !Int           -- ^ index of last used Challenges item
+  , smenuIxHelp    :: !Int           -- ^ index of last used Help Menu item
+  , smenuIxHistory :: !Int           -- ^ index of last used History Menu item
+  , sdisplayNeeded :: !Bool          -- ^ something to display on current level
+  , skeysHintMode  :: !KeysHintMode  -- ^ how to show keys hints when no messages
+  , sstart         :: !POSIXTime     -- ^ this session start time
+  , sgstart        :: !POSIXTime     -- ^ this game start time
+  , sallTime       :: !Time          -- ^ clips from start of session to current game start
+  , snframes       :: !Int           -- ^ this game current frame count
+  , sallNframes    :: !Int           -- ^ frame count from start of session to current game start
   }
 
 -- | Current aiming mode of a client.
@@ -126,7 +127,8 @@ emptySessionUI sconfig =
     , smarkVision = False
     , smarkSmell = True
     , smenuIxMain = 2
-    , smenuIxSettings = 0
+    , smenuIxSet = 0
+    , smenuIxChal = 0
     , smenuIxHelp = 0
     , smenuIxHistory = 0
     , sdisplayNeeded = False
@@ -164,7 +166,8 @@ instance Binary SessionUI where
     put shistory
     put smarkVision
     put smarkSmell
-    put smenuIxSettings
+    put smenuIxSet
+    put smenuIxChal
     put smenuIxHelp
     put smenuIxHistory
     put sdisplayNeeded
@@ -182,7 +185,8 @@ instance Binary SessionUI where
     shistory <- get
     smarkVision <- get
     smarkSmell <- get
-    smenuIxSettings <- get
+    smenuIxSet <- get
+    smenuIxChal <- get
     smenuIxHelp <- get
     smenuIxHistory <- get
     sdisplayNeeded <- get

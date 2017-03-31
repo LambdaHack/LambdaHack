@@ -97,6 +97,7 @@ cmdAction cmd = case cmd of
   MarkSmell -> markSmellHuman >> settingsMenuHuman cmdAction
   MarkSuspect -> markSuspectHuman >> settingsMenuHuman cmdAction
   SettingsMenu -> settingsMenuHuman cmdAction
+  ChallengesMenu -> challengesMenuHuman cmdAction
 
   Cancel -> addNoError cancelHuman
   Accept -> addNoError acceptHuman

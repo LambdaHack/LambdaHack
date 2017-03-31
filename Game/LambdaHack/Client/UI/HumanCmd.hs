@@ -140,6 +140,7 @@ data HumanCmd =
   | MarkSmell
   | MarkSuspect
   | SettingsMenu
+  | ChallengesMenu
     -- These are mostly related to aiming.
   | Cancel
   | Accept

@@ -710,13 +710,11 @@ settingsMenuHuman cmdAction = do
             , (K.mkKM "c", (tsmell, HumanCmd.MarkSmell))
             , (K.mkKM "t", (thenchmen, HumanCmd.Tactic))
             , (K.mkKM "Escape", ("back to main menu", HumanCmd.MainMenu)) ]
-      statusLen = 30
-      bindingLen = 28
+      bindingLen = 30
       gameInfo = map T.unpack $
-                 [ T.justifyLeft statusLen ' ' ""
-                 , T.justifyLeft statusLen ' ' ""
-                 , T.justifyLeft statusLen ' ' "Game settings:"
-                 , T.justifyLeft statusLen ' ' "" ]
+                 [ T.justifyLeft bindingLen ' ' ""
+                 , T.justifyLeft bindingLen ' ' "Game settings:"
+                 , T.justifyLeft bindingLen ' ' "" ]
       emptyInfo = repeat $ replicate bindingLen ' '
       bindings =  -- key bindings to display
         let fmt (k, (d, _)) =
@@ -749,10 +747,10 @@ settingsMenuHuman cmdAction = do
       (menuOvLines, mkyxs) = unzip menuOverwritten
       kyxs = catMaybes mkyxs
       ov = map stringToAL menuOvLines
-  menuIxSettings <- getsSession smenuIxSettings
-  (ekm, pointer) <- displayChoiceScreen ColorFull True menuIxSettings
+  menuIxSet <- getsSession smenuIxSet
+  (ekm, pointer) <- displayChoiceScreen ColorFull True menuIxSet
                                         (menuToSlideshow (ov, kyxs)) [K.escKM]
-  modifySession $ \sess -> sess {smenuIxSettings = pointer}
+  modifySession $ \sess -> sess {smenuIxSet = pointer}
   case ekm of
     Left km -> case km `lookup` kds of
       Just (_desc, cmd) -> cmdAction cmd
