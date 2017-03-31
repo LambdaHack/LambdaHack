@@ -232,7 +232,13 @@ populateDungeon = do
   embedItemsInDungeon
   dungeon <- getsState sdungeon
   factionD <- getsState sfactionD
-  let (minD, maxD) =
+  curChalSer <- getsServer $ scurChalSer . sdebugSer
+  let ginitialWolf fact1 = if cwolf curChalSer && fhasUI (gplayer fact1)
+                           then case ginitial fact1 of
+                             [] -> []
+                             (ln, _, grp) : _ -> [(ln, 1, grp)]
+                           else ginitial fact1
+      (minD, maxD) =
         case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
           _ -> assert `failure` "empty dungeon" `twith` dungeon
@@ -240,14 +246,14 @@ populateDungeon = do
       valuePlayer pl = (not $ fcanEscape pl, fname pl)
       -- Sorting, to keep games from similar game modes mutually reproducible.
       needInitialCrew = sortBy (comparing $ valuePlayer . gplayer . snd)
-                        $ filter (not . null . ginitial . snd)
+                        $ filter (not . null . ginitialWolf . snd)
                         $ EM.assocs factionD
       g (ln, _, _) = max minD . min maxD . toEnum $ ln
-      getEntryLevels (_, fact) = map g $ ginitial fact
+      getEntryLevels (_, fact) = map g $ ginitialWolf fact
       arenas = ES.toList $ ES.fromList
                $ concatMap getEntryLevels needInitialCrew
       hasActorsOnArena lid (_, fact) =
-        any ((== lid) . g) $ ginitial fact
+        any ((== lid) . g) $ ginitialWolf fact
       initialActors lid = do
         lvl <- getLevel lid
         let arenaFactions = filter (hasActorsOnArena lid) needInitialCrew
@@ -271,7 +277,7 @@ populateDungeon = do
             nmult = 1 + timeOffset `mod` clipInTurn
             ntime = timeShift localTime (timeDeltaScale (Delta timeClip) nmult)
             validTile t = not $ Tile.isNoActor coTileSpeedup t
-            initActors = ginitial fact3
+            initActors = ginitialWolf fact3
             initGroups = concat [ replicate n actorGroup
                                 | ln3@(_, n, actorGroup) <- initActors
                                 , g ln3 == lid ]

@@ -315,9 +315,17 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
       shistory <- defaultHistory $ configHistoryMax sconfig
       modifySession $ \sess -> sess {shistory}
     mode <- getGameMode
-    msgAdd $ "New game started in" <+> mname mode <+> "mode." <+> mdesc mode
-    when (lengthHistory history > 1) $ fadeOutOrIn False
+    curChal <- getsClient scurChal
     fact <- getsState $ (EM.! fid) . sfactionD
+    let loneMode = case ginitial fact of
+          [] -> True
+          [(_, 1, _)] -> True
+          _ -> False
+    msgAdd $ "New game started in" <+> mname mode <+> "mode." <+> mdesc mode
+             <+> if cwolf curChal && not loneMode
+                 then "Being a lone wolf, you start without companions."
+                 else ""
+    when (lengthHistory history > 1) $ fadeOutOrIn False
     setFrontAutoYes $ isAIFact fact
     when (isAIFact fact) $ do
       -- Prod the frontend to flush frames and start showing them continuously.
