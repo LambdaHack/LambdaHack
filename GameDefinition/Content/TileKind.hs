@@ -478,8 +478,7 @@ rubble = TileKind
 rubblePlace = TileKind
   { tsymbol  = ';'
   , tname    = "rubble"
-  , tfreq    = [ ("stair terminal", 1), ("smokeClumpOver_f_Lit", 1)
-               , ("noiseSet", 5), ("zooSet", 100) ]
+  , tfreq    = [("smokeClumpOver_f_Lit", 1), ("noiseSet", 5), ("zooSet", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 5
