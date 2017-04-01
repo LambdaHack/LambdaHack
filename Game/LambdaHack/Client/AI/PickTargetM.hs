@@ -122,18 +122,19 @@ targetStrategy aid = do
   let canEscape = fcanEscape (gplayer fact)
       condNoUsableWeapon = bweapon b == 0
       canSmell = aSmell ar > 0
-      meleeNearby | newCondInMelee = nearby `div` 6  -- x2 in targetableMelee
+      -- 3 is the condThreatAtHand distance that AI keeps when alone.
+      meleeNearby | newCondInMelee = 3
                   | canEscape = nearby `div` 2
                   | otherwise = nearby
       rangedNearby = 2 * meleeNearby
-      -- Don't target nonmoving actors at all if bad melee,
+      -- Don't melee-target nonmoving actors at all if bad melee,
       -- because nonmoving can't be lured nor ambushed.
       -- This is especially important for fences, tower defense actors, etc.
       -- If content gives nonmoving actor loot, this becomes problematic.
       targetableMelee aidE body = do
         actorMaxSkE <- enemyMaxAb aidE
         let attacksFriends = any (adjacent (bpos body) . bpos) friends
-            n = if attacksFriends then rangedNearby else meleeNearby
+            n = if newCondInMelee && not attacksFriends then 0 else meleeNearby
             nonmoving = EM.findWithDefault 0 AbMove actorMaxSkE <= 0
         return {-keep lazy-} $
           chessDist (bpos body) (bpos b) < n
@@ -142,8 +143,9 @@ targetStrategy aid = do
           && not (hpTooLow b ar)
           && not (nonmoving && condMeleeBad)
       targetableRangedOrSpecial body =
-        chessDist (bpos body) (bpos b) < rangedNearby
-        && condCanProject
+        if newCondInMelee then False
+        else chessDist (bpos body) (bpos b) < rangedNearby
+             && condCanProject
       targetableEnemy (aidE, body) = do
         tMelee <- targetableMelee aidE body
         return $! targetableRangedOrSpecial body || tMelee
@@ -302,6 +304,8 @@ targetStrategy aid = do
                  NoPath -> pickNewTarget  -- enemy became unreachable
                  AndPath{pathLen=0} -> pickNewTarget  -- he is his own enemy
                  AndPath{} -> return $! returN "TEnemy" tap{tapPath=mpath}
+          -- In this case, need to retarget, to focus on foes that melee ours
+          -- and not, e.g., on non-movable or fleeing foes.
         _ | newCondInMelee && not oldCondInMelee -> pickNewTarget
         TPoint _ lid _ | lid /= blid b -> pickNewTarget  -- wrong level
         TPoint _ _ pos | pos == bpos b -> tellOthersNothingHere pos

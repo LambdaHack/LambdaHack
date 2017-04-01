@@ -343,7 +343,7 @@ condMeleeBadM aid = do
       -- 3 is the condThreatAtHand distance that AI keeps when alone.
       approaching = case mtgtPos of
         Just tgtPos | condAimEnemyPresent || condAimEnemyRemembered ->
-          \b1 -> chessDist (bpos b1) tgtPos <= 3
+          \b2 -> chessDist (bpos b2) tgtPos <= 3
         _ -> const False
       closeFriends = filter (closeEnough . snd) friends
       strongActor (aid2, b2) =
