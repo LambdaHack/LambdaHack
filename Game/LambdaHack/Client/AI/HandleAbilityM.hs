@@ -129,7 +129,7 @@ actionStrategy aid = do
           , condHpTooLow && not condAnyFoeAdj
             && not condAdjTriggerable )  -- don't block stairs, perhaps ascend
         , ( [AbAlter], (toAny :: ToAny 'AbAlter)
-            <$> trigger aid True
+            <$> trigger aid ViaStairs
               -- explore next or flee via stairs, even if to wrong level;
               -- in the latter case, may return via different stairs later on
           , condAdjTriggerable && not condAimEnemyPresent
@@ -153,10 +153,14 @@ actionStrategy aid = do
                && condAimEnemyPresent  -- excited
                && not newCondInMelee )  -- don't incur overhead
         , ( [AbAlter], (toAny :: ToAny 'AbAlter)
-            <$> trigger aid False  -- don't use stairs
+            <$> trigger aid ViaEscape
           , condAdjTriggerable
-            && not condDesirableFloorItem
-            && not condAimEnemyPresent )
+            && not condDesirableFloorItem )  -- collect the last loot
+        , ( [AbAlter], (toAny :: ToAny 'AbAlter)
+            <$> trigger aid ViaNothing
+          , condAdjTriggerable
+            && not condAimEnemyPresent  -- focus if enemies nearby
+            && not newCondInMelee )  -- don't incur overhead
         , ( [AbMove]
           , flee aid fleeL
           , -- Flee either from melee, if our melee is bad and enemy close
@@ -597,14 +601,18 @@ meleeAny aid = do
   let freq = uniformFreq "melee adjacent" $ catMaybes mels
   return $! liftFrequency freq
 
+data FleeViaStairsOrEscape = ViaStairs | ViaEscape | ViaNothing
+  deriving (Show, Eq)
+
 -- | The level the actor is on is either explored or the actor already
 -- has a weapon equipped, so no need to explore further, he tries to find
 -- enemies on other levels.
 -- We don't verify the stairs are targeted by the actor, but at least
 -- the actor doesn't target a visible enemy at this point.
 trigger :: MonadClient m
-        => ActorId -> Bool -> m (Strategy (RequestTimed 'AbAlter))
-trigger aid fleeViaStairs = do
+        => ActorId -> FleeViaStairsOrEscape
+        -> m (Strategy (RequestTimed 'AbAlter))
+trigger aid fleeVia = do
   cops@Kind.COps{coTileSpeedup} <- getsState scops
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
@@ -652,18 +660,20 @@ trigger aid fleeViaStairs = do
               -- Prefer one direction of stairs, to team up.
               eben = if aiCond then if easier then 2 else 1 else 0
           return $!
-             if fleeViaStairs  -- don't flee prematurely
+             if fleeVia == ViaStairs -- don't flee prematurely
              then 10000 * eben
              else 0
         ef@IK.Escape{} -> return $  -- flee via this way, too
           -- Only some factions try to escape but they first explore all
           -- for high score.
-          if not (fcanEscape $ gplayer fact) || not allExplored
+          if fleeVia /= ViaEscape
+             || not (fcanEscape $ gplayer fact)
+             || not allExplored
           then 0
           else effectToBenefit cops b ar fact ef
-        ef | not fleeViaStairs ->
-          return $! effectToBenefit cops b ar fact ef
-        _ -> return 0
+        ef -> return $! if fleeVia == ViaNothing
+                        then effectToBenefit cops b ar fact ef
+                        else 0
   benFeats <- mapM bens feats
   let benFeat = zip benFeats feats
   return $! liftFrequency $ toFreq "trigger"
