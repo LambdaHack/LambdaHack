@@ -53,6 +53,12 @@ pickActorToMove maidToAvoid refreshTarget = do
     _ | -- Keep the leader: faction discourages client leader change on level,
         -- so will only be changed if waits (maidToAvoid)
         -- to avoid wasting his higher mobility.
+        -- This is OK for monsters even if in melee, because both having
+        -- a meleeing actor a leader (and higher DPS) and rescuing actor
+        -- a leader (and so faster to get in melee range) is good.
+        -- And we are guaranteed that only the two classes of actors are
+        -- not waiting, with some exceptions (urgent unequip, flee via starts,
+        -- melee-less trying to flee, first aid, etc.).
         snd (autoDungeonLevel fact) && isNothing maidToAvoid
       -> pickOld
     [] -> assert `failure` (oldAid, oldBody)
@@ -67,6 +73,13 @@ pickActorToMove maidToAvoid refreshTarget = do
             mtgt <- refreshTarget aidBody
             return $ (\tgt -> (aidBody, tgt)) <$> mtgt
           goodGeneric (_, TgtAndPath{tapPath=NoPath}) = False
+            -- this case means melee-less heroes adjacent to foes, etc.
+            -- will never flee if melee is happening; but this is rare;
+            -- this also ensures even if a lone actor melees and nobody
+            -- can come to rescue, he will become and remain the leader,
+            -- because otherwise an explorer would need to become a leader
+            -- and fighter will be 1 clip slower for the whole fight,
+            -- just for a few turns of exploration in return
           goodGeneric ((aid, b), _) = case maidToAvoid of
             Nothing ->  -- not the old leader that was stuck last turn
                         -- because he is likely to be still stuck
