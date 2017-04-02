@@ -99,16 +99,19 @@ condNonProjFoeAdjM aid = do
   return $ any (adjacent (bpos b) . bpos) allFoes  -- keep it lazy
 
 -- | Check if any non-dying, non-projectile foe is dist-close
--- to any of ours.
--- Even if our actor can't melee, he's under melee attack, so has to flee,
--- so full alert is justified as well.
+-- to any of our actors that can melee. If our actor can't melee
+-- and got caught in melee, he is a sunk cost, there is no advantage
+-- in trying to melee together with him (since he can't melee).
 condInMeleeM :: MonadClient m => Int -> Actor -> m Bool
 condInMeleeM dist b = do
+  actorAspect <- getsClient sactorAspect
+  let filterCanMelee (aid2, b2) = actorCanMelee actorAspect aid2 b2
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
   ours <- getsState $ actorRegularAssocs (== bfid b) (blid b)
+  let oursCanMelee = filter filterCanMelee ours
   return $! any (\(_, body) -> any (\bFoe ->
-    chessDist (bpos bFoe) (bpos body) <= dist) allFoes) ours
+    chessDist (bpos bFoe) (bpos body) <= dist) allFoes) oursCanMelee
 
 -- | Require the actor's HP is low enough.
 condHpTooLowM :: MonadClient m => ActorId -> m Bool
