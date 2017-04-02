@@ -72,7 +72,6 @@ actionStrategy aid = do
         Left{} -> assert `failure` condInMelee
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
-  condAimEnemyAdjFriend <- condAimEnemyAdjFriendM aid
   condAnyFoeAdj <- condAnyFoeAdjM aid
   condNonProjFoeAdj <- condNonProjFoeAdjM aid
   threatDistL <- threatDistList aid
@@ -192,6 +191,10 @@ actionStrategy aid = do
             && not newCondInMelee )
         ]
       -- Order doesn't matter, scaling does.
+      -- These are flattened (taking only the best variant) and then summed,
+      -- so if any of these can fire, it will fire. If none, @suffix@ is tried.
+      -- Only the best variant of @chase@ is taken, but it's almost always
+      -- good, and if not, the @chase@ in @suffix@ may fix that.
       distant :: [([Ability], m (Frequency RequestAnyAbility), Bool)]
       distant =
         [ ( [AbMoveItem]
@@ -200,17 +203,17 @@ actionStrategy aid = do
             <$> yieldUnneeded aid  -- 20000 to unequip ASAP, unless is thrown
           , True )
         , ( [AbMoveItem]
-          , stratToFreq 1$ (toAny :: ToAny 'AbMoveItem)
+          , stratToFreq 1 $ (toAny :: ToAny 'AbMoveItem)
             <$> equipItems aid  -- doesn't take long, very useful if safe
           , not (condAnyFoeAdj
                  || condDesirableFloorItem
                  || condNotCalmEnough
                  || heavilyDistressed
                  || newCondInMelee) )
-        , ( [AbProject]  -- for high-value target, shoot even in melee
+        , ( [AbProject]
           , stratToFreq 2 $ (toAny :: ToAny 'AbProject)
             <$> projectItem aid
-          , condAimEnemyPresent && condCanProject )
+          , condAimEnemyPresent && condCanProject && not newCondInMelee )
         , ( [AbApply]
           , stratToFreq 2 $ (toAny :: ToAny 'AbApply)
             <$> applyItem aid ApplyAll  -- use any potion or scroll
@@ -220,8 +223,8 @@ actionStrategy aid = do
                               2  -- if enemy only remembered, investigate anyway
                             | condTgtNonmoving && condMeleeBad ->
                               0
-                            | condAimEnemyAdjFriend ->
-                              1000  -- friends probably pummeled, go to help
+                            | newCondInMelee ->
+                              1000  -- friends pummeled by target, go to help
                             | otherwise ->
                               50)
             $ chase aid True (condThreatAt 5
@@ -257,7 +260,7 @@ actionStrategy aid = do
                                     && abInMaxSkill AbMelee
                                     && not condNoUsableWeapon))
           , not (condTgtNonmoving && condThreatAtHand)
-            && not newCondInMelee )
+            && (not newCondInMelee || condAimEnemyPresent) )
         ]
       fallback =
         [ ( [AbWait], (toAny :: ToAny 'AbWait)

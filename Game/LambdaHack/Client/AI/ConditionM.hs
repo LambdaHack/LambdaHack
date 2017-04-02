@@ -3,7 +3,6 @@
 module Game.LambdaHack.Client.AI.ConditionM
   ( condAimEnemyPresentM
   , condAimEnemyRememberedM
-  , condAimEnemyAdjFriendM
   , condTgtNonmovingM
   , condAnyFoeAdjM
   , condNonProjFoeAdjM
@@ -73,20 +72,6 @@ condAimEnemyRememberedM aid = do
   return $! case btarget of
     Just (TPoint (TEnemyPos _ permit) lid _) | lid == blid b -> not permit
     _ -> False
-
--- | Require that the target enemy is adjacent to at least one friend.
-condAimEnemyAdjFriendM :: MonadClient m => ActorId -> m Bool
-condAimEnemyAdjFriendM aid = do
-  btarget <- getsClient $ getTarget aid
-  case btarget of
-    Just (TEnemy enemy _) -> do
-      be <- getsState $ getActorBody enemy
-      b <- getsState $ getActorBody aid
-      fact <- getsState $ (EM.! bfid b) . sfactionD
-      let friendlyFid fid = fid == bfid b || isAllied fact fid
-      friends <- getsState $ actorRegularList friendlyFid (blid b)
-      return $ any (adjacent (bpos be) . bpos) friends  -- keep it lazy
-    _ -> return False
 
 -- | Check if the target is nonmoving.
 condTgtNonmovingM :: MonadClient m => ActorId -> m Bool
