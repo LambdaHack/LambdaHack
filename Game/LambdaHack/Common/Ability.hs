@@ -2,7 +2,7 @@
 -- | AI strategy abilities.
 module Game.LambdaHack.Common.Ability
   ( Ability(..), Skills
-  , zeroSkills, unitSkills, addSkills, scaleSkills
+  , zeroSkills, unitSkills, addSkills, scaleSkills, tacticSkills
   , blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems
   ) where
 
@@ -15,6 +15,8 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Hashable (Hashable)
 import GHC.Generics (Generic)
+
+import Game.LambdaHack.Common.Misc
 
 -- | Actor and faction abilities corresponding to client-server requests.
 data Ability =
@@ -35,6 +37,16 @@ data Ability =
 -- especially if the number of abilities grows as the engine is developed.
 -- It's also easier to code and maintain.
 type Skills = EM.EnumMap Ability Int
+
+tacticSkills :: Tactic -> Skills
+tacticSkills TExplore = zeroSkills
+tacticSkills TFollow = zeroSkills
+tacticSkills TFollowNoItems = ignoreItems
+tacticSkills TMeleeAndRanged = meleeAndRanged
+tacticSkills TMeleeAdjacent = meleeAdjacent
+tacticSkills TBlock = blockOnly
+tacticSkills TRoam = zeroSkills
+tacticSkills TPatrol = zeroSkills
 
 zeroSkills :: Skills
 zeroSkills = EM.empty

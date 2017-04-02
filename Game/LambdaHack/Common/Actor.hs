@@ -11,6 +11,7 @@ module Game.LambdaHack.Common.Actor
   , hpTooLow, calmEnough, hpEnough
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
+  , eqpOverfull, eqpFreeN
   ) where
 
 import Prelude ()
@@ -107,8 +108,6 @@ monsterGenChance (AbsDepth n) (AbsDepth totalDepth) lvlSpawned actorCoeff =
                      ((actorCoeff * (numSpawnedCoeff - scaledDepth))
                       `max` 1))  -- monsters up to level depth spawned at once
 
--- Actor operations
-
 -- | A template for a new actor.
 actorTemplate :: ItemId -> Int64 -> Int64 -> Point -> LevelId -> FactionId
               -> Actor
@@ -166,3 +165,13 @@ type ActorDict = EM.EnumMap ActorId Actor
 
 checkAdjacent :: Actor -> Actor -> Bool
 checkAdjacent sb tb = blid sb == blid tb && adjacent (bpos sb) (bpos tb)
+
+eqpOverfull :: Actor -> Int -> Bool
+eqpOverfull b n = let size = sum $ map fst $ EM.elems $ beqp b
+                  in assert (size <= 10 `blame` (b, n, size))
+                     $ size + n > 10
+
+eqpFreeN :: Actor -> Int
+eqpFreeN b = let size = sum $ map fst $ EM.elems $ beqp b
+             in assert (size <= 10 `blame` (b, size))
+                $ 10 - size

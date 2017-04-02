@@ -4,12 +4,14 @@
 module Game.LambdaHack.Common.Item
   ( -- * The @Item@ type
     ItemId, Item(..), ItemSource(..)
+  , itemPrice, goesIntoEqp, goesIntoInv, goesIntoSha
   , seedToAspect, meanAspect, aspectRecordToList
   , aspectRecordFull, aspectsRandom
     -- * Item discovery types
   , ItemKindIx, KindMean(..), DiscoveryKind, ItemSeed
   , AspectRecord(..), emptyAspectRecord, sumAspectRecord, DiscoveryAspect
-  , ItemFull(..), ItemDisco(..), itemNoDisco
+  , ItemFull(..), ItemDisco(..)
+  , itemNoDisco, itemToFull
     -- * Inventory management types
   , ItemTimer, ItemQuant, ItemBag, ItemDict
   ) where
@@ -145,6 +147,19 @@ itemNoDisco :: (Item, Int) -> ItemFull
 itemNoDisco (itemBase, itemK) =
   ItemFull {itemBase, itemK, itemTimer = [], itemDisco=Nothing}
 
+itemToFull :: Kind.COps -> DiscoveryKind -> DiscoveryAspect -> ItemId -> Item
+           -> ItemQuant
+           -> ItemFull
+itemToFull Kind.COps{coitem=Kind.Ops{okind}}
+           disco discoAspect iid itemBase (itemK, itemTimer) =
+  let itemDisco = case EM.lookup (jkindIx itemBase) disco of
+        Nothing -> Nothing
+        Just KindMean{..} -> Just ItemDisco{ itemKindId = kmKind
+                                           , itemKind = okind kmKind
+                                           , itemAspectMean = kmMean
+                                           , itemAspect = EM.lookup iid discoAspect }
+  in ItemFull {..}
+
 -- | Game items in actor possesion or strewn around the dungeon.
 -- The fields @jsymbol@, @jname@ and @jflavour@ make it possible to refer to
 -- and draw an unidentified item. Full information about item is available
@@ -175,6 +190,28 @@ data ItemSource =
 instance Hashable ItemSource
 
 instance Binary ItemSource
+
+-- | Price an item, taking count into consideration.
+itemPrice :: (Item, Int) -> Int
+itemPrice (item, jcount) =
+  case jsymbol item of
+    '$' -> jcount
+    '*' -> jcount * 100
+    _   -> 0
+
+-- Non-durable item that hurts doesn't go into equipment by default,
+-- but if it is in equipment or among organs, it's used for melee
+-- nevertheless, e.g., thorns.
+goesIntoEqp :: Item -> Bool
+goesIntoEqp item = IK.Equipable `elem` jfeature item
+
+goesIntoInv :: Item -> Bool
+goesIntoInv item = IK.Precious `notElem` jfeature item
+                   && not (goesIntoEqp item)
+
+goesIntoSha :: Item -> Bool
+goesIntoSha item = IK.Precious `elem` jfeature item
+                   && not (goesIntoEqp item)
 
 aspectRecordToList :: AspectRecord -> [IK.Aspect]
 aspectRecordToList AspectRecord{..} =

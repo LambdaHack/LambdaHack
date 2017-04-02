@@ -9,12 +9,10 @@ module Game.LambdaHack.Common.ActorState
   , mergeItemQuant, sharedAllOwnedFid, findIid
   , getContainerBag, getFloorBag, getEmbedBag, getBodyStoreBag
   , mapActorItems_, getActorAssocs
-  , nearbyFreePoints, whereTo, getCarriedAssocs, getCarriedIidCStore
+  , nearbyFreePoints, getCarriedAssocs, getCarriedIidCStore
   , posToAidsLvl, posToAids, posToAssocs
-  , getItemBody, memActor, getActorBody
-  , getLocalTime, itemPrice, regenCalmDelta
-  , actorInAmbient, actorSkills, dispEnemy, fullAssocs, itemToFull
-  , goesIntoEqp, goesIntoInv, goesIntoSha, eqpOverfull, eqpFreeN
+  , getItemBody, memActor, getActorBody, getLocalTime, regenCalmDelta
+  , actorInAmbient, actorSkills, dispEnemy, fullAssocs
   , storeFromC, lidFromC, posFromC, aidFromC, isEscape, isStair, anyFoeAdj
   ) where
 
@@ -162,43 +160,6 @@ findIid leader fid iid s =
       items = concatMap itemsOfActor actors
   in map snd $ filter ((== iid) . fst) items
 
--- | Price an item, taking count into consideration.
-itemPrice :: (Item, Int) -> Int
-itemPrice (item, jcount) =
-  case jsymbol item of
-    '$' -> jcount
-    '*' -> jcount * 100
-    _   -> 0
-
--- | Compute the level identifier and stair position on the new level,
--- after a level change.
---
--- We assume there is never a staircase up and down at the same position.
-whereTo :: LevelId    -- ^ level of the stairs
-        -> Point      -- ^ position of the stairs
-        -> Maybe Bool -- ^ optional forced direction
-        -> Dungeon    -- ^ current game dungeon
-        -> (LevelId, Point)
-                      -- ^ destination level and the pos of its receiving stairs
-whereTo lid pos mup dungeon =
-  let lvl = dungeon EM.! lid
-      (up, i) = case elemIndex pos $ fst $ lstair lvl of
-        Just ifst -> (True, ifst)
-        Nothing -> case elemIndex pos $ snd $ lstair lvl of
-          Just isnd -> (False, isnd)
-          Nothing -> case mup of
-            Just forcedUp -> (forcedUp, 0)  -- for ascending via, e.g., spells
-            Nothing -> assert `failure` "no stairs at" `twith` (lid, pos)
-      !_A = assert (maybe True (== up) mup) ()
-  in case ascendInBranch dungeon up lid of
-    [] | isJust mup -> (lid, pos)  -- spell fizzles
-    [] -> assert `failure` "no dungeon level to go to" `twith` (lid, pos)
-    ln : _ -> let lvlDest = dungeon EM.! ln
-                  stairsDest = (if up then snd else fst) (lstair lvlDest)
-              in if length stairsDest < i + 1
-                 then assert `failure` "no stairs at index" `twith` (lid, pos)
-                 else (ln, stairsDest !! i)
-
 getActorBody :: ActorId -> State -> Actor
 {-# INLINE getActorBody #-}
 getActorBody aid s = sactorD s EM.! aid
@@ -297,22 +258,12 @@ actorSkills :: Maybe ActorId -> ActorId -> AspectRecord -> State
 actorSkills mleader aid ar s =
   let body = getActorBody aid s
       player = gplayer . (EM.! bfid body) . sfactionD $ s
-      skillsFromTactic = tacticSkills $ ftactic player
+      skillsFromTactic = Ability.tacticSkills $ ftactic player
       factionSkills
         | Just aid == mleader = Ability.zeroSkills
         | otherwise = fskillsOther player `Ability.addSkills` skillsFromTactic
       itemSkills = aSkills ar
   in itemSkills `Ability.addSkills` factionSkills
-
-tacticSkills :: Tactic -> Ability.Skills
-tacticSkills TExplore = Ability.zeroSkills
-tacticSkills TFollow = Ability.zeroSkills
-tacticSkills TFollowNoItems = Ability.ignoreItems
-tacticSkills TMeleeAndRanged = Ability.meleeAndRanged
-tacticSkills TMeleeAdjacent = Ability.meleeAdjacent
-tacticSkills TBlock = Ability.blockOnly
-tacticSkills TRoam = Ability.zeroSkills
-tacticSkills TPatrol = Ability.zeroSkills
 
 -- Check whether an actor can displace an enemy. We assume they are adjacent.
 dispEnemy :: ActorId -> ActorId -> Ability.Skills -> State -> Bool
@@ -339,49 +290,18 @@ fullAssocs cops disco discoAspect aid cstores s =
         (iid, itemToFull cops disco discoAspect iid item kit)
   in map iToFull allAssocs
 
-itemToFull :: Kind.COps -> DiscoveryKind -> DiscoveryAspect -> ItemId -> Item
-           -> ItemQuant
-           -> ItemFull
-itemToFull Kind.COps{coitem=Kind.Ops{okind}}
-           disco discoAspect iid itemBase (itemK, itemTimer) =
-  let itemDisco = case EM.lookup (jkindIx itemBase) disco of
-        Nothing -> Nothing
-        Just KindMean{..} -> Just ItemDisco{ itemKindId = kmKind
-                                           , itemKind = okind kmKind
-                                           , itemAspectMean = kmMean
-                                           , itemAspect = EM.lookup iid discoAspect }
-  in ItemFull {..}
-
--- Non-durable item that hurts doesn't go into equipment by default,
--- but if it is in equipment or among organs, it's used for melee
--- nevertheless, e.g., thorns.
-goesIntoEqp :: Item -> Bool
-goesIntoEqp item = IK.Equipable `elem` jfeature item
-
-goesIntoInv :: Item -> Bool
-goesIntoInv item = IK.Precious `notElem` jfeature item
-                   && not (goesIntoEqp item)
-
-goesIntoSha :: Item -> Bool
-goesIntoSha item = IK.Precious `elem` jfeature item
-                   && not (goesIntoEqp item)
-
-eqpOverfull :: Actor -> Int -> Bool
-eqpOverfull b n = let size = sum $ map fst $ EM.elems $ beqp b
-                  in assert (size <= 10 `blame` (b, n, size))
-                     $ size + n > 10
-
-eqpFreeN :: Actor -> Int
-eqpFreeN b = let size = sum $ map fst $ EM.elems $ beqp b
-             in assert (size <= 10 `blame` (b, size))
-                $ 10 - size
-
 storeFromC :: Container -> CStore
 storeFromC c = case c of
   CFloor{} -> CGround
   CEmbed{} -> CGround
   CActor _ cstore -> cstore
   CTrunk{} -> assert `failure` c
+
+aidFromC :: Container -> Maybe ActorId
+aidFromC CFloor{} = Nothing
+aidFromC CEmbed{} = Nothing
+aidFromC (CActor aid _) = Just aid
+aidFromC c@CTrunk{} = assert `failure` c
 
 -- | Determine the dungeon level of the container. If the item is in a shared
 -- stash, the level depends on which actor asks.
@@ -396,12 +316,6 @@ posFromC (CFloor _ pos) _ = pos
 posFromC (CEmbed _ pos) _ = pos
 posFromC (CActor aid _) s = bpos $ getActorBody aid s
 posFromC c@CTrunk{} _ = assert `failure` c
-
-aidFromC :: Container -> Maybe ActorId
-aidFromC CFloor{} = Nothing
-aidFromC CEmbed{} = Nothing
-aidFromC (CActor aid _) = Just aid
-aidFromC c@CTrunk{} = assert `failure` c
 
 isEscape :: LevelId -> Point -> State -> Bool
 isEscape lid p s =

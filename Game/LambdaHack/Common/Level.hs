@@ -2,7 +2,8 @@
 -- as the game progresses.
 module Game.LambdaHack.Common.Level
   ( -- * Dungeon
-    LevelId, AbsDepth, Dungeon, ascendInBranch
+    LevelId, AbsDepth, Dungeon
+  , ascendInBranch, whereTo
     -- * The @Level@ type and its components
   , Level(..), ItemFloor, ActorMap, TileMap, SmellMap
     -- * Level query
@@ -44,6 +45,35 @@ ascendInBranch dungeon up lid =
     Just _ | ln /= lid -> [ln]
     _ | ln == lid -> []
     _ -> ascendInBranch dungeon up ln  -- jump over gaps
+
+-- | Compute the level identifier and stair position on the new level,
+-- after a level change.
+--
+-- We assume there is never a staircase up and down at the same position.
+whereTo :: LevelId    -- ^ level of the stairs
+        -> Point      -- ^ position of the stairs
+        -> Maybe Bool -- ^ optional forced direction
+        -> Dungeon    -- ^ current game dungeon
+        -> (LevelId, Point)
+                      -- ^ destination level and the pos of its receiving stairs
+whereTo lid pos mup dungeon =
+  let lvl = dungeon EM.! lid
+      (up, i) = case elemIndex pos $ fst $ lstair lvl of
+        Just ifst -> (True, ifst)
+        Nothing -> case elemIndex pos $ snd $ lstair lvl of
+          Just isnd -> (False, isnd)
+          Nothing -> case mup of
+            Just forcedUp -> (forcedUp, 0)  -- for ascending via, e.g., spells
+            Nothing -> assert `failure` "no stairs at" `twith` (lid, pos)
+      !_A = assert (maybe True (== up) mup) ()
+  in case ascendInBranch dungeon up lid of
+    [] | isJust mup -> (lid, pos)  -- spell fizzles
+    [] -> assert `failure` "no dungeon level to go to" `twith` (lid, pos)
+    ln : _ -> let lvlDest = dungeon EM.! ln
+                  stairsDest = (if up then snd else fst) (lstair lvlDest)
+              in if length stairsDest < i + 1
+                 then assert `failure` "no stairs at index" `twith` (lid, pos)
+                 else (ln, stairsDest !! i)
 
 -- | Items located on map tiles.
 type ItemFloor = EM.EnumMap Point ItemBag
