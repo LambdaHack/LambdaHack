@@ -322,18 +322,17 @@ condMeleeBadM aid = do
   let friendlyFid fid = fid == bfid b || isAllied fact fid
       ar = actorAspect EM.! aid
   friends <- getsState $ actorRegularAssocs friendlyFid (blid b)
-  let closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
-                       in dist > 0 && (dist <= 2 || approaching b2)
-      -- 3 is the condThreatAtHand distance that AI keeps when alone.
+  let -- 3 is the condThreatAtHand distance that AI keeps when alone.
       approaching = case mtgtPos of
         Just tgtPos | condAimEnemyPresent || condAimEnemyRemembered ->
           \b2 -> chessDist (bpos b2) tgtPos <= 3
         _ -> const False
-      closeFriends = filter (closeEnough . snd) friends
-      strongCloseFriends =
-        filter (uncurry $ actorCanMelee actorAspect) closeFriends
-      noFriendlyHelp = length closeFriends < 3 - 2 * aAggression ar
-                       && null strongCloseFriends
+      closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
+                       in dist > 0 && (dist <= 2 || approaching b2)
+      closeAndStrong (aid2, b2) = closeEnough b2
+                                  && actorCanMelee actorAspect aid2 b2
+      closeAndStrongFriends = filter closeAndStrong friends
+      noFriendlyHelp = length closeAndStrongFriends < 2 - aAggression ar
                        && length friends > 1  -- solo fighters aggresive
   return $ actorCanMelee actorAspect aid b
            || noFriendlyHelp  -- still not getting friends' help
