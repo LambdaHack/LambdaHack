@@ -186,8 +186,7 @@ actionStrategy aid = do
                   | otherwise -> False ) -- not threats in range; don't flee
         , ( [AbDisplace]  -- prevents some looping movement
           , displaceBlocker aid  -- fires up only when path blocked
-          , not condDesirableFloorItem
-            && not newCondInMelee )
+          , not condDesirableFloorItem )
         ]
       -- Order doesn't matter, scaling does.
       -- These are flattened (taking only the best variant) and then summed,
@@ -892,13 +891,17 @@ displaceTowards aid source target = do
       [] -> return reject
       [(aid2, b2)] | Just aid2 /= mleader -> do
         mtgtMPath <- getsClient $ EM.lookup aid2 . stargetD
+        actorAspect <- getsClient sactorAspect
         case mtgtMPath of
           Just TgtAndPath{tapPath=AndPath{pathList=q : _}}
             | q == source  -- friend wants to swap
-              || waitedLastTurn b2 -> do  -- he had no progress anyway
+              || waitedLastTurn b2  -- he had no progress anyway
+              || actorCanMelee actorAspect aid b
+                 && (not $ actorCanMelee actorAspect aid2 b2) -> do
+                   -- he can't meelee and I can, so push him aside
               return $! returN "displace friend" $ target `vectorToFrom` source
           Just _ -> return reject
-          Nothing -> do  -- an enemy or disorented friend --- swap
+          Nothing -> do  -- an enemy or disoriented friend --- swap
             tfact <- getsState $ (EM.! bfid b2) . sfactionD
             actorMaxSk <- enemyMaxAb aid2
             dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
