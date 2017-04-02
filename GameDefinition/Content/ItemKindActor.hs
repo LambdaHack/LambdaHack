@@ -231,7 +231,7 @@ goldenJackal = ItemKind  -- basically a much smaller and slower hyena
   , iverbHit = "thud"
   , iweight  = 13000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 12, AddMaxCalm 70, AddSpeed 22, AddNocto 2 ]
+  , iaspects = [ AddMaxHP 12, AddMaxCalm 70, AddSpeed 24, AddNocto 2 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -249,8 +249,12 @@ griffonVulture = ItemKind
   , iverbHit = "thud"
   , iweight  = 13000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 12, AddMaxCalm 80, AddSpeed 20, AddNocto 2
+  , iaspects = [ AddMaxHP 12, AddMaxCalm 80, AddSpeed 22, AddNocto 2
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
+      -- Animals don't have leader, usually, so even if only one of level,
+      -- it pays the communication overhead, so the speed is higher to get
+      -- them on par with human leaders moving solo. Random double moves,
+      -- on either side, are just too frustrating.
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -268,7 +272,7 @@ skunk = ItemKind
   , iverbHit = "thud"
   , iweight  = 4000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 10, AddMaxCalm 30, AddSpeed 20, AddNocto 2
+  , iaspects = [ AddMaxHP 10, AddMaxCalm 30, AddSpeed 22, AddNocto 2
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -288,7 +292,7 @@ armadillo = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 20, AddMaxCalm 30, AddSpeed 17, AddNocto 2
+  , iaspects = [ AddMaxHP 20, AddMaxCalm 30, AddSpeed 20, AddNocto 2
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -307,7 +311,7 @@ gilaMonster = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 12, AddMaxCalm 50, AddSpeed 15, AddNocto 2
+  , iaspects = [ AddMaxHP 12, AddMaxCalm 50, AddSpeed 18, AddNocto 2
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -326,7 +330,7 @@ rattlesnake = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 25, AddMaxCalm 60, AddSpeed 15, AddNocto 2
+  , iaspects = [ AddMaxHP 25, AddMaxCalm 60, AddSpeed 16, AddNocto 2
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -345,7 +349,7 @@ komodoDragon = ItemKind  -- bad hearing; regeneration makes it very powerful
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 41, AddMaxCalm 60, AddSpeed 16, AddNocto 2 ]
+  , iaspects = [ AddMaxHP 41, AddMaxCalm 60, AddSpeed 18, AddNocto 2 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -365,7 +369,7 @@ hyena = ItemKind
   , iverbHit = "thud"
   , iweight  = 60000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 20, AddMaxCalm 70, AddSpeed 30, AddNocto 2 ]
+  , iaspects = [ AddMaxHP 20, AddMaxCalm 70, AddSpeed 32, AddNocto 2 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -382,7 +386,7 @@ alligator = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 41, AddMaxCalm 70, AddSpeed 15, AddNocto 2 ]
+  , iaspects = [ AddMaxHP 41, AddMaxCalm 70, AddSpeed 18, AddNocto 2 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -401,7 +405,7 @@ rhinoceros = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 90, AddMaxCalm 60, AddSpeed 25, AddNocto 2
+  , iaspects = [ AddMaxHP 90, AddMaxCalm 60, AddSpeed 27, AddNocto 2
                , AddAggression 2
                , AddAbility AbAlter (-1) ]  -- can't switch levels, a miniboss
   , ieffects = [Unique]
@@ -462,7 +466,7 @@ thornbush = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 20, AddMaxCalm 999, AddSpeed 20, AddNocto 2
+  , iaspects = [ AddMaxHP 20, AddMaxCalm 999, AddSpeed 22, AddNocto 2
                , AddAbility AbWait 1, AddAbility AbMelee 1 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -497,7 +501,7 @@ geyserArsenic = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 20
+  , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 22
                , AddNocto 2, AddShine 3
                , AddAbility AbWait 1, AddAbility AbMelee 1 ]
   , ieffects = []
@@ -515,7 +519,7 @@ geyserSulfur = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 20
+  , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 22
                , AddNocto 2, AddShine 3
                , AddAbility AbWait 1, AddAbility AbMelee 1 ]
   , ieffects = []
