@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Actor
     ActorId, monsterGenChance
     -- * The@ Acto@r type
   , Actor(..), ResDelta(..), ActorAspect
-  , deltaSerious, deltaMild
+  , deltaSerious, deltaMild, actorCanMelee
   , bspeed, actorTemplate, braced, waitedLastTurn, actorDying
   , hpTooLow, calmEnough, hpEnough
     -- * Assorted
@@ -24,6 +24,7 @@ import Data.Int (Int64)
 import Data.Ratio
 import GHC.Generics (Generic)
 
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
@@ -89,6 +90,14 @@ deltaSerious ResDelta{..} =
 deltaMild :: ResDelta -> Bool
 deltaMild ResDelta{..} = fst resCurrentTurn == minusM
                          || fst resPreviousTurn == minusM
+
+actorCanMelee :: ActorAspect -> ActorId -> Actor -> Bool
+actorCanMelee actorAspect aid b =
+  let ar = actorAspect EM.! aid
+      actorMaxSk = aSkills ar
+      condUsableWeapon = bweapon b >= 0
+      canMelee = EM.findWithDefault 0 Ability.AbMelee actorMaxSk > 0
+  in condUsableWeapon && canMelee
 
 -- | Chance that a new monster is generated. Currently depends on the
 -- number of monsters already present, and on the level. In the future,

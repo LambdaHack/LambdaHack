@@ -120,7 +120,7 @@ targetStrategy aid = do
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
   let canEscape = fcanEscape (gplayer fact)
-      condNoUsableWeapon = bweapon b == 0
+      condCanMelee = actorCanMelee actorAspect aid b
       canSmell = aSmell ar > 0
       -- 3 is the condThreatAtHand distance that AI keeps when alone.
       meleeNearby | newCondInMelee = 3
@@ -138,8 +138,7 @@ targetStrategy aid = do
             nonmoving = EM.findWithDefault 0 AbMove actorMaxSkE <= 0
         return {-keep lazy-} $
           chessDist (bpos body) (bpos b) < n
-          && not condNoUsableWeapon
-          && EM.findWithDefault 0 AbMelee actorMaxSk > 0
+          && condCanMelee
           && not (hpTooLow b ar)
           && not (nonmoving && condMeleeBad)
       targetableRangedOrSpecial body =

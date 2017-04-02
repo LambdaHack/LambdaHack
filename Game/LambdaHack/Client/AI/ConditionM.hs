@@ -330,17 +330,12 @@ condMeleeBadM aid = do
           \b2 -> chessDist (bpos b2) tgtPos <= 3
         _ -> const False
       closeFriends = filter (closeEnough . snd) friends
-      strongActor (aid2, b2) =
-        let ar2 = actorAspect EM.! aid2
-            actorMaxSk2 = aSkills ar2
-            condUsableWeapon2 = bweapon b2 >= 0
-            canMelee2 = EM.findWithDefault 0 Ability.AbMelee actorMaxSk2 > 0
-        in condUsableWeapon2 && canMelee2
-      strongCloseFriends = filter strongActor closeFriends
+      strongCloseFriends =
+        filter (uncurry $ actorCanMelee actorAspect) closeFriends
       noFriendlyHelp = length closeFriends < 3 - 2 * aAggression ar
                        && null strongCloseFriends
                        && length friends > 1  -- solo fighters aggresive
-  return $ strongActor (aid, b)
+  return $ actorCanMelee actorAspect aid b
            || noFriendlyHelp  -- still not getting friends' help
     -- no $!; keep it lazy
 

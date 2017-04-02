@@ -15,7 +15,6 @@ import qualified Data.EnumSet as ES
 import Data.Int (Int64)
 
 import Game.LambdaHack.Atomic
-import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -244,11 +243,8 @@ leadLevelSwitch = do
             s <- getState
             actorAspect <- getsServer sactorAspect
             let leaderStuck = waitedLastTurn body
-                actorMaxSk = aSkills $ actorAspect EM.! leader
-                leaderMelees =
-                  anyFoeAdj leader s
-                  && bweapon body > 0
-                  && EM.findWithDefault 0 Ability.AbMelee actorMaxSk > 0
+                condCanMelee = actorCanMelee actorAspect leader body
+                leaderMelees = anyFoeAdj leader s && condCanMelee
                 ourLvl (lid, lvl) =
                   ( lid
                   , EM.size (lfloor lvl)

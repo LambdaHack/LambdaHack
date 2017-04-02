@@ -79,7 +79,6 @@ actionStrategy aid = do
   condAdjTriggerable <- condAdjTriggerableM aid
   condBlocksFriends <- condBlocksFriendsM aid
   condNoEqpWeapon <- condNoEqpWeaponM aid
-  let condNoUsableWeapon = bweapon body == 0
   condEnoughGear <- condEnoughGearM aid
   condFloorWeapon <- condFloorWeaponM aid
   condCanProject <- condCanProjectM False aid
@@ -91,7 +90,8 @@ actionStrategy aid = do
   explored <- getsClient sexplored
   (fleeL, badVic) <- fleeList aid
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
+  let condCanMelee = actorCanMelee actorAspect aid body
+      ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
       lidExplored = ES.member (blid body) explored
@@ -142,7 +142,8 @@ actionStrategy aid = do
             && not condDesirableFloorItem )
         , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
             <$> pickup aid True
-          , condNoEqpWeapon && condFloorWeapon && not condHpTooLow
+          , condNoEqpWeapon  -- we assume organ weapons usually inferior
+            && condFloorWeapon && not condHpTooLow
             && abInMaxSkill AbMelee )
         , ( [AbMelee], (toAny :: ToAny 'AbMelee)
             <$> meleeBlocker aid  -- only melee target or blocker
@@ -172,9 +173,7 @@ actionStrategy aid = do
                     -- Don't keep fleeing if just hit, because too close
                     -- to enemy to get out of his range, most likely,
                     -- and so melee him instead, unless can't melee at all.
-                    && not (heavilyDistressed
-                            && abInMaxSkill AbMelee
-                            && not condNoUsableWeapon)
+                    && not (heavilyDistressed && condCanMelee)
                   | condThreatAt 5 ->
                     -- Too far to flee from melee, too close from ranged,
                     -- not in ambient, so no point fleeing into dark; stay.
@@ -233,8 +232,7 @@ actionStrategy aid = do
           , (condAimEnemyPresent
              || condAimEnemyRemembered && not newCondInMelee)
             && not (condDesirableFloorItem && not newCondInMelee)
-            && abInMaxSkill AbMelee
-            && not condNoUsableWeapon )
+            && condCanMelee )
         ]
       -- Order matters again.
       suffix =
@@ -256,9 +254,7 @@ actionStrategy aid = do
                             condThreatAt 5
                             && not aInAmbient && not actorShines
                             && condMeleeBad
-                            && not (heavilyDistressed
-                                    && abInMaxSkill AbMelee
-                                    && not condNoUsableWeapon))
+                            && not (heavilyDistressed && condCanMelee))
           , not (condTgtNonmoving && condThreatAtHand)
             && (not newCondInMelee || condAimEnemyPresent) )
         ]

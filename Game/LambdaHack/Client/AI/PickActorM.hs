@@ -16,12 +16,10 @@ import Game.LambdaHack.Client.AI.PickTargetM
 import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
-import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
@@ -80,13 +78,10 @@ pickActorToMove maidToAvoid refreshTarget = do
             let ar = case EM.lookup aid actorAspect of
                   Just aspectRecord -> aspectRecord
                   Nothing -> assert `failure` aid
-                actorMaxSk = aSkills ar
             condMeleeBad <- condMeleeBadM aid
             threatDistL <- threatDistList aid
             (fleeL, _) <- fleeList aid
-            let abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
-                condNoUsableWeapon = bweapon body == 0
-                canMelee = abInMaxSkill AbMelee && not condNoUsableWeapon
+            let condCanMelee = actorCanMelee actorAspect aid body
                 condCanFlee = not (null fleeL)
                 condThreatAtHandVeryClose =
                   not $ null $ takeWhile ((<= 2) . fst) threatDistL
@@ -100,7 +95,7 @@ pickActorToMove maidToAvoid refreshTarget = do
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.
                   deltaSerious (bcalmDelta body)
-            return $! not (canMelee && condThreatAdj)
+            return $! not (condCanMelee && condThreatAdj)
                       && if condThreatAtHandVeryClose
                          then condCanFlee && condMeleeBad
                               && not condFastThreatAdj
