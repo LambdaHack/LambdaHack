@@ -99,20 +99,14 @@ condNonProjFoeAdjM aid = do
   return $ any (adjacent (bpos b) . bpos) allFoes  -- keep it lazy
 
 -- | Check if any non-dying, non-projectile foe is dist-close
--- to any of ours, except for our leader (he can cope alone and is not
--- harmed by communication overhead of movement of others).
+-- to any of ours.
 -- Even if our actor can't melee, he's under melee attack, so has to flee,
 -- so full alert is justified as well.
 condInMeleeM :: MonadClient m => Int -> Actor -> m Bool
 condInMeleeM dist b = do
-  mleader <- getsClient _sleader
-  let filterNotLeader = case mleader of
-        Nothing -> id
-        Just leader -> filter ((/= leader) . fst)
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
-  oursWithLeader <- getsState $ actorRegularAssocs (== bfid b) (blid b)
-  let ours = filterNotLeader oursWithLeader
+  ours <- getsState $ actorRegularAssocs (== bfid b) (blid b)
   return $! any (\(_, body) -> any (\bFoe ->
     chessDist (bpos bFoe) (bpos body) <= dist) allFoes) ours
 
