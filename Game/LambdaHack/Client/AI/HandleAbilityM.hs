@@ -65,10 +65,9 @@ actionStrategy :: forall m. MonadClient m
 actionStrategy aid = do
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
-  mleader <- getsClient _sleader
   condInMelee <- getsClient scondInMelee
   let (newCondInMelee, _oldCondInMelee) = case condInMelee EM.! blid body of
-        Right conds -> if mleader == Just aid then (False, False) else conds
+        Right conds -> conds
         Left{} -> assert `failure` condInMelee
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid

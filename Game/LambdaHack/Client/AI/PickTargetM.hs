@@ -54,7 +54,7 @@ targetStrategy aid = do
   -- set of abilities as the leader, anyway) and set his target accordingly.
   actorAspect <- getsClient sactorAspect
   let (newCondInMelee, oldCondInMelee) = case condInMelee EM.! blid b of
-        Right conds -> if mleader == Just aid then (False, False) else conds
+        Right conds -> conds
         Left{} -> assert `failure` condInMelee
       stdRuleset = Kind.stdRuleset corule
       nearby = rnearby stdRuleset
