@@ -5,7 +5,6 @@ module Game.LambdaHack.Client.AI.ConditionM
   , condAimEnemyRememberedM
   , condTgtNonmovingM
   , condAnyFoeAdjM
-  , condNonProjFoeAdjM
   , condHpTooLowM
   , condAdjTriggerableM
   , condBlocksFriendsM
@@ -90,14 +89,6 @@ condAnyFoeAdjM :: MonadStateRead m => ActorId -> m Bool
 condAnyFoeAdjM aid = do
   s <- getState
   return $! anyFoeAdj aid s
-
--- | Require that any non-dying, non-projectile foe is adjacent.
-condNonProjFoeAdjM :: MonadStateRead m => ActorId -> m Bool
-condNonProjFoeAdjM aid = do
-  b <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
-  return $ any (adjacent (bpos b) . bpos) allFoes  -- keep it lazy
 
 -- | Require the actor's HP is low enough.
 condHpTooLowM :: MonadClient m => ActorId -> m Bool
