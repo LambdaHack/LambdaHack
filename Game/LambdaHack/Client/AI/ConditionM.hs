@@ -15,6 +15,7 @@ module Game.LambdaHack.Client.AI.ConditionM
   , condCanProjectM
   , condNotCalmEnoughM
   , condDesirableFloorItemM
+  , condStrongFriendAdjM
   , condMeleeBadM
   , condMeleeBestM
   , condShineWouldBetrayM
@@ -304,6 +305,18 @@ desirableItem canEsc use itemFull =
           && not (isNothing use  -- needs resources to id
                   && preciousNotUseful)
           && maybe True (<= 0) (lookup "gem" freq)
+
+condStrongFriendAdjM :: MonadClient m => ActorId -> m Bool
+condStrongFriendAdjM aid = do
+  actorAspect <- getsClient sactorAspect
+  b <- getsState $ getActorBody aid
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  let friendlyFid fid = fid == bfid b || isAllied fact fid
+  friends <- getsState $ actorRegularAssocs friendlyFid (blid b)
+  let closeAndStrong (aid2, b2) = adjacent (bpos b) (bpos b2)
+                                  && actorCanMelee actorAspect aid2 b2
+      closeAndStrongFriends = filter closeAndStrong friends
+  return $ not $ null $ closeAndStrongFriends
 
 -- | Require the actor is in a bad position to melee or can't melee at all.
 condMeleeBadM :: MonadClient m => ActorId -> m Bool

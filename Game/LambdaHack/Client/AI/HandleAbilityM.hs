@@ -86,6 +86,7 @@ actionStrategy aid = do
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condMeleeBad <- condMeleeBadM aid
   condMeleeBest <- condMeleeBestM aid
+  condStrongFriendAdj <- condStrongFriendAdjM aid
   condTgtNonmoving <- condTgtNonmovingM aid
   aInAmbient <- getsState $ actorInAmbient body
   explored <- getsClient sexplored
@@ -98,6 +99,7 @@ actionStrategy aid = do
       lidExplored = ES.member (blid body) explored
       panicFleeL = fleeL ++ badVic
       actorShines = aShine ar > 0
+      condManyThreatAdj = length (takeWhile ((== 1) . fst) threatDistL) >= 2
       condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
       condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
       condThreatAt n = not $ null $ takeWhile ((<= n) . fst) threatDistL
@@ -168,7 +170,8 @@ actionStrategy aid = do
             -- or from missiles, if hit and enemies are only far away,
             -- can fling at us and we can't well fling at them nor well melee.
             not condFastThreatAdj
-            && if | condThreatAtHand
+            && if | condManyThreatAdj -> not condStrongFriendAdj
+                  | condThreatAtHand
                     || condThreatAt 5 && aInAmbient && not actorShines ->
                     condMeleeBad
                     -- Don't keep fleeing if just hit, because too close

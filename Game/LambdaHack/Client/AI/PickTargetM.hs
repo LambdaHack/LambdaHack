@@ -194,6 +194,11 @@ targetStrategy aid = do
         case cfoes of
           (_, (aid2, _)) : _ -> setPath $ TEnemy aid2 False
           [] | newCondInMelee -> return reject  -- don't slow down fighters
+            -- this looks a bit strange, because teammates stop in their tracks
+            -- all around the map (unless very close to the combatant),
+            -- but the intuition is, not being able to help immediately,
+            -- and not being too friendly to each other, they just wait and see
+            -- and also shout to the teammate to flee and lure foes into ambush
           [] -> do
             -- Tracking enemies is more important than exploring,
             -- and smelling actors are usually blind, so bad at exploring.

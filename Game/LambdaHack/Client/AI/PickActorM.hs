@@ -92,10 +92,13 @@ pickActorToMove maidToAvoid refreshTarget = do
                   Just aspectRecord -> aspectRecord
                   Nothing -> assert `failure` aid
             condMeleeBad <- condMeleeBadM aid
+            condStrongFriendAdj <- condStrongFriendAdjM aid
             threatDistL <- threatDistList aid
             (fleeL, _) <- fleeList aid
             let condCanMelee = actorCanMelee actorAspect aid body
                 condCanFlee = not (null fleeL)
+                condManyThreatAdj =
+                  length (takeWhile ((== 1) . fst) threatDistL) >= 2
                 condThreatAtHandVeryClose =
                   not $ null $ takeWhile ((<= 2) . fst) threatDistL
                 threatAdj = takeWhile ((== 1) . fst) threatDistL
@@ -109,10 +112,11 @@ pickActorToMove maidToAvoid refreshTarget = do
                   -- Actor hit by a projectile or similarly distressed.
                   deltaSerious (bcalmDelta body)
             return $! not (condCanMelee && condThreatAdj)
-                      && if condThreatAtHandVeryClose
-                         then condCanFlee && condMeleeBad
-                              && not condFastThreatAdj
-                         else heavilyDistressed  -- shot at
+                      && (if condThreatAtHandVeryClose
+                          then condCanFlee && condMeleeBad
+                               && not condFastThreatAdj
+                          else heavilyDistressed)  -- shot at
+                      || condManyThreatAdj && not condStrongFriendAdj
           actorHearning (_, TgtAndPath{ tapTgt=TPoint TEnemyPos{} _ _
                                       , tapPath=NoPath }) =
             return False
