@@ -15,7 +15,6 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 
-import Game.LambdaHack.Client.AI.ConditionM
 import Game.LambdaHack.Client.AI.HandleAbilityM
 import Game.LambdaHack.Client.AI.PickActorM
 import Game.LambdaHack.Client.AI.PickTargetM
@@ -24,10 +23,13 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
+import Game.LambdaHack.Common.State
 
 -- | Handle the move of an AI player.
 queryAI :: forall m. MonadClient m => ActorId -> m RequestAI
@@ -76,6 +78,21 @@ udpdateCondInMelee aid = do
         cli {scondInMelee =
                EM.adjust (const $ Right (newCond, oldCond)) (blid b)
                          (scondInMelee cli)}
+
+-- | Check if any non-dying, non-projectile foe is dist-close
+-- to any of our actors that can melee. If our actor can't melee
+-- and got caught in melee, he is a sunk cost, there is no advantage
+-- in trying to melee together with him (since he can't melee).
+condInMeleeM :: MonadClient m => Int -> Actor -> m Bool
+condInMeleeM dist b = do
+  actorAspect <- getsClient sactorAspect
+  let filterCanMelee (aid2, b2) = actorCanMelee actorAspect aid2 b2
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
+  ours <- getsState $ actorRegularAssocs (== bfid b) (blid b)
+  let oursCanMelee = filter filterCanMelee ours
+  return $! any (\(_, body) -> any (\bFoe ->
+    chessDist (bpos bFoe) (bpos body) <= dist) allFoes) oursCanMelee
 
 -- | Verify and possibly change the target of an actor. This function both
 -- updates the target in the client state and returns the new target explicitly.
