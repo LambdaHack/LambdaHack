@@ -16,6 +16,7 @@ module Game.LambdaHack.Client.AI.ConditionM
   , condNotCalmEnoughM
   , condDesirableFloorItemM
   , condMeleeBadM
+  , condMeleeBestM
   , condShineWouldBetrayM
   , benAvailableItems
   , hinders
@@ -306,7 +307,13 @@ desirableItem canEsc use itemFull =
 
 -- | Require the actor is in a bad position to melee or can't melee at all.
 condMeleeBadM :: MonadClient m => ActorId -> m Bool
-condMeleeBadM aid = do
+condMeleeBadM = condMeleeParam 2
+
+condMeleeBestM :: MonadClient m => ActorId -> m Bool
+condMeleeBestM aid = not <$> condMeleeParam 1 aid
+
+condMeleeParam :: MonadClient m => Int -> ActorId -> m Bool
+condMeleeParam param aid = do
   actorAspect <- getsClient sactorAspect
   b <- getsState $ getActorBody aid
   btarget <- getsClient $ getTarget aid
@@ -322,10 +329,10 @@ condMeleeBadM aid = do
   let -- 3 is the condThreatAtHand distance that AI keeps when alone.
       approaching = case mtgtPos of
         Just tgtPos | condAimEnemyPresent || condAimEnemyRemembered ->
-          \b2 -> chessDist (bpos b2) tgtPos <= 3
+          \b2 -> chessDist (bpos b2) tgtPos <= 1 + param
         _ -> const False
       closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
-                       in dist > 0 && (dist <= 2 || approaching b2)
+                       in dist > 0 && (dist <= param || approaching b2)
       closeAndStrong (aid2, b2) = closeEnough b2
                                   && actorCanMelee actorAspect aid2 b2
       closeAndStrongFriends = filter closeAndStrong friends

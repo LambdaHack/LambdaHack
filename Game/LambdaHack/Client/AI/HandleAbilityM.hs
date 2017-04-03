@@ -85,6 +85,7 @@ actionStrategy aid = do
   condNotCalmEnough <- condNotCalmEnoughM aid
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condMeleeBad <- condMeleeBadM aid
+  condMeleeBest <- condMeleeBestM aid
   condTgtNonmoving <- condTgtNonmovingM aid
   aInAmbient <- getsState $ actorInAmbient body
   explored <- getsClient sexplored
@@ -230,6 +231,11 @@ actionStrategy aid = do
                               && condMeleeBad)
           , (condAimEnemyPresent
              || condAimEnemyRemembered && not newCondInMelee)
+            && (not condThreatAtHand || condMeleeBest)
+              -- this results in animals in corridor never attacking,
+              -- because they can't swarm the opponent, which is logical,
+              -- and in rooms they do attack, so not too boring;
+              -- 2 monsters attack always, because they are more aggressive
             && not (condDesirableFloorItem && not newCondInMelee)
             && condCanMelee )
         ]
@@ -255,6 +261,7 @@ actionStrategy aid = do
                             && condMeleeBad
                             && not (heavilyDistressed && condCanMelee))
           , not (condTgtNonmoving && condThreatAtHand)
+            && (not condThreatAtHand || condMeleeBest)
             && (not newCondInMelee || condAimEnemyPresent) )
         ]
       fallback =
