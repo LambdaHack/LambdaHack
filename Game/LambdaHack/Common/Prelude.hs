@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.Prelude
 
   , module Control.Exception.Assert.Sugar
 
-  , Text, (<+>), tshow, divUp, (<$$>)
+  , Text, (<+>), tshow, divUp, (<$$>), partitionM
 
   , (***), (&&&), first, second
   ) where
@@ -18,6 +18,7 @@ import Prelude ()
 
 import Prelude.Compat hiding (appendFile, readFile, writeFile)
 
+import Control.Applicative
 import Control.Arrow (first, second, (&&&), (***))
 import Control.Monad.Compat
 import Data.List.Compat
@@ -48,3 +49,8 @@ divUp n k = (n + k - 1) `div` k
 infixl 4 <$$>
 (<$$>) :: (Functor f, Functor g) => (a -> b) -> f (g a) -> f (g b)
 h <$$> m = fmap h <$> m
+
+partitionM :: Applicative m => (a -> m Bool) -> [a] -> m ([a], [a])
+{-# INLINE partitionM #-}
+partitionM p = foldr (\a ->
+  liftA2 (\b -> (if b then first else second) (a :)) (p a)) (pure ([], []))

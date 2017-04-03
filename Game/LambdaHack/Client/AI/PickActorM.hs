@@ -139,14 +139,10 @@ pickActorToMove maidToAvoid refreshTarget = do
                   not $ null $ takeWhile ((<= 5) . fst) threatDistL
             condMeleeBad <- condMeleeBadM aid
             return $! condThreatMedium && condMeleeBad
-      oursVulnerable <- filterM actorVulnerable oursTgt
-      oursSafe <- filterM (fmap not . actorVulnerable) oursTgt
-      oursMeleeing <- filterM actorMeleeing oursSafe
-      oursNotMeleeing <- filterM (fmap not . actorMeleeing) oursSafe
-      oursHearing <- filterM actorHearning oursNotMeleeing
-      oursNotHearing <- filterM (fmap not . actorHearning) oursNotMeleeing
-      oursMeleeBad <- filterM actorMeleeBad oursNotHearing
-      oursNotMeleeBad <- filterM (fmap not . actorMeleeBad) oursNotHearing
+      (oursVulnerable, oursSafe) <- partitionM actorVulnerable oursTgt
+      (oursMeleeing, oursNotMeleeing) <- partitionM actorMeleeing oursSafe
+      (oursHearing, oursNotHearing) <- partitionM actorHearning oursNotMeleeing
+      (oursMeleeBad, oursNotMeleeBad) <- partitionM actorMeleeBad oursNotHearing
       let targetTEnemy (_, TgtAndPath{tapTgt=TEnemy{}}) = True
           targetTEnemy (_, TgtAndPath{tapTgt=TPoint TEnemyPos{} _ _}) = True
           targetTEnemy _ = False
