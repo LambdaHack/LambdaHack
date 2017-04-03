@@ -132,7 +132,7 @@ targetStrategy aid = do
       targetableMelee aidE body = do
         actorMaxSkE <- enemyMaxAb aidE
         let attacksFriends = any (adjacent (bpos body) . bpos) friends
-            -- 3 is the condThreatAtHand distance that AI keeps when alone.
+            -- 3 is the condThreat distance that AI keeps when alone.
             n | newCondInMelee = if attacksFriends then 3 else 0
               | otherwise = meleeNearby
             nonmoving = EM.findWithDefault 0 AbMove actorMaxSkE <= 0

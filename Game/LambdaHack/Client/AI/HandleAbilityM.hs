@@ -99,17 +99,14 @@ actionStrategy aid = do
       lidExplored = ES.member (blid body) explored
       panicFleeL = fleeL ++ badVic
       actorShines = aShine ar > 0
-      condManyThreatAdj = length (takeWhile ((== 1) . fst) threatDistL) >= 2
-      condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
-      condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
-      condThreatAt n = not $ null $ takeWhile ((<= n) . fst) threatDistL
-      condThreatNearby = not $ null $ takeWhile ((<= 9) . fst) threatDistL
-      condThreatInRange = not $ null $ takeWhile ((<= 12) . fst) threatDistL
+      condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
       speed1_5 = speedScale (3%2) (bspeed body ar)
+      threatAdj = takeWhile ((== 1) . fst) threatDistL
+      condManyThreatAdj = length threatAdj >= 2
       condFastThreatAdj = any (\(_, (aid2, b2)) ->
                                 let ar2 = actorAspect EM.! aid2
                                 in bspeed b2 ar2 > speed1_5)
-                          $ takeWhile ((== 1) . fst) threatDistL
+                              threatAdj
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
         deltaSerious (bcalmDelta body)
       actorMaxSk = aSkills ar
@@ -136,7 +133,7 @@ actionStrategy aid = do
               -- in the latter case, may return via different stairs later on
           , condAdjTriggerable && not condAimEnemyPresent
             && ((condNotCalmEnough || condHpTooLow)  -- flee
-                && condMeleeBad && condThreatAdj
+                && condMeleeBad && condThreat 1
                 || (lidExplored || condEnoughGear)  -- explore
                    && not condDesirableFloorItem) )
         , ( [AbDisplace]
@@ -171,18 +168,18 @@ actionStrategy aid = do
             -- can fling at us and we can't well fling at them nor well melee.
             not condFastThreatAdj
             && if | condManyThreatAdj -> not condStrongFriendAdj
-                  | condThreatAtHand
-                    || condThreatAt 5 && aInAmbient && not actorShines ->
+                  | condThreat 2
+                    || condThreat 5 && aInAmbient && not actorShines ->
                     condMeleeBad
                     -- Don't keep fleeing if just hit, because too close
                     -- to enemy to get out of his range, most likely,
                     -- and so melee him instead, unless can't melee at all.
                     && not (heavilyDistressed && condCanMelee)
-                  | condThreatAt 5 ->
+                  | condThreat 5 ->
                     -- Too far to flee from melee, too close from ranged,
                     -- not in ambient, so no point fleeing into dark; stay.
                     False
-                  | condThreatInRange ->
+                  | condThreat 12 ->
                     -- Too far to close in for melee; can't shoot; flee from
                     -- ranged attack and prepare ambush for later on.
                     heavilyDistressed
@@ -219,7 +216,7 @@ actionStrategy aid = do
         , ( [AbApply]
           , stratToFreq 2 $ (toAny :: ToAny 'AbApply)
             <$> applyItem aid ApplyAll  -- use any potion or scroll
-          , (condAimEnemyPresent || condThreatNearby) )  -- can affect enemies
+          , (condAimEnemyPresent || condThreat 9) )  -- can affect enemies
         , ( [AbMove]
           , stratToFreq (if | not condAimEnemyPresent ->
                               2  -- if enemy only remembered, investigate anyway
@@ -229,12 +226,12 @@ actionStrategy aid = do
                               1000  -- friends pummeled by target, go to help
                             | otherwise ->
                               50)
-            $ chase aid True (condThreatAt 5
+            $ chase aid True (condThreat 5
                               && not aInAmbient && not actorShines
                               && condMeleeBad)
           , (condAimEnemyPresent
              || condAimEnemyRemembered && not newCondInMelee)
-            && (not condThreatAtHand || condMeleeBest)
+            && (not (condThreat 2) || condMeleeBest)
               -- this results in animals in corridor never attacking,
               -- because they can't swarm the opponent, which is logical,
               -- and in rooms they do attack, so not too boring;
@@ -259,12 +256,12 @@ actionStrategy aid = do
         , ( [AbMove]
           , chase aid True (-- Don't keep hiding in darkness if hit right now,
                             -- unless can't melee at all.
-                            condThreatAt 5
+                            condThreat 5
                             && not aInAmbient && not actorShines
                             && condMeleeBad
                             && not (heavilyDistressed && condCanMelee))
-          , not (condTgtNonmoving && condThreatAtHand)
-            && (not condThreatAtHand || condMeleeBest)
+          , not (condTgtNonmoving && condThreat 2)
+            && (not (condThreat 2) || condMeleeBest)
             && (not newCondInMelee || condAimEnemyPresent) )
         ]
       fallback =

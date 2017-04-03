@@ -97,12 +97,9 @@ pickActorToMove maidToAvoid refreshTarget = do
             (fleeL, _) <- fleeList aid
             let condCanMelee = actorCanMelee actorAspect aid body
                 condCanFlee = not (null fleeL)
-                condManyThreatAdj =
-                  length (takeWhile ((== 1) . fst) threatDistL) >= 2
-                condThreatAtHandVeryClose =
-                  not $ null $ takeWhile ((<= 2) . fst) threatDistL
                 threatAdj = takeWhile ((== 1) . fst) threatDistL
-                condThreatAdj = not $ null threatAdj
+                condManyThreatAdj = length threatAdj >= 2
+                condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
                 condFastThreatAdj =
                   any (\(_, (aid2, b2)) ->
                         let ar2 = actorAspect EM.! aid2
@@ -111,8 +108,8 @@ pickActorToMove maidToAvoid refreshTarget = do
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.
                   deltaSerious (bcalmDelta body)
-            return $! not (condCanMelee && condThreatAdj)
-                      && (if condThreatAtHandVeryClose
+            return $! not (condCanMelee && condThreat 1)
+                      && (if condThreat 2
                           then condCanFlee && condMeleeBad
                                && not condFastThreatAdj
                           else heavilyDistressed)  -- shot at

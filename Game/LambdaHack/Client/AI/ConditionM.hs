@@ -339,7 +339,7 @@ condMeleeParam param aid = do
   let friendlyFid fid = fid == bfid b || isAllied fact fid
       ar = actorAspect EM.! aid
   friends <- getsState $ actorRegularAssocs friendlyFid (blid b)
-  let -- 3 is the condThreatAtHand distance that AI keeps when alone.
+  let -- 3 is the condThreat distance that AI keeps when alone.
       approaching = case mtgtPos of
         Just tgtPos | condAimEnemyPresent || condAimEnemyRemembered ->
           \b2 -> chessDist (bpos b2) tgtPos <= 1 + param
