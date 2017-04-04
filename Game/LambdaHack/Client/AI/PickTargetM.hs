@@ -116,11 +116,11 @@ targetStrategy aid = do
   condCanProject <- condCanProjectM True aid
   condHpTooLow <- condHpTooLowM aid
   condEnoughGear <- condEnoughGearM aid
-  condMeleeBad <- condMeleeBadM aid
-  let friendlyFid fid = fid == bfid b || isAllied fact fid
+  condSupport2 <- condSupport 2 aid
+  let condCanMelee = actorCanMelee actorAspect aid b
+      friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
   let canEscape = fcanEscape (gplayer fact)
-      condCanMelee = actorCanMelee actorAspect aid b
       canSmell = aSmell ar > 0
       meleeNearby | canEscape = nearby `div` 2
                   | otherwise = nearby
@@ -140,7 +140,7 @@ targetStrategy aid = do
           chessDist (bpos body) (bpos b) < n
           && condCanMelee
           && not (hpTooLow b ar && not newCondInMelee)
-          && not (nonmoving && condMeleeBad)
+          && (not nonmoving || condSupport2)
       targetableRangedOrSpecial body =
         if newCondInMelee then False
         else chessDist (bpos body) (bpos b) < rangedNearby

@@ -82,15 +82,15 @@ actionStrategy aid = do
   condCanProject <- condCanProjectM False aid
   condNotCalmEnough <- condNotCalmEnoughM aid
   condDesirableFloorItem <- condDesirableFloorItemM aid
-  condMeleeBad <- condMeleeBadM aid
-  condMeleeBest <- condMeleeBestM aid
-  condStrongFriendAdj <- condStrongFriendAdjM aid
+  condSupport1 <- condSupport 1 aid
+  condSupport2 <- condSupport 2 aid
   condTgtNonmoving <- condTgtNonmovingM aid
   aInAmbient <- getsState $ actorInAmbient body
   explored <- getsClient sexplored
   (fleeL, badVic) <- fleeList aid
   actorAspect <- getsClient sactorAspect
   let condCanMelee = actorCanMelee actorAspect aid body
+      condMeleeBad = not (condSupport2 && condCanMelee)
       ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
@@ -165,7 +165,7 @@ actionStrategy aid = do
             -- or from missiles, if hit and enemies are only far away,
             -- can fling at us and we can't well fling at them nor well melee.
             not condFastThreatAdj
-            && if | condManyThreatAdj -> not condStrongFriendAdj
+            && if | condManyThreatAdj -> not condSupport2
                   | condThreat 2
                     || condThreat 5 && aInAmbient && not actorShines ->
                     condMeleeBad
@@ -229,7 +229,7 @@ actionStrategy aid = do
                               && condMeleeBad)
           , (condAimEnemyPresent
              || condAimEnemyRemembered && not newCondInMelee)
-            && (not (condThreat 2) || condMeleeBest)
+            && (not (condThreat 2) || condSupport1)
               -- this results in animals in corridor never attacking,
               -- because they can't swarm the opponent, which is logical,
               -- and in rooms they do attack, so not too boring;
@@ -259,7 +259,7 @@ actionStrategy aid = do
                             && condMeleeBad
                             && not (heavilyDistressed && condCanMelee))
           , not (condTgtNonmoving && condThreat 2)
-            && (not (condThreat 2) || condMeleeBest)
+            && (not (condThreat 2) || condSupport1 && condCanMelee)
             && (not newCondInMelee || condAimEnemyPresent) )
         ]
       fallback =

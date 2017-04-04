@@ -91,8 +91,7 @@ pickActorToMove maidToAvoid refreshTarget = do
             let ar = case EM.lookup aid actorAspect of
                   Just aspectRecord -> aspectRecord
                   Nothing -> assert `failure` aid
-            condMeleeBad <- condMeleeBadM aid
-            condStrongFriendAdj <- condStrongFriendAdjM aid
+            condSupport2 <- condSupport 2 aid
             threatDistL <- threatDistList aid
             (fleeL, _) <- fleeList aid
             let condCanMelee = actorCanMelee actorAspect aid body
@@ -110,10 +109,11 @@ pickActorToMove maidToAvoid refreshTarget = do
                   deltaSerious (bcalmDelta body)
             return $! not (condCanMelee && condThreat 1)
                       && (if condThreat 2
-                          then condCanFlee && condMeleeBad
+                          then condCanFlee
+                               && not (condSupport2 && condCanMelee)
                                && not condFastThreatAdj
                           else heavilyDistressed)  -- shot at
-                      || condManyThreatAdj && not condStrongFriendAdj
+                      || condManyThreatAdj && not condSupport2
           actorHearning (_, TgtAndPath{ tapTgt=TPoint TEnemyPos{} _ _
                                       , tapPath=NoPath }) =
             return False
@@ -130,12 +130,13 @@ pickActorToMove maidToAvoid refreshTarget = do
           -- AI has to be prudent and not lightly waste leader for meleeing,
           -- even if his target is distant
           actorMeleeing ((aid, _), _) = condAnyFoeAdjM aid
-          actorMeleeBad ((aid, _), _) = do
+          actorMeleeBad ((aid, body), _) = do
             threatDistL <- threatDistList aid
-            let condThreatMedium =  -- if foes far, friends may still come
+            condSupport2 <- condSupport 2 aid
+            let condCanMelee = actorCanMelee actorAspect aid body
+                condThreatMedium =  -- if foes far, friends may still come
                   not $ null $ takeWhile ((<= 5) . fst) threatDistL
-            condMeleeBad <- condMeleeBadM aid
-            return $! condThreatMedium && condMeleeBad
+            return $! condThreatMedium && not (condSupport2 && condCanMelee)
       (oursVulnerable, oursSafe) <- partitionM actorVulnerable oursTgt
       (oursMeleeing, oursNotMeleeing) <- partitionM actorMeleeing oursSafe
       (oursHearing, oursNotHearing) <- partitionM actorHearning oursNotMeleeing

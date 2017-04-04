@@ -13,15 +13,13 @@ module Game.LambdaHack.Client.AI.ConditionM
   , condCanProjectM
   , condNotCalmEnoughM
   , condDesirableFloorItemM
-  , condStrongFriendAdjM
-  , condMeleeBadM
-  , condMeleeBestM
-  , condShineWouldBetrayM
+  , condSupport
   , benAvailableItems
   , hinders
   , benGroundItems
   , desirableItem
   , threatDistList
+  , condShineWouldBetrayM
   , fleeList
   ) where
 
@@ -281,27 +279,8 @@ desirableItem canEsc use itemFull =
                   && preciousNotUseful)
           && maybe True (<= 0) (lookup "gem" freq)
 
-condStrongFriendAdjM :: MonadClient m => ActorId -> m Bool
-condStrongFriendAdjM aid = do
-  actorAspect <- getsClient sactorAspect
-  b <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  let friendlyFid fid = fid == bfid b || isAllied fact fid
-  friends <- getsState $ actorRegularAssocs friendlyFid (blid b)
-  let closeAndStrong (aid2, b2) = adjacent (bpos b) (bpos b2)
-                                  && actorCanMelee actorAspect aid2 b2
-      closeAndStrongFriends = filter closeAndStrong friends
-  return $ not $ null $ closeAndStrongFriends
-
--- | Require the actor is in a bad position to melee or can't melee at all.
-condMeleeBadM :: MonadClient m => ActorId -> m Bool
-condMeleeBadM = condMeleeParam 2
-
-condMeleeBestM :: MonadClient m => ActorId -> m Bool
-condMeleeBestM aid = not <$> condMeleeParam 1 aid
-
-condMeleeParam :: MonadClient m => Int -> ActorId -> m Bool
-condMeleeParam param aid = do
+condSupport :: MonadClient m => Int -> ActorId -> m Bool
+condSupport param aid = do
   actorAspect <- getsClient sactorAspect
   b <- getsState $ getActorBody aid
   btarget <- getsClient $ getTarget aid
@@ -324,11 +303,9 @@ condMeleeParam param aid = do
       closeAndStrong (aid2, b2) = closeEnough b2
                                   && actorCanMelee actorAspect aid2 b2
       closeAndStrongFriends = filter closeAndStrong friends
-      noFriendlyHelp = length closeAndStrongFriends < 2 - aAggression ar
-                       && length friends > 1  -- solo fighters aggresive
-  return $ actorCanMelee actorAspect aid b
-           || noFriendlyHelp  -- still not getting friends' help
-    -- no $!; keep it lazy
+      suport = length closeAndStrongFriends >= 2 - aAggression ar
+               || length friends <= 1  -- solo fighters aggresive
+  return suport  -- no $!; keep it lazy
 
 -- | Require that the actor stands in the dark and so would be betrayed
 -- by his own equipped light,
