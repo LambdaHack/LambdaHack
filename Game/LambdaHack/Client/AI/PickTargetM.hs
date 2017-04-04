@@ -137,7 +137,7 @@ targetStrategy aid = do
               | otherwise = meleeNearby
             nonmoving = EM.findWithDefault 0 AbMove actorMaxSkE <= 0
         return {-keep lazy-} $
-          chessDist (bpos body) (bpos b) < n
+          chessDist (bpos body) (bpos b) <= n
           && condCanMelee
           && not (hpTooLow b ar && not newCondInMelee)
           && (not nonmoving || condSupport2)
