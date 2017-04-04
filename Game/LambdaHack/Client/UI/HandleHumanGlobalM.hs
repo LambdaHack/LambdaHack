@@ -1091,15 +1091,9 @@ chooseItemMenuHuman cmdAction c = do
 
 -- * MainMenu
 
--- | Display the main menu.
-mainMenuHuman :: MonadClientUI m
-              => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
-              -> m (Either MError ReqUI)
-mainMenuHuman cmdAction = do
-  cops@Kind.COps{corule} <- getsState scops
-  Binding{bcmdList} <- getsSession sbinding
-  gameMode <- getGameMode
-  snxtScenario <- getsClient snxtScenario
+artWithVersion :: MonadClientUI m => m [String]
+artWithVersion = do
+  Kind.COps{corule} <- getsState scops
   let stripFrame t = tail . init $ T.lines t
       pasteVersion :: [String] -> [String]
       pasteVersion art =
@@ -1110,19 +1104,16 @@ mainMenuHuman cmdAction = do
                       ++ ") "
             versionLen = length version
         in init art ++ [take (80 - versionLen) (last art) ++ version]
-      nxtGameName = mname $ nxtGameMode cops snxtScenario
-      tnextScenario = "new scenario:" <+> nxtGameName
-      -- Key-description-command tuples.
-      kds = [ (K.mkKM "s", (tnextScenario, HumanCmd.GameScenarioIncr)) ]
-            ++ [ (km, (desc, cmd))
-               | (km, ([HumanCmd.CmdMainMenu], desc, cmd)) <- bcmdList ]
-      bindingLen = 30
-      gameName = mname gameMode
-      gameInfo = map T.unpack $
-                 [ T.justifyLeft bindingLen ' ' ""
-                 , T.justifyLeft bindingLen ' '
-                   $ "Now playing:" <+> gameName
-                 , T.justifyLeft bindingLen ' ' "" ]
+      mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
+  return $! pasteVersion $ map T.unpack $ stripFrame mainMenuArt
+
+generateMenu :: MonadClientUI m
+             => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
+             -> [(K.KM, (Text, HumanCmd.HumanCmd))] -> [String]
+             -> m (Either MError ReqUI)
+generateMenu cmdAction kds gameInfo = do
+  art <- artWithVersion
+  let bindingLen = 30
       emptyInfo = repeat $ replicate bindingLen ' '
       bindings =  -- key bindings to display
         let fmt (k, (d, _)) =
@@ -1149,21 +1140,43 @@ mainMenuHuman cmdAction = do
         in snd . mapAccumL over (zip (repeat Nothing) gameInfo
                                  ++ bindings
                                  ++ zip (repeat Nothing) emptyInfo)
-      mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
-      artWithVersion = pasteVersion $ map T.unpack $ stripFrame mainMenuArt
-      menuOverwritten = overwrite $ zip [0..] artWithVersion
+      menuOverwritten = overwrite $ zip [0..] art
       (menuOvLines, mkyxs) = unzip menuOverwritten
       kyxs = catMaybes mkyxs
       ov = map stringToAL menuOvLines
-  menuIxMain <- getsSession smenuIxMain
-  (ekm, pointer) <- displayChoiceScreen ColorFull True menuIxMain
+  menuIxSet <- getsSession smenuIxSet
+  (ekm, pointer) <- displayChoiceScreen ColorFull True menuIxSet
                                         (menuToSlideshow (ov, kyxs)) [K.escKM]
-  modifySession $ \sess -> sess {smenuIxMain = pointer}
+  modifySession $ \sess -> sess {smenuIxSet = pointer}
   case ekm of
     Left km -> case km `lookup` kds of
       Just (_desc, cmd) -> cmdAction cmd
       Nothing -> weaveJust <$> failWith "never mind"
     Right _slot -> assert `failure` ekm
+
+-- | Display the main menu.
+mainMenuHuman :: MonadClientUI m
+              => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
+              -> m (Either MError ReqUI)
+mainMenuHuman cmdAction = do
+  cops <- getsState scops
+  Binding{bcmdList} <- getsSession sbinding
+  gameMode <- getGameMode
+  snxtScenario <- getsClient snxtScenario
+  let nxtGameName = mname $ nxtGameMode cops snxtScenario
+      tnextScenario = "new scenario:" <+> nxtGameName
+      -- Key-description-command tuples.
+      kds = [ (K.mkKM "s", (tnextScenario, HumanCmd.GameScenarioIncr)) ]
+            ++ [ (km, (desc, cmd))
+               | (km, ([HumanCmd.CmdMainMenu], desc, cmd)) <- bcmdList ]
+      bindingLen = 30
+      gameName = mname gameMode
+      gameInfo = map T.unpack $
+                 [ T.justifyLeft bindingLen ' ' ""
+                 , T.justifyLeft bindingLen ' '
+                   $ "Now playing:" <+> gameName
+                 , T.justifyLeft bindingLen ' ' "" ]
+  generateMenu cmdAction kds gameInfo
 
 -- * SettingsMenu
 
@@ -1172,23 +1185,12 @@ settingsMenuHuman :: MonadClientUI m
                   => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
                   -> m (Either MError ReqUI)
 settingsMenuHuman cmdAction = do
-  Kind.COps{corule} <- getsState scops
   markSuspect <- getsClient smarkSuspect
   markVision <- getsSession smarkVision
   markSmell <- getsSession smarkSmell
   side <- getsClient sside
   factTactic <- getsState $ ftactic . gplayer . (EM.! side) . sfactionD
-  let stripFrame t = tail . init $ T.lines t
-      pasteVersion :: [String] -> [String]
-      pasteVersion art =
-        let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
-            version = " Version " ++ showVersion pathsVersion
-                      ++ " (frontend: " ++ frontendName
-                      ++ ", engine: LambdaHack " ++ showVersion Self.version
-                      ++ ") "
-            versionLen = length version
-        in init art ++ [take (80 - versionLen) (last art) ++ version]
-      offOn b = if b then "on" else "off"
+  let offOn b = if b then "on" else "off"
       offOnAll n = case n of
         0 -> "off"
         1 -> "on"
@@ -1209,47 +1211,7 @@ settingsMenuHuman cmdAction = do
                  [ T.justifyLeft bindingLen ' ' ""
                  , T.justifyLeft bindingLen ' ' "Game settings:"
                  , T.justifyLeft bindingLen ' ' "" ]
-      emptyInfo = repeat $ replicate bindingLen ' '
-      bindings =  -- key bindings to display
-        let fmt (k, (d, _)) =
-              ( Just k
-              , T.unpack
-                $ T.justifyLeft bindingLen ' '
-                    $ T.justifyLeft 3 ' ' (T.pack $ K.showKM k) <> " " <> d )
-        in map fmt kds
-      overwrite :: [(Int, String)] -> [(String, Maybe KYX)]
-      overwrite =  -- overwrite the art with key bindings and other lines
-        let over [] (_, line) = ([], (line, Nothing))
-            over bs@((mkey, binding) : bsRest) (y, line) =
-              let (prefix, lineRest) = break (=='{') line
-                  (braces, suffix)   = span  (=='{') lineRest
-              in if length braces >= bindingLen
-                 then
-                   let lenB = length binding
-                       post = drop (lenB - length braces) suffix
-                       len = length prefix
-                       yxx key = (Left [key], (y, len, len + lenB))
-                       myxx = yxx <$> mkey
-                   in (bsRest, (prefix <> binding <> post, myxx))
-                 else (bs, (line, Nothing))
-        in snd . mapAccumL over (zip (repeat Nothing) gameInfo
-                                 ++ bindings
-                                 ++ zip (repeat Nothing) emptyInfo)
-      mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
-      artWithVersion = pasteVersion $ map T.unpack $ stripFrame mainMenuArt
-      menuOverwritten = overwrite $ zip [0..] artWithVersion
-      (menuOvLines, mkyxs) = unzip menuOverwritten
-      kyxs = catMaybes mkyxs
-      ov = map stringToAL menuOvLines
-  menuIxSet <- getsSession smenuIxSet
-  (ekm, pointer) <- displayChoiceScreen ColorFull True menuIxSet
-                                        (menuToSlideshow (ov, kyxs)) [K.escKM]
-  modifySession $ \sess -> sess {smenuIxSet = pointer}
-  case ekm of
-    Left km -> case km `lookup` kds of
-      Just (_desc, cmd) -> cmdAction cmd
-      Nothing -> weaveJust <$> failWith "never mind"
-    Right _slot -> assert `failure` ekm
+  generateMenu cmdAction kds gameInfo
 
 -- * ChallengesMenu
 
@@ -1258,20 +1220,9 @@ challengesMenuHuman :: MonadClientUI m
                     => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
                     -> m (Either MError ReqUI)
 challengesMenuHuman cmdAction = do
-  Kind.COps{corule} <- getsState scops
   curChal <- getsClient scurChal
   nxtChal <- getsClient snxtChal
-  let stripFrame t = tail . init $ T.lines t
-      pasteVersion :: [String] -> [String]
-      pasteVersion art =
-        let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
-            version = " Version " ++ showVersion pathsVersion
-                      ++ " (frontend: " ++ frontendName
-                      ++ ", engine: LambdaHack " ++ showVersion Self.version
-                      ++ ") "
-            versionLen = length version
-        in init art ++ [take (80 - versionLen) (last art) ++ version]
-      offOn b = if b then "on" else "off"
+  let offOn b = if b then "on" else "off"
       tcurDiff = "-   difficulty:" <+> tshow (cdiff curChal)
       tnextDiff = "difficulty:" <+> tshow (cdiff nxtChal)
       tcurWolf = "-   lone wolf:"
@@ -1297,47 +1248,7 @@ challengesMenuHuman cmdAction = do
                  , T.justifyLeft bindingLen ' ' ""
                  , T.justifyLeft bindingLen ' ' "New game challenges:"
                  , T.justifyLeft bindingLen ' ' "" ]
-      emptyInfo = repeat $ replicate bindingLen ' '
-      bindings =  -- key bindings to display
-        let fmt (k, (d, _)) =
-              ( Just k
-              , T.unpack
-                $ T.justifyLeft bindingLen ' '
-                    $ T.justifyLeft 3 ' ' (T.pack $ K.showKM k) <> " " <> d )
-        in map fmt kds
-      overwrite :: [(Int, String)] -> [(String, Maybe KYX)]
-      overwrite =  -- overwrite the art with key bindings and other lines
-        let over [] (_, line) = ([], (line, Nothing))
-            over bs@((mkey, binding) : bsRest) (y, line) =
-              let (prefix, lineRest) = break (=='{') line
-                  (braces, suffix)   = span  (=='{') lineRest
-              in if length braces >= bindingLen
-                 then
-                   let lenB = length binding
-                       post = drop (lenB - length braces) suffix
-                       len = length prefix
-                       yxx key = (Left [key], (y, len, len + lenB))
-                       myxx = yxx <$> mkey
-                   in (bsRest, (prefix <> binding <> post, myxx))
-                 else (bs, (line, Nothing))
-        in snd . mapAccumL over (zip (repeat Nothing) gameInfo
-                                 ++ bindings
-                                 ++ zip (repeat Nothing) emptyInfo)
-      mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
-      artWithVersion = pasteVersion $ map T.unpack $ stripFrame mainMenuArt
-      menuOverwritten = overwrite $ zip [0..] artWithVersion
-      (menuOvLines, mkyxs) = unzip menuOverwritten
-      kyxs = catMaybes mkyxs
-      ov = map stringToAL menuOvLines
-  menuIxChal <- getsSession smenuIxChal
-  (ekm, pointer) <- displayChoiceScreen ColorFull True menuIxChal
-                                        (menuToSlideshow (ov, kyxs)) [K.escKM]
-  modifySession $ \sess -> sess {smenuIxChal = pointer}
-  case ekm of
-    Left km -> case km `lookup` kds of
-      Just (_desc, cmd) -> cmdAction cmd
-      Nothing -> weaveJust <$> failWith "never mind"
-    Right _slot -> assert `failure` ekm
+  generateMenu cmdAction kds gameInfo
 
 -- * GameScenarioIncr
 
