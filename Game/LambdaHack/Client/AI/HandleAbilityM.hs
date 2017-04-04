@@ -165,12 +165,13 @@ actionStrategy aid = do
                     -- Too far to flee from melee, too close from ranged,
                     -- not in ambient, so no point fleeing into dark; stay.
                     False
-                  | condThreat 12 ->
+                  | otherwise ->
+                    -- If I'm hit, they are still in range to fling at me,
+                    -- even if I can't see them. And probably far away.
                     -- Too far to close in for melee; can't shoot; flee from
                     -- ranged attack and prepare ambush for later on.
                     heavilyDistressed
-                    && not condCanProject
-                  | otherwise -> False ) -- not threats in range; don't flee
+                    && not condCanProject )
         , ( [AbMelee], (toAny :: ToAny 'AbMelee)
             <$> meleeBlocker aid  -- only melee blocker
           , condAnyFoeAdj  -- if foes, don't displace, otherwise friends:
