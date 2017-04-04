@@ -11,7 +11,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , memberCycleHuman, memberBackHuman
   , selectActorHuman, selectNoneHuman, selectWithPointerHuman
   , repeatHuman, recordHuman, historyHuman
-  , markVisionHuman, markSmellHuman, markSuspectHuman, settingsMenuHuman
+  , markVisionHuman, markSmellHuman, markSuspectHuman
     -- * Commands specific to aiming
   , cancelHuman, acceptHuman, tgtClearHuman, itemClearHuman
   , moveXhairHuman, aimTgtHuman, aimFloorHuman, aimEnemyHuman, aimItemHuman
@@ -26,13 +26,11 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 -- Cabal
-import qualified Paths_LambdaHack as Self (version)
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Ord
 import qualified Data.Text as T
-import Data.Version
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsM
@@ -45,10 +43,8 @@ import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.DrawM
 import Game.LambdaHack.Client.UI.EffectDescription
 import Game.LambdaHack.Client.UI.FrameM
-import Game.LambdaHack.Client.UI.Frontend (frontendName)
 import Game.LambdaHack.Client.UI.HandleHelperM
 import Game.LambdaHack.Client.UI.HumanCmd (Trigger (..))
-import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import Game.LambdaHack.Client.UI.InventoryM
 import Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -58,7 +54,6 @@ import Game.LambdaHack.Client.UI.MsgM
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.OverlayM
 import Game.LambdaHack.Client.UI.SessionUI
-import Game.LambdaHack.Client.UI.Slideshow
 import Game.LambdaHack.Client.UI.SlideshowM
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
@@ -78,8 +73,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import qualified Game.LambdaHack.Content.ModeKind as MK
-import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind (isUknownSpace)
 
 -- * Macro
@@ -670,92 +663,6 @@ markSuspectHuman = do
   -- @condBFS@ depends on the setting we change here.
   invalidateBfsAll
   modifyClient cycleMarkSuspect
-
--- * SettingsMenu
-
--- | Display the settings menu.
-settingsMenuHuman :: MonadClientUI m
-                  => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
-                  -> m (Either MError ReqUI)
-settingsMenuHuman cmdAction = do
-  Kind.COps{corule} <- getsState scops
-  markSuspect <- getsClient smarkSuspect
-  markVision <- getsSession smarkVision
-  markSmell <- getsSession smarkSmell
-  side <- getsClient sside
-  factTactic <- getsState $ MK.ftactic . gplayer . (EM.! side) . sfactionD
-  let stripFrame t = tail . init $ T.lines t
-      pasteVersion :: [String] -> [String]
-      pasteVersion art =
-        let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
-            version = " Version " ++ showVersion pathsVersion
-                      ++ " (frontend: " ++ frontendName
-                      ++ ", engine: LambdaHack " ++ showVersion Self.version
-                      ++ ") "
-            versionLen = length version
-        in init art ++ [take (80 - versionLen) (last art) ++ version]
-      offOn b = if b then "on" else "off"
-      offOnAll n = case n of
-        0 -> "off"
-        1 -> "on"
-        2 -> "all"
-        _ -> assert `failure` n
-      tsuspect = "suspect terrain:" <+> offOnAll markSuspect
-      tvisible = "visible zone:" <+> offOn markVision
-      tsmell = "smell clues:" <+> offOn  markSmell
-      thenchmen = "tactic:" <+> tshow factTactic
-      -- Key-description-command tuples.
-      kds = [ (K.mkKM "s", (tsuspect, HumanCmd.MarkSuspect))
-            , (K.mkKM "v", (tvisible, HumanCmd.MarkVision))
-            , (K.mkKM "c", (tsmell, HumanCmd.MarkSmell))
-            , (K.mkKM "t", (thenchmen, HumanCmd.Tactic))
-            , (K.mkKM "Escape", ("back to main menu", HumanCmd.MainMenu)) ]
-      bindingLen = 30
-      gameInfo = map T.unpack $
-                 [ T.justifyLeft bindingLen ' ' ""
-                 , T.justifyLeft bindingLen ' ' "Game settings:"
-                 , T.justifyLeft bindingLen ' ' "" ]
-      emptyInfo = repeat $ replicate bindingLen ' '
-      bindings =  -- key bindings to display
-        let fmt (k, (d, _)) =
-              ( Just k
-              , T.unpack
-                $ T.justifyLeft bindingLen ' '
-                    $ T.justifyLeft 3 ' ' (T.pack $ K.showKM k) <> " " <> d )
-        in map fmt kds
-      overwrite :: [(Int, String)] -> [(String, Maybe KYX)]
-      overwrite =  -- overwrite the art with key bindings and other lines
-        let over [] (_, line) = ([], (line, Nothing))
-            over bs@((mkey, binding) : bsRest) (y, line) =
-              let (prefix, lineRest) = break (=='{') line
-                  (braces, suffix)   = span  (=='{') lineRest
-              in if length braces >= bindingLen
-                 then
-                   let lenB = length binding
-                       post = drop (lenB - length braces) suffix
-                       len = length prefix
-                       yxx key = (Left [key], (y, len, len + lenB))
-                       myxx = yxx <$> mkey
-                   in (bsRest, (prefix <> binding <> post, myxx))
-                 else (bs, (line, Nothing))
-        in snd . mapAccumL over (zip (repeat Nothing) gameInfo
-                                 ++ bindings
-                                 ++ zip (repeat Nothing) emptyInfo)
-      mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
-      artWithVersion = pasteVersion $ map T.unpack $ stripFrame mainMenuArt
-      menuOverwritten = overwrite $ zip [0..] artWithVersion
-      (menuOvLines, mkyxs) = unzip menuOverwritten
-      kyxs = catMaybes mkyxs
-      ov = map stringToAL menuOvLines
-  menuIxSet <- getsSession smenuIxSet
-  (ekm, pointer) <- displayChoiceScreen ColorFull True menuIxSet
-                                        (menuToSlideshow (ov, kyxs)) [K.escKM]
-  modifySession $ \sess -> sess {smenuIxSet = pointer}
-  case ekm of
-    Left km -> case km `lookup` kds of
-      Just (_desc, cmd) -> cmdAction cmd
-      Nothing -> weaveJust <$> failWith "never mind"
-    Right _slot -> assert `failure` ekm
 
 -- * Cancel
 
