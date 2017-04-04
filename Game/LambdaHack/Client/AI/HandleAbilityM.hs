@@ -136,8 +136,7 @@ actionStrategy aid = do
                    && not condDesirableFloorItem) )
         , ( [AbDisplace]
           , displaceFoe aid  -- only swap with an enemy to expose him
-          , condBlocksFriends && condAnyFoeAdj  -- checks later if foe eligible
-            && not condDesirableFloorItem )
+          , condBlocksFriends && condAnyFoeAdj )  -- later checks foe eligible
         , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
             <$> pickup aid True
           , condNoEqpWeapon  -- we assume organ weapons usually inferior
@@ -165,8 +164,9 @@ actionStrategy aid = do
             -- can fling at us and we can't well fling at them nor well melee.
             not condFastThreatAdj
             && if | condManyThreatAdj -> not condSupport2
-                  | condThreat 2
-                    || condThreat 5 && aInAmbient && not actorShines ->
+                  | not condInMelee
+                    && (condThreat 2
+                        || condThreat 5 && aInAmbient && not actorShines) ->
                     condMeleeBad
                     -- Don't keep fleeing if just hit, because too close
                     -- to enemy to get out of his range, most likely,
@@ -226,14 +226,15 @@ actionStrategy aid = do
             $ chase aid True (condThreat 5
                               && not aInAmbient && not actorShines
                               && condMeleeBad)
-          , (condAimEnemyPresent || condAimEnemyRemembered)
-            && (not (condThreat 2) || condSupport1)
-              -- this results in animals in corridor never attacking,
-              -- because they can't swarm the opponent, which is logical,
-              -- and in rooms they do attack, so not too boring;
-              -- 2 monsters attack always, because they are more aggressive
-            && not (condDesirableFloorItem && not condInMelee)
-            && condCanMelee )
+          , condCanMelee
+            && (if condInMelee then condAimEnemyPresent
+                else (condAimEnemyPresent || condAimEnemyRemembered)
+                     && (not (condThreat 2) || condSupport1)
+                       -- this results in animals in corridor never attacking,
+                       -- because they can't swarm opponent, which is logical,
+                       -- and in rooms they do attack, so not too boring;
+                       -- two aliens attack always, because more aggressive
+                     && not condDesirableFloorItem) )
         ]
       -- Order matters again.
       suffix =
@@ -256,9 +257,9 @@ actionStrategy aid = do
                             && not aInAmbient && not actorShines
                             && condMeleeBad
                             && not (heavilyDistressed && condCanMelee))
-          , not (condTgtNonmoving && condThreat 2)
-            && (not (condThreat 2) || condSupport1 && condCanMelee)
-            && (not condInMelee || condAimEnemyPresent) )
+          , if condInMelee then condCanMelee && condAimEnemyPresent
+            else not (condTgtNonmoving && condThreat 2)
+                 && (not (condThreat 2) || condSupport1 && condCanMelee) )
         ]
       fallback =
         [ ( [AbWait], (toAny :: ToAny 'AbWait)

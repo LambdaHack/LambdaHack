@@ -107,13 +107,14 @@ pickActorToMove maidToAvoid refreshTarget = do
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.
                   deltaSerious (bcalmDelta body)
-            return $! not (condCanMelee && condThreat 1)
-                      && (if condThreat 2
-                          then condCanFlee
-                               && not (condSupport2 && condCanMelee)
-                               && not condFastThreatAdj
-                          else heavilyDistressed)  -- shot at
-                      || condManyThreatAdj && not condSupport2
+            return $! condCanFlee
+                      && not condFastThreatAdj
+                      && if | condThreat 1 ->
+                              not condCanMelee
+                              || condManyThreatAdj && not condSupport2
+                            | condThreat 2 ->
+                              not (condCanMelee && condSupport2)
+                            | otherwise -> heavilyDistressed  -- shot at
           actorHearning (_, TgtAndPath{ tapTgt=TPoint TEnemyPos{} _ _
                                       , tapPath=NoPath }) =
             return False
@@ -146,7 +147,8 @@ pickActorToMove maidToAvoid refreshTarget = do
           targetTEnemy _ = False
           (oursTEnemy, oursOther) = partition targetTEnemy oursNotMeleeBad
           -- These are not necessarily stuck (perhaps can go around),
-          -- but their current path is blocked by friends.
+          -- but their current path is blocked by friends and they are not
+          -- melee capable or not currently chasing foes.
           targetBlocked (_, TgtAndPath{tapPath}) =
             let next = case tapPath of
                   AndPath{pathList= q : _} -> Just q
