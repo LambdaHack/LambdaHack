@@ -65,10 +65,10 @@ actionStrategy :: forall m. MonadClient m
 actionStrategy aid = do
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
-  condInMelee <- getsClient scondInMelee
-  let (newCondInMelee, _oldCondInMelee) = case condInMelee EM.! blid body of
-        Right conds -> conds
-        Left{} -> assert `failure` condInMelee
+  scondInMelee <- getsClient scondInMelee
+  let condInMelee = case scondInMelee EM.! blid body of
+        Just cond -> cond
+        Nothing -> assert `failure` condInMelee
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
   condAnyFoeAdj <- condAnyFoeAdjM aid
@@ -148,8 +148,7 @@ actionStrategy aid = do
           , condAnyFoeAdj  -- if foes, don't displace, otherwise friends:
             || not (abInMaxSkill AbDisplace)  -- displace friends, if possible
                && fleaderMode (gplayer fact) == LeaderNull  -- not restrained
-               && condAimEnemyPresent  -- excited
-               && not newCondInMelee )  -- don't incur overhead
+               && condAimEnemyPresent )  -- excited
         , ( [AbAlter], (toAny :: ToAny 'AbAlter)
             <$> trigger aid ViaEscape
           , condAdjTriggerable
@@ -158,7 +157,7 @@ actionStrategy aid = do
             <$> trigger aid ViaNothing
           , condAdjTriggerable
             && not condAimEnemyPresent  -- focus if enemies nearby
-            && not newCondInMelee )  -- don't incur overhead
+            && not condInMelee )  -- don't incur overhead
         , ( [AbMove]
           , flee aid fleeL
           , -- Flee either from melee, if our melee is bad and enemy close
@@ -195,7 +194,7 @@ actionStrategy aid = do
       distant :: [([Ability], m (Frequency RequestAnyAbility), Bool)]
       distant =
         [ ( [AbMoveItem]
-          , stratToFreq (if newCondInMelee then 2 else 20000)
+          , stratToFreq (if condInMelee then 2 else 20000)
             $ (toAny :: ToAny 'AbMoveItem)
             <$> yieldUnneeded aid  -- 20000 to unequip ASAP, unless is thrown
           , True )
@@ -206,11 +205,11 @@ actionStrategy aid = do
                  || condDesirableFloorItem
                  || condNotCalmEnough
                  || heavilyDistressed
-                 || newCondInMelee) )
+                 || condInMelee) )
         , ( [AbProject]
           , stratToFreq 2 $ (toAny :: ToAny 'AbProject)
             <$> projectItem aid
-          , condAimEnemyPresent && condCanProject && not newCondInMelee )
+          , condAimEnemyPresent && condCanProject && not condInMelee )
         , ( [AbApply]
           , stratToFreq 2 $ (toAny :: ToAny 'AbApply)
             <$> applyItem aid ApplyAll  -- use any potion or scroll
@@ -220,21 +219,20 @@ actionStrategy aid = do
                               2  -- if enemy only remembered, investigate anyway
                             | condTgtNonmoving && condMeleeBad ->
                               0
-                            | newCondInMelee ->
+                            | condInMelee ->
                               1000  -- friends pummeled by target, go to help
                             | otherwise ->
                               50)
             $ chase aid True (condThreat 5
                               && not aInAmbient && not actorShines
                               && condMeleeBad)
-          , (condAimEnemyPresent
-             || condAimEnemyRemembered && not newCondInMelee)
+          , (condAimEnemyPresent || condAimEnemyRemembered)
             && (not (condThreat 2) || condSupport1)
               -- this results in animals in corridor never attacking,
               -- because they can't swarm the opponent, which is logical,
               -- and in rooms they do attack, so not too boring;
               -- 2 monsters attack always, because they are more aggressive
-            && not (condDesirableFloorItem && not newCondInMelee)
+            && not (condDesirableFloorItem && not condInMelee)
             && condCanMelee )
         ]
       -- Order matters again.
@@ -247,10 +245,10 @@ actionStrategy aid = do
           , condAnyFoeAdj )
         , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
             <$> pickup aid False  -- e.g., to give to other party members
-          , not newCondInMelee )
+          , not condInMelee )
         , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
             <$> unEquipItems aid  -- late, because these items not bad
-          , not newCondInMelee )
+          , not condInMelee )
         , ( [AbMove]
           , chase aid True (-- Don't keep hiding in darkness if hit right now,
                             -- unless can't melee at all.
@@ -260,7 +258,7 @@ actionStrategy aid = do
                             && not (heavilyDistressed && condCanMelee))
           , not (condTgtNonmoving && condThreat 2)
             && (not (condThreat 2) || condSupport1 && condCanMelee)
-            && (not newCondInMelee || condAimEnemyPresent) )
+            && (not condInMelee || condAimEnemyPresent) )
         ]
       fallback =
         [ ( [AbWait], (toAny :: ToAny 'AbWait)

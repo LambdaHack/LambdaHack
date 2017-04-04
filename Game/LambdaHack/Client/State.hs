@@ -68,7 +68,7 @@ data StateClient = StateClient
   , snxtChal     :: !Challenge     -- ^ next game challenge setup
   , snxtScenario :: !Int           -- ^ next game scenario number
   , smarkSuspect :: !Int           -- ^ mark suspect features
-  , scondInMelee :: !(EM.EnumMap LevelId (Either Bool (Bool, Bool)))
+  , scondInMelee :: !(EM.EnumMap LevelId (Maybe Bool))
       -- ^ the old and (new, old) values of condInMelee condition
   , svictories   :: !(EM.EnumMap (Kind.Id ModeKind) (M.Map Challenge Int))
       -- ^ won games at particular difficulty levels

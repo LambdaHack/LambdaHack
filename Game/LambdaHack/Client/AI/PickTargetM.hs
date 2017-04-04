@@ -48,14 +48,14 @@ targetStrategy aid = do
   cops@Kind.COps{corule, coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   mleader <- getsClient _sleader
-  condInMelee <- getsClient scondInMelee
+  scondInMelee <- getsClient scondInMelee
   salter <- getsClient salter
   -- We assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway) and set his target accordingly.
   actorAspect <- getsClient sactorAspect
-  let (newCondInMelee, oldCondInMelee) = case condInMelee EM.! blid b of
-        Right conds -> conds
-        Left{} -> assert `failure` condInMelee
+  let condInMelee = case scondInMelee EM.! blid b of
+        Just cond -> cond
+        Nothing -> assert `failure` condInMelee
       stdRuleset = Kind.stdRuleset corule
       nearby = rnearby stdRuleset
       ar = case EM.lookup aid actorAspect of
@@ -133,16 +133,16 @@ targetStrategy aid = do
         actorMaxSkE <- enemyMaxAb aidE
         let attacksFriends = any (adjacent (bpos body) . bpos) friends
             -- 3 is the condThreat distance that AI keeps when alone.
-            n | newCondInMelee = if attacksFriends then 3 else 0
+            n | condInMelee = if attacksFriends then 3 else 0
               | otherwise = meleeNearby
             nonmoving = EM.findWithDefault 0 AbMove actorMaxSkE <= 0
         return {-keep lazy-} $
           chessDist (bpos body) (bpos b) <= n
           && condCanMelee
-          && not (hpTooLow b ar && not newCondInMelee)
+          && not (hpTooLow b ar && not condInMelee)
           && (not nonmoving || condSupport2)
       targetableRangedOrSpecial body =
-        if newCondInMelee then False
+        if condInMelee then False
         else chessDist (bpos body) (bpos b) < rangedNearby
              && condCanProject
       targetableEnemy (aidE, body) = do
@@ -193,7 +193,7 @@ targetStrategy aid = do
         cfoes <- closestFoes nearbyFoes aid
         case cfoes of
           (_, (aid2, _)) : _ -> setPath $ TEnemy aid2 False
-          [] | newCondInMelee -> return reject  -- don't slow down fighters
+          [] | condInMelee -> return reject  -- don't slow down fighters
             -- this looks a bit strange, because teammates stop in their tracks
             -- all around the map (unless very close to the combatant),
             -- but the intuition is, not being able to help immediately,
@@ -289,7 +289,7 @@ targetStrategy aid = do
       updateTgt tap@TgtAndPath{tapPath=AndPath{..},tapTgt} = case tapTgt of
         TEnemy a permit -> do
           body <- getsState $ getActorBody a
-          if | (not focused || newCondInMelee)  -- prefers closer foes
+          if | (not focused || condInMelee)  -- prefers closer foes
                && a `notElem` map fst nearbyFoes  -- old one not close enough
                || blid body /= blid b  -- wrong level
                || actorDying body  -- foe already dying
@@ -309,8 +309,8 @@ targetStrategy aid = do
                  AndPath{pathLen=0} -> pickNewTarget  -- he is his own enemy
                  AndPath{} -> return $! returN "TEnemy" tap{tapPath=mpath}
           -- In this case, need to retarget, to focus on foes that melee ours
-          -- and not, e.g., on non-movable or fleeing foes.
-        _ | newCondInMelee && not oldCondInMelee -> pickNewTarget
+          -- and not, e.g., on remembered foes or items.
+        _ | condInMelee -> pickNewTarget
         TPoint _ lid _ | lid /= blid b -> pickNewTarget  -- wrong level
         TPoint _ _ pos | pos == bpos b -> tellOthersNothingHere pos
         TPoint tgoal lid pos -> case tgoal of

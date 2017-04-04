@@ -307,9 +307,7 @@ cmdAtomicSemCli cmd = case cmd of
   UpdAgeGame arenas ->
     -- This tweak is only needed in AI client, but it's fairly cheap.
     modifyClient $ \cli ->
-      let f !ec@Left{} = ec
-          f (Right (c, _)) = Left c
-          g !em !lid = EM.adjust f lid em
+      let g !em !lid = EM.adjust (const Nothing) lid em
       in cli {scondInMelee = foldl' g (scondInMelee cli) arenas}
   UpdDiscover c iid ik seed -> do
     discoverKind c iid ik
@@ -342,7 +340,7 @@ cmdAtomicSemCli cmd = case cmd of
                   , scurChal
                   , snxtChal
                   , snxtScenario
-                  , scondInMelee = EM.map (const $ Left False) (sdungeon s)
+                  , scondInMelee = EM.map (const Nothing) (sdungeon s)
                   , svictories
                   , sdebugCli }
     modifyClient $ \cli1 -> cli1 {salter = createSalter s}

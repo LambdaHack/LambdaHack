@@ -69,22 +69,19 @@ udpdateCondInMelee aid = do
   b <- getsState $ getActorBody aid
   condInMelee <- getsClient $ (EM.! blid b) . scondInMelee
   case condInMelee of
-    Right{} -> return ()  -- still up to date
-    Left oldCond -> do
-      -- Lag the changes, to avoid frequent invalidation of targets, etc.
-      let dist = if oldCond then 3 else 1
-      newCond <- condInMeleeM dist b
+    Just{} -> return ()  -- still up to date
+    Nothing -> do
+      newCond <- condInMeleeM b
       modifyClient $ \cli ->
         cli {scondInMelee =
-               EM.adjust (const $ Right (newCond, oldCond)) (blid b)
-                         (scondInMelee cli)}
+               EM.adjust (const $ Just newCond) (blid b) (scondInMelee cli)}
 
--- | Check if any non-dying, non-projectile foe is dist-close
+-- | Check if any non-dying, non-projectile foe is adjacent
 -- to any of our actors that can melee. If our actor can't melee
 -- and got caught in melee, he is a sunk cost, there is no advantage
 -- in trying to melee together with him (since he can't melee).
-condInMeleeM :: MonadClient m => Int -> Actor -> m Bool
-condInMeleeM dist b = do
+condInMeleeM :: MonadClient m => Actor -> m Bool
+condInMeleeM b = do
   actorAspect <- getsClient sactorAspect
   let filterCanMelee (aid2, b2) = actorCanMelee actorAspect aid2 b2
   fact <- getsState $ (EM.! bfid b) . sfactionD
@@ -92,7 +89,7 @@ condInMeleeM dist b = do
   ours <- getsState $ actorRegularAssocs (== bfid b) (blid b)
   let oursCanMelee = filter filterCanMelee ours
   return $! any (\(_, body) -> any (\bFoe ->
-    chessDist (bpos bFoe) (bpos body) <= dist) allFoes) oursCanMelee
+    chessDist (bpos bFoe) (bpos body) == 1) allFoes) oursCanMelee
 
 -- | Verify and possibly change the target of an actor. This function both
 -- updates the target in the client state and returns the new target explicitly.
