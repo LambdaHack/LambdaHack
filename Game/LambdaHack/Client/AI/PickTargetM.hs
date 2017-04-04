@@ -333,11 +333,11 @@ targetStrategy aid = do
             -- First, stairs and embedded items from @closestTriggers@.
             -- We don't check skills, because they normally don't change
             -- or we can put some equipment back and recover them.
-            -- We don't determine if the stairs are interesting
+            -- We don't determine if the stairs or embed are interesting
             -- (this changes with time), but allow the actor
             -- to reach them and then retarget. The two thing we check
             -- is whether the embedded bag is still there, or used up
-            -- and whether we happend to be already adjecent to @p@,
+            -- and whether we happen to be already adjacent to @p@,
             -- even though not at @pos@.
             bag2 <- getsState $ getEmbedBag lid p  -- not @pos@
             if | bag /= bag2 -> pickNewTarget
