@@ -36,8 +36,14 @@ import qualified Content.TileKind
 tieKnot :: [String] -> IO ()
 tieKnot args = do
   -- Options for the next game taken from the commandline.
-  sdebugNxt@DebugModeSer{sallClear, sboostRandomItem} <- debugArgs args
-  let -- Common content operations, created from content definitions.
+  sdebug@DebugModeSer{sallClear, sboostRandomItem, sdungeonRng}
+    <- debugArgs args
+  -- This setup ensures the boosting option doesn't affect generating initial
+  -- RNG for dungeon, etc., and also, that setting dungeon RNG on commandline
+  -- equal to what was generated last time, ensures the same item boost.
+  initialGen <- maybe R.getStdGen return sdungeonRng
+  let sdebugNxt = sdebug {sdungeonRng = Just initialGen}
+      -- Common content operations, created from content definitions.
       -- Evaluated fully to discover errors ASAP and to free memory.
       cotile = Kind.createOps Content.TileKind.cdefs
       boostItem :: ItemKind -> ItemKind
@@ -49,16 +55,16 @@ tieKnot args = do
                   , ieffects = delete Unique $ ieffects i
                   }
            else i
-      boostList :: [ItemKind] -> IO [ItemKind]
-      boostList l | not sboostRandomItem = return l
-      boostList [] = return []
-      boostList l = do
-        r <- R.getStdRandom $ R.randomR (0, length l - 1)
-        case splitAt r l of
-          (pre, i : post) -> return $! pre ++ boostItem i : post
+      boostList :: [ItemKind] -> [ItemKind]
+      boostList l | not sboostRandomItem = l
+      boostList [] = []
+      boostList l =
+        let (r, _) = R.randomR (0, length l - 1) initialGen
+        in case splitAt r l of
+          (pre, i : post) -> pre ++ boostItem i : post
           _ -> assert `failure` l
-  boostedItems <- boostList Content.ItemKind.items
-  let cdefsItem =
+      boostedItems = boostList Content.ItemKind.items
+      cdefsItem =
         Content.ItemKind.cdefs
           {content = contentFromList
                      $ boostedItems ++ Content.ItemKind.otherItemContent}

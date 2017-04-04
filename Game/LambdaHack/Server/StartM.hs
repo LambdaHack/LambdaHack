@@ -175,6 +175,8 @@ gameReset :: MonadServer m
           -> Maybe R.StdGen -> m State
 gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
           sdebug mGameMode mrandom = do
+  -- Dungeon seed generation has to come first, to ensure item boosting
+  -- is determined by the dungeon RNG.
   dungeonSeed <- getSetGen $ sdungeonRng sdebug `mplus` mrandom
   srandom <- getSetGen $ smainRng sdebug `mplus` mrandom
   let srngs = RNGs (Just dungeonSeed) (Just srandom)

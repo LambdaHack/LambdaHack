@@ -175,9 +175,7 @@ rndToAction r = do
 
 -- | Gets a random generator from the arguments or, if not present,
 -- generates one.
-getSetGen :: MonadServer m
-          => Maybe R.StdGen
-          -> m R.StdGen
+getSetGen :: MonadServer m => Maybe R.StdGen -> m R.StdGen
 getSetGen mrng = case mrng of
   Just rnd -> return rnd
   Nothing -> liftIO R.newStdGen

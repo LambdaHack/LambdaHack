@@ -81,12 +81,9 @@ loopSer sdebug sconfig executorClient = do
       -- with --dumpInitRngs previously and we need the seeds.
       rngs <- getsServer srngs
       when (sdumpInitRngs sdebug) $ dumpRngs rngs
-    _ -> do  -- Starting the first new game for this savefile.
-      -- Set up commandline debug mode
-      let mrandom = case restored of
-            Just (_, ser) -> Just $ srandom ser
-            Nothing -> Nothing
-      s <- gameReset cops sdebug Nothing mrandom
+    _ -> do  -- starting new game for this savefile (--newGame or fresh save)
+      s <- gameReset cops sdebug Nothing Nothing  -- get RNG from item boost
+      -- Set up commandline debug mode.
       let debugBarRngs = sdebug {sdungeonRng = Nothing, smainRng = Nothing}
       modifyServer $ \ser -> ser { sdebugNxt = debugBarRngs
                                  , sdebugSer = debugBarRngs }

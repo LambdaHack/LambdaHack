@@ -104,7 +104,7 @@ emptyStateClient _sside =
     , sactorAspect = EM.empty
     , sfper = EM.empty
     , salter = EM.empty
-    , srandom = R.mkStdGen 42  -- will be set later
+    , srandom = R.mkStdGen 42  -- will get modified in this and future games
     , _sleader = Nothing  -- no heroes yet alive
     , _sside
     , squit = False
