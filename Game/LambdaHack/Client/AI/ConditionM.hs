@@ -319,10 +319,14 @@ fleeList :: MonadClient m => ActorId -> m ([(Int, Point)], [(Int, Point)])
 fleeList aid = do
   Kind.COps{coTileSpeedup} <- getsState scops
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
-  let tgtPath = case mtgtMPath of  -- prefer fleeing along the path to target
-        Just TgtAndPath{tapTgt=TEnemy{}} -> []  -- don't flee towards an enemy
-        Just TgtAndPath{tapPath=AndPath{pathList}} -> pathList
-        _ -> []
+  -- Prefer fleeing along the path to target, unless the target is a foe,
+  -- in which case flee in the opposite direction.
+  let etgtPath = case mtgtMPath of
+        Just TgtAndPath{tapPath=AndPath{pathList}, tapTgt} -> case tapTgt of
+          TEnemy{} -> Left pathList
+          TPoint TEnemyPos{} _ _ -> Left pathList
+          _ -> Right pathList
+        _ -> Right []
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
@@ -341,10 +345,21 @@ fleeList aid = do
       gtVic = filter ((> dist (bpos b)) . fst) accVic
       eqVic = filter ((== dist (bpos b)) . fst) accVic
       ltVic = filter ((< dist (bpos b)) . fst) accVic
-      rewardPath mult (d, p)
-        | p `elem` tgtPath = (100 * mult * d, p)
-        | any (\q -> chessDist p q == 1) tgtPath = (10 * mult * d, p)
-        | otherwise = (mult * d, p)
+      rewardPath mult (d, p) = case etgtPath of
+        Right tgtPath | p `elem` tgtPath ->
+          (100 * mult * d, p)
+        Right tgtPath | any (\q -> chessDist p q == 1) tgtPath ->
+          (10 * mult * d, p)
+        Left tgtPath@(_ : _) ->
+          let venemy = towards (bpos b) (last tgtPath)
+              vflee = towards (bpos b) p
+              sq = euclidDistSqVector venemy vflee
+              skew = case compare sq 2 of
+                GT -> 100 * sq
+                EQ -> 10 * sq
+                LT -> sq  -- going towards enemy (but may escape adjacent foes)
+          in (mult * skew * d, p)
+        _ -> (mult * d, p)
       goodVic = map (rewardPath 10000) gtVic
                 ++ map (rewardPath 100) eqVic
       badVic = map (rewardPath 1) ltVic
