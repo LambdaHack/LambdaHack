@@ -187,24 +187,14 @@ pickActorToMove maidToAvoid refreshTarget = do
                     _ -> if d < 8 then d `div` 4 else 2 + d `div` 10)
                + (if aid == oldAid then 1 else 0)
           sortOurs = sortBy $ comparing overheadOurs
-          goodTEnemy ((_aid, b), TgtAndPath{ tapTgt=TEnemy{}
-                                           , tapPath=AndPath{pathGoal} }) =
-            not (adjacent (bpos b) pathGoal) -- not in melee range already
-          goodTEnemy _ = True
-          oursVulnerableGood = filter goodTEnemy oursVulnerable
-          oursTEnemyGood = filter goodTEnemy oursTEnemy
-          oursPosGood = oursPos
-          oursMeleeingGood = oursMeleeing
-          oursHearingGood = filter goodTEnemy oursHearing
-          oursBlockedGood = oursBlocked
-          candidates = [ sortOurs oursVulnerableGood
-                       , sortOurs oursTEnemyGood
-                       , sortOurs oursPosGood
-                       , sortOurs oursMeleeingGood
-                       , sortOurs oursHearingGood
-                       , sortOurs oursBlockedGood
+          candidates = [ oursVulnerable
+                       , oursTEnemy
+                       , oursPos
+                       , oursMeleeing
+                       , oursHearing
+                       , oursBlocked
                        ]
-      case filter (not . null) candidates of
+      case map sortOurs $ filter (not . null) candidates of
         l@(c : _) : _ -> do
           let best = takeWhile ((== overheadOurs c) . overheadOurs) l
               freq = uniformFreq "candidates for AI leader" best
