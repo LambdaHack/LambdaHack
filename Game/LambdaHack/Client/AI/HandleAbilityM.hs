@@ -903,13 +903,12 @@ displaceTowards aid source target = do
         case mtgtMPath of
           Just TgtAndPath{tapPath=AndPath{pathList=q : _}}
             | q == source  -- friend wants to swap
-              || waitedLastTurn b2  -- he had no progress anyway
               || actorCanMelee actorAspect aid b
                  && (not $ actorCanMelee actorAspect aid2 b2) -> do
                    -- he can't meelee and I can, so push him aside
               return $! returN "displace friend" $ target `vectorToFrom` source
           Just _ -> return reject
-          Nothing -> do  -- an enemy or disoriented friend --- swap
+          Nothing -> do  -- an enemy or ally or disoriented friend --- swap
             tfact <- getsState $ (EM.! bfid b2) . sfactionD
             actorMaxSk <- enemyMaxAb aid2
             dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
