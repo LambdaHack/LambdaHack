@@ -142,21 +142,10 @@ actionStrategy aid = do
           , condNoEqpWeapon  -- we assume organ weapons usually inferior
             && condFloorWeapon && not condHpTooLow
             && abInMaxSkill AbMelee )
-        , ( [AbMelee], (toAny :: ToAny 'AbMelee)
-            <$> meleeBlocker aid  -- only melee target or blocker
-          , condAnyFoeAdj  -- if foes, don't displace, otherwise friends:
-            || not (abInMaxSkill AbDisplace)  -- displace friends, if possible
-               && fleaderMode (gplayer fact) == LeaderNull  -- not restrained
-               && condAimEnemyPresent )  -- excited
         , ( [AbAlter], (toAny :: ToAny 'AbAlter)
             <$> trigger aid ViaEscape
           , condAdjTriggerable
             && not condDesirableFloorItem )  -- collect the last loot
-        , ( [AbAlter], (toAny :: ToAny 'AbAlter)
-            <$> trigger aid ViaNothing
-          , condAdjTriggerable
-            && not condAimEnemyPresent  -- focus if enemies nearby
-            && not condInMelee )  -- don't incur overhead
         , ( [AbMove]
           , flee aid fleeL
           , -- Flee either from melee, if our melee is bad and enemy close
@@ -182,6 +171,17 @@ actionStrategy aid = do
                     heavilyDistressed
                     && not condCanProject
                   | otherwise -> False ) -- not threats in range; don't flee
+        , ( [AbMelee], (toAny :: ToAny 'AbMelee)
+            <$> meleeBlocker aid  -- only melee blocker
+          , condAnyFoeAdj  -- if foes, don't displace, otherwise friends:
+            || not (abInMaxSkill AbDisplace)  -- displace friends, if possible
+               && fleaderMode (gplayer fact) == LeaderNull  -- not restrained
+               && condAimEnemyPresent )  -- excited
+        , ( [AbAlter], (toAny :: ToAny 'AbAlter)
+            <$> trigger aid ViaNothing
+          , condAdjTriggerable
+            && not condAimEnemyPresent  -- focus if enemies nearby
+            && not condInMelee )  -- don't incur overhead
         , ( [AbDisplace]  -- prevents some looping movement
           , displaceBlocker aid  -- fires up only when path blocked
           , not condDesirableFloorItem )
@@ -558,9 +558,12 @@ meleeBlocker aid = do
   actorSk <- actorSkillsClient aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   case mtgtMPath of
+    Just TgtAndPath{ tapTgt=TEnemy{}
+                   , tapPath=AndPath{pathList=q : _, pathGoal} }
+      | q == pathGoal -> return reject  -- not a real blocker, but goal enemy
     Just TgtAndPath{tapPath=AndPath{pathList=q : _, pathGoal}} -> do
-      -- We prefer the goal (e.g., when no accessible, but adjacent),
-      -- but accept @q@ even if it's only a blocking enemy position.
+      -- We prefer the goal position, so that we can kill the foe and enter it,
+      -- but we accept any @q@ as well.
       let maim | adjacent (bpos b) pathGoal = Just pathGoal
                | adjacent (bpos b) q = Just q
                | otherwise = Nothing  -- MeleeDistant
