@@ -536,14 +536,15 @@ effectSummon execSfx grp nDm source target periodic = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   actorAspect <- getsServer sactorAspect
-  let ar = actorAspect EM.! source
+  let sar = actorAspect EM.! source
+      tar = actorAspect EM.! target
   -- Verify Calm only at periodic activations. Otherwise summon uses up
   -- the item, which prevent summoning getting out of control
   -- (unless the item is durable, but normally it shouldn't be).
   -- I don't verify Calm otherwise, to prevent an exploit via draining
   -- one's calm on purpose when an item with good activation has a nasty
   -- summoning side-effect.
-  if periodic && not (bproj sb) && not (calmEnough sb ar) then do
+  if periodic && not (bproj sb) && not (calmEnough sb sar) then do
     unless (bproj sb) $ do
       execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonLackCalm source
     return False
@@ -555,7 +556,8 @@ effectSummon execSfx grp nDm source target periodic = do
     ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
     localTime <- getsState $ getLocalTime (blid tb)
     -- Make sure summoned actors start acting after the victim.
-    let targetTime = timeShift localTime $ ticksPerMeter $ bspeed tb ar
+    let actorTurn = ticksPerMeter $ bspeed tb tar
+        targetTime = timeShift localTime actorTurn
         afterTime = timeShift targetTime $ Delta timeClip
     bs <- forM (take power ps) $ \p -> do
       maid <- addAnyActor [(grp, 1)] (blid tb) afterTime (Just p)
@@ -745,8 +747,8 @@ effectInsertMove execSfx nDm target = do
   b <- getsState $ getActorBody target
   actorAspect <- getsServer sactorAspect
   let ar = actorAspect EM.! target
-  let tpm = ticksPerMeter $ bspeed b ar
-      t = timeDeltaScale tpm (-p)
+  let actorTurn = ticksPerMeter $ bspeed b ar
+      t = timeDeltaScale actorTurn (-p)
   modifyServer $ \ser ->
     ser {sactorTime = ageActor (bfid b) (blid b) target t $ sactorTime ser}
   return True
@@ -1135,8 +1137,8 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
               -- any turn of movement (but he may need to retrace the push).
               actorAspect <- getsServer sactorAspect
               let ar = actorAspect EM.! target
-                  tpm = ticksPerMeter $ bspeed tb ar
-                  delta = timeDeltaScale tpm (-1)
+                  actorTurn = ticksPerMeter $ bspeed tb ar
+                  delta = timeDeltaScale actorTurn (-1)
               modifyServer $ \ser ->
                 ser {sactorTime = ageActor (bfid tb) (blid tb) target delta
                                   $ sactorTime ser}
