@@ -186,6 +186,9 @@ actionStrategy aid = do
         , ( [AbDisplace]  -- prevents some looping movement
           , displaceBlocker aid  -- fires up only when path blocked
           , not condDesirableFloorItem )
+        , ( [AbMelee], (toAny :: ToAny 'AbMelee)
+            <$> meleeAny aid
+          , condAnyFoeAdj )  -- won't flee nor displace, so let it melee
         ]
       -- Order doesn't matter, scaling does.
       -- These are flattened (taking only the best variant) and then summed,
@@ -239,10 +242,7 @@ actionStrategy aid = do
         ]
       -- Order matters again.
       suffix =
-        [ ( [AbMelee], (toAny :: ToAny 'AbMelee)
-            <$> meleeAny aid  -- avoid getting damaged for naught
-          , condAnyFoeAdj )
-        , ( [AbMove]
+        [ ( [AbMove]
           , flee aid panicFleeL  -- ultimate panic mode, displaces foes
           , condAnyFoeAdj )
         , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
@@ -860,14 +860,14 @@ displaceFoe aid = do
         adjacent (bpos body) (bpos b)
         && Tile.isWalkable coTileSpeedup (lvl `at` (bpos body))
       nFriends body = length $ filter (adjacent (bpos body) . bpos) friends
-      nFrHere = nFriends b + 1
+      nFrNew = nFriends b + 1
       qualifyActor (aid2, body2) = do
         actorMaxSk <- enemyMaxAb aid2
         dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
           -- DisplaceDying, DisplaceBraced, DisplaceImmobile, DisplaceSupported
-        let nFr = nFriends body2
-        return $! if displaceable body2 && dEnemy && nFr < nFrHere
-                  then Just (nFr * nFr, bpos body2 `vectorToFrom` bpos b)
+        let nFrOld = nFriends body2
+        return $! if displaceable body2 && dEnemy && nFrOld < nFrNew
+                  then Just (nFrOld * nFrOld, bpos body2 `vectorToFrom` bpos b)
                   else Nothing
   vFoes <- mapM qualifyActor allFoes
   let str = liftFrequency $ toFreq "displaceFoe" $ catMaybes vFoes
@@ -878,6 +878,9 @@ displaceBlocker aid = do
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   str <- case mtgtMPath of
+    Just TgtAndPath{ tapTgt=TEnemy{}
+                   , tapPath=AndPath{pathList=q : _, pathGoal} }
+      | q == pathGoal -> return reject  -- not a real blocker, but goal enemy
     Just TgtAndPath{tapPath=AndPath{pathList=q : _}} ->
       displaceTowards aid (bpos b) q
     _ -> return reject  -- goal reached
