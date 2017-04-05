@@ -132,7 +132,8 @@ targetStrategy aid = do
       targetableMelee aidE body = do
         actorMaxSkE <- enemyMaxAb aidE
         let attacksFriends = any (adjacent (bpos body) . bpos) friends
-            -- 3 is 1 from condSupport1
+            -- 3 is
+            -- 1 from condSupport1
             -- + 2 from foe being 2 away from friend before he closed in
             -- + 1 for as a margin for ambush, given than actors exploring
             -- can't physically keep adjacent all the time
@@ -296,7 +297,7 @@ targetStrategy aid = do
                && a `notElem` map fst nearbyFoes  -- old one not close enough
                || blid body /= blid b  -- wrong level
                || actorDying body  -- foe already dying
-               || permit ->  -- never follow a friend more than 1 step
+               || permit && condInMelee ->  -- at melee, stop following
                pickNewTarget
              | bpos body == pathGoal ->
                return $! returN "TEnemy" tap
@@ -318,7 +319,7 @@ targetStrategy aid = do
         TPoint _ _ pos | pos == bpos b -> tellOthersNothingHere pos
         TPoint tgoal lid pos -> case tgoal of
           TEnemyPos _ permit  -- chase last position even if foe hides
-            | permit -> pickNewTarget  -- never follow a friend more than 1 step
+            | permit && condInMelee -> pickNewTarget  -- melee, stop following
             | otherwise -> return $! returN "TEnemyPos" tap
           _ | not $ null nearbyFoes ->
             pickNewTarget  -- prefer close foes to anything else

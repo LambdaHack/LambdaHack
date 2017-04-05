@@ -212,9 +212,13 @@ useTactics :: MonadClient m
            -> m ()
 {-# INLINE useTactics #-}
 useTactics refreshTarget oldAid = do
+  oldBody <- getsState $ getActorBody oldAid
+  scondInMelee <- getsClient scondInMelee
+  let condInMelee = case scondInMelee EM.! blid oldBody of
+        Just cond -> cond
+        Nothing -> assert `failure` condInMelee
   mleader <- getsClient _sleader
   let !_A = assert (mleader /= Just oldAid) ()
-  oldBody <- getsState $ getActorBody oldAid
   let side = bfid oldBody
       arena = blid oldBody
   fact <- getsState $ (EM.! side) . sfactionD
@@ -236,7 +240,7 @@ useTactics refreshTarget oldAid = do
         Just leader -> do
           onLevel <- getsState $ memActor leader arena
           -- If leader not on this level, fall back to @TExplore@.
-          if not onLevel then explore
+          if not onLevel || condInMelee then explore
           else do
             -- Copy over the leader's target, if any, or follow his bpos.
             mtgt <- getsClient $ EM.lookup leader . stargetD

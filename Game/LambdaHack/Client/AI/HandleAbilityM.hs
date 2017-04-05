@@ -170,7 +170,8 @@ actionStrategy aid = do
                     -- even if I can't see them. And probably far away.
                     -- Too far to close in for melee; can't shoot; flee from
                     -- ranged attack and prepare ambush for later on.
-                    heavilyDistressed
+                    not condInMelee
+                    && heavilyDistressed
                     && not condCanProject )
         , ( [AbMelee], (toAny :: ToAny 'AbMelee)
             <$> meleeBlocker aid  -- only melee blocker
