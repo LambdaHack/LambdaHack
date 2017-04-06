@@ -411,14 +411,14 @@ keyTranslate ['K','P','_',c] = KP c
 keyTranslate [c]             = Char c
 keyTranslate s               = Unknown s
 
-
 -- | Translate key from a Web API string description
 -- (https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key#Key_values)
 -- to our internal key type. To be used in web frontends.
--- Currently only the "Key values on Linux (GTK)" table taken into account.
+-- The argument says whether Shift is pressed.
 keyTranslateWeb :: String -> Bool -> Key
 keyTranslateWeb "Backspace"  _ = BackSpace
-keyTranslateWeb "Tab"        _ = Tab
+keyTranslateWeb "Tab"        True = BackTab
+keyTranslateWeb "Tab"        False = Tab
 keyTranslateWeb "BackTab"    _ = BackTab
 keyTranslateWeb "Clear"      _ = Begin
 keyTranslateWeb "Enter"      _ = Return
@@ -441,16 +441,25 @@ keyTranslateWeb "End"        _ = End
 keyTranslateWeb "Insert"     _ = Insert
 keyTranslateWeb "space"      _ = Space
 keyTranslateWeb "Equals"     _ = Char '='
-keyTranslateWeb "Multiply"   False = Char '*'  -- for latop movement keys
-keyTranslateWeb "Multiply"   True = KP '*'     -- for keypad aiming
-keyTranslateWeb "*"          True = KP '*'     -- for keypad aiming
+keyTranslateWeb "Multiply"   True = Char '*'  -- for latop movement keys
+keyTranslateWeb "Multiply"   False = KP '*'     -- for keypad aiming
+keyTranslateWeb "*"          False = KP '*'     -- for keypad aiming
 keyTranslateWeb "Add"        _ = Char '+'  -- KP and normal are merged here
 keyTranslateWeb "Subtract"   _ = Char '-'  -- KP and normal are merged here
-keyTranslateWeb "Divide"     False = Char '/'
-keyTranslateWeb "Divide"     True = KP '/'
-keyTranslateWeb "/"          True = KP '/'
+keyTranslateWeb "Divide"     True = Char '/'
+keyTranslateWeb "Divide"     False = KP '/'
+keyTranslateWeb "/"          False = KP '/'
 keyTranslateWeb "Decimal"    _ = Char '.'  -- dot and comma are merged here
 keyTranslateWeb "Separator"  _ = Char '.'  -- to sidestep national standards
+keyTranslateWeb "1"          True = KP '1'
+keyTranslateWeb "2"          True = KP '2'
+keyTranslateWeb "3"          True = KP '3'
+keyTranslateWeb "4"          True = KP '4'
+keyTranslateWeb "5"          True = KP '5'
+keyTranslateWeb "6"          True = KP '6'
+keyTranslateWeb "7"          True = KP '7'
+keyTranslateWeb "8"          True = KP '8'
+keyTranslateWeb "9"          True = KP '9'
 keyTranslateWeb "F1"         _ = Fun 1
 keyTranslateWeb "F2"         _ = Fun 2
 keyTranslateWeb "F3"         _ = Fun 3
@@ -476,6 +485,7 @@ keyTranslateWeb "Num_Lock"    _ = DeadKey
 keyTranslateWeb "CapsLock"    _ = DeadKey
 keyTranslateWeb "Win"         _ = DeadKey
 -- browser quirks
+keyTranslateWeb "Unidentified" _ = Begin  -- hack for Firefox
 keyTranslateWeb ['\ESC']     _ = Esc
 keyTranslateWeb [' ']        _ = Space
 keyTranslateWeb ['\n']       _ = Return

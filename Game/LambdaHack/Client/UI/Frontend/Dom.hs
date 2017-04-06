@@ -23,23 +23,20 @@ import GHCJS.DOM.Element (Element (Element), getStyle, setInnerHTML)
 import GHCJS.DOM.EventM (EventM, mouseAltKey, mouseButton, mouseCtrlKey,
                          mouseMetaKey, mouseShiftKey, on, on, preventDefault,
                          stopPropagation)
-import GHCJS.DOM.GlobalEventHandlers (contextMenu, keyDown, keyPress, mouseUp,
-                                      wheel)
+import GHCJS.DOM.GlobalEventHandlers (contextMenu, keyDown, mouseUp, wheel)
 import GHCJS.DOM.HTMLCollection (itemUnsafe)
 import GHCJS.DOM.HTMLTableElement (HTMLTableElement (HTMLTableElement), getRows,
                                    setCellPadding, setCellSpacing)
 import GHCJS.DOM.HTMLTableRowElement (HTMLTableRowElement (HTMLTableRowElement),
                                       getCells)
-import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCharCode,
-                                getCtrlKey, getKeyCode, getKeyIdentifier,
-                                getKeyLocation, getMetaKey, getShiftKey)
+import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey, getKey,
+                                getMetaKey, getShiftKey)
 import GHCJS.DOM.Node (appendChild_, setTextContent)
 import GHCJS.DOM.RequestAnimationFrameCallback
 import GHCJS.DOM.Types (CSSStyleDeclaration, DOM,
                         HTMLDivElement (HTMLDivElement),
                         HTMLTableCellElement (HTMLTableCellElement),
                         IsMouseEvent, Window, runDOM, unsafeCastTo)
-import GHCJS.DOM.UIEvent (getWhich)
 import GHCJS.DOM.WheelEvent (getDeltaY)
 import GHCJS.DOM.Window (requestAnimationFrame_)
 
@@ -117,10 +114,6 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   spreviousFrame <- newIORef blankSingleFrame
   let sess = FrontendSession{..}
   rf <- IO.liftIO $ createRawFrontend (display sdebugCli sess) shutdown
-  -- Handle keypresses. http://unixpapa.com/js/key.html
-  -- A bunch of faulty hacks; @keyPress@ doesn't handle non-character keys
-  -- while with @keyDown@ all of getKeyIdentifier, getWhich and getKeyCode
-  -- return absurd codes for, e.g., semicolon in Chromium.
   let readMod = do
         modCtrl <- ask >>= getCtrlKey
         modShift <- ask >>= getShiftKey
@@ -130,68 +123,26 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
         return $! modifierTranslate
                     modCtrl modShift (modAlt || modAltG) modMeta
   void $ doc `on` keyDown $ do
-    keyId <- ask >>= getKeyIdentifier
-    which <- ask >>= getWhich
-    keyCode <- ask >>= getKeyCode
-    charCode <- ask >>= getCharCode
+    keyId <- ask >>= getKey
     modifier <- readMod
-    let keyIdBogus = keyId `elem` ["", "Unidentified"]
-                     || take 2 keyId == "U+"
-        -- Handle browser quirks, especially for ESC, etc.
-        quirksN | which == 0 = ""
-                | charCode /= 0 = ""
-                | not keyIdBogus = keyId
-                | keyCode == 8 = "Backspace"
-                | keyCode == 9 =
-                  if modifier == K.Shift then "BackTab" else "Tab"
-                | keyCode == 13 = "Enter"
-                | keyCode == 27 = "Escape"
-                | keyCode == 46 = "Delete"
-                | otherwise = ""
-    when (not $ null quirksN) $ do
-      let key = K.keyTranslateWeb quirksN False
-      -- IO.liftIO $ do
-      --   putStrLn $ "keyId: " ++ keyId
-      --   putStrLn $ "quirksN: " ++ quirksN
-      --   putStrLn $ "key: " ++ K.showKey key
-      --   putStrLn $ "which: " ++ show which
-      --   putStrLn $ "keyCode: " ++ show keyCode
-      --   putStrLn $ "modifier: " ++ show modifier
-      when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
-      IO.liftIO $ saveKMP rf modifier key originPoint
-      -- Pass through C-+ and others, disable Tab.
-      when (modifier `elem` [K.NoModifier, K.Shift, K.Control]) $ do
-        preventDefault
-        stopPropagation
-  void $ doc `on` keyPress $ do
-    keyLoc <- ask >>= getKeyLocation
-    which <- ask >>= getWhich
-    keyCode <- ask >>= getKeyCode
-    charCode <- ask >>= getCharCode
-    let quirksN | which == 0 = [Char.chr $ fromEnum keyCode]  -- old IE
-                | charCode /= 0 = [Char.chr which]  -- all others
-                | otherwise = ""
-    when (not $ null quirksN) $ do
-      modifier <- readMod
-      let onKeyPad = case keyLoc of
-            3 {-KEY_LOCATION_NUMPAD-} -> True
-            _ -> False
-          key = K.keyTranslateWeb quirksN onKeyPad
-          modifierNoShift =  -- to prevent S-!, etc.
-            if modifier == K.Shift then K.NoModifier else modifier
-      -- IO.liftIO $ do
-      --   putStrLn $ "charCode: " ++ show charCode
-      --   putStrLn $ "quirksN: " ++ quirksN
-      --   putStrLn $ "key: " ++ K.showKey key
-      --   putStrLn $ "which: " ++ show which
-      --   putStrLn $ "keyCode: " ++ show keyCode
-      --   putStrLn $ "modifier: " ++ show modifier
-      when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
-      IO.liftIO $ saveKMP rf modifierNoShift key originPoint
-      -- Pass through C-+ and others, disable Tab.
-      when (modifier `elem` [K.NoModifier, K.Shift, K.Control]) $ do
-        preventDefault
-        stopPropagation
+--  This is currently broken at least for Shift-F1, etc., so won't be used:
+--    keyLoc <- ask >>= getKeyLocation
+--    let onKeyPad = case keyLoc of
+--          3 {-KEY_LOCATION_NUMPAD-} -> True
+--          _ -> False
+    let key = K.keyTranslateWeb keyId (modifier == K.Shift)
+        modifierNoShift =  -- to prevent S-!, etc.
+          if modifier == K.Shift then K.NoModifier else modifier
+    -- IO.liftIO $ do
+    --   putStrLn $ "keyId: " ++ keyId
+    --   putStrLn $ "key: " ++ K.showKey key
+    --   putStrLn $ "modifier: " ++ show modifier
+    when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
+    IO.liftIO $ saveKMP rf modifierNoShift key originPoint
+    -- Pass through C-+ and others, disable special behaviour on Tab.
+    when (modifier `elem` [K.NoModifier, K.Shift, K.Control]) $ do
+      preventDefault
+      stopPropagation
   -- Handle mouseclicks, per-cell.
   let setupMouse i a = let Point x y = PointArray.punindex lxsize i
                        in handleMouse rf a x y
