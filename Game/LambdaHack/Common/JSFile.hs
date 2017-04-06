@@ -15,7 +15,7 @@ import Data.Text.Encoding (decodeLatin1)
 import GHCJS.DOM (currentWindow)
 import GHCJS.DOM.Storage (getItem, setItem)
 import GHCJS.DOM.Types (runDOM)
-import GHCJS.DOM.Window (getLocalStorageUnchecked)
+import GHCJS.DOM.Window (getLocalStorage)
 
 -- | Serialize and save data with an EOF marker. In JS, compression
 -- is probably performed by the browser and we don't have access
@@ -25,7 +25,7 @@ import GHCJS.DOM.Window (getLocalStorageUnchecked)
 encodeEOF :: Binary a => FilePath -> a -> IO ()
 encodeEOF path a = flip runDOM undefined $ do
   Just win <- currentWindow
-  storage <- getLocalStorageUnchecked win
+  storage <- getLocalStorage win
   setItem storage path $ decodeLatin1 $ LBS.toStrict
                        $ encode (a, "OK" :: String)
 
@@ -35,7 +35,7 @@ encodeEOF path a = flip runDOM undefined $ do
 strictDecodeEOF :: Binary a => FilePath -> IO a
 strictDecodeEOF path = flip runDOM undefined $ do
   Just win <- currentWindow
-  storage <- getLocalStorageUnchecked win
+  storage <- getLocalStorage win
   Just item <- getItem storage path
   let (a, n) = decode $ LBS.pack $ T.unpack item
   if n == ("OK" :: String)
@@ -49,7 +49,7 @@ tryCreateDir _dir = return ()
 doesFileExist :: FilePath -> IO Bool
 doesFileExist path = flip runDOM undefined $ do
   Just win <- currentWindow
-  storage <- getLocalStorageUnchecked win
+  storage <- getLocalStorage win
   mitem <- getItem storage path
   let fileExists = isJust (mitem :: Maybe String)
   return $! fileExists
@@ -58,7 +58,7 @@ doesFileExist path = flip runDOM undefined $ do
 tryWriteFile :: FilePath -> String -> IO ()
 tryWriteFile path content = flip runDOM undefined $ do
   Just win <- currentWindow
-  storage <- getLocalStorageUnchecked win
+  storage <- getLocalStorage win
   mitem <- getItem storage path
   let fileExists = isJust (mitem :: Maybe String)
   unless fileExists $
@@ -67,7 +67,7 @@ tryWriteFile path content = flip runDOM undefined $ do
 readFile :: FilePath -> IO String
 readFile path = flip runDOM undefined $ do
   Just win <- currentWindow
-  storage <- getLocalStorageUnchecked win
+  storage <- getLocalStorage win
   mitem <- getItem storage path
   case mitem of
     Nothing -> error $ "Fatal error: no file " ++ path

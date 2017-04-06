@@ -18,30 +18,28 @@ import Data.Word (Word32)
 
 import GHCJS.DOM (currentDocument, currentWindow)
 import GHCJS.DOM.CSSStyleDeclaration (setProperty)
-import GHCJS.DOM.Document (createElementUnchecked, getBodyUnchecked, keyDown,
-                           keyPress)
-import GHCJS.DOM.Element (contextMenu, getStyleUnchecked, mouseUp, setInnerHTML,
-                          wheel)
+import GHCJS.DOM.Document (createElement, getBodyUnchecked)
+import GHCJS.DOM.Element (Element (Element), getStyle, setInnerHTML)
 import GHCJS.DOM.EventM (EventM, mouseAltKey, mouseButton, mouseCtrlKey,
                          mouseMetaKey, mouseShiftKey, on, on, preventDefault,
                          stopPropagation)
-import GHCJS.DOM.HTMLCollection (itemUnchecked)
-import GHCJS.DOM.HTMLTableCellElement (HTMLTableCellElement,
-                                       castToHTMLTableCellElement)
-import GHCJS.DOM.HTMLTableElement (HTMLTableElement, castToHTMLTableElement,
-                                   getRowsUnchecked, setCellPadding,
-                                   setCellSpacing)
-import GHCJS.DOM.HTMLTableRowElement (HTMLTableRowElement,
-                                      castToHTMLTableRowElement,
-                                      getCellsUnchecked)
-import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
-                                getKeyIdentifier, getKeyLocation, getMetaKey,
-                                getShiftKey)
+import GHCJS.DOM.GlobalEventHandlers (contextMenu, keyDown, keyPress, mouseUp,
+                                      wheel)
+import GHCJS.DOM.HTMLCollection (itemUnsafe)
+import GHCJS.DOM.HTMLTableElement (HTMLTableElement (HTMLTableElement), getRows,
+                                   setCellPadding, setCellSpacing)
+import GHCJS.DOM.HTMLTableRowElement (HTMLTableRowElement (HTMLTableRowElement),
+                                      getCells)
+import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCharCode,
+                                getCtrlKey, getKeyCode, getKeyIdentifier,
+                                getKeyLocation, getMetaKey, getShiftKey)
 import GHCJS.DOM.Node (appendChild_, setTextContent)
 import GHCJS.DOM.RequestAnimationFrameCallback
-import GHCJS.DOM.Types (CSSStyleDeclaration, DOM, IsMouseEvent, Window,
-                        castToHTMLDivElement, runDOM)
-import GHCJS.DOM.UIEvent (getCharCode, getKeyCode, getWhich)
+import GHCJS.DOM.Types (CSSStyleDeclaration, DOM,
+                        HTMLDivElement (HTMLDivElement),
+                        HTMLTableCellElement (HTMLTableCellElement),
+                        IsMouseEvent, Window, runDOM, unsafeCastTo)
+import GHCJS.DOM.UIEvent (getWhich)
 import GHCJS.DOM.WheelEvent (getDeltaY)
 import GHCJS.DOM.Window (requestAnimationFrame_)
 
@@ -78,12 +76,12 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   Just doc <- currentDocument
   Just scurrentWindow <- currentWindow
   body <- getBodyUnchecked doc
-  pageStyle <- getStyleUnchecked body
+  pageStyle <- getStyle body
   setProp pageStyle "background-color" (Color.colorToRGB Color.Black)
   setProp pageStyle "color" (Color.colorToRGB Color.White)
-  divBlockRaw <- createElementUnchecked doc (Just ("div" :: Text))
-  divBlock <- castToHTMLDivElement divBlockRaw
-  divStyle <- getStyleUnchecked divBlock
+  divBlockRaw <- createElement doc ("div" :: Text)
+  divBlock <- unsafeCastTo HTMLDivElement divBlockRaw
+  divStyle <- getStyle divBlock
   setProp divStyle "text-align" "center"
   case (saddress, stitle) of
     (Just address, Just title) -> do
@@ -96,18 +94,18 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
       cell = "<td>" ++ [Char.chr 160]
       row = "<tr>" ++ concat (replicate lxsize cell)
       rows = concat (replicate lysize row)
-  tableElemRaw <- createElementUnchecked doc (Just ("table" :: Text))
-  tableElem <- castToHTMLTableElement tableElemRaw
-  appendChild_ divBlock (Just tableElem)
-  scharStyle <- getStyleUnchecked tableElem
+  tableElemRaw <- createElement doc ("table" :: Text)
+  tableElem <- unsafeCastTo HTMLTableElement tableElemRaw
+  appendChild_ divBlock tableElem
+  scharStyle <- getStyle tableElem
   -- Speed: http://www.w3.org/TR/CSS21/tables.html#fixed-table-layout
   setProp scharStyle "table-layout" "fixed"
   setProp scharStyle "font-family" "lambdaHackFont"
   setProp scharStyle "font-size" $ tshow (fromJust sfontSize) <> "px"
   setProp scharStyle "font-weight" "bold"
   -- Get rid of table spacing. Tons of spurious hacks just in case.
-  setCellPadding tableElem ("0" :: Text)
-  setCellSpacing tableElem ("0" :: Text)
+  setCellPadding tableElem (Just ("0" :: Text))
+  setCellSpacing tableElem (Just ("0" :: Text))
   setProp scharStyle "outline" "1px solid grey"
   setProp scharStyle "padding" "0 0 0 0"
   setProp scharStyle "border-collapse" "collapse"
@@ -170,7 +168,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
     which <- ask >>= getWhich
     keyCode <- ask >>= getKeyCode
     charCode <- ask >>= getCharCode
-    let quirksN | which == 0 = [Char.chr keyCode]  -- old IE
+    let quirksN | which == 0 = [Char.chr $ fromEnum keyCode]  -- old IE
                 | charCode /= 0 = [Char.chr which]  -- all others
                 | otherwise = ""
     when (not $ null quirksN) $ do
@@ -201,7 +199,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   let setBorder (_, style) = setProp style "border" "1px solid transparent"
   V.mapM_ setBorder scharCells
   -- Display at the end to avoid redraw
-  appendChild_ body (Just divBlock)
+  appendChild_ body divBlock
   IO.liftIO $ putMVar rfMVar rf
     -- send to client only after the whole webpage is set up
     -- because there is no @mainGUI@ to start accepting
@@ -211,7 +209,7 @@ shutdown = return () -- nothing to clean up
 
 setProp :: CSSStyleDeclaration -> Text -> Text -> DOM ()
 setProp style propRef propValue =
-  setProperty style propRef (Just propValue) ("" :: Text)
+  setProperty style propRef (Just propValue) (Nothing :: Maybe Text)
 
 -- | Let each table cell handle mouse events inside.
 handleMouse :: RawFrontend
@@ -265,19 +263,19 @@ flattenTable :: HTMLTableElement
 flattenTable table = do
   let lxsize = fst normalLevelBound + 1
       lysize = snd normalLevelBound + 4
-  rows <- getRowsUnchecked table
+  rows <- getRows table
   let f y = do
-        rowsItem <- itemUnchecked rows y
-        castToHTMLTableRowElement rowsItem
+        rowsItem <- itemUnsafe rows y
+        unsafeCastTo HTMLTableRowElement rowsItem
   lrow <- mapM f [0 .. toEnum (lysize-1)]
   let getC :: HTMLTableRowElement
            -> DOM [(HTMLTableCellElement, CSSStyleDeclaration)]
       getC row = do
-        cells <- getCellsUnchecked row
+        cells <- getCells row
         let g x = do
-              cellsItem <- itemUnchecked cells x
-              cell <- castToHTMLTableCellElement cellsItem
-              style <- getStyleUnchecked cell
+              cellsItem <- itemUnsafe cells x
+              cell <- unsafeCastTo HTMLTableCellElement cellsItem
+              style <- getStyle cell
               return (cell, style)
         mapM g [0 .. toEnum (lxsize-1)]
   lrc <- mapM getC lrow
@@ -320,4 +318,4 @@ display DebugModeCli{scolorIsBold}
     U.izipWithM_ setChar (PointArray.avector $ singleFrame curFrame)
                          (PointArray.avector $ singleFrame prevFrame)
   -- This ensures no frame redraws while callback executes.
-  requestAnimationFrame_ scurrentWindow (Just callback)
+  requestAnimationFrame_ scurrentWindow callback
