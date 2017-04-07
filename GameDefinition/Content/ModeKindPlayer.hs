@@ -105,6 +105,7 @@ playerMonsterTourist =
   playerAntiMonster { fname = "Monster Tourist Office"
                     , fcanEscape = True
                     , fneverEmpty = True  -- no spawning
+                    , fhiCondPoly = hiEscapist
                     , ftactic = TFollow  -- follow-the-guide, as tourists do
                     , fleaderMode = LeaderUI $ AutoLeader False False }
 
@@ -124,7 +125,7 @@ playerAnimalExquisite =
 victoryOutcomes :: [Outcome]
 victoryOutcomes = [Conquer, Escape]
 
-hiHero, hiDweller, hiRaid, hiEscapist :: HiCondPoly
+hiHero, hiRaid, hiDweller, hiEscapist :: HiCondPoly
 
 -- Heroes rejoice in loot.
 hiHero = [ ( [(HiLoot, 1)]
@@ -133,32 +134,24 @@ hiHero = [ ( [(HiLoot, 1)]
            , victoryOutcomes )
          ]
 
--- Spawners or skirmishers get no points from loot, but try to kill
--- all opponents fast or at least hold up for long.
-hiDweller = [ ( [(HiConst, 1000)]  -- no loot
-              , victoryOutcomes )
-            , ( [(HiConst, 1000), (HiLoss, -10)]
-              , victoryOutcomes )
-            , ( [(HiBlitz, -100)]
-              , victoryOutcomes )
-            , ( [(HiSurvival, 100)]
-              , [minBound..maxBound] \\ victoryOutcomes )
-            ]
-
 hiRaid = [ ( [(HiLoot, 1)]
            , [minBound..maxBound] )
          , ( [(HiConst, 100)]
            , victoryOutcomes )
          ]
 
-hiEscapist = [ ( [(HiLoot, 1)]  -- loot matters a little bit
-               , [minBound..maxBound] )
-             , ( [(HiConst, 1000)]
-               , victoryOutcomes )
-             , ( [(HiConst, 1000), (HiLoss, -10)]
-               , victoryOutcomes )
-             , ( [(HiBlitz, -300)]  -- but speed matters most
-               , victoryOutcomes )
-             , ( [(HiSurvival, 100)]
-               , [minBound..maxBound] \\ victoryOutcomes )
-             ]
+-- Spawners or skirmishers get no points from loot, but try to kill
+-- all opponents fast or at least hold up for long.
+hiDweller = [ ( [(HiConst, 1000)]  -- no loot, so big win reward
+              , victoryOutcomes )
+            , ( [(HiConst, 1000), (HiLoss, -10)]
+              , victoryOutcomes )
+            , ( [(HiBlitz, -100)]  -- speed matters
+              , victoryOutcomes )
+            , ( [(HiSurvival, 100)]
+              , [minBound..maxBound] \\ victoryOutcomes )
+            ]
+
+hiEscapist = ( [(HiLoot, 1)]  -- loot matters a little bit
+             , [minBound..maxBound] )
+             : hiDweller
