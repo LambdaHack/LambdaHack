@@ -1223,13 +1223,13 @@ challengesMenuHuman cmdAction = do
   curChal <- getsClient scurChal
   nxtChal <- getsClient snxtChal
   let offOn b = if b then "on" else "off"
-      tcurDiff = "-   difficulty:" <+> tshow (cdiff curChal)
+      tcurDiff = ">   difficulty:" <+> tshow (cdiff curChal)
       tnextDiff = "difficulty:" <+> tshow (cdiff nxtChal)
-      tcurWolf = "-   lone wolf:"
+      tcurWolf = ">   lone wolf:"
                  <+> offOn (cwolf curChal)
       tnextWolf = "lone wolf:"
                   <+> offOn (cwolf nxtChal)
-      tcurFish = "-   cold fish:"
+      tcurFish = ">   cold fish:"
                  <+> offOn (cfish curChal)
       tnextFish = "cold fish:"
                   <+> offOn (cfish nxtChal)
