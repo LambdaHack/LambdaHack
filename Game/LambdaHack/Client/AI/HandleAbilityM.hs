@@ -76,7 +76,7 @@ actionStrategy aid = do
   (fleeL, badVic) <- fleeList aid
   condSupport1 <- condSupport 1 aid
   condSupport2 <- condSupport 2 aid
-  aInAmbient <- getsState $ actorInAmbient body
+  aCanDeAmbient <- getsState $ actorCanDeAmbient body
   condHpTooLow <- condHpTooLowM aid
   condAdjTriggerable <- condAdjTriggerableM aid
   condBlocksFriends <- condBlocksFriendsM aid
@@ -109,6 +109,7 @@ actionStrategy aid = do
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
         deltaSerious (bcalmDelta body)
       actorShines = aShine ar > 0
+      aCanDeLight = aCanDeAmbient && not actorShines
       actorMaxSk = aSkills ar
       abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
       stratToFreq :: Int -> m (Strategy RequestAnyAbility)
@@ -157,8 +158,7 @@ actionStrategy aid = do
             && if | condThreat 1 -> not condCanMelee
                                     || condManyThreatAdj && not condSupport1
                   | not condInMelee
-                    && (condThreat 2
-                        || condThreat 5 && aInAmbient && not actorShines) ->
+                    && (condThreat 2 || condThreat 5 && aCanDeLight) ->
                     -- Don't keep fleeing if just hit, because too close
                     -- to enemy to get out of his range, most likely,
                     -- and so melee him instead, unless can't melee at all.
@@ -175,8 +175,7 @@ actionStrategy aid = do
                     -- ranged attack and prepare ambush for later on.
                     not condInMelee
                     && heavilyDistressed
-                    && (not condCanProject
-                        || aInAmbient && not actorShines) )
+                    && (not condCanProject || aCanDeLight) )
         , ( [AbMelee], (toAny :: ToAny 'AbMelee)
             <$> meleeBlocker aid  -- only melee blocker
           , condAnyFoeAdj  -- if foes, don't displace, otherwise friends:
@@ -234,7 +233,7 @@ actionStrategy aid = do
                               50)
             $ chase aid True (not condInMelee
                               && (condThreat 10 || heavilyDistressed)
-                              && not aInAmbient && not actorShines)
+                              && aCanDeLight)
           , condCanMelee
             && (if condInMelee then condAimEnemyPresent
                 else (condAimEnemyPresent || condAimEnemyRemembered)
@@ -259,7 +258,7 @@ actionStrategy aid = do
         , ( [AbMove]
           , chase aid True (not condInMelee
                             && (condThreat 5 || heavilyDistressed)
-                            && not aInAmbient && not actorShines)
+                            && aCanDeLight)
           , if condInMelee then condCanMelee && condAimEnemyPresent
             else not (condTgtNonmoving && condThreat 2)
                  && (not (condThreat 2) || not condMeleeBad1) )

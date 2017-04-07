@@ -101,7 +101,7 @@ pickActorToMove maidToAvoid refreshTarget = do
             (fleeL, _) <- fleeList aid
             condSupport1 <- condSupport 1 aid
             condSupport2 <- condSupport 2 aid
-            aInAmbient <- getsState $ actorInAmbient body
+            aCanDeAmbient <- getsState $ actorCanDeAmbient body
             let condCanFlee = not (null fleeL)
                 condCanMelee = actorCanMelee actorAspect aid body
                 condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
@@ -116,14 +116,14 @@ pickActorToMove maidToAvoid refreshTarget = do
                   -- Actor hit by a projectile or similarly distressed.
                   deltaSerious (bcalmDelta body)
                 actorShines = aShine ar > 0
+                aCanDeLight = aCanDeAmbient && not actorShines
             return $!
               condCanFlee
               && not condFastThreatAdj
               && if | condThreat 1 -> not condCanMelee
                                       || condManyThreatAdj && not condSupport1
                     | not condInMelee
-                      && (condThreat 2
-                          || condThreat 5 && aInAmbient && not actorShines) ->
+                      && (condThreat 2 || condThreat 5 && aCanDeLight) ->
                       not condCanMelee
                       || not condSupport2 && not heavilyDistressed
                     | otherwise -> False  -- far from harm, not priority

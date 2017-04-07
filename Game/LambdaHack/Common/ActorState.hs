@@ -12,7 +12,7 @@ module Game.LambdaHack.Common.ActorState
   , nearbyFreePoints, getCarriedAssocs, getCarriedIidCStore
   , posToAidsLvl, posToAids, posToAssocs
   , getItemBody, memActor, getActorBody, getLocalTime, regenCalmDelta
-  , actorInAmbient, actorSkills, dispEnemy, fullAssocs
+  , actorInAmbient, actorCanDeAmbient, actorSkills, dispEnemy, fullAssocs
   , storeFromC, lidFromC, posFromC, aidFromC, isEscape, isStair, anyFoeAdj
   ) where
 
@@ -252,6 +252,17 @@ actorInAmbient :: Actor -> State -> Bool
 actorInAmbient b s =
   let lvl = (EM.! blid b) . sdungeon $ s
   in Tile.isLit (Kind.coTileSpeedup $ scops s) (lvl `at` bpos b)
+
+actorCanDeAmbient :: Actor -> State -> Bool
+actorCanDeAmbient b s =
+  let Kind.COps{coTileSpeedup} = scops s
+      lvl = (EM.! blid b) . sdungeon $ s
+      posDeAmbient p =
+        let t = lvl `at` p
+        in Tile.isWalkable coTileSpeedup t  -- no time to waste altering
+           && not (Tile.isLit coTileSpeedup t)
+  in Tile.isLit coTileSpeedup (lvl `at` bpos b)
+     && any posDeAmbient (vicinityUnsafe $ bpos b)
 
 actorSkills :: Maybe ActorId -> ActorId -> AspectRecord -> State
             -> Ability.Skills
