@@ -73,6 +73,10 @@ actionStrategy aid = do
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
   condAnyFoeAdj <- condAnyFoeAdjM aid
   threatDistL <- threatDistList aid
+  (fleeL, badVic) <- fleeList aid
+  condSupport1 <- condSupport 1 aid
+  condSupport2 <- condSupport 2 aid
+  aInAmbient <- getsState $ actorInAmbient body
   condHpTooLow <- condHpTooLowM aid
   condAdjTriggerable <- condAdjTriggerableM aid
   condBlocksFriends <- condBlocksFriendsM aid
@@ -82,32 +86,29 @@ actionStrategy aid = do
   condCanProject <- condCanProjectM False aid
   condNotCalmEnough <- condNotCalmEnoughM aid
   condDesirableFloorItem <- condDesirableFloorItemM aid
-  condSupport1 <- condSupport 1 aid
-  condSupport2 <- condSupport 2 aid
   condTgtNonmoving <- condTgtNonmovingM aid
-  aInAmbient <- getsState $ actorInAmbient body
   explored <- getsClient sexplored
-  (fleeL, badVic) <- fleeList aid
   actorAspect <- getsClient sactorAspect
-  let condCanMelee = actorCanMelee actorAspect aid body
-      condMeleeBad1 = not (condSupport1 && condCanMelee)
-      condMeleeBad2 = not (condSupport2 && condCanMelee)
-      ar = case EM.lookup aid actorAspect of
+  let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
       lidExplored = ES.member (blid body) explored
       panicFleeL = fleeL ++ badVic
-      actorShines = aShine ar > 0
-      condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
       speed1_5 = speedScale (3%2) (bspeed body ar)
+      condCanMelee = actorCanMelee actorAspect aid body
+      condMeleeBad1 = not (condSupport1 && condCanMelee)
+      condMeleeBad2 = not (condSupport2 && condCanMelee)
+      condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
       threatAdj = takeWhile ((== 1) . fst) threatDistL
       condManyThreatAdj = length threatAdj >= 2
-      condFastThreatAdj = any (\(_, (aid2, b2)) ->
-                                let ar2 = actorAspect EM.! aid2
-                                in bspeed b2 ar2 > speed1_5)
-                              threatAdj
+      condFastThreatAdj =
+        any (\(_, (aid2, b2)) ->
+              let ar2 = actorAspect EM.! aid2
+              in bspeed b2 ar2 > speed1_5)
+        threatAdj
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
         deltaSerious (bcalmDelta body)
+      actorShines = aShine ar > 0
       actorMaxSk = aSkills ar
       abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
       stratToFreq :: Int -> m (Strategy RequestAnyAbility)
@@ -158,11 +159,11 @@ actionStrategy aid = do
                   | not condInMelee
                     && (condThreat 2
                         || condThreat 5 && aInAmbient && not actorShines) ->
-                    condMeleeBad2
                     -- Don't keep fleeing if just hit, because too close
                     -- to enemy to get out of his range, most likely,
                     -- and so melee him instead, unless can't melee at all.
-                    && not (heavilyDistressed && condCanMelee)
+                    not condCanMelee
+                    || not condSupport2 && not heavilyDistressed
                   | condThreat 5 ->
                     -- Too far to flee from melee, too close from ranged,
                     -- not in ambient, so no point fleeing into dark; stay.

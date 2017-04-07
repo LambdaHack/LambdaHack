@@ -20,6 +20,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
+import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
@@ -87,18 +88,25 @@ pickActorToMove maidToAvoid refreshTarget = do
             Just aidToAvoid ->  -- not an attempted leader stuck this turn
               aid /= aidToAvoid
       oursTgt <- filter goodGeneric . catMaybes <$> mapM refresh ours
+      -- This should be kept in sync with @actionStrategy@.
       let actorVulnerable ((aid, body), _) = do
-            let ar = case EM.lookup aid actorAspect of
+            scondInMelee <- getsClient scondInMelee
+            let condInMelee = case scondInMelee EM.! blid body of
+                  Just cond -> cond
+                  Nothing -> assert `failure` condInMelee
+                ar = case EM.lookup aid actorAspect of
                   Just aspectRecord -> aspectRecord
                   Nothing -> assert `failure` aid
-            condSupport2 <- condSupport 2 aid
             threatDistL <- threatDistList aid
             (fleeL, _) <- fleeList aid
-            let condCanMelee = actorCanMelee actorAspect aid body
-                condCanFlee = not (null fleeL)
+            condSupport1 <- condSupport 1 aid
+            condSupport2 <- condSupport 2 aid
+            aInAmbient <- getsState $ actorInAmbient body
+            let condCanFlee = not (null fleeL)
+                condCanMelee = actorCanMelee actorAspect aid body
+                condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
                 threatAdj = takeWhile ((== 1) . fst) threatDistL
                 condManyThreatAdj = length threatAdj >= 2
-                condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
                 condFastThreatAdj =
                   any (\(_, (aid2, b2)) ->
                         let ar2 = actorAspect EM.! aid2
@@ -107,14 +115,18 @@ pickActorToMove maidToAvoid refreshTarget = do
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.
                   deltaSerious (bcalmDelta body)
-            return $! condCanFlee
-                      && not condFastThreatAdj
-                      && if | condThreat 1 ->
-                              not condCanMelee
-                              || condManyThreatAdj && not condSupport2
-                            | condThreat 2 ->
-                              not (condCanMelee && condSupport2)
-                            | otherwise -> heavilyDistressed  -- shot at
+                actorShines = aShine ar > 0
+            return $!
+              condCanFlee
+              && not condFastThreatAdj
+              && if | condThreat 1 -> not condCanMelee
+                                      || condManyThreatAdj && not condSupport1
+                    | not condInMelee
+                      && (condThreat 2
+                          || condThreat 5 && aInAmbient && not actorShines) ->
+                      not condCanMelee
+                      || not condSupport2 && not heavilyDistressed
+                    | otherwise -> False  -- far from harm, not priority
           actorHearning (_, TgtAndPath{ tapTgt=TPoint TEnemyPos{} _ _
                                       , tapPath=NoPath }) =
             return False
