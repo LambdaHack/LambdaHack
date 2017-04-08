@@ -223,12 +223,13 @@ actionStrategy aid = do
             <$> applyItem aid ApplyAll  -- use any potion or scroll
           , (condAimEnemyPresent || condThreat 9) )  -- can affect enemies
         , ( [AbMove]
-          , stratToFreq (if | not condAimEnemyPresent ->
-                              2  -- if enemy only remembered, investigate anyway
-                            | condTgtNonmoving && condMeleeBad2 ->
-                              0
-                            | condInMelee ->
+          , stratToFreq (if | condInMelee ->
                               1000  -- friends pummeled by target, go to help
+                            | not condAimEnemyPresent ->
+                              2  -- if enemy only remembered, investigate anyway
+                            | condTgtNonmoving && condMeleeBad2
+                              && condThreat 2 ->
+                              0
                             | otherwise ->
                               50)
             $ chase aid True (not condInMelee
@@ -260,8 +261,7 @@ actionStrategy aid = do
                             && heavilyDistressed
                             && aCanDeLight)
           , if condInMelee then condCanMelee && condAimEnemyPresent
-            else not (condTgtNonmoving && condThreat 2)
-                 && (not (condThreat 2) || not condMeleeBad1) )
+            else not (condThreat 2) || not condMeleeBad1 )
         ]
       fallback =
         [ ( [AbWait], (toAny :: ToAny 'AbWait)

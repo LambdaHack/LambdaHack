@@ -144,6 +144,9 @@ targetStrategy aid = do
           chessDist (bpos body) (bpos b) <= n
           && condCanMelee
           && (not nonmoving || condSupport2)
+      -- Even when missiles run out, the non-moving foe will still be
+      -- targeted, which is fine, since he is weakened by ranged, so should be
+      -- meleed ASAP, even if without friends.
       targetableRangedOrSpecial body =
         if condInMelee then False
         else chessDist (bpos body) (bpos b) < rangedNearby
