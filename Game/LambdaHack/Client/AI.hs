@@ -77,19 +77,15 @@ udpdateCondInMelee aid = do
                EM.adjust (const $ Just newCond) (blid b) (scondInMelee cli)}
 
 -- | Check if any non-dying, non-projectile foe is adjacent
--- to any of our actors that can melee. If our actor can't melee
--- and got caught in melee, he is a sunk cost, there is no advantage
--- in trying to melee together with him (since he can't melee).
+-- to any of our actors (whether they can melee or just need to flee,
+-- in which case alert is needed so that they are no slowed down by others).
 condInMeleeM :: MonadClient m => Actor -> m Bool
 condInMeleeM b = do
-  actorAspect <- getsClient sactorAspect
-  let filterCanMelee (aid2, b2) = actorCanMelee actorAspect aid2 b2
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
   ours <- getsState $ actorRegularAssocs (== bfid b) (blid b)
-  let oursCanMelee = filter filterCanMelee ours
   return $! any (\(_, body) -> any (\bFoe ->
-    chessDist (bpos bFoe) (bpos body) == 1) allFoes) oursCanMelee
+    chessDist (bpos bFoe) (bpos body) == 1) allFoes) ours
 
 -- | Verify and possibly change the target of an actor. This function both
 -- updates the target in the client state and returns the new target explicitly.

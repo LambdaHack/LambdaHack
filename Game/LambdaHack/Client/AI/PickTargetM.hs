@@ -125,7 +125,7 @@ targetStrategy aid = do
       meleeNearby | canEscape = nearby `div` 2
                   | otherwise = nearby
       rangedNearby = 2 * meleeNearby
-      -- Don't melee-target nonmoving actors at all if bad melee,
+      -- Don't melee-target nonmoving actors at all if no support,
       -- because nonmoving can't be lured nor ambushed.
       -- This is especially important for fences, tower defense actors, etc.
       -- If content gives nonmoving actor loot, this becomes problematic.
@@ -141,9 +141,9 @@ targetStrategy aid = do
               | otherwise = meleeNearby
             nonmoving = EM.findWithDefault 0 AbMove actorMaxSkE <= 0
         return {-keep lazy-} $
-          chessDist (bpos body) (bpos b) <= n
-          && condCanMelee
-          && (not nonmoving || condSupport2)
+          case chessDist (bpos body) (bpos b) of
+            1 -> True  -- if adjacent, target even if can't melee, to flee
+            cd -> condCanMelee && cd <= n && (not nonmoving || condSupport2)
       -- Even when missiles run out, the non-moving foe will still be
       -- targeted, which is fine, since he is weakened by ranged, so should be
       -- meleed ASAP, even if without friends.
