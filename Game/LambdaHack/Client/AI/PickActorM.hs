@@ -9,7 +9,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import Data.Ord
 
 import Game.LambdaHack.Client.AI.ConditionM
 import Game.LambdaHack.Client.AI.PickTargetM
@@ -159,11 +158,18 @@ pickActorToMove maidToAvoid refreshTarget = do
             return $! condThreatMedium && not condSupport2
           (oursRanged, oursNotRanged) = partition actorRanged oursNotHearing
           (oursTEnemy, oursOther) = partition targetTEnemy oursNotRanged
-      (oursNoSupport, oursSupport) <- partitionM actorNoSupport oursTEnemy
-      -- These are not necessarily stuck (perhaps can go around),
-      -- but their current path is blocked by friends and they are not
-      -- melee capable or not currently chasing foes.
-      let targetBlocked (_, TgtAndPath{tapPath}) =
+      (oursNoSupportRaw, oursSupportRaw) <-
+        if length oursTEnemy <= 2
+        then return ([], oursTEnemy)
+        else partitionM actorNoSupport oursTEnemy
+      let (oursNoSupport, oursSupport) =
+            if length oursSupportRaw <= 1  -- make sure picks random enough
+            then ([], oursTEnemy)
+            else (oursNoSupportRaw, oursSupportRaw)
+          -- These are not necessarily stuck (perhaps can go around),
+          -- but their current path is blocked by friends and they are not
+          -- melee capable or not currently chasing foes.
+          targetBlocked (_, TgtAndPath{tapPath}) =
             let next = case tapPath of
                   AndPath{pathList= q : _} -> Just q
                   _ -> Nothing
@@ -198,11 +204,13 @@ pickActorToMove maidToAvoid refreshTarget = do
             in formationValue `div` 3 + fightValue
                + (if targetBlocked abt then 1000 else 0)
                + (case d of
-                    0 -> -4000 -- do your thing ASAP and retarget
-                    1 -> -2000 -- prevent others from occupying the tile
+                    0 -> -400 -- do your thing ASAP and retarget
+                    1 -> -200 -- prevent others from occupying the tile
                     _ -> if d < 8 then d `div` 4 else 2 + d `div` 10)
                + (if aid == oldAid then 1 else 0)
-          sortOurs = sortBy $ comparing overheadOurs
+          positiveOverhead ab =
+            let ov = 500 + overheadOurs ab
+            in if ov <= 0 then 1 else ov
           candidates = [ oursVulnerable
                        , oursSupport
                        , oursNoSupport
@@ -211,10 +219,10 @@ pickActorToMove maidToAvoid refreshTarget = do
                        , oursHearing
                        , oursBlocked
                        ]
-      case map sortOurs $ filter (not . null) candidates of
-        l@(c : _) : _ -> do
-          let best = takeWhile ((== overheadOurs c) . overheadOurs) l
-              freq = uniformFreq "candidates for AI leader" best
+      case filter (not . null) candidates of
+        l : _ -> do
+          let freq = toFreq "candidates for AI leader"
+                     $ map (positiveOverhead &&& id) l
           ((aid, b), _) <- rndToAction $ frequency freq
           s <- getState
           modifyClient $ updateLeader aid s
