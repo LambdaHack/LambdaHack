@@ -143,31 +143,33 @@ pickActorToMove maidToAvoid refreshTarget = do
           -- AI has to be prudent and not lightly waste leader for meleeing,
           -- even if his target is distant
           actorMeleeing ((aid, _), _) = condAnyFoeAdjM aid
-          actorMeleeBad ((aid, body), _) = do
-            threatDistL <- threatDistList aid
-            condSupport2 <- condSupport 2 aid
-            let condCanMelee = actorCanMelee actorAspect aid body
-                condThreatMedium =  -- if foes far, friends may still come
-                  not $ null $ takeWhile ((<= 5) . fst) threatDistL
-            return $! condThreatMedium && not (condSupport2 && condCanMelee)
       (oursVulnerable, oursSafe) <- partitionM actorVulnerable oursTgt
       (oursMeleeing, oursNotMeleeing) <- partitionM actorMeleeing oursSafe
       (oursHearing, oursNotHearing) <- partitionM actorHearning oursNotMeleeing
-      (oursMeleeBad, oursNotMeleeBad) <- partitionM actorMeleeBad oursNotHearing
-      let targetTEnemy (_, TgtAndPath{tapTgt=TEnemy{}}) = True
+      let actorRanged ((aid, body), _) =
+            not $ actorCanMelee actorAspect aid body
+          targetTEnemy (_, TgtAndPath{tapTgt=TEnemy{}}) = True
           targetTEnemy (_, TgtAndPath{tapTgt=TPoint TEnemyPos{} _ _}) = True
           targetTEnemy _ = False
-          (oursTEnemy, oursOther) = partition targetTEnemy oursNotMeleeBad
-          -- These are not necessarily stuck (perhaps can go around),
-          -- but their current path is blocked by friends and they are not
-          -- melee capable or not currently chasing foes.
-          targetBlocked (_, TgtAndPath{tapPath}) =
+          actorNoSupport ((aid, _), _) = do
+            threatDistL <- threatDistList aid
+            condSupport2 <- condSupport 2 aid
+            let condThreatMedium =  -- if foes far, friends may still come
+                  not $ null $ takeWhile ((<= 5) . fst) threatDistL
+            return $! condThreatMedium && not condSupport2
+          (oursRanged, oursNotRanged) = partition actorRanged oursNotHearing
+          (oursTEnemy, oursOther) = partition targetTEnemy oursNotRanged
+      (oursNoSupport, oursSupport) <- partitionM actorNoSupport oursTEnemy
+      -- These are not necessarily stuck (perhaps can go around),
+      -- but their current path is blocked by friends and they are not
+      -- melee capable or not currently chasing foes.
+      let targetBlocked (_, TgtAndPath{tapPath}) =
             let next = case tapPath of
                   AndPath{pathList= q : _} -> Just q
                   _ -> Nothing
             in any ((== next) . Just . bpos . snd) ours
           (oursBlocked, oursPos) =
-            partition targetBlocked $ oursOther ++ oursMeleeBad
+            partition targetBlocked $ oursRanged ++ oursOther
           -- Lower overhead is better.
           overheadOurs :: ((ActorId, Actor), TgtAndPath) -> Int
           overheadOurs ((aid, _), TgtAndPath{tapPath=NoPath}) =
@@ -202,7 +204,8 @@ pickActorToMove maidToAvoid refreshTarget = do
                + (if aid == oldAid then 1 else 0)
           sortOurs = sortBy $ comparing overheadOurs
           candidates = [ oursVulnerable
-                       , oursTEnemy
+                       , oursSupport
+                       , oursNoSupport
                        , oursPos
                        , oursMeleeing
                        , oursHearing
