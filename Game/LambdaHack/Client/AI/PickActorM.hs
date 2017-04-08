@@ -101,6 +101,7 @@ pickActorToMove maidToAvoid refreshTarget = do
             condSupport1 <- condSupport 1 aid
             condSupport2 <- condSupport 2 aid
             aCanDeAmbient <- getsState $ actorCanDeAmbient body
+            condCanProject <- condCanProjectM False aid
             let condCanFlee = not (null fleeL)
                 condCanMelee = actorCanMelee actorAspect aid body
                 condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
@@ -125,7 +126,10 @@ pickActorToMove maidToAvoid refreshTarget = do
                       && (condThreat 2 || condThreat 5 && aCanDeLight) ->
                       not condCanMelee
                       || not condSupport2 && not heavilyDistressed
-                    | otherwise -> False  -- far from harm, not priority
+                    | otherwise ->
+                      not condInMelee
+                      && heavilyDistressed
+                      && (not condCanProject || aCanDeLight)
           actorHearning (_, TgtAndPath{ tapTgt=TPoint TEnemyPos{} _ _
                                       , tapPath=NoPath }) =
             return False

@@ -77,13 +77,13 @@ actionStrategy aid = do
   condSupport1 <- condSupport 1 aid
   condSupport2 <- condSupport 2 aid
   aCanDeAmbient <- getsState $ actorCanDeAmbient body
+  condCanProject <- condCanProjectM False aid
   condHpTooLow <- condHpTooLowM aid
   condAdjTriggerable <- condAdjTriggerableM aid
   condBlocksFriends <- condBlocksFriendsM aid
   condNoEqpWeapon <- condNoEqpWeaponM aid
   condEnoughGear <- condEnoughGearM aid
   condFloorWeapon <- condFloorWeaponM aid
-  condCanProject <- condCanProjectM False aid
   condNotCalmEnough <- condNotCalmEnoughM aid
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condTgtNonmoving <- condTgtNonmovingM aid
