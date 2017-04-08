@@ -232,7 +232,7 @@ actionStrategy aid = do
                             | otherwise ->
                               50)
             $ chase aid True (not condInMelee
-                              && (condThreat 10 || heavilyDistressed)
+                              && (condThreat 12 || heavilyDistressed)
                               && aCanDeLight)
           , condCanMelee
             && (if condInMelee then condAimEnemyPresent
@@ -257,7 +257,7 @@ actionStrategy aid = do
           , not condInMelee )
         , ( [AbMove]
           , chase aid True (not condInMelee
-                            && (condThreat 5 || heavilyDistressed)
+                            && heavilyDistressed
                             && aCanDeLight)
           , if condInMelee then condCanMelee && condAimEnemyPresent
             else not (condTgtNonmoving && condThreat 2)
@@ -942,7 +942,9 @@ chase aid doDisplace avoidAmbient = do
   -- We'd normally melee the target earlier on via @AbMelee@, but for
   -- actors that don't have this ability (and so melee only when forced to),
   -- this is meaningul.
-  mapStrategyM (moveOrRunAid doDisplace aid) str
+  if avoidAmbient && nullStrategy str
+  then chase aid doDisplace False
+  else mapStrategyM (moveOrRunAid doDisplace aid) str
 
 moveTowards :: MonadClient m
             => ActorId -> Point -> Point -> Bool -> m (Strategy Vector)

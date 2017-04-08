@@ -143,7 +143,6 @@ targetStrategy aid = do
         return {-keep lazy-} $
           chessDist (bpos body) (bpos b) <= n
           && condCanMelee
-          && not (hpTooLow b ar && not condInMelee)
           && (not nonmoving || condSupport2)
       targetableRangedOrSpecial body =
         if condInMelee then False
@@ -318,11 +317,11 @@ targetStrategy aid = do
         TPoint _ lid _ | lid /= blid b -> pickNewTarget  -- wrong level
         TPoint _ _ pos | pos == bpos b -> tellOthersNothingHere pos
         TPoint tgoal lid pos -> case tgoal of
+          _ | not $ null nearbyFoes ->
+            pickNewTarget  -- prefer close foes to anything else
           TEnemyPos _ permit  -- chase last position even if foe hides
             | permit && condInMelee -> pickNewTarget  -- melee, stop following
             | otherwise -> return $! returN "TEnemyPos" tap
-          _ | not $ null nearbyFoes ->
-            pickNewTarget  -- prefer close foes to anything else
           -- Below we check the target could not be picked again in
           -- pickNewTarget (e.g., an item got picked up by our teammate)
           -- and only in this case it is invalidated.
