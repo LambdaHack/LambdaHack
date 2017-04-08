@@ -161,7 +161,12 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , smainRng = Nothing
                                , snewGameSer = False
                                , scurChalSer = defaultChallenge
+-- for debug; hard to set manually in browser:
+#ifdef USE_BROWSER
+                               , sdumpInitRngs = True
+#else
                                , sdumpInitRngs = False
+#endif
                                , ssavePrefixSer = "save"
                                , sdbgMsgSer = False
                                , sdebugCli = defDebugModeCli
