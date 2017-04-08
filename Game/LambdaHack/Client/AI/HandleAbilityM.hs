@@ -649,12 +649,12 @@ trigger aid fleeVia = do
         Nothing -> []
         Just bag -> [(pos, concatMap iidToEffs $ EM.assocs bag)]
       feats = concatMap f $ filter enterableHere $ vicinityUnsafe (bpos b)
-      bens (_, fs) = do
-        bs <- mapM ben fs
+      bens (p, fs) = do
+        bs <- mapM (ben p) fs
         return $! if any (< -10) bs
                   then 0  -- mixed blessing
                   else sum bs
-      ben feat = case feat of
+      ben p feat = case feat of
         IK.Ascend up -> do  -- change levels sensibly, in teams
           let easier = up /= (fromEnum (blid b) > 0)
               unexpForth = unexploredD up (blid b)
@@ -678,9 +678,12 @@ trigger aid fleeVia = do
              || not allExplored
           then 0
           else effectToBenefit cops b ar fact ef
-        ef -> return $! if fleeVia == ViaNothing
-                        then effectToBenefit cops b ar fact ef
-                        else 0
+        ef -> return $!
+          if fleeVia == ViaNothing
+             && (not (Tile.isSuspect coTileSpeedup (lvl `at` p))
+                 || Tile.consideredByAI coTileSpeedup (lvl `at` p))
+          then effectToBenefit cops b ar fact ef
+          else 0
   benFeats <- mapM bens feats
   let benFeat = zip benFeats feats
   return $! liftFrequency $ toFreq "trigger"
