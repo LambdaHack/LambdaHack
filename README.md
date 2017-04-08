@@ -85,7 +85,9 @@ to the specified font size.
 
 If you don't have the numeric keypad, you can use mouse or laptop
 keys (uk8o79jl) or you can enable the Vi keys (aka roguelike keys)
-in the config file.
+in the config file. If numeric keypad doesn't wori, toggling the Num Lock key
+may help. If runing with the Shift kay and keypad keys don't work,
+try Control key and keypad keys instead.
 
 
 Compilation from source
@@ -132,7 +134,9 @@ Compatibility notes
 
 If you are using a terminal frontend, numeric keypad may not work
 correctly depending on versions of the libraries, terminfo and terminal
-emulators. The curses frontend is not fully supported due to the limitations
+emulators. Toggling the Num Lock key may help.
+
+The curses frontend is not fully supported due to the limitations
 of the curses library. With the vty frontend started in an xterm,
 Control-keypad keys for running seem to work OK, but on rxvt they do not.
 The commands that require pressing Control and Shift together won't
