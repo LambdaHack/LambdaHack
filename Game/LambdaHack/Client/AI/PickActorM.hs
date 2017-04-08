@@ -96,7 +96,7 @@ pickActorToMove maidToAvoid refreshTarget = do
                 ar = case EM.lookup aid actorAspect of
                   Just aspectRecord -> aspectRecord
                   Nothing -> assert `failure` aid
-            threatDistL <- threatDistList aid
+            threatDistL <- meleeThreatDistList aid
             (fleeL, _) <- fleeList aid
             condSupport1 <- condSupport 1 aid
             condSupport2 <- condSupport 2 aid
@@ -155,11 +155,13 @@ pickActorToMove maidToAvoid refreshTarget = do
           targetTEnemy (_, TgtAndPath{tapTgt=TPoint TEnemyPos{} _ _}) = True
           targetTEnemy _ = False
           actorNoSupport ((aid, _), _) = do
-            threatDistL <- threatDistList aid
+            threatDistL <- meleeThreatDistList aid
             condSupport2 <- condSupport 2 aid
-            let condThreatMedium =  -- if foes far, friends may still come
-                  not $ null $ takeWhile ((<= 5) . fst) threatDistL
-            return $! condThreatMedium && not condSupport2
+            let condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
+            -- If foes far, friends may still come, so we let him move.
+            -- The net effect is that lone heroes close to foes freeze
+            -- until support comes.
+            return $! condThreat 5 && not condSupport2
           (oursRanged, oursNotRanged) = partition actorRanged oursNotHearing
           (oursTEnemy, oursOther) = partition targetTEnemy oursNotRanged
       (oursNoSupportRaw, oursSupportRaw) <-

@@ -18,7 +18,7 @@ module Game.LambdaHack.Client.AI.ConditionM
   , hinders
   , benGroundItems
   , desirableItem
-  , threatDistList
+  , meleeThreatDistList
   , condShineWouldBetrayM
   , fleeList
   ) where
@@ -106,12 +106,13 @@ condAdjTriggerableM aid = do
   let hasTriggerable p = p `EM.member` lembed lvl
   return $! any hasTriggerable $ vicinityUnsafe $ bpos b
 
--- | Produce the chess-distance-sorted list of non-low-HP foes on the level.
--- We don't consider path-distance, because we are interested in how soon
--- the foe can hit us, which can diverge greately from path distance
--- for short distances, e.g., when terrain gets revealed.
-threatDistList :: MonadClient m => ActorId -> m [(Int, (ActorId, Actor))]
-threatDistList aid = do
+-- | Produce the chess-distance-sorted list of non-low-HP,
+-- melee-cabable foes on the level. We don't consider path-distance,
+-- because we are interested in how soon the foe can close in to hit us,
+-- which can diverge greately from path distance for short distances,
+-- e.g., when terrain gets revealed.
+meleeThreatDistList :: MonadClient m => ActorId -> m [(Int, (ActorId, Actor))]
+meleeThreatDistList aid = do
   actorAspect <- getsClient sactorAspect
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
@@ -121,6 +122,7 @@ threatDistList aid = do
             actorMaxSkE = aSkills ar
             nonmoving = EM.findWithDefault 0 Ability.AbMove actorMaxSkE <= 0
         in not (hpTooLow b2 ar || nonmoving)
+           && actorCanMelee actorAspect aid2 b2
       allThreats = filter strongActor allAtWar
       addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
   return $ sortBy (comparing fst) $ map addDist allThreats

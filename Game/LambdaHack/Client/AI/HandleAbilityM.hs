@@ -72,7 +72,7 @@ actionStrategy aid = do
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
   condAnyFoeAdj <- condAnyFoeAdjM aid
-  threatDistL <- threatDistList aid
+  threatDistL <- meleeThreatDistList aid
   (fleeL, badVic) <- fleeList aid
   condSupport1 <- condSupport 1 aid
   condSupport2 <- condSupport 2 aid
