@@ -104,7 +104,9 @@ actionStrategy aid = do
       condFastThreatAdj =
         any (\(_, (aid2, b2)) ->
               let ar2 = actorAspect EM.! aid2
-              in bspeed b2 ar2 > speed1_5)
+                  actorMaxSk2 = aSkills ar2
+              in bspeed b2 ar2 > speed1_5
+                 && EM.findWithDefault 0 AbMove actorMaxSk2 > 0)
         threatAdj
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
         deltaSerious (bcalmDelta body)

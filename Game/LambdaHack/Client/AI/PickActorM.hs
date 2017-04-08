@@ -9,12 +9,14 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import Data.Ratio
 
 import Game.LambdaHack.Client.AI.ConditionM
 import Game.LambdaHack.Client.AI.PickTargetM
 import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -25,6 +27,7 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ModeKind
 
 -- Pick a new leader from among the actors on the current level.
@@ -103,15 +106,18 @@ pickActorToMove maidToAvoid refreshTarget = do
             aCanDeAmbient <- getsState $ actorCanDeAmbient body
             condCanProject <- condCanProjectM False aid
             let condCanFlee = not (null fleeL)
+                speed1_5 = speedScale (3%2) (bspeed body ar)
                 condCanMelee = actorCanMelee actorAspect aid body
                 condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
                 threatAdj = takeWhile ((== 1) . fst) threatDistL
                 condManyThreatAdj = length threatAdj >= 2
                 condFastThreatAdj =
                   any (\(_, (aid2, b2)) ->
-                        let ar2 = actorAspect EM.! aid2
-                        in bspeed b2 ar2 > bspeed body ar)
-                      threatAdj
+                    let ar2 = actorAspect EM.! aid2
+                        actorMaxSk2 = aSkills ar2
+                    in bspeed b2 ar2 > speed1_5
+                       && EM.findWithDefault 0 Ability.AbMove actorMaxSk2 > 0)
+                     threatAdj
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.
                   deltaSerious (bcalmDelta body)

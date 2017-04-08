@@ -108,9 +108,10 @@ condAdjTriggerableM aid = do
 
 -- | Produce the chess-distance-sorted list of non-low-HP,
 -- melee-cabable foes on the level. We don't consider path-distance,
--- because we are interested in how soon the foe can close in to hit us,
+-- because we are interested in how soon we or the foe can initiate melee,
 -- which can diverge greately from path distance for short distances,
--- e.g., when terrain gets revealed.
+-- e.g., when terrain gets revealed. We do not care if foe is non-moving,
+-- because it he evades melee, it's often equivalent.
 meleeThreatDistList :: MonadClient m => ActorId -> m [(Int, (ActorId, Actor))]
 meleeThreatDistList aid = do
   actorAspect <- getsClient sactorAspect
@@ -119,10 +120,7 @@ meleeThreatDistList aid = do
   allAtWar <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   let strongActor (aid2, b2) =
         let ar = actorAspect EM.! aid2
-            actorMaxSkE = aSkills ar
-            nonmoving = EM.findWithDefault 0 Ability.AbMove actorMaxSkE <= 0
-        in not (hpTooLow b2 ar || nonmoving)
-           && actorCanMelee actorAspect aid2 b2
+        in not (hpTooLow b2 ar) && actorCanMelee actorAspect aid2 b2
       allThreats = filter strongActor allAtWar
       addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
   return $ sortBy (comparing fst) $ map addDist allThreats
