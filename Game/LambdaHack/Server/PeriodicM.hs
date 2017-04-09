@@ -241,10 +241,7 @@ leadLevelSwitch = do
           Just leader -> do
             body <- getsState $ getActorBody leader
             s <- getState
-            actorAspect <- getsServer sactorAspect
             let leaderStuck = waitedLastTurn body
-                condCanMelee = actorCanMelee actorAspect leader body
-                leaderMelees = anyFoeAdj leader s && condCanMelee
                 ourLvl (lid, lvl) =
                   ( lid
                   , EM.size (lfloor lvl)
@@ -258,12 +255,9 @@ leadLevelSwitch = do
             -- once and for all and concentrate forces on another level.
             -- In addition, sole stranded actors tend to become leaders
             -- so that they can join the main force ASAP.
-            -- Also, if leader melees, he may be alone or there is huge battle,
-            -- so switch elsewhere to send him backup.
             let freqList = [ (k, (lid, a))
                            | (lid, itemN, a : rest) <- ours
-                           , lid /= blid body
-                             || not leaderStuck && not leaderMelees
+                           , lid /= blid body || not leaderStuck
                            , let len = 1 + min 7 (length rest)
                                  divisor = 3 * itemN + len
                                  k = 1000000 `div` divisor ]
