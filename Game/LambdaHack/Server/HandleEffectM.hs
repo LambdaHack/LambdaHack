@@ -184,7 +184,7 @@ itemEffect source target iid c recharged periodic effects = do
   unless (triggered  -- some effect triggered, so feedback comes from them
           || periodic  -- don't spam from fizzled periodic effects
           || bproj sb  -- don't spam, projectiles can be very numerous
-          || null (filter IK.properEffect effects)) $
+          || all (not . IK.forApplyEffect) effects) $
     execSfxAtomic $ SfxMsgFid (bfid sb) SfxFizzles
   return triggered
 

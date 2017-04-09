@@ -5,7 +5,7 @@ module Game.LambdaHack.Content.ItemKind
   , Effect(..), TimerDice(..)
   , Aspect(..), ThrowMod(..)
   , Feature(..), EqpSlot(..)
-  , properEffect
+  , forApplyEffect, forIdEffect
   , toDmg, toVelocity, toLinger, toOrganGameTurn, toOrganActorTurn, toOrganNone
   , validateSingleItemKind, validateAllItemKind
   ) where
@@ -101,10 +101,21 @@ data Effect =
 
 instance NFData Effect
 
-properEffect :: Effect -> Bool
-properEffect eff = case eff of
+forApplyEffect :: Effect -> Bool
+forApplyEffect eff = case eff of
   ELabel{} -> False
   EqpSlot{} -> False
+  OnSmash{} -> False
+  Temporary{} -> False
+  Unique -> False
+  Periodic -> False
+  _ -> True
+
+forIdEffect :: Effect -> Bool
+forIdEffect eff = case eff of
+  ELabel{} -> False
+  EqpSlot{} -> False
+  OnSmash{} -> False
   Explode{} -> False  -- tentative; needed for rings to auto-identify
   Unique -> False
   Periodic -> False

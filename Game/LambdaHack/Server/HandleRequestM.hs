@@ -493,8 +493,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
       case itemFull of
         ItemFull{itemDisco=
                    Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}}}
-          | not $ null $ filter IK.properEffect ieffects ->
-          return ()  -- discover by use
+          | any IK.forIdEffect ieffects -> return ()  -- discover by use
         _ -> do
           seed <- getsServer $ (EM.! iid) . sitemSeedD
           execUpdAtomic $ UpdDiscoverSeed fromC iid seed

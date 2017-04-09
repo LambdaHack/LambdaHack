@@ -153,7 +153,7 @@ actorDying b = bhp b <= 0
 
 hpTooLow :: Actor -> AspectRecord -> Bool
 hpTooLow b AspectRecord{aMaxHP} =
-  bhp b <= oneM || 5 * bhp b < xM aMaxHP && bhp b <= xM 10
+  bhp b <= oneM || 5 * bhp b < xM aMaxHP && bhp b <= xM 40
 
 calmEnough :: Actor -> AspectRecord -> Bool
 calmEnough b AspectRecord{aMaxCalm} =

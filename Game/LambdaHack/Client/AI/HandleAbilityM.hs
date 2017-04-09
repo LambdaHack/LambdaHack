@@ -126,8 +126,7 @@ actionStrategy aid = do
       prefix =
         [ ( [AbApply], (toAny :: ToAny 'AbApply)
             <$> applyItem aid ApplyFirstAid
-          , condHpTooLow && not condAnyFoeAdj
-            && not condAdjTriggerable )  -- don't block stairs, perhaps ascend
+          , condHpTooLow && not condAnyFoeAdj )
         , ( [AbAlter], (toAny :: ToAny 'AbAlter)
             <$> trigger aid ViaStairs
               -- explore next or flee via stairs, even if to wrong level;
@@ -803,28 +802,26 @@ applyItem aid applyGroup = do
                            then 5  -- we keep it after use
                            else 1
             oldGrps = map (toGroupName . jname) organs
-            createOrganAgain =
-              -- This assumes the organ creation is beneficial. If it's
-              -- a drawback of an otherwise good item, we should reverse
-              -- the condition.
-              let newGrps = strengthCreateOrgan itemFull
-              in not $ null $ intersect newGrps oldGrps
-            dropOrganVoid =
+            onlyVoidlyDropsOrgan =
+              -- We check if the only effect of the item is that it drops
+              -- an organ that we don't have. If so, item should not be applied.
               -- This assumes the organ dropping is beneficial. If it's
               -- a drawback of an otherwise good item, or a marginal
               -- advantage only, we should reverse or ignore the condition.
-              -- We ignore a very general @grp@ being used for a very
-              -- common and easy to drop organ, etc.
+              -- For simplicity, we ignore the case of a general @grp@
+              -- that potentially drop many kinds of organs.
               let newGrps = strengthDropOrgan itemFull
                   hasDropOrgan = not $ null newGrps
-              in hasDropOrgan && null (newGrps `intersect` oldGrps)
+                  f eff = if IK.forApplyEffect eff then [eff] else []
+              in hasDropOrgan
+                 && null (newGrps `intersect` oldGrps)
+                 && length (strengthEffect f itemFull) == 1
             benR = case mben of
                      Nothing -> 0
                        -- experimenting is fun, but it's better to risk
                        -- foes' skin than ours
                      Just (_, ben) -> ben
-                   * (if not createOrganAgain then 1 else 0)
-                   * (if not dropOrganVoid then 1 else 0)
+                   * (if onlyVoidlyDropsOrgan then 0 else 1)
                    * durableBonus
                    * coeff cstore
         in if itemLegal itemFull && benR > 0
