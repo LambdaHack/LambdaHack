@@ -116,7 +116,6 @@ targetStrategy aid = do
   condCanProject <- condCanProjectM True aid
   condHpTooLow <- condHpTooLowM aid
   condEnoughGear <- condEnoughGearM aid
-  condSupport2 <- condSupport 2 aid
   let condCanMelee = actorCanMelee actorAspect aid b
       friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
@@ -125,8 +124,8 @@ targetStrategy aid = do
       meleeNearby | canEscape = nearby `div` 2
                   | otherwise = nearby
       rangedNearby = 2 * meleeNearby
-      -- Don't melee-target nonmoving actors at all if no support,
-      -- because nonmoving can't be lured nor ambushed.
+      -- Don't melee-target nonmoving actors, unless they attack ours,
+      -- because nonmoving can't be lured nor ambushed nor can't chase.
       -- This is especially important for fences, tower defense actors, etc.
       -- If content gives nonmoving actor loot, this becomes problematic.
       targetableMelee aidE body = do
@@ -143,7 +142,7 @@ targetStrategy aid = do
         return {-keep lazy-} $
           case chessDist (bpos body) (bpos b) of
             1 -> True  -- if adjacent, target even if can't melee, to flee
-            cd -> condCanMelee && cd <= n && (not nonmoving || condSupport2)
+            cd -> condCanMelee && cd <= n && (not nonmoving || attacksFriends)
       -- Even when missiles run out, the non-moving foe will still be
       -- targeted, which is fine, since he is weakened by ranged, so should be
       -- meleed ASAP, even if without friends.

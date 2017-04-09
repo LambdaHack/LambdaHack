@@ -215,7 +215,8 @@ actionStrategy aid = do
                  || heavilyDistressed
                  || condInMelee) )
         , ( [AbProject]
-          , stratToFreq 2 $ (toAny :: ToAny 'AbProject)
+          , stratToFreq (if condTgtNonmoving then 20 else 2)
+            $ (toAny :: ToAny 'AbProject)
             <$> projectItem aid
           , condAimEnemyPresent && condCanProject && not condInMelee )
         , ( [AbApply]
@@ -227,9 +228,6 @@ actionStrategy aid = do
                               1000  -- friends pummeled by target, go to help
                             | not condAimEnemyPresent ->
                               2  -- if enemy only remembered, investigate anyway
-                            | condTgtNonmoving && condMeleeBad2
-                              && condThreat 2 ->
-                              0
                             | otherwise ->
                               50)
             $ chase aid True (not condInMelee
