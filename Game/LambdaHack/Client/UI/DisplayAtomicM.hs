@@ -105,7 +105,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
     markDisplayNeeded lid
   UpdSpotActor aid body _ -> createActorUI False aid body
   UpdLoseActor aid body _ -> destroyActorUI False aid body
-  UpdSpotItem v iid _ kit c -> do
+  UpdSpotItem verbose2 iid _ kit c -> do
     -- This is due to a move, or similar, which will be displayed,
     -- so no extra @markDisplayNeeded@ needed here and in similar places.
     ItemSlots itemSlots _ <- getsSession sslots
@@ -134,7 +134,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
             stopPlayBack
           CTrunk{} -> return ()
       _ -> return ()  -- seen already (has a slot assigned)
-    when v $ case c of
+    when verbose2 $ case c of
       CActor aid store | store `elem` [CEqp, CInv] -> do
         -- Actor fetching an item from shared stash, most probably.
         bUI <- getsSession $ getActorUI aid

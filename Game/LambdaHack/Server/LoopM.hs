@@ -173,7 +173,9 @@ loopUpd updConn = do
           arenas <- getsServer sarenas
           mapM_ (\fid -> mapM_ (\lid ->
             handleTrajectories lid fid) arenas) (EM.keys factionD)
-          endClip updatePerFid  -- must be last, in case it performs a bkp save
+          quit <- getsServer squit
+          unless quit $
+            endClip updatePerFid  -- must be last, in case performs a bkp save
         quit <- getsServer squit
         if quit then do
           modifyServer $ \ser -> ser {squit = False}

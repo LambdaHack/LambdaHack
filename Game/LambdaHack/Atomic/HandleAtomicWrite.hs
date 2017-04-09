@@ -153,7 +153,7 @@ updDestroyActor aid body ais = do
       f (Just b) = assert (b == body `blame` "inconsistent destroyed actor body"
                                      `twith` (aid, body, b)) Nothing
   modifyState $ updateActorD $ EM.alter f aid
-  -- Remove actor from @sprio@.
+  -- Remove actor from @lactor@.
   let g Nothing = assert `failure` "actor already removed" `twith` (aid, body)
       g (Just l) =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
