@@ -16,7 +16,6 @@ import Game.LambdaHack.Client.AI.PickTargetM
 import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
-import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -114,10 +113,8 @@ pickActorToMove maidToAvoid refreshTarget = do
                 condFastThreatAdj =
                   any (\(_, (aid2, b2)) ->
                     let ar2 = actorAspect EM.! aid2
-                        actorMaxSk2 = aSkills ar2
-                    in bspeed b2 ar2 > speed1_5
-                       && EM.findWithDefault 0 Ability.AbMove actorMaxSk2 > 0)
-                     threatAdj
+                    in bspeed b2 ar2 > speed1_5)
+                  threatAdj
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.
                   deltaSerious (bcalmDelta body)
