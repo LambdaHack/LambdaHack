@@ -904,13 +904,13 @@ displaceTowards aid source target = do
       [] -> return reject
       [(aid2, b2)] | Just aid2 /= mleader -> do
         mtgtMPath <- getsClient $ EM.lookup aid2 . stargetD
-        actorAspect <- getsClient sactorAspect
+        enemyTgt <- condAimEnemyPresentM aid
+        enemyTgt2 <- condAimEnemyPresentM aid2
         case mtgtMPath of
           Just TgtAndPath{tapPath=AndPath{pathList=q : _}}
             | q == source  -- friend wants to swap
-              || actorCanMelee actorAspect aid b
-                 && (not $ actorCanMelee actorAspect aid2 b2) -> do
-                   -- he can't meelee and I can, so push him aside
+              || enemyTgt && not enemyTgt2 -> do
+                   -- he doesn't have Enemy target and I have, so push him aside
               return $! returN "displace friend" $ target `vectorToFrom` source
           Just _ -> return reject
           Nothing -> do  -- an enemy or ally or disoriented friend --- swap
