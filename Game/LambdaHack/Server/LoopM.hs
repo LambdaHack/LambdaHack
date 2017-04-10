@@ -173,9 +173,7 @@ loopUpd updConn = do
           arenas <- getsServer sarenas
           mapM_ (\fid -> mapM_ (\lid ->
             handleTrajectories lid fid) arenas) (EM.keys factionD)
-          quit <- getsServer squit
-          unless quit $
-            endClip updatePerFid  -- must be last, in case performs a bkp save
+          endClip updatePerFid  -- must be last, in case performs a bkp save
         quit <- getsServer squit
         if quit then do
           modifyServer $ \ser -> ser {squit = False}
@@ -207,19 +205,21 @@ endClip updatePerFid = do
   -- because I'd need to send also all arenas, which should be updated,
   -- and this is too expensive data for each, e.g., projectile move.
   -- I send even if nothing changes so that UI time display can progress.
-  execUpdAtomic $ UpdAgeGame arenas
-  -- Perform periodic dungeon maintenance.
-  when (clipN `mod` rleadLevelClips == 0) leadLevelSwitch
-  case clipN `mod` clipInTurn of
-    2 ->
-      -- Periodic activation only once per turn, for speed,
-      -- but on all active arenas. Calm updates and domination
-      -- happen there as well.
-      applyPeriodicLevel
-    4 ->
-      -- Add monsters each turn, not each clip.
-      spawnMonster
-    _ -> return ()
+  quit <- getsServer squit
+  unless quit $ do
+    execUpdAtomic $ UpdAgeGame arenas
+    -- Perform periodic dungeon maintenance.
+    when (clipN `mod` rleadLevelClips == 0) leadLevelSwitch
+    case clipN `mod` clipInTurn of
+      2 ->
+        -- Periodic activation only once per turn, for speed,
+        -- but on all active arenas. Calm updates and domination
+        -- happen there as well.
+        applyPeriodicLevel
+      4 ->
+        -- Add monsters each turn, not each clip.
+        spawnMonster
+      _ -> return ()
   -- Update all perception for visual feedback and to make sure
   -- saving a game doesn't affect gameplay (by updating perception).
   factionD <- getsState sfactionD
