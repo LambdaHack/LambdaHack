@@ -173,7 +173,10 @@ condCanProjectM maxSkills aid = do
         either (const False) id
         $ permittedProject False skill b ar "" itemFull
   benList <- benAvailableItems aid q [CEqp, CInv, CGround]
-  let missiles = filter (maybe True ((< 0) . snd) . fst . fst) benList
+  let isMissile ((Nothing, _), _) = True
+      isMissile ((Just (_, ben), _), (_, itemFull)) =
+        ben < 0 && not (isMelee $ itemBase itemFull)
+      missiles = filter isMissile benList
   return $ not (null missiles)
     -- keep it lazy
 
