@@ -266,8 +266,9 @@ actionStrategy aid = do
             -- Wait until friends sidestep; ensures strategy is never empty.
           , True )
         ]
-  -- Check current, not maximal skills, since this can be a non-leader action.
-  actorSk <- actorSkillsClient aid
+  -- Check current, not maximal skills, since this can be a leader as well
+  -- as non-leader action.
+  actorSk <- currentSkillsClient aid
   let abInSkill ab = EM.findWithDefault 0 ab actorSk > 0
       checkAction :: ([Ability], m a, Bool) -> Bool
       checkAction (abts, _, cond) = all abInSkill abts && cond
@@ -554,7 +555,7 @@ meleeBlocker aid = do
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  actorSk <- actorSkillsClient aid
+  actorSk <- currentSkillsClient aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   case mtgtMPath of
     Just TgtAndPath{ tapTgt=TEnemy{}
@@ -621,7 +622,7 @@ trigger aid fleeVia = do
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
   b <- getsState $ getActorBody aid
-  actorSk <- actorSkillsClient aid
+  actorSk <- currentSkillsClient aid
   let alterSkill = EM.findWithDefault 0 AbAlter actorSk
   actorAspect <- getsClient sactorAspect
   let ar = case EM.lookup aid actorAspect of
@@ -703,7 +704,7 @@ projectItem aid = do
       mnewEps <- makeLine False b fpos seps
       case mnewEps of
         Just newEps -> do
-          actorSk <- actorSkillsClient aid
+          actorSk <- currentSkillsClient aid
           let skill = EM.findWithDefault 0 AbProject actorSk
           -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
           -- and no actors or obstacles along the path.
@@ -763,7 +764,7 @@ data ApplyItemGroup = ApplyAll | ApplyFirstAid
 applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed 'AbApply))
 applyItem aid applyGroup = do
-  actorSk <- actorSkillsClient aid
+  actorSk <- currentSkillsClient aid
   b <- getsState $ getActorBody aid
   localTime <- getsState $ getLocalTime (blid b)
   let skill = EM.findWithDefault 0 AbApply actorSk
@@ -843,7 +844,6 @@ flee aid fleeL = do
       str = liftFrequency $ toFreq "flee" vVic
   mapStrategyM (moveOrRunAid True aid) str
 
--- We assume @aid@ is a foe and so @dispEnemy@ is binding.
 -- The result of all these conditions is that AI displaces rarely,
 -- but it can't be helped as long as the enemy is smart enough to form fronts.
 displaceFoe :: MonadClient m => ActorId -> m (Strategy RequestAnyAbility)
@@ -861,7 +861,7 @@ displaceFoe aid = do
       nFriends body = length $ filter (adjacent (bpos body) . bpos) friends
       nFrNew = nFriends b + 1
       qualifyActor (aid2, body2) = do
-        actorMaxSk <- enemyMaxAb aid2
+        actorMaxSk <- maxActorSkillsClient aid2
         dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
           -- DisplaceDying, DisplaceBraced, DisplaceImmobile, DisplaceSupported
         let nFrOld = nFriends body2
@@ -912,7 +912,7 @@ displaceTowards aid source target = do
           Just _ -> return reject
           Nothing -> do  -- an enemy or ally or disoriented friend --- swap
             tfact <- getsState $ (EM.! bfid b2) . sfactionD
-            actorMaxSk <- enemyMaxAb aid2
+            actorMaxSk <- maxActorSkillsClient aid2
             dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
             if not (isAtWar tfact (bfid b)) || dEnemy then
               return $! returN "displace other" $ target `vectorToFrom` source
@@ -948,7 +948,7 @@ moveTowards :: MonadClient m
             => ActorId -> Point -> Point -> Bool -> m (Strategy Vector)
 moveTowards aid target goal relaxed = do
   b <- getsState $ getActorBody aid
-  actorSk <- actorSkillsClient aid
+  actorSk <- currentSkillsClient aid
   let source = bpos b
       alterSkill = EM.findWithDefault 0 AbAlter actorSk
       !_A = assert (source == bpos b
@@ -988,7 +988,7 @@ moveOrRunAid :: MonadClient m
 moveOrRunAid run source dir = do
   Kind.COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
-  actorSk <- actorSkillsClient source
+  actorSk <- currentSkillsClient source
   let lid = blid sb
   lvl <- getLevel lid
   let alterSkill = EM.findWithDefault 0 AbAlter actorSk
@@ -1004,7 +1004,7 @@ moveOrRunAid run source dir = do
     [(target, b2)] | run -> do
       -- @target@ can be a foe, as well as a friend.
       tfact <- getsState $ (EM.! bfid b2) . sfactionD
-      actorMaxSk <- enemyMaxAb target
+      actorMaxSk <- maxActorSkillsClient target
       dEnemy <- getsState $ dispEnemy source target actorMaxSk
       if | boldpos sb == Just tpos && not (waitedLastTurn sb)
              -- avoid Displace loops

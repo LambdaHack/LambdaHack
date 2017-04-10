@@ -49,7 +49,6 @@ import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.HighScore as HighScore
-import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -402,5 +401,4 @@ tryRestore = do
 leaderSkillsClientUI :: MonadClientUI m => m Ability.Skills
 leaderSkillsClientUI = do
   leader <- getLeaderUI
-  ar <- getsClient $ (EM.! leader) . sactorAspect
-  return $! aSkills ar
+  maxActorSkillsClient leader

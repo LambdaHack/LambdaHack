@@ -2,8 +2,8 @@
 -- | Common client monad operations.
 module Game.LambdaHack.Client.CommonM
   ( getPerFid, aidTgtToPos, makeLine
-  , actorSkillsClient, fullAssocsClient
-  , itemToFullClient, pickWeaponClient, enemyMaxAb, updateSalter, createSalter
+  , maxActorSkillsClient, currentSkillsClient, fullAssocsClient
+  , itemToFullClient, pickWeaponClient, updateSalter, createSalter
   , aspectRecordFromItemClient, aspectRecordFromActorClient, createSactorAspect
   ) where
 
@@ -102,9 +102,19 @@ makeLine onlyFirst body fpos epsOld = do
                | otherwise ->
                  tryLines (epsOld + 1) (Nothing, minBound)  -- generate best
 
-actorSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
-actorSkillsClient aid = do
-  ar <- getsClient $ (EM.! aid) . sactorAspect
+maxActorSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
+maxActorSkillsClient aid = do
+  actorAspect <- getsClient sactorAspect
+  case EM.lookup aid actorAspect of
+    Just aspectRecord -> return $! aSkills aspectRecord
+    Nothing -> assert `failure` aid
+
+currentSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
+currentSkillsClient aid = do
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
   body <- getsState $ getActorBody aid
   side <- getsClient sside
   -- Newest Leader in _sleader, not yet in sfactionD.
@@ -141,7 +151,7 @@ pickWeaponClient :: MonadClient m
 pickWeaponClient source target = do
   eqpAssocs <- fullAssocsClient source [CEqp]
   bodyAssocs <- fullAssocsClient source [COrgan]
-  actorSk <- actorSkillsClient source
+  actorSk <- currentSkillsClient source
   actorAspect <- getsClient sactorAspect
   let allAssocsRaw = eqpAssocs ++ bodyAssocs
       allAssocs = filter (isMelee . itemBase . snd) allAssocsRaw
@@ -210,10 +220,3 @@ createSactorAspect s = do
   discoAspect <- getsClient sdiscoAspect
   let f b = aspectRecordFromActorState disco discoAspect b s
   return $! EM.map f $ sactorD s
-
-enemyMaxAb :: MonadClient m => ActorId -> m Ability.Skills
-enemyMaxAb aid = do
-  actorAspect <- getsClient sactorAspect
-  case EM.lookup aid actorAspect of
-    Just aspectRecord -> return $! aSkills aspectRecord
-    Nothing -> assert `failure` aid

@@ -129,7 +129,7 @@ targetStrategy aid = do
       -- This is especially important for fences, tower defense actors, etc.
       -- If content gives nonmoving actor loot, this becomes problematic.
       targetableMelee aidE body = do
-        actorMaxSkE <- enemyMaxAb aidE
+        actorMaxSkE <- maxActorSkillsClient aidE
         let attacksFriends = any (adjacent (bpos body) . bpos) friends
             -- 3 is
             -- 1 from condSupport1
@@ -146,13 +146,13 @@ targetStrategy aid = do
       -- Even when missiles run out, the non-moving foe will still be
       -- targeted, which is fine, since he is weakened by ranged, so should be
       -- meleed ASAP, even if without friends.
-      targetableRangedOrSpecial body =
+      targetableRanged body =
         if condInMelee then False
         else chessDist (bpos body) (bpos b) < rangedNearby
              && condCanProject
       targetableEnemy (aidE, body) = do
         tMelee <- targetableMelee aidE body
-        return $! targetableRangedOrSpecial body || tMelee
+        return $! targetableRanged body || tMelee
   nearbyFoes <- filterM targetableEnemy allFoes
   explored <- getsClient sexplored
   isStairPos <- getsState $ \s lid p -> isStair lid p s

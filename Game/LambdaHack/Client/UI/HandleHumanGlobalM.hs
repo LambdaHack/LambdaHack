@@ -357,7 +357,7 @@ displaceAid target = do
   sb <- getsState $ getActorBody leader
   tb <- getsState $ getActorBody target
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
-  actorMaxSk <- enemyMaxAb target
+  actorMaxSk <- maxActorSkillsClient target
   disp <- getsState $ dispEnemy leader target actorMaxSk
   let immobile = EM.findWithDefault 0 AbMove actorMaxSk <= 0
       tpos = bpos tb

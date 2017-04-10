@@ -77,7 +77,7 @@ condTgtNonmovingM aid = do
   btarget <- getsClient $ getTarget aid
   case btarget of
     Just (TEnemy enemy _) -> do
-      actorMaxSk <- enemyMaxAb enemy
+      actorMaxSk <- maxActorSkillsClient enemy
       return $! EM.findWithDefault 0 Ability.AbMove actorMaxSk <= 0
     _ -> return False
 
@@ -160,14 +160,8 @@ condNoEqpWeaponM aid = do
 condCanProjectM :: MonadClient m => Bool -> ActorId -> m Bool
 condCanProjectM maxSkills aid = do
   actorSk <- if maxSkills
-             then do
-               actorAspect <- getsClient sactorAspect
-               let ar = case EM.lookup aid actorAspect of
-                     Just aspectRecord -> aspectRecord
-                     Nothing -> assert `failure` aid
-               return $! aSkills ar
-             else
-               actorSkillsClient aid
+             then maxActorSkillsClient aid
+             else currentSkillsClient aid
   let skill = EM.findWithDefault 0 Ability.AbProject actorSk
       q _ itemFull b ar =
         either (const False) id

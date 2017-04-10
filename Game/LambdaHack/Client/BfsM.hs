@@ -22,6 +22,7 @@ import Data.Ord
 import Data.Word
 
 import Game.LambdaHack.Client.Bfs
+import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Common.Ability as Ability
@@ -150,12 +151,8 @@ condBFS aid = do
   -- to reset BFS after leader changes, but it would still lead to
   -- wasted movement if, e.g., non-leaders move but only leaders open doors
   -- and leader change is very rare.
-  actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
-      actorMaxSk = aSkills ar
-      alterSkill =
+  actorMaxSk <- maxActorSkillsClient aid
+  let alterSkill =
         min (maxBound - 1)  -- @maxBound :: Word8@ means unalterable
             (toEnum $ EM.findWithDefault 0 Ability.AbAlter actorMaxSk)
       canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
@@ -249,11 +246,7 @@ closestTriggers :: MonadClient m => Maybe Bool -> ActorId
                 -> m [(Int, (Point, (Point, ItemBag)))]
 closestTriggers onlyDir aid = do
   Kind.COps{coTileSpeedup} <- getsState scops
-  actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
-      actorMaxSk = aSkills ar
+  actorMaxSk <- maxActorSkillsClient aid
   body <- getsState $ getActorBody aid
   let lid = blid body
   lvl <- getLevel lid
@@ -364,11 +357,7 @@ unexploredDepth = do
 -- | Closest (wrt paths) items.
 closestItems :: MonadClient m => ActorId -> m [(Int, (Point, ItemBag))]
 closestItems aid = do
-  actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
-      actorMaxSk = aSkills ar
+  actorMaxSk <- maxActorSkillsClient aid
   if EM.findWithDefault 0 Ability.AbMoveItem actorMaxSk <= 0 then return []
   else do
     body <- getsState $ getActorBody aid

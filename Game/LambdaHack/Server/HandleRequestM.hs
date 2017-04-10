@@ -280,6 +280,13 @@ reqMelee source target iid cstore = do
       -- and the weapon is never destroyed, even if not durable.
       -- Pushed actor doesn't stop flight by catching the projectile
       -- nor does he lose 1HP.
+      -- This is not overpowered, because usually at least one partial wait
+      -- is needed to sync (if not, attacker should switch missiles)
+      -- and so only every other missile can be caught. Normal sidestepping
+      -- or sync and displace, if in a corridor, is as effective
+      -- and blocking can be even more so, depending on stats of the missile.
+      -- Missiles are really easy to defend against, but sight (and so, Calm)
+      -- is the key, as well as light, ambush around a corner, etc.
       execSfxAtomic $ SfxSteal source target iid cstore hurtMultZero
       case EM.assocs $ beqp tb of
         [(iid2, (k, _))] -> do

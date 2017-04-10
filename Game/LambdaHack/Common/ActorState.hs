@@ -277,6 +277,7 @@ actorSkills mleader aid ar s =
   in itemSkills `Ability.addSkills` factionSkills
 
 -- Check whether an actor can displace an enemy. We assume they are adjacent.
+-- If the actor is not, in fact, an enemy, we let it displace.
 dispEnemy :: ActorId -> ActorId -> Ability.Skills -> State -> Bool
 dispEnemy source target actorMaxSk s =
   let hasSupport b =
@@ -287,6 +288,7 @@ dispEnemy source target actorMaxSk s =
       sb = getActorBody source s
       tb = getActorBody target s
   in bproj tb
+     || not (isAtWar ((EM.! bfid tb) . sfactionD $ s) (bfid sb))
      || not (actorDying tb
              || braced tb
              || EM.findWithDefault 0 Ability.AbMove actorMaxSk <= 0
