@@ -68,9 +68,9 @@ matrix:
     - env: CABALVER=2.0 GHCVER=8.2.1 GTKVTY=noopt
       compiler: ": #GHC 8.2.1"
       addons: {apt: {packages: [libgtk-3-dev, cabal-install-2.0,ghc-8.2.1,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
-#    - env: CABALVER=2.0 GHCVER=8.2.1 GTKVTY=opt2
-#      compiler: ": #GHC 8.2.1"
-#      addons: {apt: {packages: [libgtk-3-dev, cabal-install-2.0,ghc-8.2.1,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
+    - env: CABALVER=2.0 GHCVER=8.2.1 GTKVTY=opt2
+      compiler: ": #GHC 8.2.1"
+      addons: {apt: {packages: [libgtk-3-dev, cabal-install-2.0,ghc-8.2.1,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
     - env: CABALVER=2.0 GHCVER=8.2.1 GTKVTY=asserts
       compiler: ": #GHC 8.2.1"
       addons: {apt: {packages: [libgtk-3-dev, cabal-install-2.0,ghc-8.2.1,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
@@ -110,6 +110,12 @@ matrix:
   allow_failures:
     - env: CABALVER=head GHCVER=head GTKVTY=gtk-v2
     - env: CABALVER=head GHCVER=head GTKVTY=sdl-v2
+    - env: CABALVER=2.0 GHCVER=8.2.1 GTKVTY=noopt
+    - env: CABALVER=2.0 GHCVER=8.2.1 GTKVTY=opt2
+    - env: CABALVER=2.0 GHCVER=8.2.1 GTKVTY=asserts
+    - env: CABALVER=2.0 GHCVER=8.2.1 GTKVTY=vty
+    - env: CABALVER=2.0 GHCVER=8.2.1 GTKVTY=curses
+    - env: CABALVER=2.0 GHCVER=8.2.1 GTKVTY=gtk
 
 before_install:
  - unset CC
