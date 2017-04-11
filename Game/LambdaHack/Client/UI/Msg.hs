@@ -17,7 +17,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
-import Data.Binary.Orphans ()
+import Data.Vector.Binary ()
 import qualified Data.Vector.Unboxed as U
 import Data.Word (Word32)
 import GHC.Generics (Generic)

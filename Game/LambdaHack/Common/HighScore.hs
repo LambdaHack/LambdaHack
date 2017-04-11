@@ -14,7 +14,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
-import Data.Binary.Orphans ()
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import Data.Time.Clock.POSIX

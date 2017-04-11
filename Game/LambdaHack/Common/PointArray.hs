@@ -16,7 +16,7 @@ import Game.LambdaHack.Common.Prelude
 
 import Control.Monad.ST.Strict
 import Data.Binary
-import Data.Binary.Orphans ()
+import Data.Vector.Binary ()
 #if MIN_VERSION_vector(0,11,0)
 import qualified Data.Vector.Fusion.Bundle as Bundle
 #else

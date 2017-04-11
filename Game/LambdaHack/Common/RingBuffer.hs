@@ -10,7 +10,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude hiding (length, uncons)
 
 import Data.Binary
-import Data.Binary.Orphans ()
 import qualified Data.Foldable as Foldable
 import qualified Data.Sequence as Seq
 import GHC.Generics (Generic)

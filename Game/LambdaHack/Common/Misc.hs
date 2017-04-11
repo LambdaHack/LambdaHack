@@ -25,13 +25,16 @@ import Data.Binary
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.Fixed as Fixed
 import Data.Function
 import Data.Hashable
+import qualified Data.HashMap.Strict as HM
 import Data.Int (Int64)
 import Data.Key
 import Data.Ord
 import Data.String (IsString (..))
 import qualified Data.Text as T
+import qualified Data.Time as Time
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 import System.Directory (getAppUserDataDirectory)
@@ -197,6 +200,14 @@ instance (Enum k, Binary k, Binary e) => Binary (EM.EnumMap k e) where
 instance (Enum k, Binary k) => Binary (ES.EnumSet k) where
   put m = put (ES.size m) >> mapM_ put (ES.toAscList m)
   get = liftM ES.fromDistinctAscList get
+
+instance Binary Time.NominalDiffTime where
+  get = fmap realToFrac (get :: Get Fixed.Pico)
+  put = (put :: Fixed.Pico -> Put) . realToFrac
+
+instance (Hashable k, Eq k, Binary k, Binary v) => Binary (HM.HashMap k v) where
+  get = fmap HM.fromList get
+  put = put . HM.toList
 
 -- Data.Key
 
