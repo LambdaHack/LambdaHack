@@ -76,16 +76,22 @@ udpdateCondInMelee aid = do
         cli {scondInMelee =
                EM.adjust (const $ Just newCond) (blid b) (scondInMelee cli)}
 
--- | Check if any non-dying, non-projectile foe is adjacent
--- to any of our actors (whether they can melee or just need to flee,
--- in which case alert is needed so that they are no slowed down by others).
+-- | Check if any non-dying foe (projectile or not) is adjacent
+-- to any of our normal actors (whether they can melee or just need to flee,
+-- in which case alert is needed so that they are not slowed down by others).
 condInMeleeM :: MonadClient m => Actor -> m Bool
-condInMeleeM b = do
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
-  ours <- getsState $ actorRegularAssocs (== bfid b) (blid b)
-  return $! any (\(_, body) -> any (\bFoe ->
-    chessDist (bpos bFoe) (bpos body) == 1) allFoes) ours
+condInMeleeM bodyOur = do
+  fact <- getsState $ (EM.! bfid bodyOur) . sfactionD
+  let f !b = blid b == blid bodyOur && isAtWar fact (bfid b) && bhp b > 0
+  -- We assume foes are less numerous, because usually they are heroes,
+  -- and so we compute them once and use many times.
+  allFoes <- getsState $ filter f . EM.elems . sactorD
+  getsState $ any (\body ->
+    bfid bodyOur == bfid body
+    && blid bodyOur == blid body
+    && not (bproj body)
+    && bhp body > 0
+    && any (\b -> adjacent (bpos b) (bpos body)) allFoes) . sactorD
 
 -- | Verify and possibly change the target of an actor. This function both
 -- updates the target in the client state and returns the new target explicitly.

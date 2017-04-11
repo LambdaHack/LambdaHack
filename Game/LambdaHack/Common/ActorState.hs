@@ -35,7 +35,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 
@@ -346,18 +345,13 @@ isStair lid p s =
       isE Item{jname} = jname == "staircase up" || jname == "staircase down"
   in any isE is
 
--- | Require that any non-dying foe is adjacent, except projectiles
--- that (possibly) explode upon contact.
+-- | Require that any non-dying foe is adjacent. We include even
+-- projectiles that explode when striked down, because they can be caught
+-- and then they don't explode, so it makes sense to focus on handling them.
 anyFoeAdj :: ActorId -> State -> Bool
 anyFoeAdj aid s =
   let body = getActorBody aid s
       fact = (EM.! bfid body) . sfactionD $ s
-      isFragile bag = case EM.keys bag of
-        [iid] -> let itemBase = getItemBody iid s
-                 in IK.Fragile `elem` jfeature itemBase
-        _ -> assert `failure` bag
-      f b = blid b == blid body && isAtWar fact (bfid b) && bhp b > 0
-            && adjacent (bpos b) (bpos body)
-            && not (bproj b && isFragile (beqp b))
-      allAdjFoes = filter f . EM.elems . sactorD $ s
-  in not $ null allAdjFoes
+      f !b = blid b == blid body && adjacent (bpos b) (bpos body)
+             && isAtWar fact (bfid b) && bhp b > 0
+  in any f (sactorD s)
