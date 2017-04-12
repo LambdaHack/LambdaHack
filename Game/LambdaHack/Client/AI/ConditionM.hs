@@ -182,7 +182,8 @@ benAvailableItems :: MonadClient m
                   -> [CStore]
                   -> m [( (Maybe (Int, Int), (Int, CStore))
                         , (ItemId, ItemFull) )]
-benAvailableItems aid permitted cstores = do
+{-# INLINE benAvailableItems #-}
+benAvailableItems aid permitted cstores = {-# SCC benAvailableItems #-} do
   cops <- getsState scops
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
@@ -192,6 +193,7 @@ benAvailableItems aid permitted cstores = do
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condNotCalmEnough <- condNotCalmEnoughM aid
   actorAspect <- getsClient sactorAspect
+  s <- getState
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
@@ -208,11 +210,8 @@ benAvailableItems aid permitted cstores = do
                              b ar itemFull
         , permitted (fst <$> benefit) itemFull b ar
           && (cstore /= CEqp || hind) ]
-      benCStore cs = do
-        bag <- getsState $ getBodyStoreBag b cs
-        return $! ben cs bag
-  perBag <- mapM benCStore cstores
-  return $ concat perBag
+      benCStore cs = ben cs $ getBodyStoreBag b cs s
+  return $ concatMap benCStore cstores
     -- keep it lazy
 
 hinders :: Bool -> Bool -> Bool -> Bool -> Bool
