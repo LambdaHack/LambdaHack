@@ -58,17 +58,16 @@ pickAI maid aid = do
       {-# NOINLINE refreshTarget #-}
       refreshTarget (aid2, b2) = refreshTargetS aid2 b2
   mleader <- getsClient _sleader
-  (aidToMove, bToMove) <-
+  aidToMove <-
     if mleader == Just aid
     then pickActorToMove (fst <$> maid) refreshTarget
     else do
       useTactics refreshTarget aid
-      b <- getsState $ getActorBody aid
-      return (aid, b)
+      return aid
   treq <- case maid of
     Just (aidOld, treqOld) | aidToMove == aidOld ->
       return treqOld  -- no better leader found
-    _ -> pickAction (aidToMove, bToMove)
+    _ -> pickAction aidToMove
   return (aidToMove, treq)
 
 udpdateCondInMelee :: MonadClient m => ActorId -> m ()
@@ -136,10 +135,11 @@ refreshTargetS aid body = do
     -- trace _debug $ return $ Just tgtMPath
 
 -- | Pick an action the actor will perform this turn.
-pickAction :: MonadClient m => (ActorId, Actor) -> m RequestAnyAbility
+pickAction :: MonadClient m => ActorId -> m RequestAnyAbility
 {-# INLINE pickAction #-}
-pickAction (aid, body) = do
+pickAction aid = do
   side <- getsClient sside
+  body <- getsState $ getActorBody aid
   let !_A = assert (bfid body == side
                     `blame` "AI tries to move enemy actor"
                     `twith` (aid, bfid body, side)) ()

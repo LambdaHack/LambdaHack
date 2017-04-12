@@ -33,7 +33,7 @@ import Game.LambdaHack.Content.ModeKind
 -- Refresh the target of the new leader, even if unchanged.
 pickActorToMove :: MonadClient m
                 => Maybe ActorId -> ((ActorId, Actor) -> m (Maybe TgtAndPath))
-                -> m (ActorId, Actor)
+                -> m ActorId
 {-# INLINE pickActorToMove #-}
 pickActorToMove maidToAvoid refreshTarget = do
   actorAspect <- getsClient sactorAspect
@@ -50,7 +50,7 @@ pickActorToMove maidToAvoid refreshTarget = do
                       . actorRegularAssocs (== side) arena
   let pickOld = do
         void $ refreshTarget (oldAid, oldBody)
-        return (oldAid, oldBody)
+        return oldAid
   case ours of
     _ | -- Keep the leader: faction discourages client leader change on level,
         -- so will only be changed if waits (maidToAvoid)
@@ -232,11 +232,11 @@ pickActorToMove maidToAvoid refreshTarget = do
         l : _ -> do
           let freq = toFreq "candidates for AI leader"
                      $ map (positiveOverhead &&& id) l
-          ((aid, b), _) <- rndToAction $ frequency freq
+          ((aid, _), _) <- rndToAction $ frequency freq
           s <- getState
           modifyClient $ updateLeader aid s
-          return (aid, b)
-        _ -> return (oldAid, oldBody)
+          return aid
+        _ -> return oldAid
 
 useTactics :: MonadClient m
            => ((ActorId, Actor) -> m (Maybe TgtAndPath))
