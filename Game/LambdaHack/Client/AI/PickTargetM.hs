@@ -1,7 +1,11 @@
 {-# LANGUAGE TupleSections #-}
 -- | Let AI pick the best target for an actor.
 module Game.LambdaHack.Client.AI.PickTargetM
-  ( targetStrategy
+  ( refreshTarget
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , targetStrategy
+#endif
   ) where
 
 import Prelude ()
@@ -39,6 +43,42 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind (isUknownSpace)
+
+-- | Verify and possibly change the target of an actor. This function both
+-- updates the target in the client state and returns the new target explicitly.
+refreshTarget :: MonadClient m => (ActorId, Actor) -> m (Maybe TgtAndPath)
+-- This inline speeds up execution by 5%, despite probably bloating executable
+-- (but it slows down execution if pickAI is not inlined):
+{-# INLINE refreshTarget #-}
+refreshTarget (aid, body) = do
+  side <- getsClient sside
+  let !_A = assert (bfid body == side
+                    `blame` "AI tries to move an enemy actor"
+                    `twith` (aid, body, side)) ()
+  let !_A = assert (isNothing (btrajectory body)
+                    `blame` "AI gets to manually move its projectiles"
+                    `twith` (aid, body, side)) ()
+  stratTarget <- targetStrategy aid
+  if nullStrategy stratTarget then do
+    -- Melee in progress and the actor can't contribute
+    -- and would slow down others if he acted.
+    modifyClient $ \cli -> cli {stargetD = EM.delete aid (stargetD cli)}
+    return Nothing
+  else do
+    -- _debugoldTgt <- getsClient $ EM.lookup aid . stargetD
+    -- Choose a target from those proposed by AI for the actor.
+    tgtMPath <- rndToAction $ frequency $ bestVariant stratTarget
+    modifyClient $ \cli ->
+      cli {stargetD = EM.insert aid tgtMPath (stargetD cli)}
+    return $ Just tgtMPath
+    -- let _debug = T.unpack
+    --       $ "\nHandleAI symbol:"    <+> tshow (bsymbol body)
+    --       <> ", aid:"               <+> tshow aid
+    --       <> ", pos:"               <+> tshow (bpos body)
+    --       <> "\nHandleAI oldTgt:"   <+> tshow _debugoldTgt
+    --       <> "\nHandleAI strTgt:"   <+> tshow stratTarget
+    --       <> "\nHandleAI target:"   <+> tshow tgtMPath
+    -- trace _debug $ return $ Just tgtMPath
 
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: forall m. MonadClient m

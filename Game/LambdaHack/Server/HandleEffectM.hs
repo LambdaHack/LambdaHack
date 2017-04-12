@@ -286,6 +286,7 @@ effectExplode execSfx cgroup target = do
   execSfx
   tb <- getsState $ getActorBody target
   let itemFreq = [(cgroup, 1)]
+      -- Explosion particles are placed among organs of the victim:
       container = CActor target COrgan
   m2 <- rollAndRegisterItem (blid tb) itemFreq container False Nothing
   let (iid, (ItemFull{itemBase, itemK}, _)) =
@@ -333,6 +334,7 @@ effectExplode execSfx cgroup target = do
             Just failMsg -> execFailure target req failMsg
       tryFlying 0 = return ()
       tryFlying k100 = do
+        -- Explosion particles are placed among organs of the victim:
         bag2 <- getsState $ borgan . getActorBody target
         let mn2 = EM.lookup iid bag2
         case mn2 of

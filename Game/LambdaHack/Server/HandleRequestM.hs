@@ -274,7 +274,8 @@ reqMelee source target iid cstore = do
           execUpdAtomic $ UpdRefillHP target deltaHP
           when serious $ cutCalm target
     if bproj tb && length (beqp tb) == 1
-       && cstore == COrgan && bhp tb + deltaHP <= 0 then do
+       && cstore == COrgan  -- only catch with appendages, never with weapons
+       && bhp tb + deltaHP <= 0 then do
       -- Catching the projectile, that is, stealing the item from its eqp.
       -- No effect from our weapon is applied to the projectile
       -- and the weapon is never destroyed, even if not durable.

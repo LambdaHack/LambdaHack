@@ -12,6 +12,7 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Ratio
 
 import Game.LambdaHack.Client.AI.ConditionM
+import Game.LambdaHack.Client.AI.PickTargetM
 import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.BfsM
 import Game.LambdaHack.Client.MonadClient
@@ -31,11 +32,9 @@ import Game.LambdaHack.Content.ModeKind
 
 -- Pick a new leader from among the actors on the current level.
 -- Refresh the target of the new leader, even if unchanged.
-pickActorToMove :: MonadClient m
-                => Maybe ActorId -> ((ActorId, Actor) -> m (Maybe TgtAndPath))
-                -> m ActorId
+pickActorToMove :: MonadClient m => Maybe ActorId -> m ActorId
 {-# INLINE pickActorToMove #-}
-pickActorToMove maidToAvoid refreshTarget = do
+pickActorToMove maidToAvoid = do
   actorAspect <- getsClient sactorAspect
   mleader <- getsClient _sleader
   let oldAid = case mleader of
@@ -238,12 +237,9 @@ pickActorToMove maidToAvoid refreshTarget = do
           return aid
         _ -> return oldAid
 
-useTactics :: MonadClient m
-           => ((ActorId, Actor) -> m (Maybe TgtAndPath))
-           -> ActorId
-           -> m ()
+useTactics :: MonadClient m => ActorId -> m ()
 {-# INLINE useTactics #-}
-useTactics refreshTarget oldAid = do
+useTactics oldAid = do
   oldBody <- getsState $ getActorBody oldAid
   scondInMelee <- getsClient scondInMelee
   let condInMelee = case scondInMelee EM.! blid oldBody of
