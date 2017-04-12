@@ -334,6 +334,8 @@ perceptionCacheFromLevel actorAspect fovClearLid fid lid s =
 
 -- * The actual Fov algorithm
 
+type Matrix = (Int, Int, Int, Int)
+
 -- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view. The Field of View
 -- algorithm to use is passed in the second argument.
@@ -347,18 +349,18 @@ fullscan FovClear{fovClear} radius spectatorPos =
      | radius == 1 -> ES.singleton spectatorPos
      | radius == 2 -> inline squareUnsafeSet spectatorPos
      | otherwise ->
-         mapTr (\B{..} -> trV   bx  (-by))  -- quadrant I
-       $ mapTr (\B{..} -> trV   by    bx)   -- II (counter-clock)
-       $ mapTr (\B{..} -> trV (-bx)   by)   -- III
-       $ mapTr (\B{..} -> trV (-by) (-bx))  -- IV
+         mapTr (1, 0, 0, -1)   -- quadrant I
+       $ mapTr (0, 1, 1, 0)    -- II (counter-clockwise)
+       $ mapTr (-1, 0, 0, 1)   -- III
+       $ mapTr (0, -1, -1, 0)  -- IV
        $ ES.singleton spectatorPos
  where
-  mapTr :: (Bump -> Point) -> ES.EnumSet Point -> ES.EnumSet Point
-  {-# INLINE mapTr #-}
-  mapTr tr es = scan es (radius - 1) fovClear tr
+  mapTr :: Matrix -> ES.EnumSet Point -> ES.EnumSet Point
+  mapTr m@(!_, !_, !_, !_) es = scan es (radius - 1) fovClear (trV m)
 
   -- This function is cheap, so no problem it's called twice
-  -- for each point: once with @isCl@, once via @concatMap@.
-  trV :: X -> Y -> Point
+  -- for some points: once for @isClear@, once in @outside@.
+  trV :: Matrix -> Bump -> Point
   {-# INLINE trV #-}
-  trV x y = shift spectatorPos $ Vector x y
+  trV (x1, y1, x2, y2) B{..} =
+    shift spectatorPos $ Vector (x1 * bx + y1 * by) (x2 * bx + y2 * by)

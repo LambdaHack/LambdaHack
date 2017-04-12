@@ -63,7 +63,7 @@ scan :: ES.EnumSet Point
      -> PointArray.Array Bool
      -> (Bump -> Point)  -- ^ coordinate transformation
      -> ES.EnumSet Point
-{-# NOINLINE scan #-}
+{-# INLINE scan #-}
 scan accScan r fovClear tr = assert (r > 0 `blame` r) $
   -- The scanned area is a square, which is a sphere in the chessboard metric.
   dscan accScan 1 ( (Line (B 1 0) (B (-r) r), [B 0 0])
@@ -93,7 +93,6 @@ scan accScan r fovClear tr = assert (r > 0 `blame` r) $
                   else mscanShadowed accBump (ps0+1)    -- start in shadow
           else foldl' (\acc ps -> ES.insert (bump ps) acc) accDscan [ps0..pe]
 
-        {-# INLINE bump #-}
         bump px = tr $ B px d
 
         -- We're in a visible interval.

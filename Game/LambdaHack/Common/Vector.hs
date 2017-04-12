@@ -152,6 +152,7 @@ squareUnsafeSet (Point x y) =
 
 -- | Translate a point by a vector.
 shift :: Point -> Vector -> Point
+{-# INLINE shift #-}
 shift (Point x0 y0) (Vector x1 y1) = Point (x0 + x1) (y0 + y1)
 
 -- | Translate a point by a vector, but only if the result fits in an area.
