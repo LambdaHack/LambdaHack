@@ -43,7 +43,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- of commands kept for each command received.
 cmdAtomicFilterCli :: MonadClient m => UpdAtomic -> m [UpdAtomic]
 {-# INLINE cmdAtomicFilterCli #-}
-cmdAtomicFilterCli cmd = case cmd of
+cmdAtomicFilterCli cmd = {-# SCC cmdAtomicFilterCli #-} case cmd of
   UpdSpotActor aid _ _ -> do
     -- Needed, e.g., when we teleport and so see our actor at the new
     -- location, but also the location is part of new perception,
@@ -223,7 +223,7 @@ cmdAtomicFilterCli cmd = case cmd of
 -- with the global state from before the command is executed.
 cmdAtomicSemCli :: MonadClientSetup m => UpdAtomic -> m ()
 {-# INLINE cmdAtomicSemCli #-}
-cmdAtomicSemCli cmd = case cmd of
+cmdAtomicSemCli cmd = {-# SCC cmdAtomicSemCli #-} case cmd of
   UpdCreateActor aid b ais -> createActor aid b ais
   UpdDestroyActor aid b _ -> destroyActor aid b True
   UpdCreateItem iid itemBase (k, _) (CActor aid store) -> do

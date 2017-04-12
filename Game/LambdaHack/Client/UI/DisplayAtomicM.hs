@@ -61,7 +61,8 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 displayRespUpdAtomicUI :: MonadClientUI m
                        => Bool -> StateClient -> UpdAtomic -> m ()
 {-# INLINE displayRespUpdAtomicUI #-}
-displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
+displayRespUpdAtomicUI verbose oldCli
+                       cmd = {-# SCC displayRespUpdAtomicUI #-} case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid body _ -> createActorUI True aid body
   UpdDestroyActor aid body _ -> destroyActorUI True aid body
@@ -842,7 +843,8 @@ discover c oldCli iid = do
 -- | Display special effects (text, animation) sent to the client.
 displayRespSfxAtomicUI :: MonadClientUI m => Bool -> SfxAtomic -> m ()
 {-# INLINE displayRespSfxAtomicUI #-}
-displayRespSfxAtomicUI verbose sfx = case sfx of
+displayRespSfxAtomicUI verbose
+                       sfx = {-# SCC displayRespSfxAtomicUI #-} case sfx of
   SfxStrike source target iid store mult ->
     strike False source target iid store mult
   SfxRecoil source target _ _ _ -> do
