@@ -32,36 +32,44 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 
 -- | Handle the move of an AI player.
-queryAI :: forall m. MonadClient m => ActorId -> m RequestAI
+queryAI :: MonadClient m => ActorId -> m RequestAI
 queryAI aid = do
-  let refreshTarget :: (ActorId, Actor) -> m (Maybe TgtAndPath)
-      {-# NOINLINE refreshTarget #-}
-      refreshTarget (aid2, b2) = refreshTargetS aid2 b2
   udpdateCondInMelee aid
   mleader <- getsClient _sleader
-  (aidToMove, bToMove) <-
-    if mleader == Just aid
-    then pickActorToMove Nothing refreshTarget
-    else do
-      useTactics refreshTarget aid
-      b <- getsState $ getActorBody aid
-      return (aid, b)
-  treq <- pickAction (aidToMove, bToMove)
+  (aidToMove, treq) <- pickAI Nothing aid
   (aidToMove2, treq2) <-
     case treq of
       RequestAnyAbility ReqWait | mleader == Just aid -> do
-        -- leader waits; a waste; try once to change leader
+        -- leader waits; a waste; try once to pick a yet different leader
         modifyClient $ \cli -> cli {_sleader = mleader}  -- undo previous choice
-        (aidToMove2, bToMove2) <- pickActorToMove (Just aidToMove) refreshTarget
-        if aidToMove2 /= aidToMove
-        then do
-          treq2 <- pickAction (aidToMove2, bToMove2)
-          return (aidToMove2, treq2)
-        else return (aidToMove, treq)  -- no luck; wait anyway
+        pickAI (Just (aidToMove, treq)) aid
       _ -> return (aidToMove, treq)
   if aidToMove2 /= aid
   then return (ReqAITimed treq2, Just aidToMove2)
   else return (ReqAITimed treq2, Nothing)
+
+pickAI :: forall m. MonadClient m
+       => Maybe (ActorId, RequestAnyAbility) -> ActorId
+       -> m (ActorId, RequestAnyAbility)
+-- This inline speeds up execution by 10%, despite bloating executable:
+{-# INLINE pickAI #-}
+pickAI maid aid = do
+  let refreshTarget :: (ActorId, Actor) -> m (Maybe TgtAndPath)
+      {-# NOINLINE refreshTarget #-}
+      refreshTarget (aid2, b2) = refreshTargetS aid2 b2
+  mleader <- getsClient _sleader
+  (aidToMove, bToMove) <-
+    if mleader == Just aid
+    then pickActorToMove (fst <$> maid) refreshTarget
+    else do
+      useTactics refreshTarget aid
+      b <- getsState $ getActorBody aid
+      return (aid, b)
+  treq <- case maid of
+    Just (aidOld, treqOld) | aidToMove == aidOld ->
+      return treqOld  -- no better leader found
+    _ -> pickAction (aidToMove, bToMove)
+  return (aidToMove, treq)
 
 udpdateCondInMelee :: MonadClient m => ActorId -> m ()
 udpdateCondInMelee aid = do
