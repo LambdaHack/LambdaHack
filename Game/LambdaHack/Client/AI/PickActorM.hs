@@ -12,8 +12,8 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Ratio
 
 import Game.LambdaHack.Client.AI.ConditionM
-import Game.LambdaHack.Client.AI.PickTargetM
 import Game.LambdaHack.Client.Bfs
+import Game.LambdaHack.Client.BfsM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor

@@ -2,7 +2,8 @@
 -- | Breadth first search and realted algorithms using the client monad.
 module Game.LambdaHack.Client.BfsM
   ( invalidateBfsAid, invalidateBfsLid, invalidateBfsAll
-  , createBfs, condBFS, getCacheBfsAndPath, getCacheBfs, getCachePath
+  , createBfs, condBFS, getCacheBfsAndPath, getCacheBfs
+  , getCachePath, createPath
   , unexploredDepth
   , closestUnknown, closestSmell, furthestKnown
   , closestTriggers, closestItems, closestFoes
@@ -142,6 +143,16 @@ getCachePath aid target = do
   let source = bpos b
   if | source == target -> return $! AndPath [] target 0  -- speedup
      | otherwise -> snd <$> getCacheBfsAndPath aid target
+
+createPath :: MonadClient m => ActorId -> Target -> m TgtAndPath
+createPath aid tapTgt = do
+  b <- getsState $ getActorBody aid
+  mpos <- aidTgtToPos aid (blid b) tapTgt
+  case mpos of
+    Nothing -> return TgtAndPath{tapTgt, tapPath=NoPath}
+    Just p -> do
+      tapPath <- getCachePath aid p
+      return $! TgtAndPath{..}
 
 condBFS :: MonadClient m => ActorId -> m (Bool, Word8)
 condBFS aid = do

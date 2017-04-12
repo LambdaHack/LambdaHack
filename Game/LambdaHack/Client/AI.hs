@@ -64,7 +64,6 @@ queryAI aid = do
   else return (ReqAITimed treq2, Nothing)
 
 udpdateCondInMelee :: MonadClient m => ActorId -> m ()
-{-# INLINE udpdateCondInMelee #-}
 udpdateCondInMelee aid = do
   b <- getsState $ getActorBody aid
   condInMelee <- getsClient $ (EM.! blid b) . scondInMelee
@@ -96,6 +95,7 @@ condInMeleeM bodyOur = do
 -- | Verify and possibly change the target of an actor. This function both
 -- updates the target in the client state and returns the new target explicitly.
 refreshTargetS :: MonadClient m => ActorId -> Actor -> m (Maybe TgtAndPath)
+-- This inline is surprisingly beneficial:
 {-# INLINE refreshTargetS #-}
 refreshTargetS aid body = do
   side <- getsClient sside

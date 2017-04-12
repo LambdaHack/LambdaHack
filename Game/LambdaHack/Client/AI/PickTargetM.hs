@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 -- | Let AI pick the best target for an actor.
 module Game.LambdaHack.Client.AI.PickTargetM
-  ( targetStrategy, createPath
+  ( targetStrategy
   ) where
 
 import Prelude ()
@@ -378,13 +378,3 @@ targetStrategy aid = do
     Nothing -> pickNewTarget
     Just tap -> updateTgt tap
   else return $! returN "NoMove" $ TgtAndPath (TEnemy aid True) NoPath
-
-createPath :: MonadClient m => ActorId -> Target -> m TgtAndPath
-createPath aid tapTgt = do
-  b <- getsState $ getActorBody aid
-  mpos <- aidTgtToPos aid (blid b) tapTgt
-  case mpos of
-    Nothing -> return TgtAndPath{tapTgt, tapPath=NoPath}
-    Just p -> do
-      tapPath <- getCachePath aid p
-      return $! TgtAndPath{..}
