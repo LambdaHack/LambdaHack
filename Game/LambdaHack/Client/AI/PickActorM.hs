@@ -15,8 +15,10 @@ import Game.LambdaHack.Client.AI.ConditionM
 import Game.LambdaHack.Client.AI.PickTargetM
 import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.BfsM
+import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -102,7 +104,10 @@ pickActorToMove maidToAvoid = do
             condSupport1 <- condSupport 1 aid
             condSupport2 <- condSupport 2 aid
             aCanDeAmbient <- getsState $ actorCanDeAmbient body
-            condCanProject <- condCanProjectM False aid
+            actorSk <- currentSkillsClient aid
+            condCanProject <-
+              condCanProjectM (EM.findWithDefault 0 Ability.AbProject actorSk)
+                              aid
             let condCanFlee = not (null fleeL)
                 speed1_5 = speedScale (3%2) (bspeed body ar)
                 condCanMelee = actorCanMelee actorAspect aid body

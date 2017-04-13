@@ -157,21 +157,22 @@ condNoEqpWeaponM aid = do
   return $ all (not . isMelee . snd) eqpAssocs  -- keep it lazy
 
 -- | Require that the actor can project any items.
-condCanProjectM :: MonadClient m => Bool -> ActorId -> m Bool
-condCanProjectM maxSkills aid = do
-  actorSk <- if maxSkills
-             then maxActorSkillsClient aid
-             else currentSkillsClient aid
-  let skill = EM.findWithDefault 0 Ability.AbProject actorSk
-      q _ itemFull b ar =
+condCanProjectM :: MonadClient m => Int -> ActorId -> m Bool
+condCanProjectM skill aid = do
+  b <- getsState $ getActorBody aid
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+             Just aspectRecord -> aspectRecord
+             Nothing -> assert `failure` aid
+      calmE = calmEnough b ar
+      q _ itemFull _ _ =
         either (const False) id
         $ permittedProject False skill b ar "" itemFull
-  benList <- benAvailableItems aid q [CEqp, CInv, CGround]
+  benList <- benAvailableItems aid q $ [CEqp, CInv, CGround] ++ [CSha | calmE]
   let isMissile ((Nothing, _), _) = True
       isMissile ((Just (_, ben), _), (_, itemFull)) =
         ben < 0 && not (isMelee $ itemBase itemFull)
-      missiles = filter isMissile benList
-  return $ not (null missiles)
+  return $ any isMissile benList
     -- keep it lazy
 
 -- | Produce the list of items with a given property available to the actor

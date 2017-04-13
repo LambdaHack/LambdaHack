@@ -153,7 +153,8 @@ targetStrategy aid = do
                 -- based on the path to them, not LOS to them:
                 || EM.findWithDefault 0 AbProject actorMaxSk > 0
   actorMinSk <- getsState $ actorSkills Nothing aid ar
-  condCanProject <- condCanProjectM True aid
+  condCanProject <-
+    condCanProjectM (EM.findWithDefault 0 AbProject actorMaxSk) aid
   condHpTooLow <- condHpTooLowM aid
   condEnoughGear <- condEnoughGearM aid
   let condCanMelee = actorCanMelee actorAspect aid b

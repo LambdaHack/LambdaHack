@@ -77,7 +77,9 @@ actionStrategy aid = do
   condSupport1 <- condSupport 1 aid
   condSupport2 <- condSupport 2 aid
   aCanDeAmbient <- getsState $ actorCanDeAmbient body
-  condCanProject <- condCanProjectM False aid
+  actorSk <- currentSkillsClient aid
+  condCanProject <-
+    condCanProjectM (EM.findWithDefault 0 AbProject actorSk) aid
   condHpTooLow <- condHpTooLowM aid
   condAdjTriggerable <- condAdjTriggerableM aid
   condBlocksFriends <- condBlocksFriendsM aid
@@ -268,7 +270,6 @@ actionStrategy aid = do
         ]
   -- Check current, not maximal skills, since this can be a leader as well
   -- as non-leader action.
-  actorSk <- currentSkillsClient aid
   let abInSkill ab = EM.findWithDefault 0 ab actorSk > 0
       checkAction :: ([Ability], m a, Bool) -> Bool
       checkAction (abts, _, cond) = all abInSkill abts && cond
