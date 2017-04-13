@@ -151,7 +151,7 @@ loopUpd :: forall m. (MonadAtomic m, MonadServerReadRequest m) => m () -> m ()
 loopUpd updConn = do
   let updatePerFid :: FactionId -> m ()
       {-# NOINLINE updatePerFid #-}
-      updatePerFid fid = {-# SCC updatePerFid #-} do
+      updatePerFid fid = do  -- {-# SCC updatePerFid #-} do
         perValid <- getsServer $ (EM.! fid) . sperValidFid
         mapM_ (\(lid, valid) -> unless valid $ updatePer fid lid)
               (EM.assocs perValid)

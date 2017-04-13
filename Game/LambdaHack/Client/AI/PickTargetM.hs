@@ -50,7 +50,7 @@ refreshTarget :: MonadClient m => (ActorId, Actor) -> m (Maybe TgtAndPath)
 -- This inline speeds up execution by 5%, despite probably bloating executable
 -- (but it slows down execution if pickAI is not inlined):
 {-# INLINE refreshTarget #-}
-refreshTarget (aid, body) = {-# SCC refreshTarget #-} do
+refreshTarget (aid, body) = do
   side <- getsClient sside
   let !_A = assert (bfid body == side
                     `blame` "AI tries to move an enemy actor"

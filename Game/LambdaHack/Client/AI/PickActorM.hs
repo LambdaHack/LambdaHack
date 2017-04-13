@@ -34,7 +34,7 @@ import Game.LambdaHack.Content.ModeKind
 -- Refresh the target of the new leader, even if unchanged.
 pickActorToMove :: MonadClient m => Maybe ActorId -> m ActorId
 {-# INLINE pickActorToMove #-}
-pickActorToMove maidToAvoid = {-# SCC pickActorToMove #-} do
+pickActorToMove maidToAvoid = do
   actorAspect <- getsClient sactorAspect
   mleader <- getsClient _sleader
   let oldAid = case mleader of
@@ -239,7 +239,7 @@ pickActorToMove maidToAvoid = {-# SCC pickActorToMove #-} do
 
 useTactics :: MonadClient m => ActorId -> m ()
 {-# INLINE useTactics #-}
-useTactics oldAid = {-# SCC useTactics #-} do
+useTactics oldAid = do
   oldBody <- getsState $ getActorBody oldAid
   scondInMelee <- getsClient scondInMelee
   let condInMelee = case scondInMelee EM.! blid oldBody of

@@ -183,7 +183,7 @@ benAvailableItems :: MonadClient m
                   -> m [( (Maybe (Int, Int), (Int, CStore))
                         , (ItemId, ItemFull) )]
 {-# INLINE benAvailableItems #-}
-benAvailableItems aid permitted cstores = {-# SCC benAvailableItems #-} do
+benAvailableItems aid permitted cstores = do  -- {-# SCC benAvailableItems #-}
   cops <- getsState scops
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
