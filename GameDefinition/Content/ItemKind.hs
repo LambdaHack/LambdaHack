@@ -461,7 +461,7 @@ potion1 = potion
 potion2 = potion
   { ifreq    = [("treasure", 100)]
   , irarity  = [(6, 10), (10, 10)]
-  , ieffects = [ Unique, ELabel "of Attraction", Impress, OverfillCalm (-20)
+  , ieffects = [ Unique, ELabel "of Attraction", Impress, RefillCalm (-20)
                , OnSmash (Explode "pheromone") ]
   }
 potion3 = potion
@@ -475,7 +475,7 @@ potion4 = potion
                , OnSmash (Explode "healing mist 2") ]
   }
 potion5 = potion
-  { ieffects = [ OneOf [ OverfillHP 10, OverfillHP 5, Burn 5
+  { ieffects = [ OneOf [ RefillHP 10, RefillHP 5, Burn 5
                        , toOrganActorTurn "strengthened" (20 + d 5) ]
                , OnSmash (OneOf [ Explode "dense shower"
                                 , Explode "sparse shower"
@@ -487,8 +487,8 @@ potion5 = potion
 potion6 = potion
   { irarity  = [(3, 3), (10, 6)]
   , ieffects = [ Impress
-               , OneOf [ OverfillCalm (-60)
-                       , OverfillHP 20, OverfillHP 10, Burn 10
+               , OneOf [ RefillCalm (-60)
+                       , RefillHP 20, RefillHP 10, Burn 10
                        , toOrganActorTurn "fast 20" (20 + d 5) ]
                , OnSmash (OneOf [ Explode "healing mist 2"
                                 , Explode "wounding mist"
@@ -516,8 +516,8 @@ potion9 = potion
 potion10 = potion
   { ifreq    = [("treasure", 100)]
   , irarity  = [(10, 5)]
-  , ieffects = [ Unique, ELabel "of Love", OverfillHP 60
-               , Impress, OverfillCalm (-60)
+  , ieffects = [ Unique, ELabel "of Love", RefillHP 60
+               , Impress, RefillCalm (-60)
                , OnSmash (Explode "healing mist 2")
                , OnSmash (Explode "pheromone") ]
   }
@@ -550,7 +550,7 @@ scroll1 = scroll
 scroll2 = scroll
   { irarity  = [(1, 3)]
   , ieffects = [ ELabel "of greed", Teleport 20, DetectItem 10
-               , OverfillCalm (-100) ]
+               , RefillCalm (-100) ]
   }
 scroll3 = scroll
   { irarity  = [(1, 5), (10, 3)]
@@ -565,7 +565,7 @@ scroll5 = scroll
   , ieffects = [ Impress
                , OneOf [ Teleport 20, Ascend False, Ascend True
                        , Summon "hero" 1, Summon "mobile animal" 2
-                       , Detect 20, OverfillCalm (-100)
+                       , Detect 20, RefillCalm (-100)
                        , CreateItem CGround "useful" TimerNone ] ]
   }
 scroll6 = scroll
@@ -1209,7 +1209,7 @@ gem4 = gem
   , iflavour = zipPlain [BrYellow]
   , irarity  = [(1, 40), (10, 40)]
   , iaspects = []
-  , ieffects = [ELabel "of youth", OverfillCalm 5, OverfillHP 15]
+  , ieffects = [ELabel "of youth", RefillCalm 5, RefillHP 15]
   , ifeature = [Identified, Applicable, Precious]
   , idesc    = "A crystal vial of amber liquid, supposedly granting eternal youth and fetching 100 gold per piece. The main effect seems to be mild euphoria, but it admittedly heals minor ailments rather well."
   }

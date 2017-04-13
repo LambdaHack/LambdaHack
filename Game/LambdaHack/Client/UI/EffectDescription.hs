@@ -38,22 +38,12 @@ effectToSuffix effect =
     Burn d -> wrapInParens (tshow d
                             <+> if d > 1 then "burns" else "burn")
     Explode t -> "of" <+> tshow t <+> "explosion"
-    RefillHP p | p > 0 ->
-      "of limited healing" <+> wrapInParens (affixBonus p)
+    RefillHP p | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
     RefillHP 0 -> assert `failure` effect
-    RefillHP p ->
-      "of limited wounding" <+> wrapInParens (affixBonus p)
-    OverfillHP p | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
-    OverfillHP 0 -> assert `failure` effect
-    OverfillHP p -> "of wounding" <+> wrapInParens (affixBonus p)
-    RefillCalm p | p > 0 ->
-      "of limited soothing" <+> wrapInParens (affixBonus p)
+    RefillHP p -> "of wounding" <+> wrapInParens (affixBonus p)
+    RefillCalm p | p > 0 -> "of soothing" <+> wrapInParens (affixBonus p)
     RefillCalm 0 -> assert `failure` effect
-    RefillCalm p ->
-      "of limited dismaying" <+> wrapInParens (affixBonus p)
-    OverfillCalm p | p > 0 -> "of soothing" <+> wrapInParens (affixBonus p)
-    OverfillCalm 0 -> assert `failure` effect
-    OverfillCalm p -> "of dismaying" <+> wrapInParens (affixBonus p)
+    RefillCalm p -> "of dismaying" <+> wrapInParens (affixBonus p)
     Dominate -> "of domination"
     Impress -> "of impression"
     Summon grp p -> makePhrase

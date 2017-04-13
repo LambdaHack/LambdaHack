@@ -787,7 +787,6 @@ applyItem aid applyGroup = do
   let itemLegal itemFull = case applyGroup of
         ApplyFirstAid ->
           let getP (IK.RefillHP p) _ | p > 0 = True
-              getP (IK.OverfillHP p) _ | p > 0 = True
               getP _ acc = acc
           in case itemDisco itemFull of
             Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}} ->

@@ -903,20 +903,6 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             actorVerbMU aid bUI "look wounded"
           let ps = (bpos b, bpos b)
           animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
-        IK.OverfillHP{} | hpDelta > 0 -> do
-          if isOurAlive then
-            actorVerbMU aid bUI "feel healthier"
-          else
-            actorVerbMU aid bUI "look healthier"
-          let ps = (bpos b, bpos b)
-          animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
-        IK.OverfillHP{} -> do
-          if isOurAlive then
-            actorVerbMU aid bUI "feel wounded"
-          else
-            actorVerbMU aid bUI "look wounded"
-          let ps = (bpos b, bpos b)
-          animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
         IK.RefillCalm p | p == 1 -> return ()  -- no spam from regen items
         IK.RefillCalm p | p > 0 -> do
           if isOurAlive then
@@ -924,16 +910,6 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           else
             actorVerbMU aid bUI "look calmer"
         IK.RefillCalm _ -> do
-          if isOurAlive then
-            actorVerbMU aid bUI "feel agitated"
-          else
-            actorVerbMU aid bUI "look agitated"
-        IK.OverfillCalm p | p > 0 -> do
-          if isOurAlive then
-            actorVerbMU aid bUI "feel calmer"
-          else
-            actorVerbMU aid bUI "look calmer"
-        IK.OverfillCalm _ -> do
           if isOurAlive then
             actorVerbMU aid bUI "feel agitated"
           else

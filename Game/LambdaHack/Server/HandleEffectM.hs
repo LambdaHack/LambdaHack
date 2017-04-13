@@ -209,10 +209,8 @@ effectSem source target iid c recharged periodic effect = do
     IK.EqpSlot _ -> return False
     IK.Burn nDm -> effectBurn nDm source target
     IK.Explode t -> effectExplode execSfx t target
-    IK.RefillHP p -> effectRefillHP False p source target
-    IK.OverfillHP p -> effectRefillHP True p source target
-    IK.RefillCalm p -> effectRefillCalm False execSfx p source target
-    IK.OverfillCalm p -> effectRefillCalm True execSfx p source target
+    IK.RefillHP p -> effectRefillHP p source target
+    IK.RefillCalm p -> effectRefillCalm execSfx p source target
     IK.Dominate -> effectDominate recursiveCall source target
     IK.Impress -> effectImpress recursiveCall execSfx source target
     IK.Summon grp p -> effectSummon execSfx grp p source target periodic
@@ -356,21 +354,19 @@ effectExplode execSfx cgroup target = do
 
 -- Unaffected by armor.
 effectRefillHP :: (MonadAtomic m, MonadServer m)
-               => Bool -> Int -> ActorId -> ActorId -> m Bool
-effectRefillHP overfill power source target = do
+               => Int -> ActorId -> ActorId -> m Bool
+effectRefillHP power source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   actorAspect <- getsServer sactorAspect
   let ar = actorAspect EM.! target
       hpMax = aMaxHP ar
-      overMax | overfill = xM hpMax * 10  -- arbitrary limit to scumming
-              | otherwise = xM hpMax
       -- We ignore light poison and similar -1HP per turn annoyances.
       serious = not (bproj tb) && source /= target && abs power > 1
-      deltaHP | power > 0 = min (xM power) (max 0 $ overMax - bhp tb)
-              | serious = -- if overfull, at least cut back to max
-                          min (xM power) (xM hpMax - bhp tb)
-              | otherwise = xM power
+      deltaHP | power < 0 && serious =  -- if overfull, at least cut back to max
+                  min (xM power) (xM hpMax - bhp tb)
+              | otherwise = min (xM power) (max 0 $ xM 999 - bhp tb)
+                                                         -- UI limitation
   curChalSer <- getsServer $ scurChalSer . sdebugSer
   fact <- getsState $ (EM.! bfid tb) . sfactionD
   if | cfish curChalSer && fhasUI (gplayer fact) && bfid sb /= bfid tb -> do
@@ -378,9 +374,7 @@ effectRefillHP overfill power source target = do
        return False
      | deltaHP == 0 -> return False
      | otherwise -> do
-       let reportedEffect | overfill = IK.OverfillHP power
-                          | otherwise = IK.RefillHP power
-       execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
+       execSfxAtomic $ SfxEffect (bfid sb) target (IK.RefillHP power) deltaHP
        execUpdAtomic $ UpdRefillHP target deltaHP
        when (deltaHP < 0 && serious) $ cutCalm target
        return True
@@ -401,25 +395,22 @@ cutCalm target = do
 -- ** RefillCalm
 
 effectRefillCalm ::  (MonadAtomic m, MonadServer m)
-                 => Bool -> m () -> Int -> ActorId -> ActorId -> m Bool
-effectRefillCalm overfill execSfx power source target = do
+                 => m () -> Int -> ActorId -> ActorId -> m Bool
+effectRefillCalm execSfx power source target = do
   tb <- getsState $ getActorBody target
   actorAspect <- getsServer sactorAspect
   let ar = actorAspect EM.! target
       calmMax = aMaxCalm ar
-      overMax | overfill = xM calmMax * 10  -- arbitrary limit to scumming
-              | otherwise = xM calmMax
       serious = not (bproj tb) && source /= target && power > 1
-      deltaCalm | power > 0 = min (xM power) (max 0 $ overMax - bcalm tb)
-                | serious = -- if overfull, at least cut back to max
-                            min (xM power) (xM calmMax - bcalm tb)
-                | otherwise = xM power
-  if deltaCalm == 0
-    then return False
-    else do
-      execSfx
-      udpateCalm target deltaCalm
-      return True
+      deltaCalm | power < 0 && serious =  -- if overfull, at least cut to max
+                    min (xM power) (xM calmMax - bcalm tb)
+                | otherwise = min (xM power) (max 0 $ xM 999 - bcalm tb)
+                                                           -- UI limitation
+  if deltaCalm == 0 then return False
+  else do
+    execSfx
+    udpateCalm target deltaCalm
+    return True
 
 -- ** Dominate
 

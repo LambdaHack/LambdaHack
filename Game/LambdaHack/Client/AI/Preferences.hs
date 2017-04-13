@@ -34,17 +34,9 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
          if p > 0
          then 10 * min p (max 0 $ fromEnum $ (xM aMaxHP - bhp b) `divUp` oneM)
          else max (-99) (11 * p)
-    IK.OverfillHP p ->
-         if p > 0
-         then 11 * min p (max 1 $ fromEnum $ (xM aMaxHP - bhp b) `divUp` oneM)
-         else max (-99) (11 * p)
     IK.RefillCalm p ->
          if p > 0
          then min p (max 0 $ fromEnum $ (xM aMaxCalm - bcalm b) `divUp` oneM)
-         else max (-20) p
-    IK.OverfillCalm p ->
-         if p > 0
-         then min p (max 1 $ fromEnum $ (xM aMaxCalm - bcalm b) `divUp` oneM)
          else max (-20) p
     IK.Dominate -> -200
     IK.Impress -> -10

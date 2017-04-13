@@ -58,9 +58,7 @@ data Effect =
   | Explode !(GroupName ItemKind)
       -- ^ explode, producing this group of blasts
   | RefillHP !Int
-  | OverfillHP !Int
   | RefillCalm !Int
-  | OverfillCalm !Int
   | Dominate
   | Impress
   | Summon !(GroupName ItemKind) !Dice.Dice
