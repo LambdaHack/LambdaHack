@@ -287,7 +287,8 @@ permittedProjectClient triggerSyms = do
   let ar = case EM.lookup leader actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` leader
-  return $ permittedProject False skill b ar triggerSyms
+      calmE = calmEnough b ar
+  return $ permittedProject False skill calmE triggerSyms
 
 projectCheck :: MonadClientUI m => Point -> m (Maybe ReqFailure)
 projectCheck tpos = do
@@ -446,8 +447,9 @@ permittedApplyClient triggerSyms = do
   let ar = case EM.lookup leader actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` leader
+      calmE = calmEnough b ar
   localTime <- getsState $ getLocalTime (blid b)
-  return $ permittedApply localTime skill b ar triggerSyms
+  return $ permittedApply localTime skill calmE triggerSyms
 
 -- * PickLeader
 

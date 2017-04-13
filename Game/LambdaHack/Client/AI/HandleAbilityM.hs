@@ -706,18 +706,16 @@ projectItem aid = do
       case mnewEps of
         Just newEps -> do
           actorSk <- currentSkillsClient aid
-          let skill = EM.findWithDefault 0 AbProject actorSk
-          -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
-          -- and no actors or obstacles along the path.
-          let q _ itemFull b2 ar =
-                either (const False) id
-                $ permittedProject False skill b2 ar "" itemFull
           actorAspect <- getsClient sactorAspect
           let ar = case EM.lookup aid actorAspect of
                 Just aspectRecord -> aspectRecord
                 Nothing -> assert `failure` aid
               calmE = calmEnough b ar
               stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
+              skill = EM.findWithDefault 0 AbProject actorSk
+              -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
+              -- and no actors or obstacles along the path.
+              q = permittedProjectAI skill calmE
           benList <- benAvailableItems aid q stores
           localTime <- getsState $ getLocalTime (blid b)
           let coeff CGround = 2
@@ -768,19 +766,21 @@ applyItem aid applyGroup = do
   actorSk <- currentSkillsClient aid
   b <- getsState $ getActorBody aid
   localTime <- getsState $ getLocalTime (blid b)
-  let skill = EM.findWithDefault 0 AbApply actorSk
-      q _ itemFull _ ar =
-        let freq = case itemDisco itemFull of
-              Nothing -> []
-              Just ItemDisco{itemKind} -> IK.ifreq itemKind
-        in maybe True (<= 0) (lookup "gem" freq)
-           && either (const False) id
-                (permittedApply localTime skill b ar " " itemFull)
   actorAspect <- getsClient sactorAspect
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
       calmE = calmEnough b ar
+      skill = EM.findWithDefault 0 AbApply actorSk
+      permittedActor =
+        either (const False) id
+        . permittedApply localTime skill calmE " "
+      q itemFull =
+        let freq = case itemDisco itemFull of
+              Nothing -> []
+              Just ItemDisco{itemKind} -> IK.ifreq itemKind
+        in permittedActor itemFull
+           && maybe True (<= 0) (lookup "gem" freq)
       stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
   benList <- benAvailableItems aid q stores
   organs <- mapM (getsState . getItemBody) $ EM.keys $ borgan b

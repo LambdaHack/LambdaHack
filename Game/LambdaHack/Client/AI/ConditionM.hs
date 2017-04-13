@@ -165,13 +165,11 @@ condCanProjectM skill aid = do
              Just aspectRecord -> aspectRecord
              Nothing -> assert `failure` aid
       calmE = calmEnough b ar
-      q _ itemFull _ _ =
-        either (const False) id
-        $ permittedProject False skill b ar "" itemFull
+      q = permittedProjectAI skill calmE
   benList <- benAvailableItems aid q $ [CEqp, CInv, CGround] ++ [CSha | calmE]
   let isMissile ((Nothing, _), _) = True
-      isMissile ((Just (_, ben), _), (_, itemFull)) =
-        ben < 0 && not (isMelee $ itemBase itemFull)
+      isMissile ((Just (_, benR), _), (_, itemFull)) =
+        benR < 0 && not (isMelee $ itemBase itemFull)
   return $ any isMissile benList
     -- keep it lazy
 
@@ -179,12 +177,11 @@ condCanProjectM skill aid = do
 -- and the items' values.
 benAvailableItems :: MonadClient m
                   => ActorId
-                  -> (Maybe Int -> ItemFull -> Actor -> AspectRecord -> Bool)
+                  -> (ItemFull -> Bool)
                   -> [CStore]
                   -> m [( (Maybe (Int, Int), (Int, CStore))
                         , (ItemId, ItemFull) )]
-{-# INLINE benAvailableItems #-}
-benAvailableItems aid permitted cstores = do  -- {-# SCC benAvailableItems #-}
+benAvailableItems aid permitted cstores = do
   cops <- getsState scops
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
@@ -209,8 +206,7 @@ benAvailableItems aid permitted cstores = do  -- {-# SCC benAvailableItems #-}
                              condAimEnemyPresent
                              heavilyDistressed condNotCalmEnough
                              b ar itemFull
-        , permitted (fst <$> benefit) itemFull b ar
-          && (cstore /= CEqp || hind) ]
+        , permitted itemFull && (cstore /= CEqp || hind) ]
       benCStore cs = ben cs $ getBodyStoreBag b cs s
   return $ concatMap benCStore cstores
     -- keep it lazy
@@ -260,8 +256,12 @@ benGroundItems aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let canEsc = fcanEscape (gplayer fact)
-  benAvailableItems aid (\use itemFull _ _ ->
-                           desirableItem canEsc use itemFull) [CGround]
+      isDesirable ((Nothing, _), (_, itemFull)) =
+        desirableItem canEsc Nothing itemFull
+      isDesirable ((Just (totalSum, _), _), (_, itemFull)) =
+        desirableItem canEsc (Just totalSum) itemFull
+  benList <- benAvailableItems aid (const True) [CGround]
+  return $ filter isDesirable benList
 
 desirableItem :: Bool -> Maybe Int -> ItemFull -> Bool
 desirableItem canEsc use itemFull =

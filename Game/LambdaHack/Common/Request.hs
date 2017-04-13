@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Request
   ( RequestAI, ReqAI(..), RequestUI, ReqUI(..)
   , RequestTimed(..), RequestAnyAbility(..), ReqFailure(..)
   , impossibleReqFailure, showReqFailure, timedToUI
-  , permittedPrecious, permittedProject, permittedApply
+  , permittedPrecious, permittedProject, permittedProjectAI, permittedApply
   ) where
 
 import Prelude ()
@@ -195,18 +195,24 @@ permittedPrecious calmE forced itemFull =
                        Just ItemDisco{itemAspect=Just _} -> True
                        _ -> not isPrecious
 
-permittedProject :: Bool -> Int -> Actor -> AspectRecord -> [Char] -> ItemFull
+permittedPreciousAI :: Bool -> ItemFull -> Bool
+permittedPreciousAI calmE itemFull =
+  let isPrecious = IK.Precious `elem` jfeature (itemBase itemFull)
+  in if not calmE && isPrecious then False
+     else IK.Durable `elem` jfeature (itemBase itemFull)
+          || case itemDisco itemFull of
+               Just ItemDisco{itemAspect=Just _} -> True
+               _ -> not isPrecious
+
+permittedProject :: Bool -> Int -> Bool -> [Char] -> ItemFull
                  -> Either ReqFailure Bool
-permittedProject forced skill b ar
-                 triggerSyms itemFull@ItemFull{itemBase} =
- if | not forced
-      && skill < 1 -> Left ProjectUnskilled
+permittedProject forced skill calmE triggerSyms itemFull@ItemFull{itemBase} =
+ if | not forced && skill < 1 -> Left ProjectUnskilled
     | not forced
       && IK.Lobable `elem` jfeature itemBase
       && skill < 3 -> Left ProjectLobable
     | otherwise ->
-      let calmE = calmEnough b ar
-          legal = permittedPrecious calmE forced itemFull
+      let legal = permittedPrecious calmE forced itemFull
       in case legal of
         Left{} -> legal
         Right False -> legal
@@ -219,14 +225,21 @@ permittedProject forced skill b ar
                  Nothing -> IK.Equipable `notElem` jfeature itemBase
              | otherwise -> jsymbol itemBase `elem` triggerSyms
 
-permittedApply :: Time -> Int -> Actor -> AspectRecord -> [Char] -> ItemFull
+-- Speedup.
+permittedProjectAI :: Int -> Bool -> ItemFull -> Bool
+permittedProjectAI skill calmE itemFull@ItemFull{itemBase} =
+ if | skill < 1 -> False
+    | IK.Lobable `elem` jfeature itemBase
+      && skill < 3 -> False
+    | otherwise -> permittedPreciousAI calmE itemFull
+
+permittedApply :: Time -> Int -> Bool-> [Char] -> ItemFull
                -> Either ReqFailure Bool
-permittedApply localTime skill b ar
-               triggerSyms itemFull@ItemFull{..} =
+permittedApply localTime skill calmE triggerSyms itemFull@ItemFull{..} =
   if | skill < 1 -> Left ApplyUnskilled
      | jsymbol itemBase == '?' && skill < 2 -> Left ApplyRead
-     -- We assume if the item has a timeout, all or most of interesting effects
-     -- are under Recharging, so no point activating if not recharged.
+     -- We assume if the item has a timeout, all or most of interesting
+     -- effects are under Recharging, so no point activating if not recharged.
      -- Note that if client doesn't know the timeout, here we leak the fact
      -- that the item is still charging, but the client risks destruction
      -- if the item is, in fact, rechanrged and is not durable
@@ -236,8 +249,7 @@ permittedApply localTime skill b ar
      | otherwise -> case itemDisco of
        Just ItemDisco{itemKind} | null $ IK.ieffects itemKind ->
          Left ApplyNoEffects
-       _ -> let calmE = calmEnough b ar
-                legal = permittedPrecious calmE False itemFull
+       _ -> let legal = permittedPrecious calmE False itemFull
             in case legal of
               Left{} -> legal
               Right False -> legal
