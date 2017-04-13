@@ -111,36 +111,37 @@ aspectToBenefit _cops asp =
 -- according to item type, and also the benefit conferred by equipping the item
 -- and from meleeing with it or applying it or throwing it.
 totalUsefulness :: Kind.COps -> Faction -> ItemFull -> Maybe (Int, Int)
-totalUsefulness cops fact itemFull =
-  let ben effects aspects =
-        let effSum = -(min 150
-                           (10 * Dice.meanDice (jdamage $ itemBase itemFull)))
-                     + sum (map (effectToBenefit cops fact) effects)
-            aspBens = map (aspectToBenefit cops) $ aspectRecordToList aspects
-            periodicEffBens = map (effectToBenefit cops fact)
-                                  (stripRecharging effects)
-            timeout = aTimeout $ aspectRecordFull itemFull
-            periodicBens | timeout == 0 = []
-                         | otherwise =
-              map (\eff -> eff * 10 `divUp` timeout) periodicEffBens
-            selfBens = aspBens ++ periodicBens
-            selfSum = sum selfBens
-            mixedBlessing =
-              not (null selfBens)
-              && (selfSum > 0 && minimum selfBens < -10
-                  || selfSum < 0 && maximum selfBens > 10)
-            isWeapon = isMelee $ itemBase itemFull
-            totalSum
-              | isWeapon && effSum < 0 = - effSum + selfSum
-              | not $ goesIntoEqp $ itemBase itemFull = effSum
-              | mixedBlessing =
-                  0  -- significant mixed blessings out of AI control
-              | otherwise = selfSum  -- if the weapon heals the enemy, it
-                                     -- won't be used but can be equipped
-        in (totalSum, effSum)
-  in case itemDisco itemFull of
-    Just ItemDisco{itemAspect=Just aspectRecord, itemKind=IK.ItemKind{ieffects}} ->
-      Just $ ben ieffects aspectRecord
-    Just ItemDisco{itemAspectMean, itemKind=IK.ItemKind{ieffects}} ->
-      Just $ ben ieffects itemAspectMean
-    _ -> Nothing
+totalUsefulness cops fact itemFull = case itemDisco itemFull of
+  Just ItemDisco{itemAspect=Just aspectRecord, itemKind=IK.ItemKind{ieffects}} ->
+    Just $ totalUse cops fact ieffects aspectRecord (itemBase itemFull)
+  Just ItemDisco{itemAspectMean, itemKind=IK.ItemKind{ieffects}} ->
+    Just $ totalUse cops fact ieffects itemAspectMean (itemBase itemFull)
+  _ -> Nothing
+
+totalUse :: Kind.COps -> Faction -> [IK.Effect] -> AspectRecord -> Item
+         -> (Int, Int)
+totalUse cops fact effects aspects item =
+  let effSum = -(min 150 (10 * Dice.meanDice (jdamage item)))
+               + sum (map (effectToBenefit cops fact) effects)
+      aspBens = map (aspectToBenefit cops) $ aspectRecordToList aspects
+      periodicEffBens = map (effectToBenefit cops fact)
+                            (stripRecharging effects)
+      timeout = aTimeout aspects
+      periodicBens | timeout == 0 = []
+                   | otherwise =
+        map (\eff -> eff * 10 `divUp` timeout) periodicEffBens
+      selfBens = aspBens ++ periodicBens
+      selfSum = sum selfBens
+      mixedBlessing =
+        not (null selfBens)
+        && (selfSum > 0 && minimum selfBens < -10
+            || selfSum < 0 && maximum selfBens > 10)
+      isWeapon = isMelee item
+      totalSum
+        | isWeapon && effSum < 0 = - effSum + selfSum
+        | not $ goesIntoEqp item = effSum
+        | mixedBlessing =
+            0  -- significant mixed blessings out of AI control
+        | otherwise = selfSum  -- if the weapon heals the enemy, it
+                               -- won't be used but can be equipped
+  in (totalSum, effSum)

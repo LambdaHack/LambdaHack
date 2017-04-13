@@ -350,10 +350,10 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
   let trunkKind = case itemDisco of
         Just ItemDisco{itemKind} -> itemKind
         Nothing -> assert `failure` trunkFull
+      aspects = fromJust $ itemAspect $ fromJust itemDisco
   -- Initial HP and Calm is based only on trunk and ignores organs.
-  let hp = xM (max 2 $ aMaxHP (aspectRecordFull trunkFull))
-           `div` 2
-      calm = xM $ max 1 $ aMaxCalm (aspectRecordFull trunkFull)
+      hp = xM (max 2 $ aMaxHP aspects) `div` 2
+      calm = xM $ max 1 $ aMaxCalm aspects
   -- Create actor.
   factionD <- getsState sfactionD
   let fact = factionD EM.! bfid
