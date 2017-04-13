@@ -2,7 +2,7 @@
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Client.State
   ( StateClient(..), emptyStateClient
-  , AlterLid
+  , DiscoveryBenefit, AlterLid
   , updateTarget, getTarget, updateLeader, sside
   , BfsAndPath(..), TgtAndPath(..), cycleMarkSuspect
   ) where
@@ -44,37 +44,40 @@ import Game.LambdaHack.Content.ModeKind (ModeKind)
 --
 -- Data invariant: if @_sleader@ is @Nothing@ then so is @srunning@.
 data StateClient = StateClient
-  { seps         :: !Int           -- ^ a parameter of the aiming digital line
-  , stargetD     :: !(EM.EnumMap ActorId TgtAndPath)
+  { seps          :: !Int           -- ^ a parameter of the aiming digital line
+  , stargetD      :: !(EM.EnumMap ActorId TgtAndPath)
                                    -- ^ targets of our actors in the dungeon
-  , sexplored    :: !(ES.EnumSet LevelId)
+  , sexplored     :: !(ES.EnumSet LevelId)
                                    -- ^ the set of fully explored levels
-  , sbfsD        :: !(EM.EnumMap ActorId BfsAndPath)
+  , sbfsD         :: !(EM.EnumMap ActorId BfsAndPath)
                                    -- ^ pathfinding distances for our actors
                                    --   and paths to their targets, if any
-  , sundo        :: ![CmdAtomic]   -- ^ atomic commands performed to date
-  , sdiscoKind   :: !DiscoveryKind    -- ^ remembered item discoveries
-  , sdiscoAspect :: !DiscoveryAspect  -- ^ remembered aspects of items
-  , sactorAspect :: !ActorAspect   -- ^ best known actor aspect data
-  , sfper        :: !PerLid        -- ^ faction perception indexed by levels
-  , salter       :: !AlterLid      -- ^ cached alter ability data for positions
-  , srandom      :: !R.StdGen      -- ^ current random generator
-  , _sleader     :: !(Maybe ActorId)
+  , sundo         :: ![CmdAtomic]   -- ^ atomic commands performed to date
+  , sdiscoKind    :: !DiscoveryKind    -- ^ remembered item discoveries
+  , sdiscoAspect  :: !DiscoveryAspect  -- ^ remembered aspects of items
+  , sdiscoBenefit :: !DiscoveryBenefit  -- ^ remembered AI benefits of items
+  , sactorAspect  :: !ActorAspect   -- ^ best known actor aspect data
+  , sfper         :: !PerLid        -- ^ faction perception indexed by levels
+  , salter        :: !AlterLid      -- ^ cached alter ability data for positions
+  , srandom       :: !R.StdGen      -- ^ current random generator
+  , _sleader      :: !(Maybe ActorId)
                                    -- ^ candidate new leader of the faction;
                                    --   Faction._gleader is the old leader
-  , _sside       :: !FactionId     -- ^ faction controlled by the client
-  , squit        :: !Bool          -- ^ exit the game loop
-  , scurChal     :: !Challenge     -- ^ current game challenge setup
-  , snxtChal     :: !Challenge     -- ^ next game challenge setup
-  , snxtScenario :: !Int           -- ^ next game scenario number
-  , smarkSuspect :: !Int           -- ^ mark suspect features
-  , scondInMelee :: !(EM.EnumMap LevelId (Maybe Bool))
+  , _sside        :: !FactionId     -- ^ faction controlled by the client
+  , squit         :: !Bool          -- ^ exit the game loop
+  , scurChal      :: !Challenge     -- ^ current game challenge setup
+  , snxtChal      :: !Challenge     -- ^ next game challenge setup
+  , snxtScenario  :: !Int           -- ^ next game scenario number
+  , smarkSuspect  :: !Int           -- ^ mark suspect features
+  , scondInMelee  :: !(EM.EnumMap LevelId (Maybe Bool))
       -- ^ the old and (new, old) values of condInMelee condition
-  , svictories   :: !(EM.EnumMap (Kind.Id ModeKind) (M.Map Challenge Int))
+  , svictories    :: !(EM.EnumMap (Kind.Id ModeKind) (M.Map Challenge Int))
       -- ^ won games at particular difficulty levels
-  , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
+  , sdebugCli     :: !DebugModeCli  -- ^ client debugging mode
   }
   deriving Show
+
+type DiscoveryBenefit = EM.EnumMap ItemId (Int, Int)
 
 data BfsAndPath =
     BfsInvalid
@@ -101,6 +104,7 @@ emptyStateClient _sside =
     , sundo = []
     , sdiscoKind = EM.empty
     , sdiscoAspect = EM.empty
+    , sdiscoBenefit = EM.empty
     , sactorAspect = EM.empty
     , sfper = EM.empty
     , salter = EM.empty
@@ -154,6 +158,7 @@ instance Binary StateClient where
     put sundo
     put sdiscoKind
     put sdiscoAspect
+    put sdiscoBenefit
     put (show srandom)
     put _sleader
     put _sside
@@ -174,6 +179,7 @@ instance Binary StateClient where
     sundo <- get
     sdiscoKind <- get
     sdiscoAspect <- get
+    sdiscoBenefit <- get
     g <- get
     _sleader <- get
     _sside <- get

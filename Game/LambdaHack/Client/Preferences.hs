@@ -1,6 +1,6 @@
 -- | Actor preferences for targets and actions based on actor attributes.
-module Game.LambdaHack.Client.AI.Preferences
-  ( totalUsefulness, effectToBenefit
+module Game.LambdaHack.Client.Preferences
+  ( totalUsefulness, totalUse, effectToBenefit
   ) where
 
 import Prelude ()
@@ -20,8 +20,7 @@ import Game.LambdaHack.Content.ModeKind
 -- | How much AI benefits from applying the effect. Multipllied by item p.
 -- Negative means harm to the enemy when thrown at him. Effects with zero
 -- benefit won't ever be used, neither actively nor passively.
-effectToBenefit :: Kind.COps -> Faction -> IK.Effect
-                -> Int
+effectToBenefit :: Kind.COps -> Faction -> IK.Effect -> Int
 effectToBenefit cops fact eff =
   case eff of
     IK.ELabel _ -> 0

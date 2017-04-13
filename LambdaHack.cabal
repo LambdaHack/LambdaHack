@@ -118,7 +118,6 @@ library
                       Game.LambdaHack.Client.AI.HandleAbilityM
                       Game.LambdaHack.Client.AI.PickActorM
                       Game.LambdaHack.Client.AI.PickTargetM
-                      Game.LambdaHack.Client.AI.Preferences
                       Game.LambdaHack.Client.AI.Strategy
                       Game.LambdaHack.Client.Bfs
                       Game.LambdaHack.Client.BfsM
@@ -127,6 +126,7 @@ library
                       Game.LambdaHack.Client.HandleResponseM
                       Game.LambdaHack.Client.LoopM
                       Game.LambdaHack.Client.MonadClient
+                      Game.LambdaHack.Client.Preferences
                       Game.LambdaHack.Client.State
                       Game.LambdaHack.Client.UI
                       Game.LambdaHack.Client.UI.ActorUI

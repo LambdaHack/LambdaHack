@@ -19,6 +19,7 @@ import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.BfsM
 import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
+import Game.LambdaHack.Client.Preferences
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -32,6 +33,7 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind (ModeKind)
 import Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
@@ -229,6 +231,8 @@ cmdAtomicSemCli cmd = case cmd of
   UpdCreateItem iid itemBase (k, _) (CActor aid store) -> do
     wipeBfsIfItemAffectsSkills [store] aid
     when (store `elem` [CEqp, COrgan]) $ addItemToActor iid itemBase k aid
+    addItemToDiscoBenefit iid itemBase
+  UpdCreateItem iid itemBase _ _ -> addItemToDiscoBenefit iid itemBase
   UpdDestroyItem iid itemBase (k, _) (CActor aid store) -> do
     wipeBfsIfItemAffectsSkills [store] aid
     when (store `elem` [CEqp, COrgan]) $ addItemToActor iid itemBase (-k) aid
@@ -237,6 +241,8 @@ cmdAtomicSemCli cmd = case cmd of
   UpdSpotItem _ iid itemBase (k, _) (CActor aid store) -> do
     wipeBfsIfItemAffectsSkills [store] aid
     when (store `elem` [CEqp, COrgan]) $ addItemToActor iid itemBase k aid
+    addItemToDiscoBenefit iid itemBase
+  UpdSpotItem _ iid itemBase _ _ -> addItemToDiscoBenefit iid itemBase
   UpdLoseItem _ iid itemBase (k, _) (CActor aid store) -> do
     wipeBfsIfItemAffectsSkills [store] aid
     when (store `elem` [CEqp, COrgan]) $ addItemToActor iid itemBase (-k) aid
@@ -384,6 +390,7 @@ createActor aid b ais = do
   aspectRecord <- aspectRecordFromActorClient b ais
   let f = EM.insert aid aspectRecord
   modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
+  mapM_ (uncurry addItemToDiscoBenefit) ais
 
 destroyActor :: MonadClient m => ActorId -> Actor -> Bool -> m ()
 destroyActor aid b destroy = do
@@ -415,6 +422,24 @@ addItemToActor iid itemBase k aid = do
       f = EM.adjust g aid
   modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
 
+addItemToDiscoBenefit :: MonadClient m => ItemId -> Item -> m ()
+addItemToDiscoBenefit iid item = do
+  cops@Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  discoBenefit <- getsClient sdiscoBenefit
+  case EM.lookup iid discoBenefit of
+    Just{} -> return ()  -- already there
+    Nothing -> do
+      discoKind <- getsClient sdiscoKind
+      case EM.lookup (jkindIx item) discoKind of
+        Nothing -> return ()
+        Just KindMean{..} -> do
+          side <- getsClient sside
+          fact <- getsState $ (EM.! side) . sfactionD
+          let effects = IK.ieffects $ okind kmKind
+              benefit = totalUse cops fact effects kmMean item
+          modifyClient $ \cli ->
+            cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
+
 perception :: MonadClient m => LevelId -> Perception -> Perception -> m ()
 perception lid outPer inPer = do
   -- Clients can't compute FOV on their own, because they don't know
@@ -442,17 +467,22 @@ perception lid outPer inPer = do
 
 discoverKind :: MonadClient m => Container -> ItemId -> Kind.Id ItemKind -> m ()
 discoverKind c iid kmKind = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  cops@Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
   -- affect his actors' skills relevant to BFS.
   invalidateBfsAll
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
   item <- getsState $ getItemBody iid
-  let kmMean = meanAspect $ okind kmKind
+  let kind = okind kmKind
+      kmMean = meanAspect kind
+      benefit = totalUse cops fact (IK.ieffects kind) kmMean item
       f Nothing = Just KindMean{..}
       f Just{} = assert `failure` "already discovered"
                         `twith` (c, iid, kmKind)
   modifyClient $ \cli ->
-    cli {sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)}
+    cli { sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)
+        , sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli) }
   -- Each actor's equipment and organs would need to be inspected,
   -- the iid looked up, e.g., if it wasn't in old discoKind, but is in new,
   -- and then aspect record updated, so it's simpler and not much more
@@ -468,6 +498,7 @@ coverKind c iid ik = do
       f (Just KindMean{kmKind}) =
         assert (ik == kmKind `blame` "unexpected covered item kind"
                              `twith` (ik, kmKind)) Nothing
+  -- For now, undoing @sdiscoBenefit@ is too much work.
   modifyClient $ \cli ->
     cli {sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)}
   s <- getState
@@ -476,10 +507,12 @@ coverKind c iid ik = do
 
 discoverSeed :: MonadClient m => Container -> ItemId -> ItemSeed -> m ()
 discoverSeed c iid seed = do
+  cops@Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
   -- affect his actors' skills relevant to BFS.
   invalidateBfsAll
-  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
   discoKind <- getsClient sdiscoKind
   item <- getsState $ getItemBody iid
   totalDepth <- getsState stotalDepth
@@ -489,11 +522,14 @@ discoverSeed c iid seed = do
     Just KindMean{kmKind} -> do
       Level{ldepth} <- getLevel $ jlid item
       let kind = okind kmKind
-          f Nothing = Just $ seedToAspect seed kind ldepth totalDepth
+          aspects = seedToAspect seed kind ldepth totalDepth
+          benefit = totalUse cops fact (IK.ieffects kind) aspects item
+          f Nothing = Just aspects
           f Just{} = assert `failure` "already discovered"
                             `twith` (c, iid, seed)
       modifyClient $ \cli ->
-        cli {sdiscoAspect = EM.alter f iid (sdiscoAspect cli)}
+        cli { sdiscoAspect = EM.alter f iid (sdiscoAspect cli)
+            , sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli) }
   s <- getState
   sactorAspect <- createSactorAspect s
   modifyClient $ \cli -> cli {sactorAspect}
@@ -502,6 +538,7 @@ coverSeed :: MonadClient m => Container -> ItemId -> ItemSeed -> m ()
 coverSeed c iid seed = do
   let f Nothing = assert `failure` "already covered" `twith` (c, iid, seed)
       f Just{} = Nothing  -- checking that old and new agree is too much work
+  -- For now, undoing @sdiscoBenefit@ is too much work.
   modifyClient $ \cli -> cli {sdiscoAspect = EM.alter f iid (sdiscoAspect cli)}
   s <- getState
   sactorAspect <- createSactorAspect s
