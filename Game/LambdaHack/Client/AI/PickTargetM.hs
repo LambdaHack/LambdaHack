@@ -155,9 +155,9 @@ targetStrategy aid = do
   actorMinSk <- getsState $ actorSkills Nothing aid ar
   condCanProject <-
     condCanProjectM (EM.findWithDefault 0 AbProject actorMaxSk) aid
-  condHpTooLow <- condHpTooLowM aid
   condEnoughGear <- condEnoughGearM aid
   let condCanMelee = actorCanMelee actorAspect aid b
+      condHpTooLow = hpTooLow b ar
       friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
   let canEscape = fcanEscape (gplayer fact)

@@ -5,13 +5,11 @@ module Game.LambdaHack.Client.AI.ConditionM
   , condAimEnemyRememberedM
   , condTgtNonmovingM
   , condAnyFoeAdjM
-  , condHpTooLowM
   , condAdjTriggerableM
   , condBlocksFriendsM
   , condFloorWeaponM
   , condNoEqpWeaponM
   , condCanProjectM
-  , condNotCalmEnoughM
   , condDesirableFloorItemM
   , condSupport
   , benAvailableItems
@@ -87,16 +85,6 @@ condAnyFoeAdjM :: MonadStateRead m => ActorId -> m Bool
 condAnyFoeAdjM aid = do
   s <- getState
   return $! anyFoeAdj aid s
-
--- | Require the actor's HP is low enough.
-condHpTooLowM :: MonadClient m => ActorId -> m Bool
-condHpTooLowM aid = do
-  b <- getsState $ getActorBody aid
-  actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
-  return $! hpTooLow b ar
 
 -- | Require the actor stands adjacent to a triggerable tile (e.g., stairs).
 condAdjTriggerableM :: MonadStateRead m => ActorId -> m Bool
@@ -189,12 +177,12 @@ benAvailableItems aid permitted cstores = do
   condAnyFoeAdj <- condAnyFoeAdjM aid
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
-  condNotCalmEnough <- condNotCalmEnoughM aid
   actorAspect <- getsClient sactorAspect
   s <- getState
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
+      condNotCalmEnough = not (calmEnough b ar)
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltaSerious (bcalmDelta b)
       ben cstore bag =
@@ -229,16 +217,6 @@ hinders condAnyFoeAdj condShineWouldBetray condAimEnemyPresent
      -- actors want to hide in the dark.
      || itemShineBad
         && (heavilyDistressed || condNotCalmEnough || condAimEnemyPresent)
-
--- | Require the actor is not calm enough.
-condNotCalmEnoughM :: MonadClient m => ActorId -> m Bool
-condNotCalmEnoughM aid = do
-  b <- getsState $ getActorBody aid
-  actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
-  return $! not (calmEnough b ar)
 
 -- | Require that the actor stands over a desirable item.
 condDesirableFloorItemM :: MonadClient m => ActorId -> m Bool

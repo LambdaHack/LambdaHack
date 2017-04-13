@@ -80,13 +80,11 @@ actionStrategy aid = do
   actorSk <- currentSkillsClient aid
   condCanProject <-
     condCanProjectM (EM.findWithDefault 0 AbProject actorSk) aid
-  condHpTooLow <- condHpTooLowM aid
   condAdjTriggerable <- condAdjTriggerableM aid
   condBlocksFriends <- condBlocksFriendsM aid
   condNoEqpWeapon <- condNoEqpWeaponM aid
   condEnoughGear <- condEnoughGearM aid
   condFloorWeapon <- condFloorWeaponM aid
-  condNotCalmEnough <- condNotCalmEnoughM aid
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condTgtNonmoving <- condTgtNonmovingM aid
   explored <- getsClient sexplored
@@ -96,6 +94,8 @@ actionStrategy aid = do
         Nothing -> assert `failure` aid
       lidExplored = ES.member (blid body) explored
       panicFleeL = fleeL ++ badVic
+      condHpTooLow = hpTooLow body ar
+      condNotCalmEnough = not (calmEnough body ar)
       speed1_5 = speedScale (3%2) (bspeed body ar)
       condCanMelee = actorCanMelee actorAspect aid body
       condMeleeBad1 = not (condSupport1 && condCanMelee)
@@ -223,7 +223,8 @@ actionStrategy aid = do
         , ( [AbApply]
           , stratToFreq 2 $ (toAny :: ToAny 'AbApply)
             <$> applyItem aid ApplyAll  -- use any potion or scroll
-          , (condAimEnemyPresent || condThreat 9) )  -- can affect enemies
+          , (condAimEnemyPresent || condThreat 9)  -- can affect enemies
+            && bhp body < xM (aMaxHP ar - 10) )  -- don't waste healing
         , ( [AbMove]
           , stratToFreq (if | condInMelee ->
                               1000  -- friends pummeled by target, go to help
