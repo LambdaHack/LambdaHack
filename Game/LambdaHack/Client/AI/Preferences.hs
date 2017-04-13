@@ -7,7 +7,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
@@ -21,23 +20,17 @@ import Game.LambdaHack.Content.ModeKind
 -- | How much AI benefits from applying the effect. Multipllied by item p.
 -- Negative means harm to the enemy when thrown at him. Effects with zero
 -- benefit won't ever be used, neither actively nor passively.
-effectToBenefit :: Kind.COps -> Actor -> AspectRecord -> Faction -> IK.Effect
+effectToBenefit :: Kind.COps -> Faction -> IK.Effect
                 -> Int
-effectToBenefit cops b ar@AspectRecord{..} fact eff =
+effectToBenefit cops fact eff =
   case eff of
     IK.ELabel _ -> 0
     IK.EqpSlot _ -> 0
     IK.Burn d -> -(min 200 $ 15 * Dice.meanDice d)
                    -- often splash damage, etc.
     IK.Explode _ -> 0  -- depends on explosion
-    IK.RefillHP p ->
-         if p > 0
-         then 10 * min p (max 0 $ fromEnum $ (xM aMaxHP - bhp b) `divUp` oneM)
-         else max (-99) (11 * p)
-    IK.RefillCalm p ->
-         if p > 0
-         then min p (max 0 $ fromEnum $ (xM aMaxCalm - bcalm b) `divUp` oneM)
-         else max (-20) p
+    IK.RefillHP p -> if p > 0 then min 99 (10 * p) else max (-99) (10 * p)
+    IK.RefillCalm p -> if p > 0 then min 9 p else max (-9) p
     IK.Dominate -> -200
     IK.Impress -> -10
     IK.Summon grp d ->  -- contrived by not taking into account alliances
@@ -53,11 +46,11 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
          then 1
          else -p  -- get rid of the foe
     IK.CreateItem COrgan grp _ ->
-      let (total, count) = organBenefit grp cops b ar fact
+      let (total, count) = organBenefit grp cops fact
       in total `divUp` count  -- average over all matching grp; rarities ignored
     IK.CreateItem{} -> 30
     IK.DropItem _ _ COrgan grp ->
-      let (total, _) = organBenefit grp cops b ar fact
+      let (total, _) = organBenefit grp cops fact
       in - total  -- sum over all matching grp; simplification: rarities ignored
     IK.DropItem _ _ _ _ -> -15
     IK.PolyItem -> 0  -- AI can't estimate item desirability vs average
@@ -74,33 +67,31 @@ effectToBenefit cops b ar@AspectRecord{..} fact eff =
     IK.ActivateInv ' ' -> -100
     IK.ActivateInv _ -> -50
     IK.ApplyPerfume -> 0  -- depends on the smell sense of friends and foes
-    IK.OneOf efs -> let bs = map (effectToBenefit cops b ar fact) efs
+    IK.OneOf efs -> let bs = map (effectToBenefit cops fact) efs
                     in if any (< -10) bs
                        then 0  -- mixed blessing
                        else sum bs `divUp` length bs
     IK.OnSmash _ -> 0  -- can be beneficial; we'd need to analyze explosions
-    IK.Recharging e -> effectToBenefit cops b ar fact e  -- for weapons
+    IK.Recharging e -> effectToBenefit cops fact e  -- for weapons
     IK.Temporary _ -> 0
     IK.Unique -> 0
     IK.Periodic -> 0
 
 -- We ignore the possibility of, e.g., temporary extra clawed limb, etc.,
 -- so we don't take into account idamage of the item kinds.
-organBenefit :: GroupName ItemKind -> Kind.COps
-             -> Actor -> AspectRecord -> Faction
-             -> (Int, Int)
-organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} b ar fact =
+organBenefit :: GroupName ItemKind -> Kind.COps -> Faction -> (Int, Int)
+organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} fact =
   let f (!sacc, !pacc) !p _ !kind =
-        let paspect asp = p * aspectToBenefit cops b asp
-            peffect eff = p * effectToBenefit cops b ar fact eff
+        let paspect asp = p * aspectToBenefit cops asp
+            peffect eff = p * effectToBenefit cops fact eff
         in ( sacc + sum (map paspect $ IK.iaspects kind)
                   + sum (map peffect $ IK.ieffects kind)
            , pacc + p )
   in ofoldlGroup' t f (0, 0)
 
 -- | Return the value to add to effect value.
-aspectToBenefit :: Kind.COps -> Actor -> IK.Aspect -> Int
-aspectToBenefit _cops _b asp =
+aspectToBenefit :: Kind.COps -> IK.Aspect -> Int
+aspectToBenefit _cops asp =
   case asp of
     IK.Timeout{} -> 0
     IK.AddHurtMelee p -> Dice.meanDice p
@@ -119,15 +110,14 @@ aspectToBenefit _cops _b asp =
 -- | Determine the total benefit from having an item in eqp or inv,
 -- according to item type, and also the benefit conferred by equipping the item
 -- and from meleeing with it or applying it or throwing it.
-totalUsefulness :: Kind.COps -> Actor -> AspectRecord -> Faction -> ItemFull
-                -> Maybe (Int, Int)
-totalUsefulness cops b ar fact itemFull =
+totalUsefulness :: Kind.COps -> Faction -> ItemFull -> Maybe (Int, Int)
+totalUsefulness cops fact itemFull =
   let ben effects aspects =
         let effSum = -(min 150
                            (10 * Dice.meanDice (jdamage $ itemBase itemFull)))
-                     + sum (map (effectToBenefit cops b ar fact) effects)
-            aspBens = map (aspectToBenefit cops b) $ aspectRecordToList aspects
-            periodicEffBens = map (effectToBenefit cops b ar fact)
+                     + sum (map (effectToBenefit cops fact) effects)
+            aspBens = map (aspectToBenefit cops) $ aspectRecordToList aspects
+            periodicEffBens = map (effectToBenefit cops fact)
                                   (stripRecharging effects)
             timeout = aTimeout $ aspectRecordFull itemFull
             periodicBens | timeout == 0 = []

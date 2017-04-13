@@ -199,8 +199,7 @@ targetStrategy aid = do
   isStairPos <- getsState $ \s lid p -> isStair lid p s
   let lidExplored = ES.member (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
-      itemUsefulness itemFull =
-        fst <$> totalUsefulness cops b ar fact itemFull
+      itemUsefulness itemFull = fst <$> totalUsefulness cops fact itemFull
       desirableBagFloor bag = any (\(iid, k) ->
         let itemFull = itemToF iid k
             use = itemUsefulness itemFull

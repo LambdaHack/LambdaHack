@@ -201,7 +201,7 @@ benAvailableItems aid permitted cstores = do
         [ ((benefit, (k, cstore)), (iid, itemFull))
         | (iid, kit@(k, _)) <- EM.assocs bag
         , let itemFull = itemToF iid kit
-              benefit = totalUsefulness cops b ar fact itemFull
+              benefit = totalUsefulness cops fact itemFull
               hind = hinders condAnyFoeAdj condShineWouldBetray
                              condAimEnemyPresent
                              heavilyDistressed condNotCalmEnough

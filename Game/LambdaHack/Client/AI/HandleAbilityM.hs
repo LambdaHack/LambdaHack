@@ -415,7 +415,7 @@ yieldUnneeded aid = do
         deltaSerious (bcalmDelta body)
       yieldSingleUnneeded (iidEqp, itemEqp) =
         let csha = if calmE then CSha else CInv
-        in if | harmful cops body ar fact itemEqp ->
+        in if | harmful cops fact itemEqp ->
                 [(iidEqp, itemK itemEqp, CEqp, CInv)]
               | hinders condAnyFoeAdj condShineWouldBetray
                         condAimEnemyPresent heavilyDistressed (not calmE)
@@ -529,12 +529,11 @@ bestByEqpSlot eqpAssocs invAssocs shaAssocs =
                                         bestSingle eqpSlot g3)
   in EM.assocs $ EM.mapWithKey bestThree eqpInvShaMap
 
-harmful :: Kind.COps -> Actor -> AspectRecord -> Faction -> ItemFull -> Bool
-harmful cops body ar fact itemFull =
+harmful :: Kind.COps -> Faction -> ItemFull -> Bool
+harmful cops fact itemFull =
   -- Items that are known and their effects are not stricly beneficial
   -- should not be equipped (either they are harmful or they waste eqp space).
-  maybe False (\(u, _) -> u <= 0)
-    (totalUsefulness cops body ar fact itemFull)
+  maybe False (\(u, _) -> u <= 0) (totalUsefulness cops fact itemFull)
 
 unneeded :: Kind.COps -> Bool -> Bool -> Bool -> Bool -> Bool
          -> Actor -> AspectRecord -> Faction -> ItemFull
@@ -542,7 +541,7 @@ unneeded :: Kind.COps -> Bool -> Bool -> Bool -> Bool -> Bool
 unneeded cops condAnyFoeAdj condShineWouldBetray
          condAimEnemyPresent heavilyDistressed condNotCalmEnough
          body ar fact itemFull =
-  harmful cops body ar fact itemFull
+  harmful cops fact itemFull
   || hinders condAnyFoeAdj condShineWouldBetray
              condAimEnemyPresent heavilyDistressed condNotCalmEnough
              body ar itemFull
@@ -625,10 +624,6 @@ trigger aid fleeVia = do
   b <- getsState $ getActorBody aid
   actorSk <- currentSkillsClient aid
   let alterSkill = EM.findWithDefault 0 AbAlter actorSk
-  actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   lvl <- getLevel (blid b)
   unexploredD <- unexploredDepth
@@ -676,12 +671,12 @@ trigger aid fleeVia = do
              || not (fcanEscape $ gplayer fact)
              || not allExplored
           then 0
-          else effectToBenefit cops b ar fact ef
+          else effectToBenefit cops fact ef
         ef -> return $!
           if fleeVia == ViaNothing
              && (not (Tile.isSuspect coTileSpeedup (lvl `at` p))
                  || Tile.consideredByAI coTileSpeedup (lvl `at` p))
-          then effectToBenefit cops b ar fact ef
+          then effectToBenefit cops fact ef
           else 0
   benFeats <- mapM bens feats
   let benFeat = zip benFeats feats
