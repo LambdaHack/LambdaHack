@@ -266,7 +266,8 @@ embedBenefit fleeVia aid pbags = do
   let alterSkill = EM.findWithDefault 0 Ability.AbAlter actorSk
   fact <- getsState $ (EM.! bfid b) . sfactionD
   lvl <- getLevel (blid b)
-  unexploredD <- unexploredDepth
+  unexploredTrue <- unexploredDepth True (blid b)
+  unexploredFalse <- unexploredDepth False (blid b)
   condEnoughGear <- condEnoughGearM aid
   discoKind <- getsClient sdiscoKind
   discoBenefit <- getsClient sdiscoBenefit
@@ -274,8 +275,6 @@ embedBenefit fleeVia aid pbags = do
   let aiAlterMinSkill p = Tile.aiAlterMinSkill coTileSpeedup $ lvl `at` p
       lidExplored = ES.member (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
-      unexploredTrue = unexploredD True (blid b)
-      unexploredFalse = unexploredD False (blid b)
       -- Ignoring the number of items, because only one of each @iid@
       -- is triggered at the same time, others are left to be used later on.
       iidToEffs iid = case EM.lookup (jkindIx $ getItemBody iid s) discoKind of
@@ -368,9 +367,10 @@ closestTriggers fleeVia aid = do
 -- | Check whether the actor has enough gear to go look for enemies.
 -- We assume weapons in equipment are better than any among organs
 -- or at least provide some essential diversity.
--- Disable if, due to tactic, actors follow leader and so would
+-- Disabled if, due to tactic, actors follow leader and so would
 -- repeatedly move towards and away form stairs at leader change,
 -- depending on current leader's gear.
+-- Number of items of a single kind is ignored, because variety is needed.
 condEnoughGearM :: MonadClient m => ActorId -> m Bool
 condEnoughGearM aid = do
   b <- getsState $ getActorBody aid
@@ -382,18 +382,18 @@ condEnoughGearM aid = do
            && (any (isMelee . snd) eqpAssocs
                || length (eqpAssocs ++ invAssocs) >= 5)
 
-unexploredDepth :: MonadClient m => m (Bool -> LevelId -> Bool)
-unexploredDepth = do
+unexploredDepth :: MonadClient m => Bool -> LevelId -> m Bool
+unexploredDepth up lidCurrent = do
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
   let allExplored = ES.size explored == EM.size dungeon
-      unexploredD up =
+      unexploredD =
         let unex lid = allExplored
                        && not (null $ lescape $ dungeon EM.! lid)
                        || ES.notMember lid explored
-                       || unexploredD up lid
+                       || unexploredD lid
         in any unex . ascendInBranch dungeon up
-  return unexploredD
+  return $! unexploredD lidCurrent
 
 -- | Closest (wrt paths) items.
 closestItems :: MonadClient m => ActorId -> m [(Int, (Point, ItemBag))]
