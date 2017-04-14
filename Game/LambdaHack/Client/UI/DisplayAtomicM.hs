@@ -843,15 +843,15 @@ discover c oldCli iid = do
 displayRespSfxAtomicUI :: MonadClientUI m => Bool -> SfxAtomic -> m ()
 {-# INLINE displayRespSfxAtomicUI #-}
 displayRespSfxAtomicUI verbose sfx = case sfx of
-  SfxStrike source target iid store mult ->
-    strike False source target iid store mult
-  SfxRecoil source target _ _ _ -> do
+  SfxStrike source target iid store ->
+    strike False source target iid store
+  SfxRecoil source target _ _ -> do
     spart <- partAidLeader source
     tpart <- partAidLeader target
     msgAdd $ makeSentence [MU.SubjectVerbSg spart "shrink away from", tpart]
-  SfxSteal source target iid store mult ->
-    strike True source target iid store mult
-  SfxRelease source target _ _ _ -> do
+  SfxSteal source target iid store ->
+    strike True source target iid store
+  SfxRelease source target _ _ -> do
     spart <- partAidLeader source
     tpart <- partAidLeader target
     msgAdd $ makeSentence [MU.SubjectVerbSg spart "release", tpart]
@@ -1044,14 +1044,14 @@ ppSfxMsg sfxMsg = case sfxMsg of
         msg = makeSentence [ "you hear"
                            , MU.AW $ MU.Phrase $ distant ++ [sound] ]
     return $! msg
-  SfxLoudStrike local ik hurtMult -> do
+  SfxLoudStrike local ik distance -> do
     Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
     let verb = IK.iverbHit $ okind ik
-        adverb = if | hurtMult > 90 -> "loudly"
-                    | hurtMult >= 50 -> "distinctly"
-                    | hurtMult > 1 -> ""  -- most common with projectiles
-                    | hurtMult > 0 -> "faintly"
-                    | otherwise -> "barely"
+        adverb = if | distance < 5 -> "loudly"
+                    | distance < 10 -> "distinctly"
+                    | distance < 40 -> ""  -- most common
+                    | distance < 45 -> "faintly"
+                    | otherwise -> "barely"  -- 50 is the hearing limit
         distant = if local then [] else ["far away"]
         msg = makeSentence $
           [ "you", adverb, "hear something", verb, "someone"] ++ distant
@@ -1099,8 +1099,10 @@ setLastSlot aid iid cstore = do
       Nothing -> assert `failure` (iid, cstore, aid)
 
 strike :: MonadClientUI m
-       => Bool -> ActorId -> ActorId -> ItemId -> CStore -> Int -> m ()
-strike catch source target iid cstore hurtMult = assert (source /= target) $ do
+       => Bool -> ActorId -> ActorId -> ItemId -> CStore -> m ()
+strike catch source target iid cstore = assert (source /= target) $ do
+  actorAspect <- getsClient sactorAspect
+  hurtMult <- getsState $ armorHurtBonus actorAspect source target
   tb <- getsState $ getActorBody target
   tbUI <- getsSession $ getActorUI target
   sourceSeen <- getsState $ memActor source (blid tb)
@@ -1158,10 +1160,8 @@ strike catch source target iid cstore hurtMult = assert (source /= target) $ do
                       "partly"
                     | hurtMult > 1 ->  -- braced and/or huge bonuses
                       if braced tb then "doggedly" else "nonchalantly"
-                    | hurtMult > 0 ->      -- 1% got through, which can
+                    | otherwise ->         -- 1% got through, which can
                       "almost completely"  -- still be deadly, if fast missile
-                    | otherwise ->  -- apparently no damage; report
-                      "completely"
                ]
     msgAdd msg
     return (bpos tb, bpos sb)

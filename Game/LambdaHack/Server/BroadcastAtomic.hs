@@ -145,14 +145,15 @@ loudUpdAtomic local cmd = do
 loudSfxAtomic :: MonadServer m => Bool -> SfxAtomic -> m (Maybe SfxMsg)
 loudSfxAtomic local cmd = do
   case cmd of
-    SfxStrike source _ iid cstore hurtMult | local -> do
+    SfxStrike source _ iid cstore | local -> do
       itemToF <- itemToFullServer
       sb <- getsState $ getActorBody source
       bag <- getsState $ getBodyStoreBag sb cstore
       let kit = EM.findWithDefault (1, []) iid bag
           itemFull = itemToF iid kit
           ik = itemKindId $ fromJust $ itemDisco itemFull
-      return $ Just $ SfxLoudStrike local ik hurtMult
+          distance = 20  -- TODO: distance to leader; also, add a skill
+      return $ Just $ SfxLoudStrike local ik distance
     _ -> return Nothing
 
 sendPer :: MonadServerReadRequest m

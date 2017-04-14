@@ -252,11 +252,10 @@ reqMelee source target iid cstore = do
     let sfid = bfid sb
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
-    hurtBonus <- armorHurtBonus source target
+    hurtMult <- getsState $ armorHurtBonus actorAspect source target
     itemBase <- getsState $ getItemBody iid
     dmg <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) $ jdamage itemBase
-    let hurtMult = 100 + hurtBonus
-        rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
+    let rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
         speedDeltaHP = case btrajectory sb of
           Just (_, speed) -> - modifyDamageBySpeed rawDeltaHP speed
           Nothing -> - rawDeltaHP
@@ -266,9 +265,6 @@ reqMelee source target iid cstore = do
         deltaHP | serious = -- if HP overfull, at least cut back to max HP
                             min speedDeltaHP (xM hpMax - bhp tb)
                 | otherwise = speedDeltaHP
-        hurtMultZero | speedDeltaHP < 0 = hurtMult
-                     | speedDeltaHP == 0 && dmg > 0 = 0
-                     | otherwise = 100  -- no blocking, because no initial dmg
         -- Damage the target, never heal.
         damageTarget = when (deltaHP < 0) $ do
           execUpdAtomic $ UpdRefillHP target deltaHP
@@ -288,7 +284,7 @@ reqMelee source target iid cstore = do
       -- and blocking can be even more so, depending on stats of the missile.
       -- Missiles are really easy to defend against, but sight (and so, Calm)
       -- is the key, as well as light, ambush around a corner, etc.
-      execSfxAtomic $ SfxSteal source target iid cstore hurtMultZero
+      execSfxAtomic $ SfxSteal source target iid cstore
       case EM.assocs $ beqp tb of
         [(iid2, (k, _))] -> do
           upds <- generalMoveItem True iid2 k (CActor target CEqp)
@@ -298,7 +294,7 @@ reqMelee source target iid cstore = do
       damageTarget  -- damage the caught missile to let it vanish
     else do
       -- Normal hit, with effects.
-      execSfxAtomic $ SfxStrike source target iid cstore hurtMultZero
+      execSfxAtomic $ SfxStrike source target iid cstore
       damageTarget
       case btrajectory sb of
         Just (tra, speed) | not $ null tra -> do
@@ -325,20 +321,6 @@ reqMelee source target iid cstore = do
               || isAllied sfact tfid  -- allies never at war
               || sfid == tfid) $
         execUpdAtomic $ UpdDiplFaction sfid tfid fromDipl War
-
-armorHurtBonus :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m Int
-armorHurtBonus source target = do
-  sb <- getsState $ getActorBody source
-  tb <- getsState $ getActorBody target
-  actorAspect <- getsServer sactorAspect
-  let trim200 n = min 200 $ max (-200) n
-      block200 b n = min 200 $ max (-200) $ n + if braced tb then b else 0
-      sar = actorAspect EM.! source
-      tar = actorAspect EM.! target
-      itemBonus = trim200 (aHurtMelee sar) - if bproj sb
-                                             then block200 25 (aArmorRanged tar)
-                                             else block200 50 (aArmorMelee tar)
-  return $! min 99 $ max (-99) itemBonus  -- at least 1% of dmg gets through
 
 -- * ReqDisplace
 

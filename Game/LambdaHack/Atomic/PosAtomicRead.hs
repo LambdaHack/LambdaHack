@@ -135,14 +135,14 @@ posUpdAtomic cmd = case cmd of
 -- | Produce the positions where the atomic special effect takes place.
 posSfxAtomic :: MonadStateRead m => SfxAtomic -> m PosAtomic
 posSfxAtomic cmd = case cmd of
-  SfxStrike _ _ _ CSha _ -> return PosNone  -- shared stash is private
-  SfxStrike _ target _ _ _ -> singleAid target
-  SfxRecoil _ _ _ CSha _ -> return PosNone  -- shared stash is private
-  SfxRecoil _ target _ _ _ -> singleAid target
-  SfxSteal _ _ _ CSha _ -> return PosNone  -- shared stash is private
-  SfxSteal _ target _ _ _ -> singleAid target
-  SfxRelease _ _ _ CSha _ -> return PosNone  -- shared stash is private
-  SfxRelease _ target _ _ _ -> singleAid target
+  SfxStrike _ _ _ CSha -> return PosNone  -- shared stash is private
+  SfxStrike _ target _ _ -> singleAid target
+  SfxRecoil _ _ _ CSha -> return PosNone  -- shared stash is private
+  SfxRecoil _ target _ _ -> singleAid target
+  SfxSteal _ _ _ CSha -> return PosNone  -- shared stash is private
+  SfxSteal _ target _ _ -> singleAid target
+  SfxRelease _ _ _ CSha -> return PosNone  -- shared stash is private
+  SfxRelease _ target _ _ -> singleAid target
   SfxProject aid _ cstore -> singleContainer $ CActor aid cstore
   SfxReceive aid _ cstore -> singleContainer $ CActor aid cstore
   SfxApply aid _ cstore -> singleContainer $ CActor aid cstore

@@ -117,10 +117,10 @@ instance Binary UpdAtomic
 -- | Abstract syntax of atomic special effects, that is, atomic commands
 -- that only display special effects and don't change the state.
 data SfxAtomic =
-    SfxStrike !ActorId !ActorId !ItemId !CStore !Int
-  | SfxRecoil !ActorId !ActorId !ItemId !CStore !Int
-  | SfxSteal !ActorId !ActorId !ItemId !CStore !Int
-  | SfxRelease !ActorId !ActorId !ItemId !CStore !Int
+    SfxStrike !ActorId !ActorId !ItemId !CStore
+  | SfxRecoil !ActorId !ActorId !ItemId !CStore
+  | SfxSteal !ActorId !ActorId !ItemId !CStore
+  | SfxRelease !ActorId !ActorId !ItemId !CStore
   | SfxProject !ActorId !ItemId !CStore
   | SfxReceive !ActorId !ItemId !CStore
   | SfxApply !ActorId !ItemId !CStore
@@ -136,7 +136,7 @@ instance Binary SfxAtomic
 data SfxMsg =
     SfxUnexpected !ReqFailure
   | SfxLoudUpd !Bool !UpdAtomic
-  | SfxLoudStrike !Bool !(Kind.Id ItemKind) ! Int
+  | SfxLoudStrike !Bool !(Kind.Id ItemKind) !Int
   | SfxFizzles
   | SfxVoidDetection
   | SfxSummonLackCalm !ActorId
@@ -209,10 +209,10 @@ undoUpdAtomic cmd = case cmd of
 
 undoSfxAtomic :: SfxAtomic -> SfxAtomic
 undoSfxAtomic cmd = case cmd of
-  SfxStrike source target iid cstore h -> SfxRecoil source target iid cstore h
-  SfxRecoil source target iid cstore h -> SfxStrike source target iid cstore h
-  SfxSteal source target iid cstore h -> SfxRelease source target iid cstore h
-  SfxRelease source target iid cstore h -> SfxSteal source target iid cstore h
+  SfxStrike source target iid cstore -> SfxRecoil source target iid cstore
+  SfxRecoil source target iid cstore -> SfxStrike source target iid cstore
+  SfxSteal source target iid cstore -> SfxRelease source target iid cstore
+  SfxRelease source target iid cstore -> SfxSteal source target iid cstore
   SfxProject aid iid cstore -> SfxReceive aid iid cstore
   SfxReceive aid iid cstore -> SfxProject aid iid cstore
   SfxApply aid iid cstore -> SfxCheck aid iid cstore

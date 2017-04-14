@@ -13,7 +13,8 @@ module Game.LambdaHack.Common.ActorState
   , posToAidsLvl, posToAids, posToAssocs
   , getItemBody, memActor, getActorBody, getLocalTime, regenCalmDelta
   , actorInAmbient, actorCanDeAmbient, actorSkills, dispEnemy, fullAssocs
-  , storeFromC, lidFromC, posFromC, aidFromC, isEscape, isStair, anyFoeAdj
+  , storeFromC, lidFromC, posFromC, aidFromC, isEscape, isStair
+  , anyFoeAdj, armorHurtBonus
   ) where
 
 import Prelude ()
@@ -355,3 +356,16 @@ anyFoeAdj aid s =
       f !b = blid b == blid body && adjacent (bpos b) (bpos body)
              && isAtWar fact (bfid b) && bhp b > 0
   in any f (sactorD s)
+
+armorHurtBonus :: ActorAspect -> ActorId -> ActorId -> State -> Int
+armorHurtBonus actorAspect source target s =
+  let sb = getActorBody source s
+      tb = getActorBody target s
+      trim200 n = min 200 $ max (-200) n
+      block200 b n = min 200 $ max (-200) $ n + if braced tb then b else 0
+      sar = actorAspect EM.! source
+      tar = actorAspect EM.! target
+      itemBonus = trim200 (aHurtMelee sar) - if bproj sb
+                                             then block200 25 (aArmorRanged tar)
+                                             else block200 50 (aArmorMelee tar)
+  in 100 + min 99 (max (-99) itemBonus)  -- at least 1% of damage gets through
