@@ -252,23 +252,24 @@ reqMelee source target iid cstore = do
     let sfid = bfid sb
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
-    hurtMult <- getsState $ armorHurtBonus actorAspect source target
-    itemBase <- getsState $ getItemBody iid
-    dmg <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) $ jdamage itemBase
-    let rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
-        speedDeltaHP = case btrajectory sb of
-          Just (_, speed) -> - modifyDamageBySpeed rawDeltaHP speed
-          Nothing -> - rawDeltaHP
-        -- Any amount of damage is serious, because next turn a stronger
-        -- projectile or melee weapon may be used and also it accumulates.
-        serious = speedDeltaHP < 0 && source /= target && not (bproj tb)
-        deltaHP | serious = -- if HP overfull, at least cut back to max HP
-                            min speedDeltaHP (xM hpMax - bhp tb)
-                | otherwise = speedDeltaHP
         -- Damage the target, never heal.
-        damageTarget = when (deltaHP < 0) $ do
-          execUpdAtomic $ UpdRefillHP target deltaHP
-          when serious $ cutCalm target
+    let damageTarget = do
+          hurtMult <- getsState $ armorHurtBonus actorAspect source target
+          itemBase <- getsState $ getItemBody iid
+          dmg <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) $ jdamage itemBase
+          let rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
+              speedDeltaHP = case btrajectory sb of
+                Just (_, speed) -> - modifyDamageBySpeed rawDeltaHP speed
+                Nothing -> - rawDeltaHP
+              -- Any amount of damage is serious, because next turn a stronger
+              -- projectile or melee weapon may be used and also it accumulates.
+              serious = speedDeltaHP < 0 && source /= target && not (bproj tb)
+              deltaHP | serious = -- if HP overfull, at least cut back to max HP
+                                  min speedDeltaHP (xM hpMax - bhp tb)
+                      | otherwise = speedDeltaHP
+          when (deltaHP < 0) $ do
+            execUpdAtomic $ UpdRefillHP target deltaHP
+            when serious $ cutCalm target
     -- Only catch with appendages, never with weapons.
     if bproj tb && length (beqp tb) == 1 && cstore == COrgan then do
       -- Catching the projectile, that is, stealing the item from its eqp.
@@ -296,25 +297,26 @@ reqMelee source target iid cstore = do
       -- Normal hit, with effects.
       execSfxAtomic $ SfxStrike source target iid cstore
       damageTarget
-      case btrajectory sb of
+      let c = CActor source cstore
+      -- Msgs inside itemEffect describe the target part.
+      itemEffectAndDestroy source target iid c
+      sb2 <- getsState $ getActorBody source
+      case btrajectory sb2 of
         Just (tra, speed) | not $ null tra -> do
           -- Deduct a hitpoint for a pierce of a projectile
           -- or due to a hurled actor colliding with another.
           -- Don't deduct if no pierce, to prevent spam.
-          when (not (bproj sb) || bhp sb > oneM) $
+          when (not (bproj sb2) || bhp sb2 > oneM) $
             execUpdAtomic $ UpdRefillHP source minusM
-          when (not (bproj sb) || bhp sb <= oneM) $
+          when (not (bproj sb2) || bhp sb2 <= oneM) $
             -- Non-projectiles can't pierce, so terminate their flight.
             -- If projectile has too low HP to pierce, ditto.
             execUpdAtomic
-            $ UpdTrajectory source (btrajectory sb) (Just ([], speed))
+            $ UpdTrajectory source (btrajectory sb2) (Just ([], speed))
         _ -> return ()
-      let c = CActor source cstore
-      -- Msgs inside itemEffect describe the target part.
-      itemEffectAndDestroy source target iid c
       -- The only way to start a war is to slap an enemy. Being hit by
       -- and hitting projectiles count as unintentional friendly fire.
-      let friendlyFire = bproj sb || bproj tb
+      let friendlyFire = bproj sb2 || bproj tb
           fromDipl = EM.findWithDefault Unknown tfid (gdipl sfact)
       unless (friendlyFire
               || isAtWar sfact tfid  -- already at war
