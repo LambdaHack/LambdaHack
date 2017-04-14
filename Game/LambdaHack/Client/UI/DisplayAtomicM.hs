@@ -1102,11 +1102,12 @@ strike :: MonadClientUI m
        => Bool -> ActorId -> ActorId -> ItemId -> CStore -> m ()
 strike catch source target iid cstore = assert (source /= target) $ do
   actorAspect <- getsClient sactorAspect
-  hurtMult <- getsState $ armorHurtBonus actorAspect source target
   tb <- getsState $ getActorBody target
   tbUI <- getsSession $ getActorUI target
   sourceSeen <- getsState $ memActor source (blid tb)
-  ps <- if sourceSeen then do
+  (ps, hurtMult) <-
+   if sourceSeen then do
+    hurtMult <- getsState $ armorHurtBonus actorAspect source target
     itemToF <- itemToFullClient
     sb <- getsState $ getActorBody source
     sbUI <- getsSession $ getActorUI source
@@ -1164,8 +1165,8 @@ strike catch source target iid cstore = assert (source /= target) $ do
                       "almost completely"  -- still be deadly, if fast missile
                ]
     msgAdd msg
-    return (bpos tb, bpos sb)
-  else return (bpos tb, bpos tb)
+    return ((bpos tb, bpos sb), hurtMult)
+   else return ((bpos tb, bpos tb), 100)
   let anim | hurtMult > 90 = twirlSplash ps Color.BrRed Color.Red
            | hurtMult > 1 = blockHit ps Color.BrRed Color.Red
            | otherwise = blockMiss ps
