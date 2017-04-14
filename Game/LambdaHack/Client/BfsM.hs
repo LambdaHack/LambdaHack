@@ -6,7 +6,8 @@ module Game.LambdaHack.Client.BfsM
   , getCachePath, createPath
   , unexploredDepth
   , closestUnknown, closestSmell, furthestKnown
-  , closestTriggers, closestItems, closestFoes
+  , FleeViaStairsOrEscape(..), embedBenefit, closestTriggers
+  , closestItems, closestFoes
   , condEnoughGearM
 #ifdef EXPOSE_INTERNAL
   , updatePathFromBfs
@@ -43,6 +44,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind (isUknownSpace)
 
@@ -334,6 +336,84 @@ closestTriggers onlyDir aid = do
           in (depthDelta * v, ppbag)
     in mapMaybe (\(cid, (p, pbag)) ->
          mix (cid, (p, pbag)) <$> accessBfs bfs p) vicAll
+
+data FleeViaStairsOrEscape = ViaStairs | ViaEscape | ViaNothing | ViaAnything
+  deriving (Show, Eq)
+
+embedBenefit :: MonadClient m
+             => ActorId -> FleeViaStairsOrEscape -> [(Point, ItemBag)]
+             -> m [(Int, (Point, ItemBag))]
+embedBenefit aid fleeVia pbags = do
+  Kind.COps{coitem=Kind.Ops{okind}, coTileSpeedup} <- getsState scops
+  dungeon <- getsState sdungeon
+  explored <- getsClient sexplored
+  b <- getsState $ getActorBody aid
+  actorSk <- currentSkillsClient aid
+  let alterSkill = EM.findWithDefault 0 Ability.AbAlter actorSk
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  lvl <- getLevel (blid b)
+  unexploredD <- unexploredDepth
+  condEnoughGear <- condEnoughGearM aid
+  discoKind <- getsClient sdiscoKind
+  discoBenefit <- getsClient sdiscoBenefit
+  s <- getState
+  let aiAlterMinSkill p = Tile.aiAlterMinSkill coTileSpeedup $ lvl `at` p
+      lidExplored = ES.member (blid b) explored
+      allExplored = ES.size explored == EM.size dungeon
+      unexploredTrue = unexploredD True (blid b)
+      unexploredFalse = unexploredD False (blid b)
+      -- Ignoring the number of items, because only one of each @iid@
+      -- is triggered at the same time, others are left to be used later on.
+      iidToEffs iid = case EM.lookup (jkindIx $ getItemBody iid s) discoKind of
+        Nothing -> []
+        Just KindMean{kmKind} -> IK.ieffects $ okind kmKind
+      isEffAscend IK.Ascend{} = True
+      isEffAscend _ = False
+      isEffEscape IK.Escape{} = True
+      isEffEscape _ = False
+      -- For simplicity, we assume at most one exit at each position
+      -- and we force AI to use exit even if terrible traps protect it.
+      bens (pos, bag) = do
+        let fs = concatMap iidToEffs $ EM.keys bag
+        case find isEffEscape fs of
+          Just{} ->
+            -- Only some factions try to escape but they first explore all
+            -- for high score.
+            return $! if fleeVia `notElem` [ViaEscape, ViaAnything]
+                         || not (fcanEscape $ gplayer fact)
+                         || not allExplored
+                      then 0  -- don't escape prematurely
+                      else 10000
+          Nothing -> case find isEffAscend fs of
+            Just (IK.Ascend up) -> do  -- change levels sensibly, in teams
+              let easier = up /= (fromEnum (blid b) > 0)
+                  unexpForth = if up then unexploredTrue else unexploredFalse
+                  unexpBack = if not up then unexploredTrue else unexploredFalse
+                  -- Forbid loops via peeking at unexplored and getting back.
+                  aiCond = if unexpForth
+                           then easier && condEnoughGear
+                                || (not unexpBack || easier) && lidExplored
+                           else easier && allExplored && null (lescape lvl)
+                  -- Prefer one direction of stairs, to team up.
+                  eben = if aiCond then if easier then 10 else 1 else 0
+              return $! if fleeVia `notElem` [ViaStairs, ViaAnything]
+                        then 0  -- don't flee prematurely
+                        else 10000 * eben
+            _ -> return $!
+              if fleeVia `elem` [ViaNothing, ViaAnything]
+                 && (not (Tile.isSuspect coTileSpeedup (lvl `at` pos))
+                     || Tile.consideredByAI coTileSpeedup (lvl `at` pos))
+              then
+                -- Actor uses he embedded item on himself, hence @snd@,
+                -- the same as when flinging item at an enemy.
+                sum $ mapMaybe (\iid -> snd <$> EM.lookup iid discoBenefit)
+                               (EM.keys bag)
+              else 0
+      -- Only actors with high enough AbAlter can trigger embedded items.
+      enterableHere p = alterSkill >= fromEnum (aiAlterMinSkill p)
+      ebags = filter (enterableHere . fst) pbags
+  benFeats <- mapM bens ebags
+  return $ filter ((> 0 ) . fst) $ zip benFeats ebags
 
 -- | Check whether the actor has enough gear to go look for enemies.
 -- We assume weapons in equipment are better than any among organs

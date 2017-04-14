@@ -203,11 +203,7 @@ targetStrategy aid = do
         let itemFull = itemToF iid k
             use = fst <$> EM.lookup iid discoBenefit
         in desirableItem canEscape use itemFull) $ EM.assocs bag
-      desirableBagEmbed bag = any (\iid ->
-        let use = fst <$> EM.lookup iid discoBenefit
-        in maybe False (> 0) use) $ EM.keys bag  -- mixed blessing OK; caches
       desirableFloor (_, (_, bag)) = desirableBagFloor bag
-      desirableEmbed (_, (_, (_, bag))) = desirableBagEmbed bag
       focused = bspeed b ar < speedWalk || condHpTooLow
       couldMoveLastTurn =
         let actorSk = if mleader == Just aid then actorMaxSk else actorMinSk
@@ -256,8 +252,7 @@ targetStrategy aid = do
                 if nullFreq citems then do
                   -- This is mostly lazy and referred to a few times below.
                   ctriggersRaw <- closestTriggers Nothing aid
-                  let ctriggers = toFreq "closestTriggers"
-                                  $ filter desirableEmbed ctriggersRaw
+                  let ctriggers = toFreq "closestTriggers" ctriggersRaw
                   if nullFreq ctriggers then do
                       let vToTgt v0 = do
                             let vFreq = toFreq "vFreq"
