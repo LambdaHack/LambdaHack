@@ -279,7 +279,8 @@ applyPeriodicLevel = do
               Just ItemDisco {itemKind=IK.ItemKind{IK.ieffects}} ->
                 when (IK.Periodic `elem` ieffects) $ do
                   -- In periodic activation, consider *only* recharging effects.
-                  effectAndDestroy aid aid iid (CActor aid cstore) True
+                  -- Activate even if effects null, to possibly destroy item.
+                  effectAndDestroy False aid aid iid (CActor aid cstore) True
                                    (filterRecharging ieffects) itemFull
               _ -> assert `failure` (aid, cstore, iid)
       applyPeriodicActor (aid, b) =

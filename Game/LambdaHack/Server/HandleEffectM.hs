@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectM
-  ( applyItem, itemEffectAndDestroy, effectAndDestroy, itemEffectEmbedded
+  ( applyItem, meleeEffectAndDestroy, effectAndDestroy, itemEffectEmbedded
   , dropCStoreItem, dominateFidSfx, pickDroppable, cutCalm
   ) where
 
@@ -47,20 +47,47 @@ import Game.LambdaHack.Server.State
 
 -- + Semantics of effects
 
--- If this function is called, melee damage is never applied.
--- If an item is activated in melee, melee damage is applied elsewhere
--- and @itemEffectAndDestroy@ is called directly.
 applyItem :: (MonadAtomic m, MonadServer m)
           => ActorId -> ItemId -> CStore -> m ()
 applyItem aid iid cstore = do
   execSfxAtomic $ SfxApply aid iid cstore
   let c = CActor aid cstore
-  itemEffectAndDestroy aid aid iid c
+  meleeEffectAndDestroy aid aid iid c
 
-itemEffectAndDestroy :: (MonadAtomic m, MonadServer m)
-                     => ActorId -> ActorId -> ItemId -> Container
-                     -> m ()
-itemEffectAndDestroy source target iid c = do
+applyMeleeDamage :: (MonadAtomic m, MonadServer m)
+                 => ActorId -> ActorId -> ItemId -> m Bool
+applyMeleeDamage source target iid = do
+  itemBase <- getsState $ getItemBody iid
+  if jdamage itemBase <= 0 then return False else do  -- speedup
+    sb <- getsState $ getActorBody source
+    tb <- getsState $ getActorBody target
+    actorAspect <- getsServer sactorAspect
+    hurtMult <- getsState $ armorHurtBonus actorAspect source target
+    dmg <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) $ jdamage itemBase
+    let ar = actorAspect EM.! target
+        hpMax = aMaxHP ar
+        rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
+        speedDeltaHP = case btrajectory sb of
+          Just (_, speed) -> - modifyDamageBySpeed rawDeltaHP speed
+          Nothing -> - rawDeltaHP
+        -- Any amount of damage is serious, because next turn a stronger
+        -- projectile or melee weapon may be used and also it accumulates.
+        serious = speedDeltaHP < 0 && source /= target && not (bproj tb)
+        deltaHP | serious = -- if HP overfull, at least cut back to max HP
+                            min speedDeltaHP (xM hpMax - bhp tb)
+                | otherwise = speedDeltaHP
+    if deltaHP < 0 then do  -- damage the target, never heal
+      execUpdAtomic $ UpdRefillHP target deltaHP
+      when serious $ cutCalm target
+      return True
+    else return False
+
+-- Here melee damage is applied. This is necessary so that the same
+-- AI benefit calculation may be used for flinging and for applying items.
+meleeEffectAndDestroy :: (MonadAtomic m, MonadServer m)
+                       => ActorId -> ActorId -> ItemId -> Container -> m ()
+meleeEffectAndDestroy source target iid c = do
+  meleePerformed <- applyMeleeDamage source target iid
   bag <- getsState $ getContainerBag c
   case iid `EM.lookup` bag of
     Nothing -> assert `failure` (source, target, iid, c)
@@ -69,24 +96,23 @@ itemEffectAndDestroy source target iid c = do
       let itemFull = itemToF iid kit
       case itemDisco itemFull of
         Just ItemDisco {itemKind=IK.ItemKind{IK.ieffects}} ->
-          effectAndDestroy source target iid c False ieffects itemFull
+          effectAndDestroy meleePerformed source target iid c False ieffects
+                           itemFull
         _ -> assert `failure` (source, target, iid, c)
 
 effectAndDestroy :: (MonadAtomic m, MonadServer m)
-                 => ActorId -> ActorId -> ItemId -> Container -> Bool
+                 => Bool -> ActorId -> ActorId -> ItemId -> Container -> Bool
                  -> [IK.Effect] -> ItemFull
                  -> m ()
-effectAndDestroy _ _ iid container periodic [] itemFull@ItemFull{..} =
-  -- This case is a speedup only.
-  if not periodic && jdamage itemBase /= 0 then do
-    -- No effect triggered, but physical damage dealt (because having
-    -- no effects, it could only be applied via melee --- otherwise
-    -- @ApplyNoEffects@ would be raised).
+effectAndDestroy meleePerformed _ _ iid container periodic []
+                 itemFull@ItemFull{..} =
+  -- No identification occurs if effects are null. This case is also a speedup.
+  if meleePerformed then do  -- melee may cause item destruction
     let (imperishable, kit) = imperishableKit [] periodic itemTimer itemFull
     unless imperishable $
       execUpdAtomic $ UpdLoseItem False iid itemBase kit container
   else return ()
-effectAndDestroy source target iid container periodic effs
+effectAndDestroy meleePerformed source target iid container periodic effs
                  itemFull@ItemFull{..} = do
   let timeout = case itemDisco of
         Just ItemDisco{itemAspect=Just ar} -> aTimeout ar
@@ -106,7 +132,10 @@ effectAndDestroy source target iid container periodic effs
     execUpdAtomic $ UpdTimeItem iid container itemTimer it2
   -- If the activation is not periodic, trigger at least the effects
   -- that are not recharging and so don't depend on @recharged@.
-  when (not periodic || recharged) $ do
+  -- Also, if the item was meleed with, let it get destroyed, if perishable,
+  -- and let it get identified, even if no effect was eventually triggered.
+  -- Otherwise don't even id the item --- no risk of destruction, no id.
+  when (not periodic || recharged || meleePerformed) $ do
     -- We have to destroy the item before the effect affects the item
     -- or the actor holding it or standing on it (later on we could
     -- lose track of the item and wouldn't be able to destroy it) .
@@ -120,7 +149,7 @@ effectAndDestroy source target iid container periodic effs
     -- so we don't pass @c@ along.
     triggeredEffect <-
       itemEffectDisco source target iid container recharged periodic effs
-    let triggered = triggeredEffect || jdamage itemBase /= 0
+    let triggered = triggeredEffect || meleePerformed
     -- If none of item's effects was performed, we try to recreate the item.
     -- Regardless, we don't rewind the time, because some info is gained
     -- (that the item does not exhibit any effects in the given context).
@@ -152,7 +181,7 @@ itemEffectEmbedded aid tpos bag = do
       f iid = do
         -- No block against tile, hence unconditional.
         execSfxAtomic $ SfxTrigger aid tpos
-        itemEffectAndDestroy aid aid iid c
+        meleeEffectAndDestroy aid aid iid c
   mapM_ f $ EM.keys bag
 
 -- | The source actor affects the target actor, with a given item.
@@ -909,7 +938,8 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
     itemToF <- itemToFullServer
     let itemFull = itemToF iid kit
         effs = strengthOnSmash itemFull
-    effectAndDestroy aid aid iid c False effs itemFull
+    -- Activate even if effects null, to destroy the item.
+    effectAndDestroy False aid aid iid c False effs itemFull
   else do
     cDrop <- pickDroppable aid b
     mvCmd <- generalMoveItem verbose iid (min kMax k) (CActor aid store) cDrop

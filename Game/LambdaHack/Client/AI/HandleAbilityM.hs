@@ -779,6 +779,9 @@ applyItem aid applyGroup = do
               Just ItemDisco{itemKind} -> IK.ifreq itemKind
         in permittedActor itemFull
            && maybe True (<= 0) (lookup "gem" freq)
+      -- Organs are not taken into account, because usually they are either
+      -- melee items, so harmful, or periodic, so charging between activations.
+      -- The case of a weak weapon curing poison is too rare to incur overhead.
       stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
   benList <- benAvailableItems aid q stores
   organs <- mapM (getsState . getItemBody) $ EM.keys $ borgan b

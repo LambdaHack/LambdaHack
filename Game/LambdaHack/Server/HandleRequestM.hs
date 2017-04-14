@@ -241,10 +241,7 @@ reqMelee :: (MonadAtomic m, MonadServer m)
 reqMelee source target iid cstore = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  actorAspect <- getsServer sactorAspect
-  let ar = actorAspect EM.! target
-      hpMax = aMaxHP ar
-      adj = checkAdjacent sb tb
+  let adj = checkAdjacent sb tb
       req = ReqMelee target iid cstore
   if source == target then execFailure source req MeleeSelf
   else if not adj then execFailure source req MeleeDistant
@@ -252,24 +249,6 @@ reqMelee source target iid cstore = do
     let sfid = bfid sb
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
-        -- Damage the target, never heal.
-    let damageTarget = do
-          hurtMult <- getsState $ armorHurtBonus actorAspect source target
-          itemBase <- getsState $ getItemBody iid
-          dmg <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) $ jdamage itemBase
-          let rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
-              speedDeltaHP = case btrajectory sb of
-                Just (_, speed) -> - modifyDamageBySpeed rawDeltaHP speed
-                Nothing -> - rawDeltaHP
-              -- Any amount of damage is serious, because next turn a stronger
-              -- projectile or melee weapon may be used and also it accumulates.
-              serious = speedDeltaHP < 0 && source /= target && not (bproj tb)
-              deltaHP | serious = -- if HP overfull, at least cut back to max HP
-                                  min speedDeltaHP (xM hpMax - bhp tb)
-                      | otherwise = speedDeltaHP
-          when (deltaHP < 0) $ do
-            execUpdAtomic $ UpdRefillHP target deltaHP
-            when serious $ cutCalm target
     -- Only catch with appendages, never with weapons.
     if bproj tb && length (beqp tb) == 1 && cstore == COrgan then do
       -- Catching the projectile, that is, stealing the item from its eqp.
@@ -294,12 +273,14 @@ reqMelee source target iid cstore = do
       -- Let the caught missile vanish.
       execUpdAtomic $ UpdTrajectory target (btrajectory tb) Nothing
     else do
-      -- Normal hit, with effects.
+      -- Normal hit, with effects. Msgs inside @SfxStrike@ describe
+      -- the source part of the strike.
       execSfxAtomic $ SfxStrike source target iid cstore
-      damageTarget
       let c = CActor source cstore
-      -- Msgs inside itemEffect describe the target part.
-      itemEffectAndDestroy source target iid c
+      -- Msgs inside @itemEffect@ describe the target part of the strike.
+      -- If any effects and aspects, this is also where they are identified.
+      -- Here also the melee damage is applied, before any effects are.
+      meleeEffectAndDestroy source target iid c
       sb2 <- getsState $ getActorBody source
       case btrajectory sb2 of
         Just (tra, speed) | not $ null tra -> do
