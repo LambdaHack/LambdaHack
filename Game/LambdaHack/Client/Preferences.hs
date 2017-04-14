@@ -1,6 +1,6 @@
 -- | Actor preferences for targets and actions based on actor attributes.
 module Game.LambdaHack.Client.Preferences
-  ( totalUsefulness, totalUse, effectToBenefit
+  ( totalUsefulness, effectToBenefit
   ) where
 
 import Prelude ()
@@ -109,17 +109,12 @@ aspectToBenefit _cops asp =
 -- | Determine the total benefit from having an item in eqp or inv,
 -- according to item type, and also the benefit conferred by equipping the item
 -- and from meleeing with it or applying it or throwing it.
-totalUsefulness :: Kind.COps -> Faction -> ItemFull -> Maybe (Int, Int)
-totalUsefulness cops fact itemFull = case itemDisco itemFull of
-  Just ItemDisco{itemAspect=Just aspectRecord, itemKind=IK.ItemKind{ieffects}} ->
-    Just $ totalUse cops fact ieffects aspectRecord (itemBase itemFull)
-  Just ItemDisco{itemAspectMean, itemKind=IK.ItemKind{ieffects}} ->
-    Just $ totalUse cops fact ieffects itemAspectMean (itemBase itemFull)
-  _ -> Nothing
-
-totalUse :: Kind.COps -> Faction -> [IK.Effect] -> AspectRecord -> Item
-         -> (Int, Int)
-totalUse cops fact effects aspects item =
+--
+-- Result has non-strict fields, so arguments are forced to avoid leaks.
+-- When AI looks at items (including organs) more often, force the fields.
+totalUsefulness :: Kind.COps -> Faction -> [IK.Effect] -> AspectRecord -> Item
+                -> (Int, Int)
+totalUsefulness !cops !fact !effects !aspects !item =
   let effSum = -(min 150 (10 * Dice.meanDice (jdamage item)))
                + sum (map (effectToBenefit cops fact) effects)
       aspBens = map (aspectToBenefit cops) $ aspectRecordToList aspects

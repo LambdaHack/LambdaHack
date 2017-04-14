@@ -432,11 +432,11 @@ addItemToDiscoBenefit iid item = do
       discoKind <- getsClient sdiscoKind
       case EM.lookup (jkindIx item) discoKind of
         Nothing -> return ()
-        Just KindMean{..} -> do
+        Just KindMean{..} -> do  -- possible, if the kind sent in @UpdRestart@
           side <- getsClient sside
           fact <- getsState $ (EM.! side) . sfactionD
           let effects = IK.ieffects $ okind kmKind
-              benefit = totalUse cops fact effects kmMean item
+              benefit = totalUsefulness cops fact effects kmMean item
           modifyClient $ \cli ->
             cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
 
@@ -476,7 +476,7 @@ discoverKind c iid kmKind = do
   item <- getsState $ getItemBody iid
   let kind = okind kmKind
       kmMean = meanAspect kind
-      benefit = totalUse cops fact (IK.ieffects kind) kmMean item
+      benefit = totalUsefulness cops fact (IK.ieffects kind) kmMean item
       f Nothing = Just KindMean{..}
       f Just{} = assert `failure` "already discovered"
                         `twith` (c, iid, kmKind)
@@ -523,7 +523,7 @@ discoverSeed c iid seed = do
       Level{ldepth} <- getLevel $ jlid item
       let kind = okind kmKind
           aspects = seedToAspect seed kind ldepth totalDepth
-          benefit = totalUse cops fact (IK.ieffects kind) aspects item
+          benefit = totalUsefulness cops fact (IK.ieffects kind) aspects item
           f Nothing = Just aspects
           f Just{} = assert `failure` "already discovered"
                             `twith` (c, iid, seed)

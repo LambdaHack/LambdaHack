@@ -331,20 +331,19 @@ pickup aid onlyWeapon = do
 equipItems :: MonadClient m
            => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
 equipItems aid = do
-  cops <- getsState scops
   body <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
       calmE = calmEnough body ar
-  fact <- getsState $ (EM.! bfid body) . sfactionD
   eqpAssocs <- fullAssocsClient aid [CEqp]
   invAssocs <- fullAssocsClient aid [CInv]
   shaAssocs <- fullAssocsClient aid [CSha]
   condAnyFoeAdj <- condAnyFoeAdjM aid
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
+  discoBenefit <- getsClient sdiscoBenefit
   let improve :: CStore
               -> (Int, [(ItemId, Int, CStore, CStore)])
               -> ( IK.EqpSlot
@@ -366,10 +365,10 @@ equipItems aid = do
       -- We filter out unneeded items. In particular, we ignore them in eqp
       -- when comparing to items we may want to equip. Anyway, the unneeded
       -- items should be removed in yieldUnneeded earlier or soon after.
-      filterNeeded (_, itemFull) =
-        not $ unneeded cops condAnyFoeAdj condShineWouldBetray
+      filterNeeded (iid, itemFull) =
+        not $ unneeded condAnyFoeAdj condShineWouldBetray
                        condAimEnemyPresent heavilyDistressed (not calmE)
-                       body ar fact itemFull
+                       body ar discoBenefit iid itemFull
       bestThree = bestByEqpSlot (filter filterNeeded eqpAssocs)
                                 (filter filterNeeded invAssocs)
                                 (filter filterNeeded shaAssocs)
@@ -394,18 +393,17 @@ toShare _ = True
 yieldUnneeded :: MonadClient m
               => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
 yieldUnneeded aid = do
-  cops <- getsState scops
   body <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
       calmE = calmEnough body ar
-  fact <- getsState $ (EM.! bfid body) . sfactionD
   eqpAssocs <- fullAssocsClient aid [CEqp]
   condAnyFoeAdj <- condAnyFoeAdjM aid
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
+  discoBenefit <- getsClient sdiscoBenefit
       -- Here AI hides from the human player the Ring of Speed And Bleeding,
       -- which is a bit harsh, but fair. However any subsequent such
       -- rings will not be picked up at all, so the human player
@@ -416,7 +414,7 @@ yieldUnneeded aid = do
         deltaSerious (bcalmDelta body)
       yieldSingleUnneeded (iidEqp, itemEqp) =
         let csha = if calmE then CSha else CInv
-        in if | harmful cops fact itemEqp ->
+        in if | harmful discoBenefit iidEqp ->
                 [(iidEqp, itemK itemEqp, CEqp, CInv)]
               | hinders condAnyFoeAdj condShineWouldBetray
                         condAimEnemyPresent heavilyDistressed (not calmE)
@@ -431,20 +429,19 @@ yieldUnneeded aid = do
 unEquipItems :: MonadClient m
              => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
 unEquipItems aid = do
-  cops <- getsState scops
   body <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
       calmE = calmEnough body ar
-  fact <- getsState $ (EM.! bfid body) . sfactionD
   eqpAssocs <- fullAssocsClient aid [CEqp]
   invAssocs <- fullAssocsClient aid [CInv]
   shaAssocs <- fullAssocsClient aid [CSha]
   condAnyFoeAdj <- condAnyFoeAdjM aid
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
+  discoBenefit <- getsClient sdiscoBenefit
       -- Here AI hides from the human player the Ring of Speed And Bleeding,
       -- which is a bit harsh, but fair. However any subsequent such
       -- rings will not be picked up at all, so the human player
@@ -485,10 +482,10 @@ unEquipItems aid = do
       worseThanSha vEOrI ((vSha, _) : _) = vEOrI < vSha
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltaSerious (bcalmDelta body)
-      filterNeeded (_, itemFull) =
-        not $ unneeded cops condAnyFoeAdj condShineWouldBetray
+      filterNeeded (iid, itemFull) =
+        not $ unneeded condAnyFoeAdj condShineWouldBetray
                        condAimEnemyPresent heavilyDistressed (not calmE)
-                       body ar fact itemFull
+                       body ar discoBenefit iid itemFull
       bestThree =
         bestByEqpSlot eqpAssocs invAssocs (filter filterNeeded shaAssocs)
       bInvSha = concatMap
@@ -530,19 +527,19 @@ bestByEqpSlot eqpAssocs invAssocs shaAssocs =
                                         bestSingle eqpSlot g3)
   in EM.assocs $ EM.mapWithKey bestThree eqpInvShaMap
 
-harmful :: Kind.COps -> Faction -> ItemFull -> Bool
-harmful cops fact itemFull =
+harmful :: DiscoveryBenefit -> ItemId -> Bool
+harmful discoBenefit iid =
   -- Items that are known and their effects are not stricly beneficial
   -- should not be equipped (either they are harmful or they waste eqp space).
-  maybe False (\(u, _) -> u <= 0) (totalUsefulness cops fact itemFull)
+  maybe False (\(u, _) -> u <= 0) (EM.lookup iid discoBenefit)
 
-unneeded :: Kind.COps -> Bool -> Bool -> Bool -> Bool -> Bool
-         -> Actor -> AspectRecord -> Faction -> ItemFull
+unneeded :: Bool -> Bool -> Bool -> Bool -> Bool
+         -> Actor -> AspectRecord -> DiscoveryBenefit -> ItemId -> ItemFull
          -> Bool
-unneeded cops condAnyFoeAdj condShineWouldBetray
+unneeded condAnyFoeAdj condShineWouldBetray
          condAimEnemyPresent heavilyDistressed condNotCalmEnough
-         body ar fact itemFull =
-  harmful cops fact itemFull
+         body ar discoBenefit iid itemFull =
+  harmful discoBenefit iid
   || hinders condAnyFoeAdj condShineWouldBetray
              condAimEnemyPresent heavilyDistressed condNotCalmEnough
              body ar itemFull

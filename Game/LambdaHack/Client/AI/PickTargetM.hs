@@ -21,7 +21,6 @@ import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.BfsM
 import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.Preferences
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
@@ -85,7 +84,7 @@ targetStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy TgtAndPath)
 {-# INLINE targetStrategy #-}
 targetStrategy aid = do
-  cops@Kind.COps{corule, coTileSpeedup} <- getsState scops
+  Kind.COps{corule, coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   mleader <- getsClient _sleader
   scondInMelee <- getsClient scondInMelee
@@ -197,17 +196,16 @@ targetStrategy aid = do
   nearbyFoes <- filterM targetableEnemy allFoes
   explored <- getsClient sexplored
   isStairPos <- getsState $ \s lid p -> isStair lid p s
+  discoBenefit <- getsClient sdiscoBenefit
   let lidExplored = ES.member (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
-      itemUsefulness itemFull = fst <$> totalUsefulness cops fact itemFull
       desirableBagFloor bag = any (\(iid, k) ->
         let itemFull = itemToF iid k
-            use = itemUsefulness itemFull
+            use = fst <$> EM.lookup iid discoBenefit
         in desirableItem canEscape use itemFull) $ EM.assocs bag
-      desirableBagEmbed bag = any (\(iid, k) ->
-        let itemFull = itemToF iid k
-            use = itemUsefulness itemFull
-        in maybe False (> 0) use) $ EM.assocs bag  -- mixed blessing OK; caches
+      desirableBagEmbed bag = any (\iid ->
+        let use = fst <$> EM.lookup iid discoBenefit
+        in maybe False (> 0) use) $ EM.keys bag  -- mixed blessing OK; caches
       desirableFloor (_, (_, bag)) = desirableBagFloor bag
       desirableEmbed (_, (_, (_, bag))) = desirableBagEmbed bag
       focused = bspeed b ar < speedWalk || condHpTooLow

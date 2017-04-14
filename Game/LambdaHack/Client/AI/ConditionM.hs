@@ -31,7 +31,6 @@ import Data.Ord
 import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.Preferences
 import Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
@@ -170,14 +169,13 @@ benAvailableItems :: MonadClient m
                   -> m [( (Maybe (Int, Int), (Int, CStore))
                         , (ItemId, ItemFull) )]
 benAvailableItems aid permitted cstores = do
-  cops <- getsState scops
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid b) . sfactionD
   condAnyFoeAdj <- condAnyFoeAdjM aid
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   actorAspect <- getsClient sactorAspect
+  discoBenefit <- getsClient sdiscoBenefit
   s <- getState
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
@@ -189,7 +187,7 @@ benAvailableItems aid permitted cstores = do
         [ ((benefit, (k, cstore)), (iid, itemFull))
         | (iid, kit@(k, _)) <- EM.assocs bag
         , let itemFull = itemToF iid kit
-              benefit = totalUsefulness cops fact itemFull
+              benefit = EM.lookup iid discoBenefit
               hind = hinders condAnyFoeAdj condShineWouldBetray
                              condAimEnemyPresent
                              heavilyDistressed condNotCalmEnough
