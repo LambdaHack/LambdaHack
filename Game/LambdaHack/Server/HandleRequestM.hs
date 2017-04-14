@@ -269,9 +269,8 @@ reqMelee source target iid cstore = do
         damageTarget = when (deltaHP < 0) $ do
           execUpdAtomic $ UpdRefillHP target deltaHP
           when serious $ cutCalm target
-    if bproj tb && length (beqp tb) == 1
-       && cstore == COrgan  -- only catch with appendages, never with weapons
-       && bhp tb + deltaHP <= 0 then do
+    -- Only catch with appendages, never with weapons.
+    if bproj tb && length (beqp tb) == 1 && cstore == COrgan then do
       -- Catching the projectile, that is, stealing the item from its eqp.
       -- No effect from our weapon (organ) is applied to the projectile
       -- and the weapon (organ) is never destroyed, even if not durable.
@@ -291,7 +290,8 @@ reqMelee source target iid cstore = do
                                               (CActor source CInv)
           mapM_ execUpdAtomic upds
         err -> assert `failure` err
-      damageTarget  -- damage the caught missile to let it vanish
+      -- Let the caught missile vanish.
+      execUpdAtomic $ UpdTrajectory target (btrajectory tb) Nothing
     else do
       -- Normal hit, with effects.
       execSfxAtomic $ SfxStrike source target iid cstore
