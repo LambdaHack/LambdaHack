@@ -617,7 +617,7 @@ trigger aid fleeVia = do
         Nothing -> Nothing
         Just bag -> Just (pos, bag)
       pbags = mapMaybe f $ vicinityUnsafe (bpos b)
-  efeat <- embedBenefit aid fleeVia pbags
+  efeat <- embedBenefit fleeVia aid pbags
   return $! liftFrequency $ toFreq "trigger"
     [ (benefit, ReqAlter pos)
     | (benefit, (pos, _)) <- efeat ]

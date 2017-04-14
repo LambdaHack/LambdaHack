@@ -251,7 +251,7 @@ targetStrategy aid = do
                              $ filter desirableFloor citemsRaw
                 if nullFreq citems then do
                   -- This is mostly lazy and referred to a few times below.
-                  ctriggersRaw <- closestTriggers Nothing aid
+                  ctriggersRaw <- closestTriggers ViaAnything aid
                   let ctriggers = toFreq "closestTriggers" ctriggersRaw
                   if nullFreq ctriggers then do
                       let vToTgt v0 = do

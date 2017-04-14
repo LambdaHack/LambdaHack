@@ -247,108 +247,22 @@ closestSmell aid = do
       let ts = mapMaybe (\x@(p, _) -> fmap (,x) (accessBfs bfs p)) smells
       return $! sortBy (comparing (fst &&& absoluteTimeNegate . snd . snd)) ts
 
-data TriggerClass = TriggerUp | TriggerDown | TriggerEscape | TriggerOther
-  deriving Eq
-
--- | Closest (wrt paths) AI-triggerable tiles with embedded items.
--- In AI, the level the actor is on is either explored or the actor already
--- has a weapon equipped, so no need to explore further, he tries to find
--- enemies on other levels, but before that, he triggers other tiles
--- in hope of some loot or beneficial effect to enter next level with.
-closestTriggers :: MonadClient m => Maybe Bool -> ActorId
-                -> m [(Int, (Point, (Point, ItemBag)))]
-closestTriggers onlyDir aid = do
-  Kind.COps{coTileSpeedup} <- getsState scops
-  actorMaxSk <- maxActorSkillsClient aid
-  body <- getsState $ getActorBody aid
-  let lid = blid body
-  lvl <- getLevel lid
-  let aiAlterMinSkill p = Tile.aiAlterMinSkill coTileSpeedup $ lvl `at` p
-      alterSkill = EM.findWithDefault 0 Ability.AbAlter actorMaxSk
-  explored <- getsClient sexplored
-  dungeon <- getsState sdungeon
-  unexploredD <- unexploredDepth
-  condEnoughGear <- condEnoughGearM aid
-  classIid <- getsState $ \s iid ->
-    -- Contrived, for now.
-    let Item{jname} = getItemBody iid s
-    in if | jname == "staircase up" -> TriggerUp
-          | jname == "staircase down" -> TriggerDown
-          | jname == "escape" -> TriggerEscape
-          | otherwise -> TriggerOther
-  let allExplored = ES.size explored == EM.size dungeon
-      -- If lid not explored, aid equips a weapon and so can leave level.
-      lidExplored = ES.member (blid body) explored
-      f :: Point -> ItemBag -> [(TriggerClass, (Point, ItemBag))]
-        -> [(TriggerClass, (Point, ItemBag))]
-      f p bag acc =
-        if alterSkill < fromEnum (aiAlterMinSkill p) then acc else
-        let classes = map classIid $ EM.keys bag
-        in case filter (/= TriggerOther) classes of
-          [] -> -- Neither stairs nor escape, so explore if close enough.
-                if isJust onlyDir
-                   || Tile.isSuspect coTileSpeedup (lvl `at` p)
-                      && not (Tile.consideredByAI coTileSpeedup (lvl `at` p))
-                then acc  -- assume secrets have no loot, unless ConsideredByAI
-                else (TriggerOther, (p, bag)) : acc
-          TriggerEscape : _ ->  -- normally only one present, so just take first
-            -- Escape (or guard) only after exploring, for high score, etc.
-            if isNothing onlyDir && allExplored
-            then (TriggerEscape, (p, bag)) : acc
-            else acc
-          cid : _ ->  -- normally only one present, so just take first
-            let up = cid == TriggerUp
-                easier = up /= (fromEnum lid > 0)
-                unexpForth = unexploredD up lid
-                unexpBack = unexploredD (not up) lid
-                aiCond = if unexpForth
-                         then easier && condEnoughGear
-                              || (not unexpBack || easier) && lidExplored
-                         else easier && allExplored && null (lescape lvl)
-                interesting = case onlyDir of
-                  Just d -> d == up
-                  Nothing -> aiCond
-            in if interesting then (cid, (p, bag)) : acc else acc
-      triggers = EM.foldrWithKey f [] $ lembed lvl
-  -- The advantage of targeting the tiles in vicinity of triggers is that
-  -- triggers don't need to be pathable (and so AI doesn't bump into them
-  -- by chance while walking elsewhere) and that many accesses to the tiles
-  -- are more likely to be targeted by different AI actors (even starting
-  -- from the same location), so there is less risk of clogging stairs and,
-  -- OTOH, siege of stairs or escapes is more effective.
-  bfs <- getCacheBfs aid
-  let vicTrigger (cid, (p0, bag)) =
-        map (\p -> (cid, (p, (p0, bag)))) $ vicinityUnsafe p0
-      vicAll = concatMap vicTrigger triggers
-  return $  -- keep lazy
-    let mix (cid, ppbag) dist =
-          -- Prefer stairs to easier levels. Prefer loot over stairs.
-          let depthDelta = case cid of
-                TriggerUp -> if fromEnum lid > 0 then 1 else 2
-                TriggerDown -> if fromEnum lid > 0 then 2 else 1
-                TriggerEscape -> 10  -- congregate at escape
-                TriggerOther -> 4
-              maxd = fromEnum (maxBound :: BfsDistance)
-                     - fromEnum apartBfs
-              v | dist == 0 = maxd * maxd * 1000
-                    -- if already adjacent, usually keep, but fuzz, to guard
-                | otherwise = (maxd * maxd * 100) `div` (dist * dist)
-          in (depthDelta * v, ppbag)
-    in mapMaybe (\(cid, (p, pbag)) ->
-         mix (cid, (p, pbag)) <$> accessBfs bfs p) vicAll
-
-data FleeViaStairsOrEscape = ViaStairs | ViaEscape | ViaNothing | ViaAnything
+data FleeViaStairsOrEscape =
+  ViaStairs | ViaStairsUp | ViaStairsDown | ViaEscape | ViaNothing | ViaAnything
   deriving (Show, Eq)
 
 embedBenefit :: MonadClient m
-             => ActorId -> FleeViaStairsOrEscape -> [(Point, ItemBag)]
+             => FleeViaStairsOrEscape -> ActorId
+             -> [(Point, ItemBag)]
              -> m [(Int, (Point, ItemBag))]
-embedBenefit aid fleeVia pbags = do
+embedBenefit fleeVia aid pbags = do
   Kind.COps{coitem=Kind.Ops{okind}, coTileSpeedup} <- getsState scops
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
   b <- getsState $ getActorBody aid
-  actorSk <- currentSkillsClient aid
+  actorSk <- if fleeVia == ViaAnything  -- targeting, e.g., when not a leader
+             then maxActorSkillsClient aid
+             else currentSkillsClient aid
   let alterSkill = EM.findWithDefault 0 Ability.AbAlter actorSk
   fact <- getsState $ (EM.! bfid b) . sfactionD
   lvl <- getLevel (blid b)
@@ -367,53 +281,89 @@ embedBenefit aid fleeVia pbags = do
       iidToEffs iid = case EM.lookup (jkindIx $ getItemBody iid s) discoKind of
         Nothing -> []
         Just KindMean{kmKind} -> IK.ieffects $ okind kmKind
-      isEffAscend IK.Ascend{} = True
-      isEffAscend _ = False
-      isEffEscape IK.Escape{} = True
-      isEffEscape _ = False
-      -- For simplicity, we assume at most one exit at each position
-      -- and we force AI to use exit even if terrible traps protect it.
-      bens (pos, bag) = do
-        let fs = concatMap iidToEffs $ EM.keys bag
-        case find isEffEscape fs of
-          Just{} ->
-            -- Only some factions try to escape but they first explore all
-            -- for high score.
-            return $! if fleeVia `notElem` [ViaEscape, ViaAnything]
-                         || not (fcanEscape $ gplayer fact)
-                         || not allExplored
-                      then 0  -- don't escape prematurely
-                      else 10000
-          Nothing -> case find isEffAscend fs of
-            Just (IK.Ascend up) -> do  -- change levels sensibly, in teams
-              let easier = up /= (fromEnum (blid b) > 0)
-                  unexpForth = if up then unexploredTrue else unexploredFalse
-                  unexpBack = if not up then unexploredTrue else unexploredFalse
-                  -- Forbid loops via peeking at unexplored and getting back.
-                  aiCond = if unexpForth
-                           then easier && condEnoughGear
-                                || (not unexpBack || easier) && lidExplored
-                           else easier && allExplored && null (lescape lvl)
-                  -- Prefer one direction of stairs, to team up.
-                  eben = if aiCond then if easier then 10 else 1 else 0
-              return $! if fleeVia `notElem` [ViaStairs, ViaAnything]
-                        then 0  -- don't flee prematurely
-                        else 10000 * eben
-            _ -> return $!
-              if fleeVia `elem` [ViaNothing, ViaAnything]
-                 && (not (Tile.isSuspect coTileSpeedup (lvl `at` pos))
-                     || Tile.consideredByAI coTileSpeedup (lvl `at` pos))
-              then
-                -- Actor uses he embedded item on himself, hence @snd@,
-                -- the same as when flinging item at an enemy.
-                sum $ mapMaybe (\iid -> snd <$> EM.lookup iid discoBenefit)
-                               (EM.keys bag)
-              else 0
+      isEffEscapeOrAscend IK.Ascend{} = True
+      isEffEscapeOrAscend IK.Escape{} = True
+      isEffEscapeOrAscend _ = False
+      feats bag = concatMap iidToEffs $ EM.keys bag
+      -- For simplicity, we assume at most one exit at each position.
+      -- AI uses exit regardless of traps or treasures at the spot.
+      bens (pos, bag) = case find isEffEscapeOrAscend $ feats bag of
+        Just IK.Escape{} ->
+          -- Escape (or guard) only after exploring, for high score, etc.
+          let escapeOrGuard = fcanEscape (gplayer fact)
+                              || fleeVia == ViaAnything  -- targeting to guard
+          in if fleeVia `elem` [ViaEscape, ViaAnything]
+                && escapeOrGuard
+                && allExplored
+             then 10000
+             else 0  -- don't escape prematurely
+        Just (IK.Ascend up) ->  -- change levels sensibly, in teams
+          let easier = up /= (fromEnum (blid b) > 0)
+              unexpForth = if up then unexploredTrue else unexploredFalse
+              unexpBack = if not up then unexploredTrue else unexploredFalse
+              -- Forbid loops via peeking at unexplored and getting back.
+              aiCond = if unexpForth
+                       then easier && condEnoughGear
+                            || (not unexpBack || easier) && lidExplored
+                       else easier && allExplored && null (lescape lvl)
+              -- Prefer one direction of stairs, to team up
+              -- and prefer embed (may, e.g.,  create loot) over stairs.
+              v = if aiCond then if easier then 10 else 1 else 0
+          in case fleeVia of
+            ViaStairsUp | up -> 1
+            ViaStairsDown | not up -> 1
+            ViaStairs -> v
+            ViaAnything -> v
+            _ -> 0  -- don't flee prematurely
+        _ ->
+          if fleeVia `elem` [ViaNothing, ViaAnything]
+             -- Assume secrets have no loot, unless @ConsideredByAI@:
+             && (not (Tile.isSuspect coTileSpeedup (lvl `at` pos))
+                 || Tile.consideredByAI coTileSpeedup (lvl `at` pos))
+          then
+            -- Actor uses he embedded item on himself, hence @snd@,
+            -- the same as when flinging item at an enemy.
+            sum $ mapMaybe (\iid -> snd <$> EM.lookup iid discoBenefit)
+                           (EM.keys bag)
+          else 0
       -- Only actors with high enough AbAlter can trigger embedded items.
       enterableHere p = alterSkill >= fromEnum (aiAlterMinSkill p)
       ebags = filter (enterableHere . fst) pbags
-  benFeats <- mapM bens ebags
-  return $ filter ((> 0 ) . fst) $ zip benFeats ebags
+      benFeats = map (\pbag -> (bens pbag, pbag)) ebags
+  return $! filter ((> 0 ) . fst) benFeats
+
+-- | Closest (wrt paths) AI-triggerable tiles with embedded items.
+-- In AI, the level the actor is on is either explored or the actor already
+-- has a weapon equipped, so no need to explore further, he tries to find
+-- enemies on other levels, but before that, he triggers other tiles
+-- in hope of some loot or beneficial effect to enter next level with.
+closestTriggers :: MonadClient m => FleeViaStairsOrEscape -> ActorId
+                -> m [(Int, (Point, (Point, ItemBag)))]
+closestTriggers fleeVia aid = do
+  b <- getsState $ getActorBody aid
+  lvl <- getLevel (blid b)
+  let pbags = EM.assocs $ lembed lvl
+  efeat <- embedBenefit fleeVia aid pbags
+  -- The advantage of targeting the tiles in vicinity of triggers is that
+  -- triggers don't need to be pathable (and so AI doesn't bump into them
+  -- by chance while walking elsewhere) and that many accesses to the tiles
+  -- are more likely to be targeted by different AI actors (even starting
+  -- from the same location), so there is less risk of clogging stairs and,
+  -- OTOH, siege of stairs or escapes is more effective.
+  bfs <- getCacheBfs aid
+  let vicTrigger (cid, (p0, bag)) =
+        map (\p -> (cid, (p, (p0, bag)))) $ vicinityUnsafe p0
+      vicAll = concatMap vicTrigger efeat
+  return $  -- keep lazy
+    let mix (benefit, ppbag) dist =
+          let maxd = fromEnum (maxBound :: BfsDistance)
+                     - fromEnum apartBfs
+              v | dist == 0 = maxd * maxd * 1000
+                    -- if already adjacent, usually keep, but fuzz, to guard
+                | otherwise = (maxd * maxd * 100) `div` (dist * dist)
+          in (benefit * v, ppbag)
+    in mapMaybe (\bpp@(_, (p, _)) ->
+         mix bpp <$> accessBfs bfs p) vicAll
 
 -- | Check whether the actor has enough gear to go look for enemies.
 -- We assume weapons in equipment are better than any among organs

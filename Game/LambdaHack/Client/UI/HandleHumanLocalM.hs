@@ -994,7 +994,7 @@ xhairStairHuman :: MonadClientUI m => Bool -> m MError
 xhairStairHuman up = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  stairs <- closestTriggers (Just up) leader
+  stairs <- closestTriggers (if up then ViaStairsUp else ViaStairsDown) leader
   case sortBy (flip compare) stairs of
     [] -> failMsg $ "no stairs" <+> if up then "up" else "down"
     (_, (p, (p0, bag))) : _ -> do
