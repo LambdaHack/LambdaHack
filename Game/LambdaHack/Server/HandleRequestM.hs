@@ -277,8 +277,8 @@ reqMelee source target iid cstore = do
        && cstore == COrgan  -- only catch with appendages, never with weapons
        && bhp tb + deltaHP <= 0 then do
       -- Catching the projectile, that is, stealing the item from its eqp.
-      -- No effect from our weapon is applied to the projectile
-      -- and the weapon is never destroyed, even if not durable.
+      -- No effect from our weapon (organ) is applied to the projectile
+      -- and the weapon (organ) is never destroyed, even if not durable.
       -- Pushed actor doesn't stop flight by catching the projectile
       -- nor does he lose 1HP.
       -- This is not overpowered, because usually at least one partial wait
@@ -295,7 +295,7 @@ reqMelee source target iid cstore = do
                                               (CActor source CInv)
           mapM_ execUpdAtomic upds
         err -> assert `failure` err
-      damageTarget
+      damageTarget  -- damage the caught missile to let it vanish
     else do
       -- Normal hit, with effects.
       execSfxAtomic $ SfxStrike source target iid cstore hurtMultZero

@@ -29,7 +29,6 @@ import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.BfsM
 import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.Preferences
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
@@ -616,7 +615,7 @@ trigger :: MonadClient m
         => ActorId -> FleeViaStairsOrEscape
         -> m (Strategy (RequestTimed 'AbAlter))
 trigger aid fleeVia = do
-  cops@Kind.COps{coTileSpeedup} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
   b <- getsState $ getActorBody aid
@@ -627,6 +626,7 @@ trigger aid fleeVia = do
   unexploredD <- unexploredDepth
   condEnoughGear <- condEnoughGearM aid
   itemToF <- itemToFullClient
+  discoBenefit <- getsClient sdiscoBenefit
   let aiAlterMinSkill p = Tile.aiAlterMinSkill coTileSpeedup $ lvl `at` p
       lidExplored = ES.member (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
@@ -639,48 +639,53 @@ trigger aid fleeVia = do
       -- is triggered at the same time, others are left to be used later on.
       f pos = case EM.lookup pos $ lembed lvl of
         Nothing -> []
-        Just bag -> [(pos, concatMap iidToEffs $ EM.assocs bag)]
+        Just bag -> [(pos, EM.keys bag, concatMap iidToEffs $ EM.assocs bag)]
       feats = concatMap f $ filter enterableHere $ vicinityUnsafe (bpos b)
-      bens (p, fs) = do
-        bs <- mapM (ben p) fs
-        return $! if any (< -10) bs
-                  then 0  -- mixed blessing
-                  else sum bs
-      ben p feat = case feat of
-        IK.Ascend up -> do  -- change levels sensibly, in teams
-          let easier = up /= (fromEnum (blid b) > 0)
-              unexpForth = unexploredD up (blid b)
-              unexpBack = unexploredD (not up) (blid b)
-              -- Forbid loops via peeking at unexplored and getting back.
-              aiCond = if unexpForth
-                       then easier && condEnoughGear
-                            || (not unexpBack || easier) && lidExplored
-                       else easier && allExplored && null (lescape lvl)
-              -- Prefer one direction of stairs, to team up.
-              eben = if aiCond then if easier then 2 else 1 else 0
-          return $!
-             if fleeVia == ViaStairs -- don't flee prematurely
-             then 10000 * eben
-             else 0
-        ef@IK.Escape{} -> return $  -- flee via this way, too
+      isEffAscend IK.Ascend{} = True
+      isEffAscend _ = False
+      isEffEscape IK.Escape{} = True
+      isEffEscape _ = False
+      -- For simplicity, we assume at most one exit at each position
+      -- and we force AI to use exit even if terrible traps protect it.
+      bens (p, iids, fs) = case find isEffEscape fs of
+        Just{} -> return $  -- flee via this way, too
           -- Only some factions try to escape but they first explore all
           -- for high score.
           if fleeVia /= ViaEscape
              || not (fcanEscape $ gplayer fact)
              || not allExplored
           then 0
-          else effectToBenefit cops fact ef
-        ef -> return $!
-          if fleeVia == ViaNothing
-             && (not (Tile.isSuspect coTileSpeedup (lvl `at` p))
-                 || Tile.consideredByAI coTileSpeedup (lvl `at` p))
-          then effectToBenefit cops fact ef
-          else 0
+          else 10000
+        Nothing -> case find isEffAscend fs of
+          Just (IK.Ascend up) -> do  -- change levels sensibly, in teams
+            let easier = up /= (fromEnum (blid b) > 0)
+                unexpForth = unexploredD up (blid b)
+                unexpBack = unexploredD (not up) (blid b)
+                -- Forbid loops via peeking at unexplored and getting back.
+                aiCond = if unexpForth
+                         then easier && condEnoughGear
+                              || (not unexpBack || easier) && lidExplored
+                         else easier && allExplored && null (lescape lvl)
+                -- Prefer one direction of stairs, to team up.
+                eben = if aiCond then if easier then 2 else 1 else 0
+            return $!
+               if fleeVia == ViaStairs -- don't flee prematurely
+               then 10000 * eben
+               else 0
+          _ -> return $!
+            if fleeVia == ViaNothing
+               && (not (Tile.isSuspect coTileSpeedup (lvl `at` p))
+                   || Tile.consideredByAI coTileSpeedup (lvl `at` p))
+            then
+              -- Actor uses he embedded item on himself, hence @snd@,
+              -- the same as when flinging item at an enemy.
+              sum $ mapMaybe (\iid -> snd <$> EM.lookup iid discoBenefit) iids
+            else 0
   benFeats <- mapM bens feats
   let benFeat = zip benFeats feats
   return $! liftFrequency $ toFreq "trigger"
     [ (benefit, ReqAlter pos)
-    | (benefit, (pos, _)) <- benFeat
+    | (benefit, (pos, _, _)) <- benFeat
     , benefit > 0 ]
 
 projectItem :: MonadClient m

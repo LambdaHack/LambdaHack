@@ -47,6 +47,9 @@ import Game.LambdaHack.Server.State
 
 -- + Semantics of effects
 
+-- If this function is called, melee damage is never applied.
+-- If an item is activated in melee, melee damage is applied elsewhere
+-- and @itemEffectAndDestroy@ is called directly.
 applyItem :: (MonadAtomic m, MonadServer m)
           => ActorId -> ItemId -> CStore -> m ()
 applyItem aid iid cstore = do
@@ -76,7 +79,9 @@ effectAndDestroy :: (MonadAtomic m, MonadServer m)
 effectAndDestroy _ _ iid container periodic [] itemFull@ItemFull{..} =
   -- This case is a speedup only.
   if not periodic && jdamage itemBase /= 0 then do
-    -- No effect triggered, but physical damage dealt.
+    -- No effect triggered, but physical damage dealt (because having
+    -- no effects, it could only be applied via melee --- otherwise
+    -- @ApplyNoEffects@ would be raised).
     let (imperishable, kit) = imperishableKit [] periodic itemTimer itemFull
     unless imperishable $
       execUpdAtomic $ UpdLoseItem False iid itemBase kit container

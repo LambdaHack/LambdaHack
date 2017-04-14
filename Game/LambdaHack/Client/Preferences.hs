@@ -1,6 +1,6 @@
 -- | Actor preferences for targets and actions based on actor attributes.
 module Game.LambdaHack.Client.Preferences
-  ( totalUsefulness, effectToBenefit
+  ( totalUsefulness
   ) where
 
 import Prelude ()
@@ -106,9 +106,10 @@ aspectToBenefit _cops asp =
     IK.AddAggression{} -> 0
     IK.AddAbility _ p -> Dice.meanDice p * 5
 
--- | Determine the total benefit from having an item in eqp or inv,
--- according to item type, and also the benefit conferred by equipping the item
--- and from meleeing with it or applying it or throwing it.
+-- | Determine
+-- 1. the total benefit from picking an item up (to use or to put in equipment)
+-- 2. the (usually negative) benefit of flinging an item at an opponent
+--    or meleeing with it or (usually positive in this case) applying it.
 --
 -- Result has non-strict fields, so arguments are forced to avoid leaks.
 -- When AI looks at items (including organs) more often, force the fields.
@@ -126,16 +127,22 @@ totalUsefulness !cops !fact !effects !aspects !item =
         map (\eff -> eff * 10 `divUp` timeout) periodicEffBens
       selfBens = aspBens ++ periodicBens
       selfSum = sum selfBens
+      -- We don't take into account mixed blessing from @OneOf@ periodic
+      -- activations, but they are rare. However, non-periodic @OneOf@
+      -- effects are common, so checking mixed blessings for @effSum@
+      -- would be complex. Also, permaent mixed blessing from aspects
+      -- are more often obviously bad, unlike periodic or on-use ones.
       mixedBlessing =
         not (null selfBens)
         && (selfSum > 0 && minimum selfBens < -10
             || selfSum < 0 && maximum selfBens > 10)
       isWeapon = isMelee item
       totalSum
-        | isWeapon && effSum < 0 = - effSum + selfSum
-        | not $ goesIntoEqp item = effSum
+        | isWeapon && effSum < 0 =  -- if the weapon heals the enemy, it
+                                    -- won't be used (but can be equipped)
+          - effSum + selfSum
+        | not $ goesIntoEqp item = effSum  -- flinging or applying
         | mixedBlessing =
             0  -- significant mixed blessings out of AI control
-        | otherwise = selfSum  -- if the weapon heals the enemy, it
-                               -- won't be used but can be equipped
+        | otherwise = selfSum  -- healing weapon gets positive value here
   in (totalSum, effSum)
