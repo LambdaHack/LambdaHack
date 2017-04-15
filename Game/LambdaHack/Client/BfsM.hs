@@ -286,7 +286,7 @@ embedBenefit fleeVia aid pbags = do
       feats bag = concatMap iidToEffs $ EM.keys bag
       -- For simplicity, we assume at most one exit at each position.
       -- AI uses exit regardless of traps or treasures at the spot.
-      bens (pos, bag) = case find isEffEscapeOrAscend $ feats bag of
+      bens (_, bag) = case find isEffEscapeOrAscend $ feats bag of
         Just IK.Escape{} ->
           -- Escape (or guard) only after exploring, for high score, etc.
           let escapeOrGuard = fcanEscape (gplayer fact)
@@ -316,18 +316,18 @@ embedBenefit fleeVia aid pbags = do
             _ -> 0  -- don't flee prematurely
         _ ->
           if fleeVia `elem` [ViaNothing, ViaAnything]
-             -- Assume secrets have no loot, unless @ConsideredByAI@:
-             && (not (Tile.isSuspect coTileSpeedup (lvl `at` pos))
-                 || Tile.consideredByAI coTileSpeedup (lvl `at` pos))
-          then
-            -- Actor uses he embedded item on himself, hence @snd@,
-            -- the same as when flinging item at an enemy.
-            sum $ mapMaybe (\iid -> snd <$> EM.lookup iid discoBenefit)
-                           (EM.keys bag)
+
+          then -- Actor uses he embedded item on himself, hence @snd@,
+               -- the same as when flinging item at an enemy.
+               sum $ mapMaybe (\iid -> snd <$> EM.lookup iid discoBenefit)
+                              (EM.keys bag)
           else 0
-      -- Only actors with high enough AbAlter can trigger embedded items.
-      enterableHere p = alterSkill >= fromEnum (aiAlterMinSkill p)
-      ebags = filter (enterableHere . fst) pbags
+      interestingHere p =
+        -- Assume secrets have no loot, unless marked as considered by AI:
+        Tile.consideredByAI coTileSpeedup (lvl `at` p)
+        -- Only actors with high enough AbAlter can trigger embedded items.
+        && alterSkill >= fromEnum (aiAlterMinSkill p)
+      ebags = filter (interestingHere . fst) pbags
       benFeats = map (\pbag -> (bens pbag, pbag)) ebags
   return $! filter ((> 0 ) . fst) benFeats
 

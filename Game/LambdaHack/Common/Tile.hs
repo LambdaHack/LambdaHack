@@ -186,7 +186,7 @@ speedup allClear cotile =
       consideredByAITab = createTab cotile $ \tk ->
         let getTo TK.ConsideredByAI = True
             getTo _ = False
-        in any getTo $ TK.tfeature tk
+        in not (TK.isSuspectKind tk) || any getTo (TK.tfeature tk)
       isOftenItemTab = createTab cotile $ kindHasFeature TK.OftenItem
       isOftenActorTab = createTab cotile $ kindHasFeature TK.OftenActor
       isNoItemTab = createTab cotile $ kindHasFeature TK.NoItem
