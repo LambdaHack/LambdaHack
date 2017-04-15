@@ -315,7 +315,7 @@ targetStrategy aid = do
               (_, (p, _)) : _ -> setPath $ TPoint TSmell (blid b) p
       tellOthersNothingHere pos = do
         let f TgtAndPath{tapTgt} = case tapTgt of
-              TPoint (TEnemyPos _ _) lid p -> p /= pos || lid /= blid b
+              TPoint _ lid p -> p /= pos || lid /= blid b
               _ -> True
         modifyClient $ \cli -> cli {stargetD = EM.filter f (stargetD cli)}
         pickNewTarget
