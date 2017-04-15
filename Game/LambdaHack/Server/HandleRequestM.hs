@@ -249,8 +249,10 @@ reqMelee source target iid cstore = do
     let sfid = bfid sb
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
+    ttrunk <- getsState $ getItemBody $ btrunk tb
     -- Only catch with appendages, never with weapons.
-    if bproj tb && length (beqp tb) == 1 && cstore == COrgan then do
+    if bproj tb && length (beqp tb) == 1 && jweight ttrunk > 1  -- not a blast
+       && cstore == COrgan then do
       -- Catching the projectile, that is, stealing the item from its eqp.
       -- No effect from our weapon (organ) is applied to the projectile
       -- and the weapon (organ) is never destroyed, even if not durable.
