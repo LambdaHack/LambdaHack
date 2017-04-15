@@ -10,6 +10,7 @@ module Game.LambdaHack.Client.AI.ConditionM
   , condFloorWeaponM
   , condNoEqpWeaponM
   , condCanProjectM
+  , condProjectListM
   , condDesirableFloorItemM
   , condSupport
   , benAvailableItems
@@ -146,6 +147,21 @@ condNoEqpWeaponM aid = do
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => Int -> ActorId -> m Bool
 condCanProjectM skill aid = do
+  benList <- condProjectListM skill aid
+  -- This is a simplified version of conditions in @projectItem@.
+  -- In particular, range and charge are ignored, because they may change
+  -- by the time the position for the fling is reached.
+  let isMissile ((Nothing, _), (_, itemFull)) =
+        -- Melee weapon is usually needed in hand.
+        not (isMelee $ itemBase itemFull)
+      isMissile ((Just (_, benR), _), (_, itemFull)) =
+        benR < 0 && not (isMelee $ itemBase itemFull)
+  return $ any isMissile benList  -- keep it lazy
+
+condProjectListM :: MonadClient m
+                 => Int -> ActorId -> m [( (Maybe (Int, Int), (Int, CStore))
+                                         , (ItemId, ItemFull) )]
+condProjectListM skill aid = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
   let ar = case EM.lookup aid actorAspect of
@@ -153,12 +169,7 @@ condCanProjectM skill aid = do
              Nothing -> assert `failure` aid
       calmE = calmEnough b ar
       q = permittedProjectAI skill calmE
-  benList <- benAvailableItems aid q $ [CEqp, CInv, CGround] ++ [CSha | calmE]
-  let isMissile ((Nothing, _), _) = True
-      isMissile ((Just (_, benR), _), (_, itemFull)) =
-        benR < 0 && not (isMelee $ itemBase itemFull)
-  return $ any isMissile benList
-    -- keep it lazy
+  benAvailableItems aid q $ [CEqp, CInv, CGround] ++ [CSha | calmE]
 
 -- | Produce the list of items with a given property available to the actor
 -- and the items' values.

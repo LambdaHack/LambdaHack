@@ -638,17 +638,10 @@ projectItem aid = do
       case mnewEps of
         Just newEps -> do
           actorSk <- currentSkillsClient aid
-          actorAspect <- getsClient sactorAspect
-          let ar = case EM.lookup aid actorAspect of
-                Just aspectRecord -> aspectRecord
-                Nothing -> assert `failure` aid
-              calmE = calmEnough b ar
-              stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
-              skill = EM.findWithDefault 0 AbProject actorSk
-              -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
-              -- and no actors or obstacles along the path.
-              q = permittedProjectAI skill calmE
-          benList <- benAvailableItems aid q stores
+          let skill = EM.findWithDefault 0 AbProject actorSk
+          -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
+          -- and no actors or obstacles along the path.
+          benList <- condProjectListM skill aid
           localTime <- getsState $ getLocalTime (blid b)
           let coeff CGround = 2
               coeff COrgan = 3  -- can't give to others
