@@ -16,7 +16,6 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Ord as Ord
-import GHC.Exts (inline)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
@@ -118,12 +117,6 @@ prEqpSlot eqpSlot ar@AspectRecord{..} =
     EqpSlotAbWait -> EM.findWithDefault 0 Ability.AbWait aSkills
     EqpSlotAbMoveItem -> EM.findWithDefault 0 Ability.AbMoveItem aSkills
 
-strengthFromEqpSlot :: EqpSlot -> ItemFull -> Int
-strengthFromEqpSlot eqpSlot itemFull =
-   case eqpSlot of
-     EqpSlotWeapon -> inline strMelee True maxBound itemFull
-     _ -> prEqpSlot eqpSlot $ aspectRecordFull itemFull
-
 strMelee :: Bool -> Time -> ItemFull -> Int
 strMelee effectBonus localTime itemFull =
   let recharged = hasCharge localTime itemFull
@@ -167,11 +160,22 @@ strongestMelee effectBonus localTime is =
 isMelee :: Item -> Bool
 isMelee item = Meleeable `elem` jfeature item
 
-strongestSlot :: EqpSlot -> [(ItemId, ItemFull)]
+strongestSlot :: DiscoveryBenefit -> EqpSlot -> [(ItemId, ItemFull)]
               -> [(Int, (ItemId, ItemFull))]
-strongestSlot eqpSlot is =
-  let f (iid, itemFull) = ( strengthFromEqpSlot eqpSlot itemFull
-                          , (iid, itemFull) )
+strongestSlot discoBenefit eqpSlot is =
+  let f (iid, itemFull) =
+        if eqpSlot == EqpSlotWeapon
+        then
+          -- For equipping, as opposed to fighting, we value weapon
+          -- both for its damage and for any healing and other good effects
+          -- it may confer to its wearer (not its victim)
+          let ben = case EM.lookup iid discoBenefit of
+                Just (totalSum, _) -> totalSum
+                Nothing -> min 150 (10 * Dice.meanDice
+                                           (jdamage $ itemBase itemFull))
+          in (ben, (iid, itemFull))
+        else ( prEqpSlot eqpSlot $ aspectRecordFull itemFull
+             , (iid, itemFull) )
   in sortBy (flip $ Ord.comparing fst) $ map f is
 
 unknownAspect :: (Aspect -> [Dice.Dice]) -> ItemFull -> Bool

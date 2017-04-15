@@ -367,7 +367,8 @@ equipItems aid = do
         not $ unneeded condAnyFoeAdj condShineWouldBetray
                        condAimEnemyPresent heavilyDistressed (not calmE)
                        body ar discoBenefit iid itemFull
-      bestThree = bestByEqpSlot (filter filterNeeded eqpAssocs)
+      bestThree = bestByEqpSlot discoBenefit
+                                (filter filterNeeded eqpAssocs)
                                 (filter filterNeeded invAssocs)
                                 (filter filterNeeded shaAssocs)
       bEqpInv = foldl' (improve CInv) (0, [])
@@ -485,7 +486,8 @@ unEquipItems aid = do
                        condAimEnemyPresent heavilyDistressed (not calmE)
                        body ar discoBenefit iid itemFull
       bestThree =
-        bestByEqpSlot eqpAssocs invAssocs (filter filterNeeded shaAssocs)
+        bestByEqpSlot discoBenefit
+                      eqpAssocs invAssocs (filter filterNeeded shaAssocs)
       bInvSha = concatMap
                   (improve CInv . (\(slot, (_, inv, sha)) ->
                                     (slot, (sha, inv)))) bestThree
@@ -506,20 +508,21 @@ groupByEqpSlot is =
       withES = mapMaybe f is
   in EM.fromListWith (++) withES
 
-bestByEqpSlot :: [(ItemId, ItemFull)]
+bestByEqpSlot :: DiscoveryBenefit
+              -> [(ItemId, ItemFull)]
               -> [(ItemId, ItemFull)]
               -> [(ItemId, ItemFull)]
               -> [(IK.EqpSlot
                   , ( [(Int, (ItemId, ItemFull))]
                     , [(Int, (ItemId, ItemFull))]
                     , [(Int, (ItemId, ItemFull))] ) )]
-bestByEqpSlot eqpAssocs invAssocs shaAssocs =
+bestByEqpSlot discoBenefit eqpAssocs invAssocs shaAssocs =
   let eqpMap = EM.map (\g -> (g, [], [])) $ groupByEqpSlot eqpAssocs
       invMap = EM.map (\g -> ([], g, [])) $ groupByEqpSlot invAssocs
       shaMap = EM.map (\g -> ([], [], g)) $ groupByEqpSlot shaAssocs
       appendThree (g1, g2, g3) (h1, h2, h3) = (g1 ++ h1, g2 ++ h2, g3 ++ h3)
       eqpInvShaMap = EM.unionsWith appendThree [eqpMap, invMap, shaMap]
-      bestSingle = strongestSlot
+      bestSingle = strongestSlot discoBenefit
       bestThree eqpSlot (g1, g2, g3) = (bestSingle eqpSlot g1,
                                         bestSingle eqpSlot g2,
                                         bestSingle eqpSlot g3)

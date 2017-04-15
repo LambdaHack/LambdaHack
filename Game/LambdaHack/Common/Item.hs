@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.Item
   , seedToAspect, meanAspect, aspectRecordToList
   , aspectRecordFull, aspectsRandom
     -- * Item discovery types
-  , ItemKindIx, KindMean(..), DiscoveryKind, ItemSeed
+  , ItemKindIx, KindMean(..), DiscoveryKind, DiscoveryBenefit, ItemSeed
   , AspectRecord(..), emptyAspectRecord, sumAspectRecord, DiscoveryAspect
   , ItemFull(..), ItemDisco(..)
   , itemNoDisco, itemToFull
@@ -58,6 +58,8 @@ instance Binary KindMean
 -- | The map of item kind indexes to item kind ids.
 -- The full map, as known by the server, is 1-1.
 type DiscoveryKind = EM.EnumMap ItemKindIx KindMean
+
+type DiscoveryBenefit = EM.EnumMap ItemId (Int, Int)
 
 -- | A seed for rolling aspects of an item
 -- Clients have partial knowledge of how item ids map to the seeds.

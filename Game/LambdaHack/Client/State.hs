@@ -2,7 +2,7 @@
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Client.State
   ( StateClient(..), emptyStateClient
-  , DiscoveryBenefit, AlterLid
+  , AlterLid
   , updateTarget, getTarget, updateLeader, sside
   , BfsAndPath(..), TgtAndPath(..), cycleMarkSuspect
   ) where
@@ -76,8 +76,6 @@ data StateClient = StateClient
   , sdebugCli     :: !DebugModeCli  -- ^ client debugging mode
   }
   deriving Show
-
-type DiscoveryBenefit = EM.EnumMap ItemId (Int, Int)
 
 data BfsAndPath =
     BfsInvalid
