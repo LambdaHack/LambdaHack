@@ -167,21 +167,12 @@ strongestMelee effectBonus localTime is =
 isMelee :: Item -> Bool
 isMelee item = Meleeable `elem` jfeature item
 
-strongestSlotNoFilter :: EqpSlot -> [(ItemId, ItemFull)]
-                      -> [(Int, (ItemId, ItemFull))]
-strongestSlotNoFilter eqpSlot is =
-  let f (iid, itemFull) = ( strengthFromEqpSlot eqpSlot itemFull
-                          , (iid, itemFull) )
-  in sortBy (flip $ Ord.comparing fst) $ map f is
-
 strongestSlot :: EqpSlot -> [(ItemId, ItemFull)]
               -> [(Int, (ItemId, ItemFull))]
 strongestSlot eqpSlot is =
-  let f (_, itemFull) = case strengthEqpSlot itemFull of
-        Just eqpSlot2 | eqpSlot2 == eqpSlot -> True
-        _ -> False
-      slotIs = filter f is
-  in strongestSlotNoFilter eqpSlot slotIs
+  let f (iid, itemFull) = ( strengthFromEqpSlot eqpSlot itemFull
+                          , (iid, itemFull) )
+  in sortBy (flip $ Ord.comparing fst) $ map f is
 
 unknownAspect :: (Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f itemFull =
