@@ -212,7 +212,6 @@ reqMove source dir = do
   case tgt of
     (target, tb) : _ | not (bproj sb && bproj tb) -> do  -- visible or not
       -- Projectiles are too small to hit each other.
-      -- Attacking does not require full access, adjacency is enough.
       -- Here the only weapon of projectiles is picked, too.
       mweapon <- pickWeaponServer source
       case mweapon of
@@ -361,7 +360,7 @@ reqAlter :: (MonadAtomic m, MonadServer m) => ActorId -> Point -> m ()
 reqAlter source tpos = do
   Kind.COps{cotile=Kind.Ops{okind, opick}, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
-  actorSk <- actorSkillsServer source
+  actorSk <- currentSkillsServer source
   let alterSkill = EM.findWithDefault 0 Ability.AbAlter actorSk
       lid = blid sb
       spos = bpos sb
@@ -552,7 +551,7 @@ reqApply aid iid cstore = do
       Nothing -> execFailure aid req ApplyOutOfReach
       Just kit -> do
         itemToF <- itemToFullServer
-        actorSk <- actorSkillsServer aid
+        actorSk <- currentSkillsServer aid
         localTime <- getsState $ getLocalTime (blid b)
         let skill = EM.findWithDefault 0 Ability.AbApply actorSk
             itemFull = itemToF iid kit

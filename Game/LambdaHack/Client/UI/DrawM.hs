@@ -550,7 +550,7 @@ drawLeaderDamage width = do
       strongest <- pickWeaponM allAssocs actorSk actorAspect leader False
       let damage = case strongest of
             [] -> "0"
-            (_averageDmg, (_, itemFull)) : _ ->
+            (_, (_, itemFull)) : _ ->
               let tdice = show $ jdamage $ itemBase itemFull
                   bonusRaw = aHurtMelee $ actorAspect EM.! leader
                   bonus = min 200 $ max (-200) bonusRaw

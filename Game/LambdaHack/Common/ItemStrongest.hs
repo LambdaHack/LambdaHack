@@ -131,8 +131,8 @@ strMelee effectBonus localTime itemFull =
       -- weapons are preferred over weapons with no effects.
       -- If the player doesn't like a particular weapon's extra effect,
       -- he has to manage this manually.
-      p (Burn d) = [Dice.meanDice d]
       p _ | not effectBonus = []
+      p (Burn d) = [Dice.meanDice d]
       p ELabel{} = []
       p OnSmash{} = []
       -- Hackish extra bonus to force Summon as first effect used

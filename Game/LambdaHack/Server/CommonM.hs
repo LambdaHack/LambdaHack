@@ -5,7 +5,7 @@ module Game.LambdaHack.Server.CommonM
   , revealItems, moveStores, deduceQuits, deduceKilled
   , electLeader, supplantLeader
   , addActor, addActorIid, projectFail
-  , pickWeaponServer, actorSkillsServer
+  , pickWeaponServer, currentSkillsServer
   , recomputeCachePer
   ) where
 
@@ -252,7 +252,7 @@ projectFail source tpxy eps iid cstore isBlast = do
         Nothing ->  return $ Just ProjectOutOfReach
         Just kit -> do
           itemToF <- itemToFullServer
-          actorSk <- actorSkillsServer source
+          actorSk <- currentSkillsServer source
           actorAspect <- getsServer sactorAspect
           let ar = actorAspect EM.! source
               skill = EM.findWithDefault 0 Ability.AbProject actorSk
@@ -402,36 +402,23 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
         execUpdAtomic $ UpdDiscoverSeed container iid seed
   return $ Just aid
 
--- Server has to pick a random weapon or it could leak item discovery
--- information. In case of non-projectiles, it only picks items
--- with some effects, though, so it leaks properties of completely
--- unidentified items.
 pickWeaponServer :: MonadServer m => ActorId -> m (Maybe (ItemId, CStore))
 pickWeaponServer source = do
   eqpAssocs <- fullAssocsServer source [CEqp]
   bodyAssocs <- fullAssocsServer source [COrgan]
-  actorSk <- actorSkillsServer source
-  sb <- getsState $ getActorBody source
-  localTime <- getsState $ getLocalTime (blid sb)
+  actorSk <- currentSkillsServer source
   actorAspect <- getsServer sactorAspect
-  -- For projectiles we need to accept even items without any effect,
-  -- so that the projectile dissapears and "No effect" feedback is produced.
-  let ar = actorAspect EM.! source
-      allAssocs = eqpAssocs ++ bodyAssocs
-      calmE = calmEnough sb ar
+  sb <- getsState $ getActorBody source
+  let allAssocsRaw = eqpAssocs ++ bodyAssocs
       forced = bproj sb
-      permitted = permittedPrecious calmE forced
-      legalPrecious = either (const False) (const True) . permitted
-      preferredPrecious = either (const False) id . permitted
-      strongest = strongestMelee True localTime allAssocs
-      strongestLegal = filter (legalPrecious . snd . snd) strongest
-      strongestPreferred = filter (preferredPrecious . snd . snd) strongestLegal
-      best = case strongestPreferred of
-        _ | bproj sb -> map (1,) eqpAssocs
-        _ | EM.findWithDefault 0 Ability.AbMelee actorSk <= 0 -> []
-        _:_ -> strongestPreferred
-        [] -> strongestLegal
-  case best of
+      allAssocs | forced = allAssocsRaw  -- for projectiles, anything is weapon
+                | otherwise = filter (isMelee . itemBase . snd) allAssocsRaw
+      -- Server ignores item effects or it would leak item discovery info.
+      -- In particular, it even uses weapons that would heal opponent,
+      -- and not only in case of projectiles.
+      effectBonus = False
+  strongest <- pickWeaponM allAssocs actorSk actorAspect source effectBonus
+  case strongest of
     [] -> return Nothing
     iis@((maxS, _) : _) -> do
       let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
@@ -439,8 +426,8 @@ pickWeaponServer source = do
       let cstore = if isJust (lookup iid bodyAssocs) then COrgan else CEqp
       return $ Just (iid, cstore)
 
-actorSkillsServer :: MonadServer m => ActorId -> m Ability.Skills
-actorSkillsServer aid  = do
+currentSkillsServer :: MonadServer m => ActorId -> m Ability.Skills
+currentSkillsServer aid  = do
   ar <- getsServer $ (EM.! aid) . sactorAspect
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD

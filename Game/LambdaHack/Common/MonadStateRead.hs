@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Game action monads and basic building blocks for human and computer
 -- player actions. Has no access to the main action type.
 module Game.LambdaHack.Common.MonadStateRead
@@ -69,11 +70,11 @@ pickWeaponM allAssocs actorSk actorAspect source effectBonus = do
   localTime <- getsState $ getLocalTime (blid sb)
   let ar = actorAspect EM.! source
       calmE = calmEnough sb ar
-      forced = assert (not $ bproj sb) False
+      forced = bproj sb
       permitted = permittedPrecious calmE forced
       preferredPrecious = either (const False) id . permitted
       permAssocs = filter (preferredPrecious . snd) allAssocs
       strongest = strongestMelee effectBonus localTime permAssocs
-  return $! if EM.findWithDefault 0 Ability.AbMelee actorSk <= 0
-            then []
-            else strongest
+  return $! if | forced -> map (1,) allAssocs
+               | EM.findWithDefault 0 Ability.AbMelee actorSk <= 0 -> []
+               | otherwise -> strongest
