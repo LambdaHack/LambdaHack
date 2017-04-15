@@ -413,11 +413,10 @@ pickWeaponServer source = do
       forced = bproj sb
       allAssocs | forced = allAssocsRaw  -- for projectiles, anything is weapon
                 | otherwise = filter (isMelee . itemBase . snd) allAssocsRaw
-      -- Server ignores item effects or it would leak item discovery info.
-      -- In particular, it even uses weapons that would heal opponent,
-      -- and not only in case of projectiles.
-      effectBonus = False
-  strongest <- pickWeaponM allAssocs actorSk actorAspect source effectBonus
+  -- Server ignores item effects or it would leak item discovery info.
+  -- In particular, it even uses weapons that would heal opponent,
+  -- and not only in case of projectiles.
+  strongest <- pickWeaponM Nothing allAssocs actorSk actorAspect source
   case strongest of
     [] -> return Nothing
     iis@((maxS, _) : _) -> do

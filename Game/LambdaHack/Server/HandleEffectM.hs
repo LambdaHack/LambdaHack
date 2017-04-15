@@ -1209,7 +1209,7 @@ effectDropBestWeapon execSfx target = do
   tb <- getsState $ getActorBody target
   allAssocs <- fullAssocsServer target [CEqp]
   localTime <- getsState $ getLocalTime (blid tb)
-  case strongestMelee False localTime allAssocs of
+  case strongestMelee Nothing localTime allAssocs of
     (_, (iid, _)) : _ -> do
       execSfx
       let kit = beqp tb EM.! iid

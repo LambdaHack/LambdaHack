@@ -117,31 +117,6 @@ prEqpSlot eqpSlot ar@AspectRecord{..} =
     EqpSlotAbWait -> EM.findWithDefault 0 Ability.AbWait aSkills
     EqpSlotAbMoveItem -> EM.findWithDefault 0 Ability.AbMoveItem aSkills
 
-strMelee :: Bool -> Time -> ItemFull -> Int
-strMelee effectBonus localTime itemFull =
-  let recharged = hasCharge localTime itemFull
-      -- We assume extra weapon effects are useful and so such
-      -- weapons are preferred over weapons with no effects.
-      -- If the player doesn't like a particular weapon's extra effect,
-      -- he has to manage this manually.
-      p _ | not effectBonus = []
-      p (Burn d) = [Dice.meanDice d]
-      p ELabel{} = []
-      p OnSmash{} = []
-      -- Hackish extra bonus to force Summon as first effect used
-      -- before Calm is depleted due to the fight.
-      p (Recharging Summon{}) = [999 | recharged]
-      -- We assume the weapon is still worth using, even if some effects
-      -- are charging; in particular, we assume Hurt or Burn are not
-      -- under Recharging.
-      p Recharging{} = [100 | recharged]
-      p Temporary{} = []
-      p Unique = []
-      p Periodic = []
-      p _ = [100]
-      hurt = Dice.meanDice $ jdamage $ itemBase itemFull
-  in hurt + sum (strengthEffect p itemFull)
-
 hasCharge :: Time -> ItemFull -> Bool
 hasCharge localTime itemFull@ItemFull{..} =
   let timeout = aTimeout $ aspectRecordFull itemFull
@@ -150,11 +125,29 @@ hasCharge localTime itemFull@ItemFull{..} =
       it1 = filter charging itemTimer
   in length it1 < itemK
 
-strongestMelee :: Bool -> Time -> [(ItemId, ItemFull)]
+-- We assume extra weapon effects are useful and so such
+-- weapons are preferred over weapons with no effects.
+-- If the player doesn't like a particular weapon's extra effect,
+-- he has to manage this manually.
+strongestMelee :: Maybe DiscoveryBenefit -> Time -> [(ItemId, ItemFull)]
                -> [(Int, (ItemId, ItemFull))]
 strongestMelee _ _ [] = []
-strongestMelee effectBonus localTime is =
-  let f ii@(_, itemFull) = (strMelee effectBonus localTime itemFull, ii)
+strongestMelee mdiscoBenefit localTime is =
+  -- For simplicity we assume, if weapon not recharged, all important effects
+  -- are disabled and only raw damage remains.
+  let f (iid, itemFull) =
+        let rawDmgResult =
+              ( min 150 (10 * Dice.meanDice (jdamage $ itemBase itemFull))
+              , (iid, itemFull) )
+        in case mdiscoBenefit of
+          Just discoBenefit | hasCharge localTime itemFull ->
+            -- For fighting, as opposed to equipping, we value weapon
+            -- only for its raw damage and harming effects.
+            case EM.lookup iid discoBenefit of
+              Just (_, effSum) -> ( if effSum < 0 then - effSum else 0
+                                  , (iid, itemFull) )
+              Nothing -> rawDmgResult
+          _  -> rawDmgResult
   in sortBy (flip $ Ord.comparing fst) $ map f is
 
 isMelee :: Item -> Bool
@@ -167,7 +160,7 @@ strongestSlot discoBenefit eqpSlot is =
         if eqpSlot == EqpSlotWeapon
         then
           -- For equipping, as opposed to fighting, we value weapon
-          -- both for its damage and for any healing and other good effects
+          -- both for its damage and for any healing and other good aspects
           -- it may confer to its wearer (not its victim)
           let ben = case EM.lookup iid discoBenefit of
                 Just (totalSum, _) -> totalSum

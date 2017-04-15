@@ -26,7 +26,7 @@ effectToBenefit cops fact eff =
     IK.ELabel _ -> 0
     IK.EqpSlot _ -> 0
     IK.Burn d -> -(min 200 $ 15 * Dice.meanDice d)
-                   -- often splash damage, etc.
+                   -- often splash damage, armor doesn't block, etc.
     IK.Explode _ -> 0  -- depends on explosion
     IK.RefillHP p -> if p > 0 then min 99 (10 * p) else max (-99) (10 * p)
     IK.RefillCalm p -> if p > 0 then min 9 p else max (-9) p
@@ -34,7 +34,7 @@ effectToBenefit cops fact eff =
     IK.Impress -> -10
     IK.Summon grp d ->  -- contrived by not taking into account alliances
                         -- and not checking if enemies also control that group
-      if grp `elem` fgroups (gplayer fact) then Dice.meanDice d * 50 else 0
+      if grp `elem` fgroups (gplayer fact) then Dice.meanDice d * 200 else 0
     IK.Ascend{} -> 1      -- low, to only change levels sensibly, in teams
     IK.Escape{} -> 10000  -- AI wants to win; spawners to guard
     IK.Paralyze d -> -10 * Dice.meanDice d

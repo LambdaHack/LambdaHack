@@ -155,7 +155,9 @@ pickWeaponClient source target = do
   actorAspect <- getsClient sactorAspect
   let allAssocsRaw = eqpAssocs ++ bodyAssocs
       allAssocs = filter (isMelee . itemBase . snd) allAssocsRaw
-  strongest <- pickWeaponM allAssocs actorSk actorAspect source True
+  discoBenefit <- getsClient sdiscoBenefit
+  strongest <- pickWeaponM (Just discoBenefit)
+                           allAssocs actorSk actorAspect source
   case strongest of
     [] -> return Nothing
     iis@((maxS, _) : _) -> do
