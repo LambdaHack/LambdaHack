@@ -125,18 +125,20 @@ pickActorToMove maidToAvoid = do
                 actorShines = aShine ar > 0
                 aCanDeLight = aCanDeAmbient && not actorShines
             return $!
-              condCanFlee
-              && not condFastThreatAdj
+              not condFastThreatAdj
               && if | condThreat 1 -> not condCanMelee
                                       || condManyThreatAdj && not condSupport1
                     | not condInMelee
                       && (condThreat 2 || condThreat 5 && aCanDeLight) ->
                       not condCanMelee
                       || not condSupport2 && not heavilyDistressed
+                    -- not used: | condThreat 5 -> False
+                    -- because actor should be picked anyway, to try to melee
                     | otherwise ->
                       not condInMelee
                       && heavilyDistressed
-                      && (not condCanProject || aCanDeLight)
+                      && (aCanDeLight || not condCanProject)
+              && condCanFlee
           actorHearning (_, TgtAndPath{ tapTgt=TPoint TEnemyPos{} _ _
                                       , tapPath=NoPath }) =
             return False

@@ -166,7 +166,7 @@ actionStrategy aid = do
                     || not condSupport2 && not heavilyDistressed
                   | condThreat 5 ->
                     -- Too far to flee from melee, too close from ranged,
-                    -- not in ambient, so no point fleeing into dark; stay.
+                    -- not in ambient, so no point fleeing into dark; advance.
                     False
                   | otherwise ->
                     -- If I'm hit, they are still in range to fling at me,
@@ -175,7 +175,7 @@ actionStrategy aid = do
                     -- ranged attack and prepare ambush for later on.
                     not condInMelee
                     && heavilyDistressed
-                    && (not condCanProject || aCanDeLight) )
+                    && (aCanDeLight || not condCanProject) )
         , ( [AbMelee], (toAny :: ToAny 'AbMelee)
             <$> meleeBlocker aid  -- only melee blocker
           , condAnyFoeAdj  -- if foes, don't displace, otherwise friends:
@@ -184,14 +184,17 @@ actionStrategy aid = do
                && condAimEnemyPresent )  -- excited
         , ( [AbAlter], (toAny :: ToAny 'AbAlter)
             <$> trigger aid ViaNothing
-          , condAdjTriggerable && not condAimEnemyPresent
-            && not condInMelee )  -- don't incur overhead
+          , not condInMelee  -- don't incur overhead
+            && condAdjTriggerable && not condAimEnemyPresent )
         , ( [AbDisplace]  -- prevents some looping movement
           , displaceBlocker aid  -- fires up only when path blocked
           , not condDesirableFloorItem )
         , ( [AbMelee], (toAny :: ToAny 'AbMelee)
             <$> meleeAny aid
           , condAnyFoeAdj )  -- won't flee nor displace, so let it melee
+        , ( [AbMove]
+          , flee aid panicFleeL  -- ultimate panic mode, displaces foes
+          , condAnyFoeAdj )
         ]
       -- Order doesn't matter, scaling does.
       -- These are flattened (taking only the best variant) and then summed,
@@ -208,28 +211,29 @@ actionStrategy aid = do
         , ( [AbMoveItem]
           , stratToFreq 1 $ (toAny :: ToAny 'AbMoveItem)
             <$> equipItems aid  -- doesn't take long, very useful if safe
-          , not (condAnyFoeAdj
+          , not (condInMelee
+                 || condAnyFoeAdj
                  || condDesirableFloorItem
                  || condNotCalmEnough
-                 || heavilyDistressed
-                 || condInMelee) )
+                 || heavilyDistressed) )
         , ( [AbProject]
-          , stratToFreq (if condTgtNonmoving then 20 else 2)
+          , stratToFreq (if condTgtNonmoving then 20 else 5)
             $ (toAny :: ToAny 'AbProject)
-            <$> projectItem aid
-          , condAimEnemyPresent && condCanProject && not condInMelee )
+            <$> projectItem aid  -- equivalent of @condCanProject@ called inside
+          , condAimEnemyPresent && not condInMelee )
         , ( [AbApply]
           , stratToFreq 2 $ (toAny :: ToAny 'AbApply)
             <$> applyItem aid ApplyAll  -- use any potion or scroll
           , (condAimEnemyPresent || condThreat 9)  -- can affect enemies
-            && bhp body < xM (aMaxHP ar - 10) )  -- don't waste healing
+            && bhp body < xM (aMaxHP ar - 10) )
+                 -- don't waste healing, escape, etc., if in perfect condition
         , ( [AbMove]
           , stratToFreq (if | condInMelee ->
-                              1000  -- friends pummeled by target, go to help
+                              400  -- friends pummeled by target, go to help
                             | not condAimEnemyPresent ->
                               2  -- if enemy only remembered, investigate anyway
                             | otherwise ->
-                              50)
+                              20)
             $ chase aid True (not condInMelee
                               && (condThreat 12 || heavilyDistressed)
                               && aCanDeLight)
@@ -245,10 +249,7 @@ actionStrategy aid = do
         ]
       -- Order matters again.
       suffix =
-        [ ( [AbMove]
-          , flee aid panicFleeL  -- ultimate panic mode, displaces foes
-          , condAnyFoeAdj )
-        , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
+        [ ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
             <$> pickup aid False  -- e.g., to give to other party members
           , not condInMelee )
         , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
@@ -677,7 +678,7 @@ projectItem aid = do
                       not (isMelee itemBase)
                       && benR < 0
                       && trange >= chessDist (bpos b) fpos
-                   then Just ( -benR * rangeMult `div` 10
+                   then Just ( - benR * rangeMult `div` 10
                              , ReqProject fpos newEps iid cstore )
                    else Nothing
               benRanged = mapMaybe fRanged benList
