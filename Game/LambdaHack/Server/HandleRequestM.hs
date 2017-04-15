@@ -270,8 +270,10 @@ reqMelee source target iid cstore = do
                                               (CActor source CInv)
           mapM_ execUpdAtomic upds
         err -> assert `failure` err
-      -- Let the caught missile vanish.
-      execUpdAtomic $ UpdTrajectory target (btrajectory tb) Nothing
+      -- Let the caught missile vanish, but don't remove its trajectory
+      -- so that it doesn't pretend to be a non-projectile.
+      execUpdAtomic $ UpdTrajectory target (btrajectory tb)
+                                           (Just ([], toSpeed 0))
     else do
       -- Normal hit, with effects. Msgs inside @SfxStrike@ describe
       -- the source part of the strike.

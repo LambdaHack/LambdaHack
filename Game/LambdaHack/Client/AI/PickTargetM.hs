@@ -54,7 +54,7 @@ refreshTarget (aid, body) = do
   let !_A = assert (bfid body == side
                     `blame` "AI tries to move an enemy actor"
                     `twith` (aid, body, side)) ()
-  let !_A = assert (isNothing (btrajectory body)
+  let !_A = assert (isNothing (btrajectory body) && not (bproj body)
                     `blame` "AI gets to manually move its projectiles"
                     `twith` (aid, body, side)) ()
   stratTarget <- targetStrategy aid
@@ -142,7 +142,6 @@ targetStrategy aid = do
                      -- was partial; let's target again
         NoPath -> assert `failure` ()
     Nothing -> return Nothing  -- no target assigned yet
-  let !_A = assert (not $ bproj b) ()  -- would work, but is probably a bug
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   dungeon <- getsState sdungeon
