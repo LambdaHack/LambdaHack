@@ -46,8 +46,9 @@ import Game.LambdaHack.Content.TileKind (isUknownSpace)
 -- | Verify and possibly change the target of an actor. This function both
 -- updates the target in the client state and returns the new target explicitly.
 refreshTarget :: MonadClient m => (ActorId, Actor) -> m (Maybe TgtAndPath)
--- This inline speeds up execution by 5%, despite probably bloating executable
--- (but it slows down execution if pickAI is not inlined):
+-- This inline speeds up execution by 6% and increases allocation by 9%,
+-- despite probably bloating executable (but it slows down execution
+-- if pickAI is not inlined):
 {-# INLINE refreshTarget #-}
 refreshTarget (aid, body) = do
   side <- getsClient sside
