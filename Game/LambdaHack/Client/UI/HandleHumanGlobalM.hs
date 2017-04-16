@@ -668,6 +668,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorAspect <- getsClient sactorAspect
+  discoBenefit <- getsClient sdiscoBenefit
   let ar = case EM.lookup leader actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` leader
@@ -683,13 +684,14 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
             retRec toCStore =
               let n = oldN + if toCStore == CEqp then k else 0
               in ret4 rest n ((iid, k, fromCStore, toCStore) : acc)
+            inEqp = case EM.lookup iid discoBenefit of
+              Just ((_, i), _) -> i
+              Nothing -> goesIntoEqp (itemBase itemFull)
         if cLegalRaw == [CGround]  -- normal pickup
-        then case destCStore of
+        then case destCStore of  -- @CEqp@ is the implicit default; refine:
           CEqp | calmE && goesIntoSha (itemBase itemFull) ->
             retRec CSha
-          CEqp | not $ goesIntoEqp (itemBase itemFull) ->
-            retRec CInv
-          CEqp | eqpOverfull b (oldN + k) -> do
+          CEqp | inEqp && eqpOverfull b (oldN + k) -> do
             -- If this stack doesn't fit, we don't equip any part of it,
             -- but we may equip a smaller stack later in the same pickup.
             let fullWarn = if eqpOverfull b (oldN + 1)
@@ -697,9 +699,13 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
                            else EqpStackFull
             msgAdd $ "Warning:" <+> showReqFailure fullWarn <> "."
             retRec $ if calmE then CSha else CInv
+          CEqp | inEqp ->
+            retRec CEqp
+          CEqp ->
+            retRec CInv
           _ ->
             retRec destCStore
-        else case destCStore of
+        else case destCStore of  -- player forces store, so @inEqp@ ignored
           CEqp | eqpOverfull b (oldN + k) -> do
             -- If the chosen number from the stack doesn't fit,
             -- we don't equip any part of it and we exit item manipulation.

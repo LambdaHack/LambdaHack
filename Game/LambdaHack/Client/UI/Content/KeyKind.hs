@@ -162,6 +162,7 @@ applyI ts =
 
 grabCmd :: HumanCmd
 grabCmd = MoveItem [CGround] CEqp (Just "grab") True
+            -- @CEqp@ is the implicit default; refined in HandleHumanGlobalM
 
 grabItems :: Text -> CmdTriple
 grabItems t = ([CmdMove, CmdItemMenu], t, grabCmd)
