@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.ItemStrongest
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
   , unknownMelee, filterRecharging, stripRecharging, stripOnSmash
-  , hasCharge, strongestMelee, isMelee, prEqpSlot
+  , hasCharge, strongestMelee, prEqpSlot
   ) where
 
 import Prelude ()
@@ -149,9 +149,6 @@ strongestMelee mdiscoBenefit localTime is =
               Nothing -> rawDmgResult
           _  -> rawDmgResult
   in sortBy (flip $ Ord.comparing fst) $ map f is
-
-isMelee :: Item -> Bool
-isMelee item = Meleeable `elem` jfeature item
 
 strongestSlot :: DiscoveryBenefit -> EqpSlot -> [(ItemId, ItemFull)]
               -> [(Int, (ItemId, ItemFull))]

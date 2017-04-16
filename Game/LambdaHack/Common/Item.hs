@@ -4,7 +4,7 @@
 module Game.LambdaHack.Common.Item
   ( -- * The @Item@ type
     ItemId, Item(..), ItemSource(..)
-  , itemPrice, goesIntoEqp, goesIntoInv, goesIntoSha
+  , itemPrice, goesIntoEqp, isMelee, goesIntoInv, goesIntoSha
   , seedToAspect, meanAspect, aspectRecordToList
   , aspectRecordFull, aspectsRandom
     -- * Item discovery types
@@ -211,6 +211,10 @@ itemPrice (item, jcount) =
 -- nevertheless, e.g., thorns.
 goesIntoEqp :: Item -> Bool
 goesIntoEqp item = IK.Equipable `elem` jfeature item
+                   || IK.Meleeable `elem` jfeature item
+
+isMelee :: Item -> Bool
+isMelee item = IK.Meleeable `elem` jfeature item
 
 goesIntoInv :: Item -> Bool
 goesIntoInv item = IK.Precious `notElem` jfeature item

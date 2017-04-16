@@ -222,7 +222,7 @@ permittedProject forced skill calmE triggerSyms itemFull@ItemFull{itemBase} =
                case strengthEqpSlot itemFull of
                  Just IK.EqpSlotLightSource -> True
                  Just _ -> False
-                 Nothing -> IK.Equipable `notElem` jfeature itemBase
+                 Nothing -> not (goesIntoEqp itemBase)
              | otherwise -> jsymbol itemBase `elem` triggerSyms
 
 -- Speedup.

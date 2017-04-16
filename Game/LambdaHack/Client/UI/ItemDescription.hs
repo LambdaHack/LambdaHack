@@ -103,7 +103,7 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
           notDetail IK.Explode{} = fullInfo >= 6
           notDetail _ = True
           active = cstore `elem` [CEqp, COrgan]
-                   || cstore == CGround && IK.Equipable `elem` jfeature itemBase
+                   || cstore == CGround && goesIntoEqp itemBase
           splitAE :: [IK.Aspect] -> [IK.Effect] -> [Text]
           splitAE aspects effects =
             let ppA = kindAspectToSuffix
