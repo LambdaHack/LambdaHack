@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.ItemStrongest
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
   , unknownMelee, filterRecharging, stripRecharging, stripOnSmash
-  , hasCharge, strongestMelee, prEqpSlot
+  , hasCharge, damageUsefulness, strongestMelee, prEqpSlot
   ) where
 
 import Prelude ()
@@ -125,6 +125,9 @@ hasCharge localTime itemFull@ItemFull{..} =
       it1 = filter charging itemTimer
   in length it1 < itemK
 
+damageUsefulness :: Item -> Int
+damageUsefulness item = min 150 (10 * Dice.meanDice (jdamage item))
+
 -- We assume extra weapon effects are useful and so such
 -- weapons are preferred over weapons with no effects.
 -- If the player doesn't like a particular weapon's extra effect,
@@ -136,9 +139,7 @@ strongestMelee mdiscoBenefit localTime is =
   -- For simplicity we assume, if weapon not recharged, all important effects
   -- are disabled and only raw damage remains.
   let f (iid, itemFull) =
-        let rawDmgResult =
-              ( min 150 (10 * Dice.meanDice (jdamage $ itemBase itemFull))
-              , (iid, itemFull) )
+        let rawDmg = (damageUsefulness $ itemBase itemFull, (iid, itemFull))
         in case mdiscoBenefit of
           Just discoBenefit | hasCharge localTime itemFull ->
             -- For fighting, as opposed to equipping, we value weapon
@@ -146,8 +147,8 @@ strongestMelee mdiscoBenefit localTime is =
             case EM.lookup iid discoBenefit of
               Just (_, (_, effFoe)) -> ( if effFoe < 0 then - effFoe else 0
                                        , (iid, itemFull) )
-              Nothing -> rawDmgResult
-          _  -> rawDmgResult
+              Nothing -> rawDmg
+          _  -> rawDmg
   in sortBy (flip $ Ord.comparing fst) $ map f is
 
 -- This ignores items that don't go into equipment, as determined in @inEqp@.
@@ -156,14 +157,12 @@ strongestSlot :: DiscoveryBenefit -> EqpSlot -> [(ItemId, ItemFull)]
               -> [(Int, (ItemId, ItemFull))]
 strongestSlot discoBenefit eqpSlot is =
   let f (iid, itemFull) =
-        let rawDmgResult =
-              ( min 150 (10 * Dice.meanDice (jdamage $ itemBase itemFull))
-              , (iid, itemFull) )
+        let rawDmg = (damageUsefulness $ itemBase itemFull, (iid, itemFull))
         in if eqpSlot == EqpSlotWeapon
            then case EM.lookup iid discoBenefit of
              Just ((pickupSum, inEqp), (_, _)) ->
                if not inEqp then Nothing else Just (pickupSum, (iid, itemFull))
-             Nothing -> Just rawDmgResult
+             Nothing -> Just rawDmg
            else let inEqp = case EM.lookup iid discoBenefit of
                       Just ((_, i), (_, _)) -> i
                       Nothing -> goesIntoEqp (itemBase itemFull)

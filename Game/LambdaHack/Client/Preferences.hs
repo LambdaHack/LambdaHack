@@ -141,7 +141,7 @@ totalUsefulness :: Kind.COps -> Faction -> [IK.Effect] -> AspectRecord -> Item
                 -> ((Int, Bool), (Int, Int))
 totalUsefulness !cops !fact !effects !aspects !item =
   let effPairs = map (effectToBenefit cops fact) effects
-      effDice = -(min 150 (10 * Dice.meanDice (jdamage item)))
+      effDice = - damageUsefulness item
       f (friend, foe) (accFriend, accFoe) = (friend + accFriend, foe + accFoe)
       (effFriendEf, effFoeEf) = foldr f (0, 0) effPairs
       (effFriend, effFoe) = (effFriendEf + effDice, effFoeEf + effDice)
