@@ -672,7 +672,7 @@ projectItem aid = do
                            * coeff cstore
                            * case mben of
                                Nothing -> -10  -- experiment if no options
-                               Just (_, ben) -> ben
+                               Just (_, (_, effFoe)) -> effFoe
                            * (if recharged then 1 else 0)
                 in if -- Melee weapon is usually needed in hand.
                       not (isMelee itemBase)
@@ -753,7 +753,7 @@ applyItem aid applyGroup = do
                      Nothing -> 0
                        -- experimenting is fun, but it's better to risk
                        -- foes' skin than ours
-                     Just (_, ben) -> ben
+                     Just (_, (effFriend, _)) -> effFriend
                    * (if onlyVoidlyDropsOrgan then 0 else 1)
                    * durableBonus
                    * coeff cstore

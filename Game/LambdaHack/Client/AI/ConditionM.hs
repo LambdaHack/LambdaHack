@@ -154,13 +154,14 @@ condCanProjectM skill aid = do
   let isMissile ((Nothing, _), (_, itemFull)) =
         -- Melee weapon is usually needed in hand.
         not (isMelee $ itemBase itemFull)
-      isMissile ((Just (_, benR), _), (_, itemFull)) =
-        benR < 0 && not (isMelee $ itemBase itemFull)
+      isMissile ((Just (_, (_, effFoe)), _), (_, itemFull)) =
+        effFoe < 0 && not (isMelee $ itemBase itemFull)
   return $ any isMissile benList  -- keep it lazy
 
 condProjectListM :: MonadClient m
-                 => Int -> ActorId -> m [( (Maybe (Int, Int), (Int, CStore))
-                                         , (ItemId, ItemFull) )]
+                 => Int -> ActorId
+                 -> m [( (Maybe (Int, (Int, Int)), (Int, CStore))
+                       , (ItemId, ItemFull) )]
 condProjectListM skill aid = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
@@ -177,7 +178,7 @@ benAvailableItems :: MonadClient m
                   => ActorId
                   -> (ItemFull -> Bool)
                   -> [CStore]
-                  -> m [( (Maybe (Int, Int), (Int, CStore))
+                  -> m [( (Maybe (Int, (Int, Int)), (Int, CStore))
                         , (ItemId, ItemFull) )]
 benAvailableItems aid permitted cstores = do
   itemToF <- itemToFullClient
@@ -237,7 +238,7 @@ condDesirableFloorItemM aid = do
 -- that are worth picking up.
 benGroundItems :: MonadClient m
                => ActorId
-               -> m [( (Maybe (Int, Int)
+               -> m [( (Maybe (Int, (Int, Int))
                      , (Int, CStore)), (ItemId, ItemFull) )]
 benGroundItems aid = do
   b <- getsState $ getActorBody aid

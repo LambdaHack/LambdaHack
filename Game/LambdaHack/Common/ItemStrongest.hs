@@ -144,8 +144,8 @@ strongestMelee mdiscoBenefit localTime is =
             -- For fighting, as opposed to equipping, we value weapon
             -- only for its raw damage and harming effects.
             case EM.lookup iid discoBenefit of
-              Just (_, effSum) -> ( if effSum < 0 then - effSum else 0
-                                  , (iid, itemFull) )
+              Just (_, (_, effFoe)) -> ( if effFoe < 0 then - effFoe else 0
+                                       , (iid, itemFull) )
               Nothing -> rawDmgResult
           _  -> rawDmgResult
   in sortBy (flip $ Ord.comparing fst) $ map f is

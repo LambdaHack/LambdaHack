@@ -59,7 +59,12 @@ instance Binary KindMean
 -- The full map, as known by the server, is 1-1.
 type DiscoveryKind = EM.EnumMap ItemKindIx KindMean
 
-type DiscoveryBenefit = EM.EnumMap ItemId (Int, Int)
+-- | The fields are
+-- 1. the total benefit from picking an item up (to use or to put in equipment)
+-- 2. the benefit of applied the item to self
+-- 3. the (usually negative) benefit of flinging an item at an opponent
+--    or meleeing with it
+type DiscoveryBenefit = EM.EnumMap ItemId (Int, (Int, Int))
 
 -- | A seed for rolling aspects of an item
 -- Clients have partial knowledge of how item ids map to the seeds.
