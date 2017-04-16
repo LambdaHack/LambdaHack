@@ -33,6 +33,8 @@ import Game.LambdaHack.Common.State
 -- | Handle the move of an AI player.
 queryAI :: MonadClient m => ActorId -> m RequestAI
 queryAI aid = do
+  -- condInMelee will most proably be needed in this functions, but even if not,
+  -- it's OK, it's not forced, because wrapped in @Maybe@.
   udpdateCondInMelee aid
   mleader <- getsClient _sleader
   (aidToMove, treq) <- pickAI Nothing aid
@@ -93,7 +95,7 @@ udpdateCondInMelee aid = do
   case condInMelee of
     Just{} -> return ()  -- still up to date
     Nothing -> do
-      newCond <- condInMeleeM b
+      newCond <- condInMeleeM b  -- lazy and kept that way due to @Maybe@
       modifyClient $ \cli ->
         cli {scondInMelee =
                EM.adjust (const $ Just newCond) (blid b) (scondInMelee cli)}
@@ -107,6 +109,8 @@ condInMeleeM bodyOur = do
   let f !b = blid b == blid bodyOur && isAtWar fact (bfid b) && bhp b > 0
   -- We assume foes are less numerous, because usually they are heroes,
   -- and so we compute them once and use many times.
+  -- For the same reason @anyFoeAdj@ would not speed up this computation
+  -- in normal gameplay (as opposed to AI vs AI benchmarks).
   allFoes <- getsState $ filter f . EM.elems . sactorD
   getsState $ any (\body ->
     bfid bodyOur == bfid body

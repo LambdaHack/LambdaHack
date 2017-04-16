@@ -347,15 +347,22 @@ isStair lid p s =
   in any isE is
 
 -- | Require that any non-dying foe is adjacent. We include even
--- projectiles that explode when striked down, because they can be caught
+-- projectiles that explode when stricken down, because they can be caught
 -- and then they don't explode, so it makes sense to focus on handling them.
+-- If there are many projectiles in a single adjacent position, we only test
+-- the first one, the one that would be hit in melee (this is not optimal
+-- if the actor would need to flee instead of meleeing, but fleeing
+-- with *many* projectiles adjacent is a possible waste of a move anyway).
 anyFoeAdj :: ActorId -> State -> Bool
 anyFoeAdj aid s =
   let body = getActorBody aid s
+      Level{lactor} = (EM.! blid body) . sdungeon $ s
       fact = (EM.! bfid body) . sfactionD $ s
-      f !b = blid b == blid body && adjacent (bpos b) (bpos body)
-             && isAtWar fact (bfid b) && bhp b > 0
-  in any f (sactorD s)
+      f !mv = case EM.findWithDefault [] (shift (bpos body) mv) lactor of
+        [] -> False
+        aid2 : _ -> g $ getActorBody aid2 s
+      g !b = isAtWar fact (bfid b) && bhp b > 0
+  in any f moves
 
 armorHurtBonus :: ActorAspect -> ActorId -> ActorId -> State -> Int
 armorHurtBonus actorAspect source target s =

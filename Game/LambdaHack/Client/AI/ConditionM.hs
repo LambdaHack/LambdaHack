@@ -82,9 +82,7 @@ condTgtNonmovingM aid = do
 -- | Require that any non-dying foe is adjacent, except projectiles
 -- that (possibly) explode upon contact.
 condAnyFoeAdjM :: MonadStateRead m => ActorId -> m Bool
-condAnyFoeAdjM aid = do
-  s <- getState
-  return $! anyFoeAdj aid s
+condAnyFoeAdjM aid = getsState $ anyFoeAdj aid  -- not forced
 
 -- | Require the actor stands adjacent to a triggerable tile (e.g., stairs).
 condAdjTriggerableM :: MonadStateRead m => ActorId -> m Bool

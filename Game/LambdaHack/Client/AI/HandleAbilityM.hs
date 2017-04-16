@@ -127,7 +127,7 @@ actionStrategy aid = do
       prefix =
         [ ( [AbApply], (toAny :: ToAny 'AbApply)
             <$> applyItem aid ApplyFirstAid
-          , condHpTooLow && not condAnyFoeAdj )
+          , not condAnyFoeAdj && condHpTooLow)
         , ( [AbAlter], (toAny :: ToAny 'AbAlter)
             <$> trigger aid ViaStairs
               -- explore next or flee via stairs, even if to wrong level;
@@ -139,7 +139,7 @@ actionStrategy aid = do
                    && not condDesirableFloorItem) )
         , ( [AbDisplace]
           , displaceFoe aid  -- only swap with an enemy to expose him
-          , condBlocksFriends && condAnyFoeAdj )  -- later checks foe eligible
+          , condAnyFoeAdj && condBlocksFriends)  -- later checks foe eligible
         , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
             <$> pickup aid True
           , condNoEqpWeapon  -- we assume organ weapons usually inferior
@@ -212,7 +212,6 @@ actionStrategy aid = do
           , stratToFreq 1 $ (toAny :: ToAny 'AbMoveItem)
             <$> equipItems aid  -- doesn't take long, very useful if safe
           , not (condInMelee
-                 || condAnyFoeAdj
                  || condDesirableFloorItem
                  || condNotCalmEnough
                  || heavilyDistressed) )
