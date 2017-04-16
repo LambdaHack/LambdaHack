@@ -98,19 +98,18 @@ addAnyActor actorFreq lid time mpos = do
       pos <- case mpos of
         Just pos -> return pos
         Nothing -> do
-          fact <- getsState $ (EM.! fid) . sfactionD
-          rollPos <- getsState $ rollSpawnPos cops allPers mobile lid lvl fact
+          rollPos <- getsState $ rollSpawnPos cops allPers mobile lid lvl fid
           rndToAction rollPos
       let container = CTrunk fid lid pos
       trunkId <- registerItem trunkFull itemKnown seed container False
       addActorIid trunkId trunkFull False fid pos lid id time
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point
-             -> Bool -> LevelId -> Level -> Faction -> State
+             -> Bool -> LevelId -> Level -> FactionId -> State
              -> Rnd Point
 rollSpawnPos Kind.COps{coTileSpeedup} visible
-             mobile lid lvl@Level{ltile, lxsize, lysize} fact s = do
-  let inhabitants = actorRegularList (isAtWar fact) lid s
+             mobile lid lvl@Level{ltile, lxsize, lysize} fid s = do
+  let inhabitants = warActorRegularList fid lid s
       distantSo df p _ = all (\b -> df $ chessDist (bpos b) p) inhabitants
       middlePos = Point (lxsize `div` 2) (lysize `div` 2)
       distantMiddle d p _ = chessDist p middlePos < d
@@ -246,7 +245,7 @@ leadLevelSwitch = do
                   ( lid
                   , EM.size (lfloor lvl)
                   , -- Drama levels skipped, hence @Regular@.
-                    actorRegularIds (== bfid body) lid s )
+                    fidActorRegularIds (bfid body) lid s )
             ours <- getsState $ map ourLvl . EM.assocs . sdungeon
             -- Non-humans, being born in the dungeon, have a rough idea of
             -- the number of items left on the level and will focus

@@ -210,8 +210,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
       side <- getsClient sside
       b <- getsState $ getActorBody aid
       when (bfid b == side) $ do
-        fact <- getsState $ (EM.! bfid b) . sfactionD
-        allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
+        allFoes <- getsState $ warActorRegularList (bfid b) (blid b)
         let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
         when (null closeFoes) $ do  -- obvious where the feeling comes from
           aidVerbMU aid "hear something"

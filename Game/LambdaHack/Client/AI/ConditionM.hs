@@ -123,7 +123,7 @@ meleeThreatDistList aid = do
 condBlocksFriendsM :: MonadClient m => ActorId -> m Bool
 condBlocksFriendsM aid = do
   b <- getsState $ getActorBody aid
-  ours <- getsState $ actorRegularIds (== bfid b) (blid b)
+  ours <- getsState $ fidActorRegularIds (bfid b) (blid b)
   targetD <- getsClient stargetD
   let blocked aid2 = aid2 /= aid &&
         case EM.lookup aid2 targetD of
@@ -311,8 +311,7 @@ fleeList aid = do
           _ -> Right pathList
         _ -> Right []
   b <- getsState $ getActorBody aid
-  fact <- getsState $ \s -> sfactionD s EM.! bfid b
-  allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
+  allFoes <- getsState $ warActorRegularList (bfid b) (blid b)
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
   s <- getState
   let posFoes = map bpos allFoes

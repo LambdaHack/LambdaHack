@@ -777,8 +777,7 @@ displaceFoe aid = do
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  let friendlyFid fid = fid == bfid b || isAllied fact fid
-  friends <- getsState $ actorRegularList friendlyFid (blid b)
+  friends <- getsState $ friendlyActorRegularList (bfid b) (blid b)
   adjacentAssocs <- getsState $ actorAdjacentAssocs b
   let foe (_, b2) = not (bproj b2) && isAtWar fact (bfid b2) && bhp b2 > 0
       adjFoes = filter foe adjacentAssocs

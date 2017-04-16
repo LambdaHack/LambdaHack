@@ -214,7 +214,7 @@ electLeader fid lid aidDead = do
     actorD <- getsState sactorD
     let ours (_, b) = bfid b == fid && not (bproj b)
         party = filter ours $ EM.assocs actorD
-    onLevel <- getsState $ actorRegularIds (== fid) lid
+    onLevel <- getsState $ fidActorRegularIds fid lid
     let mleaderNew = case filter (/= aidDead) $ onLevel ++ map fst party of
           [] -> Nothing
           aid : _ -> Just aid

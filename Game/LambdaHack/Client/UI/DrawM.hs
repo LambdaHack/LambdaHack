@@ -26,6 +26,7 @@ import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
 import Data.Word (Word16)
+import GHC.Exts (inline)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.Bfs
@@ -225,7 +226,7 @@ drawFramePath drawnLevelId = do
                 NoPath -> []
                 AndPath {pathList} -> pathList) mpath
       xhairHere = find (\(_, m) -> xhairPos == bpos m)
-                       (actorAssocs (const True) drawnLevelId s)
+                       (inline actorAssocs (const True) drawnLevelId s)
       shiftedBTrajectory = case xhairHere of
         Just (_, Actor{btrajectory = Just p, bpos = prPos}) ->
           trajectoryToPath prPos (fst p)
@@ -574,7 +575,7 @@ drawSelected drawnLevelId width selected = do
   side <- getsClient sside
   sactorUI <- getsSession sactorUI
   ours <- getsState $ filter (not . bproj . snd)
-                      . actorAssocs (== side) drawnLevelId
+                      . inline actorAssocs (== side) drawnLevelId
   let oursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) ours
       viewOurs (aid, Actor{bhp}, ActorUI{bsymbol, bcolor}) =
         let bg = if | mleader == Just aid -> Color.HighlightRed

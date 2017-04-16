@@ -522,7 +522,7 @@ selectNoneHuman :: MonadClientUI m => m ()
 selectNoneHuman = do
   side <- getsClient sside
   lidV <- viewedLevelUI
-  oursIds <- getsState $ actorRegularIds (== side) lidV
+  oursIds <- getsState $ fidActorRegularIds side lidV
   let ours = ES.fromDistinctAscList oursIds
   oldSel <- getsSession sselected
   let wasNone = ES.null $ ES.intersection ours oldSel

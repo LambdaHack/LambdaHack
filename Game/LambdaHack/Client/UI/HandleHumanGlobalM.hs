@@ -113,7 +113,8 @@ areaToRectangles ca = case ca of
   CaMapParty -> do  -- takes preference over @CaMap@
     lidV <- viewedLevelUI
     side <- getsClient sside
-    ours <- getsState $ filter (not . bproj) . actorList (== side) lidV
+    ours <- getsState $ filter (not . bproj) . map snd
+                        . actorAssocs (== side) lidV
     let rectFromB Point{..} = (px, mapStartY + py, px, mapStartY + py)
     return $! map (rectFromB . bpos) ours
   CaMap -> return

@@ -2,9 +2,8 @@
 -- | Operations on the 'Actor' type that need the 'State' type,
 -- but not our custom monad types.
 module Game.LambdaHack.Common.ActorState
-  ( fidActorNotProjAssocs, fidActorNotProjList
-  , actorAssocs, actorList
-  , actorRegularAssocs, actorRegularList, actorRegularIds
+  ( fidActorNotProjAssocs, actorAssocs, actorRegularAssocs
+  , warActorRegularList, friendlyActorRegularList, fidActorRegularIds
   , bagAssocs, bagAssocsK, calculateTotal
   , mergeItemQuant, sharedAllOwnedFid, findIid
   , getContainerBag, getFloorBag, getEmbedBag, getBodyStoreBag
@@ -23,6 +22,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import Data.Int (Int64)
+import GHC.Exts (inline)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
@@ -44,37 +44,33 @@ fidActorNotProjAssocs fid s =
   let f (_, b) = not (bproj b) && bfid b == fid
   in filter f $ EM.assocs $ sactorD s
 
-fidActorNotProjList :: FactionId -> State -> [Actor]
-fidActorNotProjList fid s =
-  let f b = not (bproj b) && bfid b == fid
-  in filter f $ EM.elems $ sactorD s
-
 actorAssocs :: (FactionId -> Bool) -> LevelId -> State
             -> [(ActorId, Actor)]
 actorAssocs p lid s =
   let f (_, b) = blid b == lid && p (bfid b)
   in filter f $ EM.assocs $ sactorD s
 
-actorList :: (FactionId -> Bool) -> LevelId -> State -> [Actor]
-actorList p lid s =
-  let f b = blid b == lid && p (bfid b)
-  in filter f $ EM.elems $ sactorD s
-
 actorRegularAssocs :: (FactionId -> Bool) -> LevelId -> State
                    -> [(ActorId, Actor)]
+{-# INLINE actorRegularAssocs #-}
 actorRegularAssocs p lid s =
   let f (_, b) = not (bproj b) && blid b == lid && p (bfid b) && bhp b > 0
   in filter f $ EM.assocs $ sactorD s
 
-actorRegularList :: (FactionId -> Bool) -> LevelId -> State
-                 -> [Actor]
-actorRegularList p lid s =
-  let f b = not (bproj b) && blid b == lid && p (bfid b) && bhp b > 0
-  in filter f $ EM.elems $ sactorD s
+warActorRegularList :: FactionId -> LevelId -> State -> [Actor]
+warActorRegularList fid lid s =
+  let fact = (EM.! fid) . sfactionD $ s
+  in map snd $ actorRegularAssocs (isAtWar fact) lid s
 
-actorRegularIds :: (FactionId -> Bool) -> LevelId -> State
-                -> [ActorId]
-actorRegularIds p lid s = map fst $ actorRegularAssocs p lid s
+friendlyActorRegularList :: FactionId -> LevelId -> State -> [Actor]
+friendlyActorRegularList fid lid s =
+  let fact = (EM.! fid) . sfactionD $ s
+      friendlyFid fid2 = fid2 == fid || isAllied fact fid2
+  in map snd $ actorRegularAssocs friendlyFid lid s
+
+fidActorRegularIds :: FactionId -> LevelId -> State -> [ActorId]
+fidActorRegularIds fid lid s =
+  map fst $ actorRegularAssocs (== fid) lid s
 
 getItemBody :: ItemId -> State -> Item
 getItemBody iid s =
@@ -125,13 +121,13 @@ mergeItemQuant (k2, it2) (k1, it1) = (k1 + k2, it1 ++ it2)
 
 sharedInv :: FactionId -> State -> ItemBag
 sharedInv fid s =
-  let bs = fidActorNotProjList fid s
-  in EM.unionsWith mergeItemQuant $ map binv bs
+  let bs = inline fidActorNotProjAssocs fid s
+  in EM.unionsWith mergeItemQuant $ map (binv . snd) bs
 
 sharedEqp :: FactionId -> State -> ItemBag
 sharedEqp fid s =
-  let bs = fidActorNotProjList fid s
-  in EM.unionsWith mergeItemQuant $ map beqp bs
+  let bs = inline fidActorNotProjAssocs fid s
+  in EM.unionsWith mergeItemQuant $ map (beqp . snd) bs
 
 sharedAllOwned :: FactionId -> State -> ItemBag
 sharedAllOwned fid s =
@@ -141,7 +137,7 @@ sharedAllOwned fid s =
 sharedAllOwnedFid :: Bool -> FactionId -> State -> ItemBag
 sharedAllOwnedFid onlyOrgans fid s =
   let shaBag = gsha $ sfactionD s EM.! fid
-      bs = fidActorNotProjList fid s
+      bs = map snd $ inline fidActorNotProjAssocs fid s
   in EM.unionsWith mergeItemQuant
      $ if onlyOrgans
        then map borgan bs
@@ -239,8 +235,7 @@ regenCalmDelta b AspectRecord{aMaxCalm} s =
       maxDeltaCalm = xM aMaxCalm - bcalm b
       -- Worry actor by enemies felt (even if not seen)
       -- on the level within 3 steps.
-      fact = (EM.! bfid b) . sfactionD $ s
-      allFoes = actorRegularList (isAtWar fact) (blid b) s
+      allFoes = warActorRegularList (bfid b) (blid b) s
       isHeard body = not (waitedLastTurn body)
                      && chessDist (bpos b) (bpos body) <= 3
       noisyFoes = filter isHeard allFoes

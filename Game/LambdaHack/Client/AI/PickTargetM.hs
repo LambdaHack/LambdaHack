@@ -155,8 +155,7 @@ targetStrategy aid = do
   condEnoughGear <- condEnoughGearM aid
   let condCanMelee = actorCanMelee actorAspect aid b
       condHpTooLow = hpTooLow b ar
-      friendlyFid fid = fid == bfid b || isAllied fact fid
-  friends <- getsState $ actorRegularList friendlyFid (blid b)
+  friends <- getsState $ friendlyActorRegularList (bfid b) (blid b)
   let canEscape = fcanEscape (gplayer fact)
       canSmell = aSmell ar > 0
       meleeNearby | canEscape = nearby `div` 2

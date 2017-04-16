@@ -211,7 +211,7 @@ shineFromLevel :: DiscoveryAspect -> ActorAspect -> State -> LevelId -> Level
 shineFromLevel discoAspect actorAspect s lid lvl =
   let actorLights =
         [ (bpos b, radius)
-        | (aid, b) <- actorAssocs (const True) lid s
+        | (aid, b) <- inline actorAssocs (const True) lid s
         , let radius = aShine $ actorAspect EM.! aid
         , radius > 0 ]
       floorLights = floorLightSources discoAspect lvl
@@ -321,7 +321,7 @@ perceptionCacheFromLevel :: ActorAspect -> FovClearLid
                          -> PerceptionCache
 perceptionCacheFromLevel actorAspect fovClearLid fid lid s =
   let fovClear = fovClearLid EM.! lid
-      lvlBodies = actorAssocs (== fid) lid s
+      lvlBodies = inline actorAssocs (== fid) lid s
       f (aid, b) =
         let ar@AspectRecord{..} = actorAspect EM.! aid
         in if aSight <= 0 && aNocto <= 0 && aSmell <= 0  -- dumb missiles
