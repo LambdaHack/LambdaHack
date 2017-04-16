@@ -181,7 +181,6 @@ benAvailableItems :: MonadClient m
 benAvailableItems aid permitted cstores = do
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
-  condAnyFoeAdj <- condAnyFoeAdjM aid
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   actorAspect <- getsClient sactorAspect
@@ -198,7 +197,7 @@ benAvailableItems aid permitted cstores = do
         | (iid, kit@(k, _)) <- EM.assocs bag
         , let itemFull = itemToF iid kit
               benefit = EM.lookup iid discoBenefit
-              hind = hinders condAnyFoeAdj condShineWouldBetray
+              hind = hinders condShineWouldBetray
                              condAimEnemyPresent
                              heavilyDistressed condNotCalmEnough
                              b ar itemFull
@@ -207,15 +206,16 @@ benAvailableItems aid permitted cstores = do
   return $ concatMap benCStore cstores
     -- keep it lazy
 
-hinders :: Bool -> Bool -> Bool -> Bool -> Bool
-        -> Actor -> AspectRecord -> ItemFull
+hinders :: Bool -> Bool -> Bool -> Bool -> Actor -> AspectRecord -> ItemFull
         -> Bool
-hinders condAnyFoeAdj condShineWouldBetray condAimEnemyPresent
+hinders condShineWouldBetray condAimEnemyPresent
         heavilyDistressed condNotCalmEnough
           -- guess that enemies have projectiles and used them now or recently
         body ar itemFull =
   let itemShine = 0 < aShine (aspectRecordFull itemFull)
-      itemShineBad = itemShine && condShineWouldBetray && not condAnyFoeAdj
+      -- @condAnyFoeAdj@ is not checked, because it's transient and also item
+      -- management is unlikely to happen during melee, anyway
+      itemShineBad = itemShine && condShineWouldBetray
   in -- Fast actors want to hide in darkness to ambush opponents and want
      -- to hit hard for the short span they get to survive melee.
      bspeed body ar > speedWalk

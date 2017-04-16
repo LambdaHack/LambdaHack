@@ -338,7 +338,6 @@ equipItems aid = do
   eqpAssocs <- fullAssocsClient aid [CEqp]
   invAssocs <- fullAssocsClient aid [CInv]
   shaAssocs <- fullAssocsClient aid [CSha]
-  condAnyFoeAdj <- condAnyFoeAdjM aid
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   discoBenefit <- getsClient sdiscoBenefit
@@ -364,8 +363,8 @@ equipItems aid = do
       -- when comparing to items we may want to equip. Anyway, the unneeded
       -- items should be removed in yieldUnneeded earlier or soon after.
       filterNeeded (iid, itemFull) =
-        not $ unneeded condAnyFoeAdj condShineWouldBetray
-                       condAimEnemyPresent heavilyDistressed (not calmE)
+        not $ unneeded condShineWouldBetray condAimEnemyPresent
+                       heavilyDistressed (not calmE)
                        body ar discoBenefit iid itemFull
       bestThree = bestByEqpSlot discoBenefit
                                 (filter filterNeeded eqpAssocs)
@@ -399,7 +398,6 @@ yieldUnneeded aid = do
         Nothing -> assert `failure` aid
       calmE = calmEnough body ar
   eqpAssocs <- fullAssocsClient aid [CEqp]
-  condAnyFoeAdj <- condAnyFoeAdjM aid
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   discoBenefit <- getsClient sdiscoBenefit
@@ -415,8 +413,8 @@ yieldUnneeded aid = do
         let csha = if calmE then CSha else CInv
         in if | harmful discoBenefit iidEqp ->
                 [(iidEqp, itemK itemEqp, CEqp, CInv)]
-              | hinders condAnyFoeAdj condShineWouldBetray
-                        condAimEnemyPresent heavilyDistressed (not calmE)
+              | hinders condShineWouldBetray condAimEnemyPresent
+                        heavilyDistressed (not calmE)
                         body ar itemEqp ->
                 [(iidEqp, itemK itemEqp, CEqp, csha)]
               | otherwise -> []
@@ -437,7 +435,6 @@ unEquipItems aid = do
   eqpAssocs <- fullAssocsClient aid [CEqp]
   invAssocs <- fullAssocsClient aid [CInv]
   shaAssocs <- fullAssocsClient aid [CSha]
-  condAnyFoeAdj <- condAnyFoeAdjM aid
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   discoBenefit <- getsClient sdiscoBenefit
@@ -482,8 +479,8 @@ unEquipItems aid = do
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltaSerious (bcalmDelta body)
       filterNeeded (iid, itemFull) =
-        not $ unneeded condAnyFoeAdj condShineWouldBetray
-                       condAimEnemyPresent heavilyDistressed (not calmE)
+        not $ unneeded condShineWouldBetray condAimEnemyPresent
+                       heavilyDistressed (not calmE)
                        body ar discoBenefit iid itemFull
       bestThree =
         bestByEqpSlot discoBenefit
@@ -534,15 +531,15 @@ harmful discoBenefit iid =
   -- should not be equipped (either they are harmful or they waste eqp space).
   maybe False (\(u, _) -> u <= 0) (EM.lookup iid discoBenefit)
 
-unneeded :: Bool -> Bool -> Bool -> Bool -> Bool
+unneeded :: Bool -> Bool -> Bool -> Bool
          -> Actor -> AspectRecord -> DiscoveryBenefit -> ItemId -> ItemFull
          -> Bool
-unneeded condAnyFoeAdj condShineWouldBetray
-         condAimEnemyPresent heavilyDistressed condNotCalmEnough
+unneeded condShineWouldBetray condAimEnemyPresent
+         heavilyDistressed condNotCalmEnough
          body ar discoBenefit iid itemFull =
   harmful discoBenefit iid
-  || hinders condAnyFoeAdj condShineWouldBetray
-             condAimEnemyPresent heavilyDistressed condNotCalmEnough
+  || hinders condShineWouldBetray condAimEnemyPresent
+             heavilyDistressed condNotCalmEnough
              body ar itemFull
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
