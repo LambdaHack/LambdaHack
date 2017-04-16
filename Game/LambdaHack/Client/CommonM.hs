@@ -106,7 +106,7 @@ maxActorSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
 maxActorSkillsClient aid = do
   actorAspect <- getsClient sactorAspect
   case EM.lookup aid actorAspect of
-    Just aspectRecord -> return $! aSkills aspectRecord
+    Just aspectRecord -> return $ aSkills aspectRecord  -- keep it lazy
     Nothing -> assert `failure` aid
 
 currentSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
@@ -123,7 +123,7 @@ currentSkillsClient aid = do
              else do
                fact <- getsState $ (EM.! bfid body) . sfactionD
                return $! _gleader fact
-  getsState $ actorSkills mleader aid ar
+  getsState $ actorSkills mleader aid ar  -- keep it lazy
 
 fullAssocsClient :: MonadClient m
                  => ActorId -> [CStore] -> m [(ItemId, ItemFull)]

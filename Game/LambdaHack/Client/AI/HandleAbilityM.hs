@@ -943,9 +943,9 @@ moveOrRunAid run source dir = do
            wps <- pickWeaponClient source target
            case wps of
              Nothing -> return Nothing
-             Just wp -> return $! Just $ RequestAnyAbility wp
+             Just wp -> return $ Just $ RequestAnyAbility wp
          | otherwise ->
-           return $! Just $ RequestAnyAbility $ ReqDisplace target
+           return $ Just $ RequestAnyAbility $ ReqDisplace target
     (target, _) : _ -> do  -- can be a foe, as well as friend (e.g., proj.)
       -- No problem if there are many projectiles at the spot. We just
       -- attack the first one.
@@ -953,11 +953,11 @@ moveOrRunAid run source dir = do
       wps <- pickWeaponClient source target
       case wps of
         Nothing -> return Nothing
-        Just wp -> return $! Just $ RequestAnyAbility wp
+        Just wp -> return $ Just $ RequestAnyAbility wp
     [] -- move or search or alter
        | Tile.isWalkable coTileSpeedup $ lvl `at` tpos ->
          -- Movement requires full access.
-         return $! Just $ RequestAnyAbility $ ReqMove dir
+         return $ Just $ RequestAnyAbility $ ReqMove dir
          -- The potential invisible actor is hit.
        | alterSkill < Tile.alterMinWalk coTileSpeedup t ->
          assert `failure` "AI causes AlterUnwalked" `twith` (run, source, dir)

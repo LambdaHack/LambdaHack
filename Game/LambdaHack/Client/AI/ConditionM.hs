@@ -52,11 +52,14 @@ import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 
+-- All conditions are (partially) lazy, because they are not always
+-- used in the strict monadic computations they are in.
+
 -- | Require that the target enemy is visible by the party.
 condAimEnemyPresentM :: MonadClient m => ActorId -> m Bool
 condAimEnemyPresentM aid = do
   btarget <- getsClient $ getTarget aid
-  return $! case btarget of
+  return $ case btarget of
     Just (TEnemy _ permit) -> not permit
     _ -> False
 
@@ -65,7 +68,7 @@ condAimEnemyRememberedM :: MonadClient m => ActorId -> m Bool
 condAimEnemyRememberedM aid = do
   b <- getsState $ getActorBody aid
   btarget <- getsClient $ getTarget aid
-  return $! case btarget of
+  return $ case btarget of
     Just (TPoint (TEnemyPos _ permit) lid _) | lid == blid b -> not permit
     _ -> False
 
@@ -76,13 +79,13 @@ condTgtNonmovingM aid = do
   case btarget of
     Just (TEnemy enemy _) -> do
       actorMaxSk <- maxActorSkillsClient enemy
-      return $! EM.findWithDefault 0 Ability.AbMove actorMaxSk <= 0
+      return $ EM.findWithDefault 0 Ability.AbMove actorMaxSk <= 0
     _ -> return False
 
 -- | Require that any non-dying foe is adjacent, except projectiles
 -- that (possibly) explode upon contact.
 condAnyFoeAdjM :: MonadStateRead m => ActorId -> m Bool
-condAnyFoeAdjM aid = getsState $ anyFoeAdj aid  -- not forced
+condAnyFoeAdjM aid = getsState $ anyFoeAdj aid
 
 -- | Require the actor stands adjacent to a triggerable tile (e.g., stairs).
 condAdjTriggerableM :: MonadStateRead m => ActorId -> m Bool
@@ -90,7 +93,7 @@ condAdjTriggerableM aid = do
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
   let hasTriggerable p = p `EM.member` lembed lvl
-  return $! any hasTriggerable $ vicinityUnsafe $ bpos b
+  return $ any hasTriggerable $ vicinityUnsafe $ bpos b
 
 -- | Produce the chess-distance-sorted list of non-low-HP,
 -- melee-cabable foes on the level. We don't consider path-distance,
@@ -127,20 +130,20 @@ condBlocksFriendsM aid = do
         case EM.lookup aid2 targetD of
           Just TgtAndPath{tapPath=AndPath{pathList=q : _}} | q == bpos b -> True
           _ -> False
-  return $ any blocked ours  -- keep it lazy
+  return $ any blocked ours
 
 -- | Require the actor stands over a weapon that would be auto-equipped.
 condFloorWeaponM :: MonadClient m => ActorId -> m Bool
 condFloorWeaponM aid = do
   floorAssocs <- getsState $ getActorAssocs aid CGround
   let lootIsWeapon = any (isMelee . snd) floorAssocs
-  return lootIsWeapon  -- keep it lazy
+  return lootIsWeapon
 
 -- | Check whether the actor has no weapon in equipment.
 condNoEqpWeaponM :: MonadClient m => ActorId -> m Bool
 condNoEqpWeaponM aid = do
   eqpAssocs <- getsState $ getActorAssocs aid CEqp
-  return $ all (not . isMelee . snd) eqpAssocs  -- keep it lazy
+  return $ all (not . isMelee . snd) eqpAssocs
 
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => Int -> ActorId -> m Bool
@@ -154,7 +157,7 @@ condCanProjectM skill aid = do
         not (isMelee $ itemBase itemFull)
       isMissile ((Just (_, (_, effFoe)), _), (_, itemFull)) =
         effFoe < 0 && not (isMelee $ itemBase itemFull)
-  return $ any isMissile benList  -- keep it lazy
+  return $ any isMissile benList
 
 condProjectListM :: MonadClient m
                  => Int -> ActorId
@@ -202,7 +205,7 @@ benAvailableItems aid permitted cstores = do
                              b ar itemFull
         , permitted itemFull && (cstore /= CEqp || hind) ]
       benCStore cs = ben cs $ getBodyStoreBag b cs s
-  return $ concatMap benCStore cstores  -- keep it lazy
+  return $ concatMap benCStore cstores
 
 hinders :: Bool -> Bool -> Bool -> Bool -> Actor -> AspectRecord -> ItemFull
         -> Bool
@@ -227,7 +230,7 @@ hinders condShineWouldBetray condAimEnemyPresent
 condDesirableFloorItemM :: MonadClient m => ActorId -> m Bool
 condDesirableFloorItemM aid = do
   benItemL <- benGroundItems aid
-  return $ not $ null benItemL  -- keep it lazy
+  return $ not $ null benItemL
 
 -- | Produce the list of items on the ground beneath the actor
 -- that are worth picking up.
@@ -291,7 +294,7 @@ condSupport param aid = do
       -- The smaller area scanned for friends, the lower number required.
       suport = length closeAndStrongFriends >= param - aAggression ar
                || length friends <= 1  -- solo fighters aggresive
-  return suport  -- no $!; keep it lazy
+  return suport
 
 -- | Require that the actor stands in the dark and so would be betrayed
 -- by his own equipped light,
@@ -299,7 +302,7 @@ condShineWouldBetrayM :: MonadClient m => ActorId -> m Bool
 condShineWouldBetrayM aid = do
   b <- getsState $ getActorBody aid
   aInAmbient <- getsState $ actorInAmbient b
-  return $! not aInAmbient  -- tile is dark, so actor could hide
+  return $ not aInAmbient  -- tile is dark, so actor could hide
 
 -- | Produce a list of acceptable adjacent points to flee to.
 fleeList :: MonadClient m => ActorId -> m ([(Int, Point)], [(Int, Point)])
@@ -350,4 +353,4 @@ fleeList aid = do
       goodVic = map (rewardPath 10000) gtVic
                 ++ map (rewardPath 100) eqVic
       badVic = map (rewardPath 1) ltVic
-  return (goodVic, badVic)  -- keep it lazy
+  return (goodVic, badVic)

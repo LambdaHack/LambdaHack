@@ -180,7 +180,7 @@ condBFS aid = do
       enterSuspect = smarkSuspect > 0 || underAI
       skill | enterSuspect = alterSkill  -- dig and search at will
             | otherwise = 1  -- only walkable tiles and unknown
-  return (canMove, skill)
+  return (canMove, skill)  -- keep it lazy
 
 -- | Furthest (wrt paths) known position.
 furthestKnown :: MonadClient m => ActorId -> m Point
