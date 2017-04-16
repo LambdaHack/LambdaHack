@@ -596,8 +596,9 @@ meleeAny :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbMelee))
 meleeAny aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
-  let adjFoes = filter (adjacent (bpos b) . bpos . snd) allFoes
+  adjacentAssocs <- getsState $ actorAdjacentAssocs b
+  let foe (_, b2) = not (bproj b2) && isAtWar fact (bfid b2) && bhp b2 > 0
+      adjFoes = filter foe adjacentAssocs
   mels <- mapM (pickWeaponClient aid . fst) adjFoes
   let freq = uniformFreq "melee adjacent" $ catMaybes mels
   return $! liftFrequency freq
@@ -632,7 +633,7 @@ projectItem aid = do
     Just target -> aidTgtToPos aid (blid b) target
   seps <- getsClient seps
   case (btarget, mfpos) of
-    (_, Just fpos) | chessDist (bpos b) fpos == 1 -> return reject
+    (_, Just fpos) | adjacent (bpos b) fpos -> return reject
     (Just TEnemy{}, Just fpos) -> do
       mnewEps <- makeLine False b fpos seps
       case mnewEps of
@@ -782,10 +783,11 @@ displaceFoe aid = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
-  allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
-  let displaceable body =  -- DisplaceAccess
-        adjacent (bpos body) (bpos b)
-        && Tile.isWalkable coTileSpeedup (lvl `at` (bpos body))
+  adjacentAssocs <- getsState $ actorAdjacentAssocs b
+  let foe (_, b2) = not (bproj b2) && isAtWar fact (bfid b2) && bhp b2 > 0
+      adjFoes = filter foe adjacentAssocs
+      displaceable body =  -- DisplaceAccess
+        Tile.isWalkable coTileSpeedup (lvl `at` (bpos body))
       nFriends body = length $ filter (adjacent (bpos body) . bpos) friends
       nFrNew = nFriends b + 1
       qualifyActor (aid2, body2) = do
@@ -796,7 +798,7 @@ displaceFoe aid = do
         return $! if displaceable body2 && dEnemy && nFrOld < nFrNew
                   then Just (nFrOld * nFrOld, bpos body2 `vectorToFrom` bpos b)
                   else Nothing
-  vFoes <- mapM qualifyActor allFoes
+  vFoes <- mapM qualifyActor adjFoes
   let str = liftFrequency $ toFreq "displaceFoe" $ catMaybes vFoes
   mapStrategyM (moveOrRunAid True aid) str
 

@@ -406,14 +406,15 @@ lookAtMove aid = do
     lookMsg <- lookAt False "" True (bpos body) aid ""
     msgAdd lookMsg
   fact <- getsState $ (EM.! bfid body) . sfactionD
+  adjacentAssocs <- getsState $ actorAdjacentAssocs body
   if not (bproj body) && side == bfid body then do
-    foes <- getsState $ actorList (isAtWar fact) (blid body)
-    when (any (adjacent (bpos body) . bpos) foes) $
-      stopPlayBack
+    let foe (_, b2) = isAtWar fact (bfid b2)
+        adjFoes = filter foe adjacentAssocs
+    unless (null adjFoes) stopPlayBack
   else when (isAtWar fact side) $ do
-    friends <- getsState $ actorRegularList (== side) (blid body)
-    when (any (adjacent (bpos body) . bpos) friends) $
-      stopPlayBack
+    let our (_, b2) = not (bproj b2) && bfid b2 == side
+        adjOur = filter our adjacentAssocs
+    unless (null adjOur) stopPlayBack
 
 -- | Sentences such as \"Dog barks loudly.\".
 actorVerbMU :: MonadClientUI m => ActorId -> ActorUI -> MU.Part -> m ()

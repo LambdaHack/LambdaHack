@@ -14,7 +14,7 @@ module Game.LambdaHack.Common.ActorState
   , getItemBody, memActor, getActorBody, getLocalTime, regenCalmDelta
   , actorInAmbient, actorCanDeAmbient, actorSkills, dispEnemy, fullAssocs
   , storeFromC, lidFromC, posFromC, aidFromC, isEscape, isStair
-  , anyFoeAdj, armorHurtBonus
+  , anyFoeAdj, actorAdjacentAssocs, armorHurtBonus
   ) where
 
 import Prelude ()
@@ -281,10 +281,12 @@ actorSkills mleader aid ar s =
 dispEnemy :: ActorId -> ActorId -> Ability.Skills -> State -> Bool
 dispEnemy source target actorMaxSk s =
   let hasSupport b =
-        let fact = (EM.! bfid b) . sfactionD $ s
+        let adjacentAssocs = actorAdjacentAssocs b s
+            fact = (EM.! bfid b) . sfactionD $ s
             friendlyFid fid = fid == bfid b || isAllied fact fid
-            sup = actorRegularList friendlyFid (blid b) s
-        in any (adjacent (bpos b) . bpos) sup
+            friend (_, b2) =
+              not (bproj b2) && friendlyFid (bfid b2) && bhp b2 > 0
+        in any friend adjacentAssocs
       sb = getActorBody source s
       tb = getActorBody target s
   in bproj tb
@@ -356,13 +358,21 @@ isStair lid p s =
 anyFoeAdj :: ActorId -> State -> Bool
 anyFoeAdj aid s =
   let body = getActorBody aid s
-      Level{lactor} = (EM.! blid body) . sdungeon $ s
+      lvl = (EM.! blid body) . sdungeon $ s
       fact = (EM.! bfid body) . sfactionD $ s
-      f !mv = case EM.findWithDefault [] (shift (bpos body) mv) lactor of
+      f !mv = case posToAidsLvl (shift (bpos body) mv) lvl of
         [] -> False
         aid2 : _ -> g $ getActorBody aid2 s
       g !b = isAtWar fact (bfid b) && bhp b > 0
   in any f moves
+
+actorAdjacentAssocs :: Actor -> State -> [(ActorId, Actor)]
+{-# INLINE actorAdjacentAssocs #-}
+actorAdjacentAssocs body s =
+  let lvl = (EM.! blid body) . sdungeon $ s
+      f !mv = posToAidsLvl (shift (bpos body) mv) lvl
+      g !aid = (aid, getActorBody aid s)
+  in map g $ concatMap f moves
 
 armorHurtBonus :: ActorAspect -> ActorId -> ActorId -> State -> Int
 armorHurtBonus actorAspect source target s =

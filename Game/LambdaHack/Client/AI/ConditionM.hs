@@ -332,7 +332,7 @@ fleeList aid = do
       rewardPath mult (d, p) = case etgtPath of
         Right tgtPath | p `elem` tgtPath ->
           (100 * mult * d, p)
-        Right tgtPath | any (\q -> chessDist p q == 1) tgtPath ->
+        Right tgtPath | any (\q -> adjacent p q) tgtPath ->
           (10 * mult * d, p)
         Left tgtPath@(_ : _) ->
           let venemy = towards (bpos b) (last tgtPath)
