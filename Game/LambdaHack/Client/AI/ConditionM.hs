@@ -197,14 +197,12 @@ benAvailableItems aid permitted cstores = do
         | (iid, kit@(k, _)) <- EM.assocs bag
         , let itemFull = itemToF iid kit
               benefit = EM.lookup iid discoBenefit
-              hind = hinders condShineWouldBetray
-                             condAimEnemyPresent
+              hind = hinders condShineWouldBetray condAimEnemyPresent
                              heavilyDistressed condNotCalmEnough
                              b ar itemFull
         , permitted itemFull && (cstore /= CEqp || hind) ]
       benCStore cs = ben cs $ getBodyStoreBag b cs s
-  return $ concatMap benCStore cstores
-    -- keep it lazy
+  return $ concatMap benCStore cstores  -- keep it lazy
 
 hinders :: Bool -> Bool -> Bool -> Bool -> Actor -> AspectRecord -> ItemFull
         -> Bool
@@ -215,16 +213,15 @@ hinders condShineWouldBetray condAimEnemyPresent
   let itemShine = 0 < aShine (aspectRecordFull itemFull)
       -- @condAnyFoeAdj@ is not checked, because it's transient and also item
       -- management is unlikely to happen during melee, anyway
-      itemShineBad = itemShine && condShineWouldBetray
-  in -- Fast actors want to hide in darkness to ambush opponents and want
-     -- to hit hard for the short span they get to survive melee.
-     bspeed body ar > speedWalk
-     && (itemShineBad
-         || 0 > aHurtMelee (aspectRecordFull itemFull))
-     -- In the presence of enemies (seen, or unseen but distressing)
+      itemShineBad = condShineWouldBetray && itemShine
+  in -- In the presence of enemies (seen, or unseen but distressing)
      -- actors want to hide in the dark.
-     || itemShineBad
-        && (heavilyDistressed || condNotCalmEnough || condAimEnemyPresent)
+     (condAimEnemyPresent || condNotCalmEnough || heavilyDistressed)
+     && itemShineBad
+     -- Fast actors want to hit hard, because they hit much more often
+     -- than receive hits.
+     || bspeed body ar > speedWalk
+        && 0 > aHurtMelee (aspectRecordFull itemFull)
 
 -- | Require that the actor stands over a desirable item.
 condDesirableFloorItemM :: MonadClient m => ActorId -> m Bool
