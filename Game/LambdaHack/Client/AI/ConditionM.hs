@@ -249,16 +249,16 @@ benGroundItems aid = do
   return $ filter isDesirable benList
 
 desirableItem :: Bool -> Maybe Int -> Item -> Bool
-desirableItem canEsc use item =
+desirableItem canEsc mpickupSum item =
   if canEsc
-  then use /= Just 0
+  then fromMaybe 10 mpickupSum > 0
        || IK.Precious `elem` jfeature item
   else
     -- A hack to prevent monsters from picking up treasure meant for heroes.
     let preciousNotUseful =  -- suspect and probably useless jewelry
           IK.Precious `elem` jfeature item  -- risk from treasure hunters
           && IK.Equipable `notElem` jfeature item  -- can't wear
-    in use /= Just 0
+    in fromMaybe 10 mpickupSum > 0
        && not preciousNotUseful  -- hack for elixir: even if @use@ positive
 
 condSupport :: MonadClient m => Int -> ActorId -> m Bool
