@@ -61,10 +61,11 @@ type DiscoveryKind = EM.EnumMap ItemKindIx KindMean
 
 -- | The fields are
 -- 1. the total benefit from picking an item up (to use or to put in equipment)
--- 2. the benefit of applied the item to self
--- 3. the (usually negative) benefit of flinging an item at an opponent
+-- 2. whether the item should be kept in equipment (not in pack nor stash)
+-- 3. the benefit of applied the item to self
+-- 4. the (usually negative) benefit of flinging an item at an opponent
 --    or meleeing with it
-type DiscoveryBenefit = EM.EnumMap ItemId (Int, (Int, Int))
+type DiscoveryBenefit = EM.EnumMap ItemId ((Int, Bool), (Int, Int))
 
 -- | A seed for rolling aspects of an item
 -- Clients have partial knowledge of how item ids map to the seeds.

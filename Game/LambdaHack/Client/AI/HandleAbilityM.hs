@@ -527,9 +527,10 @@ bestByEqpSlot discoBenefit eqpAssocs invAssocs shaAssocs =
 
 harmful :: DiscoveryBenefit -> ItemId -> Bool
 harmful discoBenefit iid =
-  -- Items that are known and their effects are not stricly beneficial
-  -- should not be equipped (either they are harmful or they waste eqp space).
-  maybe False (\(u, _) -> u <= 0) (EM.lookup iid discoBenefit)
+  -- Items that are known, perhaps recently discovered, and it's now revealed
+  -- they should not be kept in equipment, should be unequipped
+  -- (either they are harmful or they waste eqp space).
+  maybe False (\((_, inEqp), _) -> not inEqp) (EM.lookup iid discoBenefit)
 
 unneeded :: Bool -> Bool -> Bool -> Bool
          -> Actor -> AspectRecord -> DiscoveryBenefit -> ItemId -> ItemFull

@@ -160,7 +160,7 @@ condCanProjectM skill aid = do
 
 condProjectListM :: MonadClient m
                  => Int -> ActorId
-                 -> m [( (Maybe (Int, (Int, Int)), (Int, CStore))
+                 -> m [( (Maybe ((Int, Bool), (Int, Int)), (Int, CStore))
                        , (ItemId, ItemFull) )]
 condProjectListM skill aid = do
   b <- getsState $ getActorBody aid
@@ -178,7 +178,7 @@ benAvailableItems :: MonadClient m
                   => ActorId
                   -> (ItemFull -> Bool)
                   -> [CStore]
-                  -> m [( (Maybe (Int, (Int, Int)), (Int, CStore))
+                  -> m [( (Maybe ((Int, Bool), (Int, Int)), (Int, CStore))
                         , (ItemId, ItemFull) )]
 benAvailableItems aid permitted cstores = do
   itemToF <- itemToFullClient
@@ -235,7 +235,7 @@ condDesirableFloorItemM aid = do
 -- that are worth picking up.
 benGroundItems :: MonadClient m
                => ActorId
-               -> m [( (Maybe (Int, (Int, Int))
+               -> m [( (Maybe ((Int, Bool), (Int, Int))
                      , (Int, CStore)), (ItemId, ItemFull) )]
 benGroundItems aid = do
   b <- getsState $ getActorBody aid
@@ -243,8 +243,8 @@ benGroundItems aid = do
   let canEsc = fcanEscape (gplayer fact)
       isDesirable ((Nothing, _), (_, itemFull)) =
         desirableItem canEsc Nothing (itemBase itemFull)
-      isDesirable ((Just (totalSum, _), _), (_, itemFull)) =
-        desirableItem canEsc (Just totalSum) (itemBase itemFull)
+      isDesirable ((Just ((pickupSum, _), _), _), (_, itemFull)) =
+        desirableItem canEsc (Just pickupSum) (itemBase itemFull)
   benList <- benAvailableItems aid (const True) [CGround]
   return $ filter isDesirable benList
 

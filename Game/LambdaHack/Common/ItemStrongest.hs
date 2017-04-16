@@ -155,15 +155,12 @@ strongestSlot :: DiscoveryBenefit -> EqpSlot -> [(ItemId, ItemFull)]
 strongestSlot discoBenefit eqpSlot is =
   let f (iid, itemFull) =
         if eqpSlot == EqpSlotWeapon
-        then
-          -- For equipping, as opposed to fighting, we value weapon
-          -- both for its damage and for any healing and other good aspects
-          -- it may confer to its wearer (not its victim)
-          let ben = case EM.lookup iid discoBenefit of
-                Just (totalSum, _) -> totalSum
-                Nothing -> min 150 (10 * Dice.meanDice
-                                           (jdamage $ itemBase itemFull))
-          in (ben, (iid, itemFull))
+        then let ben = case EM.lookup iid discoBenefit of
+                   Just ((pickupSum, inEqp), (_, _)) ->
+                     if inEqp then pickupSum else -999
+                   Nothing -> min 150 (10 * Dice.meanDice
+                                              (jdamage $ itemBase itemFull))
+             in (ben, (iid, itemFull))
         else ( prEqpSlot eqpSlot $ aspectRecordFull itemFull
              , (iid, itemFull) )
   in sortBy (flip $ Ord.comparing fst) $ map f is

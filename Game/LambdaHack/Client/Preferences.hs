@@ -130,14 +130,15 @@ recordToBenefit cops aspects =
 
 -- | Determine
 -- 1. the total benefit from picking an item up (to use or to put in equipment)
--- 2. the benefit of applied the item to self
--- 3. the (usually negative) benefit of flinging an item at an opponent
+-- 2. whether the item should be kept in equipment (not in pack nor stash)
+-- 3. the benefit of applied the item to self
+-- 4. the (usually negative) benefit of flinging an item at an opponent
 --    or meleeing with it
 --
 -- Result has non-strict fields, so arguments are forced to avoid leaks.
 -- When AI looks at items (including organs) more often, force the fields.
 totalUsefulness :: Kind.COps -> Faction -> [IK.Effect] -> AspectRecord -> Item
-                -> (Int, (Int, Int))
+                -> ((Int, Bool), (Int, Int))
 totalUsefulness !cops !fact !effects !aspects !item =
   let effPairs = map (effectToBenefit cops fact) effects
       effDice = -(min 150 (10 * Dice.meanDice (jdamage item)))
@@ -163,13 +164,17 @@ totalUsefulness !cops !fact !effects !aspects !item =
       eqpSum = if mixedBlessing
                then 0  -- significant mixed blessings out of AI control
                else sumBens
-      isWeapon = isMelee item
-      totalSum
-        | isWeapon && effFoe < 0 =  -- if the weapon heals the enemy, it
-                                    -- won't be used (but can be equipped)
-          eqpSum                      -- equip
-          + max effFriend (- effFoe)  -- and apply or melee with
-        | not $ goesIntoEqp item = max effFriend (- effFoe)  -- apply or fling
-        | otherwise = effFriend + eqpSum  -- no fling and equip at the same time
-            -- healing weapon gets positive value here
-  in (totalSum, (effFriend, effFoe))
+      -- If a weapon heals enemy at impact, it won't be used for melee
+      -- (but can be equipped anyway). If it harms wearer too much,
+      -- won't be worn but still may be flung, etc.
+      (inEqp, pickupSum)
+        | isMelee item && effFoe < 0 && eqpSum >= -10 =
+          ( True
+          , eqpSum                      -- equip
+            + max effFriend (- effFoe))  -- and apply or melee with
+        | goesIntoEqp item && eqpSum > 0 =  -- weapon or other equippable
+          ( True
+          , eqpSum              -- equip
+            + max effFriend 0)  -- and apply or not but don't fling (no unequip)
+        | otherwise = (False, max effFriend (- effFoe))  -- apply or fling
+  in ((pickupSum, inEqp), (effFriend, effFoe))
