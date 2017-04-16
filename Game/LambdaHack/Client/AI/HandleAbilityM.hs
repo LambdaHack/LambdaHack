@@ -311,21 +311,32 @@ pickup aid onlyWeapon = do
       isWeapon (_, (_, item)) = isMelee item
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
-      prepareOne (oldN, l4) ((_, (k, _)), (iid, item)) =
-        let n = oldN + k
-            (newN, toCStore)
-              | calmE && goesIntoSha item = (oldN, CSha)
-              | goesIntoEqp item && eqpOverfull b n =
-                (oldN, if calmE then CSha else CInv)
-              | goesIntoEqp item = (n, CEqp)
-              | otherwise = (oldN, CInv)
-        in (newN, (iid, k, CGround, toCStore) : l4)
+      prepareOne (oldN, l4) ((mvalue, (k, _)), (iid, item)) =
+        let prep newN toCStore = (newN, (iid, k, CGround, toCStore) : l4)
+            inEqp = case mvalue of
+              Just ((_, i), _) -> i
+              Nothing -> goesIntoEqp item
+            n = oldN + k
+        in if | calmE && goesIntoSha item && not onlyWeapon ->
+                prep oldN CSha
+              | inEqp && eqpOverfull b n ->
+                if onlyWeapon then (oldN, l4)
+                else prep oldN (if calmE then CSha else CInv)
+              | inEqp ->
+                prep n CEqp
+              | not onlyWeapon ->
+                prep oldN CInv
+              | otherwise -> (oldN, l4)
       (_, prepared) = foldl' prepareOne (0, [])
                       $ filterWeapon $ map (second (second itemBase)) benItemL
   return $! if null prepared
             then reject
             else returN "pickup" $ ReqMoveItems prepared
 
+-- This only concerns items that can be equipped, that is with a slot
+-- and with @inEqp@ (which implies @goesIntoEqp@).
+-- Such items are moved between any stores, as needed. In this case,
+-- from inv or sha to eqp.
 equipItems :: MonadClient m
            => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
 equipItems aid = do
@@ -360,12 +371,15 @@ equipItems aid = do
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltaSerious (bcalmDelta body)
       -- We filter out unneeded items. In particular, we ignore them in eqp
-      -- when comparing to items we may want to equip. Anyway, the unneeded
-      -- items should be removed in yieldUnneeded earlier or soon after.
-      filterNeeded (iid, itemFull) =
-        not $ unneeded condShineWouldBetray condAimEnemyPresent
-                       heavilyDistressed (not calmE)
-                       body ar discoBenefit iid itemFull
+      -- when comparing to items we may want to equip, so that the unneeded
+      -- but powerful items don't fool us.
+      -- In any case, the unneeded items should be removed from equip
+      -- in @yieldUnneeded@ earlier or soon after this check.
+      -- In other stores we need to filter, for otherwise we'd have
+      -- a loop of equip/yield.
+      filterNeeded (_, itemFull) =
+        not $ hinders condShineWouldBetray condAimEnemyPresent
+                      heavilyDistressed (not calmE) body ar itemFull
       bestThree = bestByEqpSlot discoBenefit
                                 (filter filterNeeded eqpAssocs)
                                 (filter filterNeeded invAssocs)
@@ -401,28 +415,33 @@ yieldUnneeded aid = do
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   discoBenefit <- getsClient sdiscoBenefit
-      -- Here AI hides from the human player the Ring of Speed And Bleeding,
-      -- which is a bit harsh, but fair. However any subsequent such
-      -- rings will not be picked up at all, so the human player
-      -- doesn't lose much fun. Additionally, if AI learns alchemy later on,
-      -- they can repair the ring, wield it, drop at death and it's
-      -- in play again.
+  -- Here and in @unEquipItems@ AI may hide from the human player,
+  -- in shared stash, the Ring of Speed And Bleeding,
+  -- which is a bit harsh, but fair. However any subsequent such
+  -- rings will not be picked up at all, so the human player
+  -- doesn't lose much fun. Additionally, if AI learns alchemy later on,
+  -- they can repair the ring, wield it, drop at death and it's
+  -- in play again.
   let heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltaSerious (bcalmDelta body)
+      csha = if calmE then CSha else CInv
       yieldSingleUnneeded (iidEqp, itemEqp) =
-        let csha = if calmE then CSha else CInv
-        in if | harmful discoBenefit iidEqp ->
-                [(iidEqp, itemK itemEqp, CEqp, CInv)]
-              | hinders condShineWouldBetray condAimEnemyPresent
-                        heavilyDistressed (not calmE)
-                        body ar itemEqp ->
-                [(iidEqp, itemK itemEqp, CEqp, csha)]
-              | otherwise -> []
+        if | harmful discoBenefit iidEqp ->
+             [(iidEqp, itemK itemEqp, CEqp, CInv)]  -- harmful not shared
+           | hinders condShineWouldBetray condAimEnemyPresent
+                     heavilyDistressed (not calmE)
+                     body ar itemEqp ->
+             [(iidEqp, itemK itemEqp, CEqp, csha)]
+           | otherwise -> []
       yieldAllUnneeded = concatMap yieldSingleUnneeded eqpAssocs
   return $! if null yieldAllUnneeded
             then reject
             else returN "yieldUnneeded" $ ReqMoveItems yieldAllUnneeded
 
+-- This only concerns items that can be equipped, that is with a slot
+-- and with @inEqp@ (which implies @goesIntoEqp@).
+-- Such items are moved between any stores, as needed. In this case,
+-- from inv or eqp to sha.
 unEquipItems :: MonadClient m
              => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
 unEquipItems aid = do
@@ -435,15 +454,7 @@ unEquipItems aid = do
   eqpAssocs <- fullAssocsClient aid [CEqp]
   invAssocs <- fullAssocsClient aid [CInv]
   shaAssocs <- fullAssocsClient aid [CSha]
-  condShineWouldBetray <- condShineWouldBetrayM aid
-  condAimEnemyPresent <- condAimEnemyPresentM aid
   discoBenefit <- getsClient sdiscoBenefit
-      -- Here AI hides from the human player the Ring of Speed And Bleeding,
-      -- which is a bit harsh, but fair. However any subsequent such
-      -- rings will not be picked up at all, so the human player
-      -- doesn't lose much fun. Additionally, if AI learns alchemy later on,
-      -- they can repair the ring, wield it, drop at death and it's
-      -- in play again.
   let improve :: CStore -> ( IK.EqpSlot
                            , ( [(Int, (ItemId, ItemFull))]
                              , [(Int, (ItemId, ItemFull))] ) )
@@ -476,15 +487,10 @@ unEquipItems aid = do
       betterThanSha vEOrI ((vSha, _) : _) = vEOrI > vSha
       worseThanSha _ [] = False
       worseThanSha vEOrI ((vSha, _) : _) = vEOrI < vSha
-      heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
-        deltaSerious (bcalmDelta body)
-      filterNeeded (iid, itemFull) =
-        not $ unneeded condShineWouldBetray condAimEnemyPresent
-                       heavilyDistressed (not calmE)
-                       body ar discoBenefit iid itemFull
-      bestThree =
-        bestByEqpSlot discoBenefit
-                      eqpAssocs invAssocs (filter filterNeeded shaAssocs)
+      -- Here we don't need to filter out items that hinder, because
+      -- they are moved to sha and will be equipped by another actor
+      -- at another time, where hindering will be completely different.
+      bestThree = bestByEqpSlot discoBenefit eqpAssocs invAssocs shaAssocs
       bInvSha = concatMap
                   (improve CInv . (\(slot, (_, inv, sha)) ->
                                     (slot, (sha, inv)))) bestThree
@@ -531,17 +537,6 @@ harmful discoBenefit iid =
   -- they should not be kept in equipment, should be unequipped
   -- (either they are harmful or they waste eqp space).
   maybe False (\((_, inEqp), _) -> not inEqp) (EM.lookup iid discoBenefit)
-
-unneeded :: Bool -> Bool -> Bool -> Bool
-         -> Actor -> AspectRecord -> DiscoveryBenefit -> ItemId -> ItemFull
-         -> Bool
-unneeded condShineWouldBetray condAimEnemyPresent
-         heavilyDistressed condNotCalmEnough
-         body ar discoBenefit iid itemFull =
-  harmful discoBenefit iid
-  || hinders condShineWouldBetray condAimEnemyPresent
-             heavilyDistressed condNotCalmEnough
-             body ar itemFull
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
 meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbMelee))

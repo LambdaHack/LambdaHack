@@ -150,20 +150,27 @@ strongestMelee mdiscoBenefit localTime is =
           _  -> rawDmgResult
   in sortBy (flip $ Ord.comparing fst) $ map f is
 
+-- This ignores items that don't go into equipment, as determined in @inEqp@.
+-- They are removed from equipment elsewhere vie @harmful@.
 strongestSlot :: DiscoveryBenefit -> EqpSlot -> [(ItemId, ItemFull)]
               -> [(Int, (ItemId, ItemFull))]
 strongestSlot discoBenefit eqpSlot is =
   let f (iid, itemFull) =
-        if eqpSlot == EqpSlotWeapon
-        then let ben = case EM.lookup iid discoBenefit of
-                   Just ((pickupSum, inEqp), (_, _)) ->
-                     if inEqp then pickupSum else -999
-                   Nothing -> min 150 (10 * Dice.meanDice
-                                              (jdamage $ itemBase itemFull))
-             in (ben, (iid, itemFull))
-        else ( prEqpSlot eqpSlot $ aspectRecordFull itemFull
-             , (iid, itemFull) )
-  in sortBy (flip $ Ord.comparing fst) $ map f is
+        let rawDmgResult =
+              ( min 150 (10 * Dice.meanDice (jdamage $ itemBase itemFull))
+              , (iid, itemFull) )
+        in if eqpSlot == EqpSlotWeapon
+           then case EM.lookup iid discoBenefit of
+             Just ((pickupSum, inEqp), (_, _)) ->
+               if not inEqp then Nothing else Just (pickupSum, (iid, itemFull))
+             Nothing -> Just rawDmgResult
+           else let inEqp = case EM.lookup iid discoBenefit of
+                      Just ((_, i), (_, _)) -> i
+                      Nothing -> goesIntoEqp (itemBase itemFull)
+                in if not inEqp then Nothing
+                   else Just ( prEqpSlot eqpSlot $ aspectRecordFull itemFull
+                             , (iid, itemFull) )
+  in sortBy (flip $ Ord.comparing fst) $ mapMaybe f is
 
 unknownAspect :: (Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f itemFull =
