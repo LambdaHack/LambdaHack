@@ -1191,7 +1191,7 @@ gem = ItemKind
                  -- reflects strongly, distracts; so it glows in the dark,
                  -- is visible on dark floor, but not too tempting to wear
   , ieffects = []
-  , ifeature = [Precious]
+  , ifeature = [Precious]  -- no @Identified@ and no effects, so never ided
   , idesc    = "Useless, and still worth around 100 gold each. Would gems of thought and pearls of artful design be valued that much in our age of Science and Progress!"
   , ikit     = []
   }

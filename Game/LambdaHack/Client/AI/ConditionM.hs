@@ -243,30 +243,24 @@ benGroundItems aid = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let canEsc = fcanEscape (gplayer fact)
       isDesirable ((Nothing, _), (_, itemFull)) =
-        desirableItem canEsc Nothing itemFull
+        desirableItem canEsc Nothing (itemBase itemFull)
       isDesirable ((Just (totalSum, _), _), (_, itemFull)) =
-        desirableItem canEsc (Just totalSum) itemFull
+        desirableItem canEsc (Just totalSum) (itemBase itemFull)
   benList <- benAvailableItems aid (const True) [CGround]
   return $ filter isDesirable benList
 
-desirableItem :: Bool -> Maybe Int -> ItemFull -> Bool
-desirableItem canEsc use itemFull =
-  let item = itemBase itemFull
-      freq = case itemDisco itemFull of
-        Nothing -> []
-        Just ItemDisco{itemKind} -> IK.ifreq itemKind
-  in if canEsc
-     then use /= Just 0
-          || IK.Precious `elem` jfeature item
-     else
-       -- A hack to prevent monsters from picking up unidentified treasure.
-       let preciousNotUseful =
-             IK.Precious `elem` jfeature item  -- risk from treasure hunters
-             && IK.Equipable `notElem` jfeature item  -- unlikely to be useful
-       in use /= Just 0
-          && not (isNothing use  -- needs resources to id
-                  && preciousNotUseful)
-          && maybe True (<= 0) (lookup "gem" freq)
+desirableItem :: Bool -> Maybe Int -> Item -> Bool
+desirableItem canEsc use item =
+  if canEsc
+  then use /= Just 0
+       || IK.Precious `elem` jfeature item
+  else
+    -- A hack to prevent monsters from picking up treasure meant for heroes.
+    let preciousNotUseful =  -- suspect and probably useless jewelry
+          IK.Precious `elem` jfeature item  -- risk from treasure hunters
+          && IK.Equipable `notElem` jfeature item  -- can't wear
+    in use /= Just 0
+       && not preciousNotUseful  -- hack for elixir: even if @use@ positive
 
 condSupport :: MonadClient m => Int -> ActorId -> m Bool
 condSupport param aid = do

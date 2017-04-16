@@ -102,7 +102,6 @@ targetStrategy aid = do
         Nothing -> assert `failure` aid
       actorMaxSk = aSkills ar
       alterSkill = EM.findWithDefault 0 AbAlter actorMaxSk
-  itemToF <- itemToFullClient
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
   let stepAccesible :: AndPath -> Bool
       stepAccesible AndPath{pathList=q : _} =
@@ -196,12 +195,13 @@ targetStrategy aid = do
   explored <- getsClient sexplored
   isStairPos <- getsState $ \s lid p -> isStair lid p s
   discoBenefit <- getsClient sdiscoBenefit
+  s <- getState
   let lidExplored = ES.member (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
-      desirableBagFloor bag = any (\(iid, k) ->
-        let itemFull = itemToF iid k
+      desirableBagFloor bag = any (\iid ->
+        let item = getItemBody iid s
             use = fst <$> EM.lookup iid discoBenefit
-        in desirableItem canEscape use itemFull) $ EM.assocs bag
+        in desirableItem canEscape use item) $ EM.keys bag
       desirableFloor (_, (_, bag)) = desirableBagFloor bag
       focused = bspeed b ar < speedWalk || condHpTooLow
       couldMoveLastTurn =

@@ -705,7 +705,7 @@ applyItem aid applyGroup = do
               Nothing -> []
               Just ItemDisco{itemKind} -> IK.ifreq itemKind
         in permittedActor itemFull
-           && maybe True (<= 0) (lookup "gem" freq)
+           && maybe True (<= 0) (lookup "gem" freq)  -- hack for elixir of youth
       -- Organs are not taken into account, because usually they are either
       -- melee items, so harmful, or periodic, so charging between activations.
       -- The case of a weak weapon curing poison is too rare to incur overhead.
