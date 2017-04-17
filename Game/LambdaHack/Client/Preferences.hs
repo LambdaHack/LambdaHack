@@ -151,14 +151,14 @@ totalUsefulness !cops !fact !effects !aspects !item =
       benMelee = effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
       benFling = effFoe + benFlingDice -- nothing in @eqpSum@; normally not worn
       benFlingDice | jdamage item <= 0 = 0  -- speedup
-                   | otherwise = max 0 $
+                   | otherwise = min 0 $
         let hurtMult = 100 + min 99 (max (-99) (aHurtMelee aspects))
               -- assumes no enemy armor and no block
             dmg = Dice.meanDice (jdamage item)
             rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
             IK.ThrowMod{IK.throwVelocity} = strengthToThrow item
             speed = speedFromWeight (jweight item) throwVelocity
-        in fromEnum $ modifyDamageBySpeed rawDeltaHP speed * 10 `div` oneM
+        in fromEnum $ - modifyDamageBySpeed rawDeltaHP speed * 10 `div` oneM
              -- 1 damage valued at 10, just as in @damageUsefulness@
       aspBens = recordToBenefit cops aspects
       periodicEffBens = map (fst . effectToBenefit cops fact)
