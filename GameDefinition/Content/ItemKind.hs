@@ -976,6 +976,10 @@ gloveJousting = gloveFencing
 
 -- Shield doesn't protect against ranged attacks to prevent
 -- micromanagement: walking with shield, melee without.
+-- Note that AI will pick them up but never wear and will use them at most
+-- as a way to push itself (but they won't recharge, not being in eqp).
+-- Being @Meleeable@ they will not be use as weapons either.
+-- This is OK, using shields smartly is totally beyond AI.
 buckler = ItemKind
   { isymbol  = symbolShield
   , iname    = "buckler"
@@ -986,8 +990,8 @@ buckler = ItemKind
   , iverbHit = "bash"
   , iweight  = 2000
   , idamage  = [(96, 2 * d 1), (3, 4 * d 1), (1, 8 * d 1)]
-  , iaspects = [ AddArmorMelee 40
-               , AddHurtMelee (-30)
+  , iaspects = [ AddArmorMelee 40  -- not enough to compensate; won't be in eqp
+               , AddHurtMelee (-30)  -- too harmful; won't be wielded as weapon
                , Timeout $ d 3 + 3 - dl 3 |*| 2 ]
   , ieffects = [ Recharging (PushActor (ThrowMod 200 50))
                , EqpSlot EqpSlotAddArmorMelee ]
@@ -1002,8 +1006,8 @@ shield = buckler
   , iflavour = zipPlain [Green]
   , iweight  = 3000
   , idamage  = [(96, 4 * d 1), (3, 8 * d 1), (1, 16 * d 1)]
-  , iaspects = [ AddArmorMelee 80
-               , AddHurtMelee (-70)
+  , iaspects = [ AddArmorMelee 80  -- not enough to compensate; won't be in eqp
+               , AddHurtMelee (-70)  -- too harmful; won't be wielded as weapon
                , Timeout $ d 6 + 6 - dl 6 |*| 2 ]
   , ieffects = [ Recharging (PushActor (ThrowMod 400 50))
                , EqpSlot EqpSlotAddArmorMelee ]
@@ -1131,7 +1135,8 @@ halberd = ItemKind
   , iverbHit = "impale"
   , iweight  = 3000
   , idamage  = [(96, 12 * d 1), (3, 18 * d 1), (1, 24 * d 1)]
-  , iaspects = [ AddHurtMelee (-20), AddArmorMelee $ 1 + dl 3 |*| 5 ]
+  , iaspects = [ AddHurtMelee (-20)  -- just benign enough to be used
+               , AddArmorMelee $ 1 + dl 3 |*| 5 ]
   , ieffects = [EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 20  -- not balanced
                , Durable, Identified, Meleeable ]

@@ -168,7 +168,7 @@ totalUsefulness !cops !fact !effects !aspects !item =
       -- (but can be equipped anyway). If it harms wearer too much,
       -- won't be worn but still may be flung, etc.
       (inEqp, pickupSum)
-        | isMelee item && effFoe < 0 && eqpSum >= -10 =
+        | isMelee item && effFoe < 0 && eqpSum >= -20 =
           ( True
           , eqpSum                      -- equip
             + max effFriend (- effFoe))  -- and apply or melee with
