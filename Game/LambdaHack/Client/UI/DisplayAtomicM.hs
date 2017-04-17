@@ -751,14 +751,9 @@ quitFactionUI fid toSt = do
                 Just iid -> case EM.lookup iid bag of
                   Nothing -> assert `failure` iid
                   Just kit@(k, _) -> do
-                    leader <- getLeaderUI
-                    actorAspect <- getsClient sactorAspect
                     factionD <- getsState sfactionD
-                    let ar = case EM.lookup leader actorAspect of
-                          Just aspectRecord -> aspectRecord
-                          Nothing -> assert `failure` leader
-                        itemFull = itemToF iid kit
-                        attrLine = itemDesc side factionD (aHurtMelee ar)
+                    let itemFull = itemToF iid kit
+                        attrLine = itemDesc side factionD 0
                                             store localTime itemFull
                         ov = splitAttrLine lxsize attrLine
                         worth = itemPrice (itemBase itemFull, 1)
