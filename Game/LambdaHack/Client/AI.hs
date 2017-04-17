@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.AI
   ( queryAI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , pickAction
+  , pickAI, pickAction, udpdateCondInMelee, condInMeleeM
 #endif
   ) where
 
