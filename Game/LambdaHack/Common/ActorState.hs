@@ -240,7 +240,7 @@ regenCalmDelta b AspectRecord{aMaxCalm} s =
                      && chessDist (bpos b) (bpos body) <= 3
       noisyFoes = filter isHeard allFoes
   in if null noisyFoes
-     then min calmIncr maxDeltaCalm
+     then min calmIncr (max 0 maxDeltaCalm)  -- in case Calm is over max
      else minusM  -- even if all calmness spent, keep informing the client
 
 actorInAmbient :: Actor -> State -> Bool
