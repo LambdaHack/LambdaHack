@@ -60,12 +60,12 @@ actorRegularAssocs p lid s =
 warActorRegularList :: FactionId -> LevelId -> State -> [Actor]
 warActorRegularList fid lid s =
   let fact = (EM.! fid) . sfactionD $ s
-  in map snd $ actorRegularAssocs (isAtWar fact) lid s
+  in map snd $ actorRegularAssocs (inline isAtWar fact) lid s
 
 friendlyActorRegularList :: FactionId -> LevelId -> State -> [Actor]
 friendlyActorRegularList fid lid s =
   let fact = (EM.! fid) . sfactionD $ s
-      friendlyFid fid2 = fid2 == fid || isAllied fact fid2
+      friendlyFid fid2 = fid2 == fid || inline isAllied fact fid2
   in map snd $ actorRegularAssocs friendlyFid lid s
 
 fidActorRegularIds :: FactionId -> LevelId -> State -> [ActorId]
