@@ -349,11 +349,11 @@ targetStrategy aid = do
           -- and not, e.g., on remembered foes or items.
         _ | condInMelee -> pickNewTarget
         TPoint _ lid _ | lid /= blid b -> pickNewTarget  -- wrong level
-        TPoint _ _ pos | pos == bpos b -> tellOthersNothingHere pos
         TPoint tgoal lid pos -> case tgoal of
           _ | not $ null nearbyFoes ->
             pickNewTarget  -- prefer close foes to anything else
           TEnemyPos _ permit  -- chase last position even if foe hides
+            | pos == bpos b -> tellOthersNothingHere pos
             | permit && condInMelee -> pickNewTarget  -- melee, stop following
             | otherwise -> return $! returN "TEnemyPos" tap
           -- Below we check the target could not be picked again in
@@ -374,32 +374,31 @@ targetStrategy aid = do
             -- and whether we happen to be already adjacent to @p@,
             -- even though not at @pos@.
             bag2 <- getsState $ getEmbedBag lid p  -- not @pos@
-            if | bag /= bag2 -> pickNewTarget
+            if | bag /= bag2 -> pickNewTarget  -- others will notice soon enough
                | adjacent (bpos b) p -> setPath $ TPoint tgoal lid (bpos b)
                | otherwise -> return $! returN "TEmbed" tap
           TItem bag -> do
             -- We don't check skill nor desirability of the bag,
             -- because the skill and the bag were OK when target was set.
             bag2 <- getsState $ getFloorBag lid pos
-            if bag /= bag2
-            then pickNewTarget
-            else return $! returN "TItem" tap
+            if | bag /= bag2 -> pickNewTarget  -- others will notice soon enough
+               | otherwise -> return $! returN "TItem" tap
           TSmell ->
             if not canSmell
                || let sml = EM.findWithDefault timeZero pos (lsmell lvl)
                   in sml <= ltime lvl
-            then pickNewTarget
+            then pickNewTarget  -- others will notice soon enough
             else return $! returN "TSmell" tap
           TUnknown ->
             let t = lvl `at` pos
             in if lidExplored
                   || not (isUknownSpace t)
                   || condEnoughGear && tileAdj (isStairPos lid) pos
-               then pickNewTarget
+               then pickNewTarget  -- others will notice soon enough
                else return $! returN "TUnknown" tap
           TKnown ->
             if isStuck || not allExplored  -- new levels created, etc.
-            then pickNewTarget
+            then pickNewTarget  -- others unconcerned
             else return $! returN "TKnown" tap
           TAny -> pickNewTarget  -- reset elsewhere or carried over from UI
         TVector{} -> if pathLen > 1
