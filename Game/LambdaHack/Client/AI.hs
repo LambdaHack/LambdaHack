@@ -66,13 +66,13 @@ pickAI maid aid = do
   treq <- case maid of
     Just (aidOld, treqOld) | aidToMove == aidOld ->
       return treqOld  -- no better leader found
-    _ -> pickAction aidToMove
+    _ -> pickAction aidToMove (isJust maid)
   return (aidToMove, treq)
 
 -- | Pick an action the actor will perform this turn.
-pickAction :: MonadClient m => ActorId -> m RequestAnyAbility
+pickAction :: MonadClient m => ActorId -> Bool -> m RequestAnyAbility
 {-# INLINE pickAction #-}
-pickAction aid = do
+pickAction aid retry = do
   side <- getsClient sside
   body <- getsState $ getActorBody aid
   let !_A = assert (bfid body == side
@@ -81,7 +81,7 @@ pickAction aid = do
   let !_A = assert (isNothing (btrajectory body)
                     `blame` "AI gets to manually move its projectiles"
                     `twith` (aid, bfid body, side)) ()
-  stratAction <- actionStrategy aid
+  stratAction <- actionStrategy aid retry
   let bestAction = bestVariant stratAction
       !_A = assert (not (nullFreq bestAction)  -- equiv to nullStrategy
                     `blame` "no AI action for actor"

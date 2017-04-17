@@ -59,9 +59,9 @@ toAny strat = RequestAnyAbility <$> strat
 -- | AI strategy based on actor's sight, smell, etc.
 -- Never empty.
 actionStrategy :: forall m. MonadClient m
-               => ActorId -> m (Strategy RequestAnyAbility)
+               => ActorId -> Bool -> m (Strategy RequestAnyAbility)
 {-# INLINE actionStrategy #-}
-actionStrategy aid = do
+actionStrategy aid retry = do
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   scondInMelee <- getsClient scondInMelee
@@ -187,8 +187,8 @@ actionStrategy aid = do
           , not condInMelee  -- don't incur overhead
             && condAdjTriggerable && not condAimEnemyPresent )
         , ( [AbDisplace]  -- prevents some looping movement
-          , displaceBlocker aid  -- fires up only when path blocked
-          , not condDesirableFloorItem )
+          , displaceBlocker aid retry  -- fires up only when path blocked
+          , retry || not condDesirableFloorItem )
         , ( [AbMelee], (toAny :: ToAny 'AbMelee)
             <$> meleeAny aid
           , condAnyFoeAdj )  -- won't flee nor displace, so let it melee
@@ -235,7 +235,7 @@ actionStrategy aid = do
                               20)
             $ chase aid True (not condInMelee
                               && (condThreat 12 || heavilyDistressed)
-                              && aCanDeLight)
+                              && aCanDeLight) retry
           , condCanMelee
             && (if condInMelee then condAimEnemyPresent
                 else (condAimEnemyPresent || condAimEnemyRemembered)
@@ -257,7 +257,7 @@ actionStrategy aid = do
         , ( [AbMove]
           , chase aid True (not condInMelee
                             && heavilyDistressed
-                            && aCanDeLight)
+                            && aCanDeLight) retry
           , if condInMelee then condCanMelee && condAimEnemyPresent
             else not (condThreat 2) || not condMeleeBad1 )
         ]
@@ -797,25 +797,29 @@ displaceFoe aid = do
   let str = liftFrequency $ toFreq "displaceFoe" $ catMaybes vFoes
   mapStrategyM (moveOrRunAid True aid) str
 
-displaceBlocker :: MonadClient m => ActorId -> m (Strategy RequestAnyAbility)
-displaceBlocker aid = do
+displaceBlocker :: MonadClient m
+                => ActorId -> Bool -> m (Strategy RequestAnyAbility)
+displaceBlocker aid retry = do
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   str <- case mtgtMPath of
     Just TgtAndPath{ tapTgt=TEnemy{}
                    , tapPath=AndPath{pathList=q : _, pathGoal} }
-      | q == pathGoal -> return reject  -- not a real blocker, but goal enemy
-    Just TgtAndPath{tapPath=AndPath{pathList=q : _}} ->
-      displaceTowards aid (bpos b) q
+      | q == pathGoal && not retry ->
+        return reject  -- not a real blocker but goal, possibly enemy to melee
+    Just TgtAndPath{tapPath=AndPath{pathList=q : _}}
+      | adjacent (bpos b) q ->  -- not veered off target
+      displaceTowards aid q retry
     _ -> return reject  -- goal reached
   mapStrategyM (moveOrRunAid True aid) str
 
 displaceTowards :: MonadClient m
-                => ActorId -> Point -> Point -> m (Strategy Vector)
-displaceTowards aid source target = do
+                => ActorId -> Point -> Bool -> m (Strategy Vector)
+displaceTowards aid target retry = do
   Kind.COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
-  let !_A = assert (source == bpos b && adjacent source target) ()
+  let source = bpos b
+  let !_A = assert (adjacent source target) ()
   lvl <- getLevel $ blid b
   if boldpos b /= Just target -- avoid trivial loops
      && Tile.isWalkable coTileSpeedup (lvl `at` target) then do
@@ -831,6 +835,9 @@ displaceTowards aid source target = do
         case mtgtMPath of
           Just TgtAndPath{tapPath=AndPath{pathList=q : _}}
             | q == source  -- friend wants to swap
+              || retry  -- desperate
+                 && not (boldpos b == Just target  -- and no displace loop
+                         && not (waitedLastTurn b))
               || enemyTgt && not enemyTgt2 -> do
                    -- he doesn't have Enemy target and I have, so push him aside
               return $! returN "displace friend" $ target `vectorToFrom` source
@@ -846,8 +853,8 @@ displaceTowards aid source target = do
   else return reject
 
 chase :: MonadClient m
-      => ActorId -> Bool -> Bool -> m (Strategy RequestAnyAbility)
-chase aid doDisplace avoidAmbient = do
+      => ActorId -> Bool -> Bool -> Bool -> m (Strategy RequestAnyAbility)
+chase aid doDisplace avoidAmbient retry = do
   Kind.COps{coTileSpeedup} <- getsState scops
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
@@ -859,14 +866,15 @@ chase aid doDisplace avoidAmbient = do
       | pathGoal == bpos body -> return reject  -- shortcut and just to be sure
       | not $ avoidAmbient && isAmbient q ->
       -- With no leader, the goal is vague, so permit arbitrary detours.
-      moveTowards aid q pathGoal (fleaderMode (gplayer fact) == LeaderNull)
+      moveTowards aid q pathGoal (fleaderMode (gplayer fact) == LeaderNull
+                                  || retry)
     _ -> return reject  -- goal reached or banned ambient lit tile
   -- If @doDisplace@: don't pick fights, assuming the target is more important.
   -- We'd normally melee the target earlier on via @AbMelee@, but for
   -- actors that don't have this ability (and so melee only when forced to),
   -- this is meaningul.
   if avoidAmbient && nullStrategy str
-  then chase aid doDisplace False
+  then chase aid doDisplace False retry
   else mapStrategyM (moveOrRunAid doDisplace aid) str
 
 moveTowards :: MonadClient m
@@ -932,7 +940,7 @@ moveOrRunAid run source dir = do
       actorMaxSk <- maxActorSkillsClient target
       dEnemy <- getsState $ dispEnemy source target actorMaxSk
       if | boldpos sb == Just tpos && not (waitedLastTurn sb)
-             -- avoid Displace loops
+             -- avoid displace loops
            || not (Tile.isWalkable coTileSpeedup $ lvl `at` tpos) ->
              -- DisplaceAccess
            return Nothing
