@@ -353,7 +353,7 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
       aspects = fromJust $ itemAspect $ fromJust itemDisco
   -- Initial HP and Calm is based only on trunk and ignores organs.
       hp = xM (max 2 $ aMaxHP aspects) `div` 2
-      calm = xM $ max 1 $ aMaxCalm aspects
+      calm = xM (max 2 $ aMaxCalm aspects) `div` 2
   -- Create actor.
   factionD <- getsState sfactionD
   let fact = factionD EM.! bfid

@@ -592,7 +592,6 @@ effectSummon execSfx grp nDm source target periodic = do
         Nothing -> return False  -- not enough space in dungeon?
         Just aid -> do
           b <- getsState $ getActorBody aid
-          udpateCalm aid deltaCalm  -- prevent chain summoning
           mleader <- getsState $ _gleader . (EM.! bfid b) . sfactionD
           when (isNothing mleader) $ supplantLeader (bfid b) aid
           return True

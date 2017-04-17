@@ -223,7 +223,7 @@ udpateCalm target deltaCalm = do
     -- We don't dominate the actor here, because if so, players would
     -- disengage after one of their actors is dominated and wait for him
     -- to regenerate Calm. This is unnatural and boring. Better fight
-    -- and hope he gets his Calm again to 0 and them defects back.
+    -- and hope he gets his Calm again to 0 and then defects back.
 
 leadLevelSwitch :: (MonadAtomic m, MonadServer m) => m ()
 leadLevelSwitch = do
