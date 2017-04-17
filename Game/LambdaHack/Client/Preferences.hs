@@ -112,8 +112,8 @@ aspectToBenefit _cops asp =
   case asp of
     IK.Timeout{} -> 0
     IK.AddHurtMelee p -> Dice.meanDice p
-    IK.AddArmorMelee p -> Dice.meanDice p `divUp` 5
-    IK.AddArmorRanged p -> Dice.meanDice p `divUp` 10
+    IK.AddArmorMelee p -> Dice.meanDice p `divUp` 4
+    IK.AddArmorRanged p -> Dice.meanDice p `divUp` 8
     IK.AddMaxHP p -> Dice.meanDice p
     IK.AddMaxCalm p -> Dice.meanDice p `div` 5
     IK.AddSpeed p -> Dice.meanDice p * 10000

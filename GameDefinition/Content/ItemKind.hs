@@ -906,7 +906,7 @@ armorLeather = ItemKind
   , iverbHit = "thud"
   , iweight  = 7000
   , idamage  = toDmg 0
-  , iaspects = [ AddHurtMelee (-3)
+  , iaspects = [ AddHurtMelee (-2)
                , AddArmorMelee $ 1 + d 2 + dl 2 |*| 5
                , AddArmorRanged $ dl 3 |*| 3 ]
   , ieffects = [EqpSlot EqpSlotAddArmorMelee]
