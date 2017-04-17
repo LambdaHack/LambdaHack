@@ -233,9 +233,9 @@ actionStrategy aid retry = do
                               2  -- if enemy only remembered, investigate anyway
                             | otherwise ->
                               20)
-            $ chase aid True (not condInMelee
-                              && (condThreat 12 || heavilyDistressed)
-                              && aCanDeLight) retry
+            $ chase aid (not condInMelee
+                         && (condThreat 12 || heavilyDistressed)
+                         && aCanDeLight) retry
           , condCanMelee
             && (if condInMelee then condAimEnemyPresent
                 else (condAimEnemyPresent || condAimEnemyRemembered)
@@ -255,9 +255,9 @@ actionStrategy aid retry = do
             <$> unEquipItems aid  -- late, because these items not bad
           , not condInMelee )
         , ( [AbMove]
-          , chase aid True (not condInMelee
-                            && heavilyDistressed
-                            && aCanDeLight) retry
+          , chase aid (not condInMelee
+                       && heavilyDistressed
+                       && aCanDeLight) retry
           , if condInMelee then condCanMelee && condAimEnemyPresent
             else not (condThreat 2) || not condMeleeBad1 )
         ]
@@ -767,7 +767,7 @@ flee aid fleeL = do
   b <- getsState $ getActorBody aid
   let vVic = map (second (`vectorToFrom` bpos b)) fleeL
       str = liftFrequency $ toFreq "flee" vVic
-  mapStrategyM (moveOrRunAid True aid) str
+  mapStrategyM (moveOrRunAid aid) str
 
 -- The result of all these conditions is that AI displaces rarely,
 -- but it can't be helped as long as the enemy is smart enough to form fronts.
@@ -795,7 +795,7 @@ displaceFoe aid = do
                   else Nothing
   vFoes <- mapM qualifyActor adjFoes
   let str = liftFrequency $ toFreq "displaceFoe" $ catMaybes vFoes
-  mapStrategyM (moveOrRunAid True aid) str
+  mapStrategyM (moveOrRunAid aid) str
 
 displaceBlocker :: MonadClient m
                 => ActorId -> Bool -> m (Strategy RequestAnyAbility)
@@ -811,7 +811,7 @@ displaceBlocker aid retry = do
       | adjacent (bpos b) q ->  -- not veered off target
       displaceTowards aid q retry
     _ -> return reject  -- goal reached
-  mapStrategyM (moveOrRunAid True aid) str
+  mapStrategyM (moveOrRunAid aid) str
 
 displaceTowards :: MonadClient m
                 => ActorId -> Point -> Bool -> m (Strategy Vector)
@@ -857,8 +857,8 @@ displaceTowards aid target retry = do
   else return reject
 
 chase :: MonadClient m
-      => ActorId -> Bool -> Bool -> Bool -> m (Strategy RequestAnyAbility)
-chase aid doDisplace avoidAmbient retry = do
+      => ActorId -> Bool -> Bool -> m (Strategy RequestAnyAbility)
+chase aid avoidAmbient retry = do
   Kind.COps{coTileSpeedup} <- getsState scops
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
@@ -873,13 +873,9 @@ chase aid doDisplace avoidAmbient retry = do
       moveTowards aid q pathGoal (fleaderMode (gplayer fact) == LeaderNull
                                   || retry)
     _ -> return reject  -- goal reached or banned ambient lit tile
-  -- If @doDisplace@: don't pick fights, assuming the target is more important.
-  -- We'd normally melee the target earlier on via @AbMelee@, but for
-  -- actors that don't have this ability (and so melee only when forced to),
-  -- this is meaningul.
   if avoidAmbient && nullStrategy str
-  then chase aid doDisplace False retry
-  else mapStrategyM (moveOrRunAid doDisplace aid) str
+  then chase aid False retry
+  else mapStrategyM (moveOrRunAid aid) str
 
 moveTowards :: MonadClient m
             => ActorId -> Point -> Point -> Bool -> m (Strategy Vector)
@@ -917,12 +913,12 @@ moveTowards aid target goal relaxed = do
         freqs = map (liftFrequency . uniformFreq "moveTowards") groups
     return $! foldr (.|) reject freqs
 
--- | Actor moves or searches or alters or attacks. Displaces if @run@.
+-- | Actor moves or searches or alters or attacks.
 -- This function is very general, even though it's often used in contexts
 -- when only one or two of the many cases can possibly occur.
 moveOrRunAid :: MonadClient m
-             => Bool -> ActorId -> Vector -> m (Maybe RequestAnyAbility)
-moveOrRunAid run source dir = do
+             => ActorId -> Vector -> m (Maybe RequestAnyAbility)
+moveOrRunAid source dir = do
   Kind.COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorSk <- currentSkillsClient source
@@ -938,7 +934,7 @@ moveOrRunAid run source dir = do
   -- (tiles can't be invisible).
   tgts <- getsState $ posToAssocs tpos lid
   case tgts of
-    [(target, b2)] | run -> do
+    [(target, b2)] -> do
       -- @target@ can be a foe, as well as a friend.
       tfact <- getsState $ (EM.! bfid b2) . sfactionD
       actorMaxSk <- maxActorSkillsClient target
@@ -949,13 +945,15 @@ moveOrRunAid run source dir = do
              -- DisplaceAccess
            return Nothing
          | isAtWar tfact (bfid sb) && not dEnemy -> do  -- DisplaceDying, etc.
+           -- If really can't displace, melee.
            wps <- pickWeaponClient source target
            case wps of
              Nothing -> return Nothing
              Just wp -> return $ Just $ RequestAnyAbility wp
          | otherwise ->
            return $ Just $ RequestAnyAbility $ ReqDisplace target
-    (target, _) : _ -> do  -- can be a foe, as well as friend (e.g., proj.)
+    (target, _) : _ -> do  -- can be a foe, as well as friend (e.g., projectile)
+      -- If really can't displace, melee.
       -- No problem if there are many projectiles at the spot. We just
       -- attack the first one.
       -- Attacking does not require full access, adjacency is enough.
@@ -969,10 +967,10 @@ moveOrRunAid run source dir = do
          return $ Just $ RequestAnyAbility $ ReqMove dir
          -- The potential invisible actor is hit.
        | alterSkill < Tile.alterMinWalk coTileSpeedup t ->
-         assert `failure` "AI causes AlterUnwalked" `twith` (run, source, dir)
+         assert `failure` "AI causes AlterUnwalked" `twith` (source, dir)
        | EM.member tpos $ lfloor lvl ->
          -- Only possible if items allowed inside unwalkable tiles.
-         assert `failure` "AI causes AlterBlockItem" `twith` (run, source, dir)
+         assert `failure` "AI causes AlterBlockItem" `twith` (source, dir)
        | otherwise -> do
          -- Not walkable, but alter skill suffices, so search or alter the tile.
          return $ Just $ RequestAnyAbility $ ReqAlter tpos
