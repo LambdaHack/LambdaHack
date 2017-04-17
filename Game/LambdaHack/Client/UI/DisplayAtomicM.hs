@@ -223,6 +223,8 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
     side <- getsClient sside
     when (fid == side) $ do
       fact <- getsState $ (EM.! side) . sfactionD
+      lidV <- viewedLevelUI
+      when (isAIFact fact) $ markDisplayNeeded lidV
       -- This faction can't run with multiple actors, so this is not
       -- a leader change while running, but rather server changing
       -- their leader, which the player should be alerted to.
@@ -251,6 +253,8 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
   UpdTacticFaction{} -> return ()
   UpdAutoFaction fid b -> do
     side <- getsClient sside
+    lidV <- viewedLevelUI
+    markDisplayNeeded lidV
     when (fid == side) $ setFrontAutoYes b
   UpdRecordKill{} -> return ()
   -- Alter map.
