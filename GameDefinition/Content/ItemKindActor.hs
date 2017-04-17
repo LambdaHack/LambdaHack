@@ -227,7 +227,7 @@ goldenJackal = ItemKind  -- basically a much smaller and slower hyena
                , ("scavenger", 50) ]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
-  , irarity  = [(1, 5)]
+  , irarity  = [(1, 3)]
   , iverbHit = "thud"
   , iweight  = 13000
   , idamage  = toDmg 0
