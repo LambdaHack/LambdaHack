@@ -216,7 +216,8 @@ actionStrategy aid retry = do
                  || condNotCalmEnough
                  || heavilyDistressed) )
         , ( [AbProject]
-          , stratToFreq (if condTgtNonmoving then 20 else 5)
+          , stratToFreq (if condTgtNonmoving then 20 else 3)
+              -- not too common, to leave missiles for pre-melee dance
             $ (toAny :: ToAny 'AbProject)
             <$> projectItem aid  -- equivalent of @condCanProject@ called inside
           , condAimEnemyPresent && not condInMelee )
