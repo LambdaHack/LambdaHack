@@ -1,7 +1,7 @@
 -- | Saving/loading with serialization and compression.
 module Game.LambdaHack.Common.HSFile
   ( encodeEOF, strictDecodeEOF
-  , tryCreateDir, doesFileExist, tryWriteFile, readFile
+  , tryCreateDir, doesFileExist, tryWriteFile, readFile, renameFile
   ) where
 
 import Prelude ()

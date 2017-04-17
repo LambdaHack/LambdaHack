@@ -1,7 +1,7 @@
 -- | Saving/loading with serialization and compression.
 module Game.LambdaHack.Common.JSFile
   ( encodeEOF, strictDecodeEOF
-  , tryCreateDir, doesFileExist, tryWriteFile, readFile
+  , tryCreateDir, doesFileExist, tryWriteFile, readFile, renameFile
   ) where
 
 import Prelude ()
@@ -13,7 +13,7 @@ import qualified Data.ByteString.Lazy.Char8 as LBS
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
 import GHCJS.DOM (currentWindow)
-import GHCJS.DOM.Storage (getItem, setItem)
+import GHCJS.DOM.Storage (getItem, removeItem, setItem)
 import GHCJS.DOM.Types (runDOM)
 import GHCJS.DOM.Window (getLocalStorage)
 
@@ -72,3 +72,14 @@ readFile path = flip runDOM undefined $ do
   case mitem of
     Nothing -> error $ "Fatal error: no file " ++ path
     Just item -> return item
+
+renameFile :: FilePath -> FilePath -> IO ()
+renameFile path path2 = flip runDOM undefined $ do
+  Just win <- currentWindow
+  storage <- getLocalStorage win
+  mitem <- getItem storage path
+  case mitem :: Maybe String of
+    Nothing -> error $ "Fatal error: no file " ++ path
+    Just item -> do
+      setItem storage path2 item  -- overwrites
+      removeItem storage path

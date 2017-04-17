@@ -19,7 +19,6 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.Text.IO as T
-import System.Directory (renameFile)
 import System.FilePath
 import System.IO (hFlush, stdout)
 import qualified System.Random as R
