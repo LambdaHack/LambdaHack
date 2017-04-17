@@ -80,12 +80,6 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   divBlock <- unsafeCastTo HTMLDivElement divBlockRaw
   divStyle <- getStyle divBlock
   setProp divStyle "text-align" "center"
-  case (saddress, stitle) of
-    (Just address, Just title) -> do
-      let headerText = "<h1><a href=\"" <> address <> "\">"
-                       <> title <> "</a></h1>"
-      setInnerHTML divBlock (Just headerText)
-    _ -> return ()
   let lxsize = fst normalLevelBound + 1
       lysize = snd normalLevelBound + 4
       cell = "<td>" ++ [Char.chr 160]

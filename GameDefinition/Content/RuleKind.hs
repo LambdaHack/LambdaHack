@@ -35,7 +35,6 @@ standard = RuleKind
   , rname          = "standard LambdaHack ruleset"
   , rfreq          = [("standard", 100)]
   , rtitle         = "LambdaHack"
-  , raddress       = "http://github.com/LambdaHack/LambdaHack/releases"
   , rpathsVersion  = Self.version
   -- The strings containing the default configuration file
   -- included from config.ui.default.
