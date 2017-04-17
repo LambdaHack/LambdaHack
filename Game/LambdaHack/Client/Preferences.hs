@@ -147,10 +147,10 @@ totalUsefulness !cops !fact !effects !aspects !item =
       effDice = - damageUsefulness item
       f (friend, foe) (accFriend, accFoe) = (friend + accFriend, foe + accFoe)
       (effFriend, effFoe) = foldr f (0, 0) effPairs
-      effApply = effFriend + effDice  -- hits self with dice too, when applying
-      effMelee = effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
-      effFling = effFoe + effFlingDice -- nothing in @eqpSum@; normally not worn
-      effFlingDice | jdamage item <= 0 = 0  -- speedup
+      benApply = effFriend + effDice  -- hits self with dice too, when applying
+      benMelee = effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
+      benFling = effFoe + benFlingDice -- nothing in @eqpSum@; normally not worn
+      benFlingDice | jdamage item <= 0 = 0  -- speedup
                    | otherwise = max 0 $
         let hurtMult = 100 + min 99 (max (-99) (aHurtMelee aspects))
               -- assumes no enemy armor and no block
@@ -180,15 +180,15 @@ totalUsefulness !cops !fact !effects !aspects !item =
       -- If a weapon heals enemy at impact, it won't be used for melee
       -- (but can be equipped anyway). If it harms wearer too much,
       -- won't be worn but still may be flung, etc.
-      (inEqp, pickupSum)
-        | isMelee item && effMelee < 0 && eqpSum >= -20 =
+      (benInEqp, benPickup)
+        | isMelee item && benMelee < 0 && eqpSum >= -20 =
           ( True
           , eqpSum                                -- equip
-            + max 0 (max effApply (- effMelee)))  -- and apply or melee or none
+            + max 0 (max benApply (- benMelee)))  -- and apply or melee or none
         | goesIntoEqp item && eqpSum > 0 =  -- weapon or other equippable
           ( True
           , eqpSum             -- equip
-            + max 0 effApply)  -- and apply or not but don't fling (no unequip)
+            + max 0 benApply)  -- and apply or not but don't fling (no unequip)
         | otherwise =
-          (False, max 0 (max effApply (- effFling)))  -- apply or fling
-  in ((pickupSum, inEqp), (effApply, effMelee, effFling))
+          (False, max 0 (max benApply (- benFling)))  -- apply or fling
+  in Benefit{..}

@@ -314,9 +314,7 @@ pickup aid onlyWeapon = do
                    | otherwise = id
       prepareOne (oldN, l4) ((mvalue, (k, _)), (iid, item)) =
         let prep newN toCStore = (newN, (iid, k, CGround, toCStore) : l4)
-            inEqp = case mvalue of
-              Just ((_, i), _) -> i
-              Nothing -> goesIntoEqp item
+            inEqp = maybe (goesIntoEqp item) benInEqp mvalue
             n = oldN + k
         in if | calmE && goesIntoSha item && not onlyWeapon ->
                 prep oldN CSha
@@ -537,7 +535,7 @@ harmful discoBenefit iid =
   -- Items that are known, perhaps recently discovered, and it's now revealed
   -- they should not be kept in equipment, should be unequipped
   -- (either they are harmful or they waste eqp space).
-  maybe False (\((_, inEqp), _) -> not inEqp) (EM.lookup iid discoBenefit)
+  maybe False (not . benInEqp) (EM.lookup iid discoBenefit)
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
 meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbMelee))
@@ -666,7 +664,7 @@ projectItem aid = do
                            * coeff cstore
                            * case mben of
                                Nothing -> -10  -- experiment if no good options
-                               Just (_, (_, _, effFling)) -> effFling
+                               Just Benefit{benFling} -> benFling
                            * (if recharged then 1 else 0)
                 in if -- Melee weapon is usually needed in hand.
                       not (isMelee itemBase)
@@ -747,7 +745,7 @@ applyItem aid applyGroup = do
                      Nothing -> 0
                        -- experimenting is fun, but it's better to risk
                        -- foes' skin than ours
-                     Just (_, (effApply, _, _)) -> effApply
+                     Just Benefit{benApply} -> benApply
                    * (if onlyVoidlyDropsOrgan then 0 else 1)
                    * durableBonus
                    * coeff cstore

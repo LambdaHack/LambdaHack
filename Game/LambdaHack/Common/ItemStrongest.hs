@@ -145,8 +145,8 @@ strongestMelee mdiscoBenefit localTime is =
             -- For fighting, as opposed to equipping, we value weapon
             -- only for its raw damage and harming effects.
             case EM.lookup iid discoBenefit of
-              Just (_, (_, effMelee, _)) ->
-                ( if effMelee < 0 then - effMelee else 0
+              Just Benefit{benMelee} ->
+                ( if benMelee < 0 then - benMelee else 0
                 , (iid, itemFull) )
               Nothing -> rawDmg
           _  -> rawDmg
@@ -163,11 +163,12 @@ strongestSlot discoBenefit eqpSlot is =
            -- For equipping/unequipping a weapon we take into account
            -- not only it's melee power, but also aspects, etc.
            then case EM.lookup iid discoBenefit of
-             Just ((pickupSum, inEqp), _) ->
-               if not inEqp then Nothing else Just (pickupSum, (iid, itemFull))
+             Just Benefit{benInEqp, benPickup} ->
+               if not benInEqp then Nothing
+               else Just (benPickup, (iid, itemFull))
              Nothing -> Just rawDmg
            else let inEqp = case EM.lookup iid discoBenefit of
-                      Just ((_, i), _) -> i
+                      Just Benefit{benInEqp} -> benInEqp
                       Nothing -> goesIntoEqp (itemBase itemFull)
                 in if not inEqp then Nothing
                    else Just ( prEqpSlot eqpSlot $ aspectRecordFull itemFull

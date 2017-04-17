@@ -154,8 +154,8 @@ condCanProjectM skill aid = do
   let isMissile ((Nothing, _), (_, itemFull)) =
         -- Melee weapon is usually needed in hand.
         not (isMelee $ itemBase itemFull)
-      isMissile ((Just (_, (_, _, effFling)), _), (_, itemFull)) =
-        effFling < 0 && not (isMelee $ itemBase itemFull)
+      isMissile ((Just Benefit{benFling}, _), (_, itemFull)) =
+        benFling < 0 && not (isMelee $ itemBase itemFull)
   return $ any isMissile benList
 
 condProjectListM :: MonadClient m
@@ -238,10 +238,8 @@ benGroundItems aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let canEsc = fcanEscape (gplayer fact)
-      isDesirable ((Nothing, _), (_, itemFull)) =
-        desirableItem canEsc Nothing (itemBase itemFull)
-      isDesirable ((Just ((pickupSum, _), _), _), (_, itemFull)) =
-        desirableItem canEsc (Just pickupSum) (itemBase itemFull)
+      isDesirable ((mben, _), (_, itemFull)) =
+        desirableItem canEsc (benPickup <$> mben) (itemBase itemFull)
   benList <- benAvailableItems aid (const True) [CGround]
   return $ filter isDesirable benList
 

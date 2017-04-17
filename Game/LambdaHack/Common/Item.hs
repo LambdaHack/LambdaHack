@@ -8,7 +8,8 @@ module Game.LambdaHack.Common.Item
   , seedToAspect, meanAspect, aspectRecordToList
   , aspectRecordFull, aspectsRandom
     -- * Item discovery types
-  , ItemKindIx, KindMean(..), DiscoveryKind, Benefit, DiscoveryBenefit, ItemSeed
+  , ItemKindIx, ItemSeed, KindMean(..), DiscoveryKind
+  , Benefit(..), DiscoveryBenefit
   , AspectRecord(..), emptyAspectRecord, sumAspectRecord, DiscoveryAspect
   , ItemFull(..), ItemDisco(..)
   , itemNoDisco, itemToFull
@@ -59,13 +60,23 @@ instance Binary KindMean
 -- The full map, as known by the server, is 1-1.
 type DiscoveryKind = EM.EnumMap ItemKindIx KindMean
 
--- | The fields are
--- 1. the total benefit from picking an item up (to use or to put in equipment)
--- 2. whether the item should be kept in equipment (not in pack nor stash)
--- 3. the benefit of applied the item to self
--- 4. the (usually negative) benefit of flinging an item at an opponent
---    or meleeing with it
-type Benefit = ((Int, Bool), (Int, Int, Int))
+-- | Fields are intentionally kept non-strict, because they are recomputed
+-- often, but not used every time. The fields are, in order:
+-- 1. whether the item should be kept in equipment (not in pack nor stash)
+-- 2. the total benefit from picking the item up (to use or to put in equipment)
+-- 3. the benefit of applying the item to self
+-- 4. the (usually negative) benefit of hitting a foe in meleeing with the item
+-- 5. the (usually negative) benefit of flinging an item at an opponent
+data Benefit = Benefit
+  { benInEqp  :: Bool
+  , benPickup :: Int
+  , benApply  :: Int
+  , benMelee  :: Int
+  , benFling  :: Int
+  }
+  deriving (Show, Generic)
+
+instance Binary Benefit
 
 type DiscoveryBenefit = EM.EnumMap ItemId Benefit
 
