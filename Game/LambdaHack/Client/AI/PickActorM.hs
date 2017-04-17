@@ -220,7 +220,7 @@ pickActorToMove maidToAvoid = do
                   - fromEnum (bhp b `div` (10 * oneM))
                            | otherwise = 0
             in formationValue `div` 3 + fightValue
-               + (if targetBlocked abt then abs formationValue else 0)
+               + (if targetBlocked abt then 5 else 0)
                + (case d of
                     0 -> -400 -- do your thing ASAP and retarget
                     1 -> -200 -- prevent others from occupying the tile
