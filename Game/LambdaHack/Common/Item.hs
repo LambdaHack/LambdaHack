@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.Item
   , seedToAspect, meanAspect, aspectRecordToList
   , aspectRecordFull, aspectsRandom
     -- * Item discovery types
-  , ItemKindIx, KindMean(..), DiscoveryKind, DiscoveryBenefit, ItemSeed
+  , ItemKindIx, KindMean(..), DiscoveryKind, Benefit, DiscoveryBenefit, ItemSeed
   , AspectRecord(..), emptyAspectRecord, sumAspectRecord, DiscoveryAspect
   , ItemFull(..), ItemDisco(..)
   , itemNoDisco, itemToFull
@@ -65,7 +65,9 @@ type DiscoveryKind = EM.EnumMap ItemKindIx KindMean
 -- 3. the benefit of applied the item to self
 -- 4. the (usually negative) benefit of flinging an item at an opponent
 --    or meleeing with it
-type DiscoveryBenefit = EM.EnumMap ItemId ((Int, Bool), (Int, Int))
+type Benefit = ((Int, Bool), (Int, Int, Int))
+
+type DiscoveryBenefit = EM.EnumMap ItemId Benefit
 
 -- | A seed for rolling aspects of an item
 -- Clients have partial knowledge of how item ids map to the seeds.

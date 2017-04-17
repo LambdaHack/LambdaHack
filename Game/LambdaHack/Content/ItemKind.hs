@@ -143,7 +143,7 @@ data Aspect =
   | AddArmorRanged !Dice.Dice  -- ^ percentage armor bonus against ranged
   | AddMaxHP !Dice.Dice        -- ^ maximal hp
   | AddMaxCalm !Dice.Dice      -- ^ maximal calm
-  | AddSpeed !Dice.Dice        -- ^ speed in m/10s
+  | AddSpeed !Dice.Dice        -- ^ speed in m/10s (not of a projectile!)
   | AddSight !Dice.Dice        -- ^ FOV radius, where 1 means a single tile
   | AddSmell !Dice.Dice        -- ^ smell radius, where 1 means a single tile
   | AddShine !Dice.Dice        -- ^ shine radius, where 1 means a single tile
@@ -152,7 +152,8 @@ data Aspect =
   | AddAbility !Ability.Ability !Dice.Dice  -- ^ bonus to an ability
   deriving (Show, Eq, Ord, Generic)
 
--- | Parameters modifying a throw. Not additive and don't start at 0.
+-- | Parameters modifying a throw of a projectile or flight of pushed actor.
+-- Not additive and don't start at 0.
 data ThrowMod = ThrowMod
   { throwVelocity :: !Int  -- ^ fly with this percentage of base throw speed
   , throwLinger   :: !Int  -- ^ fly for this percentage of 2 turns

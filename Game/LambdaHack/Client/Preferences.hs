@@ -17,6 +17,7 @@ import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
@@ -140,13 +141,25 @@ recordToBenefit cops aspects =
 -- Result has non-strict fields, so arguments are forced to avoid leaks.
 -- When AI looks at items (including organs) more often, force the fields.
 totalUsefulness :: Kind.COps -> Faction -> [IK.Effect] -> AspectRecord -> Item
-                -> ((Int, Bool), (Int, Int))
+                -> Benefit
 totalUsefulness !cops !fact !effects !aspects !item =
   let effPairs = map (effectToBenefit cops fact) effects
       effDice = - damageUsefulness item
       f (friend, foe) (accFriend, accFoe) = (friend + accFriend, foe + accFoe)
-      (effFriendEf, effFoeEf) = foldr f (0, 0) effPairs
-      (effFriend, effFoe) = (effFriendEf + effDice, effFoeEf + effDice)
+      (effFriend, effFoe) = foldr f (0, 0) effPairs
+      effApply = effFriend + effDice  -- hits self with dice too, when applying
+      effMelee = effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
+      effFling = effFoe + effFlingDice -- nothing in @eqpSum@; normally not worn
+      effFlingDice | jdamage item <= 0 = 0  -- speedup
+                   | otherwise = max 0 $
+        let hurtMult = 100 + min 99 (max (-99) (aHurtMelee aspects))
+              -- assumes no enemy armor and no block
+            dmg = Dice.meanDice (jdamage item)
+            rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
+            IK.ThrowMod{IK.throwVelocity} = strengthToThrow item
+            speed = speedFromWeight (jweight item) throwVelocity
+        in fromEnum $ modifyDamageBySpeed rawDeltaHP speed * 10 `div` oneM
+             -- 1 damage valued at 10, just as in @damageUsefulness@
       aspBens = recordToBenefit cops aspects
       periodicEffBens = map (fst . effectToBenefit cops fact)
                             (stripRecharging effects)
@@ -168,14 +181,14 @@ totalUsefulness !cops !fact !effects !aspects !item =
       -- (but can be equipped anyway). If it harms wearer too much,
       -- won't be worn but still may be flung, etc.
       (inEqp, pickupSum)
-        | isMelee item && effFoe < 0 && eqpSum >= -20 =
+        | isMelee item && effMelee < 0 && eqpSum >= -20 =
           ( True
-          , eqpSum                               -- equip
-            + max 0 (max effFriend (- effFoe)))  -- and apply or melee or none
+          , eqpSum                                -- equip
+            + max 0 (max effApply (- effMelee)))  -- and apply or melee or none
         | goesIntoEqp item && eqpSum > 0 =  -- weapon or other equippable
           ( True
-          , eqpSum              -- equip
-            + max 0 effFriend)  -- and apply or not but don't fling (no unequip)
+          , eqpSum             -- equip
+            + max 0 effApply)  -- and apply or not but don't fling (no unequip)
         | otherwise =
-          (False, max 0 (max effFriend (- effFoe)))  -- apply or fling
-  in ((pickupSum, inEqp), (effFriend, effFoe))
+          (False, max 0 (max effApply (- effFling)))  -- apply or fling
+  in ((pickupSum, inEqp), (effApply, effMelee, effFling))
