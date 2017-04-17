@@ -184,17 +184,18 @@ pickActorToMove maidToAvoid = do
           -- These are not necessarily stuck (perhaps can go around),
           -- but their current path is blocked by friends and they are not
           -- melee capable or not currently chasing foes.
-          targetBlocked (_, TgtAndPath{tapPath}) =
+          targetBlocked ((aid, _), TgtAndPath{tapPath}) =
             let next = case tapPath of
                   AndPath{pathList= q : _} -> Just q
                   _ -> Nothing
-            in any ((== next) . Just . bpos . snd) ours
+            in any (\(aid2, body) -> aid2 /= aid  -- in case pushed onto goal
+                                     && Just (bpos body) == next) ours
           (oursBlocked, oursPos) =
             partition targetBlocked $ oursRanged ++ oursOther
           -- Lower overhead is better.
           overheadOurs :: ((ActorId, Actor), TgtAndPath) -> Int
           overheadOurs ((aid, _), TgtAndPath{tapPath=NoPath}) =
-            1000 + if aid == oldAid then 1 else 0
+            200 + if aid == oldAid then 1 else 0
           overheadOurs abt@( (aid, b)
                            , TgtAndPath{tapPath=AndPath{pathLen=d,pathGoal}} ) =
             -- Keep proper formation. Too dense and exploration takes
@@ -217,14 +218,14 @@ pickActorToMove maidToAvoid = do
                   - fromEnum (bhp b `div` (10 * oneM))
                            | otherwise = 0
             in formationValue `div` 3 + fightValue
-               + (if targetBlocked abt then 1000 else 0)
+               + (if targetBlocked abt then 999 else 0)
                + (case d of
                     0 -> -400 -- do your thing ASAP and retarget
                     1 -> -200 -- prevent others from occupying the tile
                     _ -> if d < 8 then d `div` 4 else 2 + d `div` 10)
                + (if aid == oldAid then 1 else 0)
           positiveOverhead ab =
-            let ov = 500 + overheadOurs ab
+            let ov = 200 - overheadOurs ab
             in if ov <= 0 then 1 else ov
           candidates = [ oursVulnerable
                        , oursSupport
