@@ -159,6 +159,8 @@ strongestSlot discoBenefit eqpSlot is =
   let f (iid, itemFull) =
         let rawDmg = (damageUsefulness $ itemBase itemFull, (iid, itemFull))
         in if eqpSlot == EqpSlotWeapon
+           -- For equipping/unequipping a weapon we take into account
+           -- not only it's melee power, but also aspects, etc.
            then case EM.lookup iid discoBenefit of
              Just ((pickupSum, inEqp), (_, _)) ->
                if not inEqp then Nothing else Just (pickupSum, (iid, itemFull))

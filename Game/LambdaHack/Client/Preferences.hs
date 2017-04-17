@@ -63,8 +63,8 @@ effectToBenefit cops fact eff =
       in delta $ - total `divUp` count
            -- the same when dropped from me and from foe
     IK.DropItem _ _ _ _ -> delta $ -15
-    IK.PolyItem -> delta $ 0  -- AI can't estimate item desirability vs average
-    IK.Identify -> delta $ 0  -- AI doesn't know how to use
+    IK.PolyItem -> delta 0  -- AI can't estimate item desirability vs average
+    IK.Identify -> delta 0  -- AI doesn't know how to use
     IK.Detect radius -> (radius * 2, 0)
     IK.DetectActor radius -> (radius, 0)
     IK.DetectItem radius -> (radius, 0)
@@ -76,11 +76,11 @@ effectToBenefit cops fact eff =
     IK.DropBestWeapon -> delta $ -50
     IK.ActivateInv ' ' -> delta $ -100
     IK.ActivateInv _ -> delta $ -50
-    IK.ApplyPerfume -> delta $ 0  -- depends on smell sense of friends and foes
+    IK.ApplyPerfume -> delta 0  -- depends on smell sense of friends and foes
     IK.OneOf efs ->
       let bs = map (effectToBenefit cops fact) efs
       in if any (\(friend, foe) -> friend < -10 || foe > 10) bs
-         then delta 0  -- mixed blessing
+         then delta 0  -- mixed blessing; can't tell how bad/good this is
          else let f (friend, foe) (accFriend, accFoe) =
                     (friend + accFriend, foe + accFoe)
                   (allFriend, allFoe) = foldr f (0, 0) bs
@@ -100,7 +100,9 @@ organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} fact =
   let f (!sacc, !pacc) !p _ !kind =
         let paspect asp = p * aspectToBenefit cops asp
             peffect eff = p * fst (effectToBenefit cops fact eff)
-              -- only the effect on the owner of the organ matters
+              -- only the effect on the owner of the organ matters, because
+              -- it's probably temprary so will likely vanish before it's
+              -- used on an enemy
         in ( sacc + sum (map paspect $ IK.iaspects kind)
                   + sum (map peffect $ IK.ieffects kind)
            , pacc + p )
@@ -154,27 +156,26 @@ totalUsefulness !cops !fact !effects !aspects !item =
         map (\eff -> eff * 10 `divUp` timeout) periodicEffBens
       eqpBens = aspBens ++ periodicBens
       sumBens = sum eqpBens
-      -- We don't take into account mixed blessing from effects
-      -- but they are rare. However, permanent mixed blessings from aspects
+      -- We don't take into account crippling maluses from effects
+      -- but they are rare. However, permanent maluses from aspects
       -- are more often obviously bad, unlike periodic or on-use (effect) ones.
-      mixedBlessing =
-        not (null eqpBens)
-        && (sumBens > 0 && minimum eqpBens < -10
-            || sumBens < 0 && maximum eqpBens > 10)
-      eqpSum = if mixedBlessing
-               then 0  -- significant mixed blessings out of AI control
-               else sumBens
+      -- Examples of crippling maluses are, e.g., such that make melee
+      -- impossible or moving impossible. AI can't live with those and can't
+      -- value those competently agains bonuses the item provides.
+      cripplingDrawback = not (null eqpBens) && minimum eqpBens < -20
+      eqpSum = sumBens - if cripplingDrawback then 100 else 0
       -- If a weapon heals enemy at impact, it won't be used for melee
       -- (but can be equipped anyway). If it harms wearer too much,
       -- won't be worn but still may be flung, etc.
       (inEqp, pickupSum)
         | isMelee item && effFoe < 0 && eqpSum >= -20 =
           ( True
-          , eqpSum                      -- equip
-            + max effFriend (- effFoe))  -- and apply or melee with
+          , eqpSum                               -- equip
+            + max 0 (max effFriend (- effFoe)))  -- and apply or melee or none
         | goesIntoEqp item && eqpSum > 0 =  -- weapon or other equippable
           ( True
           , eqpSum              -- equip
-            + max effFriend 0)  -- and apply or not but don't fling (no unequip)
-        | otherwise = (False, max effFriend (- effFoe))  -- apply or fling
+            + max 0 effFriend)  -- and apply or not but don't fling (no unequip)
+        | otherwise =
+          (False, max 0 (max effFriend (- effFoe)))  -- apply or fling
   in ((pickupSum, inEqp), (effFriend, effFoe))
