@@ -831,15 +831,19 @@ displaceTowards aid target retry = do
       [(aid2, b2)] | Just aid2 /= mleader -> do
         mtgtMPath <- getsClient $ EM.lookup aid2 . stargetD
         enemyTgt <- condAimEnemyPresentM aid
+        enemyPos <- condAimEnemyRememberedM aid
         enemyTgt2 <- condAimEnemyPresentM aid2
+        enemyPos2 <- condAimEnemyRememberedM aid2
         case mtgtMPath of
           Just TgtAndPath{tapPath=AndPath{pathList=q : _}}
             | q == source  -- friend wants to swap
               || retry  -- desperate
                  && not (boldpos b == Just target  -- and no displace loop
                          && not (waitedLastTurn b))
-              || enemyTgt && not enemyTgt2 -> do
-                   -- he doesn't have Enemy target and I have, so push him aside
+              || (enemyTgt || enemyPos) && not (enemyTgt2 || enemyPos2) -> do
+                 -- he doesn't have Enemy target and I have, so push him aside,
+                 -- because, for heroes, he will never be a leader, so he can't
+                 -- step aside himself
               return $! returN "displace friend" $ target `vectorToFrom` source
           Just _ -> return reject
           Nothing -> do  -- an enemy or ally or disoriented friend --- swap
