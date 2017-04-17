@@ -305,9 +305,10 @@ fleeList aid = do
   -- Prefer fleeing along the path to target, unless the target is a foe,
   -- in which case flee in the opposite direction.
   let etgtPath = case mtgtMPath of
-        Just TgtAndPath{tapPath=AndPath{pathList}, tapTgt} -> case tapTgt of
-          TEnemy{} -> Left pathList
-          TPoint TEnemyPos{} _ _ -> Left pathList
+        Just TgtAndPath{ tapPath=tapPath@AndPath{pathList}
+                       , tapTgt } -> case tapTgt of
+          TEnemy{} -> Left tapPath
+          TPoint TEnemyPos{} _ _ -> Left tapPath
           _ -> Right pathList
         _ -> Right []
   b <- getsState $ getActorBody aid
@@ -332,8 +333,8 @@ fleeList aid = do
           (100 * mult * d, p)
         Right tgtPath | any (\q -> adjacent p q) tgtPath ->
           (10 * mult * d, p)
-        Left tgtPath@(_ : _) ->
-          let venemy = towards (bpos b) (last tgtPath)
+        Left AndPath{pathGoal} | bpos b /= pathGoal ->
+          let venemy = towards (bpos b) pathGoal
               vflee = towards (bpos b) p
               sq = euclidDistSqVector venemy vflee
               skew = case compare sq 2 of
@@ -341,7 +342,7 @@ fleeList aid = do
                 EQ -> 10 * sq
                 LT -> sq  -- going towards enemy (but may escape adjacent foes)
           in (mult * skew * d, p)
-        _ -> (mult * d, p)
+        _ -> (mult * d, p)  -- far from target path or even on target goal
       goodVic = map (rewardPath 10000) gtVic
                 ++ map (rewardPath 100) eqVic
       badVic = map (rewardPath 1) ltVic
