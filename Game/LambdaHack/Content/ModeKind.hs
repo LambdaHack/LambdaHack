@@ -15,7 +15,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Text as T
 import GHC.Generics (Generic)
-import qualified NLP.Miniutter.English as MU ()
 
 import Game.LambdaHack.Common.Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
