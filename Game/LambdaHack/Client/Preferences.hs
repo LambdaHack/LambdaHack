@@ -99,7 +99,7 @@ effectToBenefit cops fact eff =
 organBenefit :: GroupName ItemKind -> Kind.COps -> Faction -> (Int, Int)
 organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} fact =
   let f (!sacc, !pacc) !p _ !kind =
-        let paspect asp = p * aspectToBenefit cops asp
+        let paspect asp = p * aspectToBenefit asp
             peffect eff = p * fst (effectToBenefit cops fact eff)
               -- only the effect on the owner of the organ matters, because
               -- it's probably temprary so will likely vanish before it's
@@ -110,26 +110,27 @@ organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} fact =
   in ofoldlGroup' t f (0, 0)
 
 -- | Return the value to add to effect value.
-aspectToBenefit :: Kind.COps -> IK.Aspect -> Int
-aspectToBenefit _cops asp =
+aspectToBenefit :: IK.Aspect -> Int
+aspectToBenefit asp =
   case asp of
     IK.Timeout{} -> 0
     IK.AddHurtMelee p -> Dice.meanDice p
     IK.AddArmorMelee p -> Dice.meanDice p `divUp` 4
     IK.AddArmorRanged p -> Dice.meanDice p `divUp` 8
     IK.AddMaxHP p -> Dice.meanDice p
-    IK.AddMaxCalm p -> Dice.meanDice p `div` 5
-    IK.AddSpeed p -> Dice.meanDice p * 10000
-    IK.AddSight p -> Dice.meanDice p * 10
-    IK.AddSmell p -> Dice.meanDice p * 10
-    IK.AddShine p -> Dice.meanDice p
-    IK.AddNocto p -> Dice.meanDice p * 50
+    IK.AddMaxCalm p -> Dice.meanDice p `divUp` 5
+    IK.AddSpeed p -> Dice.meanDice p * 50
+      -- 1 speed ~ 5% melee; times 10 for no caps, escape, pillar-dancing, etc.
+    IK.AddSight p -> Dice.meanDice p * 5
+    IK.AddSmell p -> Dice.meanDice p
+    IK.AddShine p -> Dice.meanDice p * 2
+    IK.AddNocto p -> Dice.meanDice p * 10  -- > sight + light; stealth, slots
     IK.AddAggression{} -> 0
     IK.AddAbility _ p -> Dice.meanDice p * 5
 
-recordToBenefit :: Kind.COps -> AspectRecord -> [Int]
-recordToBenefit cops aspects =
-  map (aspectToBenefit cops) $ aspectRecordToList aspects
+recordToBenefit :: AspectRecord -> [Int]
+recordToBenefit aspects =
+  map aspectToBenefit $ aspectRecordToList aspects
 
 -- | Determine
 -- 1. the total benefit from picking an item up (to use or to put in equipment)
@@ -160,7 +161,7 @@ totalUsefulness !cops !fact !effects !aspects !item =
             speed = speedFromWeight (jweight item) throwVelocity
         in fromEnum $ - modifyDamageBySpeed rawDeltaHP speed * 10 `div` oneM
              -- 1 damage valued at 10, just as in @damageUsefulness@
-      aspBens = recordToBenefit cops aspects
+      aspBens = recordToBenefit aspects
       periodicEffBens = map (fst . effectToBenefit cops fact)
                             (stripRecharging effects)
       timeout = aTimeout aspects
