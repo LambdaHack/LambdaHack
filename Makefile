@@ -1,12 +1,8 @@
 play:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --dumpInitRngs
 
-
-xcplay:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --dumpInitRngs
-
 configure-debug:
-	cabal configure --enable-profiling --profiling-detail=all-functions --disable-optimization
+	cabal configure --enable-profiling --profiling-detail=all-functions -fwith_expensive_assertions --disable-optimization
 
 configure-prof:
 	cabal configure --enable-profiling --profiling-detail=exported-functions -frelease
