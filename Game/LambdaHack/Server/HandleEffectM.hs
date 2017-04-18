@@ -247,7 +247,7 @@ effectSem source target iid c recharged periodic effect = do
     IK.RefillCalm p -> effectRefillCalm execSfx p source target
     IK.Dominate -> effectDominate recursiveCall source target
     IK.Impress -> effectImpress recursiveCall execSfx source target
-    IK.Summon grp p -> effectSummon execSfx grp p source target periodic
+    IK.Summon grp p -> effectSummon execSfx grp p iid source target periodic
     IK.Ascend p -> effectAscend recursiveCall execSfx p source target pos
     IK.Escape{} -> effectEscape source target
     IK.Paralyze p -> effectParalyze execSfx p target
@@ -553,25 +553,26 @@ effectImpress recursiveCall execSfx source target = do
 
 -- Note that the Calm expended doesn't depend on the number of actors summoned.
 effectSummon :: (MonadAtomic m, MonadServer m)
-             => m () -> GroupName ItemKind -> Dice.Dice -> ActorId -> ActorId
-             -> Bool
+             => m () -> GroupName ItemKind -> Dice.Dice -> ItemId
+             -> ActorId -> ActorId -> Bool
              -> m Bool
-effectSummon execSfx grp nDm source target periodic = do
+effectSummon execSfx grp nDm iid source target periodic = do
   -- Obvious effect, nothing announced.
   Kind.COps{coTileSpeedup} <- getsState scops
   power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   actorAspect <- getsServer sactorAspect
+  item <- getsState $ getItemBody iid
   let sar = actorAspect EM.! source
       tar = actorAspect EM.! target
-  -- Verify Calm only at periodic activations. Otherwise summon uses up
-  -- the item, which prevent summoning getting out of control
-  -- (unless the item is durable, but normally it shouldn't be).
-  -- I don't verify Calm otherwise, to prevent an exploit via draining
-  -- one's calm on purpose when an item with good activation has a nasty
-  -- summoning side-effect.
-  if periodic && not (bproj sb) && not (calmEnough sb sar) then do
+      durable = IK.Durable `elem` jfeature item
+  -- Verify Calm only at periodic activations or if the item is durable.
+  -- Otherwise summon uses up the item, which prevents summoning getting
+  -- out of hand. I don't verify Calm otherwise, to prevent an exploit
+  -- via draining one's calm on purpose when an item with good activation
+  -- has a nasty summoning side-effect (the exploit still works on durables).
+  if (periodic || durable) && not (bproj sb) && not (calmEnough sb sar) then do
     unless (bproj sb) $ do
       execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonLackCalm source
     return False
