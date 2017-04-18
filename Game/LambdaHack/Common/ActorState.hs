@@ -162,13 +162,20 @@ getActorBody aid s = sactorD s EM.! aid
 
 getCarriedAssocs :: Actor -> State -> [(ItemId, Item)]
 getCarriedAssocs b s =
-  bagAssocs s $ EM.unionsWith const [binv b, beqp b, borgan b]
+  -- The trunk is important for a case of spotting a projectile with stolen
+  -- trunk organ (the projectile item). This actually does happen.
+  let trunk = EM.singleton (btrunk b) (1, [])
+  in bagAssocs s $ EM.unionsWith const [binv b, beqp b, borgan b, trunk]
 
 getCarriedIidCStore :: Actor -> [(ItemId, CStore)]
 getCarriedIidCStore b =
-  let bagCarried (cstore, bag) = map (,cstore) $ EM.keys bag
-  in concatMap bagCarried
-               [(CInv, binv b), (CEqp, beqp b), (COrgan, borgan b)]
+  -- The trunk is important for a case of dominating an actor with stolen
+  -- trunk organ.
+  let trunk = EM.singleton (btrunk b) (1, [])
+      bagCarried (cstore, bag) = map (,cstore) $ EM.keys bag
+  in concatMap bagCarried [ (CInv, binv b)
+                          , (CEqp, beqp b)
+                          , (COrgan, EM.unionWith const (borgan b) trunk) ]
 
 getContainerBag :: Container -> State -> ItemBag
 getContainerBag c s = case c of
