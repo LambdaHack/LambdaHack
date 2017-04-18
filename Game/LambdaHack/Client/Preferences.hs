@@ -132,13 +132,6 @@ recordToBenefit :: AspectRecord -> [Int]
 recordToBenefit aspects =
   map aspectToBenefit $ aspectRecordToList aspects
 
--- | Determine
--- 1. the total benefit from picking an item up (to use or to put in equipment)
--- 2. whether the item should be kept in equipment (not in pack nor stash)
--- 3. the benefit of applied the item to self
--- 4. the (usually negative) benefit of flinging an item at an opponent
---    or meleeing with it
---
 -- Result has non-strict fields, so arguments are forced to avoid leaks.
 -- When AI looks at items (including organs) more often, force the fields.
 totalUsefulness :: Kind.COps -> Faction -> [IK.Effect] -> AspectRecord -> Item
@@ -162,12 +155,29 @@ totalUsefulness !cops !fact !effects !aspects !item =
         in fromEnum $ - modifyDamageBySpeed rawDeltaHP speed * 10 `div` oneM
              -- 1 damage valued at 10, just as in @damageUsefulness@
       aspBens = recordToBenefit aspects
+      -- We take into account only the friendly value of the effects,
+      -- because they actor freely decides when to equip and unequip
+      -- the item and so reaps the benefits, without suffering drawbacks.
       periodicEffBens = map (fst . effectToBenefit cops fact)
                             (stripRecharging effects)
       timeout = aTimeout aspects
+      -- Timeout 1 means item usable each turn, so we consider it equivalent
+      -- to a permanent item --- withour timeout restriction.
+      -- (Similarly, item activating each turn for a 1-turn long
+      -- shielding is equivalent to a permanent shield.)
+      -- Timeout 2 means two such items are needed to use the effect each turn,
+      -- so a single item may be worth half of the permanet value.
+      -- However, e.g., for detection, activating every few turns is enough.
+      -- For weapons, it depends. Sometimes a weapon with disorienting effect
+      -- should be used once every couple of turns and stronger raw damage
+      -- weapons all the remaining time. In other cases a single weapon
+      -- with a devastating effect would ideally be available each turn.
+      -- We don't want to undervalue rarely used items with long timeouts
+      -- and we think that most interesting gameplay comes from alternating
+      -- item use, so we arbitrarily set the full value timeout to 3.
       periodicBens | timeout == 0 = []
                    | otherwise =
-        map (\eff -> eff * 10 `divUp` timeout) periodicEffBens
+        map (\eff -> min eff (eff * 3 `divUp` timeout)) periodicEffBens
       eqpBens = aspBens ++ periodicBens
       sumBens = sum eqpBens
       -- We don't take into account crippling maluses from effects
