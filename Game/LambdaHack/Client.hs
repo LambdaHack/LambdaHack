@@ -4,7 +4,7 @@
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Client
   ( -- * Re-exported from "Game.LambdaHack.Client.LoopClient"
-    loopUI
+    loopCli
   ) where
 
 import Prelude ()

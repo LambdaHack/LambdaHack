@@ -2,7 +2,7 @@
 -- | The main loop of the client, processing human and computer player
 -- moves turn by turn.
 module Game.LambdaHack.Client.LoopM
-  ( loopUI
+  ( loopCli
   ) where
 
 import Prelude ()
@@ -48,13 +48,13 @@ initUI copsClient sconfig sdebugCli = do
                       -- a step south-east, less alarming
 
 -- | The main game loop for an AI or UI client.
-loopUI :: ( MonadClientSetup m
-          , MonadClientUI m
-          , MonadAtomic m
-          , MonadClientReadResponse m
-          , MonadClientWriteRequest m )
-       => KeyKind -> Config -> DebugModeCli -> m ()
-loopUI copsClient sconfig sdebugCli = do
+loopCli :: ( MonadClientSetup m
+           , MonadClientUI m
+           , MonadAtomic m
+           , MonadClientReadResponse m
+           , MonadClientWriteRequest m )
+        => KeyKind -> Config -> DebugModeCli -> m ()
+loopCli copsClient sconfig sdebugCli = do
   hasUI <- clientHasUI
   if not hasUI then initAI sdebugCli else initUI copsClient sconfig sdebugCli
   -- Warning: state and client state are invalid here, e.g., sdungeon

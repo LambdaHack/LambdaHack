@@ -162,8 +162,9 @@ getActorBody aid s = sactorD s EM.! aid
 
 getCarriedAssocs :: Actor -> State -> [(ItemId, Item)]
 getCarriedAssocs b s =
-  -- The trunk is important for a case of spotting a projectile with stolen
-  -- trunk organ (the projectile item). This actually does happen.
+  -- The trunk is important for a case of spotting a caught projectile
+  -- that is one with a stolen trunk organ (the projectile item).
+  -- This actually does happen.
   let trunk = EM.singleton (btrunk b) (1, [])
   in bagAssocs s $ EM.unionsWith const [binv b, beqp b, borgan b, trunk]
 
@@ -237,18 +238,19 @@ getLocalTime :: LevelId -> State -> Time
 getLocalTime lid s = ltime $ sdungeon s EM.! lid
 
 regenCalmDelta :: Actor -> AspectRecord -> State -> Int64
-regenCalmDelta b AspectRecord{aMaxCalm} s =
+regenCalmDelta body AspectRecord{aMaxCalm} s =
   let calmIncr = oneM  -- normal rate of calm regen
-      maxDeltaCalm = xM aMaxCalm - bcalm b
-      -- Worry actor by enemies felt (even if not seen)
-      -- on the level within 3 steps.
-      allFoes = warActorRegularList (bfid b) (blid b) s
-      isHeard body = not (waitedLastTurn body)
-                     && chessDist (bpos b) (bpos body) <= 3
-      noisyFoes = filter isHeard allFoes
-  in if null noisyFoes
-     then min calmIncr (max 0 maxDeltaCalm)  -- in case Calm is over max
-     else minusM  -- even if all calmness spent, keep informing the client
+      maxDeltaCalm = xM aMaxCalm - bcalm body
+      fact = (EM.! bfid body) . sfactionD $ s
+      -- Worry actor by (even projectile) enemies felt (even if not seen)
+      -- on the level within 3 steps. Even dying, but not hiding in wait.
+      isHeardFoe b = blid b == blid body
+                     && chessDist (bpos b) (bpos body) <= 3  -- a bit costly
+                     && not (waitedLastTurn b)  -- uncommon
+                     && inline isAtWar fact (bfid b)  -- costly
+  in if any isHeardFoe $ EM.elems $ sactorD s
+     then minusM  -- even if all calmness spent, keep informing the client
+     else min calmIncr (max 0 maxDeltaCalm)  -- in case Calm is over max
 
 actorInAmbient :: Actor -> State -> Bool
 actorInAmbient b s =

@@ -110,7 +110,7 @@ executorSer cops copsClient sdebugNxtCmdline = do
   -- options and is never updated with config options, etc.
   let sdebugMode = applyConfigToDebug cops sconfig $ sdebugCli sdebugNxt
       -- Partially applied main loop of the clients.
-      executorClient = executorCli (loopUI copsClient sconfig sdebugMode)
+      executorClient = executorCli (loopCli copsClient sconfig sdebugMode)
   -- Wire together game content, the main loop of game clients
   -- and the game server loop.
   let m = loopSer sdebugNxt sconfig executorClient
