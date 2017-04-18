@@ -141,11 +141,11 @@ isSuspectKind t =
 
 -- | Validate all tile kinds.
 --
--- If tiles look the same on the map, the description and the substantial
+-- If tiles look the same on the map (symbol and color), their substantial
 -- features should be the same, too. Otherwise, the player has to inspect
 -- manually all the tiles of that kind, or even experiment with them,
 -- to see if any is special. This would be tedious. Note that iiles may freely
--- differ wrt dungeon generation, AI preferences, etc.
+-- differ wrt text blurb, dungeon generation, AI preferences, etc.
 validateAllTileKind :: [TileKind] -> [Text]
 validateAllTileKind lt =
   let listVis f = map (\kt -> ( ( tsymbol kt

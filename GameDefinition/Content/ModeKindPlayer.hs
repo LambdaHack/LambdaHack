@@ -130,7 +130,7 @@ hiHero, hiRaid, hiDweller, hiEscapist :: HiCondPoly
 -- Heroes rejoice in loot.
 hiHero = [ ( [(HiLoot, 1)]
            , [minBound..maxBound] )
-         , ( [(HiConst, 1000), (HiLoss, -100)]
+         , ( [(HiConst, 1000), (HiLoss, -1)]
            , victoryOutcomes )
          ]
 
