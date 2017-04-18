@@ -59,7 +59,7 @@ effectToBenefit cops fact eff =
     IK.CreateItem{} -> (30, 0)
     IK.DropItem _ _ COrgan grp ->
       -- Contrived: we assume actor has an average number of copies
-      -- of one kind of organ of average benefit.
+      -- of one kind of organ of average benefit and all are dropped.
       let (total, count) = organBenefit grp cops fact
       in delta $ - total `divUp` count
            -- the same when dropped from me and from foe
@@ -94,18 +94,19 @@ effectToBenefit cops fact eff =
     IK.Unique -> delta 0
     IK.Periodic -> delta 0
 
--- We ignore the possibility of, e.g., temporary extra clawed limb, etc.,
--- so we don't take into account idamage of the item kinds.
+-- We assume the organ is temporary and quasi-periodic with timeout 0
+-- and also that it doesn't provide any functionality, e.g., detection
+-- or burning or raw damage. However, we take into account recharging
+-- effects, knowing in some temporary organs, e.g., poison or regeneration,
+-- they are triggered at each item copy destruction. They are applied to self,
+-- hence we take the friendly component of valuation.
 organBenefit :: GroupName ItemKind -> Kind.COps -> Faction -> (Int, Int)
 organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} fact =
   let f (!sacc, !pacc) !p _ !kind =
         let paspect asp = p * aspectToBenefit asp
             peffect eff = p * fst (effectToBenefit cops fact eff)
-              -- only the effect on the owner of the organ matters, because
-              -- it's probably temprary so will likely vanish before it's
-              -- used on an enemy
         in ( sacc + sum (map paspect $ IK.iaspects kind)
-                  + sum (map peffect $ IK.ieffects kind)
+                  + sum (map peffect $ stripRecharging $ IK.ieffects kind)
            , pacc + p )
   in ofoldlGroup' t f (0, 0)
 
@@ -129,8 +130,7 @@ aspectToBenefit asp =
     IK.AddAbility _ p -> Dice.meanDice p * 5
 
 recordToBenefit :: AspectRecord -> [Int]
-recordToBenefit aspects =
-  map aspectToBenefit $ aspectRecordToList aspects
+recordToBenefit aspects = map aspectToBenefit $ aspectRecordToList aspects
 
 -- Result has non-strict fields, so arguments are forced to avoid leaks.
 -- When AI looks at items (including organs) more often, force the fields.
