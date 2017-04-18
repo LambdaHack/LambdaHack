@@ -92,7 +92,7 @@ effectToBenefit cops fact eff =
       -- simplified: no deduction for the need to recharge
     IK.Temporary _ -> delta 0
     IK.Unique -> delta 0
-    IK.Periodic -> delta 0
+    IK.Periodic -> delta 0  -- considered in totalUsefulness
 
 -- We assume the organ is temporary and quasi-periodic with timeout 0
 -- and also that it doesn't provide any functionality, e.g., detection
@@ -141,32 +141,10 @@ totalUsefulness !cops !fact !effects !aspects !item =
       effDice = - damageUsefulness item
       f (friend, foe) (accFriend, accFoe) = (friend + accFriend, foe + accFoe)
       (effFriend, effFoe) = foldr f (0, 0) effPairs
-      benApply = effFriend + effDice  -- hits self with dice too, when applying
-      benMelee = effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
-      benFling = effFoe + benFlingDice -- nothing in @eqpSum@; normally not worn
-      benFlingDice | jdamage item <= 0 = 0  -- speedup
-                   | otherwise = min 0 $
-        let hurtMult = 100 + min 99 (max (-99) (aHurtMelee aspects))
-              -- assumes no enemy armor and no block
-            dmg = Dice.meanDice (jdamage item)
-            rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
-            IK.ThrowMod{IK.throwVelocity} = strengthToThrow item
-            speed = speedFromWeight (jweight item) throwVelocity
-        in fromEnum $ - modifyDamageBySpeed rawDeltaHP speed * 10 `div` oneM
-             -- 1 damage valued at 10, just as in @damageUsefulness@
-      aspBens = recordToBenefit aspects
-      -- We take into account only the friendly value of the effects,
-      -- because they actor freely decides when to equip and unequip
-      -- the item and so reaps the benefits, without suffering drawbacks.
-      periodicEffBens = map (fst . effectToBenefit cops fact)
-                            (stripRecharging effects)
-      timeout = aTimeout aspects
-      -- Timeout 1 means item usable each turn, so we consider it equivalent
-      -- to a permanent item --- withour timeout restriction.
-      -- (Similarly, item activating each turn for a 1-turn long
-      -- shielding is equivalent to a permanent shield.)
+      -- Timeout between 0 and 1 means item usable each turn, so we consider
+      -- it equivalent to a permanent item --- without timeout restriction.
       -- Timeout 2 means two such items are needed to use the effect each turn,
-      -- so a single item may be worth half of the permanet value.
+      -- so a single such item may be worth half of the permanet value.
       -- However, e.g., for detection, activating every few turns is enough.
       -- For weapons, it depends. Sometimes a weapon with disorienting effect
       -- should be used once every couple of turns and stronger raw damage
@@ -175,17 +153,62 @@ totalUsefulness !cops !fact !effects !aspects !item =
       -- We don't want to undervalue rarely used items with long timeouts
       -- and we think that most interesting gameplay comes from alternating
       -- item use, so we arbitrarily set the full value timeout to 3.
-      periodicBens | timeout == 0 = []
-                   | otherwise =
-        map (\eff -> min eff (eff * 3 `divUp` timeout)) periodicEffBens
-      eqpBens = aspBens ++ periodicBens
+      timeout = aTimeout aspects
+      (chargeFriend, chargeFoe) =
+        let scaleChargeBens bens
+              | timeout <= 3 = bens
+              | otherwise = map (\eff -> min eff (eff * 3 `divUp` timeout)) bens
+            (cfriend, cfoe) = unzip $ map (effectToBenefit cops fact)
+                                          (stripRecharging effects)
+        in (scaleChargeBens cfriend, scaleChargeBens cfoe)
+      -- If the item is periodic, we add charging effects to equipment benefit,
+      -- but we don't assign periodic bonus or malus, because periodic items
+      -- are bad in that one can't activate them at will and they take
+      -- equipment space, and good in that one saves a turn, not having
+      -- to manually activate them. Additionally, no weapon can be periodic,
+      -- because damage would be applied to the fighter, so a large class
+      -- of items with timeout is excluded from the consideration.
+      -- Generally, periodic seems more helpful on items with low timeout
+      -- and obviously beneficial effects, e.g., frequent periodic healing
+      -- or nearby detection is better, but infrequent periodic teleportation
+      -- or harmful explosion is worse. But the rule is not strict and also
+      -- dependent on gameplay context of the moment, hence no numerical value.
+      periodic = IK.Periodic `elem` effects
+      -- If recharging effects not periodic, we add the friend part,
+      -- because they are applied to self. If they are periodic we can't
+      -- effectively apply them, becasue they are never recharged,
+      -- because they activate as soon as recharged.
+      benApply = effFriend + effDice  -- hits self with dice too, when applying
+                 + if periodic then 0 else sum chargeFriend
+      -- For melee, we add the foe part.
+      benMelee = effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
+                 + if periodic then 0 else sum chargeFoe
+      -- The periodic effects, if any, are activated when projectile flies,
+      -- but not when it hits, so they are not added to @benFling@.
+      -- However, if item is not periodic, the recharging effects
+      -- are activated at projectile impact, hence their value is added.
+      benFling = effFoe + benFlingDice -- nothing in @eqpSum@; normally not worn
+                 + if periodic then 0 else sum chargeFoe
+      benFlingDice | jdamage item <= 0 = 0  -- speedup
+                   | otherwise = min 0 $
+        let hurtMult = 100 + min 99 (max (-99) (aHurtMelee aspects))
+              -- assumes no enemy armor and no block
+            dmg = Dice.meanDice (jdamage item)
+            rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
+            -- For simplicity, we ignore range bonus/malus and @Lobable@.
+            IK.ThrowMod{IK.throwVelocity} = strengthToThrow item
+            speed = speedFromWeight (jweight item) throwVelocity
+        in fromEnum $ - modifyDamageBySpeed rawDeltaHP speed * 10 `div` oneM
+             -- 1 damage valued at 10, just as in @damageUsefulness@
+      -- For equipment benefit, we take into account only the friendly
+      -- value of the recharging effects, because they applied to self.
+      eqpBens = recordToBenefit aspects
+                ++ if periodic then chargeFriend else []
       sumBens = sum eqpBens
-      -- We don't take into account crippling maluses from effects
-      -- but they are rare. However, permanent maluses from aspects
-      -- are more often obviously bad, unlike periodic or on-use (effect) ones.
-      -- Examples of crippling maluses are, e.g., such that make melee
+      -- Equipped items may incur crippling maluses via aspects and periodic
+      -- effects. Examples of crippling maluses are, e.g., such that make melee
       -- impossible or moving impossible. AI can't live with those and can't
-      -- value those competently agains bonuses the item provides.
+      -- value those competently against bonuses the item provides.
       cripplingDrawback = not (null eqpBens) && minimum eqpBens < -20
       eqpSum = sumBens - if cripplingDrawback then 100 else 0
       -- If a weapon heals enemy at impact, it won't be used for melee
