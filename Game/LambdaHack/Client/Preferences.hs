@@ -87,9 +87,8 @@ effectToBenefit cops fact eff =
                   (allFriend, allFoe) = foldr f (0, 0) bs
               in (allFriend `divUp` length bs, allFoe `divUp` length bs)
     IK.OnSmash _ -> delta 0
-      -- can be beneficial; we'd need to analyze explosions
-    IK.Recharging e -> effectToBenefit cops fact e
-      -- simplified: no deduction for the need to recharge
+      -- can be beneficial; we'd need to analyze explosions, range, etc.
+    IK.Recharging _ -> delta 0  -- taken into account separately
     IK.Temporary _ -> delta 0
     IK.Unique -> delta 0
     IK.Periodic -> delta 0  -- considered in totalUsefulness
