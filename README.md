@@ -5,7 +5,7 @@ LambdaHack
 [![Hackage](https://img.shields.io/hackage/v/LambdaHack.svg)](https://hackage.haskell.org/package/LambdaHack)
 [![Join the chat at https://gitter.im/LambdaHack/LambdaHack](https://badges.gitter.im/LambdaHack/LambdaHack.svg)](https://gitter.im/LambdaHack/LambdaHack?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-LambdaHack is a [Haskell] [1] game engine library for [roguelike] [2]
+LambdaHack is a Haskell[1] game engine library for roguelike[2]
 games of arbitrary theme, size and complexity. You specify the content
 to be procedurally generated, including game rules and AI behaviour.
 The library lets you compile a ready-to-play game binary, using either
@@ -28,20 +28,20 @@ called LambdaHack and described in [PLAYING.md](GameDefinition/PLAYING.md).
 
 Other games known to use the LambdaHack library:
 
-* [Allure of the Stars] [6], a near-future Sci-Fi game
-* [Space Privateers] [8], an adventure game set in far future
+* Allure of the Stars[6], a near-future Sci-Fi game
+* Space Privateers[8], an adventure game set in far future
 
 Note: the engine and the example game are bundled together in a single
-[Hackage] [3] package released under the permissive `BSD3` license.
+Hackage[3] package released under the permissive `BSD3` license.
 You are welcome to create your own games by forking and modifying
 the single package, but please consider eventually splitting your changes
 into a separate content-only package that depends on the upstream
 engine library. This will help us exchange ideas and share improvements
 to the common codebase. Alternatively, you can already start the development
-in separation by cloning and rewriting [Allure of the Stars] [10]
+in separation by cloning and rewriting Allure of the Stars[10]
 or any other pure game content package and mix and merge with the example
 LambdaHack game rules at will. Note that the LambdaHack sample game
-derives from the [Hack/Nethack visual and narrative tradition] [9],
+derives from the Hack/Nethack visual and narrative tradition[9],
 while Allure of the Stars uses the more free-form Moria/Angband style
 (it also uses the `AGPL` license, and `BSD3 + AGPL = AGPL`,
 so make sure you want to liberate your code and content to such an extent).
@@ -51,7 +51,7 @@ Installation from binary archives
 ---------------------------------
 
 Pre-compiled game binaries for some platforms are available through
-the [release page] [11] and from the [Nix Packages Collection] [12].
+the release page[11] and from the Nix Packages Collection[12].
 To manually install a binary archive, make sure you have the GTK
 libraries suite on your system, unpack the LambdaHack archive
 and run the executable in the unpacked directory.
@@ -95,20 +95,20 @@ Compilation from source
 
 If you want to compile your own native binaries from the source code,
 use Cabal (already a part of your OS distribution, or available within
-[The Haskell Platform] [7]), which also takes care of all the dependencies.
+The Haskell Platform[7]), which also takes care of all the dependencies.
 
 The recommended frontend for LambdaHack is based on SDL2, so you need the SDL2
 libraries for your OS. On Linux, remember to install the -dev versions as well,
 e.g., libsdl2-dev and libsdl2-ttf-dev on Ubuntu Linux 16.04.
 
 The latest official version of the LambdaHack library can be downloaded,
-compiled for SDL2 and installed automatically by Cabal from [Hackage] [3]
+compiled for SDL2 and installed automatically by Cabal from Hackage[3]
 as follows
 
     cabal update
     cabal install LambdaHack
 
-For a newer snapshot, download source of LambdaHack from [github] [5]
+For a newer snapshot, download source of LambdaHack from github[5]
 and run Cabal from the main directory
 
     cabal install
@@ -122,9 +122,9 @@ use Cabal flags, e.g,
     cabal install -fvty
 
 To compile with GTK2 (deprecated but supported), you need GTK libraries
-for your OS. On Windows follow [the same steps as for Wine] [13].
+for your OS. On Windows follow the same steps as for Wine[13].
 On OSX, if you encounter problems, you may want to
-[compile the GTK libraries from sources] [14]. Invoke Cabal as follows
+compile the GTK libraries from sources[14]. Invoke Cabal as follows
 
     cabal install -fgtk gtk2hs-buildtools .
 
@@ -181,7 +181,7 @@ because HPC requires a clean exit to save data files.
 Further information
 -------------------
 
-For more information, visit the [wiki] [4]
+For more information, visit the wiki[4]
 and see [PLAYING.md](GameDefinition/PLAYING.md), [CREDITS](CREDITS)
 and [LICENSE](LICENSE).
 
