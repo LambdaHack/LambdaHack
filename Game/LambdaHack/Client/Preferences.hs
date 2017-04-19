@@ -89,12 +89,12 @@ effectToBenefit cops fact eff =
     IK.ApplyPerfume -> delta 0  -- depends on smell sense of friends and foes
     IK.OneOf efs ->
       let bs = map (effectToBenefit cops fact) efs
-      in if any (\(friend, foe) -> friend < -10 || foe > 10) bs
+      in if any (\(self, foe) -> self < -10 || foe > 10) bs
          then delta 0  -- mixed blessing; can't tell how bad/good this is
-         else let f (friend, foe) (accFriend, accFoe) =
-                    (friend + accFriend, foe + accFoe)
-                  (allFriend, allFoe) = foldr f (0, 0) bs
-              in (allFriend `divUp` length bs, allFoe `divUp` length bs)
+         else let f (self, foe) (accSelf, accFoe) =
+                    (self + accSelf, foe + accFoe)
+                  (allSelf, allFoe) = foldr f (0, 0) bs
+              in (allSelf `divUp` length bs, allFoe `divUp` length bs)
     IK.OnSmash _ -> delta 0
       -- can be beneficial; we'd need to analyze explosions, range, etc.
     IK.Recharging _ -> delta 0  -- taken into account separately
@@ -107,7 +107,7 @@ effectToBenefit cops fact eff =
 -- or burning or raw damage. However, we take into account recharging
 -- effects, knowing in some temporary organs, e.g., poison or regeneration,
 -- they are triggered at each item copy destruction. They are applied to self,
--- hence we take the friendly component of valuation.
+-- hence we take the self component of valuation.
 organBenefit :: GroupName ItemKind -> Kind.COps -> Faction -> (Int, Int)
 organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} fact =
   let f (!sacc, !pacc) !p _ !kind =
@@ -147,8 +147,8 @@ totalUsefulness :: Kind.COps -> Faction -> [IK.Effect] -> AspectRecord -> Item
 totalUsefulness !cops !fact !effects !aspects !item =
   let effPairs = map (effectToBenefit cops fact) effects
       effDice = - damageUsefulness item
-      f (friend, foe) (accFriend, accFoe) = (friend + accFriend, foe + accFoe)
-      (effFriend, effFoe) = foldr f (0, 0) effPairs
+      f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
+      (effSelf, effFoe) = foldr f (0, 0) effPairs
       -- Timeout between 0 and 1 means item usable each turn, so we consider
       -- it equivalent to a permanent item --- without timeout restriction.
       -- Timeout 2 means two such items are needed to use the effect each turn,
@@ -162,13 +162,13 @@ totalUsefulness !cops !fact !effects !aspects !item =
       -- and we think that most interesting gameplay comes from alternating
       -- item use, so we arbitrarily set the full value timeout to 3.
       timeout = aTimeout aspects
-      (chargeFriend, chargeFoe) =
+      (chargeSelf, chargeFoe) =
         let scaleChargeBens bens
               | timeout <= 3 = bens
               | otherwise = map (\eff -> min eff (eff * 3 `divUp` timeout)) bens
-            (cfriend, cfoe) = unzip $ map (effectToBenefit cops fact)
-                                          (stripRecharging effects)
-        in (scaleChargeBens cfriend, scaleChargeBens cfoe)
+            (cself, cfoe) = unzip $ map (effectToBenefit cops fact)
+                                        (stripRecharging effects)
+        in (scaleChargeBens cself, scaleChargeBens cfoe)
       -- If the item is periodic, we add charging effects to equipment benefit,
       -- but we don't assign periodic bonus or malus, because periodic items
       -- are bad in that one can't activate them at will and they take
@@ -182,12 +182,12 @@ totalUsefulness !cops !fact !effects !aspects !item =
       -- or harmful explosion is worse. But the rule is not strict and also
       -- dependent on gameplay context of the moment, hence no numerical value.
       periodic = IK.Periodic `elem` effects
-      -- If recharging effects not periodic, we add the friend part,
+      -- If recharging effects not periodic, we add the self part,
       -- because they are applied to self. If they are periodic we can't
       -- effectively apply them, becasue they are never recharged,
       -- because they activate as soon as recharged.
-      benApply = effFriend + effDice  -- hits self with dice too, when applying
-                 + if periodic then 0 else sum chargeFriend
+      benApply = effSelf + effDice  -- hits self with dice too, when applying
+                 + if periodic then 0 else sum chargeSelf
       -- For melee, we add the foe part.
       benMelee = effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
                  + if periodic then 0 else sum chargeFoe
@@ -208,10 +208,10 @@ totalUsefulness !cops !fact !effects !aspects !item =
             speed = speedFromWeight (jweight item) throwVelocity
         in fromEnum $ - modifyDamageBySpeed rawDeltaHP speed * 10 `div` oneM
              -- 1 damage valued at 10, just as in @damageUsefulness@
-      -- For equipment benefit, we take into account only the friendly
+      -- For equipment benefit, we take into account only the self
       -- value of the recharging effects, because they applied to self.
       eqpBens = recordToBenefit aspects
-                ++ if periodic then chargeFriend else []
+                ++ if periodic then chargeSelf else []
       sumBens = sum eqpBens
       -- Equipped items may incur crippling maluses via aspects and periodic
       -- effects. Examples of crippling maluses are, e.g., such that make melee
