@@ -220,9 +220,6 @@ itemPrice (item, jcount) =
     '*' -> jcount * 100
     _   -> 0
 
--- Non-durable item that hurts doesn't go into equipment by default,
--- but if it is in equipment or among organs, it's used for melee
--- nevertheless, e.g., thorns.
 goesIntoEqp :: Item -> Bool
 goesIntoEqp item = IK.Equipable `elem` jfeature item
                    || IK.Meleeable `elem` jfeature item

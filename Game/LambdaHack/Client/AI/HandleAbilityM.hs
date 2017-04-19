@@ -639,8 +639,8 @@ projectItem aid = do
           -- and no actors or obstacles along the path.
           benList <- condProjectListM skill aid
           localTime <- getsState $ getLocalTime (blid b)
-          let coeff CGround = 2
-              coeff COrgan = 3  -- can't give to others
+          let coeff CGround = 2  -- turn saved for pickup
+              coeff COrgan = assert `failure` benList
               coeff CEqp = 100000  -- must hinder currently
               coeff CInv = 1
               coeff CSha = 1
@@ -648,26 +648,19 @@ projectItem aid = do
                       , (iid, itemFull@ItemFull{itemBase}) ) =
                 -- We assume if the item has a timeout, most effects are under
                 -- Recharging, so no point projecting if not recharged.
-                -- This is not an obvious assumption, so recharging is not
-                -- included in permittedProject and can be tweaked here easily.
+                -- This changes in time, so recharging is not included
+                -- in @condProjectListM@, but checked here, just before fling.
                 let recharged = hasCharge localTime itemFull
                     trange = totalRange itemBase
                     bestRange =
                       chessDist (bpos b) fpos + 2  -- margin for fleeing
                     rangeMult =  -- penalize wasted or unsafely low range
                       10 + max 0 (10 - abs (trange - bestRange))
-                    durable = IK.Durable `elem` jfeature itemBase
-                    durableBonus = if durable
-                                   then 2  -- we or foes keep it after the throw
-                                   else 1
-                    benR = durableBonus
-                           * coeff cstore
+                    benR = coeff cstore
                            * case mben of
                                Nothing -> -10  -- experiment if no good options
                                Just Benefit{benFling} -> benFling
-                           * (if recharged then 1 else 0)
-                in if benR < 0
-                      && trange >= chessDist (bpos b) fpos
+                in if benR < 0 && trange >= chessDist (bpos b) fpos && recharged
                    then Just ( - benR * rangeMult `div` 10
                              , ReqProject fpos newEps iid cstore )
                    else Nothing
@@ -728,15 +721,13 @@ applyItem aid applyGroup = do
               foldr getP False ieffects
             _ -> False
         ApplyAll -> True
-      coeff CGround = 2
-      coeff COrgan = 3  -- can't give to others
-      coeff CEqp = 100000  -- must hinder currently
+      coeff CGround = 2  -- turn saved for pickup
+      coeff COrgan = assert `failure` benList
+      coeff CEqp = 1
       coeff CInv = 1
       coeff CSha = 1
       fTool ((mben, (_, cstore)), (iid, itemFull@ItemFull{itemBase})) =
-        let durableBonus = if IK.Durable `elem` jfeature itemBase
-                           then 5  -- we keep it after use
-                           else 1
+        let durable = IK.Durable `elem` jfeature itemBase
             oldGrps = map (toGroupName . jname) organs
             onlyVoidlyDropsOrgan =
               -- We check if the only effect of the item is that it drops
@@ -753,14 +744,15 @@ applyItem aid applyGroup = do
                  && null (newGrps `intersect` oldGrps)
                  && length (strengthEffect f itemFull) == 1
             benR = case mben of
-                     Nothing -> 0
-                       -- experimenting is fun, but it's better to risk
-                       -- foes' skin than ours
-                     Just Benefit{benApply} -> benApply
-                   * (if onlyVoidlyDropsOrgan then 0 else 1)
-                   * durableBonus
-                   * coeff cstore
-        in if itemLegal itemFull && benR > 0
+              Nothing -> 0
+                -- experimenting is fun, but it's better to risk
+                -- foes' skin than ours
+              Just Benefit{benApply} ->
+                benApply
+                * if cstore == CEqp && not durable
+                  then 100000  -- must hinder currently
+                  else coeff cstore
+        in if itemLegal itemFull && benR > 0 && not onlyVoidlyDropsOrgan
            then Just (benR, ReqApply iid cstore)
            else Nothing
       benTool = mapMaybe fTool benList
