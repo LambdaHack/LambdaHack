@@ -222,10 +222,10 @@ actionStrategy aid retry = do
             <$> projectItem aid  -- equivalent of @condCanProject@ called inside
           , condAimEnemyPresent && not condInMelee )
         , ( [AbApply]
-          , stratToFreq 2 $ (toAny :: ToAny 'AbApply)
+          , stratToFreq 1 $ (toAny :: ToAny 'AbApply)
             <$> applyItem aid ApplyAll  -- use any potion or scroll
           , (condAimEnemyPresent || condThreat 9)  -- can affect enemies
-            && bhp body < xM (aMaxHP ar - 10) )
+            && hpEnough body ar )
                  -- don't waste healing, escape, etc., if in perfect condition
         , ( [AbMove]
           , stratToFreq (if | condInMelee ->
