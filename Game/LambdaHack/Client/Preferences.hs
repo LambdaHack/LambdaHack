@@ -337,15 +337,20 @@ totalUsefulness !cops !fact !effects !aspects !item =
       -- If a weapon heals enemy at impact, it won't be used for melee
       -- (but can be equipped anyway). If it harms wearer too much,
       -- won't be worn but still may be flung, etc.
+      durable = IK.Durable `elem` jfeature item
       (benInEqp, benPickup)
         | isMelee item && benMelee < 0 && eqpSum >= -20 =
-          ( True
-          , eqpSum                                -- equip
-            + max 0 (max benApply (- benMelee)))  -- and apply or melee or none
+          ( True  -- equip, melee crucial, and only weapons in eqp can be used
+          , if durable
+            then eqpSum
+                 + max 0 (max benApply (- benMelee))  -- apply or melee or not
+            else max 0 (max benApply (- benMelee)))  -- melee is predominant
         | goesIntoEqp item && eqpSum > 0 =  -- weapon or other equippable
-          ( True
-          , eqpSum             -- equip
-            + max 0 benApply)  -- and apply or not but don't fling (no unequip)
+          ( True  -- equip; long time bonus usually outweighs fling or apply
+          , eqpSum  -- possibly spent turn equipping, so reap the benefits
+            + if durable
+              then max 0 benApply  -- apply or not but don't fling
+              else 0)  -- don't remove from equipment by using up
         | otherwise =
           (False, max 0 (max benApply (- benFling)))  -- apply or fling
   in Benefit{..}
