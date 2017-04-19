@@ -666,9 +666,7 @@ projectItem aid = do
                                Nothing -> -10  -- experiment if no good options
                                Just Benefit{benFling} -> benFling
                            * (if recharged then 1 else 0)
-                in if -- Melee weapon is usually needed in hand.
-                      not (isMelee itemBase)
-                      && benR < 0
+                in if benR < 0
                       && trange >= chessDist (bpos b) fpos
                    then Just ( - benR * rangeMult `div` 10
                              , ReqProject fpos newEps iid cstore )

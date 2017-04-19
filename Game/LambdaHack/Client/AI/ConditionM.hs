@@ -151,11 +151,7 @@ condCanProjectM skill aid = do
   -- This is a simplified version of conditions in @projectItem@.
   -- In particular, range and charge are ignored, because they may change
   -- by the time the position for the fling is reached.
-  let isMissile ((Nothing, _), (_, itemFull)) =
-        -- Melee weapon is usually needed in hand.
-        not (isMelee $ itemBase itemFull)
-      isMissile ((Just Benefit{benFling}, _), (_, itemFull)) =
-        benFling < 0 && not (isMelee $ itemBase itemFull)
+  let isMissile ((mben, _), _) = maybe True (< 0) $ benFling <$> mben
   return $ any isMissile benList
 
 condProjectListM :: MonadClient m
@@ -178,9 +174,11 @@ condProjectListM skill aid = do
                               heavilyDistressed condNotCalmEnough
                               b ar itemFull
       q itemFull cstore =
-        if cstore /= CEqp || hind itemFull -- even if durable, don't lose
-        then permittedProjectAI skill calmE itemFull
-        else False
+        -- Weapon is needed in hand, melee is crucial.
+        not (isMelee $ itemBase itemFull)
+        && if cstore /= CEqp || hind itemFull -- even if durable, don't lose
+           then permittedProjectAI skill calmE itemFull
+           else False
   benAvailableItems aid q $ [CEqp, CInv, CGround] ++ [CSha | calmE]
 
 -- | Produce the list of items with a given property available to the actor
