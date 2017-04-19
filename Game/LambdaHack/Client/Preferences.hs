@@ -143,6 +143,29 @@ averageTurnValue = 10
 avgItemDelay :: Int
 avgItemDelay = 3
 
+-- The average time between item being found (and enough skill obtained
+-- to use it) and item not being used any more. We specifically ignore
+-- item not being used any more, because it is not durable and is consumed.
+-- However we do consider actor mortality (especially common for spawners)
+-- and item contending with many other very different but valuable items
+-- that all vie for the same turn needed to activate them (especially common
+-- for non-spawners). Another reason is item getting obsolete or duplicated,
+-- by finding a strictly better item or an identical item.
+-- The @avgItemLife@ constant only makes sense for items with non-periodic
+-- effects, because the effects' benefit is not cumulative
+-- by just placing them in equipment and they cost a turn to activate.
+-- We set the value to 30, assuming if the actor finds an item, then he is
+-- most likely at an unlooted level, so he will find more loot soon,
+-- or he is in a battle, so he will die soon (or win even more loot).
+avgItemLife :: Int
+avgItemLife = 30
+
+-- The value of durable item is this many times higher than non-durable,
+-- because the item will on average be activated this many times
+-- before it stops being used.
+durabilityMult :: Int
+durabilityMult = avgItemLife `div` avgItemDelay
+
 -- We assume the organ is temporary (@Temporary@, @Periodic@, @Timeout 0@)
 -- and also that it doesn't provide any functionality, e.g., detection
 -- or burning or raw damage. However, we take into account recharging
