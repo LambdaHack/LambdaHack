@@ -24,11 +24,11 @@ import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 
--- | How much AI benefits from applying the effect. Multipllied by item p.
--- Negative means harm to the enemy when thrown at him. Effects with zero
--- benefit won't ever be used, neither actively nor passively.
+-- | How much AI benefits from applying the effect.
 -- The first component is benefit when applied to self, the second
 -- is benefit (preferably negative) when applied to enemy.
+-- This represents benefit from using the effect every @avgItemDelay@ turns,
+-- so if the item is not durable, the value is adjusted down elsewhere.
 effectToBenefit :: Kind.COps -> Faction -> IK.Effect -> (Int, Int)
 effectToBenefit cops fact eff =
   let delta x = (x, x)
@@ -292,15 +292,24 @@ totalUsefulness !cops !fact !effects !aspects !item =
       -- or harmful explosion is worse. But the rule is not strict and also
       -- dependent on gameplay context of the moment, hence no numerical value.
       periodic = IK.Periodic `elem` effects
+      -- Durability doesn't have any numerical impact to @eqpSum,
+      -- because item is never consumed by just being stored in equipment.
+      -- Also no numerical impact for flinging, because we can't fling it again
+      -- in the same skirmish and also enemy can pick up and fling back.
+      -- Only @benMelee@ and @benApply@ are affected, regardless if the item
+      -- is in equipment or not.
+      durable = IK.Durable `elem` jfeature item
       -- If recharging effects not periodic, we add the self part,
       -- because they are applied to self. If they are periodic we can't
       -- effectively apply them, becasue they are never recharged,
       -- because they activate as soon as recharged.
-      benApply = effSelf + effDice  -- hits self with dice too, when applying
-                 + if periodic then 0 else sum chargeSelf
+      benApply = (effSelf + effDice  -- hits self with dice too, when applying
+                  + if periodic then 0 else sum chargeSelf)
+                 `divUp` if durable then 1 else durabilityMult
       -- For melee, we add the foe part.
-      benMelee = effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
-                 + if periodic then 0 else sum chargeFoe
+      benMelee = (effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
+                  + if periodic then 0 else sum chargeFoe)
+                 `divUp` if durable then 1 else durabilityMult
       -- The periodic effects, if any, are activated when projectile flies,
       -- but not when it hits, so they are not added to @benFling@.
       -- However, if item is not periodic, the recharging effects
@@ -337,7 +346,6 @@ totalUsefulness !cops !fact !effects !aspects !item =
       -- If a weapon heals enemy at impact, it won't be used for melee
       -- (but can be equipped anyway). If it harms wearer too much,
       -- won't be worn but still may be flung, etc.
-      durable = IK.Durable `elem` jfeature item
       (benInEqp, benPickup)
         | isMelee item && benMelee < 0 && eqpSum >= -20 =
           ( True  -- equip, melee crucial, and only weapons in eqp can be used
