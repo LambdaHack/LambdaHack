@@ -89,12 +89,9 @@ effectToBenefit cops fact eff =
     IK.ApplyPerfume -> delta 0  -- depends on smell sense of friends and foes
     IK.OneOf efs ->
       let bs = map (effectToBenefit cops fact) efs
-      in if any (\(self, foe) -> self < -10 || foe > 10) bs
-         then delta 0  -- mixed blessing; can't tell how bad/good this is
-         else let f (self, foe) (accSelf, accFoe) =
-                    (self + accSelf, foe + accFoe)
-                  (allSelf, allFoe) = foldr f (0, 0) bs
-              in (allSelf `divUp` length bs, allFoe `divUp` length bs)
+          f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
+          (effSelf, effFoe) = foldr f (0, 0) bs
+      in (effSelf `divUp` length bs, effFoe `divUp` length bs)
     IK.OnSmash _ -> delta 0
       -- can be beneficial; we'd need to analyze explosions, range, etc.
     IK.Recharging _ -> delta 0  -- taken into account separately
