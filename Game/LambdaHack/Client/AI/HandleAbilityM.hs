@@ -686,22 +686,35 @@ applyItem :: MonadClient m
 applyItem aid applyGroup = do
   actorSk <- currentSkillsClient aid
   b <- getsState $ getActorBody aid
+  condShineWouldBetray <- condShineWouldBetrayM aid
+  condAimEnemyPresent <- condAimEnemyPresentM aid
   localTime <- getsState $ getLocalTime (blid b)
   actorAspect <- getsClient sactorAspect
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
       calmE = calmEnough b ar
+      condNotCalmEnough = not calmE
+      heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
+        deltaSerious (bcalmDelta b)
       skill = EM.findWithDefault 0 AbApply actorSk
+      -- This detects if the value of keeping the item in eqp is in fact 0.
+      hind itemFull = hinders condShineWouldBetray condAimEnemyPresent
+                              heavilyDistressed condNotCalmEnough
+                              b ar itemFull
       permittedActor =
         either (const False) id
         . permittedApply localTime skill calmE " "
-      q itemFull =
+      q itemFull cstore =
         let freq = case itemDisco itemFull of
               Nothing -> []
               Just ItemDisco{itemKind} -> IK.ifreq itemKind
-        in permittedActor itemFull
-           && maybe True (<= 0) (lookup "gem" freq)  -- hack for elixir of youth
+            durable = IK.Durable `elem` jfeature (itemBase itemFull)
+       in if cstore /= CEqp || durable || hind itemFull
+          then permittedActor itemFull
+               && maybe True (<= 0) (lookup "gem" freq)
+                    -- hack for elixir of youth
+          else False  -- beneficial in equipment and not durable; don't break it
       -- Organs are not taken into account, because usually they are either
       -- melee items, so harmful, or periodic, so charging between activations.
       -- The case of a weak weapon curing poison is too rare to incur overhead.

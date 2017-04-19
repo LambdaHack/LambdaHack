@@ -344,7 +344,7 @@ totalUsefulness !cops !fact !effects !aspects !item =
           , if durable
             then eqpSum
                  + max 0 (max benApply (- benMelee))  -- apply or melee or not
-            else max 0 (max benApply (- benMelee)))  -- melee is predominant
+            else max 0 (- benMelee))  -- melee is predominant
         | goesIntoEqp item && eqpSum > 0 =  -- weapon or other equippable
           ( True  -- equip; long time bonus usually outweighs fling or apply
           , eqpSum  -- possibly spent turn equipping, so reap the benefits

@@ -163,44 +163,44 @@ condProjectListM :: MonadClient m
                  -> m [((Maybe Benefit, (Int, CStore)), (ItemId, ItemFull))]
 condProjectListM skill aid = do
   b <- getsState $ getActorBody aid
+  condShineWouldBetray <- condShineWouldBetrayM aid
+  condAimEnemyPresent <- condAimEnemyPresentM aid
   actorAspect <- getsClient sactorAspect
   let ar = case EM.lookup aid actorAspect of
              Just aspectRecord -> aspectRecord
              Nothing -> assert `failure` aid
       calmE = calmEnough b ar
-      q = permittedProjectAI skill calmE
+      condNotCalmEnough = not calmE
+      heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
+        deltaSerious (bcalmDelta b)
+      -- This detects if the value of keeping the item in eqp is in fact 0.
+      hind itemFull = hinders condShineWouldBetray condAimEnemyPresent
+                              heavilyDistressed condNotCalmEnough
+                              b ar itemFull
+      q itemFull cstore =
+        if cstore /= CEqp || hind itemFull -- even if durable, don't lose
+        then permittedProjectAI skill calmE itemFull
+        else False
   benAvailableItems aid q $ [CEqp, CInv, CGround] ++ [CSha | calmE]
 
 -- | Produce the list of items with a given property available to the actor
 -- and the items' values.
 benAvailableItems :: MonadClient m
                   => ActorId
-                  -> (ItemFull -> Bool)
+                  -> (ItemFull -> CStore -> Bool)
                   -> [CStore]
                   -> m [((Maybe Benefit, (Int, CStore)), (ItemId, ItemFull))]
 benAvailableItems aid permitted cstores = do
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
-  condShineWouldBetray <- condShineWouldBetrayM aid
-  condAimEnemyPresent <- condAimEnemyPresentM aid
-  actorAspect <- getsClient sactorAspect
   discoBenefit <- getsClient sdiscoBenefit
   s <- getState
-  let ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
-      condNotCalmEnough = not (calmEnough b ar)
-      heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
-        deltaSerious (bcalmDelta b)
-      ben cstore bag =
+  let ben cstore bag =
         [ ((benefit, (k, cstore)), (iid, itemFull))
         | (iid, kit@(k, _)) <- EM.assocs bag
         , let itemFull = itemToF iid kit
               benefit = EM.lookup iid discoBenefit
-              hind = hinders condShineWouldBetray condAimEnemyPresent
-                             heavilyDistressed condNotCalmEnough
-                             b ar itemFull
-        , permitted itemFull && (cstore /= CEqp || hind) ]
+        , permitted itemFull cstore ]
       benCStore cs = ben cs $ getBodyStoreBag b cs s
   return $ concatMap benCStore cstores
 
@@ -240,7 +240,7 @@ benGroundItems aid = do
   let canEsc = fcanEscape (gplayer fact)
       isDesirable ((mben, _), (_, itemFull)) =
         desirableItem canEsc (benPickup <$> mben) (itemBase itemFull)
-  benList <- benAvailableItems aid (const True) [CGround]
+  benList <- benAvailableItems aid (\_ _ -> True) [CGround]
   return $ filter isDesirable benList
 
 desirableItem :: Bool -> Maybe Int -> Item -> Bool
