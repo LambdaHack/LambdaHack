@@ -353,7 +353,7 @@ targetStrategy aid = do
           _ | not $ null nearbyFoes ->
             pickNewTarget  -- prefer close foes to anything else
           TEnemyPos _ permit  -- chase last position even if foe hides
-            | pos == bpos b -> tellOthersNothingHere pos
+            | bpos b == pos -> tellOthersNothingHere pos
             | permit && condInMelee -> pickNewTarget  -- melee, stop following
             | otherwise -> return $! returN "TEnemyPos" tap
           -- Below we check the target could not be picked again in
@@ -369,19 +369,25 @@ targetStrategy aid = do
             -- or we can put some equipment back and recover them.
             -- We don't determine if the stairs or embed are interesting
             -- (this changes with time), but allow the actor
-            -- to reach them and then retarget. The two thing we check
+            -- to reach them and then retarget. The two things we check
             -- is whether the embedded bag is still there, or used up
             -- and whether we happen to be already adjacent to @p@,
-            -- even though not at @pos@.
+            -- even though not necessarily at @pos@.
             bag2 <- getsState $ getEmbedBag lid p  -- not @pos@
             if | bag /= bag2 -> pickNewTarget  -- others will notice soon enough
-               | adjacent (bpos b) p -> setPath $ TPoint tgoal lid (bpos b)
+               | adjacent (bpos b) p ->  -- regardless if at @pos@ or not
+                   setPath $ TPoint TAny lid (bpos b)
+                     -- stay there one turn (high chance to become leader)
+                     -- to enable triggering; if trigger fails
+                     -- (e.g, changed skills), will retarget next turn (@TAny@)
                | otherwise -> return $! returN "TEmbed" tap
           TItem bag -> do
-            -- We don't check skill nor desirability of the bag,
-            -- because the skill and the bag were OK when target was set.
             bag2 <- getsState $ getFloorBag lid pos
             if | bag /= bag2 -> pickNewTarget  -- others will notice soon enough
+               | bpos b == pos ->
+                   setPath $ TPoint TAny lid (bpos b)
+                     -- stay there one turn (high chance to become leader)
+                     -- to enable pickup; if pickup fails, will retarget
                | otherwise -> return $! returN "TItem" tap
           TSmell ->
             if not canSmell
@@ -397,7 +403,9 @@ targetStrategy aid = do
                then pickNewTarget  -- others will notice soon enough
                else return $! returN "TUnknown" tap
           TKnown ->
-            if isStuck || not allExplored  -- new levels created, etc.
+            if bpos b == pos
+               || isStuck
+               || not allExplored  -- new levels created, etc.
             then pickNewTarget  -- others unconcerned
             else return $! returN "TKnown" tap
           TAny -> pickNewTarget  -- reset elsewhere or carried over from UI
