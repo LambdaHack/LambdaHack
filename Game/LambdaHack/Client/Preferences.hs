@@ -68,18 +68,24 @@ effectToBenefit cops fact eff =
                      then (1, 0)   -- blink to shoot at foes
                      else (-9, -1)  -- for self, don't derail exploration
                                     -- for foes, fight with one less at a time
-    IK.CreateItem COrgan grp _ ->
-      let (total, count) = organBenefit grp cops fact
+    IK.CreateItem COrgan grp timer ->
+      let turnTimer = case timer of
+            IK.TimerNone -> averageTurnValue + 1  -- copy count used instead
+            IK.TimerGameTurn n -> Dice.meanDice n
+            IK.TimerActorTurn n -> Dice.meanDice n
+          (total, count) = organBenefit turnTimer grp cops fact
       in delta $ total `divUp` count  -- the same when created in me and in foe
         -- average over all matching grps; simplified: rarities ignored
     IK.CreateItem{} -> (50, 0)
     IK.DropItem ngroup kcopy COrgan grp ->
       -- Simplified: we assume actor has an average number of copies
-      -- (and none have yet run out, e.g., quick reaction to poisoning)
+      -- (and none have yet run out, e.g., prompt curing of poisoning)
       -- of a single kind of organ (and so @ngroup@ doesn't matter)
       -- of average benefit and that @kcopy@ is such that all copies
       -- are dropped. Separately we add bonuses for @ngroup@ and @kcopy@.
-      let (total, count) = organBenefit grp cops fact
+      -- Remaining time of the organ is arbitrarily assumed to be 20 turns.
+      let turnTimer = 20
+          (total, count) = organBenefit turnTimer grp cops fact
           boundBonus n = if n == maxBound then 10 else 0
       in delta $ boundBonus ngroup + boundBonus kcopy
                  - total `divUp` count  -- the same when dropped from me and foe
@@ -110,6 +116,10 @@ effectToBenefit cops fact eff =
     IK.Unique -> delta 0
     IK.Periodic -> delta 0  -- considered in totalUsefulness
 
+-- See the comment for @Paralyze@.
+averageTurnValue :: Int
+averageTurnValue = 10
+
 -- We assume the organ is temporary (@Temporary@, @Periodic@, @Timeout 0@)
 -- and also that it doesn't provide any functionality, e.g., detection
 -- or burning or raw damage. However, we take into account recharging
@@ -118,29 +128,54 @@ effectToBenefit cops fact eff =
 -- hence we take the self component of valuation. We multiply by the count
 -- of created/dropped organs, because for temporary effects it determines
 -- how many times the effect is applied, before the last copy expires.
-organBenefit :: GroupName ItemKind -> Kind.COps -> Faction -> (Int, Int)
-organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} fact =
+--
+-- To give continous benefit, organ has to be recreated each @turnTimer@ turns.
+-- Creation takes a turn, so incurs @averageTurnValue@ cost.
+-- So, on average, maintaining the organ costs @averageTurnValue/turnTimer@.
+-- So, if an item lasts @averageTurnValue@ and it can be created at will,
+-- it's as valuable as permanent.
+--
+-- We assume, only one of timer and count mechanisms is present at once.
+organBenefit :: Int -> GroupName ItemKind -> Kind.COps -> Faction -> (Int, Int)
+organBenefit turnTimer t cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} fact =
   let f (!sacc, !pacc) !p _ !kind =
         let paspect asp = p * aspectToBenefit asp
             peffect eff = p * fst (effectToBenefit cops fact eff)
         in ( sacc + Dice.meanDice (IK.icount kind)
                     * (sum (map paspect $ IK.iaspects kind)
                        + sum (map peffect $ stripRecharging $ IK.ieffects kind))
+                  - averageTurnValue `div` turnTimer
            , pacc + p )
   in ofoldlGroup' t f (0, 0)
 
--- | Return the value to add to effect value.
+-- Value of aspects and effects is linked by some deep economic principles
+-- which I'm unfortunately ignorant of. E.g., average weapon hits for 5HP,
+-- so it's worth 50 per turn, so that should also be the worth per turn
+-- of equpping a sword oil that doubles damage via @AddHurtMelee@.
+-- Which almost matches up, since 100% effective oil is worth 100.
+-- Perhaps oil is worth double (despite cap, etc.), because it's addictive
+-- and raw weapon damage is not; so oil stays and old weapons get trashed.
+-- However, using the weapon in combat costs 100 (the value of extra
+-- battle turn). However, one turn per turn is almost free, because something
+-- has to be done to move the time forward. If the oil required wasting a turn
+-- to affect next strike, then we'd have two turns per turn, so the cost
+-- would be real and 100% oil would not have any significant good or bad effect
+-- any more, but 200% oil (if not for the cap) would still be worth it.
+--
+-- Anyway, that suggests that the current scaling of effect vs aspect values
+-- is reasonable.
 aspectToBenefit :: IK.Aspect -> Int
 aspectToBenefit asp =
   case asp of
     IK.Timeout{} -> 0
-    IK.AddHurtMelee p -> Dice.meanDice p
-    IK.AddArmorMelee p -> Dice.meanDice p `divUp` 4
+    IK.AddHurtMelee p -> Dice.meanDice p  -- offence favoured
+    IK.AddArmorMelee p -> Dice.meanDice p `divUp` 4  -- only partial protection
     IK.AddArmorRanged p -> Dice.meanDice p `divUp` 8
     IK.AddMaxHP p -> Dice.meanDice p
     IK.AddMaxCalm p -> Dice.meanDice p `divUp` 5
-    IK.AddSpeed p -> Dice.meanDice p * 50
-      -- 1 speed ~ 5% melee; times 10 for no caps, escape, pillar-dancing, etc.
+    IK.AddSpeed p -> Dice.meanDice p * 25
+      -- 1 speed ~ 5% melee; times 5 for no caps, escape, pillar-dancing, etc.;
+      -- also, it's 1 extra turn each 20 turns, so 100/20, so 5; figures
     IK.AddSight p -> Dice.meanDice p * 5
     IK.AddSmell p -> Dice.meanDice p
     IK.AddShine p -> Dice.meanDice p * 2
