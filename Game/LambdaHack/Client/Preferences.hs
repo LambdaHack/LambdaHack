@@ -65,13 +65,18 @@ effectToBenefit cops fact eff =
     IK.CreateItem COrgan grp _ ->
       let (total, count) = organBenefit grp cops fact
       in delta $ total `divUp` count  -- the same when created in me and in foe
-        -- average over all matching grp; simplified: rarities ignored
+        -- average over all matching grps; simplified: rarities ignored
     IK.CreateItem{} -> (50, 0)
-    IK.DropItem _ _ COrgan grp ->
-      -- Contrived: we assume actor has an average number of copies
-      -- of one kind of organ of average benefit and all are dropped.
+    IK.DropItem ngroup kcopy COrgan grp ->
+      -- Simplified: we assume actor has an average number of copies
+      -- (and none have yet run out, e.g., quick reaction to poisoning)
+      -- of a single kind of organ (and so @ngroup@ doesn't matter)
+      -- of average benefit and that @kcopy@ is such that all copies
+      -- are dropped. Separately we add bonuses for @ngroup@ and @kcopy@.
       let (total, count) = organBenefit grp cops fact
-      in delta $ - total `divUp` count  -- the same when dropped from me and foe
+          boundBonus n = if n == maxBound then 10 else 0
+      in delta $ boundBonus ngroup + boundBonus kcopy
+                 - total `divUp` count  -- the same when dropped from me and foe
     IK.DropItem _ _ _ _ -> delta (-10)  -- depends a lot on what is dropped
     IK.PolyItem -> delta 0  -- AI can't estimate item desirability vs average
     IK.Identify -> delta 0  -- AI doesn't know how to use
@@ -99,19 +104,22 @@ effectToBenefit cops fact eff =
     IK.Unique -> delta 0
     IK.Periodic -> delta 0  -- considered in totalUsefulness
 
--- We assume the organ is temporary and quasi-periodic with timeout 0
+-- We assume the organ is temporary (@Temporary@, @Periodic@, @Timeout 0@)
 -- and also that it doesn't provide any functionality, e.g., detection
 -- or burning or raw damage. However, we take into account recharging
 -- effects, knowing in some temporary organs, e.g., poison or regeneration,
 -- they are triggered at each item copy destruction. They are applied to self,
--- hence we take the self component of valuation.
+-- hence we take the self component of valuation. We multiply by the count
+-- of created/dropped organs, because for temporary effects it determines
+-- how many times the effect is applied, before the last copy expires.
 organBenefit :: GroupName ItemKind -> Kind.COps -> Faction -> (Int, Int)
 organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} fact =
   let f (!sacc, !pacc) !p _ !kind =
         let paspect asp = p * aspectToBenefit asp
             peffect eff = p * fst (effectToBenefit cops fact eff)
-        in ( sacc + sum (map paspect $ IK.iaspects kind)
-                  + sum (map peffect $ stripRecharging $ IK.ieffects kind)
+        in ( sacc + Dice.meanDice (IK.icount kind)
+                    * (sum (map paspect $ IK.iaspects kind)
+                       + sum (map peffect $ stripRecharging $ IK.ieffects kind))
            , pacc + p )
   in ofoldlGroup' t f (0, 0)
 

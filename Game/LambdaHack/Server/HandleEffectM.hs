@@ -894,13 +894,13 @@ effectCreateItem mfidSource target store grp tim = do
 effectDropItem :: (MonadAtomic m, MonadServer m)
                => m () -> Int ->Int ->  CStore -> GroupName ItemKind -> ActorId
                -> m Bool
-effectDropItem execSfx n k store grp target = do
+effectDropItem execSfx ngroup kcopy store grp target = do
   b <- getsState $ getActorBody target
   is <- allGroupItems store grp target
   if null is then return False
   else do
     unless (store == COrgan) execSfx
-    mapM_ (uncurry (dropCStoreItem True store target b k)) $ take n is
+    mapM_ (uncurry (dropCStoreItem True store target b kcopy)) $ take ngroup is
     return True
 
 allGroupItems :: (MonadAtomic m, MonadServer m)
