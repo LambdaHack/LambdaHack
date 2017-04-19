@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.Frequency
   , scaleFreq, renameFreq, setFreq
     -- * Consumption
   , nullFreq, runFrequency, nameFrequency
-  , maxFreq, minFreq, meanFreq
+  , minFreq, maxFreq, mostFreq, meanFreq
   ) where
 
 import Prelude ()
@@ -20,6 +20,7 @@ import Control.Applicative
 import Control.DeepSeq
 import Data.Binary
 import Data.Hashable (Hashable)
+import Data.Ord (comparing)
 import GHC.Generics (Generic)
 
 -- | The frequency distribution type. Not normalized (operations may
@@ -105,11 +106,15 @@ setFreq (Frequency xs name) x n =
 nullFreq :: Frequency a -> Bool
 nullFreq (Frequency fs _) = null fs
 
+minFreq :: Ord a => Frequency a -> Maybe a
+minFreq fr = if nullFreq fr then Nothing else Just $ minimum fr
+
 maxFreq :: Ord a => Frequency a -> Maybe a
 maxFreq fr = if nullFreq fr then Nothing else Just $ maximum fr
 
-minFreq :: Ord a => Frequency a -> Maybe a
-minFreq fr = if nullFreq fr then Nothing else Just $ minimum fr
+mostFreq :: Frequency a -> Maybe a
+mostFreq fr = if nullFreq fr then Nothing
+              else Just $ snd $ maximumBy (comparing fst) $ runFrequency fr
 
 -- | Average value of an @Int@ distribution, rounded up to avoid truncating
 -- it in the other code higher up, which would equate 1d0 with 1d1.

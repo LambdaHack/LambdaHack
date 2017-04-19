@@ -13,6 +13,8 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Flavour
+import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -76,7 +78,11 @@ effectToBenefit cops fact eff =
           (total, count) = organBenefit turnTimer grp cops fact
       in delta $ total `divUp` count  -- the same when created in me and in foe
         -- average over all matching grps; simplified: rarities ignored
-    IK.CreateItem{} -> (50, 0)
+    IK.CreateItem _ "useful" _ -> (50, 0)  -- assumed not temporary
+    IK.CreateItem _ "treasure" _ -> (100, 0)  -- assumed not temporary
+    IK.CreateItem _ grp _ ->  -- assumed not temporary and @grp@ tiny
+      let (total, count) = recBenefit grp cops fact
+      in (total `divUp` count, 0)
     IK.DropItem ngroup kcopy COrgan grp ->
       -- Simplified: we assume actor has an average number of copies
       -- (and none have yet run out, e.g., prompt curing of poisoning)
@@ -137,7 +143,7 @@ averageTurnValue = 10
 --
 -- We assume, only one of timer and count mechanisms is present at once.
 organBenefit :: Int -> GroupName ItemKind -> Kind.COps -> Faction -> (Int, Int)
-organBenefit turnTimer t cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} fact =
+organBenefit turnTimer grp cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} fact =
   let f (!sacc, !pacc) !p _ !kind =
         let paspect asp = p * aspectToBenefit asp
             peffect eff = p * fst (effectToBenefit cops fact eff)
@@ -146,7 +152,30 @@ organBenefit turnTimer t cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} fact =
                        + sum (map peffect $ stripRecharging $ IK.ieffects kind))
                   - averageTurnValue `div` turnTimer
            , pacc + p )
-  in ofoldlGroup' t f (0, 0)
+  in ofoldlGroup' grp f (0, 0)
+
+recBenefit :: GroupName ItemKind -> Kind.COps -> Faction -> (Int, Int)
+recBenefit grp cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} fact =
+  let f (!sacc, !pacc) !p _ !kind =
+        let recPickup = benPickup $
+              totalUsefulness cops fact (IK.ieffects kind)
+                                        (meanAspect kind) (fakeItem kind)
+        in ( sacc + Dice.meanDice (IK.icount kind) * recPickup
+           , pacc + p )
+  in ofoldlGroup' grp f (0, 0)
+
+fakeItem :: IK.ItemKind -> Item
+fakeItem kind =
+  let jkindIx  = toEnum (-1)  -- dummy
+      jlid     = toEnum 0  -- dummy
+      jfid     = Nothing  -- the default
+      jsymbol  = IK.isymbol kind
+      jname    = IK.iname kind
+      jflavour = head stdFlav  -- dummy
+      jfeature = IK.ifeature kind
+      jweight  = IK.iweight kind
+      jdamage  = fromJust $ mostFreq $ toFreq "fakeItem" $ IK.idamage kind
+  in Item{..}
 
 -- Value of aspects and effects is linked by some deep economic principles
 -- which I'm unfortunately ignorant of. E.g., average weapon hits for 5HP,
