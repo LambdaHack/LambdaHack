@@ -944,15 +944,15 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           let verb = if bproj b then "lure" else "summon"
               object = if p == 1
                        then [MU.Text $ tshow grp]
-                       else [MU.Text $ tshow p, MU.Ws $ MU.Text $ tshow grp]
+                       else [MU.Ws $ MU.Text $ tshow grp]  -- avoid "1 + dl 3"
           actorVerbMU aid bUI $ MU.Phrase $ verb : object
         IK.Ascend True -> actorVerbMU aid bUI "find a way upstairs"
         IK.Ascend False -> actorVerbMU aid bUI "find a way downstairs"
         IK.Escape{} -> return ()
         IK.Paralyze{} -> actorVerbMU aid bUI "be paralyzed"
         IK.InsertMove{} -> actorVerbMU aid bUI "act with extreme speed"
-        IK.Teleport t | t > 9 -> actorVerbMU aid bUI "teleport"
-        IK.Teleport{} -> actorVerbMU aid bUI "blink"
+        IK.Teleport t | t <= 8 -> actorVerbMU aid bUI "blink"
+        IK.Teleport{} -> actorVerbMU aid bUI "teleport"
         IK.CreateItem{} -> return ()
         IK.DropItem _ _ COrgan _ -> return ()
         IK.DropItem _ _ _ _ -> actorVerbMU aid bUI "be stripped"
