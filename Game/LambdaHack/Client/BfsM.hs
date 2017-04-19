@@ -312,7 +312,7 @@ embedBenefit fleeVia aid pbags = do
             ViaStairsDown | not up -> 1
             ViaStairs -> v
             ViaAnything -> v
-            _ -> 0  -- don't flee prematurely
+            _ -> 0  -- don't ascend prematurely
         _ ->
           if fleeVia `elem` [ViaNothing, ViaAnything]
 

@@ -126,7 +126,7 @@ hasCharge localTime itemFull@ItemFull{..} =
   in length it1 < itemK
 
 damageUsefulness :: Item -> Int
-damageUsefulness item = min 150 (10 * Dice.meanDice (jdamage item))
+damageUsefulness item = min 1000 (10 * Dice.meanDice (jdamage item))
 
 -- We assume extra weapon effects are useful and so such
 -- weapons are preferred over weapons with no effects.

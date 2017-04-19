@@ -33,37 +33,46 @@ effectToBenefit cops fact eff =
   in case eff of
     IK.ELabel _ -> delta 0
     IK.EqpSlot _ -> delta 0
-    IK.Burn d -> delta $ -(min 200 $ 15 * Dice.meanDice d)
-                   -- often splash damage, armor doesn't block, etc.
+    IK.Burn d -> delta $ -(min 1500 $ 15 * Dice.meanDice d)
+      -- often splash damage, armor doesn't block (but HurtMelee doesn't boost)
     IK.Explode _ -> delta 0  -- depends on explosion
     IK.RefillHP p ->
-      delta $ if p > 0 then min 99 (10 * p) else max (-99) (10 * p)
+      delta $ if p > 0 then min 2000 (20 * p) else max (-1000) (10 * p)
+        -- one HP healed is worth a bit more than one HP dealed to enemy,
+        -- because if the actor survives, he may deal damage many times;
+        -- however, AI is mostly for non-heroes that fight in suicidal crowds,
+        -- so the two values are kept close enough to maintain berserk approach
     IK.RefillCalm p -> delta $ if p > 0 then min 9 p else max (-9) p
-    IK.Dominate -> delta $ -200
-    IK.Impress -> (5, -10)
+    IK.Dominate -> (0, -300)  -- I obtained an actor with, say 10HP,
+                              -- worth 200, and enemy lost him, another 100
+    IK.Impress -> (5, -50)  -- usually has no effect on self, hence low value
     IK.Summon grp d ->  -- contrived by not taking into account alliances
                         -- and not checking if enemies also control that group
-      let ben = Dice.meanDice d * 200
+      let ben = Dice.meanDice d * 200  -- the new actor can have, say, 10HP
       in if grp `elem` fgroups (gplayer fact) then (ben, -ben) else (-ben, ben)
-    IK.Ascend{} -> (1, 0)      -- low, to only change levels sensibly, in teams
-    IK.Escape{} -> (10000, 0)  -- AI wants to win; spawners to guard
-    IK.Paralyze d -> delta $ -10 * Dice.meanDice d
-    IK.InsertMove d -> delta $ 50 * Dice.meanDice d
+    IK.Ascend{} -> (-99, 99)  -- note the reversed values:
+                              -- only change levels sensibly, in teams,
+                              -- and don't remove enemy too far, he may be
+                              -- easy to kill and may have loot
+    IK.Escape{} -> (-9999, 9999)  -- even if can escape, loots first and then
+                                  -- handles escape as a special case
+    IK.Paralyze d -> delta $ -10 * Dice.meanDice d  -- clips
+    IK.InsertMove d -> delta $ 50 * Dice.meanDice d  -- turns
     IK.Teleport d -> if Dice.meanDice d <= 8
-                     then (1, 0) -- blink to shoot at foes
-                     else (0, -1)  -- get rid of the foe
+                     then (1, 0)   -- blink to shoot at foes
+                     else (-9, -1)  -- for self, don't derail exploration
+                                    -- for foes, fight with one less at a time
     IK.CreateItem COrgan grp _ ->
       let (total, count) = organBenefit grp cops fact
       in delta $ total `divUp` count  -- the same when created in me and in foe
         -- average over all matching grp; simplified: rarities ignored
-    IK.CreateItem{} -> (30, 0)
+    IK.CreateItem{} -> (50, 0)
     IK.DropItem _ _ COrgan grp ->
       -- Contrived: we assume actor has an average number of copies
       -- of one kind of organ of average benefit and all are dropped.
       let (total, count) = organBenefit grp cops fact
-      in delta $ - total `divUp` count
-           -- the same when dropped from me and from foe
-    IK.DropItem _ _ _ _ -> delta $ -15
+      in delta $ - total `divUp` count  -- the same when dropped from me and foe
+    IK.DropItem _ _ _ _ -> delta (-10)  -- depends a lot on what is dropped
     IK.PolyItem -> delta 0  -- AI can't estimate item desirability vs average
     IK.Identify -> delta 0  -- AI doesn't know how to use
     IK.Detect radius -> (radius * 2, 0)
@@ -71,12 +80,12 @@ effectToBenefit cops fact eff =
     IK.DetectItem radius -> (radius, 0)
     IK.DetectExit radius -> (radius, 0)
     IK.DetectHidden radius -> (radius, 0)
-    IK.SendFlying _ -> (1, -10)
-    IK.PushActor _ -> (1, -10)
-    IK.PullActor _ -> (1, -10)
-    IK.DropBestWeapon -> delta $ -50
-    IK.ActivateInv ' ' -> delta $ -100
-    IK.ActivateInv _ -> delta $ -50
+    IK.SendFlying _ -> (1, -10)  -- very context dependent, but it's better
+    IK.PushActor _ -> (1, -10)   -- to be the one that decides and not the one
+    IK.PullActor _ -> (1, -10)   -- that is interrupted in the middle of fleeing
+    IK.DropBestWeapon -> delta $ -50  -- often a whole turn wasted == InsertMove
+    IK.ActivateInv ' ' -> delta $ -200  -- brutal and deadly
+    IK.ActivateInv _ -> delta $ -50  -- depends on the items
     IK.ApplyPerfume -> delta 0  -- depends on smell sense of friends and foes
     IK.OneOf efs ->
       let bs = map (effectToBenefit cops fact) efs
@@ -89,7 +98,7 @@ effectToBenefit cops fact eff =
     IK.OnSmash _ -> delta 0
       -- can be beneficial; we'd need to analyze explosions, range, etc.
     IK.Recharging _ -> delta 0  -- taken into account separately
-    IK.Temporary _ -> delta 0
+    IK.Temporary _ -> delta 0  -- assumed for created organs only
     IK.Unique -> delta 0
     IK.Periodic -> delta 0  -- considered in totalUsefulness
 
