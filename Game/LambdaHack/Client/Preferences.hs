@@ -56,8 +56,14 @@ effectToBenefit cops fact eff =
                               -- easy to kill and may have loot
     IK.Escape{} -> (-9999, 9999)  -- even if can escape, loots first and then
                                   -- handles escape as a special case
-    IK.Paralyze d -> delta $ -10 * Dice.meanDice d  -- clips
-    IK.InsertMove d -> delta $ 50 * Dice.meanDice d  -- turns
+    -- The following two are expensive, because they ofen activate
+    -- while in melee, in which case each turn is worth x HP, where x
+    -- is the average effective weapon damage in the game, which would
+    -- be ~5. (Plus a huge risk factor for any non-spawner faction.)
+    -- So, each turn in battle is worth ~100. And on average, in and out
+    -- of battle, let's say each turn is worth ~10.
+    IK.Paralyze d -> delta $ -20 * Dice.meanDice d  -- clips
+    IK.InsertMove d -> delta $ 100 * Dice.meanDice d  -- turns
     IK.Teleport d -> if Dice.meanDice d <= 8
                      then (1, 0)   -- blink to shoot at foes
                      else (-9, -1)  -- for self, don't derail exploration
