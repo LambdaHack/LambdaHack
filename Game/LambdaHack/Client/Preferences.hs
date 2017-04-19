@@ -29,6 +29,13 @@ import Game.LambdaHack.Content.ModeKind
 -- is benefit (preferably negative) when applied to enemy.
 -- This represents benefit from using the effect every @avgItemDelay@ turns,
 -- so if the item is not durable, the value is adjusted down elsewhere.
+-- The benefit includes the drawback of having to use the actor's turn,
+-- except when there is battle and item is a weapon and so there is usually
+-- nothing better to do than to melee, or when the actor is stuck or idle
+-- or laying in wait or luring an enemy from a safe distance.
+-- So there is less than @averageTurnValue@ included in each benefit,
+-- so in case when turn is not spent, e.g, periodic or temporary effects,
+-- the difference in value is only slight.
 effectToBenefit :: Kind.COps -> Faction -> IK.Effect -> (Int, Int)
 effectToBenefit cops fact eff =
   let delta x = (x, x)
@@ -175,11 +182,25 @@ durabilityMult = avgItemLife `div` avgItemDelay
 -- of created/dropped organs, because for temporary effects it determines
 -- how many times the effect is applied, before the last copy expires.
 --
--- To give continous benefit, organ has to be recreated each @turnTimer@ turns.
+-- The organs are not durable nor in infnite copies, so to give
+-- continous benefit, organ has to be recreated each @turnTimer@ turns.
 -- Creation takes a turn, so incurs @averageTurnValue@ cost.
+-- That's how the lack of durability impacts their value, not via
+-- @durabilityMult@, which however may be applied to organ creating item.
 -- So, on average, maintaining the organ costs @averageTurnValue/turnTimer@.
 -- So, if an item lasts @averageTurnValue@ and it can be created at will,
--- it's as valuable as permanent.
+-- it's as valuable as permanent. This makes sense even if the item creating
+-- the organ is not durable, but the timer is huge. One may think the lack
+-- of durability should be offset by the timer, but remember that average
+-- item life @avgItemLife@ is rather low, so either a new item will be found
+-- soon and so the long timer doesn't matter or the actor will die
+-- or the gameplay context will change (e.g., out of battle) and so the effect
+-- will no longer be useful.
+--
+-- When considering the effects, we just use their standard valuation,
+-- despite them not using up actor's turn to be applied each turn,
+-- because, similarly as for periodic items, we don't control when they
+-- are applied and we can't stop/restart them.
 --
 -- We assume, only one of timer and count mechanisms is present at once.
 organBenefit :: Int -> GroupName ItemKind -> Kind.COps -> Faction -> (Int, Int)
@@ -232,7 +253,11 @@ fakeItem kind =
 -- any more, but 200% oil (if not for the cap) would still be worth it.
 --
 -- Anyway, that suggests that the current scaling of effect vs aspect values
--- is reasonable.
+-- is reasonable. What is even more important is consistency among aspects
+-- so that, e.g., a shield or a torch is neven equipped, but oil lamp is.
+-- Valuation of effects, and more precisely, more the signs than absolute
+-- values, ensures that both shield and torch get picked up so that
+-- the (human) actor can nevertheless equip them in very special cases.
 aspectToBenefit :: IK.Aspect -> Int
 aspectToBenefit asp =
   case asp of
@@ -297,7 +322,14 @@ totalUsefulness !cops !fact !effects !aspects !item =
       -- Also no numerical impact for flinging, because we can't fling it again
       -- in the same skirmish and also enemy can pick up and fling back.
       -- Only @benMelee@ and @benApply@ are affected, regardless if the item
-      -- is in equipment or not.
+      -- is in equipment or not. As summands of @benPickup@ they should be
+      -- impacted by durability, because picking an item to be used
+      -- only once is less advantageous than when the item is durable.
+      -- For deciding which item to apply or melee with, they should be
+      -- impacted, because it makes more sense to use an item that is durable
+      -- and save the option for using non-durable item for the future, e.g.,
+      -- when both items have timeouts, starting with durable is beneficial,
+      -- becuase it recharges while the non-durable is prepaired and used.
       durable = IK.Durable `elem` jfeature item
       -- If recharging effects not periodic, we add the self part,
       -- because they are applied to self. If they are periodic we can't
@@ -333,7 +365,8 @@ totalUsefulness !cops !fact !effects !aspects !item =
       -- effects, even though they save a turn, by being auto-applied,
       -- because on the flip side, player is not in control of the precise
       -- timing of their activation and also occasionally needs to spend a turn
-      -- unequipping them to prevent activation.
+      -- unequipping them to prevent activation. Note also that periodic
+      -- activations don't consume the item, whether it's durable or not.
       eqpBens = recordToBenefit aspects
                 ++ if periodic then chargeSelf else []
       sumBens = sum eqpBens
