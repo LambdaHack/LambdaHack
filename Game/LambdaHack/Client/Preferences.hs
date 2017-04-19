@@ -126,6 +126,23 @@ effectToBenefit cops fact eff =
 averageTurnValue :: Int
 averageTurnValue = 10
 
+-- Average delay between desired item uses. Some items are best activated
+-- every turn, e.g., healing (but still, on average, the activation would be
+-- useless some of the time, namely when HP is at max, which is rare,
+-- or when some combat boost is already lasting, which is probably also rare).
+-- However, e.g., for detection, activating every few turns is enough.
+-- Also, sometimes actor has many activable items, so he doesn't want to use
+-- the less powerful ones as often as when they are alone.
+-- For weapons, it depends. Sometimes a weapon with disorienting effect
+-- should be used once every couple of turns and stronger raw damage
+-- weapons all the remaining time. In other cases a single weapon
+-- with a devastating effect would ideally be available each turn.
+-- We don't want to undervalue rarely used items with long timeouts
+-- and we think that most interesting gameplay comes from alternating
+-- item use, so we arbitrarily set the full value timeout to 3.
+avgItemDelay :: Int
+avgItemDelay = 3
+
 -- We assume the organ is temporary (@Temporary@, @Periodic@, @Timeout 0@)
 -- and also that it doesn't provide any functionality, e.g., detection
 -- or burning or raw damage. However, we take into account recharging
@@ -228,19 +245,14 @@ totalUsefulness !cops !fact !effects !aspects !item =
       -- it equivalent to a permanent item --- without timeout restriction.
       -- Timeout 2 means two such items are needed to use the effect each turn,
       -- so a single such item may be worth half of the permanet value.
-      -- However, e.g., for detection, activating every few turns is enough.
-      -- For weapons, it depends. Sometimes a weapon with disorienting effect
-      -- should be used once every couple of turns and stronger raw damage
-      -- weapons all the remaining time. In other cases a single weapon
-      -- with a devastating effect would ideally be available each turn.
-      -- We don't want to undervalue rarely used items with long timeouts
-      -- and we think that most interesting gameplay comes from alternating
-      -- item use, so we arbitrarily set the full value timeout to 3.
+      -- Hence, we multiply item value by the proportion of the average desired
+      -- delay between item uses @avgItemDelay@ and the actual timeout.
       timeout = aTimeout aspects
       (chargeSelf, chargeFoe) =
         let scaleChargeBens bens
               | timeout <= 3 = bens
-              | otherwise = map (\eff -> min eff (eff * 3 `divUp` timeout)) bens
+              | otherwise = map (\eff ->
+                  min eff (eff * avgItemDelay `divUp` timeout)) bens
             (cself, cfoe) = unzip $ map (effectToBenefit cops fact)
                                         (stripRecharging effects)
         in (scaleChargeBens cself, scaleChargeBens cfoe)
@@ -285,6 +297,11 @@ totalUsefulness !cops !fact !effects !aspects !item =
              -- 1 damage valued at 10, just as in @damageUsefulness@
       -- For equipment benefit, we take into account only the self
       -- value of the recharging effects, because they applied to self.
+      -- We don't add a bonus @averageTurnValue@ to the value of periodic
+      -- effects, even though they save a turn, by being auto-applied,
+      -- because on the flip side, player is not in control of the precise
+      -- timing of their activation and also occasionally needs to spend a turn
+      -- unequipping them to prevent activation.
       eqpBens = recordToBenefit aspects
                 ++ if periodic then chargeSelf else []
       sumBens = sum eqpBens
