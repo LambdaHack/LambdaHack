@@ -77,10 +77,9 @@ effectToBenefit cops fact eff =
                      then (1, 0)   -- blink to shoot at foes
                      else (-9, -1)  -- for self, don't derail exploration
                                     -- for foes, fight with one less at a time
-    IK.CreateItem _ "useful" _ -> (50, 0)  -- assumed not temporary
-    IK.CreateItem _ "treasure" _ -> (100, 0)
-    IK.CreateItem COrgan "temporary condition" _ -> (0, 0)  -- varied, big bunch
-    IK.CreateItem COrgan grp timer ->
+    IK.CreateItem COrgan "temporary condition" _ ->
+      (1, -1)  -- varied, big bunch, but try to create it anyway
+    IK.CreateItem COrgan grp timer ->  -- assumed temporary
       let turnTimer = case timer of
             IK.TimerNone -> averageTurnValue + 1  -- copy count used instead
             IK.TimerGameTurn n -> Dice.meanDice n
@@ -88,10 +87,18 @@ effectToBenefit cops fact eff =
           (total, count) = organBenefit turnTimer grp cops fact
       in delta $ total `divUp` count  -- the same when created in me and in foe
         -- average over all matching grps; simplified: rarities ignored
+    IK.CreateItem _ "treasure" _ -> (100, 0)  -- assumed not temporary
+    IK.CreateItem _ "useful" _ -> (70, 0)
+    IK.CreateItem _ "any scroll" _ -> (50, 0)
+    IK.CreateItem _ "any vial" _ -> (50, 0)
+    IK.CreateItem _ "potion" _ -> (50, 0)
+    IK.CreateItem _ "flask" _ -> (50, 0)
     IK.CreateItem _ grp _ ->  -- assumed not temporary and @grp@ tiny
       let (total, count) = recBenefit grp cops fact
       in (total `divUp` count, 0)
-    IK.DropItem ngroup kcopy COrgan grp ->
+    IK.DropItem _ _ COrgan "temporary condition" ->
+      (1, -1)  -- varied, big bunch, but try to nullify it anyway
+    IK.DropItem ngroup kcopy COrgan grp ->  -- assumed temporary
       -- Simplified: we assume actor has an average number of copies
       -- (and none have yet run out, e.g., prompt curing of poisoning)
       -- of a single kind of organ (and so @ngroup@ doesn't matter)
