@@ -145,11 +145,12 @@ strongestMelee mdiscoBenefit localTime is =
             -- For fighting, as opposed to equipping, we value weapon
             -- only for its raw damage and harming effects.
             case EM.lookup iid discoBenefit of
-              Just Benefit{benMelee} ->
-                ( if benMelee < 0 then - benMelee else 0
-                , (iid, itemFull) )
+              Just Benefit{benMelee} -> (- benMelee, (iid, itemFull))
               Nothing -> rawDmg
           _  -> rawDmg
+  -- We can't filter out weapons that are not harmful to victim
+  -- (@benMelee >= 0), because actors use them if nothing else available,
+  -- e.g., geysers, bees. This is intended and fun.
   in sortBy (flip $ Ord.comparing fst) $ map f is
 
 -- This ignores items that don't go into equipment, as determined in @inEqp@.
