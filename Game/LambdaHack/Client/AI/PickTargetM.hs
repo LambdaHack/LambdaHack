@@ -119,28 +119,26 @@ targetStrategy aid = do
       Just <$> createPath aid tapTgt
     Just tap@TgtAndPath{..} -> do
       mvalidPos <- aidTgtToPos aid (blid b) tapTgt
-      if isNothing mvalidPos then return Nothing  -- wrong level
-      else return $! case tapPath of
-        AndPath{pathList=q : rest,..} -> case chessDist (bpos b) q of
-          0 ->  -- step along path
-            let newPath = AndPath{ pathList = rest
-                                 , pathGoal
-                                 , pathLen = pathLen - 1 }
-            in if stepAccesible newPath
-               then Just tap{tapPath=newPath}
-               else Nothing
-          1 ->  -- no move or a sidestep last turn
-            if stepAccesible tapPath
-            then mtgtMPath
-            else Nothing
-          _ -> Nothing  -- veered off the path
-        AndPath{pathList=[],..}->
-          if bpos b == pathGoal then
-            mtgtMPath  -- goal reached; stay there picking up items
-          else
-            Nothing  -- somebody pushed us off the goal or the path to the goal
-                     -- was partial; let's target again
-        NoPath -> assert `failure` ()
+      if | isNothing mvalidPos -> return Nothing  -- wrong level
+         | bpos b == pathGoal tapPath ->
+             return mtgtMPath  -- goal reached; stay there picking up items
+         | otherwise -> return $! case tapPath of
+             AndPath{pathList=q : rest,..} -> case chessDist (bpos b) q of
+               0 ->  -- step along path
+                 let newPath = AndPath{ pathList = rest
+                                      , pathGoal
+                                      , pathLen = pathLen - 1 }
+                 in if stepAccesible newPath
+                    then Just tap{tapPath=newPath}
+                    else Nothing
+               1 ->  -- no move or a sidestep last turn
+                 if stepAccesible tapPath
+                 then mtgtMPath
+                 else Nothing
+               _ -> Nothing  -- veered off the path
+             AndPath{pathList=[],..}->
+               Nothing  -- path to the goal was partial; let's target again
+             NoPath -> assert `failure` ()
     Nothing -> return Nothing  -- no target assigned yet
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
@@ -400,6 +398,9 @@ targetStrategy aid = do
             in if lidExplored
                   || not (isUknownSpace t)
                   || condEnoughGear && tileAdj (isStairPos lid) pos
+                       -- the unknown may be on the other side of the level
+                       -- and getting there only to explore 1 tile and get back
+                       -- looks silly
                then pickNewTarget  -- others will notice soon enough
                else return $! returN "TUnknown" tap
           TKnown ->
