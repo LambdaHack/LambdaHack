@@ -438,7 +438,7 @@ bonusHP = armoredSkin
   , iflavour = zipPlain [BrBlue]
   , ifreq    = [("bonus HP", 1)]
   , iverbHit = "intimidate"
-  , iweight  = 0
+  , iweight  = 1  -- weight 0 reserved for tmp organs
   , iaspects = [AddMaxHP 1]
   , idesc    = ""
   }

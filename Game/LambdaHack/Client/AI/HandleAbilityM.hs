@@ -637,7 +637,7 @@ projectItem aid = do
           -- and no actors or obstacles along the path.
           benList <- condProjectListM skill aid
           localTime <- getsState $ getLocalTime (blid b)
-          let coeff CGround = 2  -- turn saved for pickup
+          let coeff CGround = 2  -- pickup turn saved
               coeff COrgan = assert `failure` benList
               coeff CEqp = 100000  -- must hinder currently
               coeff CInv = 1
@@ -709,7 +709,10 @@ applyItem aid applyGroup = do
       stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
   benList <- benAvailableItems aid stores
   organs <- mapM (getsState . getItemBody) $ EM.keys $ borgan b
-  let itemLegal itemFull = case applyGroup of
+  let hasGrps = mapMaybe (\item -> if jweight item == 0
+                                   then Just $ toGroupName $ jname item
+                                   else Nothing) organs
+      itemLegal itemFull = case applyGroup of
         ApplyFirstAid ->
           let getP (IK.RefillHP p) _ | p > 0 = True
               getP _ acc = acc
@@ -718,28 +721,28 @@ applyItem aid applyGroup = do
               foldr getP False ieffects
             _ -> False
         ApplyAll -> True
-      coeff CGround = 2  -- turn saved for pickup
+      coeff CGround = 2  -- pickup turn saved
       coeff COrgan = assert `failure` benList
       coeff CEqp = 1
       coeff CInv = 1
       coeff CSha = 1
       fTool benAv@(mben, cstore, iid, itemFull@ItemFull{itemBase}) =
-        let durable = IK.Durable `elem` jfeature itemBase
-            oldGrps = map (toGroupName . jname) organs
-            onlyVoidlyDropsOrgan =
-              -- We check if the only effect of the item is that it drops
-              -- an organ that we don't have. If so, item should not be applied.
-              -- This assumes the organ dropping is beneficial. If it's
-              -- a drawback of an otherwise good item, or a marginal
-              -- advantage only, we should reverse or ignore the condition.
-              -- For simplicity, we ignore the case of a general @grp@
-              -- that potentially drop many kinds of organs.
-              let newGrps = strengthDropOrgan itemFull
-                  hasDropOrgan = not $ null newGrps
+        let onlyVoidlyDropsOrgan =
+              -- We check if the only effect of the item is that it drops a tmp
+              -- organ that we don't have. If so, item should not be applied.
+              -- This assumes the organ dropping is beneficial and so worth
+              -- saving for the future, for otherwise the item would not
+              -- be considered at all, given that it's the only effect.
+              -- We don't try to intecept a case of many effects.
+              let dropsGrps = strengthDropOrgan itemFull
+                  hasDropOrgan = not $ null dropsGrps
                   f eff = if IK.forApplyEffect eff then [eff] else []
               in hasDropOrgan
-                 && null (newGrps `intersect` oldGrps)
+                 && (null hasGrps
+                     || toGroupName "temporary condition" `notElem` dropsGrps
+                        && null (dropsGrps `intersect` hasGrps))
                  && length (strengthEffect f itemFull) == 1
+            durable = IK.Durable `elem` jfeature itemBase
             benR = case mben of
               Nothing -> 0
                 -- experimenting is fun, but it's better to risk
