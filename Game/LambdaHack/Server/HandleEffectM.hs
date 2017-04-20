@@ -1208,8 +1208,9 @@ effectDropBestWeapon :: (MonadAtomic m, MonadServer m)
                      => m () -> ActorId -> m Bool
 effectDropBestWeapon execSfx target = do
   tb <- getsState $ getActorBody target
-  allAssocs <- fullAssocsServer target [CEqp]
   localTime <- getsState $ getLocalTime (blid tb)
+  allAssocsRaw <- fullAssocsServer target [CEqp]
+  let allAssocs = filter (isMelee . itemBase . snd) allAssocsRaw
   case strongestMelee Nothing localTime allAssocs of
     (_, (iid, _)) : _ -> do
       execSfx
