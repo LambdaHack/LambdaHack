@@ -77,6 +77,9 @@ effectToBenefit cops fact eff =
                      then (1, 0)   -- blink to shoot at foes
                      else (-9, -1)  -- for self, don't derail exploration
                                     -- for foes, fight with one less at a time
+    IK.CreateItem _ "useful" _ -> (50, 0)  -- assumed not temporary
+    IK.CreateItem _ "treasure" _ -> (100, 0)
+    IK.CreateItem COrgan "temporary condition" _ -> (0, 0)  -- varied, big bunch
     IK.CreateItem COrgan grp timer ->
       let turnTimer = case timer of
             IK.TimerNone -> averageTurnValue + 1  -- copy count used instead
@@ -85,8 +88,6 @@ effectToBenefit cops fact eff =
           (total, count) = organBenefit turnTimer grp cops fact
       in delta $ total `divUp` count  -- the same when created in me and in foe
         -- average over all matching grps; simplified: rarities ignored
-    IK.CreateItem _ "useful" _ -> (50, 0)  -- assumed not temporary
-    IK.CreateItem _ "treasure" _ -> (100, 0)  -- assumed not temporary
     IK.CreateItem _ grp _ ->  -- assumed not temporary and @grp@ tiny
       let (total, count) = recBenefit grp cops fact
       in (total `divUp` count, 0)
