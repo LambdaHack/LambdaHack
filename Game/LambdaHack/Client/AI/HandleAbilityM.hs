@@ -686,23 +686,28 @@ applyItem aid applyGroup = do
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltaSerious (bcalmDelta b)
       skill = EM.findWithDefault 0 AbApply actorSk
-      -- This detects if the value of keeping the item in eqp is in fact 0.
+      -- This detects if the value of keeping the item in eqp is in fact < 0.
       hind itemFull = hinders condShineWouldBetray condAimEnemyPresent
                               heavilyDistressed condNotCalmEnough
                               b ar itemFull
       permittedActor =
         either (const False) id
         . permittedApply localTime skill calmE " "
-      q (mben, cstore, _, itemFull) =
+      q (mben, _, _, itemFull) =
         let freq = case itemDisco itemFull of
               Nothing -> []
               Just ItemDisco{itemKind} -> IK.ifreq itemKind
             durable = IK.Durable `elem` jfeature (itemBase itemFull)
-       in (maybe False (> 0) $ benApply <$> mben)
-          && (cstore /= CEqp || durable || hind itemFull)
-               -- if beneficial in equipment and not durable then retain
-          && permittedActor itemFull
-          && maybe True (<= 0) (lookup "gem" freq) -- hack for elixir of youth
+            (bInEqp, bApply) = case mben of
+              Just Benefit{benInEqp, benApply} -> (benInEqp, benApply)
+              Nothing -> (goesIntoEqp $ itemBase itemFull, 0)  -- apply unsafe
+        in bApply > 0
+           && (not bInEqp  -- can't wear, so OK to break
+               || durable  -- can wear, but can't break, even better
+               || not (isMelee $ itemBase itemFull)  -- anything else expendable
+                  && hind itemFull)  -- hinders now, so possibly often, so away!
+           && permittedActor itemFull
+           && maybe True (<= 0) (lookup "gem" freq) -- hack for elixir of youth
       -- Organs are not taken into account, because usually they are either
       -- melee items, so harmful, or periodic, so charging between activations.
       -- The case of a weak weapon curing poison is too rare to incur overhead.

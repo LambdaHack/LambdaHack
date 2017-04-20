@@ -156,16 +156,16 @@ strongestSlot :: DiscoveryBenefit -> EqpSlot -> [(ItemId, ItemFull)]
 strongestSlot discoBenefit eqpSlot is =
   let f (iid, itemFull) =
         let rawDmg = damageUsefulness $ itemBase itemFull
-            (inEqp, pickup) = case EM.lookup iid discoBenefit of
+            (bInEqp, bPickup) = case EM.lookup iid discoBenefit of
                Just Benefit{benInEqp, benPickup} -> (benInEqp, benPickup)
                Nothing -> (goesIntoEqp $ itemBase itemFull, rawDmg)
-        in if not inEqp
+        in if not bInEqp
            then Nothing
            else Just $
              let ben = if eqpSlot == EqpSlotWeapon
                        -- For equipping/unequipping a weapon we take into
                        -- account not only melee power, but also aspects, etc.
-                       then pickup
+                       then bPickup
                        else prEqpSlot eqpSlot $ aspectRecordFull itemFull
              in (ben, (iid, itemFull))
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe f is

@@ -167,16 +167,19 @@ condProjectListM skill aid = do
       condNotCalmEnough = not calmE
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltaSerious (bcalmDelta b)
-      -- This detects if the value of keeping the item in eqp is in fact 0.
+      -- This detects if the value of keeping the item in eqp is in fact < 0.
       hind itemFull = hinders condShineWouldBetray condAimEnemyPresent
                               heavilyDistressed condNotCalmEnough
                               b ar itemFull
-      q (mben, cstore, _, itemFull) =
-        (maybe True (< 0) $ benFling <$> mben)
-        -- Weapon is needed in hand, melee is crucial.
-        && not (isMelee $ itemBase itemFull)
-        && (cstore /= CEqp || hind itemFull) -- even if durable, don't lose
-        && permittedProjectAI skill calmE itemFull
+      q (mben, _, _, itemFull) =
+        let (bInEqp, bFling) = case mben of
+              Just Benefit{benInEqp, benFling} -> (benInEqp, benFling)
+              Nothing -> (goesIntoEqp $ itemBase itemFull, -10)
+        in bFling < 0
+           && (not bInEqp  -- can't wear, so OK to risk losing or breaking
+               || not (isMelee $ itemBase itemFull)  -- anything else expendable
+                  && hind itemFull)  -- hinders now, so possibly often, so away!
+           && permittedProjectAI skill calmE itemFull
   benList <- benAvailableItems aid $ [CEqp, CInv, CGround] ++ [CSha | calmE]
   return $ filter q benList
 
@@ -211,10 +214,11 @@ hinders condShineWouldBetray condAimEnemyPresent
   in -- In the presence of enemies (seen, or unseen but distressing)
      -- actors want to hide in the dark.
      (condAimEnemyPresent || condNotCalmEnough || heavilyDistressed)
-     && itemShineBad
+     && itemShineBad  -- even if it's a weapon, take it off
      -- Fast actors want to hit hard, because they hit much more often
      -- than receive hits.
      || bspeed body ar > speedWalk
+        && not (isMelee $ itemBase itemFull)  -- in case it's the only weapon
         && 0 > aHurtMelee (aspectRecordFull itemFull)
 
 -- | Require that the actor stands over a desirable item.
