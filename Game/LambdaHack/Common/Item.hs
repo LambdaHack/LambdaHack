@@ -148,6 +148,8 @@ sumAspectRecord l = AspectRecord
 -- The full map is known by the server.
 type DiscoveryAspect = EM.EnumMap ItemId AspectRecord
 
+-- Tiny speedup from making fields non-strict (1%, a bit more GC, less alloc).
+-- The fields of @KindMean@ also need to be non-strict then, otherwise slowdown.
 data ItemDisco = ItemDisco
   { itemKindId     :: !(Kind.Id IK.ItemKind)
   , itemKind       :: !IK.ItemKind
@@ -156,6 +158,7 @@ data ItemDisco = ItemDisco
   }
   deriving Show
 
+-- No speedup from making fields non-strict.
 data ItemFull = ItemFull
   { itemBase  :: !Item
   , itemK     :: !Int

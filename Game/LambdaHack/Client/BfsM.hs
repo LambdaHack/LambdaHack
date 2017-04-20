@@ -316,7 +316,7 @@ embedBenefit fleeVia aid pbags = do
         _ ->
           if fleeVia `elem` [ViaNothing, ViaAnything]
 
-          then -- Actor uses he embedded item on himself, hence @effApply@.
+          then -- Actor uses the embedded item on himself, hence @effApply@.
                sum $ mapMaybe (\iid -> benApply <$> EM.lookup iid discoBenefit)
                               (EM.keys bag)
           else 0

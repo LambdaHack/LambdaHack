@@ -200,8 +200,8 @@ targetStrategy aid = do
       allExplored = ES.size explored == EM.size dungeon
       desirableBagFloor bag = any (\iid ->
         let item = getItemBody iid s
-            use = benPickup <$> EM.lookup iid discoBenefit
-        in desirableItem canEscape use item) $ EM.keys bag
+            benPick = benPickup <$> EM.lookup iid discoBenefit
+        in desirableItem canEscape benPick item) $ EM.keys bag
       desirableFloor (_, (_, bag)) = desirableBagFloor bag
       focused = bspeed b ar < speedWalk || condHpTooLow
       couldMoveLastTurn =
