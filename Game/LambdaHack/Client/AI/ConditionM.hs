@@ -147,16 +147,14 @@ condNoEqpWeaponM aid = do
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => Int -> ActorId -> m Bool
 condCanProjectM skill aid = do
+  -- Compared to conditions in @projectItem@, range and charge are ignored,
+  -- because they may change by the time the position for the fling is reached.
   benList <- condProjectListM skill aid
-  -- This is a simplified version of conditions in @projectItem@.
-  -- In particular, range and charge are ignored, because they may change
-  -- by the time the position for the fling is reached.
-  let isMissile ((mben, _), _) = maybe True (< 0) $ benFling <$> mben
-  return $ any isMissile benList
+  return $ not $ null benList
 
 condProjectListM :: MonadClient m
                  => Int -> ActorId
-                 -> m [((Maybe Benefit, (Int, CStore)), (ItemId, ItemFull))]
+                 -> m [(Maybe Benefit, CStore, ItemId, ItemFull)]
 condProjectListM skill aid = do
   b <- getsState $ getActorBody aid
   condShineWouldBetray <- condShineWouldBetrayM aid
@@ -173,32 +171,30 @@ condProjectListM skill aid = do
       hind itemFull = hinders condShineWouldBetray condAimEnemyPresent
                               heavilyDistressed condNotCalmEnough
                               b ar itemFull
-      q itemFull cstore =
+      q (mben, cstore, _, itemFull) =
+        (maybe True (< 0) $ benFling <$> mben)
         -- Weapon is needed in hand, melee is crucial.
-        not (isMelee $ itemBase itemFull)
-        && if cstore /= CEqp || hind itemFull -- even if durable, don't lose
-           then permittedProjectAI skill calmE itemFull
-           else False
-  benAvailableItems aid q $ [CEqp, CInv, CGround] ++ [CSha | calmE]
+        && not (isMelee $ itemBase itemFull)
+        && (cstore /= CEqp || hind itemFull) -- even if durable, don't lose
+        && permittedProjectAI skill calmE itemFull
+  benList <- benAvailableItems aid $ [CEqp, CInv, CGround] ++ [CSha | calmE]
+  return $ filter q benList
 
 -- | Produce the list of items with a given property available to the actor
 -- and the items' values.
 benAvailableItems :: MonadClient m
-                  => ActorId
-                  -> (ItemFull -> CStore -> Bool)
-                  -> [CStore]
-                  -> m [((Maybe Benefit, (Int, CStore)), (ItemId, ItemFull))]
-benAvailableItems aid permitted cstores = do
+                  => ActorId -> [CStore]
+                  -> m [(Maybe Benefit, CStore, ItemId, ItemFull)]
+benAvailableItems aid cstores = do
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
   discoBenefit <- getsClient sdiscoBenefit
   s <- getState
   let ben cstore bag =
-        [ ((benefit, (k, cstore)), (iid, itemFull))
-        | (iid, kit@(k, _)) <- EM.assocs bag
+        [ (mben, cstore, iid, itemFull)
+        | (iid, kit) <- EM.assocs bag
         , let itemFull = itemToF iid kit
-              benefit = EM.lookup iid discoBenefit
-        , permitted itemFull cstore ]
+              mben = EM.lookup iid discoBenefit ]
       benCStore cs = ben cs $ getBodyStoreBag b cs s
   return $ concatMap benCStore cstores
 
@@ -231,14 +227,14 @@ condDesirableFloorItemM aid = do
 -- that are worth picking up.
 benGroundItems :: MonadClient m
                => ActorId
-               -> m [((Maybe Benefit, (Int, CStore)), (ItemId, ItemFull))]
+               -> m [(Maybe Benefit, CStore, ItemId, ItemFull)]
 benGroundItems aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let canEsc = fcanEscape (gplayer fact)
-      isDesirable ((mben, _), (_, itemFull)) =
+      isDesirable (mben, _, _, itemFull) =
         desirableItem canEsc (benPickup <$> mben) (itemBase itemFull)
-  benList <- benAvailableItems aid (\_ _ -> True) [CGround]
+  benList <- benAvailableItems aid [CGround]
   return $ filter isDesirable benList
 
 desirableItem :: Bool -> Maybe Int -> Item -> Bool

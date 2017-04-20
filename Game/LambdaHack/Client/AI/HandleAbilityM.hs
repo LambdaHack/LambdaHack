@@ -309,14 +309,14 @@ pickup aid onlyWeapon = do
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
       calmE = calmEnough b ar
-      isWeapon (_, (_, item)) = isMelee item
+      isWeapon (_, _, _, itemFull) = isMelee $ itemBase itemFull
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
-      prepareOne (oldN, l4) ((mvalue, (k, _)), (iid, item)) =
-        let prep newN toCStore = (newN, (iid, k, CGround, toCStore) : l4)
-            inEqp = maybe (goesIntoEqp item) benInEqp mvalue
-            n = oldN + k
-        in if | calmE && goesIntoSha item && not onlyWeapon ->
+      prepareOne (oldN, l4) (mben, _, iid, ItemFull{..}) =
+        let prep newN toCStore = (newN, (iid, itemK, CGround, toCStore) : l4)
+            inEqp = maybe (goesIntoEqp itemBase) benInEqp mben
+            n = oldN + itemK
+        in if | calmE && goesIntoSha itemBase && not onlyWeapon ->
                 prep oldN CSha
               | inEqp && eqpOverfull b n ->
                 if onlyWeapon then (oldN, l4)
@@ -326,10 +326,8 @@ pickup aid onlyWeapon = do
               | not onlyWeapon ->
                 prep oldN CInv
               | otherwise -> (oldN, l4)
-      (_, prepared) = foldl' prepareOne (0, [])
-                      $ filterWeapon $ map (second (second itemBase)) benItemL
-  return $! if null prepared
-            then reject
+      (_, prepared) = foldl' prepareOne (0, []) $ filterWeapon benItemL
+  return $! if null prepared then reject
             else returN "pickup" $ ReqMoveItems prepared
 
 -- This only concerns items that can be equipped, that is with a slot
@@ -644,8 +642,7 @@ projectItem aid = do
               coeff CEqp = 100000  -- must hinder currently
               coeff CInv = 1
               coeff CSha = 1
-              fRanged ( (mben, (_, cstore))
-                      , (iid, itemFull@ItemFull{itemBase}) ) =
+              fRanged (mben, cstore, iid, itemFull@ItemFull{itemBase}) =
                 -- We assume if the item has a timeout, most effects are under
                 -- Recharging, so no point projecting if not recharged.
                 -- This changes in time, so recharging is not included
@@ -660,7 +657,7 @@ projectItem aid = do
                            * case mben of
                                Nothing -> -10  -- experiment if no good options
                                Just Benefit{benFling} -> benFling
-                in if benR < 0 && trange >= chessDist (bpos b) fpos && recharged
+                in if trange >= chessDist (bpos b) fpos && recharged
                    then Just ( - benR * rangeMult `div` 10
                              , ReqProject fpos newEps iid cstore )
                    else Nothing
@@ -696,21 +693,21 @@ applyItem aid applyGroup = do
       permittedActor =
         either (const False) id
         . permittedApply localTime skill calmE " "
-      q itemFull cstore =
+      q (mben, cstore, _, itemFull) =
         let freq = case itemDisco itemFull of
               Nothing -> []
               Just ItemDisco{itemKind} -> IK.ifreq itemKind
             durable = IK.Durable `elem` jfeature (itemBase itemFull)
-       in if cstore /= CEqp || durable || hind itemFull
-          then permittedActor itemFull
-               && maybe True (<= 0) (lookup "gem" freq)
-                    -- hack for elixir of youth
-          else False  -- beneficial in equipment and not durable; don't break it
+       in (maybe False (> 0) $ benApply <$> mben)
+          && (cstore /= CEqp || durable || hind itemFull)
+               -- if beneficial in equipment and not durable then retain
+          && permittedActor itemFull
+          && maybe True (<= 0) (lookup "gem" freq) -- hack for elixir of youth
       -- Organs are not taken into account, because usually they are either
       -- melee items, so harmful, or periodic, so charging between activations.
       -- The case of a weak weapon curing poison is too rare to incur overhead.
       stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
-  benList <- benAvailableItems aid q stores
+  benList <- benAvailableItems aid stores
   organs <- mapM (getsState . getItemBody) $ EM.keys $ borgan b
   let itemLegal itemFull = case applyGroup of
         ApplyFirstAid ->
@@ -726,7 +723,7 @@ applyItem aid applyGroup = do
       coeff CEqp = 1
       coeff CInv = 1
       coeff CSha = 1
-      fTool ((mben, (_, cstore)), (iid, itemFull@ItemFull{itemBase})) =
+      fTool benAv@(mben, cstore, iid, itemFull@ItemFull{itemBase}) =
         let durable = IK.Durable `elem` jfeature itemBase
             oldGrps = map (toGroupName . jname) organs
             onlyVoidlyDropsOrgan =
@@ -752,7 +749,7 @@ applyItem aid applyGroup = do
                 * if cstore == CEqp && not durable
                   then 100000  -- must hinder currently
                   else coeff cstore
-        in if itemLegal itemFull && benR > 0 && not onlyVoidlyDropsOrgan
+        in if q benAv && itemLegal itemFull && not onlyVoidlyDropsOrgan
            then Just (benR, ReqApply iid cstore)
            else Nothing
       benTool = mapMaybe fTool benList
