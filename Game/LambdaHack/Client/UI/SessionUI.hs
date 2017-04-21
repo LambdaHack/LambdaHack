@@ -105,7 +105,7 @@ data KeysHintMode =
 emptySessionUI :: Config -> SessionUI
 emptySessionUI sconfig =
   SessionUI
-    { sxhair = TVector $ Vector 1 1
+    { sxhair = TVector $ Vector 0 0
     , sactorUI = EM.empty
     , sslots = ItemSlots EM.empty EM.empty
     , slastSlot = SlotChar 0 'Z'
