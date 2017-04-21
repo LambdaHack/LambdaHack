@@ -20,13 +20,13 @@ import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.CommonM
-import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.ActorUI
 import Game.LambdaHack.Client.UI.EffectDescription
 import Game.LambdaHack.Client.UI.ItemDescription
 import Game.LambdaHack.Client.UI.ItemSlot
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgM
 import Game.LambdaHack.Client.UI.Overlay
@@ -242,10 +242,15 @@ itemOverlay store lid bag = do
   ItemSlots itemSlots organSlots <- getsSession sslots
   side <- getsClient sside
   factionD <- getsState sfactionD
+  sEqp <- getsState $ sharedEqp side
   let isOrgan = store == COrgan
       lSlots = if isOrgan then organSlots else itemSlots
       !_A = assert (all (`elem` EM.elems lSlots) (EM.keys bag)
                     `blame` (store, lid, bag, lSlots)) ()
+      markEqp iid t =
+        if store /= CEqp && not isOrgan && iid `EM.member` sEqp
+        then T.snoc (T.init t) '>'
+        else t
       pr (l, iid) =
         case EM.lookup iid bag of
           Nothing -> Nothing
@@ -255,7 +260,7 @@ itemOverlay store lid bag = do
                 phrase =
                   makePhrase [partItemWsRanged side factionD
                                                k store localTime itemFull]
-                al = textToAL (slotLabel l)
+                al = textToAL (markEqp iid $ slotLabel l)
                      <+:> [colorSymbol]
                      <+:> textToAL phrase
                 kx = (Right l, (undefined, 0, length al))

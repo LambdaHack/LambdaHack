@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.ActorState
   ( fidActorNotProjAssocs, actorAssocs, actorRegularAssocs
   , warActorRegularList, friendlyActorRegularList, fidActorRegularIds
   , bagAssocs, bagAssocsK, calculateTotal
-  , mergeItemQuant, sharedAllOwnedFid, findIid
+  , mergeItemQuant, sharedEqp, sharedAllOwnedFid, findIid
   , getContainerBag, getFloorBag, getEmbedBag, getBodyStoreBag
   , mapActorItems_, getActorAssocs
   , nearbyFreePoints, getCarriedAssocs, getCarriedIidCStore

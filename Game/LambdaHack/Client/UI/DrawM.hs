@@ -419,7 +419,7 @@ drawFrameStatus drawnLevelId = do
                                             - length damageStatus)
       tgtOrItem n = do
         let fallback = if MK.fleaderMode (gplayer fact) == MK.LeaderNull
-                       then "This faction never has a leader"
+                       then "This faction never picks a leader"
                        else "Waiting for a team member to spawn"
             leaderName =
               maybe fallback (\body -> "Leader:" <+> bname body) mbodyUI
