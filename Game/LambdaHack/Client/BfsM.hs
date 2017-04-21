@@ -403,17 +403,17 @@ condEnoughGearM aid = do
                || length (eqpAssocs ++ invAssocs) >= 5)
 
 unexploredDepth :: MonadClient m => Bool -> LevelId -> m Bool
-unexploredDepth up lidCurrent = do
+unexploredDepth !up !lidCurrent = do
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
   let allExplored = ES.size explored == EM.size dungeon
       unexploredD =
-        let unex lid = allExplored
-                       && not (null $ lescape $ dungeon EM.! lid)
-                       || ES.notMember lid explored
-                       || unexploredD lid
+        let unex !lid = allExplored
+                        && not (null $ lescape $ dungeon EM.! lid)
+                        || ES.notMember lid explored
+                        || unexploredD lid
         in any unex . ascendInBranch dungeon up
-  return $! unexploredD lidCurrent
+  return $ unexploredD lidCurrent  -- keep it lazy
 
 -- | Closest (wrt paths) items.
 closestItems :: MonadClient m => ActorId -> m [(Int, (Point, ItemBag))]
