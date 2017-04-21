@@ -215,6 +215,13 @@ furthestKnown aid = do
 -- AI is at a disadvantage (and with many hidden doors, it fares as well
 -- as a human that deduced the dungeon properties). Changing Bfs to accomodate
 -- all dungeon styles would be complex and would slow down the engine.
+--
+-- If the level has inaccessible open areas (at least from the stairs AI used)
+-- the level will be nevertheless here finally marked explored,
+-- to enable transition to other levels.
+-- We should generally avoid such levels, because digging and/or trying
+-- to find other stairs leading to disconnected areas is not KISS
+-- so we don't do this in AI, so AI is at a disadvantage.
 closestUnknown :: MonadClient m => ActorId -> m (Maybe Point)
 closestUnknown aid = do
   body <- getsState $ getActorBody aid
@@ -222,20 +229,20 @@ closestUnknown aid = do
   bfs <- getCacheBfs aid
   let closestPoss = PointArray.minIndexesA bfs
       dist = bfs PointArray.! head closestPoss
-  when (lclear lvl <= lseen lvl) $ do
-    -- Some unknown may still be accessible through suspect tiles,
-    -- so we return them below, but we already know the unknown (or the suspect)
-    -- are not clear or not reachable, so we mark the level explored.
-    -- If the level has inaccessible open areas (at least from stairs AI used)
-    -- the level will be nevertheless here finally marked explored,
-    -- to enable transition to other levels.
-    -- We should generally avoid such levels, because digging and/or trying
-    -- to find other stairs leading to disconnected areas is not KISS
-    -- so we don't do this in AI, so AI is at a disadvantage.
-    let !_A = assert (lclear lvl >= lseen lvl) ()
+      !_A = assert (lclear lvl >= lseen lvl) ()
+  if lclear lvl <= lseen lvl
+       -- Some unknown may still be visible and even pathable, but we already
+       -- know from global level info that they are blocked.
+     || dist >= apartBfs
+       -- Global level info may tell us that terrain was changed and so
+       -- some new explorable tile appeared, but we don't care about those
+       -- and we know we already explored all initially seen unknown tiles
+       -- and it's enough for us (otherwise we'd need to hunt all around
+       -- the map for tiles altered by enemies).
+  then do
     modifyClient $ \cli ->
       cli {sexplored = ES.insert (blid body) (sexplored cli)}
-  if dist >= apartBfs then return Nothing
+    return Nothing
   else do
     let unknownAround pos =
           let vic = vicinityUnsafe pos
