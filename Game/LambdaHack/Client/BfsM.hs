@@ -147,13 +147,28 @@ getCachePath aid target = do
 
 createPath :: MonadClient m => ActorId -> Target -> m TgtAndPath
 createPath aid tapTgt = do
+  Kind.COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
+  lvl <- getLevel $ blid b
+  let stopAtUnwalkable tapPath@AndPath{..} =
+        let (walkable, rest) =
+              span (Tile.isWalkable coTileSpeedup . at lvl) pathList
+        in case rest of
+          [] -> TgtAndPath{..}
+          [g] | g == pathGoal -> TgtAndPath{..}
+          newGoal : _ ->
+            let newTgt = TPoint TKnown (blid b) newGoal
+                newPath = AndPath{ pathList = walkable ++ [newGoal]
+                                 , pathGoal = newGoal
+                                 , pathLen = length walkable + 1 }
+            in TgtAndPath{tapTgt = newTgt, tapPath = newPath}
+      stopAtUnwalkable tapPath@NoPath = TgtAndPath{..}
   mpos <- aidTgtToPos aid (blid b) tapTgt
   case mpos of
     Nothing -> return TgtAndPath{tapTgt, tapPath=NoPath}
     Just p -> do
-      tapPath <- getCachePath aid p
-      return $! TgtAndPath{..}
+      path <- getCachePath aid p
+      return $! stopAtUnwalkable path
 
 condBFS :: MonadClient m => ActorId -> m (Bool, Word8)
 condBFS aid = do
@@ -212,7 +227,7 @@ closestUnknown aid = do
     -- so we return them below, but we already know the unknown (or the suspect)
     -- are not clear or not reachable, so we mark the level explored.
     -- If the level has inaccessible open areas (at least from stairs AI used)
-    -- the level will nevertheless here finally marked explored,
+    -- the level will be nevertheless here finally marked explored,
     -- to enable transition to other levels.
     -- We should generally avoid such levels, because digging and/or trying
     -- to find other stairs leading to disconnected areas is not KISS

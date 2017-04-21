@@ -93,7 +93,8 @@ targetStrategy aid = do
   -- We assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway) and set his target accordingly.
   actorAspect <- getsClient sactorAspect
-  let condInMelee = case scondInMelee EM.! blid b of
+  let lalter = salter EM.! blid b
+      condInMelee = case scondInMelee EM.! blid b of
         Just cond -> cond
         Nothing -> assert `failure` condInMelee
       stdRuleset = Kind.stdRuleset corule
@@ -108,8 +109,7 @@ targetStrategy aid = do
       stepAccesible AndPath{pathList=q : _} =
         -- Effectively, only @alterMinWalk@ is checked, because real altering
         -- is not done via target path, but action after end of path.
-        let lalter = salter EM.! blid b
-        in alterSkill >= fromEnum (lalter PointArray.! q)
+        alterSkill >= fromEnum (lalter PointArray.! q)
       stepAccesible _ = False
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   oldTgtUpdatedPath <- case mtgtMPath of
@@ -195,7 +195,6 @@ targetStrategy aid = do
   discoBenefit <- getsClient sdiscoBenefit
   s <- getState
   let lidExplored = ES.member (blid b) explored
-      allExplored = ES.size explored == EM.size dungeon
       desirableBagFloor bag = any (\iid ->
         let item = getItemBody iid s
             benPick = benPickup <$> EM.lookup iid discoBenefit
@@ -406,7 +405,8 @@ targetStrategy aid = do
           TKnown ->
             if bpos b == pos
                || isStuck
-               || not allExplored  -- new levels created, etc.
+               || alterSkill < fromEnum (lalter PointArray.! pos)
+                    -- tile was searched or altered or skill lowered
             then pickNewTarget  -- others unconcerned
             else return $! returN "TKnown" tap
           TAny -> pickNewTarget  -- reset elsewhere or carried over from UI

@@ -156,7 +156,8 @@ alterMinWalk TileSpeedup{alterMinWalkTab} =
 -- so that a foe opening a door doesn't force us to backtrack to explore it.
 isExplorable :: TileSpeedup -> Kind.Id TileKind -> Bool
 isExplorable coTileSpeedup t =
-  (isWalkable coTileSpeedup t || isClear coTileSpeedup t) && not (isDoor coTileSpeedup t)
+  (isWalkable coTileSpeedup t || isClear coTileSpeedup t)
+  && not (isDoor coTileSpeedup t)
 
 speedup :: Bool -> Kind.Ops TileKind -> TileSpeedup
 speedup allClear cotile =
