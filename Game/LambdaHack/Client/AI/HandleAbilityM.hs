@@ -908,15 +908,15 @@ moveTowards aid target goal relaxed = do
   if noFriends target && enterableHere target then
     return $! returN "moveTowards adjacent" $ target `vectorToFrom` source
   else do
-    let goesBack v = maybe False (\oldpos -> v == oldpos `vectorToFrom` source)
-                           (boldpos b)
+    let goesBack p = Just p == boldpos b
         nonincreasing p = chessDist source goal >= chessDist p goal
         isSensible | relaxed = \p -> noFriends p
                                      && enterableHere p
                    | otherwise = \p -> nonincreasing p
+                                       && not (goesBack p)
                                        && noFriends p
                                        && enterableHere p
-        sensible = [ ((goesBack v, chessDist p goal), v)
+        sensible = [ ((goesBack p, chessDist p goal), v)
                    | v <- moves, let p = source `shift` v, isSensible p ]
         sorted = sortBy (comparing fst) sensible
         groups = map (map snd) $ groupBy ((==) `on` fst) sorted
