@@ -337,6 +337,11 @@ targetStrategy aid = do
                  -- as soon as it bumps into them.
              | otherwise -> do
                let p = bpos body
+               -- If there are no unwalkable tiles on the path to enemy,
+               -- he gets target @TEnemy@ and then, even if such tiles emerge,
+               -- the target updated by his moves remains @TEnemy@.
+               -- Coversly, he is stuck with @TKnown@ if initial target had
+               -- unwalkable tiles, for as long as they remain. Harmless quirk.
                mpath <- getCachePath aid p
                case mpath of
                  NoPath -> pickNewTarget  -- enemy became unreachable
