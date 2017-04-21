@@ -72,8 +72,9 @@ pickActorToMove maidToAvoid = do
       -- (to make the AI appear more human-like and easier to observe).
       let refresh aidBody = do
             mtgt <- refreshTarget aidBody
-            return $ (\tgt -> (aidBody, tgt)) <$> mtgt
-          goodGeneric (_, TgtAndPath{tapPath=NoPath}) = False
+            return $ (aidBody, mtgt)
+          goodGeneric (_, Nothing) = Nothing
+          goodGeneric (_, Just TgtAndPath{tapPath=NoPath}) = Nothing
             -- this case means melee-less heroes adjacent to foes, etc.
             -- will never flee if melee is happening; but this is rare;
             -- this also ensures even if a lone actor melees and nobody
@@ -81,15 +82,19 @@ pickActorToMove maidToAvoid = do
             -- because otherwise an explorer would need to become a leader
             -- and fighter will be 1 clip slower for the whole fight,
             -- just for a few turns of exploration in return
-          goodGeneric ((aid, b), _) = case maidToAvoid of
-            Nothing ->  -- not the old leader that was stuck last turn
-                        -- because he is likely to be still stuck
-              not (aid == oldAid && waitedLastTurn b)
-            Just aidToAvoid ->  -- not an attempted leader stuck this turn
-              aid /= aidToAvoid
-      oursTgt <- filter goodGeneric . catMaybes <$> mapM refresh ours
-      -- This should be kept in sync with @actionStrategy@.
-      let actorVulnerable ((aid, body), _) = do
+          goodGeneric ((aid, b), Just tgt) = case maidToAvoid of
+            Nothing | not (aid == oldAid && waitedLastTurn b) ->
+              -- Not the old leader that was stuck last turn
+              -- because he is likely to be still stuck.
+              Just ((aid, b), tgt)
+            Just aidToAvoid | aid /= aidToAvoid ->
+              -- Not an attempted leader stuck this turn/
+              Just ((aid, b), tgt)
+            _ -> Nothing
+      oursTgtRaw <- mapM refresh ours
+      let oursTgt = mapMaybe goodGeneric oursTgtRaw
+          -- This should be kept in sync with @actionStrategy@.
+          actorVulnerable ((aid, body), _) = do
             scondInMelee <- getsClient scondInMelee
             let condInMelee = case scondInMelee EM.! blid body of
                   Just cond -> cond
@@ -177,13 +182,18 @@ pickActorToMove maidToAvoid = do
           (oursTEnemyAll, oursOther) = partition targetTEnemy oursNotRanged
           -- These are not necessarily stuck (perhaps can go around),
           -- but their current path is blocked by friends.
-          targetBlocked ((aid, body), TgtAndPath{tapPath}) =
-            let next = case tapPath of
-                  AndPath{pathList= q : _} -> Just q
-                  _ -> Nothing
-            in any (\(aid2, body2) -> aid2 /= aid  -- in case pushed onto goal
-                                      && waitedLastTurn body  -- 1 free sidestep
-                                      && Just (bpos body2) == next) ours
+          notSwapReady b TgtAndPath{tapPath=AndPath{pathList=q : _}} =
+            q /= bpos b
+          notSwapReady _ _ = True
+          targetBlocked ((aid, body), TgtAndPath{tapPath}) = case tapPath of
+            AndPath{pathList= q : _} ->
+               waitedLastTurn body  -- 1 free sidestep
+               && any (\((aid2, body2), mtgt2) ->
+                         aid2 /= aid  -- in case pushed on goal
+                         && bpos body2 == q
+                         && maybe True (notSwapReady body) mtgt2)
+                      oursTgtRaw
+            _ -> False
           (oursTEnemyBlocked, oursTEnemy) =
             partition targetBlocked oursTEnemyAll
       (oursNoSupportRaw, oursSupportRaw) <-
@@ -199,7 +209,7 @@ pickActorToMove maidToAvoid = do
           -- Lower overhead is better.
           overheadOurs :: ((ActorId, Actor), TgtAndPath) -> Int
           overheadOurs ((aid, _), TgtAndPath{tapPath=NoPath}) =
-            200 + if aid == oldAid then 1 else 0
+            100 + if aid == oldAid then 1 else 0
           overheadOurs abt@( (aid, b)
                            , TgtAndPath{tapPath=AndPath{pathLen=d,pathGoal}} ) =
             -- Keep proper formation. Too dense and exploration takes
