@@ -101,7 +101,7 @@ pickActorToMove maidToAvoid = do
             (fleeL, _) <- fleeList aid
             condSupport1 <- condSupport 1 aid
             condSupport2 <- condSupport 2 aid
-            aCanDeAmbient <- getsState $ actorCanDeAmbient body
+            canDeAmbientL <- getsState $ canDeAmbientList body
             let condCanFlee = not (null fleeL)
                 speed1_5 = speedScale (3%2) (bspeed body ar)
                 condCanMelee = actorCanMelee actorAspect aid body
@@ -117,13 +117,16 @@ pickActorToMove maidToAvoid = do
                   -- Actor hit by a projectile or similarly distressed.
                   deltaSerious (bcalmDelta body)
                 actorShines = aShine ar > 0
-                aCanDeLight = aCanDeAmbient && not actorShines
+                aCanDeLightL | actorShines = []
+                             | otherwise = canDeAmbientL
+                canFleeFromLight =
+                  not $ null $ aCanDeLightL `intersect` map snd fleeL
             return $!
               not condFastThreatAdj
               && if | condThreat 1 -> not condCanMelee
                                       || condManyThreatAdj && not condSupport1
                     | not condInMelee
-                      && (condThreat 2 || condThreat 5 && aCanDeLight) ->
+                      && (condThreat 2 || condThreat 5 && canFleeFromLight) ->
                       not condCanMelee
                       || not condSupport2 && not heavilyDistressed
                     -- not used: | condThreat 5 -> False
@@ -136,7 +139,7 @@ pickActorToMove maidToAvoid = do
                       -- cope with being pummeled by projectiles.
                       -- He is still vulnerable, just not necessarily needs
                       -- to flee, but may cover himself otherwise.
-                      -- && (aCanDeLight || not condCanProject)
+                      -- && (not condCanProject || canFleeFromLight)
               && condCanFlee
           actorHearning (_, TgtAndPath{ tapTgt=TPoint TEnemyPos{} _ _
                                       , tapPath=NoPath }) =

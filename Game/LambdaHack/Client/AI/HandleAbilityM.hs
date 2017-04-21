@@ -75,7 +75,7 @@ actionStrategy aid retry = do
   (fleeL, badVic) <- fleeList aid
   condSupport1 <- condSupport 1 aid
   condSupport2 <- condSupport 2 aid
-  aCanDeAmbient <- getsState $ actorCanDeAmbient body
+  canDeAmbientL <- getsState $ canDeAmbientList body
   actorSk <- currentSkillsClient aid
   condCanProject <-
     condCanProjectM (EM.findWithDefault 0 AbProject actorSk) aid
@@ -110,7 +110,10 @@ actionStrategy aid retry = do
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
         deltaSerious (bcalmDelta body)
       actorShines = aShine ar > 0
-      aCanDeLight = aCanDeAmbient && not actorShines
+      aCanDeLightL | actorShines = []
+                   | otherwise = canDeAmbientL
+      aCanDeLight = not $ null aCanDeLightL
+      canFleeFromLight = not $ null $ aCanDeLightL `intersect` map snd fleeL
       actorMaxSk = aSkills ar
       abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
       stratToFreq :: Int -> m (Strategy RequestAnyAbility)
@@ -158,7 +161,7 @@ actionStrategy aid retry = do
             && if | condThreat 1 -> not condCanMelee
                                     || condManyThreatAdj && not condSupport1
                   | not condInMelee
-                    && (condThreat 2 || condThreat 5 && aCanDeLight) ->
+                    && (condThreat 2 || condThreat 5 && canFleeFromLight) ->
                     -- Don't keep fleeing if just hit, because too close
                     -- to enemy to get out of his range, most likely,
                     -- and so melee him instead, unless can't melee at all.
@@ -175,7 +178,7 @@ actionStrategy aid retry = do
                     -- ranged attack and prepare ambush for later on.
                     not condInMelee
                     && heavilyDistressed
-                    && (aCanDeLight || not condCanProject) )
+                    && (not condCanProject || canFleeFromLight) )
         , ( [AbMelee], (toAny :: ToAny 'AbMelee)
             <$> meleeBlocker aid  -- only melee blocker
           , condAnyFoeAdj  -- if foes, don't displace, otherwise friends:
