@@ -22,9 +22,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleModeKind
   , validateAll = validateAllModeKind
   , content = contentFromList
-      [raid, brawl, shootout, escape, zoo, ambush, exploration, safari, safariSurvival, battle, battleSurvival, defense, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush]
+      [raid, brawl, shootout, escape, zoo, ambush, exploration, safari, safariSurvival, battle, battleSurvival, defense, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverExploration, screensaverSafari]
   }
-raid,        brawl, shootout, escape, zoo, ambush, exploration, safari, safariSurvival, battle, battleSurvival, defense, screensaverSafari, screensaverRaid, screensaverBrawl, screensaverAmbush :: ModeKind
+raid,        brawl, shootout, escape, zoo, ambush, exploration, safari, safariSurvival, battle, battleSurvival, defense, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverExploration, screensaverSafari :: ModeKind
 
 -- What other symmetric (two only-one-moves factions) and asymmetric vs crowd
 -- scenarios make sense (e.g., are good for a tutorial or for standalone
@@ -175,13 +175,6 @@ screensave auto r =
         (player {fleaderMode = LeaderAI auto}, initial) : rest
   in r {rosterList = f $ rosterList r}
 
-screensaverSafari = safari
-  { mname   = "auto-safari"
-  , mfreq   = [("starting", 1), ("no confirms", 1)]
-  , mroster = -- changing leader by client needed, because of TFollow
-              screensave (AutoLeader False True) rosterSafari
-  }
-
 screensaverRaid = raid
   { mname   = "auto-raid"
   , mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
@@ -194,12 +187,42 @@ screensaverBrawl = brawl
   , mroster = screensave (AutoLeader False False) rosterBrawl
   }
 
+screensaverShootout = shootout
+  { mname   = "auto-shootout"
+  , mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
+  , mroster = screensave (AutoLeader False False) rosterShootout
+  }
+
+screensaverEscape = escape
+  { mname   = "auto-escape"
+  , mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
+  , mroster = screensave (AutoLeader False False) rosterEscape
+  }
+
+screensaverZoo = zoo
+  { mname   = "auto-zoo"
+  , mfreq   = [("no confirms", 1)]
+  , mroster = screensave (AutoLeader False False) rosterZoo
+  }
+
 screensaverAmbush = ambush
   { mname   = "auto-ambush"
-  , mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
+  , mfreq   = [("no confirms", 1)]
   , mroster = screensave (AutoLeader False False) rosterAmbush
   }
 
+screensaverExploration = exploration
+  { mname   = "auto-crawl"
+  , mfreq   = [("no confirms", 1)]
+  , mroster = screensave (AutoLeader False False) rosterExploration
+  }
+
+screensaverSafari = safari
+  { mname   = "auto-safari"
+  , mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
+  , mroster = -- changing leader by client needed, because of TFollow
+              screensave (AutoLeader False True) rosterSafari
+  }
 
 rosterRaid, rosterBrawl, rosterShootout, rosterEscape, rosterZoo, rosterAmbush, rosterExploration, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleSurvival, rosterDefense :: Roster
 
