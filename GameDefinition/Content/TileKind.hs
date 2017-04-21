@@ -29,7 +29,7 @@ cdefs = ContentDef
 unknown,        wall, hardRock, pillar, pillarIce, pulpit, pillarCache, lampPost, signboardUnread, signboardRead, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, wallObscuredV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, rubblePlace, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark :: TileKind
 
 ldarkable :: [TileKind]
-ldarkable = [wallV, wallSuspectV, wallObscuredV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, doorTrappedH, doorClosedH, doorOpenH, rubble, rubblePlace, floorCorridorLit]
+ldarkable = [wallV, wallSuspectV, wallObscuredV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, doorTrappedH, doorClosedH, doorOpenH, floorCorridorLit]
 
 ldarkColorable :: [TileKind]
 ldarkColorable = [floorArenaLit, floorNoiseLit, floorDirtLit, floorActorLit, floorItemLit, floorActorItemLit]
@@ -470,12 +470,12 @@ rubble = TileKind
                    -- disabled while it's all or nothing per cave and per room;
                    -- we need a new mechanism, Spice is not enough, because
                    -- we don't want multicolor trailLit corridors
-      -- ("rubbleOrNotLit", 70)
+      -- ("rubbleOrNot", 70)
       -- until we can sync change of tile and activation, it always takes 1 turn
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 5
-  , tfeature = [ OpenTo "rubbleOrNotLit", Embed "rubble", Indistinct
+  , tfeature = [ OpenTo "rubbleOrNot", Embed "rubble", Indistinct
                , RevealAs "dummy, prevents AI trigger, unless in the way" ]
                  -- AI doesn't go out of its way to clear the way for heroes
   }
@@ -487,7 +487,7 @@ rubblePlace = TileKind
   , tcolor2  = defFG
   , talter   = 5
   , tfeature = [ Spice
-               , OpenTo "rubblePlaceOrNotLit", Embed "rubble", Indistinct
+               , OpenTo "rubblePlaceOrNot", Embed "rubble", Indistinct
                , RevealAs "dummy, prevents AI trigger, unless in the way" ]
       -- It's not explorable, due to not being walkable nor clear and due
       -- to being a door (@OpenTo@), which is kind of OK, because getting
@@ -496,7 +496,7 @@ rubblePlace = TileKind
 floorCorridorLit = TileKind
   { tsymbol  = '#'
   , tname    = "corridor"
-  , tfreq    = [("floorCorridorLit", 99), ("rubbleOrNotLit", 30)]
+  , tfreq    = [("floorCorridorLit", 99), ("rubbleOrNot", 30)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = maxBound
@@ -505,7 +505,7 @@ floorCorridorLit = TileKind
 floorArenaLit = floorCorridorLit
   { tsymbol  = floorSymbol
   , tname    = "stone floor"
-  , tfreq    = [ ("floorArenaLit", 1), ("rubblePlaceOrNotLit", 30)
+  , tfreq    = [ ("floorArenaLit", 1), ("rubblePlaceOrNot", 30)
                , ("arenaSet", 1), ("emptySet", 97), ("zooSet", 1000) ]
   }
 floorNoiseLit = floorArenaLit
