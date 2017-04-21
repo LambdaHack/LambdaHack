@@ -99,6 +99,9 @@ pillarIce = TileKind
   , tcolor2  = Blue
   , talter   = 5
   , tfeature = [Clear, Embed "frost", OpenTo "damp stone floor", Indistinct]
+      -- Is door, due to @OpenTo@, so is not explorable, but it's OK, because
+      -- it doesn't generate items nor clues. This saves on the need to
+      -- get each ice pillar into sight range when exploring level.
   }
 pulpit = TileKind
   { tsymbol  = 'O'
@@ -118,6 +121,7 @@ pillarCache = TileKind
   , talter   = 5
   , tfeature = [ Embed "terrain cache", Embed "terrain cache trap"
                , ChangeTo "cachable", Indistinct ]
+      -- Not explorable, but prominently placed, so hard to miss.
   }
 lampPost = TileKind
   { tsymbol  = 'O'
@@ -485,6 +489,9 @@ rubblePlace = TileKind
   , tfeature = [ Spice
                , OpenTo "rubblePlaceOrNotLit", Embed "rubble", Indistinct
                , RevealAs "dummy, prevents AI trigger, unless in the way" ]
+      -- It's not explorable, due to not being walkable nor clear and due
+      -- to being a door (@OpenTo@), which is kind of OK, because getting
+      -- the item is risky and, e.g., AI doesn't attempt it.
   }
 floorCorridorLit = TileKind
   { tsymbol  = '#'

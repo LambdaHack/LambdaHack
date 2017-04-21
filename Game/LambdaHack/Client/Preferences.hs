@@ -337,7 +337,7 @@ totalUsefulness !cops !fact !effects !aspects !item =
       -- impacted, because it makes more sense to use an item that is durable
       -- and save the option for using non-durable item for the future, e.g.,
       -- when both items have timeouts, starting with durable is beneficial,
-      -- becuase it recharges while the non-durable is prepaired and used.
+      -- because it recharges while the non-durable is prepaired and used.
       durable = IK.Durable `elem` jfeature item
       -- If recharging effects not periodic, we add the self part,
       -- because they are applied to self. If they are periodic we can't
