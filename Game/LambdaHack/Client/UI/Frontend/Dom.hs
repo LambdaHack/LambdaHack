@@ -56,6 +56,9 @@ data FrontendSession = FrontendSession
   , spreviousFrame :: !(IORef SingleFrame)
   }
 
+extraBlankMargin :: Int
+extraBlankMargin = 1
+
 -- | The name of the frontend.
 frontendName :: String
 frontendName = "browser"
@@ -83,8 +86,8 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   let lxsize = fst normalLevelBound + 1
       lysize = snd normalLevelBound + 4
       cell = "<td>" ++ [Char.chr 160]
-      row = "<tr>" ++ concat (replicate lxsize cell)
-      rows = concat (replicate lysize row)
+      row = "<tr>" ++ concat (replicate (lxsize + extraBlankMargin * 2) cell)
+      rows = concat (replicate (lysize + extraBlankMargin * 2) row)
   tableElemRaw <- createElement doc ("table" :: Text)
   tableElem <- unsafeCastTo HTMLTableElement tableElemRaw
   appendChild_ divBlock tableElem
@@ -94,14 +97,16 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   setProp scharStyle "font-family" "lambdaHackFont"
   setProp scharStyle "font-size" $ tshow (fromJust sfontSize) <> "px"
   setProp scharStyle "font-weight" "bold"
-  -- Get rid of table spacing. Tons of spurious hacks just in case.
-  setCellPadding tableElem (Just ("0" :: Text))
-  setCellSpacing tableElem (Just ("0" :: Text))
   setProp scharStyle "outline" "1px solid grey"
-  setProp scharStyle "padding" "0 0 0 0"
   setProp scharStyle "border-collapse" "collapse"
   setProp scharStyle "margin-left" "auto"
   setProp scharStyle "margin-right" "auto"
+  -- Get rid of table spacing. Tons of spurious hacks just in case.
+  setCellPadding tableElem (Just ("0" :: Text))
+  setCellSpacing tableElem (Just ("0" :: Text))
+  setProp scharStyle "padding" "0 0 0 0"
+  setProp scharStyle "border-spacing" "0"
+  setProp scharStyle "border" "none"
   -- Create the session record.
   setInnerHTML tableElem $ Just rows
   scharCells <- flattenTable tableElem
@@ -138,11 +143,10 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
       preventDefault
       stopPropagation
   -- Handle mouseclicks, per-cell.
-  let setupMouse i a = let Point x y = PointArray.punindex lxsize i
-                       in handleMouse rf a x y
+  let setupMouse i a =
+        let Point x y = PointArray.punindex lxsize i
+        in handleMouse rf a x y
   V.imapM_ setupMouse scharCells
-  let setBorder (_, style) = setProp style "border" "1px solid transparent"
-  V.mapM_ setBorder scharCells
   -- Display at the end to avoid redraw
   appendChild_ body divBlock
   IO.liftIO $ putMVar rfMVar rf
@@ -212,7 +216,8 @@ flattenTable table = do
   let f y = do
         rowsItem <- itemUnsafe rows y
         unsafeCastTo HTMLTableRowElement rowsItem
-  lrow <- mapM f [0 .. toEnum (lysize-1)]
+  lrow <- mapM f [toEnum extraBlankMargin
+                  .. toEnum (lysize - 1 + extraBlankMargin)]
   let getC :: HTMLTableRowElement
            -> DOM [(HTMLTableCellElement, CSSStyleDeclaration)]
       getC row = do
@@ -222,7 +227,8 @@ flattenTable table = do
               cell <- unsafeCastTo HTMLTableCellElement cellsItem
               style <- getStyle cell
               return (cell, style)
-        mapM g [0 .. toEnum (lxsize-1)]
+        mapM g [toEnum extraBlankMargin
+                .. toEnum (lxsize - 1 + extraBlankMargin)]
   lrc <- mapM getC lrow
   return $! V.fromListN (lxsize * lysize) $ concat lrc
 
