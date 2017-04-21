@@ -372,7 +372,9 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
                                  (filter (`isAllied` bfid) $ EM.elems factionD)
                      else any hasUIorEscapes
                               (filter (`isAtWar` bfid) $ EM.elems factionD)
-      diffHP | boostFact = hp * 2 ^ abs diffBonusCoeff
+      diffHP | boostFact = if cdiff curChalSer == 1
+                           then xM 999 - hp -- as much as UI can stand
+                           else hp * 2 ^ abs diffBonusCoeff
              | otherwise = hp
       bonusHP = fromEnum $ (diffHP - hp) `divUp` oneM
       healthOrgans = [(Just bonusHP, ("bonus HP", COrgan)) | bonusHP /= 0]
