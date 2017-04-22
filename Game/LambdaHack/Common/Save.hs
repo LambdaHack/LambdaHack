@@ -106,18 +106,17 @@ restoreGame cops fileName = do
       else do
         let msg = "Savefile" <+> T.pack path <+> "from old version"
                   <+> showVersion2 vExevLib2
-                  <+> "found and moved aside to start"
+                  <+> "detected while trying to restore"
                   <+> showVersion2 (vExevLib cops)
                   <+> "game."
-        delayPrint msg
-        renameFile path (path <.> "bkp")
-        return Nothing
+        fail $ T.unpack msg
     else return Nothing
   let handler :: Ex.SomeException -> IO (Maybe a)
       handler e = do
-        let msg = "Restore failed. The error message is:"
+        let msg = "Restore failed. The old file moved aside. The error message is:"
                   <+> (T.unwords . T.lines) (tshow e)
         delayPrint msg
+        renameFile path (path <.> "bkp")
         return Nothing
   either handler return res
 

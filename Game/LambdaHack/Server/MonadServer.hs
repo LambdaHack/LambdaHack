@@ -113,15 +113,15 @@ restoreScore Kind.COps{corule} = do
         if vlib2 == Self.version
         then return $ Just s
         else do
-          renameFile path (path <.> "bkp")
-          let msg = "Old version high score file moved aside."
+          let msg = "High score file from old version of game detected."
           fail msg
       else return Nothing
     let handler :: Ex.SomeException -> m (Maybe a)
         handler e = do
-          let msg = "High score restore failed. The error message is:"
+          let msg = "High score restore failed. The old file moved aside. The error message is:"
                     <+> (T.unwords . T.lines) (tshow e)
           serverPrint msg
+          liftIO $ renameFile path (path <.> "bkp")
           return Nothing
     either handler return res
   maybe (return HighScore.empty) return mscore
