@@ -380,9 +380,9 @@ closestTriggers fleeVia aid = do
     let mix (benefit, ppbag) dist =
           let maxd = fromEnum (maxBound :: BfsDistance)
                      - fromEnum apartBfs
-              v | dist == 0 = maxd * maxd * 1000
+              v | dist == 0 = maxd * maxd * 10
                     -- if already adjacent, usually keep, but fuzz, to guard
-                | otherwise = (maxd * maxd * 100) `div` (dist * dist)
+                | otherwise = (maxd * maxd) `div` dist
           in (benefit * v, ppbag)
     in mapMaybe (\bpp@(_, (p, _)) ->
          mix bpp <$> accessBfs bfs p) vicAll
