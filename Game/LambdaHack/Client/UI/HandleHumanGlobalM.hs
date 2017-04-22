@@ -1103,10 +1103,11 @@ artWithVersion = do
   let stripFrame t = tail . init $ T.lines t
       pasteVersion :: [String] -> [String]
       pasteVersion art =
-        let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
-            version = " Version " ++ showVersion pathsVersion
+        let exeVersion = rexeVersion $ Kind.stdRuleset corule
+            libVersion = Self.version
+            version = " Version " ++ showVersion exeVersion
                       ++ " (frontend: " ++ frontendName
-                      ++ ", engine: LambdaHack " ++ showVersion Self.version
+                      ++ ", engine: LambdaHack " ++ showVersion libVersion
                       ++ ") "
             versionLen = length version
         in init art ++ [take (80 - versionLen) (last art) ++ version]

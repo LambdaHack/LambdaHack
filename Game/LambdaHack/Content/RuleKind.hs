@@ -24,8 +24,8 @@ data RuleKind = RuleKind
   { rsymbol         :: !Char      -- ^ a symbol
   , rname           :: !Text      -- ^ short description
   , rfreq           :: !(Freqs RuleKind)  -- ^ frequency within groups
-  , rtitle          :: !Text      -- ^ the title of the game
-  , rpathsVersion   :: !Version   -- ^ the version of the game
+  , rtitle          :: !Text      -- ^ title of the game (not lib)
+  , rexeVersion     :: !Version   -- ^ version of the game
   , rcfgUIName      :: !FilePath  -- ^ name of the UI config file
   , rcfgUIDefault   :: !String    -- ^ the default UI settings config file
   , rmainMenuArt    :: !Text      -- ^ the ASCII art for the Main Menu
