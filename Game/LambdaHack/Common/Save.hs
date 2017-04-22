@@ -101,7 +101,7 @@ restoreGame cops fileName = do
   res <- Ex.try $
     if saveExists then do
       (vExevLib2, s) <- strictDecodeEOF path
-      if vExevLib cops == vExevLib2
+      if vExevLib2 == vExevLib cops
       then return $ Just s
       else do
         let msg = "Savefile" <+> T.pack path <+> "from old version"

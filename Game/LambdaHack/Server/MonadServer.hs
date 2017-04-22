@@ -19,6 +19,9 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+-- Cabal
+import qualified Paths_LambdaHack as Self (version)
+
 import qualified Control.Exception as Ex hiding (handle)
 import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.EnumMap.Strict as EM
@@ -106,8 +109,13 @@ restoreScore Kind.COps{corule} = do
     configExists <- liftIO $ doesFileExist path
     res <- liftIO $ Ex.try $
       if configExists then do
-        s <- strictDecodeEOF path
-        return $ Just s
+        (vlib2, s) <- strictDecodeEOF path
+        if vlib2 == Self.version
+        then return $ Just s
+        else do
+          renameFile path (path <.> "bkp")
+          let msg = "Old version high score file moved aside."
+          fail msg
       else return Nothing
     let handler :: Ex.SomeException -> m (Maybe a)
         handler e = do
@@ -144,8 +152,8 @@ registerScore status fid = do
           $ HighScore.showScore tz (pos, HighScore.getRecord pos ntable)
         else
           let nScoreDict = EM.insert gameModeId ntable scoreDict
-          in when worthMentioning $
-               liftIO $ encodeEOF path (nScoreDict :: HighScore.ScoreDict)
+          in when worthMentioning $ liftIO $
+               encodeEOF path (Self.version, nScoreDict :: HighScore.ScoreDict)
       chal | fhasUI $ gplayer fact = curChalSer
            | otherwise = curChalSer
                            {cdiff = difficultyInverse (cdiff curChalSer)}
