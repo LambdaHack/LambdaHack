@@ -78,13 +78,13 @@ saveName = serverSaveName
 tryRestore :: MonadServerReadRequest m
            => Kind.COps -> DebugModeSer
            -> m (Maybe (State, StateServer))
-tryRestore Kind.COps{corule} sdebugSer = do
+tryRestore cops@Kind.COps{corule} sdebugSer = do
   let bench = sbenchmark $ sdebugCli sdebugSer
   if bench then return Nothing
   else do
     let prefix = ssavePrefixSer sdebugSer
-        name = prefix <.> saveName
-    res <- liftIO $ Save.restoreGame name
+        fileName = prefix <.> saveName
+    res <- liftIO $ Save.restoreGame cops fileName
     let stdRuleset = Kind.stdRuleset corule
         cfgUIName = rcfgUIName stdRuleset
         content = rcfgUIDefault stdRuleset

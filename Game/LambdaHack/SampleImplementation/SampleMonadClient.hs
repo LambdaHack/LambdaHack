@@ -41,9 +41,9 @@ data CliState = CliState
   { cliState   :: !State              -- ^ current global state
   , cliClient  :: !StateClient        -- ^ current client state
   , cliSession :: !(Maybe SessionUI)  -- ^ UI state, empty for AI clients
-  , cliDict    :: !ChanServer   -- ^ this client connection information
+  , cliDict    :: !ChanServer         -- ^ this client connection information
   , cliToSave  :: !(Save.ChanSave (State, StateClient, Maybe SessionUI))
-                                -- ^ connection to the save thread
+                                      -- ^ connection to the save thread
   }
   deriving Generic
 
@@ -139,9 +139,8 @@ executorCli :: CliImplementation ()
             -> ChanServer
             -> IO ()
 executorCli m cliSession cops fid cliDict =
-  let saveFile (_, cli, _) =
-        ssavePrefixCli (sdebugCli cli)
-        <.> saveName (sside cli)
+  let stateToFileName (_, cli, _) =
+        ssavePrefixCli (sdebugCli cli) <.> saveName (sside cli)
       totalState cliToSave = CliState
         { cliState = emptyState cops
         , cliClient = emptyStateClient fid
@@ -150,4 +149,4 @@ executorCli m cliSession cops fid cliDict =
         , cliSession
         }
       exe = evalStateT (runCliImplementation m) . totalState
-  in Save.wrapInSaves saveFile exe
+  in Save.wrapInSaves cops stateToFileName exe

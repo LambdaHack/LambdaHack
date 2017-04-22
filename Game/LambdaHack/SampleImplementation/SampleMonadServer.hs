@@ -114,7 +114,7 @@ executorSer cops copsClient sdebugNxtCmdline = do
   -- Wire together game content, the main loop of game clients
   -- and the game server loop.
   let m = loopSer sdebugNxt sconfig executorClient
-      saveFile (_, ser) = ssavePrefixSer (sdebugSer ser) <.> saveName
+      stateToFileName (_, ser) = ssavePrefixSer (sdebugSer ser) <.> saveName
       totalState serToSave = SerState
         { serState = emptyState cops
         , serServer = emptyStateServer
@@ -122,7 +122,7 @@ executorSer cops copsClient sdebugNxtCmdline = do
         , serToSave
         }
       exe = evalStateT (runSerImplementation m) . totalState
-      exeWithSaves = Save.wrapInSaves saveFile exe
+      exeWithSaves = Save.wrapInSaves cops stateToFileName exe
   -- Wait for clients to exit even in case of server crash
   -- (or server and client crash), which gives them time to save
   -- and report their own inconsistencies, if any.

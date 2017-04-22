@@ -1100,10 +1100,11 @@ chooseItemMenuHuman cmdAction c = do
 artWithVersion :: MonadClientUI m => m [String]
 artWithVersion = do
   Kind.COps{corule} <- getsState scops
-  let stripFrame t = tail . init $ T.lines t
+  let stdRuleset = Kind.stdRuleset corule
+      stripFrame t = tail . init $ T.lines t
       pasteVersion :: [String] -> [String]
       pasteVersion art =
-        let exeVersion = rexeVersion $ Kind.stdRuleset corule
+        let exeVersion = rexeVersion stdRuleset
             libVersion = Self.version
             version = " Version " ++ showVersion exeVersion
                       ++ " (frontend: " ++ frontendName
@@ -1111,7 +1112,7 @@ artWithVersion = do
                       ++ ") "
             versionLen = length version
         in init art ++ [take (80 - versionLen) (last art) ++ version]
-      mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
+      mainMenuArt = rmainMenuArt stdRuleset
   return $! pasteVersion $ map T.unpack $ stripFrame mainMenuArt
 
 generateMenu :: MonadClientUI m

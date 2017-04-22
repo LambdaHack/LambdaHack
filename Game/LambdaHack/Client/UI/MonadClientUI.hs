@@ -383,14 +383,14 @@ partAidLeader aid = do
 
 tryRestore :: MonadClientUI m => m (Maybe (State, StateClient, Maybe SessionUI))
 tryRestore = do
+  cops@Kind.COps{corule} <- getsState scops
   bench <- getsClient $ sbenchmark . sdebugCli
   if bench then return Nothing
   else do
     side <- getsClient sside
     prefix <- getsClient $ ssavePrefixCli . sdebugCli
-    let name = prefix <.> saveName side
-    res <- liftIO $ Save.restoreGame name
-    Kind.COps{corule} <- getsState scops
+    let fileName = prefix <.> saveName side
+    res <- liftIO $ Save.restoreGame cops fileName
     let stdRuleset = Kind.stdRuleset corule
         cfgUIName = rcfgUIName stdRuleset
         content = rcfgUIDefault stdRuleset
