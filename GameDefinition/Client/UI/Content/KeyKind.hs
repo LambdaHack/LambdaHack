@@ -11,6 +11,7 @@ import Game.LambdaHack.Common.Prelude
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Common.Misc
+import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Description of default key-command bindings.
 --
@@ -56,10 +57,10 @@ standardKeys = KeyKind
       -- Terrain exploration and alteration
       , ("semicolon", ( [CmdMove]
                       , "go to x-hair for 25 steps"
-                      , Macro ["C-semicolon", "C-period", "C-V"] ))
+                      , Macro ["C-semicolon", "C-/", "C-V"] ))
       , ("colon", ( [CmdMove]
                   , "run to x-hair collectively for 25 steps"
-                  , Macro ["C-colon", "C-period", "C-V"] ))
+                  , Macro ["C-colon", "C-/", "C-V"] ))
       , ("x", ( [CmdMove]
               , "explore nearest unknown spot"
               , autoexploreCmd ))
@@ -113,10 +114,11 @@ standardKeys = KeyKind
                 { verb = "read"
                 , object = "scroll"
                 , symbol = '?' }])
-      , ("t", addCmdCategory CmdItem $ projectA [ApplyItem
-                { verb = "throw"
-                , object = "missile"
-                , symbol = '|' }])
+
+      , ("t", addCmdCategory CmdItem $ projectA
+                [ ApplyItem { verb = "throw"
+                            , object = "missile"
+                             , symbol = '|' } ])
 --      , ("z", projectA [ApplyItem { verb = "zap"
 --                                  , object = "wand"
 --                                  , symbol = '/' }])
@@ -200,9 +202,9 @@ standardKeys = KeyKind
       , ("C-colon", ( [CmdNoHelp]
                     , "run collectively one step towards the x-hair"
                     , RunOnceToXhair ))
-      , ("C-period", ( [CmdNoHelp]
-                     , "continue towards the x-hair"
-                     , ContinueToXhair ))
+      , ("C-/", ( [CmdNoHelp]
+                , "continue towards the x-hair"
+                , ContinueToXhair ))
       , ("C-comma", ([CmdNoHelp], "run once ahead", RunOnceAhead))
       , ("safe1", ( [CmdInternal]
                   , "go to pointer for 25 steps"
@@ -240,3 +242,35 @@ standardKeys = KeyKind
       ]
       ++ map defaultHeroSelect [0..6]
   }
+
+closeDoorTriggers :: [Trigger]
+closeDoorTriggers =
+  [ AlterFeature { verb = "close"
+                 , object = "door"
+                 , feature = TK.CloseTo "closed vertical door Lit" }
+  , AlterFeature { verb = "close"
+                 , object = "door"
+                 , feature = TK.CloseTo "closed horizontal door Lit" }
+  , AlterFeature { verb = "close"
+                 , object = "door"
+                 , feature = TK.CloseTo "closed vertical door Dark" }
+  , AlterFeature { verb = "close"
+                 , object = "door"
+                 , feature = TK.CloseTo "closed horizontal door Dark" }
+  ]
+
+openDoorTriggers :: [Trigger]
+openDoorTriggers =
+  [ AlterFeature { verb = "open"
+                 , object = "door"
+                 , feature = TK.OpenTo "open vertical door Lit" }
+  , AlterFeature { verb = "open"
+                 , object = "door"
+                 , feature = TK.OpenTo "open horizontal door Lit" }
+  , AlterFeature { verb = "open"
+                 , object = "door"
+                 , feature = TK.OpenTo "open vertical door Dark" }
+  , AlterFeature { verb = "open"
+                 , object = "door"
+                 , feature = TK.OpenTo "open horizontal door Dark" }
+  ]

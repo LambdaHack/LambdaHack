@@ -39,7 +39,7 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
       wait10Triple = ([CmdMove], "", Wait10)
       moveXhairOr n cmd v = ByAimMode { exploration = cmd v
                                       , aiming = MoveXhair v n }
-      cmdAll =
+      bcmdList =
         (if configVi
          then filter (\(k, _) ->
            k `notElem` [K.mkKM "period", K.mkKM "C-period"])
@@ -66,13 +66,13 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
   in Binding
   { bcmdMap = M.fromListWith rejectRepetitions
       [ (k, triple)
-      | (k, triple@(cats, _, _)) <- cmdAll
+      | (k, triple@(cats, _, _)) <- bcmdList
       , all (`notElem` [CmdMainMenu]) cats
       ]
-  , bcmdList = cmdAll
+  , bcmdList
   , brevMap = M.fromListWith (flip (++)) $ concat
       [ [(cmd, [k])]
-      | (k, (cats, _desc, cmd)) <- cmdAll
+      | (k, (cats, _desc, cmd)) <- bcmdList
       , all (`notElem` [CmdMainMenu, CmdDebug, CmdNoHelp]) cats
       ]
   }

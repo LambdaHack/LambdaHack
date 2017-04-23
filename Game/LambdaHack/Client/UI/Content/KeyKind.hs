@@ -6,7 +6,6 @@ module Game.LambdaHack.Client.UI.Content.KeyKind
   , goToCmd, runToAllCmd, autoexploreCmd, autoexplore25Cmd
   , aimFlingCmd, projectI, projectA, flingTs, applyI, applyIK
   , grabItems, dropItems, descTs, defaultHeroSelect
-  , closeDoorTriggers, openDoorTriggers
   ) where
 
 import Prelude ()
@@ -20,7 +19,6 @@ import Game.LambdaHack.Client.UI.ActorUI (verbCStore)
 import Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Common.Misc
-import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Key-command mappings to be used for the UI.
 data KeyKind = KeyKind
@@ -112,16 +110,16 @@ mouseRMB =
     , (CaHPGauge, Wait10) ]
 
 goToCmd :: HumanCmd
-goToCmd = Macro ["MiddleButtonRelease", "C-semicolon", "C-period", "C-V"]
+goToCmd = Macro ["MiddleButtonRelease", "C-semicolon", "C-/", "C-V"]
 
 runToAllCmd :: HumanCmd
-runToAllCmd = Macro ["MiddleButtonRelease", "C-colon", "C-period", "C-V"]
+runToAllCmd = Macro ["MiddleButtonRelease", "C-colon", "C-/", "C-V"]
 
 autoexploreCmd :: HumanCmd
-autoexploreCmd = Macro ["C-?", "C-period", "C-V"]
+autoexploreCmd = Macro ["C-?", "C-/", "C-V"]
 
 autoexplore25Cmd :: HumanCmd
-autoexplore25Cmd = Macro ["'", "C-?", "C-period", "'", "C-V"]
+autoexplore25Cmd = Macro ["'", "C-?", "C-/", "'", "C-V"]
 
 aimFlingCmd :: HumanCmd
 aimFlingCmd = ComposeIfLocal AimPointerEnemy (projectICmd flingTs)
@@ -179,43 +177,3 @@ descTs (t : _) = makePhrase [verb t, object t]
 
 defaultHeroSelect :: Int -> (String, CmdTriple)
 defaultHeroSelect k = ([Char.intToDigit k], ([CmdMeta], "", PickLeader k))
-
-closeDoorTriggers :: [Trigger]
-closeDoorTriggers =
-  [ AlterFeature { verb = "close"
-                 , object = "door"
-                 , feature =
-                     TK.CloseTo "closed vertical door Lit" }
-  , AlterFeature { verb = "close"
-                 , object = "door"
-                 , feature =
-                     TK.CloseTo "closed horizontal door Lit" }
-  , AlterFeature { verb = "close"
-                 , object = "door"
-                 , feature =
-                     TK.CloseTo "closed vertical door Dark" }
-  , AlterFeature { verb = "close"
-                 , object = "door"
-                 , feature =
-                     TK.CloseTo "closed horizontal door Dark" }
-  ]
-
-openDoorTriggers :: [Trigger]
-openDoorTriggers =
-  [ AlterFeature { verb = "open"
-                 , object = "door"
-                 , feature =
-                     TK.OpenTo "open vertical door Lit" }
-  , AlterFeature { verb = "open"
-                 , object = "door"
-                 , feature =
-                     TK.OpenTo "open horizontal door Lit" }
-  , AlterFeature { verb = "open"
-                 , object = "door"
-                 , feature =
-                     TK.OpenTo "open vertical door Dark" }
-  , AlterFeature { verb = "open"
-                 , object = "door"
-                 , feature =
-                     TK.OpenTo "open horizontal door Dark" }
-  ]
