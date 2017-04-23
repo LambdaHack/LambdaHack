@@ -123,12 +123,12 @@ empty = rogue
   , chidden       = 0
   , cactorCoeff   = 20
   , cactorFreq    = [("animal", 10), ("immobile animal", 90)]
-      -- The healing geysers on lvl 3 act like HP resets. They are needed to avoid
+      -- The healing geysers on lvl 3 act like HP resets. Needed to avoid
       -- cascading failure, if the particular starting conditions were
-      -- very hard. The items are not reset, even if the are bad, which provides
+      -- very hard. Items are not reset, even if they are bad, which provides
       -- enough of a continuity. Gyesers on lvl 3 are not OP and can't be
-      -- abused, because they spawn less and less often and they don't heal over
-      -- max HP.
+      -- abused, because they spawn less and less often and also HP doesn't
+      -- effectively accumulate over max.
   , citemNum      = 2 * d 4  -- few rooms and geysers are the boon
   , cplaceFreq    = [("empty", 100)]
   , cpassable     = True
@@ -210,7 +210,7 @@ brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
   , clitCorTile   = "floorArenaLit"
   }
 shootout = rogue  -- a scenario with strong missiles;
-                  -- no solid tiles, but only tranlucent tiles or walkable
+                  -- no solid tiles, but only translucent tiles or walkable
                   -- opaque tiles, to make scouting and sniping more interesting
                   -- and to avoid obstructing view too much, since this
                   -- scenario is about ranged combat at long range
