@@ -63,7 +63,7 @@ glasshouse = PlaceKind
   , ptopLeft = [ "=="
                , "!·"
                ]
-  , poverride = [('=', "wallGlassH"), ('!', "wallGlassV")]
+  , poverride = [('=', "wallGlassH"), ('!', "wallGlass")]
   }
 pulpit = PlaceKind
   { psymbol  = 'p'
@@ -76,7 +76,7 @@ pulpit = PlaceKind
                , "!··"
                , "··O"
                ]
-  , poverride = [('=', "wallGlassH"), ('!', "wallGlassV"), ('O', "pulpit")]
+  , poverride = [('=', "wallGlassH"), ('!', "wallGlass"), ('O', "pulpit")]
   }
 ruin = PlaceKind
   { psymbol  = 'R'

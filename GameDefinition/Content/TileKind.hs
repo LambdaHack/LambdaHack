@@ -22,14 +22,14 @@ cdefs = ContentDef
   , validateSingle = validateSingleTileKind
   , validateAll = validateAllTileKind
   , content = contentFromList $
-      [unknown, wall, hardRock, pillar, pillarIce, pulpit, pillarCache, lampPost, signboardUnread, signboardRead, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, wallObscuredV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, rubblePlace, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark]
+      [unknown, bedrock, hardRock, pillar, pillarIce, pulpit, pillarCache, lampPost, signboardUnread, signboardRead, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wall, wallGlass, wallGlassSpice, wallSuspect, wallObscured, doorTrapped, doorClosed, doorOpen, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, rubblePlace, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark]
       ++ map makeDark ldarkable
       ++ map makeDarkColor ldarkColorable
   }
-unknown,        wall, hardRock, pillar, pillarIce, pulpit, pillarCache, lampPost, signboardUnread, signboardRead, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wallV, wallGlassV, wallGlassVSpice, wallSuspectV, wallObscuredV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, rubblePlace, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark :: TileKind
+unknown,        bedrock, hardRock, pillar, pillarIce, pulpit, pillarCache, lampPost, signboardUnread, signboardRead, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wall, wallGlass, wallGlassSpice, wallSuspect, wallObscured, doorTrapped, doorClosed, doorOpen, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, rubblePlace, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark :: TileKind
 
 ldarkable :: [TileKind]
-ldarkable = [wallV, wallSuspectV, wallObscuredV, doorTrappedV, doorClosedV, doorOpenV, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, doorTrappedH, doorClosedH, doorOpenH, floorCorridorLit]
+ldarkable = [wall, wallSuspect, wallObscured, doorTrapped, doorClosed, doorOpen, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, doorTrappedH, doorClosedH, doorOpenH, floorCorridorLit]
 
 ldarkColorable :: [TileKind]
 ldarkColorable = [floorArenaLit, floorNoiseLit, floorDirtLit, floorActorLit, floorItemLit, floorActorItemLit]
@@ -49,7 +49,7 @@ unknown = TileKind  -- needs to have index 0 and alter 1
   , talter   = 1
   , tfeature = [Dark, Indistinct]
   }
-wall = TileKind
+bedrock = TileKind
   { tsymbol  = ' '
   , tname    = "bedrock"
   , tfreq    = [("fillerWall", 1), ("legendLit", 100), ("legendDark", 100)]
@@ -67,8 +67,7 @@ wall = TileKind
       -- distinguished from an unknown tile. However, LH follows the NetHack,
       -- not the Angband, visual tradition, so we can't improve the situation,
       -- unless we turn to subtle shades of black or non-ASCII glyphs,
-      -- but that is yet different aesthetics and it's inconsistent
-      -- with console frontends.
+      -- but that is yet different aesthetics.
   }
 hardRock = TileKind
   { tsymbol  = ' '
@@ -212,31 +211,29 @@ treeBurning = tree
       -- dousing off the tree will have more sense when it periodically
       -- explodes, hitting and lighting up the team and so betraying it
   }
-wallV = TileKind
+wall = TileKind
   { tsymbol  = '|'
   , tname    = "granite wall"
   , tfreq    = [("legendLit", 100), ("rectWindowsOver_!_Lit", 90)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 100
-  , tfeature = [ BuildAs "suspect vertical wall Lit"
-               , Indistinct ]
+  , tfeature = [BuildAs "suspect vertical wall Lit", Indistinct]
   }
-wallGlassV = TileKind
+wallGlass = TileKind
   { tsymbol  = '|'
   , tname    = "polished crystal wall"
-  , tfreq    = [("wallGlassV", 1)]
+  , tfreq    = [("wallGlass", 1)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
-  , tfeature = [ BuildAs "suspect vertical wall Lit"
-               , Clear ]
+  , tfeature = [BuildAs "suspect vertical wall Lit", Clear]
   }
-wallGlassVSpice = wallGlassV
+wallGlassSpice = wallGlass
   { tfreq    = [("rectWindowsOver_!_Lit", 10)]
-  , tfeature = Spice : tfeature wallGlassV
+  , tfeature = Spice : tfeature wallGlass
   }
-wallSuspectV = TileKind  -- only on client
+wallSuspect = TileKind  -- only on client
   { tsymbol  = '|'
   , tname    = "suspect uneven wall"
   , tfreq    = [("suspect vertical wall Lit", 1)]
@@ -247,7 +244,7 @@ wallSuspectV = TileKind  -- only on client
                , ObscureAs "obscured vertical wall Lit"
                , Indistinct ]
   }
-wallObscuredV = TileKind
+wallObscured = TileKind
   { tsymbol  = '|'
   , tname    = "scratched wall"
   , tfreq    = [("obscured vertical wall Lit", 1)]
@@ -259,7 +256,7 @@ wallObscuredV = TileKind
                , Indistinct
                ]
   }
-doorTrappedV = TileKind
+doorTrapped = TileKind
   { tsymbol  = '+'
   , tname    = "trapped door"
   , tfreq    = [("trapped vertical door Lit", 1)]
@@ -272,7 +269,7 @@ doorTrappedV = TileKind
                , Indistinct
                ]
   }
-doorClosedV = TileKind
+doorClosed = TileKind
   { tsymbol  = '+'
   , tname    = "closed door"
   , tfreq    = [("closed vertical door Lit", 1)]
@@ -281,7 +278,7 @@ doorClosedV = TileKind
   , talter   = 2
   , tfeature = [OpenTo "open vertical door Lit", Indistinct]  -- never hidden
   }
-doorOpenV = TileKind
+doorOpen = TileKind
   { tsymbol  = '-'
   , tname    = "open door"
   , tfreq    = [("open vertical door Lit", 1)]
@@ -538,19 +535,19 @@ floorArenaShade = floorActorLit
   { tname    = "shaded ground"
   , tfreq    = [("shaded ground", 1), ("treeShadeOver_s_Lit", 2)]
   , tcolor2  = BrBlack
-  , tfeature = Dark : NoItem : tfeature floorActorLit  -- no OftenItem
+  , tfeature = Dark : NoItem : tfeature floorActorLit
   }
 floorRedLit = floorCorridorLit
   { tsymbol  = floorSymbol
   , tname    = "brick pavement"
-  , tfreq    = [("trailLit", 30), ("trailChessLit", 30)]
+  , tfreq    = [("trailLit", 30)]
   , tcolor   = BrRed
   , tcolor2  = Red
   , tfeature = Trail : tfeature floorCorridorLit  -- no Indistinct
   }
 floorBlueLit = floorRedLit
   { tname    = "cobblestone path"
-  , tfreq    = [("trailLit", 100), ("trailChessLit", 70)]
+  , tfreq    = [("trailLit", 100)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   }
