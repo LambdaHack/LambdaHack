@@ -63,7 +63,8 @@ data CaveKind = CaveKind
 -- of the cave descriptions to make sure they fit on screen. Etc.
 validateSingleCaveKind :: CaveKind -> [Text]
 validateSingleCaveKind CaveKind{..} =
-  let (maxGridX, maxGridY) = Dice.maxDiceXY cgrid
+  let (minGridX, minGridY) = Dice.minDiceXY cgrid
+      (maxGridX, maxGridY) = Dice.maxDiceXY cgrid
       (minMinSizeX, minMinSizeY) = Dice.minDiceXY cminPlaceSize
       (maxMinSizeX, maxMinSizeY) = Dice.maxDiceXY cminPlaceSize
       (minMaxSizeX, minMaxSizeY) = Dice.minDiceXY cmaxPlaceSize
@@ -72,6 +73,8 @@ validateSingleCaveKind CaveKind{..} =
   in [ "cname longer than 25" | T.length cname > 25 ]
      ++ [ "cxsize < 7" | cxsize < 7 ]
      ++ [ "cysize < 7" | cysize < 7 ]
+     ++ [ "minGridX < 1" | minGridX < 1 ]
+     ++ [ "minGridY < 1" | minGridY < 1 ]
      ++ [ "minMinSizeX < 1" | minMinSizeX < 1 ]
      ++ [ "minMinSizeY < 1" | minMinSizeY < 1 ]
      ++ [ "minMaxSizeX < maxMinSizeX" | minMaxSizeX < maxMinSizeX ]
@@ -80,6 +83,10 @@ validateSingleCaveKind CaveKind{..} =
         | maxGridX * (maxMinSizeX - 4) + xborder >= cxsize ]
      ++ [ "cysize too small"
         | maxGridY * maxMinSizeY + yborder >= cysize ]
+     ++ [ "cextraStairs < 0" | cextraStairs < 0 ]
+     ++ [ "chidden < 0" | chidden < 0 ]
+     ++ [ "cactorCoeff < 0" | cactorCoeff < 0 ]
+     ++ [ "citemNum < 0" | citemNum < 0 ]
 
 -- | Validate all cave kinds.
 -- Note that names don't have to be unique: we can have several variants
