@@ -27,7 +27,7 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validateSingle = validateSingleItemKind
   , validateAll = validateAllItemKind
-  , content = contentFromList []
+  , content = contentFromList []  -- filled out later on
   }
 
 otherItemContent :: [ItemKind]
@@ -55,7 +55,7 @@ symbolNecklace   = '"'
 symbolRing       = '='
 symbolPotion     = '!'  -- concoction, bottle, jar, vial, canister
 symbolFlask      = '!'
-symbolScroll     = '?'  -- book, note, tablet, remote
+symbolScroll     = '?'  -- book, note, tablet, remote, chip, card
 symbolTorsoArmor = '['
 symbolMiscArmor  = '['
 _symbolClothes   = '('
@@ -82,7 +82,7 @@ sandstoneRock = ItemKind
   , iaspects = [AddHurtMelee (-16 |*| 5)]
   , ieffects = []
   , ifeature = [toVelocity 70, Fragile, Identified]  -- not dense, irregular
-  , idesc    = "A lump of brittle standstone rock."
+  , idesc    = "A lump of brittle sandstone rock."
   , ikit     = []
   }
 dart = ItemKind
@@ -147,7 +147,7 @@ slingBullet = ItemKind
   , iaspects = [AddHurtMelee (-17 + d 2 + dl 4 |*| 5)]  -- not armor-piercing
   , ieffects = []
   , ifeature = [toVelocity 200, Identified]
-  , idesc    = "Small almond-shaped leaden projectile than weighs more than the sling used to tie the bag. It doesn't drop out of the sling's pouch when swung and doesn't snag when released."
+  , idesc    = "Small almond-shaped leaden projectile that weighs more than the sling used to tie the bag. It doesn't drop out of the sling's pouch when swung and doesn't snag when released."
   , ikit     = []
   }
 

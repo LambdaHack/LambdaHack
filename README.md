@@ -39,12 +39,19 @@ into a separate content-only package that depends on the upstream
 engine library. This will help us exchange ideas and share improvements
 to the common codebase. Alternatively, you can already start the development
 in separation by cloning and rewriting Allure of the Stars[10]
-or any other pure game content package and mix and merge with the example
-LambdaHack game rules at will. Note that the LambdaHack sample game
-derives from the Hack/Nethack visual and narrative tradition[9],
-while Allure of the Stars uses the more free-form Moria/Angband style
-(it also uses the `AGPL` license, and `BSD3 + AGPL = AGPL`,
+and mix and merge with the example LambdaHack game rules at will.
+Note that the LambdaHack sample game derives from the Hack/Nethack visual
+and narrative tradition[9], while Allure of the Stars uses the more free-form
+Moria/Angband style (it also uses the `AGPL` license, and `BSD3 + AGPL = AGPL`,
 so make sure you want to liberate your code and content to such an extent).
+
+When creating a new game based on Lambdahack I've found it useful to place
+completely new content at the end of the content files to distinguish from
+merely modified original LambdaHack content and thus help merging with new
+releases. Removal of LambdaHack content merges reasonably well, so there are
+no special considerations. When modifying individual content items,
+it makes sense to keep their Haskell identifier names and change only
+in-game names and possibly frequency group names.
 
 
 Installation from binary archives
