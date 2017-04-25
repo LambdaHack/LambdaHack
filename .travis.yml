@@ -137,8 +137,8 @@ install:
  - sed -i 's/^jobsColon/jobs:/' ${HOME}/.cabal/config
  - |
    if [ $GTKVTY = "gtk" ]; then
-     cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v gtk2hs-buildtools > installplan.txt
-     cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
+     cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v --constraint="binary>=0.8" --force-reinstalls gtk2hs-buildtools > installplan.txt
+     cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v --force-reinstalls >> installplan.txt
    elif [ $GTKVTY = "gtk-v2" ]; then
      cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v gtk2hs-buildtools > installplan.txt
      cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
@@ -176,8 +176,8 @@ install:
      rm -rf $HOME/.cabsnap;
      mkdir -p $HOME/.ghc $HOME/.cabal/lib $HOME/.cabal/share $HOME/.cabal/bin;
      if [ $GTKVTY = "gtk" ]; then
-       cabal install gtk2hs-buildtools;
-       cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks;
+       cabal install --constraint="binary>=0.8" --force-reinstalls gtk2hs-buildtools;
+       cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls;
      elif [ $GTKVTY = "gtk-v2" ]; then
        cabal install -v2 gtk2hs-buildtools;
        cabal install -v2 -fgtk --only-dependencies --enable-tests --enable-benchmarks;
@@ -253,7 +253,7 @@ script:
    cd dist/;
    if [ -f "$SRC_TGZ" ]; then
       if [ $GTKVTY = "gtk" ]; then
-        travis_wait cabal install -fgtk "$SRC_TGZ";
+        travis_wait cabal install --force-reinstalls -fgtk "$SRC_TGZ";
       elif [ $GTKVTY = "gtk-v2" ]; then
         travis_wait cabal install -fgtk "$SRC_TGZ";
       elif [ $GTKVTY = "sdl" ]; then
