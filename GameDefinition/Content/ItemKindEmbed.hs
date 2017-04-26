@@ -121,7 +121,7 @@ fireBig = fireSmall
   , ikit     = []
   }
 frost = ItemKind
-  { isymbol  = 'O'
+  { isymbol  = '%'
   , iname    = "frost"
   , ifreq    = [("frost", 1)]
   , iflavour = zipPlain [BrBlue]
@@ -139,7 +139,7 @@ frost = ItemKind
   , ikit     = []
   }
 rubble = ItemKind
-  { isymbol  = ';'
+  { isymbol  = ':'
   , iname    = "rubble"
   , ifreq    = [("rubble", 1)]
   , iflavour = zipPlain [BrWhite]
@@ -202,7 +202,7 @@ doorwayTrap = ItemKind
   , ikit     = []
   }
 obscenePictograms = ItemKind
-  { isymbol  = '|'
+  { isymbol  = '*'
   , iname    = "obscene pictograms"
   , ifreq    = [("obscene pictograms", 1)]
   , iflavour = zipPlain [BrRed]
@@ -222,7 +222,7 @@ obscenePictograms = ItemKind
   , ikit     = []
   }
 subtleFresco = ItemKind
-  { isymbol  = '|'
+  { isymbol  = '*'
   , iname    = "subtle fresco"
   , ifreq    = [("subtle fresco", 1)]
   , iflavour = zipPlain [BrGreen]
@@ -241,7 +241,7 @@ subtleFresco = ItemKind
   , ikit     = []
   }
 scratchOnWall = ItemKind
-  { isymbol  = '|'
+  { isymbol  = '*'
   , iname    = "scratch on wall"
   , ifreq    = [("scratch on wall", 1)]
   , iflavour = zipPlain [BrBlue]

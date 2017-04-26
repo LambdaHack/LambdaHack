@@ -34,6 +34,16 @@ ldarkable = [wall, wallSuspect, wallObscured, doorTrapped, doorClosed, doorOpen,
 ldarkColorable :: [TileKind]
 ldarkColorable = [floorArenaLit, floorNoiseLit, floorDirtLit, floorActorLit, floorItemLit, floorActorItemLit]
 
+-- Symbols used (the Nethack visual tradition imposes inconsistency):
+--         LOS    noLOS
+-- Walk    .|-    ~
+-- noWalk  %&^    -| O:<>+
+--
+-- can be opened %:+^
+-- can be closed |-
+-- some noWalk can be changed without opening, regardless of symbol
+-- not used yet `;^
+
 -- Note that for AI hints and UI comfort, most multiple-use @Embed@ tiles
 -- should have a variant, which after first use transforms into a different
 -- colour tile without @ChangeTo@ and similar (which then AI no longer touches).
@@ -91,13 +101,13 @@ pillar = TileKind
   , tfeature = [Indistinct]
   }
 pillarIce = TileKind
-  { tsymbol  = 'O'
+  { tsymbol  = '%'
   , tname    = "ice"
   , tfreq    = [("noiseSet", 30), ("ice", 1)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 5
-  , tfeature = [Clear, Embed "frost", OpenTo "damp stone floor", Indistinct]
+  , tfeature = [Clear, Embed "frost", OpenTo "damp stone floor"]
       -- Is door, due to @OpenTo@, so is not explorable, but it's OK, because
       -- it doesn't generate items nor clues. This saves on the need to
       -- get each ice pillar into sight range when exploring level.
@@ -115,8 +125,8 @@ pillarCache = TileKind
   { tsymbol  = 'O'
   , tname    = "cache"
   , tfreq    = [("cachable", 50), ("stair terminal", 1)]
-  , tcolor   = BrYellow
-  , tcolor2  = Brown
+  , tcolor   = BrBlue
+  , tcolor2  = Blue
   , talter   = 5
   , tfeature = [ Embed "terrain cache", Embed "terrain cache trap"
                , ChangeTo "cachable", Indistinct ]
@@ -129,7 +139,7 @@ lampPost = TileKind
   , tcolor   = BrYellow
   , tcolor2  = Brown
   , talter   = 100
-  , tfeature = [Indistinct]
+  , tfeature = []
   }
 signboardUnread = TileKind  -- client only, indicates never used by this faction
   { tsymbol  = 'O'
@@ -461,7 +471,7 @@ escapeOutdoorDown = escapeDown
   , tfreq    = [("escape outdoor down", 1)]
   }
 rubble = TileKind
-  { tsymbol  = ';'
+  { tsymbol  = ':'
   , tname    = "rubble"
   , tfreq    = []  -- [("floorCorridorLit", 1)]
                    -- disabled while it's all or nothing per cave and per room;
@@ -477,7 +487,7 @@ rubble = TileKind
                  -- AI doesn't go out of its way to clear the way for heroes
   }
 rubblePlace = TileKind
-  { tsymbol  = ';'
+  { tsymbol  = ':'
   , tname    = "rubble"
   , tfreq    = [("smokeClumpOver_f_Lit", 1), ("noiseSet", 5), ("zooSet", 100)]
   , tcolor   = BrWhite
@@ -564,7 +574,7 @@ floorBrownLit = floorRedLit
   , tcolor2  = Magenta
   }
 floorFog = TileKind
-  { tsymbol  = '#'
+  { tsymbol  = '~'
   , tname    = "faint fog"
   , tfreq    = [ ("lit fog", 1), ("emptySet", 3), ("shootoutSet", 20)
                , ("fogClumpOver_f_Lit", 2) ]
@@ -582,7 +592,7 @@ floorFogDark = floorFog
   , tfeature = Dark : tfeature floorFog
   }
 floorSmoke = TileKind
-  { tsymbol  = '#'
+  { tsymbol  = '~'
   , tname    = "billowing smoke"
   , tfreq    = [ ("lit smoke", 1)
                , ("ambushSet", 30), ("zooSet", 15), ("battleSet", 5)
