@@ -62,8 +62,10 @@ data-files:    GameDefinition/config.ui.default,
                GameDefinition/fonts/Fix15Mono-Bold.woff,
                GameDefinition/fonts/LICENSE.Fix15Mono-Bold,
                GameDefinition/PLAYING.md,
-               README.md, CHANGELOG.md,
-               LICENSE, CREDITS
+               README.md,
+               CHANGELOG.md,
+               LICENSE,
+               CREDITS
 extra-source-files: GameDefinition/MainMenu.ascii, Makefile
 author:        Andres Loeh, Mikolaj Konarski
 maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>

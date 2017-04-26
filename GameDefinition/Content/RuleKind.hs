@@ -31,11 +31,11 @@ cdefs = ContentDef
 
 standard :: RuleKind
 standard = RuleKind
-  { rsymbol        = 's'
-  , rname          = "standard LambdaHack ruleset"
-  , rfreq          = [("standard", 100)]
-  , rtitle         = "LambdaHack"
-  , rexeVersion  = Self.version
+  { rsymbol = 's'
+  , rname = "standard LambdaHack ruleset"
+  , rfreq = [("standard", 100)]
+  , rtitle = "LambdaHack"
+  , rexeVersion = Self.version
   -- The strings containing the default configuration file
   -- included from config.ui.default.
   , rcfgUIName = "config.ui" <.> "ini"
