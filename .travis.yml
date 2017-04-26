@@ -137,10 +137,10 @@ install:
  - sed -i 's/^jobsColon/jobs:/' ${HOME}/.cabal/config
  - |
    if [ $GTKVTY = "gtk" ]; then
-     cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v --constraint="binary>=0.8" --force-reinstalls gtk2hs-buildtools > installplan.txt
+     cabal install --only-dependencies --dry -v --constraint="binary>=0.8" --force-reinstalls gtk2hs-buildtools > installplan.txt
      cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v --force-reinstalls >> installplan.txt
    elif [ $GTKVTY = "gtk-v2" ]; then
-     cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v gtk2hs-buildtools > installplan.txt
+     cabal install --only-dependencies --dry -v gtk2hs-buildtools > installplan.txt
      cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
    elif [ $GTKVTY = "sdl" ]; then
      cabal install -fsdl --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
@@ -151,13 +151,13 @@ install:
    elif [ $GTKVTY = "curses" ]; then
      cabal install -fcurses -frelease --only-dependencies --enable-tests --enable-benchmarks --dry -v > installplan.txt # test -frelease together with the curses frontend
    elif [ $GTKVTY = "noopt" ]; then
-     cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v gtk2hs-buildtools > installplan.txt
+     cabal install --only-dependencies --dry -v gtk2hs-buildtools > installplan.txt
      cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
    elif [ $GTKVTY = "opt2" ]; then
-     cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v gtk2hs-buildtools > installplan.txt
+     cabal install --only-dependencies --dry -v gtk2hs-buildtools > installplan.txt
      cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
    elif [ $GTKVTY = "asserts" ]; then
-     cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v gtk2hs-buildtools > installplan.txt
+     cabal install --only-dependencies --dry -v gtk2hs-buildtools > installplan.txt
      cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
    else exit 7
    fi
@@ -275,5 +275,6 @@ script:
 
  - touch /tmp/teletypetest.log;
  - (make test-travis-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77));
+ - travis_wait (make testDefense-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77));
 
 # EOF
