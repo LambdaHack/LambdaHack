@@ -118,7 +118,7 @@ standardKeys = KeyKind
       , ("t", addCmdCategory CmdItem $ projectA
                 [ ApplyItem { verb = "throw"
                             , object = "missile"
-                             , symbol = '|' } ])
+                            , symbol = '|' } ])
 --      , ("z", projectA [ApplyItem { verb = "zap"
 --                                  , object = "wand"
 --                                  , symbol = '/' }])
