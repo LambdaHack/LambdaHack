@@ -253,13 +253,44 @@ toOrganNone grp = CreateItem COrgan grp TimerNone
 validateSingleItemKind :: ItemKind -> [Text]
 validateSingleItemKind ItemKind{..} =
   [ "iname longer than 23" | T.length iname > 23 ]
+  ++ [ "icount < 0" | icount < 0 ]
   ++ validateRarity irarity
   -- Reject duplicate Timeout, because it's not additive.
-  ++ let timeoutAspect :: Aspect -> Bool
-         timeoutAspect Timeout{} = True
-         timeoutAspect _ = False
-         ts = filter timeoutAspect iaspects
-     in ["more than one Timeout specification" | length ts > 1]
+  ++ (let timeoutAspect :: Aspect -> Bool
+          timeoutAspect Timeout{} = True
+          timeoutAspect _ = False
+          ts = filter timeoutAspect iaspects
+      in ["more than one Timeout specification" | length ts > 1])
+  ++ (let f :: Effect -> Bool
+          f ELabel{} = True
+          f _ = False
+          ts = filter f ieffects
+      in ["more than one ELabel specification" | length ts > 1])
+  ++ (let f :: Effect -> Bool
+          f EqpSlot{} = True
+          f _ = False
+          ts = filter f ieffects
+      in ["more than one EqpSlot specification" | length ts > 1]
+         ++ [ "EqpSlot specified but not Equipable nor Meleeable"
+            | length ts > 0 && Equipable `notElem` ifeature
+                            && Meleeable `notElem` ifeature ])
+  ++ ["Reduntand Equipable or Meleeable" | Equipable `elem` ifeature
+                                           && Meleeable `elem` ifeature]
+  ++ (let f :: Effect -> Bool
+          f Temporary{} = True
+          f _ = False
+          ts = filter f ieffects
+      in ["more than one Temporary specification" | length ts > 1])
+  ++ (let f :: Effect -> Bool
+          f Unique = True
+          f _ = False
+          ts = filter f ieffects
+      in ["more than one Unique specification" | length ts > 1])
+  ++ (let f :: Effect -> Bool
+          f Periodic = True
+          f _ = False
+          ts = filter f ieffects
+      in ["more than one Periodic specification" | length ts > 1])
 
 -- | Validate all item kinds.
 validateAllItemKind :: [ItemKind] -> [Text]
@@ -279,4 +310,15 @@ validateAllItemKind content =
         _ -> ["no groups" <+> tshow missingGroups
               <+> "among content that has groups"
               <+> tshow (S.elems kindFreq)]
+      hardwiredAbsent = filter (`S.notMember` kindFreq) hardwiredItemGroups
   in errorMsg
+     ++ [ "Hardwired groups not in content:" <+> tshow hardwiredAbsent
+        | not $ null hardwiredAbsent ]
+
+hardwiredItemGroups :: [GroupName ItemKind]
+hardwiredItemGroups =
+  -- From Preferences.hs:
+  [ "temporary condition", "treasure", "useful", "any scroll", "any vial"
+  , "potion", "flask" ]
+  -- Assorted:
+  ++ ["bonus HP", "currency", "impressed", "mobile"]
