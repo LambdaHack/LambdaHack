@@ -154,7 +154,6 @@ test-short-new:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --savePrefix safariSurvival --dumpInitRngs --automateAll --keepAutomated --gameMode "safari survival" --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --savePrefix battle --dumpInitRngs --automateAll --keepAutomated --gameMode battle --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --savePrefix battleSurvival --dumpInitRngs --automateAll --keepAutomated --gameMode "battle survival" --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --newGame 5 --savePrefix defense --dumpInitRngs --automateAll --keepAutomated --gameMode defense --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
 
 # "--setDungeonRng 0 --setMainRng 0" is needed for determinism relative to seed
 # generated before game save
@@ -170,7 +169,6 @@ test-short-load:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix safariSurvival --dumpInitRngs --automateAll --keepAutomated --gameMode "safari survival" --frontendTeletype --stopAfterSeconds 2 --setDungeonRng 0 --setMainRng 0 2> /tmp/teletypetest.log
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix battle --dumpInitRngs --automateAll --keepAutomated --gameMode battle --frontendTeletype --stopAfterSeconds 2 --setDungeonRng 0 --setMainRng 0 2> /tmp/teletypetest.log
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix battleSurvival --dumpInitRngs --automateAll --keepAutomated --gameMode "battle survival" --frontendTeletype --stopAfterSeconds 2 --setDungeonRng 0 --setMainRng 0 2> /tmp/teletypetest.log
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix defense --dumpInitRngs --automateAll --keepAutomated --gameMode defense --frontendTeletype --stopAfterSeconds 2 --setDungeonRng 0 --setMainRng 0 2> /tmp/teletypetest.log
 
 
 build-binary:
