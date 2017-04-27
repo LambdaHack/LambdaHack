@@ -81,16 +81,18 @@ handleAndBroadcast atomic = do
       sendAtomic fid (SfxAtomic sfx) = sendSfx fid sfx
       breakSend lid fid fact perFidLid = do
         -- We take the new leader, from after cmd execution.
-        let hear atomic2 = case _gleader fact of
-              Just leader -> do
-                body <- getsState $ getActorBody leader
-                loud <- case atomic2 of
-                  UpdAtomic cmd -> loudUpdAtomic (blid body == lid) cmd
-                  SfxAtomic cmd -> loudSfxAtomic (blid body == lid) cmd
-                case loud of
-                  Nothing -> return ()
-                  Just msg -> sendSfx fid $ SfxMsgFid fid msg
-              _ -> return ()
+        let hear atomic2 = do
+              local <- case _gleader fact of
+                Nothing -> return True  -- give leaderless factions some love
+                Just leader -> do
+                  body <- getsState $ getActorBody leader
+                  return $! (blid body == lid)
+              loud <- case atomic2 of
+                UpdAtomic cmd -> loudUpdAtomic local cmd
+                SfxAtomic cmd -> loudSfxAtomic local cmd
+              case loud of
+                Nothing -> return ()
+                Just msg -> sendSfx fid $ SfxMsgFid fid msg
             send2 (cmd2, ps2) =
               when (seenAtomicCli knowEvents fid perFidLid ps2) $
                 sendUpdate fid cmd2

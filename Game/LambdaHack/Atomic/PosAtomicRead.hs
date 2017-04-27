@@ -132,7 +132,6 @@ posUpdAtomic cmd = case cmd of
   UpdKillExit fid -> return $! PosFid fid
   UpdWriteSave -> return PosAll
   UpdMsgAll{} -> return PosAll
-  UpdRecordHistory fid -> return $! PosFid fid
 
 -- | Produce the positions where the atomic special effect takes place.
 posSfxAtomic :: MonadStateRead m => SfxAtomic -> m PosAtomic

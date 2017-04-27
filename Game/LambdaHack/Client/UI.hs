@@ -61,17 +61,16 @@ queryUI = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   if isAIFact fact then do
+    recordHistory
     keyPressed <- anyKeyPressed
-    if keyPressed then do
+    if keyPressed && fleaderMode (gplayer fact) /= LeaderNull then do
       discardPressedKey
       addPressedEsc
       -- Regaining control of faction cancels --stopAfter*.
       modifyClient $ \cli ->
         cli {sdebugCli = (sdebugCli cli) { sstopAfterSeconds = Nothing
                                          , sstopAfterFrames = Nothing }}
-      if fleaderMode (gplayer fact) /= LeaderNull then
-        return (ReqUIAutomate, Nothing)  -- stop AI
-      else return (ReqUINop, Nothing)
+      return (ReqUIAutomate, Nothing)  -- stop AI
     else do
       -- As long as UI faction is under AI control, check, once per move,
       -- for benchmark game stop.

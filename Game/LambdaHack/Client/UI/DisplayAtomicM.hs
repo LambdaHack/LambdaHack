@@ -352,7 +352,6 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
     side <- getsClient sside
     sortSlots side Nothing
   UpdMsgAll msg -> msgAdd msg
-  UpdRecordHistory _ -> recordHistory
 
 updateItemSlot :: MonadClientUI m
                => CStore -> Maybe ActorId -> ItemId -> m SlotChar
@@ -1017,6 +1016,14 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Unique -> assert `failure` sfx
         IK.Periodic -> assert `failure` sfx
   SfxMsgFid _ sfxMsg -> do
+    side <- getsClient sside
+    fact <- getsState $ (EM.! side) . sfactionD
+    case _gleader fact of
+      Just{} -> return ()  -- will display stuff when leader moves
+      Nothing -> do
+        lidV <- viewedLevelUI
+        markDisplayNeeded lidV
+        recordHistory
     msg <- ppSfxMsg sfxMsg
     msgAdd msg
 

@@ -393,8 +393,9 @@ handleActors lid fid = do
 hActors :: forall m. (MonadAtomic m, MonadServerReadRequest m)
         => FactionId -> [(ActorId, Actor)] -> m Bool
 hActors _ [] = return False
-hActors fid as@((aid, body) : rest) = do
+hActors _fid as@((aid, body) : rest) = do
   let side = bfid body
+      !_A = assert (side == _fid) ()
   fact <- getsState $ (EM.! side) . sfactionD
   squit <- getsServer squit
   let mleader = _gleader fact
@@ -416,8 +417,6 @@ hActors fid as@((aid, body) : rest) = do
         -- and no need to abort turn.
         modifyServer $ \ser -> ser {swriteSave = False}
       _ -> assert `failure` cmdS
-    -- Clear messages in the UI client, regardless if leaderless or not.
-    execUpdAtomic $ UpdRecordHistory side
   let mswitchLeader :: Maybe ActorId -> m ActorId
       {-# NOINLINE mswitchLeader #-}
       mswitchLeader (Just aidNew) = switchLeader side aidNew >> return aidNew
@@ -436,10 +435,10 @@ hActors fid as@((aid, body) : rest) = do
   case mtimed of
     Just (RequestAnyAbility timed) -> do
       nonWaitMove <- handleRequestTimed side aidNew timed
-      if nonWaitMove then return True else hActors fid rest
+      if nonWaitMove then return True else hActors side rest
     Nothing -> do
       swriteSave <- getsServer swriteSave
-      if swriteSave then return False else hActors fid as
+      if swriteSave then return False else hActors side as
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 gameExit = do
