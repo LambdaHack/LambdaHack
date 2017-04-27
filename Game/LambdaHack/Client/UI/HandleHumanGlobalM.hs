@@ -1101,7 +1101,6 @@ artWithVersion :: MonadClientUI m => m [String]
 artWithVersion = do
   Kind.COps{corule} <- getsState scops
   let stdRuleset = Kind.stdRuleset corule
-      stripFrame t = tail . init $ T.lines t
       pasteVersion :: [String] -> [String]
       pasteVersion art =
         let exeVersion = rexeVersion stdRuleset
@@ -1113,7 +1112,7 @@ artWithVersion = do
             versionLen = length version
         in init art ++ [take (80 - versionLen) (last art) ++ version]
       mainMenuArt = rmainMenuArt stdRuleset
-  return $! pasteVersion $ map T.unpack $ stripFrame mainMenuArt
+  return $! pasteVersion $ map T.unpack $ T.lines mainMenuArt
 
 generateMenu :: MonadClientUI m
              => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
