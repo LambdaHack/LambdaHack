@@ -88,8 +88,8 @@ hardRock = TileKind
   , tfreq    = [("basic outer fence", 1), ("noise fence", 1)]
   , tcolor   = defFG
   , tcolor2  = defFG
-  , talter   = maxBound
-  , tfeature = [Dark, Impenetrable, Indistinct]
+  , talter   = maxBound  -- impenetrable
+  , tfeature = [Dark, Indistinct]
   }
 pillar = TileKind
   { tsymbol  = 'O'
@@ -509,7 +509,7 @@ floorCorridorLit = TileKind
   , tfreq    = [("floorCorridorLit", 99), ("rubbleOrNot", 30)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , talter   = maxBound
+  , talter   = 0
   , tfeature = [Walkable, Clear, Indistinct]
   }
 floorArenaLit = floorCorridorLit
@@ -586,7 +586,7 @@ floorFog = TileKind
       -- on big maps, where he doesn't know on which side of fog patch to hide
   , tcolor   = BrCyan
   , tcolor2  = Cyan
-  , talter   = maxBound
+  , talter   = 0
   , tfeature = [Walkable, NoItem, Indistinct]
   }
 floorFogDark = floorFog
@@ -603,7 +603,7 @@ floorSmoke = TileKind
                , ("smokeClumpOver_f_Lit", 1) ]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , talter   = maxBound
+  , talter   = 0
   , tfeature = [Walkable, NoItem, Indistinct]  -- not dark, embers
   }
 floorSmokeDark = floorSmoke

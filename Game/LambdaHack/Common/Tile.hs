@@ -160,7 +160,7 @@ speedup allClear cotile =
   -- taken makes random lookups more or less efficient, so not optimizing
   -- further, until I have benchmarks.
   let isClearTab | allClear = createTab cotile
-                              $ not . kindHasFeature TK.Impenetrable
+                              $ not . (== maxBound) . TK.talter
                  | otherwise = createTab cotile
                                $ kindHasFeature TK.Clear
       isLitTab = createTab cotile $ not . kindHasFeature TK.Dark

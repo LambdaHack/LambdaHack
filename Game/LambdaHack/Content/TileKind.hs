@@ -71,7 +71,6 @@ data Feature =
   | Walkable             -- ^ actors can walk through
   | Clear                -- ^ actors can see through
   | Dark                 -- ^ is not lit with an ambient light
-  | Impenetrable         -- ^ can never be excavated nor seen through
 
   | OftenItem            -- ^ initial items often generated there
   | OftenActor           -- ^ initial actors often generated there
@@ -207,7 +206,6 @@ actionFeatures markSuspect t =
         ChangeTo grp -> Just $ ChangeTo $ stripLight grp
         Walkable -> Just feat
         Clear -> Just feat
-        Impenetrable -> Just feat
         HideAs{} -> Nothing
         BuildAs{} -> Nothing
         RevealAs{} -> if markSuspect then Just feat else Nothing
