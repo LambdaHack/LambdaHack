@@ -204,6 +204,7 @@ torsor = ItemKind
   , iaspects = [ AddMaxHP 300, AddMaxCalm 100, AddSpeed 10, AddNocto 2
                , AddAggression 3
                , AddAbility AbProject 2, AddAbility AbApply 1 ]
+                 -- can't exit the gated level, the boss
   , ieffects = [Unique]
   , ifeature = [Durable, Identified]
   , idesc    = "A principal homogeneous manifold, that acts freely and with enormous force, but whose stabilizers are trivial, making it rather helpless without a support group."
