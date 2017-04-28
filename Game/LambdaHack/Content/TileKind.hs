@@ -4,7 +4,7 @@ module Game.LambdaHack.Content.TileKind
   ( TileKind(..), Feature(..)
   , validateSingleTileKind, validateAllTileKind, actionFeatures
   , TileSpeedup(..), Tab(..), isUknownSpace, unknownId
-  , isSuspectKind, talterForStairs, floorSymbol
+  , isSuspectKind, isOpenableKind, isClosableKind, talterForStairs, floorSymbol
   ) where
 
 import Prelude ()
@@ -131,11 +131,36 @@ validateSingleTileKind :: TileKind -> [Text]
 validateSingleTileKind t@TileKind{..} =
   [ "suspect tile is walkable" | Walkable `elem` tfeature
                                  && isSuspectKind t ]
+  ++ [ "openable tile is open" | Walkable `elem` tfeature
+                                 && isOpenableKind t ]
+  ++ [ "closable tile is closed" | Walkable `notElem` tfeature
+                                   && isClosableKind t ]
+  ++ [ "walkable tile is considered for triggering by AI"
+     | Walkable `elem` tfeature
+       && ConsideredByAI `elem` tfeature ]
+  ++ [ "trail tile not walkable" | Walkable `notElem` tfeature
+                                   && Trail `elem` tfeature ]
+  ++ [ "OftenItem and NoItem on a tile" | OftenItem `elem` tfeature
+                                          && NoItem `elem` tfeature ]
+  ++ [ "OftenActor and NoActor on a tile" | OftenItem `elem` tfeature
+                                            && NoItem `elem` tfeature ]
 
 isSuspectKind :: TileKind -> Bool
 isSuspectKind t =
   let getTo RevealAs{} = True
       getTo ObscureAs{} = True
+      getTo _ = False
+  in any getTo $ tfeature t
+
+isOpenableKind ::TileKind -> Bool
+isOpenableKind t =
+  let getTo OpenTo{} = True
+      getTo _ = False
+  in any getTo $ tfeature t
+
+isClosableKind :: TileKind -> Bool
+isClosableKind t =
+  let getTo CloseTo{} = True
       getTo _ = False
   in any getTo $ tfeature t
 

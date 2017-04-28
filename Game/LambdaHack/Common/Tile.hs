@@ -179,10 +179,7 @@ speedup allClear cotile =
         let getTo TK.HideAs{} = True
             getTo _ = False
         in any getTo $ TK.tfeature tk
-      consideredByAITab = createTab cotile $ \tk ->
-        let getTo TK.ConsideredByAI = True
-            getTo _ = False
-        in any getTo $ TK.tfeature tk
+      consideredByAITab = createTab cotile $ kindHasFeature TK.ConsideredByAI
       isOftenItemTab = createTab cotile $ kindHasFeature TK.OftenItem
       isOftenActorTab = createTab cotile $ kindHasFeature TK.OftenActor
       isNoItemTab = createTab cotile $ kindHasFeature TK.NoItem
@@ -298,14 +295,8 @@ isEasyOpenKind tk =
 
 -- | Whether a tile kind (specified by its id) has an OpenTo feature.
 isOpenable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-isOpenable Kind.Ops{okind} t =
-  let getTo TK.OpenTo{} = True
-      getTo _ = False
-  in any getTo $ TK.tfeature $ okind t
+isOpenable Kind.Ops{okind} t = TK.isOpenableKind $ okind t
 
 -- | Whether a tile kind (specified by its id) has a CloseTo feature.
 isClosable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-isClosable Kind.Ops{okind} t =
-  let getTo TK.CloseTo{} = True
-      getTo _ = False
-  in any getTo $ TK.tfeature $ okind t
+isClosable Kind.Ops{okind} t = TK.isClosableKind $ okind t
