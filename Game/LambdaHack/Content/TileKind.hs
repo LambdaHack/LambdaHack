@@ -17,6 +17,7 @@ import qualified Data.Char as Char
 import Data.Hashable
 import qualified Data.IntSet as IS
 import qualified Data.Map.Strict as M
+import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import GHC.Generics (Generic)
 
@@ -61,7 +62,7 @@ data Feature =
 
   -- The following three are only used in dungeon generation.
   | BuildAs !(GroupName TileKind)
-      -- ^ when generating cave, may be transfromed as the group indicates
+      -- ^ when generating cave, may be transformed as the group indicates
   | RevealAs !(GroupName TileKind)
       -- ^ when generating in opening, can be revealed to belong to the group
   | ObscureAs !(GroupName TileKind)
@@ -164,19 +165,22 @@ validateAllTileKind lt =
     cfs -> ["tile confusions detected:" <+> tshow cfs]
 
 -- | Features of tiles that differentiate them substantially from one another.
--- By tile content validation condition, this means the player
--- can tell such tile apart, and only looking at the map, not tile name.
+-- The intention is the player can easily tell such tiles apart by their
+-- behaviour and only looking at the map, not tile name nor description.
 -- So if running uses this function, it won't stop at places that the player
 -- can't himself tell from other places, and so running does not confer
 -- any advantages, except UI convenience. Hashes are accurate enough
 -- for our purpose, given that we use arbitrary heuristics anyway.
 actionFeatures :: Bool -> TileKind -> IS.IntSet
 actionFeatures markSuspect t =
-  let f feat = case feat of
+  let stripLight grp = maybe grp toGroupName
+                       $ maybe (T.stripSuffix "Dark" $ tshow grp) Just
+                       $ T.stripSuffix "Lit" $ tshow grp
+      f feat = case feat of
         Embed{} -> Just feat
-        OpenTo{} -> Just $ OpenTo ""  -- if needed, remove prefix/suffix
-        CloseTo{} -> Just $ CloseTo ""
-        ChangeTo{} -> Just $ ChangeTo ""
+        OpenTo grp -> Just $ OpenTo $ stripLight grp
+        CloseTo grp -> Just $ CloseTo $ stripLight grp
+        ChangeTo grp -> Just $ ChangeTo $ stripLight grp
         Walkable -> Just feat
         Clear -> Just feat
         Impenetrable -> Just feat
@@ -190,7 +194,7 @@ actionFeatures markSuspect t =
         NoItem -> Nothing
         NoActor -> Nothing
         Indistinct -> Nothing
-        ConsideredByAI -> Just feat
+        ConsideredByAI -> Nothing
         Trail -> Just feat  -- doesn't affect tile behaviour, but important
         Spice -> Nothing
   in IS.fromList $ map hash $ mapMaybe f $ tfeature t
