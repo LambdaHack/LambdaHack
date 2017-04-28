@@ -209,9 +209,13 @@ validateAllTileKind lt =
         any ((Indistinct `notElem`) . tfeature . fst) (hd : tl)
         && any ((/= snd hd) . snd) tl
       confusions f = filter isConfused $ M.elems $ mapVis f
-  in case confusions tcolor ++ confusions tcolor2 of
-    [] -> []
-    cfs -> ["tile confusions detected:" <+> tshow cfs]
+  in [ "first tile should be the unknown one"
+     | talter (head lt) /= 1 || tname (head lt) /= "unknown space" ]
+     ++ [ "only unknown tile may have talter 1"
+        | any ((== 1) . talter) $ tail lt ]
+     ++ case confusions tcolor ++ confusions tcolor2 of
+       [] -> []
+       cfs -> ["tile confusions detected:" <+> tshow cfs]
 
 -- | Features of tiles that differentiate them substantially from one another.
 -- The intention is the player can easily tell such tiles apart by their
