@@ -150,6 +150,7 @@ noise = rogue
   , cauxConnects  = 1%10
   , cmaxVoid      = 1%100
   , cextraStairs  = d 4
+  , cdoorChance   = 1  -- to avoid lit quasi-door tiles
   , chidden       = 0
   , cactorCoeff   = 160  -- the maze requires time to explore
   , cactorFreq    = [("monster", 80), ("animal", 20)]
