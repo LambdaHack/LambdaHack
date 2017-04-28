@@ -194,21 +194,21 @@ isClosableKind t =
 -- If tiles look the same on the map (symbol and color), their substantial
 -- features should be the same, too. Otherwise, the player has to inspect
 -- manually all the tiles of that kind, or even experiment with them,
--- to see if any is special. This would be tedious. Note that iiles may freely
+-- to see if any is special. This would be tedious. Note that tiles may freely
 -- differ wrt text blurb, dungeon generation, AI preferences, etc.
 validateAllTileKind :: [TileKind] -> [Text]
 validateAllTileKind lt =
-  let listVis f = map (\kt -> ( ( tsymbol kt
-                                  , f kt
-                                  )
-                                , [kt] ) ) lt
-      mapVis :: (TileKind -> Color) -> M.Map (Char, Color) [TileKind]
+  let listVis f = map (\kt -> ( (tsymbol kt, f kt)
+                              , [(kt, actionFeatures True kt)] )) lt
+      mapVis :: (TileKind -> Color)
+             -> M.Map (Char, Color) [(TileKind, IS.IntSet)]
       mapVis f = M.fromListWith (++) $ listVis f
-      minorVariant [] = assert `failure` "no TileKind content" `twith` lt
-      minorVariant (hd : tl) =  -- probably just a dark variant of the tile
-        all (== actionFeatures True hd) (map (actionFeatures True) tl)
-      confusions f = filter (any ((Indistinct `notElem`) . tfeature))
-                     $ filter (not . minorVariant) $ M.elems $ mapVis f
+      isConfused [] =  assert `failure` lt
+      isConfused [_] = False
+      isConfused (hd : tl) =
+        any ((Indistinct `notElem`) . tfeature . fst) (hd : tl)
+        && any ((/= snd hd) . snd) tl
+      confusions f = filter isConfused $ M.elems $ mapVis f
   in case confusions tcolor ++ confusions tcolor2 of
     [] -> []
     cfs -> ["tile confusions detected:" <+> tshow cfs]
