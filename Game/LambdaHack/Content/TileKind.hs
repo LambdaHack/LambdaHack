@@ -17,6 +17,7 @@ import qualified Data.Char as Char
 import Data.Hashable
 import qualified Data.IntSet as IS
 import qualified Data.Map.Strict as M
+import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import GHC.Generics (Generic)
@@ -198,7 +199,13 @@ isClosableKind t =
 -- differ wrt text blurb, dungeon generation, AI preferences, etc.
 validateAllTileKind :: [TileKind] -> [Text]
 validateAllTileKind lt =
-  let listVis f = map (\kt -> ( (tsymbol kt, f kt)
+  let kindFreq :: S.Set (GroupName TileKind)  -- cf. Kind.kindFreq
+      kindFreq = let tuples = [ cgroup
+                              | k <- lt
+                              , (cgroup, n) <- tfreq k
+                              , n > 0 ]
+                 in S.fromList tuples
+      listVis f = map (\kt -> ( (tsymbol kt, f kt)
                               , [(kt, actionFeatures True kt)] )) lt
       mapVis :: (TileKind -> Color)
              -> M.Map (Char, Color) [(TileKind, IS.IntSet)]
@@ -209,6 +216,7 @@ validateAllTileKind lt =
         any ((Indistinct `notElem`) . tfeature . fst) (hd : tl)
         && any ((/= snd hd) . snd) tl
       confusions f = filter isConfused $ M.elems $ mapVis f
+      hardwiredAbsent = filter (`S.notMember` kindFreq) hardwiredTileGroups
   in [ "first tile should be the unknown one"
      | talter (head lt) /= 1 || tname (head lt) /= "unknown space" ]
      ++ [ "only unknown tile may have talter 1"
@@ -216,6 +224,13 @@ validateAllTileKind lt =
      ++ case confusions tcolor ++ confusions tcolor2 of
        [] -> []
        cfs -> ["tile confusions detected:" <+> tshow cfs]
+     ++ [ "Hardwired groups not in content:" <+> tshow hardwiredAbsent
+        | not $ null hardwiredAbsent ]
+
+hardwiredTileGroups :: [GroupName TileKind]
+hardwiredTileGroups =
+  [ "unknown space", "legendLit", "legendDark", "basic outer fence"
+  , "stair terminal" ]
 
 -- | Features of tiles that differentiate them substantially from one another.
 -- The intention is the player can easily tell such tiles apart by their
