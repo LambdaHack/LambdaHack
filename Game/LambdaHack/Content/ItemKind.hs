@@ -251,7 +251,7 @@ toOrganNone grp = CreateItem COrgan grp TimerNone
 
 -- | Catch invalid item kind definitions.
 validateSingleItemKind :: ItemKind -> [Text]
-validateSingleItemKind ItemKind{..} =
+validateSingleItemKind ik@ItemKind{..} =
   [ "iname longer than 23" | T.length iname > 23 ]
   ++ [ "icount < 0" | icount < 0 ]
   ++ validateRarity irarity
@@ -291,6 +291,24 @@ validateSingleItemKind ItemKind{..} =
           f _ = False
           ts = filter f ieffects
       in ["more than one Periodic specification" | length ts > 1])
+  ++ (let f :: Feature -> Bool
+          f ToThrow{} = True
+          f _ = False
+          ts = filter f ifeature
+      in ["more than one ToThrow specification" | length ts > 1])
+  ++ (let f :: Feature -> Bool
+          f Tactic{} = True
+          f _ = False
+          ts = filter f ifeature
+      in ["more than one Tactic specification" | length ts > 1])
+  ++ concatMap (validateDups ik)
+       [ Fragile, Lobable, Durable, Identified, Applicable
+       , Equipable, Meleeable, Precious ]
+
+validateDups :: ItemKind -> Feature -> [Text]
+validateDups ItemKind{..} feat =
+  let ts = filter (== feat) ifeature
+  in ["more than one" <+> tshow feat <+> "specification" | length ts > 1]
 
 -- | Validate all item kinds.
 validateAllItemKind :: [ItemKind] -> [Text]
