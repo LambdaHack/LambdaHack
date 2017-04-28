@@ -17,7 +17,7 @@ module Game.LambdaHack.Common.Tile
   ( kindHasFeature, hasFeature, isClear, isLit, isWalkable, isDoor, isChangable
   , isSuspect, isHideAs, consideredByAI, isExplorable
   , isOftenItem, isOftenActor, isNoItem, isNoActor, isEasyOpen
-  , speedup, alterMinSkill, aiAlterMinSkill, alterMinWalk
+  , speedup, alterMinSkill, alterMinWalk
   , openTo, closeTo, embeddedItems, revealAs, obscureAs, hideAs, buildAs
   , isEasyOpenKind, isOpenable, isClosable
 #ifdef EXPOSE_INTERNAL
@@ -139,11 +139,6 @@ alterMinSkill :: TileSpeedup -> Kind.Id TileKind -> Int
 alterMinSkill TileSpeedup{alterMinSkillTab} =
   fromEnum . accessTab alterMinSkillTab
 
-aiAlterMinSkill :: TileSpeedup -> Kind.Id TileKind -> Int
-{-# INLINE aiAlterMinSkill #-}
-aiAlterMinSkill TileSpeedup{aiAlterMinSkillTab} =
-  fromEnum . accessTab aiAlterMinSkillTab
-
 alterMinWalk :: TileSpeedup -> Kind.Id TileKind -> Int
 {-# INLINE alterMinWalk #-}
 alterMinWalk TileSpeedup{alterMinWalkTab} =
@@ -187,14 +182,13 @@ speedup allClear cotile =
       consideredByAITab = createTab cotile $ \tk ->
         let getTo TK.ConsideredByAI = True
             getTo _ = False
-        in not (TK.isSuspectKind tk) || any getTo (TK.tfeature tk)
+        in any getTo $ TK.tfeature tk
       isOftenItemTab = createTab cotile $ kindHasFeature TK.OftenItem
       isOftenActorTab = createTab cotile $ kindHasFeature TK.OftenActor
       isNoItemTab = createTab cotile $ kindHasFeature TK.NoItem
       isNoActorTab = createTab cotile $ kindHasFeature TK.NoActor
       isEasyOpenTab = createTab cotile isEasyOpenKind
       alterMinSkillTab = createTabWithKey cotile alterMinSkillKind
-      aiAlterMinSkillTab = createTabWithKey cotile aiAlterMinSkillKind
       alterMinWalkTab = createTabWithKey cotile alterMinWalkKind
   in TileSpeedup {..}
 
@@ -212,26 +206,6 @@ alterMinSkillKind _k tk =
       getTo TK.RevealAs{} = True
       getTo TK.ObscureAs{} = True
       getTo TK.Embed{} = True
-      getTo TK.ConsideredByAI = True
-      getTo _ = False
-  in if any getTo $ TK.tfeature tk then TK.talter tk else maxBound
-
--- Check that alter should be used by AI, if not, @maxBound@.
--- This is a cheap upper bound --- sometimes a tile will
--- not be triggered anyway, depending on context and properties
--- of the embedded item, if any.
--- We assume AI is best off using most embedded items only once
--- and we assume most tiles change after first activation
--- (cache being an exception).
--- AI also doesn't verify that @HideAs@ tiles are not swapped.
--- Hence no @HideAs@ and no@Embed@, but @ChangeTo@ and similar stay in.
-aiAlterMinSkillKind :: Kind.Id TileKind -> TileKind -> Word8
-aiAlterMinSkillKind _k tk =
-  let getTo TK.OpenTo{} = True
-      getTo TK.CloseTo{} = True
-      getTo TK.ChangeTo{} = True
-      getTo TK.RevealAs{} = True
-      getTo TK.ObscureAs{} = True
       getTo TK.ConsideredByAI = True
       getTo _ = False
   in if any getTo $ TK.tfeature tk then TK.talter tk else maxBound

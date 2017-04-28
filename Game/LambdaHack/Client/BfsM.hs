@@ -296,7 +296,7 @@ embedBenefit fleeVia aid pbags = do
   discoKind <- getsClient sdiscoKind
   discoBenefit <- getsClient sdiscoBenefit
   s <- getState
-  let aiAlterMinSkill p = Tile.aiAlterMinSkill coTileSpeedup $ lvl `at` p
+  let alterMinSkill p = Tile.alterMinSkill coTileSpeedup $ lvl `at` p
       lidExplored = ES.member (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
       -- Ignoring the number of items, because only one of each @iid@
@@ -346,10 +346,10 @@ embedBenefit fleeVia aid pbags = do
                               (EM.keys bag)
           else 0
       interestingHere p =
-        -- Assume secrets have no loot, unless marked as considered by AI:
+        -- For speed and to avoid greedy AI loops, filter targets.
         Tile.consideredByAI coTileSpeedup (lvl `at` p)
         -- Only actors with high enough AbAlter can trigger embedded items.
-        && alterSkill >= fromEnum (aiAlterMinSkill p)
+        && alterSkill >= fromEnum (alterMinSkill p)
       ebags = filter (interestingHere . fst) pbags
       benFeats = map (\pbag -> (bens pbag, pbag)) ebags
   return $! filter ((> 0 ) . fst) benFeats

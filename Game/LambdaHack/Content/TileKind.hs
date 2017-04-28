@@ -95,22 +95,21 @@ instance Hashable Feature
 instance NFData Feature
 
 data TileSpeedup = TileSpeedup
-  { isClearTab         :: !(Tab Bool)
-  , isLitTab           :: !(Tab Bool)
-  , isWalkableTab      :: !(Tab Bool)
-  , isDoorTab          :: !(Tab Bool)
-  , isChangableTab     :: !(Tab Bool)
-  , isSuspectTab       :: !(Tab Bool)
-  , isHideAsTab        :: !(Tab Bool)
-  , consideredByAITab  :: !(Tab Bool)
-  , isOftenItemTab     :: !(Tab Bool)
-  , isOftenActorTab    :: !(Tab Bool)
-  , isNoItemTab        :: !(Tab Bool)
-  , isNoActorTab       :: !(Tab Bool)
-  , isEasyOpenTab      :: !(Tab Bool)
-  , alterMinSkillTab   :: !(Tab Word8)
-  , aiAlterMinSkillTab :: !(Tab Word8)
-  , alterMinWalkTab    :: !(Tab Word8)
+  { isClearTab        :: !(Tab Bool)
+  , isLitTab          :: !(Tab Bool)
+  , isWalkableTab     :: !(Tab Bool)
+  , isDoorTab         :: !(Tab Bool)
+  , isChangableTab    :: !(Tab Bool)
+  , isSuspectTab      :: !(Tab Bool)
+  , isHideAsTab       :: !(Tab Bool)
+  , consideredByAITab :: !(Tab Bool)
+  , isOftenItemTab    :: !(Tab Bool)
+  , isOftenActorTab   :: !(Tab Bool)
+  , isNoItemTab       :: !(Tab Bool)
+  , isNoActorTab      :: !(Tab Bool)
+  , isEasyOpenTab     :: !(Tab Bool)
+  , alterMinSkillTab  :: !(Tab Word8)
+  , alterMinWalkTab   :: !(Tab Word8)
   }
 
 -- Vectors of booleans can be slower than arrays, because they are not packed,

@@ -123,6 +123,7 @@ pulpit = TileKind
   , tcolor2  = Blue
   , talter   = 5
   , tfeature = [Clear, Embed "pulpit", Indistinct]
+                 -- mixed blessing, so AI ignores, saved for player fun
   }
 pillarCache = TileKind
   { tsymbol  = 'O'
@@ -132,8 +133,9 @@ pillarCache = TileKind
   , tcolor2  = Blue
   , talter   = 5
   , tfeature = [ Embed "terrain cache", Embed "terrain cache trap"
-               , ChangeTo "cachable", Indistinct ]
+               , ChangeTo "cachable", ConsideredByAI, Indistinct ]
       -- Not explorable, but prominently placed, so hard to miss.
+      -- Very beneficial, so AI eager to trigger.
   }
 lampPost = TileKind
   { tsymbol  = 'O'
@@ -151,8 +153,9 @@ signboardUnread = TileKind  -- client only, indicates never used by this faction
   , tcolor   = BrCyan
   , tcolor2  = Cyan
   , talter   = 5
-  , tfeature = [ Embed "signboard", ConsideredByAI, Indistinct
-               , RevealAs "dummy, treated as suspect" ]
+  , tfeature = [ Embed "signboard", Indistinct
+               , ConsideredByAI  -- changes after use, so safe for AI
+               , RevealAs "signboard" ]  -- to display as hidden
   }
 signboardRead = TileKind  -- after first use revealed to be this one
   { tsymbol  = 'O'
@@ -359,7 +362,7 @@ wallObscuredFrescoedH = TileKind
   , tfeature = [ Embed "subtle fresco"
                , HideAs "suspect horizontal wall Lit"
                , Indistinct
-               ]
+               ]  -- a bit beneficial, but AI would loop if allowed to trigger
   }
 doorTrappedH = TileKind
   { tsymbol  = '+'
@@ -402,7 +405,6 @@ stairsUp = TileKind
   , tcolor2  = defFG
   , talter   = talterForStairs
   , tfeature = [Embed "staircase up", ConsideredByAI]
-                 -- marked for AI to enable targeting in @closestTriggers@
   }
 stairsTaintedUp = TileKind
   { tsymbol  = '<'
@@ -413,6 +415,7 @@ stairsTaintedUp = TileKind
   , talter   = talterForStairs
   , tfeature = [ Embed "staircase up", Embed "staircase trap up"
                , ConsideredByAI, ChangeTo "ordinary staircase up" ]
+                 -- AI uses despite the trap; exploration more important
   }
 stairsOutdoorUp = stairsUp
   { tname    = "signpost pointing backward"
@@ -485,9 +488,7 @@ rubble = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 5
-  , tfeature = [ OpenTo "rubbleOrNot", Embed "rubble", Indistinct
-               , RevealAs "dummy, prevents AI trigger, unless in the way" ]
-                 -- AI doesn't go out of its way to clear the way for heroes
+  , tfeature = [OpenTo "rubbleOrNot", Embed "rubble", Indistinct]
   }
 rubblePlace = TileKind
   { tsymbol  = '%'
@@ -496,12 +497,11 @@ rubblePlace = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 5
-  , tfeature = [ Spice
-               , OpenTo "rubblePlaceOrNot", Embed "rubble", Indistinct
-               , RevealAs "dummy, prevents AI trigger, unless in the way" ]
+  , tfeature = [Spice, OpenTo "rubblePlaceOrNot", Embed "rubble", Indistinct]
       -- It's not explorable, due to not being walkable nor clear and due
       -- to being a door (@OpenTo@), which is kind of OK, because getting
       -- the item is risky and, e.g., AI doesn't attempt it.
+      -- Also, AI doesn't go out of its way to clear the way for heroes.
   }
 floorCorridorLit = TileKind
   { tsymbol  = '#'
