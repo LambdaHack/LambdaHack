@@ -58,11 +58,11 @@ data Feature =
   | ChangeTo !(GroupName TileKind)
       -- ^ alters tile, but does not change walkability
   | HideAs !(GroupName TileKind)
-      -- ^ when hidden, looks as a tile of the group
+      -- ^ when hidden, looks as the unique tile of the group
 
   -- The following three are only used in dungeon generation.
   | BuildAs !(GroupName TileKind)
-      -- ^ when generating cave, may be transformed as the group indicates
+      -- ^ when generating, may be transformed to the unique tile of the group
   | RevealAs !(GroupName TileKind)
       -- ^ when generating in opening, can be revealed to belong to the group
   | ObscureAs !(GroupName TileKind)
@@ -143,6 +143,32 @@ validateSingleTileKind t@TileKind{..} =
                                           && NoItem `elem` tfeature ]
   ++ [ "OftenActor and NoActor on a tile" | OftenItem `elem` tfeature
                                             && NoItem `elem` tfeature ]
+  ++ (let f :: Feature -> Bool
+          f OpenTo{} = True
+          f CloseTo{} = True
+          f ChangeTo{} = True
+          f _ = False
+          ts = filter f tfeature
+      in [ "more than one OpenTo, CloseTo and ChangeTo specification"
+         | length ts > 1 ])
+  ++ (let f :: Feature -> Bool
+          f HideAs{} = True
+          f _ = False
+          ts = filter f tfeature
+      in ["more than one HideAs specification" | length ts > 1])
+  ++ (let f :: Feature -> Bool
+          f BuildAs{} = True
+          f _ = False
+          ts = filter f tfeature
+      in ["more than one BuildAs specification" | length ts > 1])
+  ++ concatMap (validateDups t)
+       [ Walkable, Clear, Dark, OftenItem, OftenActor, NoItem, NoActor
+       , Indistinct, ConsideredByAI, Trail, Spice ]
+
+validateDups :: TileKind -> Feature -> [Text]
+validateDups TileKind{..} feat =
+  let ts = filter (== feat) tfeature
+  in ["more than one" <+> tshow feat <+> "specification" | length ts > 1]
 
 isSuspectKind :: TileKind -> Bool
 isSuspectKind t =

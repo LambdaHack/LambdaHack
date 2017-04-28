@@ -230,20 +230,16 @@ openTo Kind.Ops{okind, opick} t = do
   let getTo (TK.OpenTo grp) acc = grp : acc
       getTo _ acc = acc
   case foldr getTo [] $ TK.tfeature $ okind t of
-    [] -> return t
-    groups -> do
-      grp <- oneOf groups
-      fromMaybe (assert `failure` grp) <$> opick grp (const True)
+    [grp] -> fromMaybe (assert `failure` grp) <$> opick grp (const True)
+    _ -> return t
 
 closeTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 closeTo Kind.Ops{okind, opick} t = do
   let getTo (TK.CloseTo grp) acc = grp : acc
       getTo _ acc = acc
   case foldr getTo [] $ TK.tfeature $ okind t of
-    [] -> return t
-    groups -> do
-      grp <- oneOf groups
-      fromMaybe (assert `failure` grp) <$> opick grp (const True)
+    [grp] -> fromMaybe (assert `failure` grp) <$> opick grp (const True)
+    _ -> return t
 
 embeddedItems :: Kind.Ops TileKind -> Kind.Id TileKind -> [GroupName ItemKind]
 embeddedItems Kind.Ops{okind} t =
