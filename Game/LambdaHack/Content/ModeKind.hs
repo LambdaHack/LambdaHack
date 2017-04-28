@@ -13,6 +13,7 @@ import Game.LambdaHack.Common.Prelude
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
+import qualified Data.Set as S
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 
@@ -24,7 +25,7 @@ import Game.LambdaHack.Content.ItemKind (ItemKind)
 
 -- | Game mode specification.
 data ModeKind = ModeKind
-  { msymbol :: !Char    -- ^ a symbol (matches the keypress, if any)
+  { msymbol :: !Char    -- ^ a symbol
   , mname   :: !Text    -- ^ short description
   , mfreq   :: !(Freqs ModeKind)  -- ^ frequency within groups
   , mroster :: !Roster  -- ^ players taking part in the game
@@ -86,7 +87,7 @@ data Player = Player
   , fneverEmpty  :: !Bool        -- ^ the faction declared killed if no actors
   , fhiCondPoly  :: !HiCondPoly  -- ^ score polynomial for the player
   , fhasGender   :: !Bool        -- ^ whether actors have gender
-  , ftactic      :: !Tactic      -- ^ non-leader behave according to this
+  , ftactic      :: !Tactic      -- ^ non-leaders behave according to this
                                  --   tactic; can be changed during the game
   , fleaderMode  :: !LeaderMode  -- ^ the mode of switching the leader
   , fhasUI       :: !Bool        -- ^ does the faction have a UI client
@@ -135,7 +136,7 @@ validateSingleModeKind ModeKind{..} =
   ++ validateSingleRoster mcaves mroster
 
 -- | Checks, in particular, that there is at least one faction with fneverEmpty
--- or the game could get stuck when the dungeon is devoid of actors
+-- or the game would get stuck as soon as the dungeon is devoid of actors.
 validateSingleRoster :: Caves -> Roster -> [Text]
 validateSingleRoster caves Roster{..} =
   [ "no player keeps the dungeon alive"
@@ -160,8 +161,6 @@ validateSingleRoster caves Roster{..} =
 validateSinglePlayer :: Player -> [Text]
 validateSinglePlayer  Player{..} =
   [ "fname empty:" <+> fname | T.null fname ]
-  ++ [ "first word of fname longer than 15:" <+> fname
-     | T.length (head $ T.words fname) > 15 ]
   ++ [ "no UI client, but UI leader:" <+> fname
      | not fhasUI && case fleaderMode of
                        LeaderUI _ -> True
@@ -169,6 +168,18 @@ validateSinglePlayer  Player{..} =
   ++ [ "fskillsOther not negative:" <+> fname
      | any (>= 0) $ EM.elems fskillsOther ]
 
--- | Validate all game mode kinds. Currently always valid.
+-- | Validate game mode kinds together.
 validateAllModeKind :: [ModeKind] -> [Text]
-validateAllModeKind _ = []
+validateAllModeKind content =
+  let kindFreq :: S.Set (GroupName ModeKind)  -- cf. Kind.kindFreq
+      kindFreq = let tuples = [ cgroup
+                              | k <- content
+                              , (cgroup, n) <- mfreq k
+                              , n > 0 ]
+                 in S.fromList tuples
+      hardwiredAbsent = filter (`S.notMember` kindFreq) hardwiredModeGroups
+  in [ "Hardwired groups not in content:" <+> tshow hardwiredAbsent
+     | not $ null hardwiredAbsent ]
+
+hardwiredModeGroups :: [GroupName ModeKind]
+hardwiredModeGroups = [ "campaign scenario", "starting", "starting JS" ]
