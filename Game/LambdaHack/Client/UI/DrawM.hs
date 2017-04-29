@@ -231,7 +231,9 @@ drawFramePath drawnLevelId = do
         Just (_, Actor{btrajectory = Just p, bpos = prPos}) ->
           trajectoryToPath prPos (fst p)
         _ -> []
-      shiftedLine = bline ++ shiftedBTrajectory
+      shiftedLine = if null shiftedBTrajectory
+                    then bline
+                    else shiftedBTrajectory
       acOnPathOrLine :: Char.Char -> Point -> Kind.Id TileKind
                      -> Color.AttrCharW32
       acOnPathOrLine !ch !p0 !tile =
