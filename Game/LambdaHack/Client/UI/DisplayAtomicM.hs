@@ -509,11 +509,13 @@ createActorUI born aid body = do
           baseColor = flavourToColor $ jflavour trunk
           basePronoun | not (bproj body) && fhasGender (gplayer fact) = "he"
                       | otherwise = "it"
-          nameFromNumber k = if k == 0 then "Captain" else "Hero" <+> tshow k
+          nameFromNumber fn k = if k == 0
+                                then makePhrase [MU.Ws $ MU.Text fn, "Captain"]
+                                else fn <+> tshow k
           heroNamePronoun k =
             if gcolor fact /= Color.BrWhite
-            then (fname (gplayer fact) <+> nameFromNumber k, "he")
-            else fromMaybe (nameFromNumber k, "he")
+            then (nameFromNumber (fname $ gplayer fact) k, "he")
+            else fromMaybe (nameFromNumber (fname $ gplayer fact) k, "he")
                  $ lookup k configHeroNames
       (n, bsymbol) <-
         if | bproj body -> return $ (0, if isBlast then jsymbol trunk else '*')

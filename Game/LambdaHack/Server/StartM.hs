@@ -124,7 +124,7 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
               LeaderAI _ -> "Autonomous"
               LeaderUI _ -> "Controlled"
             (gcolor, gnameNew) = case M.lookup nameoc cmap of
-              Nothing -> (Color.BrWhite, prefix <+> fname)
+              Nothing -> (Color.BrWhite, prefix <+> fname <+> "Crew")
               Just c -> (c, prefix <+> fname <+> "Team")
             gvictimsDnew = case find (\fact -> gname fact == gnameNew)
                                 $ EM.elems factionDold of
