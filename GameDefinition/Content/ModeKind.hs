@@ -71,7 +71,7 @@ shootout = ModeKind  -- sparse ranged in daylight
   , mfreq   = [("shootout", 1), ("campaign scenario", 1)]
   , mroster = rosterShootout
   , mcaves  = cavesShootout
-  , mdesc   = "Whose arguments are most striking and whose ideas fly fastest? Let's scatter up, attack the problems from different angles and find out. To display the trajectory of any soaring entity, point it with the crosshair in aiming mode."
+  , mdesc   = "Whose arguments are most striking and whose ideas fly fastest? Let's scatter up, attack the problems from different angles and find out. (To display the trajectory of any soaring entity, point it with the crosshair in aiming mode.)"
   }
 
 escape = ModeKind  -- asymmetric ranged and stealth race at night
@@ -235,9 +235,9 @@ rosterRaid = Roster
                  , ( playerAnimal  -- starting over escape
                    , [(-2, 2, "animal")] )
                  , (playerHorror, []) ]  -- for summoned monsters
-  , rosterEnemy = [ ("Explorer Party", "Animal Kingdom")
+  , rosterEnemy = [ ("Explorer", "Animal Kingdom")
+                  , ("Explorer", "Horror Den")
                   , ("Indigo Founder", "Animal Kingdom")
-                  , ("Explorer Party", "Horror Den")
                   , ("Indigo Founder", "Horror Den") ]
   , rosterAlly = [] }
 
@@ -245,14 +245,14 @@ rosterBrawl = Roster
   { rosterList = [ ( playerHero { fcanEscape = False
                                 , fhiCondPoly = hiDweller }
                    , [(-3, 3, "hero")] )
-                 , ( playerAntiHero { fname = "Indigo Research"
+                 , ( playerAntiHero { fname = "Indigo Researcher"
                                     , fcanEscape = False
                                     , fhiCondPoly = hiDweller }
                    , [(-3, 3, "hero")] )
                  , (playerHorror, []) ]
-  , rosterEnemy = [ ("Explorer Party", "Indigo Research")
-                  , ("Explorer Party", "Horror Den")
-                  , ("Indigo Research", "Horror Den") ]
+  , rosterEnemy = [ ("Explorer", "Indigo Researcher")
+                  , ("Explorer", "Horror Den")
+                  , ("Indigo Researcher", "Horror Den") ]
   , rosterAlly = [] }
 
 -- Exactly one scout gets a sight boost, to help the aggressor, because he uses
@@ -263,27 +263,27 @@ rosterShootout = Roster
   { rosterList = [ ( playerHero { fcanEscape = False
                                 , fhiCondPoly = hiDweller }
                    , [(-5, 1, "scout hero"), (-5, 2, "ranger hero")] )
-                 , ( playerAntiHero { fname = "Indigo Research"
+                 , ( playerAntiHero { fname = "Indigo Researcher"
                                     , fcanEscape = False
                                     , fhiCondPoly = hiDweller }
                    , [(-5, 1, "scout hero"), (-5, 2, "ranger hero")] )
                  , (playerHorror, []) ]
-  , rosterEnemy = [ ("Explorer Party", "Indigo Research")
-                  , ("Explorer Party", "Horror Den")
-                  , ("Indigo Research", "Horror Den") ]
+  , rosterEnemy = [ ("Explorer", "Indigo Researcher")
+                  , ("Explorer", "Horror Den")
+                  , ("Indigo Researcher", "Horror Den") ]
   , rosterAlly = [] }
 
 rosterEscape = Roster
   { rosterList = [ ( playerHero {fhiCondPoly = hiEscapist}
                    , [(-7, 1, "scout hero"), (-7, 2, "escapist hero")] )
-                 , ( playerAntiHero { fname = "Indigo Research"
+                 , ( playerAntiHero { fname = "Indigo Researcher"
                                     , fcanEscape = False  -- start on escape
                                     , fhiCondPoly = hiDweller }
                    , [(-7, 1, "scout hero"), (-7, 7, "ambusher hero")] )
                  , (playerHorror, []) ]
-  , rosterEnemy = [ ("Explorer Party", "Indigo Research")
-                  , ("Explorer Party", "Horror Den")
-                  , ("Indigo Research", "Horror Den") ]
+  , rosterEnemy = [ ("Explorer", "Indigo Researcher")
+                  , ("Explorer", "Horror Den")
+                  , ("Indigo Researcher", "Horror Den") ]
   , rosterAlly = [] }
 
 rosterZoo = Roster
@@ -293,22 +293,22 @@ rosterZoo = Roster
                  , ( playerAnimal {fneverEmpty = True}
                    , [(-8, 100, "mobile animal")] )
                  , (playerHorror, []) ]  -- for summoned monsters
-  , rosterEnemy = [ ("Explorer Party", "Animal Kingdom")
-                  , ("Explorer Party", "Horror Den") ]
+  , rosterEnemy = [ ("Explorer", "Animal Kingdom")
+                  , ("Explorer", "Horror Den") ]
   , rosterAlly = [] }
 
 rosterAmbush = Roster
   { rosterList = [ ( playerHero { fcanEscape = False
                                 , fhiCondPoly = hiDweller }
                    , [(-9, 1, "scout hero"), (-9, 5, "ambusher hero")] )
-                 , ( playerAntiHero { fname = "Indigo Research"
+                 , ( playerAntiHero { fname = "Indigo Researcher"
                                     , fcanEscape = False
                                     , fhiCondPoly = hiDweller }
                    , [(-9, 1, "scout hero"), (-9, 5, "ambusher hero")] )
                  , (playerHorror, []) ]
-  , rosterEnemy = [ ("Explorer Party", "Indigo Research")
-                  , ("Explorer Party", "Horror Den")
-                  , ("Indigo Research", "Horror Den") ]
+  , rosterEnemy = [ ("Explorer", "Indigo Researcher")
+                  , ("Explorer", "Horror Den")
+                  , ("Indigo Researcher", "Horror Den") ]
   , rosterAlly = [] }
 
 rosterExploration = Roster
@@ -321,8 +321,8 @@ rosterExploration = Roster
                      [ (-1, 1 + d 2, "animal")
                      -- Huge battle at the end:
                      , (-10, 100, "mobile animal") ] ) ]
-  , rosterEnemy = [ ("Explorer Party", "Monster Hive")
-                  , ("Explorer Party", "Animal Kingdom") ]
+  , rosterEnemy = [ ("Explorer", "Monster Hive")
+                  , ("Explorer", "Animal Kingdom") ]
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
 -- No horrors faction needed, because spawned heroes land in civilian faction.
@@ -335,7 +335,7 @@ rosterSafari = Roster
                    , [(-7, 20, "mobile animal")] )
                  , ( playerAnimalExquisite  -- start on escape
                    , [(-10, 30, "mobile animal")] ) ]
-  , rosterEnemy = [ ("Monster Tourist Office", "Hunam Convict Pack")
+  , rosterEnemy = [ ("Monster Tourist Office", "Hunam Convict")
                   , ( "Monster Tourist Office"
                     , "Animal Magnificent Specimen Variety" )
                   , ( "Monster Tourist Office"
@@ -343,8 +343,8 @@ rosterSafari = Roster
   , rosterAlly = [ ( "Animal Magnificent Specimen Variety"
                    , "Animal Exquisite Herds and Packs" )
                  , ( "Animal Magnificent Specimen Variety"
-                   , "Hunam Convict Pack" )
-                 , ( "Hunam Convict Pack"
+                   , "Hunam Convict" )
+                 , ( "Hunam Convict"
                    , "Animal Exquisite Herds and Packs" ) ] }
 
 rosterSafariSurvival = rosterSafari
@@ -369,8 +369,8 @@ rosterBattle = Roster
                    , [(-5, 35, "mobile monster")] )
                  , ( playerAnimal {fneverEmpty = True}
                    , [(-5, 30, "mobile animal")] ) ]
-  , rosterEnemy = [ ("Explorer Party", "Monster Hive")
-                  , ("Explorer Party", "Animal Kingdom") ]
+  , rosterEnemy = [ ("Explorer", "Monster Hive")
+                  , ("Explorer", "Animal Kingdom") ]
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
 rosterBattleSurvival = rosterBattle

@@ -587,7 +587,7 @@ floorFog = TileKind
   , tcolor   = BrCyan
   , tcolor2  = Cyan
   , talter   = 0
-  , tfeature = [Walkable, NoItem, Indistinct]
+  , tfeature = [Walkable, NoItem, Indistinct, OftenActor]
   }
 floorFogDark = floorFog
   { tname    = "thick fog"

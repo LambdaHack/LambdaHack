@@ -19,7 +19,7 @@ import Game.LambdaHack.Content.ModeKind
 playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror, playerMonsterTourist, playerHunamConvict, playerAnimalMagnificent, playerAnimalExquisite :: Player
 
 playerHero = Player
-  { fname = "Explorer Party"
+  { fname = "Explorer"
   , fgroups = ["hero"]
   , fskillsOther = meleeAdjacent
   , fcanEscape = True
@@ -37,7 +37,7 @@ playerAntiHero = playerHero
   }
 
 playerCivilian = Player
-  { fname = "Civilian Crowd"
+  { fname = "Civilian"
   , fgroups = ["hero", "civilian"]
   , fskillsOther = zeroSkills  -- not coordinated by any leadership
   , fcanEscape = False
@@ -110,7 +110,7 @@ playerMonsterTourist =
                     , fleaderMode = LeaderUI $ AutoLeader False False }
 
 playerHunamConvict =
-  playerCivilian {fname = "Hunam Convict Pack"}
+  playerCivilian {fname = "Hunam Convict"}
 
 playerAnimalMagnificent =
   playerAnimal { fname = "Animal Magnificent Specimen Variety"
