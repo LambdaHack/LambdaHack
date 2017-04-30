@@ -58,14 +58,14 @@ symbolFlask      = '!'
 symbolScroll     = '?'  -- book, note, tablet, remote, chip, card
 symbolTorsoArmor = '['
 symbolMiscArmor  = '['
-_symbolClothes   = '('
-symbolShield     = '['
+_symbolClothes   = '['
+symbolShield     = ']'
 symbolPolearm    = ')'
 symbolEdged      = ')'
 symbolHafted     = ')'
 symbolWand       = '/'  -- magical rod, transmitter, pistol, rifle
 _symbolStaff     = '_'  -- scanner
-_symbolFood      = ','  -- too easy to miss?
+_symbolFood      = ','  -- distinct from floor, because middle dots used
 
 -- * Thrown weapons
 
