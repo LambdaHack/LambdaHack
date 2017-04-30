@@ -14,6 +14,7 @@ import Game.LambdaHack.Common.Prelude
 
 import Control.Concurrent.Async
 import Data.Char (chr, ord)
+import qualified Data.Char as Char
 import qualified System.IO as SIO
 
 import Game.LambdaHack.Client.UI.Frame
@@ -54,7 +55,10 @@ shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
 display :: SingleFrame  -- ^ the screen frame to draw
         -> IO ()
 display SingleFrame{singleFrame} =
-  let f w l = Color.charFromW32 w : l
+  let f w l =
+        let acCharRaw = Color.charFromW32 w
+            acChar = if Char.ord acCharRaw == 183 then '.' else acCharRaw
+        in acChar : l
       levelChar = chunk $ PointArray.foldrA f [] singleFrame
       lxsize = fst normalLevelBound + 1
       chunk [] = []
