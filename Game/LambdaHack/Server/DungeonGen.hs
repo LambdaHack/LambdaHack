@@ -234,7 +234,6 @@ levelFromCaveKind Kind.COps{coTileSpeedup}
        , lactorFreq
        , litemNum
        , litemFreq
-       , lhidden = chidden
        , lescape
        , lnight
        }

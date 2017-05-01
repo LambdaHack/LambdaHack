@@ -110,7 +110,6 @@ data Level = Level
   , litemNum    :: !Int        -- ^ number of initial items, 0 for clients
   , litemFreq   :: !(Freqs ItemKind)
                                -- ^ frequency of initial items; [] for clients
-  , lhidden     :: !Int        -- ^ secret tile density
   , lescape     :: ![Point]    -- ^ positions of IK.Escape tiles
   , lnight      :: !Bool
   }
@@ -213,7 +212,6 @@ instance Binary Level where
     put lactorFreq
     put litemNum
     put litemFreq
-    put lhidden
     put lescape
     put lnight
   get = do
@@ -234,7 +232,6 @@ instance Binary Level where
     lactorFreq <- get
     litemNum <- get
     litemFreq <- get
-    lhidden <- get
     lescape <- get
     lnight <- get
     return $! Level{..}
