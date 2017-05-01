@@ -37,9 +37,9 @@ ldarkColorable = [floorArenaLit, floorNoiseLit, floorDirtLit, floorActorLit, flo
 -- Symbols to be used (the Nethack visual tradition imposes inconsistency):
 --         LOS    noLOS
 -- Walk    .|-#   :;
--- noWalk  &^     -| O%<>+
+-- noWalk  %^-|   -| O&<>+
 --
--- can be opened ^%+
+-- can be opened ^&+
 -- can be closed |-
 -- some noWalk can be changed without opening, regardless of symbol
 -- not used yet:
@@ -116,7 +116,7 @@ pillarIce = TileKind
       -- get each ice pillar into sight range when exploring level.
   }
 pulpit = TileKind
-  { tsymbol  = 'O'
+  { tsymbol  = '%'
   , tname    = "pulpit"
   , tfreq    = [("pulpit", 1), ("zooSet", 2)]
   , tcolor   = BrBlue
@@ -167,7 +167,7 @@ signboardRead = TileKind  -- after first use revealed to be this one
   , tfeature = [Embed "signboard", HideAs "signboard unread", Indistinct]
   }
 bush = TileKind
-  { tsymbol  = '&'
+  { tsymbol  = '%'
   , tname    = "bush"
   , tfreq    = [ ("lit bush", 1), ("shootoutSet", 30)
                , ("bushClumpOver_f_Lit", 1) ]
@@ -478,7 +478,7 @@ escapeOutdoorDown = escapeDown
   , tfreq    = [("escape outdoor down", 1)]
   }
 rubble = TileKind
-  { tsymbol  = '%'
+  { tsymbol  = '&'
   , tname    = "rubble"
   , tfreq    = []  -- [("floorCorridorLit", 1)]
                    -- disabled while it's all or nothing per cave and per room;
@@ -492,7 +492,7 @@ rubble = TileKind
   , tfeature = [OpenTo "rubbleOrNot", Embed "rubble", Indistinct]
   }
 rubblePlace = TileKind
-  { tsymbol  = '%'
+  { tsymbol  = '&'
   , tname    = "rubble"
   , tfreq    = [ ("smokeClumpOver_f_Lit", 1), ("emptySet", 1), ("noiseSet", 5)
                , ("zooSet", 100), ("ambushSet", 20) ]
