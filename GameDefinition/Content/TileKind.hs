@@ -501,7 +501,7 @@ floorFog = TileKind
   { tsymbol  = ';'
   , tname    = "faint fog"
   , tfreq    = [ ("lit fog", 1), ("emptySet", 5), ("shootoutSet", 20)
-               , ("fogClumpOver_f_Lit", 60) ]
+               , ("noiseSet", 10), ("fogClumpOver_f_Lit", 60) ]
       -- lit fog is OK for shootout, because LOS is mutual, as opposed
       -- to dark fog, and so camper has little advantage, especially
       -- on big maps, where he doesn't know on which side of fog patch to hide

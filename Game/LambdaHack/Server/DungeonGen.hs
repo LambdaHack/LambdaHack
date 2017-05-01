@@ -68,7 +68,6 @@ convertTileMaps Kind.COps{coTileSpeedup} areAllWalkable
           yeven Point{..} = py `mod` 2 == 0
           connect included blocks walkableTile array =
             let g n c = if included n
-                           && not (Tile.isWalkable coTileSpeedup c)
                            && not (Tile.isEasyOpen coTileSpeedup c)
                            && n `EM.notMember` ltile
                            && blocks n array
@@ -92,18 +91,12 @@ buildTileMap cops@Kind.COps{ cotile=Kind.Ops{opick}
                            , cocave=Kind.Ops{okind=cokind} }
              Cave{dkind, dmap, dnight} = do
   let CaveKind{cxsize, cysize, cpassable, cdefTile} = cokind dkind
-      nightCond kt = not (Tile.kindHasFeature TK.Walkable kt
-                          && Tile.kindHasFeature TK.Clear kt)
+      nightCond kt = not (Tile.kindHasFeature TK.Walkable kt)
                      || (if dnight then id else not)
                            (Tile.kindHasFeature TK.Dark kt)
-      dcond kt = (cpassable
-                  || not (Tile.kindHasFeature TK.Walkable kt))
-                 && nightCond kt
       pickDefTile =
-        fromMaybe (assert `failure` cdefTile) <$> opick cdefTile dcond
-      wcond kt = (Tile.kindHasFeature TK.Walkable kt
-                  || Tile.isEasyOpenKind kt)
-                 && nightCond kt
+        fromMaybe (assert `failure` cdefTile) <$> opick cdefTile nightCond
+      wcond kt = Tile.isEasyOpenKind kt && nightCond kt
       mpickPassable =
         if cpassable
         then Just

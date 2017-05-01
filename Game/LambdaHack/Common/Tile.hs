@@ -286,6 +286,7 @@ buildAs Kind.Ops{okind, ouniqGroup} t =
 isEasyOpenKind :: TileKind -> Bool
 isEasyOpenKind tk =
   let getTo TK.OpenTo{} = True
+      getTo TK.Walkable = True  -- very easy open
       getTo _ = False
   in TK.talter tk < 10 && any getTo (TK.tfeature tk)
 
