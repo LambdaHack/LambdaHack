@@ -66,13 +66,15 @@ arena = rogue
   , cname         = "Dusty underground library"
   , cfreq         = [ ("default random", 40), ("deep random", 30)
                     , ("caveArena", 1) ]
-  , cgrid         = DiceXY (2 * d 2) (d 3)
+  , cgrid         = DiceXY (2 + d 2) (d 3)
   , cminPlaceSize = DiceXY (2 * d 2 + 4) 6
-  , cmaxPlaceSize = DiceXY 12 8
+  , cmaxPlaceSize = DiceXY 16 12
   , cdarkChance   = 49 + d 10  -- almost all rooms dark (1 in 10 lit)
   -- Light is not too deadly, because not many obstructions and so
   -- foes visible from far away and few foes have ranged combat.
   , cnightChance  = 0  -- always day
+  , cauxConnects  = 1
+  , cmaxVoid      = 1%8
   , cextraStairs  = d 3
   , chidden       = 0
   , cactorCoeff   = 100
@@ -85,7 +87,8 @@ arena = rogue
   , clitCorTile   = "trailLit"
   }
 arena2 = arena
-  { cfreq         = [("deep random", 10)]
+  { cname         = "Smoking rooms"
+  , cfreq         = [("deep random", 10)]
   , cdarkChance   = 41 + d 10  -- almost all rooms lit (1 in 10 dark)
   -- Trails provide enough light for fun stealth.
   , cnightChance  = 51  -- always night
@@ -105,7 +108,6 @@ laboratory = arena2
   , cdoorChance   = 1
   , copenChance   = 1%2
   , chidden       = 7
-  , cactorCoeff   = 160  -- deadly enough due to unclear corridors
   , citemNum      = 5 * d 4  -- reward difficulty
   , citemFreq     = [("useful", 20), ("treasure", 30), ("any vial", 50)]
   , cplaceFreq    = [("laboratory", 100)]
@@ -124,6 +126,7 @@ empty = rogue
   , cnightChance  = 0  -- always day
   , cauxConnects  = 3%2
   , cminStairDist = 30
+  , cmaxVoid      = 0  -- too few rooms to have void and fog common anyway
   , cextraStairs  = d 2
   , cdoorChance   = 0
   , copenChance   = 0
@@ -145,10 +148,10 @@ empty = rogue
   }
 noise = rogue
   { csymbol       = 'N'
-  , cname         = "Leaky, burrowed sediment"
+  , cname         = "Leaky burrowed sediment"
   , cfreq         = [("default random", 10), ("caveNoise", 1)]
   , cgrid         = DiceXY (2 + d 3) 3
-  , cminPlaceSize = DiceXY 10 6
+  , cminPlaceSize = DiceXY 8 5
   , cmaxPlaceSize = DiceXY 20 10
   , cdarkChance   = 51
   -- Light is deadly, because nowhere to hide and pillars enable spawning
@@ -168,14 +171,13 @@ noise = rogue
   , couterFenceTile = "noise fence"  -- ensures no cut-off parts from collapsed
   , cdarkCorTile  = "floorArenaDark"
   , clitCorTile   = "floorArenaLit"
-  , cstairFreq    = [("gated staircase", 100)]
   }
 noise2 = noise
-  { cfreq         = [("caveNoise2", 1)]
-  , cdarkChance   = 0
-  -- Light is deadly, because nowhere to hide and pillars enable spawning
-  -- very close to heroes.
+  { cname         = "Frozen derelict mine"
+  , cfreq         = [("caveNoise2", 1)]
   , cnightChance  = 51  -- easier variant, but looks sinister
+  , cplaceFreq    = [("noise", 1), ("mine", 99)]
+  , cstairFreq    = [("gated staircase", 100)]
   }
 shallow1rogue = rogue
   { csymbol       = 'D'
@@ -225,7 +227,7 @@ brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
   , clitCorTile   = "floorArenaLit"
   }
 shootout = rogue  -- a scenario with strong missiles;
-                  -- no solid tiles, but only translucent tiles or walkable
+                  -- few solid tiles, but only translucent tiles or walkable
                   -- opaque tiles, to make scouting and sniping more interesting
                   -- and to avoid obstructing view too much, since this
                   -- scenario is about ranged combat at long range
@@ -267,7 +269,7 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , cgrid         = DiceXY -- (2 * d 2 + 3) 4  -- park, so lamps in lines
                            (2 * d 2 + 6) 3   -- for now, to fit larger places
   , cminPlaceSize = DiceXY 3 3
-  , cmaxPlaceSize = DiceXY 7 7  -- bias towards larger lamp areas
+  , cmaxPlaceSize = DiceXY 9 9  -- bias towards larger lamp areas
   , cdarkChance   = 51  -- colonnade rooms should always be dark
   , cnightChance  = 51  -- always night
   , cauxConnects  = 3%2
@@ -278,7 +280,7 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , citemNum      = 5 * d 8
   , citemFreq     = [ ("useful", 30), ("treasure", 30), ("gem", 100)
                     , ("weak arrow", 500), ("harpoon", 400) ]
-  , cplaceFreq    = [("ambush", 100)]  -- the same rooms as ambush
+  , cplaceFreq    = [("park", 100)]  -- the same rooms as in ambush
   , cpassable     = True
   , cdefTile      = "escapeSet"  -- different tiles, not burning yet
   , cdarkCorTile  = "trailLit"  -- let trails give off light
@@ -291,7 +293,7 @@ zoo = rogue  -- few lights and many solids, to help the less numerous heroes
   , cfreq         = [("caveZoo", 1)]
   , cgrid         = DiceXY (2 * d 2 + 6) 3
   , cminPlaceSize = DiceXY 4 4
-  , cmaxPlaceSize = DiceXY 7 7
+  , cmaxPlaceSize = DiceXY 12 12
   , cdarkChance   = 51  -- always dark rooms
   , cnightChance  = 51  -- always night
   , cauxConnects  = 1%4
@@ -322,9 +324,9 @@ ambush = rogue  -- a scenario with strong missiles;
   , cname         = "Burning metropolitan park"
   , cfreq         = [("caveAmbush", 1)]
   , cgrid         = DiceXY -- (2 * d 2 + 3) 4  -- park, so lamps in lines
-                           (2 * d 2 + 6) 3   -- for now, to fit larger places
+                           (2 * d 2 + 5) 3   -- for now, to fit larger places
   , cminPlaceSize = DiceXY 3 3
-  , cmaxPlaceSize = DiceXY 7 7  -- bias towards larger lamp areas
+  , cmaxPlaceSize = DiceXY 9 9  -- bias towards larger lamp areas
   , cdarkChance   = 51  -- colonnade rooms should always be dark
   , cnightChance  = 51  -- always night
   , cauxConnects  = 3%2
@@ -334,7 +336,7 @@ ambush = rogue  -- a scenario with strong missiles;
   , cactorFreq    = []
   , citemNum      = 5 * d 8
   , citemFreq     = [("useful", 30), ("any arrow", 400), ("harpoon", 300)]
-  , cplaceFreq    = [("ambush", 100)]
+  , cplaceFreq    = [("park", 100)]
   , cpassable     = True
   , cdefTile      = "ambushSet"
   , cdarkCorTile  = "trailLit"  -- let trails give off light
@@ -366,7 +368,8 @@ battle = rogue  -- few lights and many solids, to help the less numerous heroes
   , couterFenceTile = "noise fence"  -- ensures no cut-off parts from collapsed
   }
 safari1 = escape
-  { cfreq = [("caveSafari1", 1)]
+  { cname = "Hunam habitat"
+  , cfreq = [("caveSafari1", 1)]
   , cescapeGroup = Nothing
   , cstairFreq = [("staircase outdoor", 1)]
   }

@@ -94,10 +94,10 @@ hardRock = TileKind
 pillar = TileKind
   { tsymbol  = 'O'
   , tname    = "rock"
-  , tfreq    = [ ("cachable", 50), ("stair terminal", 100)
+  , tfreq    = [ ("cachable", 70), ("stair terminal", 100)
                , ("legendLit", 100), ("legendDark", 100)
-               , ("noiseSet", 70), ("brawlSet", 50), ("shootoutSet", 10)
-               , ("zooSet", 30), ("battleSet", 250) ]
+               , ("noiseSet", 70), ("battleSet", 250), ("brawlSet", 50)
+               , ("shootoutSet", 10), ("zooSet", 10) ]
   , tcolor   = BrCyan  -- not BrWhite, to tell from heroes
   , tcolor2  = Cyan
   , talter   = 100
@@ -118,7 +118,7 @@ pillarIce = TileKind
 pulpit = TileKind
   { tsymbol  = 'O'
   , tname    = "pulpit"
-  , tfreq    = [("pulpit", 1), ("zooSet", 5)]
+  , tfreq    = [("pulpit", 1), ("zooSet", 2)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 5
@@ -128,7 +128,7 @@ pulpit = TileKind
 pillarCache = TileKind
   { tsymbol  = 'O'
   , tname    = "cache"
-  , tfreq    = [("cachable", 50), ("stair terminal", 1)]
+  , tfreq    = [("cachable", 30), ("stair terminal", 1)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 5
@@ -160,7 +160,7 @@ signboardUnread = TileKind  -- client only, indicates never used by this faction
 signboardRead = TileKind  -- after first use revealed to be this one
   { tsymbol  = 'O'
   , tname    = "signboard"
-  , tfreq    = [("signboard", 1)]
+  , tfreq    = [("signboard", 1), ("zooSet", 2)]
   , tcolor   = BrCyan
   , tcolor2  = Cyan
   , talter   = 5
@@ -190,7 +190,7 @@ bushBurnt = bush
   }
 bushBurning = bush
   { tname    = "burning bush"
-  , tfreq    = [("ambushSet", 30), ("zooSet", 300), ("bush with fire", 30)]
+  , tfreq    = [("ambushSet", 40), ("zooSet", 300), ("bush with fire", 30)]
   , tcolor   = BrRed
   , tcolor2  = Red
   , talter   = 5
@@ -199,7 +199,8 @@ bushBurning = bush
 tree = TileKind
   { tsymbol  = 'O'
   , tname    = "tree"
-  , tfreq    = [("brawlSet", 140), ("treeShadeOver_O_Lit", 1)]
+  , tfreq    = [ ("brawlSet", 140), ("shootoutSet", 10)
+               , ("treeShadeOver_O_Lit", 1) ]
   , tcolor   = BrGreen
   , tcolor2  = Green
   , talter   = 50
@@ -230,7 +231,7 @@ treeBurning = tree
 wall = TileKind
   { tsymbol  = '|'
   , tname    = "granite wall"
-  , tfreq    = [("legendLit", 100), ("rectWindowsOver_!_Lit", 90)]
+  , tfreq    = [("legendLit", 100), ("rectWindowsOver_!_Lit", 80)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 100
@@ -246,7 +247,7 @@ wallGlass = TileKind
   , tfeature = [BuildAs "suspect vertical wall Lit", Clear]
   }
 wallGlassSpice = wallGlass
-  { tfreq    = [("rectWindowsOver_!_Lit", 10)]
+  { tfreq    = [("rectWindowsOver_!_Lit", 20)]
   , tfeature = Spice : tfeature wallGlass
   }
 wallSuspect = TileKind  -- only on client
@@ -308,7 +309,7 @@ doorOpen = TileKind
 wallH = TileKind
   { tsymbol  = '-'
   , tname    = "sandstone wall"
-  , tfreq    = [("legendLit", 100), ("rectWindowsOver_=_Lit", 90)]
+  , tfreq    = [("legendLit", 100), ("rectWindowsOver_=_Lit", 80)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 100
@@ -326,7 +327,7 @@ wallGlassH = TileKind
                , Clear ]
   }
 wallGlassHSpice = wallGlassH
-  { tfreq    = [("rectWindowsOver_=_Lit", 10)]
+  { tfreq    = [("rectWindowsOver_=_Lit", 20)]
   , tfeature = Spice : tfeature wallGlassH
   }
 wallSuspectH = TileKind  -- only on client
@@ -485,17 +486,18 @@ rubble = TileKind
                    -- we don't want multicolor trailLit corridors
       -- ("rubbleOrNot", 70)
       -- until we can sync change of tile and activation, it always takes 1 turn
-  , tcolor   = BrWhite
-  , tcolor2  = defFG
+  , tcolor   = BrYellow
+  , tcolor2  = Brown
   , talter   = 5
   , tfeature = [OpenTo "rubbleOrNot", Embed "rubble", Indistinct]
   }
 rubblePlace = TileKind
   { tsymbol  = '%'
   , tname    = "rubble"
-  , tfreq    = [("smokeClumpOver_f_Lit", 1), ("noiseSet", 5), ("zooSet", 100)]
-  , tcolor   = BrWhite
-  , tcolor2  = defFG
+  , tfreq    = [ ("smokeClumpOver_f_Lit", 1), ("emptySet", 1), ("noiseSet", 5)
+               , ("zooSet", 100), ("ambushSet", 20) ]
+  , tcolor   = BrYellow
+  , tcolor2  = Brown
   , talter   = 5
   , tfeature = [Spice, OpenTo "rubblePlaceOrNot", Embed "rubble", Indistinct]
       -- It's not explorable, due to not being walkable nor clear and due
@@ -528,7 +530,7 @@ floorDirtLit = floorArenaLit
                , ("ambushSet", 1000), ("escapeSet", 1000) ]
   }
 floorDirtSpiceLit = floorDirtLit
-  { tfreq    = [ ("treeShadeOver_s_Lit", 1), ("fogClumpOver_f_Lit", 1)
+  { tfreq    = [ ("treeShadeOver_s_Lit", 1), ("fogClumpOver_f_Lit", 40)
                , ("smokeClumpOver_f_Lit", 1), ("bushClumpOver_f_Lit", 1) ]
   , tfeature = Spice : tfeature floorDirtLit
   }
@@ -579,8 +581,8 @@ floorBrownLit = floorRedLit
 floorFog = TileKind
   { tsymbol  = ';'
   , tname    = "faint fog"
-  , tfreq    = [ ("lit fog", 1), ("emptySet", 3), ("shootoutSet", 20)
-               , ("fogClumpOver_f_Lit", 2) ]
+  , tfreq    = [ ("lit fog", 1), ("emptySet", 5), ("shootoutSet", 20)
+               , ("fogClumpOver_f_Lit", 60) ]
       -- lit fog is OK for shootout, because LOS is mutual, as opposed
       -- to dark fog, and so camper has little advantage, especially
       -- on big maps, where he doesn't know on which side of fog patch to hide
@@ -598,7 +600,7 @@ floorSmoke = TileKind
   { tsymbol  = ';'
   , tname    = "billowing smoke"
   , tfreq    = [ ("lit smoke", 1)
-               , ("ambushSet", 30), ("zooSet", 15), ("battleSet", 5)
+               , ("ambushSet", 30), ("zooSet", 30), ("battleSet", 5)
                , ("labTrailLit", 1), ("stair terminal", 2)
                , ("smokeClumpOver_f_Lit", 1) ]
   , tcolor   = Brown

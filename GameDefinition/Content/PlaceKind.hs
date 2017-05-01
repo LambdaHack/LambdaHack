@@ -19,11 +19,11 @@ cdefs = ContentDef
   , validateSingle = validateSinglePlaceKind
   , validateAll = validateAllPlaceKind
   , content = contentFromList $
-      [rect, rectWindows, glasshouse, pulpit, ruin, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, fogClump, fogClump2, smokeClumpFGround, bushClump, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircaseOutdoor, staircaseGated, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, escapeOutdoorDown]
+      [rect, rectWindows, glasshouse, pulpit, ruin, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, fogClump, fogClump2, smokeClump, smokeClump2FGround, bushClump, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircaseOutdoor, staircaseGated, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, escapeOutdoorDown]
       ++ map makeStaircaseUp lstaircase
       ++ map makeStaircaseDown lstaircase
   }
-rect,        rectWindows, glasshouse, pulpit, ruin, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, fogClump, fogClump2, smokeClumpFGround, bushClump, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircaseOutdoor, staircaseGated, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, escapeOutdoorDown :: PlaceKind
+rect,        rectWindows, glasshouse, pulpit, ruin, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, fogClump, fogClump2, smokeClump, smokeClump2FGround, bushClump, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircaseOutdoor, staircaseGated, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, escapeOutdoorDown :: PlaceKind
 
 lstaircase :: [PlaceKind]
 lstaircase = [staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircaseOutdoor, staircaseGated]
@@ -32,7 +32,8 @@ lstaircase = [staircase, staircase2, staircase3, staircase4, staircase5, stairca
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
   , pname    = "room"
-  , pfreq    = [("rogue", 100), ("arena", 40), ("laboratory", 40), ("zoo", 10)]
+  , pfreq    = [ ("rogue", 100), ("arena", 40), ("laboratory", 40)
+               , ("shootout", 10), ("zoo", 7) ]
   , prarity  = [(1, 10), (10, 8)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -44,7 +45,7 @@ rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
 rectWindows = PlaceKind
   { psymbol  = 'w'
   , pname    = "room"
-  , pfreq    = [("empty", 10)]
+  , pfreq    = [("empty", 10), ("park", 7)]
   , prarity  = [(1, 10), (10, 8)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -56,7 +57,7 @@ rectWindows = PlaceKind
 glasshouse = PlaceKind
   { psymbol  = 'g'
   , pname    = "glasshouse"
-  , pfreq    = [("shootout", 8), ("arena", 40), ("zoo", 30)]
+  , pfreq    = [("arena", 40), ("zoo", 12)]
   , prarity  = [(1, 10), (10, 8)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -68,7 +69,7 @@ glasshouse = PlaceKind
 pulpit = PlaceKind
   { psymbol  = 'p'
   , pname    = "pulpit"
-  , pfreq    = [("arena", 5), ("zoo", 10)]
+  , pfreq    = [("arena", 10), ("zoo", 30)]
   , prarity  = [(1, 10), (10, 8)]
   , pcover   = CMirror
   , pfence   = FGround
@@ -144,7 +145,7 @@ pillar = PlaceKind
   { psymbol  = 'p'
   , pname    = "pillar room"
   , pfreq    = [ ("rogue", 500), ("arena", 1000), ("laboratory", 1000)
-               , ("empty", 1000) , ("noise", 1000) ]
+               , ("empty", 300) , ("noise", 1000) ]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -186,9 +187,9 @@ pillar4 = pillar
 colonnade = PlaceKind
   { psymbol  = 'c'
   , pname    = "colonnade"
-  , pfreq    = [ ("rogue", 30), ("arena", 70), ("laboratory", 70)
-               , ("empty", 70), ("noise", 4000), ("ambush", 150) ]
-  , prarity  = [(1, 5), (10, 5)]
+  , pfreq    = [ ("rogue", 30), ("arena", 70), ("laboratory", 40)
+               , ("empty", 200), ("mine", 10000), ("park", 3000) ]
+  , prarity  = [(1, 3), (10, 3)]
   , pcover   = CAlternate
   , pfence   = FFloor
   , ptopLeft = [ "O·"
@@ -197,7 +198,7 @@ colonnade = PlaceKind
   , poverride = []
   }
 colonnade2 = colonnade
-  { prarity  = [(1, 4), (10, 4)]
+  { prarity  = [(1, 2), (10, 2)]
   , ptopLeft = [ "O·"
                , "··"
                ]
@@ -217,7 +218,7 @@ colonnade4 = colonnade
                ]
   }
 colonnade5 = colonnade
-  { prarity  = [(1, 8), (10, 8)]
+  { prarity  = [(1, 7), (10, 7)]
   , ptopLeft = [ "O··"
                , "··O"
                ]
@@ -231,7 +232,7 @@ colonnade6 = colonnade
 lampPost = PlaceKind
   { psymbol  = 'l'
   , pname    = "lamp post"
-  , pfreq    = [("ambush", 20), ("zoo", 20), ("battle", 10)]
+  , pfreq    = [("park", 20), ("zoo", 10), ("battle", 10)]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CVerbatim
   , pfence   = FNone
@@ -248,7 +249,7 @@ lampPost2 = lampPost
                ]
   }
 lampPost3 = lampPost
-  { pfreq    = [("ambush", 300), ("zoo", 300), ("battle", 110)]
+  { pfreq    = [("park", 3000), ("zoo", 50), ("battle", 110)]
   , ptopLeft = [ "XX·XX"
                , "X···X"
                , "··O··"
@@ -257,7 +258,7 @@ lampPost3 = lampPost
                ]
   }
 lampPost4 = lampPost
-  { pfreq    = [("ambush", 300), ("zoo", 300), ("battle", 60)]
+  { pfreq    = [("park", 3000), ("zoo", 50), ("battle", 60)]
   , ptopLeft = [ "X···X"
                , "·····"
                , "··O··"
@@ -286,36 +287,47 @@ fogClump = PlaceKind
   , prarity  = [(1, 1)]
   , pcover   = CMirror
   , pfence   = FNone
-  , ptopLeft = [ "ff"
-               , "#f"
-               , "#f"
+  , ptopLeft = [ "f;"
+               , ";f"
+               , ";f"
                ]
-  , poverride = [('f', "fogClumpOver_f_Lit"), ('#', "lit fog")]
+  , poverride = [('f', "fogClumpOver_f_Lit"), (';', "lit fog")]
   }
 fogClump2 = fogClump
-  { pfreq    = [("shootout", 400), ("empty", 2000)]
+  { pfreq    = [("shootout", 400), ("empty", 1500)]
   , prarity  = [(1, 1)]
-  , pcover   = CVerbatim
-  , ptopLeft = [ "XfX"
-               , "f#f"
-               , "f#f"
+  , pcover   = CMirror
+  , pfence   = FNone
+  , ptopLeft = [ "Xff"
+               , "f;f"
+               , ";;f"
                , "XfX"
                ]
   }
-smokeClumpFGround = PlaceKind
+smokeClump = PlaceKind
   { psymbol  = 's'
   , pname    = "smoky patch"
-  , pfreq    = [("laboratory", 100)]
+  , pfreq    = [("zoo", 100)]
   , prarity  = [(1, 1)]
-  , pcover   = CVerbatim
-  , pfence   = FGround
-  , ptopLeft = [ "#f#"
-               , "f·f"
-               , "f·f"
-               , "#f#"
+  , pcover   = CMirror
+  , pfence   = FNone
+  , ptopLeft = [ "f;"
+               , ";f"
+               , ";f"
                ]
-  , poverride = [ ('f', "smokeClumpOver_f_Lit"), ('#', "lit smoke")
+  , poverride = [ ('f', "smokeClumpOver_f_Lit"), (';', "lit smoke")
                 , ('·', "floorActorLit") ]
+  }
+smokeClump2FGround = smokeClump
+  { pfreq    = [("laboratory", 100), ("zoo", 1000)]
+  , prarity  = [(1, 1)]
+  , pcover   = CMirror
+  , pfence   = FGround
+  , ptopLeft = [ ";f;"
+               , "f·f"
+               , ";·f"
+               , ";f;"
+               ]
   }
 bushClump = PlaceKind
   { psymbol  = 'b'
@@ -324,11 +336,11 @@ bushClump = PlaceKind
   , prarity  = [(1, 1)]
   , pcover   = CMirror
   , pfence   = FNone
-  , ptopLeft = [ "ff"
-               , "#f"
-               , "#f"
+  , ptopLeft = [ "f;"
+               , ";f"
+               , ";f"
                ]
-  , poverride = [('f', "bushClumpOver_f_Lit"), ('#', "lit bush")]
+  , poverride = [('f', "bushClumpOver_f_Lit"), (';', "lit bush")]
   }
 staircase = PlaceKind
   { psymbol  = '|'
