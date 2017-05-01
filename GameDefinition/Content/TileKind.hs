@@ -22,11 +22,11 @@ cdefs = ContentDef
   , validateSingle = validateSingleTileKind
   , validateAll = validateAllTileKind
   , content = contentFromList $
-      [unknown, bedrock, hardRock, pillar, pillarIce, pulpit, pillarCache, lampPost, signboardUnread, signboardRead, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wall, wallGlass, wallGlassSpice, wallSuspect, wallObscured, doorTrapped, doorClosed, doorOpen, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, rubblePlace, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark]
+      [unknown, hardRock, bedrock, wall, wallSuspect, wallObscured, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, pillar, pillarCache, lampPost, signboardUnread, signboardRead, tree, treeDark, treeBurnt, treeBurning, rubble, rubblePlace, doorTrapped, doorClosed, doorTrappedH, doorClosedH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, wallGlass, wallGlassSpice, wallGlassH, wallGlassHSpice, pillarIce, pulpit, bush, bushDark, bushBurnt, bushBurning, floorFog, floorFogDark, floorSmoke, floorSmokeDark, doorOpen, doorOpenH, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit ]
       ++ map makeDark ldarkable
       ++ map makeDarkColor ldarkColorable
   }
-unknown,        bedrock, hardRock, pillar, pillarIce, pulpit, pillarCache, lampPost, signboardUnread, signboardRead, bush, bushDark, bushBurnt, bushBurning, tree, treeDark, treeBurnt, treeBurning, wall, wallGlass, wallGlassSpice, wallSuspect, wallObscured, doorTrapped, doorClosed, doorOpen, wallH, wallGlassH, wallGlassHSpice, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, doorTrappedH, doorClosedH, doorOpenH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, rubble, rubblePlace, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorFogDark, floorSmoke, floorSmokeDark :: TileKind
+unknown,        hardRock, bedrock, wall, wallSuspect, wallObscured, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, pillar, pillarCache, lampPost, signboardUnread, signboardRead, tree, treeDark, treeBurnt, treeBurning, rubble, rubblePlace, doorTrapped, doorClosed, doorTrappedH, doorClosedH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, wallGlass, wallGlassSpice, wallGlassH, wallGlassHSpice, pillarIce, pulpit, bush, bushDark, bushBurnt, bushBurning, floorFog, floorFogDark, floorSmoke, floorSmokeDark, doorOpen, doorOpenH, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit :: TileKind
 
 ldarkable :: [TileKind]
 ldarkable = [wall, wallSuspect, wallObscured, doorTrapped, doorClosed, doorOpen, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, doorTrappedH, doorClosedH, doorOpenH, floorCorridorLit]
@@ -53,6 +53,12 @@ ldarkColorable = [floorArenaLit, floorNoiseLit, floorDirtLit, floorActorLit, flo
 -- If a tile is supposed to be repeatedly activated by AI (e.g., cache),
 -- it should keep @ChangeTo@ for the whole time.
 
+-- * Main tiles, in other games modified and some removed
+
+-- ** Not walkable
+
+-- *** Not clear
+
 unknown = TileKind  -- needs to have index 0 and alter 1
   { tsymbol  = ' '
   , tname    = "unknown space"
@@ -60,6 +66,15 @@ unknown = TileKind  -- needs to have index 0 and alter 1
   , tcolor   = defFG
   , tcolor2  = defFG
   , talter   = 1
+  , tfeature = [Dark, Indistinct]
+  }
+hardRock = TileKind
+  { tsymbol  = ' '
+  , tname    = "impenetrable bedrock"
+  , tfreq    = [("basic outer fence", 1), ("noise fence", 1)]
+  , tcolor   = defFG
+  , tcolor2  = defFG
+  , talter   = maxBound  -- impenetrable
   , tfeature = [Dark, Indistinct]
   }
 bedrock = TileKind
@@ -82,14 +97,82 @@ bedrock = TileKind
       -- unless we turn to subtle shades of black or non-ASCII glyphs,
       -- but that is yet different aesthetics.
   }
-hardRock = TileKind
-  { tsymbol  = ' '
-  , tname    = "impenetrable bedrock"
-  , tfreq    = [("basic outer fence", 1), ("noise fence", 1)]
-  , tcolor   = defFG
+wall = TileKind
+  { tsymbol  = '|'
+  , tname    = "granite wall"
+  , tfreq    = [("legendLit", 100), ("rectWindowsOver_!_Lit", 80)]
+  , tcolor   = BrWhite
   , tcolor2  = defFG
-  , talter   = maxBound  -- impenetrable
-  , tfeature = [Dark, Indistinct]
+  , talter   = 100
+  , tfeature = [BuildAs "suspect vertical wall Lit", Indistinct]
+  }
+wallSuspect = TileKind  -- only on client
+  { tsymbol  = '|'
+  , tname    = "suspect uneven wall"
+  , tfreq    = [("suspect vertical wall Lit", 1)]
+  , tcolor   = BrWhite
+  , tcolor2  = defFG
+  , talter   = 2
+  , tfeature = [ RevealAs "trapped vertical door Lit"
+               , ObscureAs "obscured vertical wall Lit"
+               , Indistinct ]
+  }
+wallObscured = TileKind
+  { tsymbol  = '|'
+  , tname    = "scratched wall"
+  , tfreq    = [("obscured vertical wall Lit", 1)]
+  , tcolor   = BrWhite
+  , tcolor2  = defFG
+  , talter   = 5
+  , tfeature = [ Embed "scratch on wall"
+               , HideAs "suspect vertical wall Lit"
+               , Indistinct
+               ]
+  }
+wallH = TileKind
+  { tsymbol  = '-'
+  , tname    = "sandstone wall"
+  , tfreq    = [("legendLit", 100), ("rectWindowsOver_=_Lit", 80)]
+  , tcolor   = BrWhite
+  , tcolor2  = defFG
+  , talter   = 100
+  , tfeature = [ BuildAs "suspect horizontal wall Lit"
+               , Indistinct ]
+  }
+wallSuspectH = TileKind  -- only on client
+  { tsymbol  = '-'
+  , tname    = "suspect painted wall"
+  , tfreq    = [("suspect horizontal wall Lit", 1)]
+  , tcolor   = BrWhite
+  , tcolor2  = defFG
+  , talter   = 2
+  , tfeature = [ RevealAs "trapped horizontal door Lit"
+               , ObscureAs "obscured horizontal wall Lit"
+               , Indistinct ]
+  }
+wallObscuredDefacedH = TileKind
+  { tsymbol  = '-'
+  , tname    = "defaced wall"
+  , tfreq    = [("obscured horizontal wall Lit", 90)]
+  , tcolor   = BrWhite
+  , tcolor2  = defFG
+  , talter   = 5
+  , tfeature = [ Embed "obscene pictograms"
+               , HideAs "suspect horizontal wall Lit"
+               , Indistinct
+               ]
+  }
+wallObscuredFrescoedH = TileKind
+  { tsymbol  = '-'
+  , tname    = "frescoed wall"
+  , tfreq    = [("obscured horizontal wall Lit", 10)]
+  , tcolor   = BrWhite
+  , tcolor2  = defFG
+  , talter   = 5
+  , tfeature = [ Embed "subtle fresco"
+               , HideAs "suspect horizontal wall Lit"
+               , Indistinct
+               ]  -- a bit beneficial, but AI would loop if allowed to trigger
   }
 pillar = TileKind
   { tsymbol  = 'O'
@@ -102,28 +185,6 @@ pillar = TileKind
   , tcolor2  = Cyan
   , talter   = 100
   , tfeature = [Indistinct]
-  }
-pillarIce = TileKind
-  { tsymbol  = '^'
-  , tname    = "ice"
-  , tfreq    = [("noiseSet", 30), ("ice", 1)]
-  , tcolor   = BrBlue
-  , tcolor2  = Blue
-  , talter   = 5
-  , tfeature = [Clear, Embed "frost", OpenTo "damp stone floor"]
-      -- Is door, due to @OpenTo@, so is not explorable, but it's OK, because
-      -- it doesn't generate items nor clues. This saves on the need to
-      -- get each ice pillar into sight range when exploring level.
-  }
-pulpit = TileKind
-  { tsymbol  = '%'
-  , tname    = "pulpit"
-  , tfreq    = [("pulpit", 1), ("zooSet", 2)]
-  , tcolor   = BrBlue
-  , tcolor2  = Blue
-  , talter   = 5
-  , tfeature = [Clear, Embed "pulpit", Indistinct]
-                 -- mixed blessing, so AI ignores, saved for player fun
   }
 pillarCache = TileKind
   { tsymbol  = 'O'
@@ -166,36 +227,6 @@ signboardRead = TileKind  -- after first use revealed to be this one
   , talter   = 5
   , tfeature = [Embed "signboard", HideAs "signboard unread", Indistinct]
   }
-bush = TileKind
-  { tsymbol  = '%'
-  , tname    = "bush"
-  , tfreq    = [ ("lit bush", 1), ("shootoutSet", 30)
-               , ("bushClumpOver_f_Lit", 1) ]
-  , tcolor   = BrGreen
-  , tcolor2  = Green
-  , talter   = 10
-  , tfeature = [Clear]
-  }
-bushDark = bush
-  { tfreq    = [("escapeSet", 30)]
-  , tcolor2  = BrBlack
-  , tfeature = Dark : tfeature bush
-  }
-bushBurnt = bush
-  { tname    = "burnt bush"
-  , tfreq    = [("battleSet", 30), ("bush with fire", 70)]
-  , tcolor   = BrBlack
-  , tcolor2  = BrBlack
-  , tfeature = Dark : tfeature bush
-  }
-bushBurning = bush
-  { tname    = "burning bush"
-  , tfreq    = [("ambushSet", 40), ("zooSet", 300), ("bush with fire", 30)]
-  , tcolor   = BrRed
-  , tcolor2  = Red
-  , talter   = 5
-  , tfeature = Embed "small fire" : ChangeTo "bush with fire" : tfeature bush
-  }
 tree = TileKind
   { tsymbol  = 'O'
   , tname    = "tree"
@@ -228,50 +259,33 @@ treeBurning = tree
       -- dousing off the tree will have more sense when it periodically
       -- explodes, hitting and lighting up the team and so betraying it
   }
-wall = TileKind
-  { tsymbol  = '|'
-  , tname    = "granite wall"
-  , tfreq    = [("legendLit", 100), ("rectWindowsOver_!_Lit", 80)]
-  , tcolor   = BrWhite
-  , tcolor2  = defFG
-  , talter   = 100
-  , tfeature = [BuildAs "suspect vertical wall Lit", Indistinct]
-  }
-wallGlass = TileKind
-  { tsymbol  = '|'
-  , tname    = "polished crystal wall"
-  , tfreq    = [("wallGlass", 1)]
-  , tcolor   = BrBlue
-  , tcolor2  = Blue
-  , talter   = 10
-  , tfeature = [BuildAs "suspect vertical wall Lit", Clear]
-  }
-wallGlassSpice = wallGlass
-  { tfreq    = [("rectWindowsOver_!_Lit", 20)]
-  , tfeature = Spice : tfeature wallGlass
-  }
-wallSuspect = TileKind  -- only on client
-  { tsymbol  = '|'
-  , tname    = "suspect uneven wall"
-  , tfreq    = [("suspect vertical wall Lit", 1)]
-  , tcolor   = BrWhite
-  , tcolor2  = defFG
-  , talter   = 2
-  , tfeature = [ RevealAs "trapped vertical door Lit"
-               , ObscureAs "obscured vertical wall Lit"
-               , Indistinct ]
-  }
-wallObscured = TileKind
-  { tsymbol  = '|'
-  , tname    = "scratched wall"
-  , tfreq    = [("obscured vertical wall Lit", 1)]
-  , tcolor   = BrWhite
-  , tcolor2  = defFG
+rubble = TileKind
+  { tsymbol  = '&'
+  , tname    = "rubble"
+  , tfreq    = []  -- [("floorCorridorLit", 1)]
+                   -- disabled while it's all or nothing per cave and per room;
+                   -- we need a new mechanism, Spice is not enough, because
+                   -- we don't want multicolor trailLit corridors
+      -- ("rubbleOrNot", 70)
+      -- until we can sync change of tile and activation, it always takes 1 turn
+  , tcolor   = BrYellow
+  , tcolor2  = Brown
   , talter   = 5
-  , tfeature = [ Embed "scratch on wall"
-               , HideAs "suspect vertical wall Lit"
-               , Indistinct
-               ]
+  , tfeature = [OpenTo "rubbleOrNot", Embed "rubble", Indistinct]
+  }
+rubblePlace = TileKind
+  { tsymbol  = '&'
+  , tname    = "rubble"
+  , tfreq    = [ ("smokeClumpOver_f_Lit", 1), ("emptySet", 1), ("noiseSet", 5)
+               , ("zooSet", 100), ("ambushSet", 20) ]
+  , tcolor   = BrYellow
+  , tcolor2  = Brown
+  , talter   = 5
+  , tfeature = [Spice, OpenTo "rubblePlaceOrNot", Embed "rubble", Indistinct]
+      -- It's not explorable, due to not being walkable nor clear and due
+      -- to being a door (@OpenTo@), which is kind of OK, because getting
+      -- the item is risky and, e.g., AI doesn't attempt it.
+      -- Also, AI doesn't go out of its way to clear the way for heroes.
   }
 doorTrapped = TileKind
   { tsymbol  = '+'
@@ -295,76 +309,6 @@ doorClosed = TileKind
   , talter   = 2
   , tfeature = [OpenTo "open vertical door Lit", Indistinct]  -- never hidden
   }
-doorOpen = TileKind
-  { tsymbol  = '-'
-  , tname    = "open door"
-  , tfreq    = [("open vertical door Lit", 1)]
-  , tcolor   = Brown
-  , tcolor2  = BrBlack
-  , talter   = 4
-  , tfeature = [ Walkable, Clear, NoItem, NoActor
-               , CloseTo "closed vertical door Lit"
-               ]
-  }
-wallH = TileKind
-  { tsymbol  = '-'
-  , tname    = "sandstone wall"
-  , tfreq    = [("legendLit", 100), ("rectWindowsOver_=_Lit", 80)]
-  , tcolor   = BrWhite
-  , tcolor2  = defFG
-  , talter   = 100
-  , tfeature = [ BuildAs "suspect horizontal wall Lit"
-               , Indistinct ]
-  }
-wallGlassH = TileKind
-  { tsymbol  = '-'
-  , tname    = "polished crystal wall"
-  , tfreq    = [("wallGlassH", 1)]
-  , tcolor   = BrBlue
-  , tcolor2  = Blue
-  , talter   = 10
-  , tfeature = [ BuildAs "suspect horizontal wall Lit"
-               , Clear ]
-  }
-wallGlassHSpice = wallGlassH
-  { tfreq    = [("rectWindowsOver_=_Lit", 20)]
-  , tfeature = Spice : tfeature wallGlassH
-  }
-wallSuspectH = TileKind  -- only on client
-  { tsymbol  = '-'
-  , tname    = "suspect painted wall"
-  , tfreq    = [("suspect horizontal wall Lit", 1)]
-  , tcolor   = BrWhite
-  , tcolor2  = defFG
-  , talter   = 2
-  , tfeature = [ RevealAs "trapped horizontal door Lit"
-               , ObscureAs "obscured horizontal wall Lit"
-               , Indistinct ]
-  }
-wallObscuredDefacedH = TileKind
-  { tsymbol  = '-'
-  , tname    = "defaced wall"
-  , tfreq    = [("obscured horizontal wall Lit", 90)]
-  , tcolor   = BrWhite
-  , tcolor2  = defFG
-  , talter   = 5
-  , tfeature = [ Embed "obscene pictograms"
-               , HideAs "suspect horizontal wall Lit"
-               , Indistinct
-               ]
-  }
-wallObscuredFrescoedH = TileKind
-  { tsymbol  = '-'
-  , tname    = "frescoed wall"
-  , tfreq    = [("obscured horizontal wall Lit", 10)]
-  , tcolor   = BrWhite
-  , tcolor2  = defFG
-  , talter   = 5
-  , tfeature = [ Embed "subtle fresco"
-               , HideAs "suspect horizontal wall Lit"
-               , Indistinct
-               ]  -- a bit beneficial, but AI would loop if allowed to trigger
-  }
 doorTrappedH = TileKind
   { tsymbol  = '+'
   , tname    = "trapped door"
@@ -386,17 +330,6 @@ doorClosedH = TileKind
   , tcolor2  = BrBlack
   , talter   = 2
   , tfeature = [OpenTo "open horizontal door Lit", Indistinct]  -- never hidden
-  }
-doorOpenH = TileKind
-  { tsymbol  = '|'
-  , tname    = "open door"
-  , tfreq    = [("open horizontal door Lit", 1)]
-  , tcolor   = Brown
-  , tcolor2  = BrBlack
-  , talter   = 4
-  , tfeature = [ Walkable, Clear, NoItem, NoActor
-               , CloseTo "closed horizontal door Lit"
-               ]
   }
 stairsUp = TileKind
   { tsymbol  = '<'
@@ -477,107 +410,93 @@ escapeOutdoorDown = escapeDown
   { tname    = "exit back to town"
   , tfreq    = [("escape outdoor down", 1)]
   }
-rubble = TileKind
-  { tsymbol  = '&'
-  , tname    = "rubble"
-  , tfreq    = []  -- [("floorCorridorLit", 1)]
-                   -- disabled while it's all or nothing per cave and per room;
-                   -- we need a new mechanism, Spice is not enough, because
-                   -- we don't want multicolor trailLit corridors
-      -- ("rubbleOrNot", 70)
-      -- until we can sync change of tile and activation, it always takes 1 turn
-  , tcolor   = BrYellow
-  , tcolor2  = Brown
-  , talter   = 5
-  , tfeature = [OpenTo "rubbleOrNot", Embed "rubble", Indistinct]
-  }
-rubblePlace = TileKind
-  { tsymbol  = '&'
-  , tname    = "rubble"
-  , tfreq    = [ ("smokeClumpOver_f_Lit", 1), ("emptySet", 1), ("noiseSet", 5)
-               , ("zooSet", 100), ("ambushSet", 20) ]
-  , tcolor   = BrYellow
-  , tcolor2  = Brown
-  , talter   = 5
-  , tfeature = [Spice, OpenTo "rubblePlaceOrNot", Embed "rubble", Indistinct]
-      -- It's not explorable, due to not being walkable nor clear and due
-      -- to being a door (@OpenTo@), which is kind of OK, because getting
-      -- the item is risky and, e.g., AI doesn't attempt it.
-      -- Also, AI doesn't go out of its way to clear the way for heroes.
-  }
-floorCorridorLit = TileKind
-  { tsymbol  = '#'
-  , tname    = "corridor"
-  , tfreq    = [("floorCorridorLit", 99), ("rubbleOrNot", 30)]
-  , tcolor   = BrWhite
-  , tcolor2  = defFG
-  , talter   = 0
-  , tfeature = [Walkable, Clear, Indistinct]
-  }
-floorArenaLit = floorCorridorLit
-  { tsymbol  = floorSymbol
-  , tname    = "stone floor"
-  , tfreq    = [ ("floorArenaLit", 1), ("rubblePlaceOrNot", 30)
-               , ("arenaSet", 1), ("emptySet", 97), ("zooSet", 1000) ]
-  }
-floorNoiseLit = floorArenaLit
-  { tname    = "damp stone floor"
-  , tfreq    = [("noiseSet", 60), ("damp stone floor", 1)]
-  }
-floorDirtLit = floorArenaLit
-  { tname    = "dirt"
-  , tfreq    = [ ("battleSet", 1000), ("brawlSet", 1000), ("shootoutSet", 1000)
-               , ("ambushSet", 1000), ("escapeSet", 1000) ]
-  }
-floorDirtSpiceLit = floorDirtLit
-  { tfreq    = [ ("treeShadeOver_s_Lit", 1), ("fogClumpOver_f_Lit", 40)
-               , ("smokeClumpOver_f_Lit", 1), ("bushClumpOver_f_Lit", 1) ]
-  , tfeature = Spice : tfeature floorDirtLit
-  }
-floorActorLit = floorArenaLit
-  { tfreq    = [("floorActorLit", 1)]
-  , tfeature = OftenActor : tfeature floorArenaLit
-  }
-floorItemLit = floorArenaLit
-  { tfreq    = []
-  , tfeature = OftenItem : tfeature floorArenaLit
-  }
-floorActorItemLit = floorItemLit
-  { tfreq    = [("legendLit", 100)]  -- no OftenItem in legendDark
-  , tfeature = OftenActor : tfeature floorItemLit
-  }
-floorArenaShade = floorActorLit
-  { tname    = "shaded ground"
-  , tfreq    = [("shaded ground", 1), ("treeShadeOver_s_Lit", 2)]
-  , tcolor2  = BrBlack
-  , tfeature = Dark : NoItem : tfeature floorActorLit
-  }
-floorRedLit = floorCorridorLit
-  { tsymbol  = floorSymbol
-  , tname    = "brick pavement"
-  , tfreq    = [("trailLit", 30)]
-  , tcolor   = BrRed
-  , tcolor2  = Red
-  , tfeature = Trail : tfeature floorCorridorLit  -- no Indistinct
-  }
-floorBlueLit = floorRedLit
-  { tname    = "cobblestone path"
-  , tfreq    = [("trailLit", 100)]
+
+-- *** Clear
+
+wallGlass = TileKind
+  { tsymbol  = '|'
+  , tname    = "polished crystal wall"
+  , tfreq    = [("wallGlass", 1)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
+  , talter   = 10
+  , tfeature = [BuildAs "suspect vertical wall Lit", Clear]
   }
-floorGreenLit = floorRedLit
-  { tname    = "mossy stone path"
-  , tfreq    = [("trailLit", 100)]
+wallGlassSpice = wallGlass
+  { tfreq    = [("rectWindowsOver_!_Lit", 20)]
+  , tfeature = Spice : tfeature wallGlass
+  }
+wallGlassH = TileKind
+  { tsymbol  = '-'
+  , tname    = "polished crystal wall"
+  , tfreq    = [("wallGlassH", 1)]
+  , tcolor   = BrBlue
+  , tcolor2  = Blue
+  , talter   = 10
+  , tfeature = [ BuildAs "suspect horizontal wall Lit"
+               , Clear ]
+  }
+wallGlassHSpice = wallGlassH
+  { tfreq    = [("rectWindowsOver_=_Lit", 20)]
+  , tfeature = Spice : tfeature wallGlassH
+  }
+pillarIce = TileKind
+  { tsymbol  = '^'
+  , tname    = "ice"
+  , tfreq    = [("noiseSet", 30), ("ice", 1)]
+  , tcolor   = BrBlue
+  , tcolor2  = Blue
+  , talter   = 5
+  , tfeature = [Clear, Embed "frost", OpenTo "damp stone floor"]
+      -- Is door, due to @OpenTo@, so is not explorable, but it's OK, because
+      -- it doesn't generate items nor clues. This saves on the need to
+      -- get each ice pillar into sight range when exploring level.
+  }
+pulpit = TileKind
+  { tsymbol  = '%'
+  , tname    = "pulpit"
+  , tfreq    = [("pulpit", 1), ("zooSet", 2)]
+  , tcolor   = BrBlue
+  , tcolor2  = Blue
+  , talter   = 5
+  , tfeature = [Clear, Embed "pulpit", Indistinct]
+                 -- mixed blessing, so AI ignores, saved for player fun
+  }
+bush = TileKind
+  { tsymbol  = '%'
+  , tname    = "bush"
+  , tfreq    = [ ("lit bush", 1), ("shootoutSet", 30)
+               , ("bushClumpOver_f_Lit", 1) ]
   , tcolor   = BrGreen
   , tcolor2  = Green
+  , talter   = 10
+  , tfeature = [Clear]
   }
-floorBrownLit = floorRedLit
-  { tname    = "rotting mahogany deck"
-  , tfreq    = [("trailLit", 10)]
-  , tcolor   = BrMagenta
-  , tcolor2  = Magenta
+bushDark = bush
+  { tfreq    = [("escapeSet", 30)]
+  , tcolor2  = BrBlack
+  , tfeature = Dark : tfeature bush
   }
+bushBurnt = bush
+  { tname    = "burnt bush"
+  , tfreq    = [("battleSet", 30), ("bush with fire", 70)]
+  , tcolor   = BrBlack
+  , tcolor2  = BrBlack
+  , tfeature = Dark : tfeature bush
+  }
+bushBurning = bush
+  { tname    = "burning bush"
+  , tfreq    = [("ambushSet", 40), ("zooSet", 300), ("bush with fire", 30)]
+  , tcolor   = BrRed
+  , tcolor2  = Red
+  , talter   = 5
+  , tfeature = Embed "small fire" : ChangeTo "bush with fire" : tfeature bush
+  }
+
+-- ** Walkable
+
+-- *** Not clear
+
 floorFog = TileKind
   { tsymbol  = ';'
   , tname    = "faint fog"
@@ -612,6 +531,104 @@ floorSmokeDark = floorSmoke
   { tname    = "lingering smoke"
   , tfreq    = [("ambushSet", 30)]
   , tfeature = Dark : tfeature floorSmoke
+  }
+
+-- *** Clear
+
+doorOpen = TileKind
+  { tsymbol  = '-'
+  , tname    = "open door"
+  , tfreq    = [("open vertical door Lit", 1)]
+  , tcolor   = Brown
+  , tcolor2  = BrBlack
+  , talter   = 4
+  , tfeature = [ Walkable, Clear, NoItem, NoActor
+               , CloseTo "closed vertical door Lit"
+               ]
+  }
+doorOpenH = TileKind
+  { tsymbol  = '|'
+  , tname    = "open door"
+  , tfreq    = [("open horizontal door Lit", 1)]
+  , tcolor   = Brown
+  , tcolor2  = BrBlack
+  , talter   = 4
+  , tfeature = [ Walkable, Clear, NoItem, NoActor
+               , CloseTo "closed horizontal door Lit"
+               ]
+  }
+floorCorridorLit = TileKind
+  { tsymbol  = '#'
+  , tname    = "corridor"
+  , tfreq    = [("floorCorridorLit", 99), ("rubbleOrNot", 30)]
+  , tcolor   = BrWhite
+  , tcolor2  = defFG
+  , talter   = 0
+  , tfeature = [Walkable, Clear, Indistinct]
+  }
+floorArenaLit = floorCorridorLit
+  { tsymbol  = floorSymbol
+  , tname    = "stone floor"
+  , tfreq    = [ ("floorArenaLit", 1), ("rubblePlaceOrNot", 30)
+               , ("arenaSet", 1), ("emptySet", 97), ("zooSet", 1000) ]
+  }
+floorNoiseLit = floorArenaLit
+  { tname    = "damp stone floor"
+  , tfreq    = [("noiseSet", 60), ("damp stone floor", 1)]
+  }
+floorDirtLit = floorArenaLit
+  { tname    = "dirt"
+  , tfreq    = [ ("battleSet", 1000), ("brawlSet", 1000), ("shootoutSet", 1000)
+               , ("ambushSet", 1000), ("escapeSet", 1000) ]
+  }
+floorDirtSpiceLit = floorDirtLit
+  { tfreq    = [ ("treeShadeOver_s_Lit", 1), ("fogClumpOver_f_Lit", 40)
+               , ("smokeClumpOver_f_Lit", 1), ("bushClumpOver_f_Lit", 1) ]
+  , tfeature = Spice : tfeature floorDirtLit
+  }
+floorArenaShade = floorActorLit
+  { tname    = "shaded ground"
+  , tfreq    = [("shaded ground", 1), ("treeShadeOver_s_Lit", 2)]
+  , tcolor2  = BrBlack
+  , tfeature = Dark : NoItem : tfeature floorActorLit
+  }
+floorActorLit = floorArenaLit
+  { tfreq    = [("floorActorLit", 1)]
+  , tfeature = OftenActor : tfeature floorArenaLit
+  }
+floorItemLit = floorArenaLit
+  { tfreq    = []
+  , tfeature = OftenItem : tfeature floorArenaLit
+  }
+floorActorItemLit = floorItemLit
+  { tfreq    = [("legendLit", 100)]  -- no OftenItem in legendDark
+  , tfeature = OftenActor : tfeature floorItemLit
+  }
+floorRedLit = floorCorridorLit
+  { tsymbol  = floorSymbol
+  , tname    = "brick pavement"
+  , tfreq    = [("trailLit", 30)]
+  , tcolor   = BrRed
+  , tcolor2  = Red
+  , tfeature = Trail : tfeature floorCorridorLit  -- no Indistinct
+  }
+floorBlueLit = floorRedLit
+  { tname    = "cobblestone path"
+  , tfreq    = [("trailLit", 100)]
+  , tcolor   = BrBlue
+  , tcolor2  = Blue
+  }
+floorGreenLit = floorRedLit
+  { tname    = "mossy stone path"
+  , tfreq    = [("trailLit", 100)]
+  , tcolor   = BrGreen
+  , tcolor2  = Green
+  }
+floorBrownLit = floorRedLit
+  { tname    = "rotting mahogany deck"
+  , tfreq    = [("trailLit", 10)]
+  , tcolor   = BrMagenta
+  , tcolor2  = Magenta
   }
 
 makeDark :: TileKind -> TileKind
