@@ -22,17 +22,17 @@ cdefs = ContentDef
   , validateSingle = validateSingleTileKind
   , validateAll = validateAllTileKind
   , content = contentFromList $
-      [unknown, hardRock, bedrock, wall, wallSuspect, wallObscured, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, pillar, pillarCache, lampPost, signboardUnread, signboardRead, tree, treeDark, treeBurnt, treeBurning, rubble, rubblePlace, doorTrapped, doorClosed, doorTrappedH, doorClosedH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, wallGlass, wallGlassSpice, wallGlassH, wallGlassHSpice, pillarIce, pulpit, bush, bushDark, bushBurnt, bushBurning, floorFog, floorFogDark, floorSmoke, floorSmokeDark, doorOpen, doorOpenH, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit ]
+      [unknown, hardRock, bedrock, wall, wallSuspect, wallObscured, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, pillar, pillarCache, lampPost, signboardUnread, signboardRead, tree, treeBurnt, treeBurning, rubble, rubblePlace, doorTrapped, doorClosed, doorTrappedH, doorClosedH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, wallGlass, wallGlassSpice, wallGlassH, wallGlassHSpice, pillarIce, pulpit, bush, bushBurnt, bushBurning, floorFog, floorFogDark, floorSmoke, floorSmokeDark, doorOpen, doorOpenH, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorArenaShade ]
       ++ map makeDark ldarkable
       ++ map makeDarkColor ldarkColorable
   }
-unknown,        hardRock, bedrock, wall, wallSuspect, wallObscured, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, pillar, pillarCache, lampPost, signboardUnread, signboardRead, tree, treeDark, treeBurnt, treeBurning, rubble, rubblePlace, doorTrapped, doorClosed, doorTrappedH, doorClosedH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, wallGlass, wallGlassSpice, wallGlassH, wallGlassHSpice, pillarIce, pulpit, bush, bushDark, bushBurnt, bushBurning, floorFog, floorFogDark, floorSmoke, floorSmokeDark, doorOpen, doorOpenH, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit :: TileKind
+unknown,        hardRock, bedrock, wall, wallSuspect, wallObscured, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, pillar, pillarCache, lampPost, signboardUnread, signboardRead, tree, treeBurnt, treeBurning, rubble, rubblePlace, doorTrapped, doorClosed, doorTrappedH, doorClosedH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, wallGlass, wallGlassSpice, wallGlassH, wallGlassHSpice, pillarIce, pulpit, bush, bushBurnt, bushBurning, floorFog, floorFogDark, floorSmoke, floorSmokeDark, doorOpen, doorOpenH, floorCorridorLit, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorArenaShade :: TileKind
 
 ldarkable :: [TileKind]
-ldarkable = [wall, wallSuspect, wallObscured, doorTrapped, doorClosed, doorOpen, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, doorTrappedH, doorClosedH, doorOpenH, floorCorridorLit]
+ldarkable = [wall, wallSuspect, wallObscured, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, doorTrapped, doorClosed, doorTrappedH, doorClosedH, wallGlass, wallGlassH, doorOpen, doorOpenH, floorCorridorLit]
 
 ldarkColorable :: [TileKind]
-ldarkColorable = [floorArenaLit, floorNoiseLit, floorDirtLit, floorActorLit, floorItemLit, floorActorItemLit]
+ldarkColorable = [tree, bush, floorArenaLit, floorNoiseLit, floorDirtLit, floorDirtSpiceLit, floorActorLit, floorItemLit, floorActorItemLit]
 
 -- Symbols to be used (the Nethack visual tradition imposes inconsistency):
 --         LOS    noLOS
@@ -230,17 +230,12 @@ signboardRead = TileKind  -- after first use revealed to be this one
 tree = TileKind
   { tsymbol  = 'O'
   , tname    = "tree"
-  , tfreq    = [ ("brawlSet", 140), ("shootoutSet", 10)
+  , tfreq    = [ ("brawlSet", 140), ("shootoutSet", 10), ("escapeSet", 30)
                , ("treeShadeOver_O_Lit", 1) ]
   , tcolor   = BrGreen
   , tcolor2  = Green
   , talter   = 50
   , tfeature = []
-  }
-treeDark = tree
-  { tfreq    = [("escapeSet", 30)]
-  , tcolor2  = BrBlack
-  , tfeature = Dark : tfeature tree
   }
 treeBurnt = tree
   { tname    = "burnt tree"
@@ -433,8 +428,7 @@ wallGlassH = TileKind
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
-  , tfeature = [ BuildAs "suspect horizontal wall Lit"
-               , Clear ]
+  , tfeature = [BuildAs "suspect horizontal wall Lit", Clear]
   }
 wallGlassHSpice = wallGlassH
   { tfreq    = [("rectWindowsOver_=_Lit", 20)]
@@ -465,17 +459,12 @@ pulpit = TileKind
 bush = TileKind
   { tsymbol  = '%'
   , tname    = "bush"
-  , tfreq    = [ ("lit bush", 1), ("shootoutSet", 30)
+  , tfreq    = [ ("lit bush", 1), ("shootoutSet", 30), ("escapeSet", 30)
                , ("bushClumpOver_f_Lit", 1) ]
   , tcolor   = BrGreen
   , tcolor2  = Green
   , talter   = 10
   , tfeature = [Clear]
-  }
-bushDark = bush
-  { tfreq    = [("escapeSet", 30)]
-  , tcolor2  = BrBlack
-  , tfeature = Dark : tfeature bush
   }
 bushBurnt = bush
   { tname    = "burnt bush"
@@ -586,12 +575,6 @@ floorDirtSpiceLit = floorDirtLit
                , ("smokeClumpOver_f_Lit", 1), ("bushClumpOver_f_Lit", 1) ]
   , tfeature = Spice : tfeature floorDirtLit
   }
-floorArenaShade = floorActorLit
-  { tname    = "shaded ground"
-  , tfreq    = [("shaded ground", 1), ("treeShadeOver_s_Lit", 2)]
-  , tcolor2  = BrBlack
-  , tfeature = Dark : NoItem : tfeature floorActorLit
-  }
 floorActorLit = floorArenaLit
   { tfreq    = [("floorActorLit", 1)]
   , tfeature = OftenActor : tfeature floorArenaLit
@@ -629,6 +612,12 @@ floorBrownLit = floorRedLit
   , tfreq    = [("trailLit", 10)]
   , tcolor   = BrMagenta
   , tcolor2  = Magenta
+  }
+floorArenaShade = floorActorLit
+  { tname    = "shaded ground"
+  , tfreq    = [("shaded ground", 1), ("treeShadeOver_s_Lit", 2)]
+  , tcolor2  = BrBlack
+  , tfeature = Dark : NoItem : tfeature floorActorLit
   }
 
 makeDark :: TileKind -> TileKind
