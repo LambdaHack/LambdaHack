@@ -157,11 +157,13 @@ brightCol = [BrRed .. BrCyan]  -- BrBlack is not really that bright
 stdCol    = darkCol ++ brightCol
 
 -- | Translationg to heavily modified Linux console color RGB values.
+--
+-- Warning: SDL frontend sadly duplicates this code.
 colorToRGB :: Color -> Text
 colorToRGB Black     = "#000000"
 colorToRGB Red       = "#D50000"
 colorToRGB Green     = "#00AA00"
-colorToRGB Brown     = "#AA5500"
+colorToRGB Brown     = "#CA4A00"
 colorToRGB Blue      = "#203AF0"
 colorToRGB Magenta   = "#AA00AA"
 colorToRGB Cyan      = "#00AAAA"

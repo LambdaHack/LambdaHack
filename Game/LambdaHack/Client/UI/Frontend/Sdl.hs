@@ -377,11 +377,13 @@ keyTranslate shiftPressed n =
                | 32 <= i && i <= 126 -> K.Char $ Char.chr i
                | otherwise -> K.Unknown $ show n
 
+
+-- This code is sadly duplicated from "Game.LambdaHack.Common.Color".
 colorToRGBA :: Color.Color -> Raw.Color
 colorToRGBA Color.Black     = Raw.Color 0 0 0 0
 colorToRGBA Color.Red       = Raw.Color 0xD5 0x00 0x00 0
 colorToRGBA Color.Green     = Raw.Color 0x00 0xAA 0x00 0
-colorToRGBA Color.Brown     = Raw.Color 0xAA 0x55 0x00 0
+colorToRGBA Color.Brown     = Raw.Color 0xCA 0x4A 0x00 0
 colorToRGBA Color.Blue      = Raw.Color 0x20 0x3A 0xF0 0
 colorToRGBA Color.Magenta   = Raw.Color 0xAA 0x00 0xAA 0
 colorToRGBA Color.Cyan      = Raw.Color 0x00 0xAA 0xAA 0
