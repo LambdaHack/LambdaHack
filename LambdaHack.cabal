@@ -49,7 +49,7 @@ description:   LambdaHack is a game engine library for roguelike games
                when developing the library --- library users are free
                to access any modules, since the library authors are in
                no position to guess their particular needs.
-homepage:      http://github.com/LambdaHack/LambdaHack
+homepage:      https://lambdahack.github.io
 bug-reports:   http://github.com/LambdaHack/LambdaHack/issues
 license:       BSD3
 license-file:  LICENSE

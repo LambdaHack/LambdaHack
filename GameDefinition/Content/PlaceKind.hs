@@ -33,7 +33,7 @@ rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
   , pname    = "room"
   , pfreq    = [ ("rogue", 100), ("arena", 40), ("laboratory", 40)
-               , ("shootout", 10), ("zoo", 7) ]
+               , ("shootout", 8), ("zoo", 7) ]
   , prarity  = [(1, 10), (10, 8)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -149,7 +149,7 @@ pillar = PlaceKind
   { psymbol  = 'p'
   , pname    = "pillar room"
   , pfreq    = [ ("rogue", 500), ("arena", 1000), ("laboratory", 1000)
-               , ("empty", 300) , ("noise", 1000) ]
+               , ("empty", 300), ("noise", 1000) ]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -192,7 +192,7 @@ colonnade = PlaceKind
   { psymbol  = 'c'
   , pname    = "colonnade"
   , pfreq    = [ ("rogue", 30), ("arena", 70), ("laboratory", 40)
-               , ("empty", 200), ("mine", 10000), ("park", 3000) ]
+               , ("empty", 100), ("mine", 10000), ("park", 3000) ]
   , prarity  = [(1, 3), (10, 3)]
   , pcover   = CAlternate
   , pfence   = FFloor
@@ -431,7 +431,7 @@ staircase10 = staircase
                ]
   }
 staircase11 = staircase
-  { pfreq    = [("staircase", 1000)]
+  { pfreq    = [("staircase", 10000)]
   , pfence   = FFloor
   , ptopLeft = [ "··O·O··"
                , "O·····O"

@@ -560,7 +560,7 @@ floorArena = floorCorridor
   { tsymbol  = floorSymbol
   , tname    = "stone floor"
   , tfreq    = [ ("floorArenaLit", 1), ("rubbleSpiceOrNot", 30)
-               , ("arenaSet", 1), ("emptySet", 97), ("zooSet", 1000) ]
+               , ("arenaSetLit", 1), ("emptySet", 97), ("zooSet", 1000) ]
   }
 floorNoise = floorArena
   { tname    = "damp stone floor"

@@ -83,7 +83,7 @@ arena = rogue
   , citemFreq     = [("useful", 20), ("treasure", 30), ("any scroll", 50)]
   , cplaceFreq    = [("arena", 100)]
   , cpassable     = True
-  , cdefTile      = "arenaSet"
+  , cdefTile      = "arenaSetLit"
   , clitCorTile   = "trailLit"
   }
 arena2 = arena
@@ -92,6 +92,9 @@ arena2 = arena
   , cdarkChance   = 41 + d 10  -- almost all rooms lit (1 in 10 dark)
   -- Trails provide enough light for fun stealth.
   , cnightChance  = 51  -- always night
+  , citemNum      = 5 * d 4  -- rare, so make it exciting
+  , citemFreq     = [("useful", 20), ("treasure", 30), ("any vial", 50)]
+  , cdefTile      = "arenaSetDark"
   , cdarkCorTile  = "trailLit"  -- let trails give off light
   }
 laboratory = arena2
@@ -180,7 +183,7 @@ noise2 = noise
   , cstairFreq    = [("gated staircase", 100)]
   }
 shallow1rogue = rogue
-  { csymbol       = 'D'
+  { csymbol       = 'B'
   , cname         = "Cave entrance"
   , cfreq         = [("shallow random 1", 100)]
   , cdarkChance   = 0  -- all rooms lit, for a gentle start
