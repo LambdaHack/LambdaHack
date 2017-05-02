@@ -505,7 +505,7 @@ createActorUI born aid body = do
     Nothing -> do
       trunk <- getsState $ getItemBody $ btrunk body
       Config{configHeroNames} <- getsSession sconfig
-      let isBlast = jsymbol trunk `elem` ['\'', '*']  -- good enough approx.
+      let isBlast = jsymbol trunk `elem` ['`', '\'', '*']  -- good enough approx
           baseColor = flavourToColor $ jflavour trunk
           basePronoun | not (bproj body) && fhasGender (gplayer fact) = "he"
                       | otherwise = "it"
