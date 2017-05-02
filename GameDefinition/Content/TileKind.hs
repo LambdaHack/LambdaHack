@@ -22,17 +22,17 @@ cdefs = ContentDef
   , validateSingle = validateSingleTileKind
   , validateAll = validateAllTileKind
   , content = contentFromList $
-      [unknown, hardRock, bedrock, wall, wallSuspect, wallObscured, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, pillar, pillarCache, lampPost, signboardUnread, signboardRead, tree, treeBurnt, treeBurning, rubble, rubbleSpice, doorTrapped, doorClosed, doorTrappedH, doorClosedH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, wallGlass, wallGlassSpice, wallGlassH, wallGlassHSpice, pillarIce, pulpit, bush, bushBurnt, bushBurning, floorFog, floorFogDark, floorSmoke, floorSmokeDark, doorOpen, doorOpenH, floorCorridor, floorArena, floorNoise, floorDirt, floorDirtSpice, floorActor, floorItem, floorActorItem, floorRed, floorBlue, floorGreen, floorBrown, floorArenaShade ]
+      [unknown, hardRock, bedrock, wall, wallSuspect, wallObscured, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, pillar, pillarCache, lampPost, signboardUnread, signboardRead, tree, treeBurnt, treeBurning, rubble, rubbleSpice, doorTrapped, doorClosed, doorTrappedH, doorClosedH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, wallGlass, wallGlassSpice, wallGlassH, wallGlassHSpice, pillarIce, pulpit, bush, bushBurnt, bushBurning, floorFog, floorFogDark, floorSmoke, floorSmokeDark, doorOpen, doorOpenH, floorCorridor, floorArena, floorNoise, floorDirt, floorDirtSpice, floorActor, floorActorItem, floorRed, floorBlue, floorGreen, floorBrown, floorArenaShade ]
       ++ map makeDark ldarkable
       ++ map makeDarkColor ldarkColorable
   }
-unknown,        hardRock, bedrock, wall, wallSuspect, wallObscured, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, pillar, pillarCache, lampPost, signboardUnread, signboardRead, tree, treeBurnt, treeBurning, rubble, rubbleSpice, doorTrapped, doorClosed, doorTrappedH, doorClosedH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, wallGlass, wallGlassSpice, wallGlassH, wallGlassHSpice, pillarIce, pulpit, bush, bushBurnt, bushBurning, floorFog, floorFogDark, floorSmoke, floorSmokeDark, doorOpen, doorOpenH, floorCorridor, floorArena, floorNoise, floorDirt, floorDirtSpice, floorActor, floorItem, floorActorItem, floorRed, floorBlue, floorGreen, floorBrown, floorArenaShade :: TileKind
+unknown,        hardRock, bedrock, wall, wallSuspect, wallObscured, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, pillar, pillarCache, lampPost, signboardUnread, signboardRead, tree, treeBurnt, treeBurning, rubble, rubbleSpice, doorTrapped, doorClosed, doorTrappedH, doorClosedH, stairsUp, stairsTaintedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTaintedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, wallGlass, wallGlassSpice, wallGlassH, wallGlassHSpice, pillarIce, pulpit, bush, bushBurnt, bushBurning, floorFog, floorFogDark, floorSmoke, floorSmokeDark, doorOpen, doorOpenH, floorCorridor, floorArena, floorNoise, floorDirt, floorDirtSpice, floorActor, floorActorItem, floorRed, floorBlue, floorGreen, floorBrown, floorArenaShade :: TileKind
 
 ldarkable :: [TileKind]
 ldarkable = [wall, wallSuspect, wallObscured, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, doorTrapped, doorClosed, doorTrappedH, doorClosedH, wallGlass, wallGlassH, doorOpen, doorOpenH, floorCorridor]
 
 ldarkColorable :: [TileKind]
-ldarkColorable = [tree, bush, floorArena, floorNoise, floorDirt, floorDirtSpice, floorActor, floorItem, floorActorItem]
+ldarkColorable = [tree, bush, floorArena, floorNoise, floorDirt, floorDirtSpice, floorActor, floorActorItem]
 
 -- Symbols to be used (the Nethack visual tradition imposes inconsistency):
 --         LOS    noLOS
@@ -568,7 +568,7 @@ floorNoise = floorArena
 floorDirt = floorArena
   { tname    = "dirt"
   , tfreq    = [ ("battleSet", 1000), ("brawlSet", 1000), ("shootoutSet", 1000)
-               , ("ambushSet", 1000), ("escapeSet", 1000) ]
+               , ("escapeSet", 1000), ("ambushSet", 1000) ]
   }
 floorDirtSpice = floorDirt
   { tfreq    = [ ("treeShadeOver_s_Lit", 1), ("fogClumpOver_f_Lit", 40)
@@ -576,16 +576,12 @@ floorDirtSpice = floorDirt
   , tfeature = Spice : tfeature floorDirt
   }
 floorActor = floorArena
-  { tfreq    = [("floorActorLit", 1)]
+  { tfreq    = [("floorActorLit", 1)]  -- lit even in dark cave, so no items
   , tfeature = OftenActor : tfeature floorArena
   }
-floorItem = floorArena
-  { tfreq    = []
-  , tfeature = OftenItem : tfeature floorArena
-  }
-floorActorItem = floorItem
+floorActorItem = floorActor
   { tfreq    = [("legendLit", 100)]
-  , tfeature = OftenActor : tfeature floorItem
+  , tfeature = OftenItem : tfeature floorActor
   }
 floorRed = floorCorridor
   { tsymbol  = floorSymbol
