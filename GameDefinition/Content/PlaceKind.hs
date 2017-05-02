@@ -53,6 +53,8 @@ rectWindows = PlaceKind
                , "!·"
                ]
   , poverride = [('=', "rectWindowsOver_=_Lit"), ('!', "rectWindowsOver_!_Lit")]
+      -- for now I need to specify 'Lit' or I'd be randomly getting lit and dark
+      -- tiles, until ooverride is extended to take night/dark into account
   }
 glasshouse = PlaceKind
   { psymbol  = 'g'
@@ -64,7 +66,7 @@ glasshouse = PlaceKind
   , ptopLeft = [ "=="
                , "!·"
                ]
-  , poverride = [('=', "wallGlassH"), ('!', "wallGlass")]
+  , poverride = [('=', "glasshouseOver_=_Lit"), ('!', "glasshouseOver_!_Lit")]
   }
 pulpit = PlaceKind
   { psymbol  = 'p'
@@ -77,7 +79,9 @@ pulpit = PlaceKind
                , "!··"
                , "··O"
                ]
-  , poverride = [('=', "wallGlassH"), ('!', "wallGlass"), ('O', "pulpit")]
+  , poverride = [ ('=', "glasshouseOver_=_Lit"), ('!', "glasshouseOver_!_Lit")
+                , ('O', "pulpit") ]
+      -- except for floor, this will all be lit, regardless of night/dark; OK
   }
 ruin = PlaceKind
   { psymbol  = 'R'
