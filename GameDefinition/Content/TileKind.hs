@@ -179,8 +179,8 @@ pillar = TileKind
   , tname    = "rock"
   , tfreq    = [ ("cachable", 70), ("stair terminal", 100)
                , ("legendLit", 100), ("legendDark", 100)
-               , ("noiseSet", 70), ("battleSet", 250), ("brawlSet", 50)
-               , ("shootoutSet", 10), ("zooSet", 10) ]
+               , ("noiseSet", 70), ("battleSet", 250), ("brawlSetLit", 50)
+               , ("shootoutSetLit", 10), ("zooSet", 10) ]
   , tcolor   = BrCyan  -- not BrWhite, to tell from heroes
   , tcolor2  = Cyan
   , talter   = 100
@@ -230,8 +230,8 @@ signboardRead = TileKind  -- after first use revealed to be this one
 tree = TileKind
   { tsymbol  = 'O'
   , tname    = "tree"
-  , tfreq    = [ ("brawlSet", 140), ("shootoutSet", 10), ("escapeSet", 30)
-               , ("treeShadeOver_O_Lit", 1) ]
+  , tfreq    = [ ("brawlSetLit", 140), ("shootoutSetLit", 10)
+               , ("escapeSetLit", 30), ("treeShadeOver_O_Lit", 1) ]
   , tcolor   = BrGreen
   , tcolor2  = Green
   , talter   = 50
@@ -459,7 +459,7 @@ pulpit = TileKind
 bush = TileKind
   { tsymbol  = '%'
   , tname    = "bush"
-  , tfreq    = [ ("lit bush", 1), ("shootoutSet", 30), ("escapeSet", 30)
+  , tfreq    = [ ("bush Lit", 1), ("shootoutSetLit", 30), ("escapeSetLit", 30)
                , ("bushClumpOver_f_Lit", 1) ]
   , tcolor   = BrGreen
   , tcolor2  = Green
@@ -490,7 +490,7 @@ bushBurning = bush
 floorFog = TileKind
   { tsymbol  = ';'
   , tname    = "faint fog"
-  , tfreq    = [ ("lit fog", 1), ("emptySet", 5), ("shootoutSet", 20)
+  , tfreq    = [ ("lit fog", 1), ("emptySet", 5), ("shootoutSetLit", 20)
                , ("noiseSet", 10), ("fogClumpOver_f_Lit", 60) ]
       -- lit fog is OK for shootout, because LOS is mutual, as opposed
       -- to dark fog, and so camper has little advantage, especially
@@ -502,7 +502,7 @@ floorFog = TileKind
   }
 floorFogDark = floorFog
   { tname    = "thick fog"
-  , tfreq    = [("noiseSet", 10), ("escapeSet", 60)]
+  , tfreq    = [("noiseSet", 10), ("escapeSetDark", 60)]
   , tfeature = Dark : tfeature floorFog
   }
 floorSmoke = TileKind
@@ -568,8 +568,9 @@ floorNoise = floorArena
   }
 floorDirt = floorArena
   { tname    = "dirt"
-  , tfreq    = [ ("battleSet", 1000), ("brawlSet", 1000), ("shootoutSet", 1000)
-               , ("escapeSet", 1000), ("ambushSet", 1000) ]
+  , tfreq    = [ ("battleSet", 1000), ("brawlSetLit", 1000)
+               , ("shootoutSetLit", 1000), ("escapeSetLit", 1000)
+               , ("ambushSet", 1000) ]
   }
 floorDirtSpice = floorDirt
   { tfreq    = [ ("treeShadeOver_s_Lit", 1), ("fogClumpOver_f_Lit", 40)

@@ -344,7 +344,7 @@ bushClump = PlaceKind
                , ";f"
                , ";f"
                ]
-  , poverride = [('f', "bushClumpOver_f_Lit"), (';', "lit bush")]
+  , poverride = [('f', "bushClumpOver_f_Lit"), (';', "bush Lit")]
   }
 staircase = PlaceKind
   { psymbol  = '|'
