@@ -239,7 +239,7 @@ tree = TileKind
   }
 treeBurnt = tree
   { tname    = "burnt tree"
-  , tfreq    = [("tree with fire", 30)]
+  , tfreq    = [("ambushSet", 3), ("zooSet", 3), ("tree with fire", 30)]
   , tcolor   = BrBlack
   , tcolor2  = BrBlack
   , tfeature = Dark : tfeature tree
@@ -468,7 +468,8 @@ bush = TileKind
   }
 bushBurnt = bush
   { tname    = "burnt bush"
-  , tfreq    = [("battleSet", 30), ("bush with fire", 70)]
+  , tfreq    = [ ("battleSet", 30), ("ambushSet", 4), ("zooSet", 30)
+               , ("bush with fire", 70) ]
   , tcolor   = BrBlack
   , tcolor2  = BrBlack
   , tfeature = Dark : tfeature bush
