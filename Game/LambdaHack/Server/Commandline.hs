@@ -15,9 +15,11 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Server.State
 
 -- | Parse server debug parameters from commandline arguments.
-debugArgs :: [String] -> IO DebugModeSer
-debugArgs args = do
-  let usage =
+debugArgs :: [String] -> DebugModeSer
+debugArgs =
+  let breakPar s = let (params, args) = break ("-" `isPrefixOf`) s
+                   in (unwords params, args)
+      usage =
         [ "Configure debug options here, gameplay options in config.rules.ini."
         , "  --knowMap  reveal map for all clients in the next game"
         , "  --knowEvents  show all events in the next game (needs --knowMap)"
@@ -68,57 +70,68 @@ debugArgs args = do
         (parseArgs rest) {sallClear = True}
       parseArgs ("--boostRandomItem" : rest) =
         (parseArgs rest) {sboostRandomItem = True}
-      parseArgs ("--gameMode" : s : rest) =
-        (parseArgs rest) {sgameMode = Just $ toGroupName (T.pack s)}
+      parseArgs ("--gameMode" : rest) =
+        let (params, args) = breakPar rest
+        in (parseArgs args) {sgameMode = Just $ toGroupName (T.pack params)}
       parseArgs ("--automateAll" : rest) =
         (parseArgs rest) {sautomateAll = True}
       parseArgs ("--keepAutomated" : rest) =
         (parseArgs rest) {skeepAutomated = True}
-      parseArgs ("--newGame" : s : rest) =
-        let debugSer = parseArgs rest
-            cdiff = read s
+      parseArgs ("--newGame" : rest) =
+        let (params, args) = breakPar rest
+            debugSer = parseArgs args
+            cdiff = read params
         in debugSer { scurChalSer = (scurChalSer debugSer) {cdiff}
                     , snewGameSer = True
                     , sdebugCli = (sdebugCli debugSer) {snewGameCli = True}}
-      parseArgs ("--stopAfterSeconds" : s : rest) =
-        let debugSer = parseArgs rest
+      parseArgs ("--stopAfterSeconds" : rest) =
+        let (params, args) = breakPar rest
+            debugSer = parseArgs args
         in debugSer {sdebugCli =
-             (sdebugCli debugSer) {sstopAfterSeconds = Just $ read s}}
-      parseArgs ("--stopAfterFrames" : s : rest) =
-        let debugSer = parseArgs rest
+             (sdebugCli debugSer) {sstopAfterSeconds = Just $ read params}}
+      parseArgs ("--stopAfterFrames" : rest) =
+        let (params, args) = breakPar rest
+            debugSer = parseArgs args
         in debugSer {sdebugCli =
-             (sdebugCli debugSer) {sstopAfterFrames = Just $ read s}}
+             (sdebugCli debugSer) {sstopAfterFrames = Just $ read params}}
       parseArgs ("--benchmark" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {sbenchmark = True}}
-      parseArgs ("--setDungeonRng" : s : rest) =
-        (parseArgs rest) {sdungeonRng = Just $ read s}
-      parseArgs ("--setMainRng" : s : rest) =
-        (parseArgs rest) {smainRng = Just $ read s}
+      parseArgs ("--setDungeonRng" : rest) =
+        let (params, args) = breakPar rest
+        in (parseArgs args) {sdungeonRng = Just $ read params}
+      parseArgs ("--setMainRng" : rest) =
+        let (params, args) = breakPar rest
+        in (parseArgs args) {smainRng = Just $ read params}
       parseArgs ("--dumpInitRngs" : rest) =
         (parseArgs rest) {sdumpInitRngs = True}
       parseArgs ("--dbgMsgSer" : rest) =
         (parseArgs rest) {sdbgMsgSer = True}
-      parseArgs ("--gtkFontFamily" : s : rest) =
-        let debugSer = parseArgs rest
+      parseArgs ("--gtkFontFamily" : rest) =
+        let (params, args) = breakPar rest
+            debugSer = parseArgs args
         in debugSer {sdebugCli = (sdebugCli debugSer) {sgtkFontFamily =
-                                                         Just $ T.pack s}}
-      parseArgs ("--sdlFontFile" : s : rest) =
-        let debugSer = parseArgs rest
+                                                         Just $ T.pack params}}
+      parseArgs ("--sdlFontFile" : rest) =
+        let (params, args) = breakPar rest
+            debugSer = parseArgs args
         in debugSer {sdebugCli = (sdebugCli debugSer) {sdlFontFile =
-                                                         Just $ T.pack s}}
-      parseArgs ("--sdlTtfSizeAdd" : s : rest) =
-        let debugSer = parseArgs rest
+                                                         Just $ T.pack params}}
+      parseArgs ("--sdlTtfSizeAdd" : rest) =
+        let (params, args) = breakPar rest
+            debugSer = parseArgs args
         in debugSer {sdebugCli = (sdebugCli debugSer) {sdlTtfSizeAdd =
-                                                         Just $ read s}}
-      parseArgs ("--sdlFonSizeAdd" : s : rest) =
-        let debugSer = parseArgs rest
+                                                         Just $ read params}}
+      parseArgs ("--sdlFonSizeAdd" : rest) =
+        let (params, args) = breakPar rest
+            debugSer = parseArgs args
         in debugSer {sdebugCli = (sdebugCli debugSer) {sdlFonSizeAdd =
-                                                         Just $ read s}}
-      parseArgs ("--fontSize" : s : rest) =
-        let debugSer = parseArgs rest
+                                                         Just $ read params}}
+      parseArgs ("--fontSize" : rest) =
+        let (params, args) = breakPar rest
+            debugSer = parseArgs args
         in debugSer {sdebugCli = (sdebugCli debugSer) {sfontSize =
-                                                         Just $ read s}}
+                                                         Just $ read params}}
       parseArgs ("--noColorIsBold" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli =
@@ -133,11 +146,12 @@ debugArgs args = do
       parseArgs ("--noAnim" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {snoAnim = Just True}}
-      parseArgs ("--savePrefix" : s : rest) =
-        let debugSer = parseArgs rest
-        in debugSer { ssavePrefixSer = s
+      parseArgs ("--savePrefix" : rest) =
+        let (params, args) = breakPar rest
+            debugSer = parseArgs args
+        in debugSer { ssavePrefixSer = params
                     , sdebugCli =
-                        (sdebugCli debugSer) {ssavePrefixCli = s}}
+                        (sdebugCli debugSer) {ssavePrefixCli = params}}
       parseArgs ("--frontendTeletype" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer)
@@ -153,4 +167,4 @@ debugArgs args = do
         in debugSer {sdebugCli = (sdebugCli debugSer) {sdbgMsgCli = True}}
       parseArgs (wrong : _rest) =
         error $ "Unrecognized: " ++ wrong ++ "\n" ++ unlines usage
-  return $! parseArgs args
+  in parseArgs

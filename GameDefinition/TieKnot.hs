@@ -36,8 +36,8 @@ import qualified Content.TileKind
 tieKnot :: [String] -> IO ()
 tieKnot args = do
   -- Options for the next game taken from the commandline.
-  sdebug@DebugModeSer{sallClear, sboostRandomItem, sdungeonRng}
-    <- debugArgs args
+  let sdebug@DebugModeSer{sallClear, sboostRandomItem, sdungeonRng} =
+        debugArgs args
   -- This setup ensures the boosting option doesn't affect generating initial
   -- RNG for dungeon, etc., and also, that setting dungeon RNG on commandline
   -- equal to what was generated last time, ensures the same item boost.

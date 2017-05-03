@@ -104,7 +104,7 @@ executorSer cops copsClient sdebugNxtCmdline = do
   sconfig <- mkConfig cops (sbenchmark $ sdebugCli sdebugNxtCmdline)
   sdebugNxt <- case configCmdline sconfig of
     [] -> return sdebugNxtCmdline
-    args -> debugArgs args
+    args -> return $! debugArgs args
   -- Options for the clients modified with the configuration file.
   -- The client debug inside server debug only holds the client commandline
   -- options and is never updated with config options, etc.
