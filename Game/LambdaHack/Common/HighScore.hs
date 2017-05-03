@@ -77,8 +77,7 @@ showScore tz (pos, score) =
       diffText | diff == difficultyDefault = ""
                | otherwise = "difficulty" <+> tshow diff <> ", "
       tturns = makePhrase [MU.CarWs turns "turn"]
-  in [ tpos <> "."
-       <+> tscore <+> makePhrase [MU.Ws $ MU.Text $ gplayerName score]
+  in [ tpos <> "." <+> tscore <+> gplayerName score
        <+> died <> "," <+> victims <> ","
      , "            "
        <> diffText <> "after" <+> tturns <+> "on" <+> curDate <> "."

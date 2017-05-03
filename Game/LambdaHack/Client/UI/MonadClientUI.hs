@@ -22,6 +22,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Time.Clock
 import Data.Time.Clock.POSIX
@@ -262,7 +263,7 @@ scoreToSlideshow total status = do
       ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
       (worthMentioning, (ntable, pos)) =
         HighScore.register table total time status date chal
-                           (fname $ gplayer fact)
+                           (T.concat $ tail $ T.words $ gname fact)
                            ourVictims theirVictims
                            (fhiCondPoly $ gplayer fact)
       (msg, tts) = HighScore.highSlideshow ntable pos gameModeName tz

@@ -17,6 +17,7 @@ import qualified Data.Map.Strict as M
 import Data.Ord
 import qualified Data.Text as T
 import Data.Tuple (swap)
+import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
 
 import Game.LambdaHack.Atomic
@@ -123,9 +124,14 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
               LeaderNull -> "Loose"
               LeaderAI _ -> "Autonomous"
               LeaderUI _ -> "Controlled"
+            nameSuff suff = if fhasGender
+                            then if length (T.words fname) > 1
+                                 then makePhrase [MU.Ws $ MU.Text fname]
+                                 else fname <+> suff
+                            else fname
             (gcolor, gnameNew) = case M.lookup nameoc cmap of
-              Nothing -> (Color.BrWhite, prefix <+> fname <+> "Crew")
-              Just c -> (c, prefix <+> fname <+> "Team")
+              Nothing -> (Color.BrWhite, prefix <+> nameSuff "Crew")
+              Just c -> (c, prefix <+> nameSuff "Team")
             gvictimsDnew = case find (\fact -> gname fact == gnameNew)
                                 $ EM.elems factionDold of
               Nothing -> EM.empty

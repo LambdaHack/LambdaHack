@@ -167,7 +167,7 @@ registerScore status fid = do
       table = HighScore.getTable gameModeId scoreDict
       registeredScore =
         HighScore.register table total time status date chal
-                           (fname $ gplayer fact)
+                           (T.concat $ tail $ T.words $ gname fact)
                            ourVictims theirVictims
                            (fhiCondPoly $ gplayer fact)
   outputScore registeredScore
