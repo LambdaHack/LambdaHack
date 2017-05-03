@@ -339,12 +339,12 @@ rosterSafari = Roster
                   , ( "Monster Tourist Office"
                     , "Animal Magnificent Specimen Variety" )
                   , ( "Monster Tourist Office"
+                    , "Animal Exquisite Herds and Packs" )
+                  , ( "Animal Magnificent Specimen Variety"
+                    , "Hunam Convict" )
+                  , ( "Hunam Convict"
                     , "Animal Exquisite Herds and Packs" ) ]
   , rosterAlly = [ ( "Animal Magnificent Specimen Variety"
-                   , "Animal Exquisite Herds and Packs" )
-                 , ( "Animal Magnificent Specimen Variety"
-                   , "Hunam Convict" )
-                 , ( "Hunam Convict"
                    , "Animal Exquisite Herds and Packs" ) ] }
 
 rosterSafariSurvival = rosterSafari

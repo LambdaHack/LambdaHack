@@ -524,6 +524,9 @@ drawLeaderStatus waitT = do
               = addColor Color.BrGreen
             | otherwise = stringToAL  -- only if nothing at all noteworthy
           calmAddAttr = checkDelta calmDelta
+          -- We only show ambient light, because in fact client can't tell
+          -- if a tile is lit, because it it's seen it may be due to ambient
+          -- or dynamic light or due to infravision.
           darkPick | darkL   = "."
                    | otherwise = ":"
           calmHeader = calmAddAttr $ calmHeaderText <> darkPick
