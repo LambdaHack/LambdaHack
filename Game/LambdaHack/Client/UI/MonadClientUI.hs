@@ -263,7 +263,7 @@ scoreToSlideshow total status = do
       ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
       (worthMentioning, (ntable, pos)) =
         HighScore.register table total time status date chal
-                           (T.concat $ tail $ T.words $ gname fact)
+                           (T.unwords $ tail $ T.words $ gname fact)
                            ourVictims theirVictims
                            (fhiCondPoly $ gplayer fact)
       (msg, tts) = HighScore.highSlideshow ntable pos gameModeName tz
