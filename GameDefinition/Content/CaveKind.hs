@@ -370,17 +370,18 @@ battle = rogue  -- few lights and many solids, to help the less numerous heroes
   , clitCorTile   = "trailLit"
   , couterFenceTile = "noise fence"  -- ensures no cut-off parts from collapsed
   }
-safari1 = escape
+safari1 = brawl
   { cname = "Hunam habitat"
   , cfreq = [("caveSafari1", 1)]
   , cescapeGroup = Nothing
   , cstairFreq = [("staircase outdoor", 1)]
   }
-safari2 = shootout
-  { cfreq = [("caveSafari2", 1)]
+safari2 = ambush
+  { cname = "Hunting grounds"
+  , cfreq = [("caveSafari2", 1)]
   , cstairFreq = [("staircase outdoor", 1)]
   }
-safari3 = brawl
+safari3 = zoo
   { cfreq = [("caveSafari3", 1)]
   , cescapeGroup = Just "escape outdoor down"
   , cstairFreq = [("staircase outdoor", 1)]
