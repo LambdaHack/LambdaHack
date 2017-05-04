@@ -318,7 +318,7 @@ embedBenefit fleeVia aid pbags = do
           in if fleeVia `elem` [ViaEscape, ViaAnything]
                 && escapeOrGuard
                 && allExplored
-             then 10000
+             then 10
              else 0  -- don't escape prematurely
         Just (IK.Ascend up) ->  -- change levels sensibly, in teams
           let easier = up /= (fromEnum (blid b) > 0)
@@ -342,8 +342,11 @@ embedBenefit fleeVia aid pbags = do
           if fleeVia `elem` [ViaNothing, ViaAnything]
 
           then -- Actor uses the embedded item on himself, hence @effApply@.
-               sum $ mapMaybe (\iid -> benApply <$> EM.lookup iid discoBenefit)
-                              (EM.keys bag)
+               -- Let distance be the deciding factor and also prevent
+               -- overflow on 32-bit machines.
+               min 1000 $ sum
+               $ mapMaybe (\iid -> benApply <$> EM.lookup iid discoBenefit)
+                          (EM.keys bag)
           else 0
       interestingHere p =
         -- For speed and to avoid greedy AI loops, filter targets.
@@ -380,9 +383,8 @@ closestTriggers fleeVia aid = do
     let mix (benefit, ppbag) dist =
           let maxd = fromEnum (maxBound :: BfsDistance)
                      - fromEnum apartBfs
-              v | dist == 0 = maxd * maxd * 10
-                    -- if already adjacent, usually keep, but fuzz, to guard
-                | otherwise = (maxd * maxd) `div` dist
+              -- Bewqre of overflowing 32-bit integers here.
+              v = (maxd * 10) `div` (dist + 1)
           in (benefit * v, ppbag)
     in mapMaybe (\bpp@(_, (p, _)) ->
          mix bpp <$> accessBfs bfs p) vicAll
@@ -431,7 +433,10 @@ closestItems aid = do
       let mix pbag dist =
             let maxd = fromEnum (maxBound :: BfsDistance)
                        - fromEnum apartBfs
-                v = (maxd * maxd * maxd) `div` ((dist + 1) * (dist + 1))
+                -- Bewqre of overflowing 32-bit integers here.
+                -- Here distance is the only factor influencing frequency,
+                -- unless item not desirable, which is checked later on.
+                v = (maxd * 10) `div` (dist + 1)
             in (v, pbag)
       return $! mapMaybe (\(p, bag) ->
         mix (p, bag) <$> accessBfs bfs p) (EM.assocs lfloor)
