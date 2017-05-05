@@ -17,8 +17,7 @@ chrome-prof:
 	google-chrome --no-sandbox --js-flags="--logfile=%t.log --prof" dist/build/LambdaHack/LambdaHack.jsexe/index.html
 
 minific:
-	java -jar ~/Downloads/closure-compiler.jar dist/build/LambdaHack/LambdaHack.jsexe/all.js --compilation_level=ADVANCED_OPTIMIZATIONS > ~/Downloads/all.js
-
+	ccjs /dist/build/LambdaHack/LambdaHack.jsexe/all.js --compilation_level=ADVANCED_OPTIMIZATIONS --isolation_mode=IIFE --assume_function_wrapper --jscomp_off="*" > ~/Downloads/all.js
 
 frontendRaid:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode raid
