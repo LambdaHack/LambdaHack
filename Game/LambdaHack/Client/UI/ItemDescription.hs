@@ -93,12 +93,9 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
           hurtMeleeAspect :: IK.Aspect -> Bool
           hurtMeleeAspect IK.AddHurtMelee{} = True
           hurtMeleeAspect _ = False
-          noEffect :: IK.Effect -> Bool
-          noEffect IK.ELabel{} = True
-          noEffect _ = False
-          rawDmgEffect :: IK.Effect -> Bool
-          rawDmgEffect (IK.Burn _) = True
-          rawDmgEffect _ = False
+          elabel :: IK.Effect -> Bool
+          elabel IK.ELabel{} = True
+          elabel _ = False
           notDetail :: IK.Effect -> Bool
           notDetail IK.Explode{} = fullInfo >= 6
           notDetail _ = True
@@ -114,8 +111,7 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                 restAs = sort aspects
                 -- Effects are not sorted, because they fire in the order
                 -- specified.
-                (rawDmgEs, restEs) = partition rawDmgEffect
-                                   $ filter notDetail effects
+                restEs = filter notDetail effects
                 aes = if active
                       then map ppA restAs ++ map ppE restEs
                       else map ppE restEs ++ map ppA restAs
@@ -146,7 +142,7 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                          _ -> assert `failure` mtimeout
                 onSmash = if T.null onSmashTs then ""
                           else "(on smash:" <+> onSmashTs <> ")"
-                noEff = case find noEffect effects of
+                elab = case find elabel effects of
                   Just (IK.ELabel t) -> [t]
                   _ -> []
                 damage = case find hurtMeleeAspect aspects of
@@ -158,11 +154,10 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                   _ -> if jdamage itemBase <= 0
                        then ""
                        else tshow (jdamage itemBase)
-            in noEff ++ if fullInfo >= 5 || fullInfo >= 2 && null noEff
-                        then [periodicOrTimeout] ++ [damage]
-                             ++ map ppE rawDmgEs ++ aes
-                             ++ [onSmash | fullInfo >= 7]
-                        else damage : map ppE rawDmgEs
+            in elab ++ if fullInfo >= 6 || fullInfo >= 2 && null elab
+                       then [periodicOrTimeout] ++ [damage] ++ aes
+                            ++ [onSmash | fullInfo >= 7]
+                       else [damage]
           aets = case itemAspect of
             Just aspectRecord ->
               splitAE (aspectRecordToList aspectRecord) (IK.ieffects itemKind)
@@ -218,7 +213,7 @@ partItemWsRanged :: FactionId -> FactionDict
 partItemWsRanged side factionD = partItemWsR side factionD True
 
 partItemShortAW :: FactionId -> FactionDict
-           -> CStore -> Time -> ItemFull -> MU.Part
+                -> CStore -> Time -> ItemFull -> MU.Part
 partItemShortAW side factionD c localTime itemFull =
   let (_, unique, name, _) =
         partItemN side factionD False 4 4 c localTime itemFull
