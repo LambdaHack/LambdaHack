@@ -141,7 +141,6 @@ deathBody pos = Animation $ map (mzipSingleton pos)
   , cSym Red '%'
   , cSym Red ';'
   , cSym Red ';'
-  , cSym Red ','
   ]
 
 -- | Death animation for an organic body, short version (e.g., for enemies).
