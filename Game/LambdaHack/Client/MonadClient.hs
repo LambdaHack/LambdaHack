@@ -70,12 +70,13 @@ removeServerSave = do
   -- Hack: assume the same prefix for client as for the server.
   prefix <- getsClient $ ssavePrefixCli . sdebugCli
   dataDir <- liftIO appDataDir
-  let serverSaveFile = dataDir
-                       </> "saves"
-                       </> prefix
-                       <.> serverSaveName
-  bSer <- liftIO $ doesFileExist serverSaveFile
-  when bSer $ liftIO $ renameFile serverSaveFile (serverSaveFile <.> "bkp")
+  let serverSaveFile bkp = dataDir
+                           </> "saves"
+                           </> bkp
+                           <> prefix
+                           <.> serverSaveName
+  bSer <- liftIO $ doesFileExist (serverSaveFile "")
+  when bSer $ liftIO $ renameFile (serverSaveFile "") (serverSaveFile "bkp.")
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a

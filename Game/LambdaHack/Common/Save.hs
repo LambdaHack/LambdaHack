@@ -91,8 +91,8 @@ restoreGame cops fileName = do
   -- Create user data directory and copy files, if not already there.
   dataDir <- appDataDir
   tryCreateDir dataDir
-  let path = dataDir </> "saves" </> fileName
-  saveExists <- doesFileExist path
+  let path bkp = dataDir </> "saves" </> bkp <> fileName
+  saveExists <- doesFileExist (path "")
   -- If the savefile exists but we get IO or decoding errors,
   -- we show them and start a new game. If the savefile was randomly
   -- corrupted or made read-only, that should solve the problem.
@@ -100,11 +100,11 @@ restoreGame cops fileName = do
   -- terminate the program with an exception.
   res <- Ex.try $
     if saveExists then do
-      (vExevLib2, s) <- strictDecodeEOF path
+      (vExevLib2, s) <- strictDecodeEOF (path "")
       if vExevLib2 == vExevLib cops
       then return $ Just s
       else do
-        let msg = "Savefile" <+> T.pack path <+> "from old version"
+        let msg = "Savefile" <+> T.pack (path "") <+> "from old version"
                   <+> showVersion2 vExevLib2
                   <+> "detected while trying to restore"
                   <+> showVersion2 (vExevLib cops)
@@ -116,7 +116,7 @@ restoreGame cops fileName = do
         let msg = "Restore failed. The old file moved aside. The error message is:"
                   <+> (T.unwords . T.lines) (tshow e)
         delayPrint msg
-        renameFile path (path <.> "bkp")
+        renameFile (path "") (path "bkp.")
         return Nothing
   either handler return res
 

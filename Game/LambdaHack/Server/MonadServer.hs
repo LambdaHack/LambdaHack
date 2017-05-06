@@ -105,11 +105,11 @@ restoreScore Kind.COps{corule} = do
     let stdRuleset = Kind.stdRuleset corule
         scoresFile = rscoresFile stdRuleset
     dataDir <- liftIO appDataDir
-    let path = dataDir </> scoresFile
-    configExists <- liftIO $ doesFileExist path
+    let path bkp = dataDir </> bkp <> scoresFile
+    configExists <- liftIO $ doesFileExist (path "")
     res <- liftIO $ Ex.try $
       if configExists then do
-        (vlib2, s) <- strictDecodeEOF path
+        (vlib2, s) <- strictDecodeEOF (path "")
         if vlib2 == Self.version
         then return $ Just s
         else do
@@ -121,7 +121,7 @@ restoreScore Kind.COps{corule} = do
           let msg = "High score restore failed. The old file moved aside. The error message is:"
                     <+> (T.unwords . T.lines) (tshow e)
           serverPrint msg
-          liftIO $ renameFile path (path <.> "bkp")
+          liftIO $ renameFile (path "") (path "bkp.")
           return Nothing
     either handler return res
   maybe (return HighScore.empty) return mscore
