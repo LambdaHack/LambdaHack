@@ -28,10 +28,10 @@ standardKeys = KeyKind
       -- mode) first.
 
       -- Main Menu
-      [ ("c", ([CmdMainMenu], "enter challenges menu", ChallengesMenu))
+      [ ("c", ([CmdMainMenu], "enter challenges menu>", ChallengesMenu))
       , ("n", ([CmdMainMenu], "start new game", GameRestart))
       , ("x", ([CmdMainMenu], "save and exit", GameExit))
-      , ("m", ([CmdMainMenu], "enter settings menu", SettingsMenu))
+      , ("m", ([CmdMainMenu], "enter settings menu>", SettingsMenu))
       , ("a", ([CmdMainMenu], "automate faction", Automate))
       , ("?", ([CmdMainMenu], "see command Help", Help))
       , ("Escape", ([CmdMainMenu], "back to playing", Cancel))
