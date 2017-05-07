@@ -63,7 +63,6 @@ actionStrategy :: forall m. MonadClient m
 {-# INLINE actionStrategy #-}
 actionStrategy aid retry = do
   body <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid body) . sfactionD
   scondInMelee <- getsClient scondInMelee
   let condInMelee = case scondInMelee EM.! blid body of
         Just cond -> cond
@@ -183,8 +182,9 @@ actionStrategy aid retry = do
             <$> meleeBlocker aid  -- only melee blocker
           , condAnyFoeAdj  -- if foes, don't displace, otherwise friends:
             || not (abInMaxSkill AbDisplace)  -- displace friends, if possible
-               && fleaderMode (gplayer fact) == LeaderNull  -- not restrained
                && condAimEnemyPresent )  -- excited
+                    -- So animals block each other until hero comes and then
+                    -- the stronger makes a show for him and kills the weaker.
         , ( [AbAlter], (toAny :: ToAny 'AbAlter)
             <$> trigger aid ViaNothing
           , not condInMelee  -- don't incur overhead
@@ -574,9 +574,9 @@ meleeBlocker aid = do
                   && EM.findWithDefault 0 AbDisplace actorSk <= 0 ->
                return reject
              | isAtWar fact (bfid body2)  -- at war with us, hit, not disp
-               || bfid body2 == bfid b  -- don't start a war
+               || (bfid body2 == bfid b
+                   || isAllied fact (bfid body2)) -- don't start a war
                   && EM.findWithDefault 0 AbDisplace actorSk <= 0  -- can't disp
-                  && fleaderMode (gplayer fact) == LeaderNull  -- no restrain
                   && EM.findWithDefault 0 AbMove actorSk > 0  -- blocked move
                   && 3 * bhp body2 < bhp b  -- only get rid of weak friends
                   && bspeed body2 ar2 <= bspeed b ar -> do

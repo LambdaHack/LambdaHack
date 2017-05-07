@@ -377,8 +377,8 @@ rosterSafariSurvival = rosterSafari
                  , ( playerHunamConvict
                    , [(-4, 3, "civilian")] )
                  , ( playerAnimalMagnificent
-                     { fleaderMode = LeaderUI $ AutoLeader True False
-                     , fhasUI = True }
+                       { fleaderMode = LeaderUI $ AutoLeader True False
+                       , fhasUI = True }
                    , [(-7, 20, "mobile animal")] )
                  , ( playerAnimalExquisite
                    , [(-10, 30, "mobile animal")] ) ] }
