@@ -11,7 +11,7 @@ module Game.LambdaHack.Server.ProtocolM
     -- * Protocol
   , putDict, sendUpdate, sendSfx, sendQueryAI, sendQueryUI
     -- * Assorted
-  , killAllClients, childrenServer, updateConn, saveName, tryRestore
+  , killAllClients, childrenServer, updateConn, tryRestore
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
 #endif
@@ -72,9 +72,6 @@ readQueueUI requestS = liftIO $ takeMVar requestS
 newQueue :: IO (CliSerQueue a)
 newQueue = newEmptyMVar
 
-saveName :: String
-saveName = serverSaveName
-
 tryRestore :: MonadServerReadRequest m
            => Kind.COps -> DebugModeSer
            -> m (Maybe (State, StateServer))
@@ -83,7 +80,7 @@ tryRestore cops@Kind.COps{corule} sdebugSer = do
   if bench then return Nothing
   else do
     let prefix = ssavePrefixSer sdebugSer
-        fileName = prefix <.> saveName
+        fileName = prefix <.> Save.saveNameSer
     res <- liftIO $ Save.restoreGame cops fileName
     let stdRuleset = Kind.stdRuleset corule
         cfgUIName = rcfgUIName stdRuleset

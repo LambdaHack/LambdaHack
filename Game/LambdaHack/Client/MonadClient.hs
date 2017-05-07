@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.MonadClient
                     )
     -- * Assorted primitives
   , getClient, putClient
-  , debugPossiblyPrint, saveName, removeServerSave
+  , debugPossiblyPrint, removeServerSave
   , rndToAction, rndToActionForget
   ) where
 
@@ -25,11 +25,11 @@ import qualified System.Random as R
 
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.ClientOptions
-import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.File
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Random
+import qualified Game.LambdaHack.Common.Save as Save
 
 class MonadStateRead m => MonadClient m where
   getsClient    :: (StateClient -> a) -> m a
@@ -55,14 +55,6 @@ debugPossiblyPrint t = do
     T.hPutStrLn stdout t
     hFlush stdout
 
-saveName :: FactionId -> String
-saveName side =
-  let n = fromEnum side  -- we depend on the numbering hack to number saves
-  in (if n > 0
-      then "human_" ++ show n
-      else "computer_" ++ show (-n))
-     ++ ".sav"
-
 -- | Assuming the client runs on the same machine and for the same
 -- user as the server, move the server savegame out of the way.
 removeServerSave :: MonadClient m => m ()
@@ -74,7 +66,7 @@ removeServerSave = do
                            </> "saves"
                            </> bkp
                            <> prefix
-                           <.> serverSaveName
+                           <.> Save.saveNameSer
   bSer <- liftIO $ doesFileExist (serverSaveFile "")
   when bSer $ liftIO $ renameFile (serverSaveFile "") (serverSaveFile "bkp.")
 

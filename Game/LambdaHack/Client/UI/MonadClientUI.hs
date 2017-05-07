@@ -390,7 +390,7 @@ tryRestore = do
   else do
     side <- getsClient sside
     prefix <- getsClient $ ssavePrefixCli . sdebugCli
-    let fileName = prefix <.> saveName side
+    let fileName = prefix <.> Save.saveNameCli side
     res <- liftIO $ Save.restoreGame cops fileName
     let stdRuleset = Kind.stdRuleset corule
         cfgUIName = rcfgUIName stdRuleset

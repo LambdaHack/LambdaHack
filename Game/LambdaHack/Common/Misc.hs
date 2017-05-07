@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.Misc
     -- * Assorted
   , makePhrase, makeSentence
   , normalLevelBound, GroupName, toGroupName, Freqs, breturn
-  , serverSaveName, Rarity, validateRarity
+  , Rarity, validateRarity
   , Tactic(..), describeTactic, appDataDir
   , xM, minusM, minusM1, oneM
   ) where
@@ -47,9 +47,6 @@ import Game.LambdaHack.Common.Point
 makePhrase, makeSentence :: [MU.Part] -> Text
 makePhrase = MU.makePhrase MU.defIrregular
 makeSentence = MU.makeSentence MU.defIrregular
-
-serverSaveName :: String
-serverSaveName = "server.sav"
 
 -- | Level bounds.
 normalLevelBound :: (Int, Int)

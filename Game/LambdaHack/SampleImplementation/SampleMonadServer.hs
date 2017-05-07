@@ -20,10 +20,9 @@ import qualified Control.Exception as Ex
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict hiding (State)
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.Text.IO as T
 import System.FilePath
-
---import qualified Data.Text.IO as T
---import System.IO (hFlush, stdout)
+import System.IO (hFlush, stdout)
 
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.MonadAtomic
@@ -32,7 +31,9 @@ import Game.LambdaHack.Client
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Common.ClientOptions
+import Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
@@ -114,7 +115,8 @@ executorSer cops copsClient sdebugNxtCmdline = do
   -- Wire together game content, the main loop of game clients
   -- and the game server loop.
   let m = loopSer sdebugNxt sconfig executorClient
-      stateToFileName (_, ser) = ssavePrefixSer (sdebugSer ser) <.> saveName
+      stateToFileName (_, ser) =
+        ssavePrefixSer (sdebugSer ser) <.> Save.saveNameSer
       totalState serToSave = SerState
         { serState = emptyState cops
         , serServer = emptyStateServer
@@ -123,13 +125,26 @@ executorSer cops copsClient sdebugNxtCmdline = do
         }
       exe = evalStateT (runSerImplementation m) . totalState
       exeWithSaves = Save.wrapInSaves cops stateToFileName exe
+      defPrefix = ssavePrefixSer defDebugModeSer
+      bkpOneSave name = do
+        dataDir <- appDataDir
+        let path bkp = dataDir </> "saves" </> bkp <> name
+        b <- doesFileExist (path "")
+        when b $ renameFile (path "") (path "bkp.")
+      bkpAllSaves = do
+        T.hPutStrLn stdout "The game crashed, so savefiles are moved aside."
+        bkpOneSave $ defPrefix <.> Save.saveNameSer
+        forM_ [-99..99] $ \n ->
+          bkpOneSave $ defPrefix <.> Save.saveNameCli (toEnum n)
   -- Wait for clients to exit even in case of server crash
   -- (or server and client crash), which gives them time to save
   -- and report their own inconsistencies, if any.
   Ex.handle (\(ex :: Ex.SomeException) -> do
 --               T.hPutStrLn stdout "Server got exception, waiting for clients."
 --               hFlush stdout
-               threadDelay 1000000  -- let clients report their errors
+               threadDelay 1000000  -- let clients report their errors and save
+               when (ssavePrefixSer sdebugNxt == defPrefix) bkpAllSaves
+               hFlush stdout
                Ex.throw ex)  -- crash eventually, which kills clients
             exeWithSaves
 --  T.hPutStrLn stdout "Server exiting, waiting for clients."

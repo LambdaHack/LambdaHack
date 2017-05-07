@@ -35,7 +35,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Server.ProtocolM hiding (saveName)
+import Game.LambdaHack.Server.ProtocolM
 
 data CliState = CliState
   { cliState   :: !State              -- ^ current global state
@@ -140,7 +140,7 @@ executorCli :: CliImplementation ()
             -> IO ()
 executorCli m cliSession cops fid cliDict =
   let stateToFileName (_, cli, _) =
-        ssavePrefixCli (sdebugCli cli) <.> saveName (sside cli)
+        ssavePrefixCli (sdebugCli cli) <.> Save.saveNameCli (sside cli)
       totalState cliToSave = CliState
         { cliState = emptyState cops
         , cliClient = emptyStateClient fid

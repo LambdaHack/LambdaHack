@@ -1,6 +1,6 @@
 -- | Saving and restoring server game state.
 module Game.LambdaHack.Common.Save
-  ( ChanSave, saveToChan, wrapInSaves, restoreGame
+  ( ChanSave, saveToChan, wrapInSaves, restoreGame, saveNameCli, saveNameSer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , loopSave
@@ -28,7 +28,7 @@ import qualified System.Random as R
 
 import Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Misc (appDataDir)
+import Game.LambdaHack.Common.Misc (FactionId, appDataDir)
 import Game.LambdaHack.Content.RuleKind
 
 type ChanSave a = MVar (Maybe a)
@@ -136,3 +136,14 @@ delayPrint t = do
   threadDelay delay  -- try not to interleave saves with other clients
   T.hPutStrLn stdout t
   hFlush stdout
+
+saveNameCli :: FactionId -> String
+saveNameCli side =
+  let n = fromEnum side  -- we depend on the numbering hack to number saves
+  in (if n > 0
+      then "human_" ++ show n
+      else "computer_" ++ show (-n))
+     ++ ".sav"
+
+saveNameSer :: String
+saveNameSer = "server.sav"
