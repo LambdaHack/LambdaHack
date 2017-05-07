@@ -9,8 +9,7 @@ module Game.LambdaHack.Client.MonadClient
                     )
     -- * Assorted primitives
   , getClient, putClient
-  , debugPossiblyPrint, removeServerSave
-  , rndToAction, rndToActionForget
+  , debugPossiblyPrint, rndToAction, rndToActionForget
   ) where
 
 import Prelude ()
@@ -19,17 +18,13 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.Text.IO as T
-import System.FilePath
 import System.IO (hFlush, stdout)
 import qualified System.Random as R
 
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.ClientOptions
-import Game.LambdaHack.Common.File
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Random
-import qualified Game.LambdaHack.Common.Save as Save
 
 class MonadStateRead m => MonadClient m where
   getsClient    :: (StateClient -> a) -> m a
@@ -54,21 +49,6 @@ debugPossiblyPrint t = do
   when sdbgMsgCli $ liftIO $  do
     T.hPutStrLn stdout t
     hFlush stdout
-
--- | Assuming the client runs on the same machine and for the same
--- user as the server, move the server savegame out of the way.
-removeServerSave :: MonadClient m => m ()
-removeServerSave = do
-  -- Hack: assume the same prefix for client as for the server.
-  prefix <- getsClient $ ssavePrefixCli . sdebugCli
-  dataDir <- liftIO appDataDir
-  let serverSaveFile bkp = dataDir
-                           </> "saves"
-                           </> bkp
-                           <> prefix
-                           <.> Save.saveNameSer
-  bSer <- liftIO $ doesFileExist (serverSaveFile "")
-  when bSer $ liftIO $ renameFile (serverSaveFile "") (serverSaveFile "bkp.")
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a

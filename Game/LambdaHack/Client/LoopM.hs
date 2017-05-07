@@ -86,10 +86,7 @@ loopCli copsClient sconfig sdebugCli = do
       when hasUI $ msgAdd $
         "Ignoring an old savefile and starting a new game."
     (False, RespUpdAtomic UpdResume{}) -> do
-      removeServerSave
-      error $ T.unpack $
-        "Savefile of client" <+> tshow side
-        <+> "not usable. Removing server savefile. Please restart now."
+      error $ T.unpack $ "Savefile of client" <+> tshow side <+> "not usable."
     (False, RespUpdAtomic UpdRestart{}) -> return ()
     _ -> assert `failure` "unexpected command" `twith` (side, restored, cmd1)
   handleResponse cmd1
