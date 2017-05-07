@@ -110,7 +110,8 @@ playerMonsterTourist =
                     , fleaderMode = LeaderUI $ AutoLeader False False }
 
 playerHunamConvict =
-  playerCivilian {fname = "Hunam Convict"}
+  playerCivilian { fname = "Hunam Convict"
+                 , fleaderMode = LeaderAI $ AutoLeader True False }
 
 playerAnimalMagnificent =
   playerAnimal { fname = "Animal Magnificent Specimen Variety"
