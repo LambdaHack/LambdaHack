@@ -201,8 +201,9 @@ drawFrameContent drawnLevelId = do
 
 drawFramePath :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFramePath drawnLevelId = do
+ SessionUI{saimMode} <- getSession
+ if isNothing saimMode then return $! FrameForall $ \_ -> return () else do
   Kind.COps{coTileSpeedup} <- getsState scops
-  SessionUI{saimMode} <- getSession
   StateClient{seps} <- getClient
   Level{lxsize, lysize, ltile=PointArray.Array{avector}}
     <- getLevel drawnLevelId
@@ -218,9 +219,13 @@ drawFramePath drawnLevelId = do
                 then []
                 else fromMaybe [] $ bla lxsize lysize seps bpos xhairPos
     _ -> return []
-  mpath <- maybe (return Nothing) (\aid ->
-    Just <$> getCachePath aid xhairPos) mleader
-  let lpath = if null bline || isNothing saimMode then []
+  mpath <- maybe (return Nothing) (\aid -> Just <$> do
+    mtgtMPath <- getsClient $ EM.lookup aid . stargetD
+    case mtgtMPath of
+      Just TgtAndPath{tapPath=tapPath@AndPath{pathGoal}}
+        | pathGoal == xhairPos -> return tapPath
+      _ -> getCachePath aid xhairPos) mleader
+  let lpath = if null bline then []
               else maybe [] (\mp -> case mp of
                 NoPath -> []
                 AndPath {pathList} -> pathList) mpath
@@ -258,7 +263,7 @@ drawFramePath drawnLevelId = do
               VM.write v (pI + lxsize) w
         mapM_ g l
       upd :: FrameForall
-      upd = FrameForall $ \v -> when (isJust saimMode) $ do
+      upd = FrameForall $ \v -> do
         mapVTL (acOnPathOrLine ';') lpath v
         mapVTL (acOnPathOrLine '*') shiftedLine v  -- overwrites path
   return upd
