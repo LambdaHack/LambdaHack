@@ -30,11 +30,7 @@ import Control.Exception.Assert.Sugar
 import Data.Text (Text)
 
 import qualified Data.Text as T (pack)
-import qualified NLP.Miniutter.English as MU ((<+>))
-
-infixr 6 <+>
-(<+>) :: Text -> Text -> Text
-(<+>) = (MU.<+>)
+import NLP.Miniutter.English ((<+>))
 
 -- | Show and pack the result.
 tshow :: Show a => a -> Text
