@@ -507,6 +507,7 @@ restartGame updConn loop mgameMode = do
 writeSaveAll :: (MonadAtomic m, MonadServer m) => Bool -> m ()
 writeSaveAll uiRequested = do
   bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
-  when (uiRequested || not bench) $ do
+  noConfirmsGame <- isNoConfirmsGame
+  when (uiRequested || not bench && not noConfirmsGame) $ do
     execUpdAtomic UpdWriteSave
     saveServer
