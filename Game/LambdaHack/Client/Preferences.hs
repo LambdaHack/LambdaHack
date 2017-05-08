@@ -44,7 +44,8 @@ effectToBenefit cops fact eff =
     IK.EqpSlot _ -> delta 0
     IK.Burn d -> delta $ -(min 1500 $ 15 * Dice.meanDice d)
       -- often splash damage, armor doesn't block (but HurtMelee doesn't boost)
-    IK.Explode _ -> delta 0  -- depends on explosion
+    IK.Explode _ -> delta 1  -- depends on explosion, but usually good,
+                             -- unless under OnSmash, but they are ignored
     IK.RefillHP p ->
       delta $ if p > 0 then min 2000 (20 * p) else max (-1000) (10 * p)
         -- one HP healed is worth a bit more than one HP dealed to enemy,
