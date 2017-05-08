@@ -1,7 +1,7 @@
 -- | A set of Slideshow monad operations.
 module Game.LambdaHack.Client.UI.SlideshowM
   ( overlayToSlideshow, reportToSlideshow, reportToSlideshowKeep
-  , displaySpaceEsc, displayMore, displayYesNo, getConfirms
+  , displaySpaceEsc, displayMore, displayMoreKeep, displayYesNo, getConfirms
   , displayChoiceScreen
   ) where
 
@@ -45,8 +45,8 @@ reportToSlideshowKeep keys = do
   lidV <- viewedLevelUI
   Level{lxsize, lysize} <- getLevel lidV
   report <- getReportUI
-  -- Don't do @recordHistory@, it will be done later on, after running
-  -- inspects messages to decide if stopping is needed.
+  -- Don't do @recordHistory@; the message is important, but related
+  -- to the messages that come after, so should be shown together.
   return $! splitOverlay lxsize (lysize + 1) report keys ([], [])
 
 -- | Display a message. Return value indicates if the player wants to continue.
@@ -65,6 +65,12 @@ displayMore :: MonadClientUI m => ColorMode -> Text -> m ()
 displayMore dm prompt = do
   promptAdd prompt
   slides <- reportToSlideshow [K.spaceKM]
+  void $ getConfirms dm [K.spaceKM, K.escKM] slides
+
+displayMoreKeep :: MonadClientUI m => ColorMode -> Text -> m ()
+displayMoreKeep dm prompt = do
+  promptAdd prompt
+  slides <- reportToSlideshowKeep [K.spaceKM]
   void $ getConfirms dm [K.spaceKM, K.escKM] slides
 
 -- | Print a yes/no question and return the player's answer. Use black

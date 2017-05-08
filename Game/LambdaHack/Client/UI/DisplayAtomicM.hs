@@ -722,7 +722,8 @@ quitFactionUI fid toSt = do
     (Just status, Just pp) -> do
       isNoConfirms <- isNoConfirmsGame
       go <- if isNoConfirms then return False else displaySpaceEsc ColorFull ""
-      recordHistory  -- we are going to exit or restart, so record and clear
+      when (side == fid) recordHistory
+        -- we are going to exit or restart, so record and clear, but only once
       when go $ do
         lidV <- viewedLevelUI
         Level{lxsize, lysize} <- getLevel lidV
@@ -929,7 +930,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             let verb = "be no longer controlled by"
             msgAdd $ makeSentence
               [MU.SubjectVerbSg subject verb, MU.Text fidName]
-            when isOurAlive $ displayMore ColorFull ""
+            when isOurAlive $ displayMoreKeep ColorFull ""
           else do
             -- After domination, possibly not seen, if actor (already) not ours.
             fidSourceName <- getsState $ gname . (EM.! fidSource) . sfactionD
