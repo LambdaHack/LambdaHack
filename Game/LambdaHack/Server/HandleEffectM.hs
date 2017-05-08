@@ -480,17 +480,18 @@ dominateFidSfx fid target = do
   if canMove && not (bproj tb) then do
     let execSfx = execSfxAtomic $ SfxEffect fid target IK.Dominate 0
     execSfx  -- if actor ours, possibly the last occasion to see him
-    dominateFid fid target
-    execSfx  -- see the actor as theirs, unless position not visible
+    gameOver <- dominateFid fid target
+    unless gameOver execSfx  -- see actor as theirs, unless position not visible
     return True
   else
     return False
 
-dominateFid :: (MonadAtomic m, MonadServer m) => FactionId -> ActorId -> m ()
+dominateFid :: (MonadAtomic m, MonadServer m) => FactionId -> ActorId -> m Bool
 dominateFid fid target = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   tb0 <- getsState $ getActorBody target
-  deduceKilled target  -- the actor body exists and his items are not dropped
+  -- At this point the actor's body exists and his items are not dropped.
+  gameOver <- deduceKilled target
   electLeader (bfid tb0) (blid tb0) target
   fact <- getsState $ (EM.! bfid tb0) . sfactionD
   -- Prevent the faction's stash from being lost in case they are not spawners.
@@ -510,26 +511,30 @@ dominateFid fid target = do
   btime <-
     getsServer $ (EM.! target) . (EM.! blid tb) . (EM.! bfid tb) . sactorTime
   execUpdAtomic $ UpdLoseActor target tb ais
-  let bNew = tb { bfid = fid
-                , bcalm = max (xM 10) $ xM (aMaxCalm ar) `div` 2
-                , bhp = min (xM $ aMaxHP ar) $ bhp tb + xM 10
-                , borgan = borganNoImpression}
-  aisNew <- getsState $ getCarriedAssocs bNew
-  execUpdAtomic $ UpdSpotActor target bNew aisNew
-  -- Add some nostalgia for the old faction.
-  void $ effectCreateItem (Just (bfid tb, 10)) target COrgan
-                          "impressed" IK.TimerNone
-  modifyServer $ \ser ->
-    ser {sactorTime = updateActorTime fid (blid tb) target btime
-                      $ sactorTime ser}
-  let discoverSeed (iid, cstore) = do
-        seed <- getsServer $ (EM.! iid) . sitemSeedD
-        let c = CActor target cstore
-        execUpdAtomic $ UpdDiscoverSeed c iid seed
-      aic = getCarriedIidCStore tb
-  mapM_ discoverSeed aic
-  -- Focus on the dominated actor, by making him a leader.
-  supplantLeader fid target
+  if gameOver
+  then return True  -- avoid spam
+  else do
+    let bNew = tb { bfid = fid
+                  , bcalm = max (xM 10) $ xM (aMaxCalm ar) `div` 2
+                  , bhp = min (xM $ aMaxHP ar) $ bhp tb + xM 10
+                  , borgan = borganNoImpression}
+    aisNew <- getsState $ getCarriedAssocs bNew
+    execUpdAtomic $ UpdSpotActor target bNew aisNew
+    -- Add some nostalgia for the old faction.
+    void $ effectCreateItem (Just (bfid tb, 10)) target COrgan
+                            "impressed" IK.TimerNone
+    modifyServer $ \ser ->
+      ser {sactorTime = updateActorTime fid (blid tb) target btime
+                        $ sactorTime ser}
+    let discoverSeed (iid, cstore) = do
+          seed <- getsServer $ (EM.! iid) . sitemSeedD
+          let c = CActor target cstore
+          execUpdAtomic $ UpdDiscoverSeed c iid seed
+        aic = getCarriedIidCStore tb
+    mapM_ discoverSeed aic
+    -- Focus on the dominated actor, by making him a leader.
+    supplantLeader fid target
+    return False
 
 -- ** Impress
 

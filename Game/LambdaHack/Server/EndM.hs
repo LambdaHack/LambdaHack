@@ -63,7 +63,8 @@ dieSer aid b = do
     trunk <- getsState $ getItemBody $ btrunk b
     let KindMean{kmKind} = discoKind EM.! jkindIx trunk
     execUpdAtomic $ UpdRecordKill aid kmKind 1
-    deduceKilled aid  -- the actor body exists and his items are not dropped
+    -- At this point the actor's body exists and his items are not dropped.
+    void $ deduceKilled aid
     electLeader (bfid b) (blid b) aid
     fact <- getsState $ (EM.! bfid b) . sfactionD
     -- Prevent faction's stash from being lost in case they are not spawners.
