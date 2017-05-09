@@ -517,15 +517,15 @@ dominateFid fid target = do
                 , borgan = borganNoImpression}
   aisNew <- getsState $ getCarriedAssocs bNew
   execUpdAtomic $ UpdSpotActor target bNew aisNew
+  modifyServer $ \ser ->
+    ser {sactorTime = updateActorTime fid (blid tb) target btime
+                      $ sactorTime ser}
   if gameOver
   then return True  -- avoid spam
   else do
     -- Add some nostalgia for the old faction.
     void $ effectCreateItem (Just (bfid tb, 10)) target COrgan
                             "impressed" IK.TimerNone
-    modifyServer $ \ser ->
-      ser {sactorTime = updateActorTime fid (blid tb) target btime
-                        $ sactorTime ser}
     let discoverSeed (iid, cstore) = do
           seed <- getsServer $ (EM.! iid) . sitemSeedD
           let c = CActor target cstore
