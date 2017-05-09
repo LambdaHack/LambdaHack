@@ -592,6 +592,8 @@ destroyActorUI destroy aid b = do
             TPoint (TEnemyPos a permit) (blid b) (bpos b)
         _ -> tgt
   modifySession $ \sess -> sess {sxhair = affect $ sxhair sess}
+  when (isNothing $ btrajectory b) $
+    modifySession $ \sess -> sess {slastLost = ES.insert aid $ slastLost sess}
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let gameOver = isJust $ gquit fact
@@ -608,8 +610,6 @@ destroyActorUI destroy aid b = do
           -- on a different level than the new one:
           clearAimMode
     -- If pushed, animate spotting again, to draw attention to pushing.
-    when (isNothing $ btrajectory b) $
-      modifySession $ \sess -> sess {slastLost = ES.insert aid $ slastLost sess}
     markDisplayNeeded (blid b)
 
 moveActor :: MonadClientUI m => ActorId -> Point -> Point -> m ()

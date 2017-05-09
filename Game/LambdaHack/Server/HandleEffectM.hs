@@ -511,15 +511,15 @@ dominateFid fid target = do
   btime <-
     getsServer $ (EM.! target) . (EM.! blid tb) . (EM.! bfid tb) . sactorTime
   execUpdAtomic $ UpdLoseActor target tb ais
+  let bNew = tb { bfid = fid
+                , bcalm = max (xM 10) $ xM (aMaxCalm ar) `div` 2
+                , bhp = min (xM $ aMaxHP ar) $ bhp tb + xM 10
+                , borgan = borganNoImpression}
+  aisNew <- getsState $ getCarriedAssocs bNew
+  execUpdAtomic $ UpdSpotActor target bNew aisNew
   if gameOver
   then return True  -- avoid spam
   else do
-    let bNew = tb { bfid = fid
-                  , bcalm = max (xM 10) $ xM (aMaxCalm ar) `div` 2
-                  , bhp = min (xM $ aMaxHP ar) $ bhp tb + xM 10
-                  , borgan = borganNoImpression}
-    aisNew <- getsState $ getCarriedAssocs bNew
-    execUpdAtomic $ UpdSpotActor target bNew aisNew
     -- Add some nostalgia for the old faction.
     void $ effectCreateItem (Just (bfid tb, 10)) target COrgan
                             "impressed" IK.TimerNone
