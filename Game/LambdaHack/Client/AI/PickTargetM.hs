@@ -327,7 +327,9 @@ targetStrategy aid = do
                && a `notElem` map fst nearbyFoes  -- old one not close enough
                || blid body /= blid b  -- wrong level
                || actorDying body  -- foe already dying
-               || permit && condInMelee ->  -- at melee, stop following
+               || permit
+                  && (condInMelee  -- in melee, stop following
+                      || mleader == Just aid) ->  -- a leader, never follow
                pickNewTarget
              | bpos body == pathGoal ->
                return $! returN "TEnemy" tap
@@ -355,7 +357,10 @@ targetStrategy aid = do
             pickNewTarget  -- prefer close foes to anything else
           TEnemyPos _ permit  -- chase last position even if foe hides
             | bpos b == pos -> tellOthersNothingHere pos
-            | permit && condInMelee -> pickNewTarget  -- melee, stop following
+            | permit
+              && (condInMelee  -- in melee, stop following
+                  || mleader == Just aid) ->  -- a leader, never follow
+              pickNewTarget  -- melee, stop following
             | otherwise -> return $! returN "TEnemyPos" tap
           -- Below we check the target could not be picked again in
           -- pickNewTarget (e.g., an item got picked up by our teammate)
