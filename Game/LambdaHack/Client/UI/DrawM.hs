@@ -428,7 +428,8 @@ drawFrameStatus drawnLevelId = do
                        then "This faction never picks a leader"
                        else "Waiting for a team member to spawn"
             leaderName =
-              maybe fallback (\body -> "Leader:" <+> bname body) mbodyUI
+              maybe fallback (\body ->
+                "Leader:" <+> trimTgtDesc n (bname body)) mbodyUI
             tgtBlurb = maybe leaderName (\t ->
               "Target:" <+> trimTgtDesc n t) mtgtDesc
         case (sitemSel, mleader) of
