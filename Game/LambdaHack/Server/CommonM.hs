@@ -191,19 +191,16 @@ keepArenaFact fact = fleaderMode (gplayer fact) /= LeaderNull
 -- We assume the actor in the second argument has HP <= 0 or is going to be
 -- dominated right now. Even if the actor is to be dominated,
 -- @bfid@ of the actor body is still the old faction.
-deduceKilled :: (MonadAtomic m, MonadServer m) => ActorId -> m Bool
+deduceKilled :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 deduceKilled aid = do
   Kind.COps{corule} <- getsState scops
   body <- getsState $ getActorBody aid
   let firstDeathEnds = rfirstDeathEnds $ Kind.stdRuleset corule
   fact <- getsState $ (EM.! bfid body) . sfactionD
-  if fneverEmpty $ gplayer fact then do
+  when (fneverEmpty $ gplayer fact) $ do
     actorsAlive <- anyActorsAlive (bfid body) aid
-    if not actorsAlive || firstDeathEnds then do
+    when (not actorsAlive || firstDeathEnds) $
       deduceQuits (bfid body) $ Status Killed (fromEnum $ blid body) Nothing
-      return True
-    else return False
-  else return False
 
 anyActorsAlive :: MonadServer m => FactionId -> ActorId -> m Bool
 anyActorsAlive fid aid = do

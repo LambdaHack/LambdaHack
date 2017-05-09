@@ -481,7 +481,8 @@ dominateFidSfx fid target = do
     let execSfx = execSfxAtomic $ SfxEffect fid target IK.Dominate 0
     execSfx  -- if actor ours, possibly the last occasion to see him
     gameOver <- dominateFid fid target
-    unless gameOver execSfx  -- see actor as theirs, unless position not visible
+    unless gameOver  -- avoid spam
+      execSfx  -- see the actor as theirs, unless position not visible
     return True
   else
     return False
@@ -491,7 +492,7 @@ dominateFid fid target = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   tb0 <- getsState $ getActorBody target
   -- At this point the actor's body exists and his items are not dropped.
-  gameOver <- deduceKilled target
+  deduceKilled target
   electLeader (bfid tb0) (blid tb0) target
   fact <- getsState $ (EM.! bfid tb0) . sfactionD
   -- Prevent the faction's stash from being lost in case they are not spawners.
@@ -520,6 +521,12 @@ dominateFid fid target = do
   modifyServer $ \ser ->
     ser {sactorTime = updateActorTime fid (blid tb) target btime
                       $ sactorTime ser}
+  factionD <- getsState sfactionD
+  let inGame fact2 = case gquit fact2 of
+        Nothing -> True
+        Just Status{stOutcome=Camping} -> True
+        _ -> False
+      gameOver = not $ any inGame $ EM.elems factionD
   if gameOver
   then return True  -- avoid spam
   else do

@@ -596,7 +596,7 @@ destroyActorUI destroy aid b = do
     modifySession $ \sess -> sess {slastLost = ES.insert aid $ slastLost sess}
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  let gameOver = isJust $ gquit fact
+  let gameOver = isJust $ gquit fact  -- we are the UI faction, so we determine
   unless gameOver $ do
     when (bfid b == side && not (bproj b)) $ do
       stopPlayBack
