@@ -117,21 +117,17 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
               n <- castDice (AbsDepth $ abs ln) totalDepth d
               return (ln, n, actorGroup)
         ginitial <- mapM castInitialActors initialActors
-        let cmap = mapFromFuns
-                     [colorToTeamName, colorToPlainName, colorToFancyName]
-            nameoc = T.toLower $ head $ T.words fname
+        let cmap =
+              mapFromFuns [colorToTeamName, colorToPlainName, colorToFancyName]
+            colorName = T.toLower $ head $ T.words fname
             prefix = case fleaderMode of
               LeaderNull -> "Loose"
               LeaderAI _ -> "Autonomous"
               LeaderUI _ -> "Controlled"
-            nameSuff suff = if fhasGender
-                            then if length (T.words fname) > 1
-                                 then makePhrase [MU.Ws $ MU.Text fname]
-                                 else fname <+> suff
-                            else fname
-            (gcolor, gnameNew) = case M.lookup nameoc cmap of
-              Nothing -> (Color.BrWhite, prefix <+> nameSuff "Crew")
-              Just c -> (c, prefix <+> nameSuff "Team")
+            gnameNew = prefix <+> if fhasGender
+                                  then makePhrase [MU.Ws $ MU.Text fname]
+                                  else fname
+            gcolor = M.findWithDefault Color.BrWhite colorName cmap
             gvictimsDnew = case find (\fact -> gname fact == gnameNew)
                                 $ EM.elems factionDold of
               Nothing -> EM.empty
