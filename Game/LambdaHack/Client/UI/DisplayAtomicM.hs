@@ -668,6 +668,7 @@ quitFactionUI fid toSt = do
   Kind.COps{coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
   fact <- getsState $ (EM.! fid) . sfactionD
   let fidName = MU.Text $ gname fact
+      person = if fhasGender $ gplayer fact then MU.PlEtc else MU.Sg3rd
       horror = isHorrorFact fact
   side <- getsClient sside
   when (side == fid && maybe False ((/= Camping) . stOutcome) toSt) $ do
@@ -717,7 +718,7 @@ quitFactionUI fid toSt = do
         Nothing -> (Nothing, Nothing)  -- server wipes out Camping for savefile
   case startingPart of
     Nothing -> return ()
-    Just sp -> msgAdd $ makeSentence [MU.SubjectVerbSg fidName sp]
+    Just sp -> msgAdd $ makeSentence [MU.SubjectVerb person MU.Yes fidName sp]
   case (toSt, partingPart) of
     (Just status, Just pp) -> do
       isNoConfirms <- isNoConfirmsGame
