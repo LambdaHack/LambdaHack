@@ -61,8 +61,8 @@ showScore tz (pos, score) =
   let Status{stOutcome, stDepth} = status score
       died = case stOutcome of
         Killed   -> "perished on level" <+> tshow (abs stDepth)
-        Defeated -> "was defeated"
-        Camping  -> "camps somewhere"
+        Defeated -> "got defeated"
+        Camping  -> "set camp"
         Conquer  -> "slew all opposition"
         Escape   -> "emerged victorious"
         Restart  -> "resigned prematurely"
