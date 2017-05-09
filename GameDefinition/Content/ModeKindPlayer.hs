@@ -120,7 +120,7 @@ playerAnimalMagnificent =
                                LeaderAI $ AutoLeader True False }
 
 playerAnimalExquisite =
-  playerAnimal { fname = "Animal Exquisite Herds and Packs"
+  playerAnimal { fname = "Animal Exquisite Herds and Packs Galore"
                , fneverEmpty = True }
 
 victoryOutcomes :: [Outcome]
