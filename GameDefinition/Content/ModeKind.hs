@@ -45,7 +45,7 @@ raid = ModeKind  -- mini-crawl
   , mfreq   = [("raid", 1), ("campaign scenario", 1)]
   , mroster = rosterRaid
   , mcaves  = cavesRaid
-  , mdesc   = "An incredibly advanced typing machine worth 100 gold is buried at the exit of this maze. Be the first to claim it and fund a research team that makes typing accurate and dependable forever."
+  , mdesc   = "An incredibly advanced typing machine worth 100 gold is buried at the exit of this maze. Be the first to find it and fund a research team that makes typing accurate and dependable forever."
   }
 
 brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
@@ -54,7 +54,7 @@ brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
   , mfreq   = [("brawl", 1), ("campaign scenario", 1)]
   , mroster = rosterBrawl
   , mcaves  = cavesBrawl
-  , mdesc   = "Your engineering team disagreed over a drink with some gentlemen scientists about premises of a relative completeness theorem and there's only one way to settle that. Remember to keep together so that neither team is tempted to gang upon a solitary disputant."
+  , mdesc   = "Your engineering team disagrees over a drink with some gentlemen scientists about premises of a relative completeness theorem and there's only one way to settle that. Remember to keep together so that neither team is tempted to gang upon a solitary disputant."
   }
 
 -- The trajectory tip is important because of tactics of scout looking from
@@ -89,7 +89,7 @@ zoo = ModeKind  -- asymmetric crowd melee at night
   , mfreq   = [("zoo", 1), ("campaign scenario", 1)]
   , mroster = rosterZoo
   , mcaves  = cavesZoo
-  , mdesc   = "The heat of the dispute reached the nearby Wonders of Science and Nature exhibition, igniting greenery, nets and cages. Crazed animals must be prevented from ruining precious scentific equipment and setting back the fruitful exchange of ideas."
+  , mdesc   = "The heat of the dispute reaches the nearby Wonders of Science and Nature exhibition, igniting greenery, nets and cages. Crazed animals must be prevented from ruining precious scentific equipment and setting back the otherwise fruitful exchange of ideas."
   }
 
 -- The tactic is to sneak in the dark, highlight enemy with thrown torches
@@ -116,7 +116,7 @@ exploration = ModeKind
               , ("campaign scenario", 1) ]
   , mroster = rosterExploration
   , mcaves  = cavesExploration
-  , mdesc   = "Don't let wanton curiosity, greed and the creeping abstraction madness keep you down there for too long!"
+  , mdesc   = "Enjoy the peaceful seclusion of these cold ancient tunnels, but don't let wanton curiosity, greed and the ever-creeping abstraction madness keep you down there for too long."
   }
 
 safari = ModeKind  -- easter egg available only via screensaver
