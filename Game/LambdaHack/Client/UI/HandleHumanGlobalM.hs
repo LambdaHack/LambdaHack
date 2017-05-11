@@ -1097,22 +1097,31 @@ chooseItemMenuHuman cmdAction c = do
 
 -- * MainMenu
 
+-- We detect the place for the version string by searching for 'Version'
+-- in the last line of the picture. If it doesn't fit, we shift, if everything
+-- else fails, only then we crop. We don't assume 80 character in a line.
 artWithVersion :: MonadClientUI m => m [String]
 artWithVersion = do
   Kind.COps{corule} <- getsState scops
   let stdRuleset = Kind.stdRuleset corule
-      pasteVersion :: [String] -> [String]
+      pasteVersion :: [Text] -> [String]
       pasteVersion art =
         let exeVersion = rexeVersion stdRuleset
             libVersion = Self.version
-            version = " Version " ++ showVersion exeVersion
+            version = "Version " ++ showVersion exeVersion
                       ++ " (frontend: " ++ frontendName
                       ++ ", engine: LambdaHack " ++ showVersion libVersion
                       ++ ") "
             versionLen = length version
-        in init art ++ [take (80 - versionLen) (last art) ++ version]
+            lastOriginal = last art
+            (prefix, versionSuffix) = T.breakOn "Version" lastOriginal
+            suffix = drop versionLen $ T.unpack versionSuffix
+            overfillLen = versionLen - T.length versionSuffix
+            prefixModified = T.unpack $ T.dropEnd overfillLen prefix
+            lastModified = prefixModified ++ version ++ suffix
+        in map T.unpack (init art) ++ [lastModified]
       mainMenuArt = rmainMenuArt stdRuleset
-  return $! pasteVersion $ map T.unpack $ T.lines mainMenuArt
+  return $! pasteVersion $ T.lines mainMenuArt
 
 generateMenu :: MonadClientUI m
              => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
