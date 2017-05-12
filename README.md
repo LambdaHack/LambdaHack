@@ -148,9 +148,12 @@ of the curses library. With the vty frontend started in an xterm,
 Control-keypad keys for running seem to work OK, but on rxvt they do not.
 The commands that require pressing Control and Shift together won't
 work either, but fortunately they are not crucial to gameplay.
+
 For movement, laptop (uk8o79jl) and Vi keys (hjklyubn, if enabled
-in config.ui.ini) should work everywhere. SDL2 works fine, too, both
-regarding numeric keypad and mouse.
+in config.ui.ini) should work everywhere. GTK and SDL2 work fine, too,
+both regarding numeric keypad and mouse. Display on SDL2 and in the browser
+is superior to all the other frontends, due to custom, square font
+and less intrusive ways of highlighting interesting squares.
 
 
 Testing and debugging
