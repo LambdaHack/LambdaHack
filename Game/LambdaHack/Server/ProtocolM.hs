@@ -85,12 +85,8 @@ tryRestore cops@Kind.COps{corule} sdebugSer = do
     liftIO $ tryWriteFile (dataDir </> cfgUIName) content
     return $! res
 
--- | Either states or connections to the human-controlled client
--- of a faction and to the AI client for the same faction.
-type FrozenClient = ChanServer
-
 -- | Connection information for all factions, indexed by faction identifier.
-type ConnServerDict = EM.EnumMap FactionId FrozenClient
+type ConnServerDict = EM.EnumMap FactionId ChanServer
 
 -- | The server monad with the ability to communicate with clients.
 class MonadServer m => MonadServerReadRequest m where
@@ -106,20 +102,20 @@ putDict s = modifyDict (const s)
 
 sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
 sendUpdate !fid !cmd = do
-  frozenClient <- getsDict (EM.! fid)
+  chan <- getsDict (EM.! fid)
   let resp = RespUpdAtomic cmd
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponse fid resp
-  writeQueue resp $ responseS frozenClient
+  writeQueue resp $ responseS chan
 
 sendSfx :: MonadServerReadRequest m => FactionId -> SfxAtomic -> m ()
 sendSfx !fid !sfx = do
   let resp = RespSfxAtomic sfx
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponse fid resp
-  frozenClient <- getsDict (EM.! fid)
-  case frozenClient of
-    ChanServer{requestUIS=Just{}} -> writeQueue resp $ responseS frozenClient
+  chan <- getsDict (EM.! fid)
+  case chan of
+    ChanServer{requestUIS=Just{}} -> writeQueue resp $ responseS chan
     _ -> return ()
 
 sendQueryAI :: MonadServerReadRequest m => FactionId -> ActorId -> m RequestAI
@@ -127,10 +123,10 @@ sendQueryAI fid aid = do
   let respAI = RespQueryAI aid
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponse fid respAI
-  frozenClient <- getsDict (EM.! fid)
+  chan <- getsDict (EM.! fid)
   req <- do
-    writeQueue respAI $ responseS frozenClient
-    readQueueAI $ requestAIS frozenClient
+    writeQueue respAI $ responseS chan
+    readQueueAI $ requestAIS chan
   when debug $ debugRequestAI aid req
   return req
 
@@ -140,10 +136,10 @@ sendQueryUI fid _aid = do
   let respUI = RespQueryUI
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponse fid respUI
-  frozenClient <- getsDict (EM.! fid)
+  chan <- getsDict (EM.! fid)
   req <- do
-    writeQueue respUI $ responseS frozenClient
-    readQueueUI $ fromJust $ requestUIS frozenClient
+    writeQueue respUI $ responseS chan
+    readQueueUI $ fromJust $ requestUIS chan
   when debug $ debugRequestUI _aid req
   return req
 
@@ -181,7 +177,7 @@ updateConn cops sconfig executorClient = do
                       then Just <$> newQueue
                       else return Nothing
         return $! ChanServer{..}
-      addConn :: FactionId -> Faction -> IO FrozenClient
+      addConn :: FactionId -> Faction -> IO ChanServer
       addConn fid fact = case EM.lookup fid oldD of
         Just conns -> return conns  -- share old conns and threads
         Nothing -> mkChanServer fact
