@@ -18,9 +18,6 @@ import qualified Data.EnumSet as ES
 import Data.Key (mapWithKeyM_)
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Atomic.HandleAtomicWrite
-import Game.LambdaHack.Atomic.MonadStateWrite
-import Game.LambdaHack.Atomic.PosAtomicRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction

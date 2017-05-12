@@ -1,7 +1,7 @@
 -- | The server definitions for the server-client communication protocol.
 module Game.LambdaHack.Server.ProtocolM
   ( -- * The communication channels
-    CliSerQueue, ChanServer(..), ConnServerDict
+    ConnServerDict
     -- * The server-client communication monad
   , MonadServerReadRequest
       ( getsDict  -- exposed only to be implemented, not used
@@ -29,9 +29,7 @@ import System.FilePath
 import System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.UI
-import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.SessionUI
+import Game.LambdaHack.Client.UI (Config, SessionUI, emptySessionUI)
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
@@ -49,8 +47,6 @@ import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.DebugM
 import Game.LambdaHack.Server.MonadServer hiding (liftIO)
 import Game.LambdaHack.Server.State
-
-type CliSerQueue = MVar
 
 writeQueue :: MonadServerReadRequest m
            => Response -> CliSerQueue Response -> m ()
@@ -88,13 +84,6 @@ tryRestore cops@Kind.COps{corule} sdebugSer = do
     dataDir <- liftIO appDataDir
     liftIO $ tryWriteFile (dataDir </> cfgUIName) content
     return $! res
-
--- | Connection channel between the server and a single client.
-data ChanServer = ChanServer
-  { responseS  :: !(CliSerQueue Response)
-  , requestAIS :: !(CliSerQueue RequestAI)
-  , requestUIS :: !(Maybe (CliSerQueue RequestUI))
-  }
 
 -- | Either states or connections to the human-controlled client
 -- of a faction and to the AI client for the same faction.

@@ -3,16 +3,17 @@
 -- of the game state.
 module Game.LambdaHack.Client.UI
   ( -- * Client UI monad
-    MonadClientUI
+    MonadClientUI(..)
     -- * Assorted UI operations
   , putSession, queryUI
   , displayRespUpdAtomicUI, displayRespSfxAtomicUI
     -- * Startup
-  , KeyKind, SessionUI(..)
+  , KeyKind, SessionUI(..), emptySessionUI, Config
   , ChanFrontend, chanFrontend, frontendShutdown
     -- * Operations exposed for LoopClient
   , ColorMode(..)
   , reportToSlideshow, getConfirms, msgAdd, promptAdd, addPressedEsc
+  , tryRestore, stdBinding
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , humanCommand
@@ -30,6 +31,7 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.DisplayAtomicM
 import Game.LambdaHack.Client.UI.FrameM

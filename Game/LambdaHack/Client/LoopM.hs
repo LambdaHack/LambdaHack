@@ -16,10 +16,6 @@ import Game.LambdaHack.Client.HandleResponseM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI
-import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.KeyBindings
-import Game.LambdaHack.Client.UI.MonadClientUI
-import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead

@@ -21,8 +21,7 @@ import qualified Data.EnumSet as ES
 import qualified Data.Ord as Ord
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.SessionUI
+import Game.LambdaHack.Client.UI (Config, SessionUI)
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
@@ -34,6 +33,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Request
+import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time

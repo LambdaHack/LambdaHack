@@ -24,9 +24,7 @@ import qualified Data.Text.IO as T
 import System.FilePath
 import System.IO (hFlush, stdout)
 
-import Game.LambdaHack.Atomic.CmdAtomic
-import Game.LambdaHack.Atomic.MonadAtomic
-import Game.LambdaHack.Atomic.MonadStateWrite
+import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Content.KeyKind
