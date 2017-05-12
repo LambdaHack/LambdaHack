@@ -85,7 +85,7 @@ tryRestore cops@Kind.COps{corule} sdebugSer = do
     let stdRuleset = Kind.stdRuleset corule
         cfgUIName = rcfgUIName stdRuleset
         content = rcfgUIDefault stdRuleset
-    dataDir <- liftIO $ appDataDir
+    dataDir <- liftIO appDataDir
     liftIO $ tryWriteFile (dataDir </> cfgUIName) content
     return $! res
 
@@ -117,7 +117,7 @@ putDict s = modifyDict (const s)
 
 sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
 sendUpdate !fid !cmd = do
-  frozenClient <- getsDict $ (EM.! fid)
+  frozenClient <- getsDict (EM.! fid)
   let resp = RespUpdAtomic cmd
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponse fid resp
@@ -128,7 +128,7 @@ sendSfx !fid !sfx = do
   let resp = RespSfxAtomic sfx
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponse fid resp
-  frozenClient <- getsDict $ (EM.! fid)
+  frozenClient <- getsDict (EM.! fid)
   case frozenClient of
     ChanServer{requestUIS=Just{}} -> writeQueue resp $ responseS frozenClient
     _ -> return ()
@@ -138,7 +138,7 @@ sendQueryAI fid aid = do
   let respAI = RespQueryAI aid
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponse fid respAI
-  frozenClient <- getsDict $ (EM.! fid)
+  frozenClient <- getsDict (EM.! fid)
   req <- do
     writeQueue respAI $ responseS frozenClient
     readQueueAI $ requestAIS frozenClient
@@ -151,7 +151,7 @@ sendQueryUI fid _aid = do
   let respUI = RespQueryUI
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponse fid respUI
-  frozenClient <- getsDict $ (EM.! fid)
+  frozenClient <- getsDict (EM.! fid)
   req <- do
     writeQueue respUI $ responseS frozenClient
     readQueueUI $ fromJust $ requestUIS frozenClient

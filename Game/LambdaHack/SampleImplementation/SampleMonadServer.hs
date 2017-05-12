@@ -93,7 +93,7 @@ instance MonadServerReadRequest SerImplementation where
 instance MonadAtomic SerImplementation where
   execUpdAtomic cmd = cmdAtomicSemSer cmd >> handleAndBroadcast (UpdAtomic cmd)
   execSfxAtomic sfx = handleAndBroadcast (SfxAtomic sfx)
-  execSendPer fid lid outPer inPer perNew = sendPer fid lid outPer inPer perNew
+  execSendPer = sendPer
 
 -- Don't inline this, to keep GHC hard work inside the library
 -- for easy access of code analysis tools.

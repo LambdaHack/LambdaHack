@@ -94,14 +94,11 @@ targetStrategy aid = do
   -- set of abilities as the leader, anyway) and set his target accordingly.
   actorAspect <- getsClient sactorAspect
   let lalter = salter EM.! blid b
-      condInMelee = case scondInMelee EM.! blid b of
-        Just cond -> cond
-        Nothing -> assert `failure` condInMelee
+      condInMelee = fromMaybe (assert `failure` condInMelee)
+                              (scondInMelee EM.! blid b)
       stdRuleset = Kind.stdRuleset corule
       nearby = rnearby stdRuleset
-      ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
+      ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
       actorMaxSk = aSkills ar
       alterSkill = EM.findWithDefault 0 AbAlter actorMaxSk
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
@@ -183,9 +180,9 @@ targetStrategy aid = do
       -- targeted, which is fine, since he is weakened by ranged, so should be
       -- meleed ASAP, even if without friends.
       targetableRanged body =
-        if condInMelee then False
-        else chessDist (bpos body) (bpos b) < rangedNearby
-             && condCanProject
+        not condInMelee
+        && chessDist (bpos body) (bpos b) < rangedNearby
+        && condCanProject
       targetableEnemy (aidE, body) = do
         tMelee <- targetableMelee aidE body
         return $! targetableRanged body || tMelee

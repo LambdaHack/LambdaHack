@@ -90,7 +90,7 @@ macroHuman kms = do
 clearHuman :: MonadClientUI m => m ()
 clearHuman = do
   keysHintMode <- getsSession skeysHintMode
-  when (keysHintMode == KeysHintPresent) $ historyHuman
+  when (keysHintMode == KeysHintPresent) historyHuman
   modifySession $ \sess -> sess {skeysHintMode =
     let n = fromEnum (skeysHintMode sess) + 1
     in toEnum $ if n > fromEnum (maxBound :: KeysHintMode) then 0 else n}
@@ -173,9 +173,8 @@ chooseItemDialogMode c = do
             localTime <- getsState $ getLocalTime (blid b)
             factionD <- getsState sfactionD
             actorAspect <- getsClient sactorAspect
-            let ar = case EM.lookup leader actorAspect of
-                  Just aspectRecord -> aspectRecord
-                  Nothing -> assert `failure` leader
+            let ar = fromMaybe (assert `failure` leader)
+                               (EM.lookup leader actorAspect)
                 attrLine = itemDesc (bfid b) factionD (aHurtMelee ar)
                                     store localTime itemFull
                 ov = splitAttrLine lxsize attrLine
@@ -227,9 +226,8 @@ chooseItemDialogMode c = do
         b <- getsState $ getActorBody leader
         bUI <- getsSession $ getActorUI leader
         actorAspect <- getsClient sactorAspect
-        let ar = case EM.lookup leader actorAspect of
-              Just aspectRecord -> aspectRecord
-              Nothing -> assert `failure` leader
+        let ar = fromMaybe (assert `failure` leader)
+                           (EM.lookup leader actorAspect)
             valueText = slotToDecorator eqpSlot b $ prEqpSlot eqpSlot ar
             prompt2 = makeSentence
               [ MU.WownW (partActor bUI) (MU.Text $ slotToName eqpSlot)
@@ -249,9 +247,7 @@ chooseItemProjectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup leader actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` leader
+  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
   let calmE = calmEnough b ar
       cLegalRaw = [CGround, CInv, CSha, CEqp]
       cLegal | calmE = cLegalRaw
@@ -284,9 +280,7 @@ permittedProjectClient triggerSyms = do
   actorSk <- leaderSkillsClientUI
   let skill = EM.findWithDefault 0 AbProject actorSk
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup leader actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` leader
+  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
   return $ permittedProject False skill calmE triggerSyms
 
@@ -412,10 +406,8 @@ chooseItemApplyHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup leader actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` leader
-  let calmE = calmEnough b ar
+  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
+      calmE = calmEnough b ar
       cLegalRaw = [CGround, CInv, CSha, CEqp]
       cLegal | calmE = cLegalRaw
              | otherwise = delete CSha cLegalRaw
@@ -444,9 +436,7 @@ permittedApplyClient triggerSyms = do
   actorSk <- leaderSkillsClientUI
   let skill = EM.findWithDefault 0 AbApply actorSk
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup leader actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` leader
+  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
   localTime <- getsState $ getLocalTime (blid b)
   return $ permittedApply localTime skill calmE triggerSyms
@@ -709,8 +699,7 @@ tgtClearHuman = do
   leader <- getLeaderUI
   tgt <- getsClient $ getTarget leader
   case tgt of
-    Just _ -> do
-      modifyClient $ updateTarget leader (const Nothing)
+    Just _ -> modifyClient $ updateTarget leader (const Nothing)
     Nothing -> do
       clearXhair
       doLook
@@ -718,8 +707,7 @@ tgtClearHuman = do
 -- * ItemClear
 
 itemClearHuman :: MonadClientUI m => m ()
-itemClearHuman = do
-  modifySession $ \sess -> sess {sitemSel = Nothing}
+itemClearHuman = modifySession $ \sess -> sess {sitemSel = Nothing}
 
 -- | Perform look around in the current position of the xhair.
 -- Does nothing outside aiming mode.

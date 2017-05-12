@@ -1,4 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Screen frames.
 module Game.LambdaHack.Client.UI.Frame
   ( SingleFrame(..), Frames
@@ -44,14 +43,12 @@ truncateLines onBlank l =
       lysize = snd normalLevelBound + 1
       canvasLength = if onBlank then lysize + 3 else lysize + 1
       topLayer = if length l <= canvasLength
-                 then l ++ if length l < canvasLength && length l > 3
-                           then [[]]
-                           else []
+                 then l ++ [[] | length l < canvasLength && length l > 3]
                  else take (canvasLength - 1) l
                       ++ [stringToAL "--a portion of the text trimmed--"]
       f lenPrev lenNext layerLine =
         truncateAttrLine lxsize layerLine (max lenPrev lenNext)
-      lens = map (\al -> min (lxsize - 1) (length al)) topLayer
+      lens = map (min (lxsize - 1) . length) topLayer
   in zipWith3 f (0 : lens) (drop 1 lens ++ [0]) topLayer
 
 -- | Add a space at the message end, for display overlayed over the level map.

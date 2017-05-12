@@ -120,9 +120,8 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldlGroup'}}
     let itemBase = buildItem flavour discoRev itemKindId itemKind lid jdamage
         kindIx = jkindIx itemBase
         itemK = max 1 itemN
-        itemTimer = if IK.Periodic `elem` IK.ieffects itemKind
-                    then [timeZero]  -- delay first discharge of single organs
-                    else []
+        itemTimer = [timeZero | IK.Periodic `elem` IK.ieffects itemKind]
+                      -- delay first discharge of single organs
         itemAspectMean = kmMean $ EM.findWithDefault (assert `failure` kindIx)
                                                      kindIx disco
         itemDiscoData = ItemDisco { itemKindId, itemKind, itemAspectMean

@@ -166,7 +166,7 @@ findPosTry :: Int                                  -- ^ the number of tries
            -> [Point -> Kind.Id TileKind -> Bool]  -- ^ optional predicates
            -> Rnd Point
 {-# INLINE findPosTry #-}
-findPosTry numTries ltile m r = findPosTry2 numTries ltile m [] undefined r
+findPosTry numTries ltile m = findPosTry2 numTries ltile m [] undefined
 
 findPosTry2 :: Int                                  -- ^ the number of tries
             -> TileMap                              -- ^ look up in this map

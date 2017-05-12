@@ -585,7 +585,7 @@ effectSummon execSfx grp nDm iid source target periodic = do
   -- via draining one's calm on purpose when an item with good activation
   -- has a nasty summoning side-effect (the exploit still works on durables).
   if (periodic || durable) && not (bproj sb) && not (calmEnough sb sar) then do
-    unless (bproj sb) $ do
+    unless (bproj sb) $
       execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonLackCalm source
     return False
   else do
@@ -731,7 +731,7 @@ switchLevels2 lidNew posNew (aid, bOld) btime_bOld mlead = do
   -- sees new surroundings and has to reset his perception.
   ais <- getsState $ getCarriedAssocs bOld
   execUpdAtomic $ UpdCreateActor aid bNew ais
-  let btime = shiftByDelta $ btime_bOld
+  let btime = shiftByDelta btime_bOld
   modifyServer $ \ser ->
     ser {sactorTime = updateActorTime (bfid bNew) lidNew aid btime $ sactorTime ser}
   case mlead of
@@ -1045,8 +1045,7 @@ identifyIid iid c itemKindId = do
 
 effectDetect :: (MonadAtomic m, MonadServer m)
              => m () -> Int -> ActorId -> m Bool
-effectDetect execSfx radius target =
-  effectDetectX (const True) (const $ return False) execSfx radius target
+effectDetect = effectDetectX (const True) (const $ return False)
 
 effectDetectX :: (MonadAtomic m, MonadServer m)
               => (Point -> Bool) -> ([Point] -> m Bool)
@@ -1057,7 +1056,7 @@ effectDetectX predicate action execSfx radius target = do
   sperFidOld <- getsServer sperFid
   let perOld = sperFidOld EM.! bfid b EM.! blid b
       Point x0 y0 = bpos b
-      perList = filter predicate $
+      perList = filter predicate
         [ Point x y
         | y <- [max 0 (y0 - radius) .. min (lysize - 1) (y0 + radius)]
         , x <- [max 0 (x0 - radius) .. min (lxsize - 1) (x0 + radius)]
@@ -1308,7 +1307,7 @@ effectRecharging recursiveCall e recharged =
 
 effectTemporary :: MonadAtomic m
                 => m () -> ActorId -> ItemId -> Container -> m Bool
-effectTemporary execSfx source iid c = do
+effectTemporary execSfx source iid c =
   case c of
     CActor _ COrgan -> do
       b <- getsState $ getActorBody source

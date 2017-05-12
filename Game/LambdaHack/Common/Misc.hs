@@ -192,11 +192,11 @@ instance Hashable Tactic
 
 instance (Enum k, Binary k, Binary e) => Binary (EM.EnumMap k e) where
   put m = put (EM.size m) >> mapM_ put (EM.toAscList m)
-  get = liftM EM.fromDistinctAscList get
+  get = EM.fromDistinctAscList <$> get
 
 instance (Enum k, Binary k) => Binary (ES.EnumSet k) where
   put m = put (ES.size m) >> mapM_ put (ES.toAscList m)
-  get = liftM ES.fromDistinctAscList get
+  get = ES.fromDistinctAscList <$> get
 
 #if !MIN_VERSION_binary(0,8,0)
 instance Binary (Fixed.Fixed a) where

@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds, TupleSections #-}
+{-# LANGUAGE DataKinds #-}
 -- | Semantics of abilities in terms of actions and the AI procedure
 -- for picking the best action for an actor.
 module Game.LambdaHack.Client.AI.HandleAbilityM
@@ -64,9 +64,8 @@ actionStrategy :: forall m. MonadClient m
 actionStrategy aid retry = do
   body <- getsState $ getActorBody aid
   scondInMelee <- getsClient scondInMelee
-  let condInMelee = case scondInMelee EM.! blid body of
-        Just cond -> cond
-        Nothing -> assert `failure` condInMelee
+  let condInMelee = fromMaybe (assert `failure` condInMelee)
+                              (scondInMelee EM.! blid body)
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
   condAnyFoeAdj <- condAnyFoeAdjM aid
@@ -87,9 +86,7 @@ actionStrategy aid retry = do
   condTgtNonmoving <- condTgtNonmovingM aid
   explored <- getsClient sexplored
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
+  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
       lidExplored = ES.member (blid body) explored
       panicFleeL = fleeL ++ badVic
       condHpTooLow = hpTooLow body ar
@@ -308,9 +305,7 @@ pickup aid onlyWeapon = do
   -- and the server will ignore and warn (and content may avoid that,
   -- e.g., making all rings identified)
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
+  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough b ar
       isWeapon (_, _, _, itemFull) = isMelee $ itemBase itemFull
       filterWeapon | onlyWeapon = filter isWeapon
@@ -342,9 +337,7 @@ equipItems :: MonadClient m
 equipItems aid = do
   body <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
+  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough body ar
   eqpAssocs <- fullAssocsClient aid [CEqp]
   invAssocs <- fullAssocsClient aid [CInv]
@@ -407,9 +400,7 @@ yieldUnneeded :: MonadClient m
 yieldUnneeded aid = do
   body <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
+  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough body ar
   eqpAssocs <- fullAssocsClient aid [CEqp]
   condShineWouldBetray <- condShineWouldBetrayM aid
@@ -447,9 +438,7 @@ unEquipItems :: MonadClient m
 unEquipItems aid = do
   body <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
+  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough body ar
   eqpAssocs <- fullAssocsClient aid [CEqp]
   invAssocs <- fullAssocsClient aid [CInv]
@@ -543,9 +532,7 @@ meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbMelee))
 meleeBlocker aid = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
+  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
   fact <- getsState $ (EM.! bfid b) . sfactionD
   actorSk <- currentSkillsClient aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -564,9 +551,8 @@ meleeBlocker aid = do
         Just aim -> getsState $ posToAssocs aim (blid b)
       case lBlocker of
         (aid2, body2) : _ -> do
-          let ar2 = case EM.lookup aid2 actorAspect of
-                Just aspectRecord -> aspectRecord
-                Nothing -> assert `failure` aid
+          let ar2 = fromMaybe (assert `failure` aid2)
+                              (EM.lookup aid2 actorAspect)
           -- No problem if there are many projectiles at the spot. We just
           -- attack the first one.
           if | actorDying body2
@@ -681,18 +667,15 @@ applyItem aid applyGroup = do
   condAimEnemyPresent <- condAimEnemyPresentM aid
   localTime <- getsState $ getLocalTime (blid b)
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
+  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough b ar
       condNotCalmEnough = not calmE
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltaSerious (bcalmDelta b)
       skill = EM.findWithDefault 0 AbApply actorSk
       -- This detects if the value of keeping the item in eqp is in fact < 0.
-      hind itemFull = hinders condShineWouldBetray condAimEnemyPresent
-                              heavilyDistressed condNotCalmEnough
-                              b ar itemFull
+      hind = hinders condShineWouldBetray condAimEnemyPresent
+                     heavilyDistressed condNotCalmEnough b ar
       permittedActor =
         either (const False) id
         . permittedApply localTime skill calmE " "
@@ -744,7 +727,7 @@ applyItem aid applyGroup = do
               -- We don't try to intecept a case of many effects.
               let dropsGrps = strengthDropOrgan itemFull
                   hasDropOrgan = not $ null dropsGrps
-                  f eff = if IK.forApplyEffect eff then [eff] else []
+                  f eff = [eff | IK.forApplyEffect eff]
               in hasDropOrgan
                  && (null hasGrps
                      || toGroupName "temporary condition" `notElem` dropsGrps
@@ -792,7 +775,7 @@ displaceFoe aid = do
   let foe (_, b2) = not (bproj b2) && isAtWar fact (bfid b2) && bhp b2 > 0
       adjFoes = filter foe adjacentAssocs
       displaceable body =  -- DisplaceAccess
-        Tile.isWalkable coTileSpeedup (lvl `at` (bpos body))
+        Tile.isWalkable coTileSpeedup (lvl `at` bpos body)
       nFriends body = length $ filter (adjacent (bpos body) . bpos) friends
       nFrNew = nFriends b + 1
       qualifyActor (aid2, body2) = do
@@ -850,7 +833,7 @@ displaceTowards aid target retry = do
               || retry  -- desperate
                  && not (boldpos b == Just target  -- and no displace loop
                          && not (waitedLastTurn b))
-              || (enemyTgt || enemyPos) && not (enemyTgt2 || enemyPos2) -> do
+              || (enemyTgt || enemyPos) && not (enemyTgt2 || enemyPos2) ->
                  -- he doesn't have Enemy target and I have, so push him aside,
                  -- because, for heroes, he will never be a leader, so he can't
                  -- step aside himself
@@ -981,6 +964,6 @@ moveOrRunAid source dir = do
        | EM.member tpos $ lfloor lvl ->
          -- Only possible if items allowed inside unwalkable tiles.
          assert `failure` "AI causes AlterBlockItem" `twith` (source, dir)
-       | otherwise -> do
+       | otherwise ->
          -- Not walkable, but alter skill suffices, so search or alter the tile.
          return $ Just $ RequestAnyAbility $ ReqAlter tpos

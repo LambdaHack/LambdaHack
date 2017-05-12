@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 -- | Semantics of most 'ResponseAI' client commands.
 module Game.LambdaHack.Client.AI.PickActorM
   ( pickActorToMove, useTactics
@@ -37,9 +36,7 @@ pickActorToMove :: MonadClient m => Maybe ActorId -> m ActorId
 pickActorToMove maidToAvoid = do
   actorAspect <- getsClient sactorAspect
   mleader <- getsClient _sleader
-  let oldAid = case mleader of
-        Just aid -> aid
-        Nothing -> assert `failure` mleader
+  let oldAid = fromMaybe (assert `failure` maidToAvoid) mleader
   oldBody <- getsState $ getActorBody oldAid
   let side = bfid oldBody
       arena = blid oldBody
@@ -72,7 +69,7 @@ pickActorToMove maidToAvoid = do
       -- (to make the AI appear more human-like and easier to observe).
       let refresh aidBody = do
             mtgt <- refreshTarget aidBody
-            return $ (aidBody, mtgt)
+            return (aidBody, mtgt)
           goodGeneric (_, Nothing) = Nothing
           goodGeneric (_, Just TgtAndPath{tapPath=NoPath}) = Nothing
             -- this case means melee-less heroes adjacent to foes, etc.
@@ -96,12 +93,10 @@ pickActorToMove maidToAvoid = do
           -- This should be kept in sync with @actionStrategy@.
           actorVulnerable ((aid, body), _) = do
             scondInMelee <- getsClient scondInMelee
-            let condInMelee = case scondInMelee EM.! blid body of
-                  Just cond -> cond
-                  Nothing -> assert `failure` condInMelee
-                ar = case EM.lookup aid actorAspect of
-                  Just aspectRecord -> aspectRecord
-                  Nothing -> assert `failure` aid
+            let condInMelee = fromMaybe (assert `failure` condInMelee)
+                                        (scondInMelee EM.! blid body)
+                ar = fromMaybe (assert `failure` aid)
+                               (EM.lookup aid actorAspect)
             threatDistL <- meleeThreatDistList aid
             (fleeL, _) <- fleeList aid
             condSupport1 <- condSupport 1 aid
@@ -275,9 +270,8 @@ useTactics :: MonadClient m => ActorId -> m ()
 useTactics oldAid = do
   oldBody <- getsState $ getActorBody oldAid
   scondInMelee <- getsClient scondInMelee
-  let condInMelee = case scondInMelee EM.! blid oldBody of
-        Just cond -> cond
-        Nothing -> assert `failure` condInMelee
+  let condInMelee = fromMaybe (assert `failure` condInMelee)
+                              (scondInMelee EM.! blid oldBody)
   mleader <- getsClient _sleader
   let !_A = assert (mleader /= Just oldAid) ()
   let side = bfid oldBody
@@ -310,7 +304,7 @@ useTactics oldAid = do
                                            , tapPath = NoPath }
             unless tgtPathSet $ do
                enemyPathSet <- setPath enemyPath
-               unless enemyPathSet $
+               unless enemyPathSet
                  -- If no path even to the leader himself, explore.
                  explore
   case ftactic $ gplayer fact of

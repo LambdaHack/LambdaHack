@@ -223,7 +223,7 @@ electLeader fid lid aidDead = do
 supplantLeader :: MonadAtomic m => FactionId -> ActorId -> m ()
 supplantLeader fid aid = do
   fact <- getsState $ (EM.! fid) . sfactionD
-  unless (fleaderMode (gplayer fact) == LeaderNull) $ do
+  unless (fleaderMode (gplayer fact) == LeaderNull) $
     execUpdAtomic $ UpdLeadFaction fid (_gleader fact) (Just aid)
 
 -- The missile item is removed from the store only if the projection

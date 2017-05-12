@@ -73,7 +73,7 @@ grid fixedCenters boot (nx, ny) (Area x0 y0 x1 y1) =
       ycs = IS.toList $ IS.fromList $ map py $ EM.keys fixedCenters ++ boot
       yallCenters = zip [0..] $ f y0 y1 ny y0 ycs
   in ( (length xallCenters, length yallCenters)
-     , EM.fromDistinctAscList $
+     , EM.fromDistinctAscList
          [ ( Point x y
            , case (mcx, mcy) of
                (Just cx, Just cy) ->
@@ -97,13 +97,13 @@ expand (Area x0 y0 x1 y1) = Area (x0 - 1) (y0 - 1) (x1 + 1) (y1 + 1)
 sumAreas :: Area -> Area -> Area
 sumAreas a@(Area x0 y0 x1 y1) a'@(Area x0' y0' x1' y1') =
   if | y1 == y0' -> assert (x0 == x0' && x1 == x1' `blame` (a, a')) $
-       (Area x0 y0 x1 y1')
+       Area x0 y0 x1 y1'
      | y0 == y1' -> assert (x0 == x0' && x1 == x1' `blame` (a, a')) $
-       (Area x0' y0' x1' y1)
+       Area x0' y0' x1' y1
      | x1 == x0' -> assert (y0 == y0' && y1 == y1' `blame` (a, a')) $
-       (Area x0 y0 x1' y1)
+       Area x0 y0 x1' y1
      | x0 == x1' -> assert (y0 == y0' && y1 == y1' `blame` (a, a')) $
-       (Area x0' y0' x1 y1')
+       Area x0' y0' x1 y1'
      | otherwise -> assert `failure` (a, a')
 
 instance Binary Area where

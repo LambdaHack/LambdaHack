@@ -34,7 +34,7 @@ data Binding = Binding
 stdBinding :: KeyKind  -- ^ default key bindings from the content
            -> Config   -- ^ game config
            -> Binding  -- ^ concrete binding
-stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
+stdBinding copsClient Config{configCommands, configVi, configLaptop} =
   let waitTriple = ([CmdMove], "", Wait)
       wait10Triple = ([CmdMove], "", Wait10)
       moveXhairOr n cmd v = ByAimMode { exploration = cmd v
@@ -204,7 +204,7 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
     okm sel key1 key2 header footer =
       let kst1 = keySel sel key1
           kst2 = keySel sel key2
-          f (ca1, Left km1, _) (ca2, Left km2, _) y = assert (ca1 == ca2) $
+          f (ca1, Left km1, _) (ca2, Left km2, _) y = assert (ca1 == ca2)
             [ (Left [km1], (y, keyM + 3, keyB + keyM + 3))
             , (Left [km2], (y, keyB + keyM + 5, 2 * keyB + keyM + 5)) ]
           f c d e = assert `failure` (c, d, e)
@@ -215,7 +215,7 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
       in (map textToAL $ "" : header ++ menu ++ footer, kxs)
   in
     [ ( casualDescription <+> "(1/2)."
-      , (map textToAL $ movText, []) )
+      , (map textToAL movText, []) )
     , ( casualDescription <+> "(2/2)."
       , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEnd )
     , ( "All terrain exploration and alteration commands."

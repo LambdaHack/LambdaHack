@@ -1,4 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Slideshows.
 module Game.LambdaHack.Client.UI.Slideshow
   ( KYX, OKX, Slideshow(slideshow)
@@ -10,8 +9,8 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.ItemSlot
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.Overlay
 import qualified Game.LambdaHack.Common.Color as Color
@@ -96,7 +95,7 @@ splitOKX lxsize yspace rrep keys (ls0, kxs0) =
       msgOkx = (glueLines msgRaw lX, keysX)
       ((lsInit, kxsInit), (header, rkxs)) =
         -- Check whether most space taken by report and keys.
-        if (length $ glueLines msgRaw lX0) * 2 > yspace
+        if length (glueLines msgRaw lX0) * 2 > yspace
         then (msgOkx, ( [intercalate [Color.spaceAttrW32] lX0 <+:> rrep]
                       , keysX0 ))
                -- will display "$" (unless has EOLs)

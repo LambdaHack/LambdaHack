@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 -- {-# OPTIONS_GHC -fprof-auto #-}
 -- | Display game data on the screen using one of the available frontends
 -- (determined at compile time with cabal flags).
@@ -72,9 +71,7 @@ targetDesc mtarget = do
       b <- getsState $ getActorBody aid
       bUI <- getsSession $ getActorUI aid
       actorAspect <- getsClient sactorAspect
-      let ar = case EM.lookup aid actorAspect of
-            Just aspectRecord -> aspectRecord
-            Nothing -> assert `failure` aid
+      let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
           percentage = 100 * bhp b `div` xM (max 5 $ aMaxHP ar)
           chs n = "[" <> T.replicate n "*"
                       <> T.replicate (4 - n) "_" <> "]"
@@ -301,7 +298,7 @@ drawFrameActor drawnLevelId = do
               VM.write v (pI + lxsize) w
         mapM_ g l
       upd :: FrameForall
-      upd = FrameForall $ \v -> do
+      upd = FrameForall $ \v ->
         mapVAL viewActor (EM.assocs lactor) v
   return upd
 
@@ -329,11 +326,11 @@ drawFrameExtra dm drawnLevelId = do
       backlightVision ac = case ac of
         Color.AttrChar (Color.Attr fg _) ch ->
           Color.AttrChar (Color.Attr fg Color.HighlightGrey) ch
-      writeSquare !hi !(Color.AttrChar (Color.Attr fg bg) ch) =
+      writeSquare !hi (Color.AttrChar (Color.Attr fg bg) ch) =
         let hiUnlessLeader | bg == Color.HighlightRed = bg
                            | otherwise = hi
         in Color.AttrChar (Color.Attr fg hiUnlessLeader) ch
-      turnBW !(Color.AttrChar _ ch) = Color.AttrChar Color.defAttr ch
+      turnBW (Color.AttrChar _ ch) = Color.AttrChar Color.defAttr ch
       mapVL :: forall s. (Color.AttrChar -> Color.AttrChar) -> [Int]
             -> FrameST s
       mapVL f l v = do
@@ -506,9 +503,8 @@ drawLeaderStatus waitT = do
     Just leader -> do
       actorAspect <- getsClient sactorAspect
       s <- getState
-      let ar = case EM.lookup leader actorAspect of
-            Just aspectRecord -> aspectRecord
-            Nothing -> assert `failure`leader
+      let ar = fromMaybe (assert `failure` leader)
+                         (EM.lookup leader actorAspect)
           showTrunc :: Show a => a -> String
           showTrunc = (\t -> if length t > 3 then "***" else t) . show
           (darkL, bracedL, hpDelta, calmDelta,
@@ -522,7 +518,7 @@ drawLeaderStatus waitT = do
           -- 'wait' command.
           slashes = ["/", "|", "\\", "|"]
           slashPick = slashes !! (max 0 (waitT - 1) `mod` length slashes)
-          addColor c t = map (Color.attrChar2ToW32 c) t
+          addColor c = map (Color.attrChar2ToW32 c)
           checkDelta ResDelta{..}
             | fst resCurrentTurn < 0 || fst resPreviousTurn < 0
               = addColor Color.BrRed  -- alarming news have priority
@@ -551,7 +547,7 @@ drawLeaderStatus waitT = do
 drawLeaderDamage :: MonadClientUI m => Int -> m AttrLine
 drawLeaderDamage width = do
   mleader <- getsClient _sleader
-  let addColor s = map (Color.attrChar2ToW32 Color.BrCyan) s
+  let addColor = map (Color.attrChar2ToW32 Color.BrCyan)
   stats <- case mleader of
     Just leader -> do
       allAssocsRaw <- fullAssocsClient leader [CEqp, COrgan]

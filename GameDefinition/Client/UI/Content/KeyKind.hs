@@ -185,7 +185,7 @@ standardKeys = KeyKind
       -- Mouse
       , ("LeftButtonRelease", mouseLMB)
       , ("RightButtonRelease", mouseRMB)
-      , ("C-LeftButtonRelease", replaceDesc "" $ mouseRMB)  -- Mac convention
+      , ("C-LeftButtonRelease", replaceDesc "" mouseRMB)  -- Mac convention
       , ( "C-RightButtonRelease"
         , ( [CmdMouse]
           , "open or close door"

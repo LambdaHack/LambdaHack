@@ -207,7 +207,7 @@ doAttr :: DebugModeCli -> TextTag -> (Color.Color, Color.Color) -> IO ()
 doAttr sdebugCli tt (fg, bg)
   | fg == Color.defFG && bg == Color.Black = return ()
   | fg == Color.defFG =
-    set tt $ [textTagBackground := Color.colorToRGB bg]
+    set tt [textTagBackground := Color.colorToRGB bg]
   | bg == Color.Black =
     set tt $ extraAttr sdebugCli
              ++ [textTagForeground := Color.colorToRGB fg]

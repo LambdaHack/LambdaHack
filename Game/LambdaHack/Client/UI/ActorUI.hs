@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
 -- | UI aspects of actors.
 module Game.LambdaHack.Client.UI.ActorUI
   ( ActorUI(..), ActorDictUI

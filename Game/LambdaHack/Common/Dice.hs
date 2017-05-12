@@ -64,7 +64,7 @@ instance Num SimpleDice where
 
 liftAName :: Text -> (Int -> Int) -> SimpleDice -> SimpleDice
 liftAName name f fr =
-  let frRes = liftA f fr
+  let frRes = f <$> fr
       nameRes = name <> " (" <> nameFrequency fr  <> ")"
   in renameFreq nameRes frRes
 

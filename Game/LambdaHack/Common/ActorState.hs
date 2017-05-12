@@ -340,7 +340,7 @@ posFromC c@CTrunk{} _ = assert `failure` c
 isEscape :: LevelId -> Point -> State -> Bool
 isEscape lid p s =
   let bag = getEmbedBag lid p s
-      is = map (flip getItemBody s) $ EM.keys bag
+      is = map (`getItemBody` s) $ EM.keys bag
       -- Contrived, for now.
       isE Item{jname} = jname == "escape"
   in any isE is
@@ -348,7 +348,7 @@ isEscape lid p s =
 isStair :: LevelId -> Point -> State -> Bool
 isStair lid p s =
   let bag = getEmbedBag lid p s
-      is = map (flip getItemBody s) $ EM.keys bag
+      is = map (`getItemBody` s) $ EM.keys bag
       -- Contrived, for now.
       isE Item{jname} = jname == "staircase up" || jname == "staircase down"
   in any isE is

@@ -130,7 +130,7 @@ emptyHistory size = History timeZero emptyReport $ RB.empty size U.empty
 
 -- | Add a report to history, handling repetitions.
 addReport :: History -> Time -> Report -> History
-addReport !histOld@(History oldT oldRep@(Report h) hRest) !time !(Report m') =
+addReport histOld@(History oldT oldRep@(Report h) hRest) !time (Report m') =
   let rep@(Report m) = Report $ filter (msgHist . repMsg) m'
   in if null m then histOld else
     case (reverse m, h) of

@@ -111,9 +111,7 @@ maxActorSkillsClient aid = do
 currentSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
 currentSkillsClient aid = do
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
+  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
   body <- getsState $ getActorBody aid
   side <- getsClient sside
   -- Newest Leader in _sleader, not yet in sfactionD.
@@ -211,7 +209,7 @@ aspectRecordFromActorClient b ais = do
   disco <- getsClient sdiscoKind
   discoAspect <- getsClient sdiscoAspect
   s <- getState
-  let f (iid, itemBase) itemD = EM.insert iid itemBase itemD
+  let f (iid, itemBase) = EM.insert iid itemBase
       sAis = updateItemD (\itemD -> foldr f itemD ais) s
   return $! aspectRecordFromActorState disco discoAspect b sAis
 

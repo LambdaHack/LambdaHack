@@ -21,8 +21,8 @@ import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | Session data maintained by the frontend.
-data FrontendSession = FrontendSession
-  { svty :: !Vty  -- ^ internal vty session
+newtype FrontendSession = FrontendSession
+  { svty :: Vty  -- ^ internal vty session
   }
 
 -- | The name of the frontend.

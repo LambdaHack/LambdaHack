@@ -465,7 +465,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
    | otherwise -> do
     itemToF <- itemToFullServer
     let itemFull = itemToF iid (k, [])
-    when (fromCStore == CGround) $ do
+    when (fromCStore == CGround) $
       case itemFull of
         ItemFull{itemDisco=
                    Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}}}
@@ -501,7 +501,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
         Nothing -> return ()  -- no Periodic or Timeout aspect; don't touch
 
 computeRndTimeout :: Time -> ItemId -> ItemFull -> Rnd (Maybe Time)
-computeRndTimeout localTime iid ItemFull{..}= do
+computeRndTimeout localTime iid ItemFull{..}=
   case itemDisco of
     Just ItemDisco{itemKind, itemAspect=Just ar} ->
       case aTimeout ar of
@@ -594,7 +594,7 @@ reqGameExit aid = do
 -- * ReqGameSave
 
 reqGameSave :: MonadServer m => m ()
-reqGameSave = do
+reqGameSave =
   modifyServer $ \ser -> ser { swriteSave = True
                              , squit = True }  -- do this at once
 

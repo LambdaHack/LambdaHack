@@ -9,13 +9,13 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 
-import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.DrawM
 import Game.LambdaHack.Client.UI.Frame
+import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgM
@@ -58,9 +58,7 @@ promptGetKey dm ov onBlank frontKeyKeys = do
       -- We can't continue playback, so wipe out old slastPlay, srunning, etc.
       stopPlayBack
       discardPressedKey
-      let ov2 = ov `glueLines` if keyPressed
-                                 then [stringToAL "*interrupted*"]
-                                 else []
+      let ov2 = ov `glueLines` [stringToAL "*interrupted*" | keyPressed]
       frontKeyFrame <- drawOverlay dm onBlank ov2 lidV
       connFrontendFrontKey frontKeyKeys frontKeyFrame
     [] -> do

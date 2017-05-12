@@ -92,10 +92,9 @@ saveServer = do
 
 -- | Dumps RNG states from the start of the game to stdout.
 dumpRngs :: MonadServer m => RNGs -> m ()
-dumpRngs rngs = do
-  liftIO $ do
-    T.hPutStrLn stdout $ tshow rngs
-    hFlush stdout
+dumpRngs rngs = liftIO $ do
+  T.hPutStrLn stdout $ tshow rngs
+  hFlush stdout
 
 -- | Read the high scores dictionary. Return the empty table if no file.
 restoreScore :: forall m. MonadServer m => Kind.COps -> m HighScore.ScoreDict

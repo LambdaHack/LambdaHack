@@ -273,9 +273,7 @@ statsOverlay :: MonadClient m => ActorId -> m OKX
 statsOverlay aid = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` aid
+  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
       prSlot :: (Y, SlotChar) -> IK.EqpSlot -> (Text, KYX)
       prSlot (y, c) eqpSlot =
         let statName = slotToName eqpSlot

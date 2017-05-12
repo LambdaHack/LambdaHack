@@ -134,8 +134,8 @@ scan accScan r fovClear tr = assert (r > 0 `blame` r) $
                        in mscanVisible accBump ns (ps+1)
           else acc  -- reached end while in shadow
 
-    in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e0,ps0,pe)) $
-       outside
+    in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e0,ps0,pe))
+         outside
 
 -- | Check if the line from the second point to the first is more steep
 -- than the line from the third point to the first. This is related

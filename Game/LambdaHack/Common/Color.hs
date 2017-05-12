@@ -101,7 +101,7 @@ newtype AttrCharW32 = AttrCharW32 {attrCharW32 :: Word32}
   deriving (Show, Eq, Enum, Binary)
 
 attrCharToW32 :: AttrChar -> AttrCharW32
-attrCharToW32 !AttrChar{acAttr=Attr{..}, acChar} = AttrCharW32 $ toEnum $
+attrCharToW32 AttrChar{acAttr=Attr{..}, acChar} = AttrCharW32 $ toEnum $
   unsafeShiftL (fromEnum fg) 8 + fromEnum bg + unsafeShiftL (Char.ord acChar) 16
 
 attrCharFromW32 :: AttrCharW32 -> AttrChar

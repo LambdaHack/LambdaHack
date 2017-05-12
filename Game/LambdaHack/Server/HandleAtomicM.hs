@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 -- | Handle atomic commands before they are executed to change State
 -- and sent to clients.
 module Game.LambdaHack.Server.HandleAtomicM
@@ -216,7 +215,7 @@ actorHasShine actorAspect aid = case EM.lookup aid actorAspect of
 
 itemAffectsShineRadius :: DiscoveryAspect -> ItemId -> [CStore] -> Bool
 itemAffectsShineRadius discoAspect iid stores =
-  (null stores || (not $ null $ intersect stores [CEqp, COrgan, CGround]))
+  (null stores || not (null $ intersect stores [CEqp, COrgan, CGround]))
   && case EM.lookup iid discoAspect of
     Just AspectRecord{aShine} -> aShine /= 0
     Nothing -> assert `failure` iid

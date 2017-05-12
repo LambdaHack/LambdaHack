@@ -171,8 +171,8 @@ loopUpd updConn = do
           -- can save&exit before the state is changed and the turn
           -- needs to be carried through.
           arenas <- getsServer sarenas
-          mapM_ (\fid -> mapM_ (\lid ->
-            handleTrajectories lid fid) arenas) (EM.keys factionD)
+          mapM_ (\fid -> mapM_ (`handleTrajectories` fid) arenas)
+                (EM.keys factionD)
           endClip updatePerFid  -- must be last, in case performs a bkp save
         quit <- getsServer squit
         if quit then do
@@ -277,7 +277,7 @@ applyPeriodicLevel = do
             let itemFull = itemToF iid kit
             case itemDisco itemFull of
               Just ItemDisco {itemKind=IK.ItemKind{IK.ieffects}} ->
-                when (IK.Periodic `elem` ieffects) $ do
+                when (IK.Periodic `elem` ieffects) $
                   -- In periodic activation, consider *only* recharging effects.
                   -- Activate even if effects null, to possibly destroy item.
                   effectAndDestroy False aid aid iid (CActor aid cstore) True

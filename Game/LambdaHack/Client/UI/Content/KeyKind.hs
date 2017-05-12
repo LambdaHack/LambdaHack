@@ -21,8 +21,8 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Common.Misc
 
 -- | Key-command mappings to be used for the UI.
-data KeyKind = KeyKind
-  { rhumanCommands :: ![(K.KM, CmdTriple)]  -- ^ default client UI commands
+newtype KeyKind = KeyKind
+  { rhumanCommands :: [(K.KM, CmdTriple)]  -- ^ default client UI commands
   }
 
 evalKeyDef :: (String, CmdTriple) -> (K.KM, CmdTriple)
@@ -134,8 +134,8 @@ projectI :: [Trigger] -> CmdTriple
 projectI ts = ([], descTs ts, projectICmd ts)
 
 projectA :: [Trigger] -> CmdTriple
-projectA ts = replaceCmd (ByAimMode { exploration = AimTgt
-                                    , aiming = projectICmd ts }) (projectI ts)
+projectA ts = replaceCmd ByAimMode { exploration = AimTgt
+                                   , aiming = projectICmd ts } (projectI ts)
 
 flingTs :: [Trigger]
 flingTs = [ApplyItem { verb = "fling"

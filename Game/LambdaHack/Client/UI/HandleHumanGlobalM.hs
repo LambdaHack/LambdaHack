@@ -400,7 +400,7 @@ moveSearchAlter dir = do
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos
       alterMinSkill = Tile.alterMinSkill coTileSpeedup t
-  runStopOrCmd <- do
+  runStopOrCmd <-
     -- Movement requires full access.
     if | Tile.isWalkable coTileSpeedup t ->
          -- A potential invisible actor is hit. War started without asking.
@@ -490,7 +490,7 @@ goToXhair initialStep run = do
     xhairPos <- xhairToPos
     case xhairPos of
       Nothing -> failWith "crosshair position invalid"
-      Just c | c == bpos b -> do
+      Just c | c == bpos b ->
         if initialStep
         then return $ Right $ RequestAnyAbility ReqWait
         else failWith "position reached"
@@ -635,9 +635,7 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
   -- and the server will ignore and warn (and content may avoid that,
   -- e.g., making all rings identified)
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup leader actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` leader
+  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
       cLegal | calmE = cLegalRaw
              | destCStore == CSha = []
@@ -670,9 +668,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
   b <- getsState $ getActorBody leader
   actorAspect <- getsClient sactorAspect
   discoBenefit <- getsClient sdiscoBenefit
-  let ar = case EM.lookup leader actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` leader
+  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
       ret4 :: MonadClientUI m
            => [(ItemId, ItemFull)]
@@ -749,9 +745,7 @@ projectItem ts (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup leader actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` leader
+  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
   if not calmE && fromCStore == CSha then failSer ItemNotCalm
   else do
@@ -797,9 +791,7 @@ applyItem ts (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup leader actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` leader
+  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
   if not calmE && fromCStore == CSha then failSer ItemNotCalm
   else do
@@ -891,7 +883,7 @@ verifyAlters lid p = do
   lvl <- getLevel lid
   let t = lvl `at` p
   bag <- getsState $ getEmbedBag lid p
-  is <- mapM (\iid -> getsState $ getItemBody iid) $ EM.keys bag
+  is <- mapM (getsState . getItemBody) $ EM.keys bag
   let isE Item{jname} = jname == "escape"
   if | any isE is -> verifyEscape
      | null is && not (Tile.isDoor coTileSpeedup t
@@ -995,9 +987,8 @@ itemMenuHuman cmdAction = do
         Nothing -> weaveJust <$> failWith "no item to open Item Menu for"
         Just kit -> do
           actorAspect <- getsClient sactorAspect
-          let ar = case EM.lookup leader actorAspect of
-                Just aspectRecord -> aspectRecord
-                Nothing -> assert `failure` leader
+          let ar = fromMaybe (assert `failure` leader)
+                             (EM.lookup leader actorAspect)
           itemToF <- itemToFullClient
           lidV <- viewedLevelUI
           Level{lxsize, lysize} <- getLevel lidV
@@ -1182,16 +1173,16 @@ mainMenuHuman cmdAction = do
   let nxtGameName = mname $ nxtGameMode cops snxtScenario
       tnextScenario = "new scenario:" <+> nxtGameName
       -- Key-description-command tuples.
-      kds = [ (K.mkKM "s", (tnextScenario, HumanCmd.GameScenarioIncr)) ]
-            ++ [ (km, (desc, cmd))
-               | (km, ([HumanCmd.CmdMainMenu], desc, cmd)) <- bcmdList ]
+      kds = (K.mkKM "s", (tnextScenario, HumanCmd.GameScenarioIncr))
+            : [ (km, (desc, cmd))
+              | (km, ([HumanCmd.CmdMainMenu], desc, cmd)) <- bcmdList ]
       bindingLen = 30
       gameName = mname gameMode
-      gameInfo = map T.unpack $
-                 [ T.justifyLeft bindingLen ' ' ""
-                 , T.justifyLeft bindingLen ' '
-                   $ "Now playing:" <+> gameName
-                 , T.justifyLeft bindingLen ' ' "" ]
+      gameInfo = map T.unpack
+                   [ T.justifyLeft bindingLen ' ' ""
+                   , T.justifyLeft bindingLen ' '
+                     $ "Now playing:" <+> gameName
+                   , T.justifyLeft bindingLen ' ' "" ]
   generateMenu cmdAction kds gameInfo
 
 -- * SettingsMenu
@@ -1223,10 +1214,10 @@ settingsMenuHuman cmdAction = do
             , (K.mkKM "t", (thenchmen, HumanCmd.Tactic))
             , (K.mkKM "Escape", ("back to main menu", HumanCmd.MainMenu)) ]
       bindingLen = 30
-      gameInfo = map T.unpack $
-                 [ T.justifyLeft bindingLen ' ' ""
-                 , T.justifyLeft bindingLen ' ' "Game settings:"
-                 , T.justifyLeft bindingLen ' ' "" ]
+      gameInfo = map T.unpack
+                   [ T.justifyLeft bindingLen ' ' ""
+                   , T.justifyLeft bindingLen ' ' "Game settings:"
+                   , T.justifyLeft bindingLen ' ' "" ]
   generateMenu cmdAction kds gameInfo
 
 -- * ChallengesMenu
@@ -1255,15 +1246,15 @@ challengesMenuHuman cmdAction = do
             , (K.mkKM "f", (tnextFish, HumanCmd.GameFishToggle))
             , (K.mkKM "Escape", ("back to main menu", HumanCmd.MainMenu)) ]
       bindingLen = 30
-      gameInfo = map T.unpack $
-                 [ T.justifyLeft bindingLen ' ' "Current challenges:"
-                 , T.justifyLeft bindingLen ' ' ""
-                 , T.justifyLeft bindingLen ' ' tcurDiff
-                 , T.justifyLeft bindingLen ' ' tcurWolf
-                 , T.justifyLeft bindingLen ' ' tcurFish
-                 , T.justifyLeft bindingLen ' ' ""
-                 , T.justifyLeft bindingLen ' ' "New game challenges:"
-                 , T.justifyLeft bindingLen ' ' "" ]
+      gameInfo = map T.unpack
+                   [ T.justifyLeft bindingLen ' ' "Current challenges:"
+                   , T.justifyLeft bindingLen ' ' ""
+                   , T.justifyLeft bindingLen ' ' tcurDiff
+                   , T.justifyLeft bindingLen ' ' tcurWolf
+                   , T.justifyLeft bindingLen ' ' tcurFish
+                   , T.justifyLeft bindingLen ' ' ""
+                   , T.justifyLeft bindingLen ' ' "New game challenges:"
+                   , T.justifyLeft bindingLen ' ' "" ]
   generateMenu cmdAction kds gameInfo
 
 -- * GameScenarioIncr

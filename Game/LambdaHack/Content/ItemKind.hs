@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable #-}
+{-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of weapons, treasure, organs, blasts and actors.
 module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..)

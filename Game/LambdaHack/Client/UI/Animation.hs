@@ -1,4 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.UI.Animation
   ( Animation, renderAnim
@@ -49,7 +48,7 @@ mapPosToOffset (Point{..}, attr) =
 mzipSingleton :: Point -> Maybe AttrCharW32 -> Overlay
 mzipSingleton p1 mattr1 = map mapPosToOffset $
   let mzip (pos, mattr) = fmap (\attr -> (pos, attr)) mattr
-  in catMaybes $ [mzip (p1, mattr1)]
+  in catMaybes [mzip (p1, mattr1)]
 
 mzipPairs :: (Point, Point) -> (Maybe AttrCharW32, Maybe AttrCharW32)
           -> Overlay
@@ -216,7 +215,7 @@ fadeout out step lxsize lysize = do
             fadeLine !y =
               let x1 :: Int
                   {-# INLINE x1 #-}
-                  x1 = min xbound ((n - 2 * (ybound - y)))
+                  x1 = min xbound (n - 2 * (ybound - y))
                   x2 :: Int
                   {-# INLINE x2 #-}
                   x2 = max 0 (xbound - (n - 2 * y))

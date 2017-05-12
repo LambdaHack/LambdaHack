@@ -56,7 +56,7 @@ fgToAL !fg !t =
   in T.foldr f [] t
 
 stringToAL :: String -> AttrLine
-stringToAL s = map Color.attrChar1ToW32 s
+stringToAL = map Color.attrChar1ToW32
 
 infixr 6 <+:>  -- matches Monoid.<>
 (<+:>) :: AttrLine -> AttrLine -> AttrLine

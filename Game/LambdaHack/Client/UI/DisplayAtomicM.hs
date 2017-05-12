@@ -187,11 +187,10 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
          let msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
          msgAdd msgDie
          -- We show death anims only if not dead already before this refill.
-         let deathAct = if alreadyDeadBefore
-                        then twirlSplash (bpos b, bpos b) Color.Red Color.Red
-                        else if bfid b == side
-                             then deathBody (bpos b)
-                             else shortDeathBody (bpos b)
+         let deathAct | alreadyDeadBefore =
+                        twirlSplash (bpos b, bpos b) Color.Red Color.Red
+                      | bfid b == side = deathBody (bpos b)
+                      | otherwise = shortDeathBody (bpos b)
          unless (bproj b) $ animate (blid b) deathAct
        | otherwise -> do
          when (n >= bhp b && bhp b > 0) $
@@ -199,9 +198,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
          mleader <- getsClient _sleader
          when (Just aid == mleader) $ do
            actorAspect <- getsClient sactorAspect
-           let ar = case EM.lookup aid actorAspect of
-                 Just aspectRecord -> aspectRecord
-                 Nothing -> assert `failure` aid
+           let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
            when (bhp b >= xM (aMaxHP ar) && aMaxHP ar > 0 && n > 0) $ do
              actorVerbMU aid bUI "recover your health fully"
              stopPlayBack
@@ -228,8 +225,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
       -- This faction can't run with multiple actors, so this is not
       -- a leader change while running, but rather server changing
       -- their leader, which the player should be alerted to.
-      when (noRunWithMulti fact) $
-        stopPlayBack
+      when (noRunWithMulti fact) stopPlayBack
       actorD <- getsState sactorD
       case EM.lookup source actorD of
         Just sb | bhp sb <= 0 -> assert (not $ bproj sb) $ do
@@ -307,7 +303,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
   UpdPerception{} -> return ()
   UpdRestart fid _ _ _ _ _ -> do
     sstart <- getsSession sstart
-    when (sstart == 0) $ resetSessionStart
+    when (sstart == 0) resetSessionStart
     history <- getsSession shistory
     when (lengthHistory history == 0) $ do
       Kind.COps{corule} <- getsState scops
@@ -518,8 +514,8 @@ createActorUI born aid body = do
             else fromMaybe (nameFromNumber (fname $ gplayer fact) k, "he")
                  $ lookup k configHeroNames
       (n, bsymbol) <-
-        if | bproj body -> return $ (0, if isBlast then jsymbol trunk else '*')
-           | baseColor /= Color.BrWhite -> return $ (0, jsymbol trunk)
+        if | bproj body -> return (0, if isBlast then jsymbol trunk else '*')
+           | baseColor /= Color.BrWhite -> return (0, jsymbol trunk)
            | otherwise -> do
              sactorUI <- getsSession sactorUI
              let hasNameK k bUI = bname bUI == fst (heroNamePronoun k)
@@ -605,7 +601,7 @@ destroyActorUI destroy aid b = do
       when destroy $ do
         displayMore ColorBW "Alas!"
         mleader <- getsClient _sleader
-        when (isJust mleader) $
+        when (isJust mleader)
           -- This is especially handy when the dead actor was a leader
           -- on a different level than the new one:
           clearAimMode
@@ -681,7 +677,7 @@ quitFactionUI fid toSt = do
       scurChal <- getsClient scurChal
       let sing = M.singleton scurChal 1
           f = M.unionWith (+)
-          g svictoriesOld = EM.insertWith f gameModeId sing svictoriesOld
+          g = EM.insertWith f gameModeId sing
       modifyClient $ \cli -> cli {svictories = g $ svictories cli}
     tellGameClipPS
     resetGameStart
@@ -906,12 +902,12 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           let ps = (bpos b, bpos b)
           animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
         IK.RefillCalm p | p == 1 -> return ()  -- no spam from regen items
-        IK.RefillCalm p | p > 0 -> do
+        IK.RefillCalm p | p > 0 ->
           if isOurAlive then
             actorVerbMU aid bUI "feel calmer"
           else
             actorVerbMU aid bUI "look calmer"
-        IK.RefillCalm _ -> do
+        IK.RefillCalm _ ->
           if isOurAlive then
             actorVerbMU aid bUI "feel agitated"
           else
@@ -958,7 +954,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Teleport{} -> actorVerbMU aid bUI "teleport"
         IK.CreateItem{} -> return ()
         IK.DropItem _ _ COrgan _ -> return ()
-        IK.DropItem _ _ _ _ -> actorVerbMU aid bUI "be stripped"
+        IK.DropItem{} -> actorVerbMU aid bUI "be stripped"
         IK.PolyItem -> do
           localTime <- getsState $ getLocalTime $ blid b
           allAssocs <- fullAssocsClient aid [CGround]
@@ -1043,7 +1039,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
           UpdTrajectory{} ->
             -- Projectile hits an non-walkable tile on leader's level.
             "thud"
-          UpdAlterTile _ _ fromTile _ -> do
+          UpdAlterTile _ _ fromTile _ ->
             if Tile.isDoor coTileSpeedup fromTile
             then "creaking sound"
             else "rumble"

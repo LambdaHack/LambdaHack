@@ -123,7 +123,7 @@ handleAndBroadcast atomic = do
   -- Factions that are eliminated by the command are processed as well,
   -- because they are not deleted from @sfactionD@.
   factionD <- getsState sfactionD
-  mapWithKeyM_ (\fid fact -> send fid fact) factionD
+  mapWithKeyM_ send factionD
 
 -- | Messages for some unseen atomic commands.
 loudUpdAtomic :: MonadStateRead m => Bool -> UpdAtomic -> m (Maybe SfxMsg)
@@ -145,7 +145,7 @@ loudUpdAtomic local cmd = do
 
 -- | Messages for some unseen sfx.
 loudSfxAtomic :: MonadServer m => Bool -> SfxAtomic -> m (Maybe SfxMsg)
-loudSfxAtomic local cmd = do
+loudSfxAtomic local cmd =
   case cmd of
     SfxStrike source _ iid cstore | local -> do
       itemToF <- itemToFullServer

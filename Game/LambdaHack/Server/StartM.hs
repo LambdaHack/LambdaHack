@@ -81,7 +81,7 @@ reinitGame = do
   let sactorTime = EM.map (const (EM.map (const EM.empty) dungeon)) factionD
   modifyServer $ \ser -> ser {sactorTime}
   populateDungeon
-  mapM_ (\fid -> mapM_ (\lid -> updatePer fid lid) (EM.keys dungeon))
+  mapM_ (\fid -> mapM_ (updatePer fid) (EM.keys dungeon))
         (EM.keys factionD)
   execUpdAtomic $ UpdMsgAll "SortSlots"  -- hack
 
@@ -97,7 +97,7 @@ updatePer fid lid = do
   perNew <- recomputeCachePer fid lid
   let inPer = diffPer perNew perOld
       outPer = diffPer perOld perNew
-  unless (nullPer outPer && nullPer inPer) $ do
+  unless (nullPer outPer && nullPer inPer) $
     unless knowEvents $  -- inconsistencies would quickly manifest
       execSendPer fid lid outPer inPer perNew
 
@@ -334,7 +334,7 @@ findEntryPoss Kind.COps{coTileSpeedup}
       onStairs = reverse $ take k $ lescape ++ stairPoss
       nk = k - length onStairs
   -- Starting in the middle is too easy.
-  found <- tryFind ([middlePos] ++ onStairs) nk
+  found <- tryFind (middlePos : onStairs) nk
   return $! found ++ onStairs
 
 -- | Apply debug options that don't need a new game.

@@ -111,7 +111,7 @@ effectToBenefit cops fact eff =
           boundBonus n = if n == maxBound then 10 else 0
       in delta $ boundBonus ngroup + boundBonus kcopy
                  - total `divUp` count  -- the same when dropped from me and foe
-    IK.DropItem _ _ _ _ -> delta (-10)  -- depends a lot on what is dropped
+    IK.DropItem{} -> delta (-10)  -- depends a lot on what is dropped
     IK.PolyItem -> delta 0  -- AI can't estimate item desirability vs average
     IK.Identify -> delta 0  -- AI doesn't know how to use
     IK.Detect radius -> (radius * 2, 0)

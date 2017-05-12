@@ -110,7 +110,7 @@ updateActorTime !fid !lid !aid !time =
 ageActor :: FactionId -> LevelId -> ActorId -> Delta Time -> ActorTime
          -> ActorTime
 ageActor !fid !lid !aid !delta =
-  EM.adjust (EM.adjust (EM.adjust (flip timeShift delta) aid) lid) fid
+  EM.adjust (EM.adjust (EM.adjust (`timeShift` delta) aid) lid) fid
 
 -- | Initial, empty game server state.
 emptyStateServer :: StateServer

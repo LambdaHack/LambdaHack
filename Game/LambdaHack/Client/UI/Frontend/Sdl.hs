@@ -26,7 +26,7 @@ import Foreign.C.Types (CInt)
 import System.Directory
 import System.FilePath
 
-import qualified SDL as SDL
+import qualified SDL
 import SDL.Input.Keyboard.Codes
 import qualified SDL.Raw as Raw
 import qualified SDL.TTF as TTF

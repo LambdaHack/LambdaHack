@@ -38,7 +38,7 @@ startup _sdebugCli = do
   rf <- createRawFrontend display shutdown
   let storeKeys :: IO ()
       storeKeys = do
-        l <- SIO.hGetLine SIO.stdin  -- blocks here, so no polling
+        l <- SIO.getLine  -- blocks here, so no polling
         let c = case l of
               [] -> '\n'  -- empty line counts as RET
               hd : _ -> hd

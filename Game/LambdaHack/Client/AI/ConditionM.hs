@@ -160,17 +160,14 @@ condProjectListM skill aid = do
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup aid actorAspect of
-             Just aspectRecord -> aspectRecord
-             Nothing -> assert `failure` aid
+  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough b ar
       condNotCalmEnough = not calmE
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltaSerious (bcalmDelta b)
       -- This detects if the value of keeping the item in eqp is in fact < 0.
-      hind itemFull = hinders condShineWouldBetray condAimEnemyPresent
-                              heavilyDistressed condNotCalmEnough
-                              b ar itemFull
+      hind = hinders condShineWouldBetray condAimEnemyPresent
+                     heavilyDistressed condNotCalmEnough b ar
       q (mben, _, _, itemFull) =
         let (bInEqp, bFling) = case mben of
               Just Benefit{benInEqp, benFling} -> (benInEqp, benFling)
@@ -324,7 +321,7 @@ fleeList aid = do
       rewardPath mult (d, p) = case etgtPath of
         Right tgtPath | p `elem` tgtPath ->
           (100 * mult * d, p)
-        Right tgtPath | any (\q -> adjacent p q) tgtPath ->
+        Right tgtPath | any (adjacent p) tgtPath ->
           (10 * mult * d, p)
         Left AndPath{pathGoal} | bpos b /= pathGoal ->
           let venemy = towards (bpos b) pathGoal

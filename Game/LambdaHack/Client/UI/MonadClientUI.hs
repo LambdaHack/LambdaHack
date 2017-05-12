@@ -114,7 +114,7 @@ displayFrames lid frs = do
 -- set pointer, return key.
 connFrontendFrontKey :: MonadClientUI m => [K.KM] -> FrameForall -> m K.KM
 connFrontendFrontKey frontKeyKeys frontKeyFrame = do
-  kmp <- connFrontend $ FrontKey{..}
+  kmp <- connFrontend FrontKey{..}
   modifySession $ \sess -> sess {spointer = kmpPointer kmp}
   return $! kmpKeyMod kmp
 
@@ -131,8 +131,8 @@ addPressedKey :: MonadClientUI m => KMP -> m ()
 addPressedKey = connFrontend . FrontAdd
 
 addPressedEsc :: MonadClientUI m => m ()
-addPressedEsc = addPressedKey$ KMP { kmpKeyMod = K.escKM
-                                   , kmpPointer = originPoint }
+addPressedEsc = addPressedKey KMP { kmpKeyMod = K.escKM
+                                  , kmpPointer = originPoint }
 
 frontendShutdown :: MonadClientUI m => m ()
 frontendShutdown = connFrontend FrontShutdown
@@ -290,7 +290,7 @@ tellAllClipPS = do
   bench <- getsClient $ sbenchmark . sdebugCli
   when bench $ do
     sstartPOSIX <- getsSession sstart
-    curPOSIX <- liftIO $ getPOSIXTime
+    curPOSIX <- liftIO getPOSIXTime
     allTime <- getsSession sallTime
     gtime <- getsState stime
     allNframes <- getsSession sallNframes
@@ -310,7 +310,7 @@ tellGameClipPS = do
   bench <- getsClient $ sbenchmark . sdebugCli
   when bench $ do
     sgstartPOSIX <- getsSession sgstart
-    curPOSIX <- liftIO $ getPOSIXTime
+    curPOSIX <- liftIO getPOSIXTime
     -- If loaded game, don't report anything.
     unless (sgstartPOSIX == 0) $ do
       time <- getsState stime
@@ -395,7 +395,7 @@ tryRestore = do
     let stdRuleset = Kind.stdRuleset corule
         cfgUIName = rcfgUIName stdRuleset
         content = rcfgUIDefault stdRuleset
-    dataDir <- liftIO $ appDataDir
+    dataDir <- liftIO appDataDir
     liftIO $ tryWriteFile (dataDir </> cfgUIName) content
     return res
 

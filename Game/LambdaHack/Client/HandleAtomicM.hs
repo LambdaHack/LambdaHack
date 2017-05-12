@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 -- | Handle atomic commands received by the client.
 module Game.LambdaHack.Client.HandleAtomicM
   ( cmdAtomicSemCli, cmdAtomicFilterCli
@@ -263,7 +262,7 @@ cmdAtomicSemCli cmd = case cmd of
         _ -> do
           itemBase <- getsState $ getItemBody iid
           addItemToActor iid itemBase (-k) aid
-      _ -> do
+      _ ->
         when (s2 `elem` [CEqp, COrgan]) $ do
           itemBase <- getsState $ getItemBody iid
           addItemToActor iid itemBase k aid
@@ -335,9 +334,7 @@ cmdAtomicSemCli cmd = case cmd of
         g :: (Int, Kind.Id ModeKind) -> Int
         g (_, mode) = case EM.lookup mode svictories of
           Nothing -> 0
-          Just cm -> case M.lookup snxtChal cm of
-            Nothing -> 0
-            Just k -> k
+          Just cm -> fromMaybe 0 (M.lookup snxtChal cm)
         (snxtScenario, _) = minimumBy (comparing g) modes
         cli = emptyStateClient side
     putClient cli { sdiscoKind

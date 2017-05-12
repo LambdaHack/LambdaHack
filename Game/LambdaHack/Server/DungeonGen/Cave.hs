@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 -- | Generation of caves (not yet inhabited dungeon levels) from cave kinds.
 module Game.LambdaHack.Server.DungeonGen.Cave
   ( Cave(..), bootFixedCenters, buildCave
@@ -97,7 +96,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
         maxPlaceSize <- castDiceXY ldepth totalDepth cmaxPlaceSize
         let mergeFixed :: EM.EnumMap Point SpecialArea
                        -> (Point, SpecialArea)
-                       -> (EM.EnumMap Point SpecialArea)
+                       -> EM.EnumMap Point SpecialArea
             mergeFixed !gs0 (!i, !special) =
               let mergeSpecial ar p2 f =
                     case EM.lookup p2 gs0 of
@@ -170,7 +169,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                         -> (Point, SpecialArea)
                         -> Rnd ( TileMapEM, [Place]
                                , EM.EnumMap Point (Area, Fence, Area) )
-            decidePlace noVoid (!m, !pls, !qls) (!i, !special) = do
+            decidePlace noVoid (!m, !pls, !qls) (!i, !special) =
               case special of
                 SpecialArea ar -> do
                   -- Reserved for corridors and the global fence.

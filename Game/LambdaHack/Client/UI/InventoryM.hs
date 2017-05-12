@@ -259,9 +259,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   body <- getsState $ getActorBody leader
   bodyUI <- getsSession $ getActorUI leader
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup leader actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` leader
+  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
   fact <- getsState $ (EM.! bfid body) . sfactionD
   hs <- partyAfterLeader leader
   bagAll <- getsState $ \s -> accessModeBag leader s cCur
@@ -352,7 +350,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
            { defLabel = Left ""
            , defCond = not (cCur == MOwned || null hs)
            , defAction = \_ -> do
-               void $ pickLeaderWithPointer  -- error ignored; update anyway
+               void pickLeaderWithPointer  -- error ignored; update anyway
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                recCall numPrefix cCurUpd cRestUpd itemDialogState
            })
@@ -460,9 +458,7 @@ legalWithUpdatedLeader cCur cRest = do
   let newLegal = cCur : cRest  -- not updated in any way yet
   b <- getsState $ getActorBody leader
   actorAspect <- getsClient sactorAspect
-  let ar = case EM.lookup leader actorAspect of
-        Just aspectRecord -> aspectRecord
-        Nothing -> assert `failure` leader
+  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
       legalAfterCalm = case newLegal of
         c1@(MStore CSha) : c2 : rest | not calmE -> (c2, c1 : rest)

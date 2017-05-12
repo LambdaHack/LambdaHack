@@ -41,7 +41,7 @@ encodeEOF path a = encodeData path (a, "OK" :: String)
 -- The @OK@ EOF marker ensures any easily detectable file corruption
 -- is discovered and reported before the function returns.
 strictDecodeEOF :: Binary a => FilePath -> IO a
-strictDecodeEOF path = do
+strictDecodeEOF path =
   withBinaryFile path ReadMode $ \h -> do
     c <- LBS.hGetContents h
     let (a, n) = decode $ Z.decompress c
