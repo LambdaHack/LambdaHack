@@ -597,7 +597,7 @@ scroll12 = scroll
   , ieffects = [DetectHidden 10]
   }
 scroll13 = scroll
-  { ieffects = [ELabel "of acute hearing", DetectActor 4]
+  { ieffects = [ELabel "of acute hearing", DetectActor 7]
   }
 
 -- * Assorted tools
