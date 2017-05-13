@@ -29,6 +29,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.Map.Strict as M
 import Data.Ord
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -605,10 +606,13 @@ historyHuman = do
   promptAdd msg
   okxs <- overlayToSlideshow (lysize + 3) [K.escKM] (rh, kxs)
   let displayAllHistory = do
-        menuIxHistory <- getsSession smenuIxHistory
+        menuIxMap <- getsSession smenuIxMap
+        let menuName = "history"
+            menuIx = fromMaybe 0 (M.lookup menuName menuIxMap)
         (ekm, pointer) <-
-          displayChoiceScreen ColorFull True menuIxHistory okxs [K.escKM]
-        modifySession $ \sess -> sess {smenuIxHistory = pointer}
+          displayChoiceScreen ColorFull True menuIx okxs [K.escKM]
+        modifySession $ \sess ->
+          sess {smenuIxMap = M.insert menuName pointer menuIxMap}
         case ekm of
           Left km | km == K.escKM ->
             promptAdd "Try to survive a few seconds more, if you can."

@@ -953,16 +953,19 @@ helpHuman :: MonadClientUI m
 helpHuman cmdAction = do
   lidV <- viewedLevelUI
   Level{lxsize, lysize} <- getLevel lidV
-  menuIxHelp <- getsSession smenuIxHelp
   keyb <- getsSession sbinding
-  let keyH = keyHelp keyb 1
+  menuIxMap <- getsSession smenuIxMap
+  let menuName = "help"
+      menuIx = fromMaybe 0 (M.lookup menuName menuIxMap)
+      keyH = keyHelp keyb 1
       splitHelp (t, okx) =
         splitOKX lxsize (lysize + 3) (textToAL t) [K.spaceKM, K.escKM] okx
       sli = toSlideshow $ concat $ map splitHelp keyH
   (ekm, pointer) <-
-    displayChoiceScreen ColorFull True menuIxHelp sli [K.spaceKM, K.escKM]
-  modifySession $ \sess -> sess { smenuIxHelp = pointer
-                                , skeysHintMode = KeysHintBlocked }
+    displayChoiceScreen ColorFull True menuIx sli [K.spaceKM, K.escKM]
+  modifySession $ \sess ->
+    sess { smenuIxMap = M.insert menuName pointer menuIxMap
+         , skeysHintMode = KeysHintBlocked }
   case ekm of
     Left km -> case km `M.lookup` bcmdMap keyb of
       _ | km == K.escKM -> return $ Left Nothing
@@ -1116,9 +1119,9 @@ artWithVersion = do
 
 generateMenu :: MonadClientUI m
              => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
-             -> [(K.KM, (Text, HumanCmd.HumanCmd))] -> [String]
+             -> [(K.KM, (Text, HumanCmd.HumanCmd))] -> [String] -> String
              -> m (Either MError ReqUI)
-generateMenu cmdAction kds gameInfo = do
+generateMenu cmdAction kds gameInfo menuName = do
   art <- artWithVersion
   let bindingLen = 30
       emptyInfo = repeat $ replicate bindingLen ' '
@@ -1151,10 +1154,12 @@ generateMenu cmdAction kds gameInfo = do
       (menuOvLines, mkyxs) = unzip menuOverwritten
       kyxs = catMaybes mkyxs
       ov = map stringToAL menuOvLines
-  menuIxSet <- getsSession smenuIxSet
-  (ekm, pointer) <- displayChoiceScreen ColorFull True menuIxSet
+  menuIxMap <- getsSession smenuIxMap
+  let menuIx = fromMaybe 0 (M.lookup menuName menuIxMap)
+  (ekm, pointer) <- displayChoiceScreen ColorFull True menuIx
                                         (menuToSlideshow (ov, kyxs)) [K.escKM]
-  modifySession $ \sess -> sess {smenuIxSet = pointer}
+  modifySession $ \sess ->
+    sess {smenuIxMap = M.insert menuName pointer menuIxMap}
   case ekm of
     Left km -> case km `lookup` kds of
       Just (_desc, cmd) -> cmdAction cmd
@@ -1183,7 +1188,7 @@ mainMenuHuman cmdAction = do
                    , T.justifyLeft bindingLen ' '
                      $ "Now playing:" <+> gameName
                    , T.justifyLeft bindingLen ' ' "" ]
-  generateMenu cmdAction kds gameInfo
+  generateMenu cmdAction kds gameInfo "main"
 
 -- * SettingsMenu
 
@@ -1218,7 +1223,7 @@ settingsMenuHuman cmdAction = do
                    [ T.justifyLeft bindingLen ' ' ""
                    , T.justifyLeft bindingLen ' ' "Game settings:"
                    , T.justifyLeft bindingLen ' ' "" ]
-  generateMenu cmdAction kds gameInfo
+  generateMenu cmdAction kds gameInfo "settings"
 
 -- * ChallengesMenu
 
@@ -1255,7 +1260,7 @@ challengesMenuHuman cmdAction = do
                    , T.justifyLeft bindingLen ' ' ""
                    , T.justifyLeft bindingLen ' ' "New game challenges:"
                    , T.justifyLeft bindingLen ' ' "" ]
-  generateMenu cmdAction kds gameInfo
+  generateMenu cmdAction kds gameInfo "challenge"
 
 -- * GameScenarioIncr
 

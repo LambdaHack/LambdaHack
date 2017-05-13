@@ -61,11 +61,8 @@ data SessionUI = SessionUI
   , swaitTimes     :: !Int           -- ^ player just waited this many times
   , smarkVision    :: !Bool          -- ^ mark leader and party FOV
   , smarkSmell     :: !Bool          -- ^ mark smell, if the leader can smell
-  , smenuIxMain    :: !Int           -- ^ index of last used Main Menu item
-  , smenuIxSet     :: !Int           -- ^ index of last used Settings Menu item
-  , smenuIxChal    :: !Int           -- ^ index of last used Challenges item
-  , smenuIxHelp    :: !Int           -- ^ index of last used Help Menu item
-  , smenuIxHistory :: !Int           -- ^ index of last used History Menu item
+  , smenuIxMap     :: !(M.Map String Int)
+                                     -- ^ indices of last used menu items
   , sdisplayNeeded :: !Bool          -- ^ something to display on current level
   , skeysHintMode  :: !KeysHintMode  -- ^ how to show keys hints when no messages
   , sstart         :: !POSIXTime     -- ^ this session start time
@@ -127,11 +124,7 @@ emptySessionUI sconfig =
     , swaitTimes = 0
     , smarkVision = False
     , smarkSmell = True
-    , smenuIxMain = 2
-    , smenuIxSet = 0
-    , smenuIxChal = 0
-    , smenuIxHelp = 0
-    , smenuIxHistory = 0
+    , smenuIxMap = M.singleton "main" 2
     , sdisplayNeeded = False
     , skeysHintMode = KeysHintPresent
     , sstart = 0
@@ -167,10 +160,6 @@ instance Binary SessionUI where
     put shistory
     put smarkVision
     put smarkSmell
-    put smenuIxSet
-    put smenuIxChal
-    put smenuIxHelp
-    put smenuIxHistory
     put sdisplayNeeded
   get = do
     sxhair <- get
@@ -186,10 +175,6 @@ instance Binary SessionUI where
     shistory <- get
     smarkVision <- get
     smarkSmell <- get
-    smenuIxSet <- get
-    smenuIxChal <- get
-    smenuIxHelp <- get
-    smenuIxHistory <- get
     sdisplayNeeded <- get
     let schanF = ChanFrontend $ const $
           assert `failure` ("Binary: ChanFrontend" :: String)
@@ -200,7 +185,7 @@ instance Binary SessionUI where
         slastPlay = []
         slastLost = ES.empty
         swaitTimes = 0
-        smenuIxMain = 7
+        smenuIxMap = M.singleton "main" 7
         skeysHintMode = KeysHintAbsent
         sstart = 0
         sgstart = 0
