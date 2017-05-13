@@ -40,7 +40,7 @@ strictDecodeEOF path = flip runDOM undefined $ do
   let (a, n) = decode $ LBS.pack $ T.unpack item
   if n == ("OK" :: String)
     then return $! a
-    else error $ "Fatal error: corrupted file " ++ path
+    else assert `failure` "Fatal error: corrupted file " ++ path
 
 -- | Try to create a directory; not needed with local storage in JS.
 tryCreateDir :: FilePath -> IO ()
@@ -70,7 +70,7 @@ readFile path = flip runDOM undefined $ do
   storage <- getLocalStorage win
   mitem <- getItem storage path
   case mitem of
-    Nothing -> error $ "Fatal error: no file " ++ path
+    Nothing -> assert `failure` "Fatal error: no file " ++ path
     Just item -> return item
 
 renameFile :: FilePath -> FilePath -> IO ()
@@ -79,7 +79,7 @@ renameFile path path2 = flip runDOM undefined $ do
   storage <- getLocalStorage win
   mitem <- getItem storage path
   case mitem :: Maybe String of
-    Nothing -> error $ "Fatal error: no file " ++ path
+    Nothing -> assert `failure` "Fatal error: no file " ++ path
     Just item -> do
       setItem storage path2 item  -- overwrites
       removeItem storage path

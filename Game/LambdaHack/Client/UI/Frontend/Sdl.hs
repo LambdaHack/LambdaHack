@@ -84,10 +84,12 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
               then Self.getDataFileName fontFileName
               else return fontFileName
   fontFileExists <- doesFileExist fontFile
-  unless fontFileExists $ error $ "Font file does not exist: " ++ fontFile
+  unless fontFileExists $
+    assert `failure` "Font file does not exist: " ++ fontFile
   let fontSize = fromJust sfontSize
   code <- TTF.init
-  when (code /= 0) $ error $ "init of sdl2-ttf failed with: " ++ show code
+  when (code /= 0) $
+    assert `failure` "init of sdl2-ttf failed with: " ++ show code
   sfont <- TTF.openFont fontFile fontSize
   let fonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
       sdlSizeAdd = fromJust $ if fonFile then sdlFonSizeAdd else sdlTtfSizeAdd

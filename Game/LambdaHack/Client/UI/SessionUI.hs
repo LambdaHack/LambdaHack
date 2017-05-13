@@ -109,7 +109,8 @@ emptySessionUI sconfig =
     , sactorUI = EM.empty
     , sslots = ItemSlots EM.empty EM.empty
     , slastSlot = SlotChar 0 'Z'
-    , schanF = ChanFrontend $ const $ error "emptySessionUI: ChanFrontend "
+    , schanF = ChanFrontend $ const $
+        assert `failure` ("emptySessionUI: ChanFrontend " :: String)
     , sbinding = Binding M.empty [] M.empty
     , sconfig
     , saimMode = Nothing
@@ -190,7 +191,8 @@ instance Binary SessionUI where
     smenuIxHelp <- get
     smenuIxHistory <- get
     sdisplayNeeded <- get
-    let schanF = ChanFrontend $ const $ error "Binary: ChanFrontend"
+    let schanF = ChanFrontend $ const $
+          assert `failure` ("Binary: ChanFrontend" :: String)
         sbinding = Binding M.empty [] M.empty
         sxhairMoused = True
         spointer = originPoint

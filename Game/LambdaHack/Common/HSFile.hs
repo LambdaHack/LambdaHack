@@ -47,7 +47,7 @@ strictDecodeEOF path =
     let (a, n) = decode $ Z.decompress c
     if n == ("OK" :: String)
       then return $! a
-      else error $ "Fatal error: corrupted file " ++ path
+      else assert `failure` "Fatal error: corrupted file " ++ path
 
 -- | Try to create a directory, if it doesn't exist. We catch exceptions
 -- in case many clients try to do the same thing at the same time.
