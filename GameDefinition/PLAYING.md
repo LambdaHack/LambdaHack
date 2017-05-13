@@ -167,12 +167,18 @@ are described in the status lines at the bottom of the screen,
 as explained in section [Heroes](#heroes) above.
 
 Commands for saving and exiting the current game, starting a new game,
-setting options and changing henchmen tactics, etc.,
-are listed in the Main Menu, brought up by the `ESC` key.
-Game difficulty setting affects hitpoints at birth for any actors
-of any UI-using faction. For a person new to roguelikes, the `raid` scenario
-offers a gentle introduction. The subsequent game scenarios gradually
-introduce squad combat, stealth, opportunity fire, asymmetric battles and more.
+setting options and changing henchmen tactics, etc., are listed
+in the Main Menu, brought up by the `ESC` key. Game difficulty setting
+affects hitpoints at birth for any actors of any UI-using faction.
+The "lone wolf" challenge mode reduces player's starting actors
+to exactly one (consequently, this does not affect the initial scenario).
+The "cold fish" challenge mode makes it impossible for player characters
+to be healed by actors from other factions (this is a significant
+restriction in the final scenario).
+
+For a person new to roguelikes, the `raid` scenario offers a gentle
+introduction. The subsequent game scenarios gradually introduce squad combat,
+stealth, opportunity fire, asymmetric battles and more.
 
 
 Monsters
