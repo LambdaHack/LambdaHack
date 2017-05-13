@@ -403,7 +403,8 @@ effectRefillHP power source target = do
                                                          -- UI limitation
   curChalSer <- getsServer $ scurChalSer . sdebugSer
   fact <- getsState $ (EM.! bfid tb) . sfactionD
-  if | cfish curChalSer && fhasUI (gplayer fact) && bfid sb /= bfid tb -> do
+  if | cfish curChalSer && power > 0
+       && fhasUI (gplayer fact) && bfid sb /= bfid tb -> do
        execSfxAtomic $ SfxMsgFid (bfid tb) SfxColdFish
        return False
      | deltaHP == 0 -> return False
