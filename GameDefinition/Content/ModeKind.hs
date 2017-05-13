@@ -89,7 +89,7 @@ zoo = ModeKind  -- asymmetric crowd melee at night
   , mfreq   = [("zoo", 1), ("campaign scenario", 1)]
   , mroster = rosterZoo
   , mcaves  = cavesZoo
-  , mdesc   = "The heat of the dispute reaches the nearby Wonders of Science and Nature exhibition, igniting greenery, nets and cages. Crazed animals must be prevented from ruining precious scentific equipment and setting back the otherwise fruitful exchange of ideas."
+  , mdesc   = "The heat of the dispute reaches the nearby Wonders of Science and Nature exhibition, igniting greenery, nets and cages. Crazed animals must be prevented from ruining precious scientific equipment and setting back the otherwise fruitful exchange of ideas."
   }
 
 -- The tactic is to sneak in the dark, highlight enemy with thrown torches
@@ -106,7 +106,7 @@ ambush = ModeKind  -- dense ranged with reaction fire at night
   , mfreq   = [("ambush", 1), ("campaign scenario", 1)]
   , mroster = rosterAmbush
   , mcaves  = cavesAmbush
-  , mdesc   = "Prevent highjacking of your ideas at all cost! Be stealthy, be aggresive. Fast execution is what makes or breaks a creative team."
+  , mdesc   = "Prevent hijacking of your ideas at all cost! Be stealthy, be aggressive. Fast execution is what makes or breaks a creative team."
   }
 
 exploration = ModeKind

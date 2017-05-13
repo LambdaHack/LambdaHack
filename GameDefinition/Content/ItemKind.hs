@@ -761,7 +761,7 @@ necklace7 = necklace
   , ieffects = [ Unique, ELabel "of Overdrive", EqpSlot EqpSlotAddSpeed
                , Recharging (InsertMove $ 1 + d 2)
                , Recharging (RefillHP (-1))
-               , Recharging (RefillCalm (-1)) ]  -- fake "hears someting" :)
+               , Recharging (RefillCalm (-1)) ]  -- fake "hears something" :)
                ++ ieffects necklace
   , ifeature = Durable : ifeature necklace
   }
