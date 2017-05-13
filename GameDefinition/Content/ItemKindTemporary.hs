@@ -53,8 +53,8 @@ tmpProtectedRanged = tmpAs "protected from ranged" [AddArmorRanged 25]
 tmpVulnerable = tmpAs "defenseless" [ AddArmorMelee (-50)
                                     , AddArmorRanged (-25) ]
 tmpResolute = tmpAs "resolute" [AddMaxCalm 60]
-tmpFast20 = tmpAs "fast 20" [AddSpeed 20]
-tmpSlow10 = tmpAs "slow 10" [AddSpeed (-10)]
+tmpFast20 = tmpAs "hasted" [AddSpeed 20]
+tmpSlow10 = tmpAs "slowed" [AddSpeed (-10)]
 tmpFarSighted = tmpAs "far-sighted" [AddSight 5]
 tmpBlind = tmpAs "blind" [AddSight (-99)]
 tmpKeenSmelling = tmpAs "keen-smelling" [AddSmell 2]
@@ -89,7 +89,7 @@ tmpWeaklyPoisoned =
 tmpSlow10Resistant =
   let tmp = tmpAs "slow resistant" []
   in tmp { icount = 7 + d 5
-         , ieffects = Recharging (DropItem 1 1 COrgan "slow 10") : ieffects tmp
+         , ieffects = Recharging (DropItem 1 1 COrgan "slowed") : ieffects tmp
          }
 tmpPoisonResistant =
   let tmp = tmpAs "poison resistant" []

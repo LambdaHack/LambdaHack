@@ -198,7 +198,7 @@ net = ItemKind
   , iweight  = 1000
   , idamage  = toDmg $ 2 * d 1
   , iaspects = [AddHurtMelee (-14 |*| 5)]
-  , ieffects = [ toOrganGameTurn "slow 10" (3 + d 3)
+  , ieffects = [ toOrganGameTurn "slowed" (3 + d 3)
                , DropItem maxBound 1 CEqp "torso armor" ]
   , ifeature = [Identified]
   , idesc    = "A wide net with weights along the edges. Entangles armor and restricts movement."
@@ -345,13 +345,13 @@ flask6 = flask
 flask7 = flask
   { irarity  = [(10, 5)]
   , ieffects = [ ELabel "of haste brew"
-               , toOrganActorTurn "fast 20" (20 + d 5)
+               , toOrganActorTurn "hasted" (20 + d 5)
                , OnSmash (Explode "blast 20")
                , OnSmash (Explode "haste spray") ]
   }
 flask8 = flask
   { ieffects = [ ELabel "of lethargy brew"
-               , toOrganGameTurn "slow 10" (20 + d 5)
+               , toOrganGameTurn "slowed" (20 + d 5)
                , toOrganNone "regenerating"
                , RefillCalm 5
                , OnSmash (Explode "slowness mist") ]
@@ -490,7 +490,7 @@ potion6 = potion
   , ieffects = [ Impress
                , OneOf [ RefillCalm (-60)
                        , RefillHP 20, RefillHP 10, Burn 10
-                       , toOrganActorTurn "fast 20" (20 + d 5) ]
+                       , toOrganActorTurn "hasted" (20 + d 5) ]
                , OnSmash (OneOf [ Explode "healing mist 2"
                                 , Explode "wounding mist"
                                 , Explode "distressing odor"
@@ -613,7 +613,7 @@ jumpingPole = ItemKind
   , iweight  = 10000
   , idamage  = toDmg 0
   , iaspects = [Timeout $ d 2 + 2 - dl 2 |*| 10]
-  , ieffects = [Recharging (toOrganActorTurn "fast 20" 1)]
+  , ieffects = [Recharging (toOrganActorTurn "hasted" 1)]
   , ifeature = [Durable, Applicable, Identified]
   , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
   , ikit     = []
