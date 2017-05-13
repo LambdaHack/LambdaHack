@@ -138,9 +138,8 @@ executorSer cops copsClient sdebugNxtCmdline = do
   -- (or server and client crash), which gives them time to save
   -- and report their own inconsistencies, if any.
   Ex.handle (\(ex :: Ex.SomeException) -> do
---               T.hPutStrLn stdout "Server got exception, waiting for clients."
---               hFlush stdout
-               threadDelay 1000000  -- let clients report their errors and save
+               Ex.uninterruptibleMask_ $ threadDelay 1000000
+                 -- let clients report their errors and save
                when (ssavePrefixSer sdebugNxt == defPrefix) bkpAllSaves
                hFlush stdout
                Ex.throw ex)  -- crash eventually, which kills clients
