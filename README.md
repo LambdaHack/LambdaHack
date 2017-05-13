@@ -77,10 +77,11 @@ The game UI can be configured via a config file.
 A file with the default settings, the same as built into the binary, is in
 [GameDefinition/config.ui.default](GameDefinition/config.ui.default).
 When the game is run for the first time, the file is copied to the default
-user data folder, which is `~/.LambdaHack/` on Linux and
+user data folder, which is `~/.LambdaHack/` on Linux,
 `C:\Users\<username>\AppData\Roaming\LambdaHack\`
 (or `C:\Documents And Settings\user\Application Data\LambdaHack\`
-or something else altogether) on Windows.
+or something else altogether) on Windows, and in RMB menu, under
+`Inspect/Application/Local Storage` when run inside the Chrome browser.
 
 Screen font can be changed and enlarged by editing the config file
 in the user data folder. For a small game window, the highly optimized
