@@ -202,20 +202,13 @@ xhairToPos = do
     Nothing -> return Nothing  -- e.g., when game start and no leader yet
     Just aid -> aidTgtToPos aid lidV sxhair  -- e.g., xhair on another level
 
--- Reset xhair and move it to viewed level.
+-- Reset xhair and move it to actor's position.
 clearXhair :: MonadClientUI m => m ()
 clearXhair = do
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
-  xhairPos <- xhairToPos
   lidV <- viewedLevelUI  -- don't assume aiming mode is or will be off
-  sxhairOld <- getsSession sxhair
-  let cpos = fromMaybe lpos xhairPos
-      sxhair = case sxhairOld of
-        TEnemy{} -> sxhairOld
-        TVector{} -> sxhairOld
-        _ -> TPoint TAny lidV cpos
-  modifySession $ \sess -> sess {sxhair}
+  modifySession $ \sess -> sess {sxhair = TPoint TAny lidV lpos}
 
 -- If aim mode is exited, usually the player had the opportunity to deal
 -- with xhair on a foe spotted on another level, so now move xhair
