@@ -372,7 +372,7 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
                                  (filter (`isAllied` bfid) $ EM.elems factionD)
                      else any hasUIorEscapes
                               (filter (`isAtWar` bfid) $ EM.elems factionD)
-      diffHP | boostFact = if cdiff curChalSer == 1
+      diffHP | boostFact = if cdiff curChalSer `elem` [1, difficultyBound]
                            then xM 999 - hp -- as much as UI can stand
                            else hp * 2 ^ abs diffBonusCoeff
              | otherwise = hp
