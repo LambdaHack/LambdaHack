@@ -19,7 +19,7 @@ description:   LambdaHack is a game engine library for roguelike games
                and compile a ready-to-play game binary, using either
                the supplied or a custom-made main loop.
                Several frontends are available (SDL2 is the default
-               for desktop and DOM is the default for browser)
+               for desktop and the game also runs in Javascript on browser)
                and many other generic engine components are easily overridden,
                but the fundamental source of flexibility lies
                in the strict and type-safe separation of code from the content

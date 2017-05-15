@@ -10,8 +10,8 @@ games of arbitrary theme, size and complexity. You specify the content
 to be procedurally generated, including game rules and AI behaviour.
 The library lets you compile a ready-to-play game binary, using either
 the supplied or a custom-made main loop. Several frontends are available
-(SDL2 is the default for desktop and DOM is the default for browser)
-and many other generic engine components are easily overridden,
+(SDL2 is the default for desktop and the game also runs in Javascript
+on browser) and many other generic engine components are easily overridden,
 but the fundamental source of flexibility lies
 in the strict and type-safe separation of code from the content
 and of clients (human and AI-controlled) from the server.
@@ -155,6 +155,8 @@ in config.ui.ini) should work everywhere. GTK and SDL2 work fine, too,
 both regarding numeric keypad and mouse. Display on SDL2 and in the browser
 is superior to all the other frontends, due to custom, square font
 and less intrusive ways of highlighting interesting squares.
+When running on browser, leave the program enough time to save games progress
+properly before killing the browser, or the savefiles may be corrupted.
 
 
 Testing and debugging
