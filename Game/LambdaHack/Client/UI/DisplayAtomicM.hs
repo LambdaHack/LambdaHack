@@ -211,8 +211,8 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
         let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
         when (null closeFoes) $ do  -- obvious where the feeling comes from
           aidVerbMU aid "hear something"
-          msgDuplicateScrap
-          stopPlayBack
+          duplicated <- msgDuplicateScrap
+          unless duplicated stopPlayBack
   UpdTrajectory{} -> return ()  -- if projectile dies here, no display
   -- Change faction attributes.
   UpdQuitFaction fid _ toSt -> quitFactionUI fid toSt
@@ -480,7 +480,7 @@ itemAidVerbMU aid verb iid ek cstore = do
           msg = makeSentence [MU.SubjectVerbSg subject verb, object]
       msgAdd msg
 
-msgDuplicateScrap :: MonadClientUI m => m ()
+msgDuplicateScrap :: MonadClientUI m => m Bool
 msgDuplicateScrap = do
   report <- getsSession _sreport
   history <- getsSession shistory
@@ -490,6 +490,7 @@ msgDuplicateScrap = do
                        || lastDup (lastReportOfHistory history)
   when lastDuplicated $
     modifySession $ \sess -> sess {_sreport = repRest}
+  return lastDuplicated
 
 createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 createActorUI born aid body = do
