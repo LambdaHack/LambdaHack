@@ -353,7 +353,9 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
       aspects = fromJust $ itemAspect $ fromJust itemDisco
   -- Initial HP and Calm is based only on trunk and ignores organs.
       hp = xM (max 2 $ aMaxHP aspects) `div` 2
-      calm = xM (max 2 $ aMaxCalm aspects) `div` 2
+      -- Hard to auto-id items that refill Calm, but reduced sight at game
+      -- start is more confusing and frustrating:
+      calm = xM (max 0 $ aMaxCalm aspects)
   -- Create actor.
   factionD <- getsState sfactionD
   let fact = factionD EM.! bfid
