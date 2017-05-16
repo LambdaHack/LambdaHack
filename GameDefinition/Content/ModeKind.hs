@@ -116,7 +116,7 @@ exploration = ModeKind
               , ("campaign scenario", 1) ]
   , mroster = rosterExploration
   , mcaves  = cavesExploration
-  , mdesc   = "Enjoy the peaceful seclusion of these cold ancient tunnels, but don't let wanton curiosity, greed and the ever-creeping abstraction madness keep you down there for too long."
+  , mdesc   = "Enjoy the peaceful seclusion of these cold austere tunnels, but don't let wanton curiosity, greed and the ever-creeping abstraction madness keep you down there for too long."
   }
 
 safari = ModeKind  -- easter egg available only via screensaver
