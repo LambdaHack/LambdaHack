@@ -163,7 +163,7 @@ calmEnough b AspectRecord{aMaxCalm} =
 hpEnough :: Actor -> AspectRecord -> Bool
 hpEnough b AspectRecord{aMaxHP} =
   let hpMax = max 1 aMaxHP
-  in 2 * xM hpMax <= 3 * bhp b && bhp b > xM 1
+  in xM hpMax <= 2 * bhp b && bhp b > xM 1
 
 -- | How long until an actor's smell vanishes from a tile.
 smellTimeout :: Delta Time
