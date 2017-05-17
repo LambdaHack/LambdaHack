@@ -30,13 +30,20 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 
--- | Handle the move of an AI player.
+-- | Handle the move of an actor under AI control (of UI or AI player).
 queryAI :: MonadClient m => ActorId -> m RequestAI
 queryAI aid = do
-  -- condInMelee will most proably be needed in this functions, but even if not,
-  -- it's OK, it's not forced, because wrapped in @Maybe@.
+  -- @_sleader@ may be different from @_gleader@ due to @stopPlayBack@,
+  -- but only leaders may change faction leader, so we fix that:
+  side <- getsClient sside
+  mleader <- getsState $ _gleader . (EM.! side) . sfactionD
+  mleaderCli <- getsClient _sleader
+  unless (Just aid == mleader || mleader == mleaderCli) $
+    -- @aid@ is not the leader, so he can't change leader
+    modifyClient $ \cli -> cli {_sleader = mleader}
+  -- @condInMelee@ will most proably be needed in this functions,
+  -- but even if not, it's OK, it's not forced, because wrapped in @Maybe@:
   udpdateCondInMelee aid
-  mleader <- getsClient _sleader
   (aidToMove, treq) <- pickAI Nothing aid
   (aidToMove2, treq2) <-
     case treq of
@@ -45,9 +52,8 @@ queryAI aid = do
         modifyClient $ \cli -> cli {_sleader = mleader}  -- undo previous choice
         pickAI (Just (aidToMove, treq)) aid
       _ -> return (aidToMove, treq)
-  if aidToMove2 /= aid
-  then return (ReqAITimed treq2, Just aidToMove2)
-  else return (ReqAITimed treq2, Nothing)
+  return ( ReqAITimed treq2
+         , if aidToMove2 /= aid then Just aidToMove2 else Nothing )
 
 pickAI :: MonadClient m
        => Maybe (ActorId, RequestAnyAbility) -> ActorId

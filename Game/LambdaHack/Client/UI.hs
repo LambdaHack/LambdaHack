@@ -100,9 +100,7 @@ queryUI = do
         !_A = assert (isJust mleader) ()
     req <- humanCommand
     leader2 <- getLeaderUI
-    if mleader /= Just leader2
-      then return (req, Just leader2)
-      else return (req, Nothing)
+    return (req, if mleader /= Just leader2 then Just leader2 else Nothing)
 
 -- | Let the human player issue commands until any command takes time.
 humanCommand :: forall m. MonadClientUI m => m ReqUI

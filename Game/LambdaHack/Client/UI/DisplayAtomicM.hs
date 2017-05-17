@@ -1017,9 +1017,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Unique -> assert `failure` sfx
         IK.Periodic -> assert `failure` sfx
   SfxMsgFid _ sfxMsg -> do
-    side <- getsClient sside
-    fact <- getsState $ (EM.! side) . sfactionD
-    case _gleader fact of
+    mleader <- getsClient _sleader
+    case mleader of
       Just{} -> return ()  -- will display stuff when leader moves
       Nothing -> do
         lidV <- viewedLevelUI
