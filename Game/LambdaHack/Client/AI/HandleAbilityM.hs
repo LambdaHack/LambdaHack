@@ -240,8 +240,11 @@ actionStrategy aid retry = do
           , condCanMelee
             && (if condInMelee then condAimEnemyPresent
                 else (condAimEnemyPresent || condAimEnemyRemembered)
-                     && (not (condThreat 2) || not condMeleeBad1)
-                       -- this results in animals in corridor never attacking,
+                     && (not (condThreat 2)
+                         || heavilyDistressed  -- if under fire, do something!
+                         || not condMeleeBad1)
+                       -- this results in animals in corridor never attacking
+                       -- (unless distressed by, e.g., being hit by missiles),
                        -- because they can't swarm opponent, which is logical,
                        -- and in rooms they do attack, so not too boring;
                        -- two aliens attack always, because more aggressive
