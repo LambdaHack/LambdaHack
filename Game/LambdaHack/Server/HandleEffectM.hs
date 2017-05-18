@@ -634,7 +634,7 @@ effectAscend recursiveCall execSfx up source target pos = do
        execSfx
        btime_bOld <- getsServer $ (EM.! target) . (EM.! lid1)
                        . (EM.! bfid b1) . sactorTime
-       pos3 <- findStairExit up lid2 pos2
+       pos3 <- findStairExit (bfid sb) up lid2 pos2
        let switch1 = void $ switchLevels1 (target, b1)
            switch2 = do
              -- Make the initiator of the stair move the leader,
@@ -672,18 +672,27 @@ effectAscend recursiveCall execSfx up source target pos = do
            switch2
        return True
 
-findStairExit :: MonadStateRead m => Bool -> LevelId -> Point -> m Point
-findStairExit moveUp lid pos = do
+findStairExit :: MonadStateRead m
+              => FactionId -> Bool -> LevelId -> Point -> m Point
+findStairExit side moveUp lid pos = do
   Kind.COps{coTileSpeedup} <- getsState scops
+  fact <- getsState $ (EM.! side) . sfactionD
   lvl <- getLevel lid
   let defLanding = uncurry Vector $ if moveUp then (-1, 0) else (1, 0)
       (mvs2, mvs1) = break (== defLanding) moves
       mvs = mvs1 ++ mvs2
-  unocc <- getsState $ \s p -> Tile.isWalkable coTileSpeedup (lvl `at` p)
-                               && null (posToAssocs p lid s)
-  case find unocc $ map (shift pos) mvs of
-    Nothing -> return $! shift pos defLanding
-    Just posRes -> return posRes
+      ps = filter (Tile.isWalkable coTileSpeedup . (lvl `at`))
+           $ map (shift pos) mvs
+      posOcc :: State -> Int -> Point -> Bool
+      posOcc s k p = case posToAssocs p lid s of
+        [] -> k == 0
+        (_, b) : _ | bproj b -> k == 3
+        (_, b) : _ | isAtWar fact (bfid b) -> k == 1  -- non-proj foe
+        _ -> k == 2  -- moving a non-projectile friend
+  unocc <- getsState posOcc
+  case concatMap (\k -> filter (unocc k) ps) [0..3] of
+    [] -> assert `failure` ps
+    posRes : _ -> return posRes
 
 switchLevels1 :: MonadAtomic m => (ActorId, Actor) -> m (Maybe ActorId)
 switchLevels1 (aid, bOld) = do
