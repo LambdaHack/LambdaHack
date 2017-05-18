@@ -308,7 +308,7 @@ flask = ItemKind
   }
 flask1 = flask
   { irarity  = [(10, 4)]
-  , ieffects = [ ELabel "of strength brew"
+  , ieffects = [ ELabel "of strength renewal brew"
                , toOrganActorTurn "strengthened" (20 + d 5)
                , toOrganNone "regenerating"
                , OnSmash (Explode "dense shower") ]
@@ -350,7 +350,8 @@ flask7 = flask
                , OnSmash (Explode "haste spray") ]
   }
 flask8 = flask
-  { ieffects = [ ELabel "of lethargy brew"
+  { irarity  = [(1, 14), (10, 4)]
+  , ieffects = [ ELabel "of lethargy brew"
                , toOrganGameTurn "slowed" (20 + d 5)
                , toOrganNone "regenerating"
                , RefillCalm 5
@@ -376,15 +377,18 @@ flask11 = flask
                , OnSmash (Explode "eye shine") ]
   }
 flask12 = flask
-  { ieffects = [ ELabel "of whiskey"
+  { irarity  = [(1, 14), (10, 10)]
+  , ieffects = [ ELabel "of whiskey"
                , toOrganActorTurn "drunk" (20 + d 5)
                , Burn 1, RefillHP 3
                , OnSmash (Explode "whiskey spray") ]
   }
 flask13 = flask
   { ieffects = [ ELabel "of bait cocktail"
-               , toOrganActorTurn "drunk" (5 + d 5)
-               , OnSmash (Summon "mobile animal" $ 1 + dl 2)
+               , toOrganActorTurn "drunk" (20 + d 5)
+               , Burn 1, RefillHP 3
+               , Summon "mobile animal" 1
+               , OnSmash (Summon "mobile animal" 1)
                , OnSmash Impress
                , OnSmash (Explode "waste") ]
   }
@@ -393,7 +397,7 @@ flask13 = flask
 -- healing effect is enough. OTOH, throwing a harmful flask at many enemies
 -- at once is not easy to arrange, so these explostions can stay powerful.
 flask14 = flask
-  { irarity  = [(1, 14), (10, 4)]
+  { irarity  = [(1, 4), (10, 14)]
   , ieffects = [ ELabel "of regeneration brew"
                , toOrganNone "regenerating"
                , OnSmash (Explode "healing mist") ]
@@ -466,12 +470,11 @@ potion2 = potion
                , OnSmash (Explode "pheromone") ]
   }
 potion3 = potion
-  { irarity  = [(1, 9)]
-  , ieffects = [ RefillHP 5, DropItem 1 maxBound COrgan "poisoned"
+  { ieffects = [ RefillHP 5, DropItem 1 maxBound COrgan "poisoned"
                , OnSmash (Explode "healing mist") ]
   }
 potion4 = potion
-  { irarity  = [(10, 9)]
+  { irarity  = [(1, 7), (10, 10)]
   , ieffects = [ RefillHP 10, DropItem 1 maxBound COrgan "poisoned"
                , OnSmash (Explode "healing mist 2") ]
   }
