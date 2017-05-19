@@ -12,6 +12,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import Data.Tuple
+import GHC.Exts (inline)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
@@ -205,11 +206,16 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
   UpdRefillCalm aid calmDelta ->
     when (calmDelta == minusM) $ do  -- lower deltas come from hits; obvious
       side <- getsClient sside
-      b <- getsState $ getActorBody aid
-      when (bfid b == side) $ do
-        allFoes <- getsState $ warActorRegularList (bfid b) (blid b)
-        let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
-        when (null closeFoes) $ do  -- obvious where the feeling comes from
+      fact <- getsState $ (EM.! side) . sfactionD
+      body <- getsState $ getActorBody aid
+      when (bfid body == side) $ do
+        let closeFoe b =  -- mimics isHeardFoe
+                     blid b == blid body
+                     && chessDist (bpos b) (bpos body) <= 3  -- a bit costly
+                     && not (waitedLastTurn b)  -- uncommon
+                     && inline isAtWar fact (bfid b)  -- costly
+        anyCloseFoes <- getsState $ any closeFoe . EM.elems . sactorD
+        when anyCloseFoes $ do  -- obvious where the feeling comes from
           aidVerbMU aid "hear something"
           duplicated <- msgDuplicateScrap
           unless duplicated stopPlayBack
