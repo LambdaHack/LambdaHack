@@ -22,9 +22,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleCaveKind
   , validateAll = validateAllCaveKind
   , content = contentFromList
-      [rogue, arena, arena2, laboratory, empty, noise, noise2, shallow1rogue, raid, brawl, shootout, escape, zoo, ambush, battle, safari1, safari2, safari3]
+      [rogue, arena, arena2, laboratory, empty, noise, noise2, shallow2rogue, shallow1rogue, raid, brawl, shootout, escape, zoo, ambush, battle, safari1, safari2, safari3]
   }
-rogue,        arena, arena2, laboratory, empty, noise, noise2, shallow1rogue, raid, brawl, shootout, escape, zoo, ambush, battle, safari1, safari2, safari3 :: CaveKind
+rogue,        arena, arena2, laboratory, empty, noise, noise2, shallow2rogue, shallow1rogue, raid, brawl, shootout, escape, zoo, ambush, battle, safari1, safari2, safari3 :: CaveKind
 
 rogue = CaveKind
   { csymbol       = 'R'
@@ -182,10 +182,14 @@ noise2 = noise
   , cplaceFreq    = [("noise", 1), ("mine", 99)]
   , cstairFreq    = [("gated staircase", 100)]
   }
-shallow1rogue = rogue
+shallow2rogue = rogue
+  { cfreq         = [("shallow random 2", 100)]
+  , cextraStairs  = 1  -- ensure heroes meet initial monsters and their loot
+  }
+shallow1rogue = shallow2rogue
   { csymbol       = 'B'
   , cname         = "Cave entrance"
-  , cfreq         = [("shallow random 1", 100)]
+  , cfreq         = [("outermost", 100)]
   , cdarkChance   = 0  -- all rooms lit, for a gentle start
   , cextraStairs  = 1
   , cactorFreq    = filter ((/= "monster") . fst) $ cactorFreq rogue

@@ -432,8 +432,8 @@ cavesZoo = IM.fromList [(-8, "caveZoo")]
 cavesAmbush = IM.fromList [(-9, "caveAmbush")]
 
 cavesExploration = IM.fromList $
-  [ (-1, "shallow random 1")
-  , (-2, "caveRogue")
+  [ (-1, "outermost")
+  , (-2, "shallow random 2")
   , (-3, "caveEmpty") ]
   ++ zip [-4, -5] (repeat "default random")
   ++ zip [-6, -7, -8, -9] (repeat "deep random")
