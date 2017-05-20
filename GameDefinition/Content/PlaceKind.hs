@@ -370,13 +370,12 @@ staircase2 = staircase
   }
 staircase3 = staircase
   { pfreq    = [("staircase", 1000)]
-  , pcover   = CMirror
   , pfence   = FFloor
   , ptopLeft = [ "O·I·O"
                , "·····"
                , "·<·>·"
                , "·····"
-               , "O·O·O"
+               , "O·I·O"
                ]
   }
 staircase4 = staircase
@@ -403,9 +402,8 @@ staircase6 = staircase
   }
 staircase7 = staircase
   { pfreq    = [("staircase", 100)]
-  , pcover   = CMirror
   , pfence   = FGround
-  , ptopLeft = [ "O·I·<·>·O·O"
+  , ptopLeft = [ "O·I·<·>·I·O"
                ]
   }
 staircase8 = staircase
@@ -474,11 +472,10 @@ staircase14 = staircase
   }
 staircase15 = staircase
   { pfreq    = [("staircase", 1000)]
-  , pcover   = CMirror
   , pfence   = FNone
   , ptopLeft = [ "-------------"
                , "|···········|"
-               , "|O·O·<·>·I·O|"
+               , "|O·I·<·>·I·O|"
                , "|···········|"
                , "-------------"
                ]
