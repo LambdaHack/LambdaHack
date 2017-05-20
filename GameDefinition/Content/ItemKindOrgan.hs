@@ -16,9 +16,13 @@ import Game.LambdaHack.Content.ItemKind
 
 organs :: [ItemKind]
 organs =
-  [fist, foot, claw, smallClaw, snout, smallJaw, jaw, largeJaw, tooth, horn, tentacle, lash, noseTip, lip, torsionRight, torsionLeft, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, pupil, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision5, vision6, vision7, vision8, vision10, vision12, vision14, vision16, nostril, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP]
+  [fist, foot, claw, smallClaw, snout, smallJaw, jaw, largeJaw, horn, tentacle, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision5, vision6, vision7, vision8, vision10, vision12, vision14, vision16, nostril, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP]
+  -- LH-specific
+  ++ [tooth, lash, noseTip, lip, torsionRight, torsionLeft, pupil]
 
-fist,    foot, claw, smallClaw, snout, smallJaw, jaw, largeJaw, tooth, horn, tentacle, lash, noseTip, lip, torsionRight, torsionLeft, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, pupil, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision5, vision6, vision7, vision8, vision10, vision12, vision14, vision16, nostril, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP :: ItemKind
+fist,    foot, claw, smallClaw, snout, smallJaw, jaw, largeJaw, horn, tentacle, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision5, vision6, vision7, vision8, vision10, vision12, vision14, vision16, nostril, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP :: ItemKind
+-- LH-specific
+tooth, lash, noseTip, lip, torsionRight, torsionLeft, pupil :: ItemKind
 
 -- Weapons
 
@@ -99,14 +103,6 @@ largeJaw = fist
   , idamage  = toDmg $ 12 * d 1
   , idesc    = ""
   }
-tooth = fist
-  { iname    = "tooth"
-  , ifreq    = [("tooth", 20)]
-  , icount   = 3
-  , iverbHit = "nail"
-  , idamage  = toDmg $ 2 * d 1
-  , idesc    = ""
-  }
 horn = fist
   { iname    = "horn"
   , ifreq    = [("horn", 20)]
@@ -116,7 +112,7 @@ horn = fist
   , idesc    = ""
   }
 
--- * Monster weapon organs
+-- * Special weapon organs
 
 tentacle = fist
   { iname    = "tentacle"
@@ -126,55 +122,6 @@ tentacle = fist
   , idamage  = toDmg $ 4 * d 1
   , idesc    = ""
   }
-lash = fist
-  { iname    = "lash"
-  , ifreq    = [("lash", 100)]
-  , icount   = 1
-  , iverbHit = "lash"
-  , idamage  = toDmg $ 3 * d 1
-  , idesc    = ""
-  }
-noseTip = fist
-  { iname    = "tip"
-  , ifreq    = [("nose tip", 50)]
-  , icount   = 1
-  , iverbHit = "poke"
-  , idamage  = toDmg $ 2 * d 1
-  , idesc    = ""
-  }
-lip = fist
-  { iname    = "lip"
-  , ifreq    = [("lip", 10)]
-  , icount   = 1
-  , iverbHit = "lap"
-  , idamage  = toDmg $ 1 * d 1
-  , iaspects = [Timeout $ 3 + d 3]
-  , ieffects = [Recharging (toOrganGameTurn "weakened" (2 + d 2))]
-  , idesc    = ""
-  }
-torsionRight = fist
-  { iname    = "right torsion"
-  , ifreq    = [("right torsion", 100)]
-  , icount   = 1
-  , iverbHit = "twist"
-  , idamage  = toDmg $ 17 * d 1
-  , iaspects = [Timeout $ 5 + d 5]
-  , ieffects = [Recharging (toOrganGameTurn "slowed" (3 + d 3))]
-  , idesc    = ""
-  }
-torsionLeft = fist
-  { iname    = "left torsion"
-  , ifreq    = [("left torsion", 100)]
-  , icount   = 1
-  , iverbHit = "twist"
-  , idamage  = toDmg $ 17 * d 1
-  , iaspects = [Timeout $ 5 + d 5]
-  , ieffects = [Recharging (toOrganGameTurn "weakened" (3 + d 3))]
-  , idesc    = ""
-  }
-
--- * Special weapon organs
-
 thorn = fist
   { iname    = "thorn"
   , ifreq    = [("thorn", 100)]
@@ -267,18 +214,6 @@ largeTail = fist
   , idamage  = toDmg $ 8 * d 1
   , iaspects = [Timeout $ 1 + d 3]
   , ieffects = [Recharging (PushActor (ThrowMod 400 25))]
-  , idesc    = ""
-  }
-pupil = fist
-  { iname    = "pupil"
-  , ifreq    = [("pupil", 100)]
-  , icount   = 1
-  , iverbHit = "gaze at"
-  , idamage  = toDmg $ 1 * d 1
-  , iaspects = [AddSight 12, Timeout $ 5 + d 5]
-  , ieffects = [ Recharging (DropItem 1 maxBound COrgan "temporary condition")
-               , Recharging $ RefillCalm (-10)
-               ]
   , idesc    = ""
   }
 
@@ -440,5 +375,74 @@ bonusHP = armoredSkin
   , iverbHit = "intimidate"
   , iweight  = 1  -- weight 0 reserved for tmp organs
   , iaspects = [AddMaxHP 1]
+  , idesc    = ""
+  }
+
+-- * LH-specific
+
+tooth = fist
+  { iname    = "tooth"
+  , ifreq    = [("tooth", 20)]
+  , icount   = 3
+  , iverbHit = "nail"
+  , idamage  = toDmg $ 2 * d 1
+  , idesc    = ""
+  }
+lash = fist
+  { iname    = "lash"
+  , ifreq    = [("lash", 100)]
+  , icount   = 1
+  , iverbHit = "lash"
+  , idamage  = toDmg $ 3 * d 1
+  , idesc    = ""
+  }
+noseTip = fist
+  { iname    = "tip"
+  , ifreq    = [("nose tip", 50)]
+  , icount   = 1
+  , iverbHit = "poke"
+  , idamage  = toDmg $ 2 * d 1
+  , idesc    = ""
+  }
+lip = fist
+  { iname    = "lip"
+  , ifreq    = [("lip", 10)]
+  , icount   = 1
+  , iverbHit = "lap"
+  , idamage  = toDmg $ 1 * d 1
+  , iaspects = [Timeout $ 3 + d 3]
+  , ieffects = [Recharging (toOrganGameTurn "weakened" (2 + d 2))]
+  , idesc    = ""
+  }
+torsionRight = fist
+  { iname    = "right torsion"
+  , ifreq    = [("right torsion", 100)]
+  , icount   = 1
+  , iverbHit = "twist"
+  , idamage  = toDmg $ 17 * d 1
+  , iaspects = [Timeout $ 5 + d 5]
+  , ieffects = [Recharging (toOrganGameTurn "slowed" (3 + d 3))]
+  , idesc    = ""
+  }
+torsionLeft = fist
+  { iname    = "left torsion"
+  , ifreq    = [("left torsion", 100)]
+  , icount   = 1
+  , iverbHit = "twist"
+  , idamage  = toDmg $ 17 * d 1
+  , iaspects = [Timeout $ 5 + d 5]
+  , ieffects = [Recharging (toOrganGameTurn "weakened" (3 + d 3))]
+  , idesc    = ""
+  }
+pupil = fist
+  { iname    = "pupil"
+  , ifreq    = [("pupil", 100)]
+  , icount   = 1
+  , iverbHit = "gaze at"
+  , idamage  = toDmg $ 1 * d 1
+  , iaspects = [AddSight 12, Timeout $ 5 + d 5]
+  , ieffects = [ Recharging (DropItem 1 maxBound COrgan "temporary condition")
+               , Recharging $ RefillCalm (-10)
+               ]
   , idesc    = ""
   }
