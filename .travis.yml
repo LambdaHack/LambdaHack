@@ -274,7 +274,7 @@ script:
    cd ..
 
  - touch /tmp/teletypetest.log;
- - (make test-travis-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77));
+ - (make test-travis || (tail -n 2000 /tmp/teletypetest.log ; exit 77));
  - (travis_wait make testDefense-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77));
 
 # EOF

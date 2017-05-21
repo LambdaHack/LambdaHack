@@ -5,13 +5,17 @@ LambdaHack
 [![Hackage](https://img.shields.io/hackage/v/LambdaHack.svg)](https://hackage.haskell.org/package/LambdaHack)
 [![Join the chat at https://gitter.im/LambdaHack/LambdaHack](https://badges.gitter.im/LambdaHack/LambdaHack.svg)](https://gitter.im/LambdaHack/LambdaHack?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
+Try out the browser version of the LambdaHack sample game
+[here](https://lambdahack.github.io)!
+
 LambdaHack is a Haskell[1] game engine library for roguelike[2]
 games of arbitrary theme, size and complexity. You specify the content
 to be procedurally generated, including game rules and AI behaviour.
-The library lets you compile a ready-to-play game binary, using either
-the supplied or a custom-made main loop. Several frontends are available
-(SDL2 is the default for desktop and the game also runs in Javascript
-on browser) and many other generic engine components are easily overridden,
+The library lets you compile a ready-to-play game binary,
+using either the supplied or a custom-made main loop.
+Several frontends are available (SDL2 is the default
+for desktop and there is a Javascript browser frontend)
+and many other generic engine components are easily overridden,
 but the fundamental source of flexibility lies
 in the strict and type-safe separation of code from the content
 and of clients (human and AI-controlled) from the server.
@@ -48,7 +52,7 @@ so make sure you want to liberate your code and content to such an extent).
 When creating a new game based on Lambdahack I've found it useful to place
 completely new content at the end of the content files to distinguish from
 merely modified original LambdaHack content and thus help merging with new
-releases. Removal of LambdaHack content merges reasonably well, so there are
+releases. Removals of LambdaHack content merge reasonably well, so there are
 no special considerations. When modifying individual content items,
 it makes sense to keep their Haskell identifier names and change only
 in-game names and possibly frequency group names.
@@ -57,25 +61,25 @@ in-game names and possibly frequency group names.
 Installation from binary archives
 ---------------------------------
 
+The game runs rather slowly in the browser and you are limited to only
+one font, though it's scalable, so after trying out the game, you may
+prefer to use a native binary for your architecture, if it exists.
 Pre-compiled game binaries for some platforms are available through
 the release page[11] and from the Nix Packages Collection[12].
-To manually install a binary archive, make sure you have the GTK
-libraries suite on your system, unpack the LambdaHack archive
-and run the executable in the unpacked directory.
+To use a pre-compiled binary archive, unpack it and run the executable
+in the unpacked directory.
 
-On Windows, if you don't already have GTK installed (e.g., for the GIMP
-picture editor) please download and run (with default settings)
-the GTK installer from
-
-http://sourceforge.net/projects/gtk-win/
+On Linux, make sure you have the SDL2 libraries suite installed on your system
+(e.g., libsdl2, libsdl2-ttf). For Windows, the SDL2 library is already
+contained in the LambdaHack binary archive.
 
 
 Screen and keyboard configuration
 ---------------------------------
 
 The game UI can be configured via a config file.
-A file with the default settings, the same as built into the binary, is in
-[GameDefinition/config.ui.default](GameDefinition/config.ui.default).
+A file with the default settings, the same that is built into the binary,
+is in [GameDefinition/config.ui.default](GameDefinition/config.ui.default).
 When the game is run for the first time, the file is copied to the default
 user data folder, which is `~/.LambdaHack/` on Linux,
 `C:\Users\<username>\AppData\Roaming\LambdaHack\`
@@ -88,14 +92,17 @@ in the user data folder. For a small game window, the highly optimized
 bitmap fonts 16x16x.fon, 8x8x.fon and 8x8xb.fon are the best,
 but for larger window sizes or if you require international characters
 (e.g. to give custom names to player characters), a scalable font
-is the only option. The game winow automatically scales according
+is the only option. The game window automatically scales according
 to the specified font size.
 
 If you don't have the numeric keypad, you can use mouse or laptop
 keys (uk8o79jl) or you can enable the Vi keys (aka roguelike keys)
-in the config file. If numeric keypad doesn't wori, toggling the Num Lock key
-may help. If runing with the Shift kay and keypad keys don't work,
-try Control key and keypad keys instead.
+in the config file. If numeric keypad doesn't work, toggling
+the Num Lock key ometimes helps. If running with the Shift key
+and keypad keys doesn't work, try Control key instead.
+The game is fully playable with mouse only, as well as with keyboard only,
+but the most efficient combination is probably mouse for distant aiming
+and distant go-to and keyboard for everything else.
 
 
 Compilation from source
@@ -121,17 +128,20 @@ and run Cabal from the main directory
 
     cabal install
 
-There is a line terminal frontend, suitable for teletype terminals
-or a keyboard and a printer, but it's going to use a lot of paper,
-unless you disable animations with `--noAnim`. To compile with this
-or one of the less rudimentary, whole screen terminal frontends,
+There is a built-in line terminal frontend, suitable for teletype terminals
+or a keyboard and a printer (but it's going to use a lot of paper,
+unless you disable animations with `--noAnim`). To compile with
+one of the less rudimentary terminal frontends (in which case you are
+on your own regarding font choice and color setup and you won't have
+the spiffy colorful squares around special positions, only crude highlights),
 use Cabal flags, e.g,
 
     cabal install -fvty
 
-To compile with GTK2 (deprecated but supported), you need GTK libraries
-for your OS. On Windows follow the same steps as for Wine[13].
-On OSX, if you encounter problems, you may want to
+To compile with GTK2 (deprecated but still supported; beware that
+the font is not square and special position highlights are annoying),
+you need GTK libraries for your OS. On Windows follow the same steps
+as for Wine[13]. On OSX, if you encounter problems, you may want to
 compile the GTK libraries from sources[14]. Invoke Cabal as follows
 
     cabal install -fgtk gtk2hs-buildtools .
@@ -155,8 +165,8 @@ in config.ui.ini) should work everywhere. GTK and SDL2 work fine, too,
 both regarding numeric keypad and mouse. Display on SDL2 and in the browser
 is superior to all the other frontends, due to custom, square font
 and less intrusive ways of highlighting interesting squares.
-When running on browser, leave the program enough time to save games progress
-properly before killing the browser, or the savefiles may be corrupted.
+When running on browser, leave the program enough time to save game progress
+properly before killing the browser, or the savefiles may get corrupted.
 
 
 Testing and debugging
@@ -165,9 +175,9 @@ Testing and debugging
 The [Makefile](Makefile) contains many sample test commands.
 Numerous tests that use the screensaver game modes (AI vs. AI)
 and the teletype frontend are gathered in `make test`.
-Of these, travis runs `test-travis-medium` on each push to the repo.
+Of these, travis runs `test-travis` on each push to github.
 Test commands with prefix `frontend` start AI vs. AI games
-with the standard, user-friendly SDL2 frontend.
+with the standard, user-friendly frontend.
 
 Run `LambdaHack --help` to see a brief description of all debug options.
 Of these, `--sniffIn` and `--sniffOut` are very useful (though verbose
