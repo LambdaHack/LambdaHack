@@ -96,7 +96,7 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
       , ""
       , "In aiming mode, the same keys (and mouse) move the x-hair (aiming crosshair)."
       , "Press 'KP_5' ('5' on keypad, if present) to wait, bracing for impact,"
-      , "which reduces any damage taken and prevents displacing by foes. Press"
+      , "which reduces any damage taken and prevents displacement by foes. Press"
       , "'C-KP_5' (the same key with Control) to wait 0.1 of a turn, without bracing."
       , "You displace enemies by running into them with Shift/Control or RMB. Search,"
       , "open, descend and attack by bumping into walls, doors, stairs and enemies."
@@ -110,7 +110,7 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
       , "anything in the game, though not necessarily with the fewest keystrokes."
       , "You can also play the game exclusively with a mouse, or both mouse and"
       , "keyboard. See the ending help screens for mouse commands."
-      , "Lastly, you can select a command with arrows or mouse directly from a help"
+      , "Lastly, you can select a command with arrows or mouse directly from the help"
       , "screen and execute it on the spot."
       , ""
       ]
