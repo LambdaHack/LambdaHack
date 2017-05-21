@@ -974,8 +974,9 @@ xhairItemHuman = do
   items <- closestItems leader
   case items of
     [] -> failMsg "no more items remembered or visible"
-    (_, (p, bag)) : _ -> do
-      let sxhair = TPoint (TItem bag) (blid b) p
+    _ -> do
+      let (_, (p, bag)) = maximumBy (comparing fst) items
+          sxhair = TPoint (TItem bag) (blid b) p
       modifySession $ \sess -> sess {sxhair}
       doLook
       return Nothing
@@ -987,10 +988,11 @@ xhairStairHuman up = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   stairs <- closestTriggers (if up then ViaStairsUp else ViaStairsDown) leader
-  case sortBy (flip compare) stairs of
+  case stairs of
     [] -> failMsg $ "no stairs" <+> if up then "up" else "down"
-    (_, (p, (p0, bag))) : _ -> do
-      let sxhair = TPoint (TEmbed bag p0) (blid b) p
+    _ -> do
+      let (_, (p, (p0, bag))) = maximumBy (comparing fst) stairs
+          sxhair = TPoint (TEmbed bag p0) (blid b) p
       modifySession $ \sess -> sess {sxhair}
       doLook
       return Nothing
