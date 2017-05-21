@@ -7,9 +7,12 @@ name:           LambdaHack
 --             | | | +--- code changes with no API change
 version:       0.5.1.3
 synopsis:      A game engine library for roguelike dungeon crawlers
-description:   LambdaHack is a game engine library for roguelike games
+description:   LambdaHack is a Haskell game engine library for roguelike games
                of arbitrary theme, size and complexity,
-               packaged together with a small example dungeon crawler.
+               packaged together with a little example dungeon crawler.
+               .
+               Try out the browser version of the LambdaHack sample game at
+               <https://lambdahack.github.io>
                .
                <<https://raw.githubusercontent.com/LambdaHack/media/master/screenshot/safari1.png>>
                .
@@ -24,11 +27,13 @@ description:   LambdaHack is a game engine library for roguelike games
                but the fundamental source of flexibility lies
                in the strict and type-safe separation of code from the content
                and of clients (human and AI-controlled) from the server.
+               .
                Please see the changelog file for recent improvements
                and the issue tracker for short-term plans. Long term vision
                revolves around procedural content generation and includes
                in-game content creation, auto-balancing and persistent
                content modification based on player behaviour.
+               Contributions are welcome.
                .
                Games known to use the LambdaHack library:
                .

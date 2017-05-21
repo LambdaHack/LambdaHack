@@ -5,12 +5,17 @@ LambdaHack
 [![Hackage](https://img.shields.io/hackage/v/LambdaHack.svg)](https://hackage.haskell.org/package/LambdaHack)
 [![Join the chat at https://gitter.im/LambdaHack/LambdaHack](https://badges.gitter.im/LambdaHack/LambdaHack.svg)](https://gitter.im/LambdaHack/LambdaHack?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
+LambdaHack is a Haskell[1] game engine library for roguelike[2] games
+of arbitrary theme, size and complexity,
+packaged together with a little example dungeon crawler.
+
 Try out the browser version of the LambdaHack sample game
 [here](https://lambdahack.github.io)!
 
-LambdaHack is a Haskell[1] game engine library for roguelike[2]
-games of arbitrary theme, size and complexity. You specify the content
-to be procedurally generated, including game rules and AI behaviour.
+![gameplay screenshot](https://raw.githubusercontent.com/LambdaHack/media/master/screenshot/raid1.png)
+
+To use the engine, you need to specify the content to be
+procedurally generated, including game rules and AI behaviour.
 The library lets you compile a ready-to-play game binary,
 using either the supplied or a custom-made main loop.
 Several frontends are available (SDL2 is the default
@@ -19,16 +24,13 @@ and many other generic engine components are easily overridden,
 but the fundamental source of flexibility lies
 in the strict and type-safe separation of code from the content
 and of clients (human and AI-controlled) from the server.
+
 Please see the changelog file for recent improvements
 and the issue tracker for short-term plans. Long term vision
 revolves around procedural content generation and includes
 in-game content creation, auto-balancing and persistent
 content modification based on player behaviour.
-
-The engine comes with a sample code for a little dungeon crawler,
-called LambdaHack and described in [PLAYING.md](GameDefinition/PLAYING.md).
-
-![gameplay screenshot](https://raw.githubusercontent.com/LambdaHack/media/master/screenshot/raid1.png)
+Contributions are welcome.
 
 Other games known to use the LambdaHack library:
 
@@ -49,7 +51,7 @@ and narrative tradition[9], while Allure of the Stars uses the more free-form
 Moria/Angband style (it also uses the `AGPL` license, and `BSD3 + AGPL = AGPL`,
 so make sure you want to liberate your code and content to such an extent).
 
-When creating a new game based on Lambdahack I've found it useful to place
+When creating a new game based on LambdaHack I've found it useful to place
 completely new content at the end of the content files to distinguish from
 merely modified original LambdaHack content and thus help merging with new
 releases. Removals of LambdaHack content merge reasonably well, so there are
@@ -58,12 +60,13 @@ it makes sense to keep their Haskell identifier names and change only
 in-game names and possibly frequency group names.
 
 
-Installation from binary archives
----------------------------------
+Installation of the sample game from binary archives
+----------------------------------------------------
 
 The game runs rather slowly in the browser and you are limited to only
 one font, though it's scalable, so after trying out the game, you may
 prefer to use a native binary for your architecture, if it exists.
+
 Pre-compiled game binaries for some platforms are available through
 the release page[11] and from the Nix Packages Collection[12].
 To use a pre-compiled binary archive, unpack it and run the executable
@@ -71,7 +74,7 @@ in the unpacked directory.
 
 On Linux, make sure you have the SDL2 libraries suite installed on your system
 (e.g., libsdl2, libsdl2-ttf). For Windows, the SDL2 library is already
-contained in the LambdaHack binary archive.
+contained in the game's binary archive.
 
 
 Screen and keyboard configuration
@@ -87,34 +90,37 @@ user data folder, which is `~/.LambdaHack/` on Linux,
 or something else altogether) on Windows, and in RMB menu, under
 `Inspect/Application/Local Storage` when run inside the Chrome browser.
 
-Screen font can be changed and enlarged by editing the config file
-in the user data folder. For a small game window, the highly optimized
+Screen font can be changed by editing the config file in the user
+data folder. For a small game window, the highly optimized
 bitmap fonts 16x16x.fon, 8x8x.fon and 8x8xb.fon are the best,
 but for larger window sizes or if you require international characters
 (e.g. to give custom names to player characters), a scalable font
 is the only option. The game window automatically scales according
 to the specified font size.
 
-If you don't have the numeric keypad, you can use mouse or laptop
-keys (uk8o79jl) or you can enable the Vi keys (aka roguelike keys)
+If you don't have a numeric keypad, you can use mouse or laptop keys
+(uk8o79jl) for movement or you can enable the Vi keys (aka roguelike keys)
 in the config file. If numeric keypad doesn't work, toggling
-the Num Lock key ometimes helps. If running with the Shift key
+the Num Lock key sometimes helps. If running with the Shift key
 and keypad keys doesn't work, try Control key instead.
 The game is fully playable with mouse only, as well as with keyboard only,
-but the most efficient combination is probably mouse for distant aiming
-and distant go-to and keyboard for everything else.
+but the most efficient combination for some players is mouse for go-to,
+inspecting, and aiming at distant positions and keyboard for everything else.
 
 
-Compilation from source
------------------------
+Compilation of the library and sample game from source
+------------------------------------------------------
 
-If you want to compile your own native binaries from the source code,
+If you want to compile native binaries from the source code,
 use Cabal (already a part of your OS distribution, or available within
 The Haskell Platform[7]), which also takes care of all the dependencies.
 
-The recommended frontend for LambdaHack is based on SDL2, so you need the SDL2
-libraries for your OS. On Linux, remember to install the -dev versions as well,
+The recommended frontend is based on SDL2, so you need the SDL2 libraries
+for your OS. On Linux, remember to install the -dev versions as well,
 e.g., libsdl2-dev and libsdl2-ttf-dev on Ubuntu Linux 16.04.
+(Compilation to Javascript for the browser is more complicated
+and requires the ghcjs[15] compiler and optionally the Google Closure
+Compiler[16] as well. See the [Makefile](Makefile) for more details.)
 
 The latest official version of the LambdaHack library can be downloaded,
 compiled for SDL2 and installed automatically by Cabal from Hackage[3]
@@ -123,7 +129,7 @@ as follows
     cabal update
     cabal install LambdaHack
 
-For a newer snapshot, download source of LambdaHack from github[5]
+For a newer snapshot, download the source code from github[5]
 and run Cabal from the main directory
 
     cabal install
@@ -163,7 +169,7 @@ work either, but fortunately they are not crucial to gameplay.
 For movement, laptop (uk8o79jl) and Vi keys (hjklyubn, if enabled
 in config.ui.ini) should work everywhere. GTK and SDL2 work fine, too,
 both regarding numeric keypad and mouse. Display on SDL2 and in the browser
-is superior to all the other frontends, due to custom, square font
+is superior to all the other frontends, due to custom square font
 and less intrusive ways of highlighting interesting squares.
 When running on browser, leave the program enough time to save game progress
 properly before killing the browser, or the savefiles may get corrupted.
@@ -187,8 +193,7 @@ though they mostly overlap with commandline options (and will be totally
 merged at some point).
 
 You can use HPC with the game as follows (details vary according
-to HPC version). A quick manual playing session after the automated tests
-would be in order, as well, since the tests don't touch the topmost UI layer.
+to HPC version).
 
     cabal clean
     cabal install --enable-coverage
@@ -196,6 +201,8 @@ would be in order, as well, since the tests don't touch the topmost UI layer.
     hpc report --hpcdir=dist/hpc/dyn/mix/LambdaHack --hpcdir=dist/hpc/dyn/mix/LambdaHack-xxx/ LambdaHack
     hpc markup --hpcdir=dist/hpc/dyn/mix/LambdaHack --hpcdir=dist/hpc/dyn/mix/LambdaHack-xxx/ LambdaHack
 
+A quick manual playing session after the automated tests would be in order,
+as well, since the tests don't touch the topmost UI layer.
 Note that a debug option of the form `--stopAfter*` is required to cleanly
 terminate any automated test. This is needed to gather any HPC info,
 because HPC requires a clean exit to save data files.
@@ -223,6 +230,8 @@ Have fun!
 [9]: https://github.com/LambdaHack/LambdaHack/wiki/Sample-dungeon-crawler
 [10]: https://github.com/AllureOfTheStars/Allure
 [11]: https://github.com/LambdaHack/LambdaHack/releases/latest
-[12]: http://hydra.cryp.to/search?query=LambdaHack
+[12]: http://hydra.nixos.org/search?query=LambdaHack
 [13]: http://www.haskell.org/haskellwiki/GHC_under_Wine#Code_that_uses_gtk2hs
 [14]: http://www.edsko.net/2014/04/27/haskell-including-gtk-on-mavericks
+[15]: https://github.com/ghcjs/ghcjs
+[16]: https://www.npmjs.com/package/google-closure-compiler
