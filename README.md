@@ -7,8 +7,7 @@ LambdaHack
 
 LambdaHack is a Haskell[1] game engine library for roguelike[2] games
 of arbitrary theme, size and complexity,
-packaged together with a little example dungeon crawler.
-
+packaged together with a little sample dungeon crawler.
 Try out the browser version of the LambdaHack sample game
 [here](https://lambdahack.github.io)!
 
