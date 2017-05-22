@@ -43,7 +43,7 @@ a basilisk monster, with hit points drawn as a bar. Additionally,
 the colon after "Calm" turning into a dot signifies that the leader
 is in a position without ambient illumination and a brace sign instead
 of colon after "HP" means the leader is braced for combat (see section
-[Basic Commands](#basic_commands)).
+[Basic Commands](#basic-commands)).
 
 Instead of a monster, the target area may describe a position on the map,
 a recently spotted item on the floor or an item in inventory selected
