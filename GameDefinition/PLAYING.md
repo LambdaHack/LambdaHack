@@ -13,16 +13,14 @@ while tirelessly chasing the elusive heroes by sight, sound and smell.
 Once the few basic command keys and on-screen symbols are learned,
 mastery and enjoyment of the game is the matter of tactical skill
 and literary imagination. To be honest, a lot of imagination is required
-for this rudimentary example game, but it has its own style and is playable
-and winnable. Contributions are welcome.
+for this rudimentary example game, but it has its own quirky style
+and is playable and winnable. Contributions are welcome.
 
 
 Heroes
 ------
 
 The heroes are marked on the map with symbols `@` and `1` through `9`.
-Their goal is to explore the world, battle the horrors within dark caves,
-gather as much gold and precious gems as possible, and escape to tell the tale.
 The currently chosen party leader is highlighted on the map
 and his attributes are displayed at the bottommost status line,
 which in its most complex form looks as follows.
@@ -111,8 +109,8 @@ Basic Commands
 This section is a copy of the first two screens of in-game help
 and a screen introducing mouse commands. The help pages are
 automatically generated based on a game's keybinding content and
-on overrides in the player's config file. Other screens list
-all game commands grouped in categories, in detail.
+on overrides in the player's config file. The remaiing in-game help screens,
+not shown here, list all game commands grouped by categories, in detail.
 
 Walk throughout a level with mouse or numeric keypad (left diagram below)
 or its compact laptop replacement (middle) or the Vi text editor keys (right,
@@ -191,9 +189,10 @@ are described in the status lines at the bottom of the screen,
 as explained in section [Heroes](#heroes) above.
 
 Commands for saving and exiting the current game, starting a new game,
-setting challenges and options, etc., are listed in the Main Menu,
-brought up by the `ESC` key. Game difficulty, from the challenges menu,
-determines hitpoints at birth for any actor of any UI-using faction.
+setting options for the current game and challenges for the next game, etc.,
+are listed in the Main Menu, brought up by the `ESC` key.
+Game difficulty, from the challenges menu, determines
+hitpoints at birth for any actor of any UI-using faction.
 The "lone wolf" challenge mode reduces player's starting actors to exactly
 one (consequently, this does not affect the initial 'raid' scenario).
 The "cold fish" challenge mode makes it impossible for player characters
@@ -209,7 +208,7 @@ Monsters
 --------
 
 The life of the heroes is full of dangers. Monstrosities, natural
-and out of this world, roam the dark caves and crawl from damp holes
+and out of this world, roam the dark corridors and crawl from damp holes
 day and night. While heroes pay attention to all other party members
 and take care to move one at a time, monsters don't care about each other
 and all move at once, sometimes brutally colliding by accident.
@@ -232,9 +231,9 @@ To determine the damage dealt, the outcome of the weapon's damage dice roll
 is multiplied by a percentage bonus. The bonus is calculated by taking
 the damage bonus (summed from the equipped items of the attacker,
 capped at 200%) minus the melee armor modifier of the defender
-(capped at 200% as well), with the outcome bounded between -99% and 99%,
+(capped at 200%, as well), with the outcome bounded between -99% and 99%,
 which means that at least 1% of damage always gets through
-and the damage is never higher than twice the dice roll.
+and the damage is always lower than twice the dice roll.
 The current leader's melee bonus, armor modifier and other detailed
 stats can be viewed via the `#` command.
 
