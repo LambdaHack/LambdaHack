@@ -141,17 +141,17 @@ keyboard. See the ending help screens for mouse commands.
 Lastly, you can select a command with arrows or mouse directly from the help
 screen and execute it on the spot.
 
-keys         command
-g or ,       grab item(s)
-c            close door
-P            manage item pack of the leader
-KP_* or !    cycle x-hair among enemies
-+            swerve the aiming line
-ESC          cancel aiming/open Main Menu
-RET or INS   accept target/open Help
-SPACE        clear messages/display history
-S-TAB        cycle among all party members
-=            select (or deselect) party member
+    keys         command
+    g or ,       grab item(s)
+    c            close door
+    P            manage item pack of the leader
+    KP_* or !    cycle x-hair among enemies
+    +            swerve the aiming line
+    ESC          cancel aiming/open Main Menu
+    RET or INS   accept target/open Help
+    SPACE        clear messages/display history
+    S-TAB        cycle among all party members
+    =            select (or deselect) party member
 
 Screen area and UI mode (aiming/exploration) determine mouse click effects.
 Here is an overview of effects of each button over most of the game map area.
@@ -160,13 +160,13 @@ middle mouse button (MMB) and even the mouse wheel, which is normally used
 over menus, to page-scroll them, rather than over game map.
 For mice without RMB, one can use C-LMB (Control key and left mouse button).
 
-keys         command
-LMB          set x-hair to enemy/go to pointer for 25 steps
-RMB or C-LMB fling at enemy/run to pointer collectively for 25 steps
-C-RMB        open or close door
-MMB          snap x-hair to floor under pointer
-WHEEL-UP     swerve the aiming line
-WHEEL-DN     unswerve the aiming line
+    keys         command
+    LMB          set x-hair to enemy/go to pointer for 25 steps
+    RMB or C-LMB fling at enemy/run to pointer collectively for 25 steps
+    C-RMB        open or close door
+    MMB          snap x-hair to floor under pointer
+    WHEEL-UP     swerve the aiming line
+    WHEEL-DN     unswerve the aiming line
 
 
 Advanced Commands
