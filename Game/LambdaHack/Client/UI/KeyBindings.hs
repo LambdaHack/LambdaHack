@@ -127,9 +127,11 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
       , "Press SPACE to see mouse command descriptions."
       ]
     mouseBasicsBlurb =
-      [ "Screen area determines mouse click effect; see next two pages for details."
-      , "Below is a general overview, including not only left and right,"
-      , "but also the optional middle mouse button (MMB) and the mouse wheel."
+      [ "Screen area and UI mode (aiming/exploration) determine mouse click effects."
+      , "Here is an overview of effects of each button over most of the game map area."
+      , "The list includes not only left and right buttons, but also the optional"
+      , "middle mouse button (MMB) and even the mouse wheel, which is normally used"
+      , "over menus, to page-scroll them, rather than over game map."
       , "For mice without RMB, one can use C-LMB (Control key and left mouse button)."
       , ""
       ]
