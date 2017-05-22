@@ -193,7 +193,7 @@ as explained in section [Heroes](#heroes) above.
 Commands for saving and exiting the current game, starting a new game,
 setting challenges and options, etc., are listed in the Main Menu,
 brought up by the `ESC` key. Game difficulty, from the challenges menu,
-affects hitpoints at birth for any actor of any UI-using faction.
+determines hitpoints at birth for any actor of any UI-using faction.
 The "lone wolf" challenge mode reduces player's starting actors to exactly
 one (consequently, this does not affect the initial 'raid' scenario).
 The "cold fish" challenge mode makes it impossible for player characters
@@ -263,11 +263,11 @@ On Winning and Dying
 You win a scenario if you escape the location alive or, in scenarios with
 no exit locations, if you eliminate all opposition. In the former case,
 your score is based predominantly on the gold and precious gems you've
-plundered. In the latter case, your score is most affected by the number
+plundered. In the latter case, your score is most influenced by the number
 of turns you spent overcoming your foes (the quicker the victory, the better;
 the slower the demise, the better). Bonus points, affected by the number
 of heroes lost, are awarded only if you win. The score is heavily
-affected the chosen game difficulty, but not by any other challenges.
+modified by the chosen game difficulty, but not by any other challenges.
 
 When all your heroes fall, you are going to invariably see a new foolhardy
 party of adventurers clamoring to be led into danger. They start
