@@ -111,6 +111,8 @@ and a screen introducing mouse commands. The help pages are
 automatically generated based on a game's keybinding content and
 on overrides in the player's config file. The remaiing in-game help screens,
 not shown here, list all game commands grouped by categories, in detail.
+A text snapshot of the complete in-game help is in
+[InGameHelp.txt](InGameHelp.txt).
 
 Walk throughout a level with mouse or numeric keypad (left diagram below)
 or its compact laptop replacement (middle) or the Vi text editor keys (right,

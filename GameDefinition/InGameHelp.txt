@@ -1,0 +1,178 @@
+This is a snapshot of in-game help, rendered with default config file.
+For more general gameplay information see PLAYING.md.
+
+
+Minimal cheat sheet for casual play (1/2).
+
+ Walk throughout a level with mouse or numeric keypad (left diagram below)
+ or its compact laptop replacement (middle) or the Vi text editor keys (right,
+ enabled in config.ui.ini). Run, until disturbed, by adding Shift or Control.
+ Go-to with LMB (left mouse button). Run collectively with RMB.
+
+                7 8 9          7 8 9          y k u
+                 \|/            \|/            \|/
+                4-5-6          u-i-o          h-.-l
+                 /|\            /|\            /|\
+                1 2 3          j k l          b j n
+
+ In aiming mode, the same keys (and mouse) move the x-hair (aiming crosshair).
+ Press 'KP_5' ('5' on keypad, if present) to wait, bracing for impact,
+ which reduces any damage taken and prevents displacement by foes. Press
+ 'C-KP_5' (the same key with Control) to wait 0.1 of a turn, without bracing.
+ You displace enemies by running into them with Shift/Control or RMB. Search,
+ open, descend and attack by bumping into walls, doors, stairs and enemies.
+ The best item to attack with is automatically chosen from among
+ weapons in your personal equipment and your unwounded organs.
+
+
+Minimal cheat sheet for casual play (2/2).
+
+ The following commands, joined with the basic set above, let you accomplish
+ anything in the game, though not necessarily with the fewest keystrokes.
+ You can also play the game exclusively with a mouse, or both mouse and
+ keyboard. See the ending help screens for mouse commands.
+ Lastly, you can select a command with arrows or mouse directly from the help
+ screen and execute it on the spot.
+
+ keys         command
+ g or ,       grab item(s)
+ c            close door
+ P            manage item pack of the leader
+ KP_* or !    cycle x-hair among enemies
+ +            swerve the aiming line
+ ESC          cancel aiming/open Main Menu
+ RET or INS   accept target/open Help
+ SPACE        clear messages/display history
+ S-TAB        cycle among all party members
+ =            select (or deselect) party member
+
+
+All terrain exploration and alteration commands.
+
+ keys         command
+ g or ,       grab item(s)
+ d or .       drop item(s)
+ ;            go to x-hair for 25 steps
+ :            run to x-hair collectively for 25 steps
+ x            explore nearest unknown spot
+ X            autoexplore 25 times
+ R            rest (wait 25 times)
+ C-R          lurk (wait 0.1 turns 100 times)
+ c            close door
+
+
+Item Menu commands.
+
+ keys         command
+ g or ,       grab item(s)
+ d or .       drop item(s)
+ f            fling projectile
+ C-f          fling without aiming
+ a            apply consumable
+ C-a          apply and keep choice
+ p            pack item
+ e            equip item
+ s            stash and share item
+
+
+Remaining item-related commands.
+
+ keys         command
+ ^            sort items by kind and stats
+ P            manage item pack of the leader
+ G            manage items on the ground
+ E            manage equipment of the leader
+ S            manage the shared party stash
+ A            manage all owned items
+ @            describe organs of the leader
+ #            show stat summary of the leader
+ ~            display known lore
+ q            quaff potion
+ r            read scroll
+ t            throw missile
+
+
+Aiming.
+
+ keys         command
+ KP_* or !    cycle x-hair among enemies
+ KP_/ or /    cycle x-hair among items
+ \            cycle aiming modes
+ +            swerve the aiming line
+ -            unswerve the aiming line
+ C-?          set x-hair to nearest unknown spot
+ C-I          set x-hair to nearest item
+ C-{          set x-hair to nearest upstairs
+ C-}          set x-hair to nearest downstairs
+ <            move aiming one level higher
+ >            move aiming one level lower
+ BACKSPACE    clear chosen item and target
+ ESC          cancel aiming/open Main Menu
+ RET or INS   accept target/open Help
+
+
+Assorted.
+
+ keys         command
+ SPACE        clear messages/display history
+ ? or F1      display Help
+ TAB          cycle among party members on the level
+ S-TAB        cycle among all party members
+ =            select (or deselect) party member
+ _            deselect (or select) all on the level
+ v            voice again the recorded commands
+ V            voice recorded commands 100 times
+ C-v          voice recorded commands 1000 times
+ C-V          voice recorded commands 25 times
+ '            start recording commands
+ 0, 1 ... 6   pick a particular actor as the new leader
+
+
+Mouse overview.
+
+ Screen area and UI mode (aiming/exploration) determine mouse click effects.
+ Here is an overview of effects of each button over most of the game map area.
+ The list includes not only left and right buttons, but also the optional
+ middle mouse button (MMB) and even the mouse wheel, which is normally used
+ over menus, to page-scroll them, rather than over game map.
+ For mice without RMB, one can use C-LMB (Control key and left mouse button).
+
+ keys         command
+ LMB          set x-hair to enemy/go to pointer for 25 steps
+ RMB or C-LMB fling at enemy/run to pointer collectively for 25 steps
+ C-RMB        open or close door
+ MMB          snap x-hair to floor under pointer
+ WHEEL-UP     swerve the aiming line
+ WHEEL-DN     unswerve the aiming line
+
+
+Mouse in aiming mode.
+
+ area           LMB (left mouse button)          RMB (right mouse button)
+ message line   clear messages/display history   display known lore
+ the map area   set x-hair to enemy              fling at enemy under pointer
+ level number   move aiming one level higher     move aiming one level lower
+ level caption  accept target                    cancel aiming
+ percent seen   set x-hair to nearest upstairs   set x-hair to nearest downstai$
+ x-hair info    cycle x-hair among enemies       cycle x-hair among items
+ party roster   pick new leader on screen        select party member on screen
+ Calm gauge     rest (wait 25 times)             lurk (wait 0.1 turns 100 times)
+ HP gauge       wait a turn, bracing for impact  wait 0.1 of a turn
+ target info    manage item pack of the leader   clear chosen item and target
+
+
+Mouse in exploration mode.
+
+ area           LMB (left mouse button)          RMB (right mouse button)
+ message line   clear messages/display history   display known lore
+ leader on map  grab item(s)                     drop item(s)
+ party on map   pick new leader on screen        select party member on screen
+ the map area   go to pointer for 25 steps       run to pointer collectively
+ level number   move aiming one level higher     move aiming one level lower
+ level caption  display Help                     open Main Menu
+ percent seen   explore nearest unknown spot     autoexplore 25 times
+ x-hair info    cycle x-hair among enemies       cycle x-hair among items
+ party roster   pick new leader on screen        select party member on screen
+ Calm gauge     rest (wait 25 times)             lurk (wait 0.1 turns 100 times)
+ HP gauge       wait a turn, bracing for impact  wait 0.1 of a turn
+ target info    manage item pack of the leader   fling without aiming
