@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.Color
     -- * Text attributes and the screen
   , Attr(..), defAttr
   , AttrChar(..)
-  , AttrCharW32(AttrCharW32), attrCharW32
+  , AttrCharW32(..)
   , attrCharToW32, attrCharFromW32
   , fgFromW32, bgFromW32, charFromW32, attrFromW32, attrEnumFromW32
   , spaceAttrW32, retAttrW32

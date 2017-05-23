@@ -43,23 +43,23 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | The instructions sent by clients to the raw frontend.
 data FrontReq :: * -> * where
+  -- | Show a frame.
   FrontFrame :: {frontFrame :: !FrameForall} -> FrontReq ()
-    -- ^ show a frame
+  -- | Perform an explicit delay of the given length.
   FrontDelay :: !Int -> FrontReq ()
-    -- ^ perform an explicit delay of the given length
+  -- | Flush frames, display a frame and ask for a keypress.
   FrontKey :: { frontKeyKeys  :: ![K.KM]
               , frontKeyFrame :: !FrameForall } -> FrontReq KMP
-    -- ^ flush frames, display a frame and ask for a keypress
+  -- | Inspect the fkeyPressed MVar.
   FrontPressed :: FrontReq Bool
-    -- ^ inspect the fkeyPressed MVar
+  -- | discard a key in the queue, if any.
   FrontDiscard :: FrontReq ()
-    -- ^ discard a key in the queue, if any
+  -- | Add a key to the queue.
   FrontAdd :: KMP -> FrontReq ()
-    -- ^ add a key to the queue
+  -- | set in the frontend that it should auto-answer prompts.
   FrontAutoYes :: Bool -> FrontReq ()
-    -- ^ set in the frontend that it should auto-answer prompts
+  -- | shut the frontend down.
   FrontShutdown :: FrontReq ()
-    -- ^ shut the frontend down
 
 -- | Connection channel between a frontend and a client. Frontend acts
 -- as a server, serving keys, etc., when given frames to display.
