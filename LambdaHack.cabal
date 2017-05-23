@@ -109,7 +109,7 @@ flag with_expensive_assertions
 
 flag release
   description:        prepare for a release (expose internal functions and types, etc.)
-  default:            False
+  default:            True
   manual:             True
 
 library
