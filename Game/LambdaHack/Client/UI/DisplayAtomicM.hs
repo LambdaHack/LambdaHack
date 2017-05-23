@@ -215,7 +215,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
                      && not (waitedLastTurn b)  -- uncommon
                      && inline isAtWar fact (bfid b)  -- costly
         anyCloseFoes <- getsState $ any closeFoe . EM.elems . sactorD
-        when anyCloseFoes $ do  -- obvious where the feeling comes from
+        unless anyCloseFoes $ do  -- obvious where the feeling comes from
           aidVerbMU aid "hear something"
           duplicated <- msgDuplicateScrap
           unless duplicated stopPlayBack
