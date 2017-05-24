@@ -353,7 +353,7 @@ flask8 = flask
   { irarity  = [(1, 14), (10, 4)]
   , ieffects = [ ELabel "of lethargy brew"
                , toOrganGameTurn "slowed" (20 + d 5)
-               , toOrganNone "regenerating"
+               , toOrganNone "regenerating", toOrganNone "regenerating"  -- x2
                , RefillCalm 5
                , OnSmash (Explode "slowness mist") ]
   }
@@ -399,18 +399,18 @@ flask13 = flask
 flask14 = flask
   { irarity  = [(1, 4), (10, 14)]
   , ieffects = [ ELabel "of regeneration brew"
-               , toOrganNone "regenerating"
+               , toOrganNone "regenerating", toOrganNone "regenerating"  -- x2
                , OnSmash (Explode "healing mist") ]
   }
 flask15 = flask
   { ieffects = [ ELabel "of poison"
-               , toOrganNone "poisoned"
+               , toOrganNone "poisoned", toOrganNone "poisoned"  -- x2
                , OnSmash (Explode "poison cloud") ]
   }
 flask16 = flask
   { irarity  = [(1, 14), (10, 4)]
   , ieffects = [ ELabel "of weak poison"
-               , toOrganNone "weakly poisoned"
+               , toOrganNone "poisoned"
                , OnSmash (Explode "poison cloud") ]
   }
 flask17 = flask
@@ -433,7 +433,7 @@ flask19 = flask
   }
 flask20 = flask
   { ieffects = [ ELabel "of calamity"
-               , toOrganNone "weakly poisoned"
+               , toOrganNone "poisoned"
                , toOrganGameTurn "weakened" (20 + d 5)
                , toOrganGameTurn "defenseless" (20 + d 5)
                , OnSmash (Explode "poison cloud") ]

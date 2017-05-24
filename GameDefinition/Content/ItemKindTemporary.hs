@@ -15,9 +15,9 @@ import Game.LambdaHack.Content.ItemKind
 
 temporaries :: [ItemKind]
 temporaries =
-  [tmpStrengthened, tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpNoctovision, tmpDrunk, tmpRegenerating, tmpWeaklyRegenerating, tmpPoisoned, tmpWeaklyPoisoned, tmpSlow10Resistant, tmpPoisonResistant, tmpImpressed]
+  [tmpStrengthened, tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpNoctovision, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant, tmpImpressed]
 
-tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpNoctovision, tmpDrunk, tmpRegenerating, tmpWeaklyRegenerating, tmpPoisoned, tmpWeaklyPoisoned, tmpSlow10Resistant, tmpPoisonResistant, tmpImpressed :: ItemKind
+tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpNoctovision, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant, tmpImpressed :: ItemKind
 
 tmpNoLonger :: Text -> Effect
 tmpNoLonger name = Temporary $ "be no longer" <+> name
@@ -66,34 +66,22 @@ tmpDrunk = tmpAs "drunk" [ AddHurtMelee 30  -- fury
                          ]
 tmpRegenerating =
   let tmp = tmpAs "regenerating" []
-  in tmp { icount = 7 + d 5
-         , ieffects = Recharging (RefillHP 1) : ieffects tmp
-         }
-tmpWeaklyRegenerating =
-  let tmp = tmpAs "regenerating" []
-  in tmp { ifreq = [("weakly regenerating", 1)]
-         , icount = 3 + d 3
+  in tmp { icount = 4 + d 2
          , ieffects = Recharging (RefillHP 1) : ieffects tmp
          }
 tmpPoisoned =
   let tmp = tmpAs "poisoned" []
-  in tmp { icount = 7 + d 5
-         , ieffects = Recharging (RefillHP (-1)) : ieffects tmp
-         }
-tmpWeaklyPoisoned =
-  let tmp = tmpAs "poisoned" []
-  in tmp { ifreq = [("weakly poisoned", 1)]
-         , icount = 3 + d 3
+  in tmp { icount = 4 + d 2
          , ieffects = Recharging (RefillHP (-1)) : ieffects tmp
          }
 tmpSlow10Resistant =
   let tmp = tmpAs "slow resistant" []
-  in tmp { icount = 7 + d 5
+  in tmp { icount = 8 + d 4
          , ieffects = Recharging (DropItem 1 1 COrgan "slowed") : ieffects tmp
          }
 tmpPoisonResistant =
   let tmp = tmpAs "poison resistant" []
-  in tmp { icount = 7 + d 5
+  in tmp { icount = 8 + d 4
          , ieffects = Recharging (DropItem 1 maxBound COrgan "poisoned")
                       : ieffects tmp
          }
