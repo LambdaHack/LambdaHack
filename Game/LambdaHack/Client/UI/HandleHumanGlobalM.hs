@@ -594,9 +594,8 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
       b <- getsState $ getActorBody leader
       bag <- getsState $ getBodyStoreBag b fromCStore
       case iid `EM.lookup` bag of
-        Nothing | cLegalRaw == [CGround] ->  -- in case of old selection
+        Nothing ->  -- the case of old selection or selection from another actor
           moveItemHuman cLegalRaw destCStore mverb auto
-        Nothing -> failWith "no item to move"
         Just (k, it) -> do
           itemToF <- itemToFullClient
           let eqpFree = eqpFreeN b
