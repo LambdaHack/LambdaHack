@@ -224,9 +224,7 @@ actionStrategy aid retry = do
         , ( [AbApply]
           , stratToFreq 1 $ (toAny :: ToAny 'AbApply)
             <$> applyItem aid ApplyAll  -- use any potion or scroll
-          , (condAimEnemyPresent || condThreat 9)  -- can affect enemies
-            && hpEnough body ar )
-                 -- don't waste healing, escape, etc., if in perfect condition
+          , condAimEnemyPresent || condThreat 9 )  -- can affect enemies
         , ( [AbMove]
           , stratToFreq (if | condInMelee ->
                               400  -- friends pummeled by target, go to help
@@ -706,15 +704,16 @@ applyItem aid applyGroup = do
   let hasGrps = mapMaybe (\item -> if jweight item == 0
                                    then Just $ toGroupName $ jname item
                                    else Nothing) organs
-      itemLegal itemFull = case applyGroup of
-        ApplyFirstAid ->
-          let getP (IK.RefillHP p) _ | p > 0 = True
-              getP _ acc = acc
-          in case itemDisco itemFull of
-            Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}} ->
-              foldr getP False ieffects
-            _ -> False
-        ApplyAll -> True
+      itemLegal itemFull =
+        -- Don't include @Ascend@ not @Teleport@, because can be no foe nearby.
+        let getP (IK.RefillHP p) | p > 0 = True
+            getP _ = False
+            firstAidItem = case itemDisco itemFull of
+              Just ItemDisco{itemKind} -> any getP $ IK.ieffects itemKind
+              _ -> False
+        in if applyGroup == ApplyFirstAid
+           then firstAidItem
+           else not $ hpEnough b ar && firstAidItem
       coeff CGround = 2  -- pickup turn saved
       coeff COrgan = assert `failure` benList
       coeff CEqp = 1
