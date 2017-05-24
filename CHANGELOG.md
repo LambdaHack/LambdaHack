@@ -1,3 +1,57 @@
+## [v0.6.0.0, aka 'Too much to tell'](https://github.com/LambdaHack/LambdaHack/compare/v0.5.0.0...v0.6.0.0)
+
+- add and modify a lot of content: items, tiles, embedded items, scenarios
+- improve AI: targeting, stealth, moving in groups, item use, fleeing, etc.
+- make monsters more aggressive than animals
+- tie scenarios into a loose, optional storyline
+- add more level generators and more variety to room placement
+- make stairs not walkable and use them by bumping
+- align stair position on the levels they pass through
+- introduce noctovision
+- increase human vision to 12 so that normal speed missiles can be sidestepped
+- tweak and document weapon damage calculation
+- derive projectile damage mostly from their speed
+- make heavy projectiles better vs armor but easier to sidestep
+- improve hearing of unseen actions, actors and missiles impacts
+- let some missiles lit up on impact
+- make torches reusable flares and add blankets for dousing dynamic light
+- add detection effects and use them in items and tiles
+- make it possible to catch missiles, if not using weapons
+- make it possible to wait 0.1 of a turn, at the cost of no bracing
+- improve pathfinding, prefer less unknown, alterable and dark tiles on paths
+- slow down actors when acting at the same time, for speed with large factions
+- don't halve Calm at serious damage any more
+- eliminate alternative FOV modes, for speed
+- stop actors blocking FOV, for speed
+- let actor move diagonally to and from doors, for speed
+- improve blast (explosion) shapes visually and gameplay-wise
+- add SDL2 frontend and deprecate GTK frontend
+- add specialized square bitmap fonts and hack a scalable font
+- use middle dot instead of period on the map (except in teletype frontend)
+- add a browser frontend based on DOM, using ghcjs
+- improve targeting UI, e.g., cycle among items on the map
+- show an animation when actor teleports
+- add character stats menu and stat description texts
+- add item lore and organ lore menus
+- add a command to sort item slots and perform the sort at startup
+- add a single item manipulation menu and let it mark an item for later
+- make history display a menu and improve display of individual messages
+- display highscore dates according to the local timezone
+- make the help screen a menu, execute actions directly from it
+- rework the Main Menu
+- rework special positions highlight in all frontends
+- mark leader's target on the map (grey highlight)
+- visually mark currently chosen menu item and grey out impossible items
+- define mouse commands based on UI mode and screen area
+- let the game be fully playable only with mouse, use mouse wheel
+- pick menu items with mouse and with arrow keys
+- add more sanity checks for content
+- reorganize content in files to make rebasing on changed content easier
+- rework keybinding definition machinery
+- let clients, not the server, start frontends
+- version savefiles and move them aside if versions don't match
+- lots of bug fixes internal improvements and minor visual and text tweaks
+
 ## [v0.5.0.0, aka 'Halfway through space'](https://github.com/LambdaHack/LambdaHack/compare/v0.4.101.0...v0.5.0.0)
 
 - let AI put excess items in shared stash and use them out of shared stash
