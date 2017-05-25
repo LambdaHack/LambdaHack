@@ -489,7 +489,7 @@ geyserBoiling = ItemKind
   , idamage  = toDmg 0
   , iaspects = [ AddMaxHP 20, AddMaxCalm 999, AddSpeed 10, AddNocto 2
                , AddAbility AbWait 1, AddAbility AbMelee 1
-               , AddArmorMelee 40, AddArmorRanged 40 ]  -- hard material
+               , AddArmorMelee 40, AddArmorRanged 20 ]  -- hard material
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
