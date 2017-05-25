@@ -14,7 +14,7 @@ Try out the browser version of the LambdaHack sample game at
 are supported only on recent enough versions of browsers.
 Mouse should work everywhere.)
 
-![gameplay screenshot](https://raw.githubusercontent.com/LambdaHack/media/master/screenshot/crawl-0.6.0.0-16x16x.png)
+![gameplay screenshot](https://raw.githubusercontent.com/LambdaHack/media/master/screenshot/crawl-0.6.0.0-8x8xb.png)
 
 To use the engine, you need to specify the content to be
 procedurally generated, including game rules and AI behaviour.
