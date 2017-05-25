@@ -16,7 +16,7 @@ description:   LambdaHack is a Haskell game engine library for roguelike games
                are supported only on recent enough versions of browsers.
                Mouse should work everywhere.)
                .
-               <<https://raw.githubusercontent.com/LambdaHack/media/master/screenshot/safari1.png>>
+               <<https://raw.githubusercontent.com/LambdaHack/media/master/screenshot/crawl-0.6.0.0-8x8xb.png>>
                .
                When completed, the engine will let you specify content
                to be procedurally generated, define the AI behaviour
