@@ -10,6 +10,10 @@ install:
 build_script:
   - cabal update
   - cabal install happy
+  - appveyor-retry git clone git@github.com:Mikolaj/sdl2.git
+  - cd sdl2
+  - cabal install
+  - cd ..
   - cabal install
 
 artifacts:
