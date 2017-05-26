@@ -64,8 +64,8 @@ data Effect =
   | Summon !(GroupName ItemKind) !Dice.Dice
   | Ascend !Bool
   | Escape
-  | Paralyze !Dice.Dice
-  | InsertMove !Dice.Dice
+  | Paralyze !Dice.Dice  -- ^ expressed in game clips
+  | InsertMove !Dice.Dice  -- ^ expressed in game turns
   | Teleport !Dice.Dice
   | CreateItem !CStore !(GroupName ItemKind) !TimerDice
       -- ^ create an item of the group and insert into the store with the given
@@ -137,7 +137,8 @@ instance NFData TimerDice
 -- | Aspects of items. Those that are named @Add*@ are additive
 -- (starting at 0) for all items wielded by an actor and they affect the actor.
 data Aspect =
-    Timeout !Dice.Dice         -- ^ some effects disabled until item recharges
+    Timeout !Dice.Dice         -- ^ some effects disabled until item recharges;
+                               --   expressed in game turns
   | AddHurtMelee !Dice.Dice    -- ^ percentage damage bonus in melee
   | AddArmorMelee !Dice.Dice   -- ^ percentage armor bonus against melee
   | AddArmorRanged !Dice.Dice  -- ^ percentage armor bonus against ranged
