@@ -65,9 +65,10 @@ in-game names and possibly frequency group names.
 Installation of the sample game from binary archives
 ----------------------------------------------------
 
-The game runs rather slowly in the browser (fastest on Chrome) and you are
-limited to only one font, though it's scalable. Saving game progress
-and keyboard input require recent enough versions of browsers.
+The game runs rather slowly in the browser (fastest on Chrome)
+and you are limited to only one font, though it's scalable.
+Keyboard input and saving game progress requires recent enough
+version of a browser (but mouse input is enough to play the game).
 Also, savefiles are prone to corruption on the browser,
 e.g., when it's closed while the game is still saving progress
 (which takes a long time). Hence, after trying out the game,

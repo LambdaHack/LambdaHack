@@ -31,7 +31,8 @@ import GHCJS.DOM.HTMLTableRowElement (HTMLTableRowElement (HTMLTableRowElement),
                                       getCells)
 import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey, getKey,
                                 getMetaKey, getShiftKey)
-import GHCJS.DOM.Node (appendChild_, setTextContent)
+import GHCJS.DOM.Node (appendChild_, replaceChild_, setTextContent)
+import GHCJS.DOM.NonElementParentNode (getElementByIdUnsafe)
 import GHCJS.DOM.RequestAnimationFrameCallback
 import GHCJS.DOM.Types (CSSStyleDeclaration, DOM,
                         HTMLDivElement (HTMLDivElement),
@@ -147,8 +148,9 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
         let Point x y = PointArray.punindex lxsize i
         in handleMouse rf a x y
   V.imapM_ setupMouse scharCells
-  -- Display at the end to avoid redraw
-  appendChild_ body divBlock
+  -- Display at the end to avoid redraw. Replace "Please wait".
+  pleaseWait <- getElementByIdUnsafe doc ("pleaseWait" :: Text)
+  replaceChild_ body divBlock pleaseWait
   IO.liftIO $ putMVar rfMVar rf
     -- send to client only after the whole webpage is set up
     -- because there is no @mainGUI@ to start accepting
