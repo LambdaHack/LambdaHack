@@ -100,7 +100,7 @@ largeJaw = fist
   , ifreq    = [("large jaw", 100)]
   , icount   = 1
   , iverbHit = "crush"
-  , idamage  = toDmg $ 12 * d 1
+  , idamage  = toDmg $ 10 * d 1
   , idesc    = ""
   }
 horn = fist
@@ -108,7 +108,8 @@ horn = fist
   , ifreq    = [("horn", 20)]
   , icount   = 2
   , iverbHit = "impale"
-  , idamage  = toDmg $ 8 * d 1
+  , idamage  = toDmg $ 6 * d 1
+  , iaspects = [AddHurtMelee 20]
   , idesc    = ""
   }
 
@@ -138,6 +139,7 @@ boilingFissure = fist
   , icount   = 5 + d 5
   , iverbHit = "hiss at"
   , idamage  = toDmg $ 1 * d 1
+  , iaspects = [AddHurtMelee 20]
   , ieffects = [InsertMove $ 1 * d 3]
   , ifeature = [Identified, Meleeable]  -- not Durable
   , idesc    = ""
@@ -171,8 +173,8 @@ sting = fist
   , ifreq    = [("sting", 100)]
   , icount   = 1
   , iverbHit = "sting"
-  , idamage  = toDmg $ 2 * d 1
-  , iaspects = [Timeout $ 1 + d 5]
+  , idamage  = toDmg $ 1 * d 1
+  , iaspects = [Timeout $ 1 + d 5, AddHurtMelee 40]
   , ieffects = [Recharging (Paralyze 4)]
   , idesc    = "Painful, debilitating and harmful."
   }
@@ -211,8 +213,8 @@ largeTail = fist
   , ifreq    = [("large tail", 50)]
   , icount   = 1
   , iverbHit = "knock"
-  , idamage  = toDmg $ 8 * d 1
-  , iaspects = [Timeout $ 1 + d 3]
+  , idamage  = toDmg $ 6 * d 1
+  , iaspects = [Timeout $ 1 + d 3, AddHurtMelee 20]
   , ieffects = [Recharging (PushActor (ThrowMod 400 25))]
   , idesc    = ""
   }
@@ -419,8 +421,8 @@ torsionRight = fist
   , ifreq    = [("right torsion", 100)]
   , icount   = 1
   , iverbHit = "twist"
-  , idamage  = toDmg $ 17 * d 1
-  , iaspects = [Timeout $ 5 + d 5]
+  , idamage  = toDmg $ 13 * d 1
+  , iaspects = [Timeout $ 5 + d 5, AddHurtMelee 20]
   , ieffects = [Recharging (toOrganGameTurn "slowed" (3 + d 3))]
   , idesc    = ""
   }
@@ -429,8 +431,8 @@ torsionLeft = fist
   , ifreq    = [("left torsion", 100)]
   , icount   = 1
   , iverbHit = "twist"
-  , idamage  = toDmg $ 17 * d 1
-  , iaspects = [Timeout $ 5 + d 5]
+  , idamage  = toDmg $ 13 * d 1
+  , iaspects = [Timeout $ 5 + d 5, AddHurtMelee 20]
   , ieffects = [Recharging (toOrganGameTurn "weakened" (3 + d 3))]
   , idesc    = ""
   }
