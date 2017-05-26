@@ -170,7 +170,7 @@ test-short-load:
 build-binary:
 	cabal configure -frelease --prefix=/
 	cabal build exe:LambdaHack
-	rm -rf /tmp/LambdaHack_x_ubuntu-12.04-amd64.tar.gz
+	rm -rf /tmp/LambdaHack_x_ubuntu-16.04-amd64.tar.gz
 	rm -rf /tmp/LambdaHackTheGameInstall
 	rm -rf /tmp/LambdaHackTheGame
 	mkdir -p /tmp/LambdaHackTheGame/GameDefinition
@@ -183,25 +183,7 @@ build-binary:
 	cp CREDITS /tmp/LambdaHackTheGame
 	cp LICENSE /tmp/LambdaHackTheGame
 	cp README.md /tmp/LambdaHackTheGame
-	tar -czf /tmp/LambdaHack_x_ubuntu-12.04-amd64.tar.gz -C /tmp LambdaHackTheGame
-
-build-binary-i386:
-	cabal configure -frelease --prefix=/ --ghc-option="-optc-m32" --ghc-option="-opta-m32" --ghc-option="-optl-m32" --ld-option="-melf_i386"
-	cabal build exe:LambdaHack
-	rm -rf /tmp/LambdaHack_x_ubuntu-12.04-i386.tar.gz
-	rm -rf /tmp/LambdaHackTheGameInstall
-	rm -rf /tmp/LambdaHackTheGame
-	mkdir -p /tmp/LambdaHackTheGame/GameDefinition
-	cabal copy --destdir=/tmp/LambdaHackTheGameInstall
-	cp /tmp/LambdaHackTheGameInstall/bin/LambdaHack /tmp/LambdaHackTheGame
-	cp GameDefinition/PLAYING.md /tmp/LambdaHackTheGame/GameDefinition
-	cp GameDefinition/scores /tmp/LambdaHackTheGame/GameDefinition
-	cp GameDefinition/config.ui.default /tmp/LambdaHackTheGame/GameDefinition
-	cp CHANGELOG.md /tmp/LambdaHackTheGame
-	cp CREDITS /tmp/LambdaHackTheGame
-	cp LICENSE /tmp/LambdaHackTheGame
-	cp README.md /tmp/LambdaHackTheGame
-	tar -czf /tmp/LambdaHack_x_ubuntu-12.04-i386.tar.gz -C /tmp LambdaHackTheGame
+	tar -czf /tmp/LambdaHack_x_ubuntu-16.04-amd64.tar.gz -C /tmp LambdaHackTheGame
 
 # It's a pity this is so different from Linux
 build-binary-windows-i386:
