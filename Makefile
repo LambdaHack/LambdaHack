@@ -187,7 +187,7 @@ build-binary:
 
 # It's a pity this is so different from Linux
 build-binary-windows-i386:
-	wine cabal configure -frelease
+	wine cabal install -frelease --only-dependencies
 	wine cabal build exe:LambdaHack
 	rm -rf /tmp/LambdaHack_x_windows-i386.zip
 	rm -rf /tmp/LambdaHackTheGameInstall
@@ -202,5 +202,5 @@ build-binary-windows-i386:
 	cp CREDITS /tmp/LambdaHackTheGame
 	cp LICENSE /tmp/LambdaHackTheGame
 	cp README.md /tmp/LambdaHackTheGame
-	cp /home/mikolaj/.wine/drive_c/users/mikolaj/gtk/bin/zlib1.dll /tmp/LambdaHackTheGame
+	cp /home/mikolaj/.wine/drive_c/Program\ Files/Haskell\ Platform/8.0.2-a/mingw/bin/zlib1.dll /tmp/LambdaHackTheGame
 	wine Z:/home/mikolaj/.local/share/wineprefixes/7zip/drive_c/Program\ Files/7-Zip/7z.exe a -ssc -sfx Z:/tmp/LambdaHack_x_windows-i386.exe Z:/tmp/LambdaHackTheGame

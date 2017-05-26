@@ -1,0 +1,17 @@
+install:
+  - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.0.2\bin;C:\ProgramData\chocolatey\lib\cabal\tools;C:\Program Files (x86)/WiX Toolset v3.10\bin;%PATH%
+  - SET PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig
+  - SET XDG_DATA_DIRS=C:\msys64\mingw64\share
+  - pacman --version
+  - appveyor-retry choco install ghc --version 8.0.2 | grep -v '^Extracting '
+  - cabal --version
+  - appveyor-retry pacman -S -q --noconfirm mingw64/mingw-w64-x86_64-pkg-config mingw64/mingw-w64-x86_64-SDL2
+
+build_script:
+  - cabal update
+  - cabal install happy
+  - cabal install
+
+artifacts:
+  - path: dist/
+    name: Windows binaries
