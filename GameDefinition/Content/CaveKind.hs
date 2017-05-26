@@ -47,7 +47,7 @@ rogue = CaveKind
   , chidden       = 7
   , cactorCoeff   = 130  -- the maze requires time to explore
   , cactorFreq    = [("monster", 60), ("animal", 40)]
-  , citemNum      = 5 * d 4
+  , citemNum      = 5 * d 5
   , citemFreq     = [("useful", 50), ("treasure", 50)]
   , cplaceFreq    = [("rogue", 100)]
   , cpassable     = False
@@ -79,7 +79,7 @@ arena = rogue
   , chidden       = 0
   , cactorCoeff   = 100
   , cactorFreq    = [("monster", 30), ("animal", 70)]
-  , citemNum      = 4 * d 4  -- few rooms
+  , citemNum      = 4 * d 5  -- few rooms
   , citemFreq     = [("useful", 20), ("treasure", 30), ("any scroll", 50)]
   , cplaceFreq    = [("arena", 100)]
   , cpassable     = True
@@ -92,7 +92,7 @@ arena2 = arena
   , cdarkChance   = 41 + d 10  -- almost all rooms lit (1 in 10 dark)
   -- Trails provide enough light for fun stealth.
   , cnightChance  = 51  -- always night
-  , citemNum      = 6 * d 4  -- rare, so make it exciting
+  , citemNum      = 6 * d 5  -- rare, so make it exciting
   , citemFreq     = [("useful", 20), ("treasure", 30), ("any vial", 50)]
   , cdefTile      = "arenaSetDark"
   , cdarkCorTile  = "trailLit"  -- let trails give off light
@@ -111,7 +111,7 @@ laboratory = arena2
   , cdoorChance   = 1
   , copenChance   = 1%2
   , chidden       = 7
-  , citemNum      = 6 * d 4  -- reward difficulty
+  , citemNum      = 6 * d 5  -- reward difficulty
   , citemFreq     = [("useful", 20), ("treasure", 30), ("any vial", 50)]
   , cplaceFreq    = [("laboratory", 100)]
   , cpassable     = False
@@ -142,7 +142,7 @@ empty = rogue
       -- enough of a continuity. Gyesers on lvl 3 are not OP and can't be
       -- abused, because they spawn less and less often and also HP doesn't
       -- effectively accumulate over max.
-  , citemNum      = 3 * d 4  -- few rooms and geysers are the boon
+  , citemNum      = 3 * d 5  -- few rooms and geysers are the boon
   , cplaceFreq    = [("empty", 100)]
   , cpassable     = True
   , cdefTile      = "emptySet"
@@ -167,7 +167,7 @@ noise = rogue
   , chidden       = 0
   , cactorCoeff   = 160  -- the maze requires time to explore
   , cactorFreq    = [("monster", 80), ("animal", 20)]
-  , citemNum      = 6 * d 4  -- an incentive to explore the labyrinth
+  , citemNum      = 6 * d 5  -- an incentive to explore the labyrinth
   , cpassable     = True
   , cplaceFreq    = [("noise", 100)]
   , cdefTile      = "noiseSet"
@@ -193,7 +193,7 @@ shallow1rogue = shallow2rogue
   , cdarkChance   = 0  -- all rooms lit, for a gentle start
   , cextraStairs  = 1
   , cactorFreq    = filter ((/= "monster") . fst) $ cactorFreq rogue
-  , citemNum      = 8 * d 4  -- lure them in with loot
+  , citemNum      = 8 * d 5  -- lure them in with loot
   , citemFreq     = filter ((/= "treasure") . fst) $ citemFreq rogue
   , cescapeGroup  = Just "escape up"
   }
