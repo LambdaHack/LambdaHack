@@ -580,18 +580,19 @@ effectSummon execSfx grp nDm iid source target periodic = do
   let sar = actorAspect EM.! source
       tar = actorAspect EM.! target
       durable = IK.Durable `elem` jfeature item
+      deltaCalm = - xM 30
   -- Verify Calm only at periodic activations or if the item is durable.
   -- Otherwise summon uses up the item, which prevents summoning getting
   -- out of hand. I don't verify Calm otherwise, to prevent an exploit
   -- via draining one's calm on purpose when an item with good activation
   -- has a nasty summoning side-effect (the exploit still works on durables).
-  if (periodic || durable) && not (bproj sb) && not (calmEnough sb sar) then do
+  if (periodic || durable) && not (bproj sb)
+     && (bcalm sb < - deltaCalm || not (calmEnough sb sar)) then do
     unless (bproj sb) $
       execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonLackCalm source
     return False
   else do
     execSfx
-    let deltaCalm = - xM 30
     unless (bproj sb) $ udpateCalm source deltaCalm
     let validTile t = not $ Tile.isNoActor coTileSpeedup t
     ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
