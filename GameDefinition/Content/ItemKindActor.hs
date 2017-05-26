@@ -301,9 +301,9 @@ armadillo = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [ ("claw", COrgan), ("snout", COrgan), ("armored skin", COrgan)
-               , ("nostril", COrgan), ("eye 3", COrgan)
-               , ("animal brain", COrgan) ]
+  , ikit     = [ ("hooked claw", COrgan), ("snout", COrgan)
+               , ("armored skin", COrgan), ("nostril", COrgan)
+               , ("eye 3", COrgan), ("animal brain", COrgan) ]
   }
 gilaMonster = ItemKind
   { isymbol  = 'g'
@@ -357,10 +357,10 @@ komodoDragon = ItemKind  -- bad hearing; regeneration makes it very powerful
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [ ("large tail", COrgan), ("jaw", COrgan), ("claw", COrgan)
-               , ("speed gland 4", COrgan), ("armored skin", COrgan)
-               , ("eye 3", COrgan), ("nostril", COrgan)
-               , ("animal brain", COrgan) ]
+  , ikit     = [ ("large tail", COrgan), ("jaw", COrgan)
+               , ("hooked claw", COrgan), ("speed gland 4", COrgan)
+               , ("armored skin", COrgan), ("eye 3", COrgan)
+               , ("nostril", COrgan), ("animal brain", COrgan) ]
   }
 hyena = ItemKind
   { isymbol  = 'h'
