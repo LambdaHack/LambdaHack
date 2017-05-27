@@ -9,7 +9,7 @@ install:
   - cabal update
   - cabal install happy
   - pwd
-  - git clone -q --branch=master https://github.com/Mikolaj/sdl2.git sdl2
+  - git clone -q --branch=master https://github.com/Mikolaj/sdl2.git
   - cd sdl2
   - cabal install
   - cd ..
