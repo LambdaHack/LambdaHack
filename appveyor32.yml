@@ -6,17 +6,14 @@ install:
   - appveyor-retry choco install --forcex86 ghc --version 8.0.2 | grep -v '^Extracting '
   - cabal --version
   - appveyor-retry pacman -S -q --noconfirm mingw-w64-i686-SDL2 mingw-w64-i686-SDL2_ttf
-
-  - find /c/msys64/ -name "*libgcc*"
-  - find /c/msys64/ -name "*libgcc_s_dw2*"
-  - cp /c/msys64/mingw32/bin/zlib1.dll LambdaHackTheGame
-  - cp /c/msys64/mingw32/bin/SDL2.dll LambdaHackTheGame
-  - cp /c/msys64/mingw32/bin/SDL2_ttf.dll LambdaHackTheGame
-  - cp /c/msys64/mingw32/bin/libfreetype-6.dll LambdaHackTheGame
-  - cp /c/msys64/mingw32/bin/libbz2-1.dll LambdaHackTheGame
-  - cp /c/msys64/mingw32/bin/libpng16-16.dll LambdaHackTheGame
-  - exit
-
+  - cp /c/msys64/mingw32/bin/zlib1.dll .
+  - cp /c/msys64/mingw32/bin/SDL2.dll .
+  - cp /c/msys64/mingw32/bin/SDL2_ttf.dll .
+  - cp /c/msys64/mingw32/bin/libfreetype-6.dll .
+  - cp /c/msys64/mingw32/bin/libgcc_s_dw2-1.dll .
+  - cp /c/msys64/mingw32/bin/libbz2-1.dll .
+  - cp /c/msys64/mingw32/bin/libpng16-16.dll .
+  - cp /c/msys64/mingw32/bin/libwinpthread-1.dll .
   - cabal update
   - cabal install happy
   - pwd
@@ -39,6 +36,7 @@ build_script:
   - cp /c/msys64/mingw32/bin/libgcc_s_dw2-1.dll LambdaHackTheGame
   - cp /c/msys64/mingw32/bin/libbz2-1.dll LambdaHackTheGame
   - cp /c/msys64/mingw32/bin/libpng16-16.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libwinpthread-1.dll LambdaHackTheGame
   - cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
   - 7z a -ssc -sfx LambdaHack_windows-i686.exe LambdaHackTheGame
 
