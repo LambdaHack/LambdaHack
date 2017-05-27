@@ -32,6 +32,10 @@ build_script:
   - cp /c/msys64/mingw32/bin/libharfbuzz-0.dll LambdaHackTheGame
   - cp /c/msys64/mingw32/bin/libglib-2.0-0.dll LambdaHackTheGame
   - cp /c/msys64/mingw32/bin/libgraphite2.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libintl-8.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libpcre-1.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libstdc++-6.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libiconv-2.dll LambdaHackTheGame
   - cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
   - 7z a -ssc -sfx LambdaHack_windows-i686.exe LambdaHackTheGame
 
