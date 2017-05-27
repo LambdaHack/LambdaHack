@@ -5,7 +5,7 @@ install:
   - pacman --version
   - appveyor-retry choco install ghc --version 8.0.2 | grep -v '^Extracting '
   - cabal --version
-  - appveyor-retry pacman -S -q --noconfirm mingw64/mingw-w64-x86_64-SDL2
+  - appveyor-retry pacman -S -q --noconfirm mingw64/mingw-w64-x86_64-SDL2 mingw64/mingw-w64-x86_64-SDL2_ttf
   - cabal update
   - cabal install happy
   - git clone -q --branch=master https://github.com/Mikolaj/sdl2.git C:\projects\lambdahack\sdl2
