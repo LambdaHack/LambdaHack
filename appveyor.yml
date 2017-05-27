@@ -21,12 +21,12 @@ install:
 build_script:
   - pwd
   - make build-binary-common
-  - cp /c/msys64/mingw64/bin/zlib1.dll artifacts/LambdaHackTheGame
-  - cp /c/msys64/mingw64/bin/SDL2.dll artifacts/LambdaHackTheGame
-  - cp /c/msys64/mingw64/bin/SDL2_ttf.dll artifacts/LambdaHackTheGame
-  - cp artifacts/LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe artifacts/LambdaHackTheGame
-  - 7z a -ssc -sfx artifacts\LambdaHack_windows-x86_64.exe artifacts\LambdaHackTheGame
+  - cp /c/msys64/mingw64/bin/zlib1.dll LambdaHackTheGame
+  - cp /c/msys64/mingw64/bin/SDL2.dll LambdaHackTheGame
+  - cp /c/msys64/mingw64/bin/SDL2_ttf.dll LambdaHackTheGame
+  - cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
+  - 7z a -ssc -sfx LambdaHack_windows-x86_64.exe LambdaHackTheGame
 
 artifacts:
-  - path: artifacts\LambdaHack_windows-x86_64.exe
+  - path: LambdaHack_windows-x86_64.exe
     name: win64 binaries

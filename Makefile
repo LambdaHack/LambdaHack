@@ -171,22 +171,22 @@ build-binary-common:
 	cabal install -f-release --prefix=/ --only-dependencies --disable-documentation
 	cabal configure -f-release --prefix=/
 	cabal build exe:LambdaHack
-	mkdir -p artifacts/LambdaHackTheGame/GameDefinition/fonts
-	cabal copy --destdir=artifacts/LambdaHackTheGameInstall
-	cp GameDefinition/config.ui.default artifacts/LambdaHackTheGame/GameDefinition
-	cp GameDefinition/fonts/16x16x.fon artifacts/LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/8x8xb.fon artifacts/LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/8x8x.fon artifacts/LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/LICENSE.16x16x artifacts/LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/Fix15Mono-Bold.woff artifacts/LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/LICENSE.Fix15Mono-Bold artifacts/LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/PLAYING.md artifacts/LambdaHackTheGame/GameDefinition
-	cp GameDefinition/InGameHelp.txt artifacts/LambdaHackTheGame/GameDefinition
-	cp README.md artifacts/LambdaHackTheGame
-	cp CHANGELOG.md artifacts/LambdaHackTheGame
-	cp LICENSE artifacts/LambdaHackTheGame
-	cp CREDITS artifacts/LambdaHackTheGame
+	mkdir -p LambdaHackTheGame/GameDefinition/fonts
+	cabal copy --destdir=LambdaHackTheGameInstall
+	cp GameDefinition/config.ui.default LambdaHackTheGame/GameDefinition
+	cp GameDefinition/fonts/16x16x.fon LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/8x8xb.fon LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/8x8x.fon LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/LICENSE.16x16x LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/Fix15Mono-Bold.woff LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/LICENSE.Fix15Mono-Bold LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/PLAYING.md LambdaHackTheGame/GameDefinition
+	cp GameDefinition/InGameHelp.txt LambdaHackTheGame/GameDefinition
+	cp README.md LambdaHackTheGame
+	cp CHANGELOG.md LambdaHackTheGame
+	cp LICENSE LambdaHackTheGame
+	cp CREDITS LambdaHackTheGame
 
 build-binary: build-binary-common
-	cp artifacts/LambdaHackTheGameInstall/bin/LambdaHack artifacts/LambdaHackTheGame
-	tar -czf artifacts/LambdaHack_x_ubuntu-16.04-amd64.tar.gz -C artifacts LambdaHackTheGame
+	cp LambdaHackTheGameInstall/bin/LambdaHack LambdaHackTheGame
+	tar -czf LambdaHack_x_ubuntu-16.04-amd64.tar.gz -C artifacts LambdaHackTheGame
