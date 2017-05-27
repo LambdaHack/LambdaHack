@@ -73,13 +73,13 @@ benchFrontendExploration:
 
 benchNull: benchBattle benchAnimBattle benchExploration
 
-bench:  benchBattle benchAnimBattle benchFrontendBattle benchExploration benchFrontendExploration
+bench: benchBattle benchAnimBattle benchFrontendBattle benchExploration benchFrontendExploration
 
 nativeBenchExploration:
-	dist/build/LambdaHack/LambdaHack                   --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode exploration --setDungeonRng 0 --setMainRng 0
+	dist/build/LambdaHack/LambdaHack		   --dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode exploration --setDungeonRng 0 --setMainRng 0
 
 nativeBenchBattle:
-	dist/build/LambdaHack/LambdaHack                   --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode battle --setDungeonRng 0 --setMainRng 0
+	dist/build/LambdaHack/LambdaHack		   --dbgMsgSer --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode battle --setDungeonRng 0 --setMainRng 0
 
 nativeBench: nativeBenchBattle nativeBenchExploration
 
@@ -177,12 +177,12 @@ build-binary:
 	cabal copy --destdir=/tmp/LambdaHackTheGameInstall
 	cp /tmp/LambdaHackTheGameInstall/bin/LambdaHack /tmp/LambdaHackTheGame
 	cp GameDefinition/config.ui.default /tmp/LambdaHackTheGame/GameDefinition
-        cp GameDefinition/fonts/16x16x.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
-        cp GameDefinition/fonts/8x8xb.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
-        cp GameDefinition/fonts/8x8x.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
-        cp GameDefinition/fonts/LICENSE.16x16x /tmp/LambdaHackTheGame/GameDefinition/fonts
-        cp GameDefinition/fonts/Fix15Mono-Bold.woff /tmp/LambdaHackTheGame/GameDefinition/fonts
-        cp GameDefinition/fonts/LICENSE.Fix15Mono-Bold /tmp/LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/16x16x.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/8x8xb.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/8x8x.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/LICENSE.16x16x /tmp/LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/Fix15Mono-Bold.woff /tmp/LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/LICENSE.Fix15Mono-Bold /tmp/LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/PLAYING.md /tmp/LambdaHackTheGame/GameDefinition
 	cp GameDefinition/InGameHelp.txt /tmp/LambdaHackTheGame/GameDefinition
 	cp README.md /tmp/LambdaHackTheGame
@@ -198,12 +198,12 @@ build-binary-windows-i386:
 	cabal copy --destdir=/tmp/LambdaHackTheGameInstall
 	cp /tmp/LambdaHackTheGameInstall/bin/LambdaHack.exe /tmp/LambdaHackTheGame
 	cp GameDefinition/config.ui.default /tmp/LambdaHackTheGame/GameDefinition
-        cp GameDefinition/fonts/16x16x.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
-        cp GameDefinition/fonts/8x8xb.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
-        cp GameDefinition/fonts/8x8x.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
-        cp GameDefinition/fonts/LICENSE.16x16x /tmp/LambdaHackTheGame/GameDefinition/fonts
-        cp GameDefinition/fonts/Fix15Mono-Bold.woff /tmp/LambdaHackTheGame/GameDefinition/fonts
-        cp GameDefinition/fonts/LICENSE.Fix15Mono-Bold /tmp/LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/16x16x.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/8x8xb.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/8x8x.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/LICENSE.16x16x /tmp/LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/Fix15Mono-Bold.woff /tmp/LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/LICENSE.Fix15Mono-Bold /tmp/LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/PLAYING.md /tmp/LambdaHackTheGame/GameDefinition
 	cp GameDefinition/InGameHelp.txt /tmp/LambdaHackTheGame/GameDefinition
 	cp README.md /tmp/LambdaHackTheGame
