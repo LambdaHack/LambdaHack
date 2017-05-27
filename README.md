@@ -75,13 +75,14 @@ e.g., when it's closed while the game is still saving progress
 you may prefer to use a native binary for your architecture, if it exists.
 
 Pre-compiled game binaries for some platforms are available through
-the release page[11] and from the Nix Packages Collection[12].
+the release page[11] and from the Nix Packages Collection[12] (Linux)
+and AppVeyor (Windows 32bit[17] and Windows 64bit[18]).
 To use a pre-compiled binary archive, unpack it and run the executable
 in the unpacked directory.
 
 On Linux, make sure you have the SDL2 libraries suite installed on your system
-(e.g., libsdl2, libsdl2-ttf). For Windows, the SDL2 library is already
-contained in the game's binary archive.
+(e.g., libsdl2, libsdl2-ttf). For Windows, the SDL2 and all other needed
+libraries are already contained in the game's binary archive.
 
 
 Screen and keyboard configuration
@@ -232,3 +233,5 @@ Have fun!
 [14]: http://www.edsko.net/2014/04/27/haskell-including-gtk-on-mavericks
 [15]: https://github.com/ghcjs/ghcjs
 [16]: https://www.npmjs.com/package/google-closure-compiler
+[17]: https://ci.appveyor.com/project/Mikolaj/lambdahack-4hh0j/build/artifacts
+[18]: https://ci.appveyor.com/project/Mikolaj/lambdahack/build/artifacts
