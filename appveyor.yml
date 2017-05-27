@@ -19,7 +19,7 @@ install:
 
 build_script:
   - pwd
-  - cabal install
+  - make build-binary-windows-i386
 
 artifacts:
   - path: /tmp/LambdaHack_x_windows-i386.exe
