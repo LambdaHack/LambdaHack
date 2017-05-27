@@ -25,6 +25,9 @@ build_script:
   - cp /c/msys64/mingw32/bin/SDL2.dll LambdaHackTheGame
   - cp /c/msys64/mingw32/bin/SDL2_ttf.dll LambdaHackTheGame
   - cp /c/msys64/mingw32/bin/libfreetype-6.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libgcc_s_dw2-1.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libbz2-1.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libpng16-16.dll LambdaHackTheGame
   - cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
   - 7z a -ssc -sfx LambdaHack_windows-i686.exe LambdaHackTheGame
 
