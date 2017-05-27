@@ -173,34 +173,41 @@ build-binary:
 	rm -rf /tmp/LambdaHack_x_ubuntu-16.04-amd64.tar.gz
 	rm -rf /tmp/LambdaHackTheGameInstall
 	rm -rf /tmp/LambdaHackTheGame
-	mkdir -p /tmp/LambdaHackTheGame/GameDefinition
+	mkdir -p /tmp/LambdaHackTheGame/GameDefinition/fonts
 	cabal copy --destdir=/tmp/LambdaHackTheGameInstall
 	cp /tmp/LambdaHackTheGameInstall/bin/LambdaHack /tmp/LambdaHackTheGame
-	cp GameDefinition/PLAYING.md /tmp/LambdaHackTheGame/GameDefinition
-	cp GameDefinition/scores /tmp/LambdaHackTheGame/GameDefinition
 	cp GameDefinition/config.ui.default /tmp/LambdaHackTheGame/GameDefinition
-	cp CHANGELOG.md /tmp/LambdaHackTheGame
-	cp CREDITS /tmp/LambdaHackTheGame
-	cp LICENSE /tmp/LambdaHackTheGame
+        cp GameDefinition/fonts/16x16x.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
+        cp GameDefinition/fonts/8x8xb.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
+        cp GameDefinition/fonts/8x8x.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
+        cp GameDefinition/fonts/LICENSE.16x16x /tmp/LambdaHackTheGame/GameDefinition/fonts
+        cp GameDefinition/fonts/Fix15Mono-Bold.woff /tmp/LambdaHackTheGame/GameDefinition/fonts
+        cp GameDefinition/fonts/LICENSE.Fix15Mono-Bold /tmp/LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/PLAYING.md /tmp/LambdaHackTheGame/GameDefinition
+	cp GameDefinition/InGameHelp.txt /tmp/LambdaHackTheGame/GameDefinition
 	cp README.md /tmp/LambdaHackTheGame
+	cp CHANGELOG.md /tmp/LambdaHackTheGame
+	cp LICENSE /tmp/LambdaHackTheGame
+	cp CREDITS /tmp/LambdaHackTheGame
 	tar -czf /tmp/LambdaHack_x_ubuntu-16.04-amd64.tar.gz -C /tmp LambdaHackTheGame
 
-# It's a pity this is so different from Linux
 build-binary-windows-i386:
-	wine cabal install -frelease --only-dependencies
-	wine cabal build exe:LambdaHack
-	rm -rf /tmp/LambdaHack_x_windows-i386.zip
-	rm -rf /tmp/LambdaHackTheGameInstall
-	rm -rf /tmp/LambdaHackTheGame
-	mkdir -p /tmp/LambdaHackTheGame/GameDefinition
-	wine cabal copy --destdir=Z:/tmp/LambdaHackTheGameInstall
-	cp /tmp/LambdaHackTheGameInstall/users/mikolaj/Application\ Data/cabal/bin/LambdaHack.exe /tmp/LambdaHackTheGame
-	cp GameDefinition/PLAYING.md /tmp/LambdaHackTheGame/GameDefinition
-	cp GameDefinition/scores /tmp/LambdaHackTheGame/GameDefinition
+	cabal install -frelease --prefix=/ --only-dependencies
+	cabal build exe:LambdaHack
+	mkdir -p /tmp/LambdaHackTheGame/GameDefinition/fonts
+	cabal copy --destdir=/tmp/LambdaHackTheGameInstall
+	cp /tmp/LambdaHackTheGameInstall/bin/LambdaHack.exe /tmp/LambdaHackTheGame
 	cp GameDefinition/config.ui.default /tmp/LambdaHackTheGame/GameDefinition
-	cp CHANGELOG.md /tmp/LambdaHackTheGame
-	cp CREDITS /tmp/LambdaHackTheGame
-	cp LICENSE /tmp/LambdaHackTheGame
+        cp GameDefinition/fonts/16x16x.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
+        cp GameDefinition/fonts/8x8xb.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
+        cp GameDefinition/fonts/8x8x.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
+        cp GameDefinition/fonts/LICENSE.16x16x /tmp/LambdaHackTheGame/GameDefinition/fonts
+        cp GameDefinition/fonts/Fix15Mono-Bold.woff /tmp/LambdaHackTheGame/GameDefinition/fonts
+        cp GameDefinition/fonts/LICENSE.Fix15Mono-Bold /tmp/LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/PLAYING.md /tmp/LambdaHackTheGame/GameDefinition
+	cp GameDefinition/InGameHelp.txt /tmp/LambdaHackTheGame/GameDefinition
 	cp README.md /tmp/LambdaHackTheGame
-	cp /home/mikolaj/.wine/drive_c/Program\ Files/Haskell\ Platform/8.0.2-a/mingw/bin/zlib1.dll /tmp/LambdaHackTheGame
-	wine Z:/home/mikolaj/.local/share/wineprefixes/7zip/drive_c/Program\ Files/7-Zip/7z.exe a -ssc -sfx Z:/tmp/LambdaHack_x_windows-i386.exe Z:/tmp/LambdaHackTheGame
+	cp CHANGELOG.md /tmp/LambdaHackTheGame
+	cp LICENSE /tmp/LambdaHackTheGame
+	cp CREDITS /tmp/LambdaHackTheGame
+	7z a -ssc -sfx /tmp/LambdaHack_x_windows-i386.exe /tmp/LambdaHackTheGame

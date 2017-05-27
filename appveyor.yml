@@ -18,5 +18,5 @@ build_script:
   - cabal install
 
 artifacts:
-  - path: dist/
+  - path: /tmp/LambdaHack_x_windows-i386.exe
     name: win32 binaries
