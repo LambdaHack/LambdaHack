@@ -8,6 +8,9 @@ install:
   - appveyor-retry pacman -S -q --noconfirm mingw-w64-i686-SDL2 mingw-w64-i686-SDL2_ttf
   - cabal update
   - cabal install happy
+  - pwd
+  - find /c/msys64 -name "*SDL2.dll*"
+  - find /c/msys32 -name "*SDL2.dll*"
   - git clone -q --branch=master https://github.com/Mikolaj/sdl2.git C:\projects\lambdahack\sdl2
   - cd sdl2
   - cabal install
@@ -19,8 +22,6 @@ install:
 
 build_script:
   - pwd
-  - find /c/msys64 -name "*SDL2.dll*"
-  - find /c/msys32 -name "*SDL2.dll*"
   - make build-binary-common
   - cp /c/msys64/mingw64/bin/zlib1.dll artifacts/LambdaHackTheGame
   - cp /c/msys64/mingw64/bin/SDL2.dll artifacts/LambdaHackTheGame

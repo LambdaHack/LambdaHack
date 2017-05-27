@@ -8,6 +8,7 @@ install:
   - appveyor-retry pacman -S -q --noconfirm mingw64/mingw-w64-x86_64-SDL2 mingw64/mingw-w64-x86_64-SDL2_ttf
   - cabal update
   - cabal install happy
+  - pwd
   - git clone -q --branch=master https://github.com/Mikolaj/sdl2.git C:\projects\lambdahack\sdl2
   - cd sdl2
   - cabal install
