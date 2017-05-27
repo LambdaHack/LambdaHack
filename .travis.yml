@@ -100,6 +100,7 @@ matrix:
 #      addons: {apt: {packages: [libsdl2-dev, libsdl2-ttf-dev, cabal-install-head,ghc-head,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
 
   allow_failures:
+    - env: CABALVER=2.0 GHCVER=7.10.3 GTKVTY=gtk
     - env: CABALVER=head GHCVER=head GTKVTY=gtk-v2
     - env: CABALVER=head GHCVER=head GTKVTY=sdl-v2
     - env: CABALVER=2.0 GHCVER=8.2.1 GTKVTY=noopt
