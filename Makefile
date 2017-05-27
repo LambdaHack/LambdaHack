@@ -167,16 +167,12 @@ test-short-load:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --boostRandomItem --savePrefix battleSurvival --dumpInitRngs --automateAll --keepAutomated --gameMode "battle survival" --frontendTeletype --stopAfterSeconds 2 --setDungeonRng 0 --setMainRng 0 2> /tmp/teletypetest.log
 
 
-build-binary:
-	cabal install -f-release --prefix=/ --only-dependencies
+build-binary-common:
+	cabal install -f-release --prefix=/ --only-dependencies --disable-documentation
 	cabal configure -f-release --prefix=/
 	cabal build exe:LambdaHack
-	rm -rf /tmp/LambdaHack_x_ubuntu-16.04-amd64.tar.gz
-	rm -rf /tmp/LambdaHackTheGameInstall
-	rm -rf /tmp/LambdaHackTheGame
 	mkdir -p /tmp/LambdaHackTheGame/GameDefinition/fonts
 	cabal copy --destdir=/tmp/LambdaHackTheGameInstall
-	cp /tmp/LambdaHackTheGameInstall/bin/LambdaHack /tmp/LambdaHackTheGame
 	cp GameDefinition/config.ui.default /tmp/LambdaHackTheGame/GameDefinition
 	cp GameDefinition/fonts/16x16x.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/fonts/8x8xb.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
@@ -190,24 +186,7 @@ build-binary:
 	cp CHANGELOG.md /tmp/LambdaHackTheGame
 	cp LICENSE /tmp/LambdaHackTheGame
 	cp CREDITS /tmp/LambdaHackTheGame
-	tar -czf /tmp/LambdaHack_x_ubuntu-16.04-amd64.tar.gz -C /tmp LambdaHackTheGame
 
-build-binary-windows-i386:
-	cabal install -f-release --prefix=/ --only-dependencies
-	cabal configure -f-release --prefix=/
-	cabal build exe:LambdaHack
-	mkdir -p /tmp/LambdaHackTheGame/GameDefinition/fonts
-	cabal copy --destdir=/tmp/LambdaHackTheGameInstall
-	cp GameDefinition/config.ui.default /tmp/LambdaHackTheGame/GameDefinition
-	cp GameDefinition/fonts/16x16x.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/8x8xb.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/8x8x.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/LICENSE.16x16x /tmp/LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/Fix15Mono-Bold.woff /tmp/LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/LICENSE.Fix15Mono-Bold /tmp/LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/PLAYING.md /tmp/LambdaHackTheGame/GameDefinition
-	cp GameDefinition/InGameHelp.txt /tmp/LambdaHackTheGame/GameDefinition
-	cp README.md /tmp/LambdaHackTheGame
-	cp CHANGELOG.md /tmp/LambdaHackTheGame
-	cp LICENSE /tmp/LambdaHackTheGame
-	cp CREDITS /tmp/LambdaHackTheGame
+build-binary: build-binary-common
+	cp /tmp/LambdaHackTheGameInstall/bin/LambdaHack /tmp/LambdaHackTheGame
+	tar -czf /tmp/LambdaHack_x_ubuntu-16.04-amd64.tar.gz -C /tmp LambdaHackTheGame
