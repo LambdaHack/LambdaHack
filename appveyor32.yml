@@ -9,9 +9,7 @@ install:
   - cabal update
   - cabal install happy
   - pwd
-  - find /c/msys64 -name "*SDL2.dll*"
-  - find /c/msys32 -name "*SDL2.dll*"
-  - git clone -q --branch=master https://github.com/Mikolaj/sdl2.git C:\projects\lambdahack\sdl2
+  - git clone -q --branch=master https://github.com/Mikolaj/sdl2.git sdl2
   - cd sdl2
   - cabal install
   - cd ..
@@ -23,9 +21,9 @@ install:
 build_script:
   - pwd
   - make build-binary-common
-  - cp /c/msys64/mingw64/bin/zlib1.dll artifacts/LambdaHackTheGame
-  - cp /c/msys64/mingw64/bin/SDL2.dll artifacts/LambdaHackTheGame
-  - cp /c/msys64/mingw64/bin/SDL2_ttf.dll artifacts/LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/zlib1.dll artifacts/LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/SDL2.dll artifacts/LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/SDL2_ttf.dll artifacts/LambdaHackTheGame
   - cp artifacts/LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe artifacts/LambdaHackTheGame
   - 7z a -ssc -sfx artifacts\LambdaHack_windows-i686.exe artifacts\LambdaHackTheGame
 
