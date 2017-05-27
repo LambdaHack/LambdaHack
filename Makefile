@@ -168,7 +168,8 @@ test-short-load:
 
 
 build-binary:
-	cabal configure -frelease --prefix=/
+	cabal install -f-release --prefix=/ --only-dependencies
+	cabal configure -f-release --prefix=/
 	cabal build exe:LambdaHack
 	rm -rf /tmp/LambdaHack_x_ubuntu-16.04-amd64.tar.gz
 	rm -rf /tmp/LambdaHackTheGameInstall
@@ -192,11 +193,11 @@ build-binary:
 	tar -czf /tmp/LambdaHack_x_ubuntu-16.04-amd64.tar.gz -C /tmp LambdaHackTheGame
 
 build-binary-windows-i386:
-	cabal install -frelease --prefix=/ --only-dependencies
+	cabal install -f-release --prefix=/ --only-dependencies
+	cabal configure -f-release --prefix=/
 	cabal build exe:LambdaHack
 	mkdir -p /tmp/LambdaHackTheGame/GameDefinition/fonts
 	cabal copy --destdir=/tmp/LambdaHackTheGameInstall
-	cp /tmp/LambdaHackTheGameInstall/bin/LambdaHack.exe /tmp/LambdaHackTheGame
 	cp GameDefinition/config.ui.default /tmp/LambdaHackTheGame/GameDefinition
 	cp GameDefinition/fonts/16x16x.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/fonts/8x8xb.fon /tmp/LambdaHackTheGame/GameDefinition/fonts
@@ -210,4 +211,3 @@ build-binary-windows-i386:
 	cp CHANGELOG.md /tmp/LambdaHackTheGame
 	cp LICENSE /tmp/LambdaHackTheGame
 	cp CREDITS /tmp/LambdaHackTheGame
-	7z a -ssc -sfx /tmp/LambdaHack_x_windows-i386.exe /tmp/LambdaHackTheGame

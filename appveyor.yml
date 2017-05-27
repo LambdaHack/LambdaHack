@@ -19,7 +19,14 @@ install:
 
 build_script:
   - pwd
+  - ls /c/
+  - ls /c/msys64/
   - make build-binary-windows-i386
+  - cp /c/msys64/tmp/LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe /tmp/LambdaHackTheGame
+  - cp /c/msys64/mingw64/bin/zlib1.dll /tmp/LambdaHackTheGame
+  - cp /c/msys64/mingw64/bin/SDL2.dll /tmp/LambdaHackTheGame
+  - cp /c/msys64/mingw64/bin/SDL2_ttf.dll /tmp/LambdaHackTheGame
+  - 7z a -ssc -sfx /tmp/LambdaHack_x_windows-i386.exe /tmp/LambdaHackTheGame
 
 artifacts:
   - path: /tmp/LambdaHack_x_windows-i386.exe
