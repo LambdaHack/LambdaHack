@@ -30,9 +30,10 @@ build_script:
   - cp /c/msys64/mingw64/bin/libpng16-16.dll LambdaHackTheGame
   - cp /c/msys64/mingw64/bin/libwinpthread-1.dll LambdaHackTheGame
   - cp /c/msys64/mingw64/bin/libharfbuzz-0.dll LambdaHackTheGame
+  - cp /c/msys64/mingw64/bin/libglib-2.0-0.dll LambdaHackTheGame
+  - cp /c/msys64/mingw64/bin/libgraphite2.dll LambdaHackTheGame
   - cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
   - 7z a -ssc -sfx LambdaHack_windows-x86_64.exe LambdaHackTheGame
-  - make test
 
 artifacts:
   - path: LambdaHack_windows-x86_64.exe
