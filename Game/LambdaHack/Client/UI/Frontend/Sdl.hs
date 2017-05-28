@@ -105,11 +105,9 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   screenTexture <- SDL.createTexture srenderer SDL.ARGB8888
                                      SDL.TextureAccessTarget screenV2
   SDL.rendererDrawBlendMode srenderer SDL.$= SDL.BlendNone
-  SDL.clear srenderer  -- to help the win64 port clear the screen
   SDL.rendererRenderTarget srenderer SDL.$= Just screenTexture
   SDL.clear srenderer  -- clear the texture
   SDL.rendererRenderTarget srenderer SDL.$= Nothing
-  SDL.clear srenderer  -- to help the win64 port clear the screen
   SDL.copy srenderer screenTexture Nothing Nothing  -- clear the backbuffer
   satlas <- newIORef EM.empty
   spreviousFrame <- newIORef blankSingleFrame
@@ -193,7 +191,6 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
       v4black = let Raw.Color r g b a = colorToRGBA Color.Black
                 in SDL.V4 r g b a
   SDL.rendererDrawColor srenderer SDL.$= v4black
-  SDL.clear srenderer  -- to help the win64 port clear the screen
   boxSize <- (+ sdlSizeAdd) <$> TTF.getFontHeight sfont
   let xsize = fst normalLevelBound + 1
       vp :: Int -> Int -> Vect.Point Vect.V2 CInt
