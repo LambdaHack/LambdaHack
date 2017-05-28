@@ -169,7 +169,7 @@ test-short-load:
 
 build-binary-common:
 	cabal install -f-release --prefix=/ --only-dependencies --disable-documentation
-	cabal configure -f-release --prefix=/
+	cabal configure -f-release --prefix=/ --datadir=. --datasubdir=.
 	cabal build exe:LambdaHack
 	mkdir -p LambdaHackTheGame/GameDefinition/fonts
 	cabal copy --destdir=LambdaHackTheGameInstall
