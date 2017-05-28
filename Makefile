@@ -168,8 +168,8 @@ test-short-load:
 
 
 build-binary-common:
-	cabal install -f-release --prefix=/ --only-dependencies --disable-documentation
-	cabal configure -f-release --prefix=/ --datadir=. --datasubdir=.
+	cabal install --disable-library-profiling --disable-profiling --disable-documentation -f-release --prefix=/ --only-dependencies
+	cabal configure --disable-library-profiling --disable-profiling -f-release --prefix=/ --datadir=. --datasubdir=.
 	cabal build exe:LambdaHack
 	mkdir -p LambdaHackTheGame/GameDefinition/fonts
 	cabal copy --destdir=LambdaHackTheGameInstall
@@ -189,4 +189,4 @@ build-binary-common:
 
 build-binary: build-binary-common
 	cp LambdaHackTheGameInstall/bin/LambdaHack LambdaHackTheGame
-	tar -czf LambdaHack_x_ubuntu-16.04-amd64.tar.gz -C artifacts LambdaHackTheGame
+	tar -czf LambdaHack_x_ubuntu-16.04-amd64.tar.gz LambdaHackTheGame

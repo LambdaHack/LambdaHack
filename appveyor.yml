@@ -38,6 +38,7 @@ build_script:
   - cp /c/msys64/mingw64/bin/libiconv-2.dll LambdaHackTheGame
   - cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
   - 7z a -ssc -sfx LambdaHack_windows-x86_64.exe LambdaHackTheGame
+  - make test
 
 artifacts:
   - path: LambdaHack_windows-x86_64.exe
