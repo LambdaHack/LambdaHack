@@ -21,7 +21,7 @@ import qualified Data.EnumMap.Strict as EM
 import Data.IORef
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
-import Data.Word (Word32)
+import Data.Word (Word32, Word8)
 import Foreign.C.Types (CInt)
 import System.Directory
 import System.FilePath
@@ -106,6 +106,9 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
                                      SDL.TextureAccessTarget screenV2
   SDL.rendererDrawBlendMode srenderer SDL.$= SDL.BlendNone
   SDL.rendererRenderTarget srenderer SDL.$= Just screenTexture
+  let v4black = let Raw.Color r g b a = colorToRGBA Color.Black
+                in SDL.V4 r g b a
+  SDL.rendererDrawColor srenderer SDL.$= v4black
   SDL.clear srenderer  -- clear the texture
   SDL.rendererRenderTarget srenderer SDL.$= Nothing
   SDL.copy srenderer screenTexture Nothing Nothing  -- clear the backbuffer
@@ -380,21 +383,24 @@ keyTranslate shiftPressed n =
                | otherwise -> K.Unknown $ show n
 
 
+sDL_ALPHA_OPAQUE :: Word8
+sDL_ALPHA_OPAQUE = 255
+
 -- This code is sadly duplicated from "Game.LambdaHack.Common.Color".
 colorToRGBA :: Color.Color -> Raw.Color
-colorToRGBA Color.Black     = Raw.Color 0 0 0 0
-colorToRGBA Color.Red       = Raw.Color 0xD5 0x00 0x00 0
-colorToRGBA Color.Green     = Raw.Color 0x00 0xAA 0x00 0
-colorToRGBA Color.Brown     = Raw.Color 0xCA 0x4A 0x00 0
-colorToRGBA Color.Blue      = Raw.Color 0x20 0x3A 0xF0 0
-colorToRGBA Color.Magenta   = Raw.Color 0xAA 0x00 0xAA 0
-colorToRGBA Color.Cyan      = Raw.Color 0x00 0xAA 0xAA 0
-colorToRGBA Color.White     = Raw.Color 0xC5 0xBC 0xB8 0
-colorToRGBA Color.BrBlack   = Raw.Color 0x6F 0x5F 0x5F 0
-colorToRGBA Color.BrRed     = Raw.Color 0xFF 0x55 0x55 0
-colorToRGBA Color.BrGreen   = Raw.Color 0x75 0xFF 0x45 0
-colorToRGBA Color.BrYellow  = Raw.Color 0xFF 0xE8 0x55 0
-colorToRGBA Color.BrBlue    = Raw.Color 0x40 0x90 0xFF 0
-colorToRGBA Color.BrMagenta = Raw.Color 0xFF 0x77 0xFF 0
-colorToRGBA Color.BrCyan    = Raw.Color 0x60 0xFF 0xF0 0
-colorToRGBA Color.BrWhite   = Raw.Color 0xFF 0xFF 0xFF 0
+colorToRGBA Color.Black     = Raw.Color 0 0 0 sDL_ALPHA_OPAQUE
+colorToRGBA Color.Red       = Raw.Color 0xD5 0x00 0x00 sDL_ALPHA_OPAQUE
+colorToRGBA Color.Green     = Raw.Color 0x00 0xAA 0x00 sDL_ALPHA_OPAQUE
+colorToRGBA Color.Brown     = Raw.Color 0xCA 0x4A 0x00 sDL_ALPHA_OPAQUE
+colorToRGBA Color.Blue      = Raw.Color 0x20 0x3A 0xF0 sDL_ALPHA_OPAQUE
+colorToRGBA Color.Magenta   = Raw.Color 0xAA 0x00 0xAA sDL_ALPHA_OPAQUE
+colorToRGBA Color.Cyan      = Raw.Color 0x00 0xAA 0xAA sDL_ALPHA_OPAQUE
+colorToRGBA Color.White     = Raw.Color 0xC5 0xBC 0xB8 sDL_ALPHA_OPAQUE
+colorToRGBA Color.BrBlack   = Raw.Color 0x6F 0x5F 0x5F sDL_ALPHA_OPAQUE
+colorToRGBA Color.BrRed     = Raw.Color 0xFF 0x55 0x55 sDL_ALPHA_OPAQUE
+colorToRGBA Color.BrGreen   = Raw.Color 0x75 0xFF 0x45 sDL_ALPHA_OPAQUE
+colorToRGBA Color.BrYellow  = Raw.Color 0xFF 0xE8 0x55 sDL_ALPHA_OPAQUE
+colorToRGBA Color.BrBlue    = Raw.Color 0x40 0x90 0xFF sDL_ALPHA_OPAQUE
+colorToRGBA Color.BrMagenta = Raw.Color 0xFF 0x77 0xFF sDL_ALPHA_OPAQUE
+colorToRGBA Color.BrCyan    = Raw.Color 0x60 0xFF 0xF0 sDL_ALPHA_OPAQUE
+colorToRGBA Color.BrWhite   = Raw.Color 0xFF 0xFF 0xFF sDL_ALPHA_OPAQUE
