@@ -298,11 +298,11 @@ library
     cpp-options:      -DUSE_GTK
   } else { if flag(sdl) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Sdl
-    build-depends:    sdl2 >= 2, sdl2-ttf >= 1 && < 2
+    build-depends:    sdl2 >= 2, sdl2-ttf >= 2
     cpp-options:      -DUSE_SDL
   } else {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Sdl
-    build-depends:    sdl2 >= 2, sdl2-ttf >= 1 && < 2
+    build-depends:    sdl2 >= 2, sdl2-ttf >= 2
     cpp-options:      -DUSE_SDL
   } } } } }
 
