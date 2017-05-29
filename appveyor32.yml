@@ -13,8 +13,8 @@ install:
   - cd sdl2
   - cabal install
   - cd ..
-  - git clone -q --branch=master https://github.com/Mikolaj/sdl2-ttf.git
-  - cd sdl2-ttf
+  - git clone -q --branch=master https://github.com/Mikolaj/sdl2-ttf-1.git
+  - cd sdl2-ttf-1
   - cabal install
   - cd ..
 
