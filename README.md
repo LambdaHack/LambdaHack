@@ -76,7 +76,7 @@ you may prefer to use a native binary for your architecture, if it exists.
 
 Pre-compiled game binaries for some platforms are available through
 the release page[11] and from the Nix Packages Collection[12] (Linux)
-and AppVeyor (Windows 32bit[17] and Windows 64bit[18], not that these
+and AppVeyor (Windows 32bit[17] and Windows 64bit[18]; note that these
 no longer work on Windows XP, since Cygwin and MSYS2 dropped support for XP;
 they may also be broken in other ways; feedback and help appreciated).
 To use a pre-compiled binary archive, unpack it and run the executable
