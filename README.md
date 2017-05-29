@@ -92,7 +92,7 @@ Screen and keyboard configuration
 
 The game UI can be configured via a config file.
 A file with the default settings, the same that is built into the binary,
-is in [GameDefinition/config.ui.default](GameDefinition/config.ui.default).
+is in [GameDefinition/config.ui.default](https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/config.ui.default).
 When the game is run for the first time, the file is copied to the default
 user data folder, which is `~/.LambdaHack/` on Linux,
 `C:\Users\<username>\AppData\Roaming\LambdaHack\`
@@ -142,7 +142,9 @@ for your OS. On Linux, remember to install the -dev versions as well,
 e.g., libsdl2-dev and libsdl2-ttf-dev on Ubuntu Linux 16.04.
 (Compilation to Javascript for the browser is more complicated
 and requires the ghcjs[15] compiler and optionally the Google Closure
-Compiler[16] as well. See the [Makefile](Makefile) for more details.)
+Compiler[16] as well. See the
+[Makefile](https://github.com/LambdaHack/LambdaHack/blob/master/Makefile)
+for more details.)
 
 The latest official version of the LambdaHack library can be downloaded,
 compiled for SDL2 and installed automatically by Cabal from Hackage[3]
@@ -178,7 +180,8 @@ compile the GTK libraries from sources[14]. Invoke Cabal as follows
 Testing and debugging
 ---------------------
 
-The [Makefile](Makefile) contains many sample test commands.
+The [Makefile](https://github.com/LambdaHack/LambdaHack/blob/master/Makefile)
+contains many sample test commands.
 Numerous tests that use the screensaver game modes (AI vs. AI)
 and the teletype frontend are gathered in `make test`.
 Of these, travis runs `test-travis` on each push to github.
@@ -212,8 +215,9 @@ Further information
 -------------------
 
 For more information, visit the wiki[4]
-and see [PLAYING.md](GameDefinition/PLAYING.md), [CREDITS](CREDITS)
-and [LICENSE](LICENSE).
+and see [PLAYING.md](https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/PLAYING.md),
+[CREDITS](https://github.com/LambdaHack/LambdaHack/blob/master/CREDITS)
+and [LICENSE](https://github.com/LambdaHack/LambdaHack/blob/master/LICENSE).
 
 Have fun!
 
