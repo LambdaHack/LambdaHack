@@ -27,10 +27,9 @@ import System.Directory
 import System.FilePath
 
 import qualified SDL
+import qualified SDL.Font as TTF
 import SDL.Input.Keyboard.Codes
 import qualified SDL.Raw as Raw
-import qualified SDL.TTF as TTF
-import qualified SDL.TTF.FFI as TTF (TTFFont)
 import qualified SDL.Vect as Vect
 
 import Game.LambdaHack.Client.UI.Frame
@@ -48,7 +47,7 @@ type FontAtlas = EM.EnumMap Color.AttrCharW32 SDL.Texture
 data FrontendSession = FrontendSession
   { swindow           :: !SDL.Window
   , srenderer         :: !SDL.Renderer
-  , sfont             :: !TTF.TTFFont
+  , sfont             :: !TTF.Font
   , satlas            :: !(IORef FontAtlas)
   , screenTexture     :: !SDL.Texture
   , spreviousFrame    :: !(IORef SingleFrame)
@@ -87,13 +86,11 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   unless fontFileExists $
     assert `failure` "Font file does not exist: " ++ fontFile
   let fontSize = fromJust sfontSize
-  code <- TTF.init
-  when (code /= 0) $
-    assert `failure` "init of sdl2-ttf failed with: " ++ show code
-  sfont <- TTF.openFont fontFile fontSize
+  TTF.initialize
+  sfont <- TTF.load fontFile fontSize
   let fonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
       sdlSizeAdd = fromJust $ if fonFile then sdlFonSizeAdd else sdlTtfSizeAdd
-  boxSize <- (+ sdlSizeAdd) <$> TTF.getFontHeight sfont
+  boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
   let xsize = fst normalLevelBound + 1
       ysize = snd normalLevelBound + 4
       screenV2 = SDL.V2 (toEnum $ xsize * boxSize)
@@ -172,7 +169,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
         quitSDL <- readIORef squitSDL
         unless quitSDL storeKeys
   storeKeys
-  TTF.closeFont sfont
+  TTF.free sfont
   TTF.quit
   SDL.destroyRenderer srenderer
   SDL.destroyWindow swindow
@@ -194,7 +191,7 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
       v4black = let Raw.Color r g b a = colorToRGBA Color.Black
                 in SDL.V4 r g b a
   SDL.rendererDrawColor srenderer SDL.$= v4black
-  boxSize <- (+ sdlSizeAdd) <$> TTF.getFontHeight sfont
+  boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
   let xsize = fst normalLevelBound + 1
       vp :: Int -> Int -> Vect.Point Vect.V2 CInt
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
@@ -234,8 +231,9 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
                                          else 8901  -- 0x22c5
                          else acCharRaw
             textSurface <-
-              TTF.renderUTF8Shaded sfont [acChar] (colorToRGBA fg)
-                                                  (colorToRGBA Color.Black)
+              TTF.shadedGlyph sfont (let Raw.Color r g b a = colorToRGBA fg
+                                     in SDL.V4 r g b a) v4black
+                              acChar
             textTexture <- SDL.createTextureFromSurface srenderer textSurface
             SDL.freeSurface textSurface
             writeIORef satlas $ EM.insert ac textTexture atlas  -- not @acRaw@
