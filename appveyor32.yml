@@ -13,6 +13,7 @@ install:
   - cd sdl2
   - cabal install
   - cd ..
+# instead of the Hackage package sdl2-ttf that struggle with UTF8 fonts, at least under Wine:
   - git clone -q --branch=master https://github.com/Mikolaj/sdl2-ttf-1.git
   - cd sdl2-ttf-1
   - cabal install
