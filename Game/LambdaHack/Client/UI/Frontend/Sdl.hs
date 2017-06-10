@@ -29,7 +29,6 @@ import System.FilePath
 import qualified SDL
 import qualified SDL.Font as TTF
 import SDL.Input.Keyboard.Codes
-import qualified SDL.Raw as Raw
 import qualified SDL.Vect as Vect
 
 import Game.LambdaHack.Client.UI.Frame
@@ -103,9 +102,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
                                      SDL.TextureAccessTarget screenV2
   SDL.rendererDrawBlendMode srenderer SDL.$= SDL.BlendNone
   SDL.rendererRenderTarget srenderer SDL.$= Just screenTexture
-  let v4black = let Raw.Color r g b a = colorToRGBA Color.Black
-                in SDL.V4 r g b a
-  SDL.rendererDrawColor srenderer SDL.$= v4black
+  SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
   SDL.clear srenderer  -- clear the texture
   SDL.rendererRenderTarget srenderer SDL.$= Nothing
   SDL.copy srenderer screenTexture Nothing Nothing  -- clear the backbuffer
@@ -188,21 +185,17 @@ display :: DebugModeCli
 display DebugModeCli{..} FrontendSession{..} curFrame = do
   let fonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
       sdlSizeAdd = fromJust $ if fonFile then sdlFonSizeAdd else sdlTtfSizeAdd
-      v4black = let Raw.Color r g b a = colorToRGBA Color.Black
-                in SDL.V4 r g b a
-  SDL.rendererDrawColor srenderer SDL.$= v4black
+  SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
   boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
   let xsize = fst normalLevelBound + 1
       vp :: Int -> Int -> Vect.Point Vect.V2 CInt
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
       drawHighlight x y color = do
-        let v4 = let Raw.Color r g b a = colorToRGBA color
-                 in SDL.V4 r g b a
-        SDL.rendererDrawColor srenderer SDL.$= v4
+        SDL.rendererDrawColor srenderer SDL.$= colorToRGBA color
         let rect = SDL.Rectangle (vp (x * boxSize) (y * boxSize))
                                  (Vect.V2 (toEnum boxSize) (toEnum boxSize))
         SDL.drawRect srenderer $ Just rect
-        SDL.rendererDrawColor srenderer SDL.$= v4black  -- reset back to black
+        SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black  -- reset back to black
       setChar :: Int -> Word32 -> Word32 -> IO ()
       setChar i w wPrev = unless (w == wPrev) $ do
         atlas <- readIORef satlas
@@ -217,7 +210,6 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
               Color.HighlightBlue -> normalizeAc Color.Blue
               Color.HighlightYellow -> normalizeAc Color.BrYellow
               Color.HighlightGrey -> normalizeAc Color.BrBlack
-        -- https://github.com/rongcuid/sdl2-ttf/blob/master/src/SDL/TTF.hsc
         -- https://www.libsdl.org/projects/SDL_ttf/docs/SDL_ttf_42.html#SEC42
         textTexture <- case EM.lookup ac atlas of
           Nothing -> do
@@ -231,9 +223,7 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
                                          else 8901  -- 0x22c5
                          else acCharRaw
             textSurface <-
-              TTF.shadedGlyph sfont (let Raw.Color r g b a = colorToRGBA fg
-                                     in SDL.V4 r g b a) v4black
-                              acChar
+              TTF.shadedGlyph sfont (colorToRGBA fg) (colorToRGBA Color.Black) acChar
             textTexture <- SDL.createTextureFromSurface srenderer textSurface
             SDL.freeSurface textSurface
             writeIORef satlas $ EM.insert ac textTexture atlas  -- not @acRaw@
@@ -385,20 +375,20 @@ sDL_ALPHA_OPAQUE :: Word8
 sDL_ALPHA_OPAQUE = 255
 
 -- This code is sadly duplicated from "Game.LambdaHack.Common.Color".
-colorToRGBA :: Color.Color -> Raw.Color
-colorToRGBA Color.Black     = Raw.Color 0 0 0 sDL_ALPHA_OPAQUE
-colorToRGBA Color.Red       = Raw.Color 0xD5 0x00 0x00 sDL_ALPHA_OPAQUE
-colorToRGBA Color.Green     = Raw.Color 0x00 0xAA 0x00 sDL_ALPHA_OPAQUE
-colorToRGBA Color.Brown     = Raw.Color 0xCA 0x4A 0x00 sDL_ALPHA_OPAQUE
-colorToRGBA Color.Blue      = Raw.Color 0x20 0x3A 0xF0 sDL_ALPHA_OPAQUE
-colorToRGBA Color.Magenta   = Raw.Color 0xAA 0x00 0xAA sDL_ALPHA_OPAQUE
-colorToRGBA Color.Cyan      = Raw.Color 0x00 0xAA 0xAA sDL_ALPHA_OPAQUE
-colorToRGBA Color.White     = Raw.Color 0xC5 0xBC 0xB8 sDL_ALPHA_OPAQUE
-colorToRGBA Color.BrBlack   = Raw.Color 0x6F 0x5F 0x5F sDL_ALPHA_OPAQUE
-colorToRGBA Color.BrRed     = Raw.Color 0xFF 0x55 0x55 sDL_ALPHA_OPAQUE
-colorToRGBA Color.BrGreen   = Raw.Color 0x75 0xFF 0x45 sDL_ALPHA_OPAQUE
-colorToRGBA Color.BrYellow  = Raw.Color 0xFF 0xE8 0x55 sDL_ALPHA_OPAQUE
-colorToRGBA Color.BrBlue    = Raw.Color 0x40 0x90 0xFF sDL_ALPHA_OPAQUE
-colorToRGBA Color.BrMagenta = Raw.Color 0xFF 0x77 0xFF sDL_ALPHA_OPAQUE
-colorToRGBA Color.BrCyan    = Raw.Color 0x60 0xFF 0xF0 sDL_ALPHA_OPAQUE
-colorToRGBA Color.BrWhite   = Raw.Color 0xFF 0xFF 0xFF sDL_ALPHA_OPAQUE
+colorToRGBA :: Color.Color -> SDL.V4 Word8
+colorToRGBA Color.Black     = SDL.V4 0 0 0 sDL_ALPHA_OPAQUE
+colorToRGBA Color.Red       = SDL.V4 0xD5 0x00 0x00 sDL_ALPHA_OPAQUE
+colorToRGBA Color.Green     = SDL.V4 0x00 0xAA 0x00 sDL_ALPHA_OPAQUE
+colorToRGBA Color.Brown     = SDL.V4 0xCA 0x4A 0x00 sDL_ALPHA_OPAQUE
+colorToRGBA Color.Blue      = SDL.V4 0x20 0x3A 0xF0 sDL_ALPHA_OPAQUE
+colorToRGBA Color.Magenta   = SDL.V4 0xAA 0x00 0xAA sDL_ALPHA_OPAQUE
+colorToRGBA Color.Cyan      = SDL.V4 0x00 0xAA 0xAA sDL_ALPHA_OPAQUE
+colorToRGBA Color.White     = SDL.V4 0xC5 0xBC 0xB8 sDL_ALPHA_OPAQUE
+colorToRGBA Color.BrBlack   = SDL.V4 0x6F 0x5F 0x5F sDL_ALPHA_OPAQUE
+colorToRGBA Color.BrRed     = SDL.V4 0xFF 0x55 0x55 sDL_ALPHA_OPAQUE
+colorToRGBA Color.BrGreen   = SDL.V4 0x75 0xFF 0x45 sDL_ALPHA_OPAQUE
+colorToRGBA Color.BrYellow  = SDL.V4 0xFF 0xE8 0x55 sDL_ALPHA_OPAQUE
+colorToRGBA Color.BrBlue    = SDL.V4 0x40 0x90 0xFF sDL_ALPHA_OPAQUE
+colorToRGBA Color.BrMagenta = SDL.V4 0xFF 0x77 0xFF sDL_ALPHA_OPAQUE
+colorToRGBA Color.BrCyan    = SDL.V4 0x60 0xFF 0xF0 sDL_ALPHA_OPAQUE
+colorToRGBA Color.BrWhite   = SDL.V4 0xFF 0xFF 0xFF sDL_ALPHA_OPAQUE
