@@ -44,8 +44,8 @@ standard = RuleKind
       qAddDependentFile path
       x <- qRunIO (readFile path)
       lift x)
-  -- ASCII art for the Main Menu. Only pure 7-bit ASCII characters are
-  -- allowed. The picture should be exactly 24 rows by 80 columns.
+  -- ASCII art for the Main Menu. Only pure 7-bit ASCII characters are allowed
+  -- for the art part. The picture should be exactly 24 rows by 80 columns.
   -- For a different screen size, the picture is centered and padded.
   -- with spaces. When displayed in the Main Menu screen, the picture
   -- is overwritten with game and engine version strings and keybindings.

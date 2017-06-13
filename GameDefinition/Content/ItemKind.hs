@@ -1043,7 +1043,7 @@ dagger = ItemKind
 daggerDropBestWeapon = dagger
   { iname    = "Double Dagger"
   , ifreq    = [("treasure", 20)]
-  , irarity  = [(1, 2), (10, 4)]
+  , irarity  = [(1, 1), (10, 4)]
   -- The timeout has to be small, so that the player can count on the effect
   -- occuring consistently in any longer fight. Otherwise, the effect will be
   -- absent in some important fights, leading to the feeling of bad luck,
@@ -1078,7 +1078,7 @@ hammer = ItemKind
 hammerParalyze = hammer
   { iname    = "Concussion Hammer"
   , ifreq    = [("treasure", 20)]
-  , irarity  = [(5, 2), (10, 4)]
+  , irarity  = [(5, 1), (10, 6)]
   , idamage  = toDmg $ 8 * d 1
   , iaspects = iaspects hammer ++ [Timeout $ d 2 + 3 - dl 2 |*| 2]
   , ieffects = ieffects hammer ++ [Unique, Recharging $ Paralyze 10]
@@ -1086,7 +1086,7 @@ hammerParalyze = hammer
 hammerSpark = hammer
   { iname    = "Grand Smithhammer"
   , ifreq    = [("treasure", 20)]
-  , irarity  = [(5, 2), (10, 4)]
+  , irarity  = [(5, 1), (10, 6)]
   , idamage  = toDmg $ 8 * d 1
   , iaspects = iaspects hammer ++ [Timeout $ d 4 + 4 - dl 4 |*| 2]
   , ieffects = ieffects hammer ++ [Unique, Recharging $ Explode "spark"]
@@ -1111,7 +1111,7 @@ sword = ItemKind
 swordImpress = sword
   { iname    = "Master's Sword"
   , ifreq    = [("treasure", 20)]
-  , irarity  = [(5, 1), (10, 4)]
+  , irarity  = [(5, 1), (10, 6)]
   , iaspects = [Timeout $ d 4 + 5 - dl 4 |*| 2]
   , ieffects = ieffects sword
                ++ [Unique, Recharging Impress, Recharging (DetectActor 3)]
@@ -1120,7 +1120,7 @@ swordImpress = sword
 swordNullify = sword
   { iname    = "Gutting Sword"
   , ifreq    = [("treasure", 20)]
-  , irarity  = [(5, 1), (10, 4)]
+  , irarity  = [(5, 1), (10, 6)]
   , iaspects = [Timeout $ d 4 + 5 - dl 4 |*| 2]
   , ieffects = ieffects sword
                ++ [ Unique
