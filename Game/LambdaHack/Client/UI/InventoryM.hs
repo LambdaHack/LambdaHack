@@ -52,7 +52,7 @@ data ItemDialogState = ISuitable | IAll
 ppItemDialogMode :: ItemDialogMode -> (Text, Text)
 ppItemDialogMode (MStore cstore) = ppCStore cstore
 ppItemDialogMode MOwned = ("in", "our possession")
-ppItemDialogMode MStats = ("among", "strenghts")
+ppItemDialogMode MStats = ("among", "strengths")
 ppItemDialogMode MLoreItem = ("among", "item lore")
 ppItemDialogMode MLoreOrgan = ("among", "organ lore")
 
