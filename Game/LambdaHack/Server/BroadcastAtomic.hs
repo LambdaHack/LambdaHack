@@ -129,9 +129,11 @@ loudUpdAtomic local cmd = do
   mcmd <- case cmd of
     UpdDestroyActor _ body _ | not $ bproj body -> return $ Just cmd
     UpdCreateItem _ _ _ (CActor _ CGround) -> return $ Just cmd
-    UpdTrajectory _ (Just (l, _)) Nothing | not (null l) && local ->
-      -- Projectile hits an non-walkable tile on leader's level.
-      return $ Just cmd
+    UpdTrajectory aid (Just (l, _)) Nothing | local && not (null l) -> do
+      -- Non-blast projectile hits an non-walkable tile on leader's level.
+      b <- getsState $ getActorBody aid
+      trunk <- getsState $ getItemBody $ btrunk b
+      return $! if actorTrunkIsBlast trunk then Nothing else Just cmd
     UpdAlterTile _ _ fromTile _ -> return $!
       if Tile.isDoor coTileSpeedup fromTile
       then if local then Just cmd else Nothing
