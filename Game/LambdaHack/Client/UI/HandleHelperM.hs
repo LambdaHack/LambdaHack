@@ -311,7 +311,7 @@ pickNumber askNumber kAll = do
           K.Esc -> weaveJust <$> failWith "never mind"
           K.Space -> return $ Left Nothing
           _ -> assert `failure` "unexpected key:" `twith` kkm
-  if | kAll == 0 -> weaveJust <$> failWith "no number of items can be chosen"
+  if | kAll == 0 -> assert `failure` askNumber
      | kAll == 1 || not askNumber -> return $ Right kAll
      | otherwise -> do
          res <- gatherNumber 0 kAll

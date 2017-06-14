@@ -596,19 +596,22 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
       case iid `EM.lookup` bag of
         Nothing ->  -- the case of old selection or selection from another actor
           moveItemHuman cLegalRaw destCStore mverb auto
-        Just (k, it) -> do
+        Just (k, it) -> assert (k > 0) $ do
           itemToF <- itemToFullClient
           let eqpFree = eqpFreeN b
               kToPick | destCStore == CEqp = min eqpFree k
                       | otherwise = k
-          socK <- pickNumber (not auto) kToPick
-          case socK of
-            Left Nothing -> moveItemHuman cLegalRaw destCStore mverb auto
-            Left (Just err) -> return $ Left err
-            Right kChosen ->
-              let is = ( fromCStore
-                       , [(iid, itemToF iid (kChosen, take kChosen it))] )
-              in moveItems cLegalRaw is destCStore
+          if kToPick == 0
+          then failWith "no more items can be equipped"
+          else do
+            socK <- pickNumber (not auto) kToPick
+            case socK of
+              Left Nothing -> moveItemHuman cLegalRaw destCStore mverb auto
+              Left (Just err) -> return $ Left err
+              Right kChosen ->
+                let is = ( fromCStore
+                         , [(iid, itemToF iid (kChosen, take kChosen it))] )
+                in moveItems cLegalRaw is destCStore
     _ -> do
       mis <- selectItemsToMove cLegalRaw destCStore mverb auto
       case mis of
