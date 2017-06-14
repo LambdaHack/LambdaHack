@@ -393,8 +393,8 @@ reqAlter source tpos = do
             execUpdAtomic $ UpdAlterTile lid tpos serverTile toTile
             case (Tile.isExplorable coTileSpeedup serverTile,
                   Tile.isExplorable coTileSpeedup toTile) of
-              (False, True) -> execUpdAtomic $ UpdAlterClear lid 1
-              (True, False) -> execUpdAtomic $ UpdAlterClear lid (-1)
+              (False, True) -> execUpdAtomic $ UpdAlterExplorable lid 1
+              (True, False) -> execUpdAtomic $ UpdAlterExplorable lid (-1)
               _ -> return ()
         feats = TK.tfeature $ okind serverTile
         toAlter feat =

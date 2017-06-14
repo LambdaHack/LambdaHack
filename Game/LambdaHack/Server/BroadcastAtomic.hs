@@ -138,7 +138,7 @@ loudUpdAtomic local cmd = do
       if Tile.isDoor coTileSpeedup fromTile
       then if local then Just cmd else Nothing
       else Just cmd
-    UpdAlterClear{} -> return $ Just cmd
+    UpdAlterExplorable{} -> return $ Just cmd
     _ -> return Nothing
   return $! SfxLoudUpd local <$> mcmd
 

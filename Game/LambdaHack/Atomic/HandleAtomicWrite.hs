@@ -10,7 +10,7 @@ module Game.LambdaHack.Atomic.HandleAtomicWrite
   , updRefillHP, updRefillCalm
   , updTrajectory, updQuitFaction, updLeadFaction
   , updDiplFaction, updTacticFaction, updAutoFaction, updRecordKill
-  , updAlterTile, updAlterClear, updSpotTile, updLoseTile
+  , updAlterTile, updAlterExplorable, updSpotTile, updLoseTile
   , updAlterSmell, updSpotSmell, updLoseSmell, updTimeItem
   , updAgeGame, updUnAgeGame, updRestart, updRestartServer, updResumeServer
 #endif
@@ -71,7 +71,7 @@ handleUpdAtomic cmd = case cmd of
   UpdAutoFaction fid st -> updAutoFaction fid st
   UpdRecordKill aid ikind k -> updRecordKill aid ikind k
   UpdAlterTile lid p fromTile toTile -> updAlterTile lid p fromTile toTile
-  UpdAlterClear lid delta -> updAlterClear lid delta
+  UpdAlterExplorable lid delta -> updAlterExplorable lid delta
   UpdSearchTile{} -> return ()  -- only for clients
   UpdHideTile{} -> return ()  -- only for clients
   UpdSpotTile lid ts -> updSpotTile lid ts
@@ -384,9 +384,9 @@ updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
     (True, False) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl - 1}
     _ -> return ()
 
-updAlterClear :: MonadStateWrite m => LevelId -> Int -> m ()
-updAlterClear lid delta = assert (delta /= 0) $
-  updateLevel lid $ \lvl -> lvl {lclear = lclear lvl + delta}
+updAlterExplorable :: MonadStateWrite m => LevelId -> Int -> m ()
+updAlterExplorable lid delta = assert (delta /= 0) $
+  updateLevel lid $ \lvl -> lvl {lexplorable = lexplorable lvl + delta}
 
 -- Notice previously invisible tiles. This is similar to @UpdSpotActor@,
 -- but done in bulk, because it often involves dozens of tiles pers move.

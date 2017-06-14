@@ -102,7 +102,7 @@ data Level = Level
   , lstair      :: !([Point], [Point])
                                -- ^ positions of (up, down) stairs
   , lseen       :: !Int        -- ^ currently remembered clear tiles
-  , lclear      :: !Int        -- ^ total number of initially clear tiles
+  , lexplorable :: !Int        -- ^ total number of explorable tiles
   , ltime       :: !Time       -- ^ local time on the level (possibly frozen)
   , lactorCoeff :: !Int        -- ^ the lower, the more monsters spawn
   , lactorFreq  :: !(Freqs ItemKind)
@@ -206,7 +206,7 @@ instance Binary Level where
     put ldesc
     put lstair
     put lseen
-    put lclear
+    put lexplorable
     put ltime
     put lactorCoeff
     put lactorFreq
@@ -226,7 +226,7 @@ instance Binary Level where
     ldesc <- get
     lstair <- get
     lseen <- get
-    lclear <- get
+    lexplorable <- get
     ltime <- get
     lactorCoeff <- get
     lactorFreq <- get

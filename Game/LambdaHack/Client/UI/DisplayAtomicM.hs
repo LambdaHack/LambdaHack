@@ -261,7 +261,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
   UpdRecordKill{} -> return ()
   -- Alter map.
   UpdAlterTile lid _ _ _ -> markDisplayNeeded lid
-  UpdAlterClear{} -> return ()
+  UpdAlterExplorable{} -> return ()
   UpdSearchTile aid p toTile -> do
     Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsState scops
     b <- getsState $ getActorBody aid
@@ -1049,8 +1049,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
             if Tile.isDoor coTileSpeedup fromTile
             then "creaking sound"
             else "rumble"
-          UpdAlterClear _ k -> if k > 0 then "grinding noise"
-                                        else "fizzing noise"
+          UpdAlterExplorable _ k -> if k > 0 then "grinding noise"
+                                             else "fizzing noise"
           _ -> assert `failure` cmd
         distant = if local then [] else ["distant"]
         msg = makeSentence [ "you hear"

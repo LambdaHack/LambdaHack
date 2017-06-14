@@ -485,8 +485,10 @@ drawBaseFrame dm drawnLevelId = do
 -- Comfortably accomodates 3-digit level numbers and 25-character
 -- level descriptions (currently enforced max).
 drawArenaStatus :: Bool -> Level -> Int -> AttrLine
-drawArenaStatus explored Level{ldepth=AbsDepth ld, ldesc, lseen, lclear} width =
-  let seenN = 100 * lseen `div` max 1 lclear
+drawArenaStatus explored
+                Level{ldepth=AbsDepth ld, ldesc, lseen, lexplorable}
+                width =
+  let seenN = 100 * lseen `div` max 1 lexplorable
       seenTxt | explored || seenN >= 100 = "all"
               | otherwise = T.justifyLeft 3 ' ' (tshow seenN <> "%")
       lvlN = T.justifyLeft 2 ' ' (tshow ld)

@@ -208,7 +208,7 @@ levelFromCaveKind Kind.COps{coTileSpeedup}
                   ldepth ltile lstair litemNum lescape lnight =
   let f n t | Tile.isExplorable coTileSpeedup t = n + 1
             | otherwise = n
-      lclear = PointArray.foldlA' f 0 ltile
+      lexplorable = PointArray.foldlA' f 0 ltile
   in Level
        { ldepth
        , lfloor = EM.empty
@@ -221,7 +221,7 @@ levelFromCaveKind Kind.COps{coTileSpeedup}
        , ldesc = cname
        , lstair
        , lseen = 0
-       , lclear
+       , lexplorable
        , ltime = timeZero
        , lactorCoeff
        , lactorFreq
