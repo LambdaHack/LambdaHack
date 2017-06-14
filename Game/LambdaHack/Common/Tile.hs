@@ -144,15 +144,17 @@ alterMinWalk :: TileSpeedup -> Kind.Id TileKind -> Int
 alterMinWalk TileSpeedup{alterMinWalkTab} =
   fromEnum . accessTab alterMinWalkTab
 
--- | Whether one can easily explore a tile, possibly finding a treasure
--- or a clue. Doors can't be explorable since revealing a secret tile
+-- | Whether one can easily explore a tile, possibly finding a treasure,
+-- either spawned there or dropped there by a (dying from poison) foe.
+-- Doors can't be explorable since revealing a secret tile
 -- should not change it's (walkable and) explorable status.
 -- Door status should not depend on whether they are open or not
 -- so that a foe opening a door doesn't force us to backtrack to explore it.
+-- Still, a foe that digs through a wall will affect our exploration counter
+-- and if content lets walls contain threasure, such backtraking makes sense.
 isExplorable :: TileSpeedup -> Kind.Id TileKind -> Bool
 isExplorable coTileSpeedup t =
-  (isWalkable coTileSpeedup t || isClear coTileSpeedup t)
-  && not (isDoor coTileSpeedup t)
+  isWalkable coTileSpeedup t && not (isDoor coTileSpeedup t)
 
 speedup :: Bool -> Kind.Ops TileKind -> TileSpeedup
 speedup allClear cotile =
