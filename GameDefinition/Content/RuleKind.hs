@@ -13,7 +13,7 @@ import System.FilePath
 import System.IO (readFile)
 
 -- Cabal
-import qualified Paths_LambdaHack as Self (version)
+import qualified Paths_LambdaHack as Self (getDataFileName, version)
 
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Content.RuleKind
@@ -35,6 +35,9 @@ standard = RuleKind
   , rname = "standard LambdaHack ruleset"
   , rfreq = [("standard", 100)]
   , rtitle = "LambdaHack"
+  , rfontDir = $(do
+      x <- qRunIO (Self.getDataFileName "GameDefinition/fonts")
+      lift x)
   , rexeVersion = Self.version
   -- The strings containing the default configuration file
   -- included from config.ui.default.

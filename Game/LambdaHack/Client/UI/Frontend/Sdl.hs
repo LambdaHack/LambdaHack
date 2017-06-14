@@ -11,9 +11,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude hiding (Alt)
 
--- Cabal
-import qualified Paths_LambdaHack as Self (getDataFileName)
-
 import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Data.Char as Char
@@ -76,19 +73,17 @@ startupFun :: DebugModeCli -> MVar RawFrontend -> IO ()
 startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   SDL.initialize [SDL.InitVideo, SDL.InitEvents]
   let title = fromJust stitle
-      fontFileName =
-        "GameDefinition/fonts" </> T.unpack (fromJust sdlFontFile)
-  fontFile <- if isRelative fontFileName
-              then Self.getDataFileName fontFileName
-              else return fontFileName
+      fontFileName = T.unpack (fromJust sdlFontFile)
+      fontFile | isRelative fontFileName = fromJust sfontDir </> fontFileName
+               | otherwise = fontFileName
   fontFileExists <- doesFileExist fontFile
   unless fontFileExists $
     assert `failure` "Font file does not exist: " ++ fontFile
   let fontSize = fromJust sfontSize
   TTF.initialize
   sfont <- TTF.load fontFile fontSize
-  let fonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-      sdlSizeAdd = fromJust $ if fonFile then sdlFonSizeAdd else sdlTtfSizeAdd
+  let isFonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
+      sdlSizeAdd = fromJust $ if isFonFile then sdlFonSizeAdd else sdlTtfSizeAdd
   boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
   let xsize = fst normalLevelBound + 1
       ysize = snd normalLevelBound + 4
@@ -183,8 +178,8 @@ display :: DebugModeCli
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
 display DebugModeCli{..} FrontendSession{..} curFrame = do
-  let fonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-      sdlSizeAdd = fromJust $ if fonFile then sdlFonSizeAdd else sdlTtfSizeAdd
+  let isFonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
+      sdlSizeAdd = fromJust $ if isFonFile then sdlFonSizeAdd else sdlTtfSizeAdd
   SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
   boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
   let xsize = fst normalLevelBound + 1
@@ -218,7 +213,7 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
             let acChar = if fg <= Color.BrBlack
                             && Char.ord acCharRaw == 183  -- 0xb7
                             && scolorIsBold == Just True  -- only dot but enough
-                         then Char.chr $ if fonFile
+                         then Char.chr $ if isFonFile
                                          then 7   -- hack
                                          else 8901  -- 0x22c5
                          else acCharRaw

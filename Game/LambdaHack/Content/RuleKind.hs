@@ -25,6 +25,7 @@ data RuleKind = RuleKind
   , rname           :: !Text      -- ^ short description
   , rfreq           :: !(Freqs RuleKind)  -- ^ frequency within groups
   , rtitle          :: !Text      -- ^ title of the game (not lib)
+  , rfontDir        :: !FilePath  -- ^ font directory for the game (not lib)
   , rexeVersion     :: !Version   -- ^ version of the game
   , rcfgUIName      :: !FilePath  -- ^ name of the UI config file
   , rcfgUIDefault   :: !String    -- ^ the default UI settings config file

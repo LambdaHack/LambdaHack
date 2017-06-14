@@ -139,5 +139,7 @@ applyConfigToDebug Kind.COps{corule} sconfig sdebugCli =
      (\dbg -> dbg {snoAnim =
         snoAnim dbg `mplus` Just (configNoAnim sconfig)}) .
      (\dbg -> dbg {stitle =
-        stitle dbg `mplus` Just (rtitle stdRuleset)})
+        stitle dbg `mplus` Just (rtitle stdRuleset)}) .
+     (\dbg -> dbg {sfontDir =
+        sfontDir dbg `mplus` Just (rfontDir stdRuleset)})
      $ sdebugCli

@@ -39,6 +39,7 @@ data DebugModeCli = DebugModeCli
   , sbenchmark        :: !Bool
       -- ^ Don't create directories and files and show time stats.
   , stitle            :: !(Maybe Text)
+  , sfontDir          :: !(Maybe FilePath)
   , ssavePrefixCli    :: !String
       -- ^ Prefix of the save game file name.
   , sfrontendTeletype :: !Bool
@@ -70,6 +71,7 @@ defDebugModeCli = DebugModeCli
   , snewGameCli = False
   , sbenchmark = False
   , stitle = Nothing
+  , sfontDir = Nothing
   , ssavePrefixCli = "save"
   , sfrontendTeletype = False
   , sfrontendNull = False
