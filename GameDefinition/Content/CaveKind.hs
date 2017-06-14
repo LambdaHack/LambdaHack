@@ -64,14 +64,14 @@ rogue = CaveKind
 arena = rogue
   { csymbol       = 'A'
   , cname         = "Dusty underground library"
-  , cfreq         = [ ("default random", 40), ("deep random", 30)
-                    , ("caveArena", 1) ]
+  , cfreq         = [("default random", 40), ("caveArena", 1)]
   , cgrid         = DiceXY (2 + d 2) (d 3)
   , cminPlaceSize = DiceXY (2 * d 2 + 4) 6
   , cmaxPlaceSize = DiceXY 16 12
   , cdarkChance   = 49 + d 10  -- almost all rooms dark (1 in 10 lit)
   -- Light is not too deadly, because not many obstructions and so
-  -- foes visible from far away and few foes have ranged combat.
+  -- foes visible from far away and few foes have ranged combat
+  -- at shallow depth.
   , cnightChance  = 0  -- always day
   , cauxConnects  = 1
   , cmaxVoid      = 1%8
@@ -88,7 +88,7 @@ arena = rogue
   }
 arena2 = arena
   { cname         = "Smoking rooms"
-  , cfreq         = [("deep random", 10)]
+  , cfreq         = [("deep random", 30)]
   , cdarkChance   = 41 + d 10  -- almost all rooms lit (1 in 10 dark)
   -- Trails provide enough light for fun stealth.
   , cnightChance  = 51  -- always night
