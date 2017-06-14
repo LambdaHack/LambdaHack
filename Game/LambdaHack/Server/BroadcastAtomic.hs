@@ -29,6 +29,7 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolM
@@ -155,6 +156,9 @@ loudSfxAtomic local cmd =
           ik = itemKindId $ fromJust $ itemDisco itemFull
           distance = 20  -- TODO: distance to leader; also, add a skill
       return $ Just $ SfxLoudStrike local ik distance
+    SfxEffect _ aid (IK.Summon grp p) _ | local -> do
+      b <- getsState $ getActorBody aid
+      return $ Just $ SfxLoudSummon (bproj b) grp p
     _ -> return Nothing
 
 sendPer :: MonadServerReadRequest m

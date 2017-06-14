@@ -27,6 +27,7 @@ import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ClientOptions
+import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -136,6 +137,7 @@ data SfxMsg =
     SfxUnexpected !ReqFailure
   | SfxLoudUpd !Bool !UpdAtomic
   | SfxLoudStrike !Bool !(Kind.Id ItemKind) !Int
+  | SfxLoudSummon !Bool !(GroupName ItemKind) !Dice.Dice
   | SfxFizzles
   | SfxVoidDetection
   | SfxSummonLackCalm !ActorId

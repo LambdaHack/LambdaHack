@@ -949,9 +949,9 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Summon grp p -> do
           let verb = if bproj b then "lure" else "summon"
               object = if p == 1
-                       then [MU.Text $ tshow grp]
-                       else [MU.Ws $ MU.Text $ tshow grp]  -- avoid "1 + dl 3"
-          actorVerbMU aid bUI $ MU.Phrase $ verb : object
+                       then MU.Text $ tshow grp
+                       else MU.Ws $ MU.Text $ tshow grp  -- avoid "1 + dl 3"
+          actorVerbMU aid bUI $ MU.Phrase [verb, object]
         IK.Ascend True -> actorVerbMU aid bUI "find a way upstairs"
         IK.Ascend False -> actorVerbMU aid bUI "find a way downstairs"
         IK.Escape{} -> return ()
@@ -1068,6 +1068,12 @@ ppSfxMsg sfxMsg = case sfxMsg of
         msg = makeSentence $
           [ "you", adverb, "hear something", verb, "someone"] ++ distant
     return $! msg
+  SfxLoudSummon isProj grp p -> do
+    let verb = if isProj then "something lure" else "somebody summon"
+        object = if p == 1
+                 then MU.Text $ tshow grp
+                 else MU.Ws $ MU.Text $ tshow grp
+    return $! makeSentence ["you hear", verb, object]
   SfxFizzles -> return "It flashes and fizzles."
   SfxVoidDetection -> return "Nothing new detected."
   SfxSummonLackCalm aid -> do
