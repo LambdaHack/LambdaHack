@@ -425,6 +425,7 @@ resolutionDust = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [toOrganActorTurn "resolute" (3 + d 3)]
+                 -- short enough duration that @calmEnough@ not a big problem
   , ifeature = [toLinger 10, Fragile, Identified]
   , idesc    = ""
   , ikit     = []

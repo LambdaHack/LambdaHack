@@ -340,6 +340,7 @@ flask6 = flask
   , ieffects = [ ELabel "of resolution"
                , toOrganActorTurn "resolute" (200 + d 50)
                    -- long, for scouting and has to recharge
+               , RefillCalm 60  -- not to make it a drawback, via @calmEnough@
                , OnSmash (Explode "resolution dust") ]
   }
 flask7 = flask
