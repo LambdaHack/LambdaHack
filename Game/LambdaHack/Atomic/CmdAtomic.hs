@@ -151,6 +151,7 @@ data SfxMsg =
   | SfxPurposeTooFew !Int !Int
   | SfxPurposeUnique
   | SfxColdFish
+  | SfxTimerExtended !ActorId !ItemId !CStore
   deriving (Show, Eq, Generic)
 
 instance Binary SfxMsg

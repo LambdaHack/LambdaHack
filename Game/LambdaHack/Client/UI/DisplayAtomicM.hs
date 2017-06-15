@@ -1106,6 +1106,19 @@ ppSfxMsg sfxMsg = case sfxMsg of
     <+> "pieces of this item, not by" <+> tshow itemK <> "."
   SfxPurposeUnique -> return "Unique items can't be repurposed."
   SfxColdFish -> return "Healing attempt from another faction is thwarted by your cold fish attitude."
+  SfxTimerExtended aid iid cstore -> do
+    b <- getsState $ getActorBody aid
+    bUI <- getsSession $ getActorUI aid
+    aidPhrase <- partActorLeader aid bUI
+    factionD <- getsState sfactionD
+    localTime <- getsState $ getLocalTime (blid b)
+    itemToF <- itemToFullClient
+    let itemFull = itemToF iid (1, [])
+        (_, _, name, stats) =
+          partItem (bfid b) factionD cstore localTime itemFull
+        storeOwn = ppCStoreWownW True cstore aidPhrase
+    return $! makeSentence $
+      ["the", name, stats] ++ storeOwn ++ ["will now last longer"]
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
 setLastSlot aid iid cstore = do

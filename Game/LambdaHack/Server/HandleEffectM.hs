@@ -886,8 +886,11 @@ effectCreateItem mfidSource target store grp tim = do
       -- Already has such items and timer change requested, so only increase
       -- the timer of the first item by the delta, but don't create items.
       let newIt = timer `timeShift` delta : rest
-      when (afterIt /= newIt) $
+      when (afterIt /= newIt) $ do
         execUpdAtomic $ UpdTimeItem iid c afterIt newIt
+        -- It's hard for the client to tell this timer change from charge use,
+        -- timer reset on pickup, etc., so we create the msg manually.
+        execSfxAtomic $ SfxMsgFid (bfid tb) $ SfxTimerExtended target iid store
     _ -> do
       -- No such items or some items, but void delta, so create items.
       -- If it's, e.g., a periodic poison, the new items will stack with any
