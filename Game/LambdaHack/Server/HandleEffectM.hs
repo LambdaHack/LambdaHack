@@ -190,7 +190,7 @@ itemEffectEmbedded aid tpos bag = do
 -- semantics.
 --
 -- Note that if we activate a durable item, e.g., armor, from the ground,
--- it will get identified, which is perfectly fine, until we wanto to add
+-- it will get identified, which is perfectly fine, until we want to add
 -- sticky armor that can't be easily taken off (and, e.g., has some maluses).
 itemEffectDisco :: (MonadAtomic m, MonadServer m)
                 => ActorId -> ActorId -> ItemId -> Container -> Bool -> Bool
@@ -203,24 +203,19 @@ itemEffectDisco source target iid c recharged periodic effs = do
     Just KindMean{kmKind} -> do
       seed <- getsServer $ (EM.! iid) . sitemSeedD
       execUpdAtomic $ UpdDiscover c iid kmKind seed
-      itemEffect source target iid c recharged periodic effs
+      trs <- mapM (effectSem source target iid c recharged periodic) effs
+      let triggered = or trs
+      sb <- getsState $ getActorBody source
+      -- Announce no effect, which is rare and wastes time, so noteworthy.
+      unless (triggered    -- some effects triggered, so feedback comes from them
+              || periodic  -- don't spam via fizzled periodic effects
+              || bproj sb  -- don't spam, projectiles can be very numerous
+              || not (any IK.forApplyEffect effs)
+                           -- no effects expected, so nothing to announce
+             ) $
+        execSfxAtomic $ SfxMsgFid (bfid sb) SfxFizzles
+      return triggered
     _ -> assert `failure` (source, target, iid, item)
-
-itemEffect :: (MonadAtomic m, MonadServer m)
-           => ActorId -> ActorId -> ItemId -> Container -> Bool -> Bool
-           -> [IK.Effect]
-           -> m Bool
-itemEffect source target iid c recharged periodic effects = do
-  trs <- mapM (effectSem source target iid c recharged periodic) effects
-  let triggered = or trs
-  sb <- getsState $ getActorBody source
-  -- Announce no effect, which is rare and wastes time, so noteworthy.
-  unless (triggered  -- some effect triggered, so feedback comes from them
-          || periodic  -- don't spam from fizzled periodic effects
-          || bproj sb  -- don't spam, projectiles can be very numerous
-          || all (not . IK.forApplyEffect) effects) $
-    execSfxAtomic $ SfxMsgFid (bfid sb) SfxFizzles
-  return triggered
 
 -- | The source actor affects the target actor, with a given effect and power.
 -- Both actors are on the current level and can be the same actor.
@@ -915,7 +910,7 @@ effectCreateItem mfidSource target store grp tim = do
 -- (not just a random single item, or cluttering equipment with rubbish
 -- would be beneficial).
 effectDropItem :: (MonadAtomic m, MonadServer m)
-               => m () -> Int ->Int ->  CStore -> GroupName ItemKind -> ActorId
+               => m () -> Int -> Int -> CStore -> GroupName ItemKind -> ActorId
                -> m Bool
 effectDropItem execSfx ngroup kcopy store grp target = do
   b <- getsState $ getActorBody target
