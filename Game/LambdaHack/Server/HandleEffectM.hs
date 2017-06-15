@@ -1251,8 +1251,9 @@ effectDropBestWeapon execSfx target = do
 effectActivateInv :: (MonadAtomic m, MonadServer m)
                   => m () -> ActorId -> Char -> m Bool
 effectActivateInv execSfx target symbol =
-  effectTransformEqp execSfx target symbol CInv $ \iid _ ->
-    applyItem target iid CInv
+  effectTransformEqp execSfx target symbol CInv $ \iid _ -> do
+    let c = CActor target CInv
+    meleeEffectAndDestroy target target iid c
 
 effectTransformEqp :: forall m. MonadAtomic m
                    => m () -> ActorId -> Char -> CStore
