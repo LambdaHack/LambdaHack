@@ -491,12 +491,18 @@ msgDuplicateScrap = do
   report <- getsSession _sreport
   history <- getsSession shistory
   let (lastMsg, repRest) = lastMsgOfReport report
-      lastDup = isJust . findInReport (== lastMsg)
-      lastDuplicated = lastDup repRest
-                       || lastDup (lastReportOfHistory history)
-  when lastDuplicated $
-    modifySession $ \sess -> sess {_sreport = repRest}
-  return lastDuplicated
+      repLast = lastReportOfHistory history
+  case incrementInReport (== lastMsg) repRest of
+    Just repIncr -> do
+      modifySession $ \sess -> sess {_sreport = repIncr}
+      return True
+    Nothing -> case incrementInReport (== lastMsg) repLast of
+      Just repIncr -> do
+        let historyIncr = replaceLastReportOfHistory repIncr history
+        modifySession $ \sess -> sess { _sreport = repRest
+                                      , shistory = historyIncr }
+        return True
+      Nothing -> return False
 
 createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 createActorUI born aid body = do

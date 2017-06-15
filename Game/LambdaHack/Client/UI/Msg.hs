@@ -6,10 +6,11 @@ module Game.LambdaHack.Client.UI.Msg
     -- * Report
   , RepMsgN, Report, emptyReport, nullReport, singletonReport
   , snocReport, consReportNoScrub
-  , renderReport, findInReport, lastMsgOfReport
+  , renderReport, findInReport, incrementInReport, lastMsgOfReport
     -- * History
   , History, emptyHistory, addReport, lengthHistory
-  , lastReportOfHistory, splitReportForHistory, renderHistory
+  , lastReportOfHistory, replaceLastReportOfHistory
+  , splitReportForHistory, renderHistory
   ) where
 
 import Prelude ()
@@ -108,6 +109,13 @@ renderRepetition (RepMsgN s n) = msgLine s ++ stringToAL ("<x" ++ show n ++ ">")
 findInReport :: (AttrLine -> Bool) -> Report -> Maybe Msg
 findInReport f (Report xns) = find (f . msgLine) $ map repMsg xns
 
+incrementInReport :: (AttrLine -> Bool) -> Report -> Maybe Report
+incrementInReport f (Report xns) =
+  case break (f . msgLine . repMsg) xns of
+    (pre, msg : post) ->
+      Just $ Report $ pre ++ msg {_repN = _repN msg + 1} : post
+    _ -> Nothing
+
 lastMsgOfReport :: Report -> (AttrLine, Report)
 lastMsgOfReport (Report rep) = case rep of
   [] -> ([], Report [])
@@ -156,6 +164,9 @@ lengthHistory (History _ r rs) = RB.length rs + if nullReport r then 0 else 1
 
 lastReportOfHistory :: History -> Report
 lastReportOfHistory (History _ r _) = r
+
+replaceLastReportOfHistory :: Report -> History -> History
+replaceLastReportOfHistory rep (History t _r rb) = History t rep rb
 
 splitReportForHistory :: X -> AttrLine -> [AttrLine]
 splitReportForHistory w l =
