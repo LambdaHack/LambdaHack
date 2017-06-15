@@ -882,16 +882,20 @@ effectCreateItem mfidSource target store grp tim = do
         Nothing -> Nothing
         Just iid -> (iid,) <$> iid `EM.lookup` bagBefore
   case mquant of
-    Just (iid, (1, afterIt@(timer : rest))) | tim /= IK.TimerNone -> do
-      -- Already has such an item, so only increase the timer by the amount.
+    Just (iid, (_, afterIt@(timer : rest))) | tim /= IK.TimerNone -> do
+      -- Already has such items and timer change requested, so only increase
+      -- the timer of the first item by the delta, but don't create items.
       let newIt = timer `timeShift` delta : rest
       when (afterIt /= newIt) $
         execUpdAtomic $ UpdTimeItem iid c afterIt newIt
     _ -> do
-      -- Multiple such items, so it's a periodic poison, etc., so just stack,
-      -- or no such items at all, so create some.
+      -- No such items or some items, but void delta, so create items.
+      -- If it's, e.g., a periodic poison, the new items will stack with any
+      -- already existing items.
       iid <- registerItem itemFull itemKnown seed c True
-      unless (tim == IK.TimerNone) $ do
+      -- Now, if timer change requested, change the timer, but in the new items,
+      -- possibly increased in number wrt old items.
+      when (tim /= IK.TimerNone) $ do
         tb2 <- getsState $ getActorBody target
         bagAfter <- getsState $ getBodyStoreBag tb2 store
         localTime <- getsState $ getLocalTime (blid tb)
