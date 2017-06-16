@@ -4,7 +4,7 @@ module Game.LambdaHack.Server.CommonM
   ( execFailure, getPerFid
   , revealItems, moveStores, deduceQuits, deduceKilled
   , electLeader, supplantLeader
-  , addActor, addActorIid, projectFail
+  , addActor, addActorIid, projectFail, discoverIfNoEffects
   , pickWeaponServer, currentSkillsServer
   , recomputeCachePer
   ) where
@@ -398,13 +398,17 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
     mIidEtc <- rollAndRegisterItem lid itemFreq container False mk
     case mIidEtc of
       Nothing -> assert `failure` (lid, itemFreq, container, mk)
-      Just (_, (ItemFull{itemDisco=
-                  Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}}}, _))
-        | any IK.forIdEffect ieffects -> return ()  -- discover by use
-      Just (iid, _) -> do
-        seed <- getsServer $ (EM.! iid) . sitemSeedD
-        execUpdAtomic $ UpdDiscoverSeed container iid seed
+      Just (iid, (itemFull, _)) -> discoverIfNoEffects container iid itemFull
   return $ Just aid
+
+discoverIfNoEffects :: (MonadAtomic m, MonadServer m)
+                    => Container -> ItemId -> ItemFull -> m ()
+discoverIfNoEffects c iid itemFull = case itemFull of
+  ItemFull{itemDisco=Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}}}
+    | any IK.forIdEffect ieffects -> return ()  -- discover by use
+  _ -> do
+    seed <- getsServer $ (EM.! iid) . sitemSeedD
+    execUpdAtomic $ UpdDiscoverSeed c iid seed
 
 pickWeaponServer :: MonadServer m => ActorId -> m (Maybe (ItemId, CStore))
 pickWeaponServer source = do

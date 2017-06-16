@@ -470,14 +470,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
    | otherwise -> do
     itemToF <- itemToFullServer
     let itemFull = itemToF iid (k, [])
-    when (fromCStore == CGround) $
-      case itemFull of
-        ItemFull{itemDisco=
-                   Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}}}
-          | any IK.forIdEffect ieffects -> return ()  -- discover by use
-        _ -> do
-          seed <- getsServer $ (EM.! iid) . sitemSeedD
-          execUpdAtomic $ UpdDiscoverSeed fromC iid seed
+    when (fromCStore == CGround) $ discoverIfNoEffects fromC iid itemFull
     upds <- generalMoveItem True iid k fromC toC
     mapM_ execUpdAtomic upds
     -- Reset timeout for equipped periodic items.
