@@ -582,7 +582,14 @@ meleeAny aid = do
   adjacentAssocs <- getsState $ actorAdjacentAssocs b
   let foe (_, b2) = not (bproj b2) && isAtWar fact (bfid b2) && bhp b2 > 0
       adjFoes = filter foe adjacentAssocs
-  mels <- mapM (pickWeaponClient aid . fst) adjFoes
+  btarget <- getsClient $ getTarget aid
+  mtarget <- case btarget of
+    Just (TEnemy aid2 _) -> do
+      b2 <- getsState $ getActorBody aid2
+      return $! if foe (aid2, b2) then Just (aid2, b2) else Nothing
+    _ -> return Nothing
+  let adjTargets = maybe adjFoes return mtarget
+  mels <- mapM (pickWeaponClient aid . fst) adjTargets
   let freq = uniformFreq "melee adjacent" $ catMaybes mels
   return $! liftFrequency freq
 
