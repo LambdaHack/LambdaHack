@@ -529,12 +529,13 @@ dominateFid fid target = do
     -- Add some nostalgia for the old faction.
     void $ effectCreateItem (Just (bfid tb, 10)) target COrgan
                             "impressed" IK.TimerNone
-    let discoverSeed (iid, cstore) = do
-          seed <- getsServer $ (EM.! iid) . sitemSeedD
-          let c = CActor target cstore
-          execUpdAtomic $ UpdDiscoverSeed c iid seed
+    itemToF <- itemToFullServer
+    let discoverIf (iid, cstore) = do
+          let itemFull = itemToF iid (1, [])
+              c = CActor target cstore
+          discoverIfNoEffects c iid itemFull
         aic = getCarriedIidCStore tb
-    mapM_ discoverSeed aic
+    mapM_ discoverIf aic
     -- Focus on the dominated actor, by making him a leader.
     supplantLeader fid target
     return False
