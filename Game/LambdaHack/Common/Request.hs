@@ -121,7 +121,7 @@ impossibleReqFailure reqFailure = case reqFailure of
   DisplaceDying -> True
   DisplaceBraced -> True
   DisplaceImmobile -> False  -- unidentified skill items
-  DisplaceSupported -> True
+  DisplaceSupported -> False
   AlterUnskilled -> False  -- unidentified skill items
   AlterUnwalked -> False
   AlterDistant -> True
@@ -144,7 +144,7 @@ impossibleReqFailure reqFailure = case reqFailure of
   ProjectBlockActor -> True  -- adjacent actor always visible
   ProjectLobable -> False  -- unidentified skill items
   ProjectOutOfReach -> True
-  TriggerNothing -> True  -- terrain underneath always visibl
+  TriggerNothing -> True  -- terrain underneath always visible
   NoChangeDunLeader -> True
 
 showReqFailure :: ReqFailure -> Text

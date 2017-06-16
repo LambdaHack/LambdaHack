@@ -326,12 +326,17 @@ reqDisplace source target = do
   let ar = actorAspect EM.! target
   dEnemy <- getsState $ dispEnemy source target $ aSkills ar
   if | not adj -> execFailure source req DisplaceDistant
-     | atWar && not dEnemy -> do  -- if not at war, can displace
+     | atWar && not dEnemy -> do  -- if not at war, can displace always
+       -- We don't fail with DisplaceImmobile and DisplaceSupported.
+       -- because it's quite common they can't be determined by the attacker,
+       -- and so the failure would be too alarming to the player.
+       -- If the character melees instead, the player can tell displace failed.
+       -- As for the other failures, they are impossible and we don't
+       -- verify here that they don't occur, for simplicity.
        mweapon <- pickWeaponServer source
        case mweapon of
          Nothing -> reqWait source
-         Just (wp, cstore)  -> reqMelee source target wp cstore
-           -- DisplaceDying, etc.
+         Just (wp, cstore) -> reqMelee source target wp cstore
      | otherwise -> do
        let lid = blid sb
        lvl <- getLevel lid
