@@ -897,6 +897,8 @@ effectCreateItem mfidSource target store grp tim = do
       -- If it's, e.g., a periodic poison, the new items will stack with any
       -- already existing items.
       iid <- registerItem itemFull itemKnown seed c True
+      -- If created not on the ground, ID it, because it's not IDed on pickup.
+      when (store /= CGround) $ discoverIfNoEffects c iid itemFull
       -- Now, if timer change requested, change the timer, but in the new items,
       -- possibly increased in number wrt old items.
       when (tim /= IK.TimerNone) $ do
