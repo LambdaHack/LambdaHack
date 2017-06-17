@@ -586,7 +586,9 @@ meleeAny aid = do
   mtarget <- case btarget of
     Just (TEnemy aid2 _) -> do
       b2 <- getsState $ getActorBody aid2
-      return $! if foe (aid2, b2) then Just (aid2, b2) else Nothing
+      return $! if adjacent (bpos b2) (bpos b) && foe (aid2, b2)
+                then Just (aid2, b2)
+                else Nothing
     _ -> return Nothing
   let adjTargets = maybe adjFoes return mtarget
   mels <- mapM (pickWeaponClient aid . fst) adjTargets
