@@ -716,12 +716,14 @@ switchLevels2 lidNew posNew (aid, bOld) btime_bOld mlead = do
   let lidOld = blid bOld
       side = bfid bOld
   let !_A = assert (lidNew /= lidOld `blame` "stairs looped" `twith` lidNew) ()
-  -- Sync the actor time with the level time.
+  -- Sync actor's items' timeouts with the new local time of the level.
+  -- We need to sync organs and equipment due to periodic activations,
+  -- but also inventory pack (as well as some organs and equipment),
+  -- due to timeouts after use, e.g., for some weapons (they recharge also
+  -- in the pack; however, this doesn't encourage micromanagement for periodic
+  -- items, because the timeout is randomised upon move to equipment).
   timeOld <- getsState $ getLocalTime lidOld
   timeLastActive <- getsState $ getLocalTime lidNew
-  -- This time calculation may cause a double move of a foe of the same
-  -- speed, but this is OK --- the foe didn't have a chance to move
-  -- before, because the arena went inactive, so he moves now one more time.
   let delta = timeLastActive `timeDeltaToFrom` timeOld
       shiftByDelta = (`timeShift` delta)
       computeNewTimeout :: ItemQuant -> ItemQuant
@@ -732,15 +734,21 @@ switchLevels2 lidNew posNew (aid, bOld) btime_bOld mlead = do
                   , bpos = posNew
                   , boldpos = Just posNew  -- new level, new direction
                   , borgan = setTimeout $ borgan bOld
-                  , beqp = setTimeout $ beqp bOld }
+                  , beqp = setTimeout $ beqp bOld
+                  , binv = setTimeout $ binv bOld }
   -- Materialize the actor at the new location.
   -- Onlookers see somebody appear suddenly. The actor himself
   -- sees new surroundings and has to reset his perception.
   ais <- getsState $ getCarriedAssocs bOld
   execUpdAtomic $ UpdCreateActor aid bNew ais
+  -- Sync the actor time with the level time.
+  -- This time shift may cause a double move of a foe of the same speed,
+  -- but this is OK --- the foe didn't have a chance to move
+  -- before, because the arena went inactive, so he moves now one more time.
   let btime = shiftByDelta btime_bOld
   modifyServer $ \ser ->
-    ser {sactorTime = updateActorTime (bfid bNew) lidNew aid btime $ sactorTime ser}
+    ser {sactorTime = updateActorTime (bfid bNew) lidNew aid btime
+                      $ sactorTime ser}
   case mlead of
     Nothing -> return ()
     Just leader -> supplantLeader side leader
