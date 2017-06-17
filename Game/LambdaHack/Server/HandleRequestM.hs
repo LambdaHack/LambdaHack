@@ -473,9 +473,18 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
     when (fromCStore == CGround) $ discoverIfNoEffects fromC iid itemFull
     upds <- generalMoveItem True iid k fromC toC
     mapM_ execUpdAtomic upds
-    -- Reset timeout for equipped periodic items.
+    -- Reset timeout for equipped periodic items and also for items
+    -- moved out of the shared stash, in which timeouts are not consistently
+    -- wrt some local time, because actors from many levels put items there
+    -- all the time (and don't rebase it to any common clock).
+    -- If wrong local time in shared stash causes an item to recharge
+    -- for a very long time, the player can reset it by moving it to pack
+    -- and back to stash (as a flip side, a charging item in stash may sometimes
+    -- be used at once on another level, with different local time, but only
+    -- once, because after first use, the timeout is set to local time).
     when (toCStore `elem` [CEqp, COrgan]
-          && fromCStore `notElem` [CEqp, COrgan]) $ do
+          && fromCStore `notElem` [CEqp, COrgan]
+          || fromCStore == CSha) $ do
       localTime <- getsState $ getLocalTime (blid b)
       -- The first recharging period after pick up is random,
       -- between 1 and 2 standard timeouts of the item.

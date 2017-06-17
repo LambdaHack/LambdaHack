@@ -722,20 +722,33 @@ switchLevels2 lidNew posNew (aid, bOld) btime_bOld mlead = do
   -- due to timeouts after use, e.g., for some weapons (they recharge also
   -- in the pack; however, this doesn't encourage micromanagement for periodic
   -- items, because the timeout is randomised upon move to equipment).
+  --
+  -- We don't rebase timeouts for items in stash, because they are
+  -- used by many actors on levels with different local times,
+  -- so there is no single rebase that would match all.
+  -- This is not a big problem: after a single use by an actor the timeout is
+  -- set to his current local time, so further uses by that actor have
+  -- not anomalously short or long recharge times. If the recharge time
+  -- is very long, the player has an option of moving the item from stash
+  -- to pack and back, to reset the timeout. An abuse is possible when recently
+  -- used item is put from inventory to stash and at once used on another level
+  -- taking advantage of local time difference, but this only works once
+  -- and using the item back again at the original level makes the recharge
+  -- time longer, in turn.
   timeOld <- getsState $ getLocalTime lidOld
   timeLastActive <- getsState $ getLocalTime lidNew
   let delta = timeLastActive `timeDeltaToFrom` timeOld
       shiftByDelta = (`timeShift` delta)
       computeNewTimeout :: ItemQuant -> ItemQuant
       computeNewTimeout (k, it) = (k, map shiftByDelta it)
-      setTimeout :: ItemBag -> ItemBag
-      setTimeout = EM.map computeNewTimeout
+      rebaseTimeout :: ItemBag -> ItemBag
+      rebaseTimeout = EM.map computeNewTimeout
       bNew = bOld { blid = lidNew
                   , bpos = posNew
                   , boldpos = Just posNew  -- new level, new direction
-                  , borgan = setTimeout $ borgan bOld
-                  , beqp = setTimeout $ beqp bOld
-                  , binv = setTimeout $ binv bOld }
+                  , borgan = rebaseTimeout $ borgan bOld
+                  , beqp = rebaseTimeout $ beqp bOld
+                  , binv = rebaseTimeout $ binv bOld }
   -- Materialize the actor at the new location.
   -- Onlookers see somebody appear suddenly. The actor himself
   -- sees new surroundings and has to reset his perception.
