@@ -1,3 +1,24 @@
+## [v0.6.1.0, aka 'Breaking one rule at a time'](https://github.com/LambdaHack/LambdaHack/compare/v0.6.0.0...v0.6.1.0)
+
+- the only breaking API change: specify font directory in game rules content
+- let the game use its own fonts, not fonts from the sample game in library
+- tweak some item creation to occur in character's pack, not on the ground
+- make sure the 'resolution' effect is not a drawback
+- make artifact weapon rarities more regular
+- avoid creating lit, open dungeon at the bottom, where foes have ranged weapons
+- correct, add and modify some in-game messages
+- let player hear unseen summonings performed by other actors
+- don't let actors hear blasts hitting walls, as opposed to hitting actors
+- when moving item out of shared stash, reset its timeouts
+- when ascending, shift timeouts of inventory as well
+- when creating item not on the ground, discover it
+- when dominating, auto-discover only if the item can't be discovered by use
+- let henchmen take into account their targets, as described in PLAYING.md
+- let only walkable tiles be explorable, for clear walls is inside solid blocks
+- move to API 2.0.0 of sdl2-ttf and depend on corrected sdl2 (builds on Windows)
+- simplify code thanks to the new sdl2-ttf API
+- tweak travis scripts and build docs in README
+
 ## [v0.6.0.0, aka 'Too much to tell'](https://github.com/LambdaHack/LambdaHack/compare/v0.5.0.0...v0.6.0.0)
 
 - add and modify a lot of content: items, tiles, embedded items, scenarios

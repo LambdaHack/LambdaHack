@@ -1031,6 +1031,7 @@ effectPolyItem execSfx source target = do
              execSfxAtomic $ SfxMsgFid (bfid sb) SfxPurposeUnique
              return False
            | otherwise -> do
+             -- Only the required number of items is used up, not all of them.
              let c = CActor target cstore
                  kit = (maxCount, take maxCount itemTimer)
              execSfx
