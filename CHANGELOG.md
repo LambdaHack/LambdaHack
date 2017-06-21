@@ -6,6 +6,7 @@
 - make sure the 'resolution' effect is not a drawback
 - make artifact weapon rarities more regular
 - avoid creating lit, open dungeon at the bottom, where foes have ranged weapons
+- number scenarios in user descriptions
 - correct, add and modify some in-game messages
 - let player hear unseen summonings performed by other actors
 - don't let actors hear blasts hitting walls, as opposed to hitting actors

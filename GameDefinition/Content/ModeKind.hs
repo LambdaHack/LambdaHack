@@ -41,7 +41,7 @@ raid,        brawl, shootout, escape, zoo, ambush, exploration, explorationSurvi
 
 raid = ModeKind  -- mini-crawl
   { msymbol = 'r'
-  , mname   = "raid"
+  , mname   = "raid (1)"
   , mfreq   = [("raid", 1), ("campaign scenario", 1)]
   , mroster = rosterRaid
   , mcaves  = cavesRaid
@@ -50,7 +50,7 @@ raid = ModeKind  -- mini-crawl
 
 brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
   { msymbol = 'k'
-  , mname   = "brawl"
+  , mname   = "brawl (2)"
   , mfreq   = [("brawl", 1), ("campaign scenario", 1)]
   , mroster = rosterBrawl
   , mcaves  = cavesBrawl
@@ -67,7 +67,7 @@ brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
 -- and that's their only role, so a small party makes sense.
 shootout = ModeKind  -- sparse ranged in daylight
   { msymbol = 's'
-  , mname   = "shootout"
+  , mname   = "shootout (3)"
   , mfreq   = [("shootout", 1), ("campaign scenario", 1)]
   , mroster = rosterShootout
   , mcaves  = cavesShootout
@@ -76,7 +76,7 @@ shootout = ModeKind  -- sparse ranged in daylight
 
 escape = ModeKind  -- asymmetric ranged and stealth race at night
   { msymbol = 'e'
-  , mname   = "escape"
+  , mname   = "escape (4)"
   , mfreq   = [("escape", 1), ("campaign scenario", 1)]
   , mroster = rosterEscape
   , mcaves  = cavesEscape
@@ -85,7 +85,7 @@ escape = ModeKind  -- asymmetric ranged and stealth race at night
 
 zoo = ModeKind  -- asymmetric crowd melee at night
   { msymbol = 'b'
-  , mname   = "zoo"
+  , mname   = "zoo (5)"
   , mfreq   = [("zoo", 1), ("campaign scenario", 1)]
   , mroster = rosterZoo
   , mcaves  = cavesZoo
@@ -102,7 +102,7 @@ zoo = ModeKind  -- asymmetric crowd melee at night
 -- shoots (and often also scouts) and others just gather ammo.
 ambush = ModeKind  -- dense ranged with reaction fire at night
   { msymbol = 'm'
-  , mname   = "ambush"
+  , mname   = "ambush (6)"
   , mfreq   = [("ambush", 1), ("campaign scenario", 1)]
   , mroster = rosterAmbush
   , mcaves  = cavesAmbush
@@ -112,8 +112,7 @@ ambush = ModeKind  -- dense ranged with reaction fire at night
 exploration = ModeKind
   { msymbol = 'c'
   , mname   = "crawl (long)"
-  , mfreq   = [ ("crawl (long)", 1), ("exploration", 1)
-              , ("campaign scenario", 1) ]
+  , mfreq   = [("crawl", 1), ("exploration", 1), ("campaign scenario", 1)]
   , mroster = rosterExploration
   , mcaves  = cavesExploration
   , mdesc   = "Enjoy the peaceful seclusion of these cold austere tunnels, but don't let wanton curiosity, greed and the ever-creeping abstraction madness keep you down there for too long."
@@ -185,43 +184,43 @@ screensave auto r =
   in r {rosterList = f $ rosterList r}
 
 screensaverRaid = raid
-  { mname   = "auto-raid"
+  { mname   = "auto-raid (1)"
   , mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
   , mroster = screensave (AutoLeader False False) rosterRaid
   }
 
 screensaverBrawl = brawl
-  { mname   = "auto-brawl"
+  { mname   = "auto-brawl (2)"
   , mfreq   = [("no confirms", 1)]
   , mroster = screensave (AutoLeader False False) rosterBrawl
   }
 
 screensaverShootout = shootout
-  { mname   = "auto-shootout"
+  { mname   = "auto-shootout (3)"
   , mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
   , mroster = screensave (AutoLeader False False) rosterShootout
   }
 
 screensaverEscape = escape
-  { mname   = "auto-escape"
+  { mname   = "auto-escape (4)"
   , mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
   , mroster = screensave (AutoLeader False False) rosterEscape
   }
 
 screensaverZoo = zoo
-  { mname   = "auto-zoo"
+  { mname   = "auto-zoo (5)"
   , mfreq   = [("no confirms", 1)]
   , mroster = screensave (AutoLeader False False) rosterZoo
   }
 
 screensaverAmbush = ambush
-  { mname   = "auto-ambush"
+  { mname   = "auto-ambush (6)"
   , mfreq   = [("no confirms", 1)]
   , mroster = screensave (AutoLeader False False) rosterAmbush
   }
 
 screensaverExploration = exploration
-  { mname   = "auto-crawl"
+  { mname   = "auto-crawl (long)"
   , mfreq   = [("no confirms", 1)]
   , mroster = screensave (AutoLeader False False) rosterExploration
   }
