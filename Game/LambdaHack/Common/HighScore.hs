@@ -191,8 +191,7 @@ highSlideshow table pos gameModeName tz =
              else "(bonus included)")
           Restart ->
             ("your abortive attempt", MU.Sg3rd, "(no bonus)")
-      subject =
-        makePhrase [efforts, "in", MU.Capitalize $ MU.Text gameModeName]
+      subject = makePhrase [efforts, "in", MU.Text gameModeName]
       msg = makeSentence
         [ MU.SubjectVerb person MU.Yes (MU.Text subject) "award you"
         , MU.Ordinal pos, "place", msgUnless ]
