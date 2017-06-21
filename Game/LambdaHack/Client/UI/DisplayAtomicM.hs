@@ -343,7 +343,8 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
     setFrontAutoYes $ isAIFact fact
     unless (isAIFact fact) $ do
       mode <- getGameMode
-      promptAdd $ mdesc mode <+> "Are you up for the challenge?"
+      promptAdd $ "Continuing" <+> mname mode <> "." <+> mdesc mode
+                  <+> "Are you up for the challenge?"
       slides <- reportToSlideshow [K.spaceKM, K.escKM]
       km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
       if km == K.escKM then addPressedEsc else promptAdd "Prove yourself!"
