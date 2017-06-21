@@ -1313,7 +1313,10 @@ gameRestartHuman = do
   if b
   then do
     snxtChal <- getsClient snxtChal
-    let nxtGameGroup = toGroupName nxtGameName  -- a tiny bit hacky
+    -- This ignores all but the first word of game mode names picked
+    -- via Main Menu and assumes the fist word of such game modes
+    -- is present in their frequencies.
+    let nxtGameGroup = toGroupName $ head $ T.words nxtGameName
     return $ Right $ ReqUIGameRestart nxtGameGroup snxtChal
   else do
     msg2 <- rndToActionForget $ oneOf
