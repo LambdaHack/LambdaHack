@@ -202,8 +202,16 @@ to be healed by actors from other factions (this is a significant
 restriction in the final 'crawl' scenario).
 
 For a person new to roguelikes, the 'raid' scenario offers a gentle
-introduction. The subsequent game scenarios gradually introduce squad combat,
-stealth, opportunity fire, asymmetric battles and more.
+introduction. The subsequent game scenarios gradually introduce
+squad combat, stealth, opportunity fire, asymmetric battles and more.
+Starting from the second scenario, the player controls a whole team
+of characters and will develop his repertoire of squad formations,
+varying, depending on environment, the bound length, the preferred
+rendezvous locations and the use of light sources. The last scenario
+takes place in a multi-floor setting, giving player the choice
+of exploration of a single level at a time or portions of many levels
+along a single staircase and also of guarding staircases against
+enemies from other levels or, inversely, avoiding the staircases.
 
 
 Monsters
