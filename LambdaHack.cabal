@@ -105,6 +105,11 @@ flag sdl
   default:            False
   manual:             True
 
+flag jsaddle
+  description:        switch to the JSaddle frontend
+  default:            False
+  manual:             True
+
 flag with_expensive_assertions
   description:        turn on expensive assertions of well-tested code
   default:            False
@@ -300,11 +305,15 @@ library
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Sdl
     build-depends:    sdl2 >= 2, sdl2-ttf >= 2
     cpp-options:      -DUSE_SDL
+  } else { if flag(jsaddle) {
+    other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
+    build-depends:    ghcjs-dom >= 0.2
+    cpp-options:      -DUSE_BROWSER
   } else {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Sdl
     build-depends:    sdl2 >= 2, sdl2-ttf >= 2
     cpp-options:      -DUSE_SDL
-  } } } } }
+  } } } } } }
 
   if impl(ghcjs) {
     other-modules:    Game.LambdaHack.Common.JSFile
