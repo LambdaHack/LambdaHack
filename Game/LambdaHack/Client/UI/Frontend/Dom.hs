@@ -19,7 +19,8 @@ import Data.Word (Word32)
 import GHCJS.DOM (currentDocument, currentWindow)
 import GHCJS.DOM.CSSStyleDeclaration (setProperty)
 import GHCJS.DOM.Document (createElement, getBodyUnchecked)
-import GHCJS.DOM.Element (Element (Element), getStyle, setInnerHTML)
+import GHCJS.DOM.Element (Element (Element), setInnerHTML)
+import GHCJS.DOM.ElementCSSInlineStyle (getStyle)
 import GHCJS.DOM.EventM (EventM, mouseAltKey, mouseButton, mouseCtrlKey,
                          mouseMetaKey, mouseShiftKey, on, on, preventDefault,
                          stopPropagation)
@@ -103,13 +104,13 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   setProp scharStyle "margin-left" "auto"
   setProp scharStyle "margin-right" "auto"
   -- Get rid of table spacing. Tons of spurious hacks just in case.
-  setCellPadding tableElem (Just ("0" :: Text))
-  setCellSpacing tableElem (Just ("0" :: Text))
+  setCellPadding tableElem ("0" :: Text)
+  setCellSpacing tableElem ("0" :: Text)
   setProp scharStyle "padding" "0 0 0 0"
   setProp scharStyle "border-spacing" "0"
   setProp scharStyle "border" "none"
   -- Create the session record.
-  setInnerHTML tableElem $ Just rows
+  setInnerHTML tableElem rows
   scharCells <- flattenTable tableElem
   spreviousFrame <- newIORef blankSingleFrame
   let sess = FrontendSession{..}
@@ -160,7 +161,7 @@ shutdown = return () -- nothing to clean up
 
 setProp :: CSSStyleDeclaration -> Text -> Text -> DOM ()
 setProp style propRef propValue =
-  setProperty style propRef (Just propValue) (Nothing :: Maybe Text)
+  setProperty style propRef propValue (Nothing :: Maybe Text)
 
 -- | Let each table cell handle mouse events inside.
 handleMouse :: RawFrontend
