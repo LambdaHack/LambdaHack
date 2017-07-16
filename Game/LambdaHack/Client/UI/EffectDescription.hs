@@ -80,7 +80,7 @@ effectToSuffix effect =
       in "of" <+> object <+> "uncovering"
     DropItem n k store grp ->
       let ntxt = if | n == 1 && k == 1 -> ""
-                    | n == 1 && k == maxBound -> "all"
+                    | n == 1 && k == maxBound -> "one kind of"
                     | n == maxBound && k == maxBound -> "all kinds of"
                     | otherwise -> "some"
           verb = if store == COrgan then "nullify" else "drop"
