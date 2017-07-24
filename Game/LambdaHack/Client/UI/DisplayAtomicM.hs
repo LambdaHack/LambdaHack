@@ -897,7 +897,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           then actorVerbMU aid bUI "feel burned"
           else actorVerbMU aid bUI "look burned"
           let ps = (bpos b, bpos b)
-          animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
+          animate (blid b) $ twirlSplash ps Color.BrRed Color.Brown
         IK.Explode{} -> return ()  -- lots of visual feedback
         IK.RefillHP p | p == 1 -> return ()  -- no spam from regeneration
         IK.RefillHP p | p == -1 -> return ()  -- no spam from poison
@@ -907,7 +907,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           else
             actorVerbMU aid bUI "look healthier"
           let ps = (bpos b, bpos b)
-          animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
+          animate (blid b) $ twirlSplash ps Color.BrGreen Color.Green
         IK.RefillHP{} -> do
           if isOurAlive then
             actorVerbMU aid bUI "feel wounded"
