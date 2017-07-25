@@ -179,6 +179,7 @@ noise2 = noise
   { cname         = "Frozen derelict mine"
   , cfreq         = [("caveNoise2", 1)]
   , cnightChance  = 51  -- easier variant, but looks sinister
+  , citemNum      = 12 * d 5  -- an incentive to explore the final labyrinth
   , cplaceFreq    = [("noise", 1), ("mine", 99)]
   , cstairFreq    = [("gated staircase", 100)]
   }
