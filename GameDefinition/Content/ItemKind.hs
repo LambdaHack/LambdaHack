@@ -1089,7 +1089,7 @@ hammerSpark = hammer
   , ifreq    = [("treasure", 20)]
   , irarity  = [(5, 1), (10, 6)]
   , idamage  = toDmg $ 8 * d 1
-  , iaspects = iaspects hammer ++ [Timeout $ d 4 + 4 - dl 4 |*| 2]
+  , iaspects = iaspects hammer ++ [AddShine 3, Timeout $ d 4 + 4 - dl 4 |*| 2]
   , ieffects = ieffects hammer ++ [Unique, Recharging $ Explode "spark"]
   }
 sword = ItemKind
