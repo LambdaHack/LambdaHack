@@ -267,8 +267,8 @@ display DebugModeCli{scolorIsBold}
             setProp style "border-color" $ Color.colorToRGB Color.BrBlack
   prevFrame <- readIORef spreviousFrame
   writeIORef spreviousFrame curFrame
-  -- Sync, no point mutitasking threads in the single-threaded JS.
-  callback <- newRequestAnimationFrameCallback $ \_ ->
+  -- This continues asynchronously, if can't otherwise.
+  callback <- newRequestAnimationFrameCallbackSync $ \_ ->
     U.izipWithM_ setChar (PointArray.avector $ singleFrame curFrame)
                          (PointArray.avector $ singleFrame prevFrame)
   -- This ensures no frame redraws while callback executes.
