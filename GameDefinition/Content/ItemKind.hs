@@ -968,8 +968,8 @@ gloveJousting = gloveFencing
   , ifreq    = [("useful", 100)]
   , iflavour = zipFancy [BrRed]
   , irarity  = [(1, 3), (10, 3)]
-  , iweight  = 500
-  , idamage  = toDmg $ 4 * d 1
+  , iweight  = 1000
+  , idamage  = toDmg $ 3 * d 1
   , iaspects = [ AddHurtMelee $ dl 4 - 6 |*| 3
                , AddArmorMelee $ 2 + d 2 + dl 2 |*| 5
                , AddArmorRanged $ dl 2 |*| 3 ]
