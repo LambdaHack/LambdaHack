@@ -242,12 +242,12 @@ display :: DebugModeCli
         -> IO ()
 display DebugModeCli{scolorIsBold}
         FrontendSession{..}
-        curFrame = flip runDOM undefined $ do
+        !curFrame = flip runDOM undefined $ do
   let setChar :: Int -> Word32 -> Word32 -> DOM ()
-      setChar i w wPrev = unless (w == wPrev) $ do
+      setChar !i !w !wPrev = unless (w == wPrev) $ do
         let Color.AttrChar{acAttr=Color.Attr{..}, acChar} =
               Color.attrCharFromW32 $ Color.AttrCharW32 w
-            (cell, style) = scharCells V.! i
+            (!cell, !style) = scharCells V.! i
         case Char.ord acChar of
           32 -> setTextContent cell $ Just [Char.chr 160]
           183 | fg <= Color.BrBlack && scolorIsBold == Just True ->
@@ -265,11 +265,12 @@ display DebugModeCli{scolorIsBold}
             setProp style "border-color" $ Color.colorToRGB Color.BrYellow
           Color.HighlightGrey ->
             setProp style "border-color" $ Color.colorToRGB Color.BrBlack
-  prevFrame <- readIORef spreviousFrame
+  !prevFrame <- readIORef spreviousFrame
   writeIORef spreviousFrame curFrame
   -- This continues asynchronously, if can't otherwise.
   callback <- newRequestAnimationFrameCallbackSync $ \_ ->
     U.izipWithM_ setChar (PointArray.avector $ singleFrame curFrame)
                          (PointArray.avector $ singleFrame prevFrame)
-  -- This ensures no frame redraws while callback executes.
+  -- This attempts to ensure no redraws while callback executes
+  -- and a single redraw when it completes.
   requestAnimationFrame_ scurrentWindow callback
