@@ -8,15 +8,6 @@ install:
   - appveyor-retry pacman -S -q --noconfirm mingw-w64-i686-SDL2 mingw-w64-i686-SDL2_ttf
   - cabal update
   - cabal install happy
-  - pwd
-  - git clone -q --branch=master https://github.com/Mikolaj/sdl2.git
-  - cd sdl2
-  - cabal install
-  - cd ..
-  - git clone -q --branch=master https://github.com/Mikolaj/sdl2-ttf.git
-  - cd sdl2-ttf
-  - cabal install
-  - cd ..
 
 build_script:
   - pwd
