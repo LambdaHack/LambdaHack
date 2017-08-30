@@ -5,6 +5,7 @@ module Game.LambdaHack.Client.AI.HandleAbilityM
   ( actionStrategy
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
+  , ApplyItemGroup
   , waitBlockNow, pickup, equipItems, toShare, yieldUnneeded, unEquipItems
   , groupByEqpSlot, bestByEqpSlot, harmful, meleeBlocker, meleeAny
   , trigger, projectItem, applyItem, flee

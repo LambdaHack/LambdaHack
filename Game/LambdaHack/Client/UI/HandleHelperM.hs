@@ -1,6 +1,6 @@
 -- | Helper functions for both inventory management and human commands.
 module Game.LambdaHack.Client.UI.HandleHelperM
-  ( MError, FailOrCmd
+  ( MError, FailOrCmd, FailError
   , showFailError, mergeMError, failWith, failSer, failMsg, weaveJust
   , sortSlots, memberCycle, memberBack, partyAfterLeader
   , pickLeader, pickLeaderWithPointer
