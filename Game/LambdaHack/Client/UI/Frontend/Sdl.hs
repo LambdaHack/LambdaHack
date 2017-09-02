@@ -116,12 +116,14 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
       pointTranslate (SDL.P (SDL.V2 x y)) =
         Point (fromEnum x `div` boxSize) (fromEnum y `div` boxSize)
       redraw = do
+        takeMVar sdisplayPermitted
         oldTexture <- readIORef stexture
         newTexture <- initTexture
         SDL.destroyTexture oldTexture
         writeIORef stexture newTexture
         prevFrame <- readIORef spreviousFrame
         writeIORef spreviousFrame blankSingleFrame
+        putMVar sdisplayPermitted ()
         display sdebugCli sess prevFrame
       storeKeys :: IO ()
       storeKeys = do
