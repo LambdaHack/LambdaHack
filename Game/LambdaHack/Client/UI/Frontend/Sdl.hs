@@ -121,6 +121,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
         SDL.destroyTexture oldTexture
         writeIORef stexture newTexture
         prevFrame <- readIORef spreviousFrame
+        writeIORef spreviousFrame blankSingleFrame
         display sdebugCli sess prevFrame
       storeKeys :: IO ()
       storeKeys = do
