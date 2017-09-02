@@ -168,6 +168,8 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
           SDL.WindowClosedEvent{} -> shutdown sess
           SDL.QuitEvent -> shutdown sess
           SDL.WindowRestoredEvent{} -> redraw
+          SDL.WindowShownEvent{} -> redraw
+          SDL.WindowExposedEvent{} -> redraw
           _ -> return ()
         quitSDL <- readIORef squitSDL
         unless quitSDL storeKeys
