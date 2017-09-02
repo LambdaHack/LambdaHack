@@ -1,5 +1,7 @@
 ## [v0.6.1.0, aka 'Breaking one rule at a time'](https://github.com/LambdaHack/LambdaHack/compare/v0.6.0.0...v0.6.1.0)
 
+- fix redrawing after window minimized and restored
+- hack around vanishing texture on Windows
 - the only breaking API change: specify font directory in game rules content
 - let the game use its own fonts, not fonts from the sample game in library
 - tweak some item creation to occur in character's pack, not on the ground
@@ -19,7 +21,7 @@
 - let only walkable tiles be explorable, for clear walls inside solid blocks
 - move to API 2.0.0 of sdl2-ttf and depend on corrected sdl2 (builds on Windows)
 - simplify code thanks to the new sdl2-ttf API
-- tweak travis scripts and build docs in README
+- tweak travis scripts and building docs in README
 
 ## [v0.6.0.0, aka 'Too much to tell'](https://github.com/LambdaHack/LambdaHack/compare/v0.5.0.0...v0.6.0.0)
 
