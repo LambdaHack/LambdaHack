@@ -45,7 +45,7 @@ data FrontendSession = FrontendSession
   , srenderer         :: !SDL.Renderer
   , sfont             :: !TTF.Font
   , satlas            :: !(IORef FontAtlas)
-  , screenTexture     :: !SDL.Texture
+  , stexture          :: !(IORef SDL.Texture)
   , spreviousFrame    :: !(IORef SingleFrame)
   , squitSDL          :: !(IORef Bool)
   , sdisplayPermitted :: !(MVar ())
@@ -93,15 +93,19 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
       rendererConfig = SDL.defaultRenderer {SDL.rendererTargetTexture = True}
   swindow <- SDL.createWindow title windowConfig
   srenderer <- SDL.createRenderer swindow (-1) rendererConfig
-  screenTexture <- SDL.createTexture srenderer SDL.ARGB8888
+  let initTexture = do
+        texture <- SDL.createTexture srenderer SDL.ARGB8888
                                      SDL.TextureAccessTarget screenV2
-  SDL.rendererDrawBlendMode srenderer SDL.$= SDL.BlendNone
-  SDL.rendererRenderTarget srenderer SDL.$= Just screenTexture
-  SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
-  SDL.clear srenderer  -- clear the texture
-  SDL.rendererRenderTarget srenderer SDL.$= Nothing
-  SDL.copy srenderer screenTexture Nothing Nothing  -- clear the backbuffer
+        SDL.rendererRenderTarget srenderer SDL.$= Just texture
+        SDL.rendererDrawBlendMode srenderer SDL.$= SDL.BlendNone
+        SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
+        SDL.clear srenderer  -- clear the texture
+        SDL.rendererRenderTarget srenderer SDL.$= Nothing
+        SDL.copy srenderer texture Nothing Nothing  -- clear the backbuffer
+        return texture
+  texture <- initTexture
   satlas <- newIORef EM.empty
+  stexture <- newIORef texture
   spreviousFrame <- newIORef blankSingleFrame
   squitSDL <- newIORef False
   sdisplayPermitted <- newMVar ()
@@ -112,6 +116,10 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
       pointTranslate (SDL.P (SDL.V2 x y)) =
         Point (fromEnum x `div` boxSize) (fromEnum y `div` boxSize)
       redraw = do
+        oldTexture <- readIORef stexture
+        newTexture <- initTexture
+        SDL.destroyTexture oldTexture
+        writeIORef stexture newTexture
         prevFrame <- readIORef spreviousFrame
         display sdebugCli sess prevFrame
       storeKeys :: IO ()
@@ -241,13 +249,14 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
         SDL.copy srenderer textTexture (Just srcR) (Just tgtR)
         maybe (return ()) (drawHighlight x y) mlineColor
   takeMVar sdisplayPermitted
+  texture <- readIORef stexture
   prevFrame <- readIORef spreviousFrame
   writeIORef spreviousFrame curFrame
-  SDL.rendererRenderTarget srenderer SDL.$= Just screenTexture
+  SDL.rendererRenderTarget srenderer SDL.$= Just texture
   U.izipWithM_ setChar (PointArray.avector $ singleFrame curFrame)
                        (PointArray.avector $ singleFrame prevFrame)
   SDL.rendererRenderTarget srenderer SDL.$= Nothing
-  SDL.copy srenderer screenTexture Nothing Nothing
+  SDL.copy srenderer texture Nothing Nothing
   SDL.present srenderer
   putMVar sdisplayPermitted ()
 
