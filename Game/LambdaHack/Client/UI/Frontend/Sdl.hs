@@ -125,8 +125,8 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
           writeIORef stexture newTexture
           prevFrame <- readIORef spreviousFrame
           writeIORef spreviousFrame blankSingleFrame
+          displayNoLock sdebugCli sess prevFrame
           putMVar sdisplayPermitted ()
-          display sdebugCli sess prevFrame
       storeKeys :: IO ()
       storeKeys = do
         e <- SDL.waitEvent  -- blocks here, so no polling
@@ -192,10 +192,18 @@ display :: DebugModeCli
         -> FrontendSession  -- ^ frontend session data
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
-display DebugModeCli{..} FrontendSession{..} curFrame = do
+display sdebugCli sess@FrontendSession{sdisplayPermitted} curFrame = do
+  takeMVar sdisplayPermitted
+  displayNoLock sdebugCli sess curFrame
+  putMVar sdisplayPermitted ()
+
+displayNoLock :: DebugModeCli
+              -> FrontendSession  -- ^ frontend session data
+              -> SingleFrame      -- ^ the screen frame to draw
+              -> IO ()
+displayNoLock DebugModeCli{..} FrontendSession{..} curFrame = do
   let isFonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
       sdlSizeAdd = fromJust $ if isFonFile then sdlFonSizeAdd else sdlTtfSizeAdd
-  SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
   boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
   let xsize = fst normalLevelBound + 1
       vp :: Int -> Int -> Vect.Point Vect.V2 CInt
@@ -255,17 +263,16 @@ display DebugModeCli{..} FrontendSession{..} curFrame = do
         SDL.fillRect srenderer $ Just box
         SDL.copy srenderer textTexture (Just srcR) (Just tgtR)
         maybe (return ()) (drawHighlight x y) mlineColor
-  takeMVar sdisplayPermitted
   texture <- readIORef stexture
   prevFrame <- readIORef spreviousFrame
   writeIORef spreviousFrame curFrame
   SDL.rendererRenderTarget srenderer SDL.$= Just texture
+  SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
   U.izipWithM_ setChar (PointArray.avector $ singleFrame curFrame)
                        (PointArray.avector $ singleFrame prevFrame)
   SDL.rendererRenderTarget srenderer SDL.$= Nothing
-  SDL.copy srenderer texture Nothing Nothing
+  SDL.copy srenderer texture Nothing Nothing  -- clear the backbuffer
   SDL.present srenderer
-  putMVar sdisplayPermitted ()
 
 -- | Translates modifiers to our own encoding, ignoring Shift.
 modTranslate :: SDL.KeyModifier -> K.Modifier
