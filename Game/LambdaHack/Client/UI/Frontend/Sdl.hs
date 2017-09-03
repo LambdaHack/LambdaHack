@@ -119,8 +119,12 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
         quitSDL <- readIORef squitSDL
         unless quitSDL $ do
           takeMVar sdisplayPermitted
+          -- Textures may be trashed and even invalid, especially on Windows.
+          atlas <- readIORef satlas
+          writeIORef satlas EM.empty
           oldTexture <- readIORef stexture
           newTexture <- initTexture
+          mapM_ SDL.destroyTexture $ EM.elems atlas
           SDL.destroyTexture oldTexture
           writeIORef stexture newTexture
           prevFrame <- readIORef spreviousFrame
