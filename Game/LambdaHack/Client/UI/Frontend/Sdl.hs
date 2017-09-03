@@ -116,15 +116,17 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
       pointTranslate (SDL.P (SDL.V2 x y)) =
         Point (fromEnum x `div` boxSize) (fromEnum y `div` boxSize)
       redraw = do
-        takeMVar sdisplayPermitted
-        oldTexture <- readIORef stexture
-        newTexture <- initTexture
-        SDL.destroyTexture oldTexture
-        writeIORef stexture newTexture
-        prevFrame <- readIORef spreviousFrame
-        writeIORef spreviousFrame blankSingleFrame
-        putMVar sdisplayPermitted ()
-        display sdebugCli sess prevFrame
+        quitSDL <- readIORef squitSDL
+        unless quitSDL $ do
+          takeMVar sdisplayPermitted
+          oldTexture <- readIORef stexture
+          newTexture <- initTexture
+          SDL.destroyTexture oldTexture
+          writeIORef stexture newTexture
+          prevFrame <- readIORef spreviousFrame
+          writeIORef spreviousFrame blankSingleFrame
+          putMVar sdisplayPermitted ()
+          display sdebugCli sess prevFrame
       storeKeys :: IO ()
       storeKeys = do
         e <- SDL.waitEvent  -- blocks here, so no polling
@@ -182,8 +184,8 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
 
 shutdown :: FrontendSession -> IO ()
 shutdown FrontendSession{..} = do
-  takeMVar sdisplayPermitted
   writeIORef squitSDL True
+  takeMVar sdisplayPermitted
 
 -- | Add a frame to be drawn.
 display :: DebugModeCli
