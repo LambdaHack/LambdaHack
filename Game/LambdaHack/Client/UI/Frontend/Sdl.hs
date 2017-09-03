@@ -47,8 +47,7 @@ data FrontendSession = FrontendSession
   , satlas            :: !(IORef FontAtlas)
   , stexture          :: !(IORef SDL.Texture)
   , spreviousFrame    :: !(IORef SingleFrame)
-  , squitSDL          :: !(IORef Bool)
-  , sdisplayPermitted :: !(MVar ())
+  , sdisplayPermitted :: !(MVar Bool)
   }
 
 -- | The name of the frontend.
@@ -107,8 +106,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   satlas <- newIORef EM.empty
   stexture <- newIORef texture
   spreviousFrame <- newIORef blankSingleFrame
-  squitSDL <- newIORef False
-  sdisplayPermitted <- newMVar ()
+  sdisplayPermitted <- newMVar True
   let sess = FrontendSession{..}
   rf <- createRawFrontend (display sdebugCli sess) (shutdown sess)
   putMVar rfMVar rf
@@ -116,9 +114,8 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
       pointTranslate (SDL.P (SDL.V2 x y)) =
         Point (fromEnum x `div` boxSize) (fromEnum y `div` boxSize)
       redraw = do
-        quitSDL <- readIORef squitSDL
-        unless quitSDL $ do
-          takeMVar sdisplayPermitted
+        displayPermitted <- takeMVar sdisplayPermitted
+        when displayPermitted $ do
           -- Textures may be trashed and even invalid, especially on Windows.
           atlas <- readIORef satlas
           writeIORef satlas EM.empty
@@ -130,7 +127,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
           prevFrame <- readIORef spreviousFrame
           writeIORef spreviousFrame blankSingleFrame
           displayNoLock sdebugCli sess prevFrame
-          putMVar sdisplayPermitted ()
+        putMVar sdisplayPermitted displayPermitted
       storeKeys :: IO ()
       storeKeys = do
         e <- SDL.waitEvent  -- blocks here, so no polling
@@ -177,19 +174,22 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
           SDL.WindowShownEvent{} -> redraw
           SDL.WindowExposedEvent{} -> redraw
           _ -> return ()
-        quitSDL <- readIORef squitSDL
-        unless quitSDL storeKeys
+        displayPermitted <- takeMVar sdisplayPermitted
+        if displayPermitted
+        then do
+          putMVar sdisplayPermitted displayPermitted
+          storeKeys
+        else do
+          TTF.free sfont
+          TTF.quit
+          SDL.destroyRenderer srenderer
+          SDL.destroyWindow swindow
+          SDL.quit
+          putMVar sdisplayPermitted displayPermitted
   storeKeys
-  TTF.free sfont
-  TTF.quit
-  SDL.destroyRenderer srenderer
-  SDL.destroyWindow swindow
-  SDL.quit
 
 shutdown :: FrontendSession -> IO ()
-shutdown FrontendSession{..} = do
-  writeIORef squitSDL True
-  takeMVar sdisplayPermitted
+shutdown FrontendSession{..} = void $ swapMVar sdisplayPermitted False
 
 -- | Add a frame to be drawn.
 display :: DebugModeCli
@@ -197,9 +197,14 @@ display :: DebugModeCli
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
 display sdebugCli sess@FrontendSession{sdisplayPermitted} curFrame = do
-  takeMVar sdisplayPermitted
-  displayNoLock sdebugCli sess curFrame
-  putMVar sdisplayPermitted ()
+  displayPermitted <- takeMVar sdisplayPermitted
+  when displayPermitted $ do
+    displayNoLock sdebugCli sess curFrame
+    putMVar sdisplayPermitted displayPermitted
+  -- When there's shut down, ignore displaying one frame,
+  -- but hang at any subsquent, via MVar that is not put.
+  -- This ensures exit via "thread blocked indefinitely in an STM transaction",
+  -- instead of clients proceeding with the game despite, e.g., window closed.
 
 displayNoLock :: DebugModeCli
               -> FrontendSession  -- ^ frontend session data
