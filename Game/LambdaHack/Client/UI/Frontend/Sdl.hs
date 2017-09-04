@@ -56,17 +56,11 @@ frontendName = "sdl"
 
 -- | Set up and start the main loop providing input and output.
 --
--- It seems, even on Windows, SDL2 doesn't require a bound thread.
--- so we can avoid the communication overhead of bound threads.
--- However, events can only be pumped in the thread that initialized
--- the video subsystem, so we need to enter the event-gathering loop
--- after the initialization and stay there.
+-- Apparently some SDL backends are not thread-safe
+-- (https://wiki.libsdl.org/FAQDevelopment),
+-- so we stick to main thread.
 startup :: DebugModeCli -> IO RawFrontend
-startup sdebugCli = do
-  rfMVar <- newEmptyMVar
-  a <- async $ startupFun sdebugCli rfMVar
-  link a
-  takeMVar rfMVar
+startup sdebugCli = startupBound $ startupFun sdebugCli
 
 startupFun :: DebugModeCli -> MVar RawFrontend -> IO ()
 startupFun sdebugCli@DebugModeCli{..} rfMVar = do
@@ -199,7 +193,9 @@ display :: DebugModeCli
 display sdebugCli sess@FrontendSession{sdisplayPermitted} curFrame = do
   displayPermitted <- takeMVar sdisplayPermitted
   when displayPermitted $ do
-    displayNoLock sdebugCli sess curFrame
+    -- Apparently some SDL backends are not thread-safe, so keep to main thread:
+    a <- asyncBound $ displayNoLock sdebugCli sess curFrame
+    wait a
     putMVar sdisplayPermitted displayPermitted
   -- When there's shut down, ignore displaying one frame,
   -- but hang at any subsquent, via MVar that is not put.
