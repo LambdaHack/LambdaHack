@@ -2,6 +2,7 @@
 
 - fix redrawing after window minimized and restored
 - hack around vanishing texture on Windows
+- hack around SDL backends not thread-safe on Windows
 - the only breaking API change: specify font directory in game rules content
 - let the game use its own fonts, not fonts from the sample game in library
 - tweak some item creation to occur in character's pack, not on the ground
