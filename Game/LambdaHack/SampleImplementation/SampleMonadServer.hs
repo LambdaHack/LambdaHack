@@ -21,6 +21,7 @@ import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict hiding (State)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text.IO as T
+import System.Exit (ExitCode(ExitSuccess))
 import System.FilePath
 import System.IO (hFlush, stdout)
 
@@ -137,12 +138,18 @@ executorSer cops copsClient sdebugNxtCmdline = do
   -- Wait for clients to exit even in case of server crash
   -- (or server and client crash), which gives them time to save
   -- and report their own inconsistencies, if any.
-  Ex.handle (\(ex :: Ex.SomeException) -> do
-               Ex.uninterruptibleMask_ $ threadDelay 1000000
-                 -- let clients report their errors and save
-               when (ssavePrefixSer sdebugNxt == defPrefix) bkpAllSaves
-               hFlush stdout
-               Ex.throw ex)  -- crash eventually, which kills clients
+  Ex.handle (\(ex :: Ex.SomeException) -> case Ex.fromException ex of
+               Just ExitSuccess ->
+                 -- User-forced shutdown, not crash, so the intention is
+                 -- to keep old saves and also clients may be not ready to save.
+                 Ex.throwIO ex
+               _ -> do
+                 Ex.uninterruptibleMask_ $ threadDelay 1000000
+                   -- let clients report their errors and save
+                 when (ssavePrefixSer sdebugNxt == defPrefix) bkpAllSaves
+                 hFlush stdout
+                 Ex.throwIO ex  -- crash eventually, which kills clients
+            )
             exeWithSaves
 --  T.hPutStrLn stdout "Server exiting, waiting for clients."
 --  hFlush stdout

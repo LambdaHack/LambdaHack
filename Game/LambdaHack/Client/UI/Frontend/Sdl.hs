@@ -21,6 +21,7 @@ import qualified Data.Vector.Unboxed as U
 import Data.Word (Word32, Word8)
 import Foreign.C.Types (CInt)
 import System.Directory
+import System.Exit (exitSuccess)
 import System.FilePath
 
 import qualified SDL
@@ -47,6 +48,7 @@ data FrontendSession = FrontendSession
   , satlas            :: !(IORef FontAtlas)
   , stexture          :: !(IORef SDL.Texture)
   , spreviousFrame    :: !(IORef SingleFrame)
+  , sforcedShutdown   :: !(IORef Bool)
   , sdisplayPermitted :: !(MVar Bool)
   }
 
@@ -100,6 +102,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   satlas <- newIORef EM.empty
   stexture <- newIORef texture
   spreviousFrame <- newIORef blankSingleFrame
+  sforcedShutdown <- newIORef False
   sdisplayPermitted <- newMVar True
   let sess = FrontendSession{..}
   rf <- createRawFrontend (display sdebugCli sess) (shutdown sess)
@@ -162,46 +165,57 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
             p <- SDL.getAbsoluteMouseLocation
             maybe (return ())
                   (\key -> saveKMP rf modifier key (pointTranslate p)) mkey
-          SDL.WindowClosedEvent{} -> shutdown sess
-          SDL.QuitEvent -> shutdown sess
+          SDL.WindowClosedEvent{} -> forceShutdown sess
+          SDL.QuitEvent -> forceShutdown sess
           SDL.WindowRestoredEvent{} -> redraw
           -- Probably not needed, because textures nor their content not lost:
           -- SDL.WindowShownEvent{} -> redraw
           -- SDL.WindowExposedEvent{} -> redraw
           _ -> return ()
-        displayPermitted <- takeMVar sdisplayPermitted
+        displayPermitted <- readMVar sdisplayPermitted
         if displayPermitted
-        then do
-          putMVar sdisplayPermitted displayPermitted
-          storeKeys
+        then storeKeys
         else do
           TTF.free sfont
           TTF.quit
           SDL.destroyRenderer srenderer
           SDL.destroyWindow swindow
           SDL.quit
-          putMVar sdisplayPermitted displayPermitted
+          forcedShutdown <- readIORef sforcedShutdown
+          when forcedShutdown
+            exitSuccess  -- not in the main thread, so no exit yet, see "Main"
   storeKeys
 
 shutdown :: FrontendSession -> IO ()
 shutdown FrontendSession{..} = void $ swapMVar sdisplayPermitted False
+
+forceShutdown :: FrontendSession -> IO ()
+forceShutdown sess@FrontendSession{..} = do
+  writeIORef sforcedShutdown True
+  shutdown sess
 
 -- | Add a frame to be drawn.
 display :: DebugModeCli
         -> FrontendSession  -- ^ frontend session data
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
-display sdebugCli sess@FrontendSession{sdisplayPermitted} curFrame = do
+display sdebugCli sess@FrontendSession{..} curFrame = do
   displayPermitted <- takeMVar sdisplayPermitted
-  when displayPermitted $ do
+  if displayPermitted then do
     -- Apparently some SDL backends are not thread-safe, so keep to main thread:
     a <- asyncBound $ displayNoLock sdebugCli sess curFrame
     wait a
     putMVar sdisplayPermitted displayPermitted
-  -- When there's shut down, ignore displaying one frame,
-  -- but hang at any subsquent, via MVar that is not put.
-  -- This ensures exit via "thread blocked indefinitely in an STM transaction",
-  -- instead of clients proceeding with the game despite, e.g., window closed.
+  else do
+    putMVar sdisplayPermitted displayPermitted
+    forcedShutdown <- readIORef sforcedShutdown
+    when forcedShutdown $
+      -- When there's a forced shutdown, ignore displaying one frame
+      -- and don't occupy the CPU creating new ones and moving on with the game
+      -- (possibly also saving the new game state, surprising the player),
+      -- but give time for SDL to clean up and exit via @exitSuccess@
+      -- to avoid exiting via "thread blocked".
+      threadDelay 50000
 
 displayNoLock :: DebugModeCli
               -> FrontendSession  -- ^ frontend session data
