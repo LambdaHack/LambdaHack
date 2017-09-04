@@ -168,9 +168,9 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
           SDL.WindowClosedEvent{} -> forceShutdown sess
           SDL.QuitEvent -> forceShutdown sess
           SDL.WindowRestoredEvent{} -> redraw
+          SDL.WindowExposedEvent{} -> redraw  -- needed on Windows
           -- Probably not needed, because textures nor their content not lost:
           -- SDL.WindowShownEvent{} -> redraw
-          -- SDL.WindowExposedEvent{} -> redraw
           _ -> return ()
         displayPermitted <- readMVar sdisplayPermitted
         if displayPermitted
