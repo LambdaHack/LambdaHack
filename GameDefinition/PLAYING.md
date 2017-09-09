@@ -16,6 +16,11 @@ and literary imagination. To be honest, a lot of imagination is required
 for this rudimentary example game, but it has its own quirky style
 and is playable and winnable. Contributions are welcome.
 
+If the game window is too large for your screen or you experience
+other technical issues, please consult
+[README.md](https://github.com/LambdaHack/LambdaHack/blob/master/README.md)
+or describe your problem on gitter or the issue tracker.
+
 
 Heroes
 ------
