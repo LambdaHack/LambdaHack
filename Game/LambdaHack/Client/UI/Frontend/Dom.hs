@@ -140,8 +140,10 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
     --   putStrLn $ "modifier: " ++ show modifier
     when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
     IO.liftIO $ saveKMP rf modifierNoShift key originPoint
-    -- Pass through C-+ and others, disable special behaviour on Tab.
-    when (modifier `elem` [K.NoModifier, K.Shift, K.Control]) $ do
+    -- Pass through C-+ and others, but disable special behaviour on Tab, etc.
+    let browserKeys = "+-0tTnNdaxcvf"
+    unless (modifier == K.Alt
+            || modifier == K.Control && key `elem` map K.Char browserKeys) $ do
       preventDefault
       stopPropagation
   -- Handle mouseclicks, per-cell.
