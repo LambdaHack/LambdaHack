@@ -122,7 +122,7 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
       maxIx = length (concatMap snd frs) - 1
       page :: Int -> m (Either K.KM SlotChar, Int)
       page pointer = assert (pointer >= 0) $ case findKYX pointer frs of
-        Nothing -> assert `failure` "no menu keys" `twith` frs
+        Nothing -> assert `failure` "no menu keys" `swith` frs
         Just ((ov, kyxs), (ekm, (y, x1, x2)), ixOnPage) -> do
           let highableAttrs =
                 [Color.defAttr, Color.defAttr {Color.fg = Color.BrBlack}]
@@ -189,7 +189,7 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                   _ | K.key ikm `elem` [K.PgDn, K.WheelSouth] ->
                     page (min maxIx (pointer + pageLen - ixOnPage))
                   K.Space -> ignoreKey
-                  _ -> assert `failure` "unknown key" `twith` ikm
+                  _ -> assert `failure` "unknown key" `swith` ikm
           pkm <- promptGetKey dm ov1 sfBlank legalKeys
           interpretKey pkm
   (km, pointer) <- if null frs

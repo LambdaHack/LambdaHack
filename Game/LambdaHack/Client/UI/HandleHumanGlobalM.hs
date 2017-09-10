@@ -308,7 +308,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
         -- Select adjacent actor by bumping into him. Takes no time.
         success <- pickLeader True target
         let !_A = assert (success `blame` "bump self"
-                                  `twith` (leader, target, tb)) ()
+                                  `swith` (leader, target, tb)) ()
         failWith "by bumping"
       else
         -- Attacking does not require full access, adjacency is enough.

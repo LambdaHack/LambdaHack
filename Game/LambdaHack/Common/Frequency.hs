@@ -89,7 +89,7 @@ toFreq name l = Frequency (filter ((> 0 ) . fst) l) name
 -- by a positive integer constant.
 scaleFreq :: Show a => Int -> Frequency a -> Frequency a
 scaleFreq n (Frequency xs name) =
-  assert (n > 0 `blame` "non-positive frequency scale" `twith` (name, n, xs)) $
+  assert (n > 0 `blame` "non-positive frequency scale" `swith` (name, n, xs)) $
   Frequency (map (first (* n)) xs) name
 
 -- | Change the description of the frequency.

@@ -84,7 +84,7 @@ loopCli copsClient sconfig sdebugCli = do
       assert `failure`
         T.unpack ("Savefile of client" <+> tshow side <+> "not usable.")
     (False, RespUpdAtomic UpdRestart{}) -> return ()
-    _ -> assert `failure` "unexpected command" `twith` (side, restored, cmd1)
+    _ -> assert `failure` "unexpected command" `swith` (side, restored, cmd1)
   handleResponse cmd1
   -- State and client state now valid.
   debugPossiblyPrint $ "UI client" <+> tshow side <+> "started."

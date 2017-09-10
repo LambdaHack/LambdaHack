@@ -972,10 +972,10 @@ moveOrRunAid source dir = do
          return $ Just $ RequestAnyAbility $ ReqMove dir
          -- The potential invisible actor is hit.
        | alterSkill < Tile.alterMinWalk coTileSpeedup t ->
-         assert `failure` "AI causes AlterUnwalked" `twith` (source, dir)
+         assert `failure` "AI causes AlterUnwalked" `swith` (source, dir)
        | EM.member tpos $ lfloor lvl ->
          -- Only possible if items allowed inside unwalkable tiles.
-         assert `failure` "AI causes AlterBlockItem" `twith` (source, dir)
+         assert `failure` "AI causes AlterBlockItem" `swith` (source, dir)
        | otherwise ->
          -- Not walkable, but alter skill suffices, so search or alter the tile.
          return $ Just $ RequestAnyAbility $ ReqAlter tpos

@@ -51,7 +51,7 @@ serverDiscos Kind.COps{coitem=Kind.Ops{olength, ofoldlWithKey', okind}} = do
         let kmMean = meanAspect $ okind kmKind
         in (EM.insert ix KindMean{..} ikMap, EM.insert kmKind ix ikRev, rest)
       f (ikMap, _, []) ik  _ =
-        assert `failure` "too short ixs" `twith` (ik, ikMap)
+        assert `failure` "too short ixs" `swith` (ik, ikMap)
       (discoS, discoRev, _) =
         ofoldlWithKey' f (EM.empty, EM.empty, shuffled)
   return (discoS, discoRev)
@@ -162,7 +162,7 @@ rollFlavourMap fullFlavSet rnd key ik =
            proper = S.fromList flavours `S.intersection` available
        assert (not (S.null proper)
                `blame` "not enough flavours for items"
-               `twith` (flavours, available, ik, availableMap)) $ do
+               `swith` (flavours, available, ik, availableMap)) $ do
          flavour <- oneOf $ S.toList proper
          let availableReduced = S.delete flavour available
          return ( EM.insert key flavour assocs

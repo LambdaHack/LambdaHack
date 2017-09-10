@@ -86,7 +86,7 @@ cmdAtomicFilterCli cmd = case cmd of
            , UpdAlterTile (blid b) p fromTile toTile  -- reveal tile
            ]
       else assert (t == toTile `blame` "LoseTile fails to reset memory"
-                               `twith` (aid, p, fromTile, toTile, b, t, cmd))
+                               `swith` (aid, p, fromTile, toTile, b, t, cmd))
                   [cmd]  -- Already knows the tile fully, only confirm.
   UpdHideTile{} -> return []  -- will be fleshed out when Undo completed
   UpdSpotTile lid ts -> do
@@ -275,7 +275,7 @@ cmdAtomicSemCli cmd = case cmd of
                         || mleader == target
                           -- we changed the leader ourselves
                         `blame` "unexpected leader"
-                        `twith` (cmd, mleader)) ()
+                        `swith` (cmd, mleader)) ()
       modifyClient $ \cli -> cli {_sleader = target}
   UpdAutoFaction{} ->
     -- @condBFS@ depends on the setting we change here (e.g., smarkSuspect).
@@ -457,7 +457,7 @@ perception lid outPer inPer = do
               || maybe False (not . ES.null) (interAlready outPer)
   when unset $ do
 -}
-    let adj Nothing = assert `failure` "no perception to alter" `twith` lid
+    let adj Nothing = assert `failure` "no perception to alter" `swith` lid
         adj (Just per) = Just $ addPer (diffPer per outPer) inPer
         f = EM.alter adj lid
     modifyClient $ \cli -> cli {sfper = f (sfper cli)}
@@ -476,7 +476,7 @@ discoverKind c iid kmKind = do
       benefit = totalUsefulness cops fact (IK.ieffects kind) kmMean item
       f Nothing = Just KindMean{..}
       f Just{} = assert `failure` "already discovered"
-                        `twith` (c, iid, kmKind)
+                        `swith` (c, iid, kmKind)
   modifyClient $ \cli ->
     cli { sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)
         , sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli) }
@@ -491,10 +491,10 @@ discoverKind c iid kmKind = do
 coverKind :: MonadClient m => Container -> ItemId -> Kind.Id ItemKind -> m ()
 coverKind c iid ik = do
   item <- getsState $ getItemBody iid
-  let f Nothing = assert `failure` "already covered" `twith` (c, iid, ik)
+  let f Nothing = assert `failure` "already covered" `swith` (c, iid, ik)
       f (Just KindMean{kmKind}) =
         assert (ik == kmKind `blame` "unexpected covered item kind"
-                             `twith` (ik, kmKind)) Nothing
+                             `swith` (ik, kmKind)) Nothing
   -- For now, undoing @sdiscoBenefit@ is too much work.
   modifyClient $ \cli ->
     cli {sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)}
@@ -515,7 +515,7 @@ discoverSeed c iid seed = do
   totalDepth <- getsState stotalDepth
   case EM.lookup (jkindIx item) discoKind of
     Nothing -> assert `failure` "kind not known"
-                      `twith` (c, iid, seed)
+                      `swith` (c, iid, seed)
     Just KindMean{kmKind} -> do
       Level{ldepth} <- getLevel $ jlid item
       let kind = okind kmKind
@@ -523,7 +523,7 @@ discoverSeed c iid seed = do
           benefit = totalUsefulness cops fact (IK.ieffects kind) aspects item
           f Nothing = Just aspects
           f Just{} = assert `failure` "already discovered"
-                            `twith` (c, iid, seed)
+                            `swith` (c, iid, seed)
       modifyClient $ \cli ->
         cli { sdiscoAspect = EM.alter f iid (sdiscoAspect cli)
             , sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli) }
@@ -533,7 +533,7 @@ discoverSeed c iid seed = do
 
 coverSeed :: MonadClient m => Container -> ItemId -> ItemSeed -> m ()
 coverSeed c iid seed = do
-  let f Nothing = assert `failure` "already covered" `twith` (c, iid, seed)
+  let f Nothing = assert `failure` "already covered" `swith` (c, iid, seed)
       f Just{} = Nothing  -- checking that old and new agree is too much work
   -- For now, undoing @sdiscoBenefit@ is too much work.
   modifyClient $ \cli -> cli {sdiscoAspect = EM.alter f iid (sdiscoAspect cli)}
@@ -569,13 +569,12 @@ killExit = do
       g bap1 bap2 = bfsArr bap1 == bfsArr bap2
       subBfs = EM.isSubmapOfBy g
   let !_A1 = assert (salter == alter
-                     `blame` ("wrong accumulated salter on" <+> tshow side)
-                     `twith` (salter, alter)) ()
+                     `blame` "wrong accumulated salter on side"
+                     `swith` (side, salter, alter)) ()
       !_A2 = assert (sactorAspect == actorAspect
-                     `blame` ("wrong accumulated sactorAspect on"
-                              <+> tshow side)
-                     `twith` (sactorAspect, actorAspect)) ()
+                     `blame` "wrong accumulated sactorAspect on side"
+                     `swith` (side, sactorAspect, actorAspect)) ()
       !_A3 = assert (sbfsD `subBfs` bfsD
-                     `blame` ("wrong accumulated sbfsD on" <+> tshow side)
-                     `twith` (sbfsD, bfsD)) ()
+                     `blame` "wrong accumulated sbfsD on side"
+                     `swith` (side, sbfsD, bfsD)) ()
   return ()

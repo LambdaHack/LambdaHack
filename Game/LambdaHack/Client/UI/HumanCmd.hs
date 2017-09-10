@@ -192,7 +192,7 @@ data Trigger =
   deriving (Show, Eq, Ord, Generic)
 
 instance Read Trigger where
-  readsPrec = assert `failure` "parsing of Trigger not implemented" `twith` ()
+  readsPrec = assert `failure` "parsing of Trigger not implemented" `swith` ()
 
 instance NFData Trigger
 

@@ -14,7 +14,6 @@ import qualified Data.Ini as Ini
 import qualified Data.Ini.Reader as Ini
 import qualified Data.Ini.Types as Ini
 import qualified Data.Map.Strict as M
-import qualified Data.Text as T
 import Game.LambdaHack.Common.ClientOptions
 import GHC.Generics (Generic)
 import System.FilePath
@@ -63,22 +62,22 @@ parseConfig cfg =
                 Just _ ->
                   let (key, def) = read keydef
                   in (K.mkKM key, def :: CmdTriple)
-                Nothing -> assert `failure` "wrong macro id" `twith` ident
+                Nothing -> assert `failure` "wrong macro id" `swith` ident
             section = Ini.allItems "extra_commands" cfg
         in map mkCommand section
       configHeroNames =
         let toNumber (ident, nameAndPronoun) =
               case stripPrefix "HeroName_" ident of
                 Just n -> (read n, read nameAndPronoun)
-                Nothing -> assert `failure` "wrong hero name id" `twith` ident
+                Nothing -> assert `failure` "wrong hero name id" `swith` ident
             section = Ini.allItems "hero_names" cfg
         in map toNumber section
       getOption :: forall a. Read a => String -> a
       getOption optionName =
         let lookupFail :: forall b. String -> b
             lookupFail err =
-              assert `failure` ("config file access failed:" <+> T.pack err)
-                     `twith` (optionName, cfg)
+              assert `failure` "config file access failed"
+                     `swith` (err, optionName, cfg)
             s = fromMaybe (lookupFail "") $ Ini.getOption "ui" optionName cfg
         in either lookupFail id $ readEither s
       configVi = getOption "movementViKeys_hjklyubn"

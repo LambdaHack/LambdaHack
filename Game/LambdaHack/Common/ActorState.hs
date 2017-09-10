@@ -74,7 +74,7 @@ fidActorRegularIds fid lid s =
 
 getItemBody :: ItemId -> State -> Item
 getItemBody iid s =
-  let assFail = assert `failure` "item body not found" `twith` (iid, s)
+  let assFail = assert `failure` "item body not found" `swith` (iid, s)
   in EM.findWithDefault assFail iid $ sitemD s
 
 bagAssocs :: State -> ItemBag -> [(ItemId, Item)]

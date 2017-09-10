@@ -297,7 +297,7 @@ projectCheck tpos = do
   case bla lxsize lysize eps spos tpos of
     Nothing -> return $ Just ProjectAimOnself
     Just [] -> assert `failure` "project from the edge of level"
-                      `twith` (spos, tpos, sb)
+                      `swith` (spos, tpos, sb)
     Just (pos : _) -> do
       lvl <- getLevel lid
       let t = lvl `at` pos

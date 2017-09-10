@@ -39,7 +39,7 @@ getPerFid :: MonadClient m => LevelId -> m Perception
 getPerFid lid = do
   fper <- getsClient sfper
   let assFail = assert `failure` "no perception at given level"
-                       `twith` (lid, fper)
+                       `swith` (lid, fper)
   return $! EM.findWithDefault assFail lid fper
 
 -- | Calculate the position of an actor's target.

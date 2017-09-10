@@ -54,7 +54,7 @@ instance Enum Point where
 #ifdef WITH_EXPENSIVE_ASSERTIONS
     assert (x >= 0 && y >= 0 && x <= maxLevelDim && y <= maxLevelDim
             `blame` "invalid point coordinates"
-            `twith` (x, y))
+            `swith` (x, y))
 #endif
     (x + unsafeShiftL y maxLevelDimExponent)
   toEnum n = Point (n .&. maxLevelDim) (unsafeShiftR n maxLevelDimExponent)
@@ -136,7 +136,7 @@ fromTo (Point x0 y0) (Point x1 y1) =
        | x0 == x1 = map (Point x0) (fromTo1 y0 y1)
        | y0 == y1 = map (`Point` y0) (fromTo1 x0 x1)
        | otherwise = assert `failure` "diagonal fromTo"
-                            `twith` ((x0, y0), (x1, y1))
+                            `swith` ((x0, y0), (x1, y1))
  in result
 
 originPoint :: Point

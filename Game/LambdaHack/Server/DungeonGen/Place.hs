@@ -295,12 +295,12 @@ tilePlace area pl@PlaceKind{..} = do
   interior <- case pcover of
     CAlternate -> do
       let tile :: Int -> [a] -> [a]
-          tile _ []  = assert `failure` "nothing to tile" `twith` pl
+          tile _ []  = assert `failure` "nothing to tile" `swith` pl
           tile d pat = take d (cycle $ init pat ++ init (reverse pat))
       return $! fillInterior tile tile
     CStretch -> do
       let stretch :: Int -> [a] -> [a]
-          stretch _ []  = assert `failure` "nothing to stretch" `twith` pl
+          stretch _ []  = assert `failure` "nothing to stretch" `swith` pl
           stretch d pat = tileReflect d (pat ++ repeat (last pat))
       return $! fillInterior stretch stretch
     CReflect -> do

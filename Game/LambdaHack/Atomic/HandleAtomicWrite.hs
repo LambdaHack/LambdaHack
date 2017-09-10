@@ -106,14 +106,14 @@ updCreateActor aid body ais = do
   -- Add actor to @sactorD@.
   let f Nothing = Just body
       f (Just b) = assert `failure` "actor already added"
-                          `twith` (aid, body, b)
+                          `swith` (aid, body, b)
   modifyState $ updateActorD $ EM.alter f aid
   -- Add actor to @sprio@.
   let g Nothing = Just [aid]
       g (Just l) =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
         assert (aid `notElem` l `blame` "actor already added"
-                                `twith` (aid, body, l))
+                                `swith` (aid, body, l))
 #endif
         (Just $ aid : l)
   updateLevel (blid body) $ updateActorMap (EM.alter g (bpos body))
@@ -124,7 +124,7 @@ updCreateActor aid body ais = do
     let h item1 item2 =
           assert (itemsMatch item1 item2
                   `blame` "inconsistent created actor items"
-                  `twith` (aid, body, iid, item1, item2))
+                  `swith` (aid, body, iid, item1, item2))
                  item2 -- keep the first found level
     modifyState $ updateItemD $ EM.insertWith h iid item
 
@@ -146,18 +146,18 @@ updDestroyActor aid body ais = do
   -- Assert that actor's items belong to @sitemD@. Do not remove those
   -- that do not appear anywhere else, for simplicity and speed.
   let !_A = assert (allB match ais `blame` "destroyed actor items not found"
-                    `twith` (aid, body, ais, itemD)) ()
+                    `swith` (aid, body, ais, itemD)) ()
   -- Remove actor from @sactorD@.
-  let f Nothing = assert `failure` "actor already removed" `twith` (aid, body)
+  let f Nothing = assert `failure` "actor already removed" `swith` (aid, body)
       f (Just b) = assert (b == body `blame` "inconsistent destroyed actor body"
-                                     `twith` (aid, body, b)) Nothing
+                                     `swith` (aid, body, b)) Nothing
   modifyState $ updateActorD $ EM.alter f aid
   -- Remove actor from @lactor@.
-  let g Nothing = assert `failure` "actor already removed" `twith` (aid, body)
+  let g Nothing = assert `failure` "actor already removed" `swith` (aid, body)
       g (Just l) =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
         assert (aid `elem` l `blame` "actor already removed"
-                             `twith` (aid, body, l))
+                             `swith` (aid, body, l))
 #endif
         (let l2 = delete aid l
          in if null l2 then Nothing else Just l2)
@@ -189,7 +189,7 @@ updDestroyItem iid item kit@(k, _) c = assert (k > 0) $ do
                         Nothing -> False
                         Just item0 -> itemsMatch item0 item)
                     `blame` "item already removed"
-                    `twith` (iid, item, itemD)) ()
+                    `swith` (iid, item, itemD)) ()
   deleteItemContainer iid kit c
 
 updMoveActor :: MonadStateWrite m => ActorId -> Point -> Point -> m ()
@@ -197,7 +197,7 @@ updMoveActor aid fromP toP = assert (fromP /= toP) $ do
   body <- getsState $ getActorBody aid
   let !_A = assert (fromP == bpos body
                     `blame` "unexpected moved actor position"
-                    `twith` (aid, fromP, toP, bpos body, body)) ()
+                    `swith` (aid, fromP, toP, bpos body, body)) ()
       newBody = body {bpos = toP, boldpos = Just fromP}
   updateActor aid $ const newBody
   moveActorMap aid body newBody
@@ -207,7 +207,7 @@ updWaitActor aid toWait = do
   b <- getsState $ getActorBody aid
   let !_A = assert (toWait /= bwait b
                     `blame` "unexpected waited actor time"
-                    `twith` (aid, toWait, bwait b, b)) ()
+                    `swith` (aid, toWait, bwait b, b)) ()
   updateActor aid $ \body -> body {bwait = toWait}
 
 updDisplaceActor :: MonadStateWrite m => ActorId -> ActorId -> m ()
@@ -276,7 +276,7 @@ updTrajectory aid fromT toT = assert (fromT /= toT) $ do
   body <- getsState $ getActorBody aid
   let !_A = assert (fromT == btrajectory body
                     `blame` "unexpected actor trajectory"
-                    `twith` (aid, fromT, toT, body)) ()
+                    `swith` (aid, fromT, toT, body)) ()
   updateActor aid $ \b -> b {btrajectory = toT}
 
 updQuitFaction :: MonadStateWrite m
@@ -286,7 +286,7 @@ updQuitFaction fid fromSt toSt = do
   fact <- getsState $ (EM.! fid) . sfactionD
   let !_A = assert (fromSt == gquit fact
                     `blame` "unexpected actor quit status"
-                    `twith` (fid, fromSt, toSt, fact)) ()
+                    `swith` (fid, fromSt, toSt, fact)) ()
   let adj fa = fa {gquit = toSt}
   updateFaction fid adj
 
@@ -305,7 +305,7 @@ updLeadFaction fid source target = assert (source /= target) $ do
                     `blame` (fid, source, target, mtb, fact)) ()
   let !_A = assert (source == _gleader fact
                     `blame` "unexpected actor leader"
-                    `twith` (fid, source, target, mtb, fact)) ()
+                    `swith` (fid, source, target, mtb, fact)) ()
   let adj fa = fa {_gleader = target}
   updateFaction fid adj
 
@@ -318,7 +318,7 @@ updDiplFaction fid1 fid2 fromDipl toDipl =
     let !_A = assert (fromDipl == EM.findWithDefault Unknown fid2 (gdipl fact1)
                       && fromDipl == EM.findWithDefault Unknown fid1 (gdipl fact2)
                       `blame` "unexpected actor diplomacy status"
-                      `twith` (fid1, fid2, fromDipl, toDipl, fact1, fact2)) ()
+                      `swith` (fid1, fid2, fromDipl, toDipl, fact1, fact2)) ()
     let adj fid fact = fact {gdipl = EM.insert fid toDipl (gdipl fact)}
     updateFaction fid1 (adj fid2)
     updateFaction fid2 (adj fid1)
@@ -375,7 +375,7 @@ updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
   let adj ts = assert (ts PointArray.! p == fromTile
                        || ts PointArray.! p == Tile.hideAs cotile fromTile
                        `blame` "unexpected altered tile kind"
-                       `twith` (lid, p, fromTile, toTile, ts PointArray.! p))
+                       `swith` (lid, p, fromTile, toTile, ts PointArray.! p))
                $ ts PointArray.// [(p, toTile)]
   updateLevel lid $ updateTile adj
   case ( Tile.isExplorable coTileSpeedup fromTile
@@ -431,14 +431,14 @@ updAlterSmell lid p fromSm' toSm' = do
   let fromSm = if fromSm' == timeZero then Nothing else Just fromSm'
       toSm = if toSm' == timeZero then Nothing else Just toSm'
       alt sm = assert (sm == fromSm `blame` "unexpected tile smell"
-                                    `twith` (lid, p, fromSm, toSm, sm)) toSm
+                                    `swith` (lid, p, fromSm, toSm, sm)) toSm
   updateLevel lid $ updateSmell $ EM.alter alt p
 
 updSpotSmell :: MonadStateWrite m => LevelId -> [(Point, Time)] -> m ()
 updSpotSmell lid sms = assert (not $ null sms) $ do
   let alt sm Nothing = Just sm
       alt sm (Just oldSm) = assert `failure` "smell already added"
-                                   `twith` (lid, sms, sm, oldSm)
+                                   `swith` (lid, sms, sm, oldSm)
       f (p, sm) = EM.alter (alt sm) p
       upd m = foldr f m sms
   updateLevel lid $ updateSmell upd
@@ -446,10 +446,10 @@ updSpotSmell lid sms = assert (not $ null sms) $ do
 updLoseSmell :: MonadStateWrite m => LevelId -> [(Point, Time)] -> m ()
 updLoseSmell lid sms = assert (not $ null sms) $ do
   let alt sm Nothing = assert `failure` "smell already removed"
-                              `twith` (lid, sms, sm)
+                              `swith` (lid, sms, sm)
       alt sm (Just oldSm) =
         assert (sm == oldSm `blame` "unexpected lost smell"
-                            `twith` (lid, sms, sm, oldSm)) Nothing
+                            `swith` (lid, sms, sm, oldSm)) Nothing
       f (p, sm) = EM.alter (alt sm) p
       upd m = foldr f m sms
   updateLevel lid $ updateSmell upd

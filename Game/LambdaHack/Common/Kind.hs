@@ -45,19 +45,19 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
       allOffences = validateAll $ V.toList content
   in assert (allB correct $ V.toList content) $
      assert (null singleOffenders `blame` "some content items not valid"
-                                  `twith` singleOffenders) $
+                                  `swith` singleOffenders) $
      assert (null allOffences `blame` "the content set not valid"
-                              `twith` allOffences)
+                              `swith` allOffences)
      -- By this point 'content' can be GCd.
      Ops
        { okind = \ !i -> content V.! fromEnum i
        , ouniqGroup = \ !cgroup ->
            let freq = let assFail = assert `failure` "no unique group"
-                                           `twith` (cgroup, kindFreq)
+                                           `swith` (cgroup, kindFreq)
                       in M.findWithDefault assFail cgroup kindFreq
            in case freq of
              [(n, (i, _))] | n > 0 -> i
-             l -> assert `failure` "not unique" `twith` (l, cgroup, kindFreq)
+             l -> assert `failure` "not unique" `swith` (l, cgroup, kindFreq)
        , opick = \ !cgroup !p ->
            case M.lookup cgroup kindFreq of
              Just freqRaw ->

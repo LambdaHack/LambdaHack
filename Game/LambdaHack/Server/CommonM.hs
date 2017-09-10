@@ -67,9 +67,9 @@ execFailure aid req failureSer = do
 getPerFid :: MonadServer m => FactionId -> LevelId -> m Perception
 getPerFid fid lid = do
   pers <- getsServer sperFid
-  let failFact = assert `failure` "no perception for faction" `twith` (lid, fid)
+  let failFact = assert `failure` "no perception for faction" `swith` (lid, fid)
       fper = EM.findWithDefault failFact fid pers
-      failLvl = assert `failure` "no perception for level" `twith` (lid, fid)
+      failLvl = assert `failure` "no perception for level" `swith` (lid, fid)
       per = EM.findWithDefault failLvl lid fper
   return $! per
 
@@ -132,7 +132,7 @@ quitF status fid = do
 deduceQuits :: (MonadAtomic m, MonadServer m) => FactionId -> Status -> m ()
 deduceQuits fid0 status@Status{stOutcome}
   | stOutcome `elem` [Defeated, Camping, Restart, Conquer] =
-    assert `failure` "no quitting to deduce" `twith` (fid0, status)
+    assert `failure` "no quitting to deduce" `swith` (fid0, status)
 deduceQuits fid0 status = do
   fact0 <- getsState $ (EM.! fid0) . sfactionD
   let factHasUI = fhasUI . gplayer
@@ -245,7 +245,7 @@ projectFail source tpxy eps iid cstore isBlast = do
   case bla lxsize lysize eps spos tpxy of
     Nothing -> return $ Just ProjectAimOnself
     Just [] -> assert `failure` "projecting from the edge of level"
-                      `twith` (spos, tpxy)
+                      `swith` (spos, tpxy)
     Just (pos : restUnlimited) -> do
       bag <- getsState $ getBodyStoreBag sb cstore
       case EM.lookup iid bag of

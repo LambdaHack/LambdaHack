@@ -715,7 +715,7 @@ switchLevels2 ::(MonadAtomic m, MonadServer m)
 switchLevels2 lidNew posNew (aid, bOld) btime_bOld mlead = do
   let lidOld = blid bOld
       side = bfid bOld
-  let !_A = assert (lidNew /= lidOld `blame` "stairs looped" `twith` lidNew) ()
+  let !_A = assert (lidNew /= lidOld `blame` "stairs looped" `swith` lidNew) ()
   -- Sync actor's items' timeouts with the new local time of the level.
   -- We need to sync organs and equipment due to periodic activations,
   -- but also inventory pack (as well as some organs and equipment),
@@ -1192,7 +1192,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
   else case bla lxsize lysize eps (bpos tb) fpos of
     Nothing -> assert `failure` (fpos, tb)
     Just [] -> assert `failure` "projecting from the edge of level"
-                      `twith` (fpos, tb)
+                      `swith` (fpos, tb)
     Just (pos : rest) -> do
       let t = lvl `at` pos
       if not $ Tile.isWalkable coTileSpeedup t

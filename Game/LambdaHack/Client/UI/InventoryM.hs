@@ -407,11 +407,11 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                   Left K.KM{key} -> case key of
                     K.Char l -> SlotChar numPrefix l
                     _ -> assert `failure` "unexpected key:"
-                                `twith` K.showKey key
+                                `swith` K.showKey key
                   Right sl -> sl
             in case EM.lookup slot bagItemSlotsAll of
               Nothing -> assert `failure` "unexpected slot"
-                                `twith` (slot, bagItemSlots)
+                                `swith` (slot, bagItemSlots)
               Just iid -> return $! getResult (Right slot) iid
         }
       (bagFiltered, promptChosen) =
@@ -432,7 +432,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                       Left K.KM{key} -> case key of
                         K.Char l -> SlotChar numPrefix l
                         _ -> assert `failure` "unexpected key:"
-                                    `twith` K.showKey key
+                                    `swith` K.showKey key
                       Right sl -> sl
                 in return (Left "", (MStats, Right slot))
             }

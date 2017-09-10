@@ -54,10 +54,10 @@ refreshTarget (aid, body) = do
   side <- getsClient sside
   let !_A = assert (bfid body == side
                     `blame` "AI tries to move an enemy actor"
-                    `twith` (aid, body, side)) ()
+                    `swith` (aid, body, side)) ()
   let !_A = assert (isNothing (btrajectory body) && not (bproj body)
                     `blame` "AI gets to manually move its projectiles"
-                    `twith` (aid, body, side)) ()
+                    `swith` (aid, body, side)) ()
   stratTarget <- targetStrategy aid
   if nullStrategy stratTarget then do
     -- Melee in progress and the actor can't contribute

@@ -83,15 +83,15 @@ pickAction aid retry = do
   body <- getsState $ getActorBody aid
   let !_A = assert (bfid body == side
                     `blame` "AI tries to move enemy actor"
-                    `twith` (aid, bfid body, side)) ()
+                    `swith` (aid, bfid body, side)) ()
   let !_A = assert (isNothing (btrajectory body)
                     `blame` "AI gets to manually move its projectiles"
-                    `twith` (aid, bfid body, side)) ()
+                    `swith` (aid, bfid body, side)) ()
   stratAction <- actionStrategy aid retry
   let bestAction = bestVariant stratAction
       !_A = assert (not (nullFreq bestAction)  -- equiv to nullStrategy
                     `blame` "no AI action for actor"
-                    `twith` (stratAction, aid, body)) ()
+                    `swith` (stratAction, aid, body)) ()
   -- Run the AI: chose an action from those given by the AI strategy.
   rndToAction $ frequency bestAction
 

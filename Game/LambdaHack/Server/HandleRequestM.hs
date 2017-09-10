@@ -141,7 +141,7 @@ switchLeader fid aidNew = do
                      `blame` (aidNew, bPre, fid, fact)) ()
       !_A2 = assert (bfid bPre == fid
                      `blame` "client tries to move other faction actors"
-                     `twith` (aidNew, bPre, fid, fact)) ()
+                     `swith` (aidNew, bPre, fid, fact)) ()
   let (autoDun, _) = autoDungeonLevel fact
   arena <- case mleader of
     Nothing -> return $! blid bPre
@@ -424,7 +424,7 @@ reqAlter source tpos = do
             case groupsToAlterTo of
               [] -> return ()
               [groupToAlterTo] -> changeTo groupToAlterTo
-              l -> assert `failure` "tile changeable in many ways" `twith` l
+              l -> assert `failure` "tile changeable in many ways" `swith` l
             itemEffectEmbedded source tpos embeds
         else execFailure source req AlterBlockActor
       else execFailure source req AlterBlockItem

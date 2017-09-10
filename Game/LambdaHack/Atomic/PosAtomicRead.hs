@@ -234,14 +234,14 @@ seenAtomicCli knowEvents fid per posAtomic =
     PosFidAndSer _ fid2 -> fid == fid2
     PosSer -> False
     PosAll -> True
-    PosNone -> assert `failure` "no position possible" `twith` fid
+    PosNone -> assert `failure` "no position possible" `swith` fid
 
 -- Not needed ATM, but may be a coincidence.
 seenAtomicSer :: PosAtomic -> Bool
 seenAtomicSer posAtomic =
   case posAtomic of
     PosFid _ -> False
-    PosNone -> assert `failure` "no position possible" `twith` posAtomic
+    PosNone -> assert `failure` "no position possible" `swith` posAtomic
     _ -> True
 
 -- | Generate the atomic updates that jointly perform a given item move.

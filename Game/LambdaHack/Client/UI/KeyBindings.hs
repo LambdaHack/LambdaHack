@@ -62,7 +62,7 @@ stdBinding copsClient Config{configCommands, configVi, configLaptop} =
              (\v -> ([CmdMove], "", moveXhairOr 1 MoveDir v))
              (\v -> ([CmdMove], "", moveXhairOr 10 RunDir v))
       rejectRepetitions t1 t2 = assert `failure` "duplicate key"
-                                       `twith` (t1, t2)
+                                       `swith` (t1, t2)
   in Binding
   { bcmdMap = M.fromListWith rejectRepetitions
       [ (k, triple)

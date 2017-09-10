@@ -172,7 +172,7 @@ drawFrameContent drawnLevelId = do
   let {-# INLINE viewItemBag #-}
       viewItemBag _ floorBag = case EM.toDescList floorBag of
         (iid, _) : _ -> viewItem $ getItemBody iid s
-        [] -> assert `failure` "lfloor not sparse" `twith` ()
+        [] -> assert `failure` "lfloor not sparse" `swith` ()
       viewSmell :: Point -> Time -> Color.AttrCharW32
       {-# INLINE viewSmell #-}
       viewSmell p0 sml =
@@ -286,7 +286,7 @@ drawFrameActor drawnLevelId = do
                      else Color.HighlightBlue
           in Color.attrCharToW32
              $ Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
-        [] -> assert `failure` "lactor not sparse" `twith` ()
+        [] -> assert `failure` "lactor not sparse" `swith` ()
       mapVAL :: forall a s. (Point -> a -> Color.AttrCharW32) -> [(Point, a)]
              -> FrameST s
       {-# INLINE mapVAL #-}

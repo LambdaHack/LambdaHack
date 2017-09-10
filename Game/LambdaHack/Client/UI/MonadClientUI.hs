@@ -153,7 +153,7 @@ getLeaderUI :: MonadClientUI m => m ActorId
 getLeaderUI = do
   cli <- getClient
   case _sleader cli of
-    Nothing -> assert `failure` "leader expected but not found" `twith` cli
+    Nothing -> assert `failure` "leader expected but not found" `swith` cli
     Just leader -> return leader
 
 getArenaUI :: MonadClientUI m => m LevelId

@@ -40,7 +40,7 @@ random = St.state R.random
 
 -- | Get any element of a list with equal probability.
 oneOf :: [a] -> Rnd a
-oneOf [] = assert `failure` "oneOf []" `twith` ()
+oneOf [] = assert `failure` "oneOf []" `swith` ()
 oneOf xs = do
   r <- randomR (0, length xs - 1)
   return $! xs !! r
@@ -54,19 +54,19 @@ frequency = St.state . rollFreq
 rollFreq :: Show a => Frequency a -> R.StdGen -> (a, R.StdGen)
 rollFreq fr g = case runFrequency fr of
   [] -> assert `failure` "choice from an empty frequency"
-               `twith` nameFrequency fr
+               `swith` nameFrequency fr
   [(n, x)] | n <= 0 -> assert `failure` "singleton void frequency"
-                              `twith` (nameFrequency fr, n, x)
+                              `swith` (nameFrequency fr, n, x)
   [(_, x)] -> (x, g)  -- speedup
   fs -> let sumf = foldl' (\ !acc (!n, _) -> acc + n) 0 fs
             (r, ng) = R.randomR (1, sumf) g
             frec :: Int -> [(Int, a)] -> a
             frec !m [] = assert `failure` "impossible roll"
-                                `twith` (nameFrequency fr, fs, m)
+                                `swith` (nameFrequency fr, fs, m)
             frec m ((n, x) : _) | m <= n = x
             frec m ((n, _) : xs) = frec (m - n) xs
         in assert (sumf > 0 `blame` "frequency with nothing to pick"
-                            `twith` (nameFrequency fr, fs))
+                            `swith` (nameFrequency fr, fs))
              (frec r fs, ng)
 
 -- | Fractional chance.
@@ -86,7 +86,7 @@ castDice :: AbsDepth -> AbsDepth -> Dice.Dice -> Rnd Int
 castDice (AbsDepth n) (AbsDepth depth) dice = do
   let !_A = assert (n >= 0 && n <= depth
                     `blame` "invalid depth for dice rolls"
-                    `twith` (n, depth)) ()
+                    `swith` (n, depth)) ()
   dc <- frequency $ Dice.diceConst dice
   dl <- frequency $ Dice.diceLevel dice
   return $! (dc + (dl * max 0 (n - 1)) `div` max 1 (depth - 1))

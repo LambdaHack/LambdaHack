@@ -146,7 +146,7 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
   lUI <- mapM rawCreate $ filter (fhasUI . fst) $ rosterList players
   let !_A = assert (length lUI <= 1
                     `blame` "currently, at most one faction may have a UI"
-                    `twith` lUI) ()
+                    `swith` lUI) ()
   lnoUI <- mapM rawCreate $ filter (not . fhasUI . fst) $ rosterList players
   let lFs = reverse (zip [toEnum (-1), toEnum (-2)..] lnoUI)  -- sorted
             ++ zip [toEnum 1..] lUI
@@ -156,7 +156,7 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
               case (findPlayerName name1 lFs, findPlayerName name2 lFs) of
                 (Just (ix1, _), Just (ix2, _)) -> (ix1, ix2)
                 _ -> assert `failure` "unknown faction"
-                            `twith` ((name1, name2), lFs)
+                            `swith` ((name1, name2), lFs)
             ixs = map f l
         -- Only symmetry is ensured, everything else is permitted, e.g.,
         -- a faction in alliance with two others that are at war.
@@ -245,7 +245,7 @@ populateDungeon = do
       (minD, maxD) =
         case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
-          _ -> assert `failure` "empty dungeon" `twith` dungeon
+          _ -> assert `failure` "empty dungeon" `swith` dungeon
       -- Players that escape go first to be started over stairs, if possible.
       valuePlayer pl = (not $ fcanEscape pl, fname pl)
       -- Sorting, to keep games from similar game modes mutually reproducible.
@@ -291,7 +291,7 @@ populateDungeon = do
           maid <- addActor actorGroup fid3 p lid id ntime
           case maid of
             Nothing -> assert `failure` "can't spawn initial actors"
-                              `twith` (lid, (fid3, fact3))
+                              `swith` (lid, (fid3, fact3))
             Just aid -> do
               mleader <- getsState $ _gleader . (EM.! fid3) . sfactionD
               when (isNothing mleader) $ supplantLeader fid3 aid

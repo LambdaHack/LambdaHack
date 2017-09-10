@@ -243,7 +243,7 @@ dungeonGen cops caves = do
   let (minD, maxD) =
         case (IM.minViewWithKey caves, IM.maxViewWithKey caves) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
-          _ -> assert `failure` "no caves" `twith` caves
+          _ -> assert `failure` "no caves" `swith` caves
       freshTotalDepth = assert (signum minD == signum maxD)
                         $ AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)

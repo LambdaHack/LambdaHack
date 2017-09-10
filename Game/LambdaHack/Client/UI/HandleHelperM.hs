@@ -141,7 +141,7 @@ memberCycle verbose = do
     (np, b, _) : _ -> do
       success <- pickLeader verbose np
       let !_A = assert (success `blame` "same leader"
-                                `twith` (leader, np, b)) ()
+                                `swith` (leader, np, b)) ()
       return Nothing
 
 -- | Switches current member to the previous in the whole dungeon, wrapping.
@@ -158,7 +158,7 @@ memberBack verbose = do
     (np, b, _) : _ -> do
       success <- pickLeader verbose np
       let !_A = assert (success `blame` "same leader"
-                                `twith` (leader, np, b)) ()
+                                `swith` (leader, np, b)) ()
       return Nothing
 
 partyAfterLeader :: MonadClientUI m => ActorId -> m [(ActorId, Actor, ActorUI)]
@@ -186,7 +186,7 @@ pickLeader verbose aid = do
       bodyUI <- getsSession $ getActorUI aid
       let !_A = assert (not (bproj body)
                         `blame` "projectile chosen as the leader"
-                        `twith` (aid, body)) ()
+                        `swith` (aid, body)) ()
       -- Even if it's already the leader, give his proper name, not 'you'.
       let subject = partActor bodyUI
       when verbose $ msgAdd $ makeSentence [subject, "picked as a leader"]
@@ -310,7 +310,7 @@ pickNumber askNumber kAll = do
           K.Return -> return $ Right kCur
           K.Esc -> weaveJust <$> failWith "never mind"
           K.Space -> return $ Left Nothing
-          _ -> assert `failure` "unexpected key:" `twith` kkm
+          _ -> assert `failure` "unexpected key:" `swith` kkm
   if | kAll == 0 -> assert `failure` askNumber
      | kAll == 1 || not askNumber -> return $ Right kAll
      | otherwise -> do

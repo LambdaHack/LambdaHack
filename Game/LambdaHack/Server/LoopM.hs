@@ -114,7 +114,7 @@ arenasForLoop = do
   let arenas = ES.toList $ ES.fromList $ catMaybes marenas
       !_A = assert (not (null arenas)
                     `blame` "game over not caught earlier"
-                    `twith` factionD) ()
+                    `swith` factionD) ()
   return $! arenas
 
 handleFidUpd :: (MonadAtomic m, MonadServerReadRequest m)
@@ -373,7 +373,7 @@ setTrajectory aid = do
       -- Non-projectile actor stops flying.
       assert (not $ bproj b)
       $ execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
-    _ -> assert `failure` "Nothing trajectory" `twith` (aid, b)
+    _ -> assert `failure` "Nothing trajectory" `swith` (aid, b)
 
 handleActors :: (MonadAtomic m, MonadServerReadRequest m)
              => LevelId -> FactionId -> m Bool
@@ -458,25 +458,25 @@ gameExit = do
     <- getsState $ perFidInDungeon discoAspect
   let !_A7 = assert (sfovLitLid == fovLitLid
                      `blame` "wrong accumulated sfovLitLid"
-                     `twith` (sfovLitLid, fovLitLid)) ()
+                     `swith` (sfovLitLid, fovLitLid)) ()
       !_A6 = assert (sfovClearLid == fovClearLid
                      `blame` "wrong accumulated sfovClearLid"
-                     `twith` (sfovClearLid, fovClearLid)) ()
+                     `swith` (sfovClearLid, fovClearLid)) ()
       !_A5 = assert (sactorAspect == actorAspect
                      `blame` "wrong accumulated sactorAspect"
-                     `twith` (sactorAspect, actorAspect)) ()
+                     `swith` (sactorAspect, actorAspect)) ()
       !_A4 = assert (sfovLucidLid == fovLucidLid
                      `blame` "wrong accumulated sfovLucidLid"
-                     `twith` (sfovLucidLid, fovLucidLid)) ()
+                     `swith` (sfovLucidLid, fovLucidLid)) ()
       !_A3 = assert (sperValidFid == perValidFid
                      `blame` "wrong accumulated sperValidFid"
-                     `twith` (sperValidFid, perValidFid)) ()
+                     `swith` (sperValidFid, perValidFid)) ()
       !_A2 = assert (sperCacheFid == perCacheFid
                      `blame` "wrong accumulated sperCacheFid"
-                     `twith` (sperCacheFid, perCacheFid)) ()
+                     `swith` (sperCacheFid, perCacheFid)) ()
       !_A1 = assert (sperFid == perFid
                      `blame` "wrong accumulated perception"
-                     `twith` (sperFid, perFid)) ()
+                     `swith` (sperFid, perFid)) ()
   -- Kill all clients, including those that did not take part
   -- in the current game.
   -- Clients exit not now, but after they print all ending screens.

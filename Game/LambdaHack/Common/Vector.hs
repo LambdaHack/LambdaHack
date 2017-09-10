@@ -100,7 +100,7 @@ longMoveTexts = [ "northwest", "north", "northeast", "east"
 
 compassText :: Vector -> Text
 compassText v = let m = EM.fromList $ zip moves longMoveTexts
-                    assFail = assert `failure` "not a unit vector" `twith` v
+                    assFail = assert `failure` "not a unit vector" `swith` v
                 in EM.findWithDefault assFail v m
 
 -- | Vectors of all cardinal direction unit moves, clockwise, starting north.
@@ -210,7 +210,7 @@ rotate angle (Vector x' y') =
 -- (in the euclidean metric) maximally align with the original vector.
 normalize :: Double -> Double -> Vector
 normalize dx dy =
-  assert (dx /= 0 || dy /= 0 `blame` "can't normalize zero" `twith` (dx, dy)) $
+  assert (dx /= 0 || dy /= 0 `blame` "can't normalize zero" `swith` (dx, dy)) $
   let angle :: Double
       angle = atan (dy / dx) / (pi / 2)
       dxy | angle <= -0.75 && angle >= -1.25 = (0, -1)
@@ -219,7 +219,7 @@ normalize dx dy =
           | angle <= 0.75  = (1, 1)
           | angle <= 1.25  = (0, 1)
           | otherwise = assert `failure` "impossible angle"
-                               `twith` (dx, dy, angle)
+                               `swith` (dx, dy, angle)
   in if dx >= 0
      then uncurry Vector dxy
      else neg $ uncurry Vector dxy
@@ -229,7 +229,7 @@ normalizeVector v@(Vector vx vy) =
   let res = normalize (fromIntegral vx) (fromIntegral vy)
   in assert (not (isUnit v) || v == res
              `blame` "unit vector gets untrivially normalized"
-             `twith` (v, res))
+             `swith` (v, res))
      res
 
 -- | Given two distinct positions, determine the direction (a unit vector)
@@ -240,5 +240,5 @@ normalizeVector v@(Vector vx vy) =
 -- the two points.
 towards :: Point -> Point -> Vector
 towards pos0 pos1 =
-  assert (pos0 /= pos1 `blame` "towards self" `twith` (pos0, pos1))
+  assert (pos0 /= pos1 `blame` "towards self" `swith` (pos0, pos1))
   $ normalizeVector $ pos1 `vectorToFrom` pos0

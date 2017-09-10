@@ -126,7 +126,7 @@ slotToSentence es = case es of
   EqpSlotAbAlter -> "Those unskilled in alteration equip it."
   EqpSlotAbProject -> "Those unskilled in flinging equip it."
   EqpSlotAbApply -> "Those unskilled in applying items equip it."
-  _ -> assert `failure` "should not be used in content" `twith` es
+  _ -> assert `failure` "should not be used in content" `swith` es
 
 slotToName :: EqpSlot -> Text
 slotToName eqpSlot =
