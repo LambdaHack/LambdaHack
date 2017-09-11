@@ -73,7 +73,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
                | otherwise = fontFileName
   fontFileExists <- doesFileExist fontFile
   unless fontFileExists $
-    error $ "Font file does not exist: " ++ fontFile
+    fail $ "Font file does not exist: " ++ fontFile
   let fontSize = fromJust sfontSize
   TTF.initialize
   sfont <- TTF.load fontFile fontSize

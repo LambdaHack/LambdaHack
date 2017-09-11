@@ -70,7 +70,7 @@ readFile path = flip runDOM undefined $ do
   storage <- getLocalStorage win
   mitem <- getItem storage path
   case mitem of
-    Nothing -> error $2"Fatal error: no file " ++ path
+    Nothing -> fail $ "Fatal error: no file " ++ path
     Just item -> return item
 
 renameFile :: FilePath -> FilePath -> IO ()
@@ -79,7 +79,7 @@ renameFile path path2 = flip runDOM undefined $ do
   storage <- getLocalStorage win
   mitem <- getItem storage path
   case mitem :: Maybe String of
-    Nothing -> error $2"Fatal error: no file " ++ path
+    Nothing -> fail $ "Fatal error: no file " ++ path
     Just item -> do
       setItem storage path2 item  -- overwrites
       removeItem storage path
