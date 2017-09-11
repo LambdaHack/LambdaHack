@@ -105,15 +105,8 @@ matrix:
 #      addons: {apt: {packages: [libsdl2-dev, libsdl2-ttf-dev, cabal-install-head,ghc-head,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 
   allow_failures:
-    - env: CABALVER=2.0 GHCVER=7.10.3 GTKVTY=gtk
     - env: CABALVER=head GHCVER=head GTKVTY=gtk-v2
     - env: CABALVER=head GHCVER=head GTKVTY=sdl-v2
-    - env: CABALVER=2.0 GHCVER=8.2.1 GTKVTY=noopt
-    - env: CABALVER=2.0 GHCVER=8.2.1 GTKVTY=opt2
-    - env: CABALVER=2.0 GHCVER=8.2.1 GTKVTY=asserts
-    - env: CABALVER=2.0 GHCVER=8.2.1 GTKVTY=vty
-    - env: CABALVER=2.0 GHCVER=8.2.1 GTKVTY=curses
-    - env: CABALVER=2.0 GHCVER=8.2.1 GTKVTY=gtk
 
 before_install:
  - unset CC
@@ -236,7 +229,7 @@ script:
    else exit 7
    fi
 
- - cabal build   # this builds our library and executables (including tests/benchmarks)
+ - travis_retry travis_wait 40 cabal build   # this builds our library and executables (including tests/benchmarks)
 
  - (cabal test || exit 7);
 
@@ -251,19 +244,19 @@ script:
    cd dist/;
    if [ -f "$SRC_TGZ" ]; then
       if [ $GTKVTY = "gtk" ]; then
-        travis_wait cabal install --force-reinstalls -fgtk "$SRC_TGZ";
+        travis_retry travis_wait 40 cabal install --force-reinstalls -fgtk "$SRC_TGZ";
       elif [ $GTKVTY = "gtk-v2" ]; then
-        travis_wait cabal install -fgtk "$SRC_TGZ";
+        travis_retry travis_wait 40 cabal install -fgtk "$SRC_TGZ";
       elif [ $GTKVTY = "sdl" ]; then
-        travis_wait cabal install -fsdl "$SRC_TGZ";
+        travis_retry travis_wait 40 cabal install -fsdl "$SRC_TGZ";
       elif [ $GTKVTY = "sdl-v2" ]; then
-        travis_wait cabal install -fsdl "$SRC_TGZ";
+        travis_retry travis_wait 40 cabal install -fsdl "$SRC_TGZ";
       elif [ $GTKVTY = "vty" ]; then
-        travis_wait cabal install -fvty "$SRC_TGZ";
+        travis_retry travis_wait 40 cabal install -fvty "$SRC_TGZ";
       elif [ $GTKVTY = "curses" ]; then
-        travis_wait cabal install -fcurses "$SRC_TGZ";
+        travis_retry travis_wait 40 cabal install -fcurses "$SRC_TGZ";
       else
-        travis_wait cabal install -fgtk "$SRC_TGZ";
+        travis_retry travis_wait 40 cabal install -fgtk "$SRC_TGZ";
       fi;
    else
       echo "expected '$SRC_TGZ' not found";
