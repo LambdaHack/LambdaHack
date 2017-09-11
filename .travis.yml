@@ -20,47 +20,47 @@ matrix:
   include:
     - env: CABALVER=1.24 GHCVER=8.0.1 GTKVTY=noopt
       compiler: ": #GHC 8.0.1"
-      addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 #    - env: CABALVER=1.24 GHCVER=8.0.1 GTKVTY=opt2
 #      compiler: ": #GHC 8.0.1"
-#      addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+#      addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
     - env: CABALVER=1.24 GHCVER=8.0.1 GTKVTY=asserts
       compiler: ": #GHC 8.0.1"
-      addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
     - env: CABALVER=1.24 GHCVER=8.0.1 GTKVTY=vty
       compiler: ": #GHC 8.0.1"
-      addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
     - env: CABALVER=1.24 GHCVER=8.0.1 GTKVTY=curses
       compiler: ": #GHC 8.0.1"
-      addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
     - env: CABALVER=1.24 GHCVER=8.0.1 GTKVTY=gtk
       compiler: ": #GHC 8.0.1"
-      addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 #    - env: CABALVER=1.24 GHCVER=8.0.1 GTKVTY=sdl
 #      compiler: ": #GHC 8.0.1"
-#      addons: {apt: {packages: [libsdl2-dev, libsdl2-ttf-dev, cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+#      addons: {apt: {packages: [libsdl2-dev, libsdl2-ttf-dev, cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 
     - env: CABALVER=1.24 GHCVER=8.0.2 GTKVTY=noopt
       compiler: ": #GHC 8.0.2"
-      addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.2,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 #    - env: CABALVER=1.24 GHCVER=8.0.2 GTKVTY=opt2
 #      compiler: ": #GHC 8.0.2"
-#      addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+#      addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.2,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
     - env: CABALVER=1.24 GHCVER=8.0.2 GTKVTY=asserts
       compiler: ": #GHC 8.0.2"
-      addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.2,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
     - env: CABALVER=1.24 GHCVER=8.0.2 GTKVTY=vty
       compiler: ": #GHC 8.0.2"
-      addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
     - env: CABALVER=1.24 GHCVER=8.0.2 GTKVTY=curses
       compiler: ": #GHC 8.0.2"
-      addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
     - env: CABALVER=1.24 GHCVER=8.0.2 GTKVTY=gtk
       compiler: ": #GHC 8.0.2"
-      addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [libgtk-3-dev, cabal-install-1.24,ghc-8.0.2,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 #    - env: CABALVER=1.24 GHCVER=8.0.2 GTKVTY=sdl
 #      compiler: ": #GHC 8.0.2"
-#      addons: {apt: {packages: [libsdl2-dev, libsdl2-ttf-dev, cabal-install-1.24,ghc-8.0.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+#      addons: {apt: {packages: [libsdl2-dev, libsdl2-ttf-dev, cabal-install-1.24,ghc-8.0.2,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 
     - env: CABALVER=2.0 GHCVER=8.2.1 GTKVTY=noopt
       compiler: ": #GHC 8.2.1"
@@ -86,23 +86,23 @@ matrix:
 
     - env: CABALVER=1.24 GHCVER=7.10.1 GTKVTY=vty
       compiler: ": #GHC 7.10.1"
-      addons: {apt: {packages: [cabal-install-1.24,ghc-7.10.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [cabal-install-1.24,ghc-7.10.1,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
     - env: CABALVER=1.24 GHCVER=7.10.2 GTKVTY=curses
       compiler: ": #GHC 7.10.2"
-      addons: {apt: {packages: [cabal-install-1.24,ghc-7.10.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [cabal-install-1.24,ghc-7.10.2,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
     - env: CABALVER=2.0 GHCVER=7.10.3 GTKVTY=gtk
       compiler: ": #GHC 7.10.3"
-      addons: {apt: {packages: [libgtk-3-dev,cabal-install-2.0,ghc-7.10.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [libgtk-3-dev,cabal-install-2.0,ghc-7.10.3,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 #    - env: CABALVER=1.24 GHCVER=7.10.3 GTKVTY=sdl
 #      compiler: ": #GHC 7.10.3"
-#      addons: {apt: {packages: [libsdl2-dev,libsdl2-ttf-dev,cabal-install-1.24,ghc-7.10.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+#      addons: {apt: {packages: [libsdl2-dev,libsdl2-ttf-dev,cabal-install-1.24,ghc-7.10.3,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 
     - env: CABALVER=head GHCVER=head GTKVTY=gtk-v2
       compiler: ": #GHC head"
-      addons: {apt: {packages: [libgtk-3-dev, cabal-install-head,ghc-head,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [libgtk-3-dev, cabal-install-head,ghc-head,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 #    - env: CABALVER=head GHCVER=head GTKVTY=sdl-v2
 #      compiler: ": #GHC head"
-#      addons: {apt: {packages: [libsdl2-dev, libsdl2-ttf-dev, cabal-install-head,ghc-head,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+#      addons: {apt: {packages: [libsdl2-dev, libsdl2-ttf-dev, cabal-install-head,ghc-head,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 
   allow_failures:
     - env: CABALVER=2.0 GHCVER=7.10.3 GTKVTY=gtk
@@ -118,7 +118,7 @@ matrix:
 before_install:
  - unset CC
  - export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$PATH
- - export PATH=/opt/alex/3.1.4/bin:/opt/happy/1.19.5/bin:$PATH
+ - export PATH=/opt/alex/3.1.7/bin:/opt/happy/1.19.5/bin:$PATH
  - ld --version
 
 install:
