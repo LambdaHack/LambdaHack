@@ -105,8 +105,8 @@ updCreateActor :: MonadStateWrite m
 updCreateActor aid body ais = do
   -- Add actor to @sactorD@.
   let f Nothing = Just body
-      f (Just b) = assert `failure` "actor already added"
-                          `swith` (aid, body, b)
+      f (Just b) = error $ "actor already added"
+                           `showFailure` (aid, body, b)
   modifyState $ updateActorD $ EM.alter f aid
   -- Add actor to @sprio@.
   let g Nothing = Just [aid]
@@ -148,12 +148,12 @@ updDestroyActor aid body ais = do
   let !_A = assert (allB match ais `blame` "destroyed actor items not found"
                     `swith` (aid, body, ais, itemD)) ()
   -- Remove actor from @sactorD@.
-  let f Nothing = assert `failure` "actor already removed" `swith` (aid, body)
+  let f Nothing = error $ "actor already removed" `showFailure` (aid, body)
       f (Just b) = assert (b == body `blame` "inconsistent destroyed actor body"
                                      `swith` (aid, body, b)) Nothing
   modifyState $ updateActorD $ EM.alter f aid
   -- Remove actor from @lactor@.
-  let g Nothing = assert `failure` "actor already removed" `swith` (aid, body)
+  let g Nothing = error $ "actor already removed" `showFailure` (aid, body)
       g (Just l) =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
         assert (aid `elem` l `blame` "actor already removed"
@@ -230,7 +230,7 @@ updMoveItem iid k aid c1 c2 = assert (k > 0 && c1 /= c2) $ do
   b <- getsState $ getActorBody aid
   bag <- getsState $ getBodyStoreBag b c1
   case iid `EM.lookup` bag of
-    Nothing -> assert `failure` (iid, k, aid, c1, c2)
+    Nothing -> error $ "" `showFailure` (iid, k, aid, c1, c2)
     Just (_, it) -> do
       deleteItemActor iid (k, take k it) aid c1
       insertItemActor iid (k, take k it) aid c2
@@ -437,16 +437,16 @@ updAlterSmell lid p fromSm' toSm' = do
 updSpotSmell :: MonadStateWrite m => LevelId -> [(Point, Time)] -> m ()
 updSpotSmell lid sms = assert (not $ null sms) $ do
   let alt sm Nothing = Just sm
-      alt sm (Just oldSm) = assert `failure` "smell already added"
-                                   `swith` (lid, sms, sm, oldSm)
+      alt sm (Just oldSm) = error $ "smell already added"
+                                    `showFailure` (lid, sms, sm, oldSm)
       f (p, sm) = EM.alter (alt sm) p
       upd m = foldr f m sms
   updateLevel lid $ updateSmell upd
 
 updLoseSmell :: MonadStateWrite m => LevelId -> [(Point, Time)] -> m ()
 updLoseSmell lid sms = assert (not $ null sms) $ do
-  let alt sm Nothing = assert `failure` "smell already removed"
-                              `swith` (lid, sms, sm)
+  let alt sm Nothing = error $ "smell already removed"
+                               `showFailure` (lid, sms, sm)
       alt sm (Just oldSm) =
         assert (sm == oldSm `blame` "unexpected lost smell"
                             `swith` (lid, sms, sm, oldSm)) Nothing
@@ -464,7 +464,7 @@ updTimeItem iid c fromIt toIt = assert (fromIt /= toIt) $ do
       let !_A = assert (fromIt == it `blame` (k, it, iid, c, fromIt, toIt)) ()
       deleteItemContainer iid (k, fromIt) c
       insertItemContainer iid (k, toIt) c
-    Nothing -> assert `failure` (bag, iid, c, fromIt, toIt)
+    Nothing -> error $ "" `showFailure` (bag, iid, c, fromIt, toIt)
 
 -- | Age the game.
 updAgeGame :: MonadStateWrite m => [LevelId] -> m ()

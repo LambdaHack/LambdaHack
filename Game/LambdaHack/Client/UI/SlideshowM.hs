@@ -87,7 +87,7 @@ getConfirms :: MonadClientUI m
             => ColorMode -> [K.KM] -> Slideshow -> m K.KM
 getConfirms dm extraKeys slides = do
   (ekm, _) <- displayChoiceScreen dm False 0 slides extraKeys
-  return $! either id (assert `failure` ekm) ekm
+  return $! either id (error $ "" `showFailure` ekm) ekm
 
 -- This is the only source of menus and so, effectively, UI modes.
 displayChoiceScreen :: forall m . MonadClientUI m
@@ -122,7 +122,7 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
       maxIx = length (concatMap snd frs) - 1
       page :: Int -> m (Either K.KM SlotChar, Int)
       page pointer = assert (pointer >= 0) $ case findKYX pointer frs of
-        Nothing -> assert `failure` "no menu keys" `swith` frs
+        Nothing -> error $ "no menu keys" `showFailure` frs
         Just ((ov, kyxs), (ekm, (y, x1, x2)), ixOnPage) -> do
           let highableAttrs =
                 [Color.defAttr, Color.defAttr {Color.fg = Color.BrBlack}]
@@ -145,7 +145,7 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                 case K.key ikm of
                   K.Return | ekm /= Left [K.returnKM] -> case ekm of
                     Left (km : _) -> interpretKey km
-                    Left [] -> assert `failure` ikm
+                    Left [] -> error $ "" `showFailure` ikm
                     Right c -> return (Right c, pointer)
                   K.LeftButtonRelease -> do
                     Point{..} <- getsSession spointer
@@ -158,7 +158,7 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                                  else ignoreKey
                       Just (ckm, _) -> case ckm of
                         Left (km : _) -> interpretKey km
-                        Left [] -> assert `failure` ikm
+                        Left [] -> error $ "" `showFailure` ikm
                         Right c  -> return (Right c, pointer)
                   K.RightButtonRelease ->
                     if | ikm `elem` keys -> return (Left ikm, pointer)
@@ -189,7 +189,7 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                   _ | K.key ikm `elem` [K.PgDn, K.WheelSouth] ->
                     page (min maxIx (pointer + pageLen - ixOnPage))
                   K.Space -> ignoreKey
-                  _ -> assert `failure` "unknown key" `swith` ikm
+                  _ -> error $ "unknown key" `showFailure` ikm
           pkm <- promptGetKey dm ov1 sfBlank legalKeys
           interpretKey pkm
   (km, pointer) <- if null frs

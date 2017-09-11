@@ -94,11 +94,11 @@ targetStrategy aid = do
   -- set of abilities as the leader, anyway) and set his target accordingly.
   actorAspect <- getsClient sactorAspect
   let lalter = salter EM.! blid b
-      condInMelee = fromMaybe (assert `failure` condInMelee)
+      condInMelee = fromMaybe (error $ "" `showFailure` condInMelee)
                               (scondInMelee EM.! blid b)
       stdRuleset = Kind.stdRuleset corule
       nearby = rnearby stdRuleset
-      ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
+      ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       actorMaxSk = aSkills ar
       alterSkill = EM.findWithDefault 0 AbAlter actorMaxSk
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
@@ -135,7 +135,7 @@ targetStrategy aid = do
                _ -> Nothing  -- veered off the path
              AndPath{pathList=[],..}->
                Nothing  -- path to the goal was partial; let's target again
-             NoPath -> assert `failure` ()
+             NoPath -> error $ "" `showFailure` tap
     Nothing -> return Nothing  -- no target assigned yet
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)

@@ -273,7 +273,7 @@ statsOverlay :: MonadClient m => ActorId -> m OKX
 statsOverlay aid = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
-  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       prSlot :: (Y, SlotChar) -> IK.EqpSlot -> (Text, KYX)
       prSlot (y, c) eqpSlot =
         let statName = slotToName eqpSlot
@@ -310,11 +310,11 @@ pickNumber askNumber kAll = do
           K.Return -> return $ Right kCur
           K.Esc -> weaveJust <$> failWith "never mind"
           K.Space -> return $ Left Nothing
-          _ -> assert `failure` "unexpected key:" `swith` kkm
-  if | kAll == 0 -> assert `failure` askNumber
+          _ -> error $ "unexpected key" `showFailure` kkm
+  if | kAll == 0 -> error $ "" `showFailure` askNumber
      | kAll == 1 || not askNumber -> return $ Right kAll
      | otherwise -> do
          res <- gatherNumber 0 kAll
          case res of
-           Right k | k <= 0 -> assert `failure` (res, kAll)
+           Right k | k <= 0 -> error $ "" `showFailure` (res, kAll)
            _ -> return res

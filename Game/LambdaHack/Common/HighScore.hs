@@ -88,7 +88,7 @@ getTable = EM.findWithDefault (ScoreTable [])
 
 getRecord :: Int -> ScoreTable -> ScoreRecord
 getRecord pos (ScoreTable table) =
-  fromMaybe (assert `failure` (pos, table))
+  fromMaybe (error $ "" `showFailure` (pos, table))
   $ listToMaybe $ drop (pred pos) table
 
 -- | Empty score table

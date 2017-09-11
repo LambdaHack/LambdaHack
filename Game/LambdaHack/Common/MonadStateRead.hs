@@ -56,7 +56,7 @@ getEntryArena fact = do
   let (minD, maxD) =
         case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
-          _ -> assert `failure` "empty dungeon" `swith` dungeon
+          _ -> error $ "empty dungeon" `showFailure` dungeon
       f [] = 0
       f ((ln, _, _) : _) = ln
   return $! max minD $ min maxD $ toEnum $ f $ ginitial fact

@@ -211,21 +211,21 @@ invalidateLucidAid aid = do
 actorHasShine :: ActorAspect -> ActorId -> Bool
 actorHasShine actorAspect aid = case EM.lookup aid actorAspect of
   Just AspectRecord{aShine} -> aShine > 0
-  Nothing -> assert `failure` aid
+  Nothing -> error $ "" `showFailure` aid
 
 itemAffectsShineRadius :: DiscoveryAspect -> ItemId -> [CStore] -> Bool
 itemAffectsShineRadius discoAspect iid stores =
   (null stores || not (null $ intersect stores [CEqp, COrgan, CGround]))
   && case EM.lookup iid discoAspect of
     Just AspectRecord{aShine} -> aShine /= 0
-    Nothing -> assert `failure` iid
+    Nothing -> error $ "" `showFailure` iid
 
 itemAffectsPerRadius :: DiscoveryAspect -> ItemId -> Bool
 itemAffectsPerRadius discoAspect iid =
   case EM.lookup iid discoAspect of
     Just AspectRecord{aSight, aSmell, aNocto} ->
       aSight /= 0 || aSmell /= 0 || aNocto /= 0
-    Nothing -> assert `failure` iid
+    Nothing -> error $ "" `showFailure` iid
 
 addPerActor :: MonadServer m => ActorId -> Actor -> m ()
 addPerActor aid b = do

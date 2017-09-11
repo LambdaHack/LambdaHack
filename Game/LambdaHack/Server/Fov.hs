@@ -177,7 +177,7 @@ totalFromPerActor :: PerActor -> CacheBeforeLucid
 totalFromPerActor perActor =
   let as = map (\a -> case a of
                    FovValid x -> x
-                   FovInvalid -> assert `failure` perActor)
+                   FovInvalid -> error $ "" `showFailure` perActor)
            $ EM.elems perActor
   in CacheBeforeLucid
        { creachable = PerReachable
@@ -309,9 +309,9 @@ perLidFromFaction actorAspect fovLucidLid fovClearLid fid s =
              (sdungeon s)
       fovLucid lid = case EM.lookup lid fovLucidLid of
         Just (FovValid fl) -> fl
-        _ -> assert `failure` (lid, fovLucidLid)
+        _ -> error $ "" `showFailure` (lid, fovLucidLid)
       getValid (FovValid pc) = pc
-      getValid FovInvalid = assert `failure` fid
+      getValid FovInvalid = error $ "" `showFailure` fid
   in ( EM.mapWithKey (\lid pc ->
          perceptionFromPTotal (fovLucid lid) (getValid (ptotal pc))) em
      , em )

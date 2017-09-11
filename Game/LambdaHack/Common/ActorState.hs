@@ -74,7 +74,7 @@ fidActorRegularIds fid lid s =
 
 getItemBody :: ItemId -> State -> Item
 getItemBody iid s =
-  let assFail = assert `failure` "item body not found" `swith` (iid, s)
+  let assFail = error $ "item body not found" `showFailure` (iid, s)
   in EM.findWithDefault assFail iid $ sitemD s
 
 bagAssocs :: State -> ItemBag -> [(ItemId, Item)]
@@ -184,7 +184,7 @@ getContainerBag c s = case c of
   CEmbed lid p -> getEmbedBag lid p s
   CActor aid cstore -> let b = getActorBody aid s
                        in getBodyStoreBag b cstore s
-  CTrunk{} -> assert `failure` c
+  CTrunk{} -> error $ "" `showFailure` c
 
 getFloorBag :: LevelId -> Point -> State -> ItemBag
 getFloorBag lid p s = EM.findWithDefault EM.empty p
@@ -315,13 +315,13 @@ storeFromC c = case c of
   CFloor{} -> CGround
   CEmbed{} -> CGround
   CActor _ cstore -> cstore
-  CTrunk{} -> assert `failure` c
+  CTrunk{} -> error $ "" `showFailure` c
 
 aidFromC :: Container -> Maybe ActorId
 aidFromC CFloor{} = Nothing
 aidFromC CEmbed{} = Nothing
 aidFromC (CActor aid _) = Just aid
-aidFromC c@CTrunk{} = assert `failure` c
+aidFromC c@CTrunk{} = error $ "" `showFailure` c
 
 -- | Determine the dungeon level of the container. If the item is in a shared
 -- stash, the level depends on which actor asks.
@@ -329,13 +329,13 @@ lidFromC :: Container -> State -> LevelId
 lidFromC (CFloor lid _) _ = lid
 lidFromC (CEmbed lid _) _ = lid
 lidFromC (CActor aid _) s = blid $ getActorBody aid s
-lidFromC c@CTrunk{} _ = assert `failure` c
+lidFromC c@CTrunk{} _ = error $ "" `showFailure` c
 
 posFromC :: Container -> State -> Point
 posFromC (CFloor _ pos) _ = pos
 posFromC (CEmbed _ pos) _ = pos
 posFromC (CActor aid _) s = bpos $ getActorBody aid s
-posFromC c@CTrunk{} _ = assert `failure` c
+posFromC c@CTrunk{} _ = error $ "" `showFailure` c
 
 isEscape :: LevelId -> Point -> State -> Bool
 isEscape lid p s =

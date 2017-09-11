@@ -67,9 +67,9 @@ execFailure aid req failureSer = do
 getPerFid :: MonadServer m => FactionId -> LevelId -> m Perception
 getPerFid fid lid = do
   pers <- getsServer sperFid
-  let failFact = assert `failure` "no perception for faction" `swith` (lid, fid)
+  let failFact = error $ "no perception for faction" `showFailure` (lid, fid)
       fper = EM.findWithDefault failFact fid pers
-      failLvl = assert `failure` "no perception for level" `swith` (lid, fid)
+      failLvl = error $ "no perception for level" `showFailure` (lid, fid)
       per = EM.findWithDefault failLvl lid fper
   return $! per
 
@@ -83,7 +83,7 @@ revealItems mfid = do
           Just ItemDisco{itemKindId} -> do
             seed <- getsServer $ (EM.! iid) . sitemSeedD
             execUpdAtomic $ UpdDiscover c iid itemKindId seed
-          _ -> assert `failure` (mfid, c, iid, itemFull)
+          _ -> error $ "" `showFailure` (mfid, c, iid, itemFull)
       f aid = do
         b <- getsState $ getActorBody aid
         let ourSide = maybe True (== bfid b) mfid
@@ -132,7 +132,7 @@ quitF status fid = do
 deduceQuits :: (MonadAtomic m, MonadServer m) => FactionId -> Status -> m ()
 deduceQuits fid0 status@Status{stOutcome}
   | stOutcome `elem` [Defeated, Camping, Restart, Conquer] =
-    assert `failure` "no quitting to deduce" `swith` (fid0, status)
+    error $ "no quitting to deduce" `showFailure` (fid0, status)
 deduceQuits fid0 status = do
   fact0 <- getsState $ (EM.! fid0) . sfactionD
   let factHasUI = fhasUI . gplayer
@@ -244,8 +244,8 @@ projectFail source tpxy eps iid cstore isBlast = do
   lvl@Level{lxsize, lysize} <- getLevel lid
   case bla lxsize lysize eps spos tpxy of
     Nothing -> return $ Just ProjectAimOnself
-    Just [] -> assert `failure` "projecting from the edge of level"
-                      `swith` (spos, tpxy)
+    Just [] -> error $ "projecting from the edge of level"
+                       `showFailure` (spos, tpxy)
     Just (pos : restUnlimited) -> do
       bag <- getsState $ getBodyStoreBag sb cstore
       case EM.lookup iid bag of
@@ -302,7 +302,7 @@ projectBla source pos rest iid cstore isBlast = do
   unless isBlast $ execSfxAtomic $ SfxProject source iid cstore
   bag <- getsState $ getBodyStoreBag sb cstore
   case iid `EM.lookup` bag of
-    Nothing -> assert `failure` (source, pos, rest, iid, cstore)
+    Nothing -> error $ "" `showFailure` (source, pos, rest, iid, cstore)
     Just kit@(_, it) -> do
       let btime = absoluteTimeAdd timeEpsilon localTime
       addProjectile pos rest iid kit lid (bfid sb) btime isBlast
@@ -349,7 +349,7 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
             bfid pos lid tweakBody time = do
   let trunkKind = case itemDisco of
         Just ItemDisco{itemKind} -> itemKind
-        Nothing -> assert `failure` trunkFull
+        Nothing -> error $ "" `showFailure` trunkFull
       aspects = fromJust $ itemAspect $ fromJust itemDisco
   -- Initial HP and Calm is based only on trunk and ignores organs.
       hp = xM (max 2 $ aMaxHP aspects) `div` 2
@@ -397,7 +397,7 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
         itemFreq = [(ikText, 1)]
     mIidEtc <- rollAndRegisterItem lid itemFreq container False mk
     case mIidEtc of
-      Nothing -> assert `failure` (lid, itemFreq, container, mk)
+      Nothing -> error $ "" `showFailure` (lid, itemFreq, container, mk)
       Just (iid, (itemFull, _)) -> discoverIfNoEffects container iid itemFull
   return $ Just aid
 

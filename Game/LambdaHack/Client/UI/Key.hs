@@ -249,7 +249,7 @@ moveBinding configVi configLaptop move run =
 mkKM :: String -> KM
 mkKM s = let mkKey sk =
                case keyTranslate sk of
-                 Unknown _ -> assert `failure` "unknown key" `swith` s
+                 Unknown _ -> error $ "unknown key" `showFailure` s
                  key -> key
          in case s of
            'S':'-':rest -> KM Shift (mkKey rest)

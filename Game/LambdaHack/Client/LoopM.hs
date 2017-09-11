@@ -9,8 +9,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.Text as T
-
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.HandleResponseM
 import Game.LambdaHack.Client.MonadClient
@@ -81,10 +79,10 @@ loopCli copsClient sconfig sdebugCli = do
     (True, RespUpdAtomic UpdRestart{}) ->
       when hasUI $ msgAdd "Ignoring an old savefile and starting a new game."
     (False, RespUpdAtomic UpdResume{}) ->
-      assert `failure`
-        T.unpack ("Savefile of client" <+> tshow side <+> "not usable.")
+      error $ "Savefile of client " ++ show side ++ " not usable."
+              `showFailure` ()
     (False, RespUpdAtomic UpdRestart{}) -> return ()
-    _ -> assert `failure` "unexpected command" `swith` (side, restored, cmd1)
+    _ -> error $ "unexpected command" `showFailure` (side, restored, cmd1)
   handleResponse cmd1
   -- State and client state now valid.
   debugPossiblyPrint $ "UI client" <+> tshow side <+> "started."

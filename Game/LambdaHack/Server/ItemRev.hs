@@ -51,7 +51,7 @@ serverDiscos Kind.COps{coitem=Kind.Ops{olength, ofoldlWithKey', okind}} = do
         let kmMean = meanAspect $ okind kmKind
         in (EM.insert ix KindMean{..} ikMap, EM.insert kmKind ix ikRev, rest)
       f (ikMap, _, []) ik  _ =
-        assert `failure` "too short ixs" `swith` (ik, ikMap)
+        error $ "too short ixs" `showFailure` (ik, ikMap)
       (discoS, discoRev, _) =
         ofoldlWithKey' f (EM.empty, EM.empty, shuffled)
   return (discoS, discoRev)
@@ -122,8 +122,9 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldlGroup'}}
         itemK = max 1 itemN
         itemTimer = [timeZero | IK.Periodic `elem` IK.ieffects itemKind]
                       -- delay first discharge of single organs
-        itemAspectMean = kmMean $ EM.findWithDefault (assert `failure` kindIx)
-                                                     kindIx disco
+        itemAspectMean =
+          kmMean $ EM.findWithDefault (error $ "" `showFailure` kindIx)
+                                      kindIx disco
         itemDiscoData = ItemDisco { itemKindId, itemKind, itemAspectMean
                                   , itemAspect = Just aspectRecord }
         itemDisco = Just itemDiscoData

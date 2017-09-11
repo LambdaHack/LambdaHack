@@ -43,8 +43,8 @@ updateActorMap f lvl = lvl {lactor = f (lactor lvl)}
 
 moveActorMap :: MonadStateWrite m => ActorId -> Actor -> Actor -> m ()
 moveActorMap aid body newBody = do
-  let rmActor Nothing = assert `failure` "actor already removed"
-                               `swith` (aid, body)
+  let rmActor Nothing = error $ "actor already removed"
+                                `showFailure` (aid, body)
       rmActor (Just l) =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
         assert (aid `elem` l `blame` "actor already removed"
@@ -82,13 +82,13 @@ updateLevel lid f = modifyState $ updateDungeon $ EM.adjust f lid
 -- perhaps it's applied automatically due to INLINABLE.
 updateActor :: MonadStateWrite m => ActorId -> (Actor -> Actor) -> m ()
 updateActor aid f = do
-  let alt Nothing = assert `failure` "no body to update" `swith` aid
+  let alt Nothing = error $ "no body to update" `showFailure` aid
       alt (Just b) = Just $ f b
   modifyState $ updateActorD $ EM.alter alt aid
 
 updateFaction :: MonadStateWrite m => FactionId -> (Faction -> Faction) -> m ()
 updateFaction fid f = do
-  let alt Nothing = assert `failure` "no faction to update" `swith` fid
+  let alt Nothing = error $ "no faction to update" `showFailure` fid
       alt (Just fact) = Just $ f fact
   modifyState $ updateFactionD $ EM.alter alt fid
 
@@ -168,7 +168,7 @@ deleteItemContainer iid kit c = case c of
   CFloor lid pos -> deleteItemFloor iid kit lid pos
   CEmbed lid pos -> deleteItemEmbed iid kit lid pos
   CActor aid store -> deleteItemActor iid kit aid store
-  CTrunk{} -> assert `failure` c
+  CTrunk{} -> error $ "" `showFailure` c
 
 deleteItemFloor :: MonadStateWrite m
                 => ItemId -> ItemQuant -> LevelId -> Point -> m ()
@@ -176,8 +176,8 @@ deleteItemFloor iid kit lid pos =
   let rmFromFloor (Just bag) =
         let nbag = rmFromBag kit iid bag
         in if EM.null nbag then Nothing else Just nbag
-      rmFromFloor Nothing = assert `failure` "item already removed"
-                                   `swith` (iid, kit, lid, pos)
+      rmFromFloor Nothing = error $ "item already removed"
+                                    `showFailure` (iid, kit, lid, pos)
   in updateLevel lid $ updateFloor $ EM.alter rmFromFloor pos
 
 deleteItemEmbed :: MonadStateWrite m
@@ -186,8 +186,8 @@ deleteItemEmbed iid kit lid pos =
   let rmFromFloor (Just bag) =
         let nbag = rmFromBag kit iid bag
         in if EM.null nbag then Nothing else Just nbag
-      rmFromFloor Nothing = assert `failure` "item already removed"
-                                   `swith` (iid, kit, lid, pos)
+      rmFromFloor Nothing = error $ "item already removed"
+                                    `showFailure` (iid, kit, lid, pos)
   in updateLevel lid $ updateEmbed $ EM.alter rmFromFloor pos
 
 deleteItemActor :: MonadStateWrite m
@@ -229,11 +229,11 @@ deleteItemSha iid kit fid =
 -- so that @DestroyItem kit (CreateItem kit x) == x@.
 rmFromBag :: ItemQuant -> ItemId -> ItemBag -> ItemBag
 rmFromBag kit@(k, rmIt) iid bag =
-  let rfb Nothing = assert `failure` "rm from empty slot" `swith` (k, iid, bag)
+  let rfb Nothing = error $ "rm from empty slot" `showFailure` (k, iid, bag)
       rfb (Just (n, it)) =
         case compare n k of
-          LT -> assert `failure` "rm more than there is"
-                       `swith` (n, kit, iid, bag)
+          LT -> error $ "rm more than there is"
+                        `showFailure` (n, kit, iid, bag)
           EQ -> assert (rmIt == it `blame` (rmIt, it, n, kit, iid, bag)) Nothing
           GT -> assert (rmIt == take k it
                         `blame` (rmIt, take k it, n, kit, iid, bag))

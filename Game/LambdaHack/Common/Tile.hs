@@ -232,7 +232,7 @@ openTo Kind.Ops{okind, opick} t = do
   let getTo (TK.OpenTo grp) acc = grp : acc
       getTo _ acc = acc
   case foldr getTo [] $ TK.tfeature $ okind t of
-    [grp] -> fromMaybe (assert `failure` grp) <$> opick grp (const True)
+    [grp] -> fromMaybe (error $ "" `showFailure` grp) <$> opick grp (const True)
     _ -> return t
 
 closeTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
@@ -240,7 +240,7 @@ closeTo Kind.Ops{okind, opick} t = do
   let getTo (TK.CloseTo grp) acc = grp : acc
       getTo _ acc = acc
   case foldr getTo [] $ TK.tfeature $ okind t of
-    [grp] -> fromMaybe (assert `failure` grp) <$> opick grp (const True)
+    [grp] -> fromMaybe (error $ "" `showFailure` grp) <$> opick grp (const True)
     _ -> return t
 
 embeddedItems :: Kind.Ops TileKind -> Kind.Id TileKind -> [GroupName ItemKind]
@@ -257,7 +257,7 @@ revealAs Kind.Ops{okind, opick} t = do
     [] -> return t
     groups -> do
       grp <- oneOf groups
-      fromMaybe (assert `failure` grp) <$> opick grp (const True)
+      fromMaybe (error $ "" `showFailure` grp) <$> opick grp (const True)
 
 obscureAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 obscureAs Kind.Ops{okind, opick} t = do
@@ -267,7 +267,7 @@ obscureAs Kind.Ops{okind, opick} t = do
     [] -> return t
     groups -> do
       grp <- oneOf groups
-      fromMaybe (assert `failure` grp) <$> opick grp (const True)
+      fromMaybe (error $ "" `showFailure` grp) <$> opick grp (const True)
 
 hideAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Kind.Id TileKind
 hideAs Kind.Ops{okind, ouniqGroup} t =

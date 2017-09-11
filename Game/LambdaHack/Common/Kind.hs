@@ -52,12 +52,12 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
      Ops
        { okind = \ !i -> content V.! fromEnum i
        , ouniqGroup = \ !cgroup ->
-           let freq = let assFail = assert `failure` "no unique group"
-                                           `swith` (cgroup, kindFreq)
+           let freq = let assFail = error $ "no unique group"
+                                            `showFailure` (cgroup, kindFreq)
                       in M.findWithDefault assFail cgroup kindFreq
            in case freq of
              [(n, (i, _))] | n > 0 -> i
-             l -> assert `failure` "not unique" `swith` (l, cgroup, kindFreq)
+             l -> error $ "not unique" `showFailure` (l, cgroup, kindFreq)
        , opick = \ !cgroup !p ->
            case M.lookup cgroup kindFreq of
              Just freqRaw ->
@@ -81,9 +81,10 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
        , ofoldlGroup' = \cgroup f z ->
            case M.lookup cgroup kindFreq of
              Just freq -> foldl' (\acc (p, (i, a)) -> f acc p i a) z freq
-             _ -> assert `failure` "no group '" <> tshow cgroup
-                                   <> "' among content that has groups"
-                                   <+> tshow (M.keys kindFreq)
+             _ -> error $ "no group '" ++ show cgroup
+                                       ++ "' among content that has groups "
+                                       ++ show (M.keys kindFreq)
+                          `showFailure` ()
        , olength = V.length content
        }
 

@@ -238,7 +238,7 @@ manageCalmAndDomination aid b = do
   let isImpression iid = case EM.lookup (jkindIx $ getItem iid) discoKind of
         Just KindMean{kmKind} ->
           maybe False (> 0) (lookup "impressed" $ IK.ifreq $ okind kmKind)
-        Nothing -> assert `failure` iid
+        Nothing -> error $ "" `showFailure` iid
       impressions = EM.filterWithKey (\iid _ -> isImpression iid) $ borgan b
   dominated <-
     if bcalm b == 0
@@ -249,7 +249,7 @@ manageCalmAndDomination aid b = do
       let f (_, (k, _)) = k
           maxImpression = maximumBy (Ord.comparing f) $ EM.assocs impressions
       in case jfid $ getItem $ fst maxImpression of
-        Nothing -> assert `failure` impressions
+        Nothing -> error $ "" `showFailure` impressions
         Just fid1 -> assert (fid1 /= bfid b) $ dominateFidSfx fid1 aid
     else return False
   unless dominated $ do
@@ -282,7 +282,7 @@ applyPeriodicLevel = do
                   -- Activate even if effects null, to possibly destroy item.
                   effectAndDestroy False aid aid iid (CActor aid cstore) True
                                    (filterRecharging ieffects) itemFull
-              _ -> assert `failure` (aid, cstore, iid)
+              _ -> error $ "" `showFailure` (aid, cstore, iid)
       applyPeriodicActor (aid, b) =
         when (not (bproj b) && blid b `ES.member` arenasSet) $ do
           mapM_ (applyPeriodicItem aid COrgan borgan) $ EM.assocs $ borgan b
@@ -373,7 +373,7 @@ setTrajectory aid = do
       -- Non-projectile actor stops flying.
       assert (not $ bproj b)
       $ execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
-    _ -> assert `failure` "Nothing trajectory" `swith` (aid, b)
+    _ -> error $ "Nothing trajectory" `showFailure` (aid, b)
 
 handleActors :: (MonadAtomic m, MonadServerReadRequest m)
              => LevelId -> FactionId -> m Bool
@@ -416,7 +416,7 @@ hActors _fid as@((aid, body) : rest) = do
         -- This is not proper UI-forced save, but a timeout, so don't save
         -- and no need to abort turn.
         modifyServer $ \ser -> ser {swriteSave = False}
-      _ -> assert `failure` cmdS
+      _ -> error $ "" `showFailure` cmdS
   let mswitchLeader :: Maybe ActorId -> m ActorId
       {-# NOINLINE mswitchLeader #-}
       mswitchLeader (Just aidNew) = switchLeader side aidNew >> return aidNew

@@ -80,8 +80,9 @@ posUpdAtomic cmd = case cmd of
               else PosFidAndSight [bfid b] (blid b) [fromP, toP]
   UpdWaitActor aid _ -> singleAid aid
   UpdDisplaceActor source target -> doubleAid source target
-  UpdMoveItem _ _ _ _ CSha -> assert `failure` cmd  -- shared stash is private
-  UpdMoveItem _ _ _ CSha _ ->  assert `failure` cmd
+  UpdMoveItem _ _ _ _ CSha ->
+    error $ "" `showFailure` cmd  -- shared stash is private
+  UpdMoveItem _ _ _ CSha _ ->  error $ "" `showFailure` cmd
   UpdMoveItem _ _ aid _ _ -> singleAid aid
   UpdRefillHP aid _ -> singleAid aid
   UpdRefillCalm aid _ -> singleAid aid
@@ -234,14 +235,14 @@ seenAtomicCli knowEvents fid per posAtomic =
     PosFidAndSer _ fid2 -> fid == fid2
     PosSer -> False
     PosAll -> True
-    PosNone -> assert `failure` "no position possible" `swith` fid
+    PosNone -> error $ "no position possible" `showFailure` fid
 
 -- Not needed ATM, but may be a coincidence.
 seenAtomicSer :: PosAtomic -> Bool
 seenAtomicSer posAtomic =
   case posAtomic of
     PosFid _ -> False
-    PosNone -> assert `failure` "no position possible" `swith` posAtomic
+    PosNone -> error $ "no position possible" `showFailure` posAtomic
     _ -> True
 
 -- | Generate the atomic updates that jointly perform a given item move.
@@ -262,7 +263,7 @@ containerMoveItem :: MonadStateRead m
 containerMoveItem verbose iid k c1 c2 = do
   bag <- getsState $ getContainerBag c1
   case iid `EM.lookup` bag of
-    Nothing -> assert `failure` (iid, k, c1, c2)
+    Nothing -> error $ "" `showFailure` (iid, k, c1, c2)
     Just (_, it) -> do
       item <- getsState $ getItemBody iid
       return [ UpdLoseItem verbose iid item (k, take k it) c1

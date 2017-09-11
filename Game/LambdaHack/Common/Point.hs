@@ -135,8 +135,8 @@ fromTo (Point x0 y0) (Point x1 y1) =
      result
        | x0 == x1 = map (Point x0) (fromTo1 y0 y1)
        | y0 == y1 = map (`Point` y0) (fromTo1 x0 x1)
-       | otherwise = assert `failure` "diagonal fromTo"
-                            `swith` ((x0, y0), (x1, y1))
+       | otherwise = error $ "diagonal fromTo"
+                             `showFailure` ((x0, y0), (x1, y1))
  in result
 
 originPoint :: Point

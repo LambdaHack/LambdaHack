@@ -457,7 +457,7 @@ perception lid outPer inPer = do
               || maybe False (not . ES.null) (interAlready outPer)
   when unset $ do
 -}
-    let adj Nothing = assert `failure` "no perception to alter" `swith` lid
+    let adj Nothing = error $ "no perception to alter" `showFailure` lid
         adj (Just per) = Just $ addPer (diffPer per outPer) inPer
         f = EM.alter adj lid
     modifyClient $ \cli -> cli {sfper = f (sfper cli)}
@@ -475,8 +475,8 @@ discoverKind c iid kmKind = do
       kmMean = meanAspect kind
       benefit = totalUsefulness cops fact (IK.ieffects kind) kmMean item
       f Nothing = Just KindMean{..}
-      f Just{} = assert `failure` "already discovered"
-                        `swith` (c, iid, kmKind)
+      f Just{} = error $ "already discovered"
+                         `showFailure` (c, iid, kmKind)
   modifyClient $ \cli ->
     cli { sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)
         , sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli) }
@@ -491,7 +491,7 @@ discoverKind c iid kmKind = do
 coverKind :: MonadClient m => Container -> ItemId -> Kind.Id ItemKind -> m ()
 coverKind c iid ik = do
   item <- getsState $ getItemBody iid
-  let f Nothing = assert `failure` "already covered" `swith` (c, iid, ik)
+  let f Nothing = error $ "already covered" `showFailure` (c, iid, ik)
       f (Just KindMean{kmKind}) =
         assert (ik == kmKind `blame` "unexpected covered item kind"
                              `swith` (ik, kmKind)) Nothing
@@ -514,16 +514,16 @@ discoverSeed c iid seed = do
   item <- getsState $ getItemBody iid
   totalDepth <- getsState stotalDepth
   case EM.lookup (jkindIx item) discoKind of
-    Nothing -> assert `failure` "kind not known"
-                      `swith` (c, iid, seed)
+    Nothing -> error $ "kind not known"
+                       `showFailure` (c, iid, seed)
     Just KindMean{kmKind} -> do
       Level{ldepth} <- getLevel $ jlid item
       let kind = okind kmKind
           aspects = seedToAspect seed kind ldepth totalDepth
           benefit = totalUsefulness cops fact (IK.ieffects kind) aspects item
           f Nothing = Just aspects
-          f Just{} = assert `failure` "already discovered"
-                            `swith` (c, iid, seed)
+          f Just{} = error $ "already discovered"
+                             `showFailure` (c, iid, seed)
       modifyClient $ \cli ->
         cli { sdiscoAspect = EM.alter f iid (sdiscoAspect cli)
             , sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli) }
@@ -533,7 +533,7 @@ discoverSeed c iid seed = do
 
 coverSeed :: MonadClient m => Container -> ItemId -> ItemSeed -> m ()
 coverSeed c iid seed = do
-  let f Nothing = assert `failure` "already covered" `swith` (c, iid, seed)
+  let f Nothing = error $ "already covered" `showFailure` (c, iid, seed)
       f Just{} = Nothing  -- checking that old and new agree is too much work
   -- For now, undoing @sdiscoBenefit@ is too much work.
   modifyClient $ \cli -> cli {sdiscoAspect = EM.alter f iid (sdiscoAspect cli)}

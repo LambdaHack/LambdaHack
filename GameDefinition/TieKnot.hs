@@ -62,7 +62,7 @@ tieKnot args = do
         let (r, _) = R.randomR (0, length l - 1) initialGen
         in case splitAt r l of
           (pre, i : post) -> pre ++ boostItem i : post
-          _ -> assert `failure` l
+          _ -> error $  "" `showFailure` l
       boostedItems = boostList Content.ItemKind.items
       cdefsItem =
         Content.ItemKind.cdefs

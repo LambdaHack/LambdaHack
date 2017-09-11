@@ -117,7 +117,7 @@ handleAndBroadcast atomic = do
           when (fid == fid2) $ sendAtomic fid atomic
         PosSer -> return ()
         PosAll -> sendAtomic fid atomic
-        PosNone -> assert `failure` (fid, fact, atomic)
+        PosNone -> error $ "" `showFailure` (fid, fact, atomic)
   -- Factions that are eliminated by the command are processed as well,
   -- because they are not deleted from @sfactionD@.
   factionD <- getsState sfactionD

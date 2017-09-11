@@ -61,8 +61,8 @@ stdBinding copsClient Config{configCommands, configVi, configLaptop} =
         ++ K.moveBinding configVi configLaptop
              (\v -> ([CmdMove], "", moveXhairOr 1 MoveDir v))
              (\v -> ([CmdMove], "", moveXhairOr 10 RunDir v))
-      rejectRepetitions t1 t2 = assert `failure` "duplicate key"
-                                       `swith` (t1, t2)
+      rejectRepetitions t1 t2 = error $ "duplicate key"
+                                        `showFailure` (t1, t2)
   in Binding
   { bcmdMap = M.fromListWith rejectRepetitions
       [ (k, triple)
@@ -181,21 +181,21 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
     keySel sel key =
       let cmd = case M.lookup key bcmdMap of
             Just (_, _, cmd2) -> cmd2
-            Nothing -> assert `failure` key
+            Nothing -> error $ "" `showFailure` key
           caCmds = case cmd of
             ByAimMode{..} -> case sel (exploration, aiming) of
               ByArea l -> sort l
-              _ -> assert `failure` cmd
-            _ -> assert `failure` cmd
+              _ -> error $ "" `showFailure` cmd
+            _ -> error $ "" `showFailure` cmd
           caMakeChoice (ca, cmd2) =
             let (km, desc) = case M.lookup cmd2 brevMap of
                   Just ks ->
                     let descOfKM km2 = case M.lookup km2 bcmdMap of
                           Just (_, "", _) -> Nothing
                           Just (_, desc2, _) -> Just (km2, desc2)
-                          Nothing -> assert `failure` km2
+                          Nothing -> error $ "" `showFailure` km2
                     in case mapMaybe descOfKM ks of
-                      [] -> assert `failure` (ks, cmd2)
+                      [] -> error $ "" `showFailure` (ks, cmd2)
                       kmdesc3 : _ -> kmdesc3
                   Nothing -> (key, "(not described:" <+> tshow cmd2 <> ")")
             in (ca, Left km, desc)
@@ -209,7 +209,7 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
           f (ca1, Left km1, _) (ca2, Left km2, _) y = assert (ca1 == ca2)
             [ (Left [km1], (y, keyM + 3, keyB + keyM + 3))
             , (Left [km2], (y, keyB + keyM + 5, 2 * keyB + keyM + 5)) ]
-          f c d e = assert `failure` (c, d, e)
+          f c d e = error $ "" `showFailure` (c, d, e)
           kxs = concat $ zipWith3 f kst1 kst2 [offset + length header..]
           render (ca1, _, desc1) (_, _, desc2) =
             fmm (areaDescription ca1) desc1 desc2
@@ -247,7 +247,7 @@ okxsN :: Binding -> Int -> Int -> (HumanCmd -> Bool) -> CmdCategory
 okxsN Binding{..} offset n greyedOut cat header footer =
   let fmt k h = " " <> T.justifyLeft n ' ' k <+> h
       coImage :: HumanCmd -> [K.KM]
-      coImage cmd = M.findWithDefault (assert `failure` cmd) cmd brevMap
+      coImage cmd = M.findWithDefault (error $ "" `showFailure` cmd) cmd brevMap
       disp = T.intercalate " or " . map (T.pack . K.showKM)
       keys :: [(Either [K.KM] SlotChar, (Bool, Text))]
       keys = [ (Left kms, (greyedOut cmd, fmt (disp kms) desc))

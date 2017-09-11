@@ -197,5 +197,5 @@ instance Binary State where
     _stime <- get
     _shigh <- get
     _sgameModeId <- get
-    let _scops = assert `failure` "overwritten by recreated cops" `swith` ()
+    let _scops = error $ "overwritten by recreated cops" `showFailure` ()
     return $! State{..}

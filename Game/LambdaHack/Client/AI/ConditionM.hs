@@ -160,7 +160,7 @@ condProjectListM skill aid = do
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   actorAspect <- getsClient sactorAspect
-  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough b ar
       condNotCalmEnough = not calmE
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.

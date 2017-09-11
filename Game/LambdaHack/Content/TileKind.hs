@@ -210,7 +210,7 @@ validateAllTileKind lt =
       mapVis :: (TileKind -> Color)
              -> M.Map (Char, Color) [(TileKind, IS.IntSet)]
       mapVis f = M.fromListWith (++) $ listVis f
-      isConfused [] =  assert `failure` lt
+      isConfused [] = error $ "isConfused" `showFailure` lt
       isConfused [_] = False
       isConfused (hd : tl) =
         any ((Indistinct `notElem`) . tfeature . fst) (hd : tl)

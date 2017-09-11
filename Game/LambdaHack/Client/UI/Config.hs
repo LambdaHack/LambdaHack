@@ -62,22 +62,22 @@ parseConfig cfg =
                 Just _ ->
                   let (key, def) = read keydef
                   in (K.mkKM key, def :: CmdTriple)
-                Nothing -> assert `failure` "wrong macro id" `swith` ident
+                Nothing -> error $ "wrong macro id" `showFailure` ident
             section = Ini.allItems "extra_commands" cfg
         in map mkCommand section
       configHeroNames =
         let toNumber (ident, nameAndPronoun) =
               case stripPrefix "HeroName_" ident of
                 Just n -> (read n, read nameAndPronoun)
-                Nothing -> assert `failure` "wrong hero name id" `swith` ident
+                Nothing -> error $ "wrong hero name id" `showFailure` ident
             section = Ini.allItems "hero_names" cfg
         in map toNumber section
       getOption :: forall a. Read a => String -> a
       getOption optionName =
         let lookupFail :: forall b. String -> b
             lookupFail err =
-              assert `failure` "config file access failed"
-                     `swith` (err, optionName, cfg)
+              error $ "config file access failed"
+                      `showFailure` (err, optionName, cfg)
             s = fromMaybe (lookupFail "") $ Ini.getOption "ui" optionName cfg
         in either lookupFail id $ readEither s
       configVi = getOption "movementViKeys_hjklyubn"
@@ -103,7 +103,8 @@ mkConfig Kind.COps{corule} benchmark = do
   let stdRuleset = Kind.stdRuleset corule
       cfgUIName = rcfgUIName stdRuleset
       sUIDefault = rcfgUIDefault stdRuleset
-      cfgUIDefault = either (assert `failure`) id $ Ini.parse sUIDefault
+      cfgUIDefault = either (error . ("" `showFailure`)) id
+                     $ Ini.parse sUIDefault
   dataDir <- appDataDir
   let userPath = dataDir </> cfgUIName
   cfgUser <- if benchmark then return Ini.emptyConfig else do
@@ -112,7 +113,7 @@ mkConfig Kind.COps{corule} benchmark = do
       then return Ini.emptyConfig
       else do
         sUser <- readFile userPath
-        return $! either (assert `failure`) id $ Ini.parse sUser
+        return $! either (error . ("" `showFailure`)) id $ Ini.parse sUser
   let cfgUI = M.unionWith M.union cfgUser cfgUIDefault  -- user cfg preferred
       conf = parseConfig cfgUI
   -- Catch syntax errors in complex expressions ASAP,

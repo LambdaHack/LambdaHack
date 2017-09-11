@@ -88,7 +88,7 @@ interiorArea kr r =
   in if pcover kr `elem` [CVerbatim, CMirror]
      then let (x0, y0, x1, y1) = fromArea r
               dx = case ptopLeft kr of
-                [] -> assert `failure` kr
+                [] -> error $ "" `showFailure` kr
                 l : _ -> T.length l
               dy = length $ ptopLeft kr
               mx = (x1 - x0 + 1 - dx) `div` 2
@@ -99,7 +99,7 @@ interiorArea kr r =
      else case requiredForFence of
        0 -> Just r
        1 -> shrink r
-       _ -> assert `failure` kr
+       _ -> error $ "" `showFailure` kr
 
 -- | Given a few parameters, roll and construct a 'Place' datastructure
 -- and fill a cave section acccording to it.
@@ -119,7 +119,7 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick}
            CaveKind{..} dnight darkCorTile litCorTile
            ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) dsecret
            r mplaceGroup = do
-  qFWall <- fromMaybe (assert `failure` cfillerTile)
+  qFWall <- fromMaybe (error $ "" `showFailure` cfillerTile)
             <$> opick cfillerTile (const True)
   let findInterval x1y1 [] = (x1y1, (11, 0))
       findInterval !x1y1 ((!x, !y) : rest) =
@@ -153,7 +153,7 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick}
       qFGround = if dnight then darkCorTile else litCorTile
       qlegend = if dark then clegendDarkTile else clegendLitTile
       qseen = False
-      qarea = fromMaybe (assert `failure` (kr, r)) $ interiorArea kr r
+      qarea = fromMaybe (error $ "" `showFailure` (kr, r)) $ interiorArea kr r
       place = Place {..}
   (overrideOneIn, override) <- ooverride cops (poverride kr)
   (legendOneIn, legend) <- olegend cops qlegend
@@ -180,8 +180,9 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick}
         Just (oneInChance, tk) ->
           if isChancePos oneInChance dsecret xy
           then tk
-          else EM.findWithDefault (assert `failure` (c, mOneIn, m)) c m
-        Nothing -> EM.findWithDefault (assert `failure` (c, mOneIn, m)) c m
+          else EM.findWithDefault (error $ "" `showFailure` (c, mOneIn, m)) c m
+        Nothing -> EM.findWithDefault (error $ "" `showFailure` (c, mOneIn, m))
+                                      c m
       interior = case pfence kr of
         FNone | not dnight -> EM.mapWithKey digDay cmap
         _ -> EM.mapWithKey (lookupOneIn xlegend) cmap
@@ -203,7 +204,7 @@ olegend Kind.COps{cotile=Kind.Ops{ofoldlWithKey', opick, okind}} cgroup =
       getLegend s !acc = do
         (mOneIn, m) <- acc
         let p f t = TK.tsymbol t == s && f (Tile.kindHasFeature TK.Spice t)
-        tk <- fmap (fromMaybe $ assert `failure` (cgroup, s))
+        tk <- fmap (fromMaybe $ error $ "" `showFailure` (cgroup, s))
               $ opick cgroup (p not)
         mtkSpice <- opick cgroup (p id)
         return $! case mtkSpice of
@@ -223,7 +224,7 @@ ooverride Kind.COps{cotile=Kind.Ops{opick, okind}} poverride =
   let getLegend (s, cgroup) acc = do
         (mOneIn, m) <- acc
         mtkSpice <- opick cgroup (Tile.kindHasFeature TK.Spice)
-        tk <- fromMaybe (assert `failure` (s, cgroup, poverride))
+        tk <- fromMaybe (error $ "" `showFailure` (s, cgroup, poverride))
               <$> opick cgroup (not . Tile.kindHasFeature TK.Spice)
         return $! case mtkSpice of
           Nothing -> (mOneIn, EM.insert s tk m)
@@ -251,7 +252,7 @@ buildFenceRnd Kind.COps{cotile=Kind.Ops{opick}} couterFenceTile area = do
         let isCorner x y = x `elem` [x0-1, x1+1] && y `elem` [y0-1, y1+1]
             tileGroup | isCorner xf yf = "basic outer fence"
                       | otherwise = couterFenceTile
-        fenceId <- fromMaybe (assert `failure` tileGroup)
+        fenceId <- fromMaybe (error $ "" `showFailure` tileGroup)
                    <$> opick tileGroup (const True)
         return (Point xf yf, fenceId)
       pointList = [ (x, y) | x <- [x0-1, x1+1], y <- [y0..y1] ]
@@ -268,7 +269,7 @@ tilePlace area pl@PlaceKind{..} = do
       xwidth = x1 - x0 + 1
       ywidth = y1 - y0 + 1
       dxcorner = case ptopLeft of
-        [] -> assert `failure` (area, pl)
+        [] -> error $ "" `showFailure` (area, pl)
         l : _ -> T.length l
       (dx, dy) = assert (xwidth >= dxcorner && ywidth >= length ptopLeft
                          `blame` (area, pl))
@@ -295,12 +296,12 @@ tilePlace area pl@PlaceKind{..} = do
   interior <- case pcover of
     CAlternate -> do
       let tile :: Int -> [a] -> [a]
-          tile _ []  = assert `failure` "nothing to tile" `swith` pl
+          tile _ []  = error $ "nothing to tile" `showFailure` pl
           tile d pat = take d (cycle $ init pat ++ init (reverse pat))
       return $! fillInterior tile tile
     CStretch -> do
       let stretch :: Int -> [a] -> [a]
-          stretch _ []  = assert `failure` "nothing to stretch" `swith` pl
+          stretch _ []  = error $ "nothing to stretch" `showFailure` pl
           stretch d pat = tileReflect d (pat ++ repeat (last pat))
       return $! fillInterior stretch stretch
     CReflect -> do

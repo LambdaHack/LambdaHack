@@ -85,7 +85,7 @@ updatePathFromBfs canMove bfsAndPathOld aid !target = do
   Kind.COps{coTileSpeedup} <- getsState scops
   let (oldBfsArr, oldBfsPath) = case bfsAndPathOld of
         BfsAndPath{bfsArr, bfsPath} -> (bfsArr, bfsPath)
-        BfsInvalid -> assert `failure` (bfsAndPathOld, aid, target)
+        BfsInvalid -> error $ "" `showFailure` (bfsAndPathOld, aid, target)
   let bfsArr = oldBfsArr
   if not canMove
   then return (bfsArr, NoPath)

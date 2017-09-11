@@ -101,7 +101,7 @@ getGroupItem psuit prompt promptGeneric
   case soc of
     Left err -> return $ Left err
     Right ([(iid, itemFull)], cekm) -> return $ Right ((iid, itemFull), cekm)
-    Right _ -> assert `failure` soc
+    Right _ -> error $ "" `showFailure` soc
 
 -- | Display all items from a store and let the human player choose any
 -- or switch to any other store.
@@ -125,7 +125,7 @@ getStoreItem prompt cInitial = do
   case soc of
     (Left err, cekm) -> return (Left err, cekm)
     (Right [(iid, itemFull)], cekm) -> return (Right (iid, itemFull), cekm)
-    (Right{}, _) -> assert `failure` soc
+    (Right{}, _) -> error $ "" `showFailure` soc
 
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items. Don't display stores empty for all actors.
@@ -220,7 +220,7 @@ getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
       ItemSlots itemSlots organSlots <- getsSession sslots
       let isOrgan = cCur `elem` [MStore COrgan, MLoreOrgan]
           lSlots = if isOrgan then organSlots else itemSlots
-          slotChar = fromMaybe (assert `failure` (iid, lSlots))
+          slotChar = fromMaybe (error $ "" `showFailure` (iid, lSlots))
                      $ lookup iid $ map swap $ EM.assocs lSlots
       return (Right [(iid, itemToF iid k)], (cCur, Right slotChar))
     _ ->
@@ -259,7 +259,8 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   body <- getsState $ getActorBody leader
   bodyUI <- getsSession $ getActorUI leader
   actorAspect <- getsClient sactorAspect
-  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` leader)
+                     (EM.lookup leader actorAspect)
   fact <- getsState $ (EM.! bfid body) . sfactionD
   hs <- partyAfterLeader leader
   bagAll <- getsState $ \s -> accessModeBag leader s cCur
@@ -307,7 +308,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
       revCmd dflt cmd = case M.lookup cmd brevMap of
         Nothing -> dflt
         Just (k : _) -> k
-        Just [] -> assert `failure` brevMap
+        Just [] -> error $ "" `showFailure` brevMap
       keyDefs :: [(K.KM, DefItemKey m)]
       keyDefs = filter (defCond . snd) $
         [ let km = K.mkChar '?'
@@ -378,9 +379,9 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                 (cCurAfterCalm, cRestAfterCalm) = case cRest ++ mcCur of
                   c1@(MStore CSha) : c2 : rest | not calmE ->
                     (c2, c1 : rest)
-                  [MStore CSha] | not calmE -> assert `failure` cRest
+                  [MStore CSha] | not calmE -> error $ "" `showFailure` cRest
                   c1 : rest -> (c1, rest)
-                  [] -> assert `failure` cRest
+                  [] -> error $ "" `showFailure` cRest
             recCall numPrefix cCurAfterCalm cRestAfterCalm itemDialogState
         }
       useMultipleDef defLabel = DefItemKey
@@ -406,12 +407,12 @@ transition psuit prompt promptGeneric permitMulitple cLegal
             let slot = case ekm of
                   Left K.KM{key} -> case key of
                     K.Char l -> SlotChar numPrefix l
-                    _ -> assert `failure` "unexpected key:"
-                                `swith` K.showKey key
+                    _ -> error $ "unexpected key:"
+                                 `showFailure` K.showKey key
                   Right sl -> sl
             in case EM.lookup slot bagItemSlotsAll of
-              Nothing -> assert `failure` "unexpected slot"
-                                `swith` (slot, bagItemSlots)
+              Nothing -> error $ "unexpected slot"
+                                 `showFailure` (slot, bagItemSlots)
               Just iid -> return $! getResult (Right slot) iid
         }
       (bagFiltered, promptChosen) =
@@ -431,8 +432,8 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                 let slot = case ekm of
                       Left K.KM{key} -> case key of
                         K.Char l -> SlotChar numPrefix l
-                        _ -> assert `failure` "unexpected key:"
-                                    `swith` K.showKey key
+                        _ -> error $ "unexpected key:"
+                                     `showFailure` K.showKey key
                       Right sl -> sl
                 in return (Left "", (MStats, Right slot))
             }
@@ -444,7 +445,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
       runDefItemKey keyDefs lettersDef io slotKeys promptChosen cCur
 
 keyOfEKM :: Int -> Either [K.KM] SlotChar -> Maybe K.KM
-keyOfEKM _ (Left kms) = assert `failure` kms
+keyOfEKM _ (Left kms) = error $ "" `showFailure` kms
 keyOfEKM numPrefix (Right SlotChar{..}) | slotPrefix == numPrefix =
   Just $ K.mkChar slotChar
 keyOfEKM _ _ = Nothing
@@ -458,13 +459,14 @@ legalWithUpdatedLeader cCur cRest = do
   let newLegal = cCur : cRest  -- not updated in any way yet
   b <- getsState $ getActorBody leader
   actorAspect <- getsClient sactorAspect
-  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` leader)
+                     (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
       legalAfterCalm = case newLegal of
         c1@(MStore CSha) : c2 : rest | not calmE -> (c2, c1 : rest)
         [MStore CSha] | not calmE -> (MStore CGround, newLegal)
         c1 : rest -> (c1, rest)
-        [] -> assert `failure` (cCur, cRest)
+        [] -> error $ "" `showFailure` (cCur, cRest)
   return legalAfterCalm
 
 -- We don't create keys from slots in @okx@, so they have to be

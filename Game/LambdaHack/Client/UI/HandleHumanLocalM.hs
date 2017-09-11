@@ -174,7 +174,7 @@ chooseItemDialogMode c = do
             localTime <- getsState $ getLocalTime (blid b)
             factionD <- getsState sfactionD
             actorAspect <- getsClient sactorAspect
-            let ar = fromMaybe (assert `failure` leader)
+            let ar = fromMaybe (error $ "" `showFailure` leader)
                                (EM.lookup leader actorAspect)
                 attrLine = itemDesc (bfid b) factionD (aHurtMelee ar)
                                     store localTime itemFull
@@ -202,7 +202,7 @@ chooseItemDialogMode c = do
                 Just (_, store) -> (leader, store)
                 Nothing -> case found of
                   (aid, (_, store)) : _ -> (aid, store)
-                  [] -> assert `failure` iid
+                  [] -> error $ "" `showFailure` iid
           modifySession $ \sess -> sess {sitemSel = Just (bestStore, iid)}
           arena <- getArenaUI
           b2 <- getsState $ getActorBody newAid
@@ -213,7 +213,7 @@ chooseItemDialogMode c = do
              | otherwise -> do
                void $ pickLeader True newAid
                return $ Right c2
-        MStats -> assert `failure` ggi
+        MStats -> error $ "" `showFailure` ggi
         MLoreItem -> displayLore CGround
           (makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
                         , "item lore" ])
@@ -227,7 +227,7 @@ chooseItemDialogMode c = do
         b <- getsState $ getActorBody leader
         bUI <- getsSession $ getActorUI leader
         actorAspect <- getsClient sactorAspect
-        let ar = fromMaybe (assert `failure` leader)
+        let ar = fromMaybe (error $ "" `showFailure` leader)
                            (EM.lookup leader actorAspect)
             valueText = slotToDecorator eqpSlot b $ prEqpSlot eqpSlot ar
             prompt2 = makeSentence
@@ -248,7 +248,8 @@ chooseItemProjectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorAspect <- getsClient sactorAspect
-  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` leader)
+                     (EM.lookup leader actorAspect)
   let calmE = calmEnough b ar
       cLegalRaw = [CGround, CInv, CSha, CEqp]
       cLegal | calmE = cLegalRaw
@@ -271,7 +272,7 @@ chooseItemProjectHuman ts = do
           modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
           return Nothing
         Left err -> failMsg err
-        _ -> assert `failure` ggi
+        _ -> error $ "" `showFailure` ggi
 
 permittedProjectClient :: MonadClientUI m
                        => [Char] -> m (ItemFull -> Either ReqFailure Bool)
@@ -281,7 +282,8 @@ permittedProjectClient triggerSyms = do
   actorSk <- leaderSkillsClientUI
   let skill = EM.findWithDefault 0 AbProject actorSk
   actorAspect <- getsClient sactorAspect
-  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` leader)
+                     (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
   return $ permittedProject False skill calmE triggerSyms
 
@@ -296,8 +298,8 @@ projectCheck tpos = do
   Level{lxsize, lysize} <- getLevel lid
   case bla lxsize lysize eps spos tpos of
     Nothing -> return $ Just ProjectAimOnself
-    Just [] -> assert `failure` "project from the edge of level"
-                      `swith` (spos, tpos, sb)
+    Just [] -> error $ "project from the edge of level"
+                       `showFailure` (spos, tpos, sb)
     Just (pos : _) -> do
       lvl <- getLevel lid
       let t = lvl `at` pos
@@ -342,13 +344,13 @@ xhairLegalEps = do
       let pos = bpos body
       if blid body == lidV
       then findNewEps False pos
-      else assert `failure` (xhair, body, lidV)
+      else error $ "" `showFailure` (xhair, body, lidV)
     TPoint TEnemyPos{} _ _ ->
       return $ Left "selected opponent not visible"
     TPoint _ lid pos ->
       if lid == lidV
       then findNewEps True pos
-      else assert `failure` (xhair, lidV)
+      else error $ "" `showFailure` (xhair, lidV)
     TVector v -> do
       Level{lxsize, lysize} <- getLevel lidV
       let shifted = shiftBounded lxsize lysize (bpos b) v
@@ -366,7 +368,7 @@ posFromXhair = do
       sxhair <- getsSession sxhair
       mpos <- xhairToPos
       case mpos of
-        Nothing -> assert `failure` sxhair
+        Nothing -> error $ "" `showFailure` sxhair
         Just pos -> do
           munit <- projectCheck pos
           case munit of
@@ -407,7 +409,8 @@ chooseItemApplyHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorAspect <- getsClient sactorAspect
-  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` leader)
+                     (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
       cLegalRaw = [CGround, CInv, CSha, CEqp]
       cLegal | calmE = cLegalRaw
@@ -427,7 +430,7 @@ chooseItemApplyHuman ts = do
       modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
       return Nothing
     Left err -> failMsg err
-    _ -> assert `failure` ggi
+    _ -> error $ "" `showFailure` ggi
 
 permittedApplyClient :: MonadClientUI m
                      => [Char] -> m (ItemFull -> Either ReqFailure Bool)
@@ -437,7 +440,8 @@ permittedApplyClient triggerSyms = do
   actorSk <- leaderSkillsClientUI
   let skill = EM.findWithDefault 0 AbApply actorSk
   actorAspect <- getsClient sactorAspect
-  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` leader)
+                     (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
   localTime <- getsState $ getLocalTime (blid b)
   return $ permittedApply localTime skill calmE triggerSyms
@@ -618,11 +622,11 @@ historyHuman = do
             promptAdd "Try to survive a few seconds more, if you can."
           Right SlotChar{..} | slotChar == 'a' ->
             displayOneReport slotPrefix
-          _ -> assert `failure` ekm
+          _ -> error $ "" `showFailure` ekm
       displayOneReport :: Int -> m ()
       displayOneReport histSlot = do
         let timeReport = case drop histSlot rh of
-              [] -> assert `failure` histSlot
+              [] -> error $ "" `showFailure` histSlot
               tR : _ -> tR
             ov0 = splitReportForHistory lxsize timeReport
             prompt = makeSentence
@@ -639,7 +643,7 @@ historyHuman = do
           K.Up -> displayOneReport $ histSlot - 1
           K.Down -> displayOneReport $ histSlot + 1
           K.Esc -> promptAdd "Try to learn from your previous mistakes."
-          _ -> assert `failure` km
+          _ -> error $ "" `showFailure` km
   displayAllHistory
 
 -- * MarkVision
@@ -768,7 +772,7 @@ moveXhairHuman :: MonadClientUI m => Vector -> Int -> m MError
 moveXhairHuman dir n = do
   leader <- getLeaderUI
   saimMode <- getsSession saimMode
-  let lidV = maybe (assert `failure` leader) aimLevelId saimMode
+  let lidV = maybe (error $ "" `showFailure` leader) aimLevelId saimMode
   Level{lxsize, lysize} <- getLevel lidV
   lpos <- getsState $ bpos . getActorBody leader
   sxhair <- getsSession sxhair

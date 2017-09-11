@@ -36,7 +36,7 @@ pickActorToMove :: MonadClient m => Maybe ActorId -> m ActorId
 pickActorToMove maidToAvoid = do
   actorAspect <- getsClient sactorAspect
   mleader <- getsClient _sleader
-  let oldAid = fromMaybe (assert `failure` maidToAvoid) mleader
+  let oldAid = fromMaybe (error $ "" `showFailure` maidToAvoid) mleader
   oldBody <- getsState $ getActorBody oldAid
   let side = bfid oldBody
       arena = blid oldBody
@@ -59,7 +59,7 @@ pickActorToMove maidToAvoid = do
         -- melee-less trying to flee, first aid, etc.).
         snd (autoDungeonLevel fact) && isNothing maidToAvoid
       -> pickOld
-    [] -> assert `failure` (oldAid, oldBody)
+    [] -> error $ "" `showFailure` (oldAid, oldBody)
     [_] -> pickOld  -- Keep the leader: he is alone on the level.
     _ -> do
       -- At this point we almost forget who the old leader was
@@ -93,9 +93,9 @@ pickActorToMove maidToAvoid = do
           -- This should be kept in sync with @actionStrategy@.
           actorVulnerable ((aid, body), _) = do
             scondInMelee <- getsClient scondInMelee
-            let condInMelee = fromMaybe (assert `failure` condInMelee)
+            let condInMelee = fromMaybe (error $ "" `showFailure` condInMelee)
                                         (scondInMelee EM.! blid body)
-                ar = fromMaybe (assert `failure` aid)
+                ar = fromMaybe (error $ "" `showFailure` aid)
                                (EM.lookup aid actorAspect)
             threatDistL <- meleeThreatDistList aid
             (fleeL, _) <- fleeList aid
@@ -270,7 +270,7 @@ useTactics :: MonadClient m => ActorId -> m ()
 useTactics oldAid = do
   oldBody <- getsState $ getActorBody oldAid
   scondInMelee <- getsClient scondInMelee
-  let condInMelee = fromMaybe (assert `failure` condInMelee)
+  let condInMelee = fromMaybe (error $ "" `showFailure` condInMelee)
                               (scondInMelee EM.! blid oldBody)
   mleader <- getsClient _sleader
   let !_A = assert (mleader /= Just oldAid) ()

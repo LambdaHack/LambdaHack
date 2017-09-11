@@ -25,7 +25,7 @@ import Data.List.Compat
 import Data.Maybe
 import Data.Monoid.Compat
 
-import Control.Exception.Assert.Sugar
+import Control.Exception.Assert.Sugar (allB, assert, blame, showFailure, swith)
 
 import Data.Text (Text)
 

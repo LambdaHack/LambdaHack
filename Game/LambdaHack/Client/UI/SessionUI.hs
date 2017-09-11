@@ -107,7 +107,7 @@ emptySessionUI sconfig =
     , sslots = ItemSlots EM.empty EM.empty
     , slastSlot = SlotChar 0 'Z'
     , schanF = ChanFrontend $ const $
-        assert `failure` ("emptySessionUI: ChanFrontend " :: String)
+        error $ "emptySessionUI: ChanFrontend" `showFailure` ()
     , sbinding = Binding M.empty [] M.empty
     , sconfig
     , saimMode = Nothing
@@ -142,7 +142,7 @@ toggleMarkSmell s@SessionUI{smarkSmell} = s {smarkSmell = not smarkSmell}
 
 getActorUI :: ActorId -> SessionUI -> ActorUI
 getActorUI aid sess =
-  EM.findWithDefault (assert `failure` (aid, sactorUI sess)) aid
+  EM.findWithDefault (error $ "" `showFailure` (aid, sactorUI sess)) aid
   $ sactorUI sess
 
 instance Binary SessionUI where
@@ -177,7 +177,7 @@ instance Binary SessionUI where
     smarkSmell <- get
     sdisplayNeeded <- get
     let schanF = ChanFrontend $ const $
-          assert `failure` ("Binary: ChanFrontend" :: String)
+          error $ "Binary: ChanFrontend" `showFailure` ()
         sbinding = Binding M.empty [] M.empty
         sxhairMoused = True
         spointer = originPoint

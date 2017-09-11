@@ -100,7 +100,7 @@ longMoveTexts = [ "northwest", "north", "northeast", "east"
 
 compassText :: Vector -> Text
 compassText v = let m = EM.fromList $ zip moves longMoveTexts
-                    assFail = assert `failure` "not a unit vector" `swith` v
+                    assFail = error $ "not a unit vector" `showFailure` v
                 in EM.findWithDefault assFail v m
 
 -- | Vectors of all cardinal direction unit moves, clockwise, starting north.
@@ -218,8 +218,7 @@ normalize dx dy =
           | angle <= 0.25  = (1, 0)
           | angle <= 0.75  = (1, 1)
           | angle <= 1.25  = (0, 1)
-          | otherwise = assert `failure` "impossible angle"
-                               `swith` (dx, dy, angle)
+          | otherwise = error $ "impossible angle" `showFailure` (dx, dy, angle)
   in if dx >= 0
      then uncurry Vector dxy
      else neg $ uncurry Vector dxy

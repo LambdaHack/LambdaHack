@@ -271,7 +271,7 @@ reqMelee source target iid cstore = do
           upds <- generalMoveItem True iid2 k (CActor target CEqp)
                                               (CActor source CInv)
           mapM_ execUpdAtomic upds
-        err -> assert `failure` err
+        err -> error $ "" `showFailure` err
       -- Let the caught missile vanish, but don't remove its trajectory
       -- so that it doesn't pretend to be a non-projectile.
       execUpdAtomic $ UpdTrajectory target (btrajectory tb)
@@ -343,7 +343,7 @@ reqDisplace source target = do
        -- Displacing requires full access.
        if Tile.isWalkable coTileSpeedup $ lvl `at` tpos then
          case posToAidsLvl tpos lvl of
-           [] -> assert `failure` (source, sb, target, tb)
+           [] -> error $ "" `showFailure` (source, sb, target, tb)
            [_] -> do
              execUpdAtomic $ UpdDisplaceActor source target
              -- We leave or wipe out smell, for consistency, but it's not
@@ -390,8 +390,9 @@ reqAlter source tpos = do
           -- Sometimes the tile is determined precisely by the ambient light
           -- of the source tiles. If not, default to cave day/night condition.
           mtoTile <- rndToAction $ opick tgroup nightCond
-          toTile <- maybe (rndToAction $ fromMaybe (assert `failure` tgroup)
-                                         <$> opick tgroup (const True))
+          toTile <- maybe (rndToAction
+                           $ fromMaybe (error $ "" `showFailure` tgroup)
+                             <$> opick tgroup (const True))
                           return
                           mtoTile
           unless (toTile == serverTile) $ do
@@ -424,7 +425,7 @@ reqAlter source tpos = do
             case groupsToAlterTo of
               [] -> return ()
               [groupToAlterTo] -> changeTo groupToAlterTo
-              l -> assert `failure` "tile changeable in many ways" `swith` l
+              l -> error $ "tile changeable in many ways" `showFailure` l
             itemEffectEmbedded source tpos embeds
         else execFailure source req AlterBlockActor
       else execFailure source req AlterBlockItem
@@ -500,7 +501,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
         Just rndT -> do
           bagAfter <- getsState $ getContainerBag toC
           let afterIt = case iid `EM.lookup` bagAfter of
-                Nothing -> assert `failure` (iid, bagAfter, toC)
+                Nothing -> error $ "" `showFailure` (iid, bagAfter, toC)
                 Just (_, it2) -> it2
               resetIt = beforeIt ++ replicate k rndT
           when (afterIt /= resetIt) $
@@ -517,7 +518,7 @@ computeRndTimeout localTime iid ItemFull{..}=
           let rndTurns = timeDeltaScale (Delta timeTurn) rndT
           return $ Just $ timeShift localTime rndTurns
         _ -> return Nothing
-    _ -> assert `failure` iid
+    _ -> error $ "" `showFailure` iid
 
 -- * ReqProject
 

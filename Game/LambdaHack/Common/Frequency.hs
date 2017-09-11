@@ -120,7 +120,7 @@ mostFreq fr = if nullFreq fr then Nothing
 -- it in the other code higher up, which would equate 1d0 with 1d1.
 meanFreq :: Frequency Int -> Int
 meanFreq fr@(Frequency xs _) = case xs of
-  [] -> assert `failure` fr
+  [] -> error $ "empty frequency" `showFailure` fr
   _ -> let sumX = sum [ p * x | (p, x) <- xs ]
            sumP = sum $ map fst xs
        in sumX `divUp` sumP

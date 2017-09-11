@@ -39,7 +39,7 @@ ascendInBranch dungeon up lid =
   let (minD, maxD) =
         case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
-          _ -> assert `failure` "null dungeon" `swith` dungeon
+          _ -> error $ "null dungeon" `showFailure` dungeon
       ln = max minD $ min maxD $ toEnum $ fromEnum lid + if up then 1 else -1
   in case EM.lookup ln dungeon of
     Just _ | ln /= lid -> [ln]
@@ -64,15 +64,15 @@ whereTo lid pos mup dungeon =
           Just isnd -> (False, isnd)
           Nothing -> case mup of
             Just forcedUp -> (forcedUp, 0)  -- for ascending via, e.g., spells
-            Nothing -> assert `failure` "no stairs at" `swith` (lid, pos)
+            Nothing -> error $ "no stairs at" `showFailure` (lid, pos)
       !_A = assert (maybe True (== up) mup) ()
   in case ascendInBranch dungeon up lid of
     [] | isJust mup -> (lid, pos)  -- spell fizzles
-    [] -> assert `failure` "no dungeon level to go to" `swith` (lid, pos)
+    [] -> error $ "no dungeon level to go to" `showFailure` (lid, pos)
     ln : _ -> let lvlDest = dungeon EM.! ln
                   stairsDest = (if up then snd else fst) (lstair lvlDest)
               in if length stairsDest < i + 1
-                 then assert `failure` "no stairs at index" `swith` (lid, pos)
+                 then error $ "no stairs at index" `showFailure` (lid, pos)
                  else (ln, stairsDest !! i)
 
 -- | Items located on map tiles.

@@ -60,7 +60,7 @@ strengthEqpSlot item =
   in case strengthEffect p item of
     [] -> Nothing
     [x] -> Just x
-    xs -> assert `failure` (xs, item)
+    xs -> error $ "" `showFailure` (xs, item)
 
 strengthToThrow :: Item -> ThrowMod
 strengthToThrow item =
@@ -69,7 +69,7 @@ strengthToThrow item =
   in case concatMap p (jfeature item) of
     [] -> ThrowMod 100 100
     [x] -> x
-    xs -> assert `failure` (xs, item)
+    xs -> error $ "" `showFailure` (xs, item)
 
 computeTrajectory :: Int -> Int -> Int -> [Point] -> ([Vector], (Speed, Int))
 computeTrajectory weight throwVelocity throwLinger path =
@@ -100,7 +100,7 @@ prEqpSlot eqpSlot ar@AspectRecord{..} =
     EqpSlotAddSpeed -> aSpeed
     EqpSlotAddSight -> aSight
     EqpSlotLightSource -> aShine
-    EqpSlotWeapon -> assert `failure` ar
+    EqpSlotWeapon -> error $ "" `showFailure` ar
     EqpSlotMiscAbility ->
       EM.findWithDefault 0 Ability.AbWait aSkills
       + EM.findWithDefault 0 Ability.AbMoveItem aSkills

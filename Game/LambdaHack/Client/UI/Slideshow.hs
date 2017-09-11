@@ -37,7 +37,7 @@ unsnoc Slideshow{slideshow} =
 toSlideshow :: [OKX] -> Slideshow
 toSlideshow okxs = Slideshow $ addFooters False okxs
  where
-  addFooters _ [] = assert `failure` okxs
+  addFooters _ [] = error $ "" `showFailure` okxs
   addFooters _ [(als, [])] =
     [( als ++ [stringToAL endMsg]
      , [(Left [K.safeSpaceKM], (length als, 0, 15))] )]

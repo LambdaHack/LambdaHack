@@ -48,13 +48,13 @@ mkRoom (xm, ym) (xM, yM) area = do
       xspan = x1 - x0 + 1
       yspan = y1 - y0 + 1
       aW = (min xm xspan, min ym yspan, min xM xspan, min yM yspan)
-      areaW = fromMaybe (assert `failure` aW) $ toArea aW
+      areaW = fromMaybe (error $ "" `showFailure` aW) $ toArea aW
   Point xW yW <- xyInArea areaW  -- roll size
   let a1 = (x0, y0, max x0 (x1 - xW + 1), max y0 (y1 - yW + 1))
-      area1 = fromMaybe (assert `failure` a1) $ toArea a1
+      area1 = fromMaybe (error $ "" `showFailure` a1) $ toArea a1
   Point rx1 ry1 <- xyInArea area1  -- roll top-left corner
   let a3 = (rx1, ry1, rx1 + xW - 1, ry1 + yW - 1)
-      area3 = fromMaybe (assert `failure` a3) $ toArea a3
+      area3 = fromMaybe (error $ "" `showFailure` a3) $ toArea a3
   return $! area3
 
 -- Doesn't respect minimum sizes, because staircases are specified verbatim,
@@ -71,7 +71,7 @@ mkFixed (xM, yM) area p@Point{..} =
       xradius = min ((xM + 1) `div` 2) $ min (px - x0) (x1 - px)
       yradius = min ((yM + 1) `div` 2) $ min (py - y0) (y1 - py)
       a = (px - xradius, py - yradius, px + xradius, py + yradius)
-  in fromMaybe (assert `failure` (a, xM, yM, area, p)) $ toArea a
+  in fromMaybe (error $ "" `showFailure` (a, xM, yM, area, p)) $ toArea a
 
 -- Choosing connections between areas in a grid
 
@@ -194,7 +194,7 @@ connectPlaces s3@(sqarea, spfence, sg) t3@(tqarea, tpfence, tg) = do
               2 -> 1
               3 -> 1
               _ -> 3
-        in fromMaybe (assert `failure` (area, s3, t3))
+        in fromMaybe (error $ "" `showFailure` (area, s3, t3))
            $ toArea (x0 + dx, y0 + dy, x1 - dx, y1 - dy)
   Point sx sy <- xyInArea $ trim sa
   Point tx ty <- xyInArea $ trim ta
@@ -221,13 +221,13 @@ connectPlaces s3@(sqarea, spfence, sg) t3@(tqarea, tpfence, tg) = do
               x1 = if tgy0 <= sy && sy <= tgy1 then tox0 - 1 else sgx1
           in case toArea (x0, min sy ty, x1, max sy ty) of
             Just a -> (Horiz, a, Point (sax1 + 1) sy, Point (tax0 - 1) ty)
-            Nothing -> assert `failure` (sx, sy, tx, ty, s3, t3)
+            Nothing -> error $ "" `showFailure` (sx, sy, tx, ty, s3, t3)
         | otherwise = assert (sgy1 == tgy0) $
           let y0 = if sgx0 <= tx && tx <= sgx1 then soy1 + 1 else sgy1
               y1 = if tgx0 <= sx && sx <= tgx1 then toy0 - 1 else sgy1
           in case toArea (min sx tx, y0, max sx tx, y1) of
             Just a -> (Vert, a, Point sx (say1 + 1), Point tx (tay0 - 1))
-            Nothing -> assert `failure` (sx, sy, tx, ty, s3, t3)
+            Nothing -> error $ "" `showFailure` (sx, sy, tx, ty, s3, t3)
       nin p = not $ p `inside` fromArea sa || p `inside` fromArea ta
       !_A = assert (strivial || ttrivial
                     || allB nin [p0, p1]`blame` (sx, sy, tx, ty, s3, t3)) ()

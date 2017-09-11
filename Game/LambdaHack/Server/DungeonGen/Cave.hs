@@ -78,13 +78,13 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
   -- Make sure that in caves not filled with rock, there is a passage
   -- across the cave, even if a single room blocks most of the cave.
   -- Also, ensure fancy outer fences are not obstructed by room walls.
-  let fullArea = fromMaybe (assert `failure` kc)
+  let fullArea = fromMaybe (error $ "" `showFailure` kc)
                  $ toArea (0, 0, cxsize - 1, cysize - 1)
-      subFullArea = fromMaybe (assert `failure` kc)
+      subFullArea = fromMaybe (error $ "" `showFailure` kc)
                     $ toArea (1, 1, cxsize - 2, cysize - 2)
-  darkCorTile <- fromMaybe (assert `failure` cdarkCorTile)
+  darkCorTile <- fromMaybe (error $ "" `showFailure` cdarkCorTile)
                  <$> opick cdarkCorTile (const True)
-  litCorTile <- fromMaybe (assert `failure` clitCorTile)
+  litCorTile <- fromMaybe (error $ "" `showFailure` clitCorTile)
                 <$> opick clitCorTile (const True)
   dnight <- chanceDice ldepth totalDepth cnightChance
   let createPlaces lgr' = do
@@ -151,10 +151,10 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                   in case vics of
                     [p2] -> mergeSpecial ar p2 (SpecialFixed p placeGroup)
                     _ -> gs0
-                SpecialMerged{} -> assert `failure` (gs, gs0, i)
+                SpecialMerged{} -> error $ "" `showFailure` (gs, gs0, i)
             gs2 = foldl' mergeFixed gs $ EM.assocs gs
         voidPlaces <- do
-          let gridArea = fromMaybe (assert `failure` lgr)
+          let gridArea = fromMaybe (error $ "" `showFailure` lgr)
                          $ toArea (0, 0, gx - 1, gy - 1)
               voidNum = round $ cmaxVoid * fromIntegral (EM.size gs2)
               isOrdinaryArea p = case p `EM.lookup` gs2 of
@@ -173,7 +173,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
               case special of
                 SpecialArea ar -> do
                   -- Reserved for corridors and the global fence.
-                  let innerArea = fromMaybe (assert `failure` (i, ar))
+                  let innerArea = fromMaybe (error $ "" `showFailure` (i, ar))
                                   $ shrink ar
                       !_A0 = shrink innerArea
                       !_A1 = assert (isJust _A0 `blame` (innerArea, gs2)) ()
@@ -192,7 +192,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                            , EM.insert i (qarea place, fence, ar) qls )
                 SpecialFixed p@Point{..} placeGroup ar -> do
                   -- Reserved for corridors and the global fence.
-                  let innerArea = fromMaybe (assert `failure` (i, ar))
+                  let innerArea = fromMaybe (error $ "" `showFailure` (i, ar))
                                   $ shrink ar
                       !_A0 = shrink innerArea
                       !_A1 = assert (isJust _A0 `blame` (innerArea, gs2)) ()

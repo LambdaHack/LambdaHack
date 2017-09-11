@@ -133,13 +133,13 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                          Just (IK.Timeout t) ->
                            "(every" <+> reduce_a t <> ":"
                            <+> rechargingTs <> ")"
-                         _ -> assert `failure` mtimeout
+                         _ -> error $ "" `showFailure` mtimeout
                      | otherwise -> case mtimeout of
                          Nothing -> ""
                          Just (IK.Timeout t) ->
                            "(timeout" <+> reduce_a t <> ":"
                            <+> rechargingTs <> ")"
-                         _ -> assert `failure` mtimeout
+                         _ -> error $ "" `showFailure` mtimeout
                 onSmash = if T.null onSmashTs then ""
                           else "(on smash:" <+> onSmashTs <> ")"
                 elab = case find elabel effects of

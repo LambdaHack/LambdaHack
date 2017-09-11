@@ -90,7 +90,7 @@ meleeEffectAndDestroy source target iid c = do
   meleePerformed <- applyMeleeDamage source target iid
   bag <- getsState $ getContainerBag c
   case iid `EM.lookup` bag of
-    Nothing -> assert `failure` (source, target, iid, c)
+    Nothing -> error $ "" `showFailure` (source, target, iid, c)
     Just kit -> do
       itemToF <- itemToFullServer
       let itemFull = itemToF iid kit
@@ -98,7 +98,7 @@ meleeEffectAndDestroy source target iid c = do
         Just ItemDisco {itemKind=IK.ItemKind{IK.ieffects}} ->
           effectAndDestroy meleePerformed source target iid c False ieffects
                            itemFull
-        _ -> assert `failure` (source, target, iid, c)
+        _ -> error $ "" `showFailure` (source, target, iid, c)
 
 effectAndDestroy :: (MonadAtomic m, MonadServer m)
                  => Bool -> ActorId -> ActorId -> ItemId -> Container -> Bool
@@ -116,7 +116,7 @@ effectAndDestroy meleePerformed source target iid container periodic effs
                  itemFull@ItemFull{..} = do
   let timeout = case itemDisco of
         Just ItemDisco{itemAspect=Just ar} -> aTimeout ar
-        _ -> assert `failure` itemDisco
+        _ -> error $ "" `showFailure` itemDisco
   lid <- getsState $ lidFromC container
   localTime <- getsState $ getLocalTime lid
   let it1 = let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
@@ -215,7 +215,7 @@ itemEffectDisco source target iid c recharged periodic effs = do
              ) $
         execSfxAtomic $ SfxMsgFid (bfid sb) SfxFizzles
       return triggered
-    _ -> assert `failure` (source, target, iid, item)
+    _ -> error $ "" `showFailure` (source, target, iid, item)
 
 -- | The source actor affects the target actor, with a given effect and power.
 -- Both actors are on the current level and can be the same actor.
@@ -317,7 +317,7 @@ effectExplode execSfx cgroup target = do
       container = CActor target COrgan
   m2 <- rollAndRegisterItem (blid tb) itemFreq container False Nothing
   let (iid, (ItemFull{itemBase, itemK}, _)) =
-        fromMaybe (assert `failure` cgroup) m2
+        fromMaybe (error $ "" `showFailure` cgroup) m2
       Point x y = bpos tb
       semirandom = fromEnum (jkindIx itemBase)
       projectN k100 (n, _) = do
@@ -502,7 +502,7 @@ dominateFid fid target = do
       isImpression iid = case EM.lookup (jkindIx $ getItem iid) discoKind of
         Just KindMean{kmKind} ->
           maybe False (> 0) $ lookup "impressed" $ IK.ifreq (okind kmKind)
-        Nothing -> assert `failure` iid
+        Nothing -> error $ "" `showFailure` iid
       dropAllImpressions = EM.filterWithKey (\iid _ -> not $ isImpression iid)
       borganNoImpression = dropAllImpressions $ borgan tb
   btime <-
@@ -688,7 +688,7 @@ findStairExit side moveUp lid pos = do
         _ -> k == 2  -- moving a non-projectile friend
   unocc <- getsState posOcc
   case concatMap (\k -> filter (unocc k) ps) [0..3] of
-    [] -> assert `failure` ps
+    [] -> error $ "" `showFailure` ps
     posRes : _ -> return posRes
 
 switchLevels1 :: MonadAtomic m => (ActorId, Actor) -> m (Maybe ActorId)
@@ -890,7 +890,7 @@ effectCreateItem mfidSource target store grp tim = do
   -- Power depth of new items unaffected by number of spawned actors.
   m5 <- rollItem 0 (blid tb) litemFreq
   let (itemKnownRaw, itemFullRaw, _, seed, _) =
-        fromMaybe (assert `failure` (blid tb, litemFreq, c)) m5
+        fromMaybe (error $ "" `showFailure` (blid tb, litemFreq, c)) m5
       (itemKnown, itemFull) = case mfidSource of
         Just (fidSource, k) ->
           let (kindIx, ar, damage, _) = itemKnownRaw
@@ -928,7 +928,7 @@ effectCreateItem mfidSource target store grp tim = do
         localTime <- getsState $ getLocalTime (blid tb)
         let newTimer = localTime `timeShift` delta
             (afterK, afterIt) =
-              fromMaybe (assert `failure` (iid, bagAfter, c))
+              fromMaybe (error $ "" `showFailure` (iid, bagAfter, c))
                         (iid `EM.lookup` bagAfter)
             newIt = replicate afterK newTimer
         when (afterIt /= newIt) $
@@ -965,7 +965,7 @@ allGroupItems store grp target = do
           Just KindMean{kmKind} ->
             return $! maybe False (> 0) $ lookup grp $ IK.ifreq (okind kmKind)
           Nothing ->
-            assert `failure` (target, grp, iid, item)
+            error $ "" `showFailure` (target, grp, iid, item)
   assocsCStore <- getsState $ EM.assocs . getBodyStoreBag b store
   filterM hasGroup assocsCStore
 
@@ -1038,7 +1038,7 @@ effectPolyItem execSfx source target = do
              identifyIid iid c itemKindId
              execUpdAtomic $ UpdDestroyItem iid itemBase kit c
              effectCreateItem Nothing target cstore "useful" IK.TimerNone
-      _ -> assert `failure` (target, iid, itemFull)
+      _ -> error $ "" `showFailure` (target, iid, itemFull)
 
 -- ** Identify
 
@@ -1064,7 +1064,7 @@ effectIdentify execSfx iidId source target = do
               execSfx
               identifyIid iid c itemKindId
               return True
-        _ -> assert `failure` (store, as)
+        _ -> error $ "" `showFailure` (store, as)
       tryStore stores = case stores of
         [] -> return False
         store : rest -> do
@@ -1190,9 +1190,9 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
     execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
     return False
   else case bla lxsize lysize eps (bpos tb) fpos of
-    Nothing -> assert `failure` (fpos, tb)
-    Just [] -> assert `failure` "projecting from the edge of level"
-                      `swith` (fpos, tb)
+    Nothing -> error $ "" `showFailure` (fpos, tb)
+    Just [] -> error $ "projecting from the edge of level"
+                       `showFailure` (fpos, tb)
     Just (pos : rest) -> do
       let t = lvl `at` pos
       if not $ Tile.isWalkable coTileSpeedup t

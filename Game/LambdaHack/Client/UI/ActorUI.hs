@@ -52,7 +52,7 @@ ppContainer :: Container -> Text
 ppContainer CFloor{} = "nearby"
 ppContainer CEmbed{} = "embedded nearby"
 ppContainer (CActor _ cstore) = ppCStoreIn cstore
-ppContainer c@CTrunk{} = assert `failure` c
+ppContainer c@CTrunk{} = error $ "" `showFailure` c
 
 ppCStore :: CStore -> (Text, Text)
 ppCStore CGround = ("on", "the ground")
@@ -79,7 +79,7 @@ ppContainerWownW ownerFun addPrepositions c = case c of
   CEmbed{} -> ["embedded nearby"]
   CActor aid store -> let owner = ownerFun aid
                       in ppCStoreWownW addPrepositions store owner
-  CTrunk{} -> assert `failure` c
+  CTrunk{} -> error $ "" `showFailure` c
 
 verbCStore :: CStore -> Text
 verbCStore CGround = "drop"

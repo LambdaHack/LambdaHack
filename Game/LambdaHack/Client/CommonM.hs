@@ -38,8 +38,8 @@ import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 getPerFid :: MonadClient m => LevelId -> m Perception
 getPerFid lid = do
   fper <- getsClient sfper
-  let assFail = assert `failure` "no perception at given level"
-                       `swith` (lid, fper)
+  let assFail = error $ "no perception at given level"
+                        `showFailure` (lid, fper)
   return $! EM.findWithDefault assFail lid fper
 
 -- | Calculate the position of an actor's target.
@@ -88,7 +88,7 @@ makeLine onlyFirst body fpos epsOld = do
           in if | accessU -> - nUnknown
                 | accessFirst -> -10000
                 | otherwise -> minBound
-        Nothing -> assert `failure` (body, fpos, epsOld)
+        Nothing -> error $ "" `showFailure` (body, fpos, epsOld)
       tryLines curEps (acc, _) | curEps == epsOld + dist = acc
       tryLines curEps (acc, bestScore) =
         let curScore = calcScore curEps
@@ -106,12 +106,12 @@ maxActorSkillsClient aid = do
   actorAspect <- getsClient sactorAspect
   case EM.lookup aid actorAspect of
     Just aspectRecord -> return $ aSkills aspectRecord  -- keep it lazy
-    Nothing -> assert `failure` aid
+    Nothing -> error $ "" `showFailure` aid
 
 currentSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
 currentSkillsClient aid = do
   actorAspect <- getsClient sactorAspect
-  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
   body <- getsState $ getActorBody aid
   side <- getsClient sside
   -- Newest Leader in _sleader, not yet in sfactionD.

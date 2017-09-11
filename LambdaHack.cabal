@@ -5,7 +5,7 @@ name:           LambdaHack
 -- PVP summary:+-+------- breaking API changes
 --             | | +----- minor or non-breaking API additions
 --             | | | +--- code changes with no API change
-version:       0.6.1.1
+version:       0.6.2.0
 synopsis:      A game engine library for roguelike dungeon crawlers
 description:   LambdaHack is a Haskell game engine library for roguelike games
                of arbitrary theme, size and complexity,
@@ -244,7 +244,7 @@ library
 
   other-modules:      Paths_LambdaHack
   build-depends:
-                      assert-failure >= 0.1,
+                      assert-failure >= 0.1.2 && < 0.2,
                       async      >= 2,
                       base       >= 4 && < 99,
                       base-compat >= 0.8.0,
@@ -349,7 +349,7 @@ executable LambdaHack
   build-depends:      LambdaHack,
                       template-haskell >= 2.6,
 
-                      assert-failure >= 0.1,
+                      assert-failure >= 0.1.2 && < 0.2,
                       async      >= 2,
                       base       >= 4 && < 99,
                       base-compat >= 0.8.0,
@@ -420,7 +420,7 @@ test-suite test
   build-depends:      LambdaHack,
                       template-haskell >= 2.6,
 
-                      assert-failure >= 0.1,
+                      assert-failure >= 0.1.2 && < 0.2,
                       async      >= 2,
                       base       >= 4 && < 99,
                       base-compat >= 0.8.0,

@@ -98,7 +98,7 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
         void $ updateItemSlot CGround Nothing iid
         itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
         markDisplayNeeded lid
-      CTrunk{} -> assert `failure` c
+      CTrunk{} -> error $ "" `showFailure` c
     stopPlayBack
   UpdDestroyItem iid _ kit c -> do
     itemVerbMU iid kit "disappear" c
@@ -199,7 +199,8 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
          mleader <- getsClient _sleader
          when (Just aid == mleader) $ do
            actorAspect <- getsClient sactorAspect
-           let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
+           let ar = fromMaybe (error $ "" `showFailure` aid)
+                              (EM.lookup aid actorAspect)
            when (bhp b >= xM (aMaxHP ar) && aMaxHP ar > 0 && n > 0) $ do
              actorVerbMU aid bUI "recover your health fully"
              stopPlayBack
@@ -459,7 +460,7 @@ itemAidVerbMU aid verb iid ek cstore = do
   factionD <- getsState sfactionD
   -- The item may no longer be in @c@, but it was
   case iid `EM.lookup` bag of
-    Nothing -> assert `failure` (aid, verb, iid, cstore)
+    Nothing -> error $ "" `showFailure` (aid, verb, iid, cstore)
     Just kit@(k, _) -> do
       itemToF <- itemToFullClient
       let lid = blid body
@@ -671,7 +672,8 @@ moveItemUI iid k aid cstore1 cstore2 = do
         itemAidVerbMU aid (MU.Text verb) iid (Right k) cstore2
       else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
         itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
-    Nothing -> assert `failure` (iid, k, aid, cstore1, cstore2, itemSlots)
+    Nothing -> error $ "" `showFailure`
+                         (iid, k, aid, cstore1, cstore2, itemSlots)
 
 quitFactionUI :: MonadClientUI m => FactionId -> Maybe Status -> m ()
 quitFactionUI fid toSt = do
@@ -724,7 +726,7 @@ quitFactionUI fid toSt = do
                    then "This time for real."
                    else "Somebody couldn't stand the heat." )
         Just Status{stOutcome=Restart, stNewGame=Nothing} ->
-          assert `failure` (fid, toSt)
+          error $ "" `showFailure` (fid, toSt)
         Nothing -> (Nothing, Nothing)  -- server wipes out Camping for savefile
   case startingPart of
     Nothing -> return ()
@@ -760,9 +762,9 @@ quitFactionUI fid toSt = do
             keys = [K.spaceKM, K.escKM] ++ concatMap (keyOfEKM . fst) allOKX
             examItem slot =
               case EM.lookup slot lSlots of
-                Nothing -> assert `failure` slot
+                Nothing -> error $ "" `showFailure` slot
                 Just iid -> case EM.lookup iid bag of
-                  Nothing -> assert `failure` iid
+                  Nothing -> error $ "" `showFailure` iid
                   Just kit@(k, _) -> do
                     factionD <- getsState sfactionD
                     let itemFull = itemToF iid kit
@@ -788,7 +790,7 @@ quitFactionUI fid toSt = do
                 case ekm of
                   Left km | km == K.spaceKM -> return True
                   Left km | km == K.escKM -> return False
-                  Left _ -> assert `failure` ekm
+                  Left _ -> error $ "" `showFailure` ekm
                   Right slot -> do
                     go2 <- examItem slot
                     if go2 then viewItems pointer2 else return True
@@ -1024,11 +1026,11 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.ApplyPerfume ->
           msgAdd "The fragrance quells all scents in the vicinity."
         IK.OneOf{} -> return ()
-        IK.OnSmash{} -> assert `failure` sfx
-        IK.Recharging{} -> assert `failure` sfx
+        IK.OnSmash{} -> error $ "" `showFailure` sfx
+        IK.Recharging{} -> error $ "" `showFailure` sfx
         IK.Temporary t -> actorVerbMU aid bUI $ MU.Text t
-        IK.Unique -> assert `failure` sfx
-        IK.Periodic -> assert `failure` sfx
+        IK.Unique -> error $ "" `showFailure` sfx
+        IK.Periodic -> error $ "" `showFailure` sfx
   SfxMsgFid _ sfxMsg -> do
     mleader <- getsClient _sleader
     case mleader of
@@ -1058,7 +1060,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
             else "rumble"
           UpdAlterExplorable _ k -> if k > 0 then "grinding noise"
                                              else "fizzing noise"
-          _ -> assert `failure` cmd
+          _ -> error $ "" `showFailure` cmd
         distant = if local then [] else ["distant"]
         msg = makeSentence [ "you hear"
                            , MU.AW $ MU.Phrase $ distant ++ [sound] ]
@@ -1134,7 +1136,7 @@ setLastSlot aid iid cstore = do
     ItemSlots itemSlots _ <- getsSession sslots
     case lookup iid $ map swap $ EM.assocs itemSlots of
       Just slastSlot -> modifySession $ \sess -> sess {slastSlot}
-      Nothing -> assert `failure` (iid, cstore, aid)
+      Nothing -> error $ "" `showFailure` (iid, cstore, aid)
 
 strike :: MonadClientUI m
        => Bool -> ActorId -> ActorId -> ItemId -> CStore -> m ()

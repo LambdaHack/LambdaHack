@@ -382,7 +382,7 @@ displaceAid target = do
        -- Displacing requires full access.
        if Tile.isWalkable coTileSpeedup $ lvl `at` tpos then
          case posToAidsLvl tpos lvl of
-           [] -> assert `failure` (leader, sb, target, tb)
+           [] -> error $ "" `showFailure` (leader, sb, target, tb)
            [_] -> return $ Right $ ReqDisplace target
            _ -> failSer DisplaceProjectiles
        else failSer DisplaceAccess
@@ -637,7 +637,8 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
   -- and the server will ignore and warn (and content may avoid that,
   -- e.g., making all rings identified)
   actorAspect <- getsClient sactorAspect
-  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` leader)
+                     (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
       cLegal | calmE = cLegalRaw
              | destCStore == CSha = []
@@ -660,7 +661,7 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
   case ggi of
     Right (l, (MStore fromCStore, _)) -> return $ Right (fromCStore, l)
     Left err -> failWith err
-    _ -> assert `failure` ggi
+    _ -> error $ "" `showFailure` ggi
 
 moveItems :: forall m. MonadClientUI m
           => [CStore] -> (CStore, [(ItemId, ItemFull)]) -> CStore
@@ -670,7 +671,8 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
   b <- getsState $ getActorBody leader
   actorAspect <- getsClient sactorAspect
   discoBenefit <- getsClient sdiscoBenefit
-  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` leader)
+                     (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
       ret4 :: MonadClientUI m
            => [(ItemId, ItemFull)]
@@ -718,7 +720,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
     l4 <- ret4 l 0 []
     return $! case l4 of
       Left err -> Left err
-      Right [] -> assert `failure` l
+      Right [] -> error $ "" `showFailure` l
       Right lr -> Right $ ReqMoveItems lr
 
 -- * Project
@@ -747,7 +749,8 @@ projectItem ts (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorAspect <- getsClient sactorAspect
-  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` leader)
+                     (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
   if not calmE && fromCStore == CSha then failSer ItemNotCalm
   else do
@@ -793,7 +796,8 @@ applyItem ts (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorAspect <- getsClient sactorAspect
-  let ar = fromMaybe (assert `failure` leader) (EM.lookup leader actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` leader)
+                     (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
   if not calmE && fromCStore == CSha then failSer ItemNotCalm
   else do
@@ -973,7 +977,7 @@ helpHuman cmdAction = do
       _ | km == K.escKM -> return $ Left Nothing
       Just (_desc, _cats, cmd) -> cmdAction cmd
       Nothing -> weaveJust <$> failWith "never mind"
-    Right _slot -> assert `failure` ekm
+    Right _slot -> error $ "" `showFailure` ekm
 
 -- * ItemMenu
 
@@ -992,7 +996,7 @@ itemMenuHuman cmdAction = do
         Nothing -> weaveJust <$> failWith "no item to open Item Menu for"
         Just kit -> do
           actorAspect <- getsClient sactorAspect
-          let ar = fromMaybe (assert `failure` leader)
+          let ar = fromMaybe (error $ "" `showFailure` leader)
                              (EM.lookup leader actorAspect)
           itemToF <- itemToFullClient
           lidV <- viewedLevelUI
@@ -1069,10 +1073,10 @@ itemMenuHuman cmdAction = do
                        modifySession $ \sess ->
                          sess {sitemSel = Just (newCStore, iid)}
                        itemMenuHuman cmdAction
-                _ -> assert `failure` km
+                _ -> error $ "" `showFailure` km
               Just (_desc, _cats, cmd) -> cmdAction cmd
               Nothing -> weaveJust <$> failWith "never mind"
-            Right _slot -> assert `failure` ekm
+            Right _slot -> error $ "" `showFailure` ekm
     Nothing -> weaveJust <$> failWith "no item to open Item Menu for"
 
 -- * ChooseItemMenu
@@ -1166,7 +1170,7 @@ generateMenu cmdAction kds gameInfo menuName = do
     Left km -> case km `lookup` kds of
       Just (_desc, cmd) -> cmdAction cmd
       Nothing -> weaveJust <$> failWith "never mind"
-    Right _slot -> assert `failure` ekm
+    Right _slot -> error $ "" `showFailure` ekm
 
 -- | Display the main menu.
 mainMenuHuman :: MonadClientUI m
@@ -1209,7 +1213,7 @@ settingsMenuHuman cmdAction = do
         0 -> "off"
         1 -> "on"
         2 -> "all"
-        _ -> assert `failure` n
+        _ -> error $ "" `showFailure` n
       tsuspect = "suspect terrain:" <+> offOnAll markSuspect
       tvisible = "visible zone:" <+> offOn markVision
       tsmell = "smell clues:" <+> offOn  markSmell

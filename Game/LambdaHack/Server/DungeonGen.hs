@@ -94,13 +94,13 @@ buildTileMap cops@Kind.COps{ cotile=Kind.Ops{opick}
       nightCond kt = not (Tile.kindHasFeature TK.Walkable kt)
                      || (if dnight then id else not)
                            (Tile.kindHasFeature TK.Dark kt)
-      pickDefTile =
-        fromMaybe (assert `failure` cdefTile) <$> opick cdefTile nightCond
+      pickDefTile = fromMaybe (error $ "" `showFailure` cdefTile)
+                    <$> opick cdefTile nightCond
       wcond kt = Tile.isEasyOpenKind kt && nightCond kt
       mpickPassable =
         if cpassable
-        then Just
-             $ fromMaybe (assert `failure` cdefTile) <$> opick cdefTile wcond
+        then Just $ fromMaybe (error $ "" `showFailure` cdefTile)
+                    <$> opick cdefTile wcond
         else Nothing
       nwcond kt = not (Tile.kindHasFeature TK.Walkable kt) && nightCond kt
   areAllWalkable <- isNothing <$> opick cdefTile nwcond
@@ -113,7 +113,8 @@ buildLevel :: Kind.COps -> Int -> GroupName CaveKind
            -> Rnd (Level, [Point])
 buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
            ln genName minD totalDepth lstairPrev = do
-  dkind <- fromMaybe (assert `failure` genName) <$> opick genName (const True)
+  dkind <- fromMaybe (error $ "" `showFailure` genName)
+           <$> opick genName (const True)
   let kc = okind dkind
       -- Simple rule for now: level @ln@ has depth (difficulty) @abs ln@.
       ldepth = AbsDepth $ abs ln
@@ -243,7 +244,7 @@ dungeonGen cops caves = do
   let (minD, maxD) =
         case (IM.minViewWithKey caves, IM.maxViewWithKey caves) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
-          _ -> assert `failure` "no caves" `swith` caves
+          _ -> error $ "no caves" `showFailure` caves
       freshTotalDepth = assert (signum minD == signum maxD)
                         $ AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)

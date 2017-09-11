@@ -65,7 +65,7 @@ actionStrategy :: forall m. MonadClient m
 actionStrategy aid retry = do
   body <- getsState $ getActorBody aid
   scondInMelee <- getsClient scondInMelee
-  let condInMelee = fromMaybe (assert `failure` condInMelee)
+  let condInMelee = fromMaybe (error $ "" `showFailure` condInMelee)
                               (scondInMelee EM.! blid body)
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
@@ -87,7 +87,7 @@ actionStrategy aid retry = do
   condTgtNonmoving <- condTgtNonmovingM aid
   explored <- getsClient sexplored
   actorAspect <- getsClient sactorAspect
-  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       lidExplored = ES.member (blid body) explored
       panicFleeL = fleeL ++ badVic
       condHpTooLow = hpTooLow body ar
@@ -307,7 +307,7 @@ pickup aid onlyWeapon = do
   -- and the server will ignore and warn (and content may avoid that,
   -- e.g., making all rings identified)
   actorAspect <- getsClient sactorAspect
-  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough b ar
       isWeapon (_, _, _, itemFull) = isMelee $ itemBase itemFull
       filterWeapon | onlyWeapon = filter isWeapon
@@ -339,7 +339,7 @@ equipItems :: MonadClient m
 equipItems aid = do
   body <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
-  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough body ar
   eqpAssocs <- fullAssocsClient aid [CEqp]
   invAssocs <- fullAssocsClient aid [CInv]
@@ -402,7 +402,7 @@ yieldUnneeded :: MonadClient m
 yieldUnneeded aid = do
   body <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
-  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough body ar
   eqpAssocs <- fullAssocsClient aid [CEqp]
   condShineWouldBetray <- condShineWouldBetrayM aid
@@ -440,7 +440,7 @@ unEquipItems :: MonadClient m
 unEquipItems aid = do
   body <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
-  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough body ar
   eqpAssocs <- fullAssocsClient aid [CEqp]
   invAssocs <- fullAssocsClient aid [CInv]
@@ -534,7 +534,7 @@ meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbMelee))
 meleeBlocker aid = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsClient sactorAspect
-  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
   fact <- getsState $ (EM.! bfid b) . sfactionD
   actorSk <- currentSkillsClient aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -553,7 +553,7 @@ meleeBlocker aid = do
         Just aim -> getsState $ posToAssocs aim (blid b)
       case lBlocker of
         (aid2, body2) : _ -> do
-          let ar2 = fromMaybe (assert `failure` aid2)
+          let ar2 = fromMaybe (error $ "" `showFailure` aid2)
                               (EM.lookup aid2 actorAspect)
           -- No problem if there are many projectiles at the spot. We just
           -- attack the first one.
@@ -638,7 +638,7 @@ projectItem aid = do
           benList <- condProjectListM skill aid
           localTime <- getsState $ getLocalTime (blid b)
           let coeff CGround = 2  -- pickup turn saved
-              coeff COrgan = assert `failure` benList
+              coeff COrgan = error $ "" `showFailure` benList
               coeff CEqp = 100000  -- must hinder currently
               coeff CInv = 1
               coeff CSha = 1
@@ -678,7 +678,7 @@ applyItem aid applyGroup = do
   condAimEnemyPresent <- condAimEnemyPresentM aid
   localTime <- getsState $ getLocalTime (blid b)
   actorAspect <- getsClient sactorAspect
-  let ar = fromMaybe (assert `failure` aid) (EM.lookup aid actorAspect)
+  let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough b ar
       condNotCalmEnough = not calmE
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
@@ -725,7 +725,7 @@ applyItem aid applyGroup = do
            then firstAidItem
            else not $ hpEnough b ar && firstAidItem
       coeff CGround = 2  -- pickup turn saved
-      coeff COrgan = assert `failure` benList
+      coeff COrgan = error $ "" `showFailure` benList
       coeff CEqp = 1
       coeff CInv = 1
       coeff CSha = 1
@@ -972,10 +972,10 @@ moveOrRunAid source dir = do
          return $ Just $ RequestAnyAbility $ ReqMove dir
          -- The potential invisible actor is hit.
        | alterSkill < Tile.alterMinWalk coTileSpeedup t ->
-         assert `failure` "AI causes AlterUnwalked" `swith` (source, dir)
+         error $ "AI causes AlterUnwalked" `showFailure` (source, dir)
        | EM.member tpos $ lfloor lvl ->
          -- Only possible if items allowed inside unwalkable tiles.
-         assert `failure` "AI causes AlterBlockItem" `swith` (source, dir)
+         error $ "AI causes AlterBlockItem" `showFailure` (source, dir)
        | otherwise ->
          -- Not walkable, but alter skill suffices, so search or alter the tile.
          return $ Just $ RequestAnyAbility $ ReqAlter tpos

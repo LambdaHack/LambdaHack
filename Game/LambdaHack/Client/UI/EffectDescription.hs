@@ -39,10 +39,10 @@ effectToSuffix effect =
                             <+> if d > 1 then "burns" else "burn")
     Explode t -> "of" <+> tshow t <+> "explosion"
     RefillHP p | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
-    RefillHP 0 -> assert `failure` effect
+    RefillHP 0 -> error $ "" `showFailure` effect
     RefillHP p -> "of wounding" <+> wrapInParens (affixBonus p)
     RefillCalm p | p > 0 -> "of soothing" <+> wrapInParens (affixBonus p)
-    RefillCalm 0 -> assert `failure` effect
+    RefillCalm 0 -> error $ "" `showFailure` effect
     RefillCalm p -> "of dismaying" <+> wrapInParens (affixBonus p)
     Dominate -> "of domination"
     Impress -> "of impression"
@@ -69,7 +69,7 @@ effectToSuffix effect =
             Just p -> makePhrase [MU.CarWs p "move"]
       in "of speed surge for" <+> moves
     Teleport dice | dice <= 0 ->
-      assert `failure` effect
+      error $ "" `showFailure` effect
     Teleport dice | dice <= 9 -> "of blinking" <+> wrapInParens (tshow dice)
     Teleport dice -> "of teleport" <+> wrapInParens (tshow dice)
     CreateItem COrgan grp tim ->
@@ -126,7 +126,7 @@ slotToSentence es = case es of
   EqpSlotAbAlter -> "Those unskilled in alteration equip it."
   EqpSlotAbProject -> "Those unskilled in flinging equip it."
   EqpSlotAbApply -> "Those unskilled in applying items equip it."
-  _ -> assert `failure` "should not be used in content" `swith` es
+  _ -> error $ "should not be used in content" `showFailure` es
 
 slotToName :: EqpSlot -> Text
 slotToName eqpSlot =

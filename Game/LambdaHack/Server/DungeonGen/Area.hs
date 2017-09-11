@@ -67,7 +67,7 @@ grid fixedCenters boot (nx, ny) (Area x0 y0 x1 y1) =
                 ++ f z0 z1 n (c1 + len * (2 * cn - 1) `div` (2 * cn))
                      (c2 : rest)
       f _ z1 _ prev [c1] = [(prev, z1, Just c1)]
-      f _ _ _ _ [] = assert `failure` fixedCenters
+      f _ _ _ _ [] = error $ "empty list of centers" `showFailure` fixedCenters
       xcs = IS.toList $ IS.fromList $ map px $ EM.keys fixedCenters ++ boot
       xallCenters = zip [0..] $ f x0 x1 nx x0 xcs
       ycs = IS.toList $ IS.fromList $ map py $ EM.keys fixedCenters ++ boot
@@ -104,7 +104,7 @@ sumAreas a@(Area x0 y0 x1 y1) a'@(Area x0' y0' x1' y1') =
        Area x0 y0 x1' y1
      | x0 == x1' -> assert (y0 == y0' && y1 == y1' `blame` (a, a')) $
        Area x0' y0' x1 y1'
-     | otherwise -> assert `failure` (a, a')
+     | otherwise -> error $ "areas not adjacent" `showFailure` (a, a')
 
 instance Binary Area where
   put (Area x0 y0 x1 y1) = do

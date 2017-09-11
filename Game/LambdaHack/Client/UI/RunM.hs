@@ -103,7 +103,7 @@ continueRun arena paramOld = case paramOld of
 continueRunDir :: MonadClientUI m
                => RunParams -> m (Either Text Vector)
 continueRunDir params = case params of
-  RunParams{ runMembers = [] } -> assert `failure` params
+  RunParams{ runMembers = [] } -> error $ "" `showFailure` params
   RunParams{ runLeader
            , runMembers = aid : _
            , runInitial } -> do
@@ -121,7 +121,7 @@ continueRunDir params = case params of
       cops@Kind.COps{cotile} <- getsState scops
       rbody <- getsState $ getActorBody runLeader
       let rposHere = bpos rbody
-          rposLast = fromMaybe (assert `failure` (runLeader, rbody))
+          rposLast = fromMaybe (error $ "" `showFailure` (runLeader, rbody))
                                (boldpos rbody)
           -- Match run-leader dir, because we want runners to keep formation.
           dir = rposHere `vectorToFrom` rposLast
@@ -161,7 +161,7 @@ tryTurning aid = do
   let lid = blid body
   lvl <- getLevel lid
   let posHere = bpos body
-      posLast = fromMaybe (assert `failure` (aid, body)) (boldpos body)
+      posLast = fromMaybe (error $ "" `showFailure` (aid, body)) (boldpos body)
       dirLast = posHere `vectorToFrom` posLast
   let openableDir dir = Tile.isOpenable cotile (lvl `at` (posHere `shift` dir))
       dirEnterable dir = enterableDir cops lvl posHere dir || openableDir dir
@@ -192,7 +192,7 @@ checkAndRun aid dir = do
       posHasItems pos = EM.member pos $ lfloor lvl
       posThere = posHere `shift` dir
       actorsThere = posToAidsLvl posThere lvl
-  let posLast = fromMaybe (assert `failure` (aid, body)) (boldpos body)
+  let posLast = fromMaybe (error $ "" `showFailure` (aid, body)) (boldpos body)
       dirLast = posHere `vectorToFrom` posLast
       -- This is supposed to work on unit vectors --- diagonal, as well as,
       -- vertical and horizontal.

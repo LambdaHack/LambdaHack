@@ -40,7 +40,7 @@ random = St.state R.random
 
 -- | Get any element of a list with equal probability.
 oneOf :: [a] -> Rnd a
-oneOf [] = assert `failure` "oneOf []" `swith` ()
+oneOf [] = error $ "oneOf []" `showFailure` ()
 oneOf xs = do
   r <- randomR (0, length xs - 1)
   return $! xs !! r
@@ -53,16 +53,16 @@ frequency = St.state . rollFreq
 -- | Randomly choose an item according to the distribution.
 rollFreq :: Show a => Frequency a -> R.StdGen -> (a, R.StdGen)
 rollFreq fr g = case runFrequency fr of
-  [] -> assert `failure` "choice from an empty frequency"
-               `swith` nameFrequency fr
-  [(n, x)] | n <= 0 -> assert `failure` "singleton void frequency"
-                              `swith` (nameFrequency fr, n, x)
+  [] -> error $ "choice from an empty frequency"
+                `showFailure` nameFrequency fr
+  [(n, x)] | n <= 0 -> error $ "singleton void frequency"
+                               `showFailure` (nameFrequency fr, n, x)
   [(_, x)] -> (x, g)  -- speedup
   fs -> let sumf = foldl' (\ !acc (!n, _) -> acc + n) 0 fs
             (r, ng) = R.randomR (1, sumf) g
             frec :: Int -> [(Int, a)] -> a
-            frec !m [] = assert `failure` "impossible roll"
-                                `swith` (nameFrequency fr, fs, m)
+            frec !m [] = error $ "impossible roll"
+                                 `showFailure` (nameFrequency fr, fs, m)
             frec m ((n, x) : _) | m <= n = x
             frec m ((n, _) : xs) = frec (m - n) xs
         in assert (sumf > 0 `blame` "frequency with nothing to pick"
