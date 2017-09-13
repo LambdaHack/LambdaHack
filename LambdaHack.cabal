@@ -282,8 +282,8 @@ library
                       ExistentialQuantification, GADTs, StandaloneDeriving,
                       DataKinds, KindSignatures
 --, DeriveGeneric
-  ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-unrecognised-pragmas
-  ghc-options:        -fno-warn-implicit-prelude -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively
+  ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities
+  ghc-options:        -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively
 
   if impl(ghcjs) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
@@ -379,8 +379,8 @@ executable LambdaHack
   default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings
                       BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf
   other-extensions:   TemplateHaskell
-  ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-unrecognised-pragmas
-  ghc-options:        -fno-warn-implicit-prelude -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively
+  ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities
+  ghc-options:        -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively
   ghc-options:        -threaded -rtsopts
 
   if impl(ghcjs) {
@@ -450,8 +450,8 @@ test-suite test
   default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings
                       BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf
   other-extensions:   TemplateHaskell
-  ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-unrecognised-pragmas
-  ghc-options:        -fno-warn-implicit-prelude -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively
+  ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities
+  ghc-options:        -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively
   ghc-options:        -threaded -rtsopts
 
   if impl(ghcjs) {
