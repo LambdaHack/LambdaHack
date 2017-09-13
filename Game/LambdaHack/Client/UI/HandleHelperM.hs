@@ -297,20 +297,24 @@ pickNumber askNumber kAll = do
             kprompt = "Choose number:" <+> tshow kCur
         promptAdd kprompt
         sli <- reportToSlideshow shownKeys
-        (Left kkm, pointer2) <-
+        (ekkm, pointer2) <-
           displayChoiceScreen ColorFull False pointer sli frontKeyKeys
-        case K.key kkm of
-          K.Char '+' ->
-            gatherNumber pointer2 $ if kCur + 1 > kAll then 1 else kCur + 1
-          K.Char '-' ->
-            gatherNumber pointer2 $ if kCur - 1 < 1 then kAll else kCur - 1
-          K.Char l | kCur == kAll ->  gatherNumber pointer2 $ Char.digitToInt l
-          K.Char l -> gatherNumber pointer2 $ kCur * 10 + Char.digitToInt l
-          K.BackSpace -> gatherNumber pointer2 $ kCur `div` 10
-          K.Return -> return $ Right kCur
-          K.Esc -> weaveJust <$> failWith "never mind"
-          K.Space -> return $ Left Nothing
-          _ -> error $ "unexpected key" `showFailure` kkm
+        case ekkm of
+          Left kkm ->
+            case K.key kkm of
+              K.Char '+' ->
+                gatherNumber pointer2 $ if kCur + 1 > kAll then 1 else kCur + 1
+              K.Char '-' ->
+                gatherNumber pointer2 $ if kCur - 1 < 1 then kAll else kCur - 1
+              K.Char l | kCur == kAll ->
+                gatherNumber pointer2 $ Char.digitToInt l
+              K.Char l -> gatherNumber pointer2 $ kCur * 10 + Char.digitToInt l
+              K.BackSpace -> gatherNumber pointer2 $ kCur `div` 10
+              K.Return -> return $ Right kCur
+              K.Esc -> weaveJust <$> failWith "never mind"
+              K.Space -> return $ Left Nothing
+              _ -> error $ "unexpected key" `showFailure` kkm
+          Right sc -> error $ "unexpected slot char" `showFailure` sc
   if | kAll == 0 -> error $ "" `showFailure` askNumber
      | kAll == 1 || not askNumber -> return $ Right kAll
      | otherwise -> do

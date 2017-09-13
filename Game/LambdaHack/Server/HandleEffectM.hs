@@ -287,7 +287,7 @@ effectBurn nDm source target = do
   let ar = actorAspect EM.! target
       hpMax = aMaxHP ar
   n <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
-  let rawDeltaHP = - (fromIntegral $ xM n)
+  let rawDeltaHP = - xM n
       -- We ignore minor burns.
       serious = not (bproj tb) && source /= target && n > 1
       deltaHP | serious = -- if HP overfull, at least cut back to max HP
