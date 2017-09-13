@@ -1,7 +1,5 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, TypeFamilies #-}
-#if __GLASGOW_HASKELL__ >= 800
 {-# OPTIONS_GHC -Wno-orphans #-}
-#endif
 -- | Hacks that haven't found their home yet.
 module Game.LambdaHack.Common.Misc
   ( -- * Game object identifiers
@@ -197,12 +195,6 @@ instance (Enum k, Binary k, Binary e) => Binary (EM.EnumMap k e) where
 instance (Enum k, Binary k) => Binary (ES.EnumSet k) where
   put m = put (ES.size m) >> mapM_ put (ES.toAscList m)
   get = ES.fromDistinctAscList <$> get
-
-#if !MIN_VERSION_binary(0,8,0)
-instance Binary (Fixed.Fixed a) where
-  put (Fixed.MkFixed a) = put a
-  get = Fixed.MkFixed `liftM` get
-#endif
 
 instance Binary Time.NominalDiffTime where
   get = fmap realToFrac (get :: Get Fixed.Pico)
