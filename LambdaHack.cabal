@@ -280,8 +280,7 @@ library
                       GeneralizedNewtypeDeriving, TupleSections,
                       DeriveFoldable, DeriveTraversable,
                       ExistentialQuantification, GADTs, StandaloneDeriving,
-                      DataKinds, KindSignatures
---, DeriveGeneric
+                      DataKinds, KindSignatures, DeriveGeneric
   ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities
   ghc-options:        -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively
 
