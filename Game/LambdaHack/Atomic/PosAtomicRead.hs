@@ -31,12 +31,12 @@ import Game.LambdaHack.Common.Point
 -- based on the position of the command, etc. Note that the server
 -- sees and smells all positions.
 data PosAtomic =
-    PosSight !LevelId ![Point]  -- ^ whomever sees all the positions, notices
-  | PosFidAndSight ![FactionId] !LevelId ![Point]
+    PosSight LevelId [Point]    -- ^ whomever sees all the positions, notices
+  | PosFidAndSight [FactionId] LevelId [Point]
                                 -- ^ observers and the faction notice
-  | PosSmell !LevelId ![Point]  -- ^ whomever smells all the positions, notices
-  | PosFid !FactionId           -- ^ only the faction notices
-  | PosFidAndSer !(Maybe LevelId) !FactionId  -- ^ faction and server notices
+  | PosSmell LevelId [Point]    -- ^ whomever smells all the positions, notices
+  | PosFid FactionId            -- ^ only the faction notices
+  | PosFidAndSer (Maybe LevelId) FactionId  -- ^ faction and server notices
   | PosSer                      -- ^ only the server notices
   | PosAll                      -- ^ everybody notices
   | PosNone                     -- ^ never broadcasted, but sent manually

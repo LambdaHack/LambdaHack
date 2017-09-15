@@ -38,34 +38,34 @@ import Game.LambdaHack.Common.Vector
 -- to the original value from @ActorKind@ over time. E.g., HP.
 data Actor = Actor
   { -- The trunk of the actor's body (present also in @borgan@ or @beqp@)
-    btrunk      :: !ItemId
+    btrunk      :: ItemId
 
     -- Resources
-  , bhp         :: !Int64        -- ^ current hit points * 1M
-  , bhpDelta    :: !ResDelta     -- ^ HP delta this turn * 1M
-  , bcalm       :: !Int64        -- ^ current calm * 1M
-  , bcalmDelta  :: !ResDelta     -- ^ calm delta this turn * 1M
+  , bhp         :: Int64        -- ^ current hit points * 1M
+  , bhpDelta    :: ResDelta     -- ^ HP delta this turn * 1M
+  , bcalm       :: Int64        -- ^ current calm * 1M
+  , bcalmDelta  :: ResDelta     -- ^ calm delta this turn * 1M
 
     -- Location
-  , bpos        :: !Point        -- ^ current position
-  , boldpos     :: !(Maybe Point)
-                                 -- ^ previous position, if any
-  , blid        :: !LevelId      -- ^ current level
-  , bfid        :: !FactionId    -- ^ faction the actor currently belongs to
-  , btrajectory :: !(Maybe ([Vector], Speed))
-                                 -- ^ trajectory the actor must
-                                 --   travel and his travel speed
+  , bpos        :: Point        -- ^ current position
+  , boldpos     :: (Maybe Point)
+                                -- ^ previous position, if any
+  , blid        :: LevelId      -- ^ current level
+  , bfid        :: FactionId    -- ^ faction the actor currently belongs to
+  , btrajectory :: (Maybe ([Vector], Speed))
+                                -- ^ trajectory the actor must
+                                --   travel and his travel speed
 
     -- Items
-  , borgan      :: !ItemBag      -- ^ organs
-  , beqp        :: !ItemBag      -- ^ personal equipment
-  , binv        :: !ItemBag      -- ^ personal inventory pack
-  , bweapon     :: !Int          -- ^ number of weapons among eqp and organs
+  , borgan      :: ItemBag      -- ^ organs
+  , beqp        :: ItemBag      -- ^ personal equipment
+  , binv        :: ItemBag      -- ^ personal inventory pack
+  , bweapon     :: Int          -- ^ number of weapons among eqp and organs
 
     -- Assorted
-  , bwait       :: !Bool         -- ^ is the actor waiting right now?
-  , bproj       :: !Bool         -- ^ is a projectile? (shorthand only,
-                                 --   this can be deduced from btrunk)
+  , bwait       :: Bool         -- ^ is the actor waiting right now?
+  , bproj       :: Bool         -- ^ is a projectile? (shorthand only,
+                                --   this can be deduced from btrunk)
   }
   deriving (Show, Eq, Generic)
 
@@ -73,8 +73,8 @@ instance Binary Actor
 
 -- The resource changes in the tuple are negative and positive, respectively.
 data ResDelta = ResDelta
-  { resCurrentTurn  :: !(Int64, Int64)  -- ^ resource change this player turn
-  , resPreviousTurn :: !(Int64, Int64)  -- ^ resource change last player turn
+  { resCurrentTurn  :: (Int64, Int64)  -- ^ resource change this player turn
+  , resPreviousTurn :: (Int64, Int64)  -- ^ resource change last player turn
   }
   deriving (Show, Eq, Generic)
 

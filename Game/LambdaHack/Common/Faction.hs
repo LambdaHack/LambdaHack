@@ -39,18 +39,18 @@ import Game.LambdaHack.Content.ModeKind
 type FactionDict = EM.EnumMap FactionId Faction
 
 data Faction = Faction
-  { gname     :: !Text            -- ^ individual name
-  , gcolor    :: !Color.Color     -- ^ color of actors or their frames
-  , gplayer   :: !Player          -- ^ the player spec for this faction
-  , ginitial  :: ![(Int, Int, GroupName ItemKind)]  -- ^ initial actors
-  , gdipl     :: !Dipl            -- ^ diplomatic mode
-  , gquit     :: !(Maybe Status)  -- ^ cause of game end/exit
-  , _gleader  :: !(Maybe ActorId) -- ^ the leader of the faction; don't use
-                                  --   in place of _sleader on clients!
-  , gsha      :: !ItemBag         -- ^ faction's shared inventory
-  , gvictims  :: !(EM.EnumMap (Kind.Id ItemKind) Int)  -- ^ members killed
-  , gvictimsD :: !(EM.EnumMap (Kind.Id ModeKind)
-                              (IM.IntMap (EM.EnumMap (Kind.Id ItemKind) Int)))
+  { gname     :: Text            -- ^ individual name
+  , gcolor    :: Color.Color     -- ^ color of actors or their frames
+  , gplayer   :: Player          -- ^ the player spec for this faction
+  , ginitial  :: [(Int, Int, GroupName ItemKind)]  -- ^ initial actors
+  , gdipl     :: Dipl            -- ^ diplomatic mode
+  , gquit     :: Maybe Status    -- ^ cause of game end/exit
+  , _gleader  :: Maybe ActorId   -- ^ the leader of the faction; don't use
+                                 --   in place of _sleader on clients
+  , gsha      :: ItemBag         -- ^ faction's shared inventory
+  , gvictims  :: EM.EnumMap (Kind.Id ItemKind) Int  -- ^ members killed
+  , gvictimsD :: EM.EnumMap (Kind.Id ModeKind)
+                            (IM.IntMap (EM.EnumMap (Kind.Id ItemKind) Int))
       -- ^ members killed in the past, by game mode and difficulty level
   }
   deriving (Show, Eq, Ord, Generic)
@@ -71,10 +71,10 @@ type Dipl = EM.EnumMap FactionId Diplomacy
 
 -- | Current game status.
 data Status = Status
-  { stOutcome :: !Outcome  -- ^ current game outcome
-  , stDepth   :: !Int      -- ^ depth of the final encounter
-  , stNewGame :: !(Maybe (GroupName ModeKind))
-                           -- ^ new game group to start, if any
+  { stOutcome :: Outcome  -- ^ current game outcome
+  , stDepth   :: Int      -- ^ depth of the final encounter
+  , stNewGame :: Maybe (GroupName ModeKind)
+                          -- ^ new game group to start, if any
   }
   deriving (Show, Eq, Ord, Generic)
 
@@ -82,21 +82,21 @@ instance Binary Status
 
 -- | The type of na actor target.
 data Target =
-    TEnemy !ActorId !Bool
+    TEnemy ActorId Bool
     -- ^ target an actor; cycle only trough seen foes, unless the flag is set
-  | TPoint !TGoal !LevelId !Point  -- ^ target a concrete spot
-  | TVector !Vector         -- ^ target position relative to actor
+  | TPoint TGoal LevelId Point  -- ^ target a concrete spot
+  | TVector Vector         -- ^ target position relative to actor
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary Target
 
 data TGoal =
-    TEnemyPos !ActorId !Bool
+    TEnemyPos ActorId Bool
     -- ^ last seen position of the targeted actor
-  | TEmbed !ItemBag !Point
+  | TEmbed ItemBag Point
     -- ^ in @TPoint (TEmbed bag p) _ q@ usually @bag@ is embbedded in @p@
     --   and @q@ is an adjacent open tile
-  | TItem !ItemBag
+  | TItem ItemBag
   | TSmell
   | TUnknown
   | TKnown
@@ -106,9 +106,9 @@ data TGoal =
 instance Binary TGoal
 
 data Challenge = Challenge
-  { cdiff :: !Int   -- ^ game difficulty level (HP bonus or malus)
-  , cwolf :: !Bool  -- ^ lone wolf challenge (only one starting character)
-  , cfish :: !Bool  -- ^ cold fish challenge (no healing from enemies)
+  { cdiff :: Int   -- ^ game difficulty level (HP bonus or malus)
+  , cwolf :: Bool  -- ^ lone wolf challenge (only one starting character)
+  , cfish :: Bool  -- ^ cold fish challenge (no healing from enemies)
   }
   deriving (Show, Eq, Ord, Generic)
 

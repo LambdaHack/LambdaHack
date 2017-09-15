@@ -234,8 +234,8 @@ levelFromCaveKind Kind.COps{coTileSpeedup}
 
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
-  { freshDungeon    :: !Dungeon   -- ^ maps for all levels
-  , freshTotalDepth :: !AbsDepth  -- ^ absolute dungeon depth
+  { freshDungeon    :: Dungeon   -- ^ maps for all levels
+  , freshTotalDepth :: AbsDepth  -- ^ absolute dungeon depth
   }
 
 -- | Generate the dungeon for a new game.

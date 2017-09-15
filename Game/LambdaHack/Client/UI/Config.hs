@@ -30,23 +30,23 @@ import Game.LambdaHack.Content.RuleKind
 -- is a part of a game client.
 data Config = Config
   { -- commands
-    configCommands      :: ![(K.KM, CmdTriple)]
+    configCommands      :: [(K.KM, CmdTriple)]
     -- hero names
-  , configHeroNames     :: ![(Int, (Text, Text))]
+  , configHeroNames     :: [(Int, (Text, Text))]
     -- ui
-  , configVi            :: !Bool  -- ^ the option for Vi keys takes precendence
-  , configLaptop        :: !Bool  -- ^ because the laptop keys are the default
-  , configGtkFontFamily :: !Text
-  , configSdlFontFile   :: !Text
-  , configSdlTtfSizeAdd :: !Int
-  , configSdlFonSizeAdd :: !Int
-  , configFontSize      :: !Int
-  , configColorIsBold   :: !Bool
-  , configHistoryMax    :: !Int
-  , configMaxFps        :: !Int
-  , configNoAnim        :: !Bool
-  , configRunStopMsgs   :: !Bool
-  , configCmdline       :: ![String]
+  , configVi            :: Bool  -- ^ the option for Vi keys takes precendence
+  , configLaptop        :: Bool  -- ^ because the laptop keys are the default
+  , configGtkFontFamily :: Text
+  , configSdlFontFile   :: Text
+  , configSdlTtfSizeAdd :: Int
+  , configSdlFonSizeAdd :: Int
+  , configFontSize      :: Int
+  , configColorIsBold   :: Bool
+  , configHistoryMax    :: Int
+  , configMaxFps        :: Int
+  , configNoAnim        :: Bool
+  , configRunStopMsgs   :: Bool
+  , configCmdline       :: [String]
   }
   deriving (Show, Generic)
 

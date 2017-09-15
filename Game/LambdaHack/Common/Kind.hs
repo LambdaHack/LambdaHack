@@ -90,13 +90,13 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
 
 -- | Operations for all content types, gathered together.
 data COps = COps
-  { cocave        :: !(Ops CaveKind)     -- server only
-  , coitem        :: !(Ops ItemKind)
-  , comode        :: !(Ops ModeKind)     -- server only
-  , coplace       :: !(Ops PlaceKind)    -- server only, so far
-  , corule        :: !(Ops RuleKind)
-  , cotile        :: !(Ops TileKind)
-  , coTileSpeedup :: !TileSpeedup
+  { cocave        :: Ops CaveKind   -- server only
+  , coitem        :: Ops ItemKind
+  , comode        :: Ops ModeKind   -- server only
+  , coplace       :: Ops PlaceKind  -- server only, so far
+  , corule        :: Ops RuleKind
+  , cotile        :: Ops TileKind
+  , coTileSpeedup :: TileSpeedup
   }
 
 instance Show COps where

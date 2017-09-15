@@ -17,14 +17,14 @@ import Game.LambdaHack.Client.UI.Frame
 import qualified Game.LambdaHack.Client.UI.Key as K
 import Game.LambdaHack.Common.Point
 
-data KMP = KMP { kmpKeyMod  :: !K.KM
-               , kmpPointer :: !Point }
+data KMP = KMP { kmpKeyMod  :: K.KM
+               , kmpPointer :: Point }
 
 data RawFrontend = RawFrontend
-  { fdisplay  :: !(SingleFrame -> IO ())
-  , fshutdown :: !(IO ())
-  , fshowNow  :: !(MVar ())
-  , fchanKey  :: !(STM.TQueue KMP)
+  { fdisplay  :: SingleFrame -> IO ()
+  , fshutdown :: IO ()
+  , fshowNow  :: MVar ()
+  , fchanKey  :: STM.TQueue KMP
   }
 
 startupBound :: (MVar RawFrontend -> IO ()) -> IO RawFrontend

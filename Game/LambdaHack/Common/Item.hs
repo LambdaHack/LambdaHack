@@ -49,8 +49,8 @@ newtype ItemKindIx = ItemKindIx Int
   deriving (Show, Eq, Ord, Enum, Ix.Ix, Hashable, Binary)
 
 data KindMean = KindMean
-  { kmKind :: !(Kind.Id IK.ItemKind)
-  , kmMean :: !AspectRecord
+  { kmKind :: Kind.Id IK.ItemKind
+  , kmMean :: AspectRecord
   }
   deriving (Show, Eq, Generic)
 
@@ -68,11 +68,11 @@ type DiscoveryKind = EM.EnumMap ItemKindIx KindMean
 -- 4. the (usually negative) benefit of hitting a foe in meleeing with the item
 -- 5. the (usually negative) benefit of flinging an item at an opponent
 data Benefit = Benefit
-  { benInEqp  :: Bool
-  , benPickup :: Int
-  , benApply  :: Int
-  , benMelee  :: Int
-  , benFling  :: Int
+  { benInEqp  :: ~Bool
+  , benPickup :: ~Int
+  , benApply  :: ~Int
+  , benMelee  :: ~Int
+  , benFling  :: ~Int
   }
   deriving (Show, Generic)
 
@@ -87,19 +87,19 @@ newtype ItemSeed = ItemSeed Int
   deriving (Show, Eq, Ord, Enum, Hashable, Binary)
 
 data AspectRecord = AspectRecord
-  { aTimeout     :: !Int
-  , aHurtMelee   :: !Int
-  , aArmorMelee  :: !Int
-  , aArmorRanged :: !Int
-  , aMaxHP       :: !Int
-  , aMaxCalm     :: !Int
-  , aSpeed       :: !Int
-  , aSight       :: !Int
-  , aSmell       :: !Int
-  , aShine       :: !Int
-  , aNocto       :: !Int
-  , aAggression  :: !Int
-  , aSkills      :: !Ability.Skills
+  { aTimeout     :: Int
+  , aHurtMelee   :: Int
+  , aArmorMelee  :: Int
+  , aArmorRanged :: Int
+  , aMaxHP       :: Int
+  , aMaxCalm     :: Int
+  , aSpeed       :: Int
+  , aSight       :: Int
+  , aSmell       :: Int
+  , aShine       :: Int
+  , aNocto       :: Int
+  , aAggression  :: Int
+  , aSkills      :: Ability.Skills
   }
   deriving (Show, Eq, Ord, Generic)
 
@@ -151,19 +151,19 @@ type DiscoveryAspect = EM.EnumMap ItemId AspectRecord
 -- Tiny speedup from making fields non-strict (1%, a bit more GC, less alloc).
 -- The fields of @KindMean@ also need to be non-strict then, otherwise slowdown.
 data ItemDisco = ItemDisco
-  { itemKindId     :: !(Kind.Id IK.ItemKind)
-  , itemKind       :: !IK.ItemKind
-  , itemAspectMean :: !AspectRecord
-  , itemAspect     :: !(Maybe AspectRecord)
+  { itemKindId     :: Kind.Id IK.ItemKind
+  , itemKind       :: IK.ItemKind
+  , itemAspectMean :: AspectRecord
+  , itemAspect     :: Maybe AspectRecord
   }
   deriving Show
 
 -- No speedup from making fields non-strict.
 data ItemFull = ItemFull
-  { itemBase  :: !Item
-  , itemK     :: !Int
-  , itemTimer :: !ItemTimer
-  , itemDisco :: !(Maybe ItemDisco)
+  { itemBase  :: Item
+  , itemK     :: Int
+  , itemTimer :: ItemTimer
+  , itemDisco :: Maybe ItemDisco
   }
   deriving Show
 
@@ -189,16 +189,16 @@ itemToFull Kind.COps{coitem=Kind.Ops{okind}}
 -- and draw an unidentified item. Full information about item is available
 -- through the @jkindIx@ index as soon as the item is identified.
 data Item = Item
-  { jkindIx  :: !ItemKindIx    -- ^ index pointing to the kind of the item
-  , jlid     :: !LevelId       -- ^ lowest level the item was created at
-  , jfid     :: !(Maybe FactionId)
-                               -- ^ the faction that created the item, if any
-  , jsymbol  :: !Char          -- ^ map symbol
-  , jname    :: !Text          -- ^ generic name
-  , jflavour :: !Flavour       -- ^ flavour
-  , jfeature :: ![IK.Feature]  -- ^ public properties
-  , jweight  :: !Int           -- ^ weight in grams, obvious enough
-  , jdamage  :: !Dice.Dice     -- ^ impact damage of this particular weapon
+  { jkindIx  :: ItemKindIx    -- ^ index pointing to the kind of the item
+  , jlid     :: LevelId       -- ^ lowest level the item was created at
+  , jfid     :: Maybe FactionId
+                              -- ^ the faction that created the item, if any
+  , jsymbol  :: Char          -- ^ map symbol
+  , jname    :: Text          -- ^ generic name
+  , jflavour :: Flavour       -- ^ flavour
+  , jfeature :: [IK.Feature]  -- ^ public properties
+  , jweight  :: Int           -- ^ weight in grams, obvious enough
+  , jdamage  :: Dice.Dice     -- ^ impact damage of this particular weapon
   }
   deriving (Show, Eq, Generic)
 
@@ -207,8 +207,8 @@ instance Hashable Item
 instance Binary Item
 
 data ItemSource =
-    ItemSourceLevel !LevelId
-  | ItemSourceFaction !FactionId
+    ItemSourceLevel LevelId
+  | ItemSourceFaction FactionId
   deriving (Show, Eq, Generic)
 
 instance Hashable ItemSource

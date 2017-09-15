@@ -44,47 +44,47 @@ import Game.LambdaHack.Content.ModeKind (ModeKind)
 --
 -- Data invariant: if @_sleader@ is @Nothing@ then so is @srunning@.
 data StateClient = StateClient
-  { seps          :: !Int           -- ^ a parameter of the aiming digital line
-  , stargetD      :: !(EM.EnumMap ActorId TgtAndPath)
+  { seps          :: Int           -- ^ a parameter of the aiming digital line
+  , stargetD      :: EM.EnumMap ActorId TgtAndPath
                                    -- ^ targets of our actors in the dungeon
-  , sexplored     :: !(ES.EnumSet LevelId)
+  , sexplored     :: ES.EnumSet LevelId
                                    -- ^ the set of fully explored levels
-  , sbfsD         :: !(EM.EnumMap ActorId BfsAndPath)
+  , sbfsD         :: EM.EnumMap ActorId BfsAndPath
                                    -- ^ pathfinding distances for our actors
                                    --   and paths to their targets, if any
-  , sundo         :: ![CmdAtomic]   -- ^ atomic commands performed to date
-  , sdiscoKind    :: !DiscoveryKind    -- ^ remembered item discoveries
-  , sdiscoAspect  :: !DiscoveryAspect  -- ^ remembered aspects of items
-  , sdiscoBenefit :: !DiscoveryBenefit  -- ^ remembered AI benefits of items
-  , sactorAspect  :: !ActorAspect   -- ^ best known actor aspect data
-  , sfper         :: !PerLid        -- ^ faction perception indexed by levels
-  , salter        :: !AlterLid      -- ^ cached alter ability data for positions
-  , srandom       :: !R.StdGen      -- ^ current random generator
-  , _sleader      :: !(Maybe ActorId)
+  , sundo         :: [CmdAtomic]   -- ^ atomic commands performed to date
+  , sdiscoKind    :: DiscoveryKind     -- ^ remembered item discoveries
+  , sdiscoAspect  :: DiscoveryAspect   -- ^ remembered aspects of items
+  , sdiscoBenefit :: DiscoveryBenefit  -- ^ remembered AI benefits of items
+  , sactorAspect  :: ActorAspect   -- ^ best known actor aspect data
+  , sfper         :: PerLid        -- ^ faction perception indexed by levels
+  , salter        :: AlterLid      -- ^ cached alter ability data for positions
+  , srandom       :: R.StdGen      -- ^ current random generator
+  , _sleader      :: Maybe ActorId
                                    -- ^ candidate new leader of the faction;
                                    --   Faction._gleader is the old leader
-  , _sside        :: !FactionId     -- ^ faction controlled by the client
-  , squit         :: !Bool          -- ^ exit the game loop
-  , scurChal      :: !Challenge     -- ^ current game challenge setup
-  , snxtChal      :: !Challenge     -- ^ next game challenge setup
-  , snxtScenario  :: !Int           -- ^ next game scenario number
-  , smarkSuspect  :: !Int           -- ^ mark suspect features
-  , scondInMelee  :: !(EM.EnumMap LevelId (Maybe Bool))
-                                    -- ^ condInMelee value, unless invalidated
-  , svictories    :: !(EM.EnumMap (Kind.Id ModeKind) (M.Map Challenge Int))
+  , _sside        :: FactionId     -- ^ faction controlled by the client
+  , squit         :: Bool          -- ^ exit the game loop
+  , scurChal      :: Challenge     -- ^ current game challenge setup
+  , snxtChal      :: Challenge     -- ^ next game challenge setup
+  , snxtScenario  :: Int           -- ^ next game scenario number
+  , smarkSuspect  :: Int           -- ^ mark suspect features
+  , scondInMelee  :: EM.EnumMap LevelId (Maybe Bool)
+                                   -- ^ condInMelee value, unless invalidated
+  , svictories    :: EM.EnumMap (Kind.Id ModeKind) (M.Map Challenge Int)
       -- ^ won games at particular difficulty levels
-  , sdebugCli     :: !DebugModeCli  -- ^ client debugging mode
+  , sdebugCli     :: DebugModeCli  -- ^ client debugging mode
   }
   deriving Show
 
 data BfsAndPath =
     BfsInvalid
-  | BfsAndPath { bfsArr  :: !(PointArray.Array BfsDistance)
-               , bfsPath :: !(EM.EnumMap Point AndPath)
+  | BfsAndPath { bfsArr  :: PointArray.Array BfsDistance
+               , bfsPath :: EM.EnumMap Point AndPath
                }
   deriving Show
 
-data TgtAndPath = TgtAndPath {tapTgt :: !Target, tapPath :: !AndPath}
+data TgtAndPath = TgtAndPath {tapTgt :: Target, tapPath :: AndPath}
   deriving (Show, Generic)
 
 instance Binary TgtAndPath

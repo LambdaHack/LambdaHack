@@ -32,14 +32,14 @@ import Game.LambdaHack.Content.ModeKind (HiCondPoly, HiIndeterminant (..),
 -- | A single score record. Records are ordered in the highscore table,
 -- from the best to the worst, in lexicographic ordering wrt the fields below.
 data ScoreRecord = ScoreRecord
-  { points       :: !Int        -- ^ the score
-  , negTime      :: !Time       -- ^ game time spent (negated, so less better)
-  , date         :: !POSIXTime  -- ^ date of the last game interruption
-  , status       :: !Status     -- ^ reason of the game interruption
-  , challenge    :: !Challenge  -- ^ challenge setup of the game
-  , gplayerName  :: !Text       -- ^ name of the faction's gplayer
-  , ourVictims   :: !(EM.EnumMap (Kind.Id ItemKind) Int)  -- ^ allies lost
-  , theirVictims :: !(EM.EnumMap (Kind.Id ItemKind) Int)  -- ^ foes killed
+  { points       :: Int        -- ^ the score
+  , negTime      :: Time       -- ^ game time spent (negated, so less better)
+  , date         :: POSIXTime  -- ^ date of the last game interruption
+  , status       :: Status     -- ^ reason of the game interruption
+  , challenge    :: Challenge  -- ^ challenge setup of the game
+  , gplayerName  :: Text       -- ^ name of the faction's gplayer
+  , ourVictims   :: EM.EnumMap (Kind.Id ItemKind) Int  -- ^ allies lost
+  , theirVictims :: EM.EnumMap (Kind.Id ItemKind) Int  -- ^ foes killed
   }
   deriving (Eq, Ord, Show, Generic)
 

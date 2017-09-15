@@ -129,9 +129,9 @@ fillBfs lalter alterSkill source arr@PointArray.Array{..} =
   in bfs (succ minKnownBfs) [PointArray.pindex axsize source]
 
 data AndPath =
-    AndPath { pathList :: ![Point]
-            , pathGoal :: !Point    -- needn't be @last pathList@
-            , pathLen  :: !Int      -- needn't be @length pathList@
+    AndPath { pathList :: [Point]
+            , pathGoal :: Point    -- needn't be @last pathList@
+            , pathLen  :: Int      -- needn't be @length pathList@
             }
   | NoPath
   deriving (Show, Generic)

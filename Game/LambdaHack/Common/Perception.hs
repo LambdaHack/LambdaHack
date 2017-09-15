@@ -52,8 +52,8 @@ newtype PerSmelled = PerSmelled {psmelled :: ES.EnumSet Point}
 
 -- | The type representing the perception of a faction on a level.
 data Perception = Perception
-  { psight :: !PerVisible
-  , psmell :: !PerSmelled
+  { psight :: PerVisible
+  , psmell :: PerSmelled
   }
   deriving (Show, Eq, Generic)
 

@@ -46,11 +46,11 @@ import Game.LambdaHack.Server.ProtocolM
 import Game.LambdaHack.Server.State
 
 data SerState = SerState
-  { serState  :: !State           -- ^ current global state
-  , serServer :: !StateServer     -- ^ current server state
-  , serDict   :: !ConnServerDict  -- ^ client-server connection information
-  , serToSave :: !(Save.ChanSave (State, StateServer))
-                                  -- ^ connection to the save thread
+  { serState  :: State           -- ^ current global state
+  , serServer :: StateServer     -- ^ current server state
+  , serDict   :: ConnServerDict  -- ^ client-server connection information
+  , serToSave :: Save.ChanSave (State, StateServer)
+                                 -- ^ connection to the save thread
   }
 
 -- | Server state transformation monad.

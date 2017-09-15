@@ -44,12 +44,12 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 -- | The instructions sent by clients to the raw frontend.
 data FrontReq :: * -> * where
   -- | Show a frame.
-  FrontFrame :: {frontFrame :: !FrameForall} -> FrontReq ()
+  FrontFrame :: {frontFrame :: FrameForall} -> FrontReq ()
   -- | Perform an explicit delay of the given length.
-  FrontDelay :: !Int -> FrontReq ()
+  FrontDelay :: Int -> FrontReq ()
   -- | Flush frames, display a frame and ask for a keypress.
-  FrontKey :: { frontKeyKeys  :: ![K.KM]
-              , frontKeyFrame :: !FrameForall } -> FrontReq KMP
+  FrontKey :: { frontKeyKeys  :: [K.KM]
+              , frontKeyFrame :: FrameForall } -> FrontReq KMP
   -- | Inspect the fkeyPressed MVar.
   FrontPressed :: FrontReq Bool
   -- | discard a key in the queue, if any.
@@ -66,9 +66,9 @@ data FrontReq :: * -> * where
 newtype ChanFrontend = ChanFrontend (forall a. FrontReq a -> IO a)
 
 data FSession = FSession
-  { fautoYesRef   :: !(IORef Bool)
-  , fasyncTimeout :: !(Async ())
-  , fdelay        :: !(MVar Int)
+  { fautoYesRef   :: IORef Bool
+  , fasyncTimeout :: Async ()
+  , fdelay        :: MVar Int
   }
 
 -- | Display a prompt, wait for any of the specified keys (for any key,

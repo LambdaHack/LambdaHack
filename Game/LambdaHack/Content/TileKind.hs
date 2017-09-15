@@ -37,36 +37,36 @@ import Game.LambdaHack.Content.ItemKind (ItemKind)
 -- Tile kind for unknown space has the minimal @KindOps.Id@ index.
 -- The @talter@ for unknown space is @1@ and no other tile kind has that value.
 data TileKind = TileKind
-  { tsymbol  :: !Char         -- ^ map symbol
-  , tname    :: !Text         -- ^ short description
-  , tfreq    :: !(Freqs TileKind)  -- ^ frequency within groups
-  , tcolor   :: !Color        -- ^ map color
-  , tcolor2  :: !Color        -- ^ map color when not in FOV
-  , talter   :: !Word8        -- ^ minimal skill needed to alter the tile
-  , tfeature :: ![Feature]    -- ^ properties
+  { tsymbol  :: Char         -- ^ map symbol
+  , tname    :: Text         -- ^ short description
+  , tfreq    :: Freqs TileKind  -- ^ frequency within groups
+  , tcolor   :: Color        -- ^ map color
+  , tcolor2  :: Color        -- ^ map color when not in FOV
+  , talter   :: Word8        -- ^ minimal skill needed to alter the tile
+  , tfeature :: [Feature]    -- ^ properties
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound
 
 -- | All possible terrain tile features.
 data Feature =
-    Embed !(GroupName ItemKind)
+    Embed (GroupName ItemKind)
       -- ^ initially an item of this group is embedded;
       --   we assume the item has effects and is supposed to be triggered
-  | OpenTo !(GroupName TileKind)
+  | OpenTo (GroupName TileKind)
       -- ^ goes from a closed to (randomly closed or) open tile when altered
-  | CloseTo !(GroupName TileKind)
+  | CloseTo (GroupName TileKind)
       -- ^ goes from an open to (randomly opened or) closed tile when altered
-  | ChangeTo !(GroupName TileKind)
+  | ChangeTo (GroupName TileKind)
       -- ^ alters tile, but does not change walkability
-  | HideAs !(GroupName TileKind)
+  | HideAs (GroupName TileKind)
       -- ^ when hidden, looks as the unique tile of the group
 
   -- The following three are only used in dungeon generation.
-  | BuildAs !(GroupName TileKind)
+  | BuildAs (GroupName TileKind)
       -- ^ when generating, may be transformed to the unique tile of the group
-  | RevealAs !(GroupName TileKind)
+  | RevealAs (GroupName TileKind)
       -- ^ when generating in opening, can be revealed to belong to the group
-  | ObscureAs !(GroupName TileKind)
+  | ObscureAs (GroupName TileKind)
       -- ^ when generating in solid wall, can be revealed to belong to the group
 
   | Walkable             -- ^ actors can walk through
@@ -95,21 +95,21 @@ instance Hashable Feature
 instance NFData Feature
 
 data TileSpeedup = TileSpeedup
-  { isClearTab        :: !(Tab Bool)
-  , isLitTab          :: !(Tab Bool)
-  , isWalkableTab     :: !(Tab Bool)
-  , isDoorTab         :: !(Tab Bool)
-  , isChangableTab    :: !(Tab Bool)
-  , isSuspectTab      :: !(Tab Bool)
-  , isHideAsTab       :: !(Tab Bool)
-  , consideredByAITab :: !(Tab Bool)
-  , isOftenItemTab    :: !(Tab Bool)
-  , isOftenActorTab   :: !(Tab Bool)
-  , isNoItemTab       :: !(Tab Bool)
-  , isNoActorTab      :: !(Tab Bool)
-  , isEasyOpenTab     :: !(Tab Bool)
-  , alterMinSkillTab  :: !(Tab Word8)
-  , alterMinWalkTab   :: !(Tab Word8)
+  { isClearTab        :: Tab Bool
+  , isLitTab          :: Tab Bool
+  , isWalkableTab     :: Tab Bool
+  , isDoorTab         :: Tab Bool
+  , isChangableTab    :: Tab Bool
+  , isSuspectTab      :: Tab Bool
+  , isHideAsTab       :: Tab Bool
+  , consideredByAITab :: Tab Bool
+  , isOftenItemTab    :: Tab Bool
+  , isOftenActorTab   :: Tab Bool
+  , isNoItemTab       :: Tab Bool
+  , isNoActorTab      :: Tab Bool
+  , isEasyOpenTab     :: Tab Bool
+  , alterMinSkillTab  :: Tab Word8
+  , alterMinWalkTab   :: Tab Word8
   }
 
 -- Vectors of booleans can be slower than arrays, because they are not packed,

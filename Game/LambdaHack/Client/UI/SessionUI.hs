@@ -37,39 +37,39 @@ import Game.LambdaHack.Common.Vector
 -- Some of it is saved, some is reset when a new playing session starts.
 -- An important component is a frontend session.
 data SessionUI = SessionUI
-  { sxhair         :: !Target             -- ^ the common xhair
-  , sactorUI       :: !ActorDictUI        -- ^ assigned actor UI presentations
-  , sslots         :: !ItemSlots          -- ^ map from slots to items
-  , slastSlot      :: !SlotChar           -- ^ last used slot
-  , schanF         :: !ChanFrontend       -- ^ connection with the frontend
-  , sbinding       :: !Binding            -- ^ binding of keys to commands
-  , sconfig        :: !Config
-  , saimMode       :: !(Maybe AimMode)    -- ^ aiming mode
-  , sxhairMoused   :: !Bool               -- ^ last mouse aiming not vacuus
-  , sitemSel       :: !(Maybe (CStore, ItemId))  -- ^ selected item, if any
-  , sselected      :: !(ES.EnumSet ActorId)
-                                      -- ^ the set of currently selected actors
-  , srunning       :: !(Maybe RunParams)
-                                      -- ^ parameters of the current run, if any
-  , _sreport       :: !Report        -- ^ current messages
-  , shistory       :: !History       -- ^ history of messages
-  , spointer       :: !Point         -- ^ mouse pointer position
-  , slastRecord    :: !LastRecord    -- ^ state of key sequence recording
-  , slastPlay      :: ![K.KM]        -- ^ state of key sequence playback
-  , slastLost      :: !(ES.EnumSet ActorId)
-                                      -- ^ actors that just got out of sight
-  , swaitTimes     :: !Int           -- ^ player just waited this many times
-  , smarkVision    :: !Bool          -- ^ mark leader and party FOV
-  , smarkSmell     :: !Bool          -- ^ mark smell, if the leader can smell
-  , smenuIxMap     :: !(M.Map String Int)
-                                     -- ^ indices of last used menu items
-  , sdisplayNeeded :: !Bool          -- ^ something to display on current level
-  , skeysHintMode  :: !KeysHintMode  -- ^ how to show keys hints when no messages
-  , sstart         :: !POSIXTime     -- ^ this session start time
-  , sgstart        :: !POSIXTime     -- ^ this game start time
-  , sallTime       :: !Time          -- ^ clips from start of session to current game start
-  , snframes       :: !Int           -- ^ this game current frame count
-  , sallNframes    :: !Int           -- ^ frame count from start of session to current game start
+  { sxhair         :: Target             -- ^ the common xhair
+  , sactorUI       :: ActorDictUI        -- ^ assigned actor UI presentations
+  , sslots         :: ItemSlots          -- ^ map from slots to items
+  , slastSlot      :: SlotChar           -- ^ last used slot
+  , schanF         :: ChanFrontend       -- ^ connection with the frontend
+  , sbinding       :: Binding            -- ^ binding of keys to commands
+  , sconfig        :: Config
+  , saimMode       :: Maybe AimMode      -- ^ aiming mode
+  , sxhairMoused   :: Bool               -- ^ last mouse aiming not vacuus
+  , sitemSel       :: Maybe (CStore, ItemId)  -- ^ selected item, if any
+  , sselected      :: ES.EnumSet ActorId
+                                    -- ^ the set of currently selected actors
+  , srunning       :: Maybe RunParams
+                                    -- ^ parameters of the current run, if any
+  , _sreport       :: Report        -- ^ current messages
+  , shistory       :: History       -- ^ history of messages
+  , spointer       :: Point         -- ^ mouse pointer position
+  , slastRecord    :: LastRecord    -- ^ state of key sequence recording
+  , slastPlay      :: [K.KM]        -- ^ state of key sequence playback
+  , slastLost      :: ES.EnumSet ActorId
+                                    -- ^ actors that just got out of sight
+  , swaitTimes     :: Int           -- ^ player just waited this many times
+  , smarkVision    :: Bool          -- ^ mark leader and party FOV
+  , smarkSmell     :: Bool          -- ^ mark smell, if the leader can smell
+  , smenuIxMap     :: M.Map String Int
+                                    -- ^ indices of last used menu items
+  , sdisplayNeeded :: Bool          -- ^ something to display on current level
+  , skeysHintMode  :: KeysHintMode  -- ^ how to show keys hints when no messages
+  , sstart         :: POSIXTime     -- ^ this session start time
+  , sgstart        :: POSIXTime     -- ^ this game start time
+  , sallTime       :: Time          -- ^ clips from start of session to current game start
+  , snframes       :: Int           -- ^ this game current frame count
+  , sallNframes    :: Int           -- ^ frame count from start of session to current game start
   }
 
 -- | Current aiming mode of a client.
@@ -78,12 +78,12 @@ newtype AimMode = AimMode { aimLevelId :: LevelId }
 
 -- | Parameters of the current run.
 data RunParams = RunParams
-  { runLeader  :: !ActorId         -- ^ the original leader from run start
-  , runMembers :: ![ActorId]       -- ^ the list of actors that take part
-  , runInitial :: !Bool            -- ^ initial run continuation by any
-                                   --   run participant, including run leader
-  , runStopMsg :: !(Maybe Text)    -- ^ message with the next stop reason
-  , runWaiting :: !Int             -- ^ waiting for others to move out of the way
+  { runLeader  :: ActorId         -- ^ the original leader from run start
+  , runMembers :: [ActorId]       -- ^ the list of actors that take part
+  , runInitial :: Bool            -- ^ initial run continuation by any
+                                  --   run participant, including run leader
+  , runStopMsg :: Maybe Text      -- ^ message with the next stop reason
+  , runWaiting :: Int             -- ^ waiting for others to move out of the way
   }
   deriving (Show)
 

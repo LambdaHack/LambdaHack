@@ -31,8 +31,8 @@ import Game.LambdaHack.Common.Point
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { sview :: !TextView             -- ^ the widget to draw to
-  , stags :: !(IM.IntMap TextTag)  -- ^ text color tags for fg/bg
+  { sview :: TextView           -- ^ the widget to draw to
+  , stags :: IM.IntMap TextTag  -- ^ text color tags for fg/bg
   }
 
 -- | The name of the frontend.

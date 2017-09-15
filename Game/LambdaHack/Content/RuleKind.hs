@@ -21,21 +21,21 @@ import Game.LambdaHack.Common.Misc
 -- and then @RuleKind@ will become just a starting template, analogously
 -- as for the other content.
 data RuleKind = RuleKind
-  { rsymbol         :: !Char      -- ^ a symbol
-  , rname           :: !Text      -- ^ short description
-  , rfreq           :: !(Freqs RuleKind)  -- ^ frequency within groups
-  , rtitle          :: !Text      -- ^ title of the game (not lib)
-  , rfontDir        :: !FilePath  -- ^ font directory for the game (not lib)
-  , rexeVersion     :: !Version   -- ^ version of the game
-  , rcfgUIName      :: !FilePath  -- ^ name of the UI config file
-  , rcfgUIDefault   :: !String    -- ^ the default UI settings config file
-  , rmainMenuArt    :: !Text      -- ^ the ASCII art for the Main Menu
-  , rfirstDeathEnds :: !Bool      -- ^ whether first non-spawner actor death
+  { rsymbol         :: Char      -- ^ a symbol
+  , rname           :: Text      -- ^ short description
+  , rfreq           :: Freqs RuleKind  -- ^ frequency within groups
+  , rtitle          :: Text      -- ^ title of the game (not lib)
+  , rfontDir        :: FilePath  -- ^ font directory for the game (not lib)
+  , rexeVersion     :: Version   -- ^ version of the game
+  , rcfgUIName      :: FilePath  -- ^ name of the UI config file
+  , rcfgUIDefault   :: String    -- ^ the default UI settings config file
+  , rmainMenuArt    :: Text      -- ^ the ASCII art for the Main Menu
+  , rfirstDeathEnds :: Bool      -- ^ whether first non-spawner actor death
                                   --   ends the game
-  , rwriteSaveClips :: !Int       -- ^ game is saved that often
-  , rleadLevelClips :: !Int       -- ^ server switches leader level that often
-  , rscoresFile     :: !FilePath  -- ^ name of the scores file
-  , rnearby         :: !Int       -- ^ what distance between actors is 'nearby'
+  , rwriteSaveClips :: Int       -- ^ game is saved that often
+  , rleadLevelClips :: Int       -- ^ server switches leader level that often
+  , rscoresFile     :: FilePath  -- ^ name of the scores file
+  , rnearby         :: Int       -- ^ what distance between actors is 'nearby'
   }
 
 -- | A dummy instance of the 'Show' class, to satisfy general requirments

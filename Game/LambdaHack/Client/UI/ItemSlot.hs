@@ -23,7 +23,7 @@ import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.State
 
-data SlotChar = SlotChar {slotPrefix :: !Int, slotChar :: !Char}
+data SlotChar = SlotChar {slotPrefix :: Int, slotChar :: Char}
   deriving (Show, Eq)
 
 instance Ord SlotChar where
@@ -42,8 +42,8 @@ instance Enum SlotChar where
         c100 = c0 - if c0 > 150 then 100 else 0
     in SlotChar n (chr c100)
 
-data ItemSlots = ItemSlots !(EM.EnumMap SlotChar ItemId)
-                           !(EM.EnumMap SlotChar ItemId)
+data ItemSlots = ItemSlots (EM.EnumMap SlotChar ItemId)
+                           (EM.EnumMap SlotChar ItemId)
   deriving Show
 
 instance Binary ItemSlots where

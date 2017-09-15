@@ -25,12 +25,12 @@ import Game.LambdaHack.Content.ItemKind (ItemKind)
 
 -- | Game mode specification.
 data ModeKind = ModeKind
-  { msymbol :: !Char    -- ^ a symbol
-  , mname   :: !Text    -- ^ short description
-  , mfreq   :: !(Freqs ModeKind)  -- ^ frequency within groups
-  , mroster :: !Roster  -- ^ players taking part in the game
-  , mcaves  :: !Caves   -- ^ arena of the game
-  , mdesc   :: !Text    -- ^ description
+  { msymbol :: Char    -- ^ a symbol
+  , mname   :: Text    -- ^ short description
+  , mfreq   :: Freqs ModeKind  -- ^ frequency within groups
+  , mroster :: Roster  -- ^ players taking part in the game
+  , mcaves  :: Caves   -- ^ arena of the game
+  , mdesc   :: Text    -- ^ description
   }
   deriving Show
 
@@ -41,11 +41,11 @@ type Caves = IM.IntMap (GroupName CaveKind)
 
 -- | The specification of players for the game mode.
 data Roster = Roster
-  { rosterList  :: ![(Player, [(Int, Dice.Dice, GroupName ItemKind)])]
+  { rosterList  :: [(Player, [(Int, Dice.Dice, GroupName ItemKind)])]
       -- ^ players in the particular team and levels, numbers and groups
       --   of their initial members
-  , rosterEnemy :: ![(Text, Text)]  -- ^ the initial enmity matrix
-  , rosterAlly  :: ![(Text, Text)]  -- ^ the initial aliance matrix
+  , rosterEnemy :: [(Text, Text)]  -- ^ the initial enmity matrix
+  , rosterAlly  :: [(Text, Text)]  -- ^ the initial aliance matrix
   }
   deriving (Show, Eq)
 
@@ -75,22 +75,22 @@ type HiCondPoly = [HiSummand]
 
 -- | Properties of a particular player.
 data Player = Player
-  { fname        :: !Text        -- ^ name of the player
-  , fgroups      :: ![GroupName ItemKind]
+  { fname        :: Text        -- ^ name of the player
+  , fgroups      :: [GroupName ItemKind]
                                  -- ^ names of actor groups that may naturally
                                  --   fall under player's control, e.g., upon
                                  --   spawning or summoning
-  , fskillsOther :: !Skills      -- ^ fixed skill modifiers to the non-leader
+  , fskillsOther :: Skills      -- ^ fixed skill modifiers to the non-leader
                                  --   actors; also summed with skills implied
                                  --   by ftactic (which is not fixed)
-  , fcanEscape   :: !Bool        -- ^ the player can escape the dungeon
-  , fneverEmpty  :: !Bool        -- ^ the faction declared killed if no actors
-  , fhiCondPoly  :: !HiCondPoly  -- ^ score polynomial for the player
-  , fhasGender   :: !Bool        -- ^ whether actors have gender
-  , ftactic      :: !Tactic      -- ^ non-leaders behave according to this
+  , fcanEscape   :: Bool        -- ^ the player can escape the dungeon
+  , fneverEmpty  :: Bool        -- ^ the faction declared killed if no actors
+  , fhiCondPoly  :: HiCondPoly  -- ^ score polynomial for the player
+  , fhasGender   :: Bool        -- ^ whether actors have gender
+  , ftactic      :: Tactic      -- ^ non-leaders behave according to this
                                  --   tactic; can be changed during the game
-  , fleaderMode  :: !LeaderMode  -- ^ the mode of switching the leader
-  , fhasUI       :: !Bool        -- ^ does the faction have a UI client
+  , fleaderMode  :: LeaderMode  -- ^ the mode of switching the leader
+  , fhasUI       :: Bool        -- ^ does the faction have a UI client
                                  --   (for control or passive observation)
   }
   deriving (Show, Eq, Ord, Generic)
@@ -107,7 +107,7 @@ data LeaderMode =
 instance Binary LeaderMode
 
 data AutoLeader = AutoLeader
-  { autoDungeon :: !Bool
+  { autoDungeon :: Bool
       -- ^ leader switching between levels is automatically done by the server
       --   and client is not permitted to change to leaders from other levels
       --   (the frequency of leader level switching done by the server
@@ -116,7 +116,7 @@ data AutoLeader = AutoLeader
       --   of the automatic switching, e.g., when the old leader dies
       --   and no other actor of the faction resides on his level,
       --   but the client (particularly UI) is expected to do changes as well
-  , autoLevel   :: !Bool
+  , autoLevel   :: Bool
       -- ^ client is discouraged from leader switching (e.g., because
       --   non-leader actors have the same skills as leader);
       --   server is guaranteed to switch leader within a level very rarely,

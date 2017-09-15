@@ -43,8 +43,8 @@ attrLineToU l = U.fromList $ map Color.attrCharW32 l
 
 -- | The type of a single game message.
 data Msg = Msg
-  { msgLine :: !AttrLine  -- ^ the colours and characters of the message
-  , msgHist :: !Bool      -- ^ whether message should be recorded in history
+  { msgLine :: AttrLine  -- ^ the colours and characters of the message
+  , msgHist :: Bool      -- ^ whether message should be recorded in history
   }
   deriving (Show, Eq, Generic)
 
@@ -60,7 +60,7 @@ toPrompt l = Msg { msgLine = l
 
 -- * Report
 
-data RepMsgN = RepMsgN {repMsg :: !Msg, _repN :: !Int}
+data RepMsgN = RepMsgN {repMsg :: Msg, _repN :: Int}
   deriving (Show, Generic)
 
 instance Binary RepMsgN
@@ -127,7 +127,7 @@ lastMsgOfReport (Report rep) = case rep of
 -- * History
 
 -- | The history of reports. This is a ring buffer of the given length
-data History = History !Time !Report !(RB.RingBuffer UAttrLine)
+data History = History Time Report (RB.RingBuffer UAttrLine)
   deriving (Show, Generic)
 
 instance Binary History

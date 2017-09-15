@@ -30,8 +30,8 @@ instance Binary FancyName
 
 -- | The type of item flavours.
 data Flavour = Flavour
-  { fancyName :: !FancyName  -- ^ how fancy should the colour description be
-  , baseColor :: !Color      -- ^ the colour of the flavour
+  { fancyName :: FancyName  -- ^ how fancy should the colour description be
+  , baseColor :: Color      -- ^ the colour of the flavour
   }
   deriving (Show, Eq, Ord, Generic)
 

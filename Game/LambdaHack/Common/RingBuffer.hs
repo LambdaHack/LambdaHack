@@ -15,10 +15,10 @@ import qualified Data.Sequence as Seq
 import GHC.Generics (Generic)
 
 data RingBuffer a = RingBuffer
-  { rbCarrier :: !(Seq.Seq a)
-  , rbMaxSize :: !Int
-  , rbNext    :: !Int
-  , rbLength  :: !Int
+  { rbCarrier :: Seq.Seq a
+  , rbMaxSize :: Int
+  , rbNext    :: Int
+  , rbLength  :: Int
   }
   deriving (Show, Generic)
 

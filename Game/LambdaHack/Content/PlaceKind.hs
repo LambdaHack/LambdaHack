@@ -15,14 +15,14 @@ import Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | Parameters for the generation of small areas within a dungeon level.
 data PlaceKind = PlaceKind
-  { psymbol   :: !Char          -- ^ a symbol
-  , pname     :: !Text          -- ^ short description
-  , pfreq     :: !(Freqs PlaceKind)  -- ^ frequency within groups
-  , prarity   :: !Rarity        -- ^ rarity on given depths
-  , pcover    :: !Cover         -- ^ how to fill whole place based on the corner
-  , pfence    :: !Fence         -- ^ whether to fence place with solid border
-  , ptopLeft  :: ![Text]        -- ^ plan of the top-left corner of the place
-  , poverride :: ![(Char, GroupName TileKind)]  -- ^ legend override
+  { psymbol   :: Char          -- ^ a symbol
+  , pname     :: Text          -- ^ short description
+  , pfreq     :: Freqs PlaceKind  -- ^ frequency within groups
+  , prarity   :: Rarity        -- ^ rarity on given depths
+  , pcover    :: Cover         -- ^ how to fill whole place based on the corner
+  , pfence    :: Fence         -- ^ whether to fence place with solid border
+  , ptopLeft  :: [Text]        -- ^ plan of the top-left corner of the place
+  , poverride :: [(Char, GroupName TileKind)]  -- ^ legend override
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound
 

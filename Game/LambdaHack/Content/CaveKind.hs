@@ -20,40 +20,40 @@ import Game.LambdaHack.Content.TileKind (TileKind)
 -- | Parameters for the generation of dungeon levels.
 -- Warning: for efficiency, avoid embedded items in any of the common tiles.
 data CaveKind = CaveKind
-  { csymbol         :: !Char         -- ^ a symbol
-  , cname           :: !Text         -- ^ short description
-  , cfreq           :: !(Freqs CaveKind)  -- ^ frequency within groups
-  , cxsize          :: !X            -- ^ X size of the whole cave
-  , cysize          :: !Y            -- ^ Y size of the whole cave
-  , cgrid           :: !Dice.DiceXY  -- ^ the dimensions of the grid of places
-  , cminPlaceSize   :: !Dice.DiceXY  -- ^ minimal size of places; for merging
-  , cmaxPlaceSize   :: !Dice.DiceXY  -- ^ maximal size of places
-  , cdarkChance     :: !Dice.Dice    -- ^ the chance a place is dark
-  , cnightChance    :: !Dice.Dice    -- ^ the chance the cave is dark
-  , cauxConnects    :: !Rational     -- ^ a proportion of extra connections
-  , cmaxVoid        :: !Rational     -- ^ at most this proportion of rooms void
-  , cminStairDist   :: !Int          -- ^ minimal distance between stairs
-  , cextraStairs    :: !Dice.Dice    -- ^ extra stairs on top of from above
-  , cdoorChance     :: !Chance       -- ^ the chance of a door in an opening
-  , copenChance     :: !Chance       -- ^ if there's a door, is it open?
-  , chidden         :: !Int          -- ^ if not open, hidden one in n times
-  , cactorCoeff     :: !Int          -- ^ the lower, the more monsters spawn
-  , cactorFreq      :: !(Freqs ItemKind)  -- ^ actor groups to consider
-  , citemNum        :: !Dice.Dice    -- ^ the number of items in the cave
-  , citemFreq       :: !(Freqs ItemKind)
-                                     -- ^ item groups to consider
-  , cplaceFreq      :: !(Freqs PlaceKind)
-                                     -- ^ place groups to consider
-  , cpassable       :: !Bool         -- ^ are passable default tiles permitted
-  , cdefTile        :: !(GroupName TileKind)  -- ^ the default cave tile
-  , cdarkCorTile    :: !(GroupName TileKind)  -- ^ the dark cave corridor tile
-  , clitCorTile     :: !(GroupName TileKind)  -- ^ the lit cave corridor tile
-  , cfillerTile     :: !(GroupName TileKind)  -- ^ the filler wall
-  , couterFenceTile :: !(GroupName TileKind)  -- ^ the outer fence wall
-  , clegendDarkTile :: !(GroupName TileKind)  -- ^ the dark place plan legend
-  , clegendLitTile  :: !(GroupName TileKind)  -- ^ the lit place plan legend
-  , cescapeGroup    :: !(Maybe (GroupName PlaceKind))  -- ^ escape, if any
-  , cstairFreq      :: !(Freqs PlaceKind)
+  { csymbol         :: Char         -- ^ a symbol
+  , cname           :: Text         -- ^ short description
+  , cfreq           :: Freqs CaveKind  -- ^ frequency within groups
+  , cxsize          :: X            -- ^ X size of the whole cave
+  , cysize          :: Y            -- ^ Y size of the whole cave
+  , cgrid           :: Dice.DiceXY  -- ^ the dimensions of the grid of places
+  , cminPlaceSize   :: Dice.DiceXY  -- ^ minimal size of places; for merging
+  , cmaxPlaceSize   :: Dice.DiceXY  -- ^ maximal size of places
+  , cdarkChance     :: Dice.Dice    -- ^ the chance a place is dark
+  , cnightChance    :: Dice.Dice    -- ^ the chance the cave is dark
+  , cauxConnects    :: Rational     -- ^ a proportion of extra connections
+  , cmaxVoid        :: Rational     -- ^ at most this proportion of rooms void
+  , cminStairDist   :: Int          -- ^ minimal distance between stairs
+  , cextraStairs    :: Dice.Dice    -- ^ extra stairs on top of from above
+  , cdoorChance     :: Chance       -- ^ the chance of a door in an opening
+  , copenChance     :: Chance       -- ^ if there's a door, is it open?
+  , chidden         :: Int          -- ^ if not open, hidden one in n times
+  , cactorCoeff     :: Int          -- ^ the lower, the more monsters spawn
+  , cactorFreq      :: Freqs ItemKind  -- ^ actor groups to consider
+  , citemNum        :: Dice.Dice    -- ^ the number of items in the cave
+  , citemFreq       :: Freqs ItemKind
+                                    -- ^ item groups to consider
+  , cplaceFreq      :: Freqs PlaceKind
+                                    -- ^ place groups to consider
+  , cpassable       :: Bool         -- ^ are passable default tiles permitted
+  , cdefTile        :: GroupName TileKind  -- ^ the default cave tile
+  , cdarkCorTile    :: GroupName TileKind  -- ^ the dark cave corridor tile
+  , clitCorTile     :: GroupName TileKind  -- ^ the lit cave corridor tile
+  , cfillerTile     :: GroupName TileKind  -- ^ the filler wall
+  , couterFenceTile :: GroupName TileKind  -- ^ the outer fence wall
+  , clegendDarkTile :: GroupName TileKind  -- ^ the dark place plan legend
+  , clegendLitTile  :: GroupName TileKind  -- ^ the lit place plan legend
+  , cescapeGroup    :: Maybe (GroupName PlaceKind)  -- ^ escape, if any
+  , cstairFreq      :: Freqs PlaceKind
       -- ^ place groups to consider for stairs; in this case the rarity
       --   of items in the group does not affect group choice
   }

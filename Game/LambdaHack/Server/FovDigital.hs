@@ -39,13 +39,13 @@ type Progress = Int
 -- coordinate setup, where quadrant I, with x and y positive,
 -- is on the upper right.
 data Bump = B
-  { bx :: !Int
-  , by :: !Int
+  { bx :: Int
+  , by :: Int
   }
   deriving Show
 
 -- | Straight line between points.
-data Line = Line !Bump !Bump
+data Line = Line Bump Bump
   deriving Show
 
 -- | Convex hull represented as a list of points.

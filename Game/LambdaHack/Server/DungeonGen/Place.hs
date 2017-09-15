@@ -30,13 +30,13 @@ import Game.LambdaHack.Server.DungeonGen.Area
 -- | The parameters of a place. All are immutable and set
 -- at the time when a place is generated.
 data Place = Place
-  { qkind    :: !(Kind.Id PlaceKind)
-  , qarea    :: !Area
-  , qseen    :: !Bool
-  , qlegend  :: !(GroupName TileKind)
-  , qFWall   :: !(Kind.Id TileKind)
-  , qFFloor  :: !(Kind.Id TileKind)
-  , qFGround :: !(Kind.Id TileKind)
+  { qkind    :: Kind.Id PlaceKind
+  , qarea    :: Area
+  , qseen    :: Bool
+  , qlegend  :: GroupName TileKind
+  , qFWall   :: Kind.Id TileKind
+  , qFFloor  :: Kind.Id TileKind
+  , qFGround :: Kind.Id TileKind
   }
   deriving Show
 

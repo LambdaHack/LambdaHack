@@ -26,9 +26,9 @@ import Game.LambdaHack.Common.Point
 
 -- | Arrays indexed by @Point@.
 data GArray w c = Array
-  { axsize  :: !X
-  , aysize  :: !Y
-  , avector :: !(U.Vector w)
+  { axsize  :: X
+  , aysize  :: Y
+  , avector :: U.Vector w
   }
   deriving Eq
 

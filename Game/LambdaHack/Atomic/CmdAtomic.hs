@@ -46,8 +46,8 @@ import Game.LambdaHack.Content.TileKind (TileKind)
 -- | Abstract syntax of atomic commands, that is, atomic game state
 -- transformations.
 data CmdAtomic =
-    UpdAtomic !UpdAtomic  -- ^ atomic updates
-  | SfxAtomic !SfxAtomic  -- ^ atomic special effects
+    UpdAtomic UpdAtomic  -- ^ atomic updates
+  | SfxAtomic SfxAtomic  -- ^ atomic special effects
   deriving (Show, Eq, Generic)
 
 instance Binary CmdAtomic
@@ -58,58 +58,58 @@ instance Binary CmdAtomic
 -- that help clients determine whether and how to communicate them to players.
 data UpdAtomic =
   -- Create/destroy actors and items.
-    UpdCreateActor !ActorId !Actor ![(ItemId, Item)]
-  | UpdDestroyActor !ActorId !Actor ![(ItemId, Item)]
-  | UpdCreateItem !ItemId !Item !ItemQuant !Container
-  | UpdDestroyItem !ItemId !Item !ItemQuant !Container
-  | UpdSpotActor !ActorId !Actor ![(ItemId, Item)]
-  | UpdLoseActor !ActorId !Actor ![(ItemId, Item)]
-  | UpdSpotItem !Bool !ItemId !Item !ItemQuant !Container
-  | UpdLoseItem !Bool !ItemId !Item !ItemQuant !Container
+    UpdCreateActor ActorId Actor [(ItemId, Item)]
+  | UpdDestroyActor ActorId Actor [(ItemId, Item)]
+  | UpdCreateItem ItemId Item ItemQuant Container
+  | UpdDestroyItem ItemId Item ItemQuant Container
+  | UpdSpotActor ActorId Actor [(ItemId, Item)]
+  | UpdLoseActor ActorId Actor [(ItemId, Item)]
+  | UpdSpotItem Bool ItemId Item ItemQuant Container
+  | UpdLoseItem Bool ItemId Item ItemQuant Container
   -- Move actors and items.
-  | UpdMoveActor !ActorId !Point !Point
-  | UpdWaitActor !ActorId !Bool
-  | UpdDisplaceActor !ActorId !ActorId
-  | UpdMoveItem !ItemId !Int !ActorId !CStore !CStore
+  | UpdMoveActor ActorId Point Point
+  | UpdWaitActor ActorId Bool
+  | UpdDisplaceActor ActorId ActorId
+  | UpdMoveItem ItemId Int ActorId CStore CStore
   -- Change actor attributes.
-  | UpdRefillHP !ActorId !Int64
-  | UpdRefillCalm !ActorId !Int64
-  | UpdTrajectory !ActorId !(Maybe ([Vector], Speed)) !(Maybe ([Vector], Speed))
+  | UpdRefillHP ActorId Int64
+  | UpdRefillCalm ActorId Int64
+  | UpdTrajectory ActorId (Maybe ([Vector], Speed)) (Maybe ([Vector], Speed))
   -- Change faction attributes.
-  | UpdQuitFaction !FactionId !(Maybe Status) !(Maybe Status)
-  | UpdLeadFaction !FactionId !(Maybe ActorId) !(Maybe ActorId)
-  | UpdDiplFaction !FactionId !FactionId !Diplomacy !Diplomacy
-  | UpdTacticFaction !FactionId !Tactic !Tactic
-  | UpdAutoFaction !FactionId !Bool
-  | UpdRecordKill !ActorId !(Kind.Id ItemKind) !Int
+  | UpdQuitFaction FactionId (Maybe Status) (Maybe Status)
+  | UpdLeadFaction FactionId (Maybe ActorId) (Maybe ActorId)
+  | UpdDiplFaction FactionId FactionId Diplomacy Diplomacy
+  | UpdTacticFaction FactionId Tactic Tactic
+  | UpdAutoFaction FactionId Bool
+  | UpdRecordKill ActorId (Kind.Id ItemKind) Int
   -- Alter map.
-  | UpdAlterTile !LevelId !Point !(Kind.Id TileKind) !(Kind.Id TileKind)
-  | UpdAlterExplorable !LevelId !Int
-  | UpdSearchTile !ActorId !Point !(Kind.Id TileKind)
-  | UpdHideTile !ActorId !Point !(Kind.Id TileKind)
-  | UpdSpotTile !LevelId ![(Point, Kind.Id TileKind)]
-  | UpdLoseTile !LevelId ![(Point, Kind.Id TileKind)]
-  | UpdAlterSmell !LevelId !Point !Time !Time
-  | UpdSpotSmell !LevelId ![(Point, Time)]
-  | UpdLoseSmell !LevelId ![(Point, Time)]
+  | UpdAlterTile LevelId Point (Kind.Id TileKind) (Kind.Id TileKind)
+  | UpdAlterExplorable LevelId Int
+  | UpdSearchTile ActorId Point (Kind.Id TileKind)
+  | UpdHideTile ActorId Point (Kind.Id TileKind)
+  | UpdSpotTile LevelId [(Point, Kind.Id TileKind)]
+  | UpdLoseTile LevelId [(Point, Kind.Id TileKind)]
+  | UpdAlterSmell LevelId Point Time Time
+  | UpdSpotSmell LevelId [(Point, Time)]
+  | UpdLoseSmell LevelId [(Point, Time)]
   -- Assorted.
-  | UpdTimeItem !ItemId !Container !ItemTimer !ItemTimer
-  | UpdAgeGame ![LevelId]
-  | UpdUnAgeGame ![LevelId]
-  | UpdDiscover !Container !ItemId !(Kind.Id ItemKind) !ItemSeed
-  | UpdCover !Container !ItemId !(Kind.Id ItemKind) !ItemSeed
-  | UpdDiscoverKind !Container !ItemId !(Kind.Id ItemKind)
-  | UpdCoverKind !Container !ItemId !(Kind.Id ItemKind)
-  | UpdDiscoverSeed !Container !ItemId !ItemSeed
-  | UpdCoverSeed !Container !ItemId !ItemSeed
-  | UpdPerception !LevelId !Perception !Perception
-  | UpdRestart !FactionId !DiscoveryKind !PerLid !State !Challenge !DebugModeCli
-  | UpdRestartServer !State
-  | UpdResume !FactionId !PerLid
-  | UpdResumeServer !State
-  | UpdKillExit !FactionId
+  | UpdTimeItem ItemId Container ItemTimer ItemTimer
+  | UpdAgeGame [LevelId]
+  | UpdUnAgeGame [LevelId]
+  | UpdDiscover Container ItemId (Kind.Id ItemKind) ItemSeed
+  | UpdCover Container ItemId (Kind.Id ItemKind) ItemSeed
+  | UpdDiscoverKind Container ItemId (Kind.Id ItemKind)
+  | UpdCoverKind Container ItemId (Kind.Id ItemKind)
+  | UpdDiscoverSeed Container ItemId ItemSeed
+  | UpdCoverSeed Container ItemId ItemSeed
+  | UpdPerception LevelId Perception Perception
+  | UpdRestart FactionId DiscoveryKind PerLid State Challenge DebugModeCli
+  | UpdRestartServer State
+  | UpdResume FactionId PerLid
+  | UpdResumeServer State
+  | UpdKillExit FactionId
   | UpdWriteSave
-  | UpdMsgAll !Text
+  | UpdMsgAll Text
   deriving (Show, Eq, Generic)
 
 instance Binary UpdAtomic
@@ -117,41 +117,41 @@ instance Binary UpdAtomic
 -- | Abstract syntax of atomic special effects, that is, atomic commands
 -- that only display special effects and don't change the state.
 data SfxAtomic =
-    SfxStrike !ActorId !ActorId !ItemId !CStore
-  | SfxRecoil !ActorId !ActorId !ItemId !CStore
-  | SfxSteal !ActorId !ActorId !ItemId !CStore
-  | SfxRelease !ActorId !ActorId !ItemId !CStore
-  | SfxProject !ActorId !ItemId !CStore
-  | SfxReceive !ActorId !ItemId !CStore
-  | SfxApply !ActorId !ItemId !CStore
-  | SfxCheck !ActorId !ItemId !CStore
-  | SfxTrigger !ActorId !Point
-  | SfxShun !ActorId !Point
-  | SfxEffect !FactionId !ActorId !IK.Effect !Int64
-  | SfxMsgFid !FactionId !SfxMsg
+    SfxStrike ActorId ActorId ItemId CStore
+  | SfxRecoil ActorId ActorId ItemId CStore
+  | SfxSteal ActorId ActorId ItemId CStore
+  | SfxRelease ActorId ActorId ItemId CStore
+  | SfxProject ActorId ItemId CStore
+  | SfxReceive ActorId ItemId CStore
+  | SfxApply ActorId ItemId CStore
+  | SfxCheck ActorId ItemId CStore
+  | SfxTrigger ActorId Point
+  | SfxShun ActorId Point
+  | SfxEffect FactionId ActorId IK.Effect Int64
+  | SfxMsgFid FactionId SfxMsg
   deriving (Show, Eq, Generic)
 
 instance Binary SfxAtomic
 
 data SfxMsg =
-    SfxUnexpected !ReqFailure
-  | SfxLoudUpd !Bool !UpdAtomic
-  | SfxLoudStrike !Bool !(Kind.Id ItemKind) !Int
-  | SfxLoudSummon !Bool !(GroupName ItemKind) !Dice.Dice
+    SfxUnexpected ReqFailure
+  | SfxLoudUpd Bool UpdAtomic
+  | SfxLoudStrike Bool (Kind.Id ItemKind) Int
+  | SfxLoudSummon Bool (GroupName ItemKind) Dice.Dice
   | SfxFizzles
   | SfxVoidDetection
-  | SfxSummonLackCalm !ActorId
+  | SfxSummonLackCalm ActorId
   | SfxLevelNoMore
   | SfxLevelPushed
-  | SfxBracedImmune !ActorId
+  | SfxBracedImmune ActorId
   | SfxEscapeImpossible
   | SfxTransImpossible
-  | SfxIdentifyNothing !CStore
-  | SfxPurposeNothing !CStore
-  | SfxPurposeTooFew !Int !Int
+  | SfxIdentifyNothing CStore
+  | SfxPurposeNothing CStore
+  | SfxPurposeTooFew Int Int
   | SfxPurposeUnique
   | SfxColdFish
-  | SfxTimerExtended !ActorId !ItemId !CStore
+  | SfxTimerExtended ActorId ItemId CStore
   deriving (Show, Eq, Generic)
 
 instance Binary SfxMsg

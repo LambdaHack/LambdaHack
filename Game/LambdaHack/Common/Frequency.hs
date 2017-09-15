@@ -32,9 +32,9 @@ import GHC.Generics (Generic)
 -- the expected equalities, unless they do some kind of normalization
 -- (see 'Dice').
 data Frequency a = Frequency
-  { runFrequency  :: ![(Int, a)]  -- ^ give acces to raw frequency values
-  , nameFrequency :: Text         -- ^ short description for debug, etc.;
-                                  --   keep it lazy, because it's rarely used
+  { runFrequency  :: [(Int, a)]  -- ^ give acces to raw frequency values
+  , nameFrequency :: ~Text       -- ^ short description for debug, etc.;
+                                 --   keep it lazy, because it's rarely used
   }
   deriving (Show, Eq, Ord, Foldable, Traversable, Generic)
 

@@ -26,8 +26,8 @@ type Y = Int
 -- and down, so that the (0, 0) point is in the top-left corner of the screen.
 -- Coordinates are never negative.
 data Point = Point
-  { px :: !X
-  , py :: !Y
+  { px :: X
+  , py :: Y
   }
   deriving (Eq, Ord, Generic)
 

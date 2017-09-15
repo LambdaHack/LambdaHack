@@ -53,9 +53,9 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { scurrentWindow :: !Window
-  , scharCells     :: !(V.Vector (HTMLTableCellElement, CSSStyleDeclaration))
-  , spreviousFrame :: !(IORef SingleFrame)
+  { scurrentWindow :: Window
+  , scharCells     :: V.Vector (HTMLTableCellElement, CSSStyleDeclaration)
+  , spreviousFrame :: IORef SingleFrame
   }
 
 extraBlankMargin :: Int

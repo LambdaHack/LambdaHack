@@ -29,8 +29,8 @@ import Game.LambdaHack.Common.Point
 -- and down, so that the (1, 1) vector points to the bottom-right corner
 -- of the screen.
 data Vector = Vector
-  { vx :: !X
-  , vy :: !Y
+  { vx :: X
+  , vy :: Y
   }
   deriving (Show, Read, Eq, Ord, Generic)
 

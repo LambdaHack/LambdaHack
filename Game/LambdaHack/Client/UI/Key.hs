@@ -41,9 +41,9 @@ data Key =
   | Insert
   | Delete
   | Home
-  | KP !Char      -- ^ a keypad key for a character (digits and operators)
-  | Char !Char    -- ^ a single printable character
-  | Fun !Int      -- ^ function key
+  | KP Char      -- ^ a keypad key for a character (digits and operators)
+  | Char Char    -- ^ a single printable character
+  | Fun Int      -- ^ function key
   | LeftButtonPress    -- ^ left mouse button pressed
   | MiddleButtonPress  -- ^ middle mouse button pressed
   | RightButtonPress   -- ^ right mouse button pressed
@@ -52,7 +52,7 @@ data Key =
   | RightButtonRelease   -- ^ right mouse button released
   | WheelNorth  -- ^ mouse wheel rotated north
   | WheelSouth  -- ^ mouse wheel rotated south
-  | Unknown !String -- ^ an unknown key, registered to warn the user
+  | Unknown String -- ^ an unknown key, registered to warn the user
   | DeadKey
   deriving (Ord, Eq, Generic)
 
@@ -72,8 +72,8 @@ instance Binary Modifier
 
 instance NFData Modifier
 
-data KM = KM { modifier :: !Modifier
-             , key      :: !Key }
+data KM = KM { modifier :: Modifier
+             , key      :: Key }
   deriving (Ord, Eq, Generic)
 
 instance Binary KM

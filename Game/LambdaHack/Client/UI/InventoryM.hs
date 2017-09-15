@@ -228,11 +228,11 @@ getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
                  0 cCur cRest ISuitable
 
 data DefItemKey m = DefItemKey
-  { defLabel  :: Either Text K.KM  -- ^ can be undefined if not @defCond@
-  , defCond   :: !Bool
+  { defLabel  :: Either Text K.KM
+  , defCond   :: Bool
   , defAction :: Either K.KM SlotChar
-              -> m ( Either Text [(ItemId, ItemFull)]
-                   , (ItemDialogMode, Either K.KM SlotChar) )
+                 -> m ( Either Text [(ItemId, ItemFull)]
+                      , (ItemDialogMode, Either K.KM SlotChar) )
   }
 
 data Suitability =

@@ -57,7 +57,7 @@ import Game.LambdaHack.Server.FovDigital
 -- * Perception cache types
 
 data FovValid a =
-    FovValid !a
+    FovValid a
   | FovInvalid
   deriving (Show, Eq)
 
@@ -70,9 +70,9 @@ newtype PerReachable = PerReachable {preachable :: ES.EnumSet Point}
   deriving (Show, Eq)
 
 data CacheBeforeLucid = CacheBeforeLucid
-  { creachable :: !PerReachable
-  , cnocto     :: !PerVisible
-  , csmell     :: !PerSmelled
+  { creachable :: PerReachable
+  , cnocto     :: PerVisible
+  , csmell     :: PerSmelled
   }
   deriving (Show, Eq)
 
@@ -83,8 +83,8 @@ type PerActor = EM.EnumMap ActorId (FovValid CacheBeforeLucid)
 -- lights lit it). But this is complex and unions of EnumSets are cheaper
 -- than the EnumMaps that would be required.
 data PerceptionCache = PerceptionCache
-  { ptotal   :: !(FovValid CacheBeforeLucid)
-  , perActor :: !PerActor
+  { ptotal   :: FovValid CacheBeforeLucid
+  , perActor :: PerActor
   }
   deriving (Show, Eq)
 

@@ -29,21 +29,21 @@ import Game.LambdaHack.Common.Misc
 
 -- | Item properties that are fixed for a given kind of items.
 data ItemKind = ItemKind
-  { isymbol  :: !Char              -- ^ map symbol
-  , iname    :: !Text              -- ^ generic name
-  , ifreq    :: !(Freqs ItemKind)  -- ^ frequency within groups
-  , iflavour :: ![Flavour]         -- ^ possible flavours
-  , icount   :: !Dice.Dice         -- ^ created in that quantity
-  , irarity  :: !Rarity            -- ^ rarity on given depths
-  , iverbHit :: !MU.Part           -- ^ the verb&noun for applying and hit
-  , iweight  :: !Int               -- ^ weight in grams
-  , idamage  :: ![(Int, Dice.Dice)]  -- ^ frequency of basic impact damage
-  , iaspects :: ![Aspect]          -- ^ keep the aspect continuously
-  , ieffects :: ![Effect]          -- ^ cause the effect when triggered
-  , ifeature :: ![Feature]         -- ^ public properties
-  , idesc    :: !Text              -- ^ description
-  , ikit     :: ![(GroupName ItemKind, CStore)]
-                                   -- ^ accompanying organs and items
+  { isymbol  :: Char              -- ^ map symbol
+  , iname    :: Text              -- ^ generic name
+  , ifreq    :: Freqs ItemKind    -- ^ frequency within groups
+  , iflavour :: [Flavour]         -- ^ possible flavours
+  , icount   :: Dice.Dice         -- ^ created in that quantity
+  , irarity  :: Rarity            -- ^ rarity on given depths
+  , iverbHit :: MU.Part           -- ^ the verb&noun for applying and hit
+  , iweight  :: Int               -- ^ weight in grams
+  , idamage  :: [(Int, Dice.Dice)]  -- ^ frequency of basic impact damage
+  , iaspects :: [Aspect]          -- ^ keep the aspect continuously
+  , ieffects :: [Effect]          -- ^ cause the effect when triggered
+  , ifeature :: [Feature]         -- ^ public properties
+  , idesc    :: Text              -- ^ description
+  , ikit     :: [(GroupName ItemKind, CStore)]
+                                  -- ^ accompanying organs and items
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound
 
@@ -52,43 +52,43 @@ data ItemKind = ItemKind
 -- are possible. Constructors are sorted vs increasing impact/danger.
 data Effect =
     -- Ordinary effects.
-    ELabel !Text        -- ^ secret (learned as effect) label of the item
-  | EqpSlot !EqpSlot    -- ^ AI and UI flag that leaks item properties
-  | Burn !Dice.Dice
-  | Explode !(GroupName ItemKind)
+    ELabel Text        -- ^ secret (learned as effect) label of the item
+  | EqpSlot EqpSlot    -- ^ AI and UI flag that leaks item properties
+  | Burn Dice.Dice
+  | Explode (GroupName ItemKind)
       -- ^ explode, producing this group of blasts
-  | RefillHP !Int
-  | RefillCalm !Int
+  | RefillHP Int
+  | RefillCalm Int
   | Dominate
   | Impress
-  | Summon !(GroupName ItemKind) !Dice.Dice
-  | Ascend !Bool
+  | Summon (GroupName ItemKind) Dice.Dice
+  | Ascend Bool
   | Escape
-  | Paralyze !Dice.Dice  -- ^ expressed in game clips
-  | InsertMove !Dice.Dice  -- ^ expressed in game turns
-  | Teleport !Dice.Dice
-  | CreateItem !CStore !(GroupName ItemKind) !TimerDice
+  | Paralyze Dice.Dice  -- ^ expressed in game clips
+  | InsertMove Dice.Dice  -- ^ expressed in game turns
+  | Teleport Dice.Dice
+  | CreateItem CStore (GroupName ItemKind) TimerDice
       -- ^ create an item of the group and insert into the store with the given
       --   random timer
-  | DropItem !Int !Int !CStore !(GroupName ItemKind)
+  | DropItem Int Int CStore (GroupName ItemKind)
   | PolyItem
   | Identify
-  | Detect !Int
-  | DetectActor !Int
-  | DetectItem !Int
-  | DetectExit !Int
-  | DetectHidden !Int
-  | SendFlying !ThrowMod
-  | PushActor !ThrowMod
-  | PullActor !ThrowMod
+  | Detect Int
+  | DetectActor Int
+  | DetectItem Int
+  | DetectExit Int
+  | DetectHidden Int
+  | SendFlying ThrowMod
+  | PushActor ThrowMod
+  | PullActor ThrowMod
   | DropBestWeapon
-  | ActivateInv !Char   -- ^ symbol @' '@ means all
+  | ActivateInv Char   -- ^ symbol @' '@ means all
   | ApplyPerfume
     -- Exotic effects follow.
-  | OneOf ![Effect]
-  | OnSmash !Effect     -- ^ trigger if item smashed (not applied nor meleed)
-  | Recharging !Effect  -- ^ this effect inactive until timeout passes
-  | Temporary !Text
+  | OneOf [Effect]
+  | OnSmash Effect     -- ^ trigger if item smashed (not applied nor meleed)
+  | Recharging Effect  -- ^ this effect inactive until timeout passes
+  | Temporary Text
       -- ^ the item is temporary, vanishes at even void Periodic activation,
       --   unless Durable and not Fragile, and shows message with
       --   this verb at last copy activation or at each activation
@@ -121,8 +121,8 @@ forIdEffect eff = case eff of
 
 data TimerDice =
     TimerNone
-  | TimerGameTurn !Dice.Dice
-  | TimerActorTurn !Dice.Dice
+  | TimerGameTurn Dice.Dice
+  | TimerActorTurn Dice.Dice
   deriving (Eq, Ord, Generic)
 
 instance Show TimerDice where
@@ -137,27 +137,27 @@ instance NFData TimerDice
 -- | Aspects of items. Those that are named @Add*@ are additive
 -- (starting at 0) for all items wielded by an actor and they affect the actor.
 data Aspect =
-    Timeout !Dice.Dice         -- ^ some effects disabled until item recharges;
-                               --   expressed in game turns
-  | AddHurtMelee !Dice.Dice    -- ^ percentage damage bonus in melee
-  | AddArmorMelee !Dice.Dice   -- ^ percentage armor bonus against melee
-  | AddArmorRanged !Dice.Dice  -- ^ percentage armor bonus against ranged
-  | AddMaxHP !Dice.Dice        -- ^ maximal hp
-  | AddMaxCalm !Dice.Dice      -- ^ maximal calm
-  | AddSpeed !Dice.Dice        -- ^ speed in m/10s (not of a projectile!)
-  | AddSight !Dice.Dice        -- ^ FOV radius, where 1 means a single tile
-  | AddSmell !Dice.Dice        -- ^ smell radius, where 1 means a single tile
-  | AddShine !Dice.Dice        -- ^ shine radius, where 1 means a single tile
-  | AddNocto !Dice.Dice        -- ^ noctovision radius, where 1 is single tile
-  | AddAggression !Dice.Dice   -- ^ aggression, especially closing in for melee
-  | AddAbility !Ability.Ability !Dice.Dice  -- ^ bonus to an ability
+    Timeout Dice.Dice         -- ^ some effects disabled until item recharges;
+                              --   expressed in game turns
+  | AddHurtMelee Dice.Dice    -- ^ percentage damage bonus in melee
+  | AddArmorMelee Dice.Dice   -- ^ percentage armor bonus against melee
+  | AddArmorRanged Dice.Dice  -- ^ percentage armor bonus against ranged
+  | AddMaxHP Dice.Dice        -- ^ maximal hp
+  | AddMaxCalm Dice.Dice      -- ^ maximal calm
+  | AddSpeed Dice.Dice        -- ^ speed in m/10s (not of a projectile)
+  | AddSight Dice.Dice        -- ^ FOV radius, where 1 means a single tile
+  | AddSmell Dice.Dice        -- ^ smell radius, where 1 means a single tile
+  | AddShine Dice.Dice        -- ^ shine radius, where 1 means a single tile
+  | AddNocto Dice.Dice        -- ^ noctovision radius, where 1 is single tile
+  | AddAggression Dice.Dice   -- ^ aggression, especially closing in for melee
+  | AddAbility Ability.Ability Dice.Dice  -- ^ bonus to an ability
   deriving (Show, Eq, Ord, Generic)
 
 -- | Parameters modifying a throw of a projectile or flight of pushed actor.
 -- Not additive and don't start at 0.
 data ThrowMod = ThrowMod
-  { throwVelocity :: !Int  -- ^ fly with this percentage of base throw speed
-  , throwLinger   :: !Int  -- ^ fly for this percentage of 2 turns
+  { throwVelocity :: Int  -- ^ fly with this percentage of base throw speed
+  , throwLinger   :: Int  -- ^ fly for this percentage of 2 turns
   }
   deriving (Show, Eq, Ord, Generic)
 
@@ -169,7 +169,7 @@ data Feature =
     Fragile            -- ^ drop and break at target tile, even if no hit
   | Lobable            -- ^ drop at target tile, even if no hit
   | Durable            -- ^ don't break even when hitting or applying
-  | ToThrow !ThrowMod  -- ^ parameters modifying a throw
+  | ToThrow ThrowMod   -- ^ parameters modifying a throw
   | Identified         -- ^ the item starts identified
   | Applicable         -- ^ AI and UI flag: consider applying
   | Equipable          -- ^ AI and UI flag: consider equipping (independent of
@@ -177,7 +177,7 @@ data Feature =
   | Meleeable          -- ^ AI and UI flag: consider meleeing with
   | Precious           -- ^ AI and UI flag: don't risk identifying by use
                        --   also, can't throw or apply if not calm enough;
-  | Tactic !Tactic     -- ^ overrides actor's tactic
+  | Tactic Tactic      -- ^ overrides actor's tactic
   deriving (Show, Eq, Ord, Generic)
 
 data EqpSlot =

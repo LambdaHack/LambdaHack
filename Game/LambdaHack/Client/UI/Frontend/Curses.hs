@@ -26,8 +26,8 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { swin    :: !C.Window  -- ^ the window to draw to
-  , sstyles :: !(M.Map (Color.Color, Color.Color) C.CursesStyle)
+  { swin    :: C.Window  -- ^ the window to draw to
+  , sstyles :: M.Map (Color.Color, Color.Color) C.CursesStyle
       -- ^ map from fore/back colour pairs to defined curses styles
   }
 

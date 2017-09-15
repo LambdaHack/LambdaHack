@@ -90,28 +90,28 @@ type SmellMap = EM.EnumMap Point Time
 -- | A view on single, inhabited dungeon level. "Remembered" fields
 -- carry a subset of the info in the client copies of levels.
 data Level = Level
-  { ldepth      :: !AbsDepth   -- ^ absolute depth of the level
-  , lfloor      :: !ItemFloor  -- ^ remembered items lying on the floor
-  , lembed      :: !ItemFloor  -- ^ items embedded in the tile
-  , lactor      :: !ActorMap   -- ^ seen actors at positions on the level
-  , ltile       :: !TileMap    -- ^ remembered level map
-  , lxsize      :: !X          -- ^ width of the level
-  , lysize      :: !Y          -- ^ height of the level
-  , lsmell      :: !SmellMap   -- ^ remembered smells on the level
-  , ldesc       :: !Text       -- ^ level description
-  , lstair      :: !([Point], [Point])
-                               -- ^ positions of (up, down) stairs
-  , lseen       :: !Int        -- ^ currently remembered clear tiles
-  , lexplorable :: !Int        -- ^ total number of explorable tiles
-  , ltime       :: !Time       -- ^ local time on the level (possibly frozen)
-  , lactorCoeff :: !Int        -- ^ the lower, the more monsters spawn
-  , lactorFreq  :: !(Freqs ItemKind)
-                               -- ^ frequency of spawned actors; [] for clients
-  , litemNum    :: !Int        -- ^ number of initial items, 0 for clients
-  , litemFreq   :: !(Freqs ItemKind)
-                               -- ^ frequency of initial items; [] for clients
-  , lescape     :: ![Point]    -- ^ positions of IK.Escape tiles
-  , lnight      :: !Bool
+  { ldepth      :: AbsDepth   -- ^ absolute depth of the level
+  , lfloor      :: ItemFloor  -- ^ remembered items lying on the floor
+  , lembed      :: ItemFloor  -- ^ items embedded in the tile
+  , lactor      :: ActorMap   -- ^ seen actors at positions on the level
+  , ltile       :: TileMap    -- ^ remembered level map
+  , lxsize      :: X          -- ^ width of the level
+  , lysize      :: Y          -- ^ height of the level
+  , lsmell      :: SmellMap   -- ^ remembered smells on the level
+  , ldesc       :: Text       -- ^ level description
+  , lstair      :: ([Point], [Point])
+                              -- ^ positions of (up, down) stairs
+  , lseen       :: Int        -- ^ currently remembered clear tiles
+  , lexplorable :: Int        -- ^ total number of explorable tiles
+  , ltime       :: Time       -- ^ local time on the level (possibly frozen)
+  , lactorCoeff :: Int        -- ^ the lower, the more monsters spawn
+  , lactorFreq  :: Freqs ItemKind
+                              -- ^ frequency of spawned actors; [] for clients
+  , litemNum    :: Int        -- ^ number of initial items, 0 for clients
+  , litemFreq   :: Freqs ItemKind
+                              -- ^ frequency of initial items; [] for clients
+  , lescape     :: [Point]    -- ^ positions of IK.Escape tiles
+  , lnight      :: Bool
   }
   deriving (Show, Eq)
 

@@ -68,14 +68,14 @@ debugRequestUI aid cmd = do
   serverPrint d
 
 data DebugAid a = DebugAid
-  { label   :: !Text
-  , aid     :: !ActorId
-  , cmd     :: !a
-  , faction :: !FactionId
-  , lid     :: !LevelId
-  , bHP     :: !Int64
-  , btime   :: !Time
-  , time    :: !Time
+  { label   :: Text
+  , aid     :: ActorId
+  , cmd     :: a
+  , faction :: FactionId
+  , lid     :: LevelId
+  , bHP     :: Int64
+  , btime   :: Time
+  , time    :: Time
   }
   deriving Show
 

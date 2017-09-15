@@ -27,11 +27,11 @@ import Game.LambdaHack.Server.DungeonGen.Place
 
 -- | The type of caves (not yet inhabited dungeon levels).
 data Cave = Cave
-  { dkind   :: !(Kind.Id CaveKind)  -- ^ the kind of the cave
-  , dsecret :: !Int                 -- ^ secret tile seed
-  , dmap    :: !TileMapEM           -- ^ tile kinds in the cave
-  , dplaces :: ![Place]             -- ^ places generated in the cave
-  , dnight  :: !Bool                -- ^ whether the cave is dark
+  { dkind   :: Kind.Id CaveKind  -- ^ the kind of the cave
+  , dsecret :: Int               -- ^ secret tile seed
+  , dmap    :: TileMapEM         -- ^ tile kinds in the cave
+  , dplaces :: [Place]           -- ^ places generated in the cave
+  , dnight  :: Bool              -- ^ whether the cave is dark
   }
   deriving Show
 

@@ -85,29 +85,29 @@ type CmdTriple = ([CmdCategory], Text, HumanCmd)
 -- | Abstract syntax of player commands.
 data HumanCmd =
     -- Meta.
-    Macro ![String]
-  | ByArea ![(CmdArea, HumanCmd)]  -- if outside the areas, do nothing
-  | ByAimMode {exploration :: !HumanCmd, aiming :: !HumanCmd}
-  | ByItemMode {ts :: ![Trigger], notChosen :: !HumanCmd, chosen :: !HumanCmd}
-  | ComposeIfLocal !HumanCmd !HumanCmd
-  | ComposeUnlessError !HumanCmd !HumanCmd
-  | Compose2ndLocal !HumanCmd !HumanCmd
-  | LoopOnNothing !HumanCmd
+    Macro [String]
+  | ByArea [(CmdArea, HumanCmd)]  -- if outside the areas, do nothing
+  | ByAimMode {exploration :: HumanCmd, aiming :: HumanCmd}
+  | ByItemMode {ts :: [Trigger], notChosen :: HumanCmd, chosen :: HumanCmd}
+  | ComposeIfLocal HumanCmd HumanCmd
+  | ComposeUnlessError HumanCmd HumanCmd
+  | Compose2ndLocal HumanCmd HumanCmd
+  | LoopOnNothing HumanCmd
     -- Global.
     -- These usually take time.
   | Wait
   | Wait10
-  | MoveDir !Vector
-  | RunDir !Vector
+  | MoveDir Vector
+  | RunDir Vector
   | RunOnceAhead
   | MoveOnceToXhair
   | RunOnceToXhair
   | ContinueToXhair
-  | MoveItem ![CStore] !CStore !(Maybe MU.Part) !Bool
-  | Project ![Trigger]
-  | Apply ![Trigger]
-  | AlterDir ![Trigger]
-  | AlterWithPointer ![Trigger]
+  | MoveItem [CStore] CStore (Maybe MU.Part) Bool
+  | Project [Trigger]
+  | Apply [Trigger]
+  | AlterDir [Trigger]
+  | AlterWithPointer [Trigger]
   | Help
   | ItemMenu
   | MainMenu
@@ -124,18 +124,18 @@ data HumanCmd =
     -- Local. Below this line, commands do not notify the server.
   | Clear
   | SortSlots
-  | ChooseItem !ItemDialogMode
-  | ChooseItemMenu !ItemDialogMode
-  | ChooseItemProject ![Trigger]
-  | ChooseItemApply ![Trigger]
-  | PickLeader !Int
+  | ChooseItem ItemDialogMode
+  | ChooseItemMenu ItemDialogMode
+  | ChooseItemProject [Trigger]
+  | ChooseItemApply [Trigger]
+  | PickLeader Int
   | PickLeaderWithPointer
   | MemberCycle
   | MemberBack
   | SelectActor
   | SelectNone
   | SelectWithPointer
-  | Repeat !Int
+  | Repeat Int
   | Record
   | History
   | MarkVision
@@ -148,16 +148,16 @@ data HumanCmd =
   | Accept
   | TgtClear
   | ItemClear
-  | MoveXhair !Vector !Int
+  | MoveXhair Vector Int
   | AimTgt
   | AimFloor
   | AimEnemy
   | AimItem
-  | AimAscend !Int
-  | EpsIncr !Bool
+  | AimAscend Int
+  | EpsIncr Bool
   | XhairUnknown
   | XhairItem
-  | XhairStair !Bool
+  | XhairStair Bool
   | XhairPointerFloor
   | XhairPointerEnemy
   | AimPointerFloor
@@ -187,8 +187,8 @@ noRemoteHumanCmd cmd = case cmd of
   _ -> False
 
 data Trigger =
-    ApplyItem {verb :: !MU.Part, object :: !MU.Part, symbol :: !Char}
-  | AlterFeature {verb :: !MU.Part, object :: !MU.Part, feature :: !TK.Feature}
+    ApplyItem {verb :: MU.Part, object :: MU.Part, symbol :: Char}
+  | AlterFeature {verb :: MU.Part, object :: MU.Part, feature :: TK.Feature}
   deriving (Show, Eq, Ord, Generic)
 
 instance Read Trigger where

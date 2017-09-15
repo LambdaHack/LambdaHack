@@ -18,7 +18,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Content.PlaceKind (PlaceKind)
 
 -- | The type of areas. The bottom left and the top right points.
-data Area = Area !X !Y !X !Y
+data Area = Area X Y X Y
   deriving (Show, Eq)
 
 -- | Checks if it's an area with at least one field.
@@ -37,9 +37,9 @@ isTrivialArea :: Area -> Bool
 isTrivialArea (Area x0 y0 x1 y1) = x0 == x1 && y0 == y1
 
 data SpecialArea =
-    SpecialArea !Area
-  | SpecialFixed !Point !(GroupName PlaceKind) !Area
-  | SpecialMerged !SpecialArea !Point
+    SpecialArea Area
+  | SpecialFixed Point (GroupName PlaceKind) Area
+  | SpecialMerged SpecialArea Point
   deriving Show
 
 -- | Divide uniformly a larger area into the given number of smaller areas

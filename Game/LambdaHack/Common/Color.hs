@@ -75,8 +75,8 @@ instance Hashable Highlight
 
 -- | Text attributes: foreground and backgroud colors.
 data Attr = Attr
-  { fg :: !Color      -- ^ foreground colour
-  , bg :: !Highlight  -- ^ backgroud highlight
+  { fg :: Color      -- ^ foreground colour
+  , bg :: Highlight  -- ^ backgroud highlight
   }
   deriving (Show, Eq, Ord)
 
@@ -90,8 +90,8 @@ defAttr :: Attr
 defAttr = Attr defFG HighlightNone
 
 data AttrChar = AttrChar
-  { acAttr :: !Attr
-  , acChar :: !Char
+  { acAttr :: Attr
+  , acChar :: Char
   }
   deriving (Show, Eq, Ord)
 

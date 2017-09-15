@@ -34,15 +34,15 @@ import Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 -- in the client copies of the state. Clients never directly change
 -- their @State@, but apply atomic actions sent by the server to do so.
 data State = State
-  { _sdungeon    :: !Dungeon      -- ^ remembered dungeon
-  , _stotalDepth :: !AbsDepth     -- ^ absolute dungeon depth, for item creation
-  , _sactorD     :: !ActorDict    -- ^ remembered actors in the dungeon
-  , _sitemD      :: !ItemDict     -- ^ remembered items in the dungeon
-  , _sfactionD   :: !FactionDict  -- ^ remembered sides still in game
-  , _stime       :: !Time         -- ^ global game time, for UI display only
-  , _scops       :: Kind.COps     -- ^ remembered content
-  , _shigh       :: !HighScore.ScoreDict  -- ^ high score table
-  , _sgameModeId :: !(Kind.Id ModeKind)  -- ^ current game mode
+  { _sdungeon    :: Dungeon      -- ^ remembered dungeon
+  , _stotalDepth :: AbsDepth     -- ^ absolute dungeon depth, for item creation
+  , _sactorD     :: ActorDict    -- ^ remembered actors in the dungeon
+  , _sitemD      :: ItemDict     -- ^ remembered items in the dungeon
+  , _sfactionD   :: FactionDict  -- ^ remembered sides still in game
+  , _stime       :: Time         -- ^ global game time, for UI display only
+  , _scops       :: ~Kind.COps   -- ^ remembered content
+  , _shigh       :: HighScore.ScoreDict  -- ^ high score table
+  , _sgameModeId :: Kind.Id ModeKind     -- ^ current game mode
   }
   deriving (Show, Eq)
 

@@ -23,10 +23,10 @@ import qualified Game.LambdaHack.Common.Color as Color
 
 -- | Bindings and other information about human player commands.
 data Binding = Binding
-  { bcmdMap  :: !(M.Map K.KM CmdTriple)   -- ^ binding of keys to commands
-  , bcmdList :: ![(K.KM, CmdTriple)]      -- ^ the properly ordered list
-                                          --   of commands for the help menu
-  , brevMap  :: !(M.Map HumanCmd [K.KM])  -- ^ and from commands to their keys
+  { bcmdMap  :: M.Map K.KM CmdTriple   -- ^ binding of keys to commands
+  , bcmdList :: [(K.KM, CmdTriple)]    -- ^ the properly ordered list
+                                       --   of commands for the help menu
+  , brevMap  :: M.Map HumanCmd [K.KM]  -- ^ and from commands to their keys
   }
 
 -- | Binding of keys to movement and other standard commands,

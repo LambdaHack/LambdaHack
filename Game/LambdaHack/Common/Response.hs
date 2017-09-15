@@ -17,9 +17,9 @@ import Game.LambdaHack.Common.Request
 
 -- | Abstract syntax of client commands for both AI and UI clients.
 data Response =
-    RespUpdAtomic !UpdAtomic
-  | RespQueryAI !ActorId
-  | RespSfxAtomic !SfxAtomic
+    RespUpdAtomic UpdAtomic
+  | RespQueryAI ActorId
+  | RespSfxAtomic SfxAtomic
   | RespQueryUI
   deriving Show
 
@@ -27,7 +27,7 @@ type CliSerQueue = MVar
 
 -- | Connection channel between the server and a single client.
 data ChanServer = ChanServer
-  { responseS  :: !(CliSerQueue Response)
-  , requestAIS :: !(CliSerQueue RequestAI)
-  , requestUIS :: !(Maybe (CliSerQueue RequestUI))
+  { responseS  :: CliSerQueue Response
+  , requestAIS :: CliSerQueue RequestAI
+  , requestUIS :: Maybe (CliSerQueue RequestUI)
   }

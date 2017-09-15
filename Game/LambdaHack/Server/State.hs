@@ -31,64 +31,64 @@ import Game.LambdaHack.Server.ItemRev
 
 -- | Global, server state.
 data StateServer = StateServer
-  { sactorTime    :: !ActorTime         -- ^ absolute times of next actions
-  , sdiscoKind    :: !DiscoveryKind     -- ^ full item kind discoveries data
-  , sdiscoKindRev :: !DiscoveryKindRev  -- ^ reverse map, used for item creation
-  , suniqueSet    :: !UniqueSet         -- ^ already generated unique items
-  , sdiscoAspect  :: !DiscoveryAspect   -- ^ full item aspect data
-  , sitemSeedD    :: !ItemSeedDict  -- ^ map from item ids to item seeds
-  , sitemRev      :: !ItemRev       -- ^ reverse id map, used for item creation
-  , sflavour      :: !FlavourMap    -- ^ association of flavour to items
-  , sacounter     :: !ActorId       -- ^ stores next actor index
-  , sicounter     :: !ItemId        -- ^ stores next item index
-  , snumSpawned   :: !(EM.EnumMap LevelId Int)
-  , sundo         :: ![CmdAtomic]   -- ^ atomic commands performed to date
-  , sperFid       :: !PerFid        -- ^ perception of all factions
-  , sperValidFid  :: !PerValidFid   -- ^ perception validity for all factions
-  , sperCacheFid  :: !PerCacheFid   -- ^ perception cache of all factions
-  , sactorAspect  :: !ActorAspect   -- ^ full actor aspect data
-  , sfovLucidLid  :: !FovLucidLid   -- ^ ambient or shining light positions
-  , sfovClearLid  :: !FovClearLid   -- ^ clear tiles positions
-  , sfovLitLid    :: !FovLitLid     -- ^ ambient light positions
-  , sarenas       :: ![LevelId]     -- ^ active arenas
-  , svalidArenas  :: !Bool          -- ^ whether active arenas valid
-  , srandom       :: !R.StdGen      -- ^ current random generator
-  , srngs         :: !RNGs          -- ^ initial random generators
-  , squit         :: !Bool          -- ^ exit the game loop
-  , swriteSave    :: !Bool          -- ^ write savegame to a file now
-  , sdebugSer     :: !DebugModeSer  -- ^ current debugging mode
-  , sdebugNxt     :: !DebugModeSer  -- ^ debugging mode for the next game
+  { sactorTime    :: ActorTime         -- ^ absolute times of next actions
+  , sdiscoKind    :: DiscoveryKind     -- ^ full item kind discoveries data
+  , sdiscoKindRev :: DiscoveryKindRev  -- ^ reverse map, used for item creation
+  , suniqueSet    :: UniqueSet         -- ^ already generated unique items
+  , sdiscoAspect  :: DiscoveryAspect   -- ^ full item aspect data
+  , sitemSeedD    :: ItemSeedDict  -- ^ map from item ids to item seeds
+  , sitemRev      :: ItemRev       -- ^ reverse id map, used for item creation
+  , sflavour      :: FlavourMap    -- ^ association of flavour to items
+  , sacounter     :: ActorId       -- ^ stores next actor index
+  , sicounter     :: ItemId        -- ^ stores next item index
+  , snumSpawned   :: EM.EnumMap LevelId Int
+  , sundo         :: [CmdAtomic]   -- ^ atomic commands performed to date
+  , sperFid       :: PerFid        -- ^ perception of all factions
+  , sperValidFid  :: PerValidFid   -- ^ perception validity for all factions
+  , sperCacheFid  :: PerCacheFid   -- ^ perception cache of all factions
+  , sactorAspect  :: ActorAspect   -- ^ full actor aspect data
+  , sfovLucidLid  :: FovLucidLid   -- ^ ambient or shining light positions
+  , sfovClearLid  :: FovClearLid   -- ^ clear tiles positions
+  , sfovLitLid    :: FovLitLid     -- ^ ambient light positions
+  , sarenas       :: [LevelId]     -- ^ active arenas
+  , svalidArenas  :: Bool          -- ^ whether active arenas valid
+  , srandom       :: R.StdGen      -- ^ current random generator
+  , srngs         :: RNGs          -- ^ initial random generators
+  , squit         :: Bool          -- ^ exit the game loop
+  , swriteSave    :: Bool          -- ^ write savegame to a file now
+  , sdebugSer     :: DebugModeSer  -- ^ current debugging mode
+  , sdebugNxt     :: DebugModeSer  -- ^ debugging mode for the next game
   }
   deriving (Show)
 
 -- | Debug commands. See 'Server.debugArgs' for the descriptions.
 data DebugModeSer = DebugModeSer
-  { sknowMap         :: !Bool
-  , sknowEvents      :: !Bool
-  , sknowItems       :: !Bool
-  , sniffIn          :: !Bool
-  , sniffOut         :: !Bool
-  , sallClear        :: !Bool
-  , sboostRandomItem :: !Bool
-  , sgameMode        :: !(Maybe (GroupName ModeKind))
-  , sautomateAll     :: !Bool
-  , skeepAutomated   :: !Bool
-  , sdungeonRng      :: !(Maybe R.StdGen)
-  , smainRng         :: !(Maybe R.StdGen)
-  , snewGameSer      :: !Bool
-  , scurChalSer      :: !Challenge
-  , sdumpInitRngs    :: !Bool
-  , ssavePrefixSer   :: !String
-  , sdbgMsgSer       :: !Bool
-  , sdebugCli        :: !DebugModeCli
+  { sknowMap         :: Bool
+  , sknowEvents      :: Bool
+  , sknowItems       :: Bool
+  , sniffIn          :: Bool
+  , sniffOut         :: Bool
+  , sallClear        :: Bool
+  , sboostRandomItem :: Bool
+  , sgameMode        :: Maybe (GroupName ModeKind)
+  , sautomateAll     :: Bool
+  , skeepAutomated   :: Bool
+  , sdungeonRng      :: Maybe R.StdGen
+  , smainRng         :: Maybe R.StdGen
+  , snewGameSer      :: Bool
+  , scurChalSer      :: Challenge
+  , sdumpInitRngs    :: Bool
+  , ssavePrefixSer   :: String
+  , sdbgMsgSer       :: Bool
+  , sdebugCli        :: DebugModeCli
       -- The client debug inside server debug only holds the client commandline
       -- options and is never updated with config options, etc.
   }
   deriving Show
 
 data RNGs = RNGs
-  { dungeonRandomGenerator  :: !(Maybe R.StdGen)
-  , startingRandomGenerator :: !(Maybe R.StdGen)
+  { dungeonRandomGenerator  :: Maybe R.StdGen
+  , startingRandomGenerator :: Maybe R.StdGen
   }
 
 instance Show RNGs where

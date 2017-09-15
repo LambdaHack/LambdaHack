@@ -42,14 +42,14 @@ type FontAtlas = EM.EnumMap Color.AttrCharW32 SDL.Texture
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { swindow           :: !SDL.Window
-  , srenderer         :: !SDL.Renderer
-  , sfont             :: !TTF.Font
-  , satlas            :: !(IORef FontAtlas)
-  , stexture          :: !(IORef SDL.Texture)
-  , spreviousFrame    :: !(IORef SingleFrame)
-  , sforcedShutdown   :: !(IORef Bool)
-  , sdisplayPermitted :: !(MVar Bool)
+  { swindow           :: SDL.Window
+  , srenderer         :: SDL.Renderer
+  , sfont             :: TTF.Font
+  , satlas            :: IORef FontAtlas
+  , stexture          :: IORef SDL.Texture
+  , spreviousFrame    :: IORef SingleFrame
+  , sforcedShutdown   :: IORef Bool
+  , sdisplayPermitted :: MVar Bool
   }
 
 -- | The name of the frontend.

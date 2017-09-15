@@ -41,16 +41,16 @@ type RequestAI = (ReqAI, Maybe ActorId)
 data ReqUI =
     ReqUINop
   | ReqUITimed RequestAnyAbility
-  | ReqUIGameRestart !(GroupName ModeKind) !Challenge
+  | ReqUIGameRestart (GroupName ModeKind) Challenge
   | ReqUIGameExit
   | ReqUIGameSave
-  | ReqUITactic !Tactic
+  | ReqUITactic Tactic
   | ReqUIAutomate
   deriving Show
 
 type RequestUI = (ReqUI, Maybe ActorId)
 
-data RequestAnyAbility = forall a. RequestAnyAbility !(RequestTimed a)
+data RequestAnyAbility = forall a. RequestAnyAbility (RequestTimed a)
 
 deriving instance Show RequestAnyAbility
 
@@ -59,15 +59,15 @@ timedToUI = ReqUITimed . RequestAnyAbility
 
 -- | Client-server requests that take game time. Sent by both AI and UI clients.
 data RequestTimed :: Ability -> * where
-  ReqMove :: !Vector -> RequestTimed 'AbMove
-  ReqMelee :: !ActorId -> !ItemId -> !CStore -> RequestTimed 'AbMelee
-  ReqDisplace :: !ActorId -> RequestTimed 'AbDisplace
-  ReqAlter :: !Point -> RequestTimed 'AbAlter
+  ReqMove :: Vector -> RequestTimed 'AbMove
+  ReqMelee :: ActorId -> ItemId -> CStore -> RequestTimed 'AbMelee
+  ReqDisplace :: ActorId -> RequestTimed 'AbDisplace
+  ReqAlter :: Point -> RequestTimed 'AbAlter
   ReqWait :: RequestTimed 'AbWait
   ReqWait10 :: RequestTimed 'AbWait
-  ReqMoveItems :: ![(ItemId, Int, CStore, CStore)] -> RequestTimed 'AbMoveItem
-  ReqProject :: !Point -> !Int -> !ItemId -> !CStore -> RequestTimed 'AbProject
-  ReqApply :: !ItemId -> !CStore -> RequestTimed 'AbApply
+  ReqMoveItems :: [(ItemId, Int, CStore, CStore)] -> RequestTimed 'AbMoveItem
+  ReqProject :: Point -> Int -> ItemId -> CStore -> RequestTimed 'AbProject
+  ReqApply :: ItemId -> CStore -> RequestTimed 'AbApply
 
 deriving instance Show (RequestTimed a)
 

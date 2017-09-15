@@ -12,46 +12,46 @@ import Data.Binary
 import GHC.Generics (Generic)
 
 data DebugModeCli = DebugModeCli
-  { sgtkFontFamily    :: !(Maybe Text)
+  { sgtkFontFamily    :: Maybe Text
       -- ^ Font family to use for the GTK main game window.
-  , sdlFontFile       :: !(Maybe Text)
+  , sdlFontFile       :: Maybe Text
       -- ^ Font file to use for the SDL2 main game window.
-  , sdlTtfSizeAdd     :: !(Maybe Int)
+  , sdlTtfSizeAdd     :: Maybe Int
       -- ^ Pixels to add to map cells on top of scalable font max glyph height.
-  , sdlFonSizeAdd     :: !(Maybe Int)
+  , sdlFonSizeAdd     :: Maybe Int
       -- ^ Pixels to add to map cells on top of .fon font max glyph height.
-  , sfontSize         :: !(Maybe Int)
+  , sfontSize         :: Maybe Int
       -- ^ Font size to use for the main game window.
-  , scolorIsBold      :: !(Maybe Bool)
+  , scolorIsBold      :: Maybe Bool
       -- ^ Whether to use bold attribute for colorful characters.
-  , smaxFps           :: !(Maybe Int)
+  , smaxFps           :: Maybe Int
       -- ^ Maximal frames per second.
       -- This is better low and fixed, to avoid jerkiness and delays
       -- that tell the player there are many intelligent enemies on the level.
       -- That's better than scaling AI sofistication down based
       -- on the FPS setting and machine speed.
-  , sdisableAutoYes   :: !Bool
+  , sdisableAutoYes   :: Bool
       -- ^ Never auto-answer all prompts, even if under AI control.
-  , snoAnim           :: !(Maybe Bool)
+  , snoAnim           :: Maybe Bool
       -- ^ Don't show any animations.
-  , snewGameCli       :: !Bool
+  , snewGameCli       :: Bool
       -- ^ Start a new game, overwriting the save file.
-  , sbenchmark        :: !Bool
+  , sbenchmark        :: Bool
       -- ^ Don't create directories and files and show time stats.
-  , stitle            :: !(Maybe Text)
-  , sfontDir          :: !(Maybe FilePath)
-  , ssavePrefixCli    :: !String
+  , stitle            :: Maybe Text
+  , sfontDir          :: Maybe FilePath
+  , ssavePrefixCli    :: String
       -- ^ Prefix of the save game file name.
-  , sfrontendTeletype :: !Bool
+  , sfrontendTeletype :: Bool
       -- ^ Whether to use the stdout/stdin frontend.
-  , sfrontendNull     :: !Bool
+  , sfrontendNull     :: Bool
       -- ^ Whether to use null (no input/output) frontend.
-  , sfrontendLazy     :: !Bool
+  , sfrontendLazy     :: Bool
       -- ^ Whether to use lazy (output not even calculated) frontend.
-  , sdbgMsgCli        :: !Bool
+  , sdbgMsgCli        :: Bool
       -- ^ Show clients' internal debug messages.
-  , sstopAfterSeconds :: !(Maybe Int)
-  , sstopAfterFrames  :: !(Maybe Int)
+  , sstopAfterSeconds :: Maybe Int
+  , sstopAfterFrames  :: Maybe Int
   }
   deriving (Show, Eq, Generic)
 

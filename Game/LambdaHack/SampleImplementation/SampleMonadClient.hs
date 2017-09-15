@@ -35,12 +35,12 @@ import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 
 data CliState = CliState
-  { cliState   :: !State              -- ^ current global state
-  , cliClient  :: !StateClient        -- ^ current client state
-  , cliSession :: !(Maybe SessionUI)  -- ^ UI state, empty for AI clients
-  , cliDict    :: !ChanServer         -- ^ this client connection information
-  , cliToSave  :: !(Save.ChanSave (State, StateClient, Maybe SessionUI))
-                                      -- ^ connection to the save thread
+  { cliState   :: State            -- ^ current global state
+  , cliClient  :: StateClient      -- ^ current client state
+  , cliSession :: Maybe SessionUI  -- ^ UI state, empty for AI clients
+  , cliDict    :: ChanServer       -- ^ this client connection information
+  , cliToSave  :: Save.ChanSave (State, StateClient, Maybe SessionUI)
+                                   -- ^ connection to the save thread
   }
   deriving Generic
 

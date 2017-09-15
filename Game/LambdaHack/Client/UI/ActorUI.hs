@@ -24,10 +24,10 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.State
 
 data ActorUI = ActorUI
-  { bsymbol  :: !Char         -- ^ individual map symbol
-  , bname    :: !Text         -- ^ individual name
-  , bpronoun :: !Text         -- ^ individual pronoun
-  , bcolor   :: !Color.Color  -- ^ individual map color
+  { bsymbol  :: Char         -- ^ individual map symbol
+  , bname    :: Text         -- ^ individual name
+  , bpronoun :: Text         -- ^ individual pronoun
+  , bcolor   :: Color.Color  -- ^ individual map color
   }
   deriving (Show, Eq, Generic)
 
