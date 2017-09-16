@@ -320,7 +320,8 @@ targetStrategy aid = do
       updateTgt tap@TgtAndPath{tapPath=AndPath{..},tapTgt} = case tapTgt of
         TEnemy a permit -> do
           body <- getsState $ getActorBody a
-          if | (condInMelee || not focused)  -- prefers closer foes
+          if | (condInMelee  -- fight close foes or nobody at all
+                || not focused && not (null nearbyFoes))  -- prefers closer foes
                && a `notElem` map fst nearbyFoes  -- old one not close enough
                || blid body /= blid b  -- wrong level
                || actorDying body  -- foe already dying
