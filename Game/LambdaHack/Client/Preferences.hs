@@ -344,19 +344,22 @@ totalUsefulness !cops !fact !effects !aspects !item =
       -- because they are applied to self. If they are periodic we can't
       -- effectively apply them, becasue they are never recharged,
       -- because they activate as soon as recharged.
-      benApply = (effSelf + effDice  -- hits self with dice too, when applying
-                  + if periodic then 0 else sum chargeSelf)
-                 `divUp` if durable then 1 else durabilityMult
+      benApply = max 0 $  -- because optional; I don't need to apply
+        (effSelf + effDice  -- hits self with dice too, when applying
+         + if periodic then 0 else sum chargeSelf)
+        `divUp` if durable then 1 else durabilityMult
       -- For melee, we add the foe part.
-      benMelee = (effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
-                  + if periodic then 0 else sum chargeFoe)
-                 `divUp` if durable then 1 else durabilityMult
+      benMelee = min 0 $
+        (effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
+         + if periodic then 0 else sum chargeFoe)
+        `divUp` if durable then 1 else durabilityMult
       -- The periodic effects, if any, are activated when projectile flies,
       -- but not when it hits, so they are not added to @benFling@.
       -- However, if item is not periodic, the recharging effects
       -- are activated at projectile impact, hence their value is added.
-      benFling = effFoe + benFlingDice -- nothing in @eqpSum@; normally not worn
-                 + if periodic then 0 else sum chargeFoe
+      benFling = min 0 $
+        effFoe + benFlingDice -- nothing in @eqpSum@; normally not worn
+        + if periodic then 0 else sum chargeFoe
       benFlingDice | jdamage item <= 0 = 0  -- speedup
                    | otherwise = min 0 $
         let hurtMult = 100 + min 99 (max (-99) (aHurtMelee aspects))
@@ -393,14 +396,14 @@ totalUsefulness !cops !fact !effects !aspects !item =
           ( True  -- equip, melee crucial, and only weapons in eqp can be used
           , if durable
             then eqpSum
-                 + max 0 (max benApply (- benMelee))  -- apply or melee or not
-            else max 0 (- benMelee))  -- melee is predominant
+                 + max benApply (- benMelee)  -- apply or melee or not
+            else - benMelee)  -- melee is predominant
         | goesIntoEqp item && eqpSum > 0 =  -- weapon or other equippable
           ( True  -- equip; long time bonus usually outweighs fling or apply
           , eqpSum  -- possibly spent turn equipping, so reap the benefits
             + if durable
-              then max 0 benApply  -- apply or not but don't fling
+              then benApply  -- apply or not but don't fling
               else 0)  -- don't remove from equipment by using up
         | otherwise =
-          (False, max 0 (max benApply (- benFling)))  -- apply or fling
+          (False, max benApply (- benFling))  -- apply or fling
   in Benefit{..}
