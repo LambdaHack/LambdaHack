@@ -309,7 +309,8 @@ totalUsefulness !cops !fact !effects !aspects !item =
         let scaleChargeBens bens
               | timeout <= 3 = bens
               | otherwise = map (\eff ->
-                  min eff (eff * avgItemDelay `divUp` timeout)) bens
+                  if avgItemDelay >= timeout then eff
+                  else eff * avgItemDelay `divUp` timeout) bens
             (cself, cfoe) = unzip $ map (effectToBenefit cops fact)
                                         (stripRecharging effects)
         in (scaleChargeBens cself, scaleChargeBens cfoe)
