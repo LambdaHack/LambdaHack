@@ -323,15 +323,12 @@ findEntryPoss Kind.COps{coTileSpeedup}
                 ds
         nps <- tryFind (np : ps) (n - 1)
         return $! np : nps
-      -- Prefer deeper stairs to avoid spawners ambushing explorers.
-      (deeperStairs, shallowerStairs) =
-        (if fromEnum lid > 0 then id else swap) lstair
-      stairPoss = if length deeperStairs > length shallowerStairs
-                  then deeperStairs
-                  else shallowerStairs
+      -- Only consider deeper stairs to avoid leaderless spawners that lurk near
+      -- their starting stairs ambushing explorers that enter the level.
+      deeperStairs = (if fromEnum lid > 0 then fst else snd) lstair
       middlePos = Point (lxsize `div` 2) (lysize `div` 2)
   let !_A = assert (k > 0 && factionDist > 0) ()
-      onStairs = reverse $ take k $ lescape ++ stairPoss
+      onStairs = reverse $ take k $ lescape ++ deeperStairs
       nk = k - length onStairs
   -- Starting in the middle is too easy.
   found <- tryFind (middlePos : onStairs) nk
