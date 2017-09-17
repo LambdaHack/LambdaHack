@@ -361,16 +361,17 @@ totalUsefulness !cops !fact !effects !aspects !item =
         effFoe + benFlingDice -- nothing in @eqpSum@; normally not worn
         + if periodic then 0 else sum chargeFoe
       benFlingDice | jdamage item <= 0 = 0  -- speedup
-                   | otherwise = min 0 $
-        let hurtMult = 100 + min 99 (max (-99) (aHurtMelee aspects))
-              -- assumes no enemy armor and no block
-            dmg = Dice.meanDice (jdamage item)
-            rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
-            -- For simplicity, we ignore range bonus/malus and @Lobable@.
-            IK.ThrowMod{IK.throwVelocity} = strengthToThrow item
-            speed = speedFromWeight (jweight item) throwVelocity
-        in fromEnum $ - modifyDamageBySpeed rawDeltaHP speed * 10 `div` oneM
-             -- 1 damage valued at 10, just as in @damageUsefulness@
+                   | otherwise = assert (v <= 0) v
+       where
+        hurtMult = 100 + min 99 (max (-99) (aHurtMelee aspects))
+          -- assumes no enemy armor and no block
+        dmg = Dice.meanDice (jdamage item)
+        rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
+        -- For simplicity, we ignore range bonus/malus and @Lobable@.
+        IK.ThrowMod{IK.throwVelocity} = strengthToThrow item
+        speed = speedFromWeight (jweight item) throwVelocity
+        v = fromEnum $ - modifyDamageBySpeed rawDeltaHP speed * 10 `div` oneM
+          -- 1 damage valued at 10, just as in @damageUsefulness@
       -- For equipment benefit, we take into account only the self
       -- value of the recharging effects, because they applied to self.
       -- We don't add a bonus @averageTurnValue@ to the value of periodic

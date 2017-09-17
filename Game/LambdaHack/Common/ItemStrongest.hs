@@ -126,7 +126,8 @@ hasCharge localTime itemFull@ItemFull{..} =
   in length it1 < itemK
 
 damageUsefulness :: Item -> Int
-damageUsefulness item = min 1000 (10 * Dice.meanDice (jdamage item))
+damageUsefulness item = let v = min 1000 (10 * Dice.meanDice (jdamage item))
+                        in assert (v >= 0) v
 
 strongestMelee :: Maybe DiscoveryBenefit -> Time -> [(ItemId, ItemFull)]
                -> [(Int, (ItemId, ItemFull))]

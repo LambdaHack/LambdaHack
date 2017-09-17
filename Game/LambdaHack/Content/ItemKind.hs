@@ -256,6 +256,7 @@ validateSingleItemKind ik@ItemKind{..} =
   [ "iname longer than 23" | T.length iname > 23 ]
   ++ [ "icount < 0" | icount < 0 ]
   ++ validateRarity irarity
+  ++ validateDamage idamage
   -- Reject duplicate Timeout, because it's not additive.
   ++ (let timeoutAspect :: Aspect -> Bool
           timeoutAspect Timeout{} = True
@@ -275,7 +276,7 @@ validateSingleItemKind ik@ItemKind{..} =
          ++ [ "EqpSlot specified but not Equipable nor Meleeable"
             | length ts > 0 && Equipable `notElem` ifeature
                             && Meleeable `notElem` ifeature ])
-  ++ ["Reduntand Equipable or Meleeable" | Equipable `elem` ifeature
+  ++ ["Redundant Equipable or Meleeable" | Equipable `elem` ifeature
                                            && Meleeable `elem` ifeature]
   ++ (let f :: Effect -> Bool
           f Temporary{} = True
@@ -310,6 +311,12 @@ validateDups :: ItemKind -> Feature -> [Text]
 validateDups ItemKind{..} feat =
   let ts = filter (== feat) ifeature
   in ["more than one" <+> tshow feat <+> "specification" | length ts > 1]
+
+validateDamage :: [(Int, Dice.Dice)] -> [Text]
+validateDamage = concatMap validateDice
+ where
+  validateDice (_, dice) = [ "potentially negative dice:" <+> tshow dice
+                           | Dice.minDice dice < 0]
 
 -- | Validate all item kinds.
 validateAllItemKind :: [ItemKind] -> [Text]
