@@ -108,13 +108,21 @@ rollSpawnPos :: Kind.COps -> ES.EnumSet Point
              -> Bool -> LevelId -> Level -> FactionId -> State
              -> Rnd Point
 rollSpawnPos Kind.COps{coTileSpeedup} visible
-             mobile lid lvl@Level{ltile, lxsize, lysize} fid s = do
-  let inhabitants = warActorRegularList fid lid s
-      distantSo df p _ = all (\b -> df $ chessDist (bpos b) p) inhabitants
+             mobile lid lvl@Level{ltile, lxsize, lysize, lstair} fid s = do
+  let -- Monsters try to harass enemies ASAP, instead of catching up from afar.
+      inhabitants = warActorRegularList fid lid s
+      nearInh df p = all (\b -> df $ chessDist (bpos b) p) inhabitants
+      -- Monsters often appear from deeper levels or at least we try
+      -- to suggest that.
+      deeperStairs = (if fromEnum lid > 0 then fst else snd) lstair
+      nearStairs df p = any (\pstair -> df $ chessDist pstair p) deeperStairs
+      -- I actors near deep stairs, risk if close enemy spawns is higher.
+      -- Also, spawns are common midway between actors and stairs.
+      distantSo df p _ = nearInh df p && nearStairs df p
       middlePos = Point (lxsize `div` 2) (lysize `div` 2)
       distantMiddle d p _ = chessDist p middlePos < d
       condList | mobile =
-        [ distantSo (<= 10)  -- try hard to harass enemies
+        [ distantSo (<= 10)
         , distantSo (<= 15)
         , distantSo (<= 20)
         ]
