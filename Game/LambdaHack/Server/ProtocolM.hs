@@ -160,12 +160,10 @@ childrenServer = unsafePerformIO (newMVar [])
 -- Connect to clients in old or newly spawned threads
 -- that read and write directly to the channels.
 updateConn :: (MonadAtomic m, MonadServerReadRequest m)
-           => Kind.COps
-           -> Config
-           -> (Maybe SessionUI -> Kind.COps -> FactionId -> ChanServer
-               -> IO ())
+           => Config
+           -> (Maybe SessionUI -> FactionId -> ChanServer -> IO ())
            -> m ()
-updateConn cops sconfig executorClient = do
+updateConn sconfig executorClient = do
   -- Prepare connections based on factions.
   oldD <- getDict
   let sess = emptySessionUI sconfig
@@ -188,9 +186,9 @@ updateConn cops sconfig executorClient = do
   -- Spawn client threads.
   let toSpawn = newD EM.\\ oldD
       forkUI fid connS =
-        forkChild childrenServer $ executorClient (Just sess) cops fid connS
+        forkChild childrenServer $ executorClient (Just sess) fid connS
       forkAI fid connS =
-        forkChild childrenServer $ executorClient Nothing cops fid connS
+        forkChild childrenServer $ executorClient Nothing fid connS
       forkClient fid conn@ChanServer{requestUIS=Nothing} =
         -- When a connection is reused, clients are not respawned,
         -- even if UI usage changes, but it works OK thanks to UI faction

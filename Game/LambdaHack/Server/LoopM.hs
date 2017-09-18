@@ -57,13 +57,13 @@ import Game.LambdaHack.Server.State
 loopSer :: (MonadAtomic m, MonadServerReadRequest m)
         => DebugModeSer  -- ^ server debug parameters
         -> Config
-        -> (Maybe SessionUI -> Kind.COps -> FactionId -> ChanServer -> IO ())
+        -> (Maybe SessionUI -> FactionId -> ChanServer -> IO ())
              -- ^ the code to run for UI clients
         -> m ()
 loopSer sdebug sconfig executorClient = do
   -- Recover states and launch clients.
   cops <- getsState scops
-  let updConn = updateConn cops sconfig executorClient
+  let updConn = updateConn sconfig executorClient
   restored <- tryRestore cops sdebug
   case restored of
     Just (sRaw, ser) | not $ snewGameSer sdebug -> do  -- a restored game

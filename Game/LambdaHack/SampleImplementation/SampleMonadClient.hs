@@ -130,12 +130,12 @@ instance MonadAtomic CliImplementation where
 -- | Init the client, then run an action, with a given session,
 -- state and history, in the @IO@ monad.
 executorCli :: CliImplementation ()
-            -> Maybe SessionUI
             -> Kind.COps
+            -> Maybe SessionUI
             -> FactionId
             -> ChanServer
             -> IO ()
-executorCli m cliSession cops fid cliDict =
+executorCli m cops cliSession fid cliDict =
   let stateToFileName (_, cli, _) =
         ssavePrefixCli (sdebugCli cli) <.> Save.saveNameCli (sside cli)
       totalState cliToSave = CliState

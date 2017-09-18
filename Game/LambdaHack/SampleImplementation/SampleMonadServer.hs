@@ -21,7 +21,7 @@ import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict hiding (State)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text.IO as T
-import System.Exit (ExitCode(ExitSuccess))
+import System.Exit (ExitCode (ExitSuccess))
 import System.FilePath
 import System.IO (hFlush, stdout)
 
@@ -110,7 +110,7 @@ executorSer cops copsClient sdebugNxtCmdline = do
   -- options and is never updated with config options, etc.
   let sdebugMode = applyConfigToDebug cops sconfig $ sdebugCli sdebugNxt
       -- Partially applied main loop of the clients.
-      executorClient = executorCli (loopCli copsClient sconfig sdebugMode)
+      executorClient = executorCli (loopCli copsClient sconfig sdebugMode) cops
   -- Wire together game content, the main loop of game clients
   -- and the game server loop.
   let m = loopSer sdebugNxt sconfig executorClient
