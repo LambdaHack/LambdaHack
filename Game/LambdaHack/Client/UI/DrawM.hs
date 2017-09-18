@@ -270,21 +270,26 @@ drawFrameActor :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameActor drawnLevelId = do
   SessionUI{sselected} <- getSession
   Level{lxsize, lactor} <- getLevel drawnLevelId
+  side <- getsClient sside
   mleader <- getsClient _sleader
   s <- getState
   sactorUI <- getsSession sactorUI
   let {-# INLINE viewActor #-}
       viewActor _ as = case as of
         aid : _ ->
-          let Actor{bhp, bproj} = getActorBody aid s
+          let Actor{bhp, bproj, bfid, btrunk} = getActorBody aid s
               ActorUI{bsymbol, bcolor} = sactorUI EM.! aid
+              Item{jfid} = getItemBody btrunk s
               symbol | bhp > 0 || bproj = bsymbol
                      | otherwise = '%'
-              bg = case mleader of
+              dominated = maybe False (== bfid) jfid
+              bg = if bproj then Color.HighlightNone else case mleader of
                 Just leader | aid == leader -> Color.HighlightRed
-                _ -> if aid `ES.notMember` sselected
-                     then Color.HighlightNone
-                     else Color.HighlightBlue
+                _ -> if | aid `ES.member` sselected -> Color.HighlightBlue
+                        | dominated -> if bfid == side  -- dominated by us
+                                       then Color.HighlightWhite
+                                       else Color.HighlightMagenta
+                        | otherwise -> Color.HighlightNone
           in Color.attrCharToW32
              $ Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
         [] -> error $ "lactor not sparse" `showFailure` ()
