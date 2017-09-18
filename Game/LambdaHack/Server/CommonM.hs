@@ -4,7 +4,7 @@ module Game.LambdaHack.Server.CommonM
   ( execFailure, getPerFid
   , revealItems, moveStores, deduceQuits, deduceKilled
   , electLeader, supplantLeader
-  , addActor, addActorIid, projectFail, discoverIfNoEffects
+  , addActor, registerActor, addActorIid, projectFail, discoverIfNoEffects
   , pickWeaponServer, currentSkillsServer
   , recomputeCachePer
   ) where
@@ -41,6 +41,7 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ItemM
+import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
@@ -333,13 +334,27 @@ addActor :: (MonadAtomic m, MonadServer m)
          -> m (Maybe ActorId)
 addActor actorGroup bfid pos lid tweakBody time = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
-  -- contains the constant properties.
+  -- that contains the constant properties.
   let trunkFreq = [(actorGroup, 1)]
-  m2 <- rollAndRegisterItem lid trunkFreq (CTrunk bfid lid pos) False Nothing
-  case m2 of
+  m5 <- rollItem 0 lid trunkFreq
+  case m5 of
     Nothing -> return Nothing
-    Just (trunkId, (trunkFull, _)) ->
-      addActorIid trunkId trunkFull False bfid pos lid tweakBody time
+    Just (itemKnownRaw, itemFullRaw, _, seed, _) ->
+      registerActor itemKnownRaw itemFullRaw seed
+                    bfid pos lid tweakBody time
+
+registerActor :: (MonadAtomic m, MonadServer m)
+              => ItemKnown -> ItemFull -> ItemSeed
+              -> FactionId -> Point -> LevelId -> (Actor -> Actor) -> Time
+              -> m (Maybe ActorId)
+registerActor (kindIx, ar, damage, _) itemFullRaw seed
+              bfid pos lid tweakBody time = do
+  let container = CTrunk bfid lid pos
+      jfid = Just bfid
+      itemKnown = (kindIx, ar, damage, jfid)
+      itemFull = itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
+  trunkId <- registerItem itemFull itemKnown seed container False
+  addActorIid trunkId itemFull False bfid pos lid tweakBody time
 
 addActorIid :: (MonadAtomic m, MonadServer m)
             => ItemId -> ItemFull -> Bool -> FactionId -> Point -> LevelId

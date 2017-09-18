@@ -111,8 +111,7 @@ rollAndRegisterItem lid itemFreq container verbose mk = do
   case m5 of
     Nothing -> return Nothing
     Just (itemKnown, itemFullRaw, _, seed, itemGroup) -> do
-      let itemFull = itemFullRaw { itemK = fromMaybe (itemK itemFullRaw) mk
-                                 , itemBase = itemBase itemFullRaw }
+      let itemFull = itemFullRaw {itemK = fromMaybe (itemK itemFullRaw) mk}
       iid <- registerItem itemFull itemKnown seed container verbose
       return $ Just (iid, (itemFull, itemGroup))
 

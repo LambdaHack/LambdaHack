@@ -68,7 +68,7 @@ addAnyActor :: (MonadAtomic m, MonadServer m)
             -> m (Maybe ActorId)
 addAnyActor actorFreq lid time mpos = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
-  -- contains the constant properties.
+  -- that contains the constant properties.
   cops <- getsState scops
   lvl <- getLevel lid
   factionD <- getsState sfactionD
@@ -76,7 +76,7 @@ addAnyActor actorFreq lid time mpos = do
   m4 <- rollItem lvlSpawned lid actorFreq
   case m4 of
     Nothing -> return Nothing
-    Just (itemKnown, trunkFull, itemDisco, seed, _) -> do
+    Just (itemKnownRaw, itemFullRaw, itemDisco, seed, _) -> do
       let ik = itemKind itemDisco
           freqNames = map fst $ IK.ifreq ik
           f fact = fgroups (gplayer fact)
@@ -100,9 +100,8 @@ addAnyActor actorFreq lid time mpos = do
         Nothing -> do
           rollPos <- getsState $ rollSpawnPos cops allPers mobile lid lvl fid
           rndToAction rollPos
-      let container = CTrunk fid lid pos
-      trunkId <- registerItem trunkFull itemKnown seed container False
-      addActorIid trunkId trunkFull False fid pos lid id time
+      registerActor itemKnownRaw itemFullRaw seed
+                    fid pos lid id time
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point
              -> Bool -> LevelId -> Level -> FactionId -> State
