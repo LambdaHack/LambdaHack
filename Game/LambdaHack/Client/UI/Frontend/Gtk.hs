@@ -68,6 +68,8 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
           if fg /= Color.BrBlack
           then (fg, Color.BrBlack)
           else (fg, Color.defFG)
+        Color.Attr{fg} ->
+          (fg, Color.Black)
   ttt <- textTagTableNew
   stags <- IM.fromDistinctAscList <$>
              mapM (\ak -> do

@@ -124,6 +124,7 @@ setAttr Color.Attr{..} =
           if fg /= Color.BrBlack
           then (fg, Color.BrBlack)
           else (fg, Color.defFG)
+        _ -> (fg, Color.Black)
   in hack fg1 $ hack bg1 $
        defAttr { attrForeColor = SetTo (aToc fg1)
                , attrBackColor = SetTo (aToc bg1) }

@@ -103,7 +103,8 @@ display FrontendSession{..} SingleFrame{singleFrame} = do
                     Color.HighlightGrey ->
                       if fg /= Color.BrBlack
                       then (fg, Color.BrBlack)
-                      else (fg, Color.defFG) ]
+                      else (fg, Color.defFG)
+                    _ -> (fg, Color.Black) ]
   C.refresh
 
 keyTranslate :: C.Key -> K.KM

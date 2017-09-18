@@ -65,6 +65,8 @@ data Highlight =
   | HighlightBlue
   | HighlightYellow
   | HighlightGrey
+  | HighlightWhite
+  | HighlightMagenta
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary Highlight where
