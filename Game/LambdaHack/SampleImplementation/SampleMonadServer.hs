@@ -27,8 +27,6 @@ import System.IO (hFlush, stdout)
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client
-import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -110,11 +108,10 @@ executorSer cops copsClient sdebugNxtCmdline = do
   -- options and is never updated with config options, etc.
   let sdebugMode = applyConfigToDebug cops sconfig $ sdebugCli sdebugNxt
       -- Partially applied main loop of the clients.
-      executorClient = executorCli (loopCli copsClient sconfig sdebugMode) cops
+      executorClient = executorCli copsClient sconfig sdebugMode cops
   -- Wire together game content, the main loop of game clients
   -- and the game server loop.
-  let m = loopSer sdebugNxt sconfig executorClient
-      stateToFileName (_, ser) =
+  let stateToFileName (_, ser) =
         ssavePrefixSer (sdebugSer ser) <.> Save.saveNameSer
       totalState serToSave = SerState
         { serState = emptyState cops
@@ -122,6 +119,7 @@ executorSer cops copsClient sdebugNxtCmdline = do
         , serDict = EM.empty
         , serToSave
         }
+      m = loopSer sdebugNxt sconfig executorClient
       exe = evalStateT (runSerImplementation m) . totalState
       exeWithSaves = Save.wrapInSaves cops stateToFileName exe
       defPrefix = ssavePrefixSer defDebugModeSer

@@ -21,7 +21,7 @@ import qualified Data.EnumSet as ES
 import qualified Data.Ord as Ord
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.UI (Config, SessionUI)
+import Game.LambdaHack.Client (Config, SessionUI)
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions

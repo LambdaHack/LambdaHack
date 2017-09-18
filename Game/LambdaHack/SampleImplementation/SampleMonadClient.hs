@@ -22,6 +22,7 @@ import GHC.Generics (Generic)
 import System.FilePath
 
 import Game.LambdaHack.Atomic
+import Game.LambdaHack.Client
 import Game.LambdaHack.Client.HandleResponseM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
@@ -129,13 +130,13 @@ instance MonadAtomic CliImplementation where
 
 -- | Init the client, then run an action, with a given session,
 -- state and history, in the @IO@ monad.
-executorCli :: CliImplementation ()
+executorCli :: KeyKind -> Config -> DebugModeCli
             -> Kind.COps
             -> Maybe SessionUI
             -> FactionId
             -> ChanServer
             -> IO ()
-executorCli m cops cliSession fid cliDict =
+executorCli copsClient sconfig sdebugMode cops cliSession fid cliDict =
   let stateToFileName (_, cli, _) =
         ssavePrefixCli (sdebugCli cli) <.> Save.saveNameCli (sside cli)
       totalState cliToSave = CliState
@@ -145,5 +146,6 @@ executorCli m cops cliSession fid cliDict =
         , cliToSave
         , cliSession
         }
+      m = loopCli copsClient sconfig sdebugMode
       exe = evalStateT (runCliImplementation m) . totalState
   in Save.wrapInSaves cops stateToFileName exe

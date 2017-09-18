@@ -29,7 +29,7 @@ import System.FilePath
 import System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.UI (Config, SessionUI, emptySessionUI)
+import Game.LambdaHack.Client (Config, SessionUI, emptySessionUI)
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction

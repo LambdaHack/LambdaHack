@@ -8,7 +8,8 @@ module Game.LambdaHack.Client.UI
   , putSession, queryUI
   , displayRespUpdAtomicUI, displayRespSfxAtomicUI
     -- * Startup
-  , KeyKind, SessionUI(..), emptySessionUI, Config
+  , KeyKind, SessionUI(..), emptySessionUI
+  , Config, applyConfigToDebug, configCmdline, mkConfig
   , ChanFrontend, chanFrontend, frontendShutdown
     -- * Operations exposed for LoopClient
   , ColorMode(..)
