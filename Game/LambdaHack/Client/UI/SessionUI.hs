@@ -41,6 +41,7 @@ data SessionUI = SessionUI
   , sactorUI       :: ActorDictUI        -- ^ assigned actor UI presentations
   , sslots         :: ItemSlots          -- ^ map from slots to items
   , slastSlot      :: SlotChar           -- ^ last used slot
+  , slastItemMove  :: Maybe (CStore, CStore)  -- ^ last item move stores
   , schanF         :: ChanFrontend       -- ^ connection with the frontend
   , sbinding       :: Binding            -- ^ binding of keys to commands
   , sconfig        :: Config
@@ -106,6 +107,7 @@ emptySessionUI sconfig =
     , sactorUI = EM.empty
     , sslots = ItemSlots EM.empty EM.empty
     , slastSlot = SlotChar 0 'Z'
+    , slastItemMove = Nothing
     , schanF = ChanFrontend $ const $
         error $ "emptySessionUI: ChanFrontend" `showFailure` ()
     , sbinding = Binding M.empty [] M.empty
@@ -176,7 +178,8 @@ instance Binary SessionUI where
     smarkVision <- get
     smarkSmell <- get
     sdisplayNeeded <- get
-    let schanF = ChanFrontend $ const $
+    let slastItemMove = Nothing
+        schanF = ChanFrontend $ const $
           error $ "Binary: ChanFrontend" `showFailure` ()
         sbinding = Binding M.empty [] M.empty
         sxhairMoused = True

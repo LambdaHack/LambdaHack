@@ -637,12 +637,18 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
   -- and the server will ignore and warn (and content may avoid that,
   -- e.g., making all rings identified)
   actorAspect <- getsClient sactorAspect
+  lastItemMove <- getsSession slastItemMove
   let ar = fromMaybe (error $ "" `showFailure` leader)
                      (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
-      cLegal | calmE = cLegalRaw
-             | destCStore == CSha = []
-             | otherwise = delete CSha cLegalRaw
+      cLegalE | calmE = cLegalRaw
+              | destCStore == CSha = []
+              | otherwise = delete CSha cLegalRaw
+      cLegal = case lastItemMove of
+        Just (lastFrom, lastDest) | lastDest == destCStore
+                                    && lastFrom `elem` cLegalE ->
+          lastFrom : delete lastFrom cLegalE
+        _ -> cLegalE
       prompt = makePhrase ["What to", verb]
       promptEqp = makePhrase ["What consumable to", verb]
       (promptGeneric, psuit) =
@@ -659,7 +665,10 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
                  (\_ _ _ cCur -> promptGeneric <+> ppItemDialogModeFrom cCur)
                  cLegalRaw cLegal (not auto) True
   case ggi of
-    Right (l, (MStore fromCStore, _)) -> return $ Right (fromCStore, l)
+    Right (l, (MStore fromCStore, _)) -> do
+      modifySession $ \sess ->
+        sess {slastItemMove = Just (fromCStore, destCStore)}
+      return $ Right (fromCStore, l)
     Left err -> failWith err
     _ -> error $ "" `showFailure` ggi
 
