@@ -150,6 +150,16 @@ effectAndDestroy meleePerformed source target iid container periodic effs
     triggeredEffect <-
       itemEffectDisco source target iid container recharged periodic effs
     let triggered = triggeredEffect || meleePerformed
+    sb <- getsState $ getActorBody source
+    -- Announce no effect, which is rare and wastes time, so noteworthy.
+    unless (triggered    -- some effects triggered, so feedback comes from them
+            || periodic  -- don't spam via fizzled periodic effects
+            || bproj sb  -- don't spam, projectiles can be very numerous
+           ) $
+      execSfxAtomic $ SfxMsgFid (bfid sb) $
+        if any IK.forApplyEffect effs
+        then SfxFizzles  -- something didn't work, despite promising effects
+        else SfxNothingHappens  -- fully expected
     -- If none of item's effects was performed, we try to recreate the item.
     -- Regardless, we don't rewind the time, because some info is gained
     -- (that the item does not exhibit any effects in the given context).
@@ -205,15 +215,6 @@ itemEffectDisco source target iid c recharged periodic effs = do
       execUpdAtomic $ UpdDiscover c iid kmKind seed
       trs <- mapM (effectSem source target iid c recharged periodic) effs
       let triggered = or trs
-      sb <- getsState $ getActorBody source
-      -- Announce no effect, which is rare and wastes time, so noteworthy.
-      unless (triggered    -- some effects triggered, so feedback comes from them
-              || periodic  -- don't spam via fizzled periodic effects
-              || bproj sb  -- don't spam, projectiles can be very numerous
-              || not (any IK.forApplyEffect effs)
-                           -- no effects expected, so nothing to announce
-             ) $
-        execSfxAtomic $ SfxMsgFid (bfid sb) SfxFizzles
       return triggered
     _ -> error $ "" `showFailure` (source, target, iid, item)
 

@@ -1084,6 +1084,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
                  else MU.Ws $ MU.Text $ tshow grp
     return $! makeSentence ["you hear", verb, object]
   SfxFizzles -> return "It flashes and fizzles."
+  SfxNothingHappens -> return "Nothing happens."
   SfxVoidDetection -> return "Nothing new detected."
   SfxSummonLackCalm aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
