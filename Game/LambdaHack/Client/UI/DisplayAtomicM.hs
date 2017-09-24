@@ -201,7 +201,9 @@ displayRespUpdAtomicUI verbose oldCli cmd = case cmd of
            actorAspect <- getsClient sactorAspect
            let ar = fromMaybe (error $ "" `showFailure` aid)
                               (EM.lookup aid actorAspect)
-           when (bhp b >= xM (aMaxHP ar) && aMaxHP ar > 0 && n > 0) $ do
+           -- Regenerating actors never stop gaining HP, so we need to stop
+           -- reporting it after they reach full HP for the first time.
+           when (bhp b >= xM (aMaxHP ar) && bhp b - n < xM (aMaxHP ar)) $ do
              actorVerbMU aid bUI "recover your health fully"
              stopPlayBack
   UpdRefillCalm aid calmDelta ->
