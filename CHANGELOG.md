@@ -1,3 +1,21 @@
+## [v0.6.2.0, aka 'Zoom out'](https://github.com/LambdaHack/LambdaHack/compare/v0.6.1.0...v0.6.2.0)
+
+- make fireworks slower and so easier to spot
+- make rattlesnake deeper but more common
+- announce no effect of activation
+- describe original and current faction of an actor
+- highlight dominated actors
+- by default move item the same as last time
+- often spawn between heroes and stairs going deeper
+- fix totalUsefulness computation for negative effects
+- fix abandoning distant enemy target despite no alternatives
+- hotfix: Pass zoom keys through to the browser
+- help players find the info about changing the font size
+- depend on GHC >= 8.0 and new vector
+- specialize client code already in SampleMonadClient.hs
+- enable StrictData in all modules
+- replace 'failure' with 'error' that now shows call stack
+
 ## [v0.6.1.0, aka 'Breaking one rule at a time'](https://github.com/LambdaHack/LambdaHack/compare/v0.6.0.0...v0.6.1.0)
 
 - fix redrawing after window minimized and restored
