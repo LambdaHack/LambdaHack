@@ -265,6 +265,8 @@ display DebugModeCli{scolorIsBold}
             setProp style "border-color" $ Color.colorToRGB Color.Blue
           Color.HighlightYellow ->
             setProp style "border-color" $ Color.colorToRGB Color.BrYellow
+          Color.HighlightGrey ->
+            setProp style "border-color" $ Color.colorToRGB Color.BrBlack
           Color.HighlightWhite ->
             setProp style "border-color" $ Color.colorToRGB Color.White
           Color.HighlightMagenta ->
