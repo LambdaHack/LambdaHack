@@ -282,7 +282,7 @@ drawFrameActor drawnLevelId = do
               Item{jfid} = getItemBody btrunk s
               symbol | bhp > 0 || bproj = bsymbol
                      | otherwise = '%'
-              dominated = maybe False (== bfid) jfid
+              dominated = maybe False (/= bfid) jfid
               bg = if bproj then Color.HighlightNone else case mleader of
                 Just leader | aid == leader -> Color.HighlightRed
                 _ -> if | aid `ES.member` sselected -> Color.HighlightBlue
