@@ -249,7 +249,8 @@ effectSem source target iid c recharged periodic effect = do
     IK.Paralyze p -> effectParalyze execSfx p target
     IK.InsertMove p -> effectInsertMove execSfx p target
     IK.Teleport p -> effectTeleport execSfx p source target
-    IK.CreateItem store grp tim -> effectCreateItem Nothing target store grp tim
+    IK.CreateItem store grp tim ->
+      effectCreateItem (Just $ bfid sb) Nothing target store grp tim
     IK.DropItem n k store grp -> effectDropItem execSfx n k store grp target
     IK.PolyItem -> effectPolyItem execSfx source target
     IK.Identify -> effectIdentify execSfx iid source target
@@ -528,7 +529,7 @@ dominateFid fid target = do
   then return True  -- avoid spam
   else do
     -- Add some nostalgia for the old faction.
-    void $ effectCreateItem (Just (bfid tb, 10)) target COrgan
+    void $ effectCreateItem (Just $ bfid tb) (Just 10) target COrgan
                             "impressed" IK.TimerNone
     itemToF <- itemToFullServer
     let discoverIf (iid, cstore) = do
@@ -556,7 +557,7 @@ effectImpress recursiveCall execSfx source target = do
        return res
      | otherwise -> do
        execSfx
-       effectCreateItem (Just (bfid sb, 1)) target COrgan
+       effectCreateItem (Just $ bfid sb) (Just 1) target COrgan
                         "impressed" IK.TimerNone
 
 -- ** Summon
@@ -867,10 +868,10 @@ effectTeleport execSfx nDm source target = do
 -- ** CreateItem
 
 effectCreateItem :: (MonadAtomic m, MonadServer m)
-                 => Maybe (FactionId, Int) -> ActorId -> CStore
+                 => Maybe FactionId -> Maybe Int -> ActorId -> CStore
                  -> GroupName ItemKind -> IK.TimerDice
                  -> m Bool
-effectCreateItem mfidSource target store grp tim = do
+effectCreateItem jfid mcount target store grp tim = do
   tb <- getsState $ getActorBody target
   delta <- case tim of
     IK.TimerNone -> return $ Delta timeZero
@@ -892,14 +893,13 @@ effectCreateItem mfidSource target store grp tim = do
   m5 <- rollItem 0 (blid tb) litemFreq
   let (itemKnownRaw, itemFullRaw, _, seed, _) =
         fromMaybe (error $ "" `showFailure` (blid tb, litemFreq, c)) m5
-      (itemKnown, itemFull) = case mfidSource of
-        Just (fidSource, k) ->
-          let (kindIx, ar, damage, _) = itemKnownRaw
-              jfid = Just fidSource
-          in ( (kindIx, ar, damage, jfid)
-             , itemFullRaw { itemBase = (itemBase itemFullRaw) {jfid}
-                           , itemK = k })
-        Nothing -> (itemKnownRaw, itemFullRaw)
+      (itemKnown, itemFullFid) =
+        let (kindIx, ar, damage, _) = itemKnownRaw
+        in ( (kindIx, ar, damage, jfid)
+           , itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}} )
+      itemFull = case mcount of
+        Just itemK -> itemFullFid {itemK}
+        Nothing -> itemFullFid
   itemRev <- getsServer sitemRev
   let mquant = case HM.lookup itemKnown itemRev of
         Nothing -> Nothing
@@ -1038,7 +1038,8 @@ effectPolyItem execSfx source target = do
              execSfx
              identifyIid iid c itemKindId
              execUpdAtomic $ UpdDestroyItem iid itemBase kit c
-             effectCreateItem Nothing target cstore "useful" IK.TimerNone
+             effectCreateItem (Just $ bfid sb) Nothing
+                              target cstore "useful" IK.TimerNone
       _ -> error $ "" `showFailure` (target, iid, itemFull)
 
 -- ** Identify

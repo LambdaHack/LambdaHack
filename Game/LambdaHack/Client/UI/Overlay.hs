@@ -156,15 +156,18 @@ itemDesc side factionD aHurtMeleeOfOwner store localTime
           (tshow $ fromIntegral weight / (1000 :: Double), "kg")
         | otherwise = (tshow weight, "g")
       onLevel = "on level" <+> tshow (abs $ fromEnum $ jlid itemBase) <> "."
+      discoFirst = (if unique then "Discovered" else "First seen")
+                   <+> onLevel
+      whose fid = gname (factionD EM.! fid)
       sourceDesc =
         case jfid itemBase of
-          Just fid -> "First created"
-                      <+> (if fid == side
-                           then "by us"
-                           else "by" <+> gname (factionD EM.! fid))
-                      <+> onLevel
-          Nothing -> (if unique then "Discovered" else "First seen")
-                     <+> onLevel
+          Just fid | jsymbol itemBase `elem` ['!', '+'] ->
+            "Caused by" <+> (if fid == side then "us" else whose fid)
+            <> ". First observed" <+> onLevel
+          Just fid ->
+            "Coming from" <+> whose fid
+            <> "." <+> discoFirst
+          _ -> discoFirst
       colorSymbol = viewItem itemBase
       blurb =
         " "
