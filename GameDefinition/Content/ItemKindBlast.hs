@@ -83,11 +83,10 @@ firecracker n = ItemKind
   , iaspects = [AddShine $ intToDice $ n `div` 2]
   , ieffects = [ RefillCalm (-1) | n >= 5 ]
                ++ [ DropBestWeapon | n >= 5]
-               ++ [ OnSmash (Explode $ toGroupName
-                             $ "firecracker" <+> tshow (n - 1))
+               ++ [ OnSmash $ Explode
+                    $ toGroupName $ "firecracker" <+> tshow (n - 1)
                   | n > 2 ]
-  , ifeature = [ ToThrow $ ThrowMod (5 + 3 * n) (10 + 100 `div` n)
-               , Fragile, Identified ]
+  , ifeature = [toVelocity 5, Fragile, Identified]
   , idesc    = ""
   , ikit     = []
   }
