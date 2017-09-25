@@ -29,7 +29,7 @@ tooth, lash, noseTip, lip, torsionRight, torsionLeft, pupil :: ItemKind
 -- * Human weapon organs
 
 fist = ItemKind
-  { isymbol  = '%'
+  { isymbol  = ','
   , iname    = "fist"
   , ifreq    = [("fist", 100)]
   , iflavour = zipPlain [Red]
@@ -225,7 +225,7 @@ largeTail = fist
 -- * Armor organs
 
 armoredSkin = ItemKind
-  { isymbol  = '%'
+  { isymbol  = ','
   , iname    = "armored skin"
   , ifreq    = [("armored skin", 100)]
   , iflavour = zipPlain [Red]

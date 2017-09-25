@@ -43,7 +43,7 @@ necklace, ring, potion, flask, scroll, wand, gem :: ItemKind  -- generic templat
 
 -- * Item group symbols, partially from Nethack
 
-symbolProjectile, _symbolLauncher, symbolLight, symbolTool, symbolGem, symbolGold, symbolNecklace, symbolRing, symbolPotion, symbolFlask, symbolScroll, symbolTorsoArmor, symbolMiscArmor, _symbolClothes, symbolShield, symbolPolearm, symbolEdged, symbolHafted, symbolWand, _symbolStaff, _symbolFood :: Char
+symbolProjectile, _symbolLauncher, symbolLight, symbolTool, symbolGem, symbolGold, symbolNecklace, symbolRing, symbolPotion, symbolFlask, symbolScroll, symbolTorsoArmor, symbolMiscArmor, _symbolClothes, symbolShield, symbolPolearm, symbolEdged, symbolHafted, symbolWand, _symbolStaff, symbolFood :: Char
 
 symbolProjectile = '|'
 _symbolLauncher  = '}'
@@ -65,7 +65,7 @@ symbolEdged      = ')'
 symbolHafted     = ')'
 symbolWand       = '/'  -- magical rod, transmitter, pistol, rifle
 _symbolStaff     = '_'  -- scanner
-_symbolFood      = ','  -- distinct from floor, because middle dots used
+symbolFood       = ','  -- also body part; distinct from floor: not middle dot
 
 -- * Thrown weapons
 
@@ -639,7 +639,7 @@ sharpeningTool = ItemKind
   , ikit     = []
   }
 seeingItem = ItemKind
-  { isymbol  = '%'
+  { isymbol  = symbolFood
   , iname    = "pupil"
   , ifreq    = [("useful", 30)]  -- spooky and wierd, so rare
   , iflavour = zipPlain [Red]
