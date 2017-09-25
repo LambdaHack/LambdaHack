@@ -1206,16 +1206,16 @@ gem = ItemKind
   , ikit     = []
   }
 gem1 = gem
-  { irarity  = [(3, 0), (10, 12)]
+  { irarity  = [(3, 0), (10, 24)]
   }
 gem2 = gem
-  { irarity  = [(5, 0), (10, 14)]
+  { irarity  = [(5, 0), (10, 28)]
   }
 gem3 = gem
-  { irarity  = [(7, 0), (10, 16)]
+  { irarity  = [(7, 0), (10, 32)]
   }
 gem4 = gem
-  { irarity  = [(9, 0), (10, 50)]
+  { irarity  = [(9, 0), (10, 100)]
   }
 gem5 = gem
   { isymbol  = symbolSpecial
