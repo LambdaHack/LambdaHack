@@ -196,8 +196,8 @@ are described in the status lines at the bottom of the screen,
 as explained in section [Heroes](#heroes) above.
 
 Commands for saving and exiting the current game, starting a new game,
-setting options for the current game and challenges for the next game, etc.,
-are listed in the Main Menu, brought up by the `ESC` key.
+configuring convenience settings for the current game and challenges
+for the next game are listed in the Main Menu, brought up by the `ESC` key.
 Game difficulty, from the challenges menu, determines
 hitpoints at birth for any actor of any UI-using faction.
 The "lone wolf" challenge mode reduces player's starting actors to exactly

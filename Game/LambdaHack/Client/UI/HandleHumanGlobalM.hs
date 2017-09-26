@@ -1236,7 +1236,7 @@ settingsMenuHuman cmdAction = do
       bindingLen = 30
       gameInfo = map T.unpack
                    [ T.justifyLeft bindingLen ' ' ""
-                   , T.justifyLeft bindingLen ' ' "Game settings:"
+                   , T.justifyLeft bindingLen ' ' "Convenience settings:"
                    , T.justifyLeft bindingLen ' ' "" ]
   generateMenu cmdAction kds gameInfo "settings"
 
