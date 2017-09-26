@@ -479,14 +479,10 @@ itemAidVerbMU aid verb iid ek cstore = do
               in MU.Phrase [name, stats]
             Right n ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
-              $ let itemSecret = itemNoDisco (itemBase itemFull, n)
-                    (_, _, secretName, secretAE) =
-                      partItem side factionD cstore localTime itemSecret
-                    name = MU.Phrase [secretName, secretAE]
-                    nameList = if n == 1
-                               then ["the", name]
-                               else ["the", MU.Text $ tshow n, MU.Ws name]
-                in MU.Phrase nameList
+              $ let (_, _, name1, stats) =
+                      partItemShort side factionD cstore localTime itemFull
+                    name = if n == 1 then name1 else MU.CarWs n name1
+                in MU.Phrase ["the", name, stats]
           msg = makeSentence [MU.SubjectVerbSg subject verb, object]
       msgAdd msg
 
@@ -674,8 +670,8 @@ moveItemUI iid k aid cstore1 cstore2 = do
         itemAidVerbMU aid (MU.Text verb) iid (Right k) cstore2
       else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
         itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
-    Nothing -> error $ "" `showFailure`
-                         (iid, k, aid, cstore1, cstore2, itemSlots)
+    Nothing -> error $
+      "" `showFailure` (iid, k, aid, cstore1, cstore2, itemSlots)
 
 quitFactionUI :: MonadClientUI m => FactionId -> Maybe Status -> m ()
 quitFactionUI fid toSt = do
