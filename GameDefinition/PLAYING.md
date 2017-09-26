@@ -267,8 +267,11 @@ known, they are guessed based on average bonuses for that kind of item.
 The displayed figures are rounded, but the game internally keeps track
 of minute fractions of HP.
 
+The stress of combat drains Calm, gradually limiting the use of items and,
+if Calm reaches zero and the actor is sufficiently impressed by his foes,
+making him defect and surrender to their domination.
 Whenever the monster's or hero's hit points reach zero, the combatant dies.
-When the last hero dies, the scenario ends in defeat.
+When the last hero dies or is dominated, the scenario ends in defeat.
 
 
 On Winning and Dying
