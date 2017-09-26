@@ -1125,8 +1125,9 @@ ppSfxMsg sfxMsg = case sfxMsg of
         (_, _, name, stats) =
           partItem (bfid b) factionD cstore localTime itemFull
         storeOwn = ppCStoreWownW True cstore aidPhrase
+        cond = if jsymbol (itemBase itemFull) == '+' then ["condition"] else []
     return $! makeSentence $
-      ["the", name, stats] ++ storeOwn ++ ["will now last longer"]
+      ["the", name, stats] ++ cond ++ storeOwn ++ ["will now last longer"]
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
 setLastSlot aid iid cstore = do
