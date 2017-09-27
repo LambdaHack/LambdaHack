@@ -502,7 +502,7 @@ goToXhair initialStep run = do
             arena <- getArenaUI
             runOutcome <- multiActorGoTo arena c paramOld
             case runOutcome of
-              Left stopMsg -> failWith stopMsg
+              Left stopMsg -> return $ Left stopMsg
               Right (finalGoal, dir) ->
                 moveRunHuman initialStep finalGoal run False dir
           _ -> do
@@ -523,12 +523,10 @@ goToXhair initialStep run = do
                 moveRunHuman initialStep finalGoal run False dir
 
 multiActorGoTo :: MonadClientUI m
-               => LevelId -> Point -> RunParams
-               -> m (Either Text (Bool, Vector))
+               => LevelId -> Point -> RunParams -> m (FailOrCmd (Bool, Vector))
 multiActorGoTo arena c paramOld =
   case paramOld of
-    RunParams{runMembers = []} ->
-      return $ Left "selected actors no longer there"
+    RunParams{runMembers = []} -> failWith "selected actors no longer there"
     RunParams{runMembers = r : rs, runWaiting} -> do
       onLevel <- getsState $ memActor r arena
       if not onLevel then do
@@ -545,11 +543,9 @@ multiActorGoTo arena c paramOld =
         xhairMoused <- getsSession sxhairMoused
         case mpath of
           _ | xhairMoused && isNothing (accessBfs bfs c) ->
-            return $ Left "no route to crosshair"
-          NoPath -> return $ Left "no route to crosshair"
-          AndPath{pathList=[]} ->
-            -- This actor already at goal; will be caught in goToXhair.
-            return $ Left ""
+            failWith "no route to crosshair"
+          NoPath -> failWith "no route to crosshair"
+          AndPath{pathList=[]} -> failWith "almost there"
           AndPath{pathList = p1 : _} -> do
             let finalGoal = p1 == c
                 dir = towards (bpos b) p1
@@ -563,7 +559,7 @@ multiActorGoTo arena c paramOld =
                 -- to avoid cycles. When all wait for each other, fail.
                 multiActorGoTo arena c paramNew{runWaiting=runWaiting + 1}
               _ ->
-                return $ Left "actor in the way"
+                failWith "actor in the way"
 
 -- * RunOnceToXhair
 

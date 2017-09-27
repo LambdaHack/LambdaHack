@@ -435,7 +435,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                         _ -> error $ "unexpected key:"
                                      `showFailure` K.showKey key
                       Right sl -> sl
-                in return (Left "", (MStats, Right slot))
+                in return (Left "stats", (MStats, Right slot))
             }
       runDefItemKey keyDefs statsDef io slotKeys promptChosen MStats
     _ -> do

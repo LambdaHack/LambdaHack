@@ -220,8 +220,8 @@ chooseItemDialogMode c = do
         MLoreOrgan -> displayLore COrgan
           (makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
                         , "organ lore" ])
-    (Left _, (MStats, ekm)) -> case ekm of
-      Right slot -> do
+    (Left err, (MStats, ekm)) -> case ekm of
+      Right slot -> assert (err == "stats") $ do
         let eqpSlot = statSlots !! fromJust (elemIndex slot allZeroSlots)
         leader <- getLeaderUI
         b <- getsState $ getActorBody leader
