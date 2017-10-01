@@ -157,7 +157,10 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                                  then return (Left K.spaceKM, pointer)
                                  else ignoreKey
                       Just (ckm, _) -> case ckm of
-                        Left (km : _) -> interpretKey km
+                        Left (km : _) ->
+                          if K.key km == K.Return && km `elem` keys
+                          then return (Left km, pointer)
+                          else interpretKey km
                         Left [] -> error $ "" `showFailure` ikm
                         Right c  -> return (Right c, pointer)
                   K.RightButtonRelease ->
