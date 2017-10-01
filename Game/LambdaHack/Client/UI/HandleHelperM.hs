@@ -288,13 +288,12 @@ statsOverlay aid = do
   return (map textToAL ts, kxs)
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
-pickNumber askNumber kAll = do
+pickNumber askNumber kAll = assert (kAll >= 1) $ do
   let shownKeys = [ K.returnKM, K.mkChar '+', K.mkChar '-'
                   , K.spaceKM, K.escKM ]
       frontKeyKeys = K.backspaceKM : shownKeys ++ map K.mkChar ['0'..'9']
-      gatherNumber pointer kCurRaw = do
-        let kCur = min kAll $ max 1 kCurRaw
-            kprompt = "Choose number:" <+> tshow kCur
+      gatherNumber pointer kCur = assert (1 <= kCur && kCur <= kAll) $ do
+        let kprompt = "Choose number:" <+> tshow kCur
         promptAdd kprompt
         sli <- reportToSlideshow shownKeys
         (ekkm, pointer2) <-
@@ -306,17 +305,19 @@ pickNumber askNumber kAll = do
                 gatherNumber pointer2 $ if kCur + 1 > kAll then 1 else kCur + 1
               K.Char '-' ->
                 gatherNumber pointer2 $ if kCur - 1 < 1 then kAll else kCur - 1
-              K.Char l | kCur == kAll ->
-                gatherNumber pointer2 $ Char.digitToInt l
+              K.Char l | kCur * 10 + Char.digitToInt l > kAll ->
+                gatherNumber pointer2
+                $ if Char.digitToInt l == 0
+                  then kAll
+                  else min kAll (Char.digitToInt l)
               K.Char l -> gatherNumber pointer2 $ kCur * 10 + Char.digitToInt l
-              K.BackSpace -> gatherNumber pointer2 $ kCur `div` 10
+              K.BackSpace -> gatherNumber pointer2 $ max 1 (kCur `div` 10)
               K.Return -> return $ Right kCur
               K.Esc -> weaveJust <$> failWith "never mind"
               K.Space -> return $ Left Nothing
               _ -> error $ "unexpected key" `showFailure` kkm
           Right sc -> error $ "unexpected slot char" `showFailure` sc
-  if | kAll == 0 -> error $ "" `showFailure` askNumber
-     | kAll == 1 || not askNumber -> return $ Right kAll
+  if | kAll == 1 || not askNumber -> return $ Right kAll
      | otherwise -> do
          res <- gatherNumber 0 kAll
          case res of
