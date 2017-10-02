@@ -134,8 +134,8 @@ empty = rogue
   , cdoorChance   = 0
   , copenChance   = 0
   , chidden       = 0
-  , cactorCoeff   = 10
-  , cactorFreq    = [("animal", 5), ("immobile animal", 95)]
+  , cactorCoeff   = 8
+  , cactorFreq    = [("animal", 10), ("immobile animal", 90)]
       -- The healing geysers on lvl 3 act like HP resets. Needed to avoid
       -- cascading failure, if the particular starting conditions were
       -- very hard. Items are not reset, even if they are bad, which provides
@@ -204,7 +204,7 @@ raid = rogue
   , cfreq         = [("caveRaid", 1)]
   , cdarkChance   = 0  -- all rooms lit, for a gentle start
   , cmaxVoid      = 1%10
-  , cactorCoeff   = 1000  -- deep level with no kit, so slow spawning
+  , cactorCoeff   = 500  -- deep level with no kit, so slow spawning
   , cactorFreq    = [("animal", 100)]
   , citemNum      = 6 * d 8  -- just one level, hard enemies, treasure
   , citemFreq     = [("useful", 33), ("gem", 33), ("currency", 33)]
