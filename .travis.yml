@@ -205,8 +205,8 @@ script:
  - cabal sdist || true
 
  # check that the generated source-distribution can be built & installed
+ - cd dist/
  - export SRC_TGZ=$(cabal info . | awk '{print $2 ".tar.gz";exit}');
-   cd dist/;
    if [ -f "$SRC_TGZ" ]; then
       if [ $GTKVTY = "gtk" ]; then
         travis_retry travis_wait 40 cabal install --force-reinstalls -fgtk "$SRC_TGZ";
@@ -227,7 +227,7 @@ script:
       echo "expected '$SRC_TGZ' not found";
       exit 1;
    fi &&
-   cd ..
+ - cd ..
 
  - touch /tmp/teletypetest.log;
  - (make test-travis || (tail -n 2000 /tmp/teletypetest.log ; exit 77));
