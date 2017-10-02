@@ -196,7 +196,7 @@ script:
 
  - travis_retry travis_wait 40 cabal build   # this builds our library and executables (including tests/benchmarks)
 
- - (cabal test || exit 7);
+ - cabal test || exit 7
 
  # tests that a source-distribution is correct; ignore -O2 warning
  - cabal check || true
@@ -205,28 +205,31 @@ script:
  - cabal sdist || true
 
  # check that the generated source-distribution can be built & installed
+ - export SRC_TGZ=$(cabal info . | awk '{print $2;exit}')
  - cd dist/
- - export SRC_TGZ=$(cabal info . | awk '{print $2 ".tar.gz";exit}');
-   if [ -f "$SRC_TGZ" ]; then
+ - if [ -f "$SRC_TGZ".tar.gz ]; then
+      tar xzfv "$SRC_TGZ".tar.gz;
+      cd "$SRC_TGZ";
       if [ $GTKVTY = "gtk" ]; then
-        travis_retry travis_wait 40 cabal install --force-reinstalls -fgtk "$SRC_TGZ";
+        travis_retry travis_wait 40 cabal install --force-reinstalls -fgtk;
       elif [ $GTKVTY = "gtk-v2" ]; then
-        travis_retry travis_wait 40 cabal install -fgtk "$SRC_TGZ";
+        travis_retry travis_wait 40 cabal install -fgtk;
       elif [ $GTKVTY = "sdl" ]; then
-        travis_retry travis_wait 40 cabal install -fsdl "$SRC_TGZ";
+        travis_retry travis_wait 40 cabal install -fsdl;
       elif [ $GTKVTY = "sdl-v2" ]; then
-        travis_retry travis_wait 40 cabal install -fsdl "$SRC_TGZ";
+        travis_retry travis_wait 40 cabal install -fsdl;
       elif [ $GTKVTY = "vty" ]; then
-        travis_retry travis_wait 40 cabal install -fvty "$SRC_TGZ";
+        travis_retry travis_wait 40 cabal install -fvty;
       elif [ $GTKVTY = "curses" ]; then
-        travis_retry travis_wait 40 cabal install -fcurses "$SRC_TGZ";
+        travis_retry travis_wait 40 cabal install -fcurses;
       else
-        travis_retry travis_wait 40 cabal install -fgtk "$SRC_TGZ";
+        travis_retry travis_wait 40 cabal install -fgtk;
       fi;
+      cd ..;
    else
-      echo "expected '$SRC_TGZ' not found";
+      echo "expected '$SRC_TGZ'.tar.gz not found";
       exit 1;
-   fi &&
+   fi
  - cd ..
 
  - touch /tmp/teletypetest.log;
