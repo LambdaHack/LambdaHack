@@ -1,3 +1,7 @@
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import TieKnot
 
 main :: IO ()
