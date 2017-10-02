@@ -205,7 +205,7 @@ script:
  - cabal sdist || true
 
  # check that the generated source-distribution can be built & installed
- - export SRC_TGZ=$(cabal info . | awk '{print $2 ".tar.gzEEEEE";exit}');
+ - export SRC_TGZ=$(cabal info . | awk '{print $2 ".tar.gz";exit}');
    cd dist/;
    if [ -f "$SRC_TGZ" ]; then
       if [ $GTKVTY = "gtk" ]; then
@@ -225,7 +225,7 @@ script:
       fi;
    else
       echo "expected '$SRC_TGZ' not found";
-      exit 0;
+      exit 1;
    fi &&
    cd ..
 
