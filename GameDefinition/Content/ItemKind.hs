@@ -479,8 +479,9 @@ potion4 = potion
   , ieffects = [ RefillHP 10, DropItem 1 maxBound COrgan "poisoned"
                , OnSmash (Explode "healing mist 2") ]
   }
-potion5 = potion
-  { ieffects = [ OneOf [ RefillHP 10, RefillHP 5, Burn 5
+potion5 = potion  -- needs to be common to show at least a portion of effects
+  { irarity  = [(1, 30), (10, 15)]
+  , ieffects = [ OneOf [ RefillHP 10, RefillHP 5, Burn 5
                        , toOrganActorTurn "strengthened" (20 + d 5) ]
                , OnSmash (OneOf [ Explode "dense shower"
                                 , Explode "sparse shower"
@@ -489,8 +490,8 @@ potion5 = potion
                                 , Explode "PhD defense question"
                                 , Explode "blast 10" ]) ]
   }
-potion6 = potion
-  { irarity  = [(3, 2), (10, 5)]
+potion6 = potion  -- needs to be common to show at least a portion of effects
+  { irarity  = [(1, 5), (10, 20)]
   , ieffects = [ Impress
                , OneOf [ RefillCalm (-60)
                        , RefillHP 20, RefillHP 10, Burn 10
@@ -561,12 +562,13 @@ scroll3 = scroll
   { irarity  = [(1, 4), (10, 2)]
   , ieffects = [Ascend False]
   }
-scroll4 = scroll
-  { ieffects = [OneOf [ Teleport 5, RefillCalm 5, InsertMove 5
+scroll4 = scroll  -- needs to be common to show at least a portion of effects
+  { irarity  = [(1, 40), (10, 20)]
+  , ieffects = [OneOf [ Teleport 5, RefillCalm 5, InsertMove 5
                       , DetectActor 10, DetectItem 10 ]]
   }
-scroll5 = scroll
-  { irarity  = [(10, 14)]
+scroll5 = scroll  -- needs to be common to show at least a portion of effects
+  { irarity  = [(10, 30)]
   , ieffects = [ Impress
                , OneOf [ Teleport 20, Ascend False, Ascend True
                        , Summon "hero" 1, Summon "mobile animal" 2
@@ -584,7 +586,8 @@ scroll8 = scroll
   , ieffects = [InsertMove $ 1 + d 2 + dl 2]
   }
 scroll9 = scroll
-  { ieffects = [ELabel "of scientific explanation", Identify]
+  { irarity  = [(1, 30)]
+  , ieffects = [ELabel "of scientific explanation", Identify]
   }
 scroll10 = scroll
   { irarity  = [(10, 20)]
