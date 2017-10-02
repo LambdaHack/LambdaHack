@@ -161,7 +161,7 @@ itemDesc side factionD aHurtMeleeOfOwner store localTime
       whose fid = gname (factionD EM.! fid)
       sourceDesc =
         case jfid itemBase of
-          Just fid | jsymbol itemBase `elem` ['!', '+'] ->
+          Just fid | jsymbol itemBase `elem` ['+'] ->
             "Caused by" <+> (if fid == side then "us" else whose fid)
             <> ". First observed" <+> onLevel
           Just fid ->

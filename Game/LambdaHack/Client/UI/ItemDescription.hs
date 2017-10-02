@@ -63,7 +63,7 @@ partItemN side factionD ranged fullInfo n cstore localTime itemFull =
           effTs = filter (not . T.null) effTsRaw
                   ++ if ranged then rangedDamage else []
           lsource = case jfid $ itemBase itemFull of
-            Just fid | jsymbol (itemBase itemFull) `elem` ['!'] ->
+            Just fid | jname (itemBase itemFull) `elem` ["impressed"] ->
               ["by" <+> if fid == side
                         then "us"
                         else gname (factionD EM.! fid)]
