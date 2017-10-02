@@ -368,7 +368,7 @@ flask10 = flask
   { irarity  = [(10, 2)]
   , ieffects = [ ELabel "of smelly concoction"
                , toOrganActorTurn "keen-smelling" (40 + d 10)
-               , DetectActor 5
+               , DetectActor 10
                , OnSmash (Explode "smelly droplet") ]
   }
 flask11 = flask
@@ -555,7 +555,7 @@ scroll1 = scroll
   }
 scroll2 = scroll
   { irarity  = [(1, 2)]
-  , ieffects = [ ELabel "of greed", Teleport 20, DetectItem 10
+  , ieffects = [ ELabel "of greed", Teleport 20, DetectItem 20
                , RefillCalm (-100) ]
   }
 scroll3 = scroll
@@ -565,14 +565,14 @@ scroll3 = scroll
 scroll4 = scroll  -- needs to be common to show at least a portion of effects
   { irarity  = [(1, 40), (10, 20)]
   , ieffects = [OneOf [ Teleport 5, RefillCalm 5, InsertMove 5
-                      , DetectActor 10, DetectItem 10 ]]
+                      , DetectActor 20, DetectItem 20 ]]
   }
 scroll5 = scroll  -- needs to be common to show at least a portion of effects
   { irarity  = [(10, 30)]
   , ieffects = [ Impress
                , OneOf [ Teleport 20, Ascend False, Ascend True
                        , Summon "hero" 1, Summon "mobile animal" 2
-                       , Detect 20, RefillCalm (-100)
+                       , Detect 40, RefillCalm (-100)
                        , CreateItem CGround "useful" TimerNone ] ]
   }
 scroll6 = scroll
@@ -601,10 +601,10 @@ scroll11 = scroll
   }
 scroll12 = scroll
   { irarity  = [(1, 9), (10, 4)]
-  , ieffects = [DetectHidden 10]
+  , ieffects = [DetectHidden 20]
   }
 scroll13 = scroll
-  { ieffects = [ELabel "of acute hearing", DetectActor 7]
+  { ieffects = [ELabel "of acute hearing", DetectActor 20]
   }
 
 -- * Assorted tools
@@ -1118,7 +1118,7 @@ swordImpress = sword
   , irarity  = [(5, 1), (10, 6)]
   , iaspects = [Timeout $ d 4 + 5 - dl 4 |*| 2]
   , ieffects = ieffects sword
-               ++ [Unique, Recharging Impress, Recharging (DetectActor 3)]
+               ++ [Unique, Recharging Impress, Recharging (DetectActor 5)]
   , idesc    = "A particularly well-balance blade, lending itself to impressive shows of fencing skill. Master sees enemies reflected on its mirror-like surface."
   }
 swordNullify = sword
