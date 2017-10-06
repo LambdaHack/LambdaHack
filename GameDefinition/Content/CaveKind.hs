@@ -84,6 +84,7 @@ arena = rogue
   , cplaceFreq    = [("arena", 100)]
   , cpassable     = True
   , cdefTile      = "arenaSetLit"
+  , cdarkCorTile  = "trailLit"  -- let trails give off light
   , clitCorTile   = "trailLit"
   }
 arena2 = arena
@@ -95,7 +96,6 @@ arena2 = arena
   , citemNum      = 7 * d 5  -- rare, so make it exciting
   , citemFreq     = [("useful", 20), ("treasure", 40), ("any vial", 40)]
   , cdefTile      = "arenaSetDark"
-  , cdarkCorTile  = "trailLit"  -- let trails give off light
   }
 laboratory = arena2
   { csymbol       = 'L'
@@ -116,6 +116,7 @@ laboratory = arena2
   , cplaceFreq    = [("laboratory", 100)]
   , cpassable     = False
   , cdefTile      = "fillerWall"
+  , cdarkCorTile  = "labTrailLit"  -- let lab smoke give off light always
   , clitCorTile   = "labTrailLit"
   }
 empty = rogue
