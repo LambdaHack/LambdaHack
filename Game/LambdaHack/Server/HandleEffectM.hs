@@ -871,7 +871,7 @@ effectCreateItem :: (MonadAtomic m, MonadServer m)
                  => Maybe FactionId -> Maybe Int -> ActorId -> CStore
                  -> GroupName ItemKind -> IK.TimerDice
                  -> m Bool
-effectCreateItem jfid mcount target store grp tim = do
+effectCreateItem jfidRaw mcount target store grp tim = do
   tb <- getsState $ getActorBody target
   delta <- case tim of
     IK.TimerNone -> return $ Delta timeZero
@@ -891,8 +891,16 @@ effectCreateItem jfid mcount target store grp tim = do
   let litemFreq = [(grp, 1)]
   -- Power depth of new items unaffected by number of spawned actors.
   m5 <- rollItem 0 (blid tb) litemFreq
-  let (itemKnownRaw, itemFullRaw, _, seed, _) =
+  let (itemKnownRaw, itemFullRaw, itemDisco, seed, _) =
         fromMaybe (error $ "" `showFailure` (blid tb, litemFreq, c)) m5
+  -- Other code adds to @sdiscoBenefit@ only @iid@ and not any other items
+  -- that share the same @jkindIx@, so this is broken if such items
+  -- are not fully IDed from the start, so check that before risking a copy
+  -- of the same item, but with different @jfid@.
+      jfid = if store == COrgan
+                && IK.Identified `elem` IK.ifeature (itemKind itemDisco)
+             then jfidRaw
+             else Nothing
       (itemKnown, itemFullFid) =
         let (kindIx, ar, damage, _) = itemKnownRaw
         in ( (kindIx, ar, damage, jfid)

@@ -477,6 +477,9 @@ discoverKind c iid kmKind = do
       f Nothing = Just KindMean{..}
       f Just{} = error $ "already discovered"
                          `showFailure` (c, iid, kmKind)
+  -- This adds to @sdiscoBenefit@ only @iid@ and not any other items
+  -- that share the same @jkindIx@, so this is broken if such items
+  -- are not fully IDed from the start.
   modifyClient $ \cli ->
     cli { sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)
         , sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli) }
@@ -524,6 +527,9 @@ discoverSeed c iid seed = do
           f Nothing = Just aspects
           f Just{} = error $ "already discovered"
                              `showFailure` (c, iid, seed)
+  -- This adds to @sdiscoBenefit@ only @iid@ and not any other items
+  -- that share the same @jkindIx@, so this is broken if such items
+  -- are not fully IDed from the start.
       modifyClient $ \cli ->
         cli { sdiscoAspect = EM.alter f iid (sdiscoAspect cli)
             , sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli) }
