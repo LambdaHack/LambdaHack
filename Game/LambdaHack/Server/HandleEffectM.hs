@@ -1179,7 +1179,7 @@ effectDetectHidden execSfx radius target pos = do
 
 -- ** SendFlying
 
--- | Shend the target actor flying like a projectile. The arguments correspond
+-- | Send the target actor flying like a projectile. The arguments correspond
 -- to @ToThrow@ and @Linger@ properties of items. If the actors are adjacent,
 -- the vector is directed outwards, if no, inwards, if it's the same actor,
 -- boldpos is used, if it can't, a random outward vector of length 10
@@ -1216,21 +1216,21 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
               ts = Just (trajectory, speed)
           if null trajectory || btrajectory tb == ts
              || throwVelocity <= 0 || throwLinger <= 0
-            then return False  -- e.g., actor is too heavy; OK
-            else do
-              execSfx
-              execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
-              -- Give the actor one extra turn and also let the push start ASAP.
-              -- So, if the push lasts one (his) turn, he will not lose
-              -- any turn of movement (but he may need to retrace the push).
-              actorAspect <- getsServer sactorAspect
-              let ar = actorAspect EM.! target
-                  actorTurn = ticksPerMeter $ bspeed tb ar
-                  delta = timeDeltaScale actorTurn (-1)
-              modifyServer $ \ser ->
-                ser {sactorTime = ageActor (bfid tb) (blid tb) target delta
-                                  $ sactorTime ser}
-              return True
+          then return False  -- e.g., actor is too heavy; OK
+          else do
+            execSfx
+            execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
+            -- Give the actor one extra turn and also let the push start ASAP.
+            -- So, if the push lasts one (his) turn, he will not lose
+            -- any turn of movement (but he may need to retrace the push).
+            actorAspect <- getsServer sactorAspect
+            let ar = actorAspect EM.! target
+                actorTurn = ticksPerMeter $ bspeed tb ar
+                delta = timeDeltaScale actorTurn (-1)
+            modifyServer $ \ser ->
+              ser {sactorTime = ageActor (bfid tb) (blid tb) target delta
+                                $ sactorTime ser}
+            return True
 
 sendFlyingVector :: (MonadAtomic m, MonadServer m)
                  => ActorId -> ActorId -> Maybe Bool -> m Vector
