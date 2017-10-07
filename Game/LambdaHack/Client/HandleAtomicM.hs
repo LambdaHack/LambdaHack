@@ -379,9 +379,11 @@ tileChangeAffectsBfs Kind.COps{coTileSpeedup} fromTile toTile =
 
 createActor :: MonadClient m => ActorId -> Actor -> [(ItemId, Item)] -> m ()
 createActor aid b ais = do
-  let affect3 tap@TgtAndPath{..} = case tapTgt of
-        TPoint (TEnemyPos a permit) _ _ | a == aid ->
-          TgtAndPath (TEnemy a permit) NoPath
+  side <- getsClient sside
+  let newPermit = bfid b == side
+      affect3 tap@TgtAndPath{..} = case tapTgt of
+        TPoint (TEnemyPos a _) _ _ | a == aid ->
+          TgtAndPath (TEnemy a newPermit) NoPath
         _ -> tap
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   aspectRecord <- aspectRecordFromActorClient b ais
