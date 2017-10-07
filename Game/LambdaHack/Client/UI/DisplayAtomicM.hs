@@ -949,10 +949,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             msgAdd $ makeSentence
               [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
           stopPlayBack
-        IK.Impress -> actorVerbMU aid bUI $
-          if fidSource == bfid b
-          then "remember forgone allegiance suddenly"
-          else "be awestruck"
+        IK.Impress -> actorVerbMU aid bUI $ "be awestruck"
         IK.Summon grp p -> do
           let verb = if bproj b then "lure" else "summon"
               object = if p == 1
