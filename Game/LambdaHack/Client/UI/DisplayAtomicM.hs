@@ -1166,7 +1166,9 @@ strike catch source target iid cstore = assert (source /= target) $ do
           if isOrgan
           then partItemShortWownW side factionD spronoun COrgan localTime
           else partItemShortAW side factionD cstore localTime
-        msg | bhp tb <= 0 || hurtMult > 90 = makeSentence $  -- minor armor
+        msg | bhp tb <= 0  -- incapacitated, so doesn't actively block
+              || hurtMult > 90  -- at most minor armor
+              || jdamage (itemBase itemFull) <= 0 = makeSentence $
               [MU.SubjectVerbSg spart verb, tpart]
               ++ if bproj sb
                  then []
