@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.Time
   , timeDeltaSubtract, timeDeltaReverse, timeDeltaScale, timeDeltaPercent
   , timeDeltaToDigit, ticksPerMeter
   , Speed, toSpeed, fromSpeed
-  , speedZero, speedWalk, speedThrust, modifyDamageBySpeed
+  , speedZero, speedWalk, speedLimp, speedThrust, modifyDamageBySpeed
   , speedScale, timeDeltaDiv, speedAdd, speedNegate
   , speedFromWeight, rangeFromSpeedAndLinger
   ) where
@@ -181,6 +181,11 @@ speedZero = Speed 0
 -- | Fast walk speed (2 m/s) that suffices to move one tile in one turn.
 speedWalk :: Speed
 speedWalk = Speed $ 2 * sInMs
+
+-- | Limp speed (1 m/s) that suffices to move one tile in two turns.
+-- This is the minimal speed for projectiles to fly just one space and drop.
+speedLimp :: Speed
+speedLimp = Speed sInMs
 
 -- | Sword thrust speed (10 m/s). Base weapon damages, both melee and ranged,
 -- are given assuming this speed and ranged damage is modified

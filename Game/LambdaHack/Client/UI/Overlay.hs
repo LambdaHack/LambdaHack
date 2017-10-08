@@ -98,8 +98,11 @@ itemDesc side factionD aHurtMeleeOfOwner store localTime
       IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = strengthToThrow itemBase
       speed = speedFromWeight (jweight itemBase) throwVelocity
       range = rangeFromSpeedAndLinger speed throwLinger
-      tspeed = "When thrown, it flies with speed of"
-               <+> tshow (fromSpeed speed `divUp` 10)
+      tspeed | speed < speedLimp = "When thrown, it drops at once."
+             | speed < speedWalk = "When thrown, it travels only one meter and drops immediately."
+             | otherwise =
+               "When thrown, it flies with speed of"
+               <+> tshow (fromSpeed speed `div` 10)
                <> if throwLinger /= 100
                   then " m/s and range" <+> tshow range <+> "m."
                   else " m/s."
