@@ -5,10 +5,15 @@
 - announce no effect of activation
 - describe original and current faction of an actor
 - highlight dominated actors
+- mark organs with comma instead of percent and gems with dollar
+- make the healing cave dangerous to prevent camping
+- slightly balance various content
 - by default move item the same as last time
 - often spawn between heroes and stairs going deeper
 - fix totalUsefulness computation for negative effects
 - fix abandoning distant enemy target despite no alternatives
+- fix slow pushing of actors
+- fix a crash when many actors run towards stairs
 - hotfix: Pass zoom keys through to the browser
 - help players find the info about changing the font size
 - depend on GHC >= 8.0 and new vector
