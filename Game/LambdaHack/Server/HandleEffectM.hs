@@ -1211,7 +1211,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
           weightAssocs <- fullAssocsServer target [CInv, CEqp, COrgan]
           let weight = sum $ map (jweight . itemBase . snd) weightAssocs
               path = bpos tb : pos : rest
-              (trajectory, (speed, _)) =
+              (trajectory, (speed, range)) =
                 computeTrajectory weight throwVelocity throwLinger path
               ts = Just (trajectory, speed)
           if null trajectory || btrajectory tb == ts
@@ -1220,13 +1220,10 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
           else do
             execSfx
             execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
-            -- Give the actor one extra turn and also let the push start ASAP.
-            -- So, if the push lasts one (his) turn, he will not lose
+            -- Give the actor back all the time spent flying (speed * range)
+            -- and also let the push start ASAP. So, he will not lose
             -- any turn of movement (but he may need to retrace the push).
-            actorAspect <- getsServer sactorAspect
-            let ar = actorAspect EM.! target
-                actorTurn = ticksPerMeter $ bspeed tb ar
-                delta = timeDeltaScale actorTurn (-1)
+            let delta = timeDeltaScale (ticksPerMeter speed) (-range)
             modifyServer $ \ser ->
               ser {sactorTime = ageActor (bfid tb) (blid tb) target delta
                                 $ sactorTime ser}

@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveFunctor, GeneralizedNewtypeDeriving #-}
 -- | Game time and speed.
 module Game.LambdaHack.Common.Time
-  ( Time, timeZero, timeClip, timeTurn, timeEpsilon
+  ( Time, timeZero, timeClip, timeTurn, timeSecond, timeEpsilon
   , absoluteTimeAdd, absoluteTimeSubtract, absoluteTimeNegate
   , timeFit, timeFitUp
   , Delta(..), timeShift, timeDeltaToFrom
@@ -24,7 +24,7 @@ import Data.Int (Int64)
 -- | Game time in ticks. The time dimension.
 -- One tick is 1 microsecond (one millionth of a second),
 -- one turn is 0.5 s.
-newtype Time = Time Int64
+newtype Time = Time {timeTicks :: Int64}
   deriving (Show, Eq, Ord, Enum, Bounded, Binary)
 
 -- | One-dimentional vectors. Introduced to tell apart the 2 uses of Time:
@@ -64,10 +64,8 @@ turnsInSecond :: Int64
 turnsInSecond = 2
 
 -- | This many ticks fits in a single second. Do not export,
-_ticksInSecond :: Int64
-_ticksInSecond =
-  let Time ticksInTurn = timeTurn
-  in ticksInTurn * turnsInSecond
+timeSecond :: Time
+timeSecond = Time $ timeTicks timeTurn * turnsInSecond
 
 -- | Absolute time addition, e.g., for summing the total game session time
 -- from the times of individual games.
@@ -124,7 +122,7 @@ timeDeltaScale :: Delta Time -> Int -> Delta Time
 {-# INLINE timeDeltaScale #-}
 timeDeltaScale (Delta (Time t)) s = Delta (Time (t * fromIntegral s))
 
--- | Take the given percent of the time vector..
+-- | Take the given percent of the time vector.
 timeDeltaPercent :: Delta Time -> Int -> Delta Time
 {-# INLINE timeDeltaPercent #-}
 timeDeltaPercent (Delta (Time t)) s =
@@ -226,7 +224,7 @@ speedNegate (Speed n) = Speed (-n)
 ticksPerMeter :: Speed -> Delta Time
 {-# INLINE ticksPerMeter #-}
 ticksPerMeter (Speed v) =
-  Delta $ Time $ _ticksInSecond * sInMs `divUp` max minimalSpeed v
+  Delta $ Time $ timeTicks timeSecond * sInMs `divUp` max minimalSpeed v
 
 -- | Calculate projectile speed from item weight in grams
 -- and velocity percent modifier.
