@@ -19,7 +19,6 @@ import Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict hiding (State)
 import GHC.Generics (Generic)
-import System.FilePath
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client
@@ -138,7 +137,7 @@ executorCli :: KeyKind -> Config -> DebugModeCli
             -> IO ()
 executorCli copsClient sconfig sdebugMode cops cliSession fid cliDict =
   let stateToFileName (_, cli, _) =
-        ssavePrefixCli (sdebugCli cli) <.> Save.saveNameCli (sside cli)
+        ssavePrefixCli (sdebugCli cli) <> Save.saveNameCli cops (sside cli)
       totalState cliToSave = CliState
         { cliState = emptyState cops
         , cliClient = emptyStateClient fid

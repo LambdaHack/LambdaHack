@@ -112,7 +112,7 @@ executorSer cops copsClient sdebugNxtCmdline = do
   -- Wire together game content, the main loop of game clients
   -- and the game server loop.
   let stateToFileName (_, ser) =
-        ssavePrefixSer (sdebugSer ser) <.> Save.saveNameSer
+        ssavePrefixSer (sdebugSer ser) <> Save.saveNameSer cops
       totalState serToSave = SerState
         { serState = emptyState cops
         , serServer = emptyStateServer
@@ -130,9 +130,9 @@ executorSer cops copsClient sdebugNxtCmdline = do
         when b $ renameFile (path "") (path "bkp.")
       bkpAllSaves = do
         T.hPutStrLn stdout "The game crashed, so savefiles are moved aside."
-        bkpOneSave $ defPrefix <.> Save.saveNameSer
+        bkpOneSave $ defPrefix <> Save.saveNameSer cops
         forM_ [-99..99] $ \n ->
-          bkpOneSave $ defPrefix <.> Save.saveNameCli (toEnum n)
+          bkpOneSave $ defPrefix <> Save.saveNameCli cops (toEnum n)
   -- Wait for clients to exit even in case of server crash
   -- (or server and client crash), which gives them time to save
   -- and report their own inconsistencies, if any.

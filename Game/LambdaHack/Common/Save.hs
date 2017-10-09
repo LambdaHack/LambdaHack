@@ -137,13 +137,23 @@ delayPrint t = do
   T.hPutStrLn stdout t
   hFlush stdout
 
-saveNameCli :: FactionId -> String
-saveNameCli side =
-  let n = fromEnum side  -- we depend on the numbering hack to number saves
-  in (if n > 0
-      then "human_" ++ show n
-      else "computer_" ++ show (-n))
+saveNameCli :: Kind.COps -> FactionId -> String
+saveNameCli cops side =
+  let gameShortName =
+        case T.words $ rtitle $ Kind.stdRuleset $ Kind.corule cops of
+          w : _ -> T.unpack w
+          _ -> "Game"
+      n = fromEnum side  -- we depend on the numbering hack to number saves
+  in gameShortName
+     ++ (if n > 0
+         then ".human_" ++ show n
+         else ".computer_" ++ show (-n))
      ++ ".sav"
 
-saveNameSer :: String
-saveNameSer = "server.sav"
+saveNameSer :: Kind.COps -> String
+saveNameSer cops =
+  let gameShortName =
+        case T.words $ rtitle $ Kind.stdRuleset $ Kind.corule cops of
+          w : _ -> T.unpack w
+          _ -> "Game"
+  in gameShortName ++ ".server.sav"

@@ -76,7 +76,7 @@ tryRestore cops@Kind.COps{corule} sdebugSer = do
   if bench then return Nothing
   else do
     let prefix = ssavePrefixSer sdebugSer
-        fileName = prefix <.> Save.saveNameSer
+        fileName = prefix <> Save.saveNameSer cops
     res <- liftIO $ Save.restoreGame cops fileName
     let stdRuleset = Kind.stdRuleset corule
         cfgUIName = rcfgUIName stdRuleset

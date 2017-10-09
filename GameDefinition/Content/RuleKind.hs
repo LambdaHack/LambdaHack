@@ -41,7 +41,7 @@ standard = RuleKind
   , rexeVersion = Self.version
   -- The strings containing the default configuration file
   -- included from config.ui.default.
-  , rcfgUIName = "config.ui" <.> "ini"
+  , rcfgUIName = "LambdaHack.config.ui" <.> "ini"
   , rcfgUIDefault = $(do
       let path = "GameDefinition" </> "config.ui" <.> "default"
       qAddDependentFile path
@@ -63,6 +63,6 @@ standard = RuleKind
   , rfirstDeathEnds = False
   , rwriteSaveClips = 1000
   , rleadLevelClips = 50
-  , rscoresFile = "scores"
+  , rscoresFile = "LambdaHack.scores"
   , rnearby = 20
   }

@@ -167,7 +167,7 @@ defDebugModeSer = DebugModeSer { sknowMap = False
 #else
                                , sdumpInitRngs = False
 #endif
-                               , ssavePrefixSer = "save"
+                               , ssavePrefixSer = ""
                                , sdbgMsgSer = False
                                , sdebugCli = defDebugModeCli
                                }
