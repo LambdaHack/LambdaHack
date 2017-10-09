@@ -169,7 +169,8 @@ targetStrategy aid = do
             -- + 2 from foe being 2 away from friend before he closed in
             -- + 1 for as a margin for ambush, given than actors exploring
             -- can't physically keep adjacent all the time
-            n | condInMelee = if attacksFriends then 4 else 0
+            n | aAggression ar >= 2 = rangedNearby  -- boss never waits
+              | condInMelee = if attacksFriends then 4 else 0
               | otherwise = meleeNearby
             nonmoving = EM.findWithDefault 0 AbMove actorMaxSkE <= 0
         return {-keep lazy-} $
@@ -180,7 +181,7 @@ targetStrategy aid = do
       -- targeted, which is fine, since he is weakened by ranged, so should be
       -- meleed ASAP, even if without friends.
       targetableRanged body =
-        not condInMelee
+        (not condInMelee || aAggression ar >= 2)  -- boss fires at will
         && chessDist (bpos body) (bpos b) < rangedNearby
         && condCanProject
       targetableEnemy (aidE, body) = do
