@@ -21,8 +21,6 @@ newtype Strategy a = Strategy { runStrategy :: [Frequency a] }
 
 -- | Strategy is a monad.
 instance Monad Strategy where
-  {-# INLINE return #-}
-  return x = Strategy $ return $! uniformFreq "Strategy_return" [x]
   m >>= f  = normalizeStrategy $ Strategy
     [ toFreq name [ (p * q, b)
                   | (p, a) <- runFrequency x
@@ -36,7 +34,8 @@ instance Functor Strategy where
   fmap f (Strategy fs) = Strategy (map (fmap f) fs)
 
 instance Applicative Strategy where
-  pure  = return
+  {-# INLINE pure #-}
+  pure x = Strategy $ return $! uniformFreq "Strategy_pure" [x]
   (<*>) = ap
 
 instance MonadPlus Strategy where

@@ -39,8 +39,6 @@ data Frequency a = Frequency
   deriving (Show, Eq, Ord, Foldable, Traversable, Generic)
 
 instance Monad Frequency where
-  {-# INLINE return #-}
-  return x = Frequency [(1, x)] "return"
   Frequency xs name >>= f =
     Frequency [ (p * q, y) | (p, x) <- xs
                            , (q, y) <- runFrequency (f x) ]
@@ -50,7 +48,8 @@ instance Functor Frequency where
   fmap f (Frequency xs name) = Frequency (map (second f) xs) name
 
 instance Applicative Frequency where
-  pure  = return
+  {-# INLINE pure #-}
+  pure x = Frequency [(1, x)] "pure"
   Frequency fs fname <*> Frequency ys yname =
     Frequency [ (p * q, f y) | (p, f) <- fs
                              , (q, y) <- ys ]
