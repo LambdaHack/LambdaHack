@@ -190,3 +190,6 @@ build-binary-common:
 build-binary: build-binary-common
 	cp LambdaHackTheGameInstall/bin/LambdaHack LambdaHackTheGame
 	tar -czf LambdaHack_x_ubuntu-16.04-amd64.tar.gz LambdaHackTheGame
+
+new-build-dev:
+	cabal new-build --datadir=. --disable-optimization -j1
