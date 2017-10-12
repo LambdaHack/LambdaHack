@@ -11,3 +11,4 @@ cabal-dev
 *.log
 .virthualenv
 .stack-work/
+dist-newstyle
