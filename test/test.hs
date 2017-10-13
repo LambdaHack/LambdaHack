@@ -1,10 +1,15 @@
 import Prelude ()
 
+import Options.Applicative
+
 import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Server
 
 import TieKnot
 
 main :: IO ()
-main =
-  tieKnot $ words "--dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 100 --automateAll --keepAutomated --gameMode exploration --setDungeonRng 42 --setMainRng 42"
+main = do
+  let args = words "--dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 100 --automateAll --keepAutomated --gameMode exploration --setDungeonRng 42 --setMainRng 42"
+  debugModeSer <- handleParseResult $ execParserPure defaultPrefs debugModeSerPI args
+  tieKnot debugModeSer
   -- tieKnot $ words "--dbgMsgSer --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 100 --automateAll --keepAutomated --gameMode battle --setDungeonRng 42 --setMainRng 42"
