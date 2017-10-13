@@ -24,6 +24,7 @@ import qualified Data.Text.IO as T
 import System.Exit (ExitCode (ExitSuccess))
 import System.FilePath
 import System.IO (hFlush, stdout)
+import Options.Applicative (defaultPrefs, execParserPure, handleParseResult)
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client
@@ -101,8 +102,8 @@ executorSer cops copsClient sdebugNxtCmdline = do
   -- It is reparsed at each start of the game executable.
   sconfig <- mkConfig cops (sbenchmark $ sdebugCli sdebugNxtCmdline)
   sdebugNxt <- case configCmdline sconfig of
-    [] -> return sdebugNxtCmdline
-    args -> return $! debugArgs args
+    []   -> return sdebugNxtCmdline
+    args -> handleParseResult $ execParserPure defaultPrefs debugModeSerPI args
   -- Options for the clients modified with the configuration file.
   -- The client debug inside server debug only holds the client commandline
   -- options and is never updated with config options, etc.
