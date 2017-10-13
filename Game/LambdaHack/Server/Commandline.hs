@@ -40,7 +40,7 @@ debugModeSerP = do
   gameMode             <- gameModeP
   automateAll          <- automateAllP
   keepAutomated        <- keepAutomatedP
-  (newGame, challenge) <- serToChallenge <$> newGameP
+  ~(newGame,challenge) <- serToChallenge <$> newGameP
   stopAfterSeconds     <- stopAfterSecsP
   stopAfterFrames      <- stopAfterFramesP
   benchmark            <- benchmarkP
