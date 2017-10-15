@@ -30,9 +30,9 @@ debugModeSerP :: Parser DebugModeSer
 debugModeSerP = do
   ~(snewGameSer, scurChalSer)
                     <- serToChallenge <$> newGameP
-  sknowMap          <- knowMapP
-  sknowEvents       <- knowEventsP
-  sknowItems        <- knowItemsP
+  knowMap           <- knowMapP
+  knowEvents        <- knowEventsP
+  knowItems         <- knowItemsP
   sniff             <- sniffP
   sallClear         <- allClearP
   sboostRandomItem  <- boostRandItemP
@@ -70,6 +70,9 @@ debugModeSerP = do
         , ssavePrefixCli = ssavePrefixSer
         , ..
         }
+    , sknowMap = knowMap || knowEvents || knowItems
+    , sknowEvents = knowEvents || knowItems
+    , sknowItems = knowItems
     , ..
     }
  where
@@ -85,12 +88,12 @@ knowMapP =
 knowEventsP :: Parser Bool
 knowEventsP =
   switch (  long "knowEvents"
-         <> help "Show all events in the next game (enables --knowMap)" )  -- TODO: actually enable
+         <> help "Show all events in the next game (implies --knowMap)" )
 
 knowItemsP :: Parser Bool
 knowItemsP =
   switch (  long "knowItems"
-         <> help "Auto-identify all items in the next game (enables --knowEvents)" )  -- TODO: actually enable knowEvents and knowMap
+         <> help "Auto-identify all items in the next game (implies --knowEvents)" )
 
 sniffP :: Parser Bool
 sniffP =
