@@ -187,8 +187,8 @@ Test commands with prefix `frontend` start AI vs. AI games
 with the standard, user-friendly frontend.
 
 Run `LambdaHack --help` to see a brief description of all debug options.
-Of these, `--sniffIn` and `--sniffOut` are very useful (though verbose
-and initially cryptic), for monitoring the traffic between clients
+Of these, the `--sniff` option is very useful (though verbose
+and initially cryptic), for displaying the traffic between clients
 and the server. Some options in the config file may prove useful too,
 though they mostly overlap with commandline options (and will be totally
 merged at some point).

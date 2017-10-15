@@ -66,8 +66,7 @@ data DebugModeSer = DebugModeSer
   { sknowMap         :: Bool
   , sknowEvents      :: Bool
   , sknowItems       :: Bool
-  , sniffIn          :: Bool
-  , sniffOut         :: Bool
+  , sniff            :: Bool
   , sallClear        :: Bool
   , sboostRandomItem :: Bool
   , sgameMode        :: Maybe (GroupName ModeKind)
@@ -150,8 +149,7 @@ defDebugModeSer :: DebugModeSer
 defDebugModeSer = DebugModeSer { sknowMap = False
                                , sknowEvents = False
                                , sknowItems = False
-                               , sniffIn = False
-                               , sniffOut = False
+                               , sniff = False
                                , sallClear = False
                                , sboostRandomItem = False
                                , sgameMode = Nothing
@@ -225,8 +223,7 @@ instance Binary DebugModeSer where
     put sknowMap
     put sknowEvents
     put sknowItems
-    put sniffIn
-    put sniffOut
+    put sniff
     put sallClear
     put sboostRandomItem
     put sgameMode
@@ -240,8 +237,7 @@ instance Binary DebugModeSer where
     sknowMap <- get
     sknowEvents <- get
     sknowItems <- get
-    sniffIn <- get
-    sniffOut <- get
+    sniff <- get
     sallClear <- get
     sboostRandomItem <- get
     sgameMode <- get

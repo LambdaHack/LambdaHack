@@ -104,14 +104,14 @@ sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
 sendUpdate !fid !cmd = do
   chan <- getsDict (EM.! fid)
   let resp = RespUpdAtomic cmd
-  debug <- getsServer $ sniffOut . sdebugSer
+  debug <- getsServer $ sniff . sdebugSer
   when debug $ debugResponse fid resp
   writeQueue resp $ responseS chan
 
 sendSfx :: MonadServerReadRequest m => FactionId -> SfxAtomic -> m ()
 sendSfx !fid !sfx = do
   let resp = RespSfxAtomic sfx
-  debug <- getsServer $ sniffOut . sdebugSer
+  debug <- getsServer $ sniff . sdebugSer
   when debug $ debugResponse fid resp
   chan <- getsDict (EM.! fid)
   case chan of
@@ -121,7 +121,7 @@ sendSfx !fid !sfx = do
 sendQueryAI :: MonadServerReadRequest m => FactionId -> ActorId -> m RequestAI
 sendQueryAI fid aid = do
   let respAI = RespQueryAI aid
-  debug <- getsServer $ sniffOut . sdebugSer
+  debug <- getsServer $ sniff . sdebugSer
   when debug $ debugResponse fid respAI
   chan <- getsDict (EM.! fid)
   req <- do
@@ -134,7 +134,7 @@ sendQueryUI :: (MonadAtomic m, MonadServerReadRequest m)
             => FactionId -> ActorId -> m RequestUI
 sendQueryUI fid _aid = do
   let respUI = RespQueryUI
-  debug <- getsServer $ sniffOut . sdebugSer
+  debug <- getsServer $ sniff . sdebugSer
   when debug $ debugResponse fid respUI
   chan <- getsDict (EM.! fid)
   req <- do

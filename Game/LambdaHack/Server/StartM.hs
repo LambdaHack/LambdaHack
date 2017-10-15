@@ -340,8 +340,7 @@ applyDebug :: MonadServer m => m ()
 applyDebug = do
   DebugModeSer{..} <- getsServer sdebugNxt
   modifyServer $ \ser ->
-    ser {sdebugSer = (sdebugSer ser) { sniffIn
-                                     , sniffOut
+    ser {sdebugSer = (sdebugSer ser) { sniff
                                      , sallClear
                                      , sdbgMsgSer
                                      , snewGameSer

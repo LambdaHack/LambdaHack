@@ -33,8 +33,7 @@ debugModeSerP = do
   sknowMap          <- knowMapP
   sknowEvents       <- knowEventsP
   sknowItems        <- knowItemsP
-  sniffIn           <- sniffInP
-  sniffOut          <- sniffOutP
+  sniff             <- sniffP
   sallClear         <- allClearP
   sboostRandomItem  <- boostRandItemP
   sgameMode         <- gameModeP
@@ -93,15 +92,10 @@ knowItemsP =
   switch (  long "knowItems"
          <> help "Auto-identify all items in the next game (needs --knowEvents)" )
 
-sniffInP :: Parser Bool
-sniffInP =
-  switch (  long "sniffIn"
-         <> help "Display all incoming commands on console" )
-
-sniffOutP :: Parser Bool
-sniffOutP =
-  switch (  long "sniffOut"
-         <> help "Display all outgoing commands on console" )
+sniffP :: Parser Bool
+sniffP =
+  switch (  long "sniff"
+         <> help "Monitor all trafic between server and clients" )
 
 allClearP :: Parser Bool
 allClearP =
