@@ -24,7 +24,7 @@ import Game.LambdaHack.Server.State
 debugModeSerPI :: ParserInfo DebugModeSer
 debugModeSerPI =  info ( helper <*> debugModeSerP )
                $  fullDesc
-               <> progDesc "Configure debug options here, gameplay options in config.rules.ini."
+               <> progDesc "Configure debug options here, gameplay options in configuration file."
 
 debugModeSerP :: Parser DebugModeSer
 debugModeSerP = do
