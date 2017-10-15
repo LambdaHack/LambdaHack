@@ -85,12 +85,12 @@ knowMapP =
 knowEventsP :: Parser Bool
 knowEventsP =
   switch (  long "knowEvents"
-         <> help "Show all events in the next game (needs --knowMap)" )
+         <> help "Show all events in the next game (enables --knowMap)" )  -- TODO: actually enable
 
 knowItemsP :: Parser Bool
 knowItemsP =
   switch (  long "knowItems"
-         <> help "Auto-identify all items in the next game (needs --knowEvents)" )
+         <> help "Auto-identify all items in the next game (enables --knowEvents)" )  -- TODO: actually enable knowEvents and knowMap
 
 sniffP :: Parser Bool
 sniffP =
@@ -111,7 +111,7 @@ gameModeP :: Parser (Maybe (GroupName ModeKind))
 gameModeP = optional $ toGameMode <$>
   strOption (  long "gameMode"
             <> metavar "MODE"
-            <> help "Start next game in the given mode" )
+            <> help "Start next game in the scenario indicated by MODE" )
  where
   toGameMode :: String -> GroupName ModeKind
   toGameMode = toGroupName . T.pack
@@ -147,7 +147,7 @@ stopAfterFramesP = optional $
 benchmarkP :: Parser Bool
 benchmarkP =
   switch (  long "benchmark"
-         <> help "Restrict file IO, print stats" )
+         <> help "Restrict file IO, print timing stats" )
 
 setDungeonRngP :: Parser (Maybe R.StdGen)
 setDungeonRngP = optional $
@@ -164,48 +164,48 @@ setMainRngP = optional $
 dumpInitRngsP :: Parser Bool
 dumpInitRngsP =
   switch (  long "dumpInitRngs"
-         <> help "Dump RNG states from the start of the game" )
+         <> help "Dump the RNG seeds used to initialize the game" )
 
 dbgMsgSerP :: Parser Bool
 dbgMsgSerP =
   switch (  long "dbgMsgSer"
-         <> help "Let the server emit its internal debug messages" )
+         <> help "Emit extra internal server debug messages" )
 
 gtkFontFamilyP :: Parser (Maybe Text)
 gtkFontFamilyP = optional $ T.pack <$>
   strOption (  long "gtkFontFamily"
             <> metavar "FONT_FAMILY"
-            <> help "Use the given font family for the main game window in GTK" )
+            <> help "Use FONT_FAMILY for the main game window in GTK frontend" )
 
 sdlFontFileP :: Parser (Maybe Text)
 sdlFontFileP = optional $ T.pack <$>
-  strOption (  long "gtkFontFamily"
+  strOption (  long "sdlFontFile"
             <> metavar "FONT_FILE"
-            <> help "Use the given font file for the main game window in SDL2" )
+            <> help "Use FONT_FILE for the main game window in SDL2 frontend" )
 
 sdlTtfSizeAddP :: Parser (Maybe Int)
 sdlTtfSizeAddP = optional $
   option auto (  long "sdlTtfSizeAdd"
               <> metavar "N"
-              <> help "Enlarge map cells over scalable font max height in SDL2" )
+              <> help "Enlarge map cells by N over scalable font max height in SDL2 frontend" )
 
 sdlFonSizeAddP :: Parser (Maybe Int)
 sdlFonSizeAddP = optional $
   option auto (  long "sdlFonSizeAdd"
               <> metavar "N"
-              <> help "Enlarge map cells on top of .fon font max height in SDL2" )
+              <> help "Enlarge map cells by N on top of .fon font max height in SDL2 frontend" )
 
 fontSizeP :: Parser (Maybe Int)
 fontSizeP = optional $
   option auto (  long "fontSize"
               <> metavar "N"
-              <> help "Use the given font size for the main game window" )
+              <> help "Use font size N for the main game window (interpreted differently by different graphical frontends)" )
 
 fontDirP :: Parser (Maybe FilePath)
 fontDirP = optional $
   option auto (  long "fontDir"
               <> metavar "FILEPATH"
-              <> help "Use the given font path" )
+              <> help "Take font files for the SDL2 frontend from FILEPATH" )
 
 noColorIsBoldP :: Parser (Maybe Bool)
 noColorIsBoldP =
@@ -222,7 +222,7 @@ maxFpsP = optional $ max 1 <$>
 disableAutoYesP :: Parser Bool
 disableAutoYesP =
   switch (  long "disableAutoYes"
-         <> help "Never auto-answer all prompts" )
+         <> help "Never auto-answer prompts, not even when UI faction is automated" )
 
 noAnimP :: Parser (Maybe Bool)
 noAnimP =
@@ -235,7 +235,7 @@ savePrefixP =
   strOption (  long "savePrefix"
             <> metavar "PREFIX"
             <> value ""
-            <> help "Prepend the text to all savefile names" )
+            <> help "Prepend PREFIX to all savefile names" )
 
 frontendTeletypeP :: Parser Bool
 frontendTeletypeP =
@@ -255,4 +255,4 @@ frontendLazyP =
 dbgMsgCliP :: Parser Bool
 dbgMsgCliP =
   switch (  long "dbgMsgCli"
-         <> help "Let clients emit their internal debug messages" )
+         <> help "Emit extra internal client debug messages" )
