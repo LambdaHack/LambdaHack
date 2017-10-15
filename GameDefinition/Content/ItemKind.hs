@@ -27,7 +27,7 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validateSingle = validateSingleItemKind
   , validateAll = validateAllItemKind
-  , content = contentFromList []  -- filled out later on
+  , content = contentFromList $ items ++ otherItemContent
   }
 
 otherItemContent :: [ItemKind]

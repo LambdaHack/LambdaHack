@@ -11,9 +11,9 @@ import Game.LambdaHack.Common.Prelude
 import qualified System.Random as R
 
 import Game.LambdaHack.Common.ContentDef
+import qualified Game.LambdaHack.Common.Item as Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.SampleImplementation.SampleMonadServer (executorSer)
 import Game.LambdaHack.Server
 
@@ -40,32 +40,16 @@ tieKnot sdebug@DebugModeSer{sallClear, sboostRandomItem, sdungeonRng} = do
   -- equal to what was generated last time, ensures the same item boost.
   initialGen <- maybe R.getStdGen return sdungeonRng
   let sdebugNxt = sdebug {sdungeonRng = Just initialGen}
+      cotile = Kind.createOps Content.TileKind.cdefs
+      boostedItems = Item.boostItemKindList initialGen Content.ItemKind.items
+      coitem = Kind.createOps $
+        if sboostRandomItem
+        then Content.ItemKind.cdefs
+               {content = contentFromList
+                          $ boostedItems ++ Content.ItemKind.otherItemContent}
+        else Content.ItemKind.cdefs
       -- Common content operations, created from content definitions.
       -- Evaluated fully to discover errors ASAP and to free memory.
-      cotile = Kind.createOps Content.TileKind.cdefs
-      boostItem :: ItemKind -> ItemKind
-      boostItem i =
-        let mainlineLabel (label, _) = label `elem` ["useful", "treasure"]
-        in if any mainlineLabel (ifreq i)
-           then i { ifreq = ("useful", 10000)
-                            : filter (not . mainlineLabel) (ifreq i)
-                  , ieffects = delete Unique $ ieffects i
-                  }
-           else i
-      boostList :: [ItemKind] -> [ItemKind]
-      boostList l | not sboostRandomItem = l
-      boostList [] = []
-      boostList l =
-        let (r, _) = R.randomR (0, length l - 1) initialGen
-        in case splitAt r l of
-          (pre, i : post) -> pre ++ boostItem i : post
-          _ -> error $  "" `showFailure` l
-      boostedItems = boostList Content.ItemKind.items
-      cdefsItem =
-        Content.ItemKind.cdefs
-          {content = contentFromList
-                     $ boostedItems ++ Content.ItemKind.otherItemContent}
-      coitem = Kind.createOps cdefsItem
       !cops = Kind.COps
         { cocave  = Kind.createOps Content.CaveKind.cdefs
         , coitem

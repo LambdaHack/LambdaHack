@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Item
     ItemId, Item(..), ItemSource(..)
   , itemPrice, goesIntoEqp, isMelee, goesIntoInv, goesIntoSha
   , seedToAspect, meanAspect, aspectRecordToList
-  , aspectRecordFull, aspectsRandom
+  , aspectRecordFull, aspectsRandom, boostItemKindList
     -- * Item discovery types
   , ItemKindIx, ItemSeed, KindMean(..), DiscoveryKind
   , Benefit(..), DiscoveryBenefit
@@ -28,6 +28,7 @@ import Data.Hashable (Hashable)
 import qualified Data.Ix as Ix
 import GHC.Generics (Generic)
 import System.Random (mkStdGen)
+import qualified System.Random as R
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Dice (intToDice)
@@ -37,6 +38,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | A unique identifier of an item in the dungeon.
@@ -366,6 +368,24 @@ aspectRecordFull itemFull =
     Just ItemDisco{itemAspect=Just aspectRecord} -> aspectRecord
     Just ItemDisco{itemAspectMean} -> itemAspectMean
     Nothing -> emptyAspectRecord
+
+boostItemKindList :: R.StdGen -> [ItemKind] -> [ItemKind]
+boostItemKindList _ [] = []
+boostItemKindList initialGen l =
+  let (r, _) = R.randomR (0, length l - 1) initialGen
+  in case splitAt r l of
+    (pre, i : post) -> pre ++ boostItemKind i : post
+    _               -> error $  "" `showFailure` l
+
+boostItemKind :: ItemKind -> ItemKind
+boostItemKind i =
+  let mainlineLabel (label, _) = label `elem` ["useful", "treasure"]
+  in if any mainlineLabel (IK.ifreq i)
+     then i { IK.ifreq = ("useful", 10000)
+                         : filter (not . mainlineLabel) (IK.ifreq i)
+            , IK.ieffects = delete IK.Unique $ IK.ieffects i
+            }
+     else i
 
 type ItemTimer = [Time]
 
