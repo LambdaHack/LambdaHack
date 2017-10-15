@@ -6,13 +6,13 @@ module Game.LambdaHack.Server
   ( -- * Re-exported from "Game.LambdaHack.Server.LoopM"
     loopSer
     -- * Re-exported from "Game.LambdaHack.Server.Commandline"
-  , debugArgs
+  , debugModeSerPI
     -- * Re-exported from "Game.LambdaHack.Server.State"
   , DebugModeSer(..)
   ) where
 
 import Prelude ()
 
-import Game.LambdaHack.Server.Commandline (debugArgs)
+import Game.LambdaHack.Server.Commandline (debugModeSerPI)
 import Game.LambdaHack.Server.LoopM (loopSer)
 import Game.LambdaHack.Server.State (DebugModeSer (..))
