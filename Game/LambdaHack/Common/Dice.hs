@@ -43,7 +43,15 @@ normalizeSimple fr = toFreq (nameFrequency fr)
 -- faster in this case.
 instance Num SimpleDice where
   fr1 + fr2 = normalizeSimple $ liftA2AdditiveName "+" (+) fr1 fr2
-  fr1 * fr2 =
+  fr1 * fr2 = undefined
+  fr1 - fr2 = normalizeSimple $ liftA2AdditiveName "-" (-) fr1 fr2
+  negate = liftAName "-" negate
+  abs = normalizeSimple . liftAName "abs" abs
+  signum = normalizeSimple . liftAName "signum" signum
+  fromInteger n = renameFreq (tshow n) $ pure $ fromInteger n
+
+mult :: SimpleDice -> SimpleDice -> SimpleDice
+mult fr1 fr2 =
     let frRes = normalizeSimple $ do
           n <- fr1
           sum $ replicate n fr2  -- not commutative!
@@ -54,11 +62,6 @@ instance Num SimpleDice where
               nameFrequency fr1 <> nameFrequency fr2
             _ -> nameFrequency fr1 <+> "*" <+> nameFrequency fr2
     in renameFreq nameRes frRes
-  fr1 - fr2 = normalizeSimple $ liftA2AdditiveName "-" (-) fr1 fr2
-  negate = liftAName "-" negate
-  abs = normalizeSimple . liftAName "abs" abs
-  signum = normalizeSimple . liftAName "signum" signum
-  fromInteger n = renameFreq (tshow n) $ pure $ fromInteger n
 
 liftAName :: Text -> (Int -> Int) -> SimpleDice -> SimpleDice
 liftAName name f fr =
@@ -126,25 +129,7 @@ instance Num Dice where
          (scaleFreq ds1 dl1 + scaleFreq ds2 dl2)
          (if ds1 == 1 && ds2 == 1 then 1 else
             error $ "|*| must be at top level" `showFailure` (ds1, ds2))
-  (Dice dc1 dl1 ds1) * (Dice dc2 dl2 ds2) =
-    -- Hacky, but necessary (unless we forgo general multiplication and
-    -- stick to multiplications by a scalar from the left and from the right).
-    -- The pseudo-reasoning goes (remember the multiplication
-    -- is not commutative, so we take all kinds of liberties):
-    -- (dc1 + dl1 * l) * (dc2 + dl2 * l)
-    -- = dc1 * dc2 + dc1 * dl2 * l + dl1 * l * dc2 + dl1 * l * dl2 * l
-    -- = dc1 * dc2 + (dc1 * dl2) * l + (dl1 * dc2) * l + (dl1 * dl2) * l * l
-    -- Now, we don't have a slot to put the coefficient of l * l into
-    -- (and we don't know l yet, so we can't eliminate it by division),
-    -- so we happily ignore it. Done. It works well in the cases that interest
-    -- us, that is, multiplication by a scalar (a one-element frequency
-    -- distribution) from any side, unscaled and scaled by level depth
-    -- (but when we multiply two scaled scalars, we get 0).
-    Dice (scaleFreq ds1 dc1 * scaleFreq ds2 dc2)
-         (scaleFreq ds1 dc1 * scaleFreq ds2 dl2
-          + scaleFreq ds1 dl1 * scaleFreq ds2 dc2)
-         (if ds1 == 1 && ds2 == 1 then 1 else
-            error $ "|*| must be at top level" `showFailure` (ds1, ds2))
+  (Dice dc1 dl1 ds1) * (Dice dc2 dl2 ds2) = undefined
   (Dice dc1 dl1 ds1) - (Dice dc2 dl2 ds2) =
     Dice (scaleFreq ds1 dc1 - scaleFreq ds2 dc2)
          (scaleFreq ds1 dl1 - scaleFreq ds2 dl2)
@@ -159,19 +144,19 @@ affectBothDice :: (SimpleDice -> SimpleDice) -> Dice -> Dice
 affectBothDice f (Dice dc1 dl1 ds1) = Dice (f dc1) (f dl1) ds1
 
 -- | A single simple dice.
-d :: Int -> Dice
-d n = Dice (dieSimple n) 0 1
+d :: Int -> Int -> Dice
+d n k = Dice (mult (fromInteger $ toInteger n) (dieSimple k)) 0 1
 
 -- | Dice scaled with level.
-dl :: Int -> Dice
-dl n = Dice 0 (dieLevelSimple n) 1
+dl :: Int -> Int -> Dice
+dl n k = Dice 0 (mult (fromInteger $ toInteger n) (dieLevelSimple k)) 1
 
 -- Not exposed to save on documentation.
-_z :: Int -> Dice
-_z n = Dice (zdieSimple n) 0 1
+_z :: Int -> Int -> Dice
+_z n k = Dice (mult (fromInteger $ toInteger n) (zdieSimple k)) 0 1
 
-_zl :: Int -> Dice
-_zl n = Dice 0 (zdieLevelSimple n) 1
+_zl :: Int -> Int -> Dice
+_zl n k = Dice 0 (mult (fromInteger $ toInteger n) (zdieLevelSimple k)) 1
 
 intToDice :: Int -> Dice
 intToDice = fromInteger . fromIntegral

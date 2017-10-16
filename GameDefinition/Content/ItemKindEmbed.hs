@@ -180,7 +180,7 @@ staircaseTrapUp = ItemKind
 staircaseTrapDown = staircaseTrapUp
   { ifreq    = [("staircase trap down", 1)]
   , ieffects = [ Temporary "tumble down the stairwell"
-               , toOrganActorTurn "drunk" (20 + d 5) ]
+               , toOrganActorTurn "drunk" (20 + 1 `d` 5) ]
   }
 doorwayTrap = ItemKind
   { isymbol  = '^'
@@ -194,8 +194,8 @@ doorwayTrap = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [OneOf [ RefillCalm (-20)
-                      , toOrganActorTurn "slowed" (20 + d 5)
-                      , toOrganActorTurn "weakened" (20 + d 5) ]]
+                      , toOrganActorTurn "slowed" (20 + 1 `d` 5)
+                      , toOrganActorTurn "weakened" (20 + 1 `d` 5) ]]
   , ifeature = [Identified]  -- not Durable, springs at most once
   , idesc    = ""
   , ikit     = []
@@ -214,7 +214,7 @@ obscenePictograms = ItemKind
   , ieffects = [ Temporary "enter destructive rage at the sight of obscene pictograms"
                , RefillCalm (-20)
                , Recharging $ OneOf
-                   [ toOrganActorTurn "strengthened" (3 + d 3)
+                   [ toOrganActorTurn "strengthened" (3 + 1 `d` 3)
                    , CreateItem CInv "sandstone rock" TimerNone ] ]
   , ifeature = [Identified, Durable]
   , idesc    = ""
@@ -233,8 +233,8 @@ subtleFresco = ItemKind
   , iaspects = [Timeout 7]
   , ieffects = [ Temporary "feel refreshed by the subtle fresco"
                , RefillCalm 2
-               , Recharging $ toOrganActorTurn "far-sighted" (3 + d 3)
-               , Recharging $ toOrganActorTurn "keen-smelling" (3 + d 3) ]
+               , Recharging $ toOrganActorTurn "far-sighted" (3 + 1 `d` 3)
+               , Recharging $ toOrganActorTurn "keen-smelling" (3 + 1 `d` 3) ]
   , ifeature = [Identified, Durable]
   , idesc    = ""
   , ikit     = []
@@ -267,7 +267,7 @@ pulpit = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [ CreateItem CInv "any scroll" TimerNone
-               , toOrganGameTurn "defenseless" (20 + d 5)
+               , toOrganGameTurn "defenseless" (20 + 1 `d` 5)
                , Explode "PhD defense question" ]
   , ifeature = [Identified]  -- not Durable, springs at most once
   , idesc    = ""

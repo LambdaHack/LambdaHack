@@ -326,7 +326,7 @@ rosterExploration = Roster
                    , [(-4, 1, "scout monster"), (-4, 3, "monster")] )
                  , ( playerAnimal
                    , -- Fun from the start to avoid empty initial level:
-                     [ (-1, 1 + d 2, "animal")
+                     [ (-1, 1 + 1 `d` 2, "animal")
                      -- Huge battle at the end:
                      , (-10, 100, "mobile animal") ] ) ]
   , rosterEnemy = [ ("Explorer", "Monster Hive")
@@ -342,7 +342,7 @@ rosterExplorationSurvival = rosterExploration
                    , [(-4, 1, "scout monster"), (-4, 3, "monster")] )
                  , ( playerAnimal {fhasUI = True}
                    , -- Fun from the start to avoid empty initial level:
-                     [ (-1, 1 + d 2, "animal")
+                     [ (-1, 1 + 1 `d` 2, "animal")
                      -- Huge battle at the end:
                      , (-10, 100, "mobile animal") ] ) ] }
 
@@ -413,7 +413,7 @@ rosterDefense = rosterExploration
                  , ( playerAntiMonster
                    , [(-4, 1, "scout monster"), (-4, 3, "monster")] )
                  , ( playerAnimal
-                   , [ (-1, 1 + d 2, "animal")
+                   , [ (-1, 1 + 1 `d` 2, "animal")
                      , (-10, 100, "mobile animal") ] ) ] }
 
 cavesRaid, cavesBrawl, cavesShootout, cavesEscape, cavesZoo, cavesAmbush, cavesExploration, cavesSafari, cavesBattle :: Caves
