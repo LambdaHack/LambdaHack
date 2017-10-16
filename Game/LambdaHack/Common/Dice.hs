@@ -4,7 +4,7 @@
 module Game.LambdaHack.Common.Dice
   ( -- * Frequency distribution for casting dice scaled with level depth
     Dice, diceConst, diceLevel, diceMult, (|*|)
-  , d, dl, intToDice
+  , d, dl, z, zl, intToDice
   , maxDice, minDice, meanDice, reduceDice
     -- * Dice for rolling a pair of integer parameters representing coordinates.
   , DiceXY(..), maxDiceXY, minDiceXY, meanDiceXY
@@ -143,20 +143,22 @@ instance Num Dice where
 affectBothDice :: (SimpleDice -> SimpleDice) -> Dice -> Dice
 affectBothDice f (Dice dc1 dl1 ds1) = Dice (f dc1) (f dl1) ds1
 
--- | A single simple dice.
+-- | A die, rolled the given number of times.
 d :: Int -> Int -> Dice
 d n k = Dice (mult (fromInteger $ toInteger n) (dieSimple k)) 0 1
 
--- | Dice scaled with level.
+-- | A die scaled with level, rolled the given number of times.
 dl :: Int -> Int -> Dice
 dl n k = Dice 0 (mult (fromInteger $ toInteger n) (dieLevelSimple k)) 1
 
--- Not exposed to save on documentation.
-_z :: Int -> Int -> Dice
-_z n k = Dice (mult (fromInteger $ toInteger n) (zdieSimple k)) 0 1
+-- | A die, starting from zero, rolled the given number of times.
+z :: Int -> Int -> Dice
+z n k = Dice (mult (fromInteger $ toInteger n) (zdieSimple k)) 0 1
 
-_zl :: Int -> Int -> Dice
-_zl n k = Dice 0 (mult (fromInteger $ toInteger n) (zdieLevelSimple k)) 1
+-- | A die, starting from zero and scaled with level,
+-- rolled the given number of times.
+zl :: Int -> Int -> Dice
+zl n k = Dice 0 (mult (fromInteger $ toInteger n) (zdieLevelSimple k)) 1
 
 intToDice :: Int -> Dice
 intToDice = fromInteger . fromIntegral
