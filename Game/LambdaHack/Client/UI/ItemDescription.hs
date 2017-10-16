@@ -166,12 +166,12 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
               splitAE (IK.iaspects itemKind) (IK.ieffects itemKind)
           IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemBase
           speed = speedFromWeight (jweight itemBase) throwVelocity
-          meanDmg = Dice.meanDice (jdamage itemBase)
+          meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
           minDeltaHP = xM meanDmg `divUp` 100
           aHurtMeleeOfItem = case itemAspect of
             Just aspectRecord -> aHurtMelee aspectRecord
             Nothing -> case find hurtMeleeAspect (IK.iaspects itemKind) of
-              Just (IK.AddHurtMelee d) -> Dice.meanDice d
+              Just (IK.AddHurtMelee d) -> ceiling $ Dice.meanDice d
               _ -> 0
           pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
           prawDeltaHP = fromIntegral pmult * minDeltaHP

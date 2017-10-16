@@ -29,8 +29,7 @@ import GHC.Generics (Generic)
 --
 -- The @Eq@ instance compares raw representations, not relative,
 -- normalized frequencies, so operations don't need to preserve
--- the expected equalities, unless they do some kind of normalization
--- (see 'Dice').
+-- the expected equalities.
 data Frequency a = Frequency
   { runFrequency  :: [(Int, a)]  -- ^ give acces to raw frequency values
   , nameFrequency :: Text        -- ^ short description for debug, etc.

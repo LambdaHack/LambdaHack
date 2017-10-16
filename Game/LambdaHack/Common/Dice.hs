@@ -3,14 +3,12 @@
 -- | Representation of dice for parameters scaled with current level depth.
 module Game.LambdaHack.Common.Dice
   ( -- * Frequency distribution for casting dice scaled with level depth
-    Dice, diceConst, diceLevel, diceMult
-  , d, dl, z, zl, intToDice
+    Dice, castDice, d, dl, z, zl, intToDice
   , maxDice, minDice, meanDice, reduceDice
     -- * Dice for rolling a pair of integer parameters representing coordinates.
   , DiceXY(..), maxDiceXY, minDiceXY, meanDiceXY
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , SimpleDice
 #endif
   ) where
 
@@ -18,104 +16,43 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Applicative
 import Control.DeepSeq
 import Data.Binary
-import qualified Data.Char as Char
 import Data.Hashable (Hashable)
-import qualified Data.IntMap.Strict as IM
-import qualified Data.Text as T
-import Data.Tuple
+import Game.LambdaHack.Common.Misc
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Frequency
-
-type SimpleDice = Frequency Int
-
-normalizeSimple :: SimpleDice -> SimpleDice
-normalizeSimple fr = toFreq (nameFrequency fr)
-                     $ map swap $ IM.toAscList $ IM.fromListWith (+)
-                     $ map swap $ runFrequency fr
-
--- Normalized mainly as an optimization, but it also makes many expected
--- algebraic laws hold (wrt @Eq@), except for some laws about
--- multiplication. We use @liftA2@ instead of @liftM2@, because it's probably
--- faster in this case.
-instance Num SimpleDice where
-  fr1 + fr2 = normalizeSimple $ liftA2AdditiveName "+" (+) fr1 fr2
-  fr1 * fr2 = undefined
-  fr1 - fr2 = normalizeSimple $ liftA2AdditiveName "-" (-) fr1 fr2
-  negate = liftAName "-" negate
-  abs = normalizeSimple . liftAName "abs" abs
-  signum = normalizeSimple . liftAName "signum" signum
-  fromInteger n = renameFreq (tshow n) $ pure $ fromInteger n
-
-mult :: SimpleDice -> SimpleDice -> SimpleDice
-mult fr1 fr2 =
-    let frRes = normalizeSimple $ do
-          n <- fr1
-          sum $ replicate n fr2  -- not commutative!
-        nameRes =
-          case T.uncons $ nameFrequency fr2 of
-            _ | nameFrequency fr1 == "0" || nameFrequency fr2 == "0" -> "0"
-            Just ('d', _) | T.all Char.isDigit $ nameFrequency fr1 ->
-              nameFrequency fr1 <> nameFrequency fr2
-            _ -> nameFrequency fr1 <+> "*" <+> nameFrequency fr2
-    in renameFreq nameRes frRes
-
-liftAName :: Text -> (Int -> Int) -> SimpleDice -> SimpleDice
-liftAName name f fr =
-  let frRes = f <$> fr
-      nameRes = name <> " (" <> nameFrequency fr  <> ")"
-  in renameFreq nameRes frRes
-
-liftA2AdditiveName :: Text
-                   -> (Int -> Int -> Int)
-                   -> SimpleDice -> SimpleDice -> SimpleDice
-liftA2AdditiveName name f fra frb =
-  let frRes = liftA2 f fra frb
-      nameRes
-        | nameFrequency fra == "0" =
-          (if name == "+" then "" else name) <+> nameFrequency frb
-        | nameFrequency frb == "0" = nameFrequency fra
-        | otherwise = nameFrequency fra <+> name <+> nameFrequency frb
-  in renameFreq nameRes frRes
-
-dieSimple :: Int -> SimpleDice
-dieSimple n = uniformFreq ("d" <> tshow n) [1..n]
-
-zdieSimple :: Int -> SimpleDice
-zdieSimple n = uniformFreq ("z" <> tshow n) [0..n-1]
-
-dieLevelSimple :: Int -> SimpleDice
-dieLevelSimple n = uniformFreq ("dl" <> tshow n) [1..n]
-
-zdieLevelSimple :: Int -> SimpleDice
-zdieLevelSimple n = uniformFreq ("zl" <> tshow n) [0..n-1]
-
--- | Dice for parameters scaled with current level depth.
--- To the result of rolling the first set of dice we add the second,
--- scaled in proportion to current depth divided by maximal dungeon depth.
--- The result if then multiplied by the scale --- to be used to ensure
--- that dice results are multiples of, e.g., 10.
-data Dice = Dice
-  { diceConst :: SimpleDice
-  , diceLevel :: SimpleDice
-  , diceMult  :: Int
-  }
+-- | Multiple dice rolls, some scaled with current level depth, in which case
+-- the sum of all rolls is scaled in proportion to current depth
+-- divided by maximal dungeon depth.
+--
+-- The simple dice should have positive number of rolls and number of sides.
+--
+-- The @Num@ instance doesn't have @abs@ nor @signum@ defined,
+-- because the functions for computing minimum, maximum and mean dice
+-- results would be too costly.
+data Dice =
+    DiceI Int
+  | DiceD Int Int
+  | DiceDL Int Int
+  | DiceZ Int Int
+  | DiceZL Int Int
+  | DicePlus Dice Dice
+  | DiceTimes Dice Dice
+  | DiceNegate Dice
   deriving (Eq, Ord, Generic)
 
 instance Show Dice where
-  show Dice{..} = T.unpack $
-    let rawMult = nameFrequency diceLevel
-        scaled = if rawMult == "0" then "" else rawMult
-        signAndMult = case T.uncons scaled of
-          Just ('-', _) -> scaled
-          _ -> "+" <+> scaled
-    in (if | nameFrequency diceLevel == "0" -> nameFrequency diceConst
-           | nameFrequency diceConst == "0" -> scaled
-           | otherwise -> nameFrequency diceConst <+> signAndMult)
-       <+> if diceMult == 1 then "" else "|*|" <+> tshow diceMult
+  show dice1 = case dice1 of
+    DiceI k -> show k
+    DiceD n k -> show n ++ " `d` " ++ show k
+    DiceDL n k -> show n ++ " `dl` " ++ show k
+    DiceZ n k -> show n ++ " `z` " ++ show k
+    DiceZL n k -> show n ++ " `zl` " ++ show k
+    DicePlus d1 (DiceNegate d2) -> show d1 ++ " - " ++ show d2
+    DicePlus d1 d2 -> show d1 ++ " + " ++ show d2
+    DiceTimes d1 d2 -> "(" ++ show d1 ++ ") * (" ++ show d2 ++ ")"
+    DiceNegate d1 -> "- (" ++ show d1 ++ ")"
 
 instance Hashable Dice
 
@@ -124,70 +61,145 @@ instance Binary Dice
 instance NFData Dice
 
 instance Num Dice where
-  (Dice dc1 dl1 ds1) + (Dice dc2 dl2 ds2) =
-    Dice (scaleFreq ds1 dc1 + scaleFreq ds2 dc2)
-         (scaleFreq ds1 dl1 + scaleFreq ds2 dl2)
-         (if ds1 == 1 && ds2 == 1 then 1 else
-            error $ "|*| must be at top level" `showFailure` (ds1, ds2))
-  (Dice dc1 dl1 ds1) * (Dice dc2 _dl2 _ds2) =
-    let n = meanFreq dc2  -- hack
-    in Dice dc1 dl1 (ds1 * n)
-  (Dice dc1 dl1 ds1) - (Dice dc2 dl2 ds2) =
-    Dice (scaleFreq ds1 dc1 - scaleFreq ds2 dc2)
-         (scaleFreq ds1 dl1 - scaleFreq ds2 dl2)
-         (if ds1 == 1 && ds2 == 1 then 1 else
-            error $ "|*| must be at top level" `showFailure` (ds1, ds2))
-  negate = affectBothDice negate
-  abs = affectBothDice abs
-  signum = affectBothDice signum
-  fromInteger n = Dice (fromInteger n) 0 1
+  d1 + d2 = DicePlus d1 d2
+  d1 * d2 = DiceTimes d1 d2
+  d1 - d2 = d1 + DiceNegate d2
+  negate = DiceNegate
+  abs = undefined
+  signum = undefined
+  fromInteger n = DiceI (fromInteger n)
 
-affectBothDice :: (SimpleDice -> SimpleDice) -> Dice -> Dice
-affectBothDice f (Dice dc1 dl1 ds1) = Dice (f dc1) (f dl1) ds1
+-- | Cast dice scaled with current level depth.
+-- Note that at the first level, the scaled dice are always ignored.
+--
+-- The implementation calls RNG as many times as there are dice rolls,
+-- which is costly, so content should prefer to case fewer dice
+-- and then multiply them by a constant. If rounded results are not desired
+-- (often they are, to limit the number of distinct item varieties
+-- in inventory), another dice may be added to the result.
+--
+-- A different possible implementation, with dice represented as 'Frequency',
+-- makes only one RNG call per dice, but due to lists lengths proportional
+-- to the maximal value of the dice, it's is intractable for 1000d1000
+-- and problematic already for 100d100.
+castDice :: forall m. Monad m
+         => ((Int, Int) -> m Int)
+         -> AbsDepth -> AbsDepth -> Dice -> m Int
+castDice randomR (AbsDepth lvlDepth) (AbsDepth maxDepth) dice = do
+  let !_A = assert (lvlDepth >= 0 && lvlDepth <= maxDepth
+                    `blame` "invalid depth for dice rolls"
+                    `swith` (lvlDepth, maxDepth)) ()
+      castNK n start k = do
+          let f !acc 0 = return acc
+              f acc count = do
+                r <- randomR (start, k)
+                f (acc + r) (count - 1)
+          f 0 n
+      scaleL k = (k * max 0 (lvlDepth - 1)) `div` max 1 (maxDepth - 1)
+      castD :: Dice -> m Int
+      castD dice1 = case dice1 of
+        DiceI k -> return k
+        DiceD n k -> castNK n 1 k
+        DiceDL n k -> scaleL <$> castNK n 1 k
+        DiceZ n k -> castNK n 0 (k - 1)
+        DiceZL n k -> scaleL <$> castNK n 0 (k - 1)
+        DicePlus d1 d2 -> do
+          k1 <- castD d1
+          k2 <- castD d2
+          return $! k1 + k2
+        DiceTimes d1 d2 -> do
+          k1 <- castD d1
+          k2 <- castD d2
+          return $! k1 * k2
+        DiceNegate d1 -> do
+          k <- castD d1
+          return $! negate k
+  castD dice
 
--- | A die, rolled the given number of times.
+-- | A die, rolled the given number of times. E.g., @1 `d` 2@ rolls 2-sided
+-- die one time.
 d :: Int -> Int -> Dice
-d n k = Dice (mult (fromInteger $ toInteger n) (dieSimple k)) 0 1
+d n k = assert (n > 0 && k > 0 `blame` "die must be positive" `swith` (n, k))
+        $ DiceD n k
 
--- | A die scaled with level, rolled the given number of times.
+-- | A die rolled the given number of times, with the result scaled
+-- with dungeon level depth.
 dl :: Int -> Int -> Dice
-dl n k = Dice 0 (mult (fromInteger $ toInteger n) (dieLevelSimple k)) 1
+dl n k = assert (n > 0 && k > 0 `blame` "die must be positive" `swith` (n, k))
+         $ DiceDL n k
 
--- | A die, starting from zero, rolled the given number of times.
+-- | A die, starting from zero, ending at one less than the bound,
+-- rolled the given number of times. E.g., @1 `z` 1@ always rolls zero.
 z :: Int -> Int -> Dice
-z n k = Dice (mult (fromInteger $ toInteger n) (zdieSimple k)) 0 1
+z n k = assert (n > 0 && k > 0 `blame` "die must be positive" `swith` (n, k))
+        $ DiceZ n k
 
--- | A die, starting from zero and scaled with level,
--- rolled the given number of times.
+-- | A die, starting from zero, ending at one less than the bound,
+-- rolled the given number of times,
+-- with the result scaled with dungeon level depth.
 zl :: Int -> Int -> Dice
-zl n k = Dice 0 (mult (fromInteger $ toInteger n) (zdieLevelSimple k)) 1
+zl n k = assert (n > 0 && k > 0 `blame` "die must be positive" `swith` (n, k))
+         $ DiceZL n k
 
 intToDice :: Int -> Dice
-intToDice = fromInteger . fromIntegral
+intToDice = DiceI
+
+-- | Minimal and maximal possible value of the dice.
+--
+-- @divUp@ in the implementation corresponds to @ceiling@,
+-- applied to results of @meanDice@ elsewhere in the code,
+-- and prevents treating 1d1-power effects (on shallow levels) as null effects.
+minmaxDice :: Dice -> (Int, Int)
+minmaxDice dice1 = case dice1 of
+  DiceI k -> (k, k)
+  DiceD n k -> (n, n * k)
+  DiceDL n k -> (n `divUp` 2, n * k `divUp` 2)
+  DiceZ n k -> (0, n * (k - 1))
+  DiceZL n k -> (0, n * (k - 1) `divUp` 2)
+  DicePlus d1 d2 ->
+    let (minD1, maxD1) = minmaxDice d1
+        (minD2, maxD2) = minmaxDice d2
+    in (minD1 + minD2, maxD1 + maxD2)
+  DiceTimes (DiceI k) d2 ->
+    let (minD2, maxD2) = minmaxDice d2
+    in if k >= 0 then (k * minD2, k * maxD2) else (k * maxD2, k * minD2)
+  DiceTimes d1 (DiceI k) ->
+    let (minD1, maxD1) = minmaxDice d1
+    in if k >= 0 then (minD1 * k, maxD1 * k) else (maxD1 * k, minD1 * k)
+  -- Multiplication other than the two cases above is unlikely, but here it is.
+  DiceTimes d1 d2 ->
+    let (minD1, maxD1) = minmaxDice d1
+        (minD2, maxD2) = minmaxDice d2
+        options = [minD1 * minD2, minD1 * maxD2, maxD1 * maxD2, maxD1 * minD2]
+    in (minimum options, maximum options)
+  DiceNegate d1 ->
+    let (minD1, maxD1) = minmaxDice d1
+    in (negate maxD1, negate minD1)
 
 -- | Maximal value of dice. The scaled part taken assuming median level.
 maxDice :: Dice -> Int
-maxDice Dice{..} = (fromMaybe 0 (maxFreq diceConst)
-                    + fromMaybe 0 (maxFreq diceLevel) `div` 2)
-                   * diceMult
+maxDice = snd . minmaxDice
 
 -- | Minimal value of dice. The scaled part taken assuming median level.
 minDice :: Dice -> Int
-minDice Dice{..} = (fromMaybe 0 (minFreq diceConst)
-                    + fromMaybe 0 (minFreq diceLevel) `div` 2)
-                   * diceMult
+minDice = fst . minmaxDice
 
 -- | Mean value of dice. The scaled part taken assuming median level.
--- Assumes the frequencies are not null.
-meanDice :: Dice -> Int
-meanDice Dice{..} = (meanFreq diceConst
-                     + meanFreq diceLevel `div` 2)
-                    * diceMult
+meanDice :: Dice -> Double
+meanDice dice1 = case dice1 of
+  DiceI k -> fromIntegral k
+  DiceD n k -> fromIntegral (n * (k + 1)) / 2
+  DiceDL n k -> fromIntegral (n * (k + 1)) / 4
+  DiceZ n k -> fromIntegral (n * k) / 2
+  DiceZL n k -> fromIntegral (n * k) / 4
+  DicePlus d1 d2 -> meanDice d1 + meanDice d2
+  DiceTimes d1 d2 -> meanDice d1 * meanDice d2  -- I hope this is that simple
+  DiceNegate d1 -> negate $ meanDice d1
 
 reduceDice :: Dice -> Maybe Int
-reduceDice de =
-  let minD = minDice de
-  in if minD == maxDice de then Just minD else Nothing
+reduceDice d1 =
+  let (minD1, maxD1) = minmaxDice d1
+  in if minD1 == maxD1 then Just minD1 else Nothing
 
 -- | Dice for rolling a pair of integer parameters pertaining to,
 -- respectively, the X and Y cartesian 2D coordinates.
@@ -207,5 +219,5 @@ minDiceXY :: DiceXY -> (Int, Int)
 minDiceXY (DiceXY x y) = (minDice x, minDice y)
 
 -- | Mean value of DiceXY.
-meanDiceXY :: DiceXY -> (Int, Int)
+meanDiceXY :: DiceXY -> (Double, Double)
 meanDiceXY (DiceXY x y) = (meanDice x, meanDice y)

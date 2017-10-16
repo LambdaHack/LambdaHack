@@ -116,9 +116,9 @@ itemDesc side factionD aHurtMeleeOfOwner store localTime
               aHurtMeleeOfItem = case itemAspect of
                 Just aspectRecord -> aHurtMelee aspectRecord
                 Nothing -> case find hurtMeleeAspect (IK.iaspects itemKind) of
-                  Just (IK.AddHurtMelee d) -> Dice.meanDice d
+                  Just (IK.AddHurtMelee d) -> ceiling $ Dice.meanDice d
                   _ -> 0
-              meanDmg = Dice.meanDice (jdamage itemBase)
+              meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
               dmgAn = if meanDmg <= 0 then "" else
                 let multRaw = aHurtMeleeOfOwner
                               + if store `elem` [CEqp, COrgan]

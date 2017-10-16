@@ -301,47 +301,50 @@ castAspect !ldepth !totalDepth !ar !asp =
       return $! ar {aSkills = Ability.addSkills (EM.singleton ab n)
                                                 (aSkills ar)}
 
+ceilingMeanDice :: Dice.Dice -> Int
+ceilingMeanDice d = ceiling $ Dice.meanDice d
+
 addMeanAspect :: AspectRecord -> IK.Aspect -> AspectRecord
 addMeanAspect !ar !asp =
   case asp of
     IK.Timeout d ->
-      let n = Dice.meanDice d
+      let n = ceilingMeanDice d
       in assert (aTimeout ar == 0) $ ar {aTimeout = n}
     IK.AddHurtMelee d ->
-      let n = Dice.meanDice d
+      let n = ceilingMeanDice d
       in ar {aHurtMelee = n + aHurtMelee ar}
     IK.AddArmorMelee d ->
-      let n = Dice.meanDice d
+      let n = ceilingMeanDice d
       in ar {aArmorMelee = n + aArmorMelee ar}
     IK.AddArmorRanged d ->
-      let n = Dice.meanDice d
+      let n = ceilingMeanDice d
       in ar {aArmorRanged = n + aArmorRanged ar}
     IK.AddMaxHP d ->
-      let n = Dice.meanDice d
+      let n = ceilingMeanDice d
       in ar {aMaxHP = n + aMaxHP ar}
     IK.AddMaxCalm d ->
-      let n = Dice.meanDice d
+      let n = ceilingMeanDice d
       in ar {aMaxCalm = n + aMaxCalm ar}
     IK.AddSpeed d ->
-      let n = Dice.meanDice d
+      let n = ceilingMeanDice d
       in ar {aSpeed = n + aSpeed ar}
     IK.AddSight d ->
-      let n = Dice.meanDice d
+      let n = ceilingMeanDice d
       in ar {aSight = n + aSight ar}
     IK.AddSmell d ->
-      let n = Dice.meanDice d
+      let n = ceilingMeanDice d
       in ar {aSmell = n + aSmell ar}
     IK.AddShine d ->
-      let n = Dice.meanDice d
+      let n = ceilingMeanDice d
       in ar {aShine = n + aShine ar}
     IK.AddNocto d ->
-      let n = Dice.meanDice d
+      let n = ceilingMeanDice d
       in ar {aNocto = n + aNocto ar}
     IK.AddAggression d ->
-      let n = Dice.meanDice d
+      let n = ceilingMeanDice d
       in ar {aAggression = n + aAggression ar}
     IK.AddAbility ab d ->
-      let n = Dice.meanDice d
+      let n = ceilingMeanDice d
       in ar {aSkills = Ability.addSkills (EM.singleton ab n)
                                          (aSkills ar)}
 
