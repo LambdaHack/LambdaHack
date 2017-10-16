@@ -3,7 +3,7 @@
 -- | Representation of dice for parameters scaled with current level depth.
 module Game.LambdaHack.Common.Dice
   ( -- * Frequency distribution for casting dice scaled with level depth
-    Dice, diceConst, diceLevel, diceMult, (|*|)
+    Dice, diceConst, diceLevel, diceMult
   , d, dl, z, zl, intToDice
   , maxDice, minDice, meanDice, reduceDice
     -- * Dice for rolling a pair of integer parameters representing coordinates.
@@ -97,7 +97,7 @@ zdieLevelSimple n = uniformFreq ("zl" <> tshow n) [0..n-1]
 -- To the result of rolling the first set of dice we add the second,
 -- scaled in proportion to current depth divided by maximal dungeon depth.
 -- The result if then multiplied by the scale --- to be used to ensure
--- that dice results are multiples of, e.g., 10. The scale is set with @|*|@.
+-- that dice results are multiples of, e.g., 10.
 data Dice = Dice
   { diceConst :: SimpleDice
   , diceLevel :: SimpleDice
@@ -129,7 +129,9 @@ instance Num Dice where
          (scaleFreq ds1 dl1 + scaleFreq ds2 dl2)
          (if ds1 == 1 && ds2 == 1 then 1 else
             error $ "|*| must be at top level" `showFailure` (ds1, ds2))
-  (Dice dc1 dl1 ds1) * (Dice dc2 dl2 ds2) = undefined
+  (Dice dc1 dl1 ds1) * (Dice dc2 _dl2 _ds2) =
+    let n = meanFreq dc2  -- hack
+    in Dice dc1 dl1 (ds1 * n)
   (Dice dc1 dl1 ds1) - (Dice dc2 dl2 ds2) =
     Dice (scaleFreq ds1 dc1 - scaleFreq ds2 dc2)
          (scaleFreq ds1 dl1 - scaleFreq ds2 dl2)
@@ -162,12 +164,6 @@ zl n k = Dice 0 (mult (fromInteger $ toInteger n) (zdieLevelSimple k)) 1
 
 intToDice :: Int -> Dice
 intToDice = fromInteger . fromIntegral
-
-infixl 5 |*|
--- | Multiplying the dice, after all randomness is resolved, by a constant.
--- Infix declaration ensures that @1 + 2 |*| 3@ parses as @(1 + 2) |*| 3@.
-(|*|) :: Dice -> Int -> Dice
-Dice dc1 dl1 ds1 |*| s2 = Dice dc1 dl1 (ds1 * s2)
 
 -- | Maximal value of dice. The scaled part taken assuming median level.
 maxDice :: Dice -> Int
