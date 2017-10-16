@@ -95,12 +95,9 @@ zdieLevelSimple n = uniformFreq ("zl" <> tshow n) [0..n-1]
 -- scaled in proportion to current depth divided by maximal dungeon depth.
 -- The result if then multiplied by the scale --- to be used to ensure
 -- that dice results are multiples of, e.g., 10. The scale is set with @|*|@.
---
--- Dice like 100d100 lead to enormous lists, so we help a bit
--- by keeping simple dice nonstrict below.
 data Dice = Dice
-  { diceConst :: ~SimpleDice
-  , diceLevel :: ~SimpleDice
+  { diceConst :: SimpleDice
+  , diceLevel :: SimpleDice
   , diceMult  :: Int
   }
   deriving (Eq, Ord, Generic)

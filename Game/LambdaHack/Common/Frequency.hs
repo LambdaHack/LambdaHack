@@ -33,8 +33,7 @@ import GHC.Generics (Generic)
 -- (see 'Dice').
 data Frequency a = Frequency
   { runFrequency  :: [(Int, a)]  -- ^ give acces to raw frequency values
-  , nameFrequency :: ~Text       -- ^ short description for debug, etc.;
-                                 --   keep it lazy, because it's rarely used
+  , nameFrequency :: Text        -- ^ short description for debug, etc.
   }
   deriving (Show, Eq, Ord, Foldable, Traversable, Generic)
 
