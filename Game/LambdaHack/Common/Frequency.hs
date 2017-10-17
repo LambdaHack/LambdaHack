@@ -20,6 +20,7 @@ import Control.Applicative
 import Control.DeepSeq
 import Data.Binary
 import Data.Hashable (Hashable)
+import Data.Int (Int32)
 import Data.Ord (comparing)
 import GHC.Generics (Generic)
 
@@ -36,10 +37,19 @@ data Frequency a = Frequency
   }
   deriving (Show, Eq, Ord, Foldable, Traversable, Generic)
 
+_maxBound32 :: Integer
+_maxBound32 = toInteger (maxBound :: Int32)
+
 instance Monad Frequency where
   Frequency xs name >>= f =
-    Frequency [ (p * q, y) | (p, x) <- xs
-                           , (q, y) <- runFrequency (f x) ]
+    Frequency [
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+                assert (toInteger p * toInteger q <= _maxBound32) $
+#endif
+                (p * q, y)
+              | (p, x) <- xs
+              , (q, y) <- runFrequency (f x)
+              ]
               ("bind (" <> name <> ")")
 
 instance Functor Frequency where
@@ -49,8 +59,14 @@ instance Applicative Frequency where
   {-# INLINE pure #-}
   pure x = Frequency [(1, x)] "pure"
   Frequency fs fname <*> Frequency ys yname =
-    Frequency [ (p * q, f y) | (p, f) <- fs
-                             , (q, y) <- ys ]
+    Frequency [
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+                assert (toInteger p * toInteger q <= _maxBound32) $
+#endif
+                (p * q, f y)
+              | (p, f) <- fs
+              , (q, y) <- ys
+              ]
               ("(" <> fname <> ") <*> (" <> yname <> ")")
 
 instance MonadPlus Frequency where
@@ -80,14 +96,23 @@ uniformFreq name l = Frequency (map (\x -> (1, x)) l) name
 -- | Takes a name and a list of frequencies and items
 -- into the frequency distribution.
 toFreq :: Text -> [(Int, a)] -> Frequency a
-toFreq name l = Frequency (filter ((> 0 ) . fst) l) name
+toFreq name l =
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+  assert (all (\(p, _) -> toInteger p <= _maxBound32) l) $
+#endif
+  Frequency (filter ((> 0 ) . fst) l) name
 
 -- | Scale frequency distribution, multiplying it
 -- by a positive integer constant.
 scaleFreq :: Show a => Int -> Frequency a -> Frequency a
 scaleFreq n (Frequency xs name) =
   assert (n > 0 `blame` "non-positive frequency scale" `swith` (name, n, xs)) $
-  Frequency (map (first (* n)) xs) name
+  let multN p =
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+                assert (toInteger p * toInteger n <= _maxBound32) $
+#endif
+                p * n
+  in Frequency (map (first multN) xs) name
 
 -- | Change the description of the frequency.
 renameFreq :: Text -> Frequency a -> Frequency a
