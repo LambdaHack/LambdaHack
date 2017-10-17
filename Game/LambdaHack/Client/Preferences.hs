@@ -24,9 +24,6 @@ import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 
-ceilingMeanDice :: Dice.Dice -> Int
-ceilingMeanDice d = ceiling $ Dice.meanDice d
-
 -- | How much AI benefits from applying the effect.
 -- The first component is benefit when applied to self, the second
 -- is benefit (preferably negative) when applied to enemy.
@@ -39,29 +36,33 @@ ceilingMeanDice d = ceiling $ Dice.meanDice d
 -- So there is less than @averageTurnValue@ included in each benefit,
 -- so in case when turn is not spent, e.g, periodic or temporary effects,
 -- the difference in value is only slight.
-effectToBenefit :: Kind.COps -> Faction -> IK.Effect -> (Int, Int)
+effectToBenefit :: Kind.COps -> Faction -> IK.Effect -> (Double, Double)
 effectToBenefit cops fact eff =
   let delta x = (x, x)
   in case eff of
     IK.ELabel _ -> delta 0
     IK.EqpSlot _ -> delta 0
-    IK.Burn d -> delta $ -(min 1500 $ 15 * ceilingMeanDice d)
+    IK.Burn d -> delta $ -(min 1500 $ 15 * Dice.meanDice d)
       -- often splash damage, armor doesn't block (but HurtMelee doesn't boost)
     IK.Explode _ -> delta 1  -- depends on explosion, but usually good,
                              -- unless under OnSmash, but they are ignored
     IK.RefillHP p ->
-      delta $ if p > 0 then min 2000 (20 * p) else max (-1000) (10 * p)
+      delta $ if p > 0
+              then min 2000 (20 * fromIntegral p)
+              else max (-1000) (10 * fromIntegral p)
         -- one HP healed is worth a bit more than one HP dealed to enemy,
         -- because if the actor survives, he may deal damage many times;
         -- however, AI is mostly for non-heroes that fight in suicidal crowds,
         -- so the two values are kept close enough to maintain berserk approach
-    IK.RefillCalm p -> delta $ if p > 0 then min 9 p else max (-9) p
+    IK.RefillCalm p -> delta $ if p > 0
+                               then min 9 (fromIntegral p)
+                               else max (-9) (fromIntegral p)
     IK.Dominate -> (0, -300)  -- I obtained an actor with, say 10HP,
                               -- worth 200, and enemy lost him, another 100
     IK.Impress -> (5, -50)  -- usually has no effect on self, hence low value
     IK.Summon grp d ->  -- contrived by not taking into account alliances
                         -- and not checking if enemies also control that group
-      let ben = ceilingMeanDice d * 200  -- the new actor can have, say, 10HP
+      let ben = Dice.meanDice d * 200  -- the new actor can have, say, 10HP
       in if grp `elem` fgroups (gplayer fact) then (ben, -ben) else (-ben, ben)
     IK.Ascend{} -> (-99, 99)  -- note the reversed values:
                               -- only change levels sensibly, in teams,
@@ -75,9 +76,9 @@ effectToBenefit cops fact eff =
     -- be ~5. (Plus a huge risk factor for any non-spawner faction.)
     -- So, each turn in battle is worth ~100. And on average, in and out
     -- of battle, let's say each turn is worth ~10.
-    IK.Paralyze d -> delta $ -20 * ceilingMeanDice d  -- clips
-    IK.InsertMove d -> delta $ 100 * ceilingMeanDice d  -- turns
-    IK.Teleport d -> if ceilingMeanDice d <= 8
+    IK.Paralyze d -> delta $ -20 * Dice.meanDice d  -- clips
+    IK.InsertMove d -> delta $ 100 * Dice.meanDice d  -- turns
+    IK.Teleport d -> if Dice.meanDice d <= 8
                      then (1, 0)     -- blink to shoot at foes
                      else (-9, -1)  -- for self, don't derail exploration
                                     -- for foes, fight with one less at a time
@@ -86,11 +87,12 @@ effectToBenefit cops fact eff =
     IK.CreateItem COrgan grp timer ->  -- assumed temporary
       let turnTimer = case timer of
             IK.TimerNone -> averageTurnValue + 1  -- copy count used instead
-            IK.TimerGameTurn n -> ceilingMeanDice n
-            IK.TimerActorTurn n -> ceilingMeanDice n
+            IK.TimerGameTurn n -> Dice.meanDice n
+            IK.TimerActorTurn n -> Dice.meanDice n
           (total, count) = organBenefit turnTimer grp cops fact
-      in delta $ total `divUp` count  -- the same when created in me and in foe
-        -- average over all matching grps; simplified: rarities ignored
+      in delta $ total / fromIntegral count
+           -- the same when created in me and in foe
+           -- average over all matching grps; simplified: rarities ignored
     IK.CreateItem _ "treasure" _ -> (100, 0)  -- assumed not temporary
     IK.CreateItem _ "useful" _ -> (70, 0)
     IK.CreateItem _ "any scroll" _ -> (50, 0)
@@ -99,7 +101,7 @@ effectToBenefit cops fact eff =
     IK.CreateItem _ "flask" _ -> (50, 0)
     IK.CreateItem _ grp _ ->  -- assumed not temporary and @grp@ tiny
       let (total, count) = recBenefit grp cops fact
-      in (total `divUp` count, 0)
+      in (total / fromIntegral count, 0)
     IK.DropItem _ _ COrgan "temporary condition" ->
       (1, -1)  -- varied, big bunch, but try to nullify it anyway
     IK.DropItem ngroup kcopy COrgan grp ->  -- assumed temporary
@@ -113,15 +115,16 @@ effectToBenefit cops fact eff =
           (total, count) = organBenefit turnTimer grp cops fact
           boundBonus n = if n == maxBound then 10 else 0
       in delta $ boundBonus ngroup + boundBonus kcopy
-                 - total `divUp` count  -- the same when dropped from me and foe
+                 - total / fromIntegral count
+                   -- the same when dropped from me and foe
     IK.DropItem{} -> delta (-10)  -- depends a lot on what is dropped
     IK.PolyItem -> delta 0  -- AI can't estimate item desirability vs average
     IK.Identify -> delta 0  -- AI doesn't know how to use
-    IK.Detect radius -> (radius * 2, 0)
-    IK.DetectActor radius -> (radius, 0)
-    IK.DetectItem radius -> (radius, 0)
-    IK.DetectExit radius -> (radius, 0)
-    IK.DetectHidden radius -> (radius, 0)
+    IK.Detect radius -> (fromIntegral radius * 2, 0)
+    IK.DetectActor radius -> (fromIntegral radius, 0)
+    IK.DetectItem radius -> (fromIntegral radius, 0)
+    IK.DetectExit radius -> (fromIntegral radius, 0)
+    IK.DetectHidden radius -> (fromIntegral radius, 0)
     IK.SendFlying _ -> (1, -10)  -- very context dependent, but it's better
     IK.PushActor _ -> (1, -10)   -- to be the one that decides and not the one
     IK.PullActor _ -> (1, -10)   -- that is interrupted in the middle of fleeing
@@ -133,7 +136,7 @@ effectToBenefit cops fact eff =
       let bs = map (effectToBenefit cops fact) efs
           f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
           (effSelf, effFoe) = foldr f (0, 0) bs
-      in (effSelf `divUp` length bs, effFoe `divUp` length bs)
+      in (effSelf / fromIntegral (length bs), effFoe / fromIntegral (length bs))
     IK.OnSmash _ -> delta 0
       -- can be beneficial; we'd need to analyze explosions, range, etc.
     IK.Recharging _ -> delta 0  -- taken into account separately
@@ -142,7 +145,7 @@ effectToBenefit cops fact eff =
     IK.Periodic -> delta 0  -- considered in totalUsefulness
 
 -- See the comment for @Paralyze@.
-averageTurnValue :: Int
+averageTurnValue :: Double
 averageTurnValue = 10
 
 -- Average delay between desired item uses. Some items are best activated
@@ -159,7 +162,7 @@ averageTurnValue = 10
 -- We don't want to undervalue rarely used items with long timeouts
 -- and we think that most interesting gameplay comes from alternating
 -- item use, so we arbitrarily set the full value timeout to 3.
-avgItemDelay :: Int
+avgItemDelay :: Double
 avgItemDelay = 3
 
 -- The average time between item being found (and enough skill obtained
@@ -176,14 +179,14 @@ avgItemDelay = 3
 -- We set the value to 30, assuming if the actor finds an item, then he is
 -- most likely at an unlooted level, so he will find more loot soon,
 -- or he is in a battle, so he will die soon (or win even more loot).
-avgItemLife :: Int
+avgItemLife :: Double
 avgItemLife = 30
 
 -- The value of durable item is this many times higher than non-durable,
 -- because the item will on average be activated this many times
 -- before it stops being used.
-durabilityMult :: Int
-durabilityMult = avgItemLife `div` avgItemDelay
+durabilityMult :: Double
+durabilityMult = avgItemLife / avgItemDelay
 
 -- We assume the organ is temporary (@Temporary@, @Periodic@, @Timeout 0@)
 -- and also that it doesn't provide any functionality, e.g., detection
@@ -215,25 +218,26 @@ durabilityMult = avgItemLife `div` avgItemDelay
 -- are applied and we can't stop/restart them.
 --
 -- We assume, only one of timer and count mechanisms is present at once.
-organBenefit :: Int -> GroupName ItemKind -> Kind.COps -> Faction -> (Int, Int)
+organBenefit :: Double -> GroupName ItemKind -> Kind.COps -> Faction
+             -> (Double, Int)
 organBenefit turnTimer grp cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} fact =
   let f (!sacc, !pacc) !p _ !kind =
-        let paspect asp = p * aspectToBenefit asp
-            peffect eff = p * fst (effectToBenefit cops fact eff)
-        in ( sacc + ceilingMeanDice (IK.icount kind)
+        let paspect asp = fromIntegral p * aspectToBenefit asp
+            peffect eff = fromIntegral p * fst (effectToBenefit cops fact eff)
+        in ( sacc + Dice.meanDice (IK.icount kind)
                     * (sum (map paspect $ IK.iaspects kind)
                        + sum (map peffect $ stripRecharging $ IK.ieffects kind))
-                  - averageTurnValue `div` turnTimer
+                  - averageTurnValue / turnTimer
            , pacc + p )
   in ofoldlGroup' grp f (0, 0)
 
-recBenefit :: GroupName ItemKind -> Kind.COps -> Faction -> (Int, Int)
+recBenefit :: GroupName ItemKind -> Kind.COps -> Faction -> (Double, Int)
 recBenefit grp cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} fact =
   let f (!sacc, !pacc) !p _ !kind =
         let recPickup = benPickup $
               totalUsefulness cops fact (IK.ieffects kind)
                                         (meanAspect kind) (fakeItem kind)
-        in ( sacc + ceilingMeanDice (IK.icount kind) * recPickup
+        in ( sacc + Dice.meanDice (IK.icount kind) * recPickup
            , pacc + p )
   in ofoldlGroup' grp f (0, 0)
 
@@ -270,26 +274,26 @@ fakeItem kind =
 -- Valuation of effects, and more precisely, more the signs than absolute
 -- values, ensures that both shield and torch get picked up so that
 -- the (human) actor can nevertheless equip them in very special cases.
-aspectToBenefit :: IK.Aspect -> Int
+aspectToBenefit :: IK.Aspect -> Double
 aspectToBenefit asp =
   case asp of
     IK.Timeout{} -> 0
-    IK.AddHurtMelee p -> ceilingMeanDice p  -- offence favoured
-    IK.AddArmorMelee p -> ceilingMeanDice p `divUp` 4  -- only partial protection
-    IK.AddArmorRanged p -> ceilingMeanDice p `divUp` 8
-    IK.AddMaxHP p -> ceilingMeanDice p
-    IK.AddMaxCalm p -> ceilingMeanDice p `divUp` 5
-    IK.AddSpeed p -> ceilingMeanDice p * 25
+    IK.AddHurtMelee p -> Dice.meanDice p  -- offence favoured
+    IK.AddArmorMelee p -> Dice.meanDice p / 4  -- only partial protection
+    IK.AddArmorRanged p -> Dice.meanDice p / 8
+    IK.AddMaxHP p -> Dice.meanDice p
+    IK.AddMaxCalm p -> Dice.meanDice p / 5
+    IK.AddSpeed p -> Dice.meanDice p * 25
       -- 1 speed ~ 5% melee; times 5 for no caps, escape, pillar-dancing, etc.;
       -- also, it's 1 extra turn each 20 turns, so 100/20, so 5; figures
-    IK.AddSight p -> ceilingMeanDice p * 5
-    IK.AddSmell p -> ceilingMeanDice p
-    IK.AddShine p -> ceilingMeanDice p * 2
-    IK.AddNocto p -> ceilingMeanDice p * 10  -- > sight + light; stealth, slots
+    IK.AddSight p -> Dice.meanDice p * 5
+    IK.AddSmell p -> Dice.meanDice p
+    IK.AddShine p -> Dice.meanDice p * 2
+    IK.AddNocto p -> Dice.meanDice p * 10  -- > sight + light; stealth, slots
     IK.AddAggression{} -> 0
-    IK.AddAbility _ p -> ceilingMeanDice p * 5
+    IK.AddAbility _ p -> Dice.meanDice p * 5
 
-recordToBenefit :: AspectRecord -> [Int]
+recordToBenefit :: AspectRecord -> [Double]
 recordToBenefit aspects = map aspectToBenefit $ aspectRecordToList aspects
 
 -- Result has non-strict fields, so arguments are forced to avoid leaks.
@@ -298,7 +302,7 @@ totalUsefulness :: Kind.COps -> Faction -> [IK.Effect] -> AspectRecord -> Item
                 -> Benefit
 totalUsefulness !cops !fact !effects !aspects !item =
   let effPairs = map (effectToBenefit cops fact) effects
-      effDice = - ceiling (damageUsefulness item)
+      effDice = - damageUsefulness item
       f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
       (effSelf, effFoe) = foldr f (0, 0) effPairs
       -- Timeout between 0 and 1 means item usable each turn, so we consider
@@ -312,8 +316,9 @@ totalUsefulness !cops !fact !effects !aspects !item =
         let scaleChargeBens bens
               | timeout <= 3 = bens
               | otherwise = map (\eff ->
-                  if avgItemDelay >= timeout then eff
-                  else eff * avgItemDelay `divUp` timeout) bens
+                  if avgItemDelay >= fromIntegral timeout
+                  then eff
+                  else eff * avgItemDelay / fromIntegral timeout) bens
             (cself, cfoe) = unzip $ map (effectToBenefit cops fact)
                                         (stripRecharging effects)
         in (scaleChargeBens cself, scaleChargeBens cfoe)
@@ -351,12 +356,12 @@ totalUsefulness !cops !fact !effects !aspects !item =
       benApply = max 0 $  -- because optional; I don't need to apply
         (effSelf + effDice  -- hits self with dice too, when applying
          + if periodic then 0 else sum chargeSelf)
-        `divUp` if durable then 1 else durabilityMult
+        / if durable then 1 else durabilityMult
       -- For melee, we add the foe part.
       benMelee = min 0 $
         (effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
          + if periodic then 0 else sum chargeFoe)
-        `divUp` if durable then 1 else durabilityMult
+        / if durable then 1 else durabilityMult
       -- The periodic effects, if any, are activated when projectile flies,
       -- but not when it hits, so they are not added to @benFling@.
       -- However, if item is not periodic, the recharging effects
@@ -369,12 +374,12 @@ totalUsefulness !cops !fact !effects !aspects !item =
        where
         hurtMult = 100 + min 99 (max (-99) (aHurtMelee aspects))
           -- assumes no enemy armor and no block
-        dmg = ceilingMeanDice (jdamage item)
-        rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
+        dmg = Dice.meanDice (jdamage item)
+        rawDeltaHP = ceiling $ fromIntegral hurtMult * xD dmg / 100
         -- For simplicity, we ignore range bonus/malus and @Lobable@.
         IK.ThrowMod{IK.throwVelocity} = strengthToThrow item
         speed = speedFromWeight (jweight item) throwVelocity
-        v = fromEnum $ - modifyDamageBySpeed rawDeltaHP speed * 10 `div` oneM
+        v = - fromIntegral (modifyDamageBySpeed rawDeltaHP speed) * 10 / xD 1
           -- 1 damage valued at 10, just as in @damageUsefulness@
       -- For equipment benefit, we take into account only the self
       -- value of the recharging effects, because they applied to self.

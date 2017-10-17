@@ -64,7 +64,7 @@ getEntryArena fact = do
 pickWeaponM :: MonadStateRead m
             => Maybe DiscoveryBenefit
             -> [(ItemId, ItemFull)] -> Ability.Skills -> ActorAspect -> ActorId
-            -> m [(Int, (ItemId, ItemFull))]
+            -> m [(Double, (ItemId, ItemFull))]
 pickWeaponM mdiscoBenefit allAssocs actorSk actorAspect source = do
   sb <- getsState $ getActorBody source
   localTime <- getsState $ getLocalTime (blid sb)

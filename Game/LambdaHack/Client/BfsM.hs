@@ -278,7 +278,7 @@ data FleeViaStairsOrEscape =
 embedBenefit :: MonadClient m
              => FleeViaStairsOrEscape -> ActorId
              -> [(Point, ItemBag)]
-             -> m [(Int, (Point, ItemBag))]
+             -> m [(Double, (Point, ItemBag))]
 embedBenefit fleeVia aid pbags = do
   Kind.COps{coitem=Kind.Ops{okind}, coTileSpeedup} <- getsState scops
   dungeon <- getsState sdungeon
@@ -383,9 +383,8 @@ closestTriggers fleeVia aid = do
     let mix (benefit, ppbag) dist =
           let maxd = fromEnum (maxBound :: BfsDistance)
                      - fromEnum apartBfs
-              -- Bewqre of overflowing 32-bit integers here.
-              v = (maxd * 10) `div` (dist + 1)
-          in (benefit * v, ppbag)
+              v = (fromIntegral maxd * 10) / (fromIntegral dist + 1)
+          in (ceiling $ benefit * v, ppbag)
     in mapMaybe (\bpp@(_, (p, _)) ->
          mix bpp <$> accessBfs bfs p) vicAll
 

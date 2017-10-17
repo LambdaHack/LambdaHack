@@ -130,14 +130,13 @@ damageUsefulness item = let v = min 1000 (10 * Dice.meanDice (jdamage item))
                         in assert (v >= 0) v
 
 strongestMelee :: Maybe DiscoveryBenefit -> Time -> [(ItemId, ItemFull)]
-               -> [(Int, (ItemId, ItemFull))]
+               -> [(Double, (ItemId, ItemFull))]
 strongestMelee _ _ [] = []
 strongestMelee mdiscoBenefit localTime is =
   -- For simplicity we assume, if weapon not recharged, all important effects,
   -- good and bad, are disabled and only raw damage remains.
   let f (iid, itemFull) =
-        let rawDmg = ( ceiling $ damageUsefulness $ itemBase itemFull
-                     , (iid, itemFull) )
+        let rawDmg = (damageUsefulness $ itemBase itemFull, (iid, itemFull))
         in case mdiscoBenefit of
           Just discoBenefit | hasCharge localTime itemFull ->
             -- For fighting, as opposed to equipping, we value weapon
@@ -157,7 +156,7 @@ strongestSlot :: DiscoveryBenefit -> EqpSlot -> [(ItemId, ItemFull)]
               -> [(Int, (ItemId, ItemFull))]
 strongestSlot discoBenefit eqpSlot is =
   let f (iid, itemFull) =
-        let rawDmg = ceiling $ damageUsefulness $ itemBase itemFull
+        let rawDmg = damageUsefulness $ itemBase itemFull
             (bInEqp, bPickup) = case EM.lookup iid discoBenefit of
                Just Benefit{benInEqp, benPickup} -> (benInEqp, benPickup)
                Nothing -> (goesIntoEqp $ itemBase itemFull, rawDmg)
@@ -167,7 +166,7 @@ strongestSlot discoBenefit eqpSlot is =
              let ben = if eqpSlot == EqpSlotWeapon
                        -- For equipping/unequipping a weapon we take into
                        -- account not only melee power, but also aspects, etc.
-                       then bPickup
+                       then ceiling bPickup
                        else prEqpSlot eqpSlot $ aspectRecordFull itemFull
              in (ben, (iid, itemFull))
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe f is

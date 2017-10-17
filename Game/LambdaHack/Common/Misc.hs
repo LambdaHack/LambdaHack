@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.Misc
   , normalLevelBound, GroupName, toGroupName, Freqs, breturn
   , Rarity, validateRarity
   , Tactic(..), describeTactic, appDataDir
-  , xM, minusM, minusM1, oneM
+  , xM, xD, minusM, minusM1, oneM
   ) where
 
 import Prelude ()
@@ -263,6 +263,9 @@ appDataDir = do
 
 xM :: Int -> Int64
 xM k = fromIntegral k * 1000000
+
+xD :: Double -> Double
+xD k = k * 1000000
 
 minusM, minusM1, oneM :: Int64
 minusM = xM (-1)

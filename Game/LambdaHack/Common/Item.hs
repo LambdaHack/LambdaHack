@@ -71,10 +71,10 @@ type DiscoveryKind = EM.EnumMap ItemKindIx KindMean
 -- 5. the (usually negative) benefit of flinging an item at an opponent
 data Benefit = Benefit
   { benInEqp  :: ~Bool
-  , benPickup :: ~Int
-  , benApply  :: ~Int
-  , benMelee  :: ~Int
-  , benFling  :: ~Int
+  , benPickup :: ~Double
+  , benApply  :: ~Double
+  , benMelee  :: ~Double
+  , benFling  :: ~Double
   }
   deriving (Show, Generic)
 

@@ -238,7 +238,7 @@ benGroundItems aid = do
   benList <- benAvailableItems aid [CGround]
   return $ filter isDesirable benList
 
-desirableItem :: Bool -> Maybe Int -> Item -> Bool
+desirableItem :: Bool -> Maybe Double -> Item -> Bool
 desirableItem canEsc mpickupSum item =
   if canEsc
   then fromMaybe 10 mpickupSum > 0

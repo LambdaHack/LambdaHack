@@ -613,7 +613,7 @@ trigger aid fleeVia = do
       pbags = mapMaybe f $ vicinityUnsafe (bpos b)
   efeat <- embedBenefit fleeVia aid pbags
   return $! liftFrequency $ toFreq "trigger"
-    [ (benefit, ReqAlter pos)
+    [ (ceiling benefit, ReqAlter pos)
     | (benefit, (pos, _)) <- efeat ]
 
 projectItem :: MonadClient m
@@ -658,7 +658,7 @@ projectItem aid = do
                                Nothing -> -10  -- experiment if no good options
                                Just Benefit{benFling} -> benFling
                 in if trange >= chessDist (bpos b) fpos && recharged
-                   then Just ( - benR * rangeMult `div` 10
+                   then Just ( - ceiling (benR * fromIntegral rangeMult / 10)
                              , ReqProject fpos newEps iid cstore )
                    else Nothing
               benRanged = mapMaybe fRanged benList
@@ -751,7 +751,7 @@ applyItem aid applyGroup = do
                 -- experimenting is fun, but it's better to risk
                 -- foes' skin than ours
               Just Benefit{benApply} ->
-                benApply
+                ceiling benApply
                 * if cstore == CEqp && not durable
                   then 100000  -- must hinder currently
                   else coeff cstore
