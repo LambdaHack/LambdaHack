@@ -41,7 +41,7 @@ data ScoreRecord = ScoreRecord
   , ourVictims   :: EM.EnumMap (Kind.Id ItemKind) Int  -- ^ allies lost
   , theirVictims :: EM.EnumMap (Kind.Id ItemKind) Int  -- ^ foes killed
   }
-  deriving (Eq, Ord, Show, Generic)
+  deriving (Show, Eq, Ord, Generic)
 
 instance Binary ScoreRecord
 

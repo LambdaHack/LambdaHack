@@ -204,7 +204,7 @@ reduceDice d1 =
 -- | Dice for rolling a pair of integer parameters pertaining to,
 -- respectively, the X and Y cartesian 2D coordinates.
 data DiceXY = DiceXY Dice Dice
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Generic)
 
 instance Hashable DiceXY
 

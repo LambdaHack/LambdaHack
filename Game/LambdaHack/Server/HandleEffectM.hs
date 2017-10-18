@@ -58,7 +58,7 @@ applyMeleeDamage :: (MonadAtomic m, MonadServer m)
                  => ActorId -> ActorId -> ItemId -> m Bool
 applyMeleeDamage source target iid = do
   itemBase <- getsState $ getItemBody iid
-  if jdamage itemBase <= 0 then return False else do  -- speedup
+  if jdamage itemBase == 0 then return False else do  -- speedup
     sb <- getsState $ getActorBody source
     tb <- getsState $ getActorBody target
     actorAspect <- getsServer sactorAspect

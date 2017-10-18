@@ -47,7 +47,7 @@ data Roster = Roster
   , rosterEnemy :: [(Text, Text)]  -- ^ the initial enmity matrix
   , rosterAlly  :: [(Text, Text)]  -- ^ the initial aliance matrix
   }
-  deriving (Show, Eq)
+  deriving Show
 
 -- | Outcome of a game.
 data Outcome =
@@ -93,7 +93,7 @@ data Player = Player
   , fhasUI       :: Bool        -- ^ does the faction have a UI client
                                  --   (for control or passive observation)
   }
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Eq, Generic)
 
 instance Binary Player
 

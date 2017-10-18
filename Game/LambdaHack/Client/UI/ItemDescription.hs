@@ -148,11 +148,11 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                   _ -> []
                 damage = case find hurtMeleeAspect aspects of
                   Just (IK.AddHurtMelee hurtMelee) ->
-                    (if jdamage itemBase <= 0
+                    (if jdamage itemBase == 0
                      then "0d0"
                      else tshow (jdamage itemBase))
                     <> affixDice hurtMelee <> "%"
-                  _ -> if jdamage itemBase <= 0
+                  _ -> if jdamage itemBase == 0
                        then ""
                        else tshow (jdamage itemBase)
             in elab ++ if fullInfo >= 6 || fullInfo >= 2 && null elab

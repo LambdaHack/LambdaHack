@@ -53,7 +53,7 @@ data Faction = Faction
                             (IM.IntMap (EM.EnumMap (Kind.Id ItemKind) Int))
       -- ^ members killed in the past, by game mode and difficulty level
   }
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Eq, Generic)
 
 instance Binary Faction
 

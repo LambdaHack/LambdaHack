@@ -95,7 +95,7 @@ data Effect =
       --   unless Durable and Fragile
   | Unique              -- ^ at most one copy can ever be generated
   | Periodic            -- ^ in eqp, triggered as often as @Timeout@ permits
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Eq, Generic)
 
 instance NFData Effect
 
@@ -123,7 +123,7 @@ data TimerDice =
     TimerNone
   | TimerGameTurn Dice.Dice
   | TimerActorTurn Dice.Dice
-  deriving (Eq, Ord, Generic)
+  deriving (Eq, Generic)
 
 instance Show TimerDice where
   show TimerNone = "0"
@@ -254,7 +254,7 @@ toOrganNone grp = CreateItem COrgan grp TimerNone
 validateSingleItemKind :: ItemKind -> [Text]
 validateSingleItemKind ik@ItemKind{..} =
   [ "iname longer than 23" | T.length iname > 23 ]
-  ++ [ "icount < 0" | icount < 0 ]
+  ++ [ "icount < 0" | Dice.minDice icount < 0 ]
   ++ validateRarity irarity
   ++ validateDamage idamage
   -- Reject duplicate Timeout, because it's not additive.

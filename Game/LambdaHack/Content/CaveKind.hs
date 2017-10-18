@@ -83,10 +83,10 @@ validateSingleCaveKind CaveKind{..} =
         | maxGridX * (maxMinSizeX - 4) + xborder >= cxsize ]
      ++ [ "cysize too small"
         | maxGridY * maxMinSizeY + yborder >= cysize ]
-     ++ [ "cextraStairs < 0" | cextraStairs < 0 ]
+     ++ [ "cextraStairs < 0" | Dice.minDice cextraStairs < 0 ]
      ++ [ "chidden < 0" | chidden < 0 ]
      ++ [ "cactorCoeff < 0" | cactorCoeff < 0 ]
-     ++ [ "citemNum < 0" | citemNum < 0 ]
+     ++ [ "citemNum < 0" | Dice.minDice citemNum < 0 ]
 
 -- | Validate all cave kinds.
 -- Note that names don't have to be unique: we can have several variants

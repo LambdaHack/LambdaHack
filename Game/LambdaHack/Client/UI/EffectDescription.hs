@@ -36,7 +36,7 @@ effectToSuffix effect =
     ELabel _ -> ""  -- printed specially
     EqpSlot{} -> ""  -- used in @slotToSentence@ instead
     Burn d -> wrapInParens (tshow d
-                            <+> if d > 1 then "burns" else "burn")
+                            <+> if Dice.maxDice d > 1 then "burns" else "burn")
     Explode t -> "of" <+> tshow t <+> "explosion"
     RefillHP p | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
     RefillHP 0 -> error $ "" `showFailure` effect
@@ -68,9 +68,10 @@ effectToSuffix effect =
             Nothing -> tshow dice <+> "moves"
             Just p -> makePhrase [MU.CarWs p "move"]
       in "of speed surge for" <+> moves
-    Teleport dice | dice <= 0 ->
+    Teleport dice | Dice.minDice dice <= 0 ->
       error $ "" `showFailure` effect
-    Teleport dice | dice <= 9 -> "of blinking" <+> wrapInParens (tshow dice)
+    Teleport dice | Dice.maxDice dice <= 9 ->
+      "of blinking" <+> wrapInParens (tshow dice)
     Teleport dice -> "of teleport" <+> wrapInParens (tshow dice)
     CreateItem COrgan grp tim ->
       let stime = if tim == TimerNone then "" else "for" <+> tshow tim <> ":"

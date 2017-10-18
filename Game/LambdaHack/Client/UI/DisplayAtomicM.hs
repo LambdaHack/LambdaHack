@@ -38,6 +38,7 @@ import Game.LambdaHack.Client.UI.SlideshowM
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Item
@@ -961,7 +962,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Escape{} -> return ()
         IK.Paralyze{} -> actorVerbMU aid bUI "be paralyzed"
         IK.InsertMove{} -> actorVerbMU aid bUI "act with extreme speed"
-        IK.Teleport t | t <= 8 -> actorVerbMU aid bUI "blink"
+        IK.Teleport t | Dice.maxDice t <= 9 -> actorVerbMU aid bUI "blink"
         IK.Teleport{} -> actorVerbMU aid bUI "teleport"
         IK.CreateItem{} -> return ()
         IK.DropItem _ _ COrgan _ -> return ()
@@ -1168,7 +1169,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
           else partItemShortAW side factionD cstore localTime
         msg | bhp tb <= 0  -- incapacitated, so doesn't actively block
               || hurtMult > 90  -- at most minor armor
-              || jdamage (itemBase itemFull) <= 0 = makeSentence $
+              || jdamage (itemBase itemFull) == 0 = makeSentence $
               [MU.SubjectVerbSg spart verb, tpart]
               ++ if bproj sb
                  then []

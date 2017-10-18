@@ -369,7 +369,7 @@ totalUsefulness !cops !fact !effects !aspects !item =
       benFling = min 0 $
         effFoe + benFlingDice -- nothing in @eqpSum@; normally not worn
         + if periodic then 0 else sum chargeFoe
-      benFlingDice | jdamage item <= 0 = 0  -- speedup
+      benFlingDice | jdamage item == 0 = 0  -- speedup
                    | otherwise = assert (v <= 0) v
        where
         hurtMult = 100 + min 99 (max (-99) (aHurtMelee aspects))
