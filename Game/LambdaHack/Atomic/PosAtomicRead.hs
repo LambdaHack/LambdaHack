@@ -36,7 +36,8 @@ data PosAtomic =
                                 -- ^ observers and the faction notice
   | PosSmell LevelId [Point]    -- ^ whomever smells all the positions, notices
   | PosFid FactionId            -- ^ only the faction notices
-  | PosFidAndSer (Maybe LevelId) FactionId  -- ^ faction and server notices
+  | PosFidAndSer (Maybe LevelId) FactionId
+                                -- ^ faction and server notices
   | PosSer                      -- ^ only the server notices
   | PosAll                      -- ^ everybody notices
   | PosNone                     -- ^ never broadcasted, but sent manually

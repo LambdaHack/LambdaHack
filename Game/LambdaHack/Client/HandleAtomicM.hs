@@ -42,6 +42,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- | Clients keep a subset of atomic commands sent by the server
 -- and add some of their own. The result of this function is the list
 -- of commands kept for each command received.
+-- This is calculated in the global state from before the command is executed.
 cmdAtomicFilterCli :: MonadClient m => UpdAtomic -> m [UpdAtomic]
 {-# INLINE cmdAtomicFilterCli #-}
 cmdAtomicFilterCli cmd = case cmd of

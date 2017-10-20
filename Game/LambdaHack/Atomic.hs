@@ -4,7 +4,7 @@
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic
   ( -- * Re-exported from "Game.LambdaHack.Atomic.MonadAtomic"
-    MonadAtomic(..)
+    MonadAtomic(..), AtomicFail(..)
     -- * Re-exported from "Game.LambdaHack.Atomic.CmdAtomic"
   , CmdAtomic(..), UpdAtomic(..), SfxAtomic(..), SfxMsg(..)
     -- * Re-exported from "Game.LambdaHack.Atomic.PosAtomicRead"

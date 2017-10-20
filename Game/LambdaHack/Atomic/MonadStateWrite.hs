@@ -1,6 +1,6 @@
 -- | The monad for writing to the game state and related operations.
 module Game.LambdaHack.Atomic.MonadStateWrite
-  ( MonadStateWrite(..)
+  ( MonadStateWrite(..), AtomicFail(..), atomicFail
   , putState, updateLevel, updateActor, updateFaction
   , insertItemContainer, insertItemActor, deleteItemContainer, deleteItemActor
   , updateFloor, updateActorMap, moveActorMap
@@ -11,6 +11,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import qualified Control.Exception as Ex
 import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Common.Actor
@@ -25,6 +26,20 @@ import Game.LambdaHack.Common.State
 
 class MonadStateRead m => MonadStateWrite m where
   modifyState :: (State -> State) -> m ()
+
+-- | Exception signifying that atomic action failed either because
+-- the information it carries is already recorded in the state or because
+-- the state is inconsistent with the factual state held by the server
+-- (e.g., because the faction is confused, amnesiac or sees illusory
+-- actors). If the failure of the action is impossible, assertion
+-- failure or @error@ is raised instead and it is never caught and handled.
+newtype AtomicFail = AtomicFail String
+  deriving Show
+
+instance Ex.Exception AtomicFail
+
+atomicFail :: String -> a
+atomicFail = Ex.throw . AtomicFail
 
 putState :: MonadStateWrite m => State -> m ()
 putState s = modifyState (const s)

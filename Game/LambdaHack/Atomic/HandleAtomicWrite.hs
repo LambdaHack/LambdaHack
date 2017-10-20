@@ -105,8 +105,8 @@ updCreateActor :: MonadStateWrite m
 updCreateActor aid body ais = do
   -- Add actor to @sactorD@.
   let f Nothing = Just body
-      f (Just b) = error $ "actor already added"
-                           `showFailure` (aid, body, b)
+      f (Just b) = atomicFail $ "actor already added"
+                                `showFailure` (aid, body, b)
   modifyState $ updateActorD $ EM.alter f aid
   -- Add actor to @sprio@.
   let g Nothing = Just [aid]
