@@ -104,6 +104,9 @@ updCreateActor :: MonadStateWrite m
                => ActorId -> Actor -> [(ItemId, Item)] -> m ()
 updCreateActor aid body ais = do
   -- Add actor to @sactorD@.
+  -- The exception is possible, e.g., when we teleport and so see our actor
+  -- at the new location, but also the location is part of new perception,
+  -- so @UpdSpotActor@ is sent.
   let f Nothing = Just body
       f (Just b) = atomicFail $ "actor already added"
                                 `showFailure` (aid, body, b)

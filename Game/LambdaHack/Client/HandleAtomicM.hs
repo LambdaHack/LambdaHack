@@ -46,12 +46,6 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 cmdAtomicFilterCli :: MonadClient m => UpdAtomic -> m [UpdAtomic]
 {-# INLINE cmdAtomicFilterCli #-}
 cmdAtomicFilterCli cmd = case cmd of
-  UpdSpotActor aid _ _ -> do
-    -- Needed, e.g., when we teleport and so see our actor at the new
-    -- location, but also the location is part of new perception,
-    -- so @UpdSpotActor@ is sent.
-    alreadyAdded <- getsState $ EM.member aid . sactorD
-    return $! if alreadyAdded then [] else [cmd]
   UpdAlterTile lid p fromTile toTile -> do
     Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
     lvl <- getLevel lid
