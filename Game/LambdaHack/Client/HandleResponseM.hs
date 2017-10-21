@@ -37,10 +37,11 @@ handleResponse cmd = case cmd of
     cmds <- cmdAtomicFilterCli cmdA
     let handle !c = do
           s <- getState
-          execUpdAtomic c
-          cli <- getClient
-          cmdAtomicSemCli s c
-          when hasUI $ displayRespUpdAtomicUI False cli c
+          succeeded <- execUpdAtomicCatch c
+          when succeeded $ do
+            cli <- getClient
+            cmdAtomicSemCli s c
+            when hasUI $ displayRespUpdAtomicUI False cli c
     mapM_ handle cmds
   RespQueryAI aid -> do
     cmdC <- queryAI aid

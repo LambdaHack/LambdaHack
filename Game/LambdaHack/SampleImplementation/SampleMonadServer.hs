@@ -21,10 +21,10 @@ import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict hiding (State)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text.IO as T
+import Options.Applicative (defaultPrefs, execParserPure, handleParseResult)
 import System.Exit (ExitCode (ExitSuccess))
 import System.FilePath
 import System.IO (hFlush, stdout)
-import Options.Applicative (defaultPrefs, execParserPure, handleParseResult)
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client
@@ -90,6 +90,9 @@ instance MonadServerReadRequest SerImplementation where
 -- as computed on the server.
 instance MonadAtomic SerImplementation where
   execUpdAtomic cmd = cmdAtomicSemSer cmd >> handleAndBroadcast (UpdAtomic cmd)
+  execUpdAtomicCatch cmd = do
+    execUpdAtomic cmd
+    return True  -- assume the exception is impossible
   execSfxAtomic sfx = handleAndBroadcast (SfxAtomic sfx)
   execSendPer = sendPer
 
