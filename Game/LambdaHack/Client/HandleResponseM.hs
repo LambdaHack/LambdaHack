@@ -14,6 +14,7 @@ import Game.LambdaHack.Client.AI
 import Game.LambdaHack.Client.HandleAtomicM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.UI
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 
@@ -35,9 +36,10 @@ handleResponse cmd = case cmd of
     hasUI <- clientHasUI
     cmds <- cmdAtomicFilterCli cmdA
     let handle !c = do
-          cli <- getClient
-          cmdAtomicSemCli c
+          s <- getState
           execUpdAtomic c
+          cli <- getClient
+          cmdAtomicSemCli s c
           when hasUI $ displayRespUpdAtomicUI False cli c
     mapM_ handle cmds
   RespQueryAI aid -> do

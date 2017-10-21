@@ -222,10 +222,11 @@ cmdAtomicFilterCli cmd = case cmd of
   _ -> return [cmd]
 
 -- | Effect of atomic actions on client state is calculated
--- with the global state from before the command is executed.
-cmdAtomicSemCli :: MonadClientSetup m => UpdAtomic -> m ()
+-- with the global state from after the command is executed
+-- (except where the supplied @oldState@ is used).
+cmdAtomicSemCli :: MonadClientSetup m => State -> UpdAtomic -> m ()
 {-# INLINE cmdAtomicSemCli #-}
-cmdAtomicSemCli cmd = case cmd of
+cmdAtomicSemCli oldState cmd = case cmd of
   UpdCreateActor aid b ais -> createActor aid b ais
   UpdDestroyActor aid b _ -> destroyActor aid b True
   UpdCreateItem iid itemBase (k, _) (CActor aid store) -> do
@@ -294,15 +295,15 @@ cmdAtomicSemCli cmd = case cmd of
   UpdAlterTile lid pos _fromTile toTile -> do
     updateSalter lid [(pos, toTile)]
     cops <- getsState scops
-    lvl <- getLevel lid
-    let assumedTile = lvl `at` pos
+    let lvl = (EM.! lid) . sdungeon $ oldState
+        assumedTile = lvl `at` pos
     when (tileChangeAffectsBfs cops assumedTile toTile) $
       invalidateBfsLid lid
   UpdSpotTile lid ts -> do
     updateSalter lid ts
     cops <- getsState scops
-    lvl <- getLevel lid
-    let affects (pos, toTile) =
+    let lvl = (EM.! lid) . sdungeon $ oldState
+        affects (pos, toTile) =
           let fromTile = lvl `at` pos
           in tileChangeAffectsBfs cops fromTile toTile
         bs = map affects ts
