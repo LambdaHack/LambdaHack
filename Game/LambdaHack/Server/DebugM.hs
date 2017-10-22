@@ -35,10 +35,10 @@ debugShow = T.pack . Show.Pretty.ppShow
 
 debugResponse :: MonadServer m => FactionId -> Response -> m ()
 debugResponse fid cmd = case cmd of
-  RespUpdAtomic cmdA@UpdPerception{} -> debugPlain fid cmd cmdA
-  RespUpdAtomic cmdA@UpdResume{} -> debugPlain fid cmd cmdA
-  RespUpdAtomic cmdA@UpdSpotTile{} -> debugPlain fid cmd cmdA
-  RespUpdAtomic cmdA -> debugPretty fid cmd cmdA
+  RespUpdAtomic _ cmdA@UpdPerception{} -> debugPlain fid cmd cmdA
+  RespUpdAtomic _ cmdA@UpdResume{} -> debugPlain fid cmd cmdA
+  RespUpdAtomic _ cmdA@UpdSpotTile{} -> debugPlain fid cmd cmdA
+  RespUpdAtomic _ cmdA -> debugPretty fid cmd cmdA
   RespQueryAI aid -> do
     d <- debugAid aid "RespQueryAI" cmd
     serverPrint d

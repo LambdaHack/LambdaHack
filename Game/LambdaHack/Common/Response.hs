@@ -14,10 +14,11 @@ import Control.Concurrent
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Request
+import Game.LambdaHack.Common.State
 
 -- | Abstract syntax of client commands for both AI and UI clients.
 data Response =
-    RespUpdAtomic UpdAtomic
+    RespUpdAtomic State UpdAtomic
   | RespQueryAI ActorId
   | RespSfxAtomic SfxAtomic
   | RespQueryUI

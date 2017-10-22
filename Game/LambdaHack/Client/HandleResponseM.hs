@@ -32,7 +32,7 @@ handleResponse :: ( MonadClientSetup m
                   , MonadClientWriteRequest m )
                => Response -> m ()
 handleResponse cmd = case cmd of
-  RespUpdAtomic cmdA -> do
+  RespUpdAtomic newState cmdA -> do
     hasUI <- clientHasUI
     cmds <- cmdAtomicFilterCli cmdA
     let handle !c = do

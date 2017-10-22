@@ -45,6 +45,7 @@ initUI copsClient sconfig sdebugCli = do
 loopCli :: ( MonadClientSetup m
            , MonadClientUI m
            , MonadAtomic m
+           , MonadStateWrite m
            , MonadClientReadResponse m
            , MonadClientWriteRequest m )
         => KeyKind -> Config -> DebugModeCli -> m ()
@@ -59,7 +60,7 @@ loopCli copsClient sconfig sdebugCli = do
     Just (s, cli, msess) | not $ snewGameCli sdebugCli -> do
       -- Restore game.
       let sCops = updateCOps (const cops) s
-      handleResponse $ RespUpdAtomic $ UpdResumeServer sCops
+      handleResponse $ RespUpdAtomic sCops $ UpdResumeServer sCops
       schanF <- getsSession schanF
       sbinding <- getsSession sbinding
       maybe (return ()) (\sess ->
@@ -75,13 +76,13 @@ loopCli copsClient sconfig sdebugCli = do
   side <- getsClient sside
   cmd1 <- receiveResponse
   case (restored, cmd1) of
-    (True, RespUpdAtomic UpdResume{}) -> return ()
-    (True, RespUpdAtomic UpdRestart{}) ->
+    (True, RespUpdAtomic _ UpdResume{}) -> return ()
+    (True, RespUpdAtomic _ UpdRestart{}) ->
       when hasUI $ msgAdd "Ignoring an old savefile and starting a new game."
-    (False, RespUpdAtomic UpdResume{}) ->
+    (False, RespUpdAtomic _ UpdResume{}) ->
       error $ "Savefile of client " ++ show side ++ " not usable."
               `showFailure` ()
-    (False, RespUpdAtomic UpdRestart{}) -> return ()
+    (False, RespUpdAtomic _ UpdRestart{}) -> return ()
     _ -> error $ "unexpected command" `showFailure` (side, restored, cmd1)
   handleResponse cmd1
   -- State and client state now valid.

@@ -69,15 +69,15 @@ reinitGame = do
   s <- getState
   let defLocal | sknowMap = s
                | otherwise = localFromGlobal s
+  factionD <- getsState sfactionD
+  modifyServer $ \ser -> ser {sclientStates = EM.map (const defLocal) factionD}
   discoS <- getsServer sdiscoKind
   let sdiscoKind =
         let f KindMean{kmKind} = IK.Identified `elem` IK.ifeature (okind kmKind)
         in EM.filter f discoS
       updRestart fid = UpdRestart fid sdiscoKind (pers EM.! fid) defLocal
                                   scurChalSer sdebugCli
-  factionD <- getsState sfactionD
   mapWithKeyM_ (\fid _ -> execUpdAtomic $ updRestart fid) factionD
-  modifyServer $ \ser -> ser {sclientStates = EM.map (const defLocal) factionD}
   dungeon <- getsState sdungeon
   let sactorTime = EM.map (const (EM.map (const EM.empty) dungeon)) factionD
   modifyServer $ \ser -> ser {sactorTime}

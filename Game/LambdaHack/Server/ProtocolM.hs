@@ -103,7 +103,8 @@ putDict s = modifyDict (const s)
 sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
 sendUpdate !fid !cmd = do
   chan <- getsDict (EM.! fid)
-  let resp = RespUpdAtomic cmd
+  s <- getsServer $ (EM.! fid) . sclientStates
+  let resp = RespUpdAtomic s cmd
   debug <- getsServer $ sniff . sdebugSer
   when debug $ debugResponse fid resp
   writeQueue resp $ responseS chan
