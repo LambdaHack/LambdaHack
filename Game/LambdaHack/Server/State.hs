@@ -24,6 +24,7 @@ import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Perception
+import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.Fov
@@ -43,6 +44,8 @@ data StateServer = StateServer
   , sicounter     :: ItemId        -- ^ stores next item index
   , snumSpawned   :: EM.EnumMap LevelId Int
   , sundo         :: [CmdAtomic]   -- ^ atomic commands performed to date
+  , sclientStates :: EM.EnumMap FactionId State
+                                   -- ^ each faction state, as seen by clients
   , sperFid       :: PerFid        -- ^ perception of all factions
   , sperValidFid  :: PerValidFid   -- ^ perception validity for all factions
   , sperCacheFid  :: PerCacheFid   -- ^ perception cache of all factions
@@ -127,6 +130,7 @@ emptyStateServer =
     , sicounter = toEnum 0
     , snumSpawned = EM.empty
     , sundo = []
+    , sclientStates = EM.empty
     , sperFid = EM.empty
     , sperValidFid = EM.empty
     , sperCacheFid = EM.empty
@@ -183,7 +187,7 @@ instance Binary StateServer where
     put sacounter
     put sicounter
     put snumSpawned
-    put sundo
+    put sclientStates
     put (show srandom)
     put srngs
     put sdebugSer
@@ -199,11 +203,12 @@ instance Binary StateServer where
     sacounter <- get
     sicounter <- get
     snumSpawned <- get
-    sundo <- get
+    sclientStates <- get
     g <- get
     srngs <- get
     sdebugSer <- get
     let srandom = read g
+        sundo = []
         sperFid = EM.empty
         sperValidFid = EM.empty
         sperCacheFid = EM.empty

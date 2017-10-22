@@ -77,6 +77,7 @@ reinitGame = do
                                   scurChalSer sdebugCli
   factionD <- getsState sfactionD
   mapWithKeyM_ (\fid _ -> execUpdAtomic $ updRestart fid) factionD
+  modifyServer $ \ser -> ser {sclientStates = EM.map (const defLocal) factionD}
   dungeon <- getsState sdungeon
   let sactorTime = EM.map (const (EM.map (const EM.empty) dungeon)) factionD
   modifyServer $ \ser -> ser {sactorTime}
