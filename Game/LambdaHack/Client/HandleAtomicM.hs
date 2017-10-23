@@ -171,35 +171,39 @@ cmdAtomicFilterCli cmd = case cmd of
     -- in @cmdAtomicSemCli@, to avoid computing perception twice.
     perception lid outPer inPer
     s <- getState
-    -- Wipe out actors that just became invisible due to changed FOV.
-    let outFov = totalVisible outPer
-        outPrio = concatMap (\p -> posToAssocs p lid s) $ ES.elems outFov
-        fActor (aid, b) = Just $ UpdLoseActor aid b $ getCarriedAssocs b s
-          -- this command always succeeds, the actor can be always removed,
-          -- because the actor is taken from the state
-        outActor = mapMaybe fActor outPrio
-    -- Wipe out remembered items on tiles that now came into view.
-    let lvl = (EM.! lid) . sdungeon $ s
-        inFov = ES.elems $ totalVisible inPer
-        inContainer fc itemFloor =
-          let inItem = mapMaybe (\p -> (p,) <$> EM.lookup p itemFloor) inFov
-              fItem p (iid, kit) =
-                UpdLoseItem True iid (getItemBody iid s) kit (fc lid p)
-              fBag (p, bag) = map (fItem p) $ EM.assocs bag
-          in concatMap fBag inItem
-        inFloor = inContainer CFloor (lfloor lvl)
-        inEmbed = inContainer CEmbed (lembed lvl)
-    -- Remembered map tiles not wiped out, due to optimization in @updSpotTile@.
-    -- Wipe out remembered smell on tiles that now came into smell Fov.
-    let inSmellFov = totalSmelled inPer
-        inSm = mapMaybe (\p -> (p,) <$> EM.lookup p (lsmell lvl))
-                        (ES.elems inSmellFov)
-        inSmell = if null inSm then [] else [UpdLoseSmell lid inSm]
-    -- Note that the items and smells that we forget were previously
-    -- invisible, only remembered (because taken from @inPer@),
-    -- and the tiles they are on are currently visible (ditto).
-    return $! cmd : outActor ++ inFloor ++ inEmbed ++ inSmell
+    return $! cmd : cmdsFromPer lid outPer inPer s
   _ -> return [cmd]
+
+cmdsFromPer :: LevelId -> Perception -> Perception -> State -> [UpdAtomic]
+cmdsFromPer lid outPer inPer s =
+  -- Wipe out actors that just became invisible due to changed FOV.
+  let outFov = totalVisible outPer
+      outPrio = concatMap (\p -> posToAssocs p lid s) $ ES.elems outFov
+      fActor (aid, b) = Just $ UpdLoseActor aid b $ getCarriedAssocs b s
+        -- this command always succeeds, the actor can be always removed,
+        -- because the actor is taken from the state
+      outActor = mapMaybe fActor outPrio
+  -- Wipe out remembered items on tiles that now came into view.
+      lvl = (EM.! lid) . sdungeon $ s
+      inFov = ES.elems $ totalVisible inPer
+      inContainer fc itemFloor =
+        let inItem = mapMaybe (\p -> (p,) <$> EM.lookup p itemFloor) inFov
+            fItem p (iid, kit) =
+              UpdLoseItem True iid (getItemBody iid s) kit (fc lid p)
+            fBag (p, bag) = map (fItem p) $ EM.assocs bag
+        in concatMap fBag inItem
+      inFloor = inContainer CFloor (lfloor lvl)
+      inEmbed = inContainer CEmbed (lembed lvl)
+  -- Remembered map tiles not wiped out, due to optimization in @updSpotTile@.
+  -- Wipe out remembered smell on tiles that now came into smell Fov.
+      inSmellFov = totalSmelled inPer
+      inSm = mapMaybe (\p -> (p,) <$> EM.lookup p (lsmell lvl))
+                      (ES.elems inSmellFov)
+      inSmell = if null inSm then [] else [UpdLoseSmell lid inSm]
+  -- Note that the items and smells that we forget were previously
+  -- invisible, only remembered (because taken from @inPer@),
+  -- and the tiles they are on are currently visible (ditto).
+  in outActor ++ inFloor ++ inEmbed ++ inSmell
 
 -- | Effect of atomic actions on client state is calculated
 -- with the global state from after the command is executed
