@@ -45,12 +45,12 @@ data Dice =
 instance Show Dice where
   show dice1 = case dice1 of
     DiceI k -> show k
-    DiceD n k -> show n ++ " `d` " ++ show k
-    DiceDL n k -> show n ++ " `dl` " ++ show k
-    DiceZ n k -> show n ++ " `z` " ++ show k
-    DiceZL n k -> show n ++ " `zl` " ++ show k
-    DicePlus d1 (DiceNegate d2) -> show d1 ++ " - " ++ show d2
-    DicePlus d1 d2 -> show d1 ++ " + " ++ show d2
+    DiceD n k -> show n ++ "d" ++ show k
+    DiceDL n k -> show n ++ "dl" ++ show k
+    DiceZ n k -> show n ++ "z" ++ show k
+    DiceZL n k -> show n ++ "zl" ++ show k
+    DicePlus d1 (DiceNegate d2) -> show d1 ++ "-" ++ show d2
+    DicePlus d1 d2 -> show d1 ++ "+" ++ show d2
     DiceTimes d1 d2 -> "(" ++ show d1 ++ ") * (" ++ show d2 ++ ")"
     DiceNegate d1 -> "- (" ++ show d1 ++ ")"
 
