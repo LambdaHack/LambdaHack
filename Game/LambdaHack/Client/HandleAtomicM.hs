@@ -171,17 +171,26 @@ cmdAtomicFilterCli cmd = case cmd of
     -- in @cmdAtomicSemCli@, to avoid computing perception twice.
     perception lid outPer inPer
     s <- getState
-    return $! cmd : cmdsFromPer lid outPer inPer s
+    side <- getsClient sside
+    return $! cmd : cmdsFromPer side lid outPer inPer s
   _ -> return [cmd]
 
-cmdsFromPer :: LevelId -> Perception -> Perception -> State -> [UpdAtomic]
-cmdsFromPer lid outPer inPer s =
+cmdsFromPer :: FactionId -> LevelId -> Perception -> Perception -> State
+            -> [UpdAtomic]
+cmdsFromPer side lid outPer inPer s =
   -- Wipe out actors that just became invisible due to changed FOV.
   let outFov = totalVisible outPer
       outPrio = concatMap (\p -> posToAssocs p lid s) $ ES.elems outFov
-      fActor (aid, b) = Just $ UpdLoseActor aid b $ getCarriedAssocs b s
-        -- this command always succeeds, the actor can be always removed,
-        -- because the actor is taken from the state
+      fActor (aid, b) =
+        -- We forget only currently invisible actors. Actors can be outside
+        -- perception, but still visible, if they belong to our faction,
+        -- e.g., if they teleport to outside of current perception
+        -- or if they have disabled senses.
+        if not (bproj b) && bfid b == side
+        then Nothing
+        else Just $ UpdLoseActor aid b $ getCarriedAssocs b s
+          -- this command always succeeds, the actor can be always removed,
+          -- because the actor is taken from the state
       outActor = mapMaybe fActor outPrio
   -- Wipe out remembered items on tiles that now came into view.
       lvl = (EM.! lid) . sdungeon $ s
