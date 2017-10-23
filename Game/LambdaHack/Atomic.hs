@@ -10,7 +10,6 @@ module Game.LambdaHack.Atomic
     -- * Re-exported from "Game.LambdaHack.Atomic.PosAtomicRead"
   , PosAtomic(..), posUpdAtomic, posSfxAtomic, breakUpdAtomic
   , seenAtomicCli, seenAtomicSer, generalMoveItem
-  , posProjBody
     -- * Re-exported from "Game.LambdaHack.Atomic.MonadStateWrite"
   , MonadStateWrite(..)
     -- * Re-exported from "Game.LambdaHack.Atomic.HandleAtomicWrite"

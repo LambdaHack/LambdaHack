@@ -3,7 +3,7 @@
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
-  , breakUpdAtomic, seenAtomicCli, seenAtomicSer, generalMoveItem, posProjBody
+  , breakUpdAtomic, seenAtomicCli, seenAtomicSer, generalMoveItem
   ) where
 
 import Prelude ()

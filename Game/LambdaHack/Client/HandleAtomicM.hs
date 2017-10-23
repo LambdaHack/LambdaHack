@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Handle atomic commands received by the client.
 module Game.LambdaHack.Client.HandleAtomicM
   ( cmdAtomicSemCli, cmdAtomicFilterCli
@@ -168,32 +169,20 @@ cmdAtomicFilterCli cmd = case cmd of
   UpdPerception lid outPer inPer -> do
     -- Here we cheat by setting a new perception outright instead of
     -- in @cmdAtomicSemCli@, to avoid computing perception twice.
-    perOld <- getPerFid lid
     perception lid outPer inPer
-    perNew <- getPerFid lid
-    carriedAssocs <- getsState $ flip getCarriedAssocs
-    fid <- getsClient sside
     s <- getState
     -- Wipe out actors that just became invisible due to changed FOV.
-    let seenNew = seenAtomicCli False fid perNew
-        seenOld = seenAtomicCli False fid perOld
-        outFov = totalVisible outPer
+    let outFov = totalVisible outPer
         outPrio = concatMap (\p -> posToAssocs p lid s) $ ES.elems outFov
-        fActor (aid, b) =
-          let ps = posProjBody b
-              -- Verify that we forget only previously seen actors.
-              !_A = assert (seenOld ps) ()
-          in -- We forget only currently invisible actors.
-             if seenNew ps
-             then Nothing
-             else Just $ UpdLoseActor aid b $ carriedAssocs b
+        fActor (aid, b) = Just $ UpdLoseActor aid b $ getCarriedAssocs b s
+          -- this command always succeeds, the actor can be always removed,
+          -- because the actor is taken from the state
         outActor = mapMaybe fActor outPrio
     -- Wipe out remembered items on tiles that now came into view.
-    lvl <- getLevel lid
-    let inFov = ES.elems $ totalVisible inPer
-        pMaybe p = maybe Nothing (\x -> Just (p, x))
+    let lvl = (EM.! lid) . sdungeon $ s
+        inFov = ES.elems $ totalVisible inPer
         inContainer fc itemFloor =
-          let inItem = mapMaybe (\p -> pMaybe p $ EM.lookup p itemFloor) inFov
+          let inItem = mapMaybe (\p -> (p,) <$> EM.lookup p itemFloor) inFov
               fItem p (iid, kit) =
                 UpdLoseItem True iid (getItemBody iid s) kit (fc lid p)
               fBag (p, bag) = map (fItem p) $ EM.assocs bag
@@ -203,16 +192,13 @@ cmdAtomicFilterCli cmd = case cmd of
     -- Remembered map tiles not wiped out, due to optimization in @updSpotTile@.
     -- Wipe out remembered smell on tiles that now came into smell Fov.
     let inSmellFov = totalSmelled inPer
-        inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p (lsmell lvl))
+        inSm = mapMaybe (\p -> (p,) <$> EM.lookup p (lsmell lvl))
                         (ES.elems inSmellFov)
         inSmell = if null inSm then [] else [UpdLoseSmell lid inSm]
-    let inTileSmell = inFloor ++ inEmbed ++ inSmell
-    psItemSmell <- mapM posUpdAtomic inTileSmell
-    -- Verify that we forget only previously invisible items and smell.
-    let !_A = assert (allB (not . seenOld) psItemSmell) ()
-    -- Verify that we forget only currently seen items and smell.
-    let !_A = assert (allB seenNew psItemSmell) ()
-    return $! cmd : outActor ++ inTileSmell
+    -- Note that the items and smells that we forget were previously
+    -- invisible, only remembered (because taken from @inPer@),
+    -- and the tiles they are on are currently visible (ditto).
+    return $! cmd : outActor ++ inFloor ++ inEmbed ++ inSmell
   _ -> return [cmd]
 
 -- | Effect of atomic actions on client state is calculated
