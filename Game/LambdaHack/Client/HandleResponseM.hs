@@ -10,6 +10,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Game.LambdaHack.Atomic
+import Game.LambdaHack.Atomic.MonadStateWrite
 import Game.LambdaHack.Client.AI
 import Game.LambdaHack.Client.HandleAtomicM
 import Game.LambdaHack.Client.MonadClient
@@ -26,9 +27,15 @@ class MonadClient m => MonadClientWriteRequest m where
   sendRequestUI :: RequestUI -> m ()
   clientHasUI   :: m Bool
 
+-- Note that when clients over net are implemented, execUpdAtomic will be
+-- brought back, because executing a single cmd is cheaper than sending
+-- the whole state over the net. However, for the standalone exe mode,
+-- a pointer to the state will still be passed and set with @putState@,
+-- as below.
 handleResponse :: ( MonadClientSetup m
                   , MonadClientUI m
-                  , MonadAtomic m
+--                  , MonadClientAtomic m
+                  , MonadStateWrite m
                   , MonadClientWriteRequest m )
                => Response -> m ()
 handleResponse cmd = case cmd of
@@ -37,11 +44,12 @@ handleResponse cmd = case cmd of
     cmds <- cmdAtomicFilterCli cmdA
     let handle !c = do
           s <- getState
-          succeeded <- execUpdAtomicCatch c
-          when succeeded $ do
-            cli <- getClient
-            cmdAtomicSemCli s c
-            when hasUI $ displayRespUpdAtomicUI False cli c
+          putState newState
+            -- speedup wrt:
+          -- execUpdAtomic c
+          cli <- getClient
+          cmdAtomicSemCli s c
+          when hasUI $ displayRespUpdAtomicUI False cli c
     mapM_ handle cmds
   RespQueryAI aid -> do
     cmdC <- queryAI aid

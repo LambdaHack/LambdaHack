@@ -54,7 +54,7 @@ import Game.LambdaHack.Server.State
 
 -- | Start a game session, including the clients, and then loop,
 -- communicating with the clients.
-loopSer :: (MonadAtomic m, MonadServerReadRequest m)
+loopSer :: (MonadServerAtomic m, MonadServerReadRequest m)
         => DebugModeSer  -- ^ server debug parameters
         -> Config
         -> (Maybe SessionUI -> FactionId -> ChanServer -> IO ())
@@ -117,7 +117,7 @@ arenasForLoop = do
                     `swith` factionD) ()
   return $! arenas
 
-handleFidUpd :: (MonadAtomic m, MonadServerReadRequest m)
+handleFidUpd :: (MonadServerAtomic m, MonadServerReadRequest m)
              => Bool -> (FactionId -> m ()) -> FactionId -> Faction -> m Bool
 {-# INLINE handleFidUpd #-}
 handleFidUpd True _ _ _ = return True
@@ -147,7 +147,9 @@ handleFidUpd False updatePerFid fid fact = do
 -- | Handle a clip (a part of a turn for which one or more frames
 -- will be generated). Run the leader and other actors moves.
 -- Eventually advance the time and repeat.
-loopUpd :: forall m. (MonadAtomic m, MonadServerReadRequest m) => m () -> m ()
+loopUpd :: forall m. ( MonadServerAtomic m
+                     , MonadServerReadRequest m)
+        => m () -> m ()
 loopUpd updConn = do
   let updatePerFid :: FactionId -> m ()
       {-# NOINLINE updatePerFid #-}
@@ -186,7 +188,7 @@ loopUpd updConn = do
 -- | Handle the end of every clip. Do whatever has to be done
 -- every fixed number of time units, e.g., monster generation.
 -- Advance time. Perform periodic saves, if applicable.
-endClip :: forall m. (MonadAtomic m, MonadServer m)
+endClip :: forall m. MonadServerAtomic m
         => (FactionId -> m ()) -> m ()
 {-# INLINE endClip #-}
 endClip updatePerFid = do
@@ -228,7 +230,7 @@ endClip updatePerFid = do
   when (clipN `mod` rwriteSaveClips == 0) $ writeSaveAll False
 
 -- | Check if the given actor is dominated and update his calm.
-manageCalmAndDomination :: (MonadAtomic m, MonadServer m)
+manageCalmAndDomination :: MonadServerAtomic m
                         => ActorId -> Actor -> m ()
 manageCalmAndDomination aid b = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
@@ -261,7 +263,7 @@ manageCalmAndDomination aid b = do
       udpateCalm aid newCalmDelta
 
 -- | Trigger periodic items for all actors on the given level.
-applyPeriodicLevel :: (MonadAtomic m, MonadServer m) => m ()
+applyPeriodicLevel :: MonadServerAtomic m => m ()
 applyPeriodicLevel = do
   arenas <- getsServer sarenas
   let arenasSet = ES.fromDistinctAscList arenas
@@ -292,7 +294,7 @@ applyPeriodicLevel = do
   allActors <- getsState sactorD
   mapM_ applyPeriodicActor $ EM.assocs allActors
 
-handleTrajectories :: (MonadAtomic m, MonadServer m)
+handleTrajectories :: MonadServerAtomic m
                    => LevelId -> FactionId -> m ()
 handleTrajectories lid fid = do
   localTime <- getsState $ getLocalTime lid
@@ -311,7 +313,7 @@ handleTrajectories lid fid = do
 -- from projectiles or pushed actors doesn't work; too late.
 -- Even if the actor got teleported to another level by this point,
 -- we don't care, we set the trajectory, check death, etc.
-hTrajectories :: (MonadAtomic m, MonadServer m) => (ActorId, Actor) -> m ()
+hTrajectories :: MonadServerAtomic m => (ActorId, Actor) -> m ()
 {-# INLINE hTrajectories #-}
 hTrajectories (aid, b) = do
   b2 <- if actorDying b then return b else do
@@ -344,7 +346,7 @@ hTrajectories (aid, b) = do
 -- Not advancing time forces dead projectiles to be destroyed ASAP.
 -- Otherwise, with some timings, it can stay on the game map dead,
 -- blocking path of human-controlled actors and alarming the hapless human.
-setTrajectory :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
+setTrajectory :: MonadServerAtomic m => ActorId -> m ()
 {-# INLINE setTrajectory #-}
 setTrajectory aid = do
   Kind.COps{coTileSpeedup} <- getsState scops
@@ -375,7 +377,7 @@ setTrajectory aid = do
       $ execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
     _ -> error $ "Nothing trajectory" `showFailure` (aid, b)
 
-handleActors :: (MonadAtomic m, MonadServerReadRequest m)
+handleActors :: (MonadServerAtomic m, MonadServerReadRequest m)
              => LevelId -> FactionId -> m Bool
 handleActors lid fid = do
   localTime <- getsState $ getLocalTime lid
@@ -390,7 +392,7 @@ handleActors lid fid = do
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
   hActors fid l
 
-hActors :: forall m. (MonadAtomic m, MonadServerReadRequest m)
+hActors :: forall m. (MonadServerAtomic m, MonadServerReadRequest m)
         => FactionId -> [(ActorId, Actor)] -> m Bool
 hActors _ [] = return False
 hActors _fid as@((aid, body) : rest) = do
@@ -440,7 +442,7 @@ hActors _fid as@((aid, body) : rest) = do
       swriteSave <- getsServer swriteSave
       if swriteSave then return False else hActors side as
 
-gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
+gameExit :: (MonadServerAtomic m, MonadServerReadRequest m) => m ()
 gameExit = do
   -- Verify that the not saved caches are equal to future reconstructed.
   -- Otherwise, save/restore would change game state.
@@ -486,7 +488,7 @@ gameExit = do
 --  debugPossiblyPrint "All clients killed."
   return ()
 
-restartGame :: (MonadAtomic m, MonadServer m)
+restartGame :: MonadServerAtomic m
             => m () -> m () -> Maybe (GroupName ModeKind) -> m ()
 restartGame updConn loop mgameMode = do
   cops <- getsState scops
@@ -504,7 +506,7 @@ restartGame updConn loop mgameMode = do
   loop
 
 -- | Save game on server and all clients.
-writeSaveAll :: (MonadAtomic m, MonadServer m) => Bool -> m ()
+writeSaveAll :: MonadServerAtomic m => Bool -> m ()
 writeSaveAll uiRequested = do
   bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
   noConfirmsGame <- isNoConfirmsGame

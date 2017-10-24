@@ -34,7 +34,7 @@ import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
-onlyRegisterItem :: (MonadAtomic m, MonadServer m)
+onlyRegisterItem :: MonadServerAtomic m
                  => ItemKnown -> ItemSeed -> m ItemId
 onlyRegisterItem itemKnown@(_, aspectRecord, _, _) seed = do
   itemRev <- getsServer sitemRev
@@ -49,7 +49,7 @@ onlyRegisterItem itemKnown@(_, aspectRecord, _, _) seed = do
             , sicounter = succ icounter }
       return $! icounter
 
-registerItem :: (MonadAtomic m, MonadServer m)
+registerItem :: MonadServerAtomic m
              => ItemFull -> ItemKnown -> ItemSeed -> Container -> Bool
              -> m ItemId
 registerItem ItemFull{..} itemKnown seed container verbose = do
@@ -64,13 +64,14 @@ registerItem ItemFull{..} itemKnown seed container verbose = do
       execUpdAtomic $ UpdDiscover container iid itemKindId seed
   return iid
 
-createLevelItem :: (MonadAtomic m, MonadServer m) => Point -> LevelId -> m ()
+createLevelItem :: MonadServerAtomic m
+                => Point -> LevelId -> m ()
 createLevelItem pos lid = do
   Level{litemFreq} <- getLevel lid
   let container = CFloor lid pos
   void $ rollAndRegisterItem lid litemFreq container True Nothing
 
-embedItem :: (MonadAtomic m, MonadServer m)
+embedItem :: MonadServerAtomic m
           => LevelId -> Point -> Kind.Id TileKind -> m ()
 embedItem lid pos tk = do
   Kind.COps{cotile} <- getsState scops
@@ -79,7 +80,7 @@ embedItem lid pos tk = do
       f grp = rollAndRegisterItem lid [(grp, 1)] container False Nothing
   mapM_ f embeds
 
-rollItem :: (MonadAtomic m, MonadServer m)
+rollItem :: MonadServerAtomic m
          => Int -> LevelId -> Freqs ItemKind
          -> m (Maybe ( ItemKnown, ItemFull, ItemDisco
                      , ItemSeed, GroupName ItemKind ))
@@ -101,7 +102,7 @@ rollItem lvlSpawned lid itemFreq = do
     _ -> return ()
   return m5
 
-rollAndRegisterItem :: (MonadAtomic m, MonadServer m)
+rollAndRegisterItem :: MonadServerAtomic m
                     => LevelId -> Freqs ItemKind -> Container -> Bool
                     -> Maybe Int
                     -> m (Maybe (ItemId, (ItemFull, GroupName ItemKind)))
@@ -115,7 +116,7 @@ rollAndRegisterItem lid itemFreq container verbose mk = do
       iid <- registerItem itemFull itemKnown seed container verbose
       return $ Just (iid, (itemFull, itemGroup))
 
-placeItemsInDungeon :: forall m. (MonadAtomic m, MonadServer m) => m ()
+placeItemsInDungeon :: forall m. MonadServerAtomic m => m ()
 placeItemsInDungeon = do
   Kind.COps{coTileSpeedup} <- getsState scops
   let initialItems (lid, Level{ltile, litemNum, lxsize, lysize}) = do
@@ -145,7 +146,7 @@ placeItemsInDungeon = do
       fromEasyToHard = sortBy (comparing absLid `on` fst) $ EM.assocs dungeon
   mapM_ initialItems fromEasyToHard
 
-embedItemsInDungeon :: (MonadAtomic m, MonadServer m) => m ()
+embedItemsInDungeon :: MonadServerAtomic m => m ()
 embedItemsInDungeon = do
   let embedItems (lid, Level{ltile}) = PointArray.imapMA_ (embedItem lid) ltile
   dungeon <- getsState sdungeon

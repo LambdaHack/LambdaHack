@@ -44,13 +44,16 @@ import Game.LambdaHack.Server.State
 handleCmdAtomicServer :: MonadStateWrite m => PosAtomic -> UpdAtomic -> m ()
 {-# INLINE handleCmdAtomicServer #-}
 handleCmdAtomicServer posAtomic cmd =
+  -- Don't catch anything; assume exceptions impossible.
   when (seenAtomicSer posAtomic) $
 -- Not implemented ATM:
 --    storeUndo atomic
     handleUpdAtomic cmd
 
 -- | Send an atomic action to all clients that can see it.
-handleAndBroadcast :: (MonadStateWrite m, MonadServerReadRequest m)
+handleAndBroadcast :: ( MonadServerAtomic m
+                      , MonadStateWrite m
+                      , MonadServerReadRequest m )
                    => CmdAtomic -> m ()
 handleAndBroadcast atomic = do
   -- This is calculated in the server State before action (simulating
@@ -162,12 +165,12 @@ loudSfxAtomic local cmd =
       return $ Just $ SfxLoudSummon (bproj b) grp p
     _ -> return Nothing
 
-sendPer :: MonadServerReadRequest m
+sendPer :: (MonadServerAtomic m, MonadServerReadRequest m)
         => FactionId -> LevelId
         -> Perception -> Perception -> Perception -> m ()
 {-# INLINE sendPer #-}
 sendPer fid lid outPer inPer perNew = do
-  sendUpdate fid $ UpdPerception lid outPer inPer
+  sendUpdateCheck fid $ UpdPerception lid outPer inPer
   s <- getsServer $ (EM.! fid) . sclientStates
   let forget = cmdsFromPer fid lid outPer inPer s
   remember <- getsState $ atomicRemember lid inPer
@@ -175,7 +178,8 @@ sendPer fid lid outPer inPer perNew = do
   psRem <- mapM posUpdAtomic remember
   -- Verify that we remember only currently seen things.
   let !_A = assert (allB seenNew psRem) ()
-  mapM_ (sendUpdate fid) $ forget ++ remember
+  mapM_ (sendUpdateCheck fid) $ forget
+  mapM_ (sendUpdate fid) $ remember
 
 cmdsFromPer :: FactionId -> LevelId -> Perception -> Perception -> State
             -> [UpdAtomic]
@@ -219,16 +223,12 @@ cmdsFromPer side lid outPer inPer s =
 atomicRemember :: LevelId -> Perception -> State -> [UpdAtomic]
 {-# INLINE atomicRemember #-}
 atomicRemember lid inPer s =
-  -- No @UpdLoseItem@ is sent for items that became out of sight.
-  -- The client will create these atomic actions based on @outPer@,
-  -- if required. Any client that remembers out of sight items, OTOH,
-  -- will create atomic actions that forget remembered items
-  -- that are revealed not to be there any more (no @UpdSpotItem@ for them).
-  -- Similarly no @UpdLoseActor@, @UpdLoseTile@ nor @UpdLoseSmell@.
   let inFov = ES.elems $ totalVisible inPer
       lvl = sdungeon s EM.! lid
       -- Actors.
       inAssocs = concatMap (\p -> posToAssocs p lid s) inFov
+      -- Here, the actor may be already visible, e.g., when teleporting,
+      -- so the exception is caught in @sendUpdate@ above.
       fActor (aid, b) = let ais = getCarriedAssocs b s
                         in UpdSpotActor aid b ais
       inActor = map fActor inAssocs

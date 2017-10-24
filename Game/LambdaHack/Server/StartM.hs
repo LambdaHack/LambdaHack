@@ -58,7 +58,7 @@ initPer = do
     ser { sactorAspect, sfovLitLid, sfovClearLid, sfovLucidLid
         , sperValidFid, sperCacheFid, sperFid }
 
-reinitGame :: (MonadAtomic m, MonadServer m) => m ()
+reinitGame :: MonadServerAtomic m => m ()
 reinitGame = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   pers <- getsServer sperFid
@@ -86,7 +86,7 @@ reinitGame = do
         (EM.keys factionD)
   execUpdAtomic $ UpdMsgAll "SortSlots"  -- hack
 
-updatePer :: (MonadAtomic m, MonadServer m) => FactionId -> LevelId -> m ()
+updatePer :: MonadServerAtomic m => FactionId -> LevelId -> m ()
 {-# INLINE updatePer #-}
 updatePer fid lid = do
   modifyServer $ \ser ->
@@ -230,7 +230,7 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
   return $! defState
 
 -- Spawn initial actors. Clients should notice this, to set their leaders.
-populateDungeon :: (MonadAtomic m, MonadServer m) => m ()
+populateDungeon :: MonadServerAtomic m => m ()
 populateDungeon = do
   cops@Kind.COps{coTileSpeedup} <- getsState scops
   placeItemsInDungeon

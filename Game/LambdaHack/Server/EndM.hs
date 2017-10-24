@@ -26,7 +26,7 @@ import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
 -- | Continue or exit or restart the game.
-endOrLoop :: (MonadAtomic m, MonadServer m)
+endOrLoop :: MonadServerAtomic m
           => m () -> (Maybe (GroupName ModeKind) -> m ()) -> m () -> m ()
           -> m ()
 endOrLoop loop restart gameExit gameSave = do
@@ -56,7 +56,7 @@ endOrLoop loop restart gameExit gameSave = do
      | not $ null campers -> gameExit  -- and @loop@ is not called
      | otherwise -> loop  -- continue current game
 
-dieSer :: (MonadAtomic m, MonadServer m) => ActorId -> Actor -> m ()
+dieSer :: MonadServerAtomic m => ActorId -> Actor -> m ()
 dieSer aid b = do
   unless (bproj b) $ do
     discoKind <- getsServer sdiscoKind
@@ -79,7 +79,7 @@ dieSer aid b = do
   execUpdAtomic $ UpdDestroyActor aid b2 []
 
 -- | Drop all actor's items.
-dropAllItems :: (MonadAtomic m, MonadServer m)
+dropAllItems :: MonadServerAtomic m
              => ActorId -> Actor -> m ()
 dropAllItems aid b = do
   mapActorCStore_ CInv (dropCStoreItem False CInv aid b maxBound) b

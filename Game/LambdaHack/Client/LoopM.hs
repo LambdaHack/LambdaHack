@@ -44,7 +44,7 @@ initUI copsClient sconfig sdebugCli = do
 -- | The main game loop for an AI or UI client.
 loopCli :: ( MonadClientSetup m
            , MonadClientUI m
-           , MonadAtomic m
+--           , MonadClientAtomic m
            , MonadStateWrite m
            , MonadClientReadResponse m
            , MonadClientWriteRequest m )

@@ -9,6 +9,7 @@ module Game.LambdaHack.Server.MonadServer
                , saveChanServer  -- exposed only to be implemented, not used
                , liftIO  -- exposed only to be implemented, not used
                )
+  , MonadServerAtomic(..)
     -- * Assorted primitives
   , getServer, putServer, debugPossiblyPrint, debugPossiblyPrintAndExit
   , serverPrint, saveServer, dumpRngs, restoreScore, registerScore
@@ -34,6 +35,7 @@ import System.FilePath
 import System.IO (hFlush, stdout)
 import qualified System.Random as R
 
+import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
@@ -42,6 +44,7 @@ import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
@@ -56,6 +59,23 @@ class MonadStateRead m => MonadServer m where
   -- We do not provide a MonadIO instance, so that outside
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO         :: IO a -> m a
+
+-- | The monad for executing atomic game state transformations.
+class MonadServer m => MonadServerAtomic m where
+  -- | Execute an atomic command that changes the state
+  -- on the server and on all clients that can notice it.
+  execUpdAtomic :: UpdAtomic -> m ()
+  -- | Execute an atomic command that changes the state
+  -- on the given single client only.
+  execUpdAtomicFid :: FactionId -> UpdAtomic -> m ()
+  -- | Execute an atomic command that changes the state
+  -- on the given single client only.
+  -- Catch 'AtomicFail' and indicate if it was in fact raised.
+  execUpdAtomicFidCatch :: FactionId -> UpdAtomic -> m Bool
+  -- | Execute an atomic command that only displays special effects.
+  execSfxAtomic :: SfxAtomic -> m ()
+  execSendPer :: FactionId -> LevelId
+              -> Perception -> Perception -> Perception -> m ()
 
 getServer :: MonadServer m => m StateServer
 getServer = getsServer id

@@ -40,7 +40,7 @@ import Game.LambdaHack.Server.State
 
 -- | Spawn, possibly, a monster according to the level's actor groups.
 -- We assume heroes are never spawned.
-spawnMonster :: (MonadAtomic m, MonadServer m) => m ()
+spawnMonster :: MonadServerAtomic m => m ()
 spawnMonster = do
   arenas <- getsServer sarenas
   -- Do this on only one of the arenas to prevent micromanagement,
@@ -63,7 +63,7 @@ spawnMonster = do
         mleader <- getsState $ _gleader . (EM.! bfid b) . sfactionD
         when (isNothing mleader) $ supplantLeader (bfid b) aid
 
-addAnyActor :: (MonadAtomic m, MonadServer m)
+addAnyActor :: MonadServerAtomic m
             => Freqs ItemKind -> LevelId -> Time -> Maybe Point
             -> m (Maybe ActorId)
 addAnyActor actorFreq lid time mpos = do
@@ -149,7 +149,7 @@ rollSpawnPos Kind.COps{coTileSpeedup} visible
     ]
 
 -- | Advance the move time for the given actor
-advanceTime :: (MonadAtomic m, MonadServer m) => ActorId -> Int -> m ()
+advanceTime :: MonadServerAtomic m => ActorId -> Int -> m ()
 advanceTime aid percent = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsServer sactorAspect
@@ -170,7 +170,7 @@ advanceTime aid percent = do
 -- base speed) regardless how numerous the faction is.
 -- Thanks to this, there is no problem with leader of a numerous faction
 -- having very long UI turns, introducing UI lag.
-overheadActorTime :: (MonadAtomic m, MonadServer m) => FactionId -> m ()
+overheadActorTime :: MonadServerAtomic m => FactionId -> m ()
 overheadActorTime fid = do
   actorTime <- getsServer $ (EM.! fid) . sactorTime
   s <- getState
@@ -190,7 +190,7 @@ overheadActorTime fid = do
 
 -- | Swap the relative move times of two actors (e.g., when switching
 -- a UI leader).
-swapTime :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
+swapTime :: MonadServerAtomic m => ActorId -> ActorId -> m ()
 swapTime source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
@@ -217,7 +217,7 @@ swapTime source target = do
   when (tdelta /= Delta timeZero) $ modifyServer $ \ser ->
     ser {sactorTime = ageActor (bfid tb) (blid tb) target tdelta $ sactorTime ser}
 
-udpateCalm :: (MonadAtomic m, MonadServer m) => ActorId -> Int64 -> m ()
+udpateCalm :: MonadServerAtomic m => ActorId -> Int64 -> m ()
 udpateCalm target deltaCalm = do
   tb <- getsState $ getActorBody target
   actorAspect <- getsServer sactorAspect
@@ -232,7 +232,7 @@ udpateCalm target deltaCalm = do
     -- to regenerate Calm. This is unnatural and boring. Better fight
     -- and hope he gets his Calm again to 0 and then defects back.
 
-leadLevelSwitch :: (MonadAtomic m, MonadServer m) => m ()
+leadLevelSwitch :: MonadServerAtomic m => m ()
 leadLevelSwitch = do
   let canSwitch fact = fst (autoDungeonLevel fact)
                        -- a hack to help AI, until AI client can switch levels

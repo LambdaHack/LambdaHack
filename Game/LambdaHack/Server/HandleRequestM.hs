@@ -54,7 +54,7 @@ import Game.LambdaHack.Server.State
 
 -- | The semantics of server commands.
 -- AI always takes time and so doesn't loop.
-handleRequestAI :: (MonadAtomic m)
+handleRequestAI :: (MonadServerAtomic m)
                 => ReqAI
                 -> m (Maybe RequestAnyAbility)
 handleRequestAI cmd = case cmd of
@@ -62,7 +62,7 @@ handleRequestAI cmd = case cmd of
   ReqAINop -> return Nothing
 
 -- | The semantics of server commands. Only the first two cases take time.
-handleRequestUI :: (MonadAtomic m, MonadServer m)
+handleRequestUI :: MonadServerAtomic m
                 => FactionId -> ActorId -> ReqUI
                 -> m (Maybe RequestAnyAbility)
 handleRequestUI fid aid cmd = case cmd of
@@ -77,7 +77,7 @@ handleRequestUI fid aid cmd = case cmd of
 -- | This is a shorthand. Instead of setting @bwait@ in @ReqWait@
 -- and unsetting in all other requests, we call this once before
 -- executing a request.
-setBWait :: (MonadAtomic m) => RequestTimed a -> ActorId -> m (Maybe Bool)
+setBWait :: (MonadServerAtomic m) => RequestTimed a -> ActorId -> m (Maybe Bool)
 {-# INLINE setBWait #-}
 setBWait cmd aid = do
   let mwait = case cmd of
@@ -89,7 +89,7 @@ setBWait cmd aid = do
     execUpdAtomic $ UpdWaitActor aid (mwait == Just True)
   return mwait
 
-handleRequestTimed :: (MonadAtomic m, MonadServer m)
+handleRequestTimed :: MonadServerAtomic m
                    => FactionId -> ActorId -> RequestTimed a -> m Bool
 handleRequestTimed fid aid cmd = do
   mwait <- setBWait cmd aid
@@ -105,7 +105,7 @@ handleRequestTimed fid aid cmd = do
   return $! isNothing mwait  -- for speed, we report if @cmd@ harmless
 
 -- | Clear deltas for Calm and HP for proper UI display and AI hints.
-managePerRequest :: MonadAtomic m => ActorId -> m ()
+managePerRequest :: MonadServerAtomic m => ActorId -> m ()
 managePerRequest aid = do
   b <- getsState $ getActorBody aid
   let clearMark = 0
@@ -116,7 +116,7 @@ managePerRequest aid = do
     -- Clear delta for the next player turn.
     execUpdAtomic $ UpdRefillHP aid clearMark
 
-handleRequestTimedCases :: (MonadAtomic m, MonadServer m)
+handleRequestTimedCases :: MonadServerAtomic m
                         => ActorId -> RequestTimed a -> m ()
 handleRequestTimedCases aid cmd = case cmd of
   ReqMove target -> reqMove aid target
@@ -129,7 +129,7 @@ handleRequestTimedCases aid cmd = case cmd of
   ReqProject p eps iid cstore -> reqProject aid p eps iid cstore
   ReqApply iid cstore -> reqApply aid iid cstore
 
-switchLeader :: (MonadAtomic m, MonadServer m)
+switchLeader :: MonadServerAtomic m
              => FactionId -> ActorId -> m ()
 {-# INLINE switchLeader #-}
 switchLeader fid aidNew = do
@@ -174,7 +174,7 @@ switchLeader fid aidNew = do
 -- with gender leave strong and unique enough smell. If smell already there
 -- and the actor can smell, remove smell. Projectiles are ignored.
 -- As long as an actor can smell, he doesn't leave any smell ever.
-affectSmell :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
+affectSmell :: MonadServerAtomic m => ActorId -> m ()
 affectSmell aid = do
   b <- getsState $ getActorBody aid
   unless (bproj b) $ do
@@ -199,7 +199,7 @@ affectSmell aid = do
 -- Also, only the server is authorized to check if a move is legal
 -- and it needs full context for that, e.g., the initial actor position
 -- to check if melee attack does not try to reach to a distant tile.
-reqMove :: (MonadAtomic m, MonadServer m) => ActorId -> Vector -> m ()
+reqMove :: MonadServerAtomic m => ActorId -> Vector -> m ()
 reqMove source dir = do
   Kind.COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -235,7 +235,7 @@ reqMove source dir = do
 -- but for melee and not using up the weapon.
 -- No problem if there are many projectiles at the spot. We just
 -- attack the one specified.
-reqMelee :: (MonadAtomic m, MonadServer m)
+reqMelee :: MonadServerAtomic m
          => ActorId -> ActorId -> ItemId -> CStore -> m ()
 reqMelee source target iid cstore = do
   sb <- getsState $ getActorBody source
@@ -312,7 +312,7 @@ reqMelee source target iid cstore = do
 -- * ReqDisplace
 
 -- | Actor tries to swap positions with another.
-reqDisplace :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
+reqDisplace :: MonadServerAtomic m => ActorId -> ActorId -> m ()
 reqDisplace source target = do
   Kind.COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -362,7 +362,7 @@ reqDisplace source target = do
 --
 -- Note that if @serverTile /= freshClientTile@, @freshClientTile@
 -- should not be alterable (but @serverTile@ may be).
-reqAlter :: (MonadAtomic m, MonadServer m) => ActorId -> Point -> m ()
+reqAlter :: MonadServerAtomic m => ActorId -> Point -> m ()
 reqAlter source tpos = do
   Kind.COps{cotile=Kind.Ops{okind, opick}, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -435,13 +435,13 @@ reqAlter source tpos = do
 -- | Do nothing.
 --
 -- Something is sometimes done in 'setBWait'.
-reqWait :: MonadAtomic m => ActorId -> m ()
+reqWait :: MonadServerAtomic m => ActorId -> m ()
 {-# INLINE reqWait #-}
 reqWait _ = return ()
 
 -- * ReqMoveItems
 
-reqMoveItems :: (MonadAtomic m, MonadServer m)
+reqMoveItems :: MonadServerAtomic m
              => ActorId -> [(ItemId, Int, CStore, CStore)] -> m ()
 reqMoveItems aid l = do
   b <- getsState $ getActorBody aid
@@ -452,7 +452,7 @@ reqMoveItems aid l = do
       calmE = calmEnough b ar
   mapM_ (reqMoveItem aid calmE) l
 
-reqMoveItem :: (MonadAtomic m, MonadServer m)
+reqMoveItem :: MonadServerAtomic m
             => ActorId -> Bool -> (ItemId, Int, CStore, CStore) -> m ()
 reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
   b <- getsState $ getActorBody aid
@@ -522,7 +522,7 @@ computeRndTimeout localTime iid ItemFull{..}=
 
 -- * ReqProject
 
-reqProject :: (MonadAtomic m, MonadServer m)
+reqProject :: MonadServerAtomic m
            => ActorId    -- ^ actor projecting the item (is on current lvl)
            -> Point      -- ^ target position of the projectile
            -> Int        -- ^ digital line parameter
@@ -542,7 +542,7 @@ reqProject source tpxy eps iid cstore = do
 
 -- * ReqApply
 
-reqApply :: (MonadAtomic m, MonadServer m)
+reqApply :: MonadServerAtomic m
          => ActorId  -- ^ actor applying the item (is on current level)
          -> ItemId   -- ^ the item to be applied
          -> CStore   -- ^ the location of the item
@@ -571,7 +571,7 @@ reqApply aid iid cstore = do
 
 -- * ReqGameRestart
 
-reqGameRestart :: (MonadAtomic m, MonadServer m)
+reqGameRestart :: MonadServerAtomic m
                => ActorId -> GroupName ModeKind -> Challenge
                -> m ()
 reqGameRestart aid groupName scurChalSer = do
@@ -590,7 +590,7 @@ reqGameRestart aid groupName scurChalSer = do
 
 -- * ReqGameExit
 
-reqGameExit :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
+reqGameExit :: MonadServerAtomic m => ActorId -> m ()
 reqGameExit aid = do
   b <- getsState $ getActorBody aid
   oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
@@ -608,12 +608,12 @@ reqGameSave =
 
 -- * ReqTactic
 
-reqTactic :: MonadAtomic m => FactionId -> Tactic -> m ()
+reqTactic :: MonadServerAtomic m => FactionId -> Tactic -> m ()
 reqTactic fid toT = do
   fromT <- getsState $ ftactic . gplayer . (EM.! fid) . sfactionD
   execUpdAtomic $ UpdTacticFaction fid toT fromT
 
 -- * ReqAutomate
 
-reqAutomate :: MonadAtomic m => FactionId -> m ()
+reqAutomate :: MonadServerAtomic m => FactionId -> m ()
 reqAutomate fid = execUpdAtomic $ UpdAutoFaction fid True

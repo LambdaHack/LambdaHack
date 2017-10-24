@@ -124,7 +124,6 @@ library
   exposed-modules:    Game.LambdaHack.Atomic
                       Game.LambdaHack.Atomic.CmdAtomic
                       Game.LambdaHack.Atomic.HandleAtomicWrite
-                      Game.LambdaHack.Atomic.MonadAtomic
                       Game.LambdaHack.Atomic.MonadStateWrite
                       Game.LambdaHack.Atomic.PosAtomicRead
                       Game.LambdaHack.Client

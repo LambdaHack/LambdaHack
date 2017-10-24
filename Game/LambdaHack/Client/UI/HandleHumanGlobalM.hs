@@ -679,8 +679,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
   let ar = fromMaybe (error $ "" `showFailure` leader)
                      (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
-      ret4 :: MonadClientUI m
-           => [(ItemId, ItemFull)]
+      ret4 :: [(ItemId, ItemFull)]
            -> Int -> [(ItemId, Int, CStore, CStore)]
            -> m (FailOrCmd [(ItemId, Int, CStore, CStore)])
       ret4 [] _ acc = return $ Right $ reverse acc

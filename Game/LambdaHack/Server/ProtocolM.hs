@@ -9,7 +9,7 @@ module Game.LambdaHack.Server.ProtocolM
       , liftIO  -- exposed only to be implemented, not used
       )
     -- * Protocol
-  , putDict, sendUpdate, sendSfx, sendQueryAI, sendQueryUI
+  , putDict, sendUpdate, sendUpdateCheck, sendSfx, sendQueryAI, sendQueryUI
     -- * Assorted
   , killAllClients, childrenServer, updateConn, tryRestore
 #ifdef EXPOSE_INTERNAL
@@ -100,8 +100,24 @@ getDict = getsDict id
 putDict :: MonadServerReadRequest m => ConnServerDict -> m ()
 putDict s = modifyDict (const s)
 
-sendUpdate :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
+-- | If the @AtomicFail@ conditions hold, send a command to client,
+-- otherwise do nothing.
+sendUpdate :: (MonadServerAtomic m, MonadServerReadRequest m)
+           => FactionId -> UpdAtomic -> m ()
 sendUpdate !fid !cmd = do
+  succeeded <- execUpdAtomicFidCatch fid cmd
+  when succeeded $ sendUpd fid cmd
+
+-- | Send a command to client, crashing if the @AtomicFail@ conditions
+-- don't hold when executed on the client's state.
+sendUpdateCheck :: (MonadServerAtomic m, MonadServerReadRequest m)
+                => FactionId -> UpdAtomic -> m ()
+sendUpdateCheck !fid !cmd = do
+  execUpdAtomicFid fid cmd
+  sendUpd fid cmd
+
+sendUpd :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
+sendUpd !fid !cmd = do
   chan <- getsDict (EM.! fid)
   s <- getsServer $ (EM.! fid) . sclientStates
   let resp = RespUpdAtomic s cmd
@@ -131,7 +147,7 @@ sendQueryAI fid aid = do
   when debug $ debugRequestAI aid req
   return req
 
-sendQueryUI :: (MonadAtomic m, MonadServerReadRequest m)
+sendQueryUI :: (MonadServerAtomic m, MonadServerReadRequest m)
             => FactionId -> ActorId -> m RequestUI
 sendQueryUI fid _aid = do
   let respUI = RespQueryUI
@@ -144,7 +160,7 @@ sendQueryUI fid _aid = do
   when debug $ debugRequestUI _aid req
   return req
 
-killAllClients :: (MonadAtomic m, MonadServerReadRequest m) => m ()
+killAllClients :: (MonadServerAtomic m, MonadServerReadRequest m) => m ()
 killAllClients = do
   d <- getDict
   let sendKill fid _ =
@@ -160,7 +176,7 @@ childrenServer = unsafePerformIO (newMVar [])
 -- | Update connections to the new definition of factions.
 -- Connect to clients in old or newly spawned threads
 -- that read and write directly to the channels.
-updateConn :: (MonadAtomic m, MonadServerReadRequest m)
+updateConn :: (MonadServerAtomic m, MonadServerReadRequest m)
            => Config
            -> (Maybe SessionUI -> FactionId -> ChanServer -> IO ())
            -> m ()

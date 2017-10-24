@@ -16,7 +16,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Control.Concurrent
-import qualified Control.Exception as Ex
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict hiding (State)
 import GHC.Generics (Generic)
@@ -118,22 +117,10 @@ instance MonadClientWriteRequest CliImplementation where
     mSession <- gets cliSession
     return $! isJust mSession
 
--- | The game-state semantics of atomic commands
--- as computed on the client.
-instance MonadAtomic CliImplementation where
+instance MonadClientAtomic CliImplementation where
   {-# INLINE execUpdAtomic #-}
   execUpdAtomic = handleUpdAtomic
-  {-# INLINE execUpdAtomicCatch #-}
-  execUpdAtomicCatch cmd = CliImplementation $ StateT $ \cliS -> do
-    eOrcliS <- Ex.try $ execStateT (runCliImplementation $ handleUpdAtomic cmd)
-                                   cliS
-    case eOrcliS of
-      Left AtomicFail{} -> return (False, cliS)
-      Right cliSOut -> return (True, cliSOut)
-  {-# INLINE execSfxAtomic #-}
-  execSfxAtomic _sfx = return ()
-  {-# INLINE execSendPer #-}
-  execSendPer _ _ _ _ _ = return ()
+    -- Don't catch anything; assume exceptions impossible.
 
 -- | Init the client, then run an action, with a given session,
 -- state and history, in the @IO@ monad.

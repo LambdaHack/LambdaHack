@@ -86,13 +86,31 @@ instance MonadServerReadRequest SerImplementation where
     in ((), serS {serDict = newSerDict})
   liftIO = SerImplementation . IO.liftIO
 
--- | The game-state semantics of atomic commands
--- as computed on the server.
-instance MonadAtomic SerImplementation where
+instance MonadServerAtomic SerImplementation where
   execUpdAtomic cmd = cmdAtomicSemSer cmd >> handleAndBroadcast (UpdAtomic cmd)
-  execUpdAtomicCatch cmd = do
-    execUpdAtomic cmd
-    return True  -- assume the exception is impossible
+  execUpdAtomicFid fid cmd = SerImplementation $ StateT $ \cliS -> do
+    -- Don't catch anything; assume exceptions impossible.
+    let sFid = sclientStates (serServer cliS) EM.! fid
+    cliSNew <- execStateT (runSerImplementation $ handleUpdAtomic cmd)
+                          cliS {serState = sFid}
+    -- We know @cliSNew@ differs only in @serState@.
+    let serServerNew = (serServer cliS)
+          {sclientStates = EM.insert fid (serState cliSNew)
+                           $ sclientStates $ serServer cliS}
+    return $! ((), cliS {serServer = serServerNew})
+  execUpdAtomicFidCatch fid cmd = SerImplementation $ StateT $ \cliS -> do
+    let sFid = sclientStates (serServer cliS) EM.! fid
+    cliSNewOrE <- Ex.try
+                  $ execStateT (runSerImplementation $ handleUpdAtomic cmd)
+                               cliS {serState = sFid}
+    case cliSNewOrE of
+      Left AtomicFail{} -> return (False, cliS)
+      Right cliSNew -> do
+        -- We know @cliSNew@ differs only in @serState@.
+        let serServerNew = (serServer cliS)
+              {sclientStates = EM.insert fid (serState cliSNew)
+                               $ sclientStates $ serServer cliS}
+        return $! (True, cliS {serServer = serServerNew})
   execSfxAtomic sfx = handleAndBroadcast (SfxAtomic sfx)
   execSendPer = sendPer
 

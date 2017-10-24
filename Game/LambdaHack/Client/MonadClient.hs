@@ -7,6 +7,7 @@ module Game.LambdaHack.Client.MonadClient
   , MonadClientSetup( saveClient
                     , restartClient
                     )
+  , MonadClientAtomic(..)
     -- * Assorted primitives
   , getClient, putClient
   , debugPossiblyPrint, rndToAction, rndToActionForget
@@ -21,6 +22,7 @@ import qualified Data.Text.IO as T
 import System.IO (hFlush, stdout)
 import qualified System.Random as R
 
+import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.MonadStateRead
@@ -36,6 +38,11 @@ class MonadStateRead m => MonadClient m where
 class MonadClient m => MonadClientSetup m where
   saveClient    :: m ()
   restartClient :: m ()
+
+-- | The monad for executing atomic game state transformations.
+class MonadClient m => MonadClientAtomic m where
+  -- | Execute an atomic command that changes the state.
+  execUpdAtomic :: UpdAtomic -> m ()
 
 getClient :: MonadClient m => m StateClient
 getClient = getsClient id

@@ -45,7 +45,7 @@ import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
-execFailure :: (MonadAtomic m, MonadServer m)
+execFailure :: MonadServerAtomic m
             => ActorId -> RequestTimed a -> ReqFailure -> m ()
 execFailure aid req failureSer = do
   -- Clients should rarely do that (only in case of invisible actors)
@@ -74,7 +74,7 @@ getPerFid fid lid = do
       per = EM.findWithDefault failLvl lid fper
   return $! per
 
-revealItems :: (MonadAtomic m, MonadServer m) => Maybe FactionId -> m ()
+revealItems :: MonadServerAtomic m => Maybe FactionId -> m ()
 revealItems mfid = do
   itemToF <- itemToFullServer
   let discover aid store iid k =
@@ -97,7 +97,7 @@ revealItems mfid = do
   as <- getsState $ EM.keys . sactorD
   mapM_ f as
 
-moveStores :: (MonadAtomic m, MonadServer m)
+moveStores :: MonadServerAtomic m
            => Bool -> ActorId -> CStore -> CStore -> m ()
 moveStores verbose aid fromStore toStore = do
   b <- getsState $ getActorBody aid
@@ -107,7 +107,7 @@ moveStores verbose aid fromStore toStore = do
         mapM_ execUpdAtomic move
   mapActorCStore_ fromStore g b
 
-quitF :: (MonadAtomic m, MonadServer m) =>  Status -> FactionId -> m ()
+quitF :: MonadServerAtomic m =>  Status -> FactionId -> m ()
 quitF status fid = do
   fact <- getsState $ (EM.! fid) . sfactionD
   let oldSt = gquit fact
@@ -130,7 +130,7 @@ quitF status fid = do
 
 -- Send any UpdQuitFaction actions that can be deduced from factions'
 -- current state.
-deduceQuits :: (MonadAtomic m, MonadServer m) => FactionId -> Status -> m ()
+deduceQuits :: MonadServerAtomic m => FactionId -> Status -> m ()
 deduceQuits fid0 status@Status{stOutcome}
   | stOutcome `elem` [Defeated, Camping, Restart, Conquer] =
     error $ "no quitting to deduce" `showFailure` (fid0, status)
@@ -192,7 +192,7 @@ keepArenaFact fact = fleaderMode (gplayer fact) /= LeaderNull
 -- We assume the actor in the second argument has HP <= 0 or is going to be
 -- dominated right now. Even if the actor is to be dominated,
 -- @bfid@ of the actor body is still the old faction.
-deduceKilled :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
+deduceKilled :: MonadServerAtomic m => ActorId -> m ()
 deduceKilled aid = do
   Kind.COps{corule} <- getsState scops
   body <- getsState $ getActorBody aid
@@ -208,7 +208,7 @@ anyActorsAlive fid aid = do
   as <- getsState $ fidActorNotProjAssocs fid
   return $! map fst as /= [aid]
 
-electLeader :: MonadAtomic m => FactionId -> LevelId -> ActorId -> m ()
+electLeader :: MonadServerAtomic m => FactionId -> LevelId -> ActorId -> m ()
 electLeader fid lid aidDead = do
   mleader <- getsState $ _gleader . (EM.! fid) . sfactionD
   when (mleader == Just aidDead) $ do
@@ -221,7 +221,7 @@ electLeader fid lid aidDead = do
           aid : _ -> Just aid
     execUpdAtomic $ UpdLeadFaction fid mleader mleaderNew
 
-supplantLeader :: MonadAtomic m => FactionId -> ActorId -> m ()
+supplantLeader :: MonadServerAtomic m => FactionId -> ActorId -> m ()
 supplantLeader fid aid = do
   fact <- getsState $ (EM.! fid) . sfactionD
   unless (fleaderMode (gplayer fact) == LeaderNull) $
@@ -229,7 +229,7 @@ supplantLeader fid aid = do
 
 -- The missile item is removed from the store only if the projection
 -- went into effect (no failure occured).
-projectFail :: (MonadAtomic m, MonadServer m)
+projectFail :: MonadServerAtomic m
             => ActorId    -- ^ actor projecting the item (is on current lvl)
             -> Point      -- ^ target position of the projectile
             -> Int        -- ^ digital line parameter
@@ -287,7 +287,7 @@ projectFail source tpxy eps iid cstore isBlast = do
                         projectBla source pos rest iid cstore isBlast
                       return Nothing
 
-projectBla :: (MonadAtomic m, MonadServer m)
+projectBla :: MonadServerAtomic m
            => ActorId    -- ^ actor projecting the item (is on current lvl)
            -> Point      -- ^ starting point of the projectile
            -> [Point]    -- ^ rest of the trajectory of the projectile
@@ -313,7 +313,7 @@ projectBla source pos rest iid cstore isBlast = do
 -- | Create a projectile actor containing the given missile.
 --
 -- Projectile has no organs except for the trunk.
-addProjectile :: (MonadAtomic m, MonadServer m)
+addProjectile :: MonadServerAtomic m
               => Point -> [Point] -> ItemId -> ItemQuant -> LevelId
               -> FactionId -> Time -> Bool
               -> m ()
@@ -328,7 +328,7 @@ addProjectile bpos rest iid (_, it) blid bfid btime _isBlast = do
                       , borgan = EM.empty }  -- don't confer bonuses from trunk
   void $ addActorIid iid itemFull True bfid bpos blid tweakBody btime
 
-addActor :: (MonadAtomic m, MonadServer m)
+addActor :: MonadServerAtomic m
          => GroupName ItemKind -> FactionId -> Point -> LevelId
          -> (Actor -> Actor) -> Time
          -> m (Maybe ActorId)
@@ -343,7 +343,7 @@ addActor actorGroup bfid pos lid tweakBody time = do
       registerActor itemKnownRaw itemFullRaw itemDisco seed
                     bfid pos lid tweakBody time
 
-registerActor :: (MonadAtomic m, MonadServer m)
+registerActor :: MonadServerAtomic m
               => ItemKnown -> ItemFull -> ItemDisco -> ItemSeed
               -> FactionId -> Point -> LevelId -> (Actor -> Actor) -> Time
               -> m (Maybe ActorId)
@@ -362,7 +362,7 @@ registerActor (kindIx, ar, damage, _) itemFullRaw itemDisco seed
   trunkId <- registerItem itemFull itemKnown seed container False
   addActorIid trunkId itemFull False bfid pos lid tweakBody time
 
-addActorIid :: (MonadAtomic m, MonadServer m)
+addActorIid :: MonadServerAtomic m
             => ItemId -> ItemFull -> Bool -> FactionId -> Point -> LevelId
             -> (Actor -> Actor) -> Time
             -> m (Maybe ActorId)
@@ -422,7 +422,7 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
       Just (iid, (itemFull, _)) -> discoverIfNoEffects container iid itemFull
   return $ Just aid
 
-discoverIfNoEffects :: (MonadAtomic m, MonadServer m)
+discoverIfNoEffects :: MonadServerAtomic m
                     => Container -> ItemId -> ItemFull -> m ()
 discoverIfNoEffects c iid itemFull = case itemFull of
   ItemFull{itemDisco=Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}}}
