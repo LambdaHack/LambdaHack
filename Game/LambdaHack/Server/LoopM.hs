@@ -69,12 +69,16 @@ loopSer sdebug sconfig executorClient = do
     Just (sRaw, ser) | not $ snewGameSer sdebug -> do  -- a restored game
       execUpdAtomic $ UpdResumeServer $ updateCOps (const cops) sRaw
       putServer ser
+      factionD <- getsState sfactionD
+      let f fid = let cmd = UpdResumeServer $ updateCOps (const cops)
+                                            $ sclientStates ser EM.! fid
+                  in execUpdAtomicFidCatch fid cmd
+      mapM_ f $ EM.keys factionD
       modifyServer $ \ser2 -> ser2 {sdebugNxt = sdebug}
       applyDebug
       updConn
       initPer
       pers <- getsServer sperFid
-      factionD <- getsState sfactionD
       mapM_ (\fid -> sendUpdate fid $ UpdResume fid (pers EM.! fid))
             (EM.keys factionD)
       -- We dump RNG seeds here, in case the game wasn't run
