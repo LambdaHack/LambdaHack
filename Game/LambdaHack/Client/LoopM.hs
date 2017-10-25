@@ -83,6 +83,13 @@ loopCli copsClient sconfig sdebugCli = do
       error $ "Savefile of client " ++ show side ++ " not usable."
               `showFailure` ()
     (False, RespUpdAtomic _ UpdRestart{}) -> return ()
+    (True, RespUpdAtomicNoState UpdResume{}) -> return ()
+    (True, RespUpdAtomicNoState UpdRestart{}) ->
+      when hasUI $ msgAdd "Ignoring an old savefile and starting a new game."
+    (False, RespUpdAtomicNoState UpdResume{}) ->
+      error $ "Savefile of client " ++ show side ++ " not usable."
+              `showFailure` ()
+    (False, RespUpdAtomicNoState UpdRestart{}) -> return ()
     _ -> error $ "unexpected command" `showFailure` (side, restored, cmd1)
   handleResponse cmd1
   -- State and client state now valid.

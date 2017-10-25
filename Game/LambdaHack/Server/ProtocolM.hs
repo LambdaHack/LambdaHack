@@ -163,9 +163,11 @@ sendQueryUI fid _aid = do
 killAllClients :: (MonadServerAtomic m, MonadServerReadRequest m) => m ()
 killAllClients = do
   d <- getDict
-  let sendKill fid _ =
-        -- We can't check in sfactionD, because client can be from an old game.
-        sendUpdate fid $ UpdKillExit fid
+  let sendKill fid chan = do
+        let resp = RespUpdAtomicNoState $ UpdKillExit fid
+        writeQueue resp $ responseS chan
+  -- We can't interate over sfactionD, because client can be from an old game.
+  -- For the same reason we can't look up and send client's state.
   mapWithKeyM_ sendKill d
 
 -- Global variable for all children threads of the server.

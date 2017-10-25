@@ -45,7 +45,15 @@ handleResponse cmd = case cmd of
     let handle !c = do
           s <- getState
           putState newState
-            -- speedup wrt:
+          cli <- getClient
+          cmdAtomicSemCli s c
+          when hasUI $ displayRespUpdAtomicUI False cli c
+    mapM_ handle cmds
+  RespUpdAtomicNoState cmdA -> do
+    hasUI <- clientHasUI
+    cmds <- cmdAtomicFilterCli cmdA
+    let handle !c = do
+          s <- getState
           -- execUpdAtomic c
           cli <- getClient
           cmdAtomicSemCli s c

@@ -39,6 +39,10 @@ debugResponse fid cmd = case cmd of
   RespUpdAtomic _ cmdA@UpdResume{} -> debugPlain fid cmd cmdA
   RespUpdAtomic _ cmdA@UpdSpotTile{} -> debugPlain fid cmd cmdA
   RespUpdAtomic _ cmdA -> debugPretty fid cmd cmdA
+  RespUpdAtomicNoState cmdA@UpdPerception{} -> debugPlain fid cmd cmdA
+  RespUpdAtomicNoState cmdA@UpdResume{} -> debugPlain fid cmd cmdA
+  RespUpdAtomicNoState cmdA@UpdSpotTile{} -> debugPlain fid cmd cmdA
+  RespUpdAtomicNoState cmdA -> debugPretty fid cmd cmdA
   RespQueryAI aid -> do
     d <- debugAid aid "RespQueryAI" cmd
     serverPrint d
