@@ -117,9 +117,9 @@ instance MonadClientWriteRequest CliImplementation where
     mSession <- gets cliSession
     return $! isJust mSession
 
-instance MonadClientAtomic CliImplementation where
-  {-# INLINE execUpdAtomic #-}
-  execUpdAtomic = handleUpdAtomic
+--instance MonadClientAtomic CliImplementation where
+--  {-# INLINE execUpdAtomic #-}
+--  execUpdAtomic = handleUpdAtomic
     -- Don't catch anything; assume exceptions impossible.
 
 -- | Init the client, then run an action, with a given session,
