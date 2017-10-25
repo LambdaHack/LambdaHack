@@ -170,9 +170,9 @@ sendPer :: (MonadServerAtomic m, MonadServerReadRequest m)
 {-# INLINE sendPer #-}
 sendPer fid lid outPer inPer perNew = do
   sendUpdateCheck fid $ UpdPerception lid outPer inPer
-  s <- getsServer $ (EM.! fid) . sclientStates
-  let forget = cmdsFromPer fid lid outPer inPer s
-  remember <- getsState $ atomicRemember lid inPer
+  sLocal <- getsServer $ (EM.! fid) . sclientStates
+  let forget = cmdsFromPer fid lid outPer inPer sLocal
+  remember <- getsState $ atomicRemember lid inPer sLocal
   let seenNew = seenAtomicCli False fid perNew
   psRem <- mapM posUpdAtomic remember
   -- Verify that we remember only currently seen things.
@@ -182,10 +182,10 @@ sendPer fid lid outPer inPer perNew = do
 
 cmdsFromPer :: FactionId -> LevelId -> Perception -> Perception -> State
             -> [UpdAtomic]
-cmdsFromPer side lid outPer inPer s =
+cmdsFromPer side lid outPer inPer sLocal =
   -- Wipe out actors that just became invisible due to changed FOV.
   let outFov = totalVisible outPer
-      outPrio = concatMap (\p -> posToAssocs p lid s) $ ES.elems outFov
+      outPrio = concatMap (\p -> posToAssocs p lid sLocal) $ ES.elems outFov
       fActor (aid, b) =
         -- We forget only currently invisible actors. Actors can be outside
         -- perception, but still visible, if they belong to our faction,
@@ -193,17 +193,17 @@ cmdsFromPer side lid outPer inPer s =
         -- or if they have disabled senses.
         if not (bproj b) && bfid b == side
         then Nothing
-        else Just $ UpdLoseActor aid b $ getCarriedAssocs b s
+        else Just $ UpdLoseActor aid b $ getCarriedAssocs b sLocal
           -- this command always succeeds, the actor can be always removed,
           -- because the actor is taken from the state
       outActor = mapMaybe fActor outPrio
   -- Wipe out remembered items on tiles that now came into view.
-      lvl = (EM.! lid) . sdungeon $ s
+      lvl = (EM.! lid) . sdungeon $ sLocal
       inFov = ES.elems $ totalVisible inPer
       inContainer fc itemFloor =
         let inItem = mapMaybe (\p -> (p,) <$> EM.lookup p itemFloor) inFov
             fItem p (iid, kit) =
-              UpdLoseItem True iid (getItemBody iid s) kit (fc lid p)
+              UpdLoseItem True iid (getItemBody iid sLocal) kit (fc lid p)
             fBag (p, bag) = map (fItem p) $ EM.assocs bag
         in concatMap fBag inItem
       inFloor = inContainer CFloor (lfloor lvl)
@@ -219,9 +219,9 @@ cmdsFromPer side lid outPer inPer s =
   -- and the tiles they are on are currently visible (ditto).
   in outActor ++ inFloor ++ inEmbed ++ inSmell
 
-atomicRemember :: LevelId -> Perception -> State -> [UpdAtomic]
+atomicRemember :: LevelId -> Perception -> State -> State -> [UpdAtomic]
 {-# INLINE atomicRemember #-}
-atomicRemember lid inPer s =
+atomicRemember lid inPer sLocal s =
   let inFov = ES.elems $ totalVisible inPer
       lvl = sdungeon s EM.! lid
       -- Actors.
@@ -245,7 +245,15 @@ atomicRemember lid inPer s =
       Kind.COps{cotile} = scops s
       hideTile p = Tile.hideAs cotile $ lvl `at` p
       inTileMap = map (\p -> (p, hideTile p)) inFov
-      atomicTile = if null inTileMap then [] else [UpdSpotTile lid inTileMap]
+      lvlLocal = sdungeon sLocal EM.! lid
+      -- We ignore the server resending us hidden versions of the tiles
+      -- (and resending us the same data we already got).
+      -- If the tiles are changed to other variants of the hidden tile,
+      -- we can still verify by searching.
+      notKnown (p, t) = let tClient = lvlLocal `at` p
+                        in Tile.hideAs cotile tClient /= t
+      newTs = filter notKnown inTileMap
+      atomicTile = if null newTs then [] else [UpdSpotTile lid newTs]
       -- Smells.
       inSmellFov = ES.elems $ totalSmelled inPer
       inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p (lsmell lvl)) inSmellFov

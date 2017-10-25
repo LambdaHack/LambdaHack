@@ -396,7 +396,7 @@ updAlterExplorable lid delta = assert (delta /= 0) $
   updateLevel lid $ \lvl -> lvl {lexplorable = lexplorable lvl + delta}
 
 -- Notice previously invisible tiles. This is similar to @UpdSpotActor@,
--- but done in bulk, because it often involves dozens of tiles pers move.
+-- but done in bulk, because it often involves dozens of tiles per move.
 -- We don't check that the tiles at the positions in question are unknown
 -- to save computation, especially for clients that remember tiles
 -- at previously seen positions. Similarly, when updating the @lseen@
