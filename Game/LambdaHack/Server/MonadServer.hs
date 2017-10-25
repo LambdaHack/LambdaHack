@@ -66,6 +66,9 @@ class MonadServer m => MonadServerAtomic m where
   -- on the server and on all clients that can notice it.
   execUpdAtomic :: UpdAtomic -> m ()
   -- | Execute an atomic command that changes the state
+  -- on the server only.
+  execUpdAtomicSer :: UpdAtomic -> m ()
+  -- | Execute an atomic command that changes the state
   -- on the given single client only.
   execUpdAtomicFid :: FactionId -> UpdAtomic -> m ()
   -- | Execute an atomic command that changes the state

@@ -41,18 +41,17 @@ import Game.LambdaHack.Server.State
 --  maybe skip (\a -> modifyServer $ \ser -> ser {sundo = a : sundo ser})
 --    $ Nothing   -- undoCmdAtomic atomic
 
-handleCmdAtomicServer :: MonadStateWrite m => PosAtomic -> UpdAtomic -> m ()
+handleCmdAtomicServer :: MonadServerAtomic m => PosAtomic -> UpdAtomic -> m ()
 {-# INLINE handleCmdAtomicServer #-}
 handleCmdAtomicServer posAtomic cmd =
   -- Don't catch anything; assume exceptions impossible.
   when (seenAtomicSer posAtomic) $
 -- Not implemented ATM:
 --    storeUndo atomic
-    handleUpdAtomic cmd
+    execUpdAtomicSer cmd
 
 -- | Send an atomic action to all clients that can see it.
 handleAndBroadcast :: ( MonadServerAtomic m
-                      , MonadStateWrite m
                       , MonadServerReadRequest m )
                    => CmdAtomic -> m ()
 handleAndBroadcast atomic = do

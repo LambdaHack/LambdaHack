@@ -88,6 +88,15 @@ instance MonadServerReadRequest SerImplementation where
 
 instance MonadServerAtomic SerImplementation where
   execUpdAtomic cmd = cmdAtomicSemSer cmd >> handleAndBroadcast (UpdAtomic cmd)
+  execUpdAtomicSer cmd = SerImplementation $ StateT $ \cliS -> do
+    cliSNewOrE <- Ex.try
+                  $ execStateT (runSerImplementation $ handleUpdAtomic cmd)
+                               cliS
+    case cliSNewOrE of
+      Left AtomicFail{} -> return ((), cliS)
+      Right cliSNew ->
+        -- We know @cliSNew@ differs only in @serState@.
+        return $ ((), cliSNew)
   execUpdAtomicFid fid cmd = SerImplementation $ StateT $ \cliS -> do
     -- Don't catch anything; assume exceptions impossible.
     let sFid = sclientStates (serServer cliS) EM.! fid
