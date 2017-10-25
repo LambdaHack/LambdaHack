@@ -375,11 +375,15 @@ updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
   -- but does not see the tile (so does not notice the SearchTile action),
   -- and it suddenly changes into another tile,
   -- which at the same time becomes visible (e.g., an open door).
-  let adj ts = assert (ts PointArray.! p == fromTile
-                       || ts PointArray.! p == Tile.hideAs cotile fromTile
-                       `blame` "unexpected altered tile kind"
-                       `swith` (lid, p, fromTile, toTile, ts PointArray.! p))
-               $ ts PointArray.// [(p, toTile)]
+  let adj ts | ts PointArray.! p == toTile =
+        atomicFail $ "tile already altered"
+                     `showFailure` (lid, p, fromTile, toTile)
+             | otherwise =
+        assert (ts PointArray.! p == fromTile
+                || ts PointArray.! p == Tile.hideAs cotile fromTile
+                `blame` "unexpected altered tile kind"
+                `swith` (lid, p, fromTile, toTile, ts PointArray.! p))
+        $ ts PointArray.// [(p, toTile)]
   updateLevel lid $ updateTile adj
   case ( Tile.isExplorable coTileSpeedup fromTile
        , Tile.isExplorable coTileSpeedup toTile ) of

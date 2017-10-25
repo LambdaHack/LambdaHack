@@ -364,7 +364,8 @@ reqDisplace source target = do
 -- should not be alterable (but @serverTile@ may be).
 reqAlter :: MonadServerAtomic m => ActorId -> Point -> m ()
 reqAlter source tpos = do
-  Kind.COps{cotile=Kind.Ops{okind, opick}, coTileSpeedup} <- getsState scops
+  Kind.COps{ cotile=cotile@Kind.Ops{okind, opick}
+           , coTileSpeedup } <- getsState scops
   sb <- getsState $ getActorBody source
   actorSk <- currentSkillsServer source
   let alterSkill = EM.findWithDefault 0 Ability.AbAlter actorSk
@@ -417,10 +418,12 @@ reqAlter source tpos = do
     else
       if EM.notMember tpos $ lfloor lvl then
         if null (posToAidsLvl tpos lvl) then do
-          when hidden $
+          when hidden $ do
             -- Search, in case some actors present (e.g., of other factions)
             -- don't know this tile.
+            let fromTile = Tile.hideAs cotile serverTile
             execUpdAtomic $ UpdSearchTile source tpos serverTile
+            execUpdAtomic $ UpdAlterTile lid tpos fromTile serverTile
           when (alterSkill >= Tile.alterMinSkill coTileSpeedup serverTile) $ do
             case groupsToAlterTo of
               [] -> return ()
