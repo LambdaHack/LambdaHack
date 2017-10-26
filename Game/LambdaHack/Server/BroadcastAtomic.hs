@@ -44,7 +44,6 @@ import Game.LambdaHack.Server.State
 handleCmdAtomicServer :: MonadServerAtomic m => PosAtomic -> UpdAtomic -> m ()
 {-# INLINE handleCmdAtomicServer #-}
 handleCmdAtomicServer posAtomic cmd =
-  -- Don't catch anything; assume exceptions impossible.
   when (seenAtomicSer posAtomic) $
 -- Not implemented ATM:
 --    storeUndo atomic
@@ -68,8 +67,8 @@ handleAndBroadcast atomic = do
         ps <- posUpdAtomic cmd
         atomicBroken <- breakUpdAtomic cmd
         psBroken <- mapM posUpdAtomic atomicBroken
-        -- Perform the action on the server. The only part that requires
-        -- @MonadStateWrite@ and modifies server State.
+        -- Perform the action on the server. The only part that
+        -- modifies server State.
         handleCmdAtomicServer ps cmd
         return (ps, atomicBroken, psBroken)
       SfxAtomic sfx -> do
@@ -169,7 +168,7 @@ sendPer :: (MonadServerAtomic m, MonadServerReadRequest m)
         -> Perception -> Perception -> Perception -> m ()
 {-# INLINE sendPer #-}
 sendPer fid lid outPer inPer perNew = do
-  sendUpdateCheck fid $ UpdPerception lid outPer inPer
+  sendUpdNoState fid $ UpdPerception lid outPer inPer
   sLocal <- getsServer $ (EM.! fid) . sclientStates
   let forget = cmdsFromPer fid lid outPer inPer sLocal
   remember <- getsState $ atomicRemember lid inPer sLocal

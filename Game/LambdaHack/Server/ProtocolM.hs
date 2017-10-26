@@ -9,7 +9,8 @@ module Game.LambdaHack.Server.ProtocolM
       , liftIO  -- exposed only to be implemented, not used
       )
     -- * Protocol
-  , putDict, sendUpdate, sendUpdateCheck, sendSfx, sendQueryAI, sendQueryUI
+  , putDict, sendUpdate, sendUpdateCheck, sendUpdNoState
+  , sendSfx, sendQueryAI, sendQueryUI
     -- * Assorted
   , killAllClients, childrenServer, updateConn, tryRestore
 #ifdef EXPOSE_INTERNAL
@@ -125,6 +126,14 @@ sendUpd !fid !cmd = do
   when debug $ debugResponse fid resp
   writeQueue resp $ responseS chan
 
+sendUpdNoState :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
+sendUpdNoState !fid !cmd = do
+  chan <- getsDict (EM.! fid)
+  let resp = RespUpdAtomicNoState cmd
+  debug <- getsServer $ sniff . sdebugSer
+  when debug $ debugResponse fid resp
+  writeQueue resp $ responseS chan
+
 sendSfx :: MonadServerReadRequest m => FactionId -> SfxAtomic -> m ()
 sendSfx !fid !sfx = do
   let resp = RespSfxAtomic sfx
@@ -163,9 +172,7 @@ sendQueryUI fid _aid = do
 killAllClients :: (MonadServerAtomic m, MonadServerReadRequest m) => m ()
 killAllClients = do
   d <- getDict
-  let sendKill fid chan = do
-        let resp = RespUpdAtomicNoState $ UpdKillExit fid
-        writeQueue resp $ responseS chan
+  let sendKill fid _ = sendUpdNoState fid $ UpdKillExit fid
   -- We can't interate over sfactionD, because client can be from an old game.
   -- For the same reason we can't look up and send client's state.
   mapWithKeyM_ sendKill d
