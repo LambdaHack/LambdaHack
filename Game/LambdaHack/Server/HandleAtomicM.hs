@@ -174,9 +174,11 @@ addItemToActor iid k aid = do
 
 updateSclear :: MonadServer m
              => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind -> m Bool
-updateSclear lid pos fromTile toTile = do
+updateSclear lid pos _fromTile toTile = do
   Kind.COps{coTileSpeedup} <- getsState scops
-  let fromClear = Tile.isClear coTileSpeedup fromTile
+  lvl <- getLevel lid
+  let serverTile = lvl `at` pos
+      fromClear = Tile.isClear coTileSpeedup serverTile
       toClear = Tile.isClear coTileSpeedup toTile
   if fromClear == toClear then return False else do
     let f FovClear{fovClear} =
@@ -187,9 +189,11 @@ updateSclear lid pos fromTile toTile = do
 
 updateSlit :: MonadServer m
            => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind -> m Bool
-updateSlit lid pos fromTile toTile = do
+updateSlit lid pos _fromTile toTile = do
   Kind.COps{coTileSpeedup} <- getsState scops
-  let fromLit = Tile.isLit coTileSpeedup fromTile
+  lvl <- getLevel lid
+  let serverTile = lvl `at` pos
+      fromLit = Tile.isLit coTileSpeedup serverTile
       toLit = Tile.isLit coTileSpeedup toTile
   if fromLit == toLit then return False else do
     let f (FovLit set) =
