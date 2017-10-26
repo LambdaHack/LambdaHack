@@ -19,7 +19,6 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Server.MonadServer
@@ -34,47 +33,50 @@ debugShow :: Show a => a -> Text
 debugShow = T.pack . Show.Pretty.ppShow
 
 debugResponse :: MonadServer m => FactionId -> Response -> m ()
-debugResponse fid cmd = case cmd of
-  RespUpdAtomic _ cmdA@UpdPerception{} -> debugPlain fid cmd cmdA
-  RespUpdAtomic _ cmdA@UpdResume{} -> debugPlain fid cmd cmdA
-  RespUpdAtomic _ cmdA@UpdSpotTile{} -> debugPlain fid cmd cmdA
-  RespUpdAtomic _ cmdA -> debugPretty fid cmd cmdA
-  RespUpdAtomicNoState cmdA@UpdPerception{} -> debugPlain fid cmd cmdA
-  RespUpdAtomicNoState cmdA@UpdResume{} -> debugPlain fid cmd cmdA
-  RespUpdAtomicNoState cmdA@UpdSpotTile{} -> debugPlain fid cmd cmdA
-  RespUpdAtomicNoState cmdA -> debugPretty fid cmd cmdA
+debugResponse fid resp = case resp of
+  RespUpdAtomic _ cmd@UpdPerception{} -> debugPlain fid "RespUpdAtomic" cmd
+  RespUpdAtomic _ cmd@UpdResume{} -> debugPlain fid "RespUpdAtomic" cmd
+  RespUpdAtomic _ cmd@UpdSpotTile{} -> debugPlain fid "RespUpdAtomic" cmd
+  RespUpdAtomic _ cmd -> debugPretty fid "RespUpdAtomic" cmd
+  RespUpdAtomicNoState cmd@UpdPerception{} ->
+    debugPlain fid "RespUpdAtomicNoState" cmd
+  RespUpdAtomicNoState cmd@UpdResume{} ->
+    debugPlain fid "RespUpdAtomicNoState" cmd
+  RespUpdAtomicNoState cmd@UpdSpotTile{} ->
+    debugPlain fid "RespUpdAtomicNoState" cmd
+  RespUpdAtomicNoState cmd ->
+    debugPretty fid "RespUpdAtomicNoState" cmd
   RespQueryAI aid -> do
-    d <- debugAid aid "RespQueryAI" cmd
+    d <- debugAid aid "RespQueryAI"
     serverPrint d
   RespSfxAtomic sfx -> do
     ps <- posSfxAtomic sfx
-    serverPrint $ debugShow (fid, cmd, ps)
+    serverPrint $ debugShow (fid, "RespSfxAtomic" :: Text, ps)
   RespQueryUI -> serverPrint "RespQueryUI"
 
-debugPretty :: (MonadServer m, Show a) => FactionId -> a -> UpdAtomic -> m ()
-debugPretty fid cmd cmdA = do
-  ps <- posUpdAtomic cmdA
-  serverPrint $ debugShow (fid, cmd, ps)
+debugPretty :: MonadServer m => FactionId -> Text -> UpdAtomic -> m ()
+debugPretty fid t cmd = do
+  ps <- posUpdAtomic cmd
+  serverPrint $ debugShow (fid, t, ps)
 
-debugPlain :: (MonadServer m, Show a) => FactionId -> a -> UpdAtomic -> m ()
-debugPlain fid cmd cmdA = do
-  ps <- posUpdAtomic cmdA
-  serverPrint $ T.pack $ show (fid, cmd, ps)  -- too large for pretty printing
+debugPlain :: MonadServer m => FactionId -> Text -> UpdAtomic -> m ()
+debugPlain fid t cmd = do
+  ps <- posUpdAtomic cmd
+  serverPrint $ T.pack $ show (fid, t, ps)  -- too large for pretty printing
 
-debugRequestAI :: MonadServer m => ActorId -> RequestAI -> m ()
-debugRequestAI aid cmd = do
-  d <- debugAid aid "AI request" cmd
+debugRequestAI :: MonadServer m => ActorId -> m ()
+debugRequestAI aid = do
+  d <- debugAid aid "AI request"
   serverPrint d
 
-debugRequestUI :: MonadServer m => ActorId -> RequestUI -> m ()
-debugRequestUI aid cmd = do
-  d <- debugAid aid "UI request" cmd
+debugRequestUI :: MonadServer m => ActorId -> m ()
+debugRequestUI aid = do
+  d <- debugAid aid "UI request"
   serverPrint d
 
-data DebugAid a = DebugAid
+data DebugAid = DebugAid
   { label   :: Text
   , aid     :: ActorId
-  , cmd     :: a
   , faction :: FactionId
   , lid     :: LevelId
   , bHP     :: Int64
@@ -83,14 +85,13 @@ data DebugAid a = DebugAid
   }
   deriving Show
 
-debugAid :: (MonadServer m, Show a) => ActorId -> Text -> a -> m Text
-debugAid aid label cmd = do
+debugAid :: MonadServer m => ActorId -> Text -> m Text
+debugAid aid label = do
   b <- getsState $ getActorBody aid
   time <- getsState $ getLocalTime (blid b)
   btime <- getsServer $ (EM.! aid) . (EM.! blid b) . (EM.! bfid b) . sactorTime
   return $! debugShow DebugAid { label
                                , aid
-                               , cmd
                                , faction = bfid b
                                , lid = blid b
                                , bHP = bhp b

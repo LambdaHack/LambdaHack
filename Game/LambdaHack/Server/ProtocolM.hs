@@ -153,7 +153,7 @@ sendQueryAI fid aid = do
   req <- do
     writeQueue respAI $ responseS chan
     readQueueAI $ requestAIS chan
-  when debug $ debugRequestAI aid req
+  when debug $ debugRequestAI aid
   return req
 
 sendQueryUI :: (MonadServerAtomic m, MonadServerReadRequest m)
@@ -166,7 +166,7 @@ sendQueryUI fid _aid = do
   req <- do
     writeQueue respUI $ responseS chan
     readQueueUI $ fromJust $ requestUIS chan
-  when debug $ debugRequestUI _aid req
+  when debug $ debugRequestUI _aid
   return req
 
 killAllClients :: (MonadServerAtomic m, MonadServerReadRequest m) => m ()
