@@ -108,13 +108,14 @@ updCreateActor aid body ais = do
   -- at the new location, but also the location is part of new perception,
   -- so @UpdSpotActor@ is sent.
   let f Nothing = Just body
-      f (Just b) = atomicFail $ "actor already added"
-                                `showFailure` (aid, body, b)
+      f (Just b) = assert (body == b `blame` (aid, body, b)) $
+        atomicFail $ "actor already added" `showFailure` (aid, body, b)
   modifyState $ updateActorD $ EM.alter f aid
   -- Add actor to @sprio@.
   let g Nothing = Just [aid]
       g (Just l) =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
+        -- Not so much expensive, as doubly impossible.
         assert (aid `notElem` l `blame` "actor already added"
                                 `swith` (aid, body, l))
 #endif
@@ -159,6 +160,7 @@ updDestroyActor aid body ais = do
   let g Nothing = error $ "actor already removed" `showFailure` (aid, body)
       g (Just l) =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
+        -- Not so much expensive, as doubly impossible.
         assert (aid `elem` l `blame` "actor already removed"
                              `swith` (aid, body, l))
 #endif
