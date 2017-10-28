@@ -1166,16 +1166,17 @@ effectDetectExit execSfx radius target = do
 effectDetectHidden :: MonadServerAtomic m
                    => m () -> Int -> ActorId -> Point -> m Bool
 effectDetectHidden execSfx radius target pos = do
-  Kind.COps{cotile, coTileSpeedup} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody target
   lvl <- getLevel $ blid b
   let predicate p = Tile.isHideAs coTileSpeedup $ lvl `at` p
       action l = do
         let f p = when (p /= pos) $ do
               let t = lvl `at` p
-                  fromTile = Tile.hideAs cotile t
               execUpdAtomic $ UpdSearchTile target p t
-              execUpdAtomic $ UpdAlterTile (blid b) p fromTile t
+              -- Match @PosAtomic@ of the two commands to show both or none.
+              let matchPA = [(bpos b, lvl `at` bpos b)]
+              execUpdAtomic $ UpdSpotTile (blid b) $ [(p, t)] ++ matchPA
         mapM_ f l
         return $! not $ null l
   effectDetectX predicate action execSfx radius target
