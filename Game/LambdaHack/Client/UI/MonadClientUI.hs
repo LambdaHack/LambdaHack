@@ -375,7 +375,7 @@ partAidLeader aid = do
   b <- getsSession $ getActorUI aid
   partActorLeader aid b
 
-tryRestore :: MonadClientUI m => m (Maybe (State, StateClient, Maybe SessionUI))
+tryRestore :: MonadClientUI m => m (Maybe (StateClient, Maybe SessionUI))
 tryRestore = do
   cops@Kind.COps{corule} <- getsState scops
   bench <- getsClient $ sbenchmark . sdebugCli

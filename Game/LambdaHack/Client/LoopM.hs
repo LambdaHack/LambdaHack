@@ -57,17 +57,15 @@ loopCli copsClient sconfig sdebugCli = do
   cops <- getsState scops
   restoredG <- tryRestore
   restored <- case restoredG of
-    Just (s, cli, msess) | not $ snewGameCli sdebugCli -> do
+    Just (cli, msess) | not $ snewGameCli sdebugCli -> do
       -- Restore game.
-      let sCops = updateCOps (const cops) s
-      handleResponse $ RespUpdAtomic sCops $ UpdResumeServer sCops
       schanF <- getsSession schanF
       sbinding <- getsSession sbinding
       maybe (return ()) (\sess ->
         putSession sess {schanF, sbinding, sconfig}) msess
       putClient cli {sdebugCli}
       return True
-    Just (_, _, msessR) -> do
+    Just (_, msessR) -> do
       -- Preserve previous history, if any (--newGame).
       maybe (return ()) (\sessR -> modifySession $ \sess ->
         sess {shistory = shistory sessR}) msessR
@@ -76,14 +74,16 @@ loopCli copsClient sconfig sdebugCli = do
   side <- getsClient sside
   cmd1 <- receiveResponse
   case (restored, cmd1) of
-    (True, RespUpdAtomic _ UpdResume{}) -> return ()
+    (True, RespUpdAtomic s UpdResume{}) -> do
+      let sCops = updateCOps (const cops) s
+      handleResponse $ RespUpdAtomic sCops $ UpdResumeServer sCops
     (True, RespUpdAtomic _ UpdRestart{}) ->
       when hasUI $ msgAdd "Ignoring an old savefile and starting a new game."
     (False, RespUpdAtomic _ UpdResume{}) ->
       error $ "Savefile of client " ++ show side ++ " not usable."
               `showFailure` ()
     (False, RespUpdAtomic _ UpdRestart{}) -> return ()
-    (True, RespUpdAtomicNoState UpdResume{}) -> return ()
+    (True, RespUpdAtomicNoState UpdResume{}) -> undefined
     (True, RespUpdAtomicNoState UpdRestart{}) ->
       when hasUI $ msgAdd "Ignoring an old savefile and starting a new game."
     (False, RespUpdAtomicNoState UpdResume{}) ->

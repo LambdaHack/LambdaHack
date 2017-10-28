@@ -39,7 +39,7 @@ data CliState = CliState
   , cliClient  :: StateClient      -- ^ current client state
   , cliSession :: Maybe SessionUI  -- ^ UI state, empty for AI clients
   , cliDict    :: ChanServer       -- ^ this client connection information
-  , cliToSave  :: Save.ChanSave (State, StateClient, Maybe SessionUI)
+  , cliToSave  :: Save.ChanSave (StateClient, Maybe SessionUI)
                                    -- ^ connection to the save thread
   }
   deriving Generic
@@ -71,10 +71,9 @@ instance MonadClient CliImplementation where
 instance MonadClientSetup CliImplementation where
   saveClient = CliImplementation $ do
     toSave <- gets cliToSave
-    s <- gets cliState
     cli <- gets cliClient
     msess <- gets cliSession
-    IO.liftIO $ Save.saveToChan toSave (s, cli, msess)
+    IO.liftIO $ Save.saveToChan toSave (cli, msess)
   restartClient  = CliImplementation $ state $ \cliS ->
     case cliSession cliS of
       Just sess ->
@@ -131,7 +130,7 @@ executorCli :: KeyKind -> Config -> DebugModeCli
             -> ChanServer
             -> IO ()
 executorCli copsClient sconfig sdebugMode cops cliSession fid cliDict =
-  let stateToFileName (_, cli, _) =
+  let stateToFileName (cli, _) =
         ssavePrefixCli (sdebugCli cli) <> Save.saveNameCli cops (sside cli)
       totalState cliToSave = CliState
         { cliState = emptyState cops
