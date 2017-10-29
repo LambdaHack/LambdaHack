@@ -2,9 +2,8 @@
 -- | Common client monad operations.
 module Game.LambdaHack.Client.CommonM
   ( getPerFid, aidTgtToPos, makeLine
-  , maxActorSkillsClient, currentSkillsClient
-  , pickWeaponClient, updateSalter, createSalter
-  , aspectRecordFromItemClient, aspectRecordFromActorClient, createSactorAspect
+  , maxActorSkillsClient, currentSkillsClient, pickWeaponClient
+  , updateSalter, createSalter
   ) where
 
 import Prelude ()
@@ -159,41 +158,3 @@ createSalter s =
       f Level{ltile} =
         PointArray.mapA (toEnum . Tile.alterMinWalk coTileSpeedup) ltile
   in EM.map f $ sdungeon s
-
-aspectRecordFromItem :: DiscoveryKind -> DiscoveryAspect -> ItemId -> Item
-                     -> AspectRecord
-aspectRecordFromItem disco discoAspect iid itemBase =
-  case EM.lookup iid discoAspect of
-    Just ar -> ar
-    Nothing -> case EM.lookup (jkindIx itemBase) disco of
-        Just KindMean{kmMean} -> kmMean
-        Nothing -> emptyAspectRecord
-
-aspectRecordFromItemClient :: MonadClient m => ItemId -> Item -> m AspectRecord
-aspectRecordFromItemClient iid itemBase = do
-  disco <- getsState sdiscoKind
-  discoAspect <- getsState sdiscoAspect
-  return $! aspectRecordFromItem disco discoAspect iid itemBase
-
-aspectRecordFromActorState :: Actor -> State -> AspectRecord
-aspectRecordFromActorState b s =
-  let processIid (iid, (k, _)) =
-        let itemBase = getItemBody iid s
-            ar = aspectRecordFromItem (sdiscoKind s) (sdiscoAspect s)
-                                      iid itemBase
-        in (ar, k)
-      processBag ass = sumAspectRecord $ map processIid ass
-  in processBag $ EM.assocs (borgan b) ++ EM.assocs (beqp b)
-
-aspectRecordFromActorClient :: MonadClient m
-                            => Actor -> [(ItemId, Item)] -> m AspectRecord
-aspectRecordFromActorClient b ais = do
-  s <- getState
-  let f (iid, itemBase) = EM.insert iid itemBase
-      sAis = updateItemD (\itemD -> foldr f itemD ais) s
-  return $! aspectRecordFromActorState b sAis
-
-createSactorAspect :: MonadClient m => State -> m ActorAspect
-createSactorAspect s = do
-  let f b = aspectRecordFromActorState b s
-  return $! EM.map f $ sactorD s

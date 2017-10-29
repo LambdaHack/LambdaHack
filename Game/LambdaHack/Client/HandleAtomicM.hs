@@ -195,9 +195,10 @@ cmdAtomicSemCli oldState cmd = case cmd of
                   , scondInMelee = EM.map (const Nothing) (sdungeon s)
                   , svictories
                   , sdebugCli }
-    modifyClient $ \cli1 -> cli1 {salter = createSalter s}
+    salter <- getsState createSalter
+    modifyClient $ \cli1 -> cli1 {salter}
     -- Currently always void, because no actors yet:
-    sactorAspect <- createSactorAspect s
+    sactorAspect <- getsState actorAspectInDungeon
     modifyClient $ \cli1 -> cli1 {sactorAspect}
     restartClient
   UpdResume _fid sfperNew -> do
@@ -206,9 +207,9 @@ cmdAtomicSemCli oldState cmd = case cmd of
     let !_A = assert (sfperNew == sfperOld `blame` (sfperNew, sfperOld)) ()
 #endif
     modifyClient $ \cli -> cli {sfper=sfperNew}
-    s <- getState
-    modifyClient $ \cli -> cli {salter = createSalter s}
-    sactorAspect <- createSactorAspect s
+    salter <- getsState createSalter
+    modifyClient $ \cli -> cli {salter}
+    sactorAspect <- getsState $ actorAspectInDungeon
     modifyClient $ \cli -> cli {sactorAspect}
   UpdKillExit _fid -> killExit
   UpdWriteSave -> saveClient
@@ -235,7 +236,7 @@ createActor aid b ais = do
           TgtAndPath (TEnemy a newPermit) NoPath
         _ -> tap
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
-  aspectRecord <- aspectRecordFromActorClient b ais
+  aspectRecord <- getsState $ aspectRecordFromActor b
   let f = EM.insert aid aspectRecord
   modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
   mapM_ (uncurry addItemToDiscoBenefit) ais
@@ -265,7 +266,7 @@ destroyActor aid b destroy = do
 
 addItemToActor :: MonadClient m => ItemId -> Item -> Int -> ActorId -> m ()
 addItemToActor iid itemBase k aid = do
-  arItem <- aspectRecordFromItemClient iid itemBase
+  arItem <- getsState $ aspectRecordFromItem iid itemBase
   let g arActor = sumAspectRecord [(arActor, 1), (arItem, k)]
       f = EM.adjust g aid
   modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
@@ -337,15 +338,13 @@ discoverKind _c iid ik = do
   -- the iid looked up, e.g., if it wasn't in old discoKind, but is in new,
   -- and then aspect record updated, so it's simpler and not much more
   -- expensive to generate new sactorAspect. Optimize only after profiling.
-  s <- getState
-  sactorAspect <- createSactorAspect s
+  sactorAspect <- getsState actorAspectInDungeon
   modifyClient $ \cli -> cli {sactorAspect}
 
 coverKind :: MonadClient m => Container -> ItemId -> Kind.Id ItemKind -> m ()
 coverKind _c _iid _ik = do
   -- For now, undoing @sdiscoBenefit@ is too much work.
-  s <- getState
-  sactorAspect <- createSactorAspect s
+  sactorAspect <- getsState actorAspectInDungeon
   modifyClient $ \cli -> cli {sactorAspect}
 
 discoverSeed :: MonadClient m => Container -> ItemId -> ItemSeed -> m ()
@@ -368,15 +367,13 @@ discoverSeed _c iid seed = do
       benefit = totalUsefulness cops fact (IK.ieffects kind) aspects item
   modifyClient $ \cli ->
     cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
-  s <- getState
-  sactorAspect <- createSactorAspect s
+  sactorAspect <- getsState actorAspectInDungeon
   modifyClient $ \cli -> cli {sactorAspect}
 
 coverSeed :: MonadClient m => Container -> ItemId -> ItemSeed -> m ()
 coverSeed _c _iid _seed = do
   -- For now, undoing @sdiscoBenefit@ is too much work.
-  s <- getState
-  sactorAspect <- createSactorAspect s
+  sactorAspect <- getsState actorAspectInDungeon
   modifyClient $ \cli -> cli {sactorAspect}
 
 killExit :: MonadClient m => m ()
@@ -389,9 +386,8 @@ killExit = do
   sactorAspect <- getsClient sactorAspect
   salter <- getsClient salter
   sbfsD <- getsClient sbfsD
-  s <- getState
-  let alter = createSalter s
-  actorAspect <- createSactorAspect s
+  alter <- getsState createSalter
+  actorAspect <- getsState actorAspectInDungeon
   let f aid = do
         (canMove, alterSkill) <- condBFS aid
         bfsArr <- createBfs canMove alterSkill aid

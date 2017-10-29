@@ -41,9 +41,8 @@ import Game.LambdaHack.Server.State
 cmdAtomicSemSer :: MonadServer m => UpdAtomic -> m ()
 cmdAtomicSemSer cmd = case cmd of
   UpdCreateActor aid b _ -> do
-    discoAspect <- getsState sdiscoAspect
-    let aspectRecord = aspectRecordFromActorServer discoAspect b
-        f = EM.insert aid aspectRecord
+    aspectRecord <- getsState $ aspectRecordFromActor b
+    let f = EM.insert aid aspectRecord
     modifyServer $ \ser -> ser {sactorAspect = f $ sactorAspect ser}
     actorAspect <- getsServer sactorAspect
     -- We don't have the body in the State yet, hence no @invalidateLucidAid@.
