@@ -175,12 +175,12 @@ aspectRecordFromItemClient iid itemBase = do
   discoAspect <- getsState sdiscoAspect
   return $! aspectRecordFromItem disco discoAspect iid itemBase
 
-aspectRecordFromActorState :: DiscoveryKind -> DiscoveryAspect -> Actor -> State
-                           -> AspectRecord
-aspectRecordFromActorState disco discoAspect b s =
+aspectRecordFromActorState :: Actor -> State -> AspectRecord
+aspectRecordFromActorState b s =
   let processIid (iid, (k, _)) =
         let itemBase = getItemBody iid s
-            ar = aspectRecordFromItem disco discoAspect iid itemBase
+            ar = aspectRecordFromItem (sdiscoKind s) (sdiscoAspect s)
+                                      iid itemBase
         in (ar, k)
       processBag ass = sumAspectRecord $ map processIid ass
   in processBag $ EM.assocs (borgan b) ++ EM.assocs (beqp b)
@@ -188,16 +188,12 @@ aspectRecordFromActorState disco discoAspect b s =
 aspectRecordFromActorClient :: MonadClient m
                             => Actor -> [(ItemId, Item)] -> m AspectRecord
 aspectRecordFromActorClient b ais = do
-  disco <- getsState sdiscoKind
-  discoAspect <- getsState sdiscoAspect
   s <- getState
   let f (iid, itemBase) = EM.insert iid itemBase
       sAis = updateItemD (\itemD -> foldr f itemD ais) s
-  return $! aspectRecordFromActorState disco discoAspect b sAis
+  return $! aspectRecordFromActorState b sAis
 
 createSactorAspect :: MonadClient m => State -> m ActorAspect
 createSactorAspect s = do
-  disco <- getsState sdiscoKind
-  discoAspect <- getsState sdiscoAspect
-  let f b = aspectRecordFromActorState disco discoAspect b s
+  let f b = aspectRecordFromActorState b s
   return $! EM.map f $ sactorD s
