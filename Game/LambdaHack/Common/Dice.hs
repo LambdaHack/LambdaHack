@@ -153,9 +153,9 @@ minmaxDice :: Dice -> (Int, Int)
 minmaxDice dice1 = case dice1 of
   DiceI k -> (k, k)
   DiceD n k -> (n, n * k)
-  DiceDL n k -> (n `divUp` 2, n * k `divUp` 2)
+  DiceDL n k -> (0, n * k)  -- bottom and top level considered
   DiceZ n k -> (0, n * (k - 1))
-  DiceZL n k -> (0, n * (k - 1) `divUp` 2)
+  DiceZL n k -> (0, n * (k - 1))  -- bottom and top level considered
   DicePlus d1 d2 ->
     let (minD1, maxD1) = minmaxDice d1
         (minD2, maxD2) = minmaxDice d2
