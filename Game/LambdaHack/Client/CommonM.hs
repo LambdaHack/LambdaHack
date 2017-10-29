@@ -126,15 +126,15 @@ fullAssocsClient :: MonadClient m
                  => ActorId -> [CStore] -> m [(ItemId, ItemFull)]
 fullAssocsClient aid cstores = do
   cops <- getsState scops
-  discoKind <- getsClient sdiscoKind
-  discoAspect <- getsClient sdiscoAspect
+  discoKind <- getsState sdiscoKind
+  discoAspect <- getsState sdiscoAspect
   getsState $ fullAssocs cops discoKind discoAspect aid cstores
 
 itemToFullClient :: MonadClient m => m (ItemId -> ItemQuant -> ItemFull)
 itemToFullClient = do
   cops <- getsState scops
-  discoKind <- getsClient sdiscoKind
-  discoAspect <- getsClient sdiscoAspect
+  discoKind <- getsState sdiscoKind
+  discoAspect <- getsState sdiscoAspect
   s <- getState
   let itemToF iid = itemToFull cops discoKind discoAspect iid
                                (getItemBody iid s)
@@ -189,8 +189,8 @@ aspectRecordFromItem disco discoAspect iid itemBase =
 
 aspectRecordFromItemClient :: MonadClient m => ItemId -> Item -> m AspectRecord
 aspectRecordFromItemClient iid itemBase = do
-  disco <- getsClient sdiscoKind
-  discoAspect <- getsClient sdiscoAspect
+  disco <- getsState sdiscoKind
+  discoAspect <- getsState sdiscoAspect
   return $! aspectRecordFromItem disco discoAspect iid itemBase
 
 aspectRecordFromActorState :: DiscoveryKind -> DiscoveryAspect -> Actor -> State
@@ -206,8 +206,8 @@ aspectRecordFromActorState disco discoAspect b s =
 aspectRecordFromActorClient :: MonadClient m
                             => Actor -> [(ItemId, Item)] -> m AspectRecord
 aspectRecordFromActorClient b ais = do
-  disco <- getsClient sdiscoKind
-  discoAspect <- getsClient sdiscoAspect
+  disco <- getsState sdiscoKind
+  discoAspect <- getsState sdiscoAspect
   s <- getState
   let f (iid, itemBase) = EM.insert iid itemBase
       sAis = updateItemD (\itemD -> foldr f itemD ais) s
@@ -215,7 +215,7 @@ aspectRecordFromActorClient b ais = do
 
 createSactorAspect :: MonadClient m => State -> m ActorAspect
 createSactorAspect s = do
-  disco <- getsClient sdiscoKind
-  discoAspect <- getsClient sdiscoAspect
+  disco <- getsState sdiscoKind
+  discoAspect <- getsState sdiscoAspect
   let f b = aspectRecordFromActorState disco discoAspect b s
   return $! EM.map f $ sactorD s

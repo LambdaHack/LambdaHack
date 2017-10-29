@@ -103,7 +103,7 @@ data UpdAtomic =
   | UpdDiscoverSeed Container ItemId ItemSeed
   | UpdCoverSeed Container ItemId ItemSeed
   | UpdPerception LevelId Perception Perception
-  | UpdRestart FactionId DiscoveryKind PerLid State Challenge DebugModeCli
+  | UpdRestart FactionId PerLid State Challenge DebugModeCli
   | UpdRestartServer State
   | UpdResume FactionId PerLid
   | UpdResumeServer State

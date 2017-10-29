@@ -3,11 +3,11 @@ module Game.LambdaHack.Common.State
   ( -- * Basic game state, local or global
     State
     -- * State components
-  , sdungeon, stotalDepth, sactorD, sitemD, sfactionD, stime, scops, shigh, sgameModeId
+  , sdungeon, stotalDepth, sactorD, sitemD, sfactionD, stime, scops, shigh, sgameModeId, sdiscoKind, sdiscoAspect
     -- * State operations
   , defStateGlobal, emptyState, localFromGlobal
   , updateDungeon, updateDepth, updateActorD, updateItemD
-  , updateFactionD, updateTime, updateCOps
+  , updateFactionD, updateTime, updateCOps, updateDiscoKind, updateDiscoAspect
   ) where
 
 import Prelude ()
@@ -34,15 +34,17 @@ import Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 -- in the client copies of the state. Clients never directly change
 -- their @State@, but apply atomic actions sent by the server to do so.
 data State = State
-  { _sdungeon    :: Dungeon      -- ^ remembered dungeon
-  , _stotalDepth :: AbsDepth     -- ^ absolute dungeon depth, for item creation
-  , _sactorD     :: ActorDict    -- ^ remembered actors in the dungeon
-  , _sitemD      :: ItemDict     -- ^ remembered items in the dungeon
-  , _sfactionD   :: FactionDict  -- ^ remembered sides still in game
-  , _stime       :: Time         -- ^ global game time, for UI display only
-  , _scops       :: ~Kind.COps   -- ^ remembered content
-  , _shigh       :: HighScore.ScoreDict  -- ^ high score table
-  , _sgameModeId :: Kind.Id ModeKind     -- ^ current game mode
+  { _sdungeon     :: Dungeon      -- ^ remembered dungeon
+  , _stotalDepth  :: AbsDepth     -- ^ absolute dungeon depth, for item creation
+  , _sactorD      :: ActorDict    -- ^ remembered actors in the dungeon
+  , _sitemD       :: ItemDict     -- ^ remembered items in the dungeon
+  , _sfactionD    :: FactionDict  -- ^ remembered sides still in game
+  , _stime        :: Time         -- ^ global game time, for UI display only
+  , _scops        :: ~Kind.COps   -- ^ remembered content
+  , _shigh        :: HighScore.ScoreDict  -- ^ high score table
+  , _sgameModeId  :: Kind.Id ModeKind     -- ^ current game mode
+  , _sdiscoKind   :: DiscoveryKind     -- ^ item kind discoveries data
+  , _sdiscoAspect :: DiscoveryAspect   -- ^ item aspect data
   }
   deriving (Show, Eq)
 
@@ -92,6 +94,8 @@ defStateGlobal _sdungeon _stotalDepth _sfactionD _scops _shigh _sgameModeId =
     { _sactorD = EM.empty
     , _sitemD = EM.empty
     , _stime = timeZero
+    , _sdiscoKind = EM.empty
+    , _sdiscoAspect = EM.empty
     , ..
     }
 
@@ -108,6 +112,8 @@ emptyState _scops =
     , _scops
     , _shigh = HighScore.empty
     , _sgameModeId = minBound  -- the initial value is unused
+    , _sdiscoKind = EM.empty
+    , _sdiscoAspect = EM.empty
     }
 
 -- | Local state created by removing secret information from global
@@ -151,6 +157,12 @@ updateTime f s = s {_stime = f (_stime s)}
 updateCOps :: (Kind.COps -> Kind.COps) -> State -> State
 updateCOps f s = s {_scops = f (_scops s)}
 
+updateDiscoKind :: (DiscoveryKind -> DiscoveryKind) -> State -> State
+updateDiscoKind f s = s {_sdiscoKind = f (_sdiscoKind s)}
+
+updateDiscoAspect :: (DiscoveryAspect -> DiscoveryAspect) -> State -> State
+updateDiscoAspect f s = s {_sdiscoAspect = f (_sdiscoAspect s)}
+
 sdungeon :: State -> Dungeon
 sdungeon = _sdungeon
 
@@ -178,6 +190,12 @@ shigh = _shigh
 sgameModeId :: State -> Kind.Id ModeKind
 sgameModeId = _sgameModeId
 
+sdiscoKind :: State -> DiscoveryKind
+sdiscoKind = _sdiscoKind
+
+sdiscoAspect :: State -> DiscoveryAspect
+sdiscoAspect = _sdiscoAspect
+
 instance Binary State where
   put State{..} = do
     put _sdungeon
@@ -188,6 +206,8 @@ instance Binary State where
     put _stime
     put _shigh
     put _sgameModeId
+    put _sdiscoKind
+    put _sdiscoAspect
   get = do
     _sdungeon <- get
     _stotalDepth <- get
@@ -197,5 +217,7 @@ instance Binary State where
     _stime <- get
     _shigh <- get
     _sgameModeId <- get
+    _sdiscoKind <- get
+    _sdiscoAspect <- get
     let _scops = error $ "overwritten by recreated cops" `showFailure` ()
     return $! State{..}

@@ -72,10 +72,10 @@ cmdAtomicFilterCli cmd = case cmd of
     case EM.lookup iid itemD of
       Nothing -> return []
       Just item -> do
-        discoKind <- getsClient sdiscoKind
+        discoKind <- getsState sdiscoKind
         if jkindIx item `EM.member` discoKind
           then do
-            discoAspect <- getsClient sdiscoAspect
+            discoAspect <- getsState sdiscoAspect
             if iid `EM.member` discoAspect
               then return []
               else return [UpdDiscoverSeed c iid seed]
@@ -85,11 +85,11 @@ cmdAtomicFilterCli cmd = case cmd of
     case EM.lookup iid itemD of
       Nothing -> return []
       Just item -> do
-        discoKind <- getsClient sdiscoKind
+        discoKind <- getsState sdiscoKind
         if jkindIx item `EM.notMember` discoKind
           then return []
           else do
-            discoAspect <- getsClient sdiscoAspect
+            discoAspect <- getsState sdiscoAspect
             if iid `EM.notMember` discoAspect
               then return [cmd]
               else return [UpdCoverKind c iid ik]
@@ -98,7 +98,7 @@ cmdAtomicFilterCli cmd = case cmd of
     case EM.lookup iid itemD of
       Nothing -> return []
       Just item -> do
-        discoKind <- getsClient sdiscoKind
+        discoKind <- getsState sdiscoKind
         if jkindIx item `EM.notMember` discoKind
         then return []
         else return [cmd]
@@ -107,7 +107,7 @@ cmdAtomicFilterCli cmd = case cmd of
     case EM.lookup iid itemD of
       Nothing -> return []
       Just item -> do
-        discoKind <- getsClient sdiscoKind
+        discoKind <- getsState sdiscoKind
         if jkindIx item `EM.notMember` discoKind
         then return []
         else return [cmd]
@@ -116,11 +116,11 @@ cmdAtomicFilterCli cmd = case cmd of
     case EM.lookup iid itemD of
       Nothing -> return []
       Just item -> do
-        discoKind <- getsClient sdiscoKind
+        discoKind <- getsState sdiscoKind
         if jkindIx item `EM.notMember` discoKind
         then return []
         else do
-          discoAspect <- getsClient sdiscoAspect
+          discoAspect <- getsState sdiscoAspect
           if iid `EM.member` discoAspect
             then return []
             else return [cmd]
@@ -129,11 +129,11 @@ cmdAtomicFilterCli cmd = case cmd of
     case EM.lookup iid itemD of
       Nothing -> return []
       Just item -> do
-        discoKind <- getsClient sdiscoKind
+        discoKind <- getsState sdiscoKind
         if jkindIx item `EM.notMember` discoKind
         then return []
         else do
-          discoAspect <- getsClient sdiscoAspect
+          discoAspect <- getsState sdiscoAspect
           if iid `EM.notMember` discoAspect
             then return []
             else return [cmd]
@@ -245,7 +245,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdDiscoverSeed c iid seed -> discoverSeed c iid seed
   UpdCoverSeed c iid seed -> coverSeed c iid seed
   UpdPerception lid outPer inPer -> perception lid outPer inPer
-  UpdRestart side sdiscoKind sfper s scurChal sdebugCli -> do
+  UpdRestart side sfper s scurChal sdebugCli -> do
     Kind.COps{comode=Kind.Ops{ofoldlGroup'}} <- getsState scops
     snxtChal <- getsClient snxtChal
     svictories <- getsClient svictories
@@ -257,8 +257,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
           Just cm -> fromMaybe 0 (M.lookup snxtChal cm)
         (snxtScenario, _) = minimumBy (comparing g) modes
         cli = emptyStateClient side
-    putClient cli { sdiscoKind
-                  , sfper
+    putClient cli { sfper
                   -- , sundo = [UpdAtomic cmd]
                   , scurChal
                   , snxtChal
@@ -348,7 +347,7 @@ addItemToDiscoBenefit iid item = do
   case EM.lookup iid discoBenefit of
     Just{} -> return ()  -- already there
     Nothing -> do
-      discoKind <- getsClient sdiscoKind
+      discoKind <- getsState sdiscoKind
       case EM.lookup (jkindIx item) discoKind of
         Nothing -> return ()
         Just KindMean{..} -> do  -- possible, if the kind sent in @UpdRestart@
@@ -435,7 +434,7 @@ discoverSeed c iid seed = do
   invalidateBfsAll
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  discoKind <- getsClient sdiscoKind
+  discoKind <- getsState sdiscoKind
   item <- getsState $ getItemBody iid
   totalDepth <- getsState stotalDepth
   case EM.lookup (jkindIx item) discoKind of

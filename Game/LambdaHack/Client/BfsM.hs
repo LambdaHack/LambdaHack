@@ -293,7 +293,7 @@ embedBenefit fleeVia aid pbags = do
   unexploredTrue <- unexploredDepth True (blid b)
   unexploredFalse <- unexploredDepth False (blid b)
   condEnoughGear <- condEnoughGearM aid
-  discoKind <- getsClient sdiscoKind
+  discoKind <- getsState sdiscoKind
   discoBenefit <- getsClient sdiscoBenefit
   s <- getState
   let alterMinSkill p = Tile.alterMinSkill coTileSpeedup $ lvl `at` p

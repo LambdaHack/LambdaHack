@@ -53,8 +53,6 @@ data StateClient = StateClient
                                    -- ^ pathfinding distances for our actors
                                    --   and paths to their targets, if any
   , sundo         :: [CmdAtomic]   -- ^ atomic commands performed to date
-  , sdiscoKind    :: DiscoveryKind     -- ^ remembered item discoveries
-  , sdiscoAspect  :: DiscoveryAspect   -- ^ remembered aspects of items
   , sdiscoBenefit :: DiscoveryBenefit  -- ^ remembered AI benefits of items
   , sactorAspect  :: ActorAspect   -- ^ best known actor aspect data
   , sfper         :: PerLid        -- ^ faction perception indexed by levels
@@ -100,8 +98,6 @@ emptyStateClient _sside =
     , sexplored = ES.empty
     , sbfsD = EM.empty
     , sundo = []
-    , sdiscoKind = EM.empty
-    , sdiscoAspect = EM.empty
     , sdiscoBenefit = EM.empty
     , sactorAspect = EM.empty
     , sfper = EM.empty
@@ -154,8 +150,6 @@ instance Binary StateClient where
     put stargetD
     put sexplored
     put sundo
-    put sdiscoKind
-    put sdiscoAspect
     put sdiscoBenefit
     put (show srandom)
     put _sleader
@@ -175,8 +169,6 @@ instance Binary StateClient where
     stargetD <- get
     sexplored <- get
     sundo <- get
-    sdiscoKind <- get
-    sdiscoAspect <- get
     sdiscoBenefit <- get
     g <- get
     _sleader <- get
