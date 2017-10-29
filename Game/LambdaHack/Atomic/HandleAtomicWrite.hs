@@ -378,10 +378,7 @@ updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
   -- and it suddenly changes into another tile,
   -- which at the same time becomes visible (e.g., an open door).
   let t = lvl `at` p
-      adj ts | t == toTile =
-        atomicFail $ "tile already altered"
-                     `showFailure` (lid, p, fromTile, toTile)
-             | otherwise =
+      adj ts =
         assert (t == fromTile || t == Tile.hideAs cotile fromTile
                 `blame` "unexpected altered tile kind"
                 `swith` (lid, p, fromTile, toTile, t))
@@ -399,24 +396,28 @@ updAlterExplorable lid delta = assert (delta /= 0) $
 
 -- Notice previously invisible tiles. This is similar to @UpdSpotActor@,
 -- but done in bulk, because it often involves dozens of tiles per move.
--- We don't check that the tiles at the positions in question are unknown
--- to save computation, especially for clients that remember tiles
--- at previously seen positions. Similarly, when updating the @lseen@
--- field we don't assume the tiles were unknown previously.
+-- We don't check that the tiles at the positions in question are unknown,
+-- because clients remember tiles at previously seen positions
+-- instead of marking them unknown as soon as they get out of view.
+-- Similarly, when updating the @lseen@ field we don't assume
+-- the tiles were unknown previously.
 updSpotTile :: MonadStateWrite m
             => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 updSpotTile lid ts = assert (not $ null ts) $ do
   Kind.COps{coTileSpeedup} <- getsState scops
-  Level{ltile} <- getLevel lid
-  let adj tileMap = tileMap PointArray.// ts
-  updateLevel lid $ updateTile adj
+  lvlInitial <- getLevel lid
   let f (p, t2) = do
-        let t1 = ltile PointArray.! p
-        case (Tile.isExplorable coTileSpeedup t1, Tile.isExplorable coTileSpeedup t2) of
+        let t1 = lvlInitial `at` p
+        case ( Tile.isExplorable coTileSpeedup t1
+             , Tile.isExplorable coTileSpeedup t2 ) of
           (False, True) -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl+1}
           (True, False) -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl-1}
           _ -> return ()
-  mapM_ f ts
+        return $ t1 == t2
+  bs <- mapM f ts
+  when (and bs) $ atomicFail "all tiles already spotted"
+  let adj tileMap = tileMap PointArray.// ts
+  updateLevel lid $ updateTile adj
 
 -- Stop noticing previously visible tiles. Unlike @updSpotActor@, it verifies
 -- the state of the tiles before changing them.
