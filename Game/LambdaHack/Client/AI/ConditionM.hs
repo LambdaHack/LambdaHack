@@ -186,7 +186,7 @@ benAvailableItems :: MonadClient m
                   => ActorId -> [CStore]
                   -> m [(Maybe Benefit, CStore, ItemId, ItemFull)]
 benAvailableItems aid cstores = do
-  itemToF <- itemToFullClient
+  itemToF <- getsState $ itemToFull
   b <- getsState $ getActorBody aid
   discoBenefit <- getsClient sdiscoBenefit
   s <- getState

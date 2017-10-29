@@ -16,7 +16,6 @@ import GHC.Exts (inline)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.ActorUI
@@ -443,7 +442,7 @@ itemVerbMU :: MonadClientUI m
 itemVerbMU iid kit@(k, _) verb c = assert (k > 0) $ do
   lid <- getsState $ lidFromC c
   localTime <- getsState $ getLocalTime lid
-  itemToF <- itemToFullClient
+  itemToF <- getsState $ itemToFull
   side <- getsClient sside
   factionD <- getsState sfactionD
   let subject = partItemWs side factionD
@@ -467,7 +466,7 @@ itemAidVerbMU aid verb iid ek cstore = do
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (aid, verb, iid, cstore)
     Just kit@(k, _) -> do
-      itemToF <- itemToFullClient
+      itemToF <- getsState $ itemToFull
       let lid = blid body
       localTime <- getsState $ getLocalTime lid
       subject <- partAidLeader aid
@@ -755,7 +754,7 @@ quitFactionUI fid toSt = do
             sli <- overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] io
             return (bag, sli, tot)
         localTime <- getsState $ getLocalTime arena
-        itemToF <- itemToFullClient
+        itemToF <- getsState $ itemToFull
         ItemSlots lSlots _ <- getsSession sslots
         let keyOfEKM (Left km) = km
             keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
@@ -818,7 +817,7 @@ discover c oldState iid = do
   discoKind <- getsState sdiscoKind
   discoAspect <- getsState sdiscoAspect
   localTime <- getsState $ getLocalTime lid
-  itemToF <- itemToFullClient
+  itemToF <- getsState $ itemToFull
   bag <- getsState $ getContainerBag c
   side <- getsClient sside
   factionD <- getsState sfactionD
@@ -972,7 +971,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.DropItem{} -> actorVerbMU aid bUI "be stripped"
         IK.PolyItem -> do
           localTime <- getsState $ getLocalTime $ blid b
-          allAssocs <- fullAssocsClient aid [CGround]
+          allAssocs <- getsState $ fullAssocs aid [CGround]
           case allAssocs of
             [] -> return ()  -- invisible items?
             (_, ItemFull{..}) : _ -> do
@@ -987,7 +986,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                 [ MU.SubjectVerbSg subject verb
                 , "the", secretName, secretAEText, store ]
         IK.Identify -> do
-          allAssocs <- fullAssocsClient aid [CGround]
+          allAssocs <- getsState $ fullAssocs aid [CGround]
           case allAssocs of
             [] -> return ()  -- invisible items?
             (_, ItemFull{..}) : _ -> do
@@ -1121,7 +1120,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
     aidPhrase <- partActorLeader aid bUI
     factionD <- getsState sfactionD
     localTime <- getsState $ getLocalTime (blid b)
-    itemToF <- itemToFullClient
+    itemToF <- getsState $ itemToFull
     let itemFull = itemToF iid (1, [])
         (_, _, name, stats) =
           partItem (bfid b) factionD cstore localTime itemFull
@@ -1149,7 +1148,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
   (ps, hurtMult) <-
    if sourceSeen then do
     hurtMult <- getsState $ armorHurtBonus actorAspect source target
-    itemToF <- itemToFullClient
+    itemToF <- getsState $ itemToFull
     sb <- getsState $ getActorBody source
     sbUI <- getsSession $ getActorUI source
     spart <- partActorLeader source sbUI

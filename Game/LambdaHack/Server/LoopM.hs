@@ -45,7 +45,6 @@ import Game.LambdaHack.Server.EndM
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.HandleEffectM
 import Game.LambdaHack.Server.HandleRequestM
-import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.PeriodicM
 import Game.LambdaHack.Server.ProtocolM
@@ -279,7 +278,7 @@ applyPeriodicLevel = do
         case iid `EM.lookup` bag of
           Nothing -> return ()  -- item dropped
           Just kit -> do
-            itemToF <- itemToFullServer
+            itemToF <- getsState $ itemToFull
             let itemFull = itemToF iid kit
             case itemDisco itemFull of
               Just ItemDisco {itemKind=IK.ItemKind{IK.ieffects}} ->

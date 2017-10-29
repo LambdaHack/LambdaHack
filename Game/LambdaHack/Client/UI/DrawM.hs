@@ -95,7 +95,7 @@ targetDesc mtarget = do
               [] -> return $! "exact spot" <+> tshow p
               [(iid, kit@(k, _))] -> do
                 localTime <- getsState $ getLocalTime lid
-                itemToF <- itemToFullClient
+                itemToF <- getsState $ itemToFull
                 side <- getsClient sside
                 factionD <- getsState sfactionD
                 let (_, _, name, stats) =
@@ -443,7 +443,7 @@ drawFrameStatus drawnLevelId = do
               Nothing -> return $! tgtBlurb
               Just kit@(k, _) -> do
                 localTime <- getsState $ getLocalTime (blid b)
-                itemToF <- itemToFullClient
+                itemToF <- getsState $ itemToFull
                 factionD <- getsState sfactionD
                 let (_, _, name, stats) =
                       partItem (bfid b) factionD
@@ -558,7 +558,7 @@ drawLeaderDamage width = do
   let addColor = map (Color.attrChar2ToW32 Color.BrCyan)
   stats <- case mleader of
     Just leader -> do
-      allAssocsRaw <- fullAssocsClient leader [CEqp, COrgan]
+      allAssocsRaw <- getsState $ fullAssocs leader [CEqp, COrgan]
       let allAssocs = filter (isMelee . itemBase . snd) allAssocsRaw
       actorSk <- leaderSkillsClientUI
       actorAspect <- getsClient sactorAspect

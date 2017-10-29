@@ -11,9 +11,9 @@ module Game.LambdaHack.Common.ActorState
   , nearbyFreePoints, getCarriedAssocs, getCarriedIidCStore
   , posToAidsLvl, posToAids, posToAssocs
   , getItemBody, memActor, getActorBody, getLocalTime, regenCalmDelta
-  , actorInAmbient, canDeAmbientList, actorSkills, dispEnemy, fullAssocs
-  , storeFromC, lidFromC, posFromC, aidFromC, isEscape, isStair
-  , anyFoeAdj, actorAdjacentAssocs, armorHurtBonus
+  , actorInAmbient, canDeAmbientList, actorSkills, dispEnemy
+  , itemToFull, fullAssocs, storeFromC, lidFromC, posFromC, aidFromC
+  , isEscape, isStair, anyFoeAdj, actorAdjacentAssocs, armorHurtBonus
   ) where
 
 import Prelude ()
@@ -301,13 +301,17 @@ dispEnemy source target actorMaxSk s =
              || EM.findWithDefault 0 Ability.AbMove actorMaxSk <= 0
              || hasSupport sb && hasSupport tb)  -- solo actors are flexible
 
-fullAssocs :: Kind.COps -> DiscoveryKind -> DiscoveryAspect
-           -> ActorId -> [CStore] -> State
+itemToFull :: State -> ItemId -> ItemQuant -> ItemFull
+itemToFull s iid =
+  itemToFull6 (scops s) (sdiscoKind s) (sdiscoAspect s) iid (getItemBody iid s)
+
+fullAssocs :: ActorId -> [CStore] -> State
            -> [(ItemId, ItemFull)]
-fullAssocs cops disco discoAspect aid cstores s =
+fullAssocs aid cstores s =
   let allAssocs = concatMap (\cstore -> getActorAssocsK aid cstore s) cstores
       iToFull (iid, (item, kit)) =
-        (iid, itemToFull cops disco discoAspect iid item kit)
+        (iid, itemToFull6 (scops s) (sdiscoKind s) (sdiscoAspect s)
+                          iid item kit)
   in map iToFull allAssocs
 
 storeFromC :: Container -> CStore

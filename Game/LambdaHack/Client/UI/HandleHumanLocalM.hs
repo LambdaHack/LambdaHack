@@ -739,7 +739,7 @@ doLook = do
             map (\(aid2, b2) -> (aid2, b2, sactorUI EM.! aid2)) inhabitants
       seps <- getsClient seps
       mnewEps <- makeLine False b p seps
-      itemToF <- itemToFullClient
+      itemToF <- getsState $ itemToFull
       factionD <- getsState sfactionD
       s <- getState
       let aims = isJust mnewEps

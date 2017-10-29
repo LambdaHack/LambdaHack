@@ -19,7 +19,6 @@ import Data.Ord
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.ActorUI
@@ -79,7 +78,7 @@ weaveJust (Right a) = Right a
 
 sortSlots :: MonadClientUI m => FactionId -> Maybe Actor -> m ()
 sortSlots fid mbody = do
-  itemToF <- itemToFullClient
+  itemToF <- getsState $ itemToFull
   s <- getState
   let -- If apperance the same, keep the order from before sort.
       apperance ItemFull{itemBase} =
@@ -238,7 +237,7 @@ pickLeaderWithPointer = do
 itemOverlay :: MonadClientUI m => CStore -> LevelId -> ItemBag -> m OKX
 itemOverlay store lid bag = do
   localTime <- getsState $ getLocalTime lid
-  itemToF <- itemToFullClient
+  itemToF <- getsState $ itemToFull
   ItemSlots itemSlots organSlots <- getsSession sslots
   side <- getsClient sside
   factionD <- getsState sfactionD

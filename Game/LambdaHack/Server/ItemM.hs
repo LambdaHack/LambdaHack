@@ -1,8 +1,7 @@
 -- | Server operations for items.
 module Game.LambdaHack.Server.ItemM
   ( rollItem, rollAndRegisterItem, registerItem
-  , placeItemsInDungeon, embedItemsInDungeon, fullAssocsServer
-  , itemToFullServer, mapActorCStore_
+  , placeItemsInDungeon, embedItemsInDungeon, mapActorCStore_
   ) where
 
 import Prelude ()
@@ -155,24 +154,6 @@ embedItemsInDungeon = do
   let absLid = abs . fromEnum
       fromEasyToHard = sortBy (comparing absLid `on` fst) $ EM.assocs dungeon
   mapM_ embedItems fromEasyToHard
-
-fullAssocsServer :: MonadServer m
-                 => ActorId -> [CStore] -> m [(ItemId, ItemFull)]
-fullAssocsServer aid cstores = do
-  cops <- getsState scops
-  discoKind <- getsState sdiscoKind
-  discoAspect <- getsState sdiscoAspect
-  getsState $ fullAssocs cops discoKind discoAspect aid cstores
-
-itemToFullServer :: MonadServer m => m (ItemId -> ItemQuant -> ItemFull)
-itemToFullServer = do
-  cops <- getsState scops
-  discoKind <- getsState sdiscoKind
-  discoAspect <- getsState sdiscoAspect
-  s <- getState
-  let itemToF iid =
-        itemToFull cops discoKind discoAspect iid (getItemBody iid s)
-  return itemToF
 
 -- | Mapping over actor's items from a give store.
 mapActorCStore_ :: MonadServer m

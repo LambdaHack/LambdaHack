@@ -21,7 +21,6 @@ import qualified Data.Text as T
 import Data.Tuple (swap)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.ActorUI
@@ -173,7 +172,7 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
         return $ Left $ "no items" <+> ppLegal
       else return $ Left $ showReqFailure ItemNotCalm
     haveThis@(headThisActor : _) -> do
-      itemToF <- itemToFullClient
+      itemToF <- getsState $ itemToFull
       let suitsThisActor store =
             let bag = getCStoreBag store
             in any (\(iid, kit) -> psuitFun $ itemToF iid kit) $ EM.assocs bag
@@ -216,7 +215,7 @@ getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
       allAssocs = concatMap storeAssocs (cCur : cRest)
   case (cRest, allAssocs) of
     ([], [(iid, k)]) | not askWhenLone -> do
-      itemToF <- itemToFullClient
+      itemToF <- getsState $ itemToFull
       ItemSlots itemSlots organSlots <- getsSession sslots
       let isOrgan = cCur `elem` [MStore COrgan, MLoreOrgan]
           lSlots = if isOrgan then organSlots else itemSlots
@@ -264,7 +263,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   fact <- getsState $ (EM.! bfid body) . sfactionD
   hs <- partyAfterLeader leader
   bagAll <- getsState $ \s -> accessModeBag leader s cCur
-  itemToF <- itemToFullClient
+  itemToF <- getsState $ itemToFull
   Binding{brevMap} <- getsSession sbinding
   mpsuit <- psuit  -- when throwing, this sets eps and checks xhair validity
   psuitFun <- case mpsuit of

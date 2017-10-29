@@ -11,7 +11,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Config
@@ -57,7 +56,7 @@ lookAt :: MonadClientUI m
        -> m Text
 lookAt detailed tilePrefix canSee pos aid msg = do
   Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
-  itemToF <- itemToFullClient
+  itemToF <- getsState $ itemToFull
   b <- getsState $ getActorBody aid
   lidV <- viewedLevelUI
   lvl <- getLevel lidV

@@ -341,9 +341,9 @@ equipItems aid = do
   actorAspect <- getsClient sactorAspect
   let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough body ar
-  eqpAssocs <- fullAssocsClient aid [CEqp]
-  invAssocs <- fullAssocsClient aid [CInv]
-  shaAssocs <- fullAssocsClient aid [CSha]
+  eqpAssocs <- getsState $ fullAssocs aid [CEqp]
+  invAssocs <- getsState $ fullAssocs aid [CInv]
+  shaAssocs <- getsState $ fullAssocs aid [CSha]
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   discoBenefit <- getsClient sdiscoBenefit
@@ -404,7 +404,7 @@ yieldUnneeded aid = do
   actorAspect <- getsClient sactorAspect
   let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough body ar
-  eqpAssocs <- fullAssocsClient aid [CEqp]
+  eqpAssocs <- getsState $ fullAssocs aid [CEqp]
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   discoBenefit <- getsClient sdiscoBenefit
@@ -442,9 +442,9 @@ unEquipItems aid = do
   actorAspect <- getsClient sactorAspect
   let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough body ar
-  eqpAssocs <- fullAssocsClient aid [CEqp]
-  invAssocs <- fullAssocsClient aid [CInv]
-  shaAssocs <- fullAssocsClient aid [CSha]
+  eqpAssocs <- getsState $ fullAssocs aid [CEqp]
+  invAssocs <- getsState $ fullAssocs aid [CInv]
+  shaAssocs <- getsState $ fullAssocs aid [CSha]
   discoBenefit <- getsClient sdiscoBenefit
   let improve :: CStore -> ( IK.EqpSlot
                            , ( [(Int, (ItemId, ItemFull))]

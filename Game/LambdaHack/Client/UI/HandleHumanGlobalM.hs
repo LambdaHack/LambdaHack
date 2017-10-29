@@ -593,7 +593,7 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
         Nothing ->  -- the case of old selection or selection from another actor
           moveItemHuman cLegalRaw destCStore mverb auto
         Just (k, it) -> assert (k > 0) $ do
-          itemToF <- itemToFullClient
+          itemToF <- getsState $ itemToFull
           let eqpFree = eqpFreeN b
               kToPick | destCStore == CEqp = min eqpFree k
                       | otherwise = k
@@ -741,7 +741,7 @@ projectHuman ts = do
       case iid `EM.lookup` bag of
         Nothing -> failWith "no item to fling"
         Just kit -> do
-          itemToF <- itemToFullClient
+          itemToF <- getsState $ itemToFull
           let i = (fromCStore, (iid, itemToF iid kit))
           projectItem ts i
     Nothing -> failWith "no item to fling"
@@ -788,7 +788,7 @@ applyHuman ts = do
       case iid `EM.lookup` bag of
         Nothing -> failWith "no item to apply"
         Just kit -> do
-          itemToF <- itemToFullClient
+          itemToF <- getsState $ itemToFull
           let i = (fromCStore, (iid, itemToF iid kit))
           applyItem ts i
     Nothing -> failWith "no item to apply"
@@ -1002,7 +1002,7 @@ itemMenuHuman cmdAction = do
           actorAspect <- getsClient sactorAspect
           let ar = fromMaybe (error $ "" `showFailure` leader)
                              (EM.lookup leader actorAspect)
-          itemToF <- itemToFullClient
+          itemToF <- getsState $ itemToFull
           lidV <- viewedLevelUI
           Level{lxsize, lysize} <- getLevel lidV
           localTime <- getsState $ getLocalTime (blid b)

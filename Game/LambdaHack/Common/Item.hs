@@ -12,7 +12,7 @@ module Game.LambdaHack.Common.Item
   , Benefit(..), DiscoveryBenefit
   , AspectRecord(..), emptyAspectRecord, sumAspectRecord, DiscoveryAspect
   , ItemFull(..), ItemDisco(..)
-  , itemNoDisco, itemToFull
+  , itemNoDisco, itemToFull6
     -- * Inventory management types
   , ItemTimer, ItemQuant, ItemBag, ItemDict
   ) where
@@ -173,17 +173,18 @@ itemNoDisco :: (Item, Int) -> ItemFull
 itemNoDisco (itemBase, itemK) =
   ItemFull {itemBase, itemK, itemTimer = [], itemDisco=Nothing}
 
-itemToFull :: Kind.COps -> DiscoveryKind -> DiscoveryAspect -> ItemId -> Item
-           -> ItemQuant
-           -> ItemFull
-itemToFull Kind.COps{coitem=Kind.Ops{okind}}
-           disco discoAspect iid itemBase (itemK, itemTimer) =
-  let itemDisco = case EM.lookup (jkindIx itemBase) disco of
+itemToFull6 :: Kind.COps -> DiscoveryKind -> DiscoveryAspect -> ItemId -> Item
+            -> ItemQuant
+            -> ItemFull
+itemToFull6 Kind.COps{coitem=Kind.Ops{okind}}
+           discoKind discoAspect iid itemBase (itemK, itemTimer) =
+  let itemDisco = case EM.lookup (jkindIx itemBase) discoKind of
         Nothing -> Nothing
-        Just KindMean{..} -> Just ItemDisco{ itemKindId = kmKind
-                                           , itemKind = okind kmKind
-                                           , itemAspectMean = kmMean
-                                           , itemAspect = EM.lookup iid discoAspect }
+        Just KindMean{..} ->
+          Just ItemDisco{ itemKindId = kmKind
+                        , itemKind = okind kmKind
+                        , itemAspectMean = kmMean
+                        , itemAspect = EM.lookup iid discoAspect }
   in ItemFull {..}
 
 -- | Game items in actor possesion or strewn around the dungeon.

@@ -1,8 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 -- | Server operations common to many modules.
 module Game.LambdaHack.Server.CommonM
-  ( execFailure, getPerFid
-  , revealItems, moveStores, deduceQuits, deduceKilled
+  ( execFailure, revealItems, moveStores, deduceQuits, deduceKilled
   , electLeader, supplantLeader
   , addActor, registerActor, addActorIid, projectFail, discoverIfNoEffects
   , pickWeaponServer, currentSkillsServer
@@ -65,18 +64,9 @@ execFailure aid req failureSer = do
     <> debugShow body <> "\n" <> debugShow req <> "\n" <> debugShow failureSer
   execSfxAtomic $ SfxMsgFid fid $ SfxUnexpected failureSer
 
-getPerFid :: MonadServer m => FactionId -> LevelId -> m Perception
-getPerFid fid lid = do
-  pers <- getsServer sperFid
-  let failFact = error $ "no perception for faction" `showFailure` (lid, fid)
-      fper = EM.findWithDefault failFact fid pers
-      failLvl = error $ "no perception for level" `showFailure` (lid, fid)
-      per = EM.findWithDefault failLvl lid fper
-  return $! per
-
 revealItems :: MonadServerAtomic m => Maybe FactionId -> m ()
 revealItems mfid = do
-  itemToF <- itemToFullServer
+  itemToF <- getsState $ itemToFull
   let discover aid store iid k =
         let itemFull = itemToF iid k
             c = CActor aid store
@@ -252,7 +242,7 @@ projectFail source tpxy eps iid cstore isBlast = do
       case EM.lookup iid bag of
         Nothing ->  return $ Just ProjectOutOfReach
         Just kit -> do
-          itemToF <- itemToFullServer
+          itemToF <- getsState $ itemToFull
           actorSk <- currentSkillsServer source
           actorAspect <- getsServer sactorAspect
           let ar = actorAspect EM.! source
@@ -318,7 +308,7 @@ addProjectile :: MonadServerAtomic m
               -> FactionId -> Time -> Bool
               -> m ()
 addProjectile bpos rest iid (_, it) blid bfid btime _isBlast = do
-  itemToF <- itemToFullServer
+  itemToF <- getsState $ itemToFull
   let itemFull@ItemFull{itemBase} = itemToF iid (1, take 1 it)
       (trajectory, (speed, _)) = itemTrajectory itemBase (bpos : rest)
       tweakBody b = b { bhp = oneM
@@ -434,8 +424,8 @@ discoverIfNoEffects c iid itemFull = case itemFull of
 
 pickWeaponServer :: MonadServer m => ActorId -> m (Maybe (ItemId, CStore))
 pickWeaponServer source = do
-  eqpAssocs <- fullAssocsServer source [CEqp]
-  bodyAssocs <- fullAssocsServer source [COrgan]
+  eqpAssocs <- getsState $ fullAssocs source [CEqp]
+  bodyAssocs <- getsState $ fullAssocs source [COrgan]
   actorSk <- currentSkillsServer source
   actorAspect <- getsServer sactorAspect
   sb <- getsState $ getActorBody source

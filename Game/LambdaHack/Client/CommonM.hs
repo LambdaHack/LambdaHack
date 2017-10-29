@@ -2,8 +2,8 @@
 -- | Common client monad operations.
 module Game.LambdaHack.Client.CommonM
   ( getPerFid, aidTgtToPos, makeLine
-  , maxActorSkillsClient, currentSkillsClient, fullAssocsClient
-  , itemToFullClient, pickWeaponClient, updateSalter, createSalter
+  , maxActorSkillsClient, currentSkillsClient
+  , pickWeaponClient, updateSalter, createSalter
   , aspectRecordFromItemClient, aspectRecordFromActorClient, createSactorAspect
   ) where
 
@@ -122,32 +122,14 @@ currentSkillsClient aid = do
                return $! _gleader fact
   getsState $ actorSkills mleader aid ar  -- keep it lazy
 
-fullAssocsClient :: MonadClient m
-                 => ActorId -> [CStore] -> m [(ItemId, ItemFull)]
-fullAssocsClient aid cstores = do
-  cops <- getsState scops
-  discoKind <- getsState sdiscoKind
-  discoAspect <- getsState sdiscoAspect
-  getsState $ fullAssocs cops discoKind discoAspect aid cstores
-
-itemToFullClient :: MonadClient m => m (ItemId -> ItemQuant -> ItemFull)
-itemToFullClient = do
-  cops <- getsState scops
-  discoKind <- getsState sdiscoKind
-  discoAspect <- getsState sdiscoAspect
-  s <- getState
-  let itemToF iid = itemToFull cops discoKind discoAspect iid
-                               (getItemBody iid s)
-  return itemToF
-
 -- Client has to choose the weapon based on its partial knowledge,
 -- because if server chose it, it would leak item discovery information.
 pickWeaponClient :: MonadClient m
                  => ActorId -> ActorId
                  -> m (Maybe (RequestTimed 'Ability.AbMelee))
 pickWeaponClient source target = do
-  eqpAssocs <- fullAssocsClient source [CEqp]
-  bodyAssocs <- fullAssocsClient source [COrgan]
+  eqpAssocs <- getsState $ fullAssocs source [CEqp]
+  bodyAssocs <- getsState $ fullAssocs source [COrgan]
   actorSk <- currentSkillsClient source
   actorAspect <- getsClient sactorAspect
   let allAssocsRaw = eqpAssocs ++ bodyAssocs

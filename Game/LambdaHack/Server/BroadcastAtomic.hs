@@ -31,7 +31,6 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolM
 import Game.LambdaHack.Server.State
@@ -150,7 +149,7 @@ loudSfxAtomic :: MonadServer m => Bool -> SfxAtomic -> m (Maybe SfxMsg)
 loudSfxAtomic local cmd =
   case cmd of
     SfxStrike source _ iid cstore | local -> do
-      itemToF <- itemToFullServer
+      itemToF <- getsState $ itemToFull
       sb <- getsState $ getActorBody source
       bag <- getsState $ getBodyStoreBag sb cstore
       let kit = EM.findWithDefault (1, []) iid bag

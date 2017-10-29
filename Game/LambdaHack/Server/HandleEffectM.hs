@@ -92,7 +92,7 @@ meleeEffectAndDestroy source target iid c = do
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (source, target, iid, c)
     Just kit -> do
-      itemToF <- itemToFullServer
+      itemToF <- getsState $ itemToFull
       let itemFull = itemToF iid kit
       case itemDisco itemFull of
         Just ItemDisco {itemKind=IK.ItemKind{IK.ieffects}} ->
@@ -531,7 +531,7 @@ dominateFid fid target = do
     -- Add some nostalgia for the old faction.
     void $ effectCreateItem (Just $ bfid tb) (Just 10) target COrgan
                             "impressed" IK.TimerNone
-    itemToF <- itemToFullServer
+    itemToF <- getsState $ itemToFull
     let discoverIf (iid, cstore) = do
           let itemFull = itemToF iid (1, [])
               c = CActor target cstore
@@ -994,7 +994,7 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
       isDestroyed = bproj b && (bhp b <= 0 && not durable || fragile)
                     || fragile && durable  -- hack for tmp organs
   if isDestroyed then do
-    itemToF <- itemToFullServer
+    itemToF <- getsState $ itemToFull
     let itemFull = itemToF iid kit
         effs = strengthOnSmash itemFull
     -- Activate even if effects null, to destroy the item.
@@ -1024,7 +1024,7 @@ effectPolyItem :: MonadServerAtomic m
 effectPolyItem execSfx source target = do
   sb <- getsState $ getActorBody source
   let cstore = CGround
-  allAssocs <- fullAssocsServer target [cstore]
+  allAssocs <- getsState $ fullAssocs target [cstore]
   case allAssocs of
     [] -> do
       execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxPurposeNothing cstore
@@ -1078,7 +1078,7 @@ effectIdentify execSfx iidId source target = do
       tryStore stores = case stores of
         [] -> return False
         store : rest -> do
-          allAssocs <- fullAssocsServer target [store]
+          allAssocs <- getsState $ fullAssocs target [store]
           go <- tryFull store allAssocs
           if go then return True else tryStore rest
   tryStore [CGround]
@@ -1212,7 +1212,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
       if not $ Tile.isWalkable coTileSpeedup t
         then return False  -- supported by a wall
         else do
-          weightAssocs <- fullAssocsServer target [CInv, CEqp, COrgan]
+          weightAssocs <- getsState $ fullAssocs target [CInv, CEqp, COrgan]
           let weight = sum $ map (jweight . itemBase . snd) weightAssocs
               path = bpos tb : pos : rest
               (trajectory, (speed, range)) =
@@ -1269,7 +1269,7 @@ effectDropBestWeapon :: MonadServerAtomic m
 effectDropBestWeapon execSfx target = do
   tb <- getsState $ getActorBody target
   localTime <- getsState $ getLocalTime (blid tb)
-  allAssocsRaw <- fullAssocsServer target [CEqp]
+  allAssocsRaw <- getsState $ fullAssocs target [CEqp]
   let allAssocs = filter (isMelee . itemBase . snd) allAssocsRaw
   case strongestMelee Nothing localTime allAssocs of
     (_, (iid, _)) : _ -> do

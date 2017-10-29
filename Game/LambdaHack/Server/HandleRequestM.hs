@@ -47,7 +47,6 @@ import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.CommonM
 import Game.LambdaHack.Server.HandleEffectM
-import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.PeriodicM
 import Game.LambdaHack.Server.State
@@ -472,7 +471,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
    | (fromCStore == CSha || toCStore == CSha) && not calmE ->
      execFailure aid req ItemNotCalm
    | otherwise -> do
-    itemToF <- itemToFullServer
+    itemToF <- getsState $ itemToFull
     let itemFull = itemToF iid (k, [])
     when (fromCStore == CGround) $ discoverIfNoEffects fromC iid itemFull
     upds <- generalMoveItem True iid k fromC toC
@@ -562,7 +561,7 @@ reqApply aid iid cstore = do
     case EM.lookup iid bag of
       Nothing -> execFailure aid req ApplyOutOfReach
       Just kit -> do
-        itemToF <- itemToFullServer
+        itemToF <- getsState $ itemToFull
         actorSk <- currentSkillsServer aid
         localTime <- getsState $ getLocalTime (blid b)
         let skill = EM.findWithDefault 0 Ability.AbApply actorSk
