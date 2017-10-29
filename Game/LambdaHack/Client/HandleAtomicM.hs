@@ -67,76 +67,6 @@ cmdAtomicFilterCli cmd = case cmd of
         return [ cmd  -- reveal the tile
                , UpdMsgAll msg  -- show the message
                ]
-  UpdDiscover c iid _ seed -> do
-    itemD <- getsState sitemD
-    case EM.lookup iid itemD of
-      Nothing -> return []
-      Just item -> do
-        discoKind <- getsState sdiscoKind
-        if jkindIx item `EM.member` discoKind
-          then do
-            discoAspect <- getsState sdiscoAspect
-            if iid `EM.member` discoAspect
-              then return []
-              else return [UpdDiscoverSeed c iid seed]
-          else return [cmd]
-  UpdCover c iid ik _ -> do
-    itemD <- getsState sitemD
-    case EM.lookup iid itemD of
-      Nothing -> return []
-      Just item -> do
-        discoKind <- getsState sdiscoKind
-        if jkindIx item `EM.notMember` discoKind
-          then return []
-          else do
-            discoAspect <- getsState sdiscoAspect
-            if iid `EM.notMember` discoAspect
-              then return [cmd]
-              else return [UpdCoverKind c iid ik]
-  UpdDiscoverKind _ iid _ -> do
-    itemD <- getsState sitemD
-    case EM.lookup iid itemD of
-      Nothing -> return []
-      Just item -> do
-        discoKind <- getsState sdiscoKind
-        if jkindIx item `EM.notMember` discoKind
-        then return []
-        else return [cmd]
-  UpdCoverKind _ iid _ -> do
-    itemD <- getsState sitemD
-    case EM.lookup iid itemD of
-      Nothing -> return []
-      Just item -> do
-        discoKind <- getsState sdiscoKind
-        if jkindIx item `EM.notMember` discoKind
-        then return []
-        else return [cmd]
-  UpdDiscoverSeed _ iid _ -> do
-    itemD <- getsState sitemD
-    case EM.lookup iid itemD of
-      Nothing -> return []
-      Just item -> do
-        discoKind <- getsState sdiscoKind
-        if jkindIx item `EM.notMember` discoKind
-        then return []
-        else do
-          discoAspect <- getsState sdiscoAspect
-          if iid `EM.member` discoAspect
-            then return []
-            else return [cmd]
-  UpdCoverSeed _ iid _ -> do
-    itemD <- getsState sitemD
-    case EM.lookup iid itemD of
-      Nothing -> return []
-      Just item -> do
-        discoKind <- getsState sdiscoKind
-        if jkindIx item `EM.notMember` discoKind
-        then return []
-        else do
-          discoAspect <- getsState sdiscoAspect
-          if iid `EM.notMember` discoAspect
-            then return []
-            else return [cmd]
   _ -> return [cmd]
 
 -- | Effect of atomic actions on client state is calculated
@@ -384,26 +314,25 @@ perception lid outPer inPer = do
     modifyClient $ \cli -> cli {sfper = f (sfper cli)}
 
 discoverKind :: MonadClient m => Container -> ItemId -> Kind.Id ItemKind -> m ()
-discoverKind c iid kmKind = do
+discoverKind _c iid ik = do
   cops@Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
   -- affect his actors' skills relevant to BFS.
   invalidateBfsAll
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
+  discoKind <- getsState sdiscoKind
   item <- getsState $ getItemBody iid
-  let kind = okind kmKind
-      kmMean = meanAspect kind
+  let kind = okind ik
+      KindMean{kmMean} = case EM.lookup (jkindIx item) discoKind of
+        Just km -> km
+        Nothing -> error "item kind not found"
       benefit = totalUsefulness cops fact (IK.ieffects kind) kmMean item
-      f Nothing = Just KindMean{..}
-      f Just{} = error $ "already discovered"
-                         `showFailure` (c, iid, kmKind)
   -- This adds to @sdiscoBenefit@ only @iid@ and not any other items
   -- that share the same @jkindIx@, so this is broken if such items
   -- are not fully IDed from the start.
   modifyClient $ \cli ->
-    cli { sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)
-        , sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli) }
+    cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
   -- Each actor's equipment and organs would need to be inspected,
   -- the iid looked up, e.g., if it wasn't in old discoKind, but is in new,
   -- and then aspect record updated, so it's simpler and not much more
@@ -413,21 +342,14 @@ discoverKind c iid kmKind = do
   modifyClient $ \cli -> cli {sactorAspect}
 
 coverKind :: MonadClient m => Container -> ItemId -> Kind.Id ItemKind -> m ()
-coverKind c iid ik = do
-  item <- getsState $ getItemBody iid
-  let f Nothing = error $ "already covered" `showFailure` (c, iid, ik)
-      f (Just KindMean{kmKind}) =
-        assert (ik == kmKind `blame` "unexpected covered item kind"
-                             `swith` (ik, kmKind)) Nothing
+coverKind _c _iid _ik = do
   -- For now, undoing @sdiscoBenefit@ is too much work.
-  modifyClient $ \cli ->
-    cli {sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)}
   s <- getState
   sactorAspect <- createSactorAspect s
   modifyClient $ \cli -> cli {sactorAspect}
 
 discoverSeed :: MonadClient m => Container -> ItemId -> ItemSeed -> m ()
-discoverSeed c iid seed = do
+discoverSeed _c iid seed = do
   cops@Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
   -- affect his actors' skills relevant to BFS.
@@ -437,33 +359,22 @@ discoverSeed c iid seed = do
   discoKind <- getsState sdiscoKind
   item <- getsState $ getItemBody iid
   totalDepth <- getsState stotalDepth
-  case EM.lookup (jkindIx item) discoKind of
-    Nothing -> error $ "kind not known"
-                       `showFailure` (c, iid, seed)
-    Just KindMean{kmKind} -> do
-      Level{ldepth} <- getLevel $ jlid item
-      let kind = okind kmKind
-          aspects = seedToAspect seed kind ldepth totalDepth
-          benefit = totalUsefulness cops fact (IK.ieffects kind) aspects item
-          f Nothing = Just aspects
-          f Just{} = error $ "already discovered"
-                             `showFailure` (c, iid, seed)
-  -- This adds to @sdiscoBenefit@ only @iid@ and not any other items
-  -- that share the same @jkindIx@, so this is broken if such items
-  -- are not fully IDed from the start.
-      modifyClient $ \cli ->
-        cli { sdiscoAspect = EM.alter f iid (sdiscoAspect cli)
-            , sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli) }
+  Level{ldepth} <- getLevel $ jlid item
+  let KindMean{..} = case EM.lookup (jkindIx item) discoKind of
+        Just km -> km
+        Nothing -> error "item kind not found"
+      kind = okind kmKind
+      aspects = seedToAspect seed kind ldepth totalDepth
+      benefit = totalUsefulness cops fact (IK.ieffects kind) aspects item
+  modifyClient $ \cli ->
+    cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
   s <- getState
   sactorAspect <- createSactorAspect s
   modifyClient $ \cli -> cli {sactorAspect}
 
 coverSeed :: MonadClient m => Container -> ItemId -> ItemSeed -> m ()
-coverSeed c iid seed = do
-  let f Nothing = error $ "already covered" `showFailure` (c, iid, seed)
-      f Just{} = Nothing  -- checking that old and new agree is too much work
+coverSeed _c _iid _seed = do
   -- For now, undoing @sdiscoBenefit@ is too much work.
-  modifyClient $ \cli -> cli {sdiscoAspect = EM.alter f iid (sdiscoAspect cli)}
   s <- getState
   sactorAspect <- createSactorAspect s
   modifyClient $ \cli -> cli {sactorAspect}

@@ -126,6 +126,8 @@ posUpdAtomic cmd = case cmd of
   UpdCoverKind c _ _ -> singleContainer c
   UpdDiscoverSeed c _ _ -> singleContainer c
   UpdCoverSeed c _ _ -> singleContainer c
+  UpdDiscoverServer{} -> return PosSer
+  UpdCoverServer{} -> return PosSer
   UpdPerception{} -> return PosNone
   UpdRestart fid _ _ _ _ -> return $! PosFid fid
   UpdRestartServer _ -> return PosSer

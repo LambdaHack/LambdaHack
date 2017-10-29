@@ -207,7 +207,7 @@ itemEffectDisco :: MonadServerAtomic m
                 -> [IK.Effect]
                 -> m Bool
 itemEffectDisco source target iid c recharged periodic effs = do
-  discoKind <- getsServer sdiscoKind
+  discoKind <- getsState sdiscoKind
   item <- getsState $ getItemBody iid
   case EM.lookup (jkindIx item) discoKind of
     Just KindMean{kmKind} -> do
@@ -499,7 +499,7 @@ dominateFid fid target = do
   ais <- getsState $ getCarriedAssocs tb
   actorAspect <- getsServer sactorAspect
   getItem <- getsState $ flip getItemBody
-  discoKind <- getsServer sdiscoKind
+  discoKind <- getsState sdiscoKind
   let ar = actorAspect EM.! target
       isImpression iid = case EM.lookup (jkindIx $ getItem iid) discoKind of
         Just KindMean{kmKind} ->
@@ -966,7 +966,7 @@ allGroupItems :: MonadServerAtomic m
               -> m [(ItemId, ItemQuant)]
 allGroupItems store grp target = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
-  discoKind <- getsServer sdiscoKind
+  discoKind <- getsState sdiscoKind
   b <- getsState $ getActorBody target
   let hasGroup (iid, _) = do
         item <- getsState $ getItemBody iid

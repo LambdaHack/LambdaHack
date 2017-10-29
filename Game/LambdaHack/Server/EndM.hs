@@ -59,7 +59,7 @@ endOrLoop loop restart gameExit gameSave = do
 dieSer :: MonadServerAtomic m => ActorId -> Actor -> m ()
 dieSer aid b = do
   unless (bproj b) $ do
-    discoKind <- getsServer sdiscoKind
+    discoKind <- getsState sdiscoKind
     trunk <- getsState $ getItemBody $ btrunk b
     let KindMean{kmKind} = discoKind EM.! jkindIx trunk
     execUpdAtomic $ UpdRecordKill aid kmKind 1

@@ -427,9 +427,10 @@ discoverIfNoEffects :: MonadServerAtomic m
 discoverIfNoEffects c iid itemFull = case itemFull of
   ItemFull{itemDisco=Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}}}
     | any IK.forIdEffect ieffects -> return ()  -- discover by use
-  _ -> do
+  ItemFull{itemDisco=Just ItemDisco{itemKindId}} -> do
     seed <- getsServer $ (EM.! iid) . sitemSeedD
-    execUpdAtomic $ UpdDiscoverSeed c iid seed
+    execUpdAtomic $ UpdDiscover c iid itemKindId seed
+  _ -> error "server doesn't fully know item"
 
 pickWeaponServer :: MonadServer m => ActorId -> m (Maybe (ItemId, CStore))
 pickWeaponServer source = do
@@ -464,7 +465,7 @@ currentSkillsServer aid  = do
 
 getCacheLucid :: MonadServer m => LevelId -> m FovLucid
 getCacheLucid lid = do
-  discoAspect <- getsServer sdiscoAspect
+  discoAspect <- getsState sdiscoAspect
   actorAspect <- getsServer sactorAspect
   fovClearLid <- getsServer sfovClearLid
   fovLitLid <- getsServer sfovLitLid

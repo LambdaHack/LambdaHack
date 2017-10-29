@@ -42,9 +42,9 @@ onlyRegisterItem itemKnown@(_, aspectRecord, _, _) seed = do
     Just iid -> return iid
     Nothing -> do
       icounter <- getsServer sicounter
+      execUpdAtomicSer $ UpdDiscoverServer icounter aspectRecord
       modifyServer $ \ser ->
-        ser { sdiscoAspect = EM.insert icounter aspectRecord (sdiscoAspect ser)
-            , sitemSeedD = EM.insert icounter seed (sitemSeedD ser)
+        ser { sitemSeedD = EM.insert icounter seed (sitemSeedD ser)
             , sitemRev = HM.insert itemKnown icounter (sitemRev ser)
             , sicounter = succ icounter }
       return $! icounter
@@ -87,7 +87,7 @@ rollItem :: MonadServerAtomic m
 rollItem lvlSpawned lid itemFreq = do
   cops <- getsState scops
   flavour <- getsServer sflavour
-  disco <- getsServer sdiscoKind
+  disco <- getsState sdiscoKind
   discoRev <- getsServer sdiscoKindRev
   uniqueSet <- getsServer suniqueSet
   totalDepth <- getsState stotalDepth
@@ -160,15 +160,15 @@ fullAssocsServer :: MonadServer m
                  => ActorId -> [CStore] -> m [(ItemId, ItemFull)]
 fullAssocsServer aid cstores = do
   cops <- getsState scops
-  discoKind <- getsServer sdiscoKind
-  discoAspect <- getsServer sdiscoAspect
+  discoKind <- getsState sdiscoKind
+  discoAspect <- getsState sdiscoAspect
   getsState $ fullAssocs cops discoKind discoAspect aid cstores
 
 itemToFullServer :: MonadServer m => m (ItemId -> ItemQuant -> ItemFull)
 itemToFullServer = do
   cops <- getsState scops
-  discoKind <- getsServer sdiscoKind
-  discoAspect <- getsServer sdiscoAspect
+  discoKind <- getsState sdiscoKind
+  discoAspect <- getsState sdiscoAspect
   s <- getState
   let itemToF iid =
         itemToFull cops discoKind discoAspect iid (getItemBody iid s)

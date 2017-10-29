@@ -102,6 +102,8 @@ data UpdAtomic =
   | UpdCoverKind Container ItemId (Kind.Id ItemKind)
   | UpdDiscoverSeed Container ItemId ItemSeed
   | UpdCoverSeed Container ItemId ItemSeed
+  | UpdDiscoverServer ItemId AspectRecord
+  | UpdCoverServer ItemId AspectRecord
   | UpdPerception LevelId Perception Perception
   | UpdRestart FactionId PerLid State Challenge DebugModeCli
   | UpdRestartServer State
@@ -200,6 +202,8 @@ undoUpdAtomic cmd = case cmd of
   UpdCoverKind c iid ik -> Just $ UpdDiscoverKind c iid ik
   UpdDiscoverSeed c iid seed -> Just $ UpdCoverSeed c iid seed
   UpdCoverSeed c iid seed -> Just $ UpdDiscoverSeed c iid seed
+  UpdDiscoverServer iid aspectRecord -> Just $ UpdCoverServer iid aspectRecord
+  UpdCoverServer iid aspectRecord -> Just $ UpdDiscoverServer iid aspectRecord
   UpdPerception lid outPer inPer -> Just $ UpdPerception lid inPer outPer
   UpdRestart{} -> Just cmd  -- here history ends; change direction
   UpdRestartServer{} -> Just cmd  -- here history ends; change direction

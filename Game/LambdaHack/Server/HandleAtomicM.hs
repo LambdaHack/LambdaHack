@@ -41,7 +41,7 @@ import Game.LambdaHack.Server.State
 cmdAtomicSemSer :: MonadServer m => UpdAtomic -> m ()
 cmdAtomicSemSer cmd = case cmd of
   UpdCreateActor aid b _ -> do
-    discoAspect <- getsServer sdiscoAspect
+    discoAspect <- getsState sdiscoAspect
     let aspectRecord = aspectRecordFromActorServer discoAspect b
         f = EM.insert aid aspectRecord
     modifyServer $ \ser -> ser {sactorAspect = f $ sactorAspect ser}
@@ -58,20 +58,20 @@ cmdAtomicSemSer cmd = case cmd of
       ser {sactorTime = EM.adjust (EM.adjust (EM.delete aid) (blid b)) (bfid b)
                         (sactorTime ser)}
   UpdCreateItem iid _ _ (CFloor lid _) -> do
-    discoAspect <- getsServer sdiscoAspect
+    discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
   UpdCreateItem iid _ (k, _) (CActor aid store) -> do
-    discoAspect <- getsServer sdiscoAspect
+    discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid [store]) $
       invalidateLucidAid aid
     when (store `elem` [CEqp, COrgan]) $ do
       addItemToActor iid k aid
       when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
   UpdDestroyItem iid _ _ (CFloor lid _) -> do
-    discoAspect <- getsServer sdiscoAspect
+    discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
   UpdDestroyItem iid _ (k, _) (CActor aid store) -> do
-    discoAspect <- getsServer sdiscoAspect
+    discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid [store]) $
       invalidateLucidAid aid
     when (store `elem` [CEqp, COrgan]) $ do
@@ -92,20 +92,20 @@ cmdAtomicSemSer cmd = case cmd of
       ser {sactorTime = EM.adjust (EM.adjust (EM.delete aid) (blid b)) (bfid b)
                         (sactorTime ser)}
   UpdSpotItem _ iid _ _ (CFloor lid _) -> do
-    discoAspect <- getsServer sdiscoAspect
+    discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
   UpdSpotItem _ iid _ (k, _) (CActor aid store) -> do
-    discoAspect <- getsServer sdiscoAspect
+    discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid [store]) $
       invalidateLucidAid aid
     when (store `elem` [CEqp, COrgan]) $ do
       addItemToActor iid k aid
       when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
   UpdLoseItem _ iid _ _ (CFloor lid _) -> do
-    discoAspect <- getsServer sdiscoAspect
+    discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
   UpdLoseItem _ iid _ (k, _) (CActor aid store) -> do
-    discoAspect <- getsServer sdiscoAspect
+    discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid [store]) $
       invalidateLucidAid aid
     when (store `elem` [CEqp, COrgan]) $ do
@@ -122,7 +122,7 @@ cmdAtomicSemSer cmd = case cmd of
     invalidatePerActor aid1
     invalidatePerActor aid2
   UpdMoveItem iid k aid s1 s2 -> do
-    discoAspect <- getsServer sdiscoAspect
+    discoAspect <- getsState sdiscoAspect
     let itemAffectsPer = itemAffectsPerRadius discoAspect iid
         invalidatePer = when itemAffectsPer $ reconsiderPerActor aid
         itemAffectsShine = itemAffectsShineRadius discoAspect iid [s1, s2]
@@ -166,7 +166,7 @@ invalidateArenas = modifyServer $ \ser -> ser {svalidArenas = False}
 
 addItemToActor :: MonadServer m => ItemId -> Int -> ActorId -> m ()
 addItemToActor iid k aid = do
-  discoAspect <- getsServer sdiscoAspect
+  discoAspect <- getsState sdiscoAspect
   let arItem = discoAspect EM.! iid
       g arActor = sumAspectRecord [(arActor, 1), (arItem, k)]
       f = EM.adjust g aid

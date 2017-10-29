@@ -45,9 +45,8 @@ handleResponse cmd = case cmd of
     s <- getState
     putState newState
     let handle !c = do
-          cli <- getClient
           cmdAtomicSemCli s c
-          when hasUI $ displayRespUpdAtomicUI False cli c
+          when hasUI $ displayRespUpdAtomicUI False s c
     mapM_ handle cmds
   RespUpdAtomicNoState cmdA -> do
     hasUI <- clientHasUI
@@ -57,9 +56,8 @@ handleResponse cmd = case cmd of
     s <- getState
     let handle !c = do
           -- execUpdAtomic c
-          cli <- getClient
           cmdAtomicSemCli s c
-          when hasUI $ displayRespUpdAtomicUI False cli c
+          when hasUI $ displayRespUpdAtomicUI False s c
     mapM_ handle cmds
   RespQueryAI aid -> do
     cmdC <- queryAI aid

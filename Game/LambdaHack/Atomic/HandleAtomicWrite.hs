@@ -82,12 +82,14 @@ handleUpdAtomic cmd = case cmd of
   UpdTimeItem iid c fromIt toIt -> updTimeItem iid c fromIt toIt
   UpdAgeGame lids -> updAgeGame lids
   UpdUnAgeGame lids -> updUnAgeGame lids
-  UpdDiscover{} -> return ()      -- We can't keep dicovered data in State,
-  UpdCover{} -> return ()         -- because server saves all atomic commands
-  UpdDiscoverKind{} -> return ()  -- to apply their inverses for undo,
-  UpdCoverKind{} -> return ()     -- so they would wipe out server knowledge.
-  UpdDiscoverSeed{} -> return ()
-  UpdCoverSeed{} -> return ()
+  UpdDiscover c iid ik seed -> updDiscover c iid ik seed
+  UpdCover c iid ik seed -> updCover c iid ik seed
+  UpdDiscoverKind c iid ik -> updDiscoverKind c iid ik
+  UpdCoverKind c iid ik -> updCoverKind c iid ik
+  UpdDiscoverSeed c iid seed -> updDiscoverSeed c iid seed
+  UpdCoverSeed c iid seed -> updCoverSeed c iid seed
+  UpdDiscoverServer iid aspectRecord -> updDiscoverServer iid aspectRecord
+  UpdCoverServer iid aspectRecord -> updCoverServer iid aspectRecord
   UpdPerception _ outPer inPer ->
     assert (not (nullPer outPer && nullPer inPer)) (return ())
   UpdRestart _ _ s _ _ -> updRestart s
@@ -490,6 +492,100 @@ updUnAgeGame lids = do
 ageLevel :: MonadStateWrite m => Delta Time -> LevelId -> m ()
 ageLevel delta lid =
   updateLevel lid $ \lvl -> lvl {ltime = timeShift (ltime lvl) delta}
+
+updDiscover :: MonadStateWrite m
+            => Container -> ItemId -> Kind.Id ItemKind -> ItemSeed -> m ()
+updDiscover _c iid ik seed = do
+  itemD <- getsState sitemD
+  case EM.lookup iid itemD of
+    Nothing -> atomicFail "discovered item unknown"
+    Just item -> do
+      discoKind <- getsState sdiscoKind
+      if jkindIx item `EM.member` discoKind
+      then do
+        discoAspect <- getsState sdiscoAspect
+        if iid `EM.member` discoAspect
+          then atomicFail "item already fully discovered"
+          else discoverSeed iid seed
+      else do
+        discoverKind iid ik
+        discoverSeed iid seed
+
+updCover :: Container -> ItemId -> Kind.Id ItemKind -> ItemSeed -> m ()
+updCover _c _iid _ik _seed = undefined
+
+updDiscoverKind :: MonadStateWrite m
+                => Container -> ItemId -> Kind.Id ItemKind -> m ()
+updDiscoverKind _c iid kmKind = do
+  itemD <- getsState sitemD
+  case EM.lookup iid itemD of
+    Nothing -> atomicFail "discovered item unknown"
+    Just item -> do
+      discoKind <- getsState sdiscoKind
+      if jkindIx item `EM.member` discoKind
+      then atomicFail "item kind already discovered"
+      else discoverKind iid kmKind
+
+discoverKind :: MonadStateWrite m => ItemId -> Kind.Id ItemKind -> m ()
+discoverKind iid kmKind = do
+  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  item <- getsState $ getItemBody iid
+  let kind = okind kmKind
+      kmMean = meanAspect kind
+      f Nothing = Just KindMean{..}
+      f Just{} = error $ "already discovered" `showFailure` (iid, kmKind)
+  modifyState $ updateDiscoKind $ \discoKind1 ->
+    EM.alter f (jkindIx item) discoKind1
+
+updCoverKind :: Container -> ItemId -> Kind.Id ItemKind -> m ()
+updCoverKind _c _iid _ik = undefined
+
+updDiscoverSeed :: MonadStateWrite m
+                => Container -> ItemId -> ItemSeed -> m ()
+updDiscoverSeed _c iid seed = do
+  itemD <- getsState sitemD
+  case EM.lookup iid itemD of
+    Nothing -> atomicFail "discovered item unknown"
+    Just item -> do
+      discoKind <- getsState sdiscoKind
+      if jkindIx item `EM.notMember` discoKind
+      then error "discovered item kind unknown"
+      else do
+        discoAspect <- getsState sdiscoAspect
+        if iid `EM.member` discoAspect
+        then atomicFail "item seed already discovered"
+        else discoverSeed iid seed
+
+discoverSeed :: MonadStateWrite m => ItemId -> ItemSeed -> m ()
+discoverSeed iid seed = do
+  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  item <- getsState $ getItemBody iid
+  totalDepth <- getsState stotalDepth
+  Level{ldepth} <- getLevel $ jlid item
+  discoKind <- getsState sdiscoKind
+  let KindMean{..} = case EM.lookup (jkindIx item) discoKind of
+        Just km -> km
+        Nothing -> error "discovered item kind unknown"
+      kind = okind kmKind
+      aspects = seedToAspect seed kind ldepth totalDepth
+      f Nothing = Just aspects
+      f Just{} = error $ "already discovered" `showFailure` (iid, seed)
+  modifyState $ updateDiscoAspect $ \discoAspect1 ->
+    EM.alter f iid discoAspect1
+
+updCoverSeed :: Container -> ItemId -> ItemSeed -> m ()
+updCoverSeed _c _iid _seed = undefined
+
+updDiscoverServer :: MonadStateWrite m => ItemId -> AspectRecord -> m ()
+updDiscoverServer iid aspectRecord =
+  modifyState $ updateDiscoAspect $ \discoAspect1 ->
+    EM.insert iid aspectRecord discoAspect1
+
+updCoverServer :: MonadStateWrite m => ItemId -> AspectRecord -> m ()
+updCoverServer iid aspectRecord =
+  modifyState $ updateDiscoAspect $ \discoAspect1 ->
+    assert (discoAspect1 EM.! iid == aspectRecord)
+    $ EM.delete iid discoAspect1
 
 updRestart :: MonadStateWrite m => State -> m ()
 updRestart = putState

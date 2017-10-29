@@ -50,7 +50,7 @@ import Game.LambdaHack.Server.State
 
 initPer :: MonadServer m => m ()
 initPer = do
-  discoAspect <- getsServer sdiscoAspect
+  discoAspect <- getsState sdiscoAspect
   ( sactorAspect, sfovLitLid, sfovClearLid, sfovLucidLid
    ,sperValidFid, sperCacheFid, sperFid )
     <- getsState $ perFidInDungeon discoAspect
@@ -67,15 +67,16 @@ reinitGame = do
   -- The biggest part is content, which needs to be updated
   -- at this point to keep clients in sync with server improvements.
   s <- getState
-  let defLocal | sknowMap = s
-               | otherwise = localFromGlobal s
-  factionD <- getsState sfactionD
-  modifyServer $ \ser -> ser {sclientStates = EM.map (const defLocal) factionD}
-  discoS <- getsServer sdiscoKind
-  let sdiscoKind =
+  discoS <- getsState sdiscoKind
+  let discoKindFiltered =
         let f KindMean{kmKind} = IK.Identified `elem` IK.ifeature (okind kmKind)
         in EM.filter f discoS
-      updRestart fid = UpdRestart fid sdiscoKind (pers EM.! fid) defLocal
+      defL | sknowMap = s
+           | otherwise = localFromGlobal s
+      defLocal = updateDiscoKind (const discoKindFiltered) defL
+  factionD <- getsState sfactionD
+  modifyServer $ \ser -> ser {sclientStates = EM.map (const defLocal) factionD}
+  let updRestart fid = UpdRestart fid (pers EM.! fid) defLocal
                                   scurChalSer sdebugCli
   mapWithKeyM_ (\fid _ -> execUpdAtomic $ updRestart fid) factionD
   dungeon <- getsState sdungeon
@@ -210,23 +211,23 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
                       then automatePS $ mroster mode
                       else mroster mode
         sflavour <- dungeonFlavourMap cops
-        (sdiscoKind, sdiscoKindRev) <- serverDiscos cops
+        (discoKind, sdiscoKindRev) <- serverDiscos cops
         freshDng <- DungeonGen.dungeonGen cops $ mcaves mode
         factionD <- resetFactions factionDold gameModeIdOld
                                   (cdiff curChalSer)
                                   (DungeonGen.freshTotalDepth freshDng)
                                   players
-        return ( factionD, sflavour, sdiscoKind
+        return ( factionD, sflavour, discoKind
                , sdiscoKindRev, freshDng, modeKindId )
-  let ( factionD, sflavour, sdiscoKind
+  let ( factionD, sflavour, discoKind
        ,sdiscoKindRev, DungeonGen.FreshDungeon{..}, modeKindId ) =
         St.evalState rnd dungeonSeed
       defState = defStateGlobal freshDungeon freshTotalDepth
-                                factionD cops scoreTable modeKindId
+                                factionD cops scoreTable modeKindId discoKind
       defSer = emptyStateServer { srandom
                                 , srngs }
   putServer defSer
-  modifyServer $ \ser -> ser {sdiscoKind, sdiscoKindRev, sflavour}
+  modifyServer $ \ser -> ser {sdiscoKindRev, sflavour}
   return $! defState
 
 -- Spawn initial actors. Clients should notice this, to set their leaders.

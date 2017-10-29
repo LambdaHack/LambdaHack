@@ -240,7 +240,7 @@ manageCalmAndDomination aid b = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   fact <- getsState $ (EM.! bfid b) . sfactionD
   getItem <- getsState $ flip getItemBody
-  discoKind <- getsServer sdiscoKind
+  discoKind <- getsState sdiscoKind
   let isImpression iid = case EM.lookup (jkindIx $ getItem iid) discoKind of
         Just KindMean{kmKind} ->
           maybe False (> 0) (lookup "impressed" $ IK.ifreq $ okind kmKind)
@@ -458,7 +458,7 @@ gameExit = do
   sfovClearLid <- getsServer sfovClearLid
   sfovLitLid <- getsServer sfovLitLid
   sperFid <- getsServer sperFid
-  discoAspect <- getsServer sdiscoAspect
+  discoAspect <- getsState sdiscoAspect
   ( actorAspect, fovLitLid, fovClearLid, fovLucidLid
    ,perValidFid, perCacheFid, perFid )
     <- getsState $ perFidInDungeon discoAspect

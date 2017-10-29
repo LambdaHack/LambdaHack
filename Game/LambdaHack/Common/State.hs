@@ -87,14 +87,14 @@ unknownTileMap outerId lxsize lysize =
 
 -- | Initial complete global game state.
 defStateGlobal :: Dungeon -> AbsDepth -> FactionDict -> Kind.COps
-               -> HighScore.ScoreDict -> Kind.Id ModeKind
+               -> HighScore.ScoreDict -> Kind.Id ModeKind -> DiscoveryKind
                -> State
-defStateGlobal _sdungeon _stotalDepth _sfactionD _scops _shigh _sgameModeId =
+defStateGlobal _sdungeon _stotalDepth _sfactionD _scops _shigh _sgameModeId
+               _sdiscoKind =
   State
     { _sactorD = EM.empty
     , _sitemD = EM.empty
     , _stime = timeZero
-    , _sdiscoKind = EM.empty
     , _sdiscoAspect = EM.empty
     , ..
     }

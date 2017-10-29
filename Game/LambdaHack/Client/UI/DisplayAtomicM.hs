@@ -310,6 +310,8 @@ displayRespUpdAtomicUI verbose oldState cmd = case cmd of
   UpdCoverKind{} -> return ()  -- don't spam when doing undo
   UpdDiscoverSeed c iid _ -> discover c oldState iid
   UpdCoverSeed{} -> return ()  -- don't spam when doing undo
+  UpdDiscoverServer{} -> error "server command leaked to client"
+  UpdCoverServer{} -> error "server command leaked to client"
   UpdPerception{} -> return ()
   UpdRestart fid _ _ _ _ -> do
     sstart <- getsSession sstart
