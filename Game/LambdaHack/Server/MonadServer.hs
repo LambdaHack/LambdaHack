@@ -67,7 +67,7 @@ class MonadServer m => MonadServerAtomic m where
   execUpdAtomic :: UpdAtomic -> m ()
   -- | Execute an atomic command that changes the state
   -- on the server only.
-  execUpdAtomicSer :: UpdAtomic -> m ()
+  execUpdAtomicSer :: UpdAtomic -> m Bool
   -- | Execute an atomic command that changes the state
   -- on the given single client only.
   execUpdAtomicFid :: FactionId -> UpdAtomic -> m ()

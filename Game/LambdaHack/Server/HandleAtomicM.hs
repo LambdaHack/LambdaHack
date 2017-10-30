@@ -37,15 +37,15 @@ import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
 -- | Effect of atomic actions on server state is calculated
--- with the global state from before the command is executed.
-cmdAtomicSemSer :: MonadServer m => UpdAtomic -> m ()
-cmdAtomicSemSer cmd = case cmd of
+-- with the global state from after the command is executed
+-- (except where the supplied @oldState@ is used).
+cmdAtomicSemSer :: MonadServer m => State -> UpdAtomic -> m ()
+cmdAtomicSemSer oldState cmd = case cmd of
   UpdCreateActor aid b _ -> do
     aspectRecord <- getsState $ aspectRecordFromActor b
     let f = EM.insert aid aspectRecord
     modifyServer $ \ser -> ser {sactorAspect = f $ sactorAspect ser}
     actorAspect <- getsServer sactorAspect
-    -- We don't have the body in the State yet, hence no @invalidateLucidAid@.
     when (actorHasShine actorAspect aid) $ invalidateLucidLid $ blid b
     addPerActor aid b
   UpdDestroyActor aid b _ -> do
@@ -79,7 +79,6 @@ cmdAtomicSemSer cmd = case cmd of
   UpdSpotActor aid b _ -> do
     -- On server, it does't affect aspects, but does affect lucid (Ascend).
     actorAspect <- getsServer sactorAspect
-    -- We don't have the body in the State yet, hence no @invalidateLucidAid@.
     when (actorHasShine actorAspect aid) $ invalidateLucidLid $ blid b
     addPerActor aid b
   UpdLoseActor aid b _ -> do
@@ -147,9 +146,10 @@ cmdAtomicSemSer cmd = case cmd of
   UpdRefillCalm aid n -> do
     actorAspect <- getsServer sactorAspect
     body <- getsState $ getActorBody aid
-    let AspectRecord{aSight} = actorAspect EM.! aid
-        radiusOld = boundSightByCalm aSight (bcalm body)
-        radiusNew = boundSightByCalm aSight (bcalm body + n)
+    let oldBody = getActorBody aid oldState
+        AspectRecord{aSight} = actorAspect EM.! aid
+        radiusOld = boundSightByCalm aSight (bcalm oldBody)
+        radiusNew = boundSightByCalm aSight (bcalm oldBody + n)
     when (radiusOld /= radiusNew) $ invalidatePerActor aid
   UpdLeadFaction{} -> invalidateArenas
   UpdRecordKill{} -> invalidateArenas
@@ -173,11 +173,9 @@ addItemToActor iid k aid = do
 
 updateSclear :: MonadServer m
              => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind -> m Bool
-updateSclear lid pos _fromTile toTile = do
+updateSclear lid pos fromTile toTile = do
   Kind.COps{coTileSpeedup} <- getsState scops
-  lvl <- getLevel lid
-  let serverTile = lvl `at` pos
-      fromClear = Tile.isClear coTileSpeedup serverTile
+  let fromClear = Tile.isClear coTileSpeedup fromTile
       toClear = Tile.isClear coTileSpeedup toTile
   if fromClear == toClear then return False else do
     let f FovClear{fovClear} =
@@ -188,11 +186,9 @@ updateSclear lid pos _fromTile toTile = do
 
 updateSlit :: MonadServer m
            => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind -> m Bool
-updateSlit lid pos _fromTile toTile = do
+updateSlit lid pos fromTile toTile = do
   Kind.COps{coTileSpeedup} <- getsState scops
-  lvl <- getLevel lid
-  let serverTile = lvl `at` pos
-      fromLit = Tile.isLit coTileSpeedup serverTile
+  let fromLit = Tile.isLit coTileSpeedup fromTile
       toLit = Tile.isLit coTileSpeedup toTile
   if fromLit == toLit then return False else do
     let f (FovLit set) =
@@ -206,7 +202,7 @@ invalidateLucidLid lid =
     ser { sfovLucidLid = EM.insert lid FovInvalid $ sfovLucidLid ser
         , sperValidFid = EM.map (EM.insert lid False) $ sperValidFid ser }
 
-invalidateLucidAid :: MonadServer m => ActorId  -> m ()
+invalidateLucidAid :: MonadServer m => ActorId -> m ()
 invalidateLucidAid aid = do
   lid <- getsState $ blid . getActorBody aid
   invalidateLucidLid lid

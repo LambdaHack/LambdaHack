@@ -41,7 +41,9 @@ onlyRegisterItem itemKnown@(_, aspectRecord, _, _) seed = do
     Just iid -> return iid
     Nothing -> do
       icounter <- getsServer sicounter
-      execUpdAtomicSer $ UpdDiscoverServer icounter aspectRecord
+      executedOnServer <-
+        execUpdAtomicSer $ UpdDiscoverServer icounter aspectRecord
+      let !_A = assert executedOnServer ()
       modifyServer $ \ser ->
         ser { sitemSeedD = EM.insert icounter seed (sitemSeedD ser)
             , sitemRev = HM.insert itemKnown icounter (sitemRev ser)

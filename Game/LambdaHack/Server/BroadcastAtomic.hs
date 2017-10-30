@@ -40,19 +40,20 @@ import Game.LambdaHack.Server.State
 --  maybe skip (\a -> modifyServer $ \ser -> ser {sundo = a : sundo ser})
 --    $ Nothing   -- undoCmdAtomic atomic
 
-handleCmdAtomicServer :: MonadServerAtomic m => PosAtomic -> UpdAtomic -> m ()
-{-# INLINE handleCmdAtomicServer #-}
-handleCmdAtomicServer posAtomic cmd =
-  when (seenAtomicSer posAtomic) $
--- Not implemented ATM:
---    storeUndo atomic
-    execUpdAtomicSer cmd
+handleCmdAtomicServer :: MonadServerAtomic m
+                       => UpdAtomic -> m (PosAtomic, [UpdAtomic], Bool)
+handleCmdAtomicServer cmd = do
+  ps <- posUpdAtomic cmd
+  atomicBroken <- breakUpdAtomic cmd
+  executedOnServer <- if seenAtomicSer ps
+                      then execUpdAtomicSer cmd
+                      else return False
+  return (ps, atomicBroken, executedOnServer)
 
 -- | Send an atomic action to all clients that can see it.
-handleAndBroadcast :: ( MonadServerAtomic m
-                      , MonadServerReadRequest m )
-                   => CmdAtomic -> m ()
-handleAndBroadcast atomic = do
+handleAndBroadcast :: (MonadServerAtomic m, MonadServerReadRequest m)
+                   => PosAtomic -> [UpdAtomic] -> CmdAtomic -> m ()
+handleAndBroadcast ps atomicBroken atomic = do
   -- This is calculated in the server State before action (simulating
   -- current client State, because action has not been applied
   -- on the client yet).
@@ -60,19 +61,6 @@ handleAndBroadcast atomic = do
   -- To get rid of breakUpdAtomic we'd need to send only Spot and Lose
   -- commands instead of Move and Displace (plus Sfx for Displace).
   -- So this only makes sense when we switch to sending state diffs.
-  (ps, atomicBroken, psBroken) <-
-    case atomic of
-      UpdAtomic cmd -> do
-        ps <- posUpdAtomic cmd
-        atomicBroken <- breakUpdAtomic cmd
-        psBroken <- mapM posUpdAtomic atomicBroken
-        -- Perform the action on the server. The only part that
-        -- modifies server State.
-        handleCmdAtomicServer ps cmd
-        return (ps, atomicBroken, psBroken)
-      SfxAtomic sfx -> do
-        ps <- posSfxAtomic sfx
-        return (ps, [], [])
   knowEvents <- getsServer $ sknowEvents . sdebugSer
   sperFidOld <- getsServer sperFid
   -- Send some actions to the clients, one faction at a time.
@@ -95,6 +83,7 @@ handleAndBroadcast atomic = do
             send2 (cmd2, ps2) =
               when (seenAtomicCli knowEvents fid perFidLid ps2) $
                 sendUpdate fid cmd2
+        psBroken <- mapM posUpdAtomic atomicBroken
         case psBroken of
           _ : _ -> mapM_ send2 $ zip atomicBroken psBroken
           [] -> hear atomic  -- broken commands are never loud
@@ -145,7 +134,7 @@ loudUpdAtomic local cmd = do
   return $! SfxLoudUpd local <$> mcmd
 
 -- | Messages for some unseen sfx.
-loudSfxAtomic :: MonadServer m => Bool -> SfxAtomic -> m (Maybe SfxMsg)
+loudSfxAtomic :: MonadStateRead m => Bool -> SfxAtomic -> m (Maybe SfxMsg)
 loudSfxAtomic local cmd =
   case cmd of
     SfxStrike source _ iid cstore | local -> do
@@ -163,8 +152,8 @@ loudSfxAtomic local cmd =
     _ -> return Nothing
 
 sendPer :: (MonadServerAtomic m, MonadServerReadRequest m)
-        => FactionId -> LevelId
-        -> Perception -> Perception -> Perception -> m ()
+        => FactionId -> LevelId -> Perception -> Perception -> Perception
+        -> m ()
 {-# INLINE sendPer #-}
 sendPer fid lid outPer inPer perNew = do
   sendUpdNoState fid $ UpdPerception lid outPer inPer

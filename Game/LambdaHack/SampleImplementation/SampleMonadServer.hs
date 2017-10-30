@@ -87,16 +87,20 @@ instance MonadServerReadRequest SerImplementation where
   liftIO = SerImplementation . IO.liftIO
 
 instance MonadServerAtomic SerImplementation where
-  execUpdAtomic cmd = cmdAtomicSemSer cmd >> handleAndBroadcast (UpdAtomic cmd)
+  execUpdAtomic cmd = do
+    oldState <- getState
+    (ps, atomicBroken, executedOnServer) <- handleCmdAtomicServer cmd
+    when executedOnServer $ cmdAtomicSemSer oldState cmd
+    handleAndBroadcast ps atomicBroken (UpdAtomic cmd)
   execUpdAtomicSer cmd = SerImplementation $ StateT $ \cliS -> do
     cliSNewOrE <- Ex.try
                   $ execStateT (runSerImplementation $ handleUpdAtomic cmd)
                                cliS
     case cliSNewOrE of
-      Left AtomicFail{} -> return ((), cliS)
+      Left AtomicFail{} -> return (False, cliS)
       Right cliSNew ->
         -- We know @cliSNew@ differs only in @serState@.
-        return $ ((), cliSNew)
+        return $ (True, cliSNew)
   execUpdAtomicFid fid cmd = SerImplementation $ StateT $ \cliS -> do
     -- Don't catch anything; assume exceptions impossible.
     let sFid = sclientStates (serServer cliS) EM.! fid
@@ -120,7 +124,9 @@ instance MonadServerAtomic SerImplementation where
               {sclientStates = EM.insert fid (serState cliSNew)
                                $ sclientStates $ serServer cliS}
         return $! (True, cliS {serServer = serServerNew})
-  execSfxAtomic sfx = handleAndBroadcast (SfxAtomic sfx)
+  execSfxAtomic sfx = do
+    ps <- posSfxAtomic sfx
+    handleAndBroadcast ps [] (SfxAtomic sfx)
   execSendPer = sendPer
 
 -- Don't inline this, to keep GHC hard work inside the library

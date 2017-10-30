@@ -201,16 +201,17 @@ singleContainer (CTrunk fid lid p) =
 -- potentially more positions than those visible. E.g., @UpdMoveActor@
 -- informs about the continued existence of the actor between
 -- moves, v.s., popping out of existence and then back in.
+-- This is computed in server State before performing the command.
 breakUpdAtomic :: MonadStateRead m => UpdAtomic -> m [UpdAtomic]
 breakUpdAtomic cmd = case cmd of
-  UpdMoveActor aid _ toP -> do
+  UpdMoveActor aid fromP toP -> do
     -- We assume other factions don't see leaders and we know the actor's
     -- faction always sees the atomic command, so the leader doesn't
     -- need to be updated (or the actor is a projectile, hence not a leader).
     b <- getsState $ getActorBody aid
     ais <- getsState $ getCarriedAssocs b
     return [ UpdLoseActor aid b ais
-           , UpdSpotActor aid b {bpos = toP, boldpos = Just $ bpos b} ais ]
+           , UpdSpotActor aid b {bpos = toP, boldpos = Just fromP} ais ]
   UpdDisplaceActor source target -> do
     sb <- getsState $ getActorBody source
     sais <- getsState $ getCarriedAssocs sb
