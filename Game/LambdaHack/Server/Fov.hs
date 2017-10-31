@@ -250,10 +250,10 @@ lucidFromItems clearPs allItems =
 
 -- | Calculate the perception and its caches for the whole dungeon.
 perFidInDungeon :: DiscoveryAspect -> State
-                -> ( ActorAspect, FovLitLid, FovClearLid, FovLucidLid
+                -> ( FovLitLid, FovClearLid, FovLucidLid
                    , PerValidFid, PerCacheFid, PerFid)
 perFidInDungeon discoAspect s =
-  let actorAspect = actorAspectInDungeon s
+  let actorAspect = sactorAspect s
       fovLitLid = litInDungeon s
       fovClearLid = clearInDungeon s
       fovLucidLid =
@@ -262,7 +262,7 @@ perFidInDungeon discoAspect s =
       perValidFid = EM.map (const perValidLid) (sfactionD s)
       f fid _ = perLidFromFaction actorAspect fovLucidLid fovClearLid fid s
       em = EM.mapWithKey f $ sfactionD s
-  in ( actorAspect, fovLitLid, fovClearLid, fovLucidLid
+  in ( fovLitLid, fovClearLid, fovLucidLid
      , perValidFid, EM.map snd em, EM.map fst em)
 
 litFromLevel :: Kind.COps -> Level -> FovLit

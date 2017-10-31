@@ -178,7 +178,7 @@ affectSmell aid = do
   b <- getsState $ getActorBody aid
   unless (bproj b) $ do
     fact <- getsState $ (EM.! bfid b) . sfactionD
-    actorAspect <- getsServer sactorAspect
+    actorAspect <- getsState sactorAspect
     let ar = actorAspect EM.! aid
         smellRadius = aSmell ar
     when (fhasGender (gplayer fact) || smellRadius > 0) $ do
@@ -321,7 +321,7 @@ reqDisplace source target = do
       adj = checkAdjacent sb tb
       atWar = isAtWar tfact (bfid sb)
       req = ReqDisplace target
-  actorAspect <- getsServer sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = actorAspect EM.! target
   dEnemy <- getsState $ dispEnemy source target $ aSkills ar
   if | not adj -> execFailure source req DisplaceDistant
@@ -447,7 +447,7 @@ reqMoveItems :: MonadServerAtomic m
              => ActorId -> [(ItemId, Int, CStore, CStore)] -> m ()
 reqMoveItems aid l = do
   b <- getsState $ getActorBody aid
-  actorAspect <- getsServer sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = actorAspect EM.! aid
   -- Server accepts item movement based on calm at the start, not end
   -- or in the middle, to avoid interrupted or partially ignored commands.
@@ -534,7 +534,7 @@ reqProject :: MonadServerAtomic m
 reqProject source tpxy eps iid cstore = do
   let req = ReqProject tpxy eps iid cstore
   b <- getsState $ getActorBody source
-  actorAspect <- getsServer sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = actorAspect EM.! source
       calmE = calmEnough b ar
   if cstore == CSha && not calmE then execFailure source req ItemNotCalm
@@ -552,7 +552,7 @@ reqApply :: MonadServerAtomic m
 reqApply aid iid cstore = do
   let req = ReqApply iid cstore
   b <- getsState $ getActorBody aid
-  actorAspect <- getsServer sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = actorAspect EM.! aid
       calmE = calmEnough b ar
   if cstore == CSha && not calmE then execFailure aid req ItemNotCalm

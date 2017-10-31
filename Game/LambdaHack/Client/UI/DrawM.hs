@@ -70,7 +70,7 @@ targetDesc mtarget = do
       side <- getsClient sside
       b <- getsState $ getActorBody aid
       bUI <- getsSession $ getActorUI aid
-      actorAspect <- getsClient sactorAspect
+      actorAspect <- getsState sactorAspect
       let ar = fromMaybe (error $ "" `showFailure` aid)
                          (EM.lookup aid actorAspect)
           percentage = 100 * bhp b `div` xM (max 5 $ aMaxHP ar)
@@ -509,7 +509,7 @@ drawLeaderStatus waitT = do
   mleader <- getsClient _sleader
   case mleader of
     Just leader -> do
-      actorAspect <- getsClient sactorAspect
+      actorAspect <- getsState sactorAspect
       s <- getState
       let ar = fromMaybe (error $ "" `showFailure` leader)
                          (EM.lookup leader actorAspect)
@@ -561,7 +561,7 @@ drawLeaderDamage width = do
       allAssocsRaw <- getsState $ fullAssocs leader [CEqp, COrgan]
       let allAssocs = filter (isMelee . itemBase . snd) allAssocsRaw
       actorSk <- leaderSkillsClientUI
-      actorAspect <- getsClient sactorAspect
+      actorAspect <- getsState sactorAspect
       strongest <- pickWeaponM Nothing allAssocs actorSk actorAspect leader
       let damage = case strongest of
             [] -> "0"

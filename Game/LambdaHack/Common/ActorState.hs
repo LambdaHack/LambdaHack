@@ -10,11 +10,9 @@ module Game.LambdaHack.Common.ActorState
   , mapActorItems_, getActorAssocs
   , nearbyFreePoints, getCarriedAssocs, getCarriedIidCStore
   , posToAidsLvl, posToAids, posToAssocs
-  , getItemBody, memActor, getActorBody, getLocalTime, regenCalmDelta
+  , memActor, getActorBody, getLocalTime, regenCalmDelta
   , actorInAmbient, canDeAmbientList, actorSkills, dispEnemy
-  , itemToFull, fullAssocs, aspectRecordFromItem, aspectRecordFromIid
-  , aspectRecordFromActor, actorAspectInDungeon
-  , storeFromC, lidFromC, posFromC, aidFromC
+  , itemToFull, fullAssocs, storeFromC, lidFromC, posFromC, aidFromC
   , isEscape, isStair, anyFoeAdj, actorAdjacentAssocs, armorHurtBonus
   ) where
 
@@ -73,11 +71,6 @@ friendlyActorRegularList fid lid s =
 fidActorRegularIds :: FactionId -> LevelId -> State -> [ActorId]
 fidActorRegularIds fid lid s =
   map fst $ actorRegularAssocs (== fid) lid s
-
-getItemBody :: ItemId -> State -> Item
-getItemBody iid s =
-  let assFail = error $ "item body not found" `showFailure` (iid, s)
-  in EM.findWithDefault assFail iid $ sitemD s
 
 bagAssocs :: State -> ItemBag -> [(ItemId, Item)]
 bagAssocs s bag =
@@ -315,27 +308,6 @@ fullAssocs aid cstores s =
         (iid, itemToFull6 (scops s) (sdiscoKind s) (sdiscoAspect s)
                           iid item kit)
   in map iToFull allAssocs
-
-aspectRecordFromItem :: ItemId -> Item -> State -> AspectRecord
-aspectRecordFromItem iid item s =
-  case EM.lookup iid (sdiscoAspect s) of
-    Just ar -> ar
-    Nothing -> case EM.lookup (jkindIx item) (sdiscoKind s) of
-        Just KindMean{kmMean} -> kmMean
-        Nothing -> emptyAspectRecord
-
-aspectRecordFromIid :: ItemId -> State -> AspectRecord
-aspectRecordFromIid iid s = aspectRecordFromItem iid (getItemBody iid s) s
-
-aspectRecordFromActor :: Actor -> State -> AspectRecord
-aspectRecordFromActor b s =
-  let processIid (iid, (k, _)) = (aspectRecordFromIid iid s, k)
-      processBag ass = sumAspectRecord $ map processIid ass
-  in processBag $ EM.assocs (borgan b) ++ EM.assocs (beqp b)
-
-actorAspectInDungeon :: State -> ActorAspect
-actorAspectInDungeon s =
-  EM.map (flip aspectRecordFromActor s) $ sactorD s
 
 storeFromC :: Container -> CStore
 storeFromC c = case c of

@@ -173,7 +173,7 @@ chooseItemDialogMode c = do
             Level{lxsize, lysize} <- getLevel lidV
             localTime <- getsState $ getLocalTime (blid b)
             factionD <- getsState sfactionD
-            actorAspect <- getsClient sactorAspect
+            actorAspect <- getsState sactorAspect
             let ar = fromMaybe (error $ "" `showFailure` leader)
                                (EM.lookup leader actorAspect)
                 attrLine = itemDesc (bfid b) factionD (aHurtMelee ar)
@@ -226,7 +226,7 @@ chooseItemDialogMode c = do
         leader <- getLeaderUI
         b <- getsState $ getActorBody leader
         bUI <- getsSession $ getActorUI leader
-        actorAspect <- getsClient sactorAspect
+        actorAspect <- getsState sactorAspect
         let ar = fromMaybe (error $ "" `showFailure` leader)
                            (EM.lookup leader actorAspect)
             valueText = slotToDecorator eqpSlot b $ prEqpSlot eqpSlot ar
@@ -247,7 +247,7 @@ chooseItemProjectHuman :: forall m. MonadClientUI m => [Trigger] -> m MError
 chooseItemProjectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = fromMaybe (error $ "" `showFailure` leader)
                      (EM.lookup leader actorAspect)
   let calmE = calmEnough b ar
@@ -281,7 +281,7 @@ permittedProjectClient triggerSyms = do
   b <- getsState $ getActorBody leader
   actorSk <- leaderSkillsClientUI
   let skill = EM.findWithDefault 0 AbProject actorSk
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = fromMaybe (error $ "" `showFailure` leader)
                      (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
@@ -408,7 +408,7 @@ chooseItemApplyHuman :: forall m. MonadClientUI m => [Trigger] -> m MError
 chooseItemApplyHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = fromMaybe (error $ "" `showFailure` leader)
                      (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
@@ -439,7 +439,7 @@ permittedApplyClient triggerSyms = do
   b <- getsState $ getActorBody leader
   actorSk <- leaderSkillsClientUI
   let skill = EM.findWithDefault 0 AbApply actorSk
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = fromMaybe (error $ "" `showFailure` leader)
                      (EM.lookup leader actorAspect)
       calmE = calmEnough b ar

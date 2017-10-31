@@ -133,6 +133,8 @@ updCreateActor aid body ais = do
                   `swith` (aid, body, iid, item1, item2))
                  item2 -- keep the first found level
     modifyState $ updateItemD $ EM.insertWith h iid item
+  aspectRecord <- getsState $ aspectRecordFromActor body
+  modifyState $ updateActorAspect $ EM.insert aid aspectRecord
 
 itemsMatch :: Item -> Item -> Bool
 itemsMatch item1 item2 =
@@ -169,6 +171,7 @@ updDestroyActor aid body ais = do
         (let l2 = delete aid l
          in if null l2 then Nothing else Just l2)
   updateLevel (blid body) $ updateActorMap (EM.alter g (bpos body))
+  modifyState $ updateActorAspect $ EM.delete aid
 
 -- | Create a few copies of an item that is already registered for the dungeon
 -- (in @sitemRev@ field of @StateServer@).
@@ -183,6 +186,16 @@ updCreateItem iid item kit@(k, _) c = assert (k > 0) $ do
                item2 -- keep the first found level
   modifyState $ updateItemD $ EM.insertWith f iid item
   insertItemContainer iid kit c
+  case c of
+    CActor aid store ->
+      when (store `elem` [CEqp, COrgan]) $ addItemToActor iid item k aid
+    _ -> return ()
+
+addItemToActor :: MonadStateWrite m => ItemId -> Item -> Int -> ActorId -> m ()
+addItemToActor iid itemBase k aid = do
+  arItem <- getsState $ aspectRecordFromItem iid itemBase
+  let f arActor = sumAspectRecord [(arActor, 1), (arItem, k)]
+  modifyState $ updateActorAspect $ EM.adjust f aid
 
 -- | Destroy some copies (possibly not all) of an item.
 updDestroyItem :: MonadStateWrite m
@@ -198,6 +211,10 @@ updDestroyItem iid item kit@(k, _) c = assert (k > 0) $ do
                     `blame` "item already removed"
                     `swith` (iid, item, itemD)) ()
   deleteItemContainer iid kit c
+  case c of
+    CActor aid store ->
+      when (store `elem` [CEqp, COrgan]) $ addItemToActor iid item (-k) aid
+    _ -> return ()
 
 updMoveActor :: MonadStateWrite m => ActorId -> Point -> Point -> m ()
 updMoveActor aid fromP toP = assert (fromP /= toP) $ do
@@ -233,14 +250,29 @@ updDisplaceActor source target = assert (source /= target) $ do
 updMoveItem :: MonadStateWrite m
             => ItemId -> Int -> ActorId -> CStore -> CStore
             -> m ()
-updMoveItem iid k aid c1 c2 = assert (k > 0 && c1 /= c2) $ do
+updMoveItem iid k aid s1 s2 = assert (k > 0 && s1 /= s2) $ do
   b <- getsState $ getActorBody aid
-  bag <- getsState $ getBodyStoreBag b c1
+  bag <- getsState $ getBodyStoreBag b s1
   case iid `EM.lookup` bag of
-    Nothing -> error $ "" `showFailure` (iid, k, aid, c1, c2)
+    Nothing -> error $ "" `showFailure` (iid, k, aid, s1, s2)
     Just (_, it) -> do
-      deleteItemActor iid (k, take k it) aid c1
-      insertItemActor iid (k, take k it) aid c2
+      deleteItemActor iid (k, take k it) aid s1
+      insertItemActor iid (k, take k it) aid s2
+  case s1 of
+    CEqp -> case s2 of
+      COrgan -> return ()
+      _ -> do
+        itemBase <- getsState $ getItemBody iid
+        addItemToActor iid itemBase (-k) aid
+    COrgan -> case s2 of
+      CEqp -> return ()
+      _ -> do
+        itemBase <- getsState $ getItemBody iid
+        addItemToActor iid itemBase (-k) aid
+    _ ->
+      when (s2 `elem` [CEqp, COrgan]) $ do
+        itemBase <- getsState $ getItemBody iid
+        addItemToActor iid itemBase k aid
 
 updRefillHP :: MonadStateWrite m => ActorId -> Int64 -> m ()
 updRefillHP aid n =
@@ -536,6 +568,12 @@ discoverKind iid kmKind = do
       f Just{} = error $ "already discovered" `showFailure` (iid, kmKind)
   modifyState $ updateDiscoKind $ \discoKind1 ->
     EM.alter f (jkindIx item) discoKind1
+  -- Each actor's equipment and organs would need to be inspected,
+  -- the iid looked up, e.g., if it wasn't in old discoKind, but is in new,
+  -- and then aspect record updated, so it's simpler and not much more
+  -- expensive to generate new sactorAspect. Optimize only after profiling.
+  actorAspect <- getsState actorAspectInDungeon
+  modifyState $ updateActorAspect $ const actorAspect
 
 updCoverKind :: Container -> ItemId -> Kind.Id ItemKind -> m ()
 updCoverKind _c _iid _ik = undefined
@@ -555,6 +593,8 @@ updDiscoverSeed _c iid seed = do
         if iid `EM.member` discoAspect
         then atomicFail "item seed already discovered"
         else discoverSeed iid seed
+  actorAspect <- getsState actorAspectInDungeon
+  modifyState $ updateActorAspect $ const actorAspect
 
 discoverSeed :: MonadStateWrite m => ItemId -> ItemSeed -> m ()
 discoverSeed iid seed = do

@@ -244,7 +244,7 @@ projectFail source tpxy eps iid cstore isBlast = do
         Just kit -> do
           itemToF <- getsState $ itemToFull
           actorSk <- currentSkillsServer source
-          actorAspect <- getsServer sactorAspect
+          actorAspect <- getsState sactorAspect
           let ar = actorAspect EM.! source
               skill = EM.findWithDefault 0 Ability.AbProject actorSk
               itemFull@ItemFull{itemBase} = itemToF iid kit
@@ -427,7 +427,7 @@ pickWeaponServer source = do
   eqpAssocs <- getsState $ fullAssocs source [CEqp]
   bodyAssocs <- getsState $ fullAssocs source [COrgan]
   actorSk <- currentSkillsServer source
-  actorAspect <- getsServer sactorAspect
+  actorAspect <- getsState sactorAspect
   sb <- getsState $ getActorBody source
   let allAssocsRaw = eqpAssocs ++ bodyAssocs
       forced = bproj sb
@@ -447,7 +447,7 @@ pickWeaponServer source = do
 
 currentSkillsServer :: MonadServer m => ActorId -> m Ability.Skills
 currentSkillsServer aid  = do
-  ar <- getsServer $ (EM.! aid) . sactorAspect
+  ar <- getsState $ (EM.! aid) . sactorAspect
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   let mleader = _gleader fact
@@ -456,7 +456,7 @@ currentSkillsServer aid  = do
 getCacheLucid :: MonadServer m => LevelId -> m FovLucid
 getCacheLucid lid = do
   discoAspect <- getsState sdiscoAspect
-  actorAspect <- getsServer sactorAspect
+  actorAspect <- getsState sactorAspect
   fovClearLid <- getsServer sfovClearLid
   fovLitLid <- getsServer sfovLitLid
   fovLucidLid <- getsServer sfovLucidLid
@@ -479,7 +479,7 @@ getCacheTotal fid lid = do
   case ptotal perCacheOld of
     FovValid total -> return total
     FovInvalid -> do
-      actorAspect <- getsServer sactorAspect
+      actorAspect <- getsState sactorAspect
       fovClearLid <- getsServer sfovClearLid
       getActorB <- getsState $ flip getActorBody
       let perActorNew =

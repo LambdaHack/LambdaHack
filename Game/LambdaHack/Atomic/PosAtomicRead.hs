@@ -23,6 +23,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.State
 
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.

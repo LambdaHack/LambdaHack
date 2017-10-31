@@ -20,7 +20,6 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.Preferences
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -77,45 +76,25 @@ cmdAtomicSemCli :: MonadClientSetup m => State -> UpdAtomic -> m ()
 cmdAtomicSemCli oldState cmd = case cmd of
   UpdCreateActor aid b ais -> createActor aid b ais
   UpdDestroyActor aid b _ -> destroyActor aid b True
-  UpdCreateItem iid itemBase (k, _) (CActor aid store) -> do
+  UpdCreateItem iid itemBase _ (CActor aid store) -> do
     wipeBfsIfItemAffectsSkills [store] aid
-    when (store `elem` [CEqp, COrgan]) $ addItemToActor iid itemBase k aid
     addItemToDiscoBenefit iid itemBase
   UpdCreateItem iid itemBase _ _ -> addItemToDiscoBenefit iid itemBase
-  UpdDestroyItem iid itemBase (k, _) (CActor aid store) -> do
+  UpdDestroyItem _ _ _ (CActor aid store) ->
     wipeBfsIfItemAffectsSkills [store] aid
-    when (store `elem` [CEqp, COrgan]) $ addItemToActor iid itemBase (-k) aid
   UpdSpotActor aid b ais -> createActor aid b ais
   UpdLoseActor aid b _ -> destroyActor aid b False
-  UpdSpotItem _ iid itemBase (k, _) (CActor aid store) -> do
+  UpdSpotItem _ iid itemBase _ (CActor aid store) -> do
     wipeBfsIfItemAffectsSkills [store] aid
-    when (store `elem` [CEqp, COrgan]) $ addItemToActor iid itemBase k aid
     addItemToDiscoBenefit iid itemBase
   UpdSpotItem _ iid itemBase _ _ -> addItemToDiscoBenefit iid itemBase
-  UpdLoseItem _ iid itemBase (k, _) (CActor aid store) -> do
+  UpdLoseItem _ _ _ _ (CActor aid store) ->
     wipeBfsIfItemAffectsSkills [store] aid
-    when (store `elem` [CEqp, COrgan]) $ addItemToActor iid itemBase (-k) aid
   UpdMoveActor aid _ _ -> invalidateBfsAid aid
   UpdDisplaceActor source target -> do
     invalidateBfsAid source
     invalidateBfsAid target
-  UpdMoveItem iid k aid s1 s2 -> do
-    wipeBfsIfItemAffectsSkills [s1, s2] aid
-    case s1 of
-      CEqp -> case s2 of
-        COrgan -> return ()
-        _ -> do
-          itemBase <- getsState $ getItemBody iid
-          addItemToActor iid itemBase (-k) aid
-      COrgan -> case s2 of
-        CEqp -> return ()
-        _ -> do
-          itemBase <- getsState $ getItemBody iid
-          addItemToActor iid itemBase (-k) aid
-      _ ->
-        when (s2 `elem` [CEqp, COrgan]) $ do
-          itemBase <- getsState $ getItemBody iid
-          addItemToActor iid itemBase k aid
+  UpdMoveItem _ _ aid s1 s2 -> wipeBfsIfItemAffectsSkills [s1, s2] aid
   UpdLeadFaction fid source target -> do
     side <- getsClient sside
     when (side == fid) $ do
@@ -197,9 +176,6 @@ cmdAtomicSemCli oldState cmd = case cmd of
                   , sdebugCli }
     salter <- getsState createSalter
     modifyClient $ \cli1 -> cli1 {salter}
-    -- Currently always void, because no actors yet:
-    sactorAspect <- getsState actorAspectInDungeon
-    modifyClient $ \cli1 -> cli1 {sactorAspect}
     restartClient
   UpdResume _fid sfperNew -> do
 #ifdef WITH_EXPENSIVE_ASSERTIONS
@@ -209,8 +185,6 @@ cmdAtomicSemCli oldState cmd = case cmd of
     modifyClient $ \cli -> cli {sfper=sfperNew}
     salter <- getsState createSalter
     modifyClient $ \cli -> cli {salter}
-    sactorAspect <- getsState $ actorAspectInDungeon
-    modifyClient $ \cli -> cli {sactorAspect}
   UpdKillExit _fid -> killExit
   UpdWriteSave -> saveClient
   _ -> return ()
@@ -236,9 +210,6 @@ createActor aid b ais = do
           TgtAndPath (TEnemy a newPermit) NoPath
         _ -> tap
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
-  aspectRecord <- getsState $ aspectRecordFromActor b
-  let f = EM.insert aid aspectRecord
-  modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
   mapM_ (uncurry addItemToDiscoBenefit) ais
 
 destroyActor :: MonadClient m => ActorId -> Actor -> Bool -> m ()
@@ -261,15 +232,6 @@ destroyActor aid b destroy = do
               _ -> tapPath  -- foe slow enough, so old path good
         in TgtAndPath (affect tapTgt) newMPath
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
-  let f = EM.delete aid
-  modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
-
-addItemToActor :: MonadClient m => ItemId -> Item -> Int -> ActorId -> m ()
-addItemToActor iid itemBase k aid = do
-  arItem <- getsState $ aspectRecordFromItem iid itemBase
-  let g arActor = sumAspectRecord [(arActor, 1), (arItem, k)]
-      f = EM.adjust g aid
-  modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
 
 addItemToDiscoBenefit :: MonadClient m => ItemId -> Item -> m ()
 addItemToDiscoBenefit iid item = do
@@ -334,18 +296,9 @@ discoverKind _c iid ik = do
   -- are not fully IDed from the start.
   modifyClient $ \cli ->
     cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
-  -- Each actor's equipment and organs would need to be inspected,
-  -- the iid looked up, e.g., if it wasn't in old discoKind, but is in new,
-  -- and then aspect record updated, so it's simpler and not much more
-  -- expensive to generate new sactorAspect. Optimize only after profiling.
-  sactorAspect <- getsState actorAspectInDungeon
-  modifyClient $ \cli -> cli {sactorAspect}
 
-coverKind :: MonadClient m => Container -> ItemId -> Kind.Id ItemKind -> m ()
-coverKind _c _iid _ik = do
-  -- For now, undoing @sdiscoBenefit@ is too much work.
-  sactorAspect <- getsState actorAspectInDungeon
-  modifyClient $ \cli -> cli {sactorAspect}
+coverKind :: Container -> ItemId -> Kind.Id ItemKind -> m ()
+coverKind _c _iid _ik = undefined
 
 discoverSeed :: MonadClient m => Container -> ItemId -> ItemSeed -> m ()
 discoverSeed _c iid seed = do
@@ -367,14 +320,9 @@ discoverSeed _c iid seed = do
       benefit = totalUsefulness cops fact (IK.ieffects kind) aspects item
   modifyClient $ \cli ->
     cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
-  sactorAspect <- getsState actorAspectInDungeon
-  modifyClient $ \cli -> cli {sactorAspect}
 
-coverSeed :: MonadClient m => Container -> ItemId -> ItemSeed -> m ()
-coverSeed _c _iid _seed = do
-  -- For now, undoing @sdiscoBenefit@ is too much work.
-  sactorAspect <- getsState actorAspectInDungeon
-  modifyClient $ \cli -> cli {sactorAspect}
+coverSeed :: Container -> ItemId -> ItemSeed -> m ()
+coverSeed _c _iid _seed = undefined
 
 killExit :: MonadClient m => m ()
 killExit = do
@@ -383,7 +331,7 @@ killExit = do
   modifyClient $ \cli -> cli {squit = True}
   -- Verify that the not saved caches are equal to future reconstructed.
   -- Otherwise, save/restore would change game state.
-  sactorAspect <- getsClient sactorAspect
+  sactorAspect2 <- getsState sactorAspect
   salter <- getsClient salter
   sbfsD <- getsClient sbfsD
   alter <- getsState createSalter
@@ -405,9 +353,9 @@ killExit = do
   let !_A1 = assert (salter == alter
                      `blame` "wrong accumulated salter on side"
                      `swith` (side, salter, alter)) ()
-      !_A2 = assert (sactorAspect == actorAspect
+      !_A2 = assert (sactorAspect2 == actorAspect
                      `blame` "wrong accumulated sactorAspect on side"
-                     `swith` (side, sactorAspect, actorAspect)) ()
+                     `swith` (side, sactorAspect2, actorAspect)) ()
       !_A3 = assert (sbfsD `subBfs` bfsD
                      `blame` "wrong accumulated sbfsD on side"
                      `swith` (side, sbfsD, bfsD)) ()

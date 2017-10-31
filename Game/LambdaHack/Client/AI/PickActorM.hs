@@ -34,7 +34,7 @@ import Game.LambdaHack.Content.ModeKind
 pickActorToMove :: MonadClient m => Maybe ActorId -> m ActorId
 {-# INLINE pickActorToMove #-}
 pickActorToMove maidToAvoid = do
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   mleader <- getsClient _sleader
   let oldAid = fromMaybe (error $ "" `showFailure` maidToAvoid) mleader
   oldBody <- getsState $ getActorBody oldAid

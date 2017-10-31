@@ -105,7 +105,7 @@ condAdjTriggerableM aid = do
 -- to retreat.
 meleeThreatDistList :: MonadClient m => ActorId -> m [(Int, (ActorId, Actor))]
 meleeThreatDistList aid = do
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allAtWar <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
@@ -159,7 +159,7 @@ condProjectListM skill aid = do
   b <- getsState $ getActorBody aid
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough b ar
       condNotCalmEnough = not calmE
@@ -253,7 +253,7 @@ desirableItem canEsc mpickupSum item =
 
 condSupport :: MonadClient m => Int -> ActorId -> m Bool
 condSupport param aid = do
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   b <- getsState $ getActorBody aid
   btarget <- getsClient $ getTarget aid
   mtgtPos <- case btarget of

@@ -258,7 +258,7 @@ manageCalmAndDomination aid b = do
         Just fid1 -> assert (fid1 /= bfid b) $ dominateFidSfx fid1 aid
     else return False
   unless dominated $ do
-    actorAspect <- getsServer sactorAspect
+    actorAspect <- getsState sactorAspect
     let ar = actorAspect EM.! aid
     newCalmDelta <- getsState $ regenCalmDelta b ar
     unless (newCalmDelta == 0) $
@@ -452,13 +452,14 @@ gameExit = do
 --  debugPossiblyPrint "Verifying all perceptions."
   sperCacheFid <- getsServer sperCacheFid
   sperValidFid <- getsServer sperValidFid
-  sactorAspect <- getsServer sactorAspect
+  sactorAspect2 <- getsState sactorAspect
   sfovLucidLid <- getsServer sfovLucidLid
   sfovClearLid <- getsServer sfovClearLid
   sfovLitLid <- getsServer sfovLitLid
   sperFid <- getsServer sperFid
   discoAspect <- getsState sdiscoAspect
-  ( actorAspect, fovLitLid, fovClearLid, fovLucidLid
+  actorAspect <- getsState actorAspectInDungeon
+  ( fovLitLid, fovClearLid, fovLucidLid
    ,perValidFid, perCacheFid, perFid )
     <- getsState $ perFidInDungeon discoAspect
   let !_A7 = assert (sfovLitLid == fovLitLid
@@ -467,9 +468,9 @@ gameExit = do
       !_A6 = assert (sfovClearLid == fovClearLid
                      `blame` "wrong accumulated sfovClearLid"
                      `swith` (sfovClearLid, fovClearLid)) ()
-      !_A5 = assert (sactorAspect == actorAspect
+      !_A5 = assert (sactorAspect2 == actorAspect
                      `blame` "wrong accumulated sactorAspect"
-                     `swith` (sactorAspect, actorAspect)) ()
+                     `swith` (sactorAspect2, actorAspect)) ()
       !_A4 = assert (sfovLucidLid == fovLucidLid
                      `blame` "wrong accumulated sfovLucidLid"
                      `swith` (sfovLucidLid, fovLucidLid)) ()

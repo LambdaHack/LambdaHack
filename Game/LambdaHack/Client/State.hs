@@ -54,7 +54,6 @@ data StateClient = StateClient
                                    --   and paths to their targets, if any
   , sundo         :: [CmdAtomic]   -- ^ atomic commands performed to date
   , sdiscoBenefit :: DiscoveryBenefit  -- ^ remembered AI benefits of items
-  , sactorAspect  :: ActorAspect   -- ^ best known actor aspect data
   , sfper         :: PerLid        -- ^ faction perception indexed by levels
   , salter        :: AlterLid      -- ^ cached alter ability data for positions
   , srandom       :: R.StdGen      -- ^ current random generator
@@ -99,7 +98,6 @@ emptyStateClient _sside =
     , sbfsD = EM.empty
     , sundo = []
     , sdiscoBenefit = EM.empty
-    , sactorAspect = EM.empty
     , sfper = EM.empty
     , salter = EM.empty
     , srandom = R.mkStdGen 42  -- will get modified in this and future games
@@ -181,7 +179,6 @@ instance Binary StateClient where
     svictories <- get
     sdebugCli <- get
     let sbfsD = EM.empty
-        sactorAspect = EM.empty
         salter = EM.empty
         srandom = read g
         squit = False

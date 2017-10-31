@@ -271,7 +271,7 @@ itemOverlay store lid bag = do
 statsOverlay :: MonadClient m => ActorId -> m OKX
 statsOverlay aid = do
   b <- getsState $ getActorBody aid
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       prSlot :: (Y, SlotChar) -> IK.EqpSlot -> (Text, KYX)
       prSlot (y, c) eqpSlot =

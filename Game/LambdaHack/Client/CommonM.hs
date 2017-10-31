@@ -102,14 +102,14 @@ makeLine onlyFirst body fpos epsOld = do
 
 maxActorSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
 maxActorSkillsClient aid = do
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   case EM.lookup aid actorAspect of
     Just aspectRecord -> return $ aSkills aspectRecord  -- keep it lazy
     Nothing -> error $ "" `showFailure` aid
 
 currentSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
 currentSkillsClient aid = do
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
   body <- getsState $ getActorBody aid
   side <- getsClient sside
@@ -130,7 +130,7 @@ pickWeaponClient source target = do
   eqpAssocs <- getsState $ fullAssocs source [CEqp]
   bodyAssocs <- getsState $ fullAssocs source [COrgan]
   actorSk <- currentSkillsClient source
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   let allAssocsRaw = eqpAssocs ++ bodyAssocs
       allAssocs = filter (isMelee . itemBase . snd) allAssocsRaw
   discoBenefit <- getsClient sdiscoBenefit

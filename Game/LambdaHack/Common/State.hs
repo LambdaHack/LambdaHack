@@ -3,11 +3,14 @@ module Game.LambdaHack.Common.State
   ( -- * Basic game state, local or global
     State
     -- * State components
-  , sdungeon, stotalDepth, sactorD, sitemD, sfactionD, stime, scops, shigh, sgameModeId, sdiscoKind, sdiscoAspect
+  , sdungeon, stotalDepth, sactorD, sitemD, sfactionD, stime, scops, shigh, sgameModeId, sdiscoKind, sdiscoAspect, sactorAspect
     -- * State operations
   , defStateGlobal, emptyState, localFromGlobal
   , updateDungeon, updateDepth, updateActorD, updateItemD
-  , updateFactionD, updateTime, updateCOps, updateDiscoKind, updateDiscoAspect
+  , updateFactionD, updateTime, updateCOps
+  , updateDiscoKind, updateDiscoAspect, updateActorAspect
+  , getItemBody, aspectRecordFromItem, aspectRecordFromIid
+  , aspectRecordFromActor, actorAspectInDungeon
   ) where
 
 import Prelude ()
@@ -45,6 +48,7 @@ data State = State
   , _sgameModeId  :: Kind.Id ModeKind     -- ^ current game mode
   , _sdiscoKind   :: DiscoveryKind     -- ^ item kind discoveries data
   , _sdiscoAspect :: DiscoveryAspect   -- ^ item aspect data
+  , _sactorAspect :: ActorAspect       -- ^ actor aspect data
   }
   deriving (Show, Eq)
 
@@ -96,6 +100,7 @@ defStateGlobal _sdungeon _stotalDepth _sfactionD _scops _shigh _sgameModeId
     , _sitemD = EM.empty
     , _stime = timeZero
     , _sdiscoAspect = EM.empty
+    , _sactorAspect = EM.empty
     , ..
     }
 
@@ -114,6 +119,7 @@ emptyState _scops =
     , _sgameModeId = minBound  -- the initial value is unused
     , _sdiscoKind = EM.empty
     , _sdiscoAspect = EM.empty
+    , _sactorAspect = EM.empty
     }
 
 -- | Local state created by removing secret information from global
@@ -163,6 +169,9 @@ updateDiscoKind f s = s {_sdiscoKind = f (_sdiscoKind s)}
 updateDiscoAspect :: (DiscoveryAspect -> DiscoveryAspect) -> State -> State
 updateDiscoAspect f s = s {_sdiscoAspect = f (_sdiscoAspect s)}
 
+updateActorAspect :: (ActorAspect -> ActorAspect) -> State -> State
+updateActorAspect f s = s {_sactorAspect = f (_sactorAspect s)}
+
 sdungeon :: State -> Dungeon
 sdungeon = _sdungeon
 
@@ -196,6 +205,35 @@ sdiscoKind = _sdiscoKind
 sdiscoAspect :: State -> DiscoveryAspect
 sdiscoAspect = _sdiscoAspect
 
+sactorAspect :: State -> ActorAspect
+sactorAspect = _sactorAspect
+
+getItemBody :: ItemId -> State -> Item
+getItemBody iid s =
+  let assFail = error $ "item body not found" `showFailure` (iid, s)
+  in EM.findWithDefault assFail iid $ sitemD s
+
+aspectRecordFromItem :: ItemId -> Item -> State -> AspectRecord
+aspectRecordFromItem iid item s =
+  case EM.lookup iid (sdiscoAspect s) of
+    Just ar -> ar
+    Nothing -> case EM.lookup (jkindIx item) (sdiscoKind s) of
+        Just KindMean{kmMean} -> kmMean
+        Nothing -> emptyAspectRecord
+
+aspectRecordFromIid :: ItemId -> State -> AspectRecord
+aspectRecordFromIid iid s = aspectRecordFromItem iid (getItemBody iid s) s
+
+aspectRecordFromActor :: Actor -> State -> AspectRecord
+aspectRecordFromActor b s =
+  let processIid (iid, (k, _)) = (aspectRecordFromIid iid s, k)
+      processBag ass = sumAspectRecord $ map processIid ass
+  in processBag $ EM.assocs (borgan b) ++ EM.assocs (beqp b)
+
+actorAspectInDungeon :: State -> ActorAspect
+actorAspectInDungeon s =
+  EM.map (flip aspectRecordFromActor s) $ sactorD s
+
 instance Binary State where
   put State{..} = do
     put _sdungeon
@@ -220,4 +258,6 @@ instance Binary State where
     _sdiscoKind <- get
     _sdiscoAspect <- get
     let _scops = error $ "overwritten by recreated cops" `showFailure` ()
+        sNoActorAspect = State{_sactorAspect = EM.empty, ..}
+        _sactorAspect = actorAspectInDungeon sNoActorAspect
     return $! State{..}

@@ -152,7 +152,7 @@ rollSpawnPos Kind.COps{coTileSpeedup} visible
 advanceTime :: MonadServerAtomic m => ActorId -> Int -> m ()
 advanceTime aid percent = do
   b <- getsState $ getActorBody aid
-  actorAspect <- getsServer sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = actorAspect EM.! aid
       t = timeDeltaPercent (ticksPerMeter $ bspeed b ar) percent
   -- @t@ may be negative; that's OK.
@@ -220,7 +220,7 @@ swapTime source target = do
 udpateCalm :: MonadServerAtomic m => ActorId -> Int64 -> m ()
 udpateCalm target deltaCalm = do
   tb <- getsState $ getActorBody target
-  actorAspect <- getsServer sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = actorAspect EM.! target
       calmMax64 = xM $ aMaxCalm ar
   execUpdAtomic $ UpdRefillCalm target deltaCalm

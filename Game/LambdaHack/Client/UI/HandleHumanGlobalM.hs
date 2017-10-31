@@ -632,7 +632,7 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
   -- The calmE is inaccurate also if an item not IDed, but that's intended
   -- and the server will ignore and warn (and content may avoid that,
   -- e.g., making all rings identified)
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   lastItemMove <- getsSession slastItemMove
   let ar = fromMaybe (error $ "" `showFailure` leader)
                      (EM.lookup leader actorAspect)
@@ -674,7 +674,7 @@ moveItems :: forall m. MonadClientUI m
 moveItems cLegalRaw (fromCStore, l) destCStore = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   discoBenefit <- getsClient sdiscoBenefit
   let ar = fromMaybe (error $ "" `showFailure` leader)
                      (EM.lookup leader actorAspect)
@@ -752,7 +752,7 @@ projectItem :: MonadClientUI m
 projectItem ts (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = fromMaybe (error $ "" `showFailure` leader)
                      (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
@@ -799,7 +799,7 @@ applyItem :: MonadClientUI m
 applyItem ts (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = fromMaybe (error $ "" `showFailure` leader)
                      (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
@@ -999,7 +999,7 @@ itemMenuHuman cmdAction = do
       case iid `EM.lookup` bag of
         Nothing -> weaveJust <$> failWith "no item to open Item Menu for"
         Just kit -> do
-          actorAspect <- getsClient sactorAspect
+          actorAspect <- getsState sactorAspect
           let ar = fromMaybe (error $ "" `showFailure` leader)
                              (EM.lookup leader actorAspect)
           itemToF <- getsState $ itemToFull

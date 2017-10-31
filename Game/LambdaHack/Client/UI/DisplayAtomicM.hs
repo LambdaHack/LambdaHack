@@ -198,7 +198,7 @@ displayRespUpdAtomicUI verbose oldState cmd = case cmd of
            actorVerbMU aid bUI "return from the brink of death"
          mleader <- getsClient _sleader
          when (Just aid == mleader) $ do
-           actorAspect <- getsClient sactorAspect
+           actorAspect <- getsState sactorAspect
            let ar = fromMaybe (error $ "" `showFailure` aid)
                               (EM.lookup aid actorAspect)
            -- Regenerating actors never stop gaining HP, so we need to stop
@@ -1141,7 +1141,7 @@ setLastSlot aid iid cstore = do
 strike :: MonadClientUI m
        => Bool -> ActorId -> ActorId -> ItemId -> CStore -> m ()
 strike catch source target iid cstore = assert (source /= target) $ do
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   tb <- getsState $ getActorBody target
   tbUI <- getsSession $ getActorUI target
   sourceSeen <- getsState $ memActor source (blid tb)

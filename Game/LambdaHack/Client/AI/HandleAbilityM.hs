@@ -86,7 +86,7 @@ actionStrategy aid retry = do
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condTgtNonmoving <- condTgtNonmovingM aid
   explored <- getsClient sexplored
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       lidExplored = ES.member (blid body) explored
       panicFleeL = fleeL ++ badVic
@@ -306,7 +306,7 @@ pickup aid onlyWeapon = do
   -- The calmE is inaccurate also if an item not IDed, but that's intended
   -- and the server will ignore and warn (and content may avoid that,
   -- e.g., making all rings identified)
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough b ar
       isWeapon (_, _, _, itemFull) = isMelee $ itemBase itemFull
@@ -338,7 +338,7 @@ equipItems :: MonadClient m
            => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
 equipItems aid = do
   body <- getsState $ getActorBody aid
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough body ar
   eqpAssocs <- getsState $ fullAssocs aid [CEqp]
@@ -401,7 +401,7 @@ yieldUnneeded :: MonadClient m
               => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
 yieldUnneeded aid = do
   body <- getsState $ getActorBody aid
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough body ar
   eqpAssocs <- getsState $ fullAssocs aid [CEqp]
@@ -439,7 +439,7 @@ unEquipItems :: MonadClient m
              => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
 unEquipItems aid = do
   body <- getsState $ getActorBody aid
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough body ar
   eqpAssocs <- getsState $ fullAssocs aid [CEqp]
@@ -533,7 +533,7 @@ harmful discoBenefit iid =
 meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbMelee))
 meleeBlocker aid = do
   b <- getsState $ getActorBody aid
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
   fact <- getsState $ (EM.! bfid b) . sfactionD
   actorSk <- currentSkillsClient aid
@@ -677,7 +677,7 @@ applyItem aid applyGroup = do
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   localTime <- getsState $ getLocalTime (blid b)
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       calmE = calmEnough b ar
       condNotCalmEnough = not calmE

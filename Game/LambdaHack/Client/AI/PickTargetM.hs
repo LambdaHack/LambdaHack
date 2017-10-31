@@ -92,7 +92,7 @@ targetStrategy aid = do
   salter <- getsClient salter
   -- We assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway) and set his target accordingly.
-  actorAspect <- getsClient sactorAspect
+  actorAspect <- getsState sactorAspect
   let lalter = salter EM.! blid b
       condInMelee = fromMaybe (error $ "" `showFailure` condInMelee)
                               (scondInMelee EM.! blid b)

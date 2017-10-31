@@ -61,7 +61,7 @@ applyMeleeDamage source target iid = do
   if jdamage itemBase == 0 then return False else do  -- speedup
     sb <- getsState $ getActorBody source
     tb <- getsState $ getActorBody target
-    actorAspect <- getsServer sactorAspect
+    actorAspect <- getsState sactorAspect
     hurtMult <- getsState $ armorHurtBonus actorAspect source target
     dmg <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) $ jdamage itemBase
     let ar = actorAspect EM.! target
@@ -285,7 +285,7 @@ effectBurn :: MonadServerAtomic m
            -> m Bool
 effectBurn nDm source target = do
   tb <- getsState $ getActorBody target
-  actorAspect <- getsServer sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = actorAspect EM.! target
       hpMax = aMaxHP ar
   n <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
@@ -389,7 +389,7 @@ effectRefillHP :: MonadServerAtomic m
 effectRefillHP power source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  actorAspect <- getsServer sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = actorAspect EM.! target
       hpMax = aMaxHP ar
       -- We ignore light poison and similar -1HP per turn annoyances.
@@ -414,7 +414,7 @@ effectRefillHP power source target = do
 cutCalm :: MonadServerAtomic m => ActorId -> m ()
 cutCalm target = do
   tb <- getsState $ getActorBody target
-  actorAspect <- getsServer sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = actorAspect EM.! target
       upperBound = if hpTooLow tb ar
                    then 0  -- to trigger domination, etc.
@@ -430,7 +430,7 @@ effectRefillCalm ::  MonadServerAtomic m
                  => m () -> Int -> ActorId -> ActorId -> m Bool
 effectRefillCalm execSfx power source target = do
   tb <- getsState $ getActorBody target
-  actorAspect <- getsServer sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = actorAspect EM.! target
       calmMax = aMaxCalm ar
       serious = not (bproj tb) && source /= target && power > 1
@@ -467,7 +467,7 @@ dominateFidSfx fid target = do
   -- Actors that don't move freely can't be dominated, for otherwise,
   -- when they are the last survivors, they could get stuck
   -- and the game wouldn't end.
-  actorAspect <- getsServer sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = actorAspect EM.! target
       actorMaxSk = aSkills ar
       -- Check that the actor can move, also between levels and through doors.
@@ -497,7 +497,7 @@ dominateFid fid target = do
   when (isNothing $ _gleader fact) $ moveStores False target CSha CInv
   tb <- getsState $ getActorBody target
   ais <- getsState $ getCarriedAssocs tb
-  actorAspect <- getsServer sactorAspect
+  actorAspect <- getsState sactorAspect
   getItem <- getsState $ flip getItemBody
   discoKind <- getsState sdiscoKind
   let ar = actorAspect EM.! target
@@ -573,7 +573,7 @@ effectSummon execSfx grp nDm iid source target periodic = do
   power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  actorAspect <- getsServer sactorAspect
+  actorAspect <- getsState sactorAspect
   item <- getsState $ getItemBody iid
   let sar = actorAspect EM.! source
       tar = actorAspect EM.! target
@@ -815,7 +815,7 @@ effectInsertMove execSfx nDm target = do
   execSfx
   p <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   b <- getsState $ getActorBody target
-  actorAspect <- getsServer sactorAspect
+  actorAspect <- getsState sactorAspect
   let ar = actorAspect EM.! target
   let actorTurn = ticksPerMeter $ bspeed b ar
       t = timeDeltaScale actorTurn (-p)
@@ -882,7 +882,7 @@ effectCreateItem jfidRaw mcount target store grp tim = do
     IK.TimerActorTurn nDm -> do
       k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
       let !_A = assert (k >= 0) ()
-      actorAspect <- getsServer sactorAspect
+      actorAspect <- getsState sactorAspect
       let ar = actorAspect EM.! target
           actorTurn = ticksPerMeter $ bspeed tb ar
       return $! timeDeltaScale actorTurn k

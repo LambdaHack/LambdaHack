@@ -47,7 +47,6 @@ data StateServer = StateServer
   , sperFid       :: PerFid        -- ^ perception of all factions
   , sperValidFid  :: PerValidFid   -- ^ perception validity for all factions
   , sperCacheFid  :: PerCacheFid   -- ^ perception cache of all factions
-  , sactorAspect  :: ActorAspect   -- ^ full actor aspect data
   , sfovLucidLid  :: FovLucidLid   -- ^ ambient or shining light positions
   , sfovClearLid  :: FovClearLid   -- ^ clear tiles positions
   , sfovLitLid    :: FovLitLid     -- ^ ambient light positions
@@ -130,7 +129,6 @@ emptyStateServer =
     , sperFid = EM.empty
     , sperValidFid = EM.empty
     , sperCacheFid = EM.empty
-    , sactorAspect = EM.empty
     , sfovLucidLid = EM.empty
     , sfovClearLid = EM.empty
     , sfovLitLid = EM.empty
@@ -204,7 +202,6 @@ instance Binary StateServer where
         sperFid = EM.empty
         sperValidFid = EM.empty
         sperCacheFid = EM.empty
-        sactorAspect = EM.empty
         sfovLucidLid = EM.empty
         sfovClearLid = EM.empty
         sfovLitLid = EM.empty
