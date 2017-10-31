@@ -87,7 +87,7 @@ actionStrategy aid retry = do
   condTgtNonmoving <- condTgtNonmovingM aid
   explored <- getsClient sexplored
   actorAspect <- getsState sactorAspect
-  let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
+  let ar = actorAspect EM.! aid
       lidExplored = ES.member (blid body) explored
       panicFleeL = fleeL ++ badVic
       condHpTooLow = hpTooLow body ar
@@ -306,9 +306,8 @@ pickup aid onlyWeapon = do
   -- The calmE is inaccurate also if an item not IDed, but that's intended
   -- and the server will ignore and warn (and content may avoid that,
   -- e.g., making all rings identified)
-  actorAspect <- getsState sactorAspect
-  let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
-      calmE = calmEnough b ar
+  ar <- getsState $ getActorAspect aid
+  let calmE = calmEnough b ar
       isWeapon (_, _, _, itemFull) = isMelee $ itemBase itemFull
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
@@ -338,9 +337,8 @@ equipItems :: MonadClient m
            => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
 equipItems aid = do
   body <- getsState $ getActorBody aid
-  actorAspect <- getsState sactorAspect
-  let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
-      calmE = calmEnough body ar
+  ar <- getsState $ getActorAspect aid
+  let calmE = calmEnough body ar
   eqpAssocs <- getsState $ fullAssocs aid [CEqp]
   invAssocs <- getsState $ fullAssocs aid [CInv]
   shaAssocs <- getsState $ fullAssocs aid [CSha]
@@ -401,9 +399,8 @@ yieldUnneeded :: MonadClient m
               => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
 yieldUnneeded aid = do
   body <- getsState $ getActorBody aid
-  actorAspect <- getsState sactorAspect
-  let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
-      calmE = calmEnough body ar
+  ar <- getsState $ getActorAspect aid
+  let calmE = calmEnough body ar
   eqpAssocs <- getsState $ fullAssocs aid [CEqp]
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
@@ -439,9 +436,8 @@ unEquipItems :: MonadClient m
              => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
 unEquipItems aid = do
   body <- getsState $ getActorBody aid
-  actorAspect <- getsState sactorAspect
-  let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
-      calmE = calmEnough body ar
+  ar <- getsState $ getActorAspect aid
+  let calmE = calmEnough body ar
   eqpAssocs <- getsState $ fullAssocs aid [CEqp]
   invAssocs <- getsState $ fullAssocs aid [CInv]
   shaAssocs <- getsState $ fullAssocs aid [CSha]
@@ -534,7 +530,7 @@ meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbMelee))
 meleeBlocker aid = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsState sactorAspect
-  let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
+  let ar = actorAspect EM.! aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   actorSk <- currentSkillsClient aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -553,8 +549,7 @@ meleeBlocker aid = do
         Just aim -> getsState $ posToAssocs aim (blid b)
       case lBlocker of
         (aid2, body2) : _ -> do
-          let ar2 = fromMaybe (error $ "" `showFailure` aid2)
-                              (EM.lookup aid2 actorAspect)
+          let ar2 = actorAspect EM.! aid2
           -- No problem if there are many projectiles at the spot. We just
           -- attack the first one.
           if | actorDying body2
@@ -677,9 +672,8 @@ applyItem aid applyGroup = do
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   localTime <- getsState $ getLocalTime (blid b)
-  actorAspect <- getsState sactorAspect
-  let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
-      calmE = calmEnough b ar
+  ar <- getsState $ getActorAspect aid
+  let calmE = calmEnough b ar
       condNotCalmEnough = not calmE
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltaSerious (bcalmDelta b)

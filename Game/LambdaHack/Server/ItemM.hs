@@ -65,8 +65,7 @@ registerItem ItemFull{..} itemKnown seed container verbose = do
       execUpdAtomic $ UpdDiscover container iid itemKindId seed
   return iid
 
-createLevelItem :: MonadServerAtomic m
-                => Point -> LevelId -> m ()
+createLevelItem :: MonadServerAtomic m => Point -> LevelId -> m ()
 createLevelItem pos lid = do
   Level{litemFreq} <- getLevel lid
   let container = CFloor lid pos

@@ -160,9 +160,8 @@ condProjectListM skill aid = do
   b <- getsState $ getActorBody aid
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
-  actorAspect <- getsState sactorAspect
-  let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
-      calmE = calmEnough b ar
+  ar <- getsState $ getActorAspect aid
+  let calmE = calmEnough b ar
       condNotCalmEnough = not calmE
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltaSerious (bcalmDelta b)

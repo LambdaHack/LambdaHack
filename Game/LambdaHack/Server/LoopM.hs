@@ -150,8 +150,7 @@ handleFidUpd False updatePerFid fid fact = do
 -- | Handle a clip (a part of a turn for which one or more frames
 -- will be generated). Run the leader and other actors moves.
 -- Eventually advance the time and repeat.
-loopUpd :: forall m. ( MonadServerAtomic m
-                     , MonadServerReadRequest m)
+loopUpd :: forall m. (MonadServerAtomic m, MonadServerReadRequest m)
         => m () -> m ()
 loopUpd updConn = do
   let updatePerFid :: FactionId -> m ()
@@ -191,8 +190,7 @@ loopUpd updConn = do
 -- | Handle the end of every clip. Do whatever has to be done
 -- every fixed number of time units, e.g., monster generation.
 -- Advance time. Perform periodic saves, if applicable.
-endClip :: forall m. MonadServerAtomic m
-        => (FactionId -> m ()) -> m ()
+endClip :: forall m. MonadServerAtomic m => (FactionId -> m ()) -> m ()
 {-# INLINE endClip #-}
 endClip updatePerFid = do
   Kind.COps{corule} <- getsState scops
@@ -233,8 +231,7 @@ endClip updatePerFid = do
   when (clipN `mod` rwriteSaveClips == 0) $ writeSaveAll False
 
 -- | Check if the given actor is dominated and update his calm.
-manageCalmAndDomination :: MonadServerAtomic m
-                        => ActorId -> Actor -> m ()
+manageCalmAndDomination :: MonadServerAtomic m => ActorId -> Actor -> m ()
 manageCalmAndDomination aid b = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   fact <- getsState $ (EM.! bfid b) . sfactionD
@@ -258,8 +255,7 @@ manageCalmAndDomination aid b = do
         Just fid1 -> assert (fid1 /= bfid b) $ dominateFidSfx fid1 aid
     else return False
   unless dominated $ do
-    actorAspect <- getsState sactorAspect
-    let ar = actorAspect EM.! aid
+    ar <- getsState $ getActorAspect aid
     newCalmDelta <- getsState $ regenCalmDelta b ar
     unless (newCalmDelta == 0) $
       -- Update delta for the current player turn.
@@ -297,8 +293,7 @@ applyPeriodicLevel = do
   allActors <- getsState sactorD
   mapM_ applyPeriodicActor $ EM.assocs allActors
 
-handleTrajectories :: MonadServerAtomic m
-                   => LevelId -> FactionId -> m ()
+handleTrajectories :: MonadServerAtomic m => LevelId -> FactionId -> m ()
 handleTrajectories lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime

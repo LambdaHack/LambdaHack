@@ -173,10 +173,8 @@ chooseItemDialogMode c = do
             Level{lxsize, lysize} <- getLevel lidV
             localTime <- getsState $ getLocalTime (blid b)
             factionD <- getsState sfactionD
-            actorAspect <- getsState sactorAspect
-            let ar = fromMaybe (error $ "" `showFailure` leader)
-                               (EM.lookup leader actorAspect)
-                attrLine = itemDesc (bfid b) factionD (aHurtMelee ar)
+            ar <- getsState $ getActorAspect leader
+            let attrLine = itemDesc (bfid b) factionD (aHurtMelee ar)
                                     store localTime itemFull
                 ov = splitAttrLine lxsize attrLine
             slides <-
@@ -226,10 +224,8 @@ chooseItemDialogMode c = do
         leader <- getLeaderUI
         b <- getsState $ getActorBody leader
         bUI <- getsSession $ getActorUI leader
-        actorAspect <- getsState sactorAspect
-        let ar = fromMaybe (error $ "" `showFailure` leader)
-                           (EM.lookup leader actorAspect)
-            valueText = slotToDecorator eqpSlot b $ prEqpSlot eqpSlot ar
+        ar <- getsState $ getActorAspect leader
+        let valueText = slotToDecorator eqpSlot b $ prEqpSlot eqpSlot ar
             prompt2 = makeSentence
               [ MU.WownW (partActor bUI) (MU.Text $ slotToName eqpSlot)
               , "is", MU.Text valueText ]
@@ -247,9 +243,7 @@ chooseItemProjectHuman :: forall m. MonadClientUI m => [Trigger] -> m MError
 chooseItemProjectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorAspect <- getsState sactorAspect
-  let ar = fromMaybe (error $ "" `showFailure` leader)
-                     (EM.lookup leader actorAspect)
+  ar <- getsState $ getActorAspect leader
   let calmE = calmEnough b ar
       cLegalRaw = [CGround, CInv, CSha, CEqp]
       cLegal | calmE = cLegalRaw
@@ -279,11 +273,9 @@ permittedProjectClient :: MonadClientUI m
 permittedProjectClient triggerSyms = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
+  ar <- getsState $ getActorAspect leader
   actorSk <- leaderSkillsClientUI
   let skill = EM.findWithDefault 0 AbProject actorSk
-  actorAspect <- getsState sactorAspect
-  let ar = fromMaybe (error $ "" `showFailure` leader)
-                     (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
   return $ permittedProject False skill calmE triggerSyms
 
@@ -408,10 +400,8 @@ chooseItemApplyHuman :: forall m. MonadClientUI m => [Trigger] -> m MError
 chooseItemApplyHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorAspect <- getsState sactorAspect
-  let ar = fromMaybe (error $ "" `showFailure` leader)
-                     (EM.lookup leader actorAspect)
-      calmE = calmEnough b ar
+  ar <- getsState $ getActorAspect leader
+  let calmE = calmEnough b ar
       cLegalRaw = [CGround, CInv, CSha, CEqp]
       cLegal | calmE = cLegalRaw
              | otherwise = delete CSha cLegalRaw
@@ -437,11 +427,9 @@ permittedApplyClient :: MonadClientUI m
 permittedApplyClient triggerSyms = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
+  ar <- getsState $ getActorAspect leader
   actorSk <- leaderSkillsClientUI
   let skill = EM.findWithDefault 0 AbApply actorSk
-  actorAspect <- getsState sactorAspect
-  let ar = fromMaybe (error $ "" `showFailure` leader)
-                     (EM.lookup leader actorAspect)
       calmE = calmEnough b ar
   localTime <- getsState $ getLocalTime (blid b)
   return $ permittedApply localTime skill calmE triggerSyms

@@ -47,8 +47,7 @@ import Game.LambdaHack.Server.State
 
 -- + Semantics of effects
 
-applyItem :: MonadServerAtomic m
-          => ActorId -> ItemId -> CStore -> m ()
+applyItem :: MonadServerAtomic m => ActorId -> ItemId -> CStore -> m ()
 applyItem aid iid cstore = do
   execSfxAtomic $ SfxApply aid iid cstore
   let c = CActor aid cstore
@@ -61,11 +60,10 @@ applyMeleeDamage source target iid = do
   if jdamage itemBase == 0 then return False else do  -- speedup
     sb <- getsState $ getActorBody source
     tb <- getsState $ getActorBody target
-    actorAspect <- getsState sactorAspect
+    ar <- getsState $ getActorAspect target
     hurtMult <- getsState $ armorHurtBonus source target
     dmg <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) $ jdamage itemBase
-    let ar = actorAspect EM.! target
-        hpMax = aMaxHP ar
+    let hpMax = aMaxHP ar
         rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
         speedDeltaHP = case btrajectory sb of
           Just (_, speed) -> - modifyDamageBySpeed rawDeltaHP speed
@@ -281,13 +279,11 @@ effectSem source target iid c recharged periodic effect = do
 
 -- Damage from fire. Not affected by armor.
 effectBurn :: MonadServerAtomic m
-           => Dice.Dice -> ActorId -> ActorId
-           -> m Bool
+           => Dice.Dice -> ActorId -> ActorId -> m Bool
 effectBurn nDm source target = do
   tb <- getsState $ getActorBody target
-  actorAspect <- getsState sactorAspect
-  let ar = actorAspect EM.! target
-      hpMax = aMaxHP ar
+  ar <- getsState $ getActorAspect target
+  let hpMax = aMaxHP ar
   n <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   let rawDeltaHP = - xM n
       -- We ignore minor burns.
@@ -384,14 +380,12 @@ effectExplode execSfx cgroup target = do
 -- ** RefillHP
 
 -- Unaffected by armor.
-effectRefillHP :: MonadServerAtomic m
-               => Int -> ActorId -> ActorId -> m Bool
+effectRefillHP :: MonadServerAtomic m => Int -> ActorId -> ActorId -> m Bool
 effectRefillHP power source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  actorAspect <- getsState sactorAspect
-  let ar = actorAspect EM.! target
-      hpMax = aMaxHP ar
+  ar <- getsState $ getActorAspect target
+  let hpMax = aMaxHP ar
       -- We ignore light poison and similar -1HP per turn annoyances.
       serious = not (bproj tb) && source /= target && abs power > 1
       deltaHP | power < 0 && serious =  -- if overfull, at least cut back to max
@@ -414,9 +408,8 @@ effectRefillHP power source target = do
 cutCalm :: MonadServerAtomic m => ActorId -> m ()
 cutCalm target = do
   tb <- getsState $ getActorBody target
-  actorAspect <- getsState sactorAspect
-  let ar = actorAspect EM.! target
-      upperBound = if hpTooLow tb ar
+  ar <- getsState $ getActorAspect target
+  let upperBound = if hpTooLow tb ar
                    then 0  -- to trigger domination, etc.
                    else xM $ aMaxCalm ar
       deltaCalm = min minusM1 (upperBound - bcalm tb)
@@ -426,13 +419,12 @@ cutCalm target = do
 
 -- ** RefillCalm
 
-effectRefillCalm ::  MonadServerAtomic m
+effectRefillCalm :: MonadServerAtomic m
                  => m () -> Int -> ActorId -> ActorId -> m Bool
 effectRefillCalm execSfx power source target = do
   tb <- getsState $ getActorBody target
-  actorAspect <- getsState sactorAspect
-  let ar = actorAspect EM.! target
-      calmMax = aMaxCalm ar
+  ar <- getsState $ getActorAspect target
+  let calmMax = aMaxCalm ar
       serious = not (bproj tb) && source /= target && power > 1
       deltaCalm | power < 0 && serious =  -- if overfull, at least cut to max
                     min (xM power) (xM calmMax - bcalm tb)
@@ -447,9 +439,7 @@ effectRefillCalm execSfx power source target = do
 -- ** Dominate
 
 effectDominate :: MonadServerAtomic m
-               => (IK.Effect -> m Bool)
-               -> ActorId -> ActorId
-               -> m Bool
+               => (IK.Effect -> m Bool) -> ActorId -> ActorId -> m Bool
 effectDominate recursiveCall source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
@@ -460,16 +450,14 @@ effectDominate recursiveCall source target = do
        recursiveCall IK.Impress
      | otherwise -> dominateFidSfx (bfid sb) target
 
-dominateFidSfx :: MonadServerAtomic m
-               => FactionId -> ActorId -> m Bool
+dominateFidSfx :: MonadServerAtomic m => FactionId -> ActorId -> m Bool
 dominateFidSfx fid target = do
   tb <- getsState $ getActorBody target
   -- Actors that don't move freely can't be dominated, for otherwise,
   -- when they are the last survivors, they could get stuck
   -- and the game wouldn't end.
-  actorAspect <- getsState sactorAspect
-  let ar = actorAspect EM.! target
-      actorMaxSk = aSkills ar
+  ar <- getsState $ getActorAspect target
+  let actorMaxSk = aSkills ar
       -- Check that the actor can move, also between levels and through doors.
       -- Otherwise, it's too awkward for human player to control.
       canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
@@ -497,11 +485,10 @@ dominateFid fid target = do
   when (isNothing $ _gleader fact) $ moveStores False target CSha CInv
   tb <- getsState $ getActorBody target
   ais <- getsState $ getCarriedAssocs tb
-  actorAspect <- getsState sactorAspect
+  ar <- getsState $ getActorAspect target
   getItem <- getsState $ flip getItemBody
   discoKind <- getsState sdiscoKind
-  let ar = actorAspect EM.! target
-      isImpression iid = case EM.lookup (jkindIx $ getItem iid) discoKind of
+  let isImpression iid = case EM.lookup (jkindIx $ getItem iid) discoKind of
         Just KindMean{kmKind} ->
           maybe False (> 0) $ lookup "impressed" $ IK.ifreq (okind kmKind)
         Nothing -> error $ "" `showFailure` iid
@@ -815,8 +802,7 @@ effectInsertMove execSfx nDm target = do
   execSfx
   p <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   b <- getsState $ getActorBody target
-  actorAspect <- getsState sactorAspect
-  let ar = actorAspect EM.! target
+  ar <- getsState $ getActorAspect target
   let actorTurn = ticksPerMeter $ bspeed b ar
       t = timeDeltaScale actorTurn (-p)
   modifyServer $ \ser ->
@@ -882,9 +868,8 @@ effectCreateItem jfidRaw mcount target store grp tim = do
     IK.TimerActorTurn nDm -> do
       k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
       let !_A = assert (k >= 0) ()
-      actorAspect <- getsState sactorAspect
-      let ar = actorAspect EM.! target
-          actorTurn = ticksPerMeter $ bspeed tb ar
+      ar <- getsState $ getActorAspect target
+      let actorTurn = ticksPerMeter $ bspeed tb ar
       return $! timeDeltaScale actorTurn k
   let c = CActor target store
   bagBefore <- getsState $ getBodyStoreBag tb store
@@ -1019,8 +1004,7 @@ pickDroppable aid b = do
 
 -- ** PolyItem
 
-effectPolyItem :: MonadServerAtomic m
-               => m () -> ActorId -> ActorId -> m Bool
+effectPolyItem :: MonadServerAtomic m => m () -> ActorId -> ActorId -> m Bool
 effectPolyItem execSfx source target = do
   sb <- getsState $ getActorBody source
   let cstore = CGround
@@ -1133,8 +1117,7 @@ effectDetectX predicate action execSfx radius target = do
 
 -- ** DetectActor
 
-effectDetectActor :: MonadServerAtomic m
-                  => m () -> Int -> ActorId -> m Bool
+effectDetectActor :: MonadServerAtomic m => m () -> Int -> ActorId -> m Bool
 effectDetectActor execSfx radius target = do
   b <- getsState $ getActorBody target
   Level{lactor} <- getLevel $ blid b
@@ -1143,8 +1126,7 @@ effectDetectActor execSfx radius target = do
 
 -- ** DetectItem
 
-effectDetectItem :: MonadServerAtomic m
-                 => m () -> Int -> ActorId -> m Bool
+effectDetectItem :: MonadServerAtomic m => m () -> Int -> ActorId -> m Bool
 effectDetectItem execSfx radius target = do
   b <- getsState $ getActorBody target
   Level{lfloor} <- getLevel $ blid b
@@ -1153,8 +1135,7 @@ effectDetectItem execSfx radius target = do
 
 -- ** DetectExit
 
-effectDetectExit :: MonadServerAtomic m
-                 => m () -> Int -> ActorId -> m Bool
+effectDetectExit :: MonadServerAtomic m => m () -> Int -> ActorId -> m Bool
 effectDetectExit execSfx radius target = do
   b <- getsState $ getActorBody target
   Level{lstair=(ls1, ls2), lescape} <- getLevel $ blid b
@@ -1189,8 +1170,7 @@ effectDetectHidden execSfx radius target pos = do
 -- boldpos is used, if it can't, a random outward vector of length 10
 -- is picked.
 effectSendFlying :: MonadServerAtomic m
-                 => m () -> IK.ThrowMod
-                 -> ActorId -> ActorId -> Maybe Bool
+                 => m () -> IK.ThrowMod -> ActorId -> ActorId -> Maybe Bool
                  -> m Bool
 effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
   v <- sendFlyingVector source target modePush
@@ -1264,8 +1244,7 @@ sendFlyingVector source target modePush = do
 -- ** DropBestWeapon
 
 -- | Make the target actor drop his best weapon (stack).
-effectDropBestWeapon :: MonadServerAtomic m
-                     => m () -> ActorId -> m Bool
+effectDropBestWeapon :: MonadServerAtomic m => m () -> ActorId -> m Bool
 effectDropBestWeapon execSfx target = do
   tb <- getsState $ getActorBody target
   localTime <- getsState $ getLocalTime (blid tb)
@@ -1286,8 +1265,7 @@ effectDropBestWeapon execSfx target = do
 -- in the target actor's equipment (there's no variant that activates
 -- a random one, to avoid the incentive for carrying garbage).
 -- Only one item of each stack is activated (and possibly consumed).
-effectActivateInv :: MonadServerAtomic m
-                  => m () -> ActorId -> Char -> m Bool
+effectActivateInv :: MonadServerAtomic m => m () -> ActorId -> Char -> m Bool
 effectActivateInv execSfx target symbol =
   effectTransformEqp execSfx target symbol CInv $ \iid _ -> do
     let c = CActor target CInv
@@ -1315,8 +1293,7 @@ effectTransformEqp execSfx target symbol cstore m = do
 
 -- ** ApplyPerfume
 
-effectApplyPerfume :: MonadServerAtomic m
-                   => m () -> ActorId -> m Bool
+effectApplyPerfume :: MonadServerAtomic m => m () -> ActorId -> m Bool
 effectApplyPerfume execSfx target = do
   execSfx
   tb <- getsState $ getActorBody target
@@ -1329,9 +1306,7 @@ effectApplyPerfume execSfx target = do
 -- ** OneOf
 
 effectOneOf :: MonadServerAtomic m
-            => (IK.Effect -> m Bool)
-            -> [IK.Effect]
-            -> m Bool
+            => (IK.Effect -> m Bool) -> [IK.Effect] -> m Bool
 effectOneOf recursiveCall l = do
   let call1 = do
         ef <- rndToAction $ oneOf l
@@ -1345,9 +1320,7 @@ effectOneOf recursiveCall l = do
 -- ** Recharging
 
 effectRecharging :: MonadServerAtomic m
-                 => (IK.Effect -> m Bool)
-                 -> IK.Effect -> Bool
-                 -> m Bool
+                 => (IK.Effect -> m Bool) -> IK.Effect -> Bool -> m Bool
 effectRecharging recursiveCall e recharged =
   if recharged
   then recursiveCall e

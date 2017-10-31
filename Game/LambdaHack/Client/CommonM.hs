@@ -104,15 +104,11 @@ makeLine onlyFirst body fpos epsOld = do
 -- @MonadStateRead@ would be enough, but the logic is sound only on client.
 maxActorSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
 maxActorSkillsClient aid = do
-  actorAspect <- getsState sactorAspect
-  case EM.lookup aid actorAspect of
-    Just aspectRecord -> return $ aSkills aspectRecord  -- keep it lazy
-    Nothing -> error $ "" `showFailure` aid
+  ar <- getsState $ getActorAspect aid
+  return $ aSkills ar  -- keep it lazy
 
 currentSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
 currentSkillsClient aid = do
-  actorAspect <- getsState sactorAspect
-  let ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
   body <- getsState $ getActorBody aid
   side <- getsClient sside
   -- Newest Leader in _sleader, not yet in sfactionD.
@@ -121,7 +117,7 @@ currentSkillsClient aid = do
              else do
                fact <- getsState $ (EM.! bfid body) . sfactionD
                return $! _gleader fact
-  getsState $ actorSkills mleader aid ar  -- keep it lazy
+  getsState $ actorSkills mleader aid  -- keep it lazy
 
 -- Client has to choose the weapon based on its partial knowledge,
 -- because if server chose it, it would leak item discovery information.

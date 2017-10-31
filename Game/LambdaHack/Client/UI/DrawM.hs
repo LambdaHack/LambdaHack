@@ -70,10 +70,8 @@ targetDesc mtarget = do
       side <- getsClient sside
       b <- getsState $ getActorBody aid
       bUI <- getsSession $ getActorUI aid
-      actorAspect <- getsState sactorAspect
-      let ar = fromMaybe (error $ "" `showFailure` aid)
-                         (EM.lookup aid actorAspect)
-          percentage = 100 * bhp b `div` xM (max 5 $ aMaxHP ar)
+      ar <- getsState $ getActorAspect aid
+      let percentage = 100 * bhp b `div` xM (max 5 $ aMaxHP ar)
           chs n = "[" <> T.replicate n "*"
                       <> T.replicate (4 - n) "_" <> "]"
           stars = chs $ fromEnum $ max 0 $ min 4 $ percentage `div` 20
@@ -509,11 +507,9 @@ drawLeaderStatus waitT = do
   mleader <- getsClient _sleader
   case mleader of
     Just leader -> do
-      actorAspect <- getsState sactorAspect
+      ar <- getsState $ getActorAspect leader
       s <- getState
-      let ar = fromMaybe (error $ "" `showFailure` leader)
-                         (EM.lookup leader actorAspect)
-          showTrunc :: Show a => a -> String
+      let showTrunc :: Show a => a -> String
           showTrunc = (\t -> if length t > 3 then "***" else t) . show
           (darkL, bracedL, hpDelta, calmDelta,
            ahpS, bhpS, acalmS, bcalmS) =

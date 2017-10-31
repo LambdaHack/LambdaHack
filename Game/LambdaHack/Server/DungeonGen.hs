@@ -34,9 +34,8 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.DungeonGen.Cave
 import Game.LambdaHack.Server.DungeonGen.Place
 
-convertTileMaps :: Kind.COps -> Bool
-                -> Rnd (Kind.Id TileKind) -> Maybe (Rnd (Kind.Id TileKind))
-                -> Int -> Int -> TileMapEM
+convertTileMaps :: Kind.COps -> Bool -> Rnd (Kind.Id TileKind)
+                -> Maybe (Rnd (Kind.Id TileKind)) -> Int -> Int -> TileMapEM
                 -> Rnd TileMap
 convertTileMaps Kind.COps{coTileSpeedup} areAllWalkable
                 cdefTile mpickPassable cxsize cysize ltile = do
@@ -196,9 +195,8 @@ placeDownStairs kc@CaveKind{..} ps = do
   findPoint cxsize cysize f
 
 -- | Build rudimentary level from a cave kind.
-levelFromCaveKind :: Kind.COps
-                  -> CaveKind -> AbsDepth -> TileMap -> ([Point], [Point])
-                  -> Int -> [Point] -> Bool
+levelFromCaveKind :: Kind.COps -> CaveKind -> AbsDepth -> TileMap
+                  -> ([Point], [Point]) -> Int -> [Point] -> Bool
                   -> Level
 levelFromCaveKind Kind.COps{coTileSpeedup}
                   CaveKind{ cactorCoeff=lactorCoeff

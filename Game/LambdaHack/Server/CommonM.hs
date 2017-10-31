@@ -244,9 +244,8 @@ projectFail source tpxy eps iid cstore isBlast = do
         Just kit -> do
           itemToF <- getsState $ itemToFull
           actorSk <- currentSkillsServer source
-          actorAspect <- getsState sactorAspect
-          let ar = actorAspect EM.! source
-              skill = EM.findWithDefault 0 Ability.AbProject actorSk
+          ar <- getsState $ getActorAspect source
+          let skill = EM.findWithDefault 0 Ability.AbProject actorSk
               itemFull@ItemFull{itemBase} = itemToF iid kit
               forced = isBlast || bproj sb
               calmE = calmEnough sb ar
@@ -447,11 +446,10 @@ pickWeaponServer source = do
 -- @MonadStateRead@ would be enough, but the logic is sound only on server.
 currentSkillsServer :: MonadServer m => ActorId -> m Ability.Skills
 currentSkillsServer aid  = do
-  ar <- getsState $ (EM.! aid) . sactorAspect
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   let mleader = _gleader fact
-  getsState $ actorSkills mleader aid ar
+  getsState $ actorSkills mleader aid
 
 getCacheLucid :: MonadServer m => LevelId -> m FovLucid
 getCacheLucid lid = do

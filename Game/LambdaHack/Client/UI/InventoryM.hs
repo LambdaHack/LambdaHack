@@ -257,9 +257,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   bodyUI <- getsSession $ getActorUI leader
-  actorAspect <- getsState sactorAspect
-  let ar = fromMaybe (error $ "" `showFailure` leader)
-                     (EM.lookup leader actorAspect)
+  ar <- getsState $ getActorAspect leader
   fact <- getsState $ (EM.! bfid body) . sfactionD
   hs <- partyAfterLeader leader
   bagAll <- getsState $ \s -> accessModeBag leader s cCur
@@ -457,10 +455,8 @@ legalWithUpdatedLeader cCur cRest = do
   leader <- getLeaderUI
   let newLegal = cCur : cRest  -- not updated in any way yet
   b <- getsState $ getActorBody leader
-  actorAspect <- getsState sactorAspect
-  let ar = fromMaybe (error $ "" `showFailure` leader)
-                     (EM.lookup leader actorAspect)
-      calmE = calmEnough b ar
+  ar <- getsState $ getActorAspect leader
+  let calmE = calmEnough b ar
       legalAfterCalm = case newLegal of
         c1@(MStore CSha) : c2 : rest | not calmE -> (c2, c1 : rest)
         [MStore CSha] | not calmE -> (MStore CGround, newLegal)

@@ -478,8 +478,7 @@ runOnceAheadHuman = do
 moveOnceToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestAnyAbility)
 moveOnceToXhairHuman = goToXhair True False
 
-goToXhair :: MonadClientUI m
-          => Bool -> Bool -> m (FailOrCmd RequestAnyAbility)
+goToXhair :: MonadClientUI m => Bool -> Bool -> m (FailOrCmd RequestAnyAbility)
 goToXhair initialStep run = do
   aimMode <- getsSession saimMode
   -- Movement is legal only outside aiming mode.
@@ -632,11 +631,9 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
   -- The calmE is inaccurate also if an item not IDed, but that's intended
   -- and the server will ignore and warn (and content may avoid that,
   -- e.g., making all rings identified)
-  actorAspect <- getsState sactorAspect
+  ar <- getsState $ getActorAspect leader
   lastItemMove <- getsSession slastItemMove
-  let ar = fromMaybe (error $ "" `showFailure` leader)
-                     (EM.lookup leader actorAspect)
-      calmE = calmEnough b ar
+  let calmE = calmEnough b ar
       cLegalE | calmE = cLegalRaw
               | destCStore == CSha = []
               | otherwise = delete CSha cLegalRaw
@@ -674,11 +671,9 @@ moveItems :: forall m. MonadClientUI m
 moveItems cLegalRaw (fromCStore, l) destCStore = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorAspect <- getsState sactorAspect
+  ar <- getsState $ getActorAspect leader
   discoBenefit <- getsClient sdiscoBenefit
-  let ar = fromMaybe (error $ "" `showFailure` leader)
-                     (EM.lookup leader actorAspect)
-      calmE = calmEnough b ar
+  let calmE = calmEnough b ar
       ret4 :: [(ItemId, ItemFull)]
            -> Int -> [(ItemId, Int, CStore, CStore)]
            -> m (FailOrCmd [(ItemId, Int, CStore, CStore)])
@@ -752,10 +747,8 @@ projectItem :: MonadClientUI m
 projectItem ts (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorAspect <- getsState sactorAspect
-  let ar = fromMaybe (error $ "" `showFailure` leader)
-                     (EM.lookup leader actorAspect)
-      calmE = calmEnough b ar
+  ar <- getsState $ getActorAspect leader
+  let calmE = calmEnough b ar
   if not calmE && fromCStore == CSha then failSer ItemNotCalm
   else do
     mpsuitReq <- psuitReq ts
@@ -799,10 +792,8 @@ applyItem :: MonadClientUI m
 applyItem ts (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorAspect <- getsState sactorAspect
-  let ar = fromMaybe (error $ "" `showFailure` leader)
-                     (EM.lookup leader actorAspect)
-      calmE = calmEnough b ar
+  ar <- getsState $ getActorAspect leader
+  let calmE = calmEnough b ar
   if not calmE && fromCStore == CSha then failSer ItemNotCalm
   else do
     p <- permittedApplyClient $ triggerSymbols ts
@@ -999,9 +990,7 @@ itemMenuHuman cmdAction = do
       case iid `EM.lookup` bag of
         Nothing -> weaveJust <$> failWith "no item to open Item Menu for"
         Just kit -> do
-          actorAspect <- getsState sactorAspect
-          let ar = fromMaybe (error $ "" `showFailure` leader)
-                             (EM.lookup leader actorAspect)
+          ar <- getsState $ getActorAspect leader
           itemToF <- getsState $ itemToFull
           lidV <- viewedLevelUI
           Level{lxsize, lysize} <- getLevel lidV

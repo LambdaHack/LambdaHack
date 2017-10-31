@@ -145,7 +145,7 @@ targetStrategy aid = do
                 -- Needed for now, because AI targets and shoots enemies
                 -- based on the path to them, not LOS to them:
                 || EM.findWithDefault 0 AbProject actorMaxSk > 0
-  actorMinSk <- getsState $ actorSkills Nothing aid ar
+  actorMinSk <- getsState $ actorSkills Nothing aid
   condCanProject <-
     condCanProjectM (EM.findWithDefault 0 AbProject actorMaxSk) aid
   condEnoughGear <- condEnoughGearM aid

@@ -132,10 +132,9 @@ cmdAtomicSemSer oldState cmd = case cmd of
         invalidateLucid  -- from itemAffects, s2 provides light or s1 is CGround
         when (s2 `elem` [CEqp, COrgan]) $ invalidatePer
   UpdRefillCalm aid _ -> do
-    actorAspect <- getsState sactorAspect
+    AspectRecord{aSight} <- getsState $ getActorAspect aid
     body <- getsState $ getActorBody aid
     let oldBody = getActorBody aid oldState
-        AspectRecord{aSight} = actorAspect EM.! aid
         radiusOld = boundSightByCalm aSight (bcalm oldBody)
         radiusNew = boundSightByCalm aSight (bcalm body)
     when (radiusOld /= radiusNew) $ invalidatePerActor aid
@@ -152,7 +151,8 @@ invalidateArenas :: MonadServer m => m ()
 invalidateArenas = modifyServer $ \ser -> ser {svalidArenas = False}
 
 updateSclear :: MonadServer m
-             => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind -> m Bool
+             => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
+             -> m Bool
 updateSclear lid pos fromTile toTile = do
   Kind.COps{coTileSpeedup} <- getsState scops
   let fromClear = Tile.isClear coTileSpeedup fromTile
@@ -208,8 +208,7 @@ itemAffectsPerRadius discoAspect iid =
 
 addPerActor :: MonadServer m => ActorId -> Actor -> m ()
 addPerActor aid b = do
-  actorAspect <- getsState sactorAspect
-  let AspectRecord{..} = actorAspect EM.! aid
+  AspectRecord{..} <- getsState $ getActorAspect aid
   unless (aSight <= 0 && aNocto <= 0 && aSmell <= 0) $ addPerActorAny aid b
 
 addPerActorAny :: MonadServer m => ActorId -> Actor -> m ()
@@ -243,8 +242,7 @@ deletePerActorAny aid b = do
 
 invalidatePerActor :: MonadServer m => ActorId -> m ()
 invalidatePerActor aid = do
-  actorAspect <- getsState sactorAspect
-  let AspectRecord{..} = actorAspect EM.! aid
+  AspectRecord{..} <- getsState $ getActorAspect aid
   unless (aSight <= 0 && aNocto <= 0 && aSmell <= 0) $ do
     b <- getsState $ getActorBody aid
     addPerActorAny aid b
@@ -252,8 +250,7 @@ invalidatePerActor aid = do
 reconsiderPerActor :: MonadServer m => ActorId -> m ()
 reconsiderPerActor aid = do
   b <- getsState $ getActorBody aid
-  actorAspect <- getsState sactorAspect
-  let AspectRecord{..} = actorAspect EM.! aid
+  AspectRecord{..} <- getsState $ getActorAspect aid
   if aSight <= 0 && aNocto <= 0 && aSmell <= 0
   then do
     perCacheFid <- getsServer sperCacheFid

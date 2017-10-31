@@ -198,9 +198,7 @@ displayRespUpdAtomicUI verbose oldState cmd = case cmd of
            actorVerbMU aid bUI "return from the brink of death"
          mleader <- getsClient _sleader
          when (Just aid == mleader) $ do
-           actorAspect <- getsState sactorAspect
-           let ar = fromMaybe (error $ "" `showFailure` aid)
-                              (EM.lookup aid actorAspect)
+           ar <- getsState $ getActorAspect aid
            -- Regenerating actors never stop gaining HP, so we need to stop
            -- reporting it after they reach full HP for the first time.
            when (bhp b >= xM (aMaxHP ar) && bhp b - n < xM (aMaxHP ar)) $ do
@@ -393,8 +391,7 @@ updateItemSlot store maid iid = do
 markDisplayNeeded :: MonadClientUI m => LevelId -> m ()
 markDisplayNeeded lid = do
   lidV <- viewedLevelUI
-  when (lidV == lid) $
-     modifySession $ \sess -> sess {sdisplayNeeded = True}
+  when (lidV == lid) $ modifySession $ \sess -> sess {sdisplayNeeded = True}
 
 updateItemSlotSide :: MonadClientUI m
                    => CStore -> ActorId -> ItemId -> m SlotChar

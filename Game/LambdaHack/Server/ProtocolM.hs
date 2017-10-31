@@ -55,14 +55,12 @@ writeQueue :: MonadServerReadRequest m
 writeQueue cmd responseS = liftIO $ putMVar responseS cmd
 
 readQueueAI :: MonadServerReadRequest m
-            => CliSerQueue RequestAI
-            -> m RequestAI
+            => CliSerQueue RequestAI -> m RequestAI
 {-# INLINE readQueueAI #-}
 readQueueAI requestS = liftIO $ takeMVar requestS
 
 readQueueUI :: MonadServerReadRequest m
-            => CliSerQueue RequestUI
-            -> m RequestUI
+            => CliSerQueue RequestUI -> m RequestUI
 {-# INLINE readQueueUI #-}
 readQueueUI requestS = liftIO $ takeMVar requestS
 
@@ -70,8 +68,7 @@ newQueue :: IO (CliSerQueue a)
 newQueue = newEmptyMVar
 
 tryRestore :: MonadServerReadRequest m
-           => Kind.COps -> DebugModeSer
-           -> m (Maybe (State, StateServer))
+           => Kind.COps -> DebugModeSer -> m (Maybe (State, StateServer))
 tryRestore cops@Kind.COps{corule} sdebugSer = do
   let bench = sbenchmark $ sdebugCli sdebugSer
   if bench then return Nothing

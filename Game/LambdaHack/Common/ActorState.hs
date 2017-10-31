@@ -7,10 +7,10 @@ module Game.LambdaHack.Common.ActorState
   , bagAssocs, bagAssocsK, calculateTotal
   , mergeItemQuant, sharedEqp, sharedAllOwnedFid, findIid
   , getContainerBag, getFloorBag, getEmbedBag, getBodyStoreBag
-  , mapActorItems_, getActorAssocs
+  , mapActorItems_, getActorBody, getActorAssocs
   , nearbyFreePoints, getCarriedAssocs, getCarriedIidCStore
   , posToAidsLvl, posToAids, posToAssocs
-  , memActor, getActorBody, getLocalTime, regenCalmDelta
+  , memActor, getActorAspect, getLocalTime, regenCalmDelta
   , actorInAmbient, canDeAmbientList, actorSkills, dispEnemy
   , itemToFull, fullAssocs, storeFromC, lidFromC, posFromC, aidFromC
   , isEscape, isStair, anyFoeAdj, actorAdjacentAssocs, armorHurtBonus
@@ -155,6 +155,10 @@ getActorBody :: ActorId -> State -> Actor
 {-# INLINE getActorBody #-}
 getActorBody aid s = sactorD s EM.! aid
 
+getActorAspect :: ActorId -> State -> AspectRecord
+{-# INLINE getActorAspect #-}
+getActorAspect aid s = sactorAspect s EM.! aid
+
 getCarriedAssocs :: Actor -> State -> [(ItemId, Item)]
 getCarriedAssocs b s =
   -- The trunk is important for a case of spotting a caught projectile
@@ -199,8 +203,7 @@ getBodyStoreBag b cstore s =
     CSha -> gsha $ sfactionD s EM.! bfid b
 
 mapActorItems_ :: Monad m
-               => (CStore -> ItemId -> ItemQuant -> m a) -> Actor
-               -> State
+               => (CStore -> ItemId -> ItemQuant -> m a) -> Actor -> State
                -> m ()
 mapActorItems_ f b s = do
   let notProcessed = [CGround]
@@ -264,10 +267,10 @@ canDeAmbientList b s =
      then filter posDeAmbient (vicinityUnsafe $ bpos b)
      else []
 
-actorSkills :: Maybe ActorId -> ActorId -> AspectRecord -> State
-            -> Ability.Skills
-actorSkills mleader aid ar s =
+actorSkills :: Maybe ActorId -> ActorId -> State -> Ability.Skills
+actorSkills mleader aid s =
   let body = getActorBody aid s
+      ar = getActorAspect aid s
       player = gplayer . (EM.! bfid body) . sfactionD $ s
       skillsFromTactic = Ability.tacticSkills $ ftactic player
       factionSkills
@@ -300,8 +303,7 @@ itemToFull :: State -> ItemId -> ItemQuant -> ItemFull
 itemToFull s iid =
   itemToFull6 (scops s) (sdiscoKind s) (sdiscoAspect s) iid (getItemBody iid s)
 
-fullAssocs :: ActorId -> [CStore] -> State
-           -> [(ItemId, ItemFull)]
+fullAssocs :: ActorId -> [CStore] -> State -> [(ItemId, ItemFull)]
 fullAssocs aid cstores s =
   let allAssocs = concatMap (\cstore -> getActorAssocsK aid cstore s) cstores
       iToFull (iid, (item, kit)) =

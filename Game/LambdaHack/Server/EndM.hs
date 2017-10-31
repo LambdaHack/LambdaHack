@@ -79,8 +79,7 @@ dieSer aid b = do
   execUpdAtomic $ UpdDestroyActor aid b2 []
 
 -- | Drop all actor's items.
-dropAllItems :: MonadServerAtomic m
-             => ActorId -> Actor -> m ()
+dropAllItems :: MonadServerAtomic m => ActorId -> Actor -> m ()
 dropAllItems aid b = do
   mapActorCStore_ CInv (dropCStoreItem False CInv aid b maxBound) b
   mapActorCStore_ CEqp (dropCStoreItem False CEqp aid b maxBound) b

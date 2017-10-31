@@ -53,7 +53,7 @@ import Game.LambdaHack.Server.State
 
 -- | The semantics of server commands.
 -- AI always takes time and so doesn't loop.
-handleRequestAI :: (MonadServerAtomic m)
+handleRequestAI :: MonadServerAtomic m
                 => ReqAI
                 -> m (Maybe RequestAnyAbility)
 handleRequestAI cmd = case cmd of
@@ -76,7 +76,7 @@ handleRequestUI fid aid cmd = case cmd of
 -- | This is a shorthand. Instead of setting @bwait@ in @ReqWait@
 -- and unsetting in all other requests, we call this once before
 -- executing a request.
-setBWait :: (MonadServerAtomic m) => RequestTimed a -> ActorId -> m (Maybe Bool)
+setBWait :: MonadServerAtomic m => RequestTimed a -> ActorId -> m (Maybe Bool)
 {-# INLINE setBWait #-}
 setBWait cmd aid = do
   let mwait = case cmd of
@@ -128,8 +128,7 @@ handleRequestTimedCases aid cmd = case cmd of
   ReqProject p eps iid cstore -> reqProject aid p eps iid cstore
   ReqApply iid cstore -> reqApply aid iid cstore
 
-switchLeader :: MonadServerAtomic m
-             => FactionId -> ActorId -> m ()
+switchLeader :: MonadServerAtomic m => FactionId -> ActorId -> m ()
 {-# INLINE switchLeader #-}
 switchLeader fid aidNew = do
   fact <- getsState $ (EM.! fid) . sfactionD
@@ -178,9 +177,8 @@ affectSmell aid = do
   b <- getsState $ getActorBody aid
   unless (bproj b) $ do
     fact <- getsState $ (EM.! bfid b) . sfactionD
-    actorAspect <- getsState sactorAspect
-    let ar = actorAspect EM.! aid
-        smellRadius = aSmell ar
+    ar <- getsState $ getActorAspect aid
+    let smellRadius = aSmell ar
     when (fhasGender (gplayer fact) || smellRadius > 0) $ do
       localTime <- getsState $ getLocalTime $ blid b
       lvl <- getLevel $ blid b
@@ -321,8 +319,7 @@ reqDisplace source target = do
       adj = checkAdjacent sb tb
       atWar = isAtWar tfact (bfid sb)
       req = ReqDisplace target
-  actorAspect <- getsState sactorAspect
-  let ar = actorAspect EM.! target
+  ar <- getsState $ getActorAspect target
   dEnemy <- getsState $ dispEnemy source target $ aSkills ar
   if | not adj -> execFailure source req DisplaceDistant
      | atWar && not dEnemy -> do  -- if not at war, can displace always
@@ -447,11 +444,10 @@ reqMoveItems :: MonadServerAtomic m
              => ActorId -> [(ItemId, Int, CStore, CStore)] -> m ()
 reqMoveItems aid l = do
   b <- getsState $ getActorBody aid
-  actorAspect <- getsState sactorAspect
-  let ar = actorAspect EM.! aid
+  ar <- getsState $ getActorAspect aid
   -- Server accepts item movement based on calm at the start, not end
   -- or in the middle, to avoid interrupted or partially ignored commands.
-      calmE = calmEnough b ar
+  let calmE = calmEnough b ar
   mapM_ (reqMoveItem aid calmE) l
 
 reqMoveItem :: MonadServerAtomic m
@@ -534,9 +530,8 @@ reqProject :: MonadServerAtomic m
 reqProject source tpxy eps iid cstore = do
   let req = ReqProject tpxy eps iid cstore
   b <- getsState $ getActorBody source
-  actorAspect <- getsState sactorAspect
-  let ar = actorAspect EM.! source
-      calmE = calmEnough b ar
+  ar <- getsState $ getActorAspect source
+  let calmE = calmEnough b ar
   if cstore == CSha && not calmE then execFailure source req ItemNotCalm
   else do
     mfail <- projectFail source tpxy eps iid cstore False
@@ -552,9 +547,8 @@ reqApply :: MonadServerAtomic m
 reqApply aid iid cstore = do
   let req = ReqApply iid cstore
   b <- getsState $ getActorBody aid
-  actorAspect <- getsState sactorAspect
-  let ar = actorAspect EM.! aid
-      calmE = calmEnough b ar
+  ar <- getsState $ getActorAspect aid
+  let calmE = calmEnough b ar
   if cstore == CSha && not calmE then execFailure aid req ItemNotCalm
   else do
     bag <- getsState $ getBodyStoreBag b cstore
