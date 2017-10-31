@@ -562,7 +562,7 @@ drawLeaderDamage width = do
       let allAssocs = filter (isMelee . itemBase . snd) allAssocsRaw
       actorSk <- leaderSkillsClientUI
       actorAspect <- getsState sactorAspect
-      strongest <- pickWeaponM Nothing allAssocs actorSk actorAspect leader
+      strongest <- pickWeaponM Nothing allAssocs actorSk leader
       let damage = case strongest of
             [] -> "0"
             (_, (_, itemFull)) : _ ->

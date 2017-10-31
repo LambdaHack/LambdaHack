@@ -427,7 +427,6 @@ pickWeaponServer source = do
   eqpAssocs <- getsState $ fullAssocs source [CEqp]
   bodyAssocs <- getsState $ fullAssocs source [COrgan]
   actorSk <- currentSkillsServer source
-  actorAspect <- getsState sactorAspect
   sb <- getsState $ getActorBody source
   let allAssocsRaw = eqpAssocs ++ bodyAssocs
       forced = bproj sb
@@ -436,7 +435,7 @@ pickWeaponServer source = do
   -- Server ignores item effects or it would leak item discovery info.
   -- In particular, it even uses weapons that would heal opponent,
   -- and not only in case of projectiles.
-  strongest <- pickWeaponM Nothing allAssocs actorSk actorAspect source
+  strongest <- pickWeaponM Nothing allAssocs actorSk source
   case strongest of
     [] -> return Nothing
     iis@((maxS, _) : _) -> do
@@ -445,6 +444,7 @@ pickWeaponServer source = do
       let cstore = if isJust (lookup iid bodyAssocs) then COrgan else CEqp
       return $ Just (iid, cstore)
 
+-- @MonadStateRead@ would be enough, but the logic is sound only on server.
 currentSkillsServer :: MonadServer m => ActorId -> m Ability.Skills
 currentSkillsServer aid  = do
   ar <- getsState $ (EM.! aid) . sactorAspect
@@ -455,14 +455,11 @@ currentSkillsServer aid  = do
 
 getCacheLucid :: MonadServer m => LevelId -> m FovLucid
 getCacheLucid lid = do
-  discoAspect <- getsState sdiscoAspect
-  actorAspect <- getsState sactorAspect
   fovClearLid <- getsServer sfovClearLid
   fovLitLid <- getsServer sfovLitLid
   fovLucidLid <- getsServer sfovLucidLid
   let getNewLucid = getsState $ \s ->
-        lucidFromLevel discoAspect actorAspect fovClearLid fovLitLid
-                       s lid (sdungeon s EM.! lid)
+        lucidFromLevel fovClearLid fovLitLid s lid (sdungeon s EM.! lid)
   case EM.lookup lid fovLucidLid of
     Just (FovValid fovLucid) -> return fovLucid
     _ -> do

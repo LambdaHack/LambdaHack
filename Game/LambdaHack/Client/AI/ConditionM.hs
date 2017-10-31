@@ -103,7 +103,8 @@ condAdjTriggerableM aid = do
 -- so to resolve the stalemate, the opposing AI has to be aggresive
 -- by ignoring them and then when melee is started, it's usually too late
 -- to retreat.
-meleeThreatDistList :: MonadClient m => ActorId -> m [(Int, (ActorId, Actor))]
+meleeThreatDistList :: MonadStateRead m
+                    => ActorId -> m [(Int, (ActorId, Actor))]
 meleeThreatDistList aid = do
   actorAspect <- getsState sactorAspect
   b <- getsState $ getActorBody aid
@@ -132,14 +133,14 @@ condBlocksFriendsM aid = do
   return $ any blocked ours
 
 -- | Require the actor stands over a weapon that would be auto-equipped.
-condFloorWeaponM :: MonadClient m => ActorId -> m Bool
+condFloorWeaponM :: MonadStateRead m => ActorId -> m Bool
 condFloorWeaponM aid = do
   floorAssocs <- getsState $ getActorAssocs aid CGround
   let lootIsWeapon = any (isMelee . snd) floorAssocs
   return lootIsWeapon
 
 -- | Check whether the actor has no weapon in equipment.
-condNoEqpWeaponM :: MonadClient m => ActorId -> m Bool
+condNoEqpWeaponM :: MonadStateRead m => ActorId -> m Bool
 condNoEqpWeaponM aid = do
   eqpAssocs <- getsState $ getActorAssocs aid CEqp
   return $ all (not . isMelee . snd) eqpAssocs
@@ -281,7 +282,7 @@ condSupport param aid = do
 
 -- | Require that the actor stands in the dark and so would be betrayed
 -- by his own equipped light,
-condShineWouldBetrayM :: MonadClient m => ActorId -> m Bool
+condShineWouldBetrayM :: MonadStateRead m => ActorId -> m Bool
 condShineWouldBetrayM aid = do
   b <- getsState $ getActorBody aid
   aInAmbient <- getsState $ actorInAmbient b

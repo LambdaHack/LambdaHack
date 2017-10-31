@@ -42,7 +42,8 @@ getPerFid lid = do
   return $! EM.findWithDefault assFail lid fper
 
 -- | Calculate the position of an actor's target.
-aidTgtToPos :: MonadClient m => ActorId -> LevelId -> Target -> m (Maybe Point)
+aidTgtToPos :: MonadStateRead m
+            => ActorId -> LevelId -> Target -> m (Maybe Point)
 aidTgtToPos aid lidV tgt =
   case tgt of
     TEnemy a _ -> do
@@ -64,7 +65,7 @@ aidTgtToPos aid lidV tgt =
 -- an actor or obstacle. Starts searching with the given eps and returns
 -- the first found eps for which the number reaches the distance between
 -- actor and target position, or Nothing if none can be found.
-makeLine :: MonadClient m => Bool -> Actor -> Point -> Int -> m (Maybe Int)
+makeLine :: MonadStateRead m => Bool -> Actor -> Point -> Int -> m (Maybe Int)
 makeLine onlyFirst body fpos epsOld = do
   Kind.COps{coTileSpeedup} <- getsState scops
   lvl@Level{lxsize, lysize} <- getLevel (blid body)
@@ -100,6 +101,7 @@ makeLine onlyFirst body fpos epsOld = do
                | otherwise ->
                  tryLines (epsOld + 1) (Nothing, minBound)  -- generate best
 
+-- @MonadStateRead@ would be enough, but the logic is sound only on client.
 maxActorSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
 maxActorSkillsClient aid = do
   actorAspect <- getsState sactorAspect
@@ -130,12 +132,10 @@ pickWeaponClient source target = do
   eqpAssocs <- getsState $ fullAssocs source [CEqp]
   bodyAssocs <- getsState $ fullAssocs source [COrgan]
   actorSk <- currentSkillsClient source
-  actorAspect <- getsState sactorAspect
   let allAssocsRaw = eqpAssocs ++ bodyAssocs
       allAssocs = filter (isMelee . itemBase . snd) allAssocsRaw
   discoBenefit <- getsClient sdiscoBenefit
-  strongest <- pickWeaponM (Just discoBenefit)
-                           allAssocs actorSk actorAspect source
+  strongest <- pickWeaponM (Just discoBenefit) allAssocs actorSk source
   case strongest of
     [] -> return Nothing
     iis@((maxS, _) : _) -> do

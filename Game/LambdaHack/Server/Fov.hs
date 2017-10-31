@@ -100,10 +100,7 @@ type PerCacheFid = EM.EnumMap FactionId PerCacheLid
 -- | Map from level positions that currently hold item or actor(s) with shine
 -- to the maximum of radiuses of the shining lights.
 --
--- Note: @ActorAspect@ and @FovShine@ shoudn't be in @State@,
--- because on client they need to be updated every time an item discovery
--- is made, unlike on the server, where it's much simpler and cheaper.
--- BTW, floor and (many projectile) actors light on a single tile
+-- Note that floor and (many projectile) actors light on a single tile
 -- should be additive for @FovShine@ to be incrementally updated.
 --
 -- @FovShine@ should not even be kept in @StateServer@, because it's cheap
@@ -196,25 +193,23 @@ totalFromPerActor perActor =
 -- but it's rare that cmd changed them, but not the perception
 -- (e.g., earthquake in an uninhabited corner of the active arena,
 -- but the we'd probably want some feedback, at least sound).
-lucidFromLevel :: DiscoveryAspect -> ActorAspect -> FovClearLid -> FovLitLid
-               -> State -> LevelId -> Level
+lucidFromLevel :: FovClearLid -> FovLitLid -> State -> LevelId -> Level
                -> FovLucid
-lucidFromLevel discoAspect actorAspect fovClearLid fovLitLid s lid lvl =
-  let shine = shineFromLevel discoAspect actorAspect s lid lvl
+lucidFromLevel fovClearLid fovLitLid s lid lvl =
+  let shine = shineFromLevel s lid lvl
       lucids = lucidFromItems (fovClearLid EM.! lid)
                $ EM.assocs $ fovShine shine
       litTiles = fovLitLid EM.! lid
   in FovLucid $ ES.unions $ fovLit litTiles : map fovLucid lucids
 
-shineFromLevel :: DiscoveryAspect -> ActorAspect -> State -> LevelId -> Level
-               -> FovShine
-shineFromLevel discoAspect actorAspect s lid lvl =
+shineFromLevel :: State -> LevelId -> Level -> FovShine
+shineFromLevel s lid lvl =
   let actorLights =
         [ (bpos b, radius)
         | (aid, b) <- inline actorAssocs (const True) lid s
-        , let radius = aShine $ actorAspect EM.! aid
+        , let radius = aShine $ sactorAspect s EM.! aid
         , radius > 0 ]
-      floorLights = floorLightSources discoAspect lvl
+      floorLights = floorLightSources (sdiscoAspect s) lvl
       allLights = floorLights ++ actorLights
       -- If there is light both on the floor and carried by actor
       -- (or several projectile actors), its radius is the maximum.
@@ -249,18 +244,15 @@ lucidFromItems clearPs allItems =
 -- * Computation of initial perception and caches
 
 -- | Calculate the perception and its caches for the whole dungeon.
-perFidInDungeon :: DiscoveryAspect -> State
-                -> ( FovLitLid, FovClearLid, FovLucidLid
-                   , PerValidFid, PerCacheFid, PerFid)
-perFidInDungeon discoAspect s =
-  let actorAspect = sactorAspect s
-      fovLitLid = litInDungeon s
+perFidInDungeon :: State -> ( FovLitLid, FovClearLid, FovLucidLid
+                            , PerValidFid, PerCacheFid, PerFid)
+perFidInDungeon s =
+  let fovLitLid = litInDungeon s
       fovClearLid = clearInDungeon s
-      fovLucidLid =
-        lucidInDungeon discoAspect actorAspect fovClearLid fovLitLid s
+      fovLucidLid = lucidInDungeon  fovClearLid fovLitLid s
       perValidLid = EM.map (const True) (sdungeon s)
       perValidFid = EM.map (const perValidLid) (sfactionD s)
-      f fid _ = perLidFromFaction actorAspect fovLucidLid fovClearLid fid s
+      f fid _ = perLidFromFaction fovLucidLid fovClearLid fid s
       em = EM.mapWithKey f $ sfactionD s
   in ( fovLitLid, fovClearLid, fovLucidLid
      , perValidFid, EM.map snd em, EM.map fst em)
@@ -280,23 +272,20 @@ clearFromLevel Kind.COps{coTileSpeedup} Level{ltile} =
 clearInDungeon :: State -> FovClearLid
 clearInDungeon s = EM.map (clearFromLevel (scops s)) $ sdungeon s
 
-lucidInDungeon :: DiscoveryAspect -> ActorAspect -> FovClearLid -> FovLitLid
-               -> State
-               -> FovLucidLid
-lucidInDungeon discoAspect actorAspect fovClearLid fovLitLid s =
+lucidInDungeon :: FovClearLid -> FovLitLid -> State-> FovLucidLid
+lucidInDungeon fovClearLid fovLitLid s =
   EM.mapWithKey
     (\lid lvl -> FovValid $
-       lucidFromLevel discoAspect actorAspect fovClearLid fovLitLid s lid lvl)
+       lucidFromLevel fovClearLid fovLitLid s lid lvl)
     $ sdungeon s
 
 -- | Calculate perception of a faction.
-perLidFromFaction :: ActorAspect -> FovLucidLid -> FovClearLid
-                  -> FactionId -> State
+perLidFromFaction :: FovLucidLid -> FovClearLid -> FactionId -> State
                   -> (PerLid, PerCacheLid)
-perLidFromFaction actorAspect fovLucidLid fovClearLid fid s =
+perLidFromFaction fovLucidLid fovClearLid fid s =
   let em = EM.mapWithKey (\lid _ ->
-             perceptionCacheFromLevel actorAspect fovClearLid fid lid s)
-             (sdungeon s)
+                            perceptionCacheFromLevel fovClearLid fid lid s)
+                         (sdungeon s)
       fovLucid lid = case EM.lookup lid fovLucidLid of
         Just (FovValid fl) -> fl
         _ -> error $ "" `showFailure` (lid, fovLucidLid)
@@ -306,14 +295,13 @@ perLidFromFaction actorAspect fovLucidLid fovClearLid fid s =
          perceptionFromPTotal (fovLucid lid) (getValid (ptotal pc))) em
      , em )
 
-perceptionCacheFromLevel :: ActorAspect -> FovClearLid
-                         -> FactionId -> LevelId -> State
+perceptionCacheFromLevel :: FovClearLid -> FactionId -> LevelId -> State
                          -> PerceptionCache
-perceptionCacheFromLevel actorAspect fovClearLid fid lid s =
+perceptionCacheFromLevel fovClearLid fid lid s =
   let fovClear = fovClearLid EM.! lid
       lvlBodies = inline actorAssocs (== fid) lid s
       f (aid, b) =
-        let ar@AspectRecord{..} = actorAspect EM.! aid
+        let ar@AspectRecord{..} = sactorAspect s EM.! aid
         in if aSight <= 0 && aNocto <= 0 && aSmell <= 0  -- dumb missiles
            then Nothing
            else Just (aid, FovValid $ cacheBeforeLucidFromActor fovClear b ar)

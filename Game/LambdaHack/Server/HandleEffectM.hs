@@ -62,7 +62,7 @@ applyMeleeDamage source target iid = do
     sb <- getsState $ getActorBody source
     tb <- getsState $ getActorBody target
     actorAspect <- getsState sactorAspect
-    hurtMult <- getsState $ armorHurtBonus actorAspect source target
+    hurtMult <- getsState $ armorHurtBonus source target
     dmg <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) $ jdamage itemBase
     let ar = actorAspect EM.! target
         hpMax = aMaxHP ar

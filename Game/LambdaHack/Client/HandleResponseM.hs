@@ -42,22 +42,22 @@ handleResponse cmd = case cmd of
   RespUpdAtomic newState cmdA -> do
     hasUI <- clientHasUI
     cmds <- cmdAtomicFilterCli cmdA
-    s <- getState
+    oldState <- getState
     putState newState
     let handle !c = do
-          cmdAtomicSemCli s c
-          when hasUI $ displayRespUpdAtomicUI False s c
+          cmdAtomicSemCli oldState c
+          when hasUI $ displayRespUpdAtomicUI False oldState c
     mapM_ handle cmds
   RespUpdAtomicNoState cmdA -> do
     hasUI <- clientHasUI
     cmds <- cmdAtomicFilterCli cmdA
     -- We assume at most one of @cmds@ changes state, so there is only one
     -- initial and one final state.
-    s <- getState
+    oldState <- getState
     let handle !c = do
           -- execUpdAtomic c
-          cmdAtomicSemCli s c
-          when hasUI $ displayRespUpdAtomicUI False s c
+          cmdAtomicSemCli oldState c
+          when hasUI $ displayRespUpdAtomicUI False oldState c
     mapM_ handle cmds
   RespQueryAI aid -> do
     cmdC <- queryAI aid

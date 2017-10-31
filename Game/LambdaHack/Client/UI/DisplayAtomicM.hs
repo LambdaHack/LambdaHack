@@ -1141,13 +1141,12 @@ setLastSlot aid iid cstore = do
 strike :: MonadClientUI m
        => Bool -> ActorId -> ActorId -> ItemId -> CStore -> m ()
 strike catch source target iid cstore = assert (source /= target) $ do
-  actorAspect <- getsState sactorAspect
   tb <- getsState $ getActorBody target
   tbUI <- getsSession $ getActorUI target
   sourceSeen <- getsState $ memActor source (blid tb)
   (ps, hurtMult) <-
    if sourceSeen then do
-    hurtMult <- getsState $ armorHurtBonus actorAspect source target
+    hurtMult <- getsState $ armorHurtBonus source target
     itemToF <- getsState $ itemToFull
     sb <- getsState $ getActorBody source
     sbUI <- getsSession $ getActorUI source

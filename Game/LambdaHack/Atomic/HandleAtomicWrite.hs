@@ -572,6 +572,8 @@ discoverKind iid kmKind = do
   -- the iid looked up, e.g., if it wasn't in old discoKind, but is in new,
   -- and then aspect record updated, so it's simpler and not much more
   -- expensive to generate new sactorAspect. Optimize only after profiling.
+  -- Also note this doesn't get invoked on the server, because it bails out
+  -- earlier, upon noticing the item is already fully known.
   actorAspect <- getsState actorAspectInDungeon
   modifyState $ updateActorAspect $ const actorAspect
 

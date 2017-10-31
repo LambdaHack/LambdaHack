@@ -378,14 +378,14 @@ actorAdjacentAssocs body s =
       g !aid = (aid, getActorBody aid s)
   in map g $ concatMap f moves
 
-armorHurtBonus :: ActorAspect -> ActorId -> ActorId -> State -> Int
-armorHurtBonus actorAspect source target s =
+armorHurtBonus :: ActorId -> ActorId -> State -> Int
+armorHurtBonus source target s =
   let sb = getActorBody source s
       tb = getActorBody target s
       trim200 n = min 200 $ max (-200) n
       block200 b n = min 200 $ max (-200) $ n + if braced tb then b else 0
-      sar = actorAspect EM.! source
-      tar = actorAspect EM.! target
+      sar = sactorAspect s EM.! source
+      tar = sactorAspect s EM.! target
       itemBonus = trim200 (aHurtMelee sar) - if bproj sb
                                              then block200 25 (aArmorRanged tar)
                                              else block200 50 (aArmorMelee tar)
