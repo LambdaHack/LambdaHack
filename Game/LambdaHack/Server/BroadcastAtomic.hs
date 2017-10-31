@@ -3,10 +3,10 @@
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Server.BroadcastAtomic
-  ( handleAndBroadcast, sendPer
+  ( handleAndBroadcast, sendPer, handleCmdAtomicServer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , handleCmdAtomicServer, atomicRemember
+  , atomicRemember
 #endif
   ) where
 
