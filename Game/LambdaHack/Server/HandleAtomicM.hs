@@ -143,13 +143,13 @@ cmdAtomicSemSer oldState cmd = case cmd of
           addItemToActor iid k aid
           invalidatePer
         invalidateLucid  -- from itemAffects, s2 provides light or s1 is CGround
-  UpdRefillCalm aid n -> do
+  UpdRefillCalm aid _ -> do
     actorAspect <- getsServer sactorAspect
     body <- getsState $ getActorBody aid
     let oldBody = getActorBody aid oldState
         AspectRecord{aSight} = actorAspect EM.! aid
         radiusOld = boundSightByCalm aSight (bcalm oldBody)
-        radiusNew = boundSightByCalm aSight (bcalm oldBody + n)
+        radiusNew = boundSightByCalm aSight (bcalm body)
     when (radiusOld /= radiusNew) $ invalidatePerActor aid
   UpdLeadFaction{} -> invalidateArenas
   UpdRecordKill{} -> invalidateArenas
