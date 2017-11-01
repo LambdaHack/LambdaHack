@@ -538,10 +538,24 @@ updDiscover _c iid ik seed = do
         discoAspect <- getsState sdiscoAspect
         if iid `EM.member` discoAspect
           then atomicFail "item already fully discovered"
-          else discoverSeed iid seed
+          else do
+            discoverSeed iid seed
+            resetActorAspect
       else do
         discoverKind iid ik
         discoverSeed iid seed
+        resetActorAspect
+
+resetActorAspect :: MonadStateWrite m => m ()
+resetActorAspect = do
+  -- Each actor's equipment and organs would need to be inspected,
+  -- the iid looked up, e.g., if it wasn't in old discoKind, but is in new,
+  -- and then aspect record updated, so it's simpler and not much more
+  -- expensive to generate new sactorAspect. Optimize only after profiling.
+  -- Also note this doesn't get invoked on the server, because it bails out
+  -- earlier, upon noticing the item is already fully known.
+  actorAspect <- getsState actorAspectInDungeon
+  modifyState $ updateActorAspect $ const actorAspect
 
 updCover :: Container -> ItemId -> Kind.Id ItemKind -> ItemSeed -> m ()
 updCover _c _iid _ik _seed = undefined
@@ -556,7 +570,9 @@ updDiscoverKind _c iid kmKind = do
       discoKind <- getsState sdiscoKind
       if jkindIx item `EM.member` discoKind
       then atomicFail "item kind already discovered"
-      else discoverKind iid kmKind
+      else do
+        discoverKind iid kmKind
+        resetActorAspect
 
 discoverKind :: MonadStateWrite m => ItemId -> Kind.Id ItemKind -> m ()
 discoverKind iid kmKind = do
@@ -568,14 +584,6 @@ discoverKind iid kmKind = do
       f Just{} = error $ "already discovered" `showFailure` (iid, kmKind)
   modifyState $ updateDiscoKind $ \discoKind1 ->
     EM.alter f (jkindIx item) discoKind1
-  -- Each actor's equipment and organs would need to be inspected,
-  -- the iid looked up, e.g., if it wasn't in old discoKind, but is in new,
-  -- and then aspect record updated, so it's simpler and not much more
-  -- expensive to generate new sactorAspect. Optimize only after profiling.
-  -- Also note this doesn't get invoked on the server, because it bails out
-  -- earlier, upon noticing the item is already fully known.
-  actorAspect <- getsState actorAspectInDungeon
-  modifyState $ updateActorAspect $ const actorAspect
 
 updCoverKind :: Container -> ItemId -> Kind.Id ItemKind -> m ()
 updCoverKind _c _iid _ik = undefined
@@ -594,9 +602,9 @@ updDiscoverSeed _c iid seed = do
         discoAspect <- getsState sdiscoAspect
         if iid `EM.member` discoAspect
         then atomicFail "item seed already discovered"
-        else discoverSeed iid seed
-  actorAspect <- getsState actorAspectInDungeon
-  modifyState $ updateActorAspect $ const actorAspect
+        else do
+          discoverSeed iid seed
+          resetActorAspect
 
 discoverSeed :: MonadStateWrite m => ItemId -> ItemSeed -> m ()
 discoverSeed iid seed = do
