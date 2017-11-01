@@ -1,6 +1,6 @@
 -- | Handle atomic commands received by the client.
 module Game.LambdaHack.Client.HandleAtomicM
-  ( cmdAtomicSemCli, cmdAtomicFilterCli
+  ( cmdAtomicSemCli
   ) where
 
 import Prelude ()
@@ -10,7 +10,6 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import Data.Ord
-import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.Bfs
@@ -33,40 +32,6 @@ import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind (ModeKind)
 import Game.LambdaHack.Content.TileKind (TileKind)
-import qualified Game.LambdaHack.Content.TileKind as TK
-
--- * RespUpdAtomicAI
-
--- | Clients keep a subset of atomic commands sent by the server
--- and add some of their own. The result of this function is the list
--- of commands kept for each command received.
--- This is calculated in the global state from before the command is executed.
-cmdAtomicFilterCli :: MonadClient m => UpdAtomic -> m [UpdAtomic]
-{-# INLINE cmdAtomicFilterCli #-}
-cmdAtomicFilterCli cmd = case cmd of
-  UpdAlterTile lid p fromTile toTile -> do
-    Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
-    lvl <- getLevel lid
-    let t = lvl `at` p
-    if t == fromTile
-      then return [cmd]
-      else do
-        -- From @UpdAlterTile@ we know @t == freshClientTile@,
-        -- which is uncanny, so we produce a message.
-        -- It happens when a client thinks the tile is @t@,
-        -- but it's @fromTile@, and @UpdAlterTile@ changes it
-        -- to @toTile@. See @updAlterTile@.
-        let subject = ""  -- a hack, we we don't handle adverbs well
-            verb = "turn into"
-            msg = makeSentence [ "the", MU.Text $ TK.tname $ okind t
-                               , "at position", MU.Text $ tshow p
-                               , "suddenly"  -- adverb
-                               , MU.SubjectVerbSg subject verb
-                               , MU.AW $ MU.Text $ TK.tname $ okind toTile ]
-        return [ cmd  -- reveal the tile
-               , UpdMsgAll msg  -- show the message
-               ]
-  _ -> return [cmd]
 
 -- | Effect of atomic actions on client state is calculated
 -- with the global state from after the command is executed
