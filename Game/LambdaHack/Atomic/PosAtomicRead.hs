@@ -136,7 +136,6 @@ posUpdAtomic cmd = case cmd of
   UpdResumeServer _ -> return PosSer
   UpdKillExit fid -> return $! PosFid fid
   UpdWriteSave -> return PosAll
-  UpdMsgAll{} -> return PosAll
 
 -- | Produce the positions where the atomic special effect takes place.
 posSfxAtomic :: MonadStateRead m => SfxAtomic -> m PosAtomic
@@ -165,6 +164,7 @@ posSfxAtomic cmd = case cmd of
     else return $! PosFidAndSight [bfid body] (blid body) [bpos body, p]
   SfxEffect _ aid _ _ -> singleAid aid  -- sometimes we don't see source, OK
   SfxMsgFid fid _ -> return $! PosFid fid
+  SfxSortSlots -> return PosAll
 
 posProjBody :: Actor -> PosAtomic
 posProjBody body =

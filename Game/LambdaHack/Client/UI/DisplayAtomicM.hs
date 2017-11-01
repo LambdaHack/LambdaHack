@@ -372,10 +372,6 @@ displayRespUpdAtomicUI verbose oldState cmd = case cmd of
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> frontendShutdown
   UpdWriteSave -> when verbose $ promptAdd "Saving backup."
-  UpdMsgAll "SortSlots" -> do  -- hack
-    side <- getsClient sside
-    sortSlots side Nothing
-  UpdMsgAll msg -> msgAdd msg
 
 updateItemSlot :: MonadClientUI m
                => CStore -> Maybe ActorId -> ItemId -> m SlotChar
@@ -1054,6 +1050,9 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         recordHistory
     msg <- ppSfxMsg sfxMsg
     msgAdd msg
+  SfxSortSlots -> do
+    side <- getsClient sside
+    sortSlots side Nothing
 
 ppSfxMsg :: MonadClientUI m => SfxMsg -> m Text
 ppSfxMsg sfxMsg = case sfxMsg of
