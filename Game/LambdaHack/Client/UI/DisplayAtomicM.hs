@@ -966,9 +966,9 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Impress -> actorVerbMU aid bUI $ "be awestruck"
         IK.Summon grp p -> do
           let verb = if bproj b then "lure" else "summon"
-              object = if p == 1
-                       then MU.Text $ tshow grp
-                       else MU.Ws $ MU.Text $ tshow grp  -- avoid "1 + dl 3"
+              object = (if p == 1  -- avoid "2 + 4 dl 3"
+                        then MU.AW
+                        else MU.Ws) $ MU.Text $ tshow grp
           actorVerbMU aid bUI $ MU.Phrase [verb, object]
         IK.Ascend True -> actorVerbMU aid bUI "find a way upstairs"
         IK.Ascend False -> actorVerbMU aid bUI "find a way downstairs"
