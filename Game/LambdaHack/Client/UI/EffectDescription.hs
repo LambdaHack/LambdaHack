@@ -87,7 +87,7 @@ effectToSuffix effect =
           verb = if store == COrgan then "nullify" else "drop"
       in "of" <+> verb <+> ntxt <+> tshow grp  -- TMI: <+> ppCStore store
     PolyItem -> "of repurpose on the ground"
-    Identify -> "of identify on the ground"
+    Identify -> "of identify"
     Detect radius -> "of detection" <+> wrapInParens (tshow radius)
     DetectActor radius -> "of actor detection" <+> wrapInParens (tshow radius)
     DetectItem radius -> "of item detection" <+> wrapInParens (tshow radius)
