@@ -1040,32 +1040,30 @@ effectIdentify :: MonadServerAtomic m
                => m () -> ItemId -> ActorId -> ActorId -> m Bool
 effectIdentify execSfx iidId source target = do
   sb <- getsState $ getActorBody source
+  s <- getsServer $ (EM.! bfid sb) . sclientStates
   let tryFull store as = case as of
-        [] -> do
-          execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxIdentifyNothing store
-          return False
+        [] -> return False
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
         (iid, ItemFull{itemDisco=Just ItemDisco{..}}) : rest -> do
-          -- We avoid identifying trivial items, but they may also be right
-          -- in the middle of bonus ranges, to if no other option, id them;
-          -- client will ignore them if really trivial.
-          let ided = IK.Identified `elem` IK.ifeature itemKind
-              statsObvious = Just itemAspectMean == itemAspect
-          if ided && statsObvious && not (null rest)
-            then tryFull store rest
-            else do
-              let c = CActor target store
-              execSfx
-              identifyIid iid c itemKindId
-              return True
+          if iid `EM.member` sdiscoAspect s
+             || not (any IK.forIdEffect (IK.ieffects itemKind))
+                  -- darts included, which prevents wasting the scroll
+          then tryFull store rest
+          else do
+            let c = CActor target store
+            execSfx
+            identifyIid iid c itemKindId
+            return True
         _ -> error $ "" `showFailure` (store, as)
       tryStore stores = case stores of
-        [] -> return False
+        [] -> do
+          execSfxAtomic $ SfxMsgFid (bfid sb) SfxIdentifyNothing
+          return False
         store : rest -> do
           allAssocs <- getsState $ fullAssocs target [store]
           go <- tryFull store allAssocs
           if go then return True else tryStore rest
-  tryStore [CGround]
+  tryStore [CGround, CEqp, CInv, CSha]
 
 identifyIid :: MonadServerAtomic m
             => ItemId -> Container -> Kind.Id ItemKind -> m ()

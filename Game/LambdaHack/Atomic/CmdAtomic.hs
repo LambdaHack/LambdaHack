@@ -149,7 +149,7 @@ data SfxMsg =
   | SfxBracedImmune ActorId
   | SfxEscapeImpossible
   | SfxTransImpossible
-  | SfxIdentifyNothing CStore
+  | SfxIdentifyNothing
   | SfxPurposeNothing CStore
   | SfxPurposeTooFew Int Int
   | SfxPurposeUnique

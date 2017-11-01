@@ -1118,8 +1118,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
         return $! makeSentence [MU.SubjectVerbSg subject verb]
   SfxEscapeImpossible -> return "This faction doesn't want to escape outside."
   SfxTransImpossible -> return "Translocation not possible."
-  SfxIdentifyNothing store -> return $!
-    "Nothing to identify" <+> ppCStoreIn store <> "."
+  SfxIdentifyNothing -> return "Nothing to identify."
   SfxPurposeNothing store -> return $!
     "The purpose of repurpose cannot be availed without an item"
     <+> ppCStoreIn store <> "."
