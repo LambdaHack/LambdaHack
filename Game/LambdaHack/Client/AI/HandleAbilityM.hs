@@ -730,7 +730,7 @@ applyItem aid applyGroup = do
               -- This assumes the organ dropping is beneficial and so worth
               -- saving for the future, for otherwise the item would not
               -- be considered at all, given that it's the only effect.
-              -- We don't try to intecept a case of many effects.
+              -- We don't try to intercept the case of many effects.
               let dropsGrps = strengthDropOrgan itemFull
                   hasDropOrgan = not $ null dropsGrps
                   f eff = [eff | IK.forApplyEffect eff]

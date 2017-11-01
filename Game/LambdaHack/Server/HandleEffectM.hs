@@ -272,6 +272,7 @@ effectSem source target iid c recharged periodic effect = do
     IK.Temporary _ -> effectTemporary execSfx source iid c
     IK.Unique -> return False
     IK.Periodic -> return False
+    IK.Composite l -> effectComposite recursiveCall l
 
 -- + Individual semantic functions for effects
 
@@ -1314,6 +1315,7 @@ effectOneOf recursiveCall l = do
         b <- result
         if b then return True else callNext
   foldr f (return False) call99
+  -- no @execSfx@, because individual effects sent them
 
 -- ** Recharging
 
@@ -1339,3 +1341,14 @@ effectTemporary execSfx source iid c =
     _ -> do
       execSfx
       return False  -- just a message
+
+-- ** Composite
+
+effectComposite :: MonadServerAtomic m
+                => (IK.Effect -> m Bool) -> [IK.Effect] -> m Bool
+effectComposite recursiveCall l = do
+  let f eff result = do
+        b <- recursiveCall eff
+        if b then result >> return True else return False
+  foldr f (return False) l  -- @True@ if any effect triggered
+  -- no @execSfx@, because individual effects sent them

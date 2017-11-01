@@ -95,10 +95,13 @@ data Effect =
       --   unless Durable and Fragile
   | Unique              -- ^ at most one copy can ever be generated
   | Periodic            -- ^ in eqp, triggered as often as @Timeout@ permits
+  | Composite [Effect]  -- ^ only fire next effect, if previous was triggered
   deriving (Show, Eq, Generic)
 
 instance NFData Effect
 
+-- | Whether the effect has a chance of exhibiting any potentially
+-- noticeable behaviour.
 forApplyEffect :: Effect -> Bool
 forApplyEffect eff = case eff of
   ELabel{} -> False
@@ -107,6 +110,7 @@ forApplyEffect eff = case eff of
   Temporary{} -> False
   Unique -> False
   Periodic -> False
+  Composite effs -> any forApplyEffect effs
   _ -> True
 
 forIdEffect :: Effect -> Bool
@@ -117,6 +121,7 @@ forIdEffect eff = case eff of
   Explode{} -> False  -- tentative; needed for rings to auto-identify
   Unique -> False
   Periodic -> False
+  Composite (eff1 : _) -> forIdEffect eff1  -- the rest may never fire
   _ -> True
 
 data TimerDice =

@@ -143,6 +143,12 @@ effectToBenefit cops fact eff =
     IK.Temporary _ -> delta 0  -- assumed for created organs only
     IK.Unique -> delta 0
     IK.Periodic -> delta 0  -- considered in totalUsefulness
+    IK.Composite [] -> delta 0
+    IK.Composite (eff1 : _) -> effectToBenefit cops fact eff1
+      -- for simplicity; so in content make sure to place initial animations
+      -- among normal effects, not at the start of composite effect
+      -- (animations should not fail, after all), and start composite
+      -- effect with the main thing
 
 -- See the comment for @Paralyze@.
 averageTurnValue :: Double

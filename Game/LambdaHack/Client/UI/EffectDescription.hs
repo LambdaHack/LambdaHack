@@ -108,6 +108,7 @@ effectToSuffix effect =
     Temporary _ -> ""
     Unique -> ""  -- marked by capital letters in name
     Periodic -> ""  -- printed specially
+    Composite effs -> T.intercalate " and then " $ map effectToSuffix effs
 
 slotToSentence :: EqpSlot -> Text
 slotToSentence es = case es of

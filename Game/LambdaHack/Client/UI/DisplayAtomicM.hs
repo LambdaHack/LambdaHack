@@ -1040,6 +1040,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Temporary t -> actorVerbMU aid bUI $ MU.Text t
         IK.Unique -> error $ "" `showFailure` sfx
         IK.Periodic -> error $ "" `showFailure` sfx
+        IK.Composite{} -> error $ "" `showFailure` sfx
   SfxMsgFid _ sfxMsg -> do
     mleader <- getsClient _sleader
     case mleader of
