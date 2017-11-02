@@ -375,8 +375,7 @@ reqAlter source tpos = do
       clientTile = lvlClient `at` tpos
       hiddenTile = Tile.hideAs cotile serverTile
   if not $ adjacent (bpos sb) tpos then execFailure source req AlterDistant
-  else if clientTile == hiddenTile
-          && hiddenTile /= serverTile then do -- searches
+  else if Just clientTile == hiddenTile then do -- searches
   -- Only actors with AbAlter > 1 can search for hidden doors, etc.
     if alterSkill <= 1
     then execFailure source req AlterUnskilled  -- don't leak about searching
@@ -410,8 +409,10 @@ reqAlter source tpos = do
               execUpdAtomic $ UpdAlterTile lid tpos serverTile toTile
               -- This case happens when a client does not see a searching
               -- action by another faction, but sees the subsequent altering.
-              when (hiddenTile /= serverTile) $
-                execUpdAtomic $ UpdAlterTile lid tpos hiddenTile toTile
+              case hiddenTile of
+                Just tHidden ->
+                  execUpdAtomic $ UpdAlterTile lid tpos tHidden toTile
+                Nothing -> return ()
               case (Tile.isExplorable coTileSpeedup serverTile,
                     Tile.isExplorable coTileSpeedup toTile) of
                 (False, True) -> execUpdAtomic $ UpdAlterExplorable lid 1

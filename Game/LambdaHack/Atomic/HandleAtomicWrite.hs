@@ -431,7 +431,7 @@ updSearchTile aid p toTile = do
   let t = lvl `at` p
   if t == toTile
   then atomicFail "tile already searched"
-  else assert (t == Tile.hideAs cotile toTile)
+  else assert (Just t == Tile.hideAs cotile toTile)
        $ updSpotTile (blid b) [(p, toTile)]
 
 -- Notice previously invisible tiles. This is similar to @UpdSpotActor@,

@@ -269,13 +269,15 @@ obscureAs Kind.Ops{okind, opick} t = do
       grp <- oneOf groups
       fromMaybe (error $ "" `showFailure` grp) <$> opick grp (const True)
 
-hideAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Kind.Id TileKind
+hideAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Maybe (Kind.Id TileKind)
 hideAs Kind.Ops{okind, ouniqGroup} t =
   let getTo TK.HideAs{} = True
       getTo _ = False
   in case find getTo $ TK.tfeature $ okind t of
-       Just (TK.HideAs grp) -> ouniqGroup grp
-       _ -> t
+       Just (TK.HideAs grp) ->
+         let tHidden = ouniqGroup grp
+         in assert (tHidden /= t) $ Just tHidden
+       _ -> Nothing
 
 buildAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Kind.Id TileKind
 buildAs Kind.Ops{okind, ouniqGroup} t =

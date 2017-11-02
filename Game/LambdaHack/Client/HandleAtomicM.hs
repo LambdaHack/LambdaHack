@@ -101,7 +101,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
     cops <- getsState scops
     let lvl = (EM.! lid) . sdungeon $ oldState
         t = lvl `at` p
-    let !_A = assert (t == Tile.hideAs cotile toTile && t /= toTile) ()
+    let !_A = assert (Just t == Tile.hideAs cotile toTile) ()
     when (tileChangeAffectsBfs cops t toTile) $
       invalidateBfsLid lid
   UpdSpotTile lid ts -> do

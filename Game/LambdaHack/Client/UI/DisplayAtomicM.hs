@@ -267,7 +267,7 @@ displayRespUpdAtomicUI verbose oldState cmd = case cmd of
   UpdSearchTile aid _p toTile -> do
     Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsState scops
     subject <- partAidLeader aid
-    let fromTile = Tile.hideAs cotile toTile
+    let fromTile = fromJust $ Tile.hideAs cotile toTile
         subject2 = MU.Text $ TK.tname $ okind fromTile
         object = MU.Text $ TK.tname $ okind toTile
     let msg = makeSentence [ MU.SubjectVerbSg subject "reveal"
