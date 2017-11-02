@@ -219,9 +219,8 @@ atomicRemember lid inPer sLocal s =
                         in UpdSpotActor aid b ais
       inActor = map fActor inAssocs
       -- Items.
-      pMaybe p = maybe Nothing (\x -> Just (p, x))
       inContainer fc itemFloor =
-        let inItem = mapMaybe (\p -> pMaybe p $ EM.lookup p itemFloor) inFov
+        let inItem = mapMaybe (\p -> (p,) <$> EM.lookup p itemFloor) inFov
             fItem p (iid, kit) =
               UpdSpotItem True iid (getItemBody iid s) kit (fc lid p)
             fBag (p, bag) = map (fItem p) $ EM.assocs bag
@@ -243,6 +242,6 @@ atomicRemember lid inPer sLocal s =
       atomicTile = if null newTs then [] else [UpdSpotTile lid newTs]
       -- Smells.
       inSmellFov = ES.elems $ totalSmelled inPer
-      inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p (lsmell lvl)) inSmellFov
+      inSm = mapMaybe (\p -> (p,) <$> EM.lookup p (lsmell lvl)) inSmellFov
       atomicSmell = if null inSm then [] else [UpdSpotSmell lid inSm]
   in atomicTile ++ inFloor ++ inEmbed ++ atomicSmell ++ inActor

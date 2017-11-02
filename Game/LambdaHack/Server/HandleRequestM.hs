@@ -386,6 +386,9 @@ reqAlter source tpos = do
       -- If they already know the tile, they will just consider our action
       -- a waste of time and ignore the command.
       execUpdAtomic $ UpdSearchTile source tpos serverTile
+      -- Seaching triggers the embeds as well, regardless if they are known
+      -- to the client.
+      itemEffectEmbedded source tpos embeds
   else if clientTile == serverTile then do -- alters
     if alterSkill < Tile.alterMinSkill coTileSpeedup serverTile
     then execFailure source req AlterUnskilled  -- don't leak about altering
@@ -436,6 +439,8 @@ reqAlter source tpos = do
               [] -> return ()
               [groupToAlterTo] -> changeTo groupToAlterTo
               l -> error $ "tile changeable in many ways" `showFailure` l
+            -- The embeds of the initial tile are activated, but we report
+            -- the effects after the tile is already changed.
             itemEffectEmbedded source tpos embeds
           else execFailure source req AlterBlockActor
         else execFailure source req AlterBlockItem

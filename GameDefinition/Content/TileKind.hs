@@ -218,7 +218,7 @@ signboardUnread = TileKind  -- client only, indicates never used by this faction
                , ConsideredByAI  -- changes after use, so safe for AI
                , RevealAs "signboard" ]  -- to display as hidden
   }
-signboardRead = TileKind  -- after first use revealed to be this one
+signboardRead = TileKind
   { tsymbol  = 'O'
   , tname    = "signboard"
   , tfreq    = [("signboard", 1), ("zooSet", 2)]
