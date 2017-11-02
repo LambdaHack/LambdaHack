@@ -85,12 +85,13 @@ cmdAtomicSemCli oldState cmd = case cmd of
       cli { stargetD = case (mtgt, mleader) of
               (Just tgt, Just leader) -> EM.singleton leader tgt
               _ -> EM.empty }
-  UpdAlterTile lid p _fromTile toTile -> do
+  UpdAlterTile lid p fromTile toTile -> do
     updateSalter lid [(p, toTile)]
     cops <- getsState scops
     let lvl = (EM.! lid) . sdungeon $ oldState
         t = lvl `at` p
-    when (tileChangeAffectsBfs cops t toTile) $
+    let !_A = assert (t == fromTile) ()
+    when (tileChangeAffectsBfs cops fromTile toTile) $
       invalidateBfsLid lid
   UpdSearchTile aid p toTile -> do
     b <- getsState $ getActorBody aid

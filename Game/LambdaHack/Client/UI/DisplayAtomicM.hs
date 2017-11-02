@@ -261,25 +261,8 @@ displayRespUpdAtomicUI verbose oldState cmd = case cmd of
     when (fid == side) $ setFrontAutoYes b
   UpdRecordKill{} -> return ()
   -- Alter map.
-  UpdAlterTile lid p fromTile toTile -> do
+  UpdAlterTile lid _p _fromTile _toTile ->
     markDisplayNeeded lid
-    Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
-    let lvl = (EM.! lid) . sdungeon $ oldState
-        t = lvl `at` p
-    when (t /= fromTile) $ do
-      -- From @UpdAlterTile@ we know @t == freshClientTile@,
-      -- which is uncanny, so we produce a message.
-      -- It happens when a client thinks the tile is @t@,
-      -- but it's @fromTile@, and @UpdAlterTile@ changes it
-      -- to @toTile@. See @updAlterTile@.
-      let subject = ""  -- a hack, we we don't handle adverbs well
-          verb = "turn into"
-          msg = makeSentence [ "the", MU.Text $ TK.tname $ okind t
-                             , "at position", MU.Text $ tshow p
-                             , "suddenly"  -- adverb
-                             , MU.SubjectVerbSg subject verb
-                             , MU.AW $ MU.Text $ TK.tname $ okind toTile ]
-      msgAdd msg
   UpdAlterExplorable{} -> return ()
   UpdSearchTile aid _p toTile -> do
     Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsState scops

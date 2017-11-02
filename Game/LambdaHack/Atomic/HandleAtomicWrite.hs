@@ -404,24 +404,19 @@ updAlterTile :: MonadStateWrite m
              => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
              -> m ()
 updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
-  Kind.COps{cotile, coTileSpeedup} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   lvl <- getLevel lid
-  -- The second alternative below can happen if, e.g., a client remembers,
-  -- but does not see the tile (so does not notice the SearchTile action),
-  -- and it suddenly changes into another tile,
-  -- which at the same time becomes visible (e.g., an open door).
   let t = lvl `at` p
-      adj ts =
-        assert (t == fromTile || t == Tile.hideAs cotile fromTile
-                `blame` "unexpected altered tile kind"
-                `swith` (lid, p, fromTile, toTile, t))
-        $ ts PointArray.// [(p, toTile)]
-  updateLevel lid $ updateTile adj
-  case ( Tile.isExplorable coTileSpeedup t
-       , Tile.isExplorable coTileSpeedup toTile ) of
-    (False, True) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl + 1}
-    (True, False) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl - 1}
-    _ -> return ()
+  if t /= fromTile
+  then atomicFail "tile to alter is different than assumed"
+  else do
+    let adj ts = ts PointArray.// [(p, toTile)]
+    updateLevel lid $ updateTile adj
+    case ( Tile.isExplorable coTileSpeedup fromTile
+         , Tile.isExplorable coTileSpeedup toTile ) of
+      (False, True) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl + 1}
+      (True, False) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl - 1}
+      _ -> return ()
 
 updAlterExplorable :: MonadStateWrite m => LevelId -> Int -> m ()
 updAlterExplorable lid delta = assert (delta /= 0) $
