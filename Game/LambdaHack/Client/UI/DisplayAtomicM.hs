@@ -261,8 +261,31 @@ displayRespUpdAtomicUI verbose oldState cmd = case cmd of
     when (fid == side) $ setFrontAutoYes b
   UpdRecordKill{} -> return ()
   -- Alter map.
-  UpdAlterTile lid _p _fromTile _toTile ->
+  UpdAlterTile lid p fromTile toTile -> do
     markDisplayNeeded lid
+    Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
+    let feats = TK.tfeature $ okind fromTile
+        toAlter feat =
+          case feat of
+            TK.OpenTo tgroup -> Just tgroup
+            TK.CloseTo tgroup -> Just tgroup
+            TK.ChangeTo tgroup -> Just tgroup
+            _ -> Nothing
+        groupsToAlterTo = mapMaybe toAlter feats
+        freq = map fst $ filter (\(_, q) -> q > 0) $ TK.tfreq $ okind toTile
+    when (null $ intersect freq groupsToAlterTo) $ do
+      -- Player notices @fromTile can't be altered into @toTIle@,
+      -- which is uncanny, so we produce a message.
+      -- This happens when the player missed an earlier search of the tile
+      -- performed by another faction.
+      let subject = ""  -- a hack, we we don't handle adverbs well
+          verb = "turn into"
+          msg = makeSentence [ "the", MU.Text $ TK.tname $ okind fromTile
+                             , "at position", MU.Text $ tshow p
+                             , "suddenly"  -- adverb
+                             , MU.SubjectVerbSg subject verb
+                             , MU.AW $ MU.Text $ TK.tname $ okind toTile ]
+      msgAdd msg
   UpdAlterExplorable{} -> return ()
   UpdSearchTile aid _p toTile -> do
     Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsState scops
