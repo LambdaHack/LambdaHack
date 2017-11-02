@@ -94,12 +94,14 @@ cmdAtomicSemCli oldState cmd = case cmd of
     when (tileChangeAffectsBfs cops fromTile toTile) $
       invalidateBfsLid lid
   UpdSearchTile aid p toTile -> do
+    Kind.COps{cotile} <- getsState scops
     b <- getsState $ getActorBody aid
     let lid = blid b
     updateSalter lid [(p, toTile)]
     cops <- getsState scops
     let lvl = (EM.! lid) . sdungeon $ oldState
         t = lvl `at` p
+    let !_A = assert (t == Tile.hideAs cotile toTile && t /= toTile) ()
     when (tileChangeAffectsBfs cops t toTile) $
       invalidateBfsLid lid
   UpdSpotTile lid ts -> do

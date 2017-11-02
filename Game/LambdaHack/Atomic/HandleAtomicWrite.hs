@@ -425,12 +425,14 @@ updAlterExplorable lid delta = assert (delta /= 0) $
 updSearchTile :: MonadStateWrite m
               => ActorId -> Point -> Kind.Id TileKind -> m ()
 updSearchTile aid p toTile = do
+  Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
   let t = lvl `at` p
   if t == toTile
   then atomicFail "tile already searched"
-  else updSpotTile (blid b) [(p, toTile)]
+  else assert (t == Tile.hideAs cotile toTile)
+       $ updSpotTile (blid b) [(p, toTile)]
 
 -- Notice previously invisible tiles. This is similar to @UpdSpotActor@,
 -- but done in bulk, because it often involves dozens of tiles per move.
