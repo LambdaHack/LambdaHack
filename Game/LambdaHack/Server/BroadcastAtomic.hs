@@ -232,12 +232,12 @@ atomicRemember lid inPer sLocal s =
       Kind.COps{cotile} = scops s
       hideTile p = Tile.hideAs cotile $ lvl `at` p
       inTileMap = map (\p -> (p, hideTile p)) inFov
-      lvlLocal = sdungeon sLocal EM.! lid
+      lvlClient = sdungeon sLocal EM.! lid
       -- We ignore the server resending us hidden versions of the tiles
       -- (and resending us the same data we already got).
       -- If the tiles are changed to other variants of the hidden tile,
       -- we can still verify by searching.
-      notKnown (p, t) = let tClient = lvlLocal `at` p
+      notKnown (p, t) = let tClient = lvlClient `at` p
                         in Tile.hideAs cotile tClient /= t
       newTs = filter notKnown inTileMap
       atomicTile = if null newTs then [] else [UpdSpotTile lid newTs]

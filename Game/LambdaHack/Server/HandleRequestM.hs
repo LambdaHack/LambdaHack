@@ -360,71 +360,86 @@ reqDisplace source target = do
 -- should not be alterable (but @serverTile@ may be).
 reqAlter :: MonadServerAtomic m => ActorId -> Point -> m ()
 reqAlter source tpos = do
-  Kind.COps{cotile=Kind.Ops{okind, opick}, coTileSpeedup} <- getsState scops
+  Kind.COps{ cotile=cotile@Kind.Ops{okind, opick}
+           , coTileSpeedup } <- getsState scops
   sb <- getsState $ getActorBody source
+  s <- getsServer $ (EM.! bfid sb) . sclientStates
   actorSk <- currentSkillsServer source
   let alterSkill = EM.findWithDefault 0 Ability.AbAlter actorSk
       lid = blid sb
-      spos = bpos sb
       req = ReqAlter tpos
+  embeds <- getsState $ getEmbedBag lid tpos
   lvl <- getLevel lid
   let serverTile = lvl `at` tpos
-      hidden = Tile.isHideAs coTileSpeedup serverTile
+      lvlClient = (EM.! lid) . sdungeon $ s
+      clientTile = lvlClient `at` tpos
+      hiddenTile = Tile.hideAs cotile serverTile
+  if not $ adjacent (bpos sb) tpos then execFailure source req AlterDistant
+  else if clientTile == hiddenTile
+          && hiddenTile /= serverTile then do -- searches
   -- Only actors with AbAlter > 1 can search for hidden doors, etc.
-  if alterSkill <= 1
-     || not hidden  -- no searching needed
-        && alterSkill < Tile.alterMinSkill coTileSpeedup serverTile
-  then execFailure source req AlterUnskilled
-  else if not $ adjacent spos tpos then execFailure source req AlterDistant
-  else do
-    let changeTo tgroup = do
-          -- No @SfxAlter@, because the effect is obvious (e.g., opened door).
-          let nightCond kt = not (Tile.kindHasFeature TK.Walkable kt
-                                  && Tile.kindHasFeature TK.Clear kt)
-                             || (if lnight lvl then id else not)
-                                  (Tile.kindHasFeature TK.Dark kt)
-          -- Sometimes the tile is determined precisely by the ambient light
-          -- of the source tiles. If not, default to cave day/night condition.
-          mtoTile <- rndToAction $ opick tgroup nightCond
-          toTile <- maybe (rndToAction
-                           $ fromMaybe (error $ "" `showFailure` tgroup)
-                             <$> opick tgroup (const True))
-                          return
-                          mtoTile
-          unless (toTile == serverTile) $ do
-            execUpdAtomic $ UpdAlterTile lid tpos serverTile toTile
-            case (Tile.isExplorable coTileSpeedup serverTile,
-                  Tile.isExplorable coTileSpeedup toTile) of
-              (False, True) -> execUpdAtomic $ UpdAlterExplorable lid 1
-              (True, False) -> execUpdAtomic $ UpdAlterExplorable lid (-1)
-              _ -> return ()
-        feats = TK.tfeature $ okind serverTile
-        toAlter feat =
-          case feat of
-            TK.OpenTo tgroup -> Just tgroup
-            TK.CloseTo tgroup -> Just tgroup
-            TK.ChangeTo tgroup -> Just tgroup
-            _ -> Nothing
-        groupsToAlterTo = mapMaybe toAlter feats
-    embeds <- getsState $ getEmbedBag lid tpos
-    if null groupsToAlterTo && null embeds && not hidden then
-      -- Neither searching nor altering possible; silly client.
-      execFailure source req AlterNothing
-    else
-      if EM.notMember tpos $ lfloor lvl then
-        if null (posToAidsLvl tpos lvl) then do
-          when hidden $ do
-            -- Search, in case some actors present (e.g., of other factions)
-            -- don't know this tile.
-            execUpdAtomic $ UpdSearchTile source tpos serverTile
-          when (alterSkill >= Tile.alterMinSkill coTileSpeedup serverTile) $ do
+    if alterSkill <= 1
+    then execFailure source req AlterUnskilled  -- don't leak about searching
+    else do
+      -- Blocking by items nor actors does not prevent searching.
+      -- Searching broadcasted, in case actors from other factions are present
+      -- so that they can learn the tile and learn our action.
+      -- If they already know the tile, they will just consider our action
+      -- a waste of time and ignore the command.
+      execUpdAtomic $ UpdSearchTile source tpos serverTile
+  else if clientTile == serverTile then do -- alters
+    if alterSkill < Tile.alterMinSkill coTileSpeedup serverTile
+    then execFailure source req AlterUnskilled  -- don't leak about altering
+    else do
+      let changeTo tgroup = do
+            -- No @SfxAlter@, because the effect is obvious (e.g., opened door).
+            let nightCond kt = not (Tile.kindHasFeature TK.Walkable kt
+                                    && Tile.kindHasFeature TK.Clear kt)
+                               || (if lnight lvl then id else not)
+                                    (Tile.kindHasFeature TK.Dark kt)
+            -- Sometimes the tile is determined precisely by the ambient light
+            -- of the source tiles. If not, default to cave day/night condition.
+            mtoTile <- rndToAction $ opick tgroup nightCond
+            toTile <- maybe (rndToAction
+                             $ fromMaybe (error $ "" `showFailure` tgroup)
+                               <$> opick tgroup (const True))
+                            return
+                            mtoTile
+            unless (toTile == serverTile) $ do
+              -- At most one of these two will be accepted on any given client.
+              execUpdAtomic $ UpdAlterTile lid tpos serverTile toTile
+              -- This case happens when a client does not see a searching
+              -- action by another faction, but sees the subsequent altering.
+              when (hiddenTile /= serverTile) $
+                execUpdAtomic $ UpdAlterTile lid tpos hiddenTile toTile
+              case (Tile.isExplorable coTileSpeedup serverTile,
+                    Tile.isExplorable coTileSpeedup toTile) of
+                (False, True) -> execUpdAtomic $ UpdAlterExplorable lid 1
+                (True, False) -> execUpdAtomic $ UpdAlterExplorable lid (-1)
+                _ -> return ()
+          feats = TK.tfeature $ okind serverTile
+          toAlter feat =
+            case feat of
+              TK.OpenTo tgroup -> Just tgroup
+              TK.CloseTo tgroup -> Just tgroup
+              TK.ChangeTo tgroup -> Just tgroup
+              _ -> Nothing
+          groupsToAlterTo = mapMaybe toAlter feats
+      if null groupsToAlterTo && null embeds then
+        -- No altering possible; silly client.
+        execFailure source req AlterNothing
+      else do
+        if EM.notMember tpos $ lfloor lvl then
+          if null (posToAidsLvl tpos lvl) then do
             case groupsToAlterTo of
               [] -> return ()
               [groupToAlterTo] -> changeTo groupToAlterTo
               l -> error $ "tile changeable in many ways" `showFailure` l
             itemEffectEmbedded source tpos embeds
-        else execFailure source req AlterBlockActor
-      else execFailure source req AlterBlockItem
+          else execFailure source req AlterBlockActor
+        else execFailure source req AlterBlockItem
+  else  -- client is misguided re tile at that position, so bail out
+    execFailure source req AlterNothing
 
 -- * ReqWait
 
