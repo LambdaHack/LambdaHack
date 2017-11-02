@@ -417,9 +417,6 @@ reqAlter source tpos = do
             -- Search, in case some actors present (e.g., of other factions)
             -- don't know this tile.
             execUpdAtomic $ UpdSearchTile source tpos serverTile
-            -- Match @PosAtomic@ of the two commands to show both or none.
-            let matchPA = [(bpos sb, lvl `at` bpos sb)]
-            execUpdAtomic $ UpdSpotTile lid $ [(tpos, serverTile)] ++ matchPA
           when (alterSkill >= Tile.alterMinSkill coTileSpeedup serverTile) $ do
             case groupsToAlterTo of
               [] -> return ()

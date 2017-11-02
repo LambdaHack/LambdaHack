@@ -281,21 +281,15 @@ displayRespUpdAtomicUI verbose oldState cmd = case cmd of
                              , MU.AW $ MU.Text $ TK.tname $ okind toTile ]
       msgAdd msg
   UpdAlterExplorable{} -> return ()
-  UpdSearchTile aid p toTile -> do
+  UpdSearchTile aid _p toTile -> do
     Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsState scops
-    b <- getsState $ getActorBody aid
-    lvl <- getLevel $ blid b
     subject <- partAidLeader aid
-    let t = lvl `at` p
-        fromTile = Tile.hideAs cotile toTile
-        verb | t == toTile = "confirm"
-             | otherwise = "reveal"
+    let fromTile = Tile.hideAs cotile toTile
         subject2 = MU.Text $ TK.tname $ okind fromTile
-        verb2 = "be"
         object = MU.Text $ TK.tname $ okind toTile
-    let msg = makeSentence [ MU.SubjectVerbSg subject verb
+    let msg = makeSentence [ MU.SubjectVerbSg subject "reveal"
                            , "that the"
-                           , MU.SubjectVerbSg subject2 verb2
+                           , MU.SubjectVerbSg subject2 "be"
                            , MU.AW object ]
     unless (subject2 == object) $ msgAdd msg
   UpdHideTile{} -> return ()

@@ -19,6 +19,7 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.Preferences
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -84,19 +85,28 @@ cmdAtomicSemCli oldState cmd = case cmd of
       cli { stargetD = case (mtgt, mleader) of
               (Just tgt, Just leader) -> EM.singleton leader tgt
               _ -> EM.empty }
-  UpdAlterTile lid pos _fromTile toTile -> do
-    updateSalter lid [(pos, toTile)]
+  UpdAlterTile lid p _fromTile toTile -> do
+    updateSalter lid [(p, toTile)]
     cops <- getsState scops
     let lvl = (EM.! lid) . sdungeon $ oldState
-        assumedTile = lvl `at` pos
-    when (tileChangeAffectsBfs cops assumedTile toTile) $
+        t = lvl `at` p
+    when (tileChangeAffectsBfs cops t toTile) $
+      invalidateBfsLid lid
+  UpdSearchTile aid p toTile -> do
+    b <- getsState $ getActorBody aid
+    let lid = blid b
+    updateSalter lid [(p, toTile)]
+    cops <- getsState scops
+    let lvl = (EM.! lid) . sdungeon $ oldState
+        t = lvl `at` p
+    when (tileChangeAffectsBfs cops t toTile) $
       invalidateBfsLid lid
   UpdSpotTile lid ts -> do
     updateSalter lid ts
     cops <- getsState scops
     let lvl = (EM.! lid) . sdungeon $ oldState
-        affects (pos, toTile) =
-          let fromTile = lvl `at` pos
+        affects (p, toTile) =
+          let fromTile = lvl `at` p
           in tileChangeAffectsBfs cops fromTile toTile
         bs = map affects ts
     when (or bs) $ invalidateBfsLid lid

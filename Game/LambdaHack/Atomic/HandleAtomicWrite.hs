@@ -72,8 +72,8 @@ handleUpdAtomic cmd = case cmd of
   UpdRecordKill aid ikind k -> updRecordKill aid ikind k
   UpdAlterTile lid p fromTile toTile -> updAlterTile lid p fromTile toTile
   UpdAlterExplorable lid delta -> updAlterExplorable lid delta
-  UpdSearchTile{} -> return ()  -- only for clients
-  UpdHideTile{} -> return ()  -- only for clients
+  UpdSearchTile aid p toTile -> updSearchTile aid p toTile
+  UpdHideTile{} -> undefined
   UpdSpotTile lid ts -> updSpotTile lid ts
   UpdLoseTile lid ts -> updLoseTile lid ts
   UpdAlterSmell lid p fromSm toSm -> updAlterSmell lid p fromSm toSm
@@ -426,6 +426,16 @@ updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
 updAlterExplorable :: MonadStateWrite m => LevelId -> Int -> m ()
 updAlterExplorable lid delta = assert (delta /= 0) $
   updateLevel lid $ \lvl -> lvl {lexplorable = lexplorable lvl + delta}
+
+updSearchTile :: MonadStateWrite m
+              => ActorId -> Point -> Kind.Id TileKind -> m ()
+updSearchTile aid p toTile = do
+  b <- getsState $ getActorBody aid
+  lvl <- getLevel $ blid b
+  let t = lvl `at` p
+  if t == toTile
+  then atomicFail "tile already searched"
+  else updSpotTile (blid b) [(p, toTile)]
 
 -- Notice previously invisible tiles. This is similar to @UpdSpotActor@,
 -- but done in bulk, because it often involves dozens of tiles per move.

@@ -1154,9 +1154,6 @@ effectDetectHidden execSfx radius target pos = do
         let f p = when (p /= pos) $ do
               let t = lvl `at` p
               execUpdAtomic $ UpdSearchTile target p t
-              -- Match @PosAtomic@ of the two commands to show both or none.
-              let matchPA = [(bpos b, lvl `at` bpos b)]
-              execUpdAtomic $ UpdSpotTile (blid b) $ [(p, t)] ++ matchPA
         mapM_ f l
         return $! not $ null l
   effectDetectX predicate action execSfx radius target
