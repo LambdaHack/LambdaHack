@@ -158,7 +158,7 @@ sendPer :: (MonadServerAtomic m, MonadServerReadRequest m)
 sendPer fid lid outPer inPer perNew = do
   sendUpdNoState fid $ UpdPerception lid outPer inPer
   sLocal <- getsServer $ (EM.! fid) . sclientStates
-  let forget = cmdsFromPer fid lid outPer inPer sLocal
+  let forget = atomicForget fid lid outPer sLocal
   remember <- getsState $ atomicRemember lid inPer sLocal
   let seenNew = seenAtomicCli False fid perNew
   psRem <- mapM posUpdAtomic remember
@@ -167,9 +167,11 @@ sendPer fid lid outPer inPer perNew = do
   mapM_ (sendUpdateCheck fid) $ forget
   mapM_ (sendUpdate fid) $ remember
 
-cmdsFromPer :: FactionId -> LevelId -> Perception -> Perception -> State
-            -> [UpdAtomic]
-cmdsFromPer side lid outPer inPer sLocal =
+-- Remembered items, map tiles and smells are not wiped out when they get
+-- out of FOV. Clients remember them. Only actors are forgotten.
+atomicForget :: FactionId -> LevelId -> Perception -> State
+             -> [UpdAtomic]
+atomicForget side lid outPer sLocal =
   -- Wipe out actors that just became invisible due to changed FOV.
   let outFov = totalVisible outPer
       outPrio = concatMap (\p -> posToAssocs p lid sLocal) $ ES.elems outFov
@@ -184,27 +186,7 @@ cmdsFromPer side lid outPer inPer sLocal =
           -- this command always succeeds, the actor can be always removed,
           -- because the actor is taken from the state
       outActor = mapMaybe fActor outPrio
-  -- Wipe out remembered items on tiles that now came into view.
-      lvl = (EM.! lid) . sdungeon $ sLocal
-      inFov = ES.elems $ totalVisible inPer
-      inContainer fc itemFloor =
-        let inItem = mapMaybe (\p -> (p,) <$> EM.lookup p itemFloor) inFov
-            fItem p (iid, kit) =
-              UpdLoseItem True iid (getItemBody iid sLocal) kit (fc lid p)
-            fBag (p, bag) = map (fItem p) $ EM.assocs bag
-        in concatMap fBag inItem
-      inFloor = inContainer CFloor (lfloor lvl)
-      inEmbed = inContainer CEmbed (lembed lvl)
-  -- Remembered map tiles not wiped out, due to optimization in @updSpotTile@.
-  -- Wipe out remembered smell on tiles that now came into smell Fov.
-      inSmellFov = totalSmelled inPer
-      inSm = mapMaybe (\p -> (p,) <$> EM.lookup p (lsmell lvl))
-                      (ES.elems inSmellFov)
-      inSmell = if null inSm then [] else [UpdLoseSmell lid inSm]
-  -- Note that the items and smells that we forget were previously
-  -- invisible, only remembered (because taken from @inPer@),
-  -- and the tiles they are on are currently visible (ditto).
-  in outActor ++ inFloor ++ inEmbed ++ inSmell
+  in outActor
 
 atomicRemember :: LevelId -> Perception -> State -> State -> [UpdAtomic]
 {-# INLINE atomicRemember #-}
@@ -218,21 +200,30 @@ atomicRemember lid inPer sLocal s =
       fActor (aid, b) = let ais = getCarriedAssocs b s
                         in UpdSpotActor aid b ais
       inActor = map fActor inAssocs
-      -- Items.
+      -- Wipe out remembered items on tiles that now came into view.
+      lvlClient = sdungeon sLocal EM.! lid
       inContainer fc itemFloor =
+        let inItem = mapMaybe (\p -> (p,) <$> EM.lookup p itemFloor) inFov
+            fItem p (iid, kit) =
+              UpdLoseItem True iid (getItemBody iid sLocal) kit (fc lid p)
+            fBag (p, bag) = map (fItem p) $ EM.assocs bag
+        in concatMap fBag inItem
+      inFloor = inContainer CFloor (lfloor lvlClient)
+      inEmbed = inContainer CEmbed (lembed lvlClient)
+      -- Spot items.
+      inContainer2 fc itemFloor =
         let inItem = mapMaybe (\p -> (p,) <$> EM.lookup p itemFloor) inFov
             fItem p (iid, kit) =
               UpdSpotItem True iid (getItemBody iid s) kit (fc lid p)
             fBag (p, bag) = map (fItem p) $ EM.assocs bag
         in concatMap fBag inItem
-      inFloor = inContainer CFloor (lfloor lvl)
-      inEmbed = inContainer CEmbed (lembed lvl)
-      -- Tiles.
+      inFloor2 = inContainer2 CFloor (lfloor lvl)
+      inEmbed2 = inContainer2 CEmbed (lembed lvl)
+      -- Spot tiles.
       Kind.COps{cotile} = scops s
       hideTile lvl1 p = let t = lvl1 `at` p
                         in fromMaybe t $ Tile.hideAs cotile t
       inTileMap = map (\p -> (p, hideTile lvl p)) inFov
-      lvlClient = sdungeon sLocal EM.! lid
       -- We ignore the server resending us hidden versions of the tiles
       -- (or resending us the same data we already got).
       -- If the tiles are changed to other variants of the hidden tile,
@@ -240,8 +231,12 @@ atomicRemember lid inPer sLocal s =
       notKnown (p, t) = hideTile lvlClient p /= t
       newTs = filter notKnown inTileMap
       atomicTile = if null newTs then [] else [UpdSpotTile lid newTs]
-      -- Smells.
+      -- Wipe out remembered smell on tiles that now came into smell Fov.
       inSmellFov = ES.elems $ totalSmelled inPer
-      inSm = mapMaybe (\p -> (p,) <$> EM.lookup p (lsmell lvl)) inSmellFov
-      atomicSmell = if null inSm then [] else [UpdSpotSmell lid inSm]
-  in atomicTile ++ inFloor ++ inEmbed ++ atomicSmell ++ inActor
+      inSm = mapMaybe (\p -> (p,) <$> EM.lookup p (lsmell lvlClient)) inSmellFov
+      inSmell = if null inSm then [] else [UpdLoseSmell lid inSm]
+      -- Spot smells.
+      inSm2 = mapMaybe (\p -> (p,) <$> EM.lookup p (lsmell lvl)) inSmellFov
+      atomicSmell = if null inSm2 then [] else [UpdSpotSmell lid inSm2]
+  in atomicTile ++ inFloor ++ inEmbed ++ inFloor2 ++ inEmbed2
+     ++ inSmell ++ atomicSmell ++ inActor
