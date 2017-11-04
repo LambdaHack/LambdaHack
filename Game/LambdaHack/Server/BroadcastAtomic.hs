@@ -193,13 +193,6 @@ atomicRemember :: LevelId -> Perception -> State -> State -> [UpdAtomic]
 atomicRemember lid inPer sClient s =
   let inFov = ES.elems $ totalVisible inPer
       lvl = sdungeon s EM.! lid
-      -- Actors.
-      inAssocs = concatMap (\p -> posToAssocs p lid s) inFov
-      -- Here, the actor may be already visible, e.g., when teleporting,
-      -- so the exception is caught in @sendUpdate@ above.
-      fActor (aid, b) = let ais = getCarriedAssocs b s
-                        in UpdSpotActor aid b ais
-      inActor = map fActor inAssocs
       -- Wipe out remembered items on tiles that now came into view
       -- and spot items on these tiles. Optimized away, when items match.
       lvlClient = sdungeon sClient EM.! lid
@@ -247,4 +240,11 @@ atomicRemember lid inPer sClient s =
       -- Spot smells.
       inSm2 = mapMaybe (\p -> (p,) <$> EM.lookup p (lsmell lvl)) inSmellFov
       atomicSmell = if null inSm2 then [] else [UpdSpotSmell lid inSm2]
+      -- Actors come last to report the environment they land on.
+      inAssocs = concatMap (\p -> posToAssocs p lid s) inFov
+      -- Here, the actor may be already visible, e.g., when teleporting,
+      -- so the exception is caught in @sendUpdate@ above.
+      fActor (aid, b) = let ais = getCarriedAssocs b s
+                        in UpdSpotActor aid b ais
+      inActor = map fActor inAssocs
   in atomicTile ++ inFloor ++ inEmbed ++ inSmell ++ atomicSmell ++ inActor

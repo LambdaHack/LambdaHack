@@ -191,26 +191,26 @@ displayRespUpdAtomicUI verbose oldState cmd = case cmd of
   -- Change faction attributes.
   UpdQuitFaction fid _ toSt -> quitFactionUI fid toSt
   UpdLeadFaction fid (Just source) (Just target) -> do
-    side <- getsClient sside
-    when (fid == side) $ do
-      fact <- getsState $ (EM.! side) . sfactionD
-      lidV <- viewedLevelUI
-      when (isAIFact fact) $ markDisplayNeeded lidV
-      -- This faction can't run with multiple actors, so this is not
-      -- a leader change while running, but rather server changing
-      -- their leader, which the player should be alerted to.
-      when (noRunWithMulti fact) stopPlayBack
-      actorD <- getsState sactorD
-      case EM.lookup source actorD of
-        Just sb | bhp sb <= 0 -> assert (not $ bproj sb) $ do
-          -- Regardless who the leader is, give proper names here, not 'you'.
-          sbUI <- getsSession $ getActorUI source
-          tbUI <- getsSession $ getActorUI target
-          let subject = partActor tbUI
-              object  = partActor sbUI
-          msgAdd $ makeSentence [ MU.SubjectVerbSg subject "take command"
-                                , "from", object ]
-        _ -> return ()
+    fact <- getsState $ (EM.! fid) . sfactionD
+    lidV <- viewedLevelUI
+    when (isAIFact fact) $ markDisplayNeeded lidV
+    -- This faction can't run with multiple actors, so this is not
+    -- a leader change while running, but rather server changing
+    -- their leader, which the player should be alerted to.
+    when (noRunWithMulti fact) stopPlayBack
+    actorD <- getsState sactorD
+    case EM.lookup source actorD of
+      Just sb | bhp sb <= 0 -> assert (not $ bproj sb) $ do
+        -- Regardless who the leader is, give proper names here, not 'you'.
+        sbUI <- getsSession $ getActorUI source
+        tbUI <- getsSession $ getActorUI target
+        let subject = partActor tbUI
+            object  = partActor sbUI
+        msgAdd $ makeSentence [ MU.SubjectVerbSg subject "take command"
+                              , "from", object ]
+      _ -> return ()
+    lookAtMove target
+  UpdLeadFaction _ Nothing (Just target) -> lookAtMove target
   UpdLeadFaction{} -> return ()
   UpdDiplFaction fid1 fid2 _ toDipl -> do
     name1 <- getsState $ gname . (EM.! fid1) . sfactionD
@@ -562,7 +562,6 @@ createActorUI born aid body = do
   else do
     actorVerbMU aid bUI verb
     animate (blid body) $ actorX (bpos body)
-  lookAtMove aid
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 destroyActorUI destroy aid b = do
@@ -631,7 +630,8 @@ spotItem verbose iid kit c = do
           itemVerbMU iid kit "be spotted" c
           stopPlayBack
         CTrunk{} -> return ()
-    _ -> return ()  -- seen already (has a slot assigned)
+    _ -> return ()  -- this item or another with the same @iid@
+                    -- seen already (has a slot assigned), so old news
   when verbose $ case c of
     CActor aid store | store `elem` [CEqp, CInv] -> do
       -- Actor fetching an item from shared stash, most probably.
