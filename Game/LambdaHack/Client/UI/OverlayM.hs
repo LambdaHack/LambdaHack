@@ -58,14 +58,16 @@ lookAt detailed tilePrefix canSee pos aid msg = do
   Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   itemToF <- getsState $ itemToFull
   b <- getsState $ getActorBody aid
-  lidV <- viewedLevelUI
+  -- Not using @viewedLevelUI@, because @aid@ may be temporarily not a leader.
+  saimMode <- getsSession saimMode
+  let lidV = maybe (blid b) aimLevelId saimMode
   lvl <- getLevel lidV
   localTime <- getsState $ getLocalTime lidV
   subject <- partAidLeader aid
   is <- getsState $ getFloorBag lidV pos
   side <- getsClient sside
   factionD <- getsState sfactionD
-  let verb = MU.Text $ if | pos == bpos b -> "stand on"
+  let verb = MU.Text $ if | pos == bpos b && lidV == blid b -> "stand on"
                           | canSee -> "notice"
                           | otherwise -> "remember"
   let nWs (iid, kit@(k, _)) =
