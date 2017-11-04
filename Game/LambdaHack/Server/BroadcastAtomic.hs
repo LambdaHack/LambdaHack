@@ -202,21 +202,22 @@ atomicRemember lid inPer sLocal s =
       inActor = map fActor inAssocs
       -- Wipe out remembered items on tiles that now came into view.
       lvlClient = sdungeon sLocal EM.! lid
-      inContainer fc itemFloor =
-        let inItem = mapMaybe (\p -> (p,) <$> EM.lookup p itemFloor) inFov
-            fItem p (iid, kit) =
-              UpdLoseItem True iid (getItemBody iid sLocal) kit (fc lid p)
-            fBag (p, bag) = map (fItem p) $ EM.assocs bag
-        in concatMap fBag inItem
+      inContainer fc bagEM =
+        let inItem = mapMaybe (\p -> (p,) <$> EM.lookup p bagEM) inFov
+            fBag (p, bag) =
+              let ais =
+                    map (\iid -> (iid, getItemBody iid sLocal)) $ EM.keys bag
+              in UpdLoseItemBag (fc lid p) bag ais
+        in map fBag inItem
       inFloor = inContainer CFloor (lfloor lvlClient)
       inEmbed = inContainer CEmbed (lembed lvlClient)
       -- Spot items.
-      inContainer2 fc itemFloor =
-        let inItem = mapMaybe (\p -> (p,) <$> EM.lookup p itemFloor) inFov
-            fItem p (iid, kit) =
-              UpdSpotItem True iid (getItemBody iid s) kit (fc lid p)
-            fBag (p, bag) = map (fItem p) $ EM.assocs bag
-        in concatMap fBag inItem
+      inContainer2 fc bagEM =
+        let inItem = mapMaybe (\p -> (p,) <$> EM.lookup p bagEM) inFov
+            fBag (p, bag) =
+              let ais = map (\iid -> (iid, getItemBody iid s)) $ EM.keys bag
+              in UpdSpotItemBag (fc lid p) bag ais
+        in map fBag inItem
       inFloor2 = inContainer2 CFloor (lfloor lvl)
       inEmbed2 = inContainer2 CEmbed (lembed lvl)
       -- Spot tiles.
