@@ -10,6 +10,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.Key (mapWithKeyM_)
 import qualified Data.Map.Strict as M
 import Data.Tuple
 import GHC.Exts (inline)
@@ -106,48 +107,11 @@ displayRespUpdAtomicUI verbose oldState cmd = case cmd of
     markDisplayNeeded lid
   UpdSpotActor aid body _ -> createActorUI False aid body
   UpdLoseActor aid body _ -> destroyActorUI False aid body
-  UpdSpotItem verbose2 iid _ kit c -> do
-    -- This is due to a move, or similar, which will be displayed,
-    -- so no extra @markDisplayNeeded@ needed here and in similar places.
-    ItemSlots itemSlots _ <- getsSession sslots
-    case lookup iid $ map swap $ EM.assocs itemSlots of
-      Nothing ->  -- never seen or would have a slot
-        case c of
-          CActor aid store ->
-            -- Most probably an actor putting item in or out of shared stash.
-            void $ updateItemSlotSide store aid iid
-          CEmbed{} -> return ()
-          CFloor lid p -> do
-            void $ updateItemSlot CGround Nothing iid
-            sxhairOld <- getsSession sxhair
-            case sxhairOld of
-              TEnemy{} -> return ()  -- probably too important to overwrite
-              TPoint TEnemyPos{} _ _ -> return ()
-              _ -> do
-                -- Don't steal xhair if it's only an item on another level.
-                -- For enemies, OTOH, capture xhair to alarm player.
-                lidV <- viewedLevelUI
-                when (lid == lidV) $ do
-                  bag <- getsState $ getFloorBag lid p
-                  modifySession $ \sess ->
-                    sess {sxhair = TPoint (TItem bag) lidV p}
-            itemVerbMU iid kit "be spotted" c
-            stopPlayBack
-          CTrunk{} -> return ()
-      _ -> return ()  -- seen already (has a slot assigned)
-    when verbose2 $ case c of
-      CActor aid store | store `elem` [CEqp, CInv] -> do
-        -- Actor fetching an item from shared stash, most probably.
-        bUI <- getsSession $ getActorUI aid
-        subject <- partActorLeader aid bUI
-        let ownW = ppCStoreWownW False store subject
-            verb = MU.Text $ makePhrase $ "be added to" : ownW
-        itemVerbMU iid kit verb c
-      _ -> return ()
+  UpdSpotItem verbose2 iid _ kit c -> spotItem verbose2 iid kit c
+  {-
   UpdLoseItem False _ _ _ _ -> return ()
   -- The message is rather cryptic, so let's disable it until it's decided
   -- if anemy inventories should be displayed, etc.
-  {-
   UpdLoseItem True iid _ kit c@(CActor aid store) | store /= CSha -> do
     -- Actor putting an item into shared stash, most probably.
     side <- getsClient sside
@@ -158,6 +122,9 @@ displayRespUpdAtomicUI verbose oldState cmd = case cmd of
     when (bfid b == side) $ itemVerbMU iid kit verb c
   -}
   UpdLoseItem{} -> return ()
+  UpdSpotItemBag c bag _ ->
+    mapWithKeyM_ (\iid kit -> spotItem True iid kit c) bag
+  UpdLoseItemBag{} -> return ()
   -- Move actors and items.
   UpdMoveActor aid source target -> moveActor aid source target
   UpdWaitActor aid _ -> when verbose $ aidVerbMU aid "wait"
@@ -633,6 +600,47 @@ destroyActorUI destroy aid b = do
           clearAimMode
     -- If pushed, animate spotting again, to draw attention to pushing.
     markDisplayNeeded (blid b)
+
+spotItem :: MonadClientUI m
+         => Bool -> ItemId -> ItemQuant -> Container -> m ()
+spotItem verbose iid kit c = do
+  -- This is due to a move, or similar, which will be displayed,
+  -- so no extra @markDisplayNeeded@ needed here and in similar places.
+  ItemSlots itemSlots _ <- getsSession sslots
+  case lookup iid $ map swap $ EM.assocs itemSlots of
+    Nothing ->  -- never seen or would have a slot
+      case c of
+        CActor aid store ->
+          -- Most probably an actor putting item in or out of shared stash.
+          void $ updateItemSlotSide store aid iid
+        CEmbed{} -> return ()
+        CFloor lid p -> do
+          void $ updateItemSlot CGround Nothing iid
+          sxhairOld <- getsSession sxhair
+          case sxhairOld of
+            TEnemy{} -> return ()  -- probably too important to overwrite
+            TPoint TEnemyPos{} _ _ -> return ()
+            _ -> do
+              -- Don't steal xhair if it's only an item on another level.
+              -- For enemies, OTOH, capture xhair to alarm player.
+              lidV <- viewedLevelUI
+              when (lid == lidV) $ do
+                bag <- getsState $ getFloorBag lid p
+                modifySession $ \sess ->
+                  sess {sxhair = TPoint (TItem bag) lidV p}
+          itemVerbMU iid kit "be spotted" c
+          stopPlayBack
+        CTrunk{} -> return ()
+    _ -> return ()  -- seen already (has a slot assigned)
+  when verbose $ case c of
+    CActor aid store | store `elem` [CEqp, CInv] -> do
+      -- Actor fetching an item from shared stash, most probably.
+      bUI <- getsSession $ getActorUI aid
+      subject <- partActorLeader aid bUI
+      let ownW = ppCStoreWownW False store subject
+          verb = MU.Text $ makePhrase $ "be added to" : ownW
+      itemVerbMU iid kit verb c
+    _ -> return ()
 
 moveActor :: MonadClientUI m => ActorId -> Point -> Point -> m ()
 moveActor aid source target = do

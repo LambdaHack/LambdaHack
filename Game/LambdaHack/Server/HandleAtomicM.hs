@@ -101,6 +101,32 @@ cmdAtomicSemSer oldState cmd = case cmd of
       invalidateLucidAid aid
     when (store `elem` [CEqp, COrgan]) $
       when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
+  UpdSpotItemBag (CFloor lid _) bag _ais -> do
+    discoAspect <- getsState sdiscoAspect
+    let iids = EM.keys bag
+    when (any (\iid -> itemAffectsShineRadius discoAspect iid []) iids) $
+      invalidateLucidLid lid
+  UpdSpotItemBag (CActor aid store) bag _ais -> do
+    discoAspect <- getsState sdiscoAspect
+    let iids = EM.keys bag
+    when (any (\iid -> itemAffectsShineRadius discoAspect iid [store]) iids) $
+      invalidateLucidAid aid
+    when (store `elem` [CEqp, COrgan]) $
+      when (any (\iid -> itemAffectsPerRadius discoAspect iid) iids) $
+        reconsiderPerActor aid
+  UpdLoseItemBag (CFloor lid _) bag _ais -> do
+    discoAspect <- getsState sdiscoAspect
+    let iids = EM.keys bag
+    when (any (\iid -> itemAffectsShineRadius discoAspect iid []) iids) $
+      invalidateLucidLid lid
+  UpdLoseItemBag (CActor aid store) bag _ais -> do
+    discoAspect <- getsState sdiscoAspect
+    let iids = EM.keys bag
+    when (any (\iid -> itemAffectsShineRadius discoAspect iid [store]) iids) $
+      invalidateLucidAid aid
+    when (store `elem` [CEqp, COrgan]) $
+      when (any (\iid -> itemAffectsPerRadius discoAspect iid) iids) $
+        reconsiderPerActor aid
   UpdMoveActor aid _ _ -> do
     actorAspect <- getsState sactorAspect
     when (actorHasShine actorAspect aid) $ invalidateLucidAid aid

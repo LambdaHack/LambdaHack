@@ -56,6 +56,8 @@ handleUpdAtomic cmd = case cmd of
   UpdLoseActor aid body ais -> updDestroyActor aid body ais
   UpdSpotItem _ iid item kit c -> updCreateItem iid item kit c
   UpdLoseItem _ iid item kit c -> updDestroyItem iid item kit c
+  UpdSpotItemBag c bag ais -> updSpotItemBag c bag ais
+  UpdLoseItemBag c bag ais -> updLoseItemBag c bag ais
   UpdMoveActor aid fromP toP -> updMoveActor aid fromP toP
   UpdWaitActor aid toWait -> updWaitActor aid toWait
   UpdDisplaceActor source target -> updDisplaceActor source target
@@ -122,18 +124,23 @@ updCreateActor aid body ais = do
 #endif
         (Just $ aid : l)
   updateLevel (blid body) $ updateActorMap (EM.alter g (bpos body))
-  -- Actor's items may or may not be already present in @sitemD@,
-  -- regardless if they are already present otherwise in the dungeon.
-  -- We re-add them all to save time determining which really need it.
-  forM_ ais $ \(iid, item) -> do
-    let h item1 item2 =
-          assert (itemsMatch item1 item2
-                  `blame` "inconsistent created actor items"
-                  `swith` (aid, body, iid, item1, item2))
-                 item2 -- keep the first found level
-    modifyState $ updateItemD $ EM.insertWith h iid item
+  addAis ais
   aspectRecord <- getsState $ aspectRecordFromActor body
   modifyState $ updateActorAspect $ EM.insert aid aspectRecord
+
+-- Actor's items may or may not be already present in @sitemD@,
+-- regardless if they are already present otherwise in the dungeon.
+-- We re-add them all to save time determining which really need it.
+-- If collision occurs, pick the item found on easier level.
+addAis :: MonadStateWrite m => [(ItemId, Item)] -> m ()
+addAis ais = do
+  let h item1 item2 =
+        assert (itemsMatch item1 item2
+                `blame` "inconsistent added items"
+                `swith` (item1, item2, ais))
+               item2 -- keep the first found level
+  forM_ ais $ \(iid, item) ->
+    modifyState $ updateItemD $ EM.insertWith h iid item
 
 itemsMatch :: Item -> Item -> Bool
 itemsMatch item1 item2 =
@@ -143,15 +150,16 @@ itemsMatch item1 item2 =
   -- and clients have different views on dungeon items than the server.
 
 -- | Kills an actor.
+--
+-- If a leader dies, a new leader should be elected on the server
+-- before this command is executed (not checked).
 updDestroyActor :: MonadStateWrite m
                 => ActorId -> Actor -> [(ItemId, Item)] -> m ()
 updDestroyActor aid body ais = do
-  -- If a leader dies, a new leader should be elected on the server
-  -- before this command is executed (not checked).
-  itemD <- getsState sitemD
-  let match (iid, item) = itemsMatch (itemD EM.! iid) item
   -- Assert that actor's items belong to @sitemD@. Do not remove those
   -- that do not appear anywhere else, for simplicity and speed.
+  itemD <- getsState sitemD
+  let match (iid, item) = itemsMatch (itemD EM.! iid) item
   let !_A = assert (allB match ais `blame` "destroyed actor items not found"
                     `swith` (aid, body, ais, itemD)) ()
   -- Remove actor from @sactorD@.
@@ -177,13 +185,7 @@ updDestroyActor aid body ais = do
 updCreateItem :: MonadStateWrite m
               => ItemId -> Item -> ItemQuant -> Container -> m ()
 updCreateItem iid item kit@(k, _) c = assert (k > 0) $ do
-  -- The item may or may not be already present in @sitemD@,
-  -- regardless if it's actually present in the dungeon.
-  -- If items equivalent, pick the one found on easier level.
-  let f item1 item2 =
-        assert (itemsMatch item1 item2)
-               item2 -- keep the first found level
-  modifyState $ updateItemD $ EM.insertWith f iid item
+  addAis [(iid, item)]
   insertItemContainer iid kit c
   case c of
     CActor aid store ->
@@ -213,6 +215,38 @@ updDestroyItem iid item kit@(k, _) c = assert (k > 0) $ do
   case c of
     CActor aid store ->
       when (store `elem` [CEqp, COrgan]) $ addItemToActor iid item (-k) aid
+    _ -> return ()
+
+updSpotItemBag :: MonadStateWrite m
+               => Container -> ItemBag -> [(ItemId, Item)] -> m ()
+updSpotItemBag c bag ais = assert (EM.size bag > 0
+                                   && EM.size bag == length ais) $ do
+  addAis ais
+  insertBagContainer bag c
+  case c of
+    CActor aid store ->
+      when (store `elem` [CEqp, COrgan]) $
+        forM_ ais $ \(iid, item) ->
+                      addItemToActor iid item (fst $ bag EM.! iid) aid
+    _ -> return ()
+
+updLoseItemBag :: MonadStateWrite m
+               => Container -> ItemBag -> [(ItemId, Item)] -> m ()
+updLoseItemBag c bag ais = assert (EM.size bag > 0
+                                   && EM.size bag == length ais) $ do
+  -- Do not remove the items from @sitemD@ nor from @sitemRev@,
+  -- It's incredibly costly and not noticeable for the player.
+  -- However, assert the items are registered in @sitemD@.
+  itemD <- getsState sitemD
+  let match (iid, item) = itemsMatch (itemD EM.! iid) item
+  let !_A = assert (allB match ais `blame` "items already removed"
+                                   `swith` (c, bag, ais, itemD)) ()
+  deleteBagContainer bag c
+  case c of
+    CActor aid store ->
+      when (store `elem` [CEqp, COrgan]) $
+        forM_ ais $ \(iid, item) ->
+                      addItemToActor iid item (- (fst $ bag EM.! iid)) aid
     _ -> return ()
 
 updMoveActor :: MonadStateWrite m => ActorId -> Point -> Point -> m ()

@@ -2,7 +2,8 @@
 module Game.LambdaHack.Atomic.MonadStateWrite
   ( MonadStateWrite(..), AtomicFail(..), atomicFail
   , putState, updateLevel, updateActor, updateFaction
-  , insertItemContainer, insertItemActor, deleteItemContainer, deleteItemActor
+  , insertBagContainer, insertItemContainer, insertItemActor
+  , deleteBagContainer, deleteItemContainer, deleteItemActor
   , updateFloor, updateActorMap, moveActorMap
   , updateTile, updateSmell
   ) where
@@ -13,6 +14,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Control.Exception as Ex
 import qualified Data.EnumMap.Strict as EM
+import Data.Key (mapWithKeyM_)
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -107,6 +109,24 @@ updateFaction fid f = do
       alt (Just fact) = Just $ f fact
   modifyState $ updateFactionD $ EM.alter alt fid
 
+insertBagContainer :: MonadStateWrite m
+                   => ItemBag -> Container -> m ()
+insertBagContainer bag c = case c of
+  CFloor lid pos -> do
+    let alt Nothing = Just bag
+        alt (Just bag2) = atomicFail $ "floor bag not empty"
+                                       `showFailure` (bag2, lid, pos, bag)
+    updateLevel lid $ updateFloor $ EM.alter alt pos
+  CEmbed lid pos -> do
+    let alt Nothing = Just bag
+        alt (Just bag2) = atomicFail $ "embed bag not empty"
+                                       `showFailure` (bag2, lid, pos, bag)
+    updateLevel lid $ updateEmbed $ EM.alter alt pos
+  CActor aid store ->
+    -- Very unlikely case, so we prefer brevity over performance.
+    mapWithKeyM_ (\iid kit -> insertItemActor iid kit aid store) bag
+  CTrunk{} -> return ()
+
 insertItemContainer :: MonadStateWrite m
                     => ItemId -> ItemQuant -> Container -> m ()
 insertItemContainer iid kit c = case c of
@@ -176,6 +196,24 @@ insertItemSha iid kit fid = do
   let bag = EM.singleton iid kit
       upd = EM.unionWith mergeItemQuant bag
   updateFaction fid $ \fact -> fact {gsha = upd (gsha fact)}
+
+deleteBagContainer :: MonadStateWrite m
+                   => ItemBag -> Container -> m ()
+deleteBagContainer bag c = case c of
+  CFloor lid pos -> do
+    let alt Nothing = atomicFail $ "floor bag already empty"
+                                   `showFailure` (lid, pos, bag)
+        alt (Just bag2) = assert (bag == bag2) Nothing
+    updateLevel lid $ updateFloor $ EM.alter alt pos
+  CEmbed lid pos -> do
+    let alt Nothing = atomicFail $ "embed bag already empty"
+                                   `showFailure` (lid, pos, bag)
+        alt (Just bag2) = assert (bag == bag2) Nothing
+    updateLevel lid $ updateEmbed $ EM.alter alt pos
+  CActor aid store ->
+    -- Very unlikely case, so we prefer brevity over performance.
+    mapWithKeyM_ (\iid kit -> deleteItemActor iid kit aid store) bag
+  CTrunk{} -> error $ "" `showFailure` c
 
 deleteItemContainer :: MonadStateWrite m
                     => ItemId -> ItemQuant -> Container -> m ()

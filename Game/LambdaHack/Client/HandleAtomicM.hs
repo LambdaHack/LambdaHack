@@ -56,6 +56,13 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdSpotItem _ iid itemBase _ _ -> addItemToDiscoBenefit iid itemBase
   UpdLoseItem _ _ _ _ (CActor aid store) ->
     wipeBfsIfItemAffectsSkills [store] aid
+  UpdSpotItemBag (CActor aid store) _bag ais -> do
+    wipeBfsIfItemAffectsSkills [store] aid
+    mapM_ (\(iid, item) -> addItemToDiscoBenefit iid item) ais
+  UpdSpotItemBag _ _ ais ->
+    mapM_ (\(iid, item) -> addItemToDiscoBenefit iid item) ais
+  UpdLoseItemBag (CActor aid store) _bag _ais ->
+    wipeBfsIfItemAffectsSkills [store] aid
   UpdMoveActor aid _ _ -> invalidateBfsAid aid
   UpdDisplaceActor source target -> do
     invalidateBfsAid source

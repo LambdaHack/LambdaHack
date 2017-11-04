@@ -73,6 +73,8 @@ posUpdAtomic cmd = case cmd of
   UpdLoseActor _ body _ -> return $! posProjBody body
   UpdSpotItem _ _ _ _ c -> singleContainer c
   UpdLoseItem _ _ _ _ c -> singleContainer c
+  UpdSpotItemBag c _ _ -> singleContainer c
+  UpdLoseItemBag c _ _ -> singleContainer c
   UpdMoveActor aid fromP toP -> do
     b <- getsState $ getActorBody aid
     -- Non-projectile actors are never totally isolated from envirnoment;
