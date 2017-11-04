@@ -157,9 +157,9 @@ sendPer :: (MonadServerAtomic m, MonadServerReadRequest m)
 {-# INLINE sendPer #-}
 sendPer fid lid outPer inPer perNew = do
   sendUpdNoState fid $ UpdPerception lid outPer inPer
-  sLocal <- getsServer $ (EM.! fid) . sclientStates
-  let forget = atomicForget fid lid outPer sLocal
-  remember <- getsState $ atomicRemember lid inPer sLocal
+  sClient <- getsServer $ (EM.! fid) . sclientStates
+  let forget = atomicForget fid lid outPer sClient
+  remember <- getsState $ atomicRemember lid inPer sClient
   let seenNew = seenAtomicCli False fid perNew
   psRem <- mapM posUpdAtomic remember
   -- Verify that we remember only currently seen things.
@@ -171,10 +171,10 @@ sendPer fid lid outPer inPer perNew = do
 -- out of FOV. Clients remember them. Only actors are forgotten.
 atomicForget :: FactionId -> LevelId -> Perception -> State
              -> [UpdAtomic]
-atomicForget side lid outPer sLocal =
+atomicForget side lid outPer sClient =
   -- Wipe out actors that just became invisible due to changed FOV.
   let outFov = totalVisible outPer
-      outPrio = concatMap (\p -> posToAssocs p lid sLocal) $ ES.elems outFov
+      outPrio = concatMap (\p -> posToAssocs p lid sClient) $ ES.elems outFov
       fActor (aid, b) =
         -- We forget only currently invisible actors. Actors can be outside
         -- perception, but still visible, if they belong to our faction,
@@ -182,7 +182,7 @@ atomicForget side lid outPer sLocal =
         -- or if they have disabled senses.
         if not (bproj b) && bfid b == side
         then Nothing
-        else Just $ UpdLoseActor aid b $ getCarriedAssocs b sLocal
+        else Just $ UpdLoseActor aid b $ getCarriedAssocs b sClient
           -- this command always succeeds, the actor can be always removed,
           -- because the actor is taken from the state
       outActor = mapMaybe fActor outPrio
@@ -190,7 +190,7 @@ atomicForget side lid outPer sLocal =
 
 atomicRemember :: LevelId -> Perception -> State -> State -> [UpdAtomic]
 {-# INLINE atomicRemember #-}
-atomicRemember lid inPer sLocal s =
+atomicRemember lid inPer sClient s =
   let inFov = ES.elems $ totalVisible inPer
       lvl = sdungeon s EM.! lid
       -- Actors.
@@ -200,26 +200,34 @@ atomicRemember lid inPer sLocal s =
       fActor (aid, b) = let ais = getCarriedAssocs b s
                         in UpdSpotActor aid b ais
       inActor = map fActor inAssocs
-      -- Wipe out remembered items on tiles that now came into view.
-      lvlClient = sdungeon sLocal EM.! lid
-      inContainer fc bagEM =
-        let inItem = mapMaybe (\p -> (p,) <$> EM.lookup p bagEM) inFov
-            fBag (p, bag) =
-              let ais =
-                    map (\iid -> (iid, getItemBody iid sLocal)) $ EM.keys bag
-              in UpdLoseItemBag (fc lid p) bag ais
-        in map fBag inItem
-      inFloor = inContainer CFloor (lfloor lvlClient)
-      inEmbed = inContainer CEmbed (lembed lvlClient)
-      -- Spot items.
-      inContainer2 fc bagEM =
-        let inItem = mapMaybe (\p -> (p,) <$> EM.lookup p bagEM) inFov
-            fBag (p, bag) =
-              let ais = map (\iid -> (iid, getItemBody iid s)) $ EM.keys bag
-              in UpdSpotItemBag (fc lid p) bag ais
-        in map fBag inItem
-      inFloor2 = inContainer2 CFloor (lfloor lvl)
-      inEmbed2 = inContainer2 CEmbed (lembed lvl)
+      -- Wipe out remembered items on tiles that now came into view
+      -- and spot items on these tiles. Optimized away, when items match.
+      lvlClient = sdungeon sClient EM.! lid
+      inContainer fc bagEM bagEMClient =
+        let f p = case (EM.lookup p bagEM, EM.lookup p bagEMClient) of
+              (Nothing, Nothing) -> []  -- most common, no items ever
+              (Just bag, Nothing) ->  -- common, client unaware
+                let ais = map (\iid -> (iid, getItemBody iid s))
+                              (EM.keys bag)
+                in [UpdSpotItemBag (fc lid p) bag ais]
+              (Nothing, Just bagClient) ->  -- uncommon, all items vanished
+                let aisClient = map (\iid -> (iid, getItemBody iid sClient))
+                                    (EM.keys bagClient)
+                in [UpdLoseItemBag (fc lid p) bagClient aisClient]
+              (Just bag, Just bagClient) ->
+                if bag == bagClient
+                then []  -- common, nothing has changed, so optimized
+                else  -- uncommon, surprise; because it's rare, we send
+                      -- whole bags and don't optimize by sending only delta
+                  let aisClient = map (\iid -> (iid, getItemBody iid sClient))
+                                      (EM.keys bagClient)
+                      ais = map (\iid -> (iid, getItemBody iid s))
+                                (EM.keys bag)
+                  in [ UpdLoseItemBag (fc lid p) bagClient aisClient
+                     , UpdSpotItemBag (fc lid p) bag ais ]
+        in concatMap f inFov
+      inFloor = inContainer CFloor (lfloor lvl) (lfloor lvlClient)
+      inEmbed = inContainer CEmbed (lembed lvl) (lembed lvlClient)
       -- Spot tiles.
       Kind.COps{cotile} = scops s
       hideTile lvl1 p = let t = lvl1 `at` p
@@ -239,5 +247,4 @@ atomicRemember lid inPer sLocal s =
       -- Spot smells.
       inSm2 = mapMaybe (\p -> (p,) <$> EM.lookup p (lsmell lvl)) inSmellFov
       atomicSmell = if null inSm2 then [] else [UpdSpotSmell lid inSm2]
-  in atomicTile ++ inFloor ++ inEmbed ++ inFloor2 ++ inEmbed2
-     ++ inSmell ++ atomicSmell ++ inActor
+  in atomicTile ++ inFloor ++ inEmbed ++ inSmell ++ atomicSmell ++ inActor
