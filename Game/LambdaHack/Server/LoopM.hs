@@ -41,6 +41,7 @@ import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Server.CommonM
 import Game.LambdaHack.Server.EndM
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.HandleEffectM

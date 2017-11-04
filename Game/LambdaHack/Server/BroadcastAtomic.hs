@@ -234,6 +234,7 @@ atomicRemember lid inPer sClient s =
       newTs = filter notKnown inTileMap
       atomicTile = if null newTs then [] else [UpdSpotTile lid newTs]
       -- Wipe out remembered smell on tiles that now came into smell Fov.
+      -- Smell radius is small, so we can just wipe and send all.
       inSmellFov = ES.elems $ totalSmelled inPer
       inSm = mapMaybe (\p -> (p,) <$> EM.lookup p (lsmell lvlClient)) inSmellFov
       inSmell = if null inSm then [] else [UpdLoseSmell lid inSm]

@@ -2,10 +2,9 @@
 -- | Server operations common to many modules.
 module Game.LambdaHack.Server.CommonM
   ( execFailure, revealItems, moveStores, deduceQuits, deduceKilled
-  , electLeader, supplantLeader
+  , electLeader, supplantLeader, updatePer, recomputeCachePer
   , addActor, registerActor, addActorIid, projectFail, discoverIfNoEffects
   , pickWeaponServer, currentSkillsServer
-  , recomputeCachePer
   ) where
 
 import Prelude ()
@@ -214,8 +213,38 @@ electLeader fid lid aidDead = do
 supplantLeader :: MonadServerAtomic m => FactionId -> ActorId -> m ()
 supplantLeader fid aid = do
   fact <- getsState $ (EM.! fid) . sfactionD
-  unless (fleaderMode (gplayer fact) == LeaderNull) $
+  unless (fleaderMode (gplayer fact) == LeaderNull) $ do
+    -- First update and send Perception so that the new leader
+    -- may report his environment.
+    b <- getsState $ getActorBody aid
+    valid <- getsServer $ (EM.! blid b) . (EM.! fid) . sperValidFid
+    unless valid $ updatePer fid (blid b)
     execUpdAtomic $ UpdLeadFaction fid (_gleader fact) (Just aid)
+
+updatePer :: MonadServerAtomic m => FactionId -> LevelId -> m ()
+{-# INLINE updatePer #-}
+updatePer fid lid = do
+  modifyServer $ \ser ->
+    ser {sperValidFid = EM.adjust (EM.insert lid True) fid $ sperValidFid ser}
+  sperFidOld <- getsServer sperFid
+  let perOld = sperFidOld EM.! fid EM.! lid
+  knowEvents <- getsServer $ sknowEvents . sdebugSer
+  -- Performed in the State after action, e.g., with a new actor.
+  perNew <- recomputeCachePer fid lid
+  let inPer = diffPer perNew perOld
+      outPer = diffPer perOld perNew
+  unless (nullPer outPer && nullPer inPer) $
+    unless knowEvents $  -- inconsistencies would quickly manifest
+      execSendPer fid lid outPer inPer perNew
+
+recomputeCachePer :: MonadServer m => FactionId -> LevelId -> m Perception
+recomputeCachePer fid lid = do
+  total <- getCacheTotal fid lid
+  fovLucid <- getCacheLucid lid
+  let perNew = perceptionFromPTotal fovLucid total
+      fper = EM.adjust (EM.insert lid perNew) fid
+  modifyServer $ \ser -> ser {sperFid = fper $ sperFid ser}
+  return perNew
 
 -- The missile item is removed from the store only if the projection
 -- went into effect (no failure occured).
@@ -488,12 +517,3 @@ getCacheTotal fid lid = do
           fperCache = EM.adjust (EM.insert lid perCache) fid
       modifyServer $ \ser -> ser {sperCacheFid = fperCache $ sperCacheFid ser}
       return total
-
-recomputeCachePer :: MonadServer m => FactionId -> LevelId -> m Perception
-recomputeCachePer fid lid = do
-  total <- getCacheTotal fid lid
-  fovLucid <- getCacheLucid lid
-  let perNew = perceptionFromPTotal fovLucid total
-      fper = EM.adjust (EM.insert lid perNew) fid
-  modifyServer $ \ser -> ser {sperFid = fper $ sperFid ser}
-  return perNew
