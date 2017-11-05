@@ -128,27 +128,6 @@ updCreateActor aid body ais = do
   aspectRecord <- getsState $ aspectRecordFromActor body
   modifyState $ updateActorAspect $ EM.insert aid aspectRecord
 
--- Actor's items may or may not be already present in @sitemD@,
--- regardless if they are already present otherwise in the dungeon.
--- We re-add them all to save time determining which really need it.
--- If collision occurs, pick the item found on easier level.
-addAis :: MonadStateWrite m => [(ItemId, Item)] -> m ()
-addAis ais = do
-  let h item1 item2 =
-        assert (itemsMatch item1 item2
-                `blame` "inconsistent added items"
-                `swith` (item1, item2, ais))
-               item2 -- keep the first found level
-  forM_ ais $ \(iid, item) ->
-    modifyState $ updateItemD $ EM.insertWith h iid item
-
-itemsMatch :: Item -> Item -> Bool
-itemsMatch item1 item2 =
-  jkindIx item1 == jkindIx item2
-  -- && aspects and effects are the same, but too much writing;
-  -- Note that nothing else needs to be the same, since items are merged
-  -- and clients have different views on dungeon items than the server.
-
 -- | Kills an actor.
 --
 -- If a leader dies, a new leader should be elected on the server
@@ -191,12 +170,6 @@ updCreateItem iid item kit@(k, _) c = assert (k > 0) $ do
     CActor aid store ->
       when (store `elem` [CEqp, COrgan]) $ addItemToActor iid item k aid
     _ -> return ()
-
-addItemToActor :: MonadStateWrite m => ItemId -> Item -> Int -> ActorId -> m ()
-addItemToActor iid itemBase k aid = do
-  arItem <- getsState $ aspectRecordFromItem iid itemBase
-  let f arActor = sumAspectRecord [(arActor, 1), (arItem, k)]
-  modifyState $ updateActorAspect $ EM.adjust f aid
 
 -- | Destroy some copies (possibly not all) of an item.
 updDestroyItem :: MonadStateWrite m
@@ -573,17 +546,6 @@ updDiscover _c iid ik seed = do
         discoverKind iid ik
         discoverSeed iid seed
         resetActorAspect
-
-resetActorAspect :: MonadStateWrite m => m ()
-resetActorAspect = do
-  -- Each actor's equipment and organs would need to be inspected,
-  -- the iid looked up, e.g., if it wasn't in old discoKind, but is in new,
-  -- and then aspect record updated, so it's simpler and not much more
-  -- expensive to generate new sactorAspect. Optimize only after profiling.
-  -- Also note this doesn't get invoked on the server, because it bails out
-  -- earlier, upon noticing the item is already fully known.
-  actorAspect <- getsState actorAspectInDungeon
-  modifyState $ updateActorAspect $ const actorAspect
 
 updCover :: Container -> ItemId -> Kind.Id ItemKind -> ItemSeed -> m ()
 updCover _c _iid _ik _seed = undefined
