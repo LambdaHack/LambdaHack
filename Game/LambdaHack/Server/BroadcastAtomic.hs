@@ -31,6 +31,7 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import Game.LambdaHack.Content.TileKind (isUknownSpace)
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolM
 import Game.LambdaHack.Server.State
@@ -223,16 +224,24 @@ atomicRemember lid inPer sClient s =
       inEmbed = inContainer CEmbed (lembed lvl) (lembed lvlClient)
       -- Spot tiles.
       Kind.COps{cotile} = scops s
-      hideTile lvl1 p = let t = lvl1 `at` p
-                        in fromMaybe t $ Tile.hideAs cotile t
-      inTileMap = map (\p -> (p, hideTile lvl p)) inFov
-      -- We ignore the server resending us hidden versions of the tiles
-      -- (or resending us the same data we already got).
-      -- If the tiles are changed to other variants of the hidden tile,
-      -- we can still verify by searching.
-      notKnown (p, t) = hideTile lvlClient p /= t
-      newTs = filter notKnown inTileMap
-      atomicTile = if null newTs then [] else [UpdSpotTile lid newTs]
+      atomicTile =
+        -- We ignore the server resending us hidden versions of the tiles
+        -- (or resending us the same data we already got).
+        -- If the tiles are changed to other variants of the hidden tile,
+        -- we can still verify by searching.
+        let f p (loses1, spots1) =
+              let t = lvl `at` p
+                  tHidden = fromMaybe t $ Tile.hideAs cotile t
+                  tClient = lvlClient `at` p
+              in if tClient `elem` [t, tHidden]
+                 then (loses1, spots1)
+                 else ( if isUknownSpace tClient
+                        then loses1
+                        else (p, tClient) : loses1
+                      , (p, tHidden) : spots1 )  -- send the hidden version
+            (loses, spots) = foldr f ([], []) inFov
+        in [UpdLoseTile lid loses | not $ null loses]
+           ++ [UpdSpotTile lid spots | not $ null spots]
       -- Wipe out remembered smell on tiles that now came into smell Fov.
       -- Smell radius is small, so we can just wipe and send all.
       inSmellFov = ES.elems $ totalSmelled inPer

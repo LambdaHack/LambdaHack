@@ -465,49 +465,37 @@ updSearchTile aid p toTile = do
   let t = lvl `at` p
   if t == toTile
   then atomicFail "tile already searched"
-  else assert (Just t == Tile.hideAs cotile toTile)
-       $ updSpotTile (blid b) [(p, toTile)]
+  else assert (Just t == Tile.hideAs cotile toTile) $ do
+    updLoseTile (blid b) [(p, t)]
+    updSpotTile (blid b) [(p, toTile)]  -- not the hidden version this one time
 
--- Notice previously invisible tiles. This is similar to @UpdSpotActor@,
--- but done in bulk, because it often involves dozens of tiles per move.
--- We don't check that the tiles at the positions in question are unknown,
--- because clients remember tiles at previously seen positions
--- instead of marking them unknown as soon as they get out of view.
--- Similarly, when updating the @lseen@ field we don't assume
--- the tiles were unknown previously.
+-- Notice previously invisible tiles. This is done in bulk,
+-- because it often involves dozens of tiles per move.
+-- We verify that the old tiles at the positions in question
+-- are indeed unknown.
 updSpotTile :: MonadStateWrite m
             => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 updSpotTile lid ts = assert (not $ null ts) $ do
   Kind.COps{coTileSpeedup} <- getsState scops
-  lvlInitial <- getLevel lid
-  let f (p, t2) = do
-        let t1 = lvlInitial `at` p
-        case ( Tile.isExplorable coTileSpeedup t1
-             , Tile.isExplorable coTileSpeedup t2 ) of
-          (False, True) -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl+1}
-          (True, False) -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl-1}
-          _ -> return ()
-        return $ t1 == t2
-  bs <- mapM f ts
-  when (and bs) $ atomicFail "all tiles already spotted"
-  let adj tileMap = tileMap PointArray.// ts
+  let unk tileMap (p, _) = tileMap PointArray.! p == unknownId
+      adj tileMap = assert (all (unk tileMap) ts) $ tileMap PointArray.// ts
   updateLevel lid $ updateTile adj
+  let f (_, t1) = when (Tile.isExplorable coTileSpeedup t1) $
+        updateLevel lid $ \lvl -> lvl {lseen = lseen lvl + 1}
+  mapM_ f ts
 
--- Stop noticing previously visible tiles. Unlike @updSpotActor@, it verifies
--- the state of the tiles before changing them.
+-- Stop noticing previously visible tiles. It verifies
+-- the state of the tiles before wiping them out.
 updLoseTile :: MonadStateWrite m
             => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 updLoseTile lid ts = assert (not $ null ts) $ do
   Kind.COps{coTileSpeedup} <- getsState scops
-  let matches _ [] = True
-      matches tileMap ((p, ov) : rest) =
-        tileMap PointArray.! p == ov && matches tileMap rest
+  let matches tileMap (p, ov) = tileMap PointArray.! p == ov
       tu = map (second (const unknownId)) ts
-      adj tileMap = assert (matches tileMap ts) $ tileMap PointArray.// tu
+      adj tileMap = assert (all (matches tileMap) ts) $ tileMap PointArray.// tu
   updateLevel lid $ updateTile adj
-  let f (_, t1) =
-        when (Tile.isExplorable coTileSpeedup t1) $
-          updateLevel lid $ \lvl -> lvl {lseen = lseen lvl - 1}
+  let f (_, t1) = when (Tile.isExplorable coTileSpeedup t1) $
+        updateLevel lid $ \lvl -> lvl {lseen = lseen lvl - 1}
   mapM_ f ts
 
 updAlterSmell :: MonadStateWrite m => LevelId -> Point -> Time -> Time -> m ()
