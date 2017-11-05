@@ -9,41 +9,41 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Bits (xor)
+import           Data.Bits (xor)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
-import Data.Key (mapWithKeyM_)
+import           Data.Key (mapWithKeyM_)
 
-import Game.LambdaHack.Atomic
+import           Game.LambdaHack.Atomic
 import qualified Game.LambdaHack.Common.Ability as Ability
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Perception
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.Request
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Common.Request
+import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ItemKind (ItemKind)
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
-import Game.LambdaHack.Server.CommonM
-import Game.LambdaHack.Server.ItemM
-import Game.LambdaHack.Server.MonadServer
-import Game.LambdaHack.Server.PeriodicM
-import Game.LambdaHack.Server.State
+import           Game.LambdaHack.Server.CommonM
+import           Game.LambdaHack.Server.ItemM
+import           Game.LambdaHack.Server.MonadServer
+import           Game.LambdaHack.Server.PeriodicM
+import           Game.LambdaHack.Server.State
 
 -- + Semantics of effects
 
@@ -83,7 +83,7 @@ applyMeleeDamage source target iid = do
 -- Here melee damage is applied. This is necessary so that the same
 -- AI benefit calculation may be used for flinging and for applying items.
 meleeEffectAndDestroy :: MonadServerAtomic m
-                       => ActorId -> ActorId -> ItemId -> Container -> m ()
+                      => ActorId -> ActorId -> ItemId -> Container -> m ()
 meleeEffectAndDestroy source target iid c = do
   meleePerformed <- applyMeleeDamage source target iid
   bag <- getsState $ getContainerBag c

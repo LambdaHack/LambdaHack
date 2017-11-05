@@ -24,32 +24,34 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import           Data.Key (mapWithKeyM_)
 
-import Game.LambdaHack.Atomic
+import           Game.LambdaHack.Atomic
 import qualified Game.LambdaHack.Common.Ability as Ability
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.Request
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Common.Request
+import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
-import Game.LambdaHack.Server.CommonM
-import Game.LambdaHack.Server.HandleEffectM
-import Game.LambdaHack.Server.MonadServer
-import Game.LambdaHack.Server.PeriodicM
-import Game.LambdaHack.Server.State
+import           Game.LambdaHack.Server.CommonM
+import           Game.LambdaHack.Server.HandleEffectM
+import           Game.LambdaHack.Server.ItemM
+import           Game.LambdaHack.Server.MonadServer
+import           Game.LambdaHack.Server.PeriodicM
+import           Game.LambdaHack.Server.State
 
 -- | The semantics of server commands.
 -- AI always takes time and so doesn't loop.
@@ -376,7 +378,7 @@ reqAlter source tpos = do
       hiddenTile = Tile.hideAs cotile serverTile
   if not $ adjacent (bpos sb) tpos then execFailure source req AlterDistant
   else if Just clientTile == hiddenTile then do -- searches
-  -- Only actors with AbAlter > 1 can search for hidden doors, etc.
+    -- Only actors with AbAlter > 1 can search for hidden doors, etc.
     if alterSkill <= 1
     then execFailure source req AlterUnskilled  -- don't leak about searching
     else do
@@ -387,7 +389,7 @@ reqAlter source tpos = do
       -- a waste of time and ignore the command.
       execUpdAtomic $ UpdSearchTile source tpos serverTile
       -- Seaching triggers the embeds as well, regardless if they are known
-      -- to the client.
+      -- to the client. This comes after searching that explains what happens.
       itemEffectEmbedded source tpos embeds
   else if clientTile == serverTile then do -- alters
     if alterSkill < Tile.alterMinSkill coTileSpeedup serverTile
@@ -421,6 +423,19 @@ reqAlter source tpos = do
                 (False, True) -> execUpdAtomic $ UpdAlterExplorable lid 1
                 (True, False) -> execUpdAtomic $ UpdAlterExplorable lid (-1)
                 _ -> return ()
+            -- If the source tile was hidden, the item could not be visible
+            -- on a client, in which case the command would be ignored
+            -- on the client, without causing any problems. Otherwise,
+            -- if the position is in view, client has accurate info.
+            let bagToDelete = fromMaybe EM.empty $ EM.lookup tpos (lembed lvl)
+                exeDelete iid kit = do
+                  item <- getsState $ getItemBody iid
+                  execUpdAtomic $ UpdLoseItem False iid item kit
+                                $ CEmbed lid tpos
+            mapWithKeyM_ exeDelete bagToDelete
+            -- Altering always reveals the outcome tile, so it's not hidden
+            -- and so its embedded items are always visible.
+            embedItem lid tpos toTile
           feats = TK.tfeature $ okind serverTile
           toAlter feat =
             case feat of
@@ -435,13 +450,13 @@ reqAlter source tpos = do
       else do
         if EM.notMember tpos $ lfloor lvl then
           if null (posToAidsLvl tpos lvl) then do
+            -- The embeds of the initial tile are activated before the tile
+            -- is altered, so that the items are still present.
+            itemEffectEmbedded source tpos embeds
             case groupsToAlterTo of
               [] -> return ()
               [groupToAlterTo] -> changeTo groupToAlterTo
               l -> error $ "tile changeable in many ways" `showFailure` l
-            -- The embeds of the initial tile are activated, but we report
-            -- the effects after the tile is already changed.
-            itemEffectEmbedded source tpos embeds
           else execFailure source req AlterBlockActor
         else execFailure source req AlterBlockItem
   else  -- client is misguided re tile at that position, so bail out

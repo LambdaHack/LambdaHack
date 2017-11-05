@@ -1,7 +1,7 @@
 -- | Server operations for items.
 module Game.LambdaHack.Server.ItemM
   ( rollItem, rollAndRegisterItem, registerItem
-  , placeItemsInDungeon, embedItemsInDungeon, mapActorCStore_
+  , placeItemsInDungeon, embedItem, embedItemsInDungeon, mapActorCStore_
   ) where
 
 import Prelude ()

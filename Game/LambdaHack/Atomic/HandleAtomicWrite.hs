@@ -175,6 +175,11 @@ updCreateItem iid item kit@(k, _) c = assert (k > 0) $ do
 updDestroyItem :: MonadStateWrite m
                => ItemId -> Item -> ItemQuant -> Container -> m ()
 updDestroyItem iid item kit@(k, _) c = assert (k > 0) $ do
+  -- If the item not visible by the client (e.g., it's embedded item
+  -- of a hidden tile), bail out.
+  bag <- getsState $ getContainerBag c
+  when (EM.notMember iid bag) $
+    atomicFail $ "item not present" `showFailure` (iid, item, kit, c)
   -- Do not remove the item from @sitemD@ nor from @sitemRev@,
   -- It's incredibly costly and not noticeable for the player.
   -- However, assert the item is registered in @sitemD@.
@@ -402,11 +407,8 @@ updRecordKill aid ikind k = do
 -- | Alter an attribute (actually, the only, the defining attribute)
 -- of a visible tile. This is similar to e.g., @UpdTrajectory@.
 --
--- For now, we don't remove embedded items when altering a tile
--- and neither do we create fresh ones. It works fine, e.g., for tiles on fire
--- that change into burnt out tile and then the fire item can no longer
--- be triggered due to @alterMinSkillKind@ excluding items without @Embed@,
--- even if the burnt tile has low enough @talter@.
+-- Removing and creating embedded items when altering a tile
+-- is done separately via @UpdCreateItem@ and @UpdDestroyItem@.
 updAlterTile :: MonadStateWrite m
              => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
              -> m ()
