@@ -1177,9 +1177,9 @@ mainMenuHuman cmdAction = do
   gameMode <- getGameMode
   snxtScenario <- getsClient snxtScenario
   let nxtGameName = mname $ nxtGameMode cops snxtScenario
-      tnextScenario = "new scenario:" <+> nxtGameName
+      tnextScenario = "pick next:" <+> nxtGameName
       -- Key-description-command tuples.
-      kds = (K.mkKM "s", (tnextScenario, HumanCmd.GameScenarioIncr))
+      kds = (K.mkKM "p", (tnextScenario, HumanCmd.GameScenarioIncr))
             : [ (km, (desc, cmd))
               | (km, ([HumanCmd.CmdMainMenu], desc, cmd)) <- bcmdList ]
       bindingLen = 30
@@ -1259,7 +1259,7 @@ challengesMenuHuman cmdAction = do
                    , T.justifyLeft bindingLen ' ' tcurWolf
                    , T.justifyLeft bindingLen ' ' tcurFish
                    , T.justifyLeft bindingLen ' ' ""
-                   , T.justifyLeft bindingLen ' ' "New game challenges:"
+                   , T.justifyLeft bindingLen ' ' "Next game challenges:"
                    , T.justifyLeft bindingLen ' ' "" ]
   generateMenu cmdAction kds gameInfo "challenge"
 

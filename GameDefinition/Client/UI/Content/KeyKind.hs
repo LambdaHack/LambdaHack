@@ -8,9 +8,9 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Game.LambdaHack.Client.UI.Content.KeyKind
-import Game.LambdaHack.Client.UI.HumanCmd
-import Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Client.UI.Content.KeyKind
+import           Game.LambdaHack.Client.UI.HumanCmd
+import           Game.LambdaHack.Common.Misc
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Description of default key-command bindings.
@@ -28,10 +28,10 @@ standardKeys = KeyKind
       -- mode) first.
 
       -- Main Menu
-      [ ("c", ([CmdMainMenu], "enter challenges menu>", ChallengesMenu))
-      , ("n", ([CmdMainMenu], "start new game", GameRestart))
-      , ("x", ([CmdMainMenu], "save and exit", GameExit))
-      , ("m", ([CmdMainMenu], "enter settings menu>", SettingsMenu))
+      [ ("e", ([CmdMainMenu], "enter challenges menu>", ChallengesMenu))
+      , ("s", ([CmdMainMenu], "start new game", GameRestart))
+      , ("x", ([CmdMainMenu], "exit to desktop", GameExit))
+      , ("v", ([CmdMainMenu], "visit settings menu>", SettingsMenu))
       , ("a", ([CmdMainMenu], "automate faction", Automate))
       , ("?", ([CmdMainMenu], "see command Help", Help))
       , ("Escape", ([CmdMainMenu], "back to playing", Cancel))
