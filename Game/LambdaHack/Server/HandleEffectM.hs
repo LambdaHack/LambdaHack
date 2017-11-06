@@ -1154,6 +1154,7 @@ effectDetectHidden execSfx radius target pos = do
         let f p = when (p /= pos) $ do
               let t = lvl `at` p
               execUpdAtomic $ UpdSearchTile target p t
+              -- This is safe searching; embedded items are not triggered.
         mapM_ f l
         return $! not $ null l
   effectDetectX predicate action execSfx radius target

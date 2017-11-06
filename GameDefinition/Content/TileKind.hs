@@ -115,7 +115,8 @@ wallSuspect = TileKind  -- only on client
   , talter   = 2
   , tfeature = [ RevealAs "trapped vertical door Lit"
                , ObscureAs "obscured vertical wall Lit"
-               , Indistinct ]
+               , Indistinct
+               ]
   }
 wallObscured = TileKind
   { tsymbol  = '|'
@@ -137,7 +138,8 @@ wallH = TileKind
   , tcolor2  = defFG
   , talter   = 100
   , tfeature = [ BuildAs "suspect horizontal wall Lit"
-               , Indistinct ]
+               , Indistinct
+               ]
   }
 wallSuspectH = TileKind  -- only on client
   { tsymbol  = '-'
@@ -148,7 +150,8 @@ wallSuspectH = TileKind  -- only on client
   , talter   = 2
   , tfeature = [ RevealAs "trapped horizontal door Lit"
                , ObscureAs "obscured horizontal wall Lit"
-               , Indistinct ]
+               , Indistinct
+               ]
   }
 wallObscuredDefacedH = TileKind
   { tsymbol  = '-'
@@ -214,9 +217,10 @@ signboardUnread = TileKind  -- client only, indicates never used by this faction
   , tcolor   = BrCyan
   , tcolor2  = Cyan
   , talter   = 5
-  , tfeature = [ Embed "signboard", Indistinct
-               , ConsideredByAI  -- changes after use, so safe for AI
-               , RevealAs "signboard" ]  -- to display as hidden
+  , tfeature = [ ConsideredByAI  -- changes after use, so safe for AI
+               , RevealAs "signboard"  -- to display as hidden
+               , Indistinct
+               ]
   }
 signboardRead = TileKind
   { tsymbol  = 'O'

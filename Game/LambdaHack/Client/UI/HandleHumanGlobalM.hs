@@ -34,51 +34,51 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
-import Data.Version
+import           Data.Version
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.Bfs
-import Game.LambdaHack.Client.BfsM
-import Game.LambdaHack.Client.CommonM
-import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.ActorUI
-import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.FrameM
-import Game.LambdaHack.Client.UI.Frontend (frontendName)
-import Game.LambdaHack.Client.UI.HandleHelperM
-import Game.LambdaHack.Client.UI.HandleHumanLocalM
-import Game.LambdaHack.Client.UI.HumanCmd (CmdArea (..), Trigger (..))
+import           Game.LambdaHack.Client.Bfs
+import           Game.LambdaHack.Client.BfsM
+import           Game.LambdaHack.Client.CommonM
+import           Game.LambdaHack.Client.MonadClient
+import           Game.LambdaHack.Client.State
+import           Game.LambdaHack.Client.UI.ActorUI
+import           Game.LambdaHack.Client.UI.Config
+import           Game.LambdaHack.Client.UI.FrameM
+import           Game.LambdaHack.Client.UI.Frontend (frontendName)
+import           Game.LambdaHack.Client.UI.HandleHelperM
+import           Game.LambdaHack.Client.UI.HandleHumanLocalM
+import           Game.LambdaHack.Client.UI.HumanCmd (CmdArea (..), Trigger (..))
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
-import Game.LambdaHack.Client.UI.InventoryM
+import           Game.LambdaHack.Client.UI.InventoryM
 import qualified Game.LambdaHack.Client.UI.Key as K
-import Game.LambdaHack.Client.UI.KeyBindings
-import Game.LambdaHack.Client.UI.MonadClientUI
-import Game.LambdaHack.Client.UI.Msg
-import Game.LambdaHack.Client.UI.MsgM
-import Game.LambdaHack.Client.UI.Overlay
-import Game.LambdaHack.Client.UI.RunM
-import Game.LambdaHack.Client.UI.SessionUI
-import Game.LambdaHack.Client.UI.Slideshow
-import Game.LambdaHack.Client.UI.SlideshowM
-import Game.LambdaHack.Common.Ability
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Client.UI.KeyBindings
+import           Game.LambdaHack.Client.UI.MonadClientUI
+import           Game.LambdaHack.Client.UI.Msg
+import           Game.LambdaHack.Client.UI.MsgM
+import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.RunM
+import           Game.LambdaHack.Client.UI.SessionUI
+import           Game.LambdaHack.Client.UI.Slideshow
+import           Game.LambdaHack.Client.UI.SlideshowM
+import           Game.LambdaHack.Common.Ability
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.Request
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Common.Request
+import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Content.TileKind (TileKind)
+import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.RuleKind
+import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * ByArea
@@ -400,14 +400,15 @@ moveSearchAlter dir = do
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos
       alterMinSkill = Tile.alterMinSkill coTileSpeedup t
+  bag <- getsState $ getEmbedBag (blid sb) tpos
   runStopOrCmd <-
     -- Movement requires full access.
     if | Tile.isWalkable coTileSpeedup t ->
          -- A potential invisible actor is hit. War started without asking.
          return $ Right $ RequestAnyAbility $ ReqMove dir
        -- No access, so search and/or alter the tile.
-       | Tile.isSuspect coTileSpeedup t  -- not yet searched
-         || Tile.isHideAs coTileSpeedup t  -- search again, could be swapped
+       | not (null bag)
+         || Tile.isSuspect coTileSpeedup t  -- not yet searched
          || alterMinSkill < 10
          || alterMinSkill >= 10 && alterSkill >= alterMinSkill ->
          if | alterSkill < alterMinSkill -> failSer AlterUnwalked
@@ -888,7 +889,8 @@ verifyAlters lid p = do
   let isE Item{jname} = jname == "escape"
   if | any isE is -> verifyEscape
      | null is && not (Tile.isDoor coTileSpeedup t
-                       || Tile.isChangable coTileSpeedup t) ->
+                       || Tile.isChangable coTileSpeedup t
+                       || Tile.isSuspect coTileSpeedup t) ->
          failWith "never mind"
      | otherwise -> return $ Right ()
 

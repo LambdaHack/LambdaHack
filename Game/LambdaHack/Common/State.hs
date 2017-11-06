@@ -17,21 +17,21 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
+import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
-import Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.TileKind (TileKind, unknownId)
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 
 -- | View on game state. "Remembered" fields carry a subset of the info
 -- in the client copies of the state. Clients never directly change
@@ -209,9 +209,7 @@ sactorAspect :: State -> ActorAspect
 sactorAspect = _sactorAspect
 
 getItemBody :: ItemId -> State -> Item
-getItemBody iid s =
-  let assFail = error $ "item body not found" `showFailure` (iid, s)
-  in EM.findWithDefault assFail iid $ sitemD s
+getItemBody iid s = sitemD s EM.! iid
 
 aspectRecordFromItem :: ItemId -> Item -> State -> AspectRecord
 aspectRecordFromItem iid item s =

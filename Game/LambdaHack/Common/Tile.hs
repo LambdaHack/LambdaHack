@@ -31,14 +31,14 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Vector.Unboxed as U
-import Data.Word (Word8)
+import           Data.Word (Word8)
 
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Content.ItemKind (ItemKind)
-import Game.LambdaHack.Content.TileKind (TileKind, TileSpeedup (..),
-                                         isUknownSpace)
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Content.ItemKind (ItemKind)
+import           Game.LambdaHack.Content.TileKind (TileKind, TileSpeedup (..),
+                                                   isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 createTab :: U.Unbox a => Kind.Ops TileKind -> (TileKind -> a) -> TK.Tab a
@@ -245,7 +245,7 @@ closeTo Kind.Ops{okind, opick} t = do
 
 embeddedItems :: Kind.Ops TileKind -> Kind.Id TileKind -> [GroupName ItemKind]
 embeddedItems Kind.Ops{okind} t =
-  let getTo (TK.Embed eff) acc = eff : acc
+  let getTo (TK.Embed igrp) acc = igrp : acc
       getTo _ acc = acc
   in foldr getTo [] $ TK.tfeature $ okind t
 

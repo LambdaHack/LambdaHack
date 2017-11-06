@@ -24,7 +24,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import           Data.Key (mapWithKeyM_)
 
 import           Game.LambdaHack.Atomic
 import qualified Game.LambdaHack.Common.Ability as Ability
@@ -365,7 +364,7 @@ reqAlter source tpos = do
   Kind.COps{ cotile=cotile@Kind.Ops{okind, opick}
            , coTileSpeedup } <- getsState scops
   sb <- getsState $ getActorBody source
-  s <- getsServer $ (EM.! bfid sb) . sclientStates
+  sClient <- getsServer $ (EM.! bfid sb) . sclientStates
   actorSk <- currentSkillsServer source
   let alterSkill = EM.findWithDefault 0 Ability.AbAlter actorSk
       lid = blid sb
@@ -373,9 +372,13 @@ reqAlter source tpos = do
   embeds <- getsState $ getEmbedBag lid tpos
   lvl <- getLevel lid
   let serverTile = lvl `at` tpos
-      lvlClient = (EM.! lid) . sdungeon $ s
+      lvlClient = (EM.! lid) . sdungeon $ sClient
       clientTile = lvlClient `at` tpos
       hiddenTile = Tile.hideAs cotile serverTile
+      revealEmbed = unless (null embeds) $ do
+        s <- getState
+        let ais = map (\iid -> (iid, getItemBody iid s)) (EM.keys embeds)
+        execUpdAtomic $ UpdSpotItemBag (CEmbed lid tpos) embeds ais
   if not $ adjacent (bpos sb) tpos then execFailure source req AlterDistant
   else if Just clientTile == hiddenTile then do -- searches
     -- Only actors with AbAlter > 1 can search for hidden doors, etc.
@@ -388,18 +391,29 @@ reqAlter source tpos = do
       -- If they already know the tile, they will just consider our action
       -- a waste of time and ignore the command.
       execUpdAtomic $ UpdSearchTile source tpos serverTile
-      -- Seaching triggers the embeds as well, regardless if they are known
-      -- to the client. This comes after searching that explains what happens.
-      itemEffectEmbedded source tpos embeds
+      -- Searching also reveals the embedded items of the tile.
+      -- If the items are already seen by the client
+      -- (e.g., due to item detection, despite tile being still hidden),
+      -- the command is ignored on the client.
+      revealEmbed
+      -- Seaching triggers the embeds as well, after they are revealed.
+      -- The rationale is that the items were all the time present
+      -- (just invisible to the client), so they need to be triggered.
+      -- The exception is changable tiles, because they are not so easy
+      -- to trigger; they need subsequent altering.
+      unless (Tile.isDoor coTileSpeedup serverTile
+              || Tile.isChangable coTileSpeedup serverTile) $
+        itemEffectEmbedded source tpos embeds
   else if clientTile == serverTile then do -- alters
     if alterSkill < Tile.alterMinSkill coTileSpeedup serverTile
     then execFailure source req AlterUnskilled  -- don't leak about altering
     else do
       let changeTo tgroup = do
+            lvl2 <- getLevel lid
             -- No @SfxAlter@, because the effect is obvious (e.g., opened door).
             let nightCond kt = not (Tile.kindHasFeature TK.Walkable kt
                                     && Tile.kindHasFeature TK.Clear kt)
-                               || (if lnight lvl then id else not)
+                               || (if lnight lvl2 then id else not)
                                     (Tile.kindHasFeature TK.Dark kt)
             -- Sometimes the tile is determined precisely by the ambient light
             -- of the source tiles. If not, default to cave day/night condition.
@@ -423,16 +437,18 @@ reqAlter source tpos = do
                 (False, True) -> execUpdAtomic $ UpdAlterExplorable lid 1
                 (True, False) -> execUpdAtomic $ UpdAlterExplorable lid (-1)
                 _ -> return ()
-            -- If the source tile was hidden, the item could not be visible
+            -- At the end we replace old embeds (even if partially used up)
+            -- with new ones.
+            -- If the source tile was hidden, the items could not be visible
             -- on a client, in which case the command would be ignored
             -- on the client, without causing any problems. Otherwise,
             -- if the position is in view, client has accurate info.
-            let bagToDelete = fromMaybe EM.empty $ EM.lookup tpos (lembed lvl)
-                exeDelete iid kit = do
-                  item <- getsState $ getItemBody iid
-                  execUpdAtomic $ UpdLoseItem False iid item kit
-                                $ CEmbed lid tpos
-            mapWithKeyM_ exeDelete bagToDelete
+            case EM.lookup tpos (lembed lvl2) of
+              Just bag -> do
+                s <- getState
+                let ais = map (\iid -> (iid, getItemBody iid s)) (EM.keys bag)
+                execUpdAtomic $ UpdLoseItemBag (CEmbed lid tpos) bag ais
+              Nothing -> return ()
             -- Altering always reveals the outcome tile, so it's not hidden
             -- and so its embedded items are always visible.
             embedItem lid tpos toTile
@@ -451,7 +467,13 @@ reqAlter source tpos = do
         if EM.notMember tpos $ lfloor lvl then
           if null (posToAidsLvl tpos lvl) then do
             -- The embeds of the initial tile are activated before the tile
-            -- is altered, so that the items are still present.
+            -- is altered. This prevents, e.g., trying to activate items
+            -- where none are present any more, or very different to what
+            -- the client expected. Surprise only comes through searching above.
+            -- The items are first revealed for the sake of clients that
+            -- may see the tile as hidden. Note that the tile is not revealed
+            -- (unless it's altered later on, in which case the new one is).
+            revealEmbed
             itemEffectEmbedded source tpos embeds
             case groupsToAlterTo of
               [] -> return ()

@@ -16,25 +16,25 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Key (mapWithKeyM_)
+import           Data.Key (mapWithKeyM_)
 
-import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Atomic
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Perception
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.TileKind (isUknownSpace)
-import Game.LambdaHack.Server.MonadServer
-import Game.LambdaHack.Server.ProtocolM
-import Game.LambdaHack.Server.State
+import           Game.LambdaHack.Content.TileKind (isUknownSpace)
+import           Game.LambdaHack.Server.MonadServer
+import           Game.LambdaHack.Server.ProtocolM
+import           Game.LambdaHack.Server.State
 
 --storeUndo :: MonadServer m => CmdAtomic -> m ()
 --storeUndo _atomic =
@@ -192,23 +192,28 @@ atomicForget side lid outPer sClient =
 atomicRemember :: LevelId -> Perception -> State -> State -> [UpdAtomic]
 {-# INLINE atomicRemember #-}
 atomicRemember lid inPer sClient s =
-  let inFov = ES.elems $ totalVisible inPer
+  let Kind.COps{cotile, coTileSpeedup} = scops s
+      inFov = ES.elems $ totalVisible inPer
       lvl = sdungeon s EM.! lid
       -- Wipe out remembered items on tiles that now came into view
       -- and spot items on these tiles. Optimized away, when items match.
       lvlClient = sdungeon sClient EM.! lid
-      inContainer fc bagEM bagEMClient =
+      inContainer allow fc bagEM bagEMClient =
         let f p = case (EM.lookup p bagEM, EM.lookup p bagEMClient) of
               (Nothing, Nothing) -> []  -- most common, no items ever
               (Just bag, Nothing) ->  -- common, client unaware
                 let ais = map (\iid -> (iid, getItemBody iid s))
                               (EM.keys bag)
-                in [UpdSpotItemBag (fc lid p) bag ais]
+                in if allow p then [UpdSpotItemBag (fc lid p) bag ais] else []
               (Nothing, Just bagClient) ->  -- uncommon, all items vanished
-                let aisClient = map (\iid -> (iid, getItemBody iid sClient))
+                -- We don't check @allow@, because client sees items there,
+                -- so we assume he's aware of the tile enough to notice.
+               let aisClient = map (\iid -> (iid, getItemBody iid sClient))
                                     (EM.keys bagClient)
                 in [UpdLoseItemBag (fc lid p) bagClient aisClient]
               (Just bag, Just bagClient) ->
+                -- We don't check @allow@, because client sees items there,
+                -- so we assume he's aware of the tile enough to see new items.
                 if bag == bagClient
                 then []  -- common, nothing has changed, so optimized
                 else  -- uncommon, surprise; because it's rare, we send
@@ -220,10 +225,16 @@ atomicRemember lid inPer sClient s =
                   in [ UpdLoseItemBag (fc lid p) bagClient aisClient
                      , UpdSpotItemBag (fc lid p) bag ais ]
         in concatMap f inFov
-      inFloor = inContainer CFloor (lfloor lvl) (lfloor lvlClient)
-      inEmbed = inContainer CEmbed (lembed lvl) (lembed lvlClient)
+      inFloor = inContainer (const True) CFloor (lfloor lvl) (lfloor lvlClient)
+      -- Check that client may be shown embedded items, assuming he's not seeing
+      -- any at this position so far. If he's not shown now, the items will be
+      -- revealed via searching the tile later on.
+      -- This check is essential to prevent embedded items from leaking
+      -- tile identity.
+      allowEmbed p = not (Tile.isHideAs coTileSpeedup $ lvl `at` p)
+                     || lvl `at` p == lvlClient `at` p
+      inEmbed = inContainer allowEmbed CEmbed (lembed lvl) (lembed lvlClient)
       -- Spot tiles.
-      Kind.COps{cotile} = scops s
       atomicTile =
         -- We ignore the server resending us hidden versions of the tiles
         -- (or resending us the same data we already got).

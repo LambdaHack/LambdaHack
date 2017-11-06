@@ -14,7 +14,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Control.Exception as Ex
 import qualified Data.EnumMap.Strict as EM
-import Data.Key (mapWithKeyM_)
+import           Data.Key (mapWithKeyM_)
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -208,7 +208,7 @@ deleteBagContainer bag c = case c of
   CEmbed lid pos -> do
     let alt Nothing = atomicFail $ "embed bag already empty"
                                    `showFailure` (lid, pos, bag)
-        alt (Just bag2) = assert (bag == bag2) Nothing
+        alt (Just bag2) = assert (bag == bag2 `blame` (bag, bag2)) Nothing
     updateLevel lid $ updateEmbed $ EM.alter alt pos
   CActor aid store ->
     -- Very unlikely case, so we prefer brevity over performance.

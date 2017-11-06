@@ -21,28 +21,28 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import Data.Int (Int64)
+import           Data.Int (Int64)
 
-import Game.LambdaHack.Atomic.CmdAtomic
-import Game.LambdaHack.Atomic.MonadStateWrite
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Atomic.CmdAtomic
+import           Game.LambdaHack.Atomic.MonadStateWrite
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Perception
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ItemKind (ItemKind)
-import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.TileKind (TileKind, unknownId)
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Content.ItemKind (ItemKind)
+import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 
 -- | The game-state semantics of atomic game commands.
 -- Special effects (@SfxAtomic@) don't modify state.
@@ -175,11 +175,7 @@ updCreateItem iid item kit@(k, _) c = assert (k > 0) $ do
 updDestroyItem :: MonadStateWrite m
                => ItemId -> Item -> ItemQuant -> Container -> m ()
 updDestroyItem iid item kit@(k, _) c = assert (k > 0) $ do
-  -- If the item not visible by the client (e.g., it's embedded item
-  -- of a hidden tile), bail out.
-  bag <- getsState $ getContainerBag c
-  when (EM.notMember iid bag) $
-    atomicFail $ "item not present" `showFailure` (iid, item, kit, c)
+  deleteItemContainer iid kit c
   -- Do not remove the item from @sitemD@ nor from @sitemRev@,
   -- It's incredibly costly and not noticeable for the player.
   -- However, assert the item is registered in @sitemD@.
@@ -189,7 +185,6 @@ updDestroyItem iid item kit@(k, _) c = assert (k > 0) $ do
                         Just item0 -> itemsMatch item0 item)
                     `blame` "item already removed"
                     `swith` (iid, item, itemD)) ()
-  deleteItemContainer iid kit c
   case c of
     CActor aid store ->
       when (store `elem` [CEqp, COrgan]) $ addItemToActor iid item (-k) aid
@@ -212,6 +207,7 @@ updLoseItemBag :: MonadStateWrite m
                => Container -> ItemBag -> [(ItemId, Item)] -> m ()
 updLoseItemBag c bag ais = assert (EM.size bag > 0
                                    && EM.size bag == length ais) $ do
+  deleteBagContainer bag c
   -- Do not remove the items from @sitemD@ nor from @sitemRev@,
   -- It's incredibly costly and not noticeable for the player.
   -- However, assert the items are registered in @sitemD@.
@@ -219,7 +215,6 @@ updLoseItemBag c bag ais = assert (EM.size bag > 0
   let match (iid, item) = itemsMatch (itemD EM.! iid) item
   let !_A = assert (allB match ais `blame` "items already removed"
                                    `swith` (c, bag, ais, itemD)) ()
-  deleteBagContainer bag c
   case c of
     CActor aid store ->
       when (store `elem` [CEqp, COrgan]) $
@@ -431,6 +426,7 @@ updAlterExplorable :: MonadStateWrite m => LevelId -> Int -> m ()
 updAlterExplorable lid delta = assert (delta /= 0) $
   updateLevel lid $ \lvl -> lvl {lexplorable = lexplorable lvl + delta}
 
+-- Showing to the client the embedded items, if any, is done elsewhere.
 updSearchTile :: MonadStateWrite m
               => ActorId -> Point -> Kind.Id TileKind -> m ()
 updSearchTile aid p toTile = do
