@@ -844,7 +844,7 @@ alterTile ts dir = do
       pText = compassText dir
   alterTileAtPos ts tpos pText
 
--- | Try to alter a tile using a feature in at the given position.
+-- | Try to alter a tile using a feature at the given position.
 alterTileAtPos :: MonadClientUI m
                => [Trigger] -> Point -> Text
                -> m (FailOrCmd (RequestTimed 'AbAlter))

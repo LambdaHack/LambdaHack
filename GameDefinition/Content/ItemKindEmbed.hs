@@ -193,7 +193,7 @@ doorwayTrap = ItemKind
   , iweight  = 10000
   , idamage  = toDmg 0
   , iaspects = []
-  , ieffects = [OneOf [ RefillCalm (-20)
+  , ieffects = [OneOf [ toOrganActorTurn "blind" (20 + 1 `d` 5)
                       , toOrganActorTurn "slowed" (20 + 1 `d` 5)
                       , toOrganActorTurn "weakened" (20 + 1 `d` 5) ]]
   , ifeature = [Identified]  -- not Durable, springs at most once

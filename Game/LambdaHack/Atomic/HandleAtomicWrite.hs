@@ -46,6 +46,16 @@ import           Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 
 -- | The game-state semantics of atomic game commands.
 -- Special effects (@SfxAtomic@) don't modify state.
+--
+-- For each of the commands we know the client that receives them
+-- perceives the positions the command affects (as computed by @posUpdAtomic@).
+-- In the code for each semantic function we additonally verify
+-- the client sees any relevant items and/or actors and we throw
+-- exception if it doesn't. We catch some of the exceptions to enable
+-- simpler code that addresses commands to all clients even though
+-- not all know enough items or actors. Server is able to check
+-- if commands is acceptable for a client, because it keeps clients' states,
+-- so exception-throwing commands are never sent to client threads.
 handleUpdAtomic :: MonadStateWrite m => UpdAtomic -> m ()
 handleUpdAtomic cmd = case cmd of
   UpdCreateActor aid body ais -> updCreateActor aid body ais

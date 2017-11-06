@@ -9,30 +9,30 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
-import Data.Ord
+import           Data.Ord
 
-import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.Bfs
-import Game.LambdaHack.Client.BfsM
-import Game.LambdaHack.Client.CommonM
-import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.Preferences
-import Game.LambdaHack.Client.State
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Atomic
+import           Game.LambdaHack.Client.Bfs
+import           Game.LambdaHack.Client.BfsM
+import           Game.LambdaHack.Client.CommonM
+import           Game.LambdaHack.Client.MonadClient
+import           Game.LambdaHack.Client.Preferences
+import           Game.LambdaHack.Client.State
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Perception
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Content.ItemKind (ItemKind)
+import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.ModeKind (ModeKind)
-import Game.LambdaHack.Content.TileKind (TileKind)
+import           Game.LambdaHack.Content.ModeKind (ModeKind)
+import           Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | Effect of atomic actions on client state is calculated
 -- with the global state from after the command is executed
@@ -109,6 +109,10 @@ cmdAtomicSemCli oldState cmd = case cmd of
     let lvl = (EM.! lid) . sdungeon $ oldState
         t = lvl `at` p
     let !_A = assert (Just t == Tile.hideAs cotile toTile) ()
+    -- The following check is needed even if we verity in content
+    -- that searching doesn't change clarity and light of tiles,
+    -- because it modifies skill needed to alter the tile and even
+    -- walkability and changeability.
     when (tileChangeAffectsBfs cops t toTile) $
       invalidateBfsLid lid
   UpdSpotTile lid ts -> do
