@@ -70,7 +70,7 @@ data StateClient = StateClient
                                    -- ^ condInMelee value, unless invalidated
   , svictories    :: EM.EnumMap (Kind.Id ModeKind) (M.Map Challenge Int)
       -- ^ won games at particular difficulty levels
-  , sdebugCli     :: DebugModeCli  -- ^ client debugging mode
+  , sclientOptions     :: ClientOptions  -- ^ client debugging mode
   }
   deriving Show
 
@@ -110,7 +110,7 @@ emptyStateClient _sside =
     , smarkSuspect = 1
     , scondInMelee = EM.empty
     , svictories = EM.empty
-    , sdebugCli = defDebugModeCli
+    , sclientOptions = defClientOptions
     }
 
 cycleMarkSuspect :: StateClient -> StateClient
@@ -158,7 +158,7 @@ instance Binary StateClient where
     put smarkSuspect
     put scondInMelee
     put svictories
-    put sdebugCli
+    put sclientOptions
 #ifdef WITH_EXPENSIVE_ASSERTIONS
     put sfper
 #endif
@@ -177,7 +177,7 @@ instance Binary StateClient where
     smarkSuspect <- get
     scondInMelee <- get
     svictories <- get
-    sdebugCli <- get
+    sclientOptions <- get
     let sbfsD = EM.empty
         salter = EM.empty
         srandom = read g

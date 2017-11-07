@@ -36,8 +36,8 @@ frontendName :: String
 frontendName = "curses"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: DebugModeCli -> IO RawFrontend
-startup _sdebugCli = do
+startup :: ClientOptions -> IO RawFrontend
+startup _sclientOptions = do
   C.start
   void $ C.cursSet C.CursorInvisible
   let s = [ ((fg, bg), C.Style (toFColor fg) (toBColor bg))

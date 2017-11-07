@@ -137,7 +137,7 @@ addPressedEsc = addPressedKey KMP { kmpKeyMod = K.escKM
 frontendShutdown :: MonadClientUI m => m ()
 frontendShutdown = connFrontend FrontShutdown
 
-chanFrontend :: MonadClientUI m => DebugModeCli -> m ChanFrontend
+chanFrontend :: MonadClientUI m => ClientOptions -> m ChanFrontend
 chanFrontend = liftIO . Frontend.chanFrontendIO
 
 getReportUI :: MonadClientUI m => m Report
@@ -280,7 +280,7 @@ defaultHistory configHistoryMax = liftIO $ do
 
 tellAllClipPS :: MonadClientUI m => m ()
 tellAllClipPS = do
-  bench <- getsClient $ sbenchmark . sdebugCli
+  bench <- getsClient $ sbenchmark . sclientOptions
   when bench $ do
     sstartPOSIX <- getsSession sstart
     curPOSIX <- liftIO getPOSIXTime
@@ -300,7 +300,7 @@ tellAllClipPS = do
 
 tellGameClipPS :: MonadClientUI m => m ()
 tellGameClipPS = do
-  bench <- getsClient $ sbenchmark . sdebugCli
+  bench <- getsClient $ sbenchmark . sclientOptions
   when bench $ do
     sgstartPOSIX <- getsSession sgstart
     curPOSIX <- liftIO getPOSIXTime
@@ -378,11 +378,11 @@ partAidLeader aid = do
 tryRestore :: MonadClientUI m => m (Maybe (StateClient, Maybe SessionUI))
 tryRestore = do
   cops@Kind.COps{corule} <- getsState scops
-  bench <- getsClient $ sbenchmark . sdebugCli
+  bench <- getsClient $ sbenchmark . sclientOptions
   if bench then return Nothing
   else do
     side <- getsClient sside
-    prefix <- getsClient $ ssavePrefixCli . sdebugCli
+    prefix <- getsClient $ ssavePrefixCli . sclientOptions
     let fileName = prefix <> Save.saveNameCli cops side
     res <- liftIO $ Save.restoreGame cops fileName
     let stdRuleset = Kind.stdRuleset corule

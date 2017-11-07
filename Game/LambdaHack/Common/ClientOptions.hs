@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Screen frames and animations.
 module Game.LambdaHack.Common.ClientOptions
-  ( DebugModeCli(..), defDebugModeCli
+  ( ClientOptions(..), defClientOptions
   ) where
 
 import Prelude ()
@@ -11,7 +11,7 @@ import Game.LambdaHack.Common.Prelude
 import Data.Binary
 import GHC.Generics (Generic)
 
-data DebugModeCli = DebugModeCli
+data ClientOptions = ClientOptions
   { sgtkFontFamily    :: Maybe Text
       -- ^ Font family to use for the GTK main game window.
   , sdlFontFile       :: Maybe Text
@@ -55,10 +55,10 @@ data DebugModeCli = DebugModeCli
   }
   deriving (Show, Eq, Generic)
 
-instance Binary DebugModeCli
+instance Binary ClientOptions
 
-defDebugModeCli :: DebugModeCli
-defDebugModeCli = DebugModeCli
+defClientOptions :: ClientOptions
+defClientOptions = ClientOptions
   { sgtkFontFamily = Nothing
   , sdlFontFile = Nothing
   , sdlTtfSizeAdd = Nothing

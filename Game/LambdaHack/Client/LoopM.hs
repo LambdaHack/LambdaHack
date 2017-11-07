@@ -21,19 +21,19 @@ import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
 
-initAI :: MonadClient m => DebugModeCli -> m ()
-initAI sdebugCli = do
-  modifyClient $ \cli -> cli {sdebugCli}
+initAI :: MonadClient m => ClientOptions -> m ()
+initAI sclientOptions = do
+  modifyClient $ \cli -> cli {sclientOptions}
   side <- getsClient sside
   debugPossiblyPrint $ "AI client" <+> tshow side <+> "initializing."
 
-initUI :: MonadClientUI m => KeyKind -> Config -> DebugModeCli -> m ()
-initUI copsClient sconfig sdebugCli = do
-  modifyClient $ \cli -> cli {sdebugCli}
+initUI :: MonadClientUI m => KeyKind -> Config -> ClientOptions -> m ()
+initUI copsClient sconfig sclientOptions = do
+  modifyClient $ \cli -> cli {sclientOptions}
   side <- getsClient sside
   debugPossiblyPrint $ "UI client" <+> tshow side <+> "initializing."
   -- Start the frontend.
-  schanF <- chanFrontend sdebugCli
+  schanF <- chanFrontend sclientOptions
   let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
       sess = emptySessionUI sconfig
   putSession sess { schanF
@@ -48,22 +48,22 @@ loopCli :: ( MonadClientSetup m
            , MonadStateWrite m
            , MonadClientReadResponse m
            , MonadClientWriteRequest m )
-        => KeyKind -> Config -> DebugModeCli -> m ()
-loopCli copsClient sconfig sdebugCli = do
+        => KeyKind -> Config -> ClientOptions -> m ()
+loopCli copsClient sconfig sclientOptions = do
   hasUI <- clientHasUI
-  if not hasUI then initAI sdebugCli else initUI copsClient sconfig sdebugCli
+  if not hasUI then initAI sclientOptions else initUI copsClient sconfig sclientOptions
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   cops <- getsState scops
   restoredG <- tryRestore
   restored <- case restoredG of
-    Just (cli, msess) | not $ snewGameCli sdebugCli -> do
+    Just (cli, msess) | not $ snewGameCli sclientOptions -> do
       -- Restore game.
       schanF <- getsSession schanF
       sbinding <- getsSession sbinding
       maybe (return ()) (\sess ->
         putSession sess {schanF, sbinding, sconfig}) msess
-      putClient cli {sdebugCli}
+      putClient cli {sclientOptions}
       return True
     Just (_, msessR) -> do
       -- Preserve previous history, if any (--newGame).

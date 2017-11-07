@@ -119,8 +119,8 @@ mkConfig Kind.COps{corule} benchmark = do
   -- Catch syntax errors in complex expressions ASAP,
   return $! deepseq conf conf
 
-applyConfigToDebug :: Kind.COps -> Config -> DebugModeCli -> DebugModeCli
-applyConfigToDebug Kind.COps{corule} sconfig sdebugCli =
+applyConfigToDebug :: Kind.COps -> Config -> ClientOptions -> ClientOptions
+applyConfigToDebug Kind.COps{corule} sconfig sclientOptions =
   let stdRuleset = Kind.stdRuleset corule
   in (\dbg -> dbg {sgtkFontFamily =
         sgtkFontFamily dbg `mplus` Just (configGtkFontFamily sconfig)}) .
@@ -142,4 +142,4 @@ applyConfigToDebug Kind.COps{corule} sconfig sdebugCli =
         stitle dbg `mplus` Just (rtitle stdRuleset)}) .
      (\dbg -> dbg {sfontDir =
         sfontDir dbg `mplus` Just (rfontDir stdRuleset)})
-     $ sdebugCli
+     $ sclientOptions

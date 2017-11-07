@@ -107,7 +107,7 @@ data UpdAtomic =
   | UpdDiscoverServer ItemId AspectRecord
   | UpdCoverServer ItemId AspectRecord
   | UpdPerception LevelId Perception Perception
-  | UpdRestart FactionId PerLid State Challenge DebugModeCli
+  | UpdRestart FactionId PerLid State Challenge ClientOptions
   | UpdRestartServer State
   | UpdResume FactionId PerLid
   | UpdResumeServer State

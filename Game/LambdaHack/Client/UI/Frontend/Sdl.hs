@@ -61,11 +61,11 @@ frontendName = "sdl"
 -- Apparently some SDL backends are not thread-safe
 -- (https://wiki.libsdl.org/FAQDevelopment),
 -- so we stick to main thread.
-startup :: DebugModeCli -> IO RawFrontend
-startup sdebugCli = startupBound $ startupFun sdebugCli
+startup :: ClientOptions -> IO RawFrontend
+startup sclientOptions = startupBound $ startupFun sclientOptions
 
-startupFun :: DebugModeCli -> MVar RawFrontend -> IO ()
-startupFun sdebugCli@DebugModeCli{..} rfMVar = do
+startupFun :: ClientOptions -> MVar RawFrontend -> IO ()
+startupFun sclientOptions@ClientOptions{..} rfMVar = do
   SDL.initialize [SDL.InitVideo, SDL.InitEvents]
   let title = fromJust stitle
       fontFileName = T.unpack (fromJust sdlFontFile)
@@ -105,7 +105,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
   sforcedShutdown <- newIORef False
   sdisplayPermitted <- newMVar True
   let sess = FrontendSession{..}
-  rf <- createRawFrontend (display sdebugCli sess) (shutdown sess)
+  rf <- createRawFrontend (display sclientOptions sess) (shutdown sess)
   putMVar rfMVar rf
   let pointTranslate :: forall i. (Enum i) => Vect.Point Vect.V2 i -> Point
       pointTranslate (SDL.P (SDL.V2 x y)) =
@@ -123,7 +123,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
           writeIORef stexture newTexture
           prevFrame <- readIORef spreviousFrame
           writeIORef spreviousFrame blankSingleFrame
-          displayNoLock sdebugCli sess prevFrame
+          displayNoLock sclientOptions sess prevFrame
         putMVar sdisplayPermitted displayPermitted
       storeKeys :: IO ()
       storeKeys = do
@@ -195,15 +195,15 @@ forceShutdown sess@FrontendSession{..} = do
   shutdown sess
 
 -- | Add a frame to be drawn.
-display :: DebugModeCli
+display :: ClientOptions
         -> FrontendSession  -- ^ frontend session data
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
-display sdebugCli sess@FrontendSession{..} curFrame = do
+display sclientOptions sess@FrontendSession{..} curFrame = do
   displayPermitted <- takeMVar sdisplayPermitted
   if displayPermitted then do
     -- Apparently some SDL backends are not thread-safe, so keep to main thread:
-    a <- asyncBound $ displayNoLock sdebugCli sess curFrame
+    a <- asyncBound $ displayNoLock sclientOptions sess curFrame
     wait a
     putMVar sdisplayPermitted displayPermitted
   else do
@@ -217,11 +217,11 @@ display sdebugCli sess@FrontendSession{..} curFrame = do
       -- to avoid exiting via "thread blocked".
       threadDelay 50000
 
-displayNoLock :: DebugModeCli
+displayNoLock :: ClientOptions
               -> FrontendSession  -- ^ frontend session data
               -> SingleFrame      -- ^ the screen frame to draw
               -> IO ()
-displayNoLock DebugModeCli{..} FrontendSession{..} curFrame = do
+displayNoLock ClientOptions{..} FrontendSession{..} curFrame = do
   let isFonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
       sdlSizeAdd = fromJust $ if isFonFile then sdlFonSizeAdd else sdlTtfSizeAdd
   boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont

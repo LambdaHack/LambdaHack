@@ -33,8 +33,8 @@ frontendName :: String
 frontendName = "teletype"
 
 -- | Set up the frontend input and output.
-startup :: DebugModeCli -> IO RawFrontend
-startup _sdebugCli = do
+startup :: ClientOptions -> IO RawFrontend
+startup _sclientOptions = do
   rf <- createRawFrontend display shutdown
   let storeKeys :: IO ()
       storeKeys = do

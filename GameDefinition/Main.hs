@@ -13,16 +13,16 @@ import Control.Concurrent.Async
 import qualified Control.Exception as Ex
 import System.Exit
 
-import Game.LambdaHack.Server (debugModeSerPI)
+import Game.LambdaHack.Server (serverOptionsPI)
 import TieKnot
 
 -- | Tie the LambdaHack engine client, server and frontend code
 -- with the game-specific content definitions, and run the game.
 main :: IO ()
 main = do
-  debugModeSer <- OA.execParser debugModeSerPI
+  serverOptions <- OA.execParser serverOptionsPI
   -- Avoid the bound thread that would slow down the communication.
-  a <- async $ tieKnot debugModeSer
+  a <- async $ tieKnot serverOptions
   ex <- waitCatch a
   case ex of
     Right () -> return ()

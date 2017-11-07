@@ -108,7 +108,7 @@ quitF status fid = do
     Just Escape -> return ()
     _ -> do
       when (fhasUI $ gplayer fact) $ do
-        keepAutomated <- getsServer $ skeepAutomated . sdebugSer
+        keepAutomated <- getsServer $ skeepAutomated . sserverOptions
         when (isAIFact fact
               && fleaderMode (gplayer fact) /= LeaderNull
               && not keepAutomated) $
@@ -229,7 +229,7 @@ updatePer fid lid = do
     ser {sperValidFid = EM.adjust (EM.insert lid True) fid $ sperValidFid ser}
   sperFidOld <- getsServer sperFid
   let perOld = sperFidOld EM.! fid EM.! lid
-  knowEvents <- getsServer $ sknowEvents . sdebugSer
+  knowEvents <- getsServer $ sknowEvents . sserverOptions
   -- Performed in the State after action, e.g., with a new actor.
   perNew <- recomputeCachePer fid lid
   let inPer = diffPer perNew perOld
@@ -399,7 +399,7 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
   -- Create actor.
   factionD <- getsState sfactionD
   let fact = factionD EM.! bfid
-  curChalSer <- getsServer $ scurChalSer . sdebugSer
+  curChalSer <- getsServer $ scurChalSer . sserverOptions
   nU <- nUI
   -- If difficulty is below standard, HP is added to the UI factions,
   -- otherwise HP is added to their enemies.

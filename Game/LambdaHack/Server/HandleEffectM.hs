@@ -394,7 +394,7 @@ effectRefillHP power source target = do
                   min (xM power) (xM hpMax - bhp tb)
               | otherwise = min (xM power) (max 0 $ xM 999 - bhp tb)
                                                          -- UI limitation
-  curChalSer <- getsServer $ scurChalSer . sdebugSer
+  curChalSer <- getsServer $ scurChalSer . sserverOptions
   fact <- getsState $ (EM.! bfid tb) . sfactionD
   if | cfish curChalSer && power > 0
        && fhasUI (gplayer fact) && bfid sb /= bfid tb -> do

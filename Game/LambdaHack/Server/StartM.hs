@@ -60,7 +60,7 @@ reinitGame :: MonadServerAtomic m => m ()
 reinitGame = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   pers <- getsServer sperFid
-  DebugModeSer{scurChalSer, sknowMap, sdebugCli} <- getsServer sdebugSer
+  ServerOptions{scurChalSer, sknowMap, sclientOptions} <- getsServer sserverOptions
   -- This state is quite small, fit for transmition to the client.
   -- The biggest part is content, which needs to be updated
   -- at this point to keep clients in sync with server improvements.
@@ -75,7 +75,7 @@ reinitGame = do
   factionD <- getsState sfactionD
   modifyServer $ \ser -> ser {sclientStates = EM.map (const defLocal) factionD}
   let updRestart fid = UpdRestart fid (pers EM.! fid) defLocal
-                                  scurChalSer sdebugCli
+                                  scurChalSer sclientOptions
   mapWithKeyM_ (\fid _ -> execUpdAtomic $ updRestart fid) factionD
   dungeon <- getsState sdungeon
   let sactorTime = EM.map (const (EM.map (const EM.empty) dungeon)) factionD
@@ -157,7 +157,7 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
   return $! warFs
 
 gameReset :: MonadServer m
-          => Kind.COps -> DebugModeSer -> Maybe (GroupName ModeKind)
+          => Kind.COps -> ServerOptions -> Maybe (GroupName ModeKind)
           -> Maybe R.StdGen -> m State
 gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
           sdebug mGameMode mrandom = do
@@ -167,13 +167,13 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
   srandom <- getSetGen $ smainRng sdebug `mplus` mrandom
   let srngs = RNGs (Just dungeonSeed) (Just srandom)
   when (sdumpInitRngs sdebug) $ dumpRngs srngs
-  scoreTable <- if sfrontendNull $ sdebugCli sdebug then
+  scoreTable <- if sfrontendNull $ sclientOptions sdebug then
                   return HighScore.empty
                 else
                   restoreScore cops
   factionDold <- getsState sfactionD
   gameModeIdOld <- getsState sgameModeId
-  curChalSer <- getsServer $ scurChalSer . sdebugSer
+  curChalSer <- getsServer $ scurChalSer . sserverOptions
 #ifdef USE_BROWSER
   let startingModeGroup = "starting JS"
 #else
@@ -220,7 +220,7 @@ populateDungeon = do
   embedItemsInDungeon
   dungeon <- getsState sdungeon
   factionD <- getsState sfactionD
-  curChalSer <- getsServer $ scurChalSer . sdebugSer
+  curChalSer <- getsServer $ scurChalSer . sserverOptions
   let ginitialWolf fact1 = if cwolf curChalSer && fhasUI (gplayer fact1)
                            then case ginitial fact1 of
                              [] -> []
@@ -322,11 +322,11 @@ findEntryPoss Kind.COps{coTileSpeedup}
 -- | Apply debug options that don't need a new game.
 applyDebug :: MonadServer m => m ()
 applyDebug = do
-  DebugModeSer{..} <- getsServer sdebugNxt
+  ServerOptions{..} <- getsServer sdebugNxt
   modifyServer $ \ser ->
-    ser {sdebugSer = (sdebugSer ser) { sniff
+    ser {sserverOptions = (sserverOptions ser) { sniff
                                      , sallClear
                                      , sdbgMsgSer
                                      , snewGameSer
                                      , sdumpInitRngs
-                                     , sdebugCli }}
+                                     , sclientOptions }}

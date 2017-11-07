@@ -66,14 +66,14 @@ frontendName :: String
 frontendName = "browser"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: DebugModeCli -> IO RawFrontend
-startup sdebugCli = do
+startup :: ClientOptions -> IO RawFrontend
+startup sclientOptions = do
   rfMVar <- newEmptyMVar
-  flip runDOM undefined $ runWeb sdebugCli rfMVar
+  flip runDOM undefined $ runWeb sclientOptions rfMVar
   takeMVar rfMVar
 
-runWeb :: DebugModeCli -> MVar RawFrontend -> DOM ()
-runWeb sdebugCli@DebugModeCli{..} rfMVar = do
+runWeb :: ClientOptions -> MVar RawFrontend -> DOM ()
+runWeb sclientOptions@ClientOptions{..} rfMVar = do
   -- Init the document.
   Just doc <- currentDocument
   Just scurrentWindow <- currentWindow
@@ -114,7 +114,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar = do
   scharCells <- flattenTable tableElem
   spreviousFrame <- newIORef blankSingleFrame
   let sess = FrontendSession{..}
-  rf <- IO.liftIO $ createRawFrontend (display sdebugCli sess) shutdown
+  rf <- IO.liftIO $ createRawFrontend (display sclientOptions sess) shutdown
   let readMod = do
         modCtrl <- ask >>= getCtrlKey
         modShift <- ask >>= getShiftKey
@@ -238,11 +238,11 @@ flattenTable table = do
   return $! V.fromListN (lxsize * lysize) $ concat lrc
 
 -- | Output to the screen via the frontend.
-display :: DebugModeCli
+display :: ClientOptions
         -> FrontendSession  -- ^ frontend session data
         -> SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display DebugModeCli{scolorIsBold}
+display ClientOptions{scolorIsBold}
         FrontendSession{..}
         !curFrame = flip runDOM undefined $ do
   let setChar :: Int -> Word32 -> Word32 -> DOM ()

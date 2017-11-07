@@ -30,8 +30,8 @@ frontendName :: String
 frontendName = "vty"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: DebugModeCli -> IO RawFrontend
-startup _sdebugCli = do
+startup :: ClientOptions -> IO RawFrontend
+startup _sclientOptions = do
   svty <- mkVty mempty
   let sess = FrontendSession{..}
   rf <- createRawFrontend (display sess) (Vty.shutdown svty)

@@ -34,8 +34,8 @@ import qualified Content.TileKind
 -- is different. Which of the frontends is run inside the UI client
 -- depends on the flags supplied when compiling the engine library,
 -- just as the choice of native vs JS build.
-tieKnot :: DebugModeSer -> IO ()
-tieKnot sdebug@DebugModeSer{sallClear, sboostRandomItem, sdungeonRng} = do
+tieKnot :: ServerOptions -> IO ()
+tieKnot sdebug@ServerOptions{sallClear, sboostRandomItem, sdungeonRng} = do
   -- This setup ensures the boosting option doesn't affect generating initial
   -- RNG for dungeon, etc., and also, that setting dungeon RNG on commandline
   -- equal to what was generated last time, ensures the same item boost.

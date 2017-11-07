@@ -134,24 +134,24 @@ instance MonadServerAtomic SerImplementation where
 -- Don't inline this, to keep GHC hard work inside the library
 -- for easy access of code analysis tools.
 -- | Run an action in the @IO@ monad, with undefined state.
-executorSer :: Kind.COps -> KeyKind -> DebugModeSer -> IO ()
+executorSer :: Kind.COps -> KeyKind -> ServerOptions -> IO ()
 executorSer cops copsClient sdebugNxtCmdline = do
   -- Parse UI client configuration file.
   -- It is reparsed at each start of the game executable.
-  sconfig <- mkConfig cops (sbenchmark $ sdebugCli sdebugNxtCmdline)
+  sconfig <- mkConfig cops (sbenchmark $ sclientOptions sdebugNxtCmdline)
   sdebugNxt <- case configCmdline sconfig of
     []   -> return sdebugNxtCmdline
-    args -> handleParseResult $ execParserPure defaultPrefs debugModeSerPI args
+    args -> handleParseResult $ execParserPure defaultPrefs serverOptionsPI args
   -- Options for the clients modified with the configuration file.
   -- The client debug inside server debug only holds the client commandline
   -- options and is never updated with config options, etc.
-  let sdebugMode = applyConfigToDebug cops sconfig $ sdebugCli sdebugNxt
+  let sdebugMode = applyConfigToDebug cops sconfig $ sclientOptions sdebugNxt
       -- Partially applied main loop of the clients.
       executorClient = executorCli copsClient sconfig sdebugMode cops
   -- Wire together game content, the main loop of game clients
   -- and the game server loop.
   let stateToFileName (_, ser) =
-        ssavePrefixSer (sdebugSer ser) <> Save.saveNameSer cops
+        ssavePrefixSer (sserverOptions ser) <> Save.saveNameSer cops
       totalState serToSave = SerState
         { serState = emptyState cops
         , serServer = emptyStateServer
@@ -161,7 +161,7 @@ executorSer cops copsClient sdebugNxtCmdline = do
       m = loopSer sdebugNxt sconfig executorClient
       exe = evalStateT (runSerImplementation m) . totalState
       exeWithSaves = Save.wrapInSaves cops stateToFileName exe
-      defPrefix = ssavePrefixSer defDebugModeSer
+      defPrefix = ssavePrefixSer defServerOptions
       bkpOneSave name = do
         dataDir <- appDataDir
         let path bkp = dataDir </> "saves" </> bkp <> name

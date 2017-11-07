@@ -53,7 +53,7 @@ import           Game.LambdaHack.Server.State
 -- | Start a game session, including the clients, and then loop,
 -- communicating with the clients.
 loopSer :: (MonadServerAtomic m, MonadServerReadRequest m)
-        => DebugModeSer  -- ^ server debug parameters
+        => ServerOptions  -- ^ server debug parameters
         -> Config
         -> (Maybe SessionUI -> FactionId -> ChanServer -> IO ())
              -- ^ the code to run for UI clients
@@ -88,7 +88,7 @@ loopSer sdebug sconfig executorClient = do
       -- Set up commandline debug mode.
       let debugBarRngs = sdebug {sdungeonRng = Nothing, smainRng = Nothing}
       modifyServer $ \ser -> ser { sdebugNxt = debugBarRngs
-                                 , sdebugSer = debugBarRngs }
+                                 , sserverOptions = debugBarRngs }
       execUpdAtomic $ UpdRestartServer s
       updConn
       initPer
@@ -448,7 +448,7 @@ restartGame updConn loop mgameMode = do
   s <- gameReset cops sdebugNxt mgameMode (Just srandom)
   let debugBarRngs = sdebugNxt {sdungeonRng = Nothing, smainRng = Nothing}
   modifyServer $ \ser -> ser { sdebugNxt = debugBarRngs
-                             , sdebugSer = debugBarRngs }
+                             , sserverOptions = debugBarRngs }
   execUpdAtomic $ UpdRestartServer s
   updConn
   initPer

@@ -69,12 +69,12 @@ newQueue :: IO (CliSerQueue a)
 newQueue = newEmptyMVar
 
 tryRestore :: MonadServerReadRequest m
-           => Kind.COps -> DebugModeSer -> m (Maybe (State, StateServer))
-tryRestore cops@Kind.COps{corule} sdebugSer = do
-  let bench = sbenchmark $ sdebugCli sdebugSer
+           => Kind.COps -> ServerOptions -> m (Maybe (State, StateServer))
+tryRestore cops@Kind.COps{corule} sserverOptions = do
+  let bench = sbenchmark $ sclientOptions sserverOptions
   if bench then return Nothing
   else do
-    let prefix = ssavePrefixSer sdebugSer
+    let prefix = ssavePrefixSer sserverOptions
         fileName = prefix <> Save.saveNameSer cops
     res <- liftIO $ Save.restoreGame cops fileName
     let stdRuleset = Kind.stdRuleset corule
@@ -120,7 +120,7 @@ sendUpd !fid !cmd = do
   chan <- getsDict (EM.! fid)
   s <- getsServer $ (EM.! fid) . sclientStates
   let resp = RespUpdAtomic s cmd
-  debug <- getsServer $ sniff . sdebugSer
+  debug <- getsServer $ sniff . sserverOptions
   when debug $ debugResponse fid resp
   writeQueue resp $ responseS chan
 
@@ -128,14 +128,14 @@ sendUpdNoState :: MonadServerReadRequest m => FactionId -> UpdAtomic -> m ()
 sendUpdNoState !fid !cmd = do
   chan <- getsDict (EM.! fid)
   let resp = RespUpdAtomicNoState cmd
-  debug <- getsServer $ sniff . sdebugSer
+  debug <- getsServer $ sniff . sserverOptions
   when debug $ debugResponse fid resp
   writeQueue resp $ responseS chan
 
 sendSfx :: MonadServerReadRequest m => FactionId -> SfxAtomic -> m ()
 sendSfx !fid !sfx = do
   let resp = RespSfxAtomic sfx
-  debug <- getsServer $ sniff . sdebugSer
+  debug <- getsServer $ sniff . sserverOptions
   when debug $ debugResponse fid resp
   chan <- getsDict (EM.! fid)
   case chan of
@@ -145,7 +145,7 @@ sendSfx !fid !sfx = do
 sendQueryAI :: MonadServerReadRequest m => FactionId -> ActorId -> m RequestAI
 sendQueryAI fid aid = do
   let respAI = RespQueryAI aid
-  debug <- getsServer $ sniff . sdebugSer
+  debug <- getsServer $ sniff . sserverOptions
   when debug $ debugResponse fid respAI
   chan <- getsDict (EM.! fid)
   req <- do
@@ -158,7 +158,7 @@ sendQueryUI :: (MonadServerAtomic m, MonadServerReadRequest m)
             => FactionId -> ActorId -> m RequestUI
 sendQueryUI fid _aid = do
   let respUI = RespQueryUI
-  debug <- getsServer $ sniff . sdebugSer
+  debug <- getsServer $ sniff . sserverOptions
   when debug $ debugResponse fid respUI
   chan <- getsDict (EM.! fid)
   req <- do

@@ -70,16 +70,16 @@ queryUI = do
       addPressedEsc
       -- Regaining control of faction cancels --stopAfter*.
       modifyClient $ \cli ->
-        cli {sdebugCli = (sdebugCli cli) { sstopAfterSeconds = Nothing
+        cli {sclientOptions = (sclientOptions cli) { sstopAfterSeconds = Nothing
                                          , sstopAfterFrames = Nothing }}
       return (ReqUIAutomate, Nothing)  -- stop AI
     else do
       -- As long as UI faction is under AI control, check, once per move,
       -- for benchmark game stop.
-      stopAfterFrames <- getsClient $ sstopAfterFrames . sdebugCli
+      stopAfterFrames <- getsClient $ sstopAfterFrames . sclientOptions
       case stopAfterFrames of
         Nothing -> do
-          stopAfterSeconds <- getsClient $ sstopAfterSeconds . sdebugCli
+          stopAfterSeconds <- getsClient $ sstopAfterSeconds . sclientOptions
           case stopAfterSeconds of
             Nothing -> return (ReqUINop, Nothing)
             Just stopS -> do

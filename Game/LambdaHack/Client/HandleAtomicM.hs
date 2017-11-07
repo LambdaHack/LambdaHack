@@ -143,7 +143,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdDiscoverSeed c iid seed -> discoverSeed c iid seed
   UpdCoverSeed c iid seed -> coverSeed c iid seed
   UpdPerception lid outPer inPer -> perception lid outPer inPer
-  UpdRestart side sfper s scurChal sdebugCli -> do
+  UpdRestart side sfper s scurChal sclientOptions -> do
     Kind.COps{comode=Kind.Ops{ofoldlGroup'}} <- getsState scops
     snxtChal <- getsClient snxtChal
     svictories <- getsClient svictories
@@ -162,7 +162,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
                   , snxtScenario
                   , scondInMelee = EM.map (const Nothing) (sdungeon s)
                   , svictories
-                  , sdebugCli }
+                  , sclientOptions }
     salter <- getsState createSalter
     modifyClient $ \cli1 -> cli1 {salter}
     restartClient

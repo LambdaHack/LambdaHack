@@ -43,11 +43,11 @@ frontendName = "gtk"
 --
 -- Because of Windows, GTK needs to be on a bound thread,
 -- so we can't avoid the communication overhead of bound threads.
-startup :: DebugModeCli -> IO RawFrontend
-startup sdebugCli = startupBound $ startupFun sdebugCli
+startup :: ClientOptions -> IO RawFrontend
+startup sclientOptions = startupBound $ startupFun sclientOptions
 
-startupFun :: DebugModeCli -> MVar RawFrontend -> IO ()
-startupFun sdebugCli@DebugModeCli{..} rfMVar = do
+startupFun :: ClientOptions -> MVar RawFrontend -> IO ()
+startupFun sclientOptions@ClientOptions{..} rfMVar = do
   -- Init GUI.
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
@@ -75,7 +75,7 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
              mapM (\ak -> do
                       tt <- textTagNew Nothing
                       textTagTableAdd ttt tt
-                      doAttr sdebugCli tt (emulateBox ak)
+                      doAttr sclientOptions tt (emulateBox ak)
                       return (fromEnum ak, tt))
                [ Color.Attr{fg, bg}
                | fg <- [minBound..maxBound], bg <- [minBound..maxBound] ]
@@ -203,21 +203,21 @@ startupFun sdebugCli@DebugModeCli{..} rfMVar = do
 shutdown :: IO ()
 shutdown = postGUISync mainQuit
 
-doAttr :: DebugModeCli -> TextTag -> (Color.Color, Color.Color) -> IO ()
-doAttr sdebugCli tt (fg, bg)
+doAttr :: ClientOptions -> TextTag -> (Color.Color, Color.Color) -> IO ()
+doAttr sclientOptions tt (fg, bg)
   | fg == Color.defFG && bg == Color.Black = return ()
   | fg == Color.defFG =
     set tt [textTagBackground := Color.colorToRGB bg]
   | bg == Color.Black =
-    set tt $ extraAttr sdebugCli
+    set tt $ extraAttr sclientOptions
              ++ [textTagForeground := Color.colorToRGB fg]
   | otherwise =
-    set tt $ extraAttr sdebugCli
+    set tt $ extraAttr sclientOptions
              ++ [ textTagForeground := Color.colorToRGB fg
                 , textTagBackground := Color.colorToRGB bg ]
 
-extraAttr :: DebugModeCli -> [AttrOp TextTag]
-extraAttr DebugModeCli{scolorIsBold} =
+extraAttr :: ClientOptions -> [AttrOp TextTag]
+extraAttr ClientOptions{scolorIsBold} =
   [textTagWeight := fromEnum WeightBold | scolorIsBold == Just True]
 --     , textTagStretch := StretchUltraExpanded
 

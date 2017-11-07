@@ -89,14 +89,14 @@ putServer s = modifyServer (const s)
 
 debugPossiblyPrint :: MonadServer m => Text -> m ()
 debugPossiblyPrint t = do
-  debug <- getsServer $ sdbgMsgSer . sdebugSer
+  debug <- getsServer $ sdbgMsgSer . sserverOptions
   when debug $ liftIO $ do
     T.hPutStrLn stdout t
     hFlush stdout
 
 debugPossiblyPrintAndExit :: MonadServer m => Text -> m ()
 debugPossiblyPrintAndExit t = do
-  debug <- getsServer $ sdbgMsgSer . sdebugSer
+  debug <- getsServer $ sdbgMsgSer . sserverOptions
   when debug $ liftIO $ do
     T.hPutStrLn stdout t
     hFlush stdout
@@ -123,7 +123,7 @@ dumpRngs rngs = liftIO $ do
 -- | Read the high scores dictionary. Return the empty table if no file.
 restoreScore :: forall m. MonadServer m => Kind.COps -> m HighScore.ScoreDict
 restoreScore Kind.COps{corule} = do
-  bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
+  bench <- getsServer $ sbenchmark . sclientOptions . sserverOptions
   mscore <- if bench then return Nothing else do
     let stdRuleset = Kind.stdRuleset corule
         scoresFile = rscoresFile stdRuleset
@@ -164,9 +164,9 @@ registerScore status fid = do
   time <- getsState stime
   date <- liftIO getPOSIXTime
   tz <- liftIO $ getTimeZone $ posixSecondsToUTCTime date
-  curChalSer <- getsServer $ scurChalSer . sdebugSer
+  curChalSer <- getsServer $ scurChalSer . sserverOptions
   factionD <- getsState sfactionD
-  bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
+  bench <- getsServer $ sbenchmark . sclientOptions . sserverOptions
   let path = dataDir </> scoresFile
       outputScore (worthMentioning, (ntable, pos)) =
         -- If not human, probably debugging, so dump instead of registering.

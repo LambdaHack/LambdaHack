@@ -72,9 +72,9 @@ data FSession = FSession
 
 -- | Display a prompt, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
-getKey :: DebugModeCli -> FSession -> RawFrontend -> [K.KM] -> FrameForall
+getKey :: ClientOptions -> FSession -> RawFrontend -> [K.KM] -> FrameForall
        -> IO KMP
-getKey sdebugCli fs rf@RawFrontend{fchanKey} keys frame = do
+getKey sclientOptions fs rf@RawFrontend{fchanKey} keys frame = do
   autoYes <- readIORef $ fautoYesRef fs
   if autoYes && (null keys || K.spaceKM `elem` keys) then do
     display rf frame
@@ -85,15 +85,15 @@ getKey sdebugCli fs rf@RawFrontend{fchanKey} keys frame = do
     kmp <- STM.atomically $ STM.readTQueue fchanKey
     if null keys || kmpKeyMod kmp `elem` keys
     then return kmp
-    else getKey sdebugCli fs rf keys frame
+    else getKey sclientOptions fs rf keys frame
 
 -- | Read UI requests from the client and send them to the frontend,
-fchanFrontend :: DebugModeCli -> FSession -> RawFrontend -> ChanFrontend
-fchanFrontend sdebugCli fs@FSession{..} rf =
+fchanFrontend :: ClientOptions -> FSession -> RawFrontend -> ChanFrontend
+fchanFrontend sclientOptions fs@FSession{..} rf =
   ChanFrontend $ \req -> case req of
     FrontFrame{..} -> display rf frontFrame
     FrontDelay k -> modifyMVar_ fdelay $ return . (+ k)
-    FrontKey{..} -> getKey sdebugCli fs rf frontKeyKeys frontKeyFrame
+    FrontKey{..} -> getKey sclientOptions fs rf frontKeyKeys frontKeyFrame
     FrontPressed -> do
       noKeysPending <- STM.atomically $ STM.isEmptyTQueue (fchanKey rf)
       return $! not noKeysPending
@@ -174,18 +174,18 @@ seqFrame SingleFrame{singleFrame} =
                         `seq` ()
   in return $! PointArray.foldlA' seqAttr () singleFrame
 
-chanFrontendIO :: DebugModeCli -> IO ChanFrontend
-chanFrontendIO sdebugCli = do
-  let startup | sfrontendNull sdebugCli = nullStartup
-              | sfrontendLazy sdebugCli = lazyStartup
-              | sfrontendTeletype sdebugCli = Teletype.startup sdebugCli
-              | otherwise = Chosen.startup sdebugCli
-      maxFps = fromMaybe defaultMaxFps $ smaxFps sdebugCli
+chanFrontendIO :: ClientOptions -> IO ChanFrontend
+chanFrontendIO sclientOptions = do
+  let startup | sfrontendNull sclientOptions = nullStartup
+              | sfrontendLazy sclientOptions = lazyStartup
+              | sfrontendTeletype sclientOptions = Teletype.startup sclientOptions
+              | otherwise = Chosen.startup sclientOptions
+      maxFps = fromMaybe defaultMaxFps $ smaxFps sclientOptions
       delta = max 1 $ microInSec `div` maxFps
   rf <- startup
-  fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
+  fautoYesRef <- newIORef $ not $ sdisableAutoYes sclientOptions
   fdelay <- newMVar 0
   fasyncTimeout <- async $ frameTimeoutThread delta fdelay rf
   -- Warning: not linking @fasyncTimeout@, so it'd better not crash.
   let fs = FSession{..}
-  return $ fchanFrontend sdebugCli fs rf
+  return $ fchanFrontend sclientOptions fs rf

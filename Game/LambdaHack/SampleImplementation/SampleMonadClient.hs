@@ -123,7 +123,7 @@ instance MonadClientWriteRequest CliImplementation where
 
 -- | Init the client, then run an action, with a given session,
 -- state and history, in the @IO@ monad.
-executorCli :: KeyKind -> Config -> DebugModeCli
+executorCli :: KeyKind -> Config -> ClientOptions
             -> Kind.COps
             -> Maybe SessionUI
             -> FactionId
@@ -131,7 +131,7 @@ executorCli :: KeyKind -> Config -> DebugModeCli
             -> IO ()
 executorCli copsClient sconfig sdebugMode cops cliSession fid cliDict =
   let stateToFileName (cli, _) =
-        ssavePrefixCli (sdebugCli cli) <> Save.saveNameCli cops (sside cli)
+        ssavePrefixCli (sclientOptions cli) <> Save.saveNameCli cops (sside cli)
       totalState cliToSave = CliState
         { cliState = emptyState cops
         , cliClient = emptyStateClient fid

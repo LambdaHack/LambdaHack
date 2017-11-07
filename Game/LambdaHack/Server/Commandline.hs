@@ -3,7 +3,7 @@
 -- | Parsing of commandline arguments.
 
 module Game.LambdaHack.Server.Commandline
-  ( debugModeSerPI
+  ( serverOptionsPI
   ) where
 
 import Prelude ()
@@ -21,13 +21,13 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.ServerOptions
 
 -- | Parser for server debug parameters from commandline arguments.
-debugModeSerPI :: ParserInfo DebugModeSer
-debugModeSerPI =  info ( helper <*> debugModeSerP )
+serverOptionsPI :: ParserInfo ServerOptions
+serverOptionsPI =  info ( helper <*> serverOptionsP )
                $  fullDesc
                <> progDesc "Configure debug options here, gameplay options in configuration file."
 
-debugModeSerP :: Parser DebugModeSer
-debugModeSerP = do
+serverOptionsP :: Parser ServerOptions
+serverOptionsP = do
   ~(snewGameSer, scurChalSer)
                     <- serToChallenge <$> newGameP
   knowMap           <- knowMapP
@@ -62,9 +62,9 @@ debugModeSerP = do
   sfrontendLazy     <- frontendLazyP
   sdbgMsgCli        <- dbgMsgCliP
 
-  pure DebugModeSer
+  pure ServerOptions
     {
-      sdebugCli = DebugModeCli
+      sclientOptions = ClientOptions
         { stitle         = Nothing
         , snewGameCli    = snewGameSer
         , ssavePrefixCli = ssavePrefixSer
