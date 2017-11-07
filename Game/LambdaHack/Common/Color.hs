@@ -19,15 +19,15 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
-import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
+import           Data.Binary
+import           Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
 import qualified Data.Char as Char
-import Data.Hashable (Hashable)
-import Data.Word (Word32)
-import GHC.Exts (Int (I#))
-import GHC.Generics (Generic)
-import GHC.Prim (int2Word#)
-import GHC.Word (Word32 (W32#))
+import           Data.Hashable (Hashable)
+import           Data.Word (Word32)
+import           GHC.Exts (Int (I#))
+import           GHC.Generics (Generic)
+import           GHC.Prim (int2Word#)
+import           GHC.Word (Word32 (W32#))
 
 -- | Colours supported by the major frontends.
 data Color =

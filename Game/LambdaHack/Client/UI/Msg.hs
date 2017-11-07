@@ -17,17 +17,17 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
-import Data.Vector.Binary ()
+import           Data.Binary
+import           Data.Vector.Binary ()
 import qualified Data.Vector.Unboxed as U
-import Data.Word (Word32)
-import GHC.Generics (Generic)
+import           Data.Word (Word32)
+import           GHC.Generics (Generic)
 
-import Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.Overlay
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.RingBuffer as RB
-import Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Time
 
 -- * UAttrLine
 

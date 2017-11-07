@@ -1,16 +1,18 @@
 -- | Client monad for interacting with a human through UI.
 module Game.LambdaHack.Client.UI.MsgM
-  ( msgAdd, promptAdd, promptAddAttr, recordHistory
+  ( msgAdd, promptAdd, promptMainKeys, promptAddAttr, recordHistory
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
 
@@ -23,6 +25,21 @@ msgAdd msg = modifySession $ \sess ->
 promptAdd :: MonadClientUI m => Text -> m ()
 promptAdd msg = modifySession $ \sess ->
   sess {_sreport = snocReport (_sreport sess) (toPrompt $ textToAL msg)}
+
+promptMainKeys :: MonadClientUI m => m ()
+promptMainKeys = do
+  saimMode <- getsSession saimMode
+  Config{configVi, configLaptop} <- getsSession sconfig
+  xhair <- getsSession sxhair
+  let moveKeys | configVi = "keypad or hjklyubn"
+               | configLaptop = "keypad or uk8o79jl"
+               | otherwise = "keypad"
+      keys | isNothing saimMode =
+        "Explore with" <+> moveKeys <+> "keys or mouse."
+           | otherwise =
+        "Aim" <+> tgtKindDescription xhair
+        <+> "with" <+> moveKeys <+> "keys or mouse."
+  promptAdd keys
 
 -- | Add a prompt to the current report.
 promptAddAttr :: MonadClientUI m => AttrLine -> m ()

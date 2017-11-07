@@ -114,7 +114,7 @@ humanCommand = do
           -- Display keys sometimes, alternating with empty screen.
           keysHintMode <- getsSession skeysHintMode
           case keysHintMode of
-            KeysHintPresent -> describeMainKeys >>= promptAdd
+            KeysHintPresent -> promptMainKeys
             KeysHintBlocked ->
               modifySession $ \sess -> sess {skeysHintMode = KeysHintAbsent}
             _ -> return ()

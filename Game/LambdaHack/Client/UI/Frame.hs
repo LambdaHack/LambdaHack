@@ -4,8 +4,6 @@ module Game.LambdaHack.Client.UI.Frame
   ( FrameST, FrameForall(..), writeLine
   , SingleFrame(..), Frames
   , blankSingleFrame, overlayFrame, overlayFrameWithLines
-    -- * Overlay
-  , Overlay
   ) where
 
 import Prelude ()
@@ -58,7 +56,7 @@ blankSingleFrame =
 
 -- | Truncate the overlay: for each line, if it's too long, it's truncated
 -- and if there are too many lines, excess is dropped and warning is appended.
-truncateLines :: Bool -> [AttrLine] -> [AttrLine]
+truncateLines :: Bool -> Overlay -> Overlay
 truncateLines onBlank l =
   let lxsize = fst normalLevelBound + 1
       lysize = snd normalLevelBound + 1
@@ -90,25 +88,14 @@ truncateAttrLine w xs lenMax =
 
 -- | Overlays either the game map only or the whole empty screen frame.
 -- We assume the lines of the overlay are not too long nor too many.
-overlayFrame :: Overlay -> FrameForall -> FrameForall
+overlayFrame :: IntOverlay -> FrameForall -> FrameForall
 overlayFrame ov ff = FrameForall $ \v -> do
   unFrameForall ff v
   mapM_ (\(offset, l) -> unFrameForall (writeLine offset l) v) ov
 
-overlayFrameWithLines :: Bool -> [AttrLine] -> FrameForall -> FrameForall
+overlayFrameWithLines :: Bool -> Overlay -> FrameForall -> FrameForall
 overlayFrameWithLines onBlank l msf =
   let lxsize = fst normalLevelBound + 1
       ov = map (\(y, al) -> (y * lxsize, al))
            $ zip [0..] $ truncateLines onBlank l
   in overlayFrame ov msf
-
--- * Overlay
-
--- blurb about [AttrLine]:
--- | A series of screen lines that either fit the width of the screen
--- or are intended for truncation when displayed. The length of overlay
--- may exceed the length of the screen, unlike in @SingleFrame@.
--- An exception is lines generated from animation, which have to fit
--- in either dimension.
-
-type Overlay = [(Int, AttrLine)]

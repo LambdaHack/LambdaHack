@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.UI.ItemDescription
   ( partItem, partItemShort, partItemHigh, partItemWs, partItemWsRanged
   , partItemShortAW, partItemMediumAW, partItemShortWownW
-  , viewItem, show64With2
+  , viewItem, show64With2, itemDesc
   ) where
 
 import Prelude ()
@@ -10,19 +10,20 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import Data.Int (Int64)
+import           Data.Int (Int64)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.UI.EffectDescription
+import           Game.LambdaHack.Client.UI.EffectDescription
+import           Game.LambdaHack.Client.UI.Overlay
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Flavour
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Flavour
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.ItemStrongest
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
 show64With2 :: Int64 -> Text
@@ -244,3 +245,101 @@ viewItem :: Item -> Color.AttrCharW32
 {-# INLINE viewItem #-}
 viewItem item =
   Color.attrChar2ToW32 (flavourToColor $ jflavour item) (jsymbol item)
+
+itemDesc :: FactionId -> FactionDict -> Int -> CStore -> Time -> ItemFull
+         -> AttrLine
+itemDesc side factionD aHurtMeleeOfOwner store localTime
+         itemFull@ItemFull{itemBase} =
+  let (_, unique, name, stats) =
+        partItemHigh side factionD store localTime itemFull
+      nstats = makePhrase [name, stats]
+      IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = strengthToThrow itemBase
+      speed = speedFromWeight (jweight itemBase) throwVelocity
+      range = rangeFromSpeedAndLinger speed throwLinger
+      tspeed | speed < speedLimp = "When thrown, it drops at once."
+             | speed < speedWalk = "When thrown, it travels only one meter and drops immediately."
+             | otherwise =
+               "When thrown, it flies with speed of"
+               <+> tshow (fromSpeed speed `div` 10)
+               <> if throwLinger /= 100
+                  then " m/s and range" <+> tshow range <+> "m."
+                  else " m/s."
+      (desc, featureSentences, damageAnalysis) = case itemDisco itemFull of
+        Nothing -> ("This item is as unremarkable as can be.", "", tspeed)
+        Just ItemDisco{itemKind, itemAspect} ->
+          let sentences = mapMaybe featureToSentence (IK.ifeature itemKind)
+              hurtMeleeAspect :: IK.Aspect -> Bool
+              hurtMeleeAspect IK.AddHurtMelee{} = True
+              hurtMeleeAspect _ = False
+              aHurtMeleeOfItem = case itemAspect of
+                Just aspectRecord -> aHurtMelee aspectRecord
+                Nothing -> case find hurtMeleeAspect (IK.iaspects itemKind) of
+                  Just (IK.AddHurtMelee d) -> ceiling $ Dice.meanDice d
+                  _ -> 0
+              meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
+              dmgAn = if meanDmg <= 0 then "" else
+                let multRaw = aHurtMeleeOfOwner
+                              + if store `elem` [CEqp, COrgan]
+                                then 0
+                                else aHurtMeleeOfItem
+                    mult = 100 + min 99 (max (-99) multRaw)
+                    minDeltaHP = xM meanDmg `divUp` 100
+                    rawDeltaHP = fromIntegral mult * minDeltaHP
+                    pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
+                    prawDeltaHP = fromIntegral pmult * minDeltaHP
+                    pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
+                    mDeltaHP = modifyDamageBySpeed minDeltaHP speed
+                in "Against defenceless targets you would inflict around"
+                     -- rounding and non-id items
+                   <+> tshow meanDmg
+                   <> "*" <> tshow mult <> "%"
+                   <> "=" <> show64With2 rawDeltaHP
+                   <+> "melee damage (min" <+> show64With2 minDeltaHP
+                   <> ") and"
+                   <+> tshow meanDmg
+                   <> "*" <> tshow pmult <> "%"
+                   <> "*" <> "speed^2"
+                   <> "/" <> tshow (fromSpeed speedThrust `divUp` 10) <> "^2"
+                   <> "=" <> show64With2 pdeltaHP
+                   <+> "ranged damage (min" <+> show64With2 mDeltaHP
+                   <> ") with it"
+                   <> if Dice.minDice (jdamage itemBase)
+                         == Dice.maxDice (jdamage itemBase)
+                      then "."
+                      else "on average."
+          in (IK.idesc itemKind, T.intercalate " " sentences, tspeed <+> dmgAn)
+      eqpSlotSentence = case strengthEqpSlot itemFull of
+        Just es -> slotToSentence es
+        Nothing -> ""
+      weight = jweight itemBase
+      (scaledWeight, unitWeight)
+        | weight > 1000 =
+          (tshow $ fromIntegral weight / (1000 :: Double), "kg")
+        | otherwise = (tshow weight, "g")
+      onLevel = "on level" <+> tshow (abs $ fromEnum $ jlid itemBase) <> "."
+      discoFirst = (if unique then "Discovered" else "First seen")
+                   <+> onLevel
+      whose fid = gname (factionD EM.! fid)
+      sourceDesc =
+        case jfid itemBase of
+          Just fid | jsymbol itemBase `elem` ['+'] ->
+            "Caused by" <+> (if fid == side then "us" else whose fid)
+            <> ". First observed" <+> onLevel
+          Just fid ->
+            "Coming from" <+> whose fid
+            <> "." <+> discoFirst
+          _ -> discoFirst
+      colorSymbol = viewItem itemBase
+      blurb =
+        " "
+        <> nstats
+        <> ":"
+        <+> desc
+        <+> (if weight > 0
+             then makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
+             else "")
+        <+> featureSentences
+        <+> eqpSlotSentence
+        <+> sourceDesc
+        <+> damageAnalysis
+  in colorSymbol : textToAL blurb

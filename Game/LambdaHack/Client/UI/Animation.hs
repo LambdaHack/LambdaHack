@@ -13,6 +13,7 @@ import           Data.Bits
 import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Client.UI.Frame
+import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
@@ -20,7 +21,7 @@ import Game.LambdaHack.Common.Random
 
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.
-newtype Animation = Animation [Overlay]
+newtype Animation = Animation [IntOverlay]
   deriving (Eq, Show)
 
 -- | Render animations on top of a screen frame.
@@ -28,9 +29,9 @@ newtype Animation = Animation [Overlay]
 -- Located in this module to keep @Animation@ abstract.
 renderAnim :: FrameForall -> Animation -> Frames
 renderAnim basicFrame (Animation anim) =
-  let modifyFrame :: Overlay -> FrameForall
+  let modifyFrame :: IntOverlay -> FrameForall
       modifyFrame am = overlayFrame am basicFrame
-      modifyFrames :: (Overlay, Overlay) -> Maybe FrameForall
+      modifyFrames :: (IntOverlay, IntOverlay) -> Maybe FrameForall
       modifyFrames (am, amPrevious) =
         if am == amPrevious then Nothing else Just $ modifyFrame am
   in Just basicFrame : map modifyFrames (zip anim ([] : anim))
@@ -46,13 +47,13 @@ mapPosToOffset (Point{..}, attr) =
   let lxsize = fst normalLevelBound + 1
   in ((py + 1) * lxsize + px, [attr])
 
-mzipSingleton :: Point -> Maybe AttrCharW32 -> Overlay
+mzipSingleton :: Point -> Maybe AttrCharW32 -> IntOverlay
 mzipSingleton p1 mattr1 = map mapPosToOffset $
   let mzip (pos, mattr) = fmap (\attr -> (pos, attr)) mattr
   in catMaybes [mzip (p1, mattr1)]
 
 mzipPairs :: (Point, Point) -> (Maybe AttrCharW32, Maybe AttrCharW32)
-          -> Overlay
+          -> IntOverlay
 mzipPairs (p1, p2) (mattr1, mattr2) = map mapPosToOffset $
   let mzip (pos, mattr) = fmap (\attr -> (pos, attr)) mattr
   in catMaybes $ if p1 /= p2

@@ -9,16 +9,16 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Game.LambdaHack.Client.UI.ItemSlot
+import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
-import Game.LambdaHack.Client.UI.Msg
-import Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.Msg
+import           Game.LambdaHack.Client.UI.Overlay
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Point
 
 type KYX = (Either [K.KM] SlotChar, (Y, X, X))
 
-type OKX = ([AttrLine], [KYX])
+type OKX = (Overlay, [KYX])
 
 -- May be empty, but both of each @OKX@ list have to be nonempty.
 -- Guaranteed by construction.

@@ -274,16 +274,7 @@ displayRespUpdAtomicUI verbose oldState cmd = case cmd of
   UpdTimeItem{} -> return ()
   UpdAgeGame{} -> do
     sdisplayNeeded <- getsSession sdisplayNeeded
-    when sdisplayNeeded $ do
-      -- Push the frame depicting the current level to the frame queue.
-      -- Only one line of the report is shown, as in animations,
-      -- because it may not be our turn, so we can't clear the message
-      -- to see what is underneath.
-      lidV <- viewedLevelUI
-      report <- getReportUI
-      let truncRep = [renderReport report]
-      frame <- drawOverlay ColorFull False truncRep lidV
-      displayFrames lidV [Just frame]
+    when sdisplayNeeded pushFrame
   UpdUnAgeGame{} -> return ()
   UpdDiscover c iid _ _ -> discover c oldState iid
   UpdCover{} -> return ()  -- don't spam when doing undo
