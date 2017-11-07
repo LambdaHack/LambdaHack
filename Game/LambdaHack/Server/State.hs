@@ -29,32 +29,33 @@ import Game.LambdaHack.Server.ServerOptions
 
 -- | Global, server state.
 data StateServer = StateServer
-  { sactorTime     :: ActorTime         -- ^ absolute times of next actions
-  , sdiscoKindRev  :: DiscoveryKindRev  -- ^ reverse map, used for item creation
-  , suniqueSet     :: UniqueSet         -- ^ already generated unique items
-  , sitemSeedD     :: ItemSeedDict  -- ^ map from item ids to item seeds
-  , sitemRev       :: ItemRev       -- ^ reverse id map, used for item creation
-  , sflavour       :: FlavourMap    -- ^ association of flavour to items
-  , sacounter      :: ActorId       -- ^ stores next actor index
-  , sicounter      :: ItemId        -- ^ stores next item index
-  , snumSpawned    :: EM.EnumMap LevelId Int
-  , sundo          :: [CmdAtomic]   -- ^ atomic commands performed to date
-  , sclientStates  :: EM.EnumMap FactionId State
-                                   -- ^ each faction state, as seen by clients
-  , sperFid        :: PerFid        -- ^ perception of all factions
-  , sperValidFid   :: PerValidFid   -- ^ perception validity for all factions
-  , sperCacheFid   :: PerCacheFid   -- ^ perception cache of all factions
-  , sfovLucidLid   :: FovLucidLid   -- ^ ambient or shining light positions
-  , sfovClearLid   :: FovClearLid   -- ^ clear tiles positions
-  , sfovLitLid     :: FovLitLid     -- ^ ambient light positions
-  , sarenas        :: [LevelId]     -- ^ active arenas
-  , svalidArenas   :: Bool          -- ^ whether active arenas valid
-  , srandom        :: R.StdGen      -- ^ current random generator
-  , srngs          :: RNGs          -- ^ initial random generators
-  , squit          :: Bool          -- ^ exit the game loop
-  , swriteSave     :: Bool          -- ^ write savegame to a file now
-  , sserverOptions :: ServerOptions  -- ^ current debugging mode
-  , sdebugNxt      :: ServerOptions  -- ^ debugging mode for the next game
+  { sactorTime    :: ActorTime      -- ^ absolute times of next actions
+  , sdiscoKindRev :: DiscoveryKindRev
+                                    -- ^ reverse map, used for item creation
+  , suniqueSet    :: UniqueSet      -- ^ already generated unique items
+  , sitemSeedD    :: ItemSeedDict   -- ^ map from item ids to item seeds
+  , sitemRev      :: ItemRev        -- ^ reverse id map, used for item creation
+  , sflavour      :: FlavourMap     -- ^ association of flavour to items
+  , sacounter     :: ActorId        -- ^ stores next actor index
+  , sicounter     :: ItemId         -- ^ stores next item index
+  , snumSpawned   :: EM.EnumMap LevelId Int
+  , sundo         :: [CmdAtomic]    -- ^ atomic commands performed to date
+  , sclientStates :: EM.EnumMap FactionId State
+                                    -- ^ each faction state, as seen by clients
+  , sperFid       :: PerFid         -- ^ perception of all factions
+  , sperValidFid  :: PerValidFid    -- ^ perception validity for all factions
+  , sperCacheFid  :: PerCacheFid    -- ^ perception cache of all factions
+  , sfovLucidLid  :: FovLucidLid    -- ^ ambient or shining light positions
+  , sfovClearLid  :: FovClearLid    -- ^ clear tiles positions
+  , sfovLitLid    :: FovLitLid      -- ^ ambient light positions
+  , sarenas       :: [LevelId]      -- ^ active arenas
+  , svalidArenas  :: Bool           -- ^ whether active arenas valid
+  , srandom       :: R.StdGen       -- ^ current random generator
+  , srngs         :: RNGs           -- ^ initial random generators
+  , squit         :: Bool           -- ^ exit the game loop
+  , swriteSave    :: Bool           -- ^ write savegame to a file now
+  , soptions      :: ServerOptions  -- ^ current commandline options
+  , soptionsNxt   :: ServerOptions  -- ^ options for the next game
   }
   deriving (Show)
 
@@ -99,8 +100,8 @@ emptyStateServer =
                    , startingRandomGenerator = Nothing }
     , squit = False
     , swriteSave = False
-    , sserverOptions = defServerOptions
-    , sdebugNxt = defServerOptions
+    , soptions = defServerOptions
+    , soptionsNxt = defServerOptions
     }
 
 instance Binary StateServer where
@@ -117,7 +118,7 @@ instance Binary StateServer where
     put sclientStates
     put (show srandom)
     put srngs
-    put sserverOptions
+    put soptions
   get = do
     sactorTime <- get
     sdiscoKindRev <- get
@@ -131,7 +132,7 @@ instance Binary StateServer where
     sclientStates <- get
     g <- get
     srngs <- get
-    sserverOptions <- get
+    soptions <- get
     let srandom = read g
         sundo = []
         sperFid = EM.empty
@@ -144,5 +145,5 @@ instance Binary StateServer where
         svalidArenas = False
         squit = False
         swriteSave = False
-        sdebugNxt = defServerOptions
+        soptionsNxt = defServerOptions
     return $! StateServer{..}

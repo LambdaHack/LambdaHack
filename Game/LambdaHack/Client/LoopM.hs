@@ -22,18 +22,18 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
 
 initAI :: MonadClient m => ClientOptions -> m ()
-initAI sclientOptions = do
-  modifyClient $ \cli -> cli {sclientOptions}
+initAI soptions = do
+  modifyClient $ \cli -> cli {soptions}
   side <- getsClient sside
   debugPossiblyPrint $ "AI client" <+> tshow side <+> "initializing."
 
 initUI :: MonadClientUI m => KeyKind -> Config -> ClientOptions -> m ()
-initUI copsClient sconfig sclientOptions = do
-  modifyClient $ \cli -> cli {sclientOptions}
+initUI copsClient sconfig soptions = do
+  modifyClient $ \cli -> cli {soptions}
   side <- getsClient sside
   debugPossiblyPrint $ "UI client" <+> tshow side <+> "initializing."
   -- Start the frontend.
-  schanF <- chanFrontend sclientOptions
+  schanF <- chanFrontend soptions
   let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
       sess = emptySessionUI sconfig
   putSession sess { schanF
@@ -49,21 +49,21 @@ loopCli :: ( MonadClientSetup m
            , MonadClientReadResponse m
            , MonadClientWriteRequest m )
         => KeyKind -> Config -> ClientOptions -> m ()
-loopCli copsClient sconfig sclientOptions = do
+loopCli copsClient sconfig soptions = do
   hasUI <- clientHasUI
-  if not hasUI then initAI sclientOptions else initUI copsClient sconfig sclientOptions
+  if not hasUI then initAI soptions else initUI copsClient sconfig soptions
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   cops <- getsState scops
   restoredG <- tryRestore
   restored <- case restoredG of
-    Just (cli, msess) | not $ snewGameCli sclientOptions -> do
+    Just (cli, msess) | not $ snewGameCli soptions -> do
       -- Restore game.
       schanF <- getsSession schanF
       sbinding <- getsSession sbinding
       maybe (return ()) (\sess ->
         putSession sess {schanF, sbinding, sconfig}) msess
-      putClient cli {sclientOptions}
+      putClient cli {soptions}
       return True
     Just (_, msessR) -> do
       -- Preserve previous history, if any (--newGame).

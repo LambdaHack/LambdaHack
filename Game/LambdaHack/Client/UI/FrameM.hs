@@ -115,7 +115,7 @@ renderFrames arena anim = do
   report <- getReportUI
   let truncRep = [renderReport report]
   basicFrame <- drawOverlay ColorFull False truncRep arena
-  snoAnim <- getsClient $ snoAnim . sclientOptions
+  snoAnim <- getsClient $ snoAnim . soptions
   return $! if fromMaybe False snoAnim
             then [Just basicFrame]
             else renderAnim basicFrame anim

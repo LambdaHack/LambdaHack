@@ -11,27 +11,27 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
+import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
-import GHC.Generics (Generic)
+import           GHC.Generics (Generic)
 import qualified System.Random as R
 
-import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.Bfs
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.ClientOptions
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Atomic
+import           Game.LambdaHack.Client.Bfs
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.ClientOptions
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Perception
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.State
-import Game.LambdaHack.Content.ModeKind (ModeKind)
+import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Content.ModeKind (ModeKind)
 
 -- | Client state, belonging to a single faction.
 -- Some of the data, e.g, the history, carries over
@@ -44,33 +44,33 @@ import Game.LambdaHack.Content.ModeKind (ModeKind)
 --
 -- Data invariant: if @_sleader@ is @Nothing@ then so is @srunning@.
 data StateClient = StateClient
-  { seps          :: Int           -- ^ a parameter of the aiming digital line
+  { seps          :: Int            -- ^ a parameter of the aiming digital line
   , stargetD      :: EM.EnumMap ActorId TgtAndPath
-                                   -- ^ targets of our actors in the dungeon
+                                    -- ^ targets of our actors in the dungeon
   , sexplored     :: ES.EnumSet LevelId
-                                   -- ^ the set of fully explored levels
+                                    -- ^ the set of fully explored levels
   , sbfsD         :: EM.EnumMap ActorId BfsAndPath
-                                   -- ^ pathfinding distances for our actors
-                                   --   and paths to their targets, if any
-  , sundo         :: [CmdAtomic]   -- ^ atomic commands performed to date
-  , sdiscoBenefit :: DiscoveryBenefit  -- ^ remembered AI benefits of items
-  , sfper         :: PerLid        -- ^ faction perception indexed by levels
-  , salter        :: AlterLid      -- ^ cached alter ability data for positions
-  , srandom       :: R.StdGen      -- ^ current random generator
-  , _sleader      :: Maybe ActorId
-                                   -- ^ candidate new leader of the faction;
-                                   --   Faction._gleader is the old leader
-  , _sside        :: FactionId     -- ^ faction controlled by the client
-  , squit         :: Bool          -- ^ exit the game loop
-  , scurChal      :: Challenge     -- ^ current game challenge setup
-  , snxtChal      :: Challenge     -- ^ next game challenge setup
-  , snxtScenario  :: Int           -- ^ next game scenario number
-  , smarkSuspect  :: Int           -- ^ mark suspect features
+                                    -- ^ pathfinding distances for our actors
+                                    --   and paths to their targets, if any
+  , sundo         :: [CmdAtomic]    -- ^ atomic commands performed to date
+  , sdiscoBenefit :: DiscoveryBenefit
+                                    -- ^ remembered AI benefits of items
+  , sfper         :: PerLid         -- ^ faction perception indexed by levels
+  , salter        :: AlterLid       -- ^ cached alter ability data for positions
+  , srandom       :: R.StdGen       -- ^ current random generator
+  , _sleader      :: Maybe ActorId  -- ^ candidate new leader of the faction;
+                                    --   Faction._gleader is the old leader
+  , _sside        :: FactionId      -- ^ faction controlled by the client
+  , squit         :: Bool           -- ^ exit the game loop
+  , scurChal      :: Challenge      -- ^ current game challenge setup
+  , snxtChal      :: Challenge      -- ^ next game challenge setup
+  , snxtScenario  :: Int            -- ^ next game scenario number
+  , smarkSuspect  :: Int            -- ^ mark suspect features
   , scondInMelee  :: EM.EnumMap LevelId (Maybe Bool)
-                                   -- ^ condInMelee value, unless invalidated
+                                    -- ^ condInMelee value, unless invalidated
   , svictories    :: EM.EnumMap (Kind.Id ModeKind) (M.Map Challenge Int)
-      -- ^ won games at particular difficulty levels
-  , sclientOptions     :: ClientOptions  -- ^ client debugging mode
+                                    -- ^ won games at particular difficulty lvls
+  , soptions      :: ClientOptions  -- ^ client debugging mode
   }
   deriving Show
 
@@ -110,7 +110,7 @@ emptyStateClient _sside =
     , smarkSuspect = 1
     , scondInMelee = EM.empty
     , svictories = EM.empty
-    , sclientOptions = defClientOptions
+    , soptions = defClientOptions
     }
 
 cycleMarkSuspect :: StateClient -> StateClient
@@ -158,7 +158,7 @@ instance Binary StateClient where
     put smarkSuspect
     put scondInMelee
     put svictories
-    put sclientOptions
+    put soptions
 #ifdef WITH_EXPENSIVE_ASSERTIONS
     put sfper
 #endif
@@ -177,7 +177,7 @@ instance Binary StateClient where
     smarkSuspect <- get
     scondInMelee <- get
     svictories <- get
-    sclientOptions <- get
+    soptions <- get
     let sbfsD = EM.empty
         salter = EM.empty
         srandom = read g

@@ -120,7 +120,7 @@ mkConfig Kind.COps{corule} benchmark = do
   return $! deepseq conf conf
 
 applyConfigToDebug :: Kind.COps -> Config -> ClientOptions -> ClientOptions
-applyConfigToDebug Kind.COps{corule} sconfig sclientOptions =
+applyConfigToDebug Kind.COps{corule} sconfig soptions =
   let stdRuleset = Kind.stdRuleset corule
   in (\dbg -> dbg {sgtkFontFamily =
         sgtkFontFamily dbg `mplus` Just (configGtkFontFamily sconfig)}) .
@@ -142,4 +142,4 @@ applyConfigToDebug Kind.COps{corule} sconfig sclientOptions =
         stitle dbg `mplus` Just (rtitle stdRuleset)}) .
      (\dbg -> dbg {sfontDir =
         sfontDir dbg `mplus` Just (rfontDir stdRuleset)})
-     $ sclientOptions
+     $ soptions

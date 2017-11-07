@@ -34,7 +34,7 @@ frontendName = "teletype"
 
 -- | Set up the frontend input and output.
 startup :: ClientOptions -> IO RawFrontend
-startup _sclientOptions = do
+startup _soptions = do
   rf <- createRawFrontend display shutdown
   let storeKeys :: IO ()
       storeKeys = do

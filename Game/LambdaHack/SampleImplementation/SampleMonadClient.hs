@@ -15,24 +15,24 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Concurrent
+import           Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
-import Control.Monad.Trans.State.Strict hiding (State)
-import GHC.Generics (Generic)
+import           Control.Monad.Trans.State.Strict hiding (State)
+import           GHC.Generics (Generic)
 
-import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client
-import Game.LambdaHack.Client.HandleResponseM
-import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI
-import Game.LambdaHack.Common.ClientOptions
-import Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Atomic
+import           Game.LambdaHack.Client
+import           Game.LambdaHack.Client.HandleResponseM
+import           Game.LambdaHack.Client.MonadClient
+import           Game.LambdaHack.Client.State
+import           Game.LambdaHack.Client.UI
+import           Game.LambdaHack.Common.ClientOptions
+import           Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Response
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Response
 import qualified Game.LambdaHack.Common.Save as Save
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.State
 
 data CliState = CliState
   { cliState   :: State            -- ^ current global state
@@ -129,9 +129,9 @@ executorCli :: KeyKind -> Config -> ClientOptions
             -> FactionId
             -> ChanServer
             -> IO ()
-executorCli copsClient sconfig sdebugMode cops cliSession fid cliDict =
+executorCli copsClient sconfig clientOptions cops cliSession fid cliDict =
   let stateToFileName (cli, _) =
-        ssavePrefixCli (sclientOptions cli) <> Save.saveNameCli cops (sside cli)
+        ssavePrefixCli (soptions cli) <> Save.saveNameCli cops (sside cli)
       totalState cliToSave = CliState
         { cliState = emptyState cops
         , cliClient = emptyStateClient fid
@@ -139,6 +139,6 @@ executorCli copsClient sconfig sdebugMode cops cliSession fid cliDict =
         , cliToSave
         , cliSession
         }
-      m = loopCli copsClient sconfig sdebugMode
+      m = loopCli copsClient sconfig clientOptions
       exe = evalStateT (runCliImplementation m) . totalState
   in Save.wrapInSaves cops stateToFileName exe

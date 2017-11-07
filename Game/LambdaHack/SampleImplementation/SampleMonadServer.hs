@@ -135,30 +135,31 @@ instance MonadServerAtomic SerImplementation where
 -- for easy access of code analysis tools.
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: Kind.COps -> KeyKind -> ServerOptions -> IO ()
-executorSer cops copsClient sdebugNxtCmdline = do
+executorSer cops copsClient soptionsNxtCmdline = do
   -- Parse UI client configuration file.
   -- It is reparsed at each start of the game executable.
-  sconfig <- mkConfig cops (sbenchmark $ sclientOptions sdebugNxtCmdline)
-  sdebugNxt <- case configCmdline sconfig of
-    []   -> return sdebugNxtCmdline
+  sconfig <- mkConfig cops (sbenchmark $ sclientOptions soptionsNxtCmdline)
+  soptionsNxt <- case configCmdline sconfig of
+    []   -> return soptionsNxtCmdline
     args -> handleParseResult $ execParserPure defaultPrefs serverOptionsPI args
   -- Options for the clients modified with the configuration file.
   -- The client debug inside server debug only holds the client commandline
   -- options and is never updated with config options, etc.
-  let sdebugMode = applyConfigToDebug cops sconfig $ sclientOptions sdebugNxt
+  let clientOptions = applyConfigToDebug cops sconfig
+                      $ sclientOptions soptionsNxt
       -- Partially applied main loop of the clients.
-      executorClient = executorCli copsClient sconfig sdebugMode cops
+      executorClient = executorCli copsClient sconfig clientOptions cops
   -- Wire together game content, the main loop of game clients
   -- and the game server loop.
   let stateToFileName (_, ser) =
-        ssavePrefixSer (sserverOptions ser) <> Save.saveNameSer cops
+        ssavePrefixSer (soptions ser) <> Save.saveNameSer cops
       totalState serToSave = SerState
         { serState = emptyState cops
         , serServer = emptyStateServer
         , serDict = EM.empty
         , serToSave
         }
-      m = loopSer sdebugNxt sconfig executorClient
+      m = loopSer soptionsNxt sconfig executorClient
       exe = evalStateT (runSerImplementation m) . totalState
       exeWithSaves = Save.wrapInSaves cops stateToFileName exe
       defPrefix = ssavePrefixSer defServerOptions
@@ -183,7 +184,7 @@ executorSer cops copsClient sdebugNxtCmdline = do
                _ -> do
                  Ex.uninterruptibleMask_ $ threadDelay 1000000
                    -- let clients report their errors and save
-                 when (ssavePrefixSer sdebugNxt == defPrefix) bkpAllSaves
+                 when (ssavePrefixSer soptionsNxt == defPrefix) bkpAllSaves
                  hFlush stdout
                  Ex.throwIO ex  -- crash eventually, which kills clients
             )

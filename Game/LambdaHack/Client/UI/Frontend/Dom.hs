@@ -67,13 +67,13 @@ frontendName = "browser"
 
 -- | Starts the main program loop using the frontend input and output.
 startup :: ClientOptions -> IO RawFrontend
-startup sclientOptions = do
+startup soptions = do
   rfMVar <- newEmptyMVar
-  flip runDOM undefined $ runWeb sclientOptions rfMVar
+  flip runDOM undefined $ runWeb soptions rfMVar
   takeMVar rfMVar
 
 runWeb :: ClientOptions -> MVar RawFrontend -> DOM ()
-runWeb sclientOptions@ClientOptions{..} rfMVar = do
+runWeb soptions@ClientOptions{..} rfMVar = do
   -- Init the document.
   Just doc <- currentDocument
   Just scurrentWindow <- currentWindow
@@ -114,7 +114,7 @@ runWeb sclientOptions@ClientOptions{..} rfMVar = do
   scharCells <- flattenTable tableElem
   spreviousFrame <- newIORef blankSingleFrame
   let sess = FrontendSession{..}
-  rf <- IO.liftIO $ createRawFrontend (display sclientOptions sess) shutdown
+  rf <- IO.liftIO $ createRawFrontend (display soptions sess) shutdown
   let readMod = do
         modCtrl <- ask >>= getCtrlKey
         modShift <- ask >>= getShiftKey

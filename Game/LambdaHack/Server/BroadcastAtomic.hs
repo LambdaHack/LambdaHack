@@ -63,7 +63,7 @@ handleAndBroadcast ps atomicBroken atomic = do
   -- To get rid of breakUpdAtomic we'd need to send only Spot and Lose
   -- commands instead of Move and Displace (plus Sfx for Displace).
   -- So this only makes sense when we switch to sending state diffs.
-  knowEvents <- getsServer $ sknowEvents . sserverOptions
+  knowEvents <- getsServer $ sknowEvents . soptions
   sperFidOld <- getsServer sperFid
   -- Send some actions to the clients, one faction at a time.
   let sendAtomic fid (UpdAtomic cmd) = sendUpdate fid cmd

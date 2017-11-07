@@ -1,7 +1,5 @@
 {-# LANGUAGE ApplicativeDo #-}
-
 -- | Parsing of commandline arguments.
-
 module Game.LambdaHack.Server.Commandline
   ( serverOptionsPI
   ) where

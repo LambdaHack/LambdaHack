@@ -62,10 +62,10 @@ frontendName = "sdl"
 -- (https://wiki.libsdl.org/FAQDevelopment),
 -- so we stick to main thread.
 startup :: ClientOptions -> IO RawFrontend
-startup sclientOptions = startupBound $ startupFun sclientOptions
+startup soptions = startupBound $ startupFun soptions
 
 startupFun :: ClientOptions -> MVar RawFrontend -> IO ()
-startupFun sclientOptions@ClientOptions{..} rfMVar = do
+startupFun soptions@ClientOptions{..} rfMVar = do
   SDL.initialize [SDL.InitVideo, SDL.InitEvents]
   let title = fromJust stitle
       fontFileName = T.unpack (fromJust sdlFontFile)
@@ -105,7 +105,7 @@ startupFun sclientOptions@ClientOptions{..} rfMVar = do
   sforcedShutdown <- newIORef False
   sdisplayPermitted <- newMVar True
   let sess = FrontendSession{..}
-  rf <- createRawFrontend (display sclientOptions sess) (shutdown sess)
+  rf <- createRawFrontend (display soptions sess) (shutdown sess)
   putMVar rfMVar rf
   let pointTranslate :: forall i. (Enum i) => Vect.Point Vect.V2 i -> Point
       pointTranslate (SDL.P (SDL.V2 x y)) =
@@ -123,7 +123,7 @@ startupFun sclientOptions@ClientOptions{..} rfMVar = do
           writeIORef stexture newTexture
           prevFrame <- readIORef spreviousFrame
           writeIORef spreviousFrame blankSingleFrame
-          displayNoLock sclientOptions sess prevFrame
+          displayNoLock soptions sess prevFrame
         putMVar sdisplayPermitted displayPermitted
       storeKeys :: IO ()
       storeKeys = do
@@ -199,11 +199,11 @@ display :: ClientOptions
         -> FrontendSession  -- ^ frontend session data
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
-display sclientOptions sess@FrontendSession{..} curFrame = do
+display soptions sess@FrontendSession{..} curFrame = do
   displayPermitted <- takeMVar sdisplayPermitted
   if displayPermitted then do
     -- Apparently some SDL backends are not thread-safe, so keep to main thread:
-    a <- asyncBound $ displayNoLock sclientOptions sess curFrame
+    a <- asyncBound $ displayNoLock soptions sess curFrame
     wait a
     putMVar sdisplayPermitted displayPermitted
   else do

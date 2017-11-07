@@ -44,10 +44,10 @@ frontendName = "gtk"
 -- Because of Windows, GTK needs to be on a bound thread,
 -- so we can't avoid the communication overhead of bound threads.
 startup :: ClientOptions -> IO RawFrontend
-startup sclientOptions = startupBound $ startupFun sclientOptions
+startup soptions = startupBound $ startupFun soptions
 
 startupFun :: ClientOptions -> MVar RawFrontend -> IO ()
-startupFun sclientOptions@ClientOptions{..} rfMVar = do
+startupFun soptions@ClientOptions{..} rfMVar = do
   -- Init GUI.
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
@@ -75,7 +75,7 @@ startupFun sclientOptions@ClientOptions{..} rfMVar = do
              mapM (\ak -> do
                       tt <- textTagNew Nothing
                       textTagTableAdd ttt tt
-                      doAttr sclientOptions tt (emulateBox ak)
+                      doAttr soptions tt (emulateBox ak)
                       return (fromEnum ak, tt))
                [ Color.Attr{fg, bg}
                | fg <- [minBound..maxBound], bg <- [minBound..maxBound] ]
@@ -204,15 +204,15 @@ shutdown :: IO ()
 shutdown = postGUISync mainQuit
 
 doAttr :: ClientOptions -> TextTag -> (Color.Color, Color.Color) -> IO ()
-doAttr sclientOptions tt (fg, bg)
+doAttr soptions tt (fg, bg)
   | fg == Color.defFG && bg == Color.Black = return ()
   | fg == Color.defFG =
     set tt [textTagBackground := Color.colorToRGB bg]
   | bg == Color.Black =
-    set tt $ extraAttr sclientOptions
+    set tt $ extraAttr soptions
              ++ [textTagForeground := Color.colorToRGB fg]
   | otherwise =
-    set tt $ extraAttr sclientOptions
+    set tt $ extraAttr soptions
              ++ [ textTagForeground := Color.colorToRGB fg
                 , textTagBackground := Color.colorToRGB bg ]
 

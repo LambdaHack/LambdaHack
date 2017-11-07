@@ -35,12 +35,12 @@ import qualified Content.TileKind
 -- depends on the flags supplied when compiling the engine library,
 -- just as the choice of native vs JS build.
 tieKnot :: ServerOptions -> IO ()
-tieKnot sdebug@ServerOptions{sallClear, sboostRandomItem, sdungeonRng} = do
+tieKnot options@ServerOptions{sallClear, sboostRandomItem, sdungeonRng} = do
   -- This setup ensures the boosting option doesn't affect generating initial
   -- RNG for dungeon, etc., and also, that setting dungeon RNG on commandline
   -- equal to what was generated last time, ensures the same item boost.
   initialGen <- maybe R.getStdGen return sdungeonRng
-  let sdebugNxt = sdebug {sdungeonRng = Just initialGen}
+  let soptionsNxt = options {sdungeonRng = Just initialGen}
       cotile = Kind.createOps Content.TileKind.cdefs
       boostedItems = Item.boostItemKindList initialGen Content.ItemKind.items
       coitem = Kind.createOps $
@@ -65,4 +65,4 @@ tieKnot sdebug@ServerOptions{sallClear, sboostRandomItem, sdungeonRng} = do
       !copsClient = Content.KeyKind.standardKeys
   -- Wire together game content, the main loops of game clients
   -- and the game server loop.
-  executorSer cops copsClient sdebugNxt
+  executorSer cops copsClient soptionsNxt

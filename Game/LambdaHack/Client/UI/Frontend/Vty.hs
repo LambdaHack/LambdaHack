@@ -31,7 +31,7 @@ frontendName = "vty"
 
 -- | Starts the main program loop using the frontend input and output.
 startup :: ClientOptions -> IO RawFrontend
-startup _sclientOptions = do
+startup _soptions = do
   svty <- mkVty mempty
   let sess = FrontendSession{..}
   rf <- createRawFrontend (display sess) (Vty.shutdown svty)

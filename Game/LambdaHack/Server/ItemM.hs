@@ -58,7 +58,7 @@ registerItem ItemFull{..} itemKnown seed container verbose = do
   iid <- onlyRegisterItem itemKnown seed
   let cmd = if verbose then UpdCreateItem else UpdSpotItem False
   execUpdAtomic $ cmd iid itemBase (itemK, itemTimer) container
-  knowItems <- getsServer $ sknowItems . sserverOptions
+  knowItems <- getsServer $ sknowItems . soptions
   when knowItems $ case container of
     CTrunk{} -> return ()
     _ -> do

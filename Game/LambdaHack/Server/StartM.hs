@@ -60,7 +60,7 @@ reinitGame :: MonadServerAtomic m => m ()
 reinitGame = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   pers <- getsServer sperFid
-  ServerOptions{scurChalSer, sknowMap, sclientOptions} <- getsServer sserverOptions
+  ServerOptions{scurChalSer, sknowMap, sclientOptions} <- getsServer soptions
   -- This state is quite small, fit for transmition to the client.
   -- The biggest part is content, which needs to be updated
   -- at this point to keep clients in sync with server improvements.
@@ -160,27 +160,27 @@ gameReset :: MonadServer m
           => Kind.COps -> ServerOptions -> Maybe (GroupName ModeKind)
           -> Maybe R.StdGen -> m State
 gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
-          sdebug mGameMode mrandom = do
+          serverOptions mGameMode mrandom = do
   -- Dungeon seed generation has to come first, to ensure item boosting
   -- is determined by the dungeon RNG.
-  dungeonSeed <- getSetGen $ sdungeonRng sdebug `mplus` mrandom
-  srandom <- getSetGen $ smainRng sdebug `mplus` mrandom
+  dungeonSeed <- getSetGen $ sdungeonRng serverOptions `mplus` mrandom
+  srandom <- getSetGen $ smainRng serverOptions `mplus` mrandom
   let srngs = RNGs (Just dungeonSeed) (Just srandom)
-  when (sdumpInitRngs sdebug) $ dumpRngs srngs
-  scoreTable <- if sfrontendNull $ sclientOptions sdebug then
+  when (sdumpInitRngs serverOptions) $ dumpRngs srngs
+  scoreTable <- if sfrontendNull $ sclientOptions serverOptions then
                   return HighScore.empty
                 else
                   restoreScore cops
   factionDold <- getsState sfactionD
   gameModeIdOld <- getsState sgameModeId
-  curChalSer <- getsServer $ scurChalSer . sserverOptions
+  curChalSer <- getsServer $ scurChalSer . soptions
 #ifdef USE_BROWSER
   let startingModeGroup = "starting JS"
 #else
   let startingModeGroup = "starting"
 #endif
       gameMode = fromMaybe startingModeGroup
-                 $ mGameMode `mplus` sgameMode sdebug
+                 $ mGameMode `mplus` sgameMode serverOptions
       rnd :: Rnd (FactionDict, FlavourMap, DiscoveryKind, DiscoveryKindRev,
                   DungeonGen.FreshDungeon, Kind.Id ModeKind)
       rnd = do
@@ -189,7 +189,7 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
         let mode = okind modeKindId
             automatePS ps = ps {rosterList =
               map (first $ automatePlayer True) $ rosterList ps}
-            players = if sautomateAll sdebug
+            players = if sautomateAll serverOptions
                       then automatePS $ mroster mode
                       else mroster mode
         sflavour <- dungeonFlavourMap cops
@@ -220,7 +220,7 @@ populateDungeon = do
   embedItemsInDungeon
   dungeon <- getsState sdungeon
   factionD <- getsState sfactionD
-  curChalSer <- getsServer $ scurChalSer . sserverOptions
+  curChalSer <- getsServer $ scurChalSer . soptions
   let ginitialWolf fact1 = if cwolf curChalSer && fhasUI (gplayer fact1)
                            then case ginitial fact1 of
                              [] -> []
@@ -319,14 +319,14 @@ findEntryPoss Kind.COps{coTileSpeedup}
   found <- tryFind (middlePos : onStairs) nk
   return $! found ++ onStairs
 
--- | Apply debug options that don't need a new game.
+-- | Apply options that don't need a new game.
 applyDebug :: MonadServer m => m ()
 applyDebug = do
-  ServerOptions{..} <- getsServer sdebugNxt
+  ServerOptions{..} <- getsServer soptionsNxt
   modifyServer $ \ser ->
-    ser {sserverOptions = (sserverOptions ser) { sniff
-                                     , sallClear
-                                     , sdbgMsgSer
-                                     , snewGameSer
-                                     , sdumpInitRngs
-                                     , sclientOptions }}
+    ser {soptions = (soptions ser) { sniff
+                                   , sallClear
+                                   , sdbgMsgSer
+                                   , snewGameSer
+                                   , sdumpInitRngs
+                                   , sclientOptions }}

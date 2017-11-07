@@ -627,7 +627,7 @@ reqGameRestart :: MonadServerAtomic m
                => ActorId -> GroupName ModeKind -> Challenge
                -> m ()
 reqGameRestart aid groupName scurChalSer = do
-  modifyServer $ \ser -> ser {sdebugNxt = (sdebugNxt ser) {scurChalSer}}
+  modifyServer $ \ser -> ser {soptionsNxt = (soptionsNxt ser) {scurChalSer}}
   b <- getsState $ getActorBody aid
   oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
   modifyServer $ \ser ->

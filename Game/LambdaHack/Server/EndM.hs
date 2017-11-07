@@ -136,7 +136,7 @@ dropAllItems aid b = do
 -- | Save game on server and all clients.
 writeSaveAll :: MonadServerAtomic m => Bool -> m ()
 writeSaveAll uiRequested = do
-  bench <- getsServer $ sbenchmark . sclientOptions . sserverOptions
+  bench <- getsServer $ sbenchmark . sclientOptions . soptions
   noConfirmsGame <- isNoConfirmsGame
   when (uiRequested || not bench && not noConfirmsGame) $ do
     execUpdAtomic UpdWriteSave
