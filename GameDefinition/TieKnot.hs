@@ -10,12 +10,12 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified System.Random as R
 
-import Game.LambdaHack.Common.ContentDef
+import           Game.LambdaHack.Common.ContentDef
 import qualified Game.LambdaHack.Common.Item as Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.SampleImplementation.SampleMonadServer (executorSer)
-import Game.LambdaHack.Server
+import           Game.LambdaHack.SampleImplementation.SampleMonadServer (executorSer)
+import           Game.LambdaHack.Server
 
 import qualified Client.UI.Content.KeyKind as Content.KeyKind
 import qualified Content.CaveKind
@@ -28,11 +28,12 @@ import qualified Content.TileKind
 -- | Tie the LambdaHack engine client, server and frontend code
 -- with the game-specific content definitions, and run the game.
 --
--- The action monad types to be used are determined by the 'executorSer'
+-- The custom monad types to be used are determined by the 'executorSer'
 -- and 'executorCli' calls. If other functions are used in their place
 -- the types are different and so the whole pattern of computation
 -- is different. Which of the frontends is run inside the UI client
--- depends on the flags supplied when compiling the engine library.
+-- depends on the flags supplied when compiling the engine library,
+-- just as the choice of native vs JS build.
 tieKnot :: DebugModeSer -> IO ()
 tieKnot sdebug@DebugModeSer{sallClear, sboostRandomItem, sdungeonRng} = do
   -- This setup ensures the boosting option doesn't affect generating initial

@@ -46,6 +46,7 @@ import           Game.LambdaHack.Server.HandleRequestM
 import           Game.LambdaHack.Server.MonadServer
 import           Game.LambdaHack.Server.PeriodicM
 import           Game.LambdaHack.Server.ProtocolM
+import           Game.LambdaHack.Server.ServerOptions
 import           Game.LambdaHack.Server.StartM
 import           Game.LambdaHack.Server.State
 

@@ -26,6 +26,7 @@ import Game.LambdaHack.Server.HandleEffectM
 import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolM
+import Game.LambdaHack.Server.ServerOptions
 import Game.LambdaHack.Server.State
 
 -- | Continue or exit or restart the game.

@@ -15,4 +15,4 @@ import Prelude ()
 
 import Game.LambdaHack.Server.Commandline (debugModeSerPI)
 import Game.LambdaHack.Server.LoopM (loopSer)
-import Game.LambdaHack.Server.State (DebugModeSer (..))
+import Game.LambdaHack.Server.ServerOptions

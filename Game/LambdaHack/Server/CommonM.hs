@@ -41,6 +41,7 @@ import           Game.LambdaHack.Server.Fov
 import           Game.LambdaHack.Server.ItemM
 import           Game.LambdaHack.Server.ItemRev
 import           Game.LambdaHack.Server.MonadServer
+import           Game.LambdaHack.Server.ServerOptions
 import           Game.LambdaHack.Server.State
 
 execFailure :: MonadServerAtomic m

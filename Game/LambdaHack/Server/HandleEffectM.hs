@@ -43,6 +43,7 @@ import           Game.LambdaHack.Server.CommonM
 import           Game.LambdaHack.Server.ItemM
 import           Game.LambdaHack.Server.MonadServer
 import           Game.LambdaHack.Server.PeriodicM
+import           Game.LambdaHack.Server.ServerOptions
 import           Game.LambdaHack.Server.State
 
 -- + Semantics of effects

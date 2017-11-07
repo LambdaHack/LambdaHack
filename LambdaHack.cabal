@@ -237,6 +237,7 @@ library
                       Game.LambdaHack.Server.MonadServer
                       Game.LambdaHack.Server.PeriodicM
                       Game.LambdaHack.Server.ProtocolM
+                      Game.LambdaHack.Server.ServerOptions
                       Game.LambdaHack.Server.StartM
                       Game.LambdaHack.Server.State
 

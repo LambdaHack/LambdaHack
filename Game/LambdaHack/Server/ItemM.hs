@@ -10,28 +10,29 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Function
+import           Data.Function
 import qualified Data.HashMap.Strict as HM
-import Data.Ord
+import           Data.Ord
 
-import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Atomic
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Content.ItemKind (ItemKind)
+import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.TileKind (TileKind)
-import Game.LambdaHack.Server.ItemRev
-import Game.LambdaHack.Server.MonadServer
-import Game.LambdaHack.Server.State
+import           Game.LambdaHack.Content.TileKind (TileKind)
+import           Game.LambdaHack.Server.ItemRev
+import           Game.LambdaHack.Server.MonadServer
+import           Game.LambdaHack.Server.ServerOptions
+import           Game.LambdaHack.Server.State
 
 onlyRegisterItem :: MonadServerAtomic m
                  => ItemKnown -> ItemSeed -> m ItemId

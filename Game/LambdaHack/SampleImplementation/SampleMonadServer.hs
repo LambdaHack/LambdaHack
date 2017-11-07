@@ -15,34 +15,36 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Concurrent
+import           Control.Concurrent
 import qualified Control.Exception as Ex
 import qualified Control.Monad.IO.Class as IO
-import Control.Monad.Trans.State.Strict hiding (State)
+import           Control.Monad.Trans.State.Strict hiding (State)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text.IO as T
-import Options.Applicative (defaultPrefs, execParserPure, handleParseResult)
-import System.Exit (ExitCode (ExitSuccess))
-import System.FilePath
-import System.IO (hFlush, stdout)
+import           Options.Applicative (defaultPrefs, execParserPure,
+                                      handleParseResult)
+import           System.Exit (ExitCode (ExitSuccess))
+import           System.FilePath
+import           System.IO (hFlush, stdout)
 
-import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client
-import Game.LambdaHack.Common.ClientOptions
-import Game.LambdaHack.Common.File
+import           Game.LambdaHack.Atomic
+import           Game.LambdaHack.Client
+import           Game.LambdaHack.Common.ClientOptions
+import           Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
-import Game.LambdaHack.Common.State
-import Game.LambdaHack.Common.Thread
-import Game.LambdaHack.SampleImplementation.SampleMonadClient (executorCli)
-import Game.LambdaHack.Server
-import Game.LambdaHack.Server.BroadcastAtomic
-import Game.LambdaHack.Server.HandleAtomicM
-import Game.LambdaHack.Server.MonadServer
-import Game.LambdaHack.Server.ProtocolM
-import Game.LambdaHack.Server.State
+import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Thread
+import           Game.LambdaHack.SampleImplementation.SampleMonadClient (executorCli)
+import           Game.LambdaHack.Server
+import           Game.LambdaHack.Server.BroadcastAtomic
+import           Game.LambdaHack.Server.HandleAtomicM
+import           Game.LambdaHack.Server.MonadServer
+import           Game.LambdaHack.Server.ProtocolM
+import           Game.LambdaHack.Server.ServerOptions
+import           Game.LambdaHack.Server.State
 
 data SerState = SerState
   { serState  :: State           -- ^ current global state

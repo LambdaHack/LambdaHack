@@ -34,6 +34,7 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.TileKind (isUknownSpace)
 import           Game.LambdaHack.Server.MonadServer
 import           Game.LambdaHack.Server.ProtocolM
+import           Game.LambdaHack.Server.ServerOptions
 import           Game.LambdaHack.Server.State
 
 --storeUndo :: MonadServer m => CmdAtomic -> m ()

@@ -47,6 +47,7 @@ import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Server.DebugM
 import           Game.LambdaHack.Server.MonadServer hiding (liftIO)
+import           Game.LambdaHack.Server.ServerOptions
 import           Game.LambdaHack.Server.State
 
 writeQueue :: MonadServerReadRequest m

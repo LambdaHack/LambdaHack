@@ -50,6 +50,7 @@ import           Game.LambdaHack.Server.HandleEffectM
 import           Game.LambdaHack.Server.ItemM
 import           Game.LambdaHack.Server.MonadServer
 import           Game.LambdaHack.Server.PeriodicM
+import           Game.LambdaHack.Server.ServerOptions
 import           Game.LambdaHack.Server.State
 
 -- | The semantics of server commands.
