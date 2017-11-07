@@ -15,49 +15,50 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Arrow (first)
-import Control.Monad.ST.Strict
+import           Control.Arrow (first)
+import           Control.Monad.ST.Strict
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Ord
+import           Data.Ord
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
-import Data.Word (Word16)
-import GHC.Exts (inline)
+import           Data.Word (Word16)
+import           GHC.Exts (inline)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.Bfs
-import Game.LambdaHack.Client.BfsM
-import Game.LambdaHack.Client.CommonM
-import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.ActorUI
-import Game.LambdaHack.Client.UI.ItemDescription
-import Game.LambdaHack.Client.UI.MonadClientUI
-import Game.LambdaHack.Client.UI.Overlay
-import Game.LambdaHack.Client.UI.SessionUI
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Client.Bfs
+import           Game.LambdaHack.Client.BfsM
+import           Game.LambdaHack.Client.CommonM
+import           Game.LambdaHack.Client.MonadClient
+import           Game.LambdaHack.Client.State
+import           Game.LambdaHack.Client.UI.ActorUI
+import           Game.LambdaHack.Client.UI.Frame
+import           Game.LambdaHack.Client.UI.ItemDescription
+import           Game.LambdaHack.Client.UI.MonadClientUI
+import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.SessionUI
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import qualified Game.LambdaHack.Common.KindOps as KindOps
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Perception
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ModeKind as MK
-import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
+import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 targetDesc :: MonadClientUI m => Maybe Target -> m (Maybe Text, Maybe Text)

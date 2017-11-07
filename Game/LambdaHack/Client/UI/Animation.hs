@@ -9,11 +9,10 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Bits
+import           Data.Bits
 import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Client.UI.Frame
-import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
@@ -25,6 +24,8 @@ newtype Animation = Animation [Overlay]
   deriving (Eq, Show)
 
 -- | Render animations on top of a screen frame.
+--
+-- Located in this module to keep @Animation@ abstract.
 renderAnim :: FrameForall -> Animation -> Frames
 renderAnim basicFrame (Animation anim) =
   let modifyFrame :: Overlay -> FrameForall

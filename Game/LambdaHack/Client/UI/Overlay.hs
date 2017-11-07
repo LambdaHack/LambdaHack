@@ -4,36 +4,28 @@ module Game.LambdaHack.Client.UI.Overlay
   ( -- * AttrLine
     AttrLine, emptyAttrLine, textToAL, fgToAL, stringToAL
   , (<+:>), splitAttrLine, itemDesc, glueLines, updateLines
-    -- * Overlay
-  , Overlay
     -- * Misc
   , ColorMode(..)
-  , FrameST, FrameForall(..), writeLine
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Monad.ST.Strict
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
-import qualified Data.Vector.Generic as G
-import qualified Data.Vector.Unboxed as U
-import qualified Data.Vector.Unboxed.Mutable as VM
-import Data.Word
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.UI.EffectDescription
-import Game.LambdaHack.Client.UI.ItemDescription
+import           Game.LambdaHack.Client.UI.EffectDescription
+import           Game.LambdaHack.Client.UI.ItemDescription
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.ItemStrongest
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- * AttrLine
@@ -201,17 +193,6 @@ updateLines n f ov =
       upd _ [] = []
   in upd n ov
 
--- blurb about [AttrLine]:
--- | A series of screen lines that either fit the width of the screen
--- or are intended for truncation when displayed. The length of overlay
--- may exceed the length of the screen, unlike in @SingleFrame@.
--- An exception is lines generated from animation, which have to fit
--- in either dimension.
-
--- * Overlay
-
-type Overlay = [(Int, AttrLine)]
-
 -- * Misc
 
 -- | Color mode for the display.
@@ -219,16 +200,3 @@ data ColorMode =
     ColorFull  -- ^ normal, with full colours
   | ColorBW    -- ^ black+white only
   deriving Eq
-
-type FrameST s = G.Mutable U.Vector s Word32 -> ST s ()
-
-newtype FrameForall = FrameForall {unFrameForall :: forall s. FrameST s}
-
-writeLine :: Int -> AttrLine -> FrameForall
-{-# INLINE writeLine #-}
-writeLine offset l = FrameForall $ \v -> do
-  let writeAt _ [] = return ()
-      writeAt off (ac32 : rest) = do
-        VM.write v off (Color.attrCharW32 ac32)
-        writeAt (off + 1) rest
-  writeAt offset l

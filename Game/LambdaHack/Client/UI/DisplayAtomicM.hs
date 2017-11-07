@@ -10,49 +10,48 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Key (mapWithKeyM_)
+import           Data.Key (mapWithKeyM_)
 import qualified Data.Map.Strict as M
-import Data.Tuple
-import GHC.Exts (inline)
+import           Data.Tuple
+import           GHC.Exts (inline)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.ActorUI
-import Game.LambdaHack.Client.UI.Animation
-import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.FrameM
-import Game.LambdaHack.Client.UI.HandleHelperM
-import Game.LambdaHack.Client.UI.ItemDescription
-import Game.LambdaHack.Client.UI.ItemSlot
+import           Game.LambdaHack.Atomic
+import           Game.LambdaHack.Client.MonadClient
+import           Game.LambdaHack.Client.State
+import           Game.LambdaHack.Client.UI.ActorUI
+import           Game.LambdaHack.Client.UI.Animation
+import           Game.LambdaHack.Client.UI.Config
+import           Game.LambdaHack.Client.UI.FrameM
+import           Game.LambdaHack.Client.UI.HandleHelperM
+import           Game.LambdaHack.Client.UI.ItemDescription
+import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
-import Game.LambdaHack.Client.UI.MonadClientUI
-import Game.LambdaHack.Client.UI.Msg
-import Game.LambdaHack.Client.UI.MsgM
-import Game.LambdaHack.Client.UI.Overlay
-import Game.LambdaHack.Client.UI.OverlayM
-import Game.LambdaHack.Client.UI.SessionUI
-import Game.LambdaHack.Client.UI.Slideshow
-import Game.LambdaHack.Client.UI.SlideshowM
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Client.UI.MonadClientUI
+import           Game.LambdaHack.Client.UI.Msg
+import           Game.LambdaHack.Client.UI.MsgM
+import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.SessionUI
+import           Game.LambdaHack.Client.UI.Slideshow
+import           Game.LambdaHack.Client.UI.SlideshowM
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Flavour
-import Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Flavour
+import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Request
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Request
+import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.RuleKind
+import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * RespUpdAtomicUI

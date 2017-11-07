@@ -1,20 +1,41 @@
+{-# LANGUAGE RankNTypes #-}
 -- | Screen frames.
 module Game.LambdaHack.Client.UI.Frame
-  ( SingleFrame(..), Frames
+  ( FrameST, FrameForall(..), writeLine
+  , SingleFrame(..), Frames
   , blankSingleFrame, overlayFrame, overlayFrameWithLines
+    -- * Overlay
+  , Overlay
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Word (Word32)
+import           Control.Monad.ST.Strict
+import qualified Data.Vector.Generic as G
+import qualified Data.Vector.Unboxed as U
+import qualified Data.Vector.Unboxed.Mutable as VM
+import           Data.Word
 
-import Game.LambdaHack.Client.UI.Overlay
-import Game.LambdaHack.Common.Color
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Client.UI.Overlay
+import qualified Game.LambdaHack.Common.Color as Color
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
+
+type FrameST s = G.Mutable U.Vector s Word32 -> ST s ()
+
+newtype FrameForall = FrameForall {unFrameForall :: forall s. FrameST s}
+
+writeLine :: Int -> AttrLine -> FrameForall
+{-# INLINE writeLine #-}
+writeLine offset l = FrameForall $ \v -> do
+  let writeAt _ [] = return ()
+      writeAt off (ac32 : rest) = do
+        VM.write v off (Color.attrCharW32 ac32)
+        writeAt (off + 1) rest
+  writeAt offset l
 
 -- | An overlay that fits on the screen (or is meant to be truncated on display)
 -- and is padded to fill the whole screen
@@ -23,7 +44,7 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 -- Note that we don't provide a list of color-highlighed positions separately,
 -- because overlays need to obscure not only map, but the highlights as well.
 newtype SingleFrame = SingleFrame
-  {singleFrame :: PointArray.GArray Word32 AttrCharW32}
+  {singleFrame :: PointArray.GArray Word32 Color.AttrCharW32}
   deriving (Eq, Show)
 
 -- | Sequences of screen frames, including delays.
@@ -33,7 +54,7 @@ blankSingleFrame :: SingleFrame
 blankSingleFrame =
   let lxsize = fst normalLevelBound + 1
       lysize = snd normalLevelBound + 4
-  in SingleFrame $ PointArray.replicateA lxsize lysize spaceAttrW32
+  in SingleFrame $ PointArray.replicateA lxsize lysize Color.spaceAttrW32
 
 -- | Truncate the overlay: for each line, if it's too long, it's truncated
 -- and if there are too many lines, excess is dropped and warning is appended.
@@ -57,15 +78,15 @@ truncateAttrLine :: X -> AttrLine -> X -> AttrLine
 truncateAttrLine w xs lenMax =
   case compare w (length xs) of
     LT -> let discarded = drop w xs
-          in if all (== spaceAttrW32) discarded
+          in if all (== Color.spaceAttrW32) discarded
              then take w xs
-             else take (w - 1) xs ++ [attrChar2ToW32 BrBlack '$']
+             else take (w - 1) xs ++ [Color.attrChar2ToW32 Color.BrBlack '$']
     EQ -> xs
-    GT -> let xsSpace = if null xs || last xs == spaceAttrW32
+    GT -> let xsSpace = if null xs || last xs == Color.spaceAttrW32
                         then xs
-                        else xs ++ [spaceAttrW32]
+                        else xs ++ [Color.spaceAttrW32]
               whiteN = max (40 - length xsSpace) (1 + lenMax - length xsSpace)
-          in xsSpace ++ replicate whiteN spaceAttrW32
+          in xsSpace ++ replicate whiteN Color.spaceAttrW32
 
 -- | Overlays either the game map only or the whole empty screen frame.
 -- We assume the lines of the overlay are not too long nor too many.
@@ -80,3 +101,14 @@ overlayFrameWithLines onBlank l msf =
       ov = map (\(y, al) -> (y * lxsize, al))
            $ zip [0..] $ truncateLines onBlank l
   in overlayFrame ov msf
+
+-- * Overlay
+
+-- blurb about [AttrLine]:
+-- | A series of screen lines that either fit the width of the screen
+-- or are intended for truncation when displayed. The length of overlay
+-- may exceed the length of the screen, unlike in @SingleFrame@.
+-- An exception is lines generated from animation, which have to fit
+-- in either dimension.
+
+type Overlay = [(Int, AttrLine)]

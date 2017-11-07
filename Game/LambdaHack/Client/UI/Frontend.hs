@@ -19,26 +19,25 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Concurrent
-import Control.Concurrent.Async
+import           Control.Concurrent
+import           Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
-import Control.Monad.ST.Strict
-import Data.IORef
+import           Control.Monad.ST.Strict
+import           Data.IORef
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
-import Data.Word
+import           Data.Word
 
-import Game.LambdaHack.Client.UI.Frame
+import           Game.LambdaHack.Client.UI.Frame
 import qualified Game.LambdaHack.Client.UI.Frontend.Chosen as Chosen
-import Game.LambdaHack.Client.UI.Frontend.Common
+import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Frontend.Teletype as Teletype
 import qualified Game.LambdaHack.Client.UI.Key as K
-import Game.LambdaHack.Client.UI.Overlay
-import Game.LambdaHack.Common.ClientOptions
+import           Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | The instructions sent by clients to the raw frontend.

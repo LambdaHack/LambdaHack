@@ -30,33 +30,32 @@ import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 
-import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.Content.KeyKind
-import Game.LambdaHack.Client.UI.DisplayAtomicM
-import Game.LambdaHack.Client.UI.FrameM
-import Game.LambdaHack.Client.UI.Frontend
-import Game.LambdaHack.Client.UI.HandleHelperM
-import Game.LambdaHack.Client.UI.HandleHumanM
+import           Game.LambdaHack.Client.MonadClient
+import           Game.LambdaHack.Client.State
+import           Game.LambdaHack.Client.UI.Config
+import           Game.LambdaHack.Client.UI.Content.KeyKind
+import           Game.LambdaHack.Client.UI.DisplayAtomicM
+import           Game.LambdaHack.Client.UI.FrameM
+import           Game.LambdaHack.Client.UI.Frontend
+import           Game.LambdaHack.Client.UI.HandleHelperM
+import           Game.LambdaHack.Client.UI.HandleHumanM
 import qualified Game.LambdaHack.Client.UI.Key as K
-import Game.LambdaHack.Client.UI.KeyBindings
-import Game.LambdaHack.Client.UI.MonadClientUI
-import Game.LambdaHack.Client.UI.Msg
-import Game.LambdaHack.Client.UI.MsgM
-import Game.LambdaHack.Client.UI.Overlay
-import Game.LambdaHack.Client.UI.OverlayM
-import Game.LambdaHack.Client.UI.SessionUI
-import Game.LambdaHack.Client.UI.Slideshow
-import Game.LambdaHack.Client.UI.SlideshowM
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.ClientOptions
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Request
-import Game.LambdaHack.Common.State
-import Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Client.UI.KeyBindings
+import           Game.LambdaHack.Client.UI.MonadClientUI
+import           Game.LambdaHack.Client.UI.Msg
+import           Game.LambdaHack.Client.UI.MsgM
+import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.SessionUI
+import           Game.LambdaHack.Client.UI.Slideshow
+import           Game.LambdaHack.Client.UI.SlideshowM
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.ClientOptions
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Request
+import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Content.ModeKind
 
 -- | Handle the move of a UI player.
 queryUI :: MonadClientUI m => m RequestUI
