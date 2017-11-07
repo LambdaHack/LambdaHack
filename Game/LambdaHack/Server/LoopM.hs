@@ -6,9 +6,8 @@ module Game.LambdaHack.Server.LoopM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , factionArena, arenasForLoop, handleFidUpd, loopUpd, endClip
-  , applyPeriodicLevel
-  , handleTrajectories, hTrajectories, handleActors, hActors
-  , gameExit, restartGame, writeSaveAll, setTrajectory
+  , applyPeriodicLevel, handleTrajectories, hTrajectories, handleActors, hActors
+  , restartGame, writeSaveAll, setTrajectory
 #endif
   ) where
 
@@ -20,37 +19,35 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Ord as Ord
 
-import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client (Config, SessionUI)
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.ClientOptions
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
+import           Game.LambdaHack.Atomic
+import           Game.LambdaHack.Client (Config, SessionUI)
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Request
-import Game.LambdaHack.Common.Response
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Request
+import           Game.LambdaHack.Common.Response
+import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Server.CommonM
-import Game.LambdaHack.Server.EndM
-import Game.LambdaHack.Server.Fov
-import Game.LambdaHack.Server.HandleEffectM
-import Game.LambdaHack.Server.HandleRequestM
-import Game.LambdaHack.Server.MonadServer
-import Game.LambdaHack.Server.PeriodicM
-import Game.LambdaHack.Server.ProtocolM
-import Game.LambdaHack.Server.StartM
-import Game.LambdaHack.Server.State
+import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.RuleKind
+import           Game.LambdaHack.Server.CommonM
+import           Game.LambdaHack.Server.EndM
+import           Game.LambdaHack.Server.HandleEffectM
+import           Game.LambdaHack.Server.HandleRequestM
+import           Game.LambdaHack.Server.MonadServer
+import           Game.LambdaHack.Server.PeriodicM
+import           Game.LambdaHack.Server.ProtocolM
+import           Game.LambdaHack.Server.StartM
+import           Game.LambdaHack.Server.State
 
 -- | Start a game session, including the clients, and then loop,
 -- communicating with the clients.
@@ -183,7 +180,7 @@ loopUpd updConn = do
         if quit then do
           modifyServer $ \ser -> ser {squit = False}
           endOrLoop loopUpdConn (restartGame updConn loopUpdConn)
-                    gameExit (writeSaveAll True)
+                    (writeSaveAll True)
         else
           loopUpdConn
   loopUpdConn
@@ -441,51 +438,6 @@ hActors _fid as@((aid, body) : rest) = do
       swriteSave <- getsServer swriteSave
       if swriteSave then return False else hActors side as
 
-gameExit :: (MonadServerAtomic m, MonadServerReadRequest m) => m ()
-gameExit = do
-  -- Verify that the not saved caches are equal to future reconstructed.
-  -- Otherwise, save/restore would change game state.
---  debugPossiblyPrint "Verifying all perceptions."
-  sperCacheFid <- getsServer sperCacheFid
-  sperValidFid <- getsServer sperValidFid
-  sactorAspect2 <- getsState sactorAspect
-  sfovLucidLid <- getsServer sfovLucidLid
-  sfovClearLid <- getsServer sfovClearLid
-  sfovLitLid <- getsServer sfovLitLid
-  sperFid <- getsServer sperFid
-  actorAspect <- getsState actorAspectInDungeon
-  ( fovLitLid, fovClearLid, fovLucidLid
-   ,perValidFid, perCacheFid, perFid ) <- getsState perFidInDungeon
-  let !_A7 = assert (sfovLitLid == fovLitLid
-                     `blame` "wrong accumulated sfovLitLid"
-                     `swith` (sfovLitLid, fovLitLid)) ()
-      !_A6 = assert (sfovClearLid == fovClearLid
-                     `blame` "wrong accumulated sfovClearLid"
-                     `swith` (sfovClearLid, fovClearLid)) ()
-      !_A5 = assert (sactorAspect2 == actorAspect
-                     `blame` "wrong accumulated sactorAspect"
-                     `swith` (sactorAspect2, actorAspect)) ()
-      !_A4 = assert (sfovLucidLid == fovLucidLid
-                     `blame` "wrong accumulated sfovLucidLid"
-                     `swith` (sfovLucidLid, fovLucidLid)) ()
-      !_A3 = assert (sperValidFid == perValidFid
-                     `blame` "wrong accumulated sperValidFid"
-                     `swith` (sperValidFid, perValidFid)) ()
-      !_A2 = assert (sperCacheFid == perCacheFid
-                     `blame` "wrong accumulated sperCacheFid"
-                     `swith` (sperCacheFid, perCacheFid)) ()
-      !_A1 = assert (sperFid == perFid
-                     `blame` "wrong accumulated perception"
-                     `swith` (sperFid, perFid)) ()
-  -- Kill all clients, including those that did not take part
-  -- in the current game.
-  -- Clients exit not now, but after they print all ending screens.
-  -- debugPrint "Server kills clients"
---  debugPossiblyPrint "Killing all clients."
-  killAllClients
---  debugPossiblyPrint "All clients killed."
-  return ()
-
 restartGame :: MonadServerAtomic m
             => m () -> m () -> Maybe (GroupName ModeKind) -> m ()
 restartGame updConn loop mgameMode = do
@@ -502,12 +454,3 @@ restartGame updConn loop mgameMode = do
   reinitGame
   writeSaveAll False
   loop
-
--- | Save game on server and all clients.
-writeSaveAll :: MonadServerAtomic m => Bool -> m ()
-writeSaveAll uiRequested = do
-  bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
-  noConfirmsGame <- isNoConfirmsGame
-  when (uiRequested || not bench && not noConfirmsGame) $ do
-    execUpdAtomic UpdWriteSave
-    saveServer

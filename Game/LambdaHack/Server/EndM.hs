@@ -1,7 +1,7 @@
 -- | The main loop of the server, processing human and computer player
 -- moves turn by turn.
 module Game.LambdaHack.Server.EndM
-  ( endOrLoop, dieSer
+  ( endOrLoop, dieSer, writeSaveAll
   ) where
 
 import Prelude ()
@@ -13,6 +13,7 @@ import qualified Data.EnumMap.Strict as EM
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Misc
@@ -20,16 +21,18 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.CommonM
+import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.HandleEffectM
 import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
+import Game.LambdaHack.Server.ProtocolM
 import Game.LambdaHack.Server.State
 
 -- | Continue or exit or restart the game.
-endOrLoop :: MonadServerAtomic m
-          => m () -> (Maybe (GroupName ModeKind) -> m ()) -> m () -> m ()
+endOrLoop :: (MonadServerAtomic m, MonadServerReadRequest m)
+          => m () -> (Maybe (GroupName ModeKind) -> m ()) -> m ()
           -> m ()
-endOrLoop loop restart gameExit gameSave = do
+endOrLoop loop restart gameSave = do
   factionD <- getsState sfactionD
   let inGame fact = case gquit fact of
         Nothing -> True
@@ -55,6 +58,51 @@ endOrLoop loop restart gameExit gameSave = do
   if | restartNeeded -> restart (listToMaybe quitters)
      | not $ null campers -> gameExit  -- and @loop@ is not called
      | otherwise -> loop  -- continue current game
+
+gameExit :: (MonadServerAtomic m, MonadServerReadRequest m) => m ()
+gameExit = do
+  -- Verify that the not saved caches are equal to future reconstructed.
+  -- Otherwise, save/restore would change game state.
+--  debugPossiblyPrint "Verifying all perceptions."
+  sperCacheFid <- getsServer sperCacheFid
+  sperValidFid <- getsServer sperValidFid
+  sactorAspect2 <- getsState sactorAspect
+  sfovLucidLid <- getsServer sfovLucidLid
+  sfovClearLid <- getsServer sfovClearLid
+  sfovLitLid <- getsServer sfovLitLid
+  sperFid <- getsServer sperFid
+  actorAspect <- getsState actorAspectInDungeon
+  ( fovLitLid, fovClearLid, fovLucidLid
+   ,perValidFid, perCacheFid, perFid ) <- getsState perFidInDungeon
+  let !_A7 = assert (sfovLitLid == fovLitLid
+                     `blame` "wrong accumulated sfovLitLid"
+                     `swith` (sfovLitLid, fovLitLid)) ()
+      !_A6 = assert (sfovClearLid == fovClearLid
+                     `blame` "wrong accumulated sfovClearLid"
+                     `swith` (sfovClearLid, fovClearLid)) ()
+      !_A5 = assert (sactorAspect2 == actorAspect
+                     `blame` "wrong accumulated sactorAspect"
+                     `swith` (sactorAspect2, actorAspect)) ()
+      !_A4 = assert (sfovLucidLid == fovLucidLid
+                     `blame` "wrong accumulated sfovLucidLid"
+                     `swith` (sfovLucidLid, fovLucidLid)) ()
+      !_A3 = assert (sperValidFid == perValidFid
+                     `blame` "wrong accumulated sperValidFid"
+                     `swith` (sperValidFid, perValidFid)) ()
+      !_A2 = assert (sperCacheFid == perCacheFid
+                     `blame` "wrong accumulated sperCacheFid"
+                     `swith` (sperCacheFid, perCacheFid)) ()
+      !_A1 = assert (sperFid == perFid
+                     `blame` "wrong accumulated perception"
+                     `swith` (sperFid, perFid)) ()
+  -- Kill all clients, including those that did not take part
+  -- in the current game.
+  -- Clients exit not now, but after they print all ending screens.
+  -- debugPrint "Server kills clients"
+--  debugPossiblyPrint "Killing all clients."
+  killAllClients
+--  debugPossiblyPrint "All clients killed."
+  return ()
 
 dieSer :: MonadServerAtomic m => ActorId -> Actor -> m ()
 dieSer aid b = do
@@ -83,3 +131,12 @@ dropAllItems :: MonadServerAtomic m => ActorId -> Actor -> m ()
 dropAllItems aid b = do
   mapActorCStore_ CInv (dropCStoreItem False CInv aid b maxBound) b
   mapActorCStore_ CEqp (dropCStoreItem False CEqp aid b maxBound) b
+
+-- | Save game on server and all clients.
+writeSaveAll :: MonadServerAtomic m => Bool -> m ()
+writeSaveAll uiRequested = do
+  bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
+  noConfirmsGame <- isNoConfirmsGame
+  when (uiRequested || not bench && not noConfirmsGame) $ do
+    execUpdAtomic UpdWriteSave
+    saveServer

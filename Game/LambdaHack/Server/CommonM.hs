@@ -15,33 +15,33 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import qualified Text.Show.Pretty as Show.Pretty
 
-import Game.LambdaHack.Atomic
+import           Game.LambdaHack.Atomic
 import qualified Game.LambdaHack.Common.Ability as Ability
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Perception
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.Request
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Common.Request
+import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ItemKind (ItemKind)
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Server.Fov
-import Game.LambdaHack.Server.ItemM
-import Game.LambdaHack.Server.ItemRev
-import Game.LambdaHack.Server.MonadServer
-import Game.LambdaHack.Server.State
+import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.RuleKind
+import           Game.LambdaHack.Server.Fov
+import           Game.LambdaHack.Server.ItemM
+import           Game.LambdaHack.Server.ItemRev
+import           Game.LambdaHack.Server.MonadServer
+import           Game.LambdaHack.Server.State
 
 execFailure :: MonadServerAtomic m
             => ActorId -> RequestTimed a -> ReqFailure -> m ()

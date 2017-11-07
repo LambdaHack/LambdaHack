@@ -22,32 +22,32 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Concurrent
-import Control.Concurrent.Async
+import           Control.Concurrent
+import           Control.Concurrent.Async
 import qualified Data.EnumMap.Strict as EM
-import Data.Key (mapWithKeyM, mapWithKeyM_)
-import System.FilePath
-import System.IO.Unsafe (unsafePerformIO)
+import           Data.Key (mapWithKeyM, mapWithKeyM_)
+import           System.FilePath
+import           System.IO.Unsafe (unsafePerformIO)
 
-import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client (Config, SessionUI, emptySessionUI)
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ClientOptions
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.File
+import           Game.LambdaHack.Atomic
+import           Game.LambdaHack.Client (Config, SessionUI, emptySessionUI)
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ClientOptions
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Request
-import Game.LambdaHack.Common.Response
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Request
+import           Game.LambdaHack.Common.Response
 import qualified Game.LambdaHack.Common.Save as Save
-import Game.LambdaHack.Common.State
-import Game.LambdaHack.Common.Thread
-import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Server.DebugM
-import Game.LambdaHack.Server.MonadServer hiding (liftIO)
-import Game.LambdaHack.Server.State
+import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Thread
+import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.RuleKind
+import           Game.LambdaHack.Server.DebugM
+import           Game.LambdaHack.Server.MonadServer hiding (liftIO)
+import           Game.LambdaHack.Server.State
 
 writeQueue :: MonadServerReadRequest m
            => Response -> CliSerQueue Response -> m ()
