@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.UI.Frontend.Sdl
   ( startup, frontendName
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , startupFun, shutdown, display
+  , FontAtlas, FrontendSession(..), startupFun, shutdown, display
 #endif
   ) where
 
@@ -11,31 +11,31 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude hiding (Alt)
 
-import Control.Concurrent
-import Control.Concurrent.Async
+import           Control.Concurrent
+import           Control.Concurrent.Async
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
-import Data.IORef
+import           Data.IORef
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
-import Data.Word (Word32, Word8)
-import Foreign.C.Types (CInt)
-import System.Directory
-import System.Exit (exitSuccess)
-import System.FilePath
+import           Data.Word (Word32, Word8)
+import           Foreign.C.Types (CInt)
+import           System.Directory
+import           System.Exit (exitSuccess)
+import           System.FilePath
 
 import qualified SDL
 import qualified SDL.Font as TTF
-import SDL.Input.Keyboard.Codes
+import           SDL.Input.Keyboard.Codes
 import qualified SDL.Vect as Vect
 
-import Game.LambdaHack.Client.UI.Frame
-import Game.LambdaHack.Client.UI.Frontend.Common
+import           Game.LambdaHack.Client.UI.Frame
+import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
-import Game.LambdaHack.Common.ClientOptions
+import           Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 type FontAtlas = EM.EnumMap Color.AttrCharW32 SDL.Texture

@@ -20,37 +20,38 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Function
-import Data.Ord
-import Data.Ratio
+import           Data.Function
+import           Data.Ord
+import           Data.Ratio
 
-import Game.LambdaHack.Client.AI.ConditionM
-import Game.LambdaHack.Client.AI.Strategy
-import Game.LambdaHack.Client.Bfs
-import Game.LambdaHack.Client.BfsM
-import Game.LambdaHack.Client.CommonM
-import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.State
-import Game.LambdaHack.Common.Ability
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Frequency
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
+import           Game.LambdaHack.Client.AI.ConditionM
+import           Game.LambdaHack.Client.AI.Strategy
+import           Game.LambdaHack.Client.Bfs
+import           Game.LambdaHack.Client.BfsM
+import           Game.LambdaHack.Client.CommonM
+import           Game.LambdaHack.Client.MonadClient
+import           Game.LambdaHack.Client.State
+import           Game.LambdaHack.Common.Ability
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Frequency
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.Request
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.ReqFailure
+import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Client.Request
 
 type ToAny a = Strategy (RequestTimed a) -> Strategy RequestAnyAbility
 

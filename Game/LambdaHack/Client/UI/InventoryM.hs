@@ -14,36 +14,36 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Char as Char
-import Data.Either
+import           Data.Either
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
-import Data.Tuple (swap)
+import           Data.Tuple (swap)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.ActorUI
-import Game.LambdaHack.Client.UI.HandleHelperM
-import Game.LambdaHack.Client.UI.HumanCmd
-import Game.LambdaHack.Client.UI.ItemSlot
+import           Game.LambdaHack.Client.MonadClient
+import           Game.LambdaHack.Client.State
+import           Game.LambdaHack.Client.UI.ActorUI
+import           Game.LambdaHack.Client.UI.HandleHelperM
+import           Game.LambdaHack.Client.UI.HumanCmd
+import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
-import Game.LambdaHack.Client.UI.KeyBindings
-import Game.LambdaHack.Client.UI.MonadClientUI
-import Game.LambdaHack.Client.UI.MsgM
-import Game.LambdaHack.Client.UI.Overlay
-import Game.LambdaHack.Client.UI.SessionUI
-import Game.LambdaHack.Client.UI.Slideshow
-import Game.LambdaHack.Client.UI.SlideshowM
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Request
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Client.UI.KeyBindings
+import           Game.LambdaHack.Client.UI.MonadClientUI
+import           Game.LambdaHack.Client.UI.MsgM
+import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.SessionUI
+import           Game.LambdaHack.Client.UI.Slideshow
+import           Game.LambdaHack.Client.UI.SlideshowM
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.ReqFailure
+import           Game.LambdaHack.Common.State
 
 data ItemDialogState = ISuitable | IAll
   deriving (Show, Eq)

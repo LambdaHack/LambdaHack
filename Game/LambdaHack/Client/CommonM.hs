@@ -27,7 +27,7 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.Request
+import Game.LambdaHack.Client.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector

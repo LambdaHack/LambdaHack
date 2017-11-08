@@ -35,7 +35,7 @@ import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.Point
-import           Game.LambdaHack.Common.Request
+import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector

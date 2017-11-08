@@ -12,7 +12,7 @@ import Game.LambdaHack.Client.UI.HandleHumanGlobalM
 import Game.LambdaHack.Client.UI.HandleHumanLocalM
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.MonadClientUI
-import Game.LambdaHack.Common.Request
+import Game.LambdaHack.Client.Request
 
 -- | The semantics of human player commands in terms of the @Action@ monad.
 -- Decides if the action takes time and what action to perform.

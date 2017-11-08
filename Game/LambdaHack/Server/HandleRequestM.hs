@@ -26,6 +26,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.EnumMap.Strict as EM
 
 import           Game.LambdaHack.Atomic
+import           Game.LambdaHack.Client
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
@@ -37,7 +38,7 @@ import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Random
-import           Game.LambdaHack.Common.Request
+import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time

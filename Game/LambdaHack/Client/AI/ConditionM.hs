@@ -27,29 +27,29 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import Data.Ord
+import           Data.Ord
 
-import Game.LambdaHack.Client.Bfs
-import Game.LambdaHack.Client.CommonM
-import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.State
+import           Game.LambdaHack.Client.Bfs
+import           Game.LambdaHack.Client.CommonM
+import           Game.LambdaHack.Client.MonadClient
+import           Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Common.Ability as Ability
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Request
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.ReqFailure
+import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.ModeKind
 
 -- All conditions are (partially) lazy, because they are not always
 -- used in the strict monadic computations they are in.

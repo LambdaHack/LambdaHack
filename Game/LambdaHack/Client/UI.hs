@@ -53,7 +53,7 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.MonadStateRead
-import           Game.LambdaHack.Common.Request
+import           Game.LambdaHack.Client.Request
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Content.ModeKind
 

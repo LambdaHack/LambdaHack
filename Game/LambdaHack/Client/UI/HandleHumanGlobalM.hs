@@ -73,7 +73,7 @@ import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Random
-import           Game.LambdaHack.Common.Request
+import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Vector
@@ -81,6 +81,7 @@ import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
+import           Game.LambdaHack.Client.Request
 
 -- * ByArea
 

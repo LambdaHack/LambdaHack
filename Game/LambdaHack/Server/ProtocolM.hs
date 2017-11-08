@@ -30,7 +30,7 @@ import           System.FilePath
 import           System.IO.Unsafe (unsafePerformIO)
 
 import           Game.LambdaHack.Atomic
-import           Game.LambdaHack.Client (Config, SessionUI, emptySessionUI)
+import           Game.LambdaHack.Client
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
@@ -38,8 +38,6 @@ import           Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.Kind as Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
-import           Game.LambdaHack.Common.Request
-import           Game.LambdaHack.Common.Response
 import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Thread

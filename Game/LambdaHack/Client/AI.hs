@@ -27,7 +27,7 @@ import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.Request
+import Game.LambdaHack.Client.Request
 import Game.LambdaHack.Common.State
 
 -- | Handle the move of an actor under AI control (of UI or AI player).

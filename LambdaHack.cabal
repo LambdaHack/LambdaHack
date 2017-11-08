@@ -141,6 +141,8 @@ library
                       Game.LambdaHack.Client.LoopM
                       Game.LambdaHack.Client.MonadClient
                       Game.LambdaHack.Client.Preferences
+                      Game.LambdaHack.Client.Request
+                      Game.LambdaHack.Client.Response
                       Game.LambdaHack.Client.State
                       Game.LambdaHack.Client.UI
                       Game.LambdaHack.Client.UI.ActorUI
@@ -198,10 +200,9 @@ library
                       Game.LambdaHack.Common.Point
                       Game.LambdaHack.Common.Prelude
                       Game.LambdaHack.Common.Random
+                      Game.LambdaHack.Common.ReqFailure
                       Game.LambdaHack.Common.RingBuffer
                       Game.LambdaHack.Common.Save
-                      Game.LambdaHack.Common.Request
-                      Game.LambdaHack.Common.Response
                       Game.LambdaHack.Common.State
                       Game.LambdaHack.Common.Thread
                       Game.LambdaHack.Common.Tile

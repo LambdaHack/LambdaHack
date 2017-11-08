@@ -14,8 +14,8 @@ import Game.LambdaHack.Client.HandleAtomicM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Request
-import Game.LambdaHack.Common.Response
+import Game.LambdaHack.Client.Request
+import Game.LambdaHack.Client.Response
 
 class MonadClient m => MonadClientReadResponse m where
   receiveResponse :: m Response

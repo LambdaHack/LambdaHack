@@ -9,17 +9,17 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import Data.Int (Int64)
+import           Data.Int (Int64)
 import qualified Data.Text as T
 import qualified Text.Show.Pretty as Show.Pretty
 
 import Game.LambdaHack.Atomic
+import Game.LambdaHack.Client
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State

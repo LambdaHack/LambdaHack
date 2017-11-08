@@ -14,16 +14,16 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.EnumMap.Strict as EM
 
 import qualified Game.LambdaHack.Common.Ability as Ability
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Request
-import Game.LambdaHack.Common.State
-import Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.ReqFailure
+import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Content.ModeKind
 
 class (Monad m, Functor m, Applicative m) => MonadStateRead m where
   getsState :: (State -> a) -> m a

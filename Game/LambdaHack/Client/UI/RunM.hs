@@ -33,7 +33,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Request
+import Game.LambdaHack.Client.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
