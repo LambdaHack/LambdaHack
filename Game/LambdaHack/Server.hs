@@ -7,7 +7,7 @@ module Game.LambdaHack.Server
     loopSer
     -- * Re-exported from "Game.LambdaHack.Server.Commandline"
   , serverOptionsPI
-    -- * Re-exported from "Game.LambdaHack.Server.State"
+    -- * Re-exported from "Game.LambdaHack.Server.ServerOptions"
   , ServerOptions(..)
   ) where
 

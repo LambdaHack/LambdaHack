@@ -15,15 +15,13 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Char as Char
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.UI.ActorUI (verbCStore)
-import Game.LambdaHack.Client.UI.HumanCmd
+import           Game.LambdaHack.Client.UI.ActorUI (verbCStore)
+import           Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
-import Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Misc
 
 -- | Key-command mappings to be used for the UI.
-newtype KeyKind = KeyKind
-  { rhumanCommands :: [(K.KM, CmdTriple)]  -- ^ default client UI commands
-  }
+newtype KeyKind = KeyKind [(K.KM, CmdTriple)]  -- ^ default client UI commands
 
 evalKeyDef :: (String, CmdTriple) -> (K.KM, CmdTriple)
 evalKeyDef (t, triple@(cats, _, _)) =

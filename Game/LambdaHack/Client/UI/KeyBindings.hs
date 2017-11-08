@@ -12,13 +12,13 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 
-import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.Content.KeyKind
-import Game.LambdaHack.Client.UI.HumanCmd
-import Game.LambdaHack.Client.UI.ItemSlot
+import           Game.LambdaHack.Client.UI.Config
+import           Game.LambdaHack.Client.UI.Content.KeyKind
+import           Game.LambdaHack.Client.UI.HumanCmd
+import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
-import Game.LambdaHack.Client.UI.Overlay
-import Game.LambdaHack.Client.UI.Slideshow
+import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.Slideshow
 import qualified Game.LambdaHack.Common.Color as Color
 
 -- | Bindings and other information about human player commands.
@@ -34,7 +34,7 @@ data Binding = Binding
 stdBinding :: KeyKind  -- ^ default key bindings from the content
            -> Config   -- ^ game config
            -> Binding  -- ^ concrete binding
-stdBinding copsClient Config{configCommands, configVi, configLaptop} =
+stdBinding (KeyKind copsClient) Config{configCommands, configVi, configLaptop} =
   let waitTriple = ([CmdMove], "", Wait)
       wait10Triple = ([CmdMove], "", Wait10)
       moveXhairOr n cmd v = ByAimMode { exploration = cmd v
@@ -43,7 +43,7 @@ stdBinding copsClient Config{configCommands, configVi, configLaptop} =
         (if configVi
          then filter (\(k, _) ->
            k `notElem` [K.mkKM "period", K.mkKM "C-period"])
-         else id) (rhumanCommands copsClient)
+         else id) copsClient
         ++ configCommands
         ++ [ (K.mkKM "KP_Begin", waitTriple)
            , (K.mkKM "C-KP_Begin", wait10Triple)
