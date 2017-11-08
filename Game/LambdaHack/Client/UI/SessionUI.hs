@@ -10,27 +10,27 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
+import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
-import Data.Time.Clock.POSIX
+import           Data.Time.Clock.POSIX
 
-import Game.LambdaHack.Client.UI.ActorUI
-import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.Frontend
-import Game.LambdaHack.Client.UI.ItemSlot
+import           Game.LambdaHack.Client.UI.ActorUI
+import           Game.LambdaHack.Client.UI.Frontend
+import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
-import Game.LambdaHack.Client.UI.KeyBindings
-import Game.LambdaHack.Client.UI.Msg
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Client.UI.KeyBindings
+import           Game.LambdaHack.Client.UI.Msg
+import           Game.LambdaHack.Client.UI.UIOptions
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Vector
 
 -- | The information that is used across a client playing session,
 -- including many consecutive games in a single session.
@@ -44,7 +44,7 @@ data SessionUI = SessionUI
   , slastItemMove  :: Maybe (CStore, CStore)  -- ^ last item move stores
   , schanF         :: ChanFrontend       -- ^ connection with the frontend
   , sbinding       :: Binding            -- ^ binding of keys to commands
-  , sconfig        :: Config
+  , sUIOptions     :: UIOptions
   , saimMode       :: Maybe AimMode      -- ^ aiming mode
   , sxhairMoused   :: Bool               -- ^ last mouse aiming not vacuus
   , sitemSel       :: Maybe (CStore, ItemId)  -- ^ selected item, if any
@@ -100,8 +100,8 @@ data KeysHintMode =
   deriving (Eq, Enum, Bounded)
 
 -- | Initial empty game client state.
-emptySessionUI :: Config -> SessionUI
-emptySessionUI sconfig =
+emptySessionUI :: UIOptions -> SessionUI
+emptySessionUI sUIOptions =
   SessionUI
     { sxhair = TVector $ Vector 0 0
     , sactorUI = EM.empty
@@ -111,7 +111,7 @@ emptySessionUI sconfig =
     , schanF = ChanFrontend $ const $
         error $ "emptySessionUI: ChanFrontend" `showFailure` ()
     , sbinding = Binding M.empty [] M.empty
-    , sconfig
+    , sUIOptions
     , saimMode = Nothing
     , sxhairMoused = True
     , sitemSel = Nothing
@@ -153,7 +153,7 @@ instance Binary SessionUI where
     put sactorUI
     put sslots
     put slastSlot
-    put sconfig
+    put sUIOptions
     put saimMode
     put sitemSel
     put sselected
@@ -168,7 +168,7 @@ instance Binary SessionUI where
     sactorUI <- get
     sslots <- get
     slastSlot <- get
-    sconfig <- get  -- is overwritten ASAP, but useful for, e.g., crash debug
+    sUIOptions <- get  -- is overwritten ASAP, but useful for, e.g., crash debug
     saimMode <- get
     sitemSel <- get
     sselected <- get

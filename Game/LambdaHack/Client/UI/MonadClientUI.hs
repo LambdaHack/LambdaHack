@@ -24,42 +24,42 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import Data.Time.Clock
-import Data.Time.Clock.POSIX
-import Data.Time.LocalTime
+import           Data.Time.Clock
+import           Data.Time.Clock.POSIX
+import           Data.Time.LocalTime
 import qualified NLP.Miniutter.English as MU
-import System.FilePath
-import System.IO (hFlush, stdout)
+import           System.FilePath
+import           System.IO (hFlush, stdout)
 
-import Game.LambdaHack.Client.CommonM
-import Game.LambdaHack.Client.MonadClient hiding (liftIO)
-import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.ActorUI
-import Game.LambdaHack.Client.UI.Frame
-import Game.LambdaHack.Client.UI.Frontend
+import           Game.LambdaHack.Client.CommonM
+import           Game.LambdaHack.Client.MonadClient hiding (liftIO)
+import           Game.LambdaHack.Client.State
+import           Game.LambdaHack.Client.UI.ActorUI
+import           Game.LambdaHack.Client.UI.Frame
+import           Game.LambdaHack.Client.UI.Frontend
 import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
 import qualified Game.LambdaHack.Client.UI.Key as K
-import Game.LambdaHack.Client.UI.Msg
-import Game.LambdaHack.Client.UI.Overlay
-import Game.LambdaHack.Client.UI.SessionUI
-import Game.LambdaHack.Client.UI.Slideshow
+import           Game.LambdaHack.Client.UI.Msg
+import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.SessionUI
+import           Game.LambdaHack.Client.UI.Slideshow
 import qualified Game.LambdaHack.Common.Ability as Ability
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.ClientOptions
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.File
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.ClientOptions
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.Save as Save
-import Game.LambdaHack.Common.State
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.RuleKind
+import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.RuleKind
 
 -- Assumes no interleaving with other clients, because each UI client
 -- in a different terminal/window/machine.
@@ -269,11 +269,11 @@ scoreToSlideshow total status = do
             else emptySlideshow
 
 defaultHistory :: MonadClientUI m => Int -> m History
-defaultHistory configHistoryMax = liftIO $ do
+defaultHistory uHistoryMax = liftIO $ do
   utcTime <- getCurrentTime
   timezone <- getTimeZone utcTime
   let curDate = show $ utcToLocalTime timezone utcTime
-      emptyHist = emptyHistory configHistoryMax
+      emptyHist = emptyHistory uHistoryMax
   return $! addReport emptyHist timeZero
          $ singletonReport $ toMsg $ stringToAL
          $ "Human history log started on " ++ curDate ++ "."

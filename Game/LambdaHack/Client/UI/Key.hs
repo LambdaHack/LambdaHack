@@ -15,10 +15,10 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude hiding (Alt, Left, Right)
 
-import Control.DeepSeq
-import Data.Binary
+import           Control.DeepSeq
+import           Data.Binary
 import qualified Data.Char as Char
-import GHC.Generics (Generic)
+import           GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Vector
 
@@ -199,15 +199,15 @@ dirViShiftKey :: [Key]
 dirViShiftKey = map (Char . Char.toUpper) dirViChar
 
 dirMoveNoModifier :: Bool -> Bool -> [Key]
-dirMoveNoModifier configVi configLaptop =
-  dirKeypadKey ++ if | configVi -> dirViKey
-                     | configLaptop -> dirLaptopKey
+dirMoveNoModifier uVi uLaptop =
+  dirKeypadKey ++ if | uVi -> dirViKey
+                     | uLaptop -> dirLaptopKey
                      | otherwise -> []
 
 dirRunNoModifier :: Bool -> Bool -> [Key]
-dirRunNoModifier configVi configLaptop =
-  dirKeypadShiftKey ++ if | configVi -> dirViShiftKey
-                          | configLaptop -> dirLaptopShiftKey
+dirRunNoModifier uVi uLaptop =
+  dirKeypadShiftKey ++ if | uVi -> dirViShiftKey
+                          | uLaptop -> dirLaptopShiftKey
                           | otherwise -> []
 
 dirRunControl :: [Key]
@@ -219,30 +219,30 @@ dirRunShift :: [Key]
 dirRunShift = dirRunControl
 
 dirAllKey :: Bool -> Bool -> [Key]
-dirAllKey configVi configLaptop =
-  dirMoveNoModifier configVi configLaptop
-  ++ dirRunNoModifier configVi configLaptop
+dirAllKey uVi uLaptop =
+  dirMoveNoModifier uVi uLaptop
+  ++ dirRunNoModifier uVi uLaptop
   ++ dirRunControl
 
 -- | Configurable event handler for the direction keys.
 -- Used for directed commands such as close door.
 handleDir :: Bool -> Bool -> KM -> Maybe Vector
-handleDir configVi configLaptop KM{modifier=NoModifier, key} =
-  let assocs = zip (dirAllKey configVi configLaptop) $ cycle moves
+handleDir uVi uLaptop KM{modifier=NoModifier, key} =
+  let assocs = zip (dirAllKey uVi uLaptop) $ cycle moves
   in lookup key assocs
 handleDir _ _ _ = Nothing
 
 -- | Binding of both sets of movement keys.
 moveBinding :: Bool -> Bool -> (Vector -> a) -> (Vector -> a)
             -> [(KM, a)]
-moveBinding configVi configLaptop move run =
+moveBinding uVi uLaptop move run =
   let assign f (km, dir) = (km, f dir)
       mapMove modifier keys =
         map (assign move) (zip (map (KM modifier) keys) $ cycle moves)
       mapRun modifier keys =
         map (assign run) (zip (map (KM modifier) keys) $ cycle moves)
-  in mapMove NoModifier (dirMoveNoModifier configVi configLaptop)
-     ++ mapRun NoModifier (dirRunNoModifier configVi configLaptop)
+  in mapMove NoModifier (dirMoveNoModifier uVi uLaptop)
+     ++ mapRun NoModifier (dirRunNoModifier uVi uLaptop)
      ++ mapRun Control dirRunControl
      ++ mapRun Shift dirRunShift
 

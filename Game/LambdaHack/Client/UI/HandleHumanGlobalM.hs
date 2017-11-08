@@ -41,9 +41,9 @@ import           Game.LambdaHack.Client.Bfs
 import           Game.LambdaHack.Client.BfsM
 import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
+import           Game.LambdaHack.Client.Request
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
-import           Game.LambdaHack.Client.UI.Config
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.Frontend (frontendName)
 import           Game.LambdaHack.Client.UI.HandleHelperM
@@ -62,6 +62,7 @@ import           Game.LambdaHack.Client.UI.RunM
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
+import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
@@ -81,7 +82,6 @@ import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
-import           Game.LambdaHack.Client.Request
 
 -- * ByArea
 
@@ -444,7 +444,7 @@ runOnceAheadHuman = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
-  Config{configRunStopMsgs} <- getsSession sconfig
+  UIOptions{uRunStopMsgs} <- getsSession sUIOptions
   keyPressed <- anyKeyPressed
   srunning <- getsSession srunning
   -- When running, stop if disturbed. If not running, stop at once.
@@ -455,13 +455,13 @@ runOnceAheadHuman = do
     Just RunParams{runMembers}
       | noRunWithMulti fact && runMembers /= [leader] -> do
       stopPlayBack
-      if configRunStopMsgs
+      if uRunStopMsgs
       then weaveJust <$> failWith "run stop: automatic leader change"
       else return $ Left Nothing
     Just _runParams | keyPressed -> do
       discardPressedKey
       stopPlayBack
-      if configRunStopMsgs
+      if uRunStopMsgs
       then weaveJust <$> failWith "run stop: key pressed"
       else weaveJust <$> failWith "interrupted"
     Just runParams -> do
@@ -470,7 +470,7 @@ runOnceAheadHuman = do
       case runOutcome of
         Left stopMsg -> do
           stopPlayBack
-          if configRunStopMsgs
+          if uRunStopMsgs
           then weaveJust <$> failWith ("run stop:" <+> stopMsg)
           else return $ Left Nothing
         Right runCmd ->
@@ -810,13 +810,13 @@ applyItem ts (fromCStore, (iid, itemFull)) = do
 alterDirHuman :: MonadClientUI m
               => [Trigger] -> m (FailOrCmd (RequestTimed 'AbAlter))
 alterDirHuman ts = do
-  Config{configVi, configLaptop} <- getsSession sconfig
+  UIOptions{uVi, uLaptop} <- getsSession sUIOptions
   let verb1 = case ts of
         [] -> "alter"
         tr : _ -> verb tr
       keys = K.escKM
              : K.leftButtonReleaseKM
-             : map (K.KM K.NoModifier) (K.dirAllKey configVi configLaptop)
+             : map (K.KM K.NoModifier) (K.dirAllKey uVi uLaptop)
       prompt = makePhrase
         ["Where to", verb1 <> "? [movement key] [pointer]"]
   promptAdd prompt
@@ -832,7 +832,7 @@ alterDirHuman ts = do
       then alterTile ts dir
       else failWith "never mind"
     _ ->
-      case K.handleDir configVi configLaptop km of
+      case K.handleDir uVi uLaptop km of
         Nothing -> failWith "never mind"
         Just dir -> alterTile ts dir
 

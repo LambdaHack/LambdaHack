@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
--- | Personal game configuration file type definitions.
-module Game.LambdaHack.Client.UI.Config
-  ( Config(..), mkConfig, applyConfigToDebug
+-- | UI client options.
+module Game.LambdaHack.Client.UI.UIOptions
+  ( UIOptions(..), mkUIOptions, applyUIOptions
   ) where
 
 import Prelude ()
@@ -26,37 +26,36 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Content.RuleKind
 
--- | Fully typed contents of the UI config file. This config
--- is a part of a game client.
-data Config = Config
+-- | Fully typed contents of the UI config file.
+data UIOptions = UIOptions
   { -- commands
-    configCommands      :: [(K.KM, CmdTriple)]
+    uCommands      :: [(K.KM, CmdTriple)]
     -- hero names
-  , configHeroNames     :: [(Int, (Text, Text))]
+  , uHeroNames     :: [(Int, (Text, Text))]
     -- ui
-  , configVi            :: Bool  -- ^ the option for Vi keys takes precendence
-  , configLaptop        :: Bool  -- ^ because the laptop keys are the default
-  , configGtkFontFamily :: Text
-  , configSdlFontFile   :: Text
-  , configSdlTtfSizeAdd :: Int
-  , configSdlFonSizeAdd :: Int
-  , configFontSize      :: Int
-  , configColorIsBold   :: Bool
-  , configHistoryMax    :: Int
-  , configMaxFps        :: Int
-  , configNoAnim        :: Bool
-  , configRunStopMsgs   :: Bool
-  , configCmdline       :: [String]
+  , uVi            :: Bool  -- ^ the option for Vi keys takes precendence
+  , uLaptop        :: Bool  -- ^ because the laptop keys are the default
+  , uGtkFontFamily :: Text
+  , uSdlFontFile   :: Text
+  , uSdlTtfSizeAdd :: Int
+  , uSdlFonSizeAdd :: Int
+  , uFontSize      :: Int
+  , uColorIsBold   :: Bool
+  , uHistoryMax    :: Int
+  , uMaxFps        :: Int
+  , uNoAnim        :: Bool
+  , uRunStopMsgs   :: Bool
+  , uCmdline       :: [String]
   }
   deriving (Show, Generic)
 
-instance NFData Config
+instance NFData UIOptions
 
-instance Binary Config
+instance Binary UIOptions
 
-parseConfig :: Ini.Config -> Config
+parseConfig :: Ini.Config -> UIOptions
 parseConfig cfg =
-  let configCommands =
+  let uCommands =
         let mkCommand (ident, keydef) =
               case stripPrefix "Cmd_" ident of
                 Just _ ->
@@ -65,7 +64,7 @@ parseConfig cfg =
                 Nothing -> error $ "wrong macro id" `showFailure` ident
             section = Ini.allItems "extra_commands" cfg
         in map mkCommand section
-      configHeroNames =
+      uHeroNames =
         let toNumber (ident, nameAndPronoun) =
               case stripPrefix "HeroName_" ident of
                 Just n -> (read n, read nameAndPronoun)
@@ -80,26 +79,26 @@ parseConfig cfg =
                       `showFailure` (err, optionName, cfg)
             s = fromMaybe (lookupFail "") $ Ini.getOption "ui" optionName cfg
         in either lookupFail id $ readEither s
-      configVi = getOption "movementViKeys_hjklyubn"
+      uVi = getOption "movementViKeys_hjklyubn"
       -- The option for Vi keys takes precendence,
       -- because the laptop keys are the default.
-      configLaptop = not configVi && getOption "movementLaptopKeys_uk8o79jl"
-      configGtkFontFamily = getOption "gtkFontFamily"
-      configSdlFontFile = getOption "sdlFontFile"
-      configSdlTtfSizeAdd = getOption "sdlTtfSizeAdd"
-      configSdlFonSizeAdd = getOption "sdlFonSizeAdd"
-      configFontSize = getOption "fontSize"
-      configColorIsBold = getOption "colorIsBold"
-      configHistoryMax = getOption "historyMax"
-      configMaxFps = max 1 $ getOption "maxFps"
-      configNoAnim = getOption "noAnim"
-      configRunStopMsgs = getOption "runStopMsgs"
-      configCmdline = words $ getOption "overrideCmdline"
-  in Config{..}
+      uLaptop = not uVi && getOption "movementLaptopKeys_uk8o79jl"
+      uGtkFontFamily = getOption "gtkFontFamily"
+      uSdlFontFile = getOption "sdlFontFile"
+      uSdlTtfSizeAdd = getOption "sdlTtfSizeAdd"
+      uSdlFonSizeAdd = getOption "sdlFonSizeAdd"
+      uFontSize = getOption "fontSize"
+      uColorIsBold = getOption "colorIsBold"
+      uHistoryMax = getOption "historyMax"
+      uMaxFps = max 1 $ getOption "maxFps"
+      uNoAnim = getOption "noAnim"
+      uRunStopMsgs = getOption "runStopMsgs"
+      uCmdline = words $ getOption "overrideCmdline"
+  in UIOptions{..}
 
 -- | Read and parse UI config file.
-mkConfig :: Kind.COps -> Bool -> IO Config
-mkConfig Kind.COps{corule} benchmark = do
+mkUIOptions :: Kind.COps -> Bool -> IO UIOptions
+mkUIOptions Kind.COps{corule} benchmark = do
   let stdRuleset = Kind.stdRuleset corule
       cfgUIName = rcfgUIName stdRuleset
       sUIDefault = rcfgUIDefault stdRuleset
@@ -119,27 +118,27 @@ mkConfig Kind.COps{corule} benchmark = do
   -- Catch syntax errors in complex expressions ASAP,
   return $! deepseq conf conf
 
-applyConfigToDebug :: Kind.COps -> Config -> ClientOptions -> ClientOptions
-applyConfigToDebug Kind.COps{corule} sconfig soptions =
+applyUIOptions :: Kind.COps -> UIOptions -> ClientOptions -> ClientOptions
+applyUIOptions Kind.COps{corule} uioptions soptions =
   let stdRuleset = Kind.stdRuleset corule
-  in (\dbg -> dbg {sgtkFontFamily =
-        sgtkFontFamily dbg `mplus` Just (configGtkFontFamily sconfig)}) .
-     (\dbg -> dbg {sdlFontFile =
-        sdlFontFile dbg `mplus` Just (configSdlFontFile sconfig)}) .
-     (\dbg -> dbg {sdlTtfSizeAdd =
-        sdlTtfSizeAdd dbg `mplus` Just (configSdlTtfSizeAdd sconfig)}) .
-     (\dbg -> dbg {sdlFonSizeAdd =
-        sdlFonSizeAdd dbg `mplus` Just (configSdlFonSizeAdd sconfig)}) .
-     (\dbg -> dbg {sfontSize =
-        sfontSize dbg `mplus` Just (configFontSize sconfig)}) .
-     (\dbg -> dbg {scolorIsBold =
-        scolorIsBold dbg `mplus` Just (configColorIsBold sconfig)}) .
-     (\dbg -> dbg {smaxFps =
-        smaxFps dbg `mplus` Just (configMaxFps sconfig)}) .
-     (\dbg -> dbg {snoAnim =
-        snoAnim dbg `mplus` Just (configNoAnim sconfig)}) .
-     (\dbg -> dbg {stitle =
-        stitle dbg `mplus` Just (rtitle stdRuleset)}) .
-     (\dbg -> dbg {sfontDir =
-        sfontDir dbg `mplus` Just (rfontDir stdRuleset)})
+  in (\opts -> opts {sgtkFontFamily =
+        sgtkFontFamily opts `mplus` Just (uGtkFontFamily uioptions)}) .
+     (\opts -> opts {sdlFontFile =
+        sdlFontFile opts `mplus` Just (uSdlFontFile uioptions)}) .
+     (\opts -> opts {sdlTtfSizeAdd =
+        sdlTtfSizeAdd opts `mplus` Just (uSdlTtfSizeAdd uioptions)}) .
+     (\opts -> opts {sdlFonSizeAdd =
+        sdlFonSizeAdd opts `mplus` Just (uSdlFonSizeAdd uioptions)}) .
+     (\opts -> opts {sfontSize =
+        sfontSize opts `mplus` Just (uFontSize uioptions)}) .
+     (\opts -> opts {scolorIsBold =
+        scolorIsBold opts `mplus` Just (uColorIsBold uioptions)}) .
+     (\opts -> opts {smaxFps =
+        smaxFps opts `mplus` Just (uMaxFps uioptions)}) .
+     (\opts -> opts {snoAnim =
+        snoAnim opts `mplus` Just (uNoAnim uioptions)}) .
+     (\opts -> opts {stitle =
+        stitle opts `mplus` Just (rtitle stdRuleset)}) .
+     (\opts -> opts {sfontDir =
+        sfontDir opts `mplus` Just (rfontDir stdRuleset)})
      $ soptions

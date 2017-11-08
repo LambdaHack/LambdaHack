@@ -14,7 +14,7 @@ module Game.LambdaHack.Client
   , RequestTimed(..), RequestAnyAbility(..)
     -- * Re-exported from "Game.LambdaHack.Client.UI"
   , KeyKind, SessionUI, emptySessionUI
-  , Config, applyConfigToDebug, configCmdline, mkConfig
+  , UIOptions, applyUIOptions, uCmdline, mkUIOptions
   ) where
 
 import Prelude ()

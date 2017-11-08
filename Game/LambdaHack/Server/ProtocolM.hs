@@ -191,13 +191,13 @@ childrenServer = unsafePerformIO (newMVar [])
 -- Connect to clients in old or newly spawned threads
 -- that read and write directly to the channels.
 updateConn :: (MonadServerAtomic m, MonadServerReadRequest m)
-           => Config
+           => UIOptions
            -> (Maybe SessionUI -> FactionId -> ChanServer -> IO ())
            -> m ()
-updateConn sconfig executorClient = do
+updateConn sUIOptions executorClient = do
   -- Prepare connections based on factions.
   oldD <- getDict
-  let sess = emptySessionUI sconfig
+  let sess = emptySessionUI sUIOptions
       mkChanServer :: Faction -> IO ChanServer
       mkChanServer fact = do
         responseS <- newQueue

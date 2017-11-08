@@ -7,11 +7,11 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
+import Game.LambdaHack.Client.UI.UIOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
@@ -29,10 +29,10 @@ promptAdd msg = modifySession $ \sess ->
 promptMainKeys :: MonadClientUI m => m ()
 promptMainKeys = do
   saimMode <- getsSession saimMode
-  Config{configVi, configLaptop} <- getsSession sconfig
+  UIOptions{uVi, uLaptop} <- getsSession sUIOptions
   xhair <- getsSession sxhair
-  let moveKeys | configVi = "keypad or hjklyubn"
-               | configLaptop = "keypad or uk8o79jl"
+  let moveKeys | uVi = "keypad or hjklyubn"
+               | uLaptop = "keypad or uk8o79jl"
                | otherwise = "keypad"
       keys | isNothing saimMode =
         "Explore with" <+> moveKeys <+> "keys or mouse."

@@ -12,13 +12,13 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 
-import           Game.LambdaHack.Client.UI.Config
 import           Game.LambdaHack.Client.UI.Content.KeyKind
 import           Game.LambdaHack.Client.UI.HumanCmd
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.Slideshow
+import           Game.LambdaHack.Client.UI.UIOptions
 import qualified Game.LambdaHack.Common.Color as Color
 
 -- | Bindings and other information about human player commands.
@@ -31,34 +31,34 @@ data Binding = Binding
 
 -- | Binding of keys to movement and other standard commands,
 -- as well as commands defined in the config file.
-stdBinding :: KeyKind  -- ^ default key bindings from the content
-           -> Config   -- ^ game config
-           -> Binding  -- ^ concrete binding
-stdBinding (KeyKind copsClient) Config{configCommands, configVi, configLaptop} =
+stdBinding :: KeyKind    -- ^ default key bindings from the content
+           -> UIOptions  -- ^ UI client options
+           -> Binding    -- ^ concrete binding
+stdBinding (KeyKind copsClient) UIOptions{uCommands, uVi, uLaptop} =
   let waitTriple = ([CmdMove], "", Wait)
       wait10Triple = ([CmdMove], "", Wait10)
       moveXhairOr n cmd v = ByAimMode { exploration = cmd v
                                       , aiming = MoveXhair v n }
       bcmdList =
-        (if configVi
+        (if uVi
          then filter (\(k, _) ->
            k `notElem` [K.mkKM "period", K.mkKM "C-period"])
          else id) copsClient
-        ++ configCommands
+        ++ uCommands
         ++ [ (K.mkKM "KP_Begin", waitTriple)
            , (K.mkKM "C-KP_Begin", wait10Triple)
            , (K.mkKM "KP_5", waitTriple)
            , (K.mkKM "C-KP_5", wait10Triple) ]
-        ++ (if | configVi ->
+        ++ (if | uVi ->
                  [ (K.mkKM "period", waitTriple)
                  , (K.mkKM "C-period", wait10Triple) ]
-               | configLaptop ->
+               | uLaptop ->
                  [ (K.mkKM "i", waitTriple)
                  , (K.mkKM "C-i", wait10Triple)
                  , (K.mkKM "I", waitTriple) ]
                | otherwise ->
                  [])
-        ++ K.moveBinding configVi configLaptop
+        ++ K.moveBinding uVi uLaptop
              (\v -> ([CmdMove], "", moveXhairOr 1 MoveDir v))
              (\v -> ([CmdMove], "", moveXhairOr 10 RunDir v))
       rejectRepetitions t1 t2 = error $ "duplicate key"

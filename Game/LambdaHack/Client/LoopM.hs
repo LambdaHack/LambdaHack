@@ -12,12 +12,12 @@ import Game.LambdaHack.Common.Prelude
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.HandleResponseM
 import Game.LambdaHack.Client.MonadClient
+import Game.LambdaHack.Client.Response
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Client.Response
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
 
@@ -27,15 +27,16 @@ initAI soptions = do
   side <- getsClient sside
   debugPossiblyPrint $ "AI client" <+> tshow side <+> "initializing."
 
-initUI :: MonadClientUI m => KeyKind -> Config -> ClientOptions -> m ()
-initUI copsClient sconfig soptions = do
+initUI :: MonadClientUI m => KeyKind -> UIOptions -> ClientOptions -> m ()
+initUI copsClient sUIOptions soptions = do
   modifyClient $ \cli -> cli {soptions}
   side <- getsClient sside
   debugPossiblyPrint $ "UI client" <+> tshow side <+> "initializing."
   -- Start the frontend.
   schanF <- chanFrontend soptions
-  let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
-      sess = emptySessionUI sconfig
+  let !sbinding = stdBinding copsClient sUIOptions
+        -- evaluate to check for errors
+      sess = emptySessionUI sUIOptions
   putSession sess { schanF
                   , sbinding
                   , sxhair = TVector $ Vector 1 1 }
@@ -47,10 +48,10 @@ loopCli :: ( MonadClientSetup m
            , MonadClientAtomic m
            , MonadClientReadResponse m
            , MonadClientWriteRequest m )
-        => KeyKind -> Config -> ClientOptions -> m ()
-loopCli copsClient sconfig soptions = do
+        => KeyKind -> UIOptions -> ClientOptions -> m ()
+loopCli copsClient sUIOptions soptions = do
   hasUI <- clientHasUI
-  if not hasUI then initAI soptions else initUI copsClient sconfig soptions
+  if not hasUI then initAI soptions else initUI copsClient sUIOptions soptions
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   cops <- getsState scops
@@ -61,7 +62,7 @@ loopCli copsClient sconfig soptions = do
       schanF <- getsSession schanF
       sbinding <- getsSession sbinding
       maybe (return ()) (\sess ->
-        putSession sess {schanF, sbinding, sconfig}) msess
+        putSession sess {schanF, sbinding, sUIOptions}) msess
       putClient cli {soptions}
       return True
     Just (_, msessR) -> do

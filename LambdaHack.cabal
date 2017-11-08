@@ -147,7 +147,6 @@ library
                       Game.LambdaHack.Client.UI
                       Game.LambdaHack.Client.UI.ActorUI
                       Game.LambdaHack.Client.UI.Animation
-                      Game.LambdaHack.Client.UI.Config
                       Game.LambdaHack.Client.UI.Content.KeyKind
                       Game.LambdaHack.Client.UI.DrawM
                       Game.LambdaHack.Client.UI.DisplayAtomicM
@@ -176,6 +175,7 @@ library
                       Game.LambdaHack.Client.UI.SessionUI
                       Game.LambdaHack.Client.UI.Slideshow
                       Game.LambdaHack.Client.UI.SlideshowM
+                      Game.LambdaHack.Client.UI.UIOptions
                       Game.LambdaHack.Common.Ability
                       Game.LambdaHack.Common.Actor
                       Game.LambdaHack.Common.ActorState

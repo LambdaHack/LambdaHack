@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI
   , displayRespUpdAtomicUI, displayRespSfxAtomicUI
     -- * Startup
   , KeyKind, SessionUI(..), emptySessionUI
-  , Config, applyConfigToDebug, configCmdline, mkConfig
+  , UIOptions, applyUIOptions, uCmdline, mkUIOptions
   , ChanFrontend, chanFrontend, frontendShutdown
     -- * Operations exposed for LoopClient
   , ColorMode(..)
@@ -31,8 +31,8 @@ import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 
 import           Game.LambdaHack.Client.MonadClient
+import           Game.LambdaHack.Client.Request
 import           Game.LambdaHack.Client.State
-import           Game.LambdaHack.Client.UI.Config
 import           Game.LambdaHack.Client.UI.Content.KeyKind
 import           Game.LambdaHack.Client.UI.DisplayAtomicM
 import           Game.LambdaHack.Client.UI.FrameM
@@ -48,12 +48,12 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
+import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.MonadStateRead
-import           Game.LambdaHack.Client.Request
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Content.ModeKind
 

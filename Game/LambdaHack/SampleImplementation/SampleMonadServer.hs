@@ -138,17 +138,18 @@ executorSer :: Kind.COps -> KeyKind -> ServerOptions -> IO ()
 executorSer cops copsClient soptionsNxtCmdline = do
   -- Parse UI client configuration file.
   -- It is reparsed at each start of the game executable.
-  sconfig <- mkConfig cops (sbenchmark $ sclientOptions soptionsNxtCmdline)
-  soptionsNxt <- case configCmdline sconfig of
+  sUIOptions <-
+    mkUIOptions cops (sbenchmark $ sclientOptions soptionsNxtCmdline)
+  soptionsNxt <- case uCmdline sUIOptions of
     []   -> return soptionsNxtCmdline
     args -> handleParseResult $ execParserPure defaultPrefs serverOptionsPI args
   -- Options for the clients modified with the configuration file.
   -- The client debug inside server debug only holds the client commandline
   -- options and is never updated with config options, etc.
-  let clientOptions = applyConfigToDebug cops sconfig
+  let clientOptions = applyUIOptions cops sUIOptions
                       $ sclientOptions soptionsNxt
       -- Partially applied main loop of the clients.
-      executorClient = executorCli copsClient sconfig clientOptions cops
+      executorClient = executorCli copsClient sUIOptions clientOptions cops
   -- Wire together game content, the main loop of game clients
   -- and the game server loop.
   let stateToFileName (_, ser) =
@@ -159,7 +160,7 @@ executorSer cops copsClient soptionsNxtCmdline = do
         , serDict = EM.empty
         , serToSave
         }
-      m = loopSer soptionsNxt sconfig executorClient
+      m = loopSer soptionsNxt sUIOptions executorClient
       exe = evalStateT (runSerImplementation m) . totalState
       exeWithSaves = Save.wrapInSaves cops stateToFileName exe
       defPrefix = ssavePrefixSer defServerOptions

@@ -21,7 +21,6 @@ import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Animation
-import           Game.LambdaHack.Client.UI.Config
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.ItemDescription
@@ -34,6 +33,7 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
+import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
@@ -294,8 +294,8 @@ displayRespUpdAtomicUI verbose oldState cmd = case cmd of
       let title = rtitle $ Kind.stdRuleset corule
       msgAdd $ "Welcome to" <+> title <> "!"
       -- Generate initial history. Only for UI clients.
-      sconfig <- getsSession sconfig
-      shistory <- defaultHistory $ configHistoryMax sconfig
+      sUIOptions <- getsSession sUIOptions
+      shistory <- defaultHistory $ uHistoryMax sUIOptions
       modifySession $ \sess -> sess {shistory}
     mode <- getGameMode
     curChal <- getsClient scurChal
@@ -483,7 +483,7 @@ createActorUI born aid body = do
     Just bUI -> return bUI
     Nothing -> do
       trunk <- getsState $ getItemBody $ btrunk body
-      Config{configHeroNames} <- getsSession sconfig
+      UIOptions{uHeroNames} <- getsSession sUIOptions
       let isBlast = actorTrunkIsBlast trunk
           baseColor = flavourToColor $ jflavour trunk
           basePronoun | not (bproj body) && fhasGender (gplayer fact) = "he"
@@ -495,7 +495,7 @@ createActorUI born aid body = do
             if gcolor fact /= Color.BrWhite
             then (nameFromNumber (fname $ gplayer fact) k, "he")
             else fromMaybe (nameFromNumber (fname $ gplayer fact) k, "he")
-                 $ lookup k configHeroNames
+                 $ lookup k uHeroNames
       (n, bsymbol) <-
         if | bproj body -> return (0, if isBlast then jsymbol trunk else '*')
            | baseColor /= Color.BrWhite -> return (0, jsymbol trunk)
