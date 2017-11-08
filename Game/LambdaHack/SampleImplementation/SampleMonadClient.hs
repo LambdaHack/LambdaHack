@@ -30,9 +30,9 @@ import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import           Game.LambdaHack.Common.MonadStateRead
-import           Game.LambdaHack.Common.Response
 import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Server (ChanServer (..))
 
 data CliState = CliState
   { cliState   :: State            -- ^ current global state

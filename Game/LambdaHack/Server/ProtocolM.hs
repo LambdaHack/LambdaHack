@@ -1,7 +1,7 @@
 -- | The server definitions for the server-client communication protocol.
 module Game.LambdaHack.Server.ProtocolM
   ( -- * The communication channels
-    ConnServerDict
+    ConnServerDict, CliSerQueue, ChanServer(..)
     -- * The server-client communication monad
   , MonadServerReadRequest
       ( getsDict  -- exposed only to be implemented, not used
@@ -83,6 +83,15 @@ tryRestore cops@Kind.COps{corule} soptions = do
     dataDir <- liftIO appDataDir
     liftIO $ tryWriteFile (dataDir </> cfgUIName) content
     return $! res
+
+type CliSerQueue = MVar
+
+-- | Connection channel between the server and a single client.
+data ChanServer = ChanServer
+  { responseS  :: CliSerQueue Response
+  , requestAIS :: CliSerQueue RequestAI
+  , requestUIS :: Maybe (CliSerQueue RequestUI)
+  }
 
 -- | Connection information for all factions, indexed by faction identifier.
 type ConnServerDict = EM.EnumMap FactionId ChanServer

@@ -1,5 +1,5 @@
-{-# LANGUAGE DataKinds, DeriveGeneric, GADTs, KindSignatures, StandaloneDeriving
-             #-}
+{-# LANGUAGE DataKinds, DeriveGeneric, GADTs, KindSignatures,
+             StandaloneDeriving #-}
 -- | Abstract syntax of server commands.
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
@@ -17,17 +17,17 @@ import Game.LambdaHack.Common.Prelude
 import Data.Binary
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Ability
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Common.Ability
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.ItemStrongest
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.ModeKind
 
 -- | Client-server requests sent by AI clients.
 data ReqAI =

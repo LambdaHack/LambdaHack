@@ -6,7 +6,7 @@ module Game.LambdaHack.Server.MonadServer
   ( -- * The server monad
     MonadServer( getsServer
                , modifyServer
-               , saveChanServer  -- exposed only to be implemented, not used
+               , chanSaveServer  -- exposed only to be implemented, not used
                , liftIO  -- exposed only to be implemented, not used
                )
   , MonadServerAtomic(..)
@@ -56,7 +56,7 @@ import           Game.LambdaHack.Server.State
 class MonadStateRead m => MonadServer m where
   getsServer     :: (StateServer -> a) -> m a
   modifyServer   :: (StateServer -> StateServer) -> m ()
-  saveChanServer :: m (Save.ChanSave (State, StateServer))
+  chanSaveServer :: m (Save.ChanSave (State, StateServer))
   -- We do not provide a MonadIO instance, so that outside
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO         :: IO a -> m a
@@ -111,7 +111,7 @@ saveServer :: MonadServer m => m ()
 saveServer = do
   s <- getState
   ser <- getServer
-  toSave <- saveChanServer
+  toSave <- chanSaveServer
   liftIO $ Save.saveToChan toSave (s, ser)
 
 -- | Dumps RNG states from the start of the game to stdout.

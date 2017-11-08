@@ -76,7 +76,7 @@ instance MonadServer SerImplementation where
   modifyServer f = SerImplementation $ state $ \serS ->
     let !newSerServer = f $ serServer serS
     in ((), serS {serServer = newSerServer})
-  saveChanServer = SerImplementation $ gets serToSave
+  chanSaveServer = SerImplementation $ gets serToSave
   liftIO         = SerImplementation . IO.liftIO
 
 instance MonadServerReadRequest SerImplementation where

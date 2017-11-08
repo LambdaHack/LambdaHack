@@ -2,7 +2,7 @@
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Common.Response
-  ( Response(..), CliSerQueue, ChanServer(..)
+  ( Response(..)
   ) where
 
 import Prelude ()
@@ -24,12 +24,3 @@ data Response =
   | RespSfxAtomic SfxAtomic
   | RespQueryUI
   deriving Show
-
-type CliSerQueue = MVar
-
--- | Connection channel between the server and a single client.
-data ChanServer = ChanServer
-  { responseS  :: CliSerQueue Response
-  , requestAIS :: CliSerQueue RequestAI
-  , requestUIS :: Maybe (CliSerQueue RequestUI)
-  }
