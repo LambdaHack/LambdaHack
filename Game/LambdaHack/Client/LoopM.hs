@@ -44,8 +44,7 @@ initUI copsClient sconfig soptions = do
 -- | The main game loop for an AI or UI client.
 loopCli :: ( MonadClientSetup m
            , MonadClientUI m
---           , MonadClientAtomic m
-           , MonadStateWrite m
+           , MonadClientAtomic m
            , MonadClientReadResponse m
            , MonadClientWriteRequest m )
         => KeyKind -> Config -> ClientOptions -> m ()

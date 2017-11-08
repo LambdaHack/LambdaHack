@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, FlexibleContexts #-}
+{-# LANGUAGE DeriveGeneric #-}
 -- | Personal game configuration file type definitions.
 module Game.LambdaHack.Client.UI.Config
   ( Config(..), mkConfig, applyConfigToDebug
@@ -8,23 +8,23 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.DeepSeq
-import Data.Binary
+import           Control.DeepSeq
+import           Data.Binary
 import qualified Data.Ini as Ini
 import qualified Data.Ini.Reader as Ini
 import qualified Data.Ini.Types as Ini
 import qualified Data.Map.Strict as M
-import Game.LambdaHack.Common.ClientOptions
-import GHC.Generics (Generic)
-import System.FilePath
-import Text.Read
+import           Game.LambdaHack.Common.ClientOptions
+import           GHC.Generics (Generic)
+import           System.FilePath
+import           Text.Read
 
-import Game.LambdaHack.Client.UI.HumanCmd
+import           Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
-import Game.LambdaHack.Common.File
+import           Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Content.RuleKind
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Content.RuleKind
 
 -- | Fully typed contents of the UI config file. This config
 -- is a part of a game client.

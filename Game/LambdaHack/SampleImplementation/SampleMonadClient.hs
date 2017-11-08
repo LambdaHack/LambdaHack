@@ -20,7 +20,7 @@ import qualified Control.Monad.IO.Class as IO
 import           Control.Monad.Trans.State.Strict hiding (State)
 import           GHC.Generics (Generic)
 
-import           Game.LambdaHack.Atomic
+import           Game.LambdaHack.Atomic (MonadStateWrite (..), putState)
 import           Game.LambdaHack.Client
 import           Game.LambdaHack.Client.HandleResponseM
 import           Game.LambdaHack.Client.MonadClient
@@ -116,10 +116,12 @@ instance MonadClientWriteRequest CliImplementation where
     mSession <- gets cliSession
     return $! isJust mSession
 
---instance MonadClientAtomic CliImplementation where
+instance MonadClientAtomic CliImplementation where
 --  {-# INLINE execUpdAtomic #-}
 --  execUpdAtomic = handleUpdAtomic
     -- Don't catch anything; assume exceptions impossible.
+  {-# INLINE exexPutState #-}
+  exexPutState = putState
 
 -- | Init the client, then run an action, with a given session,
 -- state and history, in the @IO@ monad.

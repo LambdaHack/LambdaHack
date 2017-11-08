@@ -19,14 +19,14 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.Text.IO as T
-import System.IO (hFlush, stdout)
+import           System.IO (hFlush, stdout)
 import qualified System.Random as R
 
-import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.State
 
 class MonadStateRead m => MonadClient m where
   getsClient    :: (StateClient -> a) -> m a
@@ -42,7 +42,8 @@ class MonadClient m => MonadClientSetup m where
 -- | The monad for executing atomic game state transformations.
 class MonadClient m => MonadClientAtomic m where
   -- | Execute an atomic command that changes the state.
-  execUpdAtomic :: UpdAtomic -> m ()
+--  execUpdAtomic :: UpdAtomic -> m ()
+  exexPutState :: State -> m ()
 
 getClient :: MonadClient m => m StateClient
 getClient = getsClient id

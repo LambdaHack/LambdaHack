@@ -9,8 +9,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Game.LambdaHack.Atomic
-import Game.LambdaHack.Atomic.MonadStateWrite
 import Game.LambdaHack.Client.AI
 import Game.LambdaHack.Client.HandleAtomicM
 import Game.LambdaHack.Client.MonadClient
@@ -30,18 +28,17 @@ class MonadClient m => MonadClientWriteRequest m where
 -- Note that when clients over net are implemented, execUpdAtomic will be
 -- brought back, because executing a single cmd is cheaper than sending
 -- the whole state over the net. However, for the standalone exe mode,
--- a pointer to the state will still be passed and set with @putState@,
+-- a pointer to the state will still be passed and set with @exexPutState@,
 -- as below.
 handleResponse :: ( MonadClientSetup m
                   , MonadClientUI m
---                  , MonadClientAtomic m
-                  , MonadStateWrite m
+                  , MonadClientAtomic m
                   , MonadClientWriteRequest m )
                => Response -> m ()
 handleResponse cmd = case cmd of
   RespUpdAtomic newState cmdA -> do
     oldState <- getState
-    putState newState
+    exexPutState newState
     cmdAtomicSemCli oldState cmdA
     hasUI <- clientHasUI
     when hasUI $ displayRespUpdAtomicUI False oldState cmdA
