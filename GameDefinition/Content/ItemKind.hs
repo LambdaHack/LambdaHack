@@ -1,4 +1,4 @@
--- | Item and treasure definitions.
+-- | Item definitions.
 module Content.ItemKind
   ( cdefs, items, otherItemContent
   ) where

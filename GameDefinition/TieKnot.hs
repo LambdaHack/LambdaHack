@@ -33,7 +33,7 @@ import qualified Content.TileKind
 -- the types are different and so the whole pattern of computation
 -- is different. Which of the frontends is run inside the UI client
 -- depends on the flags supplied when compiling the engine library,
--- just as the choice of native vs JS build.
+-- just as the choice of native vs JS builds.
 tieKnot :: ServerOptions -> IO ()
 tieKnot options@ServerOptions{sallClear, sboostRandomItem, sdungeonRng} = do
   -- This setup ensures the boosting option doesn't affect generating initial

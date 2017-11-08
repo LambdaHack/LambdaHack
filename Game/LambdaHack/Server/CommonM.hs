@@ -4,7 +4,7 @@ module Game.LambdaHack.Server.CommonM
   ( execFailure, revealItems, moveStores, deduceQuits, deduceKilled
   , electLeader, supplantLeader, updatePer, recomputeCachePer
   , addActor, registerActor, addActorIid, projectFail, discoverIfNoEffects
-  , pickWeaponServer, currentSkillsServer
+  , pickWeaponServer, currentSkillsServer, generalMoveItem
   ) where
 
 import Prelude ()
@@ -96,6 +96,30 @@ moveStores verbose aid fromStore toStore = do
                                               (CActor aid toStore)
         mapM_ execUpdAtomic move
   mapActorCStore_ fromStore g b
+
+-- | Generate the atomic updates that jointly perform a given item move.
+generalMoveItem :: MonadStateRead m
+                => Bool -> ItemId -> Int -> Container -> Container
+                -> m [UpdAtomic]
+generalMoveItem verbose iid k c1 c2 =
+  case (c1, c2) of
+    (CActor aid1 cstore1, CActor aid2 cstore2) | aid1 == aid2
+                                                 && cstore1 /= CSha
+                                                 && cstore2 /= CSha ->
+      return [UpdMoveItem iid k aid1 cstore1 cstore2]
+    _ -> containerMoveItem verbose iid k c1 c2
+
+containerMoveItem :: MonadStateRead m
+                  => Bool -> ItemId -> Int -> Container -> Container
+                  -> m [UpdAtomic]
+containerMoveItem verbose iid k c1 c2 = do
+  bag <- getsState $ getContainerBag c1
+  case iid `EM.lookup` bag of
+    Nothing -> error $ "" `showFailure` (iid, k, c1, c2)
+    Just (_, it) -> do
+      item <- getsState $ getItemBody iid
+      return [ UpdLoseItem verbose iid item (k, take k it) c1
+             , UpdSpotItem verbose iid item (k, take k it) c2 ]
 
 quitF :: MonadServerAtomic m =>  Status -> FactionId -> m ()
 quitF status fid = do

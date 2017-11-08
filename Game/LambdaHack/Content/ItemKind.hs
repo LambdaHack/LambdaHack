@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
--- | The type of kinds of weapons, treasure, organs, blasts and actors.
+-- | The type of kinds of weapons, treasure, organs, blasts, etc.
 module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..)
   , Effect(..), TimerDice(..)
@@ -14,18 +14,18 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.DeepSeq
-import Data.Binary
-import Data.Hashable (Hashable)
+import           Control.DeepSeq
+import           Data.Binary
+import           Data.Hashable (Hashable)
 import qualified Data.Set as S
 import qualified Data.Text as T
-import GHC.Generics (Generic)
+import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.Flavour
-import Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Flavour
+import           Game.LambdaHack.Common.Misc
 
 -- | Item properties that are fixed for a given kind of items.
 data ItemKind = ItemKind

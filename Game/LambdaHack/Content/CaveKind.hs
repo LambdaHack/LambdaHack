@@ -1,4 +1,4 @@
--- | The type of cave layout kinds.
+-- | The type of cave kinds.
 module Game.LambdaHack.Content.CaveKind
   ( CaveKind(..), validateSingleCaveKind, validateAllCaveKind
   ) where
@@ -10,12 +10,12 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Text as T
 
 import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Content.ItemKind (ItemKind)
-import Game.LambdaHack.Content.PlaceKind
-import Game.LambdaHack.Content.TileKind (TileKind)
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Content.ItemKind (ItemKind)
+import           Game.LambdaHack.Content.PlaceKind
+import           Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | Parameters for the generation of dungeon levels.
 -- Warning: for efficiency, avoid embedded items in any of the common tiles.

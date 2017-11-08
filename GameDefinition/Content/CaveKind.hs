@@ -1,4 +1,4 @@
--- | Cave layouts.
+-- | Cave properties.
 module Content.CaveKind
   ( cdefs
   ) where

@@ -3,27 +3,24 @@
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
-  , breakUpdAtomic, seenAtomicCli, seenAtomicSer, generalMoveItem
+  , breakUpdAtomic, seenAtomicCli, seenAtomicSer
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.State
 
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.
@@ -251,27 +248,3 @@ seenAtomicSer posAtomic =
     PosFid _ -> False
     PosNone -> error $ "no position possible" `showFailure` posAtomic
     _ -> True
-
--- | Generate the atomic updates that jointly perform a given item move.
-generalMoveItem :: MonadStateRead m
-                => Bool -> ItemId -> Int -> Container -> Container
-                -> m [UpdAtomic]
-generalMoveItem verbose iid k c1 c2 =
-  case (c1, c2) of
-    (CActor aid1 cstore1, CActor aid2 cstore2) | aid1 == aid2
-                                                 && cstore1 /= CSha
-                                                 && cstore2 /= CSha ->
-      return [UpdMoveItem iid k aid1 cstore1 cstore2]
-    _ -> containerMoveItem verbose iid k c1 c2
-
-containerMoveItem :: MonadStateRead m
-                  => Bool -> ItemId -> Int -> Container -> Container
-                  -> m [UpdAtomic]
-containerMoveItem verbose iid k c1 c2 = do
-  bag <- getsState $ getContainerBag c1
-  case iid `EM.lookup` bag of
-    Nothing -> error $ "" `showFailure` (iid, k, c1, c2)
-    Just (_, it) -> do
-      item <- getsState $ getItemBody iid
-      return [ UpdLoseItem verbose iid item (k, take k it) c1
-             , UpdSpotItem verbose iid item (k, take k it) c2 ]

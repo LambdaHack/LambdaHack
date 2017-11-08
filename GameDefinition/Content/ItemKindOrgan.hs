@@ -1,4 +1,4 @@
--- | Organ definitions.
+-- | Actor organ definitions.
 module Content.ItemKindOrgan
   ( organs
   ) where

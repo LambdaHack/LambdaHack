@@ -7,7 +7,7 @@ module Game.LambdaHack.Atomic
     CmdAtomic(..), UpdAtomic(..), SfxAtomic(..), SfxMsg(..)
     -- * Re-exported from "Game.LambdaHack.Atomic.PosAtomicRead"
   , PosAtomic(..), posUpdAtomic, posSfxAtomic, breakUpdAtomic
-  , seenAtomicCli, seenAtomicSer, generalMoveItem
+  , seenAtomicCli, seenAtomicSer
     -- * Re-exported from "Game.LambdaHack.Atomic.MonadStateWrite"
   , MonadStateWrite(..), AtomicFail(..)
     -- * Re-exported from "Game.LambdaHack.Atomic.HandleAtomicWrite"
