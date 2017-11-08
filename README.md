@@ -209,6 +209,24 @@ terminate any automated test. This is needed to gather any HPC info,
 because HPC requires a clean exit to save data files.
 
 
+Coding style
+------------
+
+Stylish Haskell is used for slight auto-formatting at buffer save; see
+[.stylish-haskell.yaml](https://github.com/LambdaHack/LambdaHack/blob/master/.stylish-haskell.yaml).
+As defined in the file, indentation is 2 spaces wide and screen is
+80-columns wide. Spaces, not tabs. Spurious whitespace avoided.
+Spaces around arithmetic operators encouraged.
+Generally, relax and try to stick to the style apparent in a file
+you are editing. Put big formatting changes in separate commits.
+
+Haddocks are provided only for functions and types from major modules,
+in particular the modules that are interfaces for a whole directory of modules.
+For minor ones, the comments, if any, should not be haddocks
+and are permitted to describe implementation details and be out of date.
+If not too verbose, use assertions instead of comments.
+
+
 Further information
 -------------------
 
