@@ -8,7 +8,7 @@
 -- For example item removal from inventory is not an atomic command,
 -- but item dropped from the inventory to the ground is. This makes
 -- it easier to undo the commands. In principle, the commands are the only
--- way to affect the basic game state (@State@).
+-- way to affect the basic game state ('State').
 --
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
@@ -25,23 +25,23 @@ import Data.Binary
 import Data.Int (Int64)
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ClientOptions
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Perception
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Request
-import Game.LambdaHack.Common.State
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ItemKind (ItemKind)
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Request
+import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.TileKind (TileKind)
+import           Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | Abstract syntax of atomic commands, that is, atomic game state
 -- transformations.
@@ -53,9 +53,9 @@ data CmdAtomic =
 instance Binary CmdAtomic
 
 -- | Abstract syntax of atomic updates, that is, atomic commands
--- that really change the state. Most of them are an encoding of a game
+-- that really change the 'State'. Most of them are an encoding of a game
 -- state diff, though they also carry some intentional hints
--- that help clients determine whether and how to communicate them to players.
+-- that help clients determine whether and how to communicate it to players.
 data UpdAtomic =
   -- Create/destroy actors and items.
     UpdCreateActor ActorId Actor [(ItemId, Item)]
@@ -118,7 +118,7 @@ data UpdAtomic =
 instance Binary UpdAtomic
 
 -- | Abstract syntax of atomic special effects, that is, atomic commands
--- that only display special effects and don't change the state.
+-- that only display special effects and don't change 'State'.
 data SfxAtomic =
     SfxStrike ActorId ActorId ItemId CStore
   | SfxRecoil ActorId ActorId ItemId CStore
@@ -137,6 +137,8 @@ data SfxAtomic =
 
 instance Binary SfxAtomic
 
+-- | Symbolic representation of text messages sent by server to clients
+-- and shown to players.
 data SfxMsg =
     SfxUnexpected ReqFailure
   | SfxLoudUpd Bool UpdAtomic

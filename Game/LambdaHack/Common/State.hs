@@ -33,9 +33,12 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 
--- | View on game state. "Remembered" fields carry a subset of the info
--- in the client copies of the state. Clients never directly change
--- their @State@, but apply atomic actions sent by the server to do so.
+-- | View on the basic game state.
+-- The @remembered@ fields, in client copies of the state, carry only
+-- a subset of the full information that the server keeps.
+-- Clients never directly change their @State@, but apply
+-- atomic actions sent by the server to do so (and/or the server applies
+-- the actions to each client state in turn).
 data State = State
   { _sdungeon     :: Dungeon      -- ^ remembered dungeon
   , _stotalDepth  :: AbsDepth     -- ^ absolute dungeon depth, for item creation

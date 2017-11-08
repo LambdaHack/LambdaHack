@@ -1,4 +1,4 @@
--- | The monad for writing to the game state and related operations.
+-- | The monad for writing to the main game state.
 module Game.LambdaHack.Atomic.MonadStateWrite
   ( MonadStateWrite(..), AtomicFail(..), atomicFail
   , putState, updateLevel, updateActor, updateFaction
@@ -26,15 +26,19 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 
+-- | The monad for writing to the main game state. Atomic updates ('UpdAtomic')
+-- are given semantics in this monad.
 class MonadStateRead m => MonadStateWrite m where
   modifyState :: (State -> State) -> m ()
 
--- | Exception signifying that atomic action failed either because
--- the information it carries is already recorded in the state or because
--- the state is inconsistent with the factual state held by the server
--- (e.g., because the faction is confused, amnesiac or sees illusory
--- actors). If the failure of the action is impossible, assertion
--- failure or @error@ is raised instead and it is never caught and handled.
+-- | Exception signifying that atomic action failed because
+-- the information it carries is inconsistent with the client's state,
+-- (e.g., because the client knows too little to understand the command
+-- or already deduced the state change from earlier commands
+-- or is confused, amnesiac or sees illusory actors or tiles).
+-- Whenever we know the failure is logically impossible,
+-- we don't throw the @AtomicFail@ exception, but insert a normal assertion
+-- or @error@ call, which are never caught nor handled.
 newtype AtomicFail = AtomicFail String
   deriving Show
 
@@ -46,15 +50,12 @@ atomicFail = Ex.throw . AtomicFail
 putState :: MonadStateWrite m => State -> m ()
 putState s = modifyState (const s)
 
--- | Update the items on the ground map.
 updateFloor :: (ItemFloor -> ItemFloor) -> Level -> Level
 updateFloor f lvl = lvl {lfloor = f (lfloor lvl)}
 
--- | Update the items embedded in a tile on the level.
 updateEmbed :: (ItemFloor -> ItemFloor) -> Level -> Level
 updateEmbed f lvl = lvl {lembed = f (lembed lvl)}
 
--- | Update the actors on the ground map.
 updateActorMap :: (ActorMap -> ActorMap) -> Level -> Level
 updateActorMap f lvl = lvl {lactor = f (lactor lvl)}
 
@@ -80,18 +81,15 @@ moveActorMap aid body newBody = do
                  . EM.alter rmActor (bpos body)
   updateLevel (blid body) $ updateActorMap updActor
 
--- | Update the tile map.
 updateTile :: (TileMap -> TileMap) -> Level -> Level
 updateTile f lvl = lvl {ltile = f (ltile lvl)}
 
--- | Update the smell map.
 updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
 updateSmell f lvl = lvl {lsmell = f (lsmell lvl)}
 
 -- INLIning offers no speedup, increases alloc and binary size.
 -- EM.alter not necessary, because levels not removed, so little risk
 -- of adjusting at absent index.
--- | Update a given level data within state.
 updateLevel :: MonadStateWrite m => LevelId -> (Level -> Level) -> m ()
 updateLevel lid f = modifyState $ updateDungeon $ EM.adjust f lid
 

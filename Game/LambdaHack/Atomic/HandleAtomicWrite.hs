@@ -45,17 +45,20 @@ import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 
 -- | The game-state semantics of atomic game commands.
--- Special effects (@SfxAtomic@) don't modify state.
+-- There is no corresponding definition for special effects (`SfxAtomic`),
+-- because they don't modify 'State'.
 --
--- For each of the commands we know the client that receives them
--- perceives the positions the command affects (as computed by @posUpdAtomic@).
+-- For each of the commands, we are guaranteed that the client,
+-- the command is addressed to, perceives all the positions the command
+-- affects (as computed by 'Game.LambdaHack.Atomic.PosAtomicRead.posUpdAtomic').
 -- In the code for each semantic function we additonally verify
--- the client sees any relevant items and/or actors and we throw
--- exception if it doesn't. We catch some of the exceptions to enable
--- simpler code that addresses commands to all clients even though
--- not all know enough items or actors. Server is able to check
--- if commands is acceptable for a client, because it keeps clients' states,
--- so exception-throwing commands are never sent to client threads.
+-- the client is aware of any relevant items and/or actors and we throw
+-- the @AtomicFail@ exception if it's not.
+-- The server keeps copies of all clients' states and, before sending a command
+-- to a client, applies it to the client's state copy.
+-- If @AtomicFail@ is signalled, the command is ignored for that client.
+-- This enables simpler server code that addresses commands to all clients
+-- that can see it, even though not all are able to process it.
 handleUpdAtomic :: MonadStateWrite m => UpdAtomic -> m ()
 handleUpdAtomic cmd = case cmd of
   UpdCreateActor aid body ais -> updCreateActor aid body ais
@@ -111,7 +114,7 @@ handleUpdAtomic cmd = case cmd of
   UpdKillExit{} -> return ()
   UpdWriteSave -> return ()
 
--- | Creates an actor. Note: after this command, usually a new leader
+-- Note: after this command, usually a new leader
 -- for the party should be elected (in case this actor is the only one alive).
 updCreateActor :: MonadStateWrite m
                => ActorId -> Actor -> [(ItemId, Item)] -> m ()
@@ -138,8 +141,6 @@ updCreateActor aid body ais = do
   aspectRecord <- getsState $ aspectRecordFromActor body
   modifyState $ updateActorAspect $ EM.insert aid aspectRecord
 
--- | Kills an actor.
---
 -- If a leader dies, a new leader should be elected on the server
 -- before this command is executed (not checked).
 updDestroyActor :: MonadStateWrite m
@@ -169,7 +170,7 @@ updDestroyActor aid body ais = do
   updateLevel (blid body) $ updateActorMap (EM.alter g (bpos body))
   modifyState $ updateActorAspect $ EM.delete aid
 
--- | Create a few copies of an item that is already registered for the dungeon
+-- Create a few copies of an item that is already registered for the dungeon
 -- (in @sitemRev@ field of @StateServer@).
 updCreateItem :: MonadStateWrite m
               => ItemId -> Item -> ItemQuant -> Container -> m ()
@@ -181,7 +182,7 @@ updCreateItem iid item kit@(k, _) c = assert (k > 0) $ do
       when (store `elem` [CEqp, COrgan]) $ addItemToActor iid item k aid
     _ -> return ()
 
--- | Destroy some copies (possibly not all) of an item.
+-- Destroy some copies (possibly not all) of an item.
 updDestroyItem :: MonadStateWrite m
                => ItemId -> Item -> ItemQuant -> Container -> m ()
 updDestroyItem iid item kit@(k, _) c = assert (k > 0) $ do
@@ -392,7 +393,7 @@ updTacticFaction fid toT fromT = do
            $ fact {gplayer = player {ftactic = toT}}
   updateFaction fid adj
 
--- | Record a given number (usually just 1, or -1 for undo) of actor kills
+-- Record a given number (usually just 1, or -1 for undo) of actor kills
 -- for score calculation.
 updRecordKill :: MonadStateWrite m => ActorId -> Kind.Id ItemKind -> Int -> m ()
 updRecordKill aid ikind k = do
@@ -409,7 +410,7 @@ updRecordKill aid ikind k = do
     -- as it could be and there is a higher chance of getting back alive
     -- the actor, the human player has grown attached to.
 
--- | Alter an attribute (actually, the only, the defining attribute)
+-- Alter an attribute (actually, the only, the defining attribute)
 -- of a visible tile. This is similar to e.g., @UpdTrajectory@.
 --
 -- Removing and creating embedded items when altering a tile
@@ -519,7 +520,6 @@ updTimeItem iid c fromIt toIt = assert (fromIt /= toIt) $ do
       insertItemContainer iid (k, toIt) c
     Nothing -> error $ "" `showFailure` (bag, iid, c, fromIt, toIt)
 
--- | Age the game.
 updAgeGame :: MonadStateWrite m => [LevelId] -> m ()
 updAgeGame lids = do
   modifyState $ updateTime $ flip timeShift (Delta timeClip)

@@ -1,4 +1,5 @@
--- | Semantics of atomic commands shared by client and server.
+-- | Representation and computation of visiblity of atomic commands
+-- by clients.
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.PosAtomicRead
@@ -33,7 +34,7 @@ data PosAtomic =
   | PosFidAndSight [FactionId] LevelId [Point]
                                 -- ^ observers and the faction notice
   | PosSmell LevelId [Point]    -- ^ whomever smells all the positions, notices
-  | PosFid FactionId            -- ^ only the faction notices
+  | PosFid FactionId            -- ^ only the faction notices, server doesn't
   | PosFidAndSer (Maybe LevelId) FactionId
                                 -- ^ faction and server notices
   | PosSer                      -- ^ only the server notices
@@ -41,22 +42,27 @@ data PosAtomic =
   | PosNone                     -- ^ never broadcasted, but sent manually
   deriving (Show, Eq)
 
--- | Produce the positions where the atomic update takes place.
+-- | Produce the positions where the atomic update takes place or, more
+-- generally, the conditions under which the update can be noticed by
+-- a client.
 --
--- The goal of the mechanics is to ensure the commands don't carry
--- significantly more information than their corresponding state diffs would.
--- In other words, the atomic commands involving the positions seen by a client
--- should convey similar information as the client would get by directly
--- observing the changes the commands enact on the visible portion of server
--- game state. The client is then free to change its copy of game state
--- accordingly or not --- it only partially reflects reality anyway.
+-- The goal of this mechanics is to ensure that atomic commands involving
+-- some positions visible by a client convey similar information as the client
+-- would get by directly observing the changes
+-- of the portion of server state limited to the visible positions.
+-- Consequently, when the visible commands are later applied
+-- to the client's state, the state stays consistent
+-- --- in sync with the server state and correctly limited by visiblity.
+-- There is some wiggle room both in what "in sync" and
+-- "visible" means and how they propagate through time.
 --
--- E.g., @UpdDisplaceActor@ in a black room,
--- with one actor carrying a 0-radius light would not be
+-- E.g., @UpdDisplaceActor@ in a black room between two enemy actors,
+-- with only one actor carrying a 0-radius light would not be
 -- distinguishable by looking at the state (or the screen) from @UpdMoveActor@
 -- of the illuminated actor, hence such @UpdDisplaceActor@ should not be
--- observable, but @UpdMoveActor@ should be (or the former should be perceived
--- as the latter). However, to simplify, we assign as strict visibility
+-- observable, but @UpdMoveActor@ in similar cotext would be
+-- (or the former should be perceived as the latter).
+-- However, to simplify, we assign as strict visibility
 -- requirements to @UpdMoveActor@ as to @UpdDisplaceActor@ and fall back
 -- to @UpdSpotActor@ (which provides minimal information that does not
 -- contradict state) if the visibility is lower.
@@ -194,14 +200,15 @@ singleContainer (CActor aid _) = singleAid aid
 singleContainer (CTrunk fid lid p) =
   return $! PosFidAndSight [fid] lid [p]
 
--- | Decompose an atomic action. The decomposed actions give reduced
--- information that still modifies client's state to match the server state
--- wrt the current FOV and the subset of @posUpdAtomic@ that is visible.
--- The original actions give more information not only due to spanning
--- potentially more positions than those visible. E.g., @UpdMoveActor@
+-- | Decompose an atomic action that is outside a client's visiblity.
+-- The decomposed actions give less information that the original command,
+-- but some of them may fall within the visibility range of the client.
+-- The original action may give more information than even the total sum
+-- of all actions it's broken into. E.g., @UpdMoveActor@
 -- informs about the continued existence of the actor between
--- moves, v.s., popping out of existence and then back in.
--- This is computed in server State before performing the command.
+-- moves vs popping out of existence and then back in.
+--
+-- This is computed in server's @State@ from before performing the command.
 breakUpdAtomic :: MonadStateRead m => UpdAtomic -> m [UpdAtomic]
 breakUpdAtomic cmd = case cmd of
   UpdMoveActor aid fromP toP -> do
@@ -226,7 +233,7 @@ breakUpdAtomic cmd = case cmd of
            ]
   _ -> return []
 
--- | Given the client, it's perception and an atomic command, determine
+-- | Given the client, its perception and an atomic command, determine
 -- if the client notices the command.
 seenAtomicCli :: Bool -> FactionId -> Perception -> PosAtomic -> Bool
 seenAtomicCli knowEvents fid per posAtomic =
@@ -241,7 +248,8 @@ seenAtomicCli knowEvents fid per posAtomic =
     PosAll -> True
     PosNone -> error $ "no position possible" `showFailure` fid
 
--- Not needed ATM, but may be a coincidence.
+-- | Determine whether the server would see a command that has
+-- the given visibilty conditions.
 seenAtomicSer :: PosAtomic -> Bool
 seenAtomicSer posAtomic =
   case posAtomic of
