@@ -25,8 +25,12 @@ import Data.Binary
 import Data.Int (Int64)
 import GHC.Generics (Generic)
 
+-- Dependence on ClientOptions is an anomaly. Instead, probably the raw
+-- remaining commandline should be passed and parsed by the client to extract
+-- client and ui options from and singnal an error if anything was left.
+
+import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Common.Actor
-import           Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item

@@ -22,11 +22,9 @@ import qualified System.Random as R
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.ActorState
-import           Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Flavour
-import qualified Game.LambdaHack.Common.HighScore as HighScore
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import           Game.LambdaHack.Common.Level
@@ -167,10 +165,7 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
   srandom <- getSetGen $ smainRng serverOptions `mplus` mrandom
   let srngs = RNGs (Just dungeonSeed) (Just srandom)
   when (sdumpInitRngs serverOptions) $ dumpRngs srngs
-  scoreTable <- if sfrontendNull $ sclientOptions serverOptions then
-                  return HighScore.empty
-                else
-                  restoreScore cops
+  scoreTable <- restoreScore cops
   factionDold <- getsState sfactionD
   gameModeIdOld <- getsState sgameModeId
   curChalSer <- getsServer $ scurChalSer . soptions

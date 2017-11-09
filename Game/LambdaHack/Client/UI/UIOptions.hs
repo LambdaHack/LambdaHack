@@ -14,7 +14,7 @@ import qualified Data.Ini as Ini
 import qualified Data.Ini.Reader as Ini
 import qualified Data.Ini.Types as Ini
 import qualified Data.Map.Strict as M
-import           Game.LambdaHack.Common.ClientOptions
+import           Game.LambdaHack.Client.ClientOptions
 import           GHC.Generics (Generic)
 import           System.FilePath
 import           Text.Read

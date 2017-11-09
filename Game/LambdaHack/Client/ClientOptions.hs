@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Screen frames and animations.
-module Game.LambdaHack.Common.ClientOptions
+module Game.LambdaHack.Client.ClientOptions
   ( ClientOptions(..), defClientOptions
   ) where
 

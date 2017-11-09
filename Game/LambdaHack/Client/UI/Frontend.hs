@@ -34,7 +34,7 @@ import qualified Game.LambdaHack.Client.UI.Frontend.Chosen as Chosen
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Frontend.Teletype as Teletype
 import qualified Game.LambdaHack.Client.UI.Key as K
-import           Game.LambdaHack.Common.ClientOptions
+import           Game.LambdaHack.Client.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point

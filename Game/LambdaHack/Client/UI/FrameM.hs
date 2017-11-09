@@ -26,7 +26,7 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.ActorState
-import           Game.LambdaHack.Common.ClientOptions
+import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.MonadStateRead

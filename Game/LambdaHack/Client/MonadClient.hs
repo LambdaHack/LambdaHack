@@ -23,7 +23,7 @@ import           System.IO (hFlush, stdout)
 import qualified System.Random as R
 
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Common.ClientOptions
+import Game.LambdaHack.Client.ClientOptions
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State

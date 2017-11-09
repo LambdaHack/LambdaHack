@@ -135,6 +135,7 @@ library
                       Game.LambdaHack.Client.AI.Strategy
                       Game.LambdaHack.Client.Bfs
                       Game.LambdaHack.Client.BfsM
+                      Game.LambdaHack.Client.ClientOptions
                       Game.LambdaHack.Client.CommonM
                       Game.LambdaHack.Client.HandleAtomicM
                       Game.LambdaHack.Client.HandleResponseM
@@ -179,7 +180,6 @@ library
                       Game.LambdaHack.Common.Ability
                       Game.LambdaHack.Common.Actor
                       Game.LambdaHack.Common.ActorState
-                      Game.LambdaHack.Common.ClientOptions
                       Game.LambdaHack.Common.Color
                       Game.LambdaHack.Common.ContentDef
                       Game.LambdaHack.Common.Dice

@@ -29,7 +29,6 @@ import           System.IO (hFlush, stdout)
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Client
-import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.Kind as Kind
 import           Game.LambdaHack.Common.Misc

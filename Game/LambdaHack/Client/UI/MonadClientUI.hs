@@ -46,7 +46,7 @@ import           Game.LambdaHack.Client.UI.Slideshow
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
-import           Game.LambdaHack.Common.ClientOptions
+import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.HighScore as HighScore

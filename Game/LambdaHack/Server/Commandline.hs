@@ -12,7 +12,11 @@ import qualified Data.Text as T
 import           Options.Applicative
 import qualified System.Random as R
 
-import Game.LambdaHack.Common.ClientOptions
+-- Dependence on ClientOptions is an anomaly. Instead, probably the raw
+-- remaining commandline should be passed and parsed by the client to extract
+-- client and ui options from and singnal an error if anything was left.
+
+import Game.LambdaHack.Client.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ModeKind
