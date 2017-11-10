@@ -11,7 +11,7 @@ module Game.LambdaHack.Client
   , Response (..)
     -- * Re-exported from "Game.LambdaHack.Client.Request"
   , RequestAI, ReqAI(..), RequestUI, ReqUI(..)
-  , RequestTimed(..), RequestAnyAbility(..)
+  , RequestAnyAbility(..), RequestTimed(..)
     -- * Re-exported from "Game.LambdaHack.Client.ClientOptions"
   , ClientOptions, defClientOptions, sbenchmark
     -- * Re-exported from "Game.LambdaHack.Client.UI"

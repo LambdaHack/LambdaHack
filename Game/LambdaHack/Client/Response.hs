@@ -14,6 +14,8 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.State
 
 -- | Abstract syntax of client commands for both AI and UI clients.
+-- The client commands are responses that are sent from server to clients,
+-- after clients delived to the server player and AI requests.
 data Response =
     RespUpdAtomic State UpdAtomic
   | RespUpdAtomicNoState UpdAtomic

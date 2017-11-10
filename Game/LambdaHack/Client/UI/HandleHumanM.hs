@@ -7,12 +7,12 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import Game.LambdaHack.Client.Request
 import Game.LambdaHack.Client.UI.HandleHelperM
 import Game.LambdaHack.Client.UI.HandleHumanGlobalM
 import Game.LambdaHack.Client.UI.HandleHumanLocalM
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.MonadClientUI
-import Game.LambdaHack.Client.Request
 
 -- | The semantics of human player commands in terms of the @Action@ monad.
 -- Decides if the action takes time and what action to perform.
@@ -50,8 +50,8 @@ cmdAction cmd = case cmd of
   LoopOnNothing cmd1 ->
     loopOnNothingHuman (cmdAction cmd1)
 
-  Wait -> weaveJust <$> Right <$> fmap timedToUI waitHuman
-  Wait10 -> weaveJust <$> Right <$> fmap timedToUI waitHuman10
+  Wait -> weaveJust <$> Right <$> fmapTimedToUI waitHuman
+  Wait10 -> weaveJust <$> Right <$> fmapTimedToUI waitHuman10
   MoveDir v ->
     weaveJust <$> (ReqUITimed <$$> moveRunHuman True True False False v)
   RunDir v -> weaveJust <$> (ReqUITimed <$$> moveRunHuman True True True True v)
@@ -60,11 +60,13 @@ cmdAction cmd = case cmd of
   RunOnceToXhair  -> weaveJust <$> (ReqUITimed <$$> runOnceToXhairHuman)
   ContinueToXhair -> weaveJust <$> (ReqUITimed <$$> continueToXhairHuman)
   MoveItem cLegalRaw toCStore mverb auto ->
-    weaveJust <$> (timedToUI <$$> moveItemHuman cLegalRaw toCStore mverb auto)
-  Project ts -> weaveJust <$> (timedToUI <$$> projectHuman ts)
-  Apply ts -> weaveJust <$> (timedToUI <$$> applyHuman ts)
-  AlterDir ts -> weaveJust <$> (timedToUI <$$> alterDirHuman ts)
-  AlterWithPointer ts -> weaveJust <$> (timedToUI <$$> alterWithPointerHuman ts)
+    weaveJust
+    <$> (fmapTimedToUI <$> moveItemHuman cLegalRaw toCStore mverb auto)
+  Project ts -> weaveJust <$> (fmapTimedToUI <$> projectHuman ts)
+  Apply ts -> weaveJust <$> (fmapTimedToUI <$> applyHuman ts)
+  AlterDir ts -> weaveJust <$> (fmapTimedToUI <$> alterDirHuman ts)
+  AlterWithPointer ts -> weaveJust
+                         <$> (fmapTimedToUI <$> alterWithPointerHuman ts)
   Help -> helpHuman cmdAction
   ItemMenu -> itemMenuHuman cmdAction
   ChooseItemMenu dialogMode -> chooseItemMenuHuman cmdAction dialogMode
@@ -122,3 +124,6 @@ cmdAction cmd = case cmd of
 
 addNoError :: Monad m => m () -> m (Either MError ReqUI)
 addNoError cmdCli = cmdCli >> return (Left Nothing)
+
+fmapTimedToUI :: Monad m => m (RequestTimed a) -> m ReqUI
+fmapTimedToUI mr = ReqUITimed . RequestAnyAbility <$> mr

@@ -4,8 +4,7 @@
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Client.Request
   ( RequestAI, ReqAI(..), RequestUI, ReqUI(..)
-  , RequestTimed(..), RequestAnyAbility(..)
-  , timedToUI
+  , RequestAnyAbility(..), RequestTimed(..)
   ) where
 
 import Prelude ()
@@ -21,13 +20,19 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 
+-- | Client-server requests sent by AI clients. If faction leader is to be
+-- changed, it's included as the second component.
+type RequestAI = (ReqAI, Maybe ActorId)
+
 -- | Client-server requests sent by AI clients.
 data ReqAI =
-    ReqAITimed RequestAnyAbility
-  | ReqAINop
+    ReqAINop
+  | ReqAITimed RequestAnyAbility
   deriving Show
 
-type RequestAI = (ReqAI, Maybe ActorId)
+-- | Client-server requests sent by UI clients. If faction leader is to be
+-- changed, it's included as the second component.
+type RequestUI = (ReqUI, Maybe ActorId)
 
 -- | Client-server requests sent by UI clients.
 data ReqUI =
@@ -40,16 +45,13 @@ data ReqUI =
   | ReqUIAutomate
   deriving Show
 
-type RequestUI = (ReqUI, Maybe ActorId)
-
+-- | Basic form of client-server requests, sent by both AI and UI clients.
 data RequestAnyAbility = forall a. RequestAnyAbility (RequestTimed a)
 
 deriving instance Show RequestAnyAbility
 
-timedToUI :: RequestTimed a -> ReqUI
-timedToUI = ReqUITimed . RequestAnyAbility
-
--- | Client-server requests that take game time. Sent by both AI and UI clients.
+-- | Client-server requests that take game time, indexed by actor ability
+-- that is needed for performing the corresponding actions.
 data RequestTimed :: Ability -> * where
   ReqMove :: Vector -> RequestTimed 'AbMove
   ReqMelee :: ActorId -> ItemId -> CStore -> RequestTimed 'AbMelee
