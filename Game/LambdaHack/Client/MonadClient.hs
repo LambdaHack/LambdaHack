@@ -1,12 +1,11 @@
--- | Basic client monad and related operations.
+-- | Basic client monads and related operations.
 module Game.LambdaHack.Client.MonadClient
-  ( -- * Basic client monad
-    MonadClient( getsClient, modifyClient
+  ( -- * Basic client monads
+    MonadClient( getsClient
+               , modifyClient
                , liftIO  -- exposed only to be implemented, not used
                )
-  , MonadClientSetup( saveClient
-                    , restartClient
-                    )
+  , MonadClientSetup(..)
   , MonadClientAtomic(..)
     -- * Assorted primitives
   , getClient, putClient
@@ -22,12 +21,14 @@ import qualified Data.Text.IO as T
 import           System.IO (hFlush, stdout)
 import qualified System.Random as R
 
-import Game.LambdaHack.Client.State
+import Game.LambdaHack.Atomic (UpdAtomic)
 import Game.LambdaHack.Client.ClientOptions
+import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 
+-- | Monad for writing to client state.
 class MonadStateRead m => MonadClient m where
   getsClient    :: (StateClient -> a) -> m a
   modifyClient  :: (StateClient -> StateClient) -> m ()
@@ -35,15 +36,18 @@ class MonadStateRead m => MonadClient m where
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO        :: IO a -> m a
 
+-- | Client monad for saving and restarting games.
 class MonadClient m => MonadClientSetup m where
   saveClient    :: m ()
   restartClient :: m ()
 
--- | The monad for executing atomic game state transformations.
+-- | Monad for executing atomic game state transformations on a client.
 class MonadClient m => MonadClientAtomic m where
-  -- | Execute an atomic command that changes the state.
---  execUpdAtomic :: UpdAtomic -> m ()
-  exexPutState :: State -> m ()
+  -- | Execute an atomic update that changes the client's 'State'.
+  execUpdAtomic :: UpdAtomic -> m ()
+  -- | Put state that is intended to be the result of performing
+  -- an atomic update by the server on its copy of the client's 'State'.
+  execPutState :: State -> m ()
 
 getClient :: MonadClient m => m StateClient
 getClient = getsClient id

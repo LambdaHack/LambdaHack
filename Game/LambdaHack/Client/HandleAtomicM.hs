@@ -1,6 +1,13 @@
 -- | Handle atomic commands received by the client.
 module Game.LambdaHack.Client.HandleAtomicM
   ( cmdAtomicSemCli
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , wipeBfsIfItemAffectsSkills, tileChangeAffectsBfs, createActor, destroyActor
+  , addItemToDiscoBenefit, perception
+  , discoverKind, coverKind, discoverSeed, coverSeed
+  , killExit
+#endif
   ) where
 
 import Prelude ()
@@ -34,7 +41,7 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind (ModeKind)
 import           Game.LambdaHack.Content.TileKind (TileKind)
 
--- | Effect of atomic actions on client state is calculated
+-- | Effect of atomic actions on client state. It is calculated
 -- with the global state from after the command is executed
 -- (except where the supplied @oldState@ is used).
 cmdAtomicSemCli :: MonadClientSetup m => State -> UpdAtomic -> m ()

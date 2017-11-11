@@ -3,6 +3,10 @@
 -- moves turn by turn.
 module Game.LambdaHack.Client.LoopM
   ( loopCli
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , initAI, initUI
+#endif
   ) where
 
 import Prelude ()

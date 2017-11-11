@@ -6,6 +6,8 @@ module Game.LambdaHack.Common.Level
   , ascendInBranch, whereTo
     -- * The @Level@ type and its components
   , Level(..), ItemFloor, ActorMap, TileMap, SmellMap
+    -- * Component updates
+  , updateFloor, updateEmbed, updateActorMap, updateTile, updateSmell
     -- * Level query
   , at, findPoint, findPos, findPosTry, findPosTry2
   ) where
@@ -14,20 +16,20 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
+import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import qualified Game.LambdaHack.Common.KindOps as KindOps
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ItemKind (ItemKind)
-import Game.LambdaHack.Content.TileKind (TileKind)
+import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Content.ItemKind (ItemKind)
+import           Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | The complete dungeon is a map from level names to levels.
 type Dungeon = EM.EnumMap LevelId Level
@@ -124,6 +126,21 @@ assertSparseActors :: ActorMap -> ActorMap
 assertSparseActors m =
   assert (EM.null (EM.filter null m)
           `blame` "null actor lists found" `swith` m) m
+
+updateFloor :: (ItemFloor -> ItemFloor) -> Level -> Level
+updateFloor f lvl = lvl {lfloor = f (lfloor lvl)}
+
+updateEmbed :: (ItemFloor -> ItemFloor) -> Level -> Level
+updateEmbed f lvl = lvl {lembed = f (lembed lvl)}
+
+updateActorMap :: (ActorMap -> ActorMap) -> Level -> Level
+updateActorMap f lvl = lvl {lactor = f (lactor lvl)}
+
+updateTile :: (TileMap -> TileMap) -> Level -> Level
+updateTile f lvl = lvl {ltile = f (ltile lvl)}
+
+updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
+updateSmell f lvl = lvl {lsmell = f (lsmell lvl)}
 
 -- | Query for tile kinds on the map.
 at :: Level -> Point -> Kind.Id TileKind

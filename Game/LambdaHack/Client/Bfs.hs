@@ -1,11 +1,12 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
--- | Breadth first search algorithms.
+-- | Breadth first search algorithm.
 module Game.LambdaHack.Client.Bfs
   ( BfsDistance, MoveLegal(..), minKnownBfs, apartBfs, fillBfs
   , AndPath(..), findPathBfs
   , accessBfs
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
+  , abortedKnownBfs, abortedUnknownBfs
 #endif
   ) where
 
@@ -13,14 +14,14 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Monad.ST.Strict
-import Data.Binary
-import Data.Bits (Bits, complement, (.&.), (.|.))
+import           Control.Monad.ST.Strict
+import           Data.Binary
+import           Data.Bits (Bits, complement, (.&.), (.|.))
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
-import GHC.Generics (Generic)
+import           GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | Weighted distance between points along shortest paths.

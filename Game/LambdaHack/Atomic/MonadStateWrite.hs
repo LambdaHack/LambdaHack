@@ -1,11 +1,18 @@
 -- | The monad for writing to the main game state.
 module Game.LambdaHack.Atomic.MonadStateWrite
   ( MonadStateWrite(..), AtomicFail(..), atomicFail
-  , putState, updateLevel, updateActor, updateFaction
+  , putState, updateLevel, updateActor, updateFaction, moveActorMap
   , insertBagContainer, insertItemContainer, insertItemActor
   , deleteBagContainer, deleteItemContainer, deleteItemActor
-  , updateFloor, updateActorMap, moveActorMap, updateTile, updateSmell
   , addAis, itemsMatch, addItemToActor, resetActorAspect
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , insertItemFloor, insertItemEmbed
+  , insertItemOrgan, insertItemEqp, insertItemInv, insertItemSha
+  , deleteItemFloor, deleteItemEmbed
+  , deleteItemOrgan, deleteItemEqp, deleteItemInv, deleteItemSha
+  , rmFromBag
+#endif
   ) where
 
 import Prelude ()
@@ -50,14 +57,25 @@ atomicFail = Ex.throw . AtomicFail
 putState :: MonadStateWrite m => State -> m ()
 putState s = modifyState (const s)
 
-updateFloor :: (ItemFloor -> ItemFloor) -> Level -> Level
-updateFloor f lvl = lvl {lfloor = f (lfloor lvl)}
+-- INLIning offers no speedup, increases alloc and binary size.
+-- EM.alter not necessary, because levels not removed, so little risk
+-- of adjusting at absent index.
+updateLevel :: MonadStateWrite m => LevelId -> (Level -> Level) -> m ()
+updateLevel lid f = modifyState $ updateDungeon $ EM.adjust f lid
 
-updateEmbed :: (ItemFloor -> ItemFloor) -> Level -> Level
-updateEmbed f lvl = lvl {lembed = f (lembed lvl)}
+-- INLIning doesn't help despite probably canceling the alt indirection.
+-- perhaps it's applied automatically due to INLINABLE.
+updateActor :: MonadStateWrite m => ActorId -> (Actor -> Actor) -> m ()
+updateActor aid f = do
+  let alt Nothing = error $ "no body to update" `showFailure` aid
+      alt (Just b) = Just $ f b
+  modifyState $ updateActorD $ EM.alter alt aid
 
-updateActorMap :: (ActorMap -> ActorMap) -> Level -> Level
-updateActorMap f lvl = lvl {lactor = f (lactor lvl)}
+updateFaction :: MonadStateWrite m => FactionId -> (Faction -> Faction) -> m ()
+updateFaction fid f = do
+  let alt Nothing = error $ "no faction to update" `showFailure` fid
+      alt (Just fact) = Just $ f fact
+  modifyState $ updateFactionD $ EM.alter alt fid
 
 moveActorMap :: MonadStateWrite m => ActorId -> Actor -> Actor -> m ()
 moveActorMap aid body newBody = do
@@ -80,32 +98,6 @@ moveActorMap aid body newBody = do
       updActor = EM.alter addActor (bpos newBody)
                  . EM.alter rmActor (bpos body)
   updateLevel (blid body) $ updateActorMap updActor
-
-updateTile :: (TileMap -> TileMap) -> Level -> Level
-updateTile f lvl = lvl {ltile = f (ltile lvl)}
-
-updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
-updateSmell f lvl = lvl {lsmell = f (lsmell lvl)}
-
--- INLIning offers no speedup, increases alloc and binary size.
--- EM.alter not necessary, because levels not removed, so little risk
--- of adjusting at absent index.
-updateLevel :: MonadStateWrite m => LevelId -> (Level -> Level) -> m ()
-updateLevel lid f = modifyState $ updateDungeon $ EM.adjust f lid
-
--- INLIning doesn't help despite probably canceling the alt indirection.
--- perhaps it's applied automatically due to INLINABLE.
-updateActor :: MonadStateWrite m => ActorId -> (Actor -> Actor) -> m ()
-updateActor aid f = do
-  let alt Nothing = error $ "no body to update" `showFailure` aid
-      alt (Just b) = Just $ f b
-  modifyState $ updateActorD $ EM.alter alt aid
-
-updateFaction :: MonadStateWrite m => FactionId -> (Faction -> Faction) -> m ()
-updateFaction fid f = do
-  let alt Nothing = error $ "no faction to update" `showFailure` fid
-      alt (Just fact) = Just $ f fact
-  modifyState $ updateFactionD $ EM.alter alt fid
 
 insertBagContainer :: MonadStateWrite m
                    => ItemBag -> Container -> m ()

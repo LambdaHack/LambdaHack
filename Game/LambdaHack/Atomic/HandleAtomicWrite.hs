@@ -1,4 +1,5 @@
 -- | Semantics of atomic commands shared by client and server.
+--
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.HandleAtomicWrite
@@ -6,13 +7,18 @@ module Game.LambdaHack.Atomic.HandleAtomicWrite
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , updCreateActor, updDestroyActor, updCreateItem, updDestroyItem
+  , updSpotItemBag, updLoseItemBag
   , updMoveActor, updWaitActor, updDisplaceActor, updMoveItem
   , updRefillHP, updRefillCalm
   , updTrajectory, updQuitFaction, updLeadFaction
   , updDiplFaction, updTacticFaction, updAutoFaction, updRecordKill
-  , updAlterTile, updAlterExplorable, updSpotTile, updLoseTile
+  , updAlterTile, updAlterExplorable, updSearchTile, updSpotTile, updLoseTile
   , updAlterSmell, updSpotSmell, updLoseSmell, updTimeItem
-  , updAgeGame, updUnAgeGame, updRestart, updRestartServer, updResumeServer
+  , updAgeGame, updUnAgeGame, ageLevel, updDiscover, updCover
+  , updDiscoverKind, discoverKind, updCoverKind
+  , updDiscoverSeed, discoverSeed, updCoverSeed
+  , updDiscoverServer, updCoverServer
+  , updRestart, updRestartServer, updResumeServer
 #endif
   ) where
 
@@ -379,12 +385,6 @@ updDiplFaction fid1 fid2 fromDipl toDipl =
     updateFaction fid1 (adj fid2)
     updateFaction fid2 (adj fid1)
 
-updAutoFaction :: MonadStateWrite m => FactionId -> Bool -> m ()
-updAutoFaction fid st =
-  updateFaction fid (\fact ->
-    assert (isAIFact fact == not st)
-    $ fact {gplayer = automatePlayer st (gplayer fact)})
-
 updTacticFaction :: MonadStateWrite m => FactionId -> Tactic -> Tactic -> m ()
 updTacticFaction fid toT fromT = do
   let adj fact =
@@ -392,6 +392,12 @@ updTacticFaction fid toT fromT = do
         in assert (ftactic player == fromT)
            $ fact {gplayer = player {ftactic = toT}}
   updateFaction fid adj
+
+updAutoFaction :: MonadStateWrite m => FactionId -> Bool -> m ()
+updAutoFaction fid st =
+  updateFaction fid (\fact ->
+    assert (isAIFact fact == not st)
+    $ fact {gplayer = automatePlayer st (gplayer fact)})
 
 -- Record a given number (usually just 1, or -1 for undo) of actor kills
 -- for score calculation.

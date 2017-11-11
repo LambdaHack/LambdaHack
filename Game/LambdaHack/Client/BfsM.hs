@@ -1,16 +1,14 @@
 {-# LANGUAGE TupleSections #-}
--- | Breadth first search and realted algorithms using the client monad.
+-- | Breadth first search and related algorithms using the client monad.
 module Game.LambdaHack.Client.BfsM
   ( invalidateBfsAid, invalidateBfsLid, invalidateBfsAll
-  , createBfs, condBFS, getCacheBfsAndPath, getCacheBfs
-  , getCachePath, createPath
-  , unexploredDepth
-  , closestUnknown, closestSmell, furthestKnown
-  , FleeViaStairsOrEscape(..), embedBenefit, closestTriggers
-  , closestItems, closestFoes
-  , condEnoughGearM
+  , createBfs, getCacheBfsAndPath, getCacheBfs
+  , getCachePath, createPath, condBFS
+  , furthestKnown, closestUnknown, closestSmell
+  , FleeViaStairsOrEscape(..)
+  , embedBenefit, closestTriggers, condEnoughGearM, closestItems, closestFoes
 #ifdef EXPOSE_INTERNAL
-  , updatePathFromBfs
+  , unexploredDepth, updatePathFromBfs
 #endif
   ) where
 
@@ -20,32 +18,32 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Ord
-import Data.Word
+import           Data.Ord
+import           Data.Word
 
-import Game.LambdaHack.Client.Bfs
-import Game.LambdaHack.Client.CommonM
-import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.State
+import           Game.LambdaHack.Client.Bfs
+import           Game.LambdaHack.Client.CommonM
+import           Game.LambdaHack.Client.MonadClient
+import           Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Common.Ability as Ability
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.TileKind (isUknownSpace)
+import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.TileKind (isUknownSpace)
 
 invalidateBfsAid :: MonadClient m => ActorId -> m ()
 invalidateBfsAid aid =
@@ -340,7 +338,6 @@ embedBenefit fleeVia aid pbags = do
             _ -> 0  -- don't ascend prematurely
         _ ->
           if fleeVia `elem` [ViaNothing, ViaAnything]
-
           then -- Actor uses the embedded item on himself, hence @effApply@.
                -- Let distance be the deciding factor and also prevent
                -- overflow on 32-bit machines.

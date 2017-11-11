@@ -118,11 +118,11 @@ instance MonadClientWriteRequest CliImplementation where
     return $! isJust mSession
 
 instance MonadClientAtomic CliImplementation where
---  {-# INLINE execUpdAtomic #-}
---  execUpdAtomic = handleUpdAtomic
+  {-# INLINE execUpdAtomic #-}
+  execUpdAtomic = undefined  -- handleUpdAtomic, until needed, save resources
     -- Don't catch anything; assume exceptions impossible.
-  {-# INLINE exexPutState #-}
-  exexPutState = putState
+  {-# INLINE execPutState #-}
+  execPutState = putState
 
 -- | Init the client, then run an action, with a given session,
 -- state and history, in the @IO@ monad.

@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
--- | Screen frames and animations.
+-- | Options that affect the behaviour of the client.
 module Game.LambdaHack.Client.ClientOptions
   ( ClientOptions(..), defClientOptions
   ) where

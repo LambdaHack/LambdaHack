@@ -1,10 +1,15 @@
 -- | Representation and computation of visiblity of atomic commands
 -- by clients.
+--
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
   , breakUpdAtomic, seenAtomicCli, seenAtomicSer
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , posProjBody, singleAid, doubleAid, singleContainer
+#endif
   ) where
 
 import Prelude ()
