@@ -20,21 +20,21 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 
--- | Client-server requests sent by AI clients. If faction leader is to be
+-- | Requests sent by AI clients to the server. If faction leader is to be
 -- changed, it's included as the second component.
 type RequestAI = (ReqAI, Maybe ActorId)
 
--- | Client-server requests sent by AI clients.
+-- | Possible forms of requests sent by AI clients.
 data ReqAI =
     ReqAINop
   | ReqAITimed RequestAnyAbility
   deriving Show
 
--- | Client-server requests sent by UI clients. If faction leader is to be
+-- | Requests sent by UI clients to the server. If faction leader is to be
 -- changed, it's included as the second component.
 type RequestUI = (ReqUI, Maybe ActorId)
 
--- | Client-server requests sent by UI clients.
+-- | Possible forms of requests sent by UI clients.
 data ReqUI =
     ReqUINop
   | ReqUITimed RequestAnyAbility
@@ -45,12 +45,12 @@ data ReqUI =
   | ReqUIAutomate
   deriving Show
 
--- | Basic form of client-server requests, sent by both AI and UI clients.
+-- | Basic form of requests, sent by both AI and UI clients to the server.
 data RequestAnyAbility = forall a. RequestAnyAbility (RequestTimed a)
 
 deriving instance Show RequestAnyAbility
 
--- | Client-server requests that take game time, indexed by actor ability
+-- | Requests that take game time, indexed by actor ability
 -- that is needed for performing the corresponding actions.
 data RequestTimed :: Ability -> * where
   ReqMove :: Vector -> RequestTimed 'AbMove

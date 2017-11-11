@@ -10,12 +10,12 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Game.LambdaHack.Atomic
+import Game.LambdaHack.Client.ClientOptions
 import Game.LambdaHack.Client.HandleResponseM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.Response
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI
-import Game.LambdaHack.Client.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
@@ -42,7 +42,11 @@ initUI copsClient sUIOptions soptions = do
                   , sxhair = TVector $ Vector 1 1 }
                       -- a step south-east, less alarming
 
--- | The main game loop for an AI or UI client.
+-- | The main game loop for an AI or UI client. It receives responses from
+-- the server, changes internal client state accordingly, analyzes
+-- ensuing human or AI commands and sends resulting requests to the server.
+-- Depending on whether it's an AI or UI client,
+-- it sends AI or human player requests.
 loopCli :: ( MonadClientSetup m
            , MonadClientUI m
            , MonadClientAtomic m

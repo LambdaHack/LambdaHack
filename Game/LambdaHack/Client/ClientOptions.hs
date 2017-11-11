@@ -11,6 +11,7 @@ import Game.LambdaHack.Common.Prelude
 import Data.Binary
 import GHC.Generics (Generic)
 
+-- | Options that affect the behaviour of the client (but not game rules).
 data ClientOptions = ClientOptions
   { sgtkFontFamily    :: Maybe Text
       -- ^ Font family to use for the GTK main game window.
@@ -57,6 +58,7 @@ data ClientOptions = ClientOptions
 
 instance Binary ClientOptions
 
+-- | Default value of client options.
 defClientOptions :: ClientOptions
 defClientOptions = ClientOptions
   { sgtkFontFamily = Nothing

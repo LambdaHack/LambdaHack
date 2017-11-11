@@ -16,7 +16,7 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ModeKind
 
--- | Debug commands. See "Server.Commandline" for the descriptions.
+-- | Options that affect the behaviour of the server (including game rules).
 data ServerOptions = ServerOptions
   { sknowMap         :: Bool
   , sknowEvents      :: Bool
@@ -53,6 +53,7 @@ instance Show RNGs where
                        startingRandomGenerator ]
     in unwords args
 
+-- | Default value of server options.
 defServerOptions :: ServerOptions
 defServerOptions = ServerOptions
   { sknowMap = False

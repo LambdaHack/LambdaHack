@@ -13,13 +13,20 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.State
 
--- | Abstract syntax of client commands for both AI and UI clients.
--- The client commands are responses that are sent from server to clients,
--- after clients delived to the server player and AI requests.
+-- | Abstract syntax of responses sent by server to an AI or UI client
+-- (or a universal client that can handle both roles, which is why
+-- this type is not separated into distinct AI and UI types).
+-- A response tells a client how to update game state or what information
+-- to send to the server.
 data Response =
-    RespUpdAtomic State UpdAtomic
-  | RespUpdAtomicNoState UpdAtomic
+    RespUpdAtomicNoState UpdAtomic
+    -- ^ change @State@ by performing this atomic update
+  | RespUpdAtomic State UpdAtomic
+    -- ^ put the given @State@, which results from performing the atomic update
   | RespQueryAI ActorId
+    -- ^ compute an AI move for the actor and send (the semantics of) it
   | RespSfxAtomic SfxAtomic
+    -- ^ perform special effects (animations, messages, etc.)
   | RespQueryUI
+    -- ^ prompt the human player for a command and send (the semantics of) it
   deriving Show

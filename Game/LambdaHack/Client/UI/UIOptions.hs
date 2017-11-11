@@ -26,7 +26,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Content.RuleKind
 
--- | Fully typed contents of the UI config file.
+-- | Options that affect the UI of the client.
 data UIOptions = UIOptions
   { -- commands
     uCommands      :: [(K.KM, CmdTriple)]
@@ -45,7 +45,7 @@ data UIOptions = UIOptions
   , uMaxFps        :: Int
   , uNoAnim        :: Bool
   , uRunStopMsgs   :: Bool
-  , uCmdline       :: [String]
+  , uCmdline       :: [String]  -- ^ hardwired commandline arguments to process
   }
   deriving (Show, Generic)
 
@@ -118,6 +118,7 @@ mkUIOptions Kind.COps{corule} benchmark = do
   -- Catch syntax errors in complex expressions ASAP,
   return $! deepseq conf conf
 
+-- | Modify client options with UI options.
 applyUIOptions :: Kind.COps -> UIOptions -> ClientOptions -> ClientOptions
 applyUIOptions Kind.COps{corule} uioptions soptions =
   let stdRuleset = Kind.stdRuleset corule

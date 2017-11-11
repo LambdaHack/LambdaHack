@@ -99,7 +99,7 @@ data KeysHintMode =
   | KeysHintPresent
   deriving (Eq, Enum, Bounded)
 
--- | Initial empty game client state.
+-- | Initial empty client session.
 emptySessionUI :: UIOptions -> SessionUI
 emptySessionUI sUIOptions =
   SessionUI
