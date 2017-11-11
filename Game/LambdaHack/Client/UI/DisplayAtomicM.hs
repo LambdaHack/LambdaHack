@@ -56,7 +56,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * RespUpdAtomicUI
 
--- | Visualize atomic actions sent to the client. This is done
+-- | Visualize atomic updates sent to the client. This is done
 -- in the global state after the command is executed and after
 -- the client state is modified by the command.
 displayRespUpdAtomicUI :: MonadClientUI m

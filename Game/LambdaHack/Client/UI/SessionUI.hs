@@ -35,7 +35,7 @@ import           Game.LambdaHack.Common.Vector
 -- | The information that is used across a client playing session,
 -- including many consecutive games in a single session.
 -- Some of it is saved, some is reset when a new playing session starts.
--- An important component is a frontend session.
+-- An important component is the frontend session.
 data SessionUI = SessionUI
   { sxhair         :: Target             -- ^ the common xhair
   , sactorUI       :: ActorDictUI        -- ^ assigned actor UI presentations
@@ -44,7 +44,7 @@ data SessionUI = SessionUI
   , slastItemMove  :: Maybe (CStore, CStore)  -- ^ last item move stores
   , schanF         :: ChanFrontend       -- ^ connection with the frontend
   , sbinding       :: Binding            -- ^ binding of keys to commands
-  , sUIOptions     :: UIOptions
+  , sUIOptions     :: UIOptions          -- ^ UI options as set by the player
   , saimMode       :: Maybe AimMode      -- ^ aiming mode
   , sxhairMoused   :: Bool               -- ^ last mouse aiming not vacuus
   , sitemSel       :: Maybe (CStore, ItemId)  -- ^ selected item, if any
@@ -64,7 +64,7 @@ data SessionUI = SessionUI
   , smarkSmell     :: Bool          -- ^ mark smell, if the leader can smell
   , smenuIxMap     :: M.Map String Int
                                     -- ^ indices of last used menu items
-  , sdisplayNeeded :: Bool          -- ^ something to display on current level
+  , sdisplayNeeded :: Bool          -- ^ current level needs displaying
   , skeysHintMode  :: KeysHintMode  -- ^ how to show keys hints when no messages
   , sstart         :: POSIXTime     -- ^ this session start time
   , sgstart        :: POSIXTime     -- ^ this game start time

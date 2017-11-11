@@ -27,6 +27,7 @@ import           Game.LambdaHack.Client.HandleResponseM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI
+import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import           Game.LambdaHack.Common.MonadStateRead

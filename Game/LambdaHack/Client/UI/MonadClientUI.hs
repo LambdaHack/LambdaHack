@@ -31,6 +31,7 @@ import qualified NLP.Miniutter.English as MU
 import           System.FilePath
 import           System.IO (hFlush, stdout)
 
+import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import           Game.LambdaHack.Client.State
@@ -46,7 +47,6 @@ import           Game.LambdaHack.Client.UI.Slideshow
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
-import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.HighScore as HighScore
@@ -137,6 +137,7 @@ addPressedEsc = addPressedKey KMP { kmpKeyMod = K.escKM
 frontendShutdown :: MonadClientUI m => m ()
 frontendShutdown = connFrontend FrontShutdown
 
+-- | Initialize the frontend chosen by the player via client options.
 chanFrontend :: MonadClientUI m => ClientOptions -> m ChanFrontend
 chanFrontend = liftIO . Frontend.chanFrontendIO
 
@@ -375,6 +376,7 @@ partAidLeader aid = do
   b <- getsSession $ getActorUI aid
   partActorLeader aid b
 
+-- | Try to read saved client game state from the file system.
 tryRestore :: MonadClientUI m => m (Maybe (StateClient, Maybe SessionUI))
 tryRestore = do
   cops@Kind.COps{corule} <- getsState scops

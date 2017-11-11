@@ -2,19 +2,17 @@
 -- requests, based on the client's view (visualized for the player)
 -- of the game state.
 module Game.LambdaHack.Client.UI
-  ( -- * Client UI monad
-    MonadClientUI(..)
-    -- * Assorted UI operations
-  , putSession, queryUI
+  ( -- * Querying the human player
+    queryUI
+    -- * UI monad and session type
+  , MonadClientUI(..), SessionUI(..)
+    -- * Updating UI state wrt game state changes
   , displayRespUpdAtomicUI, displayRespSfxAtomicUI
-    -- * Startup
-  , KeyKind, SessionUI(..), emptySessionUI
+    -- * Startup and initialization
+  , KeyKind
   , UIOptions, applyUIOptions, uCmdline, mkUIOptions
-  , ChanFrontend, chanFrontend, frontendShutdown
-    -- * Operations exposed for LoopClient
-  , ColorMode(..)
-  , reportToSlideshow, getConfirms, msgAdd, promptAdd, addPressedEsc
-  , tryRestore, stdBinding
+    -- * Operations exposed for "Game.LambdaHack.Client.LoopM"
+  , ChanFrontend, chanFrontend, msgAdd, tryRestore, stdBinding
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , humanCommand
@@ -30,6 +28,7 @@ import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 
+import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.Request
 import           Game.LambdaHack.Client.State
@@ -51,13 +50,12 @@ import           Game.LambdaHack.Client.UI.SlideshowM
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
-import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Content.ModeKind
 
--- | Handle the move of a UI player.
+-- | Handle the move of a human player.
 queryUI :: MonadClientUI m => m RequestUI
 queryUI = do
   side <- getsClient sside

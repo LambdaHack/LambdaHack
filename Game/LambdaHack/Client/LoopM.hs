@@ -36,11 +36,11 @@ initUI copsClient sUIOptions soptions = do
   schanF <- chanFrontend soptions
   let !sbinding = stdBinding copsClient sUIOptions
         -- evaluate to check for errors
-      sess = emptySessionUI sUIOptions
-  putSession sess { schanF
-                  , sbinding
-                  , sxhair = TVector $ Vector 1 1 }
-                      -- a step south-east, less alarming
+  modifySession $ \sess ->
+    sess { schanF
+         , sbinding
+         , sxhair = TVector $ Vector 1 1 }
+             -- a step south-east, less alarming
 
 -- | The main game loop for an AI or UI client. It receives responses from
 -- the server, changes internal client state accordingly, analyzes
@@ -65,8 +65,8 @@ loopCli copsClient sUIOptions soptions = do
       -- Restore game.
       schanF <- getsSession schanF
       sbinding <- getsSession sbinding
-      maybe (return ()) (\sess ->
-        putSession sess {schanF, sbinding, sUIOptions}) msess
+      maybe (return ()) (\sess -> modifySession $ \_ ->
+        sess {schanF, sbinding, sUIOptions}) msess
       putClient cli {soptions}
       return True
     Just (_, msessR) -> do
