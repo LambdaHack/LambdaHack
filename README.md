@@ -220,10 +220,12 @@ Spaces around arithmetic operators encouraged.
 Generally, relax and try to stick to the style apparent in a file
 you are editing. Put big formatting changes in separate commits.
 
-Haddocks are provided only for functions and types from major modules,
-in particular the modules that are interfaces for a whole directory of modules.
-For minor ones, the comments, if any, should not be haddocks
-and are permitted to describe implementation details and be out of date.
+Haddocks are provided for all module headers and for all functions and types
+from major modules, in particular the modules that are interfaces
+for a whole directory of modules. Apart of that only very important
+functions and types are distinguished by having a haddock.
+If minor ones have comments, they should not be haddocks
+and they are permitted to describe implementation details and be out of date.
 If not too verbose, use assertions instead of comments.
 
 

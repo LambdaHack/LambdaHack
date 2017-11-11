@@ -1,4 +1,5 @@
--- | Semantics of requests that are sent to the server.
+-- | Semantics of requests that are sent by clients to the server,
+-- in terms of game state changes and responses to be sent to the clients.
 --
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.

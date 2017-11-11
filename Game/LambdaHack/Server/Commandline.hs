@@ -22,7 +22,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.ServerOptions
 
--- | Parser for server debug parameters from commandline arguments.
+-- | Parser for server options from commandline arguments.
 serverOptionsPI :: ParserInfo ServerOptions
 serverOptionsPI =  info ( helper <*> serverOptionsP )
                $  fullDesc

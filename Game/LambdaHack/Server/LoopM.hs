@@ -51,9 +51,10 @@ import           Game.LambdaHack.Server.State
 -- | Start a game session, including the clients, and then loop,
 -- communicating with the clients.
 loopSer :: (MonadServerAtomic m, MonadServerReadRequest m)
-        => ServerOptions  -- ^ commandline parameters
+        => ServerOptions
+             -- ^ player-supplied server options
         -> (Bool -> FactionId -> ChanServer -> IO ())
-             -- ^ the code to run for UI clients
+             -- ^ function that initializes a client and runs its main loop
         -> m ()
 loopSer serverOptions executorClient = do
   -- Recover states and launch clients.

@@ -1,4 +1,5 @@
--- | The unpopulated dungeon generation routine.
+-- | The dungeon generation routine. It creates empty dungeons, without
+-- actors and without items, either lying on the floor or embedded inside tiles.
 module Game.LambdaHack.Server.DungeonGen
   ( FreshDungeon(..), dungeonGen
 #ifdef EXPOSE_INTERNAL
@@ -14,25 +15,25 @@ import Game.LambdaHack.Common.Prelude
 import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
-import Data.Tuple
+import           Data.Tuple
 import qualified System.Random as R
 
-import Game.LambdaHack.Common.Frequency
+import           Game.LambdaHack.Common.Frequency
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.CaveKind
-import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.PlaceKind (PlaceKind)
-import Game.LambdaHack.Content.TileKind (TileKind)
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Content.CaveKind
+import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.PlaceKind (PlaceKind)
+import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
-import Game.LambdaHack.Server.DungeonGen.Cave
-import Game.LambdaHack.Server.DungeonGen.Place
+import           Game.LambdaHack.Server.DungeonGen.Cave
+import           Game.LambdaHack.Server.DungeonGen.Place
 
 convertTileMaps :: Kind.COps -> Bool -> Rnd (Kind.Id TileKind)
                 -> Maybe (Rnd (Kind.Id TileKind)) -> Int -> Int -> TileMapEM
@@ -106,7 +107,7 @@ buildTileMap cops@Kind.COps{ cotile=Kind.Ops{opick}
   convertTileMaps cops areAllWalkable
                   pickDefTile mpickPassable cxsize cysize dmap
 
--- | Create a level from a cave.
+-- Create a level from a cave.
 buildLevel :: Kind.COps -> Int -> GroupName CaveKind
            -> Int -> AbsDepth -> [Point]
            -> Rnd (Level, [Point])
@@ -168,7 +169,7 @@ buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
                               (dnight cave)
   return (lvl, lstairsDouble ++ lstairsSingleDown)
 
--- | Places yet another staircase (or escape), taking into account only
+-- Places yet another staircase (or escape), taking into account only
 -- the already existing stairs.
 placeDownStairs :: CaveKind -> [Point] -> Rnd Point
 placeDownStairs kc@CaveKind{..} ps = do
@@ -194,7 +195,7 @@ placeDownStairs kc@CaveKind{..} ps = do
              in if dist 0 np && distProj np then Just np else Nothing
   findPoint cxsize cysize f
 
--- | Build rudimentary level from a cave kind.
+-- Build rudimentary level from a cave kind.
 levelFromCaveKind :: Kind.COps -> CaveKind -> AbsDepth -> TileMap
                   -> ([Point], [Point]) -> Int -> [Point] -> Bool
                   -> Level
