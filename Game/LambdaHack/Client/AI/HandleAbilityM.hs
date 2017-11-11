@@ -2,10 +2,10 @@
 -- | Semantics of abilities in terms of actions and the AI procedure
 -- for picking the best action for an actor.
 module Game.LambdaHack.Client.AI.HandleAbilityM
-  ( actionStrategy
+  ( pickAction
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , ApplyItemGroup
+  , ApplyItemGroup, actionStrategy
   , waitBlockNow, pickup, equipItems, toShare, yieldUnneeded, unEquipItems
   , groupByEqpSlot, bestByEqpSlot, harmful, meleeBlocker, meleeAny
   , trigger, projectItem, applyItem, flee
@@ -30,6 +30,7 @@ import           Game.LambdaHack.Client.Bfs
 import           Game.LambdaHack.Client.BfsM
 import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
+import           Game.LambdaHack.Client.Request
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Common.Ability
 import           Game.LambdaHack.Common.Actor
@@ -44,6 +45,7 @@ import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -51,14 +53,32 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
-import           Game.LambdaHack.Client.Request
+
+pickAction :: MonadClient m => ActorId -> Bool -> m RequestAnyAbility
+{-# INLINE pickAction #-}
+pickAction aid retry = do
+  side <- getsClient sside
+  body <- getsState $ getActorBody aid
+  let !_A = assert (bfid body == side
+                    `blame` "AI tries to move enemy actor"
+                    `swith` (aid, bfid body, side)) ()
+  let !_A = assert (isNothing (btrajectory body)
+                    `blame` "AI gets to manually move its projectiles"
+                    `swith` (aid, bfid body, side)) ()
+  stratAction <- actionStrategy aid retry
+  let bestAction = bestVariant stratAction
+      !_A = assert (not (nullFreq bestAction)  -- equiv to nullStrategy
+                    `blame` "no AI action for actor"
+                    `swith` (stratAction, aid, body)) ()
+  -- Run the AI: chose an action from those given by the AI strategy.
+  rndToAction $ frequency bestAction
 
 type ToAny a = Strategy (RequestTimed a) -> Strategy RequestAnyAbility
 
 toAny :: ToAny a
 toAny strat = RequestAnyAbility <$> strat
 
--- | AI strategy based on actor's sight, smell, etc.
+-- AI strategy based on actor's sight, smell, etc.
 -- Never empty.
 actionStrategy :: forall m. MonadClient m
                => ActorId -> Bool -> m (Strategy RequestAnyAbility)

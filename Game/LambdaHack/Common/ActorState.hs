@@ -13,7 +13,8 @@ module Game.LambdaHack.Common.ActorState
   , memActor, getActorAspect, getLocalTime, regenCalmDelta
   , actorInAmbient, canDeAmbientList, actorSkills, dispEnemy
   , itemToFull, fullAssocs, storeFromC, lidFromC, posFromC, aidFromC
-  , isEscape, isStair, anyFoeAdj, actorAdjacentAssocs, armorHurtBonus
+  , isEscape, isStair, anyFoeAdj, actorAdjacentAssocs
+  , armorHurtBonus, inMelee
   ) where
 
 import Prelude ()
@@ -21,23 +22,23 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import Data.Int (Int64)
-import GHC.Exts (inline)
+import           Data.Int (Int64)
+import           GHC.Exts (inline)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.TileKind (TileKind)
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.TileKind (TileKind)
 
 fidActorNotProjAssocs :: FactionId -> State -> [(ActorId, Actor)]
 fidActorNotProjAssocs fid s =
@@ -392,3 +393,19 @@ armorHurtBonus source target s =
                                              then block200 25 (aArmorRanged tar)
                                              else block200 50 (aArmorMelee tar)
   in 100 + min 99 (max (-99) itemBonus)  -- at least 1% of damage gets through
+
+inMelee :: Actor -> State -> Bool
+inMelee bodyOur s =
+  let fact = sfactionD s EM.! bfid bodyOur
+      f !b = blid b == blid bodyOur && isAtWar fact (bfid b) && bhp b > 0
+      -- We assume foes are less numerous, because usually they are heroes,
+      -- and so we compute them once and use many times.
+      -- For the same reason @anyFoeAdj@ would not speed up this computation
+      -- in normal gameplay (as opposed to AI vs AI benchmarks).
+      allFoes = filter f $ EM.elems $ sactorD s
+  in any (\body ->
+    bfid bodyOur == bfid body
+    && blid bodyOur == blid body
+    && not (bproj body)
+    && bhp body > 0
+    && any (\b -> adjacent (bpos b) (bpos body)) allFoes) $ sactorD s
