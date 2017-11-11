@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.UI.Key
   ( Key(..), showKey, handleDir, dirAllKey
   , moveBinding, mkKM, mkChar, mkKP, keyTranslate, keyTranslateWeb
-  , Modifier(..), KM(..), showKM
+  , Modifier(..), KM(..), KMP(..), showKM
   , escKM, spaceKM, safeSpaceKM, returnKM
   , pgupKM, pgdnKM, wheelNorthKM, wheelSouthKM
   , upKM, downKM, leftKM, rightKM
@@ -20,6 +20,7 @@ import           Data.Binary
 import qualified Data.Char as Char
 import           GHC.Generics (Generic)
 
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Vector
 
 -- | Frontend-independent datatype to represent keys.
@@ -82,6 +83,9 @@ instance NFData KM
 
 instance Show KM where
   show = showKM
+
+data KMP = KMP { kmpKeyMod  :: KM
+               , kmpPointer :: Point }
 
 -- Common and terse names for keys.
 showKey :: Key -> String

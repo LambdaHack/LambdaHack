@@ -1,6 +1,6 @@
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.UI.Frontend.Common
-  ( RawFrontend(..), KMP(..)
+  ( RawFrontend(..)
   , startupBound, createRawFrontend, resetChanKey, saveKMP
   , modifierTranslate
   ) where
@@ -9,16 +9,14 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Concurrent
-import Control.Concurrent.Async
+import           Control.Concurrent
+import           Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
 
-import Game.LambdaHack.Client.UI.Frame
+import           Game.LambdaHack.Client.UI.Frame
+import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
-import Game.LambdaHack.Common.Point
-
-data KMP = KMP { kmpKeyMod  :: K.KM
-               , kmpPointer :: Point }
+import           Game.LambdaHack.Common.Point
 
 data RawFrontend = RawFrontend
   { fdisplay  :: SingleFrame -> IO ()

@@ -2,12 +2,10 @@
 -- | Display game data on the screen and receive user input
 -- using one of the available raw frontends and derived operations.
 module Game.LambdaHack.Client.UI.Frontend
-  ( -- * Connection types
-    FrontReq(..), ChanFrontend(..), KMP(..)
+  ( -- * Connection and initialization
+    FrontReq(..), ChanFrontend(..), chanFrontendIO
     -- * Re-exported part of the raw frontend
   , frontendName
-    -- * Derived operations
-  , chanFrontendIO
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , FSession, getKey, fchanFrontend, display, defaultMaxFps, microInSec
@@ -34,13 +32,15 @@ import           Game.LambdaHack.Client.UI.Frame
 import qualified Game.LambdaHack.Client.UI.Frontend.Chosen as Chosen
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Frontend.Teletype as Teletype
+import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
--- | The instructions sent by clients to the raw frontend.
+-- | The instructions sent by clients to the raw frontend, indexed
+-- by the returned value.
 data FrontReq :: * -> * where
   -- | Show a frame.
   FrontFrame :: {frontFrame :: FrameForall} -> FrontReq ()
@@ -51,13 +51,13 @@ data FrontReq :: * -> * where
               , frontKeyFrame :: FrameForall } -> FrontReq KMP
   -- | Inspect the fkeyPressed MVar.
   FrontPressed :: FrontReq Bool
-  -- | discard a key in the queue, if any.
+  -- | Discard a key in the queue, if any.
   FrontDiscard :: FrontReq ()
   -- | Add a key to the queue.
   FrontAdd :: KMP -> FrontReq ()
-  -- | set in the frontend that it should auto-answer prompts.
+  -- | Set in the frontend that it should auto-answer prompts.
   FrontAutoYes :: Bool -> FrontReq ()
-  -- | shut the frontend down.
+  -- | Shut the frontend down.
   FrontShutdown :: FrontReq ()
 
 -- | Connection channel between a frontend and a client. Frontend acts
@@ -70,7 +70,7 @@ data FSession = FSession
   , fdelay        :: MVar Int
   }
 
--- | Display a prompt, wait for any of the specified keys (for any key,
+-- Display a frame, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
 getKey :: ClientOptions -> FSession -> RawFrontend -> [K.KM] -> FrameForall
        -> IO KMP
@@ -87,7 +87,7 @@ getKey soptions fs rf@RawFrontend{fchanKey} keys frame = do
     then return kmp
     else getKey soptions fs rf keys frame
 
--- | Read UI requests from the client and send them to the frontend,
+-- Read UI requests from the client and send them to the frontend,
 fchanFrontend :: ClientOptions -> FSession -> RawFrontend -> ChanFrontend
 fchanFrontend soptions fs@FSession{..} rf =
   ChanFrontend $ \req -> case req of

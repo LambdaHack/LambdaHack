@@ -115,8 +115,8 @@ displayFrames lid frs = do
 connFrontendFrontKey :: MonadClientUI m => [K.KM] -> FrameForall -> m K.KM
 connFrontendFrontKey frontKeyKeys frontKeyFrame = do
   kmp <- connFrontend FrontKey{..}
-  modifySession $ \sess -> sess {spointer = kmpPointer kmp}
-  return $! kmpKeyMod kmp
+  modifySession $ \sess -> sess {spointer = K.kmpPointer kmp}
+  return $! K.kmpKeyMod kmp
 
 setFrontAutoYes :: MonadClientUI m => Bool -> m ()
 setFrontAutoYes b = connFrontend $ FrontAutoYes b
@@ -127,12 +127,12 @@ anyKeyPressed = connFrontend FrontPressed
 discardPressedKey :: MonadClientUI m => m ()
 discardPressedKey = connFrontend FrontDiscard
 
-addPressedKey :: MonadClientUI m => KMP -> m ()
+addPressedKey :: MonadClientUI m => K.KMP -> m ()
 addPressedKey = connFrontend . FrontAdd
 
 addPressedEsc :: MonadClientUI m => m ()
-addPressedEsc = addPressedKey KMP { kmpKeyMod = K.escKM
-                                  , kmpPointer = originPoint }
+addPressedEsc = addPressedKey K.KMP { K.kmpKeyMod = K.escKM
+                                    , K.kmpPointer = originPoint }
 
 frontendShutdown :: MonadClientUI m => m ()
 frontendShutdown = connFrontend FrontShutdown
