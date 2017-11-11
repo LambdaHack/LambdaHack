@@ -1,6 +1,7 @@
 -- | Handle atomic commands received by the client.
 module Game.LambdaHack.Client.HandleAtomicM
-  ( cmdAtomicSemCli
+  ( MonadClientSetup(..)
+  , cmdAtomicSemCli
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , wipeBfsIfItemAffectsSkills, tileChangeAffectsBfs, createActor, destroyActor
@@ -40,6 +41,11 @@ import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind (ModeKind)
 import           Game.LambdaHack.Content.TileKind (TileKind)
+
+-- | Client monad for saving and restarting games.
+class MonadClient m => MonadClientSetup m where
+  saveClient    :: m ()
+  restartClient :: m ()
 
 -- | Effect of atomic actions on client state. It is calculated
 -- with the global state from after the command is executed

@@ -2,7 +2,8 @@
 -- | The main loop of the client, processing human and computer player
 -- moves turn by turn.
 module Game.LambdaHack.Client.LoopM
-  ( loopCli
+  ( MonadClientReadResponse(..)
+  , loopCli
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , initAI, initUI
@@ -15,6 +16,7 @@ import Game.LambdaHack.Common.Prelude
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.ClientOptions
+import Game.LambdaHack.Client.HandleAtomicM
 import Game.LambdaHack.Client.HandleResponseM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.Response
@@ -24,6 +26,10 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
+
+-- | Client monad in which one can receive responses from the server.
+class MonadClient m => MonadClientReadResponse m where
+  receiveResponse :: m Response
 
 initAI :: MonadClient m => ClientOptions -> m ()
 initAI soptions = do

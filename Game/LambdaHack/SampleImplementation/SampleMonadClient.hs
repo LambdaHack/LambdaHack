@@ -23,7 +23,9 @@ import           GHC.Generics (Generic)
 import           Game.LambdaHack.Atomic (MonadStateWrite (..), putState)
 import           Game.LambdaHack.Client
 import           Game.LambdaHack.Client.ClientOptions
+import           Game.LambdaHack.Client.HandleAtomicM
 import           Game.LambdaHack.Client.HandleResponseM
+import           Game.LambdaHack.Client.LoopM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI
@@ -119,7 +121,7 @@ instance MonadClientWriteRequest CliImplementation where
 
 instance MonadClientAtomic CliImplementation where
   {-# INLINE execUpdAtomic #-}
-  execUpdAtomic = undefined  -- handleUpdAtomic, until needed, save resources
+  execUpdAtomic _ = return ()  -- handleUpdAtomic, until needed, save resources
     -- Don't catch anything; assume exceptions impossible.
   {-# INLINE execPutState #-}
   execPutState = putState
