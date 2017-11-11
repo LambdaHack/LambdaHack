@@ -45,7 +45,7 @@ data UIOptions = UIOptions
   , uMaxFps        :: Int
   , uNoAnim        :: Bool
   , uRunStopMsgs   :: Bool
-  , uCmdline       :: [String]  -- ^ hardwired commandline arguments to process
+  , uCmdline       :: [String]  -- ^ Hardwired commandline arguments to process.
   }
   deriving (Show, Generic)
 

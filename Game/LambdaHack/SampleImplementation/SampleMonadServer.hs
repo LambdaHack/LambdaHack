@@ -159,7 +159,7 @@ executorSer cops copsClient soptionsNxtCmdline = do
         , serDict = EM.empty
         , serToSave
         }
-      m = loopSer soptionsNxt sUIOptions executorClient
+      m = loopSer soptionsNxt executorClient
       exe = evalStateT (runSerImplementation m) . totalState
       exeWithSaves = Save.wrapInSaves cops stateToFileName exe
       defPrefix = ssavePrefixSer defServerOptions

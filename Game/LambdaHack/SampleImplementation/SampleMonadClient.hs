@@ -22,11 +22,11 @@ import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Atomic (MonadStateWrite (..), putState)
 import           Game.LambdaHack.Client
+import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.HandleResponseM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI
-import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import           Game.LambdaHack.Common.MonadStateRead
@@ -127,12 +127,14 @@ instance MonadClientAtomic CliImplementation where
 -- state and history, in the @IO@ monad.
 executorCli :: KeyKind -> UIOptions -> ClientOptions
             -> Kind.COps
-            -> Maybe SessionUI
+            -> Bool
             -> FactionId
             -> ChanServer
             -> IO ()
-executorCli copsClient sUIOptions clientOptions cops cliSession fid cliDict =
-  let stateToFileName (cli, _) =
+executorCli copsClient sUIOptions clientOptions cops isUI fid cliDict =
+  let cliSession | isUI = Just $ emptySessionUI sUIOptions
+                 | otherwise = Nothing
+      stateToFileName (cli, _) =
         ssavePrefixCli (soptions cli) <> Save.saveNameCli cops (sside cli)
       totalState cliToSave = CliState
         { cliState = emptyState cops

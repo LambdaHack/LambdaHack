@@ -16,7 +16,7 @@ module Game.LambdaHack.Client
     -- * Re-exported from "Game.LambdaHack.Client.ClientOptions"
   , ClientOptions, defClientOptions, sbenchmark
     -- * Re-exported from "Game.LambdaHack.Client.UI"
-  , KeyKind, emptySessionUI
+  , KeyKind
   , UIOptions, applyUIOptions, uCmdline, mkUIOptions
   ) where
 

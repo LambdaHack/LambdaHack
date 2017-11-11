@@ -20,7 +20,6 @@ import qualified Data.EnumSet as ES
 import qualified Data.Ord as Ord
 
 import           Game.LambdaHack.Atomic
-import           Game.LambdaHack.Client (SessionUI, UIOptions)
 import           Game.LambdaHack.Client
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
@@ -53,14 +52,13 @@ import           Game.LambdaHack.Server.State
 -- communicating with the clients.
 loopSer :: (MonadServerAtomic m, MonadServerReadRequest m)
         => ServerOptions  -- ^ commandline parameters
-        -> UIOptions  -- ^ config file parameters
-        -> (Maybe SessionUI -> FactionId -> ChanServer -> IO ())
+        -> (Bool -> FactionId -> ChanServer -> IO ())
              -- ^ the code to run for UI clients
         -> m ()
-loopSer serverOptions sUIOptions executorClient = do
+loopSer serverOptions executorClient = do
   -- Recover states and launch clients.
   cops <- getsState scops
-  let updConn = updateConn sUIOptions executorClient
+  let updConn = updateConn executorClient
   restored <- tryRestore cops serverOptions
   case restored of
     Just (sRaw, ser) | not $ snewGameSer serverOptions -> do  -- a restored game
