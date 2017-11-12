@@ -1,4 +1,5 @@
--- | Abstract syntax of client commands.
+-- | Abstract syntax of responses.
+--
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Client.Response

@@ -1,10 +1,9 @@
 {-# LANGUAGE DeriveGeneric #-}
--- | Server and client game state types and operations.
+-- | Client-specific game state components.
 module Game.LambdaHack.Client.State
-  ( StateClient(..), emptyStateClient
-  , AlterLid
+  ( StateClient(..), AlterLid, BfsAndPath(..), TgtAndPath(..)
+  , emptyStateClient, cycleMarkSuspect
   , updateTarget, getTarget, updateLeader, sside
-  , BfsAndPath(..), TgtAndPath(..), cycleMarkSuspect
   ) where
 
 import Prelude ()
@@ -20,9 +19,9 @@ import qualified System.Random as R
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Client.Bfs
+import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
-import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -34,15 +33,6 @@ import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Content.ModeKind (ModeKind)
 
 -- | Client state, belonging to a single faction.
--- Some of the data, e.g, the history, carries over
--- from game to game, even across playing sessions.
---
--- When many actors want to fling at the same target, they set
--- their personal targets to follow the common xhair.
--- When each wants to kill a fleeing enemy they recently meleed,
--- they keep the enemies as their personal targets.
---
--- Data invariant: if @_sleader@ is @Nothing@ then so is @srunning@.
 data StateClient = StateClient
   { seps          :: Int            -- ^ a parameter of the aiming digital line
   , stargetD      :: EM.EnumMap ActorId TgtAndPath
@@ -50,12 +40,11 @@ data StateClient = StateClient
   , sexplored     :: ES.EnumSet LevelId
                                     -- ^ the set of fully explored levels
   , sbfsD         :: EM.EnumMap ActorId BfsAndPath
-                                    -- ^ pathfinding distances for our actors
-                                    --   and paths to their targets, if any
+                                    -- ^ pathfinding data for our actors
   , sundo         :: [CmdAtomic]    -- ^ atomic commands performed to date
   , sdiscoBenefit :: DiscoveryBenefit
                                     -- ^ remembered AI benefits of items
-  , sfper         :: PerLid         -- ^ faction perception indexed by levels
+  , sfper         :: PerLid         -- ^ faction perception indexed by level
   , salter        :: AlterLid       -- ^ cached alter ability data for positions
   , srandom       :: R.StdGen       -- ^ current random generator
   , _sleader      :: Maybe ActorId  -- ^ candidate new leader of the faction;
@@ -65,15 +54,19 @@ data StateClient = StateClient
   , scurChal      :: Challenge      -- ^ current game challenge setup
   , snxtChal      :: Challenge      -- ^ next game challenge setup
   , snxtScenario  :: Int            -- ^ next game scenario number
-  , smarkSuspect  :: Int            -- ^ mark suspect features
+  , smarkSuspect  :: Int            -- ^ whether to mark suspect features
   , scondInMelee  :: EM.EnumMap LevelId (Maybe Bool)
-                                    -- ^ condInMelee value, unless invalidated
+                                    -- ^ last in-melee condition for each level
   , svictories    :: EM.EnumMap (Kind.Id ModeKind) (M.Map Challenge Int)
                                     -- ^ won games at particular difficulty lvls
-  , soptions      :: ClientOptions  -- ^ client debugging mode
+  , soptions      :: ClientOptions  -- ^ client options
   }
   deriving Show
 
+type AlterLid = EM.EnumMap LevelId (PointArray.Array Word8)
+
+-- | Pathfinding distances to all reachable positions of an actor
+-- and a shortest paths to some of the positions.
 data BfsAndPath =
     BfsInvalid
   | BfsAndPath { bfsArr  :: PointArray.Array BfsDistance
@@ -81,12 +74,11 @@ data BfsAndPath =
                }
   deriving Show
 
+-- | Actor's target and a path to it, if any.
 data TgtAndPath = TgtAndPath {tapTgt :: Target, tapPath :: AndPath}
   deriving (Show, Generic)
 
 instance Binary TgtAndPath
-
-type AlterLid = EM.EnumMap LevelId (PointArray.Array Word8)
 
 -- | Initial empty game client state.
 emptyStateClient :: FactionId -> StateClient
@@ -113,6 +105,7 @@ emptyStateClient _sside =
     , soptions = defClientOptions
     }
 
+-- | Cycle the 'smarkSuspect' setting.
 cycleMarkSuspect :: StateClient -> StateClient
 cycleMarkSuspect s@StateClient{smarkSuspect} =
   s {smarkSuspect = (smarkSuspect + 1) `mod` 3}

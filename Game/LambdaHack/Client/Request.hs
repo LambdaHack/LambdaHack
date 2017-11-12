@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds, GADTs, KindSignatures, StandaloneDeriving #-}
--- | Abstract syntax of server commands.
+-- | Abstract syntax of requests.
+--
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Client.Request

@@ -1,9 +1,11 @@
--- | Actor preferences for targets and actions based on actor attributes.
+-- | Actor preferences for targets and actions, based on actor attributes.
 module Game.LambdaHack.Client.Preferences
   ( totalUsefulness
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , effectToBenefit, organBenefit, aspectToBenefit, recordToBenefit
+  , effectToBenefit
+  , averageTurnValue, avgItemDelay, avgItemLife, durabilityMult
+  , organBenefit, recBenefit, fakeItem, aspectToBenefit, recordToBenefit
 #endif
   ) where
 
@@ -12,17 +14,17 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Flavour
-import Game.LambdaHack.Common.Frequency
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Flavour
+import           Game.LambdaHack.Common.Frequency
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ItemKind (ItemKind)
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.ModeKind
 
 -- | How much AI benefits from applying the effect.
 -- The first component is benefit when applied to self, the second
@@ -302,7 +304,10 @@ aspectToBenefit asp =
 recordToBenefit :: AspectRecord -> [Double]
 recordToBenefit aspects = map aspectToBenefit $ aspectRecordToList aspects
 
--- Result has non-strict fields, so arguments are forced to avoid leaks.
+-- | Compute the whole 'Benefit' structure, containing various facets
+-- of AI item preference, for an item with the given effects and aspects.
+--
+-- Note: result has non-strict fields, so arguments are forced to avoid leaks.
 -- When AI looks at items (including organs) more often, force the fields.
 totalUsefulness :: Kind.COps -> Faction -> [IK.Effect] -> AspectRecord -> Item
                 -> Benefit
