@@ -1,14 +1,13 @@
 {-# LANGUAGE DataKinds #-}
--- | Semantics of abilities in terms of actions and the AI procedure
--- for picking the best action for an actor.
+-- | AI procedure for picking the best action for an actor.
 module Game.LambdaHack.Client.AI.HandleAbilityM
   ( pickAction
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , ApplyItemGroup, actionStrategy
+  , actionStrategy
   , waitBlockNow, pickup, equipItems, toShare, yieldUnneeded, unEquipItems
   , groupByEqpSlot, bestByEqpSlot, harmful, meleeBlocker, meleeAny
-  , trigger, projectItem, applyItem, flee
+  , trigger, projectItem, ApplyItemGroup, applyItem, flee
   , displaceFoe, displaceBlocker, displaceTowards
   , chase, moveTowards, moveOrRunAid
 #endif
@@ -54,6 +53,7 @@ import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 
+-- | Pick the most desirable AI ation for the actor.
 pickAction :: MonadClient m => ActorId -> Bool -> m RequestAnyAbility
 {-# INLINE pickAction #-}
 pickAction aid retry = do
@@ -311,7 +311,6 @@ actionStrategy aid retry = do
   sumFallback <- sumS fallback
   return $! sumPrefix .| comDistant .| sumSuffix .| sumFallback
 
--- | A strategy to always just wait.
 waitBlockNow :: MonadClient m => m (Strategy (RequestTimed 'AbWait))
 waitBlockNow = return $! returN "wait" ReqWait
 
@@ -612,7 +611,7 @@ meleeAny aid = do
   let freq = uniformFreq "melee adjacent" $ catMaybes mels
   return $! liftFrequency freq
 
--- | The level the actor is on is either explored or the actor already
+-- The level the actor is on is either explored or the actor already
 -- has a weapon equipped, so no need to explore further, he tries to find
 -- enemies on other levels.
 -- We don't verify any embedded item is targeted by the actor, but at least
@@ -933,7 +932,7 @@ moveTowards aid target goal relaxed = do
         freqs = map (liftFrequency . uniformFreq "moveTowards") groups
     return $! foldr (.|) reject freqs
 
--- | Actor moves or searches or alters or attacks.
+-- Actor moves or searches or alters or attacks.
 -- This function is very general, even though it's often used in contexts
 -- when only one or two of the many cases can possibly occur.
 moveOrRunAid :: MonadClient m

@@ -23,7 +23,6 @@ newtype Strategy a = Strategy { runStrategy :: [Frequency a] }
 _maxBound32 :: Integer
 _maxBound32 = toInteger (maxBound :: Int32)
 
--- | Strategy is a monad.
 instance Monad Strategy where
   m >>= f  = normalizeStrategy $ Strategy
     [ toFreq name [

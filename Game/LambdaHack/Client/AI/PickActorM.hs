@@ -1,6 +1,6 @@
--- | Semantics of most 'ResponseAI' client commands.
+-- | Picking the AI actor to move and refreshing leader and non-leader targets.
 module Game.LambdaHack.Client.AI.PickActorM
-  ( pickActorToMove, useTactics
+  ( pickActorToMove, setTargetFromTactics
   ) where
 
 import Prelude ()
@@ -8,7 +8,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import Data.Ratio
+import           Data.Ratio
 
 import Game.LambdaHack.Client.AI.ConditionM
 import Game.LambdaHack.Client.AI.PickTargetM
@@ -29,7 +29,7 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ModeKind
 
--- Pick a new leader from among the actors on the current level.
+-- | Pick a new leader from among the actors on the current level.
 -- Refresh the target of the new leader, even if unchanged.
 pickActorToMove :: MonadClient m => Maybe ActorId -> m ActorId
 {-# INLINE pickActorToMove #-}
@@ -265,15 +265,16 @@ pickActorToMove maidToAvoid = do
           return aid
         _ -> return oldAid
 
-useTactics :: MonadClient m => ActorId -> m ()
-{-# INLINE useTactics #-}
-useTactics oldAid = do
+-- | Inspect the tactics of the actor and set his target according to it.
+setTargetFromTactics :: MonadClient m => ActorId -> m ()
+{-# INLINE setTargetFromTactics #-}
+setTargetFromTactics oldAid = do
+  mleader <- getsClient _sleader
+  let !_A = assert (mleader /= Just oldAid) ()
   oldBody <- getsState $ getActorBody oldAid
   scondInMelee <- getsClient scondInMelee
   let condInMelee = fromMaybe (error $ "" `showFailure` condInMelee)
                               (scondInMelee EM.! blid oldBody)
-  mleader <- getsClient _sleader
-  let !_A = assert (mleader /= Just oldAid) ()
   let side = bfid oldBody
       arena = blid oldBody
   fact <- getsState $ (EM.! side) . sfactionD

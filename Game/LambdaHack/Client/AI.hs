@@ -66,7 +66,7 @@ pickActorAndAction maid aid = do
     if mleader == Just aid
     then pickActorToMove (fst <$> maid)
     else do
-      useTactics aid
+      setTargetFromTactics aid
       return aid
   treq <- case maid of
     Just (aidOld, treqOld) | aidToMove == aidOld ->

@@ -1,23 +1,22 @@
--- | Semantics of abilities in terms of actions and the AI procedure
--- for picking the best action for an actor.
+-- | Assorted conditions used later on in AI logic.
 module Game.LambdaHack.Client.AI.ConditionM
   ( condAimEnemyPresentM
   , condAimEnemyRememberedM
   , condTgtNonmovingM
   , condAnyFoeAdjM
   , condAdjTriggerableM
+  , meleeThreatDistList
   , condBlocksFriendsM
   , condFloorWeaponM
   , condNoEqpWeaponM
   , condCanProjectM
   , condProjectListM
-  , condDesirableFloorItemM
-  , condSupport
   , benAvailableItems
   , hinders
+  , condDesirableFloorItemM
   , benGroundItems
   , desirableItem
-  , meleeThreatDistList
+  , condSupport
   , condShineWouldBetrayM
   , fleeList
   ) where
