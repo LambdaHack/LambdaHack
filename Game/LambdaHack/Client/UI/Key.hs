@@ -1,14 +1,22 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Frontend-independent keyboard input operations.
 module Game.LambdaHack.Client.UI.Key
-  ( Key(..), showKey, handleDir, dirAllKey
-  , moveBinding, mkKM, mkChar, mkKP, keyTranslate, keyTranslateWeb
-  , Modifier(..), KM(..), KMP(..), showKM
+  ( Key(..), Modifier(..), KM(..), KMP(..)
+  , showKey, showKM
   , escKM, spaceKM, safeSpaceKM, returnKM
   , pgupKM, pgdnKM, wheelNorthKM, wheelSouthKM
   , upKM, downKM, leftKM, rightKM
   , homeKM, endKM, backspaceKM
   , leftButtonReleaseKM, rightButtonReleaseKM
+  , dirAllKey, handleDir, moveBinding, mkKM, mkChar, mkKP
+  , keyTranslate, keyTranslateWeb
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , dirKeypadKey, dirKeypadShiftChar, dirKeypadShiftKey
+  , dirLaptopKey, dirLaptopShiftKey
+  , dirViChar, dirViKey, dirViShiftKey
+  , dirMoveNoModifier, dirRunNoModifier, dirRunControl, dirRunShift
+#endif
   ) where
 
 import Prelude ()
@@ -73,6 +81,7 @@ instance Binary Modifier
 
 instance NFData Modifier
 
+-- | Key and modifier.
 data KM = KM { modifier :: Modifier
              , key      :: Key }
   deriving (Ord, Eq, Generic)
@@ -84,10 +93,11 @@ instance NFData KM
 instance Show KM where
   show = showKM
 
+-- | Key, modifier and position of mouse pointer.
 data KMP = KMP { kmpKeyMod  :: KM
                , kmpPointer :: Point }
 
--- Common and terse names for keys.
+-- | Common and terse names for keys.
 showKey :: Key -> String
 showKey Esc      = "ESC"
 showKey Return   = "RET"
@@ -236,7 +246,7 @@ handleDir uVi uLaptop KM{modifier=NoModifier, key} =
   in lookup key assocs
 handleDir _ _ _ = Nothing
 
--- | Binding of both sets of movement keys.
+-- | Binding of both sets of movement keys, vi and laptop.
 moveBinding :: Bool -> Bool -> (Vector -> a) -> (Vector -> a)
             -> [(KM, a)]
 moveBinding uVi uLaptop move run =

@@ -1,6 +1,13 @@
 -- | Display atomic commands received by the client.
 module Game.LambdaHack.Client.UI.DisplayAtomicM
   ( displayRespUpdAtomicUI, displayRespSfxAtomicUI
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , updateItemSlot, markDisplayNeeded, updateItemSlotSide, lookAtMove
+  , actorVerbMU, aidVerbMU, itemVerbMU, itemAidVerbMU, msgDuplicateScrap
+  , createActorUI, destroyActorUI, spotItem, moveActor, displaceActorUI
+  , moveItemUI, quitFactionUI, discover, ppSfxMsg, setLastSlot, strike
+#endif
   ) where
 
 import Prelude ()
@@ -394,7 +401,6 @@ lookAtMove aid = do
         adjOur = filter our adjacentAssocs
     unless (null adjOur) stopPlayBack
 
--- | Sentences such as \"Dog barks loudly.\".
 actorVerbMU :: MonadClientUI m => ActorId -> ActorUI -> MU.Part -> m ()
 actorVerbMU aid bUI verb = do
   subject <- partActorLeader aid bUI

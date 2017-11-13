@@ -1,9 +1,10 @@
 {-# LANGUAGE DataKinds, GADTs #-}
--- | Semantics of 'Command.Cmd' client commands that return server commands.
+-- | Semantics of "Game.LambdaHack.Client.UI.HumanCmd"
+-- client commands that return server requests.
 -- A couple of them do not take time, the rest does.
--- Here prompts and menus and displayed, but any feedback resulting
+-- Here prompts and menus are displayed, but any feedback resulting
 -- from the commands (e.g., from inventory manipulation) is generated later on,
--- for all clients that witness the results of the commands.
+-- by the server, for all clients that witness the results of the commands.
 module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   ( -- * Meta commands
     byAreaHuman, byAimModeHuman, byItemModeHuman
@@ -17,10 +18,17 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , alterDirHuman, alterWithPointerHuman
   , helpHuman, itemMenuHuman, chooseItemMenuHuman
   , mainMenuHuman, settingsMenuHuman, challengesMenuHuman
-  , gameDifficultyIncr, gameWolfToggle, gameFishToggle, gameScenarioIncr
+  , gameScenarioIncr, gameDifficultyIncr, gameWolfToggle, gameFishToggle
     -- * Global commands that never take time
   , gameRestartHuman, gameExitHuman, gameSaveHuman
   , tacticHuman, automateHuman
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , areaToRectangles, meleeAid, displaceAid, moveSearchAlter, goToXhair
+  , multiActorGoTo, selectItemsToMove, moveItems, projectItem, applyItem
+  , alterTile, alterTileAtPos, verifyAlters, verifyEscape, guessAlter
+  , artWithVersion, generateMenu, nxtGameMode
+#endif
   ) where
 
 import Prelude ()

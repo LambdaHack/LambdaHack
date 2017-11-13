@@ -464,9 +464,6 @@ drawFrameStatus drawnLevelId = do
                <+:> targetStatus
 
 -- | Draw the whole screen: level map and status area.
--- Pass at most a single page if overlay of text unchanged
--- to the frontends to display separately or overlay over map,
--- depending on the frontend.
 drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m FrameForall
 drawBaseFrame dm drawnLevelId = do
   Level{lxsize, lysize} <- getLevel drawnLevelId

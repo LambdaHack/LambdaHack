@@ -1,5 +1,5 @@
 {-# LANGUAGE DataKinds #-}
--- | Inventory management and party cycling.
+-- | UI of inventory management.
 module Game.LambdaHack.Client.UI.InventoryM
   ( Suitability(..)
   , getFull, getGroupItem, getStoreItem

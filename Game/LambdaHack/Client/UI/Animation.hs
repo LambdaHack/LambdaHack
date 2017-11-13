@@ -2,7 +2,11 @@
 module Game.LambdaHack.Client.UI.Animation
   ( Animation, renderAnim
   , pushAndDelay, blinkColorActor, twirlSplash, blockHit, blockMiss
-  , deathBody, shortDeathBody, actorX, swapPlaces, teleport, fadeout
+  , deathBody, shortDeathBody, actorX, teleport, swapPlaces, fadeout
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , blank, cSym, mapPosToOffset, mzipSingleton, mzipPairs
+#endif
   ) where
 
 import Prelude ()

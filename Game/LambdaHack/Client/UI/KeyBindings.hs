@@ -1,6 +1,5 @@
 {-# LANGUAGE TupleSections #-}
--- | Binding of keys to commands.
--- No operation in this module involves the 'State' or 'Action' type.
+-- | Verifying, aggregating and displaying binding of keys to commands.
 module Game.LambdaHack.Client.UI.KeyBindings
   ( Binding(..), stdBinding, keyHelp, okxsN
   ) where
@@ -29,7 +28,7 @@ data Binding = Binding
   , brevMap  :: M.Map HumanCmd [K.KM]  -- ^ and from commands to their keys
   }
 
--- | Binding of keys to movement and other standard commands,
+-- | Create binding of keys to movement and other standard commands,
 -- as well as commands defined in the config file.
 stdBinding :: KeyKind    -- ^ default key bindings from the content
            -> UIOptions  -- ^ UI client options
@@ -77,7 +76,7 @@ stdBinding (KeyKind copsClient) UIOptions{uCommands, uVi, uLaptop} =
       ]
   }
 
--- | Produce a set of help screens from the key bindings.
+-- | Produce a set of help/menu screens from the key bindings.
 keyHelp :: Binding -> Int -> [(Text, OKX)]
 keyHelp keyb@Binding{..} offset = assert (offset > 0) $
   let
@@ -242,6 +241,7 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
             [areaCaption] lastHelpEnd )
     ]
 
+-- | Turn the specified portion of bindings into a menu.
 okxsN :: Binding -> Int -> Int -> (HumanCmd -> Bool) -> CmdCategory
       -> [Text] -> [Text] -> OKX
 okxsN Binding{..} offset n greyedOut cat header footer =

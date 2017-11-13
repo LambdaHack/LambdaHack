@@ -2,7 +2,11 @@
 module Game.LambdaHack.Client.UI.ItemDescription
   ( partItem, partItemShort, partItemHigh, partItemWs, partItemWsRanged
   , partItemShortAW, partItemMediumAW, partItemShortWownW
-  , viewItem, show64With2, itemDesc
+  , viewItem, itemDesc
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , show64With2, partItemN, textAllAE, partItemWsR
+#endif
   ) where
 
 import Prelude ()

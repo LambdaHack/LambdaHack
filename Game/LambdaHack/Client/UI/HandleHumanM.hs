@@ -1,6 +1,10 @@
 -- | Semantics of human player commands.
 module Game.LambdaHack.Client.UI.HandleHumanM
   ( cmdHumanSem
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , noRemoteHumanCmd, cmdAction, addNoError, fmapTimedToUI
+#endif
   ) where
 
 import Prelude ()
@@ -14,11 +18,11 @@ import Game.LambdaHack.Client.UI.HandleHumanLocalM
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.MonadClientUI
 
--- | The semantics of human player commands in terms of the @Action@ monad.
--- Decides if the action takes time and what action to perform.
--- Some time cosuming commands are enabled in aiming mode, but cannot be
+-- | The semantics of human player commands in terms of the client monad.
+--
+-- Some time cosuming commands are enabled even in aiming mode, but cannot be
 -- invoked in aiming mode on a remote level (level different than
--- the level of the leader).
+-- the level of the leader), which is caught here.
 cmdHumanSem :: MonadClientUI m => HumanCmd -> m (Either MError ReqUI)
 cmdHumanSem cmd =
   if noRemoteHumanCmd cmd then do
@@ -32,7 +36,24 @@ cmdHumanSem cmd =
     else cmdAction cmd
   else cmdAction cmd
 
--- | Compute the basic action for a command and mark whether it takes time.
+-- | Commands that are forbidden on a remote level, because they
+-- would usually take time when invoked on one, but not necessarily do
+-- what the player expects. Note that some commands that normally take time
+-- are not included, because they don't take time in aiming mode
+-- or their individual sanity conditions include a remote level check.
+noRemoteHumanCmd :: HumanCmd -> Bool
+noRemoteHumanCmd cmd = case cmd of
+  Wait          -> True
+  Wait10        -> True
+  MoveItem{}    -> True
+  Apply{}       -> True
+  AlterDir{}    -> True
+  AlterWithPointer{} -> True
+  MoveOnceToXhair -> True
+  RunOnceToXhair -> True
+  ContinueToXhair -> True
+  _ -> False
+
 cmdAction :: MonadClientUI m => HumanCmd -> m (Either MError ReqUI)
 cmdAction cmd = case cmd of
   Macro kms -> addNoError $ macroHuman kms

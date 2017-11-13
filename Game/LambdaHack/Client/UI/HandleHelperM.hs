@@ -1,7 +1,7 @@
 -- | Helper functions for both inventory management and human commands.
 module Game.LambdaHack.Client.UI.HandleHelperM
-  ( MError, FailOrCmd, FailError
-  , showFailError, mergeMError, failWith, failSer, failMsg, weaveJust
+  ( FailError, showFailError, MError, mergeMError, FailOrCmd, failWith
+  , failSer, failMsg, weaveJust
   , sortSlots, memberCycle, memberBack, partyAfterLeader
   , pickLeader, pickLeaderWithPointer
   , itemOverlay, statsOverlay, pickNumber, lookAt
@@ -47,6 +47,7 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.TileKind as TK
 
+-- | Message describing the cause of failure of human command.
 newtype FailError = FailError {failError :: Text}
   deriving Show
 
@@ -234,7 +235,6 @@ pickLeaderWithPointer = do
            Nothing -> failMsg "not pointing at an actor"
            Just (aid, b, _) -> pick (aid, b)
 
--- | Create a list of item names.
 itemOverlay :: MonadClientUI m => CStore -> LevelId -> ItemBag -> m OKX
 itemOverlay store lid bag = do
   localTime <- getsState $ getLocalTime lid

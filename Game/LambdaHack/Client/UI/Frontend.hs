@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.UI.Frontend
   , frontendName
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , FSession, getKey, fchanFrontend, display, defaultMaxFps, microInSec
+  , FrontSetup, getKey, fchanFrontend, display, defaultMaxFps, microInSec
   , frameTimeoutThread, lazyStartup, nullStartup, seqFrame
 #endif
   ) where
@@ -64,15 +64,34 @@ data FrontReq :: * -> * where
 -- as a server, serving keys, etc., when given frames to display.
 newtype ChanFrontend = ChanFrontend (forall a. FrontReq a -> IO a)
 
-data FSession = FSession
+-- | Machinery allocated for an individual frontend at its startup,
+-- unchanged for its lifetime.
+data FrontSetup = FrontSetup
   { fautoYesRef   :: IORef Bool
   , fasyncTimeout :: Async ()
   , fdelay        :: MVar Int
   }
 
+-- | Initialize the frontend chosen by the player via client options.
+chanFrontendIO :: ClientOptions -> IO ChanFrontend
+chanFrontendIO soptions = do
+  let startup | sfrontendNull soptions = nullStartup
+              | sfrontendLazy soptions = lazyStartup
+              | sfrontendTeletype soptions = Teletype.startup soptions
+              | otherwise = Chosen.startup soptions
+      maxFps = fromMaybe defaultMaxFps $ smaxFps soptions
+      delta = max 1 $ microInSec `div` maxFps
+  rf <- startup
+  fautoYesRef <- newIORef $ not $ sdisableAutoYes soptions
+  fdelay <- newMVar 0
+  fasyncTimeout <- async $ frameTimeoutThread delta fdelay rf
+  -- Warning: not linking @fasyncTimeout@, so it'd better not crash.
+  let fs = FrontSetup{..}
+  return $ fchanFrontend soptions fs rf
+
 -- Display a frame, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
-getKey :: ClientOptions -> FSession -> RawFrontend -> [K.KM] -> FrameForall
+getKey :: ClientOptions -> FrontSetup -> RawFrontend -> [K.KM] -> FrameForall
        -> IO KMP
 getKey soptions fs rf@RawFrontend{fchanKey} keys frame = do
   autoYes <- readIORef $ fautoYesRef fs
@@ -88,8 +107,8 @@ getKey soptions fs rf@RawFrontend{fchanKey} keys frame = do
     else getKey soptions fs rf keys frame
 
 -- Read UI requests from the client and send them to the frontend,
-fchanFrontend :: ClientOptions -> FSession -> RawFrontend -> ChanFrontend
-fchanFrontend soptions fs@FSession{..} rf =
+fchanFrontend :: ClientOptions -> FrontSetup -> RawFrontend -> ChanFrontend
+fchanFrontend soptions fs@FrontSetup{..} rf =
   ChanFrontend $ \req -> case req of
     FrontFrame{..} -> display rf frontFrame
     FrontDelay k -> modifyMVar_ fdelay $ return . (+ k)
@@ -173,20 +192,3 @@ seqFrame SingleFrame{singleFrame} =
                         `seq` Color.charFromW32 attr == ' '
                         `seq` ()
   in return $! PointArray.foldlA' seqAttr () singleFrame
-
--- | Initialize the frontend chosen by the player via client options.
-chanFrontendIO :: ClientOptions -> IO ChanFrontend
-chanFrontendIO soptions = do
-  let startup | sfrontendNull soptions = nullStartup
-              | sfrontendLazy soptions = lazyStartup
-              | sfrontendTeletype soptions = Teletype.startup soptions
-              | otherwise = Chosen.startup soptions
-      maxFps = fromMaybe defaultMaxFps $ smaxFps soptions
-      delta = max 1 $ microInSec `div` maxFps
-  rf <- startup
-  fautoYesRef <- newIORef $ not $ sdisableAutoYes soptions
-  fdelay <- newMVar 0
-  fasyncTimeout <- async $ frameTimeoutThread delta fdelay rf
-  -- Warning: not linking @fasyncTimeout@, so it'd better not crash.
-  let fs = FSession{..}
-  return $ fchanFrontend soptions fs rf

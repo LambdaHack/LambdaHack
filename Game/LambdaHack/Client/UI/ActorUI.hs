@@ -4,24 +4,24 @@ module Game.LambdaHack.Client.UI.ActorUI
   ( ActorUI(..), ActorDictUI
   , keySelected, partActor, partPronoun
   , ppContainer, ppCStore, ppCStoreIn, ppCStoreWownW
-  , ppContainerWownW, verbCStore, tryFindHeroK
+  , ppContainerWownW, verbCStore, tryFindActor, tryFindHeroK
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
+import           Data.Binary
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
-import GHC.Generics (Generic)
+import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.State
 
 data ActorUI = ActorUI
   { bsymbol  :: Char         -- ^ individual map symbol
@@ -88,7 +88,6 @@ verbCStore CEqp = "equip"
 verbCStore CInv = "pack"
 verbCStore CSha = "stash"
 
--- | Tries to finds an actor body satisfying a predicate on any level.
 tryFindActor :: State -> (ActorId -> Actor -> Bool) -> Maybe (ActorId, Actor)
 tryFindActor s p = find (uncurry p) $ EM.assocs $ sactorD s
 

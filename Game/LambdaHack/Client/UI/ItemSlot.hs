@@ -1,6 +1,6 @@
 -- | Item slots for UI and AI item collections.
 module Game.LambdaHack.Client.UI.ItemSlot
-  ( ItemSlots(..), SlotChar(..)
+  ( SlotChar(..), ItemSlots(..)
   , allSlots, allZeroSlots, intSlots, slotLabel, assignSlot
   ) where
 
@@ -8,12 +8,12 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
-import Data.Bits (unsafeShiftL, unsafeShiftR)
-import Data.Char
+import           Data.Binary
+import           Data.Bits (unsafeShiftL, unsafeShiftR)
+import           Data.Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Ord (comparing)
+import           Data.Ord (comparing)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Actor
@@ -23,6 +23,7 @@ import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.State
 
+-- | Slot label. Usually just a character. Sometimes with a numerical prefix.
 data SlotChar = SlotChar {slotPrefix :: Int, slotChar :: Char}
   deriving (Show, Eq)
 
@@ -42,8 +43,10 @@ instance Enum SlotChar where
         c100 = c0 - if c0 > 150 then 100 else 0
     in SlotChar n (chr c100)
 
-data ItemSlots = ItemSlots (EM.EnumMap SlotChar ItemId)
-                           (EM.EnumMap SlotChar ItemId)
+-- | Mapping from slot labels to item identifiers.
+data ItemSlots = ItemSlots
+  { itemSlots  :: EM.EnumMap SlotChar ItemId
+  , organSlots :: EM.EnumMap SlotChar ItemId }
   deriving Show
 
 instance Binary ItemSlots where
@@ -58,6 +61,12 @@ allZeroSlots = allSlots 0
 
 intSlots :: [SlotChar]
 intSlots = map (flip SlotChar 'a') [0..]
+
+slotLabel :: SlotChar -> Text
+slotLabel x =
+  T.snoc (if slotPrefix x == 0 then T.empty else tshow $ slotPrefix x)
+         (slotChar x)
+  <> ")"
 
 -- | Assigns a slot to an item, for inclusion in the inventory
 -- of a hero. Tries to to use the requested slot, if any.
@@ -85,9 +94,3 @@ assignSlot store item fid mbody (ItemSlots itemSlots organSlots) lastSlot s =
   free = filter f candidates
   g l = l `EM.notMember` lSlots
   fresh = filter g $ take ((slotPrefix lastSlot + 1) * len0) candidates
-
-slotLabel :: SlotChar -> Text
-slotLabel x =
-  T.snoc (if slotPrefix x == 0 then T.empty else tshow $ slotPrefix x)
-         (slotChar x)
-  <> ")"

@@ -1,9 +1,9 @@
 {-# LANGUAGE DeriveGeneric #-}
--- | Abstract syntax human player commands.
+-- | Abstract syntax of human player commands.
 module Game.LambdaHack.Client.UI.HumanCmd
   ( CmdCategory(..), categoryDescription
   , CmdArea(..), areaDescription
-  , CmdTriple, HumanCmd(..), noRemoteHumanCmd
+  , CmdTriple, HumanCmd(..)
   , Trigger(..)
   ) where
 
@@ -11,13 +11,13 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.DeepSeq
-import Data.Binary
-import GHC.Generics (Generic)
+import           Control.DeepSeq
+import           Data.Binary
+import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 data CmdCategory =
@@ -45,6 +45,8 @@ categoryDescription CmdMinimal = "The minimal command set"
 
 -- The constructors are sorted, roughly, wrt inclusion, then top to bottom,
 -- the left to right.
+-- | Symbolic representation of areas of the screen used to define the meaning
+-- of mouse button presses relative to where the mouse points to.
 data CmdArea =
     CaMessage
   | CaMapLeader
@@ -80,9 +82,12 @@ areaDescription ca = case ca of
   CaTargetDesc ->   "target info"
   --                 1234567890123
 
+-- | This triple of command categories, description and the command term itself
+-- defines the meaning of a human command as entered via a keypress,
+-- mouse click or chosen from a menu.
 type CmdTriple = ([CmdCategory], Text, HumanCmd)
 
--- | Abstract syntax of player commands.
+-- | Abstract syntax of human player commands.
 data HumanCmd =
     -- Meta.
     Macro [String]
@@ -168,24 +173,8 @@ instance NFData HumanCmd
 
 instance Binary HumanCmd
 
--- | Commands that are forbidden on a remote level, because they
--- would usually take time when invoked on one, but not necessarily do
--- what the player expects. Note that some commands that normally take time
--- are not included, because they don't take time in aiming mode
--- or their individual sanity conditions include a remote level check.
-noRemoteHumanCmd :: HumanCmd -> Bool
-noRemoteHumanCmd cmd = case cmd of
-  Wait          -> True
-  Wait10        -> True
-  MoveItem{}    -> True
-  Apply{}       -> True
-  AlterDir{}    -> True
-  AlterWithPointer{} -> True
-  MoveOnceToXhair -> True
-  RunOnceToXhair -> True
-  ContinueToXhair -> True
-  _ -> False
-
+-- | Description of how item manipulation is triggered and communicated
+-- to the player.
 data Trigger =
     ApplyItem {verb :: MU.Part, object :: MU.Part, symbol :: Char}
   | AlterFeature {verb :: MU.Part, object :: MU.Part, feature :: TK.Feature}

@@ -1,5 +1,7 @@
--- | Semantics of 'HumanCmd' client commands that do not return
--- server commands. None of such commands takes game time.
+-- | Semantics of "Game.LambdaHack.Client.UI.HumanCmd"
+-- client commands that do not return server requests,,
+-- but only change internal client state.
+-- None of such commands takes game time.
 module Game.LambdaHack.Client.UI.HandleHumanLocalM
   ( -- * Meta commands
     macroHuman
@@ -19,13 +21,17 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , xhairUnknownHuman, xhairItemHuman, xhairStairHuman
   , xhairPointerFloorHuman, xhairPointerEnemyHuman
   , aimPointerFloorHuman, aimPointerEnemyHuman
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , permittedProjectClient, projectCheck, xhairLegalEps, posFromXhair
+  , selectAid, endAiming, endAimingMsg, doLook, flashAiming
+  , xhairPointerFloor, xhairPointerEnemy
+#endif
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
-
--- Cabal
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -469,13 +475,13 @@ pickLeaderWithPointerHuman = pickLeaderWithPointer
 
 -- * MemberCycle
 
--- | Switches current member to the next on the viewed level, if any, wrapping.
+-- | Switch current member to the next on the viewed level, if any, wrapping.
 memberCycleHuman :: MonadClientUI m => m MError
 memberCycleHuman = memberCycle True
 
 -- * MemberBack
 
--- | Switches current member to the previous in the whole dungeon, wrapping.
+-- | Switch current member to the previous in the whole dungeon, wrapping.
 memberBackHuman :: MonadClientUI m => m MError
 memberBackHuman = memberBack True
 
@@ -484,10 +490,10 @@ memberBackHuman = memberBack True
 selectActorHuman :: MonadClientUI m => m ()
 selectActorHuman = do
   leader <- getLeaderUI
-  selectAidHuman leader
+  selectAid leader
 
-selectAidHuman :: MonadClientUI m => ActorId -> m ()
-selectAidHuman leader = do
+selectAid :: MonadClientUI m => ActorId -> m ()
+selectAid leader = do
   bodyUI <- getsSession $ getActorUI leader
   wasMemeber <- getsSession $ ES.member leader . sselected
   let upd = if wasMemeber
@@ -536,11 +542,11 @@ selectWithPointerHuman = do
      | py == lysize + 2 ->
          case drop (px - 1) viewed of
            [] -> failMsg "not pointing at an actor"
-           (aid, _, _) : _ -> selectAidHuman aid >> return Nothing
+           (aid, _, _) : _ -> selectAid aid >> return Nothing
      | otherwise ->
          case find (\(_, b) -> bpos b == Point px (py - mapStartY)) ours of
            Nothing -> failMsg "not pointing at an actor"
-           Just (aid, _) -> selectAidHuman aid >> return Nothing
+           Just (aid, _) -> selectAid aid >> return Nothing
 
 -- * Repeat
 

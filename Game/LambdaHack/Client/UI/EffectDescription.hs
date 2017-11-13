@@ -1,9 +1,12 @@
--- | Description of effects. No operation in this module
--- involves state or monad types.
+-- | Description of effects.
 module Game.LambdaHack.Client.UI.EffectDescription
-  ( effectToSuffix, featureToSuff, kindAspectToSuffix, affixDice
-  , featureToSentence, slotToSentence
-  , slotToName, slotToDesc, slotToDecorator, statSlots
+  ( effectToSuffix
+  , slotToSentence, slotToName, slotToDesc, slotToDecorator, statSlots
+  , kindAspectToSuffix, featureToSuff, featureToSentence, affixDice
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , tmodToSuff, affixBonus, wrapInParens, wrapInChevrons
+#endif
   ) where
 
 import Prelude ()
@@ -13,12 +16,12 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Common.Ability
-import Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.Ability
+import           Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ItemKind
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Content.ItemKind
 
 -- | Suffix to append to a basic content name if the content causes the effect.
 --

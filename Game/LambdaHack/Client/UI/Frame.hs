@@ -4,6 +4,10 @@ module Game.LambdaHack.Client.UI.Frame
   ( FrameST, FrameForall(..), writeLine
   , SingleFrame(..), Frames
   , blankSingleFrame, overlayFrame, overlayFrameWithLines
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , truncateAttrLine
+#endif
   ) where
 
 import Prelude ()
@@ -24,8 +28,13 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 type FrameST s = G.Mutable U.Vector s Word32 -> ST s ()
 
+-- | Efficiently composable representation of an operation
+-- on a frame, that is, on a mutable vector. When the composite operation
+-- is eventually performed, the vector is frozen to become a 'SingleFrame'.
 newtype FrameForall = FrameForall {unFrameForall :: forall s. FrameST s}
 
+-- | Representation of an operation of overwriting a frame with a single line
+-- at the given row.
 writeLine :: Int -> AttrLine -> FrameForall
 {-# INLINE writeLine #-}
 writeLine offset l = FrameForall $ \v -> do
