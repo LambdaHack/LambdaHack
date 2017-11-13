@@ -8,6 +8,10 @@ module Game.LambdaHack.Client.UI.Overlay
   , splitAttrLine, glueLines, updateLines
     -- * Misc
   , ColorMode(..)
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , linesAttr, splitAttrPhrase
+#endif
   ) where
 
 import Prelude ()
@@ -21,6 +25,7 @@ import           Game.LambdaHack.Common.Point
 
 -- * AttrLine
 
+-- | Line of colourful text.
 type AttrLine = [Color.AttrCharW32]
 
 emptyAttrLine :: Int -> AttrLine
@@ -32,6 +37,7 @@ textToAL !t =
               in ac : l
   in T.foldr f [] t
 
+-- | Render line of text in the given foreground colour.
 fgToAL :: Color.Color -> Text -> AttrLine
 fgToAL !fg !t =
   let f c l = let !ac = Color.attrChar2ToW32 fg c
@@ -56,6 +62,8 @@ infixr 6 <+:>  -- matches Monoid.<>
 -- in either dimension.
 type Overlay = [AttrLine]
 
+-- | Sparse screen overlay representation where only the indicated rows
+-- are overlayed and the remaining rows are kept unchanged.
 type IntOverlay = [(Int, AttrLine)]
 
 -- | Split a string into lines. Avoids ending the line with a character
@@ -102,5 +110,5 @@ updateLines n f ov =
 -- | Color mode for the display.
 data ColorMode =
     ColorFull  -- ^ normal, with full colours
-  | ColorBW    -- ^ black+white only
+  | ColorBW    -- ^ black and white only
   deriving Eq

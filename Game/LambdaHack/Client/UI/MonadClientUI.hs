@@ -1,20 +1,25 @@
 -- | Client monad for interacting with a human through UI.
 module Game.LambdaHack.Client.UI.MonadClientUI
   ( -- * Client UI monad
-    MonadClientUI( getsSession, modifySession
+    MonadClientUI( getsSession
+                 , modifySession
                  , liftIO  -- exposed only to be implemented, not used,
                  )
     -- * Assorted primitives
-  , getSession, putSession, clientPrintUI, mapStartY, displayFrames
-  , setFrontAutoYes, anyKeyPressed, discardPressedKey, addPressedEsc
-  , connFrontendFrontKey, frontendShutdown, chanFrontend
+  , clientPrintUI, mapStartY, getSession, putSession, displayFrames
+  , connFrontendFrontKey, setFrontAutoYes, frontendShutdown, chanFrontend
+  , anyKeyPressed, discardPressedKey, addPressedEsc
   , getReportUI, getLeaderUI, getArenaUI, viewedLevelUI
   , leaderTgtToPos, xhairToPos, clearXhair, clearAimMode
   , scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
   , resetSessionStart, resetGameStart
-  , partAidLeader, partActorLeader, partActorLeaderFun, partPronounLeader
+  , partActorLeader, partActorLeaderFun, partPronounLeader, partAidLeader
   , tryRestore, leaderSkillsClientUI
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , connFrontend, displayFrame, addPressedKey
+#endif
   ) where
 
 import Prelude ()
@@ -121,6 +126,13 @@ connFrontendFrontKey frontKeyKeys frontKeyFrame = do
 setFrontAutoYes :: MonadClientUI m => Bool -> m ()
 setFrontAutoYes b = connFrontend $ FrontAutoYes b
 
+frontendShutdown :: MonadClientUI m => m ()
+frontendShutdown = connFrontend FrontShutdown
+
+-- | Initialize the frontend chosen by the player via client options.
+chanFrontend :: MonadClientUI m => ClientOptions -> m ChanFrontend
+chanFrontend = liftIO . Frontend.chanFrontendIO
+
 anyKeyPressed :: MonadClientUI m => m Bool
 anyKeyPressed = connFrontend FrontPressed
 
@@ -133,13 +145,6 @@ addPressedKey = connFrontend . FrontAdd
 addPressedEsc :: MonadClientUI m => m ()
 addPressedEsc = addPressedKey K.KMP { K.kmpKeyMod = K.escKM
                                     , K.kmpPointer = originPoint }
-
-frontendShutdown :: MonadClientUI m => m ()
-frontendShutdown = connFrontend FrontShutdown
-
--- | Initialize the frontend chosen by the player via client options.
-chanFrontend :: MonadClientUI m => ClientOptions -> m ChanFrontend
-chanFrontend = liftIO . Frontend.chanFrontendIO
 
 getReportUI :: MonadClientUI m => m Report
 getReportUI = do

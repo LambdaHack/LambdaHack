@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
--- | Game messages displayed on top of the screen for the player to read.
+-- | Game messages displayed on top of the screen for the player to read
+-- and then saved to player history.
 module Game.LambdaHack.Client.UI.Msg
   ( -- * Msg
     Msg, toMsg, toPrompt
@@ -11,6 +12,11 @@ module Game.LambdaHack.Client.UI.Msg
   , History, emptyHistory, addReport, lengthHistory
   , lastReportOfHistory, replaceLastReportOfHistory
   , splitReportForHistory, renderHistory
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , UAttrLine, uToAttrLine, attrLineToU
+  , renderRepetition, renderTimeReport,
+#endif
   ) where
 
 import Prelude ()

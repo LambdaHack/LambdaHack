@@ -131,9 +131,10 @@ humanCommand = do
               void $ getConfirms ColorFull [K.spaceKM, K.escKM] slidesRaw
               -- Display base frame at the end.
               return []
-        (seqCurrent, seqPrevious, k) <- getsSession slastRecord
-        let slastRecord | k == 0 = ([], seqCurrent, 0)
-                        | otherwise = ([], seqCurrent ++ seqPrevious, k - 1)
+        LastRecord seqCurrent seqPrevious k <- getsSession slastRecord
+        let slastRecord
+              | k == 0 = LastRecord [] seqCurrent 0
+              | otherwise = LastRecord [] (seqCurrent ++ seqPrevious) (k - 1)
         modifySession $ \sess -> sess {slastRecord}
         lastPlay <- getsSession slastPlay
         leader <- getLeaderUI

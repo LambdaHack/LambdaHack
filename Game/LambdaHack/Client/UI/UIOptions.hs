@@ -2,6 +2,10 @@
 -- | UI client options.
 module Game.LambdaHack.Client.UI.UIOptions
   ( UIOptions(..), mkUIOptions, applyUIOptions
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , parseConfig
+#endif
   ) where
 
 import Prelude ()

@@ -555,10 +555,10 @@ selectWithPointerHuman = do
 -- at terrain change or when walking over items.
 repeatHuman :: MonadClientUI m => Int -> m ()
 repeatHuman n = do
-  (_, seqPrevious, k) <- getsSession slastRecord
+  LastRecord _ seqPrevious k <- getsSession slastRecord
   let macro = concat $ replicate n $ reverse seqPrevious
   modifySession $ \sess -> sess {slastPlay = macro ++ slastPlay sess}
-  let slastRecord = ([], [], if k == 0 then 0 else maxK)
+  let slastRecord = LastRecord [] [] (if k == 0 then 0 else maxK)
   modifySession $ \sess -> sess {slastRecord}
 
 maxK :: Int
@@ -568,16 +568,16 @@ maxK = 100
 
 recordHuman :: MonadClientUI m => m ()
 recordHuman = do
-  (_seqCurrent, seqPrevious, k) <- getsSession slastRecord
+  LastRecord _seqCurrent seqPrevious k <- getsSession slastRecord
   case k of
     0 -> do
-      let slastRecord = ([], [], maxK)
+      let slastRecord = LastRecord [] [] maxK
       modifySession $ \sess -> sess {slastRecord}
       promptAdd $ "Macro will be recorded for up to"
                   <+> tshow maxK
                   <+> "actions. Stop recording with the same key."
     _ -> do
-      let slastRecord = (seqPrevious, [], 0)
+      let slastRecord = LastRecord seqPrevious [] 0
       modifySession $ \sess -> sess {slastRecord}
       promptAdd $ "Macro recording stopped after"
                   <+> tshow (maxK - k - 1) <+> "actions."

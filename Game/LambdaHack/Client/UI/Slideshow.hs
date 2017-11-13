@@ -3,6 +3,10 @@ module Game.LambdaHack.Client.UI.Slideshow
   ( KYX, OKX, Slideshow(slideshow)
   , emptySlideshow, unsnoc, toSlideshow, menuToSlideshow
   , wrapOKX, splitOverlay, splitOKX
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , moreMsg, endMsg, keysOKX
+#endif
   ) where
 
 import Prelude ()
@@ -16,12 +20,16 @@ import           Game.LambdaHack.Client.UI.Overlay
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Point
 
+-- | A key or an item slot label at a given position on the screen.
 type KYX = (Either [K.KM] SlotChar, (Y, X, X))
 
+-- | An Overlay of text with an associated list of keys or slots
+-- that activated when the specified screen position is pointed at.
+-- The list should be sorted wrt rows and then columns.
 type OKX = (Overlay, [KYX])
 
--- May be empty, but both of each @OKX@ list have to be nonempty.
--- Guaranteed by construction.
+-- | A list of active screenfulls to be shown one after another.
+-- Each screenful has an independent numbering of rows and columns.
 newtype Slideshow = Slideshow {slideshow :: [OKX]}
   deriving (Show, Eq)
 

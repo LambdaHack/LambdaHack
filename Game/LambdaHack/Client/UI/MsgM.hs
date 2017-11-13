@@ -1,4 +1,4 @@
--- | Client monad for interacting with a human through UI.
+-- | Monadic operations on game messages.
 module Game.LambdaHack.Client.UI.MsgM
   ( msgAdd, promptAdd, promptMainKeys, promptAddAttr, recordHistory
   ) where
@@ -26,6 +26,7 @@ promptAdd :: MonadClientUI m => Text -> m ()
 promptAdd msg = modifySession $ \sess ->
   sess {_sreport = snocReport (_sreport sess) (toPrompt $ textToAL msg)}
 
+-- | Add a prompt with basic keys description.
 promptMainKeys :: MonadClientUI m => m ()
 promptMainKeys = do
   saimMode <- getsSession saimMode

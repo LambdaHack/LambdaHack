@@ -1,9 +1,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
-  ( SessionUI(..), emptySessionUI
-  , AimMode(..), RunParams(..), LastRecord, KeysHintMode(..)
-  , toggleMarkVision, toggleMarkSmell, getActorUI
+  ( SessionUI(..), AimMode(..), RunParams(..), LastRecord(..), KeysHintMode(..)
+  , emptySessionUI, toggleMarkVision, toggleMarkSmell, getActorUI
   ) where
 
 import Prelude ()
@@ -88,10 +87,12 @@ data RunParams = RunParams
   }
   deriving (Show)
 
-type LastRecord = ( [K.KM]  -- accumulated keys of the current command
-                  , [K.KM]  -- keys of the rest of the recorded command batch
-                  , Int     -- commands left to record for this batch
-                  )
+-- | State of last recorded and currently being recorded key sequences.
+data LastRecord = LastRecord
+  { currentKeys  :: [K.KM]  -- ^ accumulated keys of the current command
+  , previousKeys :: [K.KM]  -- ^ keys of the rest of the recorded command batch
+  , freeSpace    :: Int     -- ^ space left for commands to record in this batch
+  }
 
 data KeysHintMode =
     KeysHintBlocked
@@ -99,7 +100,6 @@ data KeysHintMode =
   | KeysHintPresent
   deriving (Eq, Enum, Bounded)
 
--- | Initial empty client session.
 emptySessionUI :: UIOptions -> SessionUI
 emptySessionUI sUIOptions =
   SessionUI
@@ -120,7 +120,7 @@ emptySessionUI sUIOptions =
     , _sreport = emptyReport
     , shistory = emptyHistory 0
     , spointer = originPoint
-    , slastRecord = ([], [], 0)
+    , slastRecord = LastRecord [] [] 0
     , slastPlay = []
     , slastLost = ES.empty
     , swaitTimes = 0
@@ -184,7 +184,7 @@ instance Binary SessionUI where
         sbinding = Binding M.empty [] M.empty
         sxhairMoused = True
         spointer = originPoint
-        slastRecord = ([], [], 0)
+        slastRecord = LastRecord [] [] 0
         slastPlay = []
         slastLost = ES.empty
         swaitTimes = 0

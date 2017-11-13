@@ -1,4 +1,4 @@
--- | A set of Slideshow monad operations.
+-- | Monadic operations on slideshows and related data.
 module Game.LambdaHack.Client.UI.SlideshowM
   ( overlayToSlideshow, reportToSlideshow, reportToSlideshowKeep
   , displaySpaceEsc, displayMore, displayMoreKeep, displayYesNo, getConfirms
@@ -89,7 +89,11 @@ getConfirms dm extraKeys slides = do
   (ekm, _) <- displayChoiceScreen dm False 0 slides extraKeys
   return $! either id (error $ "" `showFailure` ekm) ekm
 
--- This is the only source of menus and so, effectively, UI modes.
+-- | Display a, potentially, multi-screen menu and return the chosen
+-- key or item slot label (and the index in the whole menu so that the cursor
+-- can again be placed at that spot next time menu is displayed).
+--
+-- This function is the only source of menus and so, effectively, UI modes.
 displayChoiceScreen :: forall m . MonadClientUI m
                     => ColorMode -> Bool -> Int -> Slideshow -> [K.KM]
                     -> m (Either K.KM SlotChar, Int)

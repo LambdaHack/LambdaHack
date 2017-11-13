@@ -12,6 +12,10 @@
 -- heard, solid tiles and actors in the way.
 module Game.LambdaHack.Client.UI.RunM
   ( continueRun
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , continueRunDir, enterableDir, tryTurning, checkAndRun
+#endif
   ) where
 
 import Prelude ()
@@ -19,24 +23,24 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import Data.Function
+import           Data.Function
 
-import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.MonadClientUI
-import Game.LambdaHack.Client.UI.Msg
-import Game.LambdaHack.Client.UI.Overlay
-import Game.LambdaHack.Client.UI.SessionUI
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Client.MonadClient
+import           Game.LambdaHack.Client.Request
+import           Game.LambdaHack.Client.State
+import           Game.LambdaHack.Client.UI.MonadClientUI
+import           Game.LambdaHack.Client.UI.Msg
+import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.SessionUI
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Client.Request
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Continue running in the given direction.

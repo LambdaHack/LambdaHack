@@ -13,6 +13,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 
+import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.Animation
@@ -26,7 +27,6 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.ActorState
-import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.MonadStateRead
@@ -80,8 +80,8 @@ promptGetKey dm ov onBlank frontKeyKeys = do
     [] -> do
       frontKeyFrame <- drawOverlay dm onBlank ov lidV
       connFrontendFrontKey frontKeyKeys frontKeyFrame
-  (seqCurrent, seqPrevious, k) <- getsSession slastRecord
-  let slastRecord = (km : seqCurrent, seqPrevious, k)
+  LastRecord seqCurrent seqPrevious k <- getsSession slastRecord
+  let slastRecord = LastRecord (km : seqCurrent) seqPrevious k
   modifySession $ \sess -> sess { slastRecord
                                 , sdisplayNeeded = False }
   return km
@@ -90,7 +90,7 @@ stopPlayBack :: MonadClientUI m => m ()
 stopPlayBack = do
   modifySession $ \sess -> sess
     { slastPlay = []
-    , slastRecord = ([], [], 0)
+    , slastRecord = LastRecord [] [] 0
         -- Needed to cancel macros that contain apostrophes.
     , swaitTimes = - abs (swaitTimes sess)
     }
