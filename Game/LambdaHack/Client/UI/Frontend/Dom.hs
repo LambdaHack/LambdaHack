@@ -1,4 +1,4 @@
--- | Text frontend running in Browser.
+-- | Text frontend running in a browser.
 module Game.LambdaHack.Client.UI.Frontend.Dom
   ( startup, frontendName
   ) where
@@ -7,14 +7,14 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Concurrent
+import           Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
-import Control.Monad.Trans.Reader (ask)
+import           Control.Monad.Trans.Reader (ask)
 import qualified Data.Char as Char
-import Data.IORef
+import           Data.IORef
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
-import Data.Word (Word32)
+import           Data.Word (Word32)
 
 import GHCJS.DOM (currentDocument, currentWindow)
 import GHCJS.DOM.CSSStyleDeclaration (setProperty)
@@ -22,7 +22,7 @@ import GHCJS.DOM.Document (createElement, getBodyUnchecked)
 import GHCJS.DOM.Element (Element (Element), setInnerHTML)
 import GHCJS.DOM.ElementCSSInlineStyle (getStyle)
 import GHCJS.DOM.EventM (EventM, mouseAltKey, mouseButton, mouseCtrlKey,
-                         mouseMetaKey, mouseShiftKey, on, on, preventDefault,
+                         mouseMetaKey, mouseShiftKey, on, preventDefault,
                          stopPropagation)
 import GHCJS.DOM.GlobalEventHandlers (contextMenu, keyDown, mouseUp, wheel)
 import GHCJS.DOM.HTMLCollection (itemUnsafe)
@@ -42,13 +42,13 @@ import GHCJS.DOM.Types (CSSStyleDeclaration, DOM,
 import GHCJS.DOM.WheelEvent (getDeltaY)
 import GHCJS.DOM.Window (requestAnimationFrame_)
 
-import Game.LambdaHack.Client.UI.Frame
-import Game.LambdaHack.Client.UI.Frontend.Common
+import           Game.LambdaHack.Client.ClientOptions
+import           Game.LambdaHack.Client.UI.Frame
+import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
-import Game.LambdaHack.Client.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | Session data maintained by the frontend.

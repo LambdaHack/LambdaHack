@@ -1,29 +1,25 @@
--- | Line terimanl text frontend based on stdin/stdout, intended for logging
--- tests, but may be used for a teletype terminal, or keyboard and printer.
+-- | Line terminal text frontend based on stdin/stdout, intended for logging
+-- tests, but may be used on a teletype terminal, or with keyboard and printer.
 module Game.LambdaHack.Client.UI.Frontend.Teletype
   ( startup, frontendName
-#ifdef EXPOSE_INTERNAL
-    -- * Internal operations
-  , shutdown, display
-#endif
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Concurrent.Async
-import Data.Char (chr, ord)
+import           Control.Concurrent.Async
+import           Data.Char (chr, ord)
 import qualified Data.Char as Char
 import qualified System.IO as SIO
 
-import Game.LambdaHack.Client.UI.Frame
-import Game.LambdaHack.Client.UI.Frontend.Common
+import           Game.LambdaHack.Client.ClientOptions
+import           Game.LambdaHack.Client.UI.Frame
+import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
-import Game.LambdaHack.Client.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- No session data maintained by this frontend

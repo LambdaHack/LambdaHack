@@ -9,19 +9,19 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Concurrent.Async
-import Data.Char (chr, ord)
+import           Control.Concurrent.Async
+import           Data.Char (chr, ord)
 import qualified Data.Map.Strict as M
 import qualified UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C
 
-import Game.LambdaHack.Client.UI.Frame
-import Game.LambdaHack.Client.UI.Frontend.Common
+import           Game.LambdaHack.Client.ClientOptions
+import           Game.LambdaHack.Client.UI.Frame
+import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
-import Game.LambdaHack.Client.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | Session data maintained by the frontend.

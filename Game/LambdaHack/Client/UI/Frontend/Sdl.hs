@@ -3,7 +3,8 @@ module Game.LambdaHack.Client.UI.Frontend.Sdl
   ( startup, frontendName
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , FontAtlas, FrontendSession(..), startupFun, shutdown, display
+  , FontAtlas, FrontendSession(..), startupFun, shutdown, forceShutdown
+  , display, displayNoLock, modTranslate, keyTranslate, colorToRGBA
 #endif
   ) where
 
@@ -29,10 +30,10 @@ import qualified SDL.Font as TTF
 import           SDL.Input.Keyboard.Codes
 import qualified SDL.Vect as Vect
 
+import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
-import           Game.LambdaHack.Client.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point

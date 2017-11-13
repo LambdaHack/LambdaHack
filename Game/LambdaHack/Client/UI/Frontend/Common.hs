@@ -18,6 +18,8 @@ import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Common.Point
 
+-- | Raw frontend definition. The minimal closed set of values that need
+-- to depend on the specifics of the chosen frontend.
 data RawFrontend = RawFrontend
   { fdisplay  :: SingleFrame -> IO ()
   , fshutdown :: IO ()
