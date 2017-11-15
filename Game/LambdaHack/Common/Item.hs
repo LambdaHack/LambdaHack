@@ -1,20 +1,22 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Weapons, treasure and all the other items in the game.
--- No operation in this module involves the state or any of our custom monads.
 module Game.LambdaHack.Common.Item
-  ( -- * The @Item@ type
-    ItemId, Item(..), ItemSource(..)
-  , itemPrice, goesIntoEqp, isMelee, goesIntoInv, goesIntoSha
-  , seedToAspect, meanAspect, aspectRecordToList
-  , aspectRecordFull, aspectsRandom, boostItemKindList
-    -- * Item discovery types
-  , ItemKindIx, ItemSeed, KindMean(..), DiscoveryKind
-  , Benefit(..), DiscoveryBenefit
-  , AspectRecord(..), emptyAspectRecord, sumAspectRecord, DiscoveryAspect
-  , ItemFull(..), ItemDisco(..)
-  , itemNoDisco, itemToFull6
+  ( -- * The @Item@ type and operations
+    ItemId, Item(..)
+  , itemPrice, isMelee, goesIntoEqp, goesIntoInv, goesIntoSha
+    -- * The @AspectRecord@ type and operations
+  , AspectRecord(..), DiscoveryAspect
+  , emptyAspectRecord, sumAspectRecord, aspectRecordToList, meanAspect
+    -- * Item discovery types and operations
+  , ItemKindIx, ItemSeed, ItemDisco(..), ItemFull(..)
+  , KindMean(..), DiscoveryKind, Benefit(..), DiscoveryBenefit
+  , itemNoDisco, itemToFull6, aspectsRandom, seedToAspect, aspectRecordFull
     -- * Inventory management types
   , ItemTimer, ItemQuant, ItemBag, ItemDict
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , castAspect, addMeanAspect, ceilingMeanDice
+#endif
   ) where
 
 import Prelude ()
@@ -22,72 +24,73 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Control.Monad.Trans.State.Strict as St
-import Data.Binary
+import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
-import Data.Hashable (Hashable)
+import           Data.Hashable (Hashable)
 import qualified Data.Ix as Ix
-import GHC.Generics (Generic)
-import System.Random (mkStdGen)
-import qualified System.Random as R
+import           GHC.Generics (Generic)
+import           System.Random (mkStdGen)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
-import Game.LambdaHack.Common.Dice (intToDice)
+import           Game.LambdaHack.Common.Dice (intToDice)
 import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.Flavour
+import           Game.LambdaHack.Common.Flavour
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ItemKind (ItemKind)
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | A unique identifier of an item in the dungeon.
 newtype ItemId = ItemId Int
   deriving (Show, Eq, Ord, Enum, Binary)
 
--- | An index of the kind id of an item. Clients have partial knowledge
--- how these idexes map to kind ids. They gain knowledge by identifying items.
-newtype ItemKindIx = ItemKindIx Int
-  deriving (Show, Eq, Ord, Enum, Ix.Ix, Hashable, Binary)
-
-data KindMean = KindMean
-  { kmKind :: Kind.Id IK.ItemKind
-  , kmMean :: AspectRecord
+-- | Game items in actor possesion or strewn around the dungeon.
+-- The fields @jsymbol@, @jname@ and @jflavour@ make it possible to refer to
+-- and draw an unidentified item. Full information about item is available
+-- through the @jkindIx@ index as soon as the item is identified.
+data Item = Item
+  { jkindIx  :: ItemKindIx    -- ^ index pointing to the kind of the item
+  , jlid     :: LevelId       -- ^ lowest level the item was created at
+  , jfid     :: Maybe FactionId
+                              -- ^ the faction that created the item, if any
+  , jsymbol  :: Char          -- ^ map symbol
+  , jname    :: Text          -- ^ generic name
+  , jflavour :: Flavour       -- ^ flavour
+  , jfeature :: [IK.Feature]  -- ^ public properties
+  , jweight  :: Int           -- ^ weight in grams, obvious enough
+  , jdamage  :: Dice.Dice     -- ^ impact damage of this particular weapon
   }
   deriving (Show, Eq, Generic)
 
-instance Binary KindMean
+instance Hashable Item
 
--- | The map of item kind indexes to item kind ids.
--- The full map, as known by the server, is 1-1.
-type DiscoveryKind = EM.EnumMap ItemKindIx KindMean
+instance Binary Item
 
--- | Fields are intentionally kept non-strict, because they are recomputed
--- often, but not used every time. The fields are, in order:
--- 1. whether the item should be kept in equipment (not in pack nor stash)
--- 2. the total benefit from picking the item up (to use or to put in equipment)
--- 3. the benefit of applying the item to self
--- 4. the (usually negative) benefit of hitting a foe in meleeing with the item
--- 5. the (usually negative) benefit of flinging an item at an opponent
-data Benefit = Benefit
-  { benInEqp  :: ~Bool
-  , benPickup :: ~Double
-  , benApply  :: ~Double
-  , benMelee  :: ~Double
-  , benFling  :: ~Double
-  }
-  deriving (Show, Generic)
+-- | Price an item, taking count into consideration.
+itemPrice :: (Item, Int) -> Int
+itemPrice (item, jcount) =
+  case jsymbol item of
+    '$' -> jcount
+    '*' -> jcount * 100
+    _   -> 0
 
-instance Binary Benefit
+isMelee :: Item -> Bool
+isMelee item = IK.Meleeable `elem` jfeature item
 
-type DiscoveryBenefit = EM.EnumMap ItemId Benefit
+goesIntoEqp :: Item -> Bool
+goesIntoEqp item = IK.Equipable `elem` jfeature item
+                   || IK.Meleeable `elem` jfeature item
 
--- | A seed for rolling aspects of an item
--- Clients have partial knowledge of how item ids map to the seeds.
--- They gain knowledge by identifying items.
-newtype ItemSeed = ItemSeed Int
-  deriving (Show, Eq, Ord, Enum, Hashable, Binary)
+goesIntoInv :: Item -> Bool
+goesIntoInv item = IK.Precious `notElem` jfeature item
+                   && not (goesIntoEqp item)
 
+goesIntoSha :: Item -> Bool
+goesIntoSha item = IK.Precious `elem` jfeature item
+                   && not (goesIntoEqp item)
+
+-- | Record of sums of aspect values of an item, container, actor, etc.
 data AspectRecord = AspectRecord
   { aTimeout     :: Int
   , aHurtMelee   :: Int
@@ -108,6 +111,10 @@ data AspectRecord = AspectRecord
 instance Binary AspectRecord
 
 instance Hashable AspectRecord
+
+-- | The map of item ids to item aspects.
+-- The full map is known by the server.
+type DiscoveryAspect = EM.EnumMap ItemId AspectRecord
 
 emptyAspectRecord :: AspectRecord
 emptyAspectRecord = AspectRecord
@@ -146,12 +153,88 @@ sumAspectRecord l = AspectRecord
   mapScale f = map (\(ar, k) -> f ar * k)
   mapScaleAbility = map (\(ar, k) -> Ability.scaleSkills k $ aSkills ar)
 
--- | The map of item ids to item aspects.
--- The full map is known by the server.
-type DiscoveryAspect = EM.EnumMap ItemId AspectRecord
+aspectRecordToList :: AspectRecord -> [IK.Aspect]
+aspectRecordToList AspectRecord{..} =
+  [IK.Timeout $ intToDice aTimeout | aTimeout /= 0]
+  ++ [IK.AddHurtMelee $ intToDice aHurtMelee | aHurtMelee /= 0]
+  ++ [IK.AddArmorMelee $ intToDice aArmorMelee | aArmorMelee /= 0]
+  ++ [IK.AddArmorRanged $ intToDice aArmorRanged | aArmorRanged /= 0]
+  ++ [IK.AddMaxHP $ intToDice aMaxHP | aMaxHP /= 0]
+  ++ [IK.AddMaxCalm $ intToDice aMaxCalm | aMaxCalm /= 0]
+  ++ [IK.AddSpeed $ intToDice aSpeed | aSpeed /= 0]
+  ++ [IK.AddSight $ intToDice aSight | aSight /= 0]
+  ++ [IK.AddSmell $ intToDice aSmell | aSmell /= 0]
+  ++ [IK.AddShine $ intToDice aShine | aShine /= 0]
+  ++ [IK.AddNocto $ intToDice aNocto | aNocto /= 0]
+  ++ [IK.AddAggression $ intToDice aAggression | aAggression /= 0]
+  ++ [IK.AddAbility ab $ intToDice n | (ab, n) <- EM.assocs aSkills, n /= 0]
+
+meanAspect :: IK.ItemKind -> AspectRecord
+meanAspect kind = foldl' addMeanAspect emptyAspectRecord (IK.iaspects kind)
+
+addMeanAspect :: AspectRecord -> IK.Aspect -> AspectRecord
+addMeanAspect !ar !asp =
+  case asp of
+    IK.Timeout d ->
+      let n = ceilingMeanDice d
+      in assert (aTimeout ar == 0) $ ar {aTimeout = n}
+    IK.AddHurtMelee d ->
+      let n = ceilingMeanDice d
+      in ar {aHurtMelee = n + aHurtMelee ar}
+    IK.AddArmorMelee d ->
+      let n = ceilingMeanDice d
+      in ar {aArmorMelee = n + aArmorMelee ar}
+    IK.AddArmorRanged d ->
+      let n = ceilingMeanDice d
+      in ar {aArmorRanged = n + aArmorRanged ar}
+    IK.AddMaxHP d ->
+      let n = ceilingMeanDice d
+      in ar {aMaxHP = n + aMaxHP ar}
+    IK.AddMaxCalm d ->
+      let n = ceilingMeanDice d
+      in ar {aMaxCalm = n + aMaxCalm ar}
+    IK.AddSpeed d ->
+      let n = ceilingMeanDice d
+      in ar {aSpeed = n + aSpeed ar}
+    IK.AddSight d ->
+      let n = ceilingMeanDice d
+      in ar {aSight = n + aSight ar}
+    IK.AddSmell d ->
+      let n = ceilingMeanDice d
+      in ar {aSmell = n + aSmell ar}
+    IK.AddShine d ->
+      let n = ceilingMeanDice d
+      in ar {aShine = n + aShine ar}
+    IK.AddNocto d ->
+      let n = ceilingMeanDice d
+      in ar {aNocto = n + aNocto ar}
+    IK.AddAggression d ->
+      let n = ceilingMeanDice d
+      in ar {aAggression = n + aAggression ar}
+    IK.AddAbility ab d ->
+      let n = ceilingMeanDice d
+      in ar {aSkills = Ability.addSkills (EM.singleton ab n)
+                                         (aSkills ar)}
+
+ceilingMeanDice :: Dice.Dice -> Int
+ceilingMeanDice d = ceiling $ Dice.meanDice d
+
+-- | An index of the kind identifier of an item. Clients have partial knowledge
+-- how these idexes map to kind ids. They gain knowledge by identifying items.
+newtype ItemKindIx = ItemKindIx Int
+  deriving (Show, Eq, Ord, Enum, Ix.Ix, Hashable, Binary)
+
+-- | A seed for rolling aspects of an item
+-- Clients have partial knowledge of how item ids map to the seeds.
+-- They gain knowledge by identifying items.
+newtype ItemSeed = ItemSeed Int
+  deriving (Show, Eq, Ord, Enum, Hashable, Binary)
 
 -- Tiny speedup from making fields non-strict (1%, a bit more GC, less alloc).
 -- The fields of @KindMean@ also need to be non-strict then, otherwise slowdown.
+-- | The secret part of the information about an item. If a faction
+-- knows the aspects of the item (the 'itemAspect' field is not empty),
+-- this is a complete secret information/.
 data ItemDisco = ItemDisco
   { itemKindId     :: Kind.Id IK.ItemKind
   , itemKind       :: IK.ItemKind
@@ -161,6 +244,7 @@ data ItemDisco = ItemDisco
   deriving Show
 
 -- No speedup from making fields non-strict.
+-- | Full information about an item.
 data ItemFull = ItemFull
   { itemBase  :: Item
   , itemK     :: Int
@@ -168,6 +252,40 @@ data ItemFull = ItemFull
   , itemDisco :: Maybe ItemDisco
   }
   deriving Show
+
+-- | Partial information about an item: it's kind and the mean aspect values
+-- computed (and here cached) for items of that kind.
+data KindMean = KindMean
+  { kmKind :: Kind.Id IK.ItemKind
+  , kmMean :: AspectRecord
+  }
+  deriving (Show, Eq, Generic)
+
+instance Binary KindMean
+
+-- | The map of item kind indexes to item kind ids.
+-- The full map, as known by the server, is 1-1.
+type DiscoveryKind = EM.EnumMap ItemKindIx KindMean
+
+-- | Fields are intentionally kept non-strict, because they are recomputed
+-- often, but not used every time. The fields are, in order:
+-- 1. whether the item should be kept in equipment (not in pack nor stash)
+-- 2. the total benefit from picking the item up (to use or to put in equipment)
+-- 3. the benefit of applying the item to self
+-- 4. the (usually negative) benefit of hitting a foe in meleeing with the item
+-- 5. the (usually negative) benefit of flinging an item at an opponent
+data Benefit = Benefit
+  { benInEqp  :: ~Bool
+  , benPickup :: ~Double
+  , benApply  :: ~Double
+  , benMelee  :: ~Double
+  , benFling  :: ~Double
+  }
+  deriving (Show, Generic)
+
+instance Binary Benefit
+
+type DiscoveryBenefit = EM.EnumMap ItemId Benefit
 
 itemNoDisco :: (Item, Int) -> ItemFull
 itemNoDisco (itemBase, itemK) =
@@ -187,75 +305,19 @@ itemToFull6 Kind.COps{coitem=Kind.Ops{okind}}
                         , itemAspect = EM.lookup iid discoAspect }
   in ItemFull {..}
 
--- | Game items in actor possesion or strewn around the dungeon.
--- The fields @jsymbol@, @jname@ and @jflavour@ make it possible to refer to
--- and draw an unidentified item. Full information about item is available
--- through the @jkindIx@ index as soon as the item is identified.
-data Item = Item
-  { jkindIx  :: ItemKindIx    -- ^ index pointing to the kind of the item
-  , jlid     :: LevelId       -- ^ lowest level the item was created at
-  , jfid     :: Maybe FactionId
-                              -- ^ the faction that created the item, if any
-  , jsymbol  :: Char          -- ^ map symbol
-  , jname    :: Text          -- ^ generic name
-  , jflavour :: Flavour       -- ^ flavour
-  , jfeature :: [IK.Feature]  -- ^ public properties
-  , jweight  :: Int           -- ^ weight in grams, obvious enough
-  , jdamage  :: Dice.Dice     -- ^ impact damage of this particular weapon
-  }
-  deriving (Show, Eq, Generic)
+-- If @False@, aspects of this kind are most probably fixed, not random.
+aspectsRandom :: IK.ItemKind -> Bool
+aspectsRandom kind =
+  let rollM = foldlM' (castAspect (AbsDepth 10) (AbsDepth 10))
+                      emptyAspectRecord (IK.iaspects kind)
+      gen = mkStdGen 0
+  in show gen /= show (St.execState rollM gen)
 
-instance Hashable Item
-
-instance Binary Item
-
-data ItemSource =
-    ItemSourceLevel LevelId
-  | ItemSourceFaction FactionId
-  deriving (Show, Eq, Generic)
-
-instance Hashable ItemSource
-
-instance Binary ItemSource
-
--- | Price an item, taking count into consideration.
-itemPrice :: (Item, Int) -> Int
-itemPrice (item, jcount) =
-  case jsymbol item of
-    '$' -> jcount
-    '*' -> jcount * 100
-    _   -> 0
-
-goesIntoEqp :: Item -> Bool
-goesIntoEqp item = IK.Equipable `elem` jfeature item
-                   || IK.Meleeable `elem` jfeature item
-
-isMelee :: Item -> Bool
-isMelee item = IK.Meleeable `elem` jfeature item
-
-goesIntoInv :: Item -> Bool
-goesIntoInv item = IK.Precious `notElem` jfeature item
-                   && not (goesIntoEqp item)
-
-goesIntoSha :: Item -> Bool
-goesIntoSha item = IK.Precious `elem` jfeature item
-                   && not (goesIntoEqp item)
-
-aspectRecordToList :: AspectRecord -> [IK.Aspect]
-aspectRecordToList AspectRecord{..} =
-  [IK.Timeout $ intToDice aTimeout | aTimeout /= 0]
-  ++ [IK.AddHurtMelee $ intToDice aHurtMelee | aHurtMelee /= 0]
-  ++ [IK.AddArmorMelee $ intToDice aArmorMelee | aArmorMelee /= 0]
-  ++ [IK.AddArmorRanged $ intToDice aArmorRanged | aArmorRanged /= 0]
-  ++ [IK.AddMaxHP $ intToDice aMaxHP | aMaxHP /= 0]
-  ++ [IK.AddMaxCalm $ intToDice aMaxCalm | aMaxCalm /= 0]
-  ++ [IK.AddSpeed $ intToDice aSpeed | aSpeed /= 0]
-  ++ [IK.AddSight $ intToDice aSight | aSight /= 0]
-  ++ [IK.AddSmell $ intToDice aSmell | aSmell /= 0]
-  ++ [IK.AddShine $ intToDice aShine | aShine /= 0]
-  ++ [IK.AddNocto $ intToDice aNocto | aNocto /= 0]
-  ++ [IK.AddAggression $ intToDice aAggression | aAggression /= 0]
-  ++ [IK.AddAbility ab $ intToDice n | (ab, n) <- EM.assocs aSkills, n /= 0]
+seedToAspect :: ItemSeed -> IK.ItemKind -> AbsDepth -> AbsDepth -> AspectRecord
+seedToAspect (ItemSeed itemSeed) kind ldepth totalDepth =
+  let rollM = foldlM' (castAspect ldepth totalDepth) emptyAspectRecord
+                      (IK.iaspects kind)
+  in St.evalState rollM (mkStdGen itemSeed)
 
 castAspect :: AbsDepth -> AbsDepth -> AspectRecord -> IK.Aspect
            -> Rnd AspectRecord
@@ -302,70 +364,6 @@ castAspect !ldepth !totalDepth !ar !asp =
       return $! ar {aSkills = Ability.addSkills (EM.singleton ab n)
                                                 (aSkills ar)}
 
-ceilingMeanDice :: Dice.Dice -> Int
-ceilingMeanDice d = ceiling $ Dice.meanDice d
-
-addMeanAspect :: AspectRecord -> IK.Aspect -> AspectRecord
-addMeanAspect !ar !asp =
-  case asp of
-    IK.Timeout d ->
-      let n = ceilingMeanDice d
-      in assert (aTimeout ar == 0) $ ar {aTimeout = n}
-    IK.AddHurtMelee d ->
-      let n = ceilingMeanDice d
-      in ar {aHurtMelee = n + aHurtMelee ar}
-    IK.AddArmorMelee d ->
-      let n = ceilingMeanDice d
-      in ar {aArmorMelee = n + aArmorMelee ar}
-    IK.AddArmorRanged d ->
-      let n = ceilingMeanDice d
-      in ar {aArmorRanged = n + aArmorRanged ar}
-    IK.AddMaxHP d ->
-      let n = ceilingMeanDice d
-      in ar {aMaxHP = n + aMaxHP ar}
-    IK.AddMaxCalm d ->
-      let n = ceilingMeanDice d
-      in ar {aMaxCalm = n + aMaxCalm ar}
-    IK.AddSpeed d ->
-      let n = ceilingMeanDice d
-      in ar {aSpeed = n + aSpeed ar}
-    IK.AddSight d ->
-      let n = ceilingMeanDice d
-      in ar {aSight = n + aSight ar}
-    IK.AddSmell d ->
-      let n = ceilingMeanDice d
-      in ar {aSmell = n + aSmell ar}
-    IK.AddShine d ->
-      let n = ceilingMeanDice d
-      in ar {aShine = n + aShine ar}
-    IK.AddNocto d ->
-      let n = ceilingMeanDice d
-      in ar {aNocto = n + aNocto ar}
-    IK.AddAggression d ->
-      let n = ceilingMeanDice d
-      in ar {aAggression = n + aAggression ar}
-    IK.AddAbility ab d ->
-      let n = ceilingMeanDice d
-      in ar {aSkills = Ability.addSkills (EM.singleton ab n)
-                                         (aSkills ar)}
-
-seedToAspect :: ItemSeed -> IK.ItemKind -> AbsDepth -> AbsDepth -> AspectRecord
-seedToAspect (ItemSeed itemSeed) kind ldepth totalDepth =
-  let rollM = foldlM' (castAspect ldepth totalDepth) emptyAspectRecord
-                      (IK.iaspects kind)
-  in St.evalState rollM (mkStdGen itemSeed)
-
--- If @False@, aspects of this kind are most probably fixed, not random.
-aspectsRandom :: IK.ItemKind -> Bool
-aspectsRandom kind =
-  let rollM = foldlM' (castAspect (AbsDepth 10) (AbsDepth 10))
-                      emptyAspectRecord (IK.iaspects kind)
-      gen = mkStdGen 0
-  in show gen /= show (St.execState rollM gen)
-
-meanAspect :: IK.ItemKind -> AspectRecord
-meanAspect kind = foldl' addMeanAspect emptyAspectRecord (IK.iaspects kind)
-
 aspectRecordFull :: ItemFull -> AspectRecord
 aspectRecordFull itemFull =
   case itemDisco itemFull of
@@ -373,28 +371,15 @@ aspectRecordFull itemFull =
     Just ItemDisco{itemAspectMean} -> itemAspectMean
     Nothing -> emptyAspectRecord
 
-boostItemKindList :: R.StdGen -> [ItemKind] -> [ItemKind]
-boostItemKindList _ [] = []
-boostItemKindList initialGen l =
-  let (r, _) = R.randomR (0, length l - 1) initialGen
-  in case splitAt r l of
-    (pre, i : post) -> pre ++ boostItemKind i : post
-    _               -> error $  "" `showFailure` l
-
-boostItemKind :: ItemKind -> ItemKind
-boostItemKind i =
-  let mainlineLabel (label, _) = label `elem` ["useful", "treasure"]
-  in if any mainlineLabel (IK.ifreq i)
-     then i { IK.ifreq = ("useful", 10000)
-                         : filter (not . mainlineLabel) (IK.ifreq i)
-            , IK.ieffects = delete IK.Unique $ IK.ieffects i
-            }
-     else i
-
 type ItemTimer = [Time]
 
+-- | Number of items in a bag, together with recharging timer, in case of
+-- items that need recharging, exists only temporarily or auto-activate
+-- at regular intervals.
 type ItemQuant = (Int, ItemTimer)
 
+-- | A bag of items, e.g., one of the stores of an actor or the items
+-- on a particular floor position or embedded in a particular map tile.
 type ItemBag = EM.EnumMap ItemId ItemQuant
 
 -- | All items in the dungeon (including in actor inventories),

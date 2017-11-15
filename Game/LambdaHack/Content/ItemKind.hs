@@ -2,12 +2,17 @@
 -- | The type of kinds of weapons, treasure, organs, blasts, etc.
 module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..)
+  , boostItemKindList
   , Effect(..), TimerDice(..)
   , Aspect(..), ThrowMod(..)
   , Feature(..), EqpSlot(..)
   , forApplyEffect, forIdEffect
   , toDmg, toVelocity, toLinger, toOrganGameTurn, toOrganActorTurn, toOrganNone
   , validateSingleItemKind, validateAllItemKind
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , boostItemKind
+#endif
   ) where
 
 import Prelude ()
@@ -21,6 +26,7 @@ import qualified Data.Set as S
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
+import qualified System.Random as R
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
@@ -46,6 +52,24 @@ data ItemKind = ItemKind
                                   -- ^ accompanying organs and items
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound
+
+boostItemKindList :: R.StdGen -> [ItemKind] -> [ItemKind]
+boostItemKindList _ [] = []
+boostItemKindList initialGen l =
+  let (r, _) = R.randomR (0, length l - 1) initialGen
+  in case splitAt r l of
+    (pre, i : post) -> pre ++ boostItemKind i : post
+    _               -> error $  "" `showFailure` l
+
+boostItemKind :: ItemKind -> ItemKind
+boostItemKind i =
+  let mainlineLabel (label, _) = label `elem` ["useful", "treasure"]
+  in if any mainlineLabel (ifreq i)
+     then i { ifreq = ("useful", 10000)
+                         : filter (not . mainlineLabel) (ifreq i)
+            , ieffects = delete Unique $ ieffects i
+            }
+     else i
 
 -- | Effects of items. Can be invoked by the item wielder to affect
 -- another actor or the wielder himself. Many occurences in the same item

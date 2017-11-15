@@ -1,11 +1,11 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | High score table operations.
 module Game.LambdaHack.Common.HighScore
-  ( ScoreDict, ScoreTable
+  ( ScoreTable, ScoreDict
   , empty, register, showScore, getTable, getRecord, highSlideshow
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , ScoreRecord
+  , ScoreRecord, insertPos, showTable, showNearbyScores
 #endif
   ) where
 
@@ -13,21 +13,22 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
+import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
-import Data.Time.Clock.POSIX
-import Data.Time.LocalTime
-import GHC.Generics (Generic)
+import           Data.Time.Clock.POSIX
+import           Data.Time.LocalTime
+import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ItemKind (ItemKind)
-import Game.LambdaHack.Content.ModeKind (HiCondPoly, HiIndeterminant (..),
-                                         ModeKind, Outcome (..))
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Content.ItemKind (ItemKind)
+import           Game.LambdaHack.Content.ModeKind (HiCondPoly,
+                                                   HiIndeterminant (..),
+                                                   ModeKind, Outcome (..))
 
 -- | A single score record. Records are ordered in the highscore table,
 -- from the best to the worst, in lexicographic ordering wrt the fields below.
@@ -54,42 +55,6 @@ instance Show ScoreTable where
 
 -- | A dictionary from game mode IDs to scores tables.
 type ScoreDict = EM.EnumMap (Kind.Id ModeKind) ScoreTable
-
--- | Show a single high score, from the given ranking in the high score table.
-showScore :: TimeZone -> (Int, ScoreRecord) -> [Text]
-showScore tz (pos, score) =
-  let Status{stOutcome, stDepth} = status score
-      died = case stOutcome of
-        Killed   -> "perished on level" <+> tshow (abs stDepth)
-        Defeated -> "got defeated"
-        Camping  -> "set camp"
-        Conquer  -> "slew all opposition"
-        Escape   -> "emerged victorious"
-        Restart  -> "resigned prematurely"
-      curDate = tshow . utcToLocalTime tz . posixSecondsToUTCTime . date $ score
-      turns = absoluteTimeNegate (negTime score) `timeFitUp` timeTurn
-      tpos = T.justifyRight 3 ' ' $ tshow pos
-      tscore = T.justifyRight 6 ' ' $ tshow $ points score
-      victims = let nkilled = sum $ EM.elems $ theirVictims score
-                    nlost = sum $ EM.elems $ ourVictims score
-                in "killed" <+> tshow nkilled <> ", lost" <+> tshow nlost
-      diff = cdiff $ challenge score
-      diffText | diff == difficultyDefault = ""
-               | otherwise = "difficulty" <+> tshow diff <> ", "
-      tturns = makePhrase [MU.CarWs turns "turn"]
-  in [ tpos <> "." <+> tscore <+> gplayerName score
-       <+> died <> "," <+> victims <> ","
-     , "            "
-       <> diffText <> "after" <+> tturns <+> "on" <+> curDate <> "."
-     ]
-
-getTable :: Kind.Id ModeKind -> ScoreDict -> ScoreTable
-getTable = EM.findWithDefault (ScoreTable [])
-
-getRecord :: Int -> ScoreTable -> ScoreRecord
-getRecord pos (ScoreTable table) =
-  fromMaybe (error $ "" `showFailure` (pos, table))
-  $ listToMaybe $ drop (pred pos) table
 
 -- | Empty score table
 empty :: ScoreDict
@@ -140,6 +105,42 @@ register table total time status@Status{stOutcome} date challenge gplayerName
       negTime = absoluteTimeNegate time
       score = ScoreRecord{..}
   in (points > 0, insertPos score table)
+
+-- | Show a single high score, from the given ranking in the high score table.
+showScore :: TimeZone -> (Int, ScoreRecord) -> [Text]
+showScore tz (pos, score) =
+  let Status{stOutcome, stDepth} = status score
+      died = case stOutcome of
+        Killed   -> "perished on level" <+> tshow (abs stDepth)
+        Defeated -> "got defeated"
+        Camping  -> "set camp"
+        Conquer  -> "slew all opposition"
+        Escape   -> "emerged victorious"
+        Restart  -> "resigned prematurely"
+      curDate = tshow . utcToLocalTime tz . posixSecondsToUTCTime . date $ score
+      turns = absoluteTimeNegate (negTime score) `timeFitUp` timeTurn
+      tpos = T.justifyRight 3 ' ' $ tshow pos
+      tscore = T.justifyRight 6 ' ' $ tshow $ points score
+      victims = let nkilled = sum $ EM.elems $ theirVictims score
+                    nlost = sum $ EM.elems $ ourVictims score
+                in "killed" <+> tshow nkilled <> ", lost" <+> tshow nlost
+      diff = cdiff $ challenge score
+      diffText | diff == difficultyDefault = ""
+               | otherwise = "difficulty" <+> tshow diff <> ", "
+      tturns = makePhrase [MU.CarWs turns "turn"]
+  in [ tpos <> "." <+> tscore <+> gplayerName score
+       <+> died <> "," <+> victims <> ","
+     , "            "
+       <> diffText <> "after" <+> tturns <+> "on" <+> curDate <> "."
+     ]
+
+getTable :: Kind.Id ModeKind -> ScoreDict -> ScoreTable
+getTable = EM.findWithDefault (ScoreTable [])
+
+getRecord :: Int -> ScoreTable -> ScoreRecord
+getRecord pos (ScoreTable table) =
+  fromMaybe (error $ "" `showFailure` (pos, table))
+  $ listToMaybe $ drop (pred pos) table
 
 -- | Show a screenful of the high scores table.
 -- Parameter height is the number of (3-line) scores to be shown.

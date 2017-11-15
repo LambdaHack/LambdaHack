@@ -1,13 +1,16 @@
 -- | Determining the strongest item wrt some property.
--- No operation in this module involves the state or any of our custom monads.
 module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
-    strengthOnSmash, strengthCreateOrgan, strengthDropOrgan
-  , strengthEqpSlot, strengthToThrow, strengthEffect, strongestSlot
+    strengthEffect, strengthOnSmash, strengthCreateOrgan, strengthDropOrgan
+  , strengthEqpSlot, strengthToThrow, strongestSlot
     -- * Assorted
-  , totalRange, computeTrajectory, itemTrajectory
-  , unknownMelee, filterRecharging, stripRecharging, stripOnSmash
+  , computeTrajectory, itemTrajectory, totalRange
   , hasCharge, damageUsefulness, strongestMelee, prEqpSlot
+  , unknownMelee, filterRecharging, stripRecharging, stripOnSmash
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , unknownAspect
+#endif
   ) where
 
 import Prelude ()
@@ -19,12 +22,12 @@ import qualified Data.Ord as Ord
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ItemKind
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Content.ItemKind
 
 strengthEffect :: (Effect -> [b]) -> ItemFull -> [b]
 strengthEffect f itemFull =
@@ -71,6 +74,27 @@ strengthToThrow item =
     [x] -> x
     xs -> error $ "" `showFailure` (xs, item)
 
+-- This ignores items that don't go into equipment, as determined in @inEqp@.
+-- They are removed from equipment elsewhere via @harmful@.
+strongestSlot :: DiscoveryBenefit -> EqpSlot -> [(ItemId, ItemFull)]
+              -> [(Int, (ItemId, ItemFull))]
+strongestSlot discoBenefit eqpSlot is =
+  let f (iid, itemFull) =
+        let rawDmg = damageUsefulness $ itemBase itemFull
+            (bInEqp, bPickup) = case EM.lookup iid discoBenefit of
+               Just Benefit{benInEqp, benPickup} -> (benInEqp, benPickup)
+               Nothing -> (goesIntoEqp $ itemBase itemFull, rawDmg)
+        in if not bInEqp
+           then Nothing
+           else Just $
+             let ben = if eqpSlot == EqpSlotWeapon
+                       -- For equipping/unequipping a weapon we take into
+                       -- account not only melee power, but also aspects, etc.
+                       then ceiling bPickup
+                       else prEqpSlot eqpSlot $ aspectRecordFull itemFull
+             in (ben, (iid, itemFull))
+  in sortBy (flip $ Ord.comparing fst) $ mapMaybe f is
+
 computeTrajectory :: Int -> Int -> Int -> [Point] -> ([Vector], (Speed, Int))
 computeTrajectory weight throwVelocity throwLinger path =
   let speed = speedFromWeight weight throwVelocity
@@ -85,37 +109,6 @@ itemTrajectory item path =
 
 totalRange :: Item -> Int
 totalRange item = snd $ snd $ itemTrajectory item []
-
-prEqpSlot :: EqpSlot -> AspectRecord -> Int
-prEqpSlot eqpSlot ar@AspectRecord{..} =
-  case eqpSlot of
-    EqpSlotMiscBonus ->
-      aTimeout  -- usually better items have longer timeout
-      + aMaxCalm + aSmell
-      + aNocto  -- powerful, but hard to boost over aSight
-    EqpSlotAddHurtMelee -> aHurtMelee
-    EqpSlotAddArmorMelee -> aArmorMelee
-    EqpSlotAddArmorRanged -> aArmorRanged
-    EqpSlotAddMaxHP -> aMaxHP
-    EqpSlotAddSpeed -> aSpeed
-    EqpSlotAddSight -> aSight
-    EqpSlotLightSource -> aShine
-    EqpSlotWeapon -> error $ "" `showFailure` ar
-    EqpSlotMiscAbility ->
-      EM.findWithDefault 0 Ability.AbWait aSkills
-      + EM.findWithDefault 0 Ability.AbMoveItem aSkills
-    EqpSlotAbMove -> EM.findWithDefault 0 Ability.AbMove aSkills
-    EqpSlotAbMelee -> EM.findWithDefault 0 Ability.AbMelee aSkills
-    EqpSlotAbDisplace -> EM.findWithDefault 0 Ability.AbDisplace aSkills
-    EqpSlotAbAlter -> EM.findWithDefault 0 Ability.AbAlter aSkills
-    EqpSlotAbProject -> EM.findWithDefault 0 Ability.AbProject aSkills
-    EqpSlotAbApply -> EM.findWithDefault 0 Ability.AbApply aSkills
-    EqpSlotAddMaxCalm -> aMaxCalm
-    EqpSlotAddSmell -> aSmell
-    EqpSlotAddNocto -> aNocto
-    EqpSlotAddAggression -> aAggression
-    EqpSlotAbWait -> EM.findWithDefault 0 Ability.AbWait aSkills
-    EqpSlotAbMoveItem -> EM.findWithDefault 0 Ability.AbMoveItem aSkills
 
 hasCharge :: Time -> ItemFull -> Bool
 hasCharge localTime itemFull@ItemFull{..} =
@@ -150,26 +143,36 @@ strongestMelee mdiscoBenefit localTime is =
   -- e.g., geysers, bees. This is intended and fun.
   in sortBy (flip $ Ord.comparing fst) $ map f is
 
--- This ignores items that don't go into equipment, as determined in @inEqp@.
--- They are removed from equipment elsewhere via @harmful@.
-strongestSlot :: DiscoveryBenefit -> EqpSlot -> [(ItemId, ItemFull)]
-              -> [(Int, (ItemId, ItemFull))]
-strongestSlot discoBenefit eqpSlot is =
-  let f (iid, itemFull) =
-        let rawDmg = damageUsefulness $ itemBase itemFull
-            (bInEqp, bPickup) = case EM.lookup iid discoBenefit of
-               Just Benefit{benInEqp, benPickup} -> (benInEqp, benPickup)
-               Nothing -> (goesIntoEqp $ itemBase itemFull, rawDmg)
-        in if not bInEqp
-           then Nothing
-           else Just $
-             let ben = if eqpSlot == EqpSlotWeapon
-                       -- For equipping/unequipping a weapon we take into
-                       -- account not only melee power, but also aspects, etc.
-                       then ceiling bPickup
-                       else prEqpSlot eqpSlot $ aspectRecordFull itemFull
-             in (ben, (iid, itemFull))
-  in sortBy (flip $ Ord.comparing fst) $ mapMaybe f is
+prEqpSlot :: EqpSlot -> AspectRecord -> Int
+prEqpSlot eqpSlot ar@AspectRecord{..} =
+  case eqpSlot of
+    EqpSlotMiscBonus ->
+      aTimeout  -- usually better items have longer timeout
+      + aMaxCalm + aSmell
+      + aNocto  -- powerful, but hard to boost over aSight
+    EqpSlotAddHurtMelee -> aHurtMelee
+    EqpSlotAddArmorMelee -> aArmorMelee
+    EqpSlotAddArmorRanged -> aArmorRanged
+    EqpSlotAddMaxHP -> aMaxHP
+    EqpSlotAddSpeed -> aSpeed
+    EqpSlotAddSight -> aSight
+    EqpSlotLightSource -> aShine
+    EqpSlotWeapon -> error $ "" `showFailure` ar
+    EqpSlotMiscAbility ->
+      EM.findWithDefault 0 Ability.AbWait aSkills
+      + EM.findWithDefault 0 Ability.AbMoveItem aSkills
+    EqpSlotAbMove -> EM.findWithDefault 0 Ability.AbMove aSkills
+    EqpSlotAbMelee -> EM.findWithDefault 0 Ability.AbMelee aSkills
+    EqpSlotAbDisplace -> EM.findWithDefault 0 Ability.AbDisplace aSkills
+    EqpSlotAbAlter -> EM.findWithDefault 0 Ability.AbAlter aSkills
+    EqpSlotAbProject -> EM.findWithDefault 0 Ability.AbProject aSkills
+    EqpSlotAbApply -> EM.findWithDefault 0 Ability.AbApply aSkills
+    EqpSlotAddMaxCalm -> aMaxCalm
+    EqpSlotAddSmell -> aSmell
+    EqpSlotAddNocto -> aNocto
+    EqpSlotAddAggression -> aAggression
+    EqpSlotAbWait -> EM.findWithDefault 0 Ability.AbWait aSkills
+    EqpSlotAbMoveItem -> EM.findWithDefault 0 Ability.AbMoveItem aSkills
 
 unknownAspect :: (Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f itemFull =

@@ -5,11 +5,15 @@ module Game.LambdaHack.Common.Level
     LevelId, AbsDepth, Dungeon
   , ascendInBranch, whereTo
     -- * The @Level@ type and its components
-  , Level(..), ItemFloor, ActorMap, TileMap, SmellMap
+  , ItemFloor, ActorMap, TileMap, SmellMap, Level(..)
     -- * Component updates
   , updateFloor, updateEmbed, updateActorMap, updateTile, updateSmell
     -- * Level query
   , at, findPoint, findPos, findPosTry, findPosTry2
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , assertSparseItems, assertSparseActors
+#endif
   ) where
 
 import Prelude ()
@@ -31,10 +35,10 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import           Game.LambdaHack.Content.TileKind (TileKind)
 
--- | The complete dungeon is a map from level names to levels.
+-- | The complete dungeon is a map from level identifiers to levels.
 type Dungeon = EM.EnumMap LevelId Level
 
--- | Levels in the current branch, @k@ levels shallower than the current.
+-- | Levels in the current branch, one level up (or down) from the current.
 ascendInBranch :: Dungeon -> Bool -> LevelId -> [LevelId]
 ascendInBranch dungeon up lid =
   -- Currently there is just one branch, so the computation is simple.
@@ -94,7 +98,7 @@ type SmellMap = EM.EnumMap Point Time
 data Level = Level
   { ldepth      :: AbsDepth   -- ^ absolute depth of the level
   , lfloor      :: ItemFloor  -- ^ remembered items lying on the floor
-  , lembed      :: ItemFloor  -- ^ items embedded in the tile
+  , lembed      :: ItemFloor  -- ^ remembered items embedded in the tile
   , lactor      :: ActorMap   -- ^ seen actors at positions on the level
   , ltile       :: TileMap    -- ^ remembered level map
   , lxsize      :: X          -- ^ width of the level
@@ -113,7 +117,7 @@ data Level = Level
   , litemFreq   :: Freqs ItemKind
                               -- ^ frequency of initial items; [] for clients
   , lescape     :: [Point]    -- ^ positions of IK.Escape tiles
-  , lnight      :: Bool
+  , lnight      :: Bool       -- ^ whether the level is covered in darkness
   }
   deriving (Show, Eq)
 

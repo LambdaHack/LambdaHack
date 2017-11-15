@@ -1,15 +1,12 @@
 {-# LANGUAGE DeriveGeneric, FlexibleInstances, TypeSynonymInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
--- | Representation of dice for parameters scaled with current level depth.
+-- | Representation of dice scaled with current level depth.
 module Game.LambdaHack.Common.Dice
   ( -- * Frequency distribution for casting dice scaled with level depth
     Dice, castDice, d, dl, z, zl, intToDice
-  , maxDice, minDice, meanDice, reduceDice
+  , minmaxDice, maxDice, minDice, meanDice, reduceDice
     -- * Dice for rolling a pair of integer parameters representing coordinates.
   , DiceXY(..), maxDiceXY, minDiceXY, meanDiceXY
-#ifdef EXPOSE_INTERNAL
-    -- * Internal operations
-#endif
   ) where
 
 import Prelude ()

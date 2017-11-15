@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveFoldable, DeriveGeneric, DeriveTraversable #-}
--- | A list of items with relative frequencies of appearance.
+-- | A list of entities with relative frequencies of appearance.
 module Game.LambdaHack.Common.Frequency
   ( -- * The @Frequency@ type
     Frequency

@@ -4,11 +4,15 @@ module Game.LambdaHack.Common.Flavour
   ( -- * The @Flavour@ type
     Flavour
   , -- * Constructors
-    zipPlain, zipFancy, stdFlav, zipLiquid
+    zipPlain, zipFancy, zipLiquid, stdFlav
   , -- * Accessors
     flavourToColor, flavourToName
     -- * Assorted
-  , colorToTeamName, colorToPlainName, colorToFancyName
+  , colorToPlainName, colorToFancyName, colorToTeamName
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , FancyName, colorToLiquidName
+#endif
   ) where
 
 import Prelude ()

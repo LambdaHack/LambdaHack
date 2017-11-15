@@ -1,4 +1,4 @@
--- | Saving/loading with serialization and compression.
+-- | Saving/loading to JS storeage, mimicking operations on files.
 module Game.LambdaHack.Common.JSFile
   ( encodeEOF, strictDecodeEOF
   , tryCreateDir, doesFileExist, tryWriteFile, readFile, renameFile
@@ -8,14 +8,14 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
+import           Data.Binary
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeLatin1)
-import GHCJS.DOM (currentWindow)
-import GHCJS.DOM.Storage (getItem, removeItem, setItem)
-import GHCJS.DOM.Types (runDOM)
-import GHCJS.DOM.Window (getLocalStorage)
+import           Data.Text.Encoding (decodeLatin1)
+import           GHCJS.DOM (currentWindow)
+import           GHCJS.DOM.Storage (getItem, removeItem, setItem)
+import           GHCJS.DOM.Types (runDOM)
+import           GHCJS.DOM.Window (getLocalStorage)
 
 -- | Serialize and save data with an EOF marker. In JS, compression
 -- is probably performed by the browser and we don't have access
@@ -54,7 +54,6 @@ doesFileExist path = flip runDOM undefined $ do
   let fileExists = isJust (mitem :: Maybe String)
   return $! fileExists
 
--- | Try to write a file, given content, if the file not already there.
 tryWriteFile :: FilePath -> String -> IO ()
 tryWriteFile path content = flip runDOM undefined $ do
   Just win <- currentWindow

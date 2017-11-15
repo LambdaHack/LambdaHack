@@ -1,18 +1,18 @@
 {-# LANGUAGE TupleSections #-}
--- | Operations on the 'Actor' type that need the 'State' type,
+-- | Operations on the 'Actor' type, and related, that need the 'State' type,
 -- but not our custom monad types.
 module Game.LambdaHack.Common.ActorState
   ( fidActorNotProjAssocs, actorAssocs, actorRegularAssocs
   , warActorRegularList, friendlyActorRegularList, fidActorRegularIds
-  , bagAssocs, bagAssocsK, calculateTotal
-  , mergeItemQuant, sharedEqp, sharedAllOwnedFid, findIid
+  , bagAssocs, bagAssocsK, posToAidsLvl, posToAids, posToAssocs
+  , nearbyFreePoints, calculateTotal, mergeItemQuant
+  , sharedInv, sharedEqp, sharedAllOwned, sharedAllOwnedFid, findIid
+  , getActorBody, getActorAspect, getCarriedAssocs, getCarriedIidCStore
   , getContainerBag, getFloorBag, getEmbedBag, getBodyStoreBag
-  , mapActorItems_, getActorBody, getActorAssocs
-  , nearbyFreePoints, getCarriedAssocs, getCarriedIidCStore
-  , posToAidsLvl, posToAids, posToAssocs
-  , memActor, getActorAspect, getLocalTime, regenCalmDelta
+  , mapActorItems_, getActorAssocs, getActorAssocsK
+  , memActor, getLocalTime, regenCalmDelta
   , actorInAmbient, canDeAmbientList, actorSkills, dispEnemy
-  , itemToFull, fullAssocs, storeFromC, lidFromC, posFromC, aidFromC
+  , itemToFull, fullAssocs, storeFromC, aidFromC, lidFromC, posFromC
   , isEscape, isStair, anyFoeAdj, actorAdjacentAssocs
   , armorHurtBonus, inMelee
   ) where

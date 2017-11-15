@@ -1,6 +1,5 @@
 {-# LANGUAGE TupleSections #-}
--- | Game action monads and basic building blocks for human and computer
--- player actions. Has no access to the main action type.
+-- | Game state reading monad and basic operations.
 module Game.LambdaHack.Common.MonadStateRead
   ( MonadStateRead(..)
   , getState, getLevel, nUI
@@ -25,6 +24,11 @@ import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Content.ModeKind
 
+-- | Monad for reading game state. A state monad with state modification
+-- disallowed (another constraint is needed to permit that).
+-- The basic server and client monads are like that, because server
+-- and clients freely modify their internal session data, but don't modify
+-- the main game state, except in very restricted and synchronized way.
 class (Monad m, Functor m, Applicative m) => MonadStateRead m where
   getsState :: (State -> a) -> m a
 

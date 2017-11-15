@@ -10,11 +10,11 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.DeepSeq
-import Data.Binary
+import           Control.DeepSeq
+import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
-import Data.Hashable (Hashable)
-import GHC.Generics (Generic)
+import           Data.Hashable (Hashable)
+import           GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Misc
 
@@ -38,16 +38,6 @@ data Ability =
 -- It's also easier to code and maintain.
 type Skills = EM.EnumMap Ability Int
 
-tacticSkills :: Tactic -> Skills
-tacticSkills TExplore = zeroSkills
-tacticSkills TFollow = zeroSkills
-tacticSkills TFollowNoItems = ignoreItems
-tacticSkills TMeleeAndRanged = meleeAndRanged
-tacticSkills TMeleeAdjacent = meleeAdjacent
-tacticSkills TBlock = blockOnly
-tacticSkills TRoam = zeroSkills
-tacticSkills TPatrol = zeroSkills
-
 zeroSkills :: Skills
 zeroSkills = EM.empty
 
@@ -59,6 +49,16 @@ addSkills = EM.unionWith (+)
 
 scaleSkills :: Int -> Skills -> Skills
 scaleSkills n = EM.map (n *)
+
+tacticSkills :: Tactic -> Skills
+tacticSkills TExplore = zeroSkills
+tacticSkills TFollow = zeroSkills
+tacticSkills TFollowNoItems = ignoreItems
+tacticSkills TMeleeAndRanged = meleeAndRanged
+tacticSkills TMeleeAdjacent = meleeAdjacent
+tacticSkills TBlock = blockOnly
+tacticSkills TRoam = zeroSkills
+tacticSkills TPatrol = zeroSkills
 
 minusTen, blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems :: Skills
 

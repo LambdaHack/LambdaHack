@@ -2,43 +2,44 @@
 -- | Actors in the game: heroes, monsters, etc. No operation in this module
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Common.Actor
-  ( -- * Actor identifiers and related operations
-    ActorId, monsterGenChance
-    -- * The@ Acto@r type
+  ( -- * Actor identifiers
+    ActorId
+    -- * The@ Acto@r type, its components and operations on them
   , Actor(..), ResDelta(..), ActorAspect
   , deltaSerious, deltaMild, actorCanMelee
-  , bspeed, actorTemplate, braced, waitedLastTurn, actorDying
+  , bspeed, braced, actorTemplate, waitedLastTurn, actorDying
   , actorTrunkIsBlast, hpTooLow, calmEnough, hpEnough
+  , checkAdjacent, eqpOverfull, eqpFreeN
     -- * Assorted
-  , ActorDict, smellTimeout, checkAdjacent
-  , eqpOverfull, eqpFreeN
+  , ActorDict, monsterGenChance, smellTimeout
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
+import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
-import Data.Int (Int64)
-import Data.Ratio
-import GHC.Generics (Generic)
+import           Data.Int (Int64)
+import           Data.Ratio
+import           GHC.Generics (Generic)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Vector
 
 -- | Actor properties that are changing throughout the game.
--- If they are dublets of properties from @ActorKind@,
--- they are usually modified temporarily, but tend to return
--- to the original value from @ActorKind@ over time. E.g., HP.
+-- If they appear dublets of properties of actor kinds, e.g. HP,
+-- they may be results of casting the dice specified in their respective
+-- actor kind and/or may be modified temporarily, but return
+-- to the original value from their respective kind over time.
 data Actor = Actor
   { -- The trunk of the actor's body (present also in @borgan@ or @beqp@)
-    btrunk      :: ItemId
+    btrunk      :: ItemId       -- ^ the trunk organ of the actor's body
 
     -- Resources
   , bhp         :: Int64        -- ^ current hit points * 1M
@@ -82,6 +83,9 @@ instance Binary ResDelta
 
 type ActorAspect = EM.EnumMap ActorId AspectRecord
 
+-- | All actors on the level, indexed by actor identifier.
+type ActorDict = EM.EnumMap ActorId Actor
+
 deltaSerious :: ResDelta -> Bool
 deltaSerious ResDelta{..} =
   fst resCurrentTurn < 0 && fst resCurrentTurn /= minusM
@@ -99,25 +103,16 @@ actorCanMelee actorAspect aid b =
       canMelee = EM.findWithDefault 0 Ability.AbMelee actorMaxSk > 0
   in condUsableWeapon && canMelee
 
--- | Chance that a new monster is generated. Currently depends on the
--- number of monsters already present, and on the level. In the future,
--- the strength of the character and the strength of the monsters present
--- could further influence the chance, and the chance could also affect
--- which monster is generated. How many and which monsters are generated
--- will also depend on the cave kind used to build the level.
-monsterGenChance :: AbsDepth -> AbsDepth -> Int -> Int -> Rnd Bool
-monsterGenChance _ _ _ 0 = return False
-monsterGenChance (AbsDepth n) (AbsDepth totalDepth) lvlSpawned actorCoeff =
-  assert (totalDepth > 0 && n > 0)
-  -- Mimics @castDice@. On level 5/10, first 6 monsters appear fast.
-  $ let scaledDepth = n * 10 `div` totalDepth
-        -- Heroes have to endure two lvl-sized waves of spawners for each level.
-        numSpawnedCoeff = lvlSpawned `div` 2
-    in chance $ 1%(fromIntegral
-                     ((actorCoeff * (numSpawnedCoeff - scaledDepth))
-                      `max` 1))  -- monsters up to level depth spawned at once
+bspeed :: Actor -> AspectRecord -> Speed
+bspeed !b AspectRecord{aSpeed} =
+  case btrajectory b of
+    Nothing -> toSpeed aSpeed
+    Just (_, speed) -> speed
 
--- | A template for a new actor.
+-- | Whether an actor is braced for combat this clip.
+braced :: Actor -> Bool
+braced = bwait
+
 actorTemplate :: ItemId -> Int64 -> Int64 -> Point -> LevelId -> FactionId
               -> Actor
 actorTemplate btrunk bhp bcalm bpos blid bfid =
@@ -133,17 +128,6 @@ actorTemplate btrunk bhp bcalm bpos blid bfid =
       bproj = False
   in Actor{..}
 
-bspeed :: Actor -> AspectRecord -> Speed
-bspeed !b AspectRecord{aSpeed} =
-  case btrajectory b of
-    Nothing -> toSpeed aSpeed
-    Just (_, speed) -> speed
-
--- | Whether an actor is braced for combat this clip.
-braced :: Actor -> Bool
-braced = bwait
-
--- | The actor waited last turn.
 waitedLastTurn :: Actor -> Bool
 waitedLastTurn = bwait
 
@@ -171,13 +155,6 @@ hpEnough b AspectRecord{aMaxHP} =
   let hpMax = max 1 aMaxHP
   in xM hpMax <= 2 * bhp b && bhp b > xM 1
 
--- | How long until an actor's smell vanishes from a tile.
-smellTimeout :: Delta Time
-smellTimeout = timeDeltaScale (Delta timeTurn) 100
-
--- | All actors on the level, indexed by actor identifier.
-type ActorDict = EM.EnumMap ActorId Actor
-
 checkAdjacent :: Actor -> Actor -> Bool
 checkAdjacent sb tb = blid sb == blid tb && adjacent (bpos sb) (bpos tb)
 
@@ -190,3 +167,25 @@ eqpFreeN :: Actor -> Int
 eqpFreeN b = let size = sum $ map fst $ EM.elems $ beqp b
              in assert (size <= 10 `blame` (b, size))
                 $ 10 - size
+
+-- | Chance that a new monster is generated. Currently depends on the
+-- number of monsters already present, and on the level. In the future,
+-- the strength of the character and the strength of the monsters present
+-- could further influence the chance, and the chance could also affect
+-- which monster is generated. How many and which monsters are generated
+-- will also depend on the cave kind used to build the level.
+monsterGenChance :: AbsDepth -> AbsDepth -> Int -> Int -> Rnd Bool
+monsterGenChance _ _ _ 0 = return False
+monsterGenChance (AbsDepth n) (AbsDepth totalDepth) lvlSpawned actorCoeff =
+  assert (totalDepth > 0 && n > 0)
+  -- Mimics @castDice@. On level 5/10, first 6 monsters appear fast.
+  $ let scaledDepth = n * 10 `div` totalDepth
+        -- Heroes have to endure two lvl-sized waves of spawners for each level.
+        numSpawnedCoeff = lvlSpawned `div` 2
+    in chance $ 1%(fromIntegral
+                     ((actorCoeff * (numSpawnedCoeff - scaledDepth))
+                      `max` 1))  -- monsters up to level depth spawned at once
+
+-- | How long until an actor's smell vanishes from a tile.
+smellTimeout :: Delta Time
+smellTimeout = timeDeltaScale (Delta timeTurn) 100

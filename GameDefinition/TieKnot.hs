@@ -11,9 +11,9 @@ import Game.LambdaHack.Common.Prelude
 import qualified System.Random as R
 
 import           Game.LambdaHack.Common.ContentDef
-import qualified Game.LambdaHack.Common.Item as Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import qualified Game.LambdaHack.Common.Tile as Tile
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.SampleImplementation.SampleMonadServer (executorSer)
 import           Game.LambdaHack.Server
 
@@ -42,7 +42,7 @@ tieKnot options@ServerOptions{sallClear, sboostRandomItem, sdungeonRng} = do
   initialGen <- maybe R.getStdGen return sdungeonRng
   let soptionsNxt = options {sdungeonRng = Just initialGen}
       cotile = Kind.createOps Content.TileKind.cdefs
-      boostedItems = Item.boostItemKindList initialGen Content.ItemKind.items
+      boostedItems = IK.boostItemKindList initialGen Content.ItemKind.items
       coitem = Kind.createOps $
         if sboostRandomItem
         then Content.ItemKind.cdefs

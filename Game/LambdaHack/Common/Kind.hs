@@ -1,6 +1,6 @@
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
-  ( Id, Ops(..), COps(..), createOps, stdRuleset
+  ( Id, Ops(..), COps(..), stdRuleset, createOps
   ) where
 
 import Prelude ()
@@ -23,7 +23,27 @@ import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 
--- Not specialized, because no speedup, but huge JS code bloat.
+-- | Operations for all content types, gathered together.
+data COps = COps
+  { cocave        :: Ops CaveKind   -- server only
+  , coitem        :: Ops ItemKind
+  , comode        :: Ops ModeKind   -- server only
+  , coplace       :: Ops PlaceKind  -- server only, so far
+  , corule        :: Ops RuleKind
+  , cotile        :: Ops TileKind
+  , coTileSpeedup :: TileSpeedup
+  }
+
+instance Show COps where
+  show _ = "game content"
+
+instance Eq COps where
+  (==) _ _ = True
+
+-- | The standard ruleset used for level operations.
+stdRuleset :: Ops RuleKind -> RuleKind
+stdRuleset Ops{ouniqGroup, okind} = okind $ ouniqGroup "standard"
+
 -- | Create content operations for type @a@ from definition of content
 -- of type @a@.
 createOps :: forall a. Show a => ContentDef a -> Ops a
@@ -87,24 +107,3 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
                           `showFailure` ()
        , olength = V.length content
        }
-
--- | Operations for all content types, gathered together.
-data COps = COps
-  { cocave        :: Ops CaveKind   -- server only
-  , coitem        :: Ops ItemKind
-  , comode        :: Ops ModeKind   -- server only
-  , coplace       :: Ops PlaceKind  -- server only, so far
-  , corule        :: Ops RuleKind
-  , cotile        :: Ops TileKind
-  , coTileSpeedup :: TileSpeedup
-  }
-
-instance Show COps where
-  show _ = "game content"
-
-instance Eq COps where
-  (==) _ _ = True
-
--- | The standard ruleset used for level operations.
-stdRuleset :: Ops RuleKind -> RuleKind
-stdRuleset Ops{ouniqGroup, okind} = okind $ ouniqGroup "standard"

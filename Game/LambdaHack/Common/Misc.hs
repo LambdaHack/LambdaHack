@@ -3,95 +3,53 @@
 -- | Hacks that haven't found their home yet.
 module Game.LambdaHack.Common.Misc
   ( -- * Game object identifiers
-    FactionId, LevelId, AbsDepth(..), ActorId
+    FactionId, LevelId, ActorId
     -- * Item containers
   , Container(..), CStore(..), ItemDialogMode(..)
     -- * Assorted
-  , makePhrase, makeSentence
-  , normalLevelBound, GroupName, toGroupName, Freqs, breturn
-  , Rarity, validateRarity
-  , Tactic(..), describeTactic, appDataDir
-  , xM, xD, minusM, minusM1, oneM
+  , GroupName, Freqs, Rarity, AbsDepth(..), Tactic(..)
+  , toGroupName, validateRarity, describeTactic
+  , makePhrase, makeSentence, normalLevelBound, breturn
+  , appDataDir, xM, xD, minusM, minusM1, oneM
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.DeepSeq
-import Data.Binary
+import           Control.DeepSeq
+import           Data.Binary
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Fixed as Fixed
-import Data.Function
-import Data.Hashable
+import           Data.Function
+import           Data.Hashable
 import qualified Data.HashMap.Strict as HM
-import Data.Int (Int64)
-import Data.Key
-import Data.Ord
-import Data.String (IsString (..))
+import           Data.Int (Int64)
+import           Data.Key
+import           Data.Ord
+import           Data.String (IsString (..))
 import qualified Data.Text as T
 import qualified Data.Time as Time
-import GHC.Generics (Generic)
+import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
-import System.Directory (getAppUserDataDirectory)
-import System.Environment (getProgName)
+import           System.Directory (getAppUserDataDirectory)
+import           System.Environment (getProgName)
 
 import Game.LambdaHack.Common.Point
 
--- | Re-exported English phrase creation functions, applied to default
--- irregular word sets.
-makePhrase, makeSentence :: [MU.Part] -> Text
-makePhrase = MU.makePhrase MU.defIrregular
-makeSentence = MU.makeSentence MU.defIrregular
+-- | A unique identifier of a faction in a game.
+newtype FactionId = FactionId Int
+  deriving (Show, Eq, Ord, Enum, Hashable, Binary)
 
--- | Level bounds.
-normalLevelBound :: (Int, Int)
-normalLevelBound = (79, 20)
+-- | Abstract level identifiers.
+newtype LevelId = LevelId Int
+  deriving (Show, Eq, Ord, Enum, Hashable, Binary)
 
--- If ever needed, we can use a symbol table here, since content
--- is never serialized. But we'd need to cover the few cases
--- (e.g., @litemFreq@) where @GroupName@ goes into savegame.
-newtype GroupName a = GroupName Text
-  deriving (Read, Eq, Ord, Hashable, Binary, Generic)
-
-instance IsString (GroupName a) where
-  fromString = GroupName . T.pack
-
-instance Show (GroupName a) where
-  show (GroupName gn) = T.unpack gn
-
-instance NFData (GroupName a)
-
-toGroupName :: Text -> GroupName a
-{-# INLINE toGroupName #-}
-toGroupName = GroupName
-
--- | For each group that the kind belongs to, denoted by a @GroupName@
--- in the first component of a pair, the second component of a pair shows
--- how common the kind is within the group.
-type Freqs a = [(GroupName a, Int)]
-
--- | Rarity on given depths.
-type Rarity = [(Double, Int)]
-
-validateRarity :: Rarity -> [Text]
-validateRarity rarity =
-  let sortedRarity = sortBy (comparing fst) rarity
-  in [ "rarity not sorted" | sortedRarity /= rarity ]
-     ++ [ "rarity depth thresholds not unique"
-        | nubBy ((==) `on` fst) sortedRarity /= sortedRarity ]
-     ++ [ "rarity depth not between 0 and 10"
-        | case (sortedRarity, reverse sortedRarity) of
-            ((lowest, _) : _, (highest, _) : _) ->
-              lowest <= 0 || highest > 10
-            _ -> False ]
-
--- | @breturn b a = [a | b]@
-breturn :: MonadPlus m => Bool -> a -> m a
-breturn True a  = return a
-breturn False _ = mzero
+-- | A unique identifier of an actor in the dungeon.
+newtype ActorId = ActorId Int
+  deriving (Show, Eq, Ord, Enum, Binary)
 
 -- | Item container type.
 data Container =
@@ -103,6 +61,7 @@ data Container =
 
 instance Binary Container
 
+-- | Actor's item stores.
 data CStore =
     CGround
   | COrgan
@@ -124,13 +83,27 @@ instance NFData ItemDialogMode
 
 instance Binary ItemDialogMode
 
--- | A unique identifier of a faction in a game.
-newtype FactionId = FactionId Int
-  deriving (Show, Eq, Ord, Enum, Hashable, Binary)
+-- If ever needed, we can use a symbol table here, since content
+-- is never serialized. But we'd need to cover the few cases
+-- (e.g., @litemFreq@) where @GroupName@ goes into savegame.
+newtype GroupName a = GroupName Text
+  deriving (Read, Eq, Ord, Hashable, Binary, Generic)
 
--- | Abstract level identifiers.
-newtype LevelId = LevelId Int
-  deriving (Show, Eq, Ord, Enum, Hashable, Binary)
+instance IsString (GroupName a) where
+  fromString = GroupName . T.pack
+
+instance Show (GroupName a) where
+  show (GroupName gn) = T.unpack gn
+
+instance NFData (GroupName a)
+
+-- | For each group that the kind belongs to, denoted by a @GroupName@
+-- in the first component of a pair, the second component of a pair shows
+-- how common the kind is within the group.
+type Freqs a = [(GroupName a, Int)]
+
+-- | Rarity on given depths.
+type Rarity = [(Double, Int)]
 
 -- | Absolute depth in the dungeon. When used for the maximum depth
 -- of the whole dungeon, this can be different than dungeon size,
@@ -138,10 +111,6 @@ newtype LevelId = LevelId Int
 -- than the length of the longest branch, if levels at some depths are missing.
 newtype AbsDepth = AbsDepth Int
   deriving (Show, Eq, Ord, Hashable, Binary)
-
--- | A unique identifier of an actor in the dungeon.
-newtype ActorId = ActorId Int
-  deriving (Show, Eq, Ord, Enum, Binary)
 
 -- | Tactic of non-leader actors. Apart of determining AI operation,
 -- each tactic implies a skill modifier, that is added to the non-leader skills
@@ -170,6 +139,26 @@ instance Show Tactic where
   show TRoam           = "roam freely"
   show TPatrol         = "patrol area"
 
+instance Binary Tactic
+
+instance Hashable Tactic
+
+toGroupName :: Text -> GroupName a
+{-# INLINE toGroupName #-}
+toGroupName = GroupName
+
+validateRarity :: Rarity -> [Text]
+validateRarity rarity =
+  let sortedRarity = sortBy (comparing fst) rarity
+  in [ "rarity not sorted" | sortedRarity /= rarity ]
+     ++ [ "rarity depth thresholds not unique"
+        | nubBy ((==) `on` fst) sortedRarity /= sortedRarity ]
+     ++ [ "rarity depth not between 0 and 10"
+        | case (sortedRarity, reverse sortedRarity) of
+            ((lowest, _) : _, (highest, _) : _) ->
+              lowest <= 0 || highest > 10
+            _ -> False ]
+
 describeTactic :: Tactic -> Text
 describeTactic TExplore = "investigate unknown positions, chase targets"
 describeTactic TFollow = "follow leader's target or position, grab items"
@@ -182,11 +171,41 @@ describeTactic TBlock = "block and wait, don't move"
 describeTactic TRoam = "move freely, chase targets"
 describeTactic TPatrol = "find and patrol an area (WIP)"
 
-instance Binary Tactic
+-- | Re-exported English phrase creation functions, applied to default
+-- irregular word sets.
+makePhrase, makeSentence :: [MU.Part] -> Text
+makePhrase = MU.makePhrase MU.defIrregular
+makeSentence = MU.makeSentence MU.defIrregular
 
-instance Hashable Tactic
+-- | Level bounds.
+normalLevelBound :: (Int, Int)
+normalLevelBound = (79, 20)
 
--- Data.Binary
+-- | @breturn b a = [a | b]@
+breturn :: MonadPlus m => Bool -> a -> m a
+breturn True a  = return a
+breturn False _ = mzero
+
+-- | Personal data directory for the game. Depends on the OS and the game,
+-- e.g., for LambdaHack under Linux it's @~\/.LambdaHack\/@.
+appDataDir :: IO FilePath
+appDataDir = do
+  progName <- getProgName
+  let name = takeWhile Char.isAlphaNum progName
+  getAppUserDataDirectory name
+
+xM :: Int -> Int64
+xM k = fromIntegral k * 1000000
+
+xD :: Double -> Double
+xD k = k * 1000000
+
+minusM, minusM1, oneM :: Int64
+minusM = xM (-1)
+minusM1 = xM (-1) - 1
+oneM = xM 1
+
+-- Data.Binary orphan instances
 
 instance (Enum k, Binary k, Binary e) => Binary (EM.EnumMap k e) where
   put m = put (EM.size m) >> mapM_ put (EM.toAscList m)
@@ -204,7 +223,7 @@ instance (Hashable k, Eq k, Binary k, Binary v) => Binary (HM.HashMap k v) where
   get = fmap HM.fromList get
   put = put . HM.toList
 
--- Data.Key
+-- Data.Key orphan instances
 
 type instance Key (EM.EnumMap k) = k
 
@@ -240,34 +259,15 @@ instance Enum k => Adjustable (EM.EnumMap k) where
   {-# INLINE adjust #-}
   adjust = EM.adjust
 
--- Data.Hashable
+-- Data.Hashable orphan instances
 
 instance (Enum k, Hashable k, Hashable e) => Hashable (EM.EnumMap k e) where
   hashWithSalt s x = hashWithSalt s (EM.toAscList x)
 
--- Control.DeepSeq
+-- Control.DeepSeq orphan instances
 
 instance NFData MU.Part
 
 instance NFData MU.Person
 
 instance NFData MU.Polarity
-
--- | Personal data directory for the game. Depends on the OS and the game,
--- e.g., for LambdaHack under Linux it's @~\/.LambdaHack\/@.
-appDataDir :: IO FilePath
-appDataDir = do
-  progName <- getProgName
-  let name = takeWhile Char.isAlphaNum progName
-  getAppUserDataDirectory name
-
-xM :: Int -> Int64
-xM k = fromIntegral k * 1000000
-
-xD :: Double -> Double
-xD k = k * 1000000
-
-minusM, minusM1, oneM :: Int64
-minusM = xM (-1)
-minusM1 = xM (-1) - 1
-oneM = xM 1

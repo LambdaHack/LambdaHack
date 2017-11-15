@@ -1,4 +1,4 @@
--- | Saving/loading with serialization and compression.
+-- | Saving/loading to files, with serialization and compression.
 module Game.LambdaHack.Common.File
   ( encodeEOF, strictDecodeEOF
   , tryCreateDir, doesFileExist, tryWriteFile, readFile, renameFile

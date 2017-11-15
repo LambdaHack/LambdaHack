@@ -2,17 +2,16 @@
 -- | Colours and text attributes.
 module Game.LambdaHack.Common.Color
   ( -- * Colours
-    Color(..), defFG, isBright, darkCol, brightCol, stdCol
-  , colorToRGB
-  , Highlight (..)
-    -- * Text attributes and the screen
-  , Attr(..), defAttr
-  , AttrChar(..)
-  , AttrCharW32(..)
+    Color(..)
+  , defFG, isBright, darkCol, brightCol, stdCol, colorToRGB
+    -- * Complete text attributes
+  , Highlight (..), Attr(..)
+  , defAttr
+    -- * Characters with attributes
+  , AttrChar(..), AttrCharW32(..)
   , attrCharToW32, attrCharFromW32
   , fgFromW32, bgFromW32, charFromW32, attrFromW32, attrEnumFromW32
-  , spaceAttrW32, retAttrW32
-  , attrChar2ToW32, attrChar1ToW32
+  , spaceAttrW32, retAttrW32, attrChar2ToW32, attrChar1ToW32
   ) where
 
 import Prelude ()
@@ -58,95 +57,6 @@ instance Hashable Color
 -- | The default colours, to optimize attribute setting.
 defFG :: Color
 defFG = White
-
-data Highlight =
-    HighlightNone
-  | HighlightRed
-  | HighlightBlue
-  | HighlightYellow
-  | HighlightGrey
-  | HighlightWhite
-  | HighlightMagenta
-  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
-
-instance Binary Highlight where
-  put = putWord8 . toEnum . fromEnum
-  get = fmap (toEnum . fromEnum) getWord8
-
-instance Hashable Highlight
-
--- | Text attributes: foreground and backgroud colors.
-data Attr = Attr
-  { fg :: Color      -- ^ foreground colour
-  , bg :: Highlight  -- ^ backgroud highlight
-  }
-  deriving (Show, Eq, Ord)
-
-instance Enum Attr where
-  fromEnum Attr{..} = unsafeShiftL (fromEnum fg) 8 + fromEnum bg
-  toEnum n = Attr (toEnum $ unsafeShiftR n 8)
-                  (toEnum $ n .&. (2 ^ (8 :: Int) - 1))
-
--- | The default attribute, to optimize attribute setting.
-defAttr :: Attr
-defAttr = Attr defFG HighlightNone
-
-data AttrChar = AttrChar
-  { acAttr :: Attr
-  , acChar :: Char
-  }
-  deriving (Show, Eq, Ord)
-
--- This implementation is faster than @Int@, because some vector updates
--- can be done without going to and from @Int@.
-newtype AttrCharW32 = AttrCharW32 {attrCharW32 :: Word32}
-  deriving (Show, Eq, Enum, Binary)
-
-attrCharToW32 :: AttrChar -> AttrCharW32
-attrCharToW32 AttrChar{acAttr=Attr{..}, acChar} = AttrCharW32 $ toEnum $
-  unsafeShiftL (fromEnum fg) 8 + fromEnum bg + unsafeShiftL (Char.ord acChar) 16
-
-attrCharFromW32 :: AttrCharW32 -> AttrChar
-attrCharFromW32 !w =
-  AttrChar (Attr (toEnum $ fromEnum
-                  $ unsafeShiftR (attrCharW32 w) 8 .&. (2 ^ (8 :: Int) - 1))
-                 (toEnum $ fromEnum
-                  $ attrCharW32 w .&. (2 ^ (8 :: Int) - 1)))
-           (Char.chr $ fromEnum $ unsafeShiftR (attrCharW32 w) 16)
-
-{- surprisingly, this is slower:
-attrCharFromW32 :: AttrCharW32 -> AttrChar
-attrCharFromW32 !w = AttrChar (attrFromW32 w) (charFromW32 w)
--}
-
-fgFromW32 :: AttrCharW32 -> Color
-{-# INLINE fgFromW32 #-}
-fgFromW32 w =
-  toEnum $ fromEnum $ unsafeShiftR (attrCharW32 w) 8 .&. (2 ^ (8 :: Int) - 1)
-
-bgFromW32 :: AttrCharW32 -> Highlight
-{-# INLINE bgFromW32 #-}
-bgFromW32 w =
-  toEnum $ fromEnum $ attrCharW32 w .&. (2 ^ (8 :: Int) - 1)
-
-charFromW32 :: AttrCharW32 -> Char
-{-# INLINE charFromW32 #-}
-charFromW32 w =
-  Char.chr $ fromEnum $ unsafeShiftR (attrCharW32 w) 16
-
-attrFromW32 :: AttrCharW32 -> Attr
-{-# INLINE attrFromW32 #-}
-attrFromW32 w = Attr (fgFromW32 w) (bgFromW32 w)
-
-attrEnumFromW32 :: AttrCharW32 -> Int
-{-# INLINE attrEnumFromW32 #-}
-attrEnumFromW32 !w = fromEnum $ attrCharW32 w .&. (2 ^ (16 :: Int) - 1)
-
-spaceAttrW32 :: AttrCharW32
-spaceAttrW32 = attrCharToW32 $ AttrChar defAttr ' '
-
-retAttrW32 :: AttrCharW32
-retAttrW32 = attrCharToW32 $ AttrChar defAttr '\n'
 
 -- | A helper for the terminal frontends that display bright via bold.
 isBright :: Color -> Bool
@@ -198,6 +108,99 @@ _olorToRGB BrBlue    = "#5555FF"
 _olorToRGB BrMagenta = "#FF55FF"
 _olorToRGB BrCyan    = "#55FFFF"
 _olorToRGB BrWhite   = "#FFFFFF"
+
+-- | Additional map cell highlight, e.g., a colorful square around the cell
+-- or a colorful background.
+data Highlight =
+    HighlightNone
+  | HighlightRed
+  | HighlightBlue
+  | HighlightYellow
+  | HighlightGrey
+  | HighlightWhite
+  | HighlightMagenta
+  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
+
+instance Binary Highlight where
+  put = putWord8 . toEnum . fromEnum
+  get = fmap (toEnum . fromEnum) getWord8
+
+instance Hashable Highlight
+
+-- | Text attributes: foreground color and highlight.
+data Attr = Attr
+  { fg :: Color      -- ^ foreground colour
+  , bg :: Highlight  -- ^ highlight
+  }
+  deriving (Show, Eq, Ord)
+
+instance Enum Attr where
+  fromEnum Attr{..} = unsafeShiftL (fromEnum fg) 8 + fromEnum bg
+  toEnum n = Attr (toEnum $ unsafeShiftR n 8)
+                  (toEnum $ n .&. (2 ^ (8 :: Int) - 1))
+
+-- | The default attribute, to optimize attribute setting.
+defAttr :: Attr
+defAttr = Attr defFG HighlightNone
+
+-- | Character to display, with its attribute.
+data AttrChar = AttrChar
+  { acAttr :: Attr
+  , acChar :: Char
+  }
+  deriving (Show, Eq, Ord)
+
+-- This implementation is faster than @Int@, because some vector updates
+-- can be done without going to and from @Int@.
+-- | Optimized representation of 'AttrChar'.
+newtype AttrCharW32 = AttrCharW32 {attrCharW32 :: Word32}
+  deriving (Show, Eq, Enum, Binary)
+
+attrCharToW32 :: AttrChar -> AttrCharW32
+attrCharToW32 AttrChar{acAttr=Attr{..}, acChar} = AttrCharW32 $ toEnum $
+  unsafeShiftL (fromEnum fg) 8 + fromEnum bg + unsafeShiftL (Char.ord acChar) 16
+
+attrCharFromW32 :: AttrCharW32 -> AttrChar
+attrCharFromW32 !w =
+  AttrChar (Attr (toEnum $ fromEnum
+                  $ unsafeShiftR (attrCharW32 w) 8 .&. (2 ^ (8 :: Int) - 1))
+                 (toEnum $ fromEnum
+                  $ attrCharW32 w .&. (2 ^ (8 :: Int) - 1)))
+           (Char.chr $ fromEnum $ unsafeShiftR (attrCharW32 w) 16)
+
+{- surprisingly, this is slower:
+attrCharFromW32 :: AttrCharW32 -> AttrChar
+attrCharFromW32 !w = AttrChar (attrFromW32 w) (charFromW32 w)
+-}
+
+fgFromW32 :: AttrCharW32 -> Color
+{-# INLINE fgFromW32 #-}
+fgFromW32 w =
+  toEnum $ fromEnum $ unsafeShiftR (attrCharW32 w) 8 .&. (2 ^ (8 :: Int) - 1)
+
+bgFromW32 :: AttrCharW32 -> Highlight
+{-# INLINE bgFromW32 #-}
+bgFromW32 w =
+  toEnum $ fromEnum $ attrCharW32 w .&. (2 ^ (8 :: Int) - 1)
+
+charFromW32 :: AttrCharW32 -> Char
+{-# INLINE charFromW32 #-}
+charFromW32 w =
+  Char.chr $ fromEnum $ unsafeShiftR (attrCharW32 w) 16
+
+attrFromW32 :: AttrCharW32 -> Attr
+{-# INLINE attrFromW32 #-}
+attrFromW32 w = Attr (fgFromW32 w) (bgFromW32 w)
+
+attrEnumFromW32 :: AttrCharW32 -> Int
+{-# INLINE attrEnumFromW32 #-}
+attrEnumFromW32 !w = fromEnum $ attrCharW32 w .&. (2 ^ (16 :: Int) - 1)
+
+spaceAttrW32 :: AttrCharW32
+spaceAttrW32 = attrCharToW32 $ AttrChar defAttr ' '
+
+retAttrW32 :: AttrCharW32
+retAttrW32 = attrCharToW32 $ AttrChar defAttr '\n'
 
 attrChar2ToW32 :: Color -> Char -> AttrCharW32
 {-# INLINE attrChar2ToW32 #-}

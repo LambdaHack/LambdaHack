@@ -1,7 +1,11 @@
--- | Saving/loading with serialization and compression.
+-- | Saving/loading to files, with serialization and compression.
 module Game.LambdaHack.Common.HSFile
   ( encodeEOF, strictDecodeEOF
   , tryCreateDir, doesFileExist, tryWriteFile, readFile, renameFile
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , encodeData
+#endif
   ) where
 
 import Prelude ()
@@ -10,12 +14,12 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Codec.Compression.Zlib as Z
 import qualified Control.Exception as Ex
-import Data.Binary
+import           Data.Binary
 import qualified Data.ByteString.Lazy as LBS
-import System.Directory
-import System.FilePath
-import System.IO (IOMode (..), hClose, openBinaryFile, readFile, withBinaryFile,
-                  writeFile)
+import           System.Directory
+import           System.FilePath
+import           System.IO (IOMode (..), hClose, openBinaryFile, readFile,
+                            withBinaryFile, writeFile)
 
 -- | Serialize, compress and save data.
 -- Note that LBS.writeFile opens the file in binary mode.

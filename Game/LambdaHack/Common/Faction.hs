@@ -1,10 +1,10 @@
 {-# LANGUAGE DeriveGeneric #-}
--- | Factions taking part in the game: e.g., two human players controlling
--- the hero faction battling the monster and the animal factions.
+-- | Factions taking part in the game, e.g., a hero faction, a monster faction
+-- and an animal faction.
 module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Status(..)
-  , Target(..), TGoal(..), Challenge(..), tgtKindDescription
-  , isHorrorFact, nameOfHorrorFact
+  , Target(..), TGoal(..), Challenge(..)
+  , tgtKindDescription, isHorrorFact, nameOfHorrorFact
   , noRunWithMulti, isAIFact, autoDungeonLevel, automatePlayer
   , isAtWar, isAllied
   , difficultyBound, difficultyDefault, difficultyCoeff, difficultyInverse
@@ -19,25 +19,26 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
+import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
-import GHC.Generics (Generic)
+import           GHC.Generics (Generic)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
-import Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ItemKind (ItemKind)
-import Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Content.ItemKind (ItemKind)
+import           Game.LambdaHack.Content.ModeKind
 
 -- | All factions in the game, indexed by faction identifier.
 type FactionDict = EM.EnumMap FactionId Faction
 
+-- | The faction datatype.
 data Faction = Faction
   { gname     :: Text            -- ^ individual name
   , gcolor    :: Color.Color     -- ^ color of actors or their frames
@@ -90,17 +91,19 @@ data Target =
 
 instance Binary Target
 
+-- | The goal of an actor.
 data TGoal =
     TEnemyPos ActorId Bool
     -- ^ last seen position of the targeted actor
   | TEmbed ItemBag Point
-    -- ^ in @TPoint (TEmbed bag p) _ q@ usually @bag@ is embbedded in @p@
-    --   and @q@ is an adjacent open tile
-  | TItem ItemBag
-  | TSmell
-  | TUnknown
-  | TKnown
-  | TAny
+    -- ^ embedded item that can be triggered;
+    -- in @TPoint (TEmbed bag p) _ q@ usually @bag@ is embbedded in @p@
+    -- and @q@ is an adjacent open tile
+  | TItem ItemBag  -- ^ item lying on the ground
+  | TSmell  -- ^ smell potentially left by enemies
+  | TUnknown  -- ^ an unknown tile to be explored
+  | TKnown  -- ^ a known tile to be patrolled
+  | TAny  -- ^ an unspecified goal
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary TGoal

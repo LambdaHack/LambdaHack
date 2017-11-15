@@ -2,11 +2,12 @@
 -- and game content, defined completely afresh for the particular game.
 -- The general type of the content is @ContentDef@ and it has instances
 -- for all content kinds, such as items kinds
--- (@Game.LambdaHack.Content.ItemKind@).
--- The possible kinds are fixed in the library and all defined in the same
--- directory. On the other hand, game content, that is all elements
--- of @ContentDef@ instances, are defined in a directory
--- of the game code proper, with names corresponding to their kinds.
+-- ("Game.LambdaHack.Content.ItemKind").
+--
+-- The possible kinds are fixed in the library and all defined within
+-- the library source code directory. On the other hand, game content,
+-- that is the values whose types are @ContentDef@ instances,
+-- are defined in the directory hosting the particular game definition.
 module Game.LambdaHack.Common.ContentDef
   ( ContentDef(..), contentFromList
   ) where
