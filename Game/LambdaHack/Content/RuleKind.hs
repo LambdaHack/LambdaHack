@@ -13,13 +13,8 @@ import Game.LambdaHack.Common.Misc
 
 -- | The type of game rule sets and assorted game data.
 --
--- For now the rules are immutable througout the game, so there is
--- no type @Rule@ to hold any changing parameters, just @RuleKind@
--- for the fixed set.
--- However, in the future, if the rules can get changed during gameplay
--- based on data mining of player behaviour, we may add such a type
--- and then @RuleKind@ will become just a starting template, analogously
--- as for the other content.
+-- In principle, it'se possible to have many rule sets
+-- and switch between them during a game session or even a single game.
 data RuleKind = RuleKind
   { rsymbol         :: Char      -- ^ a symbol
   , rname           :: Text      -- ^ short description
@@ -39,8 +34,7 @@ data RuleKind = RuleKind
   }
 
 -- | A dummy instance of the 'Show' class, to satisfy general requirments
--- about content. We won't have many rule sets and they contain functions,
--- so defining a proper instance is not practical.
+-- about content. We won't don't expect to ever print out whole rule sets.
 instance Show RuleKind where
   show _ = "The game ruleset specification."
 

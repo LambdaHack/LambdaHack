@@ -1,36 +1,41 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of game modes.
 module Game.LambdaHack.Content.ModeKind
-  ( Caves, Roster(..), Player(..), ModeKind(..), LeaderMode(..), AutoLeader(..)
-  , Outcome(..), HiIndeterminant(..), HiCondPoly, HiSummand, HiPolynomial
+  ( ModeKind(..), Caves, Roster(..), Outcome(..)
+  , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
+  , Player(..), LeaderMode(..), AutoLeader(..)
   , validateSingleModeKind, validateAllModeKind
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , validateSingleRoster, validateSinglePlayer, hardwiredModeGroups
+#endif
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
+import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Set as S
 import qualified Data.Text as T
-import GHC.Generics (Generic)
+import           GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Ability
+import           Game.LambdaHack.Common.Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Content.CaveKind
-import Game.LambdaHack.Content.ItemKind (ItemKind)
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Content.CaveKind
+import           Game.LambdaHack.Content.ItemKind (ItemKind)
 
 -- | Game mode specification.
 data ModeKind = ModeKind
-  { msymbol :: Char    -- ^ a symbol
-  , mname   :: Text    -- ^ short description
+  { msymbol :: Char            -- ^ a symbol
+  , mname   :: Text            -- ^ short description
   , mfreq   :: Freqs ModeKind  -- ^ frequency within groups
-  , mroster :: Roster  -- ^ players taking part in the game
-  , mcaves  :: Caves   -- ^ arena of the game
-  , mdesc   :: Text    -- ^ description
+  , mroster :: Roster          -- ^ players taking part in the game
+  , mcaves  :: Caves           -- ^ arena of the game
+  , mdesc   :: Text            -- ^ description
   }
   deriving Show
 
@@ -61,37 +66,37 @@ data Outcome =
 
 instance Binary Outcome
 
+-- | Conditional polynomial representing score calculation for this player.
+type HiCondPoly = [HiSummand]
+
+type HiSummand = (HiPolynomial, [Outcome])
+
+type HiPolynomial = [(HiIndeterminant, Double)]
+
 data HiIndeterminant = HiConst | HiLoot | HiBlitz | HiSurvival | HiKill | HiLoss
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary HiIndeterminant
 
-type HiPolynomial = [(HiIndeterminant, Double)]
-
-type HiSummand = (HiPolynomial, [Outcome])
-
--- | Conditional polynomial representing score calculation for this player.
-type HiCondPoly = [HiSummand]
-
 -- | Properties of a particular player.
 data Player = Player
   { fname        :: Text        -- ^ name of the player
   , fgroups      :: [GroupName ItemKind]
-                                 -- ^ names of actor groups that may naturally
-                                 --   fall under player's control, e.g., upon
-                                 --   spawning or summoning
+                                -- ^ names of actor groups that may naturally
+                                --   fall under player's control, e.g., upon
+                                --   spawning or summoning
   , fskillsOther :: Skills      -- ^ fixed skill modifiers to the non-leader
-                                 --   actors; also summed with skills implied
-                                 --   by ftactic (which is not fixed)
+                                --   actors; also summed with skills implied
+                                --   by ftactic (which is not fixed)
   , fcanEscape   :: Bool        -- ^ the player can escape the dungeon
   , fneverEmpty  :: Bool        -- ^ the faction declared killed if no actors
   , fhiCondPoly  :: HiCondPoly  -- ^ score polynomial for the player
   , fhasGender   :: Bool        -- ^ whether actors have gender
   , ftactic      :: Tactic      -- ^ non-leaders behave according to this
-                                 --   tactic; can be changed during the game
+                                --   tactic; can be changed during the game
   , fleaderMode  :: LeaderMode  -- ^ the mode of switching the leader
   , fhasUI       :: Bool        -- ^ does the faction have a UI client
-                                 --   (for control or passive observation)
+                                --   (for control or passive observation)
   }
   deriving (Show, Eq, Generic)
 

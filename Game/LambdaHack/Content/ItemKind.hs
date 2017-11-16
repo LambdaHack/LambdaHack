@@ -2,16 +2,15 @@
 -- | The type of kinds of weapons, treasure, organs, blasts, etc.
 module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..)
-  , boostItemKindList
   , Effect(..), TimerDice(..)
   , Aspect(..), ThrowMod(..)
   , Feature(..), EqpSlot(..)
-  , forApplyEffect, forIdEffect
+  , boostItemKindList, forApplyEffect, forIdEffect
   , toDmg, toVelocity, toLinger, toOrganGameTurn, toOrganActorTurn, toOrganNone
   , validateSingleItemKind, validateAllItemKind
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , boostItemKind
+  , boostItemKind, validateDups, validateDamage, hardwiredItemGroups
 #endif
   ) where
 
@@ -35,82 +34,73 @@ import           Game.LambdaHack.Common.Misc
 
 -- | Item properties that are fixed for a given kind of items.
 data ItemKind = ItemKind
-  { isymbol  :: Char              -- ^ map symbol
-  , iname    :: Text              -- ^ generic name
-  , ifreq    :: Freqs ItemKind    -- ^ frequency within groups
-  , iflavour :: [Flavour]         -- ^ possible flavours
-  , icount   :: Dice.Dice         -- ^ created in that quantity
-  , irarity  :: Rarity            -- ^ rarity on given depths
-  , iverbHit :: MU.Part           -- ^ the verb&noun for applying and hit
-  , iweight  :: Int               -- ^ weight in grams
+  { isymbol  :: Char                -- ^ map symbol
+  , iname    :: Text                -- ^ generic name
+  , ifreq    :: Freqs ItemKind      -- ^ frequency within groups
+  , iflavour :: [Flavour]           -- ^ possible flavours
+  , icount   :: Dice.Dice           -- ^ created in that quantity
+  , irarity  :: Rarity              -- ^ rarity on given depths
+  , iverbHit :: MU.Part             -- ^ the verb&noun for applying and hit
+  , iweight  :: Int                 -- ^ weight in grams
   , idamage  :: [(Int, Dice.Dice)]  -- ^ frequency of basic impact damage
-  , iaspects :: [Aspect]          -- ^ keep the aspect continuously
-  , ieffects :: [Effect]          -- ^ cause the effect when triggered
-  , ifeature :: [Feature]         -- ^ public properties
-  , idesc    :: Text              -- ^ description
+  , iaspects :: [Aspect]            -- ^ keep the aspect continuously
+  , ieffects :: [Effect]            -- ^ cause the effect when triggered
+  , ifeature :: [Feature]           -- ^ public properties
+  , idesc    :: Text                -- ^ description
   , ikit     :: [(GroupName ItemKind, CStore)]
-                                  -- ^ accompanying organs and items
+                                    -- ^ accompanying organs and items
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound
 
-boostItemKindList :: R.StdGen -> [ItemKind] -> [ItemKind]
-boostItemKindList _ [] = []
-boostItemKindList initialGen l =
-  let (r, _) = R.randomR (0, length l - 1) initialGen
-  in case splitAt r l of
-    (pre, i : post) -> pre ++ boostItemKind i : post
-    _               -> error $  "" `showFailure` l
-
-boostItemKind :: ItemKind -> ItemKind
-boostItemKind i =
-  let mainlineLabel (label, _) = label `elem` ["useful", "treasure"]
-  in if any mainlineLabel (ifreq i)
-     then i { ifreq = ("useful", 10000)
-                         : filter (not . mainlineLabel) (ifreq i)
-            , ieffects = delete Unique $ ieffects i
-            }
-     else i
-
 -- | Effects of items. Can be invoked by the item wielder to affect
 -- another actor or the wielder himself. Many occurences in the same item
--- are possible. Constructors are sorted vs increasing impact/danger.
+-- are possible.
 data Effect =
-    -- Ordinary effects.
-    ELabel Text        -- ^ secret (learned as effect) label of the item
+    ELabel Text        -- ^ secret (learned as effect) name of the item
   | EqpSlot EqpSlot    -- ^ AI and UI flag that leaks item properties
-  | Burn Dice.Dice
+  | Burn Dice.Dice     -- ^ burn with this damage
   | Explode (GroupName ItemKind)
-      -- ^ explode, producing this group of blasts
-  | RefillHP Int
-  | RefillCalm Int
-  | Dominate
-  | Impress
+      -- ^ explode producing this group of blasts
+  | RefillHP Int       -- ^ modify HP of the actor by this amount
+  | RefillCalm Int     -- ^ modify Calm of the actor by this amount
+  | Dominate           -- ^ change actor's allegiance
+  | Impress            -- ^ make actor susceptible to domination
   | Summon (GroupName ItemKind) Dice.Dice
-  | Ascend Bool
-  | Escape
-  | Paralyze Dice.Dice  -- ^ expressed in game clips
-  | InsertMove Dice.Dice  -- ^ expressed in game turns
-  | Teleport Dice.Dice
+      -- ^ summon the given number of actors of this group
+  | Ascend Bool           -- ^ ascend to another level of the dungeon
+  | Escape                -- ^ escape from the dungeon
+  | Paralyze Dice.Dice    -- ^ paralyze for this many game clips
+  | InsertMove Dice.Dice  -- ^ give free time to actor of this many game turns
+  | Teleport Dice.Dice    -- ^ teleport actor across rougly this distance
   | CreateItem CStore (GroupName ItemKind) TimerDice
       -- ^ create an item of the group and insert into the store with the given
       --   random timer
   | DropItem Int Int CStore (GroupName ItemKind)
+      -- ^ make the actor drop items of the given group from the given store;
+      -- the first integer says how many item kinds to drop, the second,
+      -- how many copie of each kind to drop
   | PolyItem
+      -- ^ find a suitable (i.e., numerous enough) item, starting from
+      -- the floor, and polymorph it randomly
   | Identify
-  | Detect Int
-  | DetectActor Int
-  | DetectItem Int
-  | DetectExit Int
-  | DetectHidden Int
-  | SendFlying ThrowMod
-  | PushActor ThrowMod
-  | PullActor ThrowMod
-  | DropBestWeapon
-  | ActivateInv Char   -- ^ symbol @' '@ means all
-  | ApplyPerfume
-    -- Exotic effects follow.
-  | OneOf [Effect]
-  | OnSmash Effect     -- ^ trigger if item smashed (not applied nor meleed)
+      -- ^ find a suitable (i.e., not identified) item, starting from
+      -- the floor, and identify it
+  | Detect Int            -- ^ detect all on the map in the given radius
+  | DetectActor Int       -- ^ detect actors on the map in the given radius
+  | DetectItem Int        -- ^ detect items on the map in the given radius
+  | DetectExit Int        -- ^ detect exits on the map in the given radius
+  | DetectHidden Int      -- ^ detect hidden tiles on the map in the radius
+  | SendFlying ThrowMod   -- ^ send an actor flying (push or pull, depending)
+  | PushActor ThrowMod    -- ^ push an actor
+  | PullActor ThrowMod    -- ^ pull an actor
+  | DropBestWeapon        -- ^ make the actor drop its best weapon
+  | ActivateInv Char
+      -- ^ activate all items with this symbol in inventory; space character
+      -- means all symbols
+  | ApplyPerfume          -- ^ remove all smell on the level
+  | OneOf [Effect]        -- ^ trigger one of the effects with equal probability
+  | OnSmash Effect
+      -- ^ trigger the effect when item smashed (not when applied nor meleed)
   | Recharging Effect  -- ^ this effect inactive until timeout passes
   | Temporary Text
       -- ^ the item is temporary, vanishes at even void Periodic activation,
@@ -118,36 +108,15 @@ data Effect =
       --   this verb at last copy activation or at each activation
       --   unless Durable and Fragile
   | Unique              -- ^ at most one copy can ever be generated
-  | Periodic            -- ^ in eqp, triggered as often as @Timeout@ permits
-  | Composite [Effect]  -- ^ only fire next effect, if previous was triggered
+  | Periodic
+      -- ^ in equipment, triggered as often as @Timeout@ permits
+  | Composite [Effect]  -- ^ only fire next effect if previous was triggered
   deriving (Show, Eq, Generic)
 
 instance NFData Effect
 
--- | Whether the effect has a chance of exhibiting any potentially
--- noticeable behaviour.
-forApplyEffect :: Effect -> Bool
-forApplyEffect eff = case eff of
-  ELabel{} -> False
-  EqpSlot{} -> False
-  OnSmash{} -> False
-  Temporary{} -> False
-  Unique -> False
-  Periodic -> False
-  Composite effs -> any forApplyEffect effs
-  _ -> True
-
-forIdEffect :: Effect -> Bool
-forIdEffect eff = case eff of
-  ELabel{} -> False
-  EqpSlot{} -> False
-  OnSmash{} -> False
-  Explode{} -> False  -- tentative; needed for rings to auto-identify
-  Unique -> False
-  Periodic -> False
-  Composite (eff1 : _) -> forIdEffect eff1  -- the rest may never fire
-  _ -> True
-
+-- | Specification of how to randomly roll a timer at item creation
+-- to obtain a fixed timer for the item's lifetime.
 data TimerDice =
     TimerNone
   | TimerGameTurn Dice.Dice
@@ -173,12 +142,12 @@ data Aspect =
   | AddArmorRanged Dice.Dice  -- ^ percentage armor bonus against ranged
   | AddMaxHP Dice.Dice        -- ^ maximal hp
   | AddMaxCalm Dice.Dice      -- ^ maximal calm
-  | AddSpeed Dice.Dice        -- ^ speed in m/10s (not of a projectile)
-  | AddSight Dice.Dice        -- ^ FOV radius, where 1 means a single tile
-  | AddSmell Dice.Dice        -- ^ smell radius, where 1 means a single tile
-  | AddShine Dice.Dice        -- ^ shine radius, where 1 means a single tile
-  | AddNocto Dice.Dice        -- ^ noctovision radius, where 1 is single tile
-  | AddAggression Dice.Dice   -- ^ aggression, especially closing in for melee
+  | AddSpeed Dice.Dice        -- ^ speed in m/10s (not when pushed or pulled)
+  | AddSight Dice.Dice        -- ^ FOV radius, where 1 means a single tile FOV
+  | AddSmell Dice.Dice        -- ^ smell radius
+  | AddShine Dice.Dice        -- ^ shine radius
+  | AddNocto Dice.Dice        -- ^ noctovision radius
+  | AddAggression Dice.Dice   -- ^ aggression, e.g., when closing in for melee
   | AddAbility Ability.Ability Dice.Dice  -- ^ bonus to an ability
   deriving (Show, Eq, Ord, Generic)
 
@@ -192,8 +161,8 @@ data ThrowMod = ThrowMod
 
 instance NFData ThrowMod
 
--- | Features of item. Affect only the item in question, not the actor,
--- and so not additive in any sense.
+-- | Features of item. Publicly visible. Affect only the item in question,
+-- not the actor, and so not additive in any sense.
 data Feature =
     Fragile            -- ^ drop and break at target tile, even if no hit
   | Lobable            -- ^ drop at target tile, even if no hit
@@ -202,13 +171,14 @@ data Feature =
   | Identified         -- ^ the item starts identified
   | Applicable         -- ^ AI and UI flag: consider applying
   | Equipable          -- ^ AI and UI flag: consider equipping (independent of
-                       -- ^ 'EqpSlot', e.g., in case of mixed blessings)
+                       --   'EqpSlot', e.g., in case of mixed blessings)
   | Meleeable          -- ^ AI and UI flag: consider meleeing with
-  | Precious           -- ^ AI and UI flag: don't risk identifying by use
-                       --   also, can't throw or apply if not calm enough;
+  | Precious           -- ^ AI and UI flag: don't risk identifying by use;
+                       --   also, can't throw or apply if not calm enough
   | Tactic Tactic      -- ^ overrides actor's tactic
   deriving (Show, Eq, Ord, Generic)
 
+-- | AI and UI hints about the role of the item.
 data EqpSlot =
     EqpSlotMiscBonus
   | EqpSlotAddHurtMelee
@@ -260,6 +230,48 @@ instance Binary ThrowMod
 instance Binary Feature
 
 instance Binary EqpSlot
+
+boostItemKindList :: R.StdGen -> [ItemKind] -> [ItemKind]
+boostItemKindList _ [] = []
+boostItemKindList initialGen l =
+  let (r, _) = R.randomR (0, length l - 1) initialGen
+  in case splitAt r l of
+    (pre, i : post) -> pre ++ boostItemKind i : post
+    _               -> error $  "" `showFailure` l
+
+boostItemKind :: ItemKind -> ItemKind
+boostItemKind i =
+  let mainlineLabel (label, _) = label `elem` ["useful", "treasure"]
+  in if any mainlineLabel (ifreq i)
+     then i { ifreq = ("useful", 10000)
+                         : filter (not . mainlineLabel) (ifreq i)
+            , ieffects = delete Unique $ ieffects i
+            }
+     else i
+
+-- | Whether the effect has a chance of exhibiting any potentially
+-- noticeable behaviour.
+forApplyEffect :: Effect -> Bool
+forApplyEffect eff = case eff of
+  ELabel{} -> False
+  EqpSlot{} -> False
+  OnSmash{} -> False
+  Temporary{} -> False
+  Unique -> False
+  Periodic -> False
+  Composite effs -> any forApplyEffect effs
+  _ -> True
+
+forIdEffect :: Effect -> Bool
+forIdEffect eff = case eff of
+  ELabel{} -> False
+  EqpSlot{} -> False
+  OnSmash{} -> False
+  Explode{} -> False  -- tentative; needed for rings to auto-identify
+  Unique -> False
+  Periodic -> False
+  Composite (eff1 : _) -> forIdEffect eff1  -- the rest may never fire
+  _ -> True
 
 toDmg :: Dice.Dice -> [(Int, Dice.Dice)]
 toDmg dmg = [(1, dmg)]

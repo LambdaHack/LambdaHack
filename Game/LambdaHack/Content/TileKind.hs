@@ -1,31 +1,35 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of terrain tiles.
 module Game.LambdaHack.Content.TileKind
-  ( TileKind(..), Feature(..)
+  ( TileKind(..), Feature(..), TileSpeedup(..), Tab(..)
   , validateSingleTileKind, validateAllTileKind, actionFeatures
-  , TileSpeedup(..), Tab(..), isUknownSpace, unknownId
-  , isSuspectKind, isOpenableKind, isClosableKind, talterForStairs, floorSymbol
+  , isUknownSpace, unknownId, isSuspectKind, isOpenableKind, isClosableKind
+  , talterForStairs, floorSymbol
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , validateDups, hardwiredTileGroups
+#endif
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.DeepSeq
-import Data.Binary
+import           Control.DeepSeq
+import           Data.Binary
 import qualified Data.Char as Char
-import Data.Hashable
+import           Data.Hashable
 import qualified Data.IntSet as IS
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
-import GHC.Generics (Generic)
+import           GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Color
+import           Game.LambdaHack.Common.Color
 import qualified Game.LambdaHack.Common.KindOps as KindOps
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Content.ItemKind (ItemKind)
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Content.ItemKind (ItemKind)
 
 -- | The type of kinds of terrain tiles. See @Tile.hs@ for explanation
 -- of the absence of a corresponding type @Tile@ that would hold
@@ -60,19 +64,15 @@ data Feature =
       -- ^ alters tile, but does not change walkability
   | HideAs (GroupName TileKind)
       -- ^ when hidden, looks as the unique tile of the group
-
-  -- The following three are only used in dungeon generation.
   | BuildAs (GroupName TileKind)
       -- ^ when generating, may be transformed to the unique tile of the group
   | RevealAs (GroupName TileKind)
       -- ^ when generating in opening, can be revealed to belong to the group
   | ObscureAs (GroupName TileKind)
       -- ^ when generating in solid wall, can be revealed to belong to the group
-
   | Walkable             -- ^ actors can walk through
   | Clear                -- ^ actors can see through
   | Dark                 -- ^ is not lit with an ambient light
-
   | OftenItem            -- ^ initial items often generated there
   | OftenActor           -- ^ initial actors often generated there
   | NoItem               -- ^ no items ever generated there
@@ -118,14 +118,6 @@ data TileSpeedup = TileSpeedup
 -- indexing. Also, in JS bool arrays are obviously not packed.
 newtype Tab a = Tab (U.Vector a)  -- morally indexed by @Id a@
 
-isUknownSpace :: KindOps.Id TileKind -> Bool
-{-# INLINE isUknownSpace #-}
-isUknownSpace tt = KindOps.Id 0 == tt
-
-unknownId :: KindOps.Id TileKind
-{-# INLINE unknownId #-}
-unknownId = KindOps.Id 0
-
 -- | Validate a single tile kind.
 validateSingleTileKind :: TileKind -> [Text]
 validateSingleTileKind t@TileKind{..} =
@@ -170,25 +162,6 @@ validateDups :: TileKind -> Feature -> [Text]
 validateDups TileKind{..} feat =
   let ts = filter (== feat) tfeature
   in ["more than one" <+> tshow feat <+> "specification" | length ts > 1]
-
-isSuspectKind :: TileKind -> Bool
-isSuspectKind t =
-  let getTo RevealAs{} = True
-      getTo ObscureAs{} = True
-      getTo _ = False
-  in any getTo $ tfeature t
-
-isOpenableKind ::TileKind -> Bool
-isOpenableKind t =
-  let getTo OpenTo{} = True
-      getTo _ = False
-  in any getTo $ tfeature t
-
-isClosableKind :: TileKind -> Bool
-isClosableKind t =
-  let getTo CloseTo{} = True
-      getTo _ = False
-  in any getTo $ tfeature t
 
 -- | Validate all tile kinds.
 --
@@ -265,6 +238,33 @@ actionFeatures markSuspect t =
         Trail -> Just feat  -- doesn't affect tile behaviour, but important
         Spice -> Nothing
   in IS.fromList $ map hash $ mapMaybe f $ tfeature t
+
+isUknownSpace :: KindOps.Id TileKind -> Bool
+{-# INLINE isUknownSpace #-}
+isUknownSpace tt = KindOps.Id 0 == tt
+
+unknownId :: KindOps.Id TileKind
+{-# INLINE unknownId #-}
+unknownId = KindOps.Id 0
+
+isSuspectKind :: TileKind -> Bool
+isSuspectKind t =
+  let getTo RevealAs{} = True
+      getTo ObscureAs{} = True
+      getTo _ = False
+  in any getTo $ tfeature t
+
+isOpenableKind ::TileKind -> Bool
+isOpenableKind t =
+  let getTo OpenTo{} = True
+      getTo _ = False
+  in any getTo $ tfeature t
+
+isClosableKind :: TileKind -> Bool
+isClosableKind t =
+  let getTo CloseTo{} = True
+      getTo _ = False
+  in any getTo $ tfeature t
 
 talterForStairs :: Word8
 talterForStairs = 3
