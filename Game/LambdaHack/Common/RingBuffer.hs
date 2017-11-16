@@ -9,11 +9,12 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude hiding (length, uncons)
 
-import Data.Binary
+import           Data.Binary
 import qualified Data.Foldable as Foldable
 import qualified Data.Sequence as Seq
-import GHC.Generics (Generic)
+import           GHC.Generics (Generic)
 
+-- | Ring buffers of a size determined at initialization.
 data RingBuffer a = RingBuffer
   { rbCarrier :: Seq.Seq a
   , rbMaxSize :: Int
@@ -30,7 +31,6 @@ empty size dummy =
   let rbMaxSize = max 1 size
   in RingBuffer (Seq.replicate rbMaxSize dummy) rbMaxSize 0 0
 
--- | Add element to the front of the buffer.
 cons :: a -> RingBuffer a -> RingBuffer a
 cons a RingBuffer{..} =
   let incNext = (rbNext + 1) `mod` rbMaxSize

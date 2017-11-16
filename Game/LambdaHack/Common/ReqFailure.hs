@@ -4,6 +4,10 @@ module Game.LambdaHack.Common.ReqFailure
   ( ReqFailure(..)
   , impossibleReqFailure, showReqFailure
   , permittedPrecious, permittedProject, permittedProjectAI, permittedApply
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , permittedPreciousAI
+#endif
   ) where
 
 import Prelude ()
@@ -18,6 +22,7 @@ import           Game.LambdaHack.Common.ItemStrongest
 import           Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
+-- | Possible causes of failure of request.
 data ReqFailure =
     MoveNothing
   | MeleeSelf

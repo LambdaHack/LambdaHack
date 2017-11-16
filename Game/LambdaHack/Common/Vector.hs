@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
--- | Basic operations on 2D vectors represented in an efficient,
--- but not unique, way.
+-- | Basic operations on bounded 2D vectors, with an efficient, but not 1-1
+-- and not monotonic @Enum@ instance.
 module Game.LambdaHack.Common.Vector
   ( Vector(..), isUnit, isDiagonal, neg, chessDistVector, euclidDistSqVector
   , moves, movesCardinal, movesDiagonal, compassText
@@ -9,17 +9,21 @@ module Game.LambdaHack.Common.Vector
   , shift, shiftBounded, trajectoryToPath, trajectoryToPathBounded
   , vectorToFrom, pathToTrajectory
   , RadianAngle, rotate, towards
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , maxVectorDim, _moveTexts, longMoveTexts, normalize, normalizeVector
+#endif
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.DeepSeq
-import Data.Binary
+import           Control.DeepSeq
+import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Int (Int32)
+import           Data.Int (Int32)
 
 import GHC.Generics (Generic)
 
@@ -73,16 +77,16 @@ neg :: Vector -> Vector
 {-# INLINE neg #-}
 neg (Vector vx vy) = Vector (-vx) (-vy)
 
--- | Squared euclidean distance between two vectors.
-euclidDistSqVector :: Vector -> Vector -> Int
-euclidDistSqVector (Vector x0 y0) (Vector x1 y1) =
-  (x1 - x0) ^ (2 :: Int) + (y1 - y0) ^ (2 :: Int)
-
 -- | The lenght of a vector in the chessboard metric,
 -- where diagonal moves cost 1.
 chessDistVector :: Vector -> Int
 {-# INLINE chessDistVector #-}
 chessDistVector (Vector x y) = max (abs x) (abs y)
+
+-- | Squared euclidean distance between two vectors.
+euclidDistSqVector :: Vector -> Vector -> Int
+euclidDistSqVector (Vector x0 y0) (Vector x1 y1) =
+  (x1 - x0) ^ (2 :: Int) + (y1 - y0) ^ (2 :: Int)
 
 -- | Vectors of all unit moves in the chessboard metric,
 -- clockwise, starting north-west.
@@ -91,6 +95,15 @@ moves =
   map (uncurry Vector)
     [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
 
+-- | Vectors of all cardinal direction unit moves, clockwise, starting north.
+movesCardinal :: [Vector]
+movesCardinal = map (uncurry Vector) [(0, -1), (1, 0), (0, 1), (-1, 0)]
+
+-- | Vectors of all diagonal direction unit moves, clockwise, starting north.
+movesDiagonal :: [Vector]
+movesDiagonal = map (uncurry Vector) [(-1, -1), (1, -1), (1, 1), (-1, 1)]
+
+-- | Currently unused.
 _moveTexts :: [Text]
 _moveTexts = ["NW", "N", "NE", "E", "SE", "S", "SW", "W"]
 
@@ -102,14 +115,6 @@ compassText :: Vector -> Text
 compassText v = let m = EM.fromList $ zip moves longMoveTexts
                     assFail = error $ "not a unit vector" `showFailure` v
                 in EM.findWithDefault assFail v m
-
--- | Vectors of all cardinal direction unit moves, clockwise, starting north.
-movesCardinal :: [Vector]
-movesCardinal = map (uncurry Vector) [(0, -1), (1, 0), (0, 1), (-1, 0)]
-
--- | Vectors of all diagonal direction unit moves, clockwise, starting north.
-movesDiagonal :: [Vector]
-movesDiagonal = map (uncurry Vector) [(-1, -1), (1, -1), (1, 1), (-1, 1)]
 
 -- | All (8 at most) closest neighbours of a point within an area.
 vicinity :: X -> Y   -- ^ limit the search to this area

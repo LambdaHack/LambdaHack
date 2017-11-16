@@ -1,22 +1,25 @@
 -- | Arrays, based on Data.Vector.Unboxed, indexed by @Point@.
 module Game.LambdaHack.Common.PointArray
   ( GArray(..), Array, pindex, punindex
-  , (!), accessI, (//)
+  , (!), accessI, (//), unsafeUpdateA, unsafeWriteA, unsafeWriteManyA
   , replicateA, replicateMA, generateA, generateMA, unfoldrNA, sizeA
   , foldrA, foldrA', foldlA', ifoldrA, ifoldrA', ifoldlA', foldMA', ifoldMA'
-  , mapA, imapA, imapMA_
-  , safeSetA, unsafeSetA, unsafeUpdateA, unsafeWriteA, unsafeWriteManyA
+  , mapA, imapA, imapMA_, safeSetA, unsafeSetA
   , minIndexA, minLastIndexA, minIndexesA, maxIndexA, maxLastIndexA, forceA
   , fromListA, toListA
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , cnv
+#endif
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Monad.ST.Strict
-import Data.Binary
-import Data.Vector.Binary ()
+import           Control.Monad.ST.Strict
+import           Data.Binary
+import           Data.Vector.Binary ()
 import qualified Data.Vector.Fusion.Bundle as Bundle
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
@@ -34,6 +37,17 @@ data GArray w c = Array
 
 instance Show (GArray w c) where
   show a = "PointArray.Array with size " ++ show (sizeA a)
+
+instance (U.Unbox w, Binary w) => Binary (GArray w c) where
+  put Array{..} = do
+    put axsize
+    put aysize
+    put avector
+  get = do
+    axsize <- get
+    aysize <- get
+    avector <- get
+    return $! Array{..}
 
 -- | Arrays of, effectively, @Word8@, indexed by @Point@.
 type Array c = GArray Word8 c
@@ -204,6 +218,14 @@ imapA f Array{..} =
   let v = U.imap (\n c -> cnv $ f (punindex axsize n) (cnv c)) avector
   in Array{avector = v, ..}
 
+-- | Map monadically over an array (function applied to each element
+-- and its index) and ignore the results.
+imapMA_ :: (U.Unbox w, Enum w, Enum c, Monad m)
+             => (Point -> c -> m ()) -> GArray w c -> m ()
+{-# INLINE imapMA_ #-}
+imapMA_ f Array{..} =
+  U.imapM_ (\n c -> f (punindex axsize n) (cnv c)) avector
+
 -- | Set all elements to the given value, in place.
 unsafeSetA :: (U.Unbox w, Enum w, Enum c) => c -> GArray w c -> GArray w c
 {-# INLINE unsafeSetA #-}
@@ -218,14 +240,6 @@ safeSetA :: (U.Unbox w, Enum w, Enum c) => c -> GArray w c -> GArray w c
 {-# INLINE safeSetA #-}
 safeSetA c Array{..} =
   Array{avector = U.modify (\v -> VM.set v (cnv c)) avector, ..}
-
--- | Map monadically over an array (function applied to each element
--- and its index) and ignore the results.
-imapMA_ :: (U.Unbox w, Enum w, Enum c, Monad m)
-             => (Point -> c -> m ()) -> GArray w c -> m ()
-{-# INLINE imapMA_ #-}
-imapMA_ f Array{..} =
-  U.imapM_ (\n c -> f (punindex axsize n) (cnv c)) avector
 
 -- | Yield the point coordinates of a minimum element of the array.
 -- The array may not be empty.
@@ -286,14 +300,3 @@ fromListA axsize aysize l =
 toListA :: (U.Unbox w, Enum w, Enum c) => GArray w c -> [c]
 {-# INLINE toListA #-}
 toListA Array{..} = map cnv $ U.toList avector
-
-instance (U.Unbox w, Binary w) => Binary (GArray w c) where
-  put Array{..} = do
-    put axsize
-    put aysize
-    put avector
-  get = do
-    axsize <- get
-    aysize <- get
-    avector <- get
-    return $! Array{..}

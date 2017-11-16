@@ -10,6 +10,10 @@ module Game.LambdaHack.Common.Random
   , castDice, chanceDice, castDiceXY
     -- * Specialized monadic folds
   , foldrM, foldlM'
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , rollFreq
+#endif
   ) where
 
 import Prelude ()
@@ -17,15 +21,14 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Control.Monad.Trans.State.Strict as St
-import Data.Ratio
+import           Data.Ratio
 import qualified System.Random as R
 
 import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.Frequency
-import Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Frequency
+import           Game.LambdaHack.Common.Misc
 
 -- | The monad of computations with random generator state.
--- The lazy state monad is OK here: the state is small and regularly forced.
 type Rnd a = St.State R.StdGen a
 
 -- | Get a random object within a range with a uniform distribution.

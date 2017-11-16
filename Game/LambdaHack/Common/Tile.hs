@@ -14,15 +14,19 @@
 --
 -- Actors at normal speed (2 m/s) take one turn to move one tile (1 m by 1 m).
 module Game.LambdaHack.Common.Tile
-  ( kindHasFeature, hasFeature, isClear, isLit, isWalkable, isDoor, isChangable
+  ( -- * Construction of tile property lookup speedup tables
+    speedup
+    -- * Sped up property lookups
+  , isClear, isLit, isWalkable, isDoor, isChangable
   , isSuspect, isHideAs, consideredByAI, isExplorable
   , isOftenItem, isOftenActor, isNoItem, isNoActor, isEasyOpen
-  , speedup, alterMinSkill, alterMinWalk
-  , openTo, closeTo, embeddedItems, revealAs, obscureAs, hideAs, buildAs
-  , isEasyOpenKind, isOpenable, isClosable
+  , alterMinSkill, alterMinWalk
+    -- * Slow property lookups
+  , kindHasFeature, hasFeature, openTo, closeTo, embeddedItems, revealAs
+  , obscureAs, hideAs, buildAs, isEasyOpenKind, isOpenable, isClosable
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , createTab, createTabWithKey, accessTab
+  , createTab, createTabWithKey, accessTab, alterMinSkillKind, alterMinWalkKind
 #endif
   ) where
 
@@ -58,103 +62,6 @@ createTabWithKey Kind.Ops{ofoldrWithKey, olength} prop =
 accessTab :: U.Unbox a => TK.Tab a -> Kind.Id TileKind -> a
 {-# INLINE accessTab #-}
 accessTab (TK.Tab tab) ki = tab `U.unsafeIndex` fromEnum ki
-
--- | Whether a tile kind has the given feature.
-kindHasFeature :: TK.Feature -> TileKind -> Bool
-{-# INLINE kindHasFeature #-}
-kindHasFeature f t = f `elem` TK.tfeature t
-
--- | Whether a tile kind (specified by its id) has the given feature.
-hasFeature :: Kind.Ops TileKind -> TK.Feature -> Kind.Id TileKind -> Bool
-{-# INLINE hasFeature #-}
-hasFeature Kind.Ops{okind} f t = kindHasFeature f (okind t)
-
--- | Whether a tile does not block vision.
--- Essential for efficiency of "FOV", hence tabulated.
-isClear :: TileSpeedup -> Kind.Id TileKind -> Bool
-{-# INLINE isClear #-}
-isClear TileSpeedup{isClearTab} = accessTab isClearTab
-
--- | Whether a tile has ambient light --- is lit on its own.
--- Essential for efficiency of "Perception", hence tabulated.
-isLit :: TileSpeedup -> Kind.Id TileKind -> Bool
-{-# INLINE isLit #-}
-isLit TileSpeedup{isLitTab} = accessTab isLitTab
-
--- | Whether actors can walk into a tile.
--- Essential for efficiency of pathfinding, hence tabulated.
-isWalkable :: TileSpeedup -> Kind.Id TileKind -> Bool
-{-# INLINE isWalkable #-}
-isWalkable TileSpeedup{isWalkableTab} = accessTab isWalkableTab
-
--- | Whether a tile is a door, open or closed.
--- Essential for efficiency of pathfinding, hence tabulated.
-isDoor :: TileSpeedup -> Kind.Id TileKind -> Bool
-{-# INLINE isDoor #-}
-isDoor TileSpeedup{isDoorTab} = accessTab isDoorTab
-
--- | Whether a tile is changable.
-isChangable :: TileSpeedup -> Kind.Id TileKind -> Bool
-{-# INLINE isChangable #-}
-isChangable TileSpeedup{isChangableTab} = accessTab isChangableTab
-
--- | Whether a tile is suspect.
--- Essential for efficiency of pathfinding, hence tabulated.
-isSuspect :: TileSpeedup -> Kind.Id TileKind -> Bool
-{-# INLINE isSuspect #-}
-isSuspect TileSpeedup{isSuspectTab} = accessTab isSuspectTab
-
-isHideAs :: TileSpeedup -> Kind.Id TileKind -> Bool
-{-# INLINE isHideAs #-}
-isHideAs TileSpeedup{isHideAsTab} = accessTab isHideAsTab
-
-consideredByAI :: TileSpeedup -> Kind.Id TileKind -> Bool
-{-# INLINE consideredByAI #-}
-consideredByAI TileSpeedup{consideredByAITab} = accessTab consideredByAITab
-
-isOftenItem :: TileSpeedup -> Kind.Id TileKind -> Bool
-{-# INLINE isOftenItem #-}
-isOftenItem TileSpeedup{isOftenItemTab} = accessTab isOftenItemTab
-
-isOftenActor:: TileSpeedup -> Kind.Id TileKind -> Bool
-{-# INLINE isOftenActor #-}
-isOftenActor TileSpeedup{isOftenActorTab} = accessTab isOftenActorTab
-
-isNoItem :: TileSpeedup -> Kind.Id TileKind -> Bool
-{-# INLINE isNoItem #-}
-isNoItem TileSpeedup{isNoItemTab} = accessTab isNoItemTab
-
-isNoActor :: TileSpeedup -> Kind.Id TileKind -> Bool
-{-# INLINE isNoActor #-}
-isNoActor TileSpeedup{isNoActorTab} = accessTab isNoActorTab
-
--- | Whether a tile kind (specified by its id) has an OpenTo feature
--- and reasonable alter min skill.
-isEasyOpen :: TileSpeedup -> Kind.Id TileKind -> Bool
-{-# INLINE isEasyOpen #-}
-isEasyOpen TileSpeedup{isEasyOpenTab} = accessTab isEasyOpenTab
-
-alterMinSkill :: TileSpeedup -> Kind.Id TileKind -> Int
-{-# INLINE alterMinSkill #-}
-alterMinSkill TileSpeedup{alterMinSkillTab} =
-  fromEnum . accessTab alterMinSkillTab
-
-alterMinWalk :: TileSpeedup -> Kind.Id TileKind -> Int
-{-# INLINE alterMinWalk #-}
-alterMinWalk TileSpeedup{alterMinWalkTab} =
-  fromEnum . accessTab alterMinWalkTab
-
--- | Whether one can easily explore a tile, possibly finding a treasure,
--- either spawned there or dropped there by a (dying from poison) foe.
--- Doors can't be explorable since revealing a secret tile
--- should not change it's (walkable and) explorable status.
--- Door status should not depend on whether they are open or not
--- so that a foe opening a door doesn't force us to backtrack to explore it.
--- Still, a foe that digs through a wall will affect our exploration counter
--- and if content lets walls contain threasure, such backtraking makes sense.
-isExplorable :: TileSpeedup -> Kind.Id TileKind -> Bool
-isExplorable coTileSpeedup t =
-  isWalkable coTileSpeedup t && not (isDoor coTileSpeedup t)
 
 speedup :: Bool -> Kind.Ops TileKind -> TileSpeedup
 speedup allClear cotile =
@@ -226,6 +133,103 @@ alterMinWalkKind k tk =
         | isUknownSpace k -> TK.talter tk
         | any getTo $ TK.tfeature tk -> TK.talter tk
         | otherwise -> maxBound
+
+-- | Whether a tile does not block vision.
+-- Essential for efficiency of "FOV", hence tabulated.
+isClear :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE isClear #-}
+isClear TileSpeedup{isClearTab} = accessTab isClearTab
+
+-- | Whether a tile has ambient light --- is lit on its own.
+-- Essential for efficiency of "Perception", hence tabulated.
+isLit :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE isLit #-}
+isLit TileSpeedup{isLitTab} = accessTab isLitTab
+
+-- | Whether actors can walk into a tile.
+-- Essential for efficiency of pathfinding, hence tabulated.
+isWalkable :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE isWalkable #-}
+isWalkable TileSpeedup{isWalkableTab} = accessTab isWalkableTab
+
+-- | Whether a tile is a door, open or closed.
+-- Essential for efficiency of pathfinding, hence tabulated.
+isDoor :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE isDoor #-}
+isDoor TileSpeedup{isDoorTab} = accessTab isDoorTab
+
+-- | Whether a tile is changable.
+isChangable :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE isChangable #-}
+isChangable TileSpeedup{isChangableTab} = accessTab isChangableTab
+
+-- | Whether a tile is suspect.
+-- Essential for efficiency of pathfinding, hence tabulated.
+isSuspect :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE isSuspect #-}
+isSuspect TileSpeedup{isSuspectTab} = accessTab isSuspectTab
+
+isHideAs :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE isHideAs #-}
+isHideAs TileSpeedup{isHideAsTab} = accessTab isHideAsTab
+
+consideredByAI :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE consideredByAI #-}
+consideredByAI TileSpeedup{consideredByAITab} = accessTab consideredByAITab
+
+-- | Whether one can easily explore a tile, possibly finding a treasure,
+-- either spawned there or dropped there by a (dying from poison) foe.
+-- Doors can't be explorable since revealing a secret tile
+-- should not change it's (walkable and) explorable status.
+-- Door status should not depend on whether they are open or not
+-- so that a foe opening a door doesn't force us to backtrack to explore it.
+-- Still, a foe that digs through a wall will affect our exploration counter
+-- and if content lets walls contain threasure, such backtraking makes sense.
+isExplorable :: TileSpeedup -> Kind.Id TileKind -> Bool
+isExplorable coTileSpeedup t =
+  isWalkable coTileSpeedup t && not (isDoor coTileSpeedup t)
+
+isOftenItem :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE isOftenItem #-}
+isOftenItem TileSpeedup{isOftenItemTab} = accessTab isOftenItemTab
+
+isOftenActor :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE isOftenActor #-}
+isOftenActor TileSpeedup{isOftenActorTab} = accessTab isOftenActorTab
+
+isNoItem :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE isNoItem #-}
+isNoItem TileSpeedup{isNoItemTab} = accessTab isNoItemTab
+
+isNoActor :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE isNoActor #-}
+isNoActor TileSpeedup{isNoActorTab} = accessTab isNoActorTab
+
+-- | Whether a tile kind (specified by its id) has an OpenTo feature
+-- and reasonable alter min skill.
+isEasyOpen :: TileSpeedup -> Kind.Id TileKind -> Bool
+{-# INLINE isEasyOpen #-}
+isEasyOpen TileSpeedup{isEasyOpenTab} = accessTab isEasyOpenTab
+
+alterMinSkill :: TileSpeedup -> Kind.Id TileKind -> Int
+{-# INLINE alterMinSkill #-}
+alterMinSkill TileSpeedup{alterMinSkillTab} =
+  fromEnum . accessTab alterMinSkillTab
+
+alterMinWalk :: TileSpeedup -> Kind.Id TileKind -> Int
+{-# INLINE alterMinWalk #-}
+alterMinWalk TileSpeedup{alterMinWalkTab} =
+  fromEnum . accessTab alterMinWalkTab
+
+-- | Whether a tile kind has the given feature.
+kindHasFeature :: TK.Feature -> TileKind -> Bool
+{-# INLINE kindHasFeature #-}
+kindHasFeature f t = f `elem` TK.tfeature t
+
+-- | Whether a tile kind (specified by its id) has the given feature.
+hasFeature :: Kind.Ops TileKind -> TK.Feature -> Kind.Id TileKind -> Bool
+{-# INLINE hasFeature #-}
+hasFeature Kind.Ops{okind} f t = kindHasFeature f (okind t)
 
 openTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 openTo Kind.Ops{okind, opick} t = do

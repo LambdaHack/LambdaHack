@@ -1,9 +1,9 @@
--- | Saving and restoring server game state.
+-- | Saving and restoring game state, used by both server and clients.
 module Game.LambdaHack.Common.Save
   ( ChanSave, saveToChan, wrapInSaves, restoreGame, saveNameCli, saveNameSer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , loopSave
+  , loopSave, vExevLib, showVersion2, delayPrint
 #endif
   ) where
 
@@ -14,22 +14,22 @@ import Game.LambdaHack.Common.Prelude
 -- Cabal
 import qualified Paths_LambdaHack as Self (version)
 
-import Control.Concurrent
-import Control.Concurrent.Async
+import           Control.Concurrent
+import           Control.Concurrent.Async
 import qualified Control.Exception as Ex hiding (handle)
-import Data.Binary
-import Data.Text (Text)
+import           Data.Binary
+import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import Data.Version
-import System.FilePath
-import System.IO (hFlush, stdout)
+import           Data.Version
+import           System.FilePath
+import           System.IO (hFlush, stdout)
 import qualified System.Random as R
 
-import Game.LambdaHack.Common.File
+import           Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Misc (FactionId, appDataDir)
-import Game.LambdaHack.Content.RuleKind
+import           Game.LambdaHack.Common.Misc (FactionId, appDataDir)
+import           Game.LambdaHack.Content.RuleKind
 
 type ChanSave a = MVar (Maybe a)
 
@@ -39,7 +39,7 @@ saveToChan toSave s = do
   void $ tryTakeMVar toSave
   putMVar toSave $ Just s
 
--- | Repeatedly save a simple serialized version of the current state.
+-- | Repeatedly save serialized snapshots of current state.
 loopSave :: Binary a => Kind.COps -> (a -> FilePath) -> ChanSave a -> IO ()
 loopSave cops stateToFileName toSave =
   loop

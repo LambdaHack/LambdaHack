@@ -4,7 +4,7 @@
 -- Visibility works according to KISS. Everything that player sees is real.
 -- There are no unmarked hidden tiles and only solid tiles can be marked,
 -- so there are no invisible walls and to pass through an illusory wall,
--- you have use a turn bumping into it first. Only tiles marked with Suspect
+-- you have to use a turn bumping into it first. Only tiles marked with Suspect
 -- can turn out to be another tile. (So, if all tiles are marked with
 -- Suspect, the player knows nothing for sure, but this should be avoided,
 -- because searching becomes too time-consuming.)
@@ -17,8 +17,7 @@
 -- the tile, so the player can flee or block. Invisible actors in open
 -- space can be hit.
 module Game.LambdaHack.Common.Perception
-  ( -- * Public perception
-    PerVisible(..)
+  ( PerVisible(..)
   , PerSmelled(..)
   , Perception(..)
   , PerLid
@@ -31,16 +30,14 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
+import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import GHC.Generics (Generic)
+import           GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
-
--- * Public perception
 
 -- | Visible positions.
 newtype PerVisible = PerVisible {pvisible :: ES.EnumSet Point}

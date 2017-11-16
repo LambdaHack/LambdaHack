@@ -1,4 +1,4 @@
--- | Client monad for interacting with a human through UI.
+-- | Custom Prelude, compatible across many GHC versions.
 module Game.LambdaHack.Common.Prelude
   ( module Prelude.Compat
 
@@ -30,7 +30,7 @@ import Control.Exception.Assert.Sugar (allB, assert, blame, showFailure, swith)
 import Data.Text (Text)
 
 import qualified Data.Text as T (pack)
-import NLP.Miniutter.English ((<+>))
+import           NLP.Miniutter.English ((<+>))
 
 -- | Show and pack the result.
 tshow :: Show a => a -> Text

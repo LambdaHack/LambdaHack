@@ -4,6 +4,10 @@ module Game.LambdaHack.Common.Point
   ( X, Y, Point(..), maxLevelDimExponent
   , chessDist, euclidDistSq, adjacent, inside, bla, fromTo
   , originPoint
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , maxLevelDim, blaXY, balancedWord
+#endif
   ) where
 
 import Prelude ()

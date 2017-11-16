@@ -1,17 +1,24 @@
--- | Server and client game state types and operations.
+-- | The common server and client basic game state type and its operations.
 module Game.LambdaHack.Common.State
   ( -- * Basic game state, local or global
     State
     -- * State components
-  , sdungeon, stotalDepth, sactorD, sitemD, sfactionD, stime, scops, shigh, sgameModeId, sdiscoKind, sdiscoAspect, sactorAspect
-    -- * State operations
+  , sdungeon, stotalDepth, sactorD, sitemD, sfactionD, stime, scops, shigh
+  , sgameModeId, sdiscoKind, sdiscoAspect, sactorAspect
+    -- * State construction
   , defStateGlobal, emptyState, localFromGlobal
+    -- * State update
   , updateDungeon, updateDepth, updateActorD, updateItemD
   , updateFactionD, updateTime, updateCOps
   , updateDiscoKind, updateDiscoAspect, updateActorAspect
+    -- * State operations
   , getItemBody, aspectRecordFromItem, aspectRecordFromIid
   , aspectRecordFromActor, actorAspectInDungeon
-  ) where
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , unknownLevel, unknownTileMap
+#endif
+ ) where
 
 import Prelude ()
 
@@ -54,6 +61,70 @@ data State = State
   , _sactorAspect :: ActorAspect       -- ^ actor aspect data
   }
   deriving (Show, Eq)
+
+instance Binary State where
+  put State{..} = do
+    put _sdungeon
+    put _stotalDepth
+    put _sactorD
+    put _sitemD
+    put _sfactionD
+    put _stime
+    put _shigh
+    put _sgameModeId
+    put _sdiscoKind
+    put _sdiscoAspect
+  get = do
+    _sdungeon <- get
+    _stotalDepth <- get
+    _sactorD <- get
+    _sitemD <- get
+    _sfactionD <- get
+    _stime <- get
+    _shigh <- get
+    _sgameModeId <- get
+    _sdiscoKind <- get
+    _sdiscoAspect <- get
+    let _scops = error $ "overwritten by recreated cops" `showFailure` ()
+        sNoActorAspect = State{_sactorAspect = EM.empty, ..}
+        _sactorAspect = actorAspectInDungeon sNoActorAspect
+    return $! State{..}
+
+sdungeon :: State -> Dungeon
+sdungeon = _sdungeon
+
+stotalDepth :: State -> AbsDepth
+stotalDepth = _stotalDepth
+
+sactorD :: State -> ActorDict
+sactorD = _sactorD
+
+sitemD :: State -> ItemDict
+sitemD = _sitemD
+
+sfactionD :: State -> FactionDict
+sfactionD = _sfactionD
+
+stime :: State -> Time
+stime = _stime
+
+scops :: State -> Kind.COps
+scops = _scops
+
+shigh :: State -> HighScore.ScoreDict
+shigh = _shigh
+
+sgameModeId :: State -> Kind.Id ModeKind
+sgameModeId = _sgameModeId
+
+sdiscoKind :: State -> DiscoveryKind
+sdiscoKind = _sdiscoKind
+
+sdiscoAspect :: State -> DiscoveryAspect
+sdiscoAspect = _sdiscoAspect
+
+sactorAspect :: State -> ActorAspect
+sactorAspect = _sactorAspect
 
 unknownLevel :: Kind.COps -> AbsDepth -> X -> Y
              -> Text -> ([Point], [Point]) -> Int -> [Point] -> Bool
@@ -175,42 +246,6 @@ updateDiscoAspect f s = s {_sdiscoAspect = f (_sdiscoAspect s)}
 updateActorAspect :: (ActorAspect -> ActorAspect) -> State -> State
 updateActorAspect f s = s {_sactorAspect = f (_sactorAspect s)}
 
-sdungeon :: State -> Dungeon
-sdungeon = _sdungeon
-
-stotalDepth :: State -> AbsDepth
-stotalDepth = _stotalDepth
-
-sactorD :: State -> ActorDict
-sactorD = _sactorD
-
-sitemD :: State -> ItemDict
-sitemD = _sitemD
-
-sfactionD :: State -> FactionDict
-sfactionD = _sfactionD
-
-stime :: State -> Time
-stime = _stime
-
-scops :: State -> Kind.COps
-scops = _scops
-
-shigh :: State -> HighScore.ScoreDict
-shigh = _shigh
-
-sgameModeId :: State -> Kind.Id ModeKind
-sgameModeId = _sgameModeId
-
-sdiscoKind :: State -> DiscoveryKind
-sdiscoKind = _sdiscoKind
-
-sdiscoAspect :: State -> DiscoveryAspect
-sdiscoAspect = _sdiscoAspect
-
-sactorAspect :: State -> ActorAspect
-sactorAspect = _sactorAspect
-
 getItemBody :: ItemId -> State -> Item
 getItemBody iid s = sitemD s EM.! iid
 
@@ -234,31 +269,3 @@ aspectRecordFromActor b s =
 actorAspectInDungeon :: State -> ActorAspect
 actorAspectInDungeon s =
   EM.map (flip aspectRecordFromActor s) $ sactorD s
-
-instance Binary State where
-  put State{..} = do
-    put _sdungeon
-    put _stotalDepth
-    put _sactorD
-    put _sitemD
-    put _sfactionD
-    put _stime
-    put _shigh
-    put _sgameModeId
-    put _sdiscoKind
-    put _sdiscoAspect
-  get = do
-    _sdungeon <- get
-    _stotalDepth <- get
-    _sactorD <- get
-    _sitemD <- get
-    _sfactionD <- get
-    _stime <- get
-    _shigh <- get
-    _sgameModeId <- get
-    _sdiscoKind <- get
-    _sdiscoAspect <- get
-    let _scops = error $ "overwritten by recreated cops" `showFailure` ()
-        sNoActorAspect = State{_sactorAspect = EM.empty, ..}
-        _sactorAspect = actorAspectInDungeon sNoActorAspect
-    return $! State{..}

@@ -1,25 +1,29 @@
 {-# LANGUAGE DeriveFunctor, GeneralizedNewtypeDeriving #-}
 -- | Game time and speed.
 module Game.LambdaHack.Common.Time
-  ( Time, timeZero, timeClip, timeTurn, timeSecond, timeEpsilon
+  ( Time, timeZero, timeEpsilon, timeClip, timeTurn, timeSecond
   , absoluteTimeAdd, absoluteTimeSubtract, absoluteTimeNegate
   , timeFit, timeFitUp
   , Delta(..), timeShift, timeDeltaToFrom
   , timeDeltaSubtract, timeDeltaReverse, timeDeltaScale, timeDeltaPercent
-  , timeDeltaToDigit, ticksPerMeter
+  , timeDeltaDiv, timeDeltaToDigit
   , Speed, toSpeed, fromSpeed
   , speedZero, speedWalk, speedLimp, speedThrust, modifyDamageBySpeed
-  , speedScale, timeDeltaDiv, speedAdd, speedNegate
-  , speedFromWeight, rangeFromSpeedAndLinger
+  , speedScale, speedAdd, speedNegate
+  , ticksPerMeter, speedFromWeight, rangeFromSpeedAndLinger
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , _timeTick, turnsInSecond, sInMs, minimalSpeed, rangeFromSpeed
+#endif
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
+import           Data.Binary
 import qualified Data.Char as Char
-import Data.Int (Int64)
+import           Data.Int (Int64)
 
 -- | Game time in ticks. The time dimension.
 -- One tick is 1 microsecond (one millionth of a second),
@@ -27,17 +31,12 @@ import Data.Int (Int64)
 newtype Time = Time {timeTicks :: Int64}
   deriving (Show, Eq, Ord, Enum, Bounded, Binary)
 
--- | One-dimentional vectors. Introduced to tell apart the 2 uses of Time:
--- as an absolute game time and as an increment.
-newtype Delta a = Delta a
-  deriving (Show, Eq, Ord, Enum, Bounded, Binary, Functor)
-
 -- | Start of the game time, or zero lenght time interval.
 timeZero :: Time
 timeZero = Time 0
 
--- | The smallest unit of time. Do not export, because the proportion
--- of turn to tick is an implementation detail.
+-- | The smallest unit of time. Should not be exported and used elsewhere,
+-- because the proportion of turn to tick is an implementation detail.
 -- The significance of this detail is only that it determines resolution
 -- of the time dimension.
 _timeTick :: Time
@@ -77,10 +76,11 @@ absoluteTimeSubtract :: Time -> Time -> Time
 {-# INLINE absoluteTimeSubtract #-}
 absoluteTimeSubtract (Time t1) (Time t2) = Time (t1 - t2)
 
--- | Shifting an absolute time by a time vector.
-timeShift :: Time -> Delta Time -> Time
-{-# INLINE timeShift #-}
-timeShift (Time t1) (Delta (Time t2)) = Time (t1 + t2)
+-- | Absolute time negation. To be used for reversing time flow,
+-- e.g., for comparing absolute times in the reverse order.
+absoluteTimeNegate :: Time -> Time
+{-# INLINE absoluteTimeNegate #-}
+absoluteTimeNegate (Time t) = Time (-t)
 
 -- | How many time intervals of the latter kind fits in an interval
 -- of the former kind.
@@ -94,16 +94,15 @@ timeFitUp :: Time -> Time -> Int
 {-# INLINE timeFitUp #-}
 timeFitUp (Time t1) (Time t2) = fromEnum $ t1 `divUp` t2
 
--- | Reverse a time vector.
-timeDeltaReverse :: Delta Time -> Delta Time
-{-# INLINE timeDeltaReverse #-}
-timeDeltaReverse (Delta (Time t)) = Delta (Time (-t))
+-- | One-dimentional vectors. Introduced to tell apart the 2 uses of Time:
+-- as an absolute game time and as an increment.
+newtype Delta a = Delta a
+  deriving (Show, Eq, Ord, Enum, Bounded, Binary, Functor)
 
--- | Absolute time negation. To be used for reversing time flow,
--- e.g., for comparing absolute times in the reverse order.
-absoluteTimeNegate :: Time -> Time
-{-# INLINE absoluteTimeNegate #-}
-absoluteTimeNegate (Time t) = Time (-t)
+-- | Shifting an absolute time by a time vector.
+timeShift :: Time -> Delta Time -> Time
+{-# INLINE timeShift #-}
+timeShift (Time t1) (Delta (Time t2)) = Time (t1 + t2)
 
 -- | Time time vector between the second and the first absolute times.
 -- The arguments are in the same order as in the underlying scalar subtraction.
@@ -116,6 +115,11 @@ timeDeltaToFrom (Time t1) (Time t2) = Delta $ Time (t1 - t2)
 timeDeltaSubtract :: Delta Time -> Delta Time -> Delta Time
 {-# INLINE timeDeltaSubtract #-}
 timeDeltaSubtract (Delta (Time t1)) (Delta (Time t2)) = Delta $ Time (t1 - t2)
+
+-- | Reverse a time vector.
+timeDeltaReverse :: Delta Time -> Delta Time
+{-# INLINE timeDeltaReverse #-}
+timeDeltaReverse (Delta (Time t)) = Delta (Time (-t))
 
 -- | Scale the time vector by an @Int@ scalar value.
 timeDeltaScale :: Delta Time -> Int -> Delta Time
@@ -162,15 +166,15 @@ toSpeed :: Int -> Speed
 {-# INLINE toSpeed #-}
 toSpeed s = Speed $ fromIntegral s * sInMs `div` 10
 
--- Can't be lower or actors would slow down (via tmp organs and weight),
--- boost time with InsertMove, speed up and have lots of free moves.
-minimalSpeed :: Int64
-minimalSpeed = sInMs `div` 10
-
 -- | Pretty-printing of speed in the format used in content definitions.
 fromSpeed :: Speed -> Int
 {-# INLINE fromSpeed #-}
 fromSpeed (Speed s) = fromEnum $ s * 10 `div` sInMs
+
+-- Can't be lower or actors would slow down (via tmp organs and weight),
+-- boost time with InsertMove, speed up and have lots of free moves.
+minimalSpeed :: Int64
+minimalSpeed = sInMs `div` 10
 
 -- | No movement possible at that speed.
 speedZero :: Speed

@@ -15,7 +15,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import           Control.Arrow (first)
 import           Control.Monad.ST.Strict
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
