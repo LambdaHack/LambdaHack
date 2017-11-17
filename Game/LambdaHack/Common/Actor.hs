@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
--- | Actors in the game: heroes, monsters, etc. No operation in this module
--- involves the 'State' or 'Action' type.
+-- | Actors in the game: heroes, monsters, etc.
 module Game.LambdaHack.Common.Actor
   ( -- * Actor identifiers
     ActorId

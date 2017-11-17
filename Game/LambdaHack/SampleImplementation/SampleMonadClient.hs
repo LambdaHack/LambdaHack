@@ -1,8 +1,6 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
--- | The main game action monad type implementation. Just as any other
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+-- | The implementation of our custom game client monads. Just as any other
 -- component of the library, this implementation can be substituted.
--- This module should not be imported anywhere except in 'Action'
--- to expose the executor to any code using the library.
 module Game.LambdaHack.SampleImplementation.SampleMonadClient
   ( executorCli
 #ifdef EXPOSE_INTERNAL
@@ -18,7 +16,6 @@ import Game.LambdaHack.Common.Prelude
 import           Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import           Control.Monad.Trans.State.Strict hiding (State)
-import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Atomic (MonadStateWrite (..), putState)
 import           Game.LambdaHack.Client
@@ -45,7 +42,6 @@ data CliState = CliState
   , cliToSave  :: Save.ChanSave (StateClient, Maybe SessionUI)
                                    -- ^ connection to the save thread
   }
-  deriving Generic
 
 -- | Client state transformation monad.
 newtype CliImplementation a = CliImplementation
@@ -126,8 +122,8 @@ instance MonadClientAtomic CliImplementation where
   {-# INLINE execPutState #-}
   execPutState = putState
 
--- | Init the client, then run an action, with a given session,
--- state and history, in the @IO@ monad.
+-- | Run the main client loop, with the given arguments and empty
+-- initial states, in the @IO@ monad.
 executorCli :: KeyKind -> UIOptions -> ClientOptions
             -> Kind.COps
             -> Bool

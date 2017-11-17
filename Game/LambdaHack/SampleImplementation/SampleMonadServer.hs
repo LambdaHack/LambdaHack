@@ -1,8 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
--- | The main game action monad type implementation. Just as any other
+-- | The implementation of our custom game server monads. Just as any other
 -- component of the library, this implementation can be substituted.
--- This module should not be imported anywhere except in 'Action'
--- to expose the executor to any code using the library.
 module Game.LambdaHack.SampleImplementation.SampleMonadServer
   ( executorSer
 #ifdef EXPOSE_INTERNAL
@@ -132,7 +130,8 @@ instance MonadServerAtomic SerImplementation where
 
 -- Don't inline this, to keep GHC hard work inside the library
 -- for easy access of code analysis tools.
--- | Run an action in the @IO@ monad, with undefined state.
+-- | Run the main server loop, with the given arguments and empty
+-- initial states, in the @IO@ monad.
 executorSer :: Kind.COps -> KeyKind -> ServerOptions -> IO ()
 executorSer cops copsClient soptionsNxtCmdline = do
   -- Parse UI client configuration file.

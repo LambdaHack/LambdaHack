@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveFoldable, DeriveTraversable, TupleSections #-}
 -- | AI strategies to direct actors not controlled directly by human players.
--- No operation in this module involves the 'State' or 'Action' type.
+-- No operation in this module involves the 'State' tyep or any of our
+-- client/server monads types.
 module Game.LambdaHack.Client.AI.Strategy
   ( Strategy, nullStrategy, liftFrequency
   , (.|), reject, (.=>), only, bestVariant, renameStrategy, returN, mapStrategyM
