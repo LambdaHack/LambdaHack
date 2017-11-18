@@ -141,7 +141,7 @@ loudSfxAtomic :: MonadStateRead m => Bool -> SfxAtomic -> m (Maybe SfxMsg)
 loudSfxAtomic local cmd =
   case cmd of
     SfxStrike source _ iid cstore | local -> do
-      itemToF <- getsState $ itemToFull
+      itemToF <- getsState itemToFull
       sb <- getsState $ getActorBody source
       bag <- getsState $ getBodyStoreBag sb cstore
       let kit = EM.findWithDefault (1, []) iid bag
@@ -167,8 +167,8 @@ sendPer fid lid outPer inPer perNew = do
   psRem <- mapM posUpdAtomic remember
   -- Verify that we remember only currently seen things.
   let !_A = assert (allB seenNew psRem) ()
-  mapM_ (sendUpdateCheck fid) $ forget
-  mapM_ (sendUpdate fid) $ remember
+  mapM_ (sendUpdateCheck fid) forget
+  mapM_ (sendUpdate fid) remember
 
 -- Remembered items, map tiles and smells are not wiped out when they get
 -- out of FOV. Clients remember them. Only actors are forgotten.
@@ -206,7 +206,7 @@ atomicRemember lid inPer sClient s =
               (Just bag, Nothing) ->  -- common, client unaware
                 let ais = map (\iid -> (iid, getItemBody iid s))
                               (EM.keys bag)
-                in if allow p then [UpdSpotItemBag (fc lid p) bag ais] else []
+                in  [UpdSpotItemBag (fc lid p) bag ais | allow p]
               (Nothing, Just bagClient) ->  -- uncommon, all items vanished
                 -- We don't check @allow@, because client sees items there,
                 -- so we assume he's aware of the tile enough to notice.

@@ -80,7 +80,7 @@ weaveJust (Right a) = Right a
 
 sortSlots :: MonadClientUI m => FactionId -> Maybe Actor -> m ()
 sortSlots fid mbody = do
-  itemToF <- getsState $ itemToFull
+  itemToF <- getsState itemToFull
   s <- getState
   let -- If apperance the same, keep the order from before sort.
       apperance ItemFull{itemBase} =
@@ -238,7 +238,7 @@ pickLeaderWithPointer = do
 itemOverlay :: MonadClientUI m => CStore -> LevelId -> ItemBag -> m OKX
 itemOverlay store lid bag = do
   localTime <- getsState $ getLocalTime lid
-  itemToF <- getsState $ itemToFull
+  itemToF <- getsState itemToFull
   ItemSlots itemSlots organSlots <- getsSession sslots
   side <- getsClient sside
   factionD <- getsState sfactionD
@@ -336,7 +336,7 @@ lookAt :: MonadClientUI m
        -> m Text
 lookAt detailed tilePrefix canSee pos aid msg = do
   Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
-  itemToF <- getsState $ itemToFull
+  itemToF <- getsState itemToFull
   b <- getsState $ getActorBody aid
   -- Not using @viewedLevelUI@, because @aid@ may be temporarily not a leader.
   saimMode <- getsSession saimMode

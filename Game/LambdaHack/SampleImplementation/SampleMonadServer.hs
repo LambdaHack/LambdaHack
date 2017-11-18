@@ -99,7 +99,7 @@ instance MonadServerAtomic SerImplementation where
       Left AtomicFail{} -> return (False, cliS)
       Right cliSNew ->
         -- We know @cliSNew@ differs only in @serState@.
-        return $ (True, cliSNew)
+        return (True, cliSNew)
   execUpdAtomicFid fid cmd = SerImplementation $ StateT $ \cliS -> do
     -- Don't catch anything; assume exceptions impossible.
     let sFid = sclientStates (serServer cliS) EM.! fid

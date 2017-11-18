@@ -380,7 +380,7 @@ reqAlter source tpos = do
         let ais = map (\iid -> (iid, getItemBody iid s)) (EM.keys embeds)
         execUpdAtomic $ UpdSpotItemBag (CEmbed lid tpos) embeds ais
   if not $ adjacent (bpos sb) tpos then execFailure source req AlterDistant
-  else if Just clientTile == hiddenTile then do -- searches
+  else if Just clientTile == hiddenTile then  -- searches
     -- Only actors with AbAlter > 1 can search for hidden doors, etc.
     if alterSkill <= 1
     then execFailure source req AlterUnskilled  -- don't leak about searching
@@ -404,7 +404,7 @@ reqAlter source tpos = do
       unless (Tile.isDoor coTileSpeedup serverTile
               || Tile.isChangable coTileSpeedup serverTile) $
         itemEffectEmbedded source tpos embeds
-  else if clientTile == serverTile then do -- alters
+  else if clientTile == serverTile then  -- alters
     if alterSkill < Tile.alterMinSkill coTileSpeedup serverTile
     then execFailure source req AlterUnskilled  -- don't leak about altering
     else do
@@ -463,7 +463,7 @@ reqAlter source tpos = do
       if null groupsToAlterTo && null embeds then
         -- No altering possible; silly client.
         execFailure source req AlterNothing
-      else do
+      else
         if EM.notMember tpos $ lfloor lvl then
           if null (posToAidsLvl tpos lvl) then do
             -- The embeds of the initial tile are activated before the tile
@@ -522,7 +522,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
    | (fromCStore == CSha || toCStore == CSha) && not calmE ->
      execFailure aid req ItemNotCalm
    | otherwise -> do
-    itemToF <- getsState $ itemToFull
+    itemToF <- getsState itemToFull
     let itemFull = itemToF iid (k, [])
     when (fromCStore == CGround) $ discoverIfNoEffects fromC iid itemFull
     upds <- generalMoveItem True iid k fromC toC
@@ -610,7 +610,7 @@ reqApply aid iid cstore = do
     case EM.lookup iid bag of
       Nothing -> execFailure aid req ApplyOutOfReach
       Just kit -> do
-        itemToF <- getsState $ itemToFull
+        itemToF <- getsState itemToFull
         actorSk <- currentSkillsServer aid
         localTime <- getsState $ getLocalTime (blid b)
         let skill = EM.findWithDefault 0 Ability.AbApply actorSk

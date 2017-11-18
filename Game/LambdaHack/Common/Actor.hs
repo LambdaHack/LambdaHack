@@ -48,11 +48,10 @@ data Actor = Actor
 
     -- Location
   , bpos        :: Point        -- ^ current position
-  , boldpos     :: (Maybe Point)
-                                -- ^ previous position, if any
+  , boldpos     :: Maybe Point  -- ^ previous position, if any
   , blid        :: LevelId      -- ^ current level
   , bfid        :: FactionId    -- ^ faction the actor currently belongs to
-  , btrajectory :: (Maybe ([Vector], Speed))
+  , btrajectory :: Maybe ([Vector], Speed)
                                 -- ^ trajectory the actor must
                                 --   travel and his travel speed
 
@@ -181,9 +180,9 @@ monsterGenChance (AbsDepth n) (AbsDepth totalDepth) lvlSpawned actorCoeff =
   $ let scaledDepth = n * 10 `div` totalDepth
         -- Heroes have to endure two lvl-sized waves of spawners for each level.
         numSpawnedCoeff = lvlSpawned `div` 2
-    in chance $ 1%(fromIntegral
-                     ((actorCoeff * (numSpawnedCoeff - scaledDepth))
-                      `max` 1))  -- monsters up to level depth spawned at once
+    in chance $ 1%fromIntegral
+                    ((actorCoeff * (numSpawnedCoeff - scaledDepth))
+                     `max` 1)  -- monsters up to level depth spawned at once
 
 -- | How long until an actor's smell vanishes from a tile.
 smellTimeout :: Delta Time

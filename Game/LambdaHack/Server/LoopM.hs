@@ -274,7 +274,7 @@ applyPeriodicLevel = do
         case iid `EM.lookup` bag of
           Nothing -> return ()  -- item dropped
           Just kit -> do
-            itemToF <- getsState $ itemToFull
+            itemToF <- getsState itemToFull
             let itemFull = itemToF iid kit
             case itemDisco itemFull of
               Just ItemDisco {itemKind=IK.ItemKind{IK.ieffects}} ->

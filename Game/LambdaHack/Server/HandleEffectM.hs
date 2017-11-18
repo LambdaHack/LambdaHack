@@ -107,7 +107,7 @@ meleeEffectAndDestroy source target iid c = do
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (source, target, iid, c)
     Just kit -> do
-      itemToF <- getsState $ itemToFull
+      itemToF <- getsState itemToFull
       let itemFull = itemToF iid kit
       case itemDisco itemFull of
         Just ItemDisco {itemKind=IK.ItemKind{IK.ieffects}} ->
@@ -536,7 +536,7 @@ dominateFid fid target = do
     -- Add some nostalgia for the old faction.
     void $ effectCreateItem (Just $ bfid tb) (Just 10) target COrgan
                             "impressed" IK.TimerNone
-    itemToF <- getsState $ itemToFull
+    itemToF <- getsState itemToFull
     let discoverIf (iid, cstore) = do
           let itemFull = itemToF iid (1, [])
               c = CActor target cstore
@@ -997,7 +997,7 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
       isDestroyed = bproj b && (bhp b <= 0 && not durable || fragile)
                     || fragile && durable  -- hack for tmp organs
   if isDestroyed then do
-    itemToF <- getsState $ itemToFull
+    itemToF <- getsState itemToFull
     let itemFull = itemToF iid kit
         effs = strengthOnSmash itemFull
     -- Activate even if effects null, to destroy the item.
@@ -1062,7 +1062,7 @@ effectIdentify execSfx iidId source target = do
   let tryFull store as = case as of
         [] -> return False
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
-        (iid, ItemFull{itemDisco=Just ItemDisco{..}}) : rest -> do
+        (iid, ItemFull{itemDisco=Just ItemDisco{..}}) : rest ->
           if iid `EM.member` sdiscoAspect s
              || not (any IK.forIdEffect (IK.ieffects itemKind))
                   -- darts included, which prevents wasting the scroll

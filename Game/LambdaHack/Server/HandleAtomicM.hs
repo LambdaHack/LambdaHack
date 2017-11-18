@@ -112,7 +112,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
     when (any (\iid -> itemAffectsShineRadius discoAspect iid [store]) iids) $
       invalidateLucidAid aid
     when (store `elem` [CEqp, COrgan]) $
-      when (any (\iid -> itemAffectsPerRadius discoAspect iid) iids) $
+      when (any (itemAffectsPerRadius discoAspect) iids) $
         reconsiderPerActor aid
   UpdLoseItemBag (CFloor lid _) bag _ais -> do
     discoAspect <- getsState sdiscoAspect
@@ -125,7 +125,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
     when (any (\iid -> itemAffectsShineRadius discoAspect iid [store]) iids) $
       invalidateLucidAid aid
     when (store `elem` [CEqp, COrgan]) $
-      when (any (\iid -> itemAffectsPerRadius discoAspect iid) iids) $
+      when (any (itemAffectsPerRadius discoAspect) iids) $
         reconsiderPerActor aid
   UpdMoveActor aid _ _ -> do
     actorAspect <- getsState sactorAspect
@@ -156,7 +156,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
           invalidatePer
       _ -> do
         invalidateLucid  -- from itemAffects, s2 provides light or s1 is CGround
-        when (s2 `elem` [CEqp, COrgan]) $ invalidatePer
+        when (s2 `elem` [CEqp, COrgan]) invalidatePer
   UpdRefillCalm aid _ -> do
     AspectRecord{aSight} <- getsState $ getActorAspect aid
     body <- getsState $ getActorBody aid

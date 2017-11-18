@@ -268,4 +268,4 @@ aspectRecordFromActor b s =
 
 actorAspectInDungeon :: State -> ActorAspect
 actorAspectInDungeon s =
-  EM.map (flip aspectRecordFromActor s) $ sactorD s
+  EM.map (`aspectRecordFromActor` s) $ sactorD s

@@ -28,7 +28,7 @@ instance Monad Strategy where
   m >>= f  = normalizeStrategy $ Strategy
     [ toFreq name [
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-                    assert (toInteger p * toInteger q <= _maxBound32) $
+                    assert (toInteger p * toInteger q <= _maxBound32)
 #endif
                     (p * q, b)
                   | (p, a) <- runFrequency x

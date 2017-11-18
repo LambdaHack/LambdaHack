@@ -73,7 +73,7 @@ execFailure aid req failureSer = do
 
 revealItems :: MonadServerAtomic m => Maybe FactionId -> m ()
 revealItems mfid = do
-  itemToF <- getsState $ itemToFull
+  itemToF <- getsState itemToFull
   let discover aid store iid k =
         let itemFull = itemToF iid k
             c = CActor aid store
@@ -303,7 +303,7 @@ projectFail source tpxy eps iid cstore isBlast = do
       case EM.lookup iid bag of
         Nothing ->  return $ Just ProjectOutOfReach
         Just kit -> do
-          itemToF <- getsState $ itemToFull
+          itemToF <- getsState itemToFull
           actorSk <- currentSkillsServer source
           ar <- getsState $ getActorAspect source
           let skill = EM.findWithDefault 0 Ability.AbProject actorSk
@@ -365,7 +365,7 @@ addProjectile :: MonadServerAtomic m
               -> FactionId -> Time -> Bool
               -> m ()
 addProjectile bpos rest iid (_, it) blid bfid btime _isBlast = do
-  itemToF <- getsState $ itemToFull
+  itemToF <- getsState itemToFull
   let itemFull@ItemFull{itemBase} = itemToF iid (1, take 1 it)
       (trajectory, (speed, _)) = itemTrajectory itemBase (bpos : rest)
       tweakBody b = b { bhp = oneM

@@ -416,7 +416,7 @@ itemVerbMU :: MonadClientUI m
 itemVerbMU iid kit@(k, _) verb c = assert (k > 0) $ do
   lid <- getsState $ lidFromC c
   localTime <- getsState $ getLocalTime lid
-  itemToF <- getsState $ itemToFull
+  itemToF <- getsState itemToFull
   side <- getsClient sside
   factionD <- getsState sfactionD
   let subject = partItemWs side factionD
@@ -440,7 +440,7 @@ itemAidVerbMU aid verb iid ek cstore = do
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (aid, verb, iid, cstore)
     Just kit@(k, _) -> do
-      itemToF <- getsState $ itemToFull
+      itemToF <- getsState itemToFull
       let lid = blid body
       localTime <- getsState $ getLocalTime lid
       subject <- partAidLeader aid
@@ -769,7 +769,7 @@ quitFactionUI fid toSt = do
             sli <- overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] io
             return (bag, sli, tot)
         localTime <- getsState $ getLocalTime arena
-        itemToF <- getsState $ itemToFull
+        itemToF <- getsState itemToFull
         ItemSlots lSlots _ <- getsSession sslots
         let keyOfEKM (Left km) = km
             keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
@@ -832,7 +832,7 @@ discover c oldState iid = do
   discoKind <- getsState sdiscoKind
   discoAspect <- getsState sdiscoAspect
   localTime <- getsState $ getLocalTime lid
-  itemToF <- getsState $ itemToFull
+  itemToF <- getsState itemToFull
   bag <- getsState $ getContainerBag c
   side <- getsClient sside
   factionD <- getsState sfactionD
@@ -967,7 +967,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             msgAdd $ makeSentence
               [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
           stopPlayBack
-        IK.Impress -> actorVerbMU aid bUI $ "be awestruck"
+        IK.Impress -> actorVerbMU aid bUI "be awestruck"
         IK.Summon grp p -> do
           let verb = if bproj b then "lure" else "summon"
               object = (if p == 1  -- avoid "2 + 4 dl 3"
@@ -1138,12 +1138,12 @@ ppSfxMsg sfxMsg = case sfxMsg of
     aidPhrase <- partActorLeader aid bUI
     factionD <- getsState sfactionD
     localTime <- getsState $ getLocalTime (blid b)
-    itemToF <- getsState $ itemToFull
+    itemToF <- getsState itemToFull
     let itemFull = itemToF iid (1, [])
         (_, _, name, stats) =
           partItem (bfid b) factionD cstore localTime itemFull
         storeOwn = ppCStoreWownW True cstore aidPhrase
-        cond = if jsymbol (itemBase itemFull) == '+' then ["condition"] else []
+        cond = ["condition" | jsymbol (itemBase itemFull) == '+']
     return $! makeSentence $
       ["the", name, stats] ++ cond ++ storeOwn ++ ["will now last longer"]
 
@@ -1165,7 +1165,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
   (ps, hurtMult) <-
    if sourceSeen then do
     hurtMult <- getsState $ armorHurtBonus source target
-    itemToF <- getsState $ itemToFull
+    itemToF <- getsState itemToFull
     sb <- getsState $ getActorBody source
     sbUI <- getsSession $ getActorUI source
     spart <- partActorLeader source sbUI

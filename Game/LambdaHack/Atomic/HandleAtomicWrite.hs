@@ -617,9 +617,8 @@ discoverSeed iid seed = do
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel $ jlid item
   discoKind <- getsState sdiscoKind
-  let KindMean{..} = case EM.lookup (jkindIx item) discoKind of
-        Just km -> km
-        Nothing -> error "discovered item kind unknown"
+  let KindMean{..} = fromMaybe (error "discovered item kind unknown")
+                               (EM.lookup (jkindIx item) discoKind)
       kind = okind kmKind
       aspects = seedToAspect seed kind ldepth totalDepth
       f Nothing = Just aspects

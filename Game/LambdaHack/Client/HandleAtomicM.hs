@@ -289,9 +289,8 @@ discoverKind _c iid ik = do
   discoKind <- getsState sdiscoKind
   item <- getsState $ getItemBody iid
   let kind = okind ik
-      KindMean{kmMean} = case EM.lookup (jkindIx item) discoKind of
-        Just km -> km
-        Nothing -> error "item kind not found"
+      KindMean{kmMean} = fromMaybe (error "item kind not found")
+                                   (EM.lookup (jkindIx item) discoKind)
       benefit = totalUsefulness cops fact (IK.ieffects kind) kmMean item
   -- This adds to @sdiscoBenefit@ only @iid@ and not any other items
   -- that share the same @jkindIx@, so this is broken if such items
@@ -314,9 +313,8 @@ discoverSeed _c iid seed = do
   item <- getsState $ getItemBody iid
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel $ jlid item
-  let KindMean{..} = case EM.lookup (jkindIx item) discoKind of
-        Just km -> km
-        Nothing -> error "item kind not found"
+  let KindMean{..} = fromMaybe (error "item kind not found")
+                               (EM.lookup (jkindIx item) discoKind)
       kind = okind kmKind
       aspects = seedToAspect seed kind ldepth totalDepth
       benefit = totalUsefulness cops fact (IK.ieffects kind) aspects item

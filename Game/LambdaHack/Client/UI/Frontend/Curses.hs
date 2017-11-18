@@ -46,7 +46,7 @@ startup _soptions = do
           , bg <- [Color.Black, Color.Blue, Color.White, Color.BrBlack] ]
   nr <- C.colorPairs
   when (nr < length s) $
-    C.end >> (error $ "terminal has too few color pairs" `showFailure` nr)
+    C.end >> error ("terminal has too few color pairs" `showFailure` nr)
   let (ks, vs) = unzip s
   ws <- C.convertStyles vs
   let swin = C.stdScr

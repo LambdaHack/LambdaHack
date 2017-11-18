@@ -93,7 +93,7 @@ targetDesc mtarget = do
               [] -> return $! "exact spot" <+> tshow p
               [(iid, kit@(k, _))] -> do
                 localTime <- getsState $ getLocalTime lid
-                itemToF <- getsState $ itemToFull
+                itemToF <- getsState itemToFull
                 side <- getsClient sside
                 factionD <- getsState sfactionD
                 let (_, _, name, stats) =
@@ -441,7 +441,7 @@ drawFrameStatus drawnLevelId = do
               Nothing -> return $! tgtBlurb
               Just kit@(k, _) -> do
                 localTime <- getsState $ getLocalTime (blid b)
-                itemToF <- getsState $ itemToFull
+                itemToF <- getsState itemToFull
                 factionD <- getsState sfactionD
                 let (_, _, name, stats) =
                       partItem (bfid b) factionD
