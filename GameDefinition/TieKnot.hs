@@ -1,4 +1,4 @@
--- | Here the knot of engine code pieces and the game-specific
+-- | Here the knot of engine code pieces, frontend and the game-specific
 -- content definitions is tied, resulting in an executable game.
 module TieKnot
   ( tieKnot
@@ -29,11 +29,11 @@ import qualified Content.TileKind
 -- with the game-specific content definitions, and run the game.
 --
 -- The custom monad types to be used are determined by the 'executorSer'
--- and 'executorCli' calls. If other functions are used in their place
--- the types are different and so the whole pattern of computation
--- is different. Which of the frontends is run inside the UI client
--- depends on the flags supplied when compiling the engine library,
--- just as the choice of native vs JS builds.
+-- call, which in turn calls 'executorCli'. If other functions are used
+-- in their place- the types are different and so the whole pattern
+-- of computation differs. Which of the frontends is run inside the UI client
+-- depends on the flags supplied when compiling the engine library.
+-- Similarly for the choice of native vs JS builds.
 tieKnot :: ServerOptions -> IO ()
 tieKnot options@ServerOptions{sallClear, sboostRandomItem, sdungeonRng} = do
   -- This setup ensures the boosting option doesn't affect generating initial

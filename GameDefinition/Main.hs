@@ -8,16 +8,16 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Options.Applicative as OA
-import Control.Concurrent.Async
+import           Control.Concurrent.Async
 import qualified Control.Exception as Ex
-import System.Exit
+import qualified Options.Applicative as OA
+import           System.Exit
 
 import Game.LambdaHack.Server (serverOptionsPI)
 import TieKnot
 
--- | Tie the LambdaHack engine client, server and frontend code
--- with the game-specific content definitions, and run the game.
+-- | Parse commandline options, tie the engine, content and clients knot,
+-- run the game and handle exit.
 main :: IO ()
 main = do
   serverOptions <- OA.execParser serverOptionsPI
@@ -28,5 +28,5 @@ main = do
     Right () -> return ()
     Left e -> case Ex.fromException e of
       Just ExitSuccess ->
-        exitSuccess  -- we are in the main thread, so it really exits
+        exitSuccess  -- we are in the main thread, so here it really exits
       _ -> Ex.throwIO e
