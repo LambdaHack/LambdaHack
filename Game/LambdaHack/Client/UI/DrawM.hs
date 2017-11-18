@@ -222,7 +222,7 @@ drawFramePath drawnLevelId = do
         | pathGoal == xhairPos -> return tapPath
       _ -> getCachePath aid xhairPos) mleader
   let lpath = if null bline then []
-              else maybe [] (\mp -> case mp of
+              else maybe [] (\case
                 NoPath -> []
                 AndPath {pathList} -> pathList) mpath
       xhairHere = find (\(_, m) -> xhairPos == bpos m)

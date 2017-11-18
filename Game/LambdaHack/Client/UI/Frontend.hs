@@ -109,7 +109,7 @@ getKey soptions fs rf@RawFrontend{fchanKey} keys frame = do
 -- Read UI requests from the client and send them to the frontend,
 fchanFrontend :: ClientOptions -> FrontSetup -> RawFrontend -> ChanFrontend
 fchanFrontend soptions fs@FrontSetup{..} rf =
-  ChanFrontend $ \req -> case req of
+  ChanFrontend $ \case
     FrontFrame{..} -> display rf frontFrame
     FrontDelay k -> modifyMVar_ fdelay $ return . (+ k)
     FrontKey{..} -> getKey soptions fs rf frontKeyKeys frontKeyFrame

@@ -164,7 +164,7 @@ cacheBeforeLucidFromActor clearPs body AspectRecord{..} =
 
 totalFromPerActor :: PerActor -> CacheBeforeLucid
 totalFromPerActor perActor =
-  let as = map (\a -> case a of
+  let as = map (\case
                    FovValid x -> x
                    FovInvalid -> error $ "" `showFailure` perActor)
            $ EM.elems perActor

@@ -20,7 +20,7 @@ import Game.LambdaHack.Common.Prelude
 -- Cabal
 import qualified Paths_LambdaHack as Self (version)
 
-import qualified Control.Exception as Ex hiding (handle)
+import qualified Control.Exception as Ex
 import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T

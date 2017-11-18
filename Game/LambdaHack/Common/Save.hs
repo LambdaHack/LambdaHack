@@ -16,7 +16,7 @@ import qualified Paths_LambdaHack as Self (version)
 
 import           Control.Concurrent
 import           Control.Concurrent.Async
-import qualified Control.Exception as Ex hiding (handle)
+import qualified Control.Exception as Ex
 import           Data.Binary
 import           Data.Text (Text)
 import qualified Data.Text as T
