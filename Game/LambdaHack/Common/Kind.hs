@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-expose-all-unfoldings #-}
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
   ( Id, Ops(..), COps(..), stdRuleset, createOps
@@ -44,9 +45,13 @@ instance Eq COps where
 stdRuleset :: Ops RuleKind -> RuleKind
 stdRuleset Ops{ouniqGroup, okind} = okind $ ouniqGroup "standard"
 
+-- Not specialized, because no speedup, but big JS code bloat
+-- (-fno-expose-all-unfoldings and NOINLINE used to ensure that,
+-- in the absence of NOSPECIALIZABLE pragma).
 -- | Create content operations for type @a@ from definition of content
 -- of type @a@.
 createOps :: forall a. Show a => ContentDef a -> Ops a
+{-# NOINLINE createOps #-}
 createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
   assert (V.length content <= fromEnum (maxBound :: Id a)) $
   let kindFreq :: M.Map (GroupName a) [(Int, (Id a, a))]
