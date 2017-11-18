@@ -1,11 +1,15 @@
 -- | Operations on the 'Area' type that involve random numbers.
 module Game.LambdaHack.Server.DungeonGen.AreaRnd
   ( -- * Picking points inside areas
-    xyInArea, mkVoidRoom, mkRoom, mkFixed
+    xyInArea, mkVoidRoom, mkRoom
     -- * Choosing connections
   , connectGrid, randomConnection
     -- * Plotting corridors
   , HV(..), Corridor, connectPlaces
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , connectGrid', sortPoint, mkCorridor, borderPlace
+#endif
   ) where
 
 import Prelude ()
@@ -56,22 +60,6 @@ mkRoom (xm, ym) (xM, yM) area = do
   let a3 = (rx1, ry1, rx1 + xW - 1, ry1 + yW - 1)
       area3 = fromMaybe (error $ "" `showFailure` a3) $ toArea a3
   return $! area3
-
--- Doesn't respect minimum sizes, because staircases are specified verbatim,
--- so can't be arbitrarily scaled up.
--- The size may be one more than what maximal size hint requests,
--- but this is safe (limited by area size) and makes up for the rigidity
--- of the fixed room sizes (e.g., that the size is always odd).
-mkFixed :: (X, Y)    -- ^ maximum size
-        -> Area      -- ^ the containing area, not the room itself
-        -> Point     -- ^ the center point
-        -> Area
-mkFixed (xM, yM) area p@Point{..} =
-  let (x0, y0, x1, y1) = fromArea area
-      xradius = min ((xM + 1) `div` 2) $ min (px - x0) (x1 - px)
-      yradius = min ((yM + 1) `div` 2) $ min (py - y0) (y1 - py)
-      a = (px - xradius, py - yradius, px + xradius, py + yradius)
-  in fromMaybe (error $ "" `showFailure` (a, xM, yM, area, p)) $ toArea a
 
 -- Choosing connections between areas in a grid
 

@@ -1,33 +1,37 @@
 {-# LANGUAGE RankNTypes #-}
 -- | Generation of places from place kinds.
 module Game.LambdaHack.Server.DungeonGen.Place
-  ( TileMapEM, Place(..), isChancePos, placeCheck, buildFenceRnd, buildPlace
+  ( Place(..), TileMapEM, placeCheck, buildPlace, isChancePos, buildFenceRnd
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , interiorArea, olegend, ooverride, buildFence, tilePlace
+#endif
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
+import           Data.Binary
 import qualified Data.Bits as Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Text as T
 
-import Game.LambdaHack.Common.Frequency
+import           Game.LambdaHack.Common.Frequency
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Content.CaveKind
-import Game.LambdaHack.Content.PlaceKind
-import Game.LambdaHack.Content.TileKind (TileKind)
+import           Game.LambdaHack.Content.CaveKind
+import           Game.LambdaHack.Content.PlaceKind
+import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
-import Game.LambdaHack.Server.DungeonGen.Area
+import           Game.LambdaHack.Server.DungeonGen.Area
 
--- | The parameters of a place. All are immutable and set
+-- | The parameters of a place. All are immutable and rolled and fixed
 -- at the time when a place is generated.
 data Place = Place
   { qkind    :: Kind.Id PlaceKind

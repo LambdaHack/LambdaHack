@@ -1,15 +1,14 @@
 -- | Rectangular areas of levels and their basic operations.
 module Game.LambdaHack.Server.DungeonGen.Area
-  ( Area, toArea, fromArea, trivialArea, isTrivialArea
-  , grid, shrink, expand, sumAreas
-  , SpecialArea(..)
+  ( Area, toArea, fromArea, trivialArea, isTrivialArea, mkFixed
+  , SpecialArea(..), grid, shrink, expand, sumAreas
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
+import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntSet as IS
 
@@ -35,6 +34,22 @@ trivialArea (Point x y) = Area x y x y
 
 isTrivialArea :: Area -> Bool
 isTrivialArea (Area x0 y0 x1 y1) = x0 == x1 && y0 == y1
+
+-- Doesn't respect minimum sizes, because staircases are specified verbatim,
+-- so can't be arbitrarily scaled up.
+-- The size may be one more than what maximal size hint requests,
+-- but this is safe (limited by area size) and makes up for the rigidity
+-- of the fixed room sizes (e.g., that the size is always odd).
+mkFixed :: (X, Y)    -- ^ maximum size
+        -> Area      -- ^ the containing area, not the room itself
+        -> Point     -- ^ the center point
+        -> Area
+mkFixed (xMax, yMax) area p@Point{..} =
+  let (x0, y0, x1, y1) = fromArea area
+      xradius = min ((xMax + 1) `div` 2) $ min (px - x0) (x1 - px)
+      yradius = min ((yMax + 1) `div` 2) $ min (py - y0) (y1 - py)
+      a = (px - xradius, py - yradius, px + xradius, py + yradius)
+  in fromMaybe (error $ "" `showFailure` (a, xMax, yMax, area, p)) $ toArea a
 
 data SpecialArea =
     SpecialArea Area
