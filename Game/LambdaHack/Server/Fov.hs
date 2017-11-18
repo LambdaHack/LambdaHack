@@ -1,32 +1,24 @@
--- | Field Of View scanning with a variety of algorithms.
+-- | Field Of View scanning.
+--
 -- See <https://github.com/LambdaHack/LambdaHack/wiki/Fov-and-los>
 -- for discussion.
 module Game.LambdaHack.Server.Fov
   ( -- * Perception cache
-    FovValid(..)
-  , PerValidFid
-  , PerReachable(..)
-  , CacheBeforeLucid(..)
-  , PerActor
-  , PerceptionCache(..)
-  , PerCacheLid
-  , PerCacheFid
+    FovValid(..), PerValidFid
+  , PerReachable(..), CacheBeforeLucid(..), PerActor
+  , PerceptionCache(..), PerCacheLid, PerCacheFid
     -- * Data used in FOV computation and cached to speed it up
   , FovShine(..), FovLucid(..), FovLucidLid
   , FovClear(..), FovClearLid, FovLit (..), FovLitLid
-    -- * Update of invalidated Fov data
-  , perceptionFromPTotal, perActorFromLevel, totalFromPerActor, lucidFromLevel
-    -- * Computation of initial perception and caches
-  , perFidInDungeon, boundSightByCalm
+    -- * Operations
+  , perceptionFromPTotal, perActorFromLevel, boundSightByCalm
+  , totalFromPerActor, lucidFromLevel, perFidInDungeon
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , cacheBeforeLucidFromActor
-  , perceptionCacheFromLevel, perLidFromFaction
-  , clearFromLevel, clearInDungeon
-  , litFromLevel, litInDungeon, shineFromLevel
-  , floorLightSources, lucidFromItems, lucidInDungeon
-    -- * The actual Fov algorithm
-  , fullscan
+  , cacheBeforeLucidFromActor, shineFromLevel, floorLightSources, lucidFromItems
+  , litFromLevel, litInDungeon, clearFromLevel, clearInDungeon, lucidInDungeon
+  , perLidFromFaction, perceptionCacheFromLevel
+  , Matrix, fullscan
 #endif
   ) where
 
@@ -36,23 +28,23 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Int (Int64)
-import GHC.Exts (inline)
+import           Data.Int (Int64)
+import           GHC.Exts (inline)
 
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Perception
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Server.FovDigital
+import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Server.FovDigital
 
 -- * Perception cache types
 

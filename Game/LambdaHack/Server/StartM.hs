@@ -1,6 +1,10 @@
 -- | Operations for starting and restarting the game.
 module Game.LambdaHack.Server.StartM
-  ( gameReset, reinitGame, initPer, applyDebug
+  ( initPer, reinitGame, gameReset, applyDebug
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , mapFromFuns, resetFactions, populateDungeon, findEntryPoss
+#endif
   ) where
 
 import Prelude ()

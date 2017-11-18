@@ -1,7 +1,4 @@
--- | Game action monads and basic building blocks for human and computer
--- player actions. Has no access to the main action type.
--- Does not export the @liftIO@ operation nor a few other implementation
--- details.
+-- | Basic server monads and related operations.
 module Game.LambdaHack.Server.MonadServer
   ( -- * The server monad
     MonadServer( getsServer
@@ -114,7 +111,7 @@ saveServer = do
   toSave <- chanSaveServer
   liftIO $ Save.saveToChan toSave (s, ser)
 
--- | Dumps RNG states from the start of the game to stdout.
+-- | Dumps to stdout the RNG states from the start of the game.
 dumpRngs :: MonadServer m => RNGs -> m ()
 dumpRngs rngs = liftIO $ do
   T.hPutStrLn stdout $ tshow rngs
@@ -203,7 +200,7 @@ rndToAction r = do
   modifyServer $ \ser -> ser {srandom = gen1}
   return $! St.evalState r gen2
 
--- | Gets a random generator from the arguments or, if not present,
+-- | Gets a random generator from the user-submitted options or, if not present,
 -- generates one.
 getSetGen :: MonadServer m => Maybe R.StdGen -> m R.StdGen
 getSetGen mrng = case mrng of

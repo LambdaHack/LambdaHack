@@ -1,10 +1,10 @@
--- | Handle atomic commands before they are executed to change State
--- and sent to clients.
+-- | Handle atomic commands on the server, after they are executed
+-- to change server 'State' and before they are sent to clients.
 module Game.LambdaHack.Server.HandleAtomicM
   ( cmdAtomicSemSer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , updateSclear, updateSlit
+  , invalidateArenas, updateSclear, updateSlit
   , invalidateLucidLid, invalidateLucidAid
   , actorHasShine, itemAffectsShineRadius, itemAffectsPerRadius
   , addPerActor, addPerActorAny, deletePerActor, deletePerActorAny
@@ -19,22 +19,22 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
-import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Atomic
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Content.TileKind (TileKind)
-import Game.LambdaHack.Server.Fov
-import Game.LambdaHack.Server.MonadServer
-import Game.LambdaHack.Server.State
+import           Game.LambdaHack.Content.TileKind (TileKind)
+import           Game.LambdaHack.Server.Fov
+import           Game.LambdaHack.Server.MonadServer
+import           Game.LambdaHack.Server.State
 
 -- | Effect of atomic actions on server state is calculated
 -- with the global state from after the command is executed

@@ -1,8 +1,7 @@
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Server.State
-  ( StateServer(..), emptyStateServer
-  , RNGs(..)
-  , ActorTime, updateActorTime, ageActor
+  ( StateServer(..), ActorTime
+  , emptyStateServer, updateActorTime, ageActor
   ) where
 
 import Prelude ()
@@ -27,7 +26,8 @@ import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.ServerOptions
 
--- | Global, server state.
+-- | State with server-specific data, including a copy of each client's
+-- basic game state, but not the server's basic state.
 data StateServer = StateServer
   { sactorTime    :: ActorTime      -- ^ absolute times of next actions
   , sdiscoKindRev :: DiscoveryKindRev
@@ -59,18 +59,9 @@ data StateServer = StateServer
   }
   deriving (Show)
 
+-- | Position in time for each actor, grouped by level and by faction.
 type ActorTime =
   EM.EnumMap FactionId (EM.EnumMap LevelId (EM.EnumMap ActorId Time))
-
-updateActorTime :: FactionId -> LevelId -> ActorId -> Time -> ActorTime
-                -> ActorTime
-updateActorTime !fid !lid !aid !time =
-  EM.adjust (EM.adjust (EM.insert aid time) lid) fid
-
-ageActor :: FactionId -> LevelId -> ActorId -> Delta Time -> ActorTime
-         -> ActorTime
-ageActor !fid !lid !aid !delta =
-  EM.adjust (EM.adjust (EM.adjust (`timeShift` delta) aid) lid) fid
 
 -- | Initial, empty game server state.
 emptyStateServer :: StateServer
@@ -103,6 +94,16 @@ emptyStateServer =
     , soptions = defServerOptions
     , soptionsNxt = defServerOptions
     }
+
+updateActorTime :: FactionId -> LevelId -> ActorId -> Time -> ActorTime
+                -> ActorTime
+updateActorTime !fid !lid !aid !time =
+  EM.adjust (EM.adjust (EM.insert aid time) lid) fid
+
+ageActor :: FactionId -> LevelId -> ActorId -> Delta Time -> ActorTime
+         -> ActorTime
+ageActor !fid !lid !aid !delta =
+  EM.adjust (EM.adjust (EM.adjust (`timeShift` delta) aid) lid) fid
 
 instance Binary StateServer where
   put StateServer{..} = do

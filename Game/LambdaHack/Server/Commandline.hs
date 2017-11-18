@@ -2,6 +2,11 @@
 -- | Parsing of commandline arguments.
 module Game.LambdaHack.Server.Commandline
   ( serverOptionsPI
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , serverOptionsP
+      -- other internal operations too numerous and changing, so not listed
+#endif
   ) where
 
 import Prelude ()

@@ -1,10 +1,16 @@
 {-# LANGUAGE TupleSections #-}
 -- | Server operations common to many modules.
 module Game.LambdaHack.Server.CommonM
-  ( execFailure, revealItems, moveStores, deduceQuits, deduceKilled
-  , electLeader, supplantLeader, updatePer, recomputeCachePer
-  , addActor, registerActor, addActorIid, projectFail, discoverIfNoEffects
-  , pickWeaponServer, currentSkillsServer, generalMoveItem
+  ( execFailure, revealItems, moveStores, generalMoveItem
+  , deduceQuits, deduceKilled, electLeader, supplantLeader
+  , updatePer, recomputeCachePer, projectFail
+  , addActor, registerActor, addActorIid, discoverIfNoEffects
+  , pickWeaponServer, currentSkillsServer
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , containerMoveItem, quitF, keepArenaFact, anyActorsAlive, projectBla
+  , addProjectile, getCacheLucid, getCacheTotal
+#endif
   ) where
 
 import Prelude ()
@@ -354,9 +360,6 @@ projectBla source pos rest iid cstore isBlast = do
       let c = CActor source cstore
       execUpdAtomic $ UpdLoseItem False iid item (1, take 1 it) c
 
--- | Create a projectile actor containing the given missile.
---
--- Projectile has no organs except for the trunk.
 addProjectile :: MonadServerAtomic m
               => Point -> [Point] -> ItemId -> ItemQuant -> LevelId
               -> FactionId -> Time -> Bool

@@ -1,8 +1,23 @@
 {-# LANGUAGE TupleSections #-}
--- | Handle effects (most often caused by requests sent by clients).
+-- | Handle effects. They are most often caused by requests sent by clients
+-- but sometimes also caused by projectiles or periodically activated items.
 module Game.LambdaHack.Server.HandleEffectM
   ( applyItem, meleeEffectAndDestroy, effectAndDestroy, itemEffectEmbedded
   , dropCStoreItem, dominateFidSfx, pickDroppable, cutCalm
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , applyMeleeDamage, imperishableKit, itemEffectDisco, effectSem
+  , effectBurn, effectExplode, effectRefillHP, effectRefillCalm
+  , effectDominate, dominateFid, effectImpress, effectSummon
+  , effectAscend, findStairExit, switchLevels1, switchLevels2, effectEscape
+  , effectParalyze, effectInsertMove, effectTeleport, effectCreateItem
+  , effectDropItem, allGroupItems, effectPolyItem, effectIdentify, identifyIid
+  , effectDetect, effectDetectX, effectDetectActor, effectDetectItem
+  , effectDetectExit, effectDetectHidden
+  , effectSendFlying, sendFlyingVector, effectDropBestWeapon
+  , effectActivateInv, effectTransformEqp, effectApplyPerfume, effectOneOf
+  , effectRecharging, effectTemporary, effectComposite
+#endif
   ) where
 
 import Prelude ()

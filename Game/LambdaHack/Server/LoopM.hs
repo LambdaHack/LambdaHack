@@ -6,8 +6,9 @@ module Game.LambdaHack.Server.LoopM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , factionArena, arenasForLoop, handleFidUpd, loopUpd, endClip
-  , applyPeriodicLevel, handleTrajectories, hTrajectories, handleActors, hActors
-  , restartGame, writeSaveAll, setTrajectory
+  , manageCalmAndDomination, applyPeriodicLevel
+  , handleTrajectories, hTrajectories, setTrajectory
+  , handleActors, hActors, restartGame
 #endif
   ) where
 
@@ -146,8 +147,8 @@ handleFidUpd False updatePerFid fid fact = do
         Nothing -> arenas
   handle myArenas
 
--- | Handle a clip (a part of a turn for which one or more frames
--- will be generated). Run the leader and other actors moves.
+-- | Handle a clip (the smallest fraction of a game turn for which a frame may
+-- potentially be generated). Run the leader and other actors moves.
 -- Eventually advance the time and repeat.
 loopUpd :: forall m. (MonadServerAtomic m, MonadServerReadRequest m)
         => m () -> m ()
@@ -187,7 +188,7 @@ loopUpd updConn = do
   loopUpdConn
 
 -- | Handle the end of every clip. Do whatever has to be done
--- every fixed number of time units, e.g., monster generation.
+-- every fixed number of clips, e.g., monster generation.
 -- Advance time. Perform periodic saves, if applicable.
 endClip :: forall m. MonadServerAtomic m => (FactionId -> m ()) -> m ()
 {-# INLINE endClip #-}

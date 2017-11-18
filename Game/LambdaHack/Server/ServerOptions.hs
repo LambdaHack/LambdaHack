@@ -1,7 +1,6 @@
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Server.ServerOptions
-  ( ServerOptions(..), defServerOptions
-  , RNGs(..)
+  ( ServerOptions(..), RNGs(..), defServerOptions
   ) where
 
 import Prelude ()
@@ -53,33 +52,6 @@ instance Show RNGs where
                        startingRandomGenerator ]
     in unwords args
 
--- | Default value of server options.
-defServerOptions :: ServerOptions
-defServerOptions = ServerOptions
-  { sknowMap = False
-  , sknowEvents = False
-  , sknowItems = False
-  , sniff = False
-  , sallClear = False
-  , sboostRandomItem = False
-  , sgameMode = Nothing
-  , sautomateAll = False
-  , skeepAutomated = False
-  , sdungeonRng = Nothing
-  , smainRng = Nothing
-  , snewGameSer = False
-  , scurChalSer = defaultChallenge
--- for debug; hard to set manually in browser:
-#ifdef USE_BROWSER
-  , sdumpInitRngs = True
-#else
-  , sdumpInitRngs = False
-#endif
-  , ssavePrefixSer = ""
-  , sdbgMsgSer = False
-  , sclientOptions = defClientOptions
-  }
-
 instance Binary ServerOptions where
   put ServerOptions{..} = do
     put sknowMap
@@ -125,3 +97,30 @@ instance Binary RNGs where
     let dungeonRandomGenerator = read dg
         startingRandomGenerator = read sg
     return $! RNGs{..}
+
+-- | Default value of server options.
+defServerOptions :: ServerOptions
+defServerOptions = ServerOptions
+  { sknowMap = False
+  , sknowEvents = False
+  , sknowItems = False
+  , sniff = False
+  , sallClear = False
+  , sboostRandomItem = False
+  , sgameMode = Nothing
+  , sautomateAll = False
+  , skeepAutomated = False
+  , sdungeonRng = Nothing
+  , smainRng = Nothing
+  , snewGameSer = False
+  , scurChalSer = defaultChallenge
+-- for debug; hard to set manually in browser:
+#ifdef USE_BROWSER
+  , sdumpInitRngs = True
+#else
+  , sdumpInitRngs = False
+#endif
+  , ssavePrefixSer = ""
+  , sdbgMsgSer = False
+  , sclientOptions = defClientOptions
+  }

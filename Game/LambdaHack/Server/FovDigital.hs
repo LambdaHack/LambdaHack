@@ -23,7 +23,7 @@ import Game.LambdaHack.Common.Prelude hiding (intersect)
 
 import qualified Data.EnumSet as ES
 
-import Game.LambdaHack.Common.Point hiding (inside)
+import           Game.LambdaHack.Common.Point hiding (inside)
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | Distance from the (0, 0) point where FOV originates.

@@ -1,7 +1,11 @@
--- | Debug output for requests and responseQs.
+-- | Debug output for requests and responses.
 module Game.LambdaHack.Server.DebugM
   ( debugResponse
   , debugRequestAI, debugRequestUI
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , debugShow, debugPretty, debugPlain, DebugAid(..), debugAid
+#endif
   ) where
 
 import Prelude ()

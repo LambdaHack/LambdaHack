@@ -1,12 +1,13 @@
 {-# LANGUAGE TupleSections #-}
 -- | Sending atomic commands to clients and executing them on the server.
+--
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Server.BroadcastAtomic
   ( handleAndBroadcast, sendPer, handleCmdAtomicServer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , atomicRemember
+  , loudUpdAtomic, loudSfxAtomic, atomicForget, atomicRemember
 #endif
   ) where
 

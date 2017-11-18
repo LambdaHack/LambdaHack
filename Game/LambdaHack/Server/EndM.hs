@@ -1,7 +1,10 @@
--- | The main loop of the server, processing human and computer player
--- moves turn by turn.
+-- | Server operations used when ending game and deciding whether to end.
 module Game.LambdaHack.Server.EndM
   ( endOrLoop, dieSer, writeSaveAll
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , gameExit, dropAllItems
+#endif
   ) where
 
 import Prelude ()

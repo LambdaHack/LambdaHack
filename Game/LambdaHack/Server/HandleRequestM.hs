@@ -1,5 +1,6 @@
 {-# LANGUAGE GADTs #-}
--- | Semantics of request.
+-- | Semantics of requests
+-- .
 -- A couple of them do not take time, the rest does.
 -- Note that since the results are atomic commands, which are executed
 -- only later (on the server and some of the clients), all condition
@@ -8,11 +9,11 @@
 -- are already issued by the point an expression is evaluated, they do not
 -- influence the outcome of the evaluation.
 module Game.LambdaHack.Server.HandleRequestM
-  ( handleRequestAI, handleRequestUI, switchLeader, handleRequestTimed
+  ( handleRequestAI, handleRequestUI, handleRequestTimed, switchLeader
   , reqMove, reqDisplace, reqGameExit
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , setBWait, handleRequestTimedCases
+  , setBWait, managePerRequest, handleRequestTimedCases
   , affectSmell, reqMelee, reqAlter, reqWait
   , reqMoveItems, reqMoveItem, computeRndTimeout, reqProject, reqApply
   , reqGameRestart, reqGameSave, reqTactic, reqAutomate
@@ -63,7 +64,7 @@ handleRequestAI cmd = case cmd of
   ReqAITimed cmdT -> return $ Just cmdT
   ReqAINop -> return Nothing
 
--- | The semantics of server commands. Only the first two cases take time.
+-- | The semantics of server commands. Only the first two cases affect time.
 handleRequestUI :: MonadServerAtomic m
                 => FactionId -> ActorId -> ReqUI
                 -> m (Maybe RequestAnyAbility)
@@ -358,9 +359,6 @@ reqDisplace source target = do
 -- * ReqAlter
 
 -- | Search and/or alter the tile.
---
--- Note that if @serverTile /= freshClientTile@, @freshClientTile@
--- should not be alterable (but @serverTile@ may be).
 reqAlter :: MonadServerAtomic m => ActorId -> Point -> m ()
 reqAlter source tpos = do
   Kind.COps{ cotile=cotile@Kind.Ops{okind, opick}

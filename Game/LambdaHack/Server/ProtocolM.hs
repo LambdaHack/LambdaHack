@@ -1,7 +1,7 @@
 -- | The server definitions for the server-client communication protocol.
 module Game.LambdaHack.Server.ProtocolM
   ( -- * The communication channels
-    ConnServerDict, CliSerQueue, ChanServer(..)
+    CliSerQueue, ConnServerDict, ChanServer(..)
     -- * The server-client communication monad
   , MonadServerReadRequest
       ( getsDict  -- exposed only to be implemented, not used
@@ -15,6 +15,7 @@ module Game.LambdaHack.Server.ProtocolM
   , killAllClients, childrenServer, updateConn, tryRestore
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
+  , writeQueue, readQueueAI, readQueueUI, newQueue
 #endif
   ) where
 
@@ -65,23 +66,10 @@ readQueueUI requestS = liftIO $ takeMVar requestS
 newQueue :: IO (CliSerQueue a)
 newQueue = newEmptyMVar
 
-tryRestore :: MonadServerReadRequest m
-           => Kind.COps -> ServerOptions -> m (Maybe (State, StateServer))
-tryRestore cops@Kind.COps{corule} soptions = do
-  let bench = sbenchmark $ sclientOptions soptions
-  if bench then return Nothing
-  else do
-    let prefix = ssavePrefixSer soptions
-        fileName = prefix <> Save.saveNameSer cops
-    res <- liftIO $ Save.restoreGame cops fileName
-    let stdRuleset = Kind.stdRuleset corule
-        cfgUIName = rcfgUIName stdRuleset
-        content = rcfgUIDefault stdRuleset
-    dataDir <- liftIO appDataDir
-    liftIO $ tryWriteFile (dataDir </> cfgUIName) content
-    return $! res
-
 type CliSerQueue = MVar
+
+-- | Connection information for all factions, indexed by faction identifier.
+type ConnServerDict = EM.EnumMap FactionId ChanServer
 
 -- | Connection channel between the server and a single client.
 data ChanServer = ChanServer
@@ -89,9 +77,6 @@ data ChanServer = ChanServer
   , requestAIS :: CliSerQueue RequestAI
   , requestUIS :: Maybe (CliSerQueue RequestUI)
   }
-
--- | Connection information for all factions, indexed by faction identifier.
-type ConnServerDict = EM.EnumMap FactionId ChanServer
 
 -- | The server monad with the ability to communicate with clients.
 class MonadServer m => MonadServerReadRequest m where
@@ -225,3 +210,19 @@ updateConn executorClient = do
       forkClient fid conn =
         forkUI fid conn
   liftIO $ mapWithKeyM_ forkClient toSpawn
+
+tryRestore :: MonadServerReadRequest m
+           => Kind.COps -> ServerOptions -> m (Maybe (State, StateServer))
+tryRestore cops@Kind.COps{corule} soptions = do
+  let bench = sbenchmark $ sclientOptions soptions
+  if bench then return Nothing
+  else do
+    let prefix = ssavePrefixSer soptions
+        fileName = prefix <> Save.saveNameSer cops
+    res <- liftIO $ Save.restoreGame cops fileName
+    let stdRuleset = Kind.stdRuleset corule
+        cfgUIName = rcfgUIName stdRuleset
+        content = rcfgUIDefault stdRuleset
+    dataDir <- liftIO appDataDir
+    liftIO $ tryWriteFile (dataDir </> cfgUIName) content
+    return $! res

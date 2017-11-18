@@ -2,8 +2,11 @@
 -- and related operations.
 module Game.LambdaHack.Server.PeriodicM
   ( spawnMonster, addAnyActor
-  , advanceTime, overheadActorTime, swapTime
-  , leadLevelSwitch, udpateCalm
+  , advanceTime, overheadActorTime, swapTime, udpateCalm, leadLevelSwitch
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , rollSpawnPos
+#endif
   ) where
 
 import Prelude ()
@@ -12,31 +15,31 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Int (Int64)
+import           Data.Int (Int64)
 
-import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Frequency
-import Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Atomic
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Frequency
+import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Perception
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ItemKind (ItemKind)
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Server.CommonM
-import Game.LambdaHack.Server.ItemM
-import Game.LambdaHack.Server.MonadServer
-import Game.LambdaHack.Server.State
+import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Server.CommonM
+import           Game.LambdaHack.Server.ItemM
+import           Game.LambdaHack.Server.MonadServer
+import           Game.LambdaHack.Server.State
 
 -- | Spawn, possibly, a monster according to the level's actor groups.
 -- We assume heroes are never spawned.
