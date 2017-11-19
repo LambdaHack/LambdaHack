@@ -121,7 +121,7 @@ laboratory = arena2
   , cdefTile      = "fillerWall"
   , cdarkCorTile  = "labTrailLit"  -- let lab smoke give off light always
   , clitCorTile   = "labTrailLit"
-  , cdesc         = "An experiment (or was it manufacturing?) had gone wrong."
+  , cdesc         = "An experiment (or was it manufacturing?) had gone wrong here."
   }
 empty = rogue
   { csymbol       = 'E'

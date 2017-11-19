@@ -729,7 +729,7 @@ applyItem aid applyGroup = do
                                    then Just $ toGroupName $ jname item
                                    else Nothing) organs
       itemLegal itemFull =
-        -- Don't include @Ascend@ not @Teleport@, because can be no foe nearby.
+        -- Don't include @Ascend@ nor @Teleport@, because can be no foe nearby.
         let getP (IK.RefillHP p) | p > 0 = True
             getP _ = False
             firstAidItem = case itemDisco itemFull of
