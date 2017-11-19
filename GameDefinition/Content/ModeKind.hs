@@ -22,9 +22,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleModeKind
   , validateAll = validateAllModeKind
   , content = contentFromList
-      [raid, brawl, shootout, escape, zoo, ambush, exploration, explorationSurvival, safari, safariSurvival, battle, battleSurvival, defense, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverExploration, screensaverSafari]
+      [raid, brawl, shootout, escape, zoo, ambush, crawl, crawlSurvival, safari, safariSurvival, battle, battleSurvival, defense, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari]
   }
-raid,        brawl, shootout, escape, zoo, ambush, exploration, explorationSurvival, safari, safariSurvival, battle, battleSurvival, defense, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverExploration, screensaverSafari :: ModeKind
+raid,        brawl, shootout, escape, zoo, ambush, crawl, crawlSurvival, safari, safariSurvival, battle, battleSurvival, defense, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari :: ModeKind
 
 -- What other symmetric (two only-one-moves factions) and asymmetric vs crowd
 -- scenarios make sense (e.g., are good for a tutorial or for standalone
@@ -109,12 +109,12 @@ ambush = ModeKind  -- dense ranged with reaction fire at night
   , mdesc   = "Prevent hijacking of your ideas at all cost! Be stealthy, be aggressive. Fast execution is what makes or breaks a creative team."
   }
 
-exploration = ModeKind
+crawl = ModeKind
   { msymbol = 'c'
   , mname   = "crawl (long)"
-  , mfreq   = [("crawl", 1), ("exploration", 1), ("campaign scenario", 1)]
-  , mroster = rosterExploration
-  , mcaves  = cavesExploration
+  , mfreq   = [("crawl", 1), ("campaign scenario", 1)]
+  , mroster = rosterCrawl
+  , mcaves  = cavesCrawl
   , mdesc   = "Enjoy the peaceful seclusion of these cold austere tunnels, but don't let wanton curiosity, greed and the ever-creeping abstraction madness keep you down there for too long."
   }
 
@@ -129,12 +129,12 @@ safari = ModeKind  -- easter egg available only via screensaver
 
 -- * Testing modes
 
-explorationSurvival = ModeKind
+crawlSurvival = ModeKind
   { msymbol = 'd'
   , mname   = "crawl survival"
   , mfreq   = [("crawl survival", 1)]
-  , mroster = rosterExplorationSurvival
-  , mcaves  = cavesExploration
+  , mroster = rosterCrawlSurvival
+  , mcaves  = cavesCrawl
   , mdesc   = "Lure the human intruders deeper and deeper."
   }
 
@@ -170,7 +170,7 @@ defense = ModeKind  -- perhaps a real scenario in the future
   , mname   = "defense"
   , mfreq   = [("defense", 1)]
   , mroster = rosterDefense
-  , mcaves  = cavesExploration
+  , mcaves  = cavesCrawl
   , mdesc   = "Don't let human interlopers defile your abstract secrets and flee unpunished!"
   }
 
@@ -219,10 +219,10 @@ screensaverAmbush = ambush
   , mroster = screensave (AutoLeader False False) rosterAmbush
   }
 
-screensaverExploration = exploration
+screensaverCrawl = crawl
   { mname   = "auto-crawl (long)"
   , mfreq   = [("no confirms", 1)]
-  , mroster = screensave (AutoLeader False False) rosterExploration
+  , mroster = screensave (AutoLeader False False) rosterCrawl
   }
 
 screensaverSafari = safari
@@ -232,7 +232,7 @@ screensaverSafari = safari
               screensave (AutoLeader False True) rosterSafari
   }
 
-rosterRaid, rosterBrawl, rosterShootout, rosterEscape, rosterZoo, rosterAmbush, rosterExploration, rosterExplorationSurvival, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleSurvival, rosterDefense :: Roster
+rosterRaid, rosterBrawl, rosterShootout, rosterEscape, rosterZoo, rosterAmbush, rosterCrawl, rosterCrawlSurvival, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleSurvival, rosterDefense :: Roster
 
 rosterRaid = Roster
   { rosterList = [ ( playerHero {fhiCondPoly = hiRaid}
@@ -319,7 +319,7 @@ rosterAmbush = Roster
                   , ("Indigo Researcher", "Horror Den") ]
   , rosterAlly = [] }
 
-rosterExploration = Roster
+rosterCrawl = Roster
   { rosterList = [ ( playerHero
                    , [(-1, 3, "hero")] )
                  , ( playerMonster
@@ -333,7 +333,7 @@ rosterExploration = Roster
                   , ("Explorer", "Animal Kingdom") ]
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
-rosterExplorationSurvival = rosterExploration
+rosterCrawlSurvival = rosterCrawl
   { rosterList = [ ( playerHero { fleaderMode =
                                     LeaderAI $ AutoLeader True False
                                 , fhasUI = False }
@@ -407,7 +407,7 @@ rosterBattleSurvival = rosterBattle
                                   , fhasUI = True }
                    , [(-5, 30, "mobile animal")] ) ] }
 
-rosterDefense = rosterExploration
+rosterDefense = rosterCrawl
   { rosterList = [ ( playerAntiHero
                    , [(-1, 3, "hero")] )
                  , ( playerAntiMonster
@@ -416,7 +416,7 @@ rosterDefense = rosterExploration
                    , [ (-1, 1 + 1 `d` 2, "animal")
                      , (-10, 100, "mobile animal") ] ) ] }
 
-cavesRaid, cavesBrawl, cavesShootout, cavesEscape, cavesZoo, cavesAmbush, cavesExploration, cavesSafari, cavesBattle :: Caves
+cavesRaid, cavesBrawl, cavesShootout, cavesEscape, cavesZoo, cavesAmbush, cavesCrawl, cavesSafari, cavesBattle :: Caves
 
 cavesRaid = IM.fromList [(-2, "caveRaid")]
 
@@ -430,7 +430,7 @@ cavesZoo = IM.fromList [(-8, "caveZoo")]
 
 cavesAmbush = IM.fromList [(-9, "caveAmbush")]
 
-cavesExploration = IM.fromList $
+cavesCrawl = IM.fromList $
   [ (-1, "outermost")
   , (-2, "shallow random 2")
   , (-3, "caveEmpty") ]
