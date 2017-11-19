@@ -57,6 +57,7 @@ data CaveKind = CaveKind
   , cstairFreq      :: Freqs PlaceKind
       -- ^ place groups to consider for stairs; in this case the rarity
       --   of items in the group does not affect group choice
+  , cdesc           :: Text                -- ^ cave description
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound
 

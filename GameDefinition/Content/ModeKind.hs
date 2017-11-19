@@ -124,7 +124,7 @@ safari = ModeKind  -- easter egg available only via screensaver
   , mfreq   = [("safari", 1)]
   , mroster = rosterSafari
   , mcaves  = cavesSafari
-  , mdesc   = "\"In this simulation you'll discover the joys of hunting the most exquisite of Earth's flora and fauna, both animal and semi-intelligent. Exit at the bottommost level.\" This is a VR recording recovered from a monster nest debris."
+  , mdesc   = "\"In this enactment you'll discover the joys of hunting the most exquisite of Earth's flora and fauna, both animal and semi-intelligent. Exit at the bottommost level.\" This is a drama script recovered from a monster nest debris."
   }
 
 -- * Testing modes
@@ -144,7 +144,7 @@ safariSurvival = ModeKind
   , mfreq   = [("safari survival", 1)]
   , mroster = rosterSafariSurvival
   , mcaves  = cavesSafari
-  , mdesc   = "In this simulation you'll discover the joys of being hunted among the most exquisite of Earth's flora and fauna, both animal and semi-intelligent."
+  , mdesc   = "In this enactment you'll discover the joys of being hunted among the most exquisite of Earth's flora and fauna, both animal and semi-intelligent."
   }
 
 battle = ModeKind
