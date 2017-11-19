@@ -1,3 +1,18 @@
+## [v0.7.0.0, aka 'The dice are cast'](https://github.com/LambdaHack/LambdaHack/compare/v0.6.2.0...v0.7.0.0)
+
+- decouple tile searching from tile alteration
+- fix missing report about items underneath an actor when changing levels
+- API breakage: change the syntax of dice in content
+- API addition: introduce cave descriptions
+- keep all client states in the server and optimize communication with clients
+- improve item choice for identification and item polymorphing
+- reset embedded items when altering tile
+- replace atomic command filtering with exception catching
+- reimplement dice as symbolic expressions inducing multiple RNG calls
+- switch to optparse-applicative and rewrite cli handling
+- add stack and cabal new-build project files
+- improve haddocks across the codebase
+
 ## [v0.6.2.0, aka 'Zoom out'](https://github.com/LambdaHack/LambdaHack/compare/v0.6.1.0...v0.6.2.0)
 
 - make fireworks slower and so easier to spot
