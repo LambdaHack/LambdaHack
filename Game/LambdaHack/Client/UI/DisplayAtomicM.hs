@@ -304,6 +304,8 @@ displayRespUpdAtomicUI verbose oldState cmd = case cmd of
       sUIOptions <- getsSession sUIOptions
       shistory <- defaultHistory $ uHistoryMax sUIOptions
       modifySession $ \sess -> sess {shistory}
+    lid <- getArenaUI
+    lvl <- getLevel lid
     mode <- getGameMode
     curChal <- getsClient scurChal
     fact <- getsState $ (EM.! fid) . sfactionD
@@ -311,7 +313,8 @@ displayRespUpdAtomicUI verbose oldState cmd = case cmd of
           [] -> True
           [(_, 1, _)] -> True
           _ -> False
-    msgAdd $ "New game started in" <+> mname mode <+> "mode." <+> mdesc mode
+    msgAdd $ "New game started in" <+> mname mode <+> "mode."
+             <+> mdesc mode <+> ldesc lvl
              <+> if cwolf curChal && not loneMode
                  then "Being a lone wolf, you start without companions."
                  else ""
@@ -327,8 +330,11 @@ displayRespUpdAtomicUI verbose oldState cmd = case cmd of
     fact <- getsState $ (EM.! fid) . sfactionD
     setFrontAutoYes $ isAIFact fact
     unless (isAIFact fact) $ do
+      lid <- getArenaUI
+      lvl <- getLevel lid
       mode <- getGameMode
-      promptAdd $ "Continuing" <+> mname mode <> "." <+> mdesc mode
+      promptAdd $ "Continuing" <+> mname mode <> "."
+                  <+> mdesc mode <+> ldesc lvl
                   <+> "Are you up for the challenge?"
       slides <- reportToSlideshow [K.spaceKM, K.escKM]
       km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
@@ -974,8 +980,18 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                         then MU.AW
                         else MU.Ws) $ MU.Text $ tshow grp
           actorVerbMU aid bUI $ MU.Phrase [verb, object]
-        IK.Ascend True -> actorVerbMU aid bUI "find a way upstairs"
-        IK.Ascend False -> actorVerbMU aid bUI "find a way downstairs"
+        IK.Ascend True -> do
+          actorVerbMU aid bUI "find a way upstairs"
+          (lid, _) <- getsState $ whereTo (blid b) (bpos b) (Just True)
+                                  . sdungeon
+          lvl <- getLevel lid
+          msgAdd $ ldesc lvl
+        IK.Ascend False -> do
+          actorVerbMU aid bUI "find a way downstairs"
+          (lid, _) <- getsState $ whereTo (blid b) (bpos b) (Just False)
+                                  . sdungeon
+          lvl <- getLevel lid
+          msgAdd $ ldesc lvl
         IK.Escape{} -> return ()
         IK.Paralyze{} -> actorVerbMU aid bUI "be paralyzed"
         IK.InsertMove{} -> actorVerbMU aid bUI "act with extreme speed"

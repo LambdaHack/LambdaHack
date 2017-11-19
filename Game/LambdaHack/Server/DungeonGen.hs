@@ -219,7 +219,6 @@ levelFromCaveKind Kind.COps{coTileSpeedup}
        , lxsize = cxsize
        , lysize = cysize
        , lsmell = EM.empty
-       , ldesc = cname
        , lstair
        , lseen = 0
        , lexplorable
@@ -230,6 +229,8 @@ levelFromCaveKind Kind.COps{coTileSpeedup}
        , litemFreq
        , lescape
        , lnight
+       , lname = cname
+       , ldesc = cdesc
        }
 
 -- | Freshly generated and not yet populated dungeon.

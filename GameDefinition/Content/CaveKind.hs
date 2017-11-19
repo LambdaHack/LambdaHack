@@ -397,18 +397,18 @@ safari1 = brawl
   , cfreq         = [("caveSafari1", 1)]
   , cescapeGroup  = Nothing
   , cstairFreq    = [("staircase outdoor", 1)]
-  , cdesc         = "Act 1. Hunams scavenge in a forest in their usual disgusting way."
+  , cdesc         = "\"Act 1. Hunams scavenge in a forest in their usual disgusting way.\""
   }
 safari2 = ambush
   { cname         = "Deep into the jungle"
   , cfreq         = [("caveSafari2", 1)]
   , cstairFreq    = [("staircase outdoor", 1)]
-  , cdesc         = "Act 2. In the dark pure heart of the jungle noble animals roam freely."
+  , cdesc         = "\"Act 2. In the dark pure heart of the jungle noble animals roam freely.\""
   }
 safari3 = zoo
   { cname         = "Jungle in flames"
   , cfreq         = [("caveSafari3", 1)]
   , cescapeGroup  = Just "escape outdoor down"
   , cstairFreq    = [("staircase outdoor", 1)]
-  , cdesc         = "Act 3. Jealous hunams set jungle on fire and flee."
+  , cdesc         = "\"Act 3. Jealous hunams set jungle on fire and flee.\""
   }

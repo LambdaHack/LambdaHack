@@ -487,7 +487,7 @@ drawBaseFrame dm drawnLevelId = do
 -- level descriptions (currently enforced max).
 drawArenaStatus :: Bool -> Level -> Int -> AttrLine
 drawArenaStatus explored
-                Level{ldepth=AbsDepth ld, ldesc, lseen, lexplorable}
+                Level{ldepth=AbsDepth ld, lname, lseen, lexplorable}
                 width =
   let seenN = 100 * lseen `div` max 1 lexplorable
       seenTxt | explored || seenN >= 100 = "all"
@@ -495,7 +495,7 @@ drawArenaStatus explored
       lvlN = T.justifyLeft 2 ' ' (tshow ld)
       seenStatus = "[" <> seenTxt <+> "seen]"
   in textToAL $ T.justifyLeft width ' '
-              $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' ldesc) <+> seenStatus
+              $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' lname) <+> seenStatus
 
 drawLeaderStatus :: MonadClient m => Int -> m AttrLine
 drawLeaderStatus waitT = do

@@ -104,7 +104,6 @@ data Level = Level
   , lxsize      :: X          -- ^ width of the level
   , lysize      :: Y          -- ^ height of the level
   , lsmell      :: SmellMap   -- ^ remembered smells on the level
-  , ldesc       :: Text       -- ^ level description
   , lstair      :: ([Point], [Point])
                               -- ^ positions of (up, down) stairs
   , lseen       :: Int        -- ^ currently remembered clear tiles
@@ -118,6 +117,8 @@ data Level = Level
                               -- ^ frequency of initial items; [] for clients
   , lescape     :: [Point]    -- ^ positions of IK.Escape tiles
   , lnight      :: Bool       -- ^ whether the level is covered in darkness
+  , lname       :: Text       -- ^ level name
+  , ldesc       :: Text       -- ^ level description
   }
   deriving (Show, Eq)
 
@@ -224,7 +225,6 @@ instance Binary Level where
     put lxsize
     put lysize
     put lsmell
-    put ldesc
     put lstair
     put lseen
     put lexplorable
@@ -235,6 +235,8 @@ instance Binary Level where
     put litemFreq
     put lescape
     put lnight
+    put lname
+    put ldesc
   get = do
     ldepth <- get
     lfloor <- get
@@ -244,7 +246,6 @@ instance Binary Level where
     lxsize <- get
     lysize <- get
     lsmell <- get
-    ldesc <- get
     lstair <- get
     lseen <- get
     lexplorable <- get
@@ -255,4 +256,6 @@ instance Binary Level where
     litemFreq <- get
     lescape <- get
     lnight <- get
+    lname <- get
+    ldesc <- get
     return $! Level{..}

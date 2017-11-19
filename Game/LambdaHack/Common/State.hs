@@ -127,10 +127,11 @@ sactorAspect :: State -> ActorAspect
 sactorAspect = _sactorAspect
 
 unknownLevel :: Kind.COps -> AbsDepth -> X -> Y
-             -> Text -> ([Point], [Point]) -> Int -> [Point] -> Bool
+             -> Text -> Text -> ([Point], [Point]) -> Int -> [Point] -> Bool
              -> Level
 unknownLevel Kind.COps{cotile=Kind.Ops{ouniqGroup}}
-             ldepth lxsize lysize ldesc lstair lexplorable lescape lnight =
+             ldepth lxsize lysize lname ldesc
+             lstair lexplorable lescape lnight =
   let outerId = ouniqGroup "basic outer fence"
   in Level { ldepth
            , lfloor = EM.empty
@@ -140,7 +141,6 @@ unknownLevel Kind.COps{cotile=Kind.Ops{ouniqGroup}}
            , lxsize
            , lysize
            , lsmell = EM.empty
-           , ldesc
            , lstair
            , lseen = 0
            , lexplorable
@@ -151,6 +151,8 @@ unknownLevel Kind.COps{cotile=Kind.Ops{ouniqGroup}}
            , litemFreq = []
            , lescape
            , lnight
+           , lname
+           , ldesc
            }
 
 unknownTileMap :: Kind.Id TileKind -> Int -> Int -> TileMap
@@ -203,8 +205,8 @@ localFromGlobal State{..} =
   State
     { _sdungeon =
       EM.map (\Level{..} ->
-              unknownLevel _scops ldepth lxsize lysize ldesc lstair lexplorable
-                           lescape lnight)
+              unknownLevel _scops ldepth lxsize lysize lname ldesc
+                           lstair lexplorable lescape lnight)
              _sdungeon
     , ..
     }
