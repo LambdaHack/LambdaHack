@@ -10,8 +10,10 @@ import Game.LambdaHack.Common.Prelude
 
 import           Control.Concurrent.Async
 import qualified Control.Exception as Ex
+import qualified GHC.IO.Handle as GHC.IO.Handle
 import qualified Options.Applicative as OA
 import           System.Exit
+import qualified System.IO as SIO
 
 import Game.LambdaHack.Server (serverOptionsPI)
 import TieKnot
@@ -20,6 +22,13 @@ import TieKnot
 -- run the game and handle exit.
 main :: IO ()
 main = do
+  -- For the case when the game is started not on a console.
+  isTerminal <- SIO.hIsTerminalDevice SIO.stdout
+  unless isTerminal $ do
+    fstdout <- SIO.openFile "stdout.txt" SIO.WriteMode
+    fstderr <- SIO.openFile "stderr.txt" SIO.WriteMode
+    GHC.IO.Handle.hDuplicateTo fstdout SIO.stdout
+    GHC.IO.Handle.hDuplicateTo fstderr SIO.stderr
   serverOptions <- OA.execParser serverOptionsPI
   -- Avoid the bound thread that would slow down the communication.
   a <- async $ tieKnot serverOptions
