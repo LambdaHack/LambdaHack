@@ -94,7 +94,7 @@ actionStrategy aid retry = do
   threatDistL <- meleeThreatDistList aid
   (fleeL, badVic) <- fleeList aid
   condSupport1 <- condSupport 1 aid
-  condSupport2 <- condSupport 2 aid
+  condSupport3 <- condSupport 3 aid
   canDeAmbientL <- getsState $ canDeAmbientList body
   actorSk <- currentSkillsClient aid
   condCanProject <-
@@ -116,7 +116,6 @@ actionStrategy aid retry = do
       speed1_5 = speedScale (3%2) (bspeed body ar)
       condCanMelee = actorCanMelee actorAspect aid body
       condMeleeBad1 = not (condSupport1 && condCanMelee)
-      condMeleeBad2 = not (condSupport2 && condCanMelee)
       condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
       threatAdj = takeWhile ((== 1) . fst) threatDistL
       condManyThreatAdj = length threatAdj >= 2
@@ -155,7 +154,7 @@ actionStrategy aid retry = do
               -- in the latter case, may return via different stairs later on
           , condAdjTriggerable && not condAimEnemyPresent
             && ((condNotCalmEnough || condHpTooLow)  -- flee
-                && condMeleeBad2 && condThreat 1
+                && condMeleeBad1 && condThreat 1
                 || (lidExplored || condEnoughGear)  -- explore
                    && not condDesirableFloorItem) )
         , ( [AbDisplace]
@@ -184,7 +183,7 @@ actionStrategy aid retry = do
                     -- to enemy to get out of his range, most likely,
                     -- and so melee him instead, unless can't melee at all.
                     not condCanMelee
-                    || not condSupport2 && not heavilyDistressed
+                    || not condSupport3 && not heavilyDistressed
                   | condThreat 5 ->
                     -- Too far to flee from melee, too close from ranged,
                     -- not in ambient, so no point fleeing into dark; advance.
@@ -884,6 +883,8 @@ chase aid avoidAmbient retry = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   lvl <- getLevel $ blid body
   let isAmbient pos = Tile.isLit coTileSpeedup (lvl `at` pos)
+                      && Tile.isWalkable coTileSpeedup (lvl `at` pos)
+                        -- if solid, will be altered and perhaps darkened
   str <- case mtgtMPath of
     Just TgtAndPath{tapPath=AndPath{pathList=q : _, ..}}
       | pathGoal == bpos body -> return reject  -- shortcut and just to be sure

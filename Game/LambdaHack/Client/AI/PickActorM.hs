@@ -100,7 +100,7 @@ pickActorToMove maidToAvoid = do
             threatDistL <- meleeThreatDistList aid
             (fleeL, _) <- fleeList aid
             condSupport1 <- condSupport 1 aid
-            condSupport2 <- condSupport 2 aid
+            condSupport3 <- condSupport 3 aid
             canDeAmbientL <- getsState $ canDeAmbientList body
             let condCanFlee = not (null fleeL)
                 speed1_5 = speedScale (3%2) (bspeed body ar)
@@ -122,13 +122,14 @@ pickActorToMove maidToAvoid = do
                 canFleeFromLight =
                   not $ null $ aCanDeLightL `intersect` map snd fleeL
             return $!
+              -- This is a part of the condition for @flee@ in @HandleAbilityM@.
               not condFastThreatAdj
               && if | condThreat 1 -> not condCanMelee
                                       || condManyThreatAdj && not condSupport1
                     | not condInMelee
                       && (condThreat 2 || condThreat 5 && canFleeFromLight) ->
                       not condCanMelee
-                      || not condSupport2 && not heavilyDistressed
+                      || not condSupport3 && not heavilyDistressed
                     -- not used: | condThreat 5 -> False
                     -- because actor should be picked anyway, to try to melee
                     | otherwise ->
