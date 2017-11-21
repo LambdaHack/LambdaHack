@@ -316,6 +316,9 @@ targetStrategy aid = do
         pickNewTarget
       tileAdj :: (Point -> Bool) -> Point -> Bool
       tileAdj f p = any f $ vicinityUnsafe p
+      followingWrong permit =
+        permit && (condInMelee  -- in melee, stop following
+                   || mleader == Just aid) -- a leader, never follow
       updateTgt :: TgtAndPath -> m (Strategy TgtAndPath)
       updateTgt TgtAndPath{tapPath=NoPath} = pickNewTarget
       updateTgt tap@TgtAndPath{tapPath=AndPath{..},tapTgt} = case tapTgt of
@@ -325,11 +328,9 @@ targetStrategy aid = do
                 || not focused && not (null nearbyFoes))  -- prefers closer foes
                && a `notElem` map fst nearbyFoes  -- old one not close enough
                || blid body /= blid b  -- wrong level
-               || actorDying body  -- foe already dying
-               || permit
-                  && (condInMelee  -- in melee, stop following
-                      || mleader == Just aid) ->  -- a leader, never follow
+               || actorDying body -> -- foe already dying
                pickNewTarget
+             | followingWrong permit -> pickNewTarget
              | bpos body == pathGoal ->
                return $! returN "TEnemy" tap
                  -- The enemy didn't move since the target acquired.
@@ -356,10 +357,7 @@ targetStrategy aid = do
             pickNewTarget  -- prefer close foes to anything else
           TEnemyPos _ permit  -- chase last position even if foe hides
             | bpos b == pos -> tellOthersNothingHere pos
-            | permit
-              && (condInMelee  -- in melee, stop following
-                  || mleader == Just aid) ->  -- a leader, never follow
-              pickNewTarget  -- melee, stop following
+            | followingWrong permit -> pickNewTarget
             | otherwise -> return $! returN "TEnemyPos" tap
           -- Below we check the target could not be picked again in
           -- pickNewTarget (e.g., an item got picked up by our teammate)
@@ -395,13 +393,15 @@ targetStrategy aid = do
                      -- to enable pickup; if pickup fails, will retarget
                | otherwise -> return $! returN "TItem" tap
           TSmell ->
-            if not canSmell
-               || let sml = EM.findWithDefault timeZero pos (lsmell lvl)
-                  in sml <= ltime lvl
-            then pickNewTarget  -- others will notice soon enough
-            else return $! returN "TSmell" tap
+            let lvl2 = sdungeon s EM.! lid
+            in if not canSmell
+                  || let sml = EM.findWithDefault timeZero pos (lsmell lvl2)
+                     in sml <= ltime lvl2
+               then pickNewTarget  -- others will notice soon enough
+               else return $! returN "TSmell" tap
           TUnknown ->
-            let t = lvl `at` pos
+            let lvl2 = sdungeon s EM.! lid
+                t = lvl2 `at` pos
             in if lidExplored
                   || not (isUknownSpace t)
                   || condEnoughGear && tileAdj (isStairPos lid) pos
@@ -410,13 +410,19 @@ targetStrategy aid = do
                        -- looks silly
                then pickNewTarget  -- others will notice soon enough
                else return $! returN "TUnknown" tap
-          TKnown ->
-            if bpos b == pos
-               || isStuck
-               || alterSkill < fromEnum (lalter PointArray.! pos)
-                    -- tile was searched or altered or skill lowered
-            then pickNewTarget  -- others unconcerned
-            else return $! returN "TKnown" tap
+          TKnown ->  -- e.g., staircase or first unknown tile of an area
+            let allExplored = ES.size explored == EM.size dungeon
+                lvl2 = sdungeon s EM.! lid
+            in if bpos b == pos
+                  || isStuck
+                  || alterSkill < fromEnum (lalter PointArray.! pos)
+                       -- tile was searched or altered or skill lowered
+                  || Tile.isWalkable coTileSpeedup (lvl2 `at` pos)
+                     && not allExplored  -- not patrolling explored dungeon
+                       -- tile is no longer unwalkable, so was explored
+                       -- so time to recalculate target
+               then pickNewTarget  -- others unconcerned
+               else return $! returN "TKnown" tap
           TAny -> pickNewTarget  -- reset elsewhere or carried over from UI
         TVector{} -> if pathLen > 1
                      then return $! returN "TVector" tap

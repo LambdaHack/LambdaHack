@@ -89,10 +89,10 @@ pickActorToMove maidToAvoid = do
               Just ((aid, b), tgt)
             _ -> Nothing
       oursTgtRaw <- mapM refresh ours
+      scondInMelee <- getsClient scondInMelee
       let oursTgt = mapMaybe goodGeneric oursTgtRaw
           -- This should be kept in sync with @actionStrategy@.
           actorVulnerable ((aid, body), _) = do
-            scondInMelee <- getsClient scondInMelee
             let condInMelee = fromMaybe (error $ "" `showFailure` condInMelee)
                                         (scondInMelee EM.! blid body)
                 ar = fromMaybe (error $ "" `showFailure` aid)
@@ -260,9 +260,16 @@ pickActorToMove maidToAvoid = do
         l : _ -> do
           let freq = toFreq "candidates for AI leader"
                      $ map (positiveOverhead &&& id) l
-          ((aid, _), _) <- rndToAction $ frequency freq
+          ((aid, b), _) <- rndToAction $ frequency freq
           s <- getState
           modifyClient $ updateLeader aid s
+          -- When you become a leader, stop following old leader, but follow
+          -- his target, if still valid, to avoid distraction.
+          let condInMelee = fromMaybe (error $ "" `showFailure` condInMelee)
+                                      (scondInMelee EM.! blid b)
+          when (ftactic (gplayer fact) `elem` [TFollow, TFollowNoItems]
+                && not condInMelee) $
+            void $ refreshTarget (aid, b)
           return aid
         _ -> return oldAid
 
