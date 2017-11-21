@@ -284,7 +284,7 @@ library
                       DataKinds, KindSignatures, DeriveGeneric
   ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities -Wredundant-constraints
   ghc-options:        -Wall-missed-specialisations
-  ghc-options:        -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively
+  ghc-options:        -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively -fsimpl-tick-factor=200
 
   if impl(ghcjs) {
     exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
