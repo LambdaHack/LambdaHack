@@ -399,13 +399,13 @@ safari1 = brawl
   , cstairFreq    = [("staircase outdoor", 1)]
   , cdesc         = "\"Act 1. Hunams scavenge in a forest in their usual disgusting way.\""
   }
-safari2 = ambush
+safari2 = ambush  -- lamps instead of trees, but ok, it's only a simulation
   { cname         = "Deep into the jungle"
   , cfreq         = [("caveSafari2", 1)]
   , cstairFreq    = [("staircase outdoor", 1)]
   , cdesc         = "\"Act 2. In the dark pure heart of the jungle noble animals roam freely.\""
   }
-safari3 = zoo
+safari3 = zoo  -- glass rooms, but ok, it's only a simulation
   { cname         = "Jungle in flames"
   , cfreq         = [("caveSafari3", 1)]
   , cescapeGroup  = Just "escape outdoor down"
