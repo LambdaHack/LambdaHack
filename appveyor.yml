@@ -1,9 +1,9 @@
 install:
-  - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.2.1\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
+  - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.2.2\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
   - SET PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig
   - SET XDG_DATA_DIRS=C:\msys64\mingw64\share
   - pacman --version
-  - appveyor-retry choco install ghc --version 8.2.1 | grep -v '^Extracting '
+  - appveyor-retry choco install ghc --version 8.2.2 | grep -v '^Extracting '
   - cabal --version
   - appveyor-retry pacman -S -q --noconfirm mingw64/mingw-w64-x86_64-SDL2 mingw64/mingw-w64-x86_64-SDL2_ttf
   - cabal update
