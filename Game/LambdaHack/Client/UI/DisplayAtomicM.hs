@@ -491,6 +491,7 @@ createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 createActorUI born aid body = do
   side <- getsClient sside
   fact <- getsState $ (EM.! bfid body) . sfactionD
+  localTime <- getsState $ getLocalTime $ blid body
   mbUI <- getsSession $ EM.lookup aid . sactorUI
   bUI <- case mbUI of
     Just bUI -> return bUI
@@ -521,7 +522,6 @@ createActorUI born aid body = do
                  n = fromJust $ elemIndex False mhs
              return (n, if 0 < n && n < 10 then Char.intToDigit n else '@')
       factionD <- getsState sfactionD
-      localTime <- getsState $ getLocalTime $ blid body
       let (bname, bpronoun) =
             if | bproj body ->
                  let adj | length (btrajectory body) < 5 = "falling"
@@ -541,10 +541,12 @@ createActorUI born aid body = do
       modifySession $ \sess ->
         sess {sactorUI = EM.insert aid bUI $ sactorUI sess}
       return bUI
-  let verb = if born
-             then MU.Text $ "appear"
-                            <+> if bfid body == side then "" else "suddenly"
-             else "be spotted"
+  let verb = MU.Text $
+        if born
+        then if localTime == timeZero
+             then "be here"
+             else "appear" <+> if bfid body == side then "" else "suddenly"
+        else "be spotted"
   mapM_ (\(iid, store) -> void $ updateItemSlotSide store aid iid)
         (getCarriedIidCStore body)
   when (bfid body /= side) $ do
