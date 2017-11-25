@@ -73,7 +73,7 @@ makeLine onlyFirst body fpos epsOld = do
   let dist = chessDist (bpos body) fpos
       calcScore eps = case bla lxsize lysize eps (bpos body) fpos of
         Just bl ->
-          let blDist = take dist bl
+          let blDist = take (dist - 1) bl  -- goal not checked; actor well aware
               noActor p = all (bproj . snd) (posA p) || p == fpos
               accessibleUnknown tpos =
                 let tt = lvl `at` tpos

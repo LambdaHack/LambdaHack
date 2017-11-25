@@ -328,13 +328,11 @@ xhairLegalEps = do
       findNewEps onlyFirst pos = do
         oldEps <- getsClient seps
         mnewEps <- makeLine onlyFirst b pos oldEps
-        case mnewEps of
-          Just newEps -> return $ Right newEps
-          Nothing ->
-            return $ Left
-                   $ if onlyFirst
-                     then "aiming blocked at the first step"
-                     else "aiming line to the opponent blocked somewhere"
+        return $! case mnewEps of
+          Just newEps -> Right newEps
+          Nothing -> Left $ if onlyFirst
+                            then "aiming blocked at the first step"
+                            else "aiming line blocked somewhere"
   xhair <- getsSession sxhair
   case xhair of
     TEnemy a _ -> do
@@ -347,14 +345,14 @@ xhairLegalEps = do
       return $ Left "selected opponent not visible"
     TPoint _ lid pos ->
       if lid == lidV
-      then findNewEps True pos
+      then findNewEps False pos
       else error $ "" `showFailure` (xhair, lidV)
     TVector v -> do
       Level{lxsize, lysize} <- getLevel lidV
       let shifted = shiftBounded lxsize lysize (bpos b) v
       if shifted == bpos b && v /= Vector 0 0
       then return $ Left "selected translation is void"
-      else findNewEps True shifted
+      else findNewEps True shifted  -- True, because the goal is vague anyway
 
 posFromXhair :: MonadClientUI m => m (Either Text Point)
 posFromXhair = do
