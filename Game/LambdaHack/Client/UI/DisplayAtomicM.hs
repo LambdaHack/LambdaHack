@@ -56,6 +56,7 @@ import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import           Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
@@ -867,7 +868,8 @@ discover c oldState iid = do
       ik = itemKind $ fromJust $ itemDisco itemFull
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.
-  unless (isOurOrgan
+  unless (localTime == timeZero  -- don't spam about initial equipment
+          || isOurOrgan
           || (EM.member jix discoKind == EM.member jix oldDiscoKind
               && (EM.member iid discoAspect == EM.member iid oldDiscoAspect
                   || not (aspectsRandom ik)))) $
