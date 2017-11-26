@@ -166,14 +166,6 @@ use Cabal flags, e.g,
 
     cabal install -fvty
 
-To compile with GTK2 (deprecated but still supported; beware that
-the font is not square and special position highlights are annoying),
-you need GTK libraries for your OS. On Windows follow the same steps
-as for Wine[13]. On OSX, if you encounter problems, you may want to
-compile the GTK libraries from sources[14]. Invoke Cabal as follows
-
-    cabal install -fgtk gtk2hs-buildtools .
-
 
 Testing and debugging
 ---------------------
@@ -252,8 +244,6 @@ Have fun!
 [9]: https://github.com/LambdaHack/LambdaHack/wiki/Sample-dungeon-crawler
 [10]: https://github.com/AllureOfTheStars/Allure
 [11]: https://github.com/LambdaHack/LambdaHack/releases/latest
-[13]: http://www.haskell.org/haskellwiki/GHC_under_Wine#Code_that_uses_gtk2hs
-[14]: http://www.edsko.net/2014/04/27/haskell-including-gtk-on-mavericks
 [15]: https://github.com/ghcjs/ghcjs
 [16]: https://www.npmjs.com/package/google-closure-compiler
 [17]: https://ci.appveyor.com/project/Mikolaj/lambdahack-4hh0j/build/artifacts
