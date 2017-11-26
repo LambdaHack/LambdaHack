@@ -286,10 +286,10 @@ library
   ghc-options:        -Wall-missed-specialisations
   ghc-options:        -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively -fsimpl-tick-factor=200
 
-  if impl(ghcjs) {
+  if impl(ghcjs) || flag(jsaddle) {
     exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
     build-depends:    ghcjs-dom >= 0.9.1.1
-    cpp-options:      -DUSE_BROWSER -DUSE_JSFILE
+    cpp-options:      -DUSE_BROWSER
   } else { if flag(vty) {
     exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Vty
     build-depends:    vty >= 5
@@ -302,22 +302,15 @@ library
     exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk
     build-depends:    gtk3 >= 0.12.1
     cpp-options:      -DUSE_GTK
-  } else { if flag(sdl) {
-    exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Sdl
-    build-depends:    sdl2 >= 2, sdl2-ttf >= 2
-    cpp-options:      -DUSE_SDL
-  } else { if flag(jsaddle) {
-    exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
-    build-depends:    ghcjs-dom >= 0.9.1.1
-    cpp-options:      -DUSE_BROWSER
   } else {
     exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Sdl
     build-depends:    sdl2 >= 2, sdl2-ttf >= 2
     cpp-options:      -DUSE_SDL
-  } } } } } }
+  } } } }
 
   if impl(ghcjs) {
     exposed-modules:    Game.LambdaHack.Common.JSFile
+    cpp-options:      -DUSE_JSFILE
   } else {
     exposed-modules:    Game.LambdaHack.Common.HSFile
     build-depends:    zlib >= 0.5.3.1
