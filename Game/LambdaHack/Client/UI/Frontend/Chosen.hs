@@ -17,5 +17,5 @@ import Game.LambdaHack.Client.UI.Frontend.Sdl
 #elif USE_BROWSER
 import Game.LambdaHack.Client.UI.Frontend.Dom
 #else
-import Game.LambdaHack.Client.UI.Frontend.Gtk
+import Game.LambdaHack.Client.UI.Frontend.Sdl
 #endif
