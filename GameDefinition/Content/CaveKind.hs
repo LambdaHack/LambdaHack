@@ -271,7 +271,7 @@ shootout = rogue  -- a scenario with strong missiles;
                     , ("any arrow", 400), ("harpoon", 300)
                     , ("any vial", 60) ]
                       -- Many consumable buffs are needed in symmetric maps
-                      -- so that aggresor prepares them in advance and camper
+                      -- so that aggressor prepares them in advance and camper
                       -- needs to waste initial turns to buff for the defence.
   , cplaceFreq    = [("shootout", 100)]
   , cpassable     = True
