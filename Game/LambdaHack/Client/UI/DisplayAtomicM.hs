@@ -491,6 +491,7 @@ createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 createActorUI born aid body = do
   side <- getsClient sside
   fact <- getsState $ (EM.! bfid body) . sfactionD
+  globalTime <- getsState stime
   localTime <- getsState $ getLocalTime $ blid body
   mbUI <- getsSession $ EM.lookup aid . sactorUI
   bUI <- case mbUI of
@@ -543,7 +544,7 @@ createActorUI born aid body = do
       return bUI
   let verb = MU.Text $
         if born
-        then if localTime == timeZero
+        then if globalTime == timeZero
              then "be here"
              else "appear" <+> if bfid body == side then "" else "suddenly"
         else "be spotted"
@@ -840,6 +841,7 @@ discover c oldState iid = do
   lid <- getsState $ lidFromC c
   discoKind <- getsState sdiscoKind
   discoAspect <- getsState sdiscoAspect
+  globalTime <- getsState stime
   localTime <- getsState $ getLocalTime lid
   itemToF <- getsState itemToFull
   bag <- getsState $ getContainerBag c
@@ -870,7 +872,7 @@ discover c oldState iid = do
       ik = itemKind $ fromJust $ itemDisco itemFull
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.
-  unless (localTime == timeZero  -- don't spam about initial equipment
+  unless (globalTime == timeZero  -- don't spam about initial equipment
           || isOurOrgan
           || (EM.member jix discoKind == EM.member jix oldDiscoKind
               && (EM.member iid discoAspect == EM.member iid oldDiscoAspect
