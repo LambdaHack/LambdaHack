@@ -266,7 +266,7 @@ pulpit = ItemKind
   , iweight  = 10000
   , idamage  = toDmg 0
   , iaspects = []
-  , ieffects = [ CreateItem CInv "any scroll" TimerNone
+  , ieffects = [ CreateItem CGround "any scroll" TimerNone
                , toOrganGameTurn "defenseless" (20 + 1 `d` 5)
                , Explode "PhD defense question" ]
   , ifeature = [Identified]  -- not Durable, springs at most once

@@ -81,7 +81,7 @@ firecracker n = ItemKind
   , iweight  = 1
   , idamage  = toDmg 0
   , iaspects = [AddShine $ intToDice $ n `div` 2]
-  , ieffects = [ RefillCalm (-1) | n >= 5 ]
+  , ieffects = [ RefillCalm (3 - n) | n >= 5 ]
                ++ [ DropBestWeapon | n >= 5]
                ++ [ OnSmash $ Explode
                     $ toGroupName $ "firecracker" <+> tshow (n - 1)
