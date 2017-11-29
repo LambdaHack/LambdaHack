@@ -279,7 +279,7 @@ perception lid outPer inPer = do
     modifyClient $ \cli -> cli {sfper = f (sfper cli)}
 
 discoverKind :: MonadClient m => Container -> ItemId -> Kind.Id ItemKind -> m ()
-discoverKind _c iid ik = do
+discoverKind _c iid2 ik = do
   cops@Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
   -- affect his actors' skills relevant to BFS.
@@ -287,16 +287,17 @@ discoverKind _c iid ik = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   discoKind <- getsState sdiscoKind
-  item <- getsState $ getItemBody iid
-  let kind = okind ik
+  Item{jkindIx=ix} <- getsState $ getItemBody iid2
+  itemD <- getsState sitemD
+  let effs = IK.ieffects $ okind ik
       KindMean{kmMean} = fromMaybe (error "item kind not found")
-                                   (EM.lookup (jkindIx item) discoKind)
-      benefit = totalUsefulness cops fact (IK.ieffects kind) kmMean item
-  -- This adds to @sdiscoBenefit@ only @iid@ and not any other items
-  -- that share the same @jkindIx@, so this is broken if such items
-  -- are not fully IDed from the start.
-  modifyClient $ \cli ->
-    cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
+                                   (EM.lookup ix discoKind)
+      benefit iid =
+        let item = itemD EM.! iid
+        in totalUsefulness cops fact effs kmMean item
+  itemIxMap <- getsState $ (EM.! ix) . sitemIxMap
+  forM_ itemIxMap $ \iid -> modifyClient $ \cli ->
+    cli {sdiscoBenefit = EM.insert iid (benefit iid) (sdiscoBenefit cli)}
 
 coverKind :: Container -> ItemId -> Kind.Id ItemKind -> m ()
 coverKind _c _iid _ik = undefined
