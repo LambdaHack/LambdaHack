@@ -894,14 +894,12 @@ effectCreateItem jfidRaw mcount target store grp tim = do
   let litemFreq = [(grp, 1)]
   -- Power depth of new items unaffected by number of spawned actors.
   m5 <- rollItem 0 (blid tb) litemFreq
-  let (itemKnownRaw, itemFullRaw, itemDisco, seed, _) =
+  let (itemKnownRaw, itemFullRaw, _, seed, _) =
         fromMaybe (error $ "" `showFailure` (blid tb, litemFreq, c)) m5
-  -- Other code adds to @sdiscoBenefit@ only @iid@ and not any other items
-  -- that share the same @jkindIx@, so this is broken if such items
-  -- are not fully IDed from the start, so check that before risking a copy
-  -- of the same item, but with different @jfid@.
+      -- Avoid too many different item identifiers (one for each faction)
+      -- for blasts or common item generating tiles. Temporary organs are
+      -- also duplicated but they provide really useful info (perpetrator).
       jfid = if store == COrgan
-                && IK.Identified `elem` IK.ifeature (itemKind itemDisco)
              then jfidRaw
              else Nothing
       (itemKnown, itemFullFid) =

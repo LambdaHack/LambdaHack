@@ -386,24 +386,17 @@ addActor actorGroup bfid pos lid tweakBody time = do
   m5 <- rollItem 0 lid trunkFreq
   case m5 of
     Nothing -> return Nothing
-    Just (itemKnownRaw, itemFullRaw, itemDisco, seed, _) ->
-      registerActor itemKnownRaw itemFullRaw itemDisco seed
-                    bfid pos lid tweakBody time
+    Just (itemKnownRaw, itemFullRaw, _, seed, _) ->
+      registerActor itemKnownRaw itemFullRaw seed bfid pos lid tweakBody time
 
 registerActor :: MonadServerAtomic m
-              => ItemKnown -> ItemFull -> ItemDisco -> ItemSeed
+              => ItemKnown -> ItemFull -> ItemSeed
               -> FactionId -> Point -> LevelId -> (Actor -> Actor) -> Time
               -> m (Maybe ActorId)
-registerActor (kindIx, ar, damage, _) itemFullRaw itemDisco seed
+registerActor (kindIx, ar, damage, _) itemFullRaw seed
               bfid pos lid tweakBody time = do
   let container = CTrunk bfid lid pos
-  -- Other code adds to @sdiscoBenefit@ only @iid@ and not any other items
-  -- that share the same @jkindIx@, so this is broken if such items
-  -- are not fully IDed from the start, so check that before risking a copy
-  -- of the same item, but with different @jfid@.
-      jfid = if IK.Identified `elem` IK.ifeature (itemKind itemDisco)
-             then Just bfid
-             else Nothing
+      jfid = Just bfid
       itemKnown = (kindIx, ar, damage, jfid)
       itemFull = itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
   trunkId <- registerItem itemFull itemKnown seed container False
