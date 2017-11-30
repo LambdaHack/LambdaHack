@@ -562,7 +562,7 @@ drawLeaderDamage width = do
               let tdice = show $ jdamage $ itemBase itemFull
                   bonusRaw = aHurtMelee $ actorAspect EM.! leader
                   bonus = min 200 $ max (-200) bonusRaw
-                  unknownBonus = unknownMelee $ map snd allAssocs
+                  unknownBonus = unknownMeleeBonus $ map snd allAssocs
                   tbonus = if bonus == 0
                            then if unknownBonus then "+?" else ""
                            else (if bonus > 0 then "+" else "")

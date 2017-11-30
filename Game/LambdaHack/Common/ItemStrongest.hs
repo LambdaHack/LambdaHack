@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.ItemStrongest
     -- * Assorted
   , computeTrajectory, itemTrajectory, totalRange
   , hasCharge, damageUsefulness, strongestMelee, prEqpSlot
-  , unknownMelee, filterRecharging, stripRecharging, stripOnSmash
+  , unknownMeleeBonus, filterRecharging, stripRecharging, stripOnSmash
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , unknownAspect
@@ -177,13 +177,14 @@ prEqpSlot eqpSlot ar@AspectRecord{..} =
 unknownAspect :: (Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f itemFull =
   case itemDisco itemFull of
+    Nothing -> True  -- not even kind is known, so aspect unknown
     Just ItemDisco{itemAspect=Nothing, itemKind=ItemKind{iaspects}} ->
       let unknown x = Dice.minDice x /= Dice.maxDice x
       in or $ concatMap (map unknown . f) iaspects
-    _ -> False  -- we don't know if it affect the aspect, so we assume 0
+    Just{} -> False  -- all known
 
-unknownMelee :: [ItemFull] -> Bool
-unknownMelee =
+unknownMeleeBonus :: [ItemFull] -> Bool
+unknownMeleeBonus =
   let p (AddHurtMelee k) = [k]
       p _ = []
       f itemFull b = b || unknownAspect p itemFull
