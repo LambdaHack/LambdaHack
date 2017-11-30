@@ -52,13 +52,13 @@ handleResponse cmd = case cmd of
     execPutState newState
     cmdAtomicSemCli oldState cmdA
     hasUI <- clientHasUI
-    when hasUI $ displayRespUpdAtomicUI False oldState cmdA
+    when hasUI $ displayRespUpdAtomicUI False cmdA
   RespUpdAtomicNoState cmdA -> do
     oldState <- getState
     execUpdAtomic cmdA
     cmdAtomicSemCli oldState cmdA
     hasUI <- clientHasUI
-    when hasUI $ displayRespUpdAtomicUI False oldState cmdA
+    when hasUI $ displayRespUpdAtomicUI False cmdA
   RespQueryAI aid -> do
     cmdC <- queryAI aid
     sendRequestAI cmdC

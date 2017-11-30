@@ -1064,7 +1064,9 @@ effectIdentify execSfx iidId source target = do
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
         (iid, ItemFull{itemDisco=Just ItemDisco{..}}) : rest ->
           if iid `EM.member` sdiscoAspect s
-             || not (any IK.forIdEffect (IK.ieffects itemKind))
+             || store == CGround
+                && (not $ any IK.forIdEffect $ IK.ieffects itemKind)
+                  -- will be identified as soon as picked up, so don't bother;
                   -- darts included, which prevents wasting the scroll
           then tryFull store rest
           else do

@@ -67,10 +67,9 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- | Visualize atomic updates sent to the client. This is done
 -- in the global state after the command is executed and after
 -- the client state is modified by the command.
-displayRespUpdAtomicUI :: MonadClientUI m
-                       => Bool -> State -> UpdAtomic -> m ()
+displayRespUpdAtomicUI :: MonadClientUI m => Bool -> UpdAtomic -> m ()
 {-# INLINE displayRespUpdAtomicUI #-}
-displayRespUpdAtomicUI verbose oldState cmd = case cmd of
+displayRespUpdAtomicUI verbose cmd = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid body _ -> createActorUI True aid body
   UpdDestroyActor aid body _ -> destroyActorUI True aid body
@@ -284,11 +283,11 @@ displayRespUpdAtomicUI verbose oldState cmd = case cmd of
     sdisplayNeeded <- getsSession sdisplayNeeded
     when sdisplayNeeded pushFrame
   UpdUnAgeGame{} -> return ()
-  UpdDiscover c iid _ _ -> discover c oldState iid
+  UpdDiscover c iid _ _ -> discover c iid
   UpdCover{} -> return ()  -- don't spam when doing undo
-  UpdDiscoverKind c iid _ -> discover c oldState iid
+  UpdDiscoverKind c iid _ -> discover c iid
   UpdCoverKind{} -> return ()  -- don't spam when doing undo
-  UpdDiscoverSeed c iid _ -> discover c oldState iid
+  UpdDiscoverSeed c iid _ -> discover c iid
   UpdCoverSeed{} -> return ()  -- don't spam when doing undo
   UpdDiscoverServer{} -> error "server command leaked to client"
   UpdCoverServer{} -> error "server command leaked to client"
@@ -833,14 +832,10 @@ quitFactionUI fid toSt = do
         fadeOutOrIn True
     _ -> return ()
 
-discover :: MonadClientUI m => Container -> State -> ItemId -> m ()
-discover c oldState iid = do
-  let oldDiscoKind = sdiscoKind oldState
-      oldDiscoAspect = sdiscoAspect oldState
-      cstore = storeFromC c
+discover :: MonadClientUI m => Container -> ItemId -> m ()
+discover c iid = do
+  let cstore = storeFromC c
   lid <- getsState $ lidFromC c
-  discoKind <- getsState sdiscoKind
-  discoAspect <- getsState sdiscoAspect
   globalTime <- getsState stime
   localTime <- getsState $ getLocalTime lid
   itemToF <- getsState itemToFull
@@ -868,15 +863,10 @@ discover c oldState iid = do
       namePhrase = MU.Phrase $ [secretName, secretAEText] ++ nameWhere
       msg = makeSentence
         ["the", MU.SubjectVerbSg namePhrase "turn out to be", knownName]
-      jix = jkindIx $ itemBase itemFull
-      ik = itemKind $ fromJust $ itemDisco itemFull
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.
   unless (globalTime == timeZero  -- don't spam about initial equipment
-          || isOurOrgan
-          || (EM.member jix discoKind == EM.member jix oldDiscoKind
-              && (EM.member iid discoAspect == EM.member iid oldDiscoAspect
-                  || not (aspectsRandom ik)))) $
+          || isOurOrgan) $  -- assume own faction organs known intuitively
     msgAdd msg
 
 -- * RespSfxAtomicUI
