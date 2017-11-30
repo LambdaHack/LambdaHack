@@ -258,7 +258,7 @@ data ItemFull = ItemFull
 -- 'ItemKindIx'. There is an item kinda, mean aspect value computed
 -- (and here cached) for items of that kind and a flag saying whether
 -- the item's aspects are constant rather than random or dependent
--- dungeon level where the item is created.
+-- on dungeon level where the item is created.
 data KindMean = KindMean
   { kmKind  :: Kind.Id IK.ItemKind
   , kmMean  :: AspectRecord
@@ -313,13 +313,16 @@ itemToFull6 Kind.COps{coitem=Kind.Ops{okind}}
                         , itemAspect = EM.lookup iid discoAspect }
   in ItemFull {..}
 
--- If @False@, aspects of this kind are most probably fixed, not random.
+-- If @False@, aspects of this kind are most probably fixed, not random
+-- nor dependent on dungeon level where the item is created.
 aspectsRandom :: IK.ItemKind -> Bool
 aspectsRandom kind =
-  let rollM = foldlM' (castAspect (AbsDepth 10) (AbsDepth 10))
-                      emptyAspectRecord (IK.iaspects kind)
+  let rollM depth = foldlM' (castAspect (AbsDepth depth) (AbsDepth 10))
+                            emptyAspectRecord (IK.iaspects kind)
       gen = mkStdGen 0
-  in show gen /= show (St.execState rollM gen)
+      (ar0, gen0) = St.runState (rollM 0) gen
+      (ar1, gen1) = St.runState (rollM 10) gen0
+  in show gen /= show gen0 || show gen /= show gen1 || ar0 /= ar1
 
 seedToAspect :: ItemSeed -> IK.ItemKind -> AbsDepth -> AbsDepth -> AspectRecord
 seedToAspect (ItemSeed itemSeed) kind ldepth totalDepth =
