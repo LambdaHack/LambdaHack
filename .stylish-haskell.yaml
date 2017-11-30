@@ -242,3 +242,4 @@ language_extensions:
     - MultiWayIf
     - MagicHash
     - StrictData
+    - LambdaCase
