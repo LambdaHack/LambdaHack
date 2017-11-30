@@ -638,8 +638,8 @@ spotItem verbose iid kit c = do
     _ -> return ()  -- this item or another with the same @iid@
                     -- seen already (has a slot assigned), so old news
   when verbose $ case c of
-    CActor aid store | store `elem` [CEqp, CInv] -> do
-      -- Actor fetching an item from shared stash, most probably.
+    CActor aid store | store `elem` [CEqp, CInv, CGround, CSha] -> do
+      -- Actor fetching an item from or to shared stash, most probably.
       bUI <- getsSession $ getActorUI aid
       subject <- partActorLeader aid bUI
       let ownW = ppCStoreWownW False store subject
