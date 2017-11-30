@@ -145,7 +145,9 @@ serverDiscos Kind.COps{coitem=Kind.Ops{olength, ofoldlWithKey', okind}} = do
         (x :) <$> shuffle (delete x l)
   shuffled <- shuffle ixs
   let f (!ikMap, !ikRev, ix : rest) kmKind _ =
-        let kmMean = meanAspect $ okind kmKind
+        let kind = okind kmKind
+            kmMean = meanAspect kind
+            kmConst = not $ aspectsRandom kind
         in (EM.insert ix KindMean{..} ikMap, EM.insert kmKind ix ikRev, rest)
       f (ikMap, _, []) ik  _ =
         error $ "too short ixs" `showFailure` (ik, ikMap)

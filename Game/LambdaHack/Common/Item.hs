@@ -255,11 +255,14 @@ data ItemFull = ItemFull
   deriving Show
 
 -- | Partial information about item kinds. These are assigned to each
--- 'ItemKindIx'. There is an item kinda dn mean aspect value computed
--- (and here cached) for items of that kind.
+-- 'ItemKindIx'. There is an item kinda, mean aspect value computed
+-- (and here cached) for items of that kind and a flag saying whether
+-- the item's aspects are constant rather than random or dependent
+-- dungeon level where the item is created.
 data KindMean = KindMean
-  { kmKind :: Kind.Id IK.ItemKind
-  , kmMean :: AspectRecord
+  { kmKind  :: Kind.Id IK.ItemKind
+  , kmMean  :: AspectRecord
+  , kmConst :: Bool
   }
   deriving (Show, Eq, Generic)
 

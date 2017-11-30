@@ -548,18 +548,16 @@ updDiscover _c iid ik seed = do
     Nothing -> atomicFail "discovered item unknown"
     Just item -> do
       discoKind <- getsState sdiscoKind
-      if jkindIx item `EM.member` discoKind
-      then do
-        discoAspect <- getsState sdiscoAspect
-        if iid `EM.member` discoAspect
+      case EM.lookup (jkindIx item) discoKind of
+        Just KindMean{kmConst} -> do
+          discoAspect <- getsState sdiscoAspect
+          if kmConst || iid `EM.member` discoAspect
           then atomicFail "item already fully discovered"
-          else do
-            discoverSeed iid seed
-            resetActorAspect
-      else do
-        discoverKind (jkindIx item) ik
-        discoverSeed iid seed
-        resetActorAspect
+          else discoverSeed iid seed
+        Nothing -> do
+          KindMean{kmConst} <- discoverKind (jkindIx item) ik
+          unless kmConst $ discoverSeed iid seed
+  resetActorAspect
 
 updCover :: Container -> ItemId -> Kind.Id ItemKind -> ItemSeed -> m ()
 updCover _c _iid _ik _seed = undefined
@@ -571,18 +569,22 @@ updDiscoverKind _c ix kmKind = do
   if ix `EM.member` discoKind
   then atomicFail "item kind already discovered"
   else do
-    discoverKind ix kmKind
+    void $ discoverKind ix kmKind
     resetActorAspect
 
-discoverKind :: MonadStateWrite m => ItemKindIx -> Kind.Id ItemKind -> m ()
+discoverKind :: MonadStateWrite m
+             => ItemKindIx -> Kind.Id ItemKind -> m KindMean
 discoverKind ix kmKind = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   let kind = okind kmKind
       kmMean = meanAspect kind
-      f Nothing = Just KindMean{..}
+      kmConst = not $ aspectsRandom kind
+      km = KindMean{..}
+      f Nothing = Just km
       f Just{} = error $ "already discovered" `showFailure` (ix, kmKind)
   modifyState $ updateDiscoKind $ \discoKind1 ->
     EM.alter f ix discoKind1
+  return km
 
 updCoverKind :: Container -> ItemKindIx -> Kind.Id ItemKind -> m ()
 updCoverKind _c _ix _ik = undefined
@@ -595,15 +597,15 @@ updDiscoverSeed _c iid seed = do
     Nothing -> atomicFail "discovered item unknown"
     Just item -> do
       discoKind <- getsState sdiscoKind
-      if jkindIx item `EM.notMember` discoKind
-      then error "discovered item kind unknown"
-      else do
-        discoAspect <- getsState sdiscoAspect
-        if iid `EM.member` discoAspect
-        then atomicFail "item seed already discovered"
-        else do
-          discoverSeed iid seed
-          resetActorAspect
+      case EM.lookup (jkindIx item) discoKind of
+        Nothing -> error "discovered item kind unknown"
+        Just KindMean{kmConst} -> do
+          discoAspect <- getsState sdiscoAspect
+          if kmConst || iid `EM.member` discoAspect
+          then atomicFail "item seed already discovered"
+          else do
+            discoverSeed iid seed
+            resetActorAspect
 
 discoverSeed :: MonadStateWrite m => ItemId -> ItemSeed -> m ()
 discoverSeed iid seed = do
@@ -618,8 +620,9 @@ discoverSeed iid seed = do
       aspects = seedToAspect seed kind ldepth totalDepth
       f Nothing = Just aspects
       f Just{} = error $ "already discovered" `showFailure` (iid, seed)
-  modifyState $ updateDiscoAspect $ \discoAspect1 ->
-    EM.alter f iid discoAspect1
+  assert (not kmConst) $
+    modifyState $ updateDiscoAspect $ \discoAspect1 ->
+      EM.alter f iid discoAspect1
 
 updCoverSeed :: Container -> ItemId -> ItemSeed -> m ()
 updCoverSeed _c _iid _seed = undefined
