@@ -1060,8 +1060,10 @@ effectIdentify execSfx iidId source target = do
   let tryFull store as = case as of
         [] -> return False
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
-        (iid, ItemFull{itemDisco=Just ItemDisco{..}}) : rest ->
-          if iid `EM.member` sdiscoAspect s
+        (iid, ItemFull{itemBase, itemDisco=Just ItemDisco{..}}) : rest ->
+          if iid `EM.member` sdiscoAspect s  -- already identified
+             || itemConst  -- doesn't need further identification
+                && jkindIx itemBase `EM.member` sdiscoKind s
              || store == CGround
                 && (not $ any IK.forIdEffect $ IK.ieffects itemKind)
                   -- will be identified as soon as picked up, so don't bother;

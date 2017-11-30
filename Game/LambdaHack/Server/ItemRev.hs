@@ -114,11 +114,11 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldlGroup'}}
         itemK = max 1 itemN
         itemTimer = [timeZero | IK.Periodic `elem` IK.ieffects itemKind]
                       -- delay first discharge of single organs
-        itemAspectMean =
-          kmMean $ EM.findWithDefault (error $ "" `showFailure` kindIx)
-                                      kindIx disco
-        itemDiscoData = ItemDisco { itemKindId, itemKind, itemAspectMean
-                                  , itemAspect = Just aspectRecord }
+        km = EM.findWithDefault (error $ "" `showFailure` kindIx) kindIx disco
+        itemAspectMean = kmMean km
+        itemConst = kmConst km
+        itemAspect = Just aspectRecord
+        itemDiscoData = ItemDisco {..}
         itemDisco = Just itemDiscoData
         -- Bonuses on items/actors unaffected by number of spawned actors.
         aspectRecord = seedToAspect seed itemKind ldepth totalDepth

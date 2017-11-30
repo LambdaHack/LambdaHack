@@ -240,6 +240,7 @@ data ItemDisco = ItemDisco
   { itemKindId     :: Kind.Id IK.ItemKind
   , itemKind       :: IK.ItemKind
   , itemAspectMean :: AspectRecord
+  , itemConst      :: Bool
   , itemAspect     :: Maybe AspectRecord
   }
   deriving Show
@@ -310,6 +311,7 @@ itemToFull6 Kind.COps{coitem=Kind.Ops{okind}}
           Just ItemDisco{ itemKindId = kmKind
                         , itemKind = okind kmKind
                         , itemAspectMean = kmMean
+                        , itemConst = kmConst
                         , itemAspect = EM.lookup iid discoAspect }
   in ItemFull {..}
 
