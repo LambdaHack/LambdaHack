@@ -78,9 +78,11 @@ revealItems mfid = do
         let itemFull = itemToF iid k
             c = CActor aid store
         in case itemDisco itemFull of
-          Just ItemDisco{itemKindId} -> do
-            seed <- getsServer $ (EM.! iid) . sitemSeedD
-            execUpdAtomic $ UpdDiscover c iid itemKindId seed
+          Just ItemDisco{itemKindId, itemKind} -> do
+            let isGem = maybe False (> 0) (lookup "gem" $ IK.ifreq itemKind)
+            unless isGem $ do  -- a hack
+              seed <- getsServer $ (EM.! iid) . sitemSeedD
+              execUpdAtomic $ UpdDiscover c iid itemKindId seed
           _ -> error $ "" `showFailure` (mfid, c, iid, itemFull)
       f aid = do
         b <- getsState $ getActorBody aid
@@ -465,8 +467,10 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
 discoverIfNoEffects :: MonadServerAtomic m
                     => Container -> ItemId -> ItemFull -> m ()
 discoverIfNoEffects c iid itemFull = case itemFull of
-  ItemFull{itemDisco=Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}}}
-    | any IK.forIdEffect ieffects -> return ()  -- discover by use
+  ItemFull{itemDisco=Just ItemDisco{itemKind}}
+    | any IK.forIdEffect (IK.ieffects itemKind)
+      || maybe False (> 0) (lookup "gem" $ IK.ifreq itemKind) ->  -- a hack
+    return ()  -- discover by use, ignore gems
   ItemFull{itemDisco=Just ItemDisco{itemKindId}} -> do
     seed <- getsServer $ (EM.! iid) . sitemSeedD
     execUpdAtomic $ UpdDiscover c iid itemKindId seed
