@@ -104,8 +104,8 @@ data UpdAtomic =
   | UpdUnAgeGame [LevelId]
   | UpdDiscover Container ItemId (Kind.Id ItemKind) ItemSeed
   | UpdCover Container ItemId (Kind.Id ItemKind) ItemSeed
-  | UpdDiscoverKind Container ItemId (Kind.Id ItemKind)
-  | UpdCoverKind Container ItemId (Kind.Id ItemKind)
+  | UpdDiscoverKind Container ItemKindIx (Kind.Id ItemKind)
+  | UpdCoverKind Container ItemKindIx (Kind.Id ItemKind)
   | UpdDiscoverSeed Container ItemId ItemSeed
   | UpdCoverSeed Container ItemId ItemSeed
   | UpdDiscoverServer ItemId AspectRecord
@@ -208,8 +208,8 @@ undoUpdAtomic cmd = case cmd of
   UpdUnAgeGame lids -> Just $ UpdAgeGame lids
   UpdDiscover c iid ik seed -> Just $ UpdCover c iid ik seed
   UpdCover c iid ik seed -> Just $ UpdDiscover c iid ik seed
-  UpdDiscoverKind c iid ik -> Just $ UpdCoverKind c iid ik
-  UpdCoverKind c iid ik -> Just $ UpdDiscoverKind c iid ik
+  UpdDiscoverKind c ix ik -> Just $ UpdCoverKind c ix ik
+  UpdCoverKind c ix ik -> Just $ UpdDiscoverKind c ix ik
   UpdDiscoverSeed c iid seed -> Just $ UpdCoverSeed c iid seed
   UpdCoverSeed c iid seed -> Just $ UpdDiscoverSeed c iid seed
   UpdDiscoverServer iid aspectRecord -> Just $ UpdCoverServer iid aspectRecord

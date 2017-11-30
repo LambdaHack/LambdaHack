@@ -105,8 +105,8 @@ handleUpdAtomic cmd = case cmd of
   UpdUnAgeGame lids -> updUnAgeGame lids
   UpdDiscover c iid ik seed -> updDiscover c iid ik seed
   UpdCover c iid ik seed -> updCover c iid ik seed
-  UpdDiscoverKind c iid ik -> updDiscoverKind c iid ik
-  UpdCoverKind c iid ik -> updCoverKind c iid ik
+  UpdDiscoverKind c ix ik -> updDiscoverKind c ix ik
+  UpdCoverKind c ix ik -> updCoverKind c ix ik
   UpdDiscoverSeed c iid seed -> updDiscoverSeed c iid seed
   UpdCoverSeed c iid seed -> updCoverSeed c iid seed
   UpdDiscoverServer iid aspectRecord -> updDiscoverServer iid aspectRecord
@@ -557,7 +557,7 @@ updDiscover _c iid ik seed = do
             discoverSeed iid seed
             resetActorAspect
       else do
-        discoverKind iid ik
+        discoverKind (jkindIx item) ik
         discoverSeed iid seed
         resetActorAspect
 
@@ -565,32 +565,27 @@ updCover :: Container -> ItemId -> Kind.Id ItemKind -> ItemSeed -> m ()
 updCover _c _iid _ik _seed = undefined
 
 updDiscoverKind :: MonadStateWrite m
-                => Container -> ItemId -> Kind.Id ItemKind -> m ()
-updDiscoverKind _c iid kmKind = do
-  itemD <- getsState sitemD
-  case EM.lookup iid itemD of
-    Nothing -> atomicFail "discovered item unknown"
-    Just item -> do
-      discoKind <- getsState sdiscoKind
-      if jkindIx item `EM.member` discoKind
-      then atomicFail "item kind already discovered"
-      else do
-        discoverKind iid kmKind
-        resetActorAspect
+                => Container -> ItemKindIx -> Kind.Id ItemKind -> m ()
+updDiscoverKind _c ix kmKind = do
+  discoKind <- getsState sdiscoKind
+  if ix `EM.member` discoKind
+  then atomicFail "item kind already discovered"
+  else do
+    discoverKind ix kmKind
+    resetActorAspect
 
-discoverKind :: MonadStateWrite m => ItemId -> Kind.Id ItemKind -> m ()
-discoverKind iid kmKind = do
+discoverKind :: MonadStateWrite m => ItemKindIx -> Kind.Id ItemKind -> m ()
+discoverKind ix kmKind = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
-  item <- getsState $ getItemBody iid
   let kind = okind kmKind
       kmMean = meanAspect kind
       f Nothing = Just KindMean{..}
-      f Just{} = error $ "already discovered" `showFailure` (iid, kmKind)
+      f Just{} = error $ "already discovered" `showFailure` (ix, kmKind)
   modifyState $ updateDiscoKind $ \discoKind1 ->
-    EM.alter f (jkindIx item) discoKind1
+    EM.alter f ix discoKind1
 
-updCoverKind :: Container -> ItemId -> Kind.Id ItemKind -> m ()
-updCoverKind _c _iid _ik = undefined
+updCoverKind :: Container -> ItemKindIx -> Kind.Id ItemKind -> m ()
+updCoverKind _c _ix _ik = undefined
 
 updDiscoverSeed :: MonadStateWrite m
                 => Container -> ItemId -> ItemSeed -> m ()

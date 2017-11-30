@@ -67,6 +67,8 @@ reinitGame = do
   -- at this point to keep clients in sync with server improvements.
   s <- getState
   discoS <- getsState sdiscoKind
+  -- Thanks to the following, for any item with feature @Identified@,
+  -- the client has its kind from the start.
   let discoKindFiltered =
         let f KindMean{kmKind} = IK.Identified `elem` IK.ifeature (okind kmKind)
         in EM.filter f discoS

@@ -146,13 +146,15 @@ cmdAtomicSemCli oldState cmd = case cmd of
       let g !em !lid = EM.adjust (const Nothing) lid em
       in cli {scondInMelee = foldl' g (scondInMelee cli) arenas}
   UpdDiscover c iid ik seed -> do
-    discoverKind c iid ik
+    item <- getsState $ getItemBody iid
+    discoverKind c (jkindIx item) ik
     discoverSeed c iid seed
   UpdCover c iid ik seed -> do
     coverSeed c iid seed
-    coverKind c iid ik
-  UpdDiscoverKind c iid ik -> discoverKind c iid ik
-  UpdCoverKind c iid ik -> coverKind c iid ik
+    item <- getsState $ getItemBody iid
+    coverKind c (jkindIx item) ik
+  UpdDiscoverKind c ix ik -> discoverKind c ix ik
+  UpdCoverKind c ix ik -> coverKind c ix ik
   UpdDiscoverSeed c iid seed -> discoverSeed c iid seed
   UpdCoverSeed c iid seed -> coverSeed c iid seed
   UpdPerception lid outPer inPer -> perception lid outPer inPer
@@ -240,7 +242,7 @@ addItemToDiscoBenefit iid item = do
   cops@Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   discoBenefit <- getsClient sdiscoBenefit
   case EM.lookup iid discoBenefit of
-    Just{} -> return ()  -- already there
+    Just{} -> return ()  -- already there, possibly with real aspects, too
     Nothing -> do
       discoKind <- getsState sdiscoKind
       case EM.lookup (jkindIx item) discoKind of
@@ -249,6 +251,8 @@ addItemToDiscoBenefit iid item = do
           side <- getsClient sside
           fact <- getsState $ (EM.! side) . sfactionD
           let effects = IK.ieffects $ okind kmKind
+              -- Mean aspects are used, because the item can't yet have
+              -- know real aspects, because it didn't even have kind before.
               benefit = totalUsefulness cops fact effects kmMean item
           modifyClient $ \cli ->
             cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
@@ -278,8 +282,9 @@ perception lid outPer inPer = do
         f = EM.alter adj lid
     modifyClient $ \cli -> cli {sfper = f (sfper cli)}
 
-discoverKind :: MonadClient m => Container -> ItemId -> Kind.Id ItemKind -> m ()
-discoverKind _c iid2 ik = do
+discoverKind :: MonadClient m
+             => Container -> ItemKindIx -> Kind.Id ItemKind -> m ()
+discoverKind _c ix ik = do
   cops@Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
   -- affect his actors' skills relevant to BFS.
@@ -287,7 +292,6 @@ discoverKind _c iid2 ik = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   discoKind <- getsState sdiscoKind
-  Item{jkindIx=ix} <- getsState $ getItemBody iid2
   itemD <- getsState sitemD
   let effs = IK.ieffects $ okind ik
       KindMean{kmMean} = fromMaybe (error "item kind not found")
@@ -299,7 +303,7 @@ discoverKind _c iid2 ik = do
   forM_ itemIxMap $ \iid -> modifyClient $ \cli ->
     cli {sdiscoBenefit = EM.insert iid (benefit iid) (sdiscoBenefit cli)}
 
-coverKind :: Container -> ItemId -> Kind.Id ItemKind -> m ()
+coverKind :: Container -> ItemKindIx -> Kind.Id ItemKind -> m ()
 coverKind _c _iid _ik = undefined
 
 discoverSeed :: MonadClient m => Container -> ItemId -> ItemSeed -> m ()

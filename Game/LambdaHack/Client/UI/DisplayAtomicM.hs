@@ -285,9 +285,9 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdUnAgeGame{} -> return ()
   UpdDiscover c iid _ _ -> discover c iid
   UpdCover{} -> return ()  -- don't spam when doing undo
-  UpdDiscoverKind c iid _ -> discover c iid
+  UpdDiscoverKind{} -> return ()  -- don't spam when server tweaks stuff
   UpdCoverKind{} -> return ()  -- don't spam when doing undo
-  UpdDiscoverSeed c iid _ -> discover c iid
+  UpdDiscoverSeed{} -> return ()  -- don't spam when server tweaks stuff
   UpdCoverSeed{} -> return ()  -- don't spam when doing undo
   UpdDiscoverServer{} -> error "server command leaked to client"
   UpdCoverServer{} -> error "server command leaked to client"
