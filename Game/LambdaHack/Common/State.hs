@@ -3,12 +3,12 @@ module Game.LambdaHack.Common.State
   ( -- * Basic game state, local or global
     State
     -- * State components
-  , sdungeon, stotalDepth, sactorD, sitemD, sfactionD, stime, scops, shigh
-  , sgameModeId, sdiscoKind, sdiscoAspect, sactorAspect
+  , sdungeon, stotalDepth, sactorD, sitemD, sitemIxMap, sfactionD, stime, scops
+  , shigh, sgameModeId, sdiscoKind, sdiscoAspect, sactorAspect
     -- * State construction
   , defStateGlobal, emptyState, localFromGlobal
     -- * State update
-  , updateDungeon, updateDepth, updateActorD, updateItemD
+  , updateDungeon, updateDepth, updateActorD, updateItemD, updateItemIxMap
   , updateFactionD, updateTime, updateCOps
   , updateDiscoKind, updateDiscoAspect, updateActorAspect
     -- * State operations
@@ -51,6 +51,7 @@ data State = State
   , _stotalDepth  :: AbsDepth     -- ^ absolute dungeon depth, for item creation
   , _sactorD      :: ActorDict    -- ^ remembered actors in the dungeon
   , _sitemD       :: ItemDict     -- ^ remembered items in the dungeon
+  , _sitemIxMap   :: ItemIxMap    -- ^ spotted items with the same kind index
   , _sfactionD    :: FactionDict  -- ^ remembered sides still in game
   , _stime        :: Time         -- ^ global game time, for UI display only
   , _scops        :: ~Kind.COps   -- ^ remembered content
@@ -68,6 +69,7 @@ instance Binary State where
     put _stotalDepth
     put _sactorD
     put _sitemD
+    put _sitemIxMap
     put _sfactionD
     put _stime
     put _shigh
@@ -79,6 +81,7 @@ instance Binary State where
     _stotalDepth <- get
     _sactorD <- get
     _sitemD <- get
+    _sitemIxMap <- get
     _sfactionD <- get
     _stime <- get
     _shigh <- get
@@ -101,6 +104,9 @@ sactorD = _sactorD
 
 sitemD :: State -> ItemDict
 sitemD = _sitemD
+
+sitemIxMap :: State -> ItemIxMap
+sitemIxMap = _sitemIxMap
 
 sfactionD :: State -> FactionDict
 sfactionD = _sfactionD
@@ -174,6 +180,7 @@ defStateGlobal _sdungeon _stotalDepth _sfactionD _scops _shigh _sgameModeId
   State
     { _sactorD = EM.empty
     , _sitemD = EM.empty
+    , _sitemIxMap = EM.empty
     , _stime = timeZero
     , _sdiscoAspect = EM.empty
     , _sactorAspect = EM.empty
@@ -188,6 +195,7 @@ emptyState _scops =
     , _stotalDepth = AbsDepth 0
     , _sactorD = EM.empty
     , _sitemD = EM.empty
+    , _sitemIxMap = EM.empty
     , _sfactionD = EM.empty
     , _stime = timeZero
     , _scops
@@ -226,6 +234,10 @@ updateActorD f s = s {_sactorD = f (_sactorD s)}
 -- | Update the item dictionary.
 updateItemD :: (ItemDict -> ItemDict) -> State -> State
 updateItemD f s = s {_sitemD = f (_sitemD s)}
+
+-- | Update the item kind index map.
+updateItemIxMap :: (ItemIxMap -> ItemIxMap) -> State -> State
+updateItemIxMap f s = s {_sitemIxMap = f (_sitemIxMap s)}
 
 -- | Update faction data within state.
 updateFactionD :: (FactionDict -> FactionDict) -> State -> State

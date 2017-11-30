@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.Item
   , emptyAspectRecord, sumAspectRecord, aspectRecordToList, meanAspect
     -- * Item discovery types and operations
   , ItemKindIx, ItemSeed, ItemDisco(..), ItemFull(..)
-  , KindMean(..), DiscoveryKind, Benefit(..), DiscoveryBenefit
+  , KindMean(..), DiscoveryKind, ItemIxMap, Benefit(..), DiscoveryBenefit
   , itemNoDisco, itemToFull6, aspectsRandom, seedToAspect, aspectRecordFull
     -- * Inventory management types
   , ItemTimer, ItemQuant, ItemBag, ItemDict
@@ -221,6 +221,7 @@ ceilingMeanDice d = ceiling $ Dice.meanDice d
 
 -- | An index of the kind identifier of an item. Clients have partial knowledge
 -- how these idexes map to kind ids. They gain knowledge by identifying items.
+-- The indexes and kind identifiers are 1-1.
 newtype ItemKindIx = ItemKindIx Int
   deriving (Show, Eq, Ord, Enum, Ix.Ix, Hashable, Binary)
 
@@ -253,8 +254,9 @@ data ItemFull = ItemFull
   }
   deriving Show
 
--- | Partial information about an item: it's kind and the mean aspect values
--- computed (and here cached) for items of that kind.
+-- | Partial information about item kinds. These are assigned to each
+-- 'ItemKindIx'. There is an item kinda dn mean aspect value computed
+-- (and here cached) for items of that kind.
 data KindMean = KindMean
   { kmKind :: Kind.Id IK.ItemKind
   , kmMean :: AspectRecord
@@ -266,6 +268,9 @@ instance Binary KindMean
 -- | The map of item kind indexes to item kind ids.
 -- The full map, as known by the server, is 1-1.
 type DiscoveryKind = EM.EnumMap ItemKindIx KindMean
+
+-- | The map of item kind indexes to identifiers of items that have that kind.
+type ItemIxMap = EM.EnumMap ItemKindIx [ItemId]
 
 -- | Fields are intentionally kept non-strict, because they are recomputed
 -- often, but not used every time. The fields are, in order:

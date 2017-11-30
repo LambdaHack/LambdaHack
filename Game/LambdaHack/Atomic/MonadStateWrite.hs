@@ -295,7 +295,9 @@ addAis ais = do
                 `swith` (item1, item2, ais))
                item2 -- keep the first found level
   forM_ ais $ \(iid, item) ->
-    modifyState $ updateItemD $ EM.insertWith h iid item
+    modifyState
+    $ updateItemIxMap (EM.insertWith (++) (jkindIx item) [iid])
+      . updateItemD (EM.insertWith h iid item)
 
 itemsMatch :: Item -> Item -> Bool
 itemsMatch item1 item2 =
