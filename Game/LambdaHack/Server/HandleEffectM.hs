@@ -1068,6 +1068,7 @@ effectIdentify execSfx iidId source target = do
                 && (not $ any IK.forIdEffect $ IK.ieffects itemKind)
                   -- will be identified as soon as picked up, so don't bother;
                   -- darts included, which prevents wasting the scroll
+             || maybe False (> 0) (lookup "gem" $ IK.ifreq itemKind)  -- a hack
           then tryFull store rest
           else do
             let c = CActor target store
