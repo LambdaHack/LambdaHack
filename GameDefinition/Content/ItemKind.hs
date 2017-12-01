@@ -1099,7 +1099,7 @@ hammerSpark = hammer
   { iname    = "Grand Smithhammer"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(5, 1), (10, 6)]
-  , idamage  = toDmg $ 8 `d` 1
+  , idamage  = toDmg $ 12 `d` 1
   , iaspects = iaspects hammer ++ [AddShine 3, Timeout $ (1 `d` 4 + 4 - 1 `dl` 4) * 2]
   , ieffects = ieffects hammer ++ [Unique, Recharging $ Explode "spark"]
   }
@@ -1125,9 +1125,8 @@ swordImpress = sword
   , ifreq    = [("treasure", 20)]
   , irarity  = [(5, 1), (10, 6)]
   , iaspects = [Timeout $ (1 `d` 4 + 5 - 1 `dl` 4) * 2]
-  , ieffects = ieffects sword
-               ++ [Unique, Recharging Impress, Recharging (DetectActor 5)]
-  , idesc    = "A particularly well-balance blade, lending itself to impressive shows of fencing skill. Master sees enemies reflected on its mirror-like surface."
+  , ieffects = ieffects sword ++ [Unique, Recharging Impress]
+  , idesc    = "A particularly well-balance blade, lending itself to impressive shows of fencing skill."
   }
 swordNullify = sword
   { iname    = "Gutting Sword"
