@@ -556,6 +556,7 @@ scroll1 = scroll
   , irarity  = [(5, 9), (10, 9)]  -- mixed blessing, so available early
   , ieffects = [ Unique, ELabel "of Reckless Beacon"
                , Summon "hero" 1, Summon "mobile animal" (2 + 1 `d` 2) ]
+  , idesc    = "The bright flame and sweet-smelling smoke of this heavily infused scroll should attract natural creatures inhabiting the area, including human survivors, if any."
   }
 scroll2 = scroll
   { irarity  = [(1, 2)]
@@ -604,7 +605,8 @@ scroll10 = scroll
 scroll11 = scroll
   { ifreq    = [("treasure", 100)]
   , irarity  = [(6, 9), (10, 9)]
-  , ieffects = [Unique, ELabel "of Prisoner Release", Summon "hero" 1]
+  , ieffects = [Unique, ELabel "of Rescue Proclamation", Summon "hero" 1]
+  , idesc    = "A survivor is found that enjoys, apparently, complete physiological integrity. If we so wish, we can pronounce him rescued and let him join our team."
   }
 scroll12 = scroll
   { irarity  = [(1, 9), (10, 4)]
