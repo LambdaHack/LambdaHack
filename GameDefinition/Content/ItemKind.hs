@@ -863,12 +863,12 @@ ring1 = ring
                , EqpSlot EqpSlotAddSpeed ]
   }
 ring2 = ring
-  { irarity  = [(10, 5)]
+  { irarity  = [(10, 8)]
   , iaspects = [AddMaxHP $ 10 + 1 `dl` 10, AddMaxCalm $ 1 `dl` 5 - 20 - 1 `d` 5]
   , ieffects = [Explode "blast 20", EqpSlot EqpSlotAddMaxHP]
   }
 ring3 = ring
-  { irarity  = [(10, 5)]
+  { irarity  = [(10, 3)]
   , iaspects = [AddMaxCalm $ 29 + 1 `dl` 10]
   , ieffects = [Explode "blast 20", EqpSlot EqpSlotMiscBonus]
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with solemn, strangely comforting, worn out words."
