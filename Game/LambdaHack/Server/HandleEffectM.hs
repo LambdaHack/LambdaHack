@@ -554,7 +554,7 @@ effectImpress :: MonadServerAtomic m
 effectImpress recursiveCall execSfx source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  if | bproj tb -> return False
+  if | bproj tb || bhp tb <= 0 -> return False  -- avoid spam just before death
      | bfid tb == bfid sb -> do
        -- Unimpress wrt others, but only once.
        res <- recursiveCall $ IK.DropItem 1 1 COrgan "impressed"
