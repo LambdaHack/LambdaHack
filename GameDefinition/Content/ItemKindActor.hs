@@ -296,14 +296,15 @@ armadillo = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = toDmg 0
-  , iaspects = [ AddMaxHP 20, AddMaxCalm 30, AddSpeed 20, AddNocto 2
+  , iaspects = [ AddMaxHP 10, AddMaxCalm 30, AddSpeed 20, AddNocto 2
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [ ("hooked claw", COrgan), ("snout", COrgan)
-               , ("armored skin", COrgan), ("nostril", COrgan)
-               , ("eye 3", COrgan), ("animal brain", COrgan) ]
+               , ("armored skin", COrgan), ("armored skin", COrgan)
+               , ("nostril", COrgan), ("eye 3", COrgan)
+               , ("animal brain", COrgan) ]
   }
 gilaMonster = ItemKind
   { isymbol  = 'g'
