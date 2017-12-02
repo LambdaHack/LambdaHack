@@ -481,7 +481,7 @@ dominateFidSfx fid target = do
       canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
                 && EM.findWithDefault 0 Ability.AbAlter actorMaxSk
                    >= fromEnum TK.talterForStairs
-  if canMove && not (bproj tb) then do
+  if canMove && not (bproj tb) && bhp tb > 0 then do
     let execSfx = execSfxAtomic $ SfxEffect fid target IK.Dominate 0
     execSfx  -- if actor ours, possibly the last occasion to see him
     gameOver <- dominateFid fid target
