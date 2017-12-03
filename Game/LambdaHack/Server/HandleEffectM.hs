@@ -62,7 +62,7 @@ import           Game.LambdaHack.Server.PeriodicM
 import           Game.LambdaHack.Server.ServerOptions
 import           Game.LambdaHack.Server.State
 
--- + Semantics of effects
+-- * Semantics of effects
 
 applyItem :: MonadServerAtomic m => ActorId -> ItemId -> CStore -> m ()
 applyItem aid iid cstore = do
@@ -291,7 +291,7 @@ effectSem source target iid c recharged periodic effect = do
     IK.Periodic -> return False
     IK.Composite l -> effectComposite recursiveCall l
 
--- + Individual semantic functions for effects
+-- * Individual semantic functions for effects
 
 -- ** Burn
 
