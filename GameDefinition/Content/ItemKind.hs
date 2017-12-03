@@ -486,6 +486,7 @@ potion4 = potion
 potion5 = potion  -- needs to be common to show at least a portion of effects
   { irarity  = [(1, 30), (10, 15)]
   , ieffects = [ OneOf [ RefillHP 10, RefillHP 5, Burn 5
+                       , DropItem 1 maxBound COrgan "poisoned"
                        , toOrganActorTurn "strengthened" (20 + 1 `d` 5) ]
                , OnSmash (OneOf [ Explode "dense shower"
                                 , Explode "sparse shower"
@@ -499,6 +500,7 @@ potion6 = potion  -- needs to be common to show at least a portion of effects
   , ieffects = [ Impress
                , OneOf [ RefillCalm (-60)
                        , RefillHP 20, RefillHP 10, Burn 10
+                       , DropItem 1 maxBound COrgan "poisoned"
                        , toOrganActorTurn "hasted" (20 + 1 `d` 5) ]
                , OnSmash (OneOf [ Explode "healing mist 2"
                                 , Explode "wounding mist"
