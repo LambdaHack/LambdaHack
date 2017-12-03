@@ -273,7 +273,7 @@ condSupport param aid = do
       closeAndStrong (aid2, b2) = closeEnough b2
                                   && actorCanMelee actorAspect aid2 b2
       closeAndStrongFriends = filter closeAndStrong friends
-      -- The smaller area scanned for friends, the lower number required.
+      -- The smaller the area scanned for friends, the lower number required.
       suport = length closeAndStrongFriends >= min 2 param - aAggression ar
                || length friends <= 1  -- solo fighters aggresive
   return suport

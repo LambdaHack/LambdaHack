@@ -61,12 +61,13 @@ debugResponse fid resp = case resp of
 debugPretty :: MonadServer m => FactionId -> Text -> UpdAtomic -> m ()
 debugPretty fid t cmd = do
   ps <- posUpdAtomic cmd
-  serverPrint $ debugShow (fid, t, ps)
+  serverPrint $ debugShow (fid, t, ps, cmd)
 
 debugPlain :: MonadServer m => FactionId -> Text -> UpdAtomic -> m ()
 debugPlain fid t cmd = do
   ps <- posUpdAtomic cmd
-  serverPrint $ T.pack $ show (fid, t, ps)  -- too large for pretty printing
+  serverPrint $ T.pack $ show (fid, t, ps, cmd)
+    -- too large for pretty printing
 
 debugRequestAI :: MonadServer m => ActorId -> m ()
 debugRequestAI aid = do

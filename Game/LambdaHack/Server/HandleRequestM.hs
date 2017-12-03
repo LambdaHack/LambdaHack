@@ -80,28 +80,29 @@ handleRequestUI fid aid cmd = case cmd of
 -- | This is a shorthand. Instead of setting @bwait@ in @ReqWait@
 -- and unsetting in all other requests, we call this once before
 -- executing a request.
-setBWait :: MonadServerAtomic m => RequestTimed a -> ActorId -> m (Maybe Bool)
+setBWait :: MonadServerAtomic m
+         => RequestTimed a -> ActorId -> Actor -> m (Maybe Bool)
 {-# INLINE setBWait #-}
-setBWait cmd aid = do
+setBWait cmd aid b = do
   let mwait = case cmd of
         ReqWait -> Just True  -- true wait, with bracind, no overhead, etc.
         ReqWait10 -> Just False  -- false wait, only one clip at a time
         _ -> Nothing
-  bPre <- getsState $ getActorBody aid
-  when ((mwait == Just True) /= bwait bPre) $
+  when ((mwait == Just True) /= bwait b) $
     execUpdAtomic $ UpdWaitActor aid (mwait == Just True)
   return mwait
 
 handleRequestTimed :: MonadServerAtomic m
                    => FactionId -> ActorId -> RequestTimed a -> m Bool
 handleRequestTimed fid aid cmd = do
-  mwait <- setBWait cmd aid
+  b <- getsState $ getActorBody aid
+  mwait <- setBWait cmd aid b
   -- Note that only the ordinary 1-turn wait eliminates overhead.
   -- The more fine-graned waits don't make actors braced and induce
   -- overhead, so that they have some drawbacks in addition to the
   -- benefit of seeing approaching danger up to almost a turn faster.
   -- It may be too late to block then, but not too late to sidestep or attack.
-  unless (mwait == Just True) $ overheadActorTime fid
+  unless (mwait == Just True) $ overheadActorTime fid (blid b)
   advanceTime aid (if mwait == Just False then 10 else 100)
   handleRequestTimedCases aid cmd
   managePerRequest aid

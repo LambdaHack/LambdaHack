@@ -161,30 +161,34 @@ advanceTime aid percent = do
     ser {sactorTime = ageActor (bfid b) (blid b) aid t $ sactorTime ser}
 
 -- Add communication overhead time delta to all non-projectile, non-dying
--- faction's actors (except the leader). Effectively, this limits moves of
--- a faction to 10, regardless of the number of actors and their speeds.
--- To discourage micromanagement distributing actors among active arenas,
--- overhead applies to all actors in active arenas.
+-- faction's actors (except the leader). Effectively, this limits moves
+-- of a faction on a level to 10, regardless of the number of actors
+-- and their speeds. To avoid animals suddenly acting extremely sluggish
+-- whenever monster's leader visits a distant arena that has a crowd
+-- of animals, overhead applies only to actors on the same level.
+-- Since the number of active arenas is limited, this bounds the total moves
+-- per turn of each faction as well.
 --
 -- Leader is immune from overhead and so he is faster than other faction
 -- members and of equal speed to leaders of other factions (of equal
 -- base speed) regardless how numerous the faction is.
 -- Thanks to this, there is no problem with leader of a numerous faction
 -- having very long UI turns, introducing UI lag.
-overheadActorTime :: MonadServerAtomic m => FactionId -> m ()
-overheadActorTime fid = do
+overheadActorTime :: MonadServerAtomic m => FactionId -> LevelId -> m ()
+overheadActorTime fid lid = do
   actorTime <- getsServer $ (EM.! fid) . sactorTime
   s <- getState
   mleader <- getsState $ _gleader . (EM.! fid) . sfactionD
   arenas <- getsServer sarenas
-  let f !aid !time =
+  let f !lid2 !_aid !time | lid2 /= lid = time
+      f _ aid time =
         let body = getActorBody aid s
         in if isNothing (btrajectory body)
               && bhp body > 0
               && Just aid /= mleader  -- leader fast, for UI to be fast
            then timeShift time (Delta timeClip)
            else time
-      g !acc !lid = EM.adjust (EM.mapWithKey f) lid acc
+      g !acc !lid2 = EM.adjust (EM.mapWithKey $ f lid2) lid acc
       actorTimeNew = foldl' g actorTime arenas
   modifyServer $ \ser ->
     ser {sactorTime = EM.insert fid actorTimeNew $ sactorTime ser}
