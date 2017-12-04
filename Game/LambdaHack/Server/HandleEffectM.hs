@@ -28,6 +28,7 @@ import           Data.Bits (xor)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
+import           Data.Int (Int64)
 import           Data.Key (mapWithKeyM_)
 
 import           Game.LambdaHack.Atomic
@@ -92,10 +93,14 @@ applyMeleeDamage source target iid = do
                             min speedDeltaHP (xM hpMax - bhp tb)
                 | otherwise = speedDeltaHP
     if deltaHP < 0 then do  -- damage the target, never heal
-      execUpdAtomic $ UpdRefillHP target deltaHP
-      when serious $ cutCalm target
+      refillHP serious target deltaHP
       return True
     else return False
+
+refillHP :: MonadServerAtomic m => Bool -> ActorId -> Int64 -> m ()
+refillHP serious target deltaHP = do
+  execUpdAtomic $ UpdRefillHP target deltaHP
+  when serious $ cutCalm target
 
 -- Here melee damage is applied. This is necessary so that the same
 -- AI benefit calculation may be used for flinging and for applying items.
@@ -305,7 +310,7 @@ effectBurn nDm source target = do
   n <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   let rawDeltaHP = - xM n
       -- We ignore minor burns.
-      serious = not (bproj tb) && source /= target && n > 1
+      serious = n > 1 && source /= target && not (bproj tb)
       deltaHP | serious = -- if HP overfull, at least cut back to max HP
                           min rawDeltaHP (xM hpMax - bhp tb)
               | otherwise = rawDeltaHP
@@ -317,8 +322,7 @@ effectBurn nDm source target = do
     let reportedEffect = IK.Burn $ Dice.intToDice n
     execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
     -- Damage the target.
-    execUpdAtomic $ UpdRefillHP target deltaHP
-    when serious $ cutCalm target
+    refillHP serious target deltaHP
     return True
 
 -- ** Explode
@@ -405,9 +409,9 @@ effectRefillHP power source target = do
   ar <- getsState $ getActorAspect target
   let hpMax = aMaxHP ar
       -- We ignore light poison and similar -1HP per turn annoyances.
-      serious = not (bproj tb) && source /= target && abs power > 1
-      deltaHP | power < 0 && serious =  -- if overfull, at least cut back to max
-                  min (xM power) (xM hpMax - bhp tb)
+      serious = power < -1 && source /= target && not (bproj tb)
+      deltaHP | serious = -- if overfull, at least cut back to max
+                          min (xM power) (xM hpMax - bhp tb)
               | otherwise = min (xM power) (max 0 $ xM 999 - bhp tb)
                                                          -- UI limitation
   curChalSer <- getsServer $ scurChalSer . soptions
@@ -419,8 +423,7 @@ effectRefillHP power source target = do
      | deltaHP == 0 -> return False
      | otherwise -> do
        execSfxAtomic $ SfxEffect (bfid sb) target (IK.RefillHP power) deltaHP
-       execUpdAtomic $ UpdRefillHP target deltaHP
-       when (deltaHP < 0 && serious) $ cutCalm target
+       refillHP serious target deltaHP
        return True
 
 cutCalm :: MonadServerAtomic m => ActorId -> m ()
