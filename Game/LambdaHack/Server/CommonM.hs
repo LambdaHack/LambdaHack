@@ -134,19 +134,24 @@ quitF :: MonadServerAtomic m =>  Status -> FactionId -> m ()
 quitF status fid = do
   fact <- getsState $ (EM.! fid) . sfactionD
   let oldSt = gquit fact
+  -- Note that it's the _old_ status that we check here.
   case stOutcome <$> oldSt of
     Just Killed -> return ()    -- Do not overwrite in case
     Just Defeated -> return ()  -- many things happen in 1 turn.
     Just Conquer -> return ()
     Just Escape -> return ()
     _ -> do
+      -- This runs regardless of the _new_ status.
       when (fhasUI $ gplayer fact) $ do
         keepAutomated <- getsServer $ skeepAutomated . soptions
+        -- Try to remove AI control of the UI faction, to show endgame info.
         when (isAIFact fact
               && fleaderMode (gplayer fact) /= LeaderNull
               && not keepAutomated) $
           execUpdAtomic $ UpdAutoFaction fid False
         revealItems (Just fid)
+        -- Likely, by this time UI faction is no longer AI-controlled,
+        -- so the score will get registered.
         registerScore status fid
       execUpdAtomic $ UpdQuitFaction fid oldSt $ Just status
       modifyServer $ \ser -> ser {squit = True}  -- check game over ASAP

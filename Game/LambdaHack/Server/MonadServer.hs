@@ -164,10 +164,12 @@ registerScore status fid = do
   curChalSer <- getsServer $ scurChalSer . soptions
   factionD <- getsState sfactionD
   bench <- getsServer $ sbenchmark . sclientOptions . soptions
+  noConfirmsGame <- isNoConfirmsGame
   let path = dataDir </> scoresFile
       outputScore (worthMentioning, (ntable, pos)) =
-        -- If not human, probably debugging, so dump instead of registering.
-        if bench || isAIFact fact then
+        -- If testing or fooling around, dump instead of registering.
+        -- In particular don't register score for the auto-* scenarios.
+        if bench || noConfirmsGame || isAIFact fact then
           debugPossiblyPrint $ T.intercalate "\n"
           $ HighScore.showScore tz (pos, HighScore.getRecord pos ntable)
         else
