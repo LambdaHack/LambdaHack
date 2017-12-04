@@ -294,7 +294,7 @@ reqMelee source target iid cstore = do
           -- or due to a hurled actor colliding with another.
           -- Don't deduct if no pierce, to prevent spam.
           when (not (bproj sb2) || bhp sb2 > oneM) $
-            execUpdAtomic $ UpdRefillHP source minusM
+            refillHP False source sb2 minusM
           when (not (bproj sb2) || bhp sb2 <= oneM) $
             -- Non-projectiles can't pierce, so terminate their flight.
             -- If projectile has too low HP to pierce, ditto.

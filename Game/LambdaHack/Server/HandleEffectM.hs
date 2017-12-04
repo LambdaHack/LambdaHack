@@ -3,7 +3,7 @@
 -- but sometimes also caused by projectiles or periodically activated items.
 module Game.LambdaHack.Server.HandleEffectM
   ( applyItem, meleeEffectAndDestroy, effectAndDestroy, itemEffectEmbedded
-  , dropCStoreItem, dominateFidSfx, pickDroppable, cutCalm
+  , dropCStoreItem, dominateFidSfx, pickDroppable, refillHP, cutCalm
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , applyMeleeDamage, imperishableKit, itemEffectDisco, effectSem
@@ -93,14 +93,28 @@ applyMeleeDamage source target iid = do
                             min speedDeltaHP (xM hpMax - bhp tb)
                 | otherwise = speedDeltaHP
     if deltaHP < 0 then do  -- damage the target, never heal
-      refillHP serious target deltaHP
+      refillHP serious target tb deltaHP
       return True
     else return False
 
-refillHP :: MonadServerAtomic m => Bool -> ActorId -> Int64 -> m ()
-refillHP serious target deltaHP = do
+refillHP :: MonadServerAtomic m => Bool -> ActorId -> Actor -> Int64 -> m ()
+refillHP serious target tbOld deltaHP = do
   execUpdAtomic $ UpdRefillHP target deltaHP
   when serious $ cutCalm target
+  -- If leader just lost all HP, change the leader to let players rescue him,
+  -- especially if he's slowed by the attackers.
+  tb <- getsState $ getActorBody target
+  when (bhp tb <= 0 && bhp tbOld > 0) $ do
+    mleader <- getsState $ _gleader . (EM.! bfid tb) . sfactionD
+    when (Just target == mleader) $ do
+      actorD <- getsState sactorD
+      let ours (_, b) = bfid b == bfid tb && not (bproj b) && bhp b > 0
+          -- Only consider actors positive HP.
+          positive = filter ours $ EM.assocs actorD
+      onLevel <- getsState $ fidActorRegularIds (bfid tb) (blid tb)
+      case onLevel ++ map fst positive of
+        [] -> return ()
+        aid : _ -> execUpdAtomic $ UpdLeadFaction (bfid tb) mleader $ Just aid
 
 -- Here melee damage is applied. This is necessary so that the same
 -- AI benefit calculation may be used for flinging and for applying items.
@@ -322,7 +336,7 @@ effectBurn nDm source target = do
     let reportedEffect = IK.Burn $ Dice.intToDice n
     execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
     -- Damage the target.
-    refillHP serious target deltaHP
+    refillHP serious target tb deltaHP
     return True
 
 -- ** Explode
@@ -423,7 +437,7 @@ effectRefillHP power source target = do
      | deltaHP == 0 -> return False
      | otherwise -> do
        execSfxAtomic $ SfxEffect (bfid sb) target (IK.RefillHP power) deltaHP
-       refillHP serious target deltaHP
+       refillHP serious target tb deltaHP
        return True
 
 cutCalm :: MonadServerAtomic m => ActorId -> m ()
