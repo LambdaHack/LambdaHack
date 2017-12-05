@@ -103,8 +103,8 @@ queryUI = do
 -- | Let the human player issue commands until any command takes time.
 humanCommand :: forall m. MonadClientUI m => m ReqUI
 humanCommand = do
-  modifySession $ \sess -> sess {slastLost = ES.empty}
-  modifySession $ \sess -> sess {skeysHintMode = KeysHintAbsent}
+  modifySession $ \sess -> sess { slastLost = ES.empty
+                                , skeysHintMode = KeysHintAbsent }
   let loop :: m ReqUI
       loop = do
         report <- getsSession sreport

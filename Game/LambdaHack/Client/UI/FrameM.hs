@@ -78,6 +78,10 @@ promptGetKey dm ov onBlank frontKeyKeys = do
       frontKeyFrame <- drawOverlay dm onBlank ov2 lidV
       connFrontendFrontKey frontKeyKeys frontKeyFrame
     [] -> do
+      -- If we ask for a key, then we don't want to run any more
+      -- and we want to avoid changing leader back to initial run leader
+      -- at the nearest @stopPlayBack@, etc.
+      modifySession $ \sess -> sess {srunning = Nothing}
       frontKeyFrame <- drawOverlay dm onBlank ov lidV
       connFrontendFrontKey frontKeyKeys frontKeyFrame
   LastRecord seqCurrent seqPrevious k <- getsSession slastRecord
