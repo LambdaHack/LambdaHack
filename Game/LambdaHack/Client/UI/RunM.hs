@@ -111,7 +111,7 @@ continueRunDir params = case params of
   RunParams{ runLeader
            , runMembers = aid : _
            , runInitial } -> do
-    report <- getsSession _sreport
+    report <- getsSession sreport
     let boringMsgs = map stringToAL
           [ "You hear a distant"
           , "reveals that the"

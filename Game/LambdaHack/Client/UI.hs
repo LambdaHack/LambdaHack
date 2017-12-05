@@ -107,7 +107,7 @@ humanCommand = do
   modifySession $ \sess -> sess {skeysHintMode = KeysHintAbsent}
   let loop :: m ReqUI
       loop = do
-        report <- getsSession _sreport
+        report <- getsSession sreport
         if nullReport report then do
           -- Display keys sometimes, alternating with empty screen.
           keysHintMode <- getsSession skeysHintMode

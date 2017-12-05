@@ -148,7 +148,7 @@ addPressedEsc = addPressedKey K.KMP { K.kmpKeyMod = K.escKM
 
 getReportUI :: MonadClientUI m => m Report
 getReportUI = do
-  report <- getsSession _sreport
+  report <- getsSession sreport
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact

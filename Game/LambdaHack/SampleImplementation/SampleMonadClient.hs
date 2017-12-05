@@ -80,7 +80,7 @@ instance MonadClientSetup CliImplementation where
                          { schanF = schanF sess
                          , sbinding = sbinding sess
                          , shistory = shistory sess
-                         , _sreport = _sreport sess
+                         , _sreport = sreport sess
                          , sstart = sstart sess
                          , sgstart = sgstart sess
                          , sallTime = sallTime sess

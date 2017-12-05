@@ -470,7 +470,7 @@ itemAidVerbMU aid verb iid ek cstore = do
 
 msgDuplicateScrap :: MonadClientUI m => m Bool
 msgDuplicateScrap = do
-  report <- getsSession _sreport
+  report <- getsSession sreport
   history <- getsSession shistory
   let (lastMsg, repRest) = lastMsgOfReport report
       repLast = lastReportOfHistory history

@@ -19,12 +19,12 @@ import Game.LambdaHack.Common.State
 -- | Add a message to the current report.
 msgAdd :: MonadClientUI m => Text -> m ()
 msgAdd msg = modifySession $ \sess ->
-  sess {_sreport = snocReport (_sreport sess) (toMsg $ textToAL msg)}
+  sess {_sreport = snocReport (sreport sess) (toMsg $ textToAL msg)}
 
 -- | Add a prompt to the current report.
 promptAdd :: MonadClientUI m => Text -> m ()
 promptAdd msg = modifySession $ \sess ->
-  sess {_sreport = snocReport (_sreport sess) (toPrompt $ textToAL msg)}
+  sess {_sreport = snocReport (sreport sess) (toPrompt $ textToAL msg)}
 
 -- | Add a prompt with basic keys description.
 promptMainKeys :: MonadClientUI m => m ()
@@ -45,14 +45,14 @@ promptMainKeys = do
 -- | Add a prompt to the current report.
 promptAddAttr :: MonadClientUI m => AttrLine -> m ()
 promptAddAttr msg = modifySession $ \sess ->
-  sess {_sreport = snocReport (_sreport sess) (toPrompt msg)}
+  sess {_sreport = snocReport (sreport sess) (toPrompt msg)}
 
 -- | Store current report in the history and reset report.
 recordHistory :: MonadClientUI m => m ()
 recordHistory = do
   time <- getsState stime
-  SessionUI{_sreport, shistory} <- getSession
-  unless (nullReport _sreport) $ do
-    let nhistory = addReport shistory time _sreport
+  sessionUI <- getSession
+  unless (nullReport $ sreport sessionUI) $ do
+    let nhistory = addReport (shistory sessionUI) time (sreport sessionUI)
     modifySession $ \sess -> sess { _sreport = emptyReport
                                   , shistory = nhistory }

@@ -2,7 +2,7 @@
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
   ( SessionUI(..), AimMode(..), RunParams(..), LastRecord(..), KeysHintMode(..)
-  , emptySessionUI, toggleMarkVision, toggleMarkSmell, getActorUI
+  , sreport, emptySessionUI, toggleMarkVision, toggleMarkSmell, getActorUI
   ) where
 
 import Prelude ()
@@ -99,6 +99,9 @@ data KeysHintMode =
   | KeysHintAbsent
   | KeysHintPresent
   deriving (Eq, Enum, Bounded)
+
+sreport :: SessionUI -> Report
+sreport = _sreport
 
 emptySessionUI :: UIOptions -> SessionUI
 emptySessionUI sUIOptions =
