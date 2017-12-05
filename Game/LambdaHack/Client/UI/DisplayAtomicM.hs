@@ -95,7 +95,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
             ownerFun <- partActorLeaderFun
             let wown = ppContainerWownW ownerFun True c
             itemVerbMU iid kit (MU.Text $ makePhrase $ "appear" : wown) c
-            mleader <- getsClient _sleader
+            mleader <- getsClient sleader
             when (Just aid == mleader) $
               modifySession $ \sess -> sess {slastSlot}
       CEmbed lid _ -> markDisplayNeeded lid
@@ -169,7 +169,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
        | otherwise -> do
          when (n >= bhp b && bhp b > 0) $
            actorVerbMU aid bUI "return from the brink of death"
-         mleader <- getsClient _sleader
+         mleader <- getsClient sleader
          when (Just aid == mleader) $ do
            ar <- getsState $ getActorAspect aid
            -- Regenerating actors never stop gaining HP, so we need to stop
@@ -597,7 +597,7 @@ destroyActorUI destroy aid b = do
       modifySession $ \sess -> sess {sselected = upd $ sselected sess}
       when destroy $ do
         displayMore ColorBW "Alas!"
-        mleader <- getsClient _sleader
+        mleader <- getsClient sleader
         when (isJust mleader)
           -- This is especially handy when the dead actor was a leader
           -- on a different level than the new one:
@@ -687,7 +687,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let underAI = isAIFact fact
-  mleader <- getsClient _sleader
+  mleader <- getsClient sleader
   ItemSlots itemSlots _ <- getsSession sslots
   case lookup iid $ map swap $ EM.assocs itemSlots of
     Just slastSlot -> do
@@ -1058,7 +1058,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Periodic -> error $ "" `showFailure` sfx
         IK.Composite{} -> error $ "" `showFailure` sfx
   SfxMsgFid _ sfxMsg -> do
-    mleader <- getsClient _sleader
+    mleader <- getsClient sleader
     case mleader of
       Just{} -> return ()  -- will display stuff when leader moves
       Nothing -> do
@@ -1161,7 +1161,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
 setLastSlot aid iid cstore = do
-  mleader <- getsClient _sleader
+  mleader <- getsClient sleader
   when (Just aid == mleader) $ do
     ItemSlots itemSlots _ <- getsSession sslots
     case lookup iid $ map swap $ EM.assocs itemSlots of

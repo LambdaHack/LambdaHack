@@ -4,7 +4,7 @@
 module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Status(..)
   , Target(..), TGoal(..), Challenge(..)
-  , tgtKindDescription, isHorrorFact, nameOfHorrorFact
+  , gleader, tgtKindDescription, isHorrorFact, nameOfHorrorFact
   , noRunWithMulti, isAIFact, autoDungeonLevel, automatePlayer
   , isAtWar, isAllied
   , difficultyBound, difficultyDefault, difficultyCoeff, difficultyInverse
@@ -47,7 +47,7 @@ data Faction = Faction
   , gdipl     :: Dipl            -- ^ diplomatic mode
   , gquit     :: Maybe Status    -- ^ cause of game end/exit
   , _gleader  :: Maybe ActorId   -- ^ the leader of the faction; don't use
-                                 --   in place of _sleader on clients
+                                 --   in place of sleader on clients
   , gsha      :: ItemBag         -- ^ faction's shared inventory
   , gvictims  :: EM.EnumMap (Kind.Id ItemKind) Int  -- ^ members killed
   , gvictimsD :: EM.EnumMap (Kind.Id ModeKind)
@@ -116,6 +116,9 @@ data Challenge = Challenge
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary Challenge
+
+gleader :: Faction -> Maybe ActorId
+gleader = _gleader
 
 tgtKindDescription :: Target -> Text
 tgtKindDescription tgt = case tgt of

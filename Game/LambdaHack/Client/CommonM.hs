@@ -111,12 +111,12 @@ currentSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
 currentSkillsClient aid = do
   body <- getsState $ getActorBody aid
   side <- getsClient sside
-  -- Newest Leader in _sleader, not yet in sfactionD.
+  -- Newest Leader in sleader, not yet in sfactionD.
   mleader <- if side == bfid body
-             then getsClient _sleader
+             then getsClient sleader
              else do
                fact <- getsState $ (EM.! bfid body) . sfactionD
-               return $! _gleader fact
+               return $! gleader fact
   getsState $ actorSkills mleader aid  -- keep it lazy
 
 -- Client has to choose the weapon based on its partial knowledge,

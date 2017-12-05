@@ -87,7 +87,7 @@ targetStrategy :: forall m. MonadClient m
 targetStrategy aid = do
   Kind.COps{corule, coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
-  mleader <- getsClient _sleader
+  mleader <- getsClient sleader
   scondInMelee <- getsClient scondInMelee
   salter <- getsClient salter
   -- We assume the actor eventually becomes a leader (or has the same

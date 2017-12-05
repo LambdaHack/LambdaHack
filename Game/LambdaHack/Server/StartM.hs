@@ -277,7 +277,7 @@ populateDungeon = do
             Nothing -> error $ "can't spawn initial actors"
                                `showFailure` (lid, (fid3, fact3))
             Just aid -> do
-              mleader <- getsState $ _gleader . (EM.! fid3) . sfactionD
+              mleader <- getsState $ gleader . (EM.! fid3) . sfactionD
               when (isNothing mleader) $ supplantLeader fid3 aid
               return True
   mapM_ initialActors arenas

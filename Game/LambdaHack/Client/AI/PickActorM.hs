@@ -35,7 +35,7 @@ pickActorToMove :: MonadClient m => Maybe ActorId -> m ActorId
 {-# INLINE pickActorToMove #-}
 pickActorToMove maidToAvoid = do
   actorAspect <- getsState sactorAspect
-  mleader <- getsClient _sleader
+  mleader <- getsClient sleader
   let oldAid = fromMaybe (error $ "" `showFailure` maidToAvoid) mleader
   oldBody <- getsState $ getActorBody oldAid
   let side = bfid oldBody
@@ -277,7 +277,7 @@ pickActorToMove maidToAvoid = do
 setTargetFromTactics :: MonadClient m => ActorId -> m ()
 {-# INLINE setTargetFromTactics #-}
 setTargetFromTactics oldAid = do
-  mleader <- getsClient _sleader
+  mleader <- getsClient sleader
   let !_A = assert (mleader /= Just oldAid) ()
   oldBody <- getsState $ getActorBody oldAid
   scondInMelee <- getsClient scondInMelee

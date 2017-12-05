@@ -72,7 +72,7 @@ handleAndBroadcast ps atomicBroken atomic = do
       breakSend lid fid fact perFidLid = do
         -- We take the new leader, from after cmd execution.
         let hear atomic2 = do
-              local <- case _gleader fact of
+              local <- case gleader fact of
                 Nothing -> return True  -- give leaderless factions some love
                 Just leader -> do
                   body <- getsState $ getActorBody leader

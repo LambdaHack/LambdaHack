@@ -84,7 +84,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdLeadFaction fid source target -> do
     side <- getsClient sside
     when (side == fid) $ do
-      mleader <- getsClient _sleader
+      mleader <- getsClient sleader
       let !_A = assert (mleader == source
                           -- somebody changed the leader for us
                         || mleader == target
@@ -97,7 +97,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
     invalidateBfsAll
   UpdTacticFaction{} -> do
     -- Clear all targets except the leader's.
-    mleader <- getsClient _sleader
+    mleader <- getsClient sleader
     mtgt <- case mleader of
       Nothing -> return Nothing
       Just leader -> getsClient $ EM.lookup leader . stargetD

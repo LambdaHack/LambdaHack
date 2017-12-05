@@ -30,11 +30,11 @@ import Game.LambdaHack.Common.State
 -- faction is under human or computer control).
 queryAI :: MonadClient m => ActorId -> m RequestAI
 queryAI aid = do
-  -- @_sleader@ may be different from @_gleader@ due to @stopPlayBack@,
+  -- @sleader@ may be different from @gleader@ due to @stopPlayBack@,
   -- but only leaders may change faction leader, so we fix that:
   side <- getsClient sside
-  mleader <- getsState $ _gleader . (EM.! side) . sfactionD
-  mleaderCli <- getsClient _sleader
+  mleader <- getsState $ gleader . (EM.! side) . sfactionD
+  mleaderCli <- getsClient sleader
   unless (Just aid == mleader || mleader == mleaderCli) $
     -- @aid@ is not the leader, so he can't change leader
     modifyClient $ \cli -> cli {_sleader = mleader}
@@ -61,7 +61,7 @@ pickActorAndAction :: MonadClient m
 -- despite probably bloating executable:
 {-# INLINE pickActorAndAction #-}
 pickActorAndAction maid aid = do
-  mleader <- getsClient _sleader
+  mleader <- getsClient sleader
   aidToMove <-
     if mleader == Just aid
     then pickActorToMove (fst <$> maid)

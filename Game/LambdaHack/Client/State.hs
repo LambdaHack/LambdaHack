@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.State
   ( StateClient(..), AlterLid, BfsAndPath(..), TgtAndPath(..)
   , emptyStateClient, cycleMarkSuspect
-  , updateTarget, getTarget, updateLeader, sside
+  , updateTarget, getTarget, updateLeader, sside, sleader
   ) where
 
 import Prelude ()
@@ -48,7 +48,7 @@ data StateClient = StateClient
   , salter        :: AlterLid       -- ^ cached alter ability data for positions
   , srandom       :: R.StdGen       -- ^ current random generator
   , _sleader      :: Maybe ActorId  -- ^ candidate new leader of the faction;
-                                    --   Faction._gleader is the old leader
+                                    --   Faction.gleader is the old leader
   , _sside        :: FactionId      -- ^ faction controlled by the client
   , squit         :: Bool           -- ^ exit the game loop
   , scurChal      :: Challenge      -- ^ current game challenge setup
@@ -134,6 +134,9 @@ updateLeader leader s cli =
 
 sside :: StateClient -> FactionId
 sside = _sside
+
+sleader :: StateClient -> Maybe ActorId
+sleader = _sleader
 
 instance Binary StateClient where
   put StateClient{..} = do

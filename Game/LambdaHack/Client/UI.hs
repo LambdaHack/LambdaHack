@@ -94,7 +94,7 @@ queryUI = do
             return (ReqUIGameExit, Nothing)  -- ask server to exit
           else return (ReqUINop, Nothing)
   else do
-    let mleader = _gleader fact
+    let mleader = gleader fact
         !_A = assert (isJust mleader) ()
     req <- humanCommand
     leader2 <- getLeaderUI

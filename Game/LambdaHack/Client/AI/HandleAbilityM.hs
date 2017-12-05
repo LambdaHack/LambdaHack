@@ -842,7 +842,7 @@ displaceTowards aid target retry = do
   if boldpos b /= Just target -- avoid trivial loops
      && Tile.isWalkable coTileSpeedup (lvl `at` target) then do
        -- DisplaceAccess
-    mleader <- getsClient _sleader
+    mleader <- getsClient sleader
     mBlocker <- getsState $ posToAssocs target (blid b)
     case mBlocker of
       [] -> return reject

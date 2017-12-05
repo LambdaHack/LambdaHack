@@ -64,7 +64,7 @@ targetDesc :: MonadClientUI m => Maybe Target -> m (Maybe Text, Maybe Text)
 targetDesc mtarget = do
   arena <- getArenaUI
   lidV <- viewedLevelUI
-  mleader <- getsClient _sleader
+  mleader <- getsClient sleader
   case mtarget of
     Just (TEnemy aid _) -> do
       side <- getsClient sside
@@ -204,7 +204,7 @@ drawFramePath drawnLevelId = do
   Level{lxsize, lysize, ltile=PointArray.Array{avector}}
     <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
-  mleader <- getsClient _sleader
+  mleader <- getsClient sleader
   xhairPosRaw <- xhairToPos
   let xhairPos = fromMaybe originPoint xhairPosRaw
   s <- getState
@@ -269,7 +269,7 @@ drawFrameActor drawnLevelId = do
   SessionUI{sselected} <- getSession
   Level{lxsize, lactor} <- getLevel drawnLevelId
   side <- getsClient sside
-  mleader <- getsClient _sleader
+  mleader <- getsClient sleader
   s <- getState
   sactorUI <- getsSession sactorUI
   let {-# INLINE viewActor #-}
@@ -314,7 +314,7 @@ drawFrameExtra dm drawnLevelId = do
   totVisible <- totalVisible <$> getPerFid drawnLevelId
   mxhairPos <- xhairToPos
   mtgtPos <- do
-    mleader <- getsClient _sleader
+    mleader <- getsClient sleader
     case mleader of
       Nothing -> return Nothing
       Just leader -> do
@@ -363,7 +363,7 @@ drawFrameExtra dm drawnLevelId = do
 drawFrameStatus :: MonadClientUI m => LevelId -> m AttrLine
 drawFrameStatus drawnLevelId = do
   SessionUI{sselected, saimMode, swaitTimes, sitemSel} <- getSession
-  mleader <- getsClient _sleader
+  mleader <- getsClient sleader
   xhairPos <- xhairToPos
   tgtPos <- leaderTgtToPos
   mbfs <- maybe (return Nothing) (\aid -> Just <$> getCacheBfs aid) mleader
@@ -501,7 +501,7 @@ drawLeaderStatus :: MonadClient m => Int -> m AttrLine
 drawLeaderStatus waitT = do
   let calmHeaderText = "Calm"
       hpHeaderText = "HP"
-  mleader <- getsClient _sleader
+  mleader <- getsClient sleader
   case mleader of
     Just leader -> do
       ar <- getsState $ getActorAspect leader
@@ -547,7 +547,7 @@ drawLeaderStatus waitT = do
 
 drawLeaderDamage :: MonadClientUI m => Int -> m AttrLine
 drawLeaderDamage width = do
-  mleader <- getsClient _sleader
+  mleader <- getsClient sleader
   let addColor = map (Color.attrChar2ToW32 Color.BrCyan)
   stats <- case mleader of
     Just leader -> do
@@ -578,7 +578,7 @@ drawLeaderDamage width = do
 drawSelected :: MonadClientUI m
              => LevelId -> Int -> ES.EnumSet ActorId -> m (Int, AttrLine)
 drawSelected drawnLevelId width selected = do
-  mleader <- getsClient _sleader
+  mleader <- getsClient sleader
   side <- getsClient sside
   sactorUI <- getsSession sactorUI
   ours <- getsState $ filter (not . bproj . snd)

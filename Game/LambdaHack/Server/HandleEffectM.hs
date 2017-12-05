@@ -105,7 +105,7 @@ refillHP serious target tbOld deltaHP = do
   -- especially if he's slowed by the attackers.
   tb <- getsState $ getActorBody target
   when (bhp tb <= 0 && bhp tbOld > 0) $ do
-    mleader <- getsState $ _gleader . (EM.! bfid tb) . sfactionD
+    mleader <- getsState $ gleader . (EM.! bfid tb) . sfactionD
     when (Just target == mleader) $ do
       actorD <- getsState sactorD
       let ours (_, b) = bfid b == bfid tb && not (bproj b) && bhp b > 0
@@ -517,7 +517,7 @@ dominateFid fid target = do
   electLeader (bfid tb0) (blid tb0) target
   fact <- getsState $ (EM.! bfid tb0) . sfactionD
   -- Prevent the faction's stash from being lost in case they are not spawners.
-  when (isNothing $ _gleader fact) $ moveStores False target CSha CInv
+  when (isNothing $ gleader fact) $ moveStores False target CSha CInv
   tb <- getsState $ getActorBody target
   ais <- getsState $ getCarriedAssocs tb
   ar <- getsState $ getActorAspect target
@@ -627,7 +627,7 @@ effectSummon execSfx grp nDm iid source target periodic = do
         Nothing -> return False  -- not enough space in dungeon?
         Just aid -> do
           b <- getsState $ getActorBody aid
-          mleader <- getsState $ _gleader . (EM.! bfid b) . sfactionD
+          mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
           when (isNothing mleader) $ supplantLeader (bfid b) aid
           return True
     return $! or bs
@@ -718,7 +718,7 @@ findStairExit side moveUp lid pos = do
 switchLevels1 :: MonadServerAtomic m => (ActorId, Actor) -> m (Maybe ActorId)
 switchLevels1 (aid, bOld) = do
   let side = bfid bOld
-  mleader <- getsState $ _gleader . (EM.! side) . sfactionD
+  mleader <- getsState $ gleader . (EM.! side) . sfactionD
   -- Prevent leader pointing to a non-existing actor.
   mlead <-
     if not (bproj bOld) && isJust mleader then do

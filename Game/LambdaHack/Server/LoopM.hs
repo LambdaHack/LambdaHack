@@ -98,7 +98,7 @@ loopSer serverOptions executorClient = do
   loopUpd updConn
 
 factionArena :: MonadStateRead m => Faction -> m (Maybe LevelId)
-factionArena fact = case _gleader fact of
+factionArena fact = case gleader fact of
   -- Even spawners need an active arena for their leader,
   -- or they start clogging stairs.
   Just leader -> do
@@ -383,7 +383,7 @@ handleActors lid fid = do
   factionD <- getsState sfactionD
   s <- getState
   -- Leader acts first, so that UI leader can save&exit before state changes.
-  let notLeader (aid, b) = Just aid /= _gleader (factionD EM.! bfid b)
+  let notLeader (aid, b) = Just aid /= gleader (factionD EM.! bfid b)
       l = sortBy (Ord.comparing notLeader)
           $ filter (\(_, b) -> isNothing (btrajectory b) && bhp b > 0)
           $ map (\(a, _) -> (a, getActorBody a s))
@@ -398,7 +398,7 @@ hActors _fid as@((aid, body) : rest) = do
       !_A = assert (side == _fid) ()
   fact <- getsState $ (EM.! side) . sfactionD
   squit <- getsServer squit
-  let mleader = _gleader fact
+  let mleader = gleader fact
       aidIsLeader = mleader == Just aid
       mainUIactor = fhasUI (gplayer fact)
                     && (aidIsLeader

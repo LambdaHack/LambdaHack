@@ -63,7 +63,7 @@ spawnMonster = do
       Nothing -> return ()
       Just aid -> do
         b <- getsState $ getActorBody aid
-        mleader <- getsState $ _gleader . (EM.! bfid b) . sfactionD
+        mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
         when (isNothing mleader) $ supplantLeader (bfid b) aid
 
 addAnyActor :: MonadServerAtomic m
@@ -178,7 +178,7 @@ overheadActorTime :: MonadServerAtomic m => FactionId -> LevelId -> m ()
 overheadActorTime fid lid = do
   actorTime <- getsServer $ (EM.! fid) . sactorTime
   s <- getState
-  mleader <- getsState $ _gleader . (EM.! fid) . sfactionD
+  mleader <- getsState $ gleader . (EM.! fid) . sfactionD
   arenas <- getsServer sarenas
   let f !lid2 !_aid !time | lid2 /= lid = time
       f _ aid time =
@@ -246,7 +246,7 @@ leadLevelSwitch = do
                             LeaderUI _ -> False
       flipFaction fact | not $ canSwitch fact = return ()
       flipFaction fact =
-        case _gleader fact of
+        case gleader fact of
           Nothing -> return ()
           Just leader -> do
             body <- getsState $ getActorBody leader

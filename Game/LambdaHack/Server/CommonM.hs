@@ -238,7 +238,7 @@ anyActorsAlive fid aid = do
 
 electLeader :: MonadServerAtomic m => FactionId -> LevelId -> ActorId -> m ()
 electLeader fid lid aidDead = do
-  mleader <- getsState $ _gleader . (EM.! fid) . sfactionD
+  mleader <- getsState $ gleader . (EM.! fid) . sfactionD
   when (mleader == Just aidDead) $ do
     actorD <- getsState sactorD
     let ours (_, b) = bfid b == fid && not (bproj b)
@@ -261,7 +261,7 @@ supplantLeader fid aid = do
     b <- getsState $ getActorBody aid
     valid <- getsServer $ (EM.! blid b) . (EM.! fid) . sperValidFid
     unless valid $ updatePer fid (blid b)
-    execUpdAtomic $ UpdLeadFaction fid (_gleader fact) (Just aid)
+    execUpdAtomic $ UpdLeadFaction fid (gleader fact) (Just aid)
 
 updatePer :: MonadServerAtomic m => FactionId -> LevelId -> m ()
 {-# INLINE updatePer #-}
@@ -511,7 +511,7 @@ currentSkillsServer :: MonadServer m => ActorId -> m Ability.Skills
 currentSkillsServer aid  = do
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
-  let mleader = _gleader fact
+  let mleader = gleader fact
   getsState $ actorSkills mleader aid
 
 getCacheLucid :: MonadServer m => LevelId -> m FovLucid

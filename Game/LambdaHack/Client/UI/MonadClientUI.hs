@@ -158,7 +158,7 @@ getReportUI = do
 getLeaderUI :: MonadClientUI m => m ActorId
 getLeaderUI = do
   cli <- getClient
-  case _sleader cli of
+  case sleader cli of
     Nothing -> error $ "leader expected but not found" `showFailure` cli
     Just leader -> return leader
 
@@ -170,7 +170,7 @@ getArenaUI = do
         case gquit fact of
           Just Status{stDepth} -> return $! toEnum stDepth
           Nothing -> getEntryArena fact
-  mleader <- getsClient _sleader
+  mleader <- getsClient sleader
   case mleader of
     Just leader -> do
       -- The leader may just be teleporting (e.g., due to displace
@@ -190,7 +190,7 @@ viewedLevelUI = do
 leaderTgtToPos :: MonadClientUI m => m (Maybe Point)
 leaderTgtToPos = do
   lidV <- viewedLevelUI
-  mleader <- getsClient _sleader
+  mleader <- getsClient sleader
   case mleader of
     Nothing -> return Nothing
     Just aid -> do
@@ -202,7 +202,7 @@ leaderTgtToPos = do
 xhairToPos :: MonadClientUI m => m (Maybe Point)
 xhairToPos = do
   lidV <- viewedLevelUI
-  mleader <- getsClient _sleader
+  mleader <- getsClient sleader
   sxhair <- getsSession sxhair
   case mleader of
     Nothing -> return Nothing  -- e.g., when game start and no leader yet
@@ -350,14 +350,14 @@ resetGameStart = do
 -- of the client's faction. The actor may be not present in the dungeon.
 partActorLeader :: MonadClientUI m => ActorId -> ActorUI -> m MU.Part
 partActorLeader aid b = do
-  mleader <- getsClient _sleader
+  mleader <- getsClient sleader
   return $! case mleader of
     Just leader | aid == leader -> "you"
     _ -> partActor b
 
 partActorLeaderFun :: MonadClientUI m => m (ActorId -> MU.Part)
 partActorLeaderFun = do
-  mleader <- getsClient _sleader
+  mleader <- getsClient sleader
   sess <- getSession
   return $! \aid ->
     if mleader == Just aid
@@ -368,7 +368,7 @@ partActorLeaderFun = do
 -- of the client's faction. The actor may be not present in the dungeon.
 partPronounLeader :: MonadClient m => ActorId -> ActorUI -> m MU.Part
 partPronounLeader aid b = do
-  mleader <- getsClient _sleader
+  mleader <- getsClient sleader
   return $! case mleader of
     Just leader | aid == leader -> "you"
     _ -> partPronoun b
