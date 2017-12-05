@@ -195,7 +195,8 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                     page (max 0 (pointer - ixOnPage - 1))
                   _ | K.key ikm `elem` [K.PgDn, K.WheelSouth] ->
                     page (min maxIx (pointer + pageLen - ixOnPage))
-                  K.Space -> ignoreKey
+                  K.Space -> if pointer == maxIx then page 0
+                             else page maxIx
                   _ -> error $ "unknown key" `showFailure` ikm
           pkm <- promptGetKey dm ov1 sfBlank legalKeys
           interpretKey pkm
