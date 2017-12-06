@@ -65,6 +65,7 @@ import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.ItemStrongest
@@ -455,7 +456,7 @@ pickLeaderHuman k = do
       mactor = case drop k hs of
                  [] -> Nothing
                  (aid, b, _) : _ -> Just (aid, b)
-      mchoice = mhero `mplus` mactor
+      mchoice = if gcolor fact == Color.BrWhite then mhero else mactor
       (autoDun, _) = autoDungeonLevel fact
   case mchoice of
     Nothing -> failMsg "no such member of the party"
