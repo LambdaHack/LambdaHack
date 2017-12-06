@@ -46,10 +46,20 @@ instance Show Dice where
     DiceDL n k -> show n ++ "dl" ++ show k
     DiceZ n k -> show n ++ "z" ++ show k
     DiceZL n k -> show n ++ "zl" ++ show k
-    DicePlus d1 (DiceNegate d2) -> show d1 ++ "-" ++ show d2
+    DicePlus d1 (DiceNegate d2) | simpleDice d2 -> show d1 ++ "-" ++ show d2
+    DicePlus d1 (DiceNegate d2) -> show d1 ++ "-" ++ "(" ++ show d2 ++ ")"
     DicePlus d1 d2 -> show d1 ++ "+" ++ show d2
-    DiceTimes d1 d2 -> "(" ++ show d1 ++ ") * (" ++ show d2 ++ ")"
+    DiceTimes d1 d2 -> "(" ++ show d1 ++ ") * (" ++ show d2 ++ ")"  -- rare
+    DiceNegate (DiceI k) -> "-" ++ show k  -- "-2" parses as this, not as DiceI
     DiceNegate d1 -> "- (" ++ show d1 ++ ")"
+
+simpleDice :: Dice -> Bool
+simpleDice DiceI{} = True
+simpleDice DiceD{} = True
+simpleDice DiceDL{} = True
+simpleDice DiceZ{} = True
+simpleDice DiceZL{} = True
+simpleDice _ = False
 
 instance Hashable Dice
 
