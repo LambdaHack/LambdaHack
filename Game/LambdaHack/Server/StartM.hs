@@ -160,12 +160,12 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
   return $! warFs
 
 gameReset :: MonadServer m
-          => Kind.COps -> ServerOptions -> Maybe (GroupName ModeKind)
+          => ServerOptions -> Maybe (GroupName ModeKind)
           -> Maybe R.StdGen -> m State
-gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
-          serverOptions mGameMode mrandom = do
+gameReset serverOptions mGameMode mrandom = do
   -- Dungeon seed generation has to come first, to ensure item boosting
   -- is determined by the dungeon RNG.
+  cops@Kind.COps{comode=Kind.Ops{opick, okind}} <- getsState scops
   dungeonSeed <- getSetGen $ sdungeonRng serverOptions `mplus` mrandom
   srandom <- getSetGen $ smainRng serverOptions `mplus` mrandom
   let srngs = RNGs (Just dungeonSeed) (Just srandom)

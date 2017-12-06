@@ -65,7 +65,6 @@ import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.ItemStrongest

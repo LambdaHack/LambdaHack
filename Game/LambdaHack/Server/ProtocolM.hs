@@ -211,9 +211,10 @@ updateConn executorClient = do
         forkUI fid conn
   liftIO $ mapWithKeyM_ forkClient toSpawn
 
-tryRestore :: MonadServerReadRequest m
-           => Kind.COps -> ServerOptions -> m (Maybe (State, StateServer))
-tryRestore cops@Kind.COps{corule} soptions = do
+tryRestore :: MonadServerReadRequest m => m (Maybe (State, StateServer))
+tryRestore = do
+  cops@Kind.COps{corule} <- getsState scops
+  soptions <- getsServer soptions
   let bench = sbenchmark $ sclientOptions soptions
   if bench then return Nothing
   else do

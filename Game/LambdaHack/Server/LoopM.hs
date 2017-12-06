@@ -51,6 +51,8 @@ import           Game.LambdaHack.Server.State
 
 -- | Start a game session, including the clients, and then loop,
 -- communicating with the clients.
+--
+-- The loop is started in server state that is empty, see 'emptyStateServer'.
 loopSer :: (MonadServerAtomic m, MonadServerReadRequest m)
         => ServerOptions
              -- ^ player-supplied server options
@@ -59,31 +61,33 @@ loopSer :: (MonadServerAtomic m, MonadServerReadRequest m)
         -> m ()
 loopSer serverOptions executorClient = do
   -- Recover states and launch clients.
+  modifyServer $ \ser -> ser { soptionsNxt = serverOptions
+                             , soptions = serverOptions }
   cops <- getsState scops
   let updConn = updateConn executorClient
-  restored <- tryRestore cops serverOptions
+  restored <- tryRestore
   case restored of
     Just (sRaw, ser) | not $ snewGameSer serverOptions -> do  -- a restored game
       execUpdAtomic $ UpdResumeServer $ updateCOps (const cops) sRaw
-      putServer ser
+      putServer ser {soptionsNxt = serverOptions}
+      applyDebug
       factionD <- getsState sfactionD
       let f fid = let cmd = UpdResumeServer $ updateCOps (const cops)
                                             $ sclientStates ser EM.! fid
                   in execUpdAtomicFidCatch fid cmd
       mapM_ f $ EM.keys factionD
-      modifyServer $ \ser2 -> ser2 {soptionsNxt = serverOptions}
-      applyDebug
       updConn
       initPer
       pers <- getsServer sperFid
       mapM_ (\fid -> sendUpdate fid $ UpdResume fid (pers EM.! fid))
             (EM.keys factionD)
-      -- We dump RNG seeds here, in case the game wasn't run
-      -- with --dumpInitRngs previously and we need the seeds.
+      -- We dump RNG seeds here, based on @soptionsNxt@, in case the game
+      -- wasn't run with @--dumpInitRngs@ previously, but we need the seeds,
+      -- e.g., to diagnose a crash.
       rngs <- getsServer srngs
       when (sdumpInitRngs serverOptions) $ dumpRngs rngs
     _ -> do  -- starting new game for this savefile (--newGame or fresh save)
-      s <- gameReset cops serverOptions Nothing Nothing
+      s <- gameReset serverOptions Nothing Nothing
              -- get RNG from item boost
       -- Set up commandline options.
       let optionsBarRngs =
@@ -443,10 +447,9 @@ hActors _fid as@((aid, body) : rest) = do
 restartGame :: MonadServerAtomic m
             => m () -> m () -> Maybe (GroupName ModeKind) -> m ()
 restartGame updConn loop mgameMode = do
-  cops <- getsState scops
   soptionsNxt <- getsServer soptionsNxt
   srandom <- getsServer srandom
-  s <- gameReset cops soptionsNxt mgameMode (Just srandom)
+  s <- gameReset soptionsNxt mgameMode (Just srandom)
   let optionsBarRngs = soptionsNxt {sdungeonRng = Nothing, smainRng = Nothing}
   modifyServer $ \ser -> ser { soptionsNxt = optionsBarRngs
                              , soptions = optionsBarRngs }

@@ -136,8 +136,8 @@ executorSer :: Kind.COps -> KeyKind -> ServerOptions -> IO ()
 executorSer cops copsClient soptionsNxtCmdline = do
   -- Parse UI client configuration file.
   -- It is reparsed at each start of the game executable.
-  sUIOptions <-
-    mkUIOptions cops (sbenchmark $ sclientOptions soptionsNxtCmdline)
+  let benchmark = sbenchmark $ sclientOptions soptionsNxtCmdline
+  sUIOptions <- mkUIOptions cops benchmark
   soptionsNxt <- case uCmdline sUIOptions of
     []   -> return soptionsNxtCmdline
     args -> handleParseResult $ execParserPure defaultPrefs serverOptionsPI args
@@ -167,7 +167,7 @@ executorSer cops copsClient soptionsNxtCmdline = do
         let path bkp = dataDir </> "saves" </> bkp <> name
         b <- doesFileExist (path "")
         when b $ renameFile (path "") (path "bkp.")
-      bkpAllSaves = do
+      bkpAllSaves = if benchmark then return () else do
         T.hPutStrLn stdout "The game crashed, so savefiles are moved aside."
         bkpOneSave $ defPrefix <> Save.saveNameSer cops
         forM_ [-99..99] $ \n ->

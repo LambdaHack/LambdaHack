@@ -31,16 +31,15 @@ import Game.LambdaHack.Common.Vector
 class MonadClient m => MonadClientReadResponse m where
   receiveResponse :: m Response
 
-initAI :: MonadClient m => ClientOptions -> m ()
-initAI soptions = do
-  modifyClient $ \cli -> cli {soptions}
+initAI :: MonadClient m => m ()
+initAI = do
   side <- getsClient sside
   debugPossiblyPrint $ "AI client" <+> tshow side <+> "initializing."
 
-initUI :: MonadClientUI m => KeyKind -> UIOptions -> ClientOptions -> m ()
-initUI copsClient sUIOptions soptions = do
-  modifyClient $ \cli -> cli {soptions}
+initUI :: MonadClientUI m => KeyKind -> UIOptions -> m ()
+initUI copsClient sUIOptions = do
   side <- getsClient sside
+  soptions <- getsClient soptions
   debugPossiblyPrint $ "UI client" <+> tshow side <+> "initializing."
   -- Start the frontend.
   schanF <- chanFrontend soptions
@@ -55,8 +54,11 @@ initUI copsClient sUIOptions soptions = do
 -- | The main game loop for an AI or UI client. It receives responses from
 -- the server, changes internal client state accordingly, analyzes
 -- ensuing human or AI commands and sends resulting requests to the server.
--- Depending on whether it's an AI or UI client,
--- it sends AI or human player requests.
+-- Depending on whether it's an AI or UI client, it sends AI or human player
+-- requests.
+--
+-- The loop is started in client state that is empty except for
+-- the @sside@ and @seps@ fields, see 'emptyStateClient'.
 loopCli :: ( MonadClientSetup m
            , MonadClientUI m
            , MonadClientAtomic m
@@ -64,8 +66,9 @@ loopCli :: ( MonadClientSetup m
            , MonadClientWriteRequest m )
         => KeyKind -> UIOptions -> ClientOptions -> m ()
 loopCli copsClient sUIOptions soptions = do
+  modifyClient $ \cli -> cli {soptions}
   hasUI <- clientHasUI
-  if not hasUI then initAI soptions else initUI copsClient sUIOptions soptions
+  if not hasUI then initAI else initUI copsClient sUIOptions
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   cops <- getsState scops
