@@ -1,6 +1,10 @@
 ## [v0.7.0.0, aka 'The dice are cast'](https://github.com/LambdaHack/LambdaHack/compare/v0.6.2.0...v0.7.0.0)
 
 - decouple tile searching from tile alteration
+- refrain from identifying items that are not randomized
+- switch away from incapacitated leader to let others revive him
+- make rescue easier by not going into negative HP the first time
+- fix crowd of friends on another level slowing even actors that melee
 - fix missing report about items underneath an actor when changing levels
 - API breakage: change the syntax of dice in content
 - API addition: introduce cave descriptions
