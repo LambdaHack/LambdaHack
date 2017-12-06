@@ -298,20 +298,24 @@ updMoveItem iid k aid s1 s2 = assert (k > 0 && s1 /= s2) $ do
         addItemToActor iid itemBase k aid
 
 updRefillHP :: MonadStateWrite m => ActorId -> Int64 -> m ()
-updRefillHP aid n =
+updRefillHP aid nRaw =
   updateActor aid $ \b ->
-    b { bhp = bhp b + n
-      , bhpDelta = let oldD = bhpDelta b
-                   in case compare n 0 of
-                     EQ -> ResDelta { resCurrentTurn = (0, 0)
-                                    , resPreviousTurn = resCurrentTurn oldD }
-                     LT -> oldD {resCurrentTurn =
-                                   ( fst (resCurrentTurn oldD) + n
-                                   , snd (resCurrentTurn oldD) )}
-                     GT -> oldD {resCurrentTurn =
-                                   ( fst (resCurrentTurn oldD)
-                                   , snd (resCurrentTurn oldD) + n )}
-      }
+    -- Make rescue easier by not going into negative HP the first time.
+    let newRawHP = bhp b + nRaw
+        newHP = if bhp b <= 0 then newRawHP else max 0 newRawHP
+        n = newHP - bhp b
+    in b { bhp = newHP
+         , bhpDelta = let oldD = bhpDelta b
+                      in case compare n 0 of
+                        EQ -> ResDelta { resCurrentTurn = (0, 0)
+                                       , resPreviousTurn = resCurrentTurn oldD }
+                        LT -> oldD {resCurrentTurn =
+                                      ( fst (resCurrentTurn oldD) + n
+                                      , snd (resCurrentTurn oldD) )}
+                        GT -> oldD {resCurrentTurn =
+                                      ( fst (resCurrentTurn oldD)
+                                      , snd (resCurrentTurn oldD) + n )}
+         }
 
 updRefillCalm :: MonadStateWrite m => ActorId -> Int64 -> m ()
 updRefillCalm aid n =
