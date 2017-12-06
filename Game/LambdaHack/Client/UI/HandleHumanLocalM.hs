@@ -81,6 +81,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import           Game.LambdaHack.Content.ModeKind (fhasGender)
 import           Game.LambdaHack.Content.TileKind (isUknownSpace)
 
 -- * Macro
@@ -456,7 +457,7 @@ pickLeaderHuman k = do
       mactor = case drop k hs of
                  [] -> Nothing
                  (aid, b, _) : _ -> Just (aid, b)
-      mchoice = if gcolor fact == Color.BrWhite then mhero else mactor
+      mchoice = if fhasGender (gplayer fact) then mhero else mactor
       (autoDun, _) = autoDungeonLevel fact
   case mchoice of
     Nothing -> failMsg "no such member of the party"
