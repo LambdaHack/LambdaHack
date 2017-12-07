@@ -270,7 +270,8 @@ of minute fractions of HP.
 The stress of combat drains Calm, gradually limiting the use of items and,
 if Calm reaches zero and the actor is sufficiently impressed by his foes,
 making him defect and surrender to their domination.
-Whenever the monster's or hero's hit points reach zero, the combatant dies.
+Whenever the monster's or hero's hit points reach zero,
+the combatant is incapacitated and promptly dies.
 When the last hero dies or is dominated, the scenario ends in defeat.
 
 
