@@ -281,7 +281,7 @@ mkKP c = KM NoModifier $ KP c
 -- To be used, in particular, for the command bindings and macros
 -- in the config file.
 --
--- See https://github.com/twobob/gtk-/blob/master/gdk/keyname-table.h
+-- See <https://github.com/twobob/gtk-/blob/master/gdk/keyname-table.h>
 keyTranslate :: String -> Key
 keyTranslate "less"          = Char '<'
 keyTranslate "greater"       = Char '>'
@@ -426,7 +426,7 @@ keyTranslate [c]             = Char c
 keyTranslate s               = Unknown s
 
 -- | Translate key from a Web API string description
--- (https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key#Key_values)
+-- (<https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key#Key_values>)
 -- to our internal key type. To be used in web frontends.
 -- The argument says whether Shift is pressed.
 keyTranslateWeb :: String -> Bool -> Key

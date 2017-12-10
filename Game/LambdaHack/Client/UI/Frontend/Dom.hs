@@ -94,7 +94,7 @@ runWeb soptions@ClientOptions{..} rfMVar = do
   tableElem <- unsafeCastTo HTMLTableElement tableElemRaw
   appendChild_ divBlock tableElem
   scharStyle <- getStyle tableElem
-  -- Speed: http://www.w3.org/TR/CSS21/tables.html#fixed-table-layout
+  -- Speed: <http://www.w3.org/TR/CSS21/tables.html#fixed-table-layout>
   setProp scharStyle "table-layout" "fixed"
   setProp scharStyle "font-family" "lambdaHackFont"
   setProp scharStyle "font-size" $ tshow (fromJust sfontSize) <> "px"
@@ -187,7 +187,7 @@ handleMouse rf (cell, _) cx cy = do
         maybe (return ())
               (\key -> IO.liftIO $ saveKMP rf modifier key pointer) mkey
       saveMouse = do
-        -- https://hackage.haskell.org/package/ghcjs-dom-0.2.1.0/docs/GHCJS-DOM-EventM.html
+        -- <https://hackage.haskell.org/package/ghcjs-dom-0.2.1.0/docs/GHCJS-DOM-EventM.html>
         but <- mouseButton
         modifier <- readMod
         let key = case but of
