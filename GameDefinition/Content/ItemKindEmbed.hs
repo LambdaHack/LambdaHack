@@ -32,7 +32,7 @@ stairsUp = ItemKind
   , iaspects = []
   , ieffects = [Ascend True]
   , ifeature = [Identified, Durable]
-  , idesc    = ""
+  , idesc    = "Stairs that rise towards escape."
   , ikit     = []
   }
 stairsDown = stairsUp
@@ -70,7 +70,7 @@ terrainCacheTrap = ItemKind
                       , ELabel "", ELabel "", ELabel ""
                       , ELabel "", ELabel "" ]]
   , ifeature = [Identified]  -- not Durable, springs at most once
-  , idesc    = ""
+  , idesc    = "Glittering gold, just waiting to be taken."
   , ikit     = []
   }
 signboardExit = ItemKind
@@ -86,7 +86,7 @@ signboardExit = ItemKind
   , iaspects = []
   , ieffects = [DetectExit 100]
   , ifeature = [Identified, Durable]
-  , idesc    = ""
+  , idesc    = "A battered sign, carved by unknown hands."
   , ikit     = []
   }
 signboardMap = signboardExit
@@ -107,7 +107,7 @@ fireSmall = ItemKind
   , iaspects = []
   , ieffects = [Burn 1, Explode "single spark"]
   , ifeature = [Identified, Durable]
-  , idesc    = ""
+  , idesc    = "A few small logs, burning brightly."
   , ikit     = []
   }
 fireBig = fireSmall
@@ -117,7 +117,7 @@ fireBig = fireSmall
   , ieffects = [ Burn 2, Explode "spark"
                , CreateItem CInv "wooden torch" TimerNone ]
   , ifeature = [Identified, Durable]
-  , idesc    = ""
+  , idesc    = "Glowing with light and warmth."
   , ikit     = []
   }
 frost = ItemKind
@@ -135,7 +135,7 @@ frost = ItemKind
                , RefillCalm 20  -- cold reason
                , PushActor (ThrowMod 200 50) ]  -- slippery ice
   , ifeature = [Identified, Durable]
-  , idesc    = ""
+  , idesc    = "Intricate patterns of shining ice."
   , ikit     = []
   }
 rubble = ItemKind
@@ -155,7 +155,7 @@ rubble = ItemKind
                       , ELabel "", ELabel "", ELabel ""
                       , ELabel "", ELabel "", ELabel "" ]]
   , ifeature = [Identified, Durable]
-  , idesc    = ""
+  , idesc    = "Broken chunks of rock and glass."
   , ikit     = []
   }
 staircaseTrapUp = ItemKind
@@ -171,7 +171,7 @@ staircaseTrapUp = ItemKind
   , iaspects = []
   , ieffects = [Temporary "be caught in an updraft", Teleport 5]
   , ifeature = [Identified]  -- not Durable, springs at most once
-  , idesc    = ""
+  , idesc    = "A hidden spring, to help the unwary soar."
   , ikit     = []
   }
 -- Needs to be separate from staircaseTrapUp, to make sure the item is
@@ -181,6 +181,7 @@ staircaseTrapDown = staircaseTrapUp
   { ifreq    = [("staircase trap down", 1)]
   , ieffects = [ Temporary "tumble down the stairwell"
                , toOrganActorTurn "drunk" (20 + 1 `d` 5) ]
+  , idesc    = "A treacherous slab, to teach those who are too proud."
   }
 doorwayTrap = ItemKind
   { isymbol  = '^'
@@ -197,7 +198,7 @@ doorwayTrap = ItemKind
                       , toOrganActorTurn "slowed" (20 + 1 `d` 5)
                       , toOrganActorTurn "weakened" (20 + 1 `d` 5) ]]
   , ifeature = [Identified]  -- not Durable, springs at most once
-  , idesc    = ""
+  , idesc    = "Just turn the handle..."
   , ikit     = []
   }
 obscenePictograms = ItemKind
@@ -217,7 +218,7 @@ obscenePictograms = ItemKind
                    [ toOrganActorTurn "strengthened" (3 + 1 `d` 3)
                    , CreateItem CInv "sandstone rock" TimerNone ] ]
   , ifeature = [Identified, Durable]
-  , idesc    = ""
+  , idesc    = "They aren't even anatomically possible."
   , ikit     = []
   }
 subtleFresco = ItemKind
@@ -236,7 +237,7 @@ subtleFresco = ItemKind
                , Recharging $ toOrganActorTurn "far-sighted" (3 + 1 `d` 3)
                , Recharging $ toOrganActorTurn "keen-smelling" (3 + 1 `d` 3) ]
   , ifeature = [Identified, Durable]
-  , idesc    = ""
+  , idesc    = "Expensive yet tasteful."
   , ikit     = []
   }
 scratchOnWall = ItemKind
@@ -252,7 +253,7 @@ scratchOnWall = ItemKind
   , iaspects = []
   , ieffects = [Temporary "start making sense of the scratches", DetectHidden 3]
   , ifeature = [Identified, Durable]
-  , idesc    = ""
+  , idesc    = "A seemingly random series of scratches, carved deep into the wall."
   , ikit     = []
   }
 pulpit = ItemKind
@@ -270,6 +271,6 @@ pulpit = ItemKind
                , toOrganGameTurn "defenseless" (20 + 1 `d` 5)
                , Explode "PhD defense question" ]
   , ifeature = [Identified]  -- not Durable, springs at most once
-  , idesc    = ""
+  , idesc    = "A dark wood stand, where strange priests once preached."
   , ikit     = []
   }
