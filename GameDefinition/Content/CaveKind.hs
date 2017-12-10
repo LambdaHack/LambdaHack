@@ -60,7 +60,7 @@ rogue = CaveKind
   , clegendLitTile  = "legendLit"
   , cescapeGroup    = Nothing
   , cstairFreq      = [("staircase", 100)]
-  , cdesc         = ""
+  , cdesc         = "Winding tunnels that stretch into the dark"
   }  -- no lit corridor alternative, because both lit # and . look bad here
 arena = rogue
   { csymbol       = 'A'
@@ -87,7 +87,7 @@ arena = rogue
   , cdefTile      = "arenaSetLit"
   , cdarkCorTile  = "trailLit"  -- let trails give off light
   , clitCorTile   = "trailLit"
-  , cdesc         = ""
+  , cdesc         = "The shelves groan with dusty books and tattered scrolls."
   }
 arena2 = arena
   { cname         = "Smoking rooms"
@@ -98,7 +98,7 @@ arena2 = arena
   , citemNum      = 7 `d` 5  -- rare, so make it exciting
   , citemFreq     = [("useful", 20), ("treasure", 40), ("any vial", 40)]
   , cdefTile      = "arenaSetDark"
-  , cdesc         = ""
+  , cdesc         = "Smoke hangs heavy in the air, filling the rooms with strange scents."
   }
 laboratory = arena2
   { csymbol       = 'L'
@@ -121,7 +121,7 @@ laboratory = arena2
   , cdefTile      = "fillerWall"
   , cdarkCorTile  = "labTrailLit"  -- let lab smoke give off light always
   , clitCorTile   = "labTrailLit"
-  , cdesc         = "An experiment (or was it manufacturing?) had gone wrong here."
+  , cdesc         = "An experiment (or maybe it manufacturing?) has gone wrong here."
   }
 empty = rogue
   { csymbol       = 'E'
@@ -153,7 +153,7 @@ empty = rogue
   , cdefTile      = "emptySet"
   , cdarkCorTile  = "floorArenaDark"
   , clitCorTile   = "floorArenaLit"
-  , cdesc         = ""
+  , cdesc         = "Sound echoes through the darkness, the hiss of geysers sounding all around."
   }
 noise = rogue
   { csymbol       = 'N'
@@ -180,7 +180,7 @@ noise = rogue
   , couterFenceTile = "noise fence"  -- ensures no cut-off parts from collapsed
   , cdarkCorTile  = "floorArenaDark"
   , clitCorTile   = "floorArenaLit"
-  , cdesc         = ""
+  , cdesc         = "Soon, these passages will be swallowed up by the mud."
   }
 noise2 = noise
   { cname         = "Frozen derelict mine"
@@ -189,7 +189,7 @@ noise2 = noise
   , citemNum      = 13 `d` 5  -- an incentive to explore the final labyrinth
   , cplaceFreq    = [("noise", 1), ("mine", 99)]
   , cstairFreq    = [("gated staircase", 100)]
-  , cdesc         = ""
+  , cdesc         = "Frost stretches across the bare rock."
   }
 shallow2rogue = rogue
   { cfreq         = [("shallow random 2", 100)]
@@ -206,7 +206,7 @@ shallow1rogue = shallow2rogue
   , citemNum      = 8 `d` 5  -- lure them in with loot
   , citemFreq     = filter ((/= "treasure") . fst) $ citemFreq rogue
   , cescapeGroup  = Just "escape up"
-  , cdesc         = ""
+  , cdesc         = "This close to the surface, the sunlight still illuminates the dungeon."
   }
 raid = rogue
   { csymbol       = 'T'
@@ -244,7 +244,7 @@ brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
   , cdefTile      = "brawlSetLit"
   , cdarkCorTile  = "floorArenaLit"
   , clitCorTile   = "floorArenaLit"
-  , cdesc         = ""
+  , cdesc         = "Sunlight falls through the trees and dapples on the ground."
   }
 shootout = rogue  -- a scenario with strong missiles;
                   -- few solid tiles, but only translucent tiles or walkable
