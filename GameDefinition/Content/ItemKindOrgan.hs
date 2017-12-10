@@ -41,7 +41,7 @@ fist = ItemKind
   , iaspects = []
   , ieffects = []
   , ifeature = [Durable, Identified, Meleeable]
-  , idesc    = ""
+  , idesc    = "Simple but effective."
   , ikit     = []
   }
 foot = fist
@@ -49,7 +49,7 @@ foot = fist
   , ifreq    = [("foot", 50)]
   , iverbHit = "kick"
   , idamage  = toDmg $ 4 `d` 1
-  , idesc    = ""
+  , idesc    = "A weapon you can still use if disarmed."
   }
 
 -- * Universal weapon organs
@@ -62,14 +62,14 @@ hookedClaw = fist
   , idamage  = toDmg $ 2 `d` 1
   , iaspects = [Timeout $ 4 + 1 `d` 4]
   , ieffects = [Recharging (toOrganGameTurn "slowed" 2)]
-  , idesc    = ""
+  , idesc    = "A curved talon."
   }
 smallClaw = fist
   { iname    = "small claw"
   , ifreq    = [("small claw", 50)]
   , iverbHit = "slash"
   , idamage  = toDmg $ 2 `d` 1
-  , idesc    = ""
+  , idesc    = "A pearly spike."
   }
 snout = fist
   { iname    = "snout"
@@ -77,7 +77,7 @@ snout = fist
   , icount   = 1
   , iverbHit = "bite"
   , idamage  = toDmg $ 2 `d` 1
-  , idesc    = ""
+  , idesc    = "Sensitive and wide-nostrilled."
   }
 smallJaw = fist
   { iname    = "small jaw"
@@ -85,7 +85,7 @@ smallJaw = fist
   , icount   = 1
   , iverbHit = "rip"
   , idamage  = toDmg $ 3 `d` 1
-  , idesc    = ""
+  , idesc    = "Filled with small, even teeth."
   }
 jaw = fist
   { iname    = "jaw"
@@ -93,7 +93,7 @@ jaw = fist
   , icount   = 1
   , iverbHit = "rip"
   , idamage  = toDmg $ 5 `d` 1
-  , idesc    = ""
+  , idesc    = "Delivers a powerful bite."
   }
 largeJaw = fist
   { iname    = "large jaw"
@@ -101,7 +101,7 @@ largeJaw = fist
   , icount   = 1
   , iverbHit = "crush"
   , idamage  = toDmg $ 10 `d` 1
-  , idesc    = ""
+  , idesc    = "Enough to swallow anything in a single gulp."
   }
 horn = fist
   { iname    = "horn"
@@ -110,7 +110,7 @@ horn = fist
   , iverbHit = "impale"
   , idamage  = toDmg $ 6 `d` 1
   , iaspects = [AddHurtMelee 20]
-  , idesc    = ""
+  , idesc    = "Sharp and solid, for defence or attack."
   }
 
 -- * Special weapon organs
@@ -121,7 +121,7 @@ tentacle = fist
   , icount   = 4
   , iverbHit = "slap"
   , idamage  = toDmg $ 4 `d` 1
-  , idesc    = ""
+  , idesc    = "Damp and dextrous."
   }
 thorn = fist
   { iname    = "thorn"
@@ -130,7 +130,7 @@ thorn = fist
   , iverbHit = "impale"
   , idamage  = toDmg $ 1 `d` 3
   , ifeature = [Identified, Meleeable]  -- not Durable
-  , idesc    = ""
+  , idesc    = "Sharp yet brittle."
   }
 boilingFissure = fist
   { iname    = "fissure"
@@ -141,7 +141,7 @@ boilingFissure = fist
   , iaspects = [AddHurtMelee 20]  -- decreasing as count decreases
   , ieffects = [InsertMove $ 1 `d` 3]
   , ifeature = [Identified, Meleeable]  -- not Durable
-  , idesc    = ""
+  , idesc    = "A deep crack to the underworld."
   }
 arsenicFissure = boilingFissure
   { iname    = "fissure"
@@ -186,7 +186,7 @@ venomTooth = fist
   , idamage  = toDmg $ 2 `d` 1
   , iaspects = [Timeout $ 5 + 1 `d` 3]
   , ieffects = [Recharging (toOrganGameTurn "slowed" (3 + 1 `d` 3))]
-  , idesc    = ""
+  , idesc    = "A hollow fang, filled with venom."
   }
 venomFang = fist
   { iname    = "venom fang"
@@ -196,7 +196,7 @@ venomFang = fist
   , idamage  = toDmg $ 2 `d` 1
   , iaspects = [Timeout $ 7 + 1 `d` 5]
   , ieffects = [Recharging (toOrganNone "poisoned")]
-  , idesc    = ""
+  , idesc    = "Dripping with deadly venom."
   }
 screechingBeak = fist
   { iname    = "screeching beak"
@@ -206,7 +206,7 @@ screechingBeak = fist
   , idamage  = toDmg $ 2 `d` 1
   , iaspects = [Timeout $ 5 + 1 `d` 5]
   , ieffects = [Recharging $ Summon "scavenger" $ 1 + 1 `dl` 2]
-  , idesc    = ""
+  , idesc    = "Both a weapon and a warning."
   }
 largeTail = fist
   { iname    = "large tail"
@@ -216,7 +216,7 @@ largeTail = fist
   , idamage  = toDmg $ 6 `d` 1
   , iaspects = [Timeout $ 1 + 1 `d` 3, AddHurtMelee 20]
   , ieffects = [Recharging (PushActor (ThrowMod 400 25))]
-  , idesc    = ""
+  , idesc    = "Slow but heavy."
   }
 
 -- Non-weapons
@@ -236,7 +236,7 @@ armoredSkin = ItemKind
   , iaspects = [AddArmorMelee 30, AddArmorRanged 15]
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
+  , idesc    = "Homemade armour is just as good."
   , ikit     = []
   }
 
@@ -249,7 +249,7 @@ eye n = armoredSkin
   , icount   = 2
   , iverbHit = "glare at"
   , iaspects = [AddSight (intToDice n)]
-  , idesc    = ""
+  , idesc    = "A piercing stare."
   }
 eye2 = eye 2
 eye3 = eye 3
