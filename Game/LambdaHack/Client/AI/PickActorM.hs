@@ -85,7 +85,7 @@ pickActorToMove maidToAvoid = do
               -- because he is likely to be still stuck.
               Just ((aid, b), tgt)
             Just aidToAvoid | aid /= aidToAvoid ->
-              -- Not an attempted leader stuck this turn/
+              -- Not an attempted leader stuck this turn.
               Just ((aid, b), tgt)
             _ -> Nothing
       oursTgtRaw <- mapM refresh ours

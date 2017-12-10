@@ -160,13 +160,13 @@ advanceTime aid percent = do
   modifyServer $ \ser ->
     ser {sactorTime = ageActor (bfid b) (blid b) aid t $ sactorTime ser}
 
--- Add communication overhead time delta to all non-projectile, non-dying
--- faction's actors (except the leader). Effectively, this limits moves
+-- | Add communication overhead time delta to all non-projectile, non-dying
+-- faction's actors, except the leader. Effectively, this limits moves
 -- of a faction on a level to 10, regardless of the number of actors
 -- and their speeds. To avoid animals suddenly acting extremely sluggish
 -- whenever monster's leader visits a distant arena that has a crowd
 -- of animals, overhead applies only to actors on the same level.
--- Since the number of active arenas is limited, this bounds the total moves
+-- Since the number of active levels is limited, this bounds the total moves
 -- per turn of each faction as well.
 --
 -- Leader is immune from overhead and so he is faster than other faction
@@ -176,22 +176,21 @@ advanceTime aid percent = do
 -- having very long UI turns, introducing UI lag.
 overheadActorTime :: MonadServerAtomic m => FactionId -> LevelId -> m ()
 overheadActorTime fid lid = do
-  actorTime <- getsServer $ (EM.! fid) . sactorTime
+  actorTimeFid <- getsServer $ (EM.! fid) . sactorTime
+  let actorTimeLid = actorTimeFid EM.! lid
   s <- getState
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
-  arenas <- getsServer sarenas
-  let f !lid2 !_aid !time | lid2 /= lid = time
-      f _ aid time =
+  let f !aid !time =
         let body = getActorBody aid s
         in if isNothing (btrajectory body)
-              && bhp body > 0
+              && bhp body > 0  -- speed up all-move-at-once carcass removal
               && Just aid /= mleader  -- leader fast, for UI to be fast
            then timeShift time (Delta timeClip)
            else time
-      g !acc !lid2 = EM.adjust (EM.mapWithKey $ f lid2) lid acc
-      actorTimeNew = foldl' g actorTime arenas
+      actorTimeLid2 = EM.mapWithKey f actorTimeLid
+      actorTimeFid2 = EM.insert lid actorTimeLid2 actorTimeFid
   modifyServer $ \ser ->
-    ser {sactorTime = EM.insert fid actorTimeNew $ sactorTime ser}
+    ser {sactorTime = EM.insert fid actorTimeFid2 $ sactorTime ser}
 
 -- | Swap the relative move times of two actors (e.g., when switching
 -- a UI leader).

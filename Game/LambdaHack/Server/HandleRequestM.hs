@@ -85,7 +85,7 @@ setBWait :: MonadServerAtomic m
 {-# INLINE setBWait #-}
 setBWait cmd aid b = do
   let mwait = case cmd of
-        ReqWait -> Just True  -- true wait, with bracind, no overhead, etc.
+        ReqWait -> Just True  -- true wait, with bracing, no overhead, etc.
         ReqWait10 -> Just False  -- false wait, only one clip at a time
         _ -> Nothing
   when ((mwait == Just True) /= bwait b) $
