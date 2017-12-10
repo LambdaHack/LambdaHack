@@ -22,7 +22,6 @@ warrior,    warrior2, warrior3, warrior4, warrior5, scout, ranger, escapist, amb
    geyserBoiling, geyserArsenic, geyserSulfur :: ItemKind
 
 -- * Hunams
-
 warrior = ItemKind
   { isymbol  = '@'
   , iname    = "warrior"  -- modified if initial actors in hero faction
@@ -39,7 +38,7 @@ warrior = ItemKind
                , AddAbility AbAlter 2 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
+  , idesc    = "A hardened veteran of combat."
   , ikit     = [ ("fist", COrgan), ("foot", COrgan), ("eye 6", COrgan)
                , ("sapient brain", COrgan) ]
   }
@@ -238,7 +237,7 @@ goldenJackal = ItemKind  -- basically a much smaller and slower hyena
   , iaspects = [ AddMaxHP 12, AddMaxCalm 70, AddSpeed 24, AddNocto 2 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
+  , idesc    = "An opportunistic predator, feeding on carrion and the weak."
   , ikit     = [ ("small jaw", COrgan), ("eye 6", COrgan), ("nostril", COrgan)
                , ("animal brain", COrgan) ]
   }
@@ -261,7 +260,7 @@ griffonVulture = ItemKind
       -- on either side, are just too frustrating.
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
+  , idesc    = "It soars high above, searching for the scent of death."
   , ikit     = [ ("screeching beak", COrgan)  -- in reality it grunts and hisses
                , ("small claw", COrgan), ("eye 7", COrgan)
                , ("animal brain", COrgan) ]
@@ -280,7 +279,7 @@ skunk = ItemKind
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
+  , idesc    = "Its only defence is the terrible stench."
   , ikit     = [ ("scent gland", COrgan)
                , ("small claw", COrgan), ("snout", COrgan)
                , ("nostril", COrgan), ("eye 3", COrgan)
@@ -300,7 +299,7 @@ armadillo = ItemKind
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
+  , idesc    = "When threatened, it rolls into a ball."
   , ikit     = [ ("hooked claw", COrgan), ("snout", COrgan)
                , ("armored skin", COrgan), ("armored skin", COrgan)
                , ("nostril", COrgan), ("eye 3", COrgan)
@@ -320,7 +319,7 @@ gilaMonster = ItemKind
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
+  , idesc    = "Slow-moving, but with a venomous bite."
   , ikit     = [ ("venom tooth", COrgan), ("small claw", COrgan)
                , ("eye 3", COrgan), ("nostril", COrgan)
                , ("animal brain", COrgan) ]
@@ -339,7 +338,7 @@ rattlesnake = ItemKind
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
+  , idesc    = "Beware its rattle - it serves as a warning of an agonising death."
   , ikit     = [ ("venom fang", COrgan)
                , ("eye 4", COrgan), ("nostril", COrgan)
                , ("animal brain", COrgan) ]
@@ -357,7 +356,7 @@ komodoDragon = ItemKind  -- bad hearing; regeneration makes it very powerful
   , iaspects = [ AddMaxHP 41, AddMaxCalm 60, AddSpeed 18, AddNocto 2 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
+  , idesc    = "Larger and more aggressive than any other lizard."
   , ikit     = [ ("large tail", COrgan), ("jaw", COrgan)
                , ("hooked claw", COrgan), ("speed gland 4", COrgan)
                , ("armored skin", COrgan), ("eye 3", COrgan)
@@ -377,7 +376,7 @@ hyena = ItemKind
   , iaspects = [ AddMaxHP 20, AddMaxCalm 70, AddSpeed 32, AddNocto 2 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
+  , idesc    = "Skulking in the shadows, waiting for easy prey."
   , ikit     = [ ("jaw", COrgan), ("eye 6", COrgan), ("nostril", COrgan)
                , ("animal brain", COrgan) ]
   }
@@ -394,7 +393,7 @@ alligator = ItemKind
   , iaspects = [ AddMaxHP 41, AddMaxCalm 70, AddSpeed 18, AddNocto 2 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
+  , idesc    = "Danger lurks in the dark water."
   , ikit     = [ ("large jaw", COrgan), ("large tail", COrgan)
                , ("small claw", COrgan)
                , ("armored skin", COrgan), ("eye 6", COrgan)
@@ -438,7 +437,7 @@ beeSwarm = ItemKind
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
+  , idesc    = "Every bee would die for the queen."
   , ikit     = [ ("bee sting", COrgan), ("vision 6", COrgan)
                , ("insect mortality", COrgan), ("animal brain", COrgan) ]
   }
@@ -457,7 +456,7 @@ hornetSwarm = ItemKind
                , AddArmorMelee 80, AddArmorRanged 40 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
+  , idesc    = "A vicious cloud of stings and hate."
   , ikit     = [ ("sting", COrgan), ("vision 8", COrgan)
                , ("insect mortality", COrgan), ("animal brain", COrgan) ]
   }
@@ -475,7 +474,7 @@ thornbush = ItemKind
                , AddAbility AbWait 1, AddAbility AbMelee 1 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
+  , idesc    = "Each branch bears long, curved thorns."
   , ikit     = [("thorn", COrgan), ("armored skin", COrgan)]
   }
 geyserBoiling = ItemKind
@@ -493,7 +492,7 @@ geyserBoiling = ItemKind
                , AddArmorMelee 40, AddArmorRanged 20 ]  -- hard material
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
+  , idesc    = "A jet of acidic water, hot enough to melt flesh."
   , ikit     = [("boiling vent", COrgan), ("boiling fissure", COrgan)]
   }
 geyserArsenic = ItemKind
@@ -505,13 +504,13 @@ geyserArsenic = ItemKind
   , irarity  = [(1, 10), (5, 10)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , idamage  = toDmg 0
+  , idamage  = toDmg 0 
   , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 22
                , AddNocto 2, AddShine 3
                , AddAbility AbWait 1, AddAbility AbMelee 1 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
+  , idesc    = "The sharp scent betrays the toxins within the spray."
   , ikit     = [("arsenic vent", COrgan), ("arsenic fissure", COrgan)]
   }
 geyserSulfur = ItemKind
@@ -529,6 +528,6 @@ geyserSulfur = ItemKind
                , AddAbility AbWait 1, AddAbility AbMelee 1 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
+  , idesc    = "The water boils and bubbles, stinking of rotten eggs."
   , ikit     = [("sulfur vent", COrgan), ("sulfur fissure", COrgan)]
   }
