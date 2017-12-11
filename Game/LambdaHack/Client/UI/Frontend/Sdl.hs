@@ -28,6 +28,7 @@ import           System.FilePath
 import qualified SDL
 import qualified SDL.Font as TTF
 import           SDL.Input.Keyboard.Codes
+import qualified SDL.Raw.Basic as SDL (logSetAllPriority)
 import qualified SDL.Vect as Vect
 
 import           Game.LambdaHack.Client.ClientOptions
@@ -68,6 +69,9 @@ startup soptions = startupBound $ startupFun soptions
 startupFun :: ClientOptions -> MVar RawFrontend -> IO ()
 startupFun soptions@ClientOptions{..} rfMVar = do
   SDL.initialize [SDL.InitVideo, SDL.InitEvents]
+  -- lowest: pattern SDL_LOG_PRIORITY_VERBOSE = (1) :: LogPriority
+  -- our default: pattern SDL_LOG_PRIORITY_ERROR = (5) :: LogPriority
+  SDL.logSetAllPriority $ toEnum $ fromMaybe 5 slogPriority
   let title = fromJust stitle
       fontFileName = T.unpack (fromJust sdlFontFile)
       fontFile | isRelative fontFileName = fromJust sfontDir </> fontFileName

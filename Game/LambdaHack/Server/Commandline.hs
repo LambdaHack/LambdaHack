@@ -60,6 +60,7 @@ serverOptionsP = do
   sfontSize         <- fontSizeP
   sfontDir          <- fontDirP
   scolorIsBold      <- noColorIsBoldP
+  slogPriority      <- logPriorityP
   smaxFps           <- maxFpsP
   sdisableAutoYes   <- disableAutoYesP
   snoAnim           <- noAnimP
@@ -228,6 +229,12 @@ maxFpsP = optional $ max 1 <$>
   option auto (  long "maxFps"
               <> metavar "N"
               <> help "Display at most N frames per second" )
+
+logPriorityP :: Parser (Maybe Int)
+logPriorityP = optional $ max 1 <$>
+  option auto (  long "logPriority"
+              <> metavar "N"
+              <> help "Log only messages of priority at least N, where 1 (all) is the lowest and 5 (errors only) is the default." )
 
 disableAutoYesP :: Parser Bool
 disableAutoYesP =

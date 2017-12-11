@@ -25,6 +25,8 @@ data ClientOptions = ClientOptions
       -- ^ Font size to use for the main game window.
   , scolorIsBold      :: Maybe Bool
       -- ^ Whether to use bold attribute for colorful characters.
+  , slogPriority      :: Maybe Int
+      -- ^ How much to log (e.g., from SDL). 1 is all, 5 is errors, the default.
   , smaxFps           :: Maybe Int
       -- ^ Maximal frames per second.
       -- This is better low and fixed, to avoid jerkiness and delays
@@ -67,6 +69,7 @@ defClientOptions = ClientOptions
   , sdlFonSizeAdd = Nothing
   , sfontSize = Nothing
   , scolorIsBold = Nothing
+  , slogPriority = Nothing
   , smaxFps = Nothing
   , sdisableAutoYes = False
   , snoAnim = Nothing
