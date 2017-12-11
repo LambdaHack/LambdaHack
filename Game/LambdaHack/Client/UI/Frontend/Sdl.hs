@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.Frontend.Sdl
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , FontAtlas, FrontendSession(..), startupFun, shutdown, forceShutdown
-  , display, displayNoLock, modTranslate, keyTranslate, colorToRGBA
+  , display, drawFrame, modTranslate, keyTranslate, colorToRGBA
 #endif
   ) where
 
@@ -13,7 +13,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude hiding (Alt)
 
 import           Control.Concurrent
-import           Control.Concurrent.Async
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import           Data.IORef
@@ -52,6 +51,8 @@ data FrontendSession = FrontendSession
   , spreviousFrame    :: IORef SingleFrame
   , sforcedShutdown   :: IORef Bool
   , sdisplayPermitted :: MVar Bool
+  , sframeQueue       :: MVar (Maybe SingleFrame)
+  , sframeDrawn       :: MVar ()
   }
 
 -- | The name of the frontend.
@@ -117,8 +118,10 @@ startupFun soptions@ClientOptions{..} rfMVar = do
   spreviousFrame <- newIORef blankSingleFrame
   sforcedShutdown <- newIORef False
   sdisplayPermitted <- newMVar True
+  sframeQueue <- newEmptyMVar
+  sframeDrawn <- newEmptyMVar
   let sess = FrontendSession{..}
-  rf <- createRawFrontend (display soptions sess) (shutdown sess)
+  rf <- createRawFrontend (display sess) (shutdown sess)
   putMVar rfMVar rf
   let pointTranslate :: forall i. (Enum i) => Vect.Point Vect.V2 i -> Point
       pointTranslate (SDL.P (SDL.V2 x y)) =
@@ -136,12 +139,38 @@ startupFun soptions@ClientOptions{..} rfMVar = do
           writeIORef stexture newTexture
           prevFrame <- readIORef spreviousFrame
           writeIORef spreviousFrame blankSingleFrame
-          displayNoLock soptions sess prevFrame
+          drawFrame soptions sess prevFrame
         putMVar sdisplayPermitted displayPermitted
-      storeKeys :: IO ()
-      storeKeys = do
-        e <- SDL.waitEvent  -- blocks here, so no polling
-        case SDL.eventPayload e of
+      loopSDL :: IO ()
+      loopSDL = do
+        me <- SDL.pollEvent  -- events take precedence over frames
+        case me of
+          Nothing -> do
+            mfr <- tryTakeMVar sframeQueue
+            case mfr of
+              Just (Just fr) -> do
+                -- Some SDL2 (OpenGL) backends are very thread-unsafe,
+                -- so we need to ensure we draw on the same (bound) OS thread
+                -- that initialized SDL, hence we have to poll frames.
+                drawFrame soptions sess fr
+                putMVar sframeDrawn ()  -- signal that drawing ended
+              Just Nothing -> error "Nothing in sframeQueue"
+              Nothing -> threadDelay 15000
+                           -- 60 polls per second, so keyboard snappy enough
+          Just e -> handleEvent e
+        displayPermitted <- readMVar sdisplayPermitted
+        if displayPermitted
+        then loopSDL
+        else do
+          TTF.free sfont
+          TTF.quit
+          SDL.destroyRenderer srenderer
+          SDL.destroyWindow swindow
+          SDL.quit
+          forcedShutdown <- readIORef sforcedShutdown
+          when forcedShutdown
+            exitSuccess  -- not in the main thread, so no exit yet, see "Main"
+      handleEvent e = case SDL.eventPayload e of
           SDL.KeyboardEvent keyboardEvent
             | SDL.keyboardEventKeyMotion keyboardEvent == SDL.Pressed -> do
               let sym = SDL.keyboardEventKeysym keyboardEvent
@@ -185,19 +214,7 @@ startupFun soptions@ClientOptions{..} rfMVar = do
           -- Probably not needed, because textures nor their content not lost:
           -- SDL.WindowShownEvent{} -> redraw
           _ -> return ()
-        displayPermitted <- readMVar sdisplayPermitted
-        if displayPermitted
-        then storeKeys
-        else do
-          TTF.free sfont
-          TTF.quit
-          SDL.destroyRenderer srenderer
-          SDL.destroyWindow swindow
-          SDL.quit
-          forcedShutdown <- readIORef sforcedShutdown
-          when forcedShutdown
-            exitSuccess  -- not in the main thread, so no exit yet, see "Main"
-  storeKeys
+  loopSDL
 
 shutdown :: FrontendSession -> IO ()
 shutdown FrontendSession{..} = void $ swapMVar sdisplayPermitted False
@@ -208,17 +225,16 @@ forceShutdown sess@FrontendSession{..} = do
   shutdown sess
 
 -- | Add a frame to be drawn.
-display :: ClientOptions
-        -> FrontendSession  -- ^ frontend session data
+display :: FrontendSession  -- ^ frontend session data
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
-display soptions sess@FrontendSession{..} curFrame = do
+display FrontendSession{..} curFrame = do
   displayPermitted <- takeMVar sdisplayPermitted
   if displayPermitted then do
-    -- Apparently some SDL backends are not thread-safe, so use bound threads:
-    a <- asyncBound $ displayNoLock soptions sess curFrame
-    wait a
     putMVar sdisplayPermitted displayPermitted
+    putMVar sframeQueue $ Just curFrame
+    -- Wait until the frame is drawn.
+    takeMVar sframeDrawn
   else do
     putMVar sdisplayPermitted displayPermitted
     forcedShutdown <- readIORef sforcedShutdown
@@ -230,11 +246,11 @@ display soptions sess@FrontendSession{..} curFrame = do
       -- to avoid exiting via "thread blocked".
       threadDelay 50000
 
-displayNoLock :: ClientOptions
-              -> FrontendSession  -- ^ frontend session data
-              -> SingleFrame      -- ^ the screen frame to draw
-              -> IO ()
-displayNoLock ClientOptions{..} FrontendSession{..} curFrame = do
+drawFrame :: ClientOptions
+          -> FrontendSession  -- ^ frontend session data
+          -> SingleFrame      -- ^ the screen frame to draw
+          -> IO ()
+drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
   let isFonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
       sdlSizeAdd = fromJust $ if isFonFile then sdlFonSizeAdd else sdlTtfSizeAdd
   boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
@@ -246,7 +262,8 @@ displayNoLock ClientOptions{..} FrontendSession{..} curFrame = do
         let rect = SDL.Rectangle (vp (x * boxSize) (y * boxSize))
                                  (Vect.V2 (toEnum boxSize) (toEnum boxSize))
         SDL.drawRect srenderer $ Just rect
-        SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black  -- reset back to black
+        SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
+          -- reset back to black
       setChar :: Int -> Word32 -> Word32 -> IO ()
       setChar i w wPrev = unless (w == wPrev) $ do
         atlas <- readIORef satlas
@@ -276,7 +293,8 @@ displayNoLock ClientOptions{..} FrontendSession{..} curFrame = do
                                          else 8901  -- 0x22c5
                          else acCharRaw
             textSurface <-
-              TTF.shadedGlyph sfont (colorToRGBA fg) (colorToRGBA Color.Black) acChar
+              TTF.shadedGlyph sfont (colorToRGBA fg)
+                                    (colorToRGBA Color.Black) acChar
             textTexture <- SDL.createTextureFromSurface srenderer textSurface
             SDL.freeSurface textSurface
             writeIORef satlas $ EM.insert ac textTexture atlas  -- not @acRaw@
