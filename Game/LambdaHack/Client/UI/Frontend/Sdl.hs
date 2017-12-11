@@ -61,8 +61,13 @@ frontendName = "sdl"
 -- | Set up and start the main loop providing input and output.
 --
 -- Apparently some SDL backends are not thread-safe
--- (<https://wiki.libsdl.org/FAQDevelopment>),
--- so we stick to main thread.
+-- (<https://wiki.libsdl.org/FAQDevelopment>;
+-- "this should only be run in the thread that initialized the video subsystem,
+-- and for extra safety, you should consider only doing those things
+-- on the main thread in any case")
+-- so we stick to a single bound thread (but not to the main thread;
+-- enough is enough and at least in the case of OpenGL all bound threads
+-- are supposed to be as good as the main thread).
 startup :: ClientOptions -> IO RawFrontend
 startup soptions = startupBound $ startupFun soptions
 
@@ -207,7 +212,7 @@ display :: ClientOptions
 display soptions sess@FrontendSession{..} curFrame = do
   displayPermitted <- takeMVar sdisplayPermitted
   if displayPermitted then do
-    -- Apparently some SDL backends are not thread-safe, so keep to main thread:
+    -- Apparently some SDL backends are not thread-safe, so use bound threads:
     a <- asyncBound $ displayNoLock soptions sess curFrame
     wait a
     putMVar sdisplayPermitted displayPermitted
