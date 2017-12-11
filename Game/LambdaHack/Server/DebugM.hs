@@ -40,6 +40,7 @@ debugResponse :: MonadServer m => FactionId -> Response -> m ()
 debugResponse fid resp = case resp of
   RespUpdAtomic _ cmd@UpdPerception{} -> debugPlain fid "RespUpdAtomic" cmd
   RespUpdAtomic _ cmd@UpdResume{} -> debugPlain fid "RespUpdAtomic" cmd
+  RespUpdAtomic _ cmd@UpdRestart{} -> debugPlain fid "RespUpdAtomic" cmd
   RespUpdAtomic _ cmd@UpdSpotTile{} -> debugPlain fid "RespUpdAtomic" cmd
   RespUpdAtomic _ cmd -> debugPretty fid "RespUpdAtomic" cmd
   RespUpdAtomicNoState cmd@UpdPerception{} ->
