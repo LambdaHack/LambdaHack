@@ -95,7 +95,10 @@ startupFun soptions@ClientOptions{..} rfMVar = do
       screenV2 = SDL.V2 (toEnum $ xsize * boxSize)
                         (toEnum $ ysize * boxSize)
       windowConfig = SDL.defaultWindow {SDL.windowInitialSize = screenV2}
-      rendererConfig = SDL.defaultRenderer {SDL.rendererTargetTexture = True}
+      rendererConfig = SDL.RendererConfig
+        { rendererType          = SDL.AcceleratedVSyncRenderer
+        , rendererTargetTexture = True
+        }
   swindow <- SDL.createWindow title windowConfig
   srenderer <- SDL.createRenderer swindow (-1) rendererConfig
   let initTexture = do
