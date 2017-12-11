@@ -80,9 +80,10 @@ note that these no longer work on Windows XP, since Cygwin and MSYS2
 dropped support for XP). To use a pre-compiled binary archive,
 unpack it and run the executable in the unpacked directory.
 
-On Linux, make sure you have the SDL2 libraries suite installed on your system
-(e.g., libsdl2, libsdl2-ttf). For Windows, the SDL2 and all other needed
-libraries are already contained in the game's binary archive.
+On Linux, make sure you have the SDL2 libraries installed on your system
+(e.g., libsdl2-2.0-0, libsdl2-ttf-2.0-0 on Ubuntu; also libdw1).
+For Windows, the SDL2 and all other needed libraries are already contained
+in the game's binary archive.
 
 
 Screen and keyboard configuration
