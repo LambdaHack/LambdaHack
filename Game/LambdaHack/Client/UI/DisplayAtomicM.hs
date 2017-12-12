@@ -758,7 +758,9 @@ quitFactionUI fid toSt = do
   case (toSt, partingPart) of
     (Just status, Just pp) -> do
       isNoConfirms <- isNoConfirmsGame
-      go <- if isNoConfirms then return False else displaySpaceEsc ColorFull ""
+      go <- if isNoConfirms && fmap stOutcome toSt /= Just Camping
+            then return False
+            else displaySpaceEsc ColorFull ""
       when (side == fid) recordHistory
         -- we are going to exit or restart, so record and clear, but only once
       when go $ do
@@ -820,10 +822,12 @@ quitFactionUI fid toSt = do
                     if go2 then viewItems pointer2 else return True
         go3 <- viewItems 2
         when go3 $ do
-          -- Show score for any UI client after any kind of game exit,
-          -- even though it is saved only for human UI clients at game over.
-          scoreSlides <- scoreToSlideshow total status
-          void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
+          unless isNoConfirms $ do
+            -- Show score for any UI client after any kind of game exit,
+            -- even though it is saved only for human UI clients at game over
+            -- (that is not a noConfirms or benchmark game).
+            scoreSlides <- scoreToSlideshow total status
+            void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
           -- The last prompt stays onscreen during shutdown, etc.
           promptAdd pp
           partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
