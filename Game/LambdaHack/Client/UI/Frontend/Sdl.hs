@@ -127,17 +127,17 @@ startupFun soptions@ClientOptions{..} rfMVar = do
       pointTranslate (SDL.P (SDL.V2 x y)) =
         Point (fromEnum x `div` boxSize) (fromEnum y `div` boxSize)
       redraw = do
-          -- Textures may be trashed and even invalid, especially on Windows.
-          atlas <- readIORef satlas
-          writeIORef satlas EM.empty
-          oldTexture <- readIORef stexture
-          newTexture <- initTexture
-          mapM_ SDL.destroyTexture $ EM.elems atlas
-          SDL.destroyTexture oldTexture
-          writeIORef stexture newTexture
-          prevFrame <- readIORef spreviousFrame
-          writeIORef spreviousFrame blankSingleFrame
-          drawFrame soptions sess prevFrame
+        -- Textures may be trashed and even invalid, especially on Windows.
+        atlas <- readIORef satlas
+        writeIORef satlas EM.empty
+        oldTexture <- readIORef stexture
+        newTexture <- initTexture
+        mapM_ SDL.destroyTexture $ EM.elems atlas
+        SDL.destroyTexture oldTexture
+        writeIORef stexture newTexture
+        prevFrame <- readIORef spreviousFrame
+        writeIORef spreviousFrame blankSingleFrame
+        drawFrame soptions sess prevFrame
       loopSDL :: IO ()
       loopSDL = do
         me <- SDL.pollEvent  -- events take precedence over frames
@@ -167,49 +167,49 @@ startupFun soptions@ClientOptions{..} rfMVar = do
           when forcedShutdown
             exitSuccess  -- not in the main thread, so no exit yet, see "Main"
       handleEvent e = case SDL.eventPayload e of
-          SDL.KeyboardEvent keyboardEvent
-            | SDL.keyboardEventKeyMotion keyboardEvent == SDL.Pressed -> do
-              let sym = SDL.keyboardEventKeysym keyboardEvent
-                  ksm = SDL.keysymModifier sym
-                  shiftPressed = SDL.keyModifierLeftShift ksm
-                                 || SDL.keyModifierRightShift ksm
-                  key = keyTranslate shiftPressed $ SDL.keysymKeycode sym
-                  modifier = modTranslate ksm
-              p <- SDL.getAbsoluteMouseLocation
-              when (key == K.Esc) $ resetChanKey (fchanKey rf)
-              saveKMP rf modifier key (pointTranslate p)
-          SDL.MouseButtonEvent mouseButtonEvent
-            | SDL.mouseButtonEventMotion mouseButtonEvent == SDL.Released -> do
-              md <- modTranslate <$> SDL.getModState
-              let key = case SDL.mouseButtonEventButton mouseButtonEvent of
-                    SDL.ButtonLeft -> K.LeftButtonRelease
-                    SDL.ButtonMiddle -> K.MiddleButtonRelease
-                    SDL.ButtonRight -> K.RightButtonRelease
-                    _ -> K.LeftButtonRelease  -- any other is spare left
-                  modifier = if md == K.Shift then K.NoModifier else md
-                  p = SDL.mouseButtonEventPos mouseButtonEvent
-              saveKMP rf modifier key (pointTranslate p)
-          SDL.MouseWheelEvent mouseWheelEvent -> do
-            md <- modTranslate <$> SDL.getModState
-            let SDL.V2 _ y = SDL.mouseWheelEventPos mouseWheelEvent
-                mkey = case (compare y 0, SDL.mouseWheelEventDirection
-                                            mouseWheelEvent) of
-                  (EQ, _) -> Nothing
-                  (LT, SDL.ScrollNormal) -> Just K.WheelSouth
-                  (GT, SDL.ScrollNormal) -> Just K.WheelNorth
-                  (LT, SDL.ScrollFlipped) -> Just K.WheelSouth
-                  (GT, SDL.ScrollFlipped) -> Just K.WheelNorth
-                modifier = if md == K.Shift then K.NoModifier else md
+        SDL.KeyboardEvent keyboardEvent
+          | SDL.keyboardEventKeyMotion keyboardEvent == SDL.Pressed -> do
+            let sym = SDL.keyboardEventKeysym keyboardEvent
+                ksm = SDL.keysymModifier sym
+                shiftPressed = SDL.keyModifierLeftShift ksm
+                               || SDL.keyModifierRightShift ksm
+                key = keyTranslate shiftPressed $ SDL.keysymKeycode sym
+                modifier = modTranslate ksm
             p <- SDL.getAbsoluteMouseLocation
-            maybe (return ())
-                  (\key -> saveKMP rf modifier key (pointTranslate p)) mkey
-          SDL.WindowClosedEvent{} -> forceShutdown sess
-          SDL.QuitEvent -> forceShutdown sess
-          SDL.WindowRestoredEvent{} -> redraw
-          SDL.WindowExposedEvent{} -> redraw  -- needed on Windows
-          -- Probably not needed, because textures nor their content not lost:
-          -- SDL.WindowShownEvent{} -> redraw
-          _ -> return ()
+            when (key == K.Esc) $ resetChanKey (fchanKey rf)
+            saveKMP rf modifier key (pointTranslate p)
+        SDL.MouseButtonEvent mouseButtonEvent
+          | SDL.mouseButtonEventMotion mouseButtonEvent == SDL.Released -> do
+            md <- modTranslate <$> SDL.getModState
+            let key = case SDL.mouseButtonEventButton mouseButtonEvent of
+                  SDL.ButtonLeft -> K.LeftButtonRelease
+                  SDL.ButtonMiddle -> K.MiddleButtonRelease
+                  SDL.ButtonRight -> K.RightButtonRelease
+                  _ -> K.LeftButtonRelease  -- any other is spare left
+                modifier = if md == K.Shift then K.NoModifier else md
+                p = SDL.mouseButtonEventPos mouseButtonEvent
+            saveKMP rf modifier key (pointTranslate p)
+        SDL.MouseWheelEvent mouseWheelEvent -> do
+          md <- modTranslate <$> SDL.getModState
+          let SDL.V2 _ y = SDL.mouseWheelEventPos mouseWheelEvent
+              mkey = case (compare y 0, SDL.mouseWheelEventDirection
+                                          mouseWheelEvent) of
+                (EQ, _) -> Nothing
+                (LT, SDL.ScrollNormal) -> Just K.WheelSouth
+                (GT, SDL.ScrollNormal) -> Just K.WheelNorth
+                (LT, SDL.ScrollFlipped) -> Just K.WheelSouth
+                (GT, SDL.ScrollFlipped) -> Just K.WheelNorth
+              modifier = if md == K.Shift then K.NoModifier else md
+          p <- SDL.getAbsoluteMouseLocation
+          maybe (return ())
+                (\key -> saveKMP rf modifier key (pointTranslate p)) mkey
+        SDL.WindowClosedEvent{} -> forceShutdown sess
+        SDL.QuitEvent -> forceShutdown sess
+        SDL.WindowRestoredEvent{} -> redraw
+        SDL.WindowExposedEvent{} -> redraw  -- needed on Windows
+        -- Probably not needed, because textures nor their content not lost:
+        -- SDL.WindowShownEvent{} -> redraw
+        _ -> return ()
   loopSDL
 
 shutdown :: FrontendSession -> IO ()
@@ -334,107 +334,106 @@ modTranslate m =
     False
 
 keyTranslate :: Bool -> SDL.Keycode -> K.Key
-keyTranslate shiftPressed n =
-  case n of
-    KeycodeEscape     -> K.Esc
-    KeycodeReturn     -> K.Return
-    KeycodeBackspace  -> K.BackSpace
-    KeycodeTab        -> if shiftPressed then K.BackTab else K.Tab
-    KeycodeSpace      -> K.Space
-    KeycodeExclaim -> K.Char '!'
-    KeycodeQuoteDbl -> K.Char '"'
-    KeycodeHash -> K.Char '#'
-    KeycodePercent -> K.Char '%'
-    KeycodeDollar -> K.Char '$'
-    KeycodeAmpersand -> K.Char '&'
-    KeycodeQuote -> if shiftPressed then K.Char '"' else K.Char '\''
-    KeycodeLeftParen -> K.Char '('
-    KeycodeRightParen -> K.Char ')'
-    KeycodeAsterisk -> K.Char '*'
-    KeycodePlus -> K.Char '+'
-    KeycodeComma -> if shiftPressed then K.Char '<' else K.Char ','
-    KeycodeMinus -> if shiftPressed then K.Char '_' else K.Char '-'
-    KeycodePeriod -> if shiftPressed then K.Char '>' else K.Char '.'
-    KeycodeSlash -> if shiftPressed then K.Char '?' else K.Char '/'
-    Keycode1 -> if shiftPressed then K.Char '!' else K.Char '1'
-    Keycode2 -> if shiftPressed then K.Char '@' else K.Char '2'
-    Keycode3 -> if shiftPressed then K.Char '#' else K.Char '3'
-    Keycode4 -> if shiftPressed then K.Char '$' else K.Char '4'
-    Keycode5 -> if shiftPressed then K.Char '%' else K.Char '5'
-    Keycode6 -> if shiftPressed then K.Char '^' else K.Char '6'
-    Keycode7 -> if shiftPressed then K.Char '&' else K.Char '7'
-    Keycode8 -> if shiftPressed then K.Char '*' else K.Char '8'
-    Keycode9 -> if shiftPressed then K.Char '(' else K.Char '9'
-    Keycode0 -> if shiftPressed then K.Char ')' else K.Char '0'
-    KeycodeColon -> K.Char ':'
-    KeycodeSemicolon -> if shiftPressed then K.Char ':' else K.Char ';'
-    KeycodeLess -> K.Char '<'
-    KeycodeEquals -> if shiftPressed then K.Char '+' else K.Char '='
-    KeycodeGreater -> K.Char '>'
-    KeycodeQuestion -> K.Char '?'
-    KeycodeAt -> K.Char '@'
-    KeycodeLeftBracket -> if shiftPressed then K.Char '{' else K.Char '['
-    KeycodeBackslash -> if shiftPressed then K.Char '|' else K.Char '\\'
-    KeycodeRightBracket -> if shiftPressed then K.Char '}' else K.Char ']'
-    KeycodeCaret -> K.Char '^'
-    KeycodeUnderscore -> K.Char '_'
-    KeycodeBackquote -> if shiftPressed then K.Char '~' else K.Char '`'
-    KeycodeUp         -> K.Up
-    KeycodeDown       -> K.Down
-    KeycodeLeft       -> K.Left
-    KeycodeRight      -> K.Right
-    KeycodeHome       -> K.Home
-    KeycodeEnd        -> K.End
-    KeycodePageUp     -> K.PgUp
-    KeycodePageDown   -> K.PgDn
-    KeycodeInsert     -> K.Insert
-    KeycodeDelete     -> K.Delete
-    KeycodeKPDivide   -> K.KP '/'
-    KeycodeKPMultiply -> K.KP '*'
-    KeycodeKPMinus    -> K.Char '-'  -- KP and normal are merged here
-    KeycodeKPPlus     -> K.Char '+'  -- KP and normal are merged here
-    KeycodeKPEnter    -> K.Return
-    KeycodeKPEquals   -> K.Return  -- in case of some funny layouts
-    KeycodeKP1 -> if shiftPressed then K.KP '1' else K.End
-    KeycodeKP2 -> if shiftPressed then K.KP '2' else K.Down
-    KeycodeKP3 -> if shiftPressed then K.KP '3' else K.PgDn
-    KeycodeKP4 -> if shiftPressed then K.KP '4' else K.Left
-    KeycodeKP5 -> if shiftPressed then K.KP '5' else K.Begin
-    KeycodeKP6 -> if shiftPressed then K.KP '6' else K.Right
-    KeycodeKP7 -> if shiftPressed then K.KP '7' else K.Home
-    KeycodeKP8 -> if shiftPressed then K.KP '8' else K.Up
-    KeycodeKP9 -> if shiftPressed then K.KP '9' else K.PgUp
-    KeycodeKP0 -> if shiftPressed then K.KP '0' else K.Insert
-    KeycodeKPPeriod -> K.Char '.'  -- dot and comma are merged here
-    KeycodeKPComma  -> K.Char '.'  -- to sidestep national standards
-    KeycodeF1       -> K.Fun 1
-    KeycodeF2       -> K.Fun 2
-    KeycodeF3       -> K.Fun 3
-    KeycodeF4       -> K.Fun 4
-    KeycodeF5       -> K.Fun 5
-    KeycodeF6       -> K.Fun 6
-    KeycodeF7       -> K.Fun 7
-    KeycodeF8       -> K.Fun 8
-    KeycodeF9       -> K.Fun 9
-    KeycodeF10      -> K.Fun 10
-    KeycodeF11      -> K.Fun 11
-    KeycodeF12      -> K.Fun 12
-    KeycodeLCtrl    -> K.DeadKey
-    KeycodeLShift   -> K.DeadKey
-    KeycodeLAlt     -> K.DeadKey
-    KeycodeLGUI     -> K.DeadKey
-    KeycodeRCtrl    -> K.DeadKey
-    KeycodeRShift   -> K.DeadKey
-    KeycodeRAlt     -> K.DeadKey
-    KeycodeRGUI     -> K.DeadKey
-    KeycodeMode     -> K.DeadKey
-    KeycodeNumLockClear -> K.DeadKey
-    KeycodeUnknown  -> K.Unknown "KeycodeUnknown"
-    _ -> let i = fromEnum $ unwrapKeycode n
-         in if | 97 <= i && i <= 122
-                 && shiftPressed -> K.Char $ Char.chr $ i - 32
-               | 32 <= i && i <= 126 -> K.Char $ Char.chr i
-               | otherwise -> K.Unknown $ show n
+keyTranslate shiftPressed n = case n of
+  KeycodeEscape     -> K.Esc
+  KeycodeReturn     -> K.Return
+  KeycodeBackspace  -> K.BackSpace
+  KeycodeTab        -> if shiftPressed then K.BackTab else K.Tab
+  KeycodeSpace      -> K.Space
+  KeycodeExclaim -> K.Char '!'
+  KeycodeQuoteDbl -> K.Char '"'
+  KeycodeHash -> K.Char '#'
+  KeycodePercent -> K.Char '%'
+  KeycodeDollar -> K.Char '$'
+  KeycodeAmpersand -> K.Char '&'
+  KeycodeQuote -> if shiftPressed then K.Char '"' else K.Char '\''
+  KeycodeLeftParen -> K.Char '('
+  KeycodeRightParen -> K.Char ')'
+  KeycodeAsterisk -> K.Char '*'
+  KeycodePlus -> K.Char '+'
+  KeycodeComma -> if shiftPressed then K.Char '<' else K.Char ','
+  KeycodeMinus -> if shiftPressed then K.Char '_' else K.Char '-'
+  KeycodePeriod -> if shiftPressed then K.Char '>' else K.Char '.'
+  KeycodeSlash -> if shiftPressed then K.Char '?' else K.Char '/'
+  Keycode1 -> if shiftPressed then K.Char '!' else K.Char '1'
+  Keycode2 -> if shiftPressed then K.Char '@' else K.Char '2'
+  Keycode3 -> if shiftPressed then K.Char '#' else K.Char '3'
+  Keycode4 -> if shiftPressed then K.Char '$' else K.Char '4'
+  Keycode5 -> if shiftPressed then K.Char '%' else K.Char '5'
+  Keycode6 -> if shiftPressed then K.Char '^' else K.Char '6'
+  Keycode7 -> if shiftPressed then K.Char '&' else K.Char '7'
+  Keycode8 -> if shiftPressed then K.Char '*' else K.Char '8'
+  Keycode9 -> if shiftPressed then K.Char '(' else K.Char '9'
+  Keycode0 -> if shiftPressed then K.Char ')' else K.Char '0'
+  KeycodeColon -> K.Char ':'
+  KeycodeSemicolon -> if shiftPressed then K.Char ':' else K.Char ';'
+  KeycodeLess -> K.Char '<'
+  KeycodeEquals -> if shiftPressed then K.Char '+' else K.Char '='
+  KeycodeGreater -> K.Char '>'
+  KeycodeQuestion -> K.Char '?'
+  KeycodeAt -> K.Char '@'
+  KeycodeLeftBracket -> if shiftPressed then K.Char '{' else K.Char '['
+  KeycodeBackslash -> if shiftPressed then K.Char '|' else K.Char '\\'
+  KeycodeRightBracket -> if shiftPressed then K.Char '}' else K.Char ']'
+  KeycodeCaret -> K.Char '^'
+  KeycodeUnderscore -> K.Char '_'
+  KeycodeBackquote -> if shiftPressed then K.Char '~' else K.Char '`'
+  KeycodeUp         -> K.Up
+  KeycodeDown       -> K.Down
+  KeycodeLeft       -> K.Left
+  KeycodeRight      -> K.Right
+  KeycodeHome       -> K.Home
+  KeycodeEnd        -> K.End
+  KeycodePageUp     -> K.PgUp
+  KeycodePageDown   -> K.PgDn
+  KeycodeInsert     -> K.Insert
+  KeycodeDelete     -> K.Delete
+  KeycodeKPDivide   -> K.KP '/'
+  KeycodeKPMultiply -> K.KP '*'
+  KeycodeKPMinus    -> K.Char '-'  -- KP and normal are merged here
+  KeycodeKPPlus     -> K.Char '+'  -- KP and normal are merged here
+  KeycodeKPEnter    -> K.Return
+  KeycodeKPEquals   -> K.Return  -- in case of some funny layouts
+  KeycodeKP1 -> if shiftPressed then K.KP '1' else K.End
+  KeycodeKP2 -> if shiftPressed then K.KP '2' else K.Down
+  KeycodeKP3 -> if shiftPressed then K.KP '3' else K.PgDn
+  KeycodeKP4 -> if shiftPressed then K.KP '4' else K.Left
+  KeycodeKP5 -> if shiftPressed then K.KP '5' else K.Begin
+  KeycodeKP6 -> if shiftPressed then K.KP '6' else K.Right
+  KeycodeKP7 -> if shiftPressed then K.KP '7' else K.Home
+  KeycodeKP8 -> if shiftPressed then K.KP '8' else K.Up
+  KeycodeKP9 -> if shiftPressed then K.KP '9' else K.PgUp
+  KeycodeKP0 -> if shiftPressed then K.KP '0' else K.Insert
+  KeycodeKPPeriod -> K.Char '.'  -- dot and comma are merged here
+  KeycodeKPComma  -> K.Char '.'  -- to sidestep national standards
+  KeycodeF1       -> K.Fun 1
+  KeycodeF2       -> K.Fun 2
+  KeycodeF3       -> K.Fun 3
+  KeycodeF4       -> K.Fun 4
+  KeycodeF5       -> K.Fun 5
+  KeycodeF6       -> K.Fun 6
+  KeycodeF7       -> K.Fun 7
+  KeycodeF8       -> K.Fun 8
+  KeycodeF9       -> K.Fun 9
+  KeycodeF10      -> K.Fun 10
+  KeycodeF11      -> K.Fun 11
+  KeycodeF12      -> K.Fun 12
+  KeycodeLCtrl    -> K.DeadKey
+  KeycodeLShift   -> K.DeadKey
+  KeycodeLAlt     -> K.DeadKey
+  KeycodeLGUI     -> K.DeadKey
+  KeycodeRCtrl    -> K.DeadKey
+  KeycodeRShift   -> K.DeadKey
+  KeycodeRAlt     -> K.DeadKey
+  KeycodeRGUI     -> K.DeadKey
+  KeycodeMode     -> K.DeadKey
+  KeycodeNumLockClear -> K.DeadKey
+  KeycodeUnknown  -> K.Unknown "KeycodeUnknown"
+  _ -> let i = fromEnum $ unwrapKeycode n
+       in if | 97 <= i && i <= 122
+               && shiftPressed -> K.Char $ Char.chr $ i - 32
+             | 32 <= i && i <= 126 -> K.Char $ Char.chr i
+             | otherwise -> K.Unknown $ show n
 
 
 sDL_ALPHA_OPAQUE :: Word8
