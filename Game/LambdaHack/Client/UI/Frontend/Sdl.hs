@@ -50,8 +50,8 @@ data FrontendSession = FrontendSession
   , stexture          :: IORef SDL.Texture
   , spreviousFrame    :: IORef SingleFrame
   , sforcedShutdown   :: IORef Bool
-  , sdisplayPermitted :: MVar Bool
-  , sframeQueue       :: MVar (Maybe SingleFrame)
+  , scontinueSdlLoop  :: IORef Bool
+  , sframeQueue       :: MVar SingleFrame
   , sframeDrawn       :: MVar ()
   }
 
@@ -117,7 +117,7 @@ startupFun soptions@ClientOptions{..} rfMVar = do
   stexture <- newIORef texture
   spreviousFrame <- newIORef blankSingleFrame
   sforcedShutdown <- newIORef False
-  sdisplayPermitted <- newMVar True
+  scontinueSdlLoop <- newIORef True
   sframeQueue <- newEmptyMVar
   sframeDrawn <- newEmptyMVar
   let sess = FrontendSession{..}
@@ -127,8 +127,6 @@ startupFun soptions@ClientOptions{..} rfMVar = do
       pointTranslate (SDL.P (SDL.V2 x y)) =
         Point (fromEnum x `div` boxSize) (fromEnum y `div` boxSize)
       redraw = do
-        displayPermitted <- takeMVar sdisplayPermitted
-        when displayPermitted $ do
           -- Textures may be trashed and even invalid, especially on Windows.
           atlas <- readIORef satlas
           writeIORef satlas EM.empty
@@ -140,7 +138,6 @@ startupFun soptions@ClientOptions{..} rfMVar = do
           prevFrame <- readIORef spreviousFrame
           writeIORef spreviousFrame blankSingleFrame
           drawFrame soptions sess prevFrame
-        putMVar sdisplayPermitted displayPermitted
       loopSDL :: IO ()
       loopSDL = do
         me <- SDL.pollEvent  -- events take precedence over frames
@@ -148,18 +145,17 @@ startupFun soptions@ClientOptions{..} rfMVar = do
           Nothing -> do
             mfr <- tryTakeMVar sframeQueue
             case mfr of
-              Just (Just fr) -> do
+              Just fr -> do
                 -- Some SDL2 (OpenGL) backends are very thread-unsafe,
                 -- so we need to ensure we draw on the same (bound) OS thread
                 -- that initialized SDL, hence we have to poll frames.
                 drawFrame soptions sess fr
                 putMVar sframeDrawn ()  -- signal that drawing ended
-              Just Nothing -> error "Nothing in sframeQueue"
               Nothing -> threadDelay 15000
                            -- 60 polls per second, so keyboard snappy enough
           Just e -> handleEvent e
-        displayPermitted <- readMVar sdisplayPermitted
-        if displayPermitted
+        continueSdlLoop <- readIORef scontinueSdlLoop
+        if continueSdlLoop
         then loopSDL
         else do
           TTF.free sfont
@@ -217,7 +213,7 @@ startupFun soptions@ClientOptions{..} rfMVar = do
   loopSDL
 
 shutdown :: FrontendSession -> IO ()
-shutdown FrontendSession{..} = void $ swapMVar sdisplayPermitted False
+shutdown FrontendSession{..} = writeIORef scontinueSdlLoop False
 
 forceShutdown :: FrontendSession -> IO ()
 forceShutdown sess@FrontendSession{..} = do
@@ -229,20 +225,19 @@ display :: FrontendSession  -- ^ frontend session data
         -> SingleFrame      -- ^ the screen frame to draw
         -> IO ()
 display FrontendSession{..} curFrame = do
-  displayPermitted <- takeMVar sdisplayPermitted
-  if displayPermitted then do
-    putMVar sdisplayPermitted displayPermitted
-    putMVar sframeQueue $ Just curFrame
+  continueSdlLoop <- readIORef scontinueSdlLoop
+  if continueSdlLoop then do
+    putMVar sframeQueue curFrame
     -- Wait until the frame is drawn.
     takeMVar sframeDrawn
   else do
-    putMVar sdisplayPermitted displayPermitted
     forcedShutdown <- readIORef sforcedShutdown
     when forcedShutdown $
       -- When there's a forced shutdown, ignore displaying one frame
       -- and don't occupy the CPU creating new ones and moving on with the game
       -- (possibly also saving the new game state, surprising the player),
-      -- but give time for SDL to clean up and exit via @exitSuccess@
+      -- but delay the server and client thread(s) for a long time
+      -- and let the SDL-init thread clean up and exit via @exitSuccess@
       -- to avoid exiting via "thread blocked".
       threadDelay 50000
 
