@@ -1,3 +1,8 @@
+## [v0.7.1.0, aka 'Ancient troubles'](https://github.com/LambdaHack/LambdaHack/compare/v0.7.0.0...v0.7.1.0)
+
+- fix a crash from SDL frontend under some OpenGL drivers (no thread-safety)
+- add WWW address to the Main Menu, for other sites that may run our JS blob
+
 ## [v0.7.0.0, aka 'The dice are cast'](https://github.com/LambdaHack/LambdaHack/compare/v0.6.2.0...v0.7.0.0)
 
 - decouple tile searching from tile alteration
