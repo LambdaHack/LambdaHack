@@ -52,6 +52,7 @@ loopSave cops stateToFileName toSave =
         dataDir <- appDataDir
         tryCreateDir (dataDir </> "saves")
         let fileName = stateToFileName s
+        yield  -- minimize UI lag due to saving
         encodeEOF (dataDir </> "saves" </> fileName) (vExevLib cops, s)
         -- Wait until the save finished. During that time, the mvar
         -- is continually updated to newest state values.
