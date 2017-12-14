@@ -40,7 +40,7 @@ install:
   - SET PKG_CONFIG_PATH=C:\msys64\mingw32\lib\pkgconfig
   - SET XDG_DATA_DIRS=C:\msys64\mingw32\share
   - pacman --version
-  - appveyor-retry choco install --forcex86 ghc --version 8.2.2 | grep -v '^Extracting '
+  - appveyor-retry choco install --force --forcex86 ghc --version 8.2.2 | grep -v '^Extracting '
   - cabal --version
   - appveyor-retry pacman -S -q --noconfirm mingw-w64-i686-SDL2 mingw-w64-i686-SDL2_ttf
   - cabal update
