@@ -75,6 +75,8 @@ install:
 
 build_script:
   - make test
+  - cat stdout.txt
+  - cat stderr.txt
 
 artifacts:
   - path: LambdaHack_windows-x86_64.exe
