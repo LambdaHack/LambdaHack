@@ -75,7 +75,7 @@ e.g., when it's closed while the game is still saving progress
 you may prefer to use a native binary for your architecture, if it exists.
 
 Pre-compiled game binaries for some platforms are available through
-the release page[11] and from AppVeyor (Windows 32bit[17] and Windows 64bit[18];
+the release page[11] (and continuously from AppVeyor[18]);
 note that these no longer work on Windows XP, since Cygwin and MSYS2
 dropped support for XP). To use a pre-compiled binary archive,
 unpack it and run the executable in the unpacked directory.
@@ -247,5 +247,4 @@ Have fun!
 [11]: https://github.com/LambdaHack/LambdaHack/releases/latest
 [15]: https://github.com/ghcjs/ghcjs
 [16]: https://www.npmjs.com/package/google-closure-compiler
-[17]: https://ci.appveyor.com/project/Mikolaj/lambdahack-4hh0j/build/artifacts
 [18]: https://ci.appveyor.com/project/Mikolaj/lambdahack/build/artifacts
