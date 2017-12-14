@@ -165,6 +165,9 @@ test-short-load:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --boostRandomItem --savePrefix battleSurvival --dumpInitRngs --automateAll --keepAutomated --gameMode "battle survival" --frontendTeletype --stopAfterSeconds 2 --setDungeonRng 0 --setMainRng 0 2> /tmp/teletypetest.log
 
 
+version:
+	dist/build/LambdaHack/LambdaHack --version
+
 build-binary-common:
 	cabal install --disable-library-profiling --disable-profiling --disable-documentation -f-release --only-dependencies
 	cabal configure --disable-library-profiling --disable-profiling -f-release --prefix=/ --datadir=. --datasubdir=.

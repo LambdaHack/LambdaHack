@@ -31,7 +31,7 @@ install:
   - cp /c/msys64/mingw64/bin/libstdc++-6.dll LambdaHackTheGame
   - cp /c/msys64/mingw64/bin/libiconv-2.dll LambdaHackTheGame
   - cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
-  - dist/build/LambdaHack/LambdaHack --version
+  - make version
   - $env:LH_VERSION=${C:stdout.txt}
   - 7z a -ssc -sfx LambdaHack_$env:LH_VERSION-dev_windows-x86_64.exe LambdaHackTheGame
 
