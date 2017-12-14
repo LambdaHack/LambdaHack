@@ -31,7 +31,9 @@ install:
   - cp /c/msys64/mingw64/bin/libstdc++-6.dll LambdaHackTheGame
   - cp /c/msys64/mingw64/bin/libiconv-2.dll LambdaHackTheGame
   - cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
-  - 7z a -ssc -sfx LambdaHack_windows-x86_64.exe LambdaHackTheGame
+  - dist/build/LambdaHack/LambdaHack --version > /dev/null
+  - LH_VERSION=$(cat stdout.txt)
+  - 7z a -ssc -sfx LambdaHack_${LH_VERSION}-dev_windows-x86_64.exe LambdaHackTheGame
 
   - make test-short
   - rm -rf LambdaHackTheGame LambdaHackTheGameInstall
@@ -72,7 +74,7 @@ install:
   - cp /c/msys64/mingw32/bin/libstdc++-6.dll LambdaHackTheGame
   - cp /c/msys64/mingw32/bin/libiconv-2.dll LambdaHackTheGame
   - cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
-  - 7z a -ssc -sfx LambdaHack_windows-i686.exe LambdaHackTheGame
+  - 7z a -ssc -sfx LambdaHack_${LH_VERSION}-dev_windows-i686.exe LambdaHackTheGame
 
 build_script:
   - make test
@@ -80,7 +82,7 @@ build_script:
   - cat stderr.txt
 
 artifacts:
-  - path: LambdaHack_windows-x86_64.exe
+  - path: LambdaHack_${LH_VERSION}-dev_windows-x86_64.exe
     name: win64 binaries
-  - path: LambdaHack_windows-i686.exe
+  - path: LambdaHack_${LH_VERSION}-dev_windows-i686.exe
     name: win32 binaries
