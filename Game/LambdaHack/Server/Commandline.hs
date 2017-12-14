@@ -12,8 +12,11 @@ module Game.LambdaHack.Server.Commandline
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
+-- Cabal
+import qualified Paths_LambdaHack as Self (version)
 
 import qualified Data.Text as T
+import           Data.Version
 import           Options.Applicative
 import qualified System.Random as R
 
@@ -29,9 +32,14 @@ import Game.LambdaHack.Server.ServerOptions
 
 -- | Parser for server options from commandline arguments.
 serverOptionsPI :: ParserInfo ServerOptions
-serverOptionsPI =  info ( helper <*> serverOptionsP )
+serverOptionsPI =  info (serverOptionsP <**> helper <**> version)
                $  fullDesc
                <> progDesc "Configure debug options here, gameplay options in configuration file."
+
+version :: Parser (a -> a)
+version = infoOption (showVersion Self.version)
+  (  long "version"
+  <> help "Print engine version information" )
 
 serverOptionsP :: Parser ServerOptions
 serverOptionsP = do
