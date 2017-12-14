@@ -33,6 +33,7 @@ install:
   - cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
   - 7z a -ssc -sfx LambdaHack_windows-x86_64.exe LambdaHackTheGame
 
+  - make test-short
   - rm -rf LambdaHackTheGame LambdaHackTheGameInstall
   - cabal clean
   - cd sdl2
