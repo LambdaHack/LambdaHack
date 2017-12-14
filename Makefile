@@ -92,8 +92,6 @@ nodeBenchBattle:
 nodeBench: nodeBenchBattle nodeBenchCrawl
 
 
-test-travis-short: test-short
-
 test-travis: test-short test-medium benchNull
 
 test: test-short test-medium benchNull
