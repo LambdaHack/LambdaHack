@@ -13,7 +13,6 @@ install:
   - cabal install -fno-linear
   - cd ..
 
-build_script:
   - pwd
   - appveyor-retry make build-binary-common
   - cp /c/msys64/mingw64/bin/zlib1.dll LambdaHackTheGame
@@ -33,8 +32,49 @@ build_script:
   - cp /c/msys64/mingw64/bin/libiconv-2.dll LambdaHackTheGame
   - cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
   - 7z a -ssc -sfx LambdaHack_windows-x86_64.exe LambdaHackTheGame
+
+  - rm -rf LambdaHackTheGame LambdaHackTheGameInstall sdl2
+  - cabal clean
+
+  - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.2.2\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
+  - SET PKG_CONFIG_PATH=C:\msys64\mingw32\lib\pkgconfig
+  - SET XDG_DATA_DIRS=C:\msys64\mingw32\share
+  - pacman --version
+  - appveyor-retry choco install --forcex86 ghc --version 8.2.2 | grep -v '^Extracting '
+  - cabal --version
+  - appveyor-retry pacman -S -q --noconfirm mingw-w64-i686-SDL2 mingw-w64-i686-SDL2_ttf
+  - cabal update
+  - cabal install happy
+  - git clone -q --branch=master https://github.com/haskell-game/sdl2
+  - cd sdl2
+  - cabal install -fno-linear
+  - cd ..
+
+  - pwd
+  - appveyor-retry make build-binary-common
+  - cp /c/msys64/mingw32/bin/zlib1.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/SDL2.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/SDL2_ttf.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libfreetype-6.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libgcc_s_dw2-1.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libbz2-1.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libpng16-16.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libwinpthread-1.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libharfbuzz-0.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libglib-2.0-0.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libgraphite2.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libintl-8.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libpcre-1.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libstdc++-6.dll LambdaHackTheGame
+  - cp /c/msys64/mingw32/bin/libiconv-2.dll LambdaHackTheGame
+  - cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
+  - 7z a -ssc -sfx LambdaHack_windows-i686.exe LambdaHackTheGame
+
+build_script:
   - make test
 
 artifacts:
   - path: LambdaHack_windows-x86_64.exe
     name: win64 binaries
+  - path: LambdaHack_windows-i686.exe
+    name: win32 binaries
