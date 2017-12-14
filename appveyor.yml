@@ -36,6 +36,7 @@ install:
   - 7z a -ssc -sfx LambdaHack_${LH_VERSION}-dev_windows-x86_64.exe LambdaHackTheGame
 
   - make test-short
+  - make benchNull
   - cat stdout.txt
   - cat stderr.txt
   - rm -rf LambdaHackTheGame LambdaHackTheGameInstall
@@ -80,6 +81,7 @@ install:
 
 build_script:
   - make test-medium
+  - make nativeBench
   - cat stdout.txt
   - cat stderr.txt
 
