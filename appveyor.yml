@@ -94,3 +94,11 @@ install:
   - ps: Push-AppveyorArtifact LambdaHack_dev_windows-installer.exe -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-installer.exe"
 
 build: off
+
+artifacts:
+  - path: LambdaHack_*-dev-*_windows-x86_64.exe
+    name: LambdaHack win64 binaries
+  - path: LambdaHack_*-dev-*_windows-i686.exe
+    name: LambdaHack win32 binaries
+  - path: LambdaHack_*-dev-*_windows-installer.exe
+    name: LambdaHack win64 and win32 installer
