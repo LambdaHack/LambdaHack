@@ -100,9 +100,7 @@ SectionEnd
 
 Section "Uninstall"
 
-  Delete \r LambdaHackTheGame32
-  # "$SMPROGRAMS\Example2\*.*"
-  RMDir LambdaHackTheGame32
+  RMDir /r LambdaHackTheGame32
 
   Delete "$INSTDIR\Uninstall.exe"
 
