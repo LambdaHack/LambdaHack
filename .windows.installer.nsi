@@ -41,6 +41,7 @@ InstallDir "$PROGRAMFILES\LambdaHack" # Default installing folder ($PROGRAMFILES
 ;--------------------------------
 ;Interface Settings
 
+!define MUI_ICON $INSTDIR\favicon.ico
 !define MUI_FINISHPAGE_NOAUTOCLOSE
 !define MUI_UNFINISHPAGE_NOAUTOCLOSE
 !define MUI_ABORTWARNING # This will warn the user if he exits from the installer.
@@ -80,6 +81,8 @@ InstallDir "$PROGRAMFILES\LambdaHack" # Default installing folder ($PROGRAMFILES
 Section "Dummy Section" SecDummy
 
   SetOutPath "$INSTDIR"
+
+File favicon.ico
 
 !include WinVer.nsh
 ${If} ${AtLeastWinVista}
