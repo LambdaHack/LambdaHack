@@ -25,8 +25,8 @@ main = do
   -- For the case when the game is started not on a console.
   isTerminal <- SIO.hIsTerminalDevice SIO.stdout
   unless isTerminal $ do
-    fstdout <- SIO.openFile "stdout.txt" SIO.WriteMode
-    fstderr <- SIO.openFile "stderr.txt" SIO.WriteMode
+    fstdout <- SIO.openFile "/tmp/stdout.txt" SIO.WriteMode
+    fstderr <- SIO.openFile "/tmp/stderr.txt" SIO.WriteMode
     GHC.IO.Handle.hDuplicateTo fstdout SIO.stdout
     GHC.IO.Handle.hDuplicateTo fstderr SIO.stderr
   serverOptions <- OA.execParser serverOptionsPI
