@@ -32,12 +32,13 @@ InstallDir "$PROGRAMFILES\LambdaHack" # Default installing folder ($PROGRAMFILES
 ;--------------------------------
 ;Interface Settings
 
+!define MUI_FINISHPAGE_NOAUTOCLOSE
+!define MUI_UNFINISHPAGE_NOAUTOCLOSE
 !define MUI_ABORTWARNING # This will warn the user if he exits from the installer.
 
 ;--------------------------------
 ;Pages
 
-  !insertmacro MUI_PAGE_COMPONENTS
   !insertmacro MUI_PAGE_DIRECTORY
 
   ;Start Menu Folder Page Configuration
@@ -48,9 +49,11 @@ InstallDir "$PROGRAMFILES\LambdaHack" # Default installing folder ($PROGRAMFILES
   !insertmacro MUI_PAGE_STARTMENU Application $StartMenuFolder
 
   !insertmacro MUI_PAGE_INSTFILES
+  !insertmacro MUI_PAGE_FINISH
 
   !insertmacro MUI_UNPAGE_CONFIRM
   !insertmacro MUI_UNPAGE_INSTFILES
+  !insertmacro MUI_UNPAGE_FINISH
 
 ;--------------------------------
 ;Languages
@@ -103,11 +106,7 @@ SectionEnd
 
 Section "Uninstall"
 
-  RMDir /r LambdaHackTheGame32
-
-  Delete "$INSTDIR\Uninstall.exe"
-
-  RMDir "$INSTDIR"
+  RMDir /r "$INSTDIR"
 
   !insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder
 
