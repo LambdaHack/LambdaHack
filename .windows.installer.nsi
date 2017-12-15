@@ -9,6 +9,14 @@ ShowUninstDetails show
 SetDateSave on
 CRCCheck on
 
+!include "x64.nsh"
+Function .onInit
+StrCpy $instdir $programfiles32\LambdaHack
+${If} ${RunningX64}
+  StrCpy $instdir $programfiles64\LambdaHack
+${EndIf}
+FunctionEnd
+
 Name "LambdaHack" # Name of the installer (usually the name of the application to install).
 
 OutFile "LambdaHack_dev_windows-installer.exe" # Name of the installer's file.
@@ -74,7 +82,6 @@ Section "Dummy Section" SecDummy
   SetOutPath "$INSTDIR"
 
 !include WinVer.nsh
-!include "x64.nsh"
 ${If} ${AtLeastWinVista}
 
   ${If} ${RunningX64}
