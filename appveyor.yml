@@ -87,6 +87,6 @@ build_script:
 
 artifacts:
   - path: LambdaHack_*-dev_windows-x86_64.exe
-    name: win64 binaries
+    name: LambdaHack win64 binaries
   - path: LambdaHack_*-dev_windows-i686.exe
-    name: win32 binaries
+    name: LambdaHack win32 binaries
