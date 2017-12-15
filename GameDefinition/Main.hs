@@ -13,8 +13,10 @@ import qualified Control.Exception as Ex
 import qualified GHC.IO.Handle as GHC.IO.Handle
 import qualified Options.Applicative as OA
 import           System.Exit
+import           System.FilePath
 import qualified System.IO as SIO
 
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Server (serverOptionsPI)
 import TieKnot
 
@@ -25,8 +27,9 @@ main = do
   -- For the case when the game is started not on a console.
   isTerminal <- SIO.hIsTerminalDevice SIO.stdout
   unless isTerminal $ do
-    fstdout <- SIO.openFile "/tmp/stdout.txt" SIO.WriteMode
-    fstderr <- SIO.openFile "/tmp/stderr.txt" SIO.WriteMode
+    dataDir <- appDataDir
+    fstdout <- SIO.openFile (dataDir </> "stdout.txt") SIO.WriteMode
+    fstderr <- SIO.openFile (dataDir </> "stderr.txt") SIO.WriteMode
     GHC.IO.Handle.hDuplicateTo fstdout SIO.stdout
     GHC.IO.Handle.hDuplicateTo fstderr SIO.stderr
   serverOptions <- OA.execParser serverOptionsPI

@@ -32,15 +32,15 @@ install:
   - cp /c/msys64/mingw64/bin/libiconv-2.dll LambdaHackTheGame
   - cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
   - make version
-  - SET /p LH_VERSION=<\tmp\stdout.txt
+  - SET /p LH_VERSION=<%APPDATA%\LambdaHack\stdout.txt
   - 7z a -ssc -sfx LambdaHack_dev_windows-x86_64.exe LambdaHackTheGame
   - ps: $env:TIME_STRING=(get-date -UFormat "%Y-%m-%d").ToString()
   - ps: Push-AppveyorArtifact LambdaHack_dev_windows-x86_64.exe -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-x86_64.exe" -DeploymentName "win64 binaries archive"
 
   - make test-short
   - make benchNull
-  - cat \tmp\stdout.txt
-  - cat \tmp\stderr.txt
+  - cat %APPDATA%\LambdaHack\stdout.txt
+  - cat %APPDATA%\LambdaHack\stderr.txt
 
   - mv LambdaHackTheGame LambdaHackTheGame64
   - rm -rf LambdaHackTheGameInstall
@@ -86,8 +86,8 @@ install:
 
   - make test-medium
   - make nativeBench
-  - cat \tmp\stdout.txt
-  - cat \tmp\stderr.txt
+  - cat %APPDATA%\LambdaHack\stdout.txt
+  - cat %APPDATA%\LambdaHack\stderr.txt
 
   - mv LambdaHackTheGame LambdaHackTheGame32
   - ps: '& "C:\Program Files (x86)\NSIS\makensis.exe" .windows.installer.nsi'
