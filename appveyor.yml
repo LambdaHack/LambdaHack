@@ -35,7 +35,7 @@ install:
   - SET /p LH_VERSION=<stdout.txt
   - 7z a -ssc -sfx LambdaHack_dev_windows-x86_64.exe LambdaHackTheGame
   - ps: $env:TIME_STRING=(get-date -UFormat "%Y-%m-%d").ToString()
-  - ps: Push-AppveyorArtifact LambdaHack_dev_windows-x86_64.exe -FileName "LambdaHack_$(LH_VERSION)-dev-$($env:TIME_STRING)_windows-x86_64.exe"
+  - ps: Push-AppveyorArtifact LambdaHack_dev_windows-x86_64.exe -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-x86_64.exe"
 
   - make test-short
   - make benchNull
