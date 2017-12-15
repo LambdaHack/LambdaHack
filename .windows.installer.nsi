@@ -7,6 +7,7 @@ SetCompressor /SOLID lzma
 ShowInstDetails show
 ShowUninstDetails show
 SetDateSave on
+CRCCheck on
 
 Name "LambdaHack" # Name of the installer (usually the name of the application to install).
 
@@ -35,6 +36,11 @@ InstallDir "$PROGRAMFILES\LambdaHack" # Default installing folder ($PROGRAMFILES
 !define MUI_FINISHPAGE_NOAUTOCLOSE
 !define MUI_UNFINISHPAGE_NOAUTOCLOSE
 !define MUI_ABORTWARNING # This will warn the user if he exits from the installer.
+!define MUI_FINISHPAGE_NOREBOOTSUPPORT
+!define MUI_FINISHPAGE_SHOWREADME $INSTDIR\README.md
+!define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
+!define MUI_FINISHPAGE_LINK "Gameplay manual at LambdaHack website"
+!define MUI_FINISHPAGE_LINK_LOCATION https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/PLAYING.md
 
 ;--------------------------------
 ;Pages
@@ -89,17 +95,6 @@ Section "Dummy Section" SecDummy
   !insertmacro MUI_STARTMENU_WRITE_END
 
 SectionEnd
-
-;--------------------------------
-;Descriptions
-
-  ;Language strings
-  LangString DESC_SecDummy ${LANG_ENGLISH} "A test section."
-
-  ;Assign language strings to sections
-  !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-    !insertmacro MUI_DESCRIPTION_TEXT ${SecDummy} $(DESC_SecDummy)
-  !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 ;--------------------------------
 ;Uninstaller Section
