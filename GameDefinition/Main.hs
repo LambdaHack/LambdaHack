@@ -16,6 +16,7 @@ import           System.Exit
 import           System.FilePath
 import qualified System.IO as SIO
 
+import Game.LambdaHack.Common.File (tryCreateDir)
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Server (serverOptionsPI)
 import TieKnot
@@ -28,6 +29,7 @@ main = do
   isTerminal <- SIO.hIsTerminalDevice SIO.stdout
   unless isTerminal $ do
     dataDir <- appDataDir
+    tryCreateDir dataDir
     fstdout <- SIO.openFile (dataDir </> "stdout.txt") SIO.WriteMode
     fstderr <- SIO.openFile (dataDir </> "stderr.txt") SIO.WriteMode
     GHC.IO.Handle.hDuplicateTo fstdout SIO.stdout
