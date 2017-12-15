@@ -73,8 +73,20 @@ Section "Dummy Section" SecDummy
 
   SetOutPath "$INSTDIR"
 
-  ;ADD YOUR OWN FILES HERE...
-  File /r LambdaHackTheGame32\*
+!include WinVer.nsh
+!include "x64.nsh"
+${If} ${AtLeastWinVista}
+
+  ${If} ${RunningX64}
+    File /r LambdaHackTheGame64\*
+  ${Else}
+    File /r LambdaHackTheGame32\*
+  ${Endif}
+
+${Else}
+  MessageBox MB_OK|MB_ICONSTOP "This program requires Windows Vista or newer."
+  Quit
+${Endif}
 
   ;Store installation folder
   WriteRegStr HKLM "Software\LambdaHack" "Install_Dir" $INSTDIR
