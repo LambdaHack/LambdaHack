@@ -10,25 +10,25 @@ SetDateSave on
 CRCCheck on
 
 !include "x64.nsh"
-Function .onInit
-StrCpy $instdir $programfiles32\LambdaHack
-${If} ${RunningX64}
-  StrCpy $instdir $programfiles64\LambdaHack
-${EndIf}
-FunctionEnd
+#Function .onInit
+#StrCpy $instdir $programfiles32\LambdaHack
+#${If} ${RunningX64}
+#  StrCpy $instdir $programfiles64\LambdaHack
+#${EndIf}
+#FunctionEnd
 
 Name "LambdaHack" # Name of the installer (usually the name of the application to install).
 
 OutFile "LambdaHack_dev_windows-installer.exe" # Name of the installer's file.
 
-InstallDir "$PROGRAMFILES\LambdaHack" # Default installing folder ($PROGRAMFILES is Program Files folder).
+InstallDir "$LOCALAPPDATA\LambdaHack" # Default installing folder ($PROGRAMFILES is Program Files folder, but requires admin rights, so I pick some local folder instead).
 
 ; Registry key to check for directory (so if you install again, it will
 ; overwrite the old one automatically)
   InstallDirRegKey HKLM "Software\LambdaHack" "Install_Dir"
 
 ; Request application privileges for Windows Vista
-RequestExecutionLevel admin
+RequestExecutionLevel user
 
 ;--------------------------------
 ;Variables
@@ -39,14 +39,16 @@ RequestExecutionLevel admin
 ;Interface Settings
 
 !define MUI_ICON favicon.ico
+!define MUI_UNICON favicon.ico
 !define MUI_FINISHPAGE_NOAUTOCLOSE
 !define MUI_UNFINISHPAGE_NOAUTOCLOSE
 !define MUI_ABORTWARNING # This will warn the user if he exits from the installer.
 !define MUI_FINISHPAGE_NOREBOOTSUPPORT
-!define MUI_FINISHPAGE_SHOWREADME "$INSTDIR\README.md"
+!define MUI_FINISHPAGE_SHOWREADME "$INSTDIR\README.txt"
 !define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
 !define MUI_FINISHPAGE_LINK "Gameplay manual at LambdaHack website"
 !define MUI_FINISHPAGE_LINK_LOCATION https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/PLAYING.md
+!define MUI_STARTMENUPAGE_DEFAULTFOLDER ""
 
 ;--------------------------------
 ;Pages
@@ -77,9 +79,12 @@ RequestExecutionLevel admin
 
 Section "Dummy Section" SecDummy
 
+#SetShellVarContext all
+
   SetOutPath "$INSTDIR"
 
 File favicon.ico
+File "/oname=README.txt" README.md
 
 !include WinVer.nsh
 ${If} ${AtLeastWinVista}
@@ -109,10 +114,15 @@ ${Endif}
 
     ;Create shortcuts
     CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-    CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
+#    CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
+    CreateShortcut "$SMPROGRAMS\$StartMenuFolder\LambdaHack.lnk" "$INSTDIR\LambdaHack.exe" "" "$INSTDIR\favicon.ico"
 
   !insertmacro MUI_STARTMENU_WRITE_END
 
+SectionEnd
+
+Section "Desktop Shortcut"
+CreateShortcut "$DESKTOP\LambdaHack.lnk" "$INSTDIR\LambdaHack.exe" "" "$INSTDIR\favicon.ico"
 SectionEnd
 
 ;--------------------------------
@@ -124,8 +134,10 @@ Section "Uninstall"
 
   !insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder
 
-  Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk"
+#  Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk"
+  Delete "$SMPROGRAMS\$StartMenuFolder\LambdaHack.lnk"
   RMDir "$SMPROGRAMS\$StartMenuFolder"
+  Delete "$DESKTOP\LambdaHack.lnk"
 
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\LambdaHack"
   DeleteRegKey /ifempty HKLM "Software\LambdaHack"
