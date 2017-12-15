@@ -27,11 +27,8 @@ InstallDir "$PROGRAMFILES\LambdaHack" # Default installing folder ($PROGRAMFILES
 ; overwrite the old one automatically)
   InstallDirRegKey HKLM "Software\LambdaHack" "Install_Dir"
 
-  ;Request application privileges for Windows Vista
-  RequestExecutionLevel user
-
 ; Request application privileges for Windows Vista
-# RequestExecutionLevel admin
+RequestExecutionLevel admin
 
 ;--------------------------------
 ;Variables
