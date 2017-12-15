@@ -3,13 +3,16 @@
 ;--------------------------------
 ;General
 
+SetCompressor /SOLID lzma
+ShowInstDetails show
+ShowUninstDetails show
+SetDateSave on
+
 Name "LambdaHack" # Name of the installer (usually the name of the application to install).
 
 OutFile "LambdaHack_dev_windows-installer.exe" # Name of the installer's file.
 
 InstallDir "$PROGRAMFILES\LambdaHack" # Default installing folder ($PROGRAMFILES is Program Files folder).
-
-ShowInstDetails show # This will always show the installation details.
 
 ; Registry key to check for directory (so if you install again, it will
 ; overwrite the old one automatically)
