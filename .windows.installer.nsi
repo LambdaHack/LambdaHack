@@ -44,11 +44,11 @@ RequestExecutionLevel user
 !define MUI_UNFINISHPAGE_NOAUTOCLOSE
 !define MUI_ABORTWARNING # This will warn the user if he exits from the installer.
 !define MUI_FINISHPAGE_NOREBOOTSUPPORT
-!define MUI_FINISHPAGE_SHOWREADME "$INSTDIR\README.txt"
-!define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
 !define MUI_FINISHPAGE_LINK "Gameplay manual at LambdaHack website"
 !define MUI_FINISHPAGE_LINK_LOCATION https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/PLAYING.md
-!define MUI_STARTMENUPAGE_DEFAULTFOLDER ""
+!define MUI_STARTMENUPAGE_DEFAULTFOLDER "Games"
+!define MUI_STARTMENUPAGE_TEXT_TOP "Select the Start Menu subfolder in which you would like to create the program's shortcut. You can also place the shortcut in the main folder, if you leave the selection blank."
+!define MUI_STARTMENUPAGE_TEXT_CHECKBOX "Do not create start menu nor desktop shortcuts"
 
 ;--------------------------------
 ;Pages
@@ -84,7 +84,6 @@ Section "Dummy Section" SecDummy
   SetOutPath "$INSTDIR"
 
 File favicon.ico
-File "/oname=README.txt" README.md
 
 !include WinVer.nsh
 ${If} ${AtLeastWinVista}
@@ -103,9 +102,11 @@ ${Endif}
   ;Store installation folder
   WriteRegStr HKLM "Software\LambdaHack" "Install_Dir" $INSTDIR
 
+  WriteUninstaller "$INSTDIR\Uninstall.exe"
   ; Write the uninstall keys for Windows
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\LambdaHack" "DisplayName" "LambdaHack"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\LambdaHack" "UninstallString" '"$INSTDIR\Uninstall.exe"'
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\LambdaHack" "UninstallString" "$INSTDIR\Uninstall.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\LambdaHack" "DisplayIcon" "$INSTDIR\favicon.ico"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\LambdaHack" "NoModify" 1
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\LambdaHack" "NoRepair" 1
   WriteUninstaller "$INSTDIR\Uninstall.exe"
@@ -117,12 +118,10 @@ ${Endif}
 #    CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
     CreateShortcut "$SMPROGRAMS\$StartMenuFolder\LambdaHack.lnk" "$INSTDIR\LambdaHack.exe" "" "$INSTDIR\favicon.ico"
 
+    CreateShortcut "$DESKTOP\LambdaHack.lnk" "$INSTDIR\LambdaHack.exe" "" "$INSTDIR\favicon.ico"
+
   !insertmacro MUI_STARTMENU_WRITE_END
 
-SectionEnd
-
-Section "Desktop Shortcut"
-CreateShortcut "$DESKTOP\LambdaHack.lnk" "$INSTDIR\LambdaHack.exe" "" "$INSTDIR\favicon.ico"
 SectionEnd
 
 ;--------------------------------
