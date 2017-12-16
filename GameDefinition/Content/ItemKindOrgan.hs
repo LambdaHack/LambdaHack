@@ -186,7 +186,7 @@ venomTooth = fist
   , idamage  = toDmg $ 2 `d` 1
   , iaspects = [Timeout $ 5 + 1 `d` 3]
   , ieffects = [Recharging (toOrganGameTurn "slowed" (3 + 1 `d` 3))]
-  , idesc    = "A hollow fang, filled with venom."
+  , idesc    = "A chilling numbness spreads from its bite."
   }
 venomFang = fist
   { iname    = "venom fang"
@@ -206,7 +206,7 @@ screechingBeak = fist
   , idamage  = toDmg $ 2 `d` 1
   , iaspects = [Timeout $ 5 + 1 `d` 5]
   , ieffects = [Recharging $ Summon "scavenger" $ 1 + 1 `dl` 2]
-  , idesc    = "Both a weapon and a warning."
+  , idesc    = "Both a weapon and a beacon, calling more scavengers to the meal."
   }
 largeTail = fist
   { iname    = "large tail"
