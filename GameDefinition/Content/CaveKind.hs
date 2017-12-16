@@ -60,7 +60,7 @@ rogue = CaveKind
   , clegendLitTile  = "legendLit"
   , cescapeGroup    = Nothing
   , cstairFreq      = [("staircase", 100)]
-  , cdesc         = "Winding tunnels that stretch into the dark"
+  , cdesc         = "Winding tunnels that stretch into the dark."
   }  -- no lit corridor alternative, because both lit # and . look bad here
 arena = rogue
   { csymbol       = 'A'
@@ -98,7 +98,7 @@ arena2 = arena
   , citemNum      = 7 `d` 5  -- rare, so make it exciting
   , citemFreq     = [("useful", 20), ("treasure", 40), ("any vial", 40)]
   , cdefTile      = "arenaSetDark"
-  , cdesc         = "Smoke hangs heavy in the air, filling the rooms with strange scents."
+  , cdesc         = "Velvet couches and the strong smell of tobacco."
   }
 laboratory = arena2
   { csymbol       = 'L'
@@ -121,7 +121,7 @@ laboratory = arena2
   , cdefTile      = "fillerWall"
   , cdarkCorTile  = "labTrailLit"  -- let lab smoke give off light always
   , clitCorTile   = "labTrailLit"
-  , cdesc         = "An experiment (or maybe it manufacturing?) has gone wrong here."
+  , cdesc         = "Shattered glassware and the sharp scent of spilt chemicals show that something terrible happened here."
   }
 empty = rogue
   { csymbol       = 'E'
@@ -153,7 +153,7 @@ empty = rogue
   , cdefTile      = "emptySet"
   , cdarkCorTile  = "floorArenaDark"
   , clitCorTile   = "floorArenaLit"
-  , cdesc         = "Sound echoes through the darkness, the hiss of geysers sounding all around."
+  , cdesc         = "Swirls of warm fog fill the air, the hiss of geysers sounding all around."
   }
 noise = rogue
   { csymbol       = 'N'
@@ -189,12 +189,12 @@ noise2 = noise
   , citemNum      = 13 `d` 5  -- an incentive to explore the final labyrinth
   , cplaceFreq    = [("noise", 1), ("mine", 99)]
   , cstairFreq    = [("gated staircase", 100)]
-  , cdesc         = "Frost stretches across the bare rock."
+  , cdesc         = "Pillars of shining ice create a frozen labyrinth."
   }
 shallow2rogue = rogue
   { cfreq         = [("shallow random 2", 100)]
   , cextraStairs  = 1  -- ensure heroes meet initial monsters and their loot
-  , cdesc         = ""
+  , cdesc         = "The snorts and grunts of savage beasts can be clearly heard."
   }
 shallow1rogue = shallow2rogue
   { csymbol       = 'B'
