@@ -319,7 +319,7 @@ gilaMonster = ItemKind
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = "Slow-moving, but with a venomous bite."
+  , idesc    = "Numbing venom ensures that even the fastest prey has no escape."
   , ikit     = [ ("venom tooth", COrgan), ("small claw", COrgan)
                , ("eye 3", COrgan), ("nostril", COrgan)
                , ("animal brain", COrgan) ]
@@ -393,7 +393,7 @@ alligator = ItemKind
   , iaspects = [ AddMaxHP 41, AddMaxCalm 70, AddSpeed 18, AddNocto 2 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = "Danger lurks in the dark water."
+  , idesc    = "An armored predator from the dawn of time."
   , ikit     = [ ("large jaw", COrgan), ("large tail", COrgan)
                , ("small claw", COrgan)
                , ("armored skin", COrgan), ("eye 6", COrgan)
@@ -510,7 +510,7 @@ geyserArsenic = ItemKind
                , AddAbility AbWait 1, AddAbility AbMelee 1 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = "The sharp scent betrays the toxins within the spray."
+  , idesc    = "The sharp scent betrays the poison within the spray."
   , ikit     = [("arsenic vent", COrgan), ("arsenic fissure", COrgan)]
   }
 geyserSulfur = ItemKind
@@ -528,6 +528,6 @@ geyserSulfur = ItemKind
                , AddAbility AbWait 1, AddAbility AbMelee 1 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = "The water boils and bubbles, stinking of rotten eggs."
+  , idesc    = "The pool boils and bubbles, stinking of rotten eggs. Despite the smell, these waters purify and strengthen."
   , ikit     = [("sulfur vent", COrgan), ("sulfur fissure", COrgan)]
   }
