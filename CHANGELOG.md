@@ -1,5 +1,6 @@
 ## [v0.7.1.0, aka 'Ancient troubles'](https://github.com/LambdaHack/LambdaHack/compare/v0.7.0.0...v0.7.1.0)
 
+- package for Windows as an installer and also as zip archives
 - fix a crash from SDL frontend under some OpenGL drivers (no thread-safety)
 - add WWW address to the Main Menu, for other sites that may run our JS blob
 
