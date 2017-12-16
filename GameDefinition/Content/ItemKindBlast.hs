@@ -87,7 +87,7 @@ firecracker n = ItemKind
                     $ toGroupName $ "firecracker" <+> tshow (n - 1)
                   | n > 2 ]
   , ifeature = [toVelocity 5, Fragile, Identified]
-  , idesc    = "String and paper, concealing a deadly surprise."
+  , idesc    = "A scrap of burnt paper, speckled with black powder residue."
   , ikit     = []
   }
 firecracker7 = firecracker 7
