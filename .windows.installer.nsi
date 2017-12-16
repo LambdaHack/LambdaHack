@@ -47,7 +47,6 @@ RequestExecutionLevel user
 !define MUI_FINISHPAGE_LINK "Gameplay manual at LambdaHack website"
 !define MUI_FINISHPAGE_LINK_LOCATION https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/PLAYING.md
 !define MUI_STARTMENUPAGE_DEFAULTFOLDER "Games"
-!define MUI_STARTMENUPAGE_TEXT_TOP "Select the Start Menu subfolder in which you would like to create the program's shortcut. You can also place the shortcut in the main folder, if you enter '.' (a dot)."
 !define MUI_STARTMENUPAGE_TEXT_CHECKBOX "Do not create start menu nor desktop shortcuts"
 
 ;--------------------------------
