@@ -276,7 +276,7 @@ blanket = ItemKind
                , AddArmorMelee 1, AddMaxCalm 2 ]
   , ieffects = []
   , ifeature = [Lobable, Identified, Equipable]  -- not Fragile; reusable douse
-  , idesc    = "Warm and comforting, woven from soft wool."
+  , idesc    = "Warm, comforting, and concealing, woven from soft wool. "
   , ikit     = []
   }
 
