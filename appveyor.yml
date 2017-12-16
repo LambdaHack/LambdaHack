@@ -33,9 +33,9 @@ install:
   - cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
   - make version
   - SET /p LH_VERSION=<%APPDATA%\LambdaHack\stdout.txt
-  - 7z a -ssc -sfx LambdaHack_dev_windows-x86_64.exe LambdaHackTheGame
+  - 7z a -ssc -tzip LambdaHack_dev_windows-x86_64.zip LambdaHackTheGame
   - ps: $env:TIME_STRING=(get-date -UFormat "%Y-%m-%d").ToString()
-  - ps: Push-AppveyorArtifact LambdaHack_dev_windows-x86_64.exe -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-x86_64.exe" -DeploymentName "win64 binaries archive"
+  - ps: Push-AppveyorArtifact LambdaHack_dev_windows-x86_64.zip -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-x86_64.zip" -DeploymentName "win64 binaries archive"
 
   - make test-short
   - make benchNull
@@ -81,8 +81,8 @@ install:
   - cp /c/msys64/mingw32/bin/libstdc++-6.dll LambdaHackTheGame
   - cp /c/msys64/mingw32/bin/libiconv-2.dll LambdaHackTheGame
   - cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
-  - 7z a -ssc -sfx LambdaHack_dev_windows-i686.exe LambdaHackTheGame
-  - ps: Push-AppveyorArtifact LambdaHack_dev_windows-i686.exe -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-i686.exe" -DeploymentName "win32 binaries archive"
+  - 7z a -ssc -tzip LambdaHack_dev_windows-i686.zip LambdaHackTheGame
+  - ps: Push-AppveyorArtifact LambdaHack_dev_windows-i686.zip -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-i686.zip" -DeploymentName "win32 binaries archive"
 
   - make test-medium
   - make nativeBench
