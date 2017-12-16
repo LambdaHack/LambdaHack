@@ -47,7 +47,7 @@ RequestExecutionLevel user
 !define MUI_FINISHPAGE_LINK "Gameplay manual at LambdaHack website"
 !define MUI_FINISHPAGE_LINK_LOCATION https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/PLAYING.md
 !define MUI_STARTMENUPAGE_DEFAULTFOLDER "Games"
-!define MUI_STARTMENUPAGE_TEXT_TOP "Select the Start Menu subfolder in which you would like to create the program's shortcut. You can also place the shortcut in the main folder, if you leave the selection blank."
+!define MUI_STARTMENUPAGE_TEXT_TOP "Select the Start Menu subfolder in which you would like to create the program's shortcut. You can also place the shortcut in the main folder, if you enter '.' (a dot)."
 !define MUI_STARTMENUPAGE_TEXT_CHECKBOX "Do not create start menu nor desktop shortcuts"
 
 ;--------------------------------
@@ -109,13 +109,12 @@ ${Endif}
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\LambdaHack" "DisplayIcon" "$INSTDIR\favicon.ico"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\LambdaHack" "NoModify" 1
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\LambdaHack" "NoRepair" 1
-  WriteUninstaller "$INSTDIR\Uninstall.exe"
 
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
 
     ;Create shortcuts
     CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-#    CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
+    CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Uninstall LambdaHack.lnk" "$INSTDIR\Uninstall.exe"
     CreateShortcut "$SMPROGRAMS\$StartMenuFolder\LambdaHack.lnk" "$INSTDIR\LambdaHack.exe" "" "$INSTDIR\favicon.ico"
 
     CreateShortcut "$DESKTOP\LambdaHack.lnk" "$INSTDIR\LambdaHack.exe" "" "$INSTDIR\favicon.ico"
@@ -133,7 +132,7 @@ Section "Uninstall"
 
   !insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder
 
-#  Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk"
+  Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall LambdaHack.lnk"
   Delete "$SMPROGRAMS\$StartMenuFolder\LambdaHack.lnk"
   RMDir "$SMPROGRAMS\$StartMenuFolder"
   Delete "$DESKTOP\LambdaHack.lnk"
