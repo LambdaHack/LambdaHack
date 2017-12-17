@@ -334,7 +334,12 @@ explosive = ItemKind
       -- but instead causes a couple of unplesant effects directly:
       -- slight burning, before the fire is doused, and paralysis
       -- from slipping on the oil and slippery grip of items,
-      -- until the oil can be wiped out; it also causes a tiny impact damage
+      -- until the oil can be wiped out; it also causes a tiny impact damage;
+      -- all this suggests that we should define "blastI" item
+      -- that not only blasts outward, but also inward, by first creating
+      -- particles that move 1 (or 2?) tle away outward and then starting
+      -- a standard "blast" explosion in each (firecracker does that,
+      -- but with many, not just 2 levels of explosions)
   , ifeature = [Lobable, Fragile, Identified, toVelocity 50]
       -- not Applicable, because won't be applied, only thrown;
       -- Fragile, because we want it to explode at target tile, even if
