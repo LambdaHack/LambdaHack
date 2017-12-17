@@ -294,26 +294,69 @@ blanket = ItemKind
 --
 -- No flask nor temporary organ of Calm depletion, since Calm reduced often.
 
-explosive = ItemKind  -- broadly based on the "flask" item kind
-  { isymbol = symbolFlask  -- went with the general "thrown object" symbol
-  , iname = "explosive"
+-- All the explosive items are currently disabled (empty rarity),
+-- so that we can brainstorm them without breaking game balance.
+explosive = ItemKind
+  { isymbol = symbolFlask
+      -- if it's, in fact, a flask of laboratory-produced highly explosive
+      -- liquid, symbolFlask makes sense; it also suggests it can be lobbed,
+      -- which is very handy for an explosive thrown weapon;
+      -- but symbolProjectile makes sense, too, if it's essentially a small
+      -- grenade, specifically designed to be thrown, or symbolTool
+      -- if it's a heavy mining explosive
+  , iname = "explosive"  -- we will need something more specific, even it it's
+                         -- only a generic template item
   , ifreq = [("useful", 100)]
-  , iflavour = zipPlain [BrRed]  -- unsure how this works, but if it does work the way I think, the explosives will need new ones anyway
+  , iflavour = zipLiquid [BrRed]
+      -- this ensures the object will be bright red on the screen
+      -- and will be described as "red-speckled"; we are also free
+      -- to manually set both the colour and the description
   , icount = 1
-  , irarity = []  -- unsure how this works
+  , irarity = []  -- [(1, 7), (10, 4)] means it's quite common (7) first level
+                  -- and less common (4) on the deepest level of the dungeon,
+                  -- linearly interpolating in-between
   , iverbHit = "blast"
-  , iweight = 500
+  , iweight = 500  -- flavour and affects the speed when thrown;
+                   -- 250g and below is full speed
   , idamage = toDmg 0
   , iaspects = []
-  , ieffects = [ Explode "blast 20"
-               , OnSmash (Explode "blast 20") ]
-  , ifeature = [Applicable, Lobable, toVelocity 50]
+  , ieffects = [Explode "blast 20", OnSmash (Explode "blast 20")]
+      -- this is tricky: @OnSmash@ causes the explosion when the item
+      -- hits a tile (including floor), so a well aimed item can successfully
+      -- ungulf many enemies (or a single hidden or fast-moving enemy)
+      -- in an explosion; however the lone @Explode "blast 20"@
+      -- activates only when an actor is hit (or applies the item)
+      -- and makes the actor the centre of the explosion and so keeps him
+      -- unharmed (from the initial explosion; fireckrackers cause chain
+      -- explosion so the secondary blasts can harm him);
+      -- this is why "oil lamp", which is the closest to a grenade
+      -- we currently have, doesn't have a lone Exlode effect,
+      -- but instead causes a couple of unplesant effects directly:
+      -- slight burning, before the fire is doused, and paralysis
+      -- from slipping on the oil and slippery grip of items,
+      -- until the oil can be wiped out; it also causes a tiny impact damage
+  , ifeature = [Lobable, Fragile, Identified, toVelocity 50]
+      -- not Applicable, because won't be applied, only thrown;
+      -- Fragile, because we want it to explode at target tile, even if
+      -- it hits no actor nor wall when it gets there;
+      -- Identified, because the player recognizes it from the description
+      -- already (unless we design granades that all look alike, but some
+      -- explode with blast, others with fireckracker, etc. and the player
+      -- needs to experiment to learn to recognize them);
+      -- @toVelocity 50@ means will have 50% of the speed of an ideally shaped
+      -- item of the same weight
   , idesc = "The practical application of science."
   , ikit = []
   }
 
 firecracker = explosive
-  { idesc = "String and paper, concealing a deadly surprise."
+  { iname = "firecracker bag/stick?"
+     -- remove the revealing name if we go the "10 kinds of grenades" route,
+     -- but make sure it's not too similar to the current "20 kinds of flasks
+     -- and potions that also explode" fun
+  , iverbHit = "crack"  -- a pun, matches the verb from ItemKindBlast.hs
+  , ieffects = [Explode "firecracker 5", OnSmash (Explode "firecracker 5")]
+  , idesc = "String and paper, concealing a deadly surprise."
   }
 
 flask = ItemKind
