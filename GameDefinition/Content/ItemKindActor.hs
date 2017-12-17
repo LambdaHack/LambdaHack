@@ -260,7 +260,7 @@ griffonVulture = ItemKind
       -- on either side, are just too frustrating.
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = "It soars high above, searching for the scent of death."
+  , idesc    = "It soars high above, searching for vulnerable prey."
   , ikit     = [ ("screeching beak", COrgan)  -- in reality it grunts and hisses
                , ("small claw", COrgan), ("eye 7", COrgan)
                , ("animal brain", COrgan) ]
