@@ -43,13 +43,21 @@ warrior = ItemKind
                , ("sapient brain", COrgan) ]
   }
 warrior2 = warrior
-  { iname    = "adventurer" }
+  { iname    = "adventurer"
+  -- , idesc    = ""
+  }
 warrior3 = warrior
-  { iname    = "blacksmith" }
+  { iname    = "blacksmith"
+  -- , idesc    = ""
+   }
 warrior4 = warrior
-  { iname    = "forester" }
+  { iname    = "forester"
+  -- , idesc    = ""
+  }
 warrior5 = warrior
-  { iname    = "scientist" }
+  { iname    = "scientist"
+  -- , idesc    = ""
+  }
 
 scout = warrior
   { iname    = "scout"
@@ -58,11 +66,13 @@ scout = warrior
                ++ [ ("add sight", CEqp)
                   , ("armor ranged", CEqp)
                   , ("add nocto 1", CInv) ]
+  -- , idesc    = ""
   }
 ranger = warrior
   { iname    = "ranger"
   , ifreq    = [("ranger hero", 100), ("mobile", 1)]
   , ikit     = ikit warrior ++ [("weak arrow", CInv), ("armor ranged", CEqp)]
+  -- , idesc    = ""
   }
 escapist = warrior
   { iname    = "escapist"
@@ -74,6 +84,7 @@ escapist = warrior
                   , ("flask", CInv)
                   , ("light source", CInv)
                   , ("blanket", CInv) ]
+  -- , idesc    = ""
   }
 ambusher = warrior
   { iname    = "ambusher"
@@ -82,25 +93,37 @@ ambusher = warrior
                ++ [ ("ring of opportunity sniper", CEqp)
                   , ("light source", CEqp), ("wooden torch", CInv)
                   , ("weak arrow", CInv), ("any arrow", CSha), ("flask", CSha) ]
+  -- , idesc    = ""
   }
 soldier = warrior
   { iname    = "soldier"
   , ifreq    = [("soldier hero", 100), ("mobile", 1)]
   , ikit     = ikit warrior ++ [("starting weapon", CEqp)]
+  -- , idesc    = ""
   }
 
 civilian = warrior
   { iname    = "clerk"
   , ifreq    = [("civilian", 100), ("mobile", 1)]
-  , iflavour = zipPlain [BrBlack] }
+  , iflavour = zipPlain [BrBlack]
+  -- , idesc    = ""
+  }
 civilian2 = civilian
-  { iname    = "hairdresser" }
+  { iname    = "hairdresser"
+  -- , idesc    = ""
+  }
 civilian3 = civilian
-  { iname    = "lawyer" }
+  { iname    = "lawyer"
+  -- , idesc    = ""
+  }
 civilian4 = civilian
-  { iname    = "peddler" }
+  { iname    = "peddler"
+  -- , idesc    = ""
+  }
 civilian5 = civilian
-  { iname    = "tax collector" }
+  { iname    = "tax collector"
+  -- , idesc    = ""
+  }
 
 -- * Monsters
 

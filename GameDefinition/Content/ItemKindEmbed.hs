@@ -40,12 +40,14 @@ stairsDown = stairsUp
   , iname    = "staircase down"
   , ifreq    = [("staircase down", 1)]
   , ieffects = [Ascend False]
+  , idesc    = ""
   }
 escape = stairsUp
   { iname    = "escape"
   , ifreq    = [("escape", 1)]
   , iflavour = zipPlain [BrYellow]
   , ieffects = [Escape]
+  , idesc    = ""
   }
 terrainCache = stairsUp
   { isymbol  = 'O'
@@ -53,6 +55,7 @@ terrainCache = stairsUp
   , ifreq    = [("terrain cache", 1)]
   , iflavour = zipPlain [BrYellow]
   , ieffects = [CreateItem CGround "useful" TimerNone]
+  , idesc    = "Glittering gold, just waiting to be taken."
   }
 terrainCacheTrap = ItemKind
   { isymbol  = '^'
@@ -70,7 +73,7 @@ terrainCacheTrap = ItemKind
                       , ELabel "", ELabel "", ELabel ""
                       , ELabel "", ELabel "" ]]
   , ifeature = [Identified]  -- not Durable, springs at most once
-  , idesc    = "Glittering gold, just waiting to be taken."
+  , idesc    = "It's a trap!"
   , ikit     = []
   }
 signboardExit = ItemKind

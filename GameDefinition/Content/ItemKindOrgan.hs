@@ -149,6 +149,7 @@ arsenicFissure = boilingFissure
   , icount   = 3 + 1 `d` 3
   , idamage  = toDmg $ 2 `d` 1
   , ieffects = [toOrganGameTurn "weakened" (2 + 1 `d` 2)]
+  , idesc    = ""
   }
 sulfurFissure = boilingFissure
   { iname    = "fissure"
@@ -156,6 +157,7 @@ sulfurFissure = boilingFissure
   , icount   = 2 + 1 `d` 2
   , idamage  = toDmg 0
   , ieffects = [RefillHP 5]
+  , idesc    = ""
   }
 beeSting = fist
   { iname    = "bee sting"

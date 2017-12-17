@@ -544,6 +544,7 @@ potion2 = potion
   , irarity  = [(6, 9), (10, 9)]
   , ieffects = [ Unique, ELabel "of Attraction", Impress, RefillCalm (-20)
                , OnSmash (Explode "pheromone") ]
+  -- , idesc    = ""
   }
 potion3 = potion
   { ieffects = [ RefillHP 5, DropItem 1 maxBound COrgan "poisoned"
@@ -603,6 +604,7 @@ potion10 = potion
                , Impress, RefillCalm (-60)
                , OnSmash (Explode "healing mist 2")
                , OnSmash (Explode "pheromone") ]
+  -- , idesc    = ""
   }
 
 -- * Non-exploding consumables, not specifically designed for throwing
@@ -853,6 +855,7 @@ necklace7 = necklace
                , Recharging (RefillCalm (-1)) ]  -- fake "hears something" :)
                ++ ieffects necklace
   , ifeature = Durable : ifeature necklace
+  -- , idesc    = ""
   }
 necklace8 = necklace
   { iaspects = [Timeout $ (1 `d` 3 + 3 - 1 `dl` 3) * 5]
@@ -967,6 +970,7 @@ ring6 = ring
   , ieffects = [ Unique, ELabel "of Rush"  -- no explosion, because Durable
                , EqpSlot EqpSlotAddSpeed ]
   , ifeature = Durable : ifeature ring
+  -- , idesc    = ""
   }
 ring7 = ring
   { ifreq    = [("useful", 10), ("ring of opportunity sniper", 1) ]
@@ -1169,6 +1173,7 @@ hammerParalyze = hammer
   , idamage  = toDmg $ 8 `d` 1
   , iaspects = iaspects hammer ++ [Timeout $ (1 `d` 2 + 3 - 1 `dl` 2) * 2]
   , ieffects = ieffects hammer ++ [Unique, Recharging $ Paralyze 10]
+  -- , idesc    = ""
   }
 hammerSpark = hammer
   { iname    = "Grand Smithhammer"
@@ -1177,6 +1182,7 @@ hammerSpark = hammer
   , idamage  = toDmg $ 12 `d` 1
   , iaspects = iaspects hammer ++ [AddShine 3, Timeout $ (1 `d` 4 + 4 - 1 `dl` 4) * 2]
   , ieffects = ieffects hammer ++ [Unique, Recharging $ Explode "spark"]
+  -- , idesc    = ""
   }
 sword = ItemKind
   { isymbol  = symbolEdged

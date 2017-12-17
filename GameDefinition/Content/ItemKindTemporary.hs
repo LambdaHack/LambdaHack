@@ -42,7 +42,7 @@ tmpAs name aspects = ItemKind
                , Recharging $ tmpNoLonger name
                , OnSmash $ tmpNoLonger name ]
   , ifeature = [Identified, Fragile, Durable]  -- hack: destroy on drop
-  , idesc    = ""
+  , idesc    = ""  -- no description needed; stats are enough
   , ikit     = []
   }
 
