@@ -504,7 +504,7 @@ geyserArsenic = ItemKind
   , irarity  = [(1, 10), (5, 10)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , idamage  = toDmg 0 
+  , idamage  = toDmg 0
   , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 22
                , AddNocto 2, AddShine 3
                , AddAbility AbWait 1, AddAbility AbMelee 1 ]
