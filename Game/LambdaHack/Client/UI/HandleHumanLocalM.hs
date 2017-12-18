@@ -755,6 +755,7 @@ doLook = do
                       in "Originally of" <+> gname tfact
                          <> ", now fighting for" <+> dominatedBy <> "."
                     _ | bfid body == side -> ""  -- just one of us
+                    _ | bproj body -> "Launched by" <+> gname bfact <> "."
                     _ -> "One of" <+> gname bfact <> "."
                   idesc = case itemDisco $ itemToF (btrunk body) (1, []) of
                     Nothing -> ""  -- no details, only show the name
