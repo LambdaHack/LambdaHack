@@ -60,7 +60,7 @@ rogue = CaveKind
   , clegendLitTile  = "legendLit"
   , cescapeGroup    = Nothing
   , cstairFreq      = [("staircase", 100)]
-  , cdesc         = "Winding tunnels that stretch into the dark."
+  , cdesc         = "Winding tunnels stretch into the dark."
   }  -- no lit corridor alternative, because both lit # and . look bad here
 arena = rogue
   { csymbol       = 'A'
@@ -98,7 +98,7 @@ arena2 = arena
   , citemNum      = 7 `d` 5  -- rare, so make it exciting
   , citemFreq     = [("useful", 20), ("treasure", 40), ("any vial", 40)]
   , cdefTile      = "arenaSetDark"
-  , cdesc         = "Velvet couches and the strong smell of tobacco."
+  , cdesc         = "Velvet couches exude the strong smell of tobacco."
   }
 laboratory = arena2
   { csymbol       = 'L'
