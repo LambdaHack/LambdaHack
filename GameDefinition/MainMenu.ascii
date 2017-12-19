@@ -1,24 +1,60 @@
-fffffjjjjtti,:Lft:                tDEGLLGEKEK;   .    .   . .  .iEDEGL.;iiij ...
-fLLLLfffjjjti;.fL .              GDDLfGDEDEf .    .  .      .    ;LDWEGi,;iit ..
-LD#WWELfffjjtt;.if.:           .DEGLLGEDLti,   . .    . . .        ,tLKDG ,;itt.
-fK#WWW#DLffjjtt;:;j...        tDEGfLDEDGtK.  . LambdaHack           itLEG::;itt.
-;K#WWWWW Lfffjjti:.t...      tDEGfLDEDL, .                           tDGj.;itt.
- EWWWWKW  GLffjjti: t,      tDEGLGEEDj;   <lambdahack.github.io>      tLDLi,ittj
- EKWWWEWG  GLffjjti: tt   .tDEGGDEDGi,                                ;fEG :iitj
- LEWWWKKK   GLfffjti: tt  tDDLGDEDGf.  {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ ;jGG :iitj
-  DWWWKDWL   DLffjjti: jt.DDLGDEDLD    {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ ,jDG .ittj
-  LEWWWEDKj   DLffjjti: jj.LGDEDLE     {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ ,jDG  ittj
-   DKKWKDEKf   GLffjjti::ff.EEDLE      {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ ,fGG  ittj
-    GWKWEDEEt   GLffjjji :fL.ELE       {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ :tGL  ittf
-    EEWKKDGDEjt..DLfftjji.,fG:K,       {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ ,fGj,.tjjf
-     EfKGKDLGDDDGDGLffiiti ttf:.       {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ .LG;i,;itt
-    ..EDKEKEGjiLDDfGLLfijtii;fL:       {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ jLj ,;tjtL
-   . . KLEEKKDGLLLGLGLfffjji,;LL:,.    {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{,tfL.fijffL
-  .......jDKEEKKKKKEDGLffffji;;LL:...  {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{j fGii tjff
-..........KtGDKEDEEDGLGLfffjti,;Lf:::: {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{iDf j:jffL.
-..........::,E,tjjifL,,LLfffjji.;fL.,: {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{fiififffL .
- ......::,;tjLGGGGGLfji;LLfffjjt.,jft.                              ;t;i:jfff  .
- ..:::::,;;;,iiiiiiii;;;;LLfffjjt,,;LL:  ...                       ,iiijjfffL ..
-..:::::,,;;;;;;;;;;;;;;;;;GLffffjt;j,jff,:::,                   ;ifLjjijifffL ..
-.......::,,,,;;;;,,,,,,,,,:GLffffjjt:::tLiL                   LLLLGj;i,ffLLL ...
-.    ..:::::,,,,,,,,,,, Version X.X.X (frontend: xxx, engine: LambdaHack X.X.X).
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+               fffffjjjjtti,:Lft:                tDEGLLGEKEK;   .    .   . .  .iEDEGL.;iiij ...               
+               fLLLLfffjjjti;.fL .              GDDLfGDEDEf .    .  .      .    ;LDWEGi,;iit ..               
+               LD#WWELfffjjtt;.if.:           .DEGLLGEDLti,   . .    . . .        ,tLKDG ,;itt.               
+               fK#WWW#DLffjjtt;:;j...        tDEGfLDEDGtK.  . LambdaHack           itLEG::;itt.               
+               ;K#WWWWW Lfffjjti:.t...      tDEGfLDEDL, .                           tDGj.;itt.                
+                EWWWWKW  GLffjjti: t,      tDEGLGEEDj;   <lambdahack.github.io>      tLDLi,ittj               
+                EKWWWEWG  GLffjjti: tt   .tDEGGDEDGi,                                ;fEG :iitj               
+                LEWWWKKK   GLfffjti: tt  tDDLGDEDGf.  {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ ;jGG :iitj               
+                 DWWWKDWL   DLffjjti: jt.DDLGDEDLD    {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ ,jDG .ittj               
+                 LEWWWEDKj   DLffjjti: jj.LGDEDLE     {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ ,jDG  ittj               
+                  DKKWKDEKf   GLffjjti::ff.EEDLE      {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ ,fGG  ittj               
+                   GWKWEDEEt   GLffjjji :fL.ELE       {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ :tGL  ittf               
+                   EEWKKDGDEjt..DLfftjji.,fG:K,       {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ ,fGj,.tjjf               
+                    EfKGKDLGDDDGDGLffiiti ttf:.       {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ .LG;i,;itt               
+                   ..EDKEKEGjiLDDfGLLfijtii;fL:       {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ jLj ,;tjtL               
+                  . . KLEEKKDGLLLGLGLfffjji,;LL:,.    {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{,tfL.fijffL               
+                 .......jDKEEKKKKKEDGLffffji;;LL:...  {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{j fGii tjff               
+               ..........KtGDKEDEEDGLGLfffjti,;Lf:::: {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{iDf j:jffL.               
+               ..........::,E,tjjifL,,LLfffjji.;fL.,: {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{fiififffL .               
+                ......::,;tjLGGGGGLfji;LLfffjjt.,jft.                              ;t;i:jfff  .               
+                ..:::::,;;;,iiiiiiii;;;;LLfffjjt,,;LL:  ...                       ,iiijjfffL ..               
+               ..:::::,,;;;;;;;;;;;;;;;;;GLffffjt;j,jff,:::,                   ;ifLjjijifffL ..               
+               .......::,,,,;;;;,,,,,,,,,:GLffffjjt:::tLiL                   LLLLGj;i,ffLLL ...               
+               .    ..:::::,,,,,,,,,,, Version X.X.X (frontend: xxx, engine: LambdaHack X.X.X).               
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      
+	                                                                                                      

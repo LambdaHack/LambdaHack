@@ -47,14 +47,23 @@ standard = RuleKind
       qAddDependentFile path
       x <- qRunIO (readFile path)
       lift x)
-  -- ASCII art for the Main Menu. Only pure 7-bit ASCII characters are allowed
-  -- for the art part. The picture should be exactly 24 rows by 80 columns.
-  -- For a different screen size, the picture is centered and padded.
-  -- with spaces. When displayed in the Main Menu screen, the picture
-  -- is overwritten with game and engine version strings and keybindings.
+  -- ASCII art for the Main Menu. Only pure 7-bit ASCII characters are allowed.
+  -- When displayed in the Main Menu screen, the picture is overwritten
+  -- with game and engine version strings and keybindings.
   -- The keybindings overwrite places marked with left curly brace signs.
-  -- The sign is forbidden anywhere else. The Main Menu is displayed dull
-  -- white on black.
+  -- This sign is forbidden anywhere else in the picture.
+  -- The picture and the whole Main Menu is displayed dull white on black.
+  --
+  -- The picture should be exactly 60 rows by 110 columns,
+  -- but only the middle rectangle of 24 rows by 80 columns is partially
+  -- overwritten with UI information and the curly brace signs are allowed
+  -- only there. So, the rectangle is 15 characters distant from the left
+  -- and 18 from top. For screen sizes larger than 60 by 100,
+  -- the picture is centered and padded with spaces, so it makes sense
+  -- for some or all of the picture borders to be spaces, as well.
+  -- If the screen is smaller than 60 by 100, borders of the picture
+  -- are cut off. Minimal screes size is 24 by 80 and the picture
+  -- should look well at this size, as well.
   , rmainMenuArt = $(do
       let path = "GameDefinition/MainMenu.ascii"
       qAddDependentFile path
