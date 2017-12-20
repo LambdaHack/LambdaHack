@@ -1102,9 +1102,21 @@ chooseItemMenuHuman cmdAction c = do
 
 -- * MainMenu
 
+artAtSize :: MonadClientUI m => m [Text]
+artAtSize = do
+  Kind.COps{corule} <- getsState scops
+  let stdRuleset = Kind.stdRuleset corule
+      lxsize = fst normalLevelBound + 1
+      lysize = snd normalLevelBound + 4
+      xoffset = (110 - lxsize) `div` 2
+      yoffset = (60 - lysize) `div` 2
+      tlines = T.lines $ rmainMenuArt stdRuleset
+      f = T.take lxsize . T.drop xoffset
+  return $! map f $ take lysize $ drop yoffset tlines
+
 -- We detect the place for the version string by searching for 'Version'
 -- in the last line of the picture. If it doesn't fit, we shift, if everything
--- else fails, only then we crop. We don't assume 80 character in a line.
+-- else fails, only then we crop. We don't assume any line length.
 artWithVersion :: MonadClientUI m => m [String]
 artWithVersion = do
   Kind.COps{corule} <- getsState scops
@@ -1125,8 +1137,8 @@ artWithVersion = do
             prefixModified = T.unpack $ T.dropEnd overfillLen prefix
             lastModified = prefixModified ++ version ++ suffix
         in map T.unpack (init art) ++ [lastModified]
-      mainMenuArt = rmainMenuArt stdRuleset
-  return $! pasteVersion $ T.lines mainMenuArt
+  mainMenuArt <- artAtSize
+  return $! pasteVersion mainMenuArt
 
 generateMenu :: MonadClientUI m
              => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
