@@ -964,13 +964,14 @@ helpHuman :: MonadClientUI m
           => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
           -> m (Either MError ReqUI)
 helpHuman cmdAction = do
+  cops <- getsState scops
   lidV <- viewedLevelUI
   Level{lxsize, lysize} <- getLevel lidV
   keyb <- getsSession sbinding
   menuIxMap <- getsSession smenuIxMap
   let menuName = "help"
       menuIx = fromMaybe 0 (M.lookup menuName menuIxMap)
-      keyH = keyHelp keyb 1
+      keyH = keyHelp cops keyb 1
       splitHelp (t, okx) =
         splitOKX lxsize (lysize + 3) (textToAL t) [K.spaceKM, K.escKM] okx
       sli = toSlideshow $ concat $ map splitHelp keyH

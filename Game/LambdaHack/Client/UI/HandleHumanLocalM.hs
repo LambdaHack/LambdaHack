@@ -956,7 +956,7 @@ epsIncrHuman b = do
   flashAiming
   modifySession $ \sess -> sess {saimMode}
 
---- Flash the aiming line and path.
+-- Flash the aiming line and path.
 flashAiming :: MonadClientUI m => m ()
 flashAiming = do
   lidV <- viewedLevelUI

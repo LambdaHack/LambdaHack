@@ -19,6 +19,8 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.UIOptions
 import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Content.RuleKind
 
 -- | Bindings and other information about human player commands.
 data Binding = Binding
@@ -77,9 +79,17 @@ stdBinding (KeyKind copsClient) UIOptions{uCommands, uVi, uLaptop} =
   }
 
 -- | Produce a set of help/menu screens from the key bindings.
-keyHelp :: Binding -> Int -> [(Text, OKX)]
-keyHelp keyb@Binding{..} offset = assert (offset > 0) $
+keyHelp :: Kind.COps -> Binding -> Int -> [(Text, OKX)]
+keyHelp Kind.COps{corule} keyb@Binding{..} offset = assert (offset > 0) $
   let
+    stdRuleset = Kind.stdRuleset corule
+    introBlurb =
+      ""
+      : map T.pack (rintroScreen stdRuleset)
+      ++
+      [ ""
+      , "Press SPACE for help or ESC to see the map again."
+      ]
     movBlurb =
       [ ""
       , "Walk throughout a level with mouse or numeric keypad (left diagram below)"
@@ -155,6 +165,7 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
     casualDescription = "Minimal cheat sheet for casual play"
     fmt n k h = " " <> T.justifyLeft n ' ' k <+> h
     fmts s = " " <> s
+    introText = map fmts introBlurb
     movText = map fmts movBlurb
     minimalText = map fmts minimalBlurb
     casualEnd = map fmts casualEnding
@@ -215,7 +226,9 @@ keyHelp keyb@Binding{..} offset = assert (offset > 0) $
           menu = zipWith render kst1 kst2
       in (map textToAL $ "" : header ++ menu ++ footer, kxs)
   in
-    [ ( casualDescription <+> "(1/2)."
+    [ ( rtitle stdRuleset <+> "- backstory"
+      , (map textToAL introText, []) )
+    , ( casualDescription <+> "(1/2)."
       , (map textToAL movText, []) )
     , ( casualDescription <+> "(2/2)."
       , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEnd )
