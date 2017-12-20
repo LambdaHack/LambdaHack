@@ -69,6 +69,19 @@ standard = RuleKind
       qAddDependentFile path
       x <- qRunIO (readFile path)
       lift x)
+  , rintroScreen = $(do
+      let path = "GameDefinition/PLAYING.md"
+      qAddDependentFile path
+      x <- qRunIO (readFile path)
+      let paragraphs :: [String] -> [String] -> [[String]]
+          paragraphs [] rows = [reverse rows]
+          paragraphs (l : ls) rows = if null l
+                                     then reverse rows : paragraphs ls []
+                                     else paragraphs ls (l : rows)
+          intro = case paragraphs (lines x) [] of
+            _title : _blurb : par1 : par2 : _rest -> par1 ++ [""] ++ par2
+            _ -> error "not enough paragraphs in intro screen text"
+      lift intro)
   , rfirstDeathEnds = False
   , rwriteSaveClips = 1000
   , rleadLevelClips = 50
