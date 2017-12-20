@@ -7,7 +7,8 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Version
+import qualified Data.Text as T
+import           Data.Version
 
 import Game.LambdaHack.Common.Misc
 
@@ -40,7 +41,14 @@ instance Show RuleKind where
 
 -- | Catch invalid rule kind definitions.
 validateSingleRuleKind :: RuleKind -> [Text]
-validateSingleRuleKind _ = []
+validateSingleRuleKind RuleKind{rmainMenuArt} =
+  let ts = T.lines rmainMenuArt
+      tsNot110 = filter ((/= 110) . T.length) ts
+  in case tsNot110 of
+     [] -> [ "rmainMenuArt doesn't have 60 lines, but " <> tshow (length ts)
+           | length ts /= 60]
+     tNot110 : _ ->
+       ["rmainMenuArt has a line with length other than 110:" <> tNot110]
 
 -- | Since we have only one rule kind, the set of rule kinds is always valid.
 validateAllRuleKind :: [RuleKind] -> [Text]
