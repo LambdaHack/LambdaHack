@@ -1,5 +1,6 @@
 This is a snapshot of in-game help, rendered with default config file.
-For more general gameplay information see PLAYING.md.
+For more general gameplay information see
+https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/PLAYING.md
 
 
 Minimal cheat sheet for casual play (1/2).
@@ -60,6 +61,10 @@ All terrain exploration and alteration commands.
  C-R          lurk (wait 0.1 turns 100 times)
  c            close door
 
+
+Here is the complete list of commands from the snapshot of in-game help.
+For more general gameplay information see
+https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/PLAYING.md
 
 Item Menu commands.
 
