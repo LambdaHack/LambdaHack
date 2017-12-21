@@ -669,12 +669,12 @@ scroll9 = scroll
   { irarity  = [(1, 30)]
   , ieffects = [ ELabel "of scientific explanation"
                , Composite [Identify, RefillCalm 10] ]
-      -- your most pressing existential concerns are answered scientifitically,
+      -- your most pressing existential concerns are answered scientifically,
       -- hence the calming effect
   }
 scroll10 = scroll
   { irarity  = [(10, 20)]
-  , ieffects = [ ELabel "transfiguration"
+  , ieffects = [ ELabel "of transfiguration"
                , Composite [PolyItem, Explode "firecracker 7"] ]
   }
 scroll11 = scroll
