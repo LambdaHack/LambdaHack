@@ -6,36 +6,37 @@ name:           LambdaHack
 --             | | +----- minor or non-breaking API additions
 --             | | | +--- code changes with no API change
 version:       0.7.2.0
-synopsis:      A game engine library for roguelike dungeon crawlers
-description:   LambdaHack is a Haskell game engine library for roguelike games
-               of arbitrary theme, size and complexity,
-               packaged together with a little example dungeon crawler.
-               Try out the browser version of the LambdaHack sample game at
-               <https://lambdahack.github.io>
-               (It runs fastest on Chrome. Keyboard commands and savefiles
-               are supported only on recent enough versions of browsers.
+synopsis:      A game engine library for tactical squad ASCII roguelike dungeon crawlers
+description:   LambdaHack is a Haskell game engine library for ASCII roguelike
+               games of arbitrary theme, size and complexity, with optional
+               tactical squad combat. It's packaged together with a little
+               example dungeon crawler in fantasy setting that can be
+               tried out in the browser.
+               (<http://lambdahack.github.io> --- It runs fastest
+               on Chrome. Keyboard commands and savefiles are supported
+               only on recent enough versions of browsers.
                Mouse should work everywhere.)
                .
                <<https://raw.githubusercontent.com/LambdaHack/media/master/screenshot/crawl-0.6.0.0-8x8xb.png>>
                .
-               When completed, the engine will let you specify content
-               to be procedurally generated, define the AI behaviour
-               on top of the generic content-independent rules
-               and compile a ready-to-play game binary,
+               To use the engine, you need to specify the content to be
+               procedurally generated. You specify what the game world
+               is made of (entities, their relations, physics and lore)
+               and the engine builds the world and runs it.
+               The library lets you compile a ready-to-play game binary,
                using either the supplied or a custom-made main loop.
                Several frontends are available (SDL2 is the default
-               for desktop and there is a Javascript browser frontend)
+               for desktop and there is a JavaScript browser frontend)
                and many other generic engine components are easily overridden,
                but the fundamental source of flexibility lies
                in the strict and type-safe separation of code from the content
                and of clients (human and AI-controlled) from the server.
                .
                Please see the changelog file for recent improvements
-               and the issue tracker for short-term plans. Long term vision
-               revolves around procedural content generation and includes
-               in-game content creation, auto-balancing and persistent
-               content modification based on player behaviour.
-               Contributions are welcome.
+               and the issue tracker for short-term plans. Long term goals
+               include multiplayer tactical squad combat, in-game content
+               creation, auto-balancing and persistent content modification
+               based on player behaviour. Contributions are welcome.
                .
                Games known to use the LambdaHack library:
                .
