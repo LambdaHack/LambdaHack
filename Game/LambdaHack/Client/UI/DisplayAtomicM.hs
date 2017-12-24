@@ -193,7 +193,8 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
           aidVerbMU aid "hear something"
           duplicated <- msgDuplicateScrap
           unless duplicated stopPlayBack
-  UpdTrajectory{} -> return ()  -- if projectile dies here, no display
+  UpdTrajectory _ _ mt ->  -- if projectile dies just after, force one frame
+    when (maybe True (null . fst) mt) pushFrame
   -- Change faction attributes.
   UpdQuitFaction fid _ toSt -> quitFactionUI fid toSt
   UpdLeadFaction fid (Just source) (Just target) -> do
