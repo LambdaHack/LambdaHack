@@ -311,7 +311,7 @@ projectFail source tpxy eps iid cstore isBlast = do
     Just (pos : restUnlimited) -> do
       bag <- getsState $ getBodyStoreBag sb cstore
       case EM.lookup iid bag of
-        Nothing ->  return $ Just ProjectOutOfReach
+        Nothing -> return $ Just ProjectOutOfReach
         Just kit -> do
           itemToF <- getsState itemToFull
           actorSk <- currentSkillsServer source
@@ -334,18 +334,19 @@ projectFail source tpxy eps iid cstore isBlast = do
                 else do
                   lab <- getsState $ posToAssocs pos lid
                   if not $ all (bproj . snd) lab
-                    then if isBlast && bproj sb then do
-                           -- Hit the blocking actor.
-                           projectBla source spos (pos:rest) iid cstore isBlast
-                           return Nothing
-                         else return $ Just ProjectBlockActor
-                    else do
-                      if isBlast && bproj sb && eps `mod` 2 == 0 then
-                        -- Make the explosion a bit less regular.
-                        projectBla source spos (pos:rest) iid cstore isBlast
-                      else
-                        projectBla source pos rest iid cstore isBlast
-                      return Nothing
+                  then if isBlast && bproj sb then do
+                         -- Hit the blocking actor.
+                         projectBla source spos (pos:rest) iid cstore isBlast
+                         return Nothing
+                       else return $ Just ProjectBlockActor
+                  else do
+                    if isBlast && bproj sb && eps `mod` 2 == 0 then
+                      -- Make the explosion a bit less regular.
+                      -- The @eps@ is quite random in case of blast.
+                      projectBla source spos (pos:rest) iid cstore isBlast
+                    else
+                      projectBla source pos rest iid cstore isBlast
+                    return Nothing
 
 projectBla :: MonadServerAtomic m
            => ActorId    -- ^ actor projecting the item (is on current lvl)
