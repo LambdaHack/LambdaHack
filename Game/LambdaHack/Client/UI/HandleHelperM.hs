@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , failSer, failMsg, weaveJust
   , sortSlots, memberCycle, memberBack, partyAfterLeader
   , pickLeader, pickLeaderWithPointer
-  , itemOverlay, statsOverlay, pickNumber, lookAtItems
+  , itemOverlay, statsOverlay, pickNumber, lookAtTile, lookAtItems
   ) where
 
 import Prelude ()
@@ -19,6 +19,7 @@ import           Data.Ord
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
+import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
@@ -37,6 +38,7 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.ItemStrongest
+import qualified Game.LambdaHack.Common.Kind as Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -44,6 +46,7 @@ import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Message describing the cause of failure of human command.
 newtype FailError = FailError {failError :: Text}
@@ -321,13 +324,35 @@ pickNumber askNumber kAll = assert (kAll >= 1) $ do
            Right k | k <= 0 -> error $ "" `showFailure` (res, kAll)
            _ -> return res
 
+-- | Produces a textual description of the tile at a position.
+lookAtTile :: MonadClientUI m
+           => Bool       -- ^ can be seen right now?
+           -> Point      -- ^ position to describe
+           -> ActorId    -- ^ the actor that looks
+           -> LevelId    -- ^ level the tile is at
+           -> m Text
+lookAtTile canSee p aid lidV = do
+  Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
+  b <- getsState $ getActorBody aid
+  lvl <- getLevel lidV
+  seps <- getsClient seps
+  mnewEps <- makeLine False b p seps
+  let aims = isJust mnewEps
+      tile = lvl `at` p
+      vis | TK.isUknownSpace tile = "that is"
+          | not canSee = "you remember"
+          | not aims = "you are aware of"
+          | otherwise = "you see"
+      tilePart = MU.AW $ MU.Text $ TK.tname $ okind tile
+  return $! makeSentence [MU.Text vis, tilePart]
+
 -- | Produces a textual description of items at a position.
 lookAtItems :: MonadClientUI m
             => Bool       -- ^ can be seen right now?
             -> Point      -- ^ position to describe
             -> ActorId    -- ^ the actor that looks
             -> m Text
-lookAtItems canSee pos aid = do
+lookAtItems canSee p aid = do
   itemToF <- getsState itemToFull
   b <- getsState $ getActorBody aid
   -- Not using @viewedLevelUI@, because @aid@ may be temporarily not a leader.
@@ -335,10 +360,10 @@ lookAtItems canSee pos aid = do
   let lidV = maybe (blid b) aimLevelId saimMode
   localTime <- getsState $ getLocalTime lidV
   subject <- partAidLeader aid
-  is <- getsState $ getFloorBag lidV pos
+  is <- getsState $ getFloorBag lidV p
   side <- getsClient sside
   factionD <- getsState sfactionD
-  let verb = MU.Text $ if | pos == bpos b && lidV == blid b -> "stand on"
+  let verb = MU.Text $ if | p == bpos b && lidV == blid b -> "stand on"
                           | canSee -> "notice"
                           | otherwise -> "remember"
       nWs (iid, kit@(k, _)) =

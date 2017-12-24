@@ -81,8 +81,6 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind (fhasGender)
-import           Game.LambdaHack.Content.TileKind (isUknownSpace)
-import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * Macro
 
@@ -719,11 +717,9 @@ doLook = do
   case saimMode of
     Nothing -> return ()
     Just aimMode -> do
-      Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
       side <- getsClient sside
       leader <- getLeaderUI
       let lidV = aimLevelId aimMode
-      lvl <- getLevel lidV
       xhairPos <- xhairToPos
       per <- getPerFid lidV
       b <- getsState $ getActorBody leader
@@ -732,13 +728,10 @@ doLook = do
       sactorUI <- getsSession sactorUI
       let inhabitantsUI =
             map (\(aid2, b2) -> (aid2, b2, sactorUI EM.! aid2)) inhabitants
-      seps <- getsClient seps
-      mnewEps <- makeLine False b p seps
       itemToF <- getsState itemToFull
       factionD <- getsState sfactionD
       s <- getState
-      let aims = isJust mnewEps
-          actorsBlurb = case inhabitants of
+      let actorsBlurb = case inhabitants of
             [] -> ""
             (_, body) : rest ->
               let Item{jfid} = getItemBody (btrunk body) s
@@ -767,14 +760,8 @@ doLook = do
                   pdesc = if desc == "" then "" else "(" <> desc <> ")"
               in makeSentence [MU.SubjectVerbSg subject verb] <+> pdesc
           canSee = ES.member p (totalVisible per)
-          tile = lvl `at` p
-          vis | isUknownSpace tile = "that is"
-              | not canSee = "you remember"
-              | not aims = "you are aware of"
-              | otherwise = "you see"
-          tilePart = MU.AW $ MU.Text $ TK.tname $ okind tile
-          tileBlurb = makeSentence [MU.Text vis, tilePart]
       -- Show general info about current position.
+      tileBlurb <- lookAtTile canSee p leader lidV
       itemsBlurb <- lookAtItems canSee p leader
       promptAdd $! tileBlurb <+> actorsBlurb <+> itemsBlurb
 
