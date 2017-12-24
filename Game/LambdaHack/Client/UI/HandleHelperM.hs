@@ -385,8 +385,10 @@ lookAtActors p lidV = do
               idesc = case itemDisco $ itemToF (btrunk body) (1, []) of
                 Nothing -> ""  -- no details, only show the name
                 Just ItemDisco{itemKind} -> IK.idesc itemKind
-              -- If many actors (projectiles), only list names.
-              desc = if not (null rest) then "" else factDesc <+> idesc
+              -- If many different actors (projectiles), only list names.
+              sameTrunks = all (\(_, b) -> btrunk b == btrunk body) rest
+              desc = if sameTrunks then factDesc <+> idesc else ""
+              -- Both description and faction blurb may be empty.
               pdesc = if desc == "" then "" else "(" <> desc <> ")"
           in makeSentence [MU.SubjectVerbSg subject verb] <+> pdesc
   return $! actorsBlurb
