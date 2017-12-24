@@ -79,7 +79,6 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind (fhasGender)
 
 -- * Macro
@@ -717,51 +716,16 @@ doLook = do
   case saimMode of
     Nothing -> return ()
     Just aimMode -> do
-      side <- getsClient sside
       leader <- getLeaderUI
       let lidV = aimLevelId aimMode
       xhairPos <- xhairToPos
       per <- getPerFid lidV
       b <- getsState $ getActorBody leader
       let p = fromMaybe (bpos b) xhairPos
-      inhabitants <- getsState $ posToAssocs p lidV
-      sactorUI <- getsSession sactorUI
-      let inhabitantsUI =
-            map (\(aid2, b2) -> (aid2, b2, sactorUI EM.! aid2)) inhabitants
-      itemToF <- getsState itemToFull
-      factionD <- getsState sfactionD
-      s <- getState
-      let actorsBlurb = case inhabitants of
-            [] -> ""
-            (_, body) : rest ->
-              let Item{jfid} = getItemBody (btrunk body) s
-                  bfact = factionD EM.! bfid body
-                  -- Even if it's the leader, give his proper name, not 'you'.
-                  subjects = map (\(_, _, bUI) -> partActor bUI)
-                                 inhabitantsUI
-                  subject = MU.WWandW subjects
-                  verb = "be here"
-                  factDesc = case jfid of
-                    Just tfid | tfid /= bfid body ->
-                      let dominatedBy = if bfid body == side
-                                        then "us"
-                                        else gname bfact
-                          tfact = factionD EM.! tfid
-                      in "Originally of" <+> gname tfact
-                         <> ", now fighting for" <+> dominatedBy <> "."
-                    _ | bfid body == side -> ""  -- just one of us
-                    _ | bproj body -> "Launched by" <+> gname bfact <> "."
-                    _ -> "One of" <+> gname bfact <> "."
-                  idesc = case itemDisco $ itemToF (btrunk body) (1, []) of
-                    Nothing -> ""  -- no details, only show the name
-                    Just ItemDisco{itemKind} -> IK.idesc itemKind
-                  -- If many actors (projectiles), only list names.
-                  desc = if not (null rest) then "" else factDesc <+> idesc
-                  pdesc = if desc == "" then "" else "(" <> desc <> ")"
-              in makeSentence [MU.SubjectVerbSg subject verb] <+> pdesc
           canSee = ES.member p (totalVisible per)
       -- Show general info about current position.
       tileBlurb <- lookAtTile canSee p leader lidV
+      actorsBlurb <- lookAtActors p lidV
       itemsBlurb <- lookAtItems canSee p leader
       promptAdd $! tileBlurb <+> actorsBlurb <+> itemsBlurb
 
