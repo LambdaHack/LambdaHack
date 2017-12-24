@@ -2,9 +2,9 @@
 -- | The appearance of in-game items, as communicated to the player.
 module Game.LambdaHack.Common.Flavour
   ( -- * The @Flavour@ type
-    Flavour
+    Flavour(Flavour)
   , -- * Constructors
-    zipPlain, zipFancy, zipLiquid, stdFlav
+    zipPlain, zipFancy, zipLiquid
   , -- * Accessors
     flavourToColor, flavourToName
     -- * Assorted
@@ -26,7 +26,7 @@ import GHC.Generics (Generic)
 import Game.LambdaHack.Common.Color
 
 data FancyName = Plain | Fancy | Liquid
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance Hashable FancyName
 
@@ -48,10 +48,6 @@ zipPlain, zipFancy, zipLiquid :: [Color] -> [Flavour]
 zipPlain = map (Flavour Plain)
 zipFancy = map (Flavour Fancy)
 zipLiquid = map (Flavour Liquid)
-
--- | The standard full set of flavours.
-stdFlav :: [Flavour]
-stdFlav = zipPlain stdCol ++ zipFancy stdCol ++ zipLiquid stdCol
 
 -- | Get the underlying base colour of a flavour.
 flavourToColor :: Flavour -> Color

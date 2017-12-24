@@ -19,6 +19,7 @@ import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as S
 
+import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Flavour
 import           Game.LambdaHack.Common.Frequency
@@ -189,7 +190,9 @@ rollFlavourMap fullFlavSet rnd key ik =
 
 -- | Randomly chooses flavour for all item kinds for this game.
 dungeonFlavourMap :: Kind.COps -> Rnd FlavourMap
-dungeonFlavourMap Kind.COps{coitem=Kind.Ops{ofoldlWithKey'}} =
+dungeonFlavourMap Kind.COps{coitem=Kind.Ops{ofoldlWithKey'}} = do
+  let allFlav = concatMap (\flv -> map (Flavour flv) Color.stdCol)
+                          [minBound..maxBound]
   liftM (FlavourMap . fst) $
-    ofoldlWithKey' (rollFlavourMap (S.fromList stdFlav))
+    ofoldlWithKey' (rollFlavourMap (S.fromList allFlav))
                    (return (EM.empty, EM.empty))
