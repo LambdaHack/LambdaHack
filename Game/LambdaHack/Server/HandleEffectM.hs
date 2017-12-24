@@ -359,8 +359,8 @@ effectExplode execSfx cgroup target = do
         -- distribution for the points the line goes through at each distance
         -- from the source. Otherwise, e.g., the points on cardinal
         -- and diagonal lines from the source would be more common.
-        let veryrandom = k100 `xor` (semirandom + n)
-            fuzz = 5 + veryrandom `mod` 5
+        let veryrandom = (k100 `xor` (semirandom + n)) `mod` 5
+            fuzz = 5 + veryrandom
             k | itemK >= 8 && n < 4 = 0  -- speed up if only a handful remains
               | n < 16 && n >= 12 = 12
               | n < 12 && n >= 8 = 8
