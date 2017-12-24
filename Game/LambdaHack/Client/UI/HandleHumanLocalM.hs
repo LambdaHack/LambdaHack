@@ -82,6 +82,7 @@ import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind (fhasGender)
 import           Game.LambdaHack.Content.TileKind (isUknownSpace)
+import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * Macro
 
@@ -718,6 +719,7 @@ doLook = do
   case saimMode of
     Nothing -> return ()
     Just aimMode -> do
+      Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
       side <- getsClient sside
       leader <- getLeaderUI
       let lidV = aimLevelId aimMode
@@ -736,7 +738,7 @@ doLook = do
       factionD <- getsState sfactionD
       s <- getState
       let aims = isJust mnewEps
-          enemyMsg = case inhabitants of
+          actorsBlurb = case inhabitants of
             [] -> ""
             (_, body) : rest ->
               let Item{jfid} = getItemBody (btrunk body) s
@@ -765,13 +767,16 @@ doLook = do
                   pdesc = if desc == "" then "" else "(" <> desc <> ")"
               in makeSentence [MU.SubjectVerbSg subject verb] <+> pdesc
           canSee = ES.member p (totalVisible per)
-          vis | isUknownSpace $ lvl `at` p = "that is"
+          tile = lvl `at` p
+          vis | isUknownSpace tile = "that is"
               | not canSee = "you remember"
               | not aims = "you are aware of"
               | otherwise = "you see"
+          tilePart = MU.AW $ MU.Text $ TK.tname $ okind tile
+          tileBlurb = makeSentence [MU.Text vis, tilePart]
       -- Show general info about current position.
-      lookMsg <- lookAt True vis canSee p leader enemyMsg
-      promptAdd lookMsg
+      itemsBlurb <- lookAtItems canSee p leader
+      promptAdd $! tileBlurb <+> actorsBlurb <+> itemsBlurb
 
 -- * MoveXhair
 

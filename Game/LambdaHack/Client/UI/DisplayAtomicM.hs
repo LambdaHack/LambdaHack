@@ -395,8 +395,8 @@ lookAtMove aid = do
   when (not (bproj body)
         && bfid body == side
         && isNothing aimMode) $ do  -- aiming does a more extensive look
-    lookMsg <- lookAt False "" True (bpos body) aid ""
-    msgAdd lookMsg
+    itemsBlurb <- lookAtItems True (bpos body) aid
+    msgAdd itemsBlurb
   fact <- getsState $ (EM.! bfid body) . sfactionD
   adjacentAssocs <- getsState $ actorAdjacentAssocs body
   if not (bproj body) && side == bfid body then do
