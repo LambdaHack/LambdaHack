@@ -366,7 +366,8 @@ projectBla source pos rest iid cstore isBlast = do
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (source, pos, rest, iid, cstore)
     Just kit@(_, it) -> do
-      let btime = absoluteTimeAdd timeEpsilon localTime
+      let delay = if jweight item == 0 then timeTurn else timeClip
+          btime = absoluteTimeAdd delay localTime
       addProjectile pos rest iid kit lid (bfid sb) btime isBlast
       let c = CActor source cstore
       execUpdAtomic $ UpdLoseItem False iid item (1, take 1 it) c
