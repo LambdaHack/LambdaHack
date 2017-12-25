@@ -171,10 +171,16 @@ fromSpeed :: Speed -> Int
 {-# INLINE fromSpeed #-}
 fromSpeed (Speed s) = fromEnum $ s * 10 `div` sInMs
 
--- Can't be lower or actors would slow down (via tmp organs and weight),
--- boost time with InsertMove, speed up and have lots of free moves.
+-- | The minimal speed is half a meter (half a step across a tile)
+-- per second (two standard turns, which the time span during which
+-- projectile moves, unless it has modified linger value).
+--
+-- It needen't be lower, because @rangeFromSpeed@ gives 0 steps
+-- with such speed, so the actor's trajectory is empty, so it drops down
+-- at once. Twice that speed already moves a normal projectile one step
+-- before it stops.
 minimalSpeed :: Int64
-minimalSpeed = sInMs `div` 10
+minimalSpeed = sInMs `div` 2
 
 -- | No movement possible at that speed.
 speedZero :: Speed
@@ -239,9 +245,8 @@ speedFromWeight !weight !velocityPercent =
       vp = fromIntegral velocityPercent
       mpMs | w < 250 = sInMs * 20
            | w < 1500 = sInMs * 20 * 1250 `div` (w + 1000)
-           | w < 10500 = sInMs * (11500 - w) `div` 1000
-           | w < 200000 = sInMs  -- half a step per turn is the minimum
-           | otherwise = minimalSpeed  -- unless _very_ heavy
+           | w < 10500 = sInMs * (11000 - w) `div` 1000
+           | otherwise = minimalSpeed
       v = mpMs * vp `div` 100
       -- We round down to the nearest multiple of 2M (unless the speed
       -- is very low), to ensure both turns of flight cover the same distance
@@ -254,7 +259,7 @@ speedFromWeight !weight !velocityPercent =
 -- | Calculate maximum range in meters of a projectile from its speed.
 -- See <https://github.com/LambdaHack/LambdaHack/wiki/Item-statistics>.
 -- With this formula, each projectile flies for at most 1 second,
--- that is 2 turns, and then drops to the ground.
+-- that is 2 standard turns, and then drops to the ground.
 rangeFromSpeed :: Speed -> Int
 {-# INLINE rangeFromSpeed #-}
 rangeFromSpeed (Speed v) = fromEnum $ v `div` sInMs
