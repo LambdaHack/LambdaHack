@@ -108,7 +108,8 @@ emptySessionUI sUIOptions =
   SessionUI
     { sxhair = TVector $ Vector 0 0
     , sactorUI = EM.empty
-    , sslots = ItemSlots EM.empty EM.empty
+    , sslots = ItemSlots $ EM.fromAscList
+               $ zip [minBound..maxBound] (repeat EM.empty)
     , slastSlot = SlotChar 0 'Z'
     , slastItemMove = Nothing
     , schanF = ChanFrontend $ const $

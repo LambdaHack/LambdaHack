@@ -2,8 +2,8 @@
 module Game.LambdaHack.Client.UI.HandleHelperM
   ( FailError, showFailError, MError, mergeMError, FailOrCmd, failWith
   , failSer, failMsg, weaveJust
-  , sortSlots, memberCycle, memberBack, partyAfterLeader
-  , pickLeader, pickLeaderWithPointer
+  , ppSLore, loreFromMode, loreFromContainer, sortSlots
+  , memberCycle, memberBack, partyAfterLeader, pickLeader, pickLeaderWithPointer
   , itemOverlay, statsOverlay, pickNumber
   , lookAtTile, lookAtActors, lookAtItems
   ) where
@@ -80,6 +80,30 @@ weaveJust :: FailOrCmd a -> Either MError a
 weaveJust (Left ferr) = Left $ Just ferr
 weaveJust (Right a) = Right a
 
+ppSLore :: SLore -> Text
+ppSLore SItem = "item"
+ppSLore SOrgan = "organ"
+ppSLore STrunk = "actor"
+ppSLore SEmbed = "tile"
+ppSLore SBlast = "blast"
+ppSLore STmp = "temporary condition"
+
+loreFromMode :: ItemDialogMode -> SLore
+loreFromMode c = case c of
+  MStore COrgan -> SOrgan
+  MStore _ -> SItem
+  MOwned -> SItem
+  MStats -> SItem  -- dummy
+  MLore slore -> slore
+
+loreFromContainer :: Container -> SLore
+loreFromContainer c = case c of
+  CFloor{} -> SItem
+  CEmbed{} -> SEmbed
+  CActor _ COrgan -> SOrgan
+  CActor _ _ -> SItem
+  CTrunk{} -> STrunk
+
 sortSlots :: MonadClientUI m => FactionId -> Maybe Actor -> m ()
 sortSlots fid mbody = do
   itemToF <- getsState itemToFull
@@ -101,10 +125,11 @@ sortSlots fid mbody = do
               case compare (itemKindId id1) (itemKindId id2) of
                 EQ -> comparing itemAspect id1 id2
                 ot -> ot
-      sortSlotMap :: Bool -> EM.EnumMap SlotChar ItemId
+      sortSlotMap :: SLore -> EM.EnumMap SlotChar ItemId
                   -> EM.EnumMap SlotChar ItemId
-      sortSlotMap onlyOrgans em =
-        let onPerson = sharedAllOwnedFid onlyOrgans fid s
+      sortSlotMap slore em =
+        let onlyOrgans = slore `elem` [SOrgan, STrunk]
+            onPerson = sharedAllOwnedFid onlyOrgans fid s
             onGround = maybe EM.empty
                          -- consider floor only under the acting actor
                        (\b -> getFloorBag (blid b) (bpos b) s)
@@ -122,9 +147,8 @@ sortSlots fid mbody = do
             farItemAsc = zip farSlots $ sortItemIds farItems
             newSlots = concatMap allSlots [0..]
         in EM.fromDistinctAscList $ nearItemAsc ++ farItemAsc
-  ItemSlots itemSlots organSlots <- getsSession sslots
-  let newSlots = ItemSlots (sortSlotMap False itemSlots)
-                           (sortSlotMap True organSlots)
+  ItemSlots itemSlots <- getsSession sslots
+  let newSlots = ItemSlots $ EM.mapWithKey sortSlotMap itemSlots
   modifySession $ \sess -> sess {sslots = newSlots}
 
 -- | Switches current member to the next on the level, if any, wrapping.
@@ -237,16 +261,16 @@ pickLeaderWithPointer = do
            Nothing -> failMsg "not pointing at an actor"
            Just (aid, b, _) -> pick (aid, b)
 
-itemOverlay :: MonadClientUI m => CStore -> LevelId -> ItemBag -> m OKX
-itemOverlay store lid bag = do
+itemOverlay :: MonadClientUI m => CStore -> SLore -> LevelId -> ItemBag -> m OKX
+itemOverlay store slore lid bag = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- getsState itemToFull
-  ItemSlots itemSlots organSlots <- getsSession sslots
+  ItemSlots itemSlots <- getsSession sslots
   side <- getsClient sside
   factionD <- getsState sfactionD
   sEqp <- getsState $ sharedEqp side
   let isOrgan = store == COrgan
-      lSlots = if isOrgan then organSlots else itemSlots
+      lSlots = itemSlots EM.! slore
       !_A = assert (all (`elem` EM.elems lSlots) (EM.keys bag)
                     `blame` (store, lid, bag, lSlots)) ()
       markEqp iid t =

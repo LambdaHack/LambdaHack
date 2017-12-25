@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.UI.InventoryM
   ( Suitability(..)
   , getFull, getGroupItem, getStoreItem
-  , ppItemDialogMode, ppItemDialogModeFrom, ppSLore, storeFromMode
+  , ppItemDialogMode, ppItemDialogModeFrom, storeFromMode
   ) where
 
 import Prelude ()
@@ -56,14 +56,6 @@ ppItemDialogModeIn c = let (tIn, t) = ppItemDialogMode c in tIn <+> t
 
 ppItemDialogModeFrom :: ItemDialogMode -> Text
 ppItemDialogModeFrom c = let (_tIn, t) = ppItemDialogMode c in "from" <+> t
-
-ppSLore :: SLore -> Text
-ppSLore SItem = "item"
-ppSLore SOrgan = "organ"
-ppSLore STrunk = "actor"
-ppSLore SEmbed = "tile"
-ppSLore SBlast = "blast"
-ppSLore STmp = "temporary condition"
 
 storeFromMode :: ItemDialogMode -> CStore
 storeFromMode c = case c of
@@ -224,9 +216,8 @@ getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
   case (cRest, allAssocs) of
     ([], [(iid, k)]) | not askWhenLone -> do
       itemToF <- getsState itemToFull
-      ItemSlots itemSlots organSlots <- getsSession sslots
-      let isOrgan = cCur `elem` [MStore COrgan, MLore SOrgan, MLore STrunk]
-          lSlots = if isOrgan then organSlots else itemSlots
+      ItemSlots itemSlots <- getsSession sslots
+      let lSlots = itemSlots EM.! loreFromMode cCur
           slotChar = fromMaybe (error $ "" `showFailure` (iid, lSlots))
                      $ lookup iid $ map swap $ EM.assocs lSlots
       return (Right [(iid, itemToF iid k)], (cCur, Right slotChar))
@@ -261,7 +252,7 @@ transition :: forall m. MonadClientUI m
 transition psuit prompt promptGeneric permitMulitple cLegal
            numPrefix cCur cRest itemDialogState = do
   let recCall = transition psuit prompt promptGeneric permitMulitple cLegal
-  ItemSlots itemSlots organSlots <- getsSession sslots
+  ItemSlots itemSlots <- getsSession sslots
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   bodyUI <- getsSession $ getActorUI leader
@@ -288,8 +279,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
       getMultResult ekm iids = (Right $ map getSingleResult iids, (cCur, ekm))
       filterP iid kit = psuitFun $ itemToF iid kit
       bagAllSuit = EM.filterWithKey filterP bagAll
-      isOrgan = cCur `elem` [MStore COrgan, MLore SOrgan, MLore STrunk]
-      lSlots = if isOrgan then organSlots else itemSlots
+      lSlots = itemSlots EM.! loreFromMode cCur
       bagItemSlotsAll = EM.filter (`EM.member` bagAll) lSlots
       -- Predicate for slot matching the current prefix, unless the prefix
       -- is 0, in which case we display all slots, even if they require
@@ -444,7 +434,8 @@ transition psuit prompt promptGeneric permitMulitple cLegal
             }
       runDefItemKey keyDefs statsDef io slotKeys promptChosen MStats
     _ -> do
-      io <- itemOverlay (storeFromMode cCur) (blid body) bagFiltered
+      io <- itemOverlay (storeFromMode cCur)
+                        (loreFromMode cCur) (blid body) bagFiltered
       let slotKeys = mapMaybe (keyOfEKM numPrefix . Right)
                      $ EM.keys bagItemSlots
       runDefItemKey keyDefs lettersDef io slotKeys promptChosen cCur

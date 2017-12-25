@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Item slots for UI and AI item collections.
 module Game.LambdaHack.Client.UI.ItemSlot
   ( SlotChar(..), ItemSlots(..)
@@ -43,15 +44,9 @@ instance Enum SlotChar where
         c100 = c0 - if c0 > 150 then 100 else 0
     in SlotChar n (chr c100)
 
--- | Mapping from slot labels to item identifiers.
-data ItemSlots = ItemSlots
-  { itemSlots  :: EM.EnumMap SlotChar ItemId
-  , organSlots :: EM.EnumMap SlotChar ItemId }
-  deriving Show
-
-instance Binary ItemSlots where
-  put (ItemSlots is os) = put is >> put os
-  get = ItemSlots <$> get <*> get
+-- | A collection of mappings from slot labels to item identifiers.
+newtype ItemSlots = ItemSlots (EM.EnumMap SLore (EM.EnumMap SlotChar ItemId))
+  deriving (Show, Binary)
 
 allSlots :: Int -> [SlotChar]
 allSlots n = map (SlotChar n) $ ['a'..'z'] ++ ['A'..'Z']
@@ -70,17 +65,17 @@ slotLabel x =
 
 -- | Assigns a slot to an item, for inclusion in the inventory
 -- of a hero. Tries to to use the requested slot, if any.
-assignSlot :: CStore -> Item -> FactionId -> Maybe Actor -> ItemSlots
+assignSlot :: SLore -> Item -> FactionId -> Maybe Actor -> ItemSlots
            -> SlotChar -> State
            -> SlotChar
-assignSlot store item fid mbody (ItemSlots itemSlots organSlots) lastSlot s =
+assignSlot slore item fid mbody (ItemSlots itemSlots) lastSlot s =
   assert (maybe True (\b -> bfid b == fid) mbody)
   $ if jsymbol item == '$'
     then SlotChar 0 '$'
     else head $ fresh ++ free
  where
   offset = maybe 0 (+1) (elemIndex lastSlot allZeroSlots)
-  onlyOrgans = store == COrgan
+  onlyOrgans = slore `elem` [SOrgan, STrunk]
   len0 = length allZeroSlots
   candidatesZero = take len0 $ drop offset $ cycle allZeroSlots
   candidates = candidatesZero ++ concat [allSlots n | n <- [1..]]
@@ -89,7 +84,7 @@ assignSlot store item fid mbody (ItemSlots itemSlots organSlots) lastSlot s =
                    (\b -> getFloorBag (blid b) (bpos b) s)
                    mbody
   inBags = ES.unions $ map EM.keysSet $ onPerson : [ onGround | not onlyOrgans]
-  lSlots = if onlyOrgans  then organSlots else itemSlots
+  lSlots = itemSlots EM.! slore
   f l = maybe True (`ES.notMember` inBags) $ EM.lookup l lSlots
   free = filter f candidates
   g l = l `EM.notMember` lSlots

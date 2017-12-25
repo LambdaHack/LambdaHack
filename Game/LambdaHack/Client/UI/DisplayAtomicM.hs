@@ -347,9 +347,9 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
 updateItemSlot :: MonadClientUI m
                => CStore -> Maybe ActorId -> ItemId -> m SlotChar
 updateItemSlot store maid iid = do
-  slots@(ItemSlots itemSlots organSlots) <- getsSession sslots
+  slots@(ItemSlots itemSlots) <- getsSession sslots
   let onlyOrgans = store == COrgan
-      lSlots = if onlyOrgans then organSlots else itemSlots
+      lSlots = if onlyOrgans then itemSlots EM.! SOrgan else itemSlots EM.! SItem
       incrementPrefix m l iid2 = EM.insert l iid2 $
         case EM.lookup l m of
           Nothing -> m
@@ -362,13 +362,13 @@ updateItemSlot store maid iid = do
       item <- getsState $ getItemBody iid
       lastSlot <- getsSession slastSlot
       mb <- maybe (return Nothing) (fmap Just . getsState . getActorBody) maid
-      l <- getsState $ assignSlot store item side mb slots lastSlot
-      let newSlots | onlyOrgans = ItemSlots
-                                    itemSlots
-                                    (incrementPrefix organSlots l iid)
-                   | otherwise = ItemSlots
-                                   (incrementPrefix itemSlots l iid)
-                                   organSlots
+      l <- getsState $ assignSlot (loreFromMode $ MStore store) item side mb slots lastSlot
+      let newSlots | onlyOrgans = ItemSlots $
+            EM.insert SOrgan (incrementPrefix (itemSlots EM.! SOrgan) l iid)
+                      itemSlots
+                   | otherwise = ItemSlots $
+            EM.insert SItem (incrementPrefix (itemSlots EM.! SItem) l iid)
+                      itemSlots
       modifySession $ \sess -> sess {sslots = newSlots}
       return l
     Just l -> return l  -- slot already assigned; a letter or a number
@@ -611,8 +611,9 @@ spotItem :: MonadClientUI m
 spotItem verbose iid kit c = do
   -- This is due to a move, or similar, which will be displayed,
   -- so no extra @markDisplayNeeded@ needed here and in similar places.
-  ItemSlots itemSlots _ <- getsSession sslots
-  case lookup iid $ map swap $ EM.assocs itemSlots of
+  ItemSlots itemSlots <- getsSession sslots
+  let slore = loreFromContainer c
+  case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! slore of
     Nothing ->  -- never seen or would have a slot
       case c of
         CActor aid store ->
@@ -689,8 +690,8 @@ moveItemUI iid k aid cstore1 cstore2 = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let underAI = isAIFact fact
   mleader <- getsClient sleader
-  ItemSlots itemSlots _ <- getsSession sslots
-  case lookup iid $ map swap $ EM.assocs itemSlots of
+  ItemSlots itemSlots <- getsSession sslots
+  case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! SItem of
     Just slastSlot -> do
       when (Just aid == mleader) $ modifySession $ \sess -> sess {slastSlot}
       if cstore1 == CGround && Just aid == mleader && not underAI then
@@ -698,7 +699,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
       else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
         itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
     Nothing -> error $
-      "" `showFailure` (iid, k, aid, cstore1, cstore2, itemSlots)
+      "" `showFailure` (iid, k, aid, cstore1, cstore2)
 
 quitFactionUI :: MonadClientUI m => FactionId -> Maybe Status -> m ()
 quitFactionUI fid toSt = do
@@ -777,18 +778,18 @@ quitFactionUI fid toSt = do
             let spoilsMsg = makeSentence [ "Your spoils are worth"
                                          , MU.CarWs tot currencyName ]
             promptAdd spoilsMsg
-            io <- itemOverlay store arena bag
+            io <- itemOverlay store SItem arena bag
             sli <- overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] io
             return (bag, sli, tot)
         localTime <- getsState $ getLocalTime arena
         itemToF <- getsState itemToFull
-        ItemSlots lSlots _ <- getsSession sslots
+        ItemSlots itemSlots <- getsSession sslots
         let keyOfEKM (Left km) = km
             keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
             allOKX = concatMap snd $ slideshow itemSlides
             keys = [K.spaceKM, K.escKM] ++ concatMap (keyOfEKM . fst) allOKX
             examItem slot =
-              case EM.lookup slot lSlots of
+              case EM.lookup slot $ itemSlots EM.! SItem of
                 Nothing -> error $ "" `showFailure` slot
                 Just iid -> case EM.lookup iid bag of
                   Nothing -> error $ "" `showFailure` iid
@@ -1168,8 +1169,8 @@ setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
 setLastSlot aid iid cstore = do
   mleader <- getsClient sleader
   when (Just aid == mleader) $ do
-    ItemSlots itemSlots _ <- getsSession sslots
-    case lookup iid $ map swap $ EM.assocs itemSlots of
+    ItemSlots itemSlots <- getsSession sslots
+    case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! SItem of
       Just slastSlot -> modifySession $ \sess -> sess {slastSlot}
       Nothing -> error $ "" `showFailure` (iid, cstore, aid)
 
