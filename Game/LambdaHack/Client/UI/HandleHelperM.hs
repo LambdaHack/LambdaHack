@@ -336,6 +336,8 @@ lookAtTile canSee p aid lidV = do
   Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel lidV
+  embeds <- getsState $ EM.keys . getEmbedBag lidV p
+  itemToF <- getsState itemToFull
   seps <- getsClient seps
   mnewEps <- makeLine False b p seps
   let aims = isJust mnewEps
@@ -345,7 +347,14 @@ lookAtTile canSee p aid lidV = do
           | not aims = "you are aware of"
           | otherwise = "you see"
       tilePart = MU.AW $ MU.Text $ TK.tname $ okind tile
-  return $! makeSentence [MU.Text vis, tilePart]
+      desc = case embeds of
+        iid : rest | all (== iid) rest ->
+          case itemDisco $ itemToF iid (1, []) of
+            Nothing -> ""
+            Just ItemDisco{itemKind} -> IK.idesc itemKind
+        _ -> ""  -- displaying many would require some glue or convention
+      pdesc = if desc == "" then "" else "(" <> desc <> ")"
+  return $! makeSentence [MU.Text vis, tilePart] <+> pdesc
 
 -- | Produces a textual description of actors at a position.
 lookAtActors :: MonadClientUI m
