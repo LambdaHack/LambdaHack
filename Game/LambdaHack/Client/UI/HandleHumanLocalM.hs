@@ -152,11 +152,7 @@ chooseItemDialogMode c = do
           makePhrase
             [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "estimate"
             , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
-        MLoreItem ->
-          makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "recall"
-            , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
-        MLoreOrgan ->
+        MLore{} ->
           makePhrase
             [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "recall"
             , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
@@ -172,7 +168,7 @@ chooseItemDialogMode c = do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       bUI <- getsSession $ getActorUI leader
-      let displayLore store prompt2 = do
+      let displayLore slore prompt2 = do
             promptAdd prompt2
             lidV <- viewedLevelUI
             Level{lxsize, lysize} <- getLevel lidV
@@ -180,7 +176,8 @@ chooseItemDialogMode c = do
             factionD <- getsState sfactionD
             ar <- getsState $ getActorAspect leader
             let attrLine = itemDesc (bfid b) factionD (aHurtMelee ar)
-                                    store localTime itemFull
+                                    (storeFromMode $ MLore slore)
+                                    localTime itemFull
                 ov = splitAttrLine lxsize attrLine
             slides <-
               overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] (ov, [])
@@ -195,7 +192,7 @@ chooseItemDialogMode c = do
                     | otherwise = "organ"
               prompt2 = makeSentence [ partActor bUI, "can't choose"
                                      , MU.AW blurb ]
-          displayLore COrgan prompt2
+          displayLore SOrgan prompt2
         MStore fromCStore -> do
           modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
           return $ Right c2
@@ -217,12 +214,9 @@ chooseItemDialogMode c = do
                void $ pickLeader True newAid
                return $ Right c2
         MStats -> error $ "" `showFailure` ggi
-        MLoreItem -> displayLore CGround
+        MLore slore -> displayLore slore
           (makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
-                        , "item lore" ])
-        MLoreOrgan -> displayLore COrgan
-          (makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
-                        , "organ lore" ])
+                        , MU.Text (ppSLore slore), "lore" ])
     (Left err, (MStats, ekm)) -> case ekm of
       Right slot -> assert (err == "stats") $ do
         let eqpSlot = statSlots !! fromJust (elemIndex slot allZeroSlots)

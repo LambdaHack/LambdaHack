@@ -104,7 +104,7 @@ standardKeys = KeyKind $ map evalKeyDef $
           , ChooseItemMenu MStats ))
   , ("~", ( [CmdItem]
           , "display known lore"
-          , ChooseItemMenu MLoreItem ))
+          , ChooseItemMenu (MLore SItem) ))
   , ("q", addCmdCategory CmdItem $ applyI [ApplyItem
             { verb = "quaff"
             , object = "potion"

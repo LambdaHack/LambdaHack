@@ -3,10 +3,7 @@
 module Game.LambdaHack.Client.UI.InventoryM
   ( Suitability(..)
   , getFull, getGroupItem, getStoreItem
-  , ppItemDialogMode, ppItemDialogModeFrom
-#ifdef EXPOSE_INTERNAL
-  , storeFromMode
-#endif
+  , ppItemDialogMode, ppItemDialogModeFrom, ppSLore, storeFromMode
   ) where
 
 import Prelude ()
@@ -52,8 +49,7 @@ ppItemDialogMode :: ItemDialogMode -> (Text, Text)
 ppItemDialogMode (MStore cstore) = ppCStore cstore
 ppItemDialogMode MOwned = ("in", "our possession")
 ppItemDialogMode MStats = ("among", "strengths")
-ppItemDialogMode MLoreItem = ("among", "item lore")
-ppItemDialogMode MLoreOrgan = ("among", "organ lore")
+ppItemDialogMode (MLore slore) = ("among", ppSLore slore <+> "lore")
 
 ppItemDialogModeIn :: ItemDialogMode -> Text
 ppItemDialogModeIn c = let (tIn, t) = ppItemDialogMode c in tIn <+> t
@@ -61,13 +57,25 @@ ppItemDialogModeIn c = let (tIn, t) = ppItemDialogMode c in tIn <+> t
 ppItemDialogModeFrom :: ItemDialogMode -> Text
 ppItemDialogModeFrom c = let (_tIn, t) = ppItemDialogMode c in "from" <+> t
 
+ppSLore :: SLore -> Text
+ppSLore SItem = "item"
+ppSLore SOrgan = "organ"
+ppSLore STrunk = "actor"
+ppSLore SEmbed = "tile"
+ppSLore SBlast = "blast"
+ppSLore STmp = "temporary condition"
+
 storeFromMode :: ItemDialogMode -> CStore
 storeFromMode c = case c of
   MStore cstore -> cstore
   MOwned -> CGround  -- needed to decide display mode in textAllAE
   MStats -> CGround
-  MLoreItem -> CGround
-  MLoreOrgan -> COrgan
+  MLore SItem -> CGround
+  MLore SOrgan -> COrgan
+  MLore STrunk -> COrgan
+  MLore SEmbed -> CGround
+  MLore SBlast -> CGround
+  MLore STmp -> CGround
 
 accessModeBag :: ActorId -> State -> ItemDialogMode -> ItemBag
 accessModeBag leader s (MStore cstore) = let b = getActorBody leader s
@@ -75,8 +83,7 @@ accessModeBag leader s (MStore cstore) = let b = getActorBody leader s
 accessModeBag leader s MOwned = let fid = bfid $ getActorBody leader s
                                 in sharedAllOwnedFid False fid s
 accessModeBag _ _ MStats = EM.empty
-accessModeBag _ s MLoreItem = EM.map (const (1, [])) $ sitemD s
-accessModeBag _ s MLoreOrgan = EM.map (const (1, [])) $ sitemD s
+accessModeBag _ s MLore{} = EM.map (const (1, [])) $ sitemD s
 
 -- | Let a human player choose any item from a given group.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -113,8 +120,9 @@ getStoreItem :: MonadClientUI m
                   , (ItemDialogMode, Either K.KM SlotChar) )
 getStoreItem prompt cInitial = do
   let itemCs = map MStore [CInv, CGround, CEqp, CSha]
-      allCs | cInitial `elem` [MLoreItem, MLoreOrgan] = [MLoreItem, MLoreOrgan]
-            | otherwise = itemCs ++ [MOwned, MStore COrgan, MStats]
+      allCs = case cInitial of
+        MLore{} -> map MLore [minBound..maxBound]
+        _ -> itemCs ++ [MOwned, MStore COrgan, MStats]
       (pre, rest) = break (== cInitial) allCs
       post = dropWhile (== cInitial) rest
       remCs = post ++ pre
@@ -217,7 +225,7 @@ getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
     ([], [(iid, k)]) | not askWhenLone -> do
       itemToF <- getsState itemToFull
       ItemSlots itemSlots organSlots <- getsSession sslots
-      let isOrgan = cCur `elem` [MStore COrgan, MLoreOrgan]
+      let isOrgan = cCur `elem` [MStore COrgan, MLore SOrgan, MLore STrunk]
           lSlots = if isOrgan then organSlots else itemSlots
           slotChar = fromMaybe (error $ "" `showFailure` (iid, lSlots))
                      $ lookup iid $ map swap $ EM.assocs lSlots
@@ -280,7 +288,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
       getMultResult ekm iids = (Right $ map getSingleResult iids, (cCur, ekm))
       filterP iid kit = psuitFun $ itemToF iid kit
       bagAllSuit = EM.filterWithKey filterP bagAll
-      isOrgan = cCur `elem` [MStore COrgan, MLoreOrgan]
+      isOrgan = cCur `elem` [MStore COrgan, MLore SOrgan, MLore STrunk]
       lSlots = if isOrgan then organSlots else itemSlots
       bagItemSlotsAll = EM.filter (`EM.member` bagAll) lSlots
       -- Predicate for slot matching the current prefix, unless the prefix
@@ -490,17 +498,22 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
     let allOKX = concatMap snd $ slideshow okxs
         pointer =
           case findIndex ((== Right lastSlot) . fst) allOKX of
-            Just p | cCur `notElem` [MStats, MLoreItem, MLoreOrgan] -> p
-            _ -> case findIndex (isRight . fst) allOKX of
-              Just p -> p
-              _ -> 0
+            Just p -> case cCur of
+              MStats -> foundPointer
+              MLore{} -> foundPointer
+              _ -> p
+            _ -> foundPointer
+        foundPointer = case findIndex (isRight . fst) allOKX of
+          Just p -> p
+          _ -> 0
     (okm, pointer2) <- displayChoiceScreen ColorFull False pointer okxs itemKeys
     -- Remember item pointer, unless not a proper item container. Remember
     -- even if not moved, in case the initial position was a default.
     case drop pointer2 allOKX of
-      (Right slastSlot, _) : _
-        | cCur `notElem` [MStats, MLoreItem, MLoreOrgan] ->
-        modifySession $ \sess -> sess {slastSlot}
+      (Right slastSlot, _) : _ -> case cCur of
+        MStats -> return ()
+        MLore{} -> return ()
+        _ -> modifySession $ \sess -> sess {slastSlot}
       _ -> return ()
     return okm
   case ekm of

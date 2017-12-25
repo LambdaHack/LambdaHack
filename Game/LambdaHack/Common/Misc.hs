@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Misc
   ( -- * Game object identifiers
     FactionId, LevelId, ActorId
     -- * Item containers
-  , Container(..), CStore(..), ItemDialogMode(..)
+  , Container(..), CStore(..), SLore(..), ItemDialogMode(..)
     -- * Assorted
   , GroupName, Freqs, Rarity, AbsDepth(..), Tactic(..)
   , toGroupName, validateRarity, describeTactic
@@ -76,7 +76,23 @@ instance Hashable CStore
 
 instance NFData CStore
 
-data ItemDialogMode = MStore CStore | MOwned | MStats | MLoreItem | MLoreOrgan
+-- | Item slot and lore categories.
+data SLore =
+    SItem
+  | SOrgan
+  | STrunk
+  | SEmbed
+  | SBlast
+  | STmp
+  deriving (Show, Read, Eq, Ord, Enum, Bounded, Generic)
+
+instance Binary SLore
+
+instance Hashable SLore
+
+instance NFData SLore
+
+data ItemDialogMode = MStore CStore | MOwned | MStats | MLore SLore
   deriving (Show, Read, Eq, Ord, Generic)
 
 instance NFData ItemDialogMode

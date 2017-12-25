@@ -105,7 +105,7 @@ mouseRMB =
           , (CaTargetDesc, ComposeUnlessError ItemClear TgtClear) ] } )
  where
   common =
-    [ (CaMessage, ChooseItemMenu MLoreItem)
+    [ (CaMessage, ChooseItemMenu (MLore SItem))
     , (CaLevelNumber, AimAscend (-1))
     , (CaXhairDesc, AimItem)
     , (CaSelected, SelectWithPointer)
