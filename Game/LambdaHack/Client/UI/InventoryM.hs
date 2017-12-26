@@ -62,12 +62,7 @@ storeFromMode c = case c of
   MStore cstore -> cstore
   MOwned -> CGround  -- needed to decide display mode in textAllAE
   MStats -> CGround
-  MLore SItem -> CGround
-  MLore SOrgan -> COrgan
-  MLore STrunk -> COrgan
-  MLore SEmbed -> CGround
-  MLore SBlast -> CGround
-  MLore STmp -> CGround
+  MLore{} -> CGround
 
 accessModeBag :: ActorId -> State -> ItemDialogMode -> ItemBag
 accessModeBag leader s (MStore cstore) = let b = getActorBody leader s

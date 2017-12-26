@@ -168,7 +168,7 @@ chooseItemDialogMode c = do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       bUI <- getsSession $ getActorUI leader
-      let displayLore slore prompt2 = do
+      let displayLore prompt2 = do
             promptAdd prompt2
             lidV <- viewedLevelUI
             Level{lxsize, lysize} <- getLevel lidV
@@ -176,8 +176,7 @@ chooseItemDialogMode c = do
             factionD <- getsState sfactionD
             ar <- getsState $ getActorAspect leader
             let attrLine = itemDesc (bfid b) factionD (aHurtMelee ar)
-                                    (storeFromMode $ MLore slore)
-                                    localTime itemFull
+                                    CGround localTime itemFull
                 ov = splitAttrLine lxsize attrLine
             slides <-
               overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] (ov, [])
@@ -191,7 +190,7 @@ chooseItemDialogMode c = do
                     | otherwise = "organ"
               prompt2 = makeSentence [ partActor bUI, "can't choose"
                                      , MU.AW blurb ]
-          displayLore SOrgan prompt2
+          displayLore prompt2
         MStore fromCStore -> do
           modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
           return $ Right c2
@@ -213,7 +212,7 @@ chooseItemDialogMode c = do
                void $ pickLeader True newAid
                return $ Right c2
         MStats -> error $ "" `showFailure` ggi
-        MLore slore -> displayLore slore
+        MLore slore -> displayLore
           (makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
                         , MU.Text (ppSLore slore), "lore" ])
     (Left err, (MStats, ekm)) -> case ekm of
