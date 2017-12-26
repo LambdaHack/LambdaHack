@@ -97,7 +97,7 @@ targetDesc mtarget = do
                 side <- getsClient sside
                 factionD <- getsState sfactionD
                 let (_, _, name, stats) =
-                      partItem side factionD CGround localTime (itemToF iid kit)
+                      partItem side factionD localTime (itemToF iid kit)
                 return $! makePhrase
                           $ if k == 1
                             then [name, stats]  -- "a sword" too wordy
@@ -444,8 +444,7 @@ drawFrameStatus drawnLevelId = do
                 itemToF <- getsState itemToFull
                 factionD <- getsState sfactionD
                 let (_, _, name, stats) =
-                      partItem (bfid b) factionD
-                               fromCStore localTime (itemToF iid kit)
+                      partItem (bfid b) factionD localTime (itemToF iid kit)
                     t = makePhrase
                         $ if k == 1
                           then [name, stats]  -- "a sword" too wordy

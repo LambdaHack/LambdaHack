@@ -42,10 +42,9 @@ show64With2 n =
 
 -- | The part of speech describing the item parameterized by the number
 -- of effects/aspects to show..
-partItemN :: FactionId -> FactionDict
-          -> Bool -> Int -> Int -> CStore -> Time -> ItemFull
+partItemN :: FactionId -> FactionDict -> Bool -> Int -> Int -> Time -> ItemFull
           -> (Bool, Bool, MU.Part, MU.Part)
-partItemN side factionD ranged fullInfo n cstore localTime itemFull =
+partItemN side factionD ranged fullInfo n localTime itemFull =
   let genericName = jname $ itemBase itemFull
   in case itemDisco itemFull of
     Nothing ->
@@ -64,7 +63,7 @@ partItemN side factionD ranged fullInfo n cstore localTime itemFull =
                 | otherwise = "(" <> tshow lenCh <+> "charging)"
           skipRecharging = fullInfo <= 4 && lenCh >= itemK itemFull
           (effTsRaw, rangedDamage) =
-            textAllAE fullInfo skipRecharging cstore itemFull
+            textAllAE fullInfo skipRecharging itemFull
           effTs = filter (not . T.null) effTsRaw
                   ++ if ranged then rangedDamage else []
           lsource = case jfid $ itemBase itemFull of
@@ -86,8 +85,8 @@ partItemN side factionD ranged fullInfo n cstore localTime itemFull =
       in ( not (null lsource) || temporary
          , unique, capName, MU.Phrase $ map MU.Text ts )
 
-textAllAE :: Int -> Bool -> CStore -> ItemFull -> ([Text], [Text])
-textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
+textAllAE :: Int -> Bool -> ItemFull -> ([Text], [Text])
+textAllAE fullInfo skipRecharging ItemFull{itemBase, itemDisco} =
   let features | fullInfo >= 9 = map featureToSuff $ sort $ jfeature itemBase
                | otherwise = []
   in case itemDisco of
@@ -105,8 +104,7 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
           notDetail :: IK.Effect -> Bool
           notDetail IK.Explode{} = fullInfo >= 6
           notDetail _ = True
-          active = cstore `elem` [CEqp, COrgan]
-                   || cstore == CGround && goesIntoEqp itemBase
+          active = goesIntoEqp itemBase
           splitAE :: [IK.Aspect] -> [IK.Effect] -> [Text]
           splitAE aspects effects =
             let ppA = kindAspectToSuffix
@@ -190,59 +188,56 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
       in (aets ++ features, rangedDamage)
 
 -- | The part of speech describing the item.
-partItem :: FactionId -> FactionDict
-         -> CStore -> Time -> ItemFull -> (Bool, Bool, MU.Part, MU.Part)
+partItem :: FactionId -> FactionDict -> Time -> ItemFull
+         -> (Bool, Bool, MU.Part, MU.Part)
 partItem side factionD = partItemN side factionD False 5 4
 
-partItemShort :: FactionId -> FactionDict
-              -> CStore -> Time -> ItemFull -> (Bool, Bool, MU.Part, MU.Part)
+partItemShort :: FactionId -> FactionDict -> Time -> ItemFull
+              -> (Bool, Bool, MU.Part, MU.Part)
 partItemShort side factionD = partItemN side factionD False 4 4
 
-partItemHigh :: FactionId -> FactionDict
-             -> CStore -> Time -> ItemFull -> (Bool, Bool, MU.Part, MU.Part)
+partItemHigh :: FactionId -> FactionDict -> Time -> ItemFull
+             -> (Bool, Bool, MU.Part, MU.Part)
 partItemHigh side factionD = partItemN side factionD False 10 100
 
 -- The @count@ can be different than @itemK@ in @ItemFull@, e.g., when picking
 -- a subset of items to drop.
-partItemWsR :: FactionId -> FactionDict
-            -> Bool -> Int -> CStore -> Time -> ItemFull -> MU.Part
-partItemWsR side factionD ranged count cstore localTime itemFull =
+partItemWsR :: FactionId -> FactionDict -> Bool -> Int -> Time -> ItemFull
+            -> MU.Part
+partItemWsR side factionD ranged count localTime itemFull =
   let (temporary, unique, name, stats) =
-        partItemN side factionD ranged 5 4 cstore localTime itemFull
+        partItemN side factionD ranged 5 4 localTime itemFull
   in if | temporary && count == 1 -> MU.Phrase [name, stats]
         | temporary -> MU.Phrase [MU.Text $ tshow count <> "-fold", name, stats]
         | unique && count == 1 -> MU.Phrase ["the", name, stats]
         | otherwise -> MU.Phrase [MU.CarWs count name, stats]
 
-partItemWs :: FactionId -> FactionDict
-           -> Int -> CStore -> Time -> ItemFull -> MU.Part
+partItemWs :: FactionId -> FactionDict -> Int -> Time -> ItemFull -> MU.Part
 partItemWs side factionD = partItemWsR side factionD False
 
-partItemWsRanged :: FactionId -> FactionDict
-                 -> Int -> CStore -> Time -> ItemFull -> MU.Part
+partItemWsRanged :: FactionId -> FactionDict -> Int -> Time -> ItemFull
+                 -> MU.Part
 partItemWsRanged side factionD = partItemWsR side factionD True
 
-partItemShortAW :: FactionId -> FactionDict
-                -> CStore -> Time -> ItemFull -> MU.Part
-partItemShortAW side factionD c localTime itemFull =
-  let (_, unique, name, _) = partItemShort side factionD c localTime itemFull
+partItemShortAW :: FactionId -> FactionDict -> Time -> ItemFull -> MU.Part
+partItemShortAW side factionD localTime itemFull =
+  let (_, unique, name, _) = partItemShort side factionD localTime itemFull
   in if unique
      then MU.Phrase ["the", name]
      else MU.AW name
 
-partItemMediumAW :: FactionId -> FactionDict
-                 -> CStore -> Time -> ItemFull -> MU.Part
-partItemMediumAW side factionD c localTime itemFull =
+partItemMediumAW :: FactionId -> FactionDict -> Time -> ItemFull -> MU.Part
+partItemMediumAW side factionD localTime itemFull =
   let (_, unique, name, stats) =
-        partItemN side factionD False 5 100 c localTime itemFull
+        partItemN side factionD False 5 100 localTime itemFull
   in if unique
      then MU.Phrase ["the", name, stats]
      else MU.AW $ MU.Phrase [name, stats]
 
-partItemShortWownW :: FactionId -> FactionDict
-                   -> MU.Part -> CStore -> Time -> ItemFull -> MU.Part
-partItemShortWownW side factionD partA c localTime itemFull =
-  let (_, _, name, _) = partItemShort side factionD c localTime itemFull
+partItemShortWownW :: FactionId -> FactionDict -> MU.Part -> Time -> ItemFull
+                   -> MU.Part
+partItemShortWownW side factionD partA localTime itemFull =
+  let (_, _, name, _) = partItemShort side factionD localTime itemFull
   in MU.WownW partA name
 
 viewItem :: Item -> Color.AttrCharW32
@@ -254,8 +249,7 @@ itemDesc :: FactionId -> FactionDict -> Int -> CStore -> Time -> ItemFull
          -> AttrLine
 itemDesc side factionD aHurtMeleeOfOwner store localTime
          itemFull@ItemFull{itemBase} =
-  let (_, unique, name, stats) =
-        partItemHigh side factionD store localTime itemFull
+  let (_, unique, name, stats) = partItemHigh side factionD localTime itemFull
       nstats = makePhrase [name, stats]
       IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = strengthToThrow itemBase
       speed = speedFromWeight (jweight itemBase) throwVelocity

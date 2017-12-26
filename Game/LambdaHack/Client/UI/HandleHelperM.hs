@@ -284,9 +284,8 @@ itemOverlay store slore lid bag = do
           Just kit@(k, _) ->
             let itemFull = itemToF iid kit
                 colorSymbol = viewItem $ itemBase itemFull
-                phrase =
-                  makePhrase [partItemWsRanged side factionD
-                                               k store localTime itemFull]
+                phrase = makePhrase
+                           [partItemWsRanged side factionD k localTime itemFull]
                 al = textToAL (markEqp iid $ slotLabel l)
                      <+:> [colorSymbol]
                      <+:> textToAL phrase
@@ -448,7 +447,7 @@ lookAtItems canSee p aid = do
                           | canSee -> "notice"
                           | otherwise -> "remember"
       nWs (iid, kit@(k, _)) =
-        partItemWs side factionD k CGround localTime (itemToF iid kit)
+        partItemWs side factionD k localTime (itemToF iid kit)
   return $! if EM.size is == 0 then ""
             else makeSentence [ MU.SubjectVerbSg subject verb
                               , MU.WWandW $ map nWs $ EM.assocs is]

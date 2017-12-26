@@ -420,8 +420,7 @@ itemVerbMU iid kit@(k, _) verb c = assert (k > 0) $ do
   itemToF <- getsState itemToFull
   side <- getsClient sside
   factionD <- getsState sfactionD
-  let subject = partItemWs side factionD
-                                k (storeFromC c) localTime (itemToF iid kit)
+  let subject = partItemWs side factionD k localTime (itemToF iid kit)
       msg | k > 1 = makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   msgAdd msg
@@ -449,15 +448,15 @@ itemAidVerbMU aid verb iid ek cstore = do
           object = case ek of
             Left (Just n) ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
-              $ partItemWs side factionD n cstore localTime itemFull
+              $ partItemWs side factionD n localTime itemFull
             Left Nothing ->
               let (_, _, name, stats) =
-                    partItem side factionD cstore localTime itemFull
+                    partItem side factionD localTime itemFull
               in MU.Phrase [name, stats]
             Right n ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
               $ let (_, _, name1, stats) =
-                      partItemShort side factionD cstore localTime itemFull
+                      partItemShort side factionD localTime itemFull
                     name = if n == 1 then name1 else MU.CarWs n name1
                 in MU.Phrase ["the", name, stats]
           msg = makeSentence [MU.SubjectVerbSg subject verb, object]
@@ -523,7 +522,7 @@ createActorUI born aid body = do
                          | otherwise = "flying"
                      -- Not much detail about a fast flying item.
                      (_, _, object1, object2) =
-                       partItem (bfid body) factionD CInv localTime
+                       partItem (bfid body) factionD localTime
                                 (itemNoDisco (trunk, 1))
                  in ( makePhrase [MU.AW $ MU.Text adj, object1, object2]
                     , basePronoun )
@@ -839,7 +838,6 @@ quitFactionUI fid toSt = do
 
 discover :: MonadClientUI m => Container -> ItemId -> m ()
 discover c iid = do
-  let cstore = storeFromC c
   lid <- getsState $ lidFromC c
   globalTime <- getsState stime
   localTime <- getsState $ getLocalTime lid
@@ -858,13 +856,13 @@ discover c iid = do
     _ -> return (False, [])
   let kit = EM.findWithDefault (1, []) iid bag
       itemFull = itemToF iid kit
-      knownName = partItemMediumAW side factionD cstore localTime itemFull
+      knownName = partItemMediumAW side factionD localTime itemFull
       -- Wipe out the whole knowledge of the item to make sure the two names
       -- in the message differ even if, e.g., the item is described as
       -- "of many effects".
       itemSecret = itemNoDisco (itemBase itemFull, itemK itemFull)
       (_, _, secretName, secretAEText) =
-        partItem side factionD cstore localTime itemSecret
+        partItem side factionD localTime itemSecret
       namePhrase = MU.Phrase $ [secretName, secretAEText] ++ nameWhere
       msg = makeSentence
         ["the", MU.SubjectVerbSg namePhrase "turn out to be", knownName]
@@ -1011,7 +1009,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
               factionD <- getsState sfactionD
               let itemSecret = itemNoDisco (itemBase, itemK)
                   (_, _, secretName, secretAEText) =
-                    partItem side factionD CGround localTime itemSecret
+                    partItem side factionD localTime itemSecret
                   verb = "repurpose"
                   store = MU.Text $ ppCStoreIn CGround
               msgAdd $ makeSentence
@@ -1157,8 +1155,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
     localTime <- getsState $ getLocalTime (blid b)
     itemToF <- getsState itemToFull
     let itemFull = itemToF iid (1, [])
-        (_, _, name, stats) =
-          partItem (bfid b) factionD cstore localTime itemFull
+        (_, _, name, stats) = partItem (bfid b) factionD localTime itemFull
         storeOwn = ppCStoreWownW True cstore aidPhrase
         cond = ["condition" | isTmpCondition $ itemBase itemFull]
     return $! makeSentence $
@@ -1201,8 +1198,8 @@ strike catch source target iid cstore = assert (source /= target) $ do
         isOrgan = iid `EM.member` borgan sb
         partItemChoice =
           if isOrgan
-          then partItemShortWownW side factionD spronoun COrgan localTime
-          else partItemShortAW side factionD cstore localTime
+          then partItemShortWownW side factionD spronoun localTime
+          else partItemShortAW side factionD localTime
         msg | bhp tb <= 0  -- incapacitated, so doesn't actively block
               || hurtMult > 90  -- at most minor armor
               || jdamage (itemBase itemFull) == 0 = makeSentence $
