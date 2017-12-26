@@ -103,7 +103,7 @@ addAnyActor actorFreq lid time mpos = do
         Nothing -> do
           rollPos <- getsState $ rollSpawnPos cops allPers mobile lid lvl fid
           rndToAction rollPos
-      registerActor itemKnownRaw itemFullRaw seed fid pos lid id time
+      registerActor itemKnownRaw itemFullRaw seed fid pos lid time
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point
              -> Bool -> LevelId -> Level -> FactionId -> State

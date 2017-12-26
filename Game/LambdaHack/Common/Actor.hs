@@ -112,8 +112,9 @@ braced :: Actor -> Bool
 braced = bwait
 
 actorTemplate :: ItemId -> Int64 -> Int64 -> Point -> LevelId -> FactionId
+              -> Bool
               -> Actor
-actorTemplate btrunk bhp bcalm bpos blid bfid =
+actorTemplate btrunk bhp bcalm bpos blid bfid bproj =
   let btrajectory = Nothing
       boldpos = Nothing
       borgan  = EM.empty
@@ -123,7 +124,6 @@ actorTemplate btrunk bhp bcalm bpos blid bfid =
       bwait   = False
       bhpDelta = ResDelta (0, 0) (0, 0)
       bcalmDelta = ResDelta (0, 0) (0, 0)
-      bproj = False
   in Actor{..}
 
 waitedLastTurn :: Actor -> Bool

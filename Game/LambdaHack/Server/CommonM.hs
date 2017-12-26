@@ -368,32 +368,14 @@ projectBla source pos rest iid cstore isBlast = do
     Just kit@(_, it) -> do
       let delay = if jweight item == 0 then timeTurn else timeClip
           btime = absoluteTimeAdd delay localTime
-      addProjectile pos rest iid kit lid (bfid sb) btime isBlast
+      addProjectile pos rest iid kit lid (bfid sb) btime
       let c = CActor source cstore
       execUpdAtomic $ UpdLoseItem False iid item (1, take 1 it) c
 
-addProjectile :: MonadServerAtomic m
-              => Point -> [Point] -> ItemId -> ItemQuant -> LevelId
-              -> FactionId -> Time -> Bool
-              -> m ()
-addProjectile bpos rest iid (_, it) blid bfid btime _isBlast = do
-  itemToF <- getsState itemToFull
-  let itemFull@ItemFull{itemBase} = itemToF iid (1, take 1 it)
-      (trajectory, (speed, _)) = itemTrajectory itemBase (bpos : rest)
-      -- Trunk is added to equipment, not to organs, because it's the
-      -- projected item, so it's carried, not grown.
-      tweakBody b = b { bhp = oneM
-                      , bproj = True
-                      , btrajectory = Just (trajectory, speed)
-                      , beqp = EM.singleton iid (1, take 1 it)
-                      , borgan = EM.empty }
-  void $ addActorIid iid itemFull True bfid bpos blid tweakBody btime
-
 addActorFromGroup :: MonadServerAtomic m
-                  => GroupName ItemKind -> FactionId -> Point -> LevelId
-                  -> (Actor -> Actor) -> Time
+                  => GroupName ItemKind -> FactionId -> Point -> LevelId -> Time
                   -> m (Maybe ActorId)
-addActorFromGroup actorGroup bfid pos lid tweakBody time = do
+addActorFromGroup actorGroup bfid pos lid time = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- that contains the constant properties.
   let trunkFreq = [(actorGroup, 1)]
@@ -401,20 +383,42 @@ addActorFromGroup actorGroup bfid pos lid tweakBody time = do
   case m5 of
     Nothing -> return Nothing
     Just (itemKnownRaw, itemFullRaw, _, seed, _) ->
-      registerActor itemKnownRaw itemFullRaw seed bfid pos lid tweakBody time
+      registerActor itemKnownRaw itemFullRaw seed bfid pos lid time
 
 registerActor :: MonadServerAtomic m
               => ItemKnown -> ItemFull -> ItemSeed
-              -> FactionId -> Point -> LevelId -> (Actor -> Actor) -> Time
+              -> FactionId -> Point -> LevelId -> Time
               -> m (Maybe ActorId)
 registerActor (kindIx, ar, damage, _) itemFullRaw seed
-              bfid pos lid tweakBody time = do
+              bfid pos lid time = do
   let container = CTrunk bfid lid pos
       jfid = Just bfid
       itemKnown = (kindIx, ar, damage, jfid)
       itemFull = itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
   trunkId <- registerItem itemFull itemKnown seed container False
-  addActorIid trunkId itemFull False bfid pos lid tweakBody time
+  addNonProjectile trunkId itemFull bfid pos lid time
+
+addProjectile :: MonadServerAtomic m
+              => Point -> [Point] -> ItemId -> ItemQuant -> LevelId -> FactionId
+              -> Time
+              -> m ()
+addProjectile bpos rest iid (_, it) blid bfid btime = do
+  itemToF <- getsState itemToFull
+  let itemFull@ItemFull{itemBase} = itemToF iid (1, take 1 it)
+      (trajectory, (speed, _)) = itemTrajectory itemBase (bpos : rest)
+      -- Trunk is added to equipment, not to organs, because it's the
+      -- projected item, so it's carried, not grown.
+      tweakBody b = b { bhp = oneM
+                      , btrajectory = Just (trajectory, speed)
+                      , beqp = EM.singleton iid (1, take 1 it) }
+  void $ addActorIid iid itemFull True bfid bpos blid tweakBody btime
+
+addNonProjectile :: MonadServerAtomic m
+                 => ItemId -> ItemFull -> FactionId -> Point -> LevelId -> Time
+                 -> m (Maybe ActorId)
+addNonProjectile trunkId itemFull@ItemFull{..} fid pos lid time = do
+  let tweakBody b = b {borgan = EM.singleton trunkId (itemK, itemTimer)}
+  addActorIid trunkId itemFull False fid pos lid tweakBody time
 
 addActorIid :: MonadServerAtomic m
             => ItemId -> ItemFull -> Bool -> FactionId -> Point -> LevelId
@@ -455,10 +459,9 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
              | otherwise = hp
       bonusHP = fromEnum $ (diffHP - hp) `divUp` oneM
       healthOrgans = [(Just bonusHP, ("bonus HP", COrgan)) | bonusHP /= 0]
-      b = actorTemplate trunkId diffHP calm pos lid bfid
+      b = actorTemplate trunkId diffHP calm pos lid bfid bproj
       -- Insert the trunk as the actor's organ.
-      withTrunk = b { borgan = EM.singleton trunkId (itemK, itemTimer)
-                    , bweapon = if isMelee itemBase then 1 else 0 }
+      withTrunk = b {bweapon = if isMelee itemBase then 1 else 0}
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
   execUpdAtomic $ UpdCreateActor aid (tweakBody withTrunk) [(trunkId, itemBase)]
