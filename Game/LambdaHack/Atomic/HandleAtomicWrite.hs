@@ -185,7 +185,7 @@ updCreateItem iid item kit@(k, _) c = assert (k > 0) $ do
   insertItemContainer iid kit c
   case c of
     CActor aid store ->
-      when (store `elem` [CEqp, COrgan]) $ addItemToActor iid item k aid
+      when (store `elem` [CEqp, COrgan]) $ addItemToActorAspect iid item k aid
     _ -> return ()
 
 -- Destroy some copies (possibly not all) of an item.
@@ -204,7 +204,7 @@ updDestroyItem iid item kit@(k, _) c = assert (k > 0) $ do
                     `swith` (iid, item, itemD)) ()
   case c of
     CActor aid store ->
-      when (store `elem` [CEqp, COrgan]) $ addItemToActor iid item (-k) aid
+      when (store `elem` [CEqp, COrgan]) $ addItemToActorAspect iid item (-k) aid
     _ -> return ()
 
 updSpotItemBag :: MonadStateWrite m
@@ -217,7 +217,7 @@ updSpotItemBag c bag ais = assert (EM.size bag > 0
     CActor aid store ->
       when (store `elem` [CEqp, COrgan]) $
         forM_ ais $ \(iid, item) ->
-                      addItemToActor iid item (fst $ bag EM.! iid) aid
+                      addItemToActorAspect iid item (fst $ bag EM.! iid) aid
     _ -> return ()
 
 updLoseItemBag :: MonadStateWrite m
@@ -236,7 +236,7 @@ updLoseItemBag c bag ais = assert (EM.size bag > 0
     CActor aid store ->
       when (store `elem` [CEqp, COrgan]) $
         forM_ ais $ \(iid, item) ->
-                      addItemToActor iid item (- (fst $ bag EM.! iid)) aid
+                      addItemToActorAspect iid item (- (fst $ bag EM.! iid)) aid
     _ -> return ()
 
 updMoveActor :: MonadStateWrite m => ActorId -> Point -> Point -> m ()
@@ -286,16 +286,16 @@ updMoveItem iid k aid s1 s2 = assert (k > 0 && s1 /= s2) $ do
       COrgan -> return ()
       _ -> do
         itemBase <- getsState $ getItemBody iid
-        addItemToActor iid itemBase (-k) aid
+        addItemToActorAspect iid itemBase (-k) aid
     COrgan -> case s2 of
       CEqp -> return ()
       _ -> do
         itemBase <- getsState $ getItemBody iid
-        addItemToActor iid itemBase (-k) aid
+        addItemToActorAspect iid itemBase (-k) aid
     _ ->
       when (s2 `elem` [CEqp, COrgan]) $ do
         itemBase <- getsState $ getItemBody iid
-        addItemToActor iid itemBase k aid
+        addItemToActorAspect iid itemBase k aid
 
 updRefillHP :: MonadStateWrite m => ActorId -> Int64 -> m ()
 updRefillHP aid nRaw =

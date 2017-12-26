@@ -4,7 +4,7 @@ module Game.LambdaHack.Atomic.MonadStateWrite
   , putState, updateLevel, updateActor, updateFaction, moveActorMap
   , insertBagContainer, insertItemContainer, insertItemActor
   , deleteBagContainer, deleteItemContainer, deleteItemActor
-  , addAis, itemsMatch, addItemToActor, resetActorAspect
+  , addAis, itemsMatch, addItemToActorAspect, resetActorAspect
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , insertItemFloor, insertItemEmbed
@@ -305,8 +305,9 @@ itemsMatch item1 item2 =
   -- Note that nothing else needs to be the same, since items are merged
   -- and clients have different views on dungeon items than the server.
 
-addItemToActor :: MonadStateWrite m => ItemId -> Item -> Int -> ActorId -> m ()
-addItemToActor iid itemBase k aid = do
+addItemToActorAspect :: MonadStateWrite m
+                     => ItemId -> Item -> Int -> ActorId -> m ()
+addItemToActorAspect iid itemBase k aid = do
   arItem <- getsState $ aspectRecordFromItem iid itemBase
   let f arActor = sumAspectRecord [(arActor, 1), (arItem, k)]
   modifyState $ updateActorAspect $ EM.adjust f aid
