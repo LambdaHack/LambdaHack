@@ -272,7 +272,7 @@ populateDungeon = do
         psFree <- getsState $ nearbyFreePoints validTile ppos lid
         let ps = zip initGroups psFree
         forM_ ps $ \ (actorGroup, p) -> do
-          maid <- addActor actorGroup fid3 p lid id ntime
+          maid <- addActorFromGroup actorGroup fid3 p lid id ntime
           case maid of
             Nothing -> error $ "can't spawn initial actors"
                                `showFailure` (lid, (fid3, fact3))

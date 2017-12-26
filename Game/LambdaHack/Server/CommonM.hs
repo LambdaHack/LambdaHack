@@ -4,12 +4,12 @@ module Game.LambdaHack.Server.CommonM
   ( execFailure, revealItems, moveStores, generalMoveItem
   , deduceQuits, deduceKilled, electLeader, supplantLeader
   , updatePer, recomputeCachePer, projectFail
-  , addActor, registerActor, addActorIid, discoverIfNoEffects
+  , addActorFromGroup, registerActor, discoverIfNoEffects
   , pickWeaponServer, currentSkillsServer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , containerMoveItem, quitF, keepArenaFact, anyActorsAlive, projectBla
-  , addProjectile, getCacheLucid, getCacheTotal
+  , addProjectile, addActorIid, getCacheLucid, getCacheTotal
 #endif
   ) where
 
@@ -380,18 +380,20 @@ addProjectile bpos rest iid (_, it) blid bfid btime _isBlast = do
   itemToF <- getsState itemToFull
   let itemFull@ItemFull{itemBase} = itemToF iid (1, take 1 it)
       (trajectory, (speed, _)) = itemTrajectory itemBase (bpos : rest)
+      -- Trunk is added to equipment, not to organs, because it's the
+      -- projected item, so it's carried, not grown.
       tweakBody b = b { bhp = oneM
                       , bproj = True
                       , btrajectory = Just (trajectory, speed)
                       , beqp = EM.singleton iid (1, take 1 it)
-                      , borgan = EM.empty }  -- don't confer bonuses from trunk
+                      , borgan = EM.empty }
   void $ addActorIid iid itemFull True bfid bpos blid tweakBody btime
 
-addActor :: MonadServerAtomic m
-         => GroupName ItemKind -> FactionId -> Point -> LevelId
-         -> (Actor -> Actor) -> Time
-         -> m (Maybe ActorId)
-addActor actorGroup bfid pos lid tweakBody time = do
+addActorFromGroup :: MonadServerAtomic m
+                  => GroupName ItemKind -> FactionId -> Point -> LevelId
+                  -> (Actor -> Actor) -> Time
+                  -> m (Maybe ActorId)
+addActorFromGroup actorGroup bfid pos lid tweakBody time = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- that contains the constant properties.
   let trunkFreq = [(actorGroup, 1)]
