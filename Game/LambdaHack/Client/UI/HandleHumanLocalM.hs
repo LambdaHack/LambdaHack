@@ -187,8 +187,7 @@ chooseItemDialogMode c = do
             else failWith "never mind"
       case c2 of
         MStore COrgan -> do
-          let symbol = jsymbol (itemBase itemFull)
-              blurb | symbol == '+' = "temporary condition"
+          let blurb | isTmpCondition (itemBase itemFull) = "temporary condition"
                     | otherwise = "organ"
               prompt2 = makeSentence [ partActor bUI, "can't choose"
                                      , MU.AW blurb ]

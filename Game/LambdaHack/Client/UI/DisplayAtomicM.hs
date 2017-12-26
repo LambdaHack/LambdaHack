@@ -1148,7 +1148,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
         (_, _, name, stats) =
           partItem (bfid b) factionD cstore localTime itemFull
         storeOwn = ppCStoreWownW True cstore aidPhrase
-        cond = ["condition" | jsymbol (itemBase itemFull) == '+']
+        cond = ["condition" | isTmpCondition $ itemBase itemFull]
     return $! makeSentence $
       ["the", name, stats] ++ cond ++ storeOwn ++ ["will now last longer"]
 
