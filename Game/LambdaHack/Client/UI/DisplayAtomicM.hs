@@ -1194,9 +1194,8 @@ strike catch source target iid cstore = assert (source /= target) $ do
           _ | catch -> "catch"
           Nothing -> "hit"  -- not identified
           Just ItemDisco{itemKind} -> IK.iverbHit itemKind
-        isOrgan = iid `EM.member` borgan sb
         partItemChoice =
-          if isOrgan
+          if iid `EM.member` borgan sb
           then partItemShortWownW side factionD spronoun localTime
           else partItemShortAW side factionD localTime
         msg | bhp tb <= 0  -- incapacitated, so doesn't actively block

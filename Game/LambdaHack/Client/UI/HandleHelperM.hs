@@ -129,14 +129,13 @@ sortSlots fid mbody = do
       sortSlotMap :: SLore -> EM.EnumMap SlotChar ItemId
                   -> EM.EnumMap SlotChar ItemId
       sortSlotMap slore em =
-        let onlyOrgans = slore `elem` [SOrgan, STrunk]
-            onPerson = sharedAllOwnedFid onlyOrgans fid s
+        let onPerson = combinedFromLore slore fid s
             onGround = maybe EM.empty
                          -- consider floor only under the acting actor
                        (\b -> getFloorBag (blid b) (bpos b) s)
                        mbody
             inBags = ES.unions $ map EM.keysSet
-                     $ onPerson : [ onGround | not onlyOrgans]
+                     $ onPerson : [onGround | slore == SItem]
             f = (`ES.member` inBags)
             (nearItems, farItems) = partition f $ EM.elems em
             g iid = (iid, itemToF iid (1, []))
@@ -269,11 +268,14 @@ itemOverlay slore lid bag = do
   ItemSlots itemSlots <- getsSession sslots
   side <- getsClient sside
   factionD <- getsState sfactionD
-  sEqp <- getsState $ sharedEqp side
+  combEqp <- getsState $ combinedEqp side
+  combOrgan <- getsState $ combinedOrgan side
   let lSlots = itemSlots EM.! slore
       !_A = assert (all (`elem` EM.elems lSlots) (EM.keys bag)
                     `blame` (lid, bag, lSlots)) ()
-      markEqp iid t = if iid `EM.member` sEqp then T.snoc (T.init t) '>' else t
+      markEqp iid t = if iid `EM.member` combEqp || iid `EM.member` combOrgan
+                      then T.snoc (T.init t) '>'
+                      else t
       pr (l, iid) =
         case EM.lookup iid bag of
           Nothing -> Nothing

@@ -61,7 +61,7 @@ accessModeBag :: ActorId -> State -> ItemDialogMode -> ItemBag
 accessModeBag leader s (MStore cstore) = let b = getActorBody leader s
                                          in getBodyStoreBag b cstore s
 accessModeBag leader s MOwned = let fid = bfid $ getActorBody leader s
-                                in sharedAllOwnedFid False fid s
+                                in combinedItems fid s
 accessModeBag _ _ MStats = EM.empty
 accessModeBag _ s MLore{} = EM.map (const (1, [])) $ sitemD s
 

@@ -5,8 +5,8 @@ module Game.LambdaHack.Common.ActorState
   ( fidActorNotProjAssocs, actorAssocs, actorRegularAssocs
   , warActorRegularList, friendlyActorRegularList, fidActorRegularIds
   , bagAssocs, bagAssocsK, posToAidsLvl, posToAids, posToAssocs
-  , nearbyFreePoints, calculateTotal, mergeItemQuant
-  , sharedInv, sharedEqp, sharedAllOwned, sharedAllOwnedFid, findIid
+  , nearbyFreePoints, calculateTotal, mergeItemQuant, findIid
+  , combinedInv, combinedEqp, combinedOrgan, combinedItems, combinedFromLore
   , getActorBody, getActorAspect, getCarriedAssocsAndTrunk, getCarriedIidCStore
   , getContainerBag, getFloorBag, getEmbedBag, getBodyStoreBag
   , mapActorItems_, getActorAssocs, getActorAssocsK
@@ -108,36 +108,12 @@ nearbyFreePoints f start lid s =
 -- | Calculate loot's worth for a given faction.
 calculateTotal :: FactionId -> State -> (ItemBag, Int)
 calculateTotal fid s =
-  let bag = sharedAllOwned fid s
+  let bag = combinedItems fid s
       items = map (\(iid, (k, _)) -> (getItemBody iid s, k)) $ EM.assocs bag
   in (bag, sum $ map itemPrice items)
 
 mergeItemQuant :: ItemQuant -> ItemQuant -> ItemQuant
 mergeItemQuant (k2, it2) (k1, it1) = (k1 + k2, it1 ++ it2)
-
-sharedInv :: FactionId -> State -> ItemBag
-sharedInv fid s =
-  let bs = inline fidActorNotProjAssocs fid s
-  in EM.unionsWith mergeItemQuant $ map (binv . snd) bs
-
-sharedEqp :: FactionId -> State -> ItemBag
-sharedEqp fid s =
-  let bs = inline fidActorNotProjAssocs fid s
-  in EM.unionsWith mergeItemQuant $ map (beqp . snd) bs
-
-sharedAllOwned :: FactionId -> State -> ItemBag
-sharedAllOwned fid s =
-  let shaBag = gsha $ sfactionD s EM.! fid
-  in EM.unionsWith mergeItemQuant [sharedEqp fid s, sharedInv fid s, shaBag]
-
-sharedAllOwnedFid :: Bool -> FactionId -> State -> ItemBag
-sharedAllOwnedFid onlyOrgans fid s =
-  let shaBag = gsha $ sfactionD s EM.! fid
-      bs = map snd $ inline fidActorNotProjAssocs fid s
-  in EM.unionsWith mergeItemQuant
-     $ if onlyOrgans
-       then map borgan bs
-       else map binv bs ++ map beqp bs ++ [shaBag]
 
 findIid :: ActorId -> FactionId -> ItemId -> State
         -> [(ActorId, (Actor, CStore))]
@@ -151,6 +127,38 @@ findIid leader fid iid s =
         in concatMap itemsOfCStore stores
       items = concatMap itemsOfActor actors
   in map snd $ filter ((== iid) . fst) items
+
+combinedInv :: FactionId -> State -> ItemBag
+combinedInv fid s =
+  let bs = inline fidActorNotProjAssocs fid s
+  in EM.unionsWith mergeItemQuant $ map (binv . snd) bs
+
+combinedEqp :: FactionId -> State -> ItemBag
+combinedEqp fid s =
+  let bs = inline fidActorNotProjAssocs fid s
+  in EM.unionsWith mergeItemQuant $ map (beqp . snd) bs
+
+-- Trunk not considered (if stolen).
+combinedOrgan :: FactionId -> State -> ItemBag
+combinedOrgan fid s =
+  let bs = inline fidActorNotProjAssocs fid s
+  in EM.unionsWith mergeItemQuant $ map (borgan . snd) bs
+
+-- Trunk not considered (if stolen).
+combinedItems :: FactionId -> State -> ItemBag
+combinedItems fid s =
+  let shaBag = gsha $ sfactionD s EM.! fid
+      bs = map snd $ inline fidActorNotProjAssocs fid s
+  in EM.unionsWith mergeItemQuant $ map binv bs ++ map beqp bs ++ [shaBag]
+
+combinedFromLore :: SLore -> FactionId -> State -> ItemBag
+combinedFromLore slore fid s = case slore of
+  SItem -> combinedItems fid s
+  SOrgan -> combinedOrgan fid s
+  STrunk -> combinedOrgan fid s
+  SEmbed -> EM.empty
+  SBlast ->  EM.empty
+  STmp -> combinedOrgan fid s
 
 getActorBody :: ActorId -> State -> Actor
 {-# INLINE getActorBody #-}

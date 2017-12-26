@@ -75,15 +75,14 @@ assignSlot slore item fid mbody (ItemSlots itemSlots) lastSlot s =
     else head $ fresh ++ free
  where
   offset = maybe 0 (+1) (elemIndex lastSlot allZeroSlots)
-  onlyOrgans = slore `elem` [SOrgan, STrunk]
   len0 = length allZeroSlots
   candidatesZero = take len0 $ drop offset $ cycle allZeroSlots
   candidates = candidatesZero ++ concat [allSlots n | n <- [1..]]
-  onPerson = sharedAllOwnedFid onlyOrgans fid s
+  onPerson = combinedFromLore slore fid s
   onGround = maybe EM.empty  -- consider floor only under the acting actor
                    (\b -> getFloorBag (blid b) (bpos b) s)
                    mbody
-  inBags = ES.unions $ map EM.keysSet $ onPerson : [ onGround | not onlyOrgans]
+  inBags = ES.unions $ map EM.keysSet $ onPerson : [onGround | slore == SItem]
   lSlots = itemSlots EM.! slore
   f l = maybe True (`ES.notMember` inBags) $ EM.lookup l lSlots
   free = filter f candidates
