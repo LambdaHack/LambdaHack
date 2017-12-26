@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.UI.DisplayAtomicM
   ( displayRespUpdAtomicUI, displayRespSfxAtomicUI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , updateItemSlot, markDisplayNeeded, updateItemSlotSide, lookAtMove
+  , updateItemSlot, markDisplayNeeded, lookAtMove
   , actorVerbMU, aidVerbMU, itemVerbMU, itemAidVerbMU, msgDuplicateScrap
   , createActorUI, destroyActorUI, spotItem, moveActor, displaceActorUI
   , moveItemUI, quitFactionUI, discover, ppSfxMsg, setLastSlot, strike
@@ -76,7 +76,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdCreateItem iid _ kit c -> do
     case c of
       CActor aid store -> do
-        slastSlot <- updateItemSlotSide store aid iid
+        slastSlot <- updateItemSlot c iid
         case store of
           COrgan -> do
             bag <- getsState $ getContainerBag c
@@ -102,7 +102,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
       CFloor lid _ -> do
         -- If you want an item to be assigned to @slastSlot@, create it
         -- in @CActor aid CGround@, not in @CFloor@.
-        void $ updateItemSlot CGround Nothing iid
+        void $ updateItemSlot c iid
         itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
         markDisplayNeeded lid
       CTrunk{} -> error $ "" `showFailure` c
@@ -344,31 +344,29 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdKillExit{} -> frontendShutdown
   UpdWriteSave -> when verbose $ promptAdd "Saving backup."
 
-updateItemSlot :: MonadClientUI m
-               => CStore -> Maybe ActorId -> ItemId -> m SlotChar
-updateItemSlot store maid iid = do
-  slots@(ItemSlots itemSlots) <- getsSession sslots
-  let onlyOrgans = store == COrgan
-      lSlots = if onlyOrgans then itemSlots EM.! SOrgan else itemSlots EM.! SItem
-      incrementPrefix m l iid2 = EM.insert l iid2 $
-        case EM.lookup l m of
+updateItemSlot :: MonadClientUI m => Container -> ItemId -> m SlotChar
+updateItemSlot c iid = do
+  let slore = loreFromContainer c
+      incrementPrefix l2 iid2 m = EM.insert l2 iid2 $
+        case EM.lookup l2 m of
           Nothing -> m
           Just iidOld ->
-            let lNew = SlotChar (slotPrefix l + 1) (slotChar l)
-            in incrementPrefix m lNew iidOld
-  case lookup iid $ map swap $ EM.assocs lSlots of
+            let lNew = SlotChar (slotPrefix l2 + 1) (slotChar l2)
+            in incrementPrefix lNew iidOld m
+  slots@(ItemSlots itemSlots) <- getsSession sslots
+  case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! slore of
     Nothing -> do
       side <- getsClient sside
+      mb <- case c of
+        CActor aid _ -> do
+          b <- getsState $ getActorBody aid
+          return $! if bfid b == side then Just b else Nothing
+        _ -> return Nothing
       item <- getsState $ getItemBody iid
       lastSlot <- getsSession slastSlot
-      mb <- maybe (return Nothing) (fmap Just . getsState . getActorBody) maid
-      l <- getsState $ assignSlot (loreFromMode $ MStore store) item side mb slots lastSlot
-      let newSlots | onlyOrgans = ItemSlots $
-            EM.insert SOrgan (incrementPrefix (itemSlots EM.! SOrgan) l iid)
-                      itemSlots
-                   | otherwise = ItemSlots $
-            EM.insert SItem (incrementPrefix (itemSlots EM.! SItem) l iid)
-                      itemSlots
+      l <- getsState $ assignSlot slore item side mb slots lastSlot
+      let newSlots =
+            ItemSlots $ EM.adjust (incrementPrefix l iid) slore itemSlots
       modifySession $ \sess -> sess {sslots = newSlots}
       return l
     Just l -> return l  -- slot already assigned; a letter or a number
@@ -377,15 +375,6 @@ markDisplayNeeded :: MonadClientUI m => LevelId -> m ()
 markDisplayNeeded lid = do
   lidV <- viewedLevelUI
   when (lidV == lid) $ modifySession $ \sess -> sess {sdisplayNeeded = True}
-
-updateItemSlotSide :: MonadClientUI m
-                   => CStore -> ActorId -> ItemId -> m SlotChar
-updateItemSlotSide store aid iid = do
-  side <- getsClient sside
-  b <- getsState $ getActorBody aid
-  if bfid b == side
-  then updateItemSlot store (Just aid) iid
-  else updateItemSlot store Nothing iid
 
 lookAtMove :: MonadClientUI m => ActorId -> m ()
 lookAtMove aid = do
@@ -548,7 +537,7 @@ createActorUI born aid body = do
              then "be here"
              else "appear" <+> if bfid body == side then "" else "suddenly"
         else "be spotted"
-  mapM_ (\(iid, store) -> void $ updateItemSlotSide store aid iid)
+  mapM_ (\(iid, store) -> void $ updateItemSlot (CActor aid store) iid)
         (getCarriedIidCStore body)
   when (bfid body /= side) $ do
     when (not (bproj body) && isAtWar fact side) $
@@ -616,12 +605,12 @@ spotItem verbose iid kit c = do
   case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! slore of
     Nothing ->  -- never seen or would have a slot
       case c of
-        CActor aid store ->
+        CActor{}  ->
           -- Most probably an actor putting item in or out of shared stash.
-          void $ updateItemSlotSide store aid iid
+          void $ updateItemSlot c iid
         CEmbed{} -> return ()
         CFloor lid p -> do
-          void $ updateItemSlot CGround Nothing iid
+          void $ updateItemSlot c iid
           sxhairOld <- getsSession sxhair
           case sxhairOld of
             TEnemy{} -> return ()  -- probably too important to overwrite
