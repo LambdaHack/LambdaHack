@@ -766,8 +766,7 @@ quitFactionUI fid toSt = do
       when go $ do
         lidV <- viewedLevelUI
         Level{lxsize, lysize} <- getLevel lidV
-        let store = CGround  -- only matters for UI details; all items shown
-            currencyName = MU.Text $ IK.iname $ okind $ ouniqGroup "currency"
+        let currencyName = MU.Text $ IK.iname $ okind $ ouniqGroup "currency"
         arena <- getArenaUI
         (bag, itemSlides, total) <- do
           (bag, tot) <- getsState $ calculateTotal side
@@ -776,7 +775,7 @@ quitFactionUI fid toSt = do
             let spoilsMsg = makeSentence [ "Your spoils are worth"
                                          , MU.CarWs tot currencyName ]
             promptAdd spoilsMsg
-            io <- itemOverlay store SItem arena bag
+            io <- itemOverlay SItem arena bag
             sli <- overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] io
             return (bag, sli, tot)
         localTime <- getsState $ getLocalTime arena
@@ -795,7 +794,7 @@ quitFactionUI fid toSt = do
                     factionD <- getsState sfactionD
                     let itemFull = itemToF iid kit
                         attrLine = itemDesc side factionD 0
-                                            store localTime itemFull
+                                            CGround localTime itemFull
                         ov = splitAttrLine lxsize attrLine
                         worth = itemPrice (itemBase itemFull, 1)
                         lootMsg = makeSentence $

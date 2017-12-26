@@ -262,22 +262,18 @@ pickLeaderWithPointer = do
            Nothing -> failMsg "not pointing at an actor"
            Just (aid, b, _) -> pick (aid, b)
 
-itemOverlay :: MonadClientUI m => CStore -> SLore -> LevelId -> ItemBag -> m OKX
-itemOverlay store slore lid bag = do
+itemOverlay :: MonadClientUI m => SLore -> LevelId -> ItemBag -> m OKX
+itemOverlay slore lid bag = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- getsState itemToFull
   ItemSlots itemSlots <- getsSession sslots
   side <- getsClient sside
   factionD <- getsState sfactionD
   sEqp <- getsState $ sharedEqp side
-  let isOrgan = store == COrgan
-      lSlots = itemSlots EM.! slore
+  let lSlots = itemSlots EM.! slore
       !_A = assert (all (`elem` EM.elems lSlots) (EM.keys bag)
-                    `blame` (store, lid, bag, lSlots)) ()
-      markEqp iid t =
-        if store /= CEqp && not isOrgan && iid `EM.member` sEqp
-        then T.snoc (T.init t) '>'
-        else t
+                    `blame` (lid, bag, lSlots)) ()
+      markEqp iid t = if iid `EM.member` sEqp then T.snoc (T.init t) '>' else t
       pr (l, iid) =
         case EM.lookup iid bag of
           Nothing -> Nothing

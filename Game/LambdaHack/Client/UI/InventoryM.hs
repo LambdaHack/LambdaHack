@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.UI.InventoryM
   ( Suitability(..)
   , getFull, getGroupItem, getStoreItem
-  , ppItemDialogMode, ppItemDialogModeFrom, storeFromMode
+  , ppItemDialogMode, ppItemDialogModeFrom
   ) where
 
 import Prelude ()
@@ -56,13 +56,6 @@ ppItemDialogModeIn c = let (tIn, t) = ppItemDialogMode c in tIn <+> t
 
 ppItemDialogModeFrom :: ItemDialogMode -> Text
 ppItemDialogModeFrom c = let (_tIn, t) = ppItemDialogMode c in "from" <+> t
-
-storeFromMode :: ItemDialogMode -> CStore
-storeFromMode c = case c of
-  MStore cstore -> cstore
-  MOwned -> CGround  -- needed to decide display mode in textAllAE
-  MStats -> CGround
-  MLore{} -> CGround
 
 accessModeBag :: ActorId -> State -> ItemDialogMode -> ItemBag
 accessModeBag leader s (MStore cstore) = let b = getActorBody leader s
@@ -429,8 +422,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
             }
       runDefItemKey keyDefs statsDef io slotKeys promptChosen MStats
     _ -> do
-      io <- itemOverlay (storeFromMode cCur)
-                        (loreFromMode cCur) (blid body) bagFiltered
+      io <- itemOverlay (loreFromMode cCur) (blid body) bagFiltered
       let slotKeys = mapMaybe (keyOfEKM numPrefix . Right)
                      $ EM.keys bagItemSlots
       runDefItemKey keyDefs lettersDef io slotKeys promptChosen cCur
