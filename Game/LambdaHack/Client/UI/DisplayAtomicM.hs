@@ -74,9 +74,9 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdCreateActor aid body _ -> createActorUI True aid body
   UpdDestroyActor aid body _ -> destroyActorUI True aid body
   UpdCreateItem iid _ kit c -> do
+    slastSlot <- updateItemSlot c iid
     case c of
       CActor aid store -> do
-        slastSlot <- updateItemSlot c iid
         case store of
           COrgan -> do
             bag <- getsState $ getContainerBag c
@@ -96,13 +96,13 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
             let wown = ppContainerWownW ownerFun True c
             itemVerbMU iid kit (MU.Text $ makePhrase $ "appear" : wown) c
             mleader <- getsClient sleader
+            -- Item created among leader's items, so must be interesting.
             when (Just aid == mleader) $
               modifySession $ \sess -> sess {slastSlot}
       CEmbed lid _ -> markDisplayNeeded lid
       CFloor lid _ -> do
         -- If you want an item to be assigned to @slastSlot@, create it
         -- in @CActor aid CGround@, not in @CFloor@.
-        void $ updateItemSlot c iid
         itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
         markDisplayNeeded lid
       CTrunk{} -> error $ "" `showFailure` c
@@ -603,14 +603,10 @@ spotItem verbose iid kit c = do
   ItemSlots itemSlots <- getsSession sslots
   let slore = loreFromContainer c
   case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! slore of
-    Nothing ->  -- never seen or would have a slot
+    Nothing -> do  -- never seen or would have a slot
+      void $ updateItemSlot c iid
       case c of
-        CActor{}  ->
-          -- Most probably an actor putting item in or out of shared stash.
-          void $ updateItemSlot c iid
-        CEmbed{} -> return ()
         CFloor lid p -> do
-          void $ updateItemSlot c iid
           sxhairOld <- getsSession sxhair
           case sxhairOld of
             TEnemy{} -> return ()  -- probably too important to overwrite
@@ -625,7 +621,7 @@ spotItem verbose iid kit c = do
                   sess {sxhair = TPoint (TItem bag) lidV p}
           itemVerbMU iid kit "be spotted" c
           stopPlayBack
-        CTrunk{} -> return ()
+        _ -> return ()
     _ -> return ()  -- this item or another with the same @iid@
                     -- seen already (has a slot assigned), so old news
   when verbose $ case c of
@@ -682,6 +678,8 @@ moveItemUI iid k aid cstore1 cstore2 = do
   ItemSlots itemSlots <- getsSession sslots
   case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! SItem of
     Just slastSlot -> do
+      -- So far organs can't be put into backpack, so no need to call
+      -- @updateItemSlot@ to add or reassign lore category.
       when (Just aid == mleader) $ modifySession $ \sess -> sess {slastSlot}
       if cstore1 == CGround && Just aid == mleader && not underAI then
         itemAidVerbMU aid (MU.Text verb) iid (Right k) cstore2
