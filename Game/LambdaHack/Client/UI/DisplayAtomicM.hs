@@ -543,12 +543,12 @@ createActorUI born aid body = do
              else "appear" <+> if bfid body == side then "" else "suddenly"
         else "be spotted"
   mapM_ (\(iid, store) ->
-           let c = if isBlast  -- if blast, then only one item carried,
-                               -- the blast, so don't register it in @SEqp@
+           let c = if iid == btrunk body
                    then CTrunk (bfid body) (blid body) (bpos body)
                    else CActor aid store
            in void $ updateItemSlot c iid)
-        (getCarriedIidCStore body)
+        ((btrunk body, COrgan)  -- store will be overwritten
+         : filter ((/= btrunk body) . fst) (getCarriedIidCStore body))
   when (bfid body /= side) $ do
     when (not (bproj body) && isAtWar fact side) $
       -- Aim even if nobody can shoot at the enemy. Let's home in on him

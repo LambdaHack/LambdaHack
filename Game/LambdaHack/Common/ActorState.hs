@@ -169,13 +169,8 @@ getCarriedAssocsAndTrunk b s =
 
 getCarriedIidCStore :: Actor -> [(ItemId, CStore)]
 getCarriedIidCStore b =
-  -- The trunk is important for a case of dominating an actor with stolen
-  -- trunk organ.
-  let trunk = EM.singleton (btrunk b) (1, [])
-      bagCarried (cstore, bag) = map (,cstore) $ EM.keys bag
-  in concatMap bagCarried [ (CInv, binv b)
-                          , (CEqp, beqp b)
-                          , (COrgan, EM.unionWith const (borgan b) trunk) ]
+  let bagCarried (cstore, bag) = map (,cstore) $ EM.keys bag
+  in concatMap bagCarried [(CInv, binv b), (CEqp, beqp b), (COrgan, borgan b)]
 
 getContainerBag :: Container -> State -> ItemBag
 getContainerBag c s = case c of
