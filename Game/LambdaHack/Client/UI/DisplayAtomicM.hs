@@ -73,24 +73,29 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid body _ -> createActorUI True aid body
   UpdDestroyActor aid body _ -> destroyActorUI True aid body
-  UpdCreateItem iid _ kit c -> do
+  UpdCreateItem iid item kit c -> do
     slastSlot <- updateItemSlot c iid
     case c of
       CActor aid store -> do
         case store of
-          COrgan -> do
-            bag <- getsState $ getContainerBag c
-            let more = case EM.lookup iid bag of
-                  Nothing -> False
-                  Just kit2 -> fst kit2 /= fst kit
-                verb = MU.Text $
-                  "become" <+> case fst kit of
-                                 1 -> if more then "more" else ""
-                                 k -> if more then "additionally" else ""
-                                      <+> tshow k <> "-fold"
-            -- This describes all such items already among organs,
-            -- which is useful, because it shows "charging".
-            itemAidVerbMU aid verb iid (Left Nothing) COrgan
+          COrgan ->
+            if isTmpCondition item then do
+              bag <- getsState $ getContainerBag c
+              let more = case EM.lookup iid bag of
+                    Nothing -> False
+                    Just kit2 -> fst kit2 /= fst kit
+                  verb = MU.Text $
+                    "become" <+> case fst kit of
+                                   1 -> if more then "more" else ""
+                                   k -> if more then "additionally" else ""
+                                        <+> tshow k <> "-fold"
+              -- This describes all such items already among organs,
+              -- which is useful, because it shows "charging".
+              itemAidVerbMU aid verb iid (Left Nothing) COrgan
+            else do
+              ownerFun <- partActorLeaderFun
+              let wown = ppContainerWownW ownerFun True c
+              itemVerbMU iid kit (MU.Text $ makePhrase $ "grow" : wown) c
           _ -> do
             ownerFun <- partActorLeaderFun
             let wown = ppContainerWownW ownerFun True c
