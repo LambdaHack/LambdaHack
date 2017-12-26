@@ -65,14 +65,12 @@ slotLabel x =
 
 -- | Assigns a slot to an item, for inclusion in the inventory
 -- of a hero. Tries to to use the requested slot, if any.
-assignSlot :: SLore -> Item -> FactionId -> Maybe Actor -> ItemSlots
+assignSlot :: SLore -> FactionId -> Maybe Actor -> ItemSlots
            -> SlotChar -> State
            -> SlotChar
-assignSlot slore item fid mbody (ItemSlots itemSlots) lastSlot s =
+assignSlot slore fid mbody (ItemSlots itemSlots) lastSlot s =
   assert (maybe True (\b -> bfid b == fid) mbody)
-  $ if jsymbol item == '$'
-    then SlotChar 0 '$'
-    else head $ fresh ++ free
+  $ head $ fresh ++ free
  where
   offset = maybe 0 (+1) (elemIndex lastSlot allZeroSlots)
   len0 = length allZeroSlots

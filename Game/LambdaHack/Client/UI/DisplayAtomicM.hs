@@ -369,7 +369,7 @@ updateItemSlot c iid = do
           return $! if bfid b == side then Just b else Nothing
         _ -> return Nothing
       lastSlot <- getsSession slastSlot
-      l <- getsState $ assignSlot slore item side mb slots lastSlot
+      l <- getsState $ assignSlot slore side mb slots lastSlot
       let newSlots =
             ItemSlots $ EM.adjust (incrementPrefix l iid) slore itemSlots
       modifySession $ \sess -> sess {sslots = newSlots}
