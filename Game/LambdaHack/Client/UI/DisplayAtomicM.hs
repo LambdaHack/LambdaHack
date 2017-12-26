@@ -488,7 +488,6 @@ createActorUI born aid body = do
   globalTime <- getsState stime
   localTime <- getsState $ getLocalTime $ blid body
   trunk <- getsState $ getItemBody $ btrunk body
-  let isBlast = bproj body && actorTrunkIsBlast trunk
   mbUI <- getsSession $ EM.lookup aid . sactorUI
   bUI <- case mbUI of
     Just bUI -> return bUI
@@ -506,7 +505,8 @@ createActorUI born aid body = do
             else fromMaybe (nameFromNumber (fname $ gplayer fact) k, "he")
                  $ lookup k uHeroNames
       (n, bsymbol) <-
-        if | bproj body -> return (0, if isBlast then jsymbol trunk else '*')
+        if | bproj body ->
+               return (0, if isBlast trunk then jsymbol trunk else '*')
            | baseColor /= Color.BrWhite -> return (0, jsymbol trunk)
            | otherwise -> do
              sactorUI <- getsSession sactorUI
@@ -529,7 +529,8 @@ createActorUI born aid body = do
                     , basePronoun )
                | baseColor /= Color.BrWhite -> (jname trunk, basePronoun)
                | otherwise -> heroNamePronoun n
-          bcolor | bproj body = if isBlast then baseColor else Color.BrWhite
+          bcolor | bproj body =
+                     if isBlast trunk then baseColor else Color.BrWhite
                  | baseColor == Color.BrWhite = gcolor fact
                  | otherwise = baseColor
           bUI = ActorUI{..}

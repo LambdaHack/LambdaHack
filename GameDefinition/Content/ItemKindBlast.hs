@@ -39,7 +39,7 @@ burningOil n = ItemKind
   , iaspects = [AddShine 2]
   , ieffects = [Burn 1, Paralyze 2]  -- tripping on oil
   , ifeature = [ toVelocity (min 100 $ n `div` 2 * 10)
-               , Fragile, Identified ]
+               , Fragile, Identified, Blast ]
   , idesc    = "Sticky oil, burning brightly."
   , ikit     = []
   }
@@ -62,7 +62,7 @@ explosionBlast n = ItemKind
                ++ [PushActor (ThrowMod (100 * (n `div` 5)) 50)| n >= 10]
                ++ [DropItem 1 maxBound COrgan "temporary condition" | n >= 10]
                ++ [DropItem 1 maxBound COrgan "impressed" | n >= 10]  -- shock
-  , ifeature = [toLinger 20, Fragile, Identified]  -- 4 steps, 1 turn
+  , ifeature = [toLinger 20, Fragile, Identified, Blast]  -- 4 steps, 1 turn
   , idesc    = ""
   , ikit     = []
   }
@@ -86,7 +86,7 @@ firecracker n = ItemKind
                ++ [ OnSmash $ Explode
                     $ toGroupName $ "firecracker" <+> tshow (n - 1)
                   | n > 2 ]
-  , ifeature = [toVelocity 5, Fragile, Identified]
+  , ifeature = [toVelocity 5, Fragile, Identified, Blast]
   , idesc    = "Scraps of burnt paper, covering little pockets of black powder, buffeted by colorful explosions."
   , ikit     = []
   }
@@ -113,7 +113,7 @@ fragrance = ItemKind
   , ieffects = [Impress]
   -- Linger 10, because sometimes it takes 2 turns due to starting just
   -- before actor turn's end (e.g., via a necklace).
-  , ifeature = [toLinger 10, Fragile, Identified]  -- 2 steps, 1 turn
+  , ifeature = [toLinger 10, Fragile, Identified, Blast]  -- 2 steps, 1 turn
   , idesc    = "A pleasant scent."
   , ikit     = []
   }
@@ -129,7 +129,7 @@ pheromone = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [Impress, RefillCalm (-10)]
-  , ifeature = [toVelocity 10, Fragile, Identified]  -- 2 steps, 2 turns
+  , ifeature = [toVelocity 10, Fragile, Identified, Blast]  -- 2 steps, 2 turns
   , idesc    = "A sharp, strong scent."
   , ikit     = []
   }
@@ -145,7 +145,7 @@ mistCalming = ItemKind  -- unused
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [RefillCalm 2]
-  , ifeature = [toVelocity 5, Fragile, Identified]  -- 1 step, 1 turn
+  , ifeature = [toVelocity 5, Fragile, Identified, Blast]  -- 1 step, 1 turn
   , idesc    = "A soothing, gentle cloud."
   , ikit     = []
   }
@@ -161,7 +161,7 @@ odorDistressing = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [RefillCalm (-20)]
-  , ifeature = [toLinger 10, Fragile, Identified]  -- 2 steps, 1 turn
+  , ifeature = [toLinger 10, Fragile, Identified, Blast]  -- 2 steps, 1 turn
   , idesc    = "It turns the stomach."
   , ikit     = []
   }
@@ -177,7 +177,7 @@ mistHealing = ItemKind
   , idamage  = toDmg 0
   , iaspects = [AddShine 1]
   , ieffects = [RefillHP 2]
-  , ifeature = [toVelocity 5, Fragile, Identified]  -- 1 step, 1 turn
+  , ifeature = [toVelocity 5, Fragile, Identified, Blast]  -- 1 step, 1 turn
   , idesc    = "It fills the air with light and life."
   , ikit     = []
   }
@@ -193,7 +193,7 @@ mistHealing2 = ItemKind
   , idamage  = toDmg 0
   , iaspects = [AddShine 2]
   , ieffects = [RefillHP 4]
-  , ifeature = [toVelocity 5, Fragile, Identified]  -- 1 step, 1 turn
+  , ifeature = [toVelocity 5, Fragile, Identified, Blast]  -- 1 step, 1 turn
   , idesc    = "At its touch, wounds close and bruises fade."
   , ikit     = []
   }
@@ -209,7 +209,7 @@ mistWounding = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [RefillHP (-2)]
-  , ifeature = [toVelocity 5, Fragile, Identified]  -- 1 step, 1 turn
+  , ifeature = [toVelocity 5, Fragile, Identified, Blast]  -- 1 step, 1 turn
   , idesc    = "The air itself stings and itches."
   , ikit     = []
   }
@@ -225,7 +225,7 @@ distortion = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [Teleport $ 15 + 1 `d` 10]
-  , ifeature = [toLinger 10, Fragile, Identified]  -- 2 steps, 1 turn
+  , ifeature = [toLinger 10, Fragile, Identified, Blast]  -- 2 steps, 1 turn
   , idesc    = "The air shifts oddly, as though light is being warped."
   , ikit     = []
   }
@@ -241,7 +241,7 @@ glassPiece = ItemKind  -- when blowing up windows
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [RefillHP (-1)]  -- high velocity, so can't do idamage
-  , ifeature = [toLinger 20, Fragile, Identified]  -- 4 steps, 1 turn
+  , ifeature = [toLinger 20, Fragile, Identified, Blast]  -- 4 steps, 1 turn
   , idesc    = "Swift, sharp edges."
   , ikit     = []
   }
@@ -257,7 +257,7 @@ smoke = ItemKind  -- when stuff burns out  -- unused
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = []
-  , ifeature = [toVelocity 20, Fragile, Identified]  -- 4 steps, 2 turns
+  , ifeature = [toVelocity 20, Fragile, Identified, Blast]  -- 4 steps, 2 turns
   , idesc    = "Twirling clouds of grey smoke."
   , ikit     = []
   }
@@ -273,7 +273,7 @@ boilingWater = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [Burn 1]
-  , ifeature = [toVelocity 30, Fragile, Identified]  -- 6 steps, 2 turns
+  , ifeature = [toVelocity 30, Fragile, Identified, Blast]  -- 6 steps, 2 turns
   , idesc    = "It bubbles and hisses."
   , ikit     = []
   }
@@ -289,7 +289,7 @@ glue = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [Paralyze 10]
-  , ifeature = [toVelocity 20, Fragile, Identified]  -- 4 steps, 2 turns
+  , ifeature = [toVelocity 20, Fragile, Identified, Blast]  -- 4 steps, 2 turns
   , idesc    = "Thick and clinging."
   , ikit     = []
   }
@@ -305,7 +305,7 @@ singleSpark = ItemKind
   , idamage  = toDmg 0
   , iaspects = [AddShine 4]
   , ieffects = []
-  , ifeature = [toLinger 5, Fragile, Identified]  -- 1 step, 1 turn
+  , ifeature = [toLinger 5, Fragile, Identified, Blast]  -- 1 step, 1 turn
   , idesc    = "A glowing ember."
   , ikit     = []
   }
@@ -321,7 +321,7 @@ spark = ItemKind
   , idamage  = toDmg 0
   , iaspects = [AddShine 4]
   , ieffects = [Burn 1]
-  , ifeature = [toLinger 10, Fragile, Identified]  -- 2 steps, 1 turn
+  , ifeature = [toLinger 10, Fragile, Identified, Blast]  -- 2 steps, 1 turn
   , idesc    = "A flash of fire."
   , ikit     = []
   }
@@ -344,7 +344,7 @@ denseShower = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [toOrganActorTurn "strengthened" (3 + 1 `d` 3)]
-  , ifeature = [toLinger 10, Fragile, Identified]
+  , ifeature = [toLinger 10, Fragile, Identified, Blast]
   , idesc    = "A thick rain of droplets."
   , ikit     = []
   }
@@ -360,7 +360,7 @@ sparseShower = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [toOrganGameTurn "weakened" (3 + 1 `d` 3)]
-  , ifeature = [toLinger 10, Fragile, Identified]
+  , ifeature = [toLinger 10, Fragile, Identified, Blast]
   , idesc    = "Light droplets that cling to clothing."
   , ikit     = []
   }
@@ -376,7 +376,7 @@ protectingBalmMelee = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [toOrganActorTurn "protected from melee" (3 + 1 `d` 3)]
-  , ifeature = [toLinger 10, Fragile, Identified]
+  , ifeature = [toLinger 10, Fragile, Identified, Blast]
   , idesc    = "A thick ointment that hardens the skin."
   , ikit     = []
   }
@@ -392,7 +392,7 @@ protectingBalmRanged = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [toOrganActorTurn "protected from ranged" (3 + 1 `d` 3)]
-  , ifeature = [toLinger 10, Fragile, Identified]
+  , ifeature = [toLinger 10, Fragile, Identified, Blast]
   , idesc    = "Grease that protects from flying death."
   , ikit     = []
   }
@@ -408,7 +408,7 @@ vulnerabilityBalm = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [toOrganGameTurn "defenseless" (3 + 1 `d` 3)]
-  , ifeature = [toLinger 10, Fragile, Identified]
+  , ifeature = [toLinger 10, Fragile, Identified, Blast]
   , idesc    = "Only the most learned make use of this."
   , ikit     = []
   }
@@ -425,7 +425,7 @@ resolutionDust = ItemKind
   , iaspects = []
   , ieffects = [toOrganActorTurn "resolute" (3 + 1 `d` 3)]
                  -- short enough duration that @calmEnough@ not a big problem
-  , ifeature = [toLinger 10, Fragile, Identified]
+  , ifeature = [toLinger 10, Fragile, Identified, Blast]
   , idesc    = "A handful of honest earth, to strengthen the soul."
   , ikit     = []
   }
@@ -441,7 +441,7 @@ hasteSpray = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [toOrganActorTurn "hasted" (3 + 1 `d` 3)]
-  , ifeature = [toLinger 10, Fragile, Identified]
+  , ifeature = [toLinger 10, Fragile, Identified, Blast]
   , idesc    = "A quick spurt."
   , ikit     = []
   }
@@ -457,7 +457,8 @@ slownessMist = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [toOrganGameTurn "slowed" (3 + 1 `d` 3)]
-  , ifeature = [toVelocity 5, Fragile, Identified]  -- 1 step, 1 turn, mist
+  , ifeature = [toVelocity 5, Fragile, Identified, Blast]
+                 -- 1 step, 1 turn, mist
   , idesc    = "Clammy fog, making each movement an effort."
   , ikit     = []
   }
@@ -473,7 +474,7 @@ eyeDrop = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [toOrganActorTurn "far-sighted" (3 + 1 `d` 3)]
-  , ifeature = [toLinger 10, Fragile, Identified]
+  , ifeature = [toLinger 10, Fragile, Identified, Blast]
   , idesc    = "Not to be taken orally."
   , ikit     = []
   }
@@ -489,7 +490,7 @@ ironFiling = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [toOrganActorTurn "blind" (10 + 1 `d` 10)]
-  , ifeature = [toLinger 10, Fragile, Identified]
+  , ifeature = [toLinger 10, Fragile, Identified, Blast]
   , idesc    = "A shaving of bright metal."
   , ikit     = []
   }
@@ -505,7 +506,7 @@ smellyDroplet = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [toOrganActorTurn "keen-smelling" (3 + 1 `d` 3)]
-  , ifeature = [toLinger 10, Fragile, Identified]
+  , ifeature = [toLinger 10, Fragile, Identified, Blast]
   , idesc    = "A viscous lump that stains the skin."
   , ikit     = []
   }
@@ -521,7 +522,7 @@ eyeShine = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [toOrganActorTurn "shiny-eyed" (3 + 1 `d` 3)]
-  , ifeature = [toLinger 10, Fragile, Identified]
+  , ifeature = [toLinger 10, Fragile, Identified, Blast]
   , idesc    = "They almost glow in the dark."
   , ikit     = []
   }
@@ -540,7 +541,7 @@ whiskeySpray = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [toOrganActorTurn "drunk" (3 + 1 `d` 3)]
-  , ifeature = [toLinger 10, Fragile, Identified]
+  , ifeature = [toLinger 10, Fragile, Identified, Blast]
   , idesc    = "It burns in the best way."
   , ikit     = []
   }
@@ -556,7 +557,7 @@ waste = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [Burn 1]
-  , ifeature = [toLinger 10, Fragile, Identified]
+  , ifeature = [toLinger 10, Fragile, Identified, Blast]
   , idesc    = "Sodden and foul-smelling."
   , ikit     = []
   }
@@ -572,7 +573,7 @@ youthSprinkle = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [toOrganNone "regenerating"]
-  , ifeature = [toLinger 10, Fragile, Identified]
+  , ifeature = [toLinger 10, Fragile, Identified, Blast]
   , idesc    = "Bright and smelling of the Spring."
   , ikit     = []
   }
@@ -588,7 +589,7 @@ poisonCloud = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [toOrganNone "poisoned"]
-  , ifeature = [toVelocity 10, Fragile, Identified]  -- 2 steps, 2 turns
+  , ifeature = [toVelocity 10, Fragile, Identified, Blast]  -- 2 steps, 2 turns
   , idesc    = "Choking gas that stings the eyes."
   , ikit     = []
   }
@@ -604,7 +605,7 @@ mistAntiSlow = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [DropItem 1 1 COrgan "slowed"]
-  , ifeature = [toVelocity 5, Fragile, Identified]  -- 1 step, 1 turn
+  , ifeature = [toVelocity 5, Fragile, Identified, Blast]  -- 1 step, 1 turn
   , idesc    = "A cleansing rain."
   , ikit     = []
   }
@@ -620,7 +621,7 @@ mistAntidote = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [DropItem 1 maxBound COrgan "poisoned"]
-  , ifeature = [toVelocity 5, Fragile, Identified]  -- 1 step, 1 turn
+  , ifeature = [toVelocity 5, Fragile, Identified, Blast]  -- 1 step, 1 turn
   , idesc    = "Washes away death's dew."
   , ikit     = []
   }

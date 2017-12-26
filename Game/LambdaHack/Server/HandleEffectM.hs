@@ -914,7 +914,7 @@ effectCreateItem jfidRaw mcount target store grp tim = do
   m5 <- rollItem 0 (blid tb) litemFreq
   let (itemKnownRaw, itemFullRaw, _, seed, _) =
         fromMaybe (error $ "" `showFailure` (blid tb, litemFreq, c)) m5
-      -- Avoid too many different item identifiers (one for each faction)
+      -- Avoid too many different item identifies (one for each faction)
       -- for blasts or common item generating tiles. Temporary organs are
       -- also duplicated but they provide really useful info (perpetrator).
       jfid = if store == COrgan

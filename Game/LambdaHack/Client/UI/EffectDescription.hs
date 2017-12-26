@@ -289,6 +289,7 @@ featureToSuff feat =
     Meleeable -> ""
     Precious -> ""
     Tactic tactics -> "overrides tactics to" <+> tshow tactics
+    Blast -> ""
 
 featureToSentence :: Feature -> Maybe Text
 featureToSentence feat =
@@ -303,6 +304,7 @@ featureToSentence feat =
     Meleeable -> Just "It is considered for melee strikes by default."
     Precious -> Just "It seems precious."
     Tactic{}  -> Nothing
+    Blast -> Nothing
 
 affixBonus :: Int -> Text
 affixBonus p = case compare p 0 of

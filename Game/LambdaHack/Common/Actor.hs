@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Actor
   , Actor(..), ResDelta(..), ActorAspect
   , deltaSerious, deltaMild, actorCanMelee
   , bspeed, braced, actorTemplate, waitedLastTurn, actorDying
-  , actorTrunkIsBlast, hpTooLow, calmEnough, hpEnough
+  , hpTooLow, calmEnough, hpEnough
   , checkAdjacent, eqpOverfull, eqpFreeN
     -- * Assorted
   , ActorDict, monsterGenChance, smellTimeout
@@ -132,12 +132,6 @@ waitedLastTurn = bwait
 actorDying :: Actor -> Bool
 actorDying b = bhp b <= 0
                || bproj b && maybe True (null . fst) (btrajectory b)
-
--- This is a good enough approximation with standard content, except for gems,
--- which would be muted when hitting a wall and which would be colorful
--- when flying, both of which are OK.
-actorTrunkIsBlast :: Item -> Bool
-actorTrunkIsBlast trunk = jsymbol trunk `elem` ['`', '\'', '*']
 
 hpTooLow :: Actor -> AspectRecord -> Bool
 hpTooLow b AspectRecord{aMaxHP} =

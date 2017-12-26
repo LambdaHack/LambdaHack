@@ -100,11 +100,11 @@ loreFromContainer :: Item -> Container -> SLore
 loreFromContainer item c = case c of
   CFloor{} -> SItem
   CEmbed{} -> SEmbed
-  CActor _ COrgan -> if | actorTrunkIsBlast item -> SBlast
+  CActor _ COrgan -> if | isBlast item -> SBlast
                         | isTmpCondition item -> STmp
                         | otherwise -> SOrgan
   CActor _ _ -> SItem
-  CTrunk{} -> if actorTrunkIsBlast item then SBlast else STrunk
+  CTrunk{} -> if isBlast item then SBlast else STrunk
 
 sortSlots :: MonadClientUI m => FactionId -> Maybe Actor -> m ()
 sortSlots fid mbody = do

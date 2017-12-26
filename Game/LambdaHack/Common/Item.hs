@@ -3,7 +3,8 @@
 module Game.LambdaHack.Common.Item
   ( -- * The @Item@ type and operations
     ItemId, Item(..)
-  , itemPrice, isMelee, isTmpCondition, goesIntoEqp, goesIntoInv, goesIntoSha
+  , itemPrice, isMelee, isTmpCondition, isBlast
+  , goesIntoEqp, goesIntoInv, goesIntoSha
     -- * The @AspectRecord@ type and operations
   , AspectRecord(..), DiscoveryAspect
   , emptyAspectRecord, sumAspectRecord, aspectRecordToList, meanAspect
@@ -80,6 +81,9 @@ isMelee item = IK.Meleeable `elem` jfeature item
 
 isTmpCondition :: Item -> Bool
 isTmpCondition item = jsymbol item == '+'
+
+isBlast :: Item -> Bool
+isBlast item = IK.Blast `elem` jfeature item
 
 goesIntoEqp :: Item -> Bool
 goesIntoEqp item = IK.Equipable `elem` jfeature item

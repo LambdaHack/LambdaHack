@@ -177,6 +177,7 @@ data Feature =
   | Precious           -- ^ AI and UI flag: don't risk identifying by use;
                        --   also, can't throw or apply if not calm enough
   | Tactic Tactic      -- ^ overrides actor's tactic
+  | Blast              -- ^ the items is an explosion blast particle
   deriving (Show, Eq, Ord, Generic)
 
 -- | AI and UI hints about the role of the item.
@@ -350,7 +351,7 @@ validateSingleItemKind ik@ItemKind{..} =
       in ["more than one Tactic specification" | length ts > 1])
   ++ concatMap (validateDups ik)
        [ Fragile, Lobable, Durable, Identified, Applicable
-       , Equipable, Meleeable, Precious ]
+       , Equipable, Meleeable, Precious, Blast ]
 
 validateDups :: ItemKind -> Feature -> [Text]
 validateDups ItemKind{..} feat =

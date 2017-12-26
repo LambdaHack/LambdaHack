@@ -298,7 +298,7 @@ projectFail :: MonadServerAtomic m
             -> CStore     -- ^ whether the items comes from floor or inventory
             -> Bool       -- ^ whether the item is a blast
             -> m (Maybe ReqFailure)
-projectFail source tpxy eps iid cstore isBlast = do
+projectFail source tpxy eps iid cstore blast = do
   Kind.COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
@@ -318,7 +318,7 @@ projectFail source tpxy eps iid cstore isBlast = do
           ar <- getsState $ getActorAspect source
           let skill = EM.findWithDefault 0 Ability.AbProject actorSk
               itemFull@ItemFull{itemBase} = itemToF iid kit
-              forced = isBlast || bproj sb
+              forced = blast || bproj sb
               calmE = calmEnough sb ar
               legal = permittedProject forced skill calmE "" itemFull
           case legal of
@@ -334,18 +334,18 @@ projectFail source tpxy eps iid cstore isBlast = do
                 else do
                   lab <- getsState $ posToAssocs pos lid
                   if not $ all (bproj . snd) lab
-                  then if isBlast && bproj sb then do
+                  then if blast && bproj sb then do
                          -- Hit the blocking actor.
-                         projectBla source spos (pos:rest) iid cstore isBlast
+                         projectBla source spos (pos:rest) iid cstore blast
                          return Nothing
                        else return $ Just ProjectBlockActor
                   else do
-                    if isBlast && bproj sb && eps `mod` 2 == 0 then
+                    if blast && bproj sb && eps `mod` 2 == 0 then
                       -- Make the explosion a bit less regular.
                       -- The @eps@ is quite random in case of blast.
-                      projectBla source spos (pos:rest) iid cstore isBlast
+                      projectBla source spos (pos:rest) iid cstore blast
                     else
-                      projectBla source pos rest iid cstore isBlast
+                      projectBla source pos rest iid cstore blast
                     return Nothing
 
 projectBla :: MonadServerAtomic m
@@ -356,12 +356,12 @@ projectBla :: MonadServerAtomic m
            -> CStore     -- ^ whether the items comes from floor or inventory
            -> Bool       -- ^ whether the item is a blast
            -> m ()
-projectBla source pos rest iid cstore isBlast = do
+projectBla source pos rest iid cstore blast = do
   sb <- getsState $ getActorBody source
   item <- getsState $ getItemBody iid
   let lid = blid sb
   localTime <- getsState $ getLocalTime lid
-  unless isBlast $ execSfxAtomic $ SfxProject source iid cstore
+  unless blast $ execSfxAtomic $ SfxProject source iid cstore
   bag <- getsState $ getBodyStoreBag sb cstore
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (source, pos, rest, iid, cstore)

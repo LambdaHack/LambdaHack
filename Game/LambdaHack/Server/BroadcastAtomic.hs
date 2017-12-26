@@ -127,7 +127,7 @@ loudUpdAtomic local cmd = do
       -- Non-blast projectile hits an non-walkable tile on leader's level.
       b <- getsState $ getActorBody aid
       trunk <- getsState $ getItemBody $ btrunk b
-      return $! if bproj b && actorTrunkIsBlast trunk then Nothing else Just cmd
+      return $! if bproj b && isBlast trunk then Nothing else Just cmd
     UpdAlterTile _ _ fromTile _ -> return $!
       if Tile.isDoor coTileSpeedup fromTile
       then if local then Just cmd else Nothing
