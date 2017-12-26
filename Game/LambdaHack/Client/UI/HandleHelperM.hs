@@ -83,8 +83,8 @@ weaveJust (Right a) = Right a
 ppSLore :: SLore -> Text
 ppSLore SItem = "item"
 ppSLore SOrgan = "organ"
-ppSLore STrunk = "actor"
-ppSLore SEmbed = "tile"
+ppSLore STrunk = "creature"
+ppSLore SEmbed = "terrain"
 ppSLore SBlast = "blast"
 ppSLore STmp = "temporary condition"
 
