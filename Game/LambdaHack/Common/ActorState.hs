@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.ActorState
   , bagAssocs, bagAssocsK, posToAidsLvl, posToAids, posToAssocs
   , nearbyFreePoints, calculateTotal, mergeItemQuant
   , sharedInv, sharedEqp, sharedAllOwned, sharedAllOwnedFid, findIid
-  , getActorBody, getActorAspect, getCarriedAssocs, getCarriedIidCStore
+  , getActorBody, getActorAspect, getCarriedAssocsAndTrunk, getCarriedIidCStore
   , getContainerBag, getFloorBag, getEmbedBag, getBodyStoreBag
   , mapActorItems_, getActorAssocs, getActorAssocsK
   , memActor, getLocalTime, regenCalmDelta
@@ -160,8 +160,8 @@ getActorAspect :: ActorId -> State -> AspectRecord
 {-# INLINE getActorAspect #-}
 getActorAspect aid s = sactorAspect s EM.! aid
 
-getCarriedAssocs :: Actor -> State -> [(ItemId, Item)]
-getCarriedAssocs b s =
+getCarriedAssocsAndTrunk :: Actor -> State -> [(ItemId, Item)]
+getCarriedAssocsAndTrunk b s =
   -- The trunk is important for a case of spotting a caught projectile
   -- with a stolen projecting item. This actually does happen.
   let trunk = EM.singleton (btrunk b) (1, [])

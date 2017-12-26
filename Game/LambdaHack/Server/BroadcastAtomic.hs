@@ -185,7 +185,7 @@ atomicForget side lid outPer sClient =
         -- or if they have disabled senses.
         if not (bproj b) && bfid b == side
         then Nothing
-        else Just $ UpdLoseActor aid b $ getCarriedAssocs b sClient
+        else Just $ UpdLoseActor aid b $ getCarriedAssocsAndTrunk b sClient
           -- this command always succeeds, the actor can be always removed,
           -- because the actor is taken from the state
       outActor = mapMaybe fActor outPrio
@@ -267,7 +267,7 @@ atomicRemember lid inPer sClient s =
       inAssocs = concatMap (\p -> posToAssocs p lid s) inFov
       -- Here, the actor may be already visible, e.g., when teleporting,
       -- so the exception is caught in @sendUpdate@ above.
-      fActor (aid, b) = let ais = getCarriedAssocs b s
+      fActor (aid, b) = let ais = getCarriedAssocsAndTrunk b s
                         in UpdSpotActor aid b ais
       inActor = map fActor inAssocs
   in atomicTile ++ inFloor ++ inEmbed ++ inSmell ++ atomicSmell ++ inActor

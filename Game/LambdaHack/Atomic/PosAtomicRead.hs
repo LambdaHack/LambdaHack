@@ -221,14 +221,14 @@ breakUpdAtomic cmd = case cmd of
     -- faction always sees the atomic command, so the leader doesn't
     -- need to be updated (or the actor is a projectile, hence not a leader).
     b <- getsState $ getActorBody aid
-    ais <- getsState $ getCarriedAssocs b
+    ais <- getsState $ getCarriedAssocsAndTrunk b
     return [ UpdLoseActor aid b ais
            , UpdSpotActor aid b {bpos = toP, boldpos = Just fromP} ais ]
   UpdDisplaceActor source target -> do
     sb <- getsState $ getActorBody source
-    sais <- getsState $ getCarriedAssocs sb
+    sais <- getsState $ getCarriedAssocsAndTrunk sb
     tb <- getsState $ getActorBody target
-    tais <- getsState $ getCarriedAssocs tb
+    tais <- getsState $ getCarriedAssocsAndTrunk tb
     return [ UpdLoseActor source sb sais
            , UpdSpotActor source sb { bpos = bpos tb
                                     , boldpos = Just $ bpos sb } sais

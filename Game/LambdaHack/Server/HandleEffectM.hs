@@ -519,7 +519,7 @@ dominateFid fid target = do
   -- Prevent the faction's stash from being lost in case they are not spawners.
   when (isNothing $ gleader fact) $ moveStores False target CSha CInv
   tb <- getsState $ getActorBody target
-  ais <- getsState $ getCarriedAssocs tb
+  ais <- getsState $ getCarriedAssocsAndTrunk tb
   ar <- getsState $ getActorAspect target
   getItem <- getsState $ flip getItemBody
   discoKind <- getsState sdiscoKind
@@ -536,7 +536,7 @@ dominateFid fid target = do
                 , bcalm = max (xM 10) $ xM (aMaxCalm ar) `div` 2
                 , bhp = min (xM $ aMaxHP ar) $ bhp tb + xM 10
                 , borgan = borganNoImpression}
-  aisNew <- getsState $ getCarriedAssocs bNew
+  aisNew <- getsState $ getCarriedAssocsAndTrunk bNew
   execUpdAtomic $ UpdSpotActor target bNew aisNew
   modifyServer $ \ser ->
     ser {sactorTime = updateActorTime fid (blid tb) target btime
@@ -729,7 +729,7 @@ switchLevels1 (aid, bOld) = do
   -- Remove the actor from the old level.
   -- Onlookers see somebody disappear suddenly.
   -- @UpdDestroyActor@ is too loud, so use @UpdLoseActor@ instead.
-  ais <- getsState $ getCarriedAssocs bOld
+  ais <- getsState $ getCarriedAssocsAndTrunk bOld
   execUpdAtomic $ UpdLoseActor aid bOld ais
   return mlead
 
@@ -776,7 +776,7 @@ switchLevels2 lidNew posNew (aid, bOld) btime_bOld mlead = do
   -- Materialize the actor at the new location.
   -- Onlookers see somebody appear suddenly. The actor himself
   -- sees new surroundings and has to reset his perception.
-  ais <- getsState $ getCarriedAssocs bOld
+  ais <- getsState $ getCarriedAssocsAndTrunk bOld
   execUpdAtomic $ UpdCreateActor aid bNew ais
   -- Sync the actor time with the level time.
   -- This time shift may cause a double move of a foe of the same speed,
