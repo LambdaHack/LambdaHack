@@ -253,7 +253,7 @@ reqMelee source target iid cstore = do
     trunk <- getsState $ getItemBody $ btrunk tb
     -- Only catch with appendages, never with weapons. Never steal trunk
     -- from an already caught projectile or one with many items inside.
-    if bproj tb && length (beqp tb) == 1 && jweight trunk > 1  -- not a blast
+    if bproj tb && length (beqp tb) == 1 && not (actorTrunkIsBlast trunk)
        && cstore == COrgan then do
       -- Catching the projectile, that is, stealing the item from its eqp.
       -- No effect from our weapon (organ) is applied to the projectile

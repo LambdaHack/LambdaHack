@@ -558,7 +558,7 @@ dominateFid fid target = do
           let itemFull = itemToF iid (1, [])
               c = CActor target cstore
           discoverIfNoEffects c iid itemFull
-        aic = (btrunk tb, COrgan)  -- the dummy store doesn't matter
+        aic = (btrunk tb, if bproj tb then CEqp else COrgan)
               : filter ((/= btrunk tb) . fst) (getCarriedIidCStore tb)
     mapM_ discoverIf aic
     -- Focus on the dominated actor, by making him a leader.

@@ -724,7 +724,7 @@ applyItem aid applyGroup = do
       stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
   benList <- benAvailableItems aid stores
   organs <- mapM (getsState . getItemBody) $ EM.keys $ borgan b
-  let hasGrps = mapMaybe (\item -> if jweight item == 0
+  let hasGrps = mapMaybe (\item -> if isTmpCondition item
                                    then Just $ toGroupName $ jname item
                                    else Nothing) organs
       itemLegal itemFull =

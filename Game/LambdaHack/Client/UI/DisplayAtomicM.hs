@@ -543,11 +543,11 @@ createActorUI born aid body = do
              else "appear" <+> if bfid body == side then "" else "suddenly"
         else "be spotted"
   mapM_ (\(iid, store) ->
-           let c = if iid == btrunk body
+           let c = if not (bproj body) && iid == btrunk body
                    then CTrunk (bfid body) (blid body) (bpos body)
                    else CActor aid store
            in void $ updateItemSlot c iid)
-        ((btrunk body, COrgan)  -- store will be overwritten
+        ((btrunk body, CEqp)  -- store will be overwritten, unless projectile
          : filter ((/= btrunk body) . fst) (getCarriedIidCStore body))
   when (bfid body /= side) $ do
     when (not (bproj body) && isAtWar fact side) $
