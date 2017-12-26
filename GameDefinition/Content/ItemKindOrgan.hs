@@ -372,12 +372,12 @@ sulfurVent = armoredSkin
   , idesc    = ""
   }
 bonusHP = armoredSkin
-  { isymbol  = '+'
+  { isymbol  = 'H'  -- '+' reserved for temporary conditions
   , iname    = "bonus HP"
   , iflavour = zipPlain [BrBlue]
   , ifreq    = [("bonus HP", 1)]
   , iverbHit = "intimidate"
-  , iweight  = 1  -- weight 0 reserved for tmp organs
+  , iweight  = 0
   , iaspects = [AddMaxHP 1]
   , idesc    = ""
   }

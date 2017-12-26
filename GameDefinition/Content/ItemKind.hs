@@ -66,6 +66,7 @@ symbolHafted     = ')'
 symbolWand       = '/'  -- magical rod, transmitter, pistol, rifle
 _symbolStaff     = '_'  -- scanner
 symbolFood       = ','  -- also body part; distinct from floor: not middle dot
+-- '+' reserved for temporary conditions that must have this symbol
 
 -- * Thrown weapons
 
