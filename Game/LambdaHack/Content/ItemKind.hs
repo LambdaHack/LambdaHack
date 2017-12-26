@@ -6,7 +6,8 @@ module Game.LambdaHack.Content.ItemKind
   , Aspect(..), ThrowMod(..)
   , Feature(..), EqpSlot(..)
   , boostItemKindList, forApplyEffect, forIdEffect
-  , toDmg, toVelocity, toLinger, toOrganGameTurn, toOrganActorTurn, toOrganNone
+  , toDmg, tmpNoLonger, toVelocity, toLinger
+  , toOrganGameTurn, toOrganActorTurn, toOrganNone
   , validateSingleItemKind, validateAllItemKind
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -275,6 +276,9 @@ forIdEffect eff = case eff of
 
 toDmg :: Dice.Dice -> [(Int, Dice.Dice)]
 toDmg dmg = [(1, dmg)]
+
+tmpNoLonger :: Text -> Effect
+tmpNoLonger name = Temporary $ "be no longer" <+> name
 
 toVelocity :: Int -> Feature
 toVelocity n = ToThrow $ ThrowMod n 100
