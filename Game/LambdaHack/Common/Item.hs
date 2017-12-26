@@ -72,6 +72,7 @@ instance Binary Item
 itemPrice :: (Item, Int) -> Int
 itemPrice (item, jcount) =
   case jsymbol item of
+    _ | jname item == "gem" -> jcount * 100  -- hack
     '$' -> jcount
     '*' -> jcount * 100
     _   -> 0
