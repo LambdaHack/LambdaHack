@@ -163,8 +163,7 @@ getActorAspect aid s = sactorAspect s EM.! aid
 getCarriedAssocs :: Actor -> State -> [(ItemId, Item)]
 getCarriedAssocs b s =
   -- The trunk is important for a case of spotting a caught projectile
-  -- that is one with a stolen trunk organ (the projectile item).
-  -- This actually does happen.
+  -- with a stolen projecting item. This actually does happen.
   let trunk = EM.singleton (btrunk b) (1, [])
   in bagAssocs s $ EM.unionsWith const [binv b, beqp b, borgan b, trunk]
 

@@ -351,7 +351,8 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
 
 updateItemSlot :: MonadClientUI m => Container -> ItemId -> m SlotChar
 updateItemSlot c iid = do
-  let slore = loreFromContainer c
+  item <- getsState $ getItemBody iid
+  let slore = loreFromContainer item c
       incrementPrefix l2 iid2 m = EM.insert l2 iid2 $
         case EM.lookup l2 m of
           Nothing -> m
@@ -367,7 +368,6 @@ updateItemSlot c iid = do
           b <- getsState $ getActorBody aid
           return $! if bfid b == side then Just b else Nothing
         _ -> return Nothing
-      item <- getsState $ getItemBody iid
       lastSlot <- getsSession slastSlot
       l <- getsState $ assignSlot slore item side mb slots lastSlot
       let newSlots =
@@ -487,14 +487,14 @@ createActorUI born aid body = do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   globalTime <- getsState stime
   localTime <- getsState $ getLocalTime $ blid body
+  trunk <- getsState $ getItemBody $ btrunk body
+  let isBlast = bproj body && actorTrunkIsBlast trunk
   mbUI <- getsSession $ EM.lookup aid . sactorUI
   bUI <- case mbUI of
     Just bUI -> return bUI
     Nothing -> do
-      trunk <- getsState $ getItemBody $ btrunk body
       UIOptions{uHeroNames} <- getsSession sUIOptions
-      let isBlast = actorTrunkIsBlast trunk
-          baseColor = flavourToColor $ jflavour trunk
+      let baseColor = flavourToColor $ jflavour trunk
           basePronoun | not (bproj body) && fhasGender (gplayer fact) = "he"
                       | otherwise = "it"
           nameFromNumber fn k = if k == 0
@@ -542,7 +542,12 @@ createActorUI born aid body = do
              then "be here"
              else "appear" <+> if bfid body == side then "" else "suddenly"
         else "be spotted"
-  mapM_ (\(iid, store) -> void $ updateItemSlot (CActor aid store) iid)
+  mapM_ (\(iid, store) ->
+           let c = if isBlast  -- if blast, then only one item carried,
+                               -- the blast, so don't register it in @SEqp@
+                   then CTrunk (bfid body) (blid body) (bpos body)
+                   else CActor aid store
+           in void $ updateItemSlot c iid)
         (getCarriedIidCStore body)
   when (bfid body /= side) $ do
     when (not (bproj body) && isAtWar fact side) $
@@ -606,7 +611,8 @@ spotItem verbose iid kit c = do
   -- This is due to a move, or similar, which will be displayed,
   -- so no extra @markDisplayNeeded@ needed here and in similar places.
   ItemSlots itemSlots <- getsSession sslots
-  let slore = loreFromContainer c
+  item <- getsState $ getItemBody iid
+  let slore = loreFromContainer item c
   case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! slore of
     Nothing -> do  -- never seen or would have a slot
       void $ updateItemSlot c iid
