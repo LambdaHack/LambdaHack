@@ -368,9 +368,8 @@ updateItemSlot c iid = do
           b <- getsState $ getActorBody aid
           return $! if bfid b == side then Just b else Nothing
         _ -> return Nothing
-      lastSlot <- getsSession slastSlot
       partySet <- getsState $ partyItemSet slore side mbody
-      let l = assignSlot partySet slore slots lastSlot
+      let l = assignSlot partySet slore slots
           newSlots =
             ItemSlots $ EM.adjust (incrementPrefix l iid) slore itemSlots
       modifySession $ \sess -> sess {sslots = newSlots}

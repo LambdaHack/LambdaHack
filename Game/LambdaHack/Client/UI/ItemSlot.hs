@@ -63,21 +63,23 @@ slotLabel x =
          (slotChar x)
   <> ")"
 
--- | Assigns a slot to an item, for inclusion in the inventory
--- of a hero. Tries to to use a slot just after the given slot.
-assignSlot :: ES.EnumSet ItemId -> SLore -> ItemSlots -> SlotChar -> SlotChar
-assignSlot partySet slore (ItemSlots itemSlots) lastSlot =
+-- | Assigns a slot to an item, e.g., for inclusion in the inventory of a hero.
+assignSlot :: ES.EnumSet ItemId -> SLore -> ItemSlots -> SlotChar
+assignSlot partySet slore (ItemSlots itemSlots) =
   head $ fresh ++ free
  where
-  offset = maybe 0 (+1) (elemIndex lastSlot allZeroSlots)
-  len0 = length allZeroSlots
-  candidatesZero = take len0 $ drop offset $ cycle allZeroSlots
-  candidates = candidatesZero ++ concat [allSlots n | n <- [1..]]
+  candidates = concat [allSlots n | n <- [0..]]
   lSlots = itemSlots EM.! slore
   f l = maybe True (`ES.notMember` partySet) $ EM.lookup l lSlots
   free = filter f candidates
   g l = l `EM.notMember` lSlots
-  fresh = filter g $ take ((slotPrefix lastSlot + 1) * len0) candidates
+  len0 = length allZeroSlots
+  maxPrefix = case EM.maxViewWithKey lSlots of
+    Just ((lm, _), _) -> slotPrefix lm
+    Nothing -> 0
+  -- Fill all empty slots up to half max prefix, then prefer lower prefixes
+  -- (even if slot not empty) as long as the item not held by the party.
+  fresh = filter g $ take ((maxPrefix `div` 2) * len0) candidates
 
 partyItemSet :: SLore -> FactionId -> Maybe Actor -> State -> ES.EnumSet ItemId
 partyItemSet slore fid mbody s =
