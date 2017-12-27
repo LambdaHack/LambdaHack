@@ -14,8 +14,6 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
-import           Data.Function
 import           Data.Ord
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -109,31 +107,12 @@ sortSlots :: MonadClientUI m => FactionId -> Maybe Actor -> m ()
 sortSlots fid mbody = do
   itemToF <- getsState itemToFull
   s <- getState
-  let -- If apperance the same, keep the order from before sort.
-      apperance ItemFull{itemBase} =
-        (jsymbol itemBase, jname itemBase, jflavour itemBase)
-      compareItemFull itemFull1 itemFull2 =
-        case (itemDisco itemFull1, itemDisco itemFull2) of
-          (Nothing, Nothing) -> comparing apperance itemFull1 itemFull2
-          (Nothing, Just{}) -> LT
-          (Just{}, Nothing) -> GT
-          (Just id1, Just id2) ->
-            case compare (itemKindId id1) (itemKindId id2) of
-              EQ -> comparing itemAspect id1 id2
-              ot -> ot
-      sortSlotMap :: SLore -> EM.EnumMap SlotChar ItemId
-                  -> EM.EnumMap SlotChar ItemId
-      sortSlotMap slore em =
-        let partySet = partyItemSet slore fid mbody s
-            (nearItems, farItems) = partition (`ES.member` partySet)
-                                    $ EM.elems em
-            f iid = (iid, itemToF iid (1, []))
-            sortItemIds l = map fst $ sortBy (compareItemFull `on` snd)
-                            $ map f l
-        in EM.fromDistinctAscList $ zip allSlots
-           $ sortItemIds nearItems ++ sortItemIds farItems
+  let sortMap :: SLore -> EM.EnumMap SlotChar ItemId
+              -> EM.EnumMap SlotChar ItemId
+      sortMap slore = let partySet = partyItemSet slore fid mbody s
+                      in sortSlotMap itemToF partySet
   ItemSlots itemSlots <- getsSession sslots
-  let newSlots = ItemSlots $ EM.mapWithKey sortSlotMap itemSlots
+  let newSlots = ItemSlots $ EM.mapWithKey sortMap itemSlots
   modifySession $ \sess -> sess {sslots = newSlots}
 
 -- | Switches current member to the next on the level, if any, wrapping.

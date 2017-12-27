@@ -2,7 +2,7 @@
 -- | Item slots for UI and AI item collections.
 module Game.LambdaHack.Client.UI.ItemSlot
   ( SlotChar(..), ItemSlots(..)
-  , allSlots, intSlots, slotLabel, assignSlot, partyItemSet
+  , allSlots, intSlots, slotLabel, assignSlot, partyItemSet, sortSlotMap
   ) where
 
 import Prelude ()
@@ -14,6 +14,7 @@ import           Data.Bits (unsafeShiftL, unsafeShiftR)
 import           Data.Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import           Data.Function
 import           Data.Ord (comparing)
 import qualified Data.Text as T
 
@@ -89,3 +90,29 @@ partyItemSet slore fid mbody s =
                    (\b -> getFloorBag (blid b) (bpos b) s)
                    mbody
   in ES.unions $ map EM.keysSet $ onPersons : [onGround | slore == SItem]
+
+-- If apperance and aspects the same, keep the order from before sort.
+compareItemFull :: ItemFull -> ItemFull -> Ordering
+compareItemFull itemFull1 itemFull2 =
+  case (itemDisco itemFull1, itemDisco itemFull2) of
+    (Nothing, Nothing) -> comparing apperance itemFull1 itemFull2
+    (Nothing, Just{}) -> LT
+    (Just{}, Nothing) -> GT
+    (Just id1, Just id2) ->
+      case compare (itemKindId id1) (itemKindId id2) of
+        EQ -> comparing itemAspect id1 id2
+        ot -> ot
+ where
+  apperance ItemFull{itemBase=Item{..}} = (jsymbol, jname, jflavour)
+
+sortSlotMap :: (ItemId -> ItemQuant -> ItemFull)
+            -> ES.EnumSet ItemId -> EM.EnumMap SlotChar ItemId
+            -> EM.EnumMap SlotChar ItemId
+sortSlotMap itemToF partySet em =
+  let (nearItems, farItems) = partition (`ES.member` partySet)
+                              $ EM.elems em
+      f iid = (iid, itemToF iid (1, []))
+      sortItemIds l = map fst $ sortBy (compareItemFull `on` snd)
+                      $ map f l
+  in EM.fromDistinctAscList $ zip allSlots
+     $ sortItemIds nearItems ++ sortItemIds farItems
