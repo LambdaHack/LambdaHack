@@ -125,17 +125,14 @@ sortSlots fid mbody = do
                   -> EM.EnumMap SlotChar ItemId
       sortSlotMap slore em =
         let partySet = partyItemSet slore fid mbody s
-            f = (`ES.member` partySet)
-            (nearItems, farItems) = partition f $ EM.elems em
-            g iid = (iid, itemToF iid (1, []))
-            sortItemIds l =
-              map fst $ sortBy (compareItemFull `on` snd) $ map g l
-            nearItemAsc = zip newSlots $ sortItemIds nearItems
-            farLen = if isNothing mbody then 0 else length allZeroSlots
-            farSlots = drop (length nearItemAsc + farLen) newSlots
-            farItemAsc = zip farSlots $ sortItemIds farItems
+            (nearItems, farItems) = partition (`ES.member` partySet)
+                                    $ EM.elems em
+            f iid = (iid, itemToF iid (1, []))
+            sortItemIds l = map fst $ sortBy (compareItemFull `on` snd)
+                            $ map f l
             newSlots = concatMap allSlots [0..]
-        in EM.fromDistinctAscList $ nearItemAsc ++ farItemAsc
+        in EM.fromDistinctAscList $ zip newSlots
+           $ sortItemIds nearItems ++ sortItemIds farItems
   ItemSlots itemSlots <- getsSession sslots
   let newSlots = ItemSlots $ EM.mapWithKey sortSlotMap itemSlots
   modifySession $ \sess -> sess {sslots = newSlots}

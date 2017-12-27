@@ -68,7 +68,7 @@ assignSlot :: ES.EnumSet ItemId -> SLore -> ItemSlots -> SlotChar
 assignSlot partySet slore (ItemSlots itemSlots) =
   head $ fresh ++ free
  where
-  candidates = concat [allSlots n | n <- [0..]]
+  candidates = concatMap allSlots [0..]
   lSlots = itemSlots EM.! slore
   f l = maybe True (`ES.notMember` partySet) $ EM.lookup l lSlots
   free = filter f candidates
