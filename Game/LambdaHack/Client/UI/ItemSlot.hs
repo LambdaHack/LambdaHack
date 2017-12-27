@@ -2,7 +2,8 @@
 -- | Item slots for UI and AI item collections.
 module Game.LambdaHack.Client.UI.ItemSlot
   ( SlotChar(..), ItemSlots(..)
-  , allSlots, intSlots, slotLabel, assignSlot, partyItemSet, sortSlotMap
+  , allSlots, intSlots, slotLabel
+  , assignSlot, partyItemSet, sortSlotMap, mergeItemSlots
   ) where
 
 import Prelude ()
@@ -119,3 +120,15 @@ sortSlotMap itemToF partySet em =
                       $ map f l
   in EM.fromDistinctAscList $ zip allSlots
      $ sortItemIds nearItems ++ sortItemIds farItems
+
+mergeItemSlots :: (ItemId -> ItemQuant -> ItemFull)
+               -> ES.EnumSet ItemId
+               -> [EM.EnumMap SlotChar ItemId]
+               -> EM.EnumMap SlotChar ItemId
+mergeItemSlots itemToF partySet ems =
+  let renumberSlot n SlotChar{slotPrefix, slotChar} =
+        SlotChar{slotPrefix = slotPrefix + n * 1000000, slotChar}
+      renumberMap (n, em1) = EM.mapKeys (renumberSlot n) em1
+      rms = map renumberMap $ zip [0..] ems
+      em = EM.unionsWith (\_ _ -> error "mergeItemSlots: duplicate keys") rms
+  in sortSlotMap itemToF partySet em

@@ -90,8 +90,9 @@ loreFromMode :: ItemDialogMode -> SLore
 loreFromMode c = case c of
   MStore COrgan -> SOrgan
   MStore _ -> SItem
+  MOrgans -> undefined  -- slots from many lore kinds
   MOwned -> SItem
-  MStats -> SItem  -- dummy
+  MStats -> undefined  -- artificial slots
   MLore slore -> slore
 
 loreFromContainer :: Item -> Container -> SLore
@@ -107,7 +108,8 @@ sortSlots :: MonadClientUI m => FactionId -> Maybe Actor -> m ()
 sortSlots fid mbody = do
   itemToF <- getsState itemToFull
   s <- getState
-  let sortMap :: SLore -> EM.EnumMap SlotChar ItemId
+  let sortMap :: SLore
+              -> EM.EnumMap SlotChar ItemId
               -> EM.EnumMap SlotChar ItemId
       sortMap slore = let partySet = partyItemSet slore fid mbody s
                       in sortSlotMap itemToF partySet
@@ -225,17 +227,16 @@ pickLeaderWithPointer = do
            Nothing -> failMsg "not pointing at an actor"
            Just (aid, b, _) -> pick (aid, b)
 
-itemOverlay :: MonadClientUI m => SLore -> LevelId -> ItemBag -> m OKX
-itemOverlay slore lid bag = do
+itemOverlay :: MonadClientUI m
+            => EM.EnumMap SlotChar ItemId -> LevelId -> ItemBag -> m OKX
+itemOverlay lSlots lid bag = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- getsState itemToFull
-  ItemSlots itemSlots <- getsSession sslots
   side <- getsClient sside
   factionD <- getsState sfactionD
   combEqp <- getsState $ combinedEqp side
   combOrgan <- getsState $ combinedOrgan side
-  let lSlots = itemSlots EM.! slore
-      !_A = assert (all (`elem` EM.elems lSlots) (EM.keys bag)
+  let !_A = assert (all (`elem` EM.elems lSlots) (EM.keys bag)
                     `blame` (lid, bag, lSlots)) ()
       markEqp iid t = if iid `EM.member` combEqp || iid `EM.member` combOrgan
                       then T.snoc (T.init t) '>'

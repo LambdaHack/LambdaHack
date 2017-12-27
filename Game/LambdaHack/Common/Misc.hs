@@ -92,7 +92,7 @@ instance Hashable SLore
 
 instance NFData SLore
 
-data ItemDialogMode = MStore CStore | MOwned | MStats | MLore SLore
+data ItemDialogMode = MStore CStore | MOrgans | MOwned | MStats | MLore SLore
   deriving (Show, Read, Eq, Ord, Generic)
 
 instance NFData ItemDialogMode

@@ -775,7 +775,9 @@ quitFactionUI fid toSt = do
             let spoilsMsg = makeSentence [ "Your spoils are worth"
                                          , MU.CarWs tot currencyName ]
             promptAdd spoilsMsg
-            io <- itemOverlay SItem arena bag
+            ItemSlots itemSlots <- getsSession sslots
+            let lSlots = itemSlots EM.! SItem
+            io <- itemOverlay lSlots arena bag
             sli <- overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] io
             return (bag, sli, tot)
         localTime <- getsState $ getLocalTime arena

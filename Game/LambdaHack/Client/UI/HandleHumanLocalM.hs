@@ -138,7 +138,7 @@ chooseItemDialogMode c = do
               $ MU.SubjectVerbSg (subject bodyUI) (verbSha body ar)
             , MU.Text tIn
             , MU.Text t ]
-        MStore COrgan ->
+        MOrgans ->
           makePhrase
             [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "feel"
             , MU.Text tIn
@@ -185,15 +185,15 @@ chooseItemDialogMode c = do
             then chooseItemDialogMode c2
             else failWith "never mind"
       case c2 of
-        MStore COrgan -> do
+        MStore fromCStore -> do
+          modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
+          return $ Right c2
+        MOrgans -> do
           let blurb | isTmpCondition (itemBase itemFull) = "temporary condition"
                     | otherwise = "organ"
               prompt2 = makeSentence [ partActor bUI, "can't choose"
                                      , MU.AW blurb ]
           displayLore prompt2
-        MStore fromCStore -> do
-          modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
-          return $ Right c2
         MOwned -> do
           found <- getsState $ findIid leader (bfid b) iid
           let (newAid, bestStore) = case leader `lookup` found of

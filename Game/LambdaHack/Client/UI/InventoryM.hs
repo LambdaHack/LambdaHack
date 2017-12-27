@@ -47,6 +47,7 @@ data ItemDialogState = ISuitable | IAll
 
 ppItemDialogMode :: ItemDialogMode -> (Text, Text)
 ppItemDialogMode (MStore cstore) = ppCStore cstore
+ppItemDialogMode MOrgans = ("in", "body")
 ppItemDialogMode MOwned = ("in", "our possession")
 ppItemDialogMode MStats = ("among", "strengths")
 ppItemDialogMode (MLore slore) = ("among", ppSLore slore <+> "lore")
@@ -60,6 +61,8 @@ ppItemDialogModeFrom c = let (_tIn, t) = ppItemDialogMode c in "from" <+> t
 accessModeBag :: ActorId -> State -> ItemDialogMode -> ItemBag
 accessModeBag leader s (MStore cstore) = let b = getActorBody leader s
                                          in getBodyStoreBag b cstore s
+accessModeBag leader s MOrgans = let b = getActorBody leader s
+                                 in getBodyStoreBag b COrgan s
 accessModeBag leader s MOwned = let fid = bfid $ getActorBody leader s
                                 in combinedItems fid s
 accessModeBag _ _ MStats = EM.empty
@@ -102,7 +105,7 @@ getStoreItem prompt cInitial = do
   let itemCs = map MStore [CInv, CGround, CEqp, CSha]
       allCs = case cInitial of
         MLore{} -> map MLore [minBound..maxBound]
-        _ -> itemCs ++ [MOwned, MStore COrgan, MStats]
+        _ -> itemCs ++ [MOwned, MOrgans, MStats]
       (pre, rest) = break (== cInitial) allCs
       post = dropWhile (== cInitial) rest
       remCs = post ++ pre
@@ -249,6 +252,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   hs <- partyAfterLeader leader
   bagAll <- getsState $ \s -> accessModeBag leader s cCur
   itemToF <- getsState itemToFull
+  organPartySet <- getsState $ partyItemSet SOrgan (bfid body) (Just body)
   Binding{brevMap} <- getsSession sbinding
   mpsuit <- psuit  -- when throwing, this sets eps and checks xhair validity
   psuitFun <- case mpsuit of
@@ -267,7 +271,12 @@ transition psuit prompt promptGeneric permitMulitple cLegal
       getMultResult ekm iids = (Right $ map getSingleResult iids, (cCur, ekm))
       filterP iid kit = psuitFun $ itemToF iid kit
       bagAllSuit = EM.filterWithKey filterP bagAll
-      lSlots = itemSlots EM.! loreFromMode cCur
+      lSlots = case cCur of
+        MOrgans -> mergeItemSlots itemToF organPartySet [ itemSlots EM.! SOrgan
+                                                        , itemSlots EM.! STrunk
+                                                        , itemSlots EM.! STmp ]
+        MStats -> EM.empty
+        _ -> itemSlots EM.! loreFromMode cCur
       bagItemSlotsAll = EM.filter (`EM.member` bagAll) lSlots
       -- Predicate for slot matching the current prefix, unless the prefix
       -- is 0, in which case we display all slots, even if they require
@@ -292,6 +301,9 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         Nothing -> dflt
         Just (k : _) -> k
         Just [] -> error $ "" `showFailure` brevMap
+      maySwitchLeader MOwned = False
+      maySwitchLeader MLore{} = False
+      maySwitchLeader _ = True
       keyDefs :: [(K.KM, DefItemKey m)]
       keyDefs = filter (defCond . snd) $
         [ let km = K.mkChar '?'
@@ -312,8 +324,8 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         , let km = revCmd (K.KM K.NoModifier K.Tab) MemberCycle
           in (km, DefItemKey
            { defLabel = Right km
-           , defCond = not (cCur == MOwned
-                            || not (any (\(_, b, _) -> blid b == blid body) hs))
+           , defCond = maySwitchLeader cCur
+                       && any (\(_, b, _) -> blid b == blid body) hs
            , defAction = \_ -> do
                err <- memberCycle False
                let !_A = assert (isNothing err `blame` err) ()
@@ -323,7 +335,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         , let km = revCmd (K.KM K.NoModifier K.BackTab) MemberBack
           in (km, DefItemKey
            { defLabel = Right km
-           , defCond = not (cCur == MOwned || autoDun || null hs)
+           , defCond = maySwitchLeader cCur && not (autoDun || null hs)
            , defAction = \_ -> do
                err <- memberBack False
                let !_A = assert (isNothing err `blame` err) ()
@@ -332,7 +344,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
            })
         , (K.KM K.NoModifier K.LeftButtonRelease, DefItemKey
            { defLabel = Left ""
-           , defCond = not (cCur == MOwned || null hs)
+           , defCond = maySwitchLeader cCur && not (null hs)
            , defAction = \_ -> do
                void pickLeaderWithPointer  -- error ignored; update anyway
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
@@ -340,8 +352,9 @@ transition psuit prompt promptGeneric permitMulitple cLegal
            })
         , let km = revCmd (K.KM K.NoModifier $ K.Char '^') SortSlots
           in (km, DefItemKey
-           { defLabel = if cCur == MOwned then Right km else Left ""
-           , defCond = True
+           { defLabel = if maySwitchLeader cCur then Left "" else Right km
+           , defCond = cCur /= MOrgans  -- auto-sorted each time
+                       && cCur /= MStats  -- artificial slots
            , defAction = \_ -> do
                sortSlots (bfid body) (Just body)
                recCall numPrefix cCur cRest itemDialogState
@@ -422,7 +435,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
             }
       runDefItemKey keyDefs statsDef io slotKeys promptChosen MStats
     _ -> do
-      io <- itemOverlay (loreFromMode cCur) (blid body) bagFiltered
+      io <- itemOverlay lSlots (blid body) bagFiltered
       let slotKeys = mapMaybe (keyOfEKM numPrefix . Right)
                      $ EM.keys bagItemSlots
       runDefItemKey keyDefs lettersDef io slotKeys promptChosen cCur
