@@ -156,9 +156,9 @@ combinedFromLore slore fid s = case slore of
   SItem -> combinedItems fid s
   SOrgan -> combinedOrgan fid s
   STrunk -> combinedOrgan fid s
-  SEmbed -> EM.empty
-  SBlast -> EM.empty
   STmp -> combinedOrgan fid s
+  SBlast -> EM.empty
+  SEmbed -> EM.empty
 
 getActorBody :: ActorId -> State -> Actor
 {-# INLINE getActorBody #-}

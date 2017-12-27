@@ -81,9 +81,9 @@ data SLore =
     SItem
   | SOrgan
   | STrunk
-  | SEmbed
-  | SBlast
   | STmp
+  | SBlast
+  | SEmbed
   deriving (Show, Read, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary SLore

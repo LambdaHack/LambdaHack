@@ -53,9 +53,6 @@ newtype ItemSlots = ItemSlots (EM.EnumMap SLore (EM.EnumMap SlotChar ItemId))
 allChars :: [Char]
 allChars = ['a'..'z'] ++ ['A'..'Z']
 
-allCharsLength :: Int
-allCharsLength = length allChars
-
 allSlots :: [SlotChar]
 allSlots = concatMap (\n -> map (SlotChar n) allChars) [0..]
 
@@ -71,18 +68,17 @@ slotLabel x =
 -- | Assigns a slot to an item, e.g., for inclusion in the inventory of a hero.
 assignSlot :: ES.EnumSet ItemId -> SLore -> ItemSlots -> SlotChar
 assignSlot partySet slore (ItemSlots itemSlots) =
-  head $ fresh ++ free
+  head $ freeLowPrefix ++ free
  where
   lSlots = itemSlots EM.! slore
-  f l = maybe True (`ES.notMember` partySet) $ EM.lookup l lSlots
-  free = filter f allSlots
-  g l = l `EM.notMember` lSlots
   maxPrefix = case EM.maxViewWithKey lSlots of
     Just ((lm, _), _) -> slotPrefix lm
     Nothing -> 0
-  -- Fill all empty slots up to half max prefix, then prefer lower prefixes
-  -- (even if slot not empty) as long as the item not held by the party.
-  fresh = filter g $ take ((maxPrefix `div` 2) * allCharsLength) allSlots
+  slotsUpTo k = concatMap (\n -> map (SlotChar n) allChars) [0..k]
+  f l = maybe True (`ES.notMember` partySet) $ EM.lookup l lSlots
+  free = filter f $ slotsUpTo (maxPrefix + 1)  -- suffices
+  g l = l {slotPrefix = maxPrefix} `EM.notMember` lSlots
+  freeLowPrefix = filter g free
 
 partyItemSet :: SLore -> FactionId -> Maybe Actor -> State -> ES.EnumSet ItemId
 partyItemSet slore fid mbody s =

@@ -209,6 +209,8 @@ chooseItemDialogMode c = do
           if | blid b2 /= arena && autoDun ->
                failSer NoChangeDunLeader
              | otherwise -> do
+               -- We switch leader only here, not in lore screens, because
+               -- lore is only about inspecting items, no activation submenu.
                void $ pickLeader True newAid
                return $ Right c2
         MStats -> error $ "" `showFailure` ggi

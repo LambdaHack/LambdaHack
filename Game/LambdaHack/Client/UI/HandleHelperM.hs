@@ -82,9 +82,9 @@ ppSLore :: SLore -> Text
 ppSLore SItem = "item"
 ppSLore SOrgan = "organ"
 ppSLore STrunk = "creature"
-ppSLore SEmbed = "terrain"
-ppSLore SBlast = "blast"
 ppSLore STmp = "temporary condition"
+ppSLore SBlast = "blast"
+ppSLore SEmbed = "terrain"
 
 loreFromMode :: ItemDialogMode -> SLore
 loreFromMode c = case c of
