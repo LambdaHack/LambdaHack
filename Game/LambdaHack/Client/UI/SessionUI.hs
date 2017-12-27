@@ -39,7 +39,6 @@ data SessionUI = SessionUI
   { sxhair         :: Target             -- ^ the common xhair
   , sactorUI       :: ActorDictUI        -- ^ assigned actor UI presentations
   , sslots         :: ItemSlots          -- ^ map from slots to items
-  , slastSlot      :: SlotChar           -- ^ last used slot
   , slastItemMove  :: Maybe (CStore, CStore)  -- ^ last item move stores
   , schanF         :: ChanFrontend       -- ^ connection with the frontend
   , sbinding       :: Binding            -- ^ binding of keys to commands
@@ -110,7 +109,6 @@ emptySessionUI sUIOptions =
     , sactorUI = EM.empty
     , sslots = ItemSlots $ EM.fromAscList
                $ zip [minBound..maxBound] (repeat EM.empty)
-    , slastSlot = SlotChar 0 'Z'
     , slastItemMove = Nothing
     , schanF = ChanFrontend $ const $
         error $ "emptySessionUI: ChanFrontend" `showFailure` ()
@@ -156,7 +154,6 @@ instance Binary SessionUI where
     put sxhair
     put sactorUI
     put sslots
-    put slastSlot
     put sUIOptions
     put saimMode
     put sitemSel
@@ -171,7 +168,6 @@ instance Binary SessionUI where
     sxhair <- get
     sactorUI <- get
     sslots <- get
-    slastSlot <- get
     sUIOptions <- get  -- is overwritten ASAP, but useful for, e.g., crash debug
     saimMode <- get
     sitemSel <- get

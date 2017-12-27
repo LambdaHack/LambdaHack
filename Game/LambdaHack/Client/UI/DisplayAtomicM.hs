@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.DisplayAtomicM
   , updateItemSlot, markDisplayNeeded, lookAtMove
   , actorVerbMU, aidVerbMU, itemVerbMU, itemAidVerbMU, msgDuplicateScrap
   , createActorUI, destroyActorUI, spotItem, moveActor, displaceActorUI
-  , moveItemUI, quitFactionUI, discover, ppSfxMsg, setLastSlot, strike
+  , moveItemUI, quitFactionUI, discover, ppSfxMsg, strike
 #endif
   ) where
 
@@ -74,7 +74,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdCreateActor aid body _ -> createActorUI True aid body
   UpdDestroyActor aid body _ -> destroyActorUI True aid body
   UpdCreateItem iid item kit c -> do
-    slastSlot <- updateItemSlot c iid
+    updateItemSlot c iid
     case c of
       CActor aid store -> do
         case store of
@@ -100,14 +100,8 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
             ownerFun <- partActorLeaderFun
             let wown = ppContainerWownW ownerFun True c
             itemVerbMU iid kit (MU.Text $ makePhrase $ "appear" : wown) c
-            mleader <- getsClient sleader
-            -- Item created among leader's items, so must be interesting.
-            when (Just aid == mleader) $
-              modifySession $ \sess -> sess {slastSlot}
       CEmbed lid _ -> markDisplayNeeded lid
       CFloor lid _ -> do
-        -- If you want an item to be assigned to @slastSlot@, create it
-        -- in @CActor aid CGround@, not in @CFloor@.
         itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
         markDisplayNeeded lid
       CTrunk{} -> error $ "" `showFailure` c
@@ -349,7 +343,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdKillExit{} -> frontendShutdown
   UpdWriteSave -> when verbose $ promptAdd "Saving backup."
 
-updateItemSlot :: MonadClientUI m => Container -> ItemId -> m SlotChar
+updateItemSlot :: MonadClientUI m => Container -> ItemId -> m ()
 updateItemSlot c iid = do
   item <- getsState $ getItemBody iid
   let slore = loreFromContainer item c
@@ -373,8 +367,7 @@ updateItemSlot c iid = do
           newSlots =
             ItemSlots $ EM.adjust (incrementPrefix l iid) slore itemSlots
       modifySession $ \sess -> sess {sslots = newSlots}
-      return l
-    Just l -> return l  -- slot already assigned
+    Just _l -> return ()  -- slot already assigned
 
 markDisplayNeeded :: MonadClientUI m => LevelId -> m ()
 markDisplayNeeded lid = do
@@ -688,10 +681,9 @@ moveItemUI iid k aid cstore1 cstore2 = do
   mleader <- getsClient sleader
   ItemSlots itemSlots <- getsSession sslots
   case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! SItem of
-    Just slastSlot -> do
+    Just _l -> do
       -- So far organs can't be put into backpack, so no need to call
       -- @updateItemSlot@ to add or reassign lore category.
-      when (Just aid == mleader) $ modifySession $ \sess -> sess {slastSlot}
       if cstore1 == CGround && Just aid == mleader && not underAI then
         itemAidVerbMU aid (MU.Text verb) iid (Right k) cstore2
       else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
@@ -891,13 +883,11 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     spart <- partAidLeader source
     tpart <- partAidLeader target
     msgAdd $ makeSentence [MU.SubjectVerbSg spart "release", tpart]
-  SfxProject aid iid cstore -> do
-    setLastSlot aid iid cstore
+  SfxProject aid iid cstore ->
     itemAidVerbMU aid "fling" iid (Left $ Just 1) cstore
   SfxReceive aid iid cstore ->
     itemAidVerbMU aid "receive" iid (Left $ Just 1) cstore
-  SfxApply aid iid cstore -> do
-    setLastSlot aid iid cstore
+  SfxApply aid iid cstore ->
     itemAidVerbMU aid "apply" iid (Left $ Just 1) cstore
   SfxCheck aid iid cstore ->
     itemAidVerbMU aid "deapply" iid (Left $ Just 1) cstore
@@ -1161,15 +1151,6 @@ ppSfxMsg sfxMsg = case sfxMsg of
         cond = ["condition" | isTmpCondition $ itemBase itemFull]
     return $! makeSentence $
       ["the", name, stats] ++ cond ++ storeOwn ++ ["will now last longer"]
-
-setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
-setLastSlot aid iid cstore = do
-  mleader <- getsClient sleader
-  when (Just aid == mleader) $ do
-    ItemSlots itemSlots <- getsSession sslots
-    case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! SItem of
-      Just slastSlot -> modifySession $ \sess -> sess {slastSlot}
-      Nothing -> error $ "" `showFailure` (iid, cstore, aid)
 
 strike :: MonadClientUI m
        => Bool -> ActorId -> ActorId -> ItemId -> CStore -> m ()

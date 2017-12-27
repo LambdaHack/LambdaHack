@@ -433,12 +433,12 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                       Right sl -> sl
                 in return (Left "stats", (MStats, Right slot))
             }
-      runDefItemKey keyDefs statsDef io slotKeys promptChosen MStats
+      runDefItemKey keyDefs statsDef io slotKeys promptChosen
     _ -> do
       io <- itemOverlay lSlots (blid body) bagFiltered
       let slotKeys = mapMaybe (keyOfEKM numPrefix . Right)
                      $ EM.keys bagItemSlots
-      runDefItemKey keyDefs lettersDef io slotKeys promptChosen cCur
+      runDefItemKey keyDefs lettersDef io slotKeys promptChosen
 
 keyOfEKM :: Int -> Either [K.KM] SlotChar -> Maybe K.KM
 keyOfEKM _ (Left kms) = error $ "" `showFailure` kms
@@ -471,10 +471,9 @@ runDefItemKey :: MonadClientUI m
               -> OKX
               -> [K.KM]
               -> Text
-              -> ItemDialogMode
               -> m ( Either Text [(ItemId, ItemFull)]
                    , (ItemDialogMode, Either K.KM SlotChar) )
-runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
+runDefItemKey keyDefs lettersDef okx slotKeys prompt = do
   let itemKeys = slotKeys ++ map fst keyDefs
       wrapB s = "[" <> s <> "]"
       (keyLabelsRaw, keys) = partitionEithers $ map (defLabel . snd) keyDefs
@@ -485,27 +484,7 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   Level{lysize} <- getLevel lidV
   ekm <- do
     okxs <- overlayToSlideshow (lysize + 1) keys okx
-    !lastSlot <- getsSession slastSlot
-    let allOKX = concatMap snd $ slideshow okxs
-        pointer =
-          case findIndex ((== Right lastSlot) . fst) allOKX of
-            Just p -> case cCur of
-              MStats -> foundPointer
-              MLore{} -> foundPointer
-              _ -> p
-            _ -> foundPointer
-        foundPointer = case findIndex (isRight . fst) allOKX of
-          Just p -> p
-          _ -> 0
-    (okm, pointer2) <- displayChoiceScreen ColorFull False pointer okxs itemKeys
-    -- Remember item pointer, unless not a proper item container. Remember
-    -- even if not moved, in case the initial position was a default.
-    case drop pointer2 allOKX of
-      (Right slastSlot, _) : _ -> case cCur of
-        MStats -> return ()
-        MLore{} -> return ()
-        _ -> modifySession $ \sess -> sess {slastSlot}
-      _ -> return ()
+    (okm, _pointer2) <- displayChoiceScreen ColorFull False 0 okxs itemKeys
     return okm
   case ekm of
     Left km -> case km `lookup` keyDefs of
