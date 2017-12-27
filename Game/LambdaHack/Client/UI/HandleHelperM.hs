@@ -130,8 +130,7 @@ sortSlots fid mbody = do
             f iid = (iid, itemToF iid (1, []))
             sortItemIds l = map fst $ sortBy (compareItemFull `on` snd)
                             $ map f l
-            newSlots = concatMap allSlots [0..]
-        in EM.fromDistinctAscList $ zip newSlots
+        in EM.fromDistinctAscList $ zip allSlots
            $ sortItemIds nearItems ++ sortItemIds farItems
   ItemSlots itemSlots <- getsSession sslots
   let newSlots = ItemSlots $ EM.mapWithKey sortSlotMap itemSlots
@@ -293,7 +292,7 @@ statsOverlay aid = do
             valueText = slotToDecorator eqpSlot b $ prEqpSlot eqpSlot ar
             ft = fullText valueText
         in (ft, (Right c, (y, 0, T.length ft)))
-      (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allZeroSlots) statSlots
+      (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) statSlots
   return (map textToAL ts, kxs)
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)

@@ -2,7 +2,7 @@
 -- | Item slots for UI and AI item collections.
 module Game.LambdaHack.Client.UI.ItemSlot
   ( SlotChar(..), ItemSlots(..)
-  , allSlots, allZeroSlots, intSlots, slotLabel, assignSlot, partyItemSet
+  , allSlots, intSlots, slotLabel, assignSlot, partyItemSet
   ) where
 
 import Prelude ()
@@ -48,11 +48,14 @@ instance Enum SlotChar where
 newtype ItemSlots = ItemSlots (EM.EnumMap SLore (EM.EnumMap SlotChar ItemId))
   deriving (Show, Binary)
 
-allSlots :: Int -> [SlotChar]
-allSlots n = map (SlotChar n) $ ['a'..'z'] ++ ['A'..'Z']
+allChars :: [Char]
+allChars = ['a'..'z'] ++ ['A'..'Z']
 
-allZeroSlots :: [SlotChar]
-allZeroSlots = allSlots 0
+allCharsLength :: Int
+allCharsLength = length allChars
+
+allSlots :: [SlotChar]
+allSlots = concatMap (\n -> map (SlotChar n) allChars) [0..]
 
 intSlots :: [SlotChar]
 intSlots = map (flip SlotChar 'a') [0..]
@@ -68,18 +71,16 @@ assignSlot :: ES.EnumSet ItemId -> SLore -> ItemSlots -> SlotChar
 assignSlot partySet slore (ItemSlots itemSlots) =
   head $ fresh ++ free
  where
-  candidates = concatMap allSlots [0..]
   lSlots = itemSlots EM.! slore
   f l = maybe True (`ES.notMember` partySet) $ EM.lookup l lSlots
-  free = filter f candidates
+  free = filter f allSlots
   g l = l `EM.notMember` lSlots
-  len0 = length allZeroSlots
   maxPrefix = case EM.maxViewWithKey lSlots of
     Just ((lm, _), _) -> slotPrefix lm
     Nothing -> 0
   -- Fill all empty slots up to half max prefix, then prefer lower prefixes
   -- (even if slot not empty) as long as the item not held by the party.
-  fresh = filter g $ take ((maxPrefix `div` 2) * len0) candidates
+  fresh = filter g $ take ((maxPrefix `div` 2) * allCharsLength) allSlots
 
 partyItemSet :: SLore -> FactionId -> Maybe Actor -> State -> ES.EnumSet ItemId
 partyItemSet slore fid mbody s =

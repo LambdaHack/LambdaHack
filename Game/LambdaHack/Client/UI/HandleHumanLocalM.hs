@@ -217,7 +217,7 @@ chooseItemDialogMode c = do
                         , MU.Text (ppSLore slore), "lore" ])
     (Left err, (MStats, ekm)) -> case ekm of
       Right slot -> assert (err == "stats") $ do
-        let eqpSlot = statSlots !! fromJust (elemIndex slot allZeroSlots)
+        let eqpSlot = statSlots !! fromJust (elemIndex slot allSlots)
         leader <- getLeaderUI
         b <- getsState $ getActorBody leader
         bUI <- getsSession $ getActorUI leader
