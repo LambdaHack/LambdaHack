@@ -124,14 +124,8 @@ sortSlots fid mbody = do
       sortSlotMap :: SLore -> EM.EnumMap SlotChar ItemId
                   -> EM.EnumMap SlotChar ItemId
       sortSlotMap slore em =
-        let onPerson = combinedFromLore slore fid s
-            onGround = maybe EM.empty
-                         -- consider floor only under the acting actor
-                       (\b -> getFloorBag (blid b) (bpos b) s)
-                       mbody
-            inBags = ES.unions $ map EM.keysSet
-                     $ onPerson : [onGround | slore == SItem]
-            f = (`ES.member` inBags)
+        let partySet = partyItemSet slore fid mbody s
+            f = (`ES.member` partySet)
             (nearItems, farItems) = partition f $ EM.elems em
             g iid = (iid, itemToF iid (1, []))
             sortItemIds l =

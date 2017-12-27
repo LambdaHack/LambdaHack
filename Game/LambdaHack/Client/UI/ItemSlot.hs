@@ -2,7 +2,7 @@
 -- | Item slots for UI and AI item collections.
 module Game.LambdaHack.Client.UI.ItemSlot
   ( SlotChar(..), ItemSlots(..)
-  , allSlots, allZeroSlots, intSlots, slotLabel, assignSlot
+  , allSlots, allZeroSlots, intSlots, slotLabel, assignSlot, partyItemSet
   ) where
 
 import Prelude ()
@@ -64,25 +64,25 @@ slotLabel x =
   <> ")"
 
 -- | Assigns a slot to an item, for inclusion in the inventory
--- of a hero. Tries to to use the requested slot, if any.
-assignSlot :: SLore -> FactionId -> Maybe Actor -> ItemSlots
-           -> SlotChar -> State
-           -> SlotChar
-assignSlot slore fid mbody (ItemSlots itemSlots) lastSlot s =
-  assert (maybe True (\b -> bfid b == fid) mbody)
-  $ head $ fresh ++ free
+-- of a hero. Tries to to use a slot just after the given slot.
+assignSlot :: ES.EnumSet ItemId -> SLore -> ItemSlots -> SlotChar -> SlotChar
+assignSlot partySet slore (ItemSlots itemSlots) lastSlot =
+  head $ fresh ++ free
  where
   offset = maybe 0 (+1) (elemIndex lastSlot allZeroSlots)
   len0 = length allZeroSlots
   candidatesZero = take len0 $ drop offset $ cycle allZeroSlots
   candidates = candidatesZero ++ concat [allSlots n | n <- [1..]]
-  onPerson = combinedFromLore slore fid s
-  onGround = maybe EM.empty  -- consider floor only under the acting actor
-                   (\b -> getFloorBag (blid b) (bpos b) s)
-                   mbody
-  inBags = ES.unions $ map EM.keysSet $ onPerson : [onGround | slore == SItem]
   lSlots = itemSlots EM.! slore
-  f l = maybe True (`ES.notMember` inBags) $ EM.lookup l lSlots
+  f l = maybe True (`ES.notMember` partySet) $ EM.lookup l lSlots
   free = filter f candidates
   g l = l `EM.notMember` lSlots
   fresh = filter g $ take ((slotPrefix lastSlot + 1) * len0) candidates
+
+partyItemSet :: SLore -> FactionId -> Maybe Actor -> State -> ES.EnumSet ItemId
+partyItemSet slore fid mbody s =
+  let onPersons = combinedFromLore slore fid s
+      onGround = maybe EM.empty  -- consider floor only under the acting actor
+                   (\b -> getFloorBag (blid b) (bpos b) s)
+                   mbody
+  in ES.unions $ map EM.keysSet $ onPersons : [onGround | slore == SItem]

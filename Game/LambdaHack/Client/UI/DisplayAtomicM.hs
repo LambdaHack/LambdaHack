@@ -363,18 +363,19 @@ updateItemSlot c iid = do
   case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! slore of
     Nothing -> do
       side <- getsClient sside
-      mb <- case c of
+      mbody <- case c of
         CActor aid _ -> do
           b <- getsState $ getActorBody aid
           return $! if bfid b == side then Just b else Nothing
         _ -> return Nothing
       lastSlot <- getsSession slastSlot
-      l <- getsState $ assignSlot slore side mb slots lastSlot
-      let newSlots =
+      partySet <- getsState $ partyItemSet slore side mbody
+      let l = assignSlot partySet slore slots lastSlot
+          newSlots =
             ItemSlots $ EM.adjust (incrementPrefix l iid) slore itemSlots
       modifySession $ \sess -> sess {sslots = newSlots}
       return l
-    Just l -> return l  -- slot already assigned; a letter or a number
+    Just l -> return l  -- slot already assigned
 
 markDisplayNeeded :: MonadClientUI m => LevelId -> m ()
 markDisplayNeeded lid = do
