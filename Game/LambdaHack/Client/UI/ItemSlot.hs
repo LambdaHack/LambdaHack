@@ -100,10 +100,13 @@ compareItemFull itemFull1 itemFull2 =
     (Just{}, Nothing) -> GT
     (Just id1, Just id2) ->
       case compare (itemKindId id1) (itemKindId id2) of
-        EQ -> comparing itemAspect id1 id2
-        ot -> ot
+        EQ -> case comparing itemAspect id1 id2 of
+          EQ -> comparing apperance itemFull1 itemFull2
+          o -> o
+        o -> o
  where
-  apperance ItemFull{itemBase=Item{..}} = (jsymbol, jname, jflavour)
+  apperance ItemFull{itemBase=Item{..}} =
+    (jsymbol, jname, jflavour, jdamage, jfid, jlid)
 
 sortSlotMap :: (ItemId -> ItemQuant -> ItemFull)
             -> ES.EnumSet ItemId -> EM.EnumMap SlotChar ItemId
