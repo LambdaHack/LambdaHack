@@ -108,9 +108,7 @@ sortSlots :: MonadClientUI m => FactionId -> Maybe Actor -> m ()
 sortSlots fid mbody = do
   itemToF <- getsState itemToFull
   s <- getState
-  let sortMap :: SLore
-              -> EM.EnumMap SlotChar ItemId
-              -> EM.EnumMap SlotChar ItemId
+  let sortMap :: SLore -> SingleItemSlots -> SingleItemSlots
       sortMap slore = let partySet = partyItemSet slore fid mbody s
                       in sortSlotMap itemToF partySet
   ItemSlots itemSlots <- getsSession sslots
@@ -227,8 +225,7 @@ pickLeaderWithPointer = do
            Nothing -> failMsg "not pointing at an actor"
            Just (aid, b, _) -> pick (aid, b)
 
-itemOverlay :: MonadClientUI m
-            => EM.EnumMap SlotChar ItemId -> LevelId -> ItemBag -> m OKX
+itemOverlay :: MonadClientUI m => SingleItemSlots -> LevelId -> ItemBag -> m OKX
 itemOverlay lSlots lid bag = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- getsState itemToFull

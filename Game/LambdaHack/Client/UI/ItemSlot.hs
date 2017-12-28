@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Item slots for UI and AI item collections.
 module Game.LambdaHack.Client.UI.ItemSlot
-  ( SlotChar(..), ItemSlots(..)
+  ( SlotChar(..), ItemSlots(..), SingleItemSlots
   , allSlots, intSlots, slotLabel
   , assignSlot, partyItemSet, sortSlotMap, mergeItemSlots
   ) where
@@ -46,8 +46,10 @@ instance Enum SlotChar where
         c100 = c0 - if c0 > 150 then 100 else 0
     in SlotChar n (chr c100)
 
+type SingleItemSlots = EM.EnumMap SlotChar ItemId
+
 -- | A collection of mappings from slot labels to item identifiers.
-newtype ItemSlots = ItemSlots (EM.EnumMap SLore (EM.EnumMap SlotChar ItemId))
+newtype ItemSlots = ItemSlots (EM.EnumMap SLore SingleItemSlots)
   deriving (Show, Binary)
 
 allChars :: [Char]
@@ -106,8 +108,8 @@ compareItemFull itemFull1 itemFull2 =
     (jsymbol, jname, jflavour, jdamage, jfid, jlid)
 
 sortSlotMap :: (ItemId -> ItemQuant -> ItemFull)
-            -> ES.EnumSet ItemId -> EM.EnumMap SlotChar ItemId
-            -> EM.EnumMap SlotChar ItemId
+            -> ES.EnumSet ItemId -> SingleItemSlots
+            -> SingleItemSlots
 sortSlotMap itemToF partySet em =
   let (nearItems, farItems) = partition (`ES.member` partySet)
                               $ EM.elems em
@@ -118,9 +120,8 @@ sortSlotMap itemToF partySet em =
      $ sortItemIds nearItems ++ sortItemIds farItems
 
 mergeItemSlots :: (ItemId -> ItemQuant -> ItemFull)
-               -> ES.EnumSet ItemId
-               -> [EM.EnumMap SlotChar ItemId]
-               -> EM.EnumMap SlotChar ItemId
+               -> ES.EnumSet ItemId -> [SingleItemSlots]
+               -> SingleItemSlots
 mergeItemSlots itemToF partySet ems =
   let renumberSlot n SlotChar{slotPrefix, slotChar} =
         SlotChar{slotPrefix = slotPrefix + n * 1000000, slotChar}
