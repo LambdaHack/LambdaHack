@@ -99,7 +99,7 @@ getStoreItem :: MonadClientUI m
              => (Actor -> ActorUI -> AspectRecord -> ItemDialogMode -> Text)
                                  -- ^ how to describe suitable items
              -> ItemDialogMode   -- ^ initial mode
-             -> m ( Either Text (ItemId, ItemFull)
+             -> m ( Either Text ((ItemId, ItemFull), ItemBag, SingleItemSlots)
                   , (ItemDialogMode, Either K.KM SlotChar) )
 getStoreItem prompt cInitial = do
   let itemCs = map MStore [CInv, CGround, CEqp, CSha]
@@ -114,7 +114,8 @@ getStoreItem prompt cInitial = do
                  True False (cInitial : remCs)
   case soc of
     (Left err, cekm) -> return (Left err, cekm)
-    (Right [(iid, itemFull)], cekm) -> return (Right (iid, itemFull), cekm)
+    (Right ([ii], itemBag, lSlots), cekm) ->
+      return (Right (ii, itemBag, lSlots), cekm)
     (Right{}, _) -> error $ "" `showFailure` soc
 
 -- | Let the human player choose a single, preferably suitable,
@@ -179,7 +180,7 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
                      askWhenLone permitMulitple (map MStore cLegal)
       case res of
         (Left x, _) -> return $ Left x
-        (Right x, cekm) -> return $ Right (x, cekm)
+        (Right (x, _, _), cekm) -> return $ Right (x, cekm)
 
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
@@ -196,7 +197,7 @@ getItem :: MonadClientUI m
                             --   in the starting mode is suitable
         -> Bool             -- ^ whether to permit multiple items as a result
         -> [ItemDialogMode] -- ^ all legal modes
-        -> m ( Either Text [(ItemId, ItemFull)]
+        -> m ( Either Text ([(ItemId, ItemFull)], ItemBag, SingleItemSlots)
              , (ItemDialogMode, Either K.KM SlotChar) )
 getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
         cLegal = do
@@ -211,7 +212,10 @@ getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
       let lSlots = itemSlots EM.! loreFromMode cCur
           slotChar = fromMaybe (error $ "" `showFailure` (iid, lSlots))
                      $ lookup iid $ map swap $ EM.assocs lSlots
-      return (Right [(iid, itemToF iid k)], (cCur, Right slotChar))
+      return ( Right ( [(iid, itemToF iid k)]
+                     , EM.singleton iid k
+                     , EM.singleton slotChar iid )
+             , (cCur, Right slotChar) )
     _ ->
       transition psuit prompt promptGeneric permitMulitple cLegal
                  0 cCur cRest ISuitable
@@ -219,9 +223,10 @@ getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
 data DefItemKey m = DefItemKey
   { defLabel  :: Either Text K.KM
   , defCond   :: Bool
-  , defAction :: Either K.KM SlotChar
-                 -> m ( Either Text [(ItemId, ItemFull)]
-                      , (ItemDialogMode, Either K.KM SlotChar) )
+  , defAction ::
+      Either K.KM SlotChar
+      -> m ( Either Text ([(ItemId, ItemFull)], ItemBag, SingleItemSlots)
+           , (ItemDialogMode, Either K.KM SlotChar) )
   }
 
 data Suitability =
@@ -238,7 +243,7 @@ transition :: forall m. MonadClientUI m
            -> ItemDialogMode
            -> [ItemDialogMode]
            -> ItemDialogState
-           -> m ( Either Text [(ItemId, ItemFull)]
+           -> m ( Either Text ([(ItemId, ItemFull)], ItemBag, SingleItemSlots)
                 , (ItemDialogMode, Either K.KM SlotChar) )
 transition psuit prompt promptGeneric permitMulitple cLegal
            numPrefix cCur cRest itemDialogState = do
@@ -261,14 +266,12 @@ transition psuit prompt promptGeneric permitMulitple cLegal
       -- When throwing, this function takes missile range into accout.
   let getSingleResult :: ItemId -> (ItemId, ItemFull)
       getSingleResult iid = (iid, itemToF iid (bagAll EM.! iid))
-      getResult :: Either K.KM SlotChar -> ItemId
-                -> ( Either Text [(ItemId, ItemFull)]
-                   , (ItemDialogMode, Either K.KM SlotChar) )
-      getResult ekm iid = (Right [getSingleResult iid], (cCur, ekm))
-      getMultResult :: Either K.KM SlotChar -> [ItemId]
-                    -> ( Either Text [(ItemId, ItemFull)]
-                       , (ItemDialogMode, Either K.KM SlotChar) )
-      getMultResult ekm iids = (Right $ map getSingleResult iids, (cCur, ekm))
+      getResult ::
+        Either K.KM SlotChar -> [ItemId]
+        -> ( Either Text ([(ItemId, ItemFull)], ItemBag, SingleItemSlots)
+           , (ItemDialogMode, Either K.KM SlotChar) )
+      getResult ekm iids =
+        (Right (map getSingleResult iids, bagAll, bagItemSlotsAll), (cCur, ekm))
       filterP iid kit = psuitFun $ itemToF iid kit
       bagAllSuit = EM.filterWithKey filterP bagAll
       lSlots = case cCur of
@@ -385,7 +388,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         , defCond = permitMulitple && not (EM.null multipleSlots)
         , defAction = \ekm ->
             let eslots = EM.elems multipleSlots
-            in return $ getMultResult ekm eslots
+            in return $ getResult ekm eslots
         }
       prefixCmdDef d =
         (K.mkChar $ Char.intToDigit d, DefItemKey
@@ -409,7 +412,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
             in case EM.lookup slot bagItemSlotsAll of
               Nothing -> error $ "unexpected slot"
                                  `showFailure` (slot, bagItemSlots)
-              Just iid -> return $! getResult (Right slot) iid
+              Just iid -> return $! getResult (Right slot) [iid]
         }
       (bagFiltered, promptChosen) =
         case itemDialogState of
@@ -472,7 +475,9 @@ runDefItemKey :: MonadClientUI m
               -> [K.KM]
               -> Text
               -> ItemDialogMode
-              -> m ( Either Text [(ItemId, ItemFull)]
+              -> m ( Either Text ( [(ItemId, ItemFull)]
+                                 , ItemBag
+                                 , SingleItemSlots )
                    , (ItemDialogMode, Either K.KM SlotChar) )
 runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   let itemKeys = slotKeys ++ map fst keyDefs
