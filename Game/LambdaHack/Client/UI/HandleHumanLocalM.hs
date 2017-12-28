@@ -171,8 +171,9 @@ chooseItemDialogMode c = do
       bUI <- getsSession $ getActorUI leader
       itemToF <- getsState itemToFull
       let lSlotsElems = EM.elems lSlots
-          displayLore ix2 promptFun = do
-            let iid2 = lSlotsElems !! ix2
+          lSlotsBound = length lSlotsElems - 1
+          displayLore slotIndex promptFun = do
+            let iid2 = lSlotsElems !! slotIndex
                 itemFull2 = itemToF iid2 (itemBag EM.! iid2)
             promptAdd $ promptFun itemFull2
             localTime <- getsState $ getLocalTime (blid b)
@@ -181,12 +182,18 @@ chooseItemDialogMode c = do
             let attrLine = itemDesc (bfid b) factionD (aHurtMelee ar)
                                     CGround localTime itemFull2
                 ov = splitAttrLine lxsize attrLine
+                keys = [K.spaceKM, K.escKM]
+                       ++ [K.upKM | slotIndex /= 0]
+                       ++ [K.downKM | slotIndex /= lSlotsBound]
             slides <-
-              overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] (ov, [])
-            km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
-            if km == K.spaceKM
-            then chooseItemDialogMode c2
-            else failWith "never mind"
+              overlayToSlideshow (lysize + 1) keys (ov, [])
+            km <- getConfirms ColorFull keys slides
+            case K.key km of
+              K.Space -> chooseItemDialogMode c2
+              K.Up -> displayLore (slotIndex - 1) promptFun
+              K.Down -> displayLore (slotIndex + 1) promptFun
+              K.Esc -> failWith "never mind"
+              _ -> error $ "" `showFailure` km
           ix0 = fromJust $ findIndex (== iid) lSlotsElems
       case c2 of
         MStore fromCStore -> do
@@ -196,7 +203,7 @@ chooseItemDialogMode c = do
           let blurb itemFull
                 | isTmpCondition (itemBase itemFull) = "temporary condition"
                 | otherwise = "organ"
-              prompt2 itemFull = makeSentence [ partActor bUI, "can't choose"
+              prompt2 itemFull = makeSentence [ partActor bUI, "can't remove"
                                               , MU.AW $ blurb itemFull ]
           displayLore ix0 prompt2
         MOwned -> do
