@@ -162,6 +162,8 @@ chooseItemDialogMode c = do
             , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
   ggi <- getStoreItem prompt c
   recordHistory  -- item chosen, wipe out already shown msgs
+  lidV <- viewedLevelUI
+  Level{lxsize, lysize} <- getLevel lidV
   case ggi of
     (Right (iid, itemFull), (c2, _)) -> do
       leader <- getLeaderUI
@@ -169,8 +171,6 @@ chooseItemDialogMode c = do
       bUI <- getsSession $ getActorUI leader
       let displayLore prompt2 = do
             promptAdd prompt2
-            lidV <- viewedLevelUI
-            Level{lxsize, lysize} <- getLevel lidV
             localTime <- getsState $ getLocalTime (blid b)
             factionD <- getsState sfactionD
             ar <- getsState $ getActorAspect leader
@@ -217,21 +217,37 @@ chooseItemDialogMode c = do
           (makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
                         , MU.Text (ppSLore slore), "lore" ])
     (Left err, (MStats, ekm)) -> case ekm of
-      Right slot -> assert (err == "stats") $ do
-        let eqpSlot = statSlots !! fromJust (elemIndex slot allSlots)
+      Right slot0 -> assert (err == "stats") $ do
         leader <- getLeaderUI
         b <- getsState $ getActorBody leader
         bUI <- getsSession $ getActorUI leader
         ar <- getsState $ getActorAspect leader
-        let valueText = slotToDecorator eqpSlot b $ prEqpSlot eqpSlot ar
-            prompt2 = makeSentence
-              [ MU.WownW (partActor bUI) (MU.Text $ slotToName eqpSlot)
-              , "is", MU.Text valueText ]
-              <+> slotToDesc eqpSlot
-        go <- displaySpaceEsc ColorFull prompt2
-        if go
-        then chooseItemDialogMode MStats
-        else failWith "never mind"
+        let statListBound = length statSlots - 1
+            displayOneStat slotIndex = do
+              let slot = allSlots !! slotIndex
+                  eqpSlot = statSlots !! fromJust (elemIndex slot allSlots)
+                  valueText = slotToDecorator eqpSlot b $ prEqpSlot eqpSlot ar
+                  prompt2 = makeSentence
+                    [ MU.WownW (partActor bUI) (MU.Text $ slotToName eqpSlot)
+                    , "is", MU.Text valueText ]
+                  ov0 = indentSplitAttrLine lxsize $ textToAL
+                        $ slotToDesc eqpSlot
+                  keys = [K.spaceKM, K.escKM]
+                         ++ [K.upKM | slotIndex /= 0]
+                         ++ [K.downKM | slotIndex /= statListBound]
+              promptAdd prompt2
+              slides <- overlayToSlideshow (lysize + 1) keys (ov0, [])
+              km <- getConfirms ColorFull keys slides
+              case K.key km of
+                K.Space -> chooseItemDialogMode MStats
+                K.Up -> displayOneStat $ slotIndex - 1
+                K.Down -> displayOneStat $ slotIndex + 1
+                K.Esc -> failWith "never mind"
+                _ -> error $ "" `showFailure` km
+            slotIndex0 = case elemIndex slot0 allSlots of
+              Just ix -> ix
+              Nothing -> error "displayOneStat: illegal slot"
+        displayOneStat slotIndex0
       Left _ -> failWith "never mind"
     (Left err, _) -> failWith err
 
@@ -601,16 +617,16 @@ historyHuman = do
           Right SlotChar{..} | slotChar == 'a' ->
             displayOneReport slotPrefix
           _ -> error $ "" `showFailure` ekm
+      histBound = lengthHistory history - 1
       displayOneReport :: Int -> m ()
       displayOneReport histSlot = do
         let timeReport = case drop histSlot rh of
               [] -> error $ "" `showFailure` histSlot
               tR : _ -> tR
-            ov0 = splitReportForHistory lxsize timeReport
+            ov0 = indentSplitAttrLine lxsize timeReport
             prompt = makeSentence
               [ "the", MU.Ordinal $ histSlot + 1
               , "record of all history follows" ]
-            histBound = lengthHistory history - 1
             keys = [K.spaceKM, K.escKM] ++ [K.upKM | histSlot /= 0]
                                         ++ [K.downKM | histSlot /= histBound]
         promptAdd prompt

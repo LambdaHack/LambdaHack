@@ -10,8 +10,7 @@ module Game.LambdaHack.Client.UI.Msg
   , renderReport, findInReport, incrementInReport, lastMsgOfReport
     -- * History
   , History, emptyHistory, addReport, lengthHistory
-  , lastReportOfHistory, replaceLastReportOfHistory
-  , splitReportForHistory, renderHistory
+  , lastReportOfHistory, replaceLastReportOfHistory, renderHistory
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , UAttrLine, uToAttrLine, attrLineToU
@@ -31,7 +30,6 @@ import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Client.UI.Overlay
 import qualified Game.LambdaHack.Common.Color as Color
-import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.RingBuffer as RB
 import           Game.LambdaHack.Common.Time
 
@@ -173,13 +171,6 @@ lastReportOfHistory (History _ r _) = r
 
 replaceLastReportOfHistory :: Report -> History -> History
 replaceLastReportOfHistory rep (History t _r rb) = History t rep rb
-
-splitReportForHistory :: X -> AttrLine -> [AttrLine]
-splitReportForHistory w l =
-  let ts = splitAttrLine (w - 1) l
-  in case ts of
-    [] -> []
-    hd : tl -> hd : map ([Color.spaceAttrW32] ++) tl
 
 -- | Render history as many lines of text, wrapping if necessary.
 renderHistory :: History -> [AttrLine]

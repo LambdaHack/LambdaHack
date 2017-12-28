@@ -485,8 +485,7 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   Level{lysize} <- getLevel lidV
   ekm <- do
     okxs <- overlayToSlideshow (lysize + 1) keys okx
-    okm <- displayChoiceScreen (show cCur) ColorFull False okxs itemKeys
-    return okm
+    displayChoiceScreen (show cCur) ColorFull False okxs itemKeys
   case ekm of
     Left km -> case km `lookup` keyDefs of
       Just keyDef -> defAction keyDef ekm

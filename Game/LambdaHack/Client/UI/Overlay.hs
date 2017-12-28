@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.Overlay
     AttrLine, emptyAttrLine, textToAL, fgToAL, stringToAL, (<+:>)
     -- * Overlay
   , Overlay, IntOverlay
-  , splitAttrLine, glueLines, updateLines
+  , splitAttrLine, indentSplitAttrLine, glueLines, updateLines
     -- * Misc
   , ColorMode(..)
 #ifdef EXPOSE_INTERNAL
@@ -73,6 +73,13 @@ splitAttrLine :: X -> AttrLine -> Overlay
 splitAttrLine w l =
   concatMap (splitAttrPhrase w . dropWhile (== Color.spaceAttrW32))
   $ linesAttr l
+
+indentSplitAttrLine :: X -> AttrLine -> [AttrLine]
+indentSplitAttrLine w l =
+  let ts = splitAttrLine (w - 1) l
+  in case ts of
+    [] -> []
+    hd : tl -> hd : map ([Color.spaceAttrW32] ++) tl
 
 linesAttr :: AttrLine -> Overlay
 linesAttr l | null l = []
