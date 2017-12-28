@@ -280,26 +280,25 @@ pickNumber askNumber kAll = assert (kAll >= 1) $ do
   let shownKeys = [ K.returnKM, K.mkChar '+', K.mkChar '-'
                   , K.spaceKM, K.escKM ]
       frontKeyKeys = K.backspaceKM : shownKeys ++ map K.mkChar ['0'..'9']
-      gatherNumber pointer kCur = assert (1 <= kCur && kCur <= kAll) $ do
+      gatherNumber kCur = assert (1 <= kCur && kCur <= kAll) $ do
         let kprompt = "Choose number:" <+> tshow kCur
         promptAdd kprompt
         sli <- reportToSlideshow shownKeys
-        (ekkm, pointer2) <-
-          displayChoiceScreen ColorFull False pointer sli frontKeyKeys
+        ekkm <- displayChoiceScreen "number choice" ColorFull False
+                                    sli frontKeyKeys
         case ekkm of
           Left kkm ->
             case K.key kkm of
               K.Char '+' ->
-                gatherNumber pointer2 $ if kCur + 1 > kAll then 1 else kCur + 1
+                gatherNumber $ if kCur + 1 > kAll then 1 else kCur + 1
               K.Char '-' ->
-                gatherNumber pointer2 $ if kCur - 1 < 1 then kAll else kCur - 1
+                gatherNumber $ if kCur - 1 < 1 then kAll else kCur - 1
               K.Char l | kCur * 10 + Char.digitToInt l > kAll ->
-                gatherNumber pointer2
-                $ if Char.digitToInt l == 0
-                  then kAll
-                  else min kAll (Char.digitToInt l)
-              K.Char l -> gatherNumber pointer2 $ kCur * 10 + Char.digitToInt l
-              K.BackSpace -> gatherNumber pointer2 $ max 1 (kCur `div` 10)
+                gatherNumber $ if Char.digitToInt l == 0
+                               then kAll
+                               else min kAll (Char.digitToInt l)
+              K.Char l -> gatherNumber $ kCur * 10 + Char.digitToInt l
+              K.BackSpace -> gatherNumber $ max 1 (kCur `div` 10)
               K.Return -> return $ Right kCur
               K.Esc -> weaveJust <$> failWith "never mind"
               K.Space -> return $ Left Nothing
@@ -307,7 +306,7 @@ pickNumber askNumber kAll = assert (kAll >= 1) $ do
           Right sc -> error $ "unexpected slot char" `showFailure` sc
   if | kAll == 1 || not askNumber -> return $ Right kAll
      | otherwise -> do
-         res <- gatherNumber 0 kAll
+         res <- gatherNumber kAll
          case res of
            Right k | k <= 0 -> error $ "" `showFailure` (res, kAll)
            _ -> return res

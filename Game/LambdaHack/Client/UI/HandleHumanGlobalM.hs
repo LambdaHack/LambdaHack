@@ -968,18 +968,12 @@ helpHuman cmdAction = do
   lidV <- viewedLevelUI
   Level{lxsize, lysize} <- getLevel lidV
   keyb <- getsSession sbinding
-  menuIxMap <- getsSession smenuIxMap
-  let menuName = "help"
-      menuIx = fromMaybe 0 (M.lookup menuName menuIxMap)
-      keyH = keyHelp cops keyb 1
+  let keyH = keyHelp cops keyb 1
       splitHelp (t, okx) =
         splitOKX lxsize (lysize + 3) (textToAL t) [K.spaceKM, K.escKM] okx
       sli = toSlideshow $ concat $ map splitHelp keyH
-  (ekm, pointer) <-
-    displayChoiceScreen ColorFull True menuIx sli [K.spaceKM, K.escKM]
-  modifySession $ \sess ->
-    sess { smenuIxMap = M.insert menuName pointer menuIxMap
-         , skeysHintMode = KeysHintBlocked }
+  ekm <- displayChoiceScreen "help" ColorFull True sli [K.spaceKM, K.escKM]
+  modifySession $ \sess -> sess {skeysHintMode = KeysHintBlocked}
   case ekm of
     Left km -> case km `M.lookup` bcmdMap keyb of
       _ | km == K.escKM -> return $ Left Nothing
@@ -1059,10 +1053,10 @@ itemMenuHuman cmdAction = do
                 splitOKX lxsize (lysize + 1) al [K.spaceKM, K.escKM] okx
               sli = toSlideshow
                     $ splitHelp (al1, (ovFound ++ ov0, kxsFound ++ kxs0))
-              ix = 2 + length foundKeys
               extraKeys = [K.spaceKM, K.escKM] ++ foundKeys
           recordHistory  -- report shown, remove it to history
-          (ekm, _) <- displayChoiceScreen ColorFull False ix sli extraKeys
+          ekm <- displayChoiceScreen "item menu" ColorFull False
+                                     sli extraKeys
           case ekm of
             Left km -> case km `M.lookup` bcmdMap keyb of
               _ | km == K.escKM -> weaveJust <$> failWith "never mind"
@@ -1178,12 +1172,8 @@ generateMenu cmdAction kds gameInfo menuName = do
       (menuOvLines, mkyxs) = unzip menuOverwritten
       kyxs = catMaybes mkyxs
       ov = map stringToAL menuOvLines
-  menuIxMap <- getsSession smenuIxMap
-  let menuIx = fromMaybe 0 (M.lookup menuName menuIxMap)
-  (ekm, pointer) <- displayChoiceScreen ColorFull True menuIx
-                                        (menuToSlideshow (ov, kyxs)) [K.escKM]
-  modifySession $ \sess ->
-    sess {smenuIxMap = M.insert menuName pointer menuIxMap}
+  ekm <- displayChoiceScreen menuName ColorFull True
+                                      (menuToSlideshow (ov, kyxs)) [K.escKM]
   case ekm of
     Left km -> case km `lookup` kds of
       Just (_desc, cmd) -> cmdAction cmd

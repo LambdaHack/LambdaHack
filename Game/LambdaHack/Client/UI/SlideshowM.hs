@@ -7,7 +7,9 @@ module Game.LambdaHack.Client.UI.SlideshowM
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import           Data.Either
+import qualified Data.Map.Strict as M
+import           Game.LambdaHack.Common.Prelude
 
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.ItemSlot
@@ -86,7 +88,7 @@ displayYesNo dm prompt = do
 getConfirms :: MonadClientUI m
             => ColorMode -> [K.KM] -> Slideshow -> m K.KM
 getConfirms dm extraKeys slides = do
-  (ekm, _) <- displayChoiceScreen dm False 0 slides extraKeys
+  ekm <- displayChoiceScreen "" dm False slides extraKeys
   return $! either id (error $ "" `showFailure` ekm) ekm
 
 -- | Display a, potentially, multi-screen menu and return the chosen
@@ -95,9 +97,9 @@ getConfirms dm extraKeys slides = do
 --
 -- This function is the only source of menus and so, effectively, UI modes.
 displayChoiceScreen :: forall m . MonadClientUI m
-                    => ColorMode -> Bool -> Int -> Slideshow -> [K.KM]
-                    -> m (Either K.KM SlotChar, Int)
-displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
+                    => String -> ColorMode -> Bool -> Slideshow -> [K.KM]
+                    -> m (Either K.KM SlotChar)
+displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
   let frs = slideshow frsX
       keys = concatMap (concatMap (either id (const []) . fst) . snd) frs
              ++ extraKeys
@@ -200,7 +202,17 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                   _ -> error $ "unknown key" `showFailure` ikm
           pkm <- promptGetKey dm ov1 sfBlank legalKeys
           interpretKey pkm
+  menuIxMap <- getsSession smenuIxMap
+  let allOKX = concatMap snd $ slideshow frsX
+      initIx = case findIndex (isRight . fst) allOKX of
+        Just p -> p
+        _ -> 0
+      menuIx | menuName == "" = initIx
+             | otherwise =  fromMaybe initIx (M.lookup menuName menuIxMap)
   (km, pointer) <- if null frs
-                   then return (Left K.escKM, pointer0)
-                   else page pointer0
-  assert (either (`elem` keys) (const True) km) $ return (km, pointer)
+                   then return (Left K.escKM, menuIx)
+                   else page menuIx
+  unless (menuName == "") $
+    modifySession $ \sess ->
+      sess {smenuIxMap = M.insert menuName pointer menuIxMap}
+  assert (either (`elem` keys) (const True) km) $ return km

@@ -433,12 +433,12 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                       Right sl -> sl
                 in return (Left "stats", (MStats, Right slot))
             }
-      runDefItemKey keyDefs statsDef io slotKeys promptChosen
+      runDefItemKey keyDefs statsDef io slotKeys promptChosen cCur
     _ -> do
       io <- itemOverlay lSlots (blid body) bagFiltered
       let slotKeys = mapMaybe (keyOfEKM numPrefix . Right)
                      $ EM.keys bagItemSlots
-      runDefItemKey keyDefs lettersDef io slotKeys promptChosen
+      runDefItemKey keyDefs lettersDef io slotKeys promptChosen cCur
 
 keyOfEKM :: Int -> Either [K.KM] SlotChar -> Maybe K.KM
 keyOfEKM _ (Left kms) = error $ "" `showFailure` kms
@@ -471,9 +471,10 @@ runDefItemKey :: MonadClientUI m
               -> OKX
               -> [K.KM]
               -> Text
+              -> ItemDialogMode
               -> m ( Either Text [(ItemId, ItemFull)]
                    , (ItemDialogMode, Either K.KM SlotChar) )
-runDefItemKey keyDefs lettersDef okx slotKeys prompt = do
+runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   let itemKeys = slotKeys ++ map fst keyDefs
       wrapB s = "[" <> s <> "]"
       (keyLabelsRaw, keys) = partitionEithers $ map (defLabel . snd) keyDefs
@@ -484,7 +485,7 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt = do
   Level{lysize} <- getLevel lidV
   ekm <- do
     okxs <- overlayToSlideshow (lysize + 1) keys okx
-    (okm, _pointer2) <- displayChoiceScreen ColorFull False 0 okxs itemKeys
+    okm <- displayChoiceScreen (show cCur) ColorFull False okxs itemKeys
     return okm
   case ekm of
     Left km -> case km `lookup` keyDefs of
