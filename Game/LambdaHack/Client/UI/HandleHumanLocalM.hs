@@ -165,7 +165,9 @@ chooseItemDialogMode c = do
   lidV <- viewedLevelUI
   Level{lxsize, lysize} <- getLevel lidV
   case ggi of
-    (Right ((iid, itemFull), _itemBag, _lSlots), (c2, _)) -> do
+    (Right (iid, itemBag, _lSlots), (c2, _)) -> do
+      itemToF <- getsState itemToFull
+      let itemFull = itemToF iid (itemBag EM.! iid)
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       bUI <- getsSession $ getActorUI leader
