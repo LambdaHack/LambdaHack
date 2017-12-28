@@ -196,7 +196,7 @@ pillarCache = TileKind
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 5
-  , tfeature = [ Embed "terrain cache", Embed "terrain cache trap"
+  , tfeature = [ Embed "treasure cache", Embed "treasure cache trap"
                , ChangeTo "cachable", ConsideredByAI, Indistinct ]
       -- Not explorable, but prominently placed, so hard to miss.
       -- Very beneficial, so AI eager to trigger.
