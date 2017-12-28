@@ -1022,7 +1022,7 @@ itemMenuHuman cmdAction = do
               foundPrefix = textToAL $
                 if null foundTexts then "" else "The item is also in:"
               itemFull = itemToF iid kit
-              desc = itemDesc (bfid b) factionD (aHurtMelee ar)
+              desc = itemDesc False (bfid b) factionD (aHurtMelee ar)
                               fromCStore localTime itemFull
               alPrefix = splitAttrLine lxsize $ desc <+:> foundPrefix
               ystart = length alPrefix - 1

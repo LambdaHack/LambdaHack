@@ -245,9 +245,10 @@ viewItem :: Item -> Color.AttrCharW32
 viewItem item =
   Color.attrChar2ToW32 (flavourToColor $ jflavour item) (jsymbol item)
 
-itemDesc :: FactionId -> FactionDict -> Int -> CStore -> Time -> ItemFull
+itemDesc :: Bool -> FactionId -> FactionDict -> Int -> CStore -> Time
+         -> ItemFull
          -> AttrLine
-itemDesc side factionD aHurtMeleeOfOwner store localTime
+itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
          itemFull@ItemFull{itemBase} =
   let (_, unique, name, stats) = partItemHigh side factionD localTime itemFull
       nstats = makePhrase [name, stats]
@@ -332,7 +333,9 @@ itemDesc side factionD aHurtMeleeOfOwner store localTime
         " "
         <> nstats
         <> ":"
+        <> (if markParagraphs then "\n\n" else "")
         <+> desc
+        <> (if markParagraphs && not (T.null desc) then "\n\n" else "")
         <+> (if weight > 0
              then makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
              else "")

@@ -179,7 +179,7 @@ chooseItemDialogMode c = do
             localTime <- getsState $ getLocalTime (blid b)
             factionD <- getsState sfactionD
             ar <- getsState $ getActorAspect leader
-            let attrLine = itemDesc (bfid b) factionD (aHurtMelee ar)
+            let attrLine = itemDesc True (bfid b) factionD (aHurtMelee ar)
                                     CGround localTime itemFull2
                 ov = splitAttrLine lxsize attrLine
                 keys = [K.spaceKM, K.escKM]

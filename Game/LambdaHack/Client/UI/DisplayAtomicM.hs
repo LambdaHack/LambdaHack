@@ -787,7 +787,7 @@ quitFactionUI fid toSt = do
                   Just kit@(k, _) -> do
                     factionD <- getsState sfactionD
                     let itemFull = itemToF iid kit
-                        attrLine = itemDesc side factionD 0
+                        attrLine = itemDesc True side factionD 0
                                             CGround localTime itemFull
                         ov = splitAttrLine lxsize attrLine
                         worth = itemPrice (itemBase itemFull, 1)
