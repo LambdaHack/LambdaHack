@@ -165,19 +165,21 @@ chooseItemDialogMode c = do
   lidV <- viewedLevelUI
   Level{lxsize, lysize} <- getLevel lidV
   case ggi of
-    (Right (iid, itemBag, _lSlots), (c2, _)) -> do
-      itemToF <- getsState itemToFull
-      let itemFull = itemToF iid (itemBag EM.! iid)
+    (Right (iid, itemBag, lSlots), (c2, _)) -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       bUI <- getsSession $ getActorUI leader
-      let displayLore prompt2 = do
-            promptAdd prompt2
+      itemToF <- getsState itemToFull
+      let lSlotsElems = EM.elems lSlots
+          displayLore ix2 promptFun = do
+            let iid2 = lSlotsElems !! ix2
+                itemFull2 = itemToF iid2 (itemBag EM.! iid2)
+            promptAdd $ promptFun itemFull2
             localTime <- getsState $ getLocalTime (blid b)
             factionD <- getsState sfactionD
             ar <- getsState $ getActorAspect leader
             let attrLine = itemDesc (bfid b) factionD (aHurtMelee ar)
-                                    CGround localTime itemFull
+                                    CGround localTime itemFull2
                 ov = splitAttrLine lxsize attrLine
             slides <-
               overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] (ov, [])
@@ -185,16 +187,18 @@ chooseItemDialogMode c = do
             if km == K.spaceKM
             then chooseItemDialogMode c2
             else failWith "never mind"
+          ix0 = fromJust $ findIndex (== iid) lSlotsElems
       case c2 of
         MStore fromCStore -> do
           modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
           return $ Right c2
         MOrgans -> do
-          let blurb | isTmpCondition (itemBase itemFull) = "temporary condition"
-                    | otherwise = "organ"
-              prompt2 = makeSentence [ partActor bUI, "can't choose"
-                                     , MU.AW blurb ]
-          displayLore prompt2
+          let blurb itemFull
+                | isTmpCondition (itemBase itemFull) = "temporary condition"
+                | otherwise = "organ"
+              prompt2 itemFull = makeSentence [ partActor bUI, "can't choose"
+                                              , MU.AW $ blurb itemFull ]
+          displayLore ix0 prompt2
         MOwned -> do
           found <- getsState $ findIid leader (bfid b) iid
           let (newAid, bestStore) = case leader `lookup` found of
@@ -215,7 +219,7 @@ chooseItemDialogMode c = do
                void $ pickLeader True newAid
                return $ Right c2
         MStats -> error $ "" `showFailure` ggi
-        MLore slore -> displayLore
+        MLore slore -> displayLore ix0 $ \_ ->
           (makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
                         , MU.Text (ppSLore slore), "lore" ])
     (Left err, (MStats, ekm)) -> case ekm of
