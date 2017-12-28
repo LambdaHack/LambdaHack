@@ -89,9 +89,10 @@ truncateAttrLine w xs lenMax =
              then take w xs
              else take (w - 1) xs ++ [Color.attrChar2ToW32 Color.BrBlack '$']
     EQ -> xs
-    GT -> let xsSpace = if null xs || last xs == Color.spaceAttrW32
-                        then xs
-                        else xs ++ [Color.spaceAttrW32]
+    GT -> let xsSpace =
+                if | null xs -> xs
+                   | last xs == Color.spaceAttrW32 -> xs ++ [Color.spaceAttrW32]
+                   | otherwise -> xs ++ [Color.spaceAttrW32, Color.spaceAttrW32]
               whiteN = max (40 - length xsSpace) (1 + lenMax - length xsSpace)
           in xsSpace ++ replicate whiteN Color.spaceAttrW32
 
