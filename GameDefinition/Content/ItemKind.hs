@@ -1012,7 +1012,7 @@ armorLeather = ItemKind
   , idamage  = toDmg 0
   , iaspects = [ AddHurtMelee (-2)
                , AddArmorMelee $ (1 + 1 `dL` 4) * 5
-               , AddArmorRanged $ (1 `dL` 2) * 6 ]
+               , AddArmorRanged $ (1 + 1 `dL` 2) * 3 ]
   , ieffects = [EqpSlot EqpSlotAddArmorMelee]
   , ifeature = [Durable, Identified, Equipable]
   , idesc    = "A stiff jacket formed from leather boiled in bee wax, padded linen and horse hair. Protects from anything that is not too sharp. Smells much better than the rest of your garment."
@@ -1043,7 +1043,7 @@ gloveFencing = ItemKind
   , iweight  = 100
   , idamage  = toDmg $ 1 `d` 1
   , iaspects = [ AddHurtMelee $ (2 + 1 `d` 2 + 1 `dL` 4) * 3
-               , AddArmorRanged $ (1 `dL` 2) * 3 ]
+               , AddArmorRanged $ (1 + 1 `dL` 2) * 3 ]
   , ieffects = [EqpSlot EqpSlotAddHurtMelee]
   , ifeature = [ toVelocity 50  -- flaps and flutters
                , Durable, Identified, Equipable ]
@@ -1057,8 +1057,7 @@ gloveGauntlet = gloveFencing
   , irarity  = [(1, 9), (10, 3)]
   , iweight  = 300
   , idamage  = toDmg $ 2 `d` 1
-  , iaspects = [ AddArmorMelee $ (2 + 1 `dL` 2) * 5
-               , AddArmorRanged $ (1 `dL` 1) * 3 ]
+  , iaspects = [AddArmorMelee $ (2 + 1 `dL` 2) * 5]
   , ieffects = [EqpSlot EqpSlotAddArmorMelee]
   , idesc    = "Long leather gauntlet covered in overlapping steel plates."
   }
@@ -1071,7 +1070,7 @@ gloveJousting = gloveFencing
   , idamage  = toDmg $ 3 `d` 1
   , iaspects = [ AddHurtMelee $ (-6 + 1 `dL` 5) * 3
                , AddArmorMelee $ (2 + 1 `d` 2 + 1 `dL` 2) * 5
-               , AddArmorRanged $ (1 `dL` 2) * 3 ]
+               , AddArmorRanged $ (1 + 1 `dL` 2) * 3 ]
                  -- very random on purpose and can even be good on occasion
   , ieffects = [Unique, EqpSlot EqpSlotAddArmorMelee]
   , idesc    = "Rigid, steel, jousting handgear. If only you had a lance. And a horse."
