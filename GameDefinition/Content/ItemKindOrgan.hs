@@ -148,7 +148,7 @@ arsenicFissure = boilingFissure
   , ifreq    = [("arsenic fissure", 100)]
   , icount   = 3 + 1 `d` 3
   , idamage  = toDmg $ 2 `d` 1
-  , ieffects = [toOrganGameTurn "weakened" (2 + 1 `d` 2)]
+  , ieffects = [toOrganGameTurn "weakened" (2 + 1 `dl` 3)]
   , idesc    = ""
   }
 sulfurFissure = boilingFissure
@@ -433,7 +433,7 @@ lip = fist
   , iverbHit = "lap"
   , idamage  = toDmg $ 1 `d` 1
   , iaspects = [Timeout $ 3 + 1 `d` 2]
-  , ieffects = [Recharging (toOrganGameTurn "weakened" (2 + 1 `d` 2))]
+  , ieffects = [Recharging (toOrganGameTurn "weakened" (2 + 1 `dl` 3))]
   , idesc    = ""
   }
 torsionRight = fist

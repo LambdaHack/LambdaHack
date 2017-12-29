@@ -174,7 +174,8 @@ staircaseTrapUp = ItemKind
   , iweight  = 10000
   , idamage  = toDmg 0
   , iaspects = []
-  , ieffects = [Temporary "be caught in an updraft", Teleport 5]
+  , ieffects = [ Temporary "be caught in an updraft"
+               , Teleport $ 3 + 1 `dl` 10 ]
   , ifeature = [Identified]  -- not Durable, springs at most once
   , idesc    = "A hidden spring, to help the unwary soar."
   , ikit     = []
@@ -200,9 +201,9 @@ doorwayTrap = ItemKind
   , iweight  = 10000
   , idamage  = toDmg 0
   , iaspects = []
-  , ieffects = [OneOf [ toOrganActorTurn "blind" (20 + 1 `d` 5)
-                      , toOrganActorTurn "slowed" (20 + 1 `d` 5)
-                      , toOrganActorTurn "weakened" (20 + 1 `d` 5) ]]
+  , ieffects = [OneOf [ toOrganActorTurn "blind" $ (2 + 1 `dl` 3) * 10
+                      , toOrganActorTurn "slowed" $ (2 + 1 `dl` 3) * 10
+                      , toOrganActorTurn "weakened" $ (2 + 1 `dl` 3) * 10 ]]
   , ifeature = [Identified]  -- not Durable, springs at most once
   , idesc    = "Just turn the handle..."
   , ikit     = []
@@ -274,7 +275,7 @@ pulpit = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [ CreateItem CGround "any scroll" TimerNone
-               , toOrganGameTurn "defenseless" (20 + 1 `d` 5)
+               , toOrganGameTurn "defenseless" $ (2 + 1 `dl` 3) * 10
                , Explode "PhD defense question" ]
   , ifeature = [Identified]  -- not Durable, springs at most once
   , idesc    = "A dark wood stand, where strange priests once preached."
