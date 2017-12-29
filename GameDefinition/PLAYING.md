@@ -54,11 +54,12 @@ Instead of a monster, the target area may describe a position on the map,
 a recently spotted item on the floor or an item in inventory selected
 for further action or, if none are available, just display the current
 leader name. Weapon damage and other item stats are displayed using
-the dice notation `XdY`, which means `X` rolls of `Y`-sided dice.
-A variant denoted `XdlY` is additionally scaled by the level depth
-in proportion to the maximal level depth. Section [Monsters](#monsters)
-below describes combat resolution in detail, including the percentage
-bonus seen in the example.
+the dice notation `xdy`, which means `x` rolls of `y`-sided dice.
+A variant denoted `xdLy` is additionally scaled by the level depth
+in proportion to the maximal level depth (at the first level it's
+always zero, then it grows up to full rolled value at the last level).
+Section [Monsters](#monsters) below describes combat resolution in detail,
+including the percentage bonus seen in the example.
 
 The second, upper status line describes the current level in relation
 to the party.
