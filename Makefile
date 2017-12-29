@@ -2,7 +2,7 @@ play:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --dumpInitRngs
 
 expose-lore:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --dumpInitRngs --newGame 2 --gameMode crawl --knowMap --knowEvents --knowItems  --benchmark  --noAnim --maxFps 1000
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --dumpInitRngs --newGame 2 --gameMode crawl --knowMap --knowEvents --knowItems --benchmark --noAnim --maxFps 1000
 
 configure-debug:
 	cabal configure --enable-profiling --profiling-detail=all-functions -fwith_expensive_assertions --disable-optimization
