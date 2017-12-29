@@ -1042,7 +1042,7 @@ gloveFencing = ItemKind
   , iverbHit = "flap"
   , iweight  = 100
   , idamage  = toDmg $ 1 `d` 1
-  , iaspects = [ AddHurtMelee $ (2 + 1 `d` 2 + 1 `dL` 4) * 3
+  , iaspects = [ AddHurtMelee $ (3 + 1 `d` 2 + 1 `dL` 2) * 3
                , AddArmorRanged $ (1 + 1 `dL` 2) * 3 ]
   , ieffects = [EqpSlot EqpSlotAddHurtMelee]
   , ifeature = [ toVelocity 50  -- flaps and flutters
