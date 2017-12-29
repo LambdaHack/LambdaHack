@@ -60,7 +60,7 @@ hookedClaw = fist
   , icount   = 2  -- even if more, only the fore claws used for fighting
   , iverbHit = "hook"
   , idamage  = toDmg $ 2 `d` 1
-  , iaspects = [Timeout $ 8 - 1 `dl` 3]
+  , iaspects = [Timeout $ 8 - 1 `dL` 3]
   , ieffects = [Recharging (toOrganGameTurn "slowed" 2)]
   , idesc    = "A curved talon."
   }
@@ -148,7 +148,7 @@ arsenicFissure = boilingFissure
   , ifreq    = [("arsenic fissure", 100)]
   , icount   = 3 + 1 `d` 3
   , idamage  = toDmg $ 2 `d` 1
-  , ieffects = [toOrganGameTurn "weakened" (2 + 1 `dl` 3)]
+  , ieffects = [toOrganGameTurn "weakened" (2 + 1 `dL` 3)]
   , idesc    = ""
   }
 sulfurFissure = boilingFissure
@@ -176,7 +176,7 @@ sting = fist
   , icount   = 1
   , iverbHit = "sting"
   , idamage  = toDmg $ 1 `d` 1
-  , iaspects = [Timeout $ 8 - 1 `dl` 3, AddHurtMelee 40]
+  , iaspects = [Timeout $ 8 - 1 `dL` 3, AddHurtMelee 40]
   , ieffects = [Recharging (Paralyze 4)]
   , idesc    = "Painful, debilitating and harmful."
   }
@@ -186,7 +186,7 @@ venomTooth = fist
   , icount   = 2
   , iverbHit = "bite"
   , idamage  = toDmg $ 2 `d` 1
-  , iaspects = [Timeout $ 6 - 1 `dl` 3]
+  , iaspects = [Timeout $ 6 - 1 `dL` 3]
   , ieffects = [Recharging (toOrganGameTurn "slowed" (3 + 1 `d` 3))]
   , idesc    = "A chilling numbness spreads from its bite."
   }
@@ -196,7 +196,7 @@ venomFang = fist
   , icount   = 2
   , iverbHit = "bite"
   , idamage  = toDmg $ 2 `d` 1
-  , iaspects = [Timeout $ 8 - 1 `dl` 3]
+  , iaspects = [Timeout $ 8 - 1 `dL` 3]
   , ieffects = [Recharging (toOrganNone "poisoned")]
   , idesc    = "Dripping with deadly venom."
   }
@@ -206,8 +206,8 @@ screechingBeak = fist
   , icount   = 1
   , iverbHit = "peck"
   , idamage  = toDmg $ 2 `d` 1
-  , iaspects = [Timeout $ 6 - 1 `dl` 3]
-  , ieffects = [Recharging $ Summon "scavenger" $ 1 + 1 `dl` 2]
+  , iaspects = [Timeout $ 6 - 1 `dL` 3]
+  , ieffects = [Recharging $ Summon "scavenger" $ 1 + 1 `dL` 2]
   , idesc    = "Both a weapon and a beacon, calling more scavengers to the meal."
   }
 largeTail = fist
@@ -433,7 +433,7 @@ lip = fist
   , iverbHit = "lap"
   , idamage  = toDmg $ 1 `d` 1
   , iaspects = [Timeout $ 3 + 1 `d` 2]
-  , ieffects = [Recharging (toOrganGameTurn "weakened" (2 + 1 `dl` 3))]
+  , ieffects = [Recharging (toOrganGameTurn "weakened" (2 + 1 `dL` 3))]
   , idesc    = ""
   }
 torsionRight = fist

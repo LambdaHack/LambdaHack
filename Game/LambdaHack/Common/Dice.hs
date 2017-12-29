@@ -3,7 +3,7 @@
 -- | Representation of dice scaled with current level depth.
 module Game.LambdaHack.Common.Dice
   ( -- * Frequency distribution for casting dice scaled with level depth
-    Dice, castDice, d, dl, z, zl, intToDice
+    Dice, castDice, d, dL, z, zL, intToDice
   , minmaxDice, maxDice, minDice, meanDice, reduceDice
     -- * Dice for rolling a pair of integer parameters representing coordinates.
   , DiceXY(..), maxDiceXY, minDiceXY, meanDiceXY
@@ -43,9 +43,9 @@ instance Show Dice where
   show dice1 = case dice1 of
     DiceI k -> show k
     DiceD n k -> show n ++ "d" ++ show k
-    DiceDL n k -> show n ++ "dl" ++ show k
+    DiceDL n k -> show n ++ "dL" ++ show k
     DiceZ n k -> show n ++ "z" ++ show k
-    DiceZL n k -> show n ++ "zl" ++ show k
+    DiceZL n k -> show n ++ "zL" ++ show k
     DicePlus d1 (DiceNegate d2) | simpleDice d2 -> show d1 ++ "-" ++ show d2
     DicePlus d1 (DiceNegate d2) -> show d1 ++ "-" ++ "(" ++ show d2 ++ ")"
     DicePlus d1 d2 -> show d1 ++ "+" ++ show d2
@@ -131,8 +131,8 @@ d n k = assert (n > 0 && k > 0 `blame` "die must be positive" `swith` (n, k))
 
 -- | A die rolled the given number of times, with the result scaled
 -- with dungeon level depth.
-dl :: Int -> Int -> Dice
-dl n k = assert (n > 0 && k > 0 `blame` "die must be positive" `swith` (n, k))
+dL :: Int -> Int -> Dice
+dL n k = assert (n > 0 && k > 0 `blame` "die must be positive" `swith` (n, k))
          $ DiceDL n k
 
 -- | A die, starting from zero, ending at one less than the bound,
@@ -144,8 +144,8 @@ z n k = assert (n > 0 && k > 0 `blame` "die must be positive" `swith` (n, k))
 -- | A die, starting from zero, ending at one less than the bound,
 -- rolled the given number of times,
 -- with the result scaled with dungeon level depth.
-zl :: Int -> Int -> Dice
-zl n k = assert (n > 0 && k > 0 `blame` "die must be positive" `swith` (n, k))
+zL :: Int -> Int -> Dice
+zL n k = assert (n > 0 && k > 0 `blame` "die must be positive" `swith` (n, k))
          $ DiceZL n k
 
 intToDice :: Int -> Dice
