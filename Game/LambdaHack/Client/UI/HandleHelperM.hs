@@ -330,12 +330,10 @@ lookAtTile canSee p aid lidV = do
           | not aims = "you are aware of"
           | otherwise = "you see"
       tilePart = MU.AW $ MU.Text $ TK.tname $ okind tile
-      desc = case embeds of
-        iid : rest | all (== iid) rest ->
-          case itemDisco $ itemToF iid (1, []) of
-            Nothing -> ""
-            Just ItemDisco{itemKind} -> IK.idesc itemKind
-        _ -> ""  -- displaying many would require some glue or convention
+      fdesc iid = case itemDisco $ itemToF iid (1, []) of
+         Nothing -> ""
+         Just ItemDisco{itemKind} -> IK.idesc itemKind
+      desc = T.intercalate " " $ filter (/= "") $ map fdesc embeds
       pdesc = if desc == "" then "" else "(" <> desc <> ")"
   return $! makeSentence [MU.Text vis, tilePart] <+> pdesc
 
