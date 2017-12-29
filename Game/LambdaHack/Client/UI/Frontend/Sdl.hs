@@ -43,16 +43,16 @@ type FontAtlas = EM.EnumMap Color.AttrCharW32 SDL.Texture
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { swindow           :: SDL.Window
-  , srenderer         :: SDL.Renderer
-  , sfont             :: TTF.Font
-  , satlas            :: IORef FontAtlas
-  , stexture          :: IORef SDL.Texture
-  , spreviousFrame    :: IORef SingleFrame
-  , sforcedShutdown   :: IORef Bool
-  , scontinueSdlLoop  :: IORef Bool
-  , sframeQueue       :: MVar SingleFrame
-  , sframeDrawn       :: MVar ()
+  { swindow          :: SDL.Window
+  , srenderer        :: SDL.Renderer
+  , sfont            :: TTF.Font
+  , satlas           :: IORef FontAtlas
+  , stexture         :: IORef SDL.Texture
+  , spreviousFrame   :: IORef SingleFrame
+  , sforcedShutdown  :: IORef Bool
+  , scontinueSdlLoop :: IORef Bool
+  , sframeQueue      :: MVar SingleFrame
+  , sframeDrawn      :: MVar ()
   }
 
 -- | The name of the frontend.
@@ -97,7 +97,9 @@ startupFun soptions@ClientOptions{..} rfMVar = do
                         (toEnum $ ysize * boxSize)
       windowConfig = SDL.defaultWindow {SDL.windowInitialSize = screenV2}
       rendererConfig = SDL.RendererConfig
-        { rendererType          = SDL.AcceleratedVSyncRenderer
+        { rendererType          = if sbenchmark
+                                  then SDL.AcceleratedRenderer
+                                  else SDL.AcceleratedVSyncRenderer
         , rendererTargetTexture = True
         }
   swindow <- SDL.createWindow title windowConfig
