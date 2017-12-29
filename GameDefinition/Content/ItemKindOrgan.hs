@@ -207,7 +207,7 @@ screechingBeak = fist
   , iverbHit = "peck"
   , idamage  = toDmg $ 2 `d` 1
   , iaspects = [Timeout $ 6 - 1 `dL` 3]
-  , ieffects = [Recharging $ Summon "scavenger" $ 1 + 1 `dL` 2]
+  , ieffects = [Recharging $ Summon "scavenger" 1]
   , idesc    = "Both a weapon and a beacon, calling more scavengers to the meal."
   }
 largeTail = fist

@@ -824,7 +824,7 @@ necklace2 = necklace
   { ifreq    = [("treasure", 100)]  -- just too nasty to call it useful
   , irarity  = [(1, 1)]
   , iaspects = [Timeout 30]
-  , ieffects = [ Recharging (Summon "mobile animal" $ 1 `dL` 3)
+  , ieffects = [ Recharging (Summon "mobile animal" 2)
                , Recharging (Explode "waste")
                , Recharging Impress
                , Recharging (DropItem 1 maxBound COrgan "temporary condition") ]
