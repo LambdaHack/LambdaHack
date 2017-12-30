@@ -354,7 +354,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
            })
         , let km = revCmd (K.KM K.NoModifier $ K.Char '^') SortSlots
           in (km, DefItemKey
-           { defLabel = if maySwitchLeader cCur then Left "" else Right km
+           { defLabel = Right km
            , defCond = cCur /= MOrgans  -- auto-sorted each time
                        && cCur /= MStats  -- artificial slots
            , defAction = \_ -> do
