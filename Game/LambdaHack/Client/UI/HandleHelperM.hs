@@ -218,7 +218,8 @@ pickLeaderWithPointer = do
   if | py == lysize + 2 && px == 0 -> memberBack True
      | py == lysize + 2 ->
          case drop (px - 1) viewed of
-           [] -> return Nothing  -- relaxed, due to subtleties of selected display
+           [] -> return Nothing
+             -- relaxed, due to subtleties of display of selected actors
            (aid, b, _) : _ -> pick (aid, b)
      | otherwise ->
          case find (\(_, b, _) -> bpos b == Point px (py - mapStartY)) oursUI of
@@ -274,9 +275,9 @@ statsOverlay aid = do
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
 pickNumber askNumber kAll = assert (kAll >= 1) $ do
-  let shownKeys = [ K.returnKM, K.mkChar '+', K.mkChar '-'
-                  , K.spaceKM, K.escKM ]
-      frontKeyKeys = K.backspaceKM : shownKeys ++ map K.mkChar ['0'..'9']
+  let shownKeys = [ K.spaceKM, K.returnKM, K.mkChar '+', K.mkChar '-'
+                  , K.backspaceKM, K.escKM ]
+      frontKeyKeys = shownKeys ++ map K.mkChar ['0'..'9']
       gatherNumber kCur = assert (1 <= kCur && kCur <= kAll) $ do
         let kprompt = "Choose number:" <+> tshow kCur
         promptAdd kprompt

@@ -623,10 +623,13 @@ historyHuman = do
   promptAdd msg
   okxs <- overlayToSlideshow (lysize + 3) [K.escKM] (rh, kxs)
   let displayAllHistory = do
-        ekm <- displayChoiceScreen "history" ColorFull True okxs [K.escKM]
+        ekm <- displayChoiceScreen "history" ColorFull True okxs
+                                   [K.spaceKM, K.escKM]
         case ekm of
           Left km | km == K.escKM ->
             promptAdd "Try to survive a few seconds more, if you can."
+          Left km | km == K.spaceKM ->  -- click in any unused space
+            promptAdd "Steady on."
           Right SlotChar{..} | slotChar == 'a' ->
             displayOneReport slotPrefix
           _ -> error $ "" `showFailure` ekm

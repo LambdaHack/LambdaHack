@@ -303,7 +303,11 @@ transition psuit prompt promptGeneric permitMulitple cLegal
       maySwitchLeader _ = True
       keyDefs :: [(K.KM, DefItemKey m)]
       keyDefs = filter (defCond . snd) $
-        [ let km = K.mkChar '?'
+        [ let km = K.mkChar '/'
+          in (km, changeContainerDef $ Right km)
+        , (K.mkKP '/', changeContainerDef $ Left "")
+        , (K.spaceKM, changeContainerDef $ Left "")
+        , let km = K.mkChar '?'
           in (km, DefItemKey
            { defLabel = Right km
            , defCond = bag /= bagSuit
@@ -312,9 +316,6 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                                    ISuitable -> IAll
                                    IAll -> ISuitable
            })
-        , let km = K.mkChar '/'
-          in (km, changeContainerDef $ Right km)
-        , (K.mkKP '/', changeContainerDef $ Left "")
         , let km = K.mkChar '!'
           in (km, useMultipleDef $ Right km)
         , (K.mkKP '*', useMultipleDef $ Left "")
@@ -342,10 +343,14 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         , (K.KM K.NoModifier K.LeftButtonRelease, DefItemKey
            { defLabel = Left ""
            , defCond = maySwitchLeader cCur && not (null hs)
-           , defAction = \_ -> do
-               void pickLeaderWithPointer  -- error ignored; update anyway
-               (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
-               recCall numPrefix cCurUpd cRestUpd itemDialogState
+           , defAction = \_unused -> do
+               merror <- pickLeaderWithPointer
+               case merror of
+                 Nothing -> do
+                   (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
+                   recCall numPrefix cCurUpd cRestUpd itemDialogState
+                 Just{} ->  -- don't inspect the error, it's expected
+                   defAction (changeContainerDef $ Left "") _unused
            })
         , let km = revCmd (K.KM K.NoModifier $ K.Char '^') SortSlots
           in (km, DefItemKey
@@ -365,7 +370,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         ++ numberPrefixes
       changeContainerDef defLabel = DefItemKey
         { defLabel
-        , defCond = not $ null cRest
+        , defCond = True  -- even if single screen, just reset it
         , defAction = \_ -> do
             let calmE = calmEnough body ar
                 mcCur = filter (`elem` cLegal) [cCur]
