@@ -439,6 +439,10 @@ hActors _fid as@((aid, body) : rest) = do
   case mtimed of
     Just (RequestAnyAbility timed) -> do
       nonWaitMove <- handleRequestTimed side aidNew timed
+      -- Even if the actor got a free turn of time via a scroll,
+      -- he will not act again this clip, only next clip.
+      -- Clip is small, so not a big deal and it's faster and avoids
+      -- complete game time freezes, e.g., due to an exploit.
       if nonWaitMove then return True else hActors side rest
     Nothing -> do
       swriteSave <- getsServer swriteSave
