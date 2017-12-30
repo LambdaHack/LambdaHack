@@ -760,7 +760,7 @@ quitFactionUI fid toSt = do
         Level{lxsize, lysize} <- getLevel lidV
         let currencyName = MU.Text $ IK.iname $ okind $ ouniqGroup "currency"
         arena <- getArenaUI
-        (bag, itemSlides, total) <- do
+        (itemBag, itemSlides, total) <- do
           (bag, tot) <- getsState $ calculateTotal side
           if EM.null bag then return (EM.empty, emptySlideshow, 0)
           else do
@@ -774,44 +774,51 @@ quitFactionUI fid toSt = do
             return (bag, sli, tot)
         localTime <- getsState $ getLocalTime arena
         itemToF <- getsState itemToFull
+        factionD <- getsState sfactionD
         ItemSlots itemSlots <- getsSession sslots
         let keyOfEKM (Left km) = km
             keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
             allOKX = concatMap snd $ slideshow itemSlides
-            keys = [K.spaceKM, K.escKM] ++ concatMap (keyOfEKM . fst) allOKX
-            examItem slot =
-              case EM.lookup slot $ itemSlots EM.! SItem of
-                Nothing -> error $ "" `showFailure` slot
-                Just iid -> case EM.lookup iid bag of
-                  Nothing -> error $ "" `showFailure` iid
-                  Just kit@(k, _) -> do
-                    factionD <- getsState sfactionD
-                    let itemFull = itemToF iid kit
-                        attrLine = itemDesc True side factionD 0
-                                            CGround localTime itemFull
-                        ov = splitAttrLine lxsize attrLine
-                        worth = itemPrice (itemBase itemFull, 1)
-                        lootMsg = makeSentence $
-                          ["This particular loot is worth"]
-                          ++ (if k > 1 then [ MU.Cardinal k, "times"] else [])
-                          ++ [MU.CarWs worth currencyName]
-                    promptAdd lootMsg
-                    slides <- overlayToSlideshow (lysize + 1)
-                                                 [K.spaceKM, K.escKM]
-                                                 (ov, [])
-                    km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
-                    return $! km == K.spaceKM
+            keysMain = [K.spaceKM, K.escKM] ++ concatMap (keyOfEKM . fst) allOKX
+            lSlots = EM.filter (`EM.member` itemBag) $ itemSlots EM.! SItem
+            lSlotsElems = EM.elems lSlots
+            lSlotsBound = length lSlotsElems - 1
+            examItem slotIndex = do
+              let iid2 = lSlotsElems !! slotIndex
+                  kit@(k, _) = itemBag EM.! iid2
+                  itemFull2 = itemToF iid2 kit
+                  attrLine = itemDesc True side factionD 0
+                                      CGround localTime itemFull2
+                  ov = splitAttrLine lxsize attrLine
+                  keys = [K.spaceKM, K.escKM]
+                         ++ [K.upKM | slotIndex /= 0]
+                         ++ [K.downKM | slotIndex /= lSlotsBound]
+                  worth = itemPrice (itemBase itemFull2, 1)
+                  lootMsg = makeSentence $
+                    ["This particular loot is worth"]
+                    ++ (if k > 1 then [ MU.Cardinal k, "times"] else [])
+                    ++ [MU.CarWs worth currencyName]
+              promptAdd lootMsg
+              slides <- overlayToSlideshow (lysize + 1) keys (ov, [])
+              km <- getConfirms ColorFull keys slides
+              case K.key km of
+                K.Space -> return True
+                K.Up -> examItem (slotIndex - 1)
+                K.Down -> examItem (slotIndex + 1)
+                K.Esc -> return False
+                _ -> error $ "" `showFailure` km
             viewItems =
               if itemSlides == emptySlideshow then return True
               else do
                 ekm <- displayChoiceScreen "quit loot" ColorFull False
-                                           itemSlides keys
+                                           itemSlides keysMain
                 case ekm of
                   Left km | km == K.spaceKM -> return True
                   Left km | km == K.escKM -> return False
                   Left _ -> error $ "" `showFailure` ekm
                   Right slot -> do
-                    go2 <- examItem slot
+                    let ix0 = fromJust $ findIndex (== slot) $ EM.keys lSlots
+                    go2 <- examItem ix0
                     if go2 then viewItems else return True
         go3 <- viewItems
         when go3 $ do

@@ -163,30 +163,29 @@ chooseItemDialogMode c = do
   ggi <- getStoreItem prompt c
   recordHistory  -- item chosen, wipe out already shown msgs
   lidV <- viewedLevelUI
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  bUI <- getsSession $ getActorUI leader
+  itemToF <- getsState itemToFull
+  localTime <- getsState $ getLocalTime (blid b)
+  factionD <- getsState sfactionD
+  ar <- getsState $ getActorAspect leader
   Level{lxsize, lysize} <- getLevel lidV
   case ggi of
     (Right (iid, itemBag, lSlots), (c2, _)) -> do
-      leader <- getLeaderUI
-      b <- getsState $ getActorBody leader
-      bUI <- getsSession $ getActorUI leader
-      itemToF <- getsState itemToFull
       let lSlotsElems = EM.elems lSlots
           lSlotsBound = length lSlotsElems - 1
           displayLore slotIndex promptFun = do
             let iid2 = lSlotsElems !! slotIndex
                 itemFull2 = itemToF iid2 (itemBag EM.! iid2)
-            promptAdd $ promptFun itemFull2
-            localTime <- getsState $ getLocalTime (blid b)
-            factionD <- getsState sfactionD
-            ar <- getsState $ getActorAspect leader
-            let attrLine = itemDesc True (bfid b) factionD (aHurtMelee ar)
+                attrLine = itemDesc True (bfid b) factionD (aHurtMelee ar)
                                     CGround localTime itemFull2
                 ov = splitAttrLine lxsize attrLine
                 keys = [K.spaceKM, K.escKM]
                        ++ [K.upKM | slotIndex /= 0]
                        ++ [K.downKM | slotIndex /= lSlotsBound]
-            slides <-
-              overlayToSlideshow (lysize + 1) keys (ov, [])
+            promptAdd $ promptFun itemFull2
+            slides <- overlayToSlideshow (lysize + 1) keys (ov, [])
             km <- getConfirms ColorFull keys slides
             case K.key km of
               K.Space -> chooseItemDialogMode c2
@@ -231,10 +230,6 @@ chooseItemDialogMode c = do
                         , MU.Text (ppSLore slore), "lore" ])
     (Left err, (MStats, ekm)) -> case ekm of
       Right slot0 -> assert (err == "stats") $ do
-        leader <- getLeaderUI
-        b <- getsState $ getActorBody leader
-        bUI <- getsSession $ getActorUI leader
-        ar <- getsState $ getActorAspect leader
         let statListBound = length statSlots - 1
             displayOneStat slotIndex = do
               let slot = allSlots !! slotIndex
