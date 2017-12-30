@@ -154,7 +154,7 @@ chooseItemDialogMode c = do
         MLore{} ->
           makePhrase
             [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "recall"
-            , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
+            , MU.Text t ]
         _ ->
           makePhrase
             [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "see"
