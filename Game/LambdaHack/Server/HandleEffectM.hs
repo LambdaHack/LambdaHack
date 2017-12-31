@@ -142,7 +142,7 @@ effectAndDestroy meleePerformed _ _ iid container periodic []
                  itemFull@ItemFull{..} =
   -- No identification occurs if effects are null. This case is also a speedup.
   if meleePerformed then do  -- melee may cause item destruction
-    let (imperishable, kit) = imperishableKit [] periodic itemTimer itemFull
+    let (imperishable, kit) = imperishableKit True periodic itemTimer itemFull
     unless imperishable $
       execUpdAtomic $ UpdLoseItem False iid itemBase kit container
   else return ()
@@ -151,6 +151,12 @@ effectAndDestroy meleePerformed source target iid container periodic effs
   let timeout = case itemDisco of
         Just ItemDisco{itemAspect=Just ar} -> aTimeout ar
         _ -> error $ "" `showFailure` itemDisco
+      permanent = let tmpEffect :: IK.Effect -> Bool
+                      tmpEffect IK.Temporary{} = True
+                      tmpEffect (IK.Recharging IK.Temporary{}) = True
+                      tmpEffect (IK.OnSmash IK.Temporary{}) = True
+                      tmpEffect _ = False
+                  in not $ any tmpEffect effs
   lid <- getsState $ lidFromC container
   localTime <- getsState $ getLocalTime lid
   let it1 = let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
@@ -158,7 +164,11 @@ effectAndDestroy meleePerformed source target iid container periodic effs
             in filter charging itemTimer
       len = length it1
       recharged = len < itemK
-      it2 = if timeout /= 0 && recharged then localTime : it1 else itemTimer
+      it2 = if timeout /= 0 && recharged
+            then if periodic && not permanent  -- copies are spares only
+                 then replicate (itemK - length it1) localTime ++ it1
+                 else localTime : it1  -- copies all fire, in turn
+            else itemTimer
       !_A = assert (len <= itemK `blame` (source, target, iid, container)) ()
   -- We use up the charge even if eventualy every effect fizzles. Tough luck.
   -- At least we don't destroy the item in such case. Also, we ID it regardless.
@@ -176,7 +186,7 @@ effectAndDestroy meleePerformed source target iid container periodic effs
     -- This is OK, because we don't remove the item type from various
     -- item dictionaries, just an individual copy from the container,
     -- so, e.g., the item can be identified after it's removed.
-    let (imperishable, kit) = imperishableKit effs periodic it2 itemFull
+    let (imperishable, kit) = imperishableKit permanent periodic it2 itemFull
     unless imperishable $
       execUpdAtomic $ UpdLoseItem False iid itemBase kit container
     -- At this point, the item is potentially no longer in container @c@,
@@ -200,16 +210,10 @@ effectAndDestroy meleePerformed source target iid container periodic effs
     unless (triggered || imperishable) $
       execUpdAtomic $ UpdSpotItem False iid itemBase kit container
 
-imperishableKit :: [IK.Effect] -> Bool -> ItemTimer -> ItemFull
+imperishableKit :: Bool -> Bool -> ItemTimer -> ItemFull
                 -> (Bool, ItemQuant)
-imperishableKit effs periodic it2 ItemFull{..} =
-  let permanent = let tmpEffect :: IK.Effect -> Bool
-                      tmpEffect IK.Temporary{} = True
-                      tmpEffect (IK.Recharging IK.Temporary{}) = True
-                      tmpEffect (IK.OnSmash IK.Temporary{}) = True
-                      tmpEffect _ = False
-                  in not $ any tmpEffect effs
-      fragile = IK.Fragile `elem` jfeature itemBase
+imperishableKit permanent periodic it2 ItemFull{..} =
+  let fragile = IK.Fragile `elem` jfeature itemBase
       durable = IK.Durable `elem` jfeature itemBase
       imperishable = durable && not fragile || periodic && permanent
       kit = if permanent || periodic then (1, take 1 it2) else (itemK, it2)
