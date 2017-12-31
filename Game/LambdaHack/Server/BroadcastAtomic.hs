@@ -159,16 +159,18 @@ sendPer :: (MonadServerAtomic m, MonadServerReadRequest m)
         -> m ()
 {-# INLINE sendPer #-}
 sendPer fid lid outPer inPer perNew = do
-  sendUpdNoState fid $ UpdPerception lid outPer inPer
-  sClient <- getsServer $ (EM.! fid) . sclientStates
-  let forget = atomicForget fid lid outPer sClient
-  remember <- getsState $ atomicRemember lid inPer sClient
-  let seenNew = seenAtomicCli False fid perNew
-  psRem <- mapM posUpdAtomic remember
-  -- Verify that we remember only currently seen things.
-  let !_A = assert (allB seenNew psRem) ()
-  mapM_ (sendUpdateCheck fid) forget
-  mapM_ (sendUpdate fid) remember
+  knowEvents <- getsServer $ sknowEvents . soptions
+  unless knowEvents $ do  -- inconsistencies would quickly manifest
+    sendUpdNoState fid $ UpdPerception lid outPer inPer
+    sClient <- getsServer $ (EM.! fid) . sclientStates
+    let forget = atomicForget fid lid outPer sClient
+    remember <- getsState $ atomicRemember lid inPer sClient
+    let seenNew = seenAtomicCli False fid perNew
+    psRem <- mapM posUpdAtomic remember
+    -- Verify that we remember only currently seen things.
+    let !_A = assert (allB seenNew psRem) ()
+    mapM_ (sendUpdateCheck fid) forget
+    mapM_ (sendUpdate fid) remember
 
 -- Remembered items, map tiles and smells are not wiped out when they get
 -- out of FOV. Clients remember them. Only actors are forgotten.

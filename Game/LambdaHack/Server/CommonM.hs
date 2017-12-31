@@ -270,14 +270,12 @@ updatePer fid lid = do
     ser {sperValidFid = EM.adjust (EM.insert lid True) fid $ sperValidFid ser}
   sperFidOld <- getsServer sperFid
   let perOld = sperFidOld EM.! fid EM.! lid
-  knowEvents <- getsServer $ sknowEvents . soptions
   -- Performed in the State after action, e.g., with a new actor.
   perNew <- recomputeCachePer fid lid
   let inPer = diffPer perNew perOld
       outPer = diffPer perOld perNew
   unless (nullPer outPer && nullPer inPer) $
-    unless knowEvents $  -- inconsistencies would quickly manifest
-      execSendPer fid lid outPer inPer perNew
+    execSendPer fid lid outPer inPer perNew
 
 recomputeCachePer :: MonadServer m => FactionId -> LevelId -> m Perception
 recomputeCachePer fid lid = do
