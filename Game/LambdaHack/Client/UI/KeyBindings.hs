@@ -177,7 +177,7 @@ keyHelp Kind.COps{corule} keyb@Binding{..} offset = assert (offset > 0) $
     lastHelpEnd = map fmts lastHelpEnding
     keyCaptionN n = fmt n "keys" "command"
     keyCaption = keyCaptionN keyL
-    okxs = okxsN keyb offset keyL (const False)
+    okxs = okxsN keyb offset keyL (const False) True
     keyM = 13
     keyB = 31
     truncatem b = if T.length b > keyB
@@ -255,17 +255,20 @@ keyHelp Kind.COps{corule} keyb@Binding{..} offset = assert (offset > 0) $
     ]
 
 -- | Turn the specified portion of bindings into a menu.
-okxsN :: Binding -> Int -> Int -> (HumanCmd -> Bool) -> CmdCategory
+okxsN :: Binding -> Int -> Int -> (HumanCmd -> Bool) -> Bool -> CmdCategory
       -> [Text] -> [Text] -> OKX
-okxsN Binding{..} offset n greyedOut cat header footer =
+okxsN Binding{..} offset n greyedOut showManyKeys cat header footer =
   let fmt k h = " " <> T.justifyLeft n ' ' k <+> h
       coImage :: HumanCmd -> [K.KM]
       coImage cmd = M.findWithDefault (error $ "" `showFailure` cmd) cmd brevMap
       disp = T.intercalate " or " . map (T.pack . K.showKM)
       keys :: [(Either [K.KM] SlotChar, (Bool, Text))]
-      keys = [ (Left kms, (greyedOut cmd, fmt (disp kms) desc))
+      keys = [ (Left kms, (greyedOut cmd, fmt keyName desc))
              | (_, (cats, desc, cmd)) <- bcmdList
              , let kms = coImage cmd
+                   keyName = case map K.key kms of
+                     K.Unknown{} : _ -> ""
+                     _ -> disp $ if showManyKeys then kms else take 1 kms
              , cat `elem` cats
              , desc /= "" ]
       f (ks, (_, tkey)) y = (ks, (y, 1, T.length tkey))

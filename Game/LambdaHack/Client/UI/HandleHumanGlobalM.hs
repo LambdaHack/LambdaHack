@@ -16,7 +16,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , runOnceToXhairHuman, continueToXhairHuman
   , moveItemHuman, projectHuman, applyHuman
   , alterDirHuman, alterWithPointerHuman
-  , helpHuman, itemMenuHuman, chooseItemMenuHuman
+  , helpHuman, dashboardHuman, itemMenuHuman, chooseItemMenuHuman
   , mainMenuHuman, settingsMenuHuman, challengesMenuHuman
   , gameScenarioIncr, gameDifficultyIncr, gameWolfToggle, gameFishToggle
     -- * Global commands that never take time
@@ -982,6 +982,31 @@ helpHuman cmdAction = do
       Nothing -> weaveJust <$> failWith "never mind"
     Right _slot -> error $ "" `showFailure` ekm
 
+-- * Dashboard
+
+-- | Display the dashboard.
+dashboardHuman :: MonadClientUI m
+               => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
+               -> m (Either MError ReqUI)
+dashboardHuman cmdAction = do
+  lidV <- viewedLevelUI
+  Level{lxsize, lysize} <- getLevel lidV
+  keyb <- getsSession sbinding
+  let keyL = 1
+      (ov0, kxs0) = okxsN keyb 1 keyL (const False) False
+                          HumanCmd.CmdDashboard [] []
+      al1 = textToAL "Dashboard"
+      splitHelp (al, okx) = splitOKX lxsize (lysize + 1) al [K.escKM] okx
+      sli = toSlideshow $ splitHelp (al1, (ov0, kxs0))
+      extraKeys = [K.escKM]
+  ekm <- displayChoiceScreen "dashboard" ColorFull False sli extraKeys
+  case ekm of
+    Left km -> case km `M.lookup` bcmdMap keyb of
+      _ | km == K.escKM -> weaveJust <$> failWith "never mind"
+      Just (_desc, _cats, cmd) -> cmdAction cmd
+      Nothing -> weaveJust <$> failWith "never mind"
+    Right _slot -> error $ "" `showFailure` ekm
+
 -- * ItemMenu
 
 itemMenuHuman :: MonadClientUI m
@@ -1045,7 +1070,7 @@ itemMenuHuman cmdAction = do
               keyL = 11
               keyCaption = fmt keyL "keys" "command"
               offset = 1 + length ovFound
-              (ov0, kxs0) = okxsN keyb offset keyL greyedOut
+              (ov0, kxs0) = okxsN keyb offset keyL greyedOut True
                                   HumanCmd.CmdItemMenu [keyCaption] []
               t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"
                                 , "an item", MU.Text $ ppCStoreIn fromCStore ]
@@ -1055,9 +1080,8 @@ itemMenuHuman cmdAction = do
               sli = toSlideshow
                     $ splitHelp (al1, (ovFound ++ ov0, kxsFound ++ kxs0))
               extraKeys = [K.spaceKM, K.escKM] ++ foundKeys
-          recordHistory  -- report shown, remove it to history
-          ekm <- displayChoiceScreen "item menu" ColorFull False
-                                     sli extraKeys
+          recordHistory  -- report shown (e.g., leader switch), save to history
+          ekm <- displayChoiceScreen "item menu" ColorFull False sli extraKeys
           case ekm of
             Left km -> case km `M.lookup` bcmdMap keyb of
               _ | km == K.escKM -> weaveJust <$> failWith "never mind"

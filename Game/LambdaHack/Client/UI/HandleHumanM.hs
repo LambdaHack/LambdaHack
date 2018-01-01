@@ -92,7 +92,7 @@ cmdAction cmd = case cmd of
   ItemMenu -> itemMenuHuman cmdAction
   ChooseItemMenu dialogMode -> chooseItemMenuHuman cmdAction dialogMode
   MainMenu -> mainMenuHuman cmdAction
-  Dashboard -> helpHuman cmdAction
+  Dashboard -> dashboardHuman cmdAction
   GameDifficultyIncr -> gameDifficultyIncr >> challengesMenuHuman cmdAction
   GameWolfToggle -> gameWolfToggle >> challengesMenuHuman cmdAction
   GameFishToggle -> gameFishToggle >> challengesMenuHuman cmdAction

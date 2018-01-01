@@ -21,7 +21,7 @@ import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 data CmdCategory =
-    CmdMainMenu | CmdItemMenu
+    CmdMainMenu | CmdDashboard | CmdItemMenu
   | CmdMove | CmdItem | CmdAim | CmdMeta | CmdMouse
   | CmdInternal | CmdNoHelp | CmdDebug | CmdMinimal
   deriving (Show, Read, Eq, Generic)
@@ -32,6 +32,7 @@ instance Binary CmdCategory
 
 categoryDescription :: CmdCategory -> Text
 categoryDescription CmdMainMenu = "Main Menu"
+categoryDescription CmdDashboard = "Dashboard"
 categoryDescription CmdItemMenu = "Item Menu commands"
 categoryDescription CmdMove = "Terrain exploration and alteration"
 categoryDescription CmdItem = "Remaining item-related commands"
