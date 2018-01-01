@@ -1388,5 +1388,5 @@ automateHuman = do
   go <- displaySpaceEsc ColorBW
           "Ceding control to AI (press ESC to regain)."
   if not go
-    then failWith "automation canceled"
-    else return $ Right ReqUIAutomate
+  then failWith "automation canceled"
+  else return $ Right ReqUIAutomate

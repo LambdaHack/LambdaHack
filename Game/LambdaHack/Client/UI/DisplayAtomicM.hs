@@ -30,9 +30,11 @@ import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Animation
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.HandleHelperM
+import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Client.UI.KeyBindings
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
@@ -758,33 +760,27 @@ quitFactionUI fid toSt = do
       when go $ do
         lidV <- viewedLevelUI
         Level{lxsize, lysize} <- getLevel lidV
+        Binding{brevMap} <- getsSession sbinding
         let currencyName = MU.Text $ IK.iname $ okind $ ouniqGroup "currency"
+            revCmd dflt cmd = case M.lookup cmd brevMap of
+              Nothing -> dflt
+              Just (k : _) -> k
+              Just [] -> error $ "" `showFailure` brevMap
+            caretKey = revCmd (K.KM K.NoModifier $ K.Char '^')
+                              HumanCmd.SortSlots
+            keysPre = [K.spaceKM, caretKey, K.escKM]
         arena <- getArenaUI
-        (itemBag, itemSlides, total) <- do
-          (bag, tot) <- getsState $ calculateTotal side
-          if EM.null bag then return (EM.empty, emptySlideshow, 0)
-          else do
-            let spoilsMsg = makeSentence [ "Your spoils are worth"
-                                         , MU.CarWs tot currencyName ]
-            promptAdd spoilsMsg
-            ItemSlots itemSlots <- getsSession sslots
-            let lSlots = itemSlots EM.! SItem
-            io <- itemOverlay lSlots arena bag
-            sli <- overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] io
-            return (bag, sli, tot)
+        (itemBag, total) <- getsState $ calculateTotal side
         localTime <- getsState $ getLocalTime arena
         itemToF <- getsState itemToFull
         factionD <- getsState sfactionD
-        ItemSlots itemSlots <- getsSession sslots
-        let keyOfEKM (Left km) = km
-            keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
-            allOKX = concatMap snd $ slideshow itemSlides
-            keysMain = [K.spaceKM, K.escKM] ++ concatMap (keyOfEKM . fst) allOKX
-            lSlots = EM.filter (`EM.member` itemBag) $ itemSlots EM.! SItem
-            lSlotsElems = EM.elems lSlots
-            lSlotsBound = length lSlotsElems - 1
-            examItem slotIndex = do
-              let iid2 = lSlotsElems !! slotIndex
+        let examItem slotIndex = do
+              ItemSlots itemSlots <- getsSession sslots
+              let lSlots = EM.filter (`EM.member` itemBag)
+                           $ itemSlots EM.! SItem
+                  lSlotsElems = EM.elems lSlots
+                  lSlotsBound = length lSlotsElems - 1
+                  iid2 = lSlotsElems !! slotIndex
                   kit@(k, _) = itemBag EM.! iid2
                   itemFull2 = itemToF iid2 kit
                   attrLine = itemDesc True side factionD 0
@@ -807,19 +803,32 @@ quitFactionUI fid toSt = do
                 K.Down -> examItem (slotIndex + 1)
                 K.Esc -> return False
                 _ -> error $ "" `showFailure` km
-            viewItems =
-              if itemSlides == emptySlideshow then return True
-              else do
-                ekm <- displayChoiceScreen "quit loot" ColorFull False
-                                           itemSlides keysMain
-                case ekm of
-                  Left km | km == K.spaceKM -> return True
-                  Left km | km == K.escKM -> return False
-                  Left _ -> error $ "" `showFailure` ekm
-                  Right slot -> do
-                    let ix0 = fromJust $ findIndex (== slot) $ EM.keys lSlots
-                    go2 <- examItem ix0
-                    if go2 then viewItems else return True
+            viewItems = if EM.null itemBag then return True else do
+              let spoilsMsg = makeSentence [ "Your spoils are worth"
+                                           , MU.CarWs total currencyName ]
+              promptAdd spoilsMsg
+              ItemSlots itemSlots <- getsSession sslots
+              let lSlots = EM.filter (`EM.member` itemBag)
+                           $ itemSlots EM.! SItem
+              io <- itemOverlay lSlots arena itemBag
+              itemSlides <- overlayToSlideshow (lysize + 1) keysPre io
+              let keyOfEKM (Left km) = km
+                  keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
+                  allOKX = concatMap snd $ slideshow itemSlides
+                  keysMain = keysPre ++ concatMap (keyOfEKM . fst) allOKX
+              ekm <- displayChoiceScreen "quit loot" ColorFull False
+                                         itemSlides keysMain
+              case ekm of
+                Left km | km == K.spaceKM -> return True
+                Left km | km == caretKey -> do
+                  sortSlots fid Nothing
+                  viewItems
+                Left km | km == K.escKM -> return False
+                Left _ -> error $ "" `showFailure` ekm
+                Right slot -> do
+                  let ix0 = fromJust $ findIndex (== slot) $ EM.keys lSlots
+                  go2 <- examItem ix0
+                  if go2 then viewItems else return True
         go3 <- viewItems
         when go3 $ do
           unless isNoConfirms $ do
