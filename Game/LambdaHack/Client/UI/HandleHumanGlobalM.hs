@@ -112,6 +112,7 @@ byAreaHuman cmdAction l = do
     (_, cmd) : _ ->
       cmdAction cmd
 
+-- Many values here are shared with "Game.LambdaHack.Client.UI.DrawM".
 areaToRectangles :: MonadClientUI m => HumanCmd.CmdArea -> m [(X, Y, X, Y)]
 areaToRectangles ca = case ca of
   CaMessage -> return [(0, 0, fst normalLevelBound, 0)]
