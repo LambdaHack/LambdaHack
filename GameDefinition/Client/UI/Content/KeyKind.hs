@@ -32,6 +32,7 @@ standardKeys = KeyKind $ map evalKeyDef $
   , ("x", ([CmdMainMenu], "exit to desktop", GameExit))
   , ("v", ([CmdMainMenu], "visit settings menu>", SettingsMenu))
   , ("a", ([CmdMainMenu], "automate faction", Automate))
+  , ("`", ([CmdMainMenu], "go to Dashboard", Dashboard))
   , ("?", ([CmdMainMenu], "see command Help", Help))
   , ("Escape", ([CmdMainMenu], "back to playing", Cancel))
 
@@ -163,6 +164,7 @@ standardKeys = KeyKind $ map evalKeyDef $
                , ByAimMode {exploration = Help, aiming = Accept} ))
 
   -- Assorted
+  , ("`", ([CmdMeta], "open Dashboard", Dashboard))
   , ("space", ( [CmdMinimal, CmdMeta]
               , "clear messages/display history", Clear ))
   , ("?", ([CmdMeta], "display Help", Help))

@@ -116,6 +116,7 @@ data HumanCmd =
   | Help
   | ItemMenu
   | MainMenu
+  | Dashboard
     -- Below this line, commands do not take time.
   | GameDifficultyIncr
   | GameWolfToggle
