@@ -262,15 +262,19 @@ okxsN Binding{..} offset n greyedOut showManyKeys cat header footer =
       coImage :: HumanCmd -> [K.KM]
       coImage cmd = M.findWithDefault (error $ "" `showFailure` cmd) cmd brevMap
       disp = T.intercalate " or " . map (T.pack . K.showKM)
+      keyKnown km = case K.key km of
+        K.Unknown{} -> False
+        _ -> True
       keys :: [(Either [K.KM] SlotChar, (Bool, Text))]
-      keys = [ (Left kms, (greyedOut cmd, fmt keyName desc))
+      keys = [ (Left kmsRes, (greyedOut cmd, fmt keyNames desc))
              | (_, (cats, desc, cmd)) <- bcmdList
              , let kms = coImage cmd
-                   keyName = case map K.key kms of
-                     K.Unknown{} : _ -> ""
-                     _ -> disp $ if showManyKeys then kms else take 1 kms
+                   knownKeys = filter keyKnown kms
+                   keyNames =
+                     disp $ (if showManyKeys then id else take 1) knownKeys
+                   kmsRes = if desc == "" then knownKeys else kms
              , cat `elem` cats
-             , desc /= "" ]
+             , desc /= "" || CmdInternal `elem` cats]
       f (ks, (_, tkey)) y = (ks, (y, 1, T.length tkey))
       kxs = zipWith f keys [offset + length header..]
       ts = map (False,) ("" : header) ++ map snd keys ++ map (False,) footer

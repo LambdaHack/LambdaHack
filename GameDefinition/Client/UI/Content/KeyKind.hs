@@ -126,7 +126,7 @@ standardKeys = KeyKind $ map evalKeyDef $
 --                              , symbol = '/' }])
 
   -- Dashboard, in addition to commands marked above
-  , ("safeD0", ([CmdInternal, CmdDashboard], " ", Dashboard))  -- blank line
+  , ("safeD0", ([CmdInternal, CmdDashboard], "", Cancel))  -- blank line
   ]
   ++
   map (\(k,  slore) -> ("safeD" ++ show (k :: Int)
@@ -135,7 +135,7 @@ standardKeys = KeyKind $ map evalKeyDef $
                          , ChooseItemMenu (MLore slore) )))
       (zip [1..] [minBound..maxBound])
   ++
-  [ ("safeD99", ([CmdInternal, CmdDashboard], " ", Dashboard))  -- blank line
+  [ ("safeD99", ([CmdInternal, CmdDashboard], "", Cancel))  -- blank line
 
   -- Aiming
   , ("KP_Multiply", ( [CmdAim, CmdMinimal]

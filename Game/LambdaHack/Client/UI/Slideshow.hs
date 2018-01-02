@@ -43,9 +43,12 @@ unsnoc Slideshow{slideshow} =
     okx : rest -> Just (Slideshow $ reverse rest, okx)
 
 toSlideshow :: [OKX] -> Slideshow
-toSlideshow okxs = Slideshow $ addFooters False okxs
+toSlideshow okxs = Slideshow $ addFooters False okxsNotNull
  where
-  addFooters _ [] = error $ "" `showFailure` okxs
+  okxFilter (ov, kyxs) =
+    (ov, filter (either (not . null) (const True) . fst) kyxs)
+  okxsNotNull = map okxFilter okxs
+  addFooters _ [] = error $ "" `showFailure` okxsNotNull
   addFooters _ [(als, [])] =
     [( als ++ [stringToAL endMsg]
      , [(Left [K.safeSpaceKM], (length als, 0, 15))] )]
