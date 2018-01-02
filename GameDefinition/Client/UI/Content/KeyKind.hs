@@ -33,8 +33,8 @@ standardKeys = KeyKind $ map evalKeyDef $
   , ("x", ([CmdMainMenu], "exit to desktop", GameExit))
   , ("v", ([CmdMainMenu], "visit settings menu>", SettingsMenu))
   , ("a", ([CmdMainMenu], "automate faction", Automate))
-  , ("`", ([CmdMainMenu], "go to Dashboard", Dashboard))
-  , ("?", ([CmdMainMenu], "see command Help", Help))
+  , ("`", ([CmdMainMenu], "go to dashboard", Dashboard))
+  , ("?", ([CmdMainMenu], "see command help", Help))
   , ("Escape", ([CmdMainMenu], "back to playing", Cancel))
 
   -- Item use, 1st part
@@ -170,17 +170,17 @@ standardKeys = KeyKind $ map evalKeyDef $
                    , "clear chosen item and target"
                    , ComposeUnlessError ItemClear TgtClear ))
   , ("Escape", ( [CmdAim, CmdMinimal]
-               , "cancel aiming/open Main Menu"
+               , "cancel aiming/open main menu"
                , ByAimMode {exploration = MainMenu, aiming = Cancel} ))
   , ("Return", ( [CmdAim, CmdMinimal]
-               , "accept target/open Help"
+               , "accept target/open help"
                , ByAimMode {exploration = Help, aiming = Accept} ))
 
   -- Assorted
-  , ("`", ([CmdMeta], "open Dashboard", Dashboard))
+  , ("`", ([CmdMeta], "open dashboard", Dashboard))
   , ("space", ( [CmdMinimal, CmdMeta]
               , "clear messages/display history", Clear ))
-  , ("?", ([CmdMeta, CmdDashboard], "display Help", Help))
+  , ("?", ([CmdMeta, CmdDashboard], "display help", Help))
   , ("F1", ([CmdMeta], "", Help))
   , ("Tab", ( [CmdMeta]
             , "cycle among party members on the level"
@@ -243,7 +243,7 @@ standardKeys = KeyKind $ map evalKeyDef $
               , "fling at enemy under pointer"
               , aimFlingCmd ))
   , ("safe7", ( [CmdInternal, CmdDashboard]
-              , "open Main Menu"
+              , "open main menu"
               , MainMenu ))
   , ("safe8", ( [CmdInternal]
               , "cancel aiming"
