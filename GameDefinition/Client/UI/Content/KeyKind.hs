@@ -171,15 +171,17 @@ standardKeys = KeyKind $ map evalKeyDef $
                    , ComposeUnlessError ItemClear TgtClear ))
   , ("Escape", ( [CmdAim, CmdMinimal]
                , "cancel aiming/open main menu"
-               , ByAimMode {exploration = MainMenu, aiming = Cancel} ))
+               , ByAimMode { exploration = ExecuteIfClear MainMenu
+                           , aiming = Cancel } ))
   , ("Return", ( [CmdAim, CmdMinimal]
                , "accept target/open help"
-               , ByAimMode {exploration = Help, aiming = Accept} ))
+               , ByAimMode { exploration = ExecuteIfClear Help
+                           , aiming = Accept } ))
 
   -- Assorted
   , ("`", ([CmdMeta], "open dashboard", Dashboard))
   , ("space", ( [CmdMinimal, CmdMeta]
-              , "clear messages/display history", Clear ))
+              , "clear messages/display history", ExecuteIfClear History ))
   , ("?", ([CmdMeta, CmdDashboard], "display help", Help))
   , ("F1", ([CmdMeta], "", Help))
   , ("Tab", ( [CmdMeta]

@@ -99,6 +99,7 @@ data HumanCmd =
   | ComposeUnlessError HumanCmd HumanCmd
   | Compose2ndLocal HumanCmd HumanCmd
   | LoopOnNothing HumanCmd
+  | ExecuteIfClear HumanCmd
     -- Global.
     -- These usually take time.
   | Wait

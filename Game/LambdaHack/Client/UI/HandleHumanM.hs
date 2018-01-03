@@ -68,8 +68,8 @@ cmdAction cmd = case cmd of
     composeUnlessErrorHuman (cmdAction cmd1) (cmdAction cmd2)
   Compose2ndLocal cmd1 cmd2 ->
     compose2ndLocalHuman (cmdAction cmd1) (cmdAction cmd2)
-  LoopOnNothing cmd1 ->
-    loopOnNothingHuman (cmdAction cmd1)
+  LoopOnNothing cmd1 -> loopOnNothingHuman (cmdAction cmd1)
+  ExecuteIfClear cmd1 -> executeIfClearHuman (cmdAction cmd1)
 
   Wait -> weaveJust <$> Right <$> fmapTimedToUI waitHuman
   Wait10 -> weaveJust <$> Right <$> fmapTimedToUI waitHuman10

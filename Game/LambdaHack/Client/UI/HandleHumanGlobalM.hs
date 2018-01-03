@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   ( -- * Meta commands
     byAreaHuman, byAimModeHuman, byItemModeHuman
   , composeIfLocalHuman, composeUnlessErrorHuman, compose2ndLocalHuman
-  , loopOnNothingHuman
+  , loopOnNothingHuman, executeIfClearHuman
     -- * Global commands that usually take time
   , waitHuman, waitHuman10, moveRunHuman
   , runOnceAheadHuman, moveOnceToXhairHuman
@@ -184,7 +184,7 @@ byItemModeHuman ts cmdNotChosenM cmdChosenM = do
         _ -> cmdNotChosenM
     Nothing -> cmdNotChosenM
 
--- * ComposeIfLeft
+-- * ComposeIfLocal
 
 composeIfLocalHuman :: MonadClientUI m
                     => m (Either MError ReqUI) -> m (Either MError ReqUI)
@@ -237,6 +237,15 @@ loopOnNothingHuman cmd = do
   case res of
     Left Nothing -> loopOnNothingHuman cmd
     _ -> return res
+
+-- * ExecuteIfClear
+
+executeIfClearHuman :: MonadClientUI m
+                    => m (Either MError ReqUI)
+                    -> m (Either MError ReqUI)
+executeIfClearHuman c1 = do
+  keysHintMode <- getsSession skeysHintMode
+  if keysHintMode == KeysHintAbsent then c1 else return $ Left Nothing
 
 -- * Wait
 
