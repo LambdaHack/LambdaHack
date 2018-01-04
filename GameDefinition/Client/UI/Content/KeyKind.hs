@@ -27,7 +27,7 @@ standardKeys = KeyKind $ map evalKeyDef $
   -- Remember to put commands that show information (e.g., enter aiming
   -- mode) first.
 
-  -- Main Menu
+  -- main menu
   [ ("e", ([CmdMainMenu], "enter challenges menu>", ChallengesMenu))
   , ("s", ([CmdMainMenu], "start new game", GameRestart))
   , ("x", ([CmdMainMenu], "exit to desktop", GameExit))
@@ -140,7 +140,7 @@ standardKeys = KeyKind $ map evalKeyDef $
   -- Aiming
   , ("KP_Multiply", ( [CmdAim, CmdMinimal]
                     , "cycle x-hair among enemies", AimEnemy ))
-      -- not really minimal, because flinging from Item Menu enters aiming
+      -- not really minimal, because flinging from item menu enters aiming
       -- mode, first screen mentions aiming mode not in fling context
   , ("!", ([CmdAim], "", AimEnemy))
   , ("KP_Divide", ([CmdAim], "cycle x-hair among items", AimItem))

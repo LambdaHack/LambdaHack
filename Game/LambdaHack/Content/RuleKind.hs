@@ -25,7 +25,7 @@ data RuleKind = RuleKind
   , rexeVersion     :: Version   -- ^ version of the game
   , rcfgUIName      :: FilePath  -- ^ name of the UI config file
   , rcfgUIDefault   :: String    -- ^ the default UI settings config file
-  , rmainMenuArt    :: Text      -- ^ the ASCII art for the Main Menu
+  , rmainMenuArt    :: Text      -- ^ the ASCII art for the main menu
   , rintroScreen    :: [String]  -- ^ the intro screen (first help screen) text
   , rfirstDeathEnds :: Bool      -- ^ whether first non-spawner actor death
                                  --   ends the game

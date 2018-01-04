@@ -1044,7 +1044,7 @@ itemMenuHuman cmdAction = do
       bUI <- getsSession $ getActorUI leader
       bag <- getsState $ getBodyStoreBag b fromCStore
       case iid `EM.lookup` bag of
-        Nothing -> weaveJust <$> failWith "no item to open Item Menu for"
+        Nothing -> weaveJust <$> failWith "no item to open item menu for"
         Just kit -> do
           ar <- getsState $ getActorAspect leader
           itemToF <- getsState itemToFull
@@ -1125,7 +1125,7 @@ itemMenuHuman cmdAction = do
               Just (_desc, _cats, cmd) -> cmdAction cmd
               Nothing -> weaveJust <$> failWith "never mind"
             Right _slot -> error $ "" `showFailure` ekm
-    Nothing -> weaveJust <$> failWith "no item to open Item Menu for"
+    Nothing -> weaveJust <$> failWith "no item to open item menu for"
 
 -- * ChooseItemMenu
 
@@ -1374,7 +1374,7 @@ gameRestartHuman = do
   then do
     snxtChal <- getsClient snxtChal
     -- This ignores all but the first word of game mode names picked
-    -- via Main Menu and assumes the fist word of such game modes
+    -- via main menu and assumes the fist word of such game modes
     -- is present in their frequencies.
     let nxtGameGroup = toGroupName $ head $ T.words nxtGameName
     return $ Right $ ReqUIGameRestart nxtGameGroup snxtChal

@@ -155,8 +155,8 @@ screen and execute it on the spot.
     P            manage item pack of the leader
     KP_* or !    cycle x-hair among enemies
     +            swerve the aiming line
-    ESC          cancel aiming/open Main Menu
-    RET or INS   accept target/open Help
+    ESC          cancel aiming/open main menu
+    RET or INS   accept target/open help
     SPACE        clear messages/display history
     S-TAB        cycle among all party members
     =            select (or deselect) party member
@@ -200,7 +200,7 @@ as explained in section [Heroes](#heroes) above.
 
 Commands for saving and exiting the current game, starting a new game,
 configuring convenience settings for the current game and challenges
-for the next game are listed in the Main Menu, brought up by the `ESC` key.
+for the next game are listed in the main menu, brought up by the `ESC` key.
 Game difficulty, from the challenges menu, determines
 hitpoints at birth for any actor of any UI-using faction.
 The "lone wolf" challenge mode reduces player's starting actors to exactly

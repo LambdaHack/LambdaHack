@@ -47,12 +47,12 @@ standard = RuleKind
       qAddDependentFile path
       x <- qRunIO (readFile path)
       lift x)
-  -- ASCII art for the Main Menu. Only pure 7-bit ASCII characters are allowed.
-  -- When displayed in the Main Menu screen, the picture is overwritten
+  -- ASCII art for the main menu. Only pure 7-bit ASCII characters are allowed.
+  -- When displayed in the main menu screen, the picture is overwritten
   -- with game and engine version strings and keybindings.
   -- The keybindings overwrite places marked with left curly brace signs.
   -- This sign is forbidden anywhere else in the picture.
-  -- The picture and the whole Main Menu is displayed dull white on black.
+  -- The picture and the whole main menu is displayed dull white on black.
   --
   -- The picture should be exactly 60 rows by 110 columns,
   -- but only the middle rectangle of 24 rows by 80 columns is partially

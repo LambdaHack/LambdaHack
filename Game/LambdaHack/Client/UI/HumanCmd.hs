@@ -31,16 +31,16 @@ instance NFData CmdCategory
 instance Binary CmdCategory
 
 categoryDescription :: CmdCategory -> Text
-categoryDescription CmdMainMenu = "Main Menu"
+categoryDescription CmdMainMenu = "Main menu"
 categoryDescription CmdDashboard = "Dashboard"
-categoryDescription CmdItemMenu = "Item Menu commands"
+categoryDescription CmdItemMenu = "Item menu commands"
 categoryDescription CmdMove = "Terrain exploration and alteration"
 categoryDescription CmdItem = "Remaining item-related commands"
 categoryDescription CmdAim = "Aiming"
 categoryDescription CmdMeta = "Assorted"
 categoryDescription CmdMouse = "Mouse"
 categoryDescription CmdInternal = "Internal"
-categoryDescription CmdNoHelp = "Ignored in Help"
+categoryDescription CmdNoHelp = "Ignored in help"
 categoryDescription CmdDebug = "Debug"
 categoryDescription CmdMinimal = "The minimal command set"
 
