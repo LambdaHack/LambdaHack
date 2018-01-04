@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
-  ( SessionUI(..), AimMode(..), RunParams(..), LastRecord(..), KeysHintMode(..)
+  ( SessionUI(..), AimMode(..), RunParams(..), LastRecord(..), HintMode(..)
   , sreport, emptySessionUI, toggleMarkVision, toggleMarkSmell, getActorUI
   ) where
 
@@ -63,7 +63,8 @@ data SessionUI = SessionUI
   , smenuIxMap     :: M.Map String Int
                                     -- ^ indices of last used menu items
   , sdisplayNeeded :: Bool          -- ^ current level needs displaying
-  , skeysHintMode  :: KeysHintMode  -- ^ how to show keys hints when no messages
+  , shintMode      :: HintMode      -- ^ how to show keys hints when no messages
+  , sreportNull    :: Bool          -- ^ whether no report created last UI turn
   , sstart         :: POSIXTime     -- ^ this session start time
   , sgstart        :: POSIXTime     -- ^ this game start time
   , sallTime       :: Time          -- ^ clips from start of session to current game start
@@ -93,10 +94,10 @@ data LastRecord = LastRecord
   , freeSpace    :: Int     -- ^ space left for commands to record in this batch
   }
 
-data KeysHintMode =
-    KeysHintBlocked
-  | KeysHintAbsent
-  | KeysHintPresent
+data HintMode =
+    HintAbsent
+  | HintShown
+  | HintWiped
   deriving (Eq, Enum, Bounded)
 
 sreport :: SessionUI -> Report
@@ -130,7 +131,8 @@ emptySessionUI sUIOptions =
     , smarkSmell = True
     , smenuIxMap = M.singleton "main" 2
     , sdisplayNeeded = False
-    , skeysHintMode = KeysHintPresent
+    , sreportNull = True
+    , shintMode = HintAbsent
     , sstart = 0
     , sgstart = 0
     , sallTime = timeZero
@@ -189,7 +191,8 @@ instance Binary SessionUI where
         slastLost = ES.empty
         swaitTimes = 0
         smenuIxMap = M.singleton "main" 7
-        skeysHintMode = KeysHintAbsent
+        sreportNull = True
+        shintMode = HintAbsent
         sstart = 0
         sgstart = 0
         sallTime = timeZero

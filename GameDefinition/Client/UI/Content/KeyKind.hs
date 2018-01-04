@@ -175,7 +175,7 @@ standardKeys = KeyKind $ map evalKeyDef $
                            , aiming = Cancel } ))
   , ("Return", ( [CmdAim, CmdMinimal]
                , "accept target/open help"
-               , ByAimMode { exploration = ExecuteIfClear Help
+               , ByAimMode { exploration = ExecuteIfClear Hint
                            , aiming = Accept } ))
 
   -- Assorted

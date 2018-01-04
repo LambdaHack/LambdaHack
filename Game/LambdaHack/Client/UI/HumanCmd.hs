@@ -116,6 +116,7 @@ data HumanCmd =
   | AlterDir [Trigger]
   | AlterWithPointer [Trigger]
   | Help
+  | Hint
   | ItemMenu
   | MainMenu
   | Dashboard
@@ -130,7 +131,6 @@ data HumanCmd =
   | Tactic
   | Automate
     -- Local. Below this line, commands do not notify the server.
-  | Clear
   | SortSlots
   | ChooseItem ItemDialogMode
   | ChooseItemMenu ItemDialogMode

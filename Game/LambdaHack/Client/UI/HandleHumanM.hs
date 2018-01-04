@@ -89,6 +89,7 @@ cmdAction cmd = case cmd of
   AlterWithPointer ts -> weaveJust
                          <$> (fmapTimedToUI <$> alterWithPointerHuman ts)
   Help -> helpHuman cmdAction
+  Hint -> hintHuman cmdAction
   ItemMenu -> itemMenuHuman cmdAction
   ChooseItemMenu dialogMode -> chooseItemMenuHuman cmdAction dialogMode
   MainMenu -> mainMenuHuman cmdAction
@@ -104,7 +105,6 @@ cmdAction cmd = case cmd of
   Tactic -> weaveJust <$> tacticHuman
   Automate -> weaveJust <$> automateHuman
 
-  Clear -> addNoError clearHuman
   SortSlots -> addNoError sortSlotsHuman
   ChooseItem dialogMode -> Left <$> chooseItemHuman dialogMode
   ChooseItemProject ts -> Left <$> chooseItemProjectHuman ts

@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   ( -- * Meta commands
     macroHuman
     -- * Local commands
-  , clearHuman, sortSlotsHuman, chooseItemHuman, chooseItemDialogMode
+  , sortSlotsHuman, chooseItemHuman, chooseItemDialogMode
   , chooseItemProjectHuman, chooseItemApplyHuman
   , psuitReq, triggerSymbols, permittedApplyClient
   , pickLeaderHuman, pickLeaderWithPointerHuman
@@ -88,17 +88,6 @@ macroHuman kms = do
   UIOptions{uRunStopMsgs} <- getsSession sUIOptions
   when uRunStopMsgs $
     promptAdd $ "Macro activated:" <+> T.pack (intercalate " " kms)
-
--- * Clear
-
--- | Clear current messages, cycle key hints mode.
-clearHuman :: MonadClientUI m => m ()
-clearHuman = do
-  keysHintMode <- getsSession skeysHintMode
-  when (keysHintMode == KeysHintPresent) historyHuman
-  modifySession $ \sess -> sess {skeysHintMode =
-    let n = fromEnum (skeysHintMode sess) + 1
-    in toEnum $ if n > fromEnum (maxBound :: KeysHintMode) then 0 else n}
 
 -- * SortSlots
 

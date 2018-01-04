@@ -16,7 +16,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , runOnceToXhairHuman, continueToXhairHuman
   , moveItemHuman, projectHuman, applyHuman
   , alterDirHuman, alterWithPointerHuman
-  , helpHuman, dashboardHuman, itemMenuHuman, chooseItemMenuHuman
+  , helpHuman, hintHuman, dashboardHuman, itemMenuHuman, chooseItemMenuHuman
   , mainMenuHuman, settingsMenuHuman, challengesMenuHuman
   , gameScenarioIncr, gameDifficultyIncr, gameWolfToggle, gameFishToggle
     -- * Global commands that never take time
@@ -244,8 +244,8 @@ executeIfClearHuman :: MonadClientUI m
                     => m (Either MError ReqUI)
                     -> m (Either MError ReqUI)
 executeIfClearHuman c1 = do
-  keysHintMode <- getsSession skeysHintMode
-  if keysHintMode == KeysHintAbsent then c1 else return $ Left Nothing
+  sreportNull <- getsSession sreportNull
+  if sreportNull then c1 else return $ Left Nothing
 
 -- * Wait
 
@@ -983,13 +983,27 @@ helpHuman cmdAction = do
         splitOKX lxsize (lysize + 3) (textToAL t) [K.spaceKM, K.escKM] okx
       sli = toSlideshow $ concat $ map splitHelp keyH
   ekm <- displayChoiceScreen "help" ColorFull True sli [K.spaceKM, K.escKM]
-  modifySession $ \sess -> sess {skeysHintMode = KeysHintBlocked}
   case ekm of
     Left km -> case km `M.lookup` bcmdMap keyb of
       _ | km == K.escKM -> return $ Left Nothing
       Just (_desc, _cats, cmd) -> cmdAction cmd
       Nothing -> weaveJust <$> failWith "never mind"
     Right _slot -> error $ "" `showFailure` ekm
+
+-- * Hint
+
+-- | Display hint or, if already displayed, display help.
+hintHuman :: MonadClientUI m
+          => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
+          -> m (Either MError ReqUI)
+hintHuman cmdAction = do
+  hintMode <- getsSession shintMode
+  if hintMode == HintWiped then
+    helpHuman cmdAction
+  else do
+    modifySession $ \sess -> sess {shintMode = HintShown}
+    promptMainKeys
+    return $ Left Nothing
 
 -- * Dashboard
 

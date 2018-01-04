@@ -104,19 +104,18 @@ queryUI = do
 humanCommand :: forall m. MonadClientUI m => m ReqUI
 humanCommand = do
   modifySession $ \sess -> sess { slastLost = ES.empty
-                                , skeysHintMode = KeysHintAbsent }
+                                , shintMode = HintAbsent }
   let loop :: m ReqUI
       loop = do
         report <- getsSession sreport
-        if nullReport report then do
-          -- Display keys sometimes, alternating with empty screen.
-          keysHintMode <- getsSession skeysHintMode
-          case keysHintMode of
-            KeysHintPresent -> promptMainKeys
-            KeysHintBlocked ->
-              modifySession $ \sess -> sess {skeysHintMode = KeysHintAbsent}
-            _ -> return ()
-        else modifySession $ \sess -> sess {skeysHintMode = KeysHintBlocked}
+        hintMode <- getsSession shintMode
+        -- Hints are not considered non-empty reports.
+        modifySession $ \sess -> sess {sreportNull =
+          nullReport report || hintMode == HintShown}
+        case hintMode of
+          HintAbsent -> return ()
+          HintShown -> modifySession $ \sess -> sess {shintMode = HintWiped}
+          HintWiped -> modifySession $ \sess -> sess {shintMode = HintAbsent}
         slidesRaw <- reportToSlideshowKeep []
         over <- case unsnoc slidesRaw of
           Nothing -> return []
