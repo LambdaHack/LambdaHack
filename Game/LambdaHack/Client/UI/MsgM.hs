@@ -39,7 +39,7 @@ promptMainKeys = do
         Nothing -> dflt
         Just (k : _) -> k
         Just [] -> error $ "" `showFailure` brevMap
-      km = revCmd (K.mkChar '?') HumanCmd.Help
+      km = revCmd (K.mkChar '?') HumanCmd.Hint
   saimMode <- getsSession saimMode
   UIOptions{uVi, uLaptop} <- getsSession sUIOptions
   xhair <- getsSession sxhair

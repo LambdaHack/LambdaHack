@@ -33,8 +33,8 @@ standardKeys = KeyKind $ map evalKeyDef $
   , ("x", ([CmdMainMenu], "exit to desktop", GameExit))
   , ("v", ([CmdMainMenu], "visit settings menu>", SettingsMenu))
   , ("a", ([CmdMainMenu], "automate faction", Automate))
-  , ("`", ([CmdMainMenu], "go to dashboard", Dashboard))
   , ("?", ([CmdMainMenu], "see command help", Help))
+  , ("F12", ([CmdMainMenu], "go to dashboard", Dashboard))
   , ("Escape", ([CmdMainMenu], "back to playing", Cancel))
 
   -- Item use, 1st part
@@ -179,11 +179,11 @@ standardKeys = KeyKind $ map evalKeyDef $
                            , aiming = Accept } ))
 
   -- Assorted
-  , ("`", ([CmdMeta], "open dashboard", Dashboard))
+  , ("F12", ([CmdMeta], "open dashboard", Dashboard))
   , ("space", ( [CmdMinimal, CmdMeta]
               , "clear messages/display history", ExecuteIfClear History ))
-  , ("?", ([CmdMeta, CmdDashboard], "display help", Help))
-  , ("F1", ([CmdMeta], "", Help))
+  , ("?", ([CmdMeta], "display help", Hint))
+  , ("F1", ([CmdMeta], "", Hint))
   , ("Tab", ( [CmdMeta]
             , "cycle among party members on the level"
             , MemberCycle ))
@@ -200,7 +200,8 @@ standardKeys = KeyKind $ map evalKeyDef $
   , ("'", ([CmdMeta], "start recording commands", Record))
 
   -- Dashboard, in addition to commands marked above
-  , ("safeD100", ([CmdInternal, CmdDashboard], "display history", History))
+  , ("safeD100", ([CmdInternal, CmdDashboard], "display help", Help))
+  , ("safeD101", ([CmdInternal, CmdDashboard], "display history", History))
 
   -- Mouse
   , ("LeftButtonRelease", mouseLMB)
