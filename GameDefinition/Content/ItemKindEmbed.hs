@@ -26,7 +26,8 @@ stairsUp = ItemKind
   , iflavour = zipPlain [BrWhite]
   , icount   = 1
   , irarity  = [(1, 1)]
-  , iverbHit = "crash"
+  , iverbHit = "crash"  -- the verb is only used when the item hits,
+                        -- not when it's applied otherwise, e.g., from tile
   , iweight  = 100000
   , idamage  = toDmg 0
   , iaspects = []
