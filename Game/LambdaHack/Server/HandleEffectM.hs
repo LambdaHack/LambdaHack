@@ -704,9 +704,10 @@ findStairExit side moveUp lid pos = do
   Kind.COps{coTileSpeedup} <- getsState scops
   fact <- getsState $ (EM.! side) . sfactionD
   lvl <- getLevel lid
-  let defLanding = uncurry Vector $ if moveUp then (-1, 0) else (1, 0)
+  let defLanding = uncurry Vector $ if moveUp then (1, 0) else (-1, 0)
+      center = uncurry Vector $ if moveUp then (-1, 0) else (1, 0)
       (mvs2, mvs1) = break (== defLanding) moves
-      mvs = mvs1 ++ mvs2
+      mvs = center : filter (/= center) (mvs1 ++ mvs2)
       ps = filter (Tile.isWalkable coTileSpeedup . (lvl `at`))
            $ map (shift pos) mvs
       posOcc :: State -> Int -> Point -> Bool
