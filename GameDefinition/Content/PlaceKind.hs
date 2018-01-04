@@ -617,9 +617,7 @@ makeStaircaseUp s = s
  { psymbol   = '<'
  , pname     = pname s <+> "up"
  , pfreq     = map (\(t, k) -> (toGroupName $ tshow t <+> "up", k)) $ pfreq s
- , poverride = [ ('>', "stair terminal")
-               , ('<', toGroupName $ pname s <+> "up")
-               , ('I', "signboard") ]
+ , poverride = ('>', "stair terminal") : filter ((/= '>') . fst) (poverride s)
  }
 
 makeStaircaseDown :: PlaceKind -> PlaceKind
@@ -627,7 +625,5 @@ makeStaircaseDown s = s
  { psymbol   = '>'
  , pname     = pname s <+> "down"
  , pfreq     = map (\(t, k) -> (toGroupName $ tshow t <+> "down", k)) $ pfreq s
- , poverride = [ ('<', "stair terminal")
-               , ('>', toGroupName $ pname s <+> "down")
-               , ('I', "signboard") ]
+ , poverride = ('<', "stair terminal") : filter ((/= '<') . fst) (poverride s)
  }
