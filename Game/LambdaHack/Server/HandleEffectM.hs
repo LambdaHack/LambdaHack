@@ -1137,20 +1137,19 @@ effectDetectX predicate action execSfx radius target = do
         ]
       extraPer = emptyPer {psight = PerVisible $ ES.fromDistinctAscList perList}
       inPer = diffPer extraPer perOld
-  perModified <- if nullPer inPer then return False else do
+  unless (nullPer inPer) $ do
     -- Perception is modified on the server and sent to the client
     -- together with all the revealed info.
     let perNew = addPer inPer perOld
         fper = EM.adjust (EM.insert (blid b) perNew) (bfid b)
     modifyServer $ \ser -> ser {sperFid = fper $ sperFid ser}
     execSendPer (bfid b) (blid b) emptyPer inPer perNew
-    return True
   pointsModified <- action perList
-  if perModified || pointsModified then do
+  if not (nullPer inPer) || pointsModified then do
     execSfx
     -- Perception is reverted. This is necessary to ensure save and restore
     -- doesn't change game state.
-    when perModified $ do
+    unless (nullPer inPer) $ do
       modifyServer $ \ser -> ser {sperFid = sperFidOld}
       execSendPer (bfid b) (blid b) inPer emptyPer perOld
   else
@@ -1193,11 +1192,19 @@ effectDetectHidden execSfx radius target pos = do
   b <- getsState $ getActorBody target
   lvl <- getLevel $ blid b
   let predicate p = Tile.isHideAs coTileSpeedup $ lvl `at` p
+      revealEmbed p = do
+        embeds <- getsState $ getEmbedBag (blid b) p
+        unless (null embeds) $ do
+          s <- getState
+          let ais = map (\iid -> (iid, getItemBody iid s)) (EM.keys embeds)
+          execUpdAtomic $ UpdSpotItemBag (CEmbed (blid b) p) embeds ais
       action l = do
         let f p = when (p /= pos) $ do
               let t = lvl `at` p
               execUpdAtomic $ UpdSearchTile target p t
-              -- This is safe searching; embedded items are not triggered.
+              -- This is safe searching; embedded items are not triggered,
+              -- but they are revealed.
+              revealEmbed p
         mapM_ f l
         return $! not $ null l
   effectDetectX predicate action execSfx radius target
