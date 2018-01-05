@@ -388,7 +388,7 @@ effectExplode execSfx cgroup target = do
               , flip Point (y - 12) $ x - fuzz
               , flip Point (y + 12) $ x - fuzz
               ]
-            ps = take k psAll
+            ps = take k $ cycle $ drop ((k100 + itemK + n) `mod` 16) psAll
         forM_ ps $ \tpxy -> do
           let req = ReqProject tpxy veryrandom iid COrgan
           mfail <- projectFail target tpxy veryrandom iid COrgan True
