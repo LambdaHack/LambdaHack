@@ -233,7 +233,7 @@ keyHelp Kind.COps{corule} keyb@Binding{..} offset = assert (offset > 0) $
     , ( casualDescription <+> "(2/2)."
       , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEnd )
     , ( "All terrain exploration and alteration commands."
-      , okxs CmdMove [keyCaption] categoryEnd )
+      , okxs CmdMove [keyCaption] (pickLeaderDescription ++ categoryEnd) )
     , ( categoryDescription CmdItemMenu <> "."
       , okxs CmdItemMenu [keyCaption] categoryEnd )
     , ( categoryDescription CmdItem <> "."
@@ -241,7 +241,7 @@ keyHelp Kind.COps{corule} keyb@Binding{..} offset = assert (offset > 0) $
     , ( categoryDescription CmdAim <> "."
       , okxs CmdAim [keyCaption] categoryEnd )
     , ( categoryDescription CmdMeta <> "."
-      , okxs CmdMeta [keyCaption] (pickLeaderDescription ++ lastCategoryEnd) )
+      , okxs CmdMeta [keyCaption] lastCategoryEnd )
     , ( "Mouse overview."
       , let (ls, _) =
               okxs CmdMouse (mouseBasicsText ++ [keyCaption]) mouseBasicsEnd

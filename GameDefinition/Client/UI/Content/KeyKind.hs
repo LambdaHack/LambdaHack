@@ -27,7 +27,7 @@ standardKeys = KeyKind $ map evalKeyDef $
   -- Remember to put commands that show information (e.g., enter aiming
   -- mode) first.
 
-  -- main menu
+  -- Main menu
   [ ("e", ([CmdMainMenu], "enter challenges menu>", ChallengesMenu))
   , ("s", ([CmdMainMenu], "start new game", GameRestart))
   , ("x", ([CmdMainMenu], "exit to desktop", GameExit))
@@ -37,9 +37,34 @@ standardKeys = KeyKind $ map evalKeyDef $
   , ("F12", ([CmdMainMenu], "go to dashboard", Dashboard))
   , ("Escape", ([CmdMainMenu], "back to playing", Cancel))
 
-  -- Item use, 1st part
+  -- Minimal command set, in the desired presentation order
   , ("g", addCmdCategory CmdMinimal $ grabItems "grab item(s)")
       -- actually it's not necessary, ground items menu suffices
+  , ("Escape", ( [CmdMinimal, CmdAim]
+               , "cancel aiming/open main menu"
+               , ByAimMode { exploration = ExecuteIfClear MainMenu
+                           , aiming = Cancel } ))
+  , ("Return", ( [CmdMinimal, CmdAim]
+               , "accept target/open dashboard"
+               , ByAimMode { exploration = ExecuteIfClear Dashboard
+                           , aiming = Accept } ))
+  , ("space", ( [CmdMinimal, CmdMeta]
+              , "clear messages/display history"
+              , ExecuteIfClear History ))
+      -- not necessary, because messages available from dashboard
+  , ("BackTab", ( [CmdMinimal, CmdMove]
+              , "cycle among all party members"
+              , MemberBack ))
+  , ("KP_Multiply", ( [CmdMinimal, CmdAim]
+                    , "cycle x-hair among enemies"
+                    , AimEnemy ))
+      -- not necessary, because flinging from item menu enters aiming mode
+  , ("c", ( [CmdMinimal, CmdMove]
+          , descTs closeDoorTriggers
+          , AlterDir closeDoorTriggers ))
+  , ("+", ([CmdMinimal, CmdAim], "swerve the aiming line", EpsIncr True))
+
+  -- Item menu, first part of item use commands
   , ("comma", grabItems "")
   , ("d", dropItems "drop item(s)")
   , ("period", dropItems "")
@@ -55,8 +80,19 @@ standardKeys = KeyKind $ map evalKeyDef $
               { verb = "apply"
               , object = "consumable"
               , symbol = ' ' }])
+  , ("p", moveItemTriple [CGround, CEqp, CSha] CInv
+                         "item" False)
+  , ("e", moveItemTriple [CGround, CInv, CSha] CEqp
+                         "item" False)
+  , ("s", moveItemTriple [CGround, CInv, CEqp] CSha
+                         "and share item" False)
 
   -- Terrain exploration and alteration
+  , ("Tab", ( [CmdMove]
+            , "cycle among party members on the level"
+            , MemberCycle ))
+  , ("=", ( [CmdMove], "select (or deselect) party member", SelectActor) )
+  , ("_", ([CmdMove], "deselect (or select) all on the level", SelectNone))
   , ("semicolon", ( [CmdMove]
                   , "go to x-hair for 25 steps"
                   , Macro ["C-semicolon", "C-/", "C-V"] ))
@@ -72,19 +108,10 @@ standardKeys = KeyKind $ map evalKeyDef $
   , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_5", "C-V"]))
   , ("C-R", ( [CmdMove], "lurk (wait 0.1 turns 100 times)"
             , Macro ["C-KP_5", "V"] ))
-  , ("c", ( [CmdMove, CmdMinimal]
-          , descTs closeDoorTriggers
-          , AlterDir closeDoorTriggers ))
 
   -- Item use, continued
   , ("^", ( [CmdItem], "sort items by kind and stats", SortSlots))
-  , ("p", moveItemTriple [CGround, CEqp, CSha] CInv
-                         "item" False)
-  , ("e", moveItemTriple [CGround, CInv, CSha] CEqp
-                         "item" False)
-  , ("s", moveItemTriple [CGround, CInv, CEqp] CSha
-                         "and share item" False)
-  , ("P", ( [CmdMinimal, CmdItem, CmdDashboard]
+  , ("P", ( [CmdItem, CmdDashboard]
           , "manage item pack of the leader"
           , ChooseItemMenu (MStore CInv) ))
   , ("G", ( [CmdItem, CmdDashboard]
@@ -138,16 +165,11 @@ standardKeys = KeyKind $ map evalKeyDef $
   [ ("safeD99", ([CmdInternal, CmdDashboard], "", Cancel))  -- blank line
 
   -- Aiming
-  , ("KP_Multiply", ( [CmdAim, CmdMinimal]
-                    , "cycle x-hair among enemies", AimEnemy ))
-      -- not really minimal, because flinging from item menu enters aiming
-      -- mode, first screen mentions aiming mode not in fling context
   , ("!", ([CmdAim], "", AimEnemy))
   , ("KP_Divide", ([CmdAim], "cycle x-hair among items", AimItem))
   , ("/", ([CmdAim], "", AimItem))
-  , ("\\", ([CmdAim], "cycle aiming modes", AimFloor))
-  , ("+", ([CmdAim, CmdMinimal], "swerve the aiming line", EpsIncr True))
   , ("-", ([CmdAim], "unswerve the aiming line", EpsIncr False))
+  , ("\\", ([CmdAim], "cycle aiming modes", AimFloor))
   , ("C-?", ( [CmdAim]
             , "set x-hair to nearest unknown spot"
             , XhairUnknown ))
@@ -169,30 +191,11 @@ standardKeys = KeyKind $ map evalKeyDef $
   , ("BackSpace" , ( [CmdAim]
                    , "clear chosen item and target"
                    , ComposeUnlessError ItemClear TgtClear ))
-  , ("Escape", ( [CmdAim, CmdMinimal]
-               , "cancel aiming/open main menu"
-               , ByAimMode { exploration = ExecuteIfClear MainMenu
-                           , aiming = Cancel } ))
-  , ("Return", ( [CmdAim, CmdMinimal]
-               , "accept target/open help"
-               , ByAimMode { exploration = ExecuteIfClear Hint
-                           , aiming = Accept } ))
 
   -- Assorted
   , ("F12", ([CmdMeta], "open dashboard", Dashboard))
-  , ("space", ( [CmdMinimal, CmdMeta]
-              , "clear messages/display history", ExecuteIfClear History ))
   , ("?", ([CmdMeta], "display help", Hint))
   , ("F1", ([CmdMeta], "", Hint))
-  , ("Tab", ( [CmdMeta]
-            , "cycle among party members on the level"
-            , MemberCycle ))
-  , ("BackTab", ( [CmdMeta, CmdMinimal]
-              , "cycle among all party members"
-              , MemberBack ))
-  , ("=", ( [CmdMinimal, CmdMeta]
-          , "select (or deselect) party member", SelectActor) )
-  , ("_", ([CmdMeta], "deselect (or select) all on the level", SelectNone))
   , ("v", ([CmdMeta], "voice again the recorded commands", Repeat 1))
   , ("V", repeatTriple 100)
   , ("C-v", repeatTriple 1000)

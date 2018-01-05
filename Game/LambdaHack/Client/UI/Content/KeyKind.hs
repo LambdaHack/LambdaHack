@@ -166,13 +166,13 @@ grabCmd = MoveItem [CGround] CEqp (Just "grab") True
             -- @CEqp@ is the implicit default; refined in HandleHumanGlobalM
 
 grabItems :: Text -> CmdTriple
-grabItems t = ([CmdMove, CmdItemMenu], t, grabCmd)
+grabItems t = ([CmdItemMenu], t, grabCmd)
 
 dropCmd :: HumanCmd
 dropCmd = MoveItem [CEqp, CInv, CSha] CGround Nothing False
 
 dropItems :: Text -> CmdTriple
-dropItems t = ([CmdMove, CmdItemMenu], t, dropCmd)
+dropItems t = ([CmdItemMenu], t, dropCmd)
 
 descTs :: [Trigger] -> Text
 descTs [] = "trigger a thing"
