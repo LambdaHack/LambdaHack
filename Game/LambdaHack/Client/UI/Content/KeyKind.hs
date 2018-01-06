@@ -65,7 +65,7 @@ mouseLMB =
           [ (CaMapLeader, grabCmd)
           , (CaMapParty, PickLeaderWithPointer)
           , (CaMap, goToCmd)
-          , (CaArenaName, Help)
+          , (CaArenaName, Dashboard)
           , (CaPercentSeen, autoexploreCmd) ]
       , aiming = ByArea $ common ++  -- aiming mode
           [ (CaMap, AimPointerEnemy)
@@ -79,7 +79,7 @@ mouseLMB =
     , (CaSelected, PickLeaderWithPointer)
     , (CaCalmGauge, Macro ["KP_5", "C-V"])
     , (CaHPGauge, Wait)
-    , (CaTargetDesc, ChooseItemMenu $ MStore CInv) ]
+    , (CaTargetDesc, projectICmd flingTs) ]
 
 mouseMMB :: CmdTriple
 mouseMMB = ( [CmdMouse]
@@ -96,21 +96,20 @@ mouseRMB =
           , (CaMapParty, SelectWithPointer)
           , (CaMap, runToAllCmd)
           , (CaArenaName, MainMenu)
-          , (CaPercentSeen, autoexplore25Cmd)
-          , (CaTargetDesc, projectICmd flingTs) ]
+          , (CaPercentSeen, autoexplore25Cmd) ]
       , aiming = ByArea $ common ++
           [ (CaMap, aimFlingCmd)
           , (CaArenaName, Cancel)
-          , (CaPercentSeen, XhairStair False)
-          , (CaTargetDesc, ComposeUnlessError ItemClear TgtClear) ] } )
+          , (CaPercentSeen, XhairStair False) ] } )
  where
   common =
-    [ (CaMessage, ChooseItemMenu (MLore SItem))
+    [ (CaMessage, Hint)
     , (CaLevelNumber, AimAscend (-1))
     , (CaXhairDesc, AimItem)
     , (CaSelected, SelectWithPointer)
     , (CaCalmGauge, Macro ["C-KP_5", "V"])
-    , (CaHPGauge, Wait10) ]
+    , (CaHPGauge, Wait10)
+    , (CaTargetDesc, ComposeUnlessError ItemClear TgtClear) ]
 
 goToCmd :: HumanCmd
 goToCmd = Macro ["MiddleButtonRelease", "C-semicolon", "C-/", "C-V"]

@@ -43,6 +43,8 @@ promptMainKeys = do
   saimMode <- getsSession saimMode
   UIOptions{uVi, uLaptop} <- getsSession sUIOptions
   xhair <- getsSession sxhair
+  -- The silly "uk8o79jl" ordering of keys is chosen to match "hjklyubn",
+  -- which the usual way of writing them.
   let moveKeys | uVi = "keypad or hjklyubn"
                | uLaptop = "keypad or uk8o79jl"
                | otherwise = "keypad"
