@@ -86,10 +86,10 @@ standardKeys = KeyKind $ map evalKeyDef $
                          "and share item" False)
 
   -- Terrain exploration and alteration
-  , ("c", ([CmdMove], descTs closeDoorTriggers, AlterDir closeDoorTriggers))
   , ("Tab", ( [CmdMove]
             , "cycle among party members on the level"
             , MemberCycle ))
+  , ("c", ([CmdMove], descTs closeDoorTriggers, AlterDir closeDoorTriggers))
   , ("=", ( [CmdMove], "select (or deselect) party member", SelectActor) )
   , ("_", ([CmdMove], "deselect (or select) all on the level", SelectNone))
   , ("semicolon", ( [CmdMove]
