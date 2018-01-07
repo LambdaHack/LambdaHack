@@ -26,7 +26,7 @@ scratchOnWall,    obscenePictogram, subtleFresco, treasureCache, treasureCacheTr
 -- and foregoing the fun of guessing how to find entrance to a disjoint part
 -- of the level by bumping the least number of secret walls.
 scratchOnWall = ItemKind
-  { isymbol  = '*'
+  { isymbol  = '?'
   , iname    = "scratch on wall"
   , ifreq    = [("scratch on wall", 1)]
   , iflavour = zipPlain [BrBlack]
@@ -108,7 +108,7 @@ treasureCacheTrap = ItemKind
   , ikit     = []
   }
 signboardExit = ItemKind
-  { isymbol  = 'O'
+  { isymbol  = '?'
   , iname    = "signboard with exits"
   , ifreq    = [("signboard", 80)]
   , iflavour = zipPlain [BrMagenta]
@@ -271,7 +271,7 @@ staircaseTrapDown = staircaseTrapUp
   , idesc    = "A treacherous slab, to teach those who are too proud."
   }
 pulpit = ItemKind
-  { isymbol  = '%'
+  { isymbol  = '?'
   , iname    = "pulpit"
   , ifreq    = [("pulpit", 1)]
   , iflavour = zipFancy [BrYellow]
