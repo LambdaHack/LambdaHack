@@ -318,12 +318,15 @@ lookAtTile :: MonadClientUI m
            -> m Text
 lookAtTile canSee p aid lidV = do
   Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
+  side <- getsClient sside
+  factionD <- getsState sfactionD
   b <- getsState $ getActorBody aid
   lvl <- getLevel lidV
-  embeds <- getsState $ EM.keys . getEmbedBag lidV p
+  embeds <- getsState $ getEmbedBag lidV p
   itemToF <- getsState itemToFull
   seps <- getsClient seps
   mnewEps <- makeLine False b p seps
+  localTime <- getsState $ getLocalTime lidV
   let aims = isJust mnewEps
       tile = lvl `at` p
       vis | TK.isUknownSpace tile = "that is"
@@ -331,12 +334,15 @@ lookAtTile canSee p aid lidV = do
           | not aims = "you are aware of"
           | otherwise = "you see"
       tilePart = MU.AW $ MU.Text $ TK.tname $ okind tile
-      fdesc iid = case itemDisco $ itemToF iid (1, []) of
-         Nothing -> ""
-         Just ItemDisco{itemKind} -> IK.idesc itemKind
-      desc = T.intercalate " " $ filter (/= "") $ map fdesc embeds
-      pdesc = if desc == "" then "" else "(" <> desc <> ")"
-  return $! makeSentence [MU.Text vis, tilePart] <+> pdesc
+      itemLook (iid, kit@(k, _)) =
+        let itemFull = itemToF iid kit
+            stats = partItemWs side factionD k localTime itemFull
+            desc = case itemDisco itemFull of
+              Nothing -> ""
+              Just ItemDisco{itemKind} -> IK.idesc itemKind
+        in makeSentence ["There is", stats] <+> desc
+      ilooks = T.intercalate " " $ map itemLook $ EM.assocs embeds
+  return $! makeSentence [MU.Text vis, tilePart] <+> ilooks
 
 -- | Produces a textual description of actors at a position.
 lookAtActors :: MonadClientUI m
