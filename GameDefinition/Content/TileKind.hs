@@ -160,7 +160,7 @@ wallObscuredDefacedH = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 5
-  , tfeature = [ Embed "obscene pictograms"
+  , tfeature = [ Embed "obscene pictogram"
                , HideAs "suspect horizontal wall Lit"
                , Indistinct
                ]

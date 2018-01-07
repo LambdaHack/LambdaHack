@@ -15,9 +15,9 @@ import Game.LambdaHack.Content.ItemKind
 
 embeds :: [ItemKind]
 embeds =
-  [scratchOnWall, obscenePictograms, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardMap, fireSmall, fireBig, frost, rubble, doorwayTrap,  stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit]
+  [scratchOnWall, obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardMap, fireSmall, fireBig, frost, rubble, doorwayTrap,  stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit]
 
-scratchOnWall,    obscenePictograms, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardMap, fireSmall, fireBig, frost, rubble, doorwayTrap,  stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit :: ItemKind
+scratchOnWall,    obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardMap, fireSmall, fireBig, frost, rubble, doorwayTrap,  stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit :: ItemKind
 
 -- Make sure very few walls are substantially useful, e.g., caches,
 -- and none that are secret. Otherwise the player will spend a lot of time
@@ -41,10 +41,10 @@ scratchOnWall = ItemKind
   , idesc    = "A seemingly random series of scratches, carved deep into the wall."
   , ikit     = []
   }
-obscenePictograms = ItemKind
+obscenePictogram = ItemKind
   { isymbol  = '*'
-  , iname    = "obscene pictograms"
-  , ifreq    = [("obscene pictograms", 1)]
+  , iname    = "obscene pictogram"
+  , ifreq    = [("obscene pictogram", 1)]
   , iflavour = zipPlain [BrMagenta]
   , icount   = 1
   , irarity  = [(1, 1)]
@@ -52,13 +52,13 @@ obscenePictograms = ItemKind
   , iweight  = 1000
   , idamage  = toDmg 0
   , iaspects = [Timeout 7]
-  , ieffects = [ Temporary "enter destructive rage at the sight of obscene pictograms"
+  , ieffects = [ Temporary "enter destructive rage at the sight of an obscene pictogram"
                , RefillCalm (-20)
                , Recharging $ OneOf
                    [ toOrganActorTurn "strengthened" (3 + 1 `d` 3)
                    , CreateItem CInv "sandstone rock" TimerNone ] ]
   , ifeature = [Identified, Durable]
-  , idesc    = "They aren't even anatomically possible."
+  , idesc    = "It's not even anatomically possible."
   , ikit     = []
   }
 subtleFresco = ItemKind
