@@ -15,9 +15,9 @@ import Game.LambdaHack.Content.ItemKind
 
 embeds :: [ItemKind]
 embeds =
-  [scratchOnWall, obscenePictograms, subtleFresco, terrainCache, terrainCacheTrap, signboardExit, signboardMap, fireSmall, fireBig, frost, rubble, doorwayTrap,  stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit]
+  [scratchOnWall, obscenePictograms, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardMap, fireSmall, fireBig, frost, rubble, doorwayTrap,  stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit]
 
-scratchOnWall,    obscenePictograms, subtleFresco, terrainCache, terrainCacheTrap, signboardExit, signboardMap, fireSmall, fireBig, frost, rubble, doorwayTrap,  stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit :: ItemKind
+scratchOnWall,    obscenePictograms, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardMap, fireSmall, fireBig, frost, rubble, doorwayTrap,  stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit :: ItemKind
 
 -- Make sure very few walls are substantially useful, e.g., caches,
 -- and none that are secret. Otherwise the player will spend a lot of time
@@ -80,7 +80,7 @@ subtleFresco = ItemKind
   , idesc    = "Expensive yet tasteful."
   , ikit     = []
   }
-terrainCache = stairsUp
+treasureCache = stairsUp
   { isymbol  = 'O'
   , iname    = "treasure cache"
   , ifreq    = [("treasure cache", 1)]
@@ -88,7 +88,7 @@ terrainCache = stairsUp
   , ieffects = [CreateItem CGround "useful" TimerNone]
   , idesc    = "Glittering gold, just waiting to be taken."
   }
-terrainCacheTrap = ItemKind
+treasureCacheTrap = ItemKind
   { isymbol  = '^'
   , iname    = "treasure cache trap"
   , ifreq    = [("treasure cache trap", 1)]
