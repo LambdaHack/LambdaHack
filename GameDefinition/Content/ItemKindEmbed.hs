@@ -209,6 +209,12 @@ doorwayTrap = ItemKind
   , idesc    = "Just turn the handle..."
   , ikit     = []
   }
+-- Make sure very few walls are substantially useful, e.g., caches,
+-- and none that are secret. Otherwise the player will spend a lot of time
+-- bumping walls, which is boring compare to fights or dialogues
+-- and ever worse, the player will bump all secret walls, wasting time
+-- and foregoing the fun of guessing how to find entrance to a disjoint part
+-- of the level by bumping the least number of secret walls.
 obscenePictograms = ItemKind
   { isymbol  = '*'
   , iname    = "obscene pictograms"
