@@ -413,36 +413,48 @@ moveSearchAlter dir = do
   Kind.COps{coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
+  ar <- getsState $ getActorAspect leader
   actorSk <- leaderSkillsClientUI
-  lvl <- getLevel $ blid sb
-  let alterSkill = EM.findWithDefault 0 AbAlter actorSk
+  let calmE = calmEnough sb ar
+      alterSkill = EM.findWithDefault 0 AbAlter actorSk
+      applySkill = EM.findWithDefault 0 AbApply actorSk
       spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
-      t = lvl `at` tpos
+  itemToF <- getsState itemToFull
+  localTime <- getsState $ getLocalTime (blid sb)
+  embeds <- getsState $ getEmbedBag (blid sb) tpos
+  lvl <- getLevel $ blid sb
+  let t = lvl `at` tpos
       alterMinSkill = Tile.alterMinSkill coTileSpeedup t
-  bag <- getsState $ getEmbedBag (blid sb) tpos
+      canApplyEmbeds = any canApplyEmbed $ EM.assocs embeds
+      canApplyEmbed (iid, kit) =
+        let itemFull = itemToF iid kit
+            legal = permittedApply localTime applySkill calmE " " itemFull
+        -- Let even completely unskilled actors trigger basic embeds.
+        in either (const False) (const True) legal
+      modifiable = Tile.isDoor coTileSpeedup t
+                   || Tile.isChangable coTileSpeedup t
+                   || Tile.isSuspect coTileSpeedup t
   runStopOrCmd <-
     -- Movement requires full access.
     if | Tile.isWalkable coTileSpeedup t ->
          -- A potential invisible actor is hit. War started without asking.
          return $ Right $ RequestAnyAbility $ ReqMove dir
-       -- No access, so search and/or alter the tile.
-       | not (null bag)
-         || Tile.isSuspect coTileSpeedup t  -- not yet searched
-         || alterMinSkill < 10
-         || alterMinSkill >= 10 && alterSkill >= alterMinSkill ->
-         if | alterSkill < alterMinSkill -> failSer AlterUnwalked
-            | EM.member tpos $ lfloor lvl -> failSer AlterBlockItem
-            | otherwise -> do
-              verAlters <- verifyAlters (blid sb) tpos
-              case verAlters of
-                Right() ->
-                  return $ Right $ RequestAnyAbility $ ReqAlter tpos
-                Left err -> return $ Left err
-            -- We don't use MoveSer, because we don't hit invisible actors.
-            -- The potential invisible actor, e.g., in a wall,
-            -- making the player use a turn.
-            -- If server performed an attack for free
+       -- No free access, so search and/or alter the tile.
+       | not (modifiable || canApplyEmbeds) ->
+           failWith "never mind"  -- misclick? related to AlterNothing
+       | alterSkill <= 1 -> failSer AlterUnskilled
+       | not (Tile.isSuspect coTileSpeedup t)
+         && alterSkill < alterMinSkill -> failSer AlterUnwalked
+       | EM.member tpos $ lfloor lvl -> failSer AlterBlockItem
+       | not $ null $ posToAidsLvl tpos lvl -> failSer AlterBlockActor
+       | otherwise -> do  -- promising
+            verAlters <- verifyAlters (blid sb) tpos
+            case verAlters of
+              Right() -> return $ Right $ RequestAnyAbility $ ReqAlter tpos
+              Left err -> return $ Left err
+            -- We don't use ReqMove, because we don't hit invisible actors,
+            -- e.g., hidden in a wall. If server performed an attack for free
             -- on the invisible actor anyway, the player (or AI)
             -- would be tempted to repeatedly hit random walls
             -- in hopes of killing a monster lurking within.
@@ -451,8 +463,6 @@ moveSearchAlter dir = do
             -- about invisible pass-wall actors, but when an actor detected,
             -- it costs a turn and does not harm the invisible actors,
             -- so it's not so tempting.
-       -- Ignore a known boring, not accessible tile.
-       | otherwise -> failWith "never mind"
   return $! runStopOrCmd
 
 -- * RunOnceAhead
@@ -865,6 +875,11 @@ alterTile ts dir = do
   alterTileAtPos ts tpos pText
 
 -- | Try to alter a tile using a feature at the given position.
+--
+-- We don't check if the tile is interesting, e.g., if any embedded
+-- item can be triggered, because the player explicitely requested
+-- the action. Consequently, even if all embedded items are recharching,
+-- the time will be wasted and the server will describe the failure in detail.
 alterTileAtPos :: MonadClientUI m
                => [Trigger] -> Point -> Text
                -> m (FailOrCmd (RequestTimed 'AbAlter))
