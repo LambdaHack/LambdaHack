@@ -888,14 +888,21 @@ alterTileAtPos ts tpos pText = do
   b <- getsState $ getActorBody leader
   actorSk <- leaderSkillsClientUI
   lvl <- getLevel $ blid b
+  embeds <- getsState $ getEmbedBag (blid b) tpos
   let alterSkill = EM.findWithDefault 0 AbAlter actorSk
       t = lvl `at` tpos
+      alterMinSkill = Tile.alterMinSkill coTileSpeedup t
       hasFeat TriggerTile{ttfeature} = Tile.hasFeature cotile ttfeature t
+      modifiable = Tile.isDoor coTileSpeedup t
+                   || Tile.isChangable coTileSpeedup t
+                   || Tile.isSuspect coTileSpeedup t
   case filter hasFeat ts of
-    _ | not $ adjacent tpos (bpos b) -> failSer AlterDistant
-    _ | alterSkill < Tile.alterMinSkill coTileSpeedup t ->
-      failSer AlterUnskilled
     [] | not $ null ts -> failWith $ guessAlter cops ts t
+    _ | not modifiable && null embeds -> failSer AlterNothing
+    _ | not $ adjacent tpos (bpos b) -> failSer AlterDistant
+    _ | alterSkill <= 1 -> failSer AlterUnskilled
+    _ | not (Tile.isSuspect coTileSpeedup t)
+        && alterSkill < alterMinSkill -> failSer AlterUnwalked
     trs ->
       if EM.notMember tpos $ lfloor lvl then
         if null (posToAidsLvl tpos lvl) then do
