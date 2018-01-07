@@ -336,7 +336,7 @@ scentGland = armoredSkin
   , iverbHit = "spray at"
   , iaspects = [Timeout $ (1 `d` 3) * 10]
   , ieffects = [ Periodic
-               , Recharging (Temporary "look spent")
+               , Temporary "look spent"
                , Recharging (Explode "distressing odor")
                , Recharging ApplyPerfume ]
   , ifeature = [Identified]  -- not Durable

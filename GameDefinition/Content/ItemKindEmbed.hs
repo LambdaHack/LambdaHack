@@ -53,7 +53,7 @@ obscenePictogram = ItemKind
   , idamage  = toDmg 0
   , iaspects = [Timeout 7]
   , ieffects = [ Temporary "enter destructive rage at the sight of an obscene pictogram"
-               , RefillCalm (-20)
+               , Recharging $ RefillCalm (-20)
                , Recharging $ OneOf
                    [ toOrganActorTurn "strengthened" (3 + 1 `d` 3)
                    , CreateItem CInv "sandstone rock" TimerNone ] ]
