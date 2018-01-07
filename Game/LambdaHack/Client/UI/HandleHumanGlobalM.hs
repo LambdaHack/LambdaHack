@@ -896,14 +896,17 @@ alterTileAtPos ts tpos pText = do
   case filter hasFeat ts of
     _ : _ | alterSkill < Tile.alterMinSkill coTileSpeedup t ->
       failSer AlterUnskilled
-    [] -> failWith $ guessAlter cops ts t
-    tr : _ ->
+    [] | not $ null ts -> failWith $ guessAlter cops ts t
+    trs ->
       if EM.notMember tpos $ lfloor lvl then
         if null (posToAidsLvl tpos lvl) then do
+          let v = case trs of
+                [] -> "alter"
+                tr : _ -> verb tr
           verAlters <- verifyAlters (blid b) tpos
           case verAlters of
             Right() -> do
-              let msg = makeSentence ["you", verb tr, MU.Text pText]
+              let msg = makeSentence ["you", v, MU.Text pText]
               msgAdd msg
               return $ Right $ ReqAlter tpos
             Left err -> return $ Left err
@@ -970,14 +973,16 @@ guessAlter _ _ _ = "never mind"
 alterWithPointerHuman :: MonadClientUI m
                       => [Trigger] -> m (FailOrCmd (RequestTimed 'AbAlter))
 alterWithPointerHuman ts = do
+  Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   lidV <- viewedLevelUI
-  Level{lxsize, lysize} <- getLevel lidV
+  lvl@Level{lxsize, lysize} <- getLevel lidV
   Point{..} <- getsSession spointer
+  let tpos = Point px (py - mapStartY)
+      t = lvl `at` tpos
   if px >= 0 && py - mapStartY >= 0
      && px < lxsize && py - mapStartY < lysize
   then do
-    let tpos = Point px (py - mapStartY)
-    alterTileAtPos ts tpos "the door"
+    alterTileAtPos ts tpos $ "the" <+> TK.tname (okind t)
   else do
     stopPlayBack
     failWith "never mind"
