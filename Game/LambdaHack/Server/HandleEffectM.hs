@@ -221,10 +221,12 @@ imperishableKit permanent periodic it2 ItemFull{..} =
 
 -- The item is triggered exactly once. If there are more copies,
 -- they are left to be triggered next time.
-itemEffectEmbedded :: MonadServerAtomic m => ActorId -> Point -> ItemId -> m ()
-itemEffectEmbedded aid tpos iid = do
-  sb <- getsState $ getActorBody aid
-  let c = CEmbed (blid sb) tpos
+itemEffectEmbedded :: MonadServerAtomic m
+                   => ActorId -> LevelId -> Point -> ItemId -> m ()
+itemEffectEmbedded aid lid tpos iid = do
+  -- First embedded item may move actor to another level, so @lid@
+  -- may be unqual to @blid sb@.
+  let c = CEmbed lid tpos
   execSfxAtomic $ SfxTrigger aid tpos
   meleeEffectAndDestroy aid aid iid c
 

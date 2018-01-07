@@ -397,7 +397,7 @@ reqAlter source tpos = do
             -- to trigger some embeds, knowing that others won't fire.
             execSfxAtomic $ SfxMsgFid (bfid sb)
             $ SfxExpected ("embedded" <+> jname itemBase) reqFail
-          _ -> itemEffectEmbedded source tpos iid
+          _ -> itemEffectEmbedded source lid tpos iid
   if not $ adjacent (bpos sb) tpos then execFailure source req AlterDistant
   else if Just clientTile == hiddenTile then  -- searches
     -- Only actors with AbAlter > 1 can search for hidden doors, etc.
