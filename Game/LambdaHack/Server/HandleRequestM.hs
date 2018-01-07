@@ -365,10 +365,15 @@ reqAlter source tpos = do
   Kind.COps{ cotile=cotile@Kind.Ops{okind, opick}
            , coTileSpeedup } <- getsState scops
   sb <- getsState $ getActorBody source
-  sClient <- getsServer $ (EM.! bfid sb) . sclientStates
-  actorSk <- currentSkillsServer source
-  let alterSkill = EM.findWithDefault 0 Ability.AbAlter actorSk
+  ar <- getsState $ getActorAspect source
+  let calmE = calmEnough sb ar
       lid = blid sb
+  sClient <- getsServer $ (EM.! bfid sb) . sclientStates
+  itemToF <- getsState itemToFull
+  actorSk <- currentSkillsServer source
+  localTime <- getsState $ getLocalTime lid
+  let alterSkill = EM.findWithDefault 0 Ability.AbAlter actorSk
+      applySkill = EM.findWithDefault 0 Ability.AbApply actorSk
       req = ReqAlter tpos
   embeds <- getsState $ getEmbedBag lid tpos
   lvl <- getLevel lid
@@ -376,10 +381,23 @@ reqAlter source tpos = do
       lvlClient = (EM.! lid) . sdungeon $ sClient
       clientTile = lvlClient `at` tpos
       hiddenTile = Tile.hideAs cotile serverTile
-      revealEmbed = unless (null embeds) $ do
+      revealEmbeds = unless (null embeds) $ do
         s <- getState
         let ais = map (\iid -> (iid, getItemBody iid s)) (EM.keys embeds)
         execUpdAtomic $ UpdSpotItemBag (CEmbed lid tpos) embeds ais
+      tryApplyEmbeds = mapM_ tryApplyEmbed $ EM.assocs embeds
+      tryApplyEmbed (iid, kit) = do
+        let itemFull@ItemFull{itemBase} = itemToF iid kit
+            legal = permittedApply localTime applySkill calmE " " itemFull
+        -- Let even completely unskilled actors trigger basic embeds.
+        case legal of
+          Left ApplyNoEffects -> return ()  -- pure flavour embed
+          Left reqFail | reqFail `notElem` [ApplyUnskilled, NotCalmPrecious] ->
+            -- The failure is fully expected, because client may choose
+            -- to trigger some embeds, knowing that others won't fire.
+            execSfxAtomic $ SfxMsgFid (bfid sb)
+            $ SfxExpected ("embedded" <+> jname itemBase) reqFail
+          _ -> itemEffectEmbedded source tpos iid
   if not $ adjacent (bpos sb) tpos then execFailure source req AlterDistant
   else if Just clientTile == hiddenTile then  -- searches
     -- Only actors with AbAlter > 1 can search for hidden doors, etc.
@@ -396,15 +414,15 @@ reqAlter source tpos = do
       -- If the items are already seen by the client
       -- (e.g., due to item detection, despite tile being still hidden),
       -- the command is ignored on the client.
-      revealEmbed
+      revealEmbeds
       -- Seaching triggers the embeds as well, after they are revealed.
       -- The rationale is that the items were all the time present
       -- (just invisible to the client), so they need to be triggered.
       -- The exception is changable tiles, because they are not so easy
       -- to trigger; they need subsequent altering.
       unless (Tile.isDoor coTileSpeedup serverTile
-              || Tile.isChangable coTileSpeedup serverTile) $
-        itemEffectEmbedded source tpos embeds
+              || Tile.isChangable coTileSpeedup serverTile)
+        tryApplyEmbeds
   else if clientTile == serverTile then  -- alters
     if alterSkill < Tile.alterMinSkill coTileSpeedup serverTile
     then execFailure source req AlterUnskilled  -- don't leak about altering
@@ -474,8 +492,8 @@ reqAlter source tpos = do
             -- The items are first revealed for the sake of clients that
             -- may see the tile as hidden. Note that the tile is not revealed
             -- (unless it's altered later on, in which case the new one is).
-            revealEmbed
-            itemEffectEmbedded source tpos embeds
+            revealEmbeds
+            tryApplyEmbeds
             case groupsToAlterTo of
               [] -> return ()
               [groupToAlterTo] -> changeTo groupToAlterTo

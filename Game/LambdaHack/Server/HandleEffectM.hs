@@ -219,18 +219,14 @@ imperishableKit permanent periodic it2 ItemFull{..} =
       kit = if permanent || periodic then (1, take 1 it2) else (itemK, it2)
   in (imperishable, kit)
 
--- One item of each @iid@ is triggered at once. If there are more copies,
+-- The item is triggered exactly once. If there are more copies,
 -- they are left to be triggered next time.
-itemEffectEmbedded :: MonadServerAtomic m
-                   => ActorId -> Point -> ItemBag -> m ()
-itemEffectEmbedded aid tpos bag = do
+itemEffectEmbedded :: MonadServerAtomic m => ActorId -> Point -> ItemId -> m ()
+itemEffectEmbedded aid tpos iid = do
   sb <- getsState $ getActorBody aid
   let c = CEmbed (blid sb) tpos
-      f iid = do
-        -- No block against tile, hence unconditional.
-        execSfxAtomic $ SfxTrigger aid tpos
-        meleeEffectAndDestroy aid aid iid c
-  mapM_ f $ EM.keys bag
+  execSfxAtomic $ SfxTrigger aid tpos
+  meleeEffectAndDestroy aid aid iid c
 
 -- | The source actor affects the target actor, with a given item.
 -- If any of the effects fires up, the item gets identified. This function

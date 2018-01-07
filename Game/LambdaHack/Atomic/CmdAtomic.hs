@@ -145,6 +145,7 @@ instance Binary SfxAtomic
 -- and shown to players.
 data SfxMsg =
     SfxUnexpected ReqFailure
+  | SfxExpected Text ReqFailure
   | SfxLoudUpd Bool UpdAtomic
   | SfxLoudStrike Bool (Kind.Id ItemKind) Int
   | SfxLoudSummon Bool (GroupName ItemKind) Dice.Dice

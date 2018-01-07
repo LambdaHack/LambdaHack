@@ -1087,6 +1087,9 @@ ppSfxMsg :: MonadClientUI m => SfxMsg -> m Text
 ppSfxMsg sfxMsg = case sfxMsg of
   SfxUnexpected reqFailure -> return $!
     "Unexpected problem:" <+> showReqFailure reqFailure <> "."
+  SfxExpected itemName reqFailure -> return $!
+    "The" <+> itemName <+> "is not triggered:"
+    <+> showReqFailure reqFailure <> "."
   SfxLoudUpd local cmd -> do
     Kind.COps{coTileSpeedup} <- getsState scops
     let sound = case cmd of

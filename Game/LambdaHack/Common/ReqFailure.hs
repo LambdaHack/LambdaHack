@@ -188,8 +188,11 @@ permittedProjectAI skill calmE itemFull@ItemFull{itemBase} =
 permittedApply :: Time -> Int -> Bool-> [Char] -> ItemFull
                -> Either ReqFailure Bool
 permittedApply localTime skill calmE triggerSyms itemFull@ItemFull{..} =
-  if | skill < 1 -> Left ApplyUnskilled
-     | jsymbol itemBase == '?' && skill < 2 -> Left ApplyRead
+  if | jsymbol itemBase == '?' && skill < 2 -> Left ApplyRead
+     -- ApplyRead has precedence for the case of embedced items that
+     -- can't be applied if they require reading, but can even if actor
+     -- completely unskilled (as long as he is able to alter the tile).
+     | skill < 1 -> Left ApplyUnskilled
      -- We assume if the item has a timeout, all or most of interesting
      -- effects are under Recharging, so no point activating if not recharged.
      -- Note that if client doesn't know the timeout, here we leak the fact
