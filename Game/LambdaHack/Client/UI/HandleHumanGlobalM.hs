@@ -894,7 +894,8 @@ alterTileAtPos ts tpos pText = do
       hasFeat AlterFeature{feature} = Tile.hasFeature cotile feature t
       hasFeat _ = False
   case filter hasFeat ts of
-    _ : _ | alterSkill < Tile.alterMinSkill coTileSpeedup t ->
+    _ | not $ adjacent tpos (bpos b) -> failSer AlterDistant
+    _ | alterSkill < Tile.alterMinSkill coTileSpeedup t ->
       failSer AlterUnskilled
     [] | not $ null ts -> failWith $ guessAlter cops ts t
     trs ->
