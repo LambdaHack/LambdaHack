@@ -59,9 +59,7 @@ standardKeys = KeyKind $ map evalKeyDef $
                     , "cycle x-hair among enemies"
                     , AimEnemy ))
       -- not necessary, because flinging from item menu enters aiming mode
-  , ("c", ( [CmdMinimal, CmdMove]
-          , descTs closeDoorTriggers
-          , AlterDir closeDoorTriggers ))
+  , ("C-c", ([CmdMinimal, CmdMove], "open or close or alter", AlterDir []))
   , ("+", ([CmdMinimal, CmdAim], "swerve the aiming line", EpsIncr True))
 
   -- Item menu, first part of item use commands
@@ -88,6 +86,7 @@ standardKeys = KeyKind $ map evalKeyDef $
                          "and share item" False)
 
   -- Terrain exploration and alteration
+  , ("c", ([CmdMove], descTs closeDoorTriggers, AlterDir closeDoorTriggers))
   , ("Tab", ( [CmdMove]
             , "cycle among party members on the level"
             , MemberCycle ))
