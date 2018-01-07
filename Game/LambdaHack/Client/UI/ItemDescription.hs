@@ -203,20 +203,23 @@ partItemHigh side factionD = partItemN side factionD False 10 100
 -- The @count@ can be different than @itemK@ in @ItemFull@, e.g., when picking
 -- a subset of items to drop.
 partItemWsR :: FactionId -> FactionDict -> Bool -> Int -> Time -> ItemFull
-            -> MU.Part
+            -> (Bool, MU.Part)
 partItemWsR side factionD ranged count localTime itemFull =
   let (temporary, unique, name, stats) =
         partItemN side factionD ranged 5 4 localTime itemFull
-  in if | temporary && count == 1 -> MU.Phrase [name, stats]
-        | temporary -> MU.Phrase [MU.Text $ tshow count <> "-fold", name, stats]
-        | unique && count == 1 -> MU.Phrase ["the", name, stats]
-        | otherwise -> MU.Phrase [MU.CarWs count name, stats]
+  in ( temporary
+     , if | temporary && count == 1 -> MU.Phrase [name, stats]
+          | temporary ->
+              MU.Phrase [MU.Text $ tshow count <> "-fold", name, stats]
+          | unique && count == 1 -> MU.Phrase ["the", name, stats]
+          | otherwise -> MU.Phrase [MU.CarWs count name, stats] )
 
-partItemWs :: FactionId -> FactionDict -> Int -> Time -> ItemFull -> MU.Part
+partItemWs :: FactionId -> FactionDict -> Int -> Time -> ItemFull
+           -> (Bool, MU.Part)
 partItemWs side factionD = partItemWsR side factionD False
 
 partItemWsRanged :: FactionId -> FactionDict -> Int -> Time -> ItemFull
-                 -> MU.Part
+                 -> (Bool, MU.Part)
 partItemWsRanged side factionD = partItemWsR side factionD True
 
 partItemShortAW :: FactionId -> FactionDict -> Time -> ItemFull -> MU.Part

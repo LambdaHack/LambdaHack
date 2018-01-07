@@ -415,8 +415,10 @@ itemVerbMU iid kit@(k, _) verb c = assert (k > 0) $ do
   itemToF <- getsState itemToFull
   side <- getsClient sside
   factionD <- getsState sfactionD
-  let subject = partItemWs side factionD k localTime (itemToF iid kit)
-      msg | k > 1 = makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
+  let (temporary, subject) =
+        partItemWs side factionD k localTime (itemToF iid kit)
+      msg | k > 1 && not temporary =
+              makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   msgAdd msg
 
@@ -443,7 +445,7 @@ itemAidVerbMU aid verb iid ek cstore = do
           object = case ek of
             Left (Just n) ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
-              $ partItemWs side factionD n localTime itemFull
+              $ snd $ partItemWs side factionD n localTime itemFull
             Left Nothing ->
               let (_, _, name, stats) =
                     partItem side factionD localTime itemFull

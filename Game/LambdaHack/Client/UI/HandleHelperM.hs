@@ -246,7 +246,7 @@ itemOverlay lSlots lid bag = do
             let itemFull = itemToF iid kit
                 colorSymbol = viewItem $ itemBase itemFull
                 phrase = makePhrase
-                           [partItemWsRanged side factionD k localTime itemFull]
+                  [snd $ partItemWsRanged side factionD k localTime itemFull]
                 al = textToAL (markEqp iid $ slotLabel l)
                      <+:> [colorSymbol]
                      <+:> textToAL phrase
@@ -336,11 +336,12 @@ lookAtTile canSee p aid lidV = do
       tilePart = MU.AW $ MU.Text $ TK.tname $ okind tile
       itemLook (iid, kit@(k, _)) =
         let itemFull = itemToF iid kit
-            stats = partItemWs side factionD k localTime itemFull
+            (temporary, nWs) = partItemWs side factionD k localTime itemFull
+            verb = if k == 1 || temporary then "is" else "are"
             desc = case itemDisco itemFull of
               Nothing -> ""
               Just ItemDisco{itemKind} -> IK.idesc itemKind
-        in makeSentence ["There is", stats] <+> desc
+        in makeSentence ["There", verb, nWs] <+> desc
       ilooks = T.intercalate " " $ map itemLook $ EM.assocs embeds
   return $! makeSentence [MU.Text vis, tilePart] <+> ilooks
 
@@ -414,4 +415,4 @@ lookAtItems canSee p aid = do
         partItemWs side factionD k localTime (itemToF iid kit)
   return $! if EM.size is == 0 then ""
             else makeSentence [ MU.SubjectVerbSg subject verb
-                              , MU.WWandW $ map nWs $ EM.assocs is]
+                              , MU.WWandW $ map (snd . nWs) $ EM.assocs is]
