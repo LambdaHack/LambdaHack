@@ -56,8 +56,7 @@ import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.Frontend (frontendName)
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HandleHumanLocalM
-import           Game.LambdaHack.Client.UI.HumanCmd (CmdArea (..), Trigger (..))
-import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
+import           Game.LambdaHack.Client.UI.HumanCmd
 import           Game.LambdaHack.Client.UI.InventoryM
 import           Game.LambdaHack.Client.UI.ItemDescription
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -96,8 +95,8 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- | Pick command depending on area the mouse pointer is in.
 -- The first matching area is chosen. If none match, only interrupt.
 byAreaHuman :: MonadClientUI m
-            => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
-            -> [(HumanCmd.CmdArea, HumanCmd.HumanCmd)]
+            => (HumanCmd -> m (Either MError ReqUI))
+            -> [(CmdArea, HumanCmd)]
             -> m (Either MError ReqUI)
 byAreaHuman cmdAction l = do
   pointer <- getsSession spointer
@@ -113,7 +112,7 @@ byAreaHuman cmdAction l = do
       cmdAction cmd
 
 -- Many values here are shared with "Game.LambdaHack.Client.UI.DrawM".
-areaToRectangles :: MonadClientUI m => HumanCmd.CmdArea -> m [(X, Y, X, Y)]
+areaToRectangles :: MonadClientUI m => CmdArea -> m [(X, Y, X, Y)]
 areaToRectangles ca = case ca of
   CaMessage -> return [(0, 0, fst normalLevelBound, 0)]
   CaMapLeader -> do  -- takes preference over @CaMapParty@ and @CaMap@
@@ -166,7 +165,7 @@ byAimModeHuman cmdNotAimingM cmdAimingM = do
 -- * ByItemMode
 
 byItemModeHuman :: MonadClientUI m
-                => [Trigger]
+                => [TriggerItem]
                 -> m (Either MError ReqUI) -> m (Either MError ReqUI)
                 -> m (Either MError ReqUI)
 byItemModeHuman ts cmdNotChosenM cmdChosenM = do
@@ -756,7 +755,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
 -- * Project
 
 projectHuman :: MonadClientUI m
-             => [Trigger] -> m (FailOrCmd (RequestTimed 'AbProject))
+             => [TriggerItem] -> m (FailOrCmd (RequestTimed 'AbProject))
 projectHuman ts = do
   itemSel <- getsSession sitemSel
   case itemSel of
@@ -773,7 +772,7 @@ projectHuman ts = do
     Nothing -> failWith "no item to fling"
 
 projectItem :: MonadClientUI m
-            => [Trigger] -> (CStore, (ItemId, ItemFull))
+            => [TriggerItem] -> (CStore, (ItemId, ItemFull))
             -> m (FailOrCmd (RequestTimed 'AbProject))
 projectItem ts (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
@@ -801,7 +800,7 @@ projectItem ts (fromCStore, (iid, itemFull)) = do
 -- * Apply
 
 applyHuman :: MonadClientUI m
-           => [Trigger] -> m (FailOrCmd (RequestTimed 'AbApply))
+           => [TriggerItem] -> m (FailOrCmd (RequestTimed 'AbApply))
 applyHuman ts = do
   itemSel <- getsSession sitemSel
   case itemSel of
@@ -818,7 +817,7 @@ applyHuman ts = do
     Nothing -> failWith "no item to apply"
 
 applyItem :: MonadClientUI m
-          => [Trigger] -> (CStore, (ItemId, ItemFull))
+          => [TriggerItem] -> (CStore, (ItemId, ItemFull))
           -> m (FailOrCmd (RequestTimed 'AbApply))
 applyItem ts (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
@@ -836,12 +835,12 @@ applyItem ts (fromCStore, (iid, itemFull)) = do
 
 -- | Ask for a direction and alter a tile in the specified way, if possible.
 alterDirHuman :: MonadClientUI m
-              => [Trigger] -> m (FailOrCmd (RequestTimed 'AbAlter))
+              => [TriggerTile] -> m (FailOrCmd (RequestTimed 'AbAlter))
 alterDirHuman ts = do
   UIOptions{uVi, uLaptop} <- getsSession sUIOptions
   let verb1 = case ts of
         [] -> "alter"
-        tr : _ -> verb tr
+        tr : _ -> ttverb tr
       keys = K.escKM
              : K.leftButtonReleaseKM
              : map (K.KM K.NoModifier) (K.dirAllKey uVi uLaptop)
@@ -866,7 +865,7 @@ alterDirHuman ts = do
 
 -- | Try to alter a tile using a feature in the given direction.
 alterTile :: MonadClientUI m
-          => [Trigger] -> Vector -> m (FailOrCmd (RequestTimed 'AbAlter))
+          => [TriggerTile] -> Vector -> m (FailOrCmd (RequestTimed 'AbAlter))
 alterTile ts dir = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -881,7 +880,7 @@ alterTile ts dir = do
 -- the action. Consequently, even if all embedded items are recharching,
 -- the time will be wasted and the server will describe the failure in detail.
 alterTileAtPos :: MonadClientUI m
-               => [Trigger] -> Point -> Text
+               => [TriggerTile] -> Point -> Text
                -> m (FailOrCmd (RequestTimed 'AbAlter))
 alterTileAtPos ts tpos pText = do
   cops@Kind.COps{cotile, coTileSpeedup} <- getsState scops
@@ -891,8 +890,7 @@ alterTileAtPos ts tpos pText = do
   lvl <- getLevel $ blid b
   let alterSkill = EM.findWithDefault 0 AbAlter actorSk
       t = lvl `at` tpos
-      hasFeat AlterFeature{feature} = Tile.hasFeature cotile feature t
-      hasFeat _ = False
+      hasFeat TriggerTile{ttfeature} = Tile.hasFeature cotile ttfeature t
   case filter hasFeat ts of
     _ | not $ adjacent tpos (bpos b) -> failSer AlterDistant
     _ | alterSkill < Tile.alterMinSkill coTileSpeedup t ->
@@ -903,7 +901,7 @@ alterTileAtPos ts tpos pText = do
         if null (posToAidsLvl tpos lvl) then do
           let v = case trs of
                 [] -> "alter"
-                tr : _ -> verb tr
+                tr : _ -> ttverb tr
           verAlters <- verifyAlters (blid b) tpos
           case verAlters of
             Right() -> do
@@ -959,20 +957,20 @@ verifyEscape = do
       else return $ Right ()
 
 -- | Guess and report why the bump command failed.
-guessAlter :: Kind.COps -> [Trigger] -> Kind.Id TileKind -> Text
-guessAlter Kind.COps{cotile} (AlterFeature{feature=TK.OpenTo _} : _) t
+guessAlter :: Kind.COps -> [TriggerTile] -> Kind.Id TileKind -> Text
+guessAlter Kind.COps{cotile} (TriggerTile{ttfeature=TK.OpenTo _} : _) t
   | Tile.isClosable cotile t = "already open"
-guessAlter _ (AlterFeature{feature=TK.OpenTo _} : _) _ = "cannot be opened"
-guessAlter Kind.COps{cotile} (AlterFeature{feature=TK.CloseTo _} : _) t
+guessAlter _ (TriggerTile{ttfeature=TK.OpenTo _} : _) _ = "cannot be opened"
+guessAlter Kind.COps{cotile} (TriggerTile{ttfeature=TK.CloseTo _} : _) t
   | Tile.isOpenable cotile t = "already closed"
-guessAlter _ (AlterFeature{feature=TK.CloseTo _} : _) _ = "cannot be closed"
+guessAlter _ (TriggerTile{ttfeature=TK.CloseTo _} : _) _ = "cannot be closed"
 guessAlter _ _ _ = "never mind"
 
 -- * AlterWithPointer
 
 -- | Try to alter a tile using a feature under the pointer.
 alterWithPointerHuman :: MonadClientUI m
-                      => [Trigger] -> m (FailOrCmd (RequestTimed 'AbAlter))
+                      => [TriggerTile] -> m (FailOrCmd (RequestTimed 'AbAlter))
 alterWithPointerHuman ts = do
   Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   lidV <- viewedLevelUI
@@ -992,7 +990,7 @@ alterWithPointerHuman ts = do
 
 -- | Display command help.
 helpHuman :: MonadClientUI m
-          => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
+          => (HumanCmd -> m (Either MError ReqUI))
           -> m (Either MError ReqUI)
 helpHuman cmdAction = do
   cops <- getsState scops
@@ -1015,7 +1013,7 @@ helpHuman cmdAction = do
 
 -- | Display hint or, if already displayed, display help.
 hintHuman :: MonadClientUI m
-          => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
+          => (HumanCmd -> m (Either MError ReqUI))
           -> m (Either MError ReqUI)
 hintHuman cmdAction = do
   hintMode <- getsSession shintMode
@@ -1030,7 +1028,7 @@ hintHuman cmdAction = do
 
 -- | Display the dashboard.
 dashboardHuman :: MonadClientUI m
-               => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
+               => (HumanCmd -> m (Either MError ReqUI))
                -> m (Either MError ReqUI)
 dashboardHuman cmdAction = do
   lidV <- viewedLevelUI
@@ -1038,7 +1036,7 @@ dashboardHuman cmdAction = do
   keyb <- getsSession sbinding
   let keyL = 1
       (ov0, kxs0) = okxsN keyb 1 keyL (const False) False
-                          HumanCmd.CmdDashboard [] []
+                          CmdDashboard [] []
       al1 = textToAL "Dashboard"
       splitHelp (al, okx) = splitOKX lxsize (lysize + 1) al [K.escKM] okx
       sli = toSlideshow $ splitHelp (al1, (ov0, kxs0))
@@ -1054,7 +1052,7 @@ dashboardHuman cmdAction = do
 -- * ItemMenu
 
 itemMenuHuman :: MonadClientUI m
-              => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
+              => (HumanCmd -> m (Either MError ReqUI))
               -> m (Either MError ReqUI)
 itemMenuHuman cmdAction = do
   itemSel <- getsSession sitemSel
@@ -1105,7 +1103,7 @@ itemMenuHuman cmdAction = do
           keyb <- getsSession sbinding
           let calmE = calmEnough b ar
               greyedOut cmd = not calmE && fromCStore == CSha || case cmd of
-                HumanCmd.MoveItem stores destCStore _ _ ->
+                MoveItem stores destCStore _ _ ->
                   fromCStore `notElem` stores
                   || not calmE && CSha == destCStore
                   || destCStore == CEqp && eqpOverfull b 1
@@ -1115,7 +1113,7 @@ itemMenuHuman cmdAction = do
               keyCaption = fmt keyL "keys" "command"
               offset = 1 + length ovFound
               (ov0, kxs0) = okxsN keyb offset keyL greyedOut True
-                                  HumanCmd.CmdItemMenu [keyCaption] []
+                                  CmdItemMenu [keyCaption] []
               t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"
                                 , "an item", MU.Text $ ppCStoreIn fromCStore ]
               al1 = renderReport report <+:> textToAL t0
@@ -1151,7 +1149,7 @@ itemMenuHuman cmdAction = do
 -- * ChooseItemMenu
 
 chooseItemMenuHuman :: MonadClientUI m
-                    => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
+                    => (HumanCmd -> m (Either MError ReqUI))
                     -> ItemDialogMode
                     -> m (Either MError ReqUI)
 chooseItemMenuHuman cmdAction c = do
@@ -1205,8 +1203,8 @@ artWithVersion = do
   return $! pasteVersion mainMenuArt
 
 generateMenu :: MonadClientUI m
-             => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
-             -> [(K.KM, (Text, HumanCmd.HumanCmd))] -> [String] -> String
+             => (HumanCmd -> m (Either MError ReqUI))
+             -> [(K.KM, (Text, HumanCmd))] -> [String] -> String
              -> m (Either MError ReqUI)
 generateMenu cmdAction kds gameInfo menuName = do
   art <- artWithVersion
@@ -1251,7 +1249,7 @@ generateMenu cmdAction kds gameInfo menuName = do
 
 -- | Display the main menu.
 mainMenuHuman :: MonadClientUI m
-              => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
+              => (HumanCmd -> m (Either MError ReqUI))
               -> m (Either MError ReqUI)
 mainMenuHuman cmdAction = do
   cops <- getsState scops
@@ -1261,9 +1259,9 @@ mainMenuHuman cmdAction = do
   let nxtGameName = mname $ nxtGameMode cops snxtScenario
       tnextScenario = "pick next:" <+> nxtGameName
       -- Key-description-command tuples.
-      kds = (K.mkKM "p", (tnextScenario, HumanCmd.GameScenarioIncr))
+      kds = (K.mkKM "p", (tnextScenario, GameScenarioIncr))
             : [ (km, (desc, cmd))
-              | (km, ([HumanCmd.CmdMainMenu], desc, cmd)) <- bcmdList ]
+              | (km, ([CmdMainMenu], desc, cmd)) <- bcmdList ]
       bindingLen = 30
       gameName = mname gameMode
       gameInfo = map T.unpack
@@ -1277,7 +1275,7 @@ mainMenuHuman cmdAction = do
 
 -- | Display the settings menu.
 settingsMenuHuman :: MonadClientUI m
-                  => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
+                  => (HumanCmd -> m (Either MError ReqUI))
                   -> m (Either MError ReqUI)
 settingsMenuHuman cmdAction = do
   markSuspect <- getsClient smarkSuspect
@@ -1296,11 +1294,11 @@ settingsMenuHuman cmdAction = do
       tsmell = "smell clues:" <+> offOn  markSmell
       thenchmen = "tactic:" <+> tshow factTactic
       -- Key-description-command tuples.
-      kds = [ (K.mkKM "s", (tsuspect, HumanCmd.MarkSuspect))
-            , (K.mkKM "v", (tvisible, HumanCmd.MarkVision))
-            , (K.mkKM "c", (tsmell, HumanCmd.MarkSmell))
-            , (K.mkKM "t", (thenchmen, HumanCmd.Tactic))
-            , (K.mkKM "Escape", ("back to main menu", HumanCmd.MainMenu)) ]
+      kds = [ (K.mkKM "s", (tsuspect, MarkSuspect))
+            , (K.mkKM "v", (tvisible, MarkVision))
+            , (K.mkKM "c", (tsmell, MarkSmell))
+            , (K.mkKM "t", (thenchmen, Tactic))
+            , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
       bindingLen = 30
       gameInfo = map T.unpack
                    [ T.justifyLeft bindingLen ' ' ""
@@ -1312,7 +1310,7 @@ settingsMenuHuman cmdAction = do
 
 -- | Display the challenges menu.
 challengesMenuHuman :: MonadClientUI m
-                    => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
+                    => (HumanCmd -> m (Either MError ReqUI))
                     -> m (Either MError ReqUI)
 challengesMenuHuman cmdAction = do
   curChal <- getsClient scurChal
@@ -1329,10 +1327,10 @@ challengesMenuHuman cmdAction = do
       tnextFish = "cold fish:"
                   <+> offOn (cfish nxtChal)
       -- Key-description-command tuples.
-      kds = [ (K.mkKM "d", (tnextDiff, HumanCmd.GameDifficultyIncr))
-            , (K.mkKM "w", (tnextWolf, HumanCmd.GameWolfToggle))
-            , (K.mkKM "f", (tnextFish, HumanCmd.GameFishToggle))
-            , (K.mkKM "Escape", ("back to main menu", HumanCmd.MainMenu)) ]
+      kds = [ (K.mkKM "d", (tnextDiff, GameDifficultyIncr))
+            , (K.mkKM "w", (tnextWolf, GameWolfToggle))
+            , (K.mkKM "f", (tnextFish, GameFishToggle))
+            , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
       bindingLen = 30
       gameInfo = map T.unpack
                    [ T.justifyLeft bindingLen ' ' "Current challenges:"

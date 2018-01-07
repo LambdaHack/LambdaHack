@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.HumanCmd
   ( CmdCategory(..), categoryDescription
   , CmdArea(..), areaDescription
   , CmdTriple, HumanCmd(..)
-  , Trigger(..)
+  , TriggerItem(..), TriggerTile(..)
   ) where
 
 import Prelude ()
@@ -94,7 +94,7 @@ data HumanCmd =
     Macro [String]
   | ByArea [(CmdArea, HumanCmd)]  -- if outside the areas, do nothing
   | ByAimMode {exploration :: HumanCmd, aiming :: HumanCmd}
-  | ByItemMode {ts :: [Trigger], notChosen :: HumanCmd, chosen :: HumanCmd}
+  | ByItemMode {ts :: [TriggerItem], notChosen :: HumanCmd, chosen :: HumanCmd}
   | ComposeIfLocal HumanCmd HumanCmd
   | ComposeUnlessError HumanCmd HumanCmd
   | Compose2ndLocal HumanCmd HumanCmd
@@ -111,10 +111,10 @@ data HumanCmd =
   | RunOnceToXhair
   | ContinueToXhair
   | MoveItem [CStore] CStore (Maybe MU.Part) Bool
-  | Project [Trigger]
-  | Apply [Trigger]
-  | AlterDir [Trigger]
-  | AlterWithPointer [Trigger]
+  | Project [TriggerItem]
+  | Apply [TriggerItem]
+  | AlterDir [TriggerTile]
+  | AlterWithPointer [TriggerTile]
   | Help
   | Hint
   | ItemMenu
@@ -134,8 +134,8 @@ data HumanCmd =
   | SortSlots
   | ChooseItem ItemDialogMode
   | ChooseItemMenu ItemDialogMode
-  | ChooseItemProject [Trigger]
-  | ChooseItemApply [Trigger]
+  | ChooseItemProject [TriggerItem]
+  | ChooseItemApply [TriggerItem]
   | PickLeader Int
   | PickLeaderWithPointer
   | MemberCycle
@@ -178,14 +178,26 @@ instance Binary HumanCmd
 
 -- | Description of how item manipulation is triggered and communicated
 -- to the player.
-data Trigger =
-    ApplyItem {verb :: MU.Part, object :: MU.Part, symbol :: Char}
-  | AlterFeature {verb :: MU.Part, object :: MU.Part, feature :: TK.Feature}
+data TriggerItem =
+  TriggerItem {tiverb :: MU.Part, tiobject :: MU.Part, tisymbol :: Char}
   deriving (Show, Eq, Ord, Generic)
 
-instance Read Trigger where
-  readsPrec = error $ "parsing of Trigger not implemented" `showFailure` ()
+instance Read TriggerItem where
+  readsPrec = error $ "parsing of TriggerItem not implemented" `showFailure` ()
 
-instance NFData Trigger
+instance NFData TriggerItem
 
-instance Binary Trigger
+instance Binary TriggerItem
+
+-- | Description of how tile altering is triggered and communicated
+-- to the player.
+data TriggerTile =
+  TriggerTile  {ttverb :: MU.Part, ttobject :: MU.Part, ttfeature :: TK.Feature}
+  deriving (Show, Eq, Ord, Generic)
+
+instance Read TriggerTile where
+  readsPrec = error $ "parsing of TriggerTile not implemented" `showFailure` ()
+
+instance NFData TriggerTile
+
+instance Binary TriggerTile

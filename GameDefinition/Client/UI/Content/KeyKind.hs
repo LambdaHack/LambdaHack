@@ -69,15 +69,15 @@ standardKeys = KeyKind $ map evalKeyDef $
   , ("f", addCmdCategory CmdItemMenu $ projectA flingTs)
   , ("C-f", addCmdCategory CmdItemMenu
             $ replaceDesc "fling without aiming" $ projectI flingTs)
-  , ("a", addCmdCategory CmdItemMenu $ applyI [ApplyItem
-            { verb = "apply"
-            , object = "consumable"
-            , symbol = ' ' }])
+  , ("a", addCmdCategory CmdItemMenu $ applyI [TriggerItem
+            { tiverb = "apply"
+            , tiobject = "consumable"
+            , tisymbol = ' ' }])
   , ("C-a", addCmdCategory CmdItemMenu
-            $ replaceDesc "apply and keep choice" $ applyIK [ApplyItem
-              { verb = "apply"
-              , object = "consumable"
-              , symbol = ' ' }])
+            $ replaceDesc "apply and keep choice" $ applyIK [TriggerItem
+              { tiverb = "apply"
+              , tiobject = "consumable"
+              , tisymbol = ' ' }])
   , ("p", moveItemTriple [CGround, CEqp, CSha] CInv
                          "item" False)
   , ("e", moveItemTriple [CGround, CInv, CSha] CEqp
@@ -134,22 +134,22 @@ standardKeys = KeyKind $ map evalKeyDef $
   , ("~", ( [CmdItem]
           , "display known lore"
           , ChooseItemMenu (MLore SItem) ))
-  , ("q", addCmdCategory CmdItem $ applyI [ApplyItem
-            { verb = "quaff"
-            , object = "potion"
-            , symbol = '!' }])
-  , ("r", addCmdCategory CmdItem $ applyI [ApplyItem
-            { verb = "read"
-            , object = "scroll"
-            , symbol = '?' }])
+  , ("q", addCmdCategory CmdItem $ applyI [TriggerItem
+            { tiverb = "quaff"
+            , tiobject = "potion"
+            , tisymbol = '!' }])
+  , ("r", addCmdCategory CmdItem $ applyI [TriggerItem
+            { tiverb = "read"
+            , tiobject = "scroll"
+            , tisymbol = '?' }])
 
   , ("t", addCmdCategory CmdItem $ projectA
-            [ ApplyItem { verb = "throw"
-                        , object = "missile"
-                        , symbol = '|' } ])
---  , ("z", projectA [ApplyItem { verb = "zap"
---                              , object = "wand"
---                              , symbol = '/' }])
+            [ TriggerItem { tiverb = "throw"
+                          , tiobject = "missile"
+                          , tisymbol = '|' } ])
+--  , ("z", projectA [TriggerItem { tiverb = "zap"
+--                                , tiobject = "wand"
+--                                , tisymbol = '/' }])
 
   -- Dashboard, in addition to commands marked above
   , ("safeD0", ([CmdInternal, CmdDashboard], "", Cancel))  -- blank line
@@ -263,18 +263,18 @@ standardKeys = KeyKind $ map evalKeyDef $
   ]
   ++ map defaultHeroSelect [0..6]
 
-closeDoorTriggers :: [Trigger]
+closeDoorTriggers :: [TriggerTile]
 closeDoorTriggers =
-  [ AlterFeature { verb = "close"
-                 , object = "door"
-                 , feature = TK.CloseTo "closed vertical door Lit" }
-  , AlterFeature { verb = "close"
-                 , object = "door"
-                 , feature = TK.CloseTo "closed horizontal door Lit" }
-  , AlterFeature { verb = "close"
-                 , object = "door"
-                 , feature = TK.CloseTo "closed vertical door Dark" }
-  , AlterFeature { verb = "close"
-                 , object = "door"
-                 , feature = TK.CloseTo "closed horizontal door Dark" }
+  [ TriggerTile { ttverb = "close"
+                , ttobject = "door"
+                , ttfeature = TK.CloseTo "closed vertical door Lit" }
+  , TriggerTile { ttverb = "close"
+                , ttobject = "door"
+                , ttfeature = TK.CloseTo "closed horizontal door Lit" }
+  , TriggerTile { ttverb = "close"
+                , ttobject = "door"
+                , ttfeature = TK.CloseTo "closed vertical door Dark" }
+  , TriggerTile { ttverb = "close"
+                , ttobject = "door"
+                , ttfeature = TK.CloseTo "closed horizontal door Dark" }
   ]

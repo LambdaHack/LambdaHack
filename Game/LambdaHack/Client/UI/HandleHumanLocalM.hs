@@ -49,7 +49,7 @@ import           Game.LambdaHack.Client.UI.DrawM
 import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.HandleHelperM
-import           Game.LambdaHack.Client.UI.HumanCmd (Trigger (..))
+import           Game.LambdaHack.Client.UI.HumanCmd
 import           Game.LambdaHack.Client.UI.InventoryM
 import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Client.UI.ItemSlot
@@ -250,7 +250,7 @@ chooseItemDialogMode c = do
 
 -- * ChooseItemProject
 
-chooseItemProjectHuman :: forall m. MonadClientUI m => [Trigger] -> m MError
+chooseItemProjectHuman :: forall m. MonadClientUI m => [TriggerItem] -> m MError
 chooseItemProjectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -261,7 +261,7 @@ chooseItemProjectHuman ts = do
              | otherwise = delete CSha cLegalRaw
       (verb1, object1) = case ts of
         [] -> ("aim", "item")
-        tr : _ -> (verb tr, object tr)
+        tr : _ -> (tiverb tr, tiobject tr)
   mpsuitReq <- psuitReq ts
   case mpsuitReq of
     -- If xhair aim invalid, no item is considered a (suitable) missile.
@@ -378,7 +378,7 @@ posFromXhair = do
     Left cause -> return $ Left cause
 
 psuitReq :: MonadClientUI m
-         => [Trigger]
+         => [TriggerItem]
          -> m (Either Text (ItemFull -> Either ReqFailure (Point, Bool)))
 psuitReq ts = do
   leader <- getLeaderUI
@@ -398,14 +398,13 @@ psuitReq ts = do
           Right True ->
             Right (pos, totalRange itemBase >= chessDist (bpos b) pos)
 
-triggerSymbols :: [Trigger] -> [Char]
+triggerSymbols :: [TriggerItem] -> [Char]
 triggerSymbols [] = []
-triggerSymbols (ApplyItem{symbol} : ts) = symbol : triggerSymbols ts
-triggerSymbols (_ : ts) = triggerSymbols ts
+triggerSymbols (TriggerItem{tisymbol} : ts) = tisymbol : triggerSymbols ts
 
 -- * ChooseItemApply
 
-chooseItemApplyHuman :: forall m. MonadClientUI m => [Trigger] -> m MError
+chooseItemApplyHuman :: forall m. MonadClientUI m => [TriggerItem] -> m MError
 chooseItemApplyHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -416,7 +415,7 @@ chooseItemApplyHuman ts = do
              | otherwise = delete CSha cLegalRaw
       (verb1, object1) = case ts of
         [] -> ("apply", "item")
-        tr : _ -> (verb tr, object tr)
+        tr : _ -> (tiverb tr, tiobject tr)
       prompt = makePhrase ["What", object1, "to", verb1]
       promptGeneric = "What to apply"
       psuit :: m Suitability

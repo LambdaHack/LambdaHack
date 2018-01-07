@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.Content.KeyKind
   , mouseLMB, mouseMMB, mouseRMB
   , goToCmd, runToAllCmd, autoexploreCmd, autoexplore25Cmd
   , aimFlingCmd, projectI, projectA, flingTs, applyIK, applyI
-  , grabItems, dropItems, descTs, defaultHeroSelect
+  , grabItems, dropItems, descIs, descTs, defaultHeroSelect
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , replaceCmd, projectICmd, grabCmd, dropCmd
@@ -126,36 +126,36 @@ autoexplore25Cmd = Macro ["'", "C-?", "C-/", "'", "C-V"]
 aimFlingCmd :: HumanCmd
 aimFlingCmd = ComposeIfLocal AimPointerEnemy (projectICmd flingTs)
 
-projectICmd :: [Trigger] -> HumanCmd
+projectICmd :: [TriggerItem] -> HumanCmd
 projectICmd ts = ByItemMode
   { ts
   , notChosen = ComposeUnlessError (ChooseItemProject ts) (Project ts)
   , chosen = Project ts }
 
-projectI :: [Trigger] -> CmdTriple
-projectI ts = ([], descTs ts, projectICmd ts)
+projectI :: [TriggerItem] -> CmdTriple
+projectI ts = ([], descIs ts, projectICmd ts)
 
-projectA :: [Trigger] -> CmdTriple
+projectA :: [TriggerItem] -> CmdTriple
 projectA ts = replaceCmd ByAimMode { exploration = AimTgt
                                    , aiming = projectICmd ts } (projectI ts)
 
-flingTs :: [Trigger]
-flingTs = [ApplyItem { verb = "fling"
-                     , object = "projectile"
-                     , symbol = ' ' }]
+flingTs :: [TriggerItem]
+flingTs = [TriggerItem { tiverb = "fling"
+                       , tiobject = "projectile"
+                       , tisymbol = ' ' }]
 
-applyIK :: [Trigger] -> CmdTriple
+applyIK :: [TriggerItem] -> CmdTriple
 applyIK ts =
   let apply = Apply ts
-  in ([], descTs ts, ByItemMode
+  in ([], descIs ts, ByItemMode
        { ts
        , notChosen = ComposeUnlessError (ChooseItemApply ts) apply
        , chosen = apply })
 
-applyI :: [Trigger] -> CmdTriple
+applyI :: [TriggerItem] -> CmdTriple
 applyI ts =
   let apply = Compose2ndLocal (Apply ts) ItemClear
-  in ([], descTs ts, ByItemMode
+  in ([], descIs ts, ByItemMode
        { ts
        , notChosen = ComposeUnlessError (ChooseItemApply ts) apply
        , chosen = apply })
@@ -173,9 +173,13 @@ dropCmd = MoveItem [CEqp, CInv, CSha] CGround Nothing False
 dropItems :: Text -> CmdTriple
 dropItems t = ([CmdItemMenu], t, dropCmd)
 
-descTs :: [Trigger] -> Text
-descTs [] = "trigger a thing"
-descTs (t : _) = makePhrase [verb t, object t]
+descIs :: [TriggerItem] -> Text
+descIs [] = "trigger an item"
+descIs (t : _) = makePhrase [tiverb t, tiobject t]
+
+descTs :: [TriggerTile] -> Text
+descTs [] = "alter a tile"
+descTs (t : _) = makePhrase [ttverb t, ttobject t]
 
 defaultHeroSelect :: Int -> (String, CmdTriple)
 defaultHeroSelect k = ([Char.intToDigit k], ([CmdMeta], "", PickLeader k))
