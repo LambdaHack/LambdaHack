@@ -15,41 +15,70 @@ import Game.LambdaHack.Content.ItemKind
 
 embeds :: [ItemKind]
 embeds =
-  [stairsUp, stairsDown, escape, terrainCache, terrainCacheTrap, signboardExit, signboardMap, fireSmall, fireBig, frost, rubble, staircaseTrapUp, staircaseTrapDown, doorwayTrap, obscenePictograms, subtleFresco, scratchOnWall, pulpit]
+  [scratchOnWall, obscenePictograms, subtleFresco, terrainCache, terrainCacheTrap, signboardExit, signboardMap, fireSmall, fireBig, frost, rubble, doorwayTrap,  stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit]
 
-stairsUp,    stairsDown, escape, terrainCache, terrainCacheTrap, signboardExit, signboardMap, fireSmall, fireBig, frost, rubble, staircaseTrapUp, staircaseTrapDown, doorwayTrap, obscenePictograms, subtleFresco, scratchOnWall, pulpit :: ItemKind
+scratchOnWall,    obscenePictograms, subtleFresco, terrainCache, terrainCacheTrap, signboardExit, signboardMap, fireSmall, fireBig, frost, rubble, doorwayTrap,  stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit :: ItemKind
 
-stairsUp = ItemKind
-  { isymbol  = '<'
-  , iname    = "staircase up"
-  , ifreq    = [("staircase up", 1)]
-  , iflavour = zipPlain [BrWhite]
+-- Make sure very few walls are substantially useful, e.g., caches,
+-- and none that are secret. Otherwise the player will spend a lot of time
+-- bumping walls, which is boring compare to fights or dialogues
+-- and ever worse, the player will bump all secret walls, wasting time
+-- and foregoing the fun of guessing how to find entrance to a disjoint part
+-- of the level by bumping the least number of secret walls.
+scratchOnWall = ItemKind
+  { isymbol  = '*'
+  , iname    = "scratch on wall"
+  , ifreq    = [("scratch on wall", 1)]
+  , iflavour = zipPlain [BrBlack]
   , icount   = 1
   , irarity  = [(1, 1)]
-  , iverbHit = "crash"  -- the verb is only used when the item hits,
-                        -- not when it's applied otherwise, e.g., from tile
-  , iweight  = 100000
+  , iverbHit = "scratch"
+  , iweight  = 1000
   , idamage  = toDmg 0
   , iaspects = []
-  , ieffects = [Ascend True]
+  , ieffects = [Temporary "start making sense of the scratches", DetectHidden 3]
   , ifeature = [Identified, Durable]
-  , idesc    = "Stairs that rise towards escape."
+  , idesc    = "A seemingly random series of scratches, carved deep into the wall."
   , ikit     = []
   }
-stairsDown = stairsUp
-  { isymbol  = '>'
-  , iname    = "staircase down"
-  , ifreq    = [("staircase down", 1)]
-  , ieffects = [Ascend False]
-  , idesc    = ""
+obscenePictograms = ItemKind
+  { isymbol  = '*'
+  , iname    = "obscene pictograms"
+  , ifreq    = [("obscene pictograms", 1)]
+  , iflavour = zipPlain [BrMagenta]
+  , icount   = 1
+  , irarity  = [(1, 1)]
+  , iverbHit = "infuriate"
+  , iweight  = 1000
+  , idamage  = toDmg 0
+  , iaspects = [Timeout 7]
+  , ieffects = [ Temporary "enter destructive rage at the sight of obscene pictograms"
+               , RefillCalm (-20)
+               , Recharging $ OneOf
+                   [ toOrganActorTurn "strengthened" (3 + 1 `d` 3)
+                   , CreateItem CInv "sandstone rock" TimerNone ] ]
+  , ifeature = [Identified, Durable]
+  , idesc    = "They aren't even anatomically possible."
+  , ikit     = []
   }
-escape = stairsUp
-  { isymbol  = 'E'
-  , iname    = "escape"
-  , ifreq    = [("escape", 1)]
-  , iflavour = zipPlain [BrYellow]
-  , ieffects = [Escape]
-  , idesc    = ""
+subtleFresco = ItemKind
+  { isymbol  = '*'
+  , iname    = "subtle fresco"
+  , ifreq    = [("subtle fresco", 1)]
+  , iflavour = zipPlain [BrGreen]
+  , icount   = 1
+  , irarity  = [(1, 1)]
+  , iverbHit = "sooth"
+  , iweight  = 1000
+  , idamage  = toDmg 0
+  , iaspects = [Timeout 7]
+  , ieffects = [ Temporary "feel refreshed by the subtle fresco"
+               , RefillCalm 2
+               , Recharging $ toOrganActorTurn "far-sighted" (3 + 1 `d` 3)
+               , Recharging $ toOrganActorTurn "keen-smelling" (3 + 1 `d` 3) ]
+  , ifeature = [Identified, Durable]
+  , idesc    = "Expensive yet tasteful."
+  , ikit     = []
   }
 terrainCache = stairsUp
   { isymbol  = 'O'
@@ -164,6 +193,56 @@ rubble = ItemKind
   , idesc    = "Broken chunks of rock and glass."
   , ikit     = []
   }
+doorwayTrap = ItemKind
+  { isymbol  = '^'
+  , iname    = "doorway trap"
+  , ifreq    = [("doorway trap", 1)]
+  , iflavour = zipPlain [Red]
+  , icount   = 1
+  , irarity  = [(1, 1)]
+  , iverbHit = "cripple"
+  , iweight  = 10000
+  , idamage  = toDmg 0
+  , iaspects = []
+  , ieffects = [OneOf [ toOrganActorTurn "blind" $ (2 + 1 `dL` 3) * 10
+                      , toOrganActorTurn "slowed" $ (2 + 1 `dL` 3) * 10
+                      , toOrganActorTurn "weakened" $ (2 + 1 `dL` 3) * 10 ]]
+  , ifeature = [Identified]  -- not Durable, springs at most once
+  , idesc    = "Just turn the handle..."
+  , ikit     = []
+  }
+stairsUp = ItemKind
+  { isymbol  = '<'
+  , iname    = "staircase up"
+  , ifreq    = [("staircase up", 1)]
+  , iflavour = zipPlain [BrWhite]
+  , icount   = 1
+  , irarity  = [(1, 1)]
+  , iverbHit = "crash"  -- the verb is only used when the item hits,
+                        -- not when it's applied otherwise, e.g., from tile
+  , iweight  = 100000
+  , idamage  = toDmg 0
+  , iaspects = []
+  , ieffects = [Ascend True]
+  , ifeature = [Identified, Durable]
+  , idesc    = "Stairs that rise towards escape."
+  , ikit     = []
+  }
+stairsDown = stairsUp
+  { isymbol  = '>'
+  , iname    = "staircase down"
+  , ifreq    = [("staircase down", 1)]
+  , ieffects = [Ascend False]
+  , idesc    = ""
+  }
+escape = stairsUp
+  { isymbol  = 'E'
+  , iname    = "escape"
+  , ifreq    = [("escape", 1)]
+  , iflavour = zipPlain [BrYellow]
+  , ieffects = [Escape]
+  , idesc    = ""
+  }
 staircaseTrapUp = ItemKind
   { isymbol  = '^'
   , iname    = "staircase trap"
@@ -190,85 +269,6 @@ staircaseTrapDown = staircaseTrapUp
   , ieffects = [ Temporary "tumble down the stairwell"
                , toOrganActorTurn "drunk" (20 + 1 `d` 5) ]
   , idesc    = "A treacherous slab, to teach those who are too proud."
-  }
-doorwayTrap = ItemKind
-  { isymbol  = '^'
-  , iname    = "doorway trap"
-  , ifreq    = [("doorway trap", 1)]
-  , iflavour = zipPlain [Red]
-  , icount   = 1
-  , irarity  = [(1, 1)]
-  , iverbHit = "cripple"
-  , iweight  = 10000
-  , idamage  = toDmg 0
-  , iaspects = []
-  , ieffects = [OneOf [ toOrganActorTurn "blind" $ (2 + 1 `dL` 3) * 10
-                      , toOrganActorTurn "slowed" $ (2 + 1 `dL` 3) * 10
-                      , toOrganActorTurn "weakened" $ (2 + 1 `dL` 3) * 10 ]]
-  , ifeature = [Identified]  -- not Durable, springs at most once
-  , idesc    = "Just turn the handle..."
-  , ikit     = []
-  }
--- Make sure very few walls are substantially useful, e.g., caches,
--- and none that are secret. Otherwise the player will spend a lot of time
--- bumping walls, which is boring compare to fights or dialogues
--- and ever worse, the player will bump all secret walls, wasting time
--- and foregoing the fun of guessing how to find entrance to a disjoint part
--- of the level by bumping the least number of secret walls.
-obscenePictograms = ItemKind
-  { isymbol  = '*'
-  , iname    = "obscene pictograms"
-  , ifreq    = [("obscene pictograms", 1)]
-  , iflavour = zipPlain [BrMagenta]
-  , icount   = 1
-  , irarity  = [(1, 1)]
-  , iverbHit = "infuriate"
-  , iweight  = 1000
-  , idamage  = toDmg 0
-  , iaspects = [Timeout 7]
-  , ieffects = [ Temporary "enter destructive rage at the sight of obscene pictograms"
-               , RefillCalm (-20)
-               , Recharging $ OneOf
-                   [ toOrganActorTurn "strengthened" (3 + 1 `d` 3)
-                   , CreateItem CInv "sandstone rock" TimerNone ] ]
-  , ifeature = [Identified, Durable]
-  , idesc    = "They aren't even anatomically possible."
-  , ikit     = []
-  }
-subtleFresco = ItemKind
-  { isymbol  = '*'
-  , iname    = "subtle fresco"
-  , ifreq    = [("subtle fresco", 1)]
-  , iflavour = zipPlain [BrGreen]
-  , icount   = 1
-  , irarity  = [(1, 1)]
-  , iverbHit = "sooth"
-  , iweight  = 1000
-  , idamage  = toDmg 0
-  , iaspects = [Timeout 7]
-  , ieffects = [ Temporary "feel refreshed by the subtle fresco"
-               , RefillCalm 2
-               , Recharging $ toOrganActorTurn "far-sighted" (3 + 1 `d` 3)
-               , Recharging $ toOrganActorTurn "keen-smelling" (3 + 1 `d` 3) ]
-  , ifeature = [Identified, Durable]
-  , idesc    = "Expensive yet tasteful."
-  , ikit     = []
-  }
-scratchOnWall = ItemKind
-  { isymbol  = '*'
-  , iname    = "scratch on wall"
-  , ifreq    = [("scratch on wall", 1)]
-  , iflavour = zipPlain [BrBlack]
-  , icount   = 1
-  , irarity  = [(1, 1)]
-  , iverbHit = "scratch"
-  , iweight  = 1000
-  , idamage  = toDmg 0
-  , iaspects = []
-  , ieffects = [Temporary "start making sense of the scratches", DetectHidden 3]
-  , ifeature = [Identified, Durable]
-  , idesc    = "A seemingly random series of scratches, carved deep into the wall."
-  , ikit     = []
   }
 pulpit = ItemKind
   { isymbol  = '%'
