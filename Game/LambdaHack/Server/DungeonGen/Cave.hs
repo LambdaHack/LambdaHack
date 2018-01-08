@@ -141,18 +141,23 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                             mergeSpecial ar i{px = px i + 1} SpecialArea
                     _ -> gs0
                 SpecialFixed p placeGroup ar ->
+                  -- If single merge is sufficient to extend the fixed place
+                  -- to full size, and the merge is possible, we perform it.
+                  -- An empty inner list signifies some merge is needed,
+                  -- but not possible, and then we abort and don't waste space.
                   let (x0, y0, x1, y1) = fromArea ar
-                      d = 3
-                      vics = [ i {py = py i - 1}
-                             | py p - y0 < d && py i - 1 >= 0 ]
-                             ++ [ i {py = py i + 1}
-                                | y1 - py p < d && py i + 1 < gy ]
-                             ++ [ i {px = px i - 1}
-                                | px p - x0 < d + 1 && px i - 1 >= 0 ]
-                             ++ [ i {px = px i + 1}
-                                | x1 - px p < d + 1 && px i + 1 < gx ]
+                      d = 3  -- arbitrary, matches common content
+                      vics :: [[Point]]
+                      vics = [ [i {py = py i - 1} | py i - 1 >= 0]  -- possible
+                             | py p - y0 < d ]  -- needed
+                             ++ [ [i {py = py i + 1} | py i + 1 < gy]
+                                | y1 - py p < d ]
+                             ++ [ [i {px = px i - 1} | px i - 1 >= 0]
+                                | px p - x0 < d + 1 ]  -- x width easy to get
+                             ++ [ [i {px = px i + 1} | px i + 1 < gx]
+                                | x1 - px p < d + 1 ]
                   in case vics of
-                    [p2] -> mergeSpecial ar p2 (SpecialFixed p placeGroup)
+                    [[p2]] -> mergeSpecial ar p2 (SpecialFixed p placeGroup)
                     _ -> gs0
                 SpecialMerged{} -> error $ "" `showFailure` (gs, gs0, i)
             gs2 = foldl' mergeFixed gs $ EM.assocs gs
