@@ -595,7 +595,7 @@ floorRed = floorCorridor
   , tfreq    = [("trailLit", 30)]
   , tcolor   = BrRed
   , tcolor2  = Red
-  , tfeature = Trail : tfeature floorCorridor  -- no Indistinct
+  , tfeature = [Trail, Walkable, Clear]
   }
 floorBlue = floorRed
   { tname    = "cobblestone path"
