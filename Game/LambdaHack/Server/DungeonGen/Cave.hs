@@ -1,6 +1,6 @@
 -- | Generation of caves (not yet inhabited dungeon levels) from cave kinds.
 module Game.LambdaHack.Server.DungeonGen.Cave
-  ( Cave(..), bootFixedCenters, buildCave
+  ( Cave(..), anchorDown, bootFixedCenters, buildCave
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , pickOpening, digCorridors
@@ -39,8 +39,12 @@ data Cave = Cave
   }
   deriving Show
 
+anchorDown :: Y
+anchorDown = 5  -- not 4, asymmetric vs up, for staircase variety
+
 bootFixedCenters :: CaveKind -> [Point]
-bootFixedCenters CaveKind{..} = [Point 4 3, Point (cxsize - 5) (cysize - 4)]
+bootFixedCenters CaveKind{..} =
+  [Point 4 3, Point (cxsize - 5) (cysize - anchorDown)]
 
 {- |
 Generate a cave using an algorithm inspired by the original Rogue,
