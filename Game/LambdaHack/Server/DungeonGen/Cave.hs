@@ -153,9 +153,9 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                              ++ [ [i {py = py i + 1} | py i + 1 < gy]
                                 | y1 - py p < d ]
                              ++ [ [i {px = px i - 1} | px i - 1 >= 0]
-                                | px p - x0 < d + 1 ]  -- x width easy to get
+                                | px p - x0 < d ]
                              ++ [ [i {px = px i + 1} | px i + 1 < gx]
-                                | x1 - px p < d + 1 ]
+                                | x1 - px p < d ]
                   in case vics of
                     [[p2]] -> mergeSpecial ar p2 (SpecialFixed p placeGroup)
                     _ -> gs0
