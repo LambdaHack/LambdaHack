@@ -115,11 +115,14 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                           isFixed p = case gs EM.! p of
                             SpecialFixed{} -> True
                             _ -> False
-                      in if | any isFixed
+                      in if -- Limit (the aggresive) merging of normal places
+                            -- and leave extra place for merging stairs.
+                            | any isFixed
                               $ vicinityCardinal gx gy (Point x y) -> Nothing
-                              -- Bias: prefer extending vertically.
-                            | y1 - y0 - 1 < snd minPlaceSize -> Just Vert
-                            | x1 - x0 - 1 < fst minPlaceSize -> Just Horiz
+                            -- Bias: prefer extending vertically.
+                            -- Not @-1@, but @-3@, to merge aggressively.
+                            | y1 - y0 - 3 < snd minPlaceSize -> Just Vert
+                            | x1 - x0 - 3 < fst minPlaceSize -> Just Horiz
                             | otherwise -> Nothing
                     _ -> Nothing
               in case special of
