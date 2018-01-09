@@ -15,7 +15,7 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectDetect, effectDetectX, effectDetectActor, effectDetectItem
   , effectDetectExit, effectDetectHidden
   , effectSendFlying, sendFlyingVector, effectDropBestWeapon
-  , effectActivateInv, effectTransformEqp, effectApplyPerfume, effectOneOf
+  , effectActivateInv, effectTransformContainer, effectApplyPerfume, effectOneOf
   , effectRecharging, effectTemporary, effectComposite
 #endif
   ) where
@@ -64,6 +64,9 @@ import           Game.LambdaHack.Server.ServerOptions
 import           Game.LambdaHack.Server.State
 
 -- * Semantics of effects
+
+data UseResult = UseDud | UseId | UseUp
+ deriving (Eq, Ord)
 
 applyItem :: MonadServerAtomic m => ActorId -> ItemId -> CStore -> m ()
 applyItem aid iid cstore = do
@@ -193,10 +196,10 @@ effectAndDestroy meleePerformed source target iid container periodic effs
     -- so we don't pass @c@ along.
     triggeredEffect <-
       itemEffectDisco source target iid container recharged periodic effs
-    let triggered = triggeredEffect || meleePerformed
+    let triggered = if meleePerformed then UseUp else triggeredEffect
     sb <- getsState $ getActorBody source
     -- Announce no effect, which is rare and wastes time, so noteworthy.
-    unless (triggered    -- some effects triggered, so feedback comes from them
+    unless (triggered == UseUp  -- effects triggered; feedback comes from them
             || periodic  -- don't spam via fizzled periodic effects
             || bproj sb  -- don't spam, projectiles can be very numerous
            ) $
@@ -207,7 +210,7 @@ effectAndDestroy meleePerformed source target iid container periodic effs
     -- If none of item's effects was performed, we try to recreate the item.
     -- Regardless, we don't rewind the time, because some info is gained
     -- (that the item does not exhibit any effects in the given context).
-    unless (triggered || imperishable) $
+    unless (triggered == UseUp || imperishable) $
       execUpdAtomic $ UpdSpotItem False iid itemBase kit container
 
 imperishableKit :: Bool -> Bool -> ItemTimer -> ItemFull
@@ -231,9 +234,7 @@ itemEffectEmbedded aid lid tpos iid = do
   meleeEffectAndDestroy aid aid iid c
 
 -- | The source actor affects the target actor, with a given item.
--- If any of the effects fires up, the item gets identified. This function
--- is mutually recursive with @effect@ and so it's a part of @Effect@
--- semantics.
+-- If any of the effects fires up, the item gets identified.
 --
 -- Note that if we activate a durable item, e.g., armor, from the ground,
 -- it will get identified, which is perfectly fine, until we want to add
@@ -241,18 +242,21 @@ itemEffectEmbedded aid lid tpos iid = do
 itemEffectDisco :: MonadServerAtomic m
                 => ActorId -> ActorId -> ItemId -> Container -> Bool -> Bool
                 -> [IK.Effect]
-                -> m Bool
+                -> m UseResult
 itemEffectDisco source target iid c recharged periodic effs = do
-  discoKind <- getsState sdiscoKind
-  item <- getsState $ getItemBody iid
-  case EM.lookup (jkindIx item) discoKind of
-    Just KindMean{kmKind} -> do
-      seed <- getsServer $ (EM.! iid) . sitemSeedD
-      execUpdAtomic $ UpdDiscover c iid kmKind seed
-      trs <- mapM (effectSem source target iid c recharged periodic) effs
-      let triggered = or trs
-      return triggered
-    _ -> error $ "" `showFailure` (source, target, iid, item)
+  urs <- mapM (effectSem source target iid c recharged periodic) effs
+  let ur = case urs of
+        [] -> UseDud
+        _ -> maximum urs
+  when (ur >= UseId) $ do  -- note: @UseId@ suffices, not only @UseUp@
+    discoKind <- getsState sdiscoKind
+    item <- getsState $ getItemBody iid
+    case EM.lookup (jkindIx item) discoKind of
+      Just KindMean{kmKind} -> do
+        seed <- getsServer $ (EM.! iid) . sitemSeedD
+        execUpdAtomic $ UpdDiscover c iid kmKind seed
+      _ -> error $ "" `showFailure` (source, target, iid, item)
+  return ur
 
 -- | The source actor affects the target actor, with a given effect and power.
 -- Both actors are on the current level and can be the same actor.
@@ -262,7 +266,7 @@ itemEffectDisco source target iid c recharged periodic effs = do
 effectSem :: MonadServerAtomic m
           => ActorId -> ActorId -> ItemId -> Container -> Bool -> Bool
           -> IK.Effect
-          -> m Bool
+          -> m UseResult
 effectSem source target iid c recharged periodic effect = do
   let recursiveCall = effectSem source target iid c recharged periodic
   sb <- getsState $ getActorBody source
@@ -271,8 +275,8 @@ effectSem source target iid c recharged periodic effect = do
   -- and we are likely to introduce more variety.
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect 0
   case effect of
-    IK.ELabel _ -> return False
-    IK.EqpSlot _ -> return False
+    IK.ELabel _ -> return UseDud
+    IK.EqpSlot _ -> return UseDud
     IK.Burn nDm -> effectBurn nDm source target
     IK.Explode t -> effectExplode execSfx t target
     IK.RefillHP p -> effectRefillHP p source target
@@ -305,11 +309,11 @@ effectSem source target iid c recharged periodic effect = do
     IK.ActivateInv symbol -> effectActivateInv execSfx target symbol
     IK.ApplyPerfume -> effectApplyPerfume execSfx target
     IK.OneOf l -> effectOneOf recursiveCall l
-    IK.OnSmash _ -> return False  -- ignored under normal circumstances
+    IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
     IK.Recharging e -> effectRecharging recursiveCall e recharged
     IK.Temporary _ -> effectTemporary execSfx source iid c
-    IK.Unique -> return False
-    IK.Periodic -> return False
+    IK.Unique -> return UseDud
+    IK.Periodic -> return UseDud
     IK.Composite l -> effectComposite recursiveCall l
 
 -- * Individual semantic functions for effects
@@ -318,7 +322,7 @@ effectSem source target iid c recharged periodic effect = do
 
 -- Damage from fire. Not affected by armor.
 effectBurn :: MonadServerAtomic m
-           => Dice.Dice -> ActorId -> ActorId -> m Bool
+           => Dice.Dice -> ActorId -> ActorId -> m UseResult
 effectBurn nDm source target = do
   tb <- getsState $ getActorBody target
   ar <- getsState $ getActorAspect target
@@ -331,7 +335,7 @@ effectBurn nDm source target = do
                           min rawDeltaHP (xM hpMax - bhp tb)
               | otherwise = rawDeltaHP
   if deltaHP == 0
-  then return False
+  then return UseDud
   else do
     sb <- getsState $ getActorBody source
     -- Display the effect.
@@ -339,12 +343,12 @@ effectBurn nDm source target = do
     execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
     -- Damage the target.
     refillHP serious target tb deltaHP
-    return True
+    return UseUp
 
 -- ** Explode
 
 effectExplode :: MonadServerAtomic m
-              => m () -> GroupName ItemKind -> ActorId -> m Bool
+              => m () -> GroupName ItemKind -> ActorId -> m UseResult
 effectExplode execSfx cgroup target = do
   execSfx
   tb <- getsState $ getActorBody target
@@ -413,12 +417,13 @@ effectExplode execSfx cgroup target = do
   -- Give up and destroy the remaining particles, if any.
   maybe (return ()) (\kit -> execUpdAtomic
                              $ UpdLoseItem False iid itemBase kit container) mn3
-  return True  -- we neglect verifying that at least one projectile got off
+  return UseUp  -- we neglect verifying that at least one projectile got off
 
 -- ** RefillHP
 
 -- Unaffected by armor.
-effectRefillHP :: MonadServerAtomic m => Int -> ActorId -> ActorId -> m Bool
+effectRefillHP :: MonadServerAtomic m
+               => Int -> ActorId -> ActorId -> m UseResult
 effectRefillHP power source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
@@ -435,12 +440,12 @@ effectRefillHP power source target = do
   if | cfish curChalSer && power > 0
        && fhasUI (gplayer fact) && bfid sb /= bfid tb -> do
        execSfxAtomic $ SfxMsgFid (bfid tb) SfxColdFish
-       return False
-     | deltaHP == 0 -> return False
+       return UseId
+     | deltaHP == 0 -> return UseDud
      | otherwise -> do
        execSfxAtomic $ SfxEffect (bfid sb) target (IK.RefillHP power) deltaHP
        refillHP serious target tb deltaHP
-       return True
+       return UseUp
 
 cutCalm :: MonadServerAtomic m => ActorId -> m ()
 cutCalm target = do
@@ -457,7 +462,7 @@ cutCalm target = do
 -- ** RefillCalm
 
 effectRefillCalm :: MonadServerAtomic m
-                 => m () -> Int -> ActorId -> ActorId -> m Bool
+                 => m () -> Int -> ActorId -> ActorId -> m UseResult
 effectRefillCalm execSfx power source target = do
   tb <- getsState $ getActorBody target
   ar <- getsState $ getActorAspect target
@@ -467,25 +472,29 @@ effectRefillCalm execSfx power source target = do
                     min (xM power) (xM calmMax - bcalm tb)
                 | otherwise = min (xM power) (max 0 $ xM 999 - bcalm tb)
                                                            -- UI limitation
-  if deltaCalm == 0 then return False
+  if deltaCalm == 0
+  then return UseDud
   else do
     execSfx
     udpateCalm target deltaCalm
-    return True
+    return UseUp
 
 -- ** Dominate
 
 effectDominate :: MonadServerAtomic m
-               => (IK.Effect -> m Bool) -> ActorId -> ActorId -> m Bool
+               => (IK.Effect -> m UseResult) -> ActorId -> ActorId
+               -> m UseResult
 effectDominate recursiveCall source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  if | bproj tb -> return False
+  if | bproj tb -> return UseDud
      | bfid tb == bfid sb ->
        -- Dominate is rather on projectiles than on items, so alternate effect
        -- is useful to avoid boredom if domination can't happen.
        recursiveCall IK.Impress
-     | otherwise -> dominateFidSfx (bfid sb) target
+     | otherwise -> do
+       b <- dominateFidSfx (bfid sb) target
+       return $! if b then UseUp else UseDud
 
 dominateFidSfx :: MonadServerAtomic m => FactionId -> ActorId -> m Bool
 dominateFidSfx fid target = do
@@ -496,7 +505,13 @@ dominateFidSfx fid target = do
   ar <- getsState $ getActorAspect target
   let actorMaxSk = aSkills ar
       -- Check that the actor can move, also between levels and through doors.
-      -- Otherwise, it's too awkward for human player to control.
+      -- Otherwise, it's too awkward for human player to control, e.g.,
+      -- being stuck in a room with revolving doors closing after one turn
+      -- and the player needing to micromanage opening such doors with
+      -- another actor all the time. Completely immovable actors
+      -- e.g., an impregnable surveillance camera in a crowded corridor,
+      -- are less of a problem due to micromanagment, but more due to
+      -- the constant disturbing of other actor's running, etc..
       canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
                 && EM.findWithDefault 0 Ability.AbAlter actorMaxSk
                    >= fromEnum TK.talterForStairs
@@ -550,7 +565,7 @@ dominateFid fid target = do
         _ -> False
       gameOver = not $ any inGame $ EM.elems factionD
   if gameOver
-  then return True  -- avoid spam
+  then return True  -- avoid spam identifying item at this point
   else do
     -- Add some nostalgia for the old faction.
     void $ effectCreateItem (Just $ bfid tb) (Just 10) target COrgan
@@ -570,16 +585,17 @@ dominateFid fid target = do
 -- ** Impress
 
 effectImpress :: MonadServerAtomic m
-              => (IK.Effect -> m Bool) -> m () -> ActorId -> ActorId -> m Bool
+              => (IK.Effect -> m UseResult) -> m () -> ActorId -> ActorId
+              -> m UseResult
 effectImpress recursiveCall execSfx source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  if | bproj tb || bhp tb <= 0 -> return False  -- avoid spam just before death
+  if | bproj tb || bhp tb <= 0 -> return UseDud  -- avoid spam just before death
      | bfid tb == bfid sb -> do
        -- Unimpress wrt others, but only once.
-       res <- recursiveCall $ IK.DropItem 1 1 COrgan "impressed"
-       when res execSfx
-       return res
+       ur <- recursiveCall $ IK.DropItem 1 1 COrgan "impressed"
+       when (ur == UseUp) execSfx
+       return ur
      | otherwise -> do
        execSfx
        effectCreateItem (Just $ bfid sb) (Just 1) target COrgan
@@ -591,7 +607,7 @@ effectImpress recursiveCall execSfx source target = do
 effectSummon :: MonadServerAtomic m
              => m () -> GroupName ItemKind -> Dice.Dice -> ItemId
              -> ActorId -> ActorId -> Bool
-             -> m Bool
+             -> m UseResult
 effectSummon execSfx grp nDm iid source target periodic = do
   -- Obvious effect, nothing announced.
   Kind.COps{coTileSpeedup} <- getsState scops
@@ -609,39 +625,39 @@ effectSummon execSfx grp nDm iid source target periodic = do
   -- out of hand. I don't verify Calm otherwise, to prevent an exploit
   -- via draining one's calm on purpose when an item with good activation
   -- has a nasty summoning side-effect (the exploit still works on durables).
-  if (periodic || durable) && not (bproj sb)
-     && (bcalm sb < - deltaCalm || not (calmEnough sb sar)) then do
-    unless (bproj sb) $
-      execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonLackCalm source
-    return False
-  else do
-    execSfx
-    unless (bproj sb) $ udpateCalm source deltaCalm
-    let validTile t = not $ Tile.isNoActor coTileSpeedup t
-    ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
-    localTime <- getsState $ getLocalTime (blid tb)
-    -- Make sure summoned actors start acting after the victim.
-    let actorTurn = ticksPerMeter $ bspeed tb tar
-        targetTime = timeShift localTime actorTurn
-        afterTime = timeShift targetTime $ Delta timeClip
-    bs <- forM (take power ps) $ \p -> do
-      maid <- addAnyActor [(grp, 1)] (blid tb) afterTime (Just p)
-      case maid of
-        Nothing -> return False  -- not enough space in dungeon?
-        Just aid -> do
-          b <- getsState $ getActorBody aid
-          mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
-          when (isNothing mleader) $ supplantLeader (bfid b) aid
-          return True
-    return $! or bs
+  if | bproj sb -> return UseDud  -- basically a misfire
+     | (periodic || durable)
+       && (bcalm sb < - deltaCalm || not (calmEnough sb sar)) -> do
+       execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonLackCalm source
+       return UseId
+     | otherwise -> do
+       execSfx
+       unless (bproj sb) $ udpateCalm source deltaCalm
+       let validTile t = not $ Tile.isNoActor coTileSpeedup t
+       ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
+       localTime <- getsState $ getLocalTime (blid tb)
+       -- Make sure summoned actors start acting after the victim.
+       let actorTurn = ticksPerMeter $ bspeed tb tar
+           targetTime = timeShift localTime actorTurn
+           afterTime = timeShift targetTime $ Delta timeClip
+       bs <- forM (take power ps) $ \p -> do
+         maid <- addAnyActor [(grp, 1)] (blid tb) afterTime (Just p)
+         case maid of
+           Nothing -> return False  -- not enough space in dungeon?
+           Just aid -> do
+             b <- getsState $ getActorBody aid
+             mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
+             when (isNothing mleader) $ supplantLeader (bfid b) aid
+             return True
+       return $! if or bs then UseUp else UseId
 
 -- ** Ascend
 
 -- Note that projectiles can be teleported, too, for extra fun.
 effectAscend :: MonadServerAtomic m
-             => (IK.Effect -> m Bool)
+             => (IK.Effect -> m UseResult)
              -> m () -> Bool -> ActorId -> ActorId -> Point
-             -> m Bool
+             -> m UseResult
 effectAscend recursiveCall execSfx up source target pos = do
   b1 <- getsState $ getActorBody target
   let lid1 = blid b1
@@ -649,7 +665,7 @@ effectAscend recursiveCall execSfx up source target pos = do
   sb <- getsState $ getActorBody source
   if | braced b1 -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
-       return False
+       return UseId
      | lid2 == lid1 && pos2 == pos -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) SfxLevelNoMore
        -- We keep it useful even in shallow dungeons.
@@ -694,7 +710,7 @@ effectAscend recursiveCall execSfx up source target pos = do
            mapM_ moveInh inhabitants
            -- Move the actor to his destination.
            switch2
-       return True
+       return UseUp
 
 findStairExit :: MonadStateRead m
               => FactionId -> Bool -> LevelId -> Point -> m Point
@@ -797,7 +813,7 @@ switchLevels2 lidNew posNew (aid, bOld) btime_bOld mlead = do
 -- ** Escape
 
 -- | The faction leaves the dungeon.
-effectEscape :: MonadServerAtomic m => ActorId -> ActorId -> m Bool
+effectEscape :: MonadServerAtomic m => ActorId -> ActorId -> m UseResult
 effectEscape source target = do
   -- Obvious effect, nothing announced.
   sb <- getsState $ getActorBody source
@@ -805,38 +821,38 @@ effectEscape source target = do
   let fid = bfid b
   fact <- getsState $ (EM.! fid) . sfactionD
   if | bproj b ->
-       return False
+       return UseDud  -- basically a misfire
      | not (fcanEscape $ gplayer fact) -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) SfxEscapeImpossible
-       return False
+       return UseId
      | otherwise -> do
        deduceQuits (bfid b) $ Status Escape (fromEnum $ blid b) Nothing
-       return True
+       return UseUp
 
 -- ** Paralyze
 
 -- | Advance target actor time by this many time clips. Not by actor moves,
 -- to hurt fast actors more.
 effectParalyze :: MonadServerAtomic m
-               => m () -> Dice.Dice -> ActorId -> m Bool
+               => m () -> Dice.Dice -> ActorId -> m UseResult
 effectParalyze execSfx nDm target = do
   p <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   b <- getsState $ getActorBody target
   if bproj b || bhp b <= 0
-    then return False
-    else do
-      execSfx
-      let t = timeDeltaScale (Delta timeClip) p
-      modifyServer $ \ser ->
-        ser {sactorTime = ageActor (bfid b) (blid b) target t $ sactorTime ser}
-      return True
+  then return UseDud
+  else do
+    execSfx
+    let t = timeDeltaScale (Delta timeClip) p
+    modifyServer $ \ser ->
+      ser {sactorTime = ageActor (bfid b) (blid b) target t $ sactorTime ser}
+    return UseUp
 
 -- ** InsertMove
 
 -- | Give target actor the given number of extra moves. Don't give
 -- an absolute amount of time units, to benefit slow actors more.
 effectInsertMove :: MonadServerAtomic m
-                 => m () -> Dice.Dice -> ActorId -> m Bool
+                 => m () -> Dice.Dice -> ActorId -> m UseResult
 effectInsertMove execSfx nDm target = do
   execSfx
   p <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
@@ -846,14 +862,14 @@ effectInsertMove execSfx nDm target = do
       t = timeDeltaScale actorTurn (-p)
   modifyServer $ \ser ->
     ser {sactorTime = ageActor (bfid b) (blid b) target t $ sactorTime ser}
-  return True
+  return UseUp
 
 -- ** Teleport
 
 -- | Teleport the target actor.
 -- Note that projectiles can be teleported, too, for extra fun.
 effectTeleport :: MonadServerAtomic m
-               => m () -> Dice.Dice -> ActorId -> ActorId -> m Bool
+               => m () -> Dice.Dice -> ActorId -> ActorId -> m UseResult
 effectTeleport execSfx nDm source target = do
   Kind.COps{coTileSpeedup} <- getsState scops
   range <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
@@ -881,21 +897,21 @@ effectTeleport execSfx nDm source target = do
     ]
   if | braced b -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
-       return False
+       return UseId
      | not (dMinMax 9 tpos) -> do  -- very rare
        execSfxAtomic $ SfxMsgFid (bfid sb) SfxTransImpossible
-       return False
+       return UseId
      | otherwise -> do
        execSfx
        execUpdAtomic $ UpdMoveActor target spos tpos
-       return True
+       return UseUp
 
 -- ** CreateItem
 
 effectCreateItem :: MonadServerAtomic m
                  => Maybe FactionId -> Maybe Int -> ActorId -> CStore
                  -> GroupName ItemKind -> IK.TimerDice
-                 -> m Bool
+                 -> m UseResult
 effectCreateItem jfidRaw mcount target store grp tim = do
   tb <- getsState $ getActorBody target
   delta <- case tim of
@@ -939,11 +955,13 @@ effectCreateItem jfidRaw mcount target store grp tim = do
       -- Already has such items and timer change requested, so only increase
       -- the timer of the first item by the delta, but don't create items.
       let newIt = timer `timeShift` delta : rest
-      when (afterIt /= newIt) $ do
+      if afterIt /= newIt then do
         execUpdAtomic $ UpdTimeItem iid c afterIt newIt
         -- It's hard for the client to tell this timer change from charge use,
         -- timer reset on pickup, etc., so we create the msg manually.
         execSfxAtomic $ SfxMsgFid (bfid tb) $ SfxTimerExtended target iid store
+        return UseUp
+      else return UseDud  -- probably incorrect content, but let it be
     _ -> do
       -- No such items or some items, but void delta, so create items.
       -- If it's, e.g., a periodic poison, the new items will stack with any
@@ -964,7 +982,7 @@ effectCreateItem jfidRaw mcount target store grp tim = do
             newIt = replicate afterK newTimer
         when (afterIt /= newIt) $
           execUpdAtomic $ UpdTimeItem iid c afterIt newIt
-  return True
+      return UseUp
 
 -- ** DropItem
 
@@ -973,15 +991,16 @@ effectCreateItem jfidRaw mcount target store grp tim = do
 -- would be beneficial).
 effectDropItem :: MonadServerAtomic m
                => m () -> Int -> Int -> CStore -> GroupName ItemKind -> ActorId
-               -> m Bool
+               -> m UseResult
 effectDropItem execSfx ngroup kcopy store grp target = do
   b <- getsState $ getActorBody target
   is <- allGroupItems store grp target
-  if null is then return False
+  if null is
+  then return UseDud
   else do
     unless (store == COrgan) execSfx
     mapM_ (uncurry (dropCStoreItem True store target b kcopy)) $ take ngroup is
-    return True
+    return UseUp
 
 allGroupItems :: MonadServerAtomic m
               => CStore -> GroupName ItemKind -> ActorId
@@ -1041,7 +1060,8 @@ pickDroppable aid b = do
 
 -- ** PolyItem
 
-effectPolyItem :: MonadServerAtomic m => m () -> ActorId -> ActorId -> m Bool
+effectPolyItem :: MonadServerAtomic m
+               => m () -> ActorId -> ActorId -> m UseResult
 effectPolyItem execSfx source target = do
   sb <- getsState $ getActorBody source
   let cstore = CGround
@@ -1049,17 +1069,17 @@ effectPolyItem execSfx source target = do
   case allAssocs of
     [] -> do
       execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxPurposeNothing cstore
-      return False
+      return UseId
     (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
       Just ItemDisco{itemKind, itemKindId} -> do
         let maxCount = Dice.maxDice $ IK.icount itemKind
         if | itemK < maxCount -> do
              execSfxAtomic $ SfxMsgFid (bfid sb)
                            $ SfxPurposeTooFew maxCount itemK
-             return False
+             return UseId
            | IK.Unique `elem` IK.ieffects itemKind -> do
              execSfxAtomic $ SfxMsgFid (bfid sb) SfxPurposeUnique
-             return False
+             return UseId
            | otherwise -> do
              -- Only the required number of items is used up, not all of them.
              let c = CActor target cstore
@@ -1074,7 +1094,7 @@ effectPolyItem execSfx source target = do
 -- ** Identify
 
 effectIdentify :: MonadServerAtomic m
-               => m () -> ItemId -> ActorId -> ActorId -> m Bool
+               => m () -> ItemId -> ActorId -> ActorId -> m UseResult
 effectIdentify execSfx iidId source target = do
   sb <- getsState $ getActorBody source
   s <- getsServer $ (EM.! bfid sb) . sclientStates
@@ -1100,11 +1120,11 @@ effectIdentify execSfx iidId source target = do
       tryStore stores = case stores of
         [] -> do
           execSfxAtomic $ SfxMsgFid (bfid sb) SfxIdentifyNothing
-          return False
+          return UseId  -- the message tells it's ID effect
         store : rest -> do
           allAssocs <- getsState $ fullAssocs target [store]
           go <- tryFull store allAssocs
-          if go then return True else tryStore rest
+          if go then return UseUp else tryStore rest
   tryStore [CGround, CEqp, CInv, CSha]
 
 identifyIid :: MonadServerAtomic m
@@ -1116,12 +1136,12 @@ identifyIid iid c itemKindId = do
 -- ** Detect
 
 effectDetect :: MonadServerAtomic m
-             => m () -> Int -> ActorId -> m Bool
+             => m () -> Int -> ActorId -> m UseResult
 effectDetect = effectDetectX (const True) (const $ return False)
 
 effectDetectX :: MonadServerAtomic m
               => (Point -> Bool) -> ([Point] -> m Bool)
-              -> m () -> Int -> ActorId -> m Bool
+              -> m () -> Int -> ActorId -> m UseResult
 effectDetectX predicate action execSfx radius target = do
   b <- getsState $ getActorBody target
   Level{lxsize, lysize} <- getLevel $ blid b
@@ -1152,11 +1172,12 @@ effectDetectX predicate action execSfx radius target = do
       execSendPer (bfid b) (blid b) inPer emptyPer perOld
   else
     execSfxAtomic $ SfxMsgFid (bfid b) SfxVoidDetection
-  return True  -- even if nothing spotted, in itself it's still useful data
+  return UseUp  -- even if nothing spotted, in itself it's still useful data
 
 -- ** DetectActor
 
-effectDetectActor :: MonadServerAtomic m => m () -> Int -> ActorId -> m Bool
+effectDetectActor :: MonadServerAtomic m
+                  => m () -> Int -> ActorId -> m UseResult
 effectDetectActor execSfx radius target = do
   b <- getsState $ getActorBody target
   Level{lactor} <- getLevel $ blid b
@@ -1165,7 +1186,7 @@ effectDetectActor execSfx radius target = do
 
 -- ** DetectItem
 
-effectDetectItem :: MonadServerAtomic m => m () -> Int -> ActorId -> m Bool
+effectDetectItem :: MonadServerAtomic m => m () -> Int -> ActorId -> m UseResult
 effectDetectItem execSfx radius target = do
   b <- getsState $ getActorBody target
   Level{lfloor} <- getLevel $ blid b
@@ -1174,7 +1195,7 @@ effectDetectItem execSfx radius target = do
 
 -- ** DetectExit
 
-effectDetectExit :: MonadServerAtomic m => m () -> Int -> ActorId -> m Bool
+effectDetectExit :: MonadServerAtomic m => m () -> Int -> ActorId -> m UseResult
 effectDetectExit execSfx radius target = do
   b <- getsState $ getActorBody target
   Level{lstair=(ls1, ls2), lescape} <- getLevel $ blid b
@@ -1184,7 +1205,7 @@ effectDetectExit execSfx radius target = do
 -- ** DetectHidden
 
 effectDetectHidden :: MonadServerAtomic m
-                   => m () -> Int -> ActorId -> Point -> m Bool
+                   => m () -> Int -> ActorId -> Point -> m UseResult
 effectDetectHidden execSfx radius target pos = do
   Kind.COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody target
@@ -1216,7 +1237,7 @@ effectDetectHidden execSfx radius target pos = do
 -- is picked.
 effectSendFlying :: MonadServerAtomic m
                  => m () -> IK.ThrowMod -> ActorId -> ActorId -> Maybe Bool
-                 -> m Bool
+                 -> m UseResult
 effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
   v <- sendFlyingVector source target modePush
   Kind.COps{coTileSpeedup} <- getsState scops
@@ -1227,7 +1248,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
       fpos = bpos tb `shift` v
   if braced tb then do
     execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
-    return False
+    return UseId  -- the message reveals what's going on
   else case bla lxsize lysize eps (bpos tb) fpos of
     Nothing -> error $ "" `showFailure` (fpos, tb)
     Just [] -> error $ "projecting from the edge of level"
@@ -1235,28 +1256,28 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
     Just (pos : rest) -> do
       let t = lvl `at` pos
       if not $ Tile.isWalkable coTileSpeedup t
-        then return False  -- supported by a wall
+      then return UseDud  -- supported by a wall, not noticeable
+      else do
+        weightAssocs <- getsState $ fullAssocs target [CInv, CEqp, COrgan]
+        let weight = sum $ map (jweight . itemBase . snd) weightAssocs
+            path = bpos tb : pos : rest
+            (trajectory, (speed, range)) =
+              computeTrajectory weight throwVelocity throwLinger path
+            ts = Just (trajectory, speed)
+        if null trajectory || btrajectory tb == ts
+           || throwVelocity <= 0 || throwLinger <= 0
+        then return UseId  -- e.g., actor is too heavy; but a jerk is noticeable
         else do
-          weightAssocs <- getsState $ fullAssocs target [CInv, CEqp, COrgan]
-          let weight = sum $ map (jweight . itemBase . snd) weightAssocs
-              path = bpos tb : pos : rest
-              (trajectory, (speed, range)) =
-                computeTrajectory weight throwVelocity throwLinger path
-              ts = Just (trajectory, speed)
-          if null trajectory || btrajectory tb == ts
-             || throwVelocity <= 0 || throwLinger <= 0
-          then return False  -- e.g., actor is too heavy; OK
-          else do
-            execSfx
-            execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
-            -- Give the actor back all the time spent flying (speed * range)
-            -- and also let the push start ASAP. So, he will not lose
-            -- any turn of movement (but he may need to retrace the push).
-            let delta = timeDeltaScale (ticksPerMeter speed) (-range)
-            modifyServer $ \ser ->
-              ser {sactorTime = ageActor (bfid tb) (blid tb) target delta
-                                $ sactorTime ser}
-            return True
+          execSfx
+          execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
+          -- Give the actor back all the time spent flying (speed * range)
+          -- and also let the push start ASAP. So, he will not lose
+          -- any turn of movement (but he may need to retrace the push).
+          let delta = timeDeltaScale (ticksPerMeter speed) (-range)
+          modifyServer $ \ser ->
+            ser {sactorTime = ageActor (bfid tb) (blid tb) target delta
+                              $ sactorTime ser}
+          return UseUp
 
 sendFlyingVector :: MonadServerAtomic m
                  => ActorId -> ActorId -> Maybe Bool -> m Vector
@@ -1289,7 +1310,7 @@ sendFlyingVector source target modePush = do
 -- ** DropBestWeapon
 
 -- | Make the target actor drop his best weapon (stack).
-effectDropBestWeapon :: MonadServerAtomic m => m () -> ActorId -> m Bool
+effectDropBestWeapon :: MonadServerAtomic m => m () -> ActorId -> m UseResult
 effectDropBestWeapon execSfx target = do
   tb <- getsState $ getActorBody target
   localTime <- getsState $ getLocalTime (blid tb)
@@ -1300,9 +1321,9 @@ effectDropBestWeapon execSfx target = do
       execSfx
       let kit = beqp tb EM.! iid
       dropCStoreItem True CEqp target tb 1 iid kit  -- not the whole stack
-      return True
+      return UseUp
     [] ->
-      return False
+      return UseDud
 
 -- ** ActivateInv
 
@@ -1310,35 +1331,37 @@ effectDropBestWeapon execSfx target = do
 -- in the target actor's equipment (there's no variant that activates
 -- a random one, to avoid the incentive for carrying garbage).
 -- Only one item of each stack is activated (and possibly consumed).
-effectActivateInv :: MonadServerAtomic m => m () -> ActorId -> Char -> m Bool
-effectActivateInv execSfx target symbol =
-  effectTransformEqp execSfx target symbol CInv $ \iid _ -> do
-    let c = CActor target CInv
+effectActivateInv :: MonadServerAtomic m
+                  => m () -> ActorId -> Char -> m UseResult
+effectActivateInv execSfx target symbol = do
+  let c = CActor target CInv
+  effectTransformContainer execSfx symbol c $ \iid _ ->
     meleeEffectAndDestroy target target iid c
 
-effectTransformEqp :: forall m. MonadServerAtomic m
-                   => m () -> ActorId -> Char -> CStore
-                   -> (ItemId -> ItemQuant -> m ())
-                   -> m Bool
-effectTransformEqp execSfx target symbol cstore m = do
-  b <- getsState $ getActorBody target
+effectTransformContainer :: forall m. MonadServerAtomic m
+                         => m () -> Char -> Container
+                         -> (ItemId -> ItemQuant -> m ())
+                         -> m UseResult
+effectTransformContainer execSfx symbol c m = do
   let hasSymbol (iid, _) = do
         item <- getsState $ getItemBody iid
         return $! jsymbol item == symbol
-  assocsCStore <- getsState $ EM.assocs . getBodyStoreBag b cstore
+  assocsCStore <- getsState $ EM.assocs . getContainerBag c
   is <- if symbol == ' '
         then return assocsCStore
         else filterM hasSymbol assocsCStore
   if null is
-    then return False
-    else do
-      execSfx
-      mapM_ (uncurry m) is
-      return True
+  then return UseDud
+  else do
+    execSfx
+    mapM_ (uncurry m) is
+    -- Even if no item produced any visible effect, rummaging through
+    -- the inventory uses up the effect and produced discernible vibrations.
+    return UseUp
 
 -- ** ApplyPerfume
 
-effectApplyPerfume :: MonadServerAtomic m => m () -> ActorId -> m Bool
+effectApplyPerfume :: MonadServerAtomic m => m () -> ActorId -> m UseResult
 effectApplyPerfume execSfx target = do
   execSfx
   tb <- getsState $ getActorBody target
@@ -1346,55 +1369,59 @@ effectApplyPerfume execSfx target = do
   let f p fromSm =
         execUpdAtomic $ UpdAlterSmell (blid tb) p fromSm timeZero
   mapWithKeyM_ f lsmell
-  return True
+  return UseUp  -- even if no smell before, the perfume is noticeable
 
 -- ** OneOf
 
 effectOneOf :: MonadServerAtomic m
-            => (IK.Effect -> m Bool) -> [IK.Effect] -> m Bool
+            => (IK.Effect -> m UseResult) -> [IK.Effect] -> m UseResult
 effectOneOf recursiveCall l = do
   let call1 = do
         ef <- rndToAction $ oneOf l
         recursiveCall ef
       call99 = replicate 99 call1
-      f callNext result = do
-        b <- result
-        if b then return True else callNext
-  foldr f (return False) call99
+      f call result = do
+        ur <- call
+        -- We avoid 99 calls to a fizzling effect that only prints
+        -- a failure message and IDs the item.
+        if ur == UseDud then result else return ur
+  foldr f (return UseDud) call99
   -- no @execSfx@, because individual effects sent them
 
 -- ** Recharging
 
 effectRecharging :: MonadServerAtomic m
-                 => (IK.Effect -> m Bool) -> IK.Effect -> Bool -> m Bool
+                 => (IK.Effect -> m UseResult) -> IK.Effect -> Bool
+                 -> m UseResult
 effectRecharging recursiveCall e recharged =
   if recharged
   then recursiveCall e
-  else return False
+  else return UseDud
 
 -- ** Temporary
 
 effectTemporary :: MonadServerAtomic m
-                => m () -> ActorId -> ItemId -> Container -> m Bool
-effectTemporary execSfx source iid c =
+                => m () -> ActorId -> ItemId -> Container -> m UseResult
+effectTemporary execSfx source iid c = do
   case c of
     CActor _ COrgan -> do
       b <- getsState $ getActorBody source
       case iid `EM.lookup` borgan b of
         Just _ -> return ()  -- still some copies left of a multi-copy tmp organ
         Nothing -> execSfx  -- last copy just destroyed
-      return True
     _ -> do
       execSfx
-      return False  -- just a message
+  return UseUp  -- temporary, so usually used up just by sitting there
 
 -- ** Composite
 
-effectComposite :: MonadServerAtomic m
-                => (IK.Effect -> m Bool) -> [IK.Effect] -> m Bool
+effectComposite :: forall m. MonadServerAtomic m
+                => (IK.Effect -> m UseResult) -> [IK.Effect] -> m UseResult
 effectComposite recursiveCall l = do
-  let f eff result = do
-        b <- recursiveCall eff
-        if b then result >> return True else return False
-  foldr f (return False) l  -- @True@ if any effect triggered
+  let f :: IK.Effect -> m UseResult -> m UseResult
+      f eff result = do
+        ur <- recursiveCall eff
+        when (ur == UseUp) $ void $ result  -- UseResult comes from the first
+        return ur
+  foldr f (return UseDud) l  -- @True@ if any effect triggered
   -- no @execSfx@, because individual effects sent them

@@ -111,7 +111,7 @@ data Effect =
   | Unique              -- ^ at most one copy can ever be generated
   | Periodic
       -- ^ in equipment, triggered as often as @Timeout@ permits
-  | Composite [Effect]  -- ^ only fire next effect if previous was triggered
+  | Composite [Effect]  -- ^ only fire next effect if previous fully activated
   deriving (Show, Eq, Generic)
 
 instance NFData Effect
