@@ -49,11 +49,15 @@ drawOverlay dm onBlank topTrunc lid = do
 -- to see what is underneath.
 pushFrame :: MonadClientUI m => m ()
 pushFrame = do
-  lidV <- viewedLevelUI
-  report <- getReportUI
-  let truncRep = [renderReport report]
-  frame <- drawOverlay ColorFull False truncRep lidV
-  displayFrames lidV [Just frame]
+  -- The delay before reaction to keypress was too long in case of many
+  -- projectiles flying and ending flight, so frames need to be skipped.
+  keyPressed <- anyKeyPressed
+  unless keyPressed $ do
+    lidV <- viewedLevelUI
+    report <- getReportUI
+    let truncRep = [renderReport report]
+    frame <- drawOverlay ColorFull False truncRep lidV
+    displayFrames lidV [Just frame]
 
 promptGetKey :: MonadClientUI m
              => ColorMode -> Overlay -> Bool -> [K.KM] -> m K.KM
@@ -127,8 +131,12 @@ renderFrames arena anim = do
 -- | Render and display animations on top of the current screen frame.
 animate :: MonadClientUI m => LevelId -> Animation -> m ()
 animate arena anim = do
-  frames <- renderFrames arena anim
-  displayFrames arena frames
+  -- The delay before reaction to keypress was too long in case of many
+  -- projectiles hitting actors, so frames need to be skipped.
+  keyPressed <- anyKeyPressed
+  unless keyPressed $ do
+    frames <- renderFrames arena anim
+    displayFrames arena frames
 
 fadeOutOrIn :: MonadClientUI m => Bool -> m ()
 fadeOutOrIn out = do

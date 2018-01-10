@@ -49,7 +49,7 @@ data FrontReq :: * -> * where
   -- | Flush frames, display a frame and ask for a keypress.
   FrontKey :: { frontKeyKeys  :: [K.KM]
               , frontKeyFrame :: FrameForall } -> FrontReq KMP
-  -- | Inspect the fkeyPressed MVar.
+  -- | Tell if a keypress is pending.
   FrontPressed :: FrontReq Bool
   -- | Discard a key in the queue, if any.
   FrontDiscard :: FrontReq ()
