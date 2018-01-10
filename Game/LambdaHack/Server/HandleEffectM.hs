@@ -83,7 +83,9 @@ applyMeleeDamage source target iid = do
     tb <- getsState $ getActorBody target
     ar <- getsState $ getActorAspect target
     hurtMult <- getsState $ armorHurtBonus source target
-    dmg <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) $ jdamage itemBase
+    totalDepth <- getsState stotalDepth
+    Level{ldepth} <- getLevel (blid tb)
+    dmg <- rndToAction $ castDice ldepth totalDepth $ jdamage itemBase
     let hpMax = aMaxHP ar
         rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
         speedDeltaHP = case btrajectory sb of
@@ -327,7 +329,9 @@ effectBurn nDm source target = do
   tb <- getsState $ getActorBody target
   ar <- getsState $ getActorAspect target
   let hpMax = aMaxHP ar
-  n <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
+  totalDepth <- getsState stotalDepth
+  Level{ldepth} <- getLevel (blid tb)
+  n <- rndToAction $ castDice ldepth totalDepth nDm
   let rawDeltaHP = - xM n
       -- We ignore minor burns.
       serious = n > 1 && source /= target && not (bproj tb)
@@ -611,10 +615,12 @@ effectSummon :: MonadServerAtomic m
 effectSummon grp nDm iid source target periodic = do
   -- Obvious effect, nothing announced.
   Kind.COps{coTileSpeedup} <- getsState scops
-  power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   actorAspect <- getsState sactorAspect
+  totalDepth <- getsState stotalDepth
+  Level{ldepth} <- getLevel (blid tb)
+  power <- rndToAction $ castDice ldepth totalDepth nDm
   item <- getsState $ getItemBody iid
   -- We put @source@ instead of @target@ and @power@ instead of dice
   -- to make the message more accurate.
@@ -840,15 +846,17 @@ effectEscape source target = do
 effectParalyze :: MonadServerAtomic m
                => m () -> Dice.Dice -> ActorId -> m UseResult
 effectParalyze execSfx nDm target = do
-  p <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
-  b <- getsState $ getActorBody target
-  if bproj b || bhp b <= 0
+  tb <- getsState $ getActorBody target
+  totalDepth <- getsState stotalDepth
+  Level{ldepth} <- getLevel (blid tb)
+  p <- rndToAction $ castDice ldepth totalDepth nDm
+  if bproj tb || bhp tb <= 0
   then return UseDud
   else do
     execSfx
     let t = timeDeltaScale (Delta timeClip) p
     modifyServer $ \ser ->
-      ser {sactorTime = ageActor (bfid b) (blid b) target t $ sactorTime ser}
+      ser {sactorTime = ageActor (bfid tb) (blid tb) target t $ sactorTime ser}
     return UseUp
 
 -- ** InsertMove
@@ -859,13 +867,15 @@ effectInsertMove :: MonadServerAtomic m
                  => m () -> Dice.Dice -> ActorId -> m UseResult
 effectInsertMove execSfx nDm target = do
   execSfx
-  p <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
-  b <- getsState $ getActorBody target
+  tb <- getsState $ getActorBody target
   ar <- getsState $ getActorAspect target
-  let actorTurn = ticksPerMeter $ bspeed b ar
+  totalDepth <- getsState stotalDepth
+  Level{ldepth} <- getLevel (blid tb)
+  p <- rndToAction $ castDice ldepth totalDepth nDm
+  let actorTurn = ticksPerMeter $ bspeed tb ar
       t = timeDeltaScale actorTurn (-p)
   modifyServer $ \ser ->
-    ser {sactorTime = ageActor (bfid b) (blid b) target t $ sactorTime ser}
+    ser {sactorTime = ageActor (bfid tb) (blid tb) target t $ sactorTime ser}
   return UseUp
 
 -- ** Teleport
@@ -876,16 +886,16 @@ effectTeleport :: MonadServerAtomic m
                => m () -> Dice.Dice -> ActorId -> ActorId -> m UseResult
 effectTeleport execSfx nDm source target = do
   Kind.COps{coTileSpeedup} <- getsState scops
-  range <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
-  b <- getsState $ getActorBody target
-  Level{ltile} <- getLevel (blid b)
-  let spos = bpos b
+  tb <- getsState $ getActorBody target
+  totalDepth <- getsState stotalDepth
+  lvl@Level{ldepth, ltile} <- getLevel (blid tb)
+  range <- rndToAction $ castDice ldepth totalDepth nDm
+  let spos = bpos tb
       dMinMax delta pos =
         let d = chessDist spos pos
         in d >= range - delta && d <= range + delta
       dist delta pos _ = dMinMax delta pos
-  lvl <- getLevel (blid b)
   tpos <- rndToAction $ findPosTry 200 ltile
     (\p t -> Tile.isWalkable coTileSpeedup t
              && (not (dMinMax 9 p)  -- don't loop, very rare
@@ -899,7 +909,7 @@ effectTeleport execSfx nDm source target = do
     , dist 7
     , dist 9
     ]
-  if | braced b -> do
+  if | braced tb -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
        return UseId
      | not (dMinMax 9 tpos) -> do  -- very rare
@@ -918,14 +928,16 @@ effectCreateItem :: MonadServerAtomic m
                  -> m UseResult
 effectCreateItem jfidRaw mcount target store grp tim = do
   tb <- getsState $ getActorBody target
+  totalDepth <- getsState stotalDepth
+  Level{ldepth} <- getLevel (blid tb)
   delta <- case tim of
     IK.TimerNone -> return $ Delta timeZero
     IK.TimerGameTurn nDm -> do
-      k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
+      k <- rndToAction $ castDice ldepth totalDepth nDm
       let !_A = assert (k >= 0) ()
       return $! timeDeltaScale (Delta timeTurn) k
     IK.TimerActorTurn nDm -> do
-      k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
+      k <- rndToAction $ castDice ldepth totalDepth nDm
       let !_A = assert (k >= 0) ()
       ar <- getsState $ getActorAspect target
       let actorTurn = ticksPerMeter $ bspeed tb ar
