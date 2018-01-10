@@ -636,6 +636,7 @@ effectSummon grp nDm iid source target periodic = do
   -- via draining one's calm on purpose when an item with good activation
   -- has a nasty summoning side-effect (the exploit still works on durables).
   if | bproj sb -> return UseDud  -- basically a misfire
+     | power <= 0 -> return UseDud  -- e.g., @1 `dL` x@ at depth 1
      | (periodic || durable)
        && (bcalm sb < - deltaCalm || not (calmEnough sb sar)) -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonLackCalm source
@@ -850,11 +851,11 @@ effectParalyze execSfx nDm target = do
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
   p <- rndToAction $ castDice ldepth totalDepth nDm
-  if bproj tb || bhp tb <= 0
+  let t = timeDeltaScale (Delta timeClip) p
+  if p <= 0 || bproj tb || bhp tb <= 0
   then return UseDud
   else do
     execSfx
-    let t = timeDeltaScale (Delta timeClip) p
     modifyServer $ \ser ->
       ser {sactorTime = ageActor (bfid tb) (blid tb) target t $ sactorTime ser}
     return UseUp
@@ -866,7 +867,6 @@ effectParalyze execSfx nDm target = do
 effectInsertMove :: MonadServerAtomic m
                  => m () -> Dice.Dice -> ActorId -> m UseResult
 effectInsertMove execSfx nDm target = do
-  execSfx
   tb <- getsState $ getActorBody target
   ar <- getsState $ getActorAspect target
   totalDepth <- getsState stotalDepth
@@ -874,9 +874,13 @@ effectInsertMove execSfx nDm target = do
   p <- rndToAction $ castDice ldepth totalDepth nDm
   let actorTurn = ticksPerMeter $ bspeed tb ar
       t = timeDeltaScale actorTurn (-p)
-  modifyServer $ \ser ->
-    ser {sactorTime = ageActor (bfid tb) (blid tb) target t $ sactorTime ser}
-  return UseUp
+  if p <= 0
+  then return UseDud
+  else do
+    execSfx
+    modifyServer $ \ser ->
+      ser {sactorTime = ageActor (bfid tb) (blid tb) target t $ sactorTime ser}
+    return UseUp
 
 -- ** Teleport
 
