@@ -34,7 +34,6 @@ import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
-import           Game.LambdaHack.Client.UI.KeyBindings
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
@@ -762,12 +761,8 @@ quitFactionUI fid toSt = do
       when go $ do
         lidV <- viewedLevelUI
         Level{lxsize, lysize} <- getLevel lidV
-        Binding{brevMap} <- getsSession sbinding
+        revCmd <- revCmdMap
         let currencyName = MU.Text $ IK.iname $ okind $ ouniqGroup "currency"
-            revCmd dflt cmd = case M.lookup cmd brevMap of
-              Nothing -> dflt
-              Just (k : _) -> k
-              Just [] -> error $ "" `showFailure` brevMap
             caretKey = revCmd (K.KM K.NoModifier $ K.Char '^')
                               HumanCmd.SortSlots
             keysPre = [K.spaceKM, caretKey, K.escKM]

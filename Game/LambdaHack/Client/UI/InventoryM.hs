@@ -13,7 +13,6 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Char as Char
 import           Data.Either
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import           Data.Tuple (swap)
 import qualified NLP.Miniutter.English as MU
@@ -25,7 +24,6 @@ import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HumanCmd
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
-import           Game.LambdaHack.Client.UI.KeyBindings
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.Overlay
@@ -256,7 +254,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   bagAll <- getsState $ \s -> accessModeBag leader s cCur
   itemToF <- getsState itemToFull
   organPartySet <- getsState $ partyItemSet SOrgan (bfid body) (Just body)
-  Binding{brevMap} <- getsSession sbinding
+  revCmd <- revCmdMap
   mpsuit <- psuit  -- when throwing, this sets eps and checks xhair validity
   psuitFun <- case mpsuit of
     SuitsEverything -> return $ const True
@@ -294,10 +292,6 @@ transition psuit prompt promptGeneric permitMulitple cLegal
       multipleSlots = if itemDialogState == IAll
                       then bagItemSlotsAll
                       else suitableItemSlotsAll
-      revCmd dflt cmd = case M.lookup cmd brevMap of
-        Nothing -> dflt
-        Just (k : _) -> k
-        Just [] -> error $ "" `showFailure` brevMap
       maySwitchLeader MOwned = False
       maySwitchLeader MLore{} = False
       maySwitchLeader _ = True

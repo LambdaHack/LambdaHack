@@ -34,12 +34,8 @@ promptAdd msg = modifySession $ \sess ->
 -- | Add a prompt with basic keys description.
 promptMainKeys :: MonadClientUI m => m ()
 promptMainKeys = do
-  Binding{brevMap} <- getsSession sbinding
-  let revCmd dflt cmd = case M.lookup cmd brevMap of
-        Nothing -> dflt
-        Just (k : _) -> k
-        Just [] -> error $ "" `showFailure` brevMap
-      km = revCmd (K.mkChar '?') HumanCmd.Hint
+  revCmd <- revCmdMap
+  let km = revCmd (K.mkChar '?') HumanCmd.Hint
   saimMode <- getsSession saimMode
   UIOptions{uVi, uLaptop} <- getsSession sUIOptions
   xhair <- getsSession sxhair

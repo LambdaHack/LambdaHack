@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
     -- * Assorted primitives
   , clientPrintUI, mapStartY, getSession, putSession, displayFrames
   , connFrontendFrontKey, setFrontAutoYes, frontendShutdown, chanFrontend
-  , anyKeyPressed, discardPressedKey, addPressedEsc
+  , anyKeyPressed, discardPressedKey, addPressedEsc, revCmdMap
   , getReportUI, getLeaderUI, getArenaUI, viewedLevelUI
   , leaderTgtToPos, xhairToPos, clearXhair, clearAimMode
   , scoreToSlideshow, defaultHistory
@@ -27,6 +27,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           Data.Time.Clock
@@ -44,7 +45,9 @@ import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend
 import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
+import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Client.UI.KeyBindings
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
@@ -145,6 +148,15 @@ addPressedKey = connFrontend . FrontAdd
 addPressedEsc :: MonadClientUI m => m ()
 addPressedEsc = addPressedKey K.KMP { K.kmpKeyMod = K.escKM
                                     , K.kmpPointer = originPoint }
+
+revCmdMap :: MonadClientUI m => m (K.KM -> HumanCmd.HumanCmd -> K.KM)
+revCmdMap = do
+  Binding{brevMap} <- getsSession sbinding
+  let revCmd dflt cmd = case M.lookup cmd brevMap of
+        Nothing -> dflt
+        Just (k : _) -> k
+        Just [] -> error $ "" `showFailure` brevMap
+  return revCmd
 
 getReportUI :: MonadClientUI m => m Report
 getReportUI = do
