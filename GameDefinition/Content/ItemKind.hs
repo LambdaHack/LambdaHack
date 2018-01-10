@@ -661,7 +661,7 @@ scroll5 = scroll  -- needs to be common to show at least a portion of effects
   { irarity  = [(10, 30)]
   , ieffects = [ Impress
                , OneOf [ Teleport 20, Ascend False, Ascend True
-                       , Summon "hero" 1, Summon "mobile animal" 2
+                       , Summon "hero" 1, Summon "mobile animal" $ 1 `d` 2
                        , Detect 40, RefillCalm (-100)
                        , CreateItem CGround "useful" TimerNone ] ]
   }
@@ -824,7 +824,7 @@ necklace2 = necklace
   { ifreq    = [("treasure", 100)]  -- just too nasty to call it useful
   , irarity  = [(1, 1)]
   , iaspects = [Timeout 30]
-  , ieffects = [ Recharging (Summon "mobile animal" 2)
+  , ieffects = [ Recharging (Summon "mobile animal" $ 1 `d` 2)
                , Recharging (Explode "waste")
                , Recharging Impress
                , Recharging (DropItem 1 maxBound COrgan "temporary condition") ]
