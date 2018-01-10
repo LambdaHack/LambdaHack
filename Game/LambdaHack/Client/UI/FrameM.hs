@@ -100,7 +100,6 @@ stopPlayBack = do
     { slastPlay = []
     , slastRecord = LastRecord [] [] 0
         -- Needed to cancel macros that contain apostrophes.
-    , swaitTimes = - abs (swaitTimes sess)
     }
   srunning <- getsSession srunning
   case srunning of

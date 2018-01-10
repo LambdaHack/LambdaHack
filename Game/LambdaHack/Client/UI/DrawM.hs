@@ -517,7 +517,7 @@ drawLeaderStatus waitT = do
           -- This is a valuable feedback for the otherwise hard to observe
           -- 'wait' command.
           slashes = ["/", "|", "\\", "|"]
-          slashPick = slashes !! (max 0 (waitT - 1) `mod` length slashes)
+          slashPick = slashes !! (max 0 waitT `mod` length slashes)
           addColor c = map (Color.attrChar2ToW32 c)
           checkDelta ResDelta{..}
             | fst resCurrentTurn < 0 || fst resPreviousTurn < 0
@@ -532,12 +532,16 @@ drawLeaderStatus waitT = do
           darkPick | darkL   = "."
                    | otherwise = ":"
           calmHeader = calmAddAttr $ calmHeaderText <> darkPick
-          calmText = bcalmS <> (if darkL then slashPick else "/") <> acalmS
+          calmText = bcalmS <> (if darkL || not bracedL
+                                then slashPick
+                                else "/") <> acalmS
           bracePick | bracedL   = "}"
                     | otherwise = ":"
           hpAddAttr = checkDelta hpDelta
           hpHeader = hpAddAttr $ hpHeaderText <> bracePick
-          hpText = bhpS <> (if bracedL then slashPick else "/") <> ahpS
+          hpText = bhpS <> (if bracedL || not darkL
+                            then slashPick
+                            else "/") <> ahpS
           justifyRight n t = replicate (n - length t) ' ' ++ t
       return $! calmHeader <> stringToAL (justifyRight 7 calmText)
                 <+:> hpHeader <> stringToAL (justifyRight 7 hpText)
