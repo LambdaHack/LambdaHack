@@ -283,12 +283,12 @@ effectSem source target iid c recharged periodic effect = do
     IK.RefillCalm p -> effectRefillCalm execSfx p source target
     IK.Dominate -> effectDominate recursiveCall source target
     IK.Impress -> effectImpress recursiveCall execSfx source target
-    IK.Summon grp p -> effectSummon execSfx grp p iid source target periodic
+    IK.Summon grp nDm -> effectSummon grp nDm iid source target periodic
     IK.Ascend p -> effectAscend recursiveCall execSfx p source target pos
     IK.Escape{} -> effectEscape source target
-    IK.Paralyze p -> effectParalyze execSfx p target
-    IK.InsertMove p -> effectInsertMove execSfx p target
-    IK.Teleport p -> effectTeleport execSfx p source target
+    IK.Paralyze nDm -> effectParalyze execSfx nDm target
+    IK.InsertMove nDm -> effectInsertMove execSfx nDm target
+    IK.Teleport nDm -> effectTeleport execSfx nDm source target
     IK.CreateItem store grp tim ->
       effectCreateItem (Just $ bfid sb) Nothing target store grp tim
     IK.DropItem n k store grp -> effectDropItem execSfx n k store grp target
@@ -338,7 +338,7 @@ effectBurn nDm source target = do
   then return UseDud
   else do
     sb <- getsState $ getActorBody source
-    -- Display the effect.
+    -- Display the effect more accurately.
     let reportedEffect = IK.Burn $ Dice.intToDice n
     execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
     -- Damage the target.
@@ -605,10 +605,10 @@ effectImpress recursiveCall execSfx source target = do
 
 -- Note that the Calm expended doesn't depend on the number of actors summoned.
 effectSummon :: MonadServerAtomic m
-             => m () -> GroupName ItemKind -> Dice.Dice -> ItemId
+             => GroupName ItemKind -> Dice.Dice -> ItemId
              -> ActorId -> ActorId -> Bool
              -> m UseResult
-effectSummon execSfx grp nDm iid source target periodic = do
+effectSummon grp nDm iid source target periodic = do
   -- Obvious effect, nothing announced.
   Kind.COps{coTileSpeedup} <- getsState scops
   power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
@@ -616,7 +616,11 @@ effectSummon execSfx grp nDm iid source target periodic = do
   tb <- getsState $ getActorBody target
   actorAspect <- getsState sactorAspect
   item <- getsState $ getItemBody iid
-  let sar = actorAspect EM.! source
+  -- We put @source@ instead of @target@ and @power@ instead of dice
+  -- to make the message more accurate.
+  let effect = IK.Summon grp $ Dice.intToDice power
+      execSfx = execSfxAtomic $ SfxEffect (bfid sb) source effect 0
+      sar = actorAspect EM.! source
       tar = actorAspect EM.! target
       durable = IK.Durable `elem` jfeature item
       deltaCalm = - xM 30

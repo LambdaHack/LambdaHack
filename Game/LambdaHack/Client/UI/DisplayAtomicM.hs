@@ -979,7 +979,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Impress -> actorVerbMU aid bUI "be awestruck"
         IK.Summon grp p -> do
           let verb = if bproj b then "lure" else "summon"
-              object = (if p == 1  -- avoid "1 `d` 2"
+              object = (if p == 1  -- works, because exact number sent, not dice
                         then MU.AW
                         else MU.Ws) $ MU.Text $ tshow grp
           actorVerbMU aid bUI $ MU.Phrase [verb, object]
@@ -1118,7 +1118,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
     return $! msg
   SfxLoudSummon isProj grp p -> do
     let verb = if isProj then "something lure" else "somebody summon"
-        object = if p == 1
+        object = if p == 1  -- works, because exact number sent, not dice
                  then MU.Text $ tshow grp
                  else MU.Ws $ MU.Text $ tshow grp
     return $! makeSentence ["you hear", verb, object]
