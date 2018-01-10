@@ -58,7 +58,7 @@ spawnMonster = do
     modifyServer $ \ser ->
       ser {snumSpawned = EM.insert arena (lvlSpawned + 1) $ snumSpawned ser}
     localTime <- getsState $ getLocalTime arena
-    maid <- addAnyActor lactorFreq arena localTime Nothing
+    maid <- addAnyActor False lactorFreq arena localTime Nothing
     case maid of
       Nothing -> return ()
       Just aid -> do
@@ -67,9 +67,9 @@ spawnMonster = do
         when (isNothing mleader) $ supplantLeader (bfid b) aid
 
 addAnyActor :: MonadServerAtomic m
-            => Freqs ItemKind -> LevelId -> Time -> Maybe Point
+            => Bool -> Freqs ItemKind -> LevelId -> Time -> Maybe Point
             -> m (Maybe ActorId)
-addAnyActor actorFreq lid time mpos = do
+addAnyActor summoned actorFreq lid time mpos = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- that contains the constant properties.
   cops <- getsState scops
@@ -103,7 +103,7 @@ addAnyActor actorFreq lid time mpos = do
         Nothing -> do
           rollPos <- getsState $ rollSpawnPos cops allPers mobile lid lvl fid
           rndToAction rollPos
-      registerActor itemKnownRaw itemFullRaw seed fid pos lid time
+      registerActor summoned itemKnownRaw itemFullRaw seed fid pos lid time
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point
              -> Bool -> LevelId -> Level -> FactionId -> State

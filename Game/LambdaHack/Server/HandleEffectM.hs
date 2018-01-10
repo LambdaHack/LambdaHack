@@ -652,7 +652,8 @@ effectSummon grp nDm iid source target periodic = do
            targetTime = timeShift localTime actorTurn
            afterTime = timeShift targetTime $ Delta timeClip
        bs <- forM (take power ps) $ \p -> do
-         maid <- addAnyActor [(grp, 1)] (blid tb) afterTime (Just p)
+         -- Mark as summoned to prevent immediate chain summoning.
+         maid <- addAnyActor True [(grp, 1)] (blid tb) afterTime (Just p)
          case maid of
            Nothing -> return False  -- not enough space in dungeon?
            Just aid -> do

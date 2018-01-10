@@ -381,20 +381,20 @@ addActorFromGroup actorGroup bfid pos lid time = do
   case m5 of
     Nothing -> return Nothing
     Just (itemKnownRaw, itemFullRaw, _, seed, _) ->
-      registerActor itemKnownRaw itemFullRaw seed bfid pos lid time
+      registerActor False itemKnownRaw itemFullRaw seed bfid pos lid time
 
 registerActor :: MonadServerAtomic m
-              => ItemKnown -> ItemFull -> ItemSeed
+              => Bool -> ItemKnown -> ItemFull -> ItemSeed
               -> FactionId -> Point -> LevelId -> Time
               -> m (Maybe ActorId)
-registerActor (kindIx, ar, damage, _) itemFullRaw seed
+registerActor summoned (kindIx, ar, damage, _) itemFullRaw seed
               bfid pos lid time = do
   let container = CTrunk bfid lid pos
       jfid = Just bfid
       itemKnown = (kindIx, ar, damage, jfid)
       itemFull = itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
   trunkId <- registerItem itemFull itemKnown seed container False
-  addNonProjectile trunkId itemFull bfid pos lid time
+  addNonProjectile summoned trunkId itemFull bfid pos lid time
 
 addProjectile :: MonadServerAtomic m
               => Point -> [Point] -> ItemId -> ItemQuant -> LevelId -> FactionId
@@ -412,10 +412,15 @@ addProjectile bpos rest iid (_, it) blid bfid btime = do
   void $ addActorIid iid itemFull True bfid bpos blid tweakBody btime
 
 addNonProjectile :: MonadServerAtomic m
-                 => ItemId -> ItemFull -> FactionId -> Point -> LevelId -> Time
+                 => Bool -> ItemId -> ItemFull -> FactionId -> Point -> LevelId
+                 -> Time
                  -> m (Maybe ActorId)
-addNonProjectile trunkId itemFull@ItemFull{..} fid pos lid time = do
-  let tweakBody b = b {borgan = EM.singleton trunkId (itemK, itemTimer)}
+addNonProjectile summoned trunkId itemFull@ItemFull{..} fid pos lid time = do
+  let tweakBody b = b { borgan = EM.singleton trunkId (itemK, itemTimer)
+                      , bcalm = if summoned
+                                then bcalm b * 2 `div` 3 - xM 3
+                                       -- will summon in 3 turn, unless hit
+                                else bcalm b }
   addActorIid trunkId itemFull False fid pos lid tweakBody time
 
 addActorIid :: MonadServerAtomic m
