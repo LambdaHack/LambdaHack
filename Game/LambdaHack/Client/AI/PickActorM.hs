@@ -78,7 +78,15 @@ pickActorToMove maidToAvoid = do
             -- can come to rescue, he will become and remain the leader,
             -- because otherwise an explorer would need to become a leader
             -- and fighter will be 1 clip slower for the whole fight,
-            -- just for a few turns of exploration in return
+            -- just for a few turns of exploration in return;
+            --
+            -- also note that when the fighter then becomes a leader
+            -- he may gain quite a lot of time via @swapTime@,
+            -- and so be able to get a double blow on opponents
+            -- or a safe blow and a withdraw (but only once); this is a mild
+            -- exploit that encourages ambush camping (with a non-leader),
+            -- but it's also a rather fun exploit and a straightforward
+            -- consequence of the game mechanics, so it's OK for now
           goodGeneric ((aid, b), Just tgt) = case maidToAvoid of
             Nothing | not (aid == oldAid && waitedLastTurn b) ->
               -- Not the old leader that was stuck last turn
