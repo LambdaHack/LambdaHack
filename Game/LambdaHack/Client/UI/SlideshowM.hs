@@ -208,7 +208,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
         Just p -> p
         _ -> 0
       menuIx | menuName == "" = initIx
-             | otherwise =  fromMaybe initIx (M.lookup menuName menuIxMap)
+             | otherwise = fromMaybe initIx (M.lookup menuName menuIxMap)
   (km, pointer) <- if null frs
                    then return (Left K.escKM, menuIx)
                    else page menuIx

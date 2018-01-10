@@ -275,14 +275,14 @@ statsOverlay aid = do
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
 pickNumber askNumber kAll = assert (kAll >= 1) $ do
-  let shownKeys = [ K.spaceKM, K.returnKM, K.mkChar '+', K.mkChar '-'
+  let shownKeys = [ K.returnKM, K.spaceKM, K.mkChar '+', K.mkChar '-'
                   , K.backspaceKM, K.escKM ]
       frontKeyKeys = shownKeys ++ map K.mkChar ['0'..'9']
       gatherNumber kCur = assert (1 <= kCur && kCur <= kAll) $ do
         let kprompt = "Choose number:" <+> tshow kCur
         promptAdd kprompt
         sli <- reportToSlideshow shownKeys
-        ekkm <- displayChoiceScreen "number choice" ColorFull False
+        ekkm <- displayChoiceScreen "" ColorFull False
                                     sli frontKeyKeys
         case ekkm of
           Left kkm ->
