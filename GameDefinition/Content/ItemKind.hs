@@ -663,7 +663,7 @@ scroll5 = scroll  -- needs to be common to show at least a portion of effects
                , OneOf [ Teleport 20, Ascend False, Ascend True
                        , Summon "hero" 1, Summon "mobile animal" $ 1 `d` 2
                        , Detect 40, RefillCalm (-100)
-                       , CreateItem CGround "useful" TimerNone ] ]
+                       , CreateItem CGround "useful" timerNone ] ]
   }
 scroll6 = scroll
   { ieffects = [Teleport 5]

@@ -2,11 +2,12 @@
 -- | The type of kinds of weapons, treasure, organs, blasts, etc.
 module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..)
-  , Effect(..), TimerDice(..)
+  , Effect(..), TimerDice
   , Aspect(..), ThrowMod(..)
   , Feature(..), EqpSlot(..)
   , boostItemKindList, forApplyEffect, forIdEffect
   , toDmg, tmpNoLonger, toVelocity, toLinger
+  , timerNone, isTimerNone, foldTimer
   , toOrganGameTurn, toOrganActorTurn, toOrganNone
   , validateSingleItemKind, validateAllItemKind
 #ifdef EXPOSE_INTERNAL
@@ -286,6 +287,18 @@ toVelocity n = ToThrow $ ThrowMod n 100
 
 toLinger :: Int -> Feature
 toLinger n = ToThrow $ ThrowMod 100 n
+
+timerNone :: TimerDice
+timerNone = TimerNone
+
+isTimerNone :: TimerDice -> Bool
+isTimerNone tim = tim == TimerNone
+
+foldTimer :: a -> (Dice.Dice -> a) -> (Dice.Dice -> a) -> TimerDice -> a
+foldTimer a fgame factor tim = case tim of
+  TimerNone -> a
+  TimerGameTurn nDm -> fgame nDm
+  TimerActorTurn nDm -> factor nDm
 
 toOrganGameTurn :: GroupName ItemKind -> Dice.Dice -> Effect
 toOrganGameTurn grp nDm = CreateItem COrgan grp (TimerGameTurn nDm)

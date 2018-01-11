@@ -87,10 +87,8 @@ effectToBenefit cops fact eff =
     IK.CreateItem COrgan "temporary condition" _ ->
       (1, -1)  -- varied, big bunch, but try to create it anyway
     IK.CreateItem COrgan grp timer ->  -- assumed temporary
-      let turnTimer = case timer of
-            IK.TimerNone -> averageTurnValue + 1  -- copy count used instead
-            IK.TimerGameTurn n -> Dice.meanDice n
-            IK.TimerActorTurn n -> Dice.meanDice n
+      let noneResult = averageTurnValue + 1  -- copy count used instead
+          turnTimer = IK.foldTimer noneResult Dice.meanDice Dice.meanDice timer
           (total, count) = organBenefit turnTimer grp cops fact
       in delta $ total / fromIntegral count
            -- the same when created in me and in foe

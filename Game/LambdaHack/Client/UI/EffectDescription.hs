@@ -77,7 +77,7 @@ effectToSuffix effect =
       "of blinking" <+> wrapInParens (tshow dice)
     Teleport dice -> "of teleport" <+> wrapInParens (tshow dice)
     CreateItem COrgan grp tim ->
-      let stime = if tim == TimerNone then "" else "for" <+> tshow tim <> ":"
+      let stime = if isTimerNone tim then "" else "for" <+> tshow tim <> ":"
       in "(keep" <+> stime <+> tshow grp <> ")"
     CreateItem _ grp _ ->
       let object = if grp == "useful" then "" else tshow grp

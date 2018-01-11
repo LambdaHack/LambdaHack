@@ -573,7 +573,7 @@ dominateFid fid target = do
   else do
     -- Add some nostalgia for the old faction.
     void $ effectCreateItem (Just $ bfid tb) (Just 10) target COrgan
-                            "impressed" IK.TimerNone
+                            "impressed" IK.timerNone
     itemToF <- getsState itemToFull
     let discoverIf (iid, cstore) = do
           let itemFull = itemToF iid (1, [])
@@ -603,7 +603,7 @@ effectImpress recursiveCall execSfx source target = do
      | otherwise -> do
        execSfx
        effectCreateItem (Just $ bfid sb) (Just 1) target COrgan
-                        "impressed" IK.TimerNone
+                        "impressed" IK.timerNone
 
 -- ** Summon
 
@@ -935,18 +935,16 @@ effectCreateItem jfidRaw mcount target store grp tim = do
   tb <- getsState $ getActorBody target
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
-  delta <- case tim of
-    IK.TimerNone -> return $ Delta timeZero
-    IK.TimerGameTurn nDm -> do
-      k <- rndToAction $ castDice ldepth totalDepth nDm
-      let !_A = assert (k >= 0) ()
-      return $! timeDeltaScale (Delta timeTurn) k
-    IK.TimerActorTurn nDm -> do
-      k <- rndToAction $ castDice ldepth totalDepth nDm
-      let !_A = assert (k >= 0) ()
-      ar <- getsState $ getActorAspect target
-      let actorTurn = ticksPerMeter $ bspeed tb ar
-      return $! timeDeltaScale actorTurn k
+  let fscale unit nDm = do
+        k <- rndToAction $ castDice ldepth totalDepth nDm
+        let !_A = assert (k >= 0) ()
+        return $! timeDeltaScale unit k
+      fgame = fscale (Delta timeTurn)
+      factor nDm = do
+        ar <- getsState $ getActorAspect target
+        let actorTurn = ticksPerMeter $ bspeed tb ar
+        fscale actorTurn nDm
+  delta <- IK.foldTimer (return $ Delta timeZero) fgame factor tim
   let c = CActor target store
   bagBefore <- getsState $ getBodyStoreBag tb store
   let litemFreq = [(grp, 1)]
@@ -972,7 +970,7 @@ effectCreateItem jfidRaw mcount target store grp tim = do
         Nothing -> Nothing
         Just iid -> (iid,) <$> iid `EM.lookup` bagBefore
   case mquant of
-    Just (iid, (_, afterIt@(timer : rest))) | tim /= IK.TimerNone -> do
+    Just (iid, (_, afterIt@(timer : rest))) | not $ IK.isTimerNone tim -> do
       -- Already has such items and timer change requested, so only increase
       -- the timer of the first item by the delta, but don't create items.
       let newIt = timer `timeShift` delta : rest
@@ -992,7 +990,7 @@ effectCreateItem jfidRaw mcount target store grp tim = do
       when (store /= CGround) $ discoverIfNoEffects c iid itemFull
       -- Now, if timer change requested, change the timer, but in the new items,
       -- possibly increased in number wrt old items.
-      when (tim /= IK.TimerNone) $ do
+      when (not $ IK.isTimerNone tim) $ do
         tb2 <- getsState $ getActorBody target
         bagAfter <- getsState $ getBodyStoreBag tb2 store
         localTime <- getsState $ getLocalTime (blid tb)
@@ -1109,7 +1107,7 @@ effectPolyItem execSfx source target = do
              identifyIid iid c itemKindId
              execUpdAtomic $ UpdDestroyItem iid itemBase kit c
              effectCreateItem (Just $ bfid sb) Nothing
-                              target cstore "useful" IK.TimerNone
+                              target cstore "useful" IK.timerNone
       _ -> error $ "" `showFailure` (target, iid, itemFull)
 
 -- ** Identify
