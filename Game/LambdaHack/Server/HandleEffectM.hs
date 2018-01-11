@@ -963,6 +963,7 @@ effectCreateItem jfidRaw mcount target store grp tim = do
       -- that I'm twice slower due to aspects from two factions and not
       -- as deadly as being poisoned at twice the rate from two factions.
       jfid = if store == COrgan && not (IK.isTimerNone tim)
+                || grp == "impressed"
              then jfidRaw
              else Nothing
       (itemKnown, itemFullFid) =
