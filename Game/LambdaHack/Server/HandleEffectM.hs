@@ -952,10 +952,17 @@ effectCreateItem jfidRaw mcount target store grp tim = do
   m5 <- rollItem 0 (blid tb) litemFreq
   let (itemKnownRaw, itemFullRaw, _, seed, _) =
         fromMaybe (error $ "" `showFailure` (blid tb, litemFreq, c)) m5
-      -- Avoid too many different item identifies (one for each faction)
+      -- Avoid too many different item identifiers (one for each faction)
       -- for blasts or common item generating tiles. Temporary organs are
-      -- also duplicated but they provide really useful info (perpetrator).
-      jfid = if store == COrgan
+      -- allowed to be duplicated, because they provide really useful info
+      -- (perpetrator). However, if timer is none, they are not duplicated
+      -- to make sure that, e.g., poisons stack with each other regardless
+      -- of perpetrator and we don't get "no longer poisoned" message
+      -- while still poisoned due to another faction. With timed aspects,
+      -- e.g., slowness, the message is also misleading, but it's interesting
+      -- that I'm twice slower due to aspects from two factions and as deadly
+      -- as being poisoned at twice the rate from two factions.
+      jfid = if store == COrgan && not (IK.isTimerNone tim)
              then jfidRaw
              else Nothing
       (itemKnown, itemFullFid) =
