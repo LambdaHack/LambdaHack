@@ -301,10 +301,18 @@ foldTimer a fgame factor tim = case tim of
   TimerActorTurn nDm -> factor nDm
 
 toOrganGameTurn :: GroupName ItemKind -> Dice.Dice -> Effect
-toOrganGameTurn grp nDm = CreateItem COrgan grp (TimerGameTurn nDm)
+toOrganGameTurn grp nDm =
+  assert (Dice.minDice nDm > 0
+          `blame` "dice at organ creation should always roll above zero"
+          `swith` (grp, nDm))
+  $ CreateItem COrgan grp (TimerGameTurn nDm)
 
 toOrganActorTurn :: GroupName ItemKind -> Dice.Dice -> Effect
-toOrganActorTurn grp nDm = CreateItem COrgan grp (TimerActorTurn nDm)
+toOrganActorTurn grp nDm =
+  assert (Dice.minDice nDm > 0
+          `blame` "dice at organ creation should always roll above zero"
+          `swith` (grp, nDm))
+  $ CreateItem COrgan grp (TimerActorTurn nDm)
 
 toOrganNone :: GroupName ItemKind -> Effect
 toOrganNone grp = CreateItem COrgan grp TimerNone
