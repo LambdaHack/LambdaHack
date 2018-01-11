@@ -56,7 +56,7 @@ ppContainer c@CTrunk{} = error $ "" `showFailure` c
 
 ppCStore :: CStore -> (Text, Text)
 ppCStore CGround = ("on", "the ground")
-ppCStore COrgan = ("among", "organs")
+ppCStore COrgan = ("in", "body")
 ppCStore CEqp = ("in", "equipment")
 ppCStore CInv = ("in", "pack")
 ppCStore CSha = ("in", "shared stash")
