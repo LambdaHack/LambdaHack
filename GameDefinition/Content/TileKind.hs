@@ -269,7 +269,7 @@ rubble = TileKind
       -- until we can sync change of tile and activation, it always takes 1 turn
   , tcolor   = BrYellow
   , tcolor2  = Brown
-  , talter   = 5
+  , talter   = 4  -- boss can dig through
   , tfeature = [OpenTo "rubbleOrNot", Embed "rubble", Indistinct]
   }
 rubbleSpice = TileKind
@@ -279,7 +279,7 @@ rubbleSpice = TileKind
                , ("zooSet", 100), ("ambushSet", 20) ]
   , tcolor   = BrYellow
   , tcolor2  = Brown
-  , talter   = 5
+  , talter   = 4  -- boss can dig through
   , tfeature = [Spice, OpenTo "rubbleSpiceOrNot", Embed "rubble", Indistinct]
       -- It's not explorable, due to not being walkable nor clear and due
       -- to being a door (@OpenTo@), which is kind of OK, because getting
@@ -357,7 +357,7 @@ stairsOutdoorUp = stairsUp
 stairsGatedUp = stairsUp
   { tname    = "gated staircase up"
   , tfreq    = [("gated staircase up", 1)]
-  , talter   = talterForStairs + 1  -- animals and bosses can't use
+  , talter   = talterForStairs + 2  -- animals and bosses can't use
   }
 stairsDown = TileKind
   { tsymbol  = '>'
@@ -385,7 +385,7 @@ stairsOutdoorDown = stairsDown
 stairsGatedDown = stairsDown
   { tname    = "gated staircase down"
   , tfreq    = [("gated staircase down", 1)]
-  , talter   = talterForStairs + 1  -- animals and bosses can't use
+  , talter   = talterForStairs + 2  -- animals and bosses can't use
   }
 escapeUp = TileKind
   { tsymbol  = '<'
@@ -444,7 +444,7 @@ pillarIce = TileKind
   , tfreq    = [("noiseSet", 30)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
-  , talter   = 5
+  , talter   = 4  -- boss can dig through
   , tfeature = [Clear, Embed "frost", OpenTo "damp stone floor"]
       -- Is door, due to @OpenTo@, so is not explorable, but it's OK, because
       -- it doesn't generate items nor clues. This saves on the need to
