@@ -21,8 +21,8 @@ tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulne
 
 -- The @name@ is be used in item description, so it should be an adjective
 -- describing the temporary set of aspects.
-tmpAs :: Text -> [Aspect] -> ItemKind
-tmpAs name aspects = ItemKind
+tmpAspects :: Text -> [Aspect] -> ItemKind
+tmpAspects name aspects = ItemKind
   { isymbol  = '+'
   , iname    = name
   , ifreq    = [(toGroupName name, 1), ("temporary condition", 1)]
@@ -36,49 +36,49 @@ tmpAs name aspects = ItemKind
                -- depending on initial timer setting
                aspects
   , ieffects = [ Periodic
-               , Recharging $ tmpNoLonger name
-               , OnSmash $ tmpNoLonger name ]
+               , Recharging $ tmpLess name
+               , OnSmash $ tmpLess name ]
   , ifeature = [Identified, Fragile, Durable]  -- hack: destroy on drop
   , idesc    = ""  -- no description needed; stats are enough
   , ikit     = []
   }
 
-tmpStrengthened = tmpAs "strengthened" [AddHurtMelee 20]
-tmpWeakened = tmpAs "weakened" [AddHurtMelee (-20)]
-tmpProtectedMelee = tmpAs "protected from melee" [AddArmorMelee 50]
-tmpProtectedRanged = tmpAs "protected from ranged" [AddArmorRanged 25]
-tmpVulnerable = tmpAs "defenseless" [ AddArmorMelee (-50)
+tmpEffects :: Text -> Dice -> [Effect] -> ItemKind
+tmpEffects name icount effects =
+  let tmp = tmpAspects name []
+  in tmp { icount
+         , ieffects = effects
+                      ++ [ Periodic
+                         , Recharging $ tmpNoLonger name
+                         , OnSmash $ tmpNoLonger name ]
+         }
+
+tmpStrengthened = tmpAspects "strengthened" [AddHurtMelee 20]
+tmpWeakened = tmpAspects "weakened" [AddHurtMelee (-20)]
+tmpProtectedMelee = tmpAspects "protected from melee" [AddArmorMelee 50]
+tmpProtectedRanged = tmpAspects "protected from ranged" [AddArmorRanged 25]
+tmpVulnerable = tmpAspects "defenseless" [ AddArmorMelee (-50)
                                     , AddArmorRanged (-25) ]
-tmpResolute = tmpAs "resolute" [AddMaxCalm 60]
-tmpFast20 = tmpAs "hasted" [AddSpeed 20]
-tmpSlow10 = tmpAs "slowed" [AddSpeed (-10)]
-tmpFarSighted = tmpAs "far-sighted" [AddSight 5]
-tmpBlind = tmpAs "blind" [AddSight (-99)]
-tmpKeenSmelling = tmpAs "keen-smelling" [AddSmell 2]
-tmpNoctovision = tmpAs "shiny-eyed" [AddNocto 2]
-tmpDrunk = tmpAs "drunk" [ AddHurtMelee 30  -- fury
+tmpResolute = tmpAspects "resolute" [AddMaxCalm 60]
+tmpFast20 = tmpAspects "hasted" [AddSpeed 20]
+tmpSlow10 = tmpAspects "slowed" [AddSpeed (-10)]
+tmpFarSighted = tmpAspects "far-sighted" [AddSight 5]
+tmpBlind = tmpAspects "blind" [AddSight (-99)]
+tmpKeenSmelling = tmpAspects "keen-smelling" [AddSmell 2]
+tmpNoctovision = tmpAspects "shiny-eyed" [AddNocto 2]
+tmpDrunk = tmpAspects "drunk" [ AddHurtMelee 30  -- fury
                          , AddArmorMelee (-20)
                          , AddArmorRanged (-20)
                          , AddSight (-8)
                          ]
+
 tmpRegenerating =
-  let tmp = tmpAs "regenerating" []
-  in tmp { icount = 4 + 1 `d` 2
-         , ieffects = Recharging (RefillHP 1) : ieffects tmp
-         }
+  tmpEffects "regenerating" (4 + 1 `d` 2) [Recharging (RefillHP 1)]
 tmpPoisoned =
-  let tmp = tmpAs "poisoned" []
-  in tmp { icount = 4 + 1 `d` 2
-         , ieffects = Recharging (RefillHP (-1)) : ieffects tmp
-         }
+  tmpEffects "poisoned" (4 + 1 `d` 2) [Recharging (RefillHP (-1))]
 tmpSlow10Resistant =
-  let tmp = tmpAs "slow resistant" []
-  in tmp { icount = 8 + 1 `d` 4
-         , ieffects = Recharging (DropItem 1 1 COrgan "slowed") : ieffects tmp
-         }
+  tmpEffects "slow resistant" (8 + 1 `d` 4)
+             [Recharging (DropItem 1 1 COrgan "slowed")]
 tmpPoisonResistant =
-  let tmp = tmpAs "poison resistant" []
-  in tmp { icount = 8 + 1 `d` 4
-         , ieffects = Recharging (DropItem 1 maxBound COrgan "poisoned")
-                      : ieffects tmp
-         }
+  tmpEffects "poison resistant" (8 + 1 `d` 4)
+             [Recharging (DropItem 1 maxBound COrgan "poisoned")]

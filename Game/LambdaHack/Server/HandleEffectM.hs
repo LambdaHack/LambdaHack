@@ -959,9 +959,9 @@ effectCreateItem jfidRaw mcount target store grp tim = do
       -- to make sure that, e.g., poisons stack with each other regardless
       -- of perpetrator and we don't get "no longer poisoned" message
       -- while still poisoned due to another faction. With timed aspects,
-      -- e.g., slowness, the message is also misleading, but it's interesting
-      -- that I'm twice slower due to aspects from two factions and as deadly
-      -- as being poisoned at twice the rate from two factions.
+      -- e.g., slowness, the message is less misleading, and it's interesting
+      -- that I'm twice slower due to aspects from two factions and not
+      -- as deadly as being poisoned at twice the rate from two factions.
       jfid = if store == COrgan && not (IK.isTimerNone tim)
              then jfidRaw
              else Nothing

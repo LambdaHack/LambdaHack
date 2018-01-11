@@ -6,7 +6,7 @@ module Game.LambdaHack.Content.ItemKind
   , Aspect(..), ThrowMod(..)
   , Feature(..), EqpSlot(..)
   , boostItemKindList, forApplyEffect, forIdEffect
-  , toDmg, tmpNoLonger, toVelocity, toLinger
+  , toDmg, tmpNoLonger, tmpLess, toVelocity, toLinger
   , timerNone, isTimerNone, foldTimer
   , toOrganGameTurn, toOrganActorTurn, toOrganNone
   , validateSingleItemKind, validateAllItemKind
@@ -281,6 +281,9 @@ toDmg dmg = [(1, dmg)]
 
 tmpNoLonger :: Text -> Effect
 tmpNoLonger name = Temporary $ "be no longer" <+> name
+
+tmpLess :: Text -> Effect
+tmpLess name = Temporary $ "become less" <+> name
 
 toVelocity :: Int -> Feature
 toVelocity n = ToThrow $ ThrowMod n 100
