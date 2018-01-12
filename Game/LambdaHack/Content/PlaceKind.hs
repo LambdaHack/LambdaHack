@@ -14,7 +14,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Text as T
 
-import Game.LambdaHack.Common.ContentDef
+import Game.LambdaHack.Common.ContentData
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.TileKind (TileKind)
 
@@ -66,5 +66,5 @@ validateSingle PlaceKind{..} =
 validateAll :: [PlaceKind] -> [Text]
 validateAll _ = []
 
-makeDef :: [PlaceKind] -> ContentDef PlaceKind
-makeDef = makeContentDef pname validateSingle validateAll pfreq
+makeDef :: [PlaceKind] -> ContentData PlaceKind
+makeDef = makeContentData pname validateSingle validateAll pfreq

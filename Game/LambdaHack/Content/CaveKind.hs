@@ -13,7 +13,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Text as T
 
-import           Game.LambdaHack.Common.ContentDef
+import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
@@ -104,5 +104,5 @@ validateAll lk =
   then []
   else ["no cave defined for \"default random\""]
 
-makeDef :: [CaveKind] -> ContentDef CaveKind
-makeDef = makeContentDef cname validateSingle validateAll cfreq
+makeDef :: [CaveKind] -> ContentData CaveKind
+makeDef = makeContentData cname validateSingle validateAll cfreq

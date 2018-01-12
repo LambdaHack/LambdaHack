@@ -14,7 +14,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Text as T
 import           Data.Version
 
-import Game.LambdaHack.Common.ContentDef
+import Game.LambdaHack.Common.ContentData
 import Game.LambdaHack.Common.Misc
 
 -- | The type of game rule sets and assorted game data.
@@ -60,5 +60,5 @@ validateSingle RuleKind{rmainMenuArt} =
 validateAll :: [RuleKind] -> [Text]
 validateAll _ = []
 
-makeDef :: [RuleKind] -> ContentDef RuleKind
-makeDef = makeContentDef rname validateSingle validateAll rfreq
+makeDef :: [RuleKind] -> ContentData RuleKind
+makeDef = makeContentData rname validateSingle validateAll rfreq

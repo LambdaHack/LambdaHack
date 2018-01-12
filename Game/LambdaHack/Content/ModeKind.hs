@@ -24,7 +24,7 @@ import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Common.Ability
-import           Game.LambdaHack.Common.ContentDef
+import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
@@ -191,5 +191,5 @@ validateAll content =
 hardwiredModeGroups :: [GroupName ModeKind]
 hardwiredModeGroups = [ "campaign scenario", "starting", "starting JS" ]
 
-makeDef :: [ModeKind] -> ContentDef ModeKind
-makeDef = makeContentDef mname validateSingle validateAll mfreq
+makeDef :: [ModeKind] -> ContentData ModeKind
+makeDef = makeContentData mname validateSingle validateAll mfreq

@@ -30,7 +30,7 @@ import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
 
 import qualified Game.LambdaHack.Common.Ability as Ability
-import           Game.LambdaHack.Common.ContentDef
+import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Flavour
 import           Game.LambdaHack.Common.Misc
@@ -420,5 +420,5 @@ hardwiredItemGroups =
   -- Assorted:
   ++ ["bonus HP", "currency", "impressed", "mobile"]
 
-makeDef :: [ItemKind] -> ContentDef ItemKind
-makeDef = makeContentDef iname validateSingle validateAll ifreq
+makeDef :: [ItemKind] -> ContentData ItemKind
+makeDef = makeContentData iname validateSingle validateAll ifreq

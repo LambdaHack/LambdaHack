@@ -29,7 +29,7 @@ import qualified Data.Vector.Unboxed as U
 import           GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Color
-import Game.LambdaHack.Common.ContentDef
+import Game.LambdaHack.Common.ContentData
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 
@@ -286,5 +286,5 @@ floorSymbol = Char.chr 183
 -- 100  walls
 -- maxBound  impenetrable walls, etc., can never be altered
 
-makeDef :: [TileKind] -> ContentDef TileKind
-makeDef = makeContentDef tname validateSingle validateAll tfreq
+makeDef :: [TileKind] -> ContentData TileKind
+makeDef = makeContentData tname validateSingle validateAll tfreq

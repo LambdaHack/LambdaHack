@@ -10,6 +10,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified System.Random as R
 
+import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Kind as Kind
 import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.CaveKind as CK
@@ -45,20 +46,20 @@ tieKnot options@ServerOptions{sallClear, sboostRandomItem, sdungeonRng} = do
   -- equal to what was generated last time, ensures the same item boost.
   initialGen <- maybe R.getStdGen return sdungeonRng
   let soptionsNxt = options {sdungeonRng = Just initialGen}
-      cotile = Kind.createOps $ TK.makeDef Content.TileKind.content
+      cotile = createOps $ TK.makeDef Content.TileKind.content
       boostedItems = IK.boostItemKindList initialGen Content.ItemKind.items
-      coitem = Kind.createOps $ IK.makeDef $
+      coitem = createOps $ IK.makeDef $
         if sboostRandomItem
         then boostedItems ++ Content.ItemKind.otherItemContent
         else Content.ItemKind.content
       -- Common content operations, created from content definitions.
       -- Evaluated fully to discover errors ASAP and to free memory.
       !cops = Kind.COps
-        { cocave  = Kind.createOps $ CK.makeDef Content.CaveKind.content
+        { cocave  = createOps $ CK.makeDef Content.CaveKind.content
         , coitem
-        , comode  = Kind.createOps $ MK.makeDef Content.ModeKind.content
-        , coplace = Kind.createOps $ PK.makeDef Content.PlaceKind.content
-        , corule  = Kind.createOps $ RK.makeDef Content.RuleKind.content
+        , comode  = createOps $ MK.makeDef Content.ModeKind.content
+        , coplace = createOps $ PK.makeDef Content.PlaceKind.content
+        , corule  = createOps $ RK.makeDef Content.RuleKind.content
         , cotile
         , coTileSpeedup = Tile.speedup sallClear cotile
         }
