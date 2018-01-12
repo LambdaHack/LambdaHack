@@ -63,8 +63,8 @@ validateSingle RuleKind{rmainMenuArt} =
        ["rmainMenuArt has a line with length other than 110:" <> tNot110]
 
 -- | Since we have only one rule kind, the set of rule kinds is always valid.
-validateAll :: [RuleKind] -> [Text]
-validateAll _ = []
+validateAll :: [RuleKind] -> ContentData RuleKind -> [Text]
+validateAll _ _ = []
 
 makeData :: [RuleKind] -> ContentData RuleKind
-makeData = makeContentData rname validateSingle validateAll rfreq
+makeData = makeContentData rname rfreq validateSingle validateAll

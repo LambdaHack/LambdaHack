@@ -23,7 +23,6 @@ import Game.LambdaHack.Common.Prelude
 import           Control.DeepSeq
 import           Data.Binary
 import           Data.Hashable (Hashable)
-import qualified Data.Set as S
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
@@ -396,26 +395,16 @@ validateDamage = concatMap validateDice
                            | Dice.minDice dice < 0]
 
 -- | Validate all item kinds.
-validateAll :: [ItemKind] -> [Text]
-validateAll content =
-  let kindFreq :: S.Set (GroupName ItemKind)  -- cf. Kind.kindFreq
-      kindFreq = let tuples = [ cgroup
-                              | k <- content
-                              , (cgroup, n) <- ifreq k
-                              , n > 0 ]
-                 in S.fromList tuples
-      missingGroups = [ cgroup
+validateAll :: [ItemKind] -> ContentData ItemKind -> [Text]
+validateAll content coitem =
+  let missingGroups = [ cgroup
                       | k <- content
                       , (cgroup, _) <- ikit k
-                      , S.notMember cgroup kindFreq ]
-      errorMsg = case missingGroups of
-        [] -> []
-        _ -> ["no groups" <+> tshow missingGroups
-              <+> "among content that has groups"
-              <+> tshow (S.elems kindFreq)]
-      hardwiredAbsent = filter (`S.notMember` kindFreq) hardwiredItemGroups
-  in errorMsg
-     ++ [ "Hardwired groups not in content:" <+> tshow hardwiredAbsent
+                      , not $ omemberGroup coitem cgroup ]
+      hardwiredAbsent = filter (not . omemberGroup coitem) hardwiredItemGroups
+  in [ "no ikit groups in content:" <+> tshow missingGroups
+     | not $ null missingGroups ]
+     ++ [ "hardwired groups not in content:" <+> tshow hardwiredAbsent
         | not $ null hardwiredAbsent ]
 
 hardwiredItemGroups :: [GroupName ItemKind]
@@ -427,4 +416,4 @@ hardwiredItemGroups =
   ++ ["bonus HP", "currency", "impressed", "mobile"]
 
 makeData :: [ItemKind] -> ContentData ItemKind
-makeData = makeContentData iname validateSingle validateAll ifreq
+makeData = makeContentData iname ifreq validateSingle validateAll

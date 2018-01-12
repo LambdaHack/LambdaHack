@@ -20,7 +20,6 @@ import           Control.DeepSeq
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
-import qualified Data.Set as S
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
@@ -181,7 +180,7 @@ validateSingleRoster caves Roster{..} =
      in concatMap f rosterList
 
 validateSinglePlayer :: Player -> [Text]
-validateSinglePlayer  Player{..} =
+validateSinglePlayer Player{..} =
   [ "fname empty:" <+> fname | T.null fname ]
   ++ [ "no UI client, but UI leader:" <+> fname
      | not fhasUI && case fleaderMode of
@@ -191,15 +190,9 @@ validateSinglePlayer  Player{..} =
      | any (>= 0) $ EM.elems fskillsOther ]
 
 -- | Validate game mode kinds together.
-validateAll :: [ModeKind] -> [Text]
-validateAll content =
-  let kindFreq :: S.Set (GroupName ModeKind)  -- cf. Kind.kindFreq
-      kindFreq = let tuples = [ cgroup
-                              | k <- content
-                              , (cgroup, n) <- mfreq k
-                              , n > 0 ]
-                 in S.fromList tuples
-      hardwiredAbsent = filter (`S.notMember` kindFreq) hardwiredModeGroups
+validateAll :: [ModeKind] -> ContentData ModeKind -> [Text]
+validateAll _content comode =
+  let hardwiredAbsent = filter (not . omemberGroup comode) hardwiredModeGroups
   in [ "Hardwired groups not in content:" <+> tshow hardwiredAbsent
      | not $ null hardwiredAbsent ]
 
@@ -207,4 +200,4 @@ hardwiredModeGroups :: [GroupName ModeKind]
 hardwiredModeGroups = [ "campaign scenario", "starting", "starting JS" ]
 
 makeData :: [ModeKind] -> ContentData ModeKind
-makeData = makeContentData mname validateSingle validateAll mfreq
+makeData = makeContentData mname mfreq validateSingle validateAll

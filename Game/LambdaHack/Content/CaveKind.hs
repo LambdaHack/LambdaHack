@@ -103,11 +103,11 @@ validateSingle CaveKind{..} =
 -- | Validate all cave kinds.
 -- Note that names don't have to be unique: we can have several variants
 -- of a cave with a given name.
-validateAll :: [CaveKind] -> [Text]
-validateAll lk =
-  if any (maybe False (> 0) . lookup "default random" . cfreq) lk
+validateAll :: [CaveKind] -> ContentData CaveKind -> [Text]
+validateAll _content cocave =
+  if omemberGroup cocave "default random"
   then []
   else ["no cave defined for \"default random\""]
 
 makeData :: [CaveKind] -> ContentData CaveKind
-makeData = makeContentData cname validateSingle validateAll cfreq
+makeData = makeContentData cname cfreq validateSingle validateAll

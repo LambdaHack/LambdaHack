@@ -24,7 +24,6 @@ import qualified Data.Char as Char
 import           Data.Hashable
 import qualified Data.IntSet as IS
 import qualified Data.Map.Strict as M
-import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import           GHC.Generics (Generic)
@@ -189,34 +188,28 @@ validateDups TileKind{..} feat =
 -- manually all the tiles of that kind, or even experiment with them,
 -- to see if any is special. This would be tedious. Note that tiles may freely
 -- differ wrt text blurb, dungeon generation, AI preferences, etc.
-validateAll :: [TileKind] -> [Text]
-validateAll lt =
-  let kindFreq :: S.Set (GroupName TileKind)  -- cf. Kind.kindFreq
-      kindFreq = let tuples = [ cgroup
-                              | k <- lt
-                              , (cgroup, n) <- tfreq k
-                              , n > 0 ]
-                 in S.fromList tuples
-      listVis f = map (\kt -> ( (tsymbol kt, f kt)
-                              , [(kt, actionFeatures True kt)] )) lt
+validateAll :: [TileKind] -> ContentData TileKind -> [Text]
+validateAll content cotile =
+  let listVis f = map (\kt -> ( (tsymbol kt, f kt)
+                              , [(kt, actionFeatures True kt)] )) content
       mapVis :: (TileKind -> Color)
              -> M.Map (Char, Color) [(TileKind, IS.IntSet)]
       mapVis f = M.fromListWith (++) $ listVis f
-      isConfused [] = error $ "isConfused" `showFailure` lt
+      isConfused [] = error $ "isConfused" `showFailure` content
       isConfused [_] = False
       isConfused (hd : tl) =
         any ((Indistinct `notElem`) . tfeature . fst) (hd : tl)
         && any ((/= snd hd) . snd) tl
       confusions f = filter isConfused $ M.elems $ mapVis f
-      hardwiredAbsent = filter (`S.notMember` kindFreq) hardwiredTileGroups
+      hardwiredAbsent = filter (not . omemberGroup cotile) hardwiredTileGroups
   in [ "first tile should be the unknown one"
-     | talter (head lt) /= 1 || tname (head lt) /= "unknown space" ]
+     | talter (head content) /= 1 || tname (head content) /= "unknown space" ]
      ++ [ "only unknown tile may have talter 1"
-        | any ((== 1) . talter) $ tail lt ]
+        | any ((== 1) . talter) $ tail content ]
      ++ case confusions tcolor ++ confusions tcolor2 of
        [] -> []
        cfs -> ["tile confusions detected:" <+> tshow cfs]
-     ++ [ "Hardwired groups not in content:" <+> tshow hardwiredAbsent
+     ++ [ "hardwired groups not in content:" <+> tshow hardwiredAbsent
         | not $ null hardwiredAbsent ]
 
 hardwiredTileGroups :: [GroupName TileKind]
@@ -304,4 +297,4 @@ floorSymbol = Char.chr 183
 -- maxBound  impenetrable walls, etc., can never be altered
 
 makeData :: [TileKind] -> ContentData TileKind
-makeData = makeContentData tname validateSingle validateAll tfreq
+makeData = makeContentData tname tfreq validateSingle validateAll

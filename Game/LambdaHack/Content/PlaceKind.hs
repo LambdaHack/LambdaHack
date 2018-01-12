@@ -72,8 +72,8 @@ validateSingle PlaceKind{..} =
      ++ validateRarity prarity
 
 -- | Validate all place kinds. Currently always valid.
-validateAll :: [PlaceKind] -> [Text]
-validateAll _ = []
+validateAll :: [PlaceKind] -> ContentData PlaceKind -> [Text]
+validateAll _ _ = []
 
 makeData :: [PlaceKind] -> ContentData PlaceKind
-makeData = makeContentData pname validateSingle validateAll pfreq
+makeData = makeContentData pname pfreq validateSingle validateAll

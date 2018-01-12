@@ -10,7 +10,7 @@
 -- in the @ContentData@ datatype.
 module Game.LambdaHack.Common.ContentData
   ( ContentData, emptyContentData, makeContentData
-  , okind, ouniqGroup, opick
+  , okind, omemberGroup, ouniqGroup, opick
   , ofoldrWithKey, ofoldlWithKey', ofoldlGroup', olength
   ) where
 
@@ -43,23 +43,18 @@ emptyContentData = ContentData V.empty M.empty
 makeContentData :: (NFData c, Show c)
                 => (c -> Text)
                      -- ^ name of the content itme, used for validation
+                -> (c -> Freqs c)
+                     -- ^ frequency in groups, for validation and preprocessing
                 -> (c -> [Text])
                      -- ^ validate a content item and list all offences
-                -> ([c] -> [Text])
+                -> ([c] ->  ContentData c -> [Text])
                      -- ^ validate the whole defined content of this type
                      -- and list all offence
-                -> (c -> Freqs c)  -- ^ frequency within groups
                 -> [c]  -- ^ all content of this type
                 -> ContentData c
 {-# INLINE makeContentData #-}
-makeContentData getName validateSingle validateAll
-                getFreq content =
-  let correct a = not (T.null (getName a)) && all ((> 0) . snd) (getFreq a)
-      singleOffenders = [ (offences, a)
-                        | a <- content
-                        , let offences = validateSingle a
-                        , not (null offences) ]
-      allOffences = validateAll content
+makeContentData getName getFreq validateSingle validateAll content =
+  let contentVector = V.fromList content
       groupFreq =
         let tuples = [ (cgroup, (n, (i, k)))
                      | (i, k) <- zip [ContentId 0..] content
@@ -67,20 +62,31 @@ makeContentData getName validateSingle validateAll
                      , n > 0 ]
             f m (cgroup, nik) = M.insertWith (++) cgroup [nik] m
         in foldl' f M.empty tuples
-      contentVector = V.fromList content
-      contendData = ContentData {..}
-  in assert (allB correct content) $
+      cd = ContentData {..}
+      -- Catch all kinds of errors in content ASAP, even in unused items.
+      contentData = deepseq cd cd
+      correct a = not (T.null (getName a)) && all ((> 0) . snd) (getFreq a)
+      incorrectOffenders = filter (not . correct) content
+      singleOffenders = [ (offences, a)
+                        | a <- content
+                        , let offences = validateSingle a
+                        , not (null offences) ]
+      allOffences = validateAll content contentData
+  in assert (null incorrectOffenders `blame` "some content items not correct"
+                                     `swith` incorrectOffenders) $
      assert (null singleOffenders `blame` "some content items not valid"
                                   `swith` singleOffenders) $
      assert (null allOffences `blame` "the content set not valid"
                               `swith` allOffences) $
      assert (V.length contentVector <= fromEnum (maxBound :: ContentId a))
-     -- Catch all kinds of errors in content ASAP, even in unused items.
-     deepseq contendData contendData
+     contentData
 
 -- | Content element at given id.
 okind :: ContentData a -> ContentId a -> a
 okind ContentData{contentVector} !i = contentVector V.! fromEnum i
+
+omemberGroup :: ContentData a -> GroupName a -> Bool
+omemberGroup ContentData{groupFreq} cgroup = cgroup `M.member` groupFreq
 
 -- | The id of the unique member of a singleton content group.
 ouniqGroup :: Show a => ContentData a -> GroupName a -> ContentId a
