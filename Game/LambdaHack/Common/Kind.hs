@@ -1,6 +1,6 @@
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
-  ( COps(..), getStdRuleset
+  ( COps(..), emptyCOps, getStdRuleset
   , ContentData
   , okind, ouniqGroup, opick
   , ofoldrWithKey, ofoldlWithKey', ofoldlGroup', olength
@@ -34,6 +34,17 @@ instance Show COps where
 
 instance Eq COps where
   (==) _ _ = True
+
+emptyCOps :: COps
+emptyCOps = COps
+  { cocave  = emptyContentData
+  , coitem  = emptyContentData
+  , comode  = emptyContentData
+  , coplace = emptyContentData
+  , corule  = emptyContentData
+  , cotile  = emptyContentData
+  , coTileSpeedup = emptyTileSpeedup
+  }
 
 -- | The standard ruleset used for level operations.
 getStdRuleset :: COps -> RuleKind

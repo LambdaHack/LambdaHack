@@ -8,7 +8,7 @@
 -- After the list is verified and the data preprocessed, it's held
 -- in the @ContentData@ datatype.
 module Game.LambdaHack.Common.ContentData
-  ( ContentData, makeContentData
+  ( ContentData, emptyContentData, makeContentData
   , okind, ouniqGroup, opick
   , ofoldrWithKey, ofoldlWithKey', ofoldlGroup', olength
   ) where
@@ -30,6 +30,9 @@ data ContentData a = ContentData
   { contentVector :: V.Vector a
   , groupFreq     :: M.Map (GroupName a) [(Int, (ContentId a, a))]
   }
+
+emptyContentData :: ContentData a
+emptyContentData = ContentData V.empty M.empty
 
 makeContentData :: Show a
                => (a -> Text)

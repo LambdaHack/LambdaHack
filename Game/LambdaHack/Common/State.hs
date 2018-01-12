@@ -54,7 +54,7 @@ data State = State
   , _sitemIxMap   :: ItemIxMap    -- ^ spotted items with the same kind index
   , _sfactionD    :: FactionDict  -- ^ remembered sides still in game
   , _stime        :: Time         -- ^ global game time, for UI display only
-  , _scops        :: ~COps        -- ^ remembered content
+  , _scops        :: COps        -- ^ remembered content
   , _shigh        :: HighScore.ScoreDict  -- ^ high score table
   , _sgameModeId  :: ContentId ModeKind     -- ^ current game mode
   , _sdiscoKind   :: DiscoveryKind     -- ^ item kind discoveries data
@@ -88,7 +88,7 @@ instance Binary State where
     _sgameModeId <- get
     _sdiscoKind <- get
     _sdiscoAspect <- get
-    let _scops = error $ "overwritten by recreated cops" `showFailure` ()
+    let _scops = emptyCOps
         sNoActorAspect = State{_sactorAspect = EM.empty, ..}
         _sactorAspect = actorAspectInDungeon sNoActorAspect
     return $! State{..}
@@ -188,8 +188,8 @@ defStateGlobal _sdungeon _stotalDepth _sfactionD _scops _shigh _sgameModeId
     }
 
 -- | Initial empty state.
-emptyState :: COps -> State
-emptyState _scops =
+emptyState :: State
+emptyState =
   State
     { _sdungeon = EM.empty
     , _stotalDepth = AbsDepth 0
@@ -198,7 +198,7 @@ emptyState _scops =
     , _sitemIxMap = EM.empty
     , _sfactionD = EM.empty
     , _stime = timeZero
-    , _scops
+    , _scops = emptyCOps
     , _shigh = HighScore.empty
     , _sgameModeId = minBound  -- the initial value is unused
     , _sdiscoKind = EM.empty

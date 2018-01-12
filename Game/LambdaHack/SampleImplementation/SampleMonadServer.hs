@@ -153,7 +153,7 @@ executorSer cops copsClient soptionsNxtCmdline = do
   let stateToFileName (_, ser) =
         ssavePrefixSer (soptions ser) <> Save.saveNameSer cops
       totalState serToSave = SerState
-        { serState = emptyState cops
+        { serState = updateCOps (const cops) emptyState
         , serServer = emptyStateServer
         , serDict = EM.empty
         , serToSave

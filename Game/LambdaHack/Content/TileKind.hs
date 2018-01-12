@@ -3,6 +3,7 @@
 module Game.LambdaHack.Content.TileKind
   ( TileKind(..), makeData
   , Feature(..), TileSpeedup(..), Tab(..)
+  , emptyTileSpeedup, emptyTab
   , actionFeatures, isUknownSpace, unknownId
   , isSuspectKind, isOpenableKind, isClosableKind
   , talterForStairs, floorSymbol
@@ -117,8 +118,16 @@ data TileSpeedup = TileSpeedup
 -- Vectors of booleans can be slower than arrays, because they are not packed,
 -- but with growing cache sizes they may as well turn out faster at some point.
 -- The advantage of vectors are exposed internals, in particular unsafe
--- indexing. Also, in JS bool arrays are obviously not packed.
+-- indexing. Also, in JS, bool arrays are obviously not packed.
 newtype Tab a = Tab (U.Vector a)  -- morally indexed by @Id a@
+
+emptyTileSpeedup :: TileSpeedup
+emptyTileSpeedup = TileSpeedup emptyTab emptyTab emptyTab emptyTab emptyTab
+                               emptyTab emptyTab emptyTab emptyTab emptyTab
+                               emptyTab emptyTab emptyTab emptyTab emptyTab
+
+emptyTab :: U.Unbox a => Tab a
+emptyTab = Tab $! U.empty
 
 -- | Validate a single tile kind.
 validateSingle :: TileKind -> [Text]
