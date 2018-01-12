@@ -31,7 +31,7 @@ import           Game.LambdaHack.Server.DungeonGen.Place
 
 -- | The type of caves (not yet inhabited dungeon levels).
 data Cave = Cave
-  { dkind   :: Kind.Id CaveKind  -- ^ the kind of the cave
+  { dkind   :: ContentId CaveKind  -- ^ the kind of the cave
   , dsecret :: Int               -- ^ secret tile seed
   , dmap    :: TileMapEM         -- ^ tile kinds in the cave
   , dplaces :: [Place]           -- ^ places generated in the cave
@@ -72,7 +72,7 @@ buildCave :: Kind.COps         -- ^ content definitions
           -> AbsDepth          -- ^ depth of the level to generate
           -> AbsDepth          -- ^ absolute depth
           -> Int               -- ^ secret tile seed
-          -> Kind.Id CaveKind  -- ^ cave kind to use for generation
+          -> ContentId CaveKind  -- ^ cave kind to use for generation
           -> EM.EnumMap Point (GroupName PlaceKind)  -- ^ pos of stairs, etc.
           -> Rnd Cave
 buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
@@ -282,9 +282,9 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
   dmap <- mapWithKeyM obscure umap
   return $! Cave {dkind, dsecret, dmap, dplaces, dnight}
 
-pickOpening :: Kind.COps -> CaveKind -> TileMapEM -> Kind.Id TileKind
-            -> Int -> Point -> (Kind.Id TileKind, Kind.Id TileKind)
-            -> Rnd (Kind.Id TileKind)
+pickOpening :: Kind.COps -> CaveKind -> TileMapEM -> ContentId TileKind
+            -> Int -> Point -> (ContentId TileKind, ContentId TileKind)
+            -> Rnd (ContentId TileKind)
 pickOpening Kind.COps{cotile, coTileSpeedup}
             CaveKind{cxsize, cysize, cdoorChance, copenChance, chidden}
             lplaces litCorTile dsecret
@@ -317,7 +317,7 @@ pickOpening Kind.COps{cotile, coTileSpeedup}
     else return $! doorTrappedId  -- assume this is what content enforces
   else return $! nicerCorridor
 
-digCorridors :: Kind.Id TileKind -> Corridor -> TileMapEM
+digCorridors :: ContentId TileKind -> Corridor -> TileMapEM
 digCorridors tile (p1:p2:ps) =
   EM.union corPos (digCorridors tile (p2:ps))
  where

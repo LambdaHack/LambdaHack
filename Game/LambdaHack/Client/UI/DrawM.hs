@@ -45,7 +45,6 @@ import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
-import qualified Game.LambdaHack.Common.KindOps as KindOps
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -131,7 +130,7 @@ drawFrameTerrain drawnLevelId = do
   StateClient{smarkSuspect} <- getClient
   Level{lxsize, ltile=PointArray.Array{avector}} <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
-  let dis :: Int -> Kind.Id TileKind -> Color.AttrCharW32
+  let dis :: Int -> ContentId TileKind -> Color.AttrCharW32
       {-# INLINE dis #-}
       dis pI tile = case okind tile of
         TK.TileKind{tsymbol, tcolor, tcolor2} ->
@@ -150,13 +149,13 @@ drawFrameTerrain drawnLevelId = do
                  | ES.member p0 totVisible = tcolor
                  | otherwise = tcolor2
           in Color.attrChar2ToW32 fg tsymbol
-      mapVT :: forall s. (Int -> Kind.Id TileKind -> Color.AttrCharW32)
+      mapVT :: forall s. (Int -> ContentId TileKind -> Color.AttrCharW32)
             -> FrameST s
       {-# INLINE mapVT #-}
       mapVT f v = do
         let g :: Int -> Word16 -> ST s ()
             g !pI !tile = do
-              let w = Color.attrCharW32 $ f pI (KindOps.Id tile)
+              let w = Color.attrCharW32 $ f pI (ContentId tile)
               VM.write v (pI + lxsize) w
         U.imapM_ g avector
       upd :: FrameForall
@@ -234,7 +233,7 @@ drawFramePath drawnLevelId = do
       shiftedLine = if null shiftedBTrajectory
                     then bline
                     else shiftedBTrajectory
-      acOnPathOrLine :: Char.Char -> Point -> Kind.Id TileKind
+      acOnPathOrLine :: Char.Char -> Point -> ContentId TileKind
                      -> Color.AttrCharW32
       acOnPathOrLine !ch !p0 !tile =
         let fgOnPathOrLine =
@@ -247,7 +246,7 @@ drawFramePath drawnLevelId = do
                 (False, True)  -> Color.Green
                 (False, False) -> Color.Red
         in Color.attrChar2ToW32 fgOnPathOrLine ch
-      mapVTL :: forall s. (Point -> Kind.Id TileKind -> Color.AttrCharW32)
+      mapVTL :: forall s. (Point -> ContentId TileKind -> Color.AttrCharW32)
              -> [Point]
              -> FrameST s
       mapVTL f l v = do
@@ -255,7 +254,7 @@ drawFramePath drawnLevelId = do
             g !p0 = do
               let pI = PointArray.pindex lxsize p0
                   tile = avector U.! pI
-                  w = Color.attrCharW32 $ f p0 (KindOps.Id tile)
+                  w = Color.attrCharW32 $ f p0 (ContentId tile)
               VM.write v (pI + lxsize) w
         mapM_ g l
       upd :: FrameForall

@@ -34,20 +34,20 @@ import           Game.LambdaHack.Server.DungeonGen.Area
 -- | The parameters of a place. All are immutable and rolled and fixed
 -- at the time when a place is generated.
 data Place = Place
-  { qkind    :: Kind.Id PlaceKind
+  { qkind    :: ContentId PlaceKind
   , qarea    :: Area
   , qseen    :: Bool
   , qlegend  :: GroupName TileKind
-  , qFWall   :: Kind.Id TileKind
-  , qFFloor  :: Kind.Id TileKind
-  , qFGround :: Kind.Id TileKind
+  , qFWall   :: ContentId TileKind
+  , qFFloor  :: ContentId TileKind
+  , qFGround :: ContentId TileKind
   }
   deriving Show
 
 -- | The map of tile kinds in a place (and generally anywhere in a cave).
 -- The map is sparse. The default tile that eventually fills the empty spaces
 -- is specified in the cave kind specification with @cdefTile@.
-type TileMapEM = EM.EnumMap Point (Kind.Id TileKind)
+type TileMapEM = EM.EnumMap Point (ContentId TileKind)
 
 -- | For @CAlternate@ tiling, require the place be comprised
 -- of an even number of whole corners, with exactly one square
@@ -110,8 +110,8 @@ interiorArea kr r =
 buildPlace :: Kind.COps         -- ^ the game content
            -> CaveKind          -- ^ current cave kind
            -> Bool              -- ^ whether the cave is dark
-           -> Kind.Id TileKind  -- ^ dark fence tile, if fence hollow
-           -> Kind.Id TileKind  -- ^ lit fence tile, if fence hollow
+           -> ContentId TileKind  -- ^ dark fence tile, if fence hollow
+           -> ContentId TileKind  -- ^ lit fence tile, if fence hollow
            -> AbsDepth          -- ^ current level depth
            -> AbsDepth          -- ^ absolute depth
            -> Int               -- ^ secret tile seed
@@ -176,10 +176,10 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick}
       isEdge (Point x y) = x `elem` [x0, x1] || y `elem` [y0, y1]
       digDay xy c | isEdge xy = lookupOneIn xlegendLit xy c
                   | otherwise = lookupOneIn xlegend xy c
-      lookupOneIn :: ( EM.EnumMap Char (Int, Kind.Id TileKind)
-                     , EM.EnumMap Char (Kind.Id TileKind) )
+      lookupOneIn :: ( EM.EnumMap Char (Int, ContentId TileKind)
+                     , EM.EnumMap Char (ContentId TileKind) )
                   -> Point -> Char
-                  -> Kind.Id TileKind
+                  -> ContentId TileKind
       lookupOneIn (mOneIn, m) xy c = case EM.lookup c mOneIn of
         Just (oneInChance, tk) ->
           if isChancePos oneInChance dsecret xy
@@ -198,8 +198,8 @@ isChancePos c dsecret (Point x y) =
 
 -- | Roll a legend of a place plan: a map from plan symbols to tile kinds.
 olegend :: Kind.COps -> GroupName TileKind
-        -> Rnd ( EM.EnumMap Char (Int, Kind.Id TileKind)
-               , EM.EnumMap Char (Kind.Id TileKind) )
+        -> Rnd ( EM.EnumMap Char (Int, ContentId TileKind)
+               , EM.EnumMap Char (ContentId TileKind) )
 olegend Kind.COps{cotile=Kind.Ops{ofoldlWithKey', opick, okind}} cgroup =
   let getSymbols !acc _ !tk =
         maybe acc (const $ ES.insert (TK.tsymbol tk) acc)
@@ -222,8 +222,8 @@ olegend Kind.COps{cotile=Kind.Ops{ofoldlWithKey', opick, okind}} cgroup =
   in legend
 
 ooverride :: Kind.COps -> [(Char, GroupName TileKind)]
-          -> Rnd ( EM.EnumMap Char (Int, Kind.Id TileKind)
-                 , EM.EnumMap Char (Kind.Id TileKind) )
+          -> Rnd ( EM.EnumMap Char (Int, ContentId TileKind)
+                 , EM.EnumMap Char (ContentId TileKind) )
 ooverride Kind.COps{cotile=Kind.Ops{opick, okind}} poverride =
   let getLegend (s, cgroup) acc = do
         (mOneIn, m) <- acc
@@ -240,7 +240,7 @@ ooverride Kind.COps{cotile=Kind.Ops{opick, okind}} poverride =
   in foldr getLegend (return (EM.empty, EM.empty)) poverride
 
 -- | Construct a fence around an area, with the given tile kind.
-buildFence :: Kind.Id TileKind -> Area -> TileMapEM
+buildFence :: ContentId TileKind -> Area -> TileMapEM
 buildFence fenceId area =
   let (x0, y0, x1, y1) = fromArea area
   in EM.fromList $ [ (Point x y, fenceId)

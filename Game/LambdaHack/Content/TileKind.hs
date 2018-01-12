@@ -28,11 +28,10 @@ import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import           GHC.Generics (Generic)
 
-import           Game.LambdaHack.Common.Color
-import           Game.LambdaHack.Common.ContentDef
-import qualified Game.LambdaHack.Common.KindOps as KindOps
-import           Game.LambdaHack.Common.Misc
-import           Game.LambdaHack.Content.ItemKind (ItemKind)
+import Game.LambdaHack.Common.Color
+import Game.LambdaHack.Common.ContentDef
+import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Content.ItemKind (ItemKind)
 
 -- | The type of kinds of terrain tiles. See @Tile.hs@ for explanation
 -- of the absence of a corresponding type @Tile@ that would hold
@@ -41,7 +40,7 @@ import           Game.LambdaHack.Content.ItemKind (ItemKind)
 -- (that would lead to "a stairs"), so "road with cobblestones" is fine,
 -- but "granite cobblestones" is wrong.
 --
--- Tile kind for unknown space has the minimal @KindOps.Id@ index.
+-- Tile kind for unknown space has the minimal @ContentId@ index.
 -- The @talter@ for unknown space is @1@ and no other tile kind has that value.
 data TileKind = TileKind
   { tsymbol  :: Char         -- ^ map symbol
@@ -242,13 +241,13 @@ actionFeatures markSuspect t =
         Spice -> Nothing
   in IS.fromList $ map hash $ mapMaybe f $ tfeature t
 
-isUknownSpace :: KindOps.Id TileKind -> Bool
+isUknownSpace :: ContentId TileKind -> Bool
 {-# INLINE isUknownSpace #-}
-isUknownSpace tt = KindOps.Id 0 == tt
+isUknownSpace tt = ContentId 0 == tt
 
-unknownId :: KindOps.Id TileKind
+unknownId :: ContentId TileKind
 {-# INLINE unknownId #-}
-unknownId = KindOps.Id 0
+unknownId = ContentId 0
 
 isSuspectKind :: TileKind -> Bool
 isSuspectKind t =

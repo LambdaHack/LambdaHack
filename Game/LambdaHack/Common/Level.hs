@@ -25,8 +25,6 @@ import qualified Data.EnumMap.Strict as EM
 
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
-import qualified Game.LambdaHack.Common.KindOps as KindOps
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -88,7 +86,7 @@ type ItemFloor = EM.EnumMap Point ItemBag
 type ActorMap = EM.EnumMap Point [ActorId]
 
 -- | Tile kinds on the map.
-type TileMap = PointArray.GArray Word16 (Kind.Id TileKind)
+type TileMap = PointArray.GArray Word16 (ContentId TileKind)
 
 -- | Current smell on map tiles.
 type SmellMap = EM.EnumMap Point Time
@@ -148,7 +146,7 @@ updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
 updateSmell f lvl = lvl {lsmell = f (lsmell lvl)}
 
 -- | Query for tile kinds on the map.
-at :: Level -> Point -> Kind.Id TileKind
+at :: Level -> Point -> ContentId TileKind
 {-# INLINE at #-}
 at Level{ltile} p = ltile PointArray.! p
 
@@ -164,12 +162,12 @@ findPoint x y f =
   in search
 
 -- | Find a random position on the map satisfying a predicate.
-findPos :: TileMap -> (Point -> Kind.Id TileKind -> Bool) -> Rnd Point
+findPos :: TileMap -> (Point -> ContentId TileKind -> Bool) -> Rnd Point
 findPos ltile p =
   let (x, y) = PointArray.sizeA ltile
       search = do
         pxy <- randomR (0, (x - 1) * (y - 1))
-        let tile = KindOps.Id $ ltile `PointArray.accessI` pxy
+        let tile = ContentId $ ltile `PointArray.accessI` pxy
             pos = PointArray.punindex x pxy
         if p pos tile
         then return $! pos
@@ -184,18 +182,18 @@ findPos ltile p =
 -- predicate.
 findPosTry :: Int                                  -- ^ the number of tries
            -> TileMap                              -- ^ look up in this map
-           -> (Point -> Kind.Id TileKind -> Bool)  -- ^ mandatory predicate
-           -> [Point -> Kind.Id TileKind -> Bool]  -- ^ optional predicates
+           -> (Point -> ContentId TileKind -> Bool)  -- ^ mandatory predicate
+           -> [Point -> ContentId TileKind -> Bool]  -- ^ optional predicates
            -> Rnd Point
 {-# INLINE findPosTry #-}
 findPosTry numTries ltile m = findPosTry2 numTries ltile m [] undefined
 
 findPosTry2 :: Int                                  -- ^ the number of tries
             -> TileMap                              -- ^ look up in this map
-            -> (Point -> Kind.Id TileKind -> Bool)  -- ^ mandatory predicate
-            -> [Point -> Kind.Id TileKind -> Bool]  -- ^ optional predicates
-            -> (Point -> Kind.Id TileKind -> Bool)  -- ^ good to have predicate
-            -> [Point -> Kind.Id TileKind -> Bool]  -- ^ worst case predicates
+            -> (Point -> ContentId TileKind -> Bool)  -- ^ mandatory predicate
+            -> [Point -> ContentId TileKind -> Bool]  -- ^ optional predicates
+            -> (Point -> ContentId TileKind -> Bool)  -- ^ good to have pred.
+            -> [Point -> ContentId TileKind -> Bool]  -- ^ worst case predicates
             -> Rnd Point
 findPosTry2 numTries ltile m0 l g r = assert (numTries > 0) $
   let (x, y) = PointArray.sizeA ltile
@@ -204,7 +202,7 @@ findPosTry2 numTries ltile m0 l g r = assert (numTries > 0) $
         let search 0 = accomodate fallback m tl
             search !k = do
               pxy <- randomR (0, (x - 1) * (y - 1))
-              let tile = KindOps.Id $ ltile `PointArray.accessI` pxy
+              let tile = ContentId $ ltile `PointArray.accessI` pxy
                   pos = PointArray.punindex x pxy
               if m pos tile && hd pos tile
               then return $! pos

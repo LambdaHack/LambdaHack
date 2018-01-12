@@ -77,7 +77,7 @@ createLevelItem pos lid = do
   void $ rollAndRegisterItem lid litemFreq container True Nothing
 
 embedItem :: MonadServerAtomic m
-          => LevelId -> Point -> Kind.Id TileKind -> m ()
+          => LevelId -> Point -> ContentId TileKind -> m ()
 embedItem lid pos tk = do
   Kind.COps{cotile} <- getsState scops
   let embeds = Tile.embeddedItems cotile tk

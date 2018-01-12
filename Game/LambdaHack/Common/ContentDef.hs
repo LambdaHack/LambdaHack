@@ -10,28 +10,23 @@
 -- that is the values whose types are @ContentDef@ instances,
 -- are defined in the directory hosting the particular game definition.
 module Game.LambdaHack.Common.ContentDef
-  ( Id(Id), ContentDef(..), makeContentDef
+  ( ContentDef(..), makeContentDef
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import           Data.Binary
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Data.Vector as V
 
 import Game.LambdaHack.Common.Misc
 
--- | Content identifiers for the content type @c@.
-newtype Id c = Id Word16
-  deriving (Show, Eq, Ord, Enum, Bounded, Binary)
-
 -- | The general type of a particular game content, e.g., item kinds.
 data ContentDef a = ContentDef
   { contentVector :: V.Vector a
-  , kindFreq      :: M.Map (GroupName a) [(Int, (Id a, a))]
+  , kindFreq      :: M.Map (GroupName a) [(Int, (ContentId a, a))]
   }
 
 makeContentDef :: Show a
@@ -56,7 +51,7 @@ makeContentDef getName validateSingle validateAll
       allOffences = validateAll content
       kindFreq =
         let tuples = [ (cgroup, (n, (i, k)))
-                     | (i, k) <- zip [Id 0..] content
+                     | (i, k) <- zip [ContentId 0..] content
                      , (cgroup, n) <- getFreq k
                      , n > 0 ]
             f m (cgroup, nik) = M.insertWith (++) cgroup [nik] m
@@ -67,5 +62,5 @@ makeContentDef getName validateSingle validateAll
                                   `swith` singleOffenders) $
      assert (null allOffences `blame` "the content set not valid"
                               `swith` allOffences) $
-     assert (V.length contentVector <= fromEnum (maxBound :: Id a))
+     assert (V.length contentVector <= fromEnum (maxBound :: ContentId a))
      ContentDef {..}

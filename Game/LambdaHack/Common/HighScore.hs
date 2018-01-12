@@ -21,14 +21,12 @@ import           Data.Time.LocalTime
 import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
-import           Game.LambdaHack.Common.Faction
-import qualified Game.LambdaHack.Common.Kind as Kind
-import           Game.LambdaHack.Common.Misc
-import           Game.LambdaHack.Common.Time
-import           Game.LambdaHack.Content.ItemKind (ItemKind)
-import           Game.LambdaHack.Content.ModeKind (HiCondPoly,
-                                                   HiIndeterminant (..),
-                                                   ModeKind, Outcome (..))
+import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.ItemKind (ItemKind)
+import Game.LambdaHack.Content.ModeKind (HiCondPoly, HiIndeterminant (..),
+                                         ModeKind, Outcome (..))
 
 -- | A single score record. Records are ordered in the highscore table,
 -- from the best to the worst, in lexicographic ordering wrt the fields below.
@@ -39,8 +37,8 @@ data ScoreRecord = ScoreRecord
   , status       :: Status     -- ^ reason of the game interruption
   , challenge    :: Challenge  -- ^ challenge setup of the game
   , gplayerName  :: Text       -- ^ name of the faction's gplayer
-  , ourVictims   :: EM.EnumMap (Kind.Id ItemKind) Int  -- ^ allies lost
-  , theirVictims :: EM.EnumMap (Kind.Id ItemKind) Int  -- ^ foes killed
+  , ourVictims   :: EM.EnumMap (ContentId ItemKind) Int  -- ^ allies lost
+  , theirVictims :: EM.EnumMap (ContentId ItemKind) Int  -- ^ foes killed
   }
   deriving (Show, Eq, Ord, Generic)
 
@@ -54,7 +52,7 @@ instance Show ScoreTable where
   show _ = "a score table"
 
 -- | A dictionary from game mode IDs to scores tables.
-type ScoreDict = EM.EnumMap (Kind.Id ModeKind) ScoreTable
+type ScoreDict = EM.EnumMap (ContentId ModeKind) ScoreTable
 
 -- | Empty score table
 empty :: ScoreDict
@@ -76,8 +74,8 @@ register :: ScoreTable  -- ^ old table
          -> POSIXTime   -- ^ current date
          -> Challenge   -- ^ challenge setup
          -> Text        -- ^ name of the faction's gplayer
-         -> EM.EnumMap (Kind.Id ItemKind) Int  -- ^ allies lost
-         -> EM.EnumMap (Kind.Id ItemKind) Int  -- ^ foes killed
+         -> EM.EnumMap (ContentId ItemKind) Int  -- ^ allies lost
+         -> EM.EnumMap (ContentId ItemKind) Int  -- ^ foes killed
          -> HiCondPoly
          -> (Bool, (ScoreTable, Int))
 register table total time status@Status{stOutcome} date challenge gplayerName
@@ -134,7 +132,7 @@ showScore tz (pos, score) =
        <> diffText <> "after" <+> tturns <+> "on" <+> curDate <> "."
      ]
 
-getTable :: Kind.Id ModeKind -> ScoreDict -> ScoreTable
+getTable :: ContentId ModeKind -> ScoreDict -> ScoreTable
 getTable = EM.findWithDefault (ScoreTable [])
 
 getRecord :: Int -> ScoreTable -> ScoreRecord

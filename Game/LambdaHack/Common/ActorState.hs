@@ -95,7 +95,7 @@ posToAssocs pos lid s =
   let l = posToAidsLvl pos $ sdungeon s EM.! lid
   in map (\aid -> (aid, getActorBody aid s)) l
 
-nearbyFreePoints :: (Kind.Id TileKind -> Bool) -> Point -> LevelId -> State
+nearbyFreePoints :: (ContentId TileKind -> Bool) -> Point -> LevelId -> State
                  -> [Point]
 nearbyFreePoints f start lid s =
   let lvl@Level{lxsize, lysize} = sdungeon s EM.! lid

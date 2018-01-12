@@ -47,10 +47,10 @@ type ItemKnown = (ItemKindIx, AspectRecord, Dice.Dice, Maybe FactionId)
 -- in bijection.
 type ItemRev = HM.HashMap ItemKnown ItemId
 
-type UniqueSet = ES.EnumSet (Kind.Id ItemKind)
+type UniqueSet = ES.EnumSet (ContentId ItemKind)
 
 -- | Build an item with the given stats.
-buildItem :: FlavourMap -> DiscoveryKindRev -> Kind.Id ItemKind -> ItemKind
+buildItem :: FlavourMap -> DiscoveryKindRev -> ContentId ItemKind -> ItemKind
           -> LevelId -> Dice.Dice
           -> Item
 buildItem (FlavourMap flavour) discoRev ikChosen kind jlid jdamage =
@@ -131,7 +131,7 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldlGroup'}}
                   , itemGroup )
 
 -- | The reverse map to @DiscoveryKind@, needed for item creation.
-type DiscoveryKindRev = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
+type DiscoveryKindRev = EM.EnumMap (ContentId ItemKind) ItemKindIx
 
 -- | The map of item ids to item seeds, needed for item creation.
 type ItemSeedDict = EM.EnumMap ItemId ItemSeed
@@ -157,7 +157,7 @@ serverDiscos Kind.COps{coitem=Kind.Ops{olength, ofoldlWithKey', okind}} = do
   return (discoS, discoRev)
 
 -- | Flavours assigned by the server to item kinds, in this particular game.
-newtype FlavourMap = FlavourMap (EM.EnumMap (Kind.Id ItemKind) Flavour)
+newtype FlavourMap = FlavourMap (EM.EnumMap (ContentId ItemKind) Flavour)
   deriving (Show, Binary)
 
 emptyFlavourMap :: FlavourMap
@@ -166,10 +166,10 @@ emptyFlavourMap = FlavourMap EM.empty
 -- | Assigns flavours to item kinds. Assures no flavor is repeated for the same
 -- symbol, except for items with only one permitted flavour.
 rollFlavourMap :: S.Set Flavour
-               -> Rnd ( EM.EnumMap (Kind.Id ItemKind) Flavour
+               -> Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
                       , EM.EnumMap Char (S.Set Flavour) )
-               -> Kind.Id ItemKind -> ItemKind
-               -> Rnd ( EM.EnumMap (Kind.Id ItemKind) Flavour
+               -> ContentId ItemKind -> ItemKind
+               -> Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
                       , EM.EnumMap Char (S.Set Flavour) )
 rollFlavourMap fullFlavSet rnd key ik =
   let flavours = IK.iflavour ik

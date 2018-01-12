@@ -36,12 +36,12 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 import           Game.LambdaHack.Server.DungeonGen.Cave
 import           Game.LambdaHack.Server.DungeonGen.Place
 
-convertTileMaps :: Kind.COps -> Bool -> Rnd (Kind.Id TileKind)
-                -> Maybe (Rnd (Kind.Id TileKind)) -> Int -> Int -> TileMapEM
+convertTileMaps :: Kind.COps -> Bool -> Rnd (ContentId TileKind)
+                -> Maybe (Rnd (ContentId TileKind)) -> Int -> Int -> TileMapEM
                 -> Rnd TileMap
 convertTileMaps Kind.COps{coTileSpeedup} areAllWalkable
                 cdefTile mpickPassable cxsize cysize ltile = do
-  let runCdefTile :: R.StdGen -> (Kind.Id TileKind, R.StdGen)
+  let runCdefTile :: R.StdGen -> (ContentId TileKind, R.StdGen)
       runCdefTile = St.runState cdefTile
       runUnfold gen =
         let (gen1, gen2) = R.split gen

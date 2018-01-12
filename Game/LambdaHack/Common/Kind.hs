@@ -1,7 +1,8 @@
+{-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -fno-expose-all-unfoldings #-}
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
-  ( Id, Ops(..), COps(..), stdRuleset, createOps
+  ( Ops(..), COps(..), stdRuleset, createOps
   ) where
 
 import Prelude ()
@@ -13,7 +14,7 @@ import qualified Data.Vector as V
 
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Frequency
-import Game.LambdaHack.Common.KindOps
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.ItemKind
@@ -21,6 +22,28 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
+
+-- | Content operations for the content of type @a@.
+data Ops a = Ops
+  { okind          :: ContentId a -> a  -- ^ content element at given id
+  , ouniqGroup     :: GroupName a -> ContentId a
+                                 -- ^ the id of the unique member of
+                                 --   a singleton content group
+  , opick          :: GroupName a -> (a -> Bool) -> Rnd (Maybe (ContentId a))
+                                 -- ^ pick a random id belonging to a group
+                                 --   and satisfying a predicate
+  , ofoldrWithKey  :: forall b. (ContentId a -> a -> b -> b) -> b -> b
+                                 -- ^ fold over all content elements of @a@
+  , ofoldlWithKey' :: forall b. (b -> ContentId a -> a -> b) -> b -> b
+                                 -- ^ fold strictly over all content @a@
+  , ofoldlGroup'   :: forall b.
+                      GroupName a
+                      -> (b -> Int -> ContentId a -> a -> b)
+                      -> b
+                      -> b
+                                 -- ^ fold over the given group only
+  , olength        :: Int        -- ^ size of content @a@
+  }
 
 -- | Operations for all content types, gathered together.
 data COps = COps

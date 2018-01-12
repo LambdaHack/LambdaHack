@@ -141,7 +141,8 @@ pickWeaponClient source target = do
       let cstore = if isJust (lookup iid bodyAssocs) then COrgan else CEqp
       return $ Just $ ReqMelee target iid cstore
 
-updateSalter :: MonadClient m => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
+updateSalter :: MonadClient m
+             => LevelId -> [(Point, ContentId TileKind)] -> m ()
 updateSalter lid pts = do
   Kind.COps{coTileSpeedup} <- getsState scops
   let pas = map (second $ toEnum . Tile.alterMinWalk coTileSpeedup) pts

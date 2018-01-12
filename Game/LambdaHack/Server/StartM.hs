@@ -96,7 +96,7 @@ mapFromFuns =
         in m2 `M.union` m1
   in foldr fromFun M.empty
 
-resetFactions :: FactionDict -> Kind.Id ModeKind -> Int -> AbsDepth -> Roster
+resetFactions :: FactionDict -> ContentId ModeKind -> Int -> AbsDepth -> Roster
               -> Rnd FactionDict
 resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
   let rawCreate (gplayer@Player{..}, initialActors) = do
@@ -182,7 +182,7 @@ gameReset serverOptions mGameMode mrandom = do
       gameMode = fromMaybe startingModeGroup
                  $ mGameMode `mplus` sgameMode serverOptions
       rnd :: Rnd (FactionDict, FlavourMap, DiscoveryKind, DiscoveryKindRev,
-                  DungeonGen.FreshDungeon, Kind.Id ModeKind)
+                  DungeonGen.FreshDungeon, ContentId ModeKind)
       rnd = do
         modeKindId <- fromMaybe (error $ "" `showFailure` gameMode)
                       <$> opick gameMode (const True)

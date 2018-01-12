@@ -964,7 +964,7 @@ verifyEscape = do
       else return $ Right ()
 
 -- | Guess and report why the bump command failed.
-guessAlter :: Kind.COps -> [TriggerTile] -> Kind.Id TileKind -> Text
+guessAlter :: Kind.COps -> [TriggerTile] -> ContentId TileKind -> Text
 guessAlter Kind.COps{cotile} (TriggerTile{ttfeature=TK.OpenTo _} : _) t
   | Tile.isClosable cotile t = "already open"
 guessAlter _ (TriggerTile{ttfeature=TK.OpenTo _} : _) _ = "cannot be opened"

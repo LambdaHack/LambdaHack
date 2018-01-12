@@ -28,7 +28,6 @@ import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Vector
@@ -49,9 +48,9 @@ data Faction = Faction
   , _gleader  :: Maybe ActorId   -- ^ the leader of the faction; don't use
                                  --   in place of sleader on clients
   , gsha      :: ItemBag         -- ^ faction's shared inventory
-  , gvictims  :: EM.EnumMap (Kind.Id ItemKind) Int  -- ^ members killed
-  , gvictimsD :: EM.EnumMap (Kind.Id ModeKind)
-                            (IM.IntMap (EM.EnumMap (Kind.Id ItemKind) Int))
+  , gvictims  :: EM.EnumMap (ContentId ItemKind) Int  -- ^ members killed
+  , gvictimsD :: EM.EnumMap (ContentId ModeKind)
+                            (IM.IntMap (EM.EnumMap (ContentId ItemKind) Int))
       -- ^ members killed in the past, by game mode and difficulty level
   }
   deriving (Show, Eq, Generic)

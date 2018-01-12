@@ -177,7 +177,7 @@ invalidateArenas :: MonadServer m => m ()
 invalidateArenas = modifyServer $ \ser -> ser {svalidArenas = False}
 
 updateSclear :: MonadServer m
-             => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
+             => LevelId -> Point -> ContentId TileKind -> ContentId TileKind
              -> m Bool
 updateSclear lid pos fromTile toTile = do
   Kind.COps{coTileSpeedup} <- getsState scops
@@ -191,7 +191,8 @@ updateSclear lid pos fromTile toTile = do
     return True
 
 updateSlit :: MonadServer m
-           => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind -> m Bool
+           => LevelId -> Point -> ContentId TileKind -> ContentId TileKind
+           -> m Bool
 updateSlit lid pos fromTile toTile = do
   Kind.COps{coTileSpeedup} <- getsState scops
   let fromLit = Tile.isLit coTileSpeedup fromTile

@@ -24,8 +24,8 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
 import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -57,7 +57,7 @@ data StateClient = StateClient
   , smarkSuspect  :: Int            -- ^ whether to mark suspect features
   , scondInMelee  :: EM.EnumMap LevelId (Maybe Bool)
                                     -- ^ last in-melee condition for each level
-  , svictories    :: EM.EnumMap (Kind.Id ModeKind) (M.Map Challenge Int)
+  , svictories    :: EM.EnumMap (ContentId ModeKind) (M.Map Challenge Int)
                                     -- ^ won games at particular difficulty lvls
   , soptions      :: ClientOptions  -- ^ client options
   }

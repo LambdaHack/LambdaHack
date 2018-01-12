@@ -203,8 +203,8 @@ updDestroyItem iid item kit@(k, _) c = assert (k > 0) $ do
                     `blame` "item already removed"
                     `swith` (iid, item, itemD)) ()
   case c of
-    CActor aid store ->
-      when (store `elem` [CEqp, COrgan]) $ addItemToActorAspect iid item (-k) aid
+    CActor aid store -> when (store `elem` [CEqp, COrgan])
+                        $ addItemToActorAspect iid item (-k) aid
     _ -> return ()
 
 updSpotItemBag :: MonadStateWrite m
@@ -405,7 +405,8 @@ updAutoFaction fid st =
 
 -- Record a given number (usually just 1, or -1 for undo) of actor kills
 -- for score calculation.
-updRecordKill :: MonadStateWrite m => ActorId -> Kind.Id ItemKind -> Int -> m ()
+updRecordKill :: MonadStateWrite m
+              => ActorId -> ContentId ItemKind -> Int -> m ()
 updRecordKill aid ikind k = do
   b <- getsState $ getActorBody aid
   let !_A = assert (not (bproj b) `blame` (aid, b))
@@ -426,7 +427,7 @@ updRecordKill aid ikind k = do
 -- Removing and creating embedded items when altering a tile
 -- is done separately via @UpdCreateItem@ and @UpdDestroyItem@.
 updAlterTile :: MonadStateWrite m
-             => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
+             => LevelId -> Point -> ContentId TileKind -> ContentId TileKind
              -> m ()
 updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
   Kind.COps{coTileSpeedup} <- getsState scops
@@ -449,7 +450,7 @@ updAlterExplorable lid delta = assert (delta /= 0) $
 
 -- Showing to the client the embedded items, if any, is done elsewhere.
 updSearchTile :: MonadStateWrite m
-              => ActorId -> Point -> Kind.Id TileKind -> m ()
+              => ActorId -> Point -> ContentId TileKind -> m ()
 updSearchTile aid p toTile = do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody aid
@@ -466,7 +467,7 @@ updSearchTile aid p toTile = do
 -- We verify that the old tiles at the positions in question
 -- are indeed unknown.
 updSpotTile :: MonadStateWrite m
-            => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
+            => LevelId -> [(Point, ContentId TileKind)] -> m ()
 updSpotTile lid ts = assert (not $ null ts) $ do
   Kind.COps{coTileSpeedup} <- getsState scops
   let unk tileMap (p, _) = tileMap PointArray.! p == unknownId
@@ -479,7 +480,7 @@ updSpotTile lid ts = assert (not $ null ts) $ do
 -- Stop noticing previously visible tiles. It verifies
 -- the state of the tiles before wiping them out.
 updLoseTile :: MonadStateWrite m
-            => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
+            => LevelId -> [(Point, ContentId TileKind)] -> m ()
 updLoseTile lid ts = assert (not $ null ts) $ do
   Kind.COps{coTileSpeedup} <- getsState scops
   let matches tileMap (p, ov) = tileMap PointArray.! p == ov
@@ -545,7 +546,7 @@ ageLevel delta lid =
   updateLevel lid $ \lvl -> lvl {ltime = timeShift (ltime lvl) delta}
 
 updDiscover :: MonadStateWrite m
-            => Container -> ItemId -> Kind.Id ItemKind -> ItemSeed -> m ()
+            => Container -> ItemId -> ContentId ItemKind -> ItemSeed -> m ()
 updDiscover _c iid ik seed = do
   itemD <- getsState sitemD
   case EM.lookup iid itemD of
@@ -563,11 +564,11 @@ updDiscover _c iid ik seed = do
           unless kmConst $ discoverSeed iid seed
   resetActorAspect
 
-updCover :: Container -> ItemId -> Kind.Id ItemKind -> ItemSeed -> m ()
+updCover :: Container -> ItemId -> ContentId ItemKind -> ItemSeed -> m ()
 updCover _c _iid _ik _seed = undefined
 
 updDiscoverKind :: MonadStateWrite m
-                => Container -> ItemKindIx -> Kind.Id ItemKind -> m ()
+                => Container -> ItemKindIx -> ContentId ItemKind -> m ()
 updDiscoverKind _c ix kmKind = do
   discoKind <- getsState sdiscoKind
   if ix `EM.member` discoKind
@@ -577,7 +578,7 @@ updDiscoverKind _c ix kmKind = do
     resetActorAspect
 
 discoverKind :: MonadStateWrite m
-             => ItemKindIx -> Kind.Id ItemKind -> m KindMean
+             => ItemKindIx -> ContentId ItemKind -> m KindMean
 discoverKind ix kmKind = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   let kind = okind kmKind
@@ -590,7 +591,7 @@ discoverKind ix kmKind = do
     EM.alter f ix discoKind1
   return km
 
-updCoverKind :: Container -> ItemKindIx -> Kind.Id ItemKind -> m ()
+updCoverKind :: Container -> ItemKindIx -> ContentId ItemKind -> m ()
 updCoverKind _c _ix _ik = undefined
 
 updDiscoverSeed :: MonadStateWrite m

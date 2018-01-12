@@ -245,7 +245,7 @@ newtype ItemSeed = ItemSeed Int
 -- knows the aspects of the item (the 'itemAspect' field is not empty),
 -- this is a complete secret information/.
 data ItemDisco = ItemDisco
-  { itemKindId     :: Kind.Id IK.ItemKind
+  { itemKindId     :: ContentId IK.ItemKind
   , itemKind       :: IK.ItemKind
   , itemAspectMean :: AspectRecord
   , itemConst      :: Bool
@@ -269,7 +269,7 @@ data ItemFull = ItemFull
 -- the item's aspects are constant rather than random or dependent
 -- on dungeon level where the item is created.
 data KindMean = KindMean
-  { kmKind  :: Kind.Id IK.ItemKind
+  { kmKind  :: ContentId IK.ItemKind
   , kmMean  :: AspectRecord
   , kmConst :: Bool
   }

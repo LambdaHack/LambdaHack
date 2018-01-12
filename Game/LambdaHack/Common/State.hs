@@ -56,7 +56,7 @@ data State = State
   , _stime        :: Time         -- ^ global game time, for UI display only
   , _scops        :: ~Kind.COps   -- ^ remembered content
   , _shigh        :: HighScore.ScoreDict  -- ^ high score table
-  , _sgameModeId  :: Kind.Id ModeKind     -- ^ current game mode
+  , _sgameModeId  :: ContentId ModeKind     -- ^ current game mode
   , _sdiscoKind   :: DiscoveryKind     -- ^ item kind discoveries data
   , _sdiscoAspect :: DiscoveryAspect   -- ^ item aspect data
   , _sactorAspect :: ActorAspect       -- ^ actor aspect data
@@ -120,7 +120,7 @@ scops = _scops
 shigh :: State -> HighScore.ScoreDict
 shigh = _shigh
 
-sgameModeId :: State -> Kind.Id ModeKind
+sgameModeId :: State -> ContentId ModeKind
 sgameModeId = _sgameModeId
 
 sdiscoKind :: State -> DiscoveryKind
@@ -161,7 +161,7 @@ unknownLevel Kind.COps{cotile=Kind.Ops{ouniqGroup}}
            , ldesc
            }
 
-unknownTileMap :: Kind.Id TileKind -> Int -> Int -> TileMap
+unknownTileMap :: ContentId TileKind -> Int -> Int -> TileMap
 unknownTileMap outerId lxsize lysize =
   let unknownMap = PointArray.replicateA lxsize lysize unknownId
       borders = [ Point x y
@@ -173,7 +173,7 @@ unknownTileMap outerId lxsize lysize =
 
 -- | Initial complete global game state.
 defStateGlobal :: Dungeon -> AbsDepth -> FactionDict -> Kind.COps
-               -> HighScore.ScoreDict -> Kind.Id ModeKind -> DiscoveryKind
+               -> HighScore.ScoreDict -> ContentId ModeKind -> DiscoveryKind
                -> State
 defStateGlobal _sdungeon _stotalDepth _sfactionD _scops _shigh _sgameModeId
                _sdiscoKind =

@@ -164,7 +164,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
     svictories <- getsClient svictories
     let f acc _p i _a = i : acc
         modes = zip [0..] $ ofoldlGroup' "campaign scenario" f []
-        g :: (Int, Kind.Id ModeKind) -> Int
+        g :: (Int, ContentId ModeKind) -> Int
         g (_, mode) = case EM.lookup mode svictories of
           Nothing -> 0
           Just cm -> fromMaybe 0 (M.lookup snxtChal cm)
@@ -199,7 +199,7 @@ wipeBfsIfItemAffectsSkills stores aid =
   unless (null $ intersect stores [CEqp, COrgan]) $ invalidateBfsAid aid
 
 tileChangeAffectsBfs :: Kind.COps
-                     -> Kind.Id TileKind -> Kind.Id TileKind
+                     -> ContentId TileKind -> ContentId TileKind
                      -> Bool
 tileChangeAffectsBfs Kind.COps{coTileSpeedup} fromTile toTile =
   Tile.alterMinWalk coTileSpeedup fromTile
@@ -283,7 +283,7 @@ perception lid outPer inPer = do
     modifyClient $ \cli -> cli {sfper = f (sfper cli)}
 
 discoverKind :: MonadClient m
-             => Container -> ItemKindIx -> Kind.Id ItemKind -> m ()
+             => Container -> ItemKindIx -> ContentId ItemKind -> m ()
 discoverKind _c ix ik = do
   cops@Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
@@ -303,7 +303,7 @@ discoverKind _c ix ik = do
   forM_ itemIxMap $ \iid -> modifyClient $ \cli ->
     cli {sdiscoBenefit = EM.insert iid (benefit iid) (sdiscoBenefit cli)}
 
-coverKind :: Container -> ItemKindIx -> Kind.Id ItemKind -> m ()
+coverKind :: Container -> ItemKindIx -> ContentId ItemKind -> m ()
 coverKind _c _iid _ik = undefined
 
 discoverSeed :: MonadClient m => Container -> ItemId -> ItemSeed -> m ()

@@ -1155,7 +1155,7 @@ effectIdentify execSfx iidId source target = do
   tryStore [CGround, CEqp, CInv, CSha]
 
 identifyIid :: MonadServerAtomic m
-            => ItemId -> Container -> Kind.Id ItemKind -> m ()
+            => ItemId -> Container -> ContentId ItemKind -> m ()
 identifyIid iid c itemKindId = do
   seed <- getsServer $ (EM.! iid) . sitemSeedD
   execUpdAtomic $ UpdDiscover c iid itemKindId seed

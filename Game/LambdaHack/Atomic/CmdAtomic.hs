@@ -34,7 +34,6 @@ import           Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Perception
@@ -87,14 +86,14 @@ data UpdAtomic =
   | UpdDiplFaction FactionId FactionId Diplomacy Diplomacy
   | UpdTacticFaction FactionId Tactic Tactic
   | UpdAutoFaction FactionId Bool
-  | UpdRecordKill ActorId (Kind.Id ItemKind) Int
+  | UpdRecordKill ActorId (ContentId ItemKind) Int
   -- Alter map.
-  | UpdAlterTile LevelId Point (Kind.Id TileKind) (Kind.Id TileKind)
+  | UpdAlterTile LevelId Point (ContentId TileKind) (ContentId TileKind)
   | UpdAlterExplorable LevelId Int
-  | UpdSearchTile ActorId Point (Kind.Id TileKind)
-  | UpdHideTile ActorId Point (Kind.Id TileKind)
-  | UpdSpotTile LevelId [(Point, Kind.Id TileKind)]
-  | UpdLoseTile LevelId [(Point, Kind.Id TileKind)]
+  | UpdSearchTile ActorId Point (ContentId TileKind)
+  | UpdHideTile ActorId Point (ContentId TileKind)
+  | UpdSpotTile LevelId [(Point, ContentId TileKind)]
+  | UpdLoseTile LevelId [(Point, ContentId TileKind)]
   | UpdAlterSmell LevelId Point Time Time
   | UpdSpotSmell LevelId [(Point, Time)]
   | UpdLoseSmell LevelId [(Point, Time)]
@@ -102,10 +101,10 @@ data UpdAtomic =
   | UpdTimeItem ItemId Container ItemTimer ItemTimer
   | UpdAgeGame [LevelId]
   | UpdUnAgeGame [LevelId]
-  | UpdDiscover Container ItemId (Kind.Id ItemKind) ItemSeed
-  | UpdCover Container ItemId (Kind.Id ItemKind) ItemSeed
-  | UpdDiscoverKind Container ItemKindIx (Kind.Id ItemKind)
-  | UpdCoverKind Container ItemKindIx (Kind.Id ItemKind)
+  | UpdDiscover Container ItemId (ContentId ItemKind) ItemSeed
+  | UpdCover Container ItemId (ContentId ItemKind) ItemSeed
+  | UpdDiscoverKind Container ItemKindIx (ContentId ItemKind)
+  | UpdCoverKind Container ItemKindIx (ContentId ItemKind)
   | UpdDiscoverSeed Container ItemId ItemSeed
   | UpdCoverSeed Container ItemId ItemSeed
   | UpdDiscoverServer ItemId AspectRecord
@@ -147,7 +146,7 @@ data SfxMsg =
     SfxUnexpected ReqFailure
   | SfxExpected Text ReqFailure
   | SfxLoudUpd Bool UpdAtomic
-  | SfxLoudStrike Bool (Kind.Id ItemKind) Int
+  | SfxLoudStrike Bool (ContentId ItemKind) Int
   | SfxLoudSummon Bool (GroupName ItemKind) Dice.Dice
   | SfxFizzles
   | SfxNothingHappens
