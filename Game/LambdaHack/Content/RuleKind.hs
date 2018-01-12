@@ -1,6 +1,10 @@
 -- | The type of game rule sets and assorted game data.
 module Game.LambdaHack.Content.RuleKind
-  ( RuleKind(..), validateSingleRuleKind, validateAllRuleKind
+  ( RuleKind(..), makeDef
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , validateSingle, validateAll
+#endif
   ) where
 
 import Prelude ()
@@ -10,6 +14,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Text as T
 import           Data.Version
 
+import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Misc
 
 -- | The type of game rule sets and assorted game data.
@@ -41,8 +46,8 @@ instance Show RuleKind where
   show _ = "The game ruleset specification."
 
 -- | Catch invalid rule kind definitions.
-validateSingleRuleKind :: RuleKind -> [Text]
-validateSingleRuleKind RuleKind{rmainMenuArt} =
+validateSingle :: RuleKind -> [Text]
+validateSingle RuleKind{rmainMenuArt} =
   let ts = T.lines rmainMenuArt
       tsNot110 = filter ((/= 110) . T.length) ts
   in case tsNot110 of
@@ -52,5 +57,8 @@ validateSingleRuleKind RuleKind{rmainMenuArt} =
        ["rmainMenuArt has a line with length other than 110:" <> tNot110]
 
 -- | Since we have only one rule kind, the set of rule kinds is always valid.
-validateAllRuleKind :: [RuleKind] -> [Text]
-validateAllRuleKind _ = []
+validateAll :: [RuleKind] -> [Text]
+validateAll _ = []
+
+makeDef :: [RuleKind] -> ContentDef RuleKind
+makeDef = makeContentDef rname validateSingle validateAll rfreq

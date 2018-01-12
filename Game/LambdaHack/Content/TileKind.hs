@@ -1,12 +1,14 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of terrain tiles.
 module Game.LambdaHack.Content.TileKind
-  ( TileKind(..), Feature(..), TileSpeedup(..), Tab(..)
-  , validateSingleTileKind, validateAllTileKind, actionFeatures
-  , isUknownSpace, unknownId, isSuspectKind, isOpenableKind, isClosableKind
+  ( TileKind(..), makeDef
+  , Feature(..), TileSpeedup(..), Tab(..)
+  , actionFeatures, isUknownSpace, unknownId
+  , isSuspectKind, isOpenableKind, isClosableKind
   , talterForStairs, floorSymbol
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
+  , validateSingle, validateAll
   , validateDups, hardwiredTileGroups
 #endif
   ) where
@@ -27,6 +29,7 @@ import qualified Data.Vector.Unboxed as U
 import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Common.Color
+import           Game.LambdaHack.Common.ContentDef
 import qualified Game.LambdaHack.Common.KindOps as KindOps
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
@@ -119,8 +122,8 @@ data TileSpeedup = TileSpeedup
 newtype Tab a = Tab (U.Vector a)  -- morally indexed by @Id a@
 
 -- | Validate a single tile kind.
-validateSingleTileKind :: TileKind -> [Text]
-validateSingleTileKind t@TileKind{..} =
+validateSingle :: TileKind -> [Text]
+validateSingle t@TileKind{..} =
   [ "suspect tile is walkable" | Walkable `elem` tfeature
                                  && isSuspectKind t ]
   ++ [ "openable tile is open" | Walkable `elem` tfeature
@@ -170,8 +173,8 @@ validateDups TileKind{..} feat =
 -- manually all the tiles of that kind, or even experiment with them,
 -- to see if any is special. This would be tedious. Note that tiles may freely
 -- differ wrt text blurb, dungeon generation, AI preferences, etc.
-validateAllTileKind :: [TileKind] -> [Text]
-validateAllTileKind lt =
+validateAll :: [TileKind] -> [Text]
+validateAll lt =
   let kindFreq :: S.Set (GroupName TileKind)  -- cf. Kind.kindFreq
       kindFreq = let tuples = [ cgroup
                               | k <- lt
@@ -283,3 +286,6 @@ floorSymbol = Char.chr 183
 -- 50  considerable obstructions
 -- 100  walls
 -- maxBound  impenetrable walls, etc., can never be altered
+
+makeDef :: [TileKind] -> ContentDef TileKind
+makeDef = makeContentDef tname validateSingle validateAll tfreq

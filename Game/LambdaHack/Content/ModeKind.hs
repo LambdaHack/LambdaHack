@@ -1,12 +1,13 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of game modes.
 module Game.LambdaHack.Content.ModeKind
-  ( ModeKind(..), Caves, Roster(..), Outcome(..)
+  ( ModeKind(..), makeDef
+  , Caves, Roster(..), Outcome(..)
   , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
   , Player(..), LeaderMode(..), AutoLeader(..)
-  , validateSingleModeKind, validateAllModeKind
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
+  , validateSingle, validateAll
   , validateSingleRoster, validateSinglePlayer, hardwiredModeGroups
 #endif
   ) where
@@ -23,9 +24,10 @@ import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Common.Ability
+import           Game.LambdaHack.Common.ContentDef
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Misc
-import           Game.LambdaHack.Content.CaveKind
+import           Game.LambdaHack.Content.CaveKind (CaveKind)
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 
 -- | Game mode specification.
@@ -135,8 +137,8 @@ data AutoLeader = AutoLeader
 instance Binary AutoLeader
 
 -- | Catch invalid game mode kind definitions.
-validateSingleModeKind :: ModeKind -> [Text]
-validateSingleModeKind ModeKind{..} =
+validateSingle :: ModeKind -> [Text]
+validateSingle ModeKind{..} =
   [ "mname longer than 20" | T.length mname > 20 ]
   ++ validateSingleRoster mcaves mroster
 
@@ -174,8 +176,8 @@ validateSinglePlayer  Player{..} =
      | any (>= 0) $ EM.elems fskillsOther ]
 
 -- | Validate game mode kinds together.
-validateAllModeKind :: [ModeKind] -> [Text]
-validateAllModeKind content =
+validateAll :: [ModeKind] -> [Text]
+validateAll content =
   let kindFreq :: S.Set (GroupName ModeKind)  -- cf. Kind.kindFreq
       kindFreq = let tuples = [ cgroup
                               | k <- content
@@ -188,3 +190,6 @@ validateAllModeKind content =
 
 hardwiredModeGroups :: [GroupName ModeKind]
 hardwiredModeGroups = [ "campaign scenario", "starting", "starting JS" ]
+
+makeDef :: [ModeKind] -> ContentDef ModeKind
+makeDef = makeContentDef mname validateSingle validateAll mfreq

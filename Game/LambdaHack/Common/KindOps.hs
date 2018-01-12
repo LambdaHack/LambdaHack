@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, RankNTypes #-}
+{-# LANGUAGE RankNTypes #-}
 -- | General content types and operations.
 module Game.LambdaHack.Common.KindOps
   ( Id(Id), Ops(..)
@@ -8,14 +8,9 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
-
+import Game.LambdaHack.Common.ContentDef (Id (Id))
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Random
-
--- | Content identifiers for the content type @c@.
-newtype Id c = Id Word16
-  deriving (Show, Eq, Ord, Enum, Bounded, Binary)
 
 -- | Content operations for the content of type @a@.
 data Ops a = Ops

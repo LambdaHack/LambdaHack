@@ -1,6 +1,6 @@
 -- | Item definitions.
 module Content.ItemKind
-  ( cdefs, items, otherItemContent
+  ( content, items, otherItemContent
   ) where
 
 import Prelude ()
@@ -14,21 +14,13 @@ import Content.ItemKindOrgan
 import Content.ItemKindTemporary
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Color
-import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ItemKind
 
-cdefs :: ContentDef ItemKind
-cdefs = ContentDef
-  { getSymbol = isymbol
-  , getName = iname
-  , getFreq = ifreq
-  , validateSingle = validateSingleItemKind
-  , validateAll = validateAllItemKind
-  , content = contentFromList $ items ++ otherItemContent
-  }
+content :: [ItemKind]
+content = items ++ otherItemContent
 
 otherItemContent :: [ItemKind]
 otherItemContent = embeds ++ actors ++ organs ++ blasts ++ temporaries

@@ -10,10 +10,14 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified System.Random as R
 
-import           Game.LambdaHack.Common.ContentDef
 import qualified Game.LambdaHack.Common.Kind as Kind
 import qualified Game.LambdaHack.Common.Tile as Tile
+import qualified Game.LambdaHack.Content.CaveKind as CK
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import qualified Game.LambdaHack.Content.ModeKind as MK
+import qualified Game.LambdaHack.Content.PlaceKind as PK
+import qualified Game.LambdaHack.Content.RuleKind as RK
+import qualified Game.LambdaHack.Content.TileKind as TK
 import           Game.LambdaHack.SampleImplementation.SampleMonadServer (executorSer)
 import           Game.LambdaHack.Server
 
@@ -41,22 +45,20 @@ tieKnot options@ServerOptions{sallClear, sboostRandomItem, sdungeonRng} = do
   -- equal to what was generated last time, ensures the same item boost.
   initialGen <- maybe R.getStdGen return sdungeonRng
   let soptionsNxt = options {sdungeonRng = Just initialGen}
-      cotile = Kind.createOps Content.TileKind.cdefs
+      cotile = Kind.createOps $ TK.makeDef Content.TileKind.content
       boostedItems = IK.boostItemKindList initialGen Content.ItemKind.items
-      coitem = Kind.createOps $
+      coitem = Kind.createOps $ IK.makeDef $
         if sboostRandomItem
-        then Content.ItemKind.cdefs
-               {content = contentFromList
-                          $ boostedItems ++ Content.ItemKind.otherItemContent}
-        else Content.ItemKind.cdefs
+        then boostedItems ++ Content.ItemKind.otherItemContent
+        else Content.ItemKind.content
       -- Common content operations, created from content definitions.
       -- Evaluated fully to discover errors ASAP and to free memory.
       !cops = Kind.COps
-        { cocave  = Kind.createOps Content.CaveKind.cdefs
+        { cocave  = Kind.createOps $ CK.makeDef Content.CaveKind.content
         , coitem
-        , comode  = Kind.createOps Content.ModeKind.cdefs
-        , coplace = Kind.createOps Content.PlaceKind.cdefs
-        , corule  = Kind.createOps Content.RuleKind.cdefs
+        , comode  = Kind.createOps $ MK.makeDef Content.ModeKind.content
+        , coplace = Kind.createOps $ PK.makeDef Content.PlaceKind.content
+        , corule  = Kind.createOps $ RK.makeDef Content.RuleKind.content
         , cotile
         , coTileSpeedup = Tile.speedup sallClear cotile
         }

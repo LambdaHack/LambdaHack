@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of weapons, treasure, organs, blasts, etc.
 module Game.LambdaHack.Content.ItemKind
-  ( ItemKind(..)
+  ( ItemKind(..), makeDef
   , Effect(..), TimerDice
   , Aspect(..), ThrowMod(..)
   , Feature(..), EqpSlot(..)
@@ -9,9 +9,9 @@ module Game.LambdaHack.Content.ItemKind
   , toDmg, tmpNoLonger, tmpLess, toVelocity, toLinger
   , timerNone, isTimerNone, foldTimer
   , toOrganGameTurn, toOrganActorTurn, toOrganNone
-  , validateSingleItemKind, validateAllItemKind
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
+  , validateSingle, validateAll
   , boostItemKind, validateDups, validateDamage, hardwiredItemGroups
 #endif
   ) where
@@ -30,6 +30,7 @@ import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
 
 import qualified Game.LambdaHack.Common.Ability as Ability
+import           Game.LambdaHack.Common.ContentDef
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Flavour
 import           Game.LambdaHack.Common.Misc
@@ -321,8 +322,8 @@ toOrganNone :: GroupName ItemKind -> Effect
 toOrganNone grp = CreateItem COrgan grp TimerNone
 
 -- | Catch invalid item kind definitions.
-validateSingleItemKind :: ItemKind -> [Text]
-validateSingleItemKind ik@ItemKind{..} =
+validateSingle :: ItemKind -> [Text]
+validateSingle ik@ItemKind{..} =
   [ "iname longer than 23" | T.length iname > 23 ]
   ++ [ "icount < 0" | Dice.minDice icount < 0 ]
   ++ validateRarity irarity
@@ -389,8 +390,8 @@ validateDamage = concatMap validateDice
                            | Dice.minDice dice < 0]
 
 -- | Validate all item kinds.
-validateAllItemKind :: [ItemKind] -> [Text]
-validateAllItemKind content =
+validateAll :: [ItemKind] -> [Text]
+validateAll content =
   let kindFreq :: S.Set (GroupName ItemKind)  -- cf. Kind.kindFreq
       kindFreq = let tuples = [ cgroup
                               | k <- content
@@ -418,3 +419,6 @@ hardwiredItemGroups =
   , "potion", "flask" ]
   -- Assorted:
   ++ ["bonus HP", "currency", "impressed", "mobile"]
+
+makeDef :: [ItemKind] -> ContentDef ItemKind
+makeDef = makeContentDef iname validateSingle validateAll ifreq

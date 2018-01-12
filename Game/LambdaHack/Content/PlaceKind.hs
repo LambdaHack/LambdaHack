@@ -1,7 +1,11 @@
 -- | The type of kinds of rooms, halls and passages.
 module Game.LambdaHack.Content.PlaceKind
-  ( PlaceKind(..), Cover(..), Fence(..)
-  , validateSinglePlaceKind, validateAllPlaceKind
+  ( PlaceKind(..), makeDef
+  , Cover(..), Fence(..)
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , validateSingle, validateAll
+#endif
   ) where
 
 import Prelude ()
@@ -10,6 +14,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Text as T
 
+import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.TileKind (TileKind)
 
@@ -47,8 +52,8 @@ data Fence =
 
 -- | Catch invalid place kind definitions. In particular, verify that
 -- the top-left corner map is rectangular and not empty.
-validateSinglePlaceKind :: PlaceKind -> [Text]
-validateSinglePlaceKind PlaceKind{..} =
+validateSingle :: PlaceKind -> [Text]
+validateSingle PlaceKind{..} =
   let dxcorner = case ptopLeft of
         [] -> 0
         l : _ -> T.length l
@@ -58,5 +63,8 @@ validateSinglePlaceKind PlaceKind{..} =
      ++ validateRarity prarity
 
 -- | Validate all place kinds. Currently always valid.
-validateAllPlaceKind :: [PlaceKind] -> [Text]
-validateAllPlaceKind _ = []
+validateAll :: [PlaceKind] -> [Text]
+validateAll _ = []
+
+makeDef :: [PlaceKind] -> ContentDef PlaceKind
+makeDef = makeContentDef pname validateSingle validateAll pfreq

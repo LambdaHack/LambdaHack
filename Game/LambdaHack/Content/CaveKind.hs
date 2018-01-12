@@ -1,6 +1,10 @@
 -- | The type of cave kinds.
 module Game.LambdaHack.Content.CaveKind
-  ( CaveKind(..), validateSingleCaveKind, validateAllCaveKind
+  ( CaveKind(..), makeDef
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , validateSingle, validateAll
+#endif
   ) where
 
 import Prelude ()
@@ -9,12 +13,13 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Text as T
 
+import           Game.LambdaHack.Common.ContentDef
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
-import           Game.LambdaHack.Content.PlaceKind
+import           Game.LambdaHack.Content.PlaceKind (PlaceKind)
 import           Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | Parameters for the generation of dungeon levels.
@@ -63,8 +68,8 @@ data CaveKind = CaveKind
 
 -- | Catch caves with not enough space for all the places. Check the size
 -- of the cave descriptions to make sure they fit on screen. Etc.
-validateSingleCaveKind :: CaveKind -> [Text]
-validateSingleCaveKind CaveKind{..} =
+validateSingle :: CaveKind -> [Text]
+validateSingle CaveKind{..} =
   let (minGridX, minGridY) = Dice.minDiceXY cgrid
       (maxGridX, maxGridY) = Dice.maxDiceXY cgrid
       (minMinSizeX, minMinSizeY) = Dice.minDiceXY cminPlaceSize
@@ -93,8 +98,11 @@ validateSingleCaveKind CaveKind{..} =
 -- | Validate all cave kinds.
 -- Note that names don't have to be unique: we can have several variants
 -- of a cave with a given name.
-validateAllCaveKind :: [CaveKind] -> [Text]
-validateAllCaveKind lk =
+validateAll :: [CaveKind] -> [Text]
+validateAll lk =
   if any (maybe False (> 0) . lookup "default random" . cfreq) lk
   then []
   else ["no cave defined for \"default random\""]
+
+makeDef :: [CaveKind] -> ContentDef CaveKind
+makeDef = makeContentDef cname validateSingle validateAll cfreq
