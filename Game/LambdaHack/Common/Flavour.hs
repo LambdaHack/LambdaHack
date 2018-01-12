@@ -19,6 +19,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import Control.DeepSeq
 import Data.Binary
 import Data.Hashable (Hashable)
 import GHC.Generics (Generic)
@@ -32,6 +33,8 @@ instance Hashable FancyName
 
 instance Binary FancyName
 
+instance NFData FancyName
+
 -- | The type of item flavours.
 data Flavour = Flavour
   { fancyName :: FancyName  -- ^ how fancy should the colour description be
@@ -42,6 +45,8 @@ data Flavour = Flavour
 instance Hashable Flavour
 
 instance Binary Flavour
+
+instance NFData Flavour
 
 -- | Turn a colour set into a flavour set.
 zipPlain, zipFancy, zipLiquid :: [Color] -> [Flavour]

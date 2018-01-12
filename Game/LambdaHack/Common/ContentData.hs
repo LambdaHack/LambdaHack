@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | A game requires the engine provided by the library, perhaps customized,
 -- and game content, defined completely afresh for the particular game.
 -- The possible kinds of content are fixed in the library and all defined
@@ -17,34 +18,39 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import           Control.DeepSeq
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Data.Vector as V
+import           GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Random
 
 -- | Verified and preprocessed content data of a particular kind.
-data ContentData a = ContentData
-  { contentVector :: V.Vector a
-  , groupFreq     :: M.Map (GroupName a) [(Int, (ContentId a, a))]
+data ContentData c = ContentData
+  { contentVector :: V.Vector c
+  , groupFreq     :: M.Map (GroupName c) [(Int, (ContentId c, c))]
   }
+  deriving Generic
+
+instance NFData c => NFData (ContentData c)
 
 emptyContentData :: ContentData a
 emptyContentData = ContentData V.empty M.empty
 
-makeContentData :: Show a
-               => (a -> Text)
-                    -- ^ name of the content itme, used for validation
-               -> (a -> [Text])
-                    -- ^ validate a content item and list all offences
-               -> ([a] -> [Text])
-                    -- ^ validate the whole defined content of this type
-                    -- and list all offence
-               -> (a -> Freqs a)  -- ^ frequency within groups
-               -> [a]  -- ^ all content of this type
-               -> ContentData a
+makeContentData :: (NFData c, Show c)
+                => (c -> Text)
+                     -- ^ name of the content itme, used for validation
+                -> (c -> [Text])
+                     -- ^ validate a content item and list all offences
+                -> ([c] -> [Text])
+                     -- ^ validate the whole defined content of this type
+                     -- and list all offence
+                -> (c -> Freqs c)  -- ^ frequency within groups
+                -> [c]  -- ^ all content of this type
+                -> ContentData c
 {-# INLINE makeContentData #-}
 makeContentData getName validateSingle validateAll
                 getFreq content =
@@ -62,13 +68,15 @@ makeContentData getName validateSingle validateAll
             f m (cgroup, nik) = M.insertWith (++) cgroup [nik] m
         in foldl' f M.empty tuples
       contentVector = V.fromList content
+      contendData = ContentData {..}
   in assert (allB correct content) $
      assert (null singleOffenders `blame` "some content items not valid"
                                   `swith` singleOffenders) $
      assert (null allOffences `blame` "the content set not valid"
                               `swith` allOffences) $
      assert (V.length contentVector <= fromEnum (maxBound :: ContentId a))
-     ContentData {..}
+     -- Catch all kinds of errors in content ASAP, even in unused items.
+     deepseq contendData contendData
 
 -- | Content element at given id.
 okind :: ContentData a -> ContentId a -> a

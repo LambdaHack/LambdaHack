@@ -41,7 +41,9 @@ import Game.LambdaHack.Common.Point
 
 -- | Content identifiers for the content type @c@.
 newtype ContentId c = ContentId Word16
-  deriving (Show, Eq, Ord, Enum, Bounded, Binary)
+  deriving (Show, Eq, Ord, Enum, Bounded, Binary, Generic)
+
+instance NFData (ContentId c)
 
 -- | A unique identifier of a faction in a game.
 newtype FactionId = FactionId Int
@@ -166,6 +168,8 @@ instance Show Tactic where
 instance Binary Tactic
 
 instance Hashable Tactic
+
+instance NFData Tactic
 
 toGroupName :: Text -> GroupName a
 {-# INLINE toGroupName #-}

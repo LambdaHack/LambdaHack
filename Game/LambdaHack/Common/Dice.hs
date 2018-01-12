@@ -217,6 +217,8 @@ instance Hashable DiceXY
 
 instance Binary DiceXY
 
+instance NFData DiceXY
+
 -- | Maximal value of DiceXY.
 maxDiceXY :: DiceXY -> (Int, Int)
 maxDiceXY (DiceXY x y) = (maxDice x, maxDice y)

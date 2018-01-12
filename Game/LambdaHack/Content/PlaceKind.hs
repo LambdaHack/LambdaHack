@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of rooms, halls and passages.
 module Game.LambdaHack.Content.PlaceKind
   ( PlaceKind(..), makeData
@@ -14,9 +15,11 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Text as T
 
+import Control.DeepSeq
 import Game.LambdaHack.Common.ContentData
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.TileKind (TileKind)
+import GHC.Generics (Generic)
 
 -- | Parameters for the generation of small areas within a dungeon level.
 data PlaceKind = PlaceKind
@@ -29,7 +32,9 @@ data PlaceKind = PlaceKind
   , ptopLeft  :: [Text]        -- ^ plan of the top-left corner of the place
   , poverride :: [(Char, GroupName TileKind)]  -- ^ legend override
   }
-  deriving Show  -- No Eq and Ord to make extending it logically sound
+  deriving (Show, Generic)  -- No Eq and Ord to make extending logically sound
+
+instance NFData PlaceKind
 
 -- | A method of filling the whole area (except for CVerbatim and CMirror,
 -- which are just placed in the middle of the area) by transforming
@@ -40,7 +45,9 @@ data Cover =
   | CReflect    -- ^ tile separately and symmetrically quarters of the place
   | CVerbatim   -- ^ just build the given interior, without filling the area
   | CMirror     -- ^ build the given interior in one of 4 mirrored variants
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance NFData Cover
 
 -- | The choice of a fence type for the place.
 data Fence =
@@ -48,7 +55,9 @@ data Fence =
   | FFloor  -- ^ leave an empty space, like the rooms floor
   | FGround -- ^ leave an empty space, like the caves ground
   | FNone   -- ^ skip the fence and fill all with the place proper
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance NFData Fence
 
 -- | Catch invalid place kind definitions. In particular, verify that
 -- the top-left corner map is rectangular and not empty.

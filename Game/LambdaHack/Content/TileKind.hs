@@ -52,7 +52,9 @@ data TileKind = TileKind
   , talter   :: Word8        -- ^ minimal skill needed to alter the tile
   , tfeature :: [Feature]    -- ^ properties
   }
-  deriving Show  -- No Eq and Ord to make extending it logically sound
+  deriving (Show, Generic)  -- No Eq and Ord to make extending logically sound
+
+instance NFData TileKind
 
 -- | All possible terrain tile features.
 data Feature =
@@ -114,12 +116,18 @@ data TileSpeedup = TileSpeedup
   , alterMinSkillTab  :: Tab Word8
   , alterMinWalkTab   :: Tab Word8
   }
+  deriving Generic
+
+instance NFData TileSpeedup
 
 -- Vectors of booleans can be slower than arrays, because they are not packed,
 -- but with growing cache sizes they may as well turn out faster at some point.
 -- The advantage of vectors are exposed internals, in particular unsafe
 -- indexing. Also, in JS, bool arrays are obviously not packed.
 newtype Tab a = Tab (U.Vector a)  -- morally indexed by @Id a@
+  deriving Generic
+
+instance NFData (Tab a)
 
 emptyTileSpeedup :: TileSpeedup
 emptyTileSpeedup = TileSpeedup emptyTab emptyTab emptyTab emptyTab emptyTab

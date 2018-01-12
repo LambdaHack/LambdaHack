@@ -18,6 +18,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import           Control.DeepSeq
 import           Data.Binary
 import           Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
 import qualified Data.Char as Char
@@ -53,6 +54,8 @@ instance Binary Color where
   get = fmap (toEnum . fromEnum) getWord8
 
 instance Hashable Color
+
+instance NFData Color
 
 -- | The default colours, to optimize attribute setting.
 defFG :: Color

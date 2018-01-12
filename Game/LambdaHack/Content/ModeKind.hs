@@ -16,6 +16,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import           Control.DeepSeq
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
@@ -39,7 +40,9 @@ data ModeKind = ModeKind
   , mcaves  :: Caves           -- ^ arena of the game
   , mdesc   :: Text            -- ^ description
   }
-  deriving Show
+  deriving (Show, Generic)
+
+instance NFData ModeKind
 
 -- | Requested cave groups for particular levels. The second component
 -- is the @Escape@ feature on the level. @True@ means it's represented
@@ -54,7 +57,9 @@ data Roster = Roster
   , rosterEnemy :: [(Text, Text)]  -- ^ the initial enmity matrix
   , rosterAlly  :: [(Text, Text)]  -- ^ the initial aliance matrix
   }
-  deriving Show
+  deriving (Show, Generic)
+
+instance NFData Roster
 
 -- | Outcome of a game.
 data Outcome =
@@ -68,6 +73,8 @@ data Outcome =
 
 instance Binary Outcome
 
+instance NFData Outcome
+
 -- | Conditional polynomial representing score calculation for this player.
 type HiCondPoly = [HiSummand]
 
@@ -79,6 +86,8 @@ data HiIndeterminant = HiConst | HiLoot | HiBlitz | HiSurvival | HiKill | HiLoss
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary HiIndeterminant
+
+instance NFData HiIndeterminant
 
 -- | Properties of a particular player.
 data Player = Player
@@ -104,6 +113,8 @@ data Player = Player
 
 instance Binary Player
 
+instance NFData Player
+
 -- | If a faction with @LeaderUI@ and @LeaderAI@ has any actor, it has a leader.
 data LeaderMode =
     LeaderNull  -- ^ faction can have no leader, is whole under AI control
@@ -112,6 +123,8 @@ data LeaderMode =
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary LeaderMode
+
+instance NFData LeaderMode
 
 data AutoLeader = AutoLeader
   { autoDungeon :: Bool
@@ -135,6 +148,8 @@ data AutoLeader = AutoLeader
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary AutoLeader
+
+instance NFData AutoLeader
 
 -- | Catch invalid game mode kind definitions.
 validateSingle :: ModeKind -> [Text]

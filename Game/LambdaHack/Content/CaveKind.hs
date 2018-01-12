@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | The type of cave kinds.
 module Game.LambdaHack.Content.CaveKind
   ( CaveKind(..), makeData
@@ -11,7 +12,9 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import           Control.DeepSeq
 import qualified Data.Text as T
+import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
@@ -64,7 +67,9 @@ data CaveKind = CaveKind
       --   of items in the group does not affect group choice
   , cdesc           :: Text                -- ^ cave description
   }
-  deriving Show  -- No Eq and Ord to make extending it logically sound
+  deriving (Show, Generic)  -- No Eq and Ord to make extending logically sound
+
+instance NFData CaveKind
 
 -- | Catch caves with not enough space for all the places. Check the size
 -- of the cave descriptions to make sure they fit on screen. Etc.

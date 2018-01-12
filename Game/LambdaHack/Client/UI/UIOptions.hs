@@ -119,7 +119,7 @@ mkUIOptions cops benchmark = do
         return $! either (error . ("" `showFailure`)) id $ Ini.parse sUser
   let cfgUI = M.unionWith M.union cfgUser cfgUIDefault  -- user cfg preferred
       conf = parseConfig cfgUI
-  -- Catch syntax errors in complex expressions ASAP,
+  -- Catch syntax errors in complex expressions ASAP.
   return $! deepseq conf conf
 
 -- | Modify client options with UI options.

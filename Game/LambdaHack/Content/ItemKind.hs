@@ -53,7 +53,9 @@ data ItemKind = ItemKind
   , ikit     :: [(GroupName ItemKind, CStore)]
                                     -- ^ accompanying organs and items
   }
-  deriving Show  -- No Eq and Ord to make extending it logically sound
+  deriving (Show, Generic)  -- No Eq and Ord to make extending logically sound
+
+instance NFData ItemKind
 
 -- | Effects of items. Can be invoked by the item wielder to affect
 -- another actor or the wielder himself. Many occurences in the same item
@@ -154,6 +156,8 @@ data Aspect =
   | AddAbility Ability.Ability Dice.Dice  -- ^ bonus to an ability
   deriving (Show, Eq, Ord, Generic)
 
+instance NFData Aspect
+
 -- | Parameters modifying a throw of a projectile or flight of pushed actor.
 -- Not additive and don't start at 0.
 data ThrowMod = ThrowMod
@@ -181,6 +185,8 @@ data Feature =
   | Tactic Tactic      -- ^ overrides actor's tactic
   | Blast              -- ^ the items is an explosion blast particle
   deriving (Show, Eq, Ord, Generic)
+
+instance NFData Feature
 
 -- | AI and UI hints about the role of the item.
 data EqpSlot =

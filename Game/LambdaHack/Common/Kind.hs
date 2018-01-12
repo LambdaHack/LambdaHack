@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
   ( COps(..), emptyCOps, getStdRuleset
@@ -9,6 +10,9 @@ module Game.LambdaHack.Common.Kind
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
+
+import Control.DeepSeq
+import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.ContentData
 import Game.LambdaHack.Content.CaveKind
@@ -28,12 +32,15 @@ data COps = COps
   , cotile        :: ContentData TileKind
   , coTileSpeedup :: TileSpeedup
   }
+  deriving Generic
 
 instance Show COps where
   show _ = "game content"
 
 instance Eq COps where
   (==) _ _ = True
+
+instance NFData COps
 
 emptyCOps :: COps
 emptyCOps = COps

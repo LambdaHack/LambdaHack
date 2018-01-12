@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | The type of game rule sets and assorted game data.
 module Game.LambdaHack.Content.RuleKind
   ( RuleKind(..), makeData
@@ -11,8 +12,10 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import           Control.DeepSeq
 import qualified Data.Text as T
 import           Data.Version
+import           GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.ContentData
 import Game.LambdaHack.Common.Misc
@@ -39,11 +42,14 @@ data RuleKind = RuleKind
   , rscoresFile     :: FilePath  -- ^ name of the scores file
   , rnearby         :: Int       -- ^ what distance between actors is 'nearby'
   }
+  deriving Generic
 
 -- | A dummy instance of the 'Show' class, to satisfy general requirments
 -- about content. We won't don't expect to ever print out whole rule sets.
 instance Show RuleKind where
   show _ = "The game ruleset specification."
+
+instance NFData RuleKind
 
 -- | Catch invalid rule kind definitions.
 validateSingle :: RuleKind -> [Text]
