@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of terrain tiles.
 module Game.LambdaHack.Content.TileKind
-  ( TileKind(..), makeDef
+  ( TileKind(..), makeData
   , Feature(..), TileSpeedup(..), Tab(..)
   , actionFeatures, isUknownSpace, unknownId
   , isSuspectKind, isOpenableKind, isClosableKind
@@ -286,5 +286,5 @@ floorSymbol = Char.chr 183
 -- 100  walls
 -- maxBound  impenetrable walls, etc., can never be altered
 
-makeDef :: [TileKind] -> ContentData TileKind
-makeDef = makeContentData tname validateSingle validateAll tfreq
+makeData :: [TileKind] -> ContentData TileKind
+makeData = makeContentData tname validateSingle validateAll tfreq

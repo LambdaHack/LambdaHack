@@ -75,7 +75,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -372,7 +372,7 @@ meleeAid target = do
 displaceAid :: MonadClientUI m
             => ActorId -> m (FailOrCmd (RequestTimed 'AbDisplace))
 displaceAid target = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
   tb <- getsState $ getActorBody target
@@ -409,7 +409,7 @@ displaceAid target = do
 -- | Leader moves or searches or alters. No visible actor at the position.
 moveSearchAlter :: MonadClientUI m => Vector -> m (FailOrCmd RequestAnyAbility)
 moveSearchAlter dir = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
   ar <- getsState $ getActorAspect leader
@@ -883,7 +883,7 @@ alterTileAtPos :: MonadClientUI m
                => [TriggerTile] -> Point -> Text
                -> m (FailOrCmd (RequestTimed 'AbAlter))
 alterTileAtPos ts tpos pText = do
-  cops@Kind.COps{cotile, coTileSpeedup} <- getsState scops
+  cops@COps{cotile, coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorSk <- leaderSkillsClientUI
@@ -925,7 +925,7 @@ alterTileAtPos ts tpos pText = do
 -- but only recognized by name.
 verifyAlters :: MonadClientUI m => LevelId -> Point -> m (FailOrCmd ())
 verifyAlters lid p = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   lvl <- getLevel lid
   let t = lvl `at` p
   bag <- getsState $ getEmbedBag lid p
@@ -964,11 +964,11 @@ verifyEscape = do
       else return $ Right ()
 
 -- | Guess and report why the bump command failed.
-guessAlter :: Kind.COps -> [TriggerTile] -> ContentId TileKind -> Text
-guessAlter Kind.COps{cotile} (TriggerTile{ttfeature=TK.OpenTo _} : _) t
+guessAlter :: COps -> [TriggerTile] -> ContentId TileKind -> Text
+guessAlter COps{cotile} (TriggerTile{ttfeature=TK.OpenTo _} : _) t
   | Tile.isClosable cotile t = "already open"
 guessAlter _ (TriggerTile{ttfeature=TK.OpenTo _} : _) _ = "cannot be opened"
-guessAlter Kind.COps{cotile} (TriggerTile{ttfeature=TK.CloseTo _} : _) t
+guessAlter COps{cotile} (TriggerTile{ttfeature=TK.CloseTo _} : _) t
   | Tile.isOpenable cotile t = "already closed"
 guessAlter _ (TriggerTile{ttfeature=TK.CloseTo _} : _) _ = "cannot be closed"
 guessAlter _ _ _ = "never mind"
@@ -979,7 +979,7 @@ guessAlter _ _ _ = "never mind"
 alterWithPointerHuman :: MonadClientUI m
                       => [TriggerTile] -> m (FailOrCmd (RequestTimed 'AbAlter))
 alterWithPointerHuman ts = do
-  Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
+  COps{cotile} <- getsState scops
   lidV <- viewedLevelUI
   lvl@Level{lxsize, lysize} <- getLevel lidV
   Point{..} <- getsSession spointer
@@ -988,7 +988,7 @@ alterWithPointerHuman ts = do
   if px >= 0 && py - mapStartY >= 0
      && px < lxsize && py - mapStartY < lysize
   then do
-    alterTileAtPos ts tpos $ "the" <+> TK.tname (okind t)
+    alterTileAtPos ts tpos $ "the" <+> TK.tname (okind cotile t)
   else do
     stopPlayBack
     failWith "never mind"
@@ -1173,8 +1173,8 @@ chooseItemMenuHuman cmdAction c = do
 
 artAtSize :: MonadClientUI m => m [Text]
 artAtSize = do
-  Kind.COps{corule} <- getsState scops
-  let stdRuleset = Kind.stdRuleset corule
+  cops <- getsState scops
+  let stdRuleset = getStdRuleset cops
       lxsize = fst normalLevelBound + 1
       lysize = snd normalLevelBound + 4
       xoffset = (110 - lxsize) `div` 2
@@ -1188,8 +1188,8 @@ artAtSize = do
 -- else fails, only then we crop. We don't assume any line length.
 artWithVersion :: MonadClientUI m => m [String]
 artWithVersion = do
-  Kind.COps{corule} <- getsState scops
-  let stdRuleset = Kind.stdRuleset corule
+  cops <- getsState scops
+  let stdRuleset = getStdRuleset cops
       pasteVersion :: [Text] -> [String]
       pasteVersion art =
         let exeVersion = rexeVersion stdRuleset
@@ -1410,10 +1410,10 @@ gameRestartHuman = do
               , "yea, a shame to get your team stranded" ]
     failWith msg2
 
-nxtGameMode :: Kind.COps -> Int -> ModeKind
-nxtGameMode Kind.COps{comode=Kind.Ops{ofoldlGroup'}} snxtScenario =
+nxtGameMode :: COps -> Int -> ModeKind
+nxtGameMode COps{comode} snxtScenario =
   let f acc _p _i a = a : acc
-      campaignModes = ofoldlGroup' "campaign scenario" f []
+      campaignModes = ofoldlGroup' comode "campaign scenario" f []
   in campaignModes !! (snxtScenario `mod` length campaignModes)
 
 -- * GameExit

@@ -49,7 +49,7 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Flavour
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -237,8 +237,8 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   -- Alter map.
   UpdAlterTile lid p fromTile toTile -> do
     markDisplayNeeded lid
-    Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
-    let feats = TK.tfeature $ okind fromTile
+    COps{cotile} <- getsState scops
+    let feats = TK.tfeature $ okind cotile fromTile
         toAlter feat =
           case feat of
             TK.OpenTo tgroup -> Just tgroup
@@ -246,7 +246,8 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
             TK.ChangeTo tgroup -> Just tgroup
             _ -> Nothing
         groupsToAlterTo = mapMaybe toAlter feats
-        freq = map fst $ filter (\(_, q) -> q > 0) $ TK.tfreq $ okind toTile
+        freq = map fst $ filter (\(_, q) -> q > 0)
+               $ TK.tfreq $ okind cotile toTile
     when (null $ intersect freq groupsToAlterTo) $ do
       -- Player notices @fromTile can't be altered into @toTIle@,
       -- which is uncanny, so we produce a message.
@@ -254,19 +255,20 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
       -- performed by another faction.
       let subject = ""  -- a hack, we we don't handle adverbs well
           verb = "turn into"
-          msg = makeSentence [ "the", MU.Text $ TK.tname $ okind fromTile
-                             , "at position", MU.Text $ tshow p
-                             , "suddenly"  -- adverb
-                             , MU.SubjectVerbSg subject verb
-                             , MU.AW $ MU.Text $ TK.tname $ okind toTile ]
+          msg = makeSentence
+            [ "the", MU.Text $ TK.tname $ okind cotile fromTile
+            , "at position", MU.Text $ tshow p
+            , "suddenly"  -- adverb
+            , MU.SubjectVerbSg subject verb
+            , MU.AW $ MU.Text $ TK.tname $ okind cotile toTile ]
       msgAdd msg
   UpdAlterExplorable{} -> return ()
   UpdSearchTile aid _p toTile -> do
-    Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsState scops
+    COps{cotile} <- getsState scops
     subject <- partAidLeader aid
     let fromTile = fromJust $ Tile.hideAs cotile toTile
-        subject2 = MU.Text $ TK.tname $ okind fromTile
-        object = MU.Text $ TK.tname $ okind toTile
+        subject2 = MU.Text $ TK.tname $ okind cotile fromTile
+        object = MU.Text $ TK.tname $ okind cotile toTile
     let msg = makeSentence [ MU.SubjectVerbSg subject "reveal"
                            , "that the"
                            , MU.SubjectVerbSg subject2 "be"
@@ -298,8 +300,8 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
     when (sstart == 0) resetSessionStart
     history <- getsSession shistory
     when (lengthHistory history == 0) $ do
-      Kind.COps{corule} <- getsState scops
-      let title = rtitle $ Kind.stdRuleset corule
+      cops <- getsState scops
+      let title = rtitle $ getStdRuleset cops
       msgAdd $ "Welcome to" <+> title <> "!"
       -- Generate initial history. Only for UI clients.
       sUIOptions <- getsSession sUIOptions
@@ -696,7 +698,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
 
 quitFactionUI :: MonadClientUI m => FactionId -> Maybe Status -> m ()
 quitFactionUI fid toSt = do
-  Kind.COps{coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
+  COps{coitem} <- getsState scops
   fact <- getsState $ (EM.! fid) . sfactionD
   let fidName = MU.Text $ gname fact
       person = if fhasGender $ gplayer fact then MU.PlEtc else MU.Sg3rd
@@ -762,7 +764,8 @@ quitFactionUI fid toSt = do
         lidV <- viewedLevelUI
         Level{lxsize, lysize} <- getLevel lidV
         revCmd <- revCmdMap
-        let currencyName = MU.Text $ IK.iname $ okind $ ouniqGroup "currency"
+        let currencyName = MU.Text $ IK.iname
+                           $ okind coitem $ ouniqGroup coitem "currency"
             caretKey = revCmd (K.KM K.NoModifier $ K.Char '^')
                               HumanCmd.SortSlots
             keysPre = [K.spaceKM, caretKey, K.escKM]
@@ -1086,7 +1089,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
     "The" <+> itemName <+> "is not triggered:"
     <+> showReqFailure reqFailure <> "."
   SfxLoudUpd local cmd -> do
-    Kind.COps{coTileSpeedup} <- getsState scops
+    COps{coTileSpeedup} <- getsState scops
     let sound = case cmd of
           UpdDestroyActor{} -> "shriek"
           UpdCreateItem{} -> "clatter"
@@ -1105,8 +1108,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
                            , MU.AW $ MU.Phrase $ distant ++ [sound] ]
     return $! msg
   SfxLoudStrike local ik distance -> do
-    Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
-    let verb = IK.iverbHit $ okind ik
+    COps{coitem} <- getsState scops
+    let verb = IK.iverbHit $ okind coitem ik
         adverb = if | distance < 5 -> "loudly"
                     | distance < 10 -> "distinctly"
                     | distance < 40 -> ""  -- most common

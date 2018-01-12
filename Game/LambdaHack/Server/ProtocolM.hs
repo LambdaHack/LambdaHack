@@ -35,7 +35,7 @@ import           Game.LambdaHack.Client
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.File
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
@@ -213,7 +213,7 @@ updateConn executorClient = do
 
 tryRestore :: MonadServerReadRequest m => m (Maybe (State, StateServer))
 tryRestore = do
-  cops@Kind.COps{corule} <- getsState scops
+  cops <- getsState scops
   soptions <- getsServer soptions
   let bench = sbenchmark $ sclientOptions soptions
   if bench then return Nothing
@@ -221,7 +221,7 @@ tryRestore = do
     let prefix = ssavePrefixSer soptions
         fileName = prefix <> Save.saveNameSer cops
     res <- liftIO $ Save.restoreGame cops fileName
-    let stdRuleset = Kind.stdRuleset corule
+    let stdRuleset = getStdRuleset cops
         cfgUIName = rcfgUIName stdRuleset
         content = rcfgUIDefault stdRuleset
     dataDir <- liftIO appDataDir

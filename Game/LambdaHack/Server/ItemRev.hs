@@ -24,7 +24,7 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Flavour
 import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.Time
@@ -67,12 +67,12 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jlid jdamage =
   in Item{..}
 
 -- | Generate an item based on level.
-newItem :: Kind.COps -> FlavourMap
+newItem :: COps -> FlavourMap
         -> DiscoveryKind -> DiscoveryKindRev -> UniqueSet
         -> Freqs ItemKind -> Int -> LevelId -> AbsDepth -> AbsDepth
         -> Rnd (Maybe ( ItemKnown, ItemFull, ItemDisco
                       , ItemSeed, GroupName ItemKind ))
-newItem Kind.COps{coitem=Kind.Ops{ofoldlGroup'}}
+newItem COps{coitem}
         flavour disco discoRev uniqueSet itemFreq lvlSpawned lid
         ldepth@(AbsDepth ldAbs) totalDepth@(AbsDepth depth) = do
   -- Effective generation depth of actors (not items) increases with spawns.
@@ -100,7 +100,7 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldlGroup'}}
         let ld = if IK.Unique `elem` IK.ieffects kind then ldAbs else ldSpawned
             rarity = linearInterpolation ld (IK.irarity kind)
         in (q * p * rarity, ((ik, kind), itemGroup)) : acc
-      g (itemGroup, q) = ofoldlGroup' itemGroup (f itemGroup q) []
+      g (itemGroup, q) = ofoldlGroup' coitem itemGroup (f itemGroup q) []
       freqDepth = concatMap g itemFreq
       freq = toFreq ("newItem ('" <> tshow ldSpawned <> ")") freqDepth
   if nullFreq freq then return Nothing
@@ -136,9 +136,9 @@ type DiscoveryKindRev = EM.EnumMap (ContentId ItemKind) ItemKindIx
 -- | The map of item ids to item seeds, needed for item creation.
 type ItemSeedDict = EM.EnumMap ItemId ItemSeed
 
-serverDiscos :: Kind.COps -> Rnd (DiscoveryKind, DiscoveryKindRev)
-serverDiscos Kind.COps{coitem=Kind.Ops{olength, ofoldlWithKey', okind}} = do
-  let ixs = [toEnum 0..toEnum (olength-1)]
+serverDiscos :: COps -> Rnd (DiscoveryKind, DiscoveryKindRev)
+serverDiscos COps{coitem} = do
+  let ixs = [toEnum 0..toEnum (olength coitem - 1)]
       shuffle :: Eq a => [a] -> Rnd [a]
       shuffle [] = return []
       shuffle l = do
@@ -146,14 +146,14 @@ serverDiscos Kind.COps{coitem=Kind.Ops{olength, ofoldlWithKey', okind}} = do
         (x :) <$> shuffle (delete x l)
   shuffled <- shuffle ixs
   let f (!ikMap, !ikRev, ix : rest) kmKind _ =
-        let kind = okind kmKind
+        let kind = okind coitem kmKind
             kmMean = meanAspect kind
             kmConst = not $ aspectsRandom kind
         in (EM.insert ix KindMean{..} ikMap, EM.insert kmKind ix ikRev, rest)
       f (ikMap, _, []) ik  _ =
         error $ "too short ixs" `showFailure` (ik, ikMap)
       (discoS, discoRev, _) =
-        ofoldlWithKey' f (EM.empty, EM.empty, shuffled)
+        ofoldlWithKey' coitem f (EM.empty, EM.empty, shuffled)
   return (discoS, discoRev)
 
 -- | Flavours assigned by the server to item kinds, in this particular game.
@@ -189,10 +189,10 @@ rollFlavourMap fullFlavSet rnd key ik =
                 , EM.insert (IK.isymbol ik) availableReduced availableMap)
 
 -- | Randomly chooses flavour for all item kinds for this game.
-dungeonFlavourMap :: Kind.COps -> Rnd FlavourMap
-dungeonFlavourMap Kind.COps{coitem=Kind.Ops{ofoldlWithKey'}} = do
+dungeonFlavourMap :: COps -> Rnd FlavourMap
+dungeonFlavourMap COps{coitem} = do
   let allFlav = concatMap (\flv -> map (Flavour flv) Color.stdCol)
                           [minBound..maxBound]
   liftM (FlavourMap . fst) $
-    ofoldlWithKey' (rollFlavourMap (S.fromList allFlav))
-                   (return (EM.empty, EM.empty))
+    ofoldlWithKey' coitem (rollFlavourMap (S.fromList allFlav))
+                          (return (EM.empty, EM.empty))

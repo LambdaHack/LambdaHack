@@ -40,7 +40,7 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.ItemStrongest
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -531,7 +531,7 @@ dominateFidSfx fid target = do
 
 dominateFid :: MonadServerAtomic m => FactionId -> ActorId -> m Bool
 dominateFid fid target = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  COps{coitem} <- getsState scops
   tb0 <- getsState $ getActorBody target
   -- At this point the actor's body exists and his items are not dropped.
   deduceKilled target
@@ -546,7 +546,8 @@ dominateFid fid target = do
   discoKind <- getsState sdiscoKind
   let isImpression iid = case EM.lookup (jkindIx $ getItem iid) discoKind of
         Just KindMean{kmKind} ->
-          maybe False (> 0) $ lookup "impressed" $ IK.ifreq (okind kmKind)
+          maybe False (> 0) $ lookup "impressed"
+          $ IK.ifreq (okind coitem kmKind)
         Nothing -> error $ "" `showFailure` iid
       dropAllImpressions = EM.filterWithKey (\iid _ -> not $ isImpression iid)
       borganNoImpression = dropAllImpressions $ borgan tb
@@ -614,7 +615,7 @@ effectSummon :: MonadServerAtomic m
              -> m UseResult
 effectSummon grp nDm iid source target periodic = do
   -- Obvious effect, nothing announced.
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   actorAspect <- getsState sactorAspect
@@ -727,7 +728,7 @@ effectAscend recursiveCall execSfx up source target pos = do
 findStairExit :: MonadStateRead m
               => FactionId -> Bool -> LevelId -> Point -> m Point
 findStairExit side moveUp lid pos = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   fact <- getsState $ (EM.! side) . sfactionD
   lvl <- getLevel lid
   let defLanding = uncurry Vector $ if moveUp then (1, 0) else (-1, 0)
@@ -890,7 +891,7 @@ effectInsertMove execSfx nDm target = do
 effectTeleport :: MonadServerAtomic m
                => m () -> Dice.Dice -> ActorId -> ActorId -> m UseResult
 effectTeleport execSfx nDm source target = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   totalDepth <- getsState stotalDepth
@@ -1033,14 +1034,15 @@ allGroupItems :: MonadServerAtomic m
               => CStore -> GroupName ItemKind -> ActorId
               -> m [(ItemId, ItemQuant)]
 allGroupItems store grp target = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  COps{coitem} <- getsState scops
   discoKind <- getsState sdiscoKind
   b <- getsState $ getActorBody target
   let hasGroup (iid, _) = do
         item <- getsState $ getItemBody iid
         case EM.lookup (jkindIx item) discoKind of
           Just KindMean{kmKind} ->
-            return $! maybe False (> 0) $ lookup grp $ IK.ifreq (okind kmKind)
+            return $! maybe False (> 0) $ lookup grp
+                   $ IK.ifreq (okind coitem kmKind)
           Nothing ->
             error $ "" `showFailure` (target, grp, iid, item)
   assocsCStore <- getsState $ EM.assocs . getBodyStoreBag b store
@@ -1074,7 +1076,7 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
 
 pickDroppable :: MonadStateRead m => ActorId -> Actor -> m Container
 pickDroppable aid b = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   lvl <- getLevel (blid b)
   let validTile t = not $ Tile.isNoItem coTileSpeedup t
   if validTile $ lvl `at` bpos b
@@ -1234,7 +1236,7 @@ effectDetectExit execSfx radius target = do
 effectDetectHidden :: MonadServerAtomic m
                    => m () -> Int -> ActorId -> Point -> m UseResult
 effectDetectHidden execSfx radius target pos = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody target
   lvl <- getLevel $ blid b
   let predicate p = Tile.isHideAs coTileSpeedup $ lvl `at` p
@@ -1267,7 +1269,7 @@ effectSendFlying :: MonadServerAtomic m
                  -> m UseResult
 effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
   v <- sendFlyingVector source target modePush
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   lvl@Level{lxsize, lysize} <- getLevel (blid tb)

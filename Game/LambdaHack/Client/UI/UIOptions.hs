@@ -26,7 +26,7 @@ import           Text.Read
 import           Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Common.File
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Content.RuleKind
 
@@ -101,9 +101,9 @@ parseConfig cfg =
   in UIOptions{..}
 
 -- | Read and parse UI config file.
-mkUIOptions :: Kind.COps -> Bool -> IO UIOptions
-mkUIOptions Kind.COps{corule} benchmark = do
-  let stdRuleset = Kind.stdRuleset corule
+mkUIOptions :: COps -> Bool -> IO UIOptions
+mkUIOptions cops benchmark = do
+  let stdRuleset = getStdRuleset cops
       cfgUIName = rcfgUIName stdRuleset
       sUIDefault = rcfgUIDefault stdRuleset
       cfgUIDefault = either (error . ("" `showFailure`)) id
@@ -123,9 +123,9 @@ mkUIOptions Kind.COps{corule} benchmark = do
   return $! deepseq conf conf
 
 -- | Modify client options with UI options.
-applyUIOptions :: Kind.COps -> UIOptions -> ClientOptions -> ClientOptions
-applyUIOptions Kind.COps{corule} uioptions soptions =
-  let stdRuleset = Kind.stdRuleset corule
+applyUIOptions :: COps -> UIOptions -> ClientOptions -> ClientOptions
+applyUIOptions cops uioptions soptions =
+  let stdRuleset = getStdRuleset cops
   in (\opts -> opts {sgtkFontFamily =
         sgtkFontFamily opts `mplus` Just (uGtkFontFamily uioptions)}) .
      (\opts -> opts {sdlFontFile =

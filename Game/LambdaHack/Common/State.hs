@@ -31,7 +31,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
@@ -54,7 +54,7 @@ data State = State
   , _sitemIxMap   :: ItemIxMap    -- ^ spotted items with the same kind index
   , _sfactionD    :: FactionDict  -- ^ remembered sides still in game
   , _stime        :: Time         -- ^ global game time, for UI display only
-  , _scops        :: ~Kind.COps   -- ^ remembered content
+  , _scops        :: ~COps        -- ^ remembered content
   , _shigh        :: HighScore.ScoreDict  -- ^ high score table
   , _sgameModeId  :: ContentId ModeKind     -- ^ current game mode
   , _sdiscoKind   :: DiscoveryKind     -- ^ item kind discoveries data
@@ -114,7 +114,7 @@ sfactionD = _sfactionD
 stime :: State -> Time
 stime = _stime
 
-scops :: State -> Kind.COps
+scops :: State -> COps
 scops = _scops
 
 shigh :: State -> HighScore.ScoreDict
@@ -132,13 +132,13 @@ sdiscoAspect = _sdiscoAspect
 sactorAspect :: State -> ActorAspect
 sactorAspect = _sactorAspect
 
-unknownLevel :: Kind.COps -> AbsDepth -> X -> Y
+unknownLevel :: COps -> AbsDepth -> X -> Y
              -> Text -> Text -> ([Point], [Point]) -> Int -> [Point] -> Bool
              -> Level
-unknownLevel Kind.COps{cotile=Kind.Ops{ouniqGroup}}
+unknownLevel COps{cotile}
              ldepth lxsize lysize lname ldesc
              lstair lexplorable lescape lnight =
-  let outerId = ouniqGroup "basic outer fence"
+  let outerId = ouniqGroup cotile "basic outer fence"
   in Level { ldepth
            , lfloor = EM.empty
            , lembed = EM.empty
@@ -172,7 +172,7 @@ unknownTileMap outerId lxsize lysize =
   in unknownMap PointArray.// outerUpdate
 
 -- | Initial complete global game state.
-defStateGlobal :: Dungeon -> AbsDepth -> FactionDict -> Kind.COps
+defStateGlobal :: Dungeon -> AbsDepth -> FactionDict -> COps
                -> HighScore.ScoreDict -> ContentId ModeKind -> DiscoveryKind
                -> State
 defStateGlobal _sdungeon _stotalDepth _sfactionD _scops _shigh _sgameModeId
@@ -188,7 +188,7 @@ defStateGlobal _sdungeon _stotalDepth _sfactionD _scops _shigh _sgameModeId
     }
 
 -- | Initial empty state.
-emptyState :: Kind.COps -> State
+emptyState :: COps -> State
 emptyState _scops =
   State
     { _sdungeon = EM.empty
@@ -248,7 +248,7 @@ updateTime :: (Time -> Time) -> State -> State
 updateTime f s = s {_stime = f (_stime s)}
 
 -- | Update content data within state.
-updateCOps :: (Kind.COps -> Kind.COps) -> State -> State
+updateCOps :: (COps -> COps) -> State -> State
 updateCOps f s = s {_scops = f (_scops s)}
 
 updateDiscoKind :: (DiscoveryKind -> DiscoveryKind) -> State -> State

@@ -24,7 +24,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -119,7 +119,7 @@ handleAndBroadcast ps atomicBroken atomic = do
 -- | Messages for some unseen atomic commands.
 loudUpdAtomic :: MonadStateRead m => Bool -> UpdAtomic -> m (Maybe SfxMsg)
 loudUpdAtomic local cmd = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   mcmd <- case cmd of
     UpdDestroyActor _ body _ | not $ bproj body -> return $ Just cmd
     UpdCreateItem _ _ _ (CActor _ CGround) -> return $ Just cmd
@@ -196,7 +196,7 @@ atomicForget side lid outPer sClient =
 atomicRemember :: LevelId -> Perception -> State -> State -> [UpdAtomic]
 {-# INLINE atomicRemember #-}
 atomicRemember lid inPer sClient s =
-  let Kind.COps{cotile, coTileSpeedup} = scops s
+  let COps{cotile, coTileSpeedup} = scops s
       inFov = ES.elems $ totalVisible inPer
       lvl = sdungeon s EM.! lid
       -- Wipe out remembered items on tiles that now came into view

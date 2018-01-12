@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of game modes.
 module Game.LambdaHack.Content.ModeKind
-  ( ModeKind(..), makeDef
+  ( ModeKind(..), makeData
   , Caves, Roster(..), Outcome(..)
   , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
   , Player(..), LeaderMode(..), AutoLeader(..)
@@ -191,5 +191,5 @@ validateAll content =
 hardwiredModeGroups :: [GroupName ModeKind]
 hardwiredModeGroups = [ "campaign scenario", "starting", "starting JS" ]
 
-makeDef :: [ModeKind] -> ContentData ModeKind
-makeDef = makeContentData mname validateSingle validateAll mfreq
+makeData :: [ModeKind] -> ContentData ModeKind
+makeData = makeContentData mname validateSingle validateAll mfreq

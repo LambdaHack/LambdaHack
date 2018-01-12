@@ -38,7 +38,7 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.HighScore as HighScore
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
@@ -118,11 +118,11 @@ dumpRngs rngs = liftIO $ do
   hFlush stdout
 
 -- | Read the high scores dictionary. Return the empty table if no file.
-restoreScore :: forall m. MonadServer m => Kind.COps -> m HighScore.ScoreDict
-restoreScore Kind.COps{corule} = do
+restoreScore :: forall m. MonadServer m => COps -> m HighScore.ScoreDict
+restoreScore cops = do
   bench <- getsServer $ sbenchmark . sclientOptions . soptions
   mscore <- if bench then return Nothing else do
-    let stdRuleset = Kind.stdRuleset corule
+    let stdRuleset = getStdRuleset cops
         scoresFile = rscoresFile stdRuleset
     dataDir <- liftIO appDataDir
     let path bkp = dataDir </> bkp <> scoresFile
@@ -149,10 +149,10 @@ restoreScore Kind.COps{corule} = do
 -- | Generate a new score, register it and save.
 registerScore :: MonadServer m => Status -> FactionId -> m ()
 registerScore status fid = do
-  cops@Kind.COps{corule} <- getsState scops
+  cops <- getsState scops
   fact <- getsState $ (EM.! fid) . sfactionD
   total <- getsState $ snd . calculateTotal fid
-  let stdRuleset = Kind.stdRuleset corule
+  let stdRuleset = getStdRuleset cops
       scoresFile = rscoresFile stdRuleset
   dataDir <- liftIO appDataDir
   -- Re-read the table in case it's changed by a concurrent game.

@@ -23,7 +23,7 @@ import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -180,7 +180,7 @@ updateSclear :: MonadServer m
              => LevelId -> Point -> ContentId TileKind -> ContentId TileKind
              -> m Bool
 updateSclear lid pos fromTile toTile = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   let fromClear = Tile.isClear coTileSpeedup fromTile
       toClear = Tile.isClear coTileSpeedup toTile
   if fromClear == toClear then return False else do
@@ -194,7 +194,7 @@ updateSlit :: MonadServer m
            => LevelId -> Point -> ContentId TileKind -> ContentId TileKind
            -> m Bool
 updateSlit lid pos fromTile toTile = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   let fromLit = Tile.isLit coTileSpeedup fromTile
       toLit = Tile.isLit coTileSpeedup toTile
   if fromLit == toLit then return False else do

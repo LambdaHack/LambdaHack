@@ -35,7 +35,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -430,7 +430,7 @@ updAlterTile :: MonadStateWrite m
              => LevelId -> Point -> ContentId TileKind -> ContentId TileKind
              -> m ()
 updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   lvl <- getLevel lid
   let t = lvl `at` p
   if t /= fromTile
@@ -452,7 +452,7 @@ updAlterExplorable lid delta = assert (delta /= 0) $
 updSearchTile :: MonadStateWrite m
               => ActorId -> Point -> ContentId TileKind -> m ()
 updSearchTile aid p toTile = do
-  Kind.COps{cotile} <- getsState scops
+  COps{cotile} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
   let t = lvl `at` p
@@ -469,7 +469,7 @@ updSearchTile aid p toTile = do
 updSpotTile :: MonadStateWrite m
             => LevelId -> [(Point, ContentId TileKind)] -> m ()
 updSpotTile lid ts = assert (not $ null ts) $ do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   let unk tileMap (p, _) = tileMap PointArray.! p == unknownId
       adj tileMap = assert (all (unk tileMap) ts) $ tileMap PointArray.// ts
   updateLevel lid $ updateTile adj
@@ -482,7 +482,7 @@ updSpotTile lid ts = assert (not $ null ts) $ do
 updLoseTile :: MonadStateWrite m
             => LevelId -> [(Point, ContentId TileKind)] -> m ()
 updLoseTile lid ts = assert (not $ null ts) $ do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   let matches tileMap (p, ov) = tileMap PointArray.! p == ov
       tu = map (second (const unknownId)) ts
       adj tileMap = assert (all (matches tileMap) ts) $ tileMap PointArray.// tu
@@ -580,8 +580,8 @@ updDiscoverKind _c ix kmKind = do
 discoverKind :: MonadStateWrite m
              => ItemKindIx -> ContentId ItemKind -> m KindMean
 discoverKind ix kmKind = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
-  let kind = okind kmKind
+  COps{coitem} <- getsState scops
+  let kind = okind coitem kmKind
       kmMean = meanAspect kind
       kmConst = not $ aspectsRandom kind
       km = KindMean{..}
@@ -614,14 +614,14 @@ updDiscoverSeed _c iid seed = do
 
 discoverSeed :: MonadStateWrite m => ItemId -> ItemSeed -> m ()
 discoverSeed iid seed = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  COps{coitem} <- getsState scops
   item <- getsState $ getItemBody iid
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel $ jlid item
   discoKind <- getsState sdiscoKind
   let KindMean{..} = fromMaybe (error "discovered item kind unknown")
                                (EM.lookup (jkindIx item) discoKind)
-      kind = okind kmKind
+      kind = okind coitem kmKind
       aspects = seedToAspect seed kind ldepth totalDepth
       f Nothing = Just aspects
       f Just{} = error $ "already discovered" `showFailure` (iid, seed)

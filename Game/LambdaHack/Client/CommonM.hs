@@ -20,7 +20,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -67,7 +67,7 @@ aidTgtToPos aid lidV tgt =
 -- actor and target position, or Nothing if none can be found.
 makeLine :: MonadStateRead m => Bool -> Actor -> Point -> Int -> m (Maybe Int)
 makeLine onlyFirst body fpos epsOld = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   lvl@Level{lxsize, lysize} <- getLevel (blid body)
   posA <- getsState $ \s p -> posToAssocs p (blid body) s
   let dist = chessDist (bpos body) fpos
@@ -144,14 +144,14 @@ pickWeaponClient source target = do
 updateSalter :: MonadClient m
              => LevelId -> [(Point, ContentId TileKind)] -> m ()
 updateSalter lid pts = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   let pas = map (second $ toEnum . Tile.alterMinWalk coTileSpeedup) pts
       f = (PointArray.// pas)
   modifyClient $ \cli -> cli {salter = EM.adjust f lid $ salter cli}
 
 createSalter :: State -> AlterLid
 createSalter s =
-  let Kind.COps{coTileSpeedup} = scops s
+  let COps{coTileSpeedup} = scops s
       f Level{ltile} =
         PointArray.mapA (toEnum . Tile.alterMinWalk coTileSpeedup) ltile
   in EM.map f $ sdungeon s

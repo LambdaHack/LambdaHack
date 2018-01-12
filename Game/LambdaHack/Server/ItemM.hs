@@ -22,7 +22,7 @@ import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -79,7 +79,7 @@ createLevelItem pos lid = do
 embedItem :: MonadServerAtomic m
           => LevelId -> Point -> ContentId TileKind -> m ()
 embedItem lid pos tk = do
-  Kind.COps{cotile} <- getsState scops
+  COps{cotile} <- getsState scops
   let embeds = Tile.embeddedItems cotile tk
       container = CEmbed lid pos
       f grp = rollAndRegisterItem lid [(grp, 1)] container False Nothing
@@ -123,7 +123,7 @@ rollAndRegisterItem lid itemFreq container verbose mk = do
 
 placeItemsInDungeon :: forall m. MonadServerAtomic m => m ()
 placeItemsInDungeon = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   let initialItems (lid, Level{ltile, litemNum, lxsize, lysize}) = do
         let placeItems :: Int -> m ()
             placeItems 0 = return ()

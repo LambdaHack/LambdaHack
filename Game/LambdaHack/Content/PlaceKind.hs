@@ -1,6 +1,6 @@
 -- | The type of kinds of rooms, halls and passages.
 module Game.LambdaHack.Content.PlaceKind
-  ( PlaceKind(..), makeDef
+  ( PlaceKind(..), makeData
   , Cover(..), Fence(..)
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -66,5 +66,5 @@ validateSingle PlaceKind{..} =
 validateAll :: [PlaceKind] -> [Text]
 validateAll _ = []
 
-makeDef :: [PlaceKind] -> ContentData PlaceKind
-makeDef = makeContentData pname validateSingle validateAll pfreq
+makeData :: [PlaceKind] -> ContentData PlaceKind
+makeData = makeContentData pname validateSingle validateAll pfreq

@@ -58,7 +58,7 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.HighScore as HighScore
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -396,7 +396,7 @@ partAidLeader aid = do
 -- | Try to read saved client game state from the file system.
 tryRestore :: MonadClientUI m => m (Maybe (StateClient, Maybe SessionUI))
 tryRestore = do
-  cops@Kind.COps{corule} <- getsState scops
+  cops <- getsState scops
   bench <- getsClient $ sbenchmark . soptions
   if bench then return Nothing
   else do
@@ -404,7 +404,7 @@ tryRestore = do
     prefix <- getsClient $ ssavePrefixCli . soptions
     let fileName = prefix <> Save.saveNameCli cops side
     res <- liftIO $ Save.restoreGame cops fileName
-    let stdRuleset = Kind.stdRuleset corule
+    let stdRuleset = getStdRuleset cops
         cfgUIName = rcfgUIName stdRuleset
         content = rcfgUIDefault stdRuleset
     dataDir <- liftIO appDataDir

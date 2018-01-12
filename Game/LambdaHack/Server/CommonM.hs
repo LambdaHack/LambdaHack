@@ -29,7 +29,7 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.ItemStrongest
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -222,9 +222,9 @@ keepArenaFact fact = fleaderMode (gplayer fact) /= LeaderNull
 -- @bfid@ of the actor body is still the old faction.
 deduceKilled :: MonadServerAtomic m => ActorId -> m ()
 deduceKilled aid = do
-  Kind.COps{corule} <- getsState scops
+  cops <- getsState scops
   body <- getsState $ getActorBody aid
-  let firstDeathEnds = rfirstDeathEnds $ Kind.stdRuleset corule
+  let firstDeathEnds = rfirstDeathEnds $ getStdRuleset cops
   fact <- getsState $ (EM.! bfid body) . sfactionD
   when (fneverEmpty $ gplayer fact) $ do
     actorsAlive <- anyActorsAlive (bfid body) aid
@@ -297,7 +297,7 @@ projectFail :: MonadServerAtomic m
             -> Bool       -- ^ whether the item is a blast
             -> m (Maybe ReqFailure)
 projectFail source tpxy eps iid cstore blast = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
       spos = bpos sb

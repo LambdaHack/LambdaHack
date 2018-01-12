@@ -1,6 +1,6 @@
 -- | The type of game rule sets and assorted game data.
 module Game.LambdaHack.Content.RuleKind
-  ( RuleKind(..), makeDef
+  ( RuleKind(..), makeData
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll
@@ -60,5 +60,5 @@ validateSingle RuleKind{rmainMenuArt} =
 validateAll :: [RuleKind] -> [Text]
 validateAll _ = []
 
-makeDef :: [RuleKind] -> ContentData RuleKind
-makeDef = makeContentData rname validateSingle validateAll rfreq
+makeData :: [RuleKind] -> ContentData RuleKind
+makeData = makeContentData rname validateSingle validateAll rfreq

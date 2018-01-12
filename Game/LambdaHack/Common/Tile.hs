@@ -37,7 +37,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Vector.Unboxed as U
 import           Data.Word (Word8)
 
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
@@ -45,17 +45,19 @@ import           Game.LambdaHack.Content.TileKind (TileKind, TileSpeedup (..),
                                                    isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
-createTab :: U.Unbox a => Kind.Ops TileKind -> (TileKind -> a) -> TK.Tab a
-createTab Kind.Ops{ofoldrWithKey, olength} prop =
+createTab :: U.Unbox a => ContentData TileKind -> (TileKind -> a) -> TK.Tab a
+createTab cotile prop =
   let f _ t acc = prop t : acc
-  in TK.Tab $ U.fromListN (fromEnum olength) $ ofoldrWithKey f []
+  in TK.Tab $ U.fromListN (fromEnum $ olength cotile)
+     $ ofoldrWithKey cotile f []
 
 createTabWithKey :: U.Unbox a
-                 => Kind.Ops TileKind -> (ContentId TileKind -> TileKind -> a)
+                 => ContentData TileKind -> (ContentId TileKind -> TileKind -> a)
                  -> TK.Tab a
-createTabWithKey Kind.Ops{ofoldrWithKey, olength} prop =
+createTabWithKey cotile prop =
   let f k t acc = prop k t : acc
-  in TK.Tab $ U.fromListN (fromEnum olength) $ ofoldrWithKey f []
+  in TK.Tab $ U.fromListN (fromEnum $ olength cotile)
+     $ ofoldrWithKey cotile f []
 
 -- Unsafe indexing is pretty safe here, because we guard the vector
 -- with the newtype.
@@ -63,7 +65,7 @@ accessTab :: U.Unbox a => TK.Tab a -> ContentId TileKind -> a
 {-# INLINE accessTab #-}
 accessTab (TK.Tab tab) ki = tab `U.unsafeIndex` fromEnum ki
 
-speedup :: Bool -> Kind.Ops TileKind -> TileSpeedup
+speedup :: Bool -> ContentData TileKind -> TileSpeedup
 speedup allClear cotile =
   -- Vectors pack bools as Word8 by default. No idea if the extra memory
   -- taken makes random lookups more or less efficient, so not optimizing
@@ -227,68 +229,75 @@ kindHasFeature :: TK.Feature -> TileKind -> Bool
 kindHasFeature f t = f `elem` TK.tfeature t
 
 -- | Whether a tile kind (specified by its id) has the given feature.
-hasFeature :: Kind.Ops TileKind -> TK.Feature -> ContentId TileKind -> Bool
+hasFeature :: ContentData TileKind -> TK.Feature -> ContentId TileKind -> Bool
 {-# INLINE hasFeature #-}
-hasFeature Kind.Ops{okind} f t = kindHasFeature f (okind t)
+hasFeature cotile f t = kindHasFeature f (okind cotile t)
 
-openTo :: Kind.Ops TileKind -> ContentId TileKind -> Rnd (ContentId TileKind)
-openTo Kind.Ops{okind, opick} t = do
+openTo :: ContentData TileKind -> ContentId TileKind -> Rnd (ContentId TileKind)
+openTo cotile t = do
   let getTo (TK.OpenTo grp) acc = grp : acc
       getTo _ acc = acc
-  case foldr getTo [] $ TK.tfeature $ okind t of
-    [grp] -> fromMaybe (error $ "" `showFailure` grp) <$> opick grp (const True)
+  case foldr getTo [] $ TK.tfeature $ okind cotile t of
+    [grp] -> fromMaybe (error $ "" `showFailure` grp)
+             <$> opick cotile grp (const True)
     _ -> return t
 
-closeTo :: Kind.Ops TileKind -> ContentId TileKind -> Rnd (ContentId TileKind)
-closeTo Kind.Ops{okind, opick} t = do
+closeTo :: ContentData TileKind -> ContentId TileKind
+        -> Rnd (ContentId TileKind)
+closeTo cotile t = do
   let getTo (TK.CloseTo grp) acc = grp : acc
       getTo _ acc = acc
-  case foldr getTo [] $ TK.tfeature $ okind t of
-    [grp] -> fromMaybe (error $ "" `showFailure` grp) <$> opick grp (const True)
+  case foldr getTo [] $ TK.tfeature $ okind cotile t of
+    [grp] -> fromMaybe (error $ "" `showFailure` grp)
+             <$> opick cotile grp (const True)
     _ -> return t
 
-embeddedItems :: Kind.Ops TileKind -> ContentId TileKind -> [GroupName ItemKind]
-embeddedItems Kind.Ops{okind} t =
+embeddedItems :: ContentData TileKind -> ContentId TileKind
+              -> [GroupName ItemKind]
+embeddedItems cotile t =
   let getTo (TK.Embed igrp) acc = igrp : acc
       getTo _ acc = acc
-  in foldr getTo [] $ TK.tfeature $ okind t
+  in foldr getTo [] $ TK.tfeature $ okind cotile t
 
-revealAs :: Kind.Ops TileKind -> ContentId TileKind -> Rnd (ContentId TileKind)
-revealAs Kind.Ops{okind, opick} t = do
+revealAs :: ContentData TileKind -> ContentId TileKind
+         -> Rnd (ContentId TileKind)
+revealAs cotile t = do
   let getTo (TK.RevealAs grp) acc = grp : acc
       getTo _ acc = acc
-  case foldr getTo [] $ TK.tfeature $ okind t of
+  case foldr getTo [] $ TK.tfeature $ okind cotile t of
     [] -> return t
     groups -> do
       grp <- oneOf groups
-      fromMaybe (error $ "" `showFailure` grp) <$> opick grp (const True)
+      fromMaybe (error $ "" `showFailure` grp) <$> opick cotile grp (const True)
 
-obscureAs :: Kind.Ops TileKind -> ContentId TileKind -> Rnd (ContentId TileKind)
-obscureAs Kind.Ops{okind, opick} t = do
+obscureAs :: ContentData TileKind -> ContentId TileKind
+          -> Rnd (ContentId TileKind)
+obscureAs cotile t = do
   let getTo (TK.ObscureAs grp) acc = grp : acc
       getTo _ acc = acc
-  case foldr getTo [] $ TK.tfeature $ okind t of
+  case foldr getTo [] $ TK.tfeature $ okind cotile t of
     [] -> return t
     groups -> do
       grp <- oneOf groups
-      fromMaybe (error $ "" `showFailure` grp) <$> opick grp (const True)
+      fromMaybe (error $ "" `showFailure` grp) <$> opick cotile grp (const True)
 
-hideAs :: Kind.Ops TileKind -> ContentId TileKind -> Maybe (ContentId TileKind)
-hideAs Kind.Ops{okind, ouniqGroup} t =
+hideAs :: ContentData TileKind -> ContentId TileKind
+       -> Maybe (ContentId TileKind)
+hideAs cotile t =
   let getTo TK.HideAs{} = True
       getTo _ = False
-  in case find getTo $ TK.tfeature $ okind t of
+  in case find getTo $ TK.tfeature $ okind cotile t of
        Just (TK.HideAs grp) ->
-         let tHidden = ouniqGroup grp
+         let tHidden = ouniqGroup cotile grp
          in assert (tHidden /= t) $ Just tHidden
        _ -> Nothing
 
-buildAs :: Kind.Ops TileKind -> ContentId TileKind -> ContentId TileKind
-buildAs Kind.Ops{okind, ouniqGroup} t =
+buildAs :: ContentData TileKind -> ContentId TileKind -> ContentId TileKind
+buildAs cotile t =
   let getTo TK.BuildAs{} = True
       getTo _ = False
-  in case find getTo $ TK.tfeature $ okind t of
-       Just (TK.BuildAs grp) -> ouniqGroup grp
+  in case find getTo $ TK.tfeature $ okind cotile t of
+       Just (TK.BuildAs grp) -> ouniqGroup cotile grp
        _ -> t
 
 isEasyOpenKind :: TileKind -> Bool
@@ -299,9 +308,9 @@ isEasyOpenKind tk =
   in TK.talter tk < 10 && any getTo (TK.tfeature tk)
 
 -- | Whether a tile kind (specified by its id) has an OpenTo feature.
-isOpenable :: Kind.Ops TileKind -> ContentId TileKind -> Bool
-isOpenable Kind.Ops{okind} t = TK.isOpenableKind $ okind t
+isOpenable :: ContentData TileKind -> ContentId TileKind -> Bool
+isOpenable cotile t = TK.isOpenableKind $ okind cotile t
 
 -- | Whether a tile kind (specified by its id) has a CloseTo feature.
-isClosable :: Kind.Ops TileKind -> ContentId TileKind -> Bool
-isClosable Kind.Ops{okind} t = TK.isClosableKind $ okind t
+isClosable :: ContentData TileKind -> ContentId TileKind -> Bool
+isClosable cotile t = TK.isClosableKind $ okind cotile t

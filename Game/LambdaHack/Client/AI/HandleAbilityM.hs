@@ -38,7 +38,7 @@ import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.ItemStrongest
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -791,7 +791,7 @@ flee aid fleeL = do
 -- but it can't be helped as long as the enemy is smart enough to form fronts.
 displaceFoe :: MonadClient m => ActorId -> m (Strategy RequestAnyAbility)
 displaceFoe aid = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
   fact <- getsState $ (EM.! bfid b) . sfactionD
@@ -834,7 +834,7 @@ displaceBlocker aid retry = do
 displaceTowards :: MonadClient m
                 => ActorId -> Point -> Bool -> m (Strategy Vector)
 displaceTowards aid target retry = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   let source = bpos b
   let !_A = assert (adjacent source target) ()
@@ -877,7 +877,7 @@ displaceTowards aid target retry = do
 chase :: MonadClient m
       => ActorId -> Bool -> Bool -> m (Strategy RequestAnyAbility)
 chase aid avoidAmbient retry = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -939,7 +939,7 @@ moveTowards aid target goal relaxed = do
 moveOrRunAid :: MonadClient m
              => ActorId -> Vector -> m (Maybe RequestAnyAbility)
 moveOrRunAid source dir = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorSk <- currentSkillsClient source
   let lid = blid sb

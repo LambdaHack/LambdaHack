@@ -35,7 +35,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Perception
@@ -249,16 +249,16 @@ perFidInDungeon s =
   in ( fovLitLid, fovClearLid, fovLucidLid
      , perValidFid, EM.map snd em, EM.map fst em)
 
-litFromLevel :: Kind.COps -> Level -> FovLit
-litFromLevel Kind.COps{coTileSpeedup} Level{ltile} =
+litFromLevel :: COps -> Level -> FovLit
+litFromLevel COps{coTileSpeedup} Level{ltile} =
   let litSet p t set = if Tile.isLit coTileSpeedup t then p : set else set
   in FovLit $ ES.fromDistinctAscList $ PointArray.ifoldrA' litSet [] ltile
 
 litInDungeon :: State -> FovLitLid
 litInDungeon s = EM.map (litFromLevel (scops s)) $ sdungeon s
 
-clearFromLevel :: Kind.COps -> Level -> FovClear
-clearFromLevel Kind.COps{coTileSpeedup} Level{ltile} =
+clearFromLevel :: COps -> Level -> FovClear
+clearFromLevel COps{coTileSpeedup} Level{ltile} =
   FovClear $ PointArray.mapA (Tile.isClear coTileSpeedup) ltile
 
 clearInDungeon :: State -> FovClearLid

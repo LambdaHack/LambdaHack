@@ -23,7 +23,7 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -105,10 +105,10 @@ addAnyActor summoned actorFreq lid time mpos = do
           rndToAction rollPos
       registerActor summoned itemKnownRaw itemFullRaw seed fid pos lid time
 
-rollSpawnPos :: Kind.COps -> ES.EnumSet Point
+rollSpawnPos :: COps -> ES.EnumSet Point
              -> Bool -> LevelId -> Level -> FactionId -> State
              -> Rnd Point
-rollSpawnPos Kind.COps{coTileSpeedup} visible
+rollSpawnPos COps{coTileSpeedup} visible
              mobile lid lvl@Level{ltile, lxsize, lysize, lstair} fid s = do
   let -- Monsters try to harass enemies ASAP, instead of catching up from afar.
       inhabitants = warActorRegularList fid lid s

@@ -26,10 +26,10 @@ import           System.FilePath
 import           System.IO (hFlush, stdout)
 import qualified System.Random as R
 
-import           Game.LambdaHack.Common.File
-import qualified Game.LambdaHack.Common.Kind as Kind
-import           Game.LambdaHack.Common.Misc (FactionId, appDataDir)
-import           Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Common.File
+import Game.LambdaHack.Common.Kind
+import Game.LambdaHack.Common.Misc (FactionId, appDataDir)
+import Game.LambdaHack.Content.RuleKind
 
 type ChanSave a = MVar (Maybe a)
 
@@ -40,7 +40,7 @@ saveToChan toSave s = do
   putMVar toSave $ Just s
 
 -- | Repeatedly save serialized snapshots of current state.
-loopSave :: Binary a => Kind.COps -> (a -> FilePath) -> ChanSave a -> IO ()
+loopSave :: Binary a => COps -> (a -> FilePath) -> ChanSave a -> IO ()
 loopSave cops stateToFileName toSave =
   loop
  where
@@ -60,7 +60,7 @@ loopSave cops stateToFileName toSave =
       Nothing -> return ()  -- exit
 
 wrapInSaves :: Binary a
-            => Kind.COps -> (a -> FilePath) -> (ChanSave a -> IO ()) -> IO ()
+            => COps -> (a -> FilePath) -> (ChanSave a -> IO ()) -> IO ()
 {-# INLINE wrapInSaves #-}
 wrapInSaves cops stateToFileName exe = do
   -- We don't merge this with the other calls to waitForChildren,
@@ -87,7 +87,7 @@ wrapInSaves cops stateToFileName exe = do
 
 -- | Restore a saved game, if it exists. Initialize directory structure
 -- and copy over data files, if needed.
-restoreGame :: Binary a => Kind.COps -> FilePath -> IO (Maybe a)
+restoreGame :: Binary a => COps -> FilePath -> IO (Maybe a)
 restoreGame cops fileName = do
   -- Create user data directory and copy files, if not already there.
   dataDir <- appDataDir
@@ -121,9 +121,9 @@ restoreGame cops fileName = do
         return Nothing
   either handler return res
 
-vExevLib :: Kind.COps -> (Version, Version)
+vExevLib :: COps -> (Version, Version)
 vExevLib cops =
-  let exeVersion = rexeVersion $ Kind.stdRuleset $ Kind.corule cops
+  let exeVersion = rexeVersion $ getStdRuleset cops
       libVersion = Self.version
   in (exeVersion, libVersion)
 
@@ -138,10 +138,10 @@ delayPrint t = do
   T.hPutStrLn stdout t
   hFlush stdout
 
-saveNameCli :: Kind.COps -> FactionId -> String
+saveNameCli :: COps -> FactionId -> String
 saveNameCli cops side =
   let gameShortName =
-        case T.words $ rtitle $ Kind.stdRuleset $ Kind.corule cops of
+        case T.words $ rtitle $ getStdRuleset cops of
           w : _ -> T.unpack w
           _ -> "Game"
       n = fromEnum side  -- we depend on the numbering hack to number saves
@@ -151,10 +151,10 @@ saveNameCli cops side =
          else ".computer_" ++ show (-n))
      ++ ".sav"
 
-saveNameSer :: Kind.COps -> String
+saveNameSer :: COps -> String
 saveNameSer cops =
   let gameShortName =
-        case T.words $ rtitle $ Kind.stdRuleset $ Kind.corule cops of
+        case T.words $ rtitle $ getStdRuleset cops of
           w : _ -> T.unpack w
           _ -> "Game"
   in gameShortName ++ ".server.sav"

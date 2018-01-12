@@ -19,7 +19,7 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.UIOptions
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Content.RuleKind
 
 -- | Bindings and other information about human player commands.
@@ -79,10 +79,10 @@ stdBinding (KeyKind copsClient) UIOptions{uCommands, uVi, uLaptop} =
   }
 
 -- | Produce a set of help/menu screens from the key bindings.
-keyHelp :: Kind.COps -> Binding -> Int -> [(Text, OKX)]
-keyHelp Kind.COps{corule} keyb@Binding{..} offset = assert (offset > 0) $
+keyHelp :: COps -> Binding -> Int -> [(Text, OKX)]
+keyHelp cops keyb@Binding{..} offset = assert (offset > 0) $
   let
-    stdRuleset = Kind.stdRuleset corule
+    stdRuleset = getStdRuleset cops
     introBlurb =
       ""
       : map T.pack (rintroScreen stdRuleset)

@@ -20,7 +20,7 @@ import           Data.Tuple
 import qualified System.Random as R
 
 import           Game.LambdaHack.Common.Frequency
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
@@ -36,10 +36,10 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 import           Game.LambdaHack.Server.DungeonGen.Cave
 import           Game.LambdaHack.Server.DungeonGen.Place
 
-convertTileMaps :: Kind.COps -> Bool -> Rnd (ContentId TileKind)
+convertTileMaps :: COps -> Bool -> Rnd (ContentId TileKind)
                 -> Maybe (Rnd (ContentId TileKind)) -> Int -> Int -> TileMapEM
                 -> Rnd TileMap
-convertTileMaps Kind.COps{coTileSpeedup} areAllWalkable
+convertTileMaps COps{coTileSpeedup} areAllWalkable
                 cdefTile mpickPassable cxsize cysize ltile = do
   let runCdefTile :: R.StdGen -> (ContentId TileKind, R.StdGen)
       runCdefTile = St.runState cdefTile
@@ -87,36 +87,33 @@ convertTileMaps Kind.COps{coTileSpeedup} areAllWalkable
             connect (not . yeven) blocksVertical walkable5 converted4
       return converted5
 
-buildTileMap :: Kind.COps -> Cave -> Rnd TileMap
-buildTileMap cops@Kind.COps{ cotile=Kind.Ops{opick}
-                           , cocave=Kind.Ops{okind=cokind} }
-             Cave{dkind, dmap, dnight} = do
-  let CaveKind{cxsize, cysize, cpassable, cdefTile} = cokind dkind
+buildTileMap :: COps -> Cave -> Rnd TileMap
+buildTileMap cops@COps{cotile, cocave} Cave{dkind, dmap, dnight} = do
+  let CaveKind{cxsize, cysize, cpassable, cdefTile} = okind cocave dkind
       nightCond kt = not (Tile.kindHasFeature TK.Walkable kt)
                      || (if dnight then id else not)
                            (Tile.kindHasFeature TK.Dark kt)
       pickDefTile = fromMaybe (error $ "" `showFailure` cdefTile)
-                    <$> opick cdefTile nightCond
+                    <$> opick cotile cdefTile nightCond
       wcond kt = Tile.isEasyOpenKind kt && nightCond kt
       mpickPassable =
         if cpassable
         then Just $ fromMaybe (error $ "" `showFailure` cdefTile)
-                    <$> opick cdefTile wcond
+                    <$> opick cotile cdefTile wcond
         else Nothing
       nwcond kt = not (Tile.kindHasFeature TK.Walkable kt) && nightCond kt
-  areAllWalkable <- isNothing <$> opick cdefTile nwcond
+  areAllWalkable <- isNothing <$> opick cotile cdefTile nwcond
   convertTileMaps cops areAllWalkable
                   pickDefTile mpickPassable cxsize cysize dmap
 
 -- Create a level from a cave.
-buildLevel :: Kind.COps -> Int -> GroupName CaveKind
+buildLevel :: COps -> Int -> GroupName CaveKind
            -> Int -> AbsDepth -> [Point]
            -> Rnd (Level, [Point])
-buildLevel cops@Kind.COps{cocave=Kind.Ops{okind=okind, opick}}
-           ln genName minD totalDepth lstairPrev = do
+buildLevel cops@COps{cocave} ln genName minD totalDepth lstairPrev = do
   dkind <- fromMaybe (error $ "" `showFailure` genName)
-           <$> opick genName (const True)
-  let kc = okind dkind
+           <$> opick cocave genName (const True)
+  let kc = okind cocave dkind
       -- Simple rule for now: level @ln@ has depth (difficulty) @abs ln@.
       ldepth = AbsDepth $ abs ln
   -- Any stairs coming from above are considered extra stairs
@@ -197,10 +194,10 @@ placeDownStairs kc@CaveKind{..} ps = do
   findPoint cxsize cysize f
 
 -- Build rudimentary level from a cave kind.
-levelFromCaveKind :: Kind.COps -> CaveKind -> AbsDepth -> TileMap
+levelFromCaveKind :: COps -> CaveKind -> AbsDepth -> TileMap
                   -> ([Point], [Point]) -> Int -> [Point] -> Bool
                   -> Level
-levelFromCaveKind Kind.COps{coTileSpeedup}
+levelFromCaveKind COps{coTileSpeedup}
                   CaveKind{ cactorCoeff=lactorCoeff
                           , cactorFreq=lactorFreq
                           , citemFreq=litemFreq
@@ -240,7 +237,7 @@ data FreshDungeon = FreshDungeon
   }
 
 -- | Generate the dungeon for a new game.
-dungeonGen :: Kind.COps -> Caves -> Rnd FreshDungeon
+dungeonGen :: COps -> Caves -> Rnd FreshDungeon
 dungeonGen cops caves = do
   let (minD, maxD) =
         case (IM.minViewWithKey caves, IM.maxViewWithKey caves) of

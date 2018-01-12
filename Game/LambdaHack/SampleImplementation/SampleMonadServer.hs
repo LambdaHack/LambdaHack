@@ -28,7 +28,7 @@ import           System.IO (hFlush, stdout)
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Client
 import           Game.LambdaHack.Common.File
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
@@ -132,7 +132,7 @@ instance MonadServerAtomic SerImplementation where
 -- for easy access of code analysis tools.
 -- | Run the main server loop, with the given arguments and empty
 -- initial states, in the @IO@ monad.
-executorSer :: Kind.COps -> KeyKind -> ServerOptions -> IO ()
+executorSer :: COps -> KeyKind -> ServerOptions -> IO ()
 executorSer cops copsClient soptionsNxtCmdline = do
   -- Parse UI client configuration file.
   -- It is reparsed at each start of the game executable.

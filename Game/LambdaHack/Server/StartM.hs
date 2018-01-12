@@ -29,7 +29,7 @@ import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Flavour
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -59,7 +59,7 @@ initPer = do
 
 reinitGame :: MonadServerAtomic m => m ()
 reinitGame = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  COps{coitem} <- getsState scops
   pers <- getsServer sperFid
   ServerOptions{scurChalSer, sknowMap, sclientOptions} <- getsServer soptions
   -- This state is quite small, fit for transmition to the client.
@@ -70,7 +70,8 @@ reinitGame = do
   -- Thanks to the following, for any item with feature @Identified@,
   -- the client has its kind from the start.
   let discoKindFiltered =
-        let f KindMean{kmKind} = IK.Identified `elem` IK.ifeature (okind kmKind)
+        let f KindMean{kmKind} =
+              IK.Identified `elem` IK.ifeature (okind coitem kmKind)
         in EM.filter f discoS
       defL | sknowMap = s
            | otherwise = localFromGlobal s
@@ -165,7 +166,7 @@ gameReset :: MonadServer m
 gameReset serverOptions mGameMode mrandom = do
   -- Dungeon seed generation has to come first, to ensure item boosting
   -- is determined by the dungeon RNG.
-  cops@Kind.COps{comode=Kind.Ops{opick, okind}} <- getsState scops
+  cops@COps{comode} <- getsState scops
   dungeonSeed <- getSetGen $ sdungeonRng serverOptions `mplus` mrandom
   srandom <- getSetGen $ smainRng serverOptions `mplus` mrandom
   let srngs = RNGs (Just dungeonSeed) (Just srandom)
@@ -185,8 +186,8 @@ gameReset serverOptions mGameMode mrandom = do
                   DungeonGen.FreshDungeon, ContentId ModeKind)
       rnd = do
         modeKindId <- fromMaybe (error $ "" `showFailure` gameMode)
-                      <$> opick gameMode (const True)
-        let mode = okind modeKindId
+                      <$> opick comode gameMode (const True)
+        let mode = okind comode modeKindId
             automatePS ps = ps {rosterList =
               map (first $ automatePlayer True) $ rosterList ps}
             players = if sautomateAll serverOptions
@@ -215,7 +216,7 @@ gameReset serverOptions mGameMode mrandom = do
 -- Spawn initial actors. Clients should notice this, to set their leaders.
 populateDungeon :: MonadServerAtomic m => m ()
 populateDungeon = do
-  cops@Kind.COps{coTileSpeedup} <- getsState scops
+  cops@COps{coTileSpeedup} <- getsState scops
   placeItemsInDungeon
   embedItemsInDungeon
   dungeon <- getsState sdungeon
@@ -287,8 +288,8 @@ populateDungeon = do
 -- over stairs, starting from the end of the list, including placing the last
 -- factions over escapes (we assume they are guardians of the escapes).
 -- This implies the inital factions (if any) start far from escapes.
-findEntryPoss :: Kind.COps -> LevelId -> Level -> Int -> Rnd [Point]
-findEntryPoss Kind.COps{coTileSpeedup}
+findEntryPoss :: COps -> LevelId -> Level -> Int -> Rnd [Point]
+findEntryPoss COps{coTileSpeedup}
               lid Level{ltile, lxsize, lysize, lstair, lescape} k = do
   let factionDist = max lxsize lysize - 10
       dist poss cmin l _ = all (\pos -> chessDist l pos > cmin) poss

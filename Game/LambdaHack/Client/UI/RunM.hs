@@ -34,7 +34,7 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Point
@@ -122,7 +122,7 @@ continueRunDir params = case params of
         msgShown = isJust $ findInReport (not . boring) report
     if msgShown then return $ Left "message shown"
     else do
-      cops@Kind.COps{cotile} <- getsState scops
+      cops@COps{cotile} <- getsState scops
       rbody <- getsState $ getActorBody runLeader
       let rposHere = bpos rbody
           rposLast = fromMaybe (error $ "" `showFailure` (runLeader, rbody))
@@ -153,14 +153,14 @@ continueRunDir params = case params of
                 tryTurning aid
       check
 
-enterableDir :: Kind.COps -> Level -> Point -> Vector -> Bool
-enterableDir Kind.COps{coTileSpeedup} lvl spos dir =
+enterableDir :: COps -> Level -> Point -> Vector -> Bool
+enterableDir COps{coTileSpeedup} lvl spos dir =
   Tile.isWalkable coTileSpeedup $ lvl `at` (spos `shift` dir)
 
 tryTurning :: MonadClient m
            => ActorId -> m (Either Text Vector)
 tryTurning aid = do
-  cops@Kind.COps{cotile} <- getsState scops
+  cops@COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
   let lid = blid body
   lvl <- getLevel lid
@@ -187,7 +187,7 @@ tryTurning aid = do
 checkAndRun :: MonadClient m
             => ActorId -> Vector -> m (Either Text Vector)
 checkAndRun aid dir = do
-  Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
+  COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
   smarkSuspect <- getsClient smarkSuspect
   let lid = blid body
@@ -224,7 +224,7 @@ checkAndRun aid dir = do
       rightTilesLast = map (lvl `at`) rightPsLast
       leftForwardTileHere = lvl `at` leftForwardPosHere
       rightForwardTileHere = lvl `at` rightForwardPosHere
-      featAt = TK.actionFeatures (smarkSuspect > 0) . okind
+      featAt = TK.actionFeatures (smarkSuspect > 0) . okind cotile
       terrainChangeMiddle =
         featAt tileThere `notElem` map featAt [tileLast, tileHere]
       terrainChangeLeft = featAt leftForwardTileHere

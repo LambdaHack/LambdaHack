@@ -30,7 +30,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -80,7 +80,7 @@ updatePathFromBfs :: MonadClient m
                   => Bool -> BfsAndPath -> ActorId -> Point
                   -> m (PointArray.Array BfsDistance, AndPath)
 updatePathFromBfs canMove bfsAndPathOld aid !target = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   let (oldBfsArr, oldBfsPath) = case bfsAndPathOld of
         BfsAndPath{bfsArr, bfsPath} -> (bfsArr, bfsPath)
         BfsInvalid -> error $ "" `showFailure` (bfsAndPathOld, aid, target)
@@ -145,7 +145,7 @@ getCachePath aid target = do
 
 createPath :: MonadClient m => ActorId -> Target -> m TgtAndPath
 createPath aid tapTgt = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
   let stopAtUnwalkable tapPath@AndPath{..} =
@@ -278,7 +278,7 @@ embedBenefit :: MonadClient m
              -> [(Point, ItemBag)]
              -> m [(Double, (Point, ItemBag))]
 embedBenefit fleeVia aid pbags = do
-  Kind.COps{coitem=Kind.Ops{okind}, coTileSpeedup} <- getsState scops
+  COps{coitem, coTileSpeedup} <- getsState scops
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
   b <- getsState $ getActorBody aid
@@ -301,7 +301,7 @@ embedBenefit fleeVia aid pbags = do
       -- is triggered at the same time, others are left to be used later on.
       iidToEffs iid = case EM.lookup (jkindIx $ getItemBody iid s) discoKind of
         Nothing -> []
-        Just KindMean{kmKind} -> IK.ieffects $ okind kmKind
+        Just KindMean{kmKind} -> IK.ieffects $ okind coitem kmKind
       isEffEscapeOrAscend IK.Ascend{} = True
       isEffEscapeOrAscend IK.Escape{} = True
       isEffEscapeOrAscend _ = False

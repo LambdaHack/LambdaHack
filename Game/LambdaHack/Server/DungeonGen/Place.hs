@@ -19,7 +19,7 @@ import qualified Data.EnumSet as ES
 import qualified Data.Text as T
 
 import           Game.LambdaHack.Common.Frequency
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
@@ -107,7 +107,7 @@ interiorArea kr r =
 
 -- | Given a few parameters, roll and construct a 'Place' datastructure
 -- and fill a cave section acccording to it.
-buildPlace :: Kind.COps         -- ^ the game content
+buildPlace :: COps         -- ^ the game content
            -> CaveKind          -- ^ current cave kind
            -> Bool              -- ^ whether the cave is dark
            -> ContentId TileKind  -- ^ dark fence tile, if fence hollow
@@ -118,13 +118,12 @@ buildPlace :: Kind.COps         -- ^ the game content
            -> Area              -- ^ whole area of the place, fence included
            -> Maybe (GroupName PlaceKind)  -- ^ optional fixed place group
            -> Rnd (TileMapEM, Place)
-buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick}
-                         , coplace=Kind.Ops{ofoldlGroup'} }
+buildPlace cops@COps{cotile, coplace}
            CaveKind{..} dnight darkCorTile litCorTile
            ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) dsecret
            r mplaceGroup = do
   qFWall <- fromMaybe (error $ "" `showFailure` cfillerTile)
-            <$> opick cfillerTile (const True)
+            <$> opick cotile cfillerTile (const True)
   let findInterval x1y1 [] = (x1y1, (11, 0))
       findInterval !x1y1 ((!x, !y) : rest) =
         if fromIntegral ld * 10 <= x * fromIntegral depth
@@ -141,7 +140,7 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick}
       f !placeGroup !q !acc !p !pk !kind =
         let rarity = linearInterpolation (prarity kind)
         in (q * p * rarity, ((pk, kind), placeGroup)) : acc
-      g (placeGroup, q) = ofoldlGroup' placeGroup (f placeGroup q) []
+      g (placeGroup, q) = ofoldlGroup' coplace placeGroup (f placeGroup q) []
       pfreq = case mplaceGroup of
         Nothing -> cplaceFreq
         Just placeGroup -> [(placeGroup, 1)]
@@ -197,44 +196,44 @@ isChancePos c dsecret (Point x y) =
   c > 0 && (dsecret `Bits.rotateR` x `Bits.xor` y + x) `mod` c == 0
 
 -- | Roll a legend of a place plan: a map from plan symbols to tile kinds.
-olegend :: Kind.COps -> GroupName TileKind
+olegend :: COps -> GroupName TileKind
         -> Rnd ( EM.EnumMap Char (Int, ContentId TileKind)
                , EM.EnumMap Char (ContentId TileKind) )
-olegend Kind.COps{cotile=Kind.Ops{ofoldlWithKey', opick, okind}} cgroup =
+olegend COps{cotile} cgroup =
   let getSymbols !acc _ !tk =
         maybe acc (const $ ES.insert (TK.tsymbol tk) acc)
               (lookup cgroup $ TK.tfreq tk)
-      symbols = ofoldlWithKey' getSymbols ES.empty
+      symbols = ofoldlWithKey' cotile getSymbols ES.empty
       getLegend s !acc = do
         (mOneIn, m) <- acc
         let p f t = TK.tsymbol t == s && f (Tile.kindHasFeature TK.Spice t)
         tk <- fmap (fromMaybe $ error $ "" `showFailure` (cgroup, s))
-              $ opick cgroup (p not)
-        mtkSpice <- opick cgroup (p id)
+              $ opick cotile cgroup (p not)
+        mtkSpice <- opick cotile cgroup (p id)
         return $! case mtkSpice of
           Nothing -> (mOneIn, EM.insert s tk m)
           Just tkSpice ->
-            let n = fromJust (lookup cgroup (TK.tfreq (okind tk)))
-                k = fromJust (lookup cgroup (TK.tfreq (okind tkSpice)))
+            let n = fromJust (lookup cgroup (TK.tfreq (okind cotile tk)))
+                k = fromJust (lookup cgroup (TK.tfreq (okind cotile tkSpice)))
                 oneIn = (n + k) `divUp` k
             in (EM.insert s (oneIn, tkSpice) mOneIn, EM.insert s tk m)
       legend = ES.foldr' getLegend (return (EM.empty, EM.empty)) symbols
   in legend
 
-ooverride :: Kind.COps -> [(Char, GroupName TileKind)]
+ooverride :: COps -> [(Char, GroupName TileKind)]
           -> Rnd ( EM.EnumMap Char (Int, ContentId TileKind)
                  , EM.EnumMap Char (ContentId TileKind) )
-ooverride Kind.COps{cotile=Kind.Ops{opick, okind}} poverride =
+ooverride COps{cotile} poverride =
   let getLegend (s, cgroup) acc = do
         (mOneIn, m) <- acc
-        mtkSpice <- opick cgroup (Tile.kindHasFeature TK.Spice)
+        mtkSpice <- opick cotile cgroup (Tile.kindHasFeature TK.Spice)
         tk <- fromMaybe (error $ "" `showFailure` (s, cgroup, poverride))
-              <$> opick cgroup (not . Tile.kindHasFeature TK.Spice)
+              <$> opick cotile cgroup (not . Tile.kindHasFeature TK.Spice)
         return $! case mtkSpice of
           Nothing -> (mOneIn, EM.insert s tk m)
           Just tkSpice ->
-            let n = fromJust (lookup cgroup (TK.tfreq (okind tk)))
-                k = fromJust (lookup cgroup (TK.tfreq (okind tkSpice)))
+            let n = fromJust (lookup cgroup (TK.tfreq (okind cotile tk)))
+                k = fromJust (lookup cgroup (TK.tfreq (okind cotile tkSpice)))
                 oneIn = (n + k) `divUp` k
             in (EM.insert s (oneIn, tkSpice) mOneIn, EM.insert s tk m)
   in foldr getLegend (return (EM.empty, EM.empty)) poverride
@@ -249,15 +248,15 @@ buildFence fenceId area =
                    | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
 
 -- | Construct a fence around an area, with the given tile group.
-buildFenceRnd :: Kind.COps -> GroupName TileKind -> Area -> Rnd TileMapEM
-buildFenceRnd Kind.COps{cotile=Kind.Ops{opick}} couterFenceTile area = do
+buildFenceRnd :: COps -> GroupName TileKind -> Area -> Rnd TileMapEM
+buildFenceRnd COps{cotile} couterFenceTile area = do
   let (x0, y0, x1, y1) = fromArea area
       fenceIdRnd (xf, yf) = do
         let isCorner x y = x `elem` [x0-1, x1+1] && y `elem` [y0-1, y1+1]
             tileGroup | isCorner xf yf = "basic outer fence"
                       | otherwise = couterFenceTile
         fenceId <- fromMaybe (error $ "" `showFailure` tileGroup)
-                   <$> opick tileGroup (const True)
+                   <$> opick cotile tileGroup (const True)
         return (Point xf yf, fenceId)
       pointList = [ (x, y) | x <- [x0-1, x1+1], y <- [y0..y1] ]
                   ++ [ (x, y) | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]

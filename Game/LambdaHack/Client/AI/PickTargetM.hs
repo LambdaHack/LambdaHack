@@ -28,7 +28,7 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -85,7 +85,7 @@ targetStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy TgtAndPath)
 {-# INLINE targetStrategy #-}
 targetStrategy aid = do
-  Kind.COps{corule, coTileSpeedup} <- getsState scops
+  cops@COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   mleader <- getsClient sleader
   scondInMelee <- getsClient scondInMelee
@@ -96,7 +96,7 @@ targetStrategy aid = do
   let lalter = salter EM.! blid b
       condInMelee = fromMaybe (error $ "" `showFailure` condInMelee)
                               (scondInMelee EM.! blid b)
-      stdRuleset = Kind.stdRuleset corule
+      stdRuleset = getStdRuleset cops
       nearby = rnearby stdRuleset
       ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       actorMaxSk = aSkills ar

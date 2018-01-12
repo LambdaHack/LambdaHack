@@ -18,7 +18,7 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.ItemStrongest
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
@@ -45,9 +45,9 @@ nUI = do
 
 getGameMode :: MonadStateRead m => m ModeKind
 getGameMode = do
-  Kind.COps{comode=Kind.Ops{okind}} <- getsState scops
+  COps{comode} <- getsState scops
   t <- getsState sgameModeId
-  return $! okind t
+  return $! okind comode t
 
 isNoConfirmsGame :: MonadStateRead m => m Bool
 isNoConfirmsGame = do

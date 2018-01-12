@@ -37,7 +37,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -289,7 +289,7 @@ condShineWouldBetrayM aid = do
 -- | Produce a list of acceptable adjacent points to flee to.
 fleeList :: MonadClient m => ActorId -> m ([(Int, Point)], [(Int, Point)])
 fleeList aid = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   -- Prefer fleeing along the path to target, unless the target is a foe,
   -- in which case flee in the opposite direction.

@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of weapons, treasure, organs, blasts, etc.
 module Game.LambdaHack.Content.ItemKind
-  ( ItemKind(..), makeDef
+  ( ItemKind(..), makeData
   , Effect(..), TimerDice
   , Aspect(..), ThrowMod(..)
   , Feature(..), EqpSlot(..)
@@ -420,5 +420,5 @@ hardwiredItemGroups =
   -- Assorted:
   ++ ["bonus HP", "currency", "impressed", "mobile"]
 
-makeDef :: [ItemKind] -> ContentData ItemKind
-makeDef = makeContentData iname validateSingle validateAll ifreq
+makeData :: [ItemKind] -> ContentData ItemKind
+makeData = makeContentData iname validateSingle validateAll ifreq

@@ -28,7 +28,7 @@ import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Common.Faction
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
@@ -125,7 +125,7 @@ instance MonadClientAtomic CliImplementation where
 -- | Run the main client loop, with the given arguments and empty
 -- initial states, in the @IO@ monad.
 executorCli :: KeyKind -> UIOptions -> ClientOptions
-            -> Kind.COps
+            -> COps
             -> Bool
             -> FactionId
             -> ChanServer

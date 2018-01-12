@@ -19,7 +19,7 @@ import           Game.LambdaHack.Common.Flavour
 import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.ItemStrongest
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
@@ -38,7 +38,7 @@ import           Game.LambdaHack.Content.ModeKind
 -- So there is less than @averageTurnValue@ included in each benefit,
 -- so in case when turn is not spent, e.g, periodic or temporary effects,
 -- the difference in value is only slight.
-effectToBenefit :: Kind.COps -> Faction -> IK.Effect -> (Double, Double)
+effectToBenefit :: COps -> Faction -> IK.Effect -> (Double, Double)
 effectToBenefit cops fact eff =
   let delta x = (x, x)
   in case eff of
@@ -224,9 +224,9 @@ durabilityMult = avgItemLife / avgItemDelay
 -- are applied and we can't stop/restart them.
 --
 -- We assume, only one of timer and count mechanisms is present at once.
-organBenefit :: Double -> GroupName ItemKind -> Kind.COps -> Faction
+organBenefit :: Double -> GroupName ItemKind -> COps -> Faction
              -> (Double, Int)
-organBenefit turnTimer grp cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} fact =
+organBenefit turnTimer grp cops@COps{coitem} fact =
   let f (!sacc, !pacc) !p _ !kind =
         let paspect asp = fromIntegral p * aspectToBenefit asp
             peffect eff = fromIntegral p * fst (effectToBenefit cops fact eff)
@@ -235,17 +235,17 @@ organBenefit turnTimer grp cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} fact =
                        + sum (map peffect $ stripRecharging $ IK.ieffects kind))
                   - averageTurnValue / turnTimer
            , pacc + p )
-  in ofoldlGroup' grp f (0, 0)
+  in ofoldlGroup' coitem grp f (0, 0)
 
-recBenefit :: GroupName ItemKind -> Kind.COps -> Faction -> (Double, Int)
-recBenefit grp cops@Kind.COps{coitem=Kind.Ops{ofoldlGroup'}} fact =
+recBenefit :: GroupName ItemKind -> COps -> Faction -> (Double, Int)
+recBenefit grp cops@COps{coitem} fact =
   let f (!sacc, !pacc) !p _ !kind =
         let recPickup = benPickup $
               totalUsefulness cops fact (IK.ieffects kind)
                                         (meanAspect kind) (fakeItem kind)
         in ( sacc + Dice.meanDice (IK.icount kind) * recPickup
            , pacc + p )
-  in ofoldlGroup' grp f (0, 0)
+  in ofoldlGroup' coitem grp f (0, 0)
 
 fakeItem :: IK.ItemKind -> Item
 fakeItem kind =
@@ -307,7 +307,7 @@ recordToBenefit aspects = map aspectToBenefit $ aspectRecordToList aspects
 --
 -- Note: result has non-strict fields, so arguments are forced to avoid leaks.
 -- When AI looks at items (including organs) more often, force the fields.
-totalUsefulness :: Kind.COps -> Faction -> [IK.Effect] -> AspectRecord -> Item
+totalUsefulness :: COps -> Faction -> [IK.Effect] -> AspectRecord -> Item
                 -> Benefit
 totalUsefulness !cops !fact !effects !aspects !item =
   let effPairs = map (effectToBenefit cops fact) effects

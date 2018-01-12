@@ -37,7 +37,7 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.ItemStrongest
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -317,7 +317,7 @@ lookAtTile :: MonadClientUI m
            -> LevelId    -- ^ level the position is at
            -> m Text
 lookAtTile canSee p aid lidV = do
-  Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
+  COps{cotile} <- getsState scops
   side <- getsClient sside
   factionD <- getsState sfactionD
   b <- getsState $ getActorBody aid
@@ -333,7 +333,7 @@ lookAtTile canSee p aid lidV = do
           | not canSee = "you remember"
           | not aims = "you are aware of"
           | otherwise = "you see"
-      tilePart = MU.AW $ MU.Text $ TK.tname $ okind tile
+      tilePart = MU.AW $ MU.Text $ TK.tname $ okind cotile tile
       itemLook (iid, kit@(k, _)) =
         let itemFull = itemToF iid kit
             (temporary, nWs) = partItemWs side factionD k localTime itemFull

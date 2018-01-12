@@ -30,7 +30,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -114,7 +114,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
     when (tileChangeAffectsBfs cops fromTile toTile) $
       invalidateBfsLid lid
   UpdSearchTile aid p toTile -> do
-    Kind.COps{cotile} <- getsState scops
+    COps{cotile} <- getsState scops
     b <- getsState $ getActorBody aid
     let lid = blid b
     updateSalter lid [(p, toTile)]
@@ -159,11 +159,11 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdCoverSeed c iid seed -> coverSeed c iid seed
   UpdPerception lid outPer inPer -> perception lid outPer inPer
   UpdRestart side sfper s scurChal soptions -> do
-    Kind.COps{comode=Kind.Ops{ofoldlGroup'}} <- getsState scops
+    COps{comode} <- getsState scops
     snxtChal <- getsClient snxtChal
     svictories <- getsClient svictories
     let f acc _p i _a = i : acc
-        modes = zip [0..] $ ofoldlGroup' "campaign scenario" f []
+        modes = zip [0..] $ ofoldlGroup' comode "campaign scenario" f []
         g :: (Int, ContentId ModeKind) -> Int
         g (_, mode) = case EM.lookup mode svictories of
           Nothing -> 0
@@ -198,10 +198,10 @@ wipeBfsIfItemAffectsSkills :: MonadClient m => [CStore] -> ActorId -> m ()
 wipeBfsIfItemAffectsSkills stores aid =
   unless (null $ intersect stores [CEqp, COrgan]) $ invalidateBfsAid aid
 
-tileChangeAffectsBfs :: Kind.COps
+tileChangeAffectsBfs :: COps
                      -> ContentId TileKind -> ContentId TileKind
                      -> Bool
-tileChangeAffectsBfs Kind.COps{coTileSpeedup} fromTile toTile =
+tileChangeAffectsBfs COps{coTileSpeedup} fromTile toTile =
   Tile.alterMinWalk coTileSpeedup fromTile
   /= Tile.alterMinWalk coTileSpeedup toTile
 
@@ -239,7 +239,7 @@ destroyActor aid b destroy = do
 
 addItemToDiscoBenefit :: MonadClient m => ItemId -> Item -> m ()
 addItemToDiscoBenefit iid item = do
-  cops@Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  cops@COps{coitem} <- getsState scops
   discoBenefit <- getsClient sdiscoBenefit
   case EM.lookup iid discoBenefit of
     Just{} -> return ()  -- already there, possibly with real aspects, too
@@ -250,7 +250,7 @@ addItemToDiscoBenefit iid item = do
         Just KindMean{..} -> do  -- possible, if the kind sent in @UpdRestart@
           side <- getsClient sside
           fact <- getsState $ (EM.! side) . sfactionD
-          let effects = IK.ieffects $ okind kmKind
+          let effects = IK.ieffects $ okind coitem kmKind
               -- Mean aspects are used, because the item can't yet have
               -- know real aspects, because it didn't even have kind before.
               benefit = totalUsefulness cops fact effects kmMean item
@@ -285,7 +285,7 @@ perception lid outPer inPer = do
 discoverKind :: MonadClient m
              => Container -> ItemKindIx -> ContentId ItemKind -> m ()
 discoverKind _c ix ik = do
-  cops@Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  cops@COps{coitem} <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
   -- affect his actors' skills relevant to BFS.
   invalidateBfsAll
@@ -293,7 +293,7 @@ discoverKind _c ix ik = do
   fact <- getsState $ (EM.! side) . sfactionD
   discoKind <- getsState sdiscoKind
   itemD <- getsState sitemD
-  let effs = IK.ieffects $ okind ik
+  let effs = IK.ieffects $ okind coitem ik
       KindMean{kmMean} = fromMaybe (error "item kind not found")
                                    (EM.lookup ix discoKind)
       benefit iid =
@@ -308,7 +308,7 @@ coverKind _c _iid _ik = undefined
 
 discoverSeed :: MonadClient m => Container -> ItemId -> ItemSeed -> m ()
 discoverSeed _c iid seed = do
-  cops@Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  cops@COps{coitem} <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
   -- affect his actors' skills relevant to BFS.
   invalidateBfsAll
@@ -320,7 +320,7 @@ discoverSeed _c iid seed = do
   Level{ldepth} <- getLevel $ jlid item
   let KindMean{..} = fromMaybe (error "item kind not found")
                                (EM.lookup (jkindIx item) discoKind)
-      kind = okind kmKind
+      kind = okind coitem kmKind
       aspects = seedToAspect seed kind ldepth totalDepth
       benefit = totalUsefulness cops fact (IK.ieffects kind) aspects item
   modifyClient $ \cli ->

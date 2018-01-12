@@ -44,7 +44,7 @@ import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.ItemStrongest
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -126,13 +126,13 @@ targetDescXhair = do
 
 drawFrameTerrain :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameTerrain drawnLevelId = do
-  Kind.COps{coTileSpeedup, cotile=Kind.Ops{okind}} <- getsState scops
+  COps{coTileSpeedup, cotile} <- getsState scops
   StateClient{smarkSuspect} <- getClient
   Level{lxsize, ltile=PointArray.Array{avector}} <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
   let dis :: Int -> ContentId TileKind -> Color.AttrCharW32
       {-# INLINE dis #-}
-      dis pI tile = case okind tile of
+      dis pI tile = case okind cotile tile of
         TK.TileKind{tsymbol, tcolor, tcolor2} ->
           -- Passing @p0@ as arg in place of @pI@ is much more costly.
           let p0 :: Point
@@ -198,7 +198,7 @@ drawFramePath :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFramePath drawnLevelId = do
  SessionUI{saimMode} <- getSession
  if isNothing saimMode then return $! FrameForall $ \_ -> return () else do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   StateClient{seps} <- getClient
   Level{lxsize, lysize, ltile=PointArray.Array{avector}}
     <- getLevel drawnLevelId

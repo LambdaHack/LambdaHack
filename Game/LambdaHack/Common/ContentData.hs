@@ -1,5 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, RankNTypes #-}
-{-# OPTIONS_GHC -fno-expose-all-unfoldings #-}
 -- | A game requires the engine provided by the library, perhaps customized,
 -- and game content, defined completely afresh for the particular game.
 -- The possible kinds of content are fixed in the library and all defined
@@ -10,7 +8,9 @@
 -- After the list is verified and the data preprocessed, it's held
 -- in the @ContentData@ datatype.
 module Game.LambdaHack.Common.ContentData
-  ( Ops(..), ContentData, makeContentData, createOps
+  ( ContentData, makeContentData
+  , okind, ouniqGroup, opick
+  , ofoldrWithKey, ofoldlWithKey', ofoldlGroup', olength
   ) where
 
 import Prelude ()
@@ -67,70 +67,63 @@ makeContentData getName validateSingle validateAll
      assert (V.length contentVector <= fromEnum (maxBound :: ContentId a))
      ContentData {..}
 
--- | Content operations for the content of type @a@.
-data Ops a = Ops
-  { okind          :: ContentId a -> a  -- ^ content element at given id
-  , ouniqGroup     :: GroupName a -> ContentId a
-                                 -- ^ the id of the unique member of
-                                 --   a singleton content group
-  , opick          :: GroupName a -> (a -> Bool) -> Rnd (Maybe (ContentId a))
-                                 -- ^ pick a random id belonging to a group
-                                 --   and satisfying a predicate
-  , ofoldrWithKey  :: forall b. (ContentId a -> a -> b -> b) -> b -> b
-                                 -- ^ fold over all content elements of @a@
-  , ofoldlWithKey' :: forall b. (b -> ContentId a -> a -> b) -> b -> b
-                                 -- ^ fold strictly over all content @a@
-  , ofoldlGroup'   :: forall b.
-                      GroupName a
-                      -> (b -> Int -> ContentId a -> a -> b)
-                      -> b
-                      -> b
-                                 -- ^ fold over the given group only
-  , olength        :: Int        -- ^ size of content @a@
-  }
+-- | Content element at given id.
+okind :: ContentData a -> ContentId a -> a
+okind ContentData{contentVector} !i = contentVector V.! fromEnum i
 
--- Not specialized, because no speedup, but big JS code bloat
--- (-fno-expose-all-unfoldings and NOINLINE used to ensure that,
--- in the absence of NOSPECIALIZABLE pragma).
--- | Create content operations for type @a@ from definition of content
--- of type @a@.
-createOps :: forall a. Show a => ContentData a -> Ops a
-{-# NOINLINE createOps #-}
-createOps ContentData{contentVector, groupFreq} =
-  Ops  { okind = \ !i -> contentVector V.! fromEnum i
-       , ouniqGroup = \ !cgroup ->
-           let freq = let assFail = error $ "no unique group"
-                                            `showFailure` (cgroup, groupFreq)
-                      in M.findWithDefault assFail cgroup groupFreq
-           in case freq of
-             [(n, (i, _))] | n > 0 -> i
-             l -> error $ "not unique" `showFailure` (l, cgroup, groupFreq)
-       , opick = \ !cgroup !p ->
-           case M.lookup cgroup groupFreq of
-             Just freqRaw ->
-               let freq = toFreq ("opick ('" <> tshow cgroup <> "')")
-                          $ filter (p . snd . snd) freqRaw
-               in if nullFreq freq
-                  then return Nothing
-                  else fmap (Just . fst) $ frequency freq
-                    {- with monadic notation; may produce empty freq:
-                    (i, k) <- freq
-                    breturn (p k) i
-                    -}
-                    {- with MonadComprehensions:
-                    frequency [ i | (i, k) <- groupFreq M.! cgroup, p k ]
-                    -}
-             _ -> return Nothing
-       , ofoldrWithKey = \f z ->
-          V.ifoldr (\i c a -> f (toEnum i) c a) z contentVector
-       , ofoldlWithKey' = \f z ->
-          V.ifoldl' (\a i c -> f a (toEnum i) c) z contentVector
-       , ofoldlGroup' = \cgroup f z ->
-           case M.lookup cgroup groupFreq of
-             Just freq -> foldl' (\acc (p, (i, a)) -> f acc p i a) z freq
-             _ -> error $ "no group '" ++ show cgroup
-                                       ++ "' among content that has groups "
-                                       ++ show (M.keys groupFreq)
-                          `showFailure` ()
-       , olength = V.length contentVector
-       }
+-- | The id of the unique member of a singleton content group.
+ouniqGroup :: Show a => ContentData a -> GroupName a -> ContentId a
+ouniqGroup ContentData{groupFreq} !cgroup =
+  let freq = let assFail = error $ "no unique group"
+                                   `showFailure` (cgroup, groupFreq)
+             in M.findWithDefault assFail cgroup groupFreq
+  in case freq of
+    [(n, (i, _))] | n > 0 -> i
+    l -> error $ "not unique" `showFailure` (l, cgroup, groupFreq)
+
+-- | Pick a random id belonging to a group and satisfying a predicate.
+opick :: Show a
+      => ContentData a
+      -> GroupName a -> (a -> Bool) -> Rnd (Maybe (ContentId a))
+opick ContentData{groupFreq} !cgroup !p =
+  case M.lookup cgroup groupFreq of
+    Just freqRaw ->
+      let freq = toFreq ("opick ('" <> tshow cgroup <> "')")
+                 $ filter (p . snd . snd) freqRaw
+      in if nullFreq freq
+         then return Nothing
+         else fmap (Just . fst) $ frequency freq
+           {- with monadic notation; may produce empty freq:
+           (i, k) <- freq
+           breturn (p k) i
+           -}
+           {- with MonadComprehensions:
+           frequency [ i | (i, k) <- groupFreq M.! cgroup, p k ]
+           -}
+    _ -> return Nothing
+
+-- | Fold over all content elements of @a@.
+ofoldrWithKey :: ContentData a -> (ContentId a -> a -> b -> b) -> b -> b
+ofoldrWithKey ContentData{contentVector} f z =
+  V.ifoldr (\i c a -> f (toEnum i) c a) z contentVector
+
+-- | Fold strictly over all content @a@.
+ofoldlWithKey' :: ContentData a -> (b -> ContentId a -> a -> b) -> b -> b
+ofoldlWithKey' ContentData{contentVector} f z =
+  V.ifoldl' (\a i c -> f a (toEnum i) c) z contentVector
+
+-- | Fold over the given group only.
+ofoldlGroup' :: ContentData a
+             -> GroupName a
+             -> (b -> Int -> ContentId a -> a -> b) -> b -> b
+ofoldlGroup' ContentData{groupFreq} cgroup f z =
+  case M.lookup cgroup groupFreq of
+    Just freq -> foldl' (\acc (p, (i, a)) -> f acc p i a) z freq
+    _ -> error $ "no group '" ++ show cgroup
+                              ++ "' among content that has groups "
+                              ++ show (M.keys groupFreq)
+                 `showFailure` ()
+
+-- | Size of content @a@.
+olength :: ContentData a -> Int
+olength ContentData{contentVector} = V.length contentVector

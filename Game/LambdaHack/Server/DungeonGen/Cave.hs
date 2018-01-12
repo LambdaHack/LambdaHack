@@ -15,7 +15,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Key (mapWithKeyM)
 
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
@@ -68,19 +68,16 @@ as follows (in gross simplification):
   on the grid is connected, and a few more might be. It is not sufficient
   to always connect all adjacent rooms, because not each cell holds a room.
 -}
-buildCave :: Kind.COps         -- ^ content definitions
+buildCave :: COps         -- ^ content definitions
           -> AbsDepth          -- ^ depth of the level to generate
           -> AbsDepth          -- ^ absolute depth
           -> Int               -- ^ secret tile seed
           -> ContentId CaveKind  -- ^ cave kind to use for generation
           -> EM.EnumMap Point (GroupName PlaceKind)  -- ^ pos of stairs, etc.
           -> Rnd Cave
-buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
-                        , cocave=Kind.Ops{okind}
-                        , coplace=Kind.Ops{okind=pokind}
-                        , coTileSpeedup }
+buildCave cops@COps{cotile, cocave, coplace, coTileSpeedup}
           ldepth totalDepth dsecret dkind fixedCenters = do
-  let kc@CaveKind{..} = okind dkind
+  let kc@CaveKind{..} = okind cocave dkind
   lgrid' <- castDiceXY ldepth totalDepth cgrid
   -- Make sure that in caves not filled with rock, there is a passage
   -- across the cave, even if a single room blocks most of the cave.
@@ -90,9 +87,9 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
       subFullArea = fromMaybe (error $ "" `showFailure` kc)
                     $ toArea (1, 1, cxsize - 2, cysize - 2)
   darkCorTile <- fromMaybe (error $ "" `showFailure` cdarkCorTile)
-                 <$> opick cdarkCorTile (const True)
+                 <$> opick cotile cdarkCorTile (const True)
   litCorTile <- fromMaybe (error $ "" `showFailure` clitCorTile)
-                <$> opick clitCorTile (const True)
+                <$> opick cotile clitCorTile (const True)
   dnight <- chanceDice ldepth totalDepth cnightChance
   let createPlaces lgr' = do
         let area | couterFenceTile /= "basic outer fence" = subFullArea
@@ -201,7 +198,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                     (tmap, place) <-
                       buildPlace cops kc dnight darkCorTile litCorTile
                                  ldepth totalDepth dsecret r Nothing
-                    let fence = pfence $ pokind $ qkind place
+                    let fence = pfence $ okind coplace $ qkind place
                     return ( EM.union tmap m
                            , place : pls
                            , EM.insert i (qarea place, fence, ar) qls )
@@ -220,7 +217,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                   (tmap, place) <-
                     buildPlace cops kc dnight darkCorTile litCorTile
                                ldepth totalDepth dsecret r (Just placeGroup)
-                  let fence = pfence $ pokind $ qkind place
+                  let fence = pfence $ okind coplace $ qkind place
                   return ( EM.union tmap m
                          , place : pls
                          , EM.insert i (qarea place, fence, ar) qls )
@@ -282,10 +279,10 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
   dmap <- mapWithKeyM obscure umap
   return $! Cave {dkind, dsecret, dmap, dplaces, dnight}
 
-pickOpening :: Kind.COps -> CaveKind -> TileMapEM -> ContentId TileKind
+pickOpening :: COps -> CaveKind -> TileMapEM -> ContentId TileKind
             -> Int -> Point -> (ContentId TileKind, ContentId TileKind)
             -> Rnd (ContentId TileKind)
-pickOpening Kind.COps{cotile, coTileSpeedup}
+pickOpening COps{cotile, coTileSpeedup}
             CaveKind{cxsize, cysize, cdoorChance, copenChance, chidden}
             lplaces litCorTile dsecret
             pos (hidden, cor) = do

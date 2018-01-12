@@ -67,7 +67,7 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.ItemStrongest
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -292,7 +292,7 @@ permittedProjectClient triggerSyms = do
 
 projectCheck :: MonadClientUI m => Point -> m (Maybe ReqFailure)
 projectCheck tpos = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
   eps <- getsClient seps
   sb <- getsState $ getActorBody leader

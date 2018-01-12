@@ -33,7 +33,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -203,7 +203,7 @@ affectSmell aid = do
 -- to check if melee attack does not try to reach to a distant tile.
 reqMove :: MonadServerAtomic m => ActorId -> Vector -> m ()
 reqMove source dir = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
   lvl <- getLevel lid
@@ -316,7 +316,7 @@ reqMelee source target iid cstore = do
 -- | Actor tries to swap positions with another.
 reqDisplace :: MonadServerAtomic m => ActorId -> ActorId -> m ()
 reqDisplace source target = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
@@ -362,8 +362,7 @@ reqDisplace source target = do
 -- | Search and/or alter the tile.
 reqAlter :: MonadServerAtomic m => ActorId -> Point -> m ()
 reqAlter source tpos = do
-  Kind.COps{ cotile=cotile@Kind.Ops{okind, opick}
-           , coTileSpeedup } <- getsState scops
+  COps{cotile, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   ar <- getsState $ getActorAspect source
   let calmE = calmEnough sb ar
@@ -436,10 +435,10 @@ reqAlter source tpos = do
                                     (Tile.kindHasFeature TK.Dark kt)
             -- Sometimes the tile is determined precisely by the ambient light
             -- of the source tiles. If not, default to cave day/night condition.
-            mtoTile <- rndToAction $ opick tgroup nightCond
+            mtoTile <- rndToAction $ opick cotile tgroup nightCond
             toTile <- maybe (rndToAction
                              $ fromMaybe (error $ "" `showFailure` tgroup)
-                               <$> opick tgroup (const True))
+                               <$> opick cotile tgroup (const True))
                             return
                             mtoTile
             unless (toTile == serverTile) $ do
@@ -471,7 +470,7 @@ reqAlter source tpos = do
             -- Altering always reveals the outcome tile, so it's not hidden
             -- and so its embedded items are always visible.
             embedItem lid tpos toTile
-          feats = TK.tfeature $ okind serverTile
+          feats = TK.tfeature $ okind cotile serverTile
           toAlter feat =
             case feat of
               TK.OpenTo tgroup -> Just tgroup

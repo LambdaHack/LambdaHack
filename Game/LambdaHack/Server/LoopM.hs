@@ -27,7 +27,7 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.ItemStrongest
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -197,8 +197,8 @@ loopUpd updConn = do
 endClip :: forall m. MonadServerAtomic m => (FactionId -> m ()) -> m ()
 {-# INLINE endClip #-}
 endClip updatePerFid = do
-  Kind.COps{corule} <- getsState scops
-  let RuleKind{rwriteSaveClips, rleadLevelClips} = Kind.stdRuleset corule
+  cops <- getsState scops
+  let RuleKind{rwriteSaveClips, rleadLevelClips} = getStdRuleset cops
   time <- getsState stime
   let clipN = time `timeFit` timeClip
       clipInTurn = let r = timeTurn `timeFit` timeClip
@@ -237,13 +237,14 @@ endClip updatePerFid = do
 -- | Check if the given actor is dominated and update his calm.
 manageCalmAndDomination :: MonadServerAtomic m => ActorId -> Actor -> m ()
 manageCalmAndDomination aid b = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  COps{coitem} <- getsState scops
   fact <- getsState $ (EM.! bfid b) . sfactionD
   getItem <- getsState $ flip getItemBody
   discoKind <- getsState sdiscoKind
   let isImpression iid = case EM.lookup (jkindIx $ getItem iid) discoKind of
         Just KindMean{kmKind} ->
-          maybe False (> 0) (lookup "impressed" $ IK.ifreq $ okind kmKind)
+          maybe False (> 0) (lookup "impressed" $ IK.ifreq
+                             $ okind coitem kmKind)
         Nothing -> error $ "" `showFailure` iid
       impressions = EM.filterWithKey (\iid _ -> isImpression iid) $ borgan b
   dominated <-
@@ -351,7 +352,7 @@ hTrajectories (aid, b) = do
 setTrajectory :: MonadServerAtomic m => ActorId -> m ()
 {-# INLINE setTrajectory #-}
 setTrajectory aid = do
-  Kind.COps{coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
   case btrajectory b of

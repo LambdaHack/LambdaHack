@@ -36,7 +36,7 @@ import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Dice (intToDice)
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Flavour
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.Time
@@ -308,16 +308,15 @@ itemNoDisco :: (Item, Int) -> ItemFull
 itemNoDisco (itemBase, itemK) =
   ItemFull {itemBase, itemK, itemTimer = [], itemDisco=Nothing}
 
-itemToFull6 :: Kind.COps -> DiscoveryKind -> DiscoveryAspect -> ItemId -> Item
+itemToFull6 :: COps -> DiscoveryKind -> DiscoveryAspect -> ItemId -> Item
             -> ItemQuant
             -> ItemFull
-itemToFull6 Kind.COps{coitem=Kind.Ops{okind}}
-           discoKind discoAspect iid itemBase (itemK, itemTimer) =
+itemToFull6 COps{coitem} discoKind discoAspect iid itemBase (itemK, itemTimer) =
   let itemDisco = case EM.lookup (jkindIx itemBase) discoKind of
         Nothing -> Nothing
         Just KindMean{..} ->
           Just ItemDisco{ itemKindId = kmKind
-                        , itemKind = okind kmKind
+                        , itemKind = okind coitem kmKind
                         , itemAspectMean = kmMean
                         , itemConst = kmConst
                         , itemAspect = EM.lookup iid discoAspect }

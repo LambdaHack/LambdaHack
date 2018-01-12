@@ -29,7 +29,7 @@ import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
@@ -100,7 +100,7 @@ nearbyFreePoints :: (ContentId TileKind -> Bool) -> Point -> LevelId -> State
 nearbyFreePoints f start lid s =
   let lvl@Level{lxsize, lysize} = sdungeon s EM.! lid
       good p = f (lvl `at` p)
-               && Tile.isWalkable (Kind.coTileSpeedup $ scops s) (lvl `at` p)
+               && Tile.isWalkable (coTileSpeedup $ scops s) (lvl `at` p)
                && null (posToAidsLvl p lvl)
       ps = nub $ start : concatMap (vicinity lxsize lysize) ps
   in filter good ps
@@ -256,11 +256,11 @@ regenCalmDelta body AspectRecord{aMaxCalm} s =
 actorInAmbient :: Actor -> State -> Bool
 actorInAmbient b s =
   let lvl = (EM.! blid b) . sdungeon $ s
-  in Tile.isLit (Kind.coTileSpeedup $ scops s) (lvl `at` bpos b)
+  in Tile.isLit (coTileSpeedup $ scops s) (lvl `at` bpos b)
 
 canDeAmbientList :: Actor -> State -> [Point]
 canDeAmbientList b s =
-  let Kind.COps{coTileSpeedup} = scops s
+  let COps{coTileSpeedup} = scops s
       lvl = (EM.! blid b) . sdungeon $ s
       posDeAmbient p =
         let t = lvl `at` p

@@ -1,6 +1,6 @@
 -- | The type of cave kinds.
 module Game.LambdaHack.Content.CaveKind
-  ( CaveKind(..), makeDef
+  ( CaveKind(..), makeData
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll
@@ -104,5 +104,5 @@ validateAll lk =
   then []
   else ["no cave defined for \"default random\""]
 
-makeDef :: [CaveKind] -> ContentData CaveKind
-makeDef = makeContentData cname validateSingle validateAll cfreq
+makeData :: [CaveKind] -> ContentData CaveKind
+makeData = makeContentData cname validateSingle validateAll cfreq
