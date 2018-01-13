@@ -728,15 +728,24 @@ applyItem aid applyGroup = do
                                    then Just $ toGroupName $ jname item
                                    else Nothing) organs
       itemLegal itemFull =
-        -- Don't include @Ascend@ nor @Teleport@, because can be no foe nearby.
-        let getP (IK.RefillHP p) | p > 0 = True
-            getP _ = False
+        let -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.
+            getHP (IK.RefillHP p) | p > 0 = True
+            getHP _ = False
             firstAidItem = case itemDisco itemFull of
-              Just ItemDisco{itemKind} -> any getP $ IK.ieffects itemKind
+              Just ItemDisco{itemKind} -> any getHP $ IK.ieffects itemKind
               _ -> False
-        in if applyGroup == ApplyFirstAid
-           then firstAidItem
-           else not $ hpEnough b ar && firstAidItem
+            -- Both effects tweak items, which is only situationally beneficial
+            -- and not really the best idea while in combat, nor interesting.
+            getTweak IK.PolyItem = True
+            getTweak IK.Identify = True
+            getTweak _ = False
+            tweakItem = case itemDisco itemFull of
+              Just ItemDisco{itemKind} -> any getTweak $ IK.ieffects itemKind
+              _ -> False
+        in not tweakItem
+           && if applyGroup == ApplyFirstAid
+              then firstAidItem
+              else not $ hpEnough b ar && firstAidItem
       coeff CGround = 2  -- pickup turn saved
       coeff COrgan = error $ "" `showFailure` benList
       coeff CEqp = 1

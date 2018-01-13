@@ -118,8 +118,8 @@ effectToBenefit cops fact eff =
                  - total / fromIntegral count
                    -- the same when dropped from me and foe
     IK.DropItem{} -> delta (-10)  -- depends a lot on what is dropped
-    IK.PolyItem -> delta 0  -- AI can't estimate item desirability vs average
-    IK.Identify -> delta 0  -- AI doesn't know how to use
+    IK.PolyItem -> (1, 0)  -- may fizzle, so AI never uses (could loop)
+    IK.Identify -> (1, 0)  -- may fizzle, so AI never uses (could loop)
     IK.Detect radius -> (fromIntegral radius * 2, 0)
     IK.DetectActor radius -> (fromIntegral radius, 0)
     IK.DetectItem radius -> (fromIntegral radius, 0)
