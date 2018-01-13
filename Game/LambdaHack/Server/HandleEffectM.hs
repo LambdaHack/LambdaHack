@@ -376,7 +376,7 @@ effectExplode execSfx cgroup target = do
               | n < 12 && n >= 8 = 8
               | n < 8 && n >= 4 = 4
               | otherwise = min n 16  -- fire in groups of 16 including old duds
-            psAll =
+            psDir =
               [ Point (x - 12) (y + 12)
               , Point (x + 12) (y + 12)
               , Point (x - 12) (y - 12)
@@ -384,17 +384,19 @@ effectExplode execSfx cgroup target = do
               , Point (x - 12) y
               , Point (x + 12) y
               , Point x (y + 12)
-              , Point x (y - 12)
-              , Point (x - 12) $ y + fuzz
+              , Point x (y - 12) ]
+            psFuzz =
+              [ Point (x - 12) $ y + fuzz
               , Point (x + 12) $ y + fuzz
               , Point (x - 12) $ y - fuzz
               , Point (x + 12) $ y - fuzz
               , flip Point (y - 12) $ x + fuzz
               , flip Point (y + 12) $ x + fuzz
               , flip Point (y - 12) $ x - fuzz
-              , flip Point (y + 12) $ x - fuzz
-              ]
-            ps = take k $ cycle $ drop ((k100 + itemK + n) `mod` 16) psAll
+              , flip Point (y + 12) $ x - fuzz ]
+            ps = take k $
+              take 8 (drop ((k100 + itemK + n) `mod` 8) $ cycle psDir)
+              ++ take 8 (drop ((k100 + n) `mod` 8) $ cycle psFuzz)
         forM_ ps $ \tpxy -> do
           let req = ReqProject tpxy veryrandom iid COrgan
           mfail <- projectFail target tpxy veryrandom iid COrgan True
