@@ -52,7 +52,7 @@ obscenePictogram = ItemKind
   , iweight  = 1000
   , idamage  = toDmg 0
   , iaspects = [Timeout 7]
-  , ieffects = [ Temporary "enter destructive rage at the sight of an obscene pictogram"
+  , ieffects = [ Recharging $ Temporary "enter destructive rage at the sight of an obscene pictogram"
                , Recharging $ RefillCalm (-20)
                , Recharging $ OneOf
                    [ toOrganActorTurn "strengthened" (3 + 1 `d` 3)
