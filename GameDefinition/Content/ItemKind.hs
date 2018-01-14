@@ -708,10 +708,13 @@ jumpingPole = ItemKind
   , iverbHit = "prod"
   , iweight  = 10000
   , idamage  = toDmg 0
-  , iaspects = [Timeout $ (2 + 1 `d` 2 - 1 `dL` 2) * 10]
+  , iaspects = [Timeout $ (2 + 1 `d` 2 - 1 `dL` 2) * 5]
   , ieffects = [Recharging (toOrganActorTurn "hasted" 1)]
-                 -- safe for AI, because it adds time, so when AI applies it
-                 -- again and again, it gets its time back and can move around
+                 -- safe for AI, because it speeds up, so when AI applies it
+                 -- again and again, it gets its time back and is not stuck;
+                 -- in total, the explorations speed is unchanged,
+                 -- but it's useful when fleeing in the dark to make distance
+                 -- and when initiating combat, so it's OK that AI uses it
   , ifeature = [Durable, Applicable, Identified]
   , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
   , ikit     = []

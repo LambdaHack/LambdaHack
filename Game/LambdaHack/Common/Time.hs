@@ -110,7 +110,7 @@ timeDeltaToFrom :: Time -> Time -> Delta Time
 {-# INLINE timeDeltaToFrom #-}
 timeDeltaToFrom (Time t1) (Time t2) = Delta $ Time (t1 - t2)
 
--- | Time time vector between the second and the first absolute times.
+-- | Subtraction of time deltas.
 -- The arguments are in the same order as in the underlying scalar subtraction.
 timeDeltaSubtract :: Delta Time -> Delta Time -> Delta Time
 {-# INLINE timeDeltaSubtract #-}

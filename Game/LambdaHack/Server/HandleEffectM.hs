@@ -938,7 +938,9 @@ effectCreateItem jfidRaw mcount target store grp tim = do
       fgame = fscale (Delta timeTurn)
       factor nDm = do
         ar <- getsState $ getActorAspect target
-        let actorTurn = ticksPerMeter $ bspeed tb ar
+        -- A tiny bit added to make sure length 1 effect doesn't end before
+        -- the end of first turn, which would make, e.g., speed, useless.
+        let actorTurn = timeDeltaPercent (ticksPerMeter $ bspeed tb ar) 101
         fscale actorTurn nDm
   delta <- IK.foldTimer (return $ Delta timeZero) fgame factor tim
   let c = CActor target store
