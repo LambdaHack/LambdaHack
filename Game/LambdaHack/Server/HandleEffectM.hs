@@ -1266,10 +1266,9 @@ effectSendFlying :: MonadServerAtomic m
                  -> m UseResult
 effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
   v <- sendFlyingVector source target modePush
-  COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  lvl@Level{lxsize, lysize} <- getLevel (blid tb)
+  Level{lxsize, lysize} <- getLevel (blid tb)
   let eps = 0
       fpos = bpos tb `shift` v
   if braced tb then do
@@ -1280,30 +1279,25 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
     Just [] -> error $ "projecting from the edge of level"
                        `showFailure` (fpos, tb)
     Just (pos : rest) -> do
-      let t = lvl `at` pos
-      if not $ Tile.isWalkable coTileSpeedup t
-      then return UseDud  -- supported by a wall, not noticeable
+      weightAssocs <- getsState $ fullAssocs target [CInv, CEqp, COrgan]
+      let weight = sum $ map (jweight . itemBase . snd) weightAssocs
+          path = bpos tb : pos : rest
+          (trajectory, (speed, range)) =
+            computeTrajectory weight throwVelocity throwLinger path
+          ts = Just (trajectory, speed)
+      if null trajectory || btrajectory tb == ts
+      then return UseId  -- e.g., actor is too heavy; but a jerk is noticeable
       else do
-        weightAssocs <- getsState $ fullAssocs target [CInv, CEqp, COrgan]
-        let weight = sum $ map (jweight . itemBase . snd) weightAssocs
-            path = bpos tb : pos : rest
-            (trajectory, (speed, range)) =
-              computeTrajectory weight throwVelocity throwLinger path
-            ts = Just (trajectory, speed)
-        if null trajectory || btrajectory tb == ts
-           || throwVelocity <= 0 || throwLinger <= 0
-        then return UseId  -- e.g., actor is too heavy; but a jerk is noticeable
-        else do
-          execSfx
-          execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
-          -- Give the actor back all the time spent flying (speed * range)
-          -- and also let the push start ASAP. So, he will not lose
-          -- any turn of movement (but he may need to retrace the push).
-          let delta = timeDeltaScale (ticksPerMeter speed) (-range)
-          modifyServer $ \ser ->
-            ser {sactorTime = ageActor (bfid tb) (blid tb) target delta
-                              $ sactorTime ser}
-          return UseUp
+        execSfx
+        execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
+        -- Give the actor back all the time spent flying (speed * range)
+        -- and also let the push start ASAP. So, he will not lose
+        -- any turn of movement (but he may need to retrace the push).
+        let delta = timeDeltaScale (ticksPerMeter speed) (-range)
+        modifyServer $ \ser ->
+          ser {sactorTime = ageActor (bfid tb) (blid tb) target delta
+                            $ sactorTime ser}
+        return UseUp
 
 sendFlyingVector :: MonadServerAtomic m
                  => ActorId -> ActorId -> Maybe Bool -> m Vector

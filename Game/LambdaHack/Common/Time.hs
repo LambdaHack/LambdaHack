@@ -240,14 +240,13 @@ ticksPerMeter (Speed v) =
 -- and velocity percent modifier.
 -- See <https://github.com/LambdaHack/LambdaHack/wiki/Item-statistics>.
 speedFromWeight :: Int -> Int -> Speed
-speedFromWeight !weight !velocityPercent =
+speedFromWeight !weight !throwVelocity =
   let w = fromIntegral weight
-      vp = fromIntegral velocityPercent
       mpMs | w < 250 = sInMs * 20
            | w < 1500 = sInMs * 20 * 1250 `div` (w + 1000)
            | w < 10500 = sInMs * (11000 - w) `div` 1000
            | otherwise = minimalSpeed
-      v = mpMs * vp `div` 100
+      v = mpMs * fromIntegral throwVelocity `div` 100
       -- We round down to the nearest multiple of 2M (unless the speed
       -- is very low), to ensure both turns of flight cover the same distance
       -- and that the speed matches the distance traveled exactly.
@@ -266,6 +265,6 @@ rangeFromSpeed (Speed v) = fromEnum $ v `div` sInMs
 
 -- | Calculate maximum range taking into account the linger percentage.
 rangeFromSpeedAndLinger :: Speed -> Int -> Int
-rangeFromSpeedAndLinger !speed !linger =
+rangeFromSpeedAndLinger !speed !throwLinger =
   let range = rangeFromSpeed speed
-  in linger * range `divUp` 100
+  in throwLinger * range `divUp` 100
