@@ -163,6 +163,8 @@ data SfxMsg =
   | SfxPurposeUnique
   | SfxColdFish
   | SfxTimerExtended ActorId ItemId CStore
+  | SfxCollideActor ActorId ActorId
+  | SfxCollideTile ActorId Point
   deriving (Show, Eq, Generic)
 
 instance Binary SfxMsg

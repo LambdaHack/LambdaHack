@@ -1170,6 +1170,22 @@ ppSfxMsg sfxMsg = case sfxMsg of
         cond = ["condition" | isTmpCondition $ itemBase itemFull]
     return $! makeSentence $
       ["the", name, stats] ++ cond ++ storeOwn ++ ["will now last longer"]
+  SfxCollideActor source target -> do
+    sbUI <- getsSession $ getActorUI source
+    tbUI <- getsSession $ getActorUI target
+    spart <- partActorLeader source sbUI
+    tpart <- partActorLeader target tbUI
+    return $! makeSentence $
+      [MU.SubjectVerbSg spart "painfully collide", "with", tpart]
+  SfxCollideTile source pos -> do
+    COps{cotile} <- getsState scops
+    sb <- getsState $ getActorBody source
+    lvl <- getLevel $ blid sb
+    sbUI <- getsSession $ getActorUI source
+    spart <- partActorLeader source sbUI
+    let object = MU.AW $ MU.Text $ TK.tname $ okind cotile $ lvl `at` pos
+    return $! makeSentence $
+      [MU.SubjectVerbSg spart "painfully collide", "with", object]
 
 strike :: MonadClientUI m
        => Bool -> ActorId -> ActorId -> ItemId -> CStore -> m ()

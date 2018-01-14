@@ -356,13 +356,13 @@ setTrajectory aid = do
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
   case btrajectory b of
-    Just (d : lv, speed) ->
-      if Tile.isWalkable coTileSpeedup $ lvl `at` (bpos b `shift` d)
+    Just (d : lv, speed) -> do
+      let tpos = bpos b `shift` d  -- target position
+      if Tile.isWalkable coTileSpeedup $ lvl `at` tpos
       then do
         -- Hit clears trajectory of non-projectiles in reqMelee so no need here.
         -- Non-projectiles displace, to make pushing in crowds less lethal
         -- and chaotic and to avoid hitting harpoons when pulled by them.
-        let tpos = bpos b `shift` d  -- target position
         case posToAidsLvl tpos lvl of
           [target] | not (bproj b) -> reqDisplace aid target
           _ -> reqMove aid d
@@ -374,8 +374,11 @@ setTrajectory aid = do
         execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
         -- Lose HP due to flying into an obstacle. Never kill a non-projectile
         -- in this way.
-        when (bhp b > oneM) $
+        when (bhp b > oneM) $ do
           execUpdAtomic $ UpdRefillHP aid minusM
+          unless (bproj b) $
+            execSfxAtomic
+            $ SfxMsgFid (bfid b) $ SfxCollideTile aid tpos
     Just ([], _) ->
       -- Non-projectile actor stops flying.
       assert (not $ bproj b)

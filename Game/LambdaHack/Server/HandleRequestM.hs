@@ -293,8 +293,14 @@ reqMelee source target iid cstore = do
           -- Deduct a hitpoint for a pierce of a projectile
           -- or due to a hurled actor colliding with another.
           -- Don't deduct if no pierce, to prevent spam. Never kill in this way.
-          when (bhp sb2 > oneM) $
+          when (bhp sb2 > oneM) $ do
             execUpdAtomic $ UpdRefillHP source minusM
+            unless (bproj sb2) $ do
+              execSfxAtomic $
+                SfxMsgFid (bfid sb2) $ SfxCollideActor source target
+              unless (bproj tb) $
+                execSfxAtomic $
+                  SfxMsgFid (bfid tb) $ SfxCollideActor source target
           when (not (bproj sb2) || bhp sb2 <= oneM) $
             -- Non-projectiles can't pierce, so terminate their flight.
             -- If projectile has too low HP to pierce, ditto.
