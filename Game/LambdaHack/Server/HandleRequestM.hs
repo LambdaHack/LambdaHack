@@ -14,7 +14,7 @@ module Game.LambdaHack.Server.HandleRequestM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , setBWait, managePerRequest, handleRequestTimedCases
-  , affectSmell, reqMelee, reqAlter, reqWait
+  , affectSmell, reqMelee, reqAlter, reqAlterFail, reqWait
   , reqMoveItems, reqMoveItem, computeRndTimeout, reqProject, reqApply
   , reqGameRestart, reqGameSave, reqTactic, reqAutomate
 #endif
@@ -368,6 +368,12 @@ reqDisplace source target = do
 -- | Search and/or alter the tile.
 reqAlter :: MonadServerAtomic m => ActorId -> Point -> m ()
 reqAlter source tpos = do
+  mfail <- reqAlterFail source tpos
+  let req = ReqAlter tpos
+  maybe (return ()) (execFailure source req) mfail
+
+reqAlterFail :: MonadServerAtomic m => ActorId -> Point -> m (Maybe ReqFailure)
+reqAlterFail source tpos = do
   COps{cotile, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   ar <- getsState $ getActorAspect source
@@ -379,7 +385,6 @@ reqAlter source tpos = do
   localTime <- getsState $ getLocalTime lid
   let alterSkill = EM.findWithDefault 0 Ability.AbAlter actorSk
       applySkill = EM.findWithDefault 0 Ability.AbApply actorSk
-      req = ReqAlter tpos
   embeds <- getsState $ getEmbedBag lid tpos
   lvl <- getLevel lid
   let serverTile = lvl `at` tpos
@@ -403,11 +408,11 @@ reqAlter source tpos = do
             execSfxAtomic $ SfxMsgFid (bfid sb)
             $ SfxExpected ("embedded" <+> jname itemBase) reqFail
           _ -> itemEffectEmbedded source lid tpos iid
-  if not $ adjacent (bpos sb) tpos then execFailure source req AlterDistant
+  if not $ adjacent (bpos sb) tpos then return $ Just AlterDistant
   else if Just clientTile == hiddenTile then  -- searches
     -- Only actors with AbAlter > 1 can search for hidden doors, etc.
     if alterSkill <= 1
-    then execFailure source req AlterUnskilled  -- don't leak about searching
+    then return $ Just AlterUnskilled  -- don't leak about searching
     else do
       -- Blocking by items nor actors does not prevent searching.
       -- Searching broadcasted, in case actors from other factions are present
@@ -428,9 +433,10 @@ reqAlter source tpos = do
       unless (Tile.isDoor coTileSpeedup serverTile
               || Tile.isChangable coTileSpeedup serverTile)
         tryApplyEmbeds
+      return Nothing  -- success
   else if clientTile == serverTile then  -- alters
     if alterSkill < Tile.alterMinSkill coTileSpeedup serverTile
-    then execFailure source req AlterUnskilled  -- don't leak about altering
+    then return $ Just AlterUnskilled  -- don't leak about altering
     else do
       let changeTo tgroup = do
             lvl2 <- getLevel lid
@@ -485,8 +491,7 @@ reqAlter source tpos = do
               _ -> Nothing
           groupsToAlterTo = mapMaybe toAlter feats
       if null groupsToAlterTo && null embeds then
-        -- No altering possible; silly client.
-        execFailure source req AlterNothing
+        return $ Just AlterNothing  -- no altering possible; silly client
       else
         if EM.notMember tpos $ lfloor lvl then
           if null (posToAidsLvl tpos lvl) then do
@@ -503,10 +508,11 @@ reqAlter source tpos = do
               [] -> return ()
               [groupToAlterTo] -> changeTo groupToAlterTo
               l -> error $ "tile changeable in many ways" `showFailure` l
-          else execFailure source req AlterBlockActor
-        else execFailure source req AlterBlockItem
+            return Nothing  -- success
+          else return $ Just AlterBlockActor
+        else return $ Just AlterBlockItem
   else  -- client is misguided re tile at that position, so bail out
-    execFailure source req AlterNothing
+    return $ Just AlterNothing
 
 -- * ReqWait
 

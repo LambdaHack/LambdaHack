@@ -372,13 +372,20 @@ setTrajectory aid = do
       else do
         -- Nothing from non-empty trajectories signifies obstacle hit.
         execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
-        -- Lose HP due to flying into an obstacle. Never kill a non-projectile
-        -- in this way.
-        when (bhp b > oneM) $ do
-          execUpdAtomic $ UpdRefillHP aid minusM
-          unless (bproj b) $
-            execSfxAtomic
-            $ SfxMsgFid (bfid b) $ SfxCollideTile aid tpos
+        if bproj b then do
+          -- Lose HP due to piercing an obstacle.
+          when (bhp b > oneM) $ do
+            execUpdAtomic $ UpdRefillHP aid minusM
+        else do
+          execSfxAtomic $ SfxMsgFid (bfid b) $ SfxCollideTile aid tpos
+          mfail <- reqAlterFail aid tpos
+          case mfail of
+            Nothing -> return ()  -- too late to announce anything
+            Just{} ->
+              -- Altering failed, probably just a wall, so lose HP
+              -- due to being pushed into an obstacle. Never kill in this way.
+              when (bhp b > oneM) $
+                execUpdAtomic $ UpdRefillHP aid minusM
     Just ([], _) ->
       -- Non-projectile actor stops flying.
       assert (not $ bproj b)
