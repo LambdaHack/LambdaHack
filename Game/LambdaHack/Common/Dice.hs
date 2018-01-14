@@ -76,8 +76,8 @@ instance Num Dice where
   signum = undefined
   fromInteger n = DiceI (fromInteger n)
 
--- | Cast dice scaled with current level depth.
--- Note that at the first level, the scaled dice are always ignored.
+-- | Cast dice scaled with current level depth. When scaling, we round up,
+-- so that the value of @1 `dL` 1@ is 1 even at the lowest level.
 --
 -- The implementation calls RNG as many times as there are dice rolls,
 -- which is costly, so content should prefer to case fewer dice
@@ -102,7 +102,7 @@ castDice randomR (AbsDepth lvlDepth) (AbsDepth maxDepth) dice = do
                 r <- randomR (start, k)
                 f (acc + r) (count - 1)
           f 0 n
-      scaleL k = (k * max 0 (lvlDepth - 1)) `div` max 1 (maxDepth - 1)
+      scaleL k = (k * max 1 lvlDepth) `divUp` max 1 maxDepth
       castD :: Dice -> m Int
       castD dice1 = case dice1 of
         DiceI k -> return k
