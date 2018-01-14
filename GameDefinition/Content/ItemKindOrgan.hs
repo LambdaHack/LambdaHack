@@ -60,7 +60,7 @@ hookedClaw = fist
   , icount   = 2  -- even if more, only the fore claws used for fighting
   , iverbHit = "hook"
   , idamage  = toDmg $ 2 `d` 1
-  , iaspects = [Timeout $ 8 - 1 `dL` 3]
+  , iaspects = [Timeout $ 10 - 1 `dL` 5]
   , ieffects = [Recharging (toOrganGameTurn "slowed" 2)]
   , idesc    = "A curved talon."
   }
@@ -176,7 +176,7 @@ sting = fist
   , icount   = 1
   , iverbHit = "sting"
   , idamage  = toDmg $ 1 `d` 1
-  , iaspects = [Timeout $ 8 - 1 `dL` 3, AddHurtMelee 40]
+  , iaspects = [Timeout $ 10 - 1 `dL` 5, AddHurtMelee 40]
   , ieffects = [Recharging (Paralyze 4)]
   , idesc    = "Painful, debilitating and harmful."
   }
@@ -186,7 +186,7 @@ venomTooth = fist
   , icount   = 2
   , iverbHit = "bite"
   , idamage  = toDmg $ 2 `d` 1
-  , iaspects = [Timeout $ 6 - 1 `dL` 3]
+  , iaspects = [Timeout $ 7 - 1 `dL` 3]
   , ieffects = [Recharging (toOrganGameTurn "slowed" (3 + 1 `d` 3))]
   , idesc    = "A chilling numbness spreads from its bite."
   }
@@ -196,7 +196,7 @@ venomFang = fist
   , icount   = 2
   , iverbHit = "bite"
   , idamage  = toDmg $ 2 `d` 1
-  , iaspects = [Timeout $ 8 - 1 `dL` 3]
+  , iaspects = [Timeout $ 10 - 1 `dL` 5]
   , ieffects = [Recharging (toOrganNone "poisoned")]
   , idesc    = "Dripping with deadly venom."
   }
@@ -206,7 +206,7 @@ screechingBeak = fist
   , icount   = 1
   , iverbHit = "peck"
   , idamage  = toDmg $ 2 `d` 1
-  , iaspects = [Timeout $ 6 - 1 `dL` 3]
+  , iaspects = [Timeout $ 7 - 1 `dL` 3]
   , ieffects = [Recharging $ Summon "scavenger" $ 1 `dL` 3]
   , idesc    = "Both a weapon and a beacon, calling more scavengers to the meal."
   }
