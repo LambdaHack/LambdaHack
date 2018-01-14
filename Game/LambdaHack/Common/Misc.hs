@@ -10,7 +10,7 @@ module Game.LambdaHack.Common.Misc
   , GroupName, Freqs, Rarity, AbsDepth(..), Tactic(..)
   , toGroupName, validateRarity, describeTactic
   , makePhrase, makeSentence, normalLevelBound, breturn
-  , appDataDir, xM, xD, minusM, minusM1, oneM
+  , appDataDir, xM, xD, minusM, minusM1, oneM, tenthM
   ) where
 
 import Prelude ()
@@ -228,10 +228,11 @@ xM k = fromIntegral k * 1000000
 xD :: Double -> Double
 xD k = k * 1000000
 
-minusM, minusM1, oneM :: Int64
+minusM, minusM1, oneM, tenthM :: Int64
 minusM = xM (-1)
 minusM1 = xM (-1) - 1
 oneM = xM 1
+tenthM = 100000
 
 -- Data.Binary orphan instances
 

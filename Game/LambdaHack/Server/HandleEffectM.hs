@@ -80,30 +80,34 @@ applyMeleeDamage source target iid = do
   itemBase <- getsState $ getItemBody iid
   if jdamage itemBase == 0 then return False else do  -- speedup
     sb <- getsState $ getActorBody source
-    tb <- getsState $ getActorBody target
-    ar <- getsState $ getActorAspect target
     hurtMult <- getsState $ armorHurtBonus source target
     totalDepth <- getsState stotalDepth
-    Level{ldepth} <- getLevel (blid tb)
+    Level{ldepth} <- getLevel (blid sb)
     dmg <- rndToAction $ castDice ldepth totalDepth $ jdamage itemBase
-    let hpMax = aMaxHP ar
-        rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
+    let rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
         speedDeltaHP = case btrajectory sb of
           Just (_, speed) -> - modifyDamageBySpeed rawDeltaHP speed
           Nothing -> - rawDeltaHP
-        -- Any amount of damage is serious, because next turn a stronger
-        -- projectile or melee weapon may be used and also it accumulates.
-        serious = speedDeltaHP < 0 && source /= target && not (bproj tb)
-        deltaHP | serious = -- if HP overfull, at least cut back to max HP
-                            min speedDeltaHP (xM hpMax - bhp tb)
-                | otherwise = speedDeltaHP
-    if deltaHP < 0 then do  -- damage the target, never heal
-      refillHP serious target tb deltaHP
+    if speedDeltaHP < 0 then do  -- damage the target, never heal
+      refillHP source target speedDeltaHP
       return True
     else return False
 
-refillHP :: MonadServerAtomic m => Bool -> ActorId -> Actor -> Int64 -> m ()
-refillHP serious target tbOld deltaHP = do
+refillHP :: MonadServerAtomic m => ActorId -> ActorId -> Int64 -> m ()
+refillHP source target speedDeltaHP = assert (speedDeltaHP /= 0) $ do
+  tbOld <- getsState $ getActorBody target
+  ar <- getsState $ getActorAspect target
+  -- We ignore light poison, tiny blasts and similar -1HP per turn annoyances.
+  let serious = speedDeltaHP < minusM && source /= target && not (bproj tbOld)
+      hpMax = aMaxHP ar
+      deltaHP0 | serious = -- if overfull, at least cut back to max
+                           min speedDeltaHP (xM hpMax - bhp tbOld)
+               | otherwise = speedDeltaHP
+      deltaHP = if | deltaHP0 > 0 && bhp tbOld > xM 999 ->  -- UI limit
+                     tenthM  -- avoid nop, to avoid loops
+                   | deltaHP0 < 0 && bhp tbOld < - xM 999 ->
+                     -tenthM
+                   | otherwise -> deltaHP0
   execUpdAtomic $ UpdRefillHP target deltaHP
   when serious $ cutCalm target
   -- If leader just lost all HP, change the leader to let players rescue him,
@@ -327,27 +331,17 @@ effectBurn :: MonadServerAtomic m
            => Dice.Dice -> ActorId -> ActorId -> m UseResult
 effectBurn nDm source target = do
   tb <- getsState $ getActorBody target
-  ar <- getsState $ getActorAspect target
-  let hpMax = aMaxHP ar
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
-  n <- rndToAction $ castDice ldepth totalDepth nDm
-  let rawDeltaHP = - xM n
-      -- We ignore minor burns.
-      serious = n > 1 && source /= target && not (bproj tb)
-      deltaHP | serious = -- if HP overfull, at least cut back to max HP
-                          min rawDeltaHP (xM hpMax - bhp tb)
-              | otherwise = rawDeltaHP
-  if deltaHP == 0
-  then return UseDud
-  else do
-    sb <- getsState $ getActorBody source
-    -- Display the effect more accurately.
-    let reportedEffect = IK.Burn $ Dice.intToDice n
-    execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
-    -- Damage the target.
-    refillHP serious target tb deltaHP
-    return UseUp
+  n0 <- rndToAction $ castDice ldepth totalDepth nDm
+  let n = max 1 n0  -- avoid 0 and negative burn
+      deltaHP = - xM n
+  sb <- getsState $ getActorBody source
+  -- Display the effect more accurately.
+  let reportedEffect = IK.Burn $ Dice.intToDice n
+  execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
+  refillHP source target deltaHP
+  return UseUp
 
 -- ** Explode
 
@@ -430,27 +424,21 @@ effectExplode execSfx cgroup target = do
 -- Unaffected by armor.
 effectRefillHP :: MonadServerAtomic m
                => Int -> ActorId -> ActorId -> m UseResult
-effectRefillHP power source target = do
+effectRefillHP power0 source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  ar <- getsState $ getActorAspect target
-  let hpMax = aMaxHP ar
-      -- We ignore light poison and similar -1HP per turn annoyances.
-      serious = power < -1 && source /= target && not (bproj tb)
-      deltaHP | serious = -- if overfull, at least cut back to max
-                          min (xM power) (xM hpMax - bhp tb)
-              | otherwise = min (xM power) (max 0 $ xM 999 - bhp tb)
-                                                         -- UI limitation
   curChalSer <- getsServer $ scurChalSer . soptions
   fact <- getsState $ (EM.! bfid tb) . sfactionD
-  if | cfish curChalSer && power > 0
+  let power = if power0 <= -1 then power0 else max 1 power0  -- avoid 0
+      deltaHP = xM power
+  if | cfish curChalSer && deltaHP > 0
        && fhasUI (gplayer fact) && bfid sb /= bfid tb -> do
        execSfxAtomic $ SfxMsgFid (bfid tb) SfxColdFish
        return UseId
-     | deltaHP == 0 -> return UseDud
      | otherwise -> do
-       execSfxAtomic $ SfxEffect (bfid sb) target (IK.RefillHP power) deltaHP
-       refillHP serious target tb deltaHP
+       let reportedEffect = IK.RefillHP power
+       execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
+       refillHP source target deltaHP
        return UseUp
 
 cutCalm :: MonadServerAtomic m => ActorId -> m ()
@@ -469,21 +457,24 @@ cutCalm target = do
 
 effectRefillCalm :: MonadServerAtomic m
                  => m () -> Int -> ActorId -> ActorId -> m UseResult
-effectRefillCalm execSfx power source target = do
+effectRefillCalm execSfx power0 source target = do
   tb <- getsState $ getActorBody target
   ar <- getsState $ getActorAspect target
-  let calmMax = aMaxCalm ar
-      serious = not (bproj tb) && source /= target && power > 1
-      deltaCalm | power < 0 && serious =  -- if overfull, at least cut to max
-                    min (xM power) (xM calmMax - bcalm tb)
-                | otherwise = min (xM power) (max 0 $ xM 999 - bcalm tb)
-                                                           -- UI limitation
-  if deltaCalm == 0
-  then return UseDud
-  else do
-    execSfx
-    udpateCalm target deltaCalm
-    return UseUp
+  let power = if power0 <= -1 then power0 else max 1 power0  -- avoid 0
+      rawDeltaCalm = xM power
+      calmMax = aMaxCalm ar
+      serious = rawDeltaCalm < minusM && source /= target && not (bproj tb)
+      deltaCalm0 | serious =  -- if overfull, at least cut back to max
+                     min rawDeltaCalm (xM calmMax - bcalm tb)
+                 | otherwise = rawDeltaCalm
+      deltaCalm = if | deltaCalm0 > 0 && bcalm tb > xM 999 ->  -- UI limit
+                       tenthM  -- avoid nop, to avoid loops
+                     | deltaCalm0 < 0 && bcalm tb < - xM 999 ->
+                       -tenthM
+                     | otherwise -> deltaCalm0
+  execSfx
+  udpateCalm target deltaCalm
+  return UseUp
 
 -- ** Dominate
 
@@ -597,14 +588,15 @@ effectImpress :: MonadServerAtomic m
 effectImpress recursiveCall execSfx source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  if | bproj tb || bhp tb <= 0 -> return UseDud  -- avoid spam just before death
+  if | bproj tb -> return UseDud
      | bfid tb == bfid sb -> do
        -- Unimpress wrt others, but only once.
        ur <- recursiveCall $ IK.DropItem 1 1 COrgan "impressed"
        when (ur == UseUp) execSfx
        return ur
      | otherwise -> do
-       execSfx
+       unless (bhp tb <= 0)
+         execSfx  -- avoid spam just before death
        effectCreateItem (Just $ bfid sb) (Just 1) target COrgan
                         "impressed" IK.timerNone
 
@@ -623,11 +615,12 @@ effectSummon grp nDm iid source target periodic = do
   actorAspect <- getsState sactorAspect
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
-  power <- rndToAction $ castDice ldepth totalDepth nDm
   item <- getsState $ getItemBody iid
-  -- We put @source@ instead of @target@ and @power@ instead of dice
-  -- to make the message more accurate.
-  let effect = IK.Summon grp $ Dice.intToDice power
+  power0 <- rndToAction $ castDice ldepth totalDepth nDm
+  let power = max power0 1  -- KISS, always at least one summon
+      -- We put @source@ instead of @target@ and @power@ instead of dice
+      -- to make the message more accurate.
+      effect = IK.Summon grp $ Dice.intToDice power
       execSfx = execSfxAtomic $ SfxEffect (bfid sb) source effect 0
       sar = actorAspect EM.! source
       tar = actorAspect EM.! target
@@ -639,7 +632,6 @@ effectSummon grp nDm iid source target periodic = do
   -- via draining one's calm on purpose when an item with good activation
   -- has a nasty summoning side-effect (the exploit still works on durables).
   if | bproj sb -> return UseDud  -- basically a misfire
-     | power <= 0 -> return UseDud  -- e.g., @1 `dL` x@ at depth 1
      | (periodic || durable)
        && (bcalm sb < - deltaCalm || not (calmEnough sb sar)) -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonLackCalm source
@@ -854,9 +846,10 @@ effectParalyze execSfx nDm target = do
   tb <- getsState $ getActorBody target
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
-  p <- rndToAction $ castDice ldepth totalDepth nDm
-  let t = timeDeltaScale (Delta timeClip) p
-  if p <= 0 || bproj tb || bhp tb <= 0
+  power0 <- rndToAction $ castDice ldepth totalDepth nDm
+  let power = max power0 1  -- KISS, avoid special case
+      t = timeDeltaScale (Delta timeClip) power
+  if bproj tb
   then return UseDud
   else do
     execSfx
@@ -875,16 +868,16 @@ effectInsertMove execSfx nDm target = do
   ar <- getsState $ getActorAspect target
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
-  p <- rndToAction $ castDice ldepth totalDepth nDm
-  let actorTurn = ticksPerMeter $ bspeed tb ar
-      t = timeDeltaScale actorTurn (-p)
-  if p <= 0
-  then return UseDud
-  else do
-    execSfx
-    modifyServer $ \ser ->
-      ser {sactorTime = ageActor (bfid tb) (blid tb) target t $ sactorTime ser}
-    return UseUp
+  power0 <- rndToAction $ castDice ldepth totalDepth nDm
+  let power = max power0 1  -- KISS, avoid special case
+      actorTurn = ticksPerMeter $ bspeed tb ar
+      t = timeDeltaScale actorTurn (-power)
+  -- Projectiles permitted; can't be suspended mid-air, as in @effectParalyze@
+  -- but can be propelled.
+  execSfx
+  modifyServer $ \ser ->
+    ser {sactorTime = ageActor (bfid tb) (blid tb) target t $ sactorTime ser}
+  return UseUp
 
 -- ** Teleport
 
@@ -939,8 +932,8 @@ effectCreateItem jfidRaw mcount target store grp tim = do
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
   let fscale unit nDm = do
-        k <- rndToAction $ castDice ldepth totalDepth nDm
-        let !_A = assert (k >= 0) ()
+        k0 <- rndToAction $ castDice ldepth totalDepth nDm
+        let k = max 1 k0  -- KISS, don't freak out if dice permit 0
         return $! timeDeltaScale unit k
       fgame = fscale (Delta timeTurn)
       factor nDm = do

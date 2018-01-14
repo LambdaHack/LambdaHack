@@ -372,8 +372,10 @@ setTrajectory aid = do
       else do
         -- Nothing from non-empty trajectories signifies obstacle hit.
         execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
-        -- Lose HP due to flying into an obstacle.
-        refillHP False aid b minusM
+        -- Lose HP due to flying into an obstacle. Never kill a non-projectile
+        -- in this way.
+        when (bhp b > oneM) $
+          execUpdAtomic $ UpdRefillHP aid minusM
     Just ([], _) ->
       -- Non-projectile actor stops flying.
       assert (not $ bproj b)
