@@ -169,6 +169,7 @@ wallObscuredFrescoedH = TileKind
                , HideAs "suspect horizontal wall Lit"
                , Indistinct
                ]  -- a bit beneficial, but AI would loop if allowed to trigger
+                  -- so no @ConsideredByAI@
   }
 pillar = TileKind
   { tsymbol  = 'O'

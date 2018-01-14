@@ -41,6 +41,9 @@ necklace, ring, potion, flask, scroll, wand, gem :: ItemKind  -- generic templat
 -- a standard item, permit only a couple possible variants.
 -- This is especially important if an item kind has mulitple random aspects.
 -- Instead multiply dice results, e.g., (1 `d` 3) * 5 instead of 1 `d` 15.
+--
+-- Beware of non-periodic non-weapon durable items with beneficial effects
+-- and low timeout -- AI will starve applying such an item incessantly.
 
 -- * Item group symbols, partially from Nethack
 
@@ -707,6 +710,8 @@ jumpingPole = ItemKind
   , idamage  = toDmg 0
   , iaspects = [Timeout $ (2 + 1 `d` 2 - 1 `dL` 2) * 10]
   , ieffects = [Recharging (toOrganActorTurn "hasted" 1)]
+                 -- safe for AI, because it adds time, so when AI applies it
+                 -- again and again, it gets its time back and can move around
   , ifeature = [Durable, Applicable, Identified]
   , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
   , ikit     = []
