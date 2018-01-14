@@ -81,7 +81,8 @@ isMelee :: Item -> Bool
 isMelee item = IK.Meleeable `elem` jfeature item
 
 isTmpCondition :: Item -> Bool
-isTmpCondition item = jsymbol item == '+'
+isTmpCondition item = IK.Fragile `elem` jfeature item
+                      && IK.Durable `elem` jfeature item
 
 isBlast :: Item -> Bool
 isBlast item = IK.Blast `elem` jfeature item
