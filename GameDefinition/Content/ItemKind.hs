@@ -968,19 +968,19 @@ ring3 = ring
   { irarity  = [(10, 8)]
   , iaspects = [ AddMaxHP $ 10 + (1 `dL` 5) * 2
                , AddMaxCalm $ -20 + (1 `dL` 5) * 2 ]
-  , ieffects = [Explode "violent chemical", EqpSlot EqpSlotAddMaxHP]
+  , ieffects = [EqpSlot EqpSlotAddMaxHP]
   }
 ring4 = ring
   { irarity  = [(5, 1), (10, 10)]  -- needed after other rings drop Calm
   , iaspects = [AddMaxCalm $ 25 + (1 `dL` 4) * 5]
-  , ieffects = [Explode "violent chemical", EqpSlot EqpSlotMiscBonus]
+  , ieffects = [EqpSlot EqpSlotMiscBonus]
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with solemn, strangely comforting, worn out words."
   }
 ring5 = ring
   { irarity  = [(3, 3), (10, 3)]
   , iaspects = [ AddHurtMelee $ (2 + 1 `d` 2 + (1 `dL` 2) * 2 ) * 3
                , AddMaxHP $ (-2 - (1 `d` 2) + (1 `dL` 2) * 2) * 3 ]  -- !!!
-  , ieffects = [Explode "violent chemical", EqpSlot EqpSlotAddHurtMelee]
+  , ieffects = [EqpSlot EqpSlotAddHurtMelee]
   }
 ring6 = ring  -- by the time it's found, probably no space in eqp
   { irarity  = [(5, 0), (10, 2)]
