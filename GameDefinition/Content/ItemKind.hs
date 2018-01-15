@@ -294,7 +294,7 @@ blanket = ItemKind
 -- is intended to be an interesting tactical decision.
 --
 -- Flasks are often not natural; maths, magic, distillery.
--- In reality, they just cover all temporary effects, which in turn matches
+-- In reality, they just cover all temporary conditions, which in turn matches
 -- all aspects.
 --
 -- No flask nor temporary organ of Calm depletion, since Calm reduced often.

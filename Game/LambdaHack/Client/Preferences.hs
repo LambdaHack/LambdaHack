@@ -36,7 +36,7 @@ import           Game.LambdaHack.Content.ModeKind
 -- nothing better to do than to melee, or when the actor is stuck or idle
 -- or laying in wait or luring an enemy from a safe distance.
 -- So there is less than @averageTurnValue@ included in each benefit,
--- so in case when turn is not spent, e.g, periodic or temporary effects,
+-- so in case when turn is not spent, e.g, periodic or temporary conditions,
 -- the difference in value is only slight.
 effectToBenefit :: COps -> Faction -> IK.Effect -> (Double, Double)
 effectToBenefit cops fact eff =
@@ -200,7 +200,7 @@ durabilityMult = avgItemLife / avgItemDelay
 -- effects, knowing in some temporary organs, e.g., poison or regeneration,
 -- they are triggered at each item copy destruction. They are applied to self,
 -- hence we take the self component of valuation. We multiply by the count
--- of created/dropped organs, because for temporary effects it determines
+-- of created/dropped organs, because for temporary conditions it determines
 -- how many times the effect is applied, before the last copy expires.
 --
 -- The temporary organs are not durable nor in infnite copies, so to give
