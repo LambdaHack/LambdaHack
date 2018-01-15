@@ -341,15 +341,14 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
           _ -> discoFirst
       colorSymbol = viewItem itemBase
       blurb =
-        (" "
-         <> nstats
-         <> ":"
-         <> (if markParagraphs then "\n\n" else ""))
-        <+> desc
-        <> (if markParagraphs && not (T.null desc) then "\n\n" else "")
-        <+> (if weight > 0
-             then makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
-             else "")
+        ((" "
+          <> nstats
+          <> (if markParagraphs then ":\n\n" else ": ")
+          <> desc
+          <> (if markParagraphs && not (T.null desc) then "\n\n" else ""))
+         <+> (if weight > 0
+              then makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
+              else ""))
         <+> featureSentences
         <+> eqpSlotSentence
         <+> sourceDesc
