@@ -1170,13 +1170,17 @@ ppSfxMsg sfxMsg = case sfxMsg of
         cond = ["condition" | isTmpCondition $ itemBase itemFull]
     return $! makeSentence $
       ["the", name, stats] ++ cond ++ storeOwn ++ ["will now last longer"]
-  SfxCollideActor source target -> do
-    sbUI <- getsSession $ getActorUI source
-    tbUI <- getsSession $ getActorUI target
-    spart <- partActorLeader source sbUI
-    tpart <- partActorLeader target tbUI
-    return $! makeSentence $
-      [MU.SubjectVerbSg spart "painfully collide", "with", tpart]
+  SfxCollideActor lid source target -> do
+    sourceSeen <- getsState $ memActor source lid
+    targetSeen <- getsState $ memActor target lid
+    if sourceSeen && targetSeen then do
+      sbUI <- getsSession $ getActorUI source
+      tbUI <- getsSession $ getActorUI target
+      spart <- partActorLeader source sbUI
+      tpart <- partActorLeader target tbUI
+      return $! makeSentence $
+        [MU.SubjectVerbSg spart "painfully collide", "with", tpart]
+    else return ""
   SfxCollideTile source pos -> do
     COps{cotile} <- getsState scops
     sb <- getsState $ getActorBody source
