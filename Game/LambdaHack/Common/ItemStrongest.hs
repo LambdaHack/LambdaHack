@@ -122,22 +122,30 @@ damageUsefulness :: Item -> Double
 damageUsefulness item = let v = min 1000 (10 * Dice.meanDice (jdamage item))
                         in assert (v >= 0) v
 
-strongestMelee :: Maybe DiscoveryBenefit -> Time -> [(ItemId, ItemFull)]
+strongestMelee :: DiscoveryKind -> DiscoveryAspect -> Maybe DiscoveryBenefit
+               -> Time -> [(ItemId, ItemFull)]
                -> [(Double, (ItemId, ItemFull))]
-strongestMelee _ _ [] = []
-strongestMelee mdiscoBenefit localTime is =
+strongestMelee _ _ _ _ [] = []
+strongestMelee discoKind discoAspect mdiscoBenefit localTime is =
   -- For simplicity we assume, if weapon not recharged, all important effects,
   -- good and bad, are disabled and only raw damage remains.
   let f (iid, itemFull) =
         let rawDmg = (damageUsefulness $ itemBase itemFull, (iid, itemFull))
+            ix = jkindIx $ itemBase itemFull
+            constantAspects = (kmConst <$> EM.lookup ix discoKind) == Just True
+            unIDedBonus | iid `EM.member` discoAspect || constantAspects = 0
+                        | otherwise = 1000  -- exceptionally strong weapon
         in case mdiscoBenefit of
-          Just discoBenefit | hasCharge localTime itemFull ->
-            -- For fighting, as opposed to equipping, we value weapon
-            -- only for its raw damage and harming effects.
-            case EM.lookup iid discoBenefit of
-              Just Benefit{benMelee} -> (- benMelee, (iid, itemFull))
-              Nothing -> rawDmg
-          _  -> rawDmg
+          Just discoBenefit -> case EM.lookup iid discoBenefit of
+            Just Benefit{benMelee} ->
+              -- For fighting, as opposed to equipping, we value weapon
+              -- only for its raw damage and harming effects.
+              let dmg = if hasCharge localTime itemFull
+                        then (- benMelee, (iid, itemFull))
+                        else rawDmg
+              in first (+ unIDedBonus) dmg
+            Nothing -> first (+ 1000) rawDmg -- not even kind known
+          Nothing -> rawDmg  -- not interested about ID
   -- We can't filter out weapons that are not harmful to victim
   -- (@benMelee >= 0), because actors use them if nothing else available,
   -- e.g., geysers, bees. This is intended and fun.

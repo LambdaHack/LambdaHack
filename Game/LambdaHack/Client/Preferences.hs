@@ -203,7 +203,7 @@ durabilityMult = avgItemLife / avgItemDelay
 -- of created/dropped organs, because for temporary effects it determines
 -- how many times the effect is applied, before the last copy expires.
 --
--- The organs are not durable nor in infnite copies, so to give
+-- The temporary organs are not durable nor in infnite copies, so to give
 -- continous benefit, organ has to be recreated each @turnTimer@ turns.
 -- Creation takes a turn, so incurs @averageTurnValue@ cost.
 -- That's how the lack of durability impacts their value, not via
@@ -360,7 +360,7 @@ totalUsefulness !cops !fact !effects !aspects !item =
       durable = IK.Durable `elem` jfeature item
       -- If recharging effects not periodic, we add the self part,
       -- because they are applied to self. If they are periodic we can't
-      -- effectively apply them, becasue they are never recharged,
+      -- effectively apply them, because they are never recharged,
       -- because they activate as soon as recharged.
       benApply = max 0 $  -- because optional; I don't need to apply
         (effSelf + effDice  -- hits self with dice too, when applying

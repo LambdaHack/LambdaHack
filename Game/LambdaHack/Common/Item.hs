@@ -265,7 +265,7 @@ data ItemFull = ItemFull
   deriving Show
 
 -- | Partial information about item kinds. These are assigned to each
--- 'ItemKindIx'. There is an item kinda, mean aspect value computed
+-- 'ItemKindIx'. There is an item kind, mean aspect value computed
 -- (and here cached) for items of that kind and a flag saying whether
 -- the item's aspects are constant rather than random or dependent
 -- on dungeon level where the item is created.
