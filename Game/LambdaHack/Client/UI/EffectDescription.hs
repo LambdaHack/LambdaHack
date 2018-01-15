@@ -1,6 +1,6 @@
 -- | Description of effects.
 module Game.LambdaHack.Client.UI.EffectDescription
-  ( effectToSuffix
+  ( DetailLevel(..), effectToSuffix
   , slotToSentence, slotToName, slotToDesc, slotToDecorator, statSlots
   , kindAspectToSuffix, featureToSuff, featureToSentence, affixDice
 #ifdef EXPOSE_INTERNAL
@@ -23,6 +23,9 @@ import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Content.ItemKind
 
+data DetailLevel = DetailLow | DetailMedium | DetailHigh | DetailAll
+  deriving (Eq, Ord, Enum, Bounded)
+
 -- | Suffix to append to a basic content name if the content causes the effect.
 --
 -- We show absolute time in seconds, not @moves@, because actors can have
@@ -33,8 +36,8 @@ import           Game.LambdaHack.Content.ItemKind
 -- We show distances in @steps@, because one step, from a tile to another
 -- tile, is always 1 meter. We don't call steps @tiles@, reserving
 -- that term for the context of terrain kinds or units of area.
-effectToSuffix :: Int -> Effect -> Text
-effectToSuffix fullInfo effect =
+effectToSuffix :: DetailLevel -> Effect -> Text
+effectToSuffix detailLevel effect =
   case effect of
     ELabel _ -> ""  -- printed specially
     EqpSlot{} -> ""  -- used in @slotToSentence@ instead
@@ -102,8 +105,8 @@ effectToSuffix fullInfo effect =
     OneOf l ->
       let subject = if length l <= 5 then "marvel" else "wonder"
           header = makePhrase ["of", MU.CardinalWs (length l) subject]
-          marvels = T.intercalate ", " $ map (effectToSuffix fullInfo) l
-      in if fullInfo >= 9 && marvels /= ""
+          marvels = T.intercalate ", " $ map (effectToSuffix detailLevel) l
+      in if detailLevel >= DetailAll && marvels /= ""
          then header <+> "[" <> marvels <> "]"
          else header
     OnSmash _ -> ""  -- printed inside a separate section
@@ -112,7 +115,7 @@ effectToSuffix fullInfo effect =
     Unique -> ""  -- marked by capital letters in name
     Periodic -> ""  -- printed specially
     Composite effs -> T.intercalate " and then "
-                    $ filter (/= "") $ map (effectToSuffix fullInfo) effs
+                    $ filter (/= "") $ map (effectToSuffix detailLevel) effs
 
 slotToSentence :: EqpSlot -> Text
 slotToSentence es = case es of

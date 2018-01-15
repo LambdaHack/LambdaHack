@@ -42,9 +42,10 @@ show64With2 n =
 
 -- | The part of speech describing the item parameterized by the number
 -- of effects/aspects to show..
-partItemN :: FactionId -> FactionDict -> Bool -> Int -> Int -> Time -> ItemFull
+partItemN :: FactionId -> FactionDict -> Bool -> DetailLevel -> Int
+          -> Time -> ItemFull
           -> (Bool, Bool, MU.Part, MU.Part)
-partItemN side factionD ranged fullInfo n localTime itemFull =
+partItemN side factionD ranged detailLevel n localTime itemFull =
   let genericName = jname $ itemBase itemFull
   in case itemDisco itemFull of
     Nothing ->
@@ -61,11 +62,11 @@ partItemN side factionD ranged fullInfo n localTime itemFull =
                 | itemK itemFull == 1 && lenCh == 1 = "(charging)"
                 | itemK itemFull == lenCh = "(all charging)"
                 | otherwise = "(" <> tshow lenCh <+> "charging)"
-          skipRecharging = fullInfo <= 4 && lenCh >= itemK itemFull
+          skipRecharging = detailLevel <= DetailLow
+                           && lenCh >= itemK itemFull
           (effTsRaw, rangedDamage) =
-            textAllAE fullInfo skipRecharging itemFull
-          effTs = filter (not . T.null) effTsRaw
-                  ++ if ranged then rangedDamage else []
+            textAllAE detailLevel skipRecharging itemFull
+          effTs = effTsRaw ++ if ranged then rangedDamage else []
           lsource = case jfid $ itemBase itemFull of
             Just fid | jname (itemBase itemFull) `elem` ["impressed"] ->
               ["by" <+> if fid == side
@@ -85,9 +86,10 @@ partItemN side factionD ranged fullInfo n localTime itemFull =
       in ( not (null lsource) || temporary
          , unique, capName, MU.Phrase $ map MU.Text ts )
 
-textAllAE :: Int -> Bool -> ItemFull -> ([Text], [Text])
-textAllAE fullInfo skipRecharging ItemFull{itemBase, itemDisco} =
-  let features | fullInfo >= 9 = map featureToSuff $ sort $ jfeature itemBase
+textAllAE :: DetailLevel -> Bool -> ItemFull -> ([Text], [Text])
+textAllAE detailLevel skipRecharging ItemFull{itemBase, itemDisco} =
+  let features | detailLevel >= DetailAll =
+                   map featureToSuff $ sort $ jfeature itemBase
                | otherwise = []
   in case itemDisco of
     Nothing -> (features, [])
@@ -101,21 +103,21 @@ textAllAE fullInfo skipRecharging ItemFull{itemBase, itemDisco} =
           elabel :: IK.Effect -> Bool
           elabel IK.ELabel{} = True
           elabel _ = False
-          notDetail :: Int -> IK.Effect -> Bool
-          notDetail fullI IK.Explode{} = fullI >= 7
-          notDetail _ _ = True
           active = goesIntoEqp itemBase
-          splitAE :: Int -> [IK.Aspect] -> [IK.Effect] -> [Text]
-          splitAE fullI aspects effects =
-            let ppA = kindAspectToSuffix
-                ppE = effectToSuffix fullI
+          splitAE :: DetailLevel -> [IK.Aspect] -> [IK.Effect] -> [Text]
+          splitAE detLev aspects effects =
+            let shownInDetail :: IK.Effect -> Bool
+                shownInDetail IK.Explode{} = detLev >= DetailAll
+                shownInDetail _ = True
+                ppA = kindAspectToSuffix
+                ppE = effectToSuffix detLev
                 reduce_a = maybe "?" tshow . Dice.reduceDice
                 periodic = IK.Periodic `elem` IK.ieffects itemKind
                 mtimeout = find timeoutAspect aspects
                 restAs = sort aspects
                 -- Effects are not sorted, because they fire in the order
                 -- specified.
-                restEs = filter (notDetail fullI) effects
+                restEs = filter shownInDetail effects
                 aes = if active
                       then map ppA restAs ++ map ppE restEs
                       else map ppE restEs ++ map ppA restAs
@@ -156,22 +158,23 @@ textAllAE fullInfo skipRecharging ItemFull{itemBase, itemDisco} =
                   _ -> if jdamage itemBase == 0
                        then ""
                        else tshow (jdamage itemBase)
-            in elab ++ if fullI >= 6
-                       then [periodicOrTimeout] ++ [damage] ++ aes
-                            ++ [onSmash | fullI >= 7]
-                       else [damage]
-          split3 ass eff = let sp = splitAE fullInfo ass eff
-                           in if any (/= "") sp
-                              then sp
-                              else let sp2 = splitAE 6 ass eff
-                                   in if any (/= "") sp2
-                                      then sp2
-                                      else splitAE maxBound ass eff
+            in filter (/= "")
+               $ elab ++ if detLev >= DetailHigh
+                         then [periodicOrTimeout] ++ [damage] ++ aes
+                              ++ [onSmash | detLev >= DetailAll]
+                         else [damage]
+          splitTry ass eff =
+            let splits = map (\detLev -> splitAE detLev ass eff)
+                             [minBound..maxBound]
+                splitsToTry = drop (fromEnum detailLevel) splits
+            in case filter (/= []) splitsToTry of
+                 detNonEmpty : _ -> detNonEmpty
+                 [] -> []
           aets = case itemAspect of
             Just aspectRecord ->
-              split3 (aspectRecordToList aspectRecord) (IK.ieffects itemKind)
+              splitTry (aspectRecordToList aspectRecord) (IK.ieffects itemKind)
             Nothing ->
-              split3 (IK.iaspects itemKind) (IK.ieffects itemKind)
+              splitTry (IK.iaspects itemKind) (IK.ieffects itemKind)
           IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemBase
           speed = speedFromWeight (jweight itemBase) throwVelocity
           meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
@@ -195,15 +198,15 @@ textAllAE fullInfo skipRecharging ItemFull{itemBase, itemDisco} =
 -- | The part of speech describing the item.
 partItem :: FactionId -> FactionDict -> Time -> ItemFull
          -> (Bool, Bool, MU.Part, MU.Part)
-partItem side factionD = partItemN side factionD False 5 4
+partItem side factionD = partItemN side factionD False DetailMedium 4
 
 partItemShort :: FactionId -> FactionDict -> Time -> ItemFull
               -> (Bool, Bool, MU.Part, MU.Part)
-partItemShort side factionD = partItemN side factionD False 4 4
+partItemShort side factionD = partItemN side factionD False DetailLow 4
 
 partItemHigh :: FactionId -> FactionDict -> Time -> ItemFull
              -> (Bool, Bool, MU.Part, MU.Part)
-partItemHigh side factionD = partItemN side factionD False 10 100
+partItemHigh side factionD = partItemN side factionD False DetailAll 100
 
 -- The @count@ can be different than @itemK@ in @ItemFull@, e.g., when picking
 -- a subset of items to drop.
@@ -211,7 +214,7 @@ partItemWsR :: FactionId -> FactionDict -> Bool -> Int -> Time -> ItemFull
             -> (Bool, MU.Part)
 partItemWsR side factionD ranged count localTime itemFull =
   let (temporary, unique, name, stats) =
-        partItemN side factionD ranged 5 4 localTime itemFull
+        partItemN side factionD ranged DetailMedium 4 localTime itemFull
   in ( temporary
      , if | temporary && count == 1 -> MU.Phrase [name, stats]
           | temporary ->
@@ -237,7 +240,7 @@ partItemShortAW side factionD localTime itemFull =
 partItemMediumAW :: FactionId -> FactionDict -> Time -> ItemFull -> MU.Part
 partItemMediumAW side factionD localTime itemFull =
   let (_, unique, name, stats) =
-        partItemN side factionD False 5 100 localTime itemFull
+        partItemN side factionD False DetailMedium 100 localTime itemFull
   in if unique
      then MU.Phrase ["the", name, stats]
      else MU.AW $ MU.Phrase [name, stats]
