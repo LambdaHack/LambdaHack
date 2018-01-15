@@ -33,8 +33,8 @@ import           Game.LambdaHack.Content.ItemKind
 -- We show distances in @steps@, because one step, from a tile to another
 -- tile, is always 1 meter. We don't call steps @tiles@, reserving
 -- that term for the context of terrain kinds or units of area.
-effectToSuffix :: Effect -> Text
-effectToSuffix effect =
+effectToSuffix :: Int -> Effect -> Text
+effectToSuffix fullInfo effect =
   case effect of
     ELabel _ -> ""  -- printed specially
     EqpSlot{} -> ""  -- used in @slotToSentence@ instead
@@ -101,14 +101,18 @@ effectToSuffix effect =
     ActivateInv symbol -> "of burst '" <> T.singleton symbol <> "'"
     OneOf l ->
       let subject = if length l <= 5 then "marvel" else "wonder"
-      in makePhrase ["of", MU.CardinalWs (length l) subject]
+          header = makePhrase ["of", MU.CardinalWs (length l) subject]
+          marvels = T.intercalate ", " $ map (effectToSuffix fullInfo) l
+      in if fullInfo >= 9 && marvels /= ""
+         then header <+> "[" <> marvels <> "]"
+         else header
     OnSmash _ -> ""  -- printed inside a separate section
     Recharging _ -> ""  -- printed inside Periodic or Timeout
     Temporary _ -> ""  -- only printed on destruction
     Unique -> ""  -- marked by capital letters in name
     Periodic -> ""  -- printed specially
-    Composite effs ->
-      T.intercalate " and then " $ filter (/= "") $ map effectToSuffix effs
+    Composite effs -> T.intercalate " and then "
+                    $ filter (/= "") $ map (effectToSuffix fullInfo) effs
 
 slotToSentence :: EqpSlot -> Text
 slotToSentence es = case es of

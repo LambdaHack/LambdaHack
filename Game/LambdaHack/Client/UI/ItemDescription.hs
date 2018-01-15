@@ -101,29 +101,27 @@ textAllAE fullInfo skipRecharging ItemFull{itemBase, itemDisco} =
           elabel :: IK.Effect -> Bool
           elabel IK.ELabel{} = True
           elabel _ = False
-          notDetail :: IK.Effect -> Bool
-          notDetail IK.Explode{} = fullInfo >= 6
-          notDetail _ = True
+          notDetail :: Int -> IK.Effect -> Bool
+          notDetail fullI IK.Explode{} = fullI >= 7
+          notDetail _ _ = True
           active = goesIntoEqp itemBase
-          splitAE :: [IK.Aspect] -> [IK.Effect] -> [Text]
-          splitAE aspects effects =
+          splitAE :: Int -> [IK.Aspect] -> [IK.Effect] -> [Text]
+          splitAE fullI aspects effects =
             let ppA = kindAspectToSuffix
-                ppE = effectToSuffix
+                ppE = effectToSuffix fullI
                 reduce_a = maybe "?" tshow . Dice.reduceDice
                 periodic = IK.Periodic `elem` IK.ieffects itemKind
                 mtimeout = find timeoutAspect aspects
                 restAs = sort aspects
                 -- Effects are not sorted, because they fire in the order
                 -- specified.
-                restEs = filter notDetail effects
+                restEs = filter (notDetail fullI) effects
                 aes = if active
                       then map ppA restAs ++ map ppE restEs
                       else map ppE restEs ++ map ppA restAs
-                rechargingTs = T.intercalate (T.singleton ' ')
-                               $ filter (not . T.null)
+                rechargingTs = T.intercalate " " $ filter (not . T.null)
                                $ map ppE $ stripRecharging restEs
-                onSmashTs = T.intercalate (T.singleton ' ')
-                            $ filter (not . T.null)
+                onSmashTs = T.intercalate " " $ filter (not . T.null)
                             $ map ppE $ stripOnSmash restEs
                 durable = IK.Durable `elem` jfeature itemBase
                 fragile = IK.Fragile `elem` jfeature itemBase
@@ -158,15 +156,22 @@ textAllAE fullInfo skipRecharging ItemFull{itemBase, itemDisco} =
                   _ -> if jdamage itemBase == 0
                        then ""
                        else tshow (jdamage itemBase)
-            in elab ++ if fullInfo >= 6 || fullInfo >= 2 && null elab
+            in elab ++ if fullI >= 6
                        then [periodicOrTimeout] ++ [damage] ++ aes
-                            ++ [onSmash | fullInfo >= 7]
+                            ++ [onSmash | fullI >= 7]
                        else [damage]
+          split3 ass eff = let sp = splitAE fullInfo ass eff
+                           in if any (/= "") sp
+                              then sp
+                              else let sp2 = splitAE 6 ass eff
+                                   in if any (/= "") sp2
+                                      then sp2
+                                      else splitAE maxBound ass eff
           aets = case itemAspect of
             Just aspectRecord ->
-              splitAE (aspectRecordToList aspectRecord) (IK.ieffects itemKind)
+              split3 (aspectRecordToList aspectRecord) (IK.ieffects itemKind)
             Nothing ->
-              splitAE (IK.iaspects itemKind) (IK.ieffects itemKind)
+              split3 (IK.iaspects itemKind) (IK.ieffects itemKind)
           IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemBase
           speed = speedFromWeight (jweight itemBase) throwVelocity
           meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
