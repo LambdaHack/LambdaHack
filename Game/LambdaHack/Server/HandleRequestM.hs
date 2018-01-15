@@ -10,11 +10,11 @@
 -- influence the outcome of the evaluation.
 module Game.LambdaHack.Server.HandleRequestM
   ( handleRequestAI, handleRequestUI, handleRequestTimed, switchLeader
-  , reqMove, reqDisplace, reqGameExit
+  , reqMove, reqDisplace, reqAlterFail, reqGameExit
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , setBWait, managePerRequest, handleRequestTimedCases
-  , affectSmell, reqMelee, reqAlter, reqAlterFail, reqWait
+  , affectSmell, reqMelee, reqAlter, reqWait
   , reqMoveItems, reqMoveItem, computeRndTimeout, reqProject, reqApply
   , reqGameRestart, reqGameSave, reqTactic, reqAutomate
 #endif
