@@ -597,13 +597,15 @@ potion7 = potion
 potion8 = potion
   { icount   = 1 `d` 4
   , irarity  = [(1, 7)]
-  , ieffects = [ DropItem 1 maxBound COrgan "temporary condition"
+  , ieffects = [ ELabel "of Shock"
+               , DropItem 1 maxBound COrgan "temporary condition"
                , OnSmash (Explode "blast 10") ]
   }
 potion9 = potion
   { icount   = 1 `d` 3
   , irarity  = [(10, 7)]
-  , ieffects = [ DropItem maxBound maxBound COrgan "temporary condition"
+  , ieffects = [ ELabel "of Shock and Awe"
+               , DropItem maxBound maxBound COrgan "temporary condition"
                , OnSmash (Explode "blast 20") ]
   }
 potion10 = potion
