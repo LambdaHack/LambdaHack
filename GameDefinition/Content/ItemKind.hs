@@ -325,11 +325,11 @@ explosive = ItemKind
                    -- 250g and below is full speed
   , idamage = toDmg 0
   , iaspects = []
-  , ieffects = [Explode "blast 20", OnSmash (Explode "blast 20")]
+  , ieffects = [Explode "violent chemical", OnSmash (Explode "violent chemical")]
       -- this is tricky: @OnSmash@ causes the explosion when the item
       -- hits a tile (including floor), so a well aimed item can successfully
       -- ungulf many enemies (or a single hidden or fast-moving enemy)
-      -- in an explosion; however the lone @Explode "blast 20"@
+      -- in an explosion; however the lone @Explode "violent chemical"@
       -- activates only when an actor is hit (or applies the item)
       -- and makes the actor the centre of the explosion and so keeps him
       -- unharmed (from the initial explosion; fireckrackers cause chain
@@ -427,7 +427,7 @@ flask7 = flask
   { irarity  = [(10, 4)]
   , ieffects = [ ELabel "of haste brew"
                , toOrganActorTurn "hasted" (20 + 1 `d` 5)
-               , OnSmash (Explode "blast 20")
+               , OnSmash (Explode "violent chemical")
                , OnSmash (Explode "haste spray") ]
   }
 flask8 = flask
@@ -498,7 +498,7 @@ flask17 = flask
   { irarity  = [(10, 4)]
   , ieffects = [ ELabel "of slow resistance"
                , toOrganNone "slow resistant"
-               , OnSmash (Explode "blast 10")
+               , OnSmash (Explode "violent chemical")
                , OnSmash (Explode "anti-slow mist") ]
   }
 flask18 = flask
@@ -571,7 +571,7 @@ potion5 = potion  -- needs to be common to show at least a portion of effects
                                 , Explode "melee protective balm"
                                 , Explode "ranged protective balm"
                                 , Explode "PhD defense question"
-                                , Explode "blast 10" ]) ]
+                                , Explode "violent chemical" ]) ]
   }
 potion6 = potion  -- needs to be common to show at least a portion of effects
   { icount   = 1 `d` 3
@@ -587,7 +587,7 @@ potion6 = potion  -- needs to be common to show at least a portion of effects
                                 , Explode "haste spray"
                                 , Explode "slowness mist"
                                 , Explode "fragrance"
-                                , Explode "blast 20" ]) ]
+                                , Explode "violent chemical" ]) ]
   }
 potion7 = potion
   { irarity  = [(1, 11), (10, 4)]
@@ -599,14 +599,14 @@ potion8 = potion
   , irarity  = [(1, 7)]
   , ieffects = [ ELabel "of Shock"
                , DropItem 1 maxBound COrgan "temporary condition"
-               , OnSmash (Explode "blast 10") ]
+               , OnSmash (Explode "violent chemical") ]
   }
 potion9 = potion
   { icount   = 1 `d` 3
   , irarity  = [(10, 7)]
   , ieffects = [ ELabel "of Shock and Awe"
                , DropItem maxBound maxBound COrgan "temporary condition"
-               , OnSmash (Explode "blast 20") ]
+               , OnSmash (Explode "violent chemical") ]
   }
 potion10 = potion
   { ifreq    = [("treasure", 100)]
@@ -968,19 +968,19 @@ ring3 = ring
   { irarity  = [(10, 8)]
   , iaspects = [ AddMaxHP $ 10 + (1 `dL` 5) * 2
                , AddMaxCalm $ -20 + (1 `dL` 5) * 2 ]
-  , ieffects = [Explode "blast 20", EqpSlot EqpSlotAddMaxHP]
+  , ieffects = [Explode "violent chemical", EqpSlot EqpSlotAddMaxHP]
   }
 ring4 = ring
   { irarity  = [(5, 1), (10, 10)]  -- needed after other rings drop Calm
   , iaspects = [AddMaxCalm $ 25 + (1 `dL` 4) * 5]
-  , ieffects = [Explode "blast 20", EqpSlot EqpSlotMiscBonus]
+  , ieffects = [Explode "violent chemical", EqpSlot EqpSlotMiscBonus]
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with solemn, strangely comforting, worn out words."
   }
 ring5 = ring
   { irarity  = [(3, 3), (10, 3)]
   , iaspects = [ AddHurtMelee $ (2 + 1 `d` 2 + (1 `dL` 2) * 2 ) * 3
                , AddMaxHP $ (-2 - (1 `d` 2) + (1 `dL` 2) * 2) * 3 ]  -- !!!
-  , ieffects = [Explode "blast 20", EqpSlot EqpSlotAddHurtMelee]
+  , ieffects = [Explode "violent chemical", EqpSlot EqpSlotAddHurtMelee]
   }
 ring6 = ring  -- by the time it's found, probably no space in eqp
   { irarity  = [(5, 0), (10, 2)]

@@ -15,9 +15,9 @@ import Game.LambdaHack.Content.ItemKind
 
 blasts :: [ItemKind]
 blasts =
-  [burningOil2, burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote]
+  [burningOil2, burningOil3, burningOil4, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, violentChemical, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote]
 
-burningOil2,    burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote :: ItemKind
+burningOil2,    burningOil3, burningOil4, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, violentChemical, firecracker7, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote :: ItemKind
 
 -- We take care (e.g., in burningOil below) that blasts are not faster
 -- than 100% fastest natural speed, or some frames would be skipped,
@@ -46,29 +46,6 @@ burningOil n = ItemKind
 burningOil2 = burningOil 2  -- 2 steps, 2 turns
 burningOil3 = burningOil 3  -- 3 steps, 2 turns
 burningOil4 = burningOil 4  -- 4 steps, 2 turns
-explosionBlast :: Int -> ItemKind
-explosionBlast n = ItemKind
-  { isymbol  = '*'
-  , iname    = "blast"
-  , ifreq    = [(toGroupName $ "blast" <+> tshow n, 1)]
-  , iflavour = zipPlain [BrBlack]
-  , icount   = 16  -- strong and wide, but few, so not always hits target
-  , irarity  = [(1, 1)]
-  , iverbHit = "tear apart"
-  , iweight  = 1
-  , idamage  = toDmg 0
-  , iaspects = [AddShine $ intToDice $ min 10 n]
-  , ieffects = [RefillHP (- n `div` 2)]
-               ++ [PushActor (ThrowMod (100 * (n `div` 5)) 50)| n >= 10]
-               ++ [DropItem 1 maxBound COrgan "temporary condition" | n >= 10]
-               ++ [DropItem 1 maxBound COrgan "impressed" | n >= 10]  -- shock
-  , ifeature = [toLinger 20, Fragile, Identified, Blast]  -- 4 steps, 1 turn
-  , idesc    = ""
-  , ikit     = []
-  }
-explosionBlast2 = explosionBlast 2
-explosionBlast10 = explosionBlast 10
-explosionBlast20 = explosionBlast 20
 firecracker :: Int -> ItemKind
 firecracker n = ItemKind
   { isymbol  = '*'
@@ -99,6 +76,25 @@ firecracker2 = firecracker 2
 
 -- * Assorted immediate effect blasts
 
+violentChemical = ItemKind
+  { isymbol  = '*'
+  , iname    = "deflagration burst"
+  , ifreq    = [("violent chemical", 1)]
+  , iflavour = zipPlain [BrBlack]
+  , icount   = 16  -- strong and wide, but few, so not always hits target
+  , irarity  = [(1, 1)]
+  , iverbHit = "tear apart"
+  , iweight  = 1
+  , idamage  = toDmg 0
+  , iaspects = [AddShine 10]
+  , ieffects = [ RefillHP (-5)  -- deadly
+               , PushActor (ThrowMod 200 50)
+               , DropItem 1 maxBound COrgan "temporary condition"
+               , DropItem 1 maxBound COrgan "impressed" ]  -- shocking
+  , ifeature = [toLinger 20, Fragile, Identified, Blast]  -- 4 steps, 1 turn
+  , idesc    = ""
+  , ikit     = []
+  }
 fragrance = ItemKind
   { isymbol  = '`'
   , iname    = "fragrance"  -- instant, fast fragrance
