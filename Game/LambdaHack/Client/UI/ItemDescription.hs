@@ -106,25 +106,21 @@ textAllAE detailLevel skipRecharging ItemFull{itemBase, itemDisco} =
           active = goesIntoEqp itemBase
           splitAE :: DetailLevel -> [IK.Aspect] -> [IK.Effect] -> [Text]
           splitAE detLev aspects effects =
-            let shownInDetail :: IK.Effect -> Bool
-                shownInDetail IK.Explode{} = detLev >= DetailAll
-                shownInDetail _ = True
-                ppA = kindAspectToSuffix
+            let ppA = kindAspectToSuffix
                 ppE = effectToSuffix detLev
                 reduce_a = maybe "?" tshow . Dice.reduceDice
                 periodic = IK.Periodic `elem` IK.ieffects itemKind
                 mtimeout = find timeoutAspect aspects
-                restAs = sort aspects
                 -- Effects are not sorted, because they fire in the order
                 -- specified.
-                restEs = filter shownInDetail effects
+                restAs = sort aspects
                 aes = if active
-                      then map ppA restAs ++ map ppE restEs
-                      else map ppE restEs ++ map ppA restAs
+                      then map ppA restAs ++ map ppE effects
+                      else map ppE effects ++ map ppA restAs
                 rechargingTs = T.intercalate " " $ filter (not . T.null)
-                               $ map ppE $ stripRecharging restEs
+                               $ map ppE $ stripRecharging effects
                 onSmashTs = T.intercalate " " $ filter (not . T.null)
-                            $ map ppE $ stripOnSmash restEs
+                            $ map ppE $ stripOnSmash effects
                 durable = IK.Durable `elem` jfeature itemBase
                 fragile = IK.Fragile `elem` jfeature itemBase
                 periodicOrTimeout =
