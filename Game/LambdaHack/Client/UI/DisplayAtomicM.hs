@@ -916,9 +916,11 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     b <- getsState $ getActorBody aid
     bUI <- getsSession $ getActorUI aid
     side <- getsClient sside
+    mleader <- getsClient sleader
     let fid = bfid b
         isOurCharacter = fid == side && not (bproj b)
         isOurAlive = isOurCharacter && bhp b > 0
+        isOurLeader = Just aid == mleader
     case effect of
         IK.ELabel{} -> return ()
         IK.EqpSlot{} -> return ()
@@ -988,16 +990,18 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           actorVerbMU aid bUI $ MU.Phrase [verb, object]
         IK.Ascend True -> do
           actorVerbMU aid bUI "find a way upstairs"
-          (lid, _) <- getsState $ whereTo (blid b) (bpos b) (Just True)
-                                  . sdungeon
-          lvl <- getLevel lid
-          msgAdd $ ldesc lvl
+          when isOurLeader $ do
+            (lid, _) <- getsState $ whereTo (blid b) (bpos b) (Just True)
+                                    . sdungeon
+            lvl <- getLevel lid
+            msgAdd $ ldesc lvl
         IK.Ascend False -> do
           actorVerbMU aid bUI "find a way downstairs"
-          (lid, _) <- getsState $ whereTo (blid b) (bpos b) (Just False)
-                                  . sdungeon
-          lvl <- getLevel lid
-          msgAdd $ ldesc lvl
+          when isOurLeader $ do
+            (lid, _) <- getsState $ whereTo (blid b) (bpos b) (Just False)
+                                    . sdungeon
+            lvl <- getLevel lid
+            msgAdd $ ldesc lvl
         IK.Escape{} -> return ()
         IK.Paralyze{} -> actorVerbMU aid bUI "be paralyzed"
         IK.InsertMove{} -> actorVerbMU aid bUI "act with extreme speed"
