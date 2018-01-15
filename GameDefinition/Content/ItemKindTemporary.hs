@@ -58,7 +58,7 @@ tmpWeakened = tmpAspects "weakened" [AddHurtMelee (-20)]
 tmpProtectedMelee = tmpAspects "protected from melee" [AddArmorMelee 50]
 tmpProtectedRanged = tmpAspects "protected from ranged" [AddArmorRanged 25]
 tmpVulnerable = tmpAspects "defenseless" [ AddArmorMelee (-50)
-                                    , AddArmorRanged (-25) ]
+                                         , AddArmorRanged (-25) ]
 tmpResolute = tmpAspects "resolute" [AddMaxCalm 60]
 tmpFast20 = tmpAspects "hasted" [AddSpeed 20]
 tmpSlow10 = tmpAspects "slowed" [AddSpeed (-10)]
@@ -67,10 +67,10 @@ tmpBlind = tmpAspects "blind" [AddSight (-99)]
 tmpKeenSmelling = tmpAspects "keen-smelling" [AddSmell 2]
 tmpNoctovision = tmpAspects "shiny-eyed" [AddNocto 2]
 tmpDrunk = tmpAspects "drunk" [ AddHurtMelee 30  -- fury
-                         , AddArmorMelee (-20)
-                         , AddArmorRanged (-20)
-                         , AddSight (-8)
-                         ]
+                              , AddArmorMelee (-20)
+                              , AddArmorRanged (-20)
+                              , AddSight (-8)
+                              ]
 
 tmpRegenerating =
   tmpEffects "regenerating" (4 + 1 `d` 2) [Recharging (RefillHP 1)]
