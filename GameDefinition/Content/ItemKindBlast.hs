@@ -16,9 +16,9 @@ import Game.LambdaHack.Content.ItemKind
 
 blasts :: [ItemKind]
 blasts =
-  [burningOil2, burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, violentChemical, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote]
+  [burningOil2, burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, violentChemical, violentChemical8, focusedChemical, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote]
 
-burningOil2,    burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, violentChemical, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote :: ItemKind
+burningOil2,    burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, violentChemical, violentChemical8, focusedChemical, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote :: ItemKind
 
 -- We take care (e.g., in burningOil below) that blasts are not faster
 -- than 100% fastest natural speed, or some frames would be skipped,
@@ -83,8 +83,8 @@ violentChemical = ItemKind
   { isymbol  = '*'
   , iname    = "deflagration burst"
   , ifreq    = [("violent chemical", 1)]
-  , iflavour = zipPlain [BrBlack]
-  , icount   = 16  -- strong and wide, but few, so not always hits target
+  , iflavour = zipPlain [Magenta]  -- fire and smoke
+  , icount   = 16  -- strong but few, so not always hits target
   , irarity  = [(1, 1)]
   , iverbHit = "tear apart"
   , iweight  = 1
@@ -95,6 +95,28 @@ violentChemical = ItemKind
                , DropItem 1 maxBound COrgan "temporary condition"
                , DropItem 1 maxBound COrgan "impressed" ]  -- shocking
   , ifeature = [toLinger 20, Fragile, Blast]  -- 4 steps, 1 turn
+  , idesc    = ""
+  , ikit     = []
+  }
+violentChemical8 = violentChemical
+  { iname    = "deflagration blast"
+  , ifreq    = [("chemical", 1)]
+  , icount   = 8
+  , ifeature = [toLinger 10, Fragile, Blast]  -- 2 steps, 1 turn
+  }
+focusedChemical = ItemKind
+  { isymbol  = '`'
+  , iname    = "ignition blast"  -- not all yet ignited
+  , ifreq    = [("focused chemical", 1)]
+  , iflavour = zipPlain [BrYellow]
+  , icount   = 8  -- 64 in total vs 16, but smaller radius
+  , irarity  = [(1, 1)]
+  , iverbHit = "ignite"
+  , iweight  = 1
+  , idamage  = 0
+  , iaspects = []
+  , ieffects = [OnSmash $ Explode "chemical"]
+  , ifeature = [toLinger 5, Fragile, Blast]  -- 1 step, 1 turn
   , idesc    = ""
   , ikit     = []
   }

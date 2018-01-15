@@ -28,9 +28,9 @@ otherItemContent = embeds ++ actors ++ organs ++ blasts ++ temporaries
 
 items :: [ItemKind]
 items =
-  [sandstoneRock, dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, flask18, flask19, flask20, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, shield2, shield3, dagger, daggerDropBestWeapon, hammer, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, wandTemplate, wand1, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency, explosive, firecracker]
+  [sandstoneRock, dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, flask18, flask19, flask20, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, explosive, firecracker, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, shield2, shield3, dagger, daggerDropBestWeapon, hammer, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, wandTemplate, wand1, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency]
 
-sandstoneRock,    dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, flask18, flask19, flask20, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, shield2, shield3, dagger, daggerDropBestWeapon, hammer, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, wandTemplate, wand1, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency, explosive, firecracker :: ItemKind
+sandstoneRock,    dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, flask18, flask19, flask20, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, explosive, firecracker, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, shield2, shield3, dagger, daggerDropBestWeapon, hammer, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, wandTemplate, wand1, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency :: ItemKind
 
 -- Keep the dice rolls and sides in aspects small so that not too many
 -- distinct items are generated (for display in item lore and for narrative
@@ -309,77 +309,8 @@ blanket = ItemKind
 -- In reality, they just cover all temporary conditions, which in turn matches
 -- all aspects.
 --
--- No flask nor temporary organ of Calm depletion, since Calm reduced often.
-
--- All the explosive items are currently disabled (empty rarity),
--- so that we can brainstorm them without breaking game balance.
-explosive = ItemKind
-  { isymbol = symbolFlask
-      -- if it's, in fact, a flask of laboratory-produced highly explosive
-      -- liquid, symbolFlask makes sense; it also suggests it can be lobbed,
-      -- which is very handy for an explosive thrown weapon;
-      -- but symbolProjectile makes sense, too, if it's essentially a small
-      -- grenade, specifically designed to be thrown, or symbolTool
-      -- if it's a heavy mining explosive
-  , iname = "explosive"  -- we will need something more specific, even it it's
-                         -- only a generic template item
-  , ifreq = [("useful", 100)]
-  , iflavour = zipLiquid [BrRed]
-      -- this ensures the object will be bright red on the screen
-      -- and will be described as "red-speckled"; we are also free
-      -- to manually set both the colour and the description
-  , icount = 1
-  , irarity = []  -- [(1, 7), (10, 4)] means it's quite common (7) first level
-                  -- and less common (4) on the deepest level of the dungeon,
-                  -- linearly interpolating in-between
-  , iverbHit = "blast"
-  , iweight = 500  -- flavour and affects the speed when thrown;
-                   -- 250g and below is full speed
-  , idamage = 0
-  , iaspects = []
-  , ieffects = [Explode "violent chemical", OnSmash (Explode "violent chemical")]
-      -- this is tricky: @OnSmash@ causes the explosion when the item
-      -- hits a tile (including floor), so a well aimed item can successfully
-      -- ungulf many enemies (or a single hidden or fast-moving enemy)
-      -- in an explosion; however the lone @Explode "violent chemical"@
-      -- activates only when an actor is hit (or applies the item)
-      -- and makes the actor the centre of the explosion and so keeps him
-      -- unharmed (from the initial explosion; fireckrackers cause chain
-      -- explosion so the secondary blasts can harm him);
-      -- this is why "oil lamp", which is the closest to a grenade
-      -- we currently have, doesn't have a lone Exlode effect,
-      -- but instead causes a couple of unplesant effects directly:
-      -- slight burning, before the fire is doused, and paralysis
-      -- from slipping on the oil and slippery grip of items,
-      -- until the oil can be wiped out; it also causes a tiny impact damage;
-      -- all this suggests that we should define "blastI" item
-      -- that not only blasts outward, but also inward, by first creating
-      -- particles that move 1 (or 2?) tle away outward and then starting
-      -- a standard "blast" explosion in each (firecracker does that,
-      -- but with many, not just 2 levels of explosions)
-  , ifeature = [Lobable, Fragile, toVelocity 50]
-      -- not Applicable, because won't be applied, only thrown;
-      -- Fragile, because we want it to explode at target tile, even if
-      -- it hits no actor nor wall when it gets there; it's identified,
-      -- because the player recognizes it from the description
-      -- already (unless we design granades that all look alike, but some
-      -- explode with blast, others with fireckracker, etc. and the player
-      -- needs to experiment to learn to recognize them);
-      -- @toVelocity 50@ means will have 50% of the speed of an ideally shaped
-      -- item of the same weight
-  , idesc = "The practical application of science."
-  , ikit = []
-  }
-
-firecracker = explosive
-  { iname = "firecracker bag/stick?"
-     -- remove the revealing name if we go the "10 kinds of grenades" route,
-     -- but make sure it's not too similar to the current "20 kinds of flasks
-     -- and potions that also explode" fun
-  , iverbHit = "crack"  -- a pun, matches the verb from ItemKindBlast.hs
-  , ieffects = [Explode "firecracker", OnSmash (Explode "firecracker")]
-  , idesc = "String and paper, concealing a deadly surprise."
-  }
+-- There is no flask nor temporary organ of Calm depletion,
+-- because Calm reduced often via combat, etc..
 
 flaskTemplate = ItemKind
   { isymbol  = symbolFlask
@@ -664,6 +595,107 @@ potion10 = potionTemplate
                , OnSmash (Explode "pheromone") ]
   , ifeature = [Unique, ELabel "of Love"] ++ ifeature potionTemplate
   -- , idesc    = ""
+  }
+
+-- * Grenades, etc.
+
+explosive = ItemKind
+  { isymbol = symbolFlask
+      -- If it's, in fact, a flask of laboratory-produced highly explosive
+      -- liquid, @symbolFlask@ makes sense. It also suggests it can be lobbed,
+      -- which is very handy for an explosive thrown weapon.
+      -- But @symbolProjectile@ makes sense, too, if it's essentially a small
+      -- grenade, specifically designed to be thrown. Or @symbolTool@
+      -- if it's a heavy satchel filled with mining explosive (black powder
+      -- probably, given the technological setting).
+  , iname = "grenade"
+      -- We need a specific name, even it it's only a generic
+      -- template item declaring all that is known about the class of items
+      -- while the details of each item are secret until identified
+      -- (which doesn't make a whole lot of sense, because we are unlikely
+      -- to create enough variety in each weight class and weight is public).
+      -- We can also design a whole set with varying weights:
+      -- small grenade, medium satchel/mine (only thrown short distances),
+      -- heavy barrel. And/or a set with different explosion types.
+      --
+      -- But let's not duplicate potions and flasks that already explode,
+      -- even though they only offer area effect, and don't explode
+      -- when enemy is hit. Perhaps move some more fitting effects
+      -- (less mist-like, more explosion-like) from potions and flasks
+      -- to grenades and thus avoid duplication (currently the "nullify
+      -- temporary conditions" potions explode with chemical blasts,
+      -- with the justification that the shock of the explosion
+      -- cancels temporary conditions, even when the (micro-) explosion
+      -- is not seen from outside of the victim body.
+  , ifreq = [("common item", 100)]
+  , iflavour = zipLiquid [BrRed]
+      -- This ensures the object will be bright red on the screen
+      -- and will be described as "red-speckled". We are also free
+      -- to manually set both the colour and a unique flavour description.
+  , icount = 1 `d` 3  -- found in batches of up to 3
+  , irarity = [(1, 7), (10, 5)]  -- the same as of flasks
+      -- It means means it's quite common (7) at first level
+      -- and less common (4) on the deepest level of the dungeon,
+      -- linearly interpolating in-between.
+  , iverbHit = "hit"
+  , iweight = 500  -- flavour and affects the speed when thrown;
+                   -- 250g and below is full speed
+  , idamage = 0  -- no direct damage from a hit
+  , iaspects = []  -- won't be worn
+  , ieffects = [ Explode "focused chemical"
+               , OnSmash (Explode "violent chemical") ]
+      -- @OnSmash@ causes the explosion when the item hits a tile
+      -- (including floor), so a well aimed item can successfully
+      -- ungulf many enemies (or a single hidden or fast-moving enemy)
+      -- in an explosion. OTOH, the @Explode "focused chemical"@
+      -- activates only when an actor is hit (or applies the item)
+      -- and makes the actor the centre of the explosion, which always
+      -- spreads outward, never focused. Consequently, if we used
+      -- just the ordinary "violent chemical" blast or any of the burning oil
+      -- blasts, that would leave the actor completely unharmed.
+      --
+      -- This is why "oil lamp", which is the item closest to a grenade
+      -- we had up to now, doesn't have an @Explode@ effect outside @OnSmash@,
+      -- but instead causes a couple of unplesant effects on direct hit:
+      -- slight burning before the fire is doused and paralysis
+      -- from slipping on the oil and slippery grip of items,
+      -- until the oil can be wiped out. It also causes tiny impact damage.
+      --
+      -- To make sure the actor hit with the grenade is harmed,
+      -- we use "focused chemical" blast that create particles
+      -- going in all directions one step, then the particles themselves
+      -- die off and explode, creating ordinary (just a bit less numerous
+      -- to balance the initial multiplication) chemical explosion blast.
+      --
+      -- BTW, firecrackers go even further and create a chain explosion
+      -- with multiple steps, hence they can be successfully used
+      -- for (colourful and silly) grenades.
+  , ifeature = [Lobable, Fragile, toVelocity 50]
+      -- Not @Applicable@, because won't be applied, only thrown,
+      -- unless as a self-destruct device that also harms bystanders,
+      -- in which case the extra UI confirmation will come in handy.
+      -- @Fragile@, because we want it to explode at target tile,
+      -- even if it hits no actor nor wall when it gets there. It will be
+      -- identified at creation time, because the player recognizes
+      -- it from the description and there are no random aspects
+      -- (unless we design granades that all look alike, but some
+      -- explode with blast, others with fireckracker, etc. and the player
+      -- needs to experiment to learn to recognize them).
+      -- @toVelocity 50@ means will have 50% of the speed of an ideally
+      -- shaped item of the same weight.
+  , idesc = "The practical application of science."  -- tweak according
+                                                     -- to the name we pick
+  , ikit = []
+  }
+firecracker = explosive
+  { iname = "firecracker tube"  -- bag? stick?
+     -- Remove the revealing name if we go the "10 kinds of grenades" route,
+     -- but make sure it's not too similar to the current "20 kinds of flasks
+     -- and potions that explode" fun.
+  , iflavour = zipPlain [Red]
+  , iverbHit = "crack"  -- a pun, matches the verb from ItemKindBlast.hs
+  , ieffects = [Explode "firecracker", OnSmash (Explode "firecracker")]
+  , idesc = "String and paper, concealing a deadly surprise."
   }
 
 -- * Non-exploding consumables, not specifically designed for throwing
@@ -1297,6 +1329,8 @@ hammerSpark = hammer
   , idamage  = 12 `d` 1
   , iaspects = iaspects hammer ++ [AddShine 3, Timeout 10]
   , ieffects = ieffects hammer ++ [Recharging $ Explode "spark"]
+      -- we can't use a focused explosion, because it would harm the hammer
+      -- wielder as well, unlike this one
   , ifeature = [Unique] ++ ifeature hammer
   -- , idesc    = ""
   }
