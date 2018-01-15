@@ -1080,6 +1080,15 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
   SfxSortSlots -> do
     side <- getsClient sside
     sortSlots side Nothing
+  SfxCollideTile source pos -> do
+    COps{cotile} <- getsState scops
+    sb <- getsState $ getActorBody source
+    lvl <- getLevel $ blid sb
+    sbUI <- getsSession $ getActorUI source
+    spart <- partActorLeader source sbUI
+    let object = MU.AW $ MU.Text $ TK.tname $ okind cotile $ lvl `at` pos
+    msgAdd $! makeSentence $
+      [MU.SubjectVerbSg spart "painfully collide", "with", object]
 
 ppSfxMsg :: MonadClientUI m => SfxMsg -> m Text
 ppSfxMsg sfxMsg = case sfxMsg of
@@ -1181,15 +1190,6 @@ ppSfxMsg sfxMsg = case sfxMsg of
       return $! makeSentence $
         [MU.SubjectVerbSg spart "painfully collide", "with", tpart]
     else return ""
-  SfxCollideTile source pos -> do
-    COps{cotile} <- getsState scops
-    sb <- getsState $ getActorBody source
-    lvl <- getLevel $ blid sb
-    sbUI <- getsSession $ getActorUI source
-    spart <- partActorLeader source sbUI
-    let object = MU.AW $ MU.Text $ TK.tname $ okind cotile $ lvl `at` pos
-    return $! makeSentence $
-      [MU.SubjectVerbSg spart "painfully collide", "with", object]
 
 strike :: MonadClientUI m
        => Bool -> ActorId -> ActorId -> ItemId -> CStore -> m ()

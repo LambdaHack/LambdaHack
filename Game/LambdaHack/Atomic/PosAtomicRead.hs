@@ -175,6 +175,7 @@ posSfxAtomic cmd = case cmd of
   SfxEffect _ aid _ _ -> singleAid aid  -- sometimes we don't see source, OK
   SfxMsgFid fid _ -> return $! PosFid fid
   SfxSortSlots -> return PosAll
+  SfxCollideTile aid _ -> singleAid aid
 
 posProjBody :: Actor -> PosAtomic
 posProjBody body =

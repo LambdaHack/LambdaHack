@@ -136,6 +136,7 @@ data SfxAtomic =
   | SfxEffect FactionId ActorId IK.Effect Int64
   | SfxMsgFid FactionId SfxMsg
   | SfxSortSlots
+  | SfxCollideTile ActorId Point
   deriving (Show, Eq, Generic)
 
 instance Binary SfxAtomic
@@ -164,7 +165,6 @@ data SfxMsg =
   | SfxColdFish
   | SfxTimerExtended ActorId ItemId CStore
   | SfxCollideActor LevelId ActorId ActorId
-  | SfxCollideTile ActorId Point
   deriving (Show, Eq, Generic)
 
 instance Binary SfxMsg
@@ -239,6 +239,7 @@ undoSfxAtomic cmd = case cmd of
   SfxEffect{} -> cmd  -- not ideal?
   SfxMsgFid{} -> cmd
   SfxSortSlots -> cmd
+  SfxCollideTile{} -> cmd
 
 undoCmdAtomic :: CmdAtomic -> Maybe CmdAtomic
 undoCmdAtomic (UpdAtomic cmd) = UpdAtomic <$> undoUpdAtomic cmd
