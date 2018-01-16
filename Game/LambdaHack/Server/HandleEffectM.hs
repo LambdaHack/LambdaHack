@@ -370,12 +370,13 @@ effectExplode execSfx cgroup target = do
               | n < 12 && n >= 8 = 8
               | n < 8 && n >= 4 = 4
               | otherwise = min n 16  -- fire in groups of 16 including old duds
-            psDir =
+            psDir4 =
               [ Point (x - 12) (y + 12)
               , Point (x + 12) (y + 12)
               , Point (x - 12) (y - 12)
-              , Point (x + 12) (y - 12)
-              , Point (x - 12) y
+              , Point (x + 12) (y - 12) ]
+            psDir8 =
+              [ Point (x - 12) y
               , Point (x + 12) y
               , Point x (y + 12)
               , Point x (y - 12) ]
@@ -388,9 +389,12 @@ effectExplode execSfx cgroup target = do
               , flip Point (y + 12) $ x + fuzz
               , flip Point (y - 12) $ x - fuzz
               , flip Point (y + 12) $ x - fuzz ]
-            ps = take k $
-              take 8 (drop ((k100 + itemK + n) `mod` 8) $ cycle psDir)
-              ++ take 8 (drop ((k100 + n) `mod` 8) $ cycle psFuzz)
+            semireverse = if semirandom `mod` 2 == 0 then id else reverse
+            ps = take k $ concat $
+              semireverse
+                [ take 4 (drop ((k100 + itemK + fuzz) `mod` 4) $ cycle psDir4)
+                , take 4 (drop ((k100 + n) `mod` 4) $ cycle psDir8) ]
+              ++ [take 8 (drop ((k100 + fuzz) `mod` 8) $ cycle psFuzz)]
         forM_ ps $ \tpxy -> do
           let req = ReqProject tpxy veryrandom iid COrgan
           mfail <- projectFail target tpxy veryrandom iid COrgan True
