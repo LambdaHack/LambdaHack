@@ -1307,7 +1307,7 @@ sendFlyingVector :: MonadServerAtomic m
                  => ActorId -> ActorId -> Maybe Bool -> m Vector
 sendFlyingVector source target modePush = do
   sb <- getsState $ getActorBody source
-  let boldpos_sb = fromMaybe originPoint (boldpos sb)
+  let boldpos_sb = fromMaybe (bpos sb) (boldpos sb)
   if source == target then
     if boldpos_sb == bpos sb then rndToAction $ do
       z <- randomR (-10, 10)
@@ -1316,15 +1316,8 @@ sendFlyingVector source target modePush = do
       return $! vectorToFrom (bpos sb) boldpos_sb
   else do
     tb <- getsState $ getActorBody target
-    let (sp, tp) = if adjacent (bpos sb) (bpos tb)
-                   then let pos = if chessDist boldpos_sb (bpos tb)
-                                     > chessDist (bpos sb) (bpos tb)
-                                  then boldpos_sb  -- avoid cardinal dir
-                                  else bpos sb
-                        in (pos, bpos tb)
-                   else (bpos sb, bpos tb)
-        pushV = vectorToFrom tp sp
-        pullV = vectorToFrom sp tp
+    let pushV = vectorToFrom (bpos tb) (bpos sb)
+        pullV = vectorToFrom (bpos sb) (bpos tb)
     return $! case modePush of
                 Just True -> pushV
                 Just False -> pullV
