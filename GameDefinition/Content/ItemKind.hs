@@ -365,7 +365,7 @@ firecracker = explosive
      -- but make sure it's not too similar to the current "20 kinds of flasks
      -- and potions that also explode" fun
   , iverbHit = "crack"  -- a pun, matches the verb from ItemKindBlast.hs
-  , ieffects = [Explode "firecracker 5", OnSmash (Explode "firecracker 5")]
+  , ieffects = [Explode "firecracker", OnSmash (Explode "firecracker")]
   , idesc = "String and paper, concealing a deadly surprise."
   }
 
@@ -688,7 +688,7 @@ scroll9 = scroll
 scroll10 = scroll
   { irarity  = [(10, 20)]
   , ieffects = [ ELabel "of transfiguration"
-               , Composite [PolyItem, Explode "firecracker 7"] ]
+               , Composite [PolyItem, Explode "firecracker"] ]
   }
 scroll11 = scroll
   { ifreq    = [("treasure", 100)]

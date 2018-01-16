@@ -15,9 +15,9 @@ import Game.LambdaHack.Content.ItemKind
 
 blasts :: [ItemKind]
 blasts =
-  [burningOil2, burningOil3, burningOil4, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, violentChemical, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote]
+  [burningOil2, burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, violentChemical, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote]
 
-burningOil2,    burningOil3, burningOil4, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, violentChemical, firecracker7, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote :: ItemKind
+burningOil2,    burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, violentChemical, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote :: ItemKind
 
 -- We take care (e.g., in burningOil below) that blasts are not faster
 -- than 100% fastest natural speed, or some frames would be skipped,
@@ -50,29 +50,30 @@ firecracker :: Int -> ItemKind
 firecracker n = ItemKind
   { isymbol  = '*'
   , iname    = "firecracker"
-  , ifreq    = [(toGroupName $ "firecracker" <+> tshow n, 1)]
-  , iflavour = zipPlain [brightCol !! (n `mod` length brightCol)]
-  , icount   = intToDice (n `div` 6) + 1 `d` (n `div` 2)
+  , ifreq    = [(toGroupName $ if n == 5
+                               then "firecracker"
+                               else "firecracker" <+> tshow n, 1)]
+  , iflavour = zipPlain [brightCol !! ((n + 2) `mod` length brightCol)]
+  , icount   = if n <= 3 then 1 `d` min 2 n else 2 + 1 `d` 2
   , irarity  = [(1, 1)]
   , iverbHit = "crack"
   , iweight  = 1
   , idamage  = toDmg 0
-  , iaspects = [AddShine $ intToDice $ n `div` 2]
-  , ieffects = [ RefillCalm (3 - n) | n >= 5 ]
-               ++ [ DropBestWeapon | n >= 5]
+  , iaspects = [AddShine $ intToDice $ 1 + n `div` 2]
+  , ieffects = [RefillCalm 2]
+               ++ [DropBestWeapon | n >= 4]
                ++ [ OnSmash $ Explode
                     $ toGroupName $ "firecracker" <+> tshow (n - 1)
-                  | n > 2 ]
+                  | n >= 2 ]
   , ifeature = [toVelocity 5, Fragile, Identified, Blast]
   , idesc    = "Scraps of burnt paper, covering little pockets of black powder, buffeted by colorful explosions."
   , ikit     = []
   }
-firecracker7 = firecracker 7
-firecracker6 = firecracker 6
 firecracker5 = firecracker 5
 firecracker4 = firecracker 4
 firecracker3 = firecracker 3
 firecracker2 = firecracker 2
+firecracker1 = firecracker 1
 
 -- * Assorted immediate effect blasts
 
