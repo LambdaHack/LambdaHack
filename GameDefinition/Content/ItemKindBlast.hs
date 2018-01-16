@@ -117,7 +117,9 @@ focusedChemical = ItemKind
   , idamage  = 0
   , iaspects = []
   , ieffects = [OnSmash $ Explode "chemical"]
-  , ifeature = [toLinger 5, Fragile, Blast]  -- 1 step, 1 turn
+  , ifeature = [toLinger 0, Fragile, Blast]  -- 0 steps, 1 turn
+      -- when the target position is occupied, the explosion starts one step
+      -- away, hence we set range to 0 steps, to limit dispersal
   , idesc    = ""
   , ikit     = []
   }
@@ -271,7 +273,7 @@ focusedGlass = glassPiece  -- when blowing up windows
   { ifreq    = [("focused glass", 1)]
   , icount   = 8
   , ieffects = [RefillHP (-1), OnSmash $ Explode "glass piece"]
-  , ifeature = [toLinger 5, Fragile, Blast]  -- 1 step, 1 turn
+  , ifeature = [toLinger 0, Fragile, Blast]  -- 0 steps, 1 turn
   }
 smoke = ItemKind  -- when stuff burns out  -- unused
   { isymbol  = '`'
