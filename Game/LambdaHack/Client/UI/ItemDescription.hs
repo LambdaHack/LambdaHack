@@ -45,11 +45,12 @@ show64With2 n =
 partItemN :: FactionId -> FactionDict -> Bool -> DetailLevel -> Int
           -> Time -> ItemFull
           -> (Bool, Bool, MU.Part, MU.Part)
-partItemN side factionD ranged detailLevel n localTime itemFull =
-  let genericName = jname $ itemBase itemFull
+partItemN side factionD ranged detailLevel n localTime
+          itemFull@ItemFull{itemBase} =
+  let genericName = jname itemBase
   in case itemDisco itemFull of
     Nothing ->
-      let flav = flavourToName $ jflavour $ itemBase itemFull
+      let flav = flavourToName $ jflavour itemBase
       in (False, False, MU.Text $ flav <+> genericName, "")
     Just iDisco ->
       let timeout = aTimeout $ aspectRecordFull itemFull
@@ -67,8 +68,8 @@ partItemN side factionD ranged detailLevel n localTime itemFull =
           (effTsRaw, rangedDamage) =
             textAllAE detailLevel skipRecharging itemFull
           effTs = effTsRaw ++ if ranged then rangedDamage else []
-          lsource = case jfid $ itemBase itemFull of
-            Just fid | jname (itemBase itemFull) `elem` ["impressed"] ->
+          lsource = case jfid itemBase of
+            Just fid | jname itemBase `elem` ["impressed"] ->
               ["by" <+> if fid == side
                         then "us"
                         else gname (factionD EM.! fid)]
@@ -211,11 +212,13 @@ partItemWsR :: FactionId -> FactionDict -> Bool -> Int -> Time -> ItemFull
 partItemWsR side factionD ranged count localTime itemFull =
   let (temporary, unique, name, stats) =
         partItemN side factionD ranged DetailMedium 4 localTime itemFull
+      tmpCondition = isTmpCondition $ itemBase itemFull
   in ( temporary
      , if | temporary && count == 1 -> MU.Phrase [name, stats]
           | temporary ->
               MU.Phrase [MU.Text $ tshow count <> "-fold", name, stats]
           | unique && count == 1 -> MU.Phrase ["the", name, stats]
+          | tmpCondition -> MU.Phrase [name, stats]
           | otherwise -> MU.Phrase [MU.CarWs count name, stats] )
 
 partItemWs :: FactionId -> FactionDict -> Int -> Time -> ItemFull
