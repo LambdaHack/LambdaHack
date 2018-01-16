@@ -619,7 +619,7 @@ reqProject source tpxy eps iid cstore = do
   let calmE = calmEnough b ar
   if cstore == CSha && not calmE then execFailure source req ItemNotCalm
   else do
-    mfail <- projectFail source tpxy eps iid cstore False
+    mfail <- projectFail source tpxy eps False iid cstore False
     maybe (return ()) (execFailure source req) mfail
 
 -- * ReqApply

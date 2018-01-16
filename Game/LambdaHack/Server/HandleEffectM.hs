@@ -392,12 +392,16 @@ effectExplode execSfx cgroup target = do
             semireverse = if semirandom `mod` 2 == 0 then id else reverse
             ps = take k $ concat $
               semireverse
-                [ take 4 (drop ((k100 + itemK + fuzz) `mod` 4) $ cycle psDir4)
-                , take 4 (drop ((k100 + n) `mod` 4) $ cycle psDir8) ]
-              ++ [take 8 (drop ((k100 + fuzz) `mod` 8) $ cycle psFuzz)]
-        forM_ ps $ \tpxy -> do
+                [ zip (repeat True)  -- diagonal particles don't reach that far
+                  $ take 4 (drop ((k100 + itemK + fuzz) `mod` 4) $ cycle psDir4)
+                , zip (repeat False)  -- only some cardinal reach far
+                  $ take 4 (drop ((k100 + n) `mod` 4) $ cycle psDir8) ]
+              ++ [zip (repeat True)
+                  $ take 8 (drop ((k100 + fuzz) `mod` 8) $ cycle psFuzz)]
+        forM_ ps $ \(centerRaw, tpxy) -> do
           let req = ReqProject tpxy veryrandom iid COrgan
-          mfail <- projectFail target tpxy veryrandom iid COrgan True
+              center = centerRaw && itemK >= 8  -- if few, keep them regular
+          mfail <- projectFail target tpxy veryrandom center iid COrgan True
           case mfail of
             Nothing -> return ()
             Just ProjectBlockTerrain -> return ()

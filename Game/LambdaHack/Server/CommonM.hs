@@ -292,11 +292,12 @@ projectFail :: MonadServerAtomic m
             => ActorId    -- ^ actor projecting the item (is on current lvl)
             -> Point      -- ^ target position of the projectile
             -> Int        -- ^ digital line parameter
+            -> Bool       -- ^ whether to start at the source position
             -> ItemId     -- ^ the item to be projected
             -> CStore     -- ^ whether the items comes from floor or inventory
             -> Bool       -- ^ whether the item is a blast
             -> m (Maybe ReqFailure)
-projectFail source tpxy eps iid cstore blast = do
+projectFail source tpxy eps center iid cstore blast = do
   COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
@@ -338,9 +339,9 @@ projectFail source tpxy eps iid cstore blast = do
                          return Nothing
                        else return $ Just ProjectBlockActor
                   else do
-                    if blast && bproj sb && eps `mod` 2 == 0 then
-                      -- Make the explosion a bit less regular.
-                      -- The @eps@ is quite random in case of blast.
+                    -- Make the explosion less regular and weaker at edges.
+                    if blast && bproj sb && center then
+                      -- Start in the center, not around.
                       projectBla source spos (pos:rest) iid cstore blast
                     else
                       projectBla source pos rest iid cstore blast
