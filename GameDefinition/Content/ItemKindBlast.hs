@@ -103,13 +103,14 @@ violentChemical8 = violentChemical
   , ifreq    = [("chemical", 1)]
   , icount   = 8
   , ifeature = [toLinger 10, Fragile, Blast]  -- 2 steps, 1 turn
+      -- smaller radius, so worse for area effect, but twice the direct damage
   }
 focusedChemical = ItemKind
   { isymbol  = '`'
   , iname    = "ignition blast"  -- not all yet ignited
   , ifreq    = [("focused chemical", 1)]
   , iflavour = zipPlain [BrYellow]
-  , icount   = 8  -- 64 in total vs 16, but smaller radius
+  , icount   = 4  -- 32 in total vs 16; on average 4 hits
   , irarity  = [(1, 1)]
   , iverbHit = "ignite"
   , iweight  = 1
@@ -255,7 +256,7 @@ glassPiece = ItemKind
   , iname    = "glass piece"
   , ifreq    = [("glass piece", 1)]
   , iflavour = zipPlain [BrBlue]
-  , icount   = 16
+  , icount   = 8
   , irarity  = [(1, 1)]
   , iverbHit = "cut"
   , iweight  = 1
