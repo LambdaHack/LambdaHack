@@ -622,11 +622,16 @@ explosive = ItemKind
       -- even though they only offer area effect, and don't explode
       -- when enemy is hit. Perhaps move some more fitting effects
       -- (less mist-like, more explosion-like) from potions and flasks
-      -- to grenades and thus avoid duplication (currently the "nullify
+      -- to grenades and thus avoid duplication. Currently the "nullify
       -- temporary conditions" potions explode with chemical blasts,
       -- with the justification that the shock of the explosion
       -- cancels temporary conditions, even when the (micro-) explosion
       -- is not seen from outside of the victim body.
+      -- Another idea: perhaps some flasks should explode with "glass piece"
+      -- given that they consist of a significant mass of glass.
+      -- There is even focused glass explosion available for a Molotov coctail
+      -- style projectile, though the real one harms much more with fire
+      -- than glass, I guess.
   , ifreq = [("common item", 100)]
   , iflavour = zipLiquid [BrRed]
       -- This ensures the object will be bright red on the screen

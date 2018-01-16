@@ -16,9 +16,9 @@ import Game.LambdaHack.Content.ItemKind
 
 blasts :: [ItemKind]
 blasts =
-  [burningOil2, burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, violentChemical, violentChemical8, focusedChemical, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote]
+  [burningOil2, burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, violentChemical, violentChemical8, focusedChemical, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, focusedGlass, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote]
 
-burningOil2,    burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, violentChemical, violentChemical8, focusedChemical, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote :: ItemKind
+burningOil2,    burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, violentChemical, violentChemical8, focusedChemical, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, focusedGlass, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote :: ItemKind
 
 -- We take care (e.g., in burningOil below) that blasts are not faster
 -- than 100% fastest natural speed, or some frames would be skipped,
@@ -250,7 +250,7 @@ distortion = ItemKind
   , idesc    = "The air shifts oddly, as though light is being warped."
   , ikit     = []
   }
-glassPiece = ItemKind  -- when blowing up windows
+glassPiece = ItemKind
   { isymbol  = '*'
   , iname    = "glass piece"
   , ifreq    = [("glass piece", 1)]
@@ -265,6 +265,12 @@ glassPiece = ItemKind  -- when blowing up windows
   , ifeature = [toLinger 20, Fragile, Blast]  -- 4 steps, 1 turn
   , idesc    = "Swift, sharp edges."
   , ikit     = []
+  }
+focusedGlass = glassPiece  -- when blowing up windows
+  { ifreq    = [("focused glass", 1)]
+  , icount   = 8
+  , ieffects = [RefillHP (-1), OnSmash $ Explode "glass piece"]
+  , ifeature = [toLinger 5, Fragile, Blast]  -- 1 step, 1 turn
   }
 smoke = ItemKind  -- when stuff burns out  -- unused
   { isymbol  = '`'
