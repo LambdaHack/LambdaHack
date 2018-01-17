@@ -730,6 +730,8 @@ applyItem aid applyGroup = do
       itemLegal itemFull =
         let -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.
             getHP (IK.RefillHP p) | p > 0 = True
+            getHP (IK.OneOf l) = any getHP l
+            getHP (IK.Composite l) = any getHP l
             getHP _ = False
             firstAidItem = case itemDisco itemFull of
               Just ItemDisco{itemKind} -> any getHP $ IK.ieffects itemKind
@@ -738,6 +740,8 @@ applyItem aid applyGroup = do
             -- and not really the best idea while in combat, nor interesting.
             getTweak IK.PolyItem = True
             getTweak IK.Identify = True
+            getTweak (IK.OneOf l) = any getTweak l
+            getTweak (IK.Composite l) = any getTweak l
             getTweak _ = False
             tweakItem = case itemDisco itemFull of
               Just ItemDisco{itemKind} -> any getTweak $ IK.ieffects itemKind

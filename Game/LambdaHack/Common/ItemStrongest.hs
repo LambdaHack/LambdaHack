@@ -1,7 +1,7 @@
 -- | Determining the strongest item wrt some property.
 module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
-    strengthEffect, strengthOnSmash, strengthCreateOrgan, strengthDropOrgan
+    strengthEffect, strengthOnSmash, strengthDropOrgan
   , strengthEqpSlot, strengthToThrow, strongestSlot
     -- * Assorted
   , computeTrajectory, itemTrajectory, totalRange
@@ -42,17 +42,12 @@ strengthOnSmash =
       p _ = []
   in strengthEffect p
 
-strengthCreateOrgan :: ItemFull -> [GroupName ItemKind]
-strengthCreateOrgan =
-  let p (CreateItem COrgan grp _) = [grp]
-      p (Recharging (CreateItem COrgan grp _)) = [grp]
-      p _ = []
-  in strengthEffect p
-
 strengthDropOrgan :: ItemFull -> [GroupName ItemKind]
 strengthDropOrgan =
   let p (DropItem _ _ COrgan grp) = [grp]
       p (Recharging (DropItem _ _ COrgan grp)) = [grp]
+      p (OneOf l) = concatMap p l
+      p (Composite l) = concatMap p l
       p _ = []
   in strengthEffect p
 

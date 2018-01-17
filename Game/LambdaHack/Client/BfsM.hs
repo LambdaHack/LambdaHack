@@ -304,6 +304,8 @@ embedBenefit fleeVia aid pbags = do
         Just KindMean{kmKind} -> IK.ieffects $ okind coitem kmKind
       isEffEscapeOrAscend IK.Ascend{} = True
       isEffEscapeOrAscend IK.Escape{} = True
+      isEffEscapeOrAscend (IK.OneOf l) = any isEffEscapeOrAscend l
+      isEffEscapeOrAscend (IK.Composite l) = any isEffEscapeOrAscend l
       isEffEscapeOrAscend _ = False
       feats bag = concatMap iidToEffs $ EM.keys bag
       -- For simplicity, we assume at most one exit at each position.
