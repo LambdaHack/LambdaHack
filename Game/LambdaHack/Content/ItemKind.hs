@@ -342,33 +342,37 @@ validateSingle ik@ItemKind{..} =
   ++ (let f :: Effect -> Bool
           f ELabel{} = True
           f _ = False
-          ts = filter f ieffects
-      in ["more than one ELabel specification" | length ts > 1])
+      in validateTopSingle ieffects "ELabel" f)
   ++ (let f :: Effect -> Bool
           f EqpSlot{} = True
           f _ = False
           ts = filter f ieffects
-      in ["more than one EqpSlot specification" | length ts > 1]
+      in validateTopSingle ieffects "EqpSlot" f
          ++ [ "EqpSlot specified but not Equipable nor Meleeable"
             | length ts > 0 && Equipable `notElem` ifeature
                             && Meleeable `notElem` ifeature ])
   ++ ["Redundant Equipable or Meleeable" | Equipable `elem` ifeature
                                            && Meleeable `elem` ifeature]
   ++ (let f :: Effect -> Bool
+          f OnSmash{} = True
+          f _ = False
+      in validateNotNested ieffects "OnSmash" f)  -- duplicates permitted
+  ++ (let f :: Effect -> Bool
+          f Recharging{} = True
+          f _ = False
+      in validateNotNested ieffects "Recharging" f)  -- duplicates permitted
+  ++ (let f :: Effect -> Bool
           f Temporary{} = True
           f _ = False
-          ts = filter f ieffects
-      in ["more than one Temporary specification" | length ts > 1])
+      in validateOnlyOne ieffects "Temporary" f)  -- may be duplicated if nested
   ++ (let f :: Effect -> Bool
           f Unique = True
           f _ = False
-          ts = filter f ieffects
-      in ["more than one Unique specification" | length ts > 1])
+      in validateTopSingle ieffects "Unique" f)
   ++ (let f :: Effect -> Bool
           f Periodic = True
           f _ = False
-          ts = filter f ieffects
-      in ["more than one Periodic specification" | length ts > 1])
+      in validateTopSingle ieffects "Periodic" f)
   ++ (let f :: Feature -> Bool
           f ToThrow{} = True
           f _ = False
@@ -382,6 +386,31 @@ validateSingle ik@ItemKind{..} =
   ++ concatMap (validateDups ik)
        [ Fragile, Lobable, Durable, Identified, Applicable
        , Equipable, Meleeable, Precious, Blast ]
+
+-- We only check there are no duplicates at top level. If it may be nested,
+-- it may presumably be duplicated inside the nesting as well.
+validateOnlyOne :: [Effect] -> Text -> (Effect -> Bool) -> [Text]
+validateOnlyOne effs t f =
+  let  ts = filter f effs
+  in ["more than one" <+> t <+> "specification" | length ts > 1]
+
+-- We check it's not nested one nor more levels.
+validateNotNested :: [Effect] -> Text -> (Effect -> Bool) -> [Text]
+validateNotNested effs t f =
+  let g (OneOf l) = any f l || any g l
+      g (OnSmash effect) = f effect || g effect
+      g (Recharging effect) = f effect || g effect
+      g (Composite l) = any f l || any g l
+      g _ = False
+      ts = filter g effs
+  in [ "effect" <+> t <+> "should be specified at top level, not nested"
+     | length ts > 0 ]
+
+-- If it's not nested and not duplicated at top level, it's not duplicated
+-- anywhere.
+validateTopSingle :: [Effect] -> Text -> (Effect -> Bool) -> [Text]
+validateTopSingle effs t f =
+  validateOnlyOne effs t f ++ validateNotNested effs t f
 
 validateDups :: ItemKind -> Feature -> [Text]
 validateDups ItemKind{..} feat =
