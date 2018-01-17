@@ -453,7 +453,7 @@ reqAlterFail source tpos = do
                                <$> opick cotile tgroup (const True))
                             return
                             mtoTile
-            unless (toTile == serverTile) $ do
+            unless (toTile == serverTile) $ do  -- don't regenerate same tile
               -- At most one of these two will be accepted on any given client.
               execUpdAtomic $ UpdAlterTile lid tpos serverTile toTile
               -- This case happens when a client does not see a searching
@@ -467,21 +467,21 @@ reqAlterFail source tpos = do
                 (False, True) -> execUpdAtomic $ UpdAlterExplorable lid 1
                 (True, False) -> execUpdAtomic $ UpdAlterExplorable lid (-1)
                 _ -> return ()
-            -- At the end we replace old embeds (even if partially used up)
-            -- with new ones.
-            -- If the source tile was hidden, the items could not be visible
-            -- on a client, in which case the command would be ignored
-            -- on the client, without causing any problems. Otherwise,
-            -- if the position is in view, client has accurate info.
-            case EM.lookup tpos (lembed lvl2) of
-              Just bag -> do
-                s <- getState
-                let ais = map (\iid -> (iid, getItemBody iid s)) (EM.keys bag)
-                execUpdAtomic $ UpdLoseItemBag (CEmbed lid tpos) bag ais
-              Nothing -> return ()
-            -- Altering always reveals the outcome tile, so it's not hidden
-            -- and so its embedded items are always visible.
-            embedItem lid tpos toTile
+              -- At the end we replace old embeds (even if partially used up)
+              -- with new ones.
+              -- If the source tile was hidden, the items could not be visible
+              -- on a client, in which case the command would be ignored
+              -- on the client, without causing any problems. Otherwise,
+              -- if the position is in view, client has accurate info.
+              case EM.lookup tpos (lembed lvl2) of
+                Just bag -> do
+                  s <- getState
+                  let ais = map (\iid -> (iid, getItemBody iid s)) (EM.keys bag)
+                  execUpdAtomic $ UpdLoseItemBag (CEmbed lid tpos) bag ais
+                Nothing -> return ()
+              -- Altering always reveals the outcome tile, so it's not hidden
+              -- and so its embedded items are always visible.
+              embedItem lid tpos toTile
           feats = TK.tfeature $ okind cotile serverTile
           toAlter feat =
             case feat of

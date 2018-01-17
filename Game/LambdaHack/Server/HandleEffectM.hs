@@ -234,7 +234,7 @@ itemEffectEmbedded :: MonadServerAtomic m
                    => ActorId -> LevelId -> Point -> ItemId -> m ()
 itemEffectEmbedded aid lid tpos iid = do
   -- First embedded item may move actor to another level, so @lid@
-  -- may be unqual to @blid sb@.
+  -- may be unequal to @blid sb@.
   let c = CEmbed lid tpos
   execSfxAtomic $ SfxTrigger aid tpos
   meleeEffectAndDestroy aid aid iid c
@@ -1444,5 +1444,5 @@ effectComposite recursiveCall l = do
         ur <- recursiveCall eff
         when (ur == UseUp) $ void $ result  -- UseResult comes from the first
         return ur
-  foldr f (return UseDud) l  -- @True@ if any effect triggered
+  foldr f (return UseDud) l
   -- no @execSfx@, because individual effects sent them

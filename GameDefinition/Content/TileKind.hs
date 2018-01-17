@@ -193,7 +193,7 @@ pillarCache = TileKind
   , tfeature = [ Embed "treasure cache", Embed "treasure cache trap"
                , ChangeTo "cachable", ConsideredByAI, Indistinct ]
       -- Not explorable, but prominently placed, so hard to miss.
-      -- Very beneficial, so AI eager to trigger.
+      -- Very beneficial, so AI eager to trigger, unless wary of traps.
   }
 lampPost = TileKind
   { tsymbol  = 'O'
