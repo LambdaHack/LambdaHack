@@ -395,7 +395,11 @@ reqAlterFail source tpos = do
         s <- getState
         let ais = map (\iid -> (iid, getItemBody iid s)) (EM.keys embeds)
         execUpdAtomic $ UpdSpotItemBag (CEmbed lid tpos) embeds ais
-      tryApplyEmbeds = mapM_ tryApplyEmbed $ EM.assocs embeds
+      tryApplyEmbeds = do
+        -- Can't send @SfxTrigger@ afterwards, because actor may be moved
+        -- by the embeds to another level, where @tpos@ is meaningless.
+        execSfxAtomic $ SfxTrigger source tpos
+        mapM_ tryApplyEmbed $ EM.assocs embeds
       tryApplyEmbed (iid, kit) = do
         let itemFull@ItemFull{itemBase} = itemToF iid kit
             legal = permittedApply localTime applySkill calmE " " itemFull

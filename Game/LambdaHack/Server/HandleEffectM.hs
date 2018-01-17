@@ -236,7 +236,6 @@ itemEffectEmbedded aid lid tpos iid = do
   -- First embedded item may move actor to another level, so @lid@
   -- may be unequal to @blid sb@.
   let c = CEmbed lid tpos
-  execSfxAtomic $ SfxTrigger aid tpos
   meleeEffectAndDestroy aid aid iid c
 
 -- | The source actor affects the target actor, with a given item.
