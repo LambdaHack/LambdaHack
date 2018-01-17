@@ -146,7 +146,7 @@ textAllAE detailLevel skipRecharging ItemFull{itemBase, itemDisco} =
                 elab = case find elabel effects of
                   Just (IK.ELabel t) -> [t]
                   _ -> []
-                damage = case find hurtMeleeAspect aspects of
+                damage = case find hurtMeleeAspect restAs of
                   Just (IK.AddHurtMelee hurtMelee) ->
                     (if jdamage itemBase == 0
                      then "0d0"
@@ -157,6 +157,7 @@ textAllAE detailLevel skipRecharging ItemFull{itemBase, itemDisco} =
                        else tshow (jdamage itemBase)
             in filter (/= "")
                $ elab ++ if detLev >= DetailHigh
+                            || detLev >= DetailMedium && null elab
                          then [periodicOrTimeout] ++ [damage] ++ aes
                               ++ [onSmash | detLev >= DetailAll]
                          else [damage]
