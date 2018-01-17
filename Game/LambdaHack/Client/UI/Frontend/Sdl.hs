@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.Frontend.Sdl
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , FontAtlas, FrontendSession(..), startupFun, shutdown, forceShutdown
-  , display, drawFrame, modTranslate, keyTranslate, colorToRGBA
+  , display, drawFrame, printScreen, modTranslate, keyTranslate, colorToRGBA
 #endif
   ) where
 
@@ -19,7 +19,10 @@ import           Data.IORef
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import           Data.Word (Word32, Word8)
+import           Foreign.C.String (withCString)
 import           Foreign.C.Types (CInt)
+import           Foreign.Ptr (nullPtr)
+import           Foreign.Storable (peek)
 import           System.Directory
 import           System.Exit (exitSuccess)
 import           System.FilePath
@@ -27,7 +30,11 @@ import           System.FilePath
 import qualified SDL
 import qualified SDL.Font as TTF
 import           SDL.Input.Keyboard.Codes
+import qualified SDL.Internal.Types
 import qualified SDL.Raw.Basic as SDL (logSetAllPriority)
+import qualified SDL.Raw.Enum
+import qualified SDL.Raw.Types
+import qualified SDL.Raw.Video
 import qualified SDL.Vect as Vect
 
 import           Game.LambdaHack.Client.ClientOptions
@@ -123,7 +130,8 @@ startupFun soptions@ClientOptions{..} rfMVar = do
   sframeQueue <- newEmptyMVar
   sframeDrawn <- newEmptyMVar
   let sess = FrontendSession{..}
-  rf <- createRawFrontend (display sess) (shutdown sess)
+  rfWithoutPrintScreen <- createRawFrontend (display sess) (shutdown sess)
+  let rf = rfWithoutPrintScreen {fprintScreen = printScreen sess}
   putMVar rfMVar rf
   let pointTranslate :: forall i. (Enum i) => Vect.Point Vect.V2 i -> Point
       pointTranslate (SDL.P (SDL.V2 x y)) =
@@ -323,6 +331,25 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
   SDL.rendererRenderTarget srenderer SDL.$= Nothing
   SDL.copy srenderer texture Nothing Nothing  -- clear the backbuffer
   SDL.present srenderer
+
+-- It can't seem to cope with SDL_PIXELFORMAT_INDEX8, so we are stuck
+-- with huge bitmaps.
+printScreen :: FrontendSession -> IO ()
+printScreen FrontendSession{..} = do
+  let fileName = "/tmp/a.bmp"
+      SDL.Internal.Types.Renderer renderer = srenderer
+  Vect.V2 sw sh <- SDL.get $ SDL.windowSize swindow
+  ptrOut <- SDL.Raw.Video.createRGBSurface 0 sw sh 32 0 0 0 0
+  surfaceOut <- peek ptrOut
+  void $ SDL.Raw.Video.renderReadPixels
+    renderer
+    nullPtr
+    SDL.Raw.Enum.SDL_PIXELFORMAT_ARGB8888
+    (SDL.Raw.Types.surfacePixels surfaceOut)
+    (sw * 4)
+  withCString fileName $ \fileNameCString -> do
+    void $! SDL.Raw.Video.saveBMP ptrOut fileNameCString
+  SDL.Raw.Video.freeSurface ptrOut
 
 -- | Translates modifiers to our own encoding, ignoring Shift.
 modTranslate :: SDL.KeyModifier -> K.Modifier

@@ -21,10 +21,11 @@ import           Game.LambdaHack.Common.Point
 -- | Raw frontend definition. The minimal closed set of values that need
 -- to depend on the specifics of the chosen frontend.
 data RawFrontend = RawFrontend
-  { fdisplay  :: SingleFrame -> IO ()
-  , fshutdown :: IO ()
-  , fshowNow  :: MVar ()
-  , fchanKey  :: STM.TQueue KMP
+  { fdisplay     :: SingleFrame -> IO ()
+  , fshutdown    :: IO ()
+  , fshowNow     :: MVar ()
+  , fchanKey     :: STM.TQueue KMP
+  , fprintScreen :: IO ()
   }
 
 startupBound :: (MVar RawFrontend -> IO ()) -> IO RawFrontend
@@ -45,6 +46,7 @@ createRawFrontend fdisplay fshutdown = do
     , fshutdown
     , fshowNow
     , fchanKey
+    , fprintScreen = return ()  -- dummy, except fro SDL2
     }
 
 -- | Empty the keyboard channel.
