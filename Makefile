@@ -1,6 +1,9 @@
 play:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --dumpInitRngs
 
+shot:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --dumpInitRngs --printEachScreen
+
 expose-lore:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --dumpInitRngs --savePrefix know --newGame 2 --gameMode crawl --knowItems --benchmark --noAnim --maxFps 1000
 
@@ -18,6 +21,10 @@ chrome-prof:
 
 minific:
 	ccjs dist/build/LambdaHack/LambdaHack.jsexe/all.js --compilation_level=ADVANCED_OPTIMIZATIONS --isolation_mode=IIFE --assume_function_wrapper --jscomp_off="*" --externs=node > ../lambdahack.github.io/lambdahack.all.js
+
+create-gif :
+	find ~/.LambdaHack/screenshots/ -name 'prtscn*.bmp' -print0 | xargs -0 -r mogrify -format gif
+	gifsicle -O3 --careful -d3 -l ~/.LambdaHack/screenshots/prtscn*.gif -o ~/.LambdaHack/screenshots/screenshot.gif
 
 frontendRaid:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --boostRandomItem --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode raid
