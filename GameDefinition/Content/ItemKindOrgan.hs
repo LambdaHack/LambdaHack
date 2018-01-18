@@ -217,7 +217,7 @@ largeTail = fist
   , iverbHit = "knock"
   , idamage  = toDmg $ 6 `d` 1
   , iaspects = [Timeout $ 1 + 1 `d` 3, AddHurtMelee 20]
-  , ieffects = [Recharging (PushActor (ThrowMod 400 25))]
+  , ieffects = [Recharging (PushActor (ThrowMod 400 50))]  -- 2 steps
   , idesc    = "Slow but heavy."
   }
 

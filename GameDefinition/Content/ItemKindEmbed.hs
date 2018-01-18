@@ -168,7 +168,7 @@ frost = ItemKind
   , iaspects = []
   , ieffects = [ Burn 1  -- sensory ambiguity between hot and cold
                , RefillCalm 20  -- cold reason
-               , PushActor (ThrowMod 200 50) ]  -- slippery ice
+               , PushActor (ThrowMod 100 50) ]  -- slippery ice, 1 step, slow
   , ifeature = [Identified, Durable]
   , idesc    = "Intricate patterns of shining ice."
   , ikit     = []
