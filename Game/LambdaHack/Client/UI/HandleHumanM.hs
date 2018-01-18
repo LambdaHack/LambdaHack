@@ -124,6 +124,7 @@ cmdAction cmd = case cmd of
   MarkSuspect -> markSuspectHuman >> settingsMenuHuman cmdAction
   SettingsMenu -> settingsMenuHuman cmdAction
   ChallengesMenu -> challengesMenuHuman cmdAction
+  PrintScreen -> addNoError printScreenHuman
 
   Cancel -> addNoError cancelHuman
   Accept -> addNoError acceptHuman

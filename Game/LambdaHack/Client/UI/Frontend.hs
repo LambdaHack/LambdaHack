@@ -59,6 +59,8 @@ data FrontReq :: * -> * where
   FrontAutoYes :: Bool -> FrontReq ()
   -- | Shut the frontend down.
   FrontShutdown :: FrontReq ()
+  -- | Take screenshot.
+  FrontPrintScreen :: FrontReq ()
 
 -- | Connection channel between a frontend and a client. Frontend acts
 -- as a server, serving keys, etc., when given frames to display.
@@ -125,6 +127,7 @@ fchanFrontend soptions fs@FrontSetup{..} rf =
       -- In case the last frame display is pending:
       void $ tryTakeMVar $ fshowNow rf
       fshutdown rf
+    FrontPrintScreen -> fprintScreen rf
 
 display :: RawFrontend -> FrameForall -> IO ()
 display rf@RawFrontend{fshowNow} frontFrame = do

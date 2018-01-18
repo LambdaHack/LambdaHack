@@ -417,6 +417,7 @@ keyTranslate shiftPressed n = case n of
   KeycodePageDown   -> K.PgDn
   KeycodeInsert     -> K.Insert
   KeycodeDelete     -> K.Delete
+  KeycodePrintScreen -> K.PrintScreen
   KeycodeKPDivide   -> K.KP '/'
   KeycodeKPMultiply -> K.KP '*'
   KeycodeKPMinus    -> K.Char '-'  -- KP and normal are merged here

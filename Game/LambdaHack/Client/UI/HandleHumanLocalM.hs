@@ -13,7 +13,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , memberCycleHuman, memberBackHuman
   , selectActorHuman, selectNoneHuman, selectWithPointerHuman
   , repeatHuman, recordHuman, historyHuman
-  , markVisionHuman, markSmellHuman, markSuspectHuman
+  , markVisionHuman, markSmellHuman, markSuspectHuman, printScreenHuman
     -- * Commands specific to aiming
   , cancelHuman, acceptHuman, tgtClearHuman, itemClearHuman
   , moveXhairHuman, aimTgtHuman, aimFloorHuman, aimEnemyHuman, aimItemHuman
@@ -656,6 +656,10 @@ markSuspectHuman = do
   -- @condBFS@ depends on the setting we change here.
   invalidateBfsAll
   modifyClient cycleMarkSuspect
+
+-- * PrintScreen
+printScreenHuman :: MonadClientUI m => m ()
+printScreenHuman = printScreen
 
 -- * Cancel
 

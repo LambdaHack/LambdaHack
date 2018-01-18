@@ -49,6 +49,7 @@ data Key =
   | Begin
   | Insert
   | Delete
+  | PrintScreen
   | Home
   | KP Char      -- ^ a keypad key for a character (digits and operators)
   | Char Char    -- ^ a single printable character
@@ -116,6 +117,7 @@ showKey PgDn     = "PGDN"
 showKey Begin    = "BEGIN"
 showKey Insert   = "INS"
 showKey Delete   = "DEL"
+showKey PrintScreen = "PRTSCR"
 showKey (KP c)   = "KP_" ++ [c]
 showKey (Char c) = [c]
 showKey (Fun n) = "F" ++ show n

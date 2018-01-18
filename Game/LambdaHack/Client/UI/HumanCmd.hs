@@ -151,6 +151,7 @@ data HumanCmd =
   | MarkSuspect
   | SettingsMenu
   | ChallengesMenu
+  | PrintScreen
     -- These are mostly related to aiming.
   | Cancel
   | Accept

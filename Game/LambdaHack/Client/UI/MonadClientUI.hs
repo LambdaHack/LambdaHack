@@ -7,8 +7,8 @@ module Game.LambdaHack.Client.UI.MonadClientUI
                  )
     -- * Assorted primitives
   , clientPrintUI, mapStartY, getSession, putSession, displayFrames
-  , connFrontendFrontKey, setFrontAutoYes, frontendShutdown, chanFrontend
-  , anyKeyPressed, discardPressedKey, addPressedEsc, revCmdMap
+  , connFrontendFrontKey, setFrontAutoYes, frontendShutdown, printScreen
+  , chanFrontend, anyKeyPressed, discardPressedKey, addPressedEsc, revCmdMap
   , getReportUI, getLeaderUI, getArenaUI, viewedLevelUI
   , leaderTgtToPos, xhairToPos, clearXhair, clearAimMode
   , scoreToSlideshow, defaultHistory
@@ -131,6 +131,9 @@ setFrontAutoYes b = connFrontend $ FrontAutoYes b
 
 frontendShutdown :: MonadClientUI m => m ()
 frontendShutdown = connFrontend FrontShutdown
+
+printScreen :: MonadClientUI m => m ()
+printScreen = connFrontend FrontPrintScreen
 
 -- | Initialize the frontend chosen by the player via client options.
 chanFrontend :: MonadClientUI m => ClientOptions -> m ChanFrontend

@@ -200,6 +200,7 @@ standardKeys = KeyKind $ map evalKeyDef $
   , ("C-v", repeatTriple 1000)
   , ("C-V", repeatTriple 25)
   , ("'", ([CmdMeta], "start recording commands", Record))
+  , ("C-P", ([CmdMeta], "print screen", PrintScreen))
 
   -- Dashboard, in addition to commands marked above
   , ("safeD100", ([CmdInternal, CmdDashboard], "display help", Help))
