@@ -234,7 +234,7 @@ speedNegate (Speed n) = Speed (-n)
 ticksPerMeter :: Speed -> Delta Time
 {-# INLINE ticksPerMeter #-}
 ticksPerMeter (Speed v) =
-  Delta $ Time $ timeTicks timeSecond * sInMs `divUp` max minimalSpeed v
+  Delta $ Time $ timeTicks timeSecond * sInMs `divUp` max 1 v
 
 -- | Calculate projectile speed from item weight in grams
 -- and velocity percent modifier.
@@ -245,7 +245,7 @@ speedFromWeight !weight !throwVelocity =
       mpMs | w < 250 = sInMs * 20
            | w < 1500 = sInMs * 20 * 1250 `div` (w + 1000)
            | w < 10500 = sInMs * (11000 - w) `div` 1000
-           | otherwise = minimalSpeed
+           | otherwise = minimalSpeed * 2  -- move one step and drop
       v = mpMs * fromIntegral throwVelocity `div` 100
       -- We round down to the nearest multiple of 2M (unless the speed
       -- is very low), to ensure both turns of flight cover the same distance
