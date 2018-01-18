@@ -149,7 +149,7 @@ startupFun soptions@ClientOptions{..} rfMVar = do
         SDL.destroyTexture oldTexture
         writeIORef stexture newTexture
         prevFrame <- readIORef spreviousFrame
-        writeIORef spreviousFrame blankSingleFrame
+        writeIORef spreviousFrame blankSingleFrame  -- to overwrite each char
         drawFrame soptions sess prevFrame
       loopSDL :: IO ()
       loopSDL = do
@@ -159,10 +159,15 @@ startupFun soptions@ClientOptions{..} rfMVar = do
             mfr <- tryTakeMVar sframeQueue
             case mfr of
               Just fr -> do
-                -- Some SDL2 (OpenGL) backends are very thread-unsafe,
-                -- so we need to ensure we draw on the same (bound) OS thread
-                -- that initialized SDL, hence we have to poll frames.
-                drawFrame soptions sess fr
+                -- Don't present an unchanged backbuffer.
+                -- This doesn't improve FPS; probably equal frames happen
+                -- very rarely, if at all, which is actually very good.
+                prevFrame <- readIORef spreviousFrame
+                unless (prevFrame == fr) $
+                  -- Some SDL2 (OpenGL) backends are very thread-unsafe,
+                  -- so we need to ensure we draw on the same (bound) OS thread
+                  -- that initialized SDL, hence we have to poll frames.
+                  drawFrame soptions sess fr
                 putMVar sframeDrawn ()  -- signal that drawing ended
               Nothing -> threadDelay 15000
                            -- 60 polls per second, so keyboard snappy enough
