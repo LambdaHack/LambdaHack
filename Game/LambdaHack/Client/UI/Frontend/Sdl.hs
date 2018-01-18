@@ -171,8 +171,9 @@ startupFun soptions@ClientOptions{..} rfMVar = do
                   -- We can't print screen in @display@ due to thread-unsafety.
                   when sprintEachScreen $ printScreen sess
                 putMVar sframeDrawn ()  -- signal that drawing ended
-              Nothing -> threadDelay 15000
-                           -- 60 polls per second, so keyboard snappy enough
+              Nothing -> threadDelay $ if sbenchmark then 150 else 15000
+                           -- 60 polls per second, so keyboard snappy enough;
+                           -- max 6000 FPS when benchmarking
           Just e -> handleEvent e
         continueSdlLoop <- readIORef scontinueSdlLoop
         if continueSdlLoop
