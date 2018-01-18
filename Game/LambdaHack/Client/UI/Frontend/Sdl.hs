@@ -163,11 +163,13 @@ startupFun soptions@ClientOptions{..} rfMVar = do
                 -- This doesn't improve FPS; probably equal frames happen
                 -- very rarely, if at all, which is actually very good.
                 prevFrame <- readIORef spreviousFrame
-                unless (prevFrame == fr) $
+                unless (prevFrame == fr) $ do
                   -- Some SDL2 (OpenGL) backends are very thread-unsafe,
                   -- so we need to ensure we draw on the same (bound) OS thread
                   -- that initialized SDL, hence we have to poll frames.
                   drawFrame soptions sess fr
+                  -- We can't print screen in @display@ due to thread-unsafety.
+                  when sprintEachScreen $ printScreen sess
                 putMVar sframeDrawn ()  -- signal that drawing ended
               Nothing -> threadDelay 15000
                            -- 60 polls per second, so keyboard snappy enough

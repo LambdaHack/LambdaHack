@@ -56,6 +56,7 @@ serverOptionsP = do
   skeepAutomated    <- keepAutomatedP
   sstopAfterSeconds <- stopAfterSecsP
   sstopAfterFrames  <- stopAfterFramesP
+  sprintEachScreen  <- printEachScreenP
   sbenchmark        <- benchmarkP
   sdungeonRng       <- setDungeonRngP
   smainRng          <- setMainRngP
@@ -162,6 +163,11 @@ stopAfterFramesP = optional $
   option auto (  long "stopAfterFrames"
               <> help "Exit game session after around N frames"
               <> metavar "N" )
+
+printEachScreenP :: Parser Bool
+printEachScreenP =
+  switch (  long "printEachScreen"
+         <> help "Take a screenshot of each rendered distinct frame (SDL only)" )
 
 benchmarkP :: Parser Bool
 benchmarkP =

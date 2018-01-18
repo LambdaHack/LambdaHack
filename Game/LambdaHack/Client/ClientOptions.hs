@@ -55,6 +55,7 @@ data ClientOptions = ClientOptions
       -- ^ Show clients' internal debug messages.
   , sstopAfterSeconds :: Maybe Int
   , sstopAfterFrames  :: Maybe Int
+  , sprintEachScreen  :: Bool
   }
   deriving (Show, Eq, Generic)
 
@@ -84,4 +85,5 @@ defClientOptions = ClientOptions
   , sdbgMsgCli = False
   , sstopAfterSeconds = Nothing
   , sstopAfterFrames = Nothing
+  , sprintEachScreen = False
   }
