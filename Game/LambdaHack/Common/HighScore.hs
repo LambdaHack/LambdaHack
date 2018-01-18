@@ -115,7 +115,8 @@ showScore tz (pos, score) =
         Conquer  -> "slew all opposition"
         Escape   -> "emerged victorious"
         Restart  -> "resigned prematurely"
-      curDate = tshow . utcToLocalTime tz . posixSecondsToUTCTime . date $ score
+      curDate = T.take 19 . tshow . utcToLocalTime tz
+                . posixSecondsToUTCTime . date $ score
       turns = absoluteTimeNegate (negTime score) `timeFitUp` timeTurn
       tpos = T.justifyRight 3 ' ' $ tshow pos
       tscore = T.justifyRight 6 ' ' $ tshow $ points score

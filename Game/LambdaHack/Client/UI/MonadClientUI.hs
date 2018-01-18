@@ -293,7 +293,7 @@ defaultHistory :: MonadClientUI m => Int -> m History
 defaultHistory uHistoryMax = liftIO $ do
   utcTime <- getCurrentTime
   timezone <- getTimeZone utcTime
-  let curDate = show $ utcToLocalTime timezone utcTime
+  let curDate = take 19 $ show $ utcToLocalTime timezone utcTime
       emptyHist = emptyHistory uHistoryMax
   return $! addReport emptyHist timeZero
          $ singletonReport $ toMsg $ stringToAL
