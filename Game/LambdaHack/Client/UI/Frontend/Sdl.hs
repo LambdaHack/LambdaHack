@@ -17,6 +17,8 @@ import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import           Data.IORef
 import qualified Data.Text as T
+import           Data.Time.Clock.POSIX
+import           Data.Time.LocalTime
 import qualified Data.Vector.Unboxed as U
 import           Data.Word (Word32, Word8)
 import           Foreign.C.String (withCString)
@@ -42,6 +44,7 @@ import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
 import qualified Game.LambdaHack.Common.Color as Color
+import           Game.LambdaHack.Common.File
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -336,7 +339,14 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
 -- with huge bitmaps.
 printScreen :: FrontendSession -> IO ()
 printScreen FrontendSession{..} = do
-  let fileName = "/tmp/a.bmp"
+  dataDir <- appDataDir
+  tryCreateDir dataDir
+  tryCreateDir $ dataDir </> "screenshots"
+  utcTime <- getCurrentTime
+  timezone <- getTimeZone utcTime
+  let unspace = map $ \c -> if c == ' ' then '_' else c
+      dateText = unspace $ take 25 $ show $ utcToLocalTime timezone utcTime
+      fileName = dataDir </> "screenshots" </> dateText <.> "bmp"
       SDL.Internal.Types.Renderer renderer = srenderer
   Vect.V2 sw sh <- SDL.get $ SDL.windowSize swindow
   ptrOut <- SDL.Raw.Video.createRGBSurface 0 sw sh 32 0 0 0 0
