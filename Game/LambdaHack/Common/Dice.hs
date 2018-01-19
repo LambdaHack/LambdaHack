@@ -160,7 +160,7 @@ minmaxDice :: Dice -> (Int, Int)
 minmaxDice dice1 = case dice1 of
   DiceI k -> (k, k)
   DiceD n k -> (n, n * k)
-  DiceDL n k -> (0, n * k)  -- bottom and top level considered
+  DiceDL n k -> (1, n * k)  -- bottom and top level considered
   DiceZ n k -> (0, n * (k - 1))
   DiceZL n k -> (0, n * (k - 1))  -- bottom and top level considered
   DicePlus d1 d2 ->
