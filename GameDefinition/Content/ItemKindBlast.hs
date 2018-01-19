@@ -60,7 +60,7 @@ firecracker n = ItemKind
   , iweight  = 1
   , idamage  = toDmg 0
   , iaspects = [AddShine $ intToDice $ 1 + n `div` 2]
-  , ieffects = [RefillCalm 2]
+  , ieffects = [if n >= 4 then Burn 1 else RefillCalm (-2)]
                ++ [DropBestWeapon | n >= 4]
                ++ [ OnSmash $ Explode
                     $ toGroupName $ "firecracker" <+> tshow (n - 1)
