@@ -55,7 +55,7 @@ obscenePictogram = ItemKind
   , ieffects = [ Recharging $ Temporary "enter destructive rage at the sight of an obscene pictogram"
                , Recharging $ RefillCalm (-20)
                , Recharging $ OneOf
-                   [ toOrganActorTurn "strengthened" (3 + 1 `d` 3)
+                   [ toOrganActorTurn "strengthened" (3 + 1 `d` 2)
                    , CreateItem CInv "sandstone rock" timerNone ] ]
   , ifeature = [Identified, Durable]
   , idesc    = "It's not even anatomically possible."
@@ -74,8 +74,8 @@ subtleFresco = ItemKind
   , iaspects = [Timeout 7]
   , ieffects = [ Temporary "feel refreshed by the subtle fresco"
                , RefillCalm 2
-               , Recharging $ toOrganActorTurn "far-sighted" (3 + 1 `d` 3)
-               , Recharging $ toOrganActorTurn "keen-smelling" (3 + 1 `d` 3) ]
+               , Recharging $ toOrganActorTurn "far-sighted" (3 + 1 `d` 2)
+               , Recharging $ toOrganActorTurn "keen-smelling" (3 + 1 `d` 2) ]
   , ifeature = [Identified, Durable]
   , idesc    = "Expensive yet tasteful."
   , ikit     = []
@@ -204,9 +204,9 @@ doorwayTrap = ItemKind
   , iweight  = 10000
   , idamage  = toDmg 0
   , iaspects = []
-  , ieffects = [OneOf [ toOrganActorTurn "blind" $ (2 + 1 `dL` 3) * 10
-                      , toOrganActorTurn "slowed" $ (2 + 1 `dL` 3) * 10
-                      , toOrganActorTurn "weakened" $ (2 + 1 `dL` 3) * 10 ]]
+  , ieffects = [OneOf [ toOrganActorTurn "blind" $ (1 `dL` 4) * 10
+                      , toOrganActorTurn "slowed" $ (1 `dL` 4) * 10
+                      , toOrganActorTurn "weakened" $ (1 `dL` 4) * 10 ]]
   , ifeature = [Identified]  -- not Durable, springs at most once
   , idesc    = "Just turn the handle..."
   , ikit     = []
@@ -282,7 +282,7 @@ pulpit = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [ CreateItem CGround "any scroll" timerNone
-               , toOrganGameTurn "defenseless" $ (2 + 1 `dL` 3) * 10
+               , toOrganGameTurn "defenseless" $ (1 `dL` 6) * 10
                , Explode "PhD defense question" ]
   , ifeature = [Identified]  -- not Durable, springs at most once
   , idesc    = "A dark wood stand, where strange priests once preached."
