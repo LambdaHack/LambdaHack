@@ -126,6 +126,10 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
               res -> res
           kyx : _ -> Just (okx, kyx, pointer)
       maxIx = length (concatMap snd frs) - 1
+      allOKX = concatMap snd frs
+      initIx = case findIndex (isRight . fst) allOKX of
+        Just p -> p
+        _ -> 0
       page :: Int -> m (Either K.KM SlotChar, Int)
       page pointer = assert (pointer >= 0) $ case findKYX pointer frs of
         Nothing -> error $ "no menu keys" `showFailure` frs
@@ -146,6 +150,11 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
               ignoreKey = page pointer
               pageLen = length kyxs
               xix (_, (_, x1', _)) = x1' == x1
+              firstRowOfNextPage = pointer + pageLen - ixOnPage
+              restOKX = drop firstRowOfNextPage allOKX
+              firstItemOfNextPage = case findIndex (isRight . fst) restOKX of
+                Just p -> p + firstRowOfNextPage
+                _ -> firstRowOfNextPage
               interpretKey :: K.KM -> m (Either K.KM SlotChar, Int)
               interpretKey ikm =
                 case K.key ikm of
@@ -173,12 +182,12 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                     if | ikm `elem` keys -> return (Left ikm, pointer)
                        | K.escKM `elem` keys -> return (Left K.escKM, pointer)
                        | otherwise -> ignoreKey
-                  K.Space | pointer + pageLen - ixOnPage <= maxIx ->
-                    page (pointer + pageLen - ixOnPage)
+                  K.Space | firstItemOfNextPage <= maxIx ->
+                    page firstItemOfNextPage
                   K.Unknown "SAFE_SPACE" ->
-                    if pointer + pageLen - ixOnPage <= maxIx
-                    then page (pointer + pageLen - ixOnPage)
-                    else page 0
+                    if firstItemOfNextPage <= maxIx
+                    then page firstItemOfNextPage
+                    else page initIx
                   _ | ikm `elem` keys ->
                     return (Left ikm, pointer)
                   K.Up -> case findIndex xix $ reverse $ take ixOnPage kyxs of
@@ -191,23 +200,19 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                     Just ix -> page (pointer + ix + 1)
                   K.Right -> if pointer == maxIx then page 0
                              else page (min maxIx (pointer + 1))
-                  K.Home -> page 0
+                  K.Home -> page initIx
                   K.End -> page maxIx
                   _ | K.key ikm `elem` [K.PgUp, K.WheelNorth] ->
                     page (max 0 (pointer - ixOnPage - 1))
                   _ | K.key ikm `elem` [K.PgDn, K.WheelSouth] ->
-                    page (min maxIx (pointer + pageLen - ixOnPage))
-                  K.Space -> if pointer == maxIx then page 0
+                    page (min maxIx firstItemOfNextPage)
+                  K.Space -> if pointer == maxIx then page initIx
                              else page maxIx
                   _ -> error $ "unknown key" `showFailure` ikm
           pkm <- promptGetKey dm ov1 sfBlank legalKeys
           interpretKey pkm
   menuIxMap <- getsSession smenuIxMap
-  let allOKX = concatMap snd $ slideshow frsX
-      initIx = case findIndex (isRight . fst) allOKX of
-        Just p -> p
-        _ -> 0
-      menuIx | menuName == "" = initIx
+  let menuIx | menuName == "" = initIx
              | otherwise = maybe initIx (+ initIx) (M.lookup menuName menuIxMap)
   (km, pointer) <- if null frs
                    then return (Left K.escKM, menuIx)
