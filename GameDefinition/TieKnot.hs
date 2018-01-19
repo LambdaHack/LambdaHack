@@ -53,6 +53,8 @@ tieKnot options@ServerOptions{sallClear, sboostRandomItem, sdungeonRng} = do
         else Content.ItemKind.content
       -- Common content operations, created from content definitions.
       -- Evaluated fully to discover errors ASAP and to free memory.
+      -- Fail here, not inside server code, so that savefiles are not removed,
+      -- because they are not the source of the failure.
       !cops = COps
         { cocave  = CK.makeData Content.CaveKind.content
         , coitem

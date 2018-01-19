@@ -34,7 +34,9 @@ main = do
     fstderr <- SIO.openFile (dataDir </> "stderr.txt") SIO.WriteMode
     GHC.IO.Handle.hDuplicateTo fstdout SIO.stdout
     GHC.IO.Handle.hDuplicateTo fstderr SIO.stderr
-  serverOptions <- OA.execParser serverOptionsPI
+  -- Fail here, not inside server code, so that savefiles are not removed,
+  -- because they are not the source of the failure.
+  !serverOptions <- OA.execParser serverOptionsPI
   -- Avoid the bound thread that would slow down the communication.
   a <- async $ tieKnot serverOptions
   ex <- waitCatch a

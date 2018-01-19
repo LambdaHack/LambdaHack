@@ -137,6 +137,8 @@ executorSer cops copsClient soptionsNxtCmdline = do
   -- Parse UI client configuration file.
   -- It is reparsed at each start of the game executable.
   let benchmark = sbenchmark $ sclientOptions soptionsNxtCmdline
+  -- Fail here, not inside client code, so that savefiles are not removed,
+  -- because they are not the source of the failure.
   sUIOptions <- mkUIOptions cops benchmark
   soptionsNxt <- case uCmdline sUIOptions of
     []   -> return soptionsNxtCmdline
