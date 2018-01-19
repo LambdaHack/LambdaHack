@@ -6,7 +6,8 @@ module Game.LambdaHack.Common.ItemStrongest
     -- * Assorted
   , computeTrajectory, itemTrajectory, totalRange
   , hasCharge, damageUsefulness, strongestMelee, prEqpSlot
-  , unknownMeleeBonus, filterRecharging, stripRecharging, stripOnSmash
+  , unknownMeleeBonus, hurtMeleeOfFull, tmpMeleeBonus
+  , filterRecharging, stripRecharging, stripOnSmash
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , unknownAspect
@@ -180,7 +181,7 @@ prEqpSlot eqpSlot ar@AspectRecord{..} =
 unknownAspect :: (Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f itemFull =
   case itemDisco itemFull of
-    Nothing -> True  -- not even kind is known, so aspect unknown
+    Nothing -> True  -- not even kind is known, so assume aspect affects melee
     Just ItemDisco{itemAspect=Nothing, itemKind=ItemKind{iaspects}} ->
       let unknown x = Dice.minDice x /= Dice.maxDice x
       in or $ concatMap (map unknown . f) iaspects
@@ -192,6 +193,24 @@ unknownMeleeBonus =
       p _ = []
       f itemFull b = b || unknownAspect p itemFull
   in foldr f False
+
+hurtMeleeOfFull :: ItemFull -> Int
+hurtMeleeOfFull itemFull =
+  let hurtMeleeAspect :: Aspect -> Bool
+      hurtMeleeAspect AddHurtMelee{} = True
+      hurtMeleeAspect _ = False
+  in case itemDisco itemFull of
+    Nothing -> 0  -- not even kind is known, so aspect totally unknown
+    Just ItemDisco{itemAspect=Just AspectRecord{aHurtMelee}} -> aHurtMelee
+    Just ItemDisco{itemKind=ItemKind{iaspects}} ->
+      case find hurtMeleeAspect iaspects of
+        Just (AddHurtMelee d) -> ceiling $ Dice.meanDice d
+        _ -> 0  -- not affecting melee
+
+tmpMeleeBonus :: [ItemFull] -> Int
+tmpMeleeBonus is =
+  let f itemFull k = itemK itemFull * hurtMeleeOfFull itemFull + k
+  in foldr f 0 $ filter (isTmpCondition . itemBase) is
 
 filterRecharging :: [Effect] -> [Effect]
 filterRecharging effs =

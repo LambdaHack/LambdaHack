@@ -550,32 +550,39 @@ drawLeaderStatus waitT = do
 drawLeaderDamage :: MonadClientUI m => Int -> m AttrLine
 drawLeaderDamage width = do
   mleader <- getsClient sleader
-  let addColor = map (Color.attrChar2ToW32 Color.BrCyan)
-  stats <- case mleader of
+  (tdice, tbonus, cbonus) <- case mleader of
     Just leader -> do
       allAssocsRaw <- getsState $ fullAssocs leader [CEqp, COrgan]
-      let allAssocs = filter (isMelee . itemBase . snd) allAssocsRaw
       actorSk <- leaderSkillsClientUI
       actorAspect <- getsState sactorAspect
-      strongest <- pickWeaponM Nothing allAssocs actorSk leader
+      let allAssocsOnlyWeapons = filter (isMelee . itemBase . snd) allAssocsRaw
+      strongest <- pickWeaponM Nothing allAssocsOnlyWeapons actorSk leader
       let damage = case strongest of
-            [] -> "0"
+            [] -> ("0", "", Color.White)
             (_, (_, itemFull)) : _ ->
               let tdice = show $ jdamage $ itemBase itemFull
                   bonusRaw = aHurtMelee $ actorAspect EM.! leader
                   bonus = min 200 $ max (-200) bonusRaw
-                  unknownBonus = unknownMeleeBonus $ map snd allAssocs
+                  unknownBonus = unknownMeleeBonus $ map snd allAssocsRaw
                   tbonus = if bonus == 0
                            then if unknownBonus then "+?" else ""
                            else (if bonus > 0 then "+" else "")
                                 <> show bonus
                                 <> (if bonus /= bonusRaw then "$" else "")
                                 <> if unknownBonus then "%?" else "%"
-             in tdice <> tbonus
+                  tmpBonus = tmpMeleeBonus $ map snd allAssocsRaw
+                  cbonus = case compare tmpBonus 0 of
+                    EQ -> Color.White
+                    GT -> Color.Green
+                    LT -> Color.Red
+             in (tdice, tbonus, cbonus)
       return $! damage
-    Nothing -> return ""
-  return $! if null stats || length stats >= width then []
-            else addColor $ stats <> " "
+    Nothing -> return ("", "", Color.White)
+  let addColorDice = map (Color.attrChar2ToW32 Color.BrCyan)
+      addColorBonus = map (Color.attrChar2ToW32 cbonus)
+  return $! if null tdice || length tdice + length tbonus >= width then []
+            else addColorDice tdice ++ addColorBonus tbonus
+                 ++ [Color.spaceAttrW32]
 
 drawSelected :: MonadClientUI m
              => LevelId -> Int -> ES.EnumSet ActorId -> m (Int, AttrLine)

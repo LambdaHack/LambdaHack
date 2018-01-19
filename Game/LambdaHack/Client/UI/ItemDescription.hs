@@ -88,7 +88,7 @@ partItemN side factionD ranged detailLevel n localTime
          , unique, capName, MU.Phrase $ map MU.Text ts )
 
 textAllAE :: DetailLevel -> Bool -> ItemFull -> ([Text], [Text])
-textAllAE detailLevel skipRecharging ItemFull{itemBase, itemDisco} =
+textAllAE detailLevel skipRecharging itemFull@ItemFull{itemBase, itemDisco} =
   let features | detailLevel >= DetailAll =
                    map featureToSuff $ sort $ jfeature itemBase
                | otherwise = []
@@ -177,11 +177,7 @@ textAllAE detailLevel skipRecharging ItemFull{itemBase, itemDisco} =
           speed = speedFromWeight (jweight itemBase) throwVelocity
           meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
           minDeltaHP = xM meanDmg `divUp` 100
-          aHurtMeleeOfItem = case itemAspect of
-            Just aspectRecord -> aHurtMelee aspectRecord
-            Nothing -> case find hurtMeleeAspect (IK.iaspects itemKind) of
-              Just (IK.AddHurtMelee d) -> ceiling $ Dice.meanDice d
-              _ -> 0
+          aHurtMeleeOfItem = hurtMeleeOfFull itemFull
           pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
           prawDeltaHP = fromIntegral pmult * minDeltaHP
           pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
@@ -277,16 +273,9 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
                   else " m/s."
       (desc, featureSentences, damageAnalysis) = case itemDisco itemFull of
         Nothing -> ("This item is as unremarkable as can be.", "", tspeed)
-        Just ItemDisco{itemKind, itemAspect} ->
+        Just ItemDisco{itemKind} ->
           let sentences = mapMaybe featureToSentence (IK.ifeature itemKind)
-              hurtMeleeAspect :: IK.Aspect -> Bool
-              hurtMeleeAspect IK.AddHurtMelee{} = True
-              hurtMeleeAspect _ = False
-              aHurtMeleeOfItem = case itemAspect of
-                Just aspectRecord -> aHurtMelee aspectRecord
-                Nothing -> case find hurtMeleeAspect (IK.iaspects itemKind) of
-                  Just (IK.AddHurtMelee d) -> ceiling $ Dice.meanDice d
-                  _ -> 0
+              aHurtMeleeOfItem = hurtMeleeOfFull itemFull
               meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
               dmgAn = if meanDmg <= 0 then "" else
                 let multRaw = aHurtMeleeOfOwner
