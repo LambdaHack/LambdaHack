@@ -54,7 +54,7 @@ debugResponse fid resp = case resp of
   RespQueryAI aid -> do
     d <- debugAid aid "RespQueryAI"
     serverPrint d
-  RespSfxAtomic sfx -> do
+  RespSfxAtomic sfx -> do  -- not so crucial so no details
     ps <- posSfxAtomic sfx
     serverPrint $ debugShow (fid, "RespSfxAtomic" :: Text, ps)
   RespQueryUI -> serverPrint "RespQueryUI"

@@ -104,7 +104,7 @@ actorCanMelee actorAspect aid b =
 bspeed :: Actor -> AspectRecord -> Speed
 bspeed !b AspectRecord{aSpeed} =
   case btrajectory b of
-    Nothing -> toSpeed aSpeed
+    Nothing -> toSpeed $ max 5 aSpeed  -- see @minimalSpeed@
     Just (_, speed) -> speed
 
 -- | Whether an actor is braced for combat this clip.

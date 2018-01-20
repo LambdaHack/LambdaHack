@@ -1273,12 +1273,12 @@ effectSendFlying :: MonadServerAtomic m
                  -> m UseResult
 effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
   v <- sendFlyingVector source target modePush
-  sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   Level{lxsize, lysize} <- getLevel (blid tb)
   let eps = 0
       fpos = bpos tb `shift` v
   if braced tb then do
+    sb <- getsState $ getActorBody source
     execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
     return UseId  -- the message reveals what's going on
   else case bla lxsize lysize eps (bpos tb) fpos of
@@ -1297,7 +1297,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
       else do
         execSfx
         execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
-        -- Give the actor back all the time spent flying (speed * range)
+        -- Give the actor back all the time spent flying (range/speed)
         -- and also let the push start ASAP. So, he will not lose
         -- any turn of movement (but he may need to retrace the push).
         let delta = timeDeltaScale (ticksPerMeter speed) (-range)

@@ -174,11 +174,14 @@ fromSpeed (Speed s) = fromEnum $ s * 10 `div` sInMs
 -- | The minimal speed is half a meter (half a step across a tile)
 -- per second (two standard turns, which the time span during which
 -- projectile moves, unless it has modified linger value).
+-- This is four times slower than standard human movement speed.
 --
 -- It needen't be lower, because @rangeFromSpeed@ gives 0 steps
 -- with such speed, so the actor's trajectory is empty, so it drops down
 -- at once. Twice that speed already moves a normal projectile one step
--- before it stops.
+-- before it stops. It shouldn't be lower or a slow actor would incur
+-- such a time debt for performing a single action that he'd be paralyzed
+-- for many turns, e.g., leaving his dead body on the screen for very long.
 minimalSpeed :: Int64
 minimalSpeed = sInMs `div` 2
 
@@ -233,8 +236,10 @@ speedNegate (Speed n) = Speed (-n)
 -- | The number of time ticks it takes to walk 1 meter at the given speed.
 ticksPerMeter :: Speed -> Delta Time
 {-# INLINE ticksPerMeter #-}
-ticksPerMeter (Speed v) =
-  Delta $ Time $ timeTicks timeSecond * sInMs `divUp` max 1 v
+ticksPerMeter (Speed v0) =
+  -- Prevent division by zero or infinite time taken for any action.
+  let v = if v0 == 0 then minimalSpeed else v
+  in Delta $ Time $ timeTicks timeSecond * sInMs `divUp` v
 
 -- | Calculate projectile speed from item weight in grams
 -- and velocity percent modifier.
