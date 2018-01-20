@@ -209,7 +209,7 @@ slotToDecorator eqpSlot b t =
     EqpSlotAddArmorMelee -> "[" <> tshowBlock 50 t <> "%]"
     EqpSlotAddArmorRanged -> "{" <> tshowBlock 25 t <> "%}"
     EqpSlotAddMaxHP -> tshow $ max 0 t
-    EqpSlotAddSpeed -> showIntWith1 t <> "m/s"
+    EqpSlotAddSpeed -> showIntWith1 (max minSpeed t) <> "m/s"
     EqpSlotAddSight ->
       let tmax = max 0 t
           tcapped = min (fromEnum $ bcalm b `div` (5 * oneM)) tmax

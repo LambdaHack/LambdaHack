@@ -276,8 +276,10 @@ reqMelee source target iid cstore = do
         err -> error $ "" `showFailure` err
       -- Let the caught missile vanish, but don't remove its trajectory
       -- so that it doesn't pretend to be a non-projectile.
-      execUpdAtomic $ UpdTrajectory target (btrajectory tb)
-                                           (Just ([], toSpeed 0))
+      case btrajectory tb of
+        btra@(Just (l, speed)) | not $ null l ->
+          execUpdAtomic $ UpdTrajectory target btra $ Just ([], speed)
+        _ -> return ()
     else do
       -- Normal hit, with effects. Msgs inside @SfxStrike@ describe
       -- the source part of the strike.

@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Time
   , Delta(..), timeShift, timeDeltaToFrom
   , timeDeltaSubtract, timeDeltaReverse, timeDeltaScale, timeDeltaPercent
   , timeDeltaDiv, timeDeltaToDigit
-  , Speed, toSpeed, fromSpeed
+  , Speed, toSpeed, fromSpeed, minSpeed
   , speedZero, speedWalk, speedLimp, speedThrust, modifyDamageBySpeed
   , speedScale, speedAdd, speedNegate
   , ticksPerMeter, speedFromWeight, rangeFromSpeedAndLinger
@@ -171,6 +171,9 @@ fromSpeed :: Speed -> Int
 {-# INLINE fromSpeed #-}
 fromSpeed (Speed s) = fromEnum $ s * 10 `div` sInMs
 
+minSpeed :: Int
+minSpeed = 5
+
 -- | The minimal speed is half a meter (half a step across a tile)
 -- per second (two standard turns, which the time span during which
 -- projectile moves, unless it has modified linger value).
@@ -183,7 +186,9 @@ fromSpeed (Speed s) = fromEnum $ s * 10 `div` sInMs
 -- such a time debt for performing a single action that he'd be paralyzed
 -- for many turns, e.g., leaving his dead body on the screen for very long.
 minimalSpeed :: Int64
-minimalSpeed = sInMs `div` 2
+minimalSpeed =
+  let Speed msp = toSpeed minSpeed
+  in assert (msp == sInMs `div` 2) msp
 
 -- | No movement possible at that speed.
 speedZero :: Speed
@@ -236,10 +241,9 @@ speedNegate (Speed n) = Speed (-n)
 -- | The number of time ticks it takes to walk 1 meter at the given speed.
 ticksPerMeter :: Speed -> Delta Time
 {-# INLINE ticksPerMeter #-}
-ticksPerMeter (Speed v0) =
+ticksPerMeter (Speed v) =
   -- Prevent division by zero or infinite time taken for any action.
-  let v = if v0 == 0 then minimalSpeed else v
-  in Delta $ Time $ timeTicks timeSecond * sInMs `divUp` v
+  Delta $ Time $ timeTicks timeSecond * sInMs `divUp` max minimalSpeed v
 
 -- | Calculate projectile speed from item weight in grams
 -- and velocity percent modifier.
