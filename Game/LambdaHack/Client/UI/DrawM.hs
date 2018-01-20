@@ -504,8 +504,10 @@ drawLeaderStatus waitT = do
     Just leader -> do
       ar <- getsState $ getActorAspect leader
       s <- getState
-      let showTrunc :: Show a => a -> String
-          showTrunc = (\t -> if length t > 3 then "***" else t) . show
+      let showTrunc x = let t = show x
+                        in if length t > 3
+                           then if x > 0 then "***" else "---"
+                           else t
           (darkL, bracedL, hpDelta, calmDelta,
            ahpS, bhpS, acalmS, bcalmS) =
             let b@Actor{bhp, bcalm} = getActorBody leader s
