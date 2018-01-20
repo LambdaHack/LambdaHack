@@ -22,9 +22,12 @@ chrome-prof:
 minific:
 	ccjs dist/build/LambdaHack/LambdaHack.jsexe/all.js --compilation_level=ADVANCED_OPTIMIZATIONS --isolation_mode=IIFE --assume_function_wrapper --jscomp_off="*" --externs=node > ../lambdahack.github.io/lambdahack.all.js
 
+# Low delay to display animations swiftly and not bore the public too much.
+# Delay can't be lower than 2, because browsers sometimes treat delay 1
+# specially and add their extra delay.
 create-gif :
 	find ~/.LambdaHack/screenshots/ -name 'prtscn*.bmp' -print0 | xargs -0 -r mogrify -format gif
-	gifsicle -O3 --careful -d3 -l ~/.LambdaHack/screenshots/prtscn*.gif -o ~/.LambdaHack/screenshots/screenshot.gif
+	gifsicle -O3 --careful -d2 -l ~/.LambdaHack/screenshots/prtscn*.gif -o ~/.LambdaHack/screenshots/screenshot.gif
 
 frontendRaid:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --boostRandomItem --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode raid
