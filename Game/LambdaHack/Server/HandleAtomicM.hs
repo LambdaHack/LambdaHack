@@ -50,8 +50,9 @@ cmdAtomicSemSer oldState cmd = case cmd of
     when (actorHasShine actorAspectOld aid) $ invalidateLucidLid $ blid b
     deletePerActor actorAspectOld aid b
     modifyServer $ \ser ->
-      ser {sactorTime = EM.adjust (EM.adjust (EM.delete aid) (blid b)) (bfid b)
-                        (sactorTime ser)}
+      ser { sactorTime = EM.adjust (EM.adjust (EM.delete aid) (blid b)) (bfid b)
+                                   (sactorTime ser)
+          , sactorStatis = ES.delete aid (sactorStatis ser) }
   UpdCreateItem iid _ _ (CFloor lid _) -> do
     discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
@@ -81,8 +82,9 @@ cmdAtomicSemSer oldState cmd = case cmd of
     when (actorHasShine actorAspectOld aid) $ invalidateLucidLid $ blid b
     deletePerActor actorAspectOld aid b
     modifyServer $ \ser ->
-      ser {sactorTime = EM.adjust (EM.adjust (EM.delete aid) (blid b)) (bfid b)
-                        (sactorTime ser)}
+      ser { sactorTime = EM.adjust (EM.adjust (EM.delete aid) (blid b)) (bfid b)
+                                   (sactorTime ser)
+          , sactorStatis = ES.delete aid (sactorStatis ser) }
   UpdSpotItem _ iid _ _ (CFloor lid _) -> do
     discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid

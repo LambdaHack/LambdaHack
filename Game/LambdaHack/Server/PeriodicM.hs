@@ -158,7 +158,10 @@ advanceTime aid percent = do
   let t = timeDeltaPercent (ticksPerMeter $ bspeed b ar) percent
   -- @t@ may be negative; that's OK.
   modifyServer $ \ser ->
-    ser {sactorTime = ageActor (bfid b) (blid b) aid t $ sactorTime ser}
+    ser { sactorTime = ageActor (bfid b) (blid b) aid t $ sactorTime ser
+        , sactorStatis = ES.delete aid (sactorStatis ser) }
+            -- actor moved, so he broke the time statis, he can be
+            -- paralyzed again and his moves can be extended again
 
 -- | Add communication overhead time delta to all non-projectile, non-dying
 -- faction's actors, except the leader. Effectively, this limits moves

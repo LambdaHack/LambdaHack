@@ -861,7 +861,9 @@ effectParalyze execSfx nDm target = do
   else do
     execSfx
     modifyServer $ \ser ->
-      ser {sactorTime = ageActor (bfid tb) (blid tb) target t $ sactorTime ser}
+      ser { sactorTime = ageActor (bfid tb) (blid tb) target t $ sactorTime ser
+          , sactorStatis = ES.insert target (sactorStatis ser) }
+              -- actor's time warped, so he is in statis, immune to new warps
     return UseUp
 
 -- ** InsertMove
@@ -883,7 +885,9 @@ effectInsertMove execSfx nDm target = do
   -- but can be propelled.
   execSfx
   modifyServer $ \ser ->
-    ser {sactorTime = ageActor (bfid tb) (blid tb) target t $ sactorTime ser}
+    ser { sactorTime = ageActor (bfid tb) (blid tb) target t $ sactorTime ser
+        , sactorStatis = ES.insert target (sactorStatis ser) }
+            -- actor's time warped, so he is in statis, immune to further warps
   return UseUp
 
 -- ** Teleport
