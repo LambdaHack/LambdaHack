@@ -31,7 +31,6 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
-import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import           Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | The complete dungeon is a map from level identifiers to levels.
@@ -111,15 +110,7 @@ data Level = Level
   , lseen       :: Int        -- ^ currently remembered clear tiles
   , lexplorable :: Int        -- ^ total number of explorable tiles
   , ltime       :: Time       -- ^ local time on the level (possibly frozen)
-  , lactorCoeff :: Int        -- ^ the lower, the more monsters spawn
-  , lactorFreq  :: Freqs ItemKind
-                              -- ^ frequency of spawned actors; [] for clients
-  , litemNum    :: Int        -- ^ number of initial items, 0 for clients
-  , litemFreq   :: Freqs ItemKind
-                              -- ^ frequency of initial items; [] for clients
   , lnight      :: Bool       -- ^ whether the level is covered in darkness
-  , lname       :: Text       -- ^ level name
-  , ldesc       :: Text       -- ^ level description
   }
   deriving (Show, Eq)
 
@@ -232,13 +223,7 @@ instance Binary Level where
     put lseen
     put lexplorable
     put ltime
-    put lactorCoeff
-    put lactorFreq
-    put litemNum
-    put litemFreq
     put lnight
-    put lname
-    put ldesc
   get = do
     lkind <- get
     ldepth <- get
@@ -254,11 +239,5 @@ instance Binary Level where
     lseen <- get
     lexplorable <- get
     ltime <- get
-    lactorCoeff <- get
-    lactorFreq <- get
-    litemNum <- get
-    litemFreq <- get
     lnight <- get
-    lname <- get
-    ldesc <- get
     return $! Level{..}

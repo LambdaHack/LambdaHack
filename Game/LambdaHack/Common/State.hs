@@ -134,11 +134,10 @@ sactorAspect :: State -> ActorAspect
 sactorAspect = _sactorAspect
 
 unknownLevel :: COps -> ContentId CaveKind -> AbsDepth -> X -> Y
-             -> Text -> Text -> ([Point], [Point]) -> Int -> [Point] -> Bool
+             -> ([Point], [Point]) -> [Point] -> Int -> Bool
              -> Level
 unknownLevel COps{cotile}
-             lkind ldepth lxsize lysize lname ldesc
-             lstair lexplorable lescape lnight =
+             lkind ldepth lxsize lysize lstair lescape lexplorable lnight =
   let outerId = ouniqGroup cotile "basic outer fence"
   in Level { lkind
            , ldepth
@@ -150,17 +149,11 @@ unknownLevel COps{cotile}
            , lysize
            , lsmell = EM.empty
            , lstair
+           , lescape
            , lseen = 0
            , lexplorable
            , ltime = timeZero
-           , lactorCoeff = 0
-           , lactorFreq = []
-           , litemNum = 0
-           , litemFreq = []
-           , lescape
            , lnight
-           , lname
-           , ldesc
            }
 
 unknownTileMap :: ContentId TileKind -> Int -> Int -> TileMap
@@ -215,8 +208,8 @@ localFromGlobal State{..} =
   State
     { _sdungeon =
       EM.map (\Level{..} ->
-              unknownLevel _scops lkind ldepth lxsize lysize lname ldesc
-                           lstair lexplorable lescape lnight)
+              unknownLevel _scops lkind ldepth lxsize lysize
+                           lstair lescape lexplorable lnight)
              _sdungeon
     , ..
     }

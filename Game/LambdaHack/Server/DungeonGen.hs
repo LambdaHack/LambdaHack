@@ -162,9 +162,8 @@ buildLevel cops@COps{cocave} ln genName minD totalDepth lstairPrev = do
   dsecret <- randomR (1, maxBound)
   cave <- buildCave cops ldepth totalDepth dsecret dkind fixedCenters
   cmap <- buildTileMap cops cave
-  litemNum <- castDice ldepth totalDepth $ citemNum kc
-  let lvl = levelFromCaveKind cops dkind kc ldepth cmap lstair litemNum lescape
-                              (dnight cave)
+  let lvl =
+        levelFromCaveKind cops dkind ldepth cmap lstair lescape (dnight cave)
   return (lvl, lstairsDouble ++ lstairsSingleDown)
 
 -- Places yet another staircase (or escape), taking into account only
@@ -194,20 +193,15 @@ placeDownStairs kc@CaveKind{..} ps = do
   findPoint cxsize cysize f
 
 -- Build rudimentary level from a cave kind.
-levelFromCaveKind :: COps -> ContentId CaveKind -> CaveKind -> AbsDepth
-                  -> TileMap -> ([Point], [Point]) -> Int -> [Point] -> Bool
+levelFromCaveKind :: COps -> ContentId CaveKind -> AbsDepth
+                  -> TileMap -> ([Point], [Point]) -> [Point] -> Bool
                   -> Level
-levelFromCaveKind COps{coTileSpeedup}
-                  lkind
-                  CaveKind{ cactorCoeff=lactorCoeff
-                          , cactorFreq=lactorFreq
-                          , citemFreq=litemFreq
-                          , ..
-                          }
-                  ldepth ltile lstair litemNum lescape lnight =
+levelFromCaveKind COps{cocave, coTileSpeedup}
+                  lkind ldepth ltile lstair lescape lnight =
   let f n t | Tile.isExplorable coTileSpeedup t = n + 1
             | otherwise = n
       lexplorable = PointArray.foldlA' f 0 ltile
+      CaveKind{cxsize, cysize} = okind cocave lkind
   in Level
        { lkind
        , ldepth
@@ -219,17 +213,11 @@ levelFromCaveKind COps{coTileSpeedup}
        , lysize = cysize
        , lsmell = EM.empty
        , lstair
+       , lescape
        , lseen = 0
        , lexplorable
        , ltime = timeZero
-       , lactorCoeff
-       , lactorFreq
-       , litemNum
-       , litemFreq
-       , lescape
        , lnight
-       , lname = cname
-       , ldesc = cdesc
        }
 
 -- | Freshly generated and not yet populated dungeon.

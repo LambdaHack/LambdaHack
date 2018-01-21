@@ -58,6 +58,7 @@ import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Content.CaveKind (cdesc)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
@@ -296,11 +297,11 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdCoverServer{} -> error "server command leaked to client"
   UpdPerception{} -> return ()
   UpdRestart fid _ _ _ _ -> do
+    cops@COps{cocave} <- getsState scops
     sstart <- getsSession sstart
     when (sstart == 0) resetSessionStart
     history <- getsSession shistory
     when (lengthHistory history == 0) $ do
-      cops <- getsState scops
       let title = rtitle $ getStdRuleset cops
       msgAdd $ "Welcome to" <+> title <> "!"
       -- Generate initial history. Only for UI clients.
@@ -317,7 +318,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
           [(_, 1, _)] -> True
           _ -> False
     msgAdd $ "New game started in" <+> mname mode <+> "mode."
-             <+> mdesc mode <+> ldesc lvl
+             <+> mdesc mode <+> cdesc (okind cocave $ lkind lvl)
              <+> if cwolf curChal && not loneMode
                  then "Being a lone wolf, you start without companions."
                  else ""
@@ -329,6 +330,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
       void $ getConfirms ColorFull [K.spaceKM, K.escKM] slides
   UpdRestartServer{} -> return ()
   UpdResume fid _ -> do
+    COps{cocave} <- getsState scops
     resetSessionStart
     fact <- getsState $ (EM.! fid) . sfactionD
     setFrontAutoYes $ isAIFact fact
@@ -337,7 +339,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
       lvl <- getLevel lid
       mode <- getGameMode
       promptAdd $ "Continuing" <+> mname mode <> "."
-                  <+> mdesc mode <+> ldesc lvl
+                  <+> mdesc mode <+> cdesc (okind cocave $ lkind lvl)
                   <+> "Are you up for the challenge?"
       slides <- reportToSlideshow [K.spaceKM, K.escKM]
       km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
@@ -988,20 +990,15 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                         then MU.AW
                         else MU.Ws) $ MU.Text $ tshow grp
           actorVerbMU aid bUI $ MU.Phrase [verb, object]
-        IK.Ascend True -> do
-          actorVerbMU aid bUI "find a way upstairs"
+        IK.Ascend up -> do
+          COps{cocave} <- getsState scops
+          actorVerbMU aid bUI $ MU.Text $
+            "find a way" <+> if up then "upstairs" else "downstairs"
           when isOurLeader $ do
-            (lid, _) <- getsState $ whereTo (blid b) (bpos b) (Just True)
+            (lid, _) <- getsState $ whereTo (blid b) (bpos b) (Just up)
                                     . sdungeon
             lvl <- getLevel lid
-            msgAdd $ ldesc lvl
-        IK.Ascend False -> do
-          actorVerbMU aid bUI "find a way downstairs"
-          when isOurLeader $ do
-            (lid, _) <- getsState $ whereTo (blid b) (bpos b) (Just False)
-                                    . sdungeon
-            lvl <- getLevel lid
-            msgAdd $ ldesc lvl
+            msgAdd $ cdesc $ okind cocave $ lkind lvl
         IK.Escape{} -> return ()
         IK.Paralyze{} -> actorVerbMU aid bUI "be paralyzed"
         IK.InsertMove{} -> actorVerbMU aid bUI "act with extreme speed"

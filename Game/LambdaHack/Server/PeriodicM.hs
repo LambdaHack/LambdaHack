@@ -33,6 +33,7 @@ import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Content.CaveKind (cactorCoeff, cactorFreq)
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
@@ -45,20 +46,22 @@ import           Game.LambdaHack.Server.State
 -- We assume heroes are never spawned.
 spawnMonster :: MonadServerAtomic m => m ()
 spawnMonster = do
+  COps{cocave} <- getsState scops
   arenas <- getsServer sarenas
   -- Do this on only one of the arenas to prevent micromanagement,
   -- e.g., spreading leaders across levels to bump monster generation.
   arena <- rndToAction $ oneOf arenas
   totalDepth <- getsState stotalDepth
-  Level{ldepth, lactorCoeff, lactorFreq} <- getLevel arena
+  Level{lkind, ldepth} <- getLevel arena
+  let ck = okind cocave lkind
   lvlSpawned <- getsServer $ fromMaybe 0 . EM.lookup arena . snumSpawned
   rc <- rndToAction
-        $ monsterGenChance ldepth totalDepth lvlSpawned lactorCoeff
+        $ monsterGenChance ldepth totalDepth lvlSpawned (cactorCoeff ck)
   when rc $ do
     modifyServer $ \ser ->
       ser {snumSpawned = EM.insert arena (lvlSpawned + 1) $ snumSpawned ser}
     localTime <- getsState $ getLocalTime arena
-    maid <- addAnyActor False lactorFreq arena localTime Nothing
+    maid <- addAnyActor False (cactorFreq ck) arena localTime Nothing
     case maid of
       Nothing -> return ()
       Just aid -> do

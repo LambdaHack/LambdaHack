@@ -55,6 +55,7 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Content.CaveKind (cname)
 import qualified Game.LambdaHack.Content.ModeKind as MK
 import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
@@ -361,6 +362,7 @@ drawFrameExtra dm drawnLevelId = do
 
 drawFrameStatus :: MonadClientUI m => LevelId -> m AttrLine
 drawFrameStatus drawnLevelId = do
+  cops <- getsState scops
   SessionUI{sselected, saimMode, swaitTimes, sitemSel} <- getSession
   mleader <- getsClient sleader
   xhairPos <- xhairToPos
@@ -380,7 +382,7 @@ drawFrameStatus drawnLevelId = do
   let widthX = 80
       widthTgt = 39
       widthStats = widthX - widthTgt - 1
-      arenaStatus = drawArenaStatus (ES.member drawnLevelId sexplored) lvl
+      arenaStatus = drawArenaStatus cops (ES.member drawnLevelId sexplored) lvl
                                     widthStats
       displayPathText mp mt =
         let (plen, llen) = case (mp, mbfs, mbpos) of
@@ -483,17 +485,20 @@ drawBaseFrame dm drawnLevelId = do
 
 -- Comfortably accomodates 3-digit level numbers and 25-character
 -- level descriptions (currently enforced max).
-drawArenaStatus :: Bool -> Level -> Int -> AttrLine
-drawArenaStatus explored
-                Level{ldepth=AbsDepth ld, lname, lseen, lexplorable}
+drawArenaStatus :: COps -> Bool -> Level -> Int -> AttrLine
+drawArenaStatus COps{cocave}
+                explored
+                Level{lkind, ldepth=AbsDepth ld, lseen, lexplorable}
                 width =
-  let seenN = 100 * lseen `div` max 1 lexplorable
+  let ck = okind cocave lkind
+      seenN = 100 * lseen `div` max 1 lexplorable
       seenTxt | explored || seenN >= 100 = "all"
               | otherwise = T.justifyLeft 3 ' ' (tshow seenN <> "%")
       lvlN = T.justifyLeft 2 ' ' (tshow ld)
       seenStatus = "[" <> seenTxt <+> "seen]"
   in textToAL $ T.justifyLeft width ' '
-              $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' lname) <+> seenStatus
+              $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' (cname ck))
+                <+> seenStatus
 
 drawLeaderStatus :: MonadClient m => Int -> m AttrLine
 drawLeaderStatus waitT = do

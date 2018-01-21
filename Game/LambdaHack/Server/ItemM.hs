@@ -28,8 +28,10 @@ import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import           Game.LambdaHack.Content.CaveKind (citemFreq, citemNum)
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.TileKind (TileKind)
@@ -72,8 +74,10 @@ registerItem ItemFull{..} itemKnown seed container verbose = do
 
 createLevelItem :: MonadServerAtomic m => Point -> LevelId -> m ()
 createLevelItem pos lid = do
-  Level{litemFreq} <- getLevel lid
+  COps{cocave} <- getsState scops
+  Level{lkind} <- getLevel lid
   let container = CFloor lid pos
+      litemFreq = citemFreq $ okind cocave lkind
   void $ rollAndRegisterItem lid litemFreq container True Nothing
 
 embedItem :: MonadServerAtomic m
@@ -123,12 +127,12 @@ rollAndRegisterItem lid itemFreq container verbose mk = do
 
 placeItemsInDungeon :: forall m. MonadServerAtomic m => m ()
 placeItemsInDungeon = do
-  COps{coTileSpeedup} <- getsState scops
-  let initialItems (lid, Level{ltile, litemNum, lxsize, lysize}) = do
+  COps{cocave, coTileSpeedup} <- getsState scops
+  totalDepth <- getsState stotalDepth
+  let initialItems (lid, Level{..}) = do
         let placeItems :: Int -> m ()
             placeItems 0 = return ()
             placeItems !n = do
-              Level{lfloor} <- getLevel lid
               -- We ensure that there are no big regions without items at all.
               let dist !p _ =
                     let f !k _ b = chessDist p k > 8 && b
@@ -143,6 +147,8 @@ placeItemsInDungeon = do
                 [notM]
               createLevelItem pos lid
               placeItems (n - 1)
+        litemNum <- rndToAction $ castDice ldepth totalDepth
+                                           (citemNum $ okind cocave lkind)
         placeItems litemNum
   dungeon <- getsState sdungeon
   -- Make sure items on easy levels are generated first, to avoid all
