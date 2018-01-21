@@ -155,7 +155,8 @@ executorSer cops copsClient soptionsNxtCmdline = do
   let stateToFileName (_, ser) =
         ssavePrefixSer (soptions ser) <> Save.saveNameSer cops
       totalState serToSave = SerState
-        { serState = updateCOps (const cops) emptyState
+        { serState = updateCOpsAndCachedData (const cops) emptyState
+            -- state is empty, so the cached data is left empty and untouched
         , serServer = emptyStateServer
         , serDict = EM.empty
         , serToSave

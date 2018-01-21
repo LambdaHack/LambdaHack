@@ -136,7 +136,8 @@ executorCli copsClient sUIOptions clientOptions cops isUI fid cliDict =
       stateToFileName (cli, _) =
         ssavePrefixCli (soptions cli) <> Save.saveNameCli cops (sside cli)
       totalState cliToSave = CliState
-        { cliState = updateCOps (const cops) emptyState
+        { cliState = updateCOpsAndCachedData (const cops) emptyState
+            -- state is empty, so the cached data is left empty and untouched
         , cliClient = emptyStateClient fid
         , cliDict
         , cliToSave

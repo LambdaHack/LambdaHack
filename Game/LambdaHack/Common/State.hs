@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.State
   , defStateGlobal, emptyState, localFromGlobal
     -- * State update
   , updateDungeon, updateDepth, updateActorD, updateItemD, updateItemIxMap
-  , updateFactionD, updateTime, updateCOps
+  , updateFactionD, updateTime, updateCOpsAndCachedData
   , updateDiscoKind, updateDiscoAspect, updateActorAspect
     -- * State operations
   , getItemBody, aspectRecordFromItem, aspectRecordFromIid
@@ -92,8 +92,7 @@ instance Binary State where
     _sdiscoKind <- get
     _sdiscoAspect <- get
     let _scops = emptyCOps
-        sNoActorAspect = State{_sactorAspect = EM.empty, ..}
-        _sactorAspect = actorAspectInDungeon sNoActorAspect
+        _sactorAspect = EM.empty
     return $! State{..}
 
 sdungeon :: State -> Dungeon
@@ -244,9 +243,11 @@ updateFactionD f s = s {_sfactionD = f (_sfactionD s)}
 updateTime :: (Time -> Time) -> State -> State
 updateTime f s = s {_stime = f (_stime s)}
 
--- | Update content data within state.
-updateCOps :: (COps -> COps) -> State -> State
-updateCOps f s = s {_scops = f (_scops s)}
+-- | Update content data within state and recompute the cached data.
+updateCOpsAndCachedData :: (COps -> COps) -> State -> State
+updateCOpsAndCachedData f s =
+  let s2 = s {_scops = f (_scops s)}
+  in s2 {_sactorAspect = actorAspectInDungeon s2}
 
 updateDiscoKind :: (DiscoveryKind -> DiscoveryKind) -> State -> State
 updateDiscoKind f s = s {_sdiscoKind = f (_sdiscoKind s)}

@@ -68,12 +68,14 @@ loopSer serverOptions executorClient = do
   restored <- tryRestore
   case restored of
     Just (sRaw, ser) | not $ snewGameSer serverOptions -> do  -- a restored game
-      execUpdAtomic $ UpdResumeServer $ updateCOps (const cops) sRaw
+      execUpdAtomic $ UpdResumeServer
+                    $ updateCOpsAndCachedData (const cops) sRaw
       putServer ser {soptionsNxt = serverOptions}
       applyDebug
       factionD <- getsState sfactionD
-      let f fid = let cmd = UpdResumeServer $ updateCOps (const cops)
-                                            $ sclientStates ser EM.! fid
+      let f fid = let cmd = UpdResumeServer
+                            $ updateCOpsAndCachedData (const cops)
+                            $ sclientStates ser EM.! fid
                   in execUpdAtomicFidCatch fid cmd
       mapM_ f $ EM.keys factionD
       updConn

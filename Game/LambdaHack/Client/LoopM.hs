@@ -92,7 +92,7 @@ loopCli copsClient sUIOptions soptions = do
   cmd1 <- receiveResponse
   case (restored, cmd1) of
     (True, RespUpdAtomic s UpdResume{}) -> do
-      let sCops = updateCOps (const cops) s
+      let sCops = updateCOpsAndCachedData (const cops) s
       handleResponse $ RespUpdAtomic sCops $ UpdResumeServer sCops
     (True, RespUpdAtomic _ UpdRestart{}) ->
       when hasUI $ msgAdd "Ignoring an old savefile and starting a new game."
