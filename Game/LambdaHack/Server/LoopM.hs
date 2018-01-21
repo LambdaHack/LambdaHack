@@ -242,9 +242,9 @@ manageCalmAndDomination aid b = do
   getItem <- getsState $ flip getItemBody
   discoKind <- getsState sdiscoKind
   let isImpression iid = case EM.lookup (jkindIx $ getItem iid) discoKind of
-        Just KindMean{kmKind} ->
+        Just kindId ->
           maybe False (> 0) (lookup "impressed" $ IK.ifreq
-                             $ okind coitem kmKind)
+                             $ okind coitem kindId)
         Nothing -> error $ "" `showFailure` iid
       impressions = EM.filterWithKey (\iid _ -> isImpression iid) $ borgan b
   dominated <-

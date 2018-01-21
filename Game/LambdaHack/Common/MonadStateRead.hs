@@ -73,15 +73,12 @@ pickWeaponM mdiscoBenefit allAssocs actorSk source = do
   sb <- getsState $ getActorBody source
   localTime <- getsState $ getLocalTime (blid sb)
   ar <- getsState $ getActorAspect source
-  discoKind <- getsState sdiscoKind
-  discoAspect <- getsState sdiscoAspect
   let calmE = calmEnough sb ar
       forced = bproj sb
       permitted = permittedPrecious calmE forced
       preferredPrecious = either (const False) id . permitted
       permAssocs = filter (preferredPrecious . snd) allAssocs
-      strongest = strongestMelee discoKind discoAspect mdiscoBenefit
-                                 localTime permAssocs
+      strongest = strongestMelee mdiscoBenefit localTime permAssocs
   return $! if | forced -> map (1,) allAssocs
                | EM.findWithDefault 0 Ability.AbMelee actorSk <= 0 -> []
                | otherwise -> strongest

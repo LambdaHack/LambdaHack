@@ -41,7 +41,8 @@ import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Content.ItemKind (AspectRecord (..),
-                                                   aspectsRandom, castAspect,
+                                                   KindMean (..), aspectsRandom,
+                                                   castAspect,
                                                    emptyAspectRecord,
                                                    meanAspect)
 import qualified Game.LambdaHack.Content.ItemKind as IK
@@ -156,14 +157,14 @@ newtype ItemSeed = ItemSeed Int
   deriving (Show, Eq, Ord, Enum, Hashable, Binary)
 
 -- | The secret part of the information about an item. If a faction
--- knows the aspects of the item (the 'itemAspect' field is not empty),
--- this is a complete secret information/.
+-- knows the aspects of the item (the @kmConst@ flag is set or
+-- the @itemAspect@ field is @Left@), this is a complete secret information.
+-- Items that don't need second identification may be identified or not and both
+-- cases are OK (their display flavour will differ and that may be the point).
 data ItemDisco = ItemDisco
-  { itemKindId     :: ContentId IK.ItemKind
-  , itemKind       :: IK.ItemKind
-  , itemAspectMean :: AspectRecord
-  , itemConst      :: Bool
-  , itemAspect     :: Maybe AspectRecord
+  { itemKindId :: ContentId IK.ItemKind
+  , itemKind   :: IK.ItemKind
+  , itemAspect :: Either AspectRecord KindMean
   }
   deriving Show
 
@@ -177,23 +178,9 @@ data ItemFull = ItemFull
   }
   deriving Show
 
--- | Partial information about item kinds. These are assigned to each
--- 'ItemKindIx'. There is an item kind, mean aspect value computed
--- (and here cached) for items of that kind and a flag saying whether
--- the item's aspects are constant rather than random or dependent
--- on dungeon level where the item is created.
-data KindMean = KindMean
-  { kmKind  :: ContentId IK.ItemKind
-  , kmMean  :: AspectRecord
-  , kmConst :: Bool
-  }
-  deriving (Show, Eq, Generic)
-
-instance Binary KindMean
-
 -- | The map of item kind indexes to item kind ids.
 -- The full map, as known by the server, is 1-1.
-type DiscoveryKind = EM.EnumMap ItemKindIx KindMean
+type DiscoveryKind = EM.EnumMap ItemKindIx (ContentId IK.ItemKind)
 
 -- | The map of item kind indexes to identifiers of items that have that kind.
 -- Used to update data about items when their kinds become known, e.g.,
@@ -227,15 +214,18 @@ itemNoDisco (itemBase, itemK) =
 itemToFull6 :: COps -> DiscoveryKind -> DiscoveryAspect -> ItemId -> Item
             -> ItemQuant
             -> ItemFull
-itemToFull6 COps{coitem} discoKind discoAspect iid itemBase (itemK, itemTimer) =
+itemToFull6 COps{coitem, coItemSpeedup}
+            discoKind discoAspect iid itemBase (itemK, itemTimer) =
   let itemDisco = case EM.lookup (jkindIx itemBase) discoKind of
         Nothing -> Nothing
-        Just KindMean{..} ->
-          Just ItemDisco{ itemKindId = kmKind
-                        , itemKind = okind coitem kmKind
-                        , itemAspectMean = kmMean
-                        , itemConst = kmConst
-                        , itemAspect = EM.lookup iid discoAspect }
+        Just itemKindId ->
+            let km = IK.getKindMean itemKindId coItemSpeedup
+                itemAspect = case EM.lookup iid discoAspect of
+                  Just ia -> Left ia
+                  Nothing -> Right km
+            in Just ItemDisco{ itemKindId
+                             , itemKind = okind coitem itemKindId
+                             , itemAspect }
   in ItemFull {..}
 
 seedToAspect :: ItemSeed -> IK.ItemKind -> AbsDepth -> AbsDepth -> AspectRecord
@@ -247,8 +237,7 @@ seedToAspect (ItemSeed itemSeed) kind ldepth totalDepth =
 aspectRecordFull :: ItemFull -> AspectRecord
 aspectRecordFull itemFull =
   case itemDisco itemFull of
-    Just ItemDisco{itemAspect=Just aspectRecord} -> aspectRecord
-    Just ItemDisco{itemAspectMean} -> itemAspectMean
+    Just ItemDisco{itemAspect} -> either id kmMean itemAspect
     Nothing -> emptyAspectRecord
 
 type ItemTimer = [Time]

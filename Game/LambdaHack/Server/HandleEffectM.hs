@@ -158,7 +158,7 @@ effectAndDestroy meleePerformed _ _ iid container periodic []
 effectAndDestroy meleePerformed source target iid container periodic effs
                  itemFull@ItemFull{..} = do
   let timeout = case itemDisco of
-        Just ItemDisco{itemAspect=Just ar} -> aTimeout ar
+        Just ItemDisco{itemAspect=Left ar} -> aTimeout ar
         _ -> error $ "" `showFailure` itemDisco
       permanent = let tmpEffect :: IK.Effect -> Bool
                       tmpEffect IK.Temporary{} = True
@@ -257,9 +257,9 @@ itemEffectDisco source target iid c recharged periodic effs = do
     discoKind <- getsState sdiscoKind
     item <- getsState $ getItemBody iid
     case EM.lookup (jkindIx item) discoKind of
-      Just KindMean{kmKind} -> do
+      Just kindId -> do
         seed <- getsServer $ (EM.! iid) . sitemSeedD
-        execUpdAtomic $ UpdDiscover c iid kmKind seed
+        execUpdAtomic $ UpdDiscover c iid kindId seed
       _ -> error $ "" `showFailure` (source, target, iid, item)
   return ur
 
@@ -545,9 +545,9 @@ dominateFid fid target = do
   getItem <- getsState $ flip getItemBody
   discoKind <- getsState sdiscoKind
   let isImpression iid = case EM.lookup (jkindIx $ getItem iid) discoKind of
-        Just KindMean{kmKind} ->
+        Just kindId ->
           maybe False (> 0) $ lookup "impressed"
-          $ IK.ifreq (okind coitem kmKind)
+          $ IK.ifreq (okind coitem kindId)
         Nothing -> error $ "" `showFailure` iid
       dropAllImpressions = EM.filterWithKey (\iid _ -> not $ isImpression iid)
       borganNoImpression = dropAllImpressions $ borgan tb
@@ -1062,9 +1062,9 @@ allGroupItems store grp target = do
   let hasGroup (iid, _) = do
         item <- getsState $ getItemBody iid
         case EM.lookup (jkindIx item) discoKind of
-          Just KindMean{kmKind} ->
+          Just kindId ->
             return $! maybe False (> 0) $ lookup grp
-                   $ IK.ifreq (okind coitem kmKind)
+                   $ IK.ifreq (okind coitem kindId)
           Nothing ->
             error $ "" `showFailure` (target, grp, iid, item)
   assocsCStore <- getsState $ EM.assocs . getBodyStoreBag b store
@@ -1147,26 +1147,30 @@ effectPolyItem execSfx source target = do
 effectIdentify :: MonadServerAtomic m
                => m () -> ItemId -> ActorId -> ActorId -> m UseResult
 effectIdentify execSfx iidId source target = do
+  COps{coItemSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   s <- getsServer $ (EM.! bfid sb) . sclientStates
   let tryFull store as = case as of
         [] -> return False
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
         (iid, ItemFull{itemBase, itemDisco=Just ItemDisco{..}}) : rest ->
-          if iid `EM.member` sdiscoAspect s  -- already identified
-             || itemConst  -- doesn't need further identification
-                && jkindIx itemBase `EM.member` sdiscoKind s
-             || store == CGround
-                && (not $ any IK.forIdEffect $ IK.ieffects itemKind)
-                  -- will be identified as soon as picked up, so don't bother;
-                  -- darts included, which prevents wasting the scroll
-             || maybe False (> 0) (lookup "gem" $ IK.ifreq itemKind)  -- a hack
-          then tryFull store rest
-          else do
-            let c = CActor target store
-            execSfx
-            identifyIid iid c itemKindId
-            return True
+          let furtherIdNotNeeded =
+                case EM.lookup (jkindIx itemBase) $ sdiscoKind s of
+                  Just{} -> kmConst $ IK.getKindMean itemKindId coItemSpeedup
+                  Nothing -> False
+          in if iid `EM.member` sdiscoAspect s  -- already fully identified
+                || furtherIdNotNeeded
+                || store == CGround
+                   && (not $ any IK.forIdEffect $ IK.ieffects itemKind)
+                     -- will be identified when picked up, so don't bother;
+                     -- darts included, which prevents wasting the scroll
+                || maybe False (> 0) (lookup "gem" $ IK.ifreq itemKind)  -- hack
+             then tryFull store rest
+             else do
+               let c = CActor target store
+               execSfx
+               identifyIid iid c itemKindId
+               return True
         _ -> error $ "" `showFailure` (store, as)
       tryStore stores = case stores of
         [] -> do
@@ -1354,7 +1358,7 @@ effectDropBestWeapon execSfx target = do
   localTime <- getsState $ getLocalTime (blid tb)
   allAssocsRaw <- getsState $ fullAssocs target [CEqp]
   let allAssocs = filter (isMelee . itemBase . snd) allAssocsRaw
-  case strongestMelee EM.empty EM.empty Nothing localTime allAssocs of
+  case strongestMelee Nothing localTime allAssocs of
     (_, (iid, _)) : _ -> do
       execSfx
       let kit = beqp tb EM.! iid

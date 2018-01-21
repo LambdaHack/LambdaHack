@@ -600,7 +600,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
 computeRndTimeout :: Time -> ItemId -> ItemFull -> Rnd (Maybe Time)
 computeRndTimeout localTime iid ItemFull{..}=
   case itemDisco of
-    Just ItemDisco{itemKind, itemAspect=Just ar} ->
+    Just ItemDisco{itemKind, itemAspect=Left ar} ->
       case aTimeout ar of
         t | t /= 0 && IK.Periodic `elem` IK.ieffects itemKind -> do
           rndT <- randomR (0, t)

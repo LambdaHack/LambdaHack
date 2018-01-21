@@ -240,7 +240,7 @@ destroyActor aid b destroy = do
 
 addItemToDiscoBenefit :: MonadClient m => ItemId -> Item -> m ()
 addItemToDiscoBenefit iid item = do
-  cops@COps{coitem} <- getsState scops
+  cops@COps{coitem, coItemSpeedup} <- getsState scops
   discoBenefit <- getsClient sdiscoBenefit
   case EM.lookup iid discoBenefit of
     Just{} -> return ()  -- already there, possibly with real aspects, too
@@ -248,13 +248,14 @@ addItemToDiscoBenefit iid item = do
       discoKind <- getsState sdiscoKind
       case EM.lookup (jkindIx item) discoKind of
         Nothing -> return ()
-        Just KindMean{..} -> do  -- possible, if the kind sent in @UpdRestart@
+        Just kindId -> do  -- possible, if the kind sent in @UpdRestart@
           side <- getsClient sside
           fact <- getsState $ (EM.! side) . sfactionD
-          let effects = IK.ieffects $ okind coitem kmKind
+          let mean = kmMean $ IK.getKindMean kindId coItemSpeedup
+              effects = IK.ieffects $ okind coitem kindId
               -- Mean aspects are used, because the item can't yet have
               -- know real aspects, because it didn't even have kind before.
-              benefit = totalUsefulness cops fact effects kmMean item
+              benefit = totalUsefulness cops fact effects mean item
           modifyClient $ \cli ->
             cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
 
@@ -286,7 +287,7 @@ perception lid outPer inPer = do
 discoverKind :: MonadClient m
              => Container -> ItemKindIx -> ContentId ItemKind -> m ()
 discoverKind _c ix ik = do
-  cops@COps{coitem} <- getsState scops
+  cops@COps{coitem, coItemSpeedup} <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
   -- affect his actors' skills relevant to BFS.
   invalidateBfsAll
@@ -295,11 +296,12 @@ discoverKind _c ix ik = do
   discoKind <- getsState sdiscoKind
   itemD <- getsState sitemD
   let effs = IK.ieffects $ okind coitem ik
-      KindMean{kmMean} = fromMaybe (error "item kind not found")
-                                   (EM.lookup ix discoKind)
+      kindId = fromMaybe (error "item kind not found")
+                         (EM.lookup ix discoKind)
+      mean = kmMean $ IK.getKindMean kindId coItemSpeedup
       benefit iid =
         let item = itemD EM.! iid
-        in totalUsefulness cops fact effs kmMean item
+        in totalUsefulness cops fact effs mean item
   itemIxMap <- getsState $ (EM.! ix) . sitemIxMap
   forM_ (ES.elems itemIxMap) $ \iid -> modifyClient $ \cli ->
     cli {sdiscoBenefit = EM.insert iid (benefit iid) (sdiscoBenefit cli)}
@@ -319,9 +321,9 @@ discoverSeed _c iid seed = do
   item <- getsState $ getItemBody iid
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel $ jlid item
-  let KindMean{..} = fromMaybe (error "item kind not found")
-                               (EM.lookup (jkindIx item) discoKind)
-      kind = okind coitem kmKind
+  let kindId = fromMaybe (error "item kind not found")
+                         (EM.lookup (jkindIx item) discoKind)
+      kind = okind coitem kindId
       aspects = seedToAspect seed kind ldepth totalDepth
       benefit = totalUsefulness cops fact (IK.ieffects kind) aspects item
   modifyClient $ \cli ->

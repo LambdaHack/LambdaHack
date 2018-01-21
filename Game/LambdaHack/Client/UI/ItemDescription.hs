@@ -169,15 +169,15 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemBase, itemDisco} =
                  detNonEmpty : _ -> detNonEmpty
                  [] -> []
           aets = case itemAspect of
-            Just aspectRecord ->
+            Left aspectRecord ->
               splitTry (aspectRecordToList aspectRecord) (IK.ieffects itemKind)
-            Nothing ->
+            Right{} ->  -- faster than @aspectRecordToList@ of mean
               splitTry (IK.iaspects itemKind) (IK.ieffects itemKind)
           IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemBase
           speed = speedFromWeight (jweight itemBase) throwVelocity
           meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
           minDeltaHP = xM meanDmg `divUp` 100
-          aHurtMeleeOfItem = hurtMeleeOfFull itemFull
+          aHurtMeleeOfItem = aHurtMelee $ aspectRecordFull itemFull
           pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
           prawDeltaHP = fromIntegral pmult * minDeltaHP
           pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
@@ -275,7 +275,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
         Nothing -> ("This item is as unremarkable as can be.", "", tspeed)
         Just ItemDisco{itemKind} ->
           let sentences = mapMaybe featureToSentence (IK.ifeature itemKind)
-              aHurtMeleeOfItem = hurtMeleeOfFull itemFull
+              aHurtMeleeOfItem = aHurtMelee $ aspectRecordFull itemFull
               meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
               dmgAn = if meanDmg <= 0 then "" else
                 let multRaw = aHurtMeleeOfOwner

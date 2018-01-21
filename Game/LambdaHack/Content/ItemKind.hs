@@ -235,7 +235,7 @@ data KindMean = KindMean
   { kmConst :: Bool  -- ^ whether the item doesn't need second identification
   , kmMean  :: AspectRecord  -- ^ mean value of item's possible aspects
   }
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq, Ord, Generic)
 
 -- Significant portions of this map are unused and so intentially kept
 -- unevaluated.

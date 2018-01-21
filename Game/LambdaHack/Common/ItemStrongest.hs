@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.ItemStrongest
     -- * Assorted
   , computeTrajectory, itemTrajectory, totalRange
   , hasCharge, damageUsefulness, strongestMelee, prEqpSlot
-  , unknownMeleeBonus, hurtMeleeOfFull, tmpMeleeBonus
+  , unknownMeleeBonus, tmpMeleeBonus
   , filterRecharging, stripRecharging, stripOnSmash
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -118,18 +118,19 @@ damageUsefulness :: Item -> Double
 damageUsefulness item = let v = min 1000 (10 * Dice.meanDice (jdamage item))
                         in assert (v >= 0) v
 
-strongestMelee :: DiscoveryKind -> DiscoveryAspect -> Maybe DiscoveryBenefit
-               -> Time -> [(ItemId, ItemFull)]
+strongestMelee :: Maybe DiscoveryBenefit -> Time -> [(ItemId, ItemFull)]
                -> [(Double, (ItemId, ItemFull))]
-strongestMelee _ _ _ _ [] = []
-strongestMelee discoKind discoAspect mdiscoBenefit localTime is =
+strongestMelee _ _ [] = []
+strongestMelee mdiscoBenefit localTime is =
   -- For simplicity we assume, if weapon not recharged, all important effects,
   -- good and bad, are disabled and only raw damage remains.
-  let f (iid, itemFull) =
-        let rawDmg = (damageUsefulness $ itemBase itemFull, (iid, itemFull))
-            ix = jkindIx $ itemBase itemFull
-            constantAspects = (kmConst <$> EM.lookup ix discoKind) == Just True
-            unIDedBonus | iid `EM.member` discoAspect || constantAspects = 0
+  let f (iid, itemFull@ItemFull{itemBase}) =
+        let rawDmg = (damageUsefulness itemBase, (iid, itemFull))
+            knownOrConstantAspects = case itemDisco itemFull of
+              Just ItemDisco{itemAspect} ->
+                either (const True) kmConst itemAspect
+              Nothing -> False
+            unIDedBonus | knownOrConstantAspects = 0
                         | otherwise = 1000  -- exceptionally strong weapon
         in case mdiscoBenefit of
           Just discoBenefit -> case EM.lookup iid discoBenefit of
@@ -182,9 +183,11 @@ unknownAspect :: (Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f itemFull =
   case itemDisco itemFull of
     Nothing -> True  -- not even kind is known, so assume aspect affects melee
-    Just ItemDisco{itemAspect=Nothing, itemKind=ItemKind{iaspects}} ->
-      let unknown x = Dice.minDice x /= Dice.maxDice x
-      in or $ concatMap (map unknown . f) iaspects
+    Just ItemDisco{ itemAspect=Right KindMean{kmConst}
+                  , itemKind=ItemKind{iaspects} } ->
+      let unknown x = let (minD, maxD) = Dice.minmaxDice x
+                      in minD /= maxD
+      in not kmConst && or (concatMap (map unknown . f) iaspects)
     Just{} -> False  -- all known
 
 unknownMeleeBonus :: [ItemFull] -> Bool
@@ -194,22 +197,9 @@ unknownMeleeBonus =
       f itemFull b = b || unknownAspect p itemFull
   in foldr f False
 
-hurtMeleeOfFull :: ItemFull -> Int
-hurtMeleeOfFull itemFull =
-  let hurtMeleeAspect :: Aspect -> Bool
-      hurtMeleeAspect AddHurtMelee{} = True
-      hurtMeleeAspect _ = False
-  in case itemDisco itemFull of
-    Nothing -> 0  -- not even kind is known, so aspect totally unknown
-    Just ItemDisco{itemAspect=Just AspectRecord{aHurtMelee}} -> aHurtMelee
-    Just ItemDisco{itemKind=ItemKind{iaspects}} ->
-      case find hurtMeleeAspect iaspects of
-        Just (AddHurtMelee d) -> ceiling $ Dice.meanDice d
-        _ -> 0  -- not affecting melee
-
 tmpMeleeBonus :: [ItemFull] -> Int
 tmpMeleeBonus is =
-  let f itemFull k = itemK itemFull * hurtMeleeOfFull itemFull + k
+  let f itemFull k = itemK itemFull * aHurtMelee (aspectRecordFull itemFull) + k
   in foldr f 0 $ filter (isTmpCondition . itemBase) is
 
 filterRecharging :: [Effect] -> [Effect]

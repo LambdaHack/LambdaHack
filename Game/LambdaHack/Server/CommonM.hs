@@ -434,7 +434,7 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
   let trunkKind = case itemDisco of
         Just ItemDisco{itemKind} -> itemKind
         Nothing -> error $ "" `showFailure` trunkFull
-      aspects = fromJust $ itemAspect $ fromJust itemDisco
+      aspects = either id undefined $ itemAspect $ fromJust itemDisco
   -- Initial HP and Calm is based only on trunk and ignores organs.
       hp = xM (max 2 $ aMaxHP aspects) `div` 2
       -- Hard to auto-id items that refill Calm, but reduced sight at game

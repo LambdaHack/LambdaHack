@@ -67,13 +67,12 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jlid jdamage =
   in Item{..}
 
 -- | Generate an item based on level.
-newItem :: COps -> FlavourMap
-        -> DiscoveryKind -> DiscoveryKindRev -> UniqueSet
+newItem :: COps -> FlavourMap -> DiscoveryKindRev -> UniqueSet
         -> Freqs ItemKind -> Int -> LevelId -> AbsDepth -> AbsDepth
         -> Rnd (Maybe ( ItemKnown, ItemFull, ItemDisco
                       , ItemSeed, GroupName ItemKind ))
-newItem COps{coitem}
-        flavour disco discoRev uniqueSet itemFreq lvlSpawned lid
+newItem COps{coitem} flavour discoRev uniqueSet
+        itemFreq lvlSpawned lid
         ldepth@(AbsDepth ldAbs) totalDepth@(AbsDepth depth) = do
   -- Effective generation depth of actors (not items) increases with spawns.
   let scaledDepth = ldAbs * 10 `div` depth
@@ -115,10 +114,7 @@ newItem COps{coitem}
         itemK = max 1 itemN
         itemTimer = [timeZero | IK.Periodic `elem` IK.ieffects itemKind]
                       -- delay first discharge of single organs
-        km = EM.findWithDefault (error $ "" `showFailure` kindIx) kindIx disco
-        itemAspectMean = kmMean km
-        itemConst = kmConst km
-        itemAspect = Just aspectRecord
+        itemAspect = Left aspectRecord
         itemDiscoData = ItemDisco {..}
         itemDisco = Just itemDiscoData
         -- Bonuses on items/actors unaffected by number of spawned actors.
@@ -146,10 +142,7 @@ serverDiscos COps{coitem} = do
         (x :) <$> shuffle (delete x l)
   shuffled <- shuffle ixs
   let f (!ikMap, !ikRev, ix : rest) kmKind _ =
-        let kind = okind coitem kmKind
-            kmMean = meanAspect kind
-            kmConst = not $ aspectsRandom kind
-        in (EM.insert ix KindMean{..} ikMap, EM.insert kmKind ix ikRev, rest)
+        (EM.insert ix kmKind ikMap, EM.insert kmKind ix ikRev, rest)
       f (ikMap, _, []) ik  _ =
         error $ "too short ixs" `showFailure` (ik, ikMap)
       (discoS, discoRev, _) =

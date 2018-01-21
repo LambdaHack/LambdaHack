@@ -38,6 +38,7 @@ import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 
@@ -59,9 +60,9 @@ data State = State
   , _scops        :: COps         -- ^ remembered content
   , _shigh        :: HighScore.ScoreDict  -- ^ high score table
   , _sgameModeId  :: ContentId ModeKind   -- ^ current game mode
-  , _sdiscoKind   :: DiscoveryKind     -- ^ item kind discoveries data
-  , _sdiscoAspect :: DiscoveryAspect   -- ^ item aspect data
-  , _sactorAspect :: ActorAspect       -- ^ actor aspect data
+  , _sdiscoKind   :: DiscoveryKind    -- ^ item kind discoveries data
+  , _sdiscoAspect :: DiscoveryAspect  -- ^ item aspect data
+  , _sactorAspect :: ActorAspect      -- ^ actor aspect data
   }
   deriving (Show, Eq)
 
@@ -264,7 +265,8 @@ aspectRecordFromItem iid item s =
   case EM.lookup iid (sdiscoAspect s) of
     Just ar -> ar
     Nothing -> case EM.lookup (jkindIx item) (sdiscoKind s) of
-        Just KindMean{kmMean} -> kmMean
+        Just kindId -> let COps{coItemSpeedup} = scops s
+                       in kmMean $ IK.getKindMean kindId coItemSpeedup
         Nothing -> emptyAspectRecord
 
 aspectRecordFromIid :: ItemId -> State -> AspectRecord

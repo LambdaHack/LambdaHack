@@ -96,12 +96,11 @@ rollItem :: MonadServerAtomic m
 rollItem lvlSpawned lid itemFreq = do
   cops <- getsState scops
   flavour <- getsServer sflavour
-  disco <- getsState sdiscoKind
   discoRev <- getsServer sdiscoKindRev
   uniqueSet <- getsServer suniqueSet
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel lid
-  m5 <- rndToAction $ newItem cops flavour disco discoRev uniqueSet
+  m5 <- rndToAction $ newItem cops flavour discoRev uniqueSet
                               itemFreq lvlSpawned lid ldepth totalDepth
   case m5 of
     Just (_, _, ItemDisco{itemKindId, itemKind}, _, _) ->

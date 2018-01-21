@@ -301,7 +301,7 @@ embedBenefit fleeVia aid pbags = do
       -- is triggered at the same time, others are left to be used later on.
       iidToEffs iid = case EM.lookup (jkindIx $ getItemBody iid s) discoKind of
         Nothing -> []
-        Just KindMean{kmKind} -> IK.ieffects $ okind coitem kmKind
+        Just kindId -> IK.ieffects $ okind coitem kindId
       isEffEscapeOrAscend IK.Ascend{} = True
       isEffEscapeOrAscend IK.Escape{} = True
       isEffEscapeOrAscend (IK.OneOf l) = any isEffEscapeOrAscend l
