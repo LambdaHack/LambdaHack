@@ -16,7 +16,6 @@ module Game.LambdaHack.Common.Item
   , ItemTimer, ItemQuant, ItemBag, ItemDict
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , castAspect, addMeanAspect, ceilingMeanDice
 #endif
   ) where
 
@@ -41,6 +40,10 @@ import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Content.ItemKind (AspectRecord (..),
+                                                   aspectsRandom, castAspect,
+                                                   emptyAspectRecord,
+                                                   meanAspect)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | A unique identifier of an item in the dungeon.
@@ -100,48 +103,9 @@ goesIntoSha :: Item -> Bool
 goesIntoSha item = IK.Precious `elem` jfeature item
                    && not (goesIntoEqp item)
 
--- | Record of sums of aspect values of an item, container, actor, etc.
-data AspectRecord = AspectRecord
-  { aTimeout     :: Int
-  , aHurtMelee   :: Int
-  , aArmorMelee  :: Int
-  , aArmorRanged :: Int
-  , aMaxHP       :: Int
-  , aMaxCalm     :: Int
-  , aSpeed       :: Int
-  , aSight       :: Int
-  , aSmell       :: Int
-  , aShine       :: Int
-  , aNocto       :: Int
-  , aAggression  :: Int
-  , aSkills      :: Ability.Skills
-  }
-  deriving (Show, Eq, Ord, Generic)
-
-instance Binary AspectRecord
-
-instance Hashable AspectRecord
-
 -- | The map of item ids to item aspects.
 -- The full map is known by the server.
 type DiscoveryAspect = EM.EnumMap ItemId AspectRecord
-
-emptyAspectRecord :: AspectRecord
-emptyAspectRecord = AspectRecord
-  { aTimeout     = 0
-  , aHurtMelee   = 0
-  , aArmorMelee  = 0
-  , aArmorRanged = 0
-  , aMaxHP       = 0
-  , aMaxCalm     = 0
-  , aSpeed       = 0
-  , aSight       = 0
-  , aSmell       = 0
-  , aShine       = 0
-  , aNocto       = 0
-  , aAggression  = 0
-  , aSkills      = Ability.zeroSkills
-  }
 
 sumAspectRecord :: [(AspectRecord, Int)] -> AspectRecord
 sumAspectRecord l = AspectRecord
@@ -179,56 +143,6 @@ aspectRecordToList AspectRecord{..} =
   ++ [IK.AddAggression $ intToDice aAggression | aAggression /= 0]
   ++ [IK.AddAbility ab $ intToDice n | (ab, n) <- EM.assocs aSkills, n /= 0]
 
-meanAspect :: IK.ItemKind -> AspectRecord
-meanAspect kind = foldl' addMeanAspect emptyAspectRecord (IK.iaspects kind)
-
-addMeanAspect :: AspectRecord -> IK.Aspect -> AspectRecord
-addMeanAspect !ar !asp =
-  case asp of
-    IK.Timeout d ->
-      let n = ceilingMeanDice d
-      in assert (aTimeout ar == 0) $ ar {aTimeout = n}
-    IK.AddHurtMelee d ->
-      let n = ceilingMeanDice d
-      in ar {aHurtMelee = n + aHurtMelee ar}
-    IK.AddArmorMelee d ->
-      let n = ceilingMeanDice d
-      in ar {aArmorMelee = n + aArmorMelee ar}
-    IK.AddArmorRanged d ->
-      let n = ceilingMeanDice d
-      in ar {aArmorRanged = n + aArmorRanged ar}
-    IK.AddMaxHP d ->
-      let n = ceilingMeanDice d
-      in ar {aMaxHP = n + aMaxHP ar}
-    IK.AddMaxCalm d ->
-      let n = ceilingMeanDice d
-      in ar {aMaxCalm = n + aMaxCalm ar}
-    IK.AddSpeed d ->
-      let n = ceilingMeanDice d
-      in ar {aSpeed = n + aSpeed ar}
-    IK.AddSight d ->
-      let n = ceilingMeanDice d
-      in ar {aSight = n + aSight ar}
-    IK.AddSmell d ->
-      let n = ceilingMeanDice d
-      in ar {aSmell = n + aSmell ar}
-    IK.AddShine d ->
-      let n = ceilingMeanDice d
-      in ar {aShine = n + aShine ar}
-    IK.AddNocto d ->
-      let n = ceilingMeanDice d
-      in ar {aNocto = n + aNocto ar}
-    IK.AddAggression d ->
-      let n = ceilingMeanDice d
-      in ar {aAggression = n + aAggression ar}
-    IK.AddAbility ab d ->
-      let n = ceilingMeanDice d
-      in ar {aSkills = Ability.addSkills (EM.singleton ab n)
-                                         (aSkills ar)}
-
-ceilingMeanDice :: Dice.Dice -> Int
-ceilingMeanDice d = ceiling $ Dice.meanDice d
-
 -- | An index of the kind identifier of an item. Clients have partial knowledge
 -- how these idexes map to kind ids. They gain knowledge by identifying items.
 -- The indexes and kind identifiers are 1-1.
@@ -241,8 +155,6 @@ newtype ItemKindIx = ItemKindIx Int
 newtype ItemSeed = ItemSeed Int
   deriving (Show, Eq, Ord, Enum, Hashable, Binary)
 
--- Tiny speedup from making fields non-strict (1%, a bit more GC, less alloc).
--- The fields of @KindMean@ also need to be non-strict then, otherwise slowdown.
 -- | The secret part of the information about an item. If a faction
 -- knows the aspects of the item (the 'itemAspect' field is not empty),
 -- this is a complete secret information/.
@@ -326,67 +238,11 @@ itemToFull6 COps{coitem} discoKind discoAspect iid itemBase (itemK, itemTimer) =
                         , itemAspect = EM.lookup iid discoAspect }
   in ItemFull {..}
 
--- If @False@, aspects of this kind are most probably fixed, not random
--- nor dependent on dungeon level where the item is created.
-aspectsRandom :: IK.ItemKind -> Bool
-aspectsRandom kind =
-  let rollM depth = foldlM' (castAspect (AbsDepth depth) (AbsDepth 10))
-                            emptyAspectRecord (IK.iaspects kind)
-      gen = mkStdGen 0
-      (ar0, gen0) = St.runState (rollM 0) gen
-      (ar1, gen1) = St.runState (rollM 10) gen0
-  in show gen /= show gen0 || show gen /= show gen1 || ar0 /= ar1
-
 seedToAspect :: ItemSeed -> IK.ItemKind -> AbsDepth -> AbsDepth -> AspectRecord
 seedToAspect (ItemSeed itemSeed) kind ldepth totalDepth =
   let rollM = foldlM' (castAspect ldepth totalDepth) emptyAspectRecord
                       (IK.iaspects kind)
   in St.evalState rollM (mkStdGen itemSeed)
-
-castAspect :: AbsDepth -> AbsDepth -> AspectRecord -> IK.Aspect
-           -> Rnd AspectRecord
-castAspect !ldepth !totalDepth !ar !asp =
-  case asp of
-    IK.Timeout d -> do
-      n <- castDice ldepth totalDepth d
-      return $! assert (aTimeout ar == 0) $ ar {aTimeout = n}
-    IK.AddHurtMelee d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aHurtMelee = n + aHurtMelee ar}
-    IK.AddArmorMelee d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aArmorMelee = n + aArmorMelee ar}
-    IK.AddArmorRanged d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aArmorRanged = n + aArmorRanged ar}
-    IK.AddMaxHP d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aMaxHP = n + aMaxHP ar}
-    IK.AddMaxCalm d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aMaxCalm = n + aMaxCalm ar}
-    IK.AddSpeed d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aSpeed = n + aSpeed ar}
-    IK.AddSight d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aSight = n + aSight ar}
-    IK.AddSmell d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aSmell = n + aSmell ar}
-    IK.AddShine d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aShine = n + aShine ar}
-    IK.AddNocto d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aNocto = n + aNocto ar}
-    IK.AddAggression d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aAggression = n + aAggression ar}
-    IK.AddAbility ab d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aSkills = Ability.addSkills (EM.singleton ab n)
-                                                (aSkills ar)}
 
 aspectRecordFull :: ItemFull -> AspectRecord
 aspectRecordFull itemFull =

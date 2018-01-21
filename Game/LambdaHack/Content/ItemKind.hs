@@ -5,13 +5,16 @@ module Game.LambdaHack.Content.ItemKind
   , Effect(..), TimerDice
   , Aspect(..), ThrowMod(..)
   , Feature(..), EqpSlot(..)
+  , AspectRecord(..), KindMean(..)
+  , ItemSpeedup, emptyItemSpeedup, getKindMean, speedupItem
+  , emptyAspectRecord, castAspect, aspectsRandom, meanAspect
   , boostItemKindList, forApplyEffect, forIdEffect
   , toDmg, tmpNoLonger, tmpLess, toVelocity, toLinger
   , timerNone, isTimerNone, foldTimer
   , toOrganGameTurn, toOrganActorTurn, toOrganNone
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , validateSingle, validateAll
+  , ceilingMeanDice, addMeanAspect, validateSingle, validateAll
   , boostItemKind, validateDups, validateDamage, hardwiredItemGroups
 #endif
   ) where
@@ -21,9 +24,12 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import           Control.DeepSeq
+import qualified Control.Monad.Trans.State.Strict as St
 import           Data.Binary
+import qualified Data.EnumMap.Strict as EM
 import           Data.Hashable (Hashable)
 import qualified Data.Text as T
+import qualified Data.Vector as V
 import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
@@ -33,6 +39,7 @@ import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Flavour
 import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Random
 
 -- | Item properties that are fixed for a given kind of items.
 data ItemKind = ItemKind
@@ -53,8 +60,6 @@ data ItemKind = ItemKind
                                     -- ^ accompanying organs and items
   }
   deriving (Show, Generic)  -- No Eq and Ord to make extending logically sound
-
-instance NFData ItemKind
 
 -- | Effects of items. Can be invoked by the item wielder to affect
 -- another actor or the wielder himself. Many occurences in the same item
@@ -117,8 +122,6 @@ data Effect =
   | Composite [Effect]  -- ^ only fire next effect if previous fully activated
   deriving (Show, Eq, Generic)
 
-instance NFData Effect
-
 -- | Specification of how to randomly roll a timer at item creation
 -- to obtain a fixed timer for the item's lifetime.
 data TimerDice =
@@ -133,8 +136,6 @@ instance Show TimerDice where
     show nDm ++ " " ++ if nDm == 1 then "turn" else "turns"
   show (TimerActorTurn nDm) =
     show nDm ++ " " ++ if nDm == 1 then "move" else "moves"
-
-instance NFData TimerDice
 
 -- | Aspects of items. Those that are named @Add*@ are additive
 -- (starting at 0) for all items wielded by an actor and they affect the actor.
@@ -155,8 +156,6 @@ data Aspect =
   | AddAbility Ability.Ability Dice.Dice  -- ^ bonus to an ability
   deriving (Show, Eq, Ord, Generic)
 
-instance NFData Aspect
-
 -- | Parameters modifying a throw of a projectile or flight of pushed actor.
 -- Not additive and don't start at 0.
 data ThrowMod = ThrowMod
@@ -164,8 +163,6 @@ data ThrowMod = ThrowMod
   , throwLinger   :: Int  -- ^ fly for this percentage of 2 turns
   }
   deriving (Show, Eq, Ord, Generic)
-
-instance NFData ThrowMod
 
 -- | Features of item. Publicly visible. Affect only the item in question,
 -- not the actor, and so not additive in any sense.
@@ -184,8 +181,6 @@ data Feature =
   | Tactic Tactic      -- ^ overrides actor's tactic
   | Blast              -- ^ the items is an explosion blast particle
   deriving (Show, Eq, Ord, Generic)
-
-instance NFData Feature
 
 -- | AI and UI hints about the role of the item.
 data EqpSlot =
@@ -214,7 +209,191 @@ data EqpSlot =
   | EqpSlotAbMoveItem
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
+-- | Record of sums of aspect values of an item, container, actor, etc.
+data AspectRecord = AspectRecord
+  { aTimeout     :: Int
+  , aHurtMelee   :: Int
+  , aArmorMelee  :: Int
+  , aArmorRanged :: Int
+  , aMaxHP       :: Int
+  , aMaxCalm     :: Int
+  , aSpeed       :: Int
+  , aSight       :: Int
+  , aSmell       :: Int
+  , aShine       :: Int
+  , aNocto       :: Int
+  , aAggression  :: Int
+  , aSkills      :: Ability.Skills
+  }
+  deriving (Show, Eq, Ord, Generic)
+
+-- | Partial information about an item, deduced from its item kind.
+-- These are assigned to each 'ItemKind'. The @kmConst@ flag says whether
+-- the item's aspects are constant rather than random or dependent
+-- on item creation dungeon level.
+data KindMean = KindMean
+  { kmConst :: Bool  -- ^ whether the item doesn't need second identification
+  , kmMean  :: AspectRecord  -- ^ mean value of item's possible aspects
+  }
+  deriving (Show, Eq, Generic)
+
+-- Significant portions of this map are unused and so intentially kept
+-- unevaluated.
+newtype ItemSpeedup = ItemSpeedup (V.Vector KindMean)
+  deriving (Show, Eq, Generic)
+
+emptyItemSpeedup :: ItemSpeedup
+emptyItemSpeedup = ItemSpeedup V.empty
+
+getKindMean :: ContentId ItemKind -> ItemSpeedup -> KindMean
+getKindMean kindId (ItemSpeedup is) = is V.! fromEnum kindId
+
+speedupItem :: ContentData ItemKind -> ItemSpeedup
+speedupItem coitem =
+  let f !kind =
+        let kmMean = meanAspect kind
+            kmConst = not $ aspectsRandom kind
+        in KindMean{..}
+  in ItemSpeedup $! omapVector f coitem
+
+emptyAspectRecord :: AspectRecord
+emptyAspectRecord = AspectRecord
+  { aTimeout     = 0
+  , aHurtMelee   = 0
+  , aArmorMelee  = 0
+  , aArmorRanged = 0
+  , aMaxHP       = 0
+  , aMaxCalm     = 0
+  , aSpeed       = 0
+  , aSight       = 0
+  , aSmell       = 0
+  , aShine       = 0
+  , aNocto       = 0
+  , aAggression  = 0
+  , aSkills      = Ability.zeroSkills
+  }
+
+castAspect :: AbsDepth -> AbsDepth -> AspectRecord -> Aspect
+           -> Rnd AspectRecord
+castAspect !ldepth !totalDepth !ar !asp =
+  case asp of
+    Timeout d -> do
+      n <- castDice ldepth totalDepth d
+      return $! assert (aTimeout ar == 0) $ ar {aTimeout = n}
+    AddHurtMelee d -> do
+      n <- castDice ldepth totalDepth d
+      return $! ar {aHurtMelee = n + aHurtMelee ar}
+    AddArmorMelee d -> do
+      n <- castDice ldepth totalDepth d
+      return $! ar {aArmorMelee = n + aArmorMelee ar}
+    AddArmorRanged d -> do
+      n <- castDice ldepth totalDepth d
+      return $! ar {aArmorRanged = n + aArmorRanged ar}
+    AddMaxHP d -> do
+      n <- castDice ldepth totalDepth d
+      return $! ar {aMaxHP = n + aMaxHP ar}
+    AddMaxCalm d -> do
+      n <- castDice ldepth totalDepth d
+      return $! ar {aMaxCalm = n + aMaxCalm ar}
+    AddSpeed d -> do
+      n <- castDice ldepth totalDepth d
+      return $! ar {aSpeed = n + aSpeed ar}
+    AddSight d -> do
+      n <- castDice ldepth totalDepth d
+      return $! ar {aSight = n + aSight ar}
+    AddSmell d -> do
+      n <- castDice ldepth totalDepth d
+      return $! ar {aSmell = n + aSmell ar}
+    AddShine d -> do
+      n <- castDice ldepth totalDepth d
+      return $! ar {aShine = n + aShine ar}
+    AddNocto d -> do
+      n <- castDice ldepth totalDepth d
+      return $! ar {aNocto = n + aNocto ar}
+    AddAggression d -> do
+      n <- castDice ldepth totalDepth d
+      return $! ar {aAggression = n + aAggression ar}
+    AddAbility ab d -> do
+      n <- castDice ldepth totalDepth d
+      return $! ar {aSkills = Ability.addSkills (EM.singleton ab n)
+                                                (aSkills ar)}
+
+-- If @False@, aspects of this kind are most probably fixed, not random
+-- nor dependent on dungeon level where the item is created.
+aspectsRandom :: ItemKind -> Bool
+aspectsRandom kind =
+  let rollM depth = foldlM' (castAspect (AbsDepth depth) (AbsDepth 10))
+                            emptyAspectRecord (iaspects kind)
+      gen = R.mkStdGen 0
+      (ar0, gen0) = St.runState (rollM 0) gen
+      (ar1, gen1) = St.runState (rollM 10) gen0
+  in show gen /= show gen0 || show gen /= show gen1 || ar0 /= ar1
+
+meanAspect :: ItemKind -> AspectRecord
+meanAspect kind = foldl' addMeanAspect emptyAspectRecord (iaspects kind)
+
+addMeanAspect :: AspectRecord -> Aspect -> AspectRecord
+addMeanAspect !ar !asp =
+  case asp of
+    Timeout d ->
+      let n = ceilingMeanDice d
+      in assert (aTimeout ar == 0) $ ar {aTimeout = n}
+    AddHurtMelee d ->
+      let n = ceilingMeanDice d
+      in ar {aHurtMelee = n + aHurtMelee ar}
+    AddArmorMelee d ->
+      let n = ceilingMeanDice d
+      in ar {aArmorMelee = n + aArmorMelee ar}
+    AddArmorRanged d ->
+      let n = ceilingMeanDice d
+      in ar {aArmorRanged = n + aArmorRanged ar}
+    AddMaxHP d ->
+      let n = ceilingMeanDice d
+      in ar {aMaxHP = n + aMaxHP ar}
+    AddMaxCalm d ->
+      let n = ceilingMeanDice d
+      in ar {aMaxCalm = n + aMaxCalm ar}
+    AddSpeed d ->
+      let n = ceilingMeanDice d
+      in ar {aSpeed = n + aSpeed ar}
+    AddSight d ->
+      let n = ceilingMeanDice d
+      in ar {aSight = n + aSight ar}
+    AddSmell d ->
+      let n = ceilingMeanDice d
+      in ar {aSmell = n + aSmell ar}
+    AddShine d ->
+      let n = ceilingMeanDice d
+      in ar {aShine = n + aShine ar}
+    AddNocto d ->
+      let n = ceilingMeanDice d
+      in ar {aNocto = n + aNocto ar}
+    AddAggression d ->
+      let n = ceilingMeanDice d
+      in ar {aAggression = n + aAggression ar}
+    AddAbility ab d ->
+      let n = ceilingMeanDice d
+      in ar {aSkills = Ability.addSkills (EM.singleton ab n)
+                                         (aSkills ar)}
+
+ceilingMeanDice :: Dice.Dice -> Int
+ceilingMeanDice d = ceiling $ Dice.meanDice d
+
+instance NFData ItemKind
+
+instance NFData Effect
+
+instance NFData TimerDice
+
+instance NFData Aspect
+
+instance NFData ThrowMod
+
+instance NFData Feature
+
 instance NFData EqpSlot
+
+instance NFData AspectRecord
 
 instance Hashable Effect
 
@@ -228,6 +407,8 @@ instance Hashable Feature
 
 instance Hashable EqpSlot
 
+instance Hashable AspectRecord
+
 instance Binary Effect
 
 instance Binary TimerDice
@@ -239,6 +420,8 @@ instance Binary ThrowMod
 instance Binary Feature
 
 instance Binary EqpSlot
+
+instance Binary AspectRecord
 
 boostItemKindList :: R.StdGen -> [ItemKind] -> [ItemKind]
 boostItemKindList _ [] = []

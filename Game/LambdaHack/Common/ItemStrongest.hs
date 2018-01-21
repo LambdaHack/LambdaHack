@@ -28,7 +28,7 @@ import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
-import           Game.LambdaHack.Content.ItemKind
+import           Game.LambdaHack.Content.ItemKind hiding (KindMean (..))
 
 strengthEffect :: (Effect -> [b]) -> ItemFull -> [b]
 strengthEffect f itemFull =

@@ -46,11 +46,13 @@ tieKnot options@ServerOptions{sallClear, sboostRandomItem, sdungeonRng} = do
   initialGen <- maybe R.getStdGen return sdungeonRng
   let soptionsNxt = options {sdungeonRng = Just initialGen}
       cotile = TK.makeData Content.TileKind.content
+      coTileSpeedup = Tile.speedupTile sallClear cotile
       boostedItems = IK.boostItemKindList initialGen Content.ItemKind.items
       coitem = IK.makeData $
         if sboostRandomItem
         then boostedItems ++ Content.ItemKind.otherItemContent
         else Content.ItemKind.content
+      coItemSpeedup = IK.speedupItem coitem
       -- Common content operations, created from content definitions.
       -- Evaluated fully to discover errors ASAP and to free memory.
       -- Fail here, not inside server code, so that savefiles are not removed,
@@ -62,7 +64,8 @@ tieKnot options@ServerOptions{sallClear, sboostRandomItem, sdungeonRng} = do
         , coplace = PK.makeData Content.PlaceKind.content
         , corule  = RK.makeData Content.RuleKind.content
         , cotile
-        , coTileSpeedup = Tile.speedup sallClear cotile
+        , coItemSpeedup
+        , coTileSpeedup
         }
       -- Client content operations containing default keypresses
       -- and command descriptions.

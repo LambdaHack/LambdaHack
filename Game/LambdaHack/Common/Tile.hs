@@ -15,7 +15,7 @@
 -- Actors at normal speed (2 m/s) take one turn to move one tile (1 m by 1 m).
 module Game.LambdaHack.Common.Tile
   ( -- * Construction of tile property lookup speedup tables
-    speedup
+    speedupTile
     -- * Sped up property lookups
   , isClear, isLit, isWalkable, isDoor, isChangable
   , isSuspect, isHideAs, consideredByAI, isExplorable
@@ -65,8 +65,8 @@ accessTab :: U.Unbox a => TK.Tab a -> ContentId TileKind -> a
 {-# INLINE accessTab #-}
 accessTab (TK.Tab tab) ki = tab `U.unsafeIndex` fromEnum ki
 
-speedup :: Bool -> ContentData TileKind -> TileSpeedup
-speedup allClear cotile =
+speedupTile :: Bool -> ContentData TileKind -> TileSpeedup
+speedupTile allClear cotile =
   -- Vectors pack bools as Word8 by default. No idea if the extra memory
   -- taken makes random lookups more or less efficient, so not optimizing
   -- further, until I have benchmarks.

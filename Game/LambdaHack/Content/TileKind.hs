@@ -123,7 +123,7 @@ instance NFData TileSpeedup
 -- but with growing cache sizes they may as well turn out faster at some point.
 -- The advantage of vectors are exposed internals, in particular unsafe
 -- indexing. Also, in JS, bool arrays are obviously not packed.
-newtype Tab a = Tab (U.Vector a)  -- morally indexed by @Id a@
+newtype Tab a = Tab (U.Vector a)  -- morally indexed by @ContentId a@
   deriving Generic
 
 instance NFData (Tab a)

@@ -11,7 +11,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.DeepSeq
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.ContentData
@@ -30,6 +29,7 @@ data COps = COps
   , coplace       :: ContentData PlaceKind  -- server only, so far
   , corule        :: ContentData RuleKind
   , cotile        :: ContentData TileKind
+  , coItemSpeedup :: ItemSpeedup
   , coTileSpeedup :: TileSpeedup
   }
   deriving Generic
@@ -40,8 +40,6 @@ instance Show COps where
 instance Eq COps where
   (==) _ _ = True
 
-instance NFData COps
-
 emptyCOps :: COps
 emptyCOps = COps
   { cocave  = emptyContentData
@@ -50,6 +48,7 @@ emptyCOps = COps
   , coplace = emptyContentData
   , corule  = emptyContentData
   , cotile  = emptyContentData
+  , coItemSpeedup = emptyItemSpeedup
   , coTileSpeedup = emptyTileSpeedup
   }
 
