@@ -23,8 +23,6 @@ import Game.LambdaHack.Client.Response
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
 
 -- | Client monad in which one can receive responses from the server.
@@ -71,7 +69,6 @@ loopCli copsClient sUIOptions soptions = do
   if not hasUI then initAI else initUI copsClient sUIOptions
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
-  cops <- getsState scops
   restoredG <- tryRestore
   restored <- case restoredG of
     Just (cli, msess) | not $ snewGameCli soptions -> do
@@ -91,9 +88,7 @@ loopCli copsClient sUIOptions soptions = do
   side <- getsClient sside
   cmd1 <- receiveResponse
   case (restored, cmd1) of
-    (True, RespUpdAtomic s UpdResume{}) -> do
-      let sCops = updateCOpsAndCachedData (const cops) s
-      handleResponse $ RespUpdAtomic sCops $ UpdResumeServer sCops
+    (True, RespUpdAtomic _ UpdResume{}) -> return ()
     (True, RespUpdAtomic _ UpdRestart{}) ->
       when hasUI $ msgAdd "Ignoring an old savefile and starting a new game."
     (False, RespUpdAtomic _ UpdResume{}) ->
