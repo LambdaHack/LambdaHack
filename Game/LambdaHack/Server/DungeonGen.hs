@@ -163,7 +163,7 @@ buildLevel cops@COps{cocave} ln genName minD totalDepth lstairPrev = do
   cave <- buildCave cops ldepth totalDepth dsecret dkind fixedCenters
   cmap <- buildTileMap cops cave
   litemNum <- castDice ldepth totalDepth $ citemNum kc
-  let lvl = levelFromCaveKind cops kc ldepth cmap lstair litemNum lescape
+  let lvl = levelFromCaveKind cops dkind kc ldepth cmap lstair litemNum lescape
                               (dnight cave)
   return (lvl, lstairsDouble ++ lstairsSingleDown)
 
@@ -194,10 +194,11 @@ placeDownStairs kc@CaveKind{..} ps = do
   findPoint cxsize cysize f
 
 -- Build rudimentary level from a cave kind.
-levelFromCaveKind :: COps -> CaveKind -> AbsDepth -> TileMap
-                  -> ([Point], [Point]) -> Int -> [Point] -> Bool
+levelFromCaveKind :: COps -> ContentId CaveKind -> CaveKind -> AbsDepth
+                  -> TileMap -> ([Point], [Point]) -> Int -> [Point] -> Bool
                   -> Level
 levelFromCaveKind COps{coTileSpeedup}
+                  lkind
                   CaveKind{ cactorCoeff=lactorCoeff
                           , cactorFreq=lactorFreq
                           , citemFreq=litemFreq
@@ -208,7 +209,8 @@ levelFromCaveKind COps{coTileSpeedup}
             | otherwise = n
       lexplorable = PointArray.foldlA' f 0 ltile
   in Level
-       { ldepth
+       { lkind
+       , ldepth
        , lfloor = EM.empty
        , lembed = EM.empty  -- is populated inside $MonadServer$
        , lactor = EM.empty

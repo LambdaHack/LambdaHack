@@ -37,6 +37,7 @@ import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Content.CaveKind (CaveKind)
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 
@@ -54,9 +55,9 @@ data State = State
   , _sitemIxMap   :: ItemIxMap    -- ^ spotted items with the same kind index
   , _sfactionD    :: FactionDict  -- ^ remembered sides still in game
   , _stime        :: Time         -- ^ global game time, for UI display only
-  , _scops        :: COps        -- ^ remembered content
+  , _scops        :: COps         -- ^ remembered content
   , _shigh        :: HighScore.ScoreDict  -- ^ high score table
-  , _sgameModeId  :: ContentId ModeKind     -- ^ current game mode
+  , _sgameModeId  :: ContentId ModeKind   -- ^ current game mode
   , _sdiscoKind   :: DiscoveryKind     -- ^ item kind discoveries data
   , _sdiscoAspect :: DiscoveryAspect   -- ^ item aspect data
   , _sactorAspect :: ActorAspect       -- ^ actor aspect data
@@ -132,14 +133,15 @@ sdiscoAspect = _sdiscoAspect
 sactorAspect :: State -> ActorAspect
 sactorAspect = _sactorAspect
 
-unknownLevel :: COps -> AbsDepth -> X -> Y
+unknownLevel :: COps -> ContentId CaveKind -> AbsDepth -> X -> Y
              -> Text -> Text -> ([Point], [Point]) -> Int -> [Point] -> Bool
              -> Level
 unknownLevel COps{cotile}
-             ldepth lxsize lysize lname ldesc
+             lkind ldepth lxsize lysize lname ldesc
              lstair lexplorable lescape lnight =
   let outerId = ouniqGroup cotile "basic outer fence"
-  in Level { ldepth
+  in Level { lkind
+           , ldepth
            , lfloor = EM.empty
            , lembed = EM.empty
            , lactor = EM.empty
@@ -213,7 +215,7 @@ localFromGlobal State{..} =
   State
     { _sdungeon =
       EM.map (\Level{..} ->
-              unknownLevel _scops ldepth lxsize lysize lname ldesc
+              unknownLevel _scops lkind ldepth lxsize lysize lname ldesc
                            lstair lexplorable lescape lnight)
              _sdungeon
     , ..

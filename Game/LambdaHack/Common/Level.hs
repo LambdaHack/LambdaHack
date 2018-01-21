@@ -30,6 +30,7 @@ import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Content.CaveKind (CaveKind)
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import           Game.LambdaHack.Content.TileKind (TileKind)
 
@@ -94,7 +95,9 @@ type SmellMap = EM.EnumMap Point Time
 -- | A view on single, inhabited dungeon level. "Remembered" fields
 -- carry a subset of the info in the client copies of levels.
 data Level = Level
-  { ldepth      :: AbsDepth   -- ^ absolute depth of the level
+  { lkind       :: ContentId CaveKind
+                              -- ^ the kind of cave the level is an instance of
+  , ldepth      :: AbsDepth   -- ^ absolute depth of the level
   , lfloor      :: ItemFloor  -- ^ remembered items lying on the floor
   , lembed      :: ItemFloor  -- ^ remembered items embedded in the tile
   , lactor      :: ActorMap   -- ^ seen actors at positions on the level
@@ -104,6 +107,7 @@ data Level = Level
   , lsmell      :: SmellMap   -- ^ remembered smells on the level
   , lstair      :: ([Point], [Point])
                               -- ^ positions of (up, down) stairs
+  , lescape     :: [Point]    -- ^ positions of IK.Escape tiles
   , lseen       :: Int        -- ^ currently remembered clear tiles
   , lexplorable :: Int        -- ^ total number of explorable tiles
   , ltime       :: Time       -- ^ local time on the level (possibly frozen)
@@ -113,7 +117,6 @@ data Level = Level
   , litemNum    :: Int        -- ^ number of initial items, 0 for clients
   , litemFreq   :: Freqs ItemKind
                               -- ^ frequency of initial items; [] for clients
-  , lescape     :: [Point]    -- ^ positions of IK.Escape tiles
   , lnight      :: Bool       -- ^ whether the level is covered in darkness
   , lname       :: Text       -- ^ level name
   , ldesc       :: Text       -- ^ level description
@@ -215,6 +218,7 @@ findPosTry2 numTries ltile m0 l g r = assert (numTries > 0) $
 
 instance Binary Level where
   put Level{..} = do
+    put lkind
     put ldepth
     put (assertSparseItems lfloor)
     put (assertSparseItems lembed)
@@ -224,6 +228,7 @@ instance Binary Level where
     put lysize
     put lsmell
     put lstair
+    put lescape
     put lseen
     put lexplorable
     put ltime
@@ -231,11 +236,11 @@ instance Binary Level where
     put lactorFreq
     put litemNum
     put litemFreq
-    put lescape
     put lnight
     put lname
     put ldesc
   get = do
+    lkind <- get
     ldepth <- get
     lfloor <- get
     lembed <- get
@@ -245,6 +250,7 @@ instance Binary Level where
     lysize <- get
     lsmell <- get
     lstair <- get
+    lescape <- get
     lseen <- get
     lexplorable <- get
     ltime <- get
@@ -252,7 +258,6 @@ instance Binary Level where
     lactorFreq <- get
     litemNum <- get
     litemFreq <- get
-    lescape <- get
     lnight <- get
     lname <- get
     ldesc <- get

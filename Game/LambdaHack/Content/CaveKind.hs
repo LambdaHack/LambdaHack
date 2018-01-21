@@ -49,7 +49,7 @@ data CaveKind = CaveKind
   , chidden         :: Int              -- ^ if not open, hidden one in n times
   , cactorCoeff     :: Int              -- ^ the lower, the more monsters spawn
   , cactorFreq      :: Freqs ItemKind   -- ^ actor groups to consider
-  , citemNum        :: Dice.Dice        -- ^ the number of items in the cave
+  , citemNum        :: Dice.Dice        -- ^ number of initial items in the cave
   , citemFreq       :: Freqs ItemKind   -- ^ item groups to consider
   , cplaceFreq      :: Freqs PlaceKind  -- ^ place groups to consider
   , cpassable       :: Bool
@@ -65,7 +65,7 @@ data CaveKind = CaveKind
   , cstairFreq      :: Freqs PlaceKind
       -- ^ place groups to consider for stairs; in this case the rarity
       --   of items in the group does not affect group choice
-  , cdesc           :: Text                -- ^ cave description
+  , cdesc           :: Text                -- ^ full cave description
   }
   deriving (Show, Generic)  -- No Eq and Ord to make extending logically sound
 
