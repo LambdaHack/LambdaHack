@@ -16,6 +16,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import           Data.Ord
 
@@ -300,7 +301,7 @@ discoverKind _c ix ik = do
         let item = itemD EM.! iid
         in totalUsefulness cops fact effs kmMean item
   itemIxMap <- getsState $ (EM.! ix) . sitemIxMap
-  forM_ itemIxMap $ \iid -> modifyClient $ \cli ->
+  forM_ (ES.elems itemIxMap) $ \iid -> modifyClient $ \cli ->
     cli {sdiscoBenefit = EM.insert iid (benefit iid) (sdiscoBenefit cli)}
 
 coverKind :: Container -> ItemKindIx -> ContentId ItemKind -> m ()

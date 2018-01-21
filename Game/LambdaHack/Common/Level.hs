@@ -99,7 +99,8 @@ data Level = Level
   , ldepth  :: AbsDepth   -- ^ absolute depth of the level
   , lfloor  :: ItemFloor  -- ^ remembered items lying on the floor
   , lembed  :: ItemFloor  -- ^ remembered items embedded in the tile
-  , lactor  :: ActorMap   -- ^ seen actors at positions on the level
+  , lactor  :: ActorMap   -- ^ seen actors at positions on the level;
+                          --   could be recomputed at resume, but small enough
   , ltile   :: TileMap    -- ^ remembered level map
   , lxsize  :: X          -- ^ width of the level
   , lysize  :: Y          -- ^ height of the level

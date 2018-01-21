@@ -53,6 +53,7 @@ data State = State
   , _sactorD      :: ActorDict    -- ^ remembered actors in the dungeon
   , _sitemD       :: ItemDict     -- ^ remembered items in the dungeon
   , _sitemIxMap   :: ItemIxMap    -- ^ spotted items with the same kind index
+                                  --   could be recomputed at resume, but small
   , _sfactionD    :: FactionDict  -- ^ remembered sides still in game
   , _stime        :: Time         -- ^ global game time, for UI display only
   , _scops        :: COps         -- ^ remembered content

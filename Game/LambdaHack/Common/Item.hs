@@ -27,6 +27,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Control.Monad.Trans.State.Strict as St
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import           Data.Hashable (Hashable)
 import qualified Data.Ix as Ix
 import           GHC.Generics (Generic)
@@ -283,7 +284,9 @@ instance Binary KindMean
 type DiscoveryKind = EM.EnumMap ItemKindIx KindMean
 
 -- | The map of item kind indexes to identifiers of items that have that kind.
-type ItemIxMap = EM.EnumMap ItemKindIx [ItemId]
+-- Used to update data about items when their kinds become known, e.g.,
+-- AI item use benefit data.
+type ItemIxMap = EM.EnumMap ItemKindIx (ES.EnumSet ItemId)
 
 -- | Fields are intentionally kept non-strict, because they are recomputed
 -- often, but not used every time. The fields are, in order:

@@ -21,6 +21,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Control.Exception as Ex
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import           Data.Key (mapWithKeyM_)
 
 import Game.LambdaHack.Common.Actor
@@ -296,7 +297,8 @@ addAis ais = do
                item2 -- keep the first found level
   forM_ ais $ \(iid, item) ->
     modifyState
-    $ updateItemIxMap (EM.insertWith (++) (jkindIx item) [iid])
+    $ updateItemIxMap
+        (EM.insertWith (ES.union) (jkindIx item) (ES.singleton iid))
       . updateItemD (EM.insertWith h iid item)
 
 itemsMatch :: Item -> Item -> Bool
