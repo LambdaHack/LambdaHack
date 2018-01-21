@@ -94,23 +94,23 @@ type SmellMap = EM.EnumMap Point Time
 -- | A view on single, inhabited dungeon level. "Remembered" fields
 -- carry a subset of the info in the client copies of levels.
 data Level = Level
-  { lkind       :: ContentId CaveKind
-                              -- ^ the kind of cave the level is an instance of
-  , ldepth      :: AbsDepth   -- ^ absolute depth of the level
-  , lfloor      :: ItemFloor  -- ^ remembered items lying on the floor
-  , lembed      :: ItemFloor  -- ^ remembered items embedded in the tile
-  , lactor      :: ActorMap   -- ^ seen actors at positions on the level
-  , ltile       :: TileMap    -- ^ remembered level map
-  , lxsize      :: X          -- ^ width of the level
-  , lysize      :: Y          -- ^ height of the level
-  , lsmell      :: SmellMap   -- ^ remembered smells on the level
-  , lstair      :: ([Point], [Point])
-                              -- ^ positions of (up, down) stairs
-  , lescape     :: [Point]    -- ^ positions of IK.Escape tiles
-  , lseen       :: Int        -- ^ currently remembered clear tiles
-  , lexplorable :: Int        -- ^ total number of explorable tiles
-  , ltime       :: Time       -- ^ local time on the level (possibly frozen)
-  , lnight      :: Bool       -- ^ whether the level is covered in darkness
+  { lkind   :: ContentId CaveKind
+                          -- ^ the kind of cave the level is an instance of
+  , ldepth  :: AbsDepth   -- ^ absolute depth of the level
+  , lfloor  :: ItemFloor  -- ^ remembered items lying on the floor
+  , lembed  :: ItemFloor  -- ^ remembered items embedded in the tile
+  , lactor  :: ActorMap   -- ^ seen actors at positions on the level
+  , ltile   :: TileMap    -- ^ remembered level map
+  , lxsize  :: X          -- ^ width of the level
+  , lysize  :: Y          -- ^ height of the level
+  , lsmell  :: SmellMap   -- ^ remembered smells on the level
+  , lstair  :: ([Point], [Point])
+                          -- ^ positions of (up, down) stairs
+  , lescape :: [Point]    -- ^ positions of IK.Escape tiles
+  , lseen   :: Int        -- ^ currently remembered clear tiles
+  , lexpl   :: Int        -- ^ total number of explorable tiles
+  , ltime   :: Time       -- ^ local time on the level (possibly frozen)
+  , lnight  :: Bool       -- ^ whether the level is covered in darkness
   }
   deriving (Show, Eq)
 
@@ -221,7 +221,7 @@ instance Binary Level where
     put lstair
     put lescape
     put lseen
-    put lexplorable
+    put lexpl
     put ltime
     put lnight
   get = do
@@ -237,7 +237,7 @@ instance Binary Level where
     lstair <- get
     lescape <- get
     lseen <- get
-    lexplorable <- get
+    lexpl <- get
     ltime <- get
     lnight <- get
     return $! Level{..}

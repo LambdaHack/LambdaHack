@@ -230,8 +230,8 @@ closestUnknown aid = do
   bfs <- getCacheBfs aid
   let closestPoss = PointArray.minIndexesA bfs
       dist = bfs PointArray.! head closestPoss
-      !_A = assert (lexplorable lvl >= lseen lvl) ()
-  if lexplorable lvl <= lseen lvl
+      !_A = assert (lexpl lvl >= lseen lvl) ()
+  if lexpl lvl <= lseen lvl
        -- Some unknown may still be visible and even pathable, but we already
        -- know from global level info that they are blocked.
      || dist >= apartBfs

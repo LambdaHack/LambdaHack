@@ -488,10 +488,10 @@ drawBaseFrame dm drawnLevelId = do
 drawArenaStatus :: COps -> Bool -> Level -> Int -> AttrLine
 drawArenaStatus COps{cocave}
                 explored
-                Level{lkind, ldepth=AbsDepth ld, lseen, lexplorable}
+                Level{lkind, ldepth=AbsDepth ld, lseen, lexpl}
                 width =
   let ck = okind cocave lkind
-      seenN = 100 * lseen `div` max 1 lexplorable
+      seenN = 100 * lseen `div` max 1 lexpl
       seenTxt | explored || seenN >= 100 = "all"
               | otherwise = T.justifyLeft 3 ' ' (tshow seenN <> "%")
       lvlN = T.justifyLeft 2 ' ' (tshow ld)

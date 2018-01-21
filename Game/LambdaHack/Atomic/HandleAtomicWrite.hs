@@ -446,7 +446,7 @@ updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
 
 updAlterExplorable :: MonadStateWrite m => LevelId -> Int -> m ()
 updAlterExplorable lid delta = assert (delta /= 0) $
-  updateLevel lid $ \lvl -> lvl {lexplorable = lexplorable lvl + delta}
+  updateLevel lid $ \lvl -> lvl {lexpl = lexpl lvl + delta}
 
 -- Showing to the client the embedded items, if any, is done elsewhere.
 updSearchTile :: MonadStateWrite m

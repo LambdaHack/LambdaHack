@@ -137,7 +137,7 @@ unknownLevel :: COps -> ContentId CaveKind -> AbsDepth -> X -> Y
              -> ([Point], [Point]) -> [Point] -> Int -> Bool
              -> Level
 unknownLevel COps{cotile}
-             lkind ldepth lxsize lysize lstair lescape lexplorable lnight =
+             lkind ldepth lxsize lysize lstair lescape lexpl lnight =
   let outerId = ouniqGroup cotile "basic outer fence"
   in Level { lkind
            , ldepth
@@ -151,7 +151,7 @@ unknownLevel COps{cotile}
            , lstair
            , lescape
            , lseen = 0
-           , lexplorable
+           , lexpl
            , ltime = timeZero
            , lnight
            }
@@ -209,7 +209,7 @@ localFromGlobal State{..} =
     { _sdungeon =
       EM.map (\Level{..} ->
               unknownLevel _scops lkind ldepth lxsize lysize
-                           lstair lescape lexplorable lnight)
+                           lstair lescape lexpl lnight)
              _sdungeon
     , ..
     }

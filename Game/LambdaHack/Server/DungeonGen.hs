@@ -200,7 +200,7 @@ levelFromCaveKind COps{cocave, coTileSpeedup}
                   lkind ldepth ltile lstair lescape lnight =
   let f n t | Tile.isExplorable coTileSpeedup t = n + 1
             | otherwise = n
-      lexplorable = PointArray.foldlA' f 0 ltile
+      lexpl = PointArray.foldlA' f 0 ltile
       CaveKind{cxsize, cysize} = okind cocave lkind
   in Level
        { lkind
@@ -215,7 +215,7 @@ levelFromCaveKind COps{cocave, coTileSpeedup}
        , lstair
        , lescape
        , lseen = 0
-       , lexplorable
+       , lexpl
        , ltime = timeZero
        , lnight
        }
