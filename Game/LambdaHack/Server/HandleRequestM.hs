@@ -103,7 +103,7 @@ handleRequestTimed fid aid cmd = do
   -- benefit of seeing approaching danger up to almost a turn faster.
   -- It may be too late to block then, but not too late to sidestep or attack.
   unless (mwait == Just True) $ overheadActorTime fid (blid b)
-  advanceTime aid (if mwait == Just False then 10 else 100)
+  advanceTime aid (if mwait == Just False then 10 else 100) True
   handleRequestTimedCases aid cmd
   managePerRequest aid
   return $! isNothing mwait  -- for speed, we report if @cmd@ harmless

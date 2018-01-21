@@ -157,6 +157,7 @@ data SfxMsg =
   | SfxLevelPushed
   | SfxBracedImmune ActorId
   | SfxEscapeImpossible
+  | SfxStatisProtects
   | SfxTransImpossible
   | SfxIdentifyNothing
   | SfxPurposeNothing CStore

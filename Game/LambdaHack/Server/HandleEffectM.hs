@@ -291,8 +291,8 @@ effectSem source target iid c recharged periodic effect = do
     IK.Summon grp nDm -> effectSummon grp nDm iid source target periodic
     IK.Ascend p -> effectAscend recursiveCall execSfx p source target pos
     IK.Escape{} -> effectEscape source target
-    IK.Paralyze nDm -> effectParalyze execSfx nDm target
-    IK.InsertMove nDm -> effectInsertMove execSfx nDm target
+    IK.Paralyze nDm -> effectParalyze execSfx nDm source target
+    IK.InsertMove nDm -> effectInsertMove execSfx nDm source target
     IK.Teleport nDm -> effectTeleport execSfx nDm source target
     IK.CreateItem store grp tim ->
       effectCreateItem (Just $ bfid sb) Nothing target store grp tim
@@ -848,47 +848,61 @@ effectEscape source target = do
 -- | Advance target actor time by this many time clips. Not by actor moves,
 -- to hurt fast actors more.
 effectParalyze :: MonadServerAtomic m
-               => m () -> Dice.Dice -> ActorId -> m UseResult
-effectParalyze execSfx nDm target = do
+               => m () -> Dice.Dice -> ActorId -> ActorId -> m UseResult
+effectParalyze execSfx nDm source target = do
   tb <- getsState $ getActorBody target
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
+  actorStatis <- getsServer sactorStatis
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
   let power = max power0 1  -- KISS, avoid special case
       t = timeDeltaScale (Delta timeClip) power
-  if bproj tb
-  then return UseDud
-  else do
-    execSfx
-    modifyServer $ \ser ->
-      ser { sactorTime = ageActor (bfid tb) (blid tb) target t $ sactorTime ser
-          , sactorStatis = ES.insert target (sactorStatis ser) }
-              -- actor's time warped, so he is in statis, immune to new warps
-    return UseUp
+  if | bproj tb -> return UseDud
+     | ES.member target actorStatis -> do
+       sb <- getsState $ getActorBody source
+       execSfxAtomic $ SfxMsgFid (bfid sb) SfxStatisProtects
+       return UseId
+     | otherwise -> do
+       execSfx
+       modifyServer $ \ser ->
+         ser { sactorTime = ageActor (bfid tb) (blid tb) target t
+                            $ sactorTime ser
+             , sactorStatis = ES.insert target (sactorStatis ser) }
+                 -- actor's time warped, so he is in statis,
+                 -- immune to further warps
+       return UseUp
 
 -- ** InsertMove
 
 -- | Give target actor the given number of extra moves. Don't give
 -- an absolute amount of time units, to benefit slow actors more.
 effectInsertMove :: MonadServerAtomic m
-                 => m () -> Dice.Dice -> ActorId -> m UseResult
-effectInsertMove execSfx nDm target = do
+                 => m () -> Dice.Dice -> ActorId -> ActorId -> m UseResult
+effectInsertMove execSfx nDm source target = do
   tb <- getsState $ getActorBody target
   ar <- getsState $ getActorAspect target
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
+  actorStatis <- getsServer sactorStatis
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
   let power = max power0 1  -- KISS, avoid special case
       actorTurn = ticksPerMeter $ bspeed tb ar
       t = timeDeltaScale actorTurn (-power)
   -- Projectiles permitted; can't be suspended mid-air, as in @effectParalyze@
   -- but can be propelled.
-  execSfx
-  modifyServer $ \ser ->
-    ser { sactorTime = ageActor (bfid tb) (blid tb) target t $ sactorTime ser
-        , sactorStatis = ES.insert target (sactorStatis ser) }
-            -- actor's time warped, so he is in statis, immune to further warps
-  return UseUp
+  if | ES.member target actorStatis -> do
+       sb <- getsState $ getActorBody source
+       execSfxAtomic $ SfxMsgFid (bfid sb) SfxStatisProtects
+       return UseId
+     | otherwise -> do
+       execSfx
+       modifyServer $ \ser ->
+         ser { sactorTime = ageActor (bfid tb) (blid tb) target t
+                            $ sactorTime ser
+             , sactorStatis = ES.insert target (sactorStatis ser) }
+                 -- actor's time warped, so he is in statis,
+                 -- immune to further warps
+       return UseUp
 
 -- ** Teleport
 

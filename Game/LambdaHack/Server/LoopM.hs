@@ -330,7 +330,7 @@ hTrajectories (aid, b) = do
   -- Note that domination of pushed actors is not checked
   -- nor is their calm updated. They are helpless wrt movement,
   -- but also invulnerable in this repsect.
-  if actorDying b2 then dieSer aid b2 else advanceTime aid 100
+  if actorDying b2 then dieSer aid b2 else advanceTime aid 100 False
   -- if @actorDying@ due to @bhp b <= 0@:
   -- If @b@ is a projectile, it means hits an actor or is hit by actor.
   -- Then the carried item is destroyed and that's all.
