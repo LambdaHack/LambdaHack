@@ -288,7 +288,7 @@ featureToSuff feat =
     Lobable -> wrapInChevrons "can be lobbed"
     Durable -> wrapInChevrons "durable"
     ToThrow tmod -> wrapInChevrons $ tmodToSuff "flies" tmod
-    Identified -> ""
+    HideAs{} -> ""
     Applicable -> ""
     Equipable -> ""
     Meleeable -> ""
@@ -303,7 +303,7 @@ featureToSentence feat =
     Lobable -> Nothing
     Durable -> Nothing
     ToThrow{} -> Nothing
-    Identified -> Nothing
+    HideAs{} -> Nothing
     Applicable -> Just "It is meant to be applied."
     Equipable -> Nothing
     Meleeable -> Just "It is considered for melee strikes by default."

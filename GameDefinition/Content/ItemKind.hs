@@ -87,7 +87,7 @@ sandstoneRock = ItemKind
   , idamage  = toDmg $ 1 `d` 1
   , iaspects = [AddHurtMelee $ -16 * 5]
   , ieffects = []
-  , ifeature = [toVelocity 70, Fragile, Identified]  -- not dense, irregular
+  , ifeature = [toVelocity 70, Fragile]  -- not dense, irregular
   , idesc    = "A lump of brittle sandstone rock."
   , ikit     = []
   }
@@ -104,7 +104,7 @@ dart = ItemKind
   , iaspects = [AddHurtMelee $ (-15 + 1 `d` 2 + 1 `dL` 3) * 5]
                  -- only leather-piercing
   , ieffects = []
-  , ifeature = [Identified]
+  , ifeature = []
   , idesc    = "A sharp delicate dart with fins."
   , ikit     = []
   }
@@ -124,7 +124,7 @@ spike = ItemKind
                , OnSmash (Explode "single spark") ]  -- at wall hit
       -- this results in a wordy item synopsis, but it's OK, the spark really
       -- is useful in some situations, not just a flavour
-  , ifeature = [toVelocity 70, Identified]  -- hitting with tip costs speed
+  , ifeature = [toVelocity 70]  -- hitting with tip costs speed
   , idesc    = "A cruel long nail with small head."  -- "Much inferior to arrows though, especially given the contravariance problems."  -- funny, but destroy the suspension of disbelief; this is supposed to be a Lovecraftian horror and any hilarity must ensue from the failures in making it so and not from actively trying to be funny; also, mundane objects are not supposed to be scary or transcendental; the scare is in horrors from the abstract dimension visiting our ordinary reality; without the contrast there's no horror and no wonder, so also the magical items must be contrasted with ordinary XIX century and antique items
   , ikit     = []
   }
@@ -142,7 +142,7 @@ slingStone = ItemKind
                  -- heavy vs armor
   , ieffects = [ Explode "single spark"  -- when hitting enemy
                , OnSmash (Explode "single spark") ]  -- at wall hit
-  , ifeature = [toVelocity 150, Identified]
+  , ifeature = [toVelocity 150]
   , idesc    = "A round stone, carefully sized and smoothed to fit the pouch of a standard string and cloth sling."
   , ikit     = []
   }
@@ -159,7 +159,7 @@ slingBullet = ItemKind
   , iaspects = [AddHurtMelee $ (-17 + 1 `d` 2 + 1 `dL` 3) * 5]
                  -- not armor-piercing
   , ieffects = []
-  , ifeature = [toVelocity 200, Identified]
+  , ifeature = [toVelocity 200]
   , idesc    = "Small almond-shaped leaden projectile that weighs more than the sling used to tie the bag. It doesn't drop out of the sling's pouch when swung and doesn't snag when released."
   , ikit     = []
   }
@@ -179,7 +179,7 @@ paralizingProj = ItemKind
   , idamage  = toDmg $ 1 `d` 1
   , iaspects = [AddHurtMelee $ -14 * 5]
   , ieffects = [Paralyze 15, DropBestWeapon]
-  , ifeature = [Identified]
+  , ifeature = []
   , idesc    = "Wood balls tied with hemp rope. The target enemy is tripped and bound to drop the main weapon, while fighting for balance."
   , ikit     = []
   }
@@ -195,7 +195,7 @@ harpoon = ItemKind
   , idamage  = [(99, 5 `d` 1), (1, 10 `d` 1)]
   , iaspects = [AddHurtMelee $ (-10 + 1 `d` 2 + 1 `dL` 3) * 5]
   , ieffects = [PullActor (ThrowMod 200 50)]
-  , ifeature = [Identified]
+  , ifeature = []
   , idesc    = "The cruel, barbed head lodges in its victim so painfully that the weakest tug of the thin line sends the victim flying."
   , ikit     = []
   }
@@ -212,7 +212,7 @@ net = ItemKind
   , iaspects = [AddHurtMelee $ -14 * 5]
   , ieffects = [ toOrganGameTurn "slowed" (3 + 1 `d` 3)
                , DropItem maxBound 1 CEqp "torso armor" ]
-  , ifeature = [Identified]
+  , ifeature = []
   , idesc    = "A wide net with weights along the edges. Entangles armor and restricts movement."
   , ikit     = []
   }
@@ -232,7 +232,7 @@ light1 = ItemKind
   , iaspects = [ AddShine 3       -- not only flashes, but also sparks,
                , AddSight (-2) ]  -- so unused by AI due to the mixed blessing
   , ieffects = [Burn 1, EqpSlot EqpSlotLightSource]
-  , ifeature = [Lobable, Identified, Equipable]  -- not Fragile; reusable flare
+  , ifeature = [Lobable, Equipable]  -- not Fragile; reusable flare
   , idesc    = "A smoking, heavy wooden torch, burning in an unsteady glow."
   , ikit     = []
   }
@@ -249,7 +249,7 @@ light2 = ItemKind
   , iaspects = [AddShine 3, AddSight (-1)]
   , ieffects = [ Burn 1, Paralyze 6, OnSmash (Explode "burning oil 2")
                , EqpSlot EqpSlotLightSource ]
-  , ifeature = [Lobable, Fragile, Identified, Equipable]
+  , ifeature = [Lobable, Fragile, Equipable]
   , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
   , ikit     = []
   }
@@ -266,7 +266,7 @@ light3 = ItemKind
   , iaspects = [AddShine 4, AddSight (-1)]
   , ieffects = [ Burn 1, Paralyze 8, OnSmash (Explode "burning oil 4")
                , EqpSlot EqpSlotLightSource ]
-  , ifeature = [Lobable, Fragile, Identified, Equipable]
+  , ifeature = [Lobable, Fragile, Equipable]
   , idesc    = "Very bright and very heavy brass lantern."
   , ikit     = []
   }
@@ -283,7 +283,7 @@ blanket = ItemKind
   , iaspects = [ AddShine (-10)  -- douses torch, lamp and lantern in one action
                , AddArmorMelee 1, AddMaxCalm 2 ]
   , ieffects = []
-  , ifeature = [Lobable, Identified, Equipable]  -- not Fragile; reusable douse
+  , ifeature = [Lobable, Equipable]  -- not Fragile; reusable douse
   , idesc    = "Warm, comforting, and concealing, woven from soft wool."
   , ikit     = []
   }
@@ -348,11 +348,11 @@ explosive = ItemKind
       -- particles that move 1 (or 2?) tle away outward and then starting
       -- a standard "blast" explosion in each (firecracker does that,
       -- but with many, not just 2 levels of explosions)
-  , ifeature = [Lobable, Fragile, Identified, toVelocity 50]
+  , ifeature = [Lobable, Fragile, toVelocity 50]
       -- not Applicable, because won't be applied, only thrown;
       -- Fragile, because we want it to explode at target tile, even if
-      -- it hits no actor nor wall when it gets there;
-      -- Identified, because the player recognizes it from the description
+      -- it hits no actor nor wall when it gets there; it's identified,
+      -- because the player recognizes it from the description
       -- already (unless we design granades that all look alike, but some
       -- explode with blast, others with fireckracker, etc. and the player
       -- needs to experiment to learn to recognize them);
@@ -375,7 +375,7 @@ firecracker = explosive
 flask = ItemKind
   { isymbol  = symbolFlask
   , iname    = "flask"
-  , ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
+  , ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100), ("flask unknown", 1)]
   , iflavour = zipLiquid darkCol ++ zipPlain darkCol ++ zipFancy darkCol
                ++ zipLiquid brightCol
   , icount   = 1
@@ -385,7 +385,7 @@ flask = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = []
-  , ifeature = [Applicable, Lobable, Fragile, toVelocity 50]  -- oily, bad grip
+  , ifeature = [HideAs "flask unknown", Applicable, Lobable, Fragile, toVelocity 50]  -- oily, bad grip
   , idesc    = "A flask of oily liquid of a suspect color. Something seems to be moving inside."
   , ikit     = []
   }
@@ -531,7 +531,7 @@ flask20 = flask
 potion = ItemKind
   { isymbol  = symbolPotion
   , iname    = "potion"
-  , ifreq    = [("useful", 100), ("potion", 100), ("any vial", 100)]
+  , ifreq    = [("useful", 100), ("potion", 100), ("any vial", 100), ("potion unknown", 1)]
   , iflavour = zipLiquid brightCol ++ zipPlain brightCol ++ zipFancy brightCol
   , icount   = 1
   , irarity  = [(1, 10), (10, 8)]
@@ -540,7 +540,7 @@ potion = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = []
-  , ifeature = [Applicable, Lobable, Fragile, toVelocity 50]  -- oily, bad grip
+  , ifeature = [HideAs "potion unknown", Applicable, Lobable, Fragile, toVelocity 50]  -- oily, bad grip
   , idesc    = "A vial of bright, frothing concoction. The best that nature has to offer."
   , ikit     = []
   }
@@ -626,7 +626,7 @@ potion10 = potion
 scroll = ItemKind
   { isymbol  = symbolScroll
   , iname    = "scroll"
-  , ifreq    = [("useful", 100), ("any scroll", 100)]
+  , ifreq    = [("useful", 100), ("any scroll", 100), ("scroll unknown", 1)]
   , iflavour = zipFancy stdCol ++ zipPlain darkCol  -- arcane and old
   , icount   = 1
   , irarity  = [(1, 14), (10, 11)]
@@ -635,7 +635,8 @@ scroll = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = []
-  , ifeature = [ toVelocity 30  -- bad shape, even rolled up
+  , ifeature = [ HideAs "scroll unknown"
+               , toVelocity 30  -- bad shape, even rolled up
                , Applicable ]
   , idesc    = "Scraps of haphazardly scribbled mysteries from beyond. Is this equation an alchemical recipe? Is this diagram an extradimensional map? Is this formula a secret call sign?"
   , ikit     = []
@@ -726,7 +727,7 @@ jumpingPole = ItemKind
                  -- in total, the explorations speed is unchanged,
                  -- but it's useful when fleeing in the dark to make distance
                  -- and when initiating combat, so it's OK that AI uses it
-  , ifeature = [Durable, Applicable, Identified]
+  , ifeature = [Durable, Applicable]
   , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
   , ikit     = []
   }
@@ -742,7 +743,7 @@ sharpeningTool = ItemKind
   , idamage  = toDmg 0
   , iaspects = [AddHurtMelee $ (1 `dL` 5) * 5]
   , ieffects = [EqpSlot EqpSlotAddHurtMelee]
-  , ifeature = [Identified, Equipable]
+  , ifeature = [Equipable]
   , idesc    = "A portable sharpening stone that lets you fix your weapons between or even during fights, without the need to set up camp, fish out tools and assemble a proper sharpening workshop."
   , ikit     = []
   }
@@ -761,7 +762,7 @@ seeingItem = ItemKind
   , ieffects = [ Periodic
                , Recharging (toOrganNone "poisoned")
                , Recharging (Summon "mobile monster" 1) ]
-  , ifeature = [Identified]
+  , ifeature = []
   , idesc    = "A slimy, dilated green pupil torn out from some giant eye. Clear and focused, as if still alive."
   , ikit     = []
   }
@@ -779,7 +780,7 @@ motionScanner = ItemKind
                , AddArmorMelee (-10 + 1 `dL` 5)
                , AddArmorRanged (-10 + 1 `dL` 5) ]
   , ieffects = [EqpSlot EqpSlotMiscBonus]
-  , ifeature = [Identified, Equipable]
+  , ifeature = [Equipable]
   , idesc    = "A silk flag with a bell for detecting sudden draft changes. May indicate a nearby corridor crossing or a fast enemy approaching in the dark. Is also very noisy."
   , ikit     = []
   }
@@ -801,7 +802,7 @@ gorget = ItemKind
                , AddArmorRanged 2 ]
   , ieffects = [ Unique, Periodic
                , Recharging (RefillCalm 1), EqpSlot EqpSlotMiscBonus ]
-  , ifeature = [Durable, Precious, Identified, Equipable]
+  , ifeature = [Durable, Precious, Equipable]
   , idesc    = "Highly ornamental, cold, large, steel medallion on a chain. Unlikely to offer much protection as an armor piece, but the old, worn engraving reassures you."
   , ikit     = []
   }
@@ -809,7 +810,7 @@ gorget = ItemKind
 necklace = ItemKind
   { isymbol  = symbolNecklace
   , iname    = "necklace"
-  , ifreq    = [("useful", 100)]
+  , ifreq    = [("useful", 100), ("necklace unknown", 1)]
   , iflavour = zipFancy stdCol ++ zipPlain brightCol
   , icount   = 1
   , irarity  = [(10, 2)]
@@ -818,7 +819,7 @@ necklace = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = [Periodic]
-  , ifeature = [Precious, toVelocity 50, Equipable]  -- not dense enough
+  , ifeature = [HideAs "necklace unknown", Precious, toVelocity 50, Equipable]  -- not dense enough
   , idesc    = "Menacing Greek symbols shimmer with increasing speeds along a chain of fine encrusted links. After a tense build-up, a prismatic arc shoots towards the ground and the iridescence subdues, becomes ordered and resembles a harmless ornament again, for a time."
   , ikit     = []
   }
@@ -905,7 +906,7 @@ imageItensifier = ItemKind
   , idamage  = toDmg 0
   , iaspects = [AddNocto 1, AddSight (-1), AddArmorMelee $ (1 `dL` 3) * 3]
   , ieffects = [EqpSlot EqpSlotMiscBonus]
-  , ifeature = [Precious, Identified, Durable, Equipable]
+  , ifeature = [Precious, Durable, Equipable]
   , idesc    = "Contraption of lenses and mirrors on a polished brass headband for capturing and strengthening light in dark environment. Hampers vision in daylight. Stackable."
   , ikit     = []
   }
@@ -921,7 +922,7 @@ sightSharpening = ItemKind
   , idamage  = toDmg 0
   , iaspects = [AddSight $ 1 + 1 `d` 2, AddHurtMelee $ (1 `d` 2) * 3]
   , ieffects = [EqpSlot EqpSlotAddSight]
-  , ifeature = [Precious, Identified, Durable, Equipable]
+  , ifeature = [Precious, Durable, Equipable]
   , idesc    = "Let's you better focus your weaker eye."
   , ikit     = []
   }
@@ -929,20 +930,20 @@ sightSharpening = ItemKind
 -- of eqp and so activating them would require UI tedium: looking for
 -- them in eqp and inv or even activating a wrong item by mistake.
 --
--- However, rings have the explosion effect.
+-- However, some rings have the explosion effect.
 -- They explode on use (and throw), for the fun of hitting everything
 -- around without the risk of being hit. In case of teleportation explosion
 -- this can also be used to immediately teleport close friends, as opposed
 -- to throwing the ring, which takes time.
 --
--- Rings should have @Identified@, so that they fully identify upon picking up.
--- Effects of many of them are seen in character sheet, so it would be silly
--- not to identify them. Necklaces provide the fun of id-by-use, because they
--- have effects and when they are triggered, they id.
+-- Bu general mechanisms, due to not having effects that could identify
+-- them by observing the effect, rings are identified on pickup.
+-- That's unlike necklaces, which provide the fun of id-by-use, because they
+-- have effects and when the effects are triggered, they get identified.
 ring = ItemKind
   { isymbol  = symbolRing
   , iname    = "ring"
-  , ifreq    = [("useful", 100)]
+  , ifreq    = [("useful", 100), ("ring unknown", 1)]
   , iflavour = zipPlain stdCol ++ zipFancy darkCol
   , icount   = 1
   , irarity  = [(10, 3)]
@@ -951,7 +952,7 @@ ring = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = []
-  , ifeature = [Precious, Identified, Equipable]
+  , ifeature = [HideAs "ring unknown", Precious, Equipable]
   , idesc    = "It looks like an ordinary object, but it's in fact a generator of exceptional effects: adding to some of your natural abilities and subtracting from others. You'd profit enormously if you could find a way to multiply such generators."
   , ikit     = []
   }
@@ -1028,7 +1029,7 @@ armorLeather = ItemKind
                , AddArmorMelee $ (2 + 1 `dL` 4) * 5
                , AddArmorRanged $ (1 + 1 `dL` 2) * 3 ]
   , ieffects = [EqpSlot EqpSlotAddArmorMelee]
-  , ifeature = [Durable, Identified, Equipable]
+  , ifeature = [Durable, Equipable]
   , idesc    = "A stiff jacket formed from leather boiled in bee wax, padded linen and horse hair. Protects from anything that is not too sharp. Smells much better than the rest of your garment."
   , ikit     = []
   }
@@ -1043,7 +1044,7 @@ armorMail = armorLeather
                , AddArmorMelee $ (2 + 1 `dL` 4) * 5
                , AddArmorRanged $ (4 + 1 `dL` 2) * 3 ]
   , ieffects = [EqpSlot EqpSlotAddArmorRanged]
-  , ifeature = [Durable, Identified, Equipable]
+  , ifeature = [Durable, Equipable]
   , idesc    = "A long shirt woven from iron rings that are hard to pierce through. Discourages foes from attacking your torso, making it harder for them to hit you."
   }
 gloveFencing = ItemKind
@@ -1060,7 +1061,7 @@ gloveFencing = ItemKind
                , AddArmorRanged $ (1 `dL` 2) * 3 ]
   , ieffects = [EqpSlot EqpSlotAddHurtMelee]
   , ifeature = [ toVelocity 50  -- flaps and flutters
-               , Durable, Identified, Equipable ]
+               , Durable, Equipable ]
   , idesc    = "A fencing glove from rough leather ensuring a good grip. Also quite effective in deflecting or even catching slow projectiles."
   , ikit     = []
   }
@@ -1114,7 +1115,7 @@ buckler = ItemKind
   , ieffects = [ Recharging (PushActor (ThrowMod 100 50))  -- 1 step, slow
                , EqpSlot EqpSlotAddArmorMelee ]
   , ifeature = [ toVelocity 50  -- unwieldy to throw
-               , Durable, Identified, Meleeable ]
+               , Durable, Meleeable ]
   , idesc    = "Heavy and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too small to intercept projectiles with."
   , ikit     = []
   }
@@ -1130,7 +1131,7 @@ shield = buckler
   , ieffects = [ Recharging (PushActor (ThrowMod 400 25))  -- 1 step, fast
                , EqpSlot EqpSlotAddArmorMelee ]
   , ifeature = [ toVelocity 50  -- unwieldy to throw
-               , Durable, Identified, Meleeable ]
+               , Durable, Meleeable ]
   , idesc    = "Large and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
   }
 
@@ -1151,7 +1152,7 @@ dagger = ItemKind
                    -- very common, so don't make too random
   , ieffects = [EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 40  -- ensuring it hits with the tip costs speed
-               , Durable, Identified, Meleeable ]
+               , Durable, Meleeable ]
   , idesc    = "A short dagger for thrusting and parrying blows. Does not penetrate deeply, but is hard to block. Especially useful in conjunction with a larger weapon."
   , ikit     = []
   }
@@ -1189,7 +1190,7 @@ hammer = ItemKind
   , iaspects = [AddHurtMelee $ (-1 + 1 `d` 2 + 1 `dL` 2) * 3]
   , ieffects = [EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 40  -- ensuring it hits with the tip costs speed
-               , Durable, Identified, Meleeable ]
+               , Durable, Meleeable ]
   , idesc    = "It may not cause grave wounds, but neither does it glance off nor ricochet. Great sidearm for opportunistic blows against armored foes."
   , ikit     = []
   }
@@ -1224,7 +1225,7 @@ sword = ItemKind
   , iaspects = []
   , ieffects = [EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 40  -- ensuring it hits with the tip costs speed
-               , Durable, Identified, Meleeable ]
+               , Durable, Meleeable ]
   , idesc    = "Difficult to master; deadly when used effectively. The steel is particularly hard and keen, but rusts quickly without regular maintenance."
   , ikit     = []
   }
@@ -1262,7 +1263,7 @@ halberd = ItemKind
                , AddArmorMelee $ (1 `dL` 4) * 5 ]
   , ieffects = [EqpSlot EqpSlotWeapon]
   , ifeature = [ toVelocity 20  -- not balanced
-               , Durable, Identified, Meleeable ]
+               , Durable, Meleeable ]
   , idesc    = "An improvised but deadly weapon made of a blade from a scythe attached to a long pole."
   , ikit     = []
   }
@@ -1282,7 +1283,7 @@ halberdPushActor = halberd
 wand = ItemKind
   { isymbol  = symbolWand
   , iname    = "wand"
-  , ifreq    = [("useful", 100)]
+  , ifreq    = [("useful", 100), ("wand unknown", 1)]
   , iflavour = zipFancy brightCol
   , icount   = 1
   , irarity  = []
@@ -1291,7 +1292,8 @@ wand = ItemKind
   , idamage  = toDmg 0
   , iaspects = [AddShine 1, AddSpeed (-1)]  -- pulsing with power, distracts
   , ieffects = []
-  , ifeature = [ toVelocity 125  -- magic
+  , ifeature = [ HideAs "wand unknown"
+               , toVelocity 125  -- magic
                , Applicable, Durable ]
   , idesc    = "Buzzing with dazzling light that shines even through appendages that handle it."  -- will have math flavour
   , ikit     = []
@@ -1308,7 +1310,7 @@ wand2 = wand
 gem = ItemKind
   { isymbol  = symbolGold
   , iname    = "gem"
-  , ifreq    = [("treasure", 100), ("gem", 100)]
+  , ifreq    = [("treasure", 100), ("gem", 100), ("gem unknown", 1)]
   , iflavour = zipPlain $ delete BrYellow brightCol  -- natural, so not fancy
   , icount   = 1
   , irarity  = []
@@ -1319,7 +1321,7 @@ gem = ItemKind
                  -- reflects strongly, distracts; so it glows in the dark,
                  -- is visible on dark floor, but not too tempting to wear
   , ieffects = [RefillCalm (-1)]  -- minor effect to ensure no id-on-pickup
-  , ifeature = [Precious]  -- no @Identified@, so kind not known
+  , ifeature = [HideAs "gem unknown", Precious]
   , idesc    = "Useless, and still worth around 100 gold each. Would gems of thought and pearls of artful design be valued that much in our age of Science and Progress!"
   , ikit     = []
   }
@@ -1342,7 +1344,7 @@ gem5 = gem
   , irarity  = [(1, 40), (10, 40)]
   , iaspects = []
   , ieffects = [ELabel "of youth", RefillCalm 5, RefillHP 15]
-  , ifeature = [Identified, Applicable, Precious]
+  , ifeature = [Applicable, Precious]
   , idesc    = "A crystal vial of amber liquid, supposedly granting eternal youth and fetching 100 gold per piece. The main effect seems to be mild euphoria, but it admittedly heals minor ailments rather well."
   }
 currency = ItemKind
@@ -1357,7 +1359,7 @@ currency = ItemKind
   , idamage  = toDmg 0
   , iaspects = []
   , ieffects = []
-  , ifeature = [Identified, Precious]
+  , ifeature = [Precious]
   , idesc    = "Reliably valuable in every civilized plane of existence."
   , ikit     = []
   }

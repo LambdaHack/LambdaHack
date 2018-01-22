@@ -41,7 +41,7 @@ fist = ItemKind
   , idamage  = toDmg $ 4 `d` 1
   , iaspects = []
   , ieffects = []
-  , ifeature = [Durable, Identified, Meleeable]
+  , ifeature = [Durable, Meleeable]
   , idesc    = "Simple but effective."
   , ikit     = []
   }
@@ -130,7 +130,7 @@ thorn = fist
   , icount   = 2 + 1 `d` 3
   , iverbHit = "impale"
   , idamage  = toDmg $ 1 `d` 3
-  , ifeature = [Identified, Meleeable]  -- not Durable
+  , ifeature = [Meleeable]  -- not Durable
   , idesc    = "Sharp yet brittle."
   }
 boilingFissure = fist
@@ -141,7 +141,7 @@ boilingFissure = fist
   , idamage  = toDmg $ 1 `d` 1
   , iaspects = [AddHurtMelee 20]  -- decreasing as count decreases
   , ieffects = [InsertMove $ 1 `d` 3]
-  , ifeature = [Identified, Meleeable]  -- not Durable
+  , ifeature = [Meleeable]  -- not Durable
   , idesc    = "A deep crack to the underworld."
   }
 arsenicFissure = boilingFissure
@@ -168,7 +168,7 @@ beeSting = fist
   , idamage  = toDmg 0
   , iaspects = [AddArmorMelee 90, AddArmorRanged 45]
   , ieffects = [Paralyze 6, RefillHP 4]
-  , ifeature = [Identified, Meleeable]  -- not Durable
+  , ifeature = [Meleeable]  -- not Durable
   , idesc    = "Painful, but beneficial."
   }
 sting = fist
@@ -238,7 +238,7 @@ armoredSkin = ItemKind
   , idamage  = toDmg 0
   , iaspects = [AddArmorMelee 30, AddArmorRanged 15]
   , ieffects = []
-  , ifeature = [Durable, Identified]
+  , ifeature = [Durable]
   , idesc    = "Homemade armour is just as good."
   , ikit     = []
   }
@@ -340,7 +340,7 @@ scentGland = armoredSkin
                , Recharging (Temporary "look spent")
                , Recharging (Explode "distressing odor")
                , Recharging ApplyPerfume ]
-  , ifeature = [Identified]  -- not Durable
+  , ifeature = []  -- not Durable
   , idesc    = ""
   }
 boilingVent = armoredSkin
@@ -398,7 +398,7 @@ impressed = armoredSkin
   , iweight  = 0
   , iaspects = [AddMaxCalm (-1)]  -- to help player notice on main screen
   , ieffects = [OnSmash $ tmpNoLonger "impressed"]  -- not @Periodic@
-  , ifeature = [Identified, Fragile, Durable]  -- hack: destroy on drop
+  , ifeature = [Fragile, Durable]  -- hack: destroy on drop
   , idesc    = ""
   }
 

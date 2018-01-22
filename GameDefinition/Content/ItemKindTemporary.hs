@@ -39,7 +39,7 @@ tmpAspects name aspects = ItemKind
   , ieffects = [ Periodic
                , Recharging $ tmpLess name
                , OnSmash $ tmpLess name ]
-  , ifeature = [Identified, Fragile, Durable]  -- hack: destroy on drop
+  , ifeature = [Fragile, Durable]  -- hack: destroy on drop
   , idesc    = ""  -- no description needed; stats are enough
   , ikit     = []
   }

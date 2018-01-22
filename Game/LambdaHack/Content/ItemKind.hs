@@ -147,7 +147,8 @@ data Feature =
   | Lobable            -- ^ drop at target tile, even if no hit
   | Durable            -- ^ don't break even when hitting or applying
   | ToThrow ThrowMod   -- ^ parameters modifying a throw
-  | Identified         -- ^ the item starts identified
+  | HideAs (GroupName ItemKind)
+                       -- ^ until identified, presents as this unique kind
   | Applicable         -- ^ AI and UI flag: consider applying
   | Equipable          -- ^ AI and UI flag: consider equipping (independent of
                        --   'EqpSlot', e.g., in case of mixed blessings)
@@ -366,12 +367,17 @@ validateSingle ik@ItemKind{..} =
           ts = filter f ifeature
       in ["more than one ToThrow specification" | length ts > 1])
   ++ (let f :: Feature -> Bool
+          f HideAs{} = True
+          f _ = False
+          ts = filter f ifeature
+      in ["more than one HideAs specification" | length ts > 1])
+  ++ (let f :: Feature -> Bool
           f Tactic{} = True
           f _ = False
           ts = filter f ifeature
       in ["more than one Tactic specification" | length ts > 1])
   ++ concatMap (validateDups ik)
-       [ Fragile, Lobable, Durable, Identified, Applicable
+       [ Fragile, Lobable, Durable, Applicable
        , Equipable, Meleeable, Precious, Blast ]
 
 -- We only check there are no duplicates at top level. If it may be nested,
