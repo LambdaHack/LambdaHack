@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
-  ( COps(..), emptyCOps, getStdRuleset
-  , ContentData
+  ( ContentId, ContentData, COps(..)
+  , emptyCOps, getStdRuleset
   , okind, ouniqGroup, opick
   , ofoldrWithKey, ofoldlWithKey', ofoldlGroup', olength
   ) where

@@ -3,7 +3,7 @@
 -- | Hacks that haven't found their home yet.
 module Game.LambdaHack.Common.Misc
   ( -- * Game object identifiers
-    ContentId(ContentId), FactionId, LevelId, ActorId
+    FactionId, LevelId, ActorId
     -- * Item containers
   , Container(..), CStore(..), SLore(..), ItemDialogMode(..)
     -- * Assorted
@@ -38,12 +38,6 @@ import           System.Directory (getAppUserDataDirectory)
 import           System.Environment (getProgName)
 
 import Game.LambdaHack.Common.Point
-
--- | Content identifiers for the content type @c@.
-newtype ContentId c = ContentId Word16
-  deriving (Show, Eq, Ord, Enum, Bounded, Binary, Generic)
-
-instance NFData (ContentId c)
 
 -- | A unique identifier of a faction in a game.
 newtype FactionId = FactionId Int

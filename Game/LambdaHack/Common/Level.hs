@@ -24,6 +24,7 @@ import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 
 import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ContentData
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point

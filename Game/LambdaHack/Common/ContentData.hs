@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | A game requires the engine provided by the library, perhaps customized,
 -- and game content, defined completely afresh for the particular game.
 -- The possible kinds of content are fixed in the library and all defined
@@ -9,7 +9,7 @@
 -- After the list is verified and the data preprocessed, it's held
 -- in the @ContentData@ datatype.
 module Game.LambdaHack.Common.ContentData
-  ( ContentData, emptyContentData, makeContentData
+  ( ContentId(ContentId), ContentData, emptyContentData, makeContentData
   , okind, omemberGroup, ouniqGroup, opick
   , ofoldrWithKey, ofoldlWithKey', ofoldlGroup', omapVector, olength
   ) where
@@ -19,6 +19,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import           Control.DeepSeq
+import           Data.Binary
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Data.Vector as V
@@ -27,6 +28,12 @@ import           GHC.Generics (Generic)
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Random
+
+-- | Content identifiers for the content type @c@.
+newtype ContentId c = ContentId Word16
+  deriving (Show, Eq, Ord, Enum, Bounded, Binary, Generic)
+
+instance NFData (ContentId c)
 
 -- | Verified and preprocessed content data of a particular kind.
 data ContentData c = ContentData
