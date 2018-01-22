@@ -6,6 +6,7 @@ module Game.LambdaHack.Server.HandleEffectM
   , dropCStoreItem, dominateFidSfx, pickDroppable, refillHP, cutCalm
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
+  , UseResult(..)
   , applyMeleeDamage, imperishableKit, itemEffectDisco, effectSem
   , effectBurn, effectExplode, effectRefillHP, effectRefillCalm
   , effectDominate, dominateFid, effectImpress, effectSummon
