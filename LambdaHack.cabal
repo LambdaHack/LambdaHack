@@ -191,6 +191,7 @@ library
                       Game.LambdaHack.Common.Frequency
                       Game.LambdaHack.Common.HighScore
                       Game.LambdaHack.Common.Item
+                      Game.LambdaHack.Common.ItemAspect
                       Game.LambdaHack.Common.ItemStrongest
                       Game.LambdaHack.Common.Kind
                       Game.LambdaHack.Common.Level

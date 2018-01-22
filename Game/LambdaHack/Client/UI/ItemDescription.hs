@@ -25,6 +25,7 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Flavour
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.ItemStrongest
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Time
@@ -53,7 +54,7 @@ partItemN side factionD ranged detailLevel n localTime
       let flav = flavourToName $ jflavour itemBase
       in (False, False, MU.Text $ flav <+> genericName, "")
     Just iDisco ->
-      let timeout = aTimeout $ aspectRecordFull itemFull
+      let timeout = IA.aTimeout $ aspectRecordFull itemFull
           timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
           temporary = not (null $ itemTimer itemFull) && timeout == 0
           charging startT = timeShift startT timeoutTurns > localTime
@@ -95,17 +96,17 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemBase, itemDisco} =
   in case itemDisco of
     Nothing -> (features, [])
     Just ItemDisco{itemKind, itemAspect} ->
-      let timeoutAspect :: IK.Aspect -> Bool
-          timeoutAspect IK.Timeout{} = True
+      let timeoutAspect :: IA.Aspect -> Bool
+          timeoutAspect IA.Timeout{} = True
           timeoutAspect _ = False
-          hurtMeleeAspect :: IK.Aspect -> Bool
-          hurtMeleeAspect IK.AddHurtMelee{} = True
+          hurtMeleeAspect :: IA.Aspect -> Bool
+          hurtMeleeAspect IA.AddHurtMelee{} = True
           hurtMeleeAspect _ = False
           elabel :: IK.Effect -> Bool
           elabel IK.ELabel{} = True
           elabel _ = False
           active = goesIntoEqp itemBase
-          splitAE :: DetailLevel -> [IK.Aspect] -> [IK.Effect] -> [Text]
+          splitAE :: DetailLevel -> [IA.Aspect] -> [IK.Effect] -> [Text]
           splitAE detLev aspects effects =
             let ppA = kindAspectToSuffix
                 ppE = effectToSuffix detLev
@@ -131,13 +132,13 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemBase, itemDisco} =
                            "(each turn:" <+> rechargingTs <> ")"
                          Nothing ->
                            "(each turn until gone:" <+> rechargingTs <> ")"
-                         Just (IK.Timeout t) ->
+                         Just (IA.Timeout t) ->
                            "(every" <+> reduce_a t <> ":"
                            <+> rechargingTs <> ")"
                          _ -> error $ "" `showFailure` mtimeout
                      | otherwise -> case mtimeout of
                          Nothing -> ""
-                         Just (IK.Timeout t) ->
+                         Just (IA.Timeout t) ->
                            "(timeout" <+> reduce_a t <> ":"
                            <+> rechargingTs <> ")"
                          _ -> error $ "" `showFailure` mtimeout
@@ -147,7 +148,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemBase, itemDisco} =
                   Just (IK.ELabel t) -> [t]
                   _ -> []
                 damage = case find hurtMeleeAspect restAs of
-                  Just (IK.AddHurtMelee hurtMelee) ->
+                  Just (IA.AddHurtMelee hurtMelee) ->
                     (if jdamage itemBase == 0
                      then "0d0"
                      else tshow (jdamage itemBase))
@@ -170,14 +171,15 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemBase, itemDisco} =
                  [] -> []
           aets = case itemAspect of
             Left aspectRecord ->
-              splitTry (aspectRecordToList aspectRecord) (IK.ieffects itemKind)
+              splitTry (IA.aspectRecordToList aspectRecord)
+                       (IK.ieffects itemKind)
             Right{} ->  -- faster than @aspectRecordToList@ of mean
               splitTry (IK.iaspects itemKind) (IK.ieffects itemKind)
           IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemBase
           speed = speedFromWeight (jweight itemBase) throwVelocity
           meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
           minDeltaHP = xM meanDmg `divUp` 100
-          aHurtMeleeOfItem = aHurtMelee $ aspectRecordFull itemFull
+          aHurtMeleeOfItem = IA.aHurtMelee $ aspectRecordFull itemFull
           pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
           prawDeltaHP = fromIntegral pmult * minDeltaHP
           pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
@@ -275,7 +277,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
         Nothing -> ("This item is as unremarkable as can be.", "", tspeed)
         Just ItemDisco{itemKind} ->
           let sentences = mapMaybe featureToSentence (IK.ifeature itemKind)
-              aHurtMeleeOfItem = aHurtMelee $ aspectRecordFull itemFull
+              aHurtMeleeOfItem = IA.aHurtMelee $ aspectRecordFull itemFull
               meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
               dmgAn = if meanDmg <= 0 then "" else
                 let multRaw = aHurtMeleeOfOwner

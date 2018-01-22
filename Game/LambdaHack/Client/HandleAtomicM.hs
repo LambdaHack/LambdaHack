@@ -31,6 +31,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -251,7 +252,7 @@ addItemToDiscoBenefit iid item = do
         Just kindId -> do  -- possible, if the kind sent in @UpdRestart@
           side <- getsClient sside
           fact <- getsState $ (EM.! side) . sfactionD
-          let mean = kmMean $ IK.getKindMean kindId coItemSpeedup
+          let mean = IA.kmMean $ IK.getKindMean kindId coItemSpeedup
               effects = IK.ieffects $ okind coitem kindId
               -- Mean aspects are used, because the item can't yet have
               -- know real aspects, because it didn't even have kind before.
@@ -298,7 +299,7 @@ discoverKind _c ix ik = do
   let effs = IK.ieffects $ okind coitem ik
       kindId = fromMaybe (error "item kind not found")
                          (EM.lookup ix discoKind)
-      mean = kmMean $ IK.getKindMean kindId coItemSpeedup
+      mean = IA.kmMean $ IK.getKindMean kindId coItemSpeedup
       benefit iid =
         let item = itemD EM.! iid
         in totalUsefulness cops fact effs mean item
@@ -309,7 +310,7 @@ discoverKind _c ix ik = do
 coverKind :: Container -> ItemKindIx -> ContentId ItemKind -> m ()
 coverKind _c _iid _ik = undefined
 
-discoverSeed :: MonadClient m => Container -> ItemId -> ItemSeed -> m ()
+discoverSeed :: MonadClient m => Container -> ItemId -> IA.ItemSeed -> m ()
 discoverSeed _c iid seed = do
   cops@COps{coitem} <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
@@ -324,12 +325,12 @@ discoverSeed _c iid seed = do
   let kindId = fromMaybe (error "item kind not found")
                          (EM.lookup (jkindIx item) discoKind)
       kind = okind coitem kindId
-      aspects = seedToAspect seed kind ldepth totalDepth
+      aspects = IA.seedToAspect seed (IK.iaspects kind) ldepth totalDepth
       benefit = totalUsefulness cops fact (IK.ieffects kind) aspects item
   modifyClient $ \cli ->
     cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
 
-coverSeed :: Container -> ItemId -> ItemSeed -> m ()
+coverSeed :: Container -> ItemId -> IA.ItemSeed -> m ()
 coverSeed _c _iid _seed = undefined
 
 killExit :: MonadClient m => m ()

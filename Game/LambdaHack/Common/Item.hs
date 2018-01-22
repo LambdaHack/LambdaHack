@@ -5,13 +5,10 @@ module Game.LambdaHack.Common.Item
     ItemId, Item(..)
   , itemPrice, isMelee, isTmpCondition, isBlast
   , goesIntoEqp, goesIntoInv, goesIntoSha
-    -- * The @AspectRecord@ type and operations
-  , AspectRecord(..), DiscoveryAspect
-  , emptyAspectRecord, sumAspectRecord, aspectRecordToList, meanAspect
     -- * Item discovery types and operations
-  , ItemKindIx, ItemSeed, ItemDisco(..), ItemFull(..)
-  , KindMean(..), DiscoveryKind, ItemIxMap, Benefit(..), DiscoveryBenefit
-  , itemNoDisco, itemToFull6, aspectsRandom, seedToAspect, aspectRecordFull
+  , ItemKindIx, ItemDisco(..), ItemFull(..)
+  , DiscoveryKind, DiscoveryAspect, ItemIxMap, Benefit(..), DiscoveryBenefit
+  , itemNoDisco, itemToFull6, aspectRecordFull
     -- * Inventory management types
   , ItemTimer, ItemQuant, ItemBag, ItemDict
 #ifdef EXPOSE_INTERNAL
@@ -23,28 +20,19 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Control.Monad.Trans.State.Strict as St
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Hashable (Hashable)
 import qualified Data.Ix as Ix
 import           GHC.Generics (Generic)
-import           System.Random (mkStdGen)
 
-import qualified Game.LambdaHack.Common.Ability as Ability
-import           Game.LambdaHack.Common.Dice (intToDice)
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Flavour
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
-import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.Time
-import           Game.LambdaHack.Content.ItemKind (AspectRecord (..),
-                                                   KindMean (..), aspectsRandom,
-                                                   castAspect,
-                                                   emptyAspectRecord,
-                                                   meanAspect)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | A unique identifier of an item in the dungeon.
@@ -106,55 +94,13 @@ goesIntoSha item = IK.Precious `elem` jfeature item
 
 -- | The map of item ids to item aspects.
 -- The full map is known by the server.
-type DiscoveryAspect = EM.EnumMap ItemId AspectRecord
-
-sumAspectRecord :: [(AspectRecord, Int)] -> AspectRecord
-sumAspectRecord l = AspectRecord
-  { aTimeout     = 0
-  , aHurtMelee   = sum $ mapScale aHurtMelee l
-  , aArmorMelee  = sum $ mapScale aArmorMelee l
-  , aArmorRanged = sum $ mapScale aArmorRanged l
-  , aMaxHP       = sum $ mapScale aMaxHP l
-  , aMaxCalm     = sum $ mapScale aMaxCalm l
-  , aSpeed       = sum $ mapScale aSpeed l
-  , aSight       = sum $ mapScale aSight l
-  , aSmell       = sum $ mapScale aSmell l
-  , aShine       = sum $ mapScale aShine l
-  , aNocto       = sum $ mapScale aNocto l
-  , aAggression  = sum $ mapScale aAggression l
-  , aSkills      = EM.unionsWith (+) $ mapScaleAbility l
-  }
- where
-  mapScale f = map (\(ar, k) -> f ar * k)
-  mapScaleAbility = map (\(ar, k) -> Ability.scaleSkills k $ aSkills ar)
-
-aspectRecordToList :: AspectRecord -> [IK.Aspect]
-aspectRecordToList AspectRecord{..} =
-  [IK.Timeout $ intToDice aTimeout | aTimeout /= 0]
-  ++ [IK.AddHurtMelee $ intToDice aHurtMelee | aHurtMelee /= 0]
-  ++ [IK.AddArmorMelee $ intToDice aArmorMelee | aArmorMelee /= 0]
-  ++ [IK.AddArmorRanged $ intToDice aArmorRanged | aArmorRanged /= 0]
-  ++ [IK.AddMaxHP $ intToDice aMaxHP | aMaxHP /= 0]
-  ++ [IK.AddMaxCalm $ intToDice aMaxCalm | aMaxCalm /= 0]
-  ++ [IK.AddSpeed $ intToDice aSpeed | aSpeed /= 0]
-  ++ [IK.AddSight $ intToDice aSight | aSight /= 0]
-  ++ [IK.AddSmell $ intToDice aSmell | aSmell /= 0]
-  ++ [IK.AddShine $ intToDice aShine | aShine /= 0]
-  ++ [IK.AddNocto $ intToDice aNocto | aNocto /= 0]
-  ++ [IK.AddAggression $ intToDice aAggression | aAggression /= 0]
-  ++ [IK.AddAbility ab $ intToDice n | (ab, n) <- EM.assocs aSkills, n /= 0]
+type DiscoveryAspect = EM.EnumMap ItemId IA.AspectRecord
 
 -- | An index of the kind identifier of an item. Clients have partial knowledge
 -- how these idexes map to kind ids. They gain knowledge by identifying items.
 -- The indexes and kind identifiers are 1-1.
 newtype ItemKindIx = ItemKindIx Int
   deriving (Show, Eq, Ord, Enum, Ix.Ix, Hashable, Binary)
-
--- | A seed for rolling aspects of an item
--- Clients have partial knowledge of how item ids map to the seeds.
--- They gain knowledge by identifying items.
-newtype ItemSeed = ItemSeed Int
-  deriving (Show, Eq, Ord, Enum, Hashable, Binary)
 
 -- | The secret part of the information about an item. If a faction
 -- knows the aspects of the item (the @kmConst@ flag is set or
@@ -164,7 +110,7 @@ newtype ItemSeed = ItemSeed Int
 data ItemDisco = ItemDisco
   { itemKindId :: ContentId IK.ItemKind
   , itemKind   :: IK.ItemKind
-  , itemAspect :: Either AspectRecord KindMean
+  , itemAspect :: Either IA.AspectRecord IA.KindMean
   }
   deriving Show
 
@@ -228,17 +174,11 @@ itemToFull6 COps{coitem, coItemSpeedup}
                              , itemAspect }
   in ItemFull {..}
 
-seedToAspect :: ItemSeed -> IK.ItemKind -> AbsDepth -> AbsDepth -> AspectRecord
-seedToAspect (ItemSeed itemSeed) kind ldepth totalDepth =
-  let rollM = foldlM' (castAspect ldepth totalDepth) emptyAspectRecord
-                      (IK.iaspects kind)
-  in St.evalState rollM (mkStdGen itemSeed)
-
-aspectRecordFull :: ItemFull -> AspectRecord
+aspectRecordFull :: ItemFull -> IA.AspectRecord
 aspectRecordFull itemFull =
   case itemDisco itemFull of
-    Just ItemDisco{itemAspect} -> either id kmMean itemAspect
-    Nothing -> emptyAspectRecord
+    Just ItemDisco{itemAspect} -> either id IA.kmMean itemAspect
+    Nothing -> IA.emptyAspectRecord
 
 type ItemTimer = [Time]
 

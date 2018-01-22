@@ -34,6 +34,7 @@ import           Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Perception
@@ -101,14 +102,14 @@ data UpdAtomic =
   | UpdTimeItem ItemId Container ItemTimer ItemTimer
   | UpdAgeGame [LevelId]
   | UpdUnAgeGame [LevelId]
-  | UpdDiscover Container ItemId (ContentId ItemKind) ItemSeed
-  | UpdCover Container ItemId (ContentId ItemKind) ItemSeed
+  | UpdDiscover Container ItemId (ContentId ItemKind) IA.ItemSeed
+  | UpdCover Container ItemId (ContentId ItemKind) IA.ItemSeed
   | UpdDiscoverKind Container ItemKindIx (ContentId ItemKind)
   | UpdCoverKind Container ItemKindIx (ContentId ItemKind)
-  | UpdDiscoverSeed Container ItemId ItemSeed
-  | UpdCoverSeed Container ItemId ItemSeed
-  | UpdDiscoverServer ItemId AspectRecord
-  | UpdCoverServer ItemId AspectRecord
+  | UpdDiscoverSeed Container ItemId IA.ItemSeed
+  | UpdCoverSeed Container ItemId IA.ItemSeed
+  | UpdDiscoverServer ItemId IA.AspectRecord
+  | UpdCoverServer ItemId IA.AspectRecord
   | UpdPerception LevelId Perception Perception
   | UpdRestart FactionId PerLid State Challenge ClientOptions
   | UpdRestartServer State

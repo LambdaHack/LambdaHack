@@ -29,6 +29,7 @@ import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -164,7 +165,7 @@ getActorBody :: ActorId -> State -> Actor
 {-# INLINE getActorBody #-}
 getActorBody aid s = sactorD s EM.! aid
 
-getActorAspect :: ActorId -> State -> AspectRecord
+getActorAspect :: ActorId -> State -> IA.AspectRecord
 {-# INLINE getActorAspect #-}
 getActorAspect aid s = sactorAspect s EM.! aid
 
@@ -238,8 +239,8 @@ memActor aid lid s =
 getLocalTime :: LevelId -> State -> Time
 getLocalTime lid s = ltime $ sdungeon s EM.! lid
 
-regenCalmDelta :: Actor -> AspectRecord -> State -> Int64
-regenCalmDelta body AspectRecord{aMaxCalm} s =
+regenCalmDelta :: Actor -> IA.AspectRecord -> State -> Int64
+regenCalmDelta body IA.AspectRecord{aMaxCalm} s =
   let calmIncr = oneM  -- normal rate of calm regen
       maxDeltaCalm = xM aMaxCalm - bcalm body
       fact = (EM.! bfid body) . sfactionD $ s
@@ -279,7 +280,7 @@ actorSkills mleader aid s =
       factionSkills
         | Just aid == mleader = Ability.zeroSkills
         | otherwise = fskillsOther player `Ability.addSkills` skillsFromTactic
-      itemSkills = aSkills ar
+      itemSkills = IA.aSkills ar
   in itemSkills `Ability.addSkills` factionSkills
 
 -- Check whether an actor can displace an enemy. We assume they are adjacent.
@@ -391,9 +392,10 @@ armorHurtBonus source target s =
       block200 b n = min 200 $ max (-200) $ n + if braced tb then b else 0
       sar = sactorAspect s EM.! source
       tar = sactorAspect s EM.! target
-      itemBonus = trim200 (aHurtMelee sar) - if bproj sb
-                                             then block200 25 (aArmorRanged tar)
-                                             else block200 50 (aArmorMelee tar)
+      itemBonus = trim200 (IA.aHurtMelee sar)
+                  - if bproj sb
+                    then block200 25 (IA.aArmorRanged tar)
+                    else block200 50 (IA.aArmorMelee tar)
   in 100 + min 99 (max (-99) itemBonus)  -- at least 1% of damage gets through
 
 inMelee :: Actor -> State -> Bool

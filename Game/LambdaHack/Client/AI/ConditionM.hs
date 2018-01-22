@@ -37,6 +37,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -111,7 +112,7 @@ meleeThreatDistList aid = do
   allAtWar <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   let strongActor (aid2, b2) =
         let ar = actorAspect EM.! aid2
-            actorMaxSkE = aSkills ar
+            actorMaxSkE = IA.aSkills ar
             nonmoving = EM.findWithDefault 0 Ability.AbMove actorMaxSkE <= 0
         in not (hpTooLow b2 ar || nonmoving)
            && actorCanMelee actorAspect aid2 b2
@@ -197,13 +198,13 @@ benAvailableItems aid cstores = do
       benCStore cs = ben cs $ getBodyStoreBag b cs s
   return $ concatMap benCStore cstores
 
-hinders :: Bool -> Bool -> Bool -> Bool -> Actor -> AspectRecord -> ItemFull
+hinders :: Bool -> Bool -> Bool -> Bool -> Actor -> IA.AspectRecord -> ItemFull
         -> Bool
 hinders condShineWouldBetray condAimEnemyPresent
         heavilyDistressed condNotCalmEnough
           -- guess that enemies have projectiles and used them now or recently
         body ar itemFull =
-  let itemShine = 0 < aShine (aspectRecordFull itemFull)
+  let itemShine = 0 < IA.aShine (aspectRecordFull itemFull)
       -- @condAnyFoeAdj@ is not checked, because it's transient and also item
       -- management is unlikely to happen during melee, anyway
       itemShineBad = condShineWouldBetray && itemShine
@@ -215,7 +216,7 @@ hinders condShineWouldBetray condAimEnemyPresent
      -- than receive hits.
      || bspeed body ar > speedWalk
         && not (isMelee $ itemBase itemFull)  -- in case it's the only weapon
-        && 0 > aHurtMelee (aspectRecordFull itemFull)
+        && 0 > IA.aHurtMelee (aspectRecordFull itemFull)
 
 -- | Require that the actor stands over a desirable item.
 condDesirableFloorItemM :: MonadClient m => ActorId -> m Bool
@@ -274,7 +275,7 @@ condSupport param aid = do
                                   && actorCanMelee actorAspect aid2 b2
       closeAndStrongFriends = filter closeAndStrong friends
       -- The smaller the area scanned for friends, the lower number required.
-      suport = length closeAndStrongFriends >= min 2 param - aAggression ar
+      suport = length closeAndStrongFriends >= min 2 param - IA.aAggression ar
                || length friends <= 1  -- solo fighters aggresive
   return suport
 

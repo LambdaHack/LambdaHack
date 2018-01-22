@@ -18,6 +18,7 @@ import Data.Binary
 import GHC.Generics (Generic)
 
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.ItemStrongest
 import           Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
@@ -172,7 +173,7 @@ permittedProject forced skill calmE triggerSyms itemFull@ItemFull{itemBase} =
           if | null triggerSyms -> True
              | ' ' `elem` triggerSyms ->
                case strengthEqpSlot itemFull of
-                 Just IK.EqpSlotLightSource -> True
+                 Just IA.EqpSlotLightSource -> True
                  Just _ -> False
                  Nothing -> not (goesIntoEqp itemBase)
              | otherwise -> jsymbol itemBase `elem` triggerSyms

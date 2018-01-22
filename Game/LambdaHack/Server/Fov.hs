@@ -35,6 +35,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -152,9 +153,9 @@ boundSightByCalm sight calm =
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
 -- Also compute positions seen by noctovision and perceived by smell.
-cacheBeforeLucidFromActor :: FovClear -> Actor -> AspectRecord
+cacheBeforeLucidFromActor :: FovClear -> Actor -> IA.AspectRecord
                           -> CacheBeforeLucid
-cacheBeforeLucidFromActor clearPs body AspectRecord{..} =
+cacheBeforeLucidFromActor clearPs body IA.AspectRecord{..} =
   let radius = boundSightByCalm aSight (bcalm body)
       creachable = PerReachable $ fullscan clearPs radius (bpos body)
       cnocto = PerVisible $ fullscan clearPs aNocto (bpos body)
@@ -199,7 +200,7 @@ shineFromLevel s lid lvl =
   let actorLights =
         [ (bpos b, radius)
         | (aid, b) <- inline actorAssocs (const True) lid s
-        , let radius = aShine $ sactorAspect s EM.! aid
+        , let radius = IA.aShine $ sactorAspect s EM.! aid
         , radius > 0 ]
       floorLights = floorLightSources (sdiscoAspect s) lvl
       allLights = floorLights ++ actorLights
@@ -212,7 +213,7 @@ floorLightSources discoAspect lvl =
   -- Not enough oxygen to have more than one light lit on a given tile.
   -- Items obscuring or dousing off fire are not cumulative as well.
   let processIid (accLight, accDouse) (iid, _) =
-        let AspectRecord{aShine} = discoAspect EM.! iid
+        let IA.AspectRecord{aShine} = discoAspect EM.! iid
         in case compare aShine 0 of
           EQ -> (accLight, accDouse)
           GT -> (max aShine accLight, accDouse)
@@ -293,7 +294,7 @@ perceptionCacheFromLevel fovClearLid fid lid s =
   let fovClear = fovClearLid EM.! lid
       lvlBodies = inline actorAssocs (== fid) lid s
       f (aid, b) =
-        let ar@AspectRecord{..} = sactorAspect s EM.! aid
+        let ar@IA.AspectRecord{..} = sactorAspect s EM.! aid
         in if aSight <= 0 && aNocto <= 0 && aSmell <= 0  -- dumb missiles
            then Nothing
            else Just (aid, FovValid $ cacheBeforeLucidFromActor fovClear b ar)

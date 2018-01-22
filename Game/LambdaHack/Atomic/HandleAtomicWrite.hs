@@ -35,6 +35,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -547,14 +548,14 @@ ageLevel delta lid =
   updateLevel lid $ \lvl -> lvl {ltime = timeShift (ltime lvl) delta}
 
 updDiscover :: MonadStateWrite m
-            => Container -> ItemId -> ContentId ItemKind -> ItemSeed -> m ()
+            => Container -> ItemId -> ContentId ItemKind -> IA.ItemSeed -> m ()
 updDiscover _c iid ik seed = do
   itemD <- getsState sitemD
   case EM.lookup iid itemD of
     Nothing -> atomicFail "discovered item unknown"
     Just item -> do
       COps{coItemSpeedup} <- getsState scops
-      let kmIsConst = kmConst $ IK.getKindMean ik coItemSpeedup
+      let kmIsConst = IA.kmConst $ IK.getKindMean ik coItemSpeedup
       discoKind <- getsState sdiscoKind
       case EM.lookup (jkindIx item) discoKind of
         Just{} -> do
@@ -567,7 +568,7 @@ updDiscover _c iid ik seed = do
           unless kmIsConst $ discoverSeed iid seed
   resetActorAspect
 
-updCover :: Container -> ItemId -> ContentId ItemKind -> ItemSeed -> m ()
+updCover :: Container -> ItemId -> ContentId ItemKind -> IA.ItemSeed -> m ()
 updCover _c _iid _ik _seed = undefined
 
 updDiscoverKind :: MonadStateWrite m
@@ -591,7 +592,7 @@ updCoverKind :: Container -> ItemKindIx -> ContentId ItemKind -> m ()
 updCoverKind _c _ix _ik = undefined
 
 updDiscoverSeed :: MonadStateWrite m
-                => Container -> ItemId -> ItemSeed -> m ()
+                => Container -> ItemId -> IA.ItemSeed -> m ()
 updDiscoverSeed _c iid seed = do
   COps{coItemSpeedup} <- getsState scops
   itemD <- getsState sitemD
@@ -603,14 +604,14 @@ updDiscoverSeed _c iid seed = do
         Nothing -> error "discovered item kind unknown"
         Just kindId -> do
           discoAspect <- getsState sdiscoAspect
-          let kmIsConst = kmConst $ IK.getKindMean kindId coItemSpeedup
+          let kmIsConst = IA.kmConst $ IK.getKindMean kindId coItemSpeedup
           if kmIsConst || iid `EM.member` discoAspect
           then atomicFail "item seed already discovered"
           else do
             discoverSeed iid seed
             resetActorAspect
 
-discoverSeed :: MonadStateWrite m => ItemId -> ItemSeed -> m ()
+discoverSeed :: MonadStateWrite m => ItemId -> IA.ItemSeed -> m ()
 discoverSeed iid seed = do
   COps{coitem} <- getsState scops
   item <- getsState $ getItemBody iid
@@ -620,22 +621,22 @@ discoverSeed iid seed = do
   let kindId = fromMaybe (error "discovered item kind unknown")
                          (EM.lookup (jkindIx item) discoKind)
       kind = okind coitem kindId
-      aspects = seedToAspect seed kind ldepth totalDepth
+      aspects = IA.seedToAspect seed (IK.iaspects kind) ldepth totalDepth
       f Nothing = Just aspects
       f Just{} = error $ "already discovered" `showFailure` (iid, seed)
   -- At this point we know the item is not @kmConst@.
   modifyState $ updateDiscoAspect $ \discoAspect1 ->
     EM.alter f iid discoAspect1
 
-updCoverSeed :: Container -> ItemId -> ItemSeed -> m ()
+updCoverSeed :: Container -> ItemId -> IA.ItemSeed -> m ()
 updCoverSeed _c _iid _seed = undefined
 
-updDiscoverServer :: MonadStateWrite m => ItemId -> AspectRecord -> m ()
+updDiscoverServer :: MonadStateWrite m => ItemId -> IA.AspectRecord -> m ()
 updDiscoverServer iid aspectRecord =
   modifyState $ updateDiscoAspect $ \discoAspect1 ->
     EM.insert iid aspectRecord discoAspect1
 
-updCoverServer :: MonadStateWrite m => ItemId -> AspectRecord -> m ()
+updCoverServer :: MonadStateWrite m => ItemId -> IA.AspectRecord -> m ()
 updCoverServer iid aspectRecord =
   modifyState $ updateDiscoAspect $ \discoAspect1 ->
     assert (discoAspect1 EM.! iid == aspectRecord)

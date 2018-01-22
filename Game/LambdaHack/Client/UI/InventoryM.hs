@@ -34,6 +34,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -94,7 +95,7 @@ getGroupItem psuit prompt promptGeneric
 -- or switch to any other store.
 -- Used, e.g., for viewing inventory and item descriptions.
 getStoreItem :: MonadClientUI m
-             => (Actor -> ActorUI -> AspectRecord -> ItemDialogMode -> Text)
+             => (Actor -> ActorUI -> IA.AspectRecord -> ItemDialogMode -> Text)
                                  -- ^ how to describe suitable items
              -> ItemDialogMode   -- ^ initial mode
              -> m ( Either Text (ItemId, ItemBag, SingleItemSlots)
@@ -121,9 +122,9 @@ getStoreItem prompt cInitial = do
 -- Start with a non-empty store.
 getFull :: MonadClientUI m
         => m Suitability    -- ^ which items to consider suitable
-        -> (Actor -> ActorUI -> AspectRecord -> ItemDialogMode -> Text)
+        -> (Actor -> ActorUI -> IA.AspectRecord -> ItemDialogMode -> Text)
                             -- ^ specific prompt for only suitable items
-        -> (Actor -> ActorUI -> AspectRecord -> ItemDialogMode -> Text)
+        -> (Actor -> ActorUI -> IA.AspectRecord -> ItemDialogMode -> Text)
                             -- ^ generic prompt
         -> [CStore]         -- ^ initial legal modes
         -> [CStore]         -- ^ legal modes with Calm taken into account
@@ -187,9 +188,9 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
 getItem :: MonadClientUI m
         => m Suitability
                             -- ^ which items to consider suitable
-        -> (Actor -> ActorUI -> AspectRecord -> ItemDialogMode -> Text)
+        -> (Actor -> ActorUI -> IA.AspectRecord -> ItemDialogMode -> Text)
                             -- ^ specific prompt for only suitable items
-        -> (Actor -> ActorUI -> AspectRecord -> ItemDialogMode -> Text)
+        -> (Actor -> ActorUI -> IA.AspectRecord -> ItemDialogMode -> Text)
                             -- ^ generic prompt
         -> ItemDialogMode   -- ^ first mode, legal or not
         -> [ItemDialogMode] -- ^ the (rest of) legal modes
@@ -231,8 +232,8 @@ data Suitability =
 
 transition :: forall m. MonadClientUI m
            => m Suitability
-           -> (Actor -> ActorUI -> AspectRecord -> ItemDialogMode -> Text)
-           -> (Actor -> ActorUI -> AspectRecord -> ItemDialogMode -> Text)
+           -> (Actor -> ActorUI -> IA.AspectRecord -> ItemDialogMode -> Text)
+           -> (Actor -> ActorUI -> IA.AspectRecord -> ItemDialogMode -> Text)
            -> Bool
            -> [ItemDialogMode]
            -> Int

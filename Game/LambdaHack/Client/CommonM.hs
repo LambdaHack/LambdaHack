@@ -20,6 +20,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -105,7 +106,7 @@ makeLine onlyFirst body fpos epsOld = do
 maxActorSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
 maxActorSkillsClient aid = do
   ar <- getsState $ getActorAspect aid
-  return $ aSkills ar  -- keep it lazy
+  return $ IA.aSkills ar  -- keep it lazy
 
 currentSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
 currentSkillsClient aid = do

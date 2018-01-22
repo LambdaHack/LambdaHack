@@ -28,6 +28,7 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -99,7 +100,7 @@ targetStrategy aid = do
       stdRuleset = getStdRuleset cops
       nearby = rnearby stdRuleset
       ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
-      actorMaxSk = aSkills ar
+      actorMaxSk = IA.aSkills ar
       alterSkill = EM.findWithDefault 0 AbAlter actorMaxSk
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
   let stepAccesible :: AndPath -> Bool
@@ -153,7 +154,7 @@ targetStrategy aid = do
       condHpTooLow = hpTooLow b ar
   friends <- getsState $ friendlyActorRegularList (bfid b) (blid b)
   let canEscape = fcanEscape (gplayer fact)
-      canSmell = aSmell ar > 0
+      canSmell = IA.aSmell ar > 0
       meleeNearby | canEscape = nearby `div` 2
                   | otherwise = nearby
       rangedNearby = 2 * meleeNearby
@@ -169,7 +170,7 @@ targetStrategy aid = do
             -- + 2 from foe being 2 away from friend before he closed in
             -- + 1 for as a margin for ambush, given than actors exploring
             -- can't physically keep adjacent all the time
-            n | aAggression ar >= 2 = rangedNearby  -- boss never waits
+            n | IA.aAggression ar >= 2 = rangedNearby  -- boss never waits
               | condInMelee = if attacksFriends then 4 else 0
               | otherwise = meleeNearby
             nonmoving = EM.findWithDefault 0 AbMove actorMaxSkE <= 0
@@ -181,7 +182,7 @@ targetStrategy aid = do
       -- targeted, which is fine, since he is weakened by ranged, so should be
       -- meleed ASAP, even if without friends.
       targetableRanged body =
-        (not condInMelee || aAggression ar >= 2)  -- boss fires at will
+        (not condInMelee || IA.aAggression ar >= 2)  -- boss fires at will
         && chessDist (bpos body) (bpos b) < rangedNearby
         && condCanProject
       targetableEnemy (aidE, body) = do

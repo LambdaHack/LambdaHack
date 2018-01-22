@@ -18,6 +18,7 @@ import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Flavour
 import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.ItemStrongest
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
@@ -242,7 +243,7 @@ recBenefit grp cops@COps{coitem} fact =
   let f (!sacc, !pacc) !p _ !kind =
         let recPickup = benPickup $
               totalUsefulness cops fact (IK.ieffects kind)
-                                        (meanAspect kind) (fakeItem kind)
+                                        (IK.meanAspect kind) (fakeItem kind)
         in ( sacc + Dice.meanDice (IK.icount kind) * recPickup
            , pacc + p )
   in ofoldlGroup' coitem grp f (0, 0)
@@ -280,34 +281,34 @@ fakeItem kind =
 -- Valuation of effects, and more precisely, more the signs than absolute
 -- values, ensures that both shield and torch get picked up so that
 -- the (human) actor can nevertheless equip them in very special cases.
-aspectToBenefit :: IK.Aspect -> Double
+aspectToBenefit :: IA.Aspect -> Double
 aspectToBenefit asp =
   case asp of
-    IK.Timeout{} -> 0
-    IK.AddHurtMelee p -> Dice.meanDice p  -- offence favoured
-    IK.AddArmorMelee p -> Dice.meanDice p / 4  -- only partial protection
-    IK.AddArmorRanged p -> Dice.meanDice p / 8
-    IK.AddMaxHP p -> Dice.meanDice p
-    IK.AddMaxCalm p -> Dice.meanDice p / 5
-    IK.AddSpeed p -> Dice.meanDice p * 25
+    IA.Timeout{} -> 0
+    IA.AddHurtMelee p -> Dice.meanDice p  -- offence favoured
+    IA.AddArmorMelee p -> Dice.meanDice p / 4  -- only partial protection
+    IA.AddArmorRanged p -> Dice.meanDice p / 8
+    IA.AddMaxHP p -> Dice.meanDice p
+    IA.AddMaxCalm p -> Dice.meanDice p / 5
+    IA.AddSpeed p -> Dice.meanDice p * 25
       -- 1 speed ~ 5% melee; times 5 for no caps, escape, pillar-dancing, etc.;
       -- also, it's 1 extra turn each 20 turns, so 100/20, so 5; figures
-    IK.AddSight p -> Dice.meanDice p * 5
-    IK.AddSmell p -> Dice.meanDice p
-    IK.AddShine p -> Dice.meanDice p * 2
-    IK.AddNocto p -> Dice.meanDice p * 10  -- > sight + light; stealth, slots
-    IK.AddAggression{} -> 0
-    IK.AddAbility _ p -> Dice.meanDice p * 5
+    IA.AddSight p -> Dice.meanDice p * 5
+    IA.AddSmell p -> Dice.meanDice p
+    IA.AddShine p -> Dice.meanDice p * 2
+    IA.AddNocto p -> Dice.meanDice p * 10  -- > sight + light; stealth, slots
+    IA.AddAggression{} -> 0
+    IA.AddAbility _ p -> Dice.meanDice p * 5
 
-recordToBenefit :: AspectRecord -> [Double]
-recordToBenefit aspects = map aspectToBenefit $ aspectRecordToList aspects
+recordToBenefit :: IA.AspectRecord -> [Double]
+recordToBenefit aspects = map aspectToBenefit $ IA.aspectRecordToList aspects
 
 -- | Compute the whole 'Benefit' structure, containing various facets
 -- of AI item preference, for an item with the given effects and aspects.
 --
 -- Note: result has non-strict fields, so arguments are forced to avoid leaks.
 -- When AI looks at items (including organs) more often, force the fields.
-totalUsefulness :: COps -> Faction -> [IK.Effect] -> AspectRecord -> Item
+totalUsefulness :: COps -> Faction -> [IK.Effect] -> IA.AspectRecord -> Item
                 -> Benefit
 totalUsefulness !cops !fact !effects !aspects !item =
   let effPairs = map (effectToBenefit cops fact) effects
@@ -320,7 +321,7 @@ totalUsefulness !cops !fact !effects !aspects !item =
       -- so a single such item may be worth half of the permanet value.
       -- Hence, we multiply item value by the proportion of the average desired
       -- delay between item uses @avgItemDelay@ and the actual timeout.
-      timeout = aTimeout aspects
+      timeout = IA.aTimeout aspects
       (chargeSelf, chargeFoe) =
         let scaleChargeBens bens
               | timeout <= 3 = bens
@@ -381,7 +382,7 @@ totalUsefulness !cops !fact !effects !aspects !item =
       benFlingDice | jdamage item == 0 = 0  -- speedup
                    | otherwise = assert (v <= 0) v
        where
-        hurtMult = 100 + min 99 (max (-99) (aHurtMelee aspects))
+        hurtMult = 100 + min 99 (max (-99) (IA.aHurtMelee aspects))
           -- assumes no enemy armor and no block
         dmg = Dice.meanDice (jdamage item)
         rawDeltaHP = ceiling $ fromIntegral hurtMult * xD dmg / 100

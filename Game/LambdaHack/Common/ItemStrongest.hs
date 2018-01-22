@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.ItemStrongest
   , strengthEqpSlot, strengthToThrow, strongestSlot
     -- * Assorted
   , computeTrajectory, itemTrajectory, totalRange
-  , hasCharge, damageUsefulness, strongestMelee, prEqpSlot
+  , hasCharge, damageUsefulness, strongestMelee
   , unknownMeleeBonus, tmpMeleeBonus
   , filterRecharging, stripRecharging, stripOnSmash
 #ifdef EXPOSE_INTERNAL
@@ -21,14 +21,14 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Ord as Ord
 
-import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
-import           Game.LambdaHack.Content.ItemKind hiding (KindMean (..))
+import           Game.LambdaHack.Content.ItemKind
 
 strengthEffect :: (Effect -> [b]) -> ItemFull -> [b]
 strengthEffect f itemFull =
@@ -52,7 +52,7 @@ strengthDropOrgan =
       p _ = []
   in strengthEffect p
 
-strengthEqpSlot :: ItemFull -> Maybe EqpSlot
+strengthEqpSlot :: ItemFull -> Maybe IA.EqpSlot
 strengthEqpSlot item =
   let p (EqpSlot eqpSlot) = [eqpSlot]
       p _ = []
@@ -72,7 +72,7 @@ strengthToThrow item =
 
 -- This ignores items that don't go into equipment, as determined in @inEqp@.
 -- They are removed from equipment elsewhere via @harmful@.
-strongestSlot :: DiscoveryBenefit -> EqpSlot -> [(ItemId, ItemFull)]
+strongestSlot :: DiscoveryBenefit -> IA.EqpSlot -> [(ItemId, ItemFull)]
               -> [(Int, (ItemId, ItemFull))]
 strongestSlot discoBenefit eqpSlot is =
   let f (iid, itemFull) =
@@ -83,11 +83,11 @@ strongestSlot discoBenefit eqpSlot is =
         in if not bInEqp
            then Nothing
            else Just $
-             let ben = if eqpSlot == EqpSlotWeapon
+             let ben = if eqpSlot == IA.EqpSlotWeapon
                        -- For equipping/unequipping a weapon we take into
                        -- account not only melee power, but also aspects, etc.
                        then ceiling bPickup
-                       else prEqpSlot eqpSlot $ aspectRecordFull itemFull
+                       else IA.prEqpSlot eqpSlot $ aspectRecordFull itemFull
              in (ben, (iid, itemFull))
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe f is
 
@@ -108,7 +108,7 @@ totalRange item = snd $ snd $ itemTrajectory item []
 
 hasCharge :: Time -> ItemFull -> Bool
 hasCharge localTime itemFull@ItemFull{..} =
-  let timeout = aTimeout $ aspectRecordFull itemFull
+  let timeout = IA.aTimeout $ aspectRecordFull itemFull
       timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
       charging startT = timeShift startT timeoutTurns > localTime
       it1 = filter charging itemTimer
@@ -128,7 +128,7 @@ strongestMelee mdiscoBenefit localTime is =
         let rawDmg = (damageUsefulness itemBase, (iid, itemFull))
             knownOrConstantAspects = case itemDisco itemFull of
               Just ItemDisco{itemAspect} ->
-                either (const True) kmConst itemAspect
+                either (const True) IA.kmConst itemAspect
               Nothing -> False
             unIDedBonus | knownOrConstantAspects = 0
                         | otherwise = 1000  -- exceptionally strong weapon
@@ -148,42 +148,11 @@ strongestMelee mdiscoBenefit localTime is =
   -- e.g., geysers, bees. This is intended and fun.
   in sortBy (flip $ Ord.comparing fst) $ map f is
 
-prEqpSlot :: EqpSlot -> AspectRecord -> Int
-prEqpSlot eqpSlot ar@AspectRecord{..} =
-  case eqpSlot of
-    EqpSlotMiscBonus ->
-      aTimeout  -- usually better items have longer timeout
-      + aMaxCalm + aSmell
-      + aNocto  -- powerful, but hard to boost over aSight
-    EqpSlotAddHurtMelee -> aHurtMelee
-    EqpSlotAddArmorMelee -> aArmorMelee
-    EqpSlotAddArmorRanged -> aArmorRanged
-    EqpSlotAddMaxHP -> aMaxHP
-    EqpSlotAddSpeed -> aSpeed
-    EqpSlotAddSight -> aSight
-    EqpSlotLightSource -> aShine
-    EqpSlotWeapon -> error $ "" `showFailure` ar
-    EqpSlotMiscAbility ->
-      EM.findWithDefault 0 Ability.AbWait aSkills
-      + EM.findWithDefault 0 Ability.AbMoveItem aSkills
-    EqpSlotAbMove -> EM.findWithDefault 0 Ability.AbMove aSkills
-    EqpSlotAbMelee -> EM.findWithDefault 0 Ability.AbMelee aSkills
-    EqpSlotAbDisplace -> EM.findWithDefault 0 Ability.AbDisplace aSkills
-    EqpSlotAbAlter -> EM.findWithDefault 0 Ability.AbAlter aSkills
-    EqpSlotAbProject -> EM.findWithDefault 0 Ability.AbProject aSkills
-    EqpSlotAbApply -> EM.findWithDefault 0 Ability.AbApply aSkills
-    EqpSlotAddMaxCalm -> aMaxCalm
-    EqpSlotAddSmell -> aSmell
-    EqpSlotAddNocto -> aNocto
-    EqpSlotAddAggression -> aAggression
-    EqpSlotAbWait -> EM.findWithDefault 0 Ability.AbWait aSkills
-    EqpSlotAbMoveItem -> EM.findWithDefault 0 Ability.AbMoveItem aSkills
-
-unknownAspect :: (Aspect -> [Dice.Dice]) -> ItemFull -> Bool
+unknownAspect :: (IA.Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f itemFull =
   case itemDisco itemFull of
     Nothing -> True  -- not even kind is known, so assume aspect affects melee
-    Just ItemDisco{ itemAspect=Right KindMean{kmConst}
+    Just ItemDisco{ itemAspect=Right IA.KindMean{kmConst}
                   , itemKind=ItemKind{iaspects} } ->
       let unknown x = let (minD, maxD) = Dice.minmaxDice x
                       in minD /= maxD
@@ -192,14 +161,15 @@ unknownAspect f itemFull =
 
 unknownMeleeBonus :: [ItemFull] -> Bool
 unknownMeleeBonus =
-  let p (AddHurtMelee k) = [k]
+  let p (IA.AddHurtMelee k) = [k]
       p _ = []
       f itemFull b = b || unknownAspect p itemFull
   in foldr f False
 
 tmpMeleeBonus :: [ItemFull] -> Int
 tmpMeleeBonus is =
-  let f itemFull k = itemK itemFull * aHurtMelee (aspectRecordFull itemFull) + k
+  let f itemFull k =
+        itemK itemFull * IA.aHurtMelee (aspectRecordFull itemFull) + k
   in foldr f 0 $ filter (isTmpCondition . itemBase) is
 
 filterRecharging :: [Effect] -> [Effect]

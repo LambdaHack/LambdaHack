@@ -10,24 +10,24 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.EnumMap.Strict as EM
 import           Data.Ratio
 
-import Game.LambdaHack.Client.AI.ConditionM
-import Game.LambdaHack.Client.AI.PickTargetM
-import Game.LambdaHack.Client.Bfs
-import Game.LambdaHack.Client.BfsM
-import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.State
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Frequency
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.State
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Client.AI.ConditionM
+import           Game.LambdaHack.Client.AI.PickTargetM
+import           Game.LambdaHack.Client.Bfs
+import           Game.LambdaHack.Client.BfsM
+import           Game.LambdaHack.Client.MonadClient
+import           Game.LambdaHack.Client.State
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Frequency
+import qualified Game.LambdaHack.Common.ItemAspect as IA
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Content.ModeKind
 
 -- | Pick a new leader from among the actors on the current level.
 -- Refresh the target of the new leader, even if unchanged.
@@ -124,7 +124,7 @@ pickActorToMove maidToAvoid = do
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.
                   deltaSerious (bcalmDelta body)
-                actorShines = aShine ar > 0
+                actorShines = IA.aShine ar > 0
                 aCanDeLightL | actorShines = []
                              | otherwise = canDeAmbientL
                 canFleeFromLight =

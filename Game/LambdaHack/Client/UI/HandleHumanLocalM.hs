@@ -66,6 +66,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.ItemStrongest
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
@@ -167,7 +168,7 @@ chooseItemDialogMode c = do
           displayLore slotIndex promptFun = do
             let iid2 = lSlotsElems !! slotIndex
                 itemFull2 = itemToF iid2 (itemBag EM.! iid2)
-                attrLine = itemDesc True (bfid b) factionD (aHurtMelee ar)
+                attrLine = itemDesc True (bfid b) factionD (IA.aHurtMelee ar)
                                     CGround localTime itemFull2
                 ov = splitAttrLine lxsize attrLine
                 keys = [K.spaceKM, K.escKM]
@@ -223,7 +224,8 @@ chooseItemDialogMode c = do
             displayOneStat slotIndex = do
               let slot = allSlots !! slotIndex
                   eqpSlot = statSlots !! fromJust (elemIndex slot allSlots)
-                  valueText = slotToDecorator eqpSlot b $ prEqpSlot eqpSlot ar
+                  valueText =
+                    slotToDecorator eqpSlot b $ IA.prEqpSlot eqpSlot ar
                   prompt2 = makeSentence
                     [ MU.WownW (partActor bUI) (MU.Text $ slotToName eqpSlot)
                     , "is", MU.Text valueText ]

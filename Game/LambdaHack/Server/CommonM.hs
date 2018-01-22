@@ -28,6 +28,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.ItemStrongest
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
@@ -386,7 +387,7 @@ addActorFromGroup actorGroup bfid pos lid time = do
       registerActor False itemKnownRaw itemFullRaw seed bfid pos lid time
 
 registerActor :: MonadServerAtomic m
-              => Bool -> ItemKnown -> ItemFull -> ItemSeed
+              => Bool -> ItemKnown -> ItemFull -> IA.ItemSeed
               -> FactionId -> Point -> LevelId -> Time
               -> m (Maybe ActorId)
 registerActor summoned (kindIx, ar, damage, _) itemFullRaw seed
@@ -436,10 +437,10 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
         Nothing -> error $ "" `showFailure` trunkFull
       aspects = either id undefined $ itemAspect $ fromJust itemDisco
   -- Initial HP and Calm is based only on trunk and ignores organs.
-      hp = xM (max 2 $ aMaxHP aspects) `div` 2
+      hp = xM (max 2 $ IA.aMaxHP aspects) `div` 2
       -- Hard to auto-id items that refill Calm, but reduced sight at game
       -- start is more confusing and frustrating:
-      calm = xM (max 0 $ aMaxCalm aspects)
+      calm = xM (max 0 $ IA.aMaxCalm aspects)
   -- Create actor.
   factionD <- getsState sfactionD
   let fact = factionD EM.! bfid

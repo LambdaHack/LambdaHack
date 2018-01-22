@@ -23,6 +23,7 @@ import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -160,7 +161,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
         invalidateLucid  -- from itemAffects, s2 provides light or s1 is CGround
         when (s2 `elem` [CEqp, COrgan]) invalidatePer
   UpdRefillCalm aid _ -> do
-    AspectRecord{aSight} <- getsState $ getActorAspect aid
+    IA.AspectRecord{aSight} <- getsState $ getActorAspect aid
     body <- getsState $ getActorBody aid
     let oldBody = getActorBody aid oldState
         radiusOld = boundSightByCalm aSight (bcalm oldBody)
@@ -218,26 +219,26 @@ invalidateLucidAid aid = do
 
 actorHasShine :: ActorAspect -> ActorId -> Bool
 actorHasShine actorAspect aid = case EM.lookup aid actorAspect of
-  Just AspectRecord{aShine} -> aShine > 0
+  Just IA.AspectRecord{aShine} -> aShine > 0
   Nothing -> error $ "" `showFailure` aid
 
 itemAffectsShineRadius :: DiscoveryAspect -> ItemId -> [CStore] -> Bool
 itemAffectsShineRadius discoAspect iid stores =
   (null stores || not (null $ intersect stores [CEqp, COrgan, CGround]))
   && case EM.lookup iid discoAspect of
-    Just AspectRecord{aShine} -> aShine /= 0
+    Just IA.AspectRecord{aShine} -> aShine /= 0
     Nothing -> error $ "" `showFailure` iid
 
 itemAffectsPerRadius :: DiscoveryAspect -> ItemId -> Bool
 itemAffectsPerRadius discoAspect iid =
   case EM.lookup iid discoAspect of
-    Just AspectRecord{aSight, aSmell, aNocto} ->
+    Just IA.AspectRecord{aSight, aSmell, aNocto} ->
       aSight /= 0 || aSmell /= 0 || aNocto /= 0
     Nothing -> error $ "" `showFailure` iid
 
 addPerActor :: MonadServer m => ActorId -> Actor -> m ()
 addPerActor aid b = do
-  AspectRecord{..} <- getsState $ getActorAspect aid
+  IA.AspectRecord{..} <- getsState $ getActorAspect aid
   unless (aSight <= 0 && aNocto <= 0 && aSmell <= 0) $ addPerActorAny aid b
 
 addPerActorAny :: MonadServer m => ActorId -> Actor -> m ()
@@ -254,7 +255,7 @@ addPerActorAny aid b = do
 
 deletePerActor :: MonadServer m => ActorAspect -> ActorId -> Actor -> m ()
 deletePerActor actorAspectOld aid b = do
-  let AspectRecord{..} = actorAspectOld EM.! aid
+  let IA.AspectRecord{..} = actorAspectOld EM.! aid
   unless (aSight <= 0 && aNocto <= 0 && aSmell <= 0) $ deletePerActorAny aid b
 
 deletePerActorAny :: MonadServer m => ActorId -> Actor -> m ()
@@ -271,7 +272,7 @@ deletePerActorAny aid b = do
 
 invalidatePerActor :: MonadServer m => ActorId -> m ()
 invalidatePerActor aid = do
-  AspectRecord{..} <- getsState $ getActorAspect aid
+  IA.AspectRecord{..} <- getsState $ getActorAspect aid
   unless (aSight <= 0 && aNocto <= 0 && aSmell <= 0) $ do
     b <- getsState $ getActorBody aid
     addPerActorAny aid b
@@ -279,7 +280,7 @@ invalidatePerActor aid = do
 reconsiderPerActor :: MonadServer m => ActorId -> m ()
 reconsiderPerActor aid = do
   b <- getsState $ getActorBody aid
-  AspectRecord{..} <- getsState $ getActorAspect aid
+  IA.AspectRecord{..} <- getsState $ getActorAspect aid
   if aSight <= 0 && aNocto <= 0 && aSmell <= 0
   then do
     perCacheFid <- getsServer sperCacheFid

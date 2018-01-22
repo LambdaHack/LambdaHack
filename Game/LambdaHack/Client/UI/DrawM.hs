@@ -43,6 +43,7 @@ import           Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.ItemStrongest
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
@@ -71,7 +72,7 @@ targetDesc mtarget = do
       b <- getsState $ getActorBody aid
       bUI <- getsSession $ getActorUI aid
       ar <- getsState $ getActorAspect aid
-      let percentage = 100 * bhp b `div` xM (max 5 $ aMaxHP ar)
+      let percentage = 100 * bhp b `div` xM (max 5 $ IA.aMaxHP ar)
           chs n = "[" <> T.replicate n "*"
                       <> T.replicate (4 - n) "_" <> "]"
           stars = chs $ fromEnum $ max 0 $ min 4 $ percentage `div` 20
@@ -518,8 +519,8 @@ drawLeaderStatus waitT = do
             let b@Actor{bhp, bcalm} = getActorBody leader s
             in ( not (actorInAmbient b s)
                , braced b, bhpDelta b, bcalmDelta b
-               , showTrunc $ aMaxHP ar, showTrunc (bhp `divUp` oneM)
-               , showTrunc $ aMaxCalm ar, showTrunc (bcalm `divUp` oneM))
+               , showTrunc $ IA.aMaxHP ar, showTrunc (bhp `divUp` oneM)
+               , showTrunc $ IA.aMaxCalm ar, showTrunc (bcalm `divUp` oneM))
           -- This is a valuable feedback for the otherwise hard to observe
           -- 'wait' command.
           slashes = ["/", "|", "\\", "|"]
@@ -568,7 +569,7 @@ drawLeaderDamage width = do
             [] -> ("0", "", Color.White)
             (_, (_, itemFull)) : _ ->
               let tdice = show $ jdamage $ itemBase itemFull
-                  bonusRaw = aHurtMelee $ actorAspect EM.! leader
+                  bonusRaw = IA.aHurtMelee $ actorAspect EM.! leader
                   bonus = min 200 $ max (-200) bonusRaw
                   unknownBonus = unknownMeleeBonus $ map snd allAssocsRaw
                   tbonus = if bonus == 0

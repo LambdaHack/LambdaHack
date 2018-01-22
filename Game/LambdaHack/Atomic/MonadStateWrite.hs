@@ -24,15 +24,16 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Key (mapWithKeyM_)
 
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.State
 
 -- | The monad for writing to the main game state. Atomic updates ('UpdAtomic')
 -- are given semantics in this monad.
@@ -311,7 +312,7 @@ addItemToActorAspect :: MonadStateWrite m
                      => ItemId -> Item -> Int -> ActorId -> m ()
 addItemToActorAspect iid itemBase k aid = do
   arItem <- getsState $ aspectRecordFromItem iid itemBase
-  let f arActor = sumAspectRecord [(arActor, 1), (arItem, k)]
+  let f arActor = IA.sumAspectRecord [(arActor, 1), (arItem, k)]
   modifyState $ updateActorAspect $ EM.adjust f aid
 
 resetActorAspect :: MonadStateWrite m => m ()

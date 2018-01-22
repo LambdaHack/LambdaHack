@@ -31,6 +31,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -261,22 +262,22 @@ updateActorAspect f s = s {_sactorAspect = f (_sactorAspect s)}
 getItemBody :: ItemId -> State -> Item
 getItemBody iid s = sitemD s EM.! iid
 
-aspectRecordFromItem :: ItemId -> Item -> State -> AspectRecord
+aspectRecordFromItem :: ItemId -> Item -> State -> IA.AspectRecord
 aspectRecordFromItem iid item s =
   case EM.lookup iid (sdiscoAspect s) of
     Just ar -> ar
     Nothing -> case EM.lookup (jkindIx item) (sdiscoKind s) of
         Just kindId -> let COps{coItemSpeedup} = scops s
-                       in kmMean $ IK.getKindMean kindId coItemSpeedup
-        Nothing -> emptyAspectRecord
+                       in IA.kmMean $ IK.getKindMean kindId coItemSpeedup
+        Nothing -> IA.emptyAspectRecord
 
-aspectRecordFromIid :: ItemId -> State -> AspectRecord
+aspectRecordFromIid :: ItemId -> State -> IA.AspectRecord
 aspectRecordFromIid iid s = aspectRecordFromItem iid (getItemBody iid s) s
 
-aspectRecordFromActor :: Actor -> State -> AspectRecord
+aspectRecordFromActor :: Actor -> State -> IA.AspectRecord
 aspectRecordFromActor b s =
   let processIid (iid, (k, _)) = (aspectRecordFromIid iid s, k)
-      processBag ass = sumAspectRecord $ map processIid ass
+      processBag ass = IA.sumAspectRecord $ map processIid ass
   in processBag $ EM.assocs (borgan b) ++ EM.assocs (beqp b)
 
 actorAspectInDungeon :: State -> ActorAspect

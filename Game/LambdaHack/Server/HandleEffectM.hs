@@ -40,6 +40,7 @@ import           Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.ItemStrongest
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
@@ -100,7 +101,7 @@ refillHP source target speedDeltaHP = assert (speedDeltaHP /= 0) $ do
   ar <- getsState $ getActorAspect target
   -- We ignore light poison, tiny blasts and similar -1HP per turn annoyances.
   let serious = speedDeltaHP < minusM && source /= target && not (bproj tbOld)
-      hpMax = aMaxHP ar
+      hpMax = IA.aMaxHP ar
       deltaHP0 | serious = -- if overfull, at least cut back to max
                            min speedDeltaHP (xM hpMax - bhp tbOld)
                | otherwise = speedDeltaHP
@@ -159,7 +160,7 @@ effectAndDestroy meleePerformed _ _ iid container periodic []
 effectAndDestroy meleePerformed source target iid container periodic effs
                  itemFull@ItemFull{..} = do
   let timeout = case itemDisco of
-        Just ItemDisco{itemAspect=Left ar} -> aTimeout ar
+        Just ItemDisco{itemAspect=Left ar} -> IA.aTimeout ar
         _ -> error $ "" `showFailure` itemDisco
       permanent = let tmpEffect :: IK.Effect -> Bool
                       tmpEffect IK.Temporary{} = True
@@ -455,7 +456,7 @@ cutCalm target = do
   ar <- getsState $ getActorAspect target
   let upperBound = if hpTooLow tb ar
                    then 0  -- to trigger domination, etc.
-                   else xM $ aMaxCalm ar
+                   else xM $ IA.aMaxCalm ar
       deltaCalm = min minusM1 (upperBound - bcalm tb)
   -- HP loss decreases Calm by at least @minusM1@ to avoid "hears something",
   -- which is emitted when decreasing Calm by @minusM@.
@@ -470,7 +471,7 @@ effectRefillCalm execSfx power0 source target = do
   ar <- getsState $ getActorAspect target
   let power = if power0 <= -1 then power0 else max 1 power0  -- avoid 0
       rawDeltaCalm = xM power
-      calmMax = aMaxCalm ar
+      calmMax = IA.aMaxCalm ar
       serious = rawDeltaCalm < minusM && source /= target && not (bproj tb)
       deltaCalm0 | serious =  -- if overfull, at least cut back to max
                      min rawDeltaCalm (xM calmMax - bcalm tb)
@@ -508,7 +509,7 @@ dominateFidSfx fid target = do
   -- when they are the last survivors, they could get stuck
   -- and the game wouldn't end.
   ar <- getsState $ getActorAspect target
-  let actorMaxSk = aSkills ar
+  let actorMaxSk = IA.aSkills ar
       -- Check that the actor can move, also between levels and through doors.
       -- Otherwise, it's too awkward for human player to control, e.g.,
       -- being stuck in a room with revolving doors closing after one turn
@@ -556,8 +557,8 @@ dominateFid fid target = do
     getsServer $ (EM.! target) . (EM.! blid tb) . (EM.! bfid tb) . sactorTime
   execUpdAtomic $ UpdLoseActor target tb ais
   let bNew = tb { bfid = fid
-                , bcalm = max (xM 10) $ xM (aMaxCalm ar) `div` 2
-                , bhp = min (xM $ aMaxHP ar) $ bhp tb + xM 10
+                , bcalm = max (xM 10) $ xM (IA.aMaxCalm ar) `div` 2
+                , bhp = min (xM $ IA.aMaxHP ar) $ bhp tb + xM 10
                 , borgan = borganNoImpression}
   aisNew <- getsState $ getCarriedAssocsAndTrunk bNew
   execUpdAtomic $ UpdSpotActor target bNew aisNew
@@ -1157,7 +1158,7 @@ effectIdentify execSfx iidId source target = do
         (iid, ItemFull{itemBase, itemDisco=Just ItemDisco{..}}) : rest ->
           let furtherIdNotNeeded =
                 case EM.lookup (jkindIx itemBase) $ sdiscoKind s of
-                  Just{} -> kmConst $ IK.getKindMean itemKindId coItemSpeedup
+                  Just{} -> IA.kmConst $ IK.getKindMean itemKindId coItemSpeedup
                   Nothing -> False
           in if iid `EM.member` sdiscoAspect s  -- already fully identified
                 || furtherIdNotNeeded

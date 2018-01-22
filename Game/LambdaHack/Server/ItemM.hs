@@ -22,6 +22,7 @@ import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -40,8 +41,7 @@ import           Game.LambdaHack.Server.MonadServer
 import           Game.LambdaHack.Server.ServerOptions
 import           Game.LambdaHack.Server.State
 
-onlyRegisterItem :: MonadServerAtomic m
-                 => ItemKnown -> ItemSeed -> m ItemId
+onlyRegisterItem :: MonadServerAtomic m => ItemKnown -> IA.ItemSeed -> m ItemId
 onlyRegisterItem itemKnown@(_, aspectRecord, _, _) seed = do
   itemRev <- getsServer sitemRev
   case HM.lookup itemKnown itemRev of
@@ -58,7 +58,7 @@ onlyRegisterItem itemKnown@(_, aspectRecord, _, _) seed = do
       return $! icounter
 
 registerItem :: MonadServerAtomic m
-             => ItemFull -> ItemKnown -> ItemSeed -> Container -> Bool
+             => ItemFull -> ItemKnown -> IA.ItemSeed -> Container -> Bool
              -> m ItemId
 registerItem ItemFull{..} itemKnown seed container verbose = do
   iid <- onlyRegisterItem itemKnown seed
@@ -92,7 +92,7 @@ embedItem lid pos tk = do
 rollItem :: MonadServerAtomic m
          => Int -> LevelId -> Freqs ItemKind
          -> m (Maybe ( ItemKnown, ItemFull, ItemDisco
-                     , ItemSeed, GroupName ItemKind ))
+                     , IA.ItemSeed, GroupName ItemKind ))
 rollItem lvlSpawned lid itemFreq = do
   cops <- getsState scops
   flavour <- getsServer sflavour

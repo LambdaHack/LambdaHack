@@ -37,6 +37,7 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.ItemStrongest
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
@@ -126,12 +127,12 @@ actionStrategy aid retry = do
         threatAdj
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
         deltaSerious (bcalmDelta body)
-      actorShines = aShine ar > 0
+      actorShines = IA.aShine ar > 0
       aCanDeLightL | actorShines = []
                    | otherwise = canDeAmbientL
       aCanDeLight = not $ null aCanDeLightL
       canFleeFromLight = not $ null $ aCanDeLightL `intersect` map snd fleeL
-      actorMaxSk = aSkills ar
+      actorMaxSk = IA.aSkills ar
       abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
       stratToFreq :: Int -> m (Strategy RequestAnyAbility)
                   -> m (Frequency RequestAnyAbility)
@@ -366,7 +367,7 @@ equipItems aid = do
   discoBenefit <- getsClient sdiscoBenefit
   let improve :: CStore
               -> (Int, [(ItemId, Int, CStore, CStore)])
-              -> ( IK.EqpSlot
+              -> ( IA.EqpSlot
                  , ( [(Int, (ItemId, ItemFull))]
                    , [(Int, (ItemId, ItemFull))] ) )
               -> (Int, [(ItemId, Int, CStore, CStore)])
@@ -409,9 +410,9 @@ equipItems aid = do
             then reject
             else returN "equipItems" $ ReqMoveItems prepared
 
-toShare :: IK.EqpSlot -> Bool
-toShare IK.EqpSlotMiscBonus = False
-toShare IK.EqpSlotMiscAbility = False
+toShare :: IA.EqpSlot -> Bool
+toShare IA.EqpSlotMiscBonus = False
+toShare IA.EqpSlotMiscAbility = False
 toShare _ = True
 
 yieldUnneeded :: MonadClient m
@@ -461,7 +462,7 @@ unEquipItems aid = do
   invAssocs <- getsState $ fullAssocs aid [CInv]
   shaAssocs <- getsState $ fullAssocs aid [CSha]
   discoBenefit <- getsClient sdiscoBenefit
-  let improve :: CStore -> ( IK.EqpSlot
+  let improve :: CStore -> ( IA.EqpSlot
                            , ( [(Int, (ItemId, ItemFull))]
                              , [(Int, (ItemId, ItemFull))] ) )
               -> [(ItemId, Int, CStore, CStore)]
@@ -509,7 +510,7 @@ unEquipItems aid = do
             else returN "unEquipItems" $ ReqMoveItems prepared
 
 groupByEqpSlot :: [(ItemId, ItemFull)]
-               -> EM.EnumMap IK.EqpSlot [(ItemId, ItemFull)]
+               -> EM.EnumMap IA.EqpSlot [(ItemId, ItemFull)]
 groupByEqpSlot is =
   let f (iid, itemFull) = case strengthEqpSlot itemFull of
         Nothing -> Nothing
@@ -521,7 +522,7 @@ bestByEqpSlot :: DiscoveryBenefit
               -> [(ItemId, ItemFull)]
               -> [(ItemId, ItemFull)]
               -> [(ItemId, ItemFull)]
-              -> [(IK.EqpSlot
+              -> [(IA.EqpSlot
                   , ( [(Int, (ItemId, ItemFull))]
                     , [(Int, (ItemId, ItemFull))]
                     , [(Int, (ItemId, ItemFull))] ) )]

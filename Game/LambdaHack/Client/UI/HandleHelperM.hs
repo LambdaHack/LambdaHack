@@ -36,7 +36,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import           Game.LambdaHack.Common.ItemStrongest
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -260,14 +260,14 @@ statsOverlay :: MonadClient m => ActorId -> m OKX
 statsOverlay aid = do
   b <- getsState $ getActorBody aid
   ar <- getsState $ getActorAspect aid
-  let prSlot :: (Y, SlotChar) -> IK.EqpSlot -> (Text, KYX)
+  let prSlot :: (Y, SlotChar) -> IA.EqpSlot -> (Text, KYX)
       prSlot (y, c) eqpSlot =
         let statName = slotToName eqpSlot
             fullText t =
               makePhrase [ MU.Text $ slotLabel c
                          , MU.Text $ T.justifyLeft 22 ' ' statName
                          , MU.Text t ]
-            valueText = slotToDecorator eqpSlot b $ prEqpSlot eqpSlot ar
+            valueText = slotToDecorator eqpSlot b $ IA.prEqpSlot eqpSlot ar
             ft = fullText valueText
         in (ft, (Right c, (y, 0, T.length ft)))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) statSlots

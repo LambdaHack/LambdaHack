@@ -33,6 +33,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -183,7 +184,7 @@ affectSmell aid = do
   unless (bproj b) $ do
     fact <- getsState $ (EM.! bfid b) . sfactionD
     ar <- getsState $ getActorAspect aid
-    let smellRadius = aSmell ar
+    let smellRadius = IA.aSmell ar
     when (fhasGender (gplayer fact) || smellRadius > 0) $ do
       localTime <- getsState $ getLocalTime $ blid b
       lvl <- getLevel $ blid b
@@ -333,7 +334,7 @@ reqDisplace source target = do
       atWar = isAtWar tfact (bfid sb)
       req = ReqDisplace target
   ar <- getsState $ getActorAspect target
-  dEnemy <- getsState $ dispEnemy source target $ aSkills ar
+  dEnemy <- getsState $ dispEnemy source target $ IA.aSkills ar
   if | not adj -> execFailure source req DisplaceDistant
      | atWar && not dEnemy -> do  -- if not at war, can displace always
        -- We don't fail with DisplaceImmobile and DisplaceSupported.
@@ -601,7 +602,7 @@ computeRndTimeout :: Time -> ItemId -> ItemFull -> Rnd (Maybe Time)
 computeRndTimeout localTime iid ItemFull{..}=
   case itemDisco of
     Just ItemDisco{itemKind, itemAspect=Left ar} ->
-      case aTimeout ar of
+      case IA.aTimeout ar of
         t | t /= 0 && IK.Periodic `elem` IK.ieffects itemKind -> do
           rndT <- randomR (0, t)
           let rndTurns = timeDeltaScale (Delta timeTurn) rndT

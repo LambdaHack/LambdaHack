@@ -24,6 +24,7 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Flavour
 import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Random
@@ -41,7 +42,7 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 -- Note 2: @ItemSeed@ instead of @AspectRecord@ is not enough,
 -- becaused different seeds may result in the same @AspectRecord@
 -- and we don't want such items to be distinct in UI and elsewhere.
-type ItemKnown = (ItemKindIx, AspectRecord, Dice.Dice, Maybe FactionId)
+type ItemKnown = (ItemKindIx, IA.AspectRecord, Dice.Dice, Maybe FactionId)
 
 -- | Reverse item map, for item creation, to keep items and item identifiers
 -- in bijection.
@@ -70,7 +71,7 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jlid jdamage =
 newItem :: COps -> FlavourMap -> DiscoveryKindRev -> UniqueSet
         -> Freqs ItemKind -> Int -> LevelId -> AbsDepth -> AbsDepth
         -> Rnd (Maybe ( ItemKnown, ItemFull, ItemDisco
-                      , ItemSeed, GroupName ItemKind ))
+                      , IA.ItemSeed, GroupName ItemKind ))
 newItem COps{coitem} flavour discoRev uniqueSet
         itemFreq lvlSpawned lid
         ldepth@(AbsDepth ldAbs) totalDepth@(AbsDepth depth) = do
@@ -118,7 +119,8 @@ newItem COps{coitem} flavour discoRev uniqueSet
         itemDiscoData = ItemDisco {..}
         itemDisco = Just itemDiscoData
         -- Bonuses on items/actors unaffected by number of spawned actors.
-        aspectRecord = seedToAspect seed itemKind ldepth totalDepth
+        aspectRecord =
+          IA.seedToAspect seed (IK.iaspects itemKind) ldepth totalDepth
         itemFull = ItemFull {..}
     return $ Just ( (kindIx, aspectRecord, jdamage, jfid itemBase)
                   , itemFull
@@ -130,7 +132,7 @@ newItem COps{coitem} flavour discoRev uniqueSet
 type DiscoveryKindRev = EM.EnumMap (ContentId ItemKind) ItemKindIx
 
 -- | The map of item ids to item seeds, needed for item creation.
-type ItemSeedDict = EM.EnumMap ItemId ItemSeed
+type ItemSeedDict = EM.EnumMap ItemId IA.ItemSeed
 
 serverDiscos :: COps -> Rnd (DiscoveryKind, DiscoveryKindRev)
 serverDiscos COps{coitem} = do

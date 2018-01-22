@@ -25,6 +25,7 @@ import           GHC.Generics (Generic)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Random
@@ -79,7 +80,7 @@ data ResDelta = ResDelta
 
 instance Binary ResDelta
 
-type ActorAspect = EM.EnumMap ActorId AspectRecord
+type ActorAspect = EM.EnumMap ActorId IA.AspectRecord
 
 -- | All actors on the level, indexed by actor identifier.
 type ActorDict = EM.EnumMap ActorId Actor
@@ -96,13 +97,13 @@ deltaMild ResDelta{..} = fst resCurrentTurn == minusM
 actorCanMelee :: ActorAspect -> ActorId -> Actor -> Bool
 actorCanMelee actorAspect aid b =
   let ar = actorAspect EM.! aid
-      actorMaxSk = aSkills ar
+      actorMaxSk = IA.aSkills ar
       condUsableWeapon = bweapon b >= 0
       canMelee = EM.findWithDefault 0 Ability.AbMelee actorMaxSk > 0
   in condUsableWeapon && canMelee
 
-bspeed :: Actor -> AspectRecord -> Speed
-bspeed !b AspectRecord{aSpeed} =
+bspeed :: Actor -> IA.AspectRecord -> Speed
+bspeed !b IA.AspectRecord{aSpeed} =
   case btrajectory b of
     Nothing -> toSpeed $ max minSpeed aSpeed  -- see @minimalSpeed@
     Just (_, speed) -> speed
@@ -133,17 +134,17 @@ actorDying :: Actor -> Bool
 actorDying b = bhp b <= 0
                || bproj b && maybe True (null . fst) (btrajectory b)
 
-hpTooLow :: Actor -> AspectRecord -> Bool
-hpTooLow b AspectRecord{aMaxHP} =
+hpTooLow :: Actor -> IA.AspectRecord -> Bool
+hpTooLow b IA.AspectRecord{aMaxHP} =
   bhp b <= oneM || 5 * bhp b < xM aMaxHP && bhp b <= xM 40
 
-calmEnough :: Actor -> AspectRecord -> Bool
-calmEnough b AspectRecord{aMaxCalm} =
+calmEnough :: Actor -> IA.AspectRecord -> Bool
+calmEnough b IA.AspectRecord{aMaxCalm} =
   let calmMax = max 1 aMaxCalm
   in 2 * xM calmMax <= 3 * bcalm b && bcalm b > xM 10
 
-hpEnough :: Actor -> AspectRecord -> Bool
-hpEnough b AspectRecord{aMaxHP} =
+hpEnough :: Actor -> IA.AspectRecord -> Bool
+hpEnough b IA.AspectRecord{aMaxHP} =
   let hpMax = max 1 aMaxHP
   in xM hpMax <= 2 * bhp b && bhp b > xM 1
 
