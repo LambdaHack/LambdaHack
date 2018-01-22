@@ -26,7 +26,6 @@ import qualified System.Random as R
 
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Frequency
-import           Game.LambdaHack.Common.Misc
 
 -- | The monad of computations with random generator state.
 type Rnd a = St.State R.StdGen a
@@ -85,18 +84,18 @@ chance r = do
 
 -- | Cast dice scaled with current level depth.
 -- Note that at the first level, the scaled dice are always ignored.
-castDice :: AbsDepth -> AbsDepth -> Dice.Dice -> Rnd Int
+castDice :: Dice.AbsDepth -> Dice.AbsDepth -> Dice.Dice -> Rnd Int
 castDice = Dice.castDice randomR
 
 -- | Cast dice scaled with current level depth and return @True@
 -- if the results is greater than 50.
-chanceDice :: AbsDepth -> AbsDepth -> Dice.Dice -> Rnd Bool
+chanceDice :: Dice.AbsDepth -> Dice.AbsDepth -> Dice.Dice -> Rnd Bool
 chanceDice ldepth totalDepth dice = do
   c <- castDice ldepth totalDepth dice
   return $! c > 50
 
 -- | Cast dice, scaled with current level depth, for coordinates.
-castDiceXY :: AbsDepth -> AbsDepth -> Dice.DiceXY -> Rnd (Int, Int)
+castDiceXY :: Dice.AbsDepth -> Dice.AbsDepth -> Dice.DiceXY -> Rnd (Int, Int)
 castDiceXY ldepth totalDepth (Dice.DiceXY dx dy) = do
   x <- castDice ldepth totalDepth dx
   y <- castDice ldepth totalDepth dy

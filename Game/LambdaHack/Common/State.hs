@@ -28,13 +28,13 @@ import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 
 import           Game.LambdaHack.Common.Actor
+import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
-import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.Time
@@ -51,7 +51,8 @@ import           Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 -- the actions to each client state in turn).
 data State = State
   { _sdungeon     :: Dungeon      -- ^ remembered dungeon
-  , _stotalDepth  :: AbsDepth     -- ^ absolute dungeon depth, for item creation
+  , _stotalDepth  :: Dice.AbsDepth
+                                  -- ^ absolute dungeon depth, for item creation
   , _sactorD      :: ActorDict    -- ^ remembered actors in the dungeon
   , _sitemD       :: ItemDict     -- ^ remembered items in the dungeon
   , _sitemIxMap   :: ItemIxMap    -- ^ spotted items with the same kind index
@@ -99,7 +100,7 @@ instance Binary State where
 sdungeon :: State -> Dungeon
 sdungeon = _sdungeon
 
-stotalDepth :: State -> AbsDepth
+stotalDepth :: State -> Dice.AbsDepth
 stotalDepth = _stotalDepth
 
 sactorD :: State -> ActorDict
@@ -135,7 +136,7 @@ sdiscoAspect = _sdiscoAspect
 sactorAspect :: State -> ActorAspect
 sactorAspect = _sactorAspect
 
-unknownLevel :: COps -> ContentId CaveKind -> AbsDepth -> X -> Y
+unknownLevel :: COps -> ContentId CaveKind -> Dice.AbsDepth -> X -> Y
              -> ([Point], [Point]) -> [Point] -> Int -> Bool
              -> Level
 unknownLevel COps{cotile}
@@ -169,7 +170,7 @@ unknownTileMap outerId lxsize lysize =
   in unknownMap PointArray.// outerUpdate
 
 -- | Initial complete global game state.
-defStateGlobal :: Dungeon -> AbsDepth -> FactionDict -> COps
+defStateGlobal :: Dungeon -> Dice.AbsDepth -> FactionDict -> COps
                -> HighScore.ScoreDict -> ContentId ModeKind -> DiscoveryKind
                -> State
 defStateGlobal _sdungeon _stotalDepth _sfactionD _scops _shigh _sgameModeId
@@ -189,7 +190,7 @@ emptyState :: State
 emptyState =
   State
     { _sdungeon = EM.empty
-    , _stotalDepth = AbsDepth 0
+    , _stotalDepth = Dice.AbsDepth 0
     , _sactorD = EM.empty
     , _sitemD = EM.empty
     , _sitemIxMap = EM.empty
@@ -221,7 +222,7 @@ updateDungeon :: (Dungeon -> Dungeon) -> State -> State
 updateDungeon f s = s {_sdungeon = f (_sdungeon s)}
 
 -- | Update dungeon depth.
-updateDepth :: (AbsDepth -> AbsDepth) -> State -> State
+updateDepth :: (Dice.AbsDepth -> Dice.AbsDepth) -> State -> State
 updateDepth f s = s {_stotalDepth = f (_stotalDepth s)}
 
 -- | Update the actor dictionary.

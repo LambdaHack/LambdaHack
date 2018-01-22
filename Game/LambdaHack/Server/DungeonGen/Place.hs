@@ -18,9 +18,9 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Text as T
 
+import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Random
@@ -112,15 +112,15 @@ buildPlace :: COps         -- ^ the game content
            -> Bool              -- ^ whether the cave is dark
            -> ContentId TileKind  -- ^ dark fence tile, if fence hollow
            -> ContentId TileKind  -- ^ lit fence tile, if fence hollow
-           -> AbsDepth          -- ^ current level depth
-           -> AbsDepth          -- ^ absolute depth
+           -> Dice.AbsDepth       -- ^ current level depth
+           -> Dice.AbsDepth       -- ^ absolute depth
            -> Int               -- ^ secret tile seed
            -> Area              -- ^ whole area of the place, fence included
            -> Maybe (GroupName PlaceKind)  -- ^ optional fixed place group
            -> Rnd (TileMapEM, Place)
 buildPlace cops@COps{cotile, coplace}
            CaveKind{..} dnight darkCorTile litCorTile
-           ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) dsecret
+           ldepth@(Dice.AbsDepth ld) totalDepth@(Dice.AbsDepth depth) dsecret
            r mplaceGroup = do
   qFWall <- fromMaybe (error $ "" `showFailure` cfillerTile)
             <$> opick cotile cfillerTile (const True)

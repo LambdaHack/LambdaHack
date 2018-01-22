@@ -1,9 +1,10 @@
-{-# LANGUAGE DeriveGeneric, FlexibleInstances, TypeSynonymInstances #-}
+{-# LANGUAGE DeriveGeneric, FlexibleInstances, GeneralizedNewtypeDeriving,
+             TypeSynonymInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 -- | Representation of dice scaled with current level depth.
 module Game.LambdaHack.Common.Dice
   ( -- * Frequency distribution for casting dice scaled with level depth
-    Dice, castDice, d, dL, z, zL, intToDice
+    Dice, AbsDepth(..), castDice, d, dL, z, zL, intToDice
   , minmaxDice, maxDice, minDice, meanDice, reduceDice
     -- * Dice for rolling a pair of integer parameters representing coordinates.
   , DiceXY(..), maxDiceXY, minDiceXY, meanDiceXY
@@ -16,7 +17,6 @@ import Game.LambdaHack.Common.Prelude
 import Control.DeepSeq
 import Data.Binary
 import Data.Hashable (Hashable)
-import Game.LambdaHack.Common.Misc
 import GHC.Generics (Generic)
 
 -- | Multiple dice rolls, some scaled with current level depth, in which case
@@ -75,6 +75,13 @@ instance Num Dice where
   abs = undefined
   signum = undefined
   fromInteger n = DiceI (fromInteger n)
+
+-- | Absolute depth in the dungeon. When used for the maximum depth
+-- of the whole dungeon, this can be different than dungeon size,
+-- e.g., when the dungeon is branched, and it can even be different
+-- than the length of the longest branch, if levels at some depths are missing.
+newtype AbsDepth = AbsDepth Int
+  deriving (Show, Eq, Ord, Hashable, Binary)
 
 -- | Cast dice scaled with current level depth. When scaling, we round up,
 -- so that the value of @1 `dL` 1@ is 1 even at the lowest level.

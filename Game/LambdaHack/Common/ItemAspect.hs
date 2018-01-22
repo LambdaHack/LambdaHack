@@ -24,7 +24,6 @@ import qualified System.Random as R
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
-import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Random
 
 -- | Aspects of items. Those that are named @Add*@ are additive
@@ -142,7 +141,7 @@ emptyAspectRecord = AspectRecord
   , aSkills      = Ability.zeroSkills
   }
 
-castAspect :: AbsDepth -> AbsDepth -> AspectRecord -> Aspect
+castAspect :: Dice.AbsDepth -> Dice.AbsDepth -> AspectRecord -> Aspect
            -> Rnd AspectRecord
 castAspect !ldepth !totalDepth !ar !asp =
   case asp of
@@ -191,8 +190,9 @@ castAspect !ldepth !totalDepth !ar !asp =
 -- nor dependent on dungeon level where the item is created.
 aspectsRandom :: [Aspect] -> Bool
 aspectsRandom ass =
-  let rollM depth = foldlM' (castAspect (AbsDepth depth) (AbsDepth 10))
-                            emptyAspectRecord ass
+  let rollM depth =
+        foldlM' (castAspect (Dice.AbsDepth depth) (Dice.AbsDepth 10))
+                emptyAspectRecord ass
       gen = R.mkStdGen 0
       (ar0, gen0) = St.runState (rollM 0) gen
       (ar1, gen1) = St.runState (rollM 10) gen0
@@ -281,7 +281,8 @@ aspectRecordToList AspectRecord{..} =
   ++ [AddAggression $ Dice.intToDice aAggression | aAggression /= 0]
   ++ [AddAbility ab $ Dice.intToDice n | (ab, n) <- EM.assocs aSkills, n /= 0]
 
-seedToAspect :: ItemSeed -> [Aspect] -> AbsDepth -> AbsDepth -> AspectRecord
+seedToAspect :: ItemSeed -> [Aspect] -> Dice.AbsDepth -> Dice.AbsDepth
+             -> AspectRecord
 seedToAspect (ItemSeed itemSeed) ass ldepth totalDepth =
   let rollM = foldlM' (castAspect ldepth totalDepth) emptyAspectRecord ass
   in St.evalState rollM (R.mkStdGen itemSeed)

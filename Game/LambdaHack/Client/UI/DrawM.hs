@@ -42,6 +42,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.ContentData
+import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
@@ -489,7 +490,7 @@ drawBaseFrame dm drawnLevelId = do
 drawArenaStatus :: COps -> Bool -> Level -> Int -> AttrLine
 drawArenaStatus COps{cocave}
                 explored
-                Level{lkind, ldepth=AbsDepth ld, lseen, lexpl}
+                Level{lkind, ldepth=Dice.AbsDepth ld, lseen, lexpl}
                 width =
   let ck = okind cocave lkind
       seenN = 100 * lseen `div` max 1 lexpl

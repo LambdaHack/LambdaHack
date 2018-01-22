@@ -15,8 +15,8 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Key (mapWithKeyM)
 
+import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Random
@@ -68,9 +68,9 @@ as follows (in gross simplification):
   on the grid is connected, and a few more might be. It is not sufficient
   to always connect all adjacent rooms, because not each cell holds a room.
 -}
-buildCave :: COps         -- ^ content definitions
-          -> AbsDepth          -- ^ depth of the level to generate
-          -> AbsDepth          -- ^ absolute depth
+buildCave :: COps              -- ^ content definitions
+          -> Dice.AbsDepth     -- ^ depth of the level to generate
+          -> Dice.AbsDepth     -- ^ absolute depth
           -> Int               -- ^ secret tile seed
           -> ContentId CaveKind  -- ^ cave kind to use for generation
           -> EM.EnumMap Point (GroupName PlaceKind)  -- ^ pos of stairs, etc.

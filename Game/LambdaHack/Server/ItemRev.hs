@@ -70,12 +70,12 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jlid jdamage =
 
 -- | Generate an item based on level.
 newItem :: COps -> FlavourMap -> DiscoveryKindRev -> UniqueSet
-        -> Freqs ItemKind -> Int -> LevelId -> AbsDepth -> AbsDepth
+        -> Freqs ItemKind -> Int -> LevelId -> Dice.AbsDepth -> Dice.AbsDepth
         -> Rnd (Maybe ( ItemKnown, ItemFull, ItemDisco
                       , IA.ItemSeed, GroupName ItemKind ))
 newItem COps{coitem} flavour discoRev uniqueSet
         itemFreq lvlSpawned lid
-        ldepth@(AbsDepth ldAbs) totalDepth@(AbsDepth depth) = do
+        ldepth@(Dice.AbsDepth ldAbs) totalDepth@(Dice.AbsDepth depth) = do
   -- Effective generation depth of actors (not items) increases with spawns.
   let scaledDepth = ldAbs * 10 `div` depth
       numSpawnedCoeff = lvlSpawned `div` 2

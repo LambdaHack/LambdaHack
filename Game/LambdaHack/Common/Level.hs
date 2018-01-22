@@ -2,7 +2,7 @@
 -- as the game progresses.
 module Game.LambdaHack.Common.Level
   ( -- * Dungeon
-    LevelId, AbsDepth, Dungeon
+    LevelId, Dungeon
   , ascendInBranch, whereTo
     -- * The @Level@ type and its components
   , ItemFloor, ActorMap, TileMap, SmellMap, Level(..)
@@ -25,6 +25,7 @@ import qualified Data.EnumMap.Strict as EM
 
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ContentData
+import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
@@ -97,7 +98,8 @@ type SmellMap = EM.EnumMap Point Time
 data Level = Level
   { lkind   :: ContentId CaveKind
                           -- ^ the kind of cave the level is an instance of
-  , ldepth  :: AbsDepth   -- ^ absolute depth of the level
+  , ldepth  :: Dice.AbsDepth
+                          -- ^ absolute depth of the level
   , lfloor  :: ItemFloor  -- ^ remembered items lying on the floor
   , lembed  :: ItemFloor  -- ^ remembered items embedded in the tile
   , lactor  :: ActorMap   -- ^ seen actors at positions on the level;

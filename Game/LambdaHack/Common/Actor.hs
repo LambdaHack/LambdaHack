@@ -24,6 +24,7 @@ import           Data.Ratio
 import           GHC.Generics (Generic)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
+import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Misc
@@ -167,9 +168,10 @@ eqpFreeN b = let size = sum $ map fst $ EM.elems $ beqp b
 -- could further influence the chance, and the chance could also affect
 -- which monster is generated. How many and which monsters are generated
 -- will also depend on the cave kind used to build the level.
-monsterGenChance :: AbsDepth -> AbsDepth -> Int -> Int -> Rnd Bool
+monsterGenChance :: Dice.AbsDepth -> Dice.AbsDepth -> Int -> Int -> Rnd Bool
 monsterGenChance _ _ _ 0 = return False
-monsterGenChance (AbsDepth n) (AbsDepth totalDepth) lvlSpawned actorCoeff =
+monsterGenChance (Dice.AbsDepth n) (Dice.AbsDepth totalDepth)
+                 lvlSpawned actorCoeff =
   assert (totalDepth > 0 && n > 0)
   -- Mimics @castDice@. On level 5/10, first 6 monsters appear fast.
   $ let scaledDepth = n * 10 `div` totalDepth

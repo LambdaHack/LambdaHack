@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Misc
     -- * Item containers
   , Container(..), CStore(..), SLore(..), ItemDialogMode(..)
     -- * Assorted
-  , GroupName, AbsDepth(..), Tactic(..)
+  , GroupName, Tactic(..)
   , toGroupName, describeTactic
   , makePhrase, makeSentence, normalLevelBound, breturn
   , appDataDir, xM, xD, minusM, minusM1, oneM, tenthM
@@ -114,13 +114,6 @@ instance Show (GroupName a) where
   show (GroupName gn) = T.unpack gn
 
 instance NFData (GroupName a)
-
--- | Absolute depth in the dungeon. When used for the maximum depth
--- of the whole dungeon, this can be different than dungeon size,
--- e.g., when the dungeon is branched, and it can even be different
--- than the length of the longest branch, if levels at some depths are missing.
-newtype AbsDepth = AbsDepth Int
-  deriving (Show, Eq, Ord, Hashable, Binary)
 
 -- | Tactic of non-leader actors. Apart of determining AI operation,
 -- each tactic implies a skill modifier, that is added to the non-leader skills

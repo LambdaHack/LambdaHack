@@ -26,6 +26,7 @@ import qualified System.Random as R
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Flavour
 import           Game.LambdaHack.Common.Item
@@ -97,12 +98,13 @@ mapFromFuns =
         in m2 `M.union` m1
   in foldr fromFun M.empty
 
-resetFactions :: FactionDict -> ContentId ModeKind -> Int -> AbsDepth -> Roster
+resetFactions :: FactionDict -> ContentId ModeKind -> Int -> Dice.AbsDepth
+              -> Roster
               -> Rnd FactionDict
 resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
   let rawCreate (gplayer@Player{..}, initialActors) = do
         let castInitialActors (ln, d, actorGroup) = do
-              n <- castDice (AbsDepth $ abs ln) totalDepth d
+              n <- castDice (Dice.AbsDepth $ abs ln) totalDepth d
               return (ln, n, actorGroup)
         ginitial <- mapM castInitialActors initialActors
         let cmap =

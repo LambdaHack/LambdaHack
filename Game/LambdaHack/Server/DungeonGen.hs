@@ -19,6 +19,7 @@ import qualified Data.IntMap.Strict as IM
 import           Data.Tuple
 import qualified System.Random as R
 
+import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
@@ -108,14 +109,14 @@ buildTileMap cops@COps{cotile, cocave} Cave{dkind, dmap, dnight} = do
 
 -- Create a level from a cave.
 buildLevel :: COps -> Int -> GroupName CaveKind
-           -> Int -> AbsDepth -> [Point]
+           -> Int -> Dice.AbsDepth -> [Point]
            -> Rnd (Level, [Point])
 buildLevel cops@COps{cocave} ln genName minD totalDepth lstairPrev = do
   dkind <- fromMaybe (error $ "" `showFailure` genName)
            <$> opick cocave genName (const True)
   let kc = okind cocave dkind
       -- Simple rule for now: level @ln@ has depth (difficulty) @abs ln@.
-      ldepth = AbsDepth $ abs ln
+      ldepth = Dice.AbsDepth $ abs ln
   -- Any stairs coming from above are considered extra stairs
   -- and if they don't exceed @extraStairs@,
   -- the amount is filled up with single downstairs.
@@ -193,7 +194,7 @@ placeDownStairs kc@CaveKind{..} ps = do
   findPoint cxsize cysize f
 
 -- Build rudimentary level from a cave kind.
-levelFromCaveKind :: COps -> ContentId CaveKind -> AbsDepth
+levelFromCaveKind :: COps -> ContentId CaveKind -> Dice.AbsDepth
                   -> TileMap -> ([Point], [Point]) -> [Point] -> Bool
                   -> Level
 levelFromCaveKind COps{cocave, coTileSpeedup}
@@ -222,8 +223,8 @@ levelFromCaveKind COps{cocave, coTileSpeedup}
 
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
-  { freshDungeon    :: Dungeon   -- ^ maps for all levels
-  , freshTotalDepth :: AbsDepth  -- ^ absolute dungeon depth
+  { freshDungeon    :: Dungeon        -- ^ maps for all levels
+  , freshTotalDepth :: Dice.AbsDepth  -- ^ absolute dungeon depth
   }
 
 -- | Generate the dungeon for a new game.
@@ -234,7 +235,7 @@ dungeonGen cops caves = do
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
           _ -> error $ "no caves" `showFailure` caves
       freshTotalDepth = assert (signum minD == signum maxD)
-                        $ AbsDepth
+                        $ Dice.AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)
       buildLvl :: ([(LevelId, Level)], [Point])
                -> (Int, GroupName CaveKind)
