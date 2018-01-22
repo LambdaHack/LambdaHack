@@ -2,7 +2,7 @@
 -- | Weapons, treasure and all the other items in the game.
 module Game.LambdaHack.Common.Item
   ( -- * The @Item@ type and operations
-    ItemId, Item(..)
+    ItemId, Item(..), ItemIdentity(..)
   , itemPrice, isMelee, isTmpCondition, isBlast
   , goesIntoEqp, goesIntoInv, goesIntoSha
     -- * Item discovery types and operations
@@ -54,7 +54,7 @@ newtype ItemId = ItemId Int
 -- and draw an unidentified item. Full information about item is available
 -- through the @jkindIx@ index as soon as the item is identified.
 data Item = Item
-  { jkindIx  :: ItemKindIx    -- ^ index pointing to the kind of the item
+  { jkind    :: ItemIdentity  -- ^ the kind of the item, or an indiretion
   , jlid     :: LevelId       -- ^ lowest level the item was created at
   , jfid     :: Maybe FactionId
                               -- ^ the faction that created the item, if any
@@ -70,6 +70,17 @@ data Item = Item
 instance Hashable Item
 
 instance Binary Item
+
+-- | Either the explicit obvious kind of the item or the kind it's hidden under,
+-- with the details covered under the index indirection.
+data ItemIdentity =
+    IdentityObvious (ContentId IK.ItemKind)
+  | IdentityCovered ItemKindIx (ContentId IK.ItemKind)
+  deriving (Show, Eq, Generic)
+
+instance Hashable ItemIdentity
+
+instance Binary ItemIdentity
 
 -- | Price an item, taking count into consideration.
 itemPrice :: (Item, Int) -> Int
@@ -172,7 +183,10 @@ itemToFull6 :: COps -> DiscoveryKind -> DiscoveryAspect -> ItemId -> Item
             -> ItemFull
 itemToFull6 COps{coitem, coItemSpeedup}
             discoKind discoAspect iid itemBase (itemK, itemTimer) =
-  let itemDisco = case EM.lookup (jkindIx itemBase) discoKind of
+  let mkindId = case jkind itemBase of
+        IdentityObvious ik -> Just ik
+        IdentityCovered ix _ik -> ix `EM.lookup` discoKind
+      itemDisco = case mkindId of
         Nothing -> Nothing
         Just itemKindId ->
             let km = IK.getKindMean itemKindId coItemSpeedup

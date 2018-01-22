@@ -263,14 +263,17 @@ updateActorAspect f s = s {_sactorAspect = f (_sactorAspect s)}
 getItemBody :: ItemId -> State -> Item
 getItemBody iid s = sitemD s EM.! iid
 
+-- This is best guess, including mean aspects, so we can take into
+-- consideration even the kind the item hides under.
 aspectRecordFromItem :: ItemId -> Item -> State -> IA.AspectRecord
 aspectRecordFromItem iid item s =
-  case EM.lookup iid (sdiscoAspect s) of
+  let kindId = case jkind item of
+        IdentityObvious ik -> ik
+        IdentityCovered ix ik -> fromMaybe ik $ ix `EM.lookup` sdiscoKind s
+  in case EM.lookup iid (sdiscoAspect s) of
     Just ar -> ar
-    Nothing -> case EM.lookup (jkindIx item) (sdiscoKind s) of
-        Just kindId -> let COps{coItemSpeedup} = scops s
-                       in IA.kmMean $ IK.getKindMean kindId coItemSpeedup
-        Nothing -> IA.emptyAspectRecord
+    Nothing -> let COps{coItemSpeedup} = scops s
+               in IA.kmMean $ IK.getKindMean kindId coItemSpeedup
 
 aspectRecordFromIid :: ItemId -> State -> IA.AspectRecord
 aspectRecordFromIid iid s = aspectRecordFromItem iid (getItemBody iid s) s

@@ -43,7 +43,7 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 -- Note 2: @ItemSeed@ instead of @AspectRecord@ is not enough,
 -- becaused different seeds may result in the same @AspectRecord@
 -- and we don't want such items to be distinct in UI and elsewhere.
-type ItemKnown = (ItemKindIx, IA.AspectRecord, Dice.Dice, Maybe FactionId)
+type ItemKnown = (ItemIdentity, IA.AspectRecord, Dice.Dice, Maybe FactionId)
 
 -- | Reverse item map, for item creation, to keep items and item identifiers
 -- in bijection.
@@ -52,18 +52,27 @@ type ItemRev = HM.HashMap ItemKnown ItemId
 type UniqueSet = ES.EnumSet (ContentId ItemKind)
 
 -- | Build an item with the given stats.
-buildItem :: FlavourMap -> DiscoveryKindRev -> ContentId ItemKind -> ItemKind
-          -> LevelId -> Dice.Dice
+buildItem :: COps -> FlavourMap -> DiscoveryKindRev
+          -> ContentId ItemKind -> ItemKind -> LevelId -> Dice.Dice
           -> Item
-buildItem (FlavourMap flavour) discoRev ikChosen kind jlid jdamage =
-  let jkindIx  = discoRev EM.! ikChosen
+buildItem COps{coitem} (FlavourMap flavourMap) discoRev
+          ikChosen kind jlid jdamage =
+  let jkind =
+        let f :: IK.Feature -> Bool
+            f IK.HideAs{} = True
+            f _ = False
+        in case find f $ IK.ifeature kind of
+          Just (IK.HideAs grp) ->
+            let kindHidden = ouniqGroup coitem grp
+            in IdentityCovered (discoRev EM.! ikChosen) kindHidden
+          _ -> IdentityObvious ikChosen
       jfid     = Nothing  -- the default
       jsymbol  = IK.isymbol kind
       jname    = IK.iname kind
       jflavour =
         case IK.iflavour kind of
           [fl] -> fl
-          _ -> flavour EM.! ikChosen
+          _ -> flavourMap EM.! ikChosen
       jfeature = IK.ifeature kind
       jweight = IK.iweight kind
   in Item{..}
@@ -73,7 +82,7 @@ newItem :: COps -> FlavourMap -> DiscoveryKindRev -> UniqueSet
         -> Freqs ItemKind -> Int -> LevelId -> Dice.AbsDepth -> Dice.AbsDepth
         -> Rnd (Maybe ( ItemKnown, ItemFull, ItemDisco
                       , IA.ItemSeed, GroupName ItemKind ))
-newItem COps{coitem} flavour discoRev uniqueSet
+newItem cops@COps{coitem} flavourMap discoRev uniqueSet
         itemFreq lvlSpawned lid
         ldepth@(Dice.AbsDepth ldAbs) totalDepth@(Dice.AbsDepth depth) = do
   -- Effective generation depth of actors (not items) increases with spawns.
@@ -111,8 +120,9 @@ newItem COps{coitem} flavour discoRev uniqueSet
     itemN <- castDice ldepth totalDepth (IK.icount itemKind)
     seed <- toEnum <$> random
     jdamage <- frequency $ toFreq "jdamage" $ IK.idamage itemKind
-    let itemBase = buildItem flavour discoRev itemKindId itemKind lid jdamage
-        kindIx = jkindIx itemBase
+    let itemBase = buildItem cops flavourMap discoRev
+                             itemKindId itemKind lid jdamage
+        itemIdentity = jkind itemBase
         itemK = max 1 itemN
         itemTimer = [timeZero | IK.Periodic `elem` IK.ieffects itemKind]
                       -- delay first discharge of single organs
@@ -123,7 +133,7 @@ newItem COps{coitem} flavour discoRev uniqueSet
         aspectRecord =
           IA.seedToAspect seed (IK.iaspects itemKind) ldepth totalDepth
         itemFull = ItemFull {..}
-    return $ Just ( (kindIx, aspectRecord, jdamage, jfid itemBase)
+    return $ Just ( (itemIdentity, aspectRecord, jdamage, jfid itemBase)
                   , itemFull
                   , itemDiscoData
                   , seed

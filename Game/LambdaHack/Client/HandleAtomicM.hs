@@ -149,12 +149,22 @@ cmdAtomicSemCli oldState cmd = case cmd of
       in cli {scondInMelee = foldl' g (scondInMelee cli) arenas}
   UpdDiscover c iid ik seed -> do
     item <- getsState $ getItemBody iid
-    discoverKind c (jkindIx item) ik
+    discoKind <- getsState sdiscoKind
+    case jkind item of
+      IdentityObvious _ik -> return ()
+      IdentityCovered ix _ik | ix `EM.notMember` discoKind ->
+        discoverKind c ix ik
+      IdentityCovered _ix _ik -> return ()
     discoverSeed c iid seed
   UpdCover c iid ik seed -> do
     coverSeed c iid seed
     item <- getsState $ getItemBody iid
-    coverKind c (jkindIx item) ik
+    discoKind <- getsState sdiscoKind
+    case jkind item of
+      IdentityObvious _ik -> return ()
+      IdentityCovered ix _ik | ix `EM.member` discoKind ->
+        coverKind c ix ik
+      IdentityCovered _ix _ik -> return ()
   UpdDiscoverKind c ix ik -> discoverKind c ix ik
   UpdCoverKind c ix ik -> coverKind c ix ik
   UpdDiscoverSeed c iid seed -> discoverSeed c iid seed
@@ -244,21 +254,23 @@ addItemToDiscoBenefit iid item = do
   cops@COps{coitem, coItemSpeedup} <- getsState scops
   discoBenefit <- getsClient sdiscoBenefit
   case EM.lookup iid discoBenefit of
-    Just{} -> return ()  -- already there, possibly with real aspects, too
+    Just{} -> return ()  -- already there, with real or provisional aspects,
+                         -- but we haven't learned anything new about the item
     Nothing -> do
       discoKind <- getsState sdiscoKind
-      case EM.lookup (jkindIx item) discoKind of
-        Nothing -> return ()
-        Just kindId -> do  -- possible, if the kind sent in @UpdRestart@
-          side <- getsClient sside
-          fact <- getsState $ (EM.! side) . sfactionD
-          let mean = IA.kmMean $ IK.getKindMean kindId coItemSpeedup
-              effects = IK.ieffects $ okind coitem kindId
-              -- Mean aspects are used, because the item can't yet have
-              -- know real aspects, because it didn't even have kind before.
-              benefit = totalUsefulness cops fact effects mean item
-          modifyClient $ \cli ->
-            cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
+      -- Best guess:
+      let kindId = case jkind item of
+            IdentityObvious ik -> ik
+            IdentityCovered ix ik -> fromMaybe ik $ ix `EM.lookup` discoKind
+      side <- getsClient sside
+      fact <- getsState $ (EM.! side) . sfactionD
+      let mean = IA.kmMean $ IK.getKindMean kindId coItemSpeedup
+          effects = IK.ieffects $ okind coitem kindId
+          -- Mean aspects are used, because the item can't yet have
+          -- known real aspects, because it didn't even have kind before.
+          benefit = totalUsefulness cops fact effects mean item
+      modifyClient $ \cli ->
+        cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
 
 perception :: MonadClient m => LevelId -> Perception -> Perception -> m ()
 perception lid outPer inPer = do
@@ -304,11 +316,12 @@ discoverKind _c ix ik = do
         let item = itemD EM.! iid
         in totalUsefulness cops fact effs mean item
   itemIxMap <- getsState $ (EM.! ix) . sitemIxMap
+  -- Possibly overwrite earlier, provisional benefits.
   forM_ (ES.elems itemIxMap) $ \iid -> modifyClient $ \cli ->
     cli {sdiscoBenefit = EM.insert iid (benefit iid) (sdiscoBenefit cli)}
 
 coverKind :: Container -> ItemKindIx -> ContentId ItemKind -> m ()
-coverKind _c _iid _ik = undefined
+coverKind _c _ix _ik = undefined
 
 discoverSeed :: MonadClient m => Container -> ItemId -> IA.ItemSeed -> m ()
 discoverSeed _c iid seed = do
@@ -322,11 +335,13 @@ discoverSeed _c iid seed = do
   item <- getsState $ getItemBody iid
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel $ jlid item
-  let kindId = fromMaybe (error "item kind not found")
-                         (EM.lookup (jkindIx item) discoKind)
+  let kindId = case jkind item of
+        IdentityObvious ik -> ik
+        IdentityCovered ix _ -> fromJust $ EM.lookup ix discoKind
       kind = okind coitem kindId
       aspects = IA.seedToAspect seed (IK.iaspects kind) ldepth totalDepth
       benefit = totalUsefulness cops fact (IK.ieffects kind) aspects item
+  -- Possibly overwrite earlier, provisional benefits.
   modifyClient $ \cli ->
     cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
 

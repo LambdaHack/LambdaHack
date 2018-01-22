@@ -296,15 +296,16 @@ addAis ais = do
                 `blame` "inconsistent added items"
                 `swith` (item1, item2, ais))
                item2 -- keep the first found level
-  forM_ ais $ \(iid, item) ->
-    modifyState
-    $ updateItemIxMap
-        (EM.insertWith (ES.union) (jkindIx item) (ES.singleton iid))
-      . updateItemD (EM.insertWith h iid item)
+  forM_ ais $ \(iid, item) -> do
+    let f = case jkind item of
+          IdentityObvious _ -> id
+          IdentityCovered ix _ ->
+            updateItemIxMap $ EM.insertWith (ES.union) ix (ES.singleton iid)
+    modifyState $ f . updateItemD (EM.insertWith h iid item)
 
 itemsMatch :: Item -> Item -> Bool
 itemsMatch item1 item2 =
-  jkindIx item1 == jkindIx item2
+  jkind item1 == jkind item2
   -- Note that nothing else needs to be the same, since items are merged
   -- and clients have different views on dungeon items than the server.
 

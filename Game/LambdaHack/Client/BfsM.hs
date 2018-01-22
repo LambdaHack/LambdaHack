@@ -293,15 +293,19 @@ embedBenefit fleeVia aid pbags = do
   condEnoughGear <- condEnoughGearM aid
   discoKind <- getsState sdiscoKind
   discoBenefit <- getsClient sdiscoBenefit
-  s <- getState
+  getItem <- getsState $ flip getItemBody
   let alterMinSkill p = Tile.alterMinSkill coTileSpeedup $ lvl `at` p
       lidExplored = ES.member (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
       -- Ignoring the number of items, because only one of each @iid@
       -- is triggered at the same time, others are left to be used later on.
-      iidToEffs iid = case EM.lookup (jkindIx $ getItemBody iid s) discoKind of
-        Nothing -> []
-        Just kindId -> IK.ieffects $ okind coitem kindId
+      -- Taking the kind the item hides under into consideration, because
+      -- it's a best guess only, for AI and UI.
+      iidToEffs iid =
+        let kindId = case jkind $ getItem iid of
+              IdentityObvious ik -> ik
+              IdentityCovered ix ik -> fromMaybe ik $ ix `EM.lookup` discoKind
+        in IK.ieffects $ okind coitem kindId
       isEffEscapeOrAscend IK.Ascend{} = True
       isEffEscapeOrAscend IK.Escape{} = True
       isEffEscapeOrAscend (IK.OneOf l) = any isEffEscapeOrAscend l

@@ -250,7 +250,7 @@ recBenefit grp cops@COps{coitem} fact =
 
 fakeItem :: IK.ItemKind -> Item
 fakeItem kind =
-  let jkindIx  = toEnum (-1)  -- dummy
+  let jkind    = IdentityObvious $ toEnum (-1)  -- dummy
       jlid     = toEnum 0  -- dummy
       jfid     = Nothing  -- the default
       jsymbol  = IK.isymbol kind

@@ -195,8 +195,11 @@ updDestroyItem :: MonadStateWrite m
                => ItemId -> Item -> ItemQuant -> Container -> m ()
 updDestroyItem iid item kit@(k, _) c = assert (k > 0) $ do
   deleteItemContainer iid kit c
-  -- Do not remove the item from @sitemD@ nor from @sitemRev@,
-  -- It's incredibly costly and not noticeable for the player.
+  -- Do not remove the item from @sitemD@ nor from @sitemRev@
+  -- nor from @DiscoveryAspect@, @ItemIxMap@, etc.
+  -- It's incredibly costly and not particularly noticeable for the player.
+  -- Moreover, copies of the item may reappear in the future
+  -- and then we save computation and the player remembers past discovery.
   -- However, assert the item is registered in @sitemD@.
   itemD <- getsState sitemD
   let !_A = assert ((case iid `EM.lookup` itemD of
@@ -551,20 +554,22 @@ updDiscover :: MonadStateWrite m
             => Container -> ItemId -> ContentId ItemKind -> IA.ItemSeed -> m ()
 updDiscover _c iid ik seed = do
   itemD <- getsState sitemD
+  COps{coItemSpeedup} <- getsState scops
+  let kmIsConst = IA.kmConst $ IK.getKindMean ik coItemSpeedup
+  discoKind <- getsState sdiscoKind
+  let discoverAtMostSeed = do
+        discoAspect <- getsState sdiscoAspect
+        if kmIsConst || iid `EM.member` discoAspect
+        then atomicFail "item already fully discovered"
+        else discoverSeed iid seed
   case EM.lookup iid itemD of
-    Nothing -> atomicFail "discovered item unknown"
-    Just item -> do
-      COps{coItemSpeedup} <- getsState scops
-      let kmIsConst = IA.kmConst $ IK.getKindMean ik coItemSpeedup
-      discoKind <- getsState sdiscoKind
-      case EM.lookup (jkindIx item) discoKind of
-        Just{} -> do
-          discoAspect <- getsState sdiscoAspect
-          if kmIsConst || iid `EM.member` discoAspect
-          then atomicFail "item already fully discovered"
-          else discoverSeed iid seed
+    Nothing -> atomicFail "discovered item unheard of"
+    Just item -> case jkind item of
+      IdentityObvious _ -> discoverAtMostSeed
+      IdentityCovered ix _ik -> case EM.lookup ix discoKind of
+        Just{} -> discoverAtMostSeed
         Nothing -> do
-          discoverKind (jkindIx item) ik
+          discoverKind ix ik
           unless kmIsConst $ discoverSeed iid seed
   resetActorAspect
 
@@ -600,16 +605,16 @@ updDiscoverSeed _c iid seed = do
     Nothing -> atomicFail "discovered item unheard of"
     Just item -> do
       discoKind <- getsState sdiscoKind
-      case EM.lookup (jkindIx item) discoKind of
-        Nothing -> error "discovered item kind unknown"
-        Just kindId -> do
-          discoAspect <- getsState sdiscoAspect
-          let kmIsConst = IA.kmConst $ IK.getKindMean kindId coItemSpeedup
-          if kmIsConst || iid `EM.member` discoAspect
-          then atomicFail "item seed already discovered"
-          else do
-            discoverSeed iid seed
-            resetActorAspect
+      let kindId = case jkind item of
+            IdentityObvious ik -> ik
+            IdentityCovered ix _ -> fromJust $ EM.lookup ix discoKind
+      discoAspect <- getsState sdiscoAspect
+      let kmIsConst = IA.kmConst $ IK.getKindMean kindId coItemSpeedup
+      if kmIsConst || iid `EM.member` discoAspect
+      then atomicFail "item seed already discovered"
+      else do
+        discoverSeed iid seed
+        resetActorAspect
 
 discoverSeed :: MonadStateWrite m => ItemId -> IA.ItemSeed -> m ()
 discoverSeed iid seed = do
@@ -618,8 +623,9 @@ discoverSeed iid seed = do
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel $ jlid item
   discoKind <- getsState sdiscoKind
-  let kindId = fromMaybe (error "discovered item kind unknown")
-                         (EM.lookup (jkindIx item) discoKind)
+  let kindId = case jkind item of
+        IdentityObvious ik -> ik  -- obvious
+        IdentityCovered ix _ -> fromJust $ EM.lookup ix discoKind
       kind = okind coitem kindId
       aspects = IA.seedToAspect seed (IK.iaspects kind) ldepth totalDepth
       f Nothing = Just aspects

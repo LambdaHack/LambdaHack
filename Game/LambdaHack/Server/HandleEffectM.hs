@@ -257,11 +257,11 @@ itemEffectDisco source target iid c recharged periodic effs = do
   when (ur >= UseId) $ do  -- note: @UseId@ suffices, not only @UseUp@
     discoKind <- getsState sdiscoKind
     item <- getsState $ getItemBody iid
-    case EM.lookup (jkindIx item) discoKind of
-      Just kindId -> do
-        seed <- getsServer $ (EM.! iid) . sitemSeedD
-        execUpdAtomic $ UpdDiscover c iid kindId seed
-      _ -> error $ "" `showFailure` (source, target, iid, item)
+    let kindId = case jkind item of
+          IdentityObvious ik -> ik
+          IdentityCovered ix _ik -> fromJust $ ix `EM.lookup` discoKind
+    seed <- getsServer $ (EM.! iid) . sitemSeedD
+    execUpdAtomic $ UpdDiscover c iid kindId seed
   return ur
 
 -- | The source actor affects the target actor, with a given effect and power.
@@ -357,7 +357,9 @@ effectExplode execSfx cgroup target = do
   let (iid, (ItemFull{itemBase, itemK}, _)) =
         fromMaybe (error $ "" `showFailure` cgroup) m2
       Point x y = bpos tb
-      semirandom = fromEnum (jkindIx itemBase)
+      semirandom = case jkind itemBase of
+        IdentityObvious ik -> fromEnum ik
+        IdentityCovered ix _ -> fromEnum ix
       projectN k100 (n, _) = do
         -- We pick a point at the border, not inside, to have a uniform
         -- distribution for the points the line goes through at each distance
@@ -545,11 +547,12 @@ dominateFid fid target = do
   ar <- getsState $ getActorAspect target
   getItem <- getsState $ flip getItemBody
   discoKind <- getsState sdiscoKind
-  let isImpression iid = case EM.lookup (jkindIx $ getItem iid) discoKind of
-        Just kindId ->
-          maybe False (> 0) $ lookup "impressed"
-          $ IK.ifreq (okind coitem kindId)
-        Nothing -> error $ "" `showFailure` iid
+  let isImpression iid =
+        let kindId = case jkind $ getItem iid of
+              IdentityObvious ik -> ik
+              IdentityCovered ix _ik -> fromJust $ ix `EM.lookup` discoKind
+            kind = okind coitem kindId
+        in maybe False (> 0) $ lookup "impressed" $ IK.ifreq kind
       dropAllImpressions = EM.filterWithKey (\iid _ -> not $ isImpression iid)
       borganNoImpression = dropAllImpressions $ borgan tb
   btime <-
@@ -1062,12 +1065,11 @@ allGroupItems store grp target = do
   b <- getsState $ getActorBody target
   let hasGroup (iid, _) = do
         item <- getsState $ getItemBody iid
-        case EM.lookup (jkindIx item) discoKind of
-          Just kindId ->
-            return $! maybe False (> 0) $ lookup grp
-                   $ IK.ifreq (okind coitem kindId)
-          Nothing ->
-            error $ "" `showFailure` (target, grp, iid, item)
+        let kindId = case jkind item of
+              IdentityObvious ik -> ik
+              IdentityCovered ix _ik -> fromJust $ ix `EM.lookup` discoKind
+            kind = okind coitem kindId
+        return $! maybe False (> 0) $ lookup grp $ IK.ifreq kind
   assocsCStore <- getsState $ EM.assocs . getBodyStoreBag b store
   filterM hasGroup assocsCStore
 
@@ -1154,13 +1156,11 @@ effectIdentify execSfx iidId source target = do
   let tryFull store as = case as of
         [] -> return False
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
-        (iid, ItemFull{itemBase, itemDisco=Just ItemDisco{..}}) : rest ->
+        (iid, ItemFull{itemDisco=Just ItemDisco{..}}) : rest ->
           let furtherIdNotNeeded =
-                case EM.lookup (jkindIx itemBase) $ sdiscoKind s of
-                  Just{} -> IA.kmConst $ IK.getKindMean itemKindId coItemSpeedup
-                  Nothing -> False
-          in if iid `EM.member` sdiscoAspect s  -- already fully identified
-                || furtherIdNotNeeded
+                iid `EM.member` sdiscoAspect s  -- already fully identified
+                || IA.kmConst (IK.getKindMean itemKindId coItemSpeedup)
+          in if furtherIdNotNeeded
                 || store == CGround
                    && (not $ any IK.forIdEffect $ IK.ieffects itemKind)
                      -- will be identified when picked up, so don't bother;

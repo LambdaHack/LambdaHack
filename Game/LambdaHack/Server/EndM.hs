@@ -113,7 +113,9 @@ dieSer aid b = do
   unless (bproj b) $ do
     discoKind <- getsState sdiscoKind
     trunk <- getsState $ getItemBody $ btrunk b
-    let kindId = discoKind EM.! jkindIx trunk
+    let kindId = case jkind trunk of
+          IdentityObvious ik -> ik
+          IdentityCovered ix _ik -> fromJust $ ix `EM.lookup` discoKind
     execUpdAtomic $ UpdRecordKill aid kindId 1
     -- At this point the actor's body exists and his items are not dropped.
     deduceKilled aid

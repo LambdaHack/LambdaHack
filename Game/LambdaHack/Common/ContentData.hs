@@ -22,6 +22,7 @@ import Game.LambdaHack.Common.Prelude
 import           Control.DeepSeq
 import           Data.Binary
 import           Data.Function
+import           Data.Hashable (Hashable)
 import qualified Data.Map.Strict as M
 import           Data.Ord
 import qualified Data.Text as T
@@ -37,6 +38,8 @@ newtype ContentId c = ContentId Word16
   deriving (Show, Eq, Ord, Enum, Bounded, Binary, Generic)
 
 instance NFData (ContentId c)
+
+instance Hashable (ContentId c)
 
 -- | Verified and preprocessed content data of a particular kind.
 data ContentData c = ContentData
