@@ -7,8 +7,8 @@ module Game.LambdaHack.Common.Misc
     -- * Item containers
   , Container(..), CStore(..), SLore(..), ItemDialogMode(..)
     -- * Assorted
-  , GroupName, Freqs, Rarity, AbsDepth(..), Tactic(..)
-  , toGroupName, validateRarity, describeTactic
+  , GroupName, AbsDepth(..), Tactic(..)
+  , toGroupName, describeTactic
   , makePhrase, makeSentence, normalLevelBound, breturn
   , appDataDir, xM, xD, minusM, minusM1, oneM, tenthM
   ) where
@@ -23,12 +23,10 @@ import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Fixed as Fixed
-import           Data.Function
 import           Data.Hashable
 import qualified Data.HashMap.Strict as HM
 import           Data.Int (Int64)
 import           Data.Key
-import           Data.Ord
 import           Data.String (IsString (..))
 import qualified Data.Text as T
 import qualified Data.Time as Time
@@ -117,14 +115,6 @@ instance Show (GroupName a) where
 
 instance NFData (GroupName a)
 
--- | For each group that the kind belongs to, denoted by a @GroupName@
--- in the first component of a pair, the second component of a pair shows
--- how common the kind is within the group.
-type Freqs a = [(GroupName a, Int)]
-
--- | Rarity on given depths.
-type Rarity = [(Double, Int)]
-
 -- | Absolute depth in the dungeon. When used for the maximum depth
 -- of the whole dungeon, this can be different than dungeon size,
 -- e.g., when the dungeon is branched, and it can even be different
@@ -168,18 +158,6 @@ instance NFData Tactic
 toGroupName :: Text -> GroupName a
 {-# INLINE toGroupName #-}
 toGroupName = GroupName
-
-validateRarity :: Rarity -> [Text]
-validateRarity rarity =
-  let sortedRarity = sortBy (comparing fst) rarity
-  in [ "rarity not sorted" | sortedRarity /= rarity ]
-     ++ [ "rarity depth thresholds not unique"
-        | nubBy ((==) `on` fst) sortedRarity /= sortedRarity ]
-     ++ [ "rarity depth not between 0 and 10"
-        | case (sortedRarity, reverse sortedRarity) of
-            ((lowest, _) : _, (highest, _) : _) ->
-              lowest <= 0 || highest > 10
-            _ -> False ]
 
 describeTactic :: Tactic -> Text
 describeTactic TExplore = "investigate unknown positions, chase targets"

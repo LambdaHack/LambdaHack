@@ -20,6 +20,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as S
 
 import qualified Game.LambdaHack.Common.Color as Color
+import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Flavour
 import           Game.LambdaHack.Common.Frequency

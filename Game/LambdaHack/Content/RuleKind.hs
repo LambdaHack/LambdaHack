@@ -18,7 +18,6 @@ import           Data.Version
 import           GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.ContentData
-import Game.LambdaHack.Common.Misc
 
 -- | The type of game rule sets and assorted game data.
 --

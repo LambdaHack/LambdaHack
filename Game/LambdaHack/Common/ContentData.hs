@@ -9,7 +9,8 @@
 -- After the list is verified and the data preprocessed, it's held
 -- in the @ContentData@ datatype.
 module Game.LambdaHack.Common.ContentData
-  ( ContentId(ContentId), ContentData, emptyContentData, makeContentData
+  ( ContentId(ContentId), ContentData, Freqs, Rarity
+  , validateRarity, emptyContentData, makeContentData
   , okind, omemberGroup, ouniqGroup, opick
   , ofoldrWithKey, ofoldlWithKey', ofoldlGroup', omapVector, olength
   ) where
@@ -20,7 +21,9 @@ import Game.LambdaHack.Common.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary
+import           Data.Function
 import qualified Data.Map.Strict as M
+import           Data.Ord
 import qualified Data.Text as T
 import qualified Data.Vector as V
 import           GHC.Generics (Generic)
@@ -43,6 +46,26 @@ data ContentData c = ContentData
   deriving Generic
 
 instance NFData c => NFData (ContentData c)
+
+-- | For each group that the kind belongs to, denoted by a @GroupName@
+-- in the first component of a pair, the second component of a pair shows
+-- how common the kind is within the group.
+type Freqs a = [(GroupName a, Int)]
+
+-- | Rarity on given depths.
+type Rarity = [(Double, Int)]
+
+validateRarity :: Rarity -> [Text]
+validateRarity rarity =
+  let sortedRarity = sortBy (comparing fst) rarity
+  in [ "rarity not sorted" | sortedRarity /= rarity ]
+     ++ [ "rarity depth thresholds not unique"
+        | nubBy ((==) `on` fst) sortedRarity /= sortedRarity ]
+     ++ [ "rarity depth not between 0 and 10"
+        | case (sortedRarity, reverse sortedRarity) of
+            ((lowest, _) : _, (highest, _) : _) ->
+              lowest <= 0 || highest > 10
+            _ -> False ]
 
 emptyContentData :: ContentData a
 emptyContentData = ContentData V.empty M.empty

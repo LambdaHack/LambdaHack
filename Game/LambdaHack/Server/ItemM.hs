@@ -21,6 +21,7 @@ import           Data.Ord
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.ContentData
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
