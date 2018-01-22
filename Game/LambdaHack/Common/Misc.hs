@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.Misc
     -- * Assorted
   , GroupName, Tactic(..)
   , toGroupName, describeTactic
-  , makePhrase, makeSentence, normalLevelBound, breturn
+  , makePhrase, makeSentence, normalLevelBound
   , appDataDir, xM, xD, minusM, minusM1, oneM, tenthM
   ) where
 
@@ -173,11 +173,6 @@ makeSentence = MU.makeSentence MU.defIrregular
 -- | Level bounds.
 normalLevelBound :: (Int, Int)
 normalLevelBound = (79, 20)
-
--- | @breturn b a = [a | b]@
-breturn :: MonadPlus m => Bool -> a -> m a
-breturn True a  = return a
-breturn False _ = mzero
 
 -- | Personal data directory for the game. Depends on the OS and the game,
 -- e.g., for LambdaHack under Linux it's @~\/.LambdaHack\/@.

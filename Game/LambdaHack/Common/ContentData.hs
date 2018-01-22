@@ -140,13 +140,6 @@ opick ContentData{groupFreq} !cgroup !p =
       in if nullFreq freq
          then return Nothing
          else fmap (Just . fst) $ frequency freq
-           {- with monadic notation; may produce empty freq:
-           (i, k) <- freq
-           breturn (p k) i
-           -}
-           {- with MonadComprehensions:
-           frequency [ i | (i, k) <- groupFreq M.! cgroup, p k ]
-           -}
     _ -> return Nothing
 
 -- | Fold over all content elements of @a@.
