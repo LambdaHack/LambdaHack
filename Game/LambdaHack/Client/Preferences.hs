@@ -19,7 +19,6 @@ import           Game.LambdaHack.Common.Flavour
 import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
-import           Game.LambdaHack.Common.ItemStrongest
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Time
@@ -233,7 +232,8 @@ organBenefit turnTimer grp cops@COps{coitem} fact =
             peffect eff = fromIntegral p * fst (effectToBenefit cops fact eff)
         in ( sacc + Dice.meanDice (IK.icount kind)
                     * (sum (map paspect $ IK.iaspects kind)
-                       + sum (map peffect $ stripRecharging $ IK.ieffects kind))
+                       + sum (map peffect
+                              $ IK.stripRecharging $ IK.ieffects kind))
                   - averageTurnValue / turnTimer
            , pacc + p )
   in ofoldlGroup' coitem grp f (0, 0)
@@ -330,7 +330,7 @@ totalUsefulness !cops !fact !effects !aspects !item =
                   then eff
                   else eff * avgItemDelay / fromIntegral timeout) bens
             (cself, cfoe) = unzip $ map (effectToBenefit cops fact)
-                                        (stripRecharging effects)
+                                        (IK.stripRecharging effects)
         in (scaleChargeBens cself, scaleChargeBens cfoe)
       -- If the item is periodic, we add charging effects to equipment benefit,
       -- but we don't assign periodic bonus or malus, because periodic items

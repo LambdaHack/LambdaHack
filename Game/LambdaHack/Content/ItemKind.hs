@@ -5,6 +5,7 @@ module Game.LambdaHack.Content.ItemKind
   , Effect(..), TimerDice, ThrowMod(..), Feature(..)
   , ItemSpeedup, emptyItemSpeedup, getKindMean, speedupItem
   , meanAspect, boostItemKindList, forApplyEffect, forIdEffect
+  , filterRecharging, stripRecharging, stripOnSmash
   , toDmg, tmpNoLonger, tmpLess, toVelocity, toLinger
   , timerNone, isTimerNone, foldTimer
   , toOrganGameTurn, toOrganActorTurn, toOrganNone
@@ -35,6 +36,7 @@ import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Misc
 
 -- | Item properties that are fixed for a given kind of items.
+-- Note that this time is mutually recursive with 'Effect'.
 data ItemKind = ItemKind
   { isymbol  :: Char                -- ^ map symbol
   , iname    :: Text                -- ^ generic name
@@ -245,6 +247,27 @@ forIdEffect eff = case eff of
   Periodic -> False
   Composite (eff1 : _) -> forIdEffect eff1  -- the rest may never fire
   _ -> True
+
+filterRecharging :: [Effect] -> [Effect]
+filterRecharging effs =
+  let getRechargingEffect :: Effect -> Maybe Effect
+      getRechargingEffect e@Recharging{} = Just e
+      getRechargingEffect _ = Nothing
+  in mapMaybe getRechargingEffect effs
+
+stripRecharging :: [Effect] -> [Effect]
+stripRecharging effs =
+  let getRechargingEffect :: Effect -> Maybe Effect
+      getRechargingEffect (Recharging e) = Just e
+      getRechargingEffect _ = Nothing
+  in mapMaybe getRechargingEffect effs
+
+stripOnSmash :: [Effect] -> [Effect]
+stripOnSmash effs =
+  let getOnSmashEffect :: Effect -> Maybe Effect
+      getOnSmashEffect (OnSmash e) = Just e
+      getOnSmashEffect _ = Nothing
+  in mapMaybe getOnSmashEffect effs
 
 toDmg :: Dice.Dice -> [(Int, Dice.Dice)]
 toDmg dmg = [(1, dmg)]

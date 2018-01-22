@@ -26,7 +26,6 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import           Game.LambdaHack.Common.ItemStrongest
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -289,7 +288,7 @@ applyPeriodicLevel = do
                   -- In periodic activation, consider *only* recharging effects.
                   -- Activate even if effects null, to possibly destroy item.
                   effectAndDestroy False aid aid iid (CActor aid cstore) True
-                                   (filterRecharging ieffects) itemFull
+                                   (IK.filterRecharging ieffects) itemFull
               _ -> error $ "" `showFailure` (aid, cstore, iid)
       applyPeriodicActor (aid, b) =
         when (not (bproj b) && blid b `ES.member` arenasSet) $ do

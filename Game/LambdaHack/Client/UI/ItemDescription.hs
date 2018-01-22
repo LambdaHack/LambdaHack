@@ -26,7 +26,6 @@ import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Flavour
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
-import           Game.LambdaHack.Common.ItemStrongest
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
@@ -120,9 +119,9 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemBase, itemDisco} =
                       then map ppA restAs ++ map ppE effects
                       else map ppE effects ++ map ppA restAs
                 rechargingTs = T.intercalate " " $ filter (not . T.null)
-                               $ map ppE $ stripRecharging effects
+                               $ map ppE $ IK.stripRecharging effects
                 onSmashTs = T.intercalate " " $ filter (not . T.null)
-                            $ map ppE $ stripOnSmash effects
+                            $ map ppE $ IK.stripOnSmash effects
                 durable = IK.Durable `elem` jfeature itemBase
                 fragile = IK.Fragile `elem` jfeature itemBase
                 periodicOrTimeout =

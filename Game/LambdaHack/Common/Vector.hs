@@ -7,11 +7,12 @@ module Game.LambdaHack.Common.Vector
   , vicinity, vicinityUnsafe, vicinityCardinal, vicinityCardinalUnsafe
   , squareUnsafeSet
   , shift, shiftBounded, trajectoryToPath, trajectoryToPathBounded
-  , vectorToFrom, pathToTrajectory
+  , vectorToFrom, computeTrajectory
   , RadianAngle, rotate, towards
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , maxVectorDim, _moveTexts, longMoveTexts, normalize, normalizeVector
+  , pathToTrajectory
 #endif
   ) where
 
@@ -28,6 +29,7 @@ import           Data.Int (Int32)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Time
 
 -- | 2D vectors in cartesian representation. Coordinates grow to the right
 -- and down, so that the (1, 1) vector points to the bottom-right corner
@@ -193,6 +195,13 @@ vectorToFrom (Point x0 y0) (Point x1 y1) = Vector (x0 - x1) (y0 - y1)
 pathToTrajectory :: [Point] -> [Vector]
 pathToTrajectory [] = []
 pathToTrajectory lp1@(_ : lp2) = zipWith vectorToFrom lp2 lp1
+
+computeTrajectory :: Int -> Int -> Int -> [Point] -> ([Vector], (Speed, Int))
+computeTrajectory weight throwVelocity throwLinger path =
+  let speed = speedFromWeight weight throwVelocity
+      trange = rangeFromSpeedAndLinger speed throwLinger
+      btrajectory = pathToTrajectory $ take (trange + 1) path
+  in (btrajectory, (speed, trange))
 
 type RadianAngle = Double
 
