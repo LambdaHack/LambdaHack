@@ -34,7 +34,7 @@ warrior = ItemKind
   , irarity  = [(1, 5)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 80  -- partially from clothes and assumed first aid
                , AddMaxCalm 70, AddSpeed 20, AddNocto 2
                , AddAbility AbProject 2, AddAbility AbApply 1
@@ -142,7 +142,7 @@ eye = ItemKind
   , irarity  = [(1, 10), (10, 6)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 16, AddMaxCalm 70, AddSpeed 20, AddNocto 2
                , AddAggression 1
                , AddAbility AbProject 2, AddAbility AbApply 1
@@ -163,7 +163,7 @@ fastEye = ItemKind
   , irarity  = [(5, 5), (10, 5)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 5, AddMaxCalm 70, AddSpeed 30, AddNocto 2
                , AddAggression 1
                , AddAbility AbAlter 2 ]
@@ -183,7 +183,7 @@ nose = ItemKind  -- depends solely on smell
   , irarity  = [(1, 5), (4, 2), (10, 5)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 30, AddMaxCalm 30, AddSpeed 18, AddNocto 2
                , AddAggression 1
                , AddAbility AbProject (-1), AddAbility AbAlter 2 ]
@@ -203,7 +203,7 @@ elbow = ItemKind
   , irarity  = [(7, 1), (10, 5)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 8, AddMaxCalm 80, AddSpeed 21, AddNocto 2
                , AddAbility AbProject 2, AddAbility AbApply 1
                , AddAbility AbAlter 2, AddAbility AbMelee (-1) ]
@@ -225,7 +225,7 @@ torsor = ItemKind
   , irarity  = [(9, 0), (10, 1000)]  -- unique
   , iverbHit = "thud"
   , iweight  = 80000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 300, AddMaxCalm 100, AddSpeed 10, AddNocto 2
                , AddAggression 3, AddAbility AbProject 2, AddAbility AbApply 1
                , AddAbility AbAlter 1]  -- can't exit the gated level, the boss
@@ -258,7 +258,7 @@ goldenJackal = ItemKind  -- basically a much smaller and slower hyena
   , irarity  = [(1, 3)]
   , iverbHit = "thud"
   , iweight  = 13000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 12, AddMaxCalm 70, AddSpeed 24, AddNocto 2 ]
   , ieffects = []
   , ifeature = [Durable]
@@ -276,7 +276,7 @@ griffonVulture = ItemKind
   , irarity  = [(1, 5)]
   , iverbHit = "thud"
   , iweight  = 13000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 12, AddMaxCalm 80, AddSpeed 22, AddNocto 2
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
       -- Animals don't have leader, usually, so even if only one of level,
@@ -299,7 +299,7 @@ skunk = ItemKind
   , irarity  = [(1, 5), (10, 3)]
   , iverbHit = "thud"
   , iweight  = 4000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 10, AddMaxCalm 30, AddSpeed 22, AddNocto 2
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
   , ieffects = []
@@ -319,7 +319,7 @@ armadillo = ItemKind
   , irarity  = [(1, 5)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 10, AddMaxCalm 30, AddSpeed 20, AddNocto 2
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
   , ieffects = []
@@ -339,7 +339,7 @@ gilaMonster = ItemKind
   , irarity  = [(2, 5), (10, 3)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 12, AddMaxCalm 50, AddSpeed 18, AddNocto 2
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
   , ieffects = []
@@ -358,7 +358,7 @@ rattlesnake = ItemKind
   , irarity  = [(5, 1), (10, 12)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 25, AddMaxCalm 60, AddSpeed 16, AddNocto 2
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
   , ieffects = []
@@ -377,7 +377,7 @@ komodoDragon = ItemKind  -- bad hearing; regeneration makes it very powerful
   , irarity  = [(9, 0), (10, 10)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 41, AddMaxCalm 60, AddSpeed 18, AddNocto 2 ]
   , ieffects = []
   , ifeature = [Durable]
@@ -397,7 +397,7 @@ hyena = ItemKind
   , irarity  = [(4, 1), (10, 8)]
   , iverbHit = "thud"
   , iweight  = 60000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 20, AddMaxCalm 70, AddSpeed 32, AddNocto 2 ]
   , ieffects = []
   , ifeature = [Durable]
@@ -414,7 +414,7 @@ alligator = ItemKind
   , irarity  = [(8, 1), (10, 9)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 41, AddMaxCalm 70, AddSpeed 18, AddNocto 2 ]
   , ieffects = []
   , ifeature = [Durable]
@@ -433,7 +433,7 @@ rhinoceros = ItemKind
   , irarity  = [(2, 0), (3, 1000000), (4, 0)]  -- unique
   , iverbHit = "thud"
   , iweight  = 80000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 90, AddMaxCalm 60, AddSpeed 27, AddNocto 2
                , AddAggression 2
                , AddAbility AbAlter (-1) ]  -- can't switch levels, a miniboss
@@ -456,7 +456,7 @@ beeSwarm = ItemKind
   , irarity  = [(1, 2), (10, 4)]
   , iverbHit = "thud"
   , iweight  = 1000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 8, AddMaxCalm 60
                , AddSpeed 30, AddNocto 2  -- armor in sting
                , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
@@ -475,7 +475,7 @@ hornetSwarm = ItemKind
   , irarity  = [(5, 1), (10, 8)]
   , iverbHit = "thud"
   , iweight  = 1000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 8, AddMaxCalm 70, AddSpeed 30, AddNocto 2
                , AddAbility AbAlter (-2)  -- can't use stairs nor doors
                , AddArmorMelee 80, AddArmorRanged 40 ]
@@ -494,7 +494,7 @@ thornbush = ItemKind
   , irarity  = [(1, 10)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 20, AddMaxCalm 999, AddSpeed 22, AddNocto 2
                , AddAbility AbWait 1, AddAbility AbMelee 1 ]
   , ieffects = []
@@ -511,7 +511,7 @@ geyserBoiling = ItemKind
   , irarity  = [(1, 3), (5, 3)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 20, AddMaxCalm 999, AddSpeed 10, AddNocto 2
                , AddAbility AbWait 1, AddAbility AbMelee 1
                , AddArmorMelee 40, AddArmorRanged 20 ]  -- hard material
@@ -529,7 +529,7 @@ geyserArsenic = ItemKind
   , irarity  = [(1, 10), (5, 10)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 22
                , AddNocto 2, AddShine 3
                , AddAbility AbWait 1, AddAbility AbMelee 1 ]
@@ -547,7 +547,7 @@ geyserSulfur = ItemKind
   , irarity  = [(1, 10), (5, 10)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , idamage  = toDmg 0
+  , idamage  = 0
   , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 22
                , AddNocto 2, AddShine 3
                , AddAbility AbWait 1, AddAbility AbMelee 1 ]

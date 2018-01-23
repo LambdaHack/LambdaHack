@@ -114,8 +114,8 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
     -- Number of new items/actors unaffected by number of spawned actors.
     itemN <- castDice ldepth totalDepth (IK.icount itemKind)
     seed <- toEnum <$> random
-    jdamage <- frequency $ toFreq "jdamage" $ IK.idamage itemKind
-    let itemBase = buildItem cops flavourMap discoRev
+    let jdamage = IK.idamage itemKind
+        itemBase = buildItem cops flavourMap discoRev
                              itemKindId itemKind lid jdamage
         itemIdentity = jkind itemBase
         itemK = max 1 itemN

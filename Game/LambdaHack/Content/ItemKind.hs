@@ -6,7 +6,7 @@ module Game.LambdaHack.Content.ItemKind
   , ItemSpeedup, emptyItemSpeedup, getKindMean, speedupItem
   , meanAspect, boostItemKindList, forApplyEffect, forIdEffect
   , filterRecharging, stripRecharging, stripOnSmash
-  , toDmg, tmpNoLonger, tmpLess, toVelocity, toLinger
+  , tmpNoLonger, tmpLess, toVelocity, toLinger
   , timerNone, isTimerNone, foldTimer
   , toOrganGameTurn, toOrganActorTurn, toOrganNone
 #ifdef EXPOSE_INTERNAL
@@ -46,7 +46,7 @@ data ItemKind = ItemKind
   , irarity  :: Rarity              -- ^ rarity on given depths
   , iverbHit :: MU.Part             -- ^ the verb&noun for applying and hit
   , iweight  :: Int                 -- ^ weight in grams
-  , idamage  :: [(Int, Dice.Dice)]  -- ^ frequency of basic impact damage
+  , idamage  :: Dice.Dice           -- ^ basic impact damage
   , iaspects :: [IA.Aspect]         -- ^ keep the aspect continuously
   , ieffects :: [Effect]            -- ^ cause the effect when triggered
   , ifeature :: [Feature]           -- ^ public properties
@@ -270,9 +270,6 @@ stripOnSmash effs =
       getOnSmashEffect _ = Nothing
   in mapMaybe getOnSmashEffect effs
 
-toDmg :: Dice.Dice -> [(Int, Dice.Dice)]
-toDmg dmg = [(1, dmg)]
-
 tmpNoLonger :: Text -> Effect
 tmpNoLonger name = Temporary $ "be no longer" <+> name
 
@@ -410,11 +407,9 @@ validateDups ItemKind{..} feat =
   let ts = filter (== feat) ifeature
   in ["more than one" <+> tshow feat <+> "specification" | length ts > 1]
 
-validateDamage :: [(Int, Dice.Dice)] -> [Text]
-validateDamage = concatMap validateDice
- where
-  validateDice (_, dice) = [ "potentially negative dice:" <+> tshow dice
-                           | Dice.minDice dice < 0]
+validateDamage :: Dice.Dice -> [Text]
+validateDamage dice = [ "potentially negative dice:" <+> tshow dice
+                      | Dice.minDice dice < 0]
 
 -- | Validate all item kinds.
 validateAll :: [ItemKind] -> ContentData ItemKind -> [Text]

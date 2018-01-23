@@ -16,7 +16,6 @@ import Game.LambdaHack.Common.Prelude
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Flavour
-import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
@@ -254,7 +253,7 @@ fakeItem kindId kind km =
       jlid     = toEnum 1  -- dummy
       jfid     = Nothing  -- the default
       jflavour = Flavour minBound minBound  -- dummy
-      jdamage  = fromJust $ mostFreq $ toFreq "fakeItem" $ IK.idamage kind
+      jdamage  = IK.idamage kind
       itemBase = Item{..}
       itemDisco = ItemDiscoMean km
   in ItemFull itemBase 1 [] kindId kind itemDisco True
