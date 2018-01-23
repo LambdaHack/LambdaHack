@@ -240,18 +240,18 @@ organBenefit turnTimer grp cops@COps{coitem} fact =
 
 recBenefit :: GroupName ItemKind -> COps -> Faction -> (Double, Int)
 recBenefit grp cops@COps{coitem} fact =
-  let f (!sacc, !pacc) !p _ !kind =
+  let f (!sacc, !pacc) !p !kindId !kind =
         let recPickup = benPickup $
               totalUsefulness cops fact (IK.ieffects kind)
-                                        (IK.meanAspect kind) (fakeItem kind)
+                              (IK.meanAspect kind) (fakeItem kindId kind)
         in ( sacc + Dice.meanDice (IK.icount kind) * recPickup
            , pacc + p )
   in ofoldlGroup' coitem grp f (0, 0)
 
-fakeItem :: IK.ItemKind -> Item
-fakeItem kind =
-  let jkind    = IdentityObvious $ toEnum (-1)  -- dummy
-      jlid     = toEnum 0  -- dummy
+fakeItem :: ContentId IK.ItemKind -> IK.ItemKind -> Item
+fakeItem kindId kind =
+  let jkind    = IdentityObvious kindId
+      jlid     = toEnum 1  -- dummy
       jfid     = Nothing  -- the default
       jsymbol  = IK.isymbol kind
       jname    = IK.iname kind
