@@ -624,7 +624,7 @@ discoverSeed iid seed = do
   Level{ldepth} <- getLevel $ jlid item
   discoKind <- getsState sdiscoKind
   let kindId = case jkind item of
-        IdentityObvious ik -> ik  -- obvious
+        IdentityObvious ik -> ik
         IdentityCovered ix _ -> fromJust $ EM.lookup ix discoKind
       kind = okind coitem kindId
       aspects = IA.seedToAspect seed (IK.iaspects kind) ldepth totalDepth

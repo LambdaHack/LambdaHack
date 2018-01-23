@@ -116,9 +116,12 @@ newtype ItemKindIx = ItemKindIx Int
 -- the @itemAspect@ field is @Left@), this is a complete secret information.
 -- Items that don't need second identification may be identified or not and both
 -- cases are OK (their display flavour will differ and that may be the point).
+--
+-- The @itemAspect@ accessor it to be used unconditionally only on the server
+-- where it's guaranteed to be safe.
 data ItemDisco =
-    ItemDiscoMean {itemAspectMean :: IA.KindMean}
-  | ItemDiscoFull {itemAspect  :: IA.AspectRecord}
+    ItemDiscoMean IA.KindMean
+  | ItemDiscoFull {itemAspect :: IA.AspectRecord}
  deriving Show
 
 -- No speedup from making fields non-strict.
@@ -197,8 +200,8 @@ itemToFull7 COps{coitem, coItemSpeedup}
 aspectRecordFull :: ItemFull -> IA.AspectRecord
 aspectRecordFull itemFull =
   case itemDisco itemFull of
-    ItemDiscoMean{itemAspectMean} -> IA.kmMean itemAspectMean
-    ItemDiscoFull{itemAspect} -> itemAspect
+    ItemDiscoMean itemAspectMean -> IA.kmMean itemAspectMean
+    ItemDiscoFull itemAspect -> itemAspect
 
 type ItemTimer = [Time]
 
@@ -302,7 +305,7 @@ strongestMelee mdiscoBenefit localTime is =
   let f (iid, itemFull) =
         let rawDmg = (damageUsefulness itemFull, (iid, itemFull))
             knownOrConstantAspects = case itemDisco itemFull of
-              ItemDiscoMean{itemAspectMean=IA.KindMean{kmConst}} -> kmConst
+              ItemDiscoMean IA.KindMean{kmConst} -> kmConst
               ItemDiscoFull{} -> True
             unIDedBonus | knownOrConstantAspects = 0
                         | otherwise = 1000  -- exceptionally strong weapon
@@ -325,7 +328,7 @@ strongestMelee mdiscoBenefit localTime is =
 unknownAspect :: (IA.Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f ItemFull{itemKind=IK.ItemKind{iaspects}, ..} =
   case itemDisco of
-    ItemDiscoMean{itemAspectMean=IA.KindMean{kmConst}} ->
+    ItemDiscoMean IA.KindMean{kmConst} ->
       let unknown x = let (minD, maxD) = Dice.minmaxDice x
                       in minD /= maxD
       in itemSuspect || not kmConst && or (concatMap (map unknown . f) iaspects)

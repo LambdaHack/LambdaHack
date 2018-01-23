@@ -102,9 +102,9 @@ compareItemFull itemFull1 itemFull2 =
       comparing apperance itemFull1 itemFull2
     (ItemDiscoMean{}, _, ItemDiscoFull{}, _) -> LT
     (ItemDiscoFull{}, _, ItemDiscoMean{}, _) -> GT
-    (ItemDiscoFull{}, _, ItemDiscoFull{}, _) ->
+    (ItemDiscoFull ia1, _, ItemDiscoFull ia2, _) ->
       case compare (itemKindId itemFull1) (itemKindId itemFull2) of
-        EQ -> case comparing (itemAspect . itemDisco) itemFull1 itemFull2 of
+        EQ -> case compare ia1 ia2 of
           EQ -> comparing apperance itemFull1 itemFull2
           o -> o
         o -> o

@@ -91,8 +91,8 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{..} =
       aets = case itemDisco of
         ItemDiscoMean{} ->  -- faster than @aspectRecordToList@ of mean
           splitTry (IK.iaspects itemKind) (IK.ieffects itemKind)
-        ItemDiscoFull{itemAspect} ->
-          splitTry (IA.aspectRecordToList itemAspect) (IK.ieffects itemKind)
+        ItemDiscoFull iAspect ->
+          splitTry (IA.aspectRecordToList iAspect) (IK.ieffects itemKind)
       timeoutAspect :: IA.Aspect -> Bool
       timeoutAspect IA.Timeout{} = True
       timeoutAspect _ = False
