@@ -493,6 +493,7 @@ createActorUI born aid body = do
   bUI <- case mbUI of
     Just bUI -> return bUI
     Nothing -> do
+      cops <- getsState scops
       UIOptions{uHeroNames} <- getsSession sUIOptions
       let baseColor = flavourToColor $ jflavour trunk
           basePronoun | not (bproj body) && fhasGender (gplayer fact) = "he"
@@ -525,7 +526,7 @@ createActorUI born aid body = do
                      -- Not much detail about a fast flying item.
                      (_, _, object1, object2) =
                        partItem (bfid body) factionD localTime
-                                (itemNoDisco (trunk, 1))
+                                (itemNoDisco cops (trunk, 1))
                  in ( makePhrase [MU.AW $ MU.Text adj, object1, object2]
                     , basePronoun )
                | baseColor /= Color.BrWhite -> (jname trunk, basePronoun)
@@ -851,6 +852,7 @@ quitFactionUI fid toSt = do
 
 discover :: MonadClientUI m => Container -> ItemId -> m ()
 discover c iid = do
+  cops <- getsState scops
   lid <- getsState $ lidFromC c
   globalTime <- getsState stime
   localTime <- getsState $ getLocalTime lid
@@ -873,7 +875,7 @@ discover c iid = do
       -- Wipe out the whole knowledge of the item to make sure the two names
       -- in the message differ even if, e.g., the item is described as
       -- "of many effects".
-      itemSecret = itemNoDisco (itemBase itemFull, itemK itemFull)
+      itemSecret = itemNoDisco cops (itemBase itemFull, itemK itemFull)
       (_, _, secretName, secretAEText) =
         partItem side factionD localTime itemSecret
       namePhrase = MU.Phrase $ [secretName, secretAEText] ++ nameWhere
@@ -1015,9 +1017,10 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           case allAssocs of
             [] -> return ()  -- invisible items?
             (_, ItemFull{..}) : _ -> do
+              cops <- getsState scops
               subject <- partActorLeader aid bUI
               factionD <- getsState sfactionD
-              let itemSecret = itemNoDisco (itemBase, itemK)
+              let itemSecret = itemNoDisco cops (itemBase, itemK)
                   (_, _, secretName, secretAEText) =
                     partItem side factionD localTime itemSecret
                   verb = "repurpose"
@@ -1215,18 +1218,15 @@ strike catch source target iid cstore = assert (source /= target) $ do
     side <- getsClient sside
     factionD <- getsState sfactionD
     let kit = EM.findWithDefault (1, []) iid bag
-        itemFull = itemToF iid kit
-        verb = case itemDisco itemFull of
-          _ | catch -> "catch"
-          Nothing -> "hit"  -- not identified
-          Just ItemDisco{itemKind} -> IK.iverbHit itemKind
+        itemFull@ItemFull{itemBase, itemDisco} = itemToF iid kit
+        verb = if catch then "catch" else IK.iverbHit $ itemKind itemDisco
         partItemChoice =
           if iid `EM.member` borgan sb
           then partItemShortWownW side factionD spronoun localTime
           else partItemShortAW side factionD localTime
         msg | bhp tb <= 0  -- incapacitated, so doesn't actively block
               || hurtMult > 90  -- at most minor armor
-              || jdamage (itemBase itemFull) == 0 = makeSentence $
+              || jdamage itemBase == 0 = makeSentence $
               [MU.SubjectVerbSg spart verb, tpart]
               ++ if bproj sb
                  then []

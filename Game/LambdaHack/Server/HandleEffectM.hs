@@ -138,11 +138,9 @@ meleeEffectAndDestroy source target iid c = do
     Just kit -> do
       itemToF <- getsState itemToFull
       let itemFull = itemToF iid kit
-      case itemDisco itemFull of
-        Just ItemDisco {itemKind=IK.ItemKind{IK.ieffects}} ->
-          effectAndDestroy meleePerformed source target iid c False ieffects
-                           itemFull
-        _ -> error $ "" `showFailure` (source, target, iid, c)
+          IK.ItemKind{IK.ieffects} = itemKind $ itemDisco itemFull
+      effectAndDestroy meleePerformed source target iid c False ieffects
+                       itemFull
 
 effectAndDestroy :: MonadServerAtomic m
                  => Bool -> ActorId -> ActorId -> ItemId -> Container -> Bool
@@ -158,9 +156,7 @@ effectAndDestroy meleePerformed _ _ iid container periodic []
   else return ()
 effectAndDestroy meleePerformed source target iid container periodic effs
                  itemFull@ItemFull{..} = do
-  let timeout = case itemDisco of
-        Just ItemDisco{itemAspect=Left ar} -> IA.aTimeout ar
-        _ -> error $ "" `showFailure` itemDisco
+  let timeout = IA.aTimeout $ itemAspect itemDisco
       permanent = let tmpEffect :: IK.Effect -> Bool
                       tmpEffect IK.Temporary{} = True
                       tmpEffect (IK.Recharging IK.Temporary{}) = True
@@ -976,9 +972,9 @@ effectCreateItem jfidRaw mcount target store grp tim = do
   bagBefore <- getsState $ getBodyStoreBag tb store
   let litemFreq = [(grp, 1)]
   -- Power depth of new items unaffected by number of spawned actors.
-  m5 <- rollItem 0 (blid tb) litemFreq
-  let (itemKnownRaw, itemFullRaw, _, seed, _) =
-        fromMaybe (error $ "" `showFailure` (blid tb, litemFreq, c)) m5
+  m4 <- rollItem 0 (blid tb) litemFreq
+  let (itemKnownRaw, itemFullRaw, seed, _) =
+        fromMaybe (error $ "" `showFailure` (blid tb, litemFreq, c)) m4
       -- Avoid too many different item identifiers (one for each faction)
       -- for blasts or common item generating tiles. Temporary organs are
       -- allowed to be duplicated, because they provide really useful info
@@ -1124,26 +1120,24 @@ effectPolyItem execSfx source target = do
     [] -> do
       execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxPurposeNothing cstore
       return UseId
-    (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
-      Just ItemDisco{itemKind, itemKindId} -> do
-        let maxCount = Dice.maxDice $ IK.icount itemKind
-        if | itemK < maxCount -> do
-             execSfxAtomic $ SfxMsgFid (bfid sb)
-                           $ SfxPurposeTooFew maxCount itemK
-             return UseId
-           | IK.Unique `elem` IK.ieffects itemKind -> do
-             execSfxAtomic $ SfxMsgFid (bfid sb) SfxPurposeUnique
-             return UseId
-           | otherwise -> do
-             -- Only the required number of items is used up, not all of them.
-             let c = CActor target cstore
-                 kit = (maxCount, take maxCount itemTimer)
-             execSfx
-             identifyIid iid c itemKindId
-             execUpdAtomic $ UpdDestroyItem iid itemBase kit c
-             effectCreateItem (Just $ bfid sb) Nothing
-                              target cstore "useful" IK.timerNone
-      _ -> error $ "" `showFailure` (target, iid, itemFull)
+    (iid, ItemFull{..}) : _ -> do
+      let maxCount = Dice.maxDice $ IK.icount $ itemKind itemDisco
+      if | itemK < maxCount -> do
+           execSfxAtomic $ SfxMsgFid (bfid sb)
+                         $ SfxPurposeTooFew maxCount itemK
+           return UseId
+         | IK.Unique `elem` IK.ieffects (itemKind itemDisco) -> do
+           execSfxAtomic $ SfxMsgFid (bfid sb) SfxPurposeUnique
+           return UseId
+         | otherwise -> do
+           -- Only the required number of items is used up, not all of them.
+           let c = CActor target cstore
+               kit = (maxCount, take maxCount itemTimer)
+           execSfx
+           identifyIid iid c $ itemKindId itemDisco
+           execUpdAtomic $ UpdDestroyItem iid itemBase kit c
+           effectCreateItem (Just $ bfid sb) Nothing
+                            target cstore "useful" IK.timerNone
 
 -- ** Identify
 
@@ -1156,7 +1150,7 @@ effectIdentify execSfx iidId source target = do
   let tryFull store as = case as of
         [] -> return False
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
-        (iid, ItemFull{itemDisco=Just ItemDisco{..}}) : rest ->
+        (iid, ItemFull{itemDisco=ItemDiscoFull{..}}) : rest ->
           let furtherIdNotNeeded =
                 iid `EM.member` sdiscoAspect s  -- already fully identified
                 || IA.kmConst (IK.getKindMean itemKindId coItemSpeedup)

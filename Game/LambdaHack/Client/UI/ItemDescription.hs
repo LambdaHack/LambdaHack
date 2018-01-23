@@ -41,154 +41,149 @@ show64With2 n =
            | otherwise -> "." <> tshow x
 
 -- | The part of speech describing the item parameterized by the number
--- of effects/aspects to show..
+-- of effects/aspects to show.
 partItemN :: FactionId -> FactionDict -> Bool -> DetailLevel -> Int
           -> Time -> ItemFull
           -> (Bool, Bool, MU.Part, MU.Part)
 partItemN side factionD ranged detailLevel n localTime
-          itemFull@ItemFull{itemBase} =
+          itemFull@ItemFull{itemBase, itemDisco} =
   let genericName = jname itemBase
-  in case itemDisco itemFull of
-    Nothing ->
-      let flav = flavourToName $ jflavour itemBase
-      in (False, False, MU.Text $ flav <+> genericName, "")
-    Just iDisco ->
-      let timeout = IA.aTimeout $ aspectRecordFull itemFull
-          timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
-          temporary = not (null $ itemTimer itemFull) && timeout == 0
-          charging startT = timeShift startT timeoutTurns > localTime
-          it1 = filter charging (itemTimer itemFull)
-          lenCh = length it1
-          timer | lenCh == 0 || temporary = ""
-                | itemK itemFull == 1 && lenCh == 1 = "(charging)"
-                | itemK itemFull == lenCh = "(all charging)"
-                | otherwise = "(" <> tshow lenCh <+> "charging)"
-          skipRecharging = detailLevel <= DetailLow
-                           && lenCh >= itemK itemFull
-          (effTsRaw, rangedDamage) =
-            textAllAE detailLevel skipRecharging itemFull
-          effTs = effTsRaw ++ if ranged then rangedDamage else []
-          lsource = case jfid itemBase of
-            Just fid | jname itemBase `elem` ["impressed"] ->
-              ["by" <+> if fid == side
-                        then "us"
-                        else gname (factionD EM.! fid)]
-            _ -> []
-          ts = lsource
-               ++ take n effTs
-               ++ ["(...)" | length effTs > n]
-               ++ [timer]
-          unique = IK.Unique `elem` IK.ieffects (itemKind iDisco)
-          name | temporary = "temporarily" <+> genericName
-               | otherwise = genericName
-          capName = if unique
-                    then MU.Capitalize $ MU.Text name
-                    else MU.Text name
-      in ( not (null lsource) || temporary
-         , unique, capName, MU.Phrase $ map MU.Text ts )
+      flav = flavourToName $ jflavour itemBase
+      ik = itemKind itemDisco
+      timeout = IA.aTimeout $ aspectRecordFull itemFull
+      timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
+      temporary = not (null $ itemTimer itemFull) && timeout == 0
+      charging startT = timeShift startT timeoutTurns > localTime
+      it1 = filter charging (itemTimer itemFull)
+      lenCh = length it1
+      timer | lenCh == 0 || temporary = ""
+            | itemK itemFull == 1 && lenCh == 1 = "(charging)"
+            | itemK itemFull == lenCh = "(all charging)"
+            | otherwise = "(" <> tshow lenCh <+> "charging)"
+      skipRecharging = detailLevel <= DetailLow
+                       && lenCh >= itemK itemFull
+      (effTsRaw, rangedDamage) =
+        textAllAE detailLevel skipRecharging itemFull
+      effTs = effTsRaw ++ if ranged then rangedDamage else []
+      lsource = case jfid itemBase of
+        Just fid | jname itemBase `elem` ["impressed"] ->
+          ["by" <+> if fid == side
+                    then "us"
+                    else gname (factionD EM.! fid)]
+        _ -> []
+      ts = lsource
+           ++ take n effTs
+           ++ ["(...)" | length effTs > n]
+           ++ [timer]
+      unique = IK.Unique `elem` IK.ieffects ik
+      name | temporary = "temporarily" <+> genericName
+           | itemSuspect itemDisco = flav <+> genericName
+           | otherwise = genericName
+      capName = if unique
+                then MU.Capitalize $ MU.Text name
+                else MU.Text name
+  in ( not (null lsource) || temporary
+     , unique, capName, MU.Phrase $ map MU.Text ts )
 
 textAllAE :: DetailLevel -> Bool -> ItemFull -> ([Text], [Text])
 textAllAE detailLevel skipRecharging itemFull@ItemFull{itemBase, itemDisco} =
   let features | detailLevel >= DetailAll =
                    map featureToSuff $ sort $ jfeature itemBase
                | otherwise = []
-  in case itemDisco of
-    Nothing -> (features, [])
-    Just ItemDisco{itemKind, itemAspect} ->
-      let timeoutAspect :: IA.Aspect -> Bool
-          timeoutAspect IA.Timeout{} = True
-          timeoutAspect _ = False
-          hurtMeleeAspect :: IA.Aspect -> Bool
-          hurtMeleeAspect IA.AddHurtMelee{} = True
-          hurtMeleeAspect _ = False
-          elabel :: IK.Effect -> Bool
-          elabel IK.ELabel{} = True
-          elabel _ = False
-          active = goesIntoEqp itemBase
-          splitAE :: DetailLevel -> [IA.Aspect] -> [IK.Effect] -> [Text]
-          splitAE detLev aspects effects =
-            let ppA = kindAspectToSuffix
-                ppE = effectToSuffix detLev
-                reduce_a = maybe "?" tshow . Dice.reduceDice
-                periodic = IK.Periodic `elem` IK.ieffects itemKind
-                mtimeout = find timeoutAspect aspects
-                -- Effects are not sorted, because they fire in the order
-                -- specified.
-                restAs = sort aspects
-                aes = if active
-                      then map ppA restAs ++ map ppE effects
-                      else map ppE effects ++ map ppA restAs
-                rechargingTs = T.intercalate " " $ filter (not . T.null)
-                               $ map ppE $ IK.stripRecharging effects
-                onSmashTs = T.intercalate " " $ filter (not . T.null)
-                            $ map ppE $ IK.stripOnSmash effects
-                durable = IK.Durable `elem` jfeature itemBase
-                fragile = IK.Fragile `elem` jfeature itemBase
-                periodicOrTimeout =
-                  if | skipRecharging || T.null rechargingTs -> ""
-                     | periodic -> case mtimeout of
-                         Nothing | durable && not fragile ->
-                           "(each turn:" <+> rechargingTs <> ")"
-                         Nothing ->
-                           "(each turn until gone:" <+> rechargingTs <> ")"
-                         Just (IA.Timeout t) ->
-                           "(every" <+> reduce_a t <> ":"
-                           <+> rechargingTs <> ")"
-                         _ -> error $ "" `showFailure` mtimeout
-                     | otherwise -> case mtimeout of
-                         Nothing -> ""
-                         Just (IA.Timeout t) ->
-                           "(timeout" <+> reduce_a t <> ":"
-                           <+> rechargingTs <> ")"
-                         _ -> error $ "" `showFailure` mtimeout
-                onSmash = if T.null onSmashTs then ""
-                          else "(on smash:" <+> onSmashTs <> ")"
-                elab = case find elabel effects of
-                  Just (IK.ELabel t) -> [t]
-                  _ -> []
-                damage = case find hurtMeleeAspect restAs of
-                  Just (IA.AddHurtMelee hurtMelee) ->
-                    (if jdamage itemBase == 0
-                     then "0d0"
-                     else tshow (jdamage itemBase))
-                    <> affixDice hurtMelee <> "%"
-                  _ -> if jdamage itemBase == 0
-                       then ""
-                       else tshow (jdamage itemBase)
-            in filter (/= "")
-               $ elab ++ if detLev >= DetailHigh
-                            || detLev >= DetailMedium && null elab
-                         then [periodicOrTimeout] ++ [damage] ++ aes
-                              ++ [onSmash | detLev >= DetailAll]
-                         else [damage]
-          splitTry ass eff =
-            let splits = map (\detLev -> splitAE detLev ass eff)
-                             [minBound..maxBound]
-                splitsToTry = drop (fromEnum detailLevel) splits
-            in case filter (/= []) splitsToTry of
-                 detNonEmpty : _ -> detNonEmpty
-                 [] -> []
-          aets = case itemAspect of
-            Left aspectRecord ->
-              splitTry (IA.aspectRecordToList aspectRecord)
-                       (IK.ieffects itemKind)
-            Right{} ->  -- faster than @aspectRecordToList@ of mean
-              splitTry (IK.iaspects itemKind) (IK.ieffects itemKind)
-          IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemBase
-          speed = speedFromWeight (jweight itemBase) throwVelocity
-          meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
-          minDeltaHP = xM meanDmg `divUp` 100
-          aHurtMeleeOfItem = IA.aHurtMelee $ aspectRecordFull itemFull
-          pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
-          prawDeltaHP = fromIntegral pmult * minDeltaHP
-          pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
-          rangedDamage = if pdeltaHP == 0
-                         then []
-                         else ["{avg" <+> show64With2 pdeltaHP <+> "ranged}"]
-          -- Note that avg melee damage would be too complex to display here,
-          -- because in case of @MOwned@ the owner is different than leader,
-          -- so the value would be different than when viewing the item.
-      in (aets ++ features, rangedDamage)
+      ik = itemKind itemDisco
+      aets = case itemDisco of
+        ItemDiscoKind{} ->  -- faster than @aspectRecordToList@ of mean
+          splitTry (IK.iaspects ik) (IK.ieffects ik)
+        ItemDiscoFull{itemAspect} ->
+          splitTry (IA.aspectRecordToList itemAspect) (IK.ieffects ik)
+      timeoutAspect :: IA.Aspect -> Bool
+      timeoutAspect IA.Timeout{} = True
+      timeoutAspect _ = False
+      hurtMeleeAspect :: IA.Aspect -> Bool
+      hurtMeleeAspect IA.AddHurtMelee{} = True
+      hurtMeleeAspect _ = False
+      elabel :: IK.Effect -> Bool
+      elabel IK.ELabel{} = True
+      elabel _ = False
+      active = goesIntoEqp itemBase
+      splitAE :: DetailLevel -> [IA.Aspect] -> [IK.Effect] -> [Text]
+      splitAE detLev aspects effects =
+        let ppA = kindAspectToSuffix
+            ppE = effectToSuffix detLev
+            reduce_a = maybe "?" tshow . Dice.reduceDice
+            periodic = IK.Periodic `elem` IK.ieffects ik
+            mtimeout = find timeoutAspect aspects
+            -- Effects are not sorted, because they fire in the order
+            -- specified.
+            restAs = sort aspects
+            aes = if active
+                  then map ppA restAs ++ map ppE effects
+                  else map ppE effects ++ map ppA restAs
+            rechargingTs = T.intercalate " " $ filter (not . T.null)
+                           $ map ppE $ IK.stripRecharging effects
+            onSmashTs = T.intercalate " " $ filter (not . T.null)
+                        $ map ppE $ IK.stripOnSmash effects
+            durable = IK.Durable `elem` jfeature itemBase
+            fragile = IK.Fragile `elem` jfeature itemBase
+            periodicOrTimeout =
+              if | skipRecharging || T.null rechargingTs -> ""
+                 | periodic -> case mtimeout of
+                     Nothing | durable && not fragile ->
+                       "(each turn:" <+> rechargingTs <> ")"
+                     Nothing ->
+                       "(each turn until gone:" <+> rechargingTs <> ")"
+                     Just (IA.Timeout t) ->
+                       "(every" <+> reduce_a t <> ":"
+                       <+> rechargingTs <> ")"
+                     _ -> error $ "" `showFailure` mtimeout
+                 | otherwise -> case mtimeout of
+                     Nothing -> ""
+                     Just (IA.Timeout t) ->
+                       "(timeout" <+> reduce_a t <> ":"
+                       <+> rechargingTs <> ")"
+                     _ -> error $ "" `showFailure` mtimeout
+            onSmash = if T.null onSmashTs then ""
+                      else "(on smash:" <+> onSmashTs <> ")"
+            elab = case find elabel effects of
+              Just (IK.ELabel t) -> [t]
+              _ -> []
+            damage = case find hurtMeleeAspect restAs of
+              Just (IA.AddHurtMelee hurtMelee) ->
+                (if jdamage itemBase == 0
+                 then "0d0"
+                 else tshow (jdamage itemBase))
+                <> affixDice hurtMelee <> "%"
+              _ -> if jdamage itemBase == 0
+                   then ""
+                   else tshow (jdamage itemBase)
+        in filter (/= "")
+           $ elab ++ if detLev >= DetailHigh
+                        || detLev >= DetailMedium && null elab
+                     then [periodicOrTimeout] ++ [damage] ++ aes
+                          ++ [onSmash | detLev >= DetailAll]
+                     else [damage]
+      splitTry ass eff =
+        let splits = map (\detLev -> splitAE detLev ass eff)
+                         [minBound..maxBound]
+            splitsToTry = drop (fromEnum detailLevel) splits
+        in case filter (/= []) splitsToTry of
+             detNonEmpty : _ -> detNonEmpty
+             [] -> []
+      IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemBase
+      speed = speedFromWeight (jweight itemBase) throwVelocity
+      meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
+      minDeltaHP = xM meanDmg `divUp` 100
+      aHurtMeleeOfItem = IA.aHurtMelee $ aspectRecordFull itemFull
+      pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
+      prawDeltaHP = fromIntegral pmult * minDeltaHP
+      pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
+      rangedDamage = if pdeltaHP == 0
+                     then []
+                     else ["{avg" <+> show64With2 pdeltaHP <+> "ranged}"]
+      -- Note that avg melee damage would be too complex to display here,
+      -- because in case of @MOwned@ the owner is different than leader,
+      -- so the value would be different than when viewing the item.
+  in (aets ++ features, rangedDamage)
 
 -- | The part of speech describing the item.
 partItem :: FactionId -> FactionDict -> Time -> ItemFull
@@ -257,7 +252,7 @@ itemDesc :: Bool -> FactionId -> FactionDict -> Int -> CStore -> Time
          -> ItemFull
          -> AttrLine
 itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
-         itemFull@ItemFull{itemBase} =
+         itemFull@ItemFull{itemBase, itemDisco} =
   let (_, unique, name, stats) = partItemHigh side factionD localTime itemFull
       nstats = makePhrase [name, stats]
       IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = strengthToThrow itemBase
@@ -272,43 +267,43 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
                <> if throwLinger /= 100
                   then " m/s and range" <+> tshow range <+> "m."
                   else " m/s."
-      (desc, featureSentences, damageAnalysis) = case itemDisco itemFull of
-        Nothing -> ("This item is as unremarkable as can be.", "", tspeed)
-        Just ItemDisco{itemKind} ->
-          let sentences = mapMaybe featureToSentence (IK.ifeature itemKind)
-              aHurtMeleeOfItem = IA.aHurtMelee $ aspectRecordFull itemFull
-              meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
-              dmgAn = if meanDmg <= 0 then "" else
-                let multRaw = aHurtMeleeOfOwner
-                              + if store `elem` [CEqp, COrgan]
-                                then 0
-                                else aHurtMeleeOfItem
-                    mult = 100 + min 99 (max (-99) multRaw)
-                    minDeltaHP = xM meanDmg `divUp` 100
-                    rawDeltaHP = fromIntegral mult * minDeltaHP
-                    pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
-                    prawDeltaHP = fromIntegral pmult * minDeltaHP
-                    pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
-                    mDeltaHP = modifyDamageBySpeed minDeltaHP speed
-                in "Against defenceless targets you would inflict around"
-                     -- rounding and non-id items
-                   <+> tshow meanDmg
-                   <> "*" <> tshow mult <> "%"
-                   <> "=" <> show64With2 rawDeltaHP
-                   <+> "melee damage (min" <+> show64With2 minDeltaHP
-                   <> ") and"
-                   <+> tshow meanDmg
-                   <> "*" <> tshow pmult <> "%"
-                   <> "*" <> "speed^2"
-                   <> "/" <> tshow (fromSpeed speedThrust `divUp` 10) <> "^2"
-                   <> "=" <> show64With2 pdeltaHP
-                   <+> "ranged damage (min" <+> show64With2 mDeltaHP
-                   <> ") with it"
-                   <> if Dice.minDice (jdamage itemBase)
-                         == Dice.maxDice (jdamage itemBase)
-                      then "."
-                      else "on average."
-          in (IK.idesc itemKind, T.intercalate " " sentences, tspeed <+> dmgAn)
+      ik = itemKind itemDisco
+      tsuspect = ["You are unsure what it does." | itemSuspect itemDisco]
+      (desc, featureSentences, damageAnalysis) =
+        let sentences = tsuspect ++ mapMaybe featureToSentence (IK.ifeature ik)
+            aHurtMeleeOfItem = IA.aHurtMelee $ aspectRecordFull itemFull
+            meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
+            dmgAn = if meanDmg <= 0 then "" else
+              let multRaw = aHurtMeleeOfOwner
+                            + if store `elem` [CEqp, COrgan]
+                              then 0
+                              else aHurtMeleeOfItem
+                  mult = 100 + min 99 (max (-99) multRaw)
+                  minDeltaHP = xM meanDmg `divUp` 100
+                  rawDeltaHP = fromIntegral mult * minDeltaHP
+                  pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
+                  prawDeltaHP = fromIntegral pmult * minDeltaHP
+                  pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
+                  mDeltaHP = modifyDamageBySpeed minDeltaHP speed
+              in "Against defenceless targets you would inflict around"
+                   -- rounding and non-id items
+                 <+> tshow meanDmg
+                 <> "*" <> tshow mult <> "%"
+                 <> "=" <> show64With2 rawDeltaHP
+                 <+> "melee damage (min" <+> show64With2 minDeltaHP
+                 <> ") and"
+                 <+> tshow meanDmg
+                 <> "*" <> tshow pmult <> "%"
+                 <> "*" <> "speed^2"
+                 <> "/" <> tshow (fromSpeed speedThrust `divUp` 10) <> "^2"
+                 <> "=" <> show64With2 pdeltaHP
+                 <+> "ranged damage (min" <+> show64With2 mDeltaHP
+                 <> ") with it"
+                 <> if Dice.minDice (jdamage itemBase)
+                       == Dice.maxDice (jdamage itemBase)
+                    then "."
+                    else "on average."
+        in (IK.idesc ik, T.intercalate " " sentences, tspeed <+> dmgAn)
       eqpSlotSentence = case strengthEqpSlot itemFull of
         Just es -> slotToSentence es
         Nothing -> ""
@@ -338,7 +333,8 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
           <> desc
           <> (if markParagraphs && not (T.null desc) then "\n\n" else ""))
          <+> (if weight > 0
-              then makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
+              then makeSentence
+                     ["Weighs around", MU.Text scaledWeight <> unitWeight]
               else ""))
         <+> featureSentences
         <+> eqpSlotSentence

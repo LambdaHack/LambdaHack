@@ -80,8 +80,7 @@ buildItem COps{coitem} (FlavourMap flavourMap) discoRev
 -- | Generate an item based on level.
 newItem :: COps -> FlavourMap -> DiscoveryKindRev -> UniqueSet
         -> Freqs ItemKind -> Int -> LevelId -> Dice.AbsDepth -> Dice.AbsDepth
-        -> Rnd (Maybe ( ItemKnown, ItemFull, ItemDisco
-                      , IA.ItemSeed, GroupName ItemKind ))
+        -> Rnd (Maybe (ItemKnown, ItemFull, IA.ItemSeed, GroupName ItemKind))
 newItem cops@COps{coitem} flavourMap discoRev uniqueSet
         itemFreq lvlSpawned lid
         ldepth@(Dice.AbsDepth ldAbs) totalDepth@(Dice.AbsDepth depth) = do
@@ -126,16 +125,14 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
         itemK = max 1 itemN
         itemTimer = [timeZero | IK.Periodic `elem` IK.ieffects itemKind]
                       -- delay first discharge of single organs
-        itemAspect = Left aspectRecord
-        itemDiscoData = ItemDisco {..}
-        itemDisco = Just itemDiscoData
+        itemSuspect = False
+        itemDisco = ItemDiscoFull {..}
         -- Bonuses on items/actors unaffected by number of spawned actors.
-        aspectRecord =
+        itemAspect =
           IA.seedToAspect seed (IK.iaspects itemKind) ldepth totalDepth
         itemFull = ItemFull {..}
-    return $ Just ( (itemIdentity, aspectRecord, jdamage, jfid itemBase)
+    return $ Just ( (itemIdentity, itemAspect, jdamage, jfid itemBase)
                   , itemFull
-                  , itemDiscoData
                   , seed
                   , itemGroup )
 

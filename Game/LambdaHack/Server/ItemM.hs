@@ -68,9 +68,7 @@ registerItem ItemFull{..} itemKnown seed container verbose = do
   knowItems <- getsServer $ sknowItems . soptions
   when knowItems $ case container of
     CTrunk{} -> return ()
-    _ -> do
-      let ItemDisco{itemKindId} = fromJust itemDisco
-      execUpdAtomic $ UpdDiscover container iid itemKindId seed
+    _ -> execUpdAtomic $ UpdDiscover container iid (itemKindId itemDisco) seed
   return iid
 
 createLevelItem :: MonadServerAtomic m => Point -> LevelId -> m ()
@@ -92,8 +90,7 @@ embedItem lid pos tk = do
 
 rollItem :: MonadServerAtomic m
          => Int -> LevelId -> Freqs ItemKind
-         -> m (Maybe ( ItemKnown, ItemFull, ItemDisco
-                     , IA.ItemSeed, GroupName ItemKind ))
+         -> m (Maybe (ItemKnown, ItemFull, IA.ItemSeed, GroupName ItemKind))
 rollItem lvlSpawned lid itemFreq = do
   cops <- getsState scops
   flavour <- getsServer sflavour
@@ -101,15 +98,15 @@ rollItem lvlSpawned lid itemFreq = do
   uniqueSet <- getsServer suniqueSet
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel lid
-  m5 <- rndToAction $ newItem cops flavour discoRev uniqueSet
+  m4 <- rndToAction $ newItem cops flavour discoRev uniqueSet
                               itemFreq lvlSpawned lid ldepth totalDepth
-  case m5 of
-    Just (_, _, ItemDisco{itemKindId, itemKind}, _, _) ->
-      when (IK.Unique `elem` IK.ieffects itemKind) $
+  case m4 of
+    Just (_, ItemFull{itemDisco}, _, _) ->
+      when (IK.Unique `elem` IK.ieffects (itemKind itemDisco)) $
         modifyServer $ \ser ->
-          ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}
+          ser {suniqueSet = ES.insert (itemKindId itemDisco) (suniqueSet ser)}
     _ -> return ()
-  return m5
+  return m4
 
 rollAndRegisterItem :: MonadServerAtomic m
                     => LevelId -> Freqs ItemKind -> Container -> Bool
@@ -117,10 +114,10 @@ rollAndRegisterItem :: MonadServerAtomic m
                     -> m (Maybe (ItemId, (ItemFull, GroupName ItemKind)))
 rollAndRegisterItem lid itemFreq container verbose mk = do
   -- Power depth of new items unaffected by number of spawned actors.
-  m5 <- rollItem 0 lid itemFreq
-  case m5 of
+  m4 <- rollItem 0 lid itemFreq
+  case m4 of
     Nothing -> return Nothing
-    Just (itemKnown, itemFullRaw, _, seed, itemGroup) -> do
+    Just (itemKnown, itemFullRaw, seed, itemGroup) -> do
       let itemFull = itemFullRaw {itemK = fromMaybe (itemK itemFullRaw) mk}
       iid <- registerItem itemFull itemKnown seed container verbose
       return $ Just (iid, (itemFull, itemGroup))

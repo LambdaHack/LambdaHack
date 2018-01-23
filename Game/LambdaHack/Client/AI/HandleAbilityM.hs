@@ -703,18 +703,16 @@ applyItem aid applyGroup = do
       permittedActor =
         either (const False) id
         . permittedApply localTime skill calmE " "
-      q (mben, _, _, itemFull) =
-        let freq = case itemDisco itemFull of
-              Nothing -> []
-              Just ItemDisco{itemKind} -> IK.ifreq itemKind
-            durable = IK.Durable `elem` jfeature (itemBase itemFull)
+      q (mben, _, _, itemFull@ItemFull{itemBase, itemDisco}) =
+        let freq = IK.ifreq $ itemKind itemDisco
+            durable = IK.Durable `elem` jfeature itemBase
             (bInEqp, bApply) = case mben of
               Just Benefit{benInEqp, benApply} -> (benInEqp, benApply)
-              Nothing -> (goesIntoEqp $ itemBase itemFull, 0)  -- apply unsafe
+              Nothing -> (goesIntoEqp itemBase, 0)  -- apply unsafe
         in bApply > 0
            && (not bInEqp  -- can't wear, so OK to break
                || durable  -- can wear, but can't break, even better
-               || not (isMelee $ itemBase itemFull)  -- anything else expendable
+               || not (isMelee itemBase)  -- anything else expendable
                   && hind itemFull)  -- hinders now, so possibly often, so away!
            && permittedActor itemFull
            && maybe True (<= 0) (lookup "gem" freq) -- hack for elixir of youth
@@ -727,15 +725,13 @@ applyItem aid applyGroup = do
   let hasGrps = mapMaybe (\item -> if isTmpCondition item
                                    then Just $ toGroupName $ jname item
                                    else Nothing) organs
-      itemLegal itemFull =
+      itemLegal ItemFull{itemDisco} =
         let -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.
             getHP (IK.RefillHP p) | p > 0 = True
             getHP (IK.OneOf l) = any getHP l
             getHP (IK.Composite l) = any getHP l
             getHP _ = False
-            firstAidItem = case itemDisco itemFull of
-              Just ItemDisco{itemKind} -> any getHP $ IK.ieffects itemKind
-              _ -> False
+            firstAidItem = any getHP $ IK.ieffects $ itemKind itemDisco
             -- Both effects tweak items, which is only situationally beneficial
             -- and not really the best idea while in combat, nor interesting.
             getTweak IK.PolyItem = True
@@ -743,9 +739,7 @@ applyItem aid applyGroup = do
             getTweak (IK.OneOf l) = any getTweak l
             getTweak (IK.Composite l) = any getTweak l
             getTweak _ = False
-            tweakItem = case itemDisco itemFull of
-              Just ItemDisco{itemKind} -> any getTweak $ IK.ieffects itemKind
-              _ -> False
+            tweakItem = any getTweak $ IK.ieffects $ itemKind itemDisco
         in not tweakItem
            && if applyGroup == ApplyFirstAid
               then firstAidItem

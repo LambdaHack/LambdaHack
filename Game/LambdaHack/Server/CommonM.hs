@@ -74,16 +74,14 @@ execFailure aid req failureSer = do
 revealItems :: MonadServerAtomic m => Maybe FactionId -> m ()
 revealItems mfid = do
   itemToF <- getsState itemToFull
-  let discover aid store iid k =
-        let itemFull = itemToF iid k
+  let discover aid store iid k = do
+        let ItemFull{itemDisco} = itemToF iid k
             c = CActor aid store
-        in case itemDisco itemFull of
-          Just ItemDisco{itemKindId, itemKind} -> do
-            let isGem = maybe False (> 0) (lookup "gem" $ IK.ifreq itemKind)
-            unless isGem $ do  -- a hack
-              seed <- getsServer $ (EM.! iid) . sitemSeedD
-              execUpdAtomic $ UpdDiscover c iid itemKindId seed
-          _ -> error $ "" `showFailure` (mfid, c, iid, itemFull)
+            isGem = maybe False (> 0)
+                    $ lookup "gem" $ IK.ifreq $ itemKind itemDisco
+        unless isGem $ do  -- a hack
+          seed <- getsServer $ (EM.! iid) . sitemSeedD
+          execUpdAtomic $ UpdDiscover c iid (itemKindId itemDisco) seed
       f aid = do
         b <- getsState $ getActorBody aid
         let ourSide = maybe True (== bfid b) mfid
@@ -379,10 +377,10 @@ addActorFromGroup actorGroup bfid pos lid time = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- that contains the constant properties.
   let trunkFreq = [(actorGroup, 1)]
-  m5 <- rollItem 0 lid trunkFreq
-  case m5 of
+  m4 <- rollItem 0 lid trunkFreq
+  case m4 of
     Nothing -> return Nothing
-    Just (itemKnownRaw, itemFullRaw, _, seed, _) ->
+    Just (itemKnownRaw, itemFullRaw, seed, _) ->
       registerActor False itemKnownRaw itemFullRaw seed bfid pos lid time
 
 registerActor :: MonadServerAtomic m
@@ -429,17 +427,12 @@ addActorIid :: MonadServerAtomic m
             => ItemId -> ItemFull -> Bool -> FactionId -> Point -> LevelId
             -> (Actor -> Actor) -> Time
             -> m (Maybe ActorId)
-addActorIid trunkId trunkFull@ItemFull{..} bproj
-            bfid pos lid tweakBody time = do
-  let trunkKind = case itemDisco of
-        Just ItemDisco{itemKind} -> itemKind
-        Nothing -> error $ "" `showFailure` trunkFull
-      aspects = either id undefined $ itemAspect $ fromJust itemDisco
+addActorIid trunkId ItemFull{..} bproj bfid pos lid tweakBody time = do
   -- Initial HP and Calm is based only on trunk and ignores organs.
-      hp = xM (max 2 $ IA.aMaxHP aspects) `div` 2
+  let hp = xM (max 2 $ IA.aMaxHP $ itemAspect itemDisco) `div` 2
       -- Hard to auto-id items that refill Calm, but reduced sight at game
       -- start is more confusing and frustrating:
-      calm = xM (max 0 $ IA.aMaxCalm aspects)
+      calm = xM (max 0 $ IA.aMaxCalm $ itemAspect itemDisco)
   -- Create actor.
   factionD <- getsState sfactionD
   let fact = factionD EM.! bfid
@@ -474,7 +467,7 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
     ser {sactorTime = updateActorTime bfid lid aid time $ sactorTime ser}
   -- Create, register and insert all initial actor items, including
   -- the bonus health organs from difficulty setting.
-  forM_ (healthOrgans ++ map (Nothing,) (IK.ikit trunkKind))
+  forM_ (healthOrgans ++ map (Nothing,) (IK.ikit $ itemKind itemDisco))
         $ \(mk, (ikText, cstore)) -> do
     let container = CActor aid cstore
         itemFreq = [(ikText, 1)]
@@ -486,15 +479,13 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
 
 discoverIfNoEffects :: MonadServerAtomic m
                     => Container -> ItemId -> ItemFull -> m ()
-discoverIfNoEffects c iid itemFull = case itemFull of
-  ItemFull{itemDisco=Just ItemDisco{itemKind}}
-    | any IK.forIdEffect (IK.ieffects itemKind)
-      || maybe False (> 0) (lookup "gem" $ IK.ifreq itemKind) ->  -- a hack
-    return ()  -- discover by use, ignore gems
-  ItemFull{itemDisco=Just ItemDisco{itemKindId}} -> do
+discoverIfNoEffects c iid ItemFull{itemDisco} =
+  if any IK.forIdEffect (IK.ieffects $ itemKind itemDisco)
+     || maybe False (> 0) (lookup "gem" $ IK.ifreq (itemKind itemDisco))
+  then return ()  -- discover by use, ignore gems (a hack)
+  else do
     seed <- getsServer $ (EM.! iid) . sitemSeedD
-    execUpdAtomic $ UpdDiscover c iid itemKindId seed
-  _ -> error "server doesn't fully know item"
+    execUpdAtomic $ UpdDiscover c iid (itemKindId itemDisco) seed
 
 pickWeaponServer :: MonadServer m => ActorId -> m (Maybe (ItemId, CStore))
 pickWeaponServer source = do

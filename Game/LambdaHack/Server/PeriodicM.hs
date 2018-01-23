@@ -84,8 +84,8 @@ addAnyActor summoned actorFreq lid time mpos = do
   m4 <- rollItem lvlSpawned lid actorFreq
   case m4 of
     Nothing -> return Nothing
-    Just (itemKnownRaw, itemFullRaw, itemDisco, seed, _) -> do
-      let ik = itemKind itemDisco
+    Just (itemKnownRaw, itemFullRaw, seed, _) -> do
+      let ik = itemKind $ itemDisco itemFullRaw
           freqNames = map fst $ IK.ifreq ik
           f fact = fgroups (gplayer fact)
           factGroups = concatMap f $ EM.elems factionD

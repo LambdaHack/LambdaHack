@@ -94,10 +94,13 @@ partyItemSet slore fid mbody s =
 compareItemFull :: ItemFull -> ItemFull -> Ordering
 compareItemFull itemFull1 itemFull2 =
   case (itemDisco itemFull1, itemDisco itemFull2) of
-    (Nothing, Nothing) -> comparing apperance itemFull1 itemFull2
-    (Nothing, Just{}) -> LT
-    (Just{}, Nothing) -> GT
-    (Just id1, Just id2) ->
+    (ItemDiscoKind{itemSuspect=True}, ItemDiscoKind{itemSuspect=False}) -> LT
+    (ItemDiscoKind{itemSuspect=False}, ItemDiscoKind{itemSuspect=True}) -> GT
+    (ItemDiscoKind{}, ItemDiscoKind{}) ->
+      comparing apperance itemFull1 itemFull2
+    (ItemDiscoKind{}, ItemDiscoFull{}) -> LT
+    (ItemDiscoFull{}, ItemDiscoKind{}) -> GT
+    (id1@ItemDiscoFull{}, id2@ItemDiscoFull{}) ->
       case compare (itemKindId id1) (itemKindId id2) of
         EQ -> case comparing itemAspect id1 id2 of
           EQ -> comparing apperance itemFull1 itemFull2

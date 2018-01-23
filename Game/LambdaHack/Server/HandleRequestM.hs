@@ -579,7 +579,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
       localTime <- getsState $ getLocalTime (blid b)
       -- The first recharging period after pick up is random,
       -- between 1 and 2 standard timeouts of the item.
-      mrndTimeout <- rndToAction $ computeRndTimeout localTime iid itemFull
+      mrndTimeout <- rndToAction $ computeRndTimeout localTime itemFull
       let beforeIt = case iid `EM.lookup` bagBefore of
             Nothing -> []  -- no such items before move
             Just (_, it2) -> it2
@@ -598,17 +598,14 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
             execUpdAtomic $ UpdTimeItem iid toC afterIt resetIt
         Nothing -> return ()  -- no Periodic or Timeout aspect; don't touch
 
-computeRndTimeout :: Time -> ItemId -> ItemFull -> Rnd (Maybe Time)
-computeRndTimeout localTime iid ItemFull{..}=
-  case itemDisco of
-    Just ItemDisco{itemKind, itemAspect=Left ar} ->
-      case IA.aTimeout ar of
-        t | t /= 0 && IK.Periodic `elem` IK.ieffects itemKind -> do
-          rndT <- randomR (0, t)
-          let rndTurns = timeDeltaScale (Delta timeTurn) rndT
-          return $ Just $ timeShift localTime rndTurns
-        _ -> return Nothing
-    _ -> error $ "" `showFailure` iid
+computeRndTimeout :: Time -> ItemFull -> Rnd (Maybe Time)
+computeRndTimeout localTime ItemFull{..}=
+  case IA.aTimeout $ itemAspect itemDisco of
+    t | t /= 0 && IK.Periodic `elem` IK.ieffects (itemKind itemDisco) -> do
+      rndT <- randomR (0, t)
+      let rndTurns = timeDeltaScale (Delta timeTurn) rndT
+      return $ Just $ timeShift localTime rndTurns
+    _ -> return Nothing
 
 -- * ReqProject
 

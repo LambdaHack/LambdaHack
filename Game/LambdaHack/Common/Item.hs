@@ -128,12 +128,18 @@ newtype ItemKindIx = ItemKindIx Int
 -- the @itemAspect@ field is @Left@), this is a complete secret information.
 -- Items that don't need second identification may be identified or not and both
 -- cases are OK (their display flavour will differ and that may be the point).
-data ItemDisco = ItemDisco
-  { itemKindId :: ContentId IK.ItemKind
-  , itemKind   :: IK.ItemKind
-  , itemAspect :: Either IA.AspectRecord IA.KindMean
-  }
-  deriving Show
+data ItemDisco =
+    ItemDiscoKind { itemKindId     :: ContentId IK.ItemKind
+                  , itemKind       :: IK.ItemKind
+                  , itemAspectMean :: IA.KindMean
+                  , itemSuspect    :: Bool
+                  }
+  | ItemDiscoFull { itemKindId  :: ContentId IK.ItemKind
+                  , itemKind    :: IK.ItemKind
+                  , itemAspect  :: IA.AspectRecord
+                  , itemSuspect :: Bool  -- here always false
+                  }
+ deriving Show
 
 -- No speedup from making fields non-strict.
 -- | Full information about an item.
@@ -141,7 +147,7 @@ data ItemFull = ItemFull
   { itemBase  :: Item
   , itemK     :: Int
   , itemTimer :: ItemTimer
-  , itemDisco :: Maybe ItemDisco
+  , itemDisco :: ItemDisco
   }
   deriving Show
 
@@ -174,35 +180,41 @@ instance Binary Benefit
 
 type DiscoveryBenefit = EM.EnumMap ItemId Benefit
 
-itemNoDisco :: (Item, Int) -> ItemFull
-itemNoDisco (itemBase, itemK) =
-  ItemFull {itemBase, itemK, itemTimer = [], itemDisco=Nothing}
+itemNoDisco :: COps -> (Item, Int) -> ItemFull
+itemNoDisco COps{coitem, coItemSpeedup} (itemBase, itemK) =
+  let itemKindId = case jkind itemBase of
+        IdentityObvious ik -> ik
+        IdentityCovered _ ik -> ik
+      itemKind = okind coitem itemKindId
+      itemAspectMean = IK.getKindMean itemKindId coItemSpeedup
+      itemSuspect = True
+  in ItemFull {itemBase, itemK, itemTimer = [], itemDisco=ItemDiscoKind{..}}
 
 itemToFull6 :: COps -> DiscoveryKind -> DiscoveryAspect -> ItemId -> Item
             -> ItemQuant
             -> ItemFull
 itemToFull6 COps{coitem, coItemSpeedup}
             discoKind discoAspect iid itemBase (itemK, itemTimer) =
-  let mkindId = case jkind itemBase of
-        IdentityObvious ik -> Just ik
-        IdentityCovered ix _ik -> ix `EM.lookup` discoKind
-      itemDisco = case mkindId of
-        Nothing -> Nothing
-        Just itemKindId ->
-            let km = IK.getKindMean itemKindId coItemSpeedup
-                itemAspect = case EM.lookup iid discoAspect of
-                  Just ia -> Left ia
-                  Nothing -> Right km
-            in Just ItemDisco{ itemKindId
-                             , itemKind = okind coitem itemKindId
-                             , itemAspect }
+  let (itemKindId, itemSuspect) = case jkind itemBase of
+        IdentityObvious ik -> (ik, False)
+        IdentityCovered ix ik ->
+          maybe (ik, True) (\ki -> (ki, False)) $ ix `EM.lookup` discoKind
+      itemKind = okind coitem itemKindId
+      km = IK.getKindMean itemKindId coItemSpeedup
+      -- If the kind is not identified, we know nothing about the real
+      -- aspects, so we at least assume they are variable.
+      itemAspectMean | itemSuspect = km {IA.kmConst = False}
+                     | otherwise = km
+      itemDisco = case EM.lookup iid discoAspect of
+        Just itemAspect -> ItemDiscoFull {..}
+        Nothing -> ItemDiscoKind{..}
   in ItemFull {..}
 
 aspectRecordFull :: ItemFull -> IA.AspectRecord
 aspectRecordFull itemFull =
   case itemDisco itemFull of
-    Just ItemDisco{itemAspect} -> either id IA.kmMean itemAspect
-    Nothing -> IA.emptyAspectRecord
+    ItemDiscoKind{itemAspectMean} -> IA.kmMean itemAspectMean
+    ItemDiscoFull{itemAspect} -> itemAspect
 
 type ItemTimer = [Time]
 
@@ -221,10 +233,7 @@ type ItemDict = EM.EnumMap ItemId Item
 
 strengthEffect :: (IK.Effect -> [b]) -> ItemFull -> [b]
 strengthEffect f itemFull =
-  case itemDisco itemFull of
-    Just ItemDisco{itemKind=IK.ItemKind{ieffects}} ->
-      concatMap f ieffects
-    Nothing -> []
+  concatMap f $ IK.ieffects $ itemKind $ itemDisco itemFull
 
 strengthOnSmash :: ItemFull -> [IK.Effect]
 strengthOnSmash =
@@ -309,9 +318,8 @@ strongestMelee mdiscoBenefit localTime is =
   let f (iid, itemFull@ItemFull{itemBase}) =
         let rawDmg = (damageUsefulness itemBase, (iid, itemFull))
             knownOrConstantAspects = case itemDisco itemFull of
-              Just ItemDisco{itemAspect} ->
-                either (const True) IA.kmConst itemAspect
-              Nothing -> False
+              ItemDiscoKind{itemAspectMean=IA.KindMean{kmConst}} -> kmConst
+              ItemDiscoFull{} -> True
             unIDedBonus | knownOrConstantAspects = 0
                         | otherwise = 1000  -- exceptionally strong weapon
         in case mdiscoBenefit of
@@ -333,13 +341,13 @@ strongestMelee mdiscoBenefit localTime is =
 unknownAspect :: (IA.Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f itemFull =
   case itemDisco itemFull of
-    Nothing -> True  -- not even kind is known, so assume aspect affects melee
-    Just ItemDisco{ itemAspect=Right IA.KindMean{kmConst}
-                  , itemKind=IK.ItemKind{iaspects} } ->
+    ItemDiscoKind{ itemAspectMean=IA.KindMean{kmConst}
+                 , itemKind=IK.ItemKind{iaspects}
+                 , itemSuspect } ->
       let unknown x = let (minD, maxD) = Dice.minmaxDice x
                       in minD /= maxD
-      in not kmConst && or (concatMap (map unknown . f) iaspects)
-    Just{} -> False  -- all known
+      in itemSuspect || not kmConst && or (concatMap (map unknown . f) iaspects)
+    ItemDiscoFull{} -> False  -- all known
 
 unknownMeleeBonus :: [ItemFull] -> Bool
 unknownMeleeBonus =

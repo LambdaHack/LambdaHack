@@ -144,7 +144,7 @@ permittedPrecious calmE forced itemFull =
   in if not calmE && not forced && isPrecious then Left NotCalmPrecious
      else Right $ IK.Durable `elem` jfeature (itemBase itemFull)
                   || case itemDisco itemFull of
-                       Just ItemDisco{itemAspect=Left{}} -> True
+                       ItemDiscoFull{} -> True
                        _ -> not isPrecious
 
 permittedPreciousAI :: Bool -> ItemFull -> Bool
@@ -153,7 +153,7 @@ permittedPreciousAI calmE itemFull =
   in if not calmE && isPrecious then False
      else IK.Durable `elem` jfeature (itemBase itemFull)
           || case itemDisco itemFull of
-               Just ItemDisco{itemAspect=Left{}} -> True
+               ItemDiscoFull{} -> True
                _ -> not isPrecious
 
 permittedProject :: Bool -> Int -> Bool -> [Char] -> ItemFull
@@ -201,10 +201,10 @@ permittedApply localTime skill calmE triggerSyms itemFull@ItemFull{..} =
      -- (very likely in case of jewellery), so it's OK (the message may be
      -- somewhat alarming though).
      | not $ hasCharge localTime itemFull -> Left ApplyCharging
-     | otherwise -> case itemDisco of
-       Just ItemDisco{itemKind} | null $ IK.ieffects itemKind ->
-         Left ApplyNoEffects
-       _ -> let legal = permittedPrecious calmE False itemFull
+     | otherwise ->
+       if null (IK.ieffects $ itemKind itemDisco) && not (itemSuspect itemDisco)
+       then Left ApplyNoEffects
+       else let legal = permittedPrecious calmE False itemFull
             in case legal of
               Left{} -> legal
               Right False -> legal
