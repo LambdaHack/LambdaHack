@@ -126,8 +126,9 @@ loudUpdAtomic local cmd = do
     UpdTrajectory aid (Just (l, _)) Nothing | local && not (null l) -> do
       -- Non-blast projectile hits an non-walkable tile on leader's level.
       b <- getsState $ getActorBody aid
-      trunk <- getsState $ getItemBody $ btrunk b
-      return $! if bproj b && isBlast trunk then Nothing else Just cmd
+      itemToF <- getsState itemToFull
+      let itemFull = itemToF (btrunk b) (1, [])
+      return $! if bproj b && isBlast itemFull then Nothing else Just cmd
     UpdAlterTile _ _ fromTile _ -> return $!
       if Tile.isDoor coTileSpeedup fromTile
       then if local then Just cmd else Nothing

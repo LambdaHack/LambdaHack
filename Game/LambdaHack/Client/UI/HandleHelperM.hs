@@ -95,14 +95,14 @@ loreFromMode c = case c of
   MStats -> undefined  -- artificial slots
   MLore slore -> slore
 
-loreFromContainer :: Item -> Container -> SLore
-loreFromContainer item c = case c of
+loreFromContainer :: ItemFull -> Container -> SLore
+loreFromContainer itemFull c = case c of
   CFloor{} -> SItem
   CEmbed{} -> SEmbed
-  CActor _ store -> if | isBlast item -> SBlast
-                       | isTmpCondition item -> STmp
+  CActor _ store -> if | isBlast itemFull -> SBlast
+                       | isTmpCondition itemFull -> STmp
                        | otherwise -> loreFromMode $ MStore store
-  CTrunk{} -> if isBlast item then SBlast else STrunk
+  CTrunk{} -> if isBlast itemFull then SBlast else STrunk
 
 sortSlots :: MonadClientUI m => FactionId -> Maybe Actor -> m ()
 sortSlots fid mbody = do

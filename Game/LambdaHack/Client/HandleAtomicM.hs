@@ -40,7 +40,6 @@ import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind (ModeKind)
 import           Game.LambdaHack.Content.TileKind (TileKind)
 
@@ -57,25 +56,25 @@ cmdAtomicSemCli :: MonadClientSetup m => State -> UpdAtomic -> m ()
 cmdAtomicSemCli oldState cmd = case cmd of
   UpdCreateActor aid b ais -> createActor aid b ais
   UpdDestroyActor aid b _ -> destroyActor aid b True
-  UpdCreateItem iid itemBase _ (CActor aid store) -> do
+  UpdCreateItem iid _ _ (CActor aid store) -> do
     wipeBfsIfItemAffectsSkills [store] aid
-    addItemToDiscoBenefit iid itemBase
-  UpdCreateItem iid itemBase _ _ -> addItemToDiscoBenefit iid itemBase
+    addItemToDiscoBenefit iid
+  UpdCreateItem iid _ _ _ -> addItemToDiscoBenefit iid
   UpdDestroyItem _ _ _ (CActor aid store) ->
     wipeBfsIfItemAffectsSkills [store] aid
   UpdSpotActor aid b ais -> createActor aid b ais
   UpdLoseActor aid b _ -> destroyActor aid b False
-  UpdSpotItem _ iid itemBase _ (CActor aid store) -> do
+  UpdSpotItem _ iid _ _ (CActor aid store) -> do
     wipeBfsIfItemAffectsSkills [store] aid
-    addItemToDiscoBenefit iid itemBase
-  UpdSpotItem _ iid itemBase _ _ -> addItemToDiscoBenefit iid itemBase
+    addItemToDiscoBenefit iid
+  UpdSpotItem _ iid _ _ _ -> addItemToDiscoBenefit iid
   UpdLoseItem _ _ _ _ (CActor aid store) ->
     wipeBfsIfItemAffectsSkills [store] aid
   UpdSpotItemBag (CActor aid store) _bag ais -> do
     wipeBfsIfItemAffectsSkills [store] aid
-    mapM_ (\(iid, item) -> addItemToDiscoBenefit iid item) ais
+    mapM_ (addItemToDiscoBenefit . fst) ais
   UpdSpotItemBag _ _ ais ->
-    mapM_ (\(iid, item) -> addItemToDiscoBenefit iid item) ais
+    mapM_ (addItemToDiscoBenefit . fst) ais
   UpdLoseItemBag (CActor aid store) _bag _ais ->
     wipeBfsIfItemAffectsSkills [store] aid
   UpdMoveActor aid _ _ -> invalidateBfsAid aid
@@ -226,7 +225,7 @@ createActor aid b ais = do
           TgtAndPath (TEnemy a newPermit) NoPath
         _ -> tap
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
-  mapM_ (uncurry addItemToDiscoBenefit) ais
+  mapM_ (addItemToDiscoBenefit . fst) ais
 
 destroyActor :: MonadClient m => ActorId -> Actor -> Bool -> m ()
 destroyActor aid b destroy = do
@@ -249,26 +248,19 @@ destroyActor aid b destroy = do
         in TgtAndPath (affect tapTgt) newMPath
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
 
-addItemToDiscoBenefit :: MonadClient m => ItemId -> Item -> m ()
-addItemToDiscoBenefit iid item = do
-  cops@COps{coitem, coItemSpeedup} <- getsState scops
+addItemToDiscoBenefit :: MonadClient m => ItemId -> m ()
+addItemToDiscoBenefit iid = do
+  cops <- getsState scops
   discoBenefit <- getsClient sdiscoBenefit
   case EM.lookup iid discoBenefit of
     Just{} -> return ()  -- already there, with real or provisional aspects,
                          -- but we haven't learned anything new about the item
     Nothing -> do
-      discoKind <- getsState sdiscoKind
-      -- Best guess:
-      let kindId = case jkind item of
-            IdentityObvious ik -> ik
-            IdentityCovered ix ik -> fromMaybe ik $ ix `EM.lookup` discoKind
       side <- getsClient sside
       fact <- getsState $ (EM.! side) . sfactionD
-      let mean = IA.kmMean $ IK.getKindMean kindId coItemSpeedup
-          kind = okind coitem kindId
-          -- Mean aspects are used, because the item can't yet have
-          -- known real aspects, because it didn't even have kind before.
-          benefit = totalUsefulness cops fact mean kind item
+      itemToF <- getsState itemToFull
+      let itemFull = itemToF iid (1, [])
+          benefit = totalUsefulness cops fact itemFull
       modifyClient $ \cli ->
         cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
 
@@ -299,22 +291,17 @@ perception lid outPer inPer = do
 
 discoverKind :: MonadClient m
              => Container -> ItemKindIx -> ContentId ItemKind -> m ()
-discoverKind _c ix ik = do
-  cops@COps{coitem, coItemSpeedup} <- getsState scops
+discoverKind _c ix _ik = do
+  cops <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
   -- affect his actors' skills relevant to BFS.
   invalidateBfsAll
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  discoKind <- getsState sdiscoKind
-  itemD <- getsState sitemD
-  let kind = okind coitem ik
-      kindId = fromMaybe (error "item kind not found")
-                         (EM.lookup ix discoKind)
-      mean = IA.kmMean $ IK.getKindMean kindId coItemSpeedup
-      benefit iid =
-        let item = itemD EM.! iid
-        in totalUsefulness cops fact mean kind item
+  itemToF <- getsState itemToFull
+  let benefit iid =
+        let itemFull = itemToF iid (1, [])
+        in totalUsefulness cops fact itemFull
   itemIxMap <- getsState $ (EM.! ix) . sitemIxMap
   -- Possibly overwrite earlier, provisional benefits.
   forM_ (ES.elems itemIxMap) $ \iid -> modifyClient $ \cli ->
@@ -324,23 +311,16 @@ coverKind :: Container -> ItemKindIx -> ContentId ItemKind -> m ()
 coverKind _c _ix _ik = undefined
 
 discoverSeed :: MonadClient m => Container -> ItemId -> IA.ItemSeed -> m ()
-discoverSeed _c iid seed = do
-  cops@COps{coitem} <- getsState scops
+discoverSeed _c iid _seed = do
+  cops <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
   -- affect his actors' skills relevant to BFS.
   invalidateBfsAll
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  discoKind <- getsState sdiscoKind
-  item <- getsState $ getItemBody iid
-  totalDepth <- getsState stotalDepth
-  Level{ldepth} <- getLevel $ jlid item
-  let kindId = case jkind item of
-        IdentityObvious ik -> ik
-        IdentityCovered ix _ -> fromJust $ EM.lookup ix discoKind
-      kind = okind coitem kindId
-      aspects = IA.seedToAspect seed (IK.iaspects kind) ldepth totalDepth
-      benefit = totalUsefulness cops fact aspects kind item
+  itemToF <- getsState itemToFull
+  let itemFull@ItemFull{..} = itemToF iid (1, [])
+      benefit = totalUsefulness cops fact itemFull
   -- Possibly overwrite earlier, provisional benefits.
   modifyClient $ \cli ->
     cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}

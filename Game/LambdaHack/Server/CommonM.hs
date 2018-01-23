@@ -314,14 +314,14 @@ projectFail source tpxy eps center iid cstore blast = do
           actorSk <- currentSkillsServer source
           ar <- getsState $ getActorAspect source
           let skill = EM.findWithDefault 0 Ability.AbProject actorSk
-              itemFull@ItemFull{itemBase} = itemToF iid kit
+              itemFull@ItemFull{itemKind} = itemToF iid kit
               forced = blast || bproj sb
               calmE = calmEnough sb ar
               legal = permittedProject forced skill calmE "" itemFull
           case legal of
             Left reqFail -> return $ Just reqFail
             Right _ -> do
-              let lobable = IK.Lobable `elem` jfeature itemBase
+              let lobable = IK.Lobable `elem` IK.ifeature itemKind
                   rest = if lobable
                          then take (chessDist spos tpxy - 1) restUnlimited
                          else restUnlimited
@@ -427,7 +427,7 @@ addActorIid :: MonadServerAtomic m
             => ItemId -> ItemFull -> Bool -> FactionId -> Point -> LevelId
             -> (Actor -> Actor) -> Time
             -> m (Maybe ActorId)
-addActorIid trunkId ItemFull{..} bproj bfid pos lid tweakBody time = do
+addActorIid trunkId itemFull@ItemFull{..} bproj bfid pos lid tweakBody time = do
   -- Initial HP and Calm is based only on trunk and ignores organs.
   let hp = xM (max 2 $ IA.aMaxHP $ itemAspect itemDisco) `div` 2
       -- Hard to auto-id items that refill Calm, but reduced sight at game
@@ -459,7 +459,7 @@ addActorIid trunkId ItemFull{..} bproj bfid pos lid tweakBody time = do
       healthOrgans = [(Just bonusHP, ("bonus HP", COrgan)) | bonusHP /= 0]
       b = actorTemplate trunkId diffHP calm pos lid bfid bproj
       -- Insert the trunk as the actor's organ.
-      withTrunk = b {bweapon = if isMelee itemBase then 1 else 0}
+      withTrunk = b {bweapon = if isMelee itemFull then 1 else 0}
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
   execUpdAtomic $ UpdCreateActor aid (tweakBody withTrunk) [(trunkId, itemBase)]
@@ -474,7 +474,7 @@ addActorIid trunkId ItemFull{..} bproj bfid pos lid tweakBody time = do
     mIidEtc <- rollAndRegisterItem lid itemFreq container False mk
     case mIidEtc of
       Nothing -> error $ "" `showFailure` (lid, itemFreq, container, mk)
-      Just (iid, (itemFull, _)) -> discoverIfNoEffects container iid itemFull
+      Just (iid, (itemFull2, _)) -> discoverIfNoEffects container iid itemFull2
   return $ Just aid
 
 discoverIfNoEffects :: MonadServerAtomic m
@@ -496,7 +496,7 @@ pickWeaponServer source = do
   let allAssocsRaw = eqpAssocs ++ bodyAssocs
       forced = bproj sb
       allAssocs | forced = allAssocsRaw  -- for projectiles, anything is weapon
-                | otherwise = filter (isMelee . itemBase . snd) allAssocsRaw
+                | otherwise = filter (isMelee . snd) allAssocsRaw
   -- Server ignores item effects or it would leak item discovery info.
   -- In particular, it even uses weapons that would heal opponent,
   -- and not only in case of projectiles.

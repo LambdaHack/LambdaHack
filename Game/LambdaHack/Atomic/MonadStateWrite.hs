@@ -158,22 +158,24 @@ insertItemActor iid kit aid cstore = case cstore of
 insertItemOrgan :: MonadStateWrite m
                 => ItemId -> ItemQuant -> ActorId -> m ()
 insertItemOrgan iid kit aid = do
-  let bag = EM.singleton iid kit
+  itemToF <- getsState itemToFull
+  let itemFull = itemToF iid kit
+      bag = EM.singleton iid kit
       upd = EM.unionWith mergeItemQuant bag
-  item <- getsState $ getItemBody iid
   updateActor aid $ \b ->
     b { borgan = upd (borgan b)
-      , bweapon = if isMelee item then bweapon b + 1 else bweapon b }
+      , bweapon = if isMelee itemFull then bweapon b + 1 else bweapon b }
 
 insertItemEqp :: MonadStateWrite m
               => ItemId -> ItemQuant -> ActorId -> m ()
 insertItemEqp iid kit aid = do
-  let bag = EM.singleton iid kit
+  itemToF <- getsState itemToFull
+  let itemFull = itemToF iid kit
+      bag = EM.singleton iid kit
       upd = EM.unionWith mergeItemQuant bag
-  item <- getsState $ getItemBody iid
   updateActor aid $ \b ->
     b { beqp = upd (beqp b)
-      , bweapon = if isMelee item then bweapon b + 1 else bweapon b }
+      , bweapon = if isMelee itemFull then bweapon b + 1 else bweapon b }
 
 insertItemInv :: MonadStateWrite m
               => ItemId -> ItemQuant -> ActorId -> m ()
@@ -250,17 +252,19 @@ deleteItemActor iid kit aid cstore = case cstore of
 
 deleteItemOrgan :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
 deleteItemOrgan iid kit aid = do
-  item <- getsState $ getItemBody iid
+  itemToF <- getsState itemToFull
+  let itemFull = itemToF iid kit
   updateActor aid $ \b ->
     b { borgan = rmFromBag kit iid (borgan b)
-      , bweapon = if isMelee item then bweapon b - 1 else bweapon b }
+      , bweapon = if isMelee itemFull then bweapon b - 1 else bweapon b }
 
 deleteItemEqp :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
 deleteItemEqp iid kit aid = do
-  item <- getsState $ getItemBody iid
+  itemToF <- getsState itemToFull
+  let itemFull = itemToF iid kit
   updateActor aid $ \b ->
     b { beqp = rmFromBag kit iid (beqp b)
-      , bweapon = if isMelee item then bweapon b - 1 else bweapon b }
+      , bweapon = if isMelee itemFull then bweapon b - 1 else bweapon b }
 
 deleteItemInv :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
 deleteItemInv iid kit aid =

@@ -140,18 +140,18 @@ showReqFailure reqFailure = case reqFailure of
 -- to operate when not calm or becuse it's too precious to identify by use.
 permittedPrecious :: Bool -> Bool -> ItemFull -> Either ReqFailure Bool
 permittedPrecious calmE forced itemFull =
-  let isPrecious = IK.Precious `elem` jfeature (itemBase itemFull)
+  let isPrecious = IK.Precious `elem` IK.ifeature (itemKind itemFull)
   in if not calmE && not forced && isPrecious then Left NotCalmPrecious
-     else Right $ IK.Durable `elem` jfeature (itemBase itemFull)
+     else Right $ IK.Durable `elem` IK.ifeature (itemKind itemFull)
                   || case itemDisco itemFull of
                        ItemDiscoFull{} -> True
                        _ -> not isPrecious
 
 permittedPreciousAI :: Bool -> ItemFull -> Bool
 permittedPreciousAI calmE itemFull =
-  let isPrecious = IK.Precious `elem` jfeature (itemBase itemFull)
+  let isPrecious = IK.Precious `elem` IK.ifeature (itemKind itemFull)
   in if not calmE && isPrecious then False
-     else IK.Durable `elem` jfeature (itemBase itemFull)
+     else IK.Durable `elem` IK.ifeature (itemKind itemFull)
           || case itemDisco itemFull of
                ItemDiscoFull{} -> True
                _ -> not isPrecious
@@ -161,7 +161,7 @@ permittedProject :: Bool -> Int -> Bool -> [Char] -> ItemFull
 permittedProject forced skill calmE triggerSyms itemFull@ItemFull{..} =
  if | not forced && skill < 1 -> Left ProjectUnskilled
     | not forced
-      && IK.Lobable `elem` jfeature itemBase
+      && IK.Lobable `elem` IK.ifeature itemKind
       && skill < 3 -> Left ProjectLobable
     | otherwise ->
       let legal = permittedPrecious calmE forced itemFull
@@ -174,14 +174,14 @@ permittedProject forced skill calmE triggerSyms itemFull@ItemFull{..} =
                case strengthEqpSlot itemFull of
                  Just IA.EqpSlotLightSource -> True
                  Just _ -> False
-                 Nothing -> not (goesIntoEqp itemBase)
+                 Nothing -> not (goesIntoEqp itemFull)
              | otherwise -> IK.isymbol itemKind `elem` triggerSyms
 
 -- Speedup.
 permittedProjectAI :: Int -> Bool -> ItemFull -> Bool
-permittedProjectAI skill calmE itemFull@ItemFull{itemBase} =
+permittedProjectAI skill calmE itemFull =
  if | skill < 1 -> False
-    | IK.Lobable `elem` jfeature itemBase
+    | IK.Lobable `elem` IK.ifeature (itemKind itemFull)
       && skill < 3 -> False
     | otherwise -> permittedPreciousAI calmE itemFull
 
@@ -210,5 +210,5 @@ permittedApply localTime skill calmE triggerSyms itemFull@ItemFull{..} =
               Right False -> legal
               Right True -> Right $
                 if ' ' `elem` triggerSyms
-                then IK.Applicable `elem` jfeature itemBase
+                then IK.Applicable `elem` IK.ifeature itemKind
                 else IK.isymbol itemKind `elem` triggerSyms

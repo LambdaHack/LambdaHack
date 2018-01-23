@@ -130,7 +130,7 @@ pickWeaponClient source target = do
   bodyAssocs <- getsState $ fullAssocs source [COrgan]
   actorSk <- currentSkillsClient source
   let allAssocsRaw = eqpAssocs ++ bodyAssocs
-      allAssocs = filter (isMelee . itemBase . snd) allAssocsRaw
+      allAssocs = filter (isMelee . snd) allAssocsRaw
   discoBenefit <- getsClient sdiscoBenefit
   strongest <- pickWeaponM (Just discoBenefit) allAssocs actorSk source
   case strongest of

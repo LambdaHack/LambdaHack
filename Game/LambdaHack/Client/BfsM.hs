@@ -403,11 +403,11 @@ condEnoughGearM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let followTactic = ftactic (gplayer fact) `elem` [TFollow, TFollowNoItems]
-  eqpAssocs <- getsState $ getActorAssocs aid CEqp
+  eqpAssocs <- getsState $ fullAssocs aid [CEqp]
   invAssocs <- getsState $ getActorAssocs aid CInv
   return $ not followTactic  -- keep it lazy
            && (any (isMelee . snd) eqpAssocs
-               || length (eqpAssocs ++ invAssocs) >= 5)
+               || length eqpAssocs + length invAssocs >= 5)
 
 unexploredDepth :: MonadClient m => Bool -> LevelId -> m Bool
 unexploredDepth !up !lidCurrent = do

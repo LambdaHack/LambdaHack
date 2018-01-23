@@ -218,9 +218,9 @@ effectAndDestroy meleePerformed source target iid container periodic effs
 
 imperishableKit :: Bool -> Bool -> ItemTimer -> ItemFull
                 -> (Bool, ItemQuant)
-imperishableKit permanent periodic it2 ItemFull{..} =
-  let fragile = IK.Fragile `elem` jfeature itemBase
-      durable = IK.Durable `elem` jfeature itemBase
+imperishableKit permanent periodic it2 ItemFull{itemKind, itemK} =
+  let fragile = IK.Fragile `elem` IK.ifeature itemKind
+      durable = IK.Durable `elem` IK.ifeature itemKind
       imperishable = durable && not fragile || periodic && permanent
       kit = if permanent || periodic then (1, take 1 it2) else (itemK, it2)
   in (imperishable, kit)
@@ -622,7 +622,8 @@ effectSummon grp nDm iid source target periodic = do
   actorAspect <- getsState sactorAspect
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
-  item <- getsState $ getItemBody iid
+  itemToF <- getsState itemToFull
+  let itemFull = itemToF iid (1, [])
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
   let power = max power0 1  -- KISS, always at least one summon
       -- We put @source@ instead of @target@ and @power@ instead of dice
@@ -631,7 +632,7 @@ effectSummon grp nDm iid source target periodic = do
       execSfx = execSfxAtomic $ SfxEffect (bfid sb) source effect 0
       sar = actorAspect EM.! source
       tar = actorAspect EM.! target
-      durable = IK.Durable `elem` jfeature item
+      durable = IK.Durable `elem` IK.ifeature (itemKind itemFull)
       deltaCalm = - xM 30
   -- Verify Calm only at periodic activations or if the item is durable.
   -- Otherwise summon uses up the item, which prevents summoning getting
@@ -1079,10 +1080,10 @@ dropCStoreItem :: MonadServerAtomic m
                -> m ()
 dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
   itemToF <- getsState itemToFull
-  let itemFull@ItemFull{itemBase} = itemToF iid kit
+  let itemFull@ItemFull{itemKind} = itemToF iid kit
   let c = CActor aid store
-      fragile = IK.Fragile `elem` jfeature itemBase
-      durable = IK.Durable `elem` jfeature itemBase
+      fragile = IK.Fragile `elem` IK.ifeature itemKind
+      durable = IK.Durable `elem` IK.ifeature itemKind
       isDestroyed = bproj b && (bhp b <= 0 && not durable || fragile)
                     || fragile && durable  -- hack for tmp organs
   if isDestroyed then do
@@ -1350,7 +1351,7 @@ effectDropBestWeapon execSfx target = do
   tb <- getsState $ getActorBody target
   localTime <- getsState $ getLocalTime (blid tb)
   allAssocsRaw <- getsState $ fullAssocs target [CEqp]
-  let allAssocs = filter (isMelee . itemBase . snd) allAssocsRaw
+  let allAssocs = filter (isMelee . snd) allAssocsRaw
   case strongestMelee Nothing localTime allAssocs of
     (_, (iid, _)) : _ -> do
       execSfx

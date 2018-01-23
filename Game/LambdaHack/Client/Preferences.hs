@@ -239,24 +239,25 @@ organBenefit turnTimer grp cops@COps{coitem} fact =
   in ofoldlGroup' coitem grp f (0, 0)
 
 recBenefit :: GroupName ItemKind -> COps -> Faction -> (Double, Int)
-recBenefit grp cops@COps{coitem} fact =
+recBenefit grp cops@COps{coitem, coItemSpeedup} fact =
   let f (!sacc, !pacc) !p !kindId !kind =
-        let recPickup = benPickup $
-              totalUsefulness cops fact (IK.meanAspect kind) kind
-                              (fakeItem kindId kind)
+        let km = IK.getKindMean kindId coItemSpeedup
+            recPickup =
+              benPickup $ totalUsefulness cops fact (fakeItem kindId kind km)
         in ( sacc + Dice.meanDice (IK.icount kind) * recPickup
            , pacc + p )
   in ofoldlGroup' coitem grp f (0, 0)
 
-fakeItem :: ContentId IK.ItemKind -> IK.ItemKind -> Item
-fakeItem kindId kind =
+fakeItem :: ContentId IK.ItemKind -> IK.ItemKind -> IA.KindMean -> ItemFull
+fakeItem kindId kind km =
   let jkind    = IdentityObvious kindId
       jlid     = toEnum 1  -- dummy
       jfid     = Nothing  -- the default
       jflavour = Flavour minBound minBound  -- dummy
-      jfeature = IK.ifeature kind
       jdamage  = fromJust $ mostFreq $ toFreq "fakeItem" $ IK.idamage kind
-  in Item{..}
+      itemBase = Item{..}
+      itemDisco = ItemDiscoMean km
+  in ItemFull itemBase 1 [] kindId kind itemDisco True
 
 -- Value of aspects and effects is linked by some deep economic principles
 -- which I'm unfortunately ignorant of. E.g., average weapon hits for 5HP,
@@ -305,10 +306,10 @@ recordToBenefit aspects = map aspectToBenefit $ IA.aspectRecordToList aspects
 --
 -- Note: result has non-strict fields, so arguments are forced to avoid leaks.
 -- When AI looks at items (including organs) more often, force the fields.
-totalUsefulness :: COps -> Faction -> IA.AspectRecord -> ItemKind -> Item
-                -> Benefit
-totalUsefulness !cops !fact !aspects !itemKind !itemBase =
+totalUsefulness :: COps -> Faction -> ItemFull -> Benefit
+totalUsefulness !cops !fact !itemFull@ItemFull{..} =
   let effects = IK.ieffects itemKind
+      aspects = aspectRecordFull itemFull
       effPairs = map (effectToBenefit cops fact) effects
       effDice = - damageUsefulness itemBase
       f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
@@ -356,7 +357,7 @@ totalUsefulness !cops !fact !aspects !itemKind !itemBase =
       -- and save the option for using non-durable item for the future, e.g.,
       -- when both items have timeouts, starting with durable is beneficial,
       -- because it recharges while the non-durable is prepared and used.
-      durable = IK.Durable `elem` jfeature itemBase
+      durable = IK.Durable `elem` IK.ifeature itemKind
       -- If recharging effects not periodic, we add the self part,
       -- because they are applied to self. If they are periodic we can't
       -- effectively apply them, because they are never recharged,
@@ -385,7 +386,7 @@ totalUsefulness !cops !fact !aspects !itemKind !itemBase =
         dmg = Dice.meanDice (jdamage itemBase)
         rawDeltaHP = ceiling $ fromIntegral hurtMult * xD dmg / 100
         -- For simplicity, we ignore range bonus/malus and @Lobable@.
-        IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemBase
+        IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemFull
         speed = speedFromWeight (IK.iweight itemKind) throwVelocity
         v = - fromIntegral (modifyDamageBySpeed rawDeltaHP speed) * 10 / xD 1
           -- 1 damage valued at 10, just as in @damageUsefulness@
@@ -410,13 +411,13 @@ totalUsefulness !cops !fact !aspects !itemKind !itemBase =
       -- (but can be equipped anyway). If it harms wearer too much,
       -- won't be worn but still may be flung, etc.
       (benInEqp, benPickup)
-        | isMelee itemBase && benMelee < 0 && eqpSum >= -20 =
+        | isMelee itemFull && benMelee < 0 && eqpSum >= -20 =
           ( True  -- equip, melee crucial, and only weapons in eqp can be used
           , if durable
             then eqpSum
                  + max benApply (- benMelee)  -- apply or melee or not
             else - benMelee)  -- melee is predominant
-        | goesIntoEqp itemBase && eqpSum > 0 =  -- weapon or other equippable
+        | goesIntoEqp itemFull && eqpSum > 0 =  -- weapon or other equippable
           ( True  -- equip; long time bonus usually outweighs fling or apply
           , eqpSum  -- possibly spent turn equipping, so reap the benefits
             + if durable

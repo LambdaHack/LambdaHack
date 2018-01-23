@@ -189,7 +189,7 @@ chooseItemDialogMode c = do
           return $ Right c2
         MOrgans -> do
           let blurb itemFull
-                | isTmpCondition (itemBase itemFull) = "temporary condition"
+                | isTmpCondition itemFull = "temporary condition"
                 | otherwise = "organ"
               prompt2 itemFull = makeSentence [ partActor bUI, "can't remove"
                                               , MU.AW $ blurb itemFull ]

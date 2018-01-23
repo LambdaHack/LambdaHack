@@ -86,7 +86,7 @@ partItemN side factionD ranged detailLevel n localTime
 textAllAE :: DetailLevel -> Bool -> ItemFull -> ([Text], [Text])
 textAllAE detailLevel skipRecharging itemFull@ItemFull{..} =
   let features | detailLevel >= DetailAll =
-                   map featureToSuff $ sort $ jfeature itemBase
+                   map featureToSuff $ sort $ IK.ifeature itemKind
                | otherwise = []
       aets = case itemDisco of
         ItemDiscoMean{} ->  -- faster than @aspectRecordToList@ of mean
@@ -102,7 +102,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{..} =
       elabel :: IK.Effect -> Bool
       elabel IK.ELabel{} = True
       elabel _ = False
-      active = goesIntoEqp itemBase
+      active = goesIntoEqp itemFull
       splitAE :: DetailLevel -> [IA.Aspect] -> [IK.Effect] -> [Text]
       splitAE detLev aspects effects =
         let ppA = kindAspectToSuffix
@@ -120,8 +120,8 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{..} =
                            $ map ppE $ IK.stripRecharging effects
             onSmashTs = T.intercalate " " $ filter (not . T.null)
                         $ map ppE $ IK.stripOnSmash effects
-            durable = IK.Durable `elem` jfeature itemBase
-            fragile = IK.Fragile `elem` jfeature itemBase
+            durable = IK.Durable `elem` IK.ifeature itemKind
+            fragile = IK.Fragile `elem` IK.ifeature itemKind
             periodicOrTimeout =
               if | skipRecharging || T.null rechargingTs -> ""
                  | periodic -> case mtimeout of
@@ -166,7 +166,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{..} =
         in case filter (/= []) splitsToTry of
              detNonEmpty : _ -> detNonEmpty
              [] -> []
-      IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemBase
+      IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemFull
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
       minDeltaHP = xM meanDmg `divUp` 100
@@ -202,7 +202,7 @@ partItemWsR :: FactionId -> FactionDict -> Bool -> Int -> Time -> ItemFull
 partItemWsR side factionD ranged count localTime itemFull =
   let (temporary, unique, name, stats) =
         partItemN side factionD ranged DetailMedium 4 localTime itemFull
-      tmpCondition = isTmpCondition $ itemBase itemFull
+      tmpCondition = isTmpCondition itemFull
   in ( temporary
      , if | temporary && count == 1 -> MU.Phrase [name, stats]
           | temporary ->
@@ -253,10 +253,10 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
          itemFull@ItemFull{..} =
   let (_, unique, name, stats) = partItemHigh side factionD localTime itemFull
       nstats = makePhrase [name, stats]
-      IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = strengthToThrow itemBase
+      IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = strengthToThrow itemFull
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       range = rangeFromSpeedAndLinger speed throwLinger
-      tspeed | isTmpCondition itemBase = ""
+      tspeed | isTmpCondition itemFull = ""
              | speed < speedLimp = "When thrown, it drops at once."
              | speed < speedWalk = "When thrown, it travels only one meter and drops immediately."
              | otherwise =
@@ -315,7 +315,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
       whose fid = gname (factionD EM.! fid)
       sourceDesc =
         case jfid itemBase of
-          Just fid | isTmpCondition itemBase ->
+          Just fid | isTmpCondition itemFull ->
             "Caused by" <+> (if fid == side then "us" else whose fid)
             <> ". First observed" <+> onLevel
           Just fid ->

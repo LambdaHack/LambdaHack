@@ -71,7 +71,6 @@ buildItem COps{coitem} (FlavourMap flavourMap) discoRev
         case IK.iflavour kind of
           [fl] -> fl
           _ -> flavourMap EM.! ikChosen
-      jfeature = IK.ifeature kind
   in Item{..}
 
 -- | Generate an item based on level.

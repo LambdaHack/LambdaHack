@@ -76,13 +76,15 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid body _ -> createActorUI True aid body
   UpdDestroyActor aid body _ -> destroyActorUI True aid body
-  UpdCreateItem iid item kit c -> do
+  UpdCreateItem iid _item kit c -> do
     updateItemSlot c iid
     case c of
       CActor aid store -> do
         case store of
-          COrgan ->
-            if isTmpCondition item then do
+          COrgan -> do
+            itemToF <- getsState itemToFull
+            let itemFull = itemToF iid kit
+            if isTmpCondition itemFull then do
               bag <- getsState $ getContainerBag c
               let more = case EM.lookup iid bag of
                     Nothing -> False
@@ -352,8 +354,9 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
 
 updateItemSlot :: MonadClientUI m => Container -> ItemId -> m ()
 updateItemSlot c iid = do
-  item <- getsState $ getItemBody iid
-  let slore = loreFromContainer item c
+  itemToF <- getsState itemToFull
+  let itemFull = itemToF iid (1, [])
+      slore = loreFromContainer itemFull c
       incrementPrefix l2 iid2 m = EM.insert l2 iid2 $
         case EM.lookup l2 m of
           Nothing -> m
@@ -489,7 +492,7 @@ createActorUI born aid body = do
   globalTime <- getsState stime
   localTime <- getsState $ getLocalTime $ blid body
   itemToF <- getsState itemToFull
-  let ItemFull{..} = itemToF (btrunk body) (1, [])
+  let itemFull@ItemFull{..} = itemToF (btrunk body) (1, [])
       symbol = IK.isymbol itemKind
   mbUI <- getsSession $ EM.lookup aid . sactorUI
   bUI <- case mbUI of
@@ -510,7 +513,7 @@ createActorUI born aid body = do
                  $ lookup k uHeroNames
       (n, bsymbol) <-
         if | bproj body ->
-               return (0, if isBlast itemBase then symbol else '*')
+               return (0, if isBlast itemFull then symbol else '*')
            | baseColor /= Color.BrWhite -> return (0, symbol)
            | otherwise -> do
              sactorUI <- getsSession sactorUI
@@ -534,7 +537,7 @@ createActorUI born aid body = do
                | baseColor /= Color.BrWhite -> (IK.iname itemKind, basePronoun)
                | otherwise -> heroNamePronoun n
           bcolor | bproj body =
-                     if isBlast itemBase then baseColor else Color.BrWhite
+                     if isBlast itemFull then baseColor else Color.BrWhite
                  | baseColor == Color.BrWhite = gcolor fact
                  | otherwise = baseColor
           bUI = ActorUI{..}
@@ -616,8 +619,9 @@ spotItem verbose iid kit c = do
   -- This is due to a move, or similar, which will be displayed,
   -- so no extra @markDisplayNeeded@ needed here and in similar places.
   ItemSlots itemSlots <- getsSession sslots
-  item <- getsState $ getItemBody iid
-  let slore = loreFromContainer item c
+  itemToF <- getsState itemToFull
+  let itemFull = itemToF iid kit
+      slore = loreFromContainer itemFull c
   case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! slore of
     Nothing -> do  -- never seen or would have a slot
       void $ updateItemSlot c iid
@@ -1185,7 +1189,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
     let itemFull = itemToF iid (1, [])
         (_, _, name, stats) = partItem (bfid b) factionD localTime itemFull
         storeOwn = ppCStoreWownW True cstore aidPhrase
-        cond = ["condition" | isTmpCondition $ itemBase itemFull]
+        cond = ["condition" | isTmpCondition itemFull]
     return $! makeSentence $
       ["the", name, stats] ++ cond ++ storeOwn ++ ["will now last longer"]
   SfxCollideActor lid source target -> do

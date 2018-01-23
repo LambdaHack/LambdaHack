@@ -61,7 +61,6 @@ data Item = Item
   , jflavour :: Flavour       -- ^ flavour, always the real one, not hidden;
                               --   people may not recognize shape, but they
                               --   remember colour and old vs fancy look
-  , jfeature :: [IK.Feature]  -- ^ public properties
   , jdamage  :: Dice.Dice     -- ^ impact damage of this particular weapon
   }
   deriving (Show, Eq, Generic)
@@ -81,27 +80,27 @@ instance Hashable ItemIdentity
 
 instance Binary ItemIdentity
 
-isMelee :: Item -> Bool
-isMelee item = IK.Meleeable `elem` jfeature item
+isMelee :: ItemFull -> Bool
+isMelee itemFull = IK.Meleeable `elem` IK.ifeature (itemKind itemFull)
 
-isTmpCondition :: Item -> Bool
-isTmpCondition item = IK.Fragile `elem` jfeature item
-                      && IK.Durable `elem` jfeature item
+isTmpCondition :: ItemFull -> Bool
+isTmpCondition itemFull = IK.Fragile `elem` IK.ifeature (itemKind itemFull)
+                          && IK.Durable `elem` IK.ifeature (itemKind itemFull)
 
-isBlast :: Item -> Bool
-isBlast item = IK.Blast `elem` jfeature item
+isBlast :: ItemFull -> Bool
+isBlast itemFull = IK.Blast `elem` IK.ifeature (itemKind itemFull)
 
-goesIntoEqp :: Item -> Bool
-goesIntoEqp item = IK.Equipable `elem` jfeature item
-                   || IK.Meleeable `elem` jfeature item
+goesIntoEqp :: ItemFull -> Bool
+goesIntoEqp itemFull = IK.Equipable `elem` IK.ifeature (itemKind itemFull)
+                       || IK.Meleeable `elem` IK.ifeature (itemKind itemFull)
 
-goesIntoInv :: Item -> Bool
-goesIntoInv item = IK.Precious `notElem` jfeature item
-                   && not (goesIntoEqp item)
+goesIntoInv :: ItemFull -> Bool
+goesIntoInv itemFull = IK.Precious `notElem` IK.ifeature (itemKind itemFull)
+                       && not (goesIntoEqp itemFull)
 
-goesIntoSha :: Item -> Bool
-goesIntoSha item = IK.Precious `elem` jfeature item
-                   && not (goesIntoEqp item)
+goesIntoSha :: ItemFull -> Bool
+goesIntoSha itemFull = IK.Precious `elem` IK.ifeature (itemKind itemFull)
+                       && not (goesIntoEqp itemFull)
 
 -- | The map of item ids to item aspects.
 -- The full map is known by the server.
@@ -244,14 +243,14 @@ strengthEqpSlot item =
     [x] -> Just x
     xs -> error $ "" `showFailure` (xs, item)
 
-strengthToThrow :: Item -> IK.ThrowMod
-strengthToThrow item =
+strengthToThrow :: ItemFull -> IK.ThrowMod
+strengthToThrow itemFull =
   let p (IK.ToThrow tmod) = [tmod]
       p _ = []
-  in case concatMap p (jfeature item) of
+  in case concatMap p (IK.ifeature $ itemKind itemFull) of
     [] -> IK.ThrowMod 100 100
     [x] -> x
-    xs -> error $ "" `showFailure` (xs, item)
+    xs -> error $ "" `showFailure` (xs, itemFull)
 
 -- This ignores items that don't go into equipment, as determined in @inEqp@.
 -- They are removed from equipment elsewhere via @harmful@.
@@ -262,7 +261,7 @@ strongestSlot discoBenefit eqpSlot is =
         let rawDmg = damageUsefulness $ itemBase itemFull
             (bInEqp, bPickup) = case EM.lookup iid discoBenefit of
                Just Benefit{benInEqp, benPickup} -> (benInEqp, benPickup)
-               Nothing -> (goesIntoEqp $ itemBase itemFull, rawDmg)
+               Nothing -> (goesIntoEqp itemFull, rawDmg)
         in if not bInEqp
            then Nothing
            else Just $
@@ -275,8 +274,8 @@ strongestSlot discoBenefit eqpSlot is =
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe f is
 
 itemTrajectory :: ItemFull -> [Point] -> ([Vector], (Speed, Int))
-itemTrajectory ItemFull{..} path =
-  let IK.ThrowMod{..} = strengthToThrow itemBase
+itemTrajectory itemFull@ItemFull{itemKind} path =
+  let IK.ThrowMod{..} = strengthToThrow itemFull
   in computeTrajectory (IK.iweight itemKind) throwVelocity throwLinger path
 
 totalRange :: ItemFull -> Int
@@ -343,4 +342,4 @@ tmpMeleeBonus :: [ItemFull] -> Int
 tmpMeleeBonus is =
   let f itemFull k =
         itemK itemFull * IA.aHurtMelee (aspectRecordFull itemFull) + k
-  in foldr f 0 $ filter (isTmpCondition . itemBase) is
+  in foldr f 0 $ filter isTmpCondition is

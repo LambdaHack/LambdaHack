@@ -135,14 +135,14 @@ condBlocksFriendsM aid = do
 -- | Require the actor stands over a weapon that would be auto-equipped.
 condFloorWeaponM :: MonadStateRead m => ActorId -> m Bool
 condFloorWeaponM aid = do
-  floorAssocs <- getsState $ getActorAssocs aid CGround
+  floorAssocs <- getsState $ fullAssocs aid [CGround]
   let lootIsWeapon = any (isMelee . snd) floorAssocs
   return lootIsWeapon
 
 -- | Check whether the actor has no weapon in equipment.
 condNoEqpWeaponM :: MonadStateRead m => ActorId -> m Bool
 condNoEqpWeaponM aid = do
-  eqpAssocs <- getsState $ getActorAssocs aid CEqp
+  eqpAssocs <- getsState $ fullAssocs aid [CEqp]
   return $ all (not . isMelee . snd) eqpAssocs
 
 -- | Require that the actor can project any items.
@@ -171,10 +171,10 @@ condProjectListM skill aid = do
       q (mben, _, _, itemFull) =
         let (bInEqp, bFling) = case mben of
               Just Benefit{benInEqp, benFling} -> (benInEqp, benFling)
-              Nothing -> (goesIntoEqp $ itemBase itemFull, -10)
+              Nothing -> (goesIntoEqp itemFull, -10)
         in bFling < 0
            && (not bInEqp  -- can't wear, so OK to risk losing or breaking
-               || not (isMelee $ itemBase itemFull)  -- anything else expendable
+               || not (isMelee itemFull)  -- anything else expendable
                   && hind itemFull)  -- hinders now, so possibly often, so away!
            && permittedProjectAI skill calmE itemFull
   benList <- benAvailableItems aid $ [CEqp, CInv, CGround] ++ [CSha | calmE]
@@ -215,7 +215,7 @@ hinders condShineWouldBetray condAimEnemyPresent
      -- Fast actors want to hit hard, because they hit much more often
      -- than receive hits.
      || bspeed body ar > speedWalk
-        && not (isMelee $ itemBase itemFull)  -- in case it's the only weapon
+        && not (isMelee itemFull)  -- in case it's the only weapon
         && 0 > IA.aHurtMelee (aspectRecordFull itemFull)
 
 -- | Require that the actor stands over a desirable item.
@@ -234,20 +234,20 @@ benGroundItems aid = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let canEsc = fcanEscape (gplayer fact)
       isDesirable (mben, _, _, itemFull) =
-        desirableItem canEsc (benPickup <$> mben) (itemBase itemFull)
+        desirableItem canEsc (benPickup <$> mben) itemFull
   benList <- benAvailableItems aid [CGround]
   return $ filter isDesirable benList
 
-desirableItem :: Bool -> Maybe Double -> Item -> Bool
-desirableItem canEsc mpickupSum item =
+desirableItem :: Bool -> Maybe Double -> ItemFull -> Bool
+desirableItem canEsc mpickupSum ItemFull{itemKind} =
   if canEsc
   then fromMaybe 10 mpickupSum > 0
-       || IK.Precious `elem` jfeature item
+       || IK.Precious `elem` IK.ifeature itemKind
   else
     -- A hack to prevent monsters from picking up treasure meant for heroes.
     let preciousNotUseful =  -- suspect and probably useless jewelry
-          IK.Precious `elem` jfeature item  -- risk from treasure hunters
-          && IK.Equipable `notElem` jfeature item  -- can't wear
+          IK.Precious `elem` IK.ifeature itemKind  -- risk from treasure hunters
+          && IK.Equipable `notElem` IK.ifeature itemKind  -- can't wear
     in fromMaybe 10 mpickupSum > 0
        && not preciousNotUseful  -- hack for elixir: even if @use@ positive
 

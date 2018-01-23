@@ -327,14 +327,14 @@ pickup aid onlyWeapon = do
   -- e.g., making all rings identified)
   ar <- getsState $ getActorAspect aid
   let calmE = calmEnough b ar
-      isWeapon (_, _, _, itemFull) = isMelee $ itemBase itemFull
+      isWeapon (_, _, _, itemFull) = isMelee itemFull
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
-      prepareOne (oldN, l4) (mben, _, iid, ItemFull{..}) =
+      prepareOne (oldN, l4) (mben, _, iid, itemFull@ItemFull{..}) =
         let prep newN toCStore = (newN, (iid, itemK, CGround, toCStore) : l4)
-            inEqp = maybe (goesIntoEqp itemBase) benInEqp mben
+            inEqp = maybe (goesIntoEqp itemFull) benInEqp mben
             n = oldN + itemK
-        in if | calmE && goesIntoSha itemBase && not onlyWeapon ->
+        in if | calmE && goesIntoSha itemFull && not onlyWeapon ->
                 prep oldN CSha
               | inEqp && eqpOverfull b n ->
                 if onlyWeapon then (oldN, l4)
@@ -705,14 +705,14 @@ applyItem aid applyGroup = do
         . permittedApply localTime skill calmE " "
       q (mben, _, _, itemFull@ItemFull{..}) =
         let freq = IK.ifreq itemKind
-            durable = IK.Durable `elem` jfeature itemBase
+            durable = IK.Durable `elem` IK.ifeature itemKind
             (bInEqp, bApply) = case mben of
               Just Benefit{benInEqp, benApply} -> (benInEqp, benApply)
-              Nothing -> (goesIntoEqp itemBase, 0)  -- apply unsafe
+              Nothing -> (goesIntoEqp itemFull, 0)  -- apply unsafe
         in bApply > 0
            && (not bInEqp  -- can't wear, so OK to break
                || durable  -- can wear, but can't break, even better
-               || not (isMelee itemBase)  -- anything else expendable
+               || not (isMelee itemFull)  -- anything else expendable
                   && hind itemFull)  -- hinders now, so possibly often, so away!
            && permittedActor itemFull
            && maybe True (<= 0) (lookup "gem" freq) -- hack for elixir of youth
@@ -723,8 +723,8 @@ applyItem aid applyGroup = do
   benList <- benAvailableItems aid stores
   itemToF <- getsState itemToFull
   let organs = map (uncurry itemToF) $ EM.assocs $ borgan b
-      hasGrps = mapMaybe (\ItemFull{..} ->
-        if isTmpCondition itemBase
+      hasGrps = mapMaybe (\itemFull@ItemFull{..} ->
+        if isTmpCondition itemFull
         then Just $ toGroupName $ IK.iname itemKind
         else Nothing) organs
       itemLegal ItemFull{itemKind} =
@@ -751,7 +751,7 @@ applyItem aid applyGroup = do
       coeff CEqp = 1
       coeff CInv = 1
       coeff CSha = 1
-      fTool benAv@(mben, cstore, iid, itemFull@ItemFull{itemBase}) =
+      fTool benAv@(mben, cstore, iid, itemFull@ItemFull{itemKind}) =
         let onlyVoidlyDropsOrgan =
               -- We check if the only effect of the item is that it drops a tmp
               -- organ that we don't have. If so, item should not be applied.
@@ -767,7 +767,7 @@ applyItem aid applyGroup = do
                      || toGroupName "temporary condition" `notElem` dropsGrps
                         && null (dropsGrps `intersect` hasGrps))
                  && length (strengthEffect f itemFull) == 1
-            durable = IK.Durable `elem` jfeature itemBase
+            durable = IK.Durable `elem` IK.ifeature itemKind
             benR = case mben of
               Nothing -> 0
                 -- experimenting is fun, but it's better to risk

@@ -193,11 +193,12 @@ targetStrategy aid = do
   isStairPos <- getsState $ \s lid p -> isStair lid p s
   discoBenefit <- getsClient sdiscoBenefit
   s <- getState
+  itemToF <- getsState itemToFull
   let lidExplored = ES.member (blid b) explored
-      desirableBagFloor bag = any (\iid ->
-        let item = getItemBody iid s
+      desirableBagFloor bag = any (\(iid, kit) ->
+        let itemFull = itemToF iid kit
             benPick = benPickup <$> EM.lookup iid discoBenefit
-        in desirableItem canEscape benPick item) $ EM.keys bag
+        in desirableItem canEscape benPick itemFull) $ EM.assocs bag
       desirableFloor (_, (_, bag)) = desirableBagFloor bag
       focused = bspeed b ar < speedWalk || condHpTooLow
       couldMoveLastTurn =
