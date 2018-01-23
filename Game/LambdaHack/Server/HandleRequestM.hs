@@ -404,7 +404,7 @@ reqAlterFail source tpos = do
         execSfxAtomic $ SfxTrigger source tpos
         mapM_ tryApplyEmbed $ EM.assocs embeds
       tryApplyEmbed (iid, kit) = do
-        let itemFull@ItemFull{itemBase} = itemToF iid kit
+        let itemFull@ItemFull{..} = itemToF iid kit
             legal = permittedApply localTime applySkill calmE " " itemFull
         -- Let even completely unskilled actors trigger basic embeds.
         case legal of
@@ -413,7 +413,7 @@ reqAlterFail source tpos = do
             -- The failure is fully expected, because client may choose
             -- to trigger some embeds, knowing that others won't fire.
             execSfxAtomic $ SfxMsgFid (bfid sb)
-            $ SfxExpected ("embedded" <+> jname itemBase) reqFail
+            $ SfxExpected ("embedded" <+> IK.iname (itemKind itemDisco)) reqFail
           _ -> itemEffectEmbedded source lid tpos iid
   if not $ adjacent (bpos sb) tpos then return $ Just AlterDistant
   else if Just clientTile == hiddenTile then  -- searches

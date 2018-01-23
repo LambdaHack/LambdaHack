@@ -47,7 +47,7 @@ partItemN :: FactionId -> FactionDict -> Bool -> DetailLevel -> Int
           -> (Bool, Bool, MU.Part, MU.Part)
 partItemN side factionD ranged detailLevel n localTime
           itemFull@ItemFull{itemBase, itemDisco} =
-  let genericName = jname itemBase
+  let genericName = IK.iname $ itemKind itemDisco
       flav = flavourToName $ jflavour itemBase
       ik = itemKind itemDisco
       timeout = IA.aTimeout $ aspectRecordFull itemFull
@@ -66,7 +66,7 @@ partItemN side factionD ranged detailLevel n localTime
         textAllAE detailLevel skipRecharging itemFull
       effTs = effTsRaw ++ if ranged then rangedDamage else []
       lsource = case jfid itemBase of
-        Just fid | jname itemBase `elem` ["impressed"] ->
+        Just fid | IK.iname (itemKind itemDisco) `elem` ["impressed"] ->
           ["by" <+> if fid == side
                     then "us"
                     else gname (factionD EM.! fid)]

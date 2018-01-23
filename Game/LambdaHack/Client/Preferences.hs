@@ -253,7 +253,6 @@ fakeItem kindId kind =
   let jkind    = IdentityObvious kindId
       jlid     = toEnum 1  -- dummy
       jfid     = Nothing  -- the default
-      jname    = IK.iname kind
       jflavour = Flavour minBound minBound  -- dummy
       jfeature = IK.ifeature kind
       jweight  = IK.iweight kind

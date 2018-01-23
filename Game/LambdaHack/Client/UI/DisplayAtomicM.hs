@@ -531,7 +531,8 @@ createActorUI born aid body = do
                                 (itemNoDisco cops (itemBase, 1))
                  in ( makePhrase [MU.AW $ MU.Text adj, object1, object2]
                     , basePronoun )
-               | baseColor /= Color.BrWhite -> (jname itemBase, basePronoun)
+               | baseColor /= Color.BrWhite ->
+                   (IK.iname (itemKind itemDisco), basePronoun)
                | otherwise -> heroNamePronoun n
           bcolor | bproj body =
                      if isBlast itemBase then baseColor else Color.BrWhite

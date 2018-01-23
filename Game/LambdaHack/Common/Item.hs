@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.Item
     -- * Item discovery types and operations
   , ItemKindIx, ItemDisco(..), ItemFull(..)
   , DiscoveryKind, DiscoveryAspect, ItemIxMap, Benefit(..), DiscoveryBenefit
-  , itemNoDisco, itemToFull6, aspectRecordFull
+  , itemNoDisco, itemToFull7, aspectRecordFull
     -- * Inventory management types
   , ItemTimer, ItemQuant, ItemBag, ItemDict
   , -- * Assorted operations
@@ -58,7 +58,6 @@ data Item = Item
   , jlid     :: LevelId       -- ^ lowest level the item was created at
   , jfid     :: Maybe FactionId
                               -- ^ the faction that created the item, if any
-  , jname    :: Text          -- ^ generic name
   , jflavour :: Flavour       -- ^ flavour, always the real one, not hidden;
                               --   people may not recognize shape, but they
                               --   remember colour and old vs fancy look
@@ -182,10 +181,10 @@ itemNoDisco COps{coitem, coItemSpeedup} (itemBase, itemK) =
       itemSuspect = True
   in ItemFull {itemBase, itemK, itemTimer = [], itemDisco=ItemDiscoKind{..}}
 
-itemToFull6 :: COps -> DiscoveryKind -> DiscoveryAspect -> ItemId -> Item
+itemToFull7 :: COps -> DiscoveryKind -> DiscoveryAspect -> ItemId -> Item
             -> ItemQuant
             -> ItemFull
-itemToFull6 COps{coitem, coItemSpeedup}
+itemToFull7 COps{coitem, coItemSpeedup}
             discoKind discoAspect iid itemBase (itemK, itemTimer) =
   let (itemKindId, itemSuspect) = case jkind itemBase of
         IdentityObvious ik -> (ik, False)

@@ -721,10 +721,12 @@ applyItem aid applyGroup = do
       -- The case of a weak weapon curing poison is too rare to incur overhead.
       stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
   benList <- benAvailableItems aid stores
-  organs <- mapM (getsState . getItemBody) $ EM.keys $ borgan b
-  let hasGrps = mapMaybe (\item -> if isTmpCondition item
-                                   then Just $ toGroupName $ jname item
-                                   else Nothing) organs
+  itemToF <- getsState itemToFull
+  let organs = map (uncurry itemToF) $ EM.assocs $ borgan b
+      hasGrps = mapMaybe (\ItemFull{..} ->
+        if isTmpCondition itemBase
+        then Just $ toGroupName $ IK.iname $ itemKind itemDisco
+        else Nothing) organs
       itemLegal ItemFull{itemDisco} =
         let -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.
             getHP (IK.RefillHP p) | p > 0 = True

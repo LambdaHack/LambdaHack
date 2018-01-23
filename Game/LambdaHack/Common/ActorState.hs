@@ -320,13 +320,13 @@ dispEnemy source target actorMaxSk s =
 
 itemToFull :: State -> ItemId -> ItemQuant -> ItemFull
 itemToFull s iid =
-  itemToFull6 (scops s) (sdiscoKind s) (sdiscoAspect s) iid (getItemBody iid s)
+  itemToFull7 (scops s) (sdiscoKind s) (sdiscoAspect s) iid (getItemBody iid s)
 
 fullAssocs :: ActorId -> [CStore] -> State -> [(ItemId, ItemFull)]
 fullAssocs aid cstores s =
   let allAssocs = concatMap (\cstore -> getActorAssocsK aid cstore s) cstores
       iToFull (iid, (item, kit)) =
-        (iid, itemToFull6 (scops s) (sdiscoKind s) (sdiscoAspect s)
+        (iid, itemToFull7 (scops s) (sdiscoKind s) (sdiscoAspect s)
                           iid item kit)
   in map iToFull allAssocs
 
@@ -360,17 +360,19 @@ posFromC c@CTrunk{} _ = error $ "" `showFailure` c
 isEscape :: LevelId -> Point -> State -> Bool
 isEscape lid p s =
   let bag = getEmbedBag lid p s
-      is = map (`getItemBody` s) $ EM.keys bag
+      is = map (uncurry (s `itemToFull`)) $ EM.assocs bag
       -- Contrived, for now.
-      isE Item{jname} = jname == "escape"
+      isE ItemFull{itemDisco} = IK.iname (itemKind itemDisco) == "escape"
   in any isE is
 
 isStair :: LevelId -> Point -> State -> Bool
 isStair lid p s =
   let bag = getEmbedBag lid p s
-      is = map (`getItemBody` s) $ EM.keys bag
+      is = map (uncurry (s `itemToFull`)) $ EM.assocs bag
       -- Contrived, for now.
-      isE Item{jname} = jname == "staircase up" || jname == "staircase down"
+      isE ItemFull{itemDisco} =
+        IK.iname (itemKind itemDisco) == "staircase up"
+        || IK.iname (itemKind itemDisco) == "staircase down"
   in any isE is
 
 -- | Require that any non-dying foe is adjacent. We include even

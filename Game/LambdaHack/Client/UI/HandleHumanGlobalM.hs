@@ -934,8 +934,10 @@ verifyAlters lid p = do
   lvl <- getLevel lid
   let t = lvl `at` p
   bag <- getsState $ getEmbedBag lid p
-  is <- mapM (getsState . getItemBody) $ EM.keys bag
-  let isE Item{jname} = jname == "escape"
+  itemToF <- getsState itemToFull
+  let is = map (uncurry itemToF) $ EM.assocs bag
+      -- Contrived, for now.
+      isE ItemFull{itemDisco} = IK.iname (itemKind itemDisco) == "escape"
   if | any isE is -> verifyEscape
      | null is && not (Tile.isDoor coTileSpeedup t
                        || Tile.isChangable coTileSpeedup t
