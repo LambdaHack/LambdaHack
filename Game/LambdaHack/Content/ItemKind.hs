@@ -423,9 +423,23 @@ validateAll content coitem =
                       | k <- content
                       , (cgroup, _) <- ikit k
                       , not $ omemberGroup coitem cgroup ]
+      f :: Feature -> Bool
+      f HideAs{} = True
+      f _ = False
+      notSingletonGroups =
+        [ cgroup
+        | k <- content
+        , let (cgroup, notSingleton) = case find f (ifeature k) of
+                Just (HideAs grp) | not $ oisSingletonGroup coitem grp ->
+                  (grp, True)
+                _ -> (undefined, False)
+        , notSingleton
+        ]
       hardwiredAbsent = filter (not . omemberGroup coitem) hardwiredItemGroups
   in [ "no ikit groups in content:" <+> tshow missingGroups
      | not $ null missingGroups ]
+     ++ [ "HideAs groups not singletons:" <+> tshow notSingletonGroups
+        | not $ null notSingletonGroups ]
      ++ [ "hardwired groups not in content:" <+> tshow hardwiredAbsent
         | not $ null hardwiredAbsent ]
 

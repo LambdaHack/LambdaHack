@@ -11,7 +11,7 @@
 module Game.LambdaHack.Common.ContentData
   ( ContentId(ContentId), ContentData, Freqs, Rarity
   , validateRarity, emptyContentData, makeContentData
-  , okind, omemberGroup, ouniqGroup, opick
+  , okind, omemberGroup, oisSingletonGroup, ouniqGroup, opick
   , ofoldrWithKey, ofoldlWithKey', ofoldlGroup', omapVector, olength
   ) where
 
@@ -121,6 +121,12 @@ okind ContentData{contentVector} !i = contentVector V.! fromEnum i
 omemberGroup :: ContentData a -> GroupName a -> Bool
 omemberGroup ContentData{groupFreq} cgroup = cgroup `M.member` groupFreq
 
+oisSingletonGroup :: ContentData a -> GroupName a -> Bool
+oisSingletonGroup ContentData{groupFreq} cgroup =
+  case M.lookup cgroup groupFreq of
+    Just [_] -> True
+    _ -> False
+
 -- | The id of the unique member of a singleton content group.
 ouniqGroup :: Show a => ContentData a -> GroupName a -> ContentId a
 ouniqGroup ContentData{groupFreq} !cgroup =
@@ -129,7 +135,7 @@ ouniqGroup ContentData{groupFreq} !cgroup =
              in M.findWithDefault assFail cgroup groupFreq
   in case freq of
     [(n, (i, _))] | n > 0 -> i
-    l -> error $ "not unique" `showFailure` (l, cgroup, groupFreq)
+    l -> error $ "not unique" `showFailure` (cgroup, l)
 
 -- | Pick a random id belonging to a group and satisfying a predicate.
 opick :: Show a

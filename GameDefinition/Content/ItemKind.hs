@@ -892,7 +892,7 @@ necklace2 = necklaceTemplate
   -- , idesc    = ""
   }
 necklace3 = necklaceTemplate
-  { ifreq    = [("useful", 100), ("necklace unknown", 1)]
+  { ifreq    = [("useful", 100)]
   , iaspects = [Timeout $ (1 `d` 2) * 20]
   , ieffects = [ ELabel "of fearful listening"
                , Recharging (DetectActor 10)
@@ -900,13 +900,13 @@ necklace3 = necklaceTemplate
                ++ ieffects necklaceTemplate
   }
 necklace4 = necklaceTemplate
-  { ifreq    = [("useful", 100), ("necklace unknown", 1)]
+  { ifreq    = [("useful", 100)]
   , iaspects = [Timeout $ (3 + 1 `d` 3 - 1 `dL` 3) * 2]
   , ieffects = [Recharging (Teleport $ 3 `d` 2)]
                ++ ieffects necklaceTemplate
   }
 necklace5 = necklaceTemplate
-  { ifreq    = [("useful", 100), ("necklace unknown", 1)]
+  { ifreq    = [("useful", 100)]
   , iaspects = [Timeout $ (7 - 1 `dL` 5) * 10]
   , ieffects = [ ELabel "of escape"
                , Recharging (Teleport $ 14 + 3 `d` 3)
@@ -915,7 +915,7 @@ necklace5 = necklaceTemplate
                ++ ieffects necklaceTemplate
   }
 necklace6 = necklaceTemplate
-  { ifreq    = [("useful", 100), ("necklace unknown", 1)]
+  { ifreq    = [("useful", 100)]
   , iaspects = [Timeout $ (1 `d` 3) * 2]
   , ieffects = [Recharging (PushActor (ThrowMod 100 50))]  -- 1 step, slow
                   -- the @50@ is only for the case of very light actor, etc.
@@ -933,13 +933,13 @@ necklace7 = necklaceTemplate
   -- , idesc    = ""
   }
 necklace8 = necklaceTemplate
-  { ifreq    = [("useful", 100), ("necklace unknown", 1)]
+  { ifreq    = [("useful", 100)]
   , iaspects = [Timeout $ (1 + 1 `d` 3) * 5]
   , ieffects = [Recharging $ Explode "spark"]
                ++ ieffects necklaceTemplate
   }
 necklace9 = necklaceTemplate
-  { ifreq    = [("useful", 100), ("necklace unknown", 1)]
+  { ifreq    = [("useful", 100)]
   , iaspects = [Timeout $ (1 + 1 `d` 3) * 5]
   , ieffects = [Recharging $ Explode "fragrance"]
                ++ ieffects necklaceTemplate
@@ -1357,7 +1357,8 @@ wandTemplate = ItemKind
   , ikit     = []
   }
 wand1 = wandTemplate
-  { ieffects = []  -- will be: emit a cone of sound shrapnel that makes enemy cover his ears and so drop '|' and '{'
+  { ifreq    = []
+  , ieffects = []  -- will be: emit a cone of sound shrapnel that makes enemy cover his ears and so drop '|' and '{'
   }
 
 -- * Treasure
