@@ -392,12 +392,12 @@ psuitReq ts = do
     p <- permittedProjectClient $ triggerSymbols ts
     case mpos of
       Left err -> return $ Left err
-      Right pos -> return $ Right $ \itemFull@ItemFull{itemBase} ->
+      Right pos -> return $ Right $ \itemFull ->
         case p itemFull of
           Left err -> Left err
           Right False -> Right (pos, False)
           Right True ->
-            Right (pos, totalRange itemBase >= chessDist (bpos b) pos)
+            Right (pos, totalRange itemFull >= chessDist (bpos b) pos)
 
 triggerSymbols :: [TriggerItem] -> [Char]
 triggerSymbols [] = []

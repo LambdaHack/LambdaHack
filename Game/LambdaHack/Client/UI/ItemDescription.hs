@@ -167,7 +167,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{..} =
              detNonEmpty : _ -> detNonEmpty
              [] -> []
       IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemBase
-      speed = speedFromWeight (jweight itemBase) throwVelocity
+      speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
       minDeltaHP = xM meanDmg `divUp` 100
       aHurtMeleeOfItem = IA.aHurtMelee $ aspectRecordFull itemFull
@@ -254,7 +254,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
   let (_, unique, name, stats) = partItemHigh side factionD localTime itemFull
       nstats = makePhrase [name, stats]
       IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = strengthToThrow itemBase
-      speed = speedFromWeight (jweight itemBase) throwVelocity
+      speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       range = rangeFromSpeedAndLinger speed throwLinger
       tspeed | isTmpCondition itemBase = ""
              | speed < speedLimp = "When thrown, it drops at once."
@@ -304,7 +304,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
       eqpSlotSentence = case strengthEqpSlot itemFull of
         Just es -> slotToSentence es
         Nothing -> ""
-      weight = jweight itemBase
+      weight = IK.iweight itemKind
       (scaledWeight, unitWeight)
         | weight > 1000 =
           (tshow $ fromIntegral weight / (1000 :: Double), "kg")

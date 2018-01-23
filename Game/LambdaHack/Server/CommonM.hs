@@ -355,19 +355,20 @@ projectBla :: MonadServerAtomic m
            -> m ()
 projectBla source pos rest iid cstore blast = do
   sb <- getsState $ getActorBody source
-  item <- getsState $ getItemBody iid
   let lid = blid sb
   localTime <- getsState $ getLocalTime lid
   unless blast $ execSfxAtomic $ SfxProject source iid cstore
   bag <- getsState $ getBodyStoreBag sb cstore
+  itemToF <- getsState itemToFull
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (source, pos, rest, iid, cstore)
     Just kit@(_, it) -> do
-      let delay = if jweight item == 0 then timeTurn else timeClip
+      let ItemFull{..} = itemToF iid kit
+          delay = if IK.iweight itemKind == 0 then timeTurn else timeClip
           btime = absoluteTimeAdd delay localTime
       addProjectile pos rest iid kit lid (bfid sb) btime
       let c = CActor source cstore
-      execUpdAtomic $ UpdLoseItem False iid item (1, take 1 it) c
+      execUpdAtomic $ UpdLoseItem False iid itemBase (1, take 1 it) c
 
 addActorFromGroup :: MonadServerAtomic m
                   => GroupName ItemKind -> FactionId -> Point -> LevelId -> Time
@@ -401,8 +402,8 @@ addProjectile :: MonadServerAtomic m
               -> m ()
 addProjectile bpos rest iid (_, it) blid bfid btime = do
   itemToF <- getsState itemToFull
-  let itemFull@ItemFull{itemBase} = itemToF iid (1, take 1 it)
-      (trajectory, (speed, _)) = itemTrajectory itemBase (bpos : rest)
+  let itemFull = itemToF iid (1, take 1 it)
+      (trajectory, (speed, _)) = itemTrajectory itemFull (bpos : rest)
       -- Trunk is added to equipment, not to organs, because it's the
       -- projected item, so it's carried, not grown.
       tweakBody b = b { bhp = oneM

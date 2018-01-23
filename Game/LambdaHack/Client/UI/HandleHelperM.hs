@@ -357,18 +357,17 @@ lookAtActors p lidV = do
         map (\(aid2, b2) -> (aid2, b2, sactorUI EM.! aid2)) inhabitants
   itemToF <- getsState itemToFull
   factionD <- getsState sfactionD
-  s <- getState
   let actorsBlurb = case inhabitants of
         [] -> ""
         (_, body) : rest ->
-          let Item{jfid} = getItemBody (btrunk body) s
+          let itemFull = itemToF (btrunk body) (1, [])
               bfact = factionD EM.! bfid body
               -- Even if it's the leader, give his proper name, not 'you'.
               subjects = map (\(_, _, bUI) -> partActor bUI)
                              inhabitantsUI
               subject = MU.WWandW subjects
               verb = "be here"
-              factDesc = case jfid of
+              factDesc = case jfid $ itemBase itemFull of
                 Just tfid | tfid /= bfid body ->
                   let dominatedBy = if bfid body == side
                                     then "us"
@@ -379,8 +378,7 @@ lookAtActors p lidV = do
                 _ | bfid body == side -> ""  -- just one of us
                 _ | bproj body -> "Launched by" <+> gname bfact <> "."
                 _ -> "One of" <+> gname bfact <> "."
-              ik = itemKind $ itemToF (btrunk body) (1, [])
-              idesc = IK.idesc ik
+              idesc = IK.idesc $ itemKind itemFull
               -- If many different actors (projectiles), only list names.
               sameTrunks = all (\(_, b) -> btrunk b == btrunk body) rest
               desc = if sameTrunks then factDesc <+> idesc else ""

@@ -265,10 +265,10 @@ addItemToDiscoBenefit iid item = do
       side <- getsClient sside
       fact <- getsState $ (EM.! side) . sfactionD
       let mean = IA.kmMean $ IK.getKindMean kindId coItemSpeedup
-          effects = IK.ieffects $ okind coitem kindId
+          kind = okind coitem kindId
           -- Mean aspects are used, because the item can't yet have
           -- known real aspects, because it didn't even have kind before.
-          benefit = totalUsefulness cops fact effects mean item
+          benefit = totalUsefulness cops fact mean kind item
       modifyClient $ \cli ->
         cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
 
@@ -308,13 +308,13 @@ discoverKind _c ix ik = do
   fact <- getsState $ (EM.! side) . sfactionD
   discoKind <- getsState sdiscoKind
   itemD <- getsState sitemD
-  let effs = IK.ieffects $ okind coitem ik
+  let kind = okind coitem ik
       kindId = fromMaybe (error "item kind not found")
                          (EM.lookup ix discoKind)
       mean = IA.kmMean $ IK.getKindMean kindId coItemSpeedup
       benefit iid =
         let item = itemD EM.! iid
-        in totalUsefulness cops fact effs mean item
+        in totalUsefulness cops fact mean kind item
   itemIxMap <- getsState $ (EM.! ix) . sitemIxMap
   -- Possibly overwrite earlier, provisional benefits.
   forM_ (ES.elems itemIxMap) $ \iid -> modifyClient $ \cli ->
@@ -340,7 +340,7 @@ discoverSeed _c iid seed = do
         IdentityCovered ix _ -> fromJust $ EM.lookup ix discoKind
       kind = okind coitem kindId
       aspects = IA.seedToAspect seed (IK.iaspects kind) ldepth totalDepth
-      benefit = totalUsefulness cops fact (IK.ieffects kind) aspects item
+      benefit = totalUsefulness cops fact aspects kind item
   -- Possibly overwrite earlier, provisional benefits.
   modifyClient $ \cli ->
     cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}

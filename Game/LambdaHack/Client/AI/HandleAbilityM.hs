@@ -656,13 +656,13 @@ projectItem aid = do
               coeff CEqp = 100000  -- must hinder currently
               coeff CInv = 1
               coeff CSha = 1
-              fRanged (mben, cstore, iid, itemFull@ItemFull{itemBase}) =
+              fRanged (mben, cstore, iid, itemFull) =
                 -- We assume if the item has a timeout, most effects are under
                 -- Recharging, so no point projecting if not recharged.
                 -- This changes in time, so recharging is not included
                 -- in @condProjectListM@, but checked here, just before fling.
                 let recharged = hasCharge localTime itemFull
-                    trange = totalRange itemBase
+                    trange = totalRange itemFull
                     bestRange =
                       chessDist (bpos b) fpos + 2  -- margin for fleeing
                     rangeMult =  -- penalize wasted or unsafely low range

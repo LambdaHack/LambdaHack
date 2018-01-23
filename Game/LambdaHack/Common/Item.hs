@@ -62,7 +62,6 @@ data Item = Item
                               --   people may not recognize shape, but they
                               --   remember colour and old vs fancy look
   , jfeature :: [IK.Feature]  -- ^ public properties
-  , jweight  :: Int           -- ^ weight in grams, obvious enough
   , jdamage  :: Dice.Dice     -- ^ impact damage of this particular weapon
   }
   deriving (Show, Eq, Generic)
@@ -275,13 +274,13 @@ strongestSlot discoBenefit eqpSlot is =
              in (ben, (iid, itemFull))
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe f is
 
-itemTrajectory :: Item -> [Point] -> ([Vector], (Speed, Int))
-itemTrajectory item path =
-  let IK.ThrowMod{..} = strengthToThrow item
-  in computeTrajectory (jweight item) throwVelocity throwLinger path
+itemTrajectory :: ItemFull -> [Point] -> ([Vector], (Speed, Int))
+itemTrajectory ItemFull{..} path =
+  let IK.ThrowMod{..} = strengthToThrow itemBase
+  in computeTrajectory (IK.iweight itemKind) throwVelocity throwLinger path
 
-totalRange :: Item -> Int
-totalRange item = snd $ snd $ itemTrajectory item []
+totalRange :: ItemFull -> Int
+totalRange itemFull = snd $ snd $ itemTrajectory itemFull []
 
 hasCharge :: Time -> ItemFull -> Bool
 hasCharge localTime itemFull@ItemFull{..} =

@@ -1078,16 +1078,15 @@ dropCStoreItem :: MonadServerAtomic m
                -> ItemId -> ItemQuant
                -> m ()
 dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
-  item <- getsState $ getItemBody iid
+  itemToF <- getsState itemToFull
+  let itemFull@ItemFull{itemBase} = itemToF iid kit
   let c = CActor aid store
-      fragile = IK.Fragile `elem` jfeature item
-      durable = IK.Durable `elem` jfeature item
+      fragile = IK.Fragile `elem` jfeature itemBase
+      durable = IK.Durable `elem` jfeature itemBase
       isDestroyed = bproj b && (bhp b <= 0 && not durable || fragile)
                     || fragile && durable  -- hack for tmp organs
   if isDestroyed then do
-    itemToF <- getsState itemToFull
-    let itemFull = itemToF iid kit
-        effs = strengthOnSmash itemFull
+    let effs = strengthOnSmash itemFull
     -- Activate even if effects null, to destroy the item.
     effectAndDestroy False aid aid iid c False effs itemFull
   else do
@@ -1303,7 +1302,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
                        `showFailure` (fpos, tb)
     Just (pos : rest) -> do
       weightAssocs <- getsState $ fullAssocs target [CInv, CEqp, COrgan]
-      let weight = sum $ map (jweight . itemBase . snd) weightAssocs
+      let weight = sum $ map (IK.iweight . itemKind . snd) weightAssocs
           path = bpos tb : pos : rest
           (trajectory, (speed, range)) =
             computeTrajectory weight throwVelocity throwLinger path
