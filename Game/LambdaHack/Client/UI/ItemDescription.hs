@@ -243,10 +243,11 @@ partItemShortWownW side factionD partA localTime itemFull =
   let (_, _, name, _) = partItemShort side factionD localTime itemFull
   in MU.WownW partA name
 
-viewItem :: Item -> Color.AttrCharW32
+viewItem :: ItemFull -> Color.AttrCharW32
 {-# INLINE viewItem #-}
-viewItem item =
-  Color.attrChar2ToW32 (flavourToColor $ jflavour item) (jsymbol item)
+viewItem itemFull =
+  Color.attrChar2ToW32 (flavourToColor $ jflavour $ itemBase itemFull)
+                       (IK.isymbol $ itemKind $ itemDisco itemFull)
 
 itemDesc :: Bool -> FactionId -> FactionDict -> Int -> CStore -> Time
          -> ItemFull
@@ -325,7 +326,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
             "Coming from" <+> whose fid
             <> "." <+> discoFirst
           _ -> discoFirst
-      colorSymbol = viewItem itemBase
+      colorSymbol = viewItem itemFull
       blurb =
         ((" "
           <> nstats

@@ -67,7 +67,6 @@ buildItem COps{coitem} (FlavourMap flavourMap) discoRev
             in IdentityCovered (discoRev EM.! ikChosen) kindHidden
           _ -> IdentityObvious ikChosen
       jfid     = Nothing  -- the default
-      jsymbol  = IK.isymbol kind
       jname    = IK.iname kind
       jflavour =
         case IK.iflavour kind of

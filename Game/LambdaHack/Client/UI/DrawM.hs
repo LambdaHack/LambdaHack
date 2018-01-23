@@ -169,10 +169,10 @@ drawFrameContent :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameContent drawnLevelId = do
   SessionUI{smarkSmell} <- getSession
   Level{lxsize, lsmell, ltime, lfloor} <- getLevel drawnLevelId
-  s <- getState
+  itemToF <- getsState itemToFull
   let {-# INLINE viewItemBag #-}
       viewItemBag _ floorBag = case EM.toDescList floorBag of
-        (iid, _) : _ -> viewItem $ getItemBody iid s
+        (iid, kit) : _ -> viewItem $ itemToF iid kit
         [] -> error $ "lfloor not sparse" `showFailure` ()
       viewSmell :: Point -> Time -> Color.AttrCharW32
       {-# INLINE viewSmell #-}

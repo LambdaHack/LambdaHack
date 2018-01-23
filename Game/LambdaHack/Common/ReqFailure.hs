@@ -158,7 +158,7 @@ permittedPreciousAI calmE itemFull =
 
 permittedProject :: Bool -> Int -> Bool -> [Char] -> ItemFull
                  -> Either ReqFailure Bool
-permittedProject forced skill calmE triggerSyms itemFull@ItemFull{itemBase} =
+permittedProject forced skill calmE triggerSyms itemFull@ItemFull{..} =
  if | not forced && skill < 1 -> Left ProjectUnskilled
     | not forced
       && IK.Lobable `elem` jfeature itemBase
@@ -175,7 +175,7 @@ permittedProject forced skill calmE triggerSyms itemFull@ItemFull{itemBase} =
                  Just IA.EqpSlotLightSource -> True
                  Just _ -> False
                  Nothing -> not (goesIntoEqp itemBase)
-             | otherwise -> jsymbol itemBase `elem` triggerSyms
+             | otherwise -> IK.isymbol (itemKind itemDisco) `elem` triggerSyms
 
 -- Speedup.
 permittedProjectAI :: Int -> Bool -> ItemFull -> Bool
@@ -188,7 +188,7 @@ permittedProjectAI skill calmE itemFull@ItemFull{itemBase} =
 permittedApply :: Time -> Int -> Bool-> [Char] -> ItemFull
                -> Either ReqFailure Bool
 permittedApply localTime skill calmE triggerSyms itemFull@ItemFull{..} =
-  if | jsymbol itemBase == '?' && skill < 2 -> Left ApplyRead
+  if | IK.isymbol (itemKind itemDisco) == '?' && skill < 2 -> Left ApplyRead
      -- ApplyRead has precedence for the case of embedced items that
      -- can't be applied if they require reading, but can even if actor
      -- completely unskilled (as long as he is able to alter the tile).
@@ -211,4 +211,4 @@ permittedApply localTime skill calmE triggerSyms itemFull@ItemFull{..} =
               Right True -> Right $
                 if ' ' `elem` triggerSyms
                 then IK.Applicable `elem` jfeature itemBase
-                else jsymbol itemBase `elem` triggerSyms
+                else IK.isymbol (itemKind itemDisco) `elem` triggerSyms

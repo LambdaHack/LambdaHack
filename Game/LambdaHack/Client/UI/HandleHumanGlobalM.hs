@@ -86,6 +86,7 @@ import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
@@ -177,10 +178,13 @@ byItemModeHuman ts cmdNotChosenM cmdChosenM = do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       bag <- getsState $ getBodyStoreBag b fromCStore
-      itemBase <- getsState $ getItemBody iid
+      itemToF <- getsState itemToFull
+      let itemFull = itemToF iid (1, [])
+          symbol = IK.isymbol $ itemKind $ itemDisco itemFull
       case iid `EM.lookup` bag of
         Just _ | ' ' `elem` triggerSyms
-                 || jsymbol itemBase `elem` triggerSyms -> cmdChosenM
+                 || symbol `elem` triggerSyms ->
+                 cmdChosenM
         _ -> cmdNotChosenM
     Nothing -> cmdNotChosenM
 

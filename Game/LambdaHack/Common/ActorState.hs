@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.ActorState
   ( fidActorNotProjAssocs, actorAssocs, actorRegularAssocs
   , warActorRegularList, friendlyActorRegularList, fidActorRegularIds
   , bagAssocs, bagAssocsK, posToAidsLvl, posToAids, posToAssocs
-  , nearbyFreePoints, calculateTotal, mergeItemQuant, findIid
+  , nearbyFreePoints, calculateTotal, itemPrice, mergeItemQuant, findIid
   , combinedInv, combinedEqp, combinedOrgan, combinedItems, combinedFromLore
   , getActorBody, getActorAspect, getCarriedAssocsAndTrunk, getCarriedIidCStore
   , getContainerBag, getFloorBag, getEmbedBag, getBodyStoreBag
@@ -38,6 +38,7 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 
@@ -111,7 +112,21 @@ calculateTotal :: FactionId -> State -> (ItemBag, Int)
 calculateTotal fid s =
   let bag = combinedItems fid s
       items = map (\(iid, (k, _)) -> (getItemBody iid s, k)) $ EM.assocs bag
-  in (bag, sum $ map itemPrice items)
+  in (bag, sum $ map (flip itemPrice s) items)
+
+-- | Price an item, taking count into consideration.
+itemPrice :: (Item, Int) -> State -> Int
+itemPrice (item, jcount) s =
+  let COps{coitem} = scops s
+      kindId = case jkind item of
+        IdentityObvious ik -> ik
+        IdentityCovered ix ik -> fromMaybe ik $ ix `EM.lookup` sdiscoKind s
+      kind = okind coitem kindId
+  in case IK.isymbol kind of
+    _ | IK.iname kind == "gem" -> jcount * 100  -- hack
+    '$' -> jcount
+    '*' -> jcount * 100
+    _   -> 0
 
 mergeItemQuant :: ItemQuant -> ItemQuant -> ItemQuant
 mergeItemQuant (k2, it2) (k1, it1) = (k1 + k2, it1 ++ it2)

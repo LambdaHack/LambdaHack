@@ -1380,9 +1380,10 @@ effectTransformContainer :: forall m. MonadServerAtomic m
                          -> (ItemId -> ItemQuant -> m ())
                          -> m UseResult
 effectTransformContainer execSfx symbol c m = do
-  let hasSymbol (iid, _) = do
-        item <- getsState $ getItemBody iid
-        return $! jsymbol item == symbol
+  itemToF <- getsState itemToFull
+  let hasSymbol (iid, kit) = do
+        let jsymbol = IK.isymbol $ itemKind $ itemDisco $ itemToF iid kit
+        return $! jsymbol == symbol
   assocsCStore <- getsState $ EM.assocs . getContainerBag c
   is <- if symbol == ' '
         then return assocsCStore

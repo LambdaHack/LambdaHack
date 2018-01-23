@@ -488,14 +488,16 @@ createActorUI born aid body = do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   globalTime <- getsState stime
   localTime <- getsState $ getLocalTime $ blid body
-  trunk <- getsState $ getItemBody $ btrunk body
+  itemToF <- getsState itemToFull
+  let ItemFull{..} = itemToF (btrunk body) (1, [])
+      symbol = IK.isymbol $ itemKind itemDisco
   mbUI <- getsSession $ EM.lookup aid . sactorUI
   bUI <- case mbUI of
     Just bUI -> return bUI
     Nothing -> do
       cops <- getsState scops
       UIOptions{uHeroNames} <- getsSession sUIOptions
-      let baseColor = flavourToColor $ jflavour trunk
+      let baseColor = flavourToColor $ jflavour itemBase
           basePronoun | not (bproj body) && fhasGender (gplayer fact) = "he"
                       | otherwise = "it"
           nameFromNumber fn k = if k == 0
@@ -508,8 +510,8 @@ createActorUI born aid body = do
                  $ lookup k uHeroNames
       (n, bsymbol) <-
         if | bproj body ->
-               return (0, if isBlast trunk then jsymbol trunk else '*')
-           | baseColor /= Color.BrWhite -> return (0, jsymbol trunk)
+               return (0, if isBlast itemBase then symbol else '*')
+           | baseColor /= Color.BrWhite -> return (0, symbol)
            | otherwise -> do
              sactorUI <- getsSession sactorUI
              let hasNameK k bUI = bname bUI == fst (heroNamePronoun k)
@@ -526,13 +528,13 @@ createActorUI born aid body = do
                      -- Not much detail about a fast flying item.
                      (_, _, object1, object2) =
                        partItem (bfid body) factionD localTime
-                                (itemNoDisco cops (trunk, 1))
+                                (itemNoDisco cops (itemBase, 1))
                  in ( makePhrase [MU.AW $ MU.Text adj, object1, object2]
                     , basePronoun )
-               | baseColor /= Color.BrWhite -> (jname trunk, basePronoun)
+               | baseColor /= Color.BrWhite -> (jname itemBase, basePronoun)
                | otherwise -> heroNamePronoun n
           bcolor | bproj body =
-                     if isBlast trunk then baseColor else Color.BrWhite
+                     if isBlast itemBase then baseColor else Color.BrWhite
                  | baseColor == Color.BrWhite = gcolor fact
                  | otherwise = baseColor
           bUI = ActorUI{..}
@@ -794,8 +796,8 @@ quitFactionUI fid toSt = do
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= lSlotsBound]
-                  worth = itemPrice (itemBase itemFull2, 1)
-                  lootMsg = makeSentence $
+              worth <- getsState $ itemPrice (itemBase itemFull2, 1)
+              let lootMsg = makeSentence $
                     ["This particular loot is worth"]
                     ++ (if k > 1 then [ MU.Cardinal k, "times"] else [])
                     ++ [MU.CarWs worth currencyName]

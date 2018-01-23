@@ -3,7 +3,7 @@
 module Game.LambdaHack.Common.Item
   ( -- * The @Item@ type and operations
     ItemId, Item(..), ItemIdentity(..)
-  , itemPrice, isMelee, isTmpCondition, isBlast
+  , isMelee, isTmpCondition, isBlast
   , goesIntoEqp, goesIntoInv, goesIntoSha
     -- * Item discovery types and operations
   , ItemKindIx, ItemDisco(..), ItemFull(..)
@@ -58,9 +58,10 @@ data Item = Item
   , jlid     :: LevelId       -- ^ lowest level the item was created at
   , jfid     :: Maybe FactionId
                               -- ^ the faction that created the item, if any
-  , jsymbol  :: Char          -- ^ map symbol
   , jname    :: Text          -- ^ generic name
-  , jflavour :: Flavour       -- ^ flavour
+  , jflavour :: Flavour       -- ^ flavour, always the real one, not hidden;
+                              --   people may not recognize shape, but they
+                              --   remember colour and old vs fancy look
   , jfeature :: [IK.Feature]  -- ^ public properties
   , jweight  :: Int           -- ^ weight in grams, obvious enough
   , jdamage  :: Dice.Dice     -- ^ impact damage of this particular weapon
@@ -81,15 +82,6 @@ data ItemIdentity =
 instance Hashable ItemIdentity
 
 instance Binary ItemIdentity
-
--- | Price an item, taking count into consideration.
-itemPrice :: (Item, Int) -> Int
-itemPrice (item, jcount) =
-  case jsymbol item of
-    _ | jname item == "gem" -> jcount * 100  -- hack
-    '$' -> jcount
-    '*' -> jcount * 100
-    _   -> 0
 
 isMelee :: Item -> Bool
 isMelee item = IK.Meleeable `elem` jfeature item

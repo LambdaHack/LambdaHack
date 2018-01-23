@@ -244,7 +244,7 @@ itemOverlay lSlots lid bag = do
           Nothing -> Nothing
           Just kit@(k, _) ->
             let itemFull = itemToF iid kit
-                colorSymbol = viewItem $ itemBase itemFull
+                colorSymbol = viewItem itemFull
                 phrase = makePhrase
                   [snd $ partItemWsRanged side factionD k localTime itemFull]
                 al = textToAL (markEqp iid $ slotLabel l)

@@ -19,12 +19,13 @@ import           Data.Function
 import           Data.Ord (comparing)
 import qualified Data.Text as T
 
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | Slot label. Usually just a character. Sometimes with a numerical prefix.
 data SlotChar = SlotChar {slotPrefix :: Int, slotChar :: Char}
@@ -107,8 +108,10 @@ compareItemFull itemFull1 itemFull2 =
           o -> o
         o -> o
  where
-  apperance ItemFull{itemBase=Item{..}} =
-    (jsymbol, jname, jflavour, jdamage, jfid, jlid)
+  apperance ItemFull{itemBase=Item{..}, itemDisco} =
+    ( IK.isymbol $ itemKind itemDisco
+    , IK.iname $ itemKind itemDisco
+    , jflavour, jdamage, jfid, jlid )
 
 sortSlotMap :: (ItemId -> ItemQuant -> ItemFull)
             -> ES.EnumSet ItemId -> SingleItemSlots
