@@ -75,13 +75,12 @@ revealItems :: MonadServerAtomic m => Maybe FactionId -> m ()
 revealItems mfid = do
   itemToF <- getsState itemToFull
   let discover aid store iid k = do
-        let ItemFull{itemDisco} = itemToF iid k
+        let ItemFull{..} = itemToF iid k
             c = CActor aid store
-            isGem = maybe False (> 0)
-                    $ lookup "gem" $ IK.ifreq $ itemKind itemDisco
+            isGem = maybe False (> 0) $ lookup "gem" $ IK.ifreq itemKind
         unless isGem $ do  -- a hack
           seed <- getsServer $ (EM.! iid) . sitemSeedD
-          execUpdAtomic $ UpdDiscover c iid (itemKindId itemDisco) seed
+          execUpdAtomic $ UpdDiscover c iid itemKindId seed
       f aid = do
         b <- getsState $ getActorBody aid
         let ourSide = maybe True (== bfid b) mfid
@@ -467,7 +466,7 @@ addActorIid trunkId ItemFull{..} bproj bfid pos lid tweakBody time = do
     ser {sactorTime = updateActorTime bfid lid aid time $ sactorTime ser}
   -- Create, register and insert all initial actor items, including
   -- the bonus health organs from difficulty setting.
-  forM_ (healthOrgans ++ map (Nothing,) (IK.ikit $ itemKind itemDisco))
+  forM_ (healthOrgans ++ map (Nothing,) (IK.ikit itemKind))
         $ \(mk, (ikText, cstore)) -> do
     let container = CActor aid cstore
         itemFreq = [(ikText, 1)]
@@ -479,13 +478,13 @@ addActorIid trunkId ItemFull{..} bproj bfid pos lid tweakBody time = do
 
 discoverIfNoEffects :: MonadServerAtomic m
                     => Container -> ItemId -> ItemFull -> m ()
-discoverIfNoEffects c iid ItemFull{itemDisco} =
-  if any IK.forIdEffect (IK.ieffects $ itemKind itemDisco)
-     || maybe False (> 0) (lookup "gem" $ IK.ifreq (itemKind itemDisco))
+discoverIfNoEffects c iid ItemFull{..} =
+  if any IK.forIdEffect (IK.ieffects itemKind)
+     || maybe False (> 0) (lookup "gem" $ IK.ifreq itemKind)
   then return ()  -- discover by use, ignore gems (a hack)
   else do
     seed <- getsServer $ (EM.! iid) . sitemSeedD
-    execUpdAtomic $ UpdDiscover c iid (itemKindId itemDisco) seed
+    execUpdAtomic $ UpdDiscover c iid itemKindId seed
 
 pickWeaponServer :: MonadServer m => ActorId -> m (Maybe (ItemId, CStore))
 pickWeaponServer source = do

@@ -490,7 +490,7 @@ createActorUI born aid body = do
   localTime <- getsState $ getLocalTime $ blid body
   itemToF <- getsState itemToFull
   let ItemFull{..} = itemToF (btrunk body) (1, [])
-      symbol = IK.isymbol $ itemKind itemDisco
+      symbol = IK.isymbol itemKind
   mbUI <- getsSession $ EM.lookup aid . sactorUI
   bUI <- case mbUI of
     Just bUI -> return bUI
@@ -531,8 +531,7 @@ createActorUI born aid body = do
                                 (itemNoDisco cops (itemBase, 1))
                  in ( makePhrase [MU.AW $ MU.Text adj, object1, object2]
                     , basePronoun )
-               | baseColor /= Color.BrWhite ->
-                   (IK.iname (itemKind itemDisco), basePronoun)
+               | baseColor /= Color.BrWhite -> (IK.iname itemKind, basePronoun)
                | otherwise -> heroNamePronoun n
           bcolor | bproj body =
                      if isBlast itemBase then baseColor else Color.BrWhite
@@ -1221,8 +1220,8 @@ strike catch source target iid cstore = assert (source /= target) $ do
     side <- getsClient sside
     factionD <- getsState sfactionD
     let kit = EM.findWithDefault (1, []) iid bag
-        itemFull@ItemFull{itemBase, itemDisco} = itemToF iid kit
-        verb = if catch then "catch" else IK.iverbHit $ itemKind itemDisco
+        itemFull@ItemFull{itemBase, itemKind} = itemToF iid kit
+        verb = if catch then "catch" else IK.iverbHit itemKind
         partItemChoice =
           if iid `EM.member` borgan sb
           then partItemShortWownW side factionD spronoun localTime

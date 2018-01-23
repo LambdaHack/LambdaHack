@@ -68,7 +68,7 @@ registerItem ItemFull{..} itemKnown seed container verbose = do
   knowItems <- getsServer $ sknowItems . soptions
   when knowItems $ case container of
     CTrunk{} -> return ()
-    _ -> execUpdAtomic $ UpdDiscover container iid (itemKindId itemDisco) seed
+    _ -> execUpdAtomic $ UpdDiscover container iid itemKindId seed
   return iid
 
 createLevelItem :: MonadServerAtomic m => Point -> LevelId -> m ()
@@ -101,10 +101,10 @@ rollItem lvlSpawned lid itemFreq = do
   m4 <- rndToAction $ newItem cops flavour discoRev uniqueSet
                               itemFreq lvlSpawned lid ldepth totalDepth
   case m4 of
-    Just (_, ItemFull{itemDisco}, _, _) ->
-      when (IK.Unique `elem` IK.ieffects (itemKind itemDisco)) $
+    Just (_, ItemFull{..}, _, _) ->
+      when (IK.Unique `elem` IK.ieffects itemKind) $
         modifyServer $ \ser ->
-          ser {suniqueSet = ES.insert (itemKindId itemDisco) (suniqueSet ser)}
+          ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}
     _ -> return ()
   return m4
 

@@ -94,24 +94,23 @@ partyItemSet slore fid mbody s =
 -- If apperance and aspects the same, keep the order from before sort.
 compareItemFull :: ItemFull -> ItemFull -> Ordering
 compareItemFull itemFull1 itemFull2 =
-  case (itemDisco itemFull1, itemDisco itemFull2) of
-    (ItemDiscoKind{itemSuspect=True}, ItemDiscoKind{itemSuspect=False}) -> LT
-    (ItemDiscoKind{itemSuspect=False}, ItemDiscoKind{itemSuspect=True}) -> GT
-    (ItemDiscoKind{}, ItemDiscoKind{}) ->
+  case ( itemDisco itemFull1, itemSuspect itemFull1
+       , itemDisco itemFull2, itemSuspect itemFull2 ) of
+    (ItemDiscoMean{}, True, ItemDiscoMean{}, False) -> LT
+    (ItemDiscoMean{}, False, ItemDiscoMean{}, True) -> GT
+    (ItemDiscoMean{}, _, ItemDiscoMean{}, _) ->
       comparing apperance itemFull1 itemFull2
-    (ItemDiscoKind{}, ItemDiscoFull{}) -> LT
-    (ItemDiscoFull{}, ItemDiscoKind{}) -> GT
-    (id1@ItemDiscoFull{}, id2@ItemDiscoFull{}) ->
-      case compare (itemKindId id1) (itemKindId id2) of
-        EQ -> case comparing itemAspect id1 id2 of
+    (ItemDiscoMean{}, _, ItemDiscoFull{}, _) -> LT
+    (ItemDiscoFull{}, _, ItemDiscoMean{}, _) -> GT
+    (ItemDiscoFull{}, _, ItemDiscoFull{}, _) ->
+      case compare (itemKindId itemFull1) (itemKindId itemFull2) of
+        EQ -> case comparing (itemAspect . itemDisco) itemFull1 itemFull2 of
           EQ -> comparing apperance itemFull1 itemFull2
           o -> o
         o -> o
  where
-  apperance ItemFull{itemBase=Item{..}, itemDisco} =
-    ( IK.isymbol $ itemKind itemDisco
-    , IK.iname $ itemKind itemDisco
-    , jflavour, jdamage, jfid, jlid )
+  apperance ItemFull{itemBase=Item{..}, itemKind} =
+    (IK.isymbol itemKind, IK.iname itemKind, jflavour, jdamage, jfid, jlid)
 
 sortSlotMap :: (ItemId -> ItemQuant -> ItemFull)
             -> ES.EnumSet ItemId -> SingleItemSlots

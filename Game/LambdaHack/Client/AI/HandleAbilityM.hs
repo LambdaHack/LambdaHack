@@ -703,8 +703,8 @@ applyItem aid applyGroup = do
       permittedActor =
         either (const False) id
         . permittedApply localTime skill calmE " "
-      q (mben, _, _, itemFull@ItemFull{itemBase, itemDisco}) =
-        let freq = IK.ifreq $ itemKind itemDisco
+      q (mben, _, _, itemFull@ItemFull{..}) =
+        let freq = IK.ifreq itemKind
             durable = IK.Durable `elem` jfeature itemBase
             (bInEqp, bApply) = case mben of
               Just Benefit{benInEqp, benApply} -> (benInEqp, benApply)
@@ -725,15 +725,15 @@ applyItem aid applyGroup = do
   let organs = map (uncurry itemToF) $ EM.assocs $ borgan b
       hasGrps = mapMaybe (\ItemFull{..} ->
         if isTmpCondition itemBase
-        then Just $ toGroupName $ IK.iname $ itemKind itemDisco
+        then Just $ toGroupName $ IK.iname itemKind
         else Nothing) organs
-      itemLegal ItemFull{itemDisco} =
+      itemLegal ItemFull{itemKind} =
         let -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.
             getHP (IK.RefillHP p) | p > 0 = True
             getHP (IK.OneOf l) = any getHP l
             getHP (IK.Composite l) = any getHP l
             getHP _ = False
-            firstAidItem = any getHP $ IK.ieffects $ itemKind itemDisco
+            firstAidItem = any getHP $ IK.ieffects itemKind
             -- Both effects tweak items, which is only situationally beneficial
             -- and not really the best idea while in combat, nor interesting.
             getTweak IK.PolyItem = True
@@ -741,7 +741,7 @@ applyItem aid applyGroup = do
             getTweak (IK.OneOf l) = any getTweak l
             getTweak (IK.Composite l) = any getTweak l
             getTweak _ = False
-            tweakItem = any getTweak $ IK.ieffects $ itemKind itemDisco
+            tweakItem = any getTweak $ IK.ieffects itemKind
         in not tweakItem
            && if applyGroup == ApplyFirstAid
               then firstAidItem

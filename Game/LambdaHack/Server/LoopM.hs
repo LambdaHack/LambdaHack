@@ -283,7 +283,7 @@ applyPeriodicLevel = do
           Just kit -> do
             itemToF <- getsState itemToFull
             let itemFull = itemToF iid kit
-                IK.ItemKind{IK.ieffects} = itemKind $ itemDisco itemFull
+                IK.ItemKind{IK.ieffects} = itemKind itemFull
             when (IK.Periodic `elem` ieffects) $
               -- In periodic activation, consider *only* recharging effects.
               -- Activate even if effects null, to possibly destroy item.

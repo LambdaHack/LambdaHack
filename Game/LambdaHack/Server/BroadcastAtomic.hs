@@ -145,7 +145,7 @@ loudSfxAtomic local cmd =
       sb <- getsState $ getActorBody source
       bag <- getsState $ getBodyStoreBag sb cstore
       let kit = EM.findWithDefault (1, []) iid bag
-          ik = itemKindId $ itemDisco $ itemToF iid kit
+          ik = itemKindId $ itemToF iid kit
           distance = 20  -- TODO: distance to leader; also, add a skill
       return $ Just $ SfxLoudStrike local ik distance
     SfxEffect _ aid (IK.Summon grp p) _ | local -> do

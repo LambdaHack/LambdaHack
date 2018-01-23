@@ -362,7 +362,7 @@ isEscape lid p s =
   let bag = getEmbedBag lid p s
       is = map (uncurry (s `itemToFull`)) $ EM.assocs bag
       -- Contrived, for now.
-      isE ItemFull{itemDisco} = IK.iname (itemKind itemDisco) == "escape"
+      isE ItemFull{itemKind} = IK.iname itemKind == "escape"
   in any isE is
 
 isStair :: LevelId -> Point -> State -> Bool
@@ -370,9 +370,9 @@ isStair lid p s =
   let bag = getEmbedBag lid p s
       is = map (uncurry (s `itemToFull`)) $ EM.assocs bag
       -- Contrived, for now.
-      isE ItemFull{itemDisco} =
-        IK.iname (itemKind itemDisco) == "staircase up"
-        || IK.iname (itemKind itemDisco) == "staircase down"
+      isE ItemFull{itemKind} =
+        IK.iname itemKind == "staircase up"
+        || IK.iname itemKind == "staircase down"
   in any isE is
 
 -- | Require that any non-dying foe is adjacent. We include even

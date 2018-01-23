@@ -46,27 +46,25 @@ partItemN :: FactionId -> FactionDict -> Bool -> DetailLevel -> Int
           -> Time -> ItemFull
           -> (Bool, Bool, MU.Part, MU.Part)
 partItemN side factionD ranged detailLevel n localTime
-          itemFull@ItemFull{itemBase, itemDisco} =
-  let genericName = IK.iname $ itemKind itemDisco
+          itemFull@ItemFull{..} =
+  let genericName = IK.iname itemKind
       flav = flavourToName $ jflavour itemBase
-      ik = itemKind itemDisco
       timeout = IA.aTimeout $ aspectRecordFull itemFull
       timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
-      temporary = not (null $ itemTimer itemFull) && timeout == 0
+      temporary = not (null itemTimer) && timeout == 0
       charging startT = timeShift startT timeoutTurns > localTime
-      it1 = filter charging (itemTimer itemFull)
+      it1 = filter charging itemTimer
       lenCh = length it1
       timer | lenCh == 0 || temporary = ""
-            | itemK itemFull == 1 && lenCh == 1 = "(charging)"
-            | itemK itemFull == lenCh = "(all charging)"
+            | itemK == 1 && lenCh == 1 = "(charging)"
+            | itemK == lenCh = "(all charging)"
             | otherwise = "(" <> tshow lenCh <+> "charging)"
-      skipRecharging = detailLevel <= DetailLow
-                       && lenCh >= itemK itemFull
+      skipRecharging = detailLevel <= DetailLow && lenCh >= itemK
       (effTsRaw, rangedDamage) =
         textAllAE detailLevel skipRecharging itemFull
       effTs = effTsRaw ++ if ranged then rangedDamage else []
       lsource = case jfid itemBase of
-        Just fid | IK.iname (itemKind itemDisco) `elem` ["impressed"] ->
+        Just fid | IK.iname itemKind `elem` ["impressed"] ->
           ["by" <+> if fid == side
                     then "us"
                     else gname (factionD EM.! fid)]
@@ -75,9 +73,9 @@ partItemN side factionD ranged detailLevel n localTime
            ++ take n effTs
            ++ ["(...)" | length effTs > n]
            ++ [timer]
-      unique = IK.Unique `elem` IK.ieffects ik
+      unique = IK.Unique `elem` IK.ieffects itemKind
       name | temporary = "temporarily" <+> genericName
-           | itemSuspect itemDisco = flav <+> genericName
+           | itemSuspect = flav <+> genericName
            | otherwise = genericName
       capName = if unique
                 then MU.Capitalize $ MU.Text name
@@ -86,16 +84,15 @@ partItemN side factionD ranged detailLevel n localTime
      , unique, capName, MU.Phrase $ map MU.Text ts )
 
 textAllAE :: DetailLevel -> Bool -> ItemFull -> ([Text], [Text])
-textAllAE detailLevel skipRecharging itemFull@ItemFull{itemBase, itemDisco} =
+textAllAE detailLevel skipRecharging itemFull@ItemFull{..} =
   let features | detailLevel >= DetailAll =
                    map featureToSuff $ sort $ jfeature itemBase
                | otherwise = []
-      ik = itemKind itemDisco
       aets = case itemDisco of
-        ItemDiscoKind{} ->  -- faster than @aspectRecordToList@ of mean
-          splitTry (IK.iaspects ik) (IK.ieffects ik)
+        ItemDiscoMean{} ->  -- faster than @aspectRecordToList@ of mean
+          splitTry (IK.iaspects itemKind) (IK.ieffects itemKind)
         ItemDiscoFull{itemAspect} ->
-          splitTry (IA.aspectRecordToList itemAspect) (IK.ieffects ik)
+          splitTry (IA.aspectRecordToList itemAspect) (IK.ieffects itemKind)
       timeoutAspect :: IA.Aspect -> Bool
       timeoutAspect IA.Timeout{} = True
       timeoutAspect _ = False
@@ -111,7 +108,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemBase, itemDisco} =
         let ppA = kindAspectToSuffix
             ppE = effectToSuffix detLev
             reduce_a = maybe "?" tshow . Dice.reduceDice
-            periodic = IK.Periodic `elem` IK.ieffects ik
+            periodic = IK.Periodic `elem` IK.ieffects itemKind
             mtimeout = find timeoutAspect aspects
             -- Effects are not sorted, because they fire in the order
             -- specified.
@@ -247,13 +244,13 @@ viewItem :: ItemFull -> Color.AttrCharW32
 {-# INLINE viewItem #-}
 viewItem itemFull =
   Color.attrChar2ToW32 (flavourToColor $ jflavour $ itemBase itemFull)
-                       (IK.isymbol $ itemKind $ itemDisco itemFull)
+                       (IK.isymbol $ itemKind itemFull)
 
 itemDesc :: Bool -> FactionId -> FactionDict -> Int -> CStore -> Time
          -> ItemFull
          -> AttrLine
 itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
-         itemFull@ItemFull{itemBase, itemDisco} =
+         itemFull@ItemFull{..} =
   let (_, unique, name, stats) = partItemHigh side factionD localTime itemFull
       nstats = makePhrase [name, stats]
       IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = strengthToThrow itemBase
@@ -268,10 +265,9 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
                <> if throwLinger /= 100
                   then " m/s and range" <+> tshow range <+> "m."
                   else " m/s."
-      ik = itemKind itemDisco
-      tsuspect = ["You are unsure what it does." | itemSuspect itemDisco]
+      tsuspect = ["You are unsure what it does." | itemSuspect]
       (desc, featureSentences, damageAnalysis) =
-        let sentences = tsuspect ++ mapMaybe featureToSentence (IK.ifeature ik)
+        let sentences = tsuspect ++ mapMaybe featureToSentence (IK.ifeature itemKind)
             aHurtMeleeOfItem = IA.aHurtMelee $ aspectRecordFull itemFull
             meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
             dmgAn = if meanDmg <= 0 then "" else
@@ -304,7 +300,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
                        == Dice.maxDice (jdamage itemBase)
                     then "."
                     else "on average."
-        in (IK.idesc ik, T.intercalate " " sentences, tspeed <+> dmgAn)
+        in (IK.idesc itemKind, T.intercalate " " sentences, tspeed <+> dmgAn)
       eqpSlotSentence = case strengthEqpSlot itemFull of
         Just es -> slotToSentence es
         Nothing -> ""

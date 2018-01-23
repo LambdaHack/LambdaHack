@@ -138,7 +138,7 @@ meleeEffectAndDestroy source target iid c = do
     Just kit -> do
       itemToF <- getsState itemToFull
       let itemFull = itemToF iid kit
-          IK.ItemKind{IK.ieffects} = itemKind $ itemDisco itemFull
+          IK.ItemKind{IK.ieffects} = itemKind itemFull
       effectAndDestroy meleePerformed source target iid c False ieffects
                        itemFull
 
@@ -1121,12 +1121,12 @@ effectPolyItem execSfx source target = do
       execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxPurposeNothing cstore
       return UseId
     (iid, ItemFull{..}) : _ -> do
-      let maxCount = Dice.maxDice $ IK.icount $ itemKind itemDisco
+      let maxCount = Dice.maxDice $ IK.icount itemKind
       if | itemK < maxCount -> do
            execSfxAtomic $ SfxMsgFid (bfid sb)
                          $ SfxPurposeTooFew maxCount itemK
            return UseId
-         | IK.Unique `elem` IK.ieffects (itemKind itemDisco) -> do
+         | IK.Unique `elem` IK.ieffects itemKind -> do
            execSfxAtomic $ SfxMsgFid (bfid sb) SfxPurposeUnique
            return UseId
          | otherwise -> do
@@ -1134,7 +1134,7 @@ effectPolyItem execSfx source target = do
            let c = CActor target cstore
                kit = (maxCount, take maxCount itemTimer)
            execSfx
-           identifyIid iid c $ itemKindId itemDisco
+           identifyIid iid c itemKindId
            execUpdAtomic $ UpdDestroyItem iid itemBase kit c
            effectCreateItem (Just $ bfid sb) Nothing
                             target cstore "useful" IK.timerNone
@@ -1150,7 +1150,7 @@ effectIdentify execSfx iidId source target = do
   let tryFull store as = case as of
         [] -> return False
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
-        (iid, ItemFull{itemDisco=ItemDiscoFull{..}}) : rest ->
+        (iid, ItemFull{..}) : rest ->
           let furtherIdNotNeeded =
                 iid `EM.member` sdiscoAspect s  -- already fully identified
                 || IA.kmConst (IK.getKindMean itemKindId coItemSpeedup)
@@ -1166,7 +1166,6 @@ effectIdentify execSfx iidId source target = do
                execSfx
                identifyIid iid c itemKindId
                return True
-        _ -> error $ "" `showFailure` (store, as)
       tryStore stores = case stores of
         [] -> do
           execSfxAtomic $ SfxMsgFid (bfid sb) SfxIdentifyNothing
@@ -1382,7 +1381,7 @@ effectTransformContainer :: forall m. MonadServerAtomic m
 effectTransformContainer execSfx symbol c m = do
   itemToF <- getsState itemToFull
   let hasSymbol (iid, kit) = do
-        let jsymbol = IK.isymbol $ itemKind $ itemDisco $ itemToF iid kit
+        let jsymbol = IK.isymbol $ itemKind $ itemToF iid kit
         return $! jsymbol == symbol
   assocsCStore <- getsState $ EM.assocs . getContainerBag c
   is <- if symbol == ' '

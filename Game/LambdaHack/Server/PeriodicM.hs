@@ -85,8 +85,7 @@ addAnyActor summoned actorFreq lid time mpos = do
   case m4 of
     Nothing -> return Nothing
     Just (itemKnownRaw, itemFullRaw, seed, _) -> do
-      let ik = itemKind $ itemDisco itemFullRaw
-          freqNames = map fst $ IK.ifreq ik
+      let freqNames = map fst $ IK.ifreq $ itemKind itemFullRaw
           f fact = fgroups (gplayer fact)
           factGroups = concatMap f $ EM.elems factionD
           fidNames = case freqNames `intersect` factGroups of

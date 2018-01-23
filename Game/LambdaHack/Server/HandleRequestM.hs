@@ -413,7 +413,7 @@ reqAlterFail source tpos = do
             -- The failure is fully expected, because client may choose
             -- to trigger some embeds, knowing that others won't fire.
             execSfxAtomic $ SfxMsgFid (bfid sb)
-            $ SfxExpected ("embedded" <+> IK.iname (itemKind itemDisco)) reqFail
+            $ SfxExpected ("embedded" <+> IK.iname itemKind) reqFail
           _ -> itemEffectEmbedded source lid tpos iid
   if not $ adjacent (bpos sb) tpos then return $ Just AlterDistant
   else if Just clientTile == hiddenTile then  -- searches
@@ -601,7 +601,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
 computeRndTimeout :: Time -> ItemFull -> Rnd (Maybe Time)
 computeRndTimeout localTime ItemFull{..}=
   case IA.aTimeout $ itemAspect itemDisco of
-    t | t /= 0 && IK.Periodic `elem` IK.ieffects (itemKind itemDisco) -> do
+    t | t /= 0 && IK.Periodic `elem` IK.ieffects itemKind -> do
       rndT <- randomR (0, t)
       let rndTurns = timeDeltaScale (Delta timeTurn) rndT
       return $ Just $ timeShift localTime rndTurns

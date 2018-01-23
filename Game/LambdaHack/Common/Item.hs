@@ -120,25 +120,20 @@ newtype ItemKindIx = ItemKindIx Int
 -- Items that don't need second identification may be identified or not and both
 -- cases are OK (their display flavour will differ and that may be the point).
 data ItemDisco =
-    ItemDiscoKind { itemKindId     :: ContentId IK.ItemKind
-                  , itemKind       :: IK.ItemKind
-                  , itemAspectMean :: IA.KindMean
-                  , itemSuspect    :: Bool
-                  }
-  | ItemDiscoFull { itemKindId  :: ContentId IK.ItemKind
-                  , itemKind    :: IK.ItemKind
-                  , itemAspect  :: IA.AspectRecord
-                  , itemSuspect :: Bool  -- here always false
-                  }
+    ItemDiscoMean {itemAspectMean :: IA.KindMean}
+  | ItemDiscoFull {itemAspect  :: IA.AspectRecord}
  deriving Show
 
 -- No speedup from making fields non-strict.
 -- | Full information about an item.
 data ItemFull = ItemFull
-  { itemBase  :: Item
-  , itemK     :: Int
-  , itemTimer :: ItemTimer
-  , itemDisco :: ItemDisco
+  { itemBase    :: Item
+  , itemK       :: Int
+  , itemTimer   :: ItemTimer
+  , itemKindId  :: ContentId IK.ItemKind
+  , itemKind    :: IK.ItemKind
+  , itemDisco   :: ItemDisco
+  , itemSuspect :: Bool
   }
   deriving Show
 
@@ -178,8 +173,9 @@ itemNoDisco COps{coitem, coItemSpeedup} (itemBase, itemK) =
         IdentityCovered _ ik -> ik
       itemKind = okind coitem itemKindId
       itemAspectMean = IK.getKindMean itemKindId coItemSpeedup
+      itemDisco = ItemDiscoMean itemAspectMean
       itemSuspect = True
-  in ItemFull {itemBase, itemK, itemTimer = [], itemDisco=ItemDiscoKind{..}}
+  in ItemFull {itemTimer = [], ..}
 
 itemToFull7 :: COps -> DiscoveryKind -> DiscoveryAspect -> ItemId -> Item
             -> ItemQuant
@@ -197,14 +193,14 @@ itemToFull7 COps{coitem, coItemSpeedup}
       itemAspectMean | itemSuspect = km {IA.kmConst = False}
                      | otherwise = km
       itemDisco = case EM.lookup iid discoAspect of
-        Just itemAspect -> ItemDiscoFull {..}
-        Nothing -> ItemDiscoKind{..}
+        Just itemAspect -> ItemDiscoFull itemAspect
+        Nothing -> ItemDiscoMean itemAspectMean
   in ItemFull {..}
 
 aspectRecordFull :: ItemFull -> IA.AspectRecord
 aspectRecordFull itemFull =
   case itemDisco itemFull of
-    ItemDiscoKind{itemAspectMean} -> IA.kmMean itemAspectMean
+    ItemDiscoMean{itemAspectMean} -> IA.kmMean itemAspectMean
     ItemDiscoFull{itemAspect} -> itemAspect
 
 type ItemTimer = [Time]
@@ -223,8 +219,7 @@ type ItemBag = EM.EnumMap ItemId ItemQuant
 type ItemDict = EM.EnumMap ItemId Item
 
 strengthEffect :: (IK.Effect -> [b]) -> ItemFull -> [b]
-strengthEffect f itemFull =
-  concatMap f $ IK.ieffects $ itemKind $ itemDisco itemFull
+strengthEffect f itemFull = concatMap f $ IK.ieffects $ itemKind itemFull
 
 strengthOnSmash :: ItemFull -> [IK.Effect]
 strengthOnSmash =
@@ -309,7 +304,7 @@ strongestMelee mdiscoBenefit localTime is =
   let f (iid, itemFull@ItemFull{itemBase}) =
         let rawDmg = (damageUsefulness itemBase, (iid, itemFull))
             knownOrConstantAspects = case itemDisco itemFull of
-              ItemDiscoKind{itemAspectMean=IA.KindMean{kmConst}} -> kmConst
+              ItemDiscoMean{itemAspectMean=IA.KindMean{kmConst}} -> kmConst
               ItemDiscoFull{} -> True
             unIDedBonus | knownOrConstantAspects = 0
                         | otherwise = 1000  -- exceptionally strong weapon
@@ -330,11 +325,9 @@ strongestMelee mdiscoBenefit localTime is =
   in sortBy (flip $ Ord.comparing fst) $ map f is
 
 unknownAspect :: (IA.Aspect -> [Dice.Dice]) -> ItemFull -> Bool
-unknownAspect f itemFull =
-  case itemDisco itemFull of
-    ItemDiscoKind{ itemAspectMean=IA.KindMean{kmConst}
-                 , itemKind=IK.ItemKind{iaspects}
-                 , itemSuspect } ->
+unknownAspect f ItemFull{itemKind=IK.ItemKind{iaspects}, ..} =
+  case itemDisco of
+    ItemDiscoMean{itemAspectMean=IA.KindMean{kmConst}} ->
       let unknown x = let (minD, maxD) = Dice.minmaxDice x
                       in minD /= maxD
       in itemSuspect || not kmConst && or (concatMap (map unknown . f) iaspects)

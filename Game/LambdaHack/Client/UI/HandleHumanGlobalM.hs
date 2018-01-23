@@ -179,8 +179,7 @@ byItemModeHuman ts cmdNotChosenM cmdChosenM = do
       b <- getsState $ getActorBody leader
       bag <- getsState $ getBodyStoreBag b fromCStore
       itemToF <- getsState itemToFull
-      let itemFull = itemToF iid (1, [])
-          symbol = IK.isymbol $ itemKind $ itemDisco itemFull
+      let symbol = IK.isymbol $ itemKind $ itemToF iid (1, [])
       case iid `EM.lookup` bag of
         Just _ | ' ' `elem` triggerSyms
                  || symbol `elem` triggerSyms ->
@@ -937,7 +936,7 @@ verifyAlters lid p = do
   itemToF <- getsState itemToFull
   let is = map (uncurry itemToF) $ EM.assocs bag
       -- Contrived, for now.
-      isE ItemFull{itemDisco} = IK.iname (itemKind itemDisco) == "escape"
+      isE ItemFull{itemKind} = IK.iname itemKind == "escape"
   if | any isE is -> verifyEscape
      | null is && not (Tile.isDoor coTileSpeedup t
                        || Tile.isChangable coTileSpeedup t

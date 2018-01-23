@@ -338,7 +338,7 @@ lookAtTile canSee p aid lidV = do
         let itemFull = itemToF iid kit
             (temporary, nWs) = partItemWs side factionD k localTime itemFull
             verb = if k == 1 || temporary then "is" else "are"
-            ik = itemKind $ itemDisco itemFull
+            ik = itemKind itemFull
             desc = IK.idesc ik
         in makeSentence ["There", verb, nWs] <+> desc
       ilooks = T.intercalate " " $ map itemLook $ EM.assocs embeds
@@ -379,7 +379,7 @@ lookAtActors p lidV = do
                 _ | bfid body == side -> ""  -- just one of us
                 _ | bproj body -> "Launched by" <+> gname bfact <> "."
                 _ -> "One of" <+> gname bfact <> "."
-              ik = itemKind $ itemDisco $ itemToF (btrunk body) (1, [])
+              ik = itemKind $ itemToF (btrunk body) (1, [])
               idesc = IK.idesc ik
               -- If many different actors (projectiles), only list names.
               sameTrunks = all (\(_, b) -> btrunk b == btrunk body) rest
