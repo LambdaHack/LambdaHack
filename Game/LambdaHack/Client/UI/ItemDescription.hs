@@ -146,13 +146,13 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{..} =
               _ -> []
             damage = case find hurtMeleeAspect restAs of
               Just (IA.AddHurtMelee hurtMelee) ->
-                (if jdamage itemBase == 0
+                (if IK.idamage itemKind == 0
                  then "0d0"
-                 else tshow (jdamage itemBase))
+                 else tshow (IK.idamage itemKind))
                 <> affixDice hurtMelee <> "%"
-              _ -> if jdamage itemBase == 0
+              _ -> if IK.idamage itemKind == 0
                    then ""
-                   else tshow (jdamage itemBase)
+                   else tshow (IK.idamage itemKind)
         in filter (/= "")
            $ elab ++ if detLev >= DetailHigh
                         || detLev >= DetailMedium && null elab
@@ -168,7 +168,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{..} =
              [] -> []
       IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemFull
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
-      meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
+      meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
       minDeltaHP = xM meanDmg `divUp` 100
       aHurtMeleeOfItem = IA.aHurtMelee $ aspectRecordFull itemFull
       pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
@@ -269,7 +269,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
       (desc, featureSentences, damageAnalysis) =
         let sentences = tsuspect ++ mapMaybe featureToSentence (IK.ifeature itemKind)
             aHurtMeleeOfItem = IA.aHurtMelee $ aspectRecordFull itemFull
-            meanDmg = ceiling $ Dice.meanDice (jdamage itemBase)
+            meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
             dmgAn = if meanDmg <= 0 then "" else
               let multRaw = aHurtMeleeOfOwner
                             + if store `elem` [CEqp, COrgan]
@@ -296,8 +296,8 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
                  <> "=" <> show64With2 pdeltaHP
                  <+> "ranged damage (min" <+> show64With2 mDeltaHP
                  <> ") with it"
-                 <> if Dice.minDice (jdamage itemBase)
-                       == Dice.maxDice (jdamage itemBase)
+                 <> if Dice.minDice (IK.idamage itemKind)
+                       == Dice.maxDice (IK.idamage itemKind)
                     then "."
                     else "on average."
         in (IK.idesc itemKind, T.intercalate " " sentences, tspeed <+> dmgAn)

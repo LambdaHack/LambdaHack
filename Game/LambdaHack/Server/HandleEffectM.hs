@@ -78,13 +78,14 @@ applyItem aid iid cstore = do
 applyMeleeDamage :: MonadServerAtomic m
                  => ActorId -> ActorId -> ItemId -> m Bool
 applyMeleeDamage source target iid = do
-  itemBase <- getsState $ getItemBody iid
-  if jdamage itemBase == 0 then return False else do  -- speedup
+  itemToF <- getsState itemToFull
+  let ItemFull{itemKind} = itemToF iid (1, [])
+  if IK.idamage itemKind == 0 then return False else do  -- speedup
     sb <- getsState $ getActorBody source
     hurtMult <- getsState $ armorHurtBonus source target
     totalDepth <- getsState stotalDepth
     Level{ldepth} <- getLevel (blid sb)
-    dmg <- rndToAction $ castDice ldepth totalDepth $ jdamage itemBase
+    dmg <- rndToAction $ castDice ldepth totalDepth $ IK.idamage itemKind
     let rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
         speedDeltaHP = case btrajectory sb of
           Just (_, speed) -> - modifyDamageBySpeed rawDeltaHP speed
@@ -991,8 +992,8 @@ effectCreateItem jfidRaw mcount target store grp tim = do
              then jfidRaw
              else Nothing
       (itemKnown, itemFullFid) =
-        let (kindIx, ar, damage, _) = itemKnownRaw
-        in ( (kindIx, ar, damage, jfid)
+        let (kindIx, ar, _) = itemKnownRaw
+        in ( (kindIx, ar, jfid)
            , itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}} )
       itemFull = case mcount of
         Just itemK -> itemFullFid {itemK}

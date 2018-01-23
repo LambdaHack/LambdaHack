@@ -43,7 +43,7 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 -- Note 2: @ItemSeed@ instead of @AspectRecord@ is not enough,
 -- becaused different seeds may result in the same @AspectRecord@
 -- and we don't want such items to be distinct in UI and elsewhere.
-type ItemKnown = (ItemIdentity, IA.AspectRecord, Dice.Dice, Maybe FactionId)
+type ItemKnown = (ItemIdentity, IA.AspectRecord, Maybe FactionId)
 
 -- | Reverse item map, for item creation, to keep items and item identifiers
 -- in bijection.
@@ -53,10 +53,10 @@ type UniqueSet = ES.EnumSet (ContentId ItemKind)
 
 -- | Build an item with the given stats.
 buildItem :: COps -> FlavourMap -> DiscoveryKindRev
-          -> ContentId ItemKind -> ItemKind -> LevelId -> Dice.Dice
+          -> ContentId ItemKind -> ItemKind -> LevelId
           -> Item
 buildItem COps{coitem} (FlavourMap flavourMap) discoRev
-          ikChosen kind jlid jdamage =
+          ikChosen kind jlid =
   let jkind =
         let f :: IK.Feature -> Bool
             f IK.HideAs{} = True
@@ -114,9 +114,7 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
     -- Number of new items/actors unaffected by number of spawned actors.
     itemN <- castDice ldepth totalDepth (IK.icount itemKind)
     seed <- toEnum <$> random
-    let jdamage = IK.idamage itemKind
-        itemBase = buildItem cops flavourMap discoRev
-                             itemKindId itemKind lid jdamage
+    let itemBase = buildItem cops flavourMap discoRev itemKindId itemKind lid
         itemIdentity = jkind itemBase
         itemK = max 1 itemN
         itemTimer = [timeZero | IK.Periodic `elem` IK.ieffects itemKind]
@@ -127,7 +125,7 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
         itemAspect =
           IA.seedToAspect seed (IK.iaspects itemKind) ldepth totalDepth
         itemFull = ItemFull {..}
-    return $ Just ( (itemIdentity, itemAspect, jdamage, jfid itemBase)
+    return $ Just ( (itemIdentity, itemAspect, jfid itemBase)
                   , itemFull
                   , seed
                   , itemGroup )

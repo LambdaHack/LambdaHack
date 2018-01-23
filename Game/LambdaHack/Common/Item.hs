@@ -61,7 +61,6 @@ data Item = Item
   , jflavour :: Flavour       -- ^ flavour, always the real one, not hidden;
                               --   people may not recognize shape, but they
                               --   remember colour and old vs fancy look
-  , jdamage  :: Dice.Dice     -- ^ impact damage of this particular weapon
   }
   deriving (Show, Eq, Generic)
 
@@ -258,7 +257,7 @@ strongestSlot :: DiscoveryBenefit -> IA.EqpSlot -> [(ItemId, ItemFull)]
               -> [(Int, (ItemId, ItemFull))]
 strongestSlot discoBenefit eqpSlot is =
   let f (iid, itemFull) =
-        let rawDmg = damageUsefulness $ itemBase itemFull
+        let rawDmg = damageUsefulness itemFull
             (bInEqp, bPickup) = case EM.lookup iid discoBenefit of
                Just Benefit{benInEqp, benPickup} -> (benInEqp, benPickup)
                Nothing -> (goesIntoEqp itemFull, rawDmg)
@@ -289,9 +288,10 @@ hasCharge localTime itemFull@ItemFull{..} =
       it1 = filter charging itemTimer
   in length it1 < itemK
 
-damageUsefulness :: Item -> Double
-damageUsefulness item = let v = min 1000 (10 * Dice.meanDice (jdamage item))
-                        in assert (v >= 0) v
+damageUsefulness :: ItemFull -> Double
+damageUsefulness ItemFull{itemKind} =
+  let v = min 1000 (10 * Dice.meanDice (IK.idamage itemKind))
+  in assert (v >= 0) v
 
 strongestMelee :: Maybe DiscoveryBenefit -> Time -> [(ItemId, ItemFull)]
                -> [(Double, (ItemId, ItemFull))]
@@ -299,8 +299,8 @@ strongestMelee _ _ [] = []
 strongestMelee mdiscoBenefit localTime is =
   -- For simplicity we assume, if weapon not recharged, all important effects,
   -- good and bad, are disabled and only raw damage remains.
-  let f (iid, itemFull@ItemFull{itemBase}) =
-        let rawDmg = (damageUsefulness itemBase, (iid, itemFull))
+  let f (iid, itemFull) =
+        let rawDmg = (damageUsefulness itemFull, (iid, itemFull))
             knownOrConstantAspects = case itemDisco itemFull of
               ItemDiscoMean{itemAspectMean=IA.KindMean{kmConst}} -> kmConst
               ItemDiscoFull{} -> True

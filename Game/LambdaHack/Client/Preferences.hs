@@ -253,7 +253,6 @@ fakeItem kindId kind km =
       jlid     = toEnum 1  -- dummy
       jfid     = Nothing  -- the default
       jflavour = Flavour minBound minBound  -- dummy
-      jdamage  = IK.idamage kind
       itemBase = Item{..}
       itemDisco = ItemDiscoMean km
   in ItemFull itemBase 1 [] kindId kind itemDisco True
@@ -310,7 +309,7 @@ totalUsefulness !cops !fact !itemFull@ItemFull{..} =
   let effects = IK.ieffects itemKind
       aspects = aspectRecordFull itemFull
       effPairs = map (effectToBenefit cops fact) effects
-      effDice = - damageUsefulness itemBase
+      effDice = - damageUsefulness itemFull
       f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
       (effSelf, effFoe) = foldr f (0, 0) effPairs
       -- Timeout between 0 and 1 means item usable each turn, so we consider
@@ -377,12 +376,12 @@ totalUsefulness !cops !fact !itemFull@ItemFull{..} =
       benFling = min 0 $
         effFoe + benFlingDice -- nothing in @eqpSum@; normally not worn
         + if periodic then 0 else sum chargeFoe
-      benFlingDice | jdamage itemBase == 0 = 0  -- speedup
+      benFlingDice | IK.idamage itemKind == 0 = 0  -- speedup
                    | otherwise = assert (v <= 0) v
        where
         hurtMult = 100 + min 99 (max (-99) (IA.aHurtMelee aspects))
           -- assumes no enemy armor and no block
-        dmg = Dice.meanDice (jdamage itemBase)
+        dmg = Dice.meanDice $ IK.idamage itemKind
         rawDeltaHP = ceiling $ fromIntegral hurtMult * xD dmg / 100
         -- For simplicity, we ignore range bonus/malus and @Lobable@.
         IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemFull

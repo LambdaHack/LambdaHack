@@ -58,6 +58,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.CaveKind (cname)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.ModeKind as MK
 import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
@@ -569,7 +570,7 @@ drawLeaderDamage width = do
       let damage = case strongest of
             [] -> ("0", "", Color.White)
             (_, (_, itemFull)) : _ ->
-              let tdice = show $ jdamage $ itemBase itemFull
+              let tdice = show $ IK.idamage $ itemKind itemFull
                   bonusRaw = IA.aHurtMelee $ actorAspect EM.! leader
                   bonus = min 200 $ max (-200) bonusRaw
                   unknownBonus = unknownMeleeBonus $ map snd allAssocsRaw

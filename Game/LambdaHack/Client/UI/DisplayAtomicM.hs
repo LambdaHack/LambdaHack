@@ -1224,7 +1224,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
     side <- getsClient sside
     factionD <- getsState sfactionD
     let kit = EM.findWithDefault (1, []) iid bag
-        itemFull@ItemFull{itemBase, itemKind} = itemToF iid kit
+        itemFull@ItemFull{itemKind} = itemToF iid kit
         verb = if catch then "catch" else IK.iverbHit itemKind
         partItemChoice =
           if iid `EM.member` borgan sb
@@ -1232,7 +1232,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
           else partItemShortAW side factionD localTime
         msg | bhp tb <= 0  -- incapacitated, so doesn't actively block
               || hurtMult > 90  -- at most minor armor
-              || jdamage itemBase == 0 = makeSentence $
+              || IK.idamage itemKind == 0 = makeSentence $
               [MU.SubjectVerbSg spart verb, tpart]
               ++ if bproj sb
                  then []

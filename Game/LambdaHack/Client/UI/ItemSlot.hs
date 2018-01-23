@@ -110,7 +110,7 @@ compareItemFull itemFull1 itemFull2 =
         o -> o
  where
   apperance ItemFull{itemBase=Item{..}, itemKind} =
-    (IK.isymbol itemKind, IK.iname itemKind, jflavour, jdamage, jfid, jlid)
+    (IK.isymbol itemKind, IK.iname itemKind, jflavour, jfid, jlid)
 
 sortSlotMap :: (ItemId -> ItemQuant -> ItemFull)
             -> ES.EnumSet ItemId -> SingleItemSlots

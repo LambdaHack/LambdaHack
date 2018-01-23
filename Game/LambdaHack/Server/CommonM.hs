@@ -387,11 +387,10 @@ registerActor :: MonadServerAtomic m
               => Bool -> ItemKnown -> ItemFull -> IA.ItemSeed
               -> FactionId -> Point -> LevelId -> Time
               -> m (Maybe ActorId)
-registerActor summoned (kindIx, ar, damage, _) itemFullRaw seed
-              bfid pos lid time = do
+registerActor summoned (kindIx, ar, _) itemFullRaw seed bfid pos lid time = do
   let container = CTrunk bfid lid pos
       jfid = Just bfid
-      itemKnown = (kindIx, ar, damage, jfid)
+      itemKnown = (kindIx, ar, jfid)
       itemFull = itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
   trunkId <- registerItem itemFull itemKnown seed container False
   addNonProjectile summoned trunkId itemFull bfid pos lid time
