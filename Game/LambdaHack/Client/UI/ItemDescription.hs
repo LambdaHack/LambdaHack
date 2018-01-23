@@ -102,7 +102,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{..} =
       elabel :: IK.Effect -> Bool
       elabel IK.ELabel{} = True
       elabel _ = False
-      active = goesIntoEqp itemFull
+      active = IK.goesIntoEqp itemKind
       splitAE :: DetailLevel -> [IA.Aspect] -> [IK.Effect] -> [Text]
       splitAE detLev aspects effects =
         let ppA = kindAspectToSuffix
@@ -166,7 +166,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{..} =
         in case filter (/= []) splitsToTry of
              detNonEmpty : _ -> detNonEmpty
              [] -> []
-      IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemFull
+      IK.ThrowMod{IK.throwVelocity} = IK.strengthToThrow itemKind
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
       minDeltaHP = xM meanDmg `divUp` 100
@@ -199,10 +199,10 @@ partItemHigh side factionD = partItemN side factionD False DetailAll 100
 -- a subset of items to drop.
 partItemWsR :: FactionId -> FactionDict -> Bool -> Int -> Time -> ItemFull
             -> (Bool, MU.Part)
-partItemWsR side factionD ranged count localTime itemFull =
+partItemWsR side factionD ranged count localTime itemFull@ItemFull{itemKind} =
   let (temporary, unique, name, stats) =
         partItemN side factionD ranged DetailMedium 4 localTime itemFull
-      tmpCondition = isTmpCondition itemFull
+      tmpCondition = IK.isTmpCondition itemKind
   in ( temporary
      , if | temporary && count == 1 -> MU.Phrase [name, stats]
           | temporary ->
@@ -253,10 +253,11 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
          itemFull@ItemFull{..} =
   let (_, unique, name, stats) = partItemHigh side factionD localTime itemFull
       nstats = makePhrase [name, stats]
-      IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = strengthToThrow itemFull
+      IK.ThrowMod{IK.throwVelocity, IK.throwLinger} =
+        IK.strengthToThrow itemKind
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       range = rangeFromSpeedAndLinger speed throwLinger
-      tspeed | isTmpCondition itemFull = ""
+      tspeed | IK.isTmpCondition itemKind = ""
              | speed < speedLimp = "When thrown, it drops at once."
              | speed < speedWalk = "When thrown, it travels only one meter and drops immediately."
              | otherwise =
@@ -301,7 +302,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
                     then "."
                     else "on average."
         in (IK.idesc itemKind, T.intercalate " " sentences, tspeed <+> dmgAn)
-      eqpSlotSentence = case strengthEqpSlot itemFull of
+      eqpSlotSentence = case IK.strengthEqpSlot itemKind of
         Just es -> slotToSentence es
         Nothing -> ""
       weight = IK.iweight itemKind
@@ -315,7 +316,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
       whose fid = gname (factionD EM.! fid)
       sourceDesc =
         case jfid itemBase of
-          Just fid | isTmpCondition itemFull ->
+          Just fid | IK.isTmpCondition itemKind ->
             "Caused by" <+> (if fid == side then "us" else whose fid)
             <> ". First observed" <+> onLevel
           Just fid ->

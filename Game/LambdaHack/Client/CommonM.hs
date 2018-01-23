@@ -32,6 +32,7 @@ import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 
 -- | Get the current perception of a client.
@@ -130,7 +131,7 @@ pickWeaponClient source target = do
   bodyAssocs <- getsState $ fullAssocs source [COrgan]
   actorSk <- currentSkillsClient source
   let allAssocsRaw = eqpAssocs ++ bodyAssocs
-      allAssocs = filter (isMelee . snd) allAssocsRaw
+      allAssocs = filter (IK.isMelee . itemKind . snd) allAssocsRaw
   discoBenefit <- getsClient sdiscoBenefit
   strongest <- pickWeaponM (Just discoBenefit) allAssocs actorSk source
   case strongest of

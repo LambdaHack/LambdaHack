@@ -685,7 +685,7 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
         -- and then pack/stash the rest selectively or en masse.
         if destCStore == CEqp && cLegalRaw /= [CGround]
         then (promptEqp, return $ SuitsSomething $ \itemFull ->
-               goesIntoEqp itemFull)
+               IK.goesIntoEqp $ itemKind itemFull)
         else (prompt, return SuitsEverything)
   ggi <- getFull psuit
                  (\_ _ _ cCur -> prompt <+> ppItemDialogModeFrom cCur)
@@ -718,11 +718,11 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
             retRec toCStore =
               let n = oldN + if toCStore == CEqp then k else 0
               in ret4 rest n ((iid, k, fromCStore, toCStore) : acc)
-            inEqp = maybe (goesIntoEqp itemFull) benInEqp
+            inEqp = maybe (IK.goesIntoEqp $ itemKind itemFull) benInEqp
                           (EM.lookup iid discoBenefit)
         if cLegalRaw == [CGround]  -- normal pickup
         then case destCStore of  -- @CEqp@ is the implicit default; refine:
-          CEqp | calmE && goesIntoSha itemFull ->
+          CEqp | calmE && IK.goesIntoSha (itemKind itemFull) ->
             retRec CSha
           CEqp | inEqp && eqpOverfull b (oldN + k) -> do
             -- If this stack doesn't fit, we don't equip any part of it,

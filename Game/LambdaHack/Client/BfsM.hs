@@ -406,7 +406,7 @@ condEnoughGearM aid = do
   eqpAssocs <- getsState $ fullAssocs aid [CEqp]
   invAssocs <- getsState $ getActorAssocs aid CInv
   return $ not followTactic  -- keep it lazy
-           && (any (isMelee . snd) eqpAssocs
+           && (any (IK.isMelee . itemKind . snd) eqpAssocs
                || length eqpAssocs + length invAssocs >= 5)
 
 unexploredDepth :: MonadClient m => Bool -> LevelId -> m Bool

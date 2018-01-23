@@ -1088,7 +1088,7 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
       isDestroyed = bproj b && (bhp b <= 0 && not durable || fragile)
                     || fragile && durable  -- hack for tmp organs
   if isDestroyed then do
-    let effs = strengthOnSmash itemFull
+    let effs = IK.strengthOnSmash itemKind
     -- Activate even if effects null, to destroy the item.
     effectAndDestroy False aid aid iid c False effs itemFull
   else do
@@ -1352,7 +1352,7 @@ effectDropBestWeapon execSfx target = do
   tb <- getsState $ getActorBody target
   localTime <- getsState $ getLocalTime (blid tb)
   allAssocsRaw <- getsState $ fullAssocs target [CEqp]
-  let allAssocs = filter (isMelee . snd) allAssocsRaw
+  let allAssocs = filter (IK.isMelee . itemKind . snd) allAssocsRaw
   case strongestMelee Nothing localTime allAssocs of
     (_, (iid, _)) : _ -> do
       execSfx

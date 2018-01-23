@@ -78,6 +78,7 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind (fhasGender)
 
 -- * Macro
@@ -173,7 +174,7 @@ chooseItemDialogMode c = do
                 keys = [K.spaceKM, K.escKM]
                        ++ [K.upKM | slotIndex /= 0]
                        ++ [K.downKM | slotIndex /= lSlotsBound]
-            promptAdd $ promptFun itemFull2
+            promptAdd $ promptFun $ itemKind itemFull2
             slides <- overlayToSlideshow (lysize + 1) keys (ov, [])
             km <- getConfirms ColorFull keys slides
             case K.key km of
@@ -188,11 +189,11 @@ chooseItemDialogMode c = do
           modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
           return $ Right c2
         MOrgans -> do
-          let blurb itemFull
-                | isTmpCondition itemFull = "temporary condition"
+          let blurb itemKind
+                | IK.isTmpCondition itemKind = "temporary condition"
                 | otherwise = "organ"
-              prompt2 itemFull = makeSentence [ partActor bUI, "can't remove"
-                                              , MU.AW $ blurb itemFull ]
+              prompt2 itemKind = makeSentence [ partActor bUI, "can't remove"
+                                              , MU.AW $ blurb itemKind ]
           displayLore ix0 prompt2
         MOwned -> do
           found <- getsState $ findIid leader (bfid b) iid
@@ -397,7 +398,8 @@ psuitReq ts = do
           Left err -> Left err
           Right False -> Right (pos, False)
           Right True ->
-            Right (pos, totalRange itemFull >= chessDist (bpos b) pos)
+            Right (pos, IK.totalRange (itemKind itemFull)
+                        >= chessDist (bpos b) pos)
 
 triggerSymbols :: [TriggerItem] -> [Char]
 triggerSymbols [] = []

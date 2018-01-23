@@ -6,6 +6,10 @@ module Game.LambdaHack.Content.ItemKind
   , ItemSpeedup, emptyItemSpeedup, getKindMean, speedupItem
   , meanAspect, boostItemKindList, forApplyEffect, forIdEffect
   , filterRecharging, stripRecharging, stripOnSmash
+  , strengthEffect, strengthOnSmash, strengthDropOrgan
+  , strengthEqpSlot, strengthToThrow, isMelee, isTmpCondition, isBlast
+  , goesIntoEqp, goesIntoInv, goesIntoSha
+  , itemTrajectory, totalRange, damageUsefulness
   , tmpNoLonger, tmpLess, toVelocity, toLinger
   , timerNone, isTimerNone, foldTimer
   , toOrganGameTurn, toOrganActorTurn, toOrganNone
@@ -34,6 +38,9 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Flavour
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Vector
 
 -- | Item properties that are fixed for a given kind of items.
 -- Note that this time is mutually recursive with 'Effect'.
@@ -269,6 +276,77 @@ stripOnSmash effs =
       getOnSmashEffect (OnSmash e) = Just e
       getOnSmashEffect _ = Nothing
   in mapMaybe getOnSmashEffect effs
+
+strengthEffect :: (Effect -> [b]) -> ItemKind -> [b]
+strengthEffect f itemKind = concatMap f $ ieffects itemKind
+
+strengthOnSmash :: ItemKind -> [Effect]
+strengthOnSmash =
+  let p (OnSmash eff) = [eff]
+      p _ = []
+  in strengthEffect p
+
+strengthDropOrgan :: ItemKind -> [GroupName ItemKind]
+strengthDropOrgan =
+  let p (DropItem _ _ COrgan grp) = [grp]
+      p (Recharging (DropItem _ _ COrgan grp)) = [grp]
+      p (OneOf l) = concatMap p l
+      p (Composite l) = concatMap p l
+      p _ = []
+  in strengthEffect p
+
+strengthEqpSlot :: ItemKind -> Maybe IA.EqpSlot
+strengthEqpSlot itemKind =
+  let p (EqpSlot eqpSlot) = [eqpSlot]
+      p _ = []
+  in case strengthEffect p itemKind of
+    [] -> Nothing
+    [x] -> Just x
+    xs -> error $ "" `showFailure` (xs, itemKind)
+
+strengthToThrow :: ItemKind -> ThrowMod
+strengthToThrow itemKind =
+  let p (ToThrow tmod) = [tmod]
+      p _ = []
+  in case concatMap p (ifeature itemKind) of
+    [] -> ThrowMod 100 100
+    [x] -> x
+    xs -> error $ "" `showFailure` (xs, itemKind)
+
+isMelee :: ItemKind -> Bool
+isMelee itemKind = Meleeable `elem` ifeature itemKind
+
+isTmpCondition :: ItemKind -> Bool
+isTmpCondition itemKind = Fragile `elem` ifeature itemKind
+                          && Durable `elem` ifeature itemKind
+
+isBlast :: ItemKind -> Bool
+isBlast itemKind = Blast `elem` ifeature itemKind
+
+goesIntoEqp :: ItemKind -> Bool
+goesIntoEqp itemKind = Equipable `elem` ifeature itemKind
+                       || Meleeable `elem` ifeature itemKind
+
+goesIntoInv :: ItemKind -> Bool
+goesIntoInv itemKind = Precious `notElem` ifeature itemKind
+                       && not (goesIntoEqp itemKind)
+
+goesIntoSha :: ItemKind -> Bool
+goesIntoSha itemKind = Precious `elem` ifeature itemKind
+                       && not (goesIntoEqp itemKind)
+
+itemTrajectory :: ItemKind -> [Point] -> ([Vector], (Speed, Int))
+itemTrajectory itemKind path =
+  let ThrowMod{..} = strengthToThrow itemKind
+  in computeTrajectory (iweight itemKind) throwVelocity throwLinger path
+
+totalRange :: ItemKind -> Int
+totalRange itemKind = snd $ snd $ itemTrajectory itemKind []
+
+damageUsefulness :: ItemKind -> Double
+damageUsefulness itemKind =
+  let v = min 1000 (10 * Dice.meanDice (idamage itemKind))
+  in assert (v >= 0) v
 
 tmpNoLonger :: Text -> Effect
 tmpNoLonger name = Temporary $ "be no longer" <+> name

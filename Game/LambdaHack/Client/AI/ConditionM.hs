@@ -136,14 +136,14 @@ condBlocksFriendsM aid = do
 condFloorWeaponM :: MonadStateRead m => ActorId -> m Bool
 condFloorWeaponM aid = do
   floorAssocs <- getsState $ fullAssocs aid [CGround]
-  let lootIsWeapon = any (isMelee . snd) floorAssocs
+  let lootIsWeapon = any (IK.isMelee . itemKind . snd) floorAssocs
   return lootIsWeapon
 
 -- | Check whether the actor has no weapon in equipment.
 condNoEqpWeaponM :: MonadStateRead m => ActorId -> m Bool
 condNoEqpWeaponM aid = do
   eqpAssocs <- getsState $ fullAssocs aid [CEqp]
-  return $ all (not . isMelee . snd) eqpAssocs
+  return $ all (not . IK.isMelee . itemKind . snd) eqpAssocs
 
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => Int -> ActorId -> m Bool
@@ -171,10 +171,11 @@ condProjectListM skill aid = do
       q (mben, _, _, itemFull) =
         let (bInEqp, bFling) = case mben of
               Just Benefit{benInEqp, benFling} -> (benInEqp, benFling)
-              Nothing -> (goesIntoEqp itemFull, -10)
+              Nothing -> (IK.goesIntoEqp $ itemKind itemFull, -10)
         in bFling < 0
            && (not bInEqp  -- can't wear, so OK to risk losing or breaking
-               || not (isMelee itemFull)  -- anything else expendable
+               || not (IK.isMelee $ itemKind itemFull)
+                    -- anything else expendable
                   && hind itemFull)  -- hinders now, so possibly often, so away!
            && permittedProjectAI skill calmE itemFull
   benList <- benAvailableItems aid $ [CEqp, CInv, CGround] ++ [CSha | calmE]
@@ -215,7 +216,7 @@ hinders condShineWouldBetray condAimEnemyPresent
      -- Fast actors want to hit hard, because they hit much more often
      -- than receive hits.
      || bspeed body ar > speedWalk
-        && not (isMelee itemFull)  -- in case it's the only weapon
+        && not (IK.isMelee $ itemKind itemFull)  -- in case it's the only weapon
         && 0 > IA.aHurtMelee (aspectRecordFull itemFull)
 
 -- | Require that the actor stands over a desirable item.

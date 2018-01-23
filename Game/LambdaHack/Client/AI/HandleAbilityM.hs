@@ -327,14 +327,14 @@ pickup aid onlyWeapon = do
   -- e.g., making all rings identified)
   ar <- getsState $ getActorAspect aid
   let calmE = calmEnough b ar
-      isWeapon (_, _, _, itemFull) = isMelee itemFull
+      isWeapon (_, _, _, itemFull) = IK.isMelee $ itemKind itemFull
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
-      prepareOne (oldN, l4) (mben, _, iid, itemFull@ItemFull{..}) =
+      prepareOne (oldN, l4) (mben, _, iid, ItemFull{..}) =
         let prep newN toCStore = (newN, (iid, itemK, CGround, toCStore) : l4)
-            inEqp = maybe (goesIntoEqp itemFull) benInEqp mben
+            inEqp = maybe (IK.goesIntoEqp itemKind) benInEqp mben
             n = oldN + itemK
-        in if | calmE && goesIntoSha itemFull && not onlyWeapon ->
+        in if | calmE && IK.goesIntoSha itemKind && not onlyWeapon ->
                 prep oldN CSha
               | inEqp && eqpOverfull b n ->
                 if onlyWeapon then (oldN, l4)
@@ -511,7 +511,7 @@ unEquipItems aid = do
 groupByEqpSlot :: [(ItemId, ItemFull)]
                -> EM.EnumMap IA.EqpSlot [(ItemId, ItemFull)]
 groupByEqpSlot is =
-  let f (iid, itemFull) = case strengthEqpSlot itemFull of
+  let f (iid, itemFull) = case IK.strengthEqpSlot $ itemKind itemFull of
         Nothing -> Nothing
         Just es -> Just (es, [(iid, itemFull)])
       withES = mapMaybe f is
@@ -662,7 +662,7 @@ projectItem aid = do
                 -- This changes in time, so recharging is not included
                 -- in @condProjectListM@, but checked here, just before fling.
                 let recharged = hasCharge localTime itemFull
-                    trange = totalRange itemFull
+                    trange = IK.totalRange $ itemKind itemFull
                     bestRange =
                       chessDist (bpos b) fpos + 2  -- margin for fleeing
                     rangeMult =  -- penalize wasted or unsafely low range
@@ -708,11 +708,11 @@ applyItem aid applyGroup = do
             durable = IK.Durable `elem` IK.ifeature itemKind
             (bInEqp, bApply) = case mben of
               Just Benefit{benInEqp, benApply} -> (benInEqp, benApply)
-              Nothing -> (goesIntoEqp itemFull, 0)  -- apply unsafe
+              Nothing -> (IK.goesIntoEqp itemKind, 0)  -- apply unsafe
         in bApply > 0
            && (not bInEqp  -- can't wear, so OK to break
                || durable  -- can wear, but can't break, even better
-               || not (isMelee itemFull)  -- anything else expendable
+               || not (IK.isMelee itemKind)  -- anything else expendable
                   && hind itemFull)  -- hinders now, so possibly often, so away!
            && permittedActor itemFull
            && maybe True (<= 0) (lookup "gem" freq) -- hack for elixir of youth
@@ -723,8 +723,8 @@ applyItem aid applyGroup = do
   benList <- benAvailableItems aid stores
   itemToF <- getsState itemToFull
   let organs = map (uncurry itemToF) $ EM.assocs $ borgan b
-      hasGrps = mapMaybe (\itemFull@ItemFull{..} ->
-        if isTmpCondition itemFull
+      hasGrps = mapMaybe (\ItemFull{itemKind} ->
+        if IK.isTmpCondition itemKind
         then Just $ toGroupName $ IK.iname itemKind
         else Nothing) organs
       itemLegal ItemFull{itemKind} =
@@ -759,14 +759,14 @@ applyItem aid applyGroup = do
               -- saving for the future, for otherwise the item would not
               -- be considered at all, given that it's the only effect.
               -- We don't try to intercept the case of many effects.
-              let dropsGrps = strengthDropOrgan itemFull
+              let dropsGrps = IK.strengthDropOrgan itemKind
                   hasDropOrgan = not $ null dropsGrps
                   f eff = [eff | IK.forApplyEffect eff]
               in hasDropOrgan
                  && (null hasGrps
                      || toGroupName "temporary condition" `notElem` dropsGrps
                         && null (dropsGrps `intersect` hasGrps))
-                 && length (strengthEffect f itemFull) == 1
+                 && length (IK.strengthEffect f itemKind) == 1
             durable = IK.Durable `elem` IK.ifeature itemKind
             benR = case mben of
               Nothing -> 0

@@ -309,7 +309,7 @@ totalUsefulness !cops !fact !itemFull@ItemFull{..} =
   let effects = IK.ieffects itemKind
       aspects = aspectRecordFull itemFull
       effPairs = map (effectToBenefit cops fact) effects
-      effDice = - damageUsefulness itemFull
+      effDice = - IK.damageUsefulness itemKind
       f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
       (effSelf, effFoe) = foldr f (0, 0) effPairs
       -- Timeout between 0 and 1 means item usable each turn, so we consider
@@ -384,7 +384,7 @@ totalUsefulness !cops !fact !itemFull@ItemFull{..} =
         dmg = Dice.meanDice $ IK.idamage itemKind
         rawDeltaHP = ceiling $ fromIntegral hurtMult * xD dmg / 100
         -- For simplicity, we ignore range bonus/malus and @Lobable@.
-        IK.ThrowMod{IK.throwVelocity} = strengthToThrow itemFull
+        IK.ThrowMod{IK.throwVelocity} = IK.strengthToThrow itemKind
         speed = speedFromWeight (IK.iweight itemKind) throwVelocity
         v = - fromIntegral (modifyDamageBySpeed rawDeltaHP speed) * 10 / xD 1
           -- 1 damage valued at 10, just as in @damageUsefulness@
@@ -409,13 +409,13 @@ totalUsefulness !cops !fact !itemFull@ItemFull{..} =
       -- (but can be equipped anyway). If it harms wearer too much,
       -- won't be worn but still may be flung, etc.
       (benInEqp, benPickup)
-        | isMelee itemFull && benMelee < 0 && eqpSum >= -20 =
+        | IK.isMelee itemKind && benMelee < 0 && eqpSum >= -20 =
           ( True  -- equip, melee crucial, and only weapons in eqp can be used
           , if durable
             then eqpSum
                  + max benApply (- benMelee)  -- apply or melee or not
             else - benMelee)  -- melee is predominant
-        | goesIntoEqp itemFull && eqpSum > 0 =  -- weapon or other equippable
+        | IK.goesIntoEqp itemKind && eqpSum > 0 =  -- weapon or other equippable
           ( True  -- equip; long time bonus usually outweighs fling or apply
           , eqpSum  -- possibly spent turn equipping, so reap the benefits
             + if durable

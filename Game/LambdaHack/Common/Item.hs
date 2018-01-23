@@ -1,22 +1,12 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Weapons, treasure and all the other items in the game.
 module Game.LambdaHack.Common.Item
-  ( -- * The @Item@ type and operations
-    ItemId, Item(..), ItemIdentity(..)
-  , isMelee, isTmpCondition, isBlast
-  , goesIntoEqp, goesIntoInv, goesIntoSha
-    -- * Item discovery types and operations
+  ( ItemId, Item(..), ItemIdentity(..)
   , ItemKindIx, ItemDisco(..), ItemFull(..)
   , DiscoveryKind, DiscoveryAspect, ItemIxMap, Benefit(..), DiscoveryBenefit
-  , itemNoDisco, itemToFull7, aspectRecordFull
-    -- * Inventory management types
   , ItemTimer, ItemQuant, ItemBag, ItemDict
-  , -- * Assorted operations
-    strengthEffect, strengthOnSmash, strengthDropOrgan
-  , strengthEqpSlot, strengthToThrow, strongestSlot
-  , computeTrajectory, itemTrajectory, totalRange
-  , hasCharge, damageUsefulness, strongestMelee
-  , unknownMeleeBonus, tmpMeleeBonus
+  , itemNoDisco, itemToFull7, aspectRecordFull
+  , strongestSlot, hasCharge, strongestMelee, unknownMeleeBonus, tmpMeleeBonus
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , unknownAspect
@@ -40,9 +30,7 @@ import           Game.LambdaHack.Common.Flavour
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
-import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Time
-import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | A unique identifier of an item in the dungeon.
@@ -78,28 +66,6 @@ data ItemIdentity =
 instance Hashable ItemIdentity
 
 instance Binary ItemIdentity
-
-isMelee :: ItemFull -> Bool
-isMelee itemFull = IK.Meleeable `elem` IK.ifeature (itemKind itemFull)
-
-isTmpCondition :: ItemFull -> Bool
-isTmpCondition itemFull = IK.Fragile `elem` IK.ifeature (itemKind itemFull)
-                          && IK.Durable `elem` IK.ifeature (itemKind itemFull)
-
-isBlast :: ItemFull -> Bool
-isBlast itemFull = IK.Blast `elem` IK.ifeature (itemKind itemFull)
-
-goesIntoEqp :: ItemFull -> Bool
-goesIntoEqp itemFull = IK.Equipable `elem` IK.ifeature (itemKind itemFull)
-                       || IK.Meleeable `elem` IK.ifeature (itemKind itemFull)
-
-goesIntoInv :: ItemFull -> Bool
-goesIntoInv itemFull = IK.Precious `notElem` IK.ifeature (itemKind itemFull)
-                       && not (goesIntoEqp itemFull)
-
-goesIntoSha :: ItemFull -> Bool
-goesIntoSha itemFull = IK.Precious `elem` IK.ifeature (itemKind itemFull)
-                       && not (goesIntoEqp itemFull)
 
 -- | The map of item ids to item aspects.
 -- The full map is known by the server.
@@ -166,6 +132,21 @@ instance Binary Benefit
 
 type DiscoveryBenefit = EM.EnumMap ItemId Benefit
 
+type ItemTimer = [Time]
+
+-- | Number of items in a bag, together with recharging timer, in case of
+-- items that need recharging, exists only temporarily or auto-activate
+-- at regular intervals.
+type ItemQuant = (Int, ItemTimer)
+
+-- | A bag of items, e.g., one of the stores of an actor or the items
+-- on a particular floor position or embedded in a particular map tile.
+type ItemBag = EM.EnumMap ItemId ItemQuant
+
+-- | All items in the dungeon (including in actor inventories),
+-- indexed by item identifier.
+type ItemDict = EM.EnumMap ItemId Item
+
 itemNoDisco :: COps -> (Item, Int) -> ItemFull
 itemNoDisco COps{coitem, coItemSpeedup} (itemBase, itemK) =
   let itemKindId = case jkind itemBase of
@@ -203,67 +184,16 @@ aspectRecordFull itemFull =
     ItemDiscoMean itemAspectMean -> IA.kmMean itemAspectMean
     ItemDiscoFull itemAspect -> itemAspect
 
-type ItemTimer = [Time]
-
--- | Number of items in a bag, together with recharging timer, in case of
--- items that need recharging, exists only temporarily or auto-activate
--- at regular intervals.
-type ItemQuant = (Int, ItemTimer)
-
--- | A bag of items, e.g., one of the stores of an actor or the items
--- on a particular floor position or embedded in a particular map tile.
-type ItemBag = EM.EnumMap ItemId ItemQuant
-
--- | All items in the dungeon (including in actor inventories),
--- indexed by item identifier.
-type ItemDict = EM.EnumMap ItemId Item
-
-strengthEffect :: (IK.Effect -> [b]) -> ItemFull -> [b]
-strengthEffect f itemFull = concatMap f $ IK.ieffects $ itemKind itemFull
-
-strengthOnSmash :: ItemFull -> [IK.Effect]
-strengthOnSmash =
-  let p (IK.OnSmash eff) = [eff]
-      p _ = []
-  in strengthEffect p
-
-strengthDropOrgan :: ItemFull -> [GroupName IK.ItemKind]
-strengthDropOrgan =
-  let p (IK.DropItem _ _ COrgan grp) = [grp]
-      p (IK.Recharging (IK.DropItem _ _ COrgan grp)) = [grp]
-      p (IK.OneOf l) = concatMap p l
-      p (IK.Composite l) = concatMap p l
-      p _ = []
-  in strengthEffect p
-
-strengthEqpSlot :: ItemFull -> Maybe IA.EqpSlot
-strengthEqpSlot item =
-  let p (IK.EqpSlot eqpSlot) = [eqpSlot]
-      p _ = []
-  in case strengthEffect p item of
-    [] -> Nothing
-    [x] -> Just x
-    xs -> error $ "" `showFailure` (xs, item)
-
-strengthToThrow :: ItemFull -> IK.ThrowMod
-strengthToThrow itemFull =
-  let p (IK.ToThrow tmod) = [tmod]
-      p _ = []
-  in case concatMap p (IK.ifeature $ itemKind itemFull) of
-    [] -> IK.ThrowMod 100 100
-    [x] -> x
-    xs -> error $ "" `showFailure` (xs, itemFull)
-
 -- This ignores items that don't go into equipment, as determined in @inEqp@.
 -- They are removed from equipment elsewhere via @harmful@.
 strongestSlot :: DiscoveryBenefit -> IA.EqpSlot -> [(ItemId, ItemFull)]
               -> [(Int, (ItemId, ItemFull))]
 strongestSlot discoBenefit eqpSlot is =
-  let f (iid, itemFull) =
-        let rawDmg = damageUsefulness itemFull
+  let f (iid, itemFull@ItemFull{itemKind}) =
+        let rawDmg = IK.damageUsefulness itemKind
             (bInEqp, bPickup) = case EM.lookup iid discoBenefit of
                Just Benefit{benInEqp, benPickup} -> (benInEqp, benPickup)
-               Nothing -> (goesIntoEqp itemFull, rawDmg)
+               Nothing -> (IK.goesIntoEqp itemKind, rawDmg)
         in if not bInEqp
            then Nothing
            else Just $
@@ -275,14 +205,6 @@ strongestSlot discoBenefit eqpSlot is =
              in (ben, (iid, itemFull))
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe f is
 
-itemTrajectory :: ItemFull -> [Point] -> ([Vector], (Speed, Int))
-itemTrajectory itemFull@ItemFull{itemKind} path =
-  let IK.ThrowMod{..} = strengthToThrow itemFull
-  in computeTrajectory (IK.iweight itemKind) throwVelocity throwLinger path
-
-totalRange :: ItemFull -> Int
-totalRange itemFull = snd $ snd $ itemTrajectory itemFull []
-
 hasCharge :: Time -> ItemFull -> Bool
 hasCharge localTime itemFull@ItemFull{..} =
   let timeout = IA.aTimeout $ aspectRecordFull itemFull
@@ -291,11 +213,6 @@ hasCharge localTime itemFull@ItemFull{..} =
       it1 = filter charging itemTimer
   in length it1 < itemK
 
-damageUsefulness :: ItemFull -> Double
-damageUsefulness ItemFull{itemKind} =
-  let v = min 1000 (10 * Dice.meanDice (IK.idamage itemKind))
-  in assert (v >= 0) v
-
 strongestMelee :: Maybe DiscoveryBenefit -> Time -> [(ItemId, ItemFull)]
                -> [(Double, (ItemId, ItemFull))]
 strongestMelee _ _ [] = []
@@ -303,7 +220,7 @@ strongestMelee mdiscoBenefit localTime is =
   -- For simplicity we assume, if weapon not recharged, all important effects,
   -- good and bad, are disabled and only raw damage remains.
   let f (iid, itemFull) =
-        let rawDmg = (damageUsefulness itemFull, (iid, itemFull))
+        let rawDmg = (IK.damageUsefulness $ itemKind itemFull, (iid, itemFull))
             knownOrConstantAspects = case itemDisco itemFull of
               ItemDiscoMean IA.KindMean{kmConst} -> kmConst
               ItemDiscoFull{} -> True
@@ -345,4 +262,4 @@ tmpMeleeBonus :: [ItemFull] -> Int
 tmpMeleeBonus is =
   let f itemFull k =
         itemK itemFull * IA.aHurtMelee (aspectRecordFull itemFull) + k
-  in foldr f 0 $ filter isTmpCondition is
+  in foldr f 0 $ filter (IK.isTmpCondition . itemKind) is

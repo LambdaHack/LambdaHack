@@ -252,10 +252,10 @@ reqMelee source target iid cstore = do
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
     itemToF <- getsState itemToFull
-    let itemFull = itemToF (btrunk tb) (1, [])
+    let ItemFull{itemKind} = itemToF (btrunk tb) (1, [])
     -- Only catch with appendages, never with weapons. Never steal trunk
     -- from an already caught projectile or one with many items inside.
-    if bproj tb && length (beqp tb) == 1 && not (isBlast itemFull)
+    if bproj tb && length (beqp tb) == 1 && not (IK.isBlast itemKind)
        && cstore == COrgan then do
       -- Catching the projectile, that is, stealing the item from its eqp.
       -- No effect from our weapon (organ) is applied to the projectile

@@ -402,7 +402,8 @@ addProjectile :: MonadServerAtomic m
 addProjectile bpos rest iid (_, it) blid bfid btime = do
   itemToF <- getsState itemToFull
   let itemFull = itemToF iid (1, take 1 it)
-      (trajectory, (speed, _)) = itemTrajectory itemFull (bpos : rest)
+      (trajectory, (speed, _)) =
+        IK.itemTrajectory (itemKind itemFull) (bpos : rest)
       -- Trunk is added to equipment, not to organs, because it's the
       -- projected item, so it's carried, not grown.
       tweakBody b = b { bhp = oneM
@@ -426,7 +427,7 @@ addActorIid :: MonadServerAtomic m
             => ItemId -> ItemFull -> Bool -> FactionId -> Point -> LevelId
             -> (Actor -> Actor) -> Time
             -> m (Maybe ActorId)
-addActorIid trunkId itemFull@ItemFull{..} bproj bfid pos lid tweakBody time = do
+addActorIid trunkId ItemFull{..} bproj bfid pos lid tweakBody time = do
   -- Initial HP and Calm is based only on trunk and ignores organs.
   let hp = xM (max 2 $ IA.aMaxHP $ itemAspect itemDisco) `div` 2
       -- Hard to auto-id items that refill Calm, but reduced sight at game
@@ -458,7 +459,7 @@ addActorIid trunkId itemFull@ItemFull{..} bproj bfid pos lid tweakBody time = do
       healthOrgans = [(Just bonusHP, ("bonus HP", COrgan)) | bonusHP /= 0]
       b = actorTemplate trunkId diffHP calm pos lid bfid bproj
       -- Insert the trunk as the actor's organ.
-      withTrunk = b {bweapon = if isMelee itemFull then 1 else 0}
+      withTrunk = b {bweapon = if IK.isMelee itemKind then 1 else 0}
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
   execUpdAtomic $ UpdCreateActor aid (tweakBody withTrunk) [(trunkId, itemBase)]
@@ -495,7 +496,7 @@ pickWeaponServer source = do
   let allAssocsRaw = eqpAssocs ++ bodyAssocs
       forced = bproj sb
       allAssocs | forced = allAssocsRaw  -- for projectiles, anything is weapon
-                | otherwise = filter (isMelee . snd) allAssocsRaw
+                | otherwise = filter (IK.isMelee . itemKind . snd) allAssocsRaw
   -- Server ignores item effects or it would leak item discovery info.
   -- In particular, it even uses weapons that would heal opponent,
   -- and not only in case of projectiles.
