@@ -130,6 +130,7 @@ spike2 = spike
   { ifreq    = [("useful", 2), ("any arrow", 1), ("weak arrow", 1)]
   , iweight  = 200
   , idamage  = 4 `d` 1
+  -- , idesc    = ""
   }
 slingStone = ItemKind
   { isymbol  = symbolProjectile
@@ -206,6 +207,7 @@ harpoon2 = harpoon
   { ifreq    = [("useful", 2), ("harpoon", 2)]
   , iweight  = 100
   , idamage  = 10 `d` 1
+  -- , idesc    = ""
   }
 net = ItemKind
   { isymbol  = symbolProjectile
@@ -850,7 +852,8 @@ motionScanner = ItemKind
 gorget = necklaceTemplate
   { iname    = "Old Gorget"
   , ifreq    = [("useful", 25), ("treasure", 25)]
-  , iflavour = zipFancy [BrCyan]
+  , iflavour = zipFancy [BrCyan]  -- looks exactly the same as on of necklaces,
+                                  -- but it's OK, it's an artifact
   , irarity  = [(4, 3), (10, 3)]  -- weak, shallow
   , iaspects = [ Timeout $ (1 `d` 2) * 2
                , AddArmorMelee 3
@@ -972,7 +975,10 @@ imageItensifier = ItemKind
   }
 sightSharpening = ringTemplate  -- small and round, so mistaken for a ring
   { iname    = "sharp monocle"
-  , ifreq    = [("treasure", 10), ("add sight", 1)]  -- not unique, so very rare
+  , ifreq    = [("treasure", 10), ("add sight", 1)]
+      -- it's has to be very rare, because it's powerful and not unique,
+      -- and also because it looks exactly as one of necklaces, so it would
+      -- be misleading when seen on the map
   , irarity  = [(7, 1), (10, 5)]
   , iweight  = 50  -- heavier that it looks, due to glass
   , iaspects = [AddSight $ 1 + 1 `d` 2, AddHurtMelee $ (1 `d` 2) * 3]
@@ -1189,11 +1195,13 @@ shield2 = shield
   { ifreq    = [("useful", 3)]
   , iweight  = 4000
   , idamage  = 8 `d` 1
+  -- , idesc    = "" e.g., "this kind has a spike protruding from the center"
   }
 shield3 = shield
   { ifreq    = [("useful", 1)]
   , iweight  = 5000
   , idamage  = 12 `d` 1
+  -- , idesc    = ""
   }
 
 -- * Weapons
@@ -1241,29 +1249,35 @@ daggerDropBestWeapon = dagger
 hammer = ItemKind
   { isymbol  = symbolHafted
   , iname    = "war hammer"
-  , ifreq    = [("useful", 100), ("starting weapon", 100)]
+  , ifreq    = [ ("useful", 100), ("starting weapon", 100)
+               , ("hammer unknown", 1) ]
   , iflavour = zipFancy [BrMagenta]  -- avoid "pink"
   , icount   = 1
   , irarity  = [(5, 20), (8, 1)]
   , iverbHit = "club"
   , iweight  = 1600
-  , idamage  = 8 `d` 1
+  , idamage  = 8 `d` 1  -- we are lying about the dice here, but the dungeon
+                        -- is too small and the extra-dice hammers too rare
+                        -- to subdivide this identification class by dice
   , iaspects = [AddHurtMelee $ (-1 + 1 `d` 2 + 1 `dL` 2) * 3]
   , ieffects = []
-  , ifeature = [ toVelocity 40  -- ensuring it hits with the tip costs speed
+  , ifeature = [ HideAs "hammer unknown"
+               , toVelocity 40  -- ensuring it hits with the tip costs speed
                , Durable, Meleeable, EqpSlot EqpSlotWeapon ]
-  , idesc    = "It may not cause grave wounds, but neither does it glance off nor ricochet. Great sidearm for opportunistic blows against armored foes."
+  , idesc    = "It may not cause extensive wounds, but neither does it harmlessly glance off heavy armour as blades and polearms tend to. There are so many shapes and types, some looking more like tools than weapons, that at a glance you can't tell what a particular specimen does."
   , ikit     = []
   }
 hammer2 = hammer
   { ifreq    = [("useful", 3), ("starting weapon", 1)]
   , iweight  = 2000
   , idamage  = 12 `d` 1
+  -- , idesc    = ""
   }
 hammer3 = hammer
   { ifreq    = [("useful", 1)]
   , iweight  = 2400
   , idamage  = 16 `d` 1
+  -- , idesc    = ""
   }
 hammerParalyze = hammer
   { iname    = "Concussion Hammer"
@@ -1345,11 +1359,13 @@ halberd2 = halberd
   { ifreq    = [("useful", 3), ("starting weapon", 1)]
   , iweight  = 4000
   , idamage  = 18 `d` 1
+  -- , idesc    = ""
   }
 halberd3 = halberd
   { ifreq    = [("useful", 1)]
   , iweight  = 5000
   , idamage  = 44 `d` 1
+  -- , idesc    = ""
   }
 halberdPushActor = halberd
   { iname    = "Swiss Halberd"
@@ -1424,7 +1440,7 @@ gem5 = gem1
   { isymbol  = symbolSpecial  -- looks differently upon closer inspection
   , iname    = "elixir"
   , ifreq    = [("treasure", 100), ("gem", 100)]
-  , iflavour = zipPlain [BrYellow]
+  , iflavour = zipPlain [BrYellow]  -- same colour as one of gems; symbol unique
   , irarity  = [(1, 40), (10, 40)]
   , ieffects = [RefillCalm 5, RefillHP 15]
   , ifeature = [ELabel "of youth", Applicable] ++ ifeature gem1
