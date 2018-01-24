@@ -38,9 +38,16 @@ newtype ItemId = ItemId Int
   deriving (Show, Eq, Ord, Enum, Binary)
 
 -- | Game items in actor possesion or strewn around the dungeon.
--- The fields @jsymbol@, @jname@ and @jflavour@ make it possible to refer to
--- and draw an unidentified item. Full information about item is available
--- through the @jkindIx@ index as soon as the item is identified.
+-- The information contained in this time is available to the player
+-- from the moment the item is first seen and is never mutated.
+--
+-- Some items are not created identified (@IdentityCovered@).
+-- Then they are presented as having a template kind that is really
+-- not their own, though usually close. Full kind information about
+-- item's kind is available through the @ItemKindIx@ index once the item
+-- is identified and full information about the value of item's aspects
+-- is available elsewhere (both @IdentityObvious@ and @IdentityCovered@
+-- items may or may not need identification of their aspects).
 data Item = Item
   { jkind    :: ItemIdentity  -- ^ the kind of the item, or an indiretion
   , jlid     :: LevelId       -- ^ lowest level the item was created at
