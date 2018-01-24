@@ -604,10 +604,8 @@ updDiscoverSeed _c iid seed = do
   case EM.lookup iid itemD of
     Nothing -> atomicFail "discovered item unheard of"
     Just item -> do
-      discoKind <- getsState sdiscoKind
-      let kindId = case jkind item of
-            IdentityObvious ik -> ik
-            IdentityCovered ix _ -> fromJust $ EM.lookup ix discoKind
+      -- Here the kind information is exact, hence @getItemKindIdServer@.
+      kindId <- getsState $ getItemKindIdServer item
       discoAspect <- getsState sdiscoAspect
       let kmIsConst = IA.kmConst $ IK.getKindMean kindId coItemSpeedup
       if kmIsConst || iid `EM.member` discoAspect
@@ -618,16 +616,12 @@ updDiscoverSeed _c iid seed = do
 
 discoverSeed :: MonadStateWrite m => ItemId -> IA.ItemSeed -> m ()
 discoverSeed iid seed = do
-  COps{coitem} <- getsState scops
   item <- getsState $ getItemBody iid
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel $ jlid item
-  discoKind <- getsState sdiscoKind
-  let kindId = case jkind item of
-        IdentityObvious ik -> ik
-        IdentityCovered ix _ -> fromJust $ EM.lookup ix discoKind
-      kind = okind coitem kindId
-      aspects = IA.seedToAspect seed (IK.iaspects kind) ldepth totalDepth
+  -- Here we know the kind information is exact, hence @getItemKindServer@.
+  kind <- getsState $ getItemKindServer item
+  let aspects = IA.seedToAspect seed (IK.iaspects kind) ldepth totalDepth
       f Nothing = Just aspects
       f Just{} = error $ "already discovered" `showFailure` (iid, seed)
   -- At this point we know the item is not @kmConst@.

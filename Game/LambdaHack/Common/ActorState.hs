@@ -10,9 +10,11 @@ module Game.LambdaHack.Common.ActorState
   , getActorBody, getActorAspect, getCarriedAssocsAndTrunk, getCarriedIidCStore
   , getContainerBag, getFloorBag, getEmbedBag, getBodyStoreBag
   , mapActorItems_, getActorAssocs, getActorAssocsK
-  , memActor, getLocalTime, regenCalmDelta
-  , actorInAmbient, canDeAmbientList, actorSkills, dispEnemy
-  , itemToFull, fullAssocs, storeFromC, aidFromC, lidFromC, posFromC
+  , memActor, getLocalTime, regenCalmDelta, actorInAmbient, canDeAmbientList
+  , actorSkills, dispEnemy, itemToFull, fullAssocs
+  , getItemKindId, getIidKindId, getItemKind, getIidKind
+  , getItemKindIdServer, getIidKindIdServer, getItemKindServer, getIidKindServer
+  , storeFromC, aidFromC, lidFromC, posFromC
   , isEscape, isStair, anyFoeAdj, actorAdjacentAssocs
   , armorHurtBonus, inMelee
   ) where
@@ -117,11 +119,7 @@ calculateTotal fid s =
 -- | Price an item, taking count into consideration.
 itemPrice :: (Item, Int) -> State -> Int
 itemPrice (item, jcount) s =
-  let COps{coitem} = scops s
-      kindId = case jkind item of
-        IdentityObvious ik -> ik
-        IdentityCovered ix ik -> fromMaybe ik $ ix `EM.lookup` sdiscoKind s
-      kind = okind coitem kindId
+  let kind = getItemKind item s
   in case IK.isymbol kind of
     _ | IK.iname kind == "gem" -> jcount * 100  -- hack
     '$' -> jcount
@@ -329,6 +327,34 @@ fullAssocs aid cstores s =
         (iid, itemToFull7 (scops s) (sdiscoKind s) (sdiscoAspect s)
                           iid item kit)
   in map iToFull allAssocs
+
+getItemKindId :: Item -> State -> ContentId IK.ItemKind
+getItemKindId item s = case jkind item of
+  IdentityObvious ik -> ik
+  IdentityCovered ix ik -> fromMaybe ik $ EM.lookup ix $ sdiscoKind s
+
+getIidKindId :: ItemId -> State -> ContentId IK.ItemKind
+getIidKindId iid s = getItemKindId (getItemBody iid s) s
+
+getItemKind :: Item -> State -> IK.ItemKind
+getItemKind item s = okind (coitem $ scops s) $ getItemKindId item s
+
+getIidKind :: ItemId -> State -> IK.ItemKind
+getIidKind iid s = getItemKind (getItemBody iid s) s
+
+getItemKindIdServer :: Item -> State -> ContentId IK.ItemKind
+getItemKindIdServer item s = case jkind item of
+  IdentityObvious ik -> ik
+  IdentityCovered ix _ik -> fromJust $ EM.lookup ix $ sdiscoKind s
+
+getIidKindIdServer :: ItemId -> State -> ContentId IK.ItemKind
+getIidKindIdServer iid s = getItemKindIdServer (getItemBody iid s) s
+
+getItemKindServer :: Item -> State -> IK.ItemKind
+getItemKindServer item s = okind (coitem $ scops s) $ getItemKindIdServer item s
+
+getIidKindServer :: ItemId -> State -> IK.ItemKind
+getIidKindServer iid s = getItemKindServer (getItemBody iid s) s
 
 storeFromC :: Container -> CStore
 storeFromC c = case c of

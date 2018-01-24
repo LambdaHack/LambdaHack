@@ -238,16 +238,11 @@ endClip updatePerFid = do
 -- | Check if the given actor is dominated and update his calm.
 manageCalmAndDomination :: MonadServerAtomic m => ActorId -> Actor -> m ()
 manageCalmAndDomination aid b = do
-  COps{coitem} <- getsState scops
   fact <- getsState $ (EM.! bfid b) . sfactionD
   getItem <- getsState $ flip getItemBody
-  discoKind <- getsState sdiscoKind
+  getKind <- getsState $ flip getIidKindServer
   let isImpression iid =
-        let kindId = case jkind $ getItem iid of
-              IdentityObvious ik -> ik
-              IdentityCovered ix _ik -> fromJust $ ix `EM.lookup` discoKind
-            kind = okind coitem kindId
-        in maybe False (> 0) $ lookup "impressed" $ IK.ifreq kind
+        maybe False (> 0) $ lookup "impressed" $ IK.ifreq $ getKind iid
       impressions = EM.filterWithKey (\iid _ -> isImpression iid) $ borgan b
   dominated <-
     if bcalm b == 0

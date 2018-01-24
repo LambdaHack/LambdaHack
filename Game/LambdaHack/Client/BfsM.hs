@@ -278,7 +278,7 @@ embedBenefit :: MonadClient m
              -> [(Point, ItemBag)]
              -> m [(Double, (Point, ItemBag))]
 embedBenefit fleeVia aid pbags = do
-  COps{coitem, coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
   b <- getsState $ getActorBody aid
@@ -291,9 +291,8 @@ embedBenefit fleeVia aid pbags = do
   unexploredTrue <- unexploredDepth True (blid b)
   unexploredFalse <- unexploredDepth False (blid b)
   condEnoughGear <- condEnoughGearM aid
-  discoKind <- getsState sdiscoKind
   discoBenefit <- getsClient sdiscoBenefit
-  getItem <- getsState $ flip getItemBody
+  getKind <- getsState $ flip getIidKind
   let alterMinSkill p = Tile.alterMinSkill coTileSpeedup $ lvl `at` p
       lidExplored = ES.member (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
@@ -301,11 +300,7 @@ embedBenefit fleeVia aid pbags = do
       -- is triggered at the same time, others are left to be used later on.
       -- Taking the kind the item hides under into consideration, because
       -- it's a best guess only, for AI and UI.
-      iidToEffs iid =
-        let kindId = case jkind $ getItem iid of
-              IdentityObvious ik -> ik
-              IdentityCovered ix ik -> fromMaybe ik $ ix `EM.lookup` discoKind
-        in IK.ieffects $ okind coitem kindId
+      iidToEffs iid = IK.ieffects $ getKind iid
       isEffEscapeOrAscend IK.Ascend{} = True
       isEffEscapeOrAscend IK.Escape{} = True
       isEffEscapeOrAscend (IK.OneOf l) = any isEffEscapeOrAscend l

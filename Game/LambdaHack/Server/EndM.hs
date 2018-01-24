@@ -18,7 +18,6 @@ import Game.LambdaHack.Client
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
@@ -111,11 +110,7 @@ gameExit = do
 dieSer :: MonadServerAtomic m => ActorId -> Actor -> m ()
 dieSer aid b = do
   unless (bproj b) $ do
-    discoKind <- getsState sdiscoKind
-    trunk <- getsState $ getItemBody $ btrunk b
-    let kindId = case jkind trunk of
-          IdentityObvious ik -> ik
-          IdentityCovered ix _ik -> fromJust $ ix `EM.lookup` discoKind
+    kindId <- getsState $ getIidKindIdServer $ btrunk b
     execUpdAtomic $ UpdRecordKill aid kindId 1
     -- At this point the actor's body exists and his items are not dropped.
     deduceKilled aid

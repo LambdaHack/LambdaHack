@@ -252,11 +252,7 @@ itemEffectDisco source target iid c recharged periodic effs = do
         [] -> UseDud
         _ -> maximum urs
   when (ur >= UseId) $ do  -- note: @UseId@ suffices, not only @UseUp@
-    discoKind <- getsState sdiscoKind
-    item <- getsState $ getItemBody iid
-    let kindId = case jkind item of
-          IdentityObvious ik -> ik
-          IdentityCovered ix _ik -> fromJust $ ix `EM.lookup` discoKind
+    kindId <- getsState $ getIidKindIdServer iid
     seed <- getsServer $ (EM.! iid) . sitemSeedD
     execUpdAtomic $ UpdDiscover c iid kindId seed
   return ur
@@ -528,7 +524,6 @@ dominateFidSfx fid target = do
 
 dominateFid :: MonadServerAtomic m => FactionId -> ActorId -> m Bool
 dominateFid fid target = do
-  COps{coitem} <- getsState scops
   tb0 <- getsState $ getActorBody target
   -- At this point the actor's body exists and his items are not dropped.
   deduceKilled target
@@ -539,14 +534,9 @@ dominateFid fid target = do
   tb <- getsState $ getActorBody target
   ais <- getsState $ getCarriedAssocsAndTrunk tb
   ar <- getsState $ getActorAspect target
-  getItem <- getsState $ flip getItemBody
-  discoKind <- getsState sdiscoKind
+  getKind <- getsState $ flip getIidKindServer
   let isImpression iid =
-        let kindId = case jkind $ getItem iid of
-              IdentityObvious ik -> ik
-              IdentityCovered ix _ik -> fromJust $ ix `EM.lookup` discoKind
-            kind = okind coitem kindId
-        in maybe False (> 0) $ lookup "impressed" $ IK.ifreq kind
+        maybe False (> 0) $ lookup "impressed" $ IK.ifreq $ getKind iid
       dropAllImpressions = EM.filterWithKey (\iid _ -> not $ isImpression iid)
       borganNoImpression = dropAllImpressions $ borgan tb
   btime <-
@@ -1055,18 +1045,12 @@ allGroupItems :: MonadServerAtomic m
               => CStore -> GroupName ItemKind -> ActorId
               -> m [(ItemId, ItemQuant)]
 allGroupItems store grp target = do
-  COps{coitem} <- getsState scops
-  discoKind <- getsState sdiscoKind
   b <- getsState $ getActorBody target
-  let hasGroup (iid, _) = do
-        item <- getsState $ getItemBody iid
-        let kindId = case jkind item of
-              IdentityObvious ik -> ik
-              IdentityCovered ix _ik -> fromJust $ ix `EM.lookup` discoKind
-            kind = okind coitem kindId
-        return $! maybe False (> 0) $ lookup grp $ IK.ifreq kind
+  getKind <- getsState $ flip getIidKindServer
+  let hasGroup (iid, _) =
+        maybe False (> 0) $ lookup grp $ IK.ifreq $ getKind iid
   assocsCStore <- getsState $ EM.assocs . getBodyStoreBag b store
-  filterM hasGroup assocsCStore
+  return $! filter hasGroup assocsCStore
 
 -- | Drop a single actor's item. Note that if there are multiple copies,
 -- at most one explodes to avoid excessive carnage and UI clutter
