@@ -4,7 +4,7 @@ module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..), makeData
   , Effect(..), TimerDice, ThrowMod(..), Feature(..)
   , ItemSpeedup, emptyItemSpeedup, getKindMean, speedupItem
-  , meanAspect, boostItemKindList, forApplyEffect, forIdEffect
+  , boostItemKindList, forApplyEffect, forIdEffect
   , filterRecharging, stripRecharging, stripOnSmash
   , strengthEffect, strengthOnSmash, strengthDropOrgan
   , strengthEqpSlot, strengthToThrow, isMelee, isTmpCondition, isBlast
@@ -15,8 +15,9 @@ module Game.LambdaHack.Content.ItemKind
   , toOrganGameTurn, toOrganActorTurn, toOrganNone
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
+  , meanAspect, boostItemKind
   , validateSingle, validateAll, validateDups, validateDamage
-  , hardwiredItemGroups, boostItemKind
+  , hardwiredItemGroups
 #endif
   ) where
 
