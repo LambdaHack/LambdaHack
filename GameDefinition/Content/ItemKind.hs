@@ -847,26 +847,20 @@ motionScanner = ItemKind
 
 -- * Periodic jewelry
 
-gorget = ItemKind
-  { isymbol  = symbolNecklace
-  , iname    = "Old Gorget"
+gorget = necklaceTemplate
+  { iname    = "Old Gorget"
   , ifreq    = [("useful", 25), ("treasure", 25)]
   , iflavour = zipFancy [BrCyan]
-  , icount   = 1
   , irarity  = [(4, 3), (10, 3)]  -- weak, shallow
-  , iverbHit = "whip"
-  , iweight  = 30
-  , idamage  = 0
   , iaspects = [ Timeout $ (1 `d` 2) * 2
                , AddArmorMelee 3
                , AddArmorRanged 2 ]
   , ieffects = [Recharging (RefillCalm 1)]
-  , ifeature = [ Unique, Periodic, Durable, Precious, Equipable
-               , EqpSlot EqpSlotMiscBonus ]
+  , ifeature = [Unique, Durable, EqpSlot EqpSlotMiscBonus]
+               ++ ifeature necklaceTemplate
   , idesc    = "Highly ornamental, cold, large, steel medallion on a chain. Unlikely to offer much protection as an armor piece, but the old, worn engraving reassures you."
-  , ikit     = []
   }
--- Not idenfified, because the id by use, e.g., via periodic activations. Fun.
+-- Not idenfified, because id by use, e.g., via periodic activations. Fun.
 necklaceTemplate = ItemKind
   { isymbol  = symbolNecklace
   , iname    = "necklace"
@@ -976,21 +970,14 @@ imageItensifier = ItemKind
   , idesc    = "Contraption of lenses and mirrors on a polished brass headband for capturing and strengthening light in dark environment. Hampers vision in daylight. Stackable."
   , ikit     = []
   }
-sightSharpening = ItemKind
-  { isymbol  = symbolRing
-  , iname    = "sharp monocle"
+sightSharpening = ringTemplate  -- small and round, so mistaken for a ring
+  { iname    = "sharp monocle"
   , ifreq    = [("treasure", 10), ("add sight", 1)]  -- not unique, so very rare
-  , iflavour = zipPlain [White]
-  , icount   = 1
   , irarity  = [(7, 1), (10, 5)]
-  , iverbHit = "rap"
-  , iweight  = 50
-  , idamage  = 0
+  , iweight  = 50  -- heavier that it looks, due to glass
   , iaspects = [AddSight $ 1 + 1 `d` 2, AddHurtMelee $ (1 `d` 2) * 3]
-  , ieffects = []
-  , ifeature = [Precious, Durable, Equipable, EqpSlot EqpSlotAddSight]
+  , ifeature = [EqpSlot EqpSlotAddSight] ++ ifeature ringTemplate
   , idesc    = "Let's you better focus your weaker eye."
-  , ikit     = []
   }
 -- Don't add standard effects to rings, because they go in and out
 -- of eqp and so activating them would require UI tedium: looking for
@@ -1414,7 +1401,7 @@ gem1 = ItemKind
   { isymbol  = symbolGold
   , iname    = "gem"
   , ifreq    = [("treasure", 100), ("gem", 100), ("gem unknown", 1)]
-  , iflavour = zipPlain $ delete BrYellow brightCol  -- natural, so not fancy
+  , iflavour = zipPlain brightCol  -- natural, so not fancy
   , icount   = 1
   , irarity  = [(3, 0), (10, 24)]
   , iverbHit = "tap"
@@ -1441,14 +1428,13 @@ gem4 = gem1
   , irarity  = [(9, 0), (10, 100)]
   }
 gem5 = gem1
-  { isymbol  = symbolSpecial
+  { isymbol  = symbolSpecial  -- looks differently upon closer inspection
   , iname    = "elixir"
   , ifreq    = [("treasure", 100), ("gem", 100)]
   , iflavour = zipPlain [BrYellow]
   , irarity  = [(1, 40), (10, 40)]
-  , iaspects = []
   , ieffects = [RefillCalm 5, RefillHP 15]
-  , ifeature = [ELabel "of youth", Applicable, Precious]
+  , ifeature = [ELabel "of youth", Applicable] ++ ifeature gem1
   , idesc    = "A crystal vial of amber liquid, supposedly granting eternal youth and fetching 100 gold per piece. The main effect seems to be mild euphoria, but it admittedly heals minor ailments rather well."
   }
 currency = ItemKind
