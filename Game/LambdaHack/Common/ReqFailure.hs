@@ -185,9 +185,9 @@ permittedProjectAI skill calmE itemFull =
       && skill < 3 -> False
     | otherwise -> permittedPreciousAI calmE itemFull
 
-permittedApply :: Time -> Int -> Bool-> [Char] -> ItemFull
+permittedApply :: Time -> Int -> Bool-> [Char] -> ItemFull -> ItemQuant
                -> Either ReqFailure Bool
-permittedApply localTime skill calmE triggerSyms itemFull@ItemFull{..} =
+permittedApply localTime skill calmE triggerSyms itemFull@ItemFull{..} kit =
   if | IK.isymbol itemKind == '?' && skill < 2 -> Left ApplyRead
      -- ApplyRead has precedence for the case of embedced items that
      -- can't be applied if they require reading, but can even if actor
@@ -200,7 +200,7 @@ permittedApply localTime skill calmE triggerSyms itemFull@ItemFull{..} =
      -- if the item is, in fact, recharged and is not durable
      -- (very likely in case of jewellery), so it's OK (the message may be
      -- somewhat alarming though).
-     | not $ hasCharge localTime itemFull -> Left ApplyCharging
+     | not $ hasCharge localTime itemFull kit -> Left ApplyCharging
      | otherwise ->
        if null (IK.ieffects itemKind) && not itemSuspect
        then Left ApplyNoEffects

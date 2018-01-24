@@ -96,11 +96,11 @@ targetDesc mtarget = do
               [] -> return $! "exact spot" <+> tshow p
               [(iid, kit@(k, _))] -> do
                 localTime <- getsState $ getLocalTime lid
-                itemToF <- getsState itemToFull
+                itemFull <- getsState $ itemToFull iid
                 side <- getsClient sside
                 factionD <- getsState sfactionD
                 let (_, _, name, stats) =
-                      partItem side factionD localTime (itemToF iid kit)
+                      partItem side factionD localTime itemFull kit
                 return $! makePhrase
                           $ if k == 1
                             then [name, stats]  -- "a sword" too wordy
@@ -170,10 +170,10 @@ drawFrameContent :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameContent drawnLevelId = do
   SessionUI{smarkSmell} <- getSession
   Level{lxsize, lsmell, ltime, lfloor} <- getLevel drawnLevelId
-  itemToF <- getsState itemToFull
+  itemToF <- getsState $ flip itemToFull
   let {-# INLINE viewItemBag #-}
       viewItemBag _ floorBag = case EM.toDescList floorBag of
-        (iid, kit) : _ -> viewItem $ itemToF iid kit
+        (iid, _kit) : _ -> viewItem $ itemToF iid
         [] -> error $ "lfloor not sparse" `showFailure` ()
       viewSmell :: Point -> Time -> Color.AttrCharW32
       {-# INLINE viewSmell #-}
@@ -445,10 +445,10 @@ drawFrameStatus drawnLevelId = do
               Nothing -> return $! tgtBlurb
               Just kit@(k, _) -> do
                 localTime <- getsState $ getLocalTime (blid b)
-                itemToF <- getsState itemToFull
+                itemFull <- getsState $ itemToFull iid
                 factionD <- getsState sfactionD
                 let (_, _, name, stats) =
-                      partItem (bfid b) factionD localTime (itemToF iid kit)
+                      partItem (bfid b) factionD localTime itemFull kit
                     t = makePhrase
                         $ if k == 1
                           then [name, stats]  -- "a sword" too wordy
@@ -562,26 +562,26 @@ drawLeaderDamage width = do
   mleader <- getsClient sleader
   (tdice, tbonus, cbonus) <- case mleader of
     Just leader -> do
-      allAssocsRaw <- getsState $ fullAssocs leader [CEqp, COrgan]
+      kitAssRaw <- getsState $ kitAssocs leader [CEqp, COrgan]
       actorSk <- leaderSkillsClientUI
       actorAspect <- getsState sactorAspect
-      let allAssocsOnlyWeapons =
-            filter (IK.isMelee . itemKind . snd) allAssocsRaw
-      strongest <- pickWeaponM Nothing allAssocsOnlyWeapons actorSk leader
+      let kitAssOnlyWeapons =
+            filter (IK.isMelee . itemKind . fst . snd) kitAssRaw
+      strongest <- pickWeaponM Nothing kitAssOnlyWeapons actorSk leader
       let damage = case strongest of
             [] -> ("0", "", Color.White)
-            (_, (_, itemFull)) : _ ->
+            (_, (_, (itemFull, _))) : _ ->
               let tdice = show $ IK.idamage $ itemKind itemFull
                   bonusRaw = IA.aHurtMelee $ actorAspect EM.! leader
                   bonus = min 200 $ max (-200) bonusRaw
-                  unknownBonus = unknownMeleeBonus $ map snd allAssocsRaw
+                  unknownBonus = unknownMeleeBonus $ map (fst . snd) kitAssRaw
                   tbonus = if bonus == 0
                            then if unknownBonus then "+?" else ""
                            else (if bonus > 0 then "+" else "")
                                 <> show bonus
                                 <> (if bonus /= bonusRaw then "$" else "")
                                 <> if unknownBonus then "%?" else "%"
-                  tmpBonus = tmpMeleeBonus $ map snd allAssocsRaw
+                  tmpBonus = tmpMeleeBonus $ map snd kitAssRaw
                   cbonus = case compare tmpBonus 0 of
                     EQ -> Color.White
                     GT -> Color.Green

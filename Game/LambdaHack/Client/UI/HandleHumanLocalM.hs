@@ -156,7 +156,7 @@ chooseItemDialogMode c = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   bUI <- getsSession $ getActorUI leader
-  itemToF <- getsState itemToFull
+  itemToF <- getsState $ flip itemToFull
   localTime <- getsState $ getLocalTime (blid b)
   factionD <- getsState sfactionD
   ar <- getsState $ getActorAspect leader
@@ -167,9 +167,10 @@ chooseItemDialogMode c = do
           lSlotsBound = length lSlotsElems - 1
           displayLore slotIndex promptFun = do
             let iid2 = lSlotsElems !! slotIndex
-                itemFull2 = itemToF iid2 (itemBag EM.! iid2)
+                itemFull2 = itemToF iid2
+                kit2 = itemBag EM.! iid2
                 attrLine = itemDesc True (bfid b) factionD (IA.aHurtMelee ar)
-                                    CGround localTime itemFull2
+                                    CGround localTime itemFull2 kit2
                 ov = splitAttrLine lxsize attrLine
                 keys = [K.spaceKM, K.escKM]
                        ++ [K.upKM | slotIndex /= 0]
@@ -270,7 +271,8 @@ chooseItemProjectHuman ts = do
     Left err -> failMsg err
     Right psuitReqFun -> do
       let psuit =
-            return $ SuitsSomething $ either (const False) snd . psuitReqFun
+            return $ SuitsSomething $ \itemFull _kit ->
+              either (const False) snd . psuitReqFun $ itemFull
           prompt = makePhrase ["What", object1, "to", verb1]
           promptGeneric = "What to fling"
       ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
@@ -424,7 +426,8 @@ chooseItemApplyHuman ts = do
       psuit :: m Suitability
       psuit = do
         mp <- permittedApplyClient $ triggerSymbols ts
-        return $ SuitsSomething $ either (const False) id . mp
+        return $ SuitsSomething $ \itemFull kit ->
+          either (const False) id $ mp itemFull kit
   ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
   case ggi of
     Right ((iid, _itemFull), (MStore fromCStore, _)) -> do
@@ -434,7 +437,8 @@ chooseItemApplyHuman ts = do
     _ -> error $ "" `showFailure` ggi
 
 permittedApplyClient :: MonadClientUI m
-                     => [Char] -> m (ItemFull -> Either ReqFailure Bool)
+                     => [Char]
+                     -> m (ItemFull -> ItemQuant -> Either ReqFailure Bool)
 permittedApplyClient triggerSyms = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader

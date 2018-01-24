@@ -106,7 +106,7 @@ loreFromContainer itemKind c = case c of
 
 sortSlots :: MonadClientUI m => FactionId -> Maybe Actor -> m ()
 sortSlots fid mbody = do
-  itemToF <- getsState itemToFull
+  itemToF <- getsState $ flip itemToFull
   s <- getState
   let sortMap :: SLore -> SingleItemSlots -> SingleItemSlots
       sortMap slore = let partySet = partyItemSet slore fid mbody s
@@ -229,7 +229,7 @@ pickLeaderWithPointer = do
 itemOverlay :: MonadClientUI m => SingleItemSlots -> LevelId -> ItemBag -> m OKX
 itemOverlay lSlots lid bag = do
   localTime <- getsState $ getLocalTime lid
-  itemToF <- getsState itemToFull
+  itemToF <- getsState $ flip itemToFull
   side <- getsClient sside
   factionD <- getsState sfactionD
   combEqp <- getsState $ combinedEqp side
@@ -243,10 +243,11 @@ itemOverlay lSlots lid bag = do
         case EM.lookup iid bag of
           Nothing -> Nothing
           Just kit@(k, _) ->
-            let itemFull = itemToF iid kit
+            let itemFull = itemToF iid
                 colorSymbol = viewItem itemFull
                 phrase = makePhrase
-                  [snd $ partItemWsRanged side factionD k localTime itemFull]
+                  [snd $ partItemWsRanged side factionD k
+                                          localTime itemFull kit]
                 al = textToAL (markEqp iid $ slotLabel l)
                      <+:> [colorSymbol]
                      <+:> textToAL phrase
@@ -323,7 +324,7 @@ lookAtTile canSee p aid lidV = do
   b <- getsState $ getActorBody aid
   lvl <- getLevel lidV
   embeds <- getsState $ getEmbedBag lidV p
-  itemToF <- getsState itemToFull
+  itemToF <- getsState $ flip itemToFull
   seps <- getsClient seps
   mnewEps <- makeLine False b p seps
   localTime <- getsState $ getLocalTime lidV
@@ -335,8 +336,8 @@ lookAtTile canSee p aid lidV = do
           | otherwise = "you see"
       tilePart = MU.AW $ MU.Text $ TK.tname $ okind cotile tile
       itemLook (iid, kit@(k, _)) =
-        let itemFull = itemToF iid kit
-            (temporary, nWs) = partItemWs side factionD k localTime itemFull
+        let itemFull = itemToF iid
+            (temporary, nWs) = partItemWs side factionD k localTime itemFull kit
             verb = if k == 1 || temporary then "is" else "are"
             ik = itemKind itemFull
             desc = IK.idesc ik
@@ -355,12 +356,12 @@ lookAtActors p lidV = do
   sactorUI <- getsSession sactorUI
   let inhabitantsUI =
         map (\(aid2, b2) -> (aid2, b2, sactorUI EM.! aid2)) inhabitants
-  itemToF <- getsState itemToFull
+  itemToF <- getsState $ flip itemToFull
   factionD <- getsState sfactionD
   let actorsBlurb = case inhabitants of
         [] -> ""
         (_, body) : rest ->
-          let itemFull = itemToF (btrunk body) (1, [])
+          let itemFull = itemToF (btrunk body)
               bfact = factionD EM.! bfid body
               -- Even if it's the leader, give his proper name, not 'you'.
               subjects = map (\(_, _, bUI) -> partActor bUI)
@@ -394,7 +395,7 @@ lookAtItems :: MonadClientUI m
             -> ActorId    -- ^ the actor that looks
             -> m Text
 lookAtItems canSee p aid = do
-  itemToF <- getsState itemToFull
+  itemToF <- getsState $ flip itemToFull
   b <- getsState $ getActorBody aid
   -- Not using @viewedLevelUI@, because @aid@ may be temporarily not a leader.
   saimMode <- getsSession saimMode
@@ -408,7 +409,7 @@ lookAtItems canSee p aid = do
                           | canSee -> "notice"
                           | otherwise -> "remember"
       nWs (iid, kit@(k, _)) =
-        partItemWs side factionD k localTime (itemToF iid kit)
+        partItemWs side factionD k localTime (itemToF iid) kit
   return $! if EM.size is == 0 then ""
             else makeSentence [ MU.SubjectVerbSg subject verb
                               , MU.WWandW $ map (snd . nWs) $ EM.assocs is]

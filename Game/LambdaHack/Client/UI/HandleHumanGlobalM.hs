@@ -178,11 +178,10 @@ byItemModeHuman ts cmdNotChosenM cmdChosenM = do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       bag <- getsState $ getBodyStoreBag b fromCStore
-      itemToF <- getsState itemToFull
-      let symbol = IK.isymbol $ itemKind $ itemToF iid (1, [])
+      itemKind <- getsState $ getIidKind iid
       case iid `EM.lookup` bag of
         Just _ | ' ' `elem` triggerSyms
-                 || symbol `elem` triggerSyms ->
+                 || IK.isymbol itemKind `elem` triggerSyms ->
                  cmdChosenM
         _ -> cmdNotChosenM
     Nothing -> cmdNotChosenM
@@ -423,7 +422,7 @@ moveSearchAlter dir = do
       applySkill = EM.findWithDefault 0 AbApply actorSk
       spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
-  itemToF <- getsState itemToFull
+  itemToF <- getsState $ flip itemToFull
   localTime <- getsState $ getLocalTime (blid sb)
   embeds <- getsState $ getEmbedBag (blid sb) tpos
   lvl <- getLevel $ blid sb
@@ -431,8 +430,8 @@ moveSearchAlter dir = do
       alterMinSkill = Tile.alterMinSkill coTileSpeedup t
       canApplyEmbeds = any canApplyEmbed $ EM.assocs embeds
       canApplyEmbed (iid, kit) =
-        let itemFull = itemToF iid kit
-            legal = permittedApply localTime applySkill calmE " " itemFull
+        let itemFull = itemToF iid
+            legal = permittedApply localTime applySkill calmE " " itemFull kit
         -- Let even completely unskilled actors trigger basic embeds.
         in either (const False) (const True) legal
       modifiable = Tile.isDoor coTileSpeedup t
@@ -626,7 +625,7 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
         Nothing ->  -- the case of old selection or selection from another actor
           moveItemHuman cLegalRaw destCStore mverb auto
         Just (k, it) -> assert (k > 0) $ do
-          itemToF <- getsState itemToFull
+          itemFull <- getsState $ itemToFull iid
           let eqpFree = eqpFreeN b
               kToPick | destCStore == CEqp = min eqpFree k
                       | otherwise = k
@@ -639,7 +638,7 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
               Left (Just err) -> return $ Left err
               Right kChosen ->
                 let is = ( fromCStore
-                         , [(iid, itemToF iid (kChosen, take kChosen it))] )
+                         , [(iid, (itemFull, (kChosen, take kChosen it)))] )
                 in moveItems cLegalRaw is destCStore
     _ -> do
       mis <- selectItemsToMove cLegalRaw destCStore mverb auto
@@ -652,7 +651,7 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
 
 selectItemsToMove :: forall m. MonadClientUI m
                   => [CStore] -> CStore -> Maybe MU.Part -> Bool
-                  -> m (FailOrCmd (CStore, [(ItemId, ItemFull)]))
+                  -> m (FailOrCmd (CStore, [(ItemId, ItemFullKit)]))
 selectItemsToMove cLegalRaw destCStore mverb auto = do
   let !_A = assert (destCStore `notElem` cLegalRaw) ()
   let verb = fromMaybe (MU.Text $ verbCStore destCStore) mverb
@@ -684,7 +683,7 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
         -- it to auto-store things, or equip first using the pruning
         -- and then pack/stash the rest selectively or en masse.
         if destCStore == CEqp && cLegalRaw /= [CGround]
-        then (promptEqp, return $ SuitsSomething $ \itemFull ->
+        then (promptEqp, return $ SuitsSomething $ \itemFull _kit ->
                IK.goesIntoEqp $ itemKind itemFull)
         else (prompt, return SuitsEverything)
   ggi <- getFull psuit
@@ -700,7 +699,7 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
     _ -> error $ "" `showFailure` ggi
 
 moveItems :: forall m. MonadClientUI m
-          => [CStore] -> (CStore, [(ItemId, ItemFull)]) -> CStore
+          => [CStore] -> (CStore, [(ItemId, ItemFullKit)]) -> CStore
           -> m (FailOrCmd (RequestTimed 'AbMoveItem))
 moveItems cLegalRaw (fromCStore, l) destCStore = do
   leader <- getLeaderUI
@@ -708,12 +707,12 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
   ar <- getsState $ getActorAspect leader
   discoBenefit <- getsClient sdiscoBenefit
   let calmE = calmEnough b ar
-      ret4 :: [(ItemId, ItemFull)]
+      ret4 :: [(ItemId, ItemFullKit)]
            -> Int -> [(ItemId, Int, CStore, CStore)]
            -> m (FailOrCmd [(ItemId, Int, CStore, CStore)])
       ret4 [] _ acc = return $ Right $ reverse acc
-      ret4 ((iid, itemFull) : rest) oldN acc = do
-        let k = itemK itemFull
+      ret4 ((iid, (itemFull, (itemK, _))) : rest) oldN acc = do
+        let k = itemK
             !_A = assert (k > 0) ()
             retRec toCStore =
               let n = oldN + if toCStore == CEqp then k else 0
@@ -769,9 +768,9 @@ projectHuman ts = do
       bag <- getsState $ getBodyStoreBag b fromCStore
       case iid `EM.lookup` bag of
         Nothing -> failWith "no item to fling"
-        Just kit -> do
-          itemToF <- getsState itemToFull
-          let i = (fromCStore, (iid, itemToF iid kit))
+        Just _kit -> do
+          itemFull <- getsState $ itemToFull iid
+          let i = (fromCStore, (iid, itemFull))
           projectItem ts i
     Nothing -> failWith "no item to fling"
 
@@ -815,15 +814,15 @@ applyHuman ts = do
       case iid `EM.lookup` bag of
         Nothing -> failWith "no item to apply"
         Just kit -> do
-          itemToF <- getsState itemToFull
-          let i = (fromCStore, (iid, itemToF iid kit))
+          itemFull <- getsState $ itemToFull iid
+          let i = (fromCStore, (iid, (itemFull, kit)))
           applyItem ts i
     Nothing -> failWith "no item to apply"
 
 applyItem :: MonadClientUI m
-          => [TriggerItem] -> (CStore, (ItemId, ItemFull))
+          => [TriggerItem] -> (CStore, (ItemId, ItemFullKit))
           -> m (FailOrCmd (RequestTimed 'AbApply))
-applyItem ts (fromCStore, (iid, itemFull)) = do
+applyItem ts (fromCStore, (iid, (itemFull, kit))) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   ar <- getsState $ getActorAspect leader
@@ -831,7 +830,7 @@ applyItem ts (fromCStore, (iid, itemFull)) = do
   if not calmE && fromCStore == CSha then failSer ItemNotCalm
   else do
     p <- permittedApplyClient $ triggerSymbols ts
-    case p itemFull of
+    case p itemFull kit of
       Left reqFail -> failSer reqFail
       Right _ -> return $ Right $ ReqApply iid fromCStore
 
@@ -933,8 +932,8 @@ verifyAlters lid p = do
   lvl <- getLevel lid
   let t = lvl `at` p
   bag <- getsState $ getEmbedBag lid p
-  itemToF <- getsState itemToFull
-  let is = map (uncurry itemToF) $ EM.assocs bag
+  itemToF <- getsState $ flip itemToFull
+  let is = map itemToF $ EM.keys bag
       -- Contrived, for now.
       isE ItemFull{itemKind} = IK.iname itemKind == "escape"
   if | any isE is -> verifyEscape
@@ -1079,7 +1078,7 @@ itemMenuHuman cmdAction = do
         Nothing -> weaveJust <$> failWith "no item to open item menu for"
         Just kit -> do
           ar <- getsState $ getActorAspect leader
-          itemToF <- getsState itemToFull
+          itemFull <- getsState $ itemToFull iid
           lidV <- viewedLevelUI
           Level{lxsize, lysize} <- getLevel lidV
           localTime <- getsState $ getLocalTime (blid b)
@@ -1102,9 +1101,8 @@ itemMenuHuman cmdAction = do
                                   ppLoc bUI2 store) foundUI
               foundPrefix = textToAL $
                 if null foundTexts then "" else "The item is also in:"
-              itemFull = itemToF iid kit
               desc = itemDesc False (bfid b) factionD (IA.aHurtMelee ar)
-                              fromCStore localTime itemFull
+                              fromCStore localTime itemFull kit
               alPrefix = splitAttrLine lxsize $ desc <+:> foundPrefix
               ystart = length alPrefix - 1
               xstart = length (last alPrefix) + 1

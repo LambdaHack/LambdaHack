@@ -23,7 +23,6 @@ import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
-import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -126,8 +125,7 @@ loudUpdAtomic local cmd = do
     UpdTrajectory aid (Just (l, _)) Nothing | local && not (null l) -> do
       -- Non-blast projectile hits an non-walkable tile on leader's level.
       b <- getsState $ getActorBody aid
-      itemToF <- getsState itemToFull
-      let ItemFull{itemKind} = itemToF (btrunk b) (1, [])
+      itemKind <- getsState $ getIidKindServer (btrunk b)
       return $! if bproj b && IK.isBlast itemKind then Nothing else Just cmd
     UpdAlterTile _ _ fromTile _ -> return $!
       if Tile.isDoor coTileSpeedup fromTile
@@ -141,14 +139,10 @@ loudUpdAtomic local cmd = do
 loudSfxAtomic :: MonadStateRead m => Bool -> SfxAtomic -> m (Maybe SfxMsg)
 loudSfxAtomic local cmd =
   case cmd of
-    SfxStrike source _ iid cstore | local -> do
-      itemToF <- getsState itemToFull
-      sb <- getsState $ getActorBody source
-      bag <- getsState $ getBodyStoreBag sb cstore
-      let kit = EM.findWithDefault (1, []) iid bag
-          ik = itemKindId $ itemToF iid kit
-          distance = 20  -- TODO: distance to leader; also, add a skill
-      return $ Just $ SfxLoudStrike local ik distance
+    SfxStrike _ _ iid _ | local -> do
+      itemKindId <- getsState $ getIidKindIdServer iid
+      let distance = 20  -- TODO: distance to leader; also, add a skill
+      return $ Just $ SfxLoudStrike local itemKindId distance
     SfxEffect _ aid (IK.Summon grp p) _ | local -> do
       b <- getsState $ getActorBody aid
       return $ Just $ SfxLoudSummon (bproj b) grp p

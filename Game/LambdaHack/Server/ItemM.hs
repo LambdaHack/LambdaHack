@@ -59,12 +59,12 @@ onlyRegisterItem itemKnown@(_, aspectRecord, _) seed = do
       return $! icounter
 
 registerItem :: MonadServerAtomic m
-             => ItemFull -> ItemKnown -> IA.ItemSeed -> Container -> Bool
+             => ItemFullKit -> ItemKnown -> IA.ItemSeed -> Container -> Bool
              -> m ItemId
-registerItem ItemFull{..} itemKnown seed container verbose = do
+registerItem (ItemFull{..}, kit) itemKnown seed container verbose = do
   iid <- onlyRegisterItem itemKnown seed
   let cmd = if verbose then UpdCreateItem else UpdSpotItem False
-  execUpdAtomic $ cmd iid itemBase (itemK, itemTimer) container
+  execUpdAtomic $ cmd iid itemBase kit container
   knowItems <- getsServer $ sknowItems . soptions
   when knowItems $ case container of
     CTrunk{} -> return ()
@@ -90,7 +90,7 @@ embedItem lid pos tk = do
 
 rollItem :: MonadServerAtomic m
          => Int -> LevelId -> Freqs ItemKind
-         -> m (Maybe (ItemKnown, ItemFull, IA.ItemSeed, GroupName ItemKind))
+         -> m (Maybe (ItemKnown, ItemFullKit, IA.ItemSeed, GroupName ItemKind))
 rollItem lvlSpawned lid itemFreq = do
   cops <- getsState scops
   flavour <- getsServer sflavour
@@ -101,7 +101,7 @@ rollItem lvlSpawned lid itemFreq = do
   m4 <- rndToAction $ newItem cops flavour discoRev uniqueSet
                               itemFreq lvlSpawned lid ldepth totalDepth
   case m4 of
-    Just (_, ItemFull{..}, _, _) ->
+    Just (_, (ItemFull{..}, _), _, _) ->
       when (IK.Unique `elem` IK.ifeature itemKind) $
         modifyServer $ \ser ->
           ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}
@@ -111,16 +111,16 @@ rollItem lvlSpawned lid itemFreq = do
 rollAndRegisterItem :: MonadServerAtomic m
                     => LevelId -> Freqs ItemKind -> Container -> Bool
                     -> Maybe Int
-                    -> m (Maybe (ItemId, (ItemFull, GroupName ItemKind)))
+                    -> m (Maybe (ItemId, (ItemFullKit, GroupName ItemKind)))
 rollAndRegisterItem lid itemFreq container verbose mk = do
   -- Power depth of new items unaffected by number of spawned actors.
   m4 <- rollItem 0 lid itemFreq
   case m4 of
     Nothing -> return Nothing
-    Just (itemKnown, itemFullRaw, seed, itemGroup) -> do
-      let itemFull = itemFullRaw {itemK = fromMaybe (itemK itemFullRaw) mk}
-      iid <- registerItem itemFull itemKnown seed container verbose
-      return $ Just (iid, (itemFull, itemGroup))
+    Just (itemKnown, (itemFull, kit), seed, itemGroup) -> do
+      let kit2 = (fromMaybe (fst kit) mk, snd kit)
+      iid <- registerItem (itemFull, kit2) itemKnown seed container verbose
+      return $ Just (iid, ((itemFull, kit2), itemGroup))
 
 placeItemsInDungeon :: forall m. MonadServerAtomic m => m ()
 placeItemsInDungeon = do

@@ -155,7 +155,7 @@ condCanProjectM skill aid = do
 
 condProjectListM :: MonadClient m
                  => Int -> ActorId
-                 -> m [(Maybe Benefit, CStore, ItemId, ItemFull)]
+                 -> m [(Maybe Benefit, CStore, ItemId, ItemFull, ItemQuant)]
 condProjectListM skill aid = do
   b <- getsState $ getActorBody aid
   condShineWouldBetray <- condShineWouldBetrayM aid
@@ -168,7 +168,7 @@ condProjectListM skill aid = do
       -- This detects if the value of keeping the item in eqp is in fact < 0.
       hind = hinders condShineWouldBetray condAimEnemyPresent
                      heavilyDistressed condNotCalmEnough b ar
-      q (mben, _, _, itemFull) =
+      q (mben, _, _, itemFull, _) =
         let (bInEqp, bFling) = case mben of
               Just Benefit{benInEqp, benFling} -> (benInEqp, benFling)
               Nothing -> (IK.goesIntoEqp $ itemKind itemFull, -10)
@@ -185,16 +185,16 @@ condProjectListM skill aid = do
 -- and the items' values.
 benAvailableItems :: MonadClient m
                   => ActorId -> [CStore]
-                  -> m [(Maybe Benefit, CStore, ItemId, ItemFull)]
+                  -> m [(Maybe Benefit, CStore, ItemId, ItemFull, ItemQuant)]
 benAvailableItems aid cstores = do
-  itemToF <- getsState itemToFull
+  itemToF <- getsState $ flip itemToFull
   b <- getsState $ getActorBody aid
   discoBenefit <- getsClient sdiscoBenefit
   s <- getState
   let ben cstore bag =
-        [ (mben, cstore, iid, itemFull)
+        [ (mben, cstore, iid, itemFull, kit)
         | (iid, kit) <- EM.assocs bag
-        , let itemFull = itemToF iid kit
+        , let itemFull = itemToF iid
               mben = EM.lookup iid discoBenefit ]
       benCStore cs = ben cs $ getBodyStoreBag b cs s
   return $ concatMap benCStore cstores
@@ -229,12 +229,12 @@ condDesirableFloorItemM aid = do
 -- that are worth picking up.
 benGroundItems :: MonadClient m
                => ActorId
-               -> m [(Maybe Benefit, CStore, ItemId, ItemFull)]
+               -> m [(Maybe Benefit, CStore, ItemId, ItemFull, ItemQuant)]
 benGroundItems aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let canEsc = fcanEscape (gplayer fact)
-      isDesirable (mben, _, _, itemFull) =
+      isDesirable (mben, _, _, itemFull, _) =
         desirableItem canEsc (benPickup <$> mben) itemFull
   benList <- benAvailableItems aid [CGround]
   return $ filter isDesirable benList

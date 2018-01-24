@@ -252,7 +252,7 @@ fakeItem kindId kind km =
       jflavour = Flavour minBound minBound  -- dummy
       itemBase = Item{..}
       itemDisco = ItemDiscoMean km
-  in ItemFull itemBase 1 [] kindId kind itemDisco True
+  in ItemFull itemBase kindId kind itemDisco True
 
 -- Value of aspects and effects is linked by some deep economic principles
 -- which I'm unfortunately ignorant of. E.g., average weapon hits for 5HP,

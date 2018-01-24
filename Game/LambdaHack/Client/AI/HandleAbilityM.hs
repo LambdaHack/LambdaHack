@@ -327,10 +327,10 @@ pickup aid onlyWeapon = do
   -- e.g., making all rings identified)
   ar <- getsState $ getActorAspect aid
   let calmE = calmEnough b ar
-      isWeapon (_, _, _, itemFull) = IK.isMelee $ itemKind itemFull
+      isWeapon (_, _, _, itemFull, _) = IK.isMelee $ itemKind itemFull
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
-      prepareOne (oldN, l4) (mben, _, iid, ItemFull{..}) =
+      prepareOne (oldN, l4) (mben, _, iid, ItemFull{..}, (itemK, _)) =
         let prep newN toCStore = (newN, (iid, itemK, CGround, toCStore) : l4)
             inEqp = maybe (IK.goesIntoEqp itemKind) benInEqp mben
             n = oldN + itemK
@@ -358,17 +358,17 @@ equipItems aid = do
   body <- getsState $ getActorBody aid
   ar <- getsState $ getActorAspect aid
   let calmE = calmEnough body ar
-  eqpAssocs <- getsState $ fullAssocs aid [CEqp]
-  invAssocs <- getsState $ fullAssocs aid [CInv]
-  shaAssocs <- getsState $ fullAssocs aid [CSha]
+  eqpAssocs <- getsState $ kitAssocs aid [CEqp]
+  invAssocs <- getsState $ kitAssocs aid [CInv]
+  shaAssocs <- getsState $ kitAssocs aid [CSha]
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   discoBenefit <- getsClient sdiscoBenefit
   let improve :: CStore
               -> (Int, [(ItemId, Int, CStore, CStore)])
               -> ( IA.EqpSlot
-                 , ( [(Int, (ItemId, ItemFull))]
-                   , [(Int, (ItemId, ItemFull))] ) )
+                 , ( [(Int, (ItemId, ItemFullKit))]
+                   , [(Int, (ItemId, ItemFullKit))] ) )
               -> (Int, [(ItemId, Int, CStore, CStore)])
       improve fromCStore (oldN, l4) (slot, (bestInv, bestEqp)) =
         let n = 1 + oldN
@@ -389,7 +389,7 @@ equipItems aid = do
       -- in @yieldUnneeded@ earlier or soon after this check.
       -- In other stores we need to filter, for otherwise we'd have
       -- a loop of equip/yield.
-      filterNeeded (_, itemFull) =
+      filterNeeded (_, (itemFull, _)) =
         not $ hinders condShineWouldBetray condAimEnemyPresent
                       heavilyDistressed (not calmE) body ar itemFull
       bestThree = bestByEqpSlot discoBenefit
@@ -420,7 +420,7 @@ yieldUnneeded aid = do
   body <- getsState $ getActorBody aid
   ar <- getsState $ getActorAspect aid
   let calmE = calmEnough body ar
-  eqpAssocs <- getsState $ fullAssocs aid [CEqp]
+  eqpAssocs <- getsState $ kitAssocs aid [CEqp]
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   discoBenefit <- getsClient sdiscoBenefit
@@ -434,13 +434,13 @@ yieldUnneeded aid = do
   let heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltaSerious (bcalmDelta body)
       csha = if calmE then CSha else CInv
-      yieldSingleUnneeded (iidEqp, itemEqp) =
+      yieldSingleUnneeded (iidEqp, (itemEqp, (itemK, _))) =
         if | harmful discoBenefit iidEqp ->
-             [(iidEqp, itemK itemEqp, CEqp, CInv)]  -- harmful not shared
+             [(iidEqp, itemK, CEqp, CInv)]  -- harmful not shared
            | hinders condShineWouldBetray condAimEnemyPresent
                      heavilyDistressed (not calmE)
                      body ar itemEqp ->
-             [(iidEqp, itemK itemEqp, CEqp, csha)]
+             [(iidEqp, itemK, CEqp, csha)]
            | otherwise -> []
       yieldAllUnneeded = concatMap yieldSingleUnneeded eqpAssocs
   return $! if null yieldAllUnneeded
@@ -457,13 +457,13 @@ unEquipItems aid = do
   body <- getsState $ getActorBody aid
   ar <- getsState $ getActorAspect aid
   let calmE = calmEnough body ar
-  eqpAssocs <- getsState $ fullAssocs aid [CEqp]
-  invAssocs <- getsState $ fullAssocs aid [CInv]
-  shaAssocs <- getsState $ fullAssocs aid [CSha]
+  eqpAssocs <- getsState $ kitAssocs aid [CEqp]
+  invAssocs <- getsState $ kitAssocs aid [CInv]
+  shaAssocs <- getsState $ kitAssocs aid [CSha]
   discoBenefit <- getsClient sdiscoBenefit
   let improve :: CStore -> ( IA.EqpSlot
-                           , ( [(Int, (ItemId, ItemFull))]
-                             , [(Int, (ItemId, ItemFull))] ) )
+                           , ( [(Int, (ItemId, ItemFullKit))]
+                             , [(Int, (ItemId, ItemFullKit))] ) )
               -> [(ItemId, Int, CStore, CStore)]
       improve fromCStore (slot, (bestSha, bestEOrI)) =
         case (bestSha, bestEOrI) of
@@ -488,7 +488,7 @@ unEquipItems aid = do
             [(fst $ snd $ last bestEOrI, 1, fromCStore, CSha)]
           _ -> []
       getK [] = 0
-      getK ((_, (_, itemFull)) : _) = itemK itemFull
+      getK ((_, (_, (_, (itemK, _)))) : _) = itemK
       betterThanSha _ [] = True
       betterThanSha vEOrI ((vSha, _) : _) = vEOrI > vSha
       worseThanSha _ [] = False
@@ -508,23 +508,24 @@ unEquipItems aid = do
             then reject
             else returN "unEquipItems" $ ReqMoveItems prepared
 
-groupByEqpSlot :: [(ItemId, ItemFull)]
-               -> EM.EnumMap IA.EqpSlot [(ItemId, ItemFull)]
+groupByEqpSlot :: [(ItemId, ItemFullKit)]
+               -> EM.EnumMap IA.EqpSlot [(ItemId, ItemFullKit)]
 groupByEqpSlot is =
-  let f (iid, itemFull) = case IK.strengthEqpSlot $ itemKind itemFull of
+  let f (iid, itemFullKit) = case IK.strengthEqpSlot
+                                  $ itemKind $ fst itemFullKit of
         Nothing -> Nothing
-        Just es -> Just (es, [(iid, itemFull)])
+        Just es -> Just (es, [(iid, itemFullKit)])
       withES = mapMaybe f is
   in EM.fromListWith (++) withES
 
 bestByEqpSlot :: DiscoveryBenefit
-              -> [(ItemId, ItemFull)]
-              -> [(ItemId, ItemFull)]
-              -> [(ItemId, ItemFull)]
+              -> [(ItemId, ItemFullKit)]
+              -> [(ItemId, ItemFullKit)]
+              -> [(ItemId, ItemFullKit)]
               -> [(IA.EqpSlot
-                  , ( [(Int, (ItemId, ItemFull))]
-                    , [(Int, (ItemId, ItemFull))]
-                    , [(Int, (ItemId, ItemFull))] ) )]
+                  , ( [(Int, (ItemId, ItemFullKit))]
+                    , [(Int, (ItemId, ItemFullKit))]
+                    , [(Int, (ItemId, ItemFullKit))] ) )]
 bestByEqpSlot discoBenefit eqpAssocs invAssocs shaAssocs =
   let eqpMap = EM.map (\g -> (g, [], [])) $ groupByEqpSlot eqpAssocs
       invMap = EM.map (\g -> ([], g, [])) $ groupByEqpSlot invAssocs
@@ -656,12 +657,12 @@ projectItem aid = do
               coeff CEqp = 100000  -- must hinder currently
               coeff CInv = 1
               coeff CSha = 1
-              fRanged (mben, cstore, iid, itemFull) =
+              fRanged (mben, cstore, iid, itemFull, kit) =
                 -- We assume if the item has a timeout, most effects are under
                 -- Recharging, so no point projecting if not recharged.
                 -- This changes in time, so recharging is not included
                 -- in @condProjectListM@, but checked here, just before fling.
-                let recharged = hasCharge localTime itemFull
+                let recharged = hasCharge localTime itemFull kit
                     trange = IK.totalRange $ itemKind itemFull
                     bestRange =
                       chessDist (bpos b) fpos + 2  -- margin for fleeing
@@ -700,10 +701,10 @@ applyItem aid applyGroup = do
       -- This detects if the value of keeping the item in eqp is in fact < 0.
       hind = hinders condShineWouldBetray condAimEnemyPresent
                      heavilyDistressed condNotCalmEnough b ar
-      permittedActor =
+      permittedActor itemFull kit =
         either (const False) id
-        . permittedApply localTime skill calmE " "
-      q (mben, _, _, itemFull@ItemFull{..}) =
+        $ permittedApply localTime skill calmE " " itemFull kit
+      q (mben, _, _, itemFull@ItemFull{..}, kit) =
         let freq = IK.ifreq itemKind
             durable = IK.Durable `elem` IK.ifeature itemKind
             (bInEqp, bApply) = case mben of
@@ -714,15 +715,15 @@ applyItem aid applyGroup = do
                || durable  -- can wear, but can't break, even better
                || not (IK.isMelee itemKind)  -- anything else expendable
                   && hind itemFull)  -- hinders now, so possibly often, so away!
-           && permittedActor itemFull
+           && permittedActor itemFull kit
            && maybe True (<= 0) (lookup "gem" freq) -- hack for elixir of youth
       -- Organs are not taken into account, because usually they are either
       -- melee items, so harmful, or periodic, so charging between activations.
       -- The case of a weak weapon curing poison is too rare to incur overhead.
       stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
   benList <- benAvailableItems aid stores
-  itemToF <- getsState itemToFull
-  let organs = map (uncurry itemToF) $ EM.assocs $ borgan b
+  itemToF <- getsState $ flip itemToFull
+  let organs = map itemToF $ EM.keys $ borgan b
       hasGrps = mapMaybe (\ItemFull{itemKind} ->
         if IK.isTmpCondition itemKind
         then Just $ toGroupName $ IK.iname itemKind
@@ -751,7 +752,7 @@ applyItem aid applyGroup = do
       coeff CEqp = 1
       coeff CInv = 1
       coeff CSha = 1
-      fTool benAv@(mben, cstore, iid, itemFull@ItemFull{itemKind}) =
+      fTool benAv@(mben, cstore, iid, itemFull@ItemFull{itemKind}, _) =
         let onlyVoidlyDropsOrgan =
               -- We check if the only effect of the item is that it drops a tmp
               -- organ that we don't have. If so, item should not be applied.

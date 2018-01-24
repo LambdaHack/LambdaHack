@@ -43,10 +43,10 @@ show64With2 n =
 -- | The part of speech describing the item parameterized by the number
 -- of effects/aspects to show.
 partItemN :: FactionId -> FactionDict -> Bool -> DetailLevel -> Int
-          -> Time -> ItemFull
+          -> Time -> ItemFull -> ItemQuant
           -> (Bool, Bool, MU.Part, MU.Part)
 partItemN side factionD ranged detailLevel n localTime
-          itemFull@ItemFull{..} =
+          itemFull@ItemFull{..} (itemK, itemTimer) =
   let genericName = IK.iname itemKind
       flav = flavourToName $ jflavour itemBase
       timeout = IA.aTimeout $ aspectRecordFull itemFull
@@ -183,25 +183,27 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{..} =
   in (aets ++ features, rangedDamage)
 
 -- | The part of speech describing the item.
-partItem :: FactionId -> FactionDict -> Time -> ItemFull
+partItem :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
          -> (Bool, Bool, MU.Part, MU.Part)
 partItem side factionD = partItemN side factionD False DetailMedium 4
 
-partItemShort :: FactionId -> FactionDict -> Time -> ItemFull
+partItemShort :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
               -> (Bool, Bool, MU.Part, MU.Part)
 partItemShort side factionD = partItemN side factionD False DetailLow 4
 
-partItemHigh :: FactionId -> FactionDict -> Time -> ItemFull
+partItemHigh :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
              -> (Bool, Bool, MU.Part, MU.Part)
 partItemHigh side factionD = partItemN side factionD False DetailAll 100
 
 -- The @count@ can be different than @itemK@ in @ItemFull@, e.g., when picking
 -- a subset of items to drop.
 partItemWsR :: FactionId -> FactionDict -> Bool -> Int -> Time -> ItemFull
+            -> ItemQuant
             -> (Bool, MU.Part)
-partItemWsR side factionD ranged count localTime itemFull@ItemFull{itemKind} =
+partItemWsR side factionD ranged count localTime itemFull@ItemFull{itemKind}
+            kit =
   let (temporary, unique, name, stats) =
-        partItemN side factionD ranged DetailMedium 4 localTime itemFull
+        partItemN side factionD ranged DetailMedium 4 localTime itemFull kit
       tmpCondition = IK.isTmpCondition itemKind
   in ( temporary
      , if | temporary && count == 1 -> MU.Phrase [name, stats]
@@ -211,33 +213,37 @@ partItemWsR side factionD ranged count localTime itemFull@ItemFull{itemKind} =
           | tmpCondition -> MU.Phrase [name, stats]
           | otherwise -> MU.Phrase [MU.CarWs count name, stats] )
 
-partItemWs :: FactionId -> FactionDict -> Int -> Time -> ItemFull
+partItemWs :: FactionId -> FactionDict -> Int -> Time -> ItemFull -> ItemQuant
            -> (Bool, MU.Part)
 partItemWs side factionD = partItemWsR side factionD False
 
 partItemWsRanged :: FactionId -> FactionDict -> Int -> Time -> ItemFull
+                 -> ItemQuant
                  -> (Bool, MU.Part)
 partItemWsRanged side factionD = partItemWsR side factionD True
 
-partItemShortAW :: FactionId -> FactionDict -> Time -> ItemFull -> MU.Part
-partItemShortAW side factionD localTime itemFull =
-  let (_, unique, name, _) = partItemShort side factionD localTime itemFull
+partItemShortAW :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
+                -> MU.Part
+partItemShortAW side factionD localTime itemFull kit =
+  let (_, unique, name, _) = partItemShort side factionD localTime itemFull kit
   in if unique
      then MU.Phrase ["the", name]
      else MU.AW name
 
-partItemMediumAW :: FactionId -> FactionDict -> Time -> ItemFull -> MU.Part
-partItemMediumAW side factionD localTime itemFull =
+partItemMediumAW :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
+                 -> MU.Part
+partItemMediumAW side factionD localTime itemFull kit =
   let (_, unique, name, stats) =
-        partItemN side factionD False DetailMedium 100 localTime itemFull
+        partItemN side factionD False DetailMedium 100 localTime itemFull kit
   in if unique
      then MU.Phrase ["the", name, stats]
      else MU.AW $ MU.Phrase [name, stats]
 
 partItemShortWownW :: FactionId -> FactionDict -> MU.Part -> Time -> ItemFull
+                   -> ItemQuant
                    -> MU.Part
-partItemShortWownW side factionD partA localTime itemFull =
-  let (_, _, name, _) = partItemShort side factionD localTime itemFull
+partItemShortWownW side factionD partA localTime itemFull kit =
+  let (_, _, name, _) = partItemShort side factionD localTime itemFull kit
   in MU.WownW partA name
 
 viewItem :: ItemFull -> Color.AttrCharW32
@@ -247,11 +253,12 @@ viewItem itemFull =
                        (IK.isymbol $ itemKind itemFull)
 
 itemDesc :: Bool -> FactionId -> FactionDict -> Int -> CStore -> Time
-         -> ItemFull
+         -> ItemFull -> ItemQuant
          -> AttrLine
 itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
-         itemFull@ItemFull{..} =
-  let (_, unique, name, stats) = partItemHigh side factionD localTime itemFull
+         itemFull@ItemFull{..} kit =
+  let (_, unique, name, stats) =
+        partItemHigh side factionD localTime itemFull kit
       nstats = makePhrase [name, stats]
       IK.ThrowMod{IK.throwVelocity, IK.throwLinger} =
         IK.strengthToThrow itemKind

@@ -88,7 +88,8 @@ getGroupItem psuit prompt promptGeneric
                  cLegalRaw cLegalAfterCalm True False
   case soc of
     Left err -> return $ Left err
-    Right ([(iid, itemFull)], cekm) -> return $ Right ((iid, itemFull), cekm)
+    Right ([(iid, (itemFull, _))], cekm) ->
+      return $ Right ((iid, itemFull), cekm)
     Right _ -> error $ "" `showFailure` soc
 
 -- | Display all items from a store and let the human player choose any
@@ -131,7 +132,7 @@ getFull :: MonadClientUI m
         -> Bool             -- ^ whether to ask, when the only item
                             --   in the starting mode is suitable
         -> Bool             -- ^ whether to permit multiple items as a result
-        -> m (Either Text ( [(ItemId, ItemFull)]
+        -> m (Either Text ( [(ItemId, ItemFullKit)]
                           , (ItemDialogMode, Either K.KM SlotChar) ))
 getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
         askWhenLone permitMulitple = do
@@ -147,7 +148,7 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
         return $! or bs
   mpsuit <- psuit
   let psuitFun = case mpsuit of
-        SuitsEverything -> const True
+        SuitsEverything -> \_ _ -> True
         SuitsSomething f -> f
   -- Move the first store that is non-empty for suitable items for this actor
   -- to the front, if any.
@@ -163,10 +164,10 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
         return $ Left $ "no items" <+> ppLegal
       else return $ Left $ showReqFailure ItemNotCalm
     haveThis@(headThisActor : _) -> do
-      itemToF <- getsState itemToFull
+      itemToF <- getsState $ flip itemToFull
       let suitsThisActor store =
             let bag = getCStoreBag store
-            in any (\(iid, kit) -> psuitFun $ itemToF iid kit) $ EM.assocs bag
+            in any (\(iid, kit) -> psuitFun (itemToF iid) kit) $ EM.assocs bag
           firstStore = fromMaybe headThisActor $ find suitsThisActor haveThis
       -- Don't display stores totally empty for all actors.
       cLegal <- filterM partyNotEmpty cLegalRaw
@@ -180,7 +181,7 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
       case res of
         (Left t, _) -> return $ Left t
         (Right (iids, itemBag, _lSlots), cekm) -> do
-          let f iid = (iid, itemToF iid (itemBag EM.! iid))
+          let f iid = (iid, (itemToF iid, itemBag EM.! iid))
           return $ Right (map f iids, cekm)
 
 -- | Let the human player choose a single, preferably suitable,
@@ -228,7 +229,7 @@ data DefItemKey m = DefItemKey
 
 data Suitability =
     SuitsEverything
-  | SuitsSomething (ItemFull -> Bool)
+  | SuitsSomething (ItemFull -> ItemQuant -> Bool)
 
 transition :: forall m. MonadClientUI m
            => m Suitability
@@ -253,19 +254,19 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   fact <- getsState $ (EM.! bfid body) . sfactionD
   hs <- partyAfterLeader leader
   bagAll <- getsState $ \s -> accessModeBag leader s cCur
-  itemToF <- getsState itemToFull
+  itemToF <- getsState $ flip itemToFull
   organPartySet <- getsState $ partyItemSet SOrgan (bfid body) (Just body)
   revCmd <- revCmdMap
   mpsuit <- psuit  -- when throwing, this sets eps and checks xhair validity
   psuitFun <- case mpsuit of
-    SuitsEverything -> return $ const True
+    SuitsEverything -> return $ \_ _ -> True
     SuitsSomething f -> return f
       -- When throwing, this function takes missile range into accout.
   let getResult :: Either K.KM SlotChar -> [ItemId]
                 -> ( Either Text ([ItemId], ItemBag, SingleItemSlots)
                    , (ItemDialogMode, Either K.KM SlotChar) )
       getResult ekm iids = (Right (iids, bagAll, bagItemSlotsAll), (cCur, ekm))
-      filterP iid kit = psuitFun $ itemToF iid kit
+      filterP iid kit = psuitFun (itemToF iid) kit
       bagAllSuit = EM.filterWithKey filterP bagAll
       lSlots = case cCur of
         MOrgans -> mergeItemSlots itemToF organPartySet [ itemSlots EM.! SOrgan

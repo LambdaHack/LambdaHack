@@ -276,14 +276,13 @@ applyPeriodicLevel = do
         case iid `EM.lookup` bag of
           Nothing -> return ()  -- item dropped
           Just kit -> do
-            itemToF <- getsState itemToFull
-            let itemFull@ItemFull{itemKind} = itemToF iid kit
+            itemFull@ItemFull{itemKind} <- getsState $ itemToFull iid
             when (IK.Periodic `elem` IK.ifeature itemKind) $
               -- In periodic activation, consider *only* recharging effects.
               -- Activate even if effects null, to possibly destroy item.
               effectAndDestroy False aid aid iid (CActor aid cstore) True
                                (IK.filterRecharging $ IK.ieffects itemKind)
-                               itemFull
+                               (itemFull, kit)
       applyPeriodicActor (aid, b) =
         when (not (bproj b) && blid b `ES.member` arenasSet) $ do
           mapM_ (applyPeriodicItem aid COrgan borgan) $ EM.assocs $ borgan b

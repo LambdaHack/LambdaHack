@@ -76,7 +76,7 @@ buildItem COps{coitem} (FlavourMap flavourMap) discoRev
 -- | Generate an item based on level.
 newItem :: COps -> FlavourMap -> DiscoveryKindRev -> UniqueSet
         -> Freqs ItemKind -> Int -> LevelId -> Dice.AbsDepth -> Dice.AbsDepth
-        -> Rnd (Maybe (ItemKnown, ItemFull, IA.ItemSeed, GroupName ItemKind))
+        -> Rnd (Maybe (ItemKnown, ItemFullKit, IA.ItemSeed, GroupName ItemKind))
 newItem cops@COps{coitem} flavourMap discoRev uniqueSet
         itemFreq lvlSpawned lid
         ldepth@(Dice.AbsDepth ldAbs) totalDepth@(Dice.AbsDepth depth) = do
@@ -126,7 +126,7 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
           IA.seedToAspect seed (IK.iaspects itemKind) ldepth totalDepth
         itemFull = ItemFull {..}
     return $ Just ( (itemIdentity, itemAspect, jfid itemBase)
-                  , itemFull
+                  , (itemFull, (itemK, itemTimer))
                   , seed
                   , itemGroup )
 

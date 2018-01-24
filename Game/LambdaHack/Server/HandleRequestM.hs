@@ -251,8 +251,7 @@ reqMelee source target iid cstore = do
     let sfid = bfid sb
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
-    itemToF <- getsState itemToFull
-    let ItemFull{itemKind} = itemToF (btrunk tb) (1, [])
+    ItemFull{itemKind} <- getsState $ itemToFull (btrunk tb)
     -- Only catch with appendages, never with weapons. Never steal trunk
     -- from an already caught projectile or one with many items inside.
     if bproj tb && length (beqp tb) == 1 && not (IK.isBlast itemKind)
@@ -384,7 +383,7 @@ reqAlterFail source tpos = do
   let calmE = calmEnough sb ar
       lid = blid sb
   sClient <- getsServer $ (EM.! bfid sb) . sclientStates
-  itemToF <- getsState itemToFull
+  itemToF <- getsState $ flip itemToFull
   actorSk <- currentSkillsServer source
   localTime <- getsState $ getLocalTime lid
   let alterSkill = EM.findWithDefault 0 Ability.AbAlter actorSk
@@ -405,8 +404,8 @@ reqAlterFail source tpos = do
         execSfxAtomic $ SfxTrigger source tpos
         mapM_ tryApplyEmbed $ EM.assocs embeds
       tryApplyEmbed (iid, kit) = do
-        let itemFull@ItemFull{..} = itemToF iid kit
-            legal = permittedApply localTime applySkill calmE " " itemFull
+        let itemFull@ItemFull{..} = itemToF iid
+            legal = permittedApply localTime applySkill calmE " " itemFull kit
         -- Let even completely unskilled actors trigger basic embeds.
         case legal of
           Left ApplyNoEffects -> return ()  -- pure flavour embed
@@ -560,9 +559,9 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
    | (fromCStore == CSha || toCStore == CSha) && not calmE ->
      execFailure aid req ItemNotCalm
    | otherwise -> do
-    itemToF <- getsState itemToFull
-    let itemFull = itemToF iid (k, [])
-    when (fromCStore == CGround) $ discoverIfNoEffects fromC iid itemFull
+    itemFull <- getsState $ itemToFull iid
+    when (fromCStore == CGround) $
+      discoverIfNoEffects fromC iid (itemKindId itemFull)
     upds <- generalMoveItem True iid k fromC toC
     mapM_ execUpdAtomic upds
     -- Reset timeout for equipped periodic items and also for items
@@ -645,12 +644,11 @@ reqApply aid iid cstore = do
     case EM.lookup iid bag of
       Nothing -> execFailure aid req ApplyOutOfReach
       Just kit -> do
-        itemToF <- getsState itemToFull
+        itemFull <- getsState $ itemToFull iid
         actorSk <- currentSkillsServer aid
         localTime <- getsState $ getLocalTime (blid b)
         let skill = EM.findWithDefault 0 Ability.AbApply actorSk
-            itemFull = itemToF iid kit
-            legal = permittedApply localTime skill calmE " " itemFull
+            legal = permittedApply localTime skill calmE " " itemFull kit
         case legal of
           Left reqFail -> execFailure aid req reqFail
           Right _ -> applyItem aid iid cstore

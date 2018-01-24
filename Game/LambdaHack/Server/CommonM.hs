@@ -73,9 +73,10 @@ execFailure aid req failureSer = do
 
 revealItems :: MonadServerAtomic m => Maybe FactionId -> m ()
 revealItems mfid = do
-  itemToF <- getsState itemToFull
-  let discover aid store iid k = do
-        let ItemFull{..} = itemToF iid k
+  COps{coitem} <- getsState scops
+  let discover aid store iid _ = do
+        itemKindId <- getsState $ getIidKindIdServer iid
+        let itemKind = okind coitem itemKindId
             c = CActor aid store
             isGem = maybe False (> 0) $ lookup "gem" $ IK.ifreq itemKind
         unless isGem $ do  -- a hack
@@ -309,12 +310,11 @@ projectFail source tpxy eps center iid cstore blast = do
       bag <- getsState $ getBodyStoreBag sb cstore
       case EM.lookup iid bag of
         Nothing -> return $ Just ProjectOutOfReach
-        Just kit -> do
-          itemToF <- getsState itemToFull
+        Just _kit -> do
+          itemFull@ItemFull{itemKind} <- getsState $ itemToFull iid
           actorSk <- currentSkillsServer source
           ar <- getsState $ getActorAspect source
           let skill = EM.findWithDefault 0 Ability.AbProject actorSk
-              itemFull@ItemFull{itemKind} = itemToF iid kit
               forced = blast || bproj sb
               calmE = calmEnough sb ar
               legal = permittedProject forced skill calmE "" itemFull
@@ -359,12 +359,11 @@ projectBla source pos rest iid cstore blast = do
   localTime <- getsState $ getLocalTime lid
   unless blast $ execSfxAtomic $ SfxProject source iid cstore
   bag <- getsState $ getBodyStoreBag sb cstore
-  itemToF <- getsState itemToFull
+  ItemFull{..} <- getsState $ itemToFull iid
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (source, pos, rest, iid, cstore)
     Just kit@(_, it) -> do
-      let ItemFull{..} = itemToF iid kit
-          delay = if IK.iweight itemKind == 0 then timeTurn else timeClip
+      let delay = if IK.iweight itemKind == 0 then timeTurn else timeClip
           btime = absoluteTimeAdd delay localTime
       addProjectile pos rest iid kit lid (bfid sb) btime
       let c = CActor source cstore
@@ -380,29 +379,29 @@ addActorFromGroup actorGroup bfid pos lid time = do
   m4 <- rollItem 0 lid trunkFreq
   case m4 of
     Nothing -> return Nothing
-    Just (itemKnownRaw, itemFullRaw, seed, _) ->
-      registerActor False itemKnownRaw itemFullRaw seed bfid pos lid time
+    Just (itemKnown, itemFullKit, seed, _) ->
+      registerActor False itemKnown itemFullKit seed bfid pos lid time
 
 registerActor :: MonadServerAtomic m
-              => Bool -> ItemKnown -> ItemFull -> IA.ItemSeed
+              => Bool -> ItemKnown -> ItemFullKit -> IA.ItemSeed
               -> FactionId -> Point -> LevelId -> Time
               -> m (Maybe ActorId)
-registerActor summoned (kindIx, ar, _) itemFullRaw seed bfid pos lid time = do
+registerActor summoned (kindIx, ar, _) (itemFullRaw, kit)
+              seed bfid pos lid time = do
   let container = CTrunk bfid lid pos
       jfid = Just bfid
       itemKnown = (kindIx, ar, jfid)
       itemFull = itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
-  trunkId <- registerItem itemFull itemKnown seed container False
-  addNonProjectile summoned trunkId itemFull bfid pos lid time
+  trunkId <- registerItem (itemFull, kit) itemKnown seed container False
+  addNonProjectile summoned trunkId (itemFull, kit) bfid pos lid time
 
 addProjectile :: MonadServerAtomic m
               => Point -> [Point] -> ItemId -> ItemQuant -> LevelId -> FactionId
               -> Time
               -> m ()
 addProjectile bpos rest iid (_, it) blid bfid btime = do
-  itemToF <- getsState itemToFull
-  let itemFull = itemToF iid (1, take 1 it)
-      (trajectory, (speed, _)) =
+  itemFull <- getsState $ itemToFull iid
+  let (trajectory, (speed, _)) =
         IK.itemTrajectory (itemKind itemFull) (bpos : rest)
       -- Trunk is added to equipment, not to organs, because it's the
       -- projected item, so it's carried, not grown.
@@ -412,11 +411,12 @@ addProjectile bpos rest iid (_, it) blid bfid btime = do
   void $ addActorIid iid itemFull True bfid bpos blid tweakBody btime
 
 addNonProjectile :: MonadServerAtomic m
-                 => Bool -> ItemId -> ItemFull -> FactionId -> Point -> LevelId
-                 -> Time
+                 => Bool -> ItemId -> ItemFullKit -> FactionId -> Point
+                 -> LevelId -> Time
                  -> m (Maybe ActorId)
-addNonProjectile summoned trunkId itemFull@ItemFull{..} fid pos lid time = do
-  let tweakBody b = b { borgan = EM.singleton trunkId (itemK, itemTimer)
+addNonProjectile summoned trunkId (itemFull@ItemFull{..}, kit)
+                 fid pos lid time = do
+  let tweakBody b = b { borgan = EM.singleton trunkId kit
                       , bcalm = if summoned
                                 then bcalm b * 2 `div` 3 - xM 3
                                        -- will summon in 3 turn, unless hit
@@ -427,7 +427,8 @@ addActorIid :: MonadServerAtomic m
             => ItemId -> ItemFull -> Bool -> FactionId -> Point -> LevelId
             -> (Actor -> Actor) -> Time
             -> m (Maybe ActorId)
-addActorIid trunkId ItemFull{..} bproj bfid pos lid tweakBody time = do
+addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
+            bproj bfid pos lid tweakBody time = do
   -- Initial HP and Calm is based only on trunk and ignores organs.
   let hp = xM (max 2 $ IA.aMaxHP $ itemAspect itemDisco) `div` 2
       -- Hard to auto-id items that refill Calm, but reduced sight at game
@@ -474,12 +475,15 @@ addActorIid trunkId ItemFull{..} bproj bfid pos lid tweakBody time = do
     mIidEtc <- rollAndRegisterItem lid itemFreq container False mk
     case mIidEtc of
       Nothing -> error $ "" `showFailure` (lid, itemFreq, container, mk)
-      Just (iid, (itemFull2, _)) -> discoverIfNoEffects container iid itemFull2
+      Just (iid, ((itemFull2, _), _)) ->
+        discoverIfNoEffects container iid (itemKindId itemFull2)
   return $ Just aid
 
 discoverIfNoEffects :: MonadServerAtomic m
-                    => Container -> ItemId -> ItemFull -> m ()
-discoverIfNoEffects c iid ItemFull{..} =
+                    => Container -> ItemId -> ContentId ItemKind -> m ()
+discoverIfNoEffects c iid itemKindId = do
+  COps{coitem} <- getsState scops
+  let itemKind = okind coitem itemKindId
   if any IK.forIdEffect (IK.ieffects itemKind)
      || maybe False (> 0) (lookup "gem" $ IK.ifreq itemKind)
   then return ()  -- discover by use, ignore gems (a hack)
@@ -489,18 +493,18 @@ discoverIfNoEffects c iid ItemFull{..} =
 
 pickWeaponServer :: MonadServer m => ActorId -> m (Maybe (ItemId, CStore))
 pickWeaponServer source = do
-  eqpAssocs <- getsState $ fullAssocs source [CEqp]
-  bodyAssocs <- getsState $ fullAssocs source [COrgan]
+  eqpAssocs <- getsState $ kitAssocs source [CEqp]
+  bodyAssocs <- getsState $ kitAssocs source [COrgan]
   actorSk <- currentSkillsServer source
   sb <- getsState $ getActorBody source
-  let allAssocsRaw = eqpAssocs ++ bodyAssocs
+  let kitAssRaw = eqpAssocs ++ bodyAssocs
       forced = bproj sb
-      allAssocs | forced = allAssocsRaw  -- for projectiles, anything is weapon
-                | otherwise = filter (IK.isMelee . itemKind . snd) allAssocsRaw
+      kitAss | forced = kitAssRaw  -- for projectiles, anything is weapon
+             | otherwise = filter (IK.isMelee . itemKind . fst . snd) kitAssRaw
   -- Server ignores item effects or it would leak item discovery info.
   -- In particular, it even uses weapons that would heal opponent,
   -- and not only in case of projectiles.
-  strongest <- pickWeaponM Nothing allAssocs actorSk source
+  strongest <- pickWeaponM Nothing kitAss actorSk source
   case strongest of
     [] -> return Nothing
     iis@((maxS, _) : _) -> do

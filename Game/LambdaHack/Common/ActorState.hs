@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.ActorState
   , getContainerBag, getFloorBag, getEmbedBag, getBodyStoreBag
   , mapActorItems_, getActorAssocs, getActorAssocsK
   , memActor, getLocalTime, regenCalmDelta, actorInAmbient, canDeAmbientList
-  , actorSkills, dispEnemy, itemToFull, fullAssocs
+  , actorSkills, dispEnemy, itemToFull, fullAssocs, kitAssocs
   , getItemKindId, getIidKindId, getItemKind, getIidKind
   , getItemKindIdServer, getIidKindIdServer, getItemKindServer, getIidKindServer
   , storeFromC, aidFromC, lidFromC, posFromC
@@ -316,16 +316,23 @@ dispEnemy source target actorMaxSk s =
              || EM.findWithDefault 0 Ability.AbMove actorMaxSk <= 0
              || hasSupport sb && hasSupport tb)  -- solo actors are flexible
 
-itemToFull :: State -> ItemId -> ItemQuant -> ItemFull
-itemToFull s iid =
-  itemToFull7 (scops s) (sdiscoKind s) (sdiscoAspect s) iid (getItemBody iid s)
+itemToFull :: ItemId -> State -> ItemFull
+itemToFull iid s =
+  itemToFull6 (scops s) (sdiscoKind s) (sdiscoAspect s) iid (getItemBody iid s)
 
 fullAssocs :: ActorId -> [CStore] -> State -> [(ItemId, ItemFull)]
 fullAssocs aid cstores s =
   let allAssocs = concatMap (\cstore -> getActorAssocsK aid cstore s) cstores
+      iToFull (iid, (item, _kit)) =
+        (iid, itemToFull6 (scops s) (sdiscoKind s) (sdiscoAspect s) iid item)
+  in map iToFull allAssocs
+
+kitAssocs :: ActorId -> [CStore] -> State -> [(ItemId, ItemFullKit)]
+kitAssocs aid cstores s =
+  let allAssocs = concatMap (\cstore -> getActorAssocsK aid cstore s) cstores
       iToFull (iid, (item, kit)) =
-        (iid, itemToFull7 (scops s) (sdiscoKind s) (sdiscoAspect s)
-                          iid item kit)
+        (iid, ( itemToFull6 (scops s) (sdiscoKind s) (sdiscoAspect s) iid item
+              , kit ))
   in map iToFull allAssocs
 
 getItemKindId :: Item -> State -> ContentId IK.ItemKind
@@ -386,7 +393,7 @@ posFromC c@CTrunk{} _ = error $ "" `showFailure` c
 isEscape :: LevelId -> Point -> State -> Bool
 isEscape lid p s =
   let bag = getEmbedBag lid p s
-      is = map (uncurry (s `itemToFull`)) $ EM.assocs bag
+      is = map (flip itemToFull s) $ EM.keys bag
       -- Contrived, for now.
       isE ItemFull{itemKind} = IK.iname itemKind == "escape"
   in any isE is
@@ -394,7 +401,7 @@ isEscape lid p s =
 isStair :: LevelId -> Point -> State -> Bool
 isStair lid p s =
   let bag = getEmbedBag lid p s
-      is = map (uncurry (s `itemToFull`)) $ EM.assocs bag
+      is = map (flip itemToFull s) $ EM.keys bag
       -- Contrived, for now.
       isE ItemFull{itemKind} =
         IK.iname itemKind == "staircase up"

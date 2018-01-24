@@ -78,8 +78,7 @@ applyItem aid iid cstore = do
 applyMeleeDamage :: MonadServerAtomic m
                  => ActorId -> ActorId -> ItemId -> m Bool
 applyMeleeDamage source target iid = do
-  itemToF <- getsState itemToFull
-  let ItemFull{itemKind} = itemToF iid (1, [])
+  itemKind <- getsState $ getIidKindServer iid
   if IK.idamage itemKind == 0 then return False else do  -- speedup
     sb <- getsState $ getActorBody source
     hurtMult <- getsState $ armorHurtBonus source target
@@ -137,26 +136,26 @@ meleeEffectAndDestroy source target iid c = do
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (source, target, iid, c)
     Just kit -> do
-      itemToF <- getsState itemToFull
-      let itemFull = itemToF iid kit
-          IK.ItemKind{IK.ieffects} = itemKind itemFull
+      itemFull <- getsState $ itemToFull iid
+      let IK.ItemKind{IK.ieffects} = itemKind itemFull
       effectAndDestroy meleePerformed source target iid c False ieffects
-                       itemFull
+                       (itemFull, kit)
 
 effectAndDestroy :: MonadServerAtomic m
                  => Bool -> ActorId -> ActorId -> ItemId -> Container -> Bool
-                 -> [IK.Effect] -> ItemFull
+                 -> [IK.Effect] -> ItemFullKit
                  -> m ()
 effectAndDestroy meleePerformed _ _ iid container periodic []
-                 itemFull@ItemFull{..} =
+                 (itemFull@ItemFull{..}, kit@(_, itemTimer)) =
   -- No identification occurs if effects are null. This case is also a speedup.
   if meleePerformed then do  -- melee may cause item destruction
-    let (imperishable, kit) = imperishableKit True periodic itemTimer itemFull
+    let (imperishable, kit2) =
+          imperishableKit True periodic itemTimer itemFull kit
     unless imperishable $
-      execUpdAtomic $ UpdLoseItem False iid itemBase kit container
+      execUpdAtomic $ UpdLoseItem False iid itemBase kit2 container
   else return ()
 effectAndDestroy meleePerformed source target iid container periodic effs
-                 itemFull@ItemFull{..} = do
+                 (itemFull@ItemFull{..}, kit@(itemK, itemTimer)) = do
   let timeout = IA.aTimeout $ itemAspect itemDisco
       permanent = let tmpEffect :: IK.Effect -> Bool
                       tmpEffect IK.Temporary{} = True
@@ -193,9 +192,10 @@ effectAndDestroy meleePerformed source target iid container periodic effs
     -- This is OK, because we don't remove the item type from various
     -- item dictionaries, just an individual copy from the container,
     -- so, e.g., the item can be identified after it's removed.
-    let (imperishable, kit) = imperishableKit permanent periodic it2 itemFull
+    let (imperishable, kit2) =
+          imperishableKit permanent periodic it2 itemFull kit
     unless imperishable $
-      execUpdAtomic $ UpdLoseItem False iid itemBase kit container
+      execUpdAtomic $ UpdLoseItem False iid itemBase kit2 container
     -- At this point, the item is potentially no longer in container @c@,
     -- so we don't pass @c@ along.
     triggeredEffect <-
@@ -215,11 +215,11 @@ effectAndDestroy meleePerformed source target iid container periodic effs
     -- Regardless, we don't rewind the time, because some info is gained
     -- (that the item does not exhibit any effects in the given context).
     unless (triggered == UseUp || imperishable) $
-      execUpdAtomic $ UpdSpotItem False iid itemBase kit container
+      execUpdAtomic $ UpdSpotItem False iid itemBase kit2 container
 
-imperishableKit :: Bool -> Bool -> ItemTimer -> ItemFull
+imperishableKit :: Bool -> Bool -> ItemTimer -> ItemFull -> ItemQuant
                 -> (Bool, ItemQuant)
-imperishableKit permanent periodic it2 ItemFull{itemKind, itemK} =
+imperishableKit permanent periodic it2 ItemFull{itemKind} (itemK, _) =
   let fragile = IK.Fragile `elem` IK.ifeature itemKind
       durable = IK.Durable `elem` IK.ifeature itemKind
       imperishable = durable && not fragile || periodic && permanent
@@ -344,7 +344,7 @@ effectExplode execSfx cgroup target = do
       -- Explosion particles are placed among organs of the victim:
       container = CActor target COrgan
   m2 <- rollAndRegisterItem (blid tb) itemFreq container False Nothing
-  let (iid, (ItemFull{itemBase, itemK}, _)) =
+  let (iid, ((ItemFull{itemBase}, (itemK, _)), _)) =
         fromMaybe (error $ "" `showFailure` cgroup) m2
       Point x y = bpos tb
       semirandom = case jkind itemBase of
@@ -563,11 +563,11 @@ dominateFid fid target = do
     -- Add some nostalgia for the old faction.
     void $ effectCreateItem (Just $ bfid tb) (Just 10) target COrgan
                             "impressed" IK.timerNone
-    itemToF <- getsState itemToFull
+    getKindId <- getsState $ flip getIidKindIdServer
     let discoverIf (iid, cstore) = do
-          let itemFull = itemToF iid (1, [])
+          let itemKindId = getKindId iid
               c = CActor target cstore
-          discoverIfNoEffects c iid itemFull
+          discoverIfNoEffects c iid itemKindId
         aic = (btrunk tb, if bproj tb then CEqp else COrgan)
               : filter ((/= btrunk tb) . fst) (getCarriedIidCStore tb)
     mapM_ discoverIf aic
@@ -610,8 +610,7 @@ effectSummon grp nDm iid source target periodic = do
   actorAspect <- getsState sactorAspect
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
-  itemToF <- getsState itemToFull
-  let itemFull = itemToF iid (1, [])
+  itemKind <- getsState $ getIidKindServer iid
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
   let power = max power0 1  -- KISS, always at least one summon
       -- We put @source@ instead of @target@ and @power@ instead of dice
@@ -620,7 +619,7 @@ effectSummon grp nDm iid source target periodic = do
       execSfx = execSfxAtomic $ SfxEffect (bfid sb) source effect 0
       sar = actorAspect EM.! source
       tar = actorAspect EM.! target
-      durable = IK.Durable `elem` IK.ifeature (itemKind itemFull)
+      durable = IK.Durable `elem` IK.ifeature itemKind
       deltaCalm = - xM 30
   -- Verify Calm only at periodic activations or if the item is durable.
   -- Otherwise summon uses up the item, which prevents summoning getting
@@ -962,7 +961,7 @@ effectCreateItem jfidRaw mcount target store grp tim = do
   let litemFreq = [(grp, 1)]
   -- Power depth of new items unaffected by number of spawned actors.
   m4 <- rollItem 0 (blid tb) litemFreq
-  let (itemKnownRaw, itemFullRaw, seed, _) =
+  let (itemKnownRaw, (itemFullRaw, kitRaw), seed, _) =
         fromMaybe (error $ "" `showFailure` (blid tb, litemFreq, c)) m4
       -- Avoid too many different item identifiers (one for each faction)
       -- for blasts or common item generating tiles. Temporary organs are
@@ -978,13 +977,13 @@ effectCreateItem jfidRaw mcount target store grp tim = do
                 || grp == "impressed"
              then jfidRaw
              else Nothing
-      (itemKnown, itemFullFid) =
+      (itemKnown, itemFull) =
         let (kindIx, ar, _) = itemKnownRaw
         in ( (kindIx, ar, jfid)
            , itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}} )
-      itemFull = case mcount of
-        Just itemK -> itemFullFid {itemK}
-        Nothing -> itemFullFid
+      kitNew = case mcount of
+        Just itemK -> (itemK, [])
+        Nothing -> kitRaw
   itemRev <- getsServer sitemRev
   let mquant = case HM.lookup itemKnown itemRev of
         Nothing -> Nothing
@@ -1005,9 +1004,9 @@ effectCreateItem jfidRaw mcount target store grp tim = do
       -- No such items or some items, but void delta, so create items.
       -- If it's, e.g., a periodic poison, the new items will stack with any
       -- already existing items.
-      iid <- registerItem itemFull itemKnown seed c True
+      iid <- registerItem (itemFull, kitNew) itemKnown seed c True
       -- If created not on the ground, ID it, because it's not IDed on pickup.
-      when (store /= CGround) $ discoverIfNoEffects c iid itemFull
+      when (store /= CGround) $ discoverIfNoEffects c iid (itemKindId itemFull)
       -- Now, if timer change requested, change the timer, but in the new items,
       -- possibly increased in number wrt old items.
       when (not $ IK.isTimerNone tim) $ do
@@ -1061,8 +1060,7 @@ dropCStoreItem :: MonadServerAtomic m
                -> ItemId -> ItemQuant
                -> m ()
 dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
-  itemToF <- getsState itemToFull
-  let itemFull@ItemFull{itemKind} = itemToF iid kit
+  itemFull@ItemFull{itemKind} <- getsState $ itemToFull iid
   let c = CActor aid store
       fragile = IK.Fragile `elem` IK.ifeature itemKind
       durable = IK.Durable `elem` IK.ifeature itemKind
@@ -1071,7 +1069,7 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
   if isDestroyed then do
     let effs = IK.strengthOnSmash itemKind
     -- Activate even if effects null, to destroy the item.
-    effectAndDestroy False aid aid iid c False effs itemFull
+    effectAndDestroy False aid aid iid c False effs (itemFull, kit)
   else do
     cDrop <- pickDroppable aid b
     mvCmd <- generalMoveItem verbose iid (min kMax k) (CActor aid store) cDrop
@@ -1097,12 +1095,12 @@ effectPolyItem :: MonadServerAtomic m
 effectPolyItem execSfx source target = do
   sb <- getsState $ getActorBody source
   let cstore = CGround
-  allAssocs <- getsState $ fullAssocs target [cstore]
-  case allAssocs of
+  kitAss <- getsState $ kitAssocs target [cstore]
+  case kitAss of
     [] -> do
       execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxPurposeNothing cstore
       return UseId
-    (iid, ItemFull{..}) : _ -> do
+    (iid, (ItemFull{..}, (itemK, itemTimer))) : _ -> do
       let maxCount = Dice.maxDice $ IK.icount itemKind
       if | itemK < maxCount -> do
            execSfxAtomic $ SfxMsgFid (bfid sb)
@@ -1332,9 +1330,9 @@ effectDropBestWeapon :: MonadServerAtomic m => m () -> ActorId -> m UseResult
 effectDropBestWeapon execSfx target = do
   tb <- getsState $ getActorBody target
   localTime <- getsState $ getLocalTime (blid tb)
-  allAssocsRaw <- getsState $ fullAssocs target [CEqp]
-  let allAssocs = filter (IK.isMelee . itemKind . snd) allAssocsRaw
-  case strongestMelee Nothing localTime allAssocs of
+  kitAssRaw <- getsState $ kitAssocs target [CEqp]
+  let kitAss = filter (IK.isMelee . itemKind . fst . snd) kitAssRaw
+  case strongestMelee Nothing localTime kitAss of
     (_, (iid, _)) : _ -> do
       execSfx
       let kit = beqp tb EM.! iid
@@ -1361,9 +1359,9 @@ effectTransformContainer :: forall m. MonadServerAtomic m
                          -> (ItemId -> ItemQuant -> m ())
                          -> m UseResult
 effectTransformContainer execSfx symbol c m = do
-  itemToF <- getsState itemToFull
-  let hasSymbol (iid, kit) = do
-        let jsymbol = IK.isymbol $ itemKind $ itemToF iid kit
+  getKind <- getsState $ flip getIidKindServer
+  let hasSymbol (iid, _kit) = do
+        let jsymbol = IK.isymbol $ getKind iid
         return $! jsymbol == symbol
   assocsCStore <- getsState $ EM.assocs . getContainerBag c
   is <- if symbol == ' '

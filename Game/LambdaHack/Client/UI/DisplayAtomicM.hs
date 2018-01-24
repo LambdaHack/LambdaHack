@@ -82,8 +82,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
       CActor aid store -> do
         case store of
           COrgan -> do
-            itemToF <- getsState itemToFull
-            let ItemFull{itemKind} = itemToF iid kit
+            itemKind <- getsState $ getIidKind iid
             if IK.isTmpCondition itemKind then do
               bag <- getsState $ getContainerBag c
               let more = case EM.lookup iid bag of
@@ -354,9 +353,8 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
 
 updateItemSlot :: MonadClientUI m => Container -> ItemId -> m ()
 updateItemSlot c iid = do
-  itemToF <- getsState itemToFull
-  let ItemFull{itemKind} = itemToF iid (1, [])
-      slore = loreFromContainer itemKind c
+  itemKind <- getsState $ getIidKind iid
+  let slore = loreFromContainer itemKind c
       incrementPrefix l2 iid2 m = EM.insert l2 iid2 $
         case EM.lookup l2 m of
           Nothing -> m
@@ -420,11 +418,11 @@ itemVerbMU :: MonadClientUI m
 itemVerbMU iid kit@(k, _) verb c = assert (k > 0) $ do
   lid <- getsState $ lidFromC c
   localTime <- getsState $ getLocalTime lid
-  itemToF <- getsState itemToFull
+  itemFull <- getsState $ itemToFull iid
   side <- getsClient sside
   factionD <- getsState sfactionD
   let (temporary, subject) =
-        partItemWs side factionD k localTime (itemToF iid kit)
+        partItemWs side factionD k localTime itemFull kit
       msg | k > 1 && not temporary =
               makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
@@ -445,23 +443,22 @@ itemAidVerbMU aid verb iid ek cstore = do
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (aid, verb, iid, cstore)
     Just kit@(k, _) -> do
-      itemToF <- getsState itemToFull
+      itemFull <- getsState $ itemToFull iid
       let lid = blid body
       localTime <- getsState $ getLocalTime lid
       subject <- partAidLeader aid
-      let itemFull = itemToF iid kit
-          object = case ek of
+      let object = case ek of
             Left (Just n) ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
-              $ snd $ partItemWs side factionD n localTime itemFull
+              $ snd $ partItemWs side factionD n localTime itemFull kit
             Left Nothing ->
               let (_, _, name, stats) =
-                    partItem side factionD localTime itemFull
+                    partItem side factionD localTime itemFull kit
               in MU.Phrase [name, stats]
             Right n ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
               $ let (_, _, name1, stats) =
-                      partItemShort side factionD localTime itemFull
+                      partItemShort side factionD localTime itemFull kit
                     name = if n == 1 then name1 else MU.CarWs n name1
                 in MU.Phrase ["the", name, stats]
           msg = makeSentence [MU.SubjectVerbSg subject verb, object]
@@ -491,9 +488,8 @@ createActorUI born aid body = do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   globalTime <- getsState stime
   localTime <- getsState $ getLocalTime $ blid body
-  itemToF <- getsState itemToFull
-  let ItemFull{..} = itemToF (btrunk body) (1, [])
-      symbol = IK.isymbol itemKind
+  ItemFull{..} <- getsState $ itemToFull (btrunk body)
+  let symbol = IK.isymbol itemKind
   mbUI <- getsSession $ EM.lookup aid . sactorUI
   bUI <- case mbUI of
     Just bUI -> return bUI
@@ -531,7 +527,7 @@ createActorUI born aid body = do
                      -- Not much detail about a fast flying item.
                      (_, _, object1, object2) =
                        partItem (bfid body) factionD localTime
-                                (itemNoDisco cops (itemBase, 1))
+                                (itemNoDisco cops itemBase) (1, [])
                  in ( makePhrase [MU.AW $ MU.Text adj, object1, object2]
                     , basePronoun )
                | baseColor /= Color.BrWhite -> (IK.iname itemKind, basePronoun)
@@ -619,9 +615,8 @@ spotItem verbose iid kit c = do
   -- This is due to a move, or similar, which will be displayed,
   -- so no extra @markDisplayNeeded@ needed here and in similar places.
   ItemSlots itemSlots <- getsSession sslots
-  itemToF <- getsState itemToFull
-  let ItemFull{itemKind} = itemToF iid kit
-      slore = loreFromContainer itemKind c
+  itemKind <- getsState $ getIidKind iid
+  let slore = loreFromContainer itemKind c
   case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! slore of
     Nothing -> do  -- never seen or would have a slot
       void $ updateItemSlot c iid
@@ -783,7 +778,6 @@ quitFactionUI fid toSt = do
         arena <- getArenaUI
         (itemBag, total) <- getsState $ calculateTotal side
         localTime <- getsState $ getLocalTime arena
-        itemToF <- getsState itemToFull
         factionD <- getsState sfactionD
         let examItem slotIndex = do
               ItemSlots itemSlots <- getsSession sslots
@@ -792,10 +786,10 @@ quitFactionUI fid toSt = do
                   lSlotsElems = EM.elems lSlots
                   lSlotsBound = length lSlotsElems - 1
                   iid2 = lSlotsElems !! slotIndex
-                  kit@(k, _) = itemBag EM.! iid2
-                  itemFull2 = itemToF iid2 kit
-                  attrLine = itemDesc True side factionD 0
-                                      CGround localTime itemFull2
+                  kit2@(k, _) = itemBag EM.! iid2
+              itemFull2 <- getsState $ itemToFull iid2
+              let attrLine = itemDesc True side factionD 0
+                                      CGround localTime itemFull2 kit2
                   ov = splitAttrLine lxsize attrLine
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
@@ -862,7 +856,7 @@ discover c iid = do
   lid <- getsState $ lidFromC c
   globalTime <- getsState stime
   localTime <- getsState $ getLocalTime lid
-  itemToF <- getsState itemToFull
+  itemFull <- getsState $ itemToFull iid
   bag <- getsState $ getContainerBag c
   side <- getsClient sside
   factionD <- getsState sfactionD
@@ -876,14 +870,13 @@ discover c iid = do
       return (bfid bOwner == side && storeOwner == COrgan, name)
     _ -> return (False, [])
   let kit = EM.findWithDefault (1, []) iid bag
-      itemFull = itemToF iid kit
-      knownName = partItemMediumAW side factionD localTime itemFull
+      knownName = partItemMediumAW side factionD localTime itemFull kit
       -- Wipe out the whole knowledge of the item to make sure the two names
       -- in the message differ even if, e.g., the item is described as
       -- "of many effects".
-      itemSecret = itemNoDisco cops (itemBase itemFull, itemK itemFull)
+      itemSecret = itemNoDisco cops (itemBase itemFull)
       (_, _, secretName, secretAEText) =
-        partItem side factionD localTime itemSecret
+        partItem side factionD localTime itemSecret kit
       namePhrase = MU.Phrase $ [secretName, secretAEText] ++ nameWhere
       msg = makeSentence
         ["the", MU.SubjectVerbSg namePhrase "turn out to be", knownName]
@@ -1018,16 +1011,16 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.DropItem{} -> actorVerbMU aid bUI "be stripped"
         IK.PolyItem -> do
           localTime <- getsState $ getLocalTime $ blid b
-          allAssocs <- getsState $ fullAssocs aid [CGround]
-          case allAssocs of
+          kitAss <- getsState $ kitAssocs aid [CGround]
+          case kitAss of
             [] -> return ()  -- invisible items?
-            (_, ItemFull{..}) : _ -> do
+            (_, (ItemFull{..}, kit)) : _ -> do
               cops <- getsState scops
               subject <- partActorLeader aid bUI
               factionD <- getsState sfactionD
-              let itemSecret = itemNoDisco cops (itemBase, itemK)
+              let itemSecret = itemNoDisco cops itemBase
                   (_, _, secretName, secretAEText) =
-                    partItem side factionD localTime itemSecret
+                    partItem side factionD localTime itemSecret kit
                   verb = "repurpose"
                   store = MU.Text $ ppCStoreIn CGround
               msgAdd $ makeSentence
@@ -1182,9 +1175,9 @@ ppSfxMsg sfxMsg = case sfxMsg of
     aidPhrase <- partActorLeader aid bUI
     factionD <- getsState sfactionD
     localTime <- getsState $ getLocalTime (blid b)
-    itemToF <- getsState itemToFull
-    let itemFull = itemToF iid (1, [])
-        (_, _, name, stats) = partItem (bfid b) factionD localTime itemFull
+    itemFull <- getsState $ itemToFull iid
+    let kit = (1, [])
+        (_, _, name, stats) = partItem (bfid b) factionD localTime itemFull kit
         storeOwn = ppCStoreWownW True cstore aidPhrase
         cond = ["condition" | IK.isTmpCondition $ itemKind itemFull]
     return $! makeSentence $
@@ -1210,7 +1203,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
   (ps, hurtMult) <-
    if sourceSeen then do
     hurtMult <- getsState $ armorHurtBonus source target
-    itemToF <- getsState itemToFull
+    itemFull@ItemFull{itemKind} <- getsState $ itemToFull iid
     sb <- getsState $ getActorBody source
     sbUI <- getsSession $ getActorUI source
     spart <- partActorLeader source sbUI
@@ -1221,7 +1214,6 @@ strike catch source target iid cstore = assert (source /= target) $ do
     side <- getsClient sside
     factionD <- getsState sfactionD
     let kit = EM.findWithDefault (1, []) iid bag
-        itemFull@ItemFull{itemKind} = itemToF iid kit
         verb = if catch then "catch" else IK.iverbHit itemKind
         partItemChoice =
           if iid `EM.member` borgan sb
@@ -1233,7 +1225,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
               [MU.SubjectVerbSg spart verb, tpart]
               ++ if bproj sb
                  then []
-                 else ["with", partItemChoice itemFull]
+                 else ["with", partItemChoice itemFull kit]
             | otherwise =
           -- This sounds funny when the victim falls down immediately,
           -- but there is no easy way to prevent that. And it's consistent.
@@ -1243,7 +1235,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
           let sActs = if bproj sb
                       then [ MU.SubjectVerbSg spart "connect" ]
                       else [ MU.SubjectVerbSg spart verb, tpart
-                           , "with", partItemChoice itemFull ]
+                           , "with", partItemChoice itemFull kit ]
               actionPhrase =
                 MU.SubjectVerbSg tpart
                 $ if bproj sb

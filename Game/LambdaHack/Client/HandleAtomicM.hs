@@ -258,9 +258,8 @@ addItemToDiscoBenefit iid = do
     Nothing -> do
       side <- getsClient sside
       fact <- getsState $ (EM.! side) . sfactionD
-      itemToF <- getsState itemToFull
-      let itemFull = itemToF iid (1, [])
-          benefit = totalUsefulness cops fact itemFull
+      itemFull <- getsState $ itemToFull iid
+      let benefit = totalUsefulness cops fact itemFull
       modifyClient $ \cli ->
         cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
 
@@ -298,9 +297,9 @@ discoverKind _c ix _ik = do
   invalidateBfsAll
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  itemToF <- getsState itemToFull
+  itemToF <- getsState $ flip itemToFull
   let benefit iid =
-        let itemFull = itemToF iid (1, [])
+        let itemFull = itemToF iid
         in totalUsefulness cops fact itemFull
   itemIxMap <- getsState $ (EM.! ix) . sitemIxMap
   -- Possibly overwrite earlier, provisional benefits.
@@ -318,9 +317,8 @@ discoverSeed _c iid _seed = do
   invalidateBfsAll
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  itemToF <- getsState itemToFull
-  let itemFull@ItemFull{..} = itemToF iid (1, [])
-      benefit = totalUsefulness cops fact itemFull
+  itemFull <- getsState $ itemToFull iid
+  let benefit = totalUsefulness cops fact itemFull
   -- Possibly overwrite earlier, provisional benefits.
   modifyClient $ \cli ->
     cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}

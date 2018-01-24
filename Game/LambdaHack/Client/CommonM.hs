@@ -127,13 +127,13 @@ pickWeaponClient :: MonadClient m
                  => ActorId -> ActorId
                  -> m (Maybe (RequestTimed 'Ability.AbMelee))
 pickWeaponClient source target = do
-  eqpAssocs <- getsState $ fullAssocs source [CEqp]
-  bodyAssocs <- getsState $ fullAssocs source [COrgan]
+  eqpAssocs <- getsState $ kitAssocs source [CEqp]
+  bodyAssocs <- getsState $ kitAssocs source [COrgan]
   actorSk <- currentSkillsClient source
-  let allAssocsRaw = eqpAssocs ++ bodyAssocs
-      allAssocs = filter (IK.isMelee . itemKind . snd) allAssocsRaw
+  let kitAssRaw = eqpAssocs ++ bodyAssocs
+      kitAss = filter (IK.isMelee . itemKind . fst . snd) kitAssRaw
   discoBenefit <- getsClient sdiscoBenefit
-  strongest <- pickWeaponM (Just discoBenefit) allAssocs actorSk source
+  strongest <- pickWeaponM (Just discoBenefit) kitAss actorSk source
   case strongest of
     [] -> return Nothing
     iis@((maxS, _) : _) -> do

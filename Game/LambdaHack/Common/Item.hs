@@ -2,10 +2,10 @@
 -- | Weapons, treasure and all the other items in the game.
 module Game.LambdaHack.Common.Item
   ( ItemId, Item(..), ItemIdentity(..)
-  , ItemKindIx, ItemDisco(..), ItemFull(..)
+  , ItemKindIx, ItemDisco(..), ItemFull(..), ItemFullKit
   , DiscoveryKind, DiscoveryAspect, ItemIxMap, Benefit(..), DiscoveryBenefit
   , ItemTimer, ItemQuant, ItemBag, ItemDict
-  , itemNoDisco, itemToFull7, aspectRecordFull
+  , itemNoDisco, itemToFull6, aspectRecordFull
   , strongestSlot, hasCharge, strongestMelee, unknownMeleeBonus, tmpMeleeBonus
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -94,14 +94,14 @@ data ItemDisco =
 -- | Full information about an item.
 data ItemFull = ItemFull
   { itemBase    :: Item
-  , itemK       :: Int
-  , itemTimer   :: ItemTimer
   , itemKindId  :: ContentId IK.ItemKind
   , itemKind    :: IK.ItemKind
   , itemDisco   :: ItemDisco
   , itemSuspect :: Bool
   }
   deriving Show
+
+type ItemFullKit = (ItemFull, ItemQuant)
 
 -- | The map of item kind indexes to item kind ids.
 -- The full map, as known by the server, is 1-1.
@@ -147,8 +147,8 @@ type ItemBag = EM.EnumMap ItemId ItemQuant
 -- indexed by item identifier.
 type ItemDict = EM.EnumMap ItemId Item
 
-itemNoDisco :: COps -> (Item, Int) -> ItemFull
-itemNoDisco COps{coitem, coItemSpeedup} (itemBase, itemK) =
+itemNoDisco :: COps -> Item -> ItemFull
+itemNoDisco COps{coitem, coItemSpeedup} itemBase =
   let itemKindId = case jkind itemBase of
         IdentityObvious ik -> ik
         IdentityCovered _ ik -> ik
@@ -156,13 +156,11 @@ itemNoDisco COps{coitem, coItemSpeedup} (itemBase, itemK) =
       itemAspectMean = IK.getKindMean itemKindId coItemSpeedup
       itemDisco = ItemDiscoMean itemAspectMean
       itemSuspect = True
-  in ItemFull {itemTimer = [], ..}
+  in ItemFull {..}
 
-itemToFull7 :: COps -> DiscoveryKind -> DiscoveryAspect -> ItemId -> Item
-            -> ItemQuant
+itemToFull6 :: COps -> DiscoveryKind -> DiscoveryAspect -> ItemId -> Item
             -> ItemFull
-itemToFull7 COps{coitem, coItemSpeedup}
-            discoKind discoAspect iid itemBase (itemK, itemTimer) =
+itemToFull6 COps{coitem, coItemSpeedup} discoKind discoAspect iid itemBase =
   let (itemKindId, itemSuspect) = case jkind itemBase of
         IdentityObvious ik -> (ik, False)
         IdentityCovered ix ik ->
@@ -186,10 +184,10 @@ aspectRecordFull itemFull =
 
 -- This ignores items that don't go into equipment, as determined in @inEqp@.
 -- They are removed from equipment elsewhere via @harmful@.
-strongestSlot :: DiscoveryBenefit -> IA.EqpSlot -> [(ItemId, ItemFull)]
-              -> [(Int, (ItemId, ItemFull))]
+strongestSlot :: DiscoveryBenefit -> IA.EqpSlot -> [(ItemId, ItemFullKit)]
+              -> [(Int, (ItemId, ItemFullKit))]
 strongestSlot discoBenefit eqpSlot is =
-  let f (iid, itemFull@ItemFull{itemKind}) =
+  let f (iid, (itemFull@ItemFull{itemKind}, kit)) =
         let rawDmg = IK.damageUsefulness itemKind
             (bInEqp, bPickup) = case EM.lookup iid discoBenefit of
                Just Benefit{benInEqp, benPickup} -> (benInEqp, benPickup)
@@ -202,25 +200,27 @@ strongestSlot discoBenefit eqpSlot is =
                        -- account not only melee power, but also aspects, etc.
                        then ceiling bPickup
                        else IA.prEqpSlot eqpSlot $ aspectRecordFull itemFull
-             in (ben, (iid, itemFull))
+             in (ben, (iid, (itemFull, kit)))
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe f is
 
-hasCharge :: Time -> ItemFull -> Bool
-hasCharge localTime itemFull@ItemFull{..} =
+hasCharge :: Time -> ItemFull -> ItemQuant -> Bool
+hasCharge localTime itemFull@ItemFull{..} (itemK, itemTimer) =
   let timeout = IA.aTimeout $ aspectRecordFull itemFull
       timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
       charging startT = timeShift startT timeoutTurns > localTime
       it1 = filter charging itemTimer
   in length it1 < itemK
 
-strongestMelee :: Maybe DiscoveryBenefit -> Time -> [(ItemId, ItemFull)]
-               -> [(Double, (ItemId, ItemFull))]
+strongestMelee :: Maybe DiscoveryBenefit -> Time
+               -> [(ItemId, ItemFullKit)]
+               -> [(Double, (ItemId, ItemFullKit))]
 strongestMelee _ _ [] = []
-strongestMelee mdiscoBenefit localTime is =
+strongestMelee mdiscoBenefit localTime kitAss =
   -- For simplicity we assume, if weapon not recharged, all important effects,
   -- good and bad, are disabled and only raw damage remains.
-  let f (iid, itemFull) =
-        let rawDmg = (IK.damageUsefulness $ itemKind itemFull, (iid, itemFull))
+  let f (iid, (itemFull, kit)) =
+        let rawDmg = (IK.damageUsefulness
+                      $ itemKind itemFull, (iid, (itemFull, kit)))
             knownOrConstantAspects = case itemDisco itemFull of
               ItemDiscoMean IA.KindMean{kmConst} -> kmConst
               ItemDiscoFull{} -> True
@@ -231,8 +231,8 @@ strongestMelee mdiscoBenefit localTime is =
             Just Benefit{benMelee} ->
               -- For fighting, as opposed to equipping, we value weapon
               -- only for its raw damage and harming effects.
-              let dmg = if hasCharge localTime itemFull
-                        then (- benMelee, (iid, itemFull))
+              let dmg = if hasCharge localTime itemFull kit
+                        then (- benMelee, (iid, (itemFull, kit)))
                         else rawDmg
               in first (+ unIDedBonus) dmg
             Nothing -> first (+ 1000) rawDmg -- not even kind known
@@ -240,7 +240,7 @@ strongestMelee mdiscoBenefit localTime is =
   -- We can't filter out weapons that are not harmful to victim
   -- (@benMelee >= 0), because actors use them if nothing else available,
   -- e.g., geysers, bees. This is intended and fun.
-  in sortBy (flip $ Ord.comparing fst) $ map f is
+  in sortBy (flip $ Ord.comparing fst) $ map f kitAss
 
 unknownAspect :: (IA.Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f ItemFull{itemKind=IK.ItemKind{iaspects}, ..} =
@@ -258,8 +258,8 @@ unknownMeleeBonus =
       f itemFull b = b || unknownAspect p itemFull
   in foldr f False
 
-tmpMeleeBonus :: [ItemFull] -> Int
-tmpMeleeBonus is =
-  let f itemFull k =
-        itemK itemFull * IA.aHurtMelee (aspectRecordFull itemFull) + k
-  in foldr f 0 $ filter (IK.isTmpCondition . itemKind) is
+tmpMeleeBonus :: [ItemFullKit] -> Int
+tmpMeleeBonus kitAss =
+  let f (itemFull, (itemK, _)) k =
+        itemK * IA.aHurtMelee (aspectRecordFull itemFull) + k
+  in foldr f 0 $ filter (IK.isTmpCondition . itemKind . fst) kitAss
