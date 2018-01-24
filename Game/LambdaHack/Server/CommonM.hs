@@ -359,7 +359,7 @@ projectBla source pos rest iid cstore blast = do
   localTime <- getsState $ getLocalTime lid
   unless blast $ execSfxAtomic $ SfxProject source iid cstore
   bag <- getsState $ getBodyStoreBag sb cstore
-  ItemFull{..} <- getsState $ itemToFull iid
+  ItemFull{itemBase, itemKind} <- getsState $ itemToFull iid
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (source, pos, rest, iid, cstore)
     Just kit@(_, it) -> do
@@ -414,8 +414,7 @@ addNonProjectile :: MonadServerAtomic m
                  => Bool -> ItemId -> ItemFullKit -> FactionId -> Point
                  -> LevelId -> Time
                  -> m (Maybe ActorId)
-addNonProjectile summoned trunkId (itemFull@ItemFull{..}, kit)
-                 fid pos lid time = do
+addNonProjectile summoned trunkId (itemFull, kit) fid pos lid time = do
   let tweakBody b = b { borgan = EM.singleton trunkId kit
                       , bcalm = if summoned
                                 then bcalm b * 2 `div` 3 - xM 3

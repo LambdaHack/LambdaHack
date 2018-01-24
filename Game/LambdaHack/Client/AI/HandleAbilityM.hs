@@ -330,7 +330,7 @@ pickup aid onlyWeapon = do
       isWeapon (_, _, _, itemFull, _) = IK.isMelee $ itemKind itemFull
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
-      prepareOne (oldN, l4) (mben, _, iid, ItemFull{..}, (itemK, _)) =
+      prepareOne (oldN, l4) (mben, _, iid, ItemFull{itemKind}, (itemK, _)) =
         let prep newN toCStore = (newN, (iid, itemK, CGround, toCStore) : l4)
             inEqp = maybe (IK.goesIntoEqp itemKind) benInEqp mben
             n = oldN + itemK
@@ -704,7 +704,7 @@ applyItem aid applyGroup = do
       permittedActor itemFull kit =
         either (const False) id
         $ permittedApply localTime skill calmE " " itemFull kit
-      q (mben, _, _, itemFull@ItemFull{..}, kit) =
+      q (mben, _, _, itemFull@ItemFull{itemKind}, kit) =
         let freq = IK.ifreq itemKind
             durable = IK.Durable `elem` IK.ifeature itemKind
             (bInEqp, bApply) = case mben of
@@ -722,13 +722,13 @@ applyItem aid applyGroup = do
       -- The case of a weak weapon curing poison is too rare to incur overhead.
       stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
   benList <- benAvailableItems aid stores
-  itemToF <- getsState $ flip itemToFull
-  let organs = map itemToF $ EM.keys $ borgan b
-      hasGrps = mapMaybe (\ItemFull{itemKind} ->
-        if IK.isTmpCondition itemKind
-        then Just $ toGroupName $ IK.iname itemKind
-        else Nothing) organs
-      itemLegal ItemFull{itemKind} =
+  getKind <- getsState $ flip getIidKind
+  let hasGrps = mapMaybe (\iid ->
+        let itemKind = getKind iid
+        in if IK.isTmpCondition itemKind
+           then Just $ toGroupName $ IK.iname itemKind
+           else Nothing) (EM.keys $ borgan b)
+      itemLegal itemKind =
         let -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.
             getHP (IK.RefillHP p) | p > 0 = True
             getHP (IK.OneOf l) = any getHP l
@@ -752,7 +752,7 @@ applyItem aid applyGroup = do
       coeff CEqp = 1
       coeff CInv = 1
       coeff CSha = 1
-      fTool benAv@(mben, cstore, iid, itemFull@ItemFull{itemKind}, _) =
+      fTool benAv@(mben, cstore, iid, ItemFull{itemKind}, _) =
         let onlyVoidlyDropsOrgan =
               -- We check if the only effect of the item is that it drops a tmp
               -- organ that we don't have. If so, item should not be applied.
@@ -778,7 +778,7 @@ applyItem aid applyGroup = do
                 * if cstore == CEqp && not durable
                   then 100000  -- must hinder currently
                   else coeff cstore
-        in if q benAv && itemLegal itemFull && not onlyVoidlyDropsOrgan
+        in if q benAv && itemLegal itemKind && not onlyVoidlyDropsOrgan
            then Just (benR, ReqApply iid cstore)
            else Nothing
       benTool = mapMaybe fTool benList

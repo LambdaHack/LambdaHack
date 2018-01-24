@@ -158,7 +158,7 @@ permittedPreciousAI calmE itemFull =
 
 permittedProject :: Bool -> Int -> Bool -> [Char] -> ItemFull
                  -> Either ReqFailure Bool
-permittedProject forced skill calmE triggerSyms itemFull@ItemFull{..} =
+permittedProject forced skill calmE triggerSyms itemFull@ItemFull{itemKind} =
  if | not forced && skill < 1 -> Left ProjectUnskilled
     | not forced
       && IK.Lobable `elem` IK.ifeature itemKind
@@ -187,7 +187,8 @@ permittedProjectAI skill calmE itemFull =
 
 permittedApply :: Time -> Int -> Bool-> [Char] -> ItemFull -> ItemQuant
                -> Either ReqFailure Bool
-permittedApply localTime skill calmE triggerSyms itemFull@ItemFull{..} kit =
+permittedApply localTime skill calmE triggerSyms
+               itemFull@ItemFull{itemKind, itemSuspect} kit =
   if | IK.isymbol itemKind == '?' && skill < 2 -> Left ApplyRead
      -- ApplyRead has precedence for the case of embedced items that
      -- can't be applied if they require reading, but can even if actor

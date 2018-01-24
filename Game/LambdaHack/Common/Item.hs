@@ -204,7 +204,7 @@ strongestSlot discoBenefit eqpSlot is =
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe f is
 
 hasCharge :: Time -> ItemFull -> ItemQuant -> Bool
-hasCharge localTime itemFull@ItemFull{..} (itemK, itemTimer) =
+hasCharge localTime itemFull (itemK, itemTimer) =
   let timeout = IA.aTimeout $ aspectRecordFull itemFull
       timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
       charging startT = timeShift startT timeoutTurns > localTime

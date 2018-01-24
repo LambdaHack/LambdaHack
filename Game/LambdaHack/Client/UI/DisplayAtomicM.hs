@@ -488,7 +488,7 @@ createActorUI born aid body = do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   globalTime <- getsState stime
   localTime <- getsState $ getLocalTime $ blid body
-  ItemFull{..} <- getsState $ itemToFull (btrunk body)
+  ItemFull{itemBase, itemKind} <- getsState $ itemToFull (btrunk body)
   let symbol = IK.isymbol itemKind
   mbUI <- getsSession $ EM.lookup aid . sactorUI
   bUI <- case mbUI of
@@ -1011,14 +1011,15 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.DropItem{} -> actorVerbMU aid bUI "be stripped"
         IK.PolyItem -> do
           localTime <- getsState $ getLocalTime $ blid b
-          kitAss <- getsState $ kitAssocs aid [CGround]
-          case kitAss of
+          bag <- getsState $ getBodyStoreBag b CGround
+          case EM.assocs bag of
             [] -> return ()  -- invisible items?
-            (_, (ItemFull{..}, kit)) : _ -> do
+            (iid, kit) : _ -> do
               cops <- getsState scops
               subject <- partActorLeader aid bUI
               factionD <- getsState sfactionD
-              let itemSecret = itemNoDisco cops itemBase
+              item <- getsState $ getItemBody iid
+              let itemSecret = itemNoDisco cops item
                   (_, _, secretName, secretAEText) =
                     partItem side factionD localTime itemSecret kit
                   verb = "repurpose"
@@ -1027,16 +1028,12 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                 [ MU.SubjectVerbSg subject verb
                 , "the", secretName, secretAEText, store ]
         IK.Identify -> do
-          allAssocs <- getsState $ fullAssocs aid [CGround]
-          case allAssocs of
-            [] -> return ()  -- invisible items?
-            (_, ItemFull{..}) : _ -> do
-              subject <- partActorLeader aid bUI
-              let verb = "inspect"
-                  store = MU.Text $ ppCStoreIn CGround
-              msgAdd $ makeSentence
-                [ MU.SubjectVerbSg subject verb
-                , "an item", store ]
+          subject <- partActorLeader aid bUI
+          let verb = "inspect"
+              store = MU.Text $ ppCStoreIn CGround
+          msgAdd $ makeSentence
+            [ MU.SubjectVerbSg subject verb
+            , "an item", store ]
         IK.Detect{} -> do
           subject <- partActorLeader aid bUI
           let verb = "perceive nearby area"

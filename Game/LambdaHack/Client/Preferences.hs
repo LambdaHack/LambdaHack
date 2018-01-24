@@ -302,7 +302,7 @@ recordToBenefit aspects = map aspectToBenefit $ IA.aspectRecordToList aspects
 -- Note: result has non-strict fields, so arguments are forced to avoid leaks.
 -- When AI looks at items (including organs) more often, force the fields.
 totalUsefulness :: COps -> Faction -> ItemFull -> Benefit
-totalUsefulness !cops !fact !itemFull@ItemFull{..} =
+totalUsefulness !cops !fact !itemFull@ItemFull{itemKind} =
   let effects = IK.ieffects itemKind
       aspects = aspectRecordFull itemFull
       effPairs = map (effectToBenefit cops fact) effects

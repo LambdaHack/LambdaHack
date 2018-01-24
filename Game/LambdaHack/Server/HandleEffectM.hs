@@ -146,7 +146,7 @@ effectAndDestroy :: MonadServerAtomic m
                  -> [IK.Effect] -> ItemFullKit
                  -> m ()
 effectAndDestroy meleePerformed _ _ iid container periodic []
-                 (itemFull@ItemFull{..}, kit@(_, itemTimer)) =
+                 (itemFull@ItemFull{itemBase}, kit@(_, itemTimer)) =
   -- No identification occurs if effects are null. This case is also a speedup.
   if meleePerformed then do  -- melee may cause item destruction
     let (imperishable, kit2) =
@@ -155,7 +155,8 @@ effectAndDestroy meleePerformed _ _ iid container periodic []
       execUpdAtomic $ UpdLoseItem False iid itemBase kit2 container
   else return ()
 effectAndDestroy meleePerformed source target iid container periodic effs
-                 (itemFull@ItemFull{..}, kit@(itemK, itemTimer)) = do
+                 ( itemFull@ItemFull{itemBase, itemDisco}
+                 , kit@(itemK, itemTimer) ) = do
   let timeout = IA.aTimeout $ itemAspect itemDisco
       permanent = let tmpEffect :: IK.Effect -> Bool
                       tmpEffect IK.Temporary{} = True
@@ -1100,7 +1101,8 @@ effectPolyItem execSfx source target = do
     [] -> do
       execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxPurposeNothing cstore
       return UseId
-    (iid, (ItemFull{..}, (itemK, itemTimer))) : _ -> do
+    (iid, ( ItemFull{itemBase, itemKindId, itemKind}
+          , (itemK, itemTimer) )) : _ -> do
       let maxCount = Dice.maxDice $ IK.icount itemKind
       if | itemK < maxCount -> do
            execSfxAtomic $ SfxMsgFid (bfid sb)
@@ -1130,7 +1132,7 @@ effectIdentify execSfx iidId source target = do
   let tryFull store as = case as of
         [] -> return False
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
-        (iid, ItemFull{..}) : rest ->
+        (iid, ItemFull{itemKindId, itemKind}) : rest ->
           let furtherIdNotNeeded =
                 iid `EM.member` sdiscoAspect s  -- already fully identified
                 || IA.kmConst (IK.getKindMean itemKindId coItemSpeedup)

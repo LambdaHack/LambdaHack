@@ -251,7 +251,7 @@ reqMelee source target iid cstore = do
     let sfid = bfid sb
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
-    ItemFull{itemKind} <- getsState $ itemToFull (btrunk tb)
+    itemKind <- getsState $ getIidKindServer $ btrunk tb
     -- Only catch with appendages, never with weapons. Never steal trunk
     -- from an already caught projectile or one with many items inside.
     if bproj tb && length (beqp tb) == 1 && not (IK.isBlast itemKind)
@@ -404,7 +404,7 @@ reqAlterFail source tpos = do
         execSfxAtomic $ SfxTrigger source tpos
         mapM_ tryApplyEmbed $ EM.assocs embeds
       tryApplyEmbed (iid, kit) = do
-        let itemFull@ItemFull{..} = itemToF iid
+        let itemFull@ItemFull{itemKind} = itemToF iid
             legal = permittedApply localTime applySkill calmE " " itemFull kit
         -- Let even completely unskilled actors trigger basic embeds.
         case legal of
@@ -599,7 +599,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
         Nothing -> return ()  -- no Periodic or Timeout aspect; don't touch
 
 computeRndTimeout :: Time -> ItemFull -> Rnd (Maybe Time)
-computeRndTimeout localTime ItemFull{..}=
+computeRndTimeout localTime ItemFull{itemKind, itemDisco} =
   case IA.aTimeout $ itemAspect itemDisco of
     t | t /= 0 && IK.Periodic `elem` IK.ifeature itemKind -> do
       rndT <- randomR (0, t)

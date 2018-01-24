@@ -61,7 +61,8 @@ onlyRegisterItem itemKnown@(_, aspectRecord, _) seed = do
 registerItem :: MonadServerAtomic m
              => ItemFullKit -> ItemKnown -> IA.ItemSeed -> Container -> Bool
              -> m ItemId
-registerItem (ItemFull{..}, kit) itemKnown seed container verbose = do
+registerItem (ItemFull{itemBase, itemKindId}, kit)
+             itemKnown seed container verbose = do
   iid <- onlyRegisterItem itemKnown seed
   let cmd = if verbose then UpdCreateItem else UpdSpotItem False
   execUpdAtomic $ cmd iid itemBase kit container
@@ -101,7 +102,7 @@ rollItem lvlSpawned lid itemFreq = do
   m4 <- rndToAction $ newItem cops flavour discoRev uniqueSet
                               itemFreq lvlSpawned lid ldepth totalDepth
   case m4 of
-    Just (_, (ItemFull{..}, _), _, _) ->
+    Just (_, (ItemFull{itemKindId, itemKind}, _), _, _) ->
       when (IK.Unique `elem` IK.ifeature itemKind) $
         modifyServer $ \ser ->
           ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}

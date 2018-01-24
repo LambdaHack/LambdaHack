@@ -46,7 +46,8 @@ partItemN :: FactionId -> FactionDict -> Bool -> DetailLevel -> Int
           -> Time -> ItemFull -> ItemQuant
           -> (Bool, Bool, MU.Part, MU.Part)
 partItemN side factionD ranged detailLevel n localTime
-          itemFull@ItemFull{..} (itemK, itemTimer) =
+          itemFull@ItemFull{itemBase, itemKind, itemSuspect}
+          (itemK, itemTimer) =
   let genericName = IK.iname itemKind
       flav = flavourToName $ jflavour itemBase
       timeout = IA.aTimeout $ aspectRecordFull itemFull
@@ -84,7 +85,7 @@ partItemN side factionD ranged detailLevel n localTime
      , unique, capName, MU.Phrase $ map MU.Text ts )
 
 textAllAE :: DetailLevel -> Bool -> ItemFull -> ([Text], [Text])
-textAllAE detailLevel skipRecharging itemFull@ItemFull{..} =
+textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
   let features | detailLevel >= DetailAll =
                    map featureToSuff $ sort $ IK.ifeature itemKind
                | otherwise = []
@@ -256,7 +257,7 @@ itemDesc :: Bool -> FactionId -> FactionDict -> Int -> CStore -> Time
          -> ItemFull -> ItemQuant
          -> AttrLine
 itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
-         itemFull@ItemFull{..} kit =
+         itemFull@ItemFull{itemBase, itemKind, itemSuspect} kit =
   let (_, unique, name, stats) =
         partItemHigh side factionD localTime itemFull kit
       nstats = makePhrase [name, stats]

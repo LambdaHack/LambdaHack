@@ -234,13 +234,13 @@ benGroundItems aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let canEsc = fcanEscape (gplayer fact)
-      isDesirable (mben, _, _, itemFull, _) =
-        desirableItem canEsc (benPickup <$> mben) itemFull
+      isDesirable (mben, _, _, ItemFull{itemKind}, _) =
+        desirableItem canEsc (benPickup <$> mben) itemKind
   benList <- benAvailableItems aid [CGround]
   return $ filter isDesirable benList
 
-desirableItem :: Bool -> Maybe Double -> ItemFull -> Bool
-desirableItem canEsc mpickupSum ItemFull{itemKind} =
+desirableItem :: Bool -> Maybe Double -> IK.ItemKind -> Bool
+desirableItem canEsc mpickupSum itemKind =
   if canEsc
   then fromMaybe 10 mpickupSum > 0
        || IK.Precious `elem` IK.ifeature itemKind
