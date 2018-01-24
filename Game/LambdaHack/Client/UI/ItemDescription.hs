@@ -48,8 +48,7 @@ partItemN :: FactionId -> FactionDict -> Bool -> DetailLevel -> Int
 partItemN side factionD ranged detailLevel n localTime
           itemFull@ItemFull{itemBase, itemKind, itemSuspect}
           (itemK, itemTimer) =
-  let genericName = IK.iname itemKind
-      flav = flavourToName $ jflavour itemBase
+  let flav = flavourToName $ jflavour itemBase
       timeout = IA.aTimeout $ aspectRecordFull itemFull
       timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
       temporary = not (null itemTimer) && timeout == 0
@@ -75,9 +74,9 @@ partItemN side factionD ranged detailLevel n localTime
            ++ ["(...)" | length effTs > n]
            ++ [timer]
       unique = IK.Unique `elem` IK.ifeature itemKind
-      name | temporary = "temporarily" <+> genericName
-           | itemSuspect = flav <+> genericName
-           | otherwise = genericName
+      name | temporary = "temporarily" <+> IK.iname itemKind
+           | itemSuspect = flav <+> IK.iname itemKind
+           | otherwise = IK.iname itemKind
       capName = if unique
                 then MU.Capitalize $ MU.Text name
                 else MU.Text name
@@ -90,22 +89,21 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
                    map featureToSuff $ sort $ IK.ifeature itemKind
                | otherwise = []
       aets = case itemDisco of
-        ItemDiscoMean{} ->  -- faster than @aspectRecordToList@ of mean
-          splitTry (IK.iaspects itemKind) (IK.ieffects itemKind)
-        ItemDiscoFull iAspect ->
-          splitTry (IA.aspectRecordToList iAspect) (IK.ieffects itemKind)
+        ItemDiscoMean{} -> splitTry (IK.iaspects itemKind)
+                             -- faster than @aspectRecordToList@ of mean
+        ItemDiscoFull iAspect -> splitTry (IA.aspectRecordToList iAspect)
       timeoutAspect :: IA.Aspect -> Bool
       timeoutAspect IA.Timeout{} = True
       timeoutAspect _ = False
       hurtMeleeAspect :: IA.Aspect -> Bool
       hurtMeleeAspect IA.AddHurtMelee{} = True
       hurtMeleeAspect _ = False
-      elabel :: IK.Effect -> Bool
+      elabel :: IK.Feature -> Bool
       elabel IK.ELabel{} = True
       elabel _ = False
       active = IK.goesIntoEqp itemKind
-      splitAE :: DetailLevel -> [IA.Aspect] -> [IK.Effect] -> [Text]
-      splitAE detLev aspects effects =
+      splitAE :: DetailLevel -> [IA.Aspect] -> [Text]
+      splitAE detLev aspects =
         let ppA = kindAspectToSuffix
             ppE = effectToSuffix detLev
             reduce_a = maybe "?" tshow . Dice.reduceDice
@@ -115,12 +113,12 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
             -- specified.
             restAs = sort aspects
             aes = if active
-                  then map ppA restAs ++ map ppE effects
-                  else map ppE effects ++ map ppA restAs
+                  then map ppA restAs ++ map ppE (IK.ieffects itemKind)
+                  else map ppE (IK.ieffects itemKind) ++ map ppA restAs
             rechargingTs = T.intercalate " " $ filter (not . T.null)
-                           $ map ppE $ IK.stripRecharging effects
+                           $ map ppE $ IK.stripRecharging (IK.ieffects itemKind)
             onSmashTs = T.intercalate " " $ filter (not . T.null)
-                        $ map ppE $ IK.stripOnSmash effects
+                        $ map ppE $ IK.stripOnSmash (IK.ieffects itemKind)
             durable = IK.Durable `elem` IK.ifeature itemKind
             fragile = IK.Fragile `elem` IK.ifeature itemKind
             periodicOrTimeout =
@@ -142,7 +140,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
                      _ -> error $ "" `showFailure` mtimeout
             onSmash = if T.null onSmashTs then ""
                       else "(on smash:" <+> onSmashTs <> ")"
-            elab = case find elabel effects of
+            elab = case find elabel $ IK.ifeature itemKind of
               Just (IK.ELabel t) -> [t]
               _ -> []
             damage = case find hurtMeleeAspect restAs of
@@ -160,8 +158,8 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
                      then [periodicOrTimeout] ++ [damage] ++ aes
                           ++ [onSmash | detLev >= DetailAll]
                      else [damage]
-      splitTry ass eff =
-        let splits = map (\detLev -> splitAE detLev ass eff)
+      splitTry ass =
+        let splits = map (\detLev -> splitAE detLev ass)
                          [minBound..maxBound]
             splitsToTry = drop (fromEnum detailLevel) splits
         in case filter (/= []) splitsToTry of

@@ -401,103 +401,104 @@ flaskTemplate = ItemKind
 flask1 = flaskTemplate
   { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
   , irarity  = [(10, 4)]
-  , ieffects = [ ELabel "of strength renewal brew"
-               , toOrganActorTurn "strengthened" (20 + 1 `d` 5)
+  , ieffects = [ toOrganActorTurn "strengthened" (20 + 1 `d` 5)
                , toOrganNone "regenerating"
                , OnSmash (Explode "dense shower") ]
+  , ifeature = [ELabel "of strength renewal brew"] ++ ifeature flaskTemplate
   }
 flask2 = flaskTemplate
   { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
-  , ieffects = [ ELabel "of weakness brew"
-               , toOrganGameTurn "weakened" (20 + 1 `d` 5)
+  , ieffects = [ toOrganGameTurn "weakened" (20 + 1 `d` 5)
                , OnSmash (Explode "sparse shower") ]
+  , ifeature = [ELabel "of weakness brew"] ++ ifeature flaskTemplate
   }
 flask3 = flaskTemplate
   { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
-  , ieffects = [ ELabel "of melee protective balm"
-               , toOrganActorTurn "protected from melee" (20 + 1 `d` 5)
+  , ieffects = [ toOrganActorTurn "protected from melee" (20 + 1 `d` 5)
                , OnSmash (Explode "melee protective balm") ]
+  , ifeature = [ELabel "of melee protective balm"] ++ ifeature flaskTemplate
   }
 flask4 = flaskTemplate
   { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
-  , ieffects = [ ELabel "of ranged protective balm"
-               , toOrganActorTurn "protected from ranged" (20 + 1 `d` 5)
+  , ieffects = [ toOrganActorTurn "protected from ranged" (20 + 1 `d` 5)
                , OnSmash (Explode "ranged protective balm") ]
+  , ifeature = [ELabel "of ranged protective balm"] ++ ifeature flaskTemplate
   }
 flask5 = flaskTemplate
   { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
-  , ieffects = [ ELabel "of PhD defense questions"
-               , toOrganGameTurn "defenseless" (20 + 1 `d` 5)
+  , ieffects = [ toOrganGameTurn "defenseless" (20 + 1 `d` 5)
                , Impress
                , DetectExit 20
                , OnSmash (Explode "PhD defense question") ]
+  , ifeature = [ELabel "of PhD defense questions"] ++ ifeature flaskTemplate
   }
 flask6 = flaskTemplate
   { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
   , irarity  = [(10, 9)]
-  , ieffects = [ ELabel "of resolution"
-               , toOrganActorTurn "resolute" (200 + 1 `d` 50)
+  , ieffects = [ toOrganActorTurn "resolute" (200 + 1 `d` 50)
                    -- long, for scouting and has to recharge
                , RefillCalm 60  -- not to make it a drawback, via @calmEnough@
                , OnSmash (Explode "resolution dust") ]
+  , ifeature = [ELabel "of resolution"] ++ ifeature flaskTemplate
   }
 flask7 = flaskTemplate
   { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
   , irarity  = [(10, 4)]
-  , ieffects = [ ELabel "of haste brew"
-               , toOrganActorTurn "hasted" (20 + 1 `d` 5)
+  , ieffects = [ toOrganActorTurn "hasted" (20 + 1 `d` 5)
                , OnSmash (Explode "violent chemical")
                , OnSmash (Explode "haste spray") ]
+  , ifeature = [ELabel "of haste brew"] ++ ifeature flaskTemplate
   }
 flask8 = flaskTemplate
   { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
   , irarity  = [(1, 14), (10, 4)]
-  , ieffects = [ ELabel "of lethargy brew"
-               , toOrganGameTurn "slowed" (20 + 1 `d` 5)
+  , ieffects = [ toOrganGameTurn "slowed" (20 + 1 `d` 5)
                , toOrganNone "regenerating", toOrganNone "regenerating"  -- x2
                , RefillCalm 5
                , OnSmash (Explode "slowness mist") ]
+  , ifeature = [ELabel "of lethargy brew"] ++ ifeature flaskTemplate
   }
 flask9 = flaskTemplate
   { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
   , irarity  = [(10, 4)]
-  , ieffects = [ ELabel "of eye drops"
-               , toOrganActorTurn "far-sighted" (40 + 1 `d` 10)
+  , ieffects = [ toOrganActorTurn "far-sighted" (40 + 1 `d` 10)
                , OnSmash (Explode "eye drop") ]
+  , ifeature = [ELabel "of eye drops"] ++ ifeature flaskTemplate
   }
 flask10 = flaskTemplate
   { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
   , irarity  = [(10, 2)]
-  , ieffects = [ ELabel "of smelly concoction"
-               , toOrganActorTurn "keen-smelling" (40 + 1 `d` 10)
+  , ieffects = [ toOrganActorTurn "keen-smelling" (40 + 1 `d` 10)
                , DetectActor 10
                , OnSmash (Explode "smelly droplet") ]
+  , ifeature = [ELabel "of smelly concoction"] ++ ifeature flaskTemplate
   }
 flask11 = flaskTemplate
   { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
   , irarity  = [(10, 4)]
-  , ieffects = [ ELabel "of cat tears"
-               , toOrganActorTurn "shiny-eyed" (40 + 1 `d` 10)
+  , ieffects = [ toOrganActorTurn "shiny-eyed" (40 + 1 `d` 10)
                , OnSmash (Explode "eye shine") ]
+  , ifeature = [ELabel "of cat tears"] ++ ifeature flaskTemplate
   }
 flask12 = flaskTemplate
-  { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
+  { iname    = "bottle"
+  , ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
   , icount   = 1 `d` 3
-  , ieffects = [ ELabel "of whiskey"
-               , toOrganActorTurn "drunk" (20 + 1 `d` 5)
+  , ieffects = [ toOrganActorTurn "drunk" (20 + 1 `d` 5)
                , Burn 1, RefillHP 3
                , OnSmash (Explode "whiskey spray") ]
+  , ifeature = [ELabel "of whiskey"] ++ ifeature flaskTemplate
   }
 flask13 = flaskTemplate
   { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
-  , ieffects = [ ELabel "of bait cocktail"
-               , toOrganActorTurn "drunk" (20 + 1 `d` 5)
+  , ieffects = [ toOrganActorTurn "drunk" (20 + 1 `d` 5)
                , Burn 1, RefillHP 3
                , Summon "mobile animal" 1
                , OnSmash (Summon "mobile animal" 1)
                , OnSmash Impress
                , OnSmash (Explode "waste") ]
-  }
+   , ifeature = [ELabel "of bait cocktail"] ++ ifeature flaskTemplate
+ }
 -- The player has full control over throwing the flask at his party,
 -- so he can milk the explosion, so it has to be much weaker, so a weak
 -- healing effect is enough. OTOH, throwing a harmful flask at many enemies
@@ -505,52 +506,52 @@ flask13 = flaskTemplate
 flask14 = flaskTemplate
   { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
   , irarity  = [(1, 4), (10, 14)]
-  , ieffects = [ ELabel "of regeneration brew"
-               , toOrganNone "regenerating", toOrganNone "regenerating"  -- x2
+  , ieffects = [ toOrganNone "regenerating", toOrganNone "regenerating"  -- x2
                , OnSmash (Explode "healing mist") ]
-  }
+  , ifeature = [ELabel "of regeneration brew"] ++ ifeature flaskTemplate
+ }
 flask15 = flaskTemplate
   { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
-  , ieffects = [ ELabel "of poison"
-               , toOrganNone "poisoned", toOrganNone "poisoned"  -- x2
+  , ieffects = [ toOrganNone "poisoned", toOrganNone "poisoned"  -- x2
                , OnSmash (Explode "poison cloud") ]
+  , ifeature = [ELabel "of poison"] ++ ifeature flaskTemplate
   }
 flask16 = flaskTemplate
   { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
   , icount   = 1 `d` 3
-  , ieffects = [ ELabel "of weak poison"
-               , toOrganNone "poisoned"
+  , ieffects = [ toOrganNone "poisoned"
                , OnSmash (Explode "poison cloud") ]
+  , ifeature = [ELabel "of weak poison"] ++ ifeature flaskTemplate
   }
 flask17 = flaskTemplate
   { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
   , irarity  = [(10, 4)]
-  , ieffects = [ ELabel "of slow resistance"
-               , toOrganNone "slow resistant"
+  , ieffects = [ toOrganNone "slow resistant"
                , OnSmash (Explode "violent chemical")
                , OnSmash (Explode "anti-slow mist") ]
+  , ifeature = [ELabel "of slow resistance"] ++ ifeature flaskTemplate
   }
 flask18 = flaskTemplate
   { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
   , icount   = 1 `d` 2
   , irarity  = [(10, 4)]
-  , ieffects = [ ELabel "of poison resistance"
-               , toOrganNone "poison resistant"
+  , ieffects = [ toOrganNone "poison resistant"
                , OnSmash (Explode "antidote mist") ]
+  , ifeature = [ELabel "of poison resistance"] ++ ifeature flaskTemplate
   }
 flask19 = flaskTemplate
   { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
-  , ieffects = [ ELabel "of blindness"
-               , toOrganGameTurn "blind" (40 + 1 `d` 10)
+  , ieffects = [ toOrganGameTurn "blind" (40 + 1 `d` 10)
                , OnSmash (Explode "iron filing") ]
+  , ifeature = [ELabel "of blindness"] ++ ifeature flaskTemplate
   }
 flask20 = flaskTemplate
   { ifreq    = [("useful", 100), ("flask", 100), ("any vial", 100)]
-  , ieffects = [ ELabel "of calamity"
-               , toOrganNone "poisoned"
+  , ieffects = [ toOrganNone "poisoned"
                , toOrganGameTurn "weakened" (20 + 1 `d` 5)
                , toOrganGameTurn "defenseless" (20 + 1 `d` 5)
                , OnSmash (Explode "poison cloud") ]
+  , ifeature = [ELabel "of calamity"] ++ ifeature flaskTemplate
   }
 
 -- Potions are often natura. Various configurations of effects.
@@ -576,16 +577,18 @@ potionTemplate = ItemKind
   , ikit     = []
   }
 potion1 = potionTemplate
-  { ifreq    = [("useful", 100), ("potion", 100), ("any vial", 100)]
-  , ieffects = [ ELabel "of rose water", Impress, RefillCalm (-5)
+  { iname    = "vial"
+  , ifreq    = [("useful", 100), ("potion", 100), ("any vial", 100)]
+  , ieffects = [ Impress, RefillCalm (-5)
                , OnSmash ApplyPerfume, OnSmash (Explode "fragrance") ]
+  , ifeature = [ELabel "of rose water"] ++ ifeature potionTemplate
   }
 potion2 = potionTemplate
   { ifreq    = [("treasure", 100)]
   , irarity  = [(6, 9), (10, 9)]
-  , ieffects = [ ELabel "of Attraction", Impress, RefillCalm (-20)
+  , ieffects = [ Impress, RefillCalm (-20)
                , OnSmash (Explode "pheromone") ]
-  , ifeature = [Unique] ++ ifeature potionTemplate
+  , ifeature = [Unique, ELabel "of Attraction"] ++ ifeature potionTemplate
   -- , idesc    = ""
   }
 potion3 = potionTemplate
@@ -641,25 +644,25 @@ potion8 = potionTemplate
   { ifreq    = [("useful", 100), ("potion", 100), ("any vial", 100)]
   , icount   = 1 `d` 4
   , irarity  = [(1, 7)]
-  , ieffects = [ ELabel "of Shock"
-               , DropItem 1 maxBound COrgan "temporary condition"
+  , ieffects = [ DropItem 1 maxBound COrgan "temporary condition"
                , OnSmash (Explode "violent chemical") ]
+  , ifeature = [ELabel "of Shock"] ++ ifeature potionTemplate
   }
 potion9 = potionTemplate
   { ifreq    = [("useful", 100), ("potion", 100), ("any vial", 100)]
   , icount   = 1 `d` 3
   , irarity  = [(10, 7)]
-  , ieffects = [ ELabel "of Shock and Awe"
-               , DropItem maxBound maxBound COrgan "temporary condition"
+  , ieffects = [ DropItem maxBound maxBound COrgan "temporary condition"
                , OnSmash (Explode "violent chemical") ]
+  , ifeature = [ELabel "of Shock and Awe"] ++ ifeature potionTemplate
   }
 potion10 = potionTemplate
   { ifreq    = [("treasure", 100)]
   , irarity  = [(10, 4)]
-  , ieffects = [ ELabel "of Love", RefillHP 60, Impress, RefillCalm (-60)
+  , ieffects = [ RefillHP 60, Impress, RefillCalm (-60)
                , OnSmash (Explode "healing mist 2")
                , OnSmash (Explode "pheromone") ]
-  , ifeature = [Unique] ++ ifeature potionTemplate
+  , ifeature = [Unique, ELabel "of Love"] ++ ifeature potionTemplate
   -- , idesc    = ""
   }
 
@@ -686,16 +689,15 @@ scrollTemplate = ItemKind
 scroll1 = scrollTemplate
   { ifreq    = [("treasure", 100)]
   , irarity  = [(5, 9), (10, 9)]  -- mixed blessing, so available early
-  , ieffects = [ ELabel "of Reckless Beacon"
-               , Summon "hero" 1, Summon "mobile animal" (2 + 1 `d` 2) ]
-  , ifeature = [Unique] ++ ifeature scrollTemplate
+  , ieffects = [Summon "hero" 1, Summon "mobile animal" (2 + 1 `d` 2)]
+  , ifeature = [Unique, ELabel "of Reckless Beacon"] ++ ifeature scrollTemplate
   , idesc    = "The bright flame and sweet-smelling smoke of this heavily infused scroll should attract natural creatures inhabiting the area, including human survivors, if any."
   }
 scroll2 = scrollTemplate
   { ifreq    = [("useful", 100), ("any scroll", 100)]
   , irarity  = [(1, 2)]
-  , ieffects = [ ELabel "of greed", DetectItem 20, Teleport 20
-               , RefillCalm (-100) ]
+  , ieffects = [DetectItem 20, Teleport 20, RefillCalm (-100)]
+  , ifeature = [ELabel "of greed"] ++ ifeature scrollTemplate
   }
 scroll3 = scrollTemplate
   { ifreq    = [("useful", 100), ("any scroll", 100)]
@@ -738,21 +740,22 @@ scroll9 = scrollTemplate
   { ifreq    = [("useful", 100), ("any scroll", 100)]
   , icount   = 1 `d` 2
   , irarity  = [(1, 10)]  -- not too common, because experimenting is fun
-  , ieffects = [ ELabel "of scientific explanation"
-               , Composite [Identify, RefillCalm 10] ]
+  , ieffects = [Composite [Identify, RefillCalm 10]]
+  , ifeature = [ELabel "of scientific explanation"] ++ ifeature scrollTemplate
   , idesc    = "The most pressing existential concerns are met with a deeply satisfying scientific answer."
   }
 scroll10 = scrollTemplate
   { ifreq    = [("useful", 100), ("any scroll", 100)]
   , irarity  = [(10, 20)]
-  , ieffects = [ ELabel "of transfiguration"
-               , Composite [PolyItem, Explode "firecracker"] ]
+  , ieffects = [Composite [PolyItem, Explode "firecracker"]]
+  , ifeature = [ELabel "of transfiguration"] ++ ifeature scrollTemplate
   }
 scroll11 = scrollTemplate
   { ifreq    = [("treasure", 100)]
   , irarity  = [(6, 9), (10, 9)]
-  , ieffects = [ELabel "of Rescue Proclamation", Summon "hero" 1]
-  , ifeature = [Unique] ++ ifeature scrollTemplate
+  , ieffects = [Summon "hero" 1]
+  , ifeature = [Unique, ELabel "of Rescue Proclamation"]
+               ++ ifeature scrollTemplate
   , idesc    = "A survivor is found that enjoys, apparently, complete physiological integrity. If we so wish, we can pronounce him rescued and let him join our team."
   }
 scroll12 = scrollTemplate
@@ -762,7 +765,8 @@ scroll12 = scrollTemplate
   }
 scroll13 = scrollTemplate
   { ifreq    = [("useful", 100), ("any scroll", 100)]
-  , ieffects = [ELabel "of acute hearing", DetectActor 20]
+  , ieffects = [DetectActor 20]
+  , ifeature = [ELabel "of acute hearing"] ++ ifeature scrollTemplate
   }
 
 -- * Assorted tools
@@ -883,32 +887,30 @@ necklaceTemplate = ItemKind
 necklace1 = necklaceTemplate
   { ifreq    = [("treasure", 100)]
   , iaspects = [Timeout $ (1 `d` 2) * 20]
-  , ieffects = [ ELabel "of Aromata"
-               , Recharging (RefillHP 1) ]
-               ++ ieffects necklaceTemplate
-  , ifeature = [Unique, Durable, EqpSlot EqpSlotMiscBonus]
+  , ieffects = [Recharging (RefillHP 1)] ++ ieffects necklaceTemplate
+  , ifeature = [Unique, ELabel "of Aromata", Durable, EqpSlot EqpSlotMiscBonus]
                ++ ifeature necklaceTemplate
   , idesc    = "A cord of freshly dried herbs and healing berries."
   }
 necklace2 = necklaceTemplate
   { ifreq    = [("treasure", 100)]  -- just too nasty to call it useful
   , iaspects = [Timeout 30]
-  , ieffects = [ ELabel "of Live Bait"
-               , Recharging (Summon "mobile animal" $ 1 `d` 2)
+  , ieffects = [ Recharging (Summon "mobile animal" $ 1 `d` 2)
                , Recharging (Explode "waste")
                , Recharging Impress
                , Recharging (DropItem 1 maxBound COrgan "temporary condition") ]
                ++ ieffects necklaceTemplate
-  , ifeature = [Unique, Durable] ++ ifeature necklaceTemplate
+  , ifeature = [Unique, ELabel "of Live Bait", Durable]
+               ++ ifeature necklaceTemplate
   -- , idesc    = ""
   }
 necklace3 = necklaceTemplate
   { ifreq    = [("useful", 100)]
   , iaspects = [Timeout $ (1 `d` 2) * 20]
-  , ieffects = [ ELabel "of fearful listening"
-               , Recharging (DetectActor 10)
+  , ieffects = [ Recharging (DetectActor 10)
                , Recharging (RefillCalm (-20)) ]
                ++ ieffects necklaceTemplate
+  , ifeature = [ELabel "of fearful listening"] ++ ifeature necklaceTemplate
   }
 necklace4 = necklaceTemplate
   { ifreq    = [("useful", 100)]
@@ -919,11 +921,11 @@ necklace4 = necklaceTemplate
 necklace5 = necklaceTemplate
   { ifreq    = [("useful", 100)]
   , iaspects = [Timeout $ (7 - 1 `dL` 5) * 10]
-  , ieffects = [ ELabel "of escape"
-               , Recharging (Teleport $ 14 + 3 `d` 3)
+  , ieffects = [ Recharging (Teleport $ 14 + 3 `d` 3)
                , Recharging (DetectExit 20)
                , Recharging (RefillHP (-2)) ]  -- prevent micromanagement
                ++ ieffects necklaceTemplate
+  , ifeature = [ELabel "of escape"] ++ ifeature necklaceTemplate
   }
 necklace6 = necklaceTemplate
   { ifreq    = [("useful", 100)]
@@ -935,12 +937,11 @@ necklace6 = necklaceTemplate
 necklace7 = necklaceTemplate
   { ifreq    = [("treasure", 100)]
   , iaspects = [AddMaxHP 15, AddArmorMelee 20, AddArmorRanged 10, Timeout 4]
-  , ieffects = [ ELabel "of Overdrive"
-               , Recharging (InsertMove $ 1 `d` 3)  -- unpredictable
+  , ieffects = [ Recharging (InsertMove $ 1 `d` 3)  -- unpredictable
                , Recharging (RefillHP (-1))
                , Recharging (RefillCalm (-1)) ]  -- fake "hears something" :)
                ++ ieffects necklaceTemplate
-  , ifeature = [Unique, Durable, EqpSlot EqpSlotAddSpeed]
+  , ifeature = [Unique, ELabel "of Overdrive", Durable, EqpSlot EqpSlotAddSpeed]
                ++ ifeature necklaceTemplate
   -- , idesc    = ""
   }
@@ -1032,8 +1033,8 @@ ring2 = ringTemplate
   { ifreq    = [("treasure", 100)]
   , irarity  = [(10, 2)]
   , iaspects = [AddSpeed $ (1 `d` 2) * 3, AddMaxCalm (-40), AddMaxHP (-20)]
-  , ieffects = [ELabel "of Rush"]  -- no explosion, because Durable
-  , ifeature = [Unique, Durable, EqpSlot EqpSlotAddSpeed]
+  , ieffects = []  -- no explosion, because Durable
+  , ifeature = [Unique, ELabel "of Rush", Durable, EqpSlot EqpSlotAddSpeed]
                ++ ifeature ringTemplate
   -- , idesc    = ""
   }
@@ -1070,17 +1071,17 @@ ring7 = ringTemplate
   { ifreq    = [("useful", 10), ("ring of opportunity sniper", 1) ]
   , irarity  = [(10, 5)]
   , iaspects = [AddAbility AbProject 8]
-  , ieffects = [ ELabel "of opportunity sniper"
-               , Explode "distortion" ]  -- strong magic
-  , ifeature = [EqpSlot EqpSlotAbProject] ++ ifeature ringTemplate
+  , ieffects = [Explode "distortion"]  -- strong magic
+  , ifeature = [ELabel "of opportunity sniper", EqpSlot EqpSlotAbProject]
+               ++ ifeature ringTemplate
   }
 ring8 = ringTemplate
   { ifreq    = [("useful", 1), ("ring of opportunity grenadier", 1) ]
   , irarity  = [(1, 1)]
   , iaspects = [AddAbility AbProject 11]
-  , ieffects = [ ELabel "of opportunity grenadier"
-               , Explode "distortion" ]  -- strong magic
-  , ifeature = [EqpSlot EqpSlotAbProject] ++ ifeature ringTemplate
+  , ieffects = [Explode "distortion"]  -- strong magic
+  , ifeature = [ELabel "of opportunity grenadier", EqpSlot EqpSlotAbProject]
+               ++ ifeature ringTemplate
   }
 
 -- * Armor
@@ -1446,8 +1447,8 @@ gem5 = gem1
   , iflavour = zipPlain [BrYellow]
   , irarity  = [(1, 40), (10, 40)]
   , iaspects = []
-  , ieffects = [ELabel "of youth", RefillCalm 5, RefillHP 15]
-  , ifeature = [Applicable, Precious]
+  , ieffects = [RefillCalm 5, RefillHP 15]
+  , ifeature = [ELabel "of youth", Applicable, Precious]
   , idesc    = "A crystal vial of amber liquid, supposedly granting eternal youth and fetching 100 gold per piece. The main effect seems to be mild euphoria, but it admittedly heals minor ailments rather well."
   }
 currency = ItemKind

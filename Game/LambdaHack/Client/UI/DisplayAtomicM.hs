@@ -927,7 +927,6 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         isOurAlive = isOurCharacter && bhp b > 0
         isOurLeader = Just aid == mleader
     case effect of
-        IK.ELabel{} -> return ()
         IK.Burn{} -> do
           if isOurAlive
           then actorVerbMU aid bUI "feel burned"

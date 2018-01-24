@@ -41,7 +41,6 @@ effectToBenefit :: COps -> Faction -> IK.Effect -> (Double, Double)
 effectToBenefit cops fact eff =
   let delta x = (x, x)
   in case eff of
-    IK.ELabel _ -> delta 0
     IK.Burn d -> delta $ -(min 1500 $ 15 * Dice.meanDice d)
       -- often splash damage, armor doesn't block (but HurtMelee doesn't boost)
     IK.Explode _ -> delta 1  -- depends on explosion, but usually good,

@@ -275,7 +275,6 @@ effectSem source target iid c recharged periodic effect = do
   -- and we are likely to introduce more variety.
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect 0
   case effect of
-    IK.ELabel _ -> return UseDud
     IK.Burn nDm -> effectBurn nDm source target
     IK.Explode t -> effectExplode execSfx t target
     IK.RefillHP p -> effectRefillHP p source target

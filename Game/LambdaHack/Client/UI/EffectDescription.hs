@@ -40,7 +40,6 @@ data DetailLevel = DetailLow | DetailMedium | DetailHigh | DetailAll
 effectToSuffix :: DetailLevel -> Effect -> Text
 effectToSuffix detailLevel effect =
   case effect of
-    ELabel _ -> ""  -- printed specially
     Burn d -> wrapInParens (tshow d
                             <+> if Dice.maxDice d > 1 then "burns" else "burn")
     Explode t -> "of" <+> tshow t <+> "explosion"
@@ -281,6 +280,7 @@ kindAspectToSuffix aspect =
 featureToSuff :: Feature -> Text
 featureToSuff feat =
   case feat of
+    ELabel{} -> ""  -- too late
     Fragile -> wrapInChevrons "fragile"
     Lobable -> wrapInChevrons "can be lobbed"
     Durable -> wrapInChevrons "durable"
@@ -299,6 +299,7 @@ featureToSuff feat =
 featureToSentence :: Feature -> Maybe Text
 featureToSentence feat =
   case feat of
+    ELabel{} -> Nothing
     Fragile -> Nothing
     Lobable -> Nothing
     Durable -> Nothing

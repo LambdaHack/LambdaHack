@@ -46,7 +46,7 @@ import           Game.LambdaHack.Common.Vector
 -- Note that this time is mutually recursive with 'Effect'.
 data ItemKind = ItemKind
   { isymbol  :: Char                -- ^ map symbol
-  , iname    :: Text                -- ^ generic name
+  , iname    :: Text                -- ^ generic name; is pluralized if needed
   , ifreq    :: Freqs ItemKind      -- ^ frequency within groups
   , iflavour :: [Flavour]           -- ^ possible flavours
   , icount   :: Dice.Dice           -- ^ created in that quantity
@@ -67,8 +67,7 @@ data ItemKind = ItemKind
 -- another actor or the wielder himself. Many occurences in the same item
 -- are possible.
 data Effect =
-    ELabel Text        -- ^ secret (learned as effect) name of the item
-  | Burn Dice.Dice     -- ^ burn with this damage
+    Burn Dice.Dice     -- ^ burn with this damage
   | Explode (GroupName ItemKind)
       -- ^ explode producing this group of blasts
   | RefillHP Int       -- ^ modify HP of the actor by this amount
@@ -146,7 +145,8 @@ data ThrowMod = ThrowMod
 -- | Features of item. Affect only the item in question,
 -- not the actor carrying it, and so not additive in any sense.
 data Feature =
-    Fragile            -- ^ drop and break at target tile, even if no hit
+    ELabel Text        -- ^ extra label of the item; it's not pluralized
+  | Fragile            -- ^ drop and break at target tile, even if no hit
   | Lobable            -- ^ drop at target tile, even if no hit
   | Durable            -- ^ don't break even when hitting or applying
   | ToThrow ThrowMod   -- ^ parameters modifying a throw
@@ -224,7 +224,6 @@ boostItemKind i =
 -- noticeable behaviour.
 forApplyEffect :: Effect -> Bool
 forApplyEffect eff = case eff of
-  ELabel{} -> False
   OnSmash{} -> False
   Composite effs -> any forApplyEffect effs
   Temporary{} -> False
@@ -232,7 +231,6 @@ forApplyEffect eff = case eff of
 
 forIdEffect :: Effect -> Bool
 forIdEffect eff = case eff of
-  ELabel{} -> False
   OnSmash{} -> False
   Explode{} -> False  -- tentative; needed for rings to auto-identify
   Composite (eff1 : _) -> forIdEffect eff1  -- the rest may never fire
@@ -384,10 +382,6 @@ validateSingle ik@ItemKind{..} =
           timeoutAspect _ = False
           ts = filter timeoutAspect iaspects
       in ["more than one Timeout specification" | length ts > 1])
-  ++ (let f :: Effect -> Bool
-          f ELabel{} = True
-          f _ = False
-      in validateTopSingle ieffects "ELabel" f)
   ++ (let f :: Feature -> Bool
           f EqpSlot{} = True
           f _ = False
@@ -409,6 +403,11 @@ validateSingle ik@ItemKind{..} =
           f Temporary{} = True
           f _ = False
       in validateOnlyOne ieffects "Temporary" f)  -- may be duplicated if nested
+  ++ (let f :: Feature -> Bool
+          f ELabel{} = True
+          f _ = False
+          ts = filter f ifeature
+      in ["more than one ELabel specification" | length ts > 1])
   ++ (let f :: Feature -> Bool
           f ToThrow{} = True
           f _ = False
@@ -446,12 +445,6 @@ validateNotNested effs t f =
       ts = filter g effs
   in [ "effect" <+> t <+> "should be specified at top level, not nested"
      | length ts > 0 ]
-
--- If it's not nested and not duplicated at top level, it's not duplicated
--- anywhere.
-validateTopSingle :: [Effect] -> Text -> (Effect -> Bool) -> [Text]
-validateTopSingle effs t f =
-  validateOnlyOne effs t f ++ validateNotNested effs t f
 
 validateDups :: ItemKind -> Feature -> [Text]
 validateDups ItemKind{..} feat =
