@@ -14,7 +14,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.DeepSeq
 import Data.Binary
 import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
 import Data.Int (Int32)
@@ -41,8 +40,6 @@ instance Show Point where
 instance Binary Point where
   put = put . (fromIntegral :: Int -> Int32) . fromEnum
   get = fmap (toEnum . (fromIntegral :: Int32 -> Int)) get
-
-instance NFData Point
 
 -- This conversion cannot be used for PointArray indexing,
 -- because it is not contiguous --- we don't know the horizontal

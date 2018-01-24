@@ -27,7 +27,6 @@ import Game.LambdaHack.Common.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary
-import           Data.Hashable (Hashable)
 import qualified Data.Text as T
 import qualified Data.Vector as V
 import           GHC.Generics (Generic)
@@ -181,21 +180,11 @@ instance NFData ThrowMod
 
 instance NFData Feature
 
-instance Hashable Effect
-
-instance Hashable TimerDice
-
-instance Hashable ThrowMod
-
-instance Hashable Feature
-
 instance Binary Effect
 
 instance Binary TimerDice
 
 instance Binary ThrowMod
-
-instance Binary Feature
 
 emptyItemSpeedup :: ItemSpeedup
 emptyItemSpeedup = ItemSpeedup V.empty

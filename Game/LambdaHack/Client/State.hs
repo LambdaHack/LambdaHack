@@ -43,7 +43,8 @@ data StateClient = StateClient
                                     -- ^ pathfinding data for our actors
   , sundo         :: [CmdAtomic]    -- ^ atomic commands performed to date
   , sdiscoBenefit :: DiscoveryBenefit
-                                    -- ^ remembered AI benefits of items
+      -- ^ remembered AI benefits of items; could be recomputed at resume,
+      --   but they are costly to generate and not too large
   , sfper         :: PerLid         -- ^ faction perception indexed by level
   , salter        :: AlterLid       -- ^ cached alter ability data for positions
   , srandom       :: R.StdGen       -- ^ current random generator

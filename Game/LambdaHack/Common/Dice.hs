@@ -61,8 +61,6 @@ simpleDice DiceZ{} = True
 simpleDice DiceZL{} = True
 simpleDice _ = False
 
-instance Hashable Dice
-
 instance Binary Dice
 
 instance NFData Dice
@@ -219,8 +217,6 @@ reduceDice d1 =
 -- respectively, the X and Y cartesian 2D coordinates.
 data DiceXY = DiceXY Dice Dice
   deriving (Show, Generic)
-
-instance Hashable DiceXY
 
 instance Binary DiceXY
 

@@ -108,21 +108,11 @@ data EqpSlot =
 
 instance NFData Aspect
 
-instance NFData AspectRecord
-
 instance NFData EqpSlot
-
-instance Hashable Aspect
 
 instance Hashable AspectRecord
 
-instance Hashable EqpSlot
-
-instance Binary Aspect
-
 instance Binary AspectRecord
-
-instance Binary EqpSlot
 
 emptyAspectRecord :: AspectRecord
 emptyAspectRecord = AspectRecord

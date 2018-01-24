@@ -74,8 +74,6 @@ data CStore =
 
 instance Binary CStore
 
-instance Hashable CStore
-
 instance NFData CStore
 
 -- | Item slot and lore categories.
@@ -89,8 +87,6 @@ data SLore =
   deriving (Show, Read, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary SLore
-
-instance Hashable SLore
 
 instance NFData SLore
 
@@ -143,8 +139,6 @@ instance Show Tactic where
   show TPatrol         = "patrol area"
 
 instance Binary Tactic
-
-instance Hashable Tactic
 
 instance NFData Tactic
 

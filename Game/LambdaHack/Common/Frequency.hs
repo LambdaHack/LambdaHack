@@ -17,9 +17,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Control.Applicative
-import Control.DeepSeq
-import Data.Binary
-import Data.Hashable (Hashable)
 import Data.Int (Int32)
 import Data.Ord (comparing)
 import GHC.Generics (Generic)
@@ -82,12 +79,6 @@ instance MonadPlus Frequency where
 instance Alternative Frequency where
   (<|>) = mplus
   empty = mzero
-
-instance Hashable a => Hashable (Frequency a)
-
-instance Binary a => Binary (Frequency a)
-
-instance NFData a => NFData (Frequency a)
 
 -- | Uniform discrete frequency distribution.
 uniformFreq :: Text -> [a] -> Frequency a
