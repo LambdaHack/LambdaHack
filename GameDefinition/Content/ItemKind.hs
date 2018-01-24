@@ -983,13 +983,7 @@ sightSharpening = ringTemplate  -- small and round, so mistaken for a ring
 -- of eqp and so activating them would require UI tedium: looking for
 -- them in eqp and inv or even activating a wrong item by mistake.
 --
--- However, some rings have the explosion effect.
--- They explode on use (and throw), for the fun of hitting everything
--- around without the risk of being hit. In case of teleportation explosion
--- this can also be used to immediately teleport close friends, as opposed
--- to throwing the ring, which takes time.
---
--- Bu general mechanisms, due to not having effects that could identify
+-- By general mechanisms, due to not having effects that could identify
 -- them by observing the effect, rings are identified on pickup.
 -- That's unlike necklaces, which provide the fun of id-by-use, because they
 -- have effects and when the effects are triggered, they get identified.
@@ -1006,21 +1000,21 @@ ringTemplate = ItemKind
   , iaspects = []
   , ieffects = []
   , ifeature = [HideAs "ring unknown", Precious, Equipable]
-  , idesc    = "It looks like an ordinary object, but it's in fact a generator of exceptional effects: adding to some of your natural abilities and subtracting from others. You'd profit enormously if you could find a way to multiply such generators."
+  , idesc    = "It looks like an ordinary object, but it's in fact a generator of exceptional effects: adding to some of your natural qualities and subtracting from others."
   , ikit     = []
   }
 ring1 = ringTemplate
   { ifreq    = [("useful", 100)]
   , irarity  = [(10, 2)]
   , iaspects = [AddSpeed $ 1 `d` 3, AddMaxHP (-15)]
-  , ieffects = [Explode "distortion"]  -- strong magic
+  , ieffects = [OnSmash (Explode "distortion")]  -- strong magic
   , ifeature = [EqpSlot EqpSlotAddSpeed] ++ ifeature ringTemplate
   }
 ring2 = ringTemplate
   { ifreq    = [("treasure", 100)]
   , irarity  = [(10, 2)]
   , iaspects = [AddSpeed $ (1 `d` 2) * 3, AddMaxCalm (-40), AddMaxHP (-20)]
-  , ieffects = []  -- no explosion, because Durable
+  , ieffects = [OnSmash (Explode "distortion")]  -- strong magic
   , ifeature = [Unique, ELabel "of Rush", Durable, EqpSlot EqpSlotAddSpeed]
                ++ ifeature ringTemplate
   -- , idesc    = ""
@@ -1050,7 +1044,6 @@ ring6 = ringTemplate  -- by the time it's found, probably no space in eqp
   { ifreq    = [("useful", 100)]
   , irarity  = [(5, 0), (10, 2)]
   , iaspects = [AddShine $ 1 `d` 2]
-  , ieffects = [Explode "distortion"]  -- strong magic
   , ifeature = [EqpSlot EqpSlotLightSource] ++ ifeature ringTemplate
   , idesc    = "A sturdy ring with a large, shining stone."
   }
@@ -1058,7 +1051,7 @@ ring7 = ringTemplate
   { ifreq    = [("useful", 10), ("ring of opportunity sniper", 1) ]
   , irarity  = [(10, 5)]
   , iaspects = [AddAbility AbProject 8]
-  , ieffects = [Explode "distortion"]  -- strong magic
+  , ieffects = [OnSmash (Explode "distortion")]  -- strong magic
   , ifeature = [ELabel "of opportunity sniper", EqpSlot EqpSlotAbProject]
                ++ ifeature ringTemplate
   }
@@ -1066,7 +1059,7 @@ ring8 = ringTemplate
   { ifreq    = [("useful", 1), ("ring of opportunity grenadier", 1) ]
   , irarity  = [(1, 1)]
   , iaspects = [AddAbility AbProject 11]
-  , ieffects = [Explode "distortion"]  -- strong magic
+  , ieffects = [OnSmash (Explode "distortion")]  -- strong magic
   , ifeature = [ELabel "of opportunity grenadier", EqpSlot EqpSlotAbProject]
                ++ ifeature ringTemplate
   }

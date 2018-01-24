@@ -69,7 +69,7 @@ data ItemKind = ItemKind
 data Effect =
     Burn Dice.Dice     -- ^ burn with this damage
   | Explode (GroupName ItemKind)
-      -- ^ explode producing this group of blasts
+                       -- ^ explode producing this group of blasts
   | RefillHP Int       -- ^ modify HP of the actor by this amount
   | RefillCalm Int     -- ^ modify Calm of the actor by this amount
   | Dominate           -- ^ change actor's allegiance
@@ -110,8 +110,8 @@ data Effect =
   | OneOf [Effect]        -- ^ trigger one of the effects with equal probability
   | OnSmash Effect
       -- ^ trigger the effect when item smashed (not when applied nor meleed)
-  | Recharging Effect  -- ^ this effect inactive until timeout passes
-  | Composite [Effect]  -- ^ only fire next effect if previous fully activated
+  | Recharging Effect     -- ^ this effect inactive until timeout passes
+  | Composite [Effect]    -- ^ only fire next effect if previous fully activated
   | Temporary Text
       -- ^ the item is temporary, vanishes at even void Periodic activation,
       --   unless Durable and not Fragile, and shows message with
@@ -221,10 +221,12 @@ boostItemKind i =
      else i
 
 -- | Whether the effect has a chance of exhibiting any potentially
--- noticeable behaviour.
+-- noticeable behaviour, except when the item is destroyed.
+-- We assume at least one of @OneOf@ effects must be noticeable.
 forApplyEffect :: Effect -> Bool
 forApplyEffect eff = case eff of
   OnSmash{} -> False
+  Recharging eff2 -> forApplyEffect eff2
   Composite effs -> any forApplyEffect effs
   Temporary{} -> False
   _ -> True
@@ -232,7 +234,7 @@ forApplyEffect eff = case eff of
 forIdEffect :: Effect -> Bool
 forIdEffect eff = case eff of
   OnSmash{} -> False
-  Explode{} -> False  -- tentative; needed for rings to auto-identify
+  Recharging eff2 -> forIdEffect eff2
   Composite (eff1 : _) -> forIdEffect eff1  -- the rest may never fire
   _ -> True
 
