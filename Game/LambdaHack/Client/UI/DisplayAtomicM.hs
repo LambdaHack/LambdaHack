@@ -935,7 +935,6 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         isOurLeader = Just aid == mleader
     case effect of
         IK.ELabel{} -> return ()
-        IK.EqpSlot{} -> return ()
         IK.Burn{} -> do
           if isOurAlive
           then actorVerbMU aid bUI "feel burned"
@@ -1076,8 +1075,6 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.OnSmash{} -> error $ "" `showFailure` sfx
         IK.Recharging{} -> error $ "" `showFailure` sfx
         IK.Temporary t -> actorVerbMU aid bUI $ MU.Text t
-        IK.Unique -> error $ "" `showFailure` sfx
-        IK.Periodic -> error $ "" `showFailure` sfx
         IK.Composite{} -> error $ "" `showFailure` sfx
   SfxMsgFid _ sfxMsg -> do
     mleader <- getsClient sleader

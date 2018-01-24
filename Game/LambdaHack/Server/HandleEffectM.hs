@@ -279,7 +279,6 @@ effectSem source target iid c recharged periodic effect = do
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect 0
   case effect of
     IK.ELabel _ -> return UseDud
-    IK.EqpSlot _ -> return UseDud
     IK.Burn nDm -> effectBurn nDm source target
     IK.Explode t -> effectExplode execSfx t target
     IK.RefillHP p -> effectRefillHP p source target
@@ -315,8 +314,6 @@ effectSem source target iid c recharged periodic effect = do
     IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
     IK.Recharging e -> effectRecharging recursiveCall e recharged
     IK.Temporary _ -> effectTemporary execSfx source iid c
-    IK.Unique -> return UseDud
-    IK.Periodic -> return UseDud
     IK.Composite l -> effectComposite recursiveCall l
 
 -- * Individual semantic functions for effects
@@ -1127,7 +1124,7 @@ effectPolyItem execSfx source target = do
            execSfxAtomic $ SfxMsgFid (bfid sb)
                          $ SfxPurposeTooFew maxCount itemK
            return UseId
-         | IK.Unique `elem` IK.ieffects itemKind -> do
+         | IK.Unique `elem` IK.ifeature itemKind -> do
            execSfxAtomic $ SfxMsgFid (bfid sb) SfxPurposeUnique
            return UseId
          | otherwise -> do

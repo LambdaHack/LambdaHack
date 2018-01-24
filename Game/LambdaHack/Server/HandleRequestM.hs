@@ -602,7 +602,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
 computeRndTimeout :: Time -> ItemFull -> Rnd (Maybe Time)
 computeRndTimeout localTime ItemFull{..}=
   case IA.aTimeout $ itemAspect itemDisco of
-    t | t /= 0 && IK.Periodic `elem` IK.ieffects itemKind -> do
+    t | t /= 0 && IK.Periodic `elem` IK.ifeature itemKind -> do
       rndT <- randomR (0, t)
       let rndTurns = timeDeltaScale (Delta timeTurn) rndT
       return $ Just $ timeShift localTime rndTurns

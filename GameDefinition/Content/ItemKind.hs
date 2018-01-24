@@ -239,8 +239,9 @@ light1 = ItemKind
   , idamage  = 0
   , iaspects = [ AddShine 3       -- not only flashes, but also sparks,
                , AddSight (-2) ]  -- so unused by AI due to the mixed blessing
-  , ieffects = [Burn 1, EqpSlot EqpSlotLightSource]
-  , ifeature = [Lobable, Equipable]  -- not Fragile; reusable flare
+  , ieffects = [Burn 1]
+  , ifeature = [Lobable, Equipable, EqpSlot EqpSlotLightSource]
+                 -- not Fragile; reusable flare
   , idesc    = "A smoking, heavy wooden torch, burning in an unsteady glow."
   , ikit     = []
   }
@@ -255,9 +256,8 @@ light2 = ItemKind
   , iweight  = 1500
   , idamage  = 1 `d` 1
   , iaspects = [AddShine 3, AddSight (-1)]
-  , ieffects = [ Burn 1, Paralyze 6, OnSmash (Explode "burning oil 2")
-               , EqpSlot EqpSlotLightSource ]
-  , ifeature = [Lobable, Fragile, Equipable]
+  , ieffects = [Burn 1, Paralyze 6, OnSmash (Explode "burning oil 2")]
+  , ifeature = [Lobable, Fragile, Equipable, EqpSlot EqpSlotLightSource ]
   , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
   , ikit     = []
   }
@@ -272,9 +272,8 @@ light3 = ItemKind
   , iweight  = 3000
   , idamage  = 4 `d` 1
   , iaspects = [AddShine 4, AddSight (-1)]
-  , ieffects = [ Burn 1, Paralyze 8, OnSmash (Explode "burning oil 4")
-               , EqpSlot EqpSlotLightSource ]
-  , ifeature = [Lobable, Fragile, Equipable]
+  , ieffects = [Burn 1, Paralyze 8, OnSmash (Explode "burning oil 4")]
+  , ifeature = [Lobable, Fragile, Equipable, EqpSlot EqpSlotLightSource]
   , idesc    = "Very bright and very heavy brass lantern."
   , ikit     = []
   }
@@ -584,8 +583,9 @@ potion1 = potionTemplate
 potion2 = potionTemplate
   { ifreq    = [("treasure", 100)]
   , irarity  = [(6, 9), (10, 9)]
-  , ieffects = [ Unique, ELabel "of Attraction", Impress, RefillCalm (-20)
+  , ieffects = [ ELabel "of Attraction", Impress, RefillCalm (-20)
                , OnSmash (Explode "pheromone") ]
+  , ifeature = [Unique] ++ ifeature potionTemplate
   -- , idesc    = ""
   }
 potion3 = potionTemplate
@@ -656,10 +656,10 @@ potion9 = potionTemplate
 potion10 = potionTemplate
   { ifreq    = [("treasure", 100)]
   , irarity  = [(10, 4)]
-  , ieffects = [ Unique, ELabel "of Love", RefillHP 60
-               , Impress, RefillCalm (-60)
+  , ieffects = [ ELabel "of Love", RefillHP 60, Impress, RefillCalm (-60)
                , OnSmash (Explode "healing mist 2")
                , OnSmash (Explode "pheromone") ]
+  , ifeature = [Unique] ++ ifeature potionTemplate
   -- , idesc    = ""
   }
 
@@ -686,8 +686,9 @@ scrollTemplate = ItemKind
 scroll1 = scrollTemplate
   { ifreq    = [("treasure", 100)]
   , irarity  = [(5, 9), (10, 9)]  -- mixed blessing, so available early
-  , ieffects = [ Unique, ELabel "of Reckless Beacon"
+  , ieffects = [ ELabel "of Reckless Beacon"
                , Summon "hero" 1, Summon "mobile animal" (2 + 1 `d` 2) ]
+  , ifeature = [Unique] ++ ifeature scrollTemplate
   , idesc    = "The bright flame and sweet-smelling smoke of this heavily infused scroll should attract natural creatures inhabiting the area, including human survivors, if any."
   }
 scroll2 = scrollTemplate
@@ -750,7 +751,8 @@ scroll10 = scrollTemplate
 scroll11 = scrollTemplate
   { ifreq    = [("treasure", 100)]
   , irarity  = [(6, 9), (10, 9)]
-  , ieffects = [Unique, ELabel "of Rescue Proclamation", Summon "hero" 1]
+  , ieffects = [ELabel "of Rescue Proclamation", Summon "hero" 1]
+  , ifeature = [Unique] ++ ifeature scrollTemplate
   , idesc    = "A survivor is found that enjoys, apparently, complete physiological integrity. If we so wish, we can pronounce him rescued and let him join our team."
   }
 scroll12 = scrollTemplate
@@ -797,8 +799,8 @@ sharpeningTool = ItemKind
   , iweight  = 400
   , idamage  = 0
   , iaspects = [AddHurtMelee $ (1 `dL` 5) * 5]
-  , ieffects = [EqpSlot EqpSlotAddHurtMelee]
-  , ifeature = [Equipable]
+  , ieffects = []
+  , ifeature = [Equipable, EqpSlot EqpSlotAddHurtMelee]
   , idesc    = "A portable sharpening stone that lets you fix your weapons between or even during fights, without the need to set up camp, fish out tools and assemble a proper sharpening workshop."
   , ikit     = []
   }
@@ -814,10 +816,9 @@ seeingItem = ItemKind
   , idamage  = 0
   , iaspects = [ AddSight 10, AddMaxCalm 30, AddShine 2
                , Timeout $ 1 + 1 `d` 2 ]
-  , ieffects = [ Periodic
-               , Recharging (toOrganNone "poisoned")
+  , ieffects = [ Recharging (toOrganNone "poisoned")
                , Recharging (Summon "mobile monster" 1) ]
-  , ifeature = []
+  , ifeature = [Periodic]
   , idesc    = "A slimy, dilated green pupil torn out from some giant eye. Clear and focused, as if still alive."
   , ikit     = []
   }
@@ -834,8 +835,8 @@ motionScanner = ItemKind
   , iaspects = [ AddNocto 1
                , AddArmorMelee (-10 + 1 `dL` 5)
                , AddArmorRanged (-10 + 1 `dL` 5) ]
-  , ieffects = [EqpSlot EqpSlotMiscBonus]
-  , ifeature = [Equipable]
+  , ieffects = []
+  , ifeature = [Equipable, EqpSlot EqpSlotMiscBonus]
   , idesc    = "A silk flag with a bell for detecting sudden draft changes. May indicate a nearby corridor crossing or a fast enemy approaching in the dark. Is also very noisy."
   , ikit     = []
   }
@@ -855,9 +856,9 @@ gorget = ItemKind
   , iaspects = [ Timeout $ (1 `d` 2) * 2
                , AddArmorMelee 3
                , AddArmorRanged 2 ]
-  , ieffects = [ Unique, Periodic
-               , Recharging (RefillCalm 1), EqpSlot EqpSlotMiscBonus ]
-  , ifeature = [Durable, Precious, Equipable]
+  , ieffects = [Recharging (RefillCalm 1)]
+  , ifeature = [ Unique, Periodic, Durable, Precious, Equipable
+               , EqpSlot EqpSlotMiscBonus ]
   , idesc    = "Highly ornamental, cold, large, steel medallion on a chain. Unlikely to offer much protection as an armor piece, but the old, worn engraving reassures you."
   , ikit     = []
   }
@@ -873,9 +874,8 @@ necklaceTemplate = ItemKind
   , iweight  = 30
   , idamage  = 0
   , iaspects = []
-  , ieffects = [Periodic]
-  , ifeature = [ HideAs "necklace unknown"
-               , Precious, Equipable
+  , ieffects = []
+  , ifeature = [ Periodic, HideAs "necklace unknown", Precious, Equipable
                , toVelocity 50 ]  -- not dense enough
   , idesc    = "Menacing Greek symbols shimmer with increasing speeds along a chain of fine encrusted links. After a tense build-up, a prismatic arc shoots towards the ground and the iridescence subdues, becomes ordered and resembles a harmless ornament again, for a time."
   , ikit     = []
@@ -883,22 +883,23 @@ necklaceTemplate = ItemKind
 necklace1 = necklaceTemplate
   { ifreq    = [("treasure", 100)]
   , iaspects = [Timeout $ (1 `d` 2) * 20]
-  , ieffects = [ Unique, ELabel "of Aromata", EqpSlot EqpSlotMiscBonus
+  , ieffects = [ ELabel "of Aromata"
                , Recharging (RefillHP 1) ]
                ++ ieffects necklaceTemplate
-  , ifeature = Durable : ifeature necklaceTemplate
+  , ifeature = [Unique, Durable, EqpSlot EqpSlotMiscBonus]
+               ++ ifeature necklaceTemplate
   , idesc    = "A cord of freshly dried herbs and healing berries."
   }
 necklace2 = necklaceTemplate
   { ifreq    = [("treasure", 100)]  -- just too nasty to call it useful
   , iaspects = [Timeout 30]
-  , ieffects = [ Unique, ELabel "of Live Bait"
+  , ieffects = [ ELabel "of Live Bait"
                , Recharging (Summon "mobile animal" $ 1 `d` 2)
                , Recharging (Explode "waste")
                , Recharging Impress
                , Recharging (DropItem 1 maxBound COrgan "temporary condition") ]
                ++ ieffects necklaceTemplate
-  , ifeature = Durable : ifeature necklaceTemplate
+  , ifeature = [Unique, Durable] ++ ifeature necklaceTemplate
   -- , idesc    = ""
   }
 necklace3 = necklaceTemplate
@@ -934,12 +935,13 @@ necklace6 = necklaceTemplate
 necklace7 = necklaceTemplate
   { ifreq    = [("treasure", 100)]
   , iaspects = [AddMaxHP 15, AddArmorMelee 20, AddArmorRanged 10, Timeout 4]
-  , ieffects = [ Unique, ELabel "of Overdrive", EqpSlot EqpSlotAddSpeed
+  , ieffects = [ ELabel "of Overdrive"
                , Recharging (InsertMove $ 1 `d` 3)  -- unpredictable
                , Recharging (RefillHP (-1))
                , Recharging (RefillCalm (-1)) ]  -- fake "hears something" :)
                ++ ieffects necklaceTemplate
-  , ifeature = Durable : ifeature necklaceTemplate
+  , ifeature = [Unique, Durable, EqpSlot EqpSlotAddSpeed]
+               ++ ifeature necklaceTemplate
   -- , idesc    = ""
   }
 necklace8 = necklaceTemplate
@@ -968,8 +970,8 @@ imageItensifier = ItemKind
   , iweight  = 500
   , idamage  = 0
   , iaspects = [AddNocto 1, AddSight (-1), AddArmorMelee $ (1 `dL` 3) * 3]
-  , ieffects = [EqpSlot EqpSlotMiscBonus]
-  , ifeature = [Precious, Durable, Equipable]
+  , ieffects = []
+  , ifeature = [Precious, Durable, Equipable, EqpSlot EqpSlotMiscBonus]
   , idesc    = "Contraption of lenses and mirrors on a polished brass headband for capturing and strengthening light in dark environment. Hampers vision in daylight. Stackable."
   , ikit     = []
   }
@@ -984,8 +986,8 @@ sightSharpening = ItemKind
   , iweight  = 50
   , idamage  = 0
   , iaspects = [AddSight $ 1 + 1 `d` 2, AddHurtMelee $ (1 `d` 2) * 3]
-  , ieffects = [EqpSlot EqpSlotAddSight]
-  , ifeature = [Precious, Durable, Equipable]
+  , ieffects = []
+  , ifeature = [Precious, Durable, Equipable, EqpSlot EqpSlotAddSight]
   , idesc    = "Let's you better focus your weaker eye."
   , ikit     = []
   }
@@ -1023,16 +1025,16 @@ ring1 = ringTemplate
   { ifreq    = [("useful", 100)]
   , irarity  = [(10, 2)]
   , iaspects = [AddSpeed $ 1 `d` 3, AddMaxHP (-15)]
-  , ieffects = [ Explode "distortion"  -- strong magic
-               , EqpSlot EqpSlotAddSpeed ]
+  , ieffects = [Explode "distortion"]  -- strong magic
+  , ifeature = [EqpSlot EqpSlotAddSpeed] ++ ifeature ringTemplate
   }
 ring2 = ringTemplate
   { ifreq    = [("treasure", 100)]
   , irarity  = [(10, 2)]
   , iaspects = [AddSpeed $ (1 `d` 2) * 3, AddMaxCalm (-40), AddMaxHP (-20)]
-  , ieffects = [ Unique, ELabel "of Rush"  -- no explosion, because Durable
-               , EqpSlot EqpSlotAddSpeed ]
-  , ifeature = Durable : ifeature ringTemplate
+  , ieffects = [ELabel "of Rush"]  -- no explosion, because Durable
+  , ifeature = [Unique, Durable, EqpSlot EqpSlotAddSpeed]
+               ++ ifeature ringTemplate
   -- , idesc    = ""
   }
 ring3 = ringTemplate
@@ -1040,13 +1042,13 @@ ring3 = ringTemplate
   , irarity  = [(10, 8)]
   , iaspects = [ AddMaxHP $ 10 + (1 `dL` 5) * 2
                , AddMaxCalm $ -20 + (1 `dL` 5) * 2 ]
-  , ieffects = [EqpSlot EqpSlotAddMaxHP]
+  , ifeature = [EqpSlot EqpSlotAddMaxHP] ++ ifeature ringTemplate
   }
 ring4 = ringTemplate
   { ifreq    = [("useful", 100)]
   , irarity  = [(5, 1), (10, 10)]  -- needed after other rings drop Calm
   , iaspects = [AddMaxCalm $ 25 + (1 `dL` 4) * 5]
-  , ieffects = [EqpSlot EqpSlotMiscBonus]
+  , ifeature = [EqpSlot EqpSlotMiscBonus] ++ ifeature ringTemplate
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with solemn, strangely comforting, worn out words."
   }
 ring5 = ringTemplate
@@ -1054,14 +1056,14 @@ ring5 = ringTemplate
   , irarity  = [(3, 3), (10, 3)]
   , iaspects = [ AddHurtMelee $ (2 + 1 `d` 2 + (1 `dL` 2) * 2 ) * 3
                , AddMaxHP $ (-2 - (1 `d` 2) + (1 `dL` 2) * 2) * 3 ]  -- !!!
-  , ieffects = [EqpSlot EqpSlotAddHurtMelee]
+  , ifeature = [EqpSlot EqpSlotAddHurtMelee] ++ ifeature ringTemplate
   }
 ring6 = ringTemplate  -- by the time it's found, probably no space in eqp
   { ifreq    = [("useful", 100)]
   , irarity  = [(5, 0), (10, 2)]
   , iaspects = [AddShine $ 1 `d` 2]
-  , ieffects = [ Explode "distortion"  -- strong magic
-               , EqpSlot EqpSlotLightSource ]
+  , ieffects = [Explode "distortion"]  -- strong magic
+  , ifeature = [EqpSlot EqpSlotLightSource] ++ ifeature ringTemplate
   , idesc    = "A sturdy ring with a large, shining stone."
   }
 ring7 = ringTemplate
@@ -1069,16 +1071,16 @@ ring7 = ringTemplate
   , irarity  = [(10, 5)]
   , iaspects = [AddAbility AbProject 8]
   , ieffects = [ ELabel "of opportunity sniper"
-               , Explode "distortion"  -- strong magic
-               , EqpSlot EqpSlotAbProject ]
+               , Explode "distortion" ]  -- strong magic
+  , ifeature = [EqpSlot EqpSlotAbProject] ++ ifeature ringTemplate
   }
 ring8 = ringTemplate
   { ifreq    = [("useful", 1), ("ring of opportunity grenadier", 1) ]
   , irarity  = [(1, 1)]
   , iaspects = [AddAbility AbProject 11]
   , ieffects = [ ELabel "of opportunity grenadier"
-               , Explode "distortion"  -- strong magic
-               , EqpSlot EqpSlotAbProject ]
+               , Explode "distortion" ]  -- strong magic
+  , ifeature = [EqpSlot EqpSlotAbProject] ++ ifeature ringTemplate
   }
 
 -- * Armor
@@ -1096,8 +1098,8 @@ armorLeather = ItemKind
   , iaspects = [ AddHurtMelee (-2)
                , AddArmorMelee $ (2 + 1 `dL` 4) * 5
                , AddArmorRanged $ (1 + 1 `dL` 2) * 3 ]
-  , ieffects = [EqpSlot EqpSlotAddArmorMelee]
-  , ifeature = [Durable, Equipable]
+  , ieffects = []
+  , ifeature = [Durable, Equipable, EqpSlot EqpSlotAddArmorMelee]
   , idesc    = "A stiff jacket formed from leather boiled in bee wax, padded linen and horse hair. Protects from anything that is not too sharp. Smells much better than the rest of your garment."
   , ikit     = []
   }
@@ -1111,8 +1113,8 @@ armorMail = armorLeather
   , iaspects = [ AddHurtMelee (-3)
                , AddArmorMelee $ (2 + 1 `dL` 4) * 5
                , AddArmorRanged $ (4 + 1 `dL` 2) * 3 ]
-  , ieffects = [EqpSlot EqpSlotAddArmorRanged]
-  , ifeature = [Durable, Equipable]
+  , ieffects = []
+  , ifeature = [Durable, Equipable, EqpSlot EqpSlotAddArmorRanged]
   , idesc    = "A long shirt woven from iron rings that are hard to pierce through. Discourages foes from attacking your torso, making it harder for them to hit you."
   }
 gloveFencing = ItemKind
@@ -1127,9 +1129,9 @@ gloveFencing = ItemKind
   , idamage  = 1 `d` 1
   , iaspects = [ AddHurtMelee $ (2 + 1 `d` 2 + 1 `dL` 2) * 3
                , AddArmorRanged $ (1 `dL` 2) * 3 ]
-  , ieffects = [EqpSlot EqpSlotAddHurtMelee]
+  , ieffects = []
   , ifeature = [ toVelocity 50  -- flaps and flutters
-               , Durable, Equipable ]
+               , Durable, Equipable, EqpSlot EqpSlotAddHurtMelee ]
   , idesc    = "A fencing glove from rough leather ensuring a good grip. Also quite effective in deflecting or even catching slow projectiles."
   , ikit     = []
   }
@@ -1141,7 +1143,8 @@ gloveGauntlet = gloveFencing
   , iweight  = 300
   , idamage  = 2 `d` 1
   , iaspects = [AddArmorMelee $ (1 + 1 `dL` 4) * 5]
-  , ieffects = [EqpSlot EqpSlotAddArmorMelee]
+  , ifeature = [ toVelocity 50  -- flaps and flutters
+               , Durable, Equipable, EqpSlot EqpSlotAddArmorMelee ]
   , idesc    = "Long leather gauntlet covered in overlapping steel plates."
   }
 gloveJousting = gloveFencing
@@ -1155,7 +1158,8 @@ gloveJousting = gloveFencing
                , AddArmorMelee $ (2 + 1 `d` 2 + 1 `dL` 2) * 5
                , AddArmorRanged $ (1 + 1 `dL` 2) * 3 ]
                  -- very random on purpose and can even be good on occasion
-  , ieffects = [Unique, EqpSlot EqpSlotAddArmorMelee]
+  , ifeature = [ toVelocity 50  -- flaps and flutters
+               , Unique, Durable, Equipable, EqpSlot EqpSlotAddArmorMelee ]
   , idesc    = "Rigid, steel, jousting handgear. If only you had a lance. And a horse."
   }
 
@@ -1180,10 +1184,9 @@ buckler = ItemKind
   , iaspects = [ AddArmorMelee 40  -- not enough to compensate; won't be in eqp
                , AddHurtMelee (-30)  -- too harmful; won't be wielded as weapon
                , Timeout $ (3 + 1 `d` 3 - 1 `dL` 3) * 2 ]
-  , ieffects = [ Recharging (PushActor (ThrowMod 100 50))  -- 1 step, slow
-               , EqpSlot EqpSlotAddArmorMelee ]
+  , ieffects = [Recharging (PushActor (ThrowMod 100 50))]  -- 1 step, slow
   , ifeature = [ toVelocity 50  -- unwieldy to throw
-               , Durable, Meleeable ]
+               , Durable, Meleeable, EqpSlot EqpSlotAddArmorMelee ]
   , idesc    = "Heavy and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too small to intercept projectiles with."
   , ikit     = []
   }
@@ -1196,10 +1199,9 @@ shield = buckler
   , iaspects = [ AddArmorMelee 80  -- not enough to compensate; won't be in eqp
                , AddHurtMelee (-70)  -- too harmful; won't be wielded as weapon
                , Timeout $ (3 + 1 `d` 3 - 1 `dL` 3) * 4 ]
-  , ieffects = [ Recharging (PushActor (ThrowMod 400 25))  -- 1 step, fast
-               , EqpSlot EqpSlotAddArmorMelee ]
+  , ieffects = [Recharging (PushActor (ThrowMod 400 25))]  -- 1 step, fast
   , ifeature = [ toVelocity 50  -- unwieldy to throw
-               , Durable, Meleeable ]
+               , Durable, Meleeable, EqpSlot EqpSlotAddArmorMelee ]
   , idesc    = "Large and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
   }
 shield2 = shield
@@ -1228,9 +1230,9 @@ dagger = ItemKind
   , iaspects = [ AddHurtMelee $ (-1 + 1 `d` 2 + 1 `dL` 2) * 3
                , AddArmorMelee $ (1 `d` 2) * 5 ]
                    -- very common, so don't make too random
-  , ieffects = [EqpSlot EqpSlotWeapon]
+  , ieffects = []
   , ifeature = [ toVelocity 40  -- ensuring it hits with the tip costs speed
-               , Durable, Meleeable ]
+               , Durable, Meleeable, EqpSlot EqpSlotWeapon ]
   , idesc    = "A short dagger for thrusting and parrying blows. Does not penetrate deeply, but is hard to block. Especially useful in conjunction with a larger weapon."
   , ikit     = []
   }
@@ -1251,8 +1253,8 @@ daggerDropBestWeapon = dagger
   -- later on in the game, but provides some variety at the start.
   , iaspects = iaspects dagger ++ [Timeout $ (1 `d` 2) * 20 - 16]
   , ieffects = ieffects dagger
-               ++ [ Unique
-                  , Recharging DropBestWeapon, Recharging $ RefillCalm (-3) ]
+               ++ [ Recharging DropBestWeapon, Recharging $ RefillCalm (-3) ]
+  , ifeature = [Unique] ++ ifeature dagger
   , idesc    = "A double dagger that a focused fencer can use to catch and twist away an opponent's blade occasionally."
   }
 hammer = ItemKind
@@ -1266,9 +1268,9 @@ hammer = ItemKind
   , iweight  = 1600
   , idamage  = 8 `d` 1
   , iaspects = [AddHurtMelee $ (-1 + 1 `d` 2 + 1 `dL` 2) * 3]
-  , ieffects = [EqpSlot EqpSlotWeapon]
+  , ieffects = []
   , ifeature = [ toVelocity 40  -- ensuring it hits with the tip costs speed
-               , Durable, Meleeable ]
+               , Durable, Meleeable, EqpSlot EqpSlotWeapon ]
   , idesc    = "It may not cause grave wounds, but neither does it glance off nor ricochet. Great sidearm for opportunistic blows against armored foes."
   , ikit     = []
   }
@@ -1288,7 +1290,8 @@ hammerParalyze = hammer
   , irarity  = [(5, 1), (10, 6)]
   , idamage  = 8 `d` 1
   , iaspects = iaspects hammer ++ [Timeout 7]
-  , ieffects = ieffects hammer ++ [Unique, Recharging $ Paralyze 10]
+  , ieffects = ieffects hammer ++ [Recharging $ Paralyze 10]
+  , ifeature = [Unique] ++ ifeature hammer
   -- , idesc    = ""
   }
 hammerSpark = hammer
@@ -1297,7 +1300,8 @@ hammerSpark = hammer
   , irarity  = [(5, 1), (10, 6)]
   , idamage  = 12 `d` 1
   , iaspects = iaspects hammer ++ [AddShine 3, Timeout 10]
-  , ieffects = ieffects hammer ++ [Unique, Recharging $ Explode "spark"]
+  , ieffects = ieffects hammer ++ [Recharging $ Explode "spark"]
+  , ifeature = [Unique] ++ ifeature hammer
   -- , idesc    = ""
   }
 sword = ItemKind
@@ -1311,9 +1315,9 @@ sword = ItemKind
   , iweight  = 2000
   , idamage  = 10 `d` 1
   , iaspects = []
-  , ieffects = [EqpSlot EqpSlotWeapon]
+  , ieffects = []
   , ifeature = [ toVelocity 40  -- ensuring it hits with the tip costs speed
-               , Durable, Meleeable ]
+               , Durable, Meleeable, EqpSlot EqpSlotWeapon ]
   , idesc    = "Difficult to master; deadly when used effectively. The steel is particularly hard and keen, but rusts quickly without regular maintenance."
   , ikit     = []
   }
@@ -1322,7 +1326,8 @@ swordImpress = sword
   , ifreq    = [("treasure", 20)]
   , irarity  = [(5, 1), (10, 6)]
   , iaspects = [Timeout $ (1 `d` 2) * 40 - 30]
-  , ieffects = ieffects sword ++ [Unique, Recharging Impress]
+  , ieffects = ieffects sword ++ [Recharging Impress]
+  , ifeature = [Unique] ++ ifeature sword
   , idesc    = "A particularly well-balance blade, lending itself to impressive shows of fencing skill."
   }
 swordNullify = sword
@@ -1331,10 +1336,10 @@ swordNullify = sword
   , irarity  = [(5, 1), (10, 6)]
   , iaspects = [Timeout 10]
   , ieffects = ieffects sword
-               ++ [ Unique
-                  , Recharging
+               ++ [ Recharging
                     $ DropItem 1 maxBound COrgan "temporary condition"
                   , Recharging $ RefillCalm (-10) ]
+  , ifeature = [Unique] ++ ifeature sword
   , idesc    = "Cold, thin blade that pierces deeply and sends its victim into abrupt, sobering shock."
   }
 halberd = ItemKind
@@ -1349,9 +1354,9 @@ halberd = ItemKind
   , idamage  = 12 `d` 1
   , iaspects = [ AddHurtMelee (-20)  -- useless against armor at game start
                , AddArmorMelee $ (1 `dL` 4) * 5 ]
-  , ieffects = [EqpSlot EqpSlotWeapon]
+  , ieffects = []
   , ifeature = [ toVelocity 20  -- not balanced
-               , Durable, Meleeable ]
+               , Durable, Meleeable, EqpSlot EqpSlotWeapon ]
   , idesc    = "An improvised but deadly weapon made of a blade from a scythe attached to a long pole."
   , ikit     = []
   }
@@ -1372,7 +1377,8 @@ halberdPushActor = halberd
   , idamage  = 12 `d` 1
   , iaspects = iaspects halberd ++ [Timeout $ (1 `d` 2) * 10]
   , ieffects = ieffects halberd
-               ++ [Unique, Recharging (PushActor (ThrowMod 400 25))]  -- 1 step
+               ++ [Recharging (PushActor (ThrowMod 400 25))]  -- 1 step
+  , ifeature = [Unique] ++ ifeature halberd
   , idesc    = "A versatile polearm, with great reach and leverage. Foes are held at a distance."
   }
 

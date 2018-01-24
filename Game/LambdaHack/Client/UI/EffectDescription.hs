@@ -41,7 +41,6 @@ effectToSuffix :: DetailLevel -> Effect -> Text
 effectToSuffix detailLevel effect =
   case effect of
     ELabel _ -> ""  -- printed specially
-    EqpSlot{} -> ""  -- used in @slotToSentence@ instead
     Burn d -> wrapInParens (tshow d
                             <+> if Dice.maxDice d > 1 then "burns" else "burn")
     Explode t -> "of" <+> tshow t <+> "explosion"
@@ -113,8 +112,6 @@ effectToSuffix detailLevel effect =
     OnSmash _ -> ""  -- printed inside a separate section
     Recharging _ -> ""  -- printed inside Periodic or Timeout
     Temporary _ -> ""  -- only printed on destruction
-    Unique -> ""  -- marked by capital letters in name
-    Periodic -> ""  -- printed specially
     Composite effs -> T.intercalate " and then "
                     $ filter (/= "") $ map (effectToSuffix detailLevel) effs
 
@@ -295,6 +292,9 @@ featureToSuff feat =
     Precious -> ""
     Tactic tactics -> "overrides tactics to" <+> tshow tactics
     Blast -> ""
+    EqpSlot{} -> ""  -- used in @slotToSentence@ instead
+    Unique -> ""  -- marked by capital letters in name
+    Periodic -> ""  -- printed specially
 
 featureToSentence :: Feature -> Maybe Text
 featureToSentence feat =
@@ -310,6 +310,9 @@ featureToSentence feat =
     Precious -> Just "It seems precious."
     Tactic{}  -> Nothing
     Blast -> Nothing
+    EqpSlot es -> Just $ slotToSentence es
+    Unique -> Nothing
+    Periodic -> Nothing
 
 affixBonus :: Int -> Text
 affixBonus p = case compare p 0 of

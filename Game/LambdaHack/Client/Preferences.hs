@@ -42,7 +42,6 @@ effectToBenefit cops fact eff =
   let delta x = (x, x)
   in case eff of
     IK.ELabel _ -> delta 0
-    IK.EqpSlot _ -> delta 0
     IK.Burn d -> delta $ -(min 1500 $ 15 * Dice.meanDice d)
       -- often splash damage, armor doesn't block (but HurtMelee doesn't boost)
     IK.Explode _ -> delta 1  -- depends on explosion, but usually good,
@@ -140,8 +139,6 @@ effectToBenefit cops fact eff =
       -- can be beneficial; we'd need to analyze explosions, range, etc.
     IK.Recharging _ -> delta 0  -- taken into account separately
     IK.Temporary _ -> delta 0  -- assumed for created organs only
-    IK.Unique -> delta 0
-    IK.Periodic -> delta 0  -- considered in totalUsefulness
     IK.Composite [] -> delta 0
     IK.Composite (eff1 : _) -> effectToBenefit cops fact eff1
       -- for simplicity; so in content make sure to place initial animations
@@ -341,7 +338,7 @@ totalUsefulness !cops !fact !itemFull@ItemFull{..} =
       -- or nearby detection is better, but infrequent periodic teleportation
       -- or harmful explosion is worse. But the rule is not strict and also
       -- dependent on gameplay context of the moment, hence no numerical value.
-      periodic = IK.Periodic `elem` effects
+      periodic = IK.Periodic `elem` IK.ifeature itemKind
       -- Durability doesn't have any numerical impact to @eqpSum,
       -- because item is never consumed by just being stored in equipment.
       -- Also no numerical impact for flinging, because we can't fling it again

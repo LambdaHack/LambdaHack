@@ -229,8 +229,8 @@ torsor = ItemKind
   , iaspects = [ AddMaxHP 300, AddMaxCalm 100, AddSpeed 10, AddNocto 2
                , AddAggression 3, AddAbility AbProject 2, AddAbility AbApply 1
                , AddAbility AbAlter 1]  -- can't exit the gated level, the boss
-  , ieffects = [Unique]
-  , ifeature = [Durable]
+  , ieffects = []
+  , ifeature = [Unique, Durable]
   , idesc    = "A principal homogeneous manifold, that acts freely and with enormous force, but whose stabilizers are trivial, making it rather helpless without a support group."
   , ikit     = [ ("right torsion", COrgan), ("left torsion", COrgan)
                , ("pupil", COrgan)
@@ -437,8 +437,8 @@ rhinoceros = ItemKind
   , iaspects = [ AddMaxHP 90, AddMaxCalm 60, AddSpeed 27, AddNocto 2
                , AddAggression 2
                , AddAbility AbAlter (-1) ]  -- can't switch levels, a miniboss
-  , ieffects = [Unique]
-  , ifeature = [Durable]
+  , ieffects = []
+  , ifeature = [Unique, Durable]
   , idesc    = "The last of its kind. Blind with rage. Charges at deadly speed."
   , ikit     = [ ("armored skin", COrgan), ("eye 2", COrgan)
                , ("horn", COrgan), ("snout", COrgan)

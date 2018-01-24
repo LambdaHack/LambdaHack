@@ -73,7 +73,7 @@ partItemN side factionD ranged detailLevel n localTime
            ++ take n effTs
            ++ ["(...)" | length effTs > n]
            ++ [timer]
-      unique = IK.Unique `elem` IK.ieffects itemKind
+      unique = IK.Unique `elem` IK.ifeature itemKind
       name | temporary = "temporarily" <+> genericName
            | itemSuspect = flav <+> genericName
            | otherwise = genericName
@@ -108,7 +108,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{..} =
         let ppA = kindAspectToSuffix
             ppE = effectToSuffix detLev
             reduce_a = maybe "?" tshow . Dice.reduceDice
-            periodic = IK.Periodic `elem` IK.ieffects itemKind
+            periodic = IK.Periodic `elem` IK.ifeature itemKind
             mtimeout = find timeoutAspect aspects
             -- Effects are not sorted, because they fire in the order
             -- specified.
@@ -302,9 +302,6 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
                     then "."
                     else "on average."
         in (IK.idesc itemKind, T.intercalate " " sentences, tspeed <+> dmgAn)
-      eqpSlotSentence = case IK.strengthEqpSlot itemKind of
-        Just es -> slotToSentence es
-        Nothing -> ""
       weight = IK.iweight itemKind
       (scaledWeight, unitWeight)
         | weight > 1000 =
@@ -335,7 +332,6 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
                      ["Weighs around", MU.Text scaledWeight <> unitWeight]
               else ""))
         <+> featureSentences
-        <+> eqpSlotSentence
         <+> sourceDesc
         <+> damageAnalysis
   in colorSymbol : textToAL blurb

@@ -68,7 +68,6 @@ data ItemKind = ItemKind
 -- are possible.
 data Effect =
     ELabel Text        -- ^ secret (learned as effect) name of the item
-  | EqpSlot IA.EqpSlot -- ^ AI and UI flag that leaks item properties
   | Burn Dice.Dice     -- ^ burn with this damage
   | Explode (GroupName ItemKind)
       -- ^ explode producing this group of blasts
@@ -113,15 +112,12 @@ data Effect =
   | OnSmash Effect
       -- ^ trigger the effect when item smashed (not when applied nor meleed)
   | Recharging Effect  -- ^ this effect inactive until timeout passes
+  | Composite [Effect]  -- ^ only fire next effect if previous fully activated
   | Temporary Text
       -- ^ the item is temporary, vanishes at even void Periodic activation,
       --   unless Durable and not Fragile, and shows message with
       --   this verb at last copy activation or at each activation
       --   unless Durable and Fragile
-  | Unique              -- ^ at most one copy can ever be generated
-  | Periodic
-      -- ^ in equipment, triggered as often as @Timeout@ permits
-  | Composite [Effect]  -- ^ only fire next effect if previous fully activated
   deriving (Show, Eq, Generic)
 
 -- | Specification of how to randomly roll a timer at item creation
@@ -147,8 +143,8 @@ data ThrowMod = ThrowMod
   }
   deriving (Show, Eq, Ord, Generic)
 
--- | Features of item. Publicly visible. Affect only the item in question,
--- not the actor, and so not additive in any sense.
+-- | Features of item. Affect only the item in question,
+-- not the actor carrying it, and so not additive in any sense.
 data Feature =
     Fragile            -- ^ drop and break at target tile, even if no hit
   | Lobable            -- ^ drop at target tile, even if no hit
@@ -162,8 +158,11 @@ data Feature =
   | Meleeable          -- ^ AI and UI flag: consider meleeing with
   | Precious           -- ^ AI and UI flag: don't risk identifying by use;
                        --   also, can't throw or apply if not calm enough
-  | Tactic Tactic      -- ^ overrides actor's tactic
-  | Blast              -- ^ the items is an explosion blast particle
+  | Tactic Tactic      -- ^ overrides actor's tactic; WIP; move?
+  | Blast              -- ^ the item is an explosion blast particle
+  | EqpSlot IA.EqpSlot -- ^ AI and UI flag that leaks item intended use
+  | Unique             -- ^ at most one copy can ever be generated
+  | Periodic           -- ^ in eqp, triggered as often as @Timeout@ permits
   deriving (Show, Eq, Ord, Generic)
 
 -- Significant portions of this map are unused and so intentially kept
@@ -226,9 +225,8 @@ boostItemKind :: ItemKind -> ItemKind
 boostItemKind i =
   let mainlineLabel (label, _) = label `elem` ["useful", "treasure"]
   in if any mainlineLabel (ifreq i)
-     then i { ifreq = ("useful", 10000)
-                         : filter (not . mainlineLabel) (ifreq i)
-            , ieffects = delete Unique $ ieffects i
+     then i { ifreq = ("useful", 10000) : filter (not . mainlineLabel) (ifreq i)
+            , ifeature = delete Unique $ ifeature i
             }
      else i
 
@@ -237,22 +235,16 @@ boostItemKind i =
 forApplyEffect :: Effect -> Bool
 forApplyEffect eff = case eff of
   ELabel{} -> False
-  EqpSlot{} -> False
   OnSmash{} -> False
-  Temporary{} -> False
-  Unique -> False
-  Periodic -> False
   Composite effs -> any forApplyEffect effs
+  Temporary{} -> False
   _ -> True
 
 forIdEffect :: Effect -> Bool
 forIdEffect eff = case eff of
   ELabel{} -> False
-  EqpSlot{} -> False
   OnSmash{} -> False
   Explode{} -> False  -- tentative; needed for rings to auto-identify
-  Unique -> False
-  Periodic -> False
   Composite (eff1 : _) -> forIdEffect eff1  -- the rest may never fire
   _ -> True
 
@@ -299,7 +291,7 @@ strengthEqpSlot :: ItemKind -> Maybe IA.EqpSlot
 strengthEqpSlot itemKind =
   let p (EqpSlot eqpSlot) = [eqpSlot]
       p _ = []
-  in case strengthEffect p itemKind of
+  in case concatMap p (ifeature itemKind) of
     [] -> Nothing
     [x] -> Just x
     xs -> error $ "" `showFailure` (xs, itemKind)
@@ -406,14 +398,13 @@ validateSingle ik@ItemKind{..} =
           f ELabel{} = True
           f _ = False
       in validateTopSingle ieffects "ELabel" f)
-  ++ (let f :: Effect -> Bool
+  ++ (let f :: Feature -> Bool
           f EqpSlot{} = True
           f _ = False
-          ts = filter f ieffects
-      in validateTopSingle ieffects "EqpSlot" f
-         ++ [ "EqpSlot specified but not Equipable nor Meleeable"
-            | length ts > 0 && Equipable `notElem` ifeature
-                            && Meleeable `notElem` ifeature ])
+          ts = filter f ifeature
+      in [ "EqpSlot specified but not Equipable nor Meleeable"
+         | length ts > 0 && Equipable `notElem` ifeature
+                         && Meleeable `notElem` ifeature ])
   ++ ["Redundant Equipable or Meleeable" | Equipable `elem` ifeature
                                            && Meleeable `elem` ifeature]
   ++ (let f :: Effect -> Bool
@@ -428,14 +419,6 @@ validateSingle ik@ItemKind{..} =
           f Temporary{} = True
           f _ = False
       in validateOnlyOne ieffects "Temporary" f)  -- may be duplicated if nested
-  ++ (let f :: Effect -> Bool
-          f Unique = True
-          f _ = False
-      in validateTopSingle ieffects "Unique" f)
-  ++ (let f :: Effect -> Bool
-          f Periodic = True
-          f _ = False
-      in validateTopSingle ieffects "Periodic" f)
   ++ (let f :: Feature -> Bool
           f ToThrow{} = True
           f _ = False
@@ -453,7 +436,7 @@ validateSingle ik@ItemKind{..} =
       in ["more than one Tactic specification" | length ts > 1])
   ++ concatMap (validateDups ik)
        [ Fragile, Lobable, Durable, Applicable
-       , Equipable, Meleeable, Precious, Blast ]
+       , Equipable, Meleeable, Precious, Blast, Unique, Periodic]
 
 -- We only check there are no duplicates at top level. If it may be nested,
 -- it may presumably be duplicated inside the nesting as well.

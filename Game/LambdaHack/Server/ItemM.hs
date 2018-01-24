@@ -102,7 +102,7 @@ rollItem lvlSpawned lid itemFreq = do
                               itemFreq lvlSpawned lid ldepth totalDepth
   case m4 of
     Just (_, ItemFull{..}, _, _) ->
-      when (IK.Unique `elem` IK.ieffects itemKind) $
+      when (IK.Unique `elem` IK.ifeature itemKind) $
         modifyServer $ \ser ->
           ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}
     _ -> return ()
