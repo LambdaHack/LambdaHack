@@ -101,7 +101,7 @@ castDice randomR (AbsDepth lvlDepth) (AbsDepth maxDepth) dice = do
   let !_A = assert (lvlDepth >= 0 && lvlDepth <= maxDepth
                     `blame` "invalid depth for dice rolls"
                     `swith` (lvlDepth, maxDepth)) ()
-      castNK n start k = do
+      castNK n start k = if start == k then return $! n * k else do
           let f !acc 0 = return acc
               f acc count = do
                 r <- randomR (start, k)
