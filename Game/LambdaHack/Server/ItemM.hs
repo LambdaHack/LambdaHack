@@ -123,8 +123,9 @@ rollAndRegisterItem lid itemFreq container verbose mk = do
       iid <- registerItem (itemFull, kit2) itemKnown seed container verbose
       return $ Just (iid, ((itemFull, kit2), itemGroup))
 
-placeItemsInDungeon :: forall m. MonadServerAtomic m => m ()
-placeItemsInDungeon = do
+placeItemsInDungeon :: forall m. MonadServerAtomic m
+                    => EM.EnumMap LevelId [Point] -> m ()
+placeItemsInDungeon alliancePositions = do
   COps{cocave, coTileSpeedup} <- getsState scops
   totalDepth <- getsState stotalDepth
   let initialItems (lid, Level{..}) = do
@@ -135,17 +136,22 @@ placeItemsInDungeon = do
             placeItems !n = do
               -- We ensure that there are no big regions without items at all.
               let dist !p _ =
-                    let f !k _ b = chessDist p k > 8 && b
+                    let f !k _ b = chessDist p k > 6 && b
                     in EM.foldrWithKey f True lfloor
+                  alPos = EM.findWithDefault [] lid alliancePositions
+                  distAlliance !p =
+                    let f !k b = chessDist p k > 4 && b
+                    in foldr f True alPos
                   notM !p _ = p `EM.notMember` lfloor
               pos <- rndToAction $ findPosTry2 200 ltile
                 (\_ !t -> Tile.isWalkable coTileSpeedup t
                           && not (Tile.isNoItem coTileSpeedup t))
                 -- If there are very many items, some regions may be very rich,
-                -- but let's try to spread the initial items evenly at least.
+                -- but let's try to spread at least the initial items evenly.
                 ([dist | n * 100 < lxsize * lysize] ++ [notM])
-                (\_ !t -> Tile.isOftenItem coTileSpeedup t)
-                [notM]
+                -- Don't generate items under actors (unless very many actors).
+                (\ !p !t -> Tile.isOftenItem coTileSpeedup t && distAlliance p)
+                [\ !p _ -> distAlliance p, notM]
               createLevelItem pos lid
               placeItems (n + 1)
         placeItems 0

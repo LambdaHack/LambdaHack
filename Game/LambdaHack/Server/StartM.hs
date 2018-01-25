@@ -221,8 +221,6 @@ gameReset serverOptions mGameMode mrandom = do
 populateDungeon :: MonadServerAtomic m => m ()
 populateDungeon = do
   cops@COps{coTileSpeedup} <- getsState scops
-  placeItemsInDungeon
-  embedItemsInDungeon
   dungeon <- getsState sdungeon
   factionD <- getsState sfactionD
   curChalSer <- getsServer $ scurChalSer . soptions
@@ -263,7 +261,9 @@ populateDungeon = do
                     arenaFactions
         entryPoss <- rndToAction
                      $ findEntryPoss cops lid lvl (length arenaAlliances)
-        mapM_ placeAlliance $ zip3 arenaAlliances entryPoss [0..]
+        let usedPoss = zip3 arenaAlliances entryPoss [0..]
+        mapM_ placeAlliance usedPoss
+        return $! (lid, usedPoss)
       placeActors lid ((fid3, fact3), ppos, timeOffset) = do
         localTime <- getsState $ getLocalTime lid
         let clipInTurn = timeTurn `timeFit` timeClip
@@ -285,7 +285,11 @@ populateDungeon = do
               mleader <- getsState $ gleader . (EM.! fid3) . sfactionD
               when (isNothing mleader) $ supplantLeader fid3 aid
               return True
-  mapM_ initialActors arenas
+  lposs <- mapM initialActors arenas
+  let alliancePositions =
+        EM.fromList $ map (second $ map $ \(_, l, _) -> l) lposs
+  placeItemsInDungeon alliancePositions
+  embedItemsInDungeon
 
 -- | Find starting postions for all factions. Try to make them distant
 -- from each other. Place as many of the factions, as possible,
