@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Item
   , ItemKindIx, ItemDisco(..), ItemFull(..), ItemFullKit
   , DiscoveryKind, DiscoveryAspect, ItemIxMap, Benefit(..), DiscoveryBenefit
   , ItemTimer, ItemQuant, ItemBag, ItemDict
-  , itemNoDisco, itemToFull6, aspectRecordFull
+  , itemToFull6, aspectRecordFull
   , strongestSlot, hasCharge, strongestMelee, unknownMeleeBonus, tmpMeleeBonus
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -153,17 +153,6 @@ type ItemBag = EM.EnumMap ItemId ItemQuant
 -- | All items in the dungeon (including in actor inventories),
 -- indexed by item identifier.
 type ItemDict = EM.EnumMap ItemId Item
-
-itemNoDisco :: COps -> Item -> ItemFull
-itemNoDisco COps{coitem, coItemSpeedup} itemBase =
-  let itemKindId = case jkind itemBase of
-        IdentityObvious ik -> ik
-        IdentityCovered _ ik -> ik
-      itemKind = okind coitem itemKindId
-      itemAspectMean = IK.getKindMean itemKindId coItemSpeedup
-      itemDisco = ItemDiscoMean itemAspectMean
-      itemSuspect = True
-  in ItemFull {..}
 
 itemToFull6 :: COps -> DiscoveryKind -> DiscoveryAspect -> ItemId -> Item
             -> ItemFull

@@ -488,13 +488,12 @@ createActorUI born aid body = do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   globalTime <- getsState stime
   localTime <- getsState $ getLocalTime $ blid body
-  ItemFull{itemBase, itemKind} <- getsState $ itemToFull (btrunk body)
+  itemFull@ItemFull{itemBase, itemKind} <- getsState $ itemToFull (btrunk body)
   let symbol = IK.isymbol itemKind
   mbUI <- getsSession $ EM.lookup aid . sactorUI
   bUI <- case mbUI of
     Just bUI -> return bUI
     Nothing -> do
-      cops <- getsState scops
       UIOptions{uHeroNames} <- getsSession sUIOptions
       let baseColor = flavourToColor $ jflavour itemBase
           basePronoun | not (bproj body) && fhasGender (gplayer fact) = "he"
@@ -526,8 +525,8 @@ createActorUI born aid body = do
                          | otherwise = "flying"
                      -- Not much detail about a fast flying item.
                      (_, _, object1, object2) =
-                       partItem (bfid body) factionD localTime
-                                (itemNoDisco cops itemBase) (1, [])
+                       partItemShort (bfid body) factionD localTime
+                                        itemFull (1, [])
                  in ( makePhrase [MU.AW $ MU.Text adj, object1, object2]
                     , basePronoun )
                | baseColor /= Color.BrWhite -> (IK.iname itemKind, basePronoun)
@@ -852,7 +851,6 @@ quitFactionUI fid toSt = do
 
 discover :: MonadClientUI m => Container -> ItemId -> m ()
 discover c iid = do
-  cops <- getsState scops
   lid <- getsState $ lidFromC c
   globalTime <- getsState stime
   localTime <- getsState $ getLocalTime lid
@@ -871,13 +869,10 @@ discover c iid = do
     _ -> return (False, [])
   let kit = EM.findWithDefault (1, []) iid bag
       knownName = partItemMediumAW side factionD localTime itemFull kit
-      -- Wipe out the whole knowledge of the item to make sure the two names
-      -- in the message differ even if, e.g., the item is described as
-      -- "of many effects".
-      itemSecret = itemNoDisco cops (itemBase itemFull)
-      (_, _, secretName, secretAEText) =
-        partItem side factionD localTime itemSecret kit
-      namePhrase = MU.Phrase $ [secretName, secretAEText] ++ nameWhere
+      -- Make sure the two names in the message differ.
+      (_, _, name, aEText) =
+        partItemShort side factionD localTime itemFull kit
+      namePhrase = MU.Phrase $ [name, aEText] ++ nameWhere
       msg = makeSentence
         ["the", MU.SubjectVerbSg namePhrase "turn out to be", knownName]
   -- Compare descriptions of all aspects and effects to determine
@@ -1014,18 +1009,16 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           case EM.assocs bag of
             [] -> return ()  -- invisible items?
             (iid, kit) : _ -> do
-              cops <- getsState scops
               subject <- partActorLeader aid bUI
               factionD <- getsState sfactionD
-              item <- getsState $ getItemBody iid
-              let itemSecret = itemNoDisco cops item
-                  (_, _, secretName, secretAEText) =
-                    partItem side factionD localTime itemSecret kit
+              itemFull <- getsState $ itemToFull iid
+              let (_, _, name, aEText) =
+                    partItemShort side factionD localTime itemFull kit
                   verb = "repurpose"
                   store = MU.Text $ ppCStoreIn CGround
               msgAdd $ makeSentence
                 [ MU.SubjectVerbSg subject verb
-                , "the", secretName, secretAEText, store ]
+                , "the", name, aEText, store ]
         IK.Identify -> do
           subject <- partActorLeader aid bUI
           let verb = "inspect"

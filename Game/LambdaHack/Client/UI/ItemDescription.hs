@@ -1,6 +1,6 @@
 -- | Descripitons of items.
 module Game.LambdaHack.Client.UI.ItemDescription
-  ( partItem, partItemShort, partItemHigh, partItemWs, partItemWsRanged
+  ( partItem,  partItemShort, partItemHigh, partItemWs, partItemWsRanged
   , partItemShortAW, partItemMediumAW, partItemShortWownW
   , viewItem, itemDesc
 #ifdef EXPOSE_INTERNAL
@@ -45,7 +45,7 @@ show64With2 n =
 partItemN :: FactionId -> FactionDict -> Bool -> DetailLevel -> Int
           -> Time -> ItemFull -> ItemQuant
           -> (Bool, Bool, MU.Part, MU.Part)
-partItemN side factionD ranged detailLevel n localTime
+partItemN side factionD ranged detailLevel maxWordsToShow localTime
           itemFull@ItemFull{itemBase, itemKind, itemSuspect}
           (itemK, itemTimer) =
   let flav = flavourToName $ jflavour itemBase
@@ -70,12 +70,13 @@ partItemN side factionD ranged detailLevel n localTime
                     else gname (factionD EM.! fid)]
         _ -> []
       ts = lsource
-           ++ take n effTs
-           ++ ["(...)" | length effTs > n]
+           ++ (take maxWordsToShow effTs)
+           ++ ["(...)" | length effTs > maxWordsToShow]
            ++ [timer]
       unique = IK.Unique `elem` IK.ifeature itemKind
       name | temporary = "temporarily" <+> IK.iname itemKind
-           | itemSuspect = flav <+> IK.iname itemKind
+           | itemSuspect || detailLevel <= DetailLow =
+             flav <+> IK.iname itemKind
            | otherwise = IK.iname itemKind
       capName = if unique
                 then MU.Capitalize $ MU.Text name
