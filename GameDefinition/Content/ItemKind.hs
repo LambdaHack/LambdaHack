@@ -28,7 +28,7 @@ otherItemContent = embeds ++ actors ++ organs ++ blasts ++ temporaries
 
 items :: [ItemKind]
 items =
-  [sandstoneRock, dart, spike,  spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, flask18, flask19, flask20, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, shield2, shield3, dagger, daggerDropBestWeapon, hammer, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, wandTemplate, wand1, gem1, gem2, gem3, gem4, gem5, currency, explosive, firecracker]
+  [sandstoneRock, dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, flask18, flask19, flask20, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, shield2, shield3, dagger, daggerDropBestWeapon, hammer, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, wandTemplate, wand1, gem1, gem2, gem3, gem4, gem5, currency, explosive, firecracker]
 
 sandstoneRock,    dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, flask18, flask19, flask20, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, shield2, shield3, dagger, daggerDropBestWeapon, hammer, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, wandTemplate, wand1, gem1, gem2, gem3, gem4, gem5, currency, explosive, firecracker :: ItemKind
 
@@ -69,7 +69,6 @@ symbolHafted     = ')'
 symbolWand       = '/'  -- magical rod, transmitter, pistol, rifle
 _symbolStaff     = '_'  -- scanner
 symbolFood       = ','  -- also body part; distinct from floor: not middle dot
--- '+' reserved for temporary conditions that must have this symbol
 
 -- * Thrown weapons
 
@@ -205,7 +204,7 @@ harpoon = ItemKind
   }
 harpoon2 = harpoon
   { ifreq    = [("useful", 2), ("harpoon", 2)]
-  , iweight  = 100
+  , iweight  = 1000
   , idamage  = 10 `d` 1
   -- , idesc    = ""
   }
@@ -882,7 +881,7 @@ necklaceTemplate = ItemKind
   , ikit     = []
   }
 necklace1 = necklaceTemplate
-  { ifreq    = [("treasure", 100)]
+  { ifreq    = [("treasure", 100), ("any jewelry", 100)]
   , iaspects = [Timeout $ (1 `d` 2) * 20]
   , ieffects = [Recharging (RefillHP 1)] ++ ieffects necklaceTemplate
   , ifeature = [Unique, ELabel "of Aromata", Durable, EqpSlot EqpSlotMiscBonus]
@@ -890,7 +889,8 @@ necklace1 = necklaceTemplate
   , idesc    = "A cord of freshly dried herbs and healing berries."
   }
 necklace2 = necklaceTemplate
-  { ifreq    = [("treasure", 100)]  -- just too nasty to call it useful
+  { ifreq    = [("treasure", 100), ("any jewelry", 100)]
+      -- just too nasty to call it useful
   , iaspects = [Timeout 30]
   , ieffects = [ Recharging (Summon "mobile animal" $ 1 `d` 2)
                , Recharging (Explode "waste")
@@ -902,7 +902,7 @@ necklace2 = necklaceTemplate
   -- , idesc    = ""
   }
 necklace3 = necklaceTemplate
-  { ifreq    = [("useful", 100)]
+  { ifreq    = [("useful", 100), ("any jewelry", 100)]
   , iaspects = [Timeout $ (1 `d` 2) * 20]
   , ieffects = [ Recharging (DetectActor 10)
                , Recharging (RefillCalm (-20)) ]
@@ -910,13 +910,13 @@ necklace3 = necklaceTemplate
   , ifeature = [ELabel "of fearful listening"] ++ ifeature necklaceTemplate
   }
 necklace4 = necklaceTemplate
-  { ifreq    = [("useful", 100)]
+  { ifreq    = [("useful", 100), ("any jewelry", 100)]
   , iaspects = [Timeout $ (3 + 1 `d` 3 - 1 `dL` 3) * 2]
   , ieffects = [Recharging (Teleport $ 3 `d` 2)]
                ++ ieffects necklaceTemplate
   }
 necklace5 = necklaceTemplate
-  { ifreq    = [("useful", 100)]
+  { ifreq    = [("useful", 100), ("any jewelry", 100)]
   , iaspects = [Timeout $ (7 - 1 `dL` 5) * 10]
   , ieffects = [ Recharging (Teleport $ 14 + 3 `d` 3)
                , Recharging (DetectExit 20)
@@ -925,14 +925,14 @@ necklace5 = necklaceTemplate
   , ifeature = [ELabel "of escape"] ++ ifeature necklaceTemplate
   }
 necklace6 = necklaceTemplate
-  { ifreq    = [("useful", 100)]
+  { ifreq    = [("useful", 100), ("any jewelry", 100)]
   , iaspects = [Timeout $ (1 `d` 3) * 2]
   , ieffects = [Recharging (PushActor (ThrowMod 100 50))]  -- 1 step, slow
                   -- the @50@ is only for the case of very light actor, etc.
                ++ ieffects necklaceTemplate
   }
 necklace7 = necklaceTemplate
-  { ifreq    = [("treasure", 100)]
+  { ifreq    = [("treasure", 100), ("any jewelry", 100)]
   , iaspects = [AddMaxHP 15, AddArmorMelee 20, AddArmorRanged 10, Timeout 4]
   , ieffects = [ Recharging (InsertMove $ 1 `d` 3)  -- unpredictable
                , Recharging (RefillHP (-1))
@@ -943,13 +943,13 @@ necklace7 = necklaceTemplate
   -- , idesc    = ""
   }
 necklace8 = necklaceTemplate
-  { ifreq    = [("useful", 100)]
+  { ifreq    = [("useful", 100), ("any jewelry", 100)]
   , iaspects = [Timeout $ (1 + 1 `d` 3) * 5]
   , ieffects = [Recharging $ Explode "spark"]
                ++ ieffects necklaceTemplate
   }
 necklace9 = necklaceTemplate
-  { ifreq    = [("useful", 100)]
+  { ifreq    = [("useful", 100), ("any jewelry", 100)]
   , iaspects = [Timeout $ (1 + 1 `d` 3) * 5]
   , ieffects = [Recharging $ Explode "fragrance"]
                ++ ieffects necklaceTemplate
@@ -1010,44 +1010,44 @@ ringTemplate = ItemKind
   , ikit     = []
   }
 ring1 = ringTemplate
-  { ifreq    = [("useful", 100)]
+  { ifreq    = [("useful", 100), ("any jewelry", 100)]
   , irarity  = [(10, 2)]
   , iaspects = [AddSpeed $ 1 `d` 3, AddMaxHP (-15)]
-  , ieffects = [OnSmash (Explode "distortion")]  -- strong magic
+  , ieffects = [OnSmash (Explode "distortion")]  -- high power
   , ifeature = [EqpSlot EqpSlotAddSpeed] ++ ifeature ringTemplate
   }
 ring2 = ringTemplate
-  { ifreq    = [("treasure", 100)]
+  { ifreq    = [("treasure", 100), ("any jewelry", 100)]
   , irarity  = [(10, 2)]
   , iaspects = [AddSpeed $ (1 `d` 2) * 3, AddMaxCalm (-40), AddMaxHP (-20)]
-  , ieffects = [OnSmash (Explode "distortion")]  -- strong magic
+  , ieffects = [OnSmash (Explode "distortion")]  -- high power
   , ifeature = [Unique, ELabel "of Rush", Durable, EqpSlot EqpSlotAddSpeed]
                ++ ifeature ringTemplate
   -- , idesc    = ""
   }
 ring3 = ringTemplate
-  { ifreq    = [("useful", 100)]
+  { ifreq    = [("useful", 100), ("any jewelry", 100)]
   , irarity  = [(10, 8)]
   , iaspects = [ AddMaxHP $ 10 + (1 `dL` 5) * 2
                , AddMaxCalm $ -20 + (1 `dL` 5) * 2 ]
   , ifeature = [EqpSlot EqpSlotAddMaxHP] ++ ifeature ringTemplate
   }
 ring4 = ringTemplate
-  { ifreq    = [("useful", 100)]
+  { ifreq    = [("useful", 100), ("any jewelry", 100)]
   , irarity  = [(5, 1), (10, 10)]  -- needed after other rings drop Calm
   , iaspects = [AddMaxCalm $ 25 + (1 `dL` 4) * 5]
   , ifeature = [EqpSlot EqpSlotMiscBonus] ++ ifeature ringTemplate
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with solemn, strangely comforting, worn out words."
   }
 ring5 = ringTemplate
-  { ifreq    = [("useful", 100)]
+  { ifreq    = [("useful", 100), ("any jewelry", 100)]
   , irarity  = [(3, 3), (10, 3)]
   , iaspects = [ AddHurtMelee $ (2 + 1 `d` 2 + (1 `dL` 2) * 2 ) * 3
                , AddMaxHP $ (-2 - (1 `d` 2) + (1 `dL` 2) * 2) * 3 ]  -- !!!
   , ifeature = [EqpSlot EqpSlotAddHurtMelee] ++ ifeature ringTemplate
   }
 ring6 = ringTemplate  -- by the time it's found, probably no space in eqp
-  { ifreq    = [("useful", 100)]
+  { ifreq    = [("useful", 100), ("any jewelry", 100)]
   , irarity  = [(5, 0), (10, 2)]
   , iaspects = [AddShine $ 1 `d` 2]
   , ifeature = [EqpSlot EqpSlotLightSource] ++ ifeature ringTemplate
@@ -1057,7 +1057,7 @@ ring7 = ringTemplate
   { ifreq    = [("useful", 10), ("ring of opportunity sniper", 1) ]
   , irarity  = [(10, 5)]
   , iaspects = [AddAbility AbProject 8]
-  , ieffects = [OnSmash (Explode "distortion")]  -- strong magic
+  , ieffects = [OnSmash (Explode "distortion")]  -- high power
   , ifeature = [ELabel "of opportunity sniper", EqpSlot EqpSlotAbProject]
                ++ ifeature ringTemplate
   }
@@ -1065,7 +1065,7 @@ ring8 = ringTemplate
   { ifreq    = [("useful", 1), ("ring of opportunity grenadier", 1) ]
   , irarity  = [(1, 1)]
   , iaspects = [AddAbility AbProject 11]
-  , ieffects = [OnSmash (Explode "distortion")]  -- strong magic
+  , ieffects = [OnSmash (Explode "distortion")]  -- high power
   , ifeature = [ELabel "of opportunity grenadier", EqpSlot EqpSlotAbProject]
                ++ ifeature ringTemplate
   }
@@ -1409,7 +1409,8 @@ wand1 = wandTemplate
 gem1 = ItemKind
   { isymbol  = symbolGold
   , iname    = "gem"
-  , ifreq    = [("treasure", 100), ("gem", 100), ("gem unknown", 1)]
+  , ifreq    =  [("treasure", 100), ("gem", 100), ("any jewelry", 100)
+               , ("gem unknown", 1) ]
   , iflavour = zipPlain brightCol  -- natural, so not fancy
   , icount   = 1
   , irarity  = [(3, 0), (10, 24)]
@@ -1425,21 +1426,21 @@ gem1 = ItemKind
   , ikit     = []
   }
 gem2 = gem1
-  { ifreq    = [("treasure", 100), ("gem", 100)]
+  { ifreq    = [("treasure", 100), ("gem", 100), ("any jewelry", 100)]
   , irarity  = [(5, 0), (10, 28)]
   }
 gem3 = gem1
-  { ifreq    = [("treasure", 100), ("gem", 100)]
+  { ifreq    = [("treasure", 100), ("gem", 100), ("any jewelry", 100)]
   , irarity  = [(7, 0), (10, 32)]
   }
 gem4 = gem1
-  { ifreq    = [("treasure", 100), ("gem", 100)]
+  { ifreq    = [("treasure", 100), ("gem", 100), ("any jewelry", 100)]
   , irarity  = [(9, 0), (10, 100)]
   }
 gem5 = gem1
   { isymbol  = symbolSpecial  -- looks differently upon closer inspection
   , iname    = "elixir"
-  , ifreq    = [("treasure", 100), ("gem", 100)]
+  , ifreq    = [("treasure", 100), ("gem", 100), ("any jewelry", 100)]
   , iflavour = zipPlain [BrYellow]  -- same colour as one of gems; symbol unique
   , irarity  = [(1, 40), (10, 40)]
   , ieffects = [RefillCalm 5, RefillHP 15]

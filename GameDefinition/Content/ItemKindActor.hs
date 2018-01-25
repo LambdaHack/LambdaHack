@@ -25,6 +25,7 @@ warrior,    warrior2, warrior3, warrior4, warrior5, scout, ranger, escapist, amb
 geyserBoiling, geyserArsenic, geyserSulfur :: ItemKind
 
 -- * Hunams
+
 warrior = ItemKind
   { isymbol  = '@'
   , iname    = "warrior"  -- modified if initial actors in hero faction
