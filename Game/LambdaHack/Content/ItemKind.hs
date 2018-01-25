@@ -15,7 +15,7 @@ module Game.LambdaHack.Content.ItemKind
   , toOrganGameTurn, toOrganActorTurn, toOrganNone
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , meanAspect, boostItemKind, forIdEffect
+  , meanAspect, boostItemKind, majorEffect
   , validateSingle, validateAll, validateDups, validateDamage
   , hardwiredItemGroups
 #endif
