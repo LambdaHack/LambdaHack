@@ -903,8 +903,13 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     itemAidVerbMU aid "fling" iid (Left $ Just 1) cstore
   SfxReceive aid iid cstore ->
     itemAidVerbMU aid "receive" iid (Left $ Just 1) cstore
-  SfxApply aid iid cstore ->
-    itemAidVerbMU aid "apply" iid (Left $ Just 1) cstore
+  SfxApply aid iid cstore -> do
+    ItemFull{itemKind} <- getsState $ itemToFull iid
+    let action = case IK.isymbol itemKind of
+          '!' -> "swallow"
+          '?' -> "peruse"
+          _ -> "use"
+    itemAidVerbMU aid (MU.Text $ "try to" <+> action) iid (Left $ Just 1) cstore
   SfxCheck aid iid cstore ->
     itemAidVerbMU aid "deapply" iid (Left $ Just 1) cstore
   SfxTrigger aid _p ->
@@ -1125,7 +1130,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
                  then MU.Text $ tshow grp
                  else MU.Ws $ MU.Text $ tshow grp
     return $! makeSentence ["you hear", verb, object]
-  SfxFizzles -> return "It flashes and fizzles."
+  SfxFizzles -> return "It doesn't work."
   SfxNothingHappens -> return "Nothing happens."
   SfxVoidDetection -> return "Nothing new detected."
   SfxSummonLackCalm aid -> do
