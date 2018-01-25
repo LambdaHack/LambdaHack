@@ -183,18 +183,15 @@ aspectRecordFull itemFull =
 strongestSlot :: DiscoveryBenefit -> IA.EqpSlot -> [(ItemId, ItemFullKit)]
               -> [(Int, (ItemId, ItemFullKit))]
 strongestSlot discoBenefit eqpSlot is =
-  let f (iid, (itemFull@ItemFull{itemKind}, kit)) =
-        let rawDmg = IK.damageUsefulness itemKind
-            (bInEqp, bPickup) = case EM.lookup iid discoBenefit of
-               Just Benefit{benInEqp, benPickup} -> (benInEqp, benPickup)
-               Nothing -> (IK.goesIntoEqp itemKind, rawDmg)
-        in if not bInEqp
+  let f (iid, (itemFull, kit)) =
+        let Benefit{benInEqp, benPickup} = discoBenefit EM.! iid
+        in if not benInEqp
            then Nothing
            else Just $
              let ben = if eqpSlot == IA.EqpSlotWeapon
                        -- For equipping/unequipping a weapon we take into
                        -- account not only melee power, but also aspects, etc.
-                       then ceiling bPickup
+                       then ceiling benPickup
                        else IA.prEqpSlot eqpSlot $ aspectRecordFull itemFull
              in (ben, (iid, (itemFull, kit)))
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe f is
@@ -223,15 +220,14 @@ strongestMelee mdiscoBenefit localTime kitAss =
             unIDedBonus | knownOrConstantAspects = 0
                         | otherwise = 1000  -- exceptionally strong weapon
         in case mdiscoBenefit of
-          Just discoBenefit -> case EM.lookup iid discoBenefit of
-            Just Benefit{benMelee} ->
-              -- For fighting, as opposed to equipping, we value weapon
-              -- only for its raw damage and harming effects.
-              let dmg = if hasCharge localTime itemFull kit
-                        then (- benMelee, (iid, (itemFull, kit)))
-                        else rawDmg
-              in first (+ unIDedBonus) dmg
-            Nothing -> first (+ 1000) rawDmg -- not even kind known
+          Just discoBenefit ->
+            let Benefit{benMelee} = discoBenefit EM.! iid
+            -- For fighting, as opposed to equipping, we value weapon
+            -- only for its raw damage and harming effects.
+                dmg = if hasCharge localTime itemFull kit
+                      then (- benMelee, (iid, (itemFull, kit)))
+                      else rawDmg
+            in first (+ unIDedBonus) dmg
           Nothing -> rawDmg  -- not interested about ID
   -- We can't filter out weapons that are not harmful to victim
   -- (@benMelee >= 0), because actors use them if nothing else available,

@@ -717,8 +717,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
             retRec toCStore =
               let n = oldN + if toCStore == CEqp then k else 0
               in ret4 rest n ((iid, k, fromCStore, toCStore) : acc)
-            inEqp = maybe (IK.goesIntoEqp $ itemKind itemFull) benInEqp
-                          (EM.lookup iid discoBenefit)
+            inEqp = benInEqp $ discoBenefit EM.! iid
         if cLegalRaw == [CGround]  -- normal pickup
         then case destCStore of  -- @CEqp@ is the implicit default; refine:
           CEqp | calmE && IK.goesIntoSha (itemKind itemFull) ->

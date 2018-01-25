@@ -301,7 +301,7 @@ recordToBenefit aspects = map aspectToBenefit $ IA.aspectRecordToList aspects
 -- Note: result has non-strict fields, so arguments are forced to avoid leaks.
 -- When AI looks at items (including organs) more often, force the fields.
 totalUsefulness :: COps -> Faction -> ItemFull -> Benefit
-totalUsefulness !cops !fact !itemFull@ItemFull{itemKind} =
+totalUsefulness !cops !fact !itemFull@ItemFull{itemKind, itemSuspect} =
   let effects = IK.ieffects itemKind
       aspects = aspectRecordFull itemFull
       effPairs = map (effectToBenefit cops fact) effects
@@ -365,11 +365,15 @@ totalUsefulness !cops !fact !itemFull@ItemFull{itemKind} =
         (effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
          + if periodic then 0 else sum chargeFoe)
         / if durable then 1 else durabilityMult
+      -- Experimenting is fun, but it's better to risk foes' skin than ours,
+      -- so we only adjust flinging bonus, not apply bonus. It's also more
+      -- fun gameplay-wise when enemies throw at us rather than using items.
+      benFling = min benFlingRaw $ if itemSuspect then -10 else 0
       -- The periodic effects, if any, are activated when projectile flies,
       -- but not when it hits, so they are not added to @benFling@.
       -- However, if item is not periodic, the recharging effects
       -- are activated at projectile impact, hence their value is added.
-      benFling = min 0 $
+      benFlingRaw = min 0 $
         effFoe + benFlingDice -- nothing in @eqpSum@; normally not worn
         + if periodic then 0 else sum chargeFoe
       benFlingDice | IK.idamage itemKind == 0 = 0  -- speedup
@@ -404,7 +408,7 @@ totalUsefulness !cops !fact !itemFull@ItemFull{itemKind} =
       -- If a weapon heals enemy at impact, it won't be used for melee
       -- (but can be equipped anyway). If it harms wearer too much,
       -- won't be worn but still may be flung, etc.
-      (benInEqp, benPickup)
+      (benInEqp, benPickupRaw)
         | IK.isMelee itemKind && benMelee < 0 && eqpSum >= -20 =
           ( True  -- equip, melee crucial, and only weapons in eqp can be used
           , if durable
@@ -419,4 +423,5 @@ totalUsefulness !cops !fact !itemFull@ItemFull{itemKind} =
               else 0)  -- don't remove from equipment by using up
         | otherwise =
           (False, max benApply (- benFling))  -- apply or fling
+      benPickup = max benPickupRaw $ if itemSuspect then 10 else 0
   in Benefit{..}

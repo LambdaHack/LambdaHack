@@ -196,8 +196,8 @@ targetStrategy aid = do
   getKind <- getsState $ flip getIidKind
   let lidExplored = ES.member (blid b) explored
       desirableBagFloor bag = any (\iid ->
-        let benPick = benPickup <$> EM.lookup iid discoBenefit
-        in desirableItem canEscape benPick (getKind iid)) $ EM.keys bag
+        let Benefit{benPickup} = discoBenefit EM.! iid
+        in desirableItem canEscape benPickup (getKind iid)) $ EM.keys bag
       desirableFloor (_, (_, bag)) = desirableBagFloor bag
       focused = bspeed b ar < speedWalk || condHpTooLow
       couldMoveLastTurn =

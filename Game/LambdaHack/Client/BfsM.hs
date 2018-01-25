@@ -343,8 +343,7 @@ embedBenefit fleeVia aid pbags = do
                -- Let distance be the deciding factor and also prevent
                -- overflow on 32-bit machines.
                min 1000 $ sum
-               $ mapMaybe (\iid -> benApply <$> EM.lookup iid discoBenefit)
-                          (EM.keys bag)
+               $ map (\iid -> benApply $ discoBenefit EM.! iid) (EM.keys bag)
           else 0
       interestingHere p =
         -- For speed and to avoid greedy AI loops, filter targets.

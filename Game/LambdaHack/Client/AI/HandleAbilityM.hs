@@ -330,16 +330,16 @@ pickup aid onlyWeapon = do
       isWeapon (_, _, _, itemFull, _) = IK.isMelee $ itemKind itemFull
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
-      prepareOne (oldN, l4) (mben, _, iid, ItemFull{itemKind}, (itemK, _)) =
+      prepareOne (oldN, l4)
+                 (Benefit{benInEqp}, _, iid, ItemFull{itemKind}, (itemK, _)) =
         let prep newN toCStore = (newN, (iid, itemK, CGround, toCStore) : l4)
-            inEqp = maybe (IK.goesIntoEqp itemKind) benInEqp mben
             n = oldN + itemK
         in if | calmE && IK.goesIntoSha itemKind && not onlyWeapon ->
                 prep oldN CSha
-              | inEqp && eqpOverfull b n ->
+              | benInEqp && eqpOverfull b n ->
                 if onlyWeapon then (oldN, l4)
                 else prep oldN (if calmE then CSha else CInv)
-              | inEqp ->
+              | benInEqp ->
                 prep n CEqp
               | not onlyWeapon ->
                 prep oldN CInv
@@ -543,7 +543,7 @@ harmful discoBenefit iid =
   -- Items that are known, perhaps recently discovered, and it's now revealed
   -- they should not be kept in equipment, should be unequipped
   -- (either they are harmful or they waste eqp space).
-  maybe False (not . benInEqp) (EM.lookup iid discoBenefit)
+  not $ benInEqp $ discoBenefit EM.! iid
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
 meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbMelee))
@@ -657,7 +657,7 @@ projectItem aid = do
               coeff CEqp = 100000  -- must hinder currently
               coeff CInv = 1
               coeff CSha = 1
-              fRanged (mben, cstore, iid, itemFull, kit) =
+              fRanged (Benefit{benFling}, cstore, iid, itemFull, kit) =
                 -- We assume if the item has a timeout, most effects are under
                 -- Recharging, so no point projecting if not recharged.
                 -- This changes in time, so recharging is not included
@@ -668,10 +668,7 @@ projectItem aid = do
                       chessDist (bpos b) fpos + 2  -- margin for fleeing
                     rangeMult =  -- penalize wasted or unsafely low range
                       10 + max 0 (10 - abs (trange - bestRange))
-                    benR = coeff cstore
-                           * case mben of
-                               Nothing -> -10  -- experiment if no good options
-                               Just Benefit{benFling} -> benFling
+                    benR = coeff cstore * benFling
                 in if trange >= chessDist (bpos b) fpos && recharged
                    then Just ( - ceiling (benR * fromIntegral rangeMult / 10)
                              , ReqProject fpos newEps iid cstore )
@@ -704,14 +701,11 @@ applyItem aid applyGroup = do
       permittedActor itemFull kit =
         either (const False) id
         $ permittedApply localTime skill calmE " " itemFull kit
-      q (mben, _, _, itemFull@ItemFull{itemKind}, kit) =
+      q (Benefit{benInEqp, benApply}, _, _, itemFull@ItemFull{itemKind}, kit) =
         let freq = IK.ifreq itemKind
             durable = IK.Durable `elem` IK.ifeature itemKind
-            (bInEqp, bApply) = case mben of
-              Just Benefit{benInEqp, benApply} -> (benInEqp, benApply)
-              Nothing -> (IK.goesIntoEqp itemKind, 0)  -- apply unsafe
-        in bApply > 0
-           && (not bInEqp  -- can't wear, so OK to break
+        in benApply > 0
+           && (not benInEqp  -- can't wear, so OK to break
                || durable  -- can wear, but can't break, even better
                || not (IK.isMelee itemKind)  -- anything else expendable
                   && hind itemFull)  -- hinders now, so possibly often, so away!
@@ -752,7 +746,7 @@ applyItem aid applyGroup = do
       coeff CEqp = 1
       coeff CInv = 1
       coeff CSha = 1
-      fTool benAv@(mben, cstore, iid, ItemFull{itemKind}, _) =
+      fTool benAv@(Benefit{benApply}, cstore, iid, ItemFull{itemKind}, _) =
         let onlyVoidlyDropsOrgan =
               -- We check if the only effect of the item is that it drops a tmp
               -- organ that we don't have. If so, item should not be applied.
@@ -769,15 +763,10 @@ applyItem aid applyGroup = do
                         && null (dropsGrps `intersect` hasGrps))
                  && length (IK.strengthEffect f itemKind) == 1
             durable = IK.Durable `elem` IK.ifeature itemKind
-            benR = case mben of
-              Nothing -> 0
-                -- experimenting is fun, but it's better to risk
-                -- foes' skin than ours
-              Just Benefit{benApply} ->
-                ceiling benApply
-                * if cstore == CEqp && not durable
-                  then 100000  -- must hinder currently
-                  else coeff cstore
+            benR = ceiling benApply
+                   * if cstore == CEqp && not durable
+                     then 100000  -- must hinder currently
+                     else coeff cstore
         in if q benAv && itemLegal itemKind && not onlyVoidlyDropsOrgan
            then Just (benR, ReqApply iid cstore)
            else Nothing

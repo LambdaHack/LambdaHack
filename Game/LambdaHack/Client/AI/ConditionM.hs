@@ -155,7 +155,7 @@ condCanProjectM skill aid = do
 
 condProjectListM :: MonadClient m
                  => Int -> ActorId
-                 -> m [(Maybe Benefit, CStore, ItemId, ItemFull, ItemQuant)]
+                 -> m [(Benefit, CStore, ItemId, ItemFull, ItemQuant)]
 condProjectListM skill aid = do
   b <- getsState $ getActorBody aid
   condShineWouldBetray <- condShineWouldBetrayM aid
@@ -168,16 +168,12 @@ condProjectListM skill aid = do
       -- This detects if the value of keeping the item in eqp is in fact < 0.
       hind = hinders condShineWouldBetray condAimEnemyPresent
                      heavilyDistressed condNotCalmEnough b ar
-      q (mben, _, _, itemFull, _) =
-        let (bInEqp, bFling) = case mben of
-              Just Benefit{benInEqp, benFling} -> (benInEqp, benFling)
-              Nothing -> (IK.goesIntoEqp $ itemKind itemFull, -10)
-        in bFling < 0
-           && (not bInEqp  -- can't wear, so OK to risk losing or breaking
-               || not (IK.isMelee $ itemKind itemFull)
-                    -- anything else expendable
-                  && hind itemFull)  -- hinders now, so possibly often, so away!
-           && permittedProjectAI skill calmE itemFull
+      q (Benefit{benInEqp, benFling}, _, _, itemFull, _) =
+        benFling < 0
+        && (not benInEqp  -- can't wear, so OK to risk losing or breaking
+            || not (IK.isMelee $ itemKind itemFull)  -- anything else expendable
+               && hind itemFull)  -- hinders now, so possibly often, so away!
+        && permittedProjectAI skill calmE itemFull
   benList <- benAvailableItems aid $ [CEqp, CInv, CGround] ++ [CSha | calmE]
   return $ filter q benList
 
@@ -185,17 +181,15 @@ condProjectListM skill aid = do
 -- and the items' values.
 benAvailableItems :: MonadClient m
                   => ActorId -> [CStore]
-                  -> m [(Maybe Benefit, CStore, ItemId, ItemFull, ItemQuant)]
+                  -> m [(Benefit, CStore, ItemId, ItemFull, ItemQuant)]
 benAvailableItems aid cstores = do
   itemToF <- getsState $ flip itemToFull
   b <- getsState $ getActorBody aid
   discoBenefit <- getsClient sdiscoBenefit
   s <- getState
   let ben cstore bag =
-        [ (mben, cstore, iid, itemFull, kit)
-        | (iid, kit) <- EM.assocs bag
-        , let itemFull = itemToF iid
-              mben = EM.lookup iid discoBenefit ]
+        [ (discoBenefit EM.! iid, cstore, iid, itemToF iid, kit)
+        | (iid, kit) <- EM.assocs bag]
       benCStore cs = ben cs $ getBodyStoreBag b cs s
   return $ concatMap benCStore cstores
 
@@ -229,28 +223,27 @@ condDesirableFloorItemM aid = do
 -- that are worth picking up.
 benGroundItems :: MonadClient m
                => ActorId
-               -> m [(Maybe Benefit, CStore, ItemId, ItemFull, ItemQuant)]
+               -> m [(Benefit, CStore, ItemId, ItemFull, ItemQuant)]
 benGroundItems aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let canEsc = fcanEscape (gplayer fact)
-      isDesirable (mben, _, _, ItemFull{itemKind}, _) =
-        desirableItem canEsc (benPickup <$> mben) itemKind
+      isDesirable (ben, _, _, ItemFull{itemKind}, _) =
+        desirableItem canEsc (benPickup $ ben) itemKind
   benList <- benAvailableItems aid [CGround]
   return $ filter isDesirable benList
 
-desirableItem :: Bool -> Maybe Double -> IK.ItemKind -> Bool
-desirableItem canEsc mpickupSum itemKind =
+desirableItem :: Bool -> Double -> IK.ItemKind -> Bool
+desirableItem canEsc pickupSum itemKind =
   if canEsc
-  then fromMaybe 10 mpickupSum > 0
-       || IK.Precious `elem` IK.ifeature itemKind
+  then pickupSum > 0 || IK.Precious `elem` IK.ifeature itemKind
   else
     -- A hack to prevent monsters from picking up treasure meant for heroes.
     let preciousNotUseful =  -- suspect and probably useless jewelry
           IK.Precious `elem` IK.ifeature itemKind  -- risk from treasure hunters
           && IK.Equipable `notElem` IK.ifeature itemKind  -- can't wear
-    in fromMaybe 10 mpickupSum > 0
-       && not preciousNotUseful  -- hack for elixir: even if @use@ positive
+    in pickupSum > 0 && not preciousNotUseful
+         -- hack for elixir: even if @use@ positive
 
 condSupport :: MonadClient m => Int -> ActorId -> m Bool
 condSupport param aid = do
