@@ -110,16 +110,23 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
             reduce_a = maybe "?" tshow . Dice.reduceDice
             periodic = IK.Periodic `elem` IK.ifeature itemKind
             mtimeout = find timeoutAspect aspects
-            -- Effects are not sorted, because they fire in the order
-            -- specified.
+            elab = case find elabel $ IK.ifeature itemKind of
+              Just (IK.ELabel t) -> [t]
+              _ -> []
+            -- Effects are not being sorted here, because they should fire
+            -- in the order specified in content.
             restAs = sort aspects
+            restEs | detLev >= DetailHigh
+                     || IK.MinorEffects `notElem` IK.ifeature itemKind =
+                     IK.ieffects itemKind
+                     | otherwise = []
             aes = if active
-                  then map ppA restAs ++ map ppE (IK.ieffects itemKind)
-                  else map ppE (IK.ieffects itemKind) ++ map ppA restAs
+                  then map ppA restAs ++ map ppE restEs
+                  else map ppE restEs ++ map ppA restAs
             rechargingTs = T.intercalate " " $ filter (not . T.null)
-                           $ map ppE $ IK.stripRecharging (IK.ieffects itemKind)
+                           $ map ppE $ IK.stripRecharging restEs
             onSmashTs = T.intercalate " " $ filter (not . T.null)
-                        $ map ppE $ IK.stripOnSmash (IK.ieffects itemKind)
+                        $ map ppE $ IK.stripOnSmash restEs
             durable = IK.Durable `elem` IK.ifeature itemKind
             fragile = IK.Fragile `elem` IK.ifeature itemKind
             periodicOrTimeout =
@@ -141,9 +148,6 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
                      _ -> error $ "" `showFailure` mtimeout
             onSmash = if T.null onSmashTs then ""
                       else "(on smash:" <+> onSmashTs <> ")"
-            elab = case find elabel $ IK.ifeature itemKind of
-              Just (IK.ELabel t) -> [t]
-              _ -> []
             damage = case find hurtMeleeAspect restAs of
               Just (IA.AddHurtMelee hurtMelee) ->
                 (if IK.idamage itemKind == 0

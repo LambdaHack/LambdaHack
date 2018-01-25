@@ -121,7 +121,7 @@ spike = ItemKind
                , OnSmash (Explode "single spark") ]  -- at wall hit
       -- this results in a wordy item synopsis, but it's OK, the spark really
       -- is useful in some situations, not just a flavour
-  , ifeature = [toVelocity 70]  -- hitting with tip costs speed
+  , ifeature = [MinorEffects, toVelocity 70]  -- hitting with tip costs speed
   , idesc    = "A cruel long nail with small head."  -- "Much inferior to arrows though, especially given the contravariance problems."  -- funny, but destroy the suspension of disbelief; this is supposed to be a Lovecraftian horror and any hilarity must ensue from the failures in making it so and not from actively trying to be funny; also, mundane objects are not supposed to be scary or transcendental; the scare is in horrors from the abstract dimension visiting our ordinary reality; without the contrast there's no horror and no wonder, so also the magical items must be contrasted with ordinary XIX century and antique items
   , ikit     = []
   }
@@ -145,7 +145,7 @@ slingStone = ItemKind
                  -- heavy vs armor
   , ieffects = [ Explode "single spark"  -- when hitting enemy
                , OnSmash (Explode "single spark") ]  -- at wall hit
-  , ifeature = [toVelocity 150]
+  , ifeature = [MinorEffects, toVelocity 150]
   , idesc    = "A round stone, carefully sized and smoothed to fit the pouch of a standard string and cloth sling."
   , ikit     = []
   }
@@ -1173,7 +1173,8 @@ buckler = ItemKind
                , Timeout $ (3 + 1 `d` 3 - 1 `dL` 3) * 2 ]
   , ieffects = [Recharging (PushActor (ThrowMod 100 50))]  -- 1 step, slow
   , ifeature = [ toVelocity 50  -- unwieldy to throw
-               , Durable, Meleeable, EqpSlot EqpSlotAddArmorMelee ]
+               , MinorEffects, Durable, Meleeable
+               , EqpSlot EqpSlotAddArmorMelee ]
   , idesc    = "Heavy and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too small to intercept projectiles with."
   , ikit     = []
   }
@@ -1188,7 +1189,8 @@ shield = buckler
                , Timeout $ (3 + 1 `d` 3 - 1 `dL` 3) * 4 ]
   , ieffects = [Recharging (PushActor (ThrowMod 400 25))]  -- 1 step, fast
   , ifeature = [ toVelocity 50  -- unwieldy to throw
-               , Durable, Meleeable, EqpSlot EqpSlotAddArmorMelee ]
+               , MinorEffects, Durable, Meleeable
+               , EqpSlot EqpSlotAddArmorMelee ]
   , idesc    = "Large and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
   }
 shield2 = shield

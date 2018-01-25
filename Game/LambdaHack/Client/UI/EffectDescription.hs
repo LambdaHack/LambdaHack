@@ -295,6 +295,7 @@ featureToSuff feat =
     EqpSlot{} -> ""  -- used in @slotToSentence@ instead
     Unique -> ""  -- marked by capital letters in name
     Periodic -> ""  -- printed specially
+    MinorEffects ->  ""  -- cryptic override
 
 featureToSentence :: Feature -> Maybe Text
 featureToSentence feat =
@@ -314,6 +315,7 @@ featureToSentence feat =
     EqpSlot es -> Just $ slotToSentence es
     Unique -> Nothing
     Periodic -> Nothing
+    MinorEffects -> Nothing
 
 affixBonus :: Int -> Text
 affixBonus p = case compare p 0 of

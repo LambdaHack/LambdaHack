@@ -155,7 +155,7 @@ effectAndDestroy meleePerformed _ _ iid container periodic []
       execUpdAtomic $ UpdLoseItem False iid itemBase kit2 container
   else return ()
 effectAndDestroy meleePerformed source target iid container periodic effs
-                 ( itemFull@ItemFull{itemBase, itemDisco}
+                 ( itemFull@ItemFull{itemBase, itemDisco, itemKind}
                  , kit@(itemK, itemTimer) ) = do
   let timeout = IA.aTimeout $ itemAspect itemDisco
       permanent = let tmpEffect :: IK.Effect -> Bool
@@ -199,8 +199,8 @@ effectAndDestroy meleePerformed source target iid container periodic effs
       execUpdAtomic $ UpdLoseItem False iid itemBase kit2 container
     -- At this point, the item is potentially no longer in container @c@,
     -- so we don't pass @c@ along.
-    triggeredEffect <-
-      itemEffectDisco source target iid container recharged periodic effs
+    triggeredEffect <- itemEffectDisco source target iid itemKind container
+                                       recharged periodic effs
     let triggered = if meleePerformed then UseUp else triggeredEffect
     sb <- getsState $ getActorBody source
     -- Announce no effect, which is rare and wastes time, so noteworthy.
@@ -239,20 +239,23 @@ itemEffectEmbedded aid lid tpos iid = do
 
 -- | The source actor affects the target actor, with a given item.
 -- If any of the effects fires up, the item gets identified.
+-- Note that using raw damage (beating the enemy with the magic wand,
+-- for example) does not identify the item.
 --
 -- Note that if we activate a durable item, e.g., armor, from the ground,
 -- it will get identified, which is perfectly fine, until we want to add
 -- sticky armor that can't be easily taken off (and, e.g., has some maluses).
 itemEffectDisco :: MonadServerAtomic m
-                => ActorId -> ActorId -> ItemId -> Container -> Bool -> Bool
-                -> [IK.Effect]
+                => ActorId -> ActorId -> ItemId -> ItemKind -> Container
+                -> Bool -> Bool -> [IK.Effect]
                 -> m UseResult
-itemEffectDisco source target iid c recharged periodic effs = do
+itemEffectDisco source target iid itemKind c recharged periodic effs = do
   urs <- mapM (effectSem source target iid c recharged periodic) effs
   let ur = case urs of
         [] -> UseDud
         _ -> maximum urs
-  when (ur >= UseId) $ do  -- note: @UseId@ suffices, not only @UseUp@
+  -- Note: @UseId@ suffices for identification, @UseUp@ is not necessary.
+  when (ur >= UseId && not (IK.onlyMinorEffects itemKind)) $ do
     kindId <- getsState $ getIidKindIdServer iid
     seed <- getsServer $ (EM.! iid) . sitemSeedD
     execUpdAtomic $ UpdDiscover c iid kindId seed
@@ -567,7 +570,9 @@ dominateFid fid target = do
     let discoverIf (iid, cstore) = do
           let itemKindId = getKindId iid
               c = CActor target cstore
-          discoverIfNoEffects c iid itemKindId
+          -- We avoid forcing the dominated actor to drop all items,
+          -- so they are not picked up by the new controllers, so id them here.
+          discoverIfMinorEffects c iid itemKindId
         aic = (btrunk tb, if bproj tb then CEqp else COrgan)
               : filter ((/= btrunk tb) . fst) (getCarriedIidCStore tb)
     mapM_ discoverIf aic
@@ -1005,8 +1010,9 @@ effectCreateItem jfidRaw mcount target store grp tim = do
       -- If it's, e.g., a periodic poison, the new items will stack with any
       -- already existing items.
       iid <- registerItem (itemFull, kitNew) itemKnown seed c True
-      -- If created not on the ground, ID it, because it's not IDed on pickup.
-      when (store /= CGround) $ discoverIfNoEffects c iid (itemKindId itemFull)
+      -- If created not on the ground, ID it, because it won't be on pickup.
+      when (store /= CGround) $
+        discoverIfMinorEffects c iid (itemKindId itemFull)
       -- Now, if timer change requested, change the timer, but in the new items,
       -- possibly increased in number wrt old items.
       when (not $ IK.isTimerNone tim) $ do
@@ -1131,22 +1137,23 @@ effectIdentify execSfx iidId source target = do
   let tryFull store as = case as of
         [] -> return False
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
-        (iid, ItemFull{itemKindId, itemKind}) : rest ->
-          let furtherIdNotNeeded =
-                iid `EM.member` sdiscoAspect s  -- already fully identified
-                || IA.kmConst (IK.getKindMean itemKindId coItemSpeedup)
-          in if furtherIdNotNeeded
-                || store == CGround
-                   && (not $ any IK.forIdEffect $ IK.ieffects itemKind)
-                     -- will be identified when picked up, so don't bother;
-                     -- darts included, which prevents wasting the scroll
-                || maybe False (> 0) (lookup "gem" $ IK.ifreq itemKind)  -- hack
-             then tryFull store rest
-             else do
-               let c = CActor target store
-               execSfx
-               identifyIid iid c itemKindId
-               return True
+        (iid, ItemFull{itemBase, itemKindId, itemKind}) : rest -> do
+          let kindIsKnown = case jkind itemBase of
+                IdentityObvious _ -> True
+                IdentityCovered ix _ -> ix `EM.member` sdiscoKind s
+          if iid `EM.member` sdiscoAspect s  -- already fully identified
+             || maybe False (> 0) (lookup "gem" $ IK.ifreq itemKind)  -- hack
+             || store == CGround && IK.onlyMinorEffects itemKind
+               -- will be identified when picked up, so don't bother
+             || IA.kmConst (IK.getKindMean itemKindId coItemSpeedup)
+                && kindIsKnown
+               -- constant aspects and known kind; no need to identify further
+          then tryFull store rest
+          else do
+            let c = CActor target store
+            execSfx
+            identifyIid iid c itemKindId
+            return True
       tryStore stores = case stores of
         [] -> do
           execSfxAtomic $ SfxMsgFid (bfid sb) SfxIdentifyNothing

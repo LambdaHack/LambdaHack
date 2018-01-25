@@ -4,7 +4,7 @@ module Game.LambdaHack.Server.CommonM
   ( execFailure, revealItems, moveStores, generalMoveItem
   , deduceQuits, deduceKilled, electLeader, supplantLeader
   , updatePer, recomputeCachePer, projectFail
-  , addActorFromGroup, registerActor, discoverIfNoEffects
+  , addActorFromGroup, registerActor, discoverIfMinorEffects
   , pickWeaponServer, currentSkillsServer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -475,20 +475,21 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
     case mIidEtc of
       Nothing -> error $ "" `showFailure` (lid, itemFreq, container, mk)
       Just (iid, ((itemFull2, _), _)) ->
-        discoverIfNoEffects container iid (itemKindId itemFull2)
+        -- The items are create in inventory, so won't be picked up,
+        -- so we have to discover them now, if eligible.
+        discoverIfMinorEffects container iid (itemKindId itemFull2)
   return $ Just aid
 
-discoverIfNoEffects :: MonadServerAtomic m
-                    => Container -> ItemId -> ContentId ItemKind -> m ()
-discoverIfNoEffects c iid itemKindId = do
+discoverIfMinorEffects :: MonadServerAtomic m
+                       => Container -> ItemId -> ContentId ItemKind -> m ()
+discoverIfMinorEffects c iid itemKindId = do
   COps{coitem} <- getsState scops
   let itemKind = okind coitem itemKindId
-  if any IK.forIdEffect (IK.ieffects itemKind)
-     || maybe False (> 0) (lookup "gem" $ IK.ifreq itemKind)
-  then return ()  -- discover by use, ignore gems (a hack)
-  else do
+  if IK.onlyMinorEffects itemKind
+  then do
     seed <- getsServer $ (EM.! iid) . sitemSeedD
     execUpdAtomic $ UpdDiscover c iid itemKindId seed
+  else return ()  -- discover by use when item's effects get activated later on
 
 pickWeaponServer :: MonadServer m => ActorId -> m (Maybe (ItemId, CStore))
 pickWeaponServer source = do

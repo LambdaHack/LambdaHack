@@ -560,8 +560,8 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
      execFailure aid req ItemNotCalm
    | otherwise -> do
     itemFull <- getsState $ itemToFull iid
-    when (fromCStore == CGround) $
-      discoverIfNoEffects fromC iid (itemKindId itemFull)
+    when (fromCStore == CGround) $  -- pick up
+      discoverIfMinorEffects fromC iid (itemKindId itemFull)
     upds <- generalMoveItem True iid k fromC toC
     mapM_ execUpdAtomic upds
     -- Reset timeout for equipped periodic items and also for items

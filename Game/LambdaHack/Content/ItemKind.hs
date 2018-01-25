@@ -4,7 +4,7 @@ module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..), makeData
   , Effect(..), TimerDice, ThrowMod(..), Feature(..)
   , ItemSpeedup, emptyItemSpeedup, getKindMean, speedupItem
-  , boostItemKindList, forApplyEffect, forIdEffect
+  , boostItemKindList, forApplyEffect, onlyMinorEffects
   , filterRecharging, stripRecharging, stripOnSmash
   , strengthEffect, strengthOnSmash, strengthDropOrgan
   , strengthEqpSlot, strengthToThrow, isMelee, isTmpCondition, isBlast
@@ -15,7 +15,7 @@ module Game.LambdaHack.Content.ItemKind
   , toOrganGameTurn, toOrganActorTurn, toOrganNone
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , meanAspect, boostItemKind
+  , meanAspect, boostItemKind, forIdEffect
   , validateSingle, validateAll, validateDups, validateDamage
   , hardwiredItemGroups
 #endif
@@ -163,6 +163,9 @@ data Feature =
   | EqpSlot IA.EqpSlot -- ^ AI and UI flag that leaks item intended use
   | Unique             -- ^ at most one copy can ever be generated
   | Periodic           -- ^ in eqp, triggered as often as @Timeout@ permits
+  | MinorEffects       -- ^ override: the effects on this item are considered
+                       --   minor and so not causing identification on use,
+                       --   and so this item will identify on pick-up
   deriving (Show, Eq, Ord, Generic)
 
 -- Significant portions of this map are unused and so intentially kept
@@ -231,12 +234,17 @@ forApplyEffect eff = case eff of
   Temporary{} -> False
   _ -> True
 
-forIdEffect :: Effect -> Bool
-forIdEffect eff = case eff of
+majorEffect :: Effect -> Bool
+majorEffect eff = case eff of
   OnSmash{} -> False
-  Recharging eff2 -> forIdEffect eff2
-  Composite (eff1 : _) -> forIdEffect eff1  -- the rest may never fire
+  Recharging eff2 -> majorEffect eff2
+  Composite (eff1 : _) -> majorEffect eff1  -- the rest may never fire
   _ -> True
+
+onlyMinorEffects :: ItemKind -> Bool
+onlyMinorEffects kind =
+  MinorEffects `elem` ifeature kind  -- override
+  || not (any majorEffect $ ieffects kind)  -- exhibits no major effects
 
 filterRecharging :: [Effect] -> [Effect]
 filterRecharging effs =
