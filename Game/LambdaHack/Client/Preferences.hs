@@ -384,7 +384,7 @@ totalUsefulness !cops !fact !itemFull@ItemFull{itemKind, itemSuspect} =
         dmg = Dice.meanDice $ IK.idamage itemKind
         rawDeltaHP = ceiling $ fromIntegral hurtMult * xD dmg / 100
         -- For simplicity, we ignore range bonus/malus and @Lobable@.
-        IK.ThrowMod{IK.throwVelocity} = IK.strengthToThrow itemKind
+        IK.ThrowMod{IK.throwVelocity} = IK.getToThrow itemKind
         speed = speedFromWeight (IK.iweight itemKind) throwVelocity
         v = - fromIntegral (modifyDamageBySpeed rawDeltaHP speed) * 10 / xD 1
           -- 1 damage valued at 10, just as in @damageUsefulness@

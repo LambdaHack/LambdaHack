@@ -170,7 +170,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
         in case filter (/= []) splitsToTry of
              detNonEmpty : _ -> detNonEmpty
              [] -> []
-      IK.ThrowMod{IK.throwVelocity} = IK.strengthToThrow itemKind
+      IK.ThrowMod{IK.throwVelocity} = IK.getToThrow itemKind
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
       minDeltaHP = xM meanDmg `divUp` 100
@@ -269,7 +269,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
         partItemHigh side factionD localTime itemFull kit
       nstats = makePhrase [name, stats]
       IK.ThrowMod{IK.throwVelocity, IK.throwLinger} =
-        IK.strengthToThrow itemKind
+        IK.getToThrow itemKind
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       range = rangeFromSpeedAndLinger speed throwLinger
       tspeed | IK.isTmpCondition itemKind = ""

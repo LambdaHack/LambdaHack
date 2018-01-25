@@ -511,7 +511,7 @@ unEquipItems aid = do
 groupByEqpSlot :: [(ItemId, ItemFullKit)]
                -> EM.EnumMap IA.EqpSlot [(ItemId, ItemFullKit)]
 groupByEqpSlot is =
-  let f (iid, itemFullKit) = case IK.strengthEqpSlot
+  let f (iid, itemFullKit) = case IK.getEqpSlot
                                   $ itemKind $ fst itemFullKit of
         Nothing -> Nothing
         Just es -> Just (es, [(iid, itemFullKit)])
@@ -754,14 +754,14 @@ applyItem aid applyGroup = do
               -- saving for the future, for otherwise the item would not
               -- be considered at all, given that it's the only effect.
               -- We don't try to intercept the case of many effects.
-              let dropsGrps = IK.strengthDropOrgan itemKind
+              let dropsGrps = IK.getDropOrgans itemKind
                   hasDropOrgan = not $ null dropsGrps
                   f eff = [eff | IK.forApplyEffect eff]
               in hasDropOrgan
                  && (null hasGrps
                      || toGroupName "temporary condition" `notElem` dropsGrps
                         && null (dropsGrps `intersect` hasGrps))
-                 && length (IK.strengthEffect f itemKind) == 1
+                 && length (concatMap f $ IK.ieffects itemKind) == 1
             durable = IK.Durable `elem` IK.ifeature itemKind
             benR = ceiling benApply
                    * if cstore == CEqp && not durable

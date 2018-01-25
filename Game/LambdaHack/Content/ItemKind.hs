@@ -6,9 +6,8 @@ module Game.LambdaHack.Content.ItemKind
   , ItemSpeedup, emptyItemSpeedup, getKindMean, speedupItem
   , boostItemKindList, forApplyEffect, onlyMinorEffects
   , filterRecharging, stripRecharging, stripOnSmash
-  , strengthEffect, strengthOnSmash, strengthDropOrgan
-  , strengthEqpSlot, strengthToThrow, isMelee, isTmpCondition, isBlast
-  , goesIntoEqp, goesIntoInv, goesIntoSha
+  , strengthOnSmash, getDropOrgans, getEqpSlot, getToThrow
+  , isMelee, isTmpCondition, isBlast, goesIntoEqp, goesIntoInv, goesIntoSha
   , itemTrajectory, totalRange, damageUsefulness
   , tmpNoLonger, tmpLess, toVelocity, toLinger
   , timerNone, isTimerNone, foldTimer
@@ -267,38 +266,35 @@ stripOnSmash effs =
       getOnSmashEffect _ = Nothing
   in mapMaybe getOnSmashEffect effs
 
-strengthEffect :: (Effect -> [b]) -> ItemKind -> [b]
-strengthEffect f itemKind = concatMap f $ ieffects itemKind
-
 strengthOnSmash :: ItemKind -> [Effect]
 strengthOnSmash =
-  let p (OnSmash eff) = [eff]
-      p _ = []
-  in strengthEffect p
+  let f (OnSmash eff) = [eff]
+      f _ = []
+  in concatMap f . ieffects
 
-strengthDropOrgan :: ItemKind -> [GroupName ItemKind]
-strengthDropOrgan =
-  let p (DropItem _ _ COrgan grp) = [grp]
-      p (Recharging (DropItem _ _ COrgan grp)) = [grp]
-      p (OneOf l) = concatMap p l
-      p (Composite l) = concatMap p l
-      p _ = []
-  in strengthEffect p
+getDropOrgans :: ItemKind -> [GroupName ItemKind]
+getDropOrgans =
+  let f (DropItem _ _ COrgan grp) = [grp]
+      f (OneOf l) = concatMap f l
+      f (Recharging eff) = f eff
+      f (Composite l) = concatMap f l
+      f _ = []
+  in concatMap f . ieffects
 
-strengthEqpSlot :: ItemKind -> Maybe IA.EqpSlot
-strengthEqpSlot itemKind =
-  let p (EqpSlot eqpSlot) = [eqpSlot]
-      p _ = []
-  in case concatMap p (ifeature itemKind) of
+getEqpSlot :: ItemKind -> Maybe IA.EqpSlot
+getEqpSlot itemKind =
+  let f (EqpSlot eqpSlot) = [eqpSlot]
+      f _ = []
+  in case concatMap f (ifeature itemKind) of
     [] -> Nothing
     [x] -> Just x
     xs -> error $ "" `showFailure` (xs, itemKind)
 
-strengthToThrow :: ItemKind -> ThrowMod
-strengthToThrow itemKind =
-  let p (ToThrow tmod) = [tmod]
-      p _ = []
-  in case concatMap p (ifeature itemKind) of
+getToThrow :: ItemKind -> ThrowMod
+getToThrow itemKind =
+  let f (ToThrow tmod) = [tmod]
+      f _ = []
+  in case concatMap f (ifeature itemKind) of
     [] -> ThrowMod 100 100
     [x] -> x
     xs -> error $ "" `showFailure` (xs, itemKind)
@@ -327,7 +323,7 @@ goesIntoSha itemKind = Precious `elem` ifeature itemKind
 
 itemTrajectory :: ItemKind -> [Point] -> ([Vector], (Speed, Int))
 itemTrajectory itemKind path =
-  let ThrowMod{..} = strengthToThrow itemKind
+  let ThrowMod{..} = getToThrow itemKind
   in computeTrajectory (iweight itemKind) throwVelocity throwLinger path
 
 totalRange :: ItemKind -> Int

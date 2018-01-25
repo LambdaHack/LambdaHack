@@ -15,7 +15,7 @@ module Game.LambdaHack.Common.ActorState
   , getItemKindId, getIidKindId, getItemKind, getIidKind
   , getItemKindIdServer, getIidKindIdServer, getItemKindServer, getIidKindServer
   , storeFromC, aidFromC, lidFromC, posFromC
-  , isEscape, isStair, anyFoeAdj, actorAdjacentAssocs
+  , isStair, anyFoeAdj, actorAdjacentAssocs
   , armorHurtBonus, inMelee
   ) where
 
@@ -389,14 +389,6 @@ posFromC (CFloor _ pos) _ = pos
 posFromC (CEmbed _ pos) _ = pos
 posFromC (CActor aid _) s = bpos $ getActorBody aid s
 posFromC c@CTrunk{} _ = error $ "" `showFailure` c
-
-isEscape :: LevelId -> Point -> State -> Bool
-isEscape lid p s =
-  let bag = getEmbedBag lid p s
-      is = map (flip itemToFull s) $ EM.keys bag
-      -- Contrived, for now.
-      isE ItemFull{itemKind} = IK.iname itemKind == "escape"
-  in any isE is
 
 isStair :: LevelId -> Point -> State -> Bool
 isStair lid p s =

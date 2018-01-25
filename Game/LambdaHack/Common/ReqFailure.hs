@@ -171,7 +171,7 @@ permittedProject forced skill calmE triggerSyms itemFull@ItemFull{itemKind} =
         Right True -> Right $
           if | null triggerSyms -> True
              | ' ' `elem` triggerSyms ->
-               case IK.strengthEqpSlot itemKind of
+               case IK.getEqpSlot itemKind of
                  Just IA.EqpSlotLightSource -> True
                  Just _ -> False
                  Nothing -> not (IK.goesIntoEqp itemKind)
