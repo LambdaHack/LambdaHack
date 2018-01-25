@@ -6,7 +6,7 @@ module Game.LambdaHack.Content.ItemKind
   , ItemSpeedup, emptyItemSpeedup, getKindMean, speedupItem
   , boostItemKindList, forApplyEffect, onlyMinorEffects
   , filterRecharging, stripRecharging, stripOnSmash
-  , strengthOnSmash, getDropOrgans, getEqpSlot, getToThrow, getHideAs
+  , strengthOnSmash, getDropOrgans, getToThrow, getHideAs, getEqpSlot
   , isEffEscapeOrAscend, isMelee, isTmpCondition, isBlast
   , goesIntoEqp, goesIntoInv, goesIntoSha
   , itemTrajectory, totalRange, damageUsefulness
@@ -290,23 +290,13 @@ getDropOrgans =
       f _ = []
   in concatMap f . ieffects
 
-getEqpSlot :: ItemKind -> Maybe IA.EqpSlot
-getEqpSlot itemKind =
-  let f (EqpSlot eqpSlot) = [eqpSlot]
-      f _ = []
-  in case concatMap f (ifeature itemKind) of
-    [] -> Nothing
-    [x] -> Just x
-    xs -> error $ "" `showFailure` (xs, itemKind)
-
 getToThrow :: ItemKind -> ThrowMod
 getToThrow itemKind =
   let f (ToThrow tmod) = [tmod]
       f _ = []
   in case concatMap f (ifeature itemKind) of
     [] -> ThrowMod 100 100
-    [x] -> x
-    xs -> error $ "" `showFailure` (xs, itemKind)
+    x : _ -> x
 
 getHideAs :: ItemKind -> Maybe (GroupName ItemKind)
 getHideAs itemKind =
@@ -314,8 +304,15 @@ getHideAs itemKind =
       f _ = []
   in case concatMap f (ifeature itemKind) of
     [] -> Nothing
-    [x] -> Just x
-    xs -> error $ "" `showFailure` (xs, itemKind)
+    x : _ -> Just x
+
+getEqpSlot :: ItemKind -> Maybe IA.EqpSlot
+getEqpSlot itemKind =
+  let f (EqpSlot eqpSlot) = [eqpSlot]
+      f _ = []
+  in case concatMap f (ifeature itemKind) of
+    [] -> Nothing
+    x : _ -> Just x
 
 isMelee :: ItemKind -> Bool
 isMelee itemKind = Meleeable `elem` ifeature itemKind
