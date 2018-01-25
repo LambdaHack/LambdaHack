@@ -393,12 +393,8 @@ posFromC c@CTrunk{} _ = error $ "" `showFailure` c
 isStair :: LevelId -> Point -> State -> Bool
 isStair lid p s =
   let bag = getEmbedBag lid p s
-      is = map (flip itemToFull s) $ EM.keys bag
-      -- Contrived, for now.
-      isE ItemFull{itemKind} =
-        IK.iname itemKind == "staircase up"
-        || IK.iname itemKind == "staircase down"
-  in any isE is
+      ks = map (flip getIidKind s) $ EM.keys bag
+  in any (any IK.isEffAscend . IK.ieffects) ks
 
 -- | Require that any non-dying foe is adjacent. We include even
 -- projectiles that explode when stricken down, because they can be caught

@@ -7,7 +7,8 @@ module Game.LambdaHack.Content.ItemKind
   , boostItemKindList, forApplyEffect, onlyMinorEffects
   , filterRecharging, stripRecharging, stripOnSmash
   , strengthOnSmash, getDropOrgans, getToThrow, getHideAs, getEqpSlot
-  , isEffEscapeOrAscend, isMelee, isTmpCondition, isBlast
+  , isEffEscape, isEffAscend, isEffEscapeOrAscend
+  , isMelee, isTmpCondition, isBlast
   , goesIntoEqp, goesIntoInv, goesIntoSha
   , itemTrajectory, totalRange, damageUsefulness
   , tmpNoLonger, tmpLess, toVelocity, toLinger
@@ -245,6 +246,20 @@ onlyMinorEffects :: ItemKind -> Bool
 onlyMinorEffects kind =
   MinorEffects `elem` ifeature kind  -- override
   || not (any majorEffect $ ieffects kind)  -- exhibits no major effects
+
+isEffEscape :: Effect -> Bool
+isEffEscape Escape{} = True
+isEffEscape (OneOf l) = any isEffEscapeOrAscend l
+isEffEscape (Recharging eff) = isEffEscapeOrAscend eff
+isEffEscape (Composite l) = any isEffEscapeOrAscend l
+isEffEscape _ = False
+
+isEffAscend :: Effect -> Bool
+isEffAscend Ascend{} = True
+isEffAscend (OneOf l) = any isEffEscapeOrAscend l
+isEffAscend (Recharging eff) = isEffEscapeOrAscend eff
+isEffAscend (Composite l) = any isEffEscapeOrAscend l
+isEffAscend _ = False
 
 isEffEscapeOrAscend :: Effect -> Bool
 isEffEscapeOrAscend Ascend{} = True

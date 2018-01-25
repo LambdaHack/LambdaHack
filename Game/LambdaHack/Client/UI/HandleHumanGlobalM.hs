@@ -931,12 +931,10 @@ verifyAlters lid p = do
   lvl <- getLevel lid
   let t = lvl `at` p
   bag <- getsState $ getEmbedBag lid p
-  itemToF <- getsState $ flip itemToFull
-  let is = map itemToF $ EM.keys bag
-      -- Contrived, for now.
-      isE ItemFull{itemKind} = IK.iname itemKind == "escape"
-  if | any isE is -> verifyEscape
-     | null is && not (Tile.isDoor coTileSpeedup t
+  getKind <- getsState $ flip getIidKind
+  let ks = map getKind $ EM.keys bag
+  if | any (any IK.isEffEscape . IK.ieffects) ks -> verifyEscape
+     | null ks && not (Tile.isDoor coTileSpeedup t
                        || Tile.isChangable coTileSpeedup t
                        || Tile.isSuspect coTileSpeedup t) ->
          failWith "never mind"
