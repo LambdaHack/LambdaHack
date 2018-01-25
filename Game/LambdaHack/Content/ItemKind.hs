@@ -6,8 +6,9 @@ module Game.LambdaHack.Content.ItemKind
   , ItemSpeedup, emptyItemSpeedup, getKindMean, speedupItem
   , boostItemKindList, forApplyEffect, onlyMinorEffects
   , filterRecharging, stripRecharging, stripOnSmash
-  , strengthOnSmash, getDropOrgans, getEqpSlot, getToThrow
-  , isMelee, isTmpCondition, isBlast, goesIntoEqp, goesIntoInv, goesIntoSha
+  , strengthOnSmash, getDropOrgans, getEqpSlot, getToThrow, getHideAs
+  , isEffEscapeOrAscend, isMelee, isTmpCondition, isBlast
+  , goesIntoEqp, goesIntoInv, goesIntoSha
   , itemTrajectory, totalRange, damageUsefulness
   , tmpNoLonger, tmpLess, toVelocity, toLinger
   , timerNone, isTimerNone, foldTimer
@@ -245,6 +246,14 @@ onlyMinorEffects kind =
   MinorEffects `elem` ifeature kind  -- override
   || not (any majorEffect $ ieffects kind)  -- exhibits no major effects
 
+isEffEscapeOrAscend :: Effect -> Bool
+isEffEscapeOrAscend Ascend{} = True
+isEffEscapeOrAscend Escape{} = True
+isEffEscapeOrAscend (OneOf l) = any isEffEscapeOrAscend l
+isEffEscapeOrAscend (Recharging eff) = isEffEscapeOrAscend eff
+isEffEscapeOrAscend (Composite l) = any isEffEscapeOrAscend l
+isEffEscapeOrAscend _ = False
+
 filterRecharging :: [Effect] -> [Effect]
 filterRecharging effs =
   let getRechargingEffect :: Effect -> Maybe Effect
@@ -297,6 +306,15 @@ getToThrow itemKind =
   in case concatMap f (ifeature itemKind) of
     [] -> ThrowMod 100 100
     [x] -> x
+    xs -> error $ "" `showFailure` (xs, itemKind)
+
+getHideAs :: ItemKind -> Maybe (GroupName ItemKind)
+getHideAs itemKind =
+  let f (HideAs grp) = [grp]
+      f _ = []
+  in case concatMap f (ifeature itemKind) of
+    [] -> Nothing
+    [x] -> Just x
     xs -> error $ "" `showFailure` (xs, itemKind)
 
 isMelee :: ItemKind -> Bool

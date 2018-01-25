@@ -301,15 +301,10 @@ embedBenefit fleeVia aid pbags = do
       -- Taking the kind the item hides under into consideration, because
       -- it's a best guess only, for AI and UI.
       iidToEffs iid = IK.ieffects $ getKind iid
-      isEffEscapeOrAscend IK.Ascend{} = True
-      isEffEscapeOrAscend IK.Escape{} = True
-      isEffEscapeOrAscend (IK.OneOf l) = any isEffEscapeOrAscend l
-      isEffEscapeOrAscend (IK.Composite l) = any isEffEscapeOrAscend l
-      isEffEscapeOrAscend _ = False
       feats bag = concatMap iidToEffs $ EM.keys bag
       -- For simplicity, we assume at most one exit at each position.
       -- AI uses exit regardless of traps or treasures at the spot.
-      bens (_, bag) = case find isEffEscapeOrAscend $ feats bag of
+      bens (_, bag) = case find IK.isEffEscapeOrAscend $ feats bag of
         Just IK.Escape{} ->
           -- Escape (or guard) only after exploring, for high score, etc.
           let escapeOrGuard = fcanEscape (gplayer fact)

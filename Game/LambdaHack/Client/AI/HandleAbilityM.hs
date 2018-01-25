@@ -726,6 +726,7 @@ applyItem aid applyGroup = do
         let -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.
             getHP (IK.RefillHP p) | p > 0 = True
             getHP (IK.OneOf l) = any getHP l
+            getHP (IK.Recharging eff) = getHP eff
             getHP (IK.Composite l) = any getHP l
             getHP _ = False
             firstAidItem = any getHP $ IK.ieffects itemKind
@@ -734,6 +735,7 @@ applyItem aid applyGroup = do
             getTweak IK.PolyItem = True
             getTweak IK.Identify = True
             getTweak (IK.OneOf l) = any getTweak l
+            getTweak (IK.Recharging eff) = getTweak eff
             getTweak (IK.Composite l) = any getTweak l
             getTweak _ = False
             tweakItem = any getTweak $ IK.ieffects itemKind

@@ -71,11 +71,8 @@ reinitGame = do
   -- Thanks to the following, for any item with feature @Identified@,
   -- the client has its kind from the start.
   let discoKindFiltered =
-        let f :: IK.Feature -> Bool
-            f IK.HideAs{} = True
-            f _ = False
-            g kindId = all (not . f) $ IK.ifeature (okind coitem kindId)
-        in EM.filter g discoS
+        let f kindId = isNothing $ IK.getHideAs $ okind coitem kindId
+        in EM.filter f discoS
       defL | sknowMap = s
            | otherwise = localFromGlobal s
       defLocal = updateDiscoKind (const discoKindFiltered) defL

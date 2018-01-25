@@ -57,15 +57,11 @@ buildItem :: COps -> FlavourMap -> DiscoveryKindRev
           -> Item
 buildItem COps{coitem} (FlavourMap flavourMap) discoRev
           ikChosen kind jlid =
-  let jkind =
-        let f :: IK.Feature -> Bool
-            f IK.HideAs{} = True
-            f _ = False
-        in case find f $ IK.ifeature kind of
-          Just (IK.HideAs grp) ->
-            let kindHidden = ouniqGroup coitem grp
-            in IdentityCovered (discoRev EM.! ikChosen) kindHidden
-          _ -> IdentityObvious ikChosen
+  let jkind = case IK.getHideAs kind of
+        Just grp ->
+          let kindHidden = ouniqGroup coitem grp
+          in IdentityCovered (discoRev EM.! ikChosen) kindHidden
+        Nothing -> IdentityObvious ikChosen
       jfid     = Nothing  -- the default
       jflavour =
         case IK.iflavour kind of
