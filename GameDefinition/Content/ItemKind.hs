@@ -873,7 +873,7 @@ necklaceTemplate = ItemKind
   , iverbHit = "whip"
   , iweight  = 30
   , idamage  = 0
-  , iaspects = []
+  , iaspects = [Timeout 1]  -- fake, but won't be displayed
   , ieffects = []
   , ifeature = [ Periodic, HideAs "necklace unknown", Precious, Equipable
                , toVelocity 50 ]  -- not dense enough

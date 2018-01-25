@@ -1,7 +1,7 @@
 -- | Descripitons of items.
 module Game.LambdaHack.Client.UI.ItemDescription
-  ( partItem,  partItemShort, partItemHigh, partItemWs, partItemWsRanged
-  , partItemShortAW, partItemMediumAW, partItemShortWownW
+  ( partItem, partItemShort, partItemShortest, partItemHigh, partItemWs
+  , partItemWsRanged, partItemShortAW, partItemMediumAW, partItemShortWownW
   , viewItem, itemDesc
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -71,11 +71,11 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
         _ -> []
       ts = lsource
            ++ (take maxWordsToShow effTs)
-           ++ ["(...)" | length effTs > maxWordsToShow]
-           ++ [timer]
+           ++ ["(...)" | length effTs > maxWordsToShow && maxWordsToShow > 1]
+           ++ [timer |  maxWordsToShow > 1]
       unique = IK.Unique `elem` IK.ifeature itemKind
       name | temporary = "temporarily" <+> IK.iname itemKind
-           | itemSuspect || detailLevel <= DetailLow =
+           | itemSuspect || maxWordsToShow <= 1 =
              flav <+> IK.iname itemKind
            | otherwise = IK.iname itemKind
       capName = if unique
@@ -195,6 +195,10 @@ partItemShort :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
               -> (Bool, Bool, MU.Part, MU.Part)
 partItemShort side factionD = partItemN side factionD False DetailLow 4
 
+partItemShortest :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
+                 -> (Bool, Bool, MU.Part, MU.Part)
+partItemShortest side factionD = partItemN side factionD False DetailLow 0
+
 partItemHigh :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
              -> (Bool, Bool, MU.Part, MU.Part)
 partItemHigh side factionD = partItemN side factionD False DetailAll 100
@@ -279,7 +283,8 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
                   else " m/s."
       tsuspect = ["You are unsure what it does." | itemSuspect]
       (desc, featureSentences, damageAnalysis) =
-        let sentences = tsuspect ++ mapMaybe featureToSentence (IK.ifeature itemKind)
+        let sentences = tsuspect
+                        ++ mapMaybe featureToSentence (IK.ifeature itemKind)
             aHurtMeleeOfItem = IA.aHurtMelee $ aspectRecordFull itemFull
             meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
             dmgAn = if meanDmg <= 0 then "" else

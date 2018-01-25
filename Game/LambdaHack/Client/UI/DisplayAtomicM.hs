@@ -525,7 +525,7 @@ createActorUI born aid body = do
                          | otherwise = "flying"
                      -- Not much detail about a fast flying item.
                      (_, _, object1, object2) =
-                       partItemShort (bfid body) factionD localTime
+                       partItemShortest (bfid body) factionD localTime
                                         itemFull (1, [])
                  in ( makePhrase [MU.AW $ MU.Text adj, object1, object2]
                     , basePronoun )
@@ -871,7 +871,7 @@ discover c iid = do
       knownName = partItemMediumAW side factionD localTime itemFull kit
       -- Make sure the two names in the message differ.
       (_, _, name, aEText) =
-        partItemShort side factionD localTime itemFull kit
+        partItemShortest side factionD localTime itemFull kit
       namePhrase = MU.Phrase $ [name, aEText] ++ nameWhere
       msg = makeSentence
         ["the", MU.SubjectVerbSg namePhrase "turn out to be", knownName]
