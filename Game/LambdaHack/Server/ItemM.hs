@@ -128,26 +128,27 @@ placeItemsInDungeon = do
   COps{cocave, coTileSpeedup} <- getsState scops
   totalDepth <- getsState stotalDepth
   let initialItems (lid, Level{..}) = do
+        litemNum <- rndToAction $ castDice ldepth totalDepth
+                                  (citemNum $ okind cocave lkind)
         let placeItems :: Int -> m ()
-            placeItems 0 = return ()
+            placeItems n | n == litemNum = return ()
             placeItems !n = do
               -- We ensure that there are no big regions without items at all.
               let dist !p _ =
                     let f !k _ b = chessDist p k > 8 && b
                     in EM.foldrWithKey f True lfloor
                   notM !p _ = p `EM.notMember` lfloor
-              pos <- rndToAction $ findPosTry2 100 ltile
+              pos <- rndToAction $ findPosTry2 200 ltile
                 (\_ !t -> Tile.isWalkable coTileSpeedup t
                           && not (Tile.isNoItem coTileSpeedup t))
-                -- If there are very many items, some regions may be very rich.
+                -- If there are very many items, some regions may be very rich,
+                -- but let's try to spread the initial items evenly at least.
                 ([dist | n * 100 < lxsize * lysize] ++ [notM])
                 (\_ !t -> Tile.isOftenItem coTileSpeedup t)
                 [notM]
               createLevelItem pos lid
-              placeItems (n - 1)
-        litemNum <- rndToAction $ castDice ldepth totalDepth
-                                           (citemNum $ okind cocave lkind)
-        placeItems litemNum
+              placeItems (n + 1)
+        placeItems 0
   dungeon <- getsState sdungeon
   -- Make sure items on easy levels are generated first, to avoid all
   -- artifacts on deep levels.
