@@ -40,26 +40,35 @@ data Dice =
   deriving (Eq, Ord, Generic)
 
 instance Show Dice where
-  show dice1 = case dice1 of
+  show = stripOuterParens . showDiceWithParens
+
+stripOuterParens :: String -> String
+stripOuterParens s@('(' : rest) = case uncons $ reverse rest of
+  Just (')', middle) -> reverse middle
+  _ -> s
+stripOuterParens s = s
+
+showDiceWithParens :: Dice -> String
+showDiceWithParens = sh
+ where
+  sh dice1 = case dice1 of
     DiceI k -> show k
     DiceD n k -> show n ++ "d" ++ show k
     DiceDL n k -> show n ++ "dL" ++ show k
     DiceZ n k -> show n ++ "z" ++ show k
     DiceZL n k -> show n ++ "zL" ++ show k
-    DicePlus d1 (DiceNegate d2) | simpleDice d2 -> show d1 ++ "-" ++ show d2
-    DicePlus d1 (DiceNegate d2) -> show d1 ++ "-" ++ "(" ++ show d2 ++ ")"
-    DicePlus d1 d2 -> show d1 ++ "+" ++ show d2
-    DiceTimes d1 d2 -> "(" ++ show d1 ++ ") * (" ++ show d2 ++ ")"  -- rare
-    DiceNegate (DiceI k) -> "-" ++ show k  -- "-2" parses as this, not as DiceI
-    DiceNegate d1 -> "- (" ++ show d1 ++ ")"
+    DicePlus d1 (DiceNegate d2) -> wrapInParens $ sh d1 ++ "-" ++ sh d2
+    DicePlus (DiceNegate d1) d2 -> wrapInParens $ "-" ++ sh d1 ++ "+" ++ sh d2
+    DicePlus d1 (DicePlus d2 d3) -> sh $ DicePlus (DicePlus d1 d2) d3
+    DicePlus (DicePlus d1 d2) d3 ->
+      wrapInParens $ stripOuterParens (sh $ DicePlus d1 d2) ++ "+" ++ sh d3
+    DicePlus d1 d2 -> wrapInParens $ sh d1 ++ "+" ++ sh d2
+    DiceTimes d1 d2 -> wrapInParens $ sh d1 ++ "*" ++ sh d2
+    DiceNegate d1 -> wrapInParens $ "-" ++ sh d1
 
-simpleDice :: Dice -> Bool
-simpleDice DiceI{} = True
-simpleDice DiceD{} = True
-simpleDice DiceDL{} = True
-simpleDice DiceZ{} = True
-simpleDice DiceZL{} = True
-simpleDice _ = False
+wrapInParens :: String -> String
+wrapInParens "" = ""
+wrapInParens t = "(" <> t <> ")"
 
 instance Binary Dice
 
