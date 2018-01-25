@@ -1026,11 +1026,11 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                 , "the", name, aEText, store ]
         IK.Identify -> do
           subject <- partActorLeader aid bUI
-          let verb = "inspect"
-              store = MU.Text $ ppCStoreIn CGround
+          pronoun <- partPronounLeader aid bUI
           msgAdd $ makeSentence
-            [ MU.SubjectVerbSg subject verb
-            , "an item", store ]
+            [ MU.SubjectVerbSg subject "look at"
+            , MU.WownW pronoun $ MU.Text "inventory"
+            , "intensely" ]
         IK.Detect{} -> do
           subject <- partActorLeader aid bUI
           let verb = "perceive nearby area"
