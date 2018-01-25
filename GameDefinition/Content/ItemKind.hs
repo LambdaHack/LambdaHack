@@ -1412,7 +1412,7 @@ gemTemplate = ItemKind
   { isymbol  = symbolGold
   , iname    = "gem"
   , ifreq    = [("gem unknown", 1)]
-  , iflavour = zipPlain brightCol  -- natural, so not fancy
+  , iflavour = zipPlain $ delete BrYellow brightCol  -- natural, so not fancy
   , icount   = 1
   , irarity  = [(3, 0), (10, 24)]
   , iverbHit = "tap"
@@ -1445,13 +1445,13 @@ gem4 = gem1
   , irarity  = [(9, 0), (10, 100)]
   }
 gem5 = gem1
-  { isymbol  = symbolSpecial  -- looks differently upon closer inspection
+  { isymbol  = symbolSpecial
   , iname    = "elixir"
   , ifreq    = [("treasure", 100), ("gem", 100), ("any jewelry", 100)]
-  , iflavour = zipPlain [BrYellow]  -- same colour as one of gems; symbol unique
+  , iflavour = zipPlain [BrYellow]
   , irarity  = [(1, 40), (10, 40)]
   , ieffects = [RefillCalm 5, RefillHP 15]
-  , ifeature = [ELabel "of youth", Applicable] ++ ifeature gem1
+  , ifeature = [ELabel "of youth", Applicable, Precious]  -- not hidden
   , idesc    = "A crystal vial of amber liquid, supposedly granting eternal youth and fetching 100 gold per piece. The main effect seems to be mild euphoria, but it admittedly heals minor ailments rather well."
   }
 currency = ItemKind
