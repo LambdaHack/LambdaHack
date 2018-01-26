@@ -17,7 +17,6 @@ import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
-import qualified Data.Set as S
 import           Data.Vector.Binary ()
 import qualified Data.Vector.Unboxed as U
 
@@ -167,17 +166,17 @@ newtype FlavourMap = FlavourMap (U.Vector Word16)
 emptyFlavourMap :: FlavourMap
 emptyFlavourMap = FlavourMap U.empty
 
-stdFlav :: S.Set Flavour
-stdFlav = S.fromList [ Flavour fn bc
-                     | fn <- [minBound..maxBound], bc <- Color.stdCol ]
+stdFlav :: ES.EnumSet Flavour
+stdFlav = ES.fromList [ Flavour fn bc
+                      | fn <- [minBound..maxBound], bc <- Color.stdCol ]
 
 -- | Assigns flavours to item kinds. Assures no flavor is repeated for the same
 -- symbol, except for items with only one permitted flavour.
 rollFlavourMap :: Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
-                      , EM.EnumMap Char (S.Set Flavour) )
+                      , EM.EnumMap Char (ES.EnumSet Flavour) )
                -> ContentId ItemKind -> ItemKind
                -> Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
-                      , EM.EnumMap Char (S.Set Flavour) )
+                      , EM.EnumMap Char (ES.EnumSet Flavour) )
 rollFlavourMap rnd key ik = case IK.iflavour ik of
   [] -> error "empty iflavour"
   [flavour] -> do
@@ -188,12 +187,12 @@ rollFlavourMap rnd key ik = case IK.iflavour ik of
     (!assocs, !availableMap) <- rnd
     let available =
           EM.findWithDefault stdFlav (IK.isymbol ik) availableMap
-        proper = S.fromList flvs `S.intersection` available
-    assert (not (S.null proper)
+        proper = ES.fromList flvs `ES.intersection` available
+    assert (not (ES.null proper)
             `blame` "not enough flavours for items"
             `swith` (flvs, available, ik, availableMap)) $ do
-      flavour <- oneOf $ S.toList proper
-      let availableReduced = S.delete flavour available
+      flavour <- oneOf $ ES.toList proper
+      let availableReduced = ES.delete flavour available
       return ( EM.insert key flavour assocs
              , EM.insert (IK.isymbol ik) availableReduced availableMap)
 
