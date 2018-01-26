@@ -139,7 +139,7 @@ placeItemsInDungeon alliancePositions = do
                     let f !k _ b = chessDist p k > 6 && b
                     in EM.foldrWithKey f True lfloor
                   alPos = EM.findWithDefault [] lid alliancePositions
-                  distAlliance !p =
+                  distAlliance !p _ =
                     let f !k b = chessDist p k > 4 && b
                     in foldr f True alPos
                   notM !p _ = p `EM.notMember` lfloor
@@ -148,10 +148,12 @@ placeItemsInDungeon alliancePositions = do
                           && not (Tile.isNoItem coTileSpeedup t))
                 -- If there are very many items, some regions may be very rich,
                 -- but let's try to spread at least the initial items evenly.
-                ([dist | n * 100 < lxsize * lysize] ++ [notM])
+                ([dist | n * 100 < lxsize * lysize]
+                 ++ [\_ !t -> Tile.isOftenItem coTileSpeedup t]
+                 ++ [notM])
                 -- Don't generate items under actors (unless very many actors).
-                (\ !p !t -> Tile.isOftenItem coTileSpeedup t && distAlliance p)
-                [\ !p _ -> distAlliance p, notM]
+                distAlliance
+                [distAlliance, notM]
               createLevelItem pos lid
               placeItems (n + 1)
         placeItems 0
