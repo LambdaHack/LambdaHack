@@ -60,7 +60,7 @@ data StateServer = StateServer
   , soptions      :: ServerOptions  -- ^ current commandline options
   , soptionsNxt   :: ServerOptions  -- ^ options for the next game
   }
-  deriving (Show)
+  deriving Show
 
 -- | Position in time for each actor, grouped by level and by faction.
 type ActorTime =
@@ -72,7 +72,7 @@ emptyStateServer =
   StateServer
     { sactorTime = EM.empty
     , sactorStatis = ES.empty
-    , sdiscoKindRev = EM.empty
+    , sdiscoKindRev = emptyDiscoveryKindRev
     , suniqueSet = ES.empty
     , sitemSeedD = EM.empty
     , sitemRev = HM.empty

@@ -43,6 +43,7 @@ random = St.state R.random
 -- | Get any element of a list with equal probability.
 oneOf :: [a] -> Rnd a
 oneOf [] = error $ "oneOf []" `showFailure` ()
+oneOf [x] = return x
 oneOf xs = do
   r <- randomR (0, length xs - 1)
   return $! xs !! r

@@ -4,7 +4,7 @@
 module Game.LambdaHack.Server.ItemRev
   ( ItemKnown, ItemRev, UniqueSet, buildItem, newItem
     -- * Item discovery types
-  , DiscoveryKindRev, ItemSeedDict, serverDiscos
+  , DiscoveryKindRev, ItemSeedDict, emptyDiscoveryKindRev, serverDiscos
     -- * The @FlavourMap@ type
   , FlavourMap, emptyFlavourMap, dungeonFlavourMap
   ) where
@@ -18,6 +18,8 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as S
+import           Data.Vector.Binary ()
+import qualified Data.Vector.Unboxed as U
 
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.ContentData
@@ -55,18 +57,17 @@ type UniqueSet = ES.EnumSet (ContentId ItemKind)
 buildItem :: COps -> FlavourMap -> DiscoveryKindRev
           -> ContentId ItemKind -> ItemKind -> LevelId
           -> Item
-buildItem COps{coitem} (FlavourMap flavourMap) discoRev
+buildItem COps{coitem} (FlavourMap flavourMap) (DiscoveryKindRev discoRev)
           ikChosen kind jlid =
   let jkind = case IK.getHideAs kind of
         Just grp ->
           let kindHidden = ouniqGroup coitem grp
-          in IdentityCovered (discoRev EM.! ikChosen) kindHidden
+          in IdentityCovered
+               (toEnum $ fromEnum $ discoRev U.! fromEnum ikChosen)
+               kindHidden
         Nothing -> IdentityObvious ikChosen
       jfid     = Nothing  -- the default
-      jflavour =
-        case IK.iflavour kind of
-          [fl] -> fl
-          _ -> flavourMap EM.! ikChosen
+      jflavour = toEnum $ fromEnum $ flavourMap U.! fromEnum ikChosen
   in Item{..}
 
 -- | Generate an item based on level.
@@ -127,10 +128,16 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
                   , itemGroup )
 
 -- | The reverse map to @DiscoveryKind@, needed for item creation.
-type DiscoveryKindRev = EM.EnumMap (ContentId ItemKind) ItemKindIx
+-- This is total and never changes, hence implemented as vector.
+-- Morally, it's indexed by @ContentId ItemKind@ and elements are @ItemKindIx@.
+newtype DiscoveryKindRev = DiscoveryKindRev (U.Vector Word16)
+  deriving (Show, Binary)
 
 -- | The map of item ids to item seeds, needed for item creation.
 type ItemSeedDict = EM.EnumMap ItemId IA.ItemSeed
+
+emptyDiscoveryKindRev :: DiscoveryKindRev
+emptyDiscoveryKindRev = DiscoveryKindRev U.empty
 
 serverDiscos :: COps -> Rnd (DiscoveryKind, DiscoveryKindRev)
 serverDiscos COps{coitem} = do
@@ -147,45 +154,54 @@ serverDiscos COps{coitem} = do
         error $ "too short ixs" `showFailure` (ik, ikMap)
       (discoS, discoRev, _) =
         ofoldlWithKey' coitem f (EM.empty, EM.empty, shuffled)
-  return (discoS, discoRev)
+      udiscoRev = U.fromListN (olength coitem)
+                  $ map (toEnum . fromEnum) $ EM.elems discoRev
+  return (discoS, DiscoveryKindRev udiscoRev)
 
 -- | Flavours assigned by the server to item kinds, in this particular game.
-newtype FlavourMap = FlavourMap (EM.EnumMap (ContentId ItemKind) Flavour)
+-- This is total and never changes, hence implemented as vector.
+-- Morally, it's indexed by @ContentId ItemKind@ and elements are @Flavour@.
+newtype FlavourMap = FlavourMap (U.Vector Word16)
   deriving (Show, Binary)
 
 emptyFlavourMap :: FlavourMap
-emptyFlavourMap = FlavourMap EM.empty
+emptyFlavourMap = FlavourMap U.empty
+
+stdFlav :: S.Set Flavour
+stdFlav = S.fromList [ Flavour fn bc
+                     | fn <- [minBound..maxBound], bc <- Color.stdCol ]
 
 -- | Assigns flavours to item kinds. Assures no flavor is repeated for the same
 -- symbol, except for items with only one permitted flavour.
-rollFlavourMap :: S.Set Flavour
-               -> Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
+rollFlavourMap :: Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
                       , EM.EnumMap Char (S.Set Flavour) )
                -> ContentId ItemKind -> ItemKind
                -> Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
                       , EM.EnumMap Char (S.Set Flavour) )
-rollFlavourMap fullFlavSet rnd key ik =
-  let flavours = IK.iflavour ik
-  in if length flavours == 1
-     then rnd
-     else do
-       (!assocs, !availableMap) <- rnd
-       let available =
-             EM.findWithDefault fullFlavSet (IK.isymbol ik) availableMap
-           proper = S.fromList flavours `S.intersection` available
-       assert (not (S.null proper)
-               `blame` "not enough flavours for items"
-               `swith` (flavours, available, ik, availableMap)) $ do
-         flavour <- oneOf $ S.toList proper
-         let availableReduced = S.delete flavour available
-         return ( EM.insert key flavour assocs
-                , EM.insert (IK.isymbol ik) availableReduced availableMap)
+rollFlavourMap rnd key ik = case IK.iflavour ik of
+  [] -> error "empty iflavour"
+  [flavour] -> do
+    (!assocs, !availableMap) <- rnd
+    return ( EM.insert key flavour assocs
+           , availableMap)
+  flvs -> do
+    (!assocs, !availableMap) <- rnd
+    let available =
+          EM.findWithDefault stdFlav (IK.isymbol ik) availableMap
+        proper = S.fromList flvs `S.intersection` available
+    assert (not (S.null proper)
+            `blame` "not enough flavours for items"
+            `swith` (flvs, available, ik, availableMap)) $ do
+      flavour <- oneOf $ S.toList proper
+      let availableReduced = S.delete flavour available
+      return ( EM.insert key flavour assocs
+             , EM.insert (IK.isymbol ik) availableReduced availableMap)
 
 -- | Randomly chooses flavour for all item kinds for this game.
 dungeonFlavourMap :: COps -> Rnd FlavourMap
 dungeonFlavourMap COps{coitem} = do
-  let allFlav = concatMap (\flv -> map (Flavour flv) Color.stdCol)
-                          [minBound..maxBound]
-  liftM (FlavourMap . fst) $
-    ofoldlWithKey' coitem (rollFlavourMap (S.fromList allFlav))
-                          (return (EM.empty, EM.empty))
+  (assocsFlav, _) <- ofoldlWithKey' coitem rollFlavourMap
+                                    (return (EM.empty, EM.empty))
+  let uFlav = U.fromListN (olength coitem)
+              $ map (toEnum . fromEnum) $ EM.elems assocsFlav
+  return $! FlavourMap uFlav
