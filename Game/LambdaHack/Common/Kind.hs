@@ -4,7 +4,8 @@ module Game.LambdaHack.Common.Kind
   ( ContentId, ContentData, COps(..)
   , emptyCOps, getStdRuleset
   , okind, ouniqGroup, opick
-  , ofoldrWithKey, ofoldlWithKey', ofoldlGroup', olength
+  , ofoldrWithKey, ofoldlWithKey', ofoldlGroup', omapVector, oimapVector
+  , olength
   ) where
 
 import Prelude ()

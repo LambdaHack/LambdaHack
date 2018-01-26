@@ -46,18 +46,13 @@ import           Game.LambdaHack.Content.TileKind (TileKind, TileSpeedup (..),
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 createTab :: U.Unbox a => ContentData TileKind -> (TileKind -> a) -> TK.Tab a
-createTab cotile prop =
-  let f _ t acc = prop t : acc
-  in TK.Tab $ U.fromListN (fromEnum $ olength cotile)
-     $ ofoldrWithKey cotile f []
+createTab cotile prop = TK.Tab $ U.convert $ omapVector cotile prop
 
 createTabWithKey :: U.Unbox a
-                 => ContentData TileKind -> (ContentId TileKind -> TileKind -> a)
+                 => ContentData TileKind
+                 -> (ContentId TileKind -> TileKind -> a)
                  -> TK.Tab a
-createTabWithKey cotile prop =
-  let f k t acc = prop k t : acc
-  in TK.Tab $ U.fromListN (fromEnum $ olength cotile)
-     $ ofoldrWithKey cotile f []
+createTabWithKey cotile prop = TK.Tab $ U.convert $ oimapVector cotile prop
 
 -- Unsafe indexing is pretty safe here, because we guard the vector
 -- with the newtype.

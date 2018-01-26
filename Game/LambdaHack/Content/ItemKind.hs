@@ -202,7 +202,7 @@ speedupItem coitem =
         let kmMean = meanAspect kind
             kmConst = not $ IA.aspectsRandom (iaspects kind)
         in IA.KindMean{..}
-  in ItemSpeedup $! omapVector f coitem
+  in ItemSpeedup $! omapVector coitem f
 
 meanAspect :: ItemKind -> IA.AspectRecord
 meanAspect kind = foldl' IA.addMeanAspect IA.emptyAspectRecord (iaspects kind)

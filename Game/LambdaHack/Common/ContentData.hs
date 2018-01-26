@@ -12,7 +12,8 @@ module Game.LambdaHack.Common.ContentData
   ( ContentId(ContentId), ContentData, Freqs, Rarity
   , validateRarity, emptyContentData, makeContentData
   , okind, omemberGroup, oisSingletonGroup, ouniqGroup, opick
-  , ofoldrWithKey, ofoldlWithKey', ofoldlGroup', omapVector, olength
+  , ofoldrWithKey, ofoldlWithKey', ofoldlGroup', omapVector, oimapVector
+  , olength
   ) where
 
 import Prelude ()
@@ -172,8 +173,12 @@ ofoldlGroup' ContentData{groupFreq} cgroup f z =
                               ++ "' among content that has groups "
                               ++ show (M.keys groupFreq)
                  `showFailure` ()
-omapVector :: (a -> b) -> ContentData a -> V.Vector b
-omapVector f = V.map f . contentVector
+
+omapVector :: ContentData a -> (a -> b) -> V.Vector b
+omapVector d f = V.map f $ contentVector d
+
+oimapVector :: ContentData a -> (ContentId a -> a -> b) -> V.Vector b
+oimapVector d f = V.imap (\i a -> f (toEnum i) a) $ contentVector d
 
 -- | Size of content @a@.
 olength :: ContentData a -> Int
