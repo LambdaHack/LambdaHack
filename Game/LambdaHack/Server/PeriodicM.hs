@@ -157,17 +157,17 @@ rollSpawnPos COps{coTileSpeedup} visible
 
 -- | Advance the move time for the given actor.
 advanceTime :: MonadServerAtomic m => ActorId -> Int -> Bool -> m ()
-advanceTime aid percent breakStatis = do
+advanceTime aid percent breakStasis = do
   b <- getsState $ getActorBody aid
   ar <- getsState $ getActorAspect aid
   let t = timeDeltaPercent (ticksPerMeter $ bspeed b ar) percent
   -- @t@ may be negative; that's OK.
   modifyServer $ \ser ->
     ser {sactorTime = ageActor (bfid b) (blid b) aid t $ sactorTime ser}
-  when breakStatis $
+  when breakStasis $
     modifyServer $ \ser ->
-      ser {sactorStatis = ES.delete aid (sactorStatis ser)}
-             -- actor moved, so he broke the time statis, he can be
+      ser {sactorStasis = ES.delete aid (sactorStasis ser)}
+             -- actor moved, so he broke the time stasis, he can be
              -- paralyzed as well as propelled again
 
 -- | Add communication overhead time delta to all non-projectile, non-dying

@@ -846,22 +846,22 @@ effectParalyze execSfx nDm source target = do
   tb <- getsState $ getActorBody target
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
-  actorStatis <- getsServer sactorStatis
+  actorStasis <- getsServer sactorStasis
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
   let power = max power0 1  -- KISS, avoid special case
       t = timeDeltaScale (Delta timeClip) power
   if | bproj tb -> return UseDud
-     | ES.member target actorStatis -> do
+     | ES.member target actorStasis -> do
        sb <- getsState $ getActorBody source
-       execSfxAtomic $ SfxMsgFid (bfid sb) SfxStatisProtects
+       execSfxAtomic $ SfxMsgFid (bfid sb) SfxStasisProtects
        return UseId
      | otherwise -> do
        execSfx
        modifyServer $ \ser ->
          ser { sactorTime = ageActor (bfid tb) (blid tb) target t
                             $ sactorTime ser
-             , sactorStatis = ES.insert target (sactorStatis ser) }
-                 -- actor's time warped, so he is in statis,
+             , sactorStasis = ES.insert target (sactorStasis ser) }
+                 -- actor's time warped, so he is in stasis,
                  -- immune to further warps
        return UseUp
 
@@ -876,24 +876,24 @@ effectInsertMove execSfx nDm source target = do
   ar <- getsState $ getActorAspect target
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
-  actorStatis <- getsServer sactorStatis
+  actorStasis <- getsServer sactorStasis
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
   let power = max power0 1  -- KISS, avoid special case
       actorTurn = ticksPerMeter $ bspeed tb ar
       t = timeDeltaScale actorTurn (-power)
   -- Projectiles permitted; can't be suspended mid-air, as in @effectParalyze@
   -- but can be propelled.
-  if | ES.member target actorStatis -> do
+  if | ES.member target actorStasis -> do
        sb <- getsState $ getActorBody source
-       execSfxAtomic $ SfxMsgFid (bfid sb) SfxStatisProtects
+       execSfxAtomic $ SfxMsgFid (bfid sb) SfxStasisProtects
        return UseId
      | otherwise -> do
        execSfx
        modifyServer $ \ser ->
          ser { sactorTime = ageActor (bfid tb) (blid tb) target t
                             $ sactorTime ser
-             , sactorStatis = ES.insert target (sactorStatis ser) }
-                 -- actor's time warped, so he is in statis,
+             , sactorStasis = ES.insert target (sactorStasis ser) }
+                 -- actor's time warped, so he is in stasis,
                  -- immune to further warps
        return UseUp
 

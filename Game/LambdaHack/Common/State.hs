@@ -63,8 +63,8 @@ data State = State
   , _shigh        :: HighScore.ScoreDict  -- ^ high score table
   , _sgameModeId  :: ContentId ModeKind   -- ^ current game mode
   , _sdiscoKind   :: DiscoveryKind    -- ^ item kind discoveries data
-  , _sdiscoAspect :: DiscoveryAspect  -- ^ item aspect data
-  , _sactorAspect :: ActorAspect      -- ^ actor aspect data
+  , _sdiscoAspect :: DiscoveryAspect  -- ^ item aspect data; could be recomputed
+  , _sactorAspect :: ActorAspect      -- ^ actor aspects; is recomputed
   }
   deriving (Show, Eq)
 

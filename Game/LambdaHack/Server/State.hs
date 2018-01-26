@@ -30,8 +30,8 @@ import Game.LambdaHack.Server.ServerOptions
 -- basic game state, but not the server's basic state.
 data StateServer = StateServer
   { sactorTime    :: ActorTime      -- ^ absolute times of next actions
-  , sactorStatis  :: ES.EnumSet ActorId
-                                    -- ^ actors currently in time statis,
+  , sactorStasis  :: ES.EnumSet ActorId
+                                    -- ^ actors currently in time stasis,
                                     --   invulnerable to time warps until move
   , sdiscoKindRev :: DiscoveryKindRev
                                     -- ^ reverse map, used for item creation
@@ -71,7 +71,7 @@ emptyStateServer :: StateServer
 emptyStateServer =
   StateServer
     { sactorTime = EM.empty
-    , sactorStatis = ES.empty
+    , sactorStasis = ES.empty
     , sdiscoKindRev = emptyDiscoveryKindRev
     , suniqueSet = ES.empty
     , sitemSeedD = EM.empty
@@ -112,7 +112,7 @@ ageActor !fid !lid !aid !delta =
 instance Binary StateServer where
   put StateServer{..} = do
     put sactorTime
-    put sactorStatis
+    put sactorStasis
     put sdiscoKindRev
     put suniqueSet
     put sitemSeedD
@@ -127,7 +127,7 @@ instance Binary StateServer where
     put soptions
   get = do
     sactorTime <- get
-    sactorStatis <- get
+    sactorStasis <- get
     sdiscoKindRev <- get
     suniqueSet <- get
     sitemSeedD <- get

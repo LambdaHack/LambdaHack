@@ -74,8 +74,7 @@ instance Hashable ItemIdentity
 
 instance Binary ItemIdentity
 
--- | The map of item ids to item aspects.
--- The full map is known by the server.
+-- | The map of item ids to item aspects. The full map is known by the server.
 type DiscoveryAspect = EM.EnumMap ItemId IA.AspectRecord
 
 -- | An index of the kind identifier of an item. Clients have partial knowledge
@@ -112,8 +111,8 @@ type ItemFullKit = (ItemFull, ItemQuant)
 
 -- | The map of item kind indexes to item kind ids.
 -- The full map, as known by the server, is 1-1.
--- Because it's sparse, we don't represent it as an (unboxed) vector,
--- until it becomes a bottleneck (if ever, likely on JS, where only
+-- Because it's sparse and changes, we don't represent it as an (unboxed)
+-- vector, until it becomes a bottleneck (if ever, likely on JS, where only
 -- vectors are fast).
 type DiscoveryKind = EM.EnumMap ItemKindIx (ContentId IK.ItemKind)
 

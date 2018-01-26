@@ -1152,7 +1152,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
             verb = "be braced and so immune to translocation"
         return $! makeSentence [MU.SubjectVerbSg subject verb]
   SfxEscapeImpossible -> return "This faction doesn't want to escape outside."
-  SfxStatisProtects -> return "This actor didn't recover yet, so he can't be paralyzed nor propelled again."
+  SfxStasisProtects -> return "This actor didn't recover yet, so he can't be paralyzed nor propelled again."
   SfxTransImpossible -> return "Translocation not possible."
   SfxIdentifyNothing -> return "Nothing to identify."
   SfxPurposeNothing store -> return $!
