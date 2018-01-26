@@ -123,6 +123,23 @@ currentSkillsClient aid = do
 
 -- Client has to choose the weapon based on its partial knowledge,
 -- because if server chose it, it would leak item discovery information.
+--
+-- Note that currently the stats of the target actor are not considered,
+-- because all weapons share the sum of all source actor stats and only differ
+-- in damage (equally important for all targets) and effects (really hard
+-- to tell which is better for which target or even which is better
+-- for the same target, so it's random). If only individual weapon's +toHit
+-- was applied to the target, situation would be much more complex,
+-- which is precisely why we keep it as is and let the player make choices
+-- by equipping and unequipping weapons instead. Content should ensure
+-- that the rule of thumb (which AI uses) that more weapons is better
+-- should give good results almost always, at least at the start of the game,
+-- to limit micromanagement and to spare newbies.
+--
+-- Note that situation is completely different with choosing projectiles
+-- against a particular foe, even before (potential) splash damage
+-- that hits multiple tagets comes into the equation. AI has to be very
+-- primitive and random here as well.
 pickWeaponClient :: MonadClient m
                  => ActorId -> ActorId
                  -> m (Maybe (RequestTimed 'Ability.AbMelee))
