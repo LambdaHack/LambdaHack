@@ -124,12 +124,6 @@ data Highlight =
   | HighlightMagenta
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
-instance Binary Highlight where
-  put = putWord8 . toEnum . fromEnum
-  get = fmap (toEnum . fromEnum) getWord8
-
-instance Hashable Highlight
-
 -- | Text attributes: foreground color and highlight.
 data Attr = Attr
   { fg :: Color      -- ^ foreground colour

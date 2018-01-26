@@ -21,17 +21,14 @@ import Game.LambdaHack.Common.Prelude
 
 import Control.DeepSeq
 import Data.Binary
-import Data.Hashable (Hashable)
+import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
+import Data.Hashable (Hashable (hashWithSalt), hashUsing)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Color
 
 data FancyName = Plain | Fancy | Liquid
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
-
-instance Hashable FancyName
-
-instance Binary FancyName
 
 instance NFData FancyName
 
@@ -42,9 +39,18 @@ data Flavour = Flavour
   }
   deriving (Show, Eq, Ord, Generic)
 
-instance Hashable Flavour
+instance Enum Flavour where
+  fromEnum Flavour{..} =
+    unsafeShiftL (fromEnum fancyName) 8 + fromEnum baseColor
+  toEnum n = Flavour (toEnum $ unsafeShiftR n 8)
+                     (toEnum $ n .&. (2 ^ (8 :: Int) - 1))
 
-instance Binary Flavour
+instance Hashable Flavour where
+  hashWithSalt = hashUsing fromEnum
+
+instance Binary Flavour where
+  put = put . (fromIntegral :: Int -> Word16) . fromEnum
+  get = fmap (toEnum . (fromIntegral :: Word16 -> Int)) get
 
 instance NFData Flavour
 
