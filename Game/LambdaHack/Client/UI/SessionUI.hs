@@ -67,9 +67,11 @@ data SessionUI = SessionUI
   , sreportNull    :: Bool          -- ^ whether no report created last UI turn
   , sstart         :: POSIXTime     -- ^ this session start time
   , sgstart        :: POSIXTime     -- ^ this game start time
-  , sallTime       :: Time          -- ^ clips from start of session to current game start
+  , sallTime       :: Time          -- ^ clips from start of session
+                                    --   to current game start
   , snframes       :: Int           -- ^ this game current frame count
-  , sallNframes    :: Int           -- ^ frame count from start of session to current game start
+  , sallNframes    :: Int           -- ^ frame count from start of session
+                                    --   to current game start
   }
 
 -- | Current aiming mode of a client.

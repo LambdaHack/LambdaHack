@@ -69,7 +69,7 @@ queryUI = do
       -- Regaining control of faction cancels --stopAfter*.
       modifyClient $ \cli ->
         cli {soptions = (soptions cli) { sstopAfterSeconds = Nothing
-                                         , sstopAfterFrames = Nothing }}
+                                       , sstopAfterFrames = Nothing }}
       return (ReqUIAutomate, Nothing)  -- stop AI
     else do
       -- As long as UI faction is under AI control, check, once per move,
