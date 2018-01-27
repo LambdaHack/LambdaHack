@@ -1293,9 +1293,9 @@ settingsMenuHuman cmdAction = do
   factTactic <- getsState $ ftactic . gplayer . (EM.! side) . sfactionD
   let offOn b = if b then "on" else "off"
       offOnAll n = case n of
-        0 -> "off"
-        1 -> "on"
-        2 -> "all"
+        0 -> "low"
+        1 -> "medium"
+        2 -> "high"
         _ -> error $ "" `showFailure` n
       tsuspect = "suspect terrain:" <+> offOnAll markSuspect
       tvisible = "visible zone:" <+> offOn markVision
