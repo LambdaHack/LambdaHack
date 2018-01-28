@@ -23,7 +23,6 @@ import           Data.Binary
 import qualified Data.Char as Char
 import           Data.Hashable
 import qualified Data.IntSet as IS
-import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import           GHC.Generics (Generic)
@@ -81,7 +80,6 @@ data Feature =
   | OftenActor           -- ^ initial actors often generated there
   | NoItem               -- ^ no items ever generated there
   | NoActor              -- ^ no actors ever generated there
-  | Indistinct           -- ^ is allowed to have the same look as another tile
   | ConsideredByAI       -- ^ even if otherwise uninteresting, taken into
                          --   account for triggering by AI
   | Trail                -- ^ used for visible trails throughout the level
@@ -174,7 +172,7 @@ validateSingle t@TileKind{..} =
       in ["more than one BuildAs specification" | length ts > 1])
   ++ concatMap (validateDups t)
        [ Walkable, Clear, Dark, OftenItem, OftenActor, NoItem, NoActor
-       , Indistinct, ConsideredByAI, Trail, Spice ]
+       , ConsideredByAI, Trail, Spice ]
 
 validateDups :: TileKind -> Feature -> [Text]
 validateDups TileKind{..} feat =
@@ -183,32 +181,19 @@ validateDups TileKind{..} feat =
 
 -- | Validate all tile kinds.
 --
--- If tiles look the same on the map (symbol and color), their substantial
--- features should be the same, too. Otherwise, the player has to inspect
--- manually all the tiles of that kind, or even experiment with them,
--- to see if any is special. This would be tedious. Note that tiles may freely
--- differ wrt text blurb, dungeon generation, AI preferences, etc.
+-- We don't check it any more, but if tiles look the same on the map
+-- (symbol and color), their substantial features should be the same, too,
+-- unless there is a good reason they shouldn't. Otherwise the player has
+-- to inspect manually all the tiles with this look to see if any is special.
+-- This tends to be tedious. Note that tiles may freely differ wrt text blurb,
+-- dungeon generation rules, AI preferences, etc., whithout causing the tedium.
 validateAll :: [TileKind] -> ContentData TileKind -> [Text]
 validateAll content cotile =
-  let listVis f = map (\kt -> ( (tsymbol kt, f kt)
-                              , [(kt, actionFeatures True kt)] )) content
-      mapVis :: (TileKind -> Color)
-             -> M.Map (Char, Color) [(TileKind, IS.IntSet)]
-      mapVis f = M.fromListWith (++) $ listVis f
-      isConfused [] = error $ "isConfused" `showFailure` content
-      isConfused [_] = False
-      isConfused (hd : tl) =
-        any ((Indistinct `notElem`) . tfeature . fst) (hd : tl)
-        && any ((/= snd hd) . snd) tl
-      confusions f = filter isConfused $ M.elems $ mapVis f
-      hardwiredAbsent = filter (not . omemberGroup cotile) hardwiredTileGroups
+  let hardwiredAbsent = filter (not . omemberGroup cotile) hardwiredTileGroups
   in [ "first tile should be the unknown one"
      | talter (head content) /= 1 || tname (head content) /= "unknown space" ]
      ++ [ "only unknown tile may have talter 1"
         | any ((== 1) . talter) $ tail content ]
-     ++ case confusions tcolor ++ confusions tcolor2 of
-       [] -> []
-       cfs -> ["tile confusions detected:" <+> tshow cfs]
      ++ [ "hardwired groups not in content:" <+> tshow hardwiredAbsent
         | not $ null hardwiredAbsent ]
 
@@ -245,7 +230,6 @@ actionFeatures markSuspect t =
         OftenActor -> Nothing
         NoItem -> Nothing
         NoActor -> Nothing
-        Indistinct -> Nothing
         ConsideredByAI -> Nothing
         Trail -> Just feat  -- doesn't affect tile behaviour, but important
         Spice -> Nothing
