@@ -114,7 +114,7 @@ spike = ItemKind
   , irarity  = [(1, 10), (10, 15)]
   , iverbHit = "nick"
   , iweight  = 150
-  , idamage  = 4 `d` 1
+  , idamage  = 2 `d` 1
   , iaspects = [AddHurtMelee $ (-10 + 1 `d` 2 + 1 `dL` 3) * 5]
                  -- heavy vs armor
   , ieffects = [ Explode "single spark"  -- when hitting enemy
@@ -1366,7 +1366,7 @@ halberd2 = halberd
 halberd3 = halberd
   { ifreq    = [("useful", 1)]
   , iweight  = 5000
-  , idamage  = 44 `d` 1
+  , idamage  = 24 `d` 1
   -- , idesc    = ""
   }
 halberdPushActor = halberd
