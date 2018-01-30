@@ -16,9 +16,9 @@ import Game.LambdaHack.Content.ItemKind
 
 blasts :: [ItemKind]
 blasts =
-  [burningOil2, burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, violentChemical, violentChemical8, focusedChemical, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, focusedGlass, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote]
+  [burningOil2, burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, spreadFragmentation, spreadFragmentation8, focusedFragmentation, spreadConcussion, spreadConcussion8, focusedConcussion, spreadFlash, spreadFlash8, focusedFlash, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, focusedGlass, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote]
 
-burningOil2,    burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, violentChemical, violentChemical8, focusedChemical, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, focusedGlass, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote :: ItemKind
+burningOil2,    burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, spreadFragmentation, spreadFragmentation8, focusedFragmentation, spreadConcussion, spreadConcussion8, focusedConcussion, spreadFlash, spreadFlash8, focusedFlash, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, focusedGlass, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote :: ItemKind
 
 -- We take care (e.g., in burningOil below) that blasts are not faster
 -- than 100% fastest natural speed, or some frames would be skipped,
@@ -79,35 +79,34 @@ firecracker1 = firecracker 1
 
 -- * Assorted immediate effect blasts
 
-violentChemical = ItemKind
+spreadFragmentation = ItemKind
   { isymbol  = '*'
-  , iname    = "deflagration burst"
-  , ifreq    = [("violent chemical", 1)]
-  , iflavour = zipPlain [Magenta]  -- fire and smoke
+  , iname    = "fragmentation burst"
+  , ifreq    = [("violent fragmentation", 1)]
+  , iflavour = zipPlain [BrCyan]  -- flying shards, hard as steel
   , icount   = 16  -- strong but few, so not always hits target
   , irarity  = [(1, 1)]
   , iverbHit = "tear apart"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [AddShine 10]
-  , ieffects = [ RefillHP (-5)  -- deadly; adjacent actor hit by 2 on average
-               , PushActor (ThrowMod 400 25)  -- 1 step, fast
-               , DropItem 1 maxBound COrgan "temporary condition" ]
+  , iaspects = [AddShine 5]
+  , ieffects = [ DropItem 1 maxBound COrgan "temporary condition"
+               , RefillHP (-5) ]  -- deadly; adjacent actor hit by 2 on average
   , ifeature = [toLinger 20, Fragile, Blast]  -- 4 steps, 1 turn
   , idesc    = ""
   , ikit     = []
   }
-violentChemical8 = violentChemical
-  { iname    = "deflagration blast"
-  , ifreq    = [("chemical", 1)]
+spreadFragmentation8 = spreadFragmentation
+  { iname    = "fragmentation burst"
+  , ifreq    = [("fragmentation", 1)]
   , icount   = 8
   , ifeature = [toLinger 10, Fragile, Blast]  -- 2 steps, 1 turn
       -- smaller radius, so worse for area effect, but twice the direct damage
   }
-focusedChemical = ItemKind
+focusedFragmentation = ItemKind
   { isymbol  = '`'
-  , iname    = "ignition blast"  -- not all yet ignited
-  , ifreq    = [("focused chemical", 1)]
+  , iname    = "deflagration ignition"  -- black powder
+  , ifreq    = [("focused fragmentation", 1)]
   , iflavour = zipPlain [BrYellow]
   , icount   = 4  -- 32 in total vs 16; on average 4 hits
   , irarity  = [(1, 1)]
@@ -115,10 +114,96 @@ focusedChemical = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = []
-  , ieffects = [OnSmash $ Explode "chemical"]
+  , ieffects = [OnSmash $ Explode "fragmentation"]
   , ifeature = [toLinger 0, Fragile, Blast]  -- 0 steps, 1 turn
       -- when the target position is occupied, the explosion starts one step
       -- away, hence we set range to 0 steps, to limit dispersal
+  , idesc    = ""
+  , ikit     = []
+  }
+spreadConcussion = ItemKind
+  { isymbol  = '*'
+  , iname    = "concussion blast"
+  , ifreq    = [("violent concussion", 1)]
+  , iflavour = zipPlain [Magenta]  -- mosty shock wave; some fire and smoke
+  , icount   = 16
+  , irarity  = [(1, 1)]
+  , iverbHit = "shock"
+  , iweight  = 1
+  , idamage  = 0
+  , iaspects = [AddShine 5]
+  , ieffects = [ DropItem maxBound maxBound CEqp "common item"
+               , PushActor (ThrowMod 400 25)  -- 1 step, fast; after DropItem
+                   -- this produces spam for braced actors; too bad
+               , DropItem 1 maxBound COrgan "temporary condition"
+               , RefillHP (-2) ]  -- only air pressure, so not as deadly
+  , ifeature = [toLinger 20, Fragile, Blast]  -- 4 steps, 1 turn
+      -- outdoors it has short range, but we only model indoors in the game;
+      -- it's much faster than black powder shock wave, but we are beyond
+      -- human-noticeable speed differences on short distances anyway
+  , idesc    = ""
+  , ikit     = []
+  }
+spreadConcussion8 = spreadConcussion
+  { iname    = "concussion blast"
+  , ifreq    = [("concussion", 1)]
+  , icount   = 8
+  , ifeature = [toLinger 10, Fragile, Blast]  -- 2 steps, 1 turn
+  }
+focusedConcussion = ItemKind
+  { isymbol  = '`'
+  , iname    = "detonation ignition"  -- nitroglycerine
+  , ifreq    = [("focused concussion", 1)]
+  , iflavour = zipPlain [BrYellow]
+  , icount   = 4
+  , irarity  = [(1, 1)]
+  , iverbHit = "ignite"
+  , iweight  = 1
+  , idamage  = 0
+  , iaspects = []
+  , ieffects = [OnSmash $ Explode "concussion"]
+  , ifeature = [toLinger 0, Fragile, Blast]  -- 0 steps, 1 turn
+  , idesc    = ""
+  , ikit     = []
+  }
+spreadFlash = ItemKind
+  { isymbol  = '*'
+  , iname    = "magnesium flash"
+  , ifreq    = [("violent flash", 1)]
+  , iflavour = zipPlain [BrWhite]  -- very brigh flash
+  , icount   = 16
+  , irarity  = [(1, 1)]
+  , iverbHit = "dazzle"
+  , iweight  = 1
+  , idamage  = 0
+  , iaspects = [AddShine 10]
+  , ieffects = [toOrganGameTurn "blind" 10, toOrganGameTurn "weakened" 30]
+                 -- Wikipedia says: blind for five seconds and afterimage
+                 -- for much longer, harming aim
+  , ifeature = [toLinger 20, Fragile, Blast]  -- 4 steps, 1 turn
+  , idesc    = ""
+  , ikit     = []
+  }
+spreadFlash8 = spreadFlash
+  { iname    = "magnesium flash"
+  , ifreq    = [("flash", 1)]
+  , icount   = 8
+  , iverbHit = "blind"
+  , ifeature = [toLinger 10, Fragile, Blast]  -- 2 steps, 1 turn
+  }
+focusedFlash = ItemKind
+  { isymbol  = '`'
+  , iname    = "magnesium ignition"
+  , ifreq    = [("focused flash", 1)]
+  , iflavour = zipPlain [BrYellow]
+  , icount   = 4
+  , irarity  = [(1, 1)]
+  , iverbHit = "ignite"
+  , iweight  = 1
+  , idamage  = 0
+  , iaspects = []
+  , ieffects = [OnSmash $ Explode "flash"]
+  , ifeature = [toLinger 0, Fragile, Blast]  -- 0 steps, 1 turn
   , idesc    = ""
   , ikit     = []
   }

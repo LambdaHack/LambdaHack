@@ -102,7 +102,7 @@ treasureCacheTrap = ItemKind
   , iaspects = []
   , ieffects = [OneOf [ toOrganGameTurn "blind" (40 + 1 `d` 10)
                       , RefillCalm (-99)
-                      , Explode "focused chemical"
+                      , Explode "focused concussion"
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1)
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1)
                       , RefillCalm (-1) ]]
