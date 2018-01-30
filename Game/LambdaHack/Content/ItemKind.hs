@@ -44,7 +44,7 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
 
 -- | Item properties that are fixed for a given kind of items.
--- Note that this time is mutually recursive with 'Effect'.
+-- Note that this type is mutually recursive with 'Effect' and `Feature`.
 data ItemKind = ItemKind
   { isymbol  :: Char                -- ^ map symbol
   , iname    :: Text                -- ^ generic name; is pluralized if needed
@@ -52,15 +52,15 @@ data ItemKind = ItemKind
   , iflavour :: [Flavour]           -- ^ possible flavours
   , icount   :: Dice.Dice           -- ^ created in that quantity
   , irarity  :: Rarity              -- ^ rarity on given depths
-  , iverbHit :: MU.Part             -- ^ the verb&noun for applying and hit
+  , iverbHit :: MU.Part             -- ^ the verb for hitting
   , iweight  :: Int                 -- ^ weight in grams
   , idamage  :: Dice.Dice           -- ^ basic impact damage
-  , iaspects :: [IA.Aspect]         -- ^ keep the aspect continuously
-  , ieffects :: [Effect]            -- ^ cause the effect when triggered
-  , ifeature :: [Feature]           -- ^ public properties
+  , iaspects :: [IA.Aspect]         -- ^ affect the actor continuously
+  , ieffects :: [Effect]            -- ^ cause the effects when triggered
+  , ifeature :: [Feature]           -- ^ properties of the item
   , idesc    :: Text                -- ^ description
   , ikit     :: [(GroupName ItemKind, CStore)]
-                                    -- ^ accompanying organs and items
+                                    -- ^ accompanying organs and equipment
   }
   deriving (Show, Generic)  -- No Eq and Ord to make extending logically sound
 
@@ -87,14 +87,15 @@ data Effect =
       --   random timer
   | DropItem Int Int CStore (GroupName ItemKind)
       -- ^ make the actor drop items of the given group from the given store;
-      -- the first integer says how many item kinds to drop, the second,
-      -- how many copie of each kind to drop
+      --   the first integer says how many item kinds to drop, the second,
+      --   how many copies of each kind to drop; for non-organs, beware of
+      --   not dropping all, or cluttering store with rubbish becomes beneficial
   | PolyItem
       -- ^ find a suitable (i.e., numerous enough) item, starting from
-      -- the floor, and polymorph it randomly
+      --   the floor, and polymorph it randomly
   | Identify
       -- ^ find a suitable (i.e., not identified) item, starting from
-      -- the floor, and identify it
+      --   the floor, and identify it
   | Detect Int            -- ^ detect all on the map in the given radius
   | DetectActor Int       -- ^ detect actors on the map in the given radius
   | DetectItem Int        -- ^ detect items on the map in the given radius
@@ -106,7 +107,7 @@ data Effect =
   | DropBestWeapon        -- ^ make the actor drop its best weapon
   | ActivateInv Char
       -- ^ activate all items with this symbol in inventory; space character
-      -- means all symbols
+      --   means all symbols
   | ApplyPerfume          -- ^ remove all smell on the level
   | OneOf [Effect]        -- ^ trigger one of the effects with equal probability
   | OnSmash Effect

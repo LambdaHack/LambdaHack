@@ -1030,9 +1030,7 @@ effectCreateItem jfidRaw mcount target store grp tim = do
 
 -- ** DropItem
 
--- | Make the target actor drop all items in a store from the given group
--- (not just a random single item, or cluttering equipment with rubbish
--- would be beneficial).
+-- | Make the target actor drop items in a store from the given group.
 effectDropItem :: MonadServerAtomic m
                => m () -> Int -> Int -> CStore -> GroupName ItemKind -> ActorId
                -> m UseResult

@@ -221,6 +221,7 @@ net = ItemKind
   , iaspects = [AddHurtMelee $ -14 * 5]
   , ieffects = [ toOrganGameTurn "slowed" (3 + 1 `d` 3)
                , DropItem maxBound 1 CEqp "torso armor" ]
+      -- only one of each kind is dropped, because no rubbish in this group
   , ifeature = []
   , idesc    = "A wide net with weights along the edges. Entangles armor and restricts movement."
   , ikit     = []
