@@ -16,6 +16,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
+import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Common.Ability
 import           Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Dice as Dice
@@ -81,12 +82,14 @@ effectToSuffix detailLevel effect =
       in "(keep" <+> stime <+> tshow grp <> ")"
     CreateItem{} -> "of gain"
     DropItem n k store grp ->
-      let ntxt = if | n == 1 && k == 1 -> ""
-                    | n == 1 && k == maxBound -> "one kind of"
+      let ntxt = if | n == 1 && k == maxBound -> "one kind of"
                     | n == maxBound && k == maxBound -> "all kinds of"
-                    | otherwise -> "some"
-          verb = if store == COrgan then "nullify" else "drop"
-      in "of" <+> verb <+> ntxt <+> tshow grp  -- TMI: <+> ppCStore store
+                    | otherwise -> ""
+          (verb, fromStore) =
+            if store == COrgan
+            then ("nullify", "")
+            else ("drop", "from" <+> snd (ppCStore store))
+      in "of" <+> verb <+> ntxt <+> tshow grp <+> fromStore
     PolyItem -> "of repurpose on the ground"
     Identify -> "of identify"
     Detect radius -> "of detection" <+> wrapInParens (tshow radius)
