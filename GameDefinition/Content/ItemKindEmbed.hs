@@ -86,7 +86,7 @@ treasureCache = stairsUp
   , iname    = "treasure cache"
   , ifreq    = [("treasure cache", 1)]
   , iflavour = zipPlain [BrBlue]
-  , ieffects = [CreateItem CGround "useful" timerNone]
+  , ieffects = [CreateItem CGround "common item" timerNone]
   , idesc    = "Glittering gold, just waiting to be taken."
   }
 treasureCacheTrap = ItemKind
@@ -187,7 +187,7 @@ rubble = ItemKind
   , iaspects = []
   , ieffects = [OneOf [ Explode "glass piece", Explode "waste"
                       , Summon "animal" $ 1 `dL` 2, toOrganNone "poisoned"
-                      , CreateItem CGround "useful" timerNone
+                      , CreateItem CGround "common item" timerNone
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1)
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1) ]]
   , ifeature = [Durable]

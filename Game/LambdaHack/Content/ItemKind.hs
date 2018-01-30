@@ -218,9 +218,9 @@ boostItemKindList initialGen l =
 
 boostItemKind :: ItemKind -> ItemKind
 boostItemKind i =
-  let mainlineLabel (label, _) = label `elem` ["useful", "treasure"]
+  let mainlineLabel (label, _) = label `elem` ["common item", "treasure"]
   in if any mainlineLabel (ifreq i)
-     then i { ifreq = ("useful", 10000) : filter (not . mainlineLabel) (ifreq i)
+     then i { ifreq = ("common item", 10000) : filter (not . mainlineLabel) (ifreq i)
             , ifeature = delete Unique $ ifeature i
             }
      else i
@@ -538,7 +538,7 @@ validateAll content coitem =
 hardwiredItemGroups :: [GroupName ItemKind]
 hardwiredItemGroups =
   -- From Preferences.hs:
-  [ "temporary condition", "treasure", "useful", "any scroll", "any vial"
+  [ "temporary condition", "treasure", "common item", "any scroll", "any vial"
   , "potion", "flask", "any jewelry" ]
   -- Assorted:
   ++ ["bonus HP", "currency", "impressed", "mobile"]

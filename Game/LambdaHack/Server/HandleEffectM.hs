@@ -1122,7 +1122,7 @@ effectPolyItem execSfx source target = do
            identifyIid iid c itemKindId
            execUpdAtomic $ UpdDestroyItem iid itemBase kit c
            effectCreateItem (Just $ bfid sb) Nothing
-                            target cstore "useful" IK.timerNone
+                            target cstore "common item" IK.timerNone
 
 -- ** Identify
 
