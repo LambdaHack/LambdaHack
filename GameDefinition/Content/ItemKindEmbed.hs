@@ -187,7 +187,7 @@ rubble = ItemKind
   , iweight  = 100000
   , idamage  = 0
   , iaspects = []
-  , ieffects = [OneOf [ Explode "focused glass"
+  , ieffects = [OneOf [ Explode "focused glass hail"
                       , Summon "animal" $ 1 `dL` 2
                       , toOrganNone "poisoned"
                       , CreateItem CGround "common item" timerNone

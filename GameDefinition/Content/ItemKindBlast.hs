@@ -92,8 +92,7 @@ violentChemical = ItemKind
   , iaspects = [AddShine 10]
   , ieffects = [ RefillHP (-5)  -- deadly; adjacent actor hit by 2 on average
                , PushActor (ThrowMod 400 25)  -- 1 step, fast
-               , DropItem 1 maxBound COrgan "temporary condition"
-               , DropItem 1 maxBound COrgan "impressed" ]  -- shocking
+               , DropItem 1 maxBound COrgan "temporary condition" ]
   , ifeature = [toLinger 20, Fragile, Blast]  -- 4 steps, 1 turn
   , idesc    = ""
   , ikit     = []
@@ -256,7 +255,7 @@ distortion = ItemKind
 glassPiece = ItemKind
   { isymbol  = '*'
   , iname    = "glass piece"
-  , ifreq    = [("glass piece", 1)]
+  , ifreq    = [("glass hail", 1)]
   , iflavour = zipPlain [BrBlue]
   , icount   = 8
   , irarity  = [(1, 1)]
@@ -264,15 +263,15 @@ glassPiece = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = []
-  , ieffects = [RefillHP (-1)]  -- high velocity, so can't do idamage
+  , ieffects = [RefillHP (-1)]
   , ifeature = [toLinger 20, Fragile, Blast]  -- 4 steps, 1 turn
   , idesc    = "Swift, sharp edges."
   , ikit     = []
   }
 focusedGlass = glassPiece  -- when blowing up windows
-  { ifreq    = [("focused glass", 1)]
+  { ifreq    = [("focused glass hail", 1)]
   , icount   = 8
-  , ieffects = [RefillHP (-1), OnSmash $ Explode "glass piece"]
+  , ieffects = [RefillHP (-1), OnSmash $ Explode "glass hail"]
   , ifeature = [toLinger 0, Fragile, Blast]  -- 0 steps, 1 turn
   }
 smoke = ItemKind  -- when stuff burns out  -- unused
@@ -282,7 +281,7 @@ smoke = ItemKind  -- when stuff burns out  -- unused
   , iflavour = zipPlain [BrBlack]
   , icount   = 16
   , irarity  = [(1, 1)]
-  , iverbHit = "choke"  -- or obscure
+  , iverbHit = "choke"  -- or "obscure"
   , iweight  = 1
   , idamage  = 0
   , iaspects = []
