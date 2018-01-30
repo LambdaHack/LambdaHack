@@ -218,8 +218,8 @@ startupFun soptions@ClientOptions{..} rfMVar = do
                 (EQ, _) -> Nothing
                 (LT, SDL.ScrollNormal) -> Just K.WheelSouth
                 (GT, SDL.ScrollNormal) -> Just K.WheelNorth
-                (LT, SDL.ScrollFlipped) -> Just K.WheelSouth
-                (GT, SDL.ScrollFlipped) -> Just K.WheelNorth
+                (LT, SDL.ScrollFlipped) -> Just K.WheelNorth
+                (GT, SDL.ScrollFlipped) -> Just K.WheelSouth
               modifier = if md == K.Shift then K.NoModifier else md
           p <- SDL.getAbsoluteMouseLocation
           maybe (return ())
