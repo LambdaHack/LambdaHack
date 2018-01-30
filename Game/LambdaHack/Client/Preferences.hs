@@ -96,6 +96,7 @@ effectToBenefit cops fact eff =
     IK.CreateItem _ "any vial" _ -> (50, 0)
     IK.CreateItem _ "potion" _ -> (50, 0)
     IK.CreateItem _ "flask" _ -> (50, 0)
+    IK.CreateItem _ "any jewelry" _ -> (100, 0)
     IK.CreateItem _ grp _ ->  -- assumed not temporary and @grp@ tiny
       let (total, count) = recBenefit grp cops fact
       in (total / fromIntegral count, 0)

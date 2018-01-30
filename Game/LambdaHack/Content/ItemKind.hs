@@ -538,7 +538,7 @@ hardwiredItemGroups :: [GroupName ItemKind]
 hardwiredItemGroups =
   -- From Preferences.hs:
   [ "temporary condition", "treasure", "useful", "any scroll", "any vial"
-  , "potion", "flask" ]
+  , "potion", "flask", "any jewelry" ]
   -- Assorted:
   ++ ["bonus HP", "currency", "impressed", "mobile"]
 
