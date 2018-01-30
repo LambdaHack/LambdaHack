@@ -189,13 +189,32 @@ validateDups TileKind{..} feat =
 -- dungeon generation rules, AI preferences, etc., whithout causing the tedium.
 validateAll :: [TileKind] -> ContentData TileKind -> [Text]
 validateAll content cotile =
-  let hardwiredAbsent = filter (not . omemberGroup cotile) hardwiredTileGroups
+  let g :: Feature -> Maybe (GroupName TileKind)
+      g (OpenTo grp) = Just grp
+      g (CloseTo grp) = Just grp
+      g (ChangeTo grp) = Just grp
+      g (HideAs grp) = Just grp
+      g (BuildAs grp) = Just grp
+      g (RevealAs grp) = Just grp
+      g (ObscureAs grp) = Just grp
+      g _ = Nothing
+      missingFeatureGroups =
+        [ (tname k, absGroups)
+        | k <- content
+        , let grps = mapMaybe g $ tfeature k
+              absGroups = filter (not . omemberGroup cotile) grps
+        , not $ null absGroups
+        ]
+      missingHardwiredGroups =
+        filter (not . omemberGroup cotile) hardwiredTileGroups
   in [ "first tile should be the unknown one"
      | talter (head content) /= 1 || tname (head content) /= "unknown space" ]
      ++ [ "only unknown tile may have talter 1"
         | any ((== 1) . talter) $ tail content ]
-     ++ [ "hardwired groups not in content:" <+> tshow hardwiredAbsent
-        | not $ null hardwiredAbsent ]
+     ++ [ "mentioned groups not in content:" <+> tshow missingFeatureGroups
+        | not $ null missingFeatureGroups ]
+     ++ [ "hardwired groups not in content:" <+> tshow missingHardwiredGroups
+        | not $ null missingHardwiredGroups ]
 
 hardwiredTileGroups :: [GroupName TileKind]
 hardwiredTileGroups =
