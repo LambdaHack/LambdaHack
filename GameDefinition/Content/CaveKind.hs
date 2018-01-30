@@ -99,7 +99,8 @@ laboratory = arena2
   , cfreq         = [("deep random", 20), ("caveLaboratory", 1)]
   , cgrid         = DiceXY (2 `d` 2 + 7) 3
   , cminPlaceSize = DiceXY (3 `d` 2 + 4) 5
-  , cdarkChance   = 1 `d` 54 + 1 `dL` 20  -- most rooms lit, to compensate for corridors
+  , cdarkChance   = 1 `d` 54 + 1 `dL` 20
+      -- most rooms lit, to compensate for corridors
   , cnightChance  = 0  -- always day
   , cauxConnects  = 1%10
   , cmaxVoid      = 1%10

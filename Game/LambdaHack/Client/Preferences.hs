@@ -92,6 +92,7 @@ effectToBenefit cops fact eff =
            -- average over all matching grps; simplified: rarities ignored
     IK.CreateItem _ "treasure" _ -> (100, 0)  -- assumed not temporary
     IK.CreateItem _ "common item" _ -> (70, 0)
+    IK.CreateItem _ "curious item" _ -> (70, 0)
     IK.CreateItem _ "any scroll" _ -> (50, 0)
     IK.CreateItem _ "any vial" _ -> (50, 0)
     IK.CreateItem _ "potion" _ -> (50, 0)
