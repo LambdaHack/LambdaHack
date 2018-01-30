@@ -494,14 +494,14 @@ validateDamage dice = [ "potentially negative dice:" <+> tshow dice
 -- | Validate all item kinds.
 validateAll :: [ItemKind] -> ContentData ItemKind -> [Text]
 validateAll content coitem =
-  let missingGroups = [ cgroup
+  let missingKitGroups = [ cgroup
                       | k <- content
                       , (cgroup, _) <- ikit k
                       , not $ omemberGroup coitem cgroup ]
       f :: Feature -> Bool
       f HideAs{} = True
       f _ = False
-      notSingletonGroups =
+      wrongHideAsGroups =
         [ cgroup
         | k <- content
         , let (cgroup, notSingleton) = case find f (ifeature k) of
@@ -510,13 +510,29 @@ validateAll content coitem =
                 _ -> (undefined, False)
         , notSingleton
         ]
-      hardwiredAbsent = filter (not . omemberGroup coitem) hardwiredItemGroups
-  in [ "no ikit groups in content:" <+> tshow missingGroups
-     | not $ null missingGroups ]
-     ++ [ "HideAs groups not singletons:" <+> tshow notSingletonGroups
-        | not $ null notSingletonGroups ]
-     ++ [ "hardwired groups not in content:" <+> tshow hardwiredAbsent
-        | not $ null hardwiredAbsent ]
+      g :: Effect -> Maybe (GroupName ItemKind)
+      g (Explode grp) = Just grp
+      g (Summon grp _) = Just grp
+      g (CreateItem _ grp _) = Just grp
+      g (DropItem _ _ _ grp) = Just grp
+      g _ = Nothing
+      missingEffectGroups =
+        [ (iname k, absGroups)
+        | k <- content
+        , let grps = mapMaybe g $ ieffects k
+              absGroups = filter (not . omemberGroup coitem) grps
+        , not $ null absGroups
+        ]
+      missingHardwiredGroups =
+        filter (not . omemberGroup coitem) hardwiredItemGroups
+  in [ "no ikit groups in content:" <+> tshow missingKitGroups
+     | not $ null missingKitGroups ]
+     ++ [ "HideAs groups not singletons:" <+> tshow wrongHideAsGroups
+        | not $ null wrongHideAsGroups ]
+     ++ [ "mentioned groups not in content:" <+> tshow missingEffectGroups
+        | not $ null missingEffectGroups ]
+     ++ [ "hardwired groups not in content:" <+> tshow missingHardwiredGroups
+        | not $ null missingHardwiredGroups ]
 
 hardwiredItemGroups :: [GroupName ItemKind]
 hardwiredItemGroups =
