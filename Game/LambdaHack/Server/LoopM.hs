@@ -239,22 +239,12 @@ endClip updatePerFid = do
 manageCalmAndDomination :: MonadServerAtomic m => ActorId -> Actor -> m ()
 manageCalmAndDomination aid b = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  getItem <- getsState $ flip getItemBody
-  getKind <- getsState $ flip getIidKindServer
-  let isImpression iid =
-        maybe False (> 0) $ lookup "impressed" $ IK.ifreq $ getKind iid
-      impressions = EM.filterWithKey (\iid _ -> isImpression iid) $ borgan b
+  hiImpression <- highestImpression aid
   dominated <-
     if bcalm b == 0
-       && not (null impressions)
        && fleaderMode (gplayer fact) /= LeaderNull
             -- animals/robots/human drones never Calm-dominated
-    then
-      let f (_, (k, _)) = k
-          maxImpression = maximumBy (Ord.comparing f) $ EM.assocs impressions
-      in case jfid $ getItem $ fst maxImpression of
-        Nothing -> error $ "" `showFailure` impressions
-        Just fid1 -> assert (fid1 /= bfid b) $ dominateFidSfx fid1 aid
+    then maybe (return False) (dominateFidSfx aid) hiImpression
     else return False
   unless dominated $ do
     ar <- getsState $ getActorAspect aid

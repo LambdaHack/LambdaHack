@@ -154,6 +154,7 @@ data SfxMsg =
   | SfxFizzles
   | SfxNothingHappens
   | SfxVoidDetection
+  | SfxUnimpressed ActorId
   | SfxSummonLackCalm ActorId
   | SfxLevelNoMore
   | SfxLevelPushed

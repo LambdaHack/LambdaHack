@@ -3,7 +3,8 @@
 -- but sometimes also caused by projectiles or periodically activated items.
 module Game.LambdaHack.Server.HandleEffectM
   ( applyItem, meleeEffectAndDestroy, effectAndDestroy, itemEffectEmbedded
-  , dropCStoreItem, dominateFidSfx, pickDroppable, refillHP, cutCalm
+  , dropCStoreItem, highestImpression, dominateFidSfx, pickDroppable
+  , refillHP, cutCalm
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , UseResult(..)
@@ -31,6 +32,7 @@ import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
 import           Data.Int (Int64)
 import           Data.Key (mapWithKeyM_)
+import qualified Data.Ord as Ord
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Client
@@ -486,11 +488,39 @@ effectDominate source target = do
   if | bproj tb -> return UseDud
      | bfid tb == bfid sb -> return UseDud  -- accidental hit; ignore
      | otherwise -> do
-       b <- dominateFidSfx (bfid sb) target
-       return $! if b then UseUp else UseDud
+       fact <- getsState $ (EM.! bfid tb) . sfactionD
+       hiImpression <- highestImpression target
+       permitted <-
+         if fleaderMode (gplayer fact) == LeaderNull
+            -- To tame/hack animal/robot, you need to impress them first.
+            && hiImpression /= Just (bfid sb)
+         then do
+           execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxUnimpressed target
+           return False
+         else return True
+       if permitted then do
+         b <- dominateFidSfx target (bfid sb)
+         return $! if b then UseUp else UseDud
+       else return UseDud
 
-dominateFidSfx :: MonadServerAtomic m => FactionId -> ActorId -> m Bool
-dominateFidSfx fid target = do
+highestImpression :: MonadServerAtomic m => ActorId -> m (Maybe FactionId)
+highestImpression target = do
+  tb <- getsState $ getActorBody target
+  getKind <- getsState $ flip getIidKindServer
+  getItem <- getsState $ flip getItemBody
+  let isImpression iid =
+        maybe False (> 0) $ lookup "impressed" $ IK.ifreq $ getKind iid
+      impressions = EM.filterWithKey (\iid _ -> isImpression iid) $ borgan tb
+      f (_, (k, _)) = k
+      maxImpression = maximumBy (Ord.comparing f) $ EM.assocs impressions
+  if null impressions
+  then return Nothing
+  else case jfid $ getItem $ fst maxImpression of
+    Nothing -> return Nothing
+    Just fid -> assert (fid /= bfid tb) $ return $ Just fid
+
+dominateFidSfx :: MonadServerAtomic m => ActorId -> FactionId -> m Bool
+dominateFidSfx target fid = do
   tb <- getsState $ getActorBody target
   -- Actors that don't move freely can't be dominated, for otherwise,
   -- when they are the last survivors, they could get stuck and the game

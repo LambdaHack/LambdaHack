@@ -1138,6 +1138,14 @@ ppSfxMsg sfxMsg = case sfxMsg of
   SfxFizzles -> return "It doesn't work."
   SfxNothingHappens -> return "Nothing happens."
   SfxVoidDetection -> return "Nothing new detected."
+  SfxUnimpressed aid -> do
+    msbUI <- getsSession $ EM.lookup aid . sactorUI
+    case msbUI of
+      Nothing -> return ""
+      Just sbUI -> do
+        let subject = partActor sbUI
+            verb = "be unimpressed"
+        return $! makeSentence [MU.SubjectVerbSg subject verb]
   SfxSummonLackCalm aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
     case msbUI of
