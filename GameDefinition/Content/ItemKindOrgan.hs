@@ -61,7 +61,7 @@ hookedClaw = fist
   , icount   = 2  -- even if more, only the fore claws used for fighting
   , iverbHit = "hook"
   , idamage  = 2 `d` 1
-  , iaspects = [Timeout $ 10 - 1 `dL` 5]
+  , iaspects = [Timeout $ 12 - 1 `dL` 3]
   , ieffects = [Recharging (toOrganGameTurn "slowed" 2)]
   , idesc    = "A curved talon."
   }
@@ -177,7 +177,7 @@ sting = fist
   , icount   = 1
   , iverbHit = "sting"
   , idamage  = 1 `d` 1
-  , iaspects = [Timeout $ 10 - 1 `dL` 5, AddHurtMelee 40]
+  , iaspects = [Timeout $ 10 - 1 `dL` 4, AddHurtMelee 40]
   , ieffects = [Recharging (Paralyze 4)]
   , idesc    = "Painful, debilitating and harmful."
   }
@@ -197,7 +197,7 @@ venomFang = fist
   , icount   = 2
   , iverbHit = "bite"
   , idamage  = 2 `d` 1
-  , iaspects = [Timeout $ 10 - 1 `dL` 5]
+  , iaspects = [Timeout $ 10 - 1 `dL` 4]
   , ieffects = [Recharging (toOrganNone "poisoned")]
   , idesc    = "Dripping with deadly venom."
   }
