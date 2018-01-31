@@ -527,7 +527,9 @@ createActorUI born aid body = do
                      (_, _, object1, object2) =
                        partItemShortest (bfid body) factionD localTime
                                         itemFull (1, [])
-                 in ( makePhrase [MU.AW $ MU.Text adj, object1, object2]
+                     flav = flavourToName $ jflavour itemBase
+                 in ( makePhrase
+                        [MU.AW $ MU.Text adj, MU.Text flav, object1, object2]
                     , basePronoun )
                | baseColor /= Color.BrWhite -> (IK.iname itemKind, basePronoun)
                | otherwise -> heroNamePronoun n
@@ -851,6 +853,7 @@ quitFactionUI fid toSt = do
 
 discover :: MonadClientUI m => Container -> ItemId -> m ()
 discover c iid = do
+  COps{coitem} <- getsState scops
   lid <- getsState $ lidFromC c
   globalTime <- getsState stime
   localTime <- getsState $ getLocalTime lid
@@ -870,11 +873,13 @@ discover c iid = do
   let kit = EM.findWithDefault (1, []) iid bag
       knownName = partItemMediumAW side factionD localTime itemFull kit
       -- Make sure the two names in the message differ.
-      (_, _, name, aEText) =
-        partItemShortest side factionD localTime itemFull kit
-      namePhrase = MU.Phrase $ [name, aEText] ++ nameWhere
+      name = IK.iname $ okind coitem $ case jkind $ itemBase itemFull of
+        IdentityObvious ik -> ik
+        IdentityCovered _ix ik -> ik  -- fake kind; we talk about appearances
+      flav = flavourToName $ jflavour $ itemBase itemFull
+      unknownName = MU.Phrase $ [MU.Text flav, MU.Text name] ++ nameWhere
       msg = makeSentence
-        ["the", MU.SubjectVerbSg namePhrase "turn out to be", knownName]
+        ["the", MU.SubjectVerbSg unknownName "turn out to be", knownName]
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.
   unless (globalTime == timeZero  -- don't spam about initial equipment

@@ -72,11 +72,10 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
       ts = lsource
            ++ (take maxWordsToShow effTs)
            ++ ["(...)" | length effTs > maxWordsToShow && maxWordsToShow > 1]
-           ++ [timer |  maxWordsToShow > 1]
+           ++ [timer | maxWordsToShow > 1]
       unique = IK.Unique `elem` IK.ifeature itemKind
       name | temporary = "temporarily" <+> IK.iname itemKind
-           | itemSuspect || maxWordsToShow <= 1 =
-             flav <+> IK.iname itemKind
+           | itemSuspect = flav <+> IK.iname itemKind
            | otherwise = IK.iname itemKind
       capName = if unique
                 then MU.Capitalize $ MU.Text name
