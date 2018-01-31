@@ -1151,8 +1151,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
         let subject = partActor sbUI
             verb = "be braced and so immune to translocation"
         return $! makeSentence [MU.SubjectVerbSg subject verb]
-  SfxEscapeImpossible -> return "This faction doesn't want to escape outside."
-  SfxStasisProtects -> return "This actor didn't recover yet, so he can't be paralyzed nor propelled again."
+  SfxEscapeImpossible -> return "Escaping outside is unthinkable for members of this faction."
+  SfxStasisProtects -> return "Paralysis and speed surge require recovery time."
   SfxTransImpossible -> return "Translocation not possible."
   SfxIdentifyNothing -> return "Nothing to identify."
   SfxPurposeNothing store -> return $!
