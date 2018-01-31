@@ -38,7 +38,8 @@ burningOil n = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [AddShine 2]
-  , ieffects = [Burn 1, Paralyze 2]  -- tripping on oil
+  , ieffects = [ Burn 1
+               , toOrganGameTurn "slowed" (2 + 1 `d` 2) ]  -- tripping on oil
   , ifeature = [ toVelocity (min 100 $ n `div` 2 * 10)
                , Fragile, Blast ]
   , idesc    = "Sticky oil, burning brightly."
@@ -216,7 +217,7 @@ distortion = ItemKind
   , iname    = "vortex"
   , ifreq    = [("distortion", 1)]
   , iflavour = zipFancy [White]
-  , icount   = 16
+  , icount   = 8  -- braced are immune to Teleport; avoid failure messages
   , irarity  = [(1, 1)]
   , iverbHit = "engulf"
   , iweight  = 1
@@ -280,7 +281,7 @@ glue = ItemKind
   , iname    = "hoof glue"
   , ifreq    = [("glue", 1)]
   , iflavour = zipPlain [Cyan]
-  , icount   = 16
+  , icount   = 8  -- Paralyze doesn't stack; avoid failure messages
   , irarity  = [(1, 1)]
   , iverbHit = "glue"
   , iweight  = 1
