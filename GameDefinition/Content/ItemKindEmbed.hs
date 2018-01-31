@@ -213,17 +213,17 @@ doorwayTrapTemplate = ItemKind
   }
 doorwayTrap1 = doorwayTrapTemplate
   { ifreq    = [("doorway trap", 50)]
-  , ieffects = [toOrganActorTurn "blind" $ (1 `dL` 4) * 10]
+  , ieffects = [toOrganGameTurn "blind" $ (1 `dL` 4) * 10]
   -- , idesc    = ""
   }
 doorwayTrap2 = doorwayTrapTemplate
   { ifreq    = [("doorway trap", 25)]
-  , ieffects = [toOrganActorTurn "slowed" $ (1 `dL` 4) * 10]
+  , ieffects = [toOrganGameTurn "slowed" $ (1 `dL` 4) * 10]
   -- , idesc    = ""
   }
 doorwayTrap3 = doorwayTrapTemplate
   { ifreq    = [("doorway trap", 25)]
-  , ieffects = [toOrganActorTurn "weakened" $ (1 `dL` 4) * 10 ]
+  , ieffects = [toOrganGameTurn "weakened" $ (1 `dL` 4) * 10 ]
   -- , idesc    = ""
   }
 stairsUp = ItemKind
