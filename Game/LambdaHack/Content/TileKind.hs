@@ -187,8 +187,9 @@ validateDups TileKind{..} feat =
 -- to inspect manually all the tiles with this look to see if any is special.
 -- This tends to be tedious. Note that tiles may freely differ wrt text blurb,
 -- dungeon generation rules, AI preferences, etc., whithout causing the tedium.
-validateAll :: [TileKind] -> ContentData TileKind -> [Text]
-validateAll content cotile =
+validateAll :: ContentData ItemKind -> [TileKind] -> ContentData TileKind
+            -> [Text]
+validateAll coitem content cotile =
   let g :: Feature -> Maybe (GroupName TileKind)
       g (OpenTo grp) = Just grp
       g (CloseTo grp) = Just grp
@@ -198,11 +199,21 @@ validateAll content cotile =
       g (RevealAs grp) = Just grp
       g (ObscureAs grp) = Just grp
       g _ = Nothing
-      missingFeatureGroups =
+      missingTileGroups =
         [ (tname k, absGroups)
         | k <- content
         , let grps = mapMaybe g $ tfeature k
               absGroups = filter (not . omemberGroup cotile) grps
+        , not $ null absGroups
+        ]
+      h :: Feature -> Maybe (GroupName ItemKind)
+      h (Embed grp) = Just grp
+      h _ = Nothing
+      missingItemGroups =
+        [ (tname k, absGroups)
+        | k <- content
+        , let grps = mapMaybe h $ tfeature k
+              absGroups = filter (not . omemberGroup coitem) grps
         , not $ null absGroups
         ]
       missingHardwiredGroups =
@@ -211,8 +222,10 @@ validateAll content cotile =
      | talter (head content) /= 1 || tname (head content) /= "unknown space" ]
      ++ [ "only unknown tile may have talter 1"
         | any ((== 1) . talter) $ tail content ]
-     ++ [ "mentioned groups not in content:" <+> tshow missingFeatureGroups
-        | not $ null missingFeatureGroups ]
+     ++ [ "mentioned tile groups not in content:" <+> tshow missingTileGroups
+        | not $ null missingTileGroups ]
+     ++ [ "embedded item groups not in content:" <+> tshow missingItemGroups
+        | not $ null missingItemGroups ]
      ++ [ "hardwired groups not in content:" <+> tshow missingHardwiredGroups
         | not $ null missingHardwiredGroups ]
 
@@ -299,5 +312,6 @@ floorSymbol = Char.chr 183
 -- 100  walls
 -- maxBound  impenetrable walls, etc., can never be altered
 
-makeData :: [TileKind] -> ContentData TileKind
-makeData = makeContentData "TileKind" tname tfreq validateSingle validateAll
+makeData :: ContentData ItemKind -> [TileKind] -> ContentData TileKind
+makeData coitem =
+  makeContentData "TileKind" tname tfreq validateSingle (validateAll coitem)

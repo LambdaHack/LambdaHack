@@ -51,7 +51,7 @@ tieKnot options@ServerOptions{sallClear, sboostRandomItem, sdungeonRng} = do
         then boostedItems ++ Content.ItemKind.otherItemContent
         else Content.ItemKind.content
       coItemSpeedup = IK.speedupItem coitem
-      cotile = TK.makeData Content.TileKind.content
+      cotile = TK.makeData coitem Content.TileKind.content
       coTileSpeedup = Tile.speedupTile sallClear cotile
       coplace = PK.makeData cotile Content.PlaceKind.content
       cocave = CK.makeData coitem coplace cotile Content.CaveKind.content
