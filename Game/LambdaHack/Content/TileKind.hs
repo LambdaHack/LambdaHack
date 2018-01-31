@@ -300,4 +300,4 @@ floorSymbol = Char.chr 183
 -- maxBound  impenetrable walls, etc., can never be altered
 
 makeData :: [TileKind] -> ContentData TileKind
-makeData = makeContentData tname tfreq validateSingle validateAll
+makeData = makeContentData "TileKind" tname tfreq validateSingle validateAll

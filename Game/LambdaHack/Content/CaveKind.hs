@@ -147,4 +147,5 @@ makeData :: ContentData ItemKind
          -> [CaveKind]
          -> ContentData CaveKind
 makeData coitem coplace cotile =
-  makeContentData cname cfreq validateSingle (validateAll coitem coplace cotile)
+  makeContentData "CaveKind" cname cfreq validateSingle
+                  (validateAll coitem coplace cotile)

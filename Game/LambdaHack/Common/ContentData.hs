@@ -75,7 +75,8 @@ emptyContentData :: ContentData a
 emptyContentData = ContentData V.empty M.empty
 
 makeContentData :: (NFData c, Show c)
-                => (c -> Text)
+                => String
+                -> (c -> Text)
                      -- ^ name of the content itme, used for validation
                 -> (c -> Freqs c)
                      -- ^ frequency in groups, for validation and preprocessing
@@ -87,7 +88,7 @@ makeContentData :: (NFData c, Show c)
                 -> [c]  -- ^ all content of this type
                 -> ContentData c
 {-# INLINE makeContentData #-}
-makeContentData getName getFreq validateSingle validateAll content =
+makeContentData contentName getName getFreq validateSingle validateAll content =
   let contentVector = V.fromList content
       groupFreq =
         let tuples = [ (cgroup, (n, (i, k)))
@@ -106,13 +107,17 @@ makeContentData getName getFreq validateSingle validateAll content =
                         , let offences = validateSingle a
                         , not (null offences) ]
       allOffences = validateAll content contentData
-  in assert (null incorrectOffenders `blame` "some content items not correct"
-                                     `swith` incorrectOffenders) $
-     assert (null singleOffenders `blame` "some content items not valid"
-                                  `swith` singleOffenders) $
-     assert (null allOffences `blame` "the content set not valid"
-                              `swith` allOffences) $
-     assert (V.length contentVector <= fromEnum (maxBound :: ContentId a))
+  in assert (null incorrectOffenders
+             `blame` contentName ++ ": some content items not correct"
+             `swith` incorrectOffenders) $
+     assert (null singleOffenders
+             `blame` contentName ++ ": some content items not valid"
+             `swith` singleOffenders) $
+     assert (null allOffences
+             `blame` contentName ++ ": the content set is not valid"
+             `swith` allOffences) $
+     assert (V.length contentVector <= fromEnum (maxBound :: ContentId a)
+             `blame` contentName ++ ": the content has too many elements")
      contentData
 
 -- | Content element at given id.

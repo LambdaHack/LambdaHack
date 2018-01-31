@@ -547,4 +547,4 @@ hardwiredItemGroups =
   ++ ["bonus HP", "currency", "impressed", "mobile"]
 
 makeData :: [ItemKind] -> ContentData ItemKind
-makeData = makeContentData iname ifreq validateSingle validateAll
+makeData = makeContentData "ItemKind" iname ifreq validateSingle validateAll

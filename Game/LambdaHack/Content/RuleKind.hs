@@ -66,4 +66,4 @@ validateAll :: [RuleKind] -> ContentData RuleKind -> [Text]
 validateAll _ _ = []
 
 makeData :: [RuleKind] -> ContentData RuleKind
-makeData = makeContentData rname rfreq validateSingle validateAll
+makeData = makeContentData "RuleKind" rname rfreq validateSingle validateAll

@@ -224,4 +224,5 @@ makeData :: ContentData CaveKind
          -> [ModeKind]
          -> ContentData ModeKind
 makeData cocave coitem =
-  makeContentData mname mfreq validateSingle (validateAll cocave coitem)
+  makeContentData "ModeKind" mname mfreq validateSingle
+                  (validateAll cocave coitem)
