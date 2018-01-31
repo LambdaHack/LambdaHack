@@ -7,8 +7,9 @@ module Game.LambdaHack.Common.ActorState
   , bagAssocs, bagAssocsK, posToAidsLvl, posToAids, posToAssocs
   , nearbyFreePoints, calculateTotal, itemPrice, mergeItemQuant, findIid
   , combinedInv, combinedEqp, combinedOrgan, combinedItems, combinedFromLore
-  , getActorBody, getActorAspect, getCarriedAssocsAndTrunk, getCarriedIidCStore
-  , getContainerBag, getFloorBag, getEmbedBag, getBodyStoreBag
+  , getActorBody, getActorAspect, canTraverse
+  , getCarriedAssocsAndTrunk, getCarriedIidCStore, getContainerBag
+  , getFloorBag, getEmbedBag, getBodyStoreBag
   , mapActorItems_, getActorAssocs, getActorAssocsK
   , memActor, getLocalTime, regenCalmDelta, actorInAmbient, canDeAmbientList
   , actorSkills, dispEnemy, itemToFull, fullAssocs, kitAssocs
@@ -43,6 +44,7 @@ import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
+import qualified Game.LambdaHack.Content.TileKind as TK
 
 fidActorNotProjAssocs :: FactionId -> State -> [(ActorId, Actor)]
 fidActorNotProjAssocs fid s =
@@ -181,6 +183,21 @@ getActorBody aid s = sactorD s EM.! aid
 getActorAspect :: ActorId -> State -> IA.AspectRecord
 {-# INLINE getActorAspect #-}
 getActorAspect aid s = sactorAspect s EM.! aid
+
+-- Check that the actor can move, also between levels and through doors.
+-- Otherwise, it's too awkward for human player to control, e.g.,
+-- being stuck in a room with revolving doors closing after one turn
+-- and the player needing to micromanage opening such doors with
+-- another actor all the time. Completely immovable actors
+-- e.g., an impregnable surveillance camera in a crowded corridor,
+-- are less of a problem due to micromanagment, but more due to
+-- the constant disturbing of other actor's running, etc..
+canTraverse :: ActorId -> State -> Bool
+canTraverse aid s =
+  let actorMaxSk = IA.aSkills $ getActorAspect aid s
+  in EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
+     && EM.findWithDefault 0 Ability.AbAlter actorMaxSk
+          >= fromEnum TK.talterForStairs
 
 getCarriedAssocsAndTrunk :: Actor -> State -> [(ItemId, Item)]
 getCarriedAssocsAndTrunk b s =

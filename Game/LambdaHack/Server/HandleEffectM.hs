@@ -34,7 +34,6 @@ import           Data.Key (mapWithKeyM_)
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Client
-import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Dice as Dice
@@ -56,7 +55,6 @@ import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
-import qualified Game.LambdaHack.Content.TileKind as TK
 import           Game.LambdaHack.Server.CommonM
 import           Game.LambdaHack.Server.ItemM
 import           Game.LambdaHack.Server.MonadServer
@@ -500,22 +498,10 @@ dominateFidSfx :: MonadServerAtomic m => FactionId -> ActorId -> m Bool
 dominateFidSfx fid target = do
   tb <- getsState $ getActorBody target
   -- Actors that don't move freely can't be dominated, for otherwise,
-  -- when they are the last survivors, they could get stuck
-  -- and the game wouldn't end.
-  ar <- getsState $ getActorAspect target
-  let actorMaxSk = IA.aSkills ar
-      -- Check that the actor can move, also between levels and through doors.
-      -- Otherwise, it's too awkward for human player to control, e.g.,
-      -- being stuck in a room with revolving doors closing after one turn
-      -- and the player needing to micromanage opening such doors with
-      -- another actor all the time. Completely immovable actors
-      -- e.g., an impregnable surveillance camera in a crowded corridor,
-      -- are less of a problem due to micromanagment, but more due to
-      -- the constant disturbing of other actor's running, etc..
-      canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
-                && EM.findWithDefault 0 Ability.AbAlter actorMaxSk
-                   >= fromEnum TK.talterForStairs
-  if canMove && not (bproj tb) && bhp tb > 0 then do
+  -- when they are the last survivors, they could get stuck and the game
+  -- wouldn't end. Also, they are a hassle to guide through the dungeon.
+  canTra <- getsState $ canTraverse target
+  if canTra && not (bproj tb) && bhp tb > 0 then do
     let execSfx = execSfxAtomic $ SfxEffect fid target IK.Dominate 0
     execSfx  -- if actor ours, possibly the last occasion to see him
     gameOver <- dominateFid fid target
@@ -595,10 +581,14 @@ effectImpress recursiveCall execSfx source target = do
        when (ur == UseUp) execSfx
        return ur
      | otherwise -> do
-       unless (bhp tb <= 0)
-         execSfx  -- avoid spam just before death
-       effectCreateItem (Just $ bfid sb) (Just 1) target COrgan
-                        "impressed" IK.timerNone
+       -- Actors that don't move freely and so are stupid, can't be impressed.
+       canTra <- getsState $ canTraverse target
+       if canTra then do
+         unless (bhp tb <= 0)
+           execSfx  -- avoid spam just before death
+         effectCreateItem (Just $ bfid sb) (Just 1) target COrgan
+                          "impressed" IK.timerNone
+       else return UseDud  -- no message, because common and not crucial
 
 -- ** Summon
 

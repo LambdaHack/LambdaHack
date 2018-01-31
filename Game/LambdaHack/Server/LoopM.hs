@@ -248,7 +248,7 @@ manageCalmAndDomination aid b = do
     if bcalm b == 0
        && not (null impressions)
        && fleaderMode (gplayer fact) /= LeaderNull
-            -- animals/robots never Calm-dominated
+            -- animals/robots/human drones never Calm-dominated
     then
       let f (_, (k, _)) = k
           maxImpression = maximumBy (Ord.comparing f) $ EM.assocs impressions
