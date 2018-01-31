@@ -906,10 +906,10 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
   SfxApply aid iid cstore -> do
     ItemFull{itemKind} <- getsState $ itemToFull iid
     let action = case IK.isymbol itemKind of
-          '!' -> "swallow"
+          '!' -> "imbibe"
           '?' -> "peruse"
           _ -> "use"
-    itemAidVerbMU aid (MU.Text $ "try to" <+> action) iid (Left $ Just 1) cstore
+    itemAidVerbMU aid action iid (Left $ Just 1) cstore
   SfxCheck aid iid cstore ->
     itemAidVerbMU aid "deapply" iid (Left $ Just 1) cstore
   SfxTrigger aid _p ->
