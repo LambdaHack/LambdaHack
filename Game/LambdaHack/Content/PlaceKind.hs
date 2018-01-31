@@ -71,9 +71,15 @@ validateSingle PlaceKind{..} =
         | any (/= dxcorner) (map T.length ptopLeft) ]
      ++ validateRarity prarity
 
--- | Validate all place kinds. Currently always valid.
-validateAll :: [PlaceKind] -> ContentData PlaceKind -> [Text]
-validateAll _ _ = []
+-- | Validate all place kinds.
+validateAll :: ContentData TileKind -> [PlaceKind] -> ContentData PlaceKind
+            -> [Text]
+validateAll cotile content _ =
+  let missingOverride = filter (not . omemberGroup cotile)
+                        $ concatMap (map snd . poverride) content
+  in [ "poverride tile groups not in content:" <+> tshow missingOverride
+     | not $ null missingOverride ]
 
-makeData :: [PlaceKind] -> ContentData PlaceKind
-makeData = makeContentData "PlaceKind" pname pfreq validateSingle validateAll
+makeData :: ContentData TileKind -> [PlaceKind] -> ContentData PlaceKind
+makeData cotile =
+  makeContentData "PlaceKind" pname pfreq validateSingle (validateAll cotile)

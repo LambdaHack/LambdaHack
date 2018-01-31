@@ -51,14 +51,14 @@ tieKnot options@ServerOptions{sallClear, sboostRandomItem, sdungeonRng} = do
         then boostedItems ++ Content.ItemKind.otherItemContent
         else Content.ItemKind.content
       coItemSpeedup = IK.speedupItem coitem
-      coplace = PK.makeData Content.PlaceKind.content
       cotile = TK.makeData Content.TileKind.content
       coTileSpeedup = Tile.speedupTile sallClear cotile
+      coplace = PK.makeData cotile Content.PlaceKind.content
+      cocave = CK.makeData coitem coplace cotile Content.CaveKind.content
       -- Common content operations, created from content definitions.
       -- Evaluated fully to discover errors ASAP and to free memory.
       -- Fail here, not inside server code, so that savefiles are not removed,
       -- because they are not the source of the failure.
-      cocave = CK.makeData coitem coplace cotile Content.CaveKind.content
       !cops = COps
         { cocave
         , coitem
