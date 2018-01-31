@@ -4,7 +4,7 @@
 module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Status(..)
   , Target(..), TGoal(..), Challenge(..)
-  , gleader, tgtKindDescription, isHorrorFact, nameOfHorrorFact
+  , gleader, tgtKindDescription, isHorrorFact
   , noRunWithMulti, isAIFact, autoDungeonLevel, automatePlayer
   , isAtWar, isAllied
   , difficultyBound, difficultyDefault, difficultyCoeff, difficultyInverse
@@ -136,9 +136,6 @@ tgtKindDescription tgt = case tgt of
 -- should be present or a horror player should be added to host them.
 isHorrorFact :: Faction -> Bool
 isHorrorFact fact = nameOfHorrorFact `elem` fgroups (gplayer fact)
-
-nameOfHorrorFact :: GroupName ItemKind
-nameOfHorrorFact = toGroupName "horror"
 
 -- A faction where other actors move at once or where some of leader change
 -- is automatic can't run with multiple actors at once. That would be

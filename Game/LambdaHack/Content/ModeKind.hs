@@ -5,6 +5,7 @@ module Game.LambdaHack.Content.ModeKind
   , Caves, Roster(..), Outcome(..)
   , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
   , Player(..), LeaderMode(..), AutoLeader(..)
+  , nameOfHorrorFact
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll
@@ -150,6 +151,9 @@ instance Binary AutoLeader
 
 instance NFData AutoLeader
 
+nameOfHorrorFact :: GroupName ItemKind
+nameOfHorrorFact = toGroupName "horror"
+
 -- | Catch invalid game mode kind definitions.
 validateSingle :: ModeKind -> [Text]
 validateSingle ModeKind{..} =
@@ -190,14 +194,34 @@ validateSinglePlayer Player{..} =
      | any (>= 0) $ EM.elems fskillsOther ]
 
 -- | Validate game mode kinds together.
-validateAll :: [ModeKind] -> ContentData ModeKind -> [Text]
-validateAll _content comode =
-  let hardwiredAbsent = filter (not . omemberGroup comode) hardwiredModeGroups
-  in [ "Hardwired groups not in content:" <+> tshow hardwiredAbsent
-     | not $ null hardwiredAbsent ]
+validateAll :: ContentData CaveKind
+            -> ContentData ItemKind
+            -> [ModeKind]
+            -> ContentData ModeKind
+            -> [Text]
+validateAll cocave coitem content comode =
+  let missingCave = filter (not . omemberGroup cocave)
+                    $ concatMap (IM.elems . mcaves) content
+      f Roster{rosterList} =
+        concatMap (\(p, l) -> delete nameOfHorrorFact (fgroups p)
+                              ++ map (\(_, _, grp) -> grp) l)
+                  rosterList
+      missingRosterItems = filter (not . omemberGroup coitem)
+                           $ concatMap (f . mroster) content
+      hardwiredAbsent = filter (not . omemberGroup comode) hardwiredModeGroups
+  in [ "cave groups not in content:" <+> tshow missingCave
+     | not $ null missingCave ]
+     ++ [ "roster item groups not in content:" <+> tshow missingRosterItems
+        | not $ null missingRosterItems ]
+     ++ [ "Hardwired groups not in content:" <+> tshow hardwiredAbsent
+        | not $ null hardwiredAbsent ]
 
 hardwiredModeGroups :: [GroupName ModeKind]
 hardwiredModeGroups = [ "campaign scenario", "starting", "starting JS" ]
 
-makeData :: [ModeKind] -> ContentData ModeKind
-makeData = makeContentData mname mfreq validateSingle validateAll
+makeData :: ContentData CaveKind
+         -> ContentData ItemKind
+         -> [ModeKind]
+         -> ContentData ModeKind
+makeData cocave coitem =
+  makeContentData mname mfreq validateSingle (validateAll cocave coitem)

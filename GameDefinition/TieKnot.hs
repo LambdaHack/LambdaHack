@@ -58,10 +58,11 @@ tieKnot options@ServerOptions{sallClear, sboostRandomItem, sdungeonRng} = do
       -- Evaluated fully to discover errors ASAP and to free memory.
       -- Fail here, not inside server code, so that savefiles are not removed,
       -- because they are not the source of the failure.
+      cocave = CK.makeData coitem coplace cotile Content.CaveKind.content
       !cops = COps
-        { cocave  = CK.makeData coitem coplace cotile Content.CaveKind.content
+        { cocave
         , coitem
-        , comode  = MK.makeData Content.ModeKind.content
+        , comode  = MK.makeData cocave coitem Content.ModeKind.content
         , coplace
         , corule  = RK.makeData Content.RuleKind.content
         , cotile
