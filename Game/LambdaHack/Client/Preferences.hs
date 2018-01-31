@@ -43,8 +43,7 @@ effectToBenefit cops fact eff =
   in case eff of
     IK.Burn d -> delta $ -(min 1500 $ 15 * Dice.meanDice d)
       -- often splash damage, armor doesn't block (but HurtMelee doesn't boost)
-    IK.Explode _ -> delta 1  -- depends on explosion, but usually good,
-                             -- unless under OnSmash, but they are ignored
+    IK.Explode _ -> (1, -1)  -- depends on explosion, but let's have fun
     IK.RefillHP p ->
       delta $ if p > 0
               then min 2000 (20 * fromIntegral p)
