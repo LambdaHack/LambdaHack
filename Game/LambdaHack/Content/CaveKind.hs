@@ -103,11 +103,48 @@ validateSingle CaveKind{..} =
 -- | Validate all cave kinds.
 -- Note that names don't have to be unique: we can have several variants
 -- of a cave with a given name.
-validateAll :: [CaveKind] -> ContentData CaveKind -> [Text]
-validateAll _content cocave =
-  if omemberGroup cocave "default random"
-  then []
-  else ["no cave defined for \"default random\""]
+validateAll :: ContentData ItemKind
+            -> ContentData PlaceKind
+            -> ContentData TileKind
+            -> [CaveKind]
+            -> ContentData CaveKind
+            -> [Text]
+validateAll coitem coplace cotile content cocave =
+  let missingActorFreq = filter (not . omemberGroup coitem)
+                         $ concatMap (map fst . cactorFreq) content
+      missingItemFreq = filter (not . omemberGroup coitem)
+                        $ concatMap (map fst . citemFreq) content
+      missingPlaceFreq = filter (not . omemberGroup coplace)
+                         $ concatMap (map fst . cplaceFreq) content
+      missingEscapeGroup = filter (not . omemberGroup coplace)
+                           $ mapMaybe cescapeGroup content
+      missingStairFreq = filter (not . omemberGroup coplace)
+                         $ concatMap (map fst . cstairFreq) content
+      tileGroupFuns = [ cdefTile, cdarkCorTile, clitCorTile, cfillerTile
+                      , couterFenceTile, clegendDarkTile, clegendLitTile ]
+      g kind = map (\f -> f kind) tileGroupFuns
+      missingTileFreq = filter (not . omemberGroup cotile)
+                        $ concatMap g content
+  in [ "cactorFreq item groups not in content:" <+> tshow missingActorFreq
+     | not $ null missingActorFreq ]
+     ++ [ "citemFreq item groups not in content:" <+> tshow missingItemFreq
+        | not $ null missingItemFreq ]
+     ++ [ "cplaceFreq place groups not in content:" <+> tshow missingPlaceFreq
+        | not $ null missingPlaceFreq ]
+     ++ [ "cescapeGroup place groups not in content:"
+          <+> tshow missingEscapeGroup
+        | not $ null missingEscapeGroup ]
+     ++ [ "cstairFreq place groups not in content:" <+> tshow missingStairFreq
+        | not $ null missingStairFreq ]
+     ++ [ "tile groups not in content:" <+> tshow missingTileFreq
+        | not $ null missingTileFreq ]
+     ++ [ "no cave defined for \"default random\""
+        | not $ omemberGroup cocave "default random" ]
 
-makeData :: [CaveKind] -> ContentData CaveKind
-makeData = makeContentData cname cfreq validateSingle validateAll
+makeData :: ContentData ItemKind
+         -> ContentData PlaceKind
+         -> ContentData TileKind
+         -> [CaveKind]
+         -> ContentData CaveKind
+makeData coitem coplace cotile =
+  makeContentData cname cfreq validateSingle (validateAll coitem coplace cotile)
