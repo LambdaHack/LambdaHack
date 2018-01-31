@@ -280,7 +280,7 @@ effectSem source target iid c recharged periodic effect = do
     IK.Explode t -> effectExplode execSfx t target
     IK.RefillHP p -> effectRefillHP p source target
     IK.RefillCalm p -> effectRefillCalm execSfx p source target
-    IK.Dominate -> effectDominate recursiveCall source target
+    IK.Dominate -> effectDominate source target
     IK.Impress -> effectImpress recursiveCall execSfx source target
     IK.Summon grp nDm -> effectSummon grp nDm iid source target periodic
     IK.Ascend p -> effectAscend recursiveCall execSfx p source target pos
@@ -479,17 +479,12 @@ effectRefillCalm execSfx power0 source target = do
 
 -- ** Dominate
 
-effectDominate :: MonadServerAtomic m
-               => (IK.Effect -> m UseResult) -> ActorId -> ActorId
-               -> m UseResult
-effectDominate recursiveCall source target = do
+effectDominate :: MonadServerAtomic m => ActorId -> ActorId -> m UseResult
+effectDominate source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   if | bproj tb -> return UseDud
-     | bfid tb == bfid sb ->
-       -- Dominate is rather on projectiles than on items, so alternate effect
-       -- is useful to avoid boredom if domination can't happen.
-       recursiveCall IK.Impress
+     | bfid tb == bfid sb -> return UseDud  -- accidental hit; ignore
      | otherwise -> do
        b <- dominateFidSfx (bfid sb) target
        return $! if b then UseUp else UseDud
