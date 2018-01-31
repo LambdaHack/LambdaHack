@@ -81,7 +81,7 @@ makeContentData :: (NFData c, Show c)
                      -- ^ frequency in groups, for validation and preprocessing
                 -> (c -> [Text])
                      -- ^ validate a content item and list all offences
-                -> ([c] ->  ContentData c -> [Text])
+                -> ([c] -> ContentData c -> [Text])
                      -- ^ validate the whole defined content of this type
                      -- and list all offence
                 -> [c]  -- ^ all content of this type

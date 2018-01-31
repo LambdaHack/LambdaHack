@@ -94,7 +94,7 @@ posUpdAtomic cmd = case cmd of
   UpdDisplaceActor source target -> doubleAid source target
   UpdMoveItem _ _ _ _ CSha ->
     error $ "" `showFailure` cmd  -- shared stash is private
-  UpdMoveItem _ _ _ CSha _ ->  error $ "" `showFailure` cmd
+  UpdMoveItem _ _ _ CSha _ -> error $ "" `showFailure` cmd
   UpdMoveItem _ _ aid _ _ -> singleAid aid
   UpdRefillHP aid _ -> singleAid aid
   UpdRefillCalm aid _ -> singleAid aid

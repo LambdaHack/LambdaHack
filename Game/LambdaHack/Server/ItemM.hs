@@ -176,7 +176,7 @@ embedItemsInDungeon = do
 
 -- | Mapping over actor's items from a give store.
 mapActorCStore_ :: MonadServer m
-                => CStore -> (ItemId -> ItemQuant -> m a) -> Actor ->  m ()
+                => CStore -> (ItemId -> ItemQuant -> m a) -> Actor -> m ()
 mapActorCStore_ cstore f b = do
   bag <- getsState $ getBodyStoreBag b cstore
   mapM_ (uncurry f) $ EM.assocs bag

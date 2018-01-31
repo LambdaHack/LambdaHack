@@ -171,7 +171,7 @@ slotToDesc eqpSlot =
     EqpSlotMiscBonus -> "represent the total power of assorted stat bonuses for the character."
     EqpSlotAddHurtMelee -> "is a percentage of addtional damage dealt by the actor (either a character or a missile) with any weapon. The value is capped at 200%, then the armor percentage of the defender is subtracted from it and the resulting total is capped at 99%."
     EqpSlotAddArmorMelee -> "is a percentage of melee damage avoided by the actor. The value is capped at 200%, then the extra melee damage percentage of the attacker is subtracted from it and the resulting total is capped at 99% (always at least 1% of damage gets through). It includes 50% bonus from being braced for combat, if applicable."
-    EqpSlotAddArmorRanged ->  "is a percentage of ranged damage avoided by the actor. The value is capped at 200%, then the extra melee damage percentage of the attacker is subtracted from it and the resulting total is capped at 99% (always at least 1% of damage gets through). It includes 25% bonus from being braced for combat, if applicable."
+    EqpSlotAddArmorRanged -> "is a percentage of ranged damage avoided by the actor. The value is capped at 200%, then the extra melee damage percentage of the attacker is subtracted from it and the resulting total is capped at 99% (always at least 1% of damage gets through). It includes 25% bonus from being braced for combat, if applicable."
     EqpSlotAddMaxHP -> "is a cap on HP of the actor, except for some rare effects able to overfill HP. At any direct enemy damage (but not, e.g., incremental poisoning damage or wounds inflicted by mishandling a device) HP is cut back to the cap."
     EqpSlotAddSpeed -> "is expressed in meters per second, which corresponds to map location (1m by 1m) per two standard turns (0.5s each). Thus actor at standard speed of 2m/s moves one location per standard turn."
     EqpSlotAddSight -> "is the limit of visibility in light. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
@@ -298,7 +298,7 @@ featureToSuff feat =
     EqpSlot{} -> ""  -- used in @slotToSentence@ instead
     Unique -> ""  -- marked by capital letters in name
     Periodic -> ""  -- printed specially
-    MinorEffects ->  ""  -- cryptic override
+    MinorEffects -> ""  -- cryptic override
 
 featureToSentence :: Feature -> Maybe Text
 featureToSentence feat =
