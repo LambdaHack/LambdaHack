@@ -411,13 +411,16 @@ totalUsefulness !cops !fact !itemFull@ItemFull{itemKind, itemSuspect} =
       -- (but can be equipped anyway). If it harms wearer too much,
       -- won't be worn but still may be flung, etc.
       (benInEqp, benPickupRaw)
-        | IK.isMelee itemKind && benMelee < 0 && eqpSum >= -20 =
+        | IK.isMelee itemKind  -- probably known even if not identified
+          && (benMelee < 0 || itemSuspect)
+          && eqpSum >= -20 =
           ( True  -- equip, melee crucial, and only weapons in eqp can be used
           , if durable
             then eqpSum
                  + max benApply (- benMelee)  -- apply or melee or not
             else - benMelee)  -- melee is predominant
-        | IK.goesIntoEqp itemKind && eqpSum > 0 =  -- weapon or other equippable
+        | IK.goesIntoEqp itemKind  -- probably known even if not identified
+          && (eqpSum > 0 || itemSuspect) =  -- weapon or other equippable
           ( True  -- equip; long time bonus usually outweighs fling or apply
           , eqpSum  -- possibly spent turn equipping, so reap the benefits
             + if durable
