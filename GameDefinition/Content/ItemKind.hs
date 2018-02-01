@@ -925,7 +925,7 @@ necklace5 = necklaceTemplate
   }
 necklace6 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , iaspects = [Timeout $ (1 `d` 3) * 2]
+  , iaspects = [Timeout $ 1 + (1 `d` 3) * 2]
   , ieffects = [Recharging (PushActor (ThrowMod 100 50))]  -- 1 step, slow
                   -- the @50@ is only for the case of very light actor, etc.
                ++ ieffects necklaceTemplate
