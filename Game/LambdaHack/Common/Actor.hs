@@ -65,8 +65,8 @@ data Actor = Actor
 
     -- Assorted
   , bwait       :: Bool         -- ^ is the actor waiting right now?
-  , bproj       :: Bool         -- ^ is a projectile? (shorthand only,
-                                --   this can be deduced from btrunk)
+  , bproj       :: Bool         -- ^ is a projectile? affects being able
+                                --   to fly through other projectiles, etc.
   }
   deriving (Show, Eq, Generic)
 
