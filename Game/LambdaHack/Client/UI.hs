@@ -98,7 +98,16 @@ queryUI = do
         !_A = assert (isJust mleader) ()
     req <- humanCommand
     leader2 <- getLeaderUI
-    return (req, if mleader /= Just leader2 then Just leader2 else Nothing)
+    -- Don't send the leader switch to the server with these commands,
+    -- to avoid leader death at resume if his HP <= 0. That would violate
+    -- the principle that save and reload doesn't change game state.
+    let saveCmd cmd = case cmd of
+          ReqUIGameExit -> True
+          ReqUIGameSave -> True
+          _ -> False
+    return (req, if mleader /= Just leader2 && not (saveCmd req)
+                 then Just leader2
+                 else Nothing)
 
 -- | Let the human player issue commands until any command takes time.
 humanCommand :: forall m. MonadClientUI m => m ReqUI
