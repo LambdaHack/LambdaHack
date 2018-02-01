@@ -1207,7 +1207,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
   tb <- getsState $ getActorBody target
   tbUI <- getsSession $ getActorUI target
   sourceSeen <- getsState $ memActor source (blid tb)
-  (ps, hurtMult) <-
+  (ps, hurtMult, dmg) <-
    if sourceSeen then do
     hurtMult <- getsState $ armorHurtBonus source target
     itemFull@ItemFull{itemKind} <- getsState $ itemToFull iid
@@ -1226,10 +1226,11 @@ strike catch source target iid cstore = assert (source /= target) $ do
           if iid `EM.member` borgan sb
           then partItemShortWownW side factionD spronoun localTime
           else partItemShortAW side factionD localTime
+        subtly = if IK.idamage itemKind == 0 then "delicately" else ""
         msg | bhp tb <= 0  -- incapacitated, so doesn't actively block
               || hurtMult > 90  -- at most minor armor
               || IK.idamage itemKind == 0 = makeSentence $
-              [MU.SubjectVerbSg spart verb, tpart]
+              [MU.SubjectVerbSg spart verb, tpart, subtly]
               ++ if bproj sb
                  then []
                  else ["with", partItemChoice itemFull kit]
@@ -1264,9 +1265,10 @@ strike catch source target iid cstore = assert (source /= target) $ do
                       "almost completely"  -- still be deadly, if fast missile
                ]
     msgAdd msg
-    return ((bpos tb, bpos sb), hurtMult)
-   else return ((bpos tb, bpos tb), 100)
-  let anim | hurtMult > 90 = twirlSplash ps Color.BrRed Color.Red
+    return ((bpos tb, bpos sb), hurtMult, IK.idamage itemKind)
+   else return ((bpos tb, bpos tb), 100, 1)
+  let anim | dmg == 0 = subtleHit $ snd ps
+           | hurtMult > 90 = twirlSplash ps Color.BrRed Color.Red
            | hurtMult > 1 = blockHit ps Color.BrRed Color.Red
            | otherwise = blockMiss ps
   animate (blid tb) anim

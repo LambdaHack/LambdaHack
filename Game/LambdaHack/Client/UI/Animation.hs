@@ -1,7 +1,7 @@
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.UI.Animation
   ( Animation, renderAnim
-  , pushAndDelay, blinkColorActor, twirlSplash, blockHit, blockMiss
+  , pushAndDelay, blinkColorActor, twirlSplash, blockHit, blockMiss, subtleHit
   , deathBody, shortDeathBody, actorX, teleport, swapPlaces, fadeout
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -128,6 +128,16 @@ blockMiss poss = Animation $ map (mzipPairs poss)
   , (cSym BrBlue  '}', blank)
   , (cSym Blue    '}', blank)
   , (cSym Blue    '}', blank)
+  ]
+
+-- | Attack that is subtle (e.g., damage dice 0).
+subtleHit :: Point -> Animation
+subtleHit pos = Animation $ map (mzipSingleton pos)
+  [ cSym BrCyan '\''
+  , cSym BrYellow '\''
+  , cSym BrYellow '^'
+  , cSym BrCyan '^'
+  , cSym BrCyan '\''
   ]
 
 -- | Death animation for an organic body.
