@@ -281,10 +281,12 @@ When the last hero dies or is dominated, the scenario ends in defeat.
 On Winning and Dying
 --------------------
 
-You win a scenario if you escape the location alive or, in scenarios with
-no exit locations, if you eliminate all opposition. In the former case,
-your score is based predominantly on the gold and precious gems you've
-plundered. In the latter case, your score is most influenced by the number
+You win a scenario if you escape the location alive (which may prove
+difficult, because your foes gradually build up the ambush squads
+blocking your escape routes) or, in scenarios with no exit locations,
+if you eliminate all opposition. In the former case, your score
+is based predominantly on the gold and precious gems you've plundered.
+In the latter case, your score is most influenced by the number
 of turns you spent overcoming your foes (the quicker the victory, the better;
 the slower the demise, the better). Bonus points, affected by the number
 of heroes lost, are awarded only if you win. The score is heavily
