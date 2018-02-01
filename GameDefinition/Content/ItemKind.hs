@@ -777,7 +777,7 @@ jumpingPole = ItemKind
   , ifreq    = [("common item", 100)]
   , iflavour = zipPlain [White]
   , icount   = 1
-  , irarity  = [(1, 2)]
+  , irarity  = [(1, 3)]
   , iverbHit = "prod"
   , iweight  = 10000
   , idamage  = 0
@@ -978,7 +978,7 @@ sightSharpening = ringTemplate  -- small and round, so mistaken for a ring
       -- it's has to be very rare, because it's powerful and not unique,
       -- and also because it looks exactly as one of necklaces, so it would
       -- be misleading when seen on the map
-  , irarity  = [(7, 1), (10, 5)]
+  , irarity  = [(7, 1), (10, 5)]  -- low @ifreq@
   , iweight  = 50  -- heavier that it looks, due to glass
   , iaspects = [AddSight $ 1 + 1 `d` 2, AddHurtMelee $ (1 `d` 2) * 3]
   , ifeature = [EqpSlot EqpSlotAddSight] ++ ifeature ringTemplate
@@ -998,7 +998,7 @@ ringTemplate = ItemKind
   , ifreq    = [("ring unknown", 1)]
   , iflavour = zipPlain stdCol ++ zipFancy darkCol
   , icount   = 1
-  , irarity  = [(10, 3)]
+  , irarity  = [(10, 1)]  -- the default very low
   , iverbHit = "knock"
   , iweight  = 15
   , idamage  = 0
@@ -1010,7 +1010,7 @@ ringTemplate = ItemKind
   }
 ring1 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(10, 2)]
+  , irarity  = [(10, 3)]
   , iaspects = [AddSpeed $ 1 `d` 3, AddMaxHP (-15)]
   , ieffects = [OnSmash (Explode "distortion")]  -- high power
   , ifeature = [EqpSlot EqpSlotAddSpeed] ++ ifeature ringTemplate
@@ -1040,21 +1040,21 @@ ring4 = ringTemplate
   }
 ring5 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(3, 3), (10, 3)]
+  , irarity  = [(3, 3), (10, 4)]
   , iaspects = [ AddHurtMelee $ (2 + 1 `d` 2 + (1 `dL` 2) * 2 ) * 3
                , AddMaxHP $ (-2 - (1 `d` 2) + (1 `dL` 2) * 2) * 3 ]  -- !!!
   , ifeature = [EqpSlot EqpSlotAddHurtMelee] ++ ifeature ringTemplate
   }
 ring6 = ringTemplate  -- by the time it's found, probably no space in eqp
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(5, 0), (10, 2)]
+  , irarity  = [(5, 0), (10, 3)]
   , iaspects = [AddShine $ 1 `d` 2]
   , ifeature = [EqpSlot EqpSlotLightSource] ++ ifeature ringTemplate
   , idesc    = "A sturdy ring with a large, shining stone."
   }
 ring7 = ringTemplate
   { ifreq    = [("common item", 10), ("ring of opportunity sniper", 1) ]
-  , irarity  = [(10, 5)]
+  , irarity  = [(10, 5)]  -- low @ifreq@
   , iaspects = [AddAbility AbProject 8]
   , ieffects = [OnSmash (Explode "distortion")]  -- high power
   , ifeature = [ELabel "of opportunity sniper", EqpSlot EqpSlotAbProject]
@@ -1179,7 +1179,7 @@ buckler = ItemKind
   }
 shield = buckler
   { iname    = "shield"
-  , irarity  = [(8, 3)]
+  , irarity  = [(8, 4)]  -- the stronger variants add to total probability
   , iflavour = zipPlain [Green]
   , iweight  = 3000
   , idamage  = 4 `d` 1
@@ -1193,13 +1193,13 @@ shield = buckler
   , idesc    = "Large and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
   }
 shield2 = shield
-  { ifreq    = [("common item", 3)]
+  { ifreq    = [("common item", 3 * 3)]  -- very low base rarity
   , iweight  = 4000
   , idamage  = 8 `d` 1
   -- , idesc    = "" e.g., "this kind has a spike protruding from the center"
   }
 shield3 = shield
-  { ifreq    = [("common item", 1)]
+  { ifreq    = [("common item", 1 * 3)]  -- very low base rarity
   , iweight  = 5000
   , idamage  = 12 `d` 1
   -- , idesc    = ""
