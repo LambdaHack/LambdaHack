@@ -1226,7 +1226,9 @@ strike catch source target iid cstore = assert (source /= target) $ do
           if iid `EM.member` borgan sb
           then partItemShortWownW side factionD spronoun localTime
           else partItemShortAW side factionD localTime
-        subtly = if IK.idamage itemKind == 0 then "delicately" else ""
+        subtly = if IK.idamage itemKind == 0 && not (bproj sb)
+                 then "delicately"
+                 else ""
         msg | bhp tb <= 0  -- incapacitated, so doesn't actively block
               || hurtMult > 90  -- at most minor armor
               || IK.idamage itemKind == 0 = makeSentence $
