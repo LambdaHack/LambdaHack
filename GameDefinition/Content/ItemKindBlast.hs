@@ -92,7 +92,7 @@ spreadFragmentation = ItemKind
   , iaspects = [AddShine 5]
   , ieffects = [ DropItem 1 maxBound COrgan "temporary condition"
                , RefillHP (-5) ]  -- deadly; adjacent actor hit by 2 on average
-  , ifeature = [toLinger 20, Fragile, Blast]  -- 4 steps, 1 turn
+  , ifeature = [toLinger 20, Lobable, Fragile, Blast]  -- 4 steps, 1 turn
   , idesc    = ""
   , ikit     = []
   }
@@ -100,7 +100,7 @@ spreadFragmentation8 = spreadFragmentation
   { iname    = "fragmentation burst"
   , ifreq    = [("fragmentation", 1)]
   , icount   = 8
-  , ifeature = [toLinger 10, Fragile, Blast]  -- 2 steps, 1 turn
+  , ifeature = [toLinger 10, Lobable, Fragile, Blast]  -- 2 steps, 1 turn
       -- smaller radius, so worse for area effect, but twice the direct damage
   }
 focusedFragmentation = ItemKind
@@ -137,7 +137,7 @@ spreadConcussion = ItemKind
                    -- this produces spam for braced actors; too bad
                , DropItem 1 maxBound COrgan "temporary condition"
                , RefillHP (-2) ]  -- only air pressure, so not as deadly
-  , ifeature = [toLinger 20, Fragile, Blast]  -- 4 steps, 1 turn
+  , ifeature = [toLinger 20, Lobable, Fragile, Blast]  -- 4 steps, 1 turn
       -- outdoors it has short range, but we only model indoors in the game;
       -- it's much faster than black powder shock wave, but we are beyond
       -- human-noticeable speed differences on short distances anyway
@@ -148,7 +148,7 @@ spreadConcussion8 = spreadConcussion
   { iname    = "concussion blast"
   , ifreq    = [("concussion", 1)]
   , icount   = 8
-  , ifeature = [toLinger 10, Fragile, Blast]  -- 2 steps, 1 turn
+  , ifeature = [toLinger 10, Lobable, Fragile, Blast]  -- 2 steps, 1 turn
   }
 focusedConcussion = ItemKind
   { isymbol  = '`'
