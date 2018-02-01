@@ -119,7 +119,7 @@ refillHP source target speedDeltaHP = assert (speedDeltaHP /= 0) $ do
     when (Just target == mleader) $ do
       actorD <- getsState sactorD
       let ours (_, b) = bfid b == bfid tb && not (bproj b) && bhp b > 0
-          -- Only consider actors positive HP.
+          -- Only consider actors with positive HP.
           positive = filter ours $ EM.assocs actorD
       onLevel <- getsState $ fidActorRegularIds (bfid tb) (blid tb)
       case onLevel ++ map fst positive of
@@ -701,7 +701,7 @@ effectAscend recursiveCall execSfx up source target pos = do
            switch2 = do
              -- Make the initiator of the stair move the leader,
              -- to let him clear the stairs for others to follow.
-             let mlead = Just target
+             let mlead = if bproj b1 then Nothing else Just target
              -- Move the actor to where the inhabitants were, if any.
              switchLevels2 lid2 pos3 (target, b1) btime_bOld mlead
        -- The actor will be added to the new level,

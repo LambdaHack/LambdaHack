@@ -258,6 +258,7 @@ supplantLeader fid aid = do
     -- First update and send Perception so that the new leader
     -- may report his environment.
     b <- getsState $ getActorBody aid
+    let !_A = assert (not $ bproj b) ()
     valid <- getsServer $ (EM.! blid b) . (EM.! fid) . sperValidFid
     unless valid $ updatePer fid (blid b)
     execUpdAtomic $ UpdLeadFaction fid (gleader fact) (Just aid)
