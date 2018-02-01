@@ -327,23 +327,23 @@ projectFail source tpxy eps center iid cstore blast = do
                          else restUnlimited
                   t = lvl `at` pos
               if not $ Tile.isWalkable coTileSpeedup t
-                then return $ Just ProjectBlockTerrain
+              then return $ Just ProjectBlockTerrain
+              else do
+                lab <- getsState $ posToAssocs pos lid
+                if not $ all (bproj . snd) lab
+                then if blast && bproj sb then do
+                       -- Hit the blocking actor.
+                       projectBla source spos (pos:rest) iid cstore blast
+                       return Nothing
+                     else return $ Just ProjectBlockActor
                 else do
-                  lab <- getsState $ posToAssocs pos lid
-                  if not $ all (bproj . snd) lab
-                  then if blast && bproj sb then do
-                         -- Hit the blocking actor.
-                         projectBla source spos (pos:rest) iid cstore blast
-                         return Nothing
-                       else return $ Just ProjectBlockActor
-                  else do
-                    -- Make the explosion less regular and weaker at edges.
-                    if blast && bproj sb && center then
-                      -- Start in the center, not around.
-                      projectBla source spos (pos:rest) iid cstore blast
-                    else
-                      projectBla source pos rest iid cstore blast
-                    return Nothing
+                  -- Make the explosion less regular and weaker at edges.
+                  if blast && bproj sb && center then
+                    -- Start in the center, not around.
+                    projectBla source spos (pos:rest) iid cstore blast
+                  else
+                    projectBla source pos rest iid cstore blast
+                  return Nothing
 
 projectBla :: MonadServerAtomic m
            => ActorId    -- ^ actor projecting the item (is on current lvl)
