@@ -91,26 +91,14 @@ partyItemSet slore fid mbody s =
                    mbody
   in ES.unions $ map EM.keysSet $ onPersons : [onGround | slore == SItem]
 
--- If apperance and aspects the same, keep the order from before sort.
+-- If appearance and aspects the same, keep the order from before sort.
 compareItemFull :: ItemFull -> ItemFull -> Ordering
 compareItemFull itemFull1 itemFull2 =
-  case ( itemDisco itemFull1, itemSuspect itemFull1
-       , itemDisco itemFull2, itemSuspect itemFull2 ) of
-    (ItemDiscoMean{}, True, ItemDiscoMean{}, False) -> LT
-    (ItemDiscoMean{}, False, ItemDiscoMean{}, True) -> GT
-    (ItemDiscoMean{}, _, ItemDiscoMean{}, _) ->
-      comparing apperance itemFull1 itemFull2
-    (ItemDiscoMean{}, _, ItemDiscoFull{}, _) -> LT
-    (ItemDiscoFull{}, _, ItemDiscoMean{}, _) -> GT
-    (ItemDiscoFull ia1, _, ItemDiscoFull ia2, _) ->
-      case compare (itemKindId itemFull1) (itemKindId itemFull2) of
-        EQ -> case compare ia1 ia2 of
-          EQ -> comparing apperance itemFull1 itemFull2
-          o -> o
-        o -> o
- where
-  apperance ItemFull{itemBase=Item{..}, itemKind} =
-    (IK.isymbol itemKind, IK.iname itemKind, jflavour, jfid, jlid)
+  let kindAndAppearance ItemFull{itemBase=Item{..}, ..} =
+        ( not itemSuspect, itemKindId, itemDisco
+        , IK.isymbol itemKind, IK.iname itemKind
+        , jflavour, jfid, jlid )
+  in comparing kindAndAppearance itemFull1 itemFull2
 
 sortSlotMap :: (ItemId -> ItemFull)-> ES.EnumSet ItemId -> SingleItemSlots
             -> SingleItemSlots
