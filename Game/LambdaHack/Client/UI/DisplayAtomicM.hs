@@ -932,6 +932,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         isOurAlive = isOurCharacter && bhp b > 0
         isOurLeader = Just aid == mleader
     case effect of
+        IK.Burn{} | bproj b -> return ()
         IK.Burn{} -> do
           if isOurAlive
           then actorVerbMU aid bUI "feel burned"
@@ -939,6 +940,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           let ps = (bpos b, bpos b)
           animate (blid b) $ twirlSplash ps Color.BrRed Color.Brown
         IK.Explode{} -> return ()  -- lots of visual feedback
+        IK.RefillHP{} | bproj b -> return ()
         IK.RefillHP p | p == 1 -> return ()  -- no spam from regeneration
         IK.RefillHP p | p == -1 -> return ()  -- no spam from poison
         IK.RefillHP{} | hpDelta > 0 -> do
@@ -955,6 +957,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             actorVerbMU aid bUI "look wounded"
           let ps = (bpos b, bpos b)
           animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
+        IK.RefillCalm{} | bproj b -> return ()
         IK.RefillCalm p | p == 1 -> return ()  -- no spam from regen items
         IK.RefillCalm p | p > 0 ->
           if isOurAlive then
@@ -966,6 +969,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             actorVerbMU aid bUI "feel agitated"
           else
             actorVerbMU aid bUI "look agitated"
+        IK.Dominate | bproj b -> return ()
         IK.Dominate -> do
           -- For subsequent messages use the proper name, never "you".
           let subject = partActor bUI
@@ -1006,7 +1010,9 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             lvl <- getLevel lid
             msgAdd $ cdesc $ okind cocave $ lkind lvl
         IK.Escape{} -> return ()
+        IK.Paralyze{} | bproj b -> return ()
         IK.Paralyze{} -> actorVerbMU aid bUI "be paralyzed"
+        IK.InsertMove{} | bproj b -> return ()
         IK.InsertMove{} -> actorVerbMU aid bUI "act with extreme speed"
         IK.Teleport t | Dice.maxDice t <= 9 -> actorVerbMU aid bUI "blink"
         IK.Teleport{} -> actorVerbMU aid bUI "teleport"
