@@ -224,7 +224,7 @@ distortion = ItemKind
   , idamage  = 0
   , iaspects = []
   , ieffects = [Teleport $ 15 + 1 `d` 10]
-  , ifeature = [toLinger 10, Fragile, Blast]  -- 2 steps, 1 turn
+  , ifeature = [toLinger 10, Lobable, Fragile, Blast]  -- 2 steps, 1 turn
   , idesc    = "The air shifts oddly, as though light is being warped."
   , ikit     = []
   }

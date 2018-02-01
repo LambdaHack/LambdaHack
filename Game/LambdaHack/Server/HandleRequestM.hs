@@ -210,13 +210,14 @@ reqMove source dir = do
   lvl <- getLevel lid
   let spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
-  notFragileProjectile <- getsState $ \s b ->
-    IK.Fragile `elem` IK.ifeature (getIidKindServer (btrunk b) s)
+  isSolidActor <- getsState $ \s b ->
+    let features = IK.ifeature $ getIidKindServer (btrunk b) s
+    in not (bproj b)
+       || IK.Fragile `elem` features && IK.Lobable `elem` features
   -- We start by checking actors at the target position.
   tgt <- getsState $ posToAssocs tpos lid
   case tgt of
-    (target, tb) : _ | not (notFragileProjectile sb
-                            && notFragileProjectile tb) -> do
+    (target, tb) : _ | isSolidActor sb || isSolidActor tb -> do
       -- Projectiles are too small to hit each other, unless fragile.
       -- The actor in the way is visible or not; server sees him always.
       -- Here the only weapon of projectiles is picked, too.
