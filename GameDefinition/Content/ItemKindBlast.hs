@@ -88,10 +88,10 @@ spreadFragmentation = ItemKind
   , irarity  = [(1, 1)]
   , iverbHit = "tear apart"
   , iweight  = 1
-  , idamage  = 0
-  , iaspects = [AddShine 5]
-  , ieffects = [ DropItem 1 maxBound COrgan "temporary condition"
-               , RefillHP (-5) ]  -- deadly; adjacent actor hit by 2 on average
+  , idamage  = 5 `d` 1  -- deadly and adjacent actor hit by 2 on average;
+                        -- however, armour can block completely with ease
+  , iaspects = [AddShine 5, AddHurtMelee $ -15 * 5]
+  , ieffects = [DropItem 1 maxBound COrgan "temporary condition"]
   , ifeature = [toLinger 20, Lobable, Fragile, Blast]  -- 4 steps, 1 turn
   , idesc    = ""
   , ikit     = []
@@ -130,13 +130,13 @@ spreadConcussion = ItemKind
   , irarity  = [(1, 1)]
   , iverbHit = "shock"
   , iweight  = 1
-  , idamage  = 0
-  , iaspects = [AddShine 5]
+  , idamage  = 1 `d` 1  -- only air pressure, so not as deadly as fragmentation,
+                        -- but armour can't block completely with ease
+  , iaspects = [AddShine 5, AddHurtMelee $ -8 * 5]
   , ieffects = [ DropItem maxBound maxBound CEqp "common item"
                , PushActor (ThrowMod 400 25)  -- 1 step, fast; after DropItem
                    -- this produces spam for braced actors; too bad
-               , DropItem 1 maxBound COrgan "temporary condition"
-               , RefillHP (-2) ]  -- only air pressure, so not as deadly
+               , DropItem 1 maxBound COrgan "temporary condition" ]
   , ifeature = [toLinger 20, Lobable, Fragile, Blast]  -- 4 steps, 1 turn
       -- outdoors it has short range, but we only model indoors in the game;
       -- it's much faster than black powder shock wave, but we are beyond
@@ -346,8 +346,8 @@ glassPiece = ItemKind
   , irarity  = [(1, 1)]
   , iverbHit = "cut"
   , iweight  = 1
-  , idamage  = 0
-  , iaspects = []
+  , idamage  = 1 `d` 1
+  , iaspects = [AddHurtMelee $ -17 * 5]
   , ieffects = [RefillHP (-1)]
   , ifeature = [toLinger 20, Fragile, Blast]  -- 4 steps, 1 turn
   , idesc    = "Swift, sharp edges."
