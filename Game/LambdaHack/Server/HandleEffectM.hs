@@ -1017,7 +1017,8 @@ effectCreateItem jfidRaw mcount target store grp tim = do
         execUpdAtomic $ UpdTimeItem iid c afterIt newIt
         -- It's hard for the client to tell this timer change from charge use,
         -- timer reset on pickup, etc., so we create the msg manually.
-        execSfxAtomic $ SfxMsgFid (bfid tb) $ SfxTimerExtended target iid store
+        execSfxAtomic $ SfxMsgFid (bfid tb)
+                      $ SfxTimerExtended (blid tb) target iid store
         return UseUp
       else return UseDud  -- probably incorrect content, but let it be
     _ -> do

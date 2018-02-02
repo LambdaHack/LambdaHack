@@ -1170,7 +1170,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
         let subject = partActor sbUI
             verb = "be braced and so immune to translocation"
         return $! makeSentence [MU.SubjectVerbSg subject verb]
-  SfxEscapeImpossible -> return "Escaping outside is unthinkable for members of this faction."
+  SfxEscapeImpossible ->
+    return "Escaping outside is unthinkable for members of this faction."
   SfxStasisProtects -> return "Paralysis and speed surge require recovery time."
   SfxTransImpossible -> return "Translocation not possible."
   SfxIdentifyNothing -> return "Nothing to identify."
@@ -1182,19 +1183,23 @@ ppSfxMsg sfxMsg = case sfxMsg of
     <+> "pieces of this item, not by" <+> tshow itemK <> "."
   SfxPurposeUnique -> return "Unique items can't be repurposed."
   SfxColdFish -> return "Healing attempt from another faction is thwarted by your cold fish attitude."
-  SfxTimerExtended aid iid cstore -> do
-    b <- getsState $ getActorBody aid
-    bUI <- getsSession $ getActorUI aid
-    aidPhrase <- partActorLeader aid bUI
-    factionD <- getsState sfactionD
-    localTime <- getsState $ getLocalTime (blid b)
-    itemFull <- getsState $ itemToFull iid
-    let kit = (1, [])
-        (_, _, name, stats) = partItem (bfid b) factionD localTime itemFull kit
-        storeOwn = ppCStoreWownW True cstore aidPhrase
-        cond = ["condition" | IK.isTmpCondition $ itemKind itemFull]
-    return $! makeSentence $
-      ["the", name, stats] ++ cond ++ storeOwn ++ ["will now last longer"]
+  SfxTimerExtended lid aid iid cstore -> do
+    aidSeen <- getsState $ memActor aid lid
+    if aidSeen then do
+      b <- getsState $ getActorBody aid
+      bUI <- getsSession $ getActorUI aid
+      aidPhrase <- partActorLeader aid bUI
+      factionD <- getsState sfactionD
+      localTime <- getsState $ getLocalTime (blid b)
+      itemFull <- getsState $ itemToFull iid
+      let kit = (1, [])
+          (_, _, name, stats) =
+            partItem (bfid b) factionD localTime itemFull kit
+          storeOwn = ppCStoreWownW True cstore aidPhrase
+          cond = ["condition" | IK.isTmpCondition $ itemKind itemFull]
+      return $! makeSentence $
+        ["the", name, stats] ++ cond ++ storeOwn ++ ["will now last longer"]
+    else return ""
   SfxCollideActor lid source target -> do
     sourceSeen <- getsState $ memActor source lid
     targetSeen <- getsState $ memActor target lid
