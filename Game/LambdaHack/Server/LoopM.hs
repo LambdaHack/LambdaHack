@@ -373,8 +373,9 @@ setTrajectory aid = do
                 let effect = IK.RefillHP (-2)  -- -2 is a lie to ensure display
                 execSfxAtomic $ SfxEffect (bfid b) aid effect (-1)
     Just ([], _) ->
-      -- Actor stops flying. Possibly a projectile started with null trajectory.
-      execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
+      -- Non-projectile actor stops flying.
+      assert (not $ bproj b)
+      $ execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
     _ -> error $ "Nothing trajectory" `showFailure` (aid, b)
 
 handleActors :: (MonadServerAtomic m, MonadServerReadRequest m)
