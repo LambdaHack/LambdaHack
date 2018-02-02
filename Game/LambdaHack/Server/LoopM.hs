@@ -291,30 +291,34 @@ handleTrajectories lid fid = do
           $ filter (\(_, (_, b)) -> isJust (btrajectory b) || bhp b <= 0)
           $ map (\(a, atime) -> (atime, (a, getActorBody a s)))
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
-  mapM_ (hTrajectories . snd) l
+  -- The actor body obtained above may be outdated before @hTrajectories@
+  -- call (due to other actors following their trajectories),
+  -- so it's only used to decide which actors are processed in this
+  -- @handleTrajectories@ call and not passed to @hTrajectories@.
+  -- If the actor no longer fulfills the criteria above, @hTrajectories@
+  -- ignores it. If it starts fulfilling them, the recursive call
+  -- to @handleTrajectories@ will detect that and process him later on.
+  mapM_ (hTrajectories . fst . snd) l
   unless (null l) $ handleTrajectories lid fid  -- for speeds > tile/clip
 
--- The body @b@ may be outdated by this time
--- (due to other actors following their trajectories)
--- but we decide death inspecting it --- last moment rescue
--- from projectiles or pushed actors doesn't work; too late.
--- Even if the actor got teleported to another level by this point,
--- we don't care, we set the trajectory, check death, etc.
-hTrajectories :: MonadServerAtomic m => (ActorId, Actor) -> m ()
+hTrajectories :: MonadServerAtomic m => ActorId -> m ()
 {-# INLINE hTrajectories #-}
-hTrajectories (aid, b) = do
-  b2 <- if actorDying b then return b else do
-          setTrajectory aid
-          getsState $ getActorBody aid
-  -- @setTrajectory@ might have affected @actorDying@, so we check again ASAP
-  -- to make sure the body of the projectile (or pushed actor)
-  -- doesn't block movement of other actors, but vanishes promptly.
-  -- Bodies of actors that die in place remain on the battlefied until
-  -- their natural next turn, to give them a chance of rescue.
-  -- Note that domination of pushed actors is not checked
-  -- nor is their calm updated. They are helpless wrt movement,
-  -- but also invulnerable in this repsect.
-  if actorDying b2 then dieSer aid b2 else advanceTime aid 100 False
+hTrajectories aid = do
+  b1 <- getsState $ getActorBody aid
+  if | actorDying b1 -> dieSer aid b1
+     | isJust (btrajectory b1) -> do  -- don't advance time if no trajectory
+       setTrajectory aid b1
+       -- @setTrajectory@ might have affected @actorDying@, so we check again
+       -- ASAP to make sure the body of the projectile (or pushed actor)
+       -- doesn't block movement of other actors, but vanishes promptly.
+       -- Bodies of actors that die not flying remain on the battlefied until
+       -- their natural next turn, to give them a chance of rescue.
+       -- Note that domination of pushed actors is not checked
+       -- nor is their calm updated. They are helpless wrt movement,
+       -- but also invulnerable in this respect.
+       b2 <- getsState $ getActorBody aid
+       if actorDying b2 then dieSer aid b2 else advanceTime aid 100 False
+     | otherwise -> return ()  -- no longer fulfills citeria, ignore him
   -- if @actorDying@ due to @bhp b <= 0@:
   -- If @b@ is a projectile, it means hits an actor or is hit by actor.
   -- Then the carried item is destroyed and that's all.
@@ -333,11 +337,10 @@ hTrajectories (aid, b) = do
 -- Not advancing time forces dead projectiles to be destroyed ASAP.
 -- Otherwise, with some timings, it can stay on the game map dead,
 -- blocking path of human-controlled actors and alarming the hapless human.
-setTrajectory :: MonadServerAtomic m => ActorId -> m ()
+setTrajectory :: MonadServerAtomic m => ActorId -> Actor -> m ()
 {-# INLINE setTrajectory #-}
-setTrajectory aid = do
+setTrajectory aid b = do
   COps{coTileSpeedup} <- getsState scops
-  b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
   case btrajectory b of
     Just (d : lv, speed) -> do
@@ -354,7 +357,8 @@ setTrajectory aid = do
         unless ((fst <$> btrajectory b2) == Just []) $  -- set in reqMelee
           execUpdAtomic $ UpdTrajectory aid (btrajectory b2) (Just (lv, speed))
       else do
-        -- Nothing from non-empty trajectories signifies obstacle hit.
+        -- @Nothing@ put in place of a non-empty trajectory signals
+        -- an obstacle hit.
         execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
         if bproj b then do
           -- Lose HP due to piercing an obstacle.
@@ -373,7 +377,8 @@ setTrajectory aid = do
                 let effect = IK.RefillHP (-2)  -- -2 is a lie to ensure display
                 execSfxAtomic $ SfxEffect (bfid b) aid effect (-1)
     Just ([], _) ->
-      -- Non-projectile actor stops flying.
+      -- Non-projectile actor stops flying (a projectile with empty trajectory
+      -- would be intercepted earlier on as dead).
       assert (not $ bproj b)
       $ execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
     _ -> error $ "Nothing trajectory" `showFailure` (aid, b)
