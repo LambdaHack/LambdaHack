@@ -37,10 +37,8 @@ install:
   - ps: $env:TIME_STRING=(get-date -UFormat "%Y-%m-%d").ToString()
   - ps: Push-AppveyorArtifact LambdaHack_dev_windows-x86_64.zip -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-x86_64.zip" -DeploymentName "win64 binaries archive"
 
-  - make test-short
-  - make benchNull
-  - cat %APPDATA%\LambdaHack\stdout.txt
-  - cat %APPDATA%\LambdaHack\stderr.txt
+  - make test-short || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
+  - make benchNull || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
 
   - mv LambdaHackTheGame LambdaHackTheGame64
   - rm -rf LambdaHackTheGameInstall
@@ -84,10 +82,8 @@ install:
   - 7z a -ssc -tzip LambdaHack_dev_windows-i686.zip LambdaHackTheGame
   - ps: Push-AppveyorArtifact LambdaHack_dev_windows-i686.zip -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-i686.zip" -DeploymentName "win32 binaries archive"
 
-  - make test-medium
-  - make nativeBench
-  - cat %APPDATA%\LambdaHack\stdout.txt
-  - cat %APPDATA%\LambdaHack\stderr.txt
+  - make test-medium || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
+  - make nativeBench || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
 
   - mv LambdaHackTheGame LambdaHackTheGame32
   - ps: '& "C:\Program Files (x86)\NSIS\makensis.exe" .windows.installer.nsi'
