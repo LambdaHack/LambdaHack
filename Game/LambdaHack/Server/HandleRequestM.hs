@@ -214,10 +214,15 @@ reqMove source dir = do
       solidSource = IK.iweight itemKind > 400
                     || IK.Fragile `elem` IK.ifeature itemKind
                        && IK.Lobable `elem` IK.ifeature itemKind
+  -- Avoid explosion extinguishing itself via its particles colliding.
+  sameBlast <- getsState $ \s tb -> IK.isBlast itemKind
+                                    && getIidKindIdServer (btrunk sb) s
+                                       == getIidKindIdServer (btrunk tb) s
   -- We start by checking actors at the target position.
   tgt <- getsState $ posToAssocs tpos lid
   case tgt of
-    (target, tb) : _ | not (bproj sb) || not (bproj tb) || solidSource -> do
+    (target, tb) : _ | not (bproj sb) || not (bproj tb)
+                       || solidSource && not (sameBlast tb)-> do
       -- A projectile is too small and insubstantial to hit another projectile,
       -- unless it's large enough or tends to explode (fragile and lobable).
       -- The actor in the way is visible or not; server sees him always.
