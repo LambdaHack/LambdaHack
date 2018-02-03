@@ -521,7 +521,7 @@ createActorUI born aid body = do
       factionD <- getsState sfactionD
       let (bname, bpronoun) =
             if | bproj body ->
-                 let adj | length (btrajectory body) < 5 = "falling"
+                 let adj | length (btrajectory body) < 4 = "falling"
                          | otherwise = "flying"
                      -- Not much detail about a fast flying item.
                      (_, _, object1, object2) =
