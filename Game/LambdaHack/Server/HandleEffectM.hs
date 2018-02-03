@@ -1402,12 +1402,12 @@ effectTransformContainer execSfx symbol c m = do
 
 effectApplyPerfume :: MonadServerAtomic m => m () -> ActorId -> m UseResult
 effectApplyPerfume execSfx target = do
-  execSfx
   tb <- getsState $ getActorBody target
   Level{lsmell} <- getLevel $ blid tb
-  let f p fromSm =
-        execUpdAtomic $ UpdAlterSmell (blid tb) p fromSm timeZero
-  mapWithKeyM_ f lsmell
+  unless (EM.null lsmell) $ do
+    execSfx
+    let f p fromSm = execUpdAtomic $ UpdAlterSmell (blid tb) p fromSm timeZero
+    mapWithKeyM_ f lsmell
   return UseUp  -- even if no smell before, the perfume is noticeable
 
 -- ** OneOf
