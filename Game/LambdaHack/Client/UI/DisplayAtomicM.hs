@@ -1017,6 +1017,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Teleport t | Dice.maxDice t <= 9 -> actorVerbMU aid bUI "blink"
         IK.Teleport{} -> actorVerbMU aid bUI "teleport"
         IK.CreateItem{} -> return ()
+        IK.DropItem{} | bproj b -> return ()
         IK.DropItem _ _ COrgan _ -> return ()
         IK.DropItem{} -> actorVerbMU aid bUI "be stripped"
         IK.PolyItem -> do
@@ -1062,9 +1063,13 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           subject <- partActorLeader aid bUI
           let verb = "detect nearby secrets"
           displayMore ColorFull $ makeSentence [MU.SubjectVerbSg subject verb]
+        IK.SendFlying{} | bproj b -> return ()
         IK.SendFlying{} -> actorVerbMU aid bUI "be sent flying"
+        IK.PushActor{} | bproj b -> return ()
         IK.PushActor{} -> actorVerbMU aid bUI "be pushed"
+        IK.PullActor{} | bproj b -> return ()
         IK.PullActor{} -> actorVerbMU aid bUI "be pulled"
+        IK.DropBestWeapon | bproj b -> return ()
         IK.DropBestWeapon -> actorVerbMU aid bUI "be disarmed"
         IK.ActivateInv{} -> return ()
         IK.ApplyPerfume ->
@@ -1242,11 +1247,13 @@ strike catch source target iid cstore = assert (source /= target) $ do
                  else ""
         msg | bhp tb <= 0  -- incapacitated, so doesn't actively block
               || hurtMult > 90  -- at most minor armor
-              || IK.idamage itemKind == 0 = makeSentence $
-              [MU.SubjectVerbSg spart verb, tpart, subtly]
-              ++ if bproj sb
-                 then []
-                 else ["with", partItemChoice itemFull kit]
+              || bproj sb && bproj tb  -- too much spam when explosions collide
+              || IK.idamage itemKind == 0 =
+              makeSentence $
+                [MU.SubjectVerbSg spart verb, tpart, subtly]
+                ++ if bproj sb
+                   then []
+                   else ["with", partItemChoice itemFull kit]
             | otherwise =
           -- This sounds funny when the victim falls down immediately,
           -- but there is no easy way to prevent that. And it's consistent.
