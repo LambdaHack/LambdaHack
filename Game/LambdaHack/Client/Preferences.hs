@@ -123,6 +123,7 @@ effectToBenefit cops fact eff =
     IK.DetectItem radius -> (fromIntegral radius, 0)
     IK.DetectExit radius -> (fromIntegral radius, 0)
     IK.DetectHidden radius -> (fromIntegral radius, 0)
+    IK.DetectEmbed radius -> (fromIntegral radius, 0)
     IK.SendFlying _ -> (1, -10)  -- very context dependent, but it's better
     IK.PushActor _ -> (1, -10)   -- to be the one that decides and not the one
     IK.PullActor _ -> (1, -10)   -- that is interrupted in the middle of fleeing

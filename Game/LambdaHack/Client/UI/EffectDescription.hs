@@ -98,6 +98,8 @@ effectToSuffix detailLevel effect =
     DetectExit radius -> "of exit detection" <+> wrapInParens (tshow radius)
     DetectHidden radius ->
       "of secrets detection" <+> wrapInParens (tshow radius)
+    DetectEmbed radius ->
+      "of interesting terrain detection" <+> wrapInParens (tshow radius)
     SendFlying tmod -> "of impact" <+> tmodToSuff "" tmod
     PushActor tmod -> "of pushing" <+> tmodToSuff "" tmod
     PullActor tmod -> "of pulling" <+> tmodToSuff "" tmod

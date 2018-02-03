@@ -1063,6 +1063,10 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           subject <- partActorLeader aid bUI
           let verb = "detect nearby secrets"
           displayMore ColorFull $ makeSentence [MU.SubjectVerbSg subject verb]
+        IK.DetectEmbed{} -> do
+          subject <- partActorLeader aid bUI
+          let verb = "detect nearby interesting terrain"
+          displayMore ColorFull $ makeSentence [MU.SubjectVerbSg subject verb]
         IK.SendFlying{} | bproj b -> return ()
         IK.SendFlying{} -> actorVerbMU aid bUI "be sent flying"
         IK.PushActor{} | bproj b -> return ()

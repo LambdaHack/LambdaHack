@@ -15,7 +15,7 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectParalyze, effectInsertMove, effectTeleport, effectCreateItem
   , effectDropItem, allGroupItems, effectPolyItem, effectIdentify, identifyIid
   , effectDetect, effectDetectX, effectDetectActor, effectDetectItem
-  , effectDetectExit, effectDetectHidden
+  , effectDetectExit, effectDetectHidden, effectDetectEmbed
   , effectSendFlying, sendFlyingVector, effectDropBestWeapon
   , effectActivateInv, effectTransformContainer, effectApplyPerfume, effectOneOf
   , effectRecharging, effectTemporary, effectComposite
@@ -300,6 +300,7 @@ effectSem source target iid c recharged periodic effect = do
     IK.DetectItem radius -> effectDetectItem execSfx radius target
     IK.DetectExit radius -> effectDetectExit execSfx radius target
     IK.DetectHidden radius -> effectDetectHidden execSfx radius target pos
+    IK.DetectEmbed radius -> effectDetectEmbed execSfx radius target
     IK.SendFlying tmod ->
       effectSendFlying execSfx tmod source target Nothing
     IK.PushActor tmod ->
@@ -1278,6 +1279,16 @@ effectDetectHidden execSfx radius target pos = do
         mapM_ f l
         return $! not $ null l
   effectDetectX predicate action execSfx radius target
+
+-- ** DetectEmbed
+
+effectDetectEmbed :: MonadServerAtomic m
+                  => m () -> Int -> ActorId -> m UseResult
+effectDetectEmbed execSfx radius target = do
+  b <- getsState $ getActorBody target
+  Level{lembed} <- getLevel $ blid b
+  effectDetectX (`EM.member` lembed) (const $ return False)
+                execSfx radius target
 
 -- ** SendFlying
 

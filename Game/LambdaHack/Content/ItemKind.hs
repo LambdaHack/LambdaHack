@@ -101,6 +101,7 @@ data Effect =
   | DetectItem Int        -- ^ detect items on the map in the given radius
   | DetectExit Int        -- ^ detect exits on the map in the given radius
   | DetectHidden Int      -- ^ detect hidden tiles on the map in the radius
+  | DetectEmbed Int       -- ^ detect embedded items on the map in the radius
   | SendFlying ThrowMod   -- ^ send an actor flying (push or pull, depending)
   | PushActor ThrowMod    -- ^ push an actor
   | PullActor ThrowMod    -- ^ pull an actor

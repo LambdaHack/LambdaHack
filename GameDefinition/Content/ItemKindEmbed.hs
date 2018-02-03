@@ -127,7 +127,7 @@ signboardExit = ItemKind
 signboardMap = signboardExit
   { iname    = "signboard with a map"
   , ifreq    = [("signboard", 20)]
-  , ieffects = [Detect 10]
+  , ieffects = [DetectEmbed 12]
   , idesc    = ""
   }
 fireSmall = ItemKind

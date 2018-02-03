@@ -710,7 +710,7 @@ scroll4 = scrollTemplate
   , icount   = 1 `d` 4
   , irarity  = [(1, 14)]
   , ieffects = [OneOf [ Teleport 5, Paralyze 10, InsertMove 10
-                      , DetectActor 20, DetectItem 20 ]]
+                      , DetectEmbed 12, DetectItem 20 ]]
   }
 scroll5 = scrollTemplate
   -- needs to be common to show at least a portion of effects
