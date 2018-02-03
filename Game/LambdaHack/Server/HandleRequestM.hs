@@ -284,6 +284,8 @@ reqMelee source target iid cstore = do
           upds <- generalMoveItem True iid2 k (CActor target CEqp)
                                               (CActor source CInv)
           mapM_ execUpdAtomic upds
+          itemFull <- getsState $ itemToFull iid2
+          discoverIfMinorEffects (CActor source CInv) iid2 (itemKindId itemFull)
         err -> error $ "" `showFailure` err
       -- Let the caught missile vanish, but don't remove its trajectory
       -- so that it doesn't pretend to be a non-projectile.
@@ -577,11 +579,11 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
    | (fromCStore == CSha || toCStore == CSha) && not calmE ->
      execFailure aid req ItemNotCalm
    | otherwise -> do
-    itemFull <- getsState $ itemToFull iid
-    when (fromCStore == CGround) $  -- pick up
-      discoverIfMinorEffects fromC iid (itemKindId itemFull)
     upds <- generalMoveItem True iid k fromC toC
     mapM_ execUpdAtomic upds
+    itemFull <- getsState $ itemToFull iid
+    when (fromCStore == CGround) $  -- pick up
+      discoverIfMinorEffects toC iid (itemKindId itemFull)
     -- Reset timeout for equipped periodic items and also for items
     -- moved out of the shared stash, in which timeouts are not consistently
     -- wrt some local time, because actors from many levels put items there
