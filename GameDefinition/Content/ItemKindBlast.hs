@@ -355,7 +355,7 @@ glassPiece = ItemKind
   }
 focusedGlass = glassPiece  -- when blowing up windows
   { ifreq    = [("focused glass hail", 1)]
-  , icount   = 8
+  , icount   = 4
   , ieffects = [RefillHP (-1), OnSmash $ Explode "glass hail"]
   , ifeature = [toLinger 0, Fragile, Blast]  -- 0 steps, 1 turn
   }
