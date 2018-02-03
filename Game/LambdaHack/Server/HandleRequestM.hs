@@ -206,21 +206,22 @@ reqMove :: MonadServerAtomic m => ActorId -> Vector -> m ()
 reqMove source dir = do
   COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
+  itemKind <- getsState $ getIidKindServer (btrunk sb)
   let lid = blid sb
   lvl <- getLevel lid
   let spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
-  isSolidActor <- getsState $ \s b ->
-    let features = IK.ifeature $ getIidKindServer (btrunk b) s
-    in not (bproj b)
-       || IK.Fragile `elem` features && IK.Lobable `elem` features
+      solidSource = IK.iweight itemKind > 400
+                    || IK.Fragile `elem` IK.ifeature itemKind
+                       && IK.Lobable `elem` IK.ifeature itemKind
   -- We start by checking actors at the target position.
   tgt <- getsState $ posToAssocs tpos lid
   case tgt of
-    (target, tb) : _ | isSolidActor sb || isSolidActor tb -> do
-      -- Projectiles are too small to hit each other, unless fragile.
+    (target, tb) : _ | not (bproj sb) || not (bproj tb) || solidSource -> do
+      -- A projectile is too small and insubstantial to hit another projectile,
+      -- unless it's large enough or tends to explode (fragile and lobable).
       -- The actor in the way is visible or not; server sees him always.
-      -- Here the only weapon of projectiles is picked, too.
+      -- Below the only weapon (the only item) of projectiles is picked.
       mweapon <- pickWeaponServer source
       case mweapon of
         Nothing -> reqWait source
