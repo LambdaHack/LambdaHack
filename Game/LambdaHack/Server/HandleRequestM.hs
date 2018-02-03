@@ -295,12 +295,19 @@ reqMelee source target iid cstore = do
       -- If any effects and aspects, this is also where they are identified.
       -- Here also the melee damage is applied, before any effects are.
       meleeEffectAndDestroy source target iid c
+      let hardTarget = not (bproj tb)
+                       || IK.idamage itemKind /= 0
+                       || IK.iweight itemKind > 400
+                       || IK.Fragile `elem` IK.ifeature itemKind
+                          && IK.Lobable `elem` IK.ifeature itemKind
       sb2 <- getsState $ getActorBody source
       case btrajectory sb2 of
-        Just (tra, speed) | not $ null tra -> do
+        Just (tra, speed) | not (null tra) && hardTarget -> do
           -- Deduct a hitpoint for a pierce of a projectile
           -- or due to a hurled actor colliding with another.
-          -- Don't deduct if no pierce, to prevent spam. Never kill in this way.
+          -- There is no damage from pierce if the target projectile
+          -- is not hard enough. Don't deduct if no pierce, to prevent spam.
+          -- Never kill in this way.
           when (bhp sb2 > oneM) $ do
             execUpdAtomic $ UpdRefillHP source minusM
             unless (bproj sb2) $ do
@@ -312,6 +319,7 @@ reqMelee source target iid cstore = do
           when (not (bproj sb2) || bhp sb2 <= oneM) $
             -- Non-projectiles can't pierce, so terminate their flight.
             -- If projectile has too low HP to pierce, ditto.
+            -- Only hard targets stop flying actors.
             execUpdAtomic
             $ UpdTrajectory source (btrajectory sb2) (Just ([], speed))
         _ -> return ()
