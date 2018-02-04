@@ -298,6 +298,9 @@ handleTrajectories lid fid = do
   -- If the actor no longer fulfills the criteria above, @hTrajectories@
   -- ignores it. If it starts fulfilling them, the recursive call
   -- to @handleTrajectories@ will detect that and process him later on.
+  -- If the actor is no longer on the level or no longer belongs
+  -- to the faction, it is nevertheless processed without a problem.
+  -- We are guaranteed the actor still exists.
   mapM_ (hTrajectories . fst . snd) l
   unless (null l) $ handleTrajectories lid fid  -- for speeds > tile/clip
 
@@ -388,22 +391,30 @@ handleActors :: (MonadServerAtomic m, MonadServerReadRequest m)
 handleActors lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
-  factionD <- getsState sfactionD
-  s <- getState
-  -- Leader acts first, so that UI leader can save&exit before state changes.
-  let notLeader (aid, b) = Just aid /= gleader (factionD EM.! bfid b)
-      l = sortBy (Ord.comparing notLeader)
+  getActorB <- getsState $ flip getActorBody
+  let l = map fst
           $ filter (\(_, b) -> isNothing (btrajectory b) && bhp b > 0)
-          $ map (\(a, _) -> (a, getActorBody a s))
+          $ map (\(a, _) -> (a, getActorB a))
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
-  hActors fid l
+  -- The actor body obtained above may be outdated before @hActors@
+  -- call gets to it (due to other actors on the list acting),
+  -- so it's only used to decide which actors are processed in this call.
+  -- If the actor is no longer on the level or no longer belongs
+  -- to the faction, it is nevertheless processed without a problem
+  -- (the client may act wrt slightly outdated Perception and that's all).
+  -- We are guaranteed the actor still exists.
+  mleader <- getsState $ gleader . (EM.! fid) . sfactionD
+  -- Leader acts first, so that UI leader can save&exit before state changes.
+  hActors $ case mleader of
+    Just aid | aid `elem` l -> aid : delete aid l
+    _ -> l
 
 hActors :: forall m. (MonadServerAtomic m, MonadServerReadRequest m)
-        => FactionId -> [(ActorId, Actor)] -> m Bool
-hActors _ [] = return False
-hActors _fid as@((aid, body) : rest) = do
-  let side = bfid body
-      !_A = assert (side == _fid) ()
+        => [ActorId] -> m Bool
+hActors [] = return False
+hActors as@(aid : rest) = do
+  b1 <- getsState $ getActorBody aid
+  let side = bfid b1
   fact <- getsState $ (EM.! side) . sfactionD
   squit <- getsServer squit
   let mleader = gleader fact
@@ -447,10 +458,10 @@ hActors _fid as@((aid, body) : rest) = do
       -- he will not act again this clip, only next clip.
       -- Clip is small, so not a big deal and it's faster and avoids
       -- complete game time freezes, e.g., due to an exploit.
-      if nonWaitMove then return True else hActors side rest
+      if nonWaitMove then return True else hActors rest
     Nothing -> do
       swriteSave <- getsServer swriteSave
-      if swriteSave then return False else hActors side as
+      if swriteSave then return False else hActors as
 
 restartGame :: MonadServerAtomic m
             => m () -> m () -> Maybe (GroupName ModeKind) -> m ()
