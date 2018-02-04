@@ -42,6 +42,14 @@ debugResponse fid resp = case resp of
   RespUpdAtomic _ cmd@UpdResume{} -> debugPlain fid "RespUpdAtomic" cmd
   RespUpdAtomic _ cmd@UpdRestart{} -> debugPlain fid "RespUpdAtomic" cmd
   RespUpdAtomic _ cmd@UpdSpotTile{} -> debugPlain fid "RespUpdAtomic" cmd
+  RespUpdAtomic _ cmd@(UpdCreateActor aid _ _) -> do
+    d <- debugAid aid "UpdCreateActor"
+    serverPrint d
+    debugPretty fid "RespUpdAtomic" cmd
+  RespUpdAtomic _ cmd@(UpdSpotActor aid _ _) -> do
+    d <- debugAid aid "UpdSpotActor"
+    serverPrint d
+    debugPretty fid "RespUpdAtomic" cmd
   RespUpdAtomic _ cmd -> debugPretty fid "RespUpdAtomic" cmd
   RespUpdAtomicNoState cmd@UpdPerception{} ->
     debugPlain fid "RespUpdAtomicNoState" cmd
