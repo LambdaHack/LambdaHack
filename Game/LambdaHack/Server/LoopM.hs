@@ -287,7 +287,8 @@ handleTrajectories lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
   s <- getState
-  let l = sortBy (Ord.comparing fst)
+  let l = map (fst . snd)
+          $ sortBy (Ord.comparing fst)
           $ filter (\(_, (_, b)) -> isJust (btrajectory b) || bhp b <= 0)
           $ map (\(a, atime) -> (atime, (a, getActorBody a s)))
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
@@ -301,7 +302,7 @@ handleTrajectories lid fid = do
   -- If the actor is no longer on the level or no longer belongs
   -- to the faction, it is nevertheless processed without a problem.
   -- We are guaranteed the actor still exists.
-  mapM_ (hTrajectories . fst . snd) l
+  mapM_ hTrajectories l
   unless (null l) $ handleTrajectories lid fid  -- for speeds > tile/clip
 
 hTrajectories :: MonadServerAtomic m => ActorId -> m ()
@@ -392,9 +393,10 @@ handleActors lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
   getActorB <- getsState $ flip getActorBody
-  let l = map fst
-          $ filter (\(_, b) -> isNothing (btrajectory b) && bhp b > 0)
-          $ map (\(a, _) -> (a, getActorB a))
+  let l = map (fst . snd)
+          $ sortBy (Ord.comparing fst)
+          $ filter (\(_, (_, b)) -> isNothing (btrajectory b) && bhp b > 0)
+          $ map (\(a, atime) -> (atime, (a, getActorB a)))
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
   -- The actor body obtained above may be outdated before @hActors@
   -- call gets to it (due to other actors on the list acting),
