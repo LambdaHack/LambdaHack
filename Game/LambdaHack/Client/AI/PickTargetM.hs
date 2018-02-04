@@ -57,7 +57,7 @@ refreshTarget (aid, body) = do
                     `blame` "AI tries to move an enemy actor"
                     `swith` (aid, body, side)) ()
   let !_A = assert (isNothing (btrajectory body) && not (bproj body)
-                    `blame` "AI gets to manually move its projectiles"
+                    `blame` "AI gets to manually move its trajectory actors"
                     `swith` (aid, body, side)) ()
   stratTarget <- targetStrategy aid
   if nullStrategy stratTarget then do

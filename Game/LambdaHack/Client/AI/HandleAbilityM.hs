@@ -62,8 +62,8 @@ pickAction aid retry = do
   let !_A = assert (bfid body == side
                     `blame` "AI tries to move enemy actor"
                     `swith` (aid, bfid body, side)) ()
-  let !_A = assert (isNothing (btrajectory body)
-                    `blame` "AI gets to manually move its projectiles"
+  let !_A = assert (isNothing (btrajectory body) && not (bproj body)
+                    `blame` "AI gets to manually move its trajectory actors"
                     `swith` (aid, bfid body, side)) ()
   stratAction <- actionStrategy aid retry
   let bestAction = bestVariant stratAction

@@ -590,7 +590,7 @@ destroyActorUI destroy aid b = do
             TPoint (TEnemyPos a permit) (blid b) (bpos b)
         _ -> tgt
   modifySession $ \sess -> sess {sxhair = affect $ sxhair sess}
-  when (isNothing $ btrajectory b) $
+  unless (bproj b) $
     modifySession $ \sess -> sess {slastLost = ES.insert aid $ slastLost sess}
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD

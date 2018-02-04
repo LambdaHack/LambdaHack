@@ -361,11 +361,11 @@ setTrajectory aid b = do
         unless ((fst <$> btrajectory b2) == Just []) $  -- set in reqMelee
           execUpdAtomic $ UpdTrajectory aid (btrajectory b2) (Just (lv, speed))
       else do
-        -- @Nothing@ put in place of a non-empty trajectory signals
-        -- an obstacle hit.
+        -- @Nothing@ trajectory of a projectile signals an obstacle hit.
+        -- The second call of @actorDying@ above will catch the dead projectile.
         execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
         if bproj b then do
-          -- Lose HP due to piercing an obstacle.
+          -- Lose HP due to hitting an obstacle.
           when (bhp b > oneM) $ do
             execUpdAtomic $ UpdRefillHP aid minusM
         else do
@@ -417,6 +417,7 @@ hActors [] = return False
 hActors as@(aid : rest) = do
   b1 <- getsState $ getActorBody aid
   let side = bfid b1
+      !_A = assert (not $ bproj b1) ()
   fact <- getsState $ (EM.! side) . sfactionD
   squit <- getsServer squit
   let mleader = gleader fact

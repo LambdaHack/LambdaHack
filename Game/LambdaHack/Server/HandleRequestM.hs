@@ -288,7 +288,7 @@ reqMelee source target iid cstore = do
           discoverIfMinorEffects (CActor source CInv) iid2 (itemKindId itemFull)
         err -> error $ "" `showFailure` err
       -- Let the caught missile vanish, but don't remove its trajectory
-      -- so that it doesn't pretend to be a non-projectile.
+      -- so that it doesn't pretend to have hit a wall.
       case btrajectory tb of
         btra@(Just (l, speed)) | not $ null l ->
           execUpdAtomic $ UpdTrajectory target btra $ Just ([], speed)
