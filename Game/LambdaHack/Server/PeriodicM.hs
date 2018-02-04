@@ -188,10 +188,10 @@ overheadActorTime :: MonadServerAtomic m => FactionId -> LevelId -> m ()
 overheadActorTime fid lid = do
   actorTimeFid <- getsServer $ (EM.! fid) . sactorTime
   let actorTimeLid = actorTimeFid EM.! lid
-  s <- getState
+  getActorB <- getsState $ flip getActorBody
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
   let f !aid !time =
-        let body = getActorBody aid s
+        let body = getActorB aid
         in if isNothing (btrajectory body)
               && bhp body > 0  -- speed up all-move-at-once carcass removal
               && Just aid /= mleader  -- leader fast, for UI to be fast

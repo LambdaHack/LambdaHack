@@ -286,11 +286,11 @@ handleTrajectories :: MonadServerAtomic m => LevelId -> FactionId -> m ()
 handleTrajectories lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
-  s <- getState
+  getActorB <- getsState $ flip getActorBody
   let l = map (fst . snd)
           $ sortBy (Ord.comparing fst)
           $ filter (\(_, (_, b)) -> isJust (btrajectory b) || bhp b <= 0)
-          $ map (\(a, atime) -> (atime, (a, getActorBody a s)))
+          $ map (\(a, atime) -> (atime, (a, getActorB a)))
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
   -- The actor body obtained above may be outdated before @hTrajectories@
   -- call (due to other actors following their trajectories),
