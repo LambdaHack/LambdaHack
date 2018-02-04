@@ -442,7 +442,7 @@ rhinoceros = ItemKind
   , ifeature = [Unique, Durable]
   , idesc    = "The last of its kind. Blind with rage. Charges at deadly speed."
   , ikit     = [ ("armored skin", COrgan), ("eye 2", COrgan)
-               , ("horn", COrgan), ("snout", COrgan)
+               , ("rhino horn", COrgan), ("snout", COrgan)
                , ("animal brain", COrgan) ]
   }
 
