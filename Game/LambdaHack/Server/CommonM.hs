@@ -463,9 +463,9 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
       withTrunk = b {bweapon = if IK.isMelee itemKind then 1 else 0}
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
-  execUpdAtomic $ UpdCreateActor aid (tweakBody withTrunk) [(trunkId, itemBase)]
   modifyServer $ \ser ->
     ser {sactorTime = updateActorTime bfid lid aid time $ sactorTime ser}
+  execUpdAtomic $ UpdCreateActor aid (tweakBody withTrunk) [(trunkId, itemBase)]
   -- Create, register and insert all initial actor items, including
   -- the bonus health organs from difficulty setting.
   forM_ (healthOrgans ++ map (Nothing,) (IK.ikit itemKind))

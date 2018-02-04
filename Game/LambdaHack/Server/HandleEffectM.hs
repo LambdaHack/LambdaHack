@@ -562,10 +562,10 @@ dominateFid fid target = do
                 , bhp = min (xM $ IA.aMaxHP ar) $ bhp tb + xM 10
                 , borgan = borganNoImpression}
   aisNew <- getsState $ getCarriedAssocsAndTrunk bNew
-  execUpdAtomic $ UpdSpotActor target bNew aisNew
   modifyServer $ \ser ->
     ser {sactorTime = updateActorTime fid (blid tb) target btime
                       $ sactorTime ser}
+  execUpdAtomic $ UpdSpotActor target bNew aisNew
   factionD <- getsState sfactionD
   let inGame fact2 = case gquit fact2 of
         Nothing -> True
@@ -816,11 +816,7 @@ switchLevels2 lidNew posNew (aid, bOld) btime_bOld mlead = do
                   , borgan = rebaseTimeout $ borgan bOld
                   , beqp = rebaseTimeout $ beqp bOld
                   , binv = rebaseTimeout $ binv bOld }
-  -- Materialize the actor at the new location.
-  -- Onlookers see somebody appear suddenly. The actor himself
-  -- sees new surroundings and has to reset his perception.
   ais <- getsState $ getCarriedAssocsAndTrunk bOld
-  execUpdAtomic $ UpdCreateActor aid bNew ais
   -- Sync the actor time with the level time.
   -- This time shift may cause a double move of a foe of the same speed,
   -- but this is OK --- the foe didn't have a chance to move
@@ -829,6 +825,10 @@ switchLevels2 lidNew posNew (aid, bOld) btime_bOld mlead = do
   modifyServer $ \ser ->
     ser {sactorTime = updateActorTime (bfid bNew) lidNew aid btime
                       $ sactorTime ser}
+  -- Materialize the actor at the new location.
+  -- Onlookers see somebody appear suddenly. The actor himself
+  -- sees new surroundings and has to reset his perception.
+  execUpdAtomic $ UpdCreateActor aid bNew ais
   case mlead of
     Nothing -> return ()
     Just leader -> supplantLeader side leader
