@@ -204,18 +204,19 @@ endClip updatePerFid = do
   let clipN = time `timeFit` timeClip
       clipInTurn = let r = timeTurn `timeFit` timeClip
                    in assert (r >= 5) r
-  validArenas <- getsServer svalidArenas
-  unless validArenas $ do
-    sarenas <- arenasForLoop
-    modifyServer $ \ser -> ser {sarenas, svalidArenas = True}
-  arenas <- getsServer sarenas
   -- I need to send time updates, because I can't add time to each command,
   -- because I'd need to send also all arenas, which should be updated,
   -- and this is too expensive data for each, e.g., projectile move.
   -- I send even if nothing changes so that UI time display can progress.
+  -- Possibly @arenas@ are invalid here, but all moves were performed according
+  -- to this value, so time should be replenished also according to it as well.
+  -- This is crucial, because tiny time discrepancies can accumulate
+  -- magnified by hunders of actors that share the clip slots due to the
+  -- restriction that at most 1 faction member acts each clip.
+  arenas <- arenasForLoop
+  execUpdAtomic $ UpdAgeGame arenas
   quit <- getsServer squit
   unless quit $ do
-    execUpdAtomic $ UpdAgeGame arenas
     -- Perform periodic dungeon maintenance.
     when (clipN `mod` rleadLevelClips == 0) leadLevelSwitch
     case clipN `mod` clipInTurn of
@@ -228,6 +229,13 @@ endClip updatePerFid = do
         -- Add monsters each turn, not each clip.
         spawnMonster
       _ -> return ()
+  -- Possibly a leader change due to @leadLevelSwitch@, so update arenas here
+  -- for 100% accuracy at least at the start of actor moves, before they
+  -- change leaders as part of the moves.
+  validArenas <- getsServer svalidArenas
+  unless validArenas $ do
+    arenasNew <- arenasForLoop
+    modifyServer $ \ser -> ser {sarenas = arenasNew, svalidArenas = True}
   -- Update all perception for visual feedback and to make sure
   -- saving a game doesn't affect gameplay (by updating perception).
   factionD <- getsState sfactionD
