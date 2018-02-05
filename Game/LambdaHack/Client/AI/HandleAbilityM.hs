@@ -757,13 +757,12 @@ applyItem aid applyGroup = do
               -- be considered at all, given that it's the only effect.
               -- We don't try to intercept the case of many effects.
               let dropsGrps = IK.getDropOrgans itemKind
-                  hasDropOrgan = not $ null dropsGrps
-                  f eff = [eff | IK.forApplyEffect eff]
-              in hasDropOrgan
+              in not (null dropsGrps)
                  && (null hasGrps
                      || toGroupName "temporary condition" `notElem` dropsGrps
                         && null (dropsGrps `intersect` hasGrps))
-                 && length (concatMap f $ IK.ieffects itemKind) == 1
+                 && length (filter IK.forApplyEffect $ IK.ieffects itemKind)
+                    == length dropsGrps
             durable = IK.Durable `elem` IK.ifeature itemKind
             benR = ceiling benApply
                    * if cstore == CEqp && not durable
