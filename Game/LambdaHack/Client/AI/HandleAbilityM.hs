@@ -717,10 +717,13 @@ applyItem aid applyGroup = do
       stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
   benList <- benAvailableItems aid stores
   getKind <- getsState $ flip getIidKind
-  let hasGrps = mapMaybe (\iid ->
+  discoBenefit <- getsClient sdiscoBenefit
+  let myBadGrps = mapMaybe (\iid ->
         let itemKind = getKind iid
-        in if IK.isTmpCondition itemKind
-           then Just $ toGroupName $ IK.iname itemKind
+        in if benInEqp (discoBenefit EM.! iid)
+           then assert (IK.isTmpCondition itemKind)
+                $ Just $ toGroupName $ IK.iname itemKind
+             -- conveniently, @iname@ matches @ifreq@
            else Nothing) (EM.keys $ borgan b)
       itemLegal itemKind =
         let -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.
@@ -750,17 +753,18 @@ applyItem aid applyGroup = do
       coeff CSha = 1
       fTool benAv@(Benefit{benApply}, cstore, iid, ItemFull{itemKind}, _) =
         let onlyVoidlyDropsOrgan =
-              -- We check if the only effect of the item is that it drops a tmp
-              -- organ that we don't have. If so, item should not be applied.
+              -- We check if the only effect of the item is that it drops
+              -- tmp conditions that we don't have or that are not bad.
+              -- If so, item should not be applied.
               -- This assumes the organ dropping is beneficial and so worth
               -- saving for the future, for otherwise the item would not
               -- be considered at all, given that it's the only effect.
-              -- We don't try to intercept the case of many effects.
+              -- We don't try to intercept the case of varied effects.
               let dropsGrps = IK.getDropOrgans itemKind
               in not (null dropsGrps)
-                 && (null hasGrps
+                 && (null myBadGrps
                      || toGroupName "temporary condition" `notElem` dropsGrps
-                        && null (dropsGrps `intersect` hasGrps))
+                        && null (dropsGrps `intersect` myBadGrps))
                  && length (filter IK.forApplyEffect $ IK.ieffects itemKind)
                     == length dropsGrps
             durable = IK.Durable `elem` IK.ifeature itemKind
