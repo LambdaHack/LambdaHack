@@ -96,6 +96,8 @@ instance Hashable Feature
 
 instance NFData Feature
 
+-- | A lot of tabulated maps from tile kind identifier to a property
+-- of the tile kind.
 data TileSpeedup = TileSpeedup
   { isClearTab        :: Tab Bool
   , isLitTab          :: Tab Bool
@@ -121,7 +123,8 @@ instance NFData TileSpeedup
 -- but with growing cache sizes they may as well turn out faster at some point.
 -- The advantage of vectors are exposed internals, in particular unsafe
 -- indexing. Also, in JS, bool arrays are obviously not packed.
-newtype Tab a = Tab (U.Vector a)  -- morally indexed by @ContentId a@
+-- | A map morally indexed by @ContentId TileKind@.
+newtype Tab a = Tab (U.Vector a)
   deriving Generic
 
 instance NFData (Tab a)
