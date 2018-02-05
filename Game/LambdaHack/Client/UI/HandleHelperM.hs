@@ -34,6 +34,7 @@ import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
@@ -234,6 +235,7 @@ itemOverlay lSlots lid bag = do
   factionD <- getsState sfactionD
   combEqp <- getsState $ combinedEqp side
   combOrgan <- getsState $ combinedOrgan side
+  discoBenefit <- getsClient sdiscoBenefit
   let !_A = assert (all (`elem` EM.elems lSlots) (EM.keys bag)
                     `blame` (lid, bag, lSlots)) ()
       markEqp iid t = if iid `EM.member` combEqp || iid `EM.member` combOrgan
@@ -244,7 +246,14 @@ itemOverlay lSlots lid bag = do
           Nothing -> Nothing
           Just kit@(k, _) ->
             let itemFull = itemToF iid
-                colorSymbol = viewItem itemFull
+                colorSymbol =
+                  if IK.isTmpCondition $ itemKind itemFull
+                  then let color = if benInEqp (discoBenefit EM.! iid)
+                                   then Color.BrGreen
+                                   else Color.BrRed
+                       in Color.attrChar2ToW32 color
+                                               (IK.isymbol $ itemKind itemFull)
+                  else viewItem itemFull
                 phrase = makePhrase
                   [snd $ partItemWsRanged side factionD k
                                           localTime itemFull kit]
