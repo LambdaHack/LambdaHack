@@ -17,6 +17,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import           Data.Either
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Function
@@ -718,12 +719,13 @@ applyItem aid applyGroup = do
   benList <- benAvailableItems aid stores
   getKind <- getsState $ flip getIidKind
   discoBenefit <- getsClient sdiscoBenefit
-  let myBadGrps = mapMaybe (\iid ->
+  let (myBadGrps, myGoodGrps) = partitionEithers $ mapMaybe (\iid ->
         let itemKind = getKind iid
-        in if benInEqp (discoBenefit EM.! iid)
-           then assert (IK.isTmpCondition itemKind)
-                $ Just $ toGroupName $ IK.iname itemKind
-             -- conveniently, @iname@ matches @ifreq@
+        in if IK.isTmpCondition itemKind
+           then Just $ if benInEqp (discoBenefit EM.! iid)
+                       then Left $ toGroupName $ IK.iname itemKind
+                         -- conveniently, @iname@ matches @ifreq@
+                       else Right $ toGroupName $ IK.iname itemKind
            else Nothing) (EM.keys $ borgan b)
       itemLegal itemKind =
         let -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.
@@ -752,27 +754,34 @@ applyItem aid applyGroup = do
       coeff CInv = 1
       coeff CSha = 1
       fTool benAv@(Benefit{benApply}, cstore, iid, ItemFull{itemKind}, _) =
-        let onlyVoidlyDropsOrgan =
-              -- We check if the only effect of the item is that it drops
+        let wronglyDropsOrgan =
+              -- We prevent each of:
+              let dropsGrps = IK.getDropOrgans itemKind
+              in not (null dropsGrps)
+              -- 1. The only effect of the item is that it drops
               -- tmp conditions that we don't have or that are not bad.
               -- If so, item should not be applied.
               -- This assumes the organ dropping is beneficial and so worth
               -- saving for the future, for otherwise the item would not
               -- be considered at all, given that it's the only effect.
               -- We don't try to intercept the case of varied effects.
-              let dropsGrps = IK.getDropOrgans itemKind
-              in not (null dropsGrps)
-                 && (null myBadGrps
-                     || toGroupName "temporary condition" `notElem` dropsGrps
-                        && null (dropsGrps `intersect` myBadGrps))
-                 && length (filter IK.forApplyEffect $ IK.ieffects itemKind)
-                    == length dropsGrps
+                 && ((null myBadGrps
+                      || toGroupName "temporary condition" `notElem` dropsGrps
+                         && null (dropsGrps `intersect` myBadGrps))
+                     && length (filter IK.forApplyEffect $ IK.ieffects itemKind)
+                        == length dropsGrps
+              -- 2. One of the effects of the item is that it drops a good
+              -- tmp condition the actor has. We don't weight dropped
+              -- good vs bad and just forbid any mixed blessing organ drop.
+                     || not (null myGoodGrps)
+                        && toGroupName "temporary condition" `elem` dropsGrps
+                           || not (null (dropsGrps `intersect` myGoodGrps)))
             durable = IK.Durable `elem` IK.ifeature itemKind
             benR = ceiling benApply
                    * if cstore == CEqp && not durable
                      then 100000  -- must hinder currently
                      else coeff cstore
-        in if q benAv && itemLegal itemKind && not onlyVoidlyDropsOrgan
+        in if q benAv && itemLegal itemKind && not wronglyDropsOrgan
            then Just (benR, ReqApply iid cstore)
            else Nothing
       benTool = mapMaybe fTool benList

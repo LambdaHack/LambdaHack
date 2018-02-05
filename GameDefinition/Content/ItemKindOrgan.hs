@@ -418,6 +418,7 @@ impressed = armoredSkin
   , iverbHit = "confuse"
   , iweight  = 0
   , iaspects = [AddMaxCalm (-1)]  -- to help player notice on main screen
+                                  -- and to count as bad tmp condition
   , ieffects = [OnSmash $ tmpNoLonger "impressed"]  -- not @Periodic@
   , ifeature = [Fragile, Durable]  -- hack: destroy on drop
   , idesc    = ""
