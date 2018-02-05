@@ -302,6 +302,7 @@ strengthOnSmash =
 getDropOrgans :: ItemKind -> [GroupName ItemKind]
 getDropOrgans =
   let f (DropItem _ _ COrgan grp) = [grp]
+      f Impress = ["impressed"]
       f (OneOf l) = concatMap f l
       f (Recharging eff) = f eff
       f (Composite l) = concatMap f l
