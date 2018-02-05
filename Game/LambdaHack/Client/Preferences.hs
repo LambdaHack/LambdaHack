@@ -57,7 +57,7 @@ effectToBenefit cops fact eff =
                                else max (-9) (fromIntegral p)
     IK.Dominate -> (0, -300)  -- I obtained an actor with, say 10HP,
                               -- worth 200, and enemy lost him, another 100
-    IK.Impress -> (5, -50)  -- usually has no effect on self, hence low value
+    IK.Impress -> (10, -50)  -- can have effect on self, more often on others
     IK.Summon grp d ->  -- contrived by not taking into account alliances
                         -- and not checking if enemies also control that group
       let ben = Dice.meanDice d * 200  -- the new actor can have, say, 10HP
@@ -101,7 +101,7 @@ effectToBenefit cops fact eff =
       let (total, count) = recBenefit grp cops fact
       in (total / fromIntegral count, 0)
     IK.DropItem _ _ COrgan "temporary condition" ->
-      (1, -1)  -- varied, big bunch, but try to nullify it anyway
+      (20, 0)  -- save for curing own bad conditions
     IK.DropItem ngroup kcopy COrgan grp ->  -- assumed temporary
       -- Simplified: we assume actor has an average number of copies
       -- (and none have yet run out, e.g., prompt curing of poisoning)

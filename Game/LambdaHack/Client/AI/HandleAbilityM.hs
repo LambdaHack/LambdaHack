@@ -702,15 +702,23 @@ applyItem aid applyGroup = do
       permittedActor itemFull kit =
         either (const False) id
         $ permittedApply localTime skill calmE " " itemFull kit
-      q (Benefit{benInEqp, benApply}, _, _, itemFull@ItemFull{itemKind}, kit) =
+      -- Both effects tweak items, which is only situationally beneficial
+      -- and not really the best idea while in combat.
+      getTweak IK.PolyItem = True
+      getTweak IK.Identify = True
+      getTweak (IK.OneOf l) = any getTweak l
+      getTweak (IK.Recharging eff) = getTweak eff
+      getTweak (IK.Composite l) = any getTweak l
+      getTweak _ = False
+      q (Benefit{benInEqp}, _, _, itemFull@ItemFull{itemKind}, kit) =
         let freq = IK.ifreq itemKind
             durable = IK.Durable `elem` IK.ifeature itemKind
-        in benApply > 0
-           && (not benInEqp  -- can't wear, so OK to break
-               || durable  -- can wear, but can't break, even better
-               || not (IK.isMelee itemKind)  -- anything else expendable
-                  && hind itemFull)  -- hinders now, so possibly often, so away!
+        in (not benInEqp  -- can't wear, so OK to break
+            || durable  -- can wear, but can't break, even better
+            || not (IK.isMelee itemKind)  -- anything else expendable
+               && hind itemFull)  -- hinders now, so possibly often, so away!
            && permittedActor itemFull kit
+           && not (any getTweak $ IK.ieffects itemKind)
            && maybe True (<= 0) (lookup "gem" freq) -- hack for elixir of youth
       -- Organs are not taken into account, because usually they are either
       -- melee items, so harmful, or periodic, so charging between activations.
@@ -727,61 +735,44 @@ applyItem aid applyGroup = do
                          -- conveniently, @iname@ matches @ifreq@
                        else Right $ toGroupName $ IK.iname itemKind
            else Nothing) (EM.keys $ borgan b)
-      itemLegal itemKind =
-        let -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.
-            -- Don't include @OneOf@ because other effects may kill you.
-            getHP (IK.RefillHP p) | p > 0 = True
-            getHP (IK.Recharging eff) = getHP eff
-            getHP (IK.Composite l) = any getHP l
-            getHP _ = False
-            firstAidItem = any getHP $ IK.ieffects itemKind
-            -- Both effects tweak items, which is only situationally beneficial
-            -- and not really the best idea while in combat, nor interesting.
-            getTweak IK.PolyItem = True
-            getTweak IK.Identify = True
-            getTweak (IK.OneOf l) = any getTweak l
-            getTweak (IK.Recharging eff) = getTweak eff
-            getTweak (IK.Composite l) = any getTweak l
-            getTweak _ = False
-            tweakItem = any getTweak $ IK.ieffects itemKind
-        in not tweakItem
-           && if applyGroup == ApplyFirstAid
-              then firstAidItem
-              else not $ hpEnough b ar && firstAidItem
       coeff CGround = 2  -- pickup turn saved
       coeff COrgan = error $ "" `showFailure` benList
       coeff CEqp = 1
       coeff CInv = 1
       coeff CSha = 1
       fTool benAv@(Benefit{benApply}, cstore, iid, ItemFull{itemKind}, _) =
-        let wronglyDropsOrgan =
-              -- We prevent each of:
-              let dropsGrps = IK.getDropOrgans itemKind
-              in not (null dropsGrps)
-              -- 1. The only effect of the item is that it drops
-              -- tmp conditions that we don't have or that are not bad.
-              -- If so, item should not be applied.
-              -- This assumes the organ dropping is beneficial and so worth
-              -- saving for the future, for otherwise the item would not
-              -- be considered at all, given that it's the only effect.
-              -- We don't try to intercept the case of varied effects.
-                 && ((null myBadGrps
-                      || toGroupName "temporary condition" `notElem` dropsGrps
-                         && null (dropsGrps `intersect` myBadGrps))
-                     && length (filter IK.forApplyEffect $ IK.ieffects itemKind)
-                        == length dropsGrps
-              -- 2. One of the effects of the item is that it drops a good
-              -- tmp condition the actor has. We don't weight dropped
-              -- good vs bad and just forbid any mixed blessing organ drop.
-                     || not (null myGoodGrps)
-                        && toGroupName "temporary condition" `elem` dropsGrps
-                           || not (null (dropsGrps `intersect` myGoodGrps)))
+        let -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.
+            -- Don't include @OneOf@ because other effects may kill you.
+            getHP (IK.RefillHP p) | p > 0 = True
+            getHP (IK.Recharging eff) = getHP eff
+            getHP (IK.Composite l) = any getHP l
+            getHP _ = False
+            heals = any getHP $ IK.ieffects itemKind
+            dropsGrps = IK.getDropOrgans itemKind
+            dropsBadOrgans =
+              not (null myBadGrps)
+              && toGroupName "temporary condition" `elem` dropsGrps
+                 || not (null (dropsGrps `intersect` myBadGrps))
+            dropsGoodOrgans =
+              not (null myGoodGrps)
+              && toGroupName "temporary condition" `elem` dropsGrps
+                 || not (null (dropsGrps `intersect` myGoodGrps))
+            wastesDrop = null myBadGrps && not (null dropsGrps)
             durable = IK.Durable `elem` IK.ifeature itemKind
-            benR = ceiling benApply
+            situationalBenApply | dropsBadOrgans = benApply + 20
+                                | wastesDrop = benApply - 10
+                                | otherwise = benApply
+            benR = ceiling situationalBenApply
                    * if cstore == CEqp && not durable
-                     then 100000  -- must hinder currently
+                     then 1000  -- must hinder currently
                      else coeff cstore
-        in if q benAv && itemLegal itemKind && not wronglyDropsOrgan
+            canApply = situationalBenApply > 0 && case applyGroup of
+              ApplyFirstAid -> q benAv && heals
+              ApplyAll -> q benAv
+                          && not dropsGoodOrgans
+                          && (dropsBadOrgans
+                              || not (hpEnough b ar && heals))
+        in if canApply
            then Just (benR, ReqApply iid cstore)
            else Nothing
       benTool = mapMaybe fTool benList
