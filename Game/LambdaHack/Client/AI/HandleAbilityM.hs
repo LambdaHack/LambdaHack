@@ -729,8 +729,8 @@ applyItem aid applyGroup = do
            else Nothing) (EM.keys $ borgan b)
       itemLegal itemKind =
         let -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.
+            -- Don't include @OneOf@ because other effects may kill you.
             getHP (IK.RefillHP p) | p > 0 = True
-            getHP (IK.OneOf l) = any getHP l
             getHP (IK.Recharging eff) = getHP eff
             getHP (IK.Composite l) = any getHP l
             getHP _ = False

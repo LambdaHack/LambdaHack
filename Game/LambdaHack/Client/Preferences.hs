@@ -221,6 +221,8 @@ durabilityMult = avgItemLife / avgItemDelay
 -- are applied and we can't stop/restart them.
 --
 -- We assume, only one of timer and count mechanisms is present at once.
+-- We assume no organ has effect that drops its group or creates its group;
+-- otherwise we'd loop.
 organBenefit :: Double -> GroupName ItemKind -> COps -> Faction
              -> (Double, Int)
 organBenefit turnTimer grp cops@COps{coitem} fact =
@@ -235,6 +237,8 @@ organBenefit turnTimer grp cops@COps{coitem} fact =
            , pacc + p )
   in ofoldlGroup' coitem grp f (0, 0)
 
+-- We assume no item has effect that drops its group or creates its group;
+-- otherwise we'd loop.
 recBenefit :: GroupName ItemKind -> COps -> Faction -> (Double, Int)
 recBenefit grp cops@COps{coitem, coItemSpeedup} fact =
   let f (!sacc, !pacc) !p !kindId !kind =
