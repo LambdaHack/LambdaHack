@@ -126,28 +126,25 @@ arenasForLoop = do
   return $! arenas
 
 handleFidUpd :: (MonadServerAtomic m, MonadServerReadRequest m)
-             => Bool -> (FactionId -> m ()) -> FactionId -> Faction -> m Bool
+             => (FactionId -> m ()) -> FactionId -> Faction -> m ()
 {-# INLINE handleFidUpd #-}
-handleFidUpd True _ _ _ = return True
-handleFidUpd False updatePerFid fid fact = do
+handleFidUpd updatePerFid fid fact = do
   -- Update perception on all levels at once,
   -- in case a leader is changed to actor on another
   -- (possibly not even currently active) level.
+  -- This runs for all factions even if save is requiested by UI.
   updatePerFid fid
+  -- Move a single actor only. Bail out if game save requested by UI.
+  let handle [] = return ()
+      handle (lid : rest) = do
+        swriteSave <- getsServer swriteSave
+        unless swriteSave $ do
+          nonWaitMove <- handleActors lid fid
+          unless nonWaitMove $ handle rest
+  -- Start on arena with leader, if available.
   fa <- factionArena fact
   arenas <- getsServer sarenas
-  -- Move a single actor, starting on arena with leader, if available.
-  -- The boolean result says if clip was aborted (due to save, restart, etc.).
-  -- If the clip was aborted, we have the guarantee game state was not
-  -- changed and so we can save without risk of affecting gameplay.
-  let handle [] = return False
-      handle (lid : rest) = do
-        nonWaitMove <- handleActors lid fid
-        swriteSave <- getsServer swriteSave
-        if | nonWaitMove -> return False
-           | swriteSave -> return True
-           | otherwise -> handle rest
-      myArenas = case fa of
+  let myArenas = case fa of
         Just myArena -> myArena : delete myArena arenas
         Nothing -> arenas
   handle myArenas
@@ -164,20 +161,21 @@ loopUpd updConn = do
         perValid <- getsServer $ (EM.! fid) . sperValidFid
         mapM_ (\(lid, valid) -> unless valid $ updatePer fid lid)
               (EM.assocs perValid)
-      handleFid :: Bool -> (FactionId, Faction) -> m Bool
+      handleFid :: (FactionId, Faction) -> m ()
       {-# NOINLINE handleFid #-}
-      handleFid aborted (fid, fact) = handleFidUpd aborted updatePerFid fid fact
+      handleFid (fid, fact) = handleFidUpd updatePerFid fid fact
       loopUpdConn = do
         factionD <- getsState sfactionD
-        -- Start handling with the single UI faction, to safely save&exit.
-        -- Note that this hack fails if there are many UI factions
-        -- (when we reenable multiplayer). Then players will request
+        -- Start handling with the single UI faction, to safely save
+        -- or save&exit. Note that this hack fails if there are many UI
+        -- factions (when we reenable multiplayer). Then players will request
         -- save&exit and others will vote on it and it will happen
         -- after the clip has ended, not at the start.
-        aborted <- foldM handleFid False (EM.toDescList factionD)
-        unless aborted $ do
+        mapM_ handleFid $ EM.toDescList factionD
+        swriteSave <- getsServer swriteSave
+        unless swriteSave $ do
           -- Projectiles are processed last, so that the UI leader
-          -- can save&exit before the state is changed and the clip
+          -- can save before the state is changed and the clip
           -- needs to be carried through.
           arenas <- getsServer sarenas
           mapM_ (\fid -> mapM_ (`handleTrajectories` fid) arenas)
