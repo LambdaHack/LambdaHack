@@ -137,8 +137,8 @@ handleFidUpd False updatePerFid fid fact = do
   fa <- factionArena fact
   arenas <- getsServer sarenas
   -- Move a single actor, starting on arena with leader, if available.
-  -- The boolean result says if turn was aborted (due to save, restart, etc.).
-  -- If the turn was aborted, we have the guarantee game state was not
+  -- The boolean result says if clip was aborted (due to save, restart, etc.).
+  -- If the clip was aborted, we have the guarantee game state was not
   -- changed and so we can save without risk of affecting gameplay.
   let handle [] = return False
       handle (lid : rest) = do
@@ -173,11 +173,11 @@ loopUpd updConn = do
         -- Note that this hack fails if there are many UI factions
         -- (when we reenable multiplayer). Then players will request
         -- save&exit and others will vote on it and it will happen
-        -- after the turn has ended, not at the start.
+        -- after the clip has ended, not at the start.
         aborted <- foldM handleFid False (EM.toDescList factionD)
         unless aborted $ do
           -- Projectiles are processed last, so that the UI leader
-          -- can save&exit before the state is changed and the turn
+          -- can save&exit before the state is changed and the clip
           -- needs to be carried through.
           arenas <- getsServer sarenas
           mapM_ (\fid -> mapM_ (`handleTrajectories` fid) arenas)
@@ -195,6 +195,13 @@ loopUpd updConn = do
 -- | Handle the end of every clip. Do whatever has to be done
 -- every fixed number of clips, e.g., monster generation.
 -- Advance time. Perform periodic saves, if applicable.
+--
+-- This is never run if UI requested save or save&exit and it's correct,
+-- because we know nobody moved and no time was or needs to be advanced
+-- and arenas are not changed. If there was game exit,
+-- on game resume the first clip is performed with empty arenas,
+-- so arena time is not updated either and neither anybody moves,
+-- nor anything happen, but arenas are here correctly updated
 endClip :: forall m. MonadServerAtomic m => (FactionId -> m ()) -> m ()
 {-# INLINE endClip #-}
 endClip updatePerFid = do
@@ -204,19 +211,22 @@ endClip updatePerFid = do
   let clipN = time `timeFit` timeClip
       clipInTurn = let r = timeTurn `timeFit` timeClip
                    in assert (r >= 5) r
-  -- I need to send time updates, because I can't add time to each command,
-  -- because I'd need to send also all arenas, which should be updated,
-  -- and this is too expensive data for each, e.g., projectile move.
-  -- I send even if nothing changes so that UI time display can progress.
-  -- Possibly @arenas@ are invalid here, but all moves were performed according
-  -- to this value, so time should be replenished also according to it as well.
-  -- This is crucial, because tiny time discrepancies can accumulate
-  -- magnified by hunders of actors that share the clip slots due to the
-  -- restriction that at most 1 faction member acts each clip.
-  arenas <- getsServer sarenas
-  execUpdAtomic $ UpdAgeGame arenas
+  -- We don't send a lot of useless info to the client if the game has already
+  -- ended. At best wasteful, at worst the player sees strange messages.
   quit <- getsServer squit
   unless quit $ do
+    -- I need to send time updates, because I can't add time to each command,
+    -- because I'd need to send also all arenas, which should be updated,
+    -- and this is too expensive data for each, e.g., projectile move.
+    -- I send even if nothing changes so that UI time display can progress.
+    -- Possibly @arenas@ are invalid here, but all moves were performed
+    -- according to this value, so time should be replenished according
+    -- to this value as well.
+    -- This is crucial, because tiny time discrepancies can accumulate
+    -- magnified by hunders of actors that share the clip slots due to the
+    -- restriction that at most 1 faction member acts each clip.
+    arenas <- getsServer sarenas
+    execUpdAtomic $ UpdAgeGame arenas
     -- Perform periodic dungeon maintenance.
     when (clipN `mod` rleadLevelClips == 0) leadLevelSwitch
     case clipN `mod` clipInTurn of
@@ -229,21 +239,30 @@ endClip updatePerFid = do
         -- Add monsters each turn, not each clip.
         spawnMonster
       _ -> return ()
-  quit2 <- getsServer squit  -- @applyPeriodicLevel@ might have, e.g., dominated
+  -- @applyPeriodicLevel@ might have, e.g., dominated actors, ending the game.
+  -- It could not have unended the game, though.
+  quit2 <- getsServer squit
   unless quit2 $ do
     -- Possibly a leader change due to @leadLevelSwitch@, so update arenas here
     -- for 100% accuracy at least at the start of actor moves, before they
-    -- change leaders as part of the moves.
+    -- change leaders as part of their moves.
+    --
+    -- After game resume, this is the first non-vacuus computation.
+    -- Next call to @loopUpdConn@ will really moves actors and updates arena
+    -- time, so we start in exactly the same place that UI save ended in.
     validArenas <- getsServer svalidArenas
     unless validArenas $ do
       arenasNew <- arenasForLoop
       modifyServer $ \ser -> ser {sarenas = arenasNew, svalidArenas = True}
-  -- Update all perception for visual feedback and to make sure
-  -- saving a game doesn't affect gameplay (by updating perception).
-  factionD <- getsState sfactionD
-  mapM_ updatePerFid (EM.keys factionD)
-  -- Save needs to be at the end, so that restore can start at the beginning.
-  when (clipN `mod` rwriteSaveClips == 0) $ writeSaveAll False
+    -- Update all perception for visual feedback and to make sure saving
+    -- and resuming game doesn't affect gameplay (by updating perception).
+    -- Perception updates in @handleFidUpd@ are not enough, because
+    -- periodic actions could have invalidated them.
+    factionD <- getsState sfactionD
+    mapM_ updatePerFid (EM.keys factionD)
+    -- Periodic save needs to be at the end, so that restore can start
+    -- at the beginning.
+    when (clipN `mod` rwriteSaveClips == 0) $ writeSaveAll False
 
 -- | Check if the given actor is dominated and update his calm.
 manageCalmAndDomination :: MonadServerAtomic m => ActorId -> Actor -> m ()
