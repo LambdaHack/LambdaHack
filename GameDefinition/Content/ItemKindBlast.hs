@@ -133,7 +133,7 @@ spreadConcussion = ItemKind
   , idamage  = 1 `d` 1  -- only air pressure, so not as deadly as fragmentation,
                         -- but armour can't block completely with ease
   , iaspects = [AddShine 5, AddHurtMelee $ -8 * 5]
-  , ieffects = [ DropItem maxBound maxBound CEqp "common item"
+  , ieffects = [ DropItem maxBound 1 CEqp "misc armor"
                , PushActor (ThrowMod 400 25)  -- 1 step, fast; after DropItem
                    -- this produces spam for braced actors; too bad
                , DropItem 1 maxBound COrgan "temporary condition" ]

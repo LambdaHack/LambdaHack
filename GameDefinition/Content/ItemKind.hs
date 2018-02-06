@@ -220,7 +220,8 @@ net = ItemKind
   , idamage  = 2 `d` 1
   , iaspects = [AddHurtMelee $ -14 * 5]
   , ieffects = [ toOrganGameTurn "slowed" (3 + 1 `d` 3)
-               , DropItem maxBound 1 CEqp "torso armor" ]
+               , DropItem maxBound 1 CEqp "torso armor"
+               , SendFlying (ThrowMod 100 50) ]  -- make the drop painful
       -- only one of each kind is dropped, because no rubbish in this group
   , ifeature = []
   , idesc    = "A wide net with weights along the edges. Entangles armor and restricts movement."
@@ -1097,7 +1098,7 @@ armorMail = armorLeather
 gloveFencing = ItemKind
   { isymbol  = symbolMiscArmor
   , iname    = "leather glove"
-  , ifreq    = [("common item", 100), ("armor ranged", 50)]
+  , ifreq    = [("common item", 100), ("misc armor", 1), ("armor ranged", 50)]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
   , irarity  = [(5, 9), (10, 9)]
@@ -1114,7 +1115,7 @@ gloveFencing = ItemKind
   }
 gloveGauntlet = gloveFencing
   { iname    = "steel gauntlet"
-  , ifreq    = [("common item", 100)]
+  , ifreq    = [("common item", 100), ("misc armor", 1)]
   , iflavour = zipPlain [BrCyan]
   , irarity  = [(1, 9), (10, 3)]
   , iweight  = 300
@@ -1126,7 +1127,7 @@ gloveGauntlet = gloveFencing
   }
 gloveJousting = gloveFencing
   { iname    = "Tournament Gauntlet"
-  , ifreq    = [("common item", 100)]
+  , ifreq    = [("common item", 100), ("misc armor", 1)]
   , iflavour = zipFancy [BrRed]
   , irarity  = [(1, 3), (10, 3)]
   , iweight  = 3000
