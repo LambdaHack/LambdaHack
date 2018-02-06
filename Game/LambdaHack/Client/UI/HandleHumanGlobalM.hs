@@ -1423,7 +1423,7 @@ gameExitHuman :: MonadClientUI m => m ReqUI
 gameExitHuman = do
   -- Announce before the saving started, since it can take a while.
   promptAdd "Saving game. The program stops now."
-  return ReqUIGameExit
+  return ReqUIGameSaveAndExit
 
 -- * GameSave
 

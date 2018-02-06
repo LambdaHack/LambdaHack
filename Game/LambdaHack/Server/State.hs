@@ -55,8 +55,10 @@ data StateServer = StateServer
   , svalidArenas  :: Bool           -- ^ whether active arenas valid
   , srandom       :: R.StdGen       -- ^ current random generator
   , srngs         :: RNGs           -- ^ initial random generators
-  , squit         :: Bool           -- ^ exit the game loop
-  , swriteSave    :: Bool           -- ^ write savegame to a file now
+  , sbreakLoop    :: Bool           -- ^ exit game loop after clip's end;
+                                    --   usually no game save follows
+  , sbreakASAP    :: Bool           -- ^ exit game loop ASAP; usually with save
+  , swriteSave    :: Bool           -- ^ write savegame to file after loop exit
   , soptions      :: ServerOptions  -- ^ current commandline options
   , soptionsNxt   :: ServerOptions  -- ^ options for the next game
   }
@@ -93,7 +95,8 @@ emptyStateServer =
     , srandom = R.mkStdGen 42
     , srngs = RNGs { dungeonRandomGenerator = Nothing
                    , startingRandomGenerator = Nothing }
-    , squit = False
+    , sbreakLoop = False
+    , sbreakASAP = False
     , swriteSave = False
     , soptions = defServerOptions
     , soptionsNxt = defServerOptions
@@ -150,7 +153,8 @@ instance Binary StateServer where
         sfovLitLid = EM.empty
         sarenas = []
         svalidArenas = False
-        squit = False
+        sbreakLoop = False
+        sbreakASAP = False
         swriteSave = False
         soptionsNxt = defServerOptions
     return $! StateServer{..}

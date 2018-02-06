@@ -132,13 +132,16 @@ handleFidUpd updatePerFid fid fact = do
   -- Update perception on all levels at once,
   -- in case a leader is changed to actor on another
   -- (possibly not even currently active) level.
-  -- This runs for all factions even if save is requiested by UI.
+  -- This runs for all factions even if save is requested by UI.
+  -- Let players ponder new game state while the engine is busy saving.
+  -- Also, this ensures perception before game save is exactly the same
+  -- as at game resume, which is an invariant we check elsewhere.
   updatePerFid fid
-  -- Move a single actor only. Bail out if game save requested by UI.
+  -- Move a single actor only. Bail out if immediate loop break requested by UI.
   let handle [] = return ()
       handle (lid : rest) = do
-        swriteSave <- getsServer swriteSave
-        unless swriteSave $ do
+        breakASAP <- getsServer sbreakASAP
+        unless breakASAP $ do
           nonWaitMove <- handleActors lid fid
           unless nonWaitMove $ handle rest
   -- Start on arena with leader, if available.
@@ -166,24 +169,26 @@ loopUpd updConn = do
       handleFid (fid, fact) = handleFidUpd updatePerFid fid fact
       loopUpdConn = do
         factionD <- getsState sfactionD
-        -- Start handling with the single UI faction, to safely save
-        -- or save&exit. Note that this hack fails if there are many UI
+        -- Start handling actors with the single UI faction (positive ID),
+        -- to safely save/exit. Note that this hack fails if there are many UI
         -- factions (when we reenable multiplayer). Then players will request
         -- save&exit and others will vote on it and it will happen
         -- after the clip has ended, not at the start.
         mapM_ handleFid $ EM.toDescList factionD
-        swriteSave <- getsServer swriteSave
-        unless swriteSave $ do
-          -- Projectiles are processed last, so that the UI leader
-          -- can save before the state is changed and the clip
-          -- needs to be carried through.
+        breakASAP <- getsServer sbreakASAP
+        unless breakASAP $ do
+          -- Projectiles are processed last and not at all if the UI leader
+          -- decides to save or exit or restart. This and UI leader acting
+          -- before any other ordinary actors ensures state is not changed
+          -- and so the clip doesn't need to be carried through before save.
           arenas <- getsServer sarenas
           mapM_ (\fid -> mapM_ (`handleTrajectories` fid) arenas)
                 (EM.keys factionD)
           endClip updatePerFid  -- must be last, in case performs a bkp save
-        quit <- getsServer squit
-        if quit then do
-          modifyServer $ \ser -> ser {squit = False}
+        breakLoop <- getsServer sbreakLoop
+        if breakASAP || breakLoop then do
+          modifyServer $ \ser -> ser { sbreakLoop = False
+                                     , sbreakASAP = False }
           endOrLoop loopUpdConn (restartGame updConn loopUpdConn)
                     (writeSaveAll True)
         else
@@ -194,12 +199,12 @@ loopUpd updConn = do
 -- every fixed number of clips, e.g., monster generation.
 -- Advance time. Perform periodic saves, if applicable.
 --
--- This is never run if UI requested save or save&exit and it's correct,
+-- This is never run if UI requested save or exit or restart and it's correct,
 -- because we know nobody moved and no time was or needs to be advanced
--- and arenas are not changed. If there was game exit,
+-- and arenas are not changed. After game was saved and exited,
 -- on game resume the first clip is performed with empty arenas,
--- so arena time is not updated either and neither anybody moves,
--- nor anything happen, but arenas are here correctly updated
+-- so arena time is not updated and nobody moves, nor anything happens,
+-- but arenas are here correctly updated
 endClip :: forall m. MonadServerAtomic m => (FactionId -> m ()) -> m ()
 {-# INLINE endClip #-}
 endClip updatePerFid = do
@@ -209,10 +214,11 @@ endClip updatePerFid = do
   let clipN = time `timeFit` timeClip
       clipInTurn = let r = timeTurn `timeFit` timeClip
                    in assert (r >= 5) r
+  -- No check if @sbreakASAP@ is set, because then the function is not called.
+  breakLoop <- getsServer sbreakLoop
   -- We don't send a lot of useless info to the client if the game has already
   -- ended. At best wasteful, at worst the player sees strange messages.
-  quit <- getsServer squit
-  unless quit $ do
+  unless breakLoop $ do
     -- I need to send time updates, because I can't add time to each command,
     -- because I'd need to send also all arenas, which should be updated,
     -- and this is too expensive data for each, e.g., projectile move.
@@ -222,7 +228,7 @@ endClip updatePerFid = do
     -- to this value as well.
     -- This is crucial, because tiny time discrepancies can accumulate
     -- magnified by hunders of actors that share the clip slots due to the
-    -- restriction that at most 1 faction member acts each clip.
+    -- restriction that at most one faction member acts each clip.
     arenas <- getsServer sarenas
     execUpdAtomic $ UpdAgeGame arenas
     -- Perform periodic dungeon maintenance.
@@ -235,29 +241,30 @@ endClip updatePerFid = do
         applyPeriodicLevel
       4 ->
         -- Add monsters each turn, not each clip.
-        spawnMonster
+        unless (null arenas) spawnMonster
       _ -> return ()
   -- @applyPeriodicLevel@ might have, e.g., dominated actors, ending the game.
   -- It could not have unended the game, though.
-  quit2 <- getsServer squit
-  unless quit2 $ do
+  breakLoop2 <- getsServer sbreakLoop
+  unless breakLoop2 $ do
     -- Possibly a leader change due to @leadLevelSwitch@, so update arenas here
     -- for 100% accuracy at least at the start of actor moves, before they
     -- change leaders as part of their moves.
     --
     -- After game resume, this is the first non-vacuus computation.
-    -- Next call to @loopUpdConn@ will really moves actors and updates arena
-    -- time, so we start in exactly the same place that UI save ended in.
+    -- Next call to @loopUpdConn@ really moves actors and updates arena times
+    -- so we start in exactly the same place that UI save ended in.
     validArenas <- getsServer svalidArenas
     unless validArenas $ do
       arenasNew <- arenasForLoop
       modifyServer $ \ser -> ser {sarenas = arenasNew, svalidArenas = True}
-    -- Update all perception for visual feedback and to make sure saving
-    -- and resuming game doesn't affect gameplay (by updating perception).
-    -- Perception updates in @handleFidUpd@ are not enough, because
-    -- periodic actions could have invalidated them.
-    factionD <- getsState sfactionD
-    mapM_ updatePerFid (EM.keys factionD)
+  -- Update all perception for visual feedback and to make sure saving
+  -- and resuming game doesn't affect gameplay (by updating perception).
+  -- Perception updates in @handleFidUpd@ are not enough, because
+  -- periodic actions could have invalidated them.
+  factionD <- getsState sfactionD
+  mapM_ updatePerFid (EM.keys factionD)
+  unless breakLoop2 $ do  -- if by chance requested and periodic saves coincide
     -- Periodic save needs to be at the end, so that restore can start
     -- at the beginning.
     when (clipN `mod` rwriteSaveClips == 0) $ writeSaveAll False
@@ -446,25 +453,24 @@ hActors as@(aid : rest) = do
   let side = bfid b1
       !_A = assert (not $ bproj b1) ()
   fact <- getsState $ (EM.! side) . sfactionD
-  squit <- getsServer squit
+  breakLoop <- getsServer sbreakLoop
   let mleader = gleader fact
       aidIsLeader = mleader == Just aid
       mainUIactor = fhasUI (gplayer fact)
                     && (aidIsLeader
                         || fleaderMode (gplayer fact) == LeaderNull)
-      -- Checking squit, to avoid doubly setting faction status to Camping.
-      mainUIunderAI = mainUIactor && isAIFact fact && not squit
+      -- Checking squit, to avoid doubly setting faction status to Camping
+      -- in case AI-controlled UI client asks to exit game at exactly
+      -- the same moment as natural game over was detected.
+      mainUIunderAI = mainUIactor && isAIFact fact && not breakLoop
       doQueryAI = not mainUIactor || isAIFact fact
   when mainUIunderAI $ do
     cmdS <- sendQueryUI side aid
     case fst cmdS of
       ReqUINop -> return ()
       ReqUIAutomate -> execUpdAtomic $ UpdAutoFaction side False
-      ReqUIGameExit -> do
-        reqGameExit aid
-        -- This is not proper UI-forced save, but a timeout, so don't save
-        -- and no need to abort turn.
-        modifyServer $ \ser -> ser {swriteSave = False}
+      ReqUIGameDropAndExit -> do
+        reqGameDropAndExit aid
       _ -> error $ "" `showFailure` cmdS
   let mswitchLeader :: Maybe ActorId -> m ActorId
       {-# NOINLINE mswitchLeader #-}
@@ -490,8 +496,9 @@ hActors as@(aid : rest) = do
       -- complete game time freezes, e.g., due to an exploit.
       if nonWaitMove then return True else hActors rest
     Nothing -> do
-      swriteSave <- getsServer swriteSave
-      if swriteSave then return False else hActors as
+      breakASAP <- getsServer sbreakASAP
+      -- If breaking out of the game lopp, pretend there was a non-wait move.
+      if breakASAP then return True else hActors as
 
 restartGame :: MonadServerAtomic m
             => m () -> m () -> Maybe (GroupName ModeKind) -> m ()

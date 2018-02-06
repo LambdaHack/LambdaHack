@@ -84,14 +84,14 @@ queryUI = do
               exit <- elapsedSessionTimeGT stopS
               if exit then do
                 tellAllClipPS
-                return (ReqUIGameExit, Nothing)  -- ask server to exit
+                return (ReqUIGameDropAndExit, Nothing)  -- ask server to exit
               else return (ReqUINop, Nothing)
         Just stopF -> do
           allNframes <- getsSession sallNframes
           gnframes <- getsSession snframes
           if allNframes + gnframes >= stopF then do
             tellAllClipPS
-            return (ReqUIGameExit, Nothing)  -- ask server to exit
+            return (ReqUIGameDropAndExit, Nothing)  -- ask server to exit
           else return (ReqUINop, Nothing)
   else do
     let mleader = gleader fact
@@ -102,7 +102,8 @@ queryUI = do
     -- to avoid leader death at resume if his HP <= 0. That would violate
     -- the principle that save and reload doesn't change game state.
     let saveCmd cmd = case cmd of
-          ReqUIGameExit -> True
+          ReqUIGameDropAndExit -> True
+          ReqUIGameSaveAndExit -> True
           ReqUIGameSave -> True
           _ -> False
     return (req, if mleader /= Just leader2 && not (saveCmd req)

@@ -40,7 +40,8 @@ data ReqUI =
     ReqUINop
   | ReqUITimed RequestAnyAbility
   | ReqUIGameRestart (GroupName ModeKind) Challenge
-  | ReqUIGameExit
+  | ReqUIGameDropAndExit
+  | ReqUIGameSaveAndExit
   | ReqUIGameSave
   | ReqUITactic Tactic
   | ReqUIAutomate

@@ -55,7 +55,7 @@ endOrLoop loop restart gameSave = do
   mapM_ (\(fid, fact) ->
     execUpdAtomic $ UpdQuitFaction fid (gquit fact) Nothing) campers
   swriteSave <- getsServer swriteSave
-  when (swriteSave && not restartNeeded) $ do
+  when swriteSave $ do
     modifyServer $ \ser -> ser {swriteSave = False}
     gameSave
   if | restartNeeded -> restart (listToMaybe quitters)

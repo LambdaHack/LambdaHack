@@ -10,7 +10,7 @@
 -- influence the outcome of the evaluation.
 module Game.LambdaHack.Server.HandleRequestM
   ( handleRequestAI, handleRequestUI, handleRequestTimed, switchLeader
-  , reqMove, reqDisplace, reqAlterFail, reqGameExit
+  , reqMove, reqDisplace, reqAlterFail, reqGameDropAndExit, reqGameSaveAndExit
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , setBWait, managePerRequest, handleRequestTimedCases
@@ -72,7 +72,8 @@ handleRequestUI :: MonadServerAtomic m
 handleRequestUI fid aid cmd = case cmd of
   ReqUITimed cmdT -> return $ Just cmdT
   ReqUIGameRestart t d -> reqGameRestart aid t d >> return Nothing
-  ReqUIGameExit -> reqGameExit aid >> return Nothing
+  ReqUIGameDropAndExit -> reqGameDropAndExit aid >> return Nothing
+  ReqUIGameSaveAndExit -> reqGameSaveAndExit aid >> return Nothing
   ReqUIGameSave -> reqGameSave >> return Nothing
   ReqUITactic toT -> reqTactic fid toT >> return Nothing
   ReqUIAutomate -> reqAutomate fid >> return Nothing
@@ -682,9 +683,8 @@ reqGameRestart aid groupName scurChalSer = do
   modifyServer $ \ser -> ser {soptionsNxt = (soptionsNxt ser) {scurChalSer}}
   b <- getsState $ getActorBody aid
   oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
-  modifyServer $ \ser ->
-    ser { swriteSave = True  -- fake saving to abort turn
-        , squit = True }  -- do this at once
+  -- We don't save game and don't wait for clips end. ASAP.
+  modifyServer $ \ser -> ser {sbreakASAP = True}
   isNoConfirms <- isNoConfirmsGame
   -- This call to `revealItems` is really needed, because the other
   -- happens only at game conclusion, not at quitting.
@@ -692,23 +692,38 @@ reqGameRestart aid groupName scurChalSer = do
   execUpdAtomic $ UpdQuitFaction (bfid b) oldSt
                 $ Just $ Status Restart (fromEnum $ blid b) (Just groupName)
 
--- * ReqGameExit
+-- * ReqGameDropAndExit
 
-reqGameExit :: MonadServerAtomic m => ActorId -> m ()
-reqGameExit aid = do
+-- After we break out of the game loop, we will notice from @Camping@
+-- we shouldn exit the game.
+reqGameDropAndExit :: MonadServerAtomic m => ActorId -> m ()
+reqGameDropAndExit aid = do
   b <- getsState $ getActorBody aid
   oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
-  modifyServer $ \ser -> ser { swriteSave = True
-                             , squit = True }  -- do this at once
+  modifyServer $ \ser -> ser {sbreakLoop = True}
+  execUpdAtomic $ UpdQuitFaction (bfid b) oldSt
+                $ Just $ Status Camping (fromEnum $ blid b) Nothing
+-- * ReqGameSaveAndExit
+
+-- After we break out of the game loop, we will notice from @Camping@
+-- we shouldn exit the game.
+reqGameSaveAndExit :: MonadServerAtomic m => ActorId -> m ()
+reqGameSaveAndExit aid = do
+  b <- getsState $ getActorBody aid
+  oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
+  modifyServer $ \ser -> ser { sbreakASAP = True
+                             , swriteSave = True }
   execUpdAtomic $ UpdQuitFaction (bfid b) oldSt
                 $ Just $ Status Camping (fromEnum $ blid b) Nothing
 
 -- * ReqGameSave
 
+-- After we break out of the game loop, we will notice we shouldn't quit
+-- the game and we will enter the game loop again.
 reqGameSave :: MonadServer m => m ()
 reqGameSave =
-  modifyServer $ \ser -> ser { swriteSave = True
-                             , squit = True }  -- do this at once
+  modifyServer $ \ser -> ser { sbreakASAP = True
+                             , swriteSave = True }
 
 -- * ReqTactic
 

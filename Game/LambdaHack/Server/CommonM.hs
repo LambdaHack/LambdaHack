@@ -152,7 +152,7 @@ quitF status fid = do
         -- so the score will get registered.
         registerScore status fid
       execUpdAtomic $ UpdQuitFaction fid oldSt $ Just status
-      modifyServer $ \ser -> ser {squit = True}  -- check game over ASAP
+      modifyServer $ \ser -> ser {sbreakLoop = True}  -- check game over
 
 -- Send any UpdQuitFaction actions that can be deduced from factions'
 -- current state.
