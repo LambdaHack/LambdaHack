@@ -213,7 +213,7 @@ endClip updatePerFid = do
   -- This is crucial, because tiny time discrepancies can accumulate
   -- magnified by hunders of actors that share the clip slots due to the
   -- restriction that at most 1 faction member acts each clip.
-  arenas <- arenasForLoop
+  arenas <- getsServer sarenas
   execUpdAtomic $ UpdAgeGame arenas
   quit <- getsServer squit
   unless quit $ do
@@ -229,13 +229,15 @@ endClip updatePerFid = do
         -- Add monsters each turn, not each clip.
         spawnMonster
       _ -> return ()
-  -- Possibly a leader change due to @leadLevelSwitch@, so update arenas here
-  -- for 100% accuracy at least at the start of actor moves, before they
-  -- change leaders as part of the moves.
-  validArenas <- getsServer svalidArenas
-  unless validArenas $ do
-    arenasNew <- arenasForLoop
-    modifyServer $ \ser -> ser {sarenas = arenasNew, svalidArenas = True}
+  quit2 <- getsServer squit  -- @applyPeriodicLevel@ might have, e.g., dominated
+  unless quit2 $ do
+    -- Possibly a leader change due to @leadLevelSwitch@, so update arenas here
+    -- for 100% accuracy at least at the start of actor moves, before they
+    -- change leaders as part of the moves.
+    validArenas <- getsServer svalidArenas
+    unless validArenas $ do
+      arenasNew <- arenasForLoop
+      modifyServer $ \ser -> ser {sarenas = arenasNew, svalidArenas = True}
   -- Update all perception for visual feedback and to make sure
   -- saving a game doesn't affect gameplay (by updating perception).
   factionD <- getsState sfactionD
