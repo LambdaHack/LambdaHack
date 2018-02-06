@@ -601,11 +601,9 @@ effectImpress recursiveCall execSfx source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   if | bproj tb -> return UseDud
-     | bfid tb == bfid sb -> do
-       -- Unimpress wrt others, but only once.
-       ur <- recursiveCall $ IK.DropItem 1 1 COrgan "impressed"
-       when (ur == UseUp) execSfx
-       return ur
+     | bfid tb == bfid sb ->
+       -- Unimpress wrt others, but only once. The recursive Sfx suffices.
+       recursiveCall $ IK.DropItem 1 1 COrgan "impressed"
      | otherwise -> do
        -- Actors that don't move freely and so are stupid, can't be impressed.
        canTra <- getsState $ canTraverse target
