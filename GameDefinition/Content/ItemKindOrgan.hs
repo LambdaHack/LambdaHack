@@ -160,7 +160,7 @@ boilingFissure = fist
   , iverbHit = "hiss at"
   , idamage  = 1 `d` 1
   , iaspects = [AddHurtMelee 20]  -- decreasing as count decreases
-  , ieffects = [InsertMove $ 1 `d` 3]
+  , ieffects = [DropItem 1 1 COrgan "temporary condition"]  -- useful; limited
   , ifeature = [Meleeable]  -- not Durable
   , idesc    = "A deep crack to the underworld."
   }
@@ -169,7 +169,7 @@ arsenicFissure = boilingFissure
   , ifreq    = [("arsenic fissure", 100)]
   , icount   = 3 + 1 `d` 3
   , idamage  = 2 `d` 1
-  , ieffects = [toOrganGameTurn "weakened" (2 + 1 `dL` 3)]
+  , ieffects = []  -- nothing interesting fits the weaken/poison biological data
   , idesc    = ""
   }
 sulfurFissure = boilingFissure
@@ -486,7 +486,7 @@ pupil = fist
   , icount   = 1
   , iverbHit = "gaze at"
   , idamage  = 1 `d` 1
-  , iaspects = [AddSight 12, Timeout 7]
+  , iaspects = [AddSight 12, Timeout 12]
   , ieffects = [ Recharging (DropItem 1 maxBound COrgan "temporary condition")
                , Recharging $ RefillCalm (-10)
                ]
