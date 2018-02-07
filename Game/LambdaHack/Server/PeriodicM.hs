@@ -122,7 +122,7 @@ rollSpawnPos COps{coTileSpeedup} visible
       -- to suggest that.
       deeperStairs = (if fromEnum lid > 0 then fst else snd) lstair
       nearStairs df p = any (\pstair -> df $ chessDist pstair p) deeperStairs
-      -- I actors near deep stairs, risk if close enemy spawns is higher.
+      -- Near deep stairs, risk of close enemy spawn is higher.
       -- Also, spawns are common midway between actors and stairs.
       distantSo df p _ = nearInh df p && nearStairs df p
       middlePos = Point (lxsize `div` 2) (lysize `div` 2)

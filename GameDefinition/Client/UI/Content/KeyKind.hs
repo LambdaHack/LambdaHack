@@ -181,11 +181,12 @@ standardKeys = KeyKind $ map evalKeyDef $
   , ("C-}", ( [CmdAim]
             , "set x-hair to nearest downstairs"
             , XhairStair False ))
-  , ("<", ([CmdAim], "move aiming one level higher" , AimAscend 1))
-  , ("C-<", ( [CmdNoHelp], "move aiming 10 levels higher"
+  , ("<", ([CmdAim], "move aiming one level up" , AimAscend 1))
+  , ("C-<", ( [CmdNoHelp], "move aiming 10 levels up"
             , AimAscend 10) )
-  , (">", ([CmdAim], "move aiming one level lower", AimAscend (-1)))
-  , ("C->", ( [CmdNoHelp], "move aiming 10 levels lower"
+  , (">", ([CmdAim], "move aiming one level down", AimAscend (-1)))
+      -- 'lower' would be misleading in some games, just as 'deeper'
+  , ("C->", ( [CmdNoHelp], "move aiming 10 levels down"
             , AimAscend (-10)) )
   , ("BackSpace" , ( [CmdAim]
                    , "clear chosen item and target"
