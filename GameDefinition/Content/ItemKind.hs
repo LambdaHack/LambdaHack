@@ -602,7 +602,7 @@ fragmentationBomb = ItemKind
       -- shards, so it's not obvious if it's a weapon or just storage method;
       -- deflagration, not detonation, so large mass and hard container
       -- required not to burn harmlessly; improvised short fuze
-  , ifreq    = [("common item", 100)]
+  , ifreq    = [("common item", 100), ("explosive", 100)]
   , iflavour = zipPlain [BrCyan]
   , icount   = 1 `dL` 4  -- many, because not very intricate
   , irarity  = [(5, 5), (10, 5)]
