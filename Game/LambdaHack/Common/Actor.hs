@@ -137,7 +137,7 @@ actorDying b = bhp b <= 0
 
 hpTooLow :: Actor -> IA.AspectRecord -> Bool
 hpTooLow b IA.AspectRecord{aMaxHP} =
-  bhp b <= oneM || 5 * bhp b < xM aMaxHP && bhp b <= xM 40
+  5 * bhp b < xM aMaxHP && bhp b <= xM 40 || bhp b <= oneM
 
 calmEnough :: Actor -> IA.AspectRecord -> Bool
 calmEnough b IA.AspectRecord{aMaxCalm} =
@@ -146,8 +146,7 @@ calmEnough b IA.AspectRecord{aMaxCalm} =
 
 hpEnough :: Actor -> IA.AspectRecord -> Bool
 hpEnough b IA.AspectRecord{aMaxHP} =
-  let hpMax = max 1 aMaxHP
-  in xM hpMax <= 2 * bhp b && bhp b > xM 1
+  xM aMaxHP <= 2 * bhp b && bhp b > oneM
 
 checkAdjacent :: Actor -> Actor -> Bool
 checkAdjacent sb tb = blid sb == blid tb && adjacent (bpos sb) (bpos tb)
