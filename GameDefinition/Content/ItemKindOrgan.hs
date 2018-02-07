@@ -149,7 +149,7 @@ thorn = fist
   , ifreq    = [("thorn", 100)]
   , icount   = 2 + 1 `d` 3
   , iverbHit = "impale"
-  , idamage  = 1 `d` 3
+  , idamage  = 2 `d` 1
   , ifeature = [Meleeable]  -- not Durable
   , idesc    = "Sharp yet brittle."
   }
