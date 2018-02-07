@@ -253,7 +253,7 @@ light2 = ItemKind
   , ifreq    = [("common item", 100), ("light source", 100)]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
-  , irarity  = [(6, 7)]
+  , irarity  = [(6, 8)]
   , iverbHit = "burn"
   , iweight  = 1500
   , idamage  = 1 `d` 1
@@ -269,7 +269,7 @@ light3 = ItemKind
   , ifreq    = [("common item", 100), ("light source", 100)]
   , iflavour = zipPlain [BrWhite]
   , icount   = 1
-  , irarity  = [(10, 5)]
+  , irarity  = [(10, 6)]
   , iverbHit = "burn"
   , iweight  = 3000
   , idamage  = 4 `d` 1
@@ -1010,7 +1010,7 @@ ringTemplate = ItemKind
   }
 ring1 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(10, 3)]
+  , irarity  = [(10, 4)]
   , iaspects = [AddSpeed $ 1 `d` 3, AddMaxHP (-15)]
   , ieffects = [OnSmash (Explode "distortion")]  -- high power
   , ifeature = [EqpSlot EqpSlotAddSpeed] ++ ifeature ringTemplate
@@ -1026,28 +1026,28 @@ ring2 = ringTemplate
   }
 ring3 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(10, 8)]
+  , irarity  = [(10, 11)]
   , iaspects = [ AddMaxHP $ 10 + (1 `dL` 5) * 2
                , AddMaxCalm $ -20 + (1 `dL` 5) * 2 ]
   , ifeature = [EqpSlot EqpSlotAddMaxHP] ++ ifeature ringTemplate
   }
 ring4 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(5, 1), (10, 10)]  -- needed after other rings drop Calm
+  , irarity  = [(5, 1), (10, 14)]  -- needed after other rings drop Calm
   , iaspects = [AddMaxCalm $ 25 + (1 `dL` 4) * 5]
   , ifeature = [EqpSlot EqpSlotMiscBonus] ++ ifeature ringTemplate
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with solemn, strangely comforting, worn out words."
   }
 ring5 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(3, 3), (10, 4)]
+  , irarity  = [(3, 3), (10, 6)]
   , iaspects = [ AddHurtMelee $ (2 + 1 `d` 2 + (1 `dL` 2) * 2 ) * 3
                , AddMaxHP $ (-2 - (1 `d` 2) + (1 `dL` 2) * 2) * 3 ]  -- !!!
   , ifeature = [EqpSlot EqpSlotAddHurtMelee] ++ ifeature ringTemplate
   }
 ring6 = ringTemplate  -- by the time it's found, probably no space in eqp
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(5, 0), (10, 3)]
+  , irarity  = [(5, 0), (10, 4)]
   , iaspects = [AddShine $ 1 `d` 2]
   , ifeature = [EqpSlot EqpSlotLightSource] ++ ifeature ringTemplate
   , idesc    = "A sturdy ring with a large, shining stone."
