@@ -133,8 +133,7 @@ rollSpawnPos COps{coTileSpeedup} visible
         , distantSo (<= 20)
         ]
                | otherwise =
-        [ distantMiddle 5
-        , distantMiddle 10
+        [ distantMiddle 10
         , distantMiddle 20
         , distantMiddle 50
         , distantMiddle 100
