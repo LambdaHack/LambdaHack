@@ -174,7 +174,7 @@ paralizingProj = ItemKind
   { isymbol  = symbolProjectile
   , iname    = "bolas set"
   , ifreq    = [("common item", 100)]
-  , iflavour = zipPlain [BrYellow]
+  , iflavour = zipPlain [BrGreen]
   , icount   = 1 `dL` 4
   , irarity  = [(5, 5), (10, 5)]
   , iverbHit = "entangle"
@@ -603,7 +603,7 @@ fragmentationBomb = ItemKind
       -- deflagration, not detonation, so large mass and hard container
       -- required not to burn harmlessly; improvised short fuze
   , ifreq    = [("common item", 100), ("explosive", 100)]
-  , iflavour = zipPlain [BrCyan]
+  , iflavour = zipPlain [Red]
   , icount   = 1 `dL` 4  -- many, because not very intricate
   , irarity  = [(5, 5), (10, 5)]
   , iverbHit = "thud"
