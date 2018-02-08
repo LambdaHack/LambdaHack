@@ -1,8 +1,8 @@
 play:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --dumpInitRngs
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --savePrefix play --dumpInitRngs
 
 shot:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --dumpInitRngs --printEachScreen
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --savePrefix play --dumpInitRngs --printEachScreen
 
 expose-lore:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --dumpInitRngs --savePrefix know --newGame 2 --gameMode crawl --knowItems --benchmark --noAnim --maxFps 1000
