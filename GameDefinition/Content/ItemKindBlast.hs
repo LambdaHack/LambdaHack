@@ -16,15 +16,15 @@ import Game.LambdaHack.Content.ItemKind
 
 blasts :: [ItemKind]
 blasts =
-  [burningOil2, burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, spreadFragmentation, spreadFragmentation8, focusedFragmentation, spreadConcussion, spreadConcussion8, focusedConcussion, spreadFlash, spreadFlash8, focusedFlash, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, focusedGlass, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote]
+  [burningOil2, burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, spreadFragmentation, spreadFragmentation8, focusedFragmentation, spreadConcussion, spreadConcussion8, focusedConcussion, spreadFlash, spreadFlash8, focusedFlash, glassPiece, focusedGlass,fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion,  smoke, boilingWater, glue, singleSpark, spark, waste, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote]
 
-burningOil2,    burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, spreadFragmentation, spreadFragmentation8, focusedFragmentation, spreadConcussion, spreadConcussion8, focusedConcussion, spreadFlash, spreadFlash8, focusedFlash, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, focusedGlass, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote :: ItemKind
+burningOil2,    burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, spreadFragmentation, spreadFragmentation8, focusedFragmentation, spreadConcussion, spreadConcussion8, focusedConcussion, spreadFlash, spreadFlash8, focusedFlash, glassPiece, focusedGlass,fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, smoke, boilingWater, glue, singleSpark, spark, waste, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote :: ItemKind
 
 -- We take care (e.g., in burningOil below) that blasts are not faster
 -- than 100% fastest natural speed, or some frames would be skipped,
 -- which is a waste of prefectly good frames.
 
--- * Parameterized immediate effect blasts
+-- * Parameterized blasts
 
 burningOil :: Int -> ItemKind
 burningOil n = ItemKind
@@ -77,7 +77,7 @@ firecracker3 = firecracker 3
 firecracker2 = firecracker 2
 firecracker1 = firecracker 1
 
--- * Assorted immediate effect blasts
+-- * Focused blasts
 
 spreadFragmentation = ItemKind
   { isymbol  = '*'
@@ -207,6 +207,31 @@ focusedFlash = ItemKind
   , idesc    = ""
   , ikit     = []
   }
+glassPiece = ItemKind
+  { isymbol  = '*'
+  , iname    = "glass piece"
+  , ifreq    = [("glass hail", 1)]
+  , iflavour = zipPlain [Blue]
+  , icount   = 8
+  , irarity  = [(1, 1)]
+  , iverbHit = "cut"
+  , iweight  = 1
+  , idamage  = 1 `d` 1
+  , iaspects = [AddHurtMelee $ -17 * 5]
+  , ieffects = [RefillHP (-1)]
+  , ifeature = [toLinger 20, Fragile, Blast]  -- 4 steps, 1 turn
+  , idesc    = "Swift, sharp edges."
+  , ikit     = []
+  }
+focusedGlass = glassPiece  -- when blowing up windows
+  { ifreq    = [("focused glass hail", 1)]
+  , icount   = 4
+  , ieffects = [RefillHP (-1), OnSmash $ Explode "glass hail"]
+  , ifeature = [toLinger 0, Fragile, Blast]  -- 0 steps, 1 turn
+  }
+
+-- * Assorted immediate effect blasts
+
 fragrance = ItemKind
   { isymbol  = '`'
   , iname    = "fragrance"  -- instant, fast fragrance
@@ -337,28 +362,6 @@ distortion = ItemKind
   , idesc    = "The air shifts oddly, as though light is being warped."
   , ikit     = []
   }
-glassPiece = ItemKind
-  { isymbol  = '*'
-  , iname    = "glass piece"
-  , ifreq    = [("glass hail", 1)]
-  , iflavour = zipPlain [Blue]
-  , icount   = 8
-  , irarity  = [(1, 1)]
-  , iverbHit = "cut"
-  , iweight  = 1
-  , idamage  = 1 `d` 1
-  , iaspects = [AddHurtMelee $ -17 * 5]
-  , ieffects = [RefillHP (-1)]
-  , ifeature = [toLinger 20, Fragile, Blast]  -- 4 steps, 1 turn
-  , idesc    = "Swift, sharp edges."
-  , ikit     = []
-  }
-focusedGlass = glassPiece  -- when blowing up windows
-  { ifreq    = [("focused glass hail", 1)]
-  , icount   = 4
-  , ieffects = [RefillHP (-1), OnSmash $ Explode "glass hail"]
-  , ifeature = [toLinger 0, Fragile, Blast]  -- 0 steps, 1 turn
-  }
 smoke = ItemKind  -- when stuff burns out  -- unused
   { isymbol  = '`'
   , iname    = "smoke"
@@ -439,12 +442,29 @@ spark = ItemKind
   , idesc    = "A flash of fire."
   , ikit     = []
   }
+waste = ItemKind
+  { isymbol  = '*'
+  , iname    = "waste"
+  , ifreq    = [("waste", 1)]
+  , iflavour = zipPlain [Brown]
+  , icount   = 16
+  , irarity  = [(1, 1)]
+  , iverbHit = "splosh"
+  , iweight  = 1
+  , idamage  = 0
+  , iaspects = []
+  , ieffects = [Burn 1]
+  , ifeature = [toLinger 10, Fragile, Blast]
+  , idesc    = "Sodden and foul-smelling."
+  , ikit     = []
+  }
 
--- * Temporary condition blasts strictly matching the aspects
+-- * Temporary condition blasts
 
 -- Almost all have @toLinger 10@, that travels 2 steps in 1 turn.
 -- These are very fast projectiles, not getting into the way of big
 -- actors and not burdening the engine for long.
+-- A few are slower 'mists'.
 
 denseShower = ItemKind
   { isymbol  = '`'
@@ -572,7 +592,7 @@ slownessMist = ItemKind
   , iaspects = []
   , ieffects = [toOrganGameTurn "slowed" (3 + 1 `d` 3)]
   , ifeature = [toVelocity 5, Fragile, Blast]
-                 -- 1 step, 1 turn, mist
+                 -- 1 step, 1 turn, mist, slow
   , idesc    = "Clammy fog, making each movement an effort."
   , ikit     = []
   }
@@ -640,9 +660,6 @@ eyeShine = ItemKind
   , idesc    = "They almost glow in the dark."
   , ikit     = []
   }
-
--- * Assorted temporary condition blasts or related (also, matching flasks)
-
 whiskeySpray = ItemKind
   { isymbol  = '`'
   , iname    = "whiskey spray"
@@ -657,22 +674,6 @@ whiskeySpray = ItemKind
   , ieffects = [toOrganActorTurn "drunk" (3 + 1 `d` 3)]
   , ifeature = [toLinger 10, Fragile, Blast]
   , idesc    = "It burns in the best way."
-  , ikit     = []
-  }
-waste = ItemKind
-  { isymbol  = '*'
-  , iname    = "waste"
-  , ifreq    = [("waste", 1)]
-  , iflavour = zipPlain [Brown]
-  , icount   = 16
-  , irarity  = [(1, 1)]
-  , iverbHit = "splosh"
-  , iweight  = 1
-  , idamage  = 0
-  , iaspects = []
-  , ieffects = [Burn 1]
-  , ifeature = [toLinger 10, Fragile, Blast]
-  , idesc    = "Sodden and foul-smelling."
   , ikit     = []
   }
 youthSprinkle = ItemKind
