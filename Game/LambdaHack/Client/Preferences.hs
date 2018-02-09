@@ -37,13 +37,29 @@ import           Game.LambdaHack.Content.ModeKind
 -- So there is less than @averageTurnValue@ included in each benefit,
 -- so in case when turn is not spent, e.g, periodic or temporary conditions,
 -- the difference in value is only slight.
-effectToBenefit :: COps -> Faction -> IK.Effect -> (Double, Double)
-effectToBenefit cops fact eff =
+effectToBenefit :: COps -> Faction -> Bool -> IK.Effect -> (Double, Double)
+effectToBenefit cops fact insideRecharging eff =
   let delta x = (x, x)
   in case eff of
     IK.Burn d -> delta $ -(min 1500 $ 15 * Dice.meanDice d)
       -- often splash damage, armor doesn't block (but HurtMelee doesn't boost)
-    IK.Explode _ -> (1, -1)  -- depends on explosion, but let's have fun
+    IK.Explode _ | insideRecharging ->
+      -- It's too hard to analyze, so we assume, explosion inside recharging
+      -- is never a cruel and cheap one-time trap, damaging HP of the actor
+      -- before he identifies the item and stops wearing it or meleeing with it.
+      -- So the explosion is either both focused and beneficial to self
+      -- or is not focused and so not affecting self. In either case
+      -- it can be good or bad for nearby friends and foes and, regardless,
+      -- AI chooses to equip that item, for fun and to challenge human player
+      -- with varied situations.
+      ( 1     -- equip, but not too greedily, in case it mostly harms friends
+      , -1 )  -- hit with it or throw, but beware of harming friends
+    IK.Explode _ ->
+      -- We know this explosion is not wrapped with @Recharging@ nor @OnSmash@
+      -- so we assume it's focused and very harmful and so only safe
+      -- for projecting at foes. Due to this assumption healing explosives
+      -- should be wrapped to avoid throwing them at foes.
+      delta (-100)
     IK.RefillHP p ->
       delta $ if p > 0
               then min 2000 (20 * fromIntegral p)
@@ -57,7 +73,8 @@ effectToBenefit cops fact eff =
                                else max (-9) (fromIntegral p)
     IK.Dominate -> (0, -300)  -- I obtained an actor with, say 10HP,
                               -- worth 200, and enemy lost him, another 100
-    IK.Impress -> (10, -50)  -- can effect self, but more often others
+    IK.Impress -> (10, -50)  -- can affect friends, but more often enemies,
+                             -- hence it's considered harmful when thrown
     IK.Summon grp d ->  -- contrived by not taking into account alliances
                         -- and not checking if enemies also control that group
       let ben = Dice.meanDice d * 200  -- the new actor can have, say, 10HP
@@ -132,7 +149,7 @@ effectToBenefit cops fact eff =
     IK.ActivateInv _ -> delta $ -50  -- depends on the items
     IK.ApplyPerfume -> delta 0  -- depends on smell sense of friends and foes
     IK.OneOf efs ->
-      let bs = map (effectToBenefit cops fact) efs
+      let bs = map (effectToBenefit cops fact insideRecharging) efs
           f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
           (effSelf, effFoe) = foldr f (0, 0) bs
       in (effSelf / fromIntegral (length bs), effFoe / fromIntegral (length bs))
@@ -141,7 +158,7 @@ effectToBenefit cops fact eff =
     IK.Recharging _ -> delta 0  -- taken into account separately
     IK.Temporary _ -> delta 0  -- assumed for created organs only
     IK.Composite [] -> delta 0
-    IK.Composite (eff1 : _) -> effectToBenefit cops fact eff1
+    IK.Composite (eff1 : _) -> effectToBenefit cops fact insideRecharging eff1
       -- for simplicity; so in content make sure to place initial animations
       -- among normal effects, not at the start of composite effect
       -- (animations should not fail, after all), and start composite
@@ -228,7 +245,8 @@ organBenefit :: Double -> GroupName ItemKind -> COps -> Faction
 organBenefit turnTimer grp cops@COps{coitem} fact =
   let f (!sacc, !pacc) !p _ !kind =
         let paspect asp = fromIntegral p * aspectToBenefit asp
-            peffect eff = fromIntegral p * fst (effectToBenefit cops fact eff)
+            peffect eff = fromIntegral p
+                          * fst (effectToBenefit cops fact False eff)
         in ( sacc + Dice.meanDice (IK.icount kind)
                     * (sum (map paspect $ IK.iaspects kind)
                        + sum (map peffect
@@ -310,7 +328,7 @@ totalUsefulness :: COps -> Faction -> ItemFull -> Benefit
 totalUsefulness !cops !fact !itemFull@ItemFull{itemKind, itemSuspect} =
   let effects = IK.ieffects itemKind
       aspects = aspectRecordFull itemFull
-      effPairs = map (effectToBenefit cops fact) effects
+      effPairs = map (effectToBenefit cops fact False) effects
       effDice = - IK.damageUsefulness itemKind
       f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
       (effSelf, effFoe) = foldr f (0, 0) effPairs
@@ -328,7 +346,7 @@ totalUsefulness !cops !fact !itemFull@ItemFull{itemKind, itemSuspect} =
                   if avgItemDelay >= fromIntegral timeout
                   then eff
                   else eff * avgItemDelay / fromIntegral timeout) bens
-            (cself, cfoe) = unzip $ map (effectToBenefit cops fact)
+            (cself, cfoe) = unzip $ map (effectToBenefit cops fact True)
                                         (IK.stripRecharging effects)
         in (scaleChargeBens cself, scaleChargeBens cfoe)
       -- If the item is periodic, we add charging effects to equipment benefit,
