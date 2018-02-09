@@ -149,7 +149,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
     bUI <- getsSession $ getActorUI aid
     arena <- getArenaUI
     side <- getsClient sside
-    if | bproj b && (length (beqp b) == 0 || isNothing (btrajectory b)) ->
+    if | bproj b && (EM.null (beqp b) || isNothing (btrajectory b)) ->
            return ()  -- ignore caught proj or one hitting a wall
        | bhp b <= 0 && n < 0
          && (bfid b == side && not (bproj b) || arena == blid b) -> do
@@ -521,15 +521,15 @@ createActorUI born aid body = do
       factionD <- getsState sfactionD
       let (bname, bpronoun) =
             if | bproj body ->
-                 let adj | length (btrajectory body) < 4 = "falling"
-                         | otherwise = "flying"
+                 let adj = case btrajectory body of
+                       Just (tra, _) | length tra < 5 -> "falling"
+                       _ -> "flying"
                      -- Not much detail about a fast flying item.
                      (_, _, object1, object2) =
                        partItemShortest (bfid body) factionD localTime
                                         itemFull (1, [])
-                     flav = flavourToName $ jflavour itemBase
                  in ( makePhrase
-                        [MU.AW $ MU.Text adj, MU.Text flav, object1, object2]
+                        [MU.AW $ MU.Text adj, object1, object2]
                     , basePronoun )
                | baseColor /= Color.BrWhite -> (IK.iname itemKind, basePronoun)
                | otherwise -> heroNamePronoun n

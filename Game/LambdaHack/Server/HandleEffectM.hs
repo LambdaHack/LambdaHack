@@ -514,7 +514,7 @@ highestImpression target = do
       impressions = EM.filterWithKey (\iid _ -> isImpression iid) $ borgan tb
       f (_, (k, _)) = k
       maxImpression = maximumBy (Ord.comparing f) $ EM.assocs impressions
-  if null impressions
+  if EM.null impressions
   then return Nothing
   else case jfid $ getItem $ fst maxImpression of
     Nothing -> return Nothing
@@ -1263,7 +1263,7 @@ effectDetectHidden execSfx radius target pos = do
   let predicate p = Tile.isHideAs coTileSpeedup $ lvl `at` p
       revealEmbed p = do
         embeds <- getsState $ getEmbedBag (blid b) p
-        unless (null embeds) $ do
+        unless (EM.null embeds) $ do
           s <- getState
           let ais = map (\iid -> (iid, getItemBody iid s)) (EM.keys embeds)
           execUpdAtomic $ UpdSpotItemBag (CEmbed (blid b) p) embeds ais

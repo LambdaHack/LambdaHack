@@ -9,21 +9,22 @@ module Game.LambdaHack.Common.Prelude
 
   , module Control.Exception.Assert.Sugar
 
-  , Text, (<+>), tshow, divUp, (<$$>), partitionM
+  , Text, (<+>), tshow, divUp, (<$$>), partitionM, length, null
 
   , (***), (&&&), first, second
   ) where
 
 import Prelude ()
 
-import Prelude.Compat hiding (appendFile, readFile, writeFile)
+import Prelude.Compat hiding (appendFile, length, null, readFile, writeFile)
 
-import Control.Applicative
-import Control.Arrow (first, second, (&&&), (***))
-import Control.Monad.Compat
-import Data.List.Compat
-import Data.Maybe
-import Data.Monoid.Compat
+import           Control.Applicative
+import           Control.Arrow (first, second, (&&&), (***))
+import           Control.Monad.Compat
+import           Data.List.Compat hiding (length, null)
+import qualified Data.List.Compat as List
+import           Data.Maybe
+import           Data.Monoid.Compat
 
 import Control.Exception.Assert.Sugar (allB, assert, blame, showFailure, swith)
 
@@ -50,3 +51,17 @@ partitionM :: Applicative m => (a -> m Bool) -> [a] -> m ([a], [a])
 {-# INLINE partitionM #-}
 partitionM p = foldr (\a ->
   liftA2 (\b -> (if b then first else second) (a :)) (p a)) (pure ([], []))
+
+-- | A version specialized to lists to avoid errors such as taking length
+-- of @Maybe [a]@ instead of @[a]@.
+-- Such errors are hard to detect, because the type of elements of the list
+-- is not constrained.
+length :: [a] -> Int
+length = List.length
+
+-- | A version specialized to lists to avoid errors such as taking null
+-- of @Maybe [a]@ instead of @[a]@.
+-- Such errors are hard to detect, because the type of elements of the list
+-- is not constrained.
+null :: [a] -> Bool
+null = List.null

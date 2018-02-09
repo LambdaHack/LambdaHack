@@ -419,7 +419,7 @@ addNonProjectile summoned trunkId (itemFull, kit) fid pos lid time = do
   let tweakBody b = b { borgan = EM.singleton trunkId kit
                       , bcalm = if summoned
                                 then bcalm b * 2 `div` 3 - xM 3
-                                       -- will summon in 3 turn, unless hit
+                                  -- will summon in 3 turns, if calm regenerates
                                 else bcalm b }
   addActorIid trunkId itemFull False fid pos lid tweakBody time
 

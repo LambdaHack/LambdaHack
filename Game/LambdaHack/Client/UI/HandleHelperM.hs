@@ -419,6 +419,6 @@ lookAtItems canSee p aid = do
                           | otherwise -> "remember"
       nWs (iid, kit@(k, _)) =
         partItemWs side factionD k localTime (itemToF iid) kit
-  return $! if EM.size is == 0 then ""
+  return $! if EM.null is then ""
             else makeSentence [ MU.SubjectVerbSg subject verb
                               , MU.WWandW $ map (snd . nWs) $ EM.assocs is]

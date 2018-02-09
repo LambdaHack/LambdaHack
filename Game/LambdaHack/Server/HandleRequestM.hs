@@ -265,7 +265,7 @@ reqMelee source target iid cstore = do
     itemKind <- getsState $ getIidKindServer $ btrunk tb
     -- Only catch with appendages, never with weapons. Never steal trunk
     -- from an already caught projectile or one with many items inside.
-    if bproj tb && length (beqp tb) == 1 && not (IK.isBlast itemKind)
+    if bproj tb && EM.size (beqp tb) == 1 && not (IK.isBlast itemKind)
        && cstore == COrgan then do
       -- Catching the projectile, that is, stealing the item from its eqp.
       -- No effect from our weapon (organ) is applied to the projectile
@@ -415,7 +415,7 @@ reqAlterFail source tpos = do
       lvlClient = (EM.! lid) . sdungeon $ sClient
       clientTile = lvlClient `at` tpos
       hiddenTile = Tile.hideAs cotile serverTile
-      revealEmbeds = unless (null embeds) $ do
+      revealEmbeds = unless (EM.null embeds) $ do
         s <- getState
         let ais = map (\iid -> (iid, getItemBody iid s)) (EM.keys embeds)
         execUpdAtomic $ UpdSpotItemBag (CEmbed lid tpos) embeds ais
@@ -518,7 +518,7 @@ reqAlterFail source tpos = do
               TK.ChangeTo tgroup -> Just tgroup
               _ -> Nothing
           groupsToAlterTo = mapMaybe toAlter feats
-      if null groupsToAlterTo && null embeds then
+      if null groupsToAlterTo && EM.null embeds then
         return $ Just AlterNothing  -- no altering possible; silly client
       else
         if EM.notMember tpos $ lfloor lvl then
