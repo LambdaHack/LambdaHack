@@ -87,6 +87,7 @@ escapist = warrior
                   , ("armor ranged", CEqp)
                   , ("flask", CInv)
                   , ("light source", CInv)
+                  , ("wooden torch", CInv)
                   , ("blanket", CInv) ]
   -- , idesc    = ""
   }
