@@ -238,6 +238,7 @@ brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
   , cdefTile      = "brawlSetLit"
   , cdarkCorTile  = "floorArenaLit"
   , clitCorTile   = "floorArenaLit"
+  , couterFenceTile = "outdoor outer fence"
   , cdesc         = "Sunlight falls through the trees and dapples on the ground."
   }
 shootout = rogue  -- a scenario with strong missiles;
@@ -272,6 +273,7 @@ shootout = rogue  -- a scenario with strong missiles;
   , cdefTile      = "shootoutSetLit"
   , cdarkCorTile  = "floorArenaLit"
   , clitCorTile   = "floorArenaLit"
+  , couterFenceTile = "outdoor outer fence"
   , cdesc         = ""
   }
 escape = rogue  -- a scenario with weak missiles, because heroes don't depend
@@ -300,6 +302,7 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , cdefTile      = "escapeSetDark"  -- different tiles, not burning yet
   , cdarkCorTile  = "trailLit"  -- let trails give off light
   , clitCorTile   = "trailLit"
+  , couterFenceTile = "outdoor outer fence"
   , cescapeGroup  = Just "escape outdoor down"
   , cdesc         = ""
   }
@@ -326,6 +329,7 @@ zoo = rogue  -- few lights and many solids, to help the less numerous heroes
   , cdefTile      = "zooSet"
   , cdarkCorTile  = "trailLit"  -- let trails give off light
   , clitCorTile   = "trailLit"
+  , couterFenceTile = "outdoor outer fence"
   , cdesc         = ""
   }
 ambush = rogue  -- a scenario with strong missiles;
@@ -358,6 +362,7 @@ ambush = rogue  -- a scenario with strong missiles;
   , cdefTile      = "ambushSet"
   , cdarkCorTile  = "trailLit"  -- let trails give off light
   , clitCorTile   = "trailLit"
+  , couterFenceTile = "outdoor outer fence"
   , cdesc         = ""
   }
 battle = rogue  -- few lights and many solids, to help the less numerous heroes
@@ -383,7 +388,7 @@ battle = rogue  -- few lights and many solids, to help the less numerous heroes
   , cdefTile      = "battleSet"
   , cdarkCorTile  = "trailLit"  -- let trails give off light
   , clitCorTile   = "trailLit"
-  , couterFenceTile = "noise fence"  -- ensures no cut-off parts from collapsed
+  , couterFenceTile = "outdoor outer fence"
   , cdesc         = ""
   }
 safari1 = brawl
