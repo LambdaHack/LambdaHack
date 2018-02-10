@@ -207,23 +207,43 @@ reqMove :: MonadServerAtomic m => ActorId -> Vector -> m ()
 reqMove source dir = do
   COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
-  itemKind <- getsState $ getIidKindServer (btrunk sb)
   let lid = blid sb
   lvl <- getLevel lid
   let spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
-      solidSource = IK.iweight itemKind > 400
-                    || IK.Fragile `elem` IK.ifeature itemKind
-                       && IK.Lobable `elem` IK.ifeature itemKind
-  -- Avoid explosion extinguishing itself via its particles colliding.
-  sameBlast <- getsState $ \s tb -> IK.isBlast itemKind
-                                    && getIidKindIdServer (btrunk sb) s
-                                       == getIidKindIdServer (btrunk tb) s
+  -- This predicate is symmetric wrt source and target, though the effect
+  -- of collision may not be (the source projectiles applies it's effect
+  -- on the target particles, but loses 1 HP due to the collision).
+  -- The condision implies that it's impossible to shoot down a bullet
+  -- with a bullet, but a bullet can shoot down a burstable target,
+  -- as well as be swept away by it, and two burstable projectiles
+  -- burst when meeting mid-air. Projectiles that are not bursting
+  -- nor damaging never collide with any projectile.
+  collides <- getsState $ \s tb ->
+    let sitemKind = getIidKindServer (btrunk sb) s
+        titemKind = getIidKindServer (btrunk tb) s
+        -- Such projectiles are prone to bursitng or are themselves
+        -- particles of an explosion shockwave.
+        bursting itemKind = IK.Fragile `elem` IK.ifeature itemKind
+                            && IK.Lobable `elem` IK.ifeature itemKind
+        sbursting = bursting sitemKind
+        tbursting = bursting titemKind
+        -- Such projectiles, even if not bursting themselves, can cause
+        -- another projectile to burst.
+        damaging itemKind = IK.idamage itemKind /= 0
+        sdamaging = damaging sitemKind
+        tdamaging = damaging titemKind
+        -- Avoid explosion extinguishing itself via its own particles colliding.
+        sameBlast = IK.isBlast sitemKind
+                    && getIidKindIdServer (btrunk sb) s
+                       == getIidKindIdServer (btrunk tb) s
+    in not sameBlast
+       && (sbursting && (tdamaging || tbursting)
+           || (tbursting && (sdamaging || sbursting)))
   -- We start by checking actors at the target position.
   tgt <- getsState $ posToAssocs tpos lid
   case tgt of
-    (target, tb) : _ | not (bproj sb) || not (bproj tb)
-                       || solidSource && not (sameBlast tb)-> do
+    (target, tb) : _ | not (bproj sb) || not (bproj tb) || collides tb -> do
       -- A projectile is too small and insubstantial to hit another projectile,
       -- unless it's large enough or tends to explode (fragile and lobable).
       -- The actor in the way is visible or not; server sees him always.
@@ -303,18 +323,12 @@ reqMelee source target iid cstore = do
       -- If any effects and aspects, this is also where they are identified.
       -- Here also the melee damage is applied, before any effects are.
       meleeEffectAndDestroy source target iid c
-      let hardTarget = not (bproj tb)
-                       || IK.idamage itemKind /= 0
-                       || IK.iweight itemKind > 400
-                       || IK.Fragile `elem` IK.ifeature itemKind
-                          && IK.Lobable `elem` IK.ifeature itemKind
       sb2 <- getsState $ getActorBody source
       case btrajectory sb2 of
-        Just (tra, speed) | not (null tra) && hardTarget -> do
+        Just (tra, speed) | not (null tra) -> do
           -- Deduct a hitpoint for a pierce of a projectile
           -- or due to a hurled actor colliding with another.
-          -- There is no damage from pierce if the target projectile
-          -- is not hard enough. Don't deduct if no pierce, to prevent spam.
+          -- Don't deduct if no pierce, to prevent spam.
           -- Never kill in this way.
           when (bhp sb2 > oneM) $ do
             execUpdAtomic $ UpdRefillHP source minusM
