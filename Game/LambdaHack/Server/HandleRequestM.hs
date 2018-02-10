@@ -212,9 +212,10 @@ reqMove source dir = do
   lvl <- getLevel lid
   let spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
-      solidSource = IK.iweight itemKind > 400
-                    || IK.Fragile `elem` IK.ifeature itemKind
-                       && IK.Lobable `elem` IK.ifeature itemKind
+      hardSource = not (bproj sb)
+                   || IK.idamage itemKind /= 0
+                   || IK.Fragile `elem` IK.ifeature itemKind
+                      && IK.Lobable `elem` IK.ifeature itemKind
   -- Avoid explosion extinguishing itself via its particles colliding.
   sameBlast <- getsState $ \s tb -> IK.isBlast itemKind
                                     && getIidKindIdServer (btrunk sb) s
@@ -222,10 +223,9 @@ reqMove source dir = do
   -- We start by checking actors at the target position.
   tgt <- getsState $ posToAssocs tpos lid
   case tgt of
-    (target, tb) : _ | not (bproj sb) || not (bproj tb)
-                       || solidSource && not (sameBlast tb)-> do
+    (target, tb) : _ | not (bproj tb) || hardSource && not (sameBlast tb) -> do
       -- A projectile is too small and insubstantial to hit another projectile,
-      -- unless it's large enough or tends to explode (fragile and lobable).
+      -- unless it's solid enough or tends to explode (fragile and lobable).
       -- The actor in the way is visible or not; server sees him always.
       -- Below the only weapon (the only item) of projectiles is picked.
       mweapon <- pickWeaponServer source
@@ -305,7 +305,6 @@ reqMelee source target iid cstore = do
       meleeEffectAndDestroy source target iid c
       let hardTarget = not (bproj tb)
                        || IK.idamage itemKind /= 0
-                       || IK.iweight itemKind > 400
                        || IK.Fragile `elem` IK.ifeature itemKind
                           && IK.Lobable `elem` IK.ifeature itemKind
       sb2 <- getsState $ getActorBody source
