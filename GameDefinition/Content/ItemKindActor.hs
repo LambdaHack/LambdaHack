@@ -83,8 +83,8 @@ escapist = warrior
   , ifreq    = [("escapist hero", 100), ("mobile", 1)]
   , ikit     = ikit warrior
                ++ [ ("add sight", CEqp)
-                  , ("weak arrow", CInv)  -- mostly for probing
                   , ("armor ranged", CEqp)
+                  , ("weak arrow", CInv)  -- mostly for probing
                   , ("flask", CInv)
                   , ("light source", CInv)
                   , ("wooden torch", CInv)
@@ -96,8 +96,11 @@ ambusher = warrior
   , ifreq    = [("ambusher hero", 100), ("mobile", 1)]
   , ikit     = ikit warrior  -- dark and numerous, so more kit without exploring
                ++ [ ("ring of opportunity sniper", CEqp)
-                  , ("light source", CEqp), ("wooden torch", CInv)
-                  , ("weak arrow", CInv), ("any arrow", CSha), ("flask", CSha) ]
+                  , ("any arrow", CSha)
+                  , ("weak arrow", CInv)
+                  , ("flask", CSha)
+                  , ("light source", CEqp)
+                  , ("wooden torch", CInv) ]
   -- , idesc    = ""
   }
 soldier = warrior
