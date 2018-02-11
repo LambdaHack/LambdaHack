@@ -467,29 +467,28 @@ unEquipItems aid = do
                              , [(Int, (ItemId, ItemFullKit))] ) )
               -> [(ItemId, Int, CStore, CStore)]
       improve fromCStore (slot, (bestSha, bestEOrI)) =
-        case (bestSha, bestEOrI) of
+        case bestEOrI of
           _ | not (toShare slot)
               && fromCStore == CEqp
               && not (eqpOverfull body 1) ->  -- keep minor boosts up to M-1
             []
-          (_, (vEOrI, (iidEOrI, _)) : _) | (toShare slot || fromCStore == CInv)
-                                           && getK bestEOrI > 1
-                                           && betterThanSha vEOrI bestSha ->
+          ((vEOrI, (iidEOrI, bei)) : _) | (toShare slot || fromCStore == CInv)
+                                          && getK bei > 1
+                                          && betterThanSha vEOrI bestSha ->
             -- To share the best items with others, if they care.
-            [(iidEOrI, getK bestEOrI - 1, fromCStore, CSha)]
-          (_, _ : (vEOrI, (iidEOrI, _)) : _) | (toShare slot
-                                                || fromCStore == CInv)
-                                               && betterThanSha vEOrI bestSha ->
+            [(iidEOrI, getK bei - 1, fromCStore, CSha)]
+          (_ : (vEOrI, (iidEOrI, bei)) : _) | (toShare slot
+                                               || fromCStore == CInv)
+                                              && betterThanSha vEOrI bestSha ->
             -- To share the second best items with others, if they care.
-            [(iidEOrI, getK bestEOrI, fromCStore, CSha)]
-          (_, (vEOrI, (_, _)) : _) | fromCStore == CEqp
-                                     && eqpOverfull body 1
-                                     && worseThanSha vEOrI bestSha ->
+            [(iidEOrI, getK bei, fromCStore, CSha)]
+          ((vEOrI, (_, _)) : _) | fromCStore == CEqp
+                                  && eqpOverfull body 1
+                                  && worseThanSha vEOrI bestSha ->
             -- To make place in eqp for an item better than any ours.
             [(fst $ snd $ last bestEOrI, 1, fromCStore, CSha)]
           _ -> []
-      getK [] = 0
-      getK ((_, (_, (_, (itemK, _)))) : _) = itemK
+      getK (_, (itemK, _)) = itemK
       betterThanSha _ [] = True
       betterThanSha vEOrI ((vSha, _) : _) = vEOrI > vSha
       worseThanSha _ [] = False
@@ -512,8 +511,7 @@ unEquipItems aid = do
 groupByEqpSlot :: [(ItemId, ItemFullKit)]
                -> EM.EnumMap IA.EqpSlot [(ItemId, ItemFullKit)]
 groupByEqpSlot is =
-  let f (iid, itemFullKit) = case IK.getEqpSlot
-                                  $ itemKind $ fst itemFullKit of
+  let f (iid, itemFullKit) = case IK.getEqpSlot $ itemKind $ fst itemFullKit of
         Nothing -> Nothing
         Just es -> Just (es, [(iid, itemFullKit)])
       withES = mapMaybe f is
