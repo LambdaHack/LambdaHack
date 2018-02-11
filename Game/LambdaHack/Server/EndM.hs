@@ -64,9 +64,24 @@ endOrLoop loop restart gameSave = do
 
 gameExit :: (MonadServerAtomic m, MonadServerReadRequest m) => m ()
 gameExit = do
-  -- Verify that the not saved caches are equal to future reconstructed.
-  -- Otherwise, save/restore would change game state.
 --  debugPossiblyPrint "Verifying all perceptions."
+  -- Verify that the possibly not saved caches are equal to future
+  -- reconstructed. Otherwise, save/restore would change game state.
+  -- This is done even in released binaries, because it only prolongs
+  -- game shutdown a bit. The same checks at each periodic game save
+  -- would icrease the game saving lag, so they are normally avoided.
+  verifyCaches
+  -- Kill all clients, including those that did not take part
+  -- in the current game.
+  -- Clients exit not now, but after they print all ending screens.
+  -- debugPrint "Server kills clients"
+--  debugPossiblyPrint "Killing all clients."
+  killAllClients
+--  debugPossiblyPrint "All clients killed."
+  return ()
+
+verifyCaches :: MonadServer m => m ()
+verifyCaches = do
   sperCacheFid <- getsServer sperCacheFid
   sperValidFid <- getsServer sperValidFid
   sactorAspect2 <- getsState sactorAspect
@@ -98,13 +113,6 @@ gameExit = do
       !_A1 = assert (sperFid == perFid
                      `blame` "wrong accumulated perception"
                      `swith` (sperFid, perFid)) ()
-  -- Kill all clients, including those that did not take part
-  -- in the current game.
-  -- Clients exit not now, but after they print all ending screens.
-  -- debugPrint "Server kills clients"
---  debugPossiblyPrint "Killing all clients."
-  killAllClients
---  debugPossiblyPrint "All clients killed."
   return ()
 
 dieSer :: MonadServerAtomic m => ActorId -> Actor -> m ()
@@ -141,3 +149,8 @@ writeSaveAll uiRequested = do
   when (uiRequested || not bench && not noConfirmsGame) $ do
     execUpdAtomic UpdWriteSave
     saveServer
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+    -- This check is sometimes repeated in @gameExit@, but we don't care about
+    -- speed of shutdown and even more so in WITH_EXPENSIVE_ASSERTIONS mode.
+    verifyCaches
+#endif
