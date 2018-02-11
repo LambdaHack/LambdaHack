@@ -472,33 +472,36 @@ hActors as@(aid : rest) = do
       ReqUIGameDropAndExit -> reqGameDropAndExit aid
       ReqUIGameSaveAndExit -> reqGameSaveAndExit aid
       _ -> error $ "" `showFailure` cmdS
-  let mswitchLeader :: Maybe ActorId -> m ActorId
-      {-# NOINLINE mswitchLeader #-}
-      mswitchLeader (Just aidNew) = switchLeader side aidNew >> return aidNew
-      mswitchLeader Nothing = return aid
-  (aidNew, mtimed) <-
-    if doQueryAI then do
-      (cmd, maid) <- sendQueryAI side aid
-      aidNew <- mswitchLeader maid
-      mtimed <- handleRequestAI cmd
-      return (aidNew, mtimed)
-    else do
-      (cmd, maid) <- sendQueryUI side aid
-      aidNew <- mswitchLeader maid
-      mtimed <- handleRequestUI side aidNew cmd
-      return (aidNew, mtimed)
-  case mtimed of
-    Just (RequestAnyAbility timed) -> do
-      nonWaitMove <- handleRequestTimed side aidNew timed
-      -- Even if the actor got a free turn of time via a scroll,
-      -- he will not act again this clip, only next clip.
-      -- Clip is small, so not a big deal and it's faster and avoids
-      -- complete game time freezes, e.g., due to an exploit.
-      if nonWaitMove then return True else hActors rest
-    Nothing -> do
-      breakASAP <- getsServer sbreakASAP
-      -- If breaking out of the game lopp, pretend there was a non-wait move.
-      if breakASAP then return True else hActors as
+  breakASAP <- getsServer sbreakASAP
+  -- If breaking out of the game lopp, pretend there was a non-wait move.
+  if breakASAP then return True else do
+    let mswitchLeader :: Maybe ActorId -> m ActorId
+        {-# NOINLINE mswitchLeader #-}
+        mswitchLeader (Just aidNew) = switchLeader side aidNew >> return aidNew
+        mswitchLeader Nothing = return aid
+    (aidNew, mtimed) <-
+      if doQueryAI then do
+        (cmd, maid) <- sendQueryAI side aid
+        aidNew <- mswitchLeader maid
+        mtimed <- handleRequestAI cmd
+        return (aidNew, mtimed)
+      else do
+        (cmd, maid) <- sendQueryUI side aid
+        aidNew <- mswitchLeader maid
+        mtimed <- handleRequestUI side aidNew cmd
+        return (aidNew, mtimed)
+    case mtimed of
+      Just (RequestAnyAbility timed) -> do
+        nonWaitMove <- handleRequestTimed side aidNew timed
+        -- Even if the actor got a free turn of time via a scroll,
+        -- he will not act again this clip, only next clip.
+        -- Clip is small, so not a big deal and it's faster and avoids
+        -- complete game time freezes, e.g., due to an exploit.
+        if nonWaitMove then return True else hActors rest
+      Nothing -> do
+        breakASAP2 <- getsServer sbreakASAP
+        -- If breaking out of the game lopp, pretend there was a non-wait move.
+        if breakASAP2 then return True else hActors as
 
 restartGame :: MonadServerAtomic m
             => m () -> m () -> Maybe (GroupName ModeKind) -> m ()
