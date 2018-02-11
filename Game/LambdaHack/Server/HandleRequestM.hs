@@ -717,6 +717,7 @@ reqGameDropAndExit aid = do
   modifyServer $ \ser -> ser {sbreakLoop = True}
   execUpdAtomic $ UpdQuitFaction (bfid b) oldSt
                 $ Just $ Status Camping (fromEnum $ blid b) Nothing
+
 -- * ReqGameSaveAndExit
 
 -- After we break out of the game loop, we will notice from @Camping@

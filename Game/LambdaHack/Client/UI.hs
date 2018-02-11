@@ -84,14 +84,14 @@ queryUI = do
               exit <- elapsedSessionTimeGT stopS
               if exit then do
                 tellAllClipPS
-                return (ReqUIGameDropAndExit, Nothing)  -- ask server to exit
+                return (ReqUIGameSaveAndExit, Nothing)  -- ask server to exit
               else return (ReqUINop, Nothing)
         Just stopF -> do
           allNframes <- getsSession sallNframes
           gnframes <- getsSession snframes
           if allNframes + gnframes >= stopF then do
             tellAllClipPS
-            return (ReqUIGameDropAndExit, Nothing)  -- ask server to exit
+            return (ReqUIGameSaveAndExit, Nothing)  -- ask server to exit
           else return (ReqUINop, Nothing)
   else do
     let mleader = gleader fact

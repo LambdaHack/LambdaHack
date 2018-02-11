@@ -469,8 +469,8 @@ hActors as@(aid : rest) = do
     case fst cmdS of
       ReqUINop -> return ()
       ReqUIAutomate -> execUpdAtomic $ UpdAutoFaction side False
-      ReqUIGameDropAndExit -> do
-        reqGameDropAndExit aid
+      ReqUIGameDropAndExit -> reqGameDropAndExit aid
+      ReqUIGameSaveAndExit -> reqGameSaveAndExit aid
       _ -> error $ "" `showFailure` cmdS
   let mswitchLeader :: Maybe ActorId -> m ActorId
       {-# NOINLINE mswitchLeader #-}
