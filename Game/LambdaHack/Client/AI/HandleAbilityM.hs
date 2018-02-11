@@ -460,6 +460,8 @@ unEquipItems aid = do
   eqpAssocs <- getsState $ kitAssocs aid [CEqp]
   invAssocs <- getsState $ kitAssocs aid [CInv]
   shaAssocs <- getsState $ kitAssocs aid [CSha]
+  condShineWouldBetray <- condShineWouldBetrayM aid
+  condAimEnemyPresent <- condAimEnemyPresentM aid
   discoBenefit <- getsClient sdiscoBenefit
   let improve :: CStore -> ( IA.EqpSlot
                            , ( [(Int, (ItemId, ItemFullKit))]
@@ -492,10 +494,18 @@ unEquipItems aid = do
       betterThanSha vEOrI ((vSha, _) : _) = vEOrI > vSha
       worseThanSha _ [] = False
       worseThanSha vEOrI ((vSha, _) : _) = vEOrI < vSha
-      -- Here we don't need to filter out items that hinder, because
-      -- they are moved to sha and will be equipped by another actor
+      heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
+        deltaSerious (bcalmDelta body)
+      -- Here we don't need to filter out items that hinder, except in sha,
+      -- because they are moved to sha and will be equipped by another actor
       -- at another time, where hindering will be completely different.
-      bestThree = bestByEqpSlot discoBenefit eqpAssocs invAssocs shaAssocs
+      -- If they hinder and we unequip them, all the better.
+      -- We filter sha to consider only eligible items in @worseThanSha@.
+      filterNeeded (_, (itemFull, _)) =
+        not $ hinders condShineWouldBetray condAimEnemyPresent
+                      heavilyDistressed (not calmE) ar itemFull
+      bestThree = bestByEqpSlot discoBenefit eqpAssocs invAssocs
+                                (filter filterNeeded shaAssocs)
       bInvSha = concatMap
                   (improve CInv . (\(slot, (_, inv, sha)) ->
                                     (slot, (sha, inv)))) bestThree
