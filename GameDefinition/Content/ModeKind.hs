@@ -15,9 +15,9 @@ import Game.LambdaHack.Content.ModeKind
 
 content :: [ModeKind]
 content =
-  [raid, brawl, shootout, escape, zoo, ambush, crawl, crawlSurvival, safari, safariSurvival, battle, battleSurvival, defense, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari]
+  [raid, brawl, shootout, escape, zoo, ambush, crawl, crawlEmpty, crawlSurvival, safari, safariSurvival, battle, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari]
 
-raid,    brawl, shootout, escape, zoo, ambush, crawl, crawlSurvival, safari, safariSurvival, battle, battleSurvival, defense, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari :: ModeKind
+raid,    brawl, shootout, escape, zoo, ambush, crawl, crawlEmpty, crawlSurvival, safari, safariSurvival, battle, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari :: ModeKind
 
 -- What other symmetric (two only-one-moves factions) and asymmetric vs crowd
 -- scenarios make sense (e.g., are good for a tutorial or for standalone
@@ -122,6 +122,15 @@ safari = ModeKind  -- easter egg available only via screensaver
 
 -- * Testing modes
 
+crawlEmpty = ModeKind
+  { msymbol = 'c'
+  , mname   = "crawl empty"
+  , mfreq   = [("crawl empty", 1)]
+  , mroster = rosterCrawlEmpty
+  , mcaves  = cavesCrawl
+  , mdesc   = "Enjoy the free space."
+  }
+
 crawlSurvival = ModeKind
   { msymbol = 'd'
   , mname   = "crawl survival"
@@ -165,6 +174,15 @@ defense = ModeKind  -- perhaps a real scenario in the future
   , mroster = rosterDefense
   , mcaves  = cavesCrawl
   , mdesc   = "Don't let human interlopers defile your abstract secrets and flee unpunished!"
+  }
+
+defenseEmpty = ModeKind
+  { msymbol = 'e'
+  , mname   = "defense empty"
+  , mfreq   = [("defense empty", 1)]
+  , mroster = rosterDefenseEmpty
+  , mcaves  = cavesCrawl
+  , mdesc   = "Lord over."
   }
 
 -- * Screensaver modes
@@ -225,7 +243,7 @@ screensaverSafari = safari
               screensave (AutoLeader False True) rosterSafari
   }
 
-rosterRaid, rosterBrawl, rosterShootout, rosterEscape, rosterZoo, rosterAmbush, rosterCrawl, rosterCrawlSurvival, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleSurvival, rosterDefense :: Roster
+rosterRaid, rosterBrawl, rosterShootout, rosterEscape, rosterZoo, rosterAmbush, rosterCrawl, rosterCrawlEmpty, rosterCrawlSurvival, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleSurvival, rosterDefense, rosterDefenseEmpty :: Roster
 
 rosterRaid = Roster
   { rosterList = [ ( playerHero {fhiCondPoly = hiRaid}
@@ -326,6 +344,13 @@ rosterCrawl = Roster
                   , ("Explorer", "Animal Kingdom") ]
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
+rosterCrawlEmpty = Roster
+  { rosterList = [ ( playerHero
+                   , [(-1, 1, "hero")] )
+                 , (playerHorror, []) ]  -- for summoned monsters
+  , rosterEnemy = []
+  , rosterAlly = [] }
+
 rosterCrawlSurvival = rosterCrawl
   { rosterList = [ ( playerHero { fleaderMode =
                                     LeaderAI $ AutoLeader True False
@@ -408,6 +433,13 @@ rosterDefense = rosterCrawl
                  , ( playerAnimal
                    , [ (-1, 1 + 1 `d` 2, "animal")
                      , (-10, 100, "mobile animal") ] ) ] }
+
+rosterDefenseEmpty = rosterCrawl
+  { rosterList = [ ( playerAntiMonster {fneverEmpty = True}
+                   , [(-4, 1, "scout monster")] )
+                 , (playerHorror, []) ]  -- for summoned animals
+  , rosterEnemy = []
+  , rosterAlly = [] }
 
 cavesRaid, cavesBrawl, cavesShootout, cavesEscape, cavesZoo, cavesAmbush, cavesCrawl, cavesSafari, cavesBattle :: Caves
 
