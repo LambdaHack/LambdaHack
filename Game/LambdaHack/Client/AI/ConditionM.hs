@@ -167,7 +167,7 @@ condProjectListM skill aid = do
         deltaSerious (bcalmDelta b)
       -- This detects if the value of keeping the item in eqp is in fact < 0.
       hind = hinders condShineWouldBetray condAimEnemyPresent
-                     heavilyDistressed condNotCalmEnough b ar
+                     heavilyDistressed condNotCalmEnough ar
       q (Benefit{benInEqp, benFling}, _, _, itemFull, _) =
         benFling < 0
         && (not benInEqp  -- can't wear, so OK to risk losing or breaking
@@ -193,12 +193,12 @@ benAvailableItems aid cstores = do
       benCStore cs = ben cs $ getBodyStoreBag b cs s
   return $ concatMap benCStore cstores
 
-hinders :: Bool -> Bool -> Bool -> Bool -> Actor -> IA.AspectRecord -> ItemFull
+hinders :: Bool -> Bool -> Bool -> Bool -> IA.AspectRecord -> ItemFull
         -> Bool
 hinders condShineWouldBetray condAimEnemyPresent
         heavilyDistressed condNotCalmEnough
           -- guess that enemies have projectiles and used them now or recently
-        body ar itemFull =
+        ar itemFull =
   let itemShine = 0 < IA.aShine (aspectRecordFull itemFull)
       -- @condAnyFoeAdj@ is not checked, because it's transient and also item
       -- management is unlikely to happen during melee, anyway
@@ -209,7 +209,7 @@ hinders condShineWouldBetray condAimEnemyPresent
      && itemShineBad  -- even if it's a weapon, take it off
      -- Fast actors want to hit hard, because they hit much more often
      -- than receive hits.
-     || bspeed body ar > speedWalk
+     || gearSpeed ar > speedWalk
         && not (IK.isMelee $ itemKind itemFull)  -- in case it's the only weapon
         && 0 > IA.aHurtMelee (aspectRecordFull itemFull)
 

@@ -199,7 +199,7 @@ targetStrategy aid = do
         let Benefit{benPickup} = discoBenefit EM.! iid
         in desirableItem canEscape benPickup (getKind iid)) $ EM.keys bag
       desirableFloor (_, (_, bag)) = desirableBagFloor bag
-      focused = bspeed b ar < speedWalk || condHpTooLow
+      focused = gearSpeed ar < speedWalk || condHpTooLow
       couldMoveLastTurn =
         let actorSk = if mleader == Just aid then actorMaxSk else actorMinSk
         in EM.findWithDefault 0 AbMove actorSk > 0

@@ -114,16 +114,16 @@ actionStrategy aid retry = do
       panicFleeL = fleeL ++ badVic
       condHpTooLow = hpTooLow body ar
       condNotCalmEnough = not (calmEnough body ar)
-      speed1_5 = speedScale (3%2) (bspeed body ar)
+      speed1_5 = speedScale (3%2) (gearSpeed ar)
       condCanMelee = actorCanMelee actorAspect aid body
       condMeleeBad1 = not (condSupport1 && condCanMelee)
       condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
       threatAdj = takeWhile ((== 1) . fst) threatDistL
       condManyThreatAdj = length threatAdj >= 2
       condFastThreatAdj =
-        any (\(_, (aid2, b2)) ->
+        any (\(_, (aid2, _)) ->
               let ar2 = actorAspect EM.! aid2
-              in bspeed b2 ar2 > speed1_5)
+              in gearSpeed ar2 > speed1_5)
         threatAdj
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
         deltaSerious (bcalmDelta body)
@@ -392,7 +392,7 @@ equipItems aid = do
       -- a loop of equip/yield.
       filterNeeded (_, (itemFull, _)) =
         not $ hinders condShineWouldBetray condAimEnemyPresent
-                      heavilyDistressed (not calmE) body ar itemFull
+                      heavilyDistressed (not calmE) ar itemFull
       bestThree = bestByEqpSlot discoBenefit
                                 (filter filterNeeded eqpAssocs)
                                 (filter filterNeeded invAssocs)
@@ -439,8 +439,7 @@ yieldUnneeded aid = do
         if | harmful discoBenefit iidEqp ->
              [(iidEqp, itemK, CEqp, CInv)]  -- harmful not shared
            | hinders condShineWouldBetray condAimEnemyPresent
-                     heavilyDistressed (not calmE)
-                     body ar itemEqp ->
+                     heavilyDistressed (not calmE) ar itemEqp ->
              [(iidEqp, itemK, CEqp, csha)]
            | otherwise -> []
       yieldAllUnneeded = concatMap yieldSingleUnneeded eqpAssocs
@@ -581,7 +580,7 @@ meleeBlocker aid = do
                   && EM.findWithDefault 0 AbDisplace actorSk <= 0  -- can't disp
                   && EM.findWithDefault 0 AbMove actorSk > 0  -- blocked move
                   && 3 * bhp body2 < bhp b  -- only get rid of weak friends
-                  && bspeed body2 ar2 <= bspeed b ar -> do
+                  && gearSpeed ar2 <= gearSpeed ar -> do
                mel <- maybeToList <$> pickWeaponClient aid aid2
                return $! liftFrequency $ uniformFreq "melee in the way" mel
              | otherwise -> return reject
@@ -696,7 +695,7 @@ applyItem aid applyGroup = do
       skill = EM.findWithDefault 0 AbApply actorSk
       -- This detects if the value of keeping the item in eqp is in fact < 0.
       hind = hinders condShineWouldBetray condAimEnemyPresent
-                     heavilyDistressed condNotCalmEnough b ar
+                     heavilyDistressed condNotCalmEnough ar
       permittedActor itemFull kit =
         either (const False) id
         $ permittedApply localTime skill calmE " " itemFull kit

@@ -111,15 +111,15 @@ pickActorToMove maidToAvoid = do
             condSupport3 <- condSupport 3 aid
             canDeAmbientL <- getsState $ canDeAmbientList body
             let condCanFlee = not (null fleeL)
-                speed1_5 = speedScale (3%2) (bspeed body ar)
+                speed1_5 = speedScale (3%2) (gearSpeed ar)
                 condCanMelee = actorCanMelee actorAspect aid body
                 condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
                 threatAdj = takeWhile ((== 1) . fst) threatDistL
                 condManyThreatAdj = length threatAdj >= 2
                 condFastThreatAdj =
-                  any (\(_, (aid2, b2)) ->
+                  any (\(_, (aid2, _)) ->
                     let ar2 = actorAspect EM.! aid2
-                    in bspeed b2 ar2 > speed1_5)
+                    in gearSpeed ar2 > speed1_5)
                   threatAdj
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.

@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Actor
     -- * The@ Acto@r type, its components and operations on them
   , Actor(..), ResDelta(..), ActorAspect
   , deltaSerious, deltaMild, actorCanMelee
-  , bspeed, braced, actorTemplate, waitedLastTurn, actorDying
+  , momentarySpeed, gearSpeed, braced, actorTemplate, waitedLastTurn, actorDying
   , hpTooLow, calmEnough, hpEnough
   , checkAdjacent, eqpOverfull, eqpFreeN
     -- * Assorted
@@ -103,11 +103,17 @@ actorCanMelee actorAspect aid b =
       canMelee = EM.findWithDefault 0 Ability.AbMelee actorMaxSk > 0
   in condUsableWeapon && canMelee
 
-bspeed :: Actor -> IA.AspectRecord -> Speed
-bspeed !b IA.AspectRecord{aSpeed} =
+-- | Current physical speed, whether from being pushed or from organs and gear.
+momentarySpeed :: Actor -> IA.AspectRecord -> Speed
+momentarySpeed !b ar =
   case btrajectory b of
-    Nothing -> toSpeed $ max minSpeed aSpeed  -- see @minimalSpeed@
+    Nothing -> gearSpeed ar
     Just (_, speed) -> speed
+
+-- | The speed from organs and gear; being pushed is ignored.
+gearSpeed :: IA.AspectRecord -> Speed
+gearSpeed IA.AspectRecord{aSpeed} =
+  toSpeed $ max minSpeed aSpeed  -- see @minimalSpeed@
 
 -- | Whether an actor is braced for combat this clip.
 braced :: Actor -> Bool

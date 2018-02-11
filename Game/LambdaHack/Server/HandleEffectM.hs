@@ -657,7 +657,7 @@ effectSummon grp nDm iid source target periodic = do
        ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
        localTime <- getsState $ getLocalTime (blid tb)
        -- Make sure summoned actors start acting after the victim.
-       let actorTurn = ticksPerMeter $ bspeed tb tar
+       let actorTurn = ticksPerMeter $ momentarySpeed tb tar
            targetTime = timeShift localTime actorTurn
            afterTime = timeShift targetTime $ Delta timeClip
        bs <- forM (take power ps) $ \p -> do
@@ -893,7 +893,7 @@ effectInsertMove execSfx nDm source target = do
   actorStasis <- getsServer sactorStasis
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
   let power = max power0 1  -- KISS, avoid special case
-      actorTurn = ticksPerMeter $ bspeed tb ar
+      actorTurn = ticksPerMeter $ momentarySpeed tb ar
       t = timeDeltaScale actorTurn (-power)
   -- Projectiles permitted; can't be suspended mid-air, as in @effectParalyze@
   -- but can be propelled.
@@ -972,7 +972,8 @@ effectCreateItem jfidRaw mcount target store grp tim = do
         ar <- getsState $ getActorAspect target
         -- A tiny bit added to make sure length 1 effect doesn't end before
         -- the end of first turn, which would make, e.g., speed, useless.
-        let actorTurn = timeDeltaPercent (ticksPerMeter $ bspeed tb ar) 101
+        let actorTurn =
+              timeDeltaPercent (ticksPerMeter $ momentarySpeed tb ar) 101
         fscale actorTurn nDm
   delta <- IK.foldTimer (return $ Delta timeZero) fgame factor tim
   let c = CActor target store
