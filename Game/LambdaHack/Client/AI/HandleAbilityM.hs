@@ -377,8 +377,11 @@ equipItems aid = do
           ((_, (iidInv, _)) : _, []) | not (eqpOverfull body n) ->
             (n, (iidInv, 1, fromCStore, CEqp) : l4)
           ((vInv, (iidInv, _)) : _, (vEqp, _) : _)
-            | not (eqpOverfull body n)
-              && (vInv > vEqp || not (toShare slot)) ->
+            | vInv > vEqp && not (eqpOverfull body n)
+              -- Only add random minor boosts if one slot remains free
+              -- for major boosts, to avoid wield/unwield loops.
+              -- All slots may be taken only via adding major boosts.
+              || not (toShare slot) && not (eqpOverfull body (n + 1)) ->
                 (n, (iidInv, 1, fromCStore, CEqp) : l4)
           _ -> (oldN, l4)
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
@@ -487,6 +490,7 @@ unEquipItems aid = do
                                   && eqpOverfull body 1
                                   && worseThanSha vEOrI bestSha ->
             -- To make place in eqp for an item better than any ours.
+            -- Even a minor boost is removed only if sha has a better one.
             [(fst $ snd $ last bestEOrI, 1, fromCStore, CSha)]
           _ -> []
       getK (_, (itemK, _)) = itemK
@@ -496,7 +500,7 @@ unEquipItems aid = do
       worseThanSha vEOrI ((vSha, _) : _) = vEOrI < vSha
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltaSerious (bcalmDelta body)
-      -- Here we don't need to filter out items that hinder, except in sha,
+      -- Here we don't need to filter out items that hinder (except in sha)
       -- because they are moved to sha and will be equipped by another actor
       -- at another time, where hindering will be completely different.
       -- If they hinder and we unequip them, all the better.
