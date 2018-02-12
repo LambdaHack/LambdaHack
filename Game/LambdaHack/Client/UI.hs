@@ -75,6 +75,8 @@ queryUI = do
       -- As long as UI faction is under AI control, check, once per move,
       -- for benchmark game stop.
       stopAfterFrames <- getsClient $ sstopAfterFrames . soptions
+      bench <- getsClient $ sbenchmark . soptions
+      let exitCmd = if bench then ReqUIGameDropAndExit else ReqUIGameSaveAndExit
       case stopAfterFrames of
         Nothing -> do
           stopAfterSeconds <- getsClient $ sstopAfterSeconds . soptions
@@ -84,14 +86,14 @@ queryUI = do
               exit <- elapsedSessionTimeGT stopS
               if exit then do
                 tellAllClipPS
-                return (ReqUIGameSaveAndExit, Nothing)  -- ask server to exit
+                return (exitCmd, Nothing)  -- ask server to exit
               else return (ReqUINop, Nothing)
         Just stopF -> do
           allNframes <- getsSession sallNframes
           gnframes <- getsSession snframes
           if allNframes + gnframes >= stopF then do
             tellAllClipPS
-            return (ReqUIGameSaveAndExit, Nothing)  -- ask server to exit
+            return (exitCmd, Nothing)  -- ask server to exit
           else return (ReqUINop, Nothing)
   else do
     let mleader = gleader fact

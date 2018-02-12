@@ -190,7 +190,6 @@ loopUpd updConn = do
           modifyServer $ \ser -> ser { sbreakLoop = False
                                      , sbreakASAP = False }
           endOrLoop loopUpdConn (restartGame updConn loopUpdConn)
-                    (writeSaveAll True)
         else
           loopUpdConn
   loopUpdConn

@@ -33,9 +33,9 @@ import Game.LambdaHack.Server.State
 
 -- | Continue or exit or restart the game.
 endOrLoop :: (MonadServerAtomic m, MonadServerReadRequest m)
-          => m () -> (Maybe (GroupName ModeKind) -> m ()) -> m ()
+          => m () -> (Maybe (GroupName ModeKind) -> m ())
           -> m ()
-endOrLoop loop restart gameSave = do
+endOrLoop loop restart = do
   factionD <- getsState sfactionD
   let inGame fact = case gquit fact of
         Nothing -> True
@@ -57,7 +57,7 @@ endOrLoop loop restart gameSave = do
   swriteSave <- getsServer swriteSave
   when swriteSave $ do
     modifyServer $ \ser -> ser {swriteSave = False}
-    gameSave
+    writeSaveAll True
   if | restartNeeded -> restart (listToMaybe quitters)
      | not $ null campers -> gameExit  -- and @loop@ is not called
      | otherwise -> loop  -- continue current game
