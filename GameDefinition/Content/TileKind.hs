@@ -595,7 +595,7 @@ floorActorItem = floorActor
 floorRed = floorCorridor
   { tsymbol  = floorSymbol
   , tname    = "brick pavement"
-  , tfreq    = [("trailLit", 30)]
+  , tfreq    = [("trailLit", 30), ("alarmingTrailLit", 70)]
   , tcolor   = BrRed
   , tcolor2  = Red
   , tfeature = [Trail, Walkable, Clear]
@@ -614,7 +614,7 @@ floorGreen = floorRed
   }
 floorBrown = floorRed
   { tname    = "rotting mahogany deck"
-  , tfreq    = [("trailLit", 10)]
+  , tfreq    = [("trailLit", 10), ("alarmingTrailLit", 30)]
   , tcolor   = BrMagenta
   , tcolor2  = Magenta
   }
