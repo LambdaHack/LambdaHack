@@ -37,7 +37,7 @@ rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
 rectWindows = PlaceKind
   { psymbol  = 'w'
   , pname    = "room"
-  , pfreq    = [("empty", 10), ("park", 7)]
+  , pfreq    = [("empty", 10), ("park", 6)]
   , prarity  = [(1, 10), (10, 8)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -184,7 +184,7 @@ colonnade = PlaceKind
   { psymbol  = 'c'
   , pname    = "colonnade"
   , pfreq    = [ ("rogue", 30), ("arena", 70), ("laboratory", 40)
-               , ("empty", 100), ("mine", 10000), ("park", 3000) ]
+               , ("empty", 100), ("mine", 10000), ("park", 4000) ]
   , prarity  = [(1, 3), (10, 3)]
   , pcover   = CAlternate
   , pfence   = FFloor

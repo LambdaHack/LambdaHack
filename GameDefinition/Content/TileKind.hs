@@ -238,7 +238,7 @@ tree = TileKind
   { tsymbol  = 'O'
   , tname    = "tree"
   , tfreq    = [ ("brawlSetLit", 140), ("shootoutSetLit", 10)
-               , ("escapeSetLit", 30), ("treeShadeOver_O_Lit", 1) ]
+               , ("escapeSetLit", 35), ("treeShadeOver_O_Lit", 1) ]
   , tcolor   = BrGreen
   , tcolor2  = Green
   , talter   = 50
@@ -466,7 +466,7 @@ pulpit = TileKind
 bush = TileKind
   { tsymbol  = '%'
   , tname    = "bush"
-  , tfreq    = [ ("bush Lit", 1), ("shootoutSetLit", 30), ("escapeSetLit", 30)
+  , tfreq    = [ ("bush Lit", 1), ("shootoutSetLit", 30), ("escapeSetLit", 40)
                , ("bushClumpOver_f_Lit", 1) ]
   , tcolor   = BrGreen
   , tcolor2  = Green
@@ -509,7 +509,7 @@ floorFog = TileKind
   }
 floorFogDark = floorFog
   { tname    = "thick fog"
-  , tfreq    = [("noiseSet", 10), ("escapeSetDark", 60)]
+  , tfreq    = [("noiseSet", 10), ("escapeSetDark", 50)]
   , tfeature = Dark : tfeature floorFog
   }
 floorSmoke = TileKind
@@ -624,6 +624,7 @@ floorArenaShade = floorActor
   , tcolor2  = BrBlack
   , tfeature = Dark : NoItem : tfeature floorActor
   }
+
 outdoorFence = TileKind
   { tsymbol  = ' '
   , tname    = "event horizon"
