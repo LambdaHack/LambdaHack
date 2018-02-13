@@ -68,7 +68,7 @@ reinitGame = do
   -- at this point to keep clients in sync with server improvements.
   s <- getState
   discoS <- getsState sdiscoKind
-  -- Thanks to the following, for any item with feature @Identified@,
+  -- Thanks to the following, for any item with not hidden identity,
   -- the client has its kind from the start.
   let discoKindFiltered =
         let f kindId = isNothing $ IK.getHideAs $ okind coitem kindId

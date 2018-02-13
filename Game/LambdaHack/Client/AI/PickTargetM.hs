@@ -319,7 +319,7 @@ targetStrategy aid = do
       tileAdj f p = any f $ vicinityUnsafe p
       followingWrong permit =
         permit && (condInMelee  -- in melee, stop following
-                   || mleader == Just aid) -- a leader, never follow
+                   || mleader == Just aid)  -- a leader, never follow
       updateTgt :: TgtAndPath -> m (Strategy TgtAndPath)
       updateTgt TgtAndPath{tapPath=NoPath} = pickNewTarget
       updateTgt tap@TgtAndPath{tapPath=AndPath{..},tapTgt} = case tapTgt of
