@@ -54,6 +54,7 @@ effectToBenefit cops fact insideRecharging eff =
       -- with varied situations.
       ( 1     -- equip, but not too greedily, in case it mostly harms friends
       , -1 )  -- hit with it or throw, but beware of harming friends
+    IK.Explode "single spark" -> delta (-1)  -- hardwired; probing and flavour
     IK.Explode _ ->
       -- We know this explosion is not wrapped with @Recharging@ nor @OnSmash@
       -- so we assume it's focused and very harmful and so only safe
