@@ -206,7 +206,7 @@ loopUpd updConn = do
 -- and arenas are not changed. After game was saved and exited,
 -- on game resume the first clip is performed with empty arenas,
 -- so arena time is not updated and nobody moves, nor anything happens,
--- but arenas are here correctly updated
+-- but arenas are here correctly updated.
 endClip :: forall m. MonadServerAtomic m => (FactionId -> m ()) -> m ()
 {-# INLINE endClip #-}
 endClip updatePerFid = do

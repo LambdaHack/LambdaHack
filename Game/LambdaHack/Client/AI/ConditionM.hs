@@ -229,21 +229,17 @@ benGroundItems aid = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let canEsc = fcanEscape (gplayer fact)
       isDesirable (ben, _, _, ItemFull{itemKind}, _) =
-        desirableItem canEsc (benPickup $ ben) itemKind
+        desirableItem canEsc (benPickup ben) itemKind
   benList <- benAvailableItems aid [CGround]
   return $ filter isDesirable benList
 
 desirableItem :: Bool -> Double -> IK.ItemKind -> Bool
-desirableItem canEsc pickupSum itemKind =
+desirableItem canEsc benPickup itemKind =
   if canEsc
-  then pickupSum > 0 || IK.Precious `elem` IK.ifeature itemKind
-  else
-    -- A hack to prevent monsters from picking up treasure meant for heroes.
-    let preciousNotUseful =  -- suspect and probably useless jewelry
-          IK.Precious `elem` IK.ifeature itemKind  -- risk from treasure hunters
-          && IK.Equipable `notElem` IK.ifeature itemKind  -- can't wear
-    in pickupSum > 0 && not preciousNotUseful
-         -- hack for elixir: even if @use@ positive
+  then benPickup > 0 || IK.Precious `elem` IK.ifeature itemKind
+  else -- A hack to prevent monsters from picking up treasure meant for heroes.
+       let preciousNotUseful = IK.isHumanTrinket itemKind
+       in benPickup > 0 && not preciousNotUseful
 
 condSupport :: MonadClient m => Int -> ActorId -> m Bool
 condSupport param aid = do

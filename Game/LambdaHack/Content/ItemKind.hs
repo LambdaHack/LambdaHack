@@ -8,7 +8,7 @@ module Game.LambdaHack.Content.ItemKind
   , filterRecharging, stripRecharging, stripOnSmash
   , strengthOnSmash, getDropOrgans, getToThrow, getHideAs, getEqpSlot
   , isEffEscape, isEffAscend, isEffEscapeOrAscend
-  , isMelee, isTmpCondition, isBlast
+  , isMelee, isTmpCondition, isBlast, isHumanTrinket
   , goesIntoEqp, goesIntoInv, goesIntoSha
   , itemTrajectory, totalRange, damageUsefulness
   , tmpNoLonger, tmpLess, toVelocity, toLinger
@@ -344,6 +344,11 @@ isTmpCondition itemKind = Fragile `elem` ifeature itemKind
 
 isBlast :: ItemKind -> Bool
 isBlast itemKind = Blast `elem` ifeature itemKind
+
+isHumanTrinket :: ItemKind -> Bool
+isHumanTrinket itemKind =
+  Precious `elem` ifeature itemKind  -- risk from treasure hunters
+  && Equipable `notElem` ifeature itemKind  -- can't wear
 
 goesIntoEqp :: ItemKind -> Bool
 goesIntoEqp itemKind = Equipable `elem` ifeature itemKind

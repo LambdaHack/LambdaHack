@@ -1156,7 +1156,7 @@ effectIdentify execSfx iidId source target = do
                 IdentityObvious _ -> True
                 IdentityCovered ix _ -> ix `EM.member` sdiscoKind s
           if iid `EM.member` sdiscoAspect s  -- already fully identified
-             || maybe False (> 0) (lookup "gem" $ IK.ifreq itemKind)  -- hack
+             || IK.isHumanTrinket itemKind  -- hack; keep them non-identified
              || store == CGround && IK.onlyMinorEffects itemKind
                -- will be identified when picked up, so don't bother
              || IA.kmConst (IK.getKindMean itemKindId coItemSpeedup)

@@ -722,15 +722,14 @@ applyItem aid applyGroup = do
       getTweak (IK.Composite l) = any getTweak l
       getTweak _ = False
       q (Benefit{benInEqp}, _, _, itemFull@ItemFull{itemKind}, kit) =
-        let freq = IK.ifreq itemKind
-            durable = IK.Durable `elem` IK.ifeature itemKind
+        let durable = IK.Durable `elem` IK.ifeature itemKind
         in (not benInEqp  -- can't wear, so OK to break
             || durable  -- can wear, but can't break, even better
             || not (IK.isMelee itemKind)  -- anything else expendable
                && hind itemFull)  -- hinders now, so possibly often, so away!
            && permittedActor itemFull kit
            && not (any getTweak $ IK.ieffects itemKind)
-           && maybe True (<= 0) (lookup "gem" freq) -- hack for elixir of youth
+           && not (IK.isHumanTrinket itemKind)  -- hack for elixir of youth
       -- Organs are not taken into account, because usually they are either
       -- melee items, so harmful, or periodic, so charging between activations.
       -- The case of a weak weapon curing poison is too rare to incur overhead.

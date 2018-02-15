@@ -78,8 +78,7 @@ revealItems mfid = do
         itemKindId <- getsState $ getIidKindIdServer iid
         let itemKind = okind coitem itemKindId
             c = CActor aid store
-            isGem = maybe False (> 0) $ lookup "gem" $ IK.ifreq itemKind
-        unless isGem $ do  -- a hack
+        unless (IK.isHumanTrinket itemKind) $ do  -- a hack
           seed <- getsServer $ (EM.! iid) . sitemSeedD
           execUpdAtomic $ UpdDiscover c iid itemKindId seed
       f aid = do
