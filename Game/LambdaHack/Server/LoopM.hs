@@ -176,21 +176,22 @@ loopUpd updConn = do
         -- after the clip has ended, not at the start.
         mapM_ handleFid $ EM.toDescList factionD
         breakASAP <- getsServer sbreakASAP
-        unless breakASAP $ do
-          -- Projectiles are processed last and not at all if the UI leader
-          -- decides to save or exit or restart. This and UI leader acting
-          -- before any other ordinary actors ensures state is not changed
-          -- and so the clip doesn't need to be carried through before save.
-          arenas <- getsServer sarenas
-          mapM_ (\fid -> mapM_ (`handleTrajectories` fid) arenas)
-                (EM.keys factionD)
-          endClip updatePerFid  -- must be last, in case performs a bkp save
         breakLoop <- getsServer sbreakLoop
         if breakASAP || breakLoop then do
           modifyServer $ \ser -> ser { sbreakLoop = False
                                      , sbreakASAP = False }
           endOrLoop loopUpdConn (restartGame updConn loopUpdConn)
-        else
+        else do
+          -- Projectiles are processed last and not at all if the UI leader
+          -- decides to save or exit or restart or if there is game over.
+          -- This and UI leader acting before any other ordinary actors
+          -- ensures state is not changed and so the clip doesn't need
+          -- to be carried through before save.
+          arenas <- getsServer sarenas
+          mapM_ (\fid -> mapM_ (`handleTrajectories` fid) arenas)
+                (EM.keys factionD)
+          endClip updatePerFid  -- must be last, in case performs a bkp save
+          -- Process next iteration.
           loopUpdConn
   loopUpdConn
 
