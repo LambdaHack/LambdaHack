@@ -178,6 +178,8 @@ loopUpd updConn = do
         breakASAP <- getsServer sbreakASAP
         breakLoop <- getsServer sbreakLoop
         if breakASAP || breakLoop then do
+          -- Update perception one last time to satisfy save/resume assertions.
+          mapM_ updatePerFid (EM.keys factionD)
           modifyServer $ \ser -> ser { sbreakLoop = False
                                      , sbreakASAP = False }
           endOrLoop loopUpdConn (restartGame updConn loopUpdConn)
