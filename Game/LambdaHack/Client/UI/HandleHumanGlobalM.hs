@@ -954,15 +954,15 @@ verifyEscape = do
     else do
       (_, total) <- getsState $ calculateTotal side
       if total == 0 then do
-        -- The player can back off at each of these steps.
+        -- The player can back off at this step. We don't insist, because
+        -- possibly the score formula doesn't reward treasure, or possibly
+        -- the dungeon definition rules out treasure, or this particular
+        -- dungeon has none by a fluke in dungeon generation.
         go1 <- displaySpaceEsc ColorBW
-                 "Afraid of the challenge? Leaving so soon and empty-handed?"
-        if not go1 then failWith "brave soul!"
-        else do
-           go2 <- displaySpaceEsc ColorBW
-                   "Next time try to grab some loot before escape!"
-           if not go2 then failWith "here's your chance!"
-           else return $ Right ()
+          "Afraid of the challenge? Leaving so soon and without any treasure?"
+        if not go1
+        then failWith "here's your chance!"
+        else return $ Right ()
       else return $ Right ()
 
 -- | Guess and report why the bump command failed.

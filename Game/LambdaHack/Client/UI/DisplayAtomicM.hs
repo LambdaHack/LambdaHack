@@ -797,10 +797,12 @@ quitFactionUI fid toSt = do
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= lSlotsBound]
               let worth = itemPrice 1 $ itemKind itemFull2
-                  lootMsg = makeSentence $
-                    ["This particular loot is worth"]
+                  lootMsg | worth /= 0 = makeSentence $
+                    ["this particular loot is worth"]
                     ++ (if k > 1 then [ MU.Cardinal k, "times"] else [])
                     ++ [MU.CarWs worth currencyName]
+                          | otherwise = makeSentence $
+                    ["this item is not worth any", MU.Ws currencyName]
               promptAdd lootMsg
               slides <- overlayToSlideshow (lysize + 1) keys (ov, [])
               km <- getConfirms ColorFull keys slides
@@ -811,8 +813,17 @@ quitFactionUI fid toSt = do
                 K.Esc -> return False
                 _ -> error $ "" `showFailure` km
             viewItems = if EM.null itemBag then return True else do
-              let spoilsMsg = makeSentence [ "Your spoils are worth"
-                                           , MU.CarWs total currencyName ]
+              dungeonTotal <- getsState sgold
+              let spoilsMsg =
+                    if | dungeonTotal == 0 ->
+                           "All your spoils are of the practical kind."
+                       | total == 0 ->
+                           "You haven't found any genuine treasure."
+                       | otherwise -> makeSentence
+                           [ "your spoils are worth"
+                           , MU.CarWs total currencyName
+                           , "out of the rumoured total"
+                           , MU.CarWs dungeonTotal currencyName ]
               promptAdd spoilsMsg
               ItemSlots itemSlots <- getsSession sslots
               let lSlots = EM.filter (`EM.member` itemBag)
