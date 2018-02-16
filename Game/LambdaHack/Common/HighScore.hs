@@ -70,6 +70,7 @@ insertPos s (ScoreTable table) =
 -- | Register a new score in a score table.
 register :: ScoreTable  -- ^ old table
          -> Int         -- ^ the total value of faction items
+         -> Int         -- ^ the total value of dungeon items
          -> Time        -- ^ game time spent
          -> Status      -- ^ reason of the game interruption
          -> POSIXTime   -- ^ current date
@@ -79,12 +80,13 @@ register :: ScoreTable  -- ^ old table
          -> EM.EnumMap (ContentId ItemKind) Int  -- ^ foes killed
          -> HiCondPoly
          -> (Bool, (ScoreTable, Int))
-register table total time status@Status{stOutcome} date challenge gplayerName
-         ourVictims theirVictims hiCondPoly =
+register table total dungeonTotal time status@Status{stOutcome}
+         date challenge gplayerName ourVictims theirVictims hiCondPoly =
   let turnsSpent = fromIntegral $ timeFitUp time timeTurn
-      hiInValue (hi, c) = case hi of
+      hiInValue (hi, c) = assert (total <= dungeonTotal) $ case hi of
         HiConst -> c
-        HiLoot -> c * fromIntegral total
+        HiLoot | dungeonTotal == 0 -> c  -- a fluke; no gold generated
+        HiLoot -> c * fromIntegral total / fromIntegral dungeonTotal
         HiBlitz -> -- Up to 1000000/c turns matter.
                    sqrt $ max 0 (1000000 + c * turnsSpent)
         HiSurvival -> -- Up to 1000000/c turns matter.

@@ -259,6 +259,7 @@ scoreToSlideshow total status = do
   gameModeId <- getsState sgameModeId
   gameMode <- getGameMode
   time <- getsState stime
+  dungeonTotal <- getsState sgold
   date <- liftIO getPOSIXTime
   tz <- liftIO $ getTimeZone $ posixSecondsToUTCTime date
   curChalSer <- getsClient scurChal
@@ -276,7 +277,7 @@ scoreToSlideshow total status = do
                       | otherwise = Nothing
       ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
       (worthMentioning, (ntable, pos)) =
-        HighScore.register table total time status date chal
+        HighScore.register table total dungeonTotal time status date chal
                            (T.unwords $ tail $ T.words $ gname fact)
                            ourVictims theirVictims
                            (fhiCondPoly $ gplayer fact)

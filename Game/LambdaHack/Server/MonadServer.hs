@@ -159,6 +159,7 @@ registerScore status fid = do
   scoreDict <- restoreScore cops
   gameModeId <- getsState sgameModeId
   time <- getsState stime
+  dungeonTotal <- getsState sgold
   date <- liftIO getPOSIXTime
   tz <- liftIO $ getTimeZone $ posixSecondsToUTCTime date
   curChalSer <- getsServer $ scurChalSer . soptions
@@ -188,7 +189,7 @@ registerScore status fid = do
       ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
       table = HighScore.getTable gameModeId scoreDict
       registeredScore =
-        HighScore.register table total time status date chal
+        HighScore.register table total dungeonTotal time status date chal
                            (T.unwords $ tail $ T.words $ gname fact)
                            ourVictims theirVictims
                            (fhiCondPoly $ gplayer fact)
