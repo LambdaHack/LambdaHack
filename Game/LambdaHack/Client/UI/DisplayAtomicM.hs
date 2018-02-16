@@ -795,8 +795,8 @@ quitFactionUI fid toSt = do
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= lSlotsBound]
-              worth <- getsState $ itemPrice (itemBase itemFull2, 1)
-              let lootMsg = makeSentence $
+              let worth = itemPrice 1 $ itemKind itemFull2
+                  lootMsg = makeSentence $
                     ["This particular loot is worth"]
                     ++ (if k > 1 then [ MU.Cardinal k, "times"] else [])
                     ++ [MU.CarWs worth currencyName]

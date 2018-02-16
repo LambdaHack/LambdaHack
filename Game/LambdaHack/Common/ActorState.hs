@@ -116,17 +116,15 @@ calculateTotal :: FactionId -> State -> (ItemBag, Int)
 calculateTotal fid s =
   let bag = combinedItems fid s
       items = map (\(iid, (k, _)) -> (getItemBody iid s, k)) $ EM.assocs bag
-  in (bag, sum $ map (flip itemPrice s) items)
+      price (item, k) = itemPrice k $ getItemKind item s
+  in (bag, sum $ map price items)
 
 -- | Price an item, taking count into consideration.
-itemPrice :: (Item, Int) -> State -> Int
-itemPrice (item, jcount) s =
-  let kind = getItemKind item s
-  in case IK.isymbol kind of
-    _ | IK.iname kind == "gem" -> jcount * 100  -- hack
-    '$' -> jcount
-    '*' -> jcount * 100
-    _   -> 0
+itemPrice :: Int -> IK.ItemKind -> Int
+itemPrice jcount itemKind = case IK.isymbol itemKind of
+  _ | IK.iname itemKind == "gem" -> jcount * 100  -- hack
+  '$' -> jcount
+  _   -> 0
 
 mergeItemQuant :: ItemQuant -> ItemQuant -> ItemQuant
 mergeItemQuant (k2, it2) (k1, it1) = (k1 + k2, it1 ++ it2)
