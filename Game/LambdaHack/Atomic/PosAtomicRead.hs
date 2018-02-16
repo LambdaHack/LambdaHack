@@ -109,6 +109,7 @@ posUpdAtomic cmd = case cmd of
   UpdAlterExplorable{} -> return PosAll
     -- Can't have @PosSight@, because we'd end up with many accessible
     -- unknown tiles, but the game reporting 'all seen'.
+  UpdAlterGold{} -> return PosAll
   UpdSearchTile aid p _ -> do
     b <- getsState $ getActorBody aid
     return $! PosFidAndSight [bfid b] (blid b) [bpos b, p]

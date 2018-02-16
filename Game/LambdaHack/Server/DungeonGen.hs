@@ -207,7 +207,7 @@ levelFromCaveKind COps{cocave, coTileSpeedup}
        { lkind
        , ldepth
        , lfloor = EM.empty
-       , lembed = EM.empty  -- is populated inside $MonadServer$
+       , lembed = EM.empty
        , lactor = EM.empty
        , ltile
        , lxsize = cxsize

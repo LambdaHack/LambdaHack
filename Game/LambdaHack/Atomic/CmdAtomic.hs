@@ -92,6 +92,7 @@ data UpdAtomic =
   -- Alter map.
   | UpdAlterTile LevelId Point (ContentId TileKind) (ContentId TileKind)
   | UpdAlterExplorable LevelId Int
+  | UpdAlterGold Int
   | UpdSearchTile ActorId Point (ContentId TileKind)
   | UpdHideTile ActorId Point (ContentId TileKind)
   | UpdSpotTile LevelId [(Point, ContentId TileKind)]
@@ -202,6 +203,7 @@ undoUpdAtomic cmd = case cmd of
   UpdAlterTile lid p fromTile toTile ->
     Just $ UpdAlterTile lid p toTile fromTile
   UpdAlterExplorable lid delta -> Just $ UpdAlterExplorable lid (-delta)
+  UpdAlterGold delta -> Just $ UpdAlterGold (-delta)
   UpdSearchTile aid p toTile -> Just $ UpdHideTile aid p toTile
   UpdHideTile aid p toTile -> Just $ UpdSearchTile aid p toTile
   UpdSpotTile lid ts -> Just $ UpdLoseTile lid ts

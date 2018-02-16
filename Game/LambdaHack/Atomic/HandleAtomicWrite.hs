@@ -95,6 +95,7 @@ handleUpdAtomic cmd = case cmd of
   UpdRecordKill aid ikind k -> updRecordKill aid ikind k
   UpdAlterTile lid p fromTile toTile -> updAlterTile lid p fromTile toTile
   UpdAlterExplorable lid delta -> updAlterExplorable lid delta
+  UpdAlterGold delta -> updAlterGold delta
   UpdSearchTile aid p toTile -> updSearchTile aid p toTile
   UpdHideTile{} -> undefined
   UpdSpotTile lid ts -> updSpotTile lid ts
@@ -452,6 +453,10 @@ updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
 updAlterExplorable :: MonadStateWrite m => LevelId -> Int -> m ()
 updAlterExplorable lid delta = assert (delta /= 0) $
   updateLevel lid $ \lvl -> lvl {lexpl = lexpl lvl + delta}
+
+updAlterGold :: MonadStateWrite m => Int -> m ()
+updAlterGold delta = assert (delta /= 0) $
+  modifyState $ updateGold (+ delta)
 
 -- Showing to the client the embedded items, if any, is done elsewhere.
 updSearchTile :: MonadStateWrite m

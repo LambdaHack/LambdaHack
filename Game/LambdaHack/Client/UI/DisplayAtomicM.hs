@@ -266,7 +266,8 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
             , MU.SubjectVerbSg subject verb
             , MU.AW $ MU.Text $ TK.tname $ okind cotile toTile ]
       msgAdd msg
-  UpdAlterExplorable{} -> return ()
+  UpdAlterExplorable lid _ -> markDisplayNeeded lid
+  UpdAlterGold{} -> return ()  -- not displayed on HUD
   UpdSearchTile aid _p toTile -> do
     COps{cotile} <- getsState scops
     subject <- partAidLeader aid

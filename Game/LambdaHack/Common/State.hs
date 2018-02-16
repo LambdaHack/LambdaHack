@@ -4,12 +4,12 @@ module Game.LambdaHack.Common.State
     State
     -- * State components
   , sdungeon, stotalDepth, sactorD, sitemD, sitemIxMap, sfactionD, stime, scops
-  , shigh, sgameModeId, sdiscoKind, sdiscoAspect, sactorAspect
+  , sgold, shigh, sgameModeId, sdiscoKind, sdiscoAspect, sactorAspect
     -- * State construction
   , defStateGlobal, emptyState, localFromGlobal
     -- * State update
   , updateDungeon, updateDepth, updateActorD, updateItemD, updateItemIxMap
-  , updateFactionD, updateTime, updateCOpsAndCachedData
+  , updateFactionD, updateTime, updateCOpsAndCachedData, updateGold
   , updateDiscoKind, updateDiscoAspect, updateActorAspect
     -- * State operations
   , getItemBody, aspectRecordFromItem, aspectRecordFromIid
@@ -60,6 +60,7 @@ data State = State
   , _sfactionD    :: FactionDict  -- ^ remembered sides still in game
   , _stime        :: Time         -- ^ global game time, for UI display only
   , _scops        :: COps         -- ^ remembered content
+  , _sgold        :: Int          -- ^ total value of human trinkets in dungeon
   , _shigh        :: HighScore.ScoreDict  -- ^ high score table
   , _sgameModeId  :: ContentId ModeKind   -- ^ current game mode
   , _sdiscoKind   :: DiscoveryKind    -- ^ item kind discoveries data
@@ -77,6 +78,7 @@ instance Binary State where
     put _sitemIxMap
     put _sfactionD
     put _stime
+    put _sgold
     put _shigh
     put _sgameModeId
     put _sdiscoKind
@@ -89,6 +91,7 @@ instance Binary State where
     _sitemIxMap <- get
     _sfactionD <- get
     _stime <- get
+    _sgold <- get
     _shigh <- get
     _sgameModeId <- get
     _sdiscoKind <- get
@@ -120,6 +123,9 @@ stime = _stime
 
 scops :: State -> COps
 scops = _scops
+
+sgold :: State -> Int
+sgold = _sgold
 
 shigh :: State -> HighScore.ScoreDict
 shigh = _shigh
@@ -180,6 +186,7 @@ defStateGlobal _sdungeon _stotalDepth _sfactionD _scops _shigh _sgameModeId
     , _sitemD = EM.empty
     , _sitemIxMap = EM.empty
     , _stime = timeZero
+    , _sgold = 0
     , _sdiscoAspect = EM.empty
     , _sactorAspect = EM.empty
     , ..
@@ -197,6 +204,7 @@ emptyState =
     , _sfactionD = EM.empty
     , _stime = timeZero
     , _scops = emptyCOps
+    , _sgold = 0
     , _shigh = HighScore.empty
     , _sgameModeId = minBound  -- the initial value is unused
     , _sdiscoKind = EM.empty
@@ -250,6 +258,10 @@ updateCOpsAndCachedData :: (COps -> COps) -> State -> State
 updateCOpsAndCachedData f s =
   let s2 = s {_scops = f (_scops s)}
   in s2 {_sactorAspect = actorAspectInDungeon s2}
+
+-- | Update total gold value in the dungeon.
+updateGold :: (Int -> Int) -> State -> State
+updateGold f s = s {_sgold = f (_sgold s)}
 
 updateDiscoKind :: (DiscoveryKind -> DiscoveryKind) -> State -> State
 updateDiscoKind f s = s {_sdiscoKind = f (_sdiscoKind s)}
