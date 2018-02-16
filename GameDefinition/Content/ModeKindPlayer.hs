@@ -128,13 +128,13 @@ victoryOutcomes = [Conquer, Escape]
 hiHero, hiRaid, hiDweller, hiEscapist :: HiCondPoly
 
 -- Heroes rejoice in loot.
-hiHero = [ ( [(HiLoot, 1)]
+hiHero = [ ( [(HiLoot, 1000)]  -- multiplied by fraction of collected
            , [minBound..maxBound] )
          , ( [(HiConst, 1000), (HiLoss, -1)]
            , victoryOutcomes )
          ]
 
-hiRaid = [ ( [(HiLoot, 1)]
+hiRaid = [ ( [(HiLoot, 100)]
            , [minBound..maxBound] )
          , ( [(HiConst, 100)]
            , victoryOutcomes )
@@ -152,6 +152,6 @@ hiDweller = [ ( [(HiConst, 1000)]  -- no loot, so big win reward
               , [minBound..maxBound] \\ victoryOutcomes )
             ]
 
-hiEscapist = ( [(HiLoot, 1)]  -- loot matters a little bit
+hiEscapist = ( [(HiLoot, 200)]  -- loot matters a little bit
              , [minBound..maxBound] )
              : hiDweller
