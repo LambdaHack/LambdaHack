@@ -121,10 +121,9 @@ calculateTotal fid s =
 
 -- | Price an item, taking count into consideration.
 itemPrice :: Int -> IK.ItemKind -> Int
-itemPrice jcount itemKind = case IK.isymbol itemKind of
-  _ | IK.iname itemKind == "gem" -> jcount * 100  -- hack
-  '$' -> jcount
-  _   -> 0
+itemPrice jcount itemKind = case lookup "valuable" $ IK.ifreq itemKind of
+  Just k -> jcount * k
+  Nothing -> 0
 
 mergeItemQuant :: ItemQuant -> ItemQuant -> ItemQuant
 mergeItemQuant (k2, it2) (k1, it1) = (k1 + k2, it1 ++ it2)
