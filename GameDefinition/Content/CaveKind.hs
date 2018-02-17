@@ -40,7 +40,7 @@ rogue = CaveKind
   , chidden       = 7
   , cactorCoeff   = 130  -- the maze requires time to explore
   , cactorFreq    = [("monster", 60), ("animal", 40)]
-  , citemNum      = 6 `d` 5
+  , citemNum      = 6 `d` 5 - 4 `dL` 1  -- deeper down quality over quantity
   , citemFreq     = [("common item", 40), ("treasure", 60)]
   , cplaceFreq    = [("rogue", 100)]
   , cpassable     = False
@@ -73,7 +73,7 @@ arena = rogue
   , chidden       = 0
   , cactorCoeff   = 100
   , cactorFreq    = [("monster", 30), ("animal", 70)]
-  , citemNum      = 5 `d` 5  -- few rooms
+  , citemNum      = 4 `d` 5  -- few rooms
   , citemFreq     = [("common item", 20), ("treasure", 40), ("any scroll", 40)]
   , cplaceFreq    = [("arena", 100)]
   , cpassable     = True
@@ -88,8 +88,8 @@ arena2 = arena
   , cdarkChance   = 41 + 1 `d` 10  -- almost all rooms lit (1 in 10 dark)
   -- Trails provide enough light for fun stealth.
   , cnightChance  = 51  -- always night
-  , citemNum      = 7 `d` 5  -- rare, so make it exciting
-  , citemFreq     = [("common item", 20), ("treasure", 40), ("any vial", 40)]
+  , citemNum      = 6 `d` 5  -- rare, so make it exciting
+  , citemFreq     = [("common item", 20), ("treasure", 40), ("flask", 40)]
   , cdefTile      = "arenaSetDark"
   , cdesc         = "Velvet couches exude the strong smell of tobacco."
   }
@@ -108,8 +108,9 @@ laboratory = arena2
   , cdoorChance   = 1
   , copenChance   = 1%2
   , chidden       = 7
-  , citemNum      = 7 `d` 5  -- reward difficulty
-  , citemFreq     = [("common item", 20), ("treasure", 40), ("any vial", 40)]
+  , citemNum      = 6 `d` 5  -- reward difficulty
+  , citemFreq     = [ ("common item", 20), ("treasure", 40)
+                    , ("explosive", 40 * 2) ]  -- few items in that group
   , cplaceFreq    = [("laboratory", 100)]
   , cpassable     = False
   , cdefTile      = "fillerWall"
@@ -167,7 +168,7 @@ noise = rogue
   , chidden       = 0
   , cactorCoeff   = 160  -- the maze requires time to explore
   , cactorFreq    = [("monster", 80), ("animal", 20)]
-  , citemNum      = 7 `d` 5  -- an incentive to explore the labyrinth
+  , citemNum      = 6 `d` 5  -- an incentive to explore the labyrinth
   , cpassable     = True
   , cplaceFreq    = [("noise", 100)]
   , cdefTile      = "noiseSet"
@@ -180,7 +181,9 @@ noise2 = noise
   { cname         = "Frozen derelict mine"
   , cfreq         = [("caveNoise2", 1)]
   , cnightChance  = 51  -- easier variant, but looks sinister
-  , citemNum      = 13 `d` 5  -- an incentive to explore the final labyrinth
+  , citemNum      = 11 `d` 5  -- an incentive to explore the final labyrinth
+  , citemFreq     = [ ("common item", 20), ("treasure", 60)
+                    , ("explosive", 20 * 2) ]
   , cplaceFreq    = [("noise", 1), ("mine", 99)]
   , cstairFreq    = [("gated staircase", 100)]
   , cdesc         = "Pillars of shining ice create a frozen labyrinth."
@@ -263,8 +266,7 @@ shootout = rogue  -- a scenario with strong missiles;
                       -- less items in inventory, more to be picked up,
                       -- to reward explorer and aggressor and punish camper
   , citemFreq     = [ ("common item", 30)
-                    , ("any arrow", 400), ("harpoon", 300)
-                    , ("any vial", 60) ]
+                    , ("any arrow", 400), ("harpoon", 300), ("explosive", 100) ]
                       -- Many consumable buffs are needed in symmetric maps
                       -- so that aggressor prepares them in advance and camper
                       -- needs to waste initial turns to buff for the defence.
@@ -296,7 +298,8 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , cactorFreq    = []
   , citemNum      = 6 `d` 8
   , citemFreq     = [ ("common item", 30), ("treasure", 30), ("gem", 100)
-                    , ("weak arrow", 500), ("harpoon", 400) ]
+                    , ("weak arrow", 500), ("harpoon", 400)
+                    , ("explosive", 200) ]
   , cplaceFreq    = [("park", 100)]  -- the same rooms as in ambush
   , cpassable     = True
   , cdefTile      = "escapeSetDark"  -- different tiles, not burning yet
@@ -356,7 +359,8 @@ ambush = rogue  -- a scenario with strong missiles;
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 5 `d` 8
-  , citemFreq     = [("common item", 30), ("any arrow", 400), ("harpoon", 300)]
+  , citemFreq     = [ ("common item", 30)
+                    , ("any arrow", 400), ("harpoon", 300), ("any vial", 50) ]
   , cplaceFreq    = [("park", 100)]
   , cpassable     = True
   , cdefTile      = "ambushSet"

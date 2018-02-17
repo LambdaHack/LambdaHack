@@ -98,7 +98,7 @@ ambusher = warrior
                ++ [ ("ring of opportunity sniper", CEqp)
                   , ("any arrow", CSha)
                   , ("weak arrow", CInv)
-                  , ("flask", CSha)
+                  , ("explosive", CSha)
                   , ("light source", CEqp)
                   , ("wooden torch", CInv) ]
   -- , idesc    = ""

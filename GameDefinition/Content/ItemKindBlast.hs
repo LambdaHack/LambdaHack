@@ -16,22 +16,22 @@ import Game.LambdaHack.Content.ItemKind
 
 blasts :: [ItemKind]
 blasts =
-  [burningOil2, burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, violentChemical, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote]
+  [burningOil2, burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, spreadFragmentation, spreadFragmentation8, focusedFragmentation, spreadConcussion, spreadConcussion8, focusedConcussion, spreadFlash, spreadFlash8, focusedFlash, singleSpark, glassPiece, focusedGlass,fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, smoke, boilingWater, glue, waste, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote]
 
-burningOil2,    burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, violentChemical, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, glassPiece, smoke, boilingWater, glue, singleSpark, spark, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, waste, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote :: ItemKind
+burningOil2,    burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, spreadFragmentation, spreadFragmentation8, focusedFragmentation, spreadConcussion, spreadConcussion8, focusedConcussion, spreadFlash, spreadFlash8, focusedFlash, singleSpark, glassPiece, focusedGlass,fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, smoke, boilingWater, glue, waste, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote :: ItemKind
 
 -- We take care (e.g., in burningOil below) that blasts are not faster
 -- than 100% fastest natural speed, or some frames would be skipped,
 -- which is a waste of prefectly good frames.
 
--- * Parameterized immediate effect blasts
+-- * Parameterized blasts
 
 burningOil :: Int -> ItemKind
 burningOil n = ItemKind
   { isymbol  = '*'
   , iname    = "burning oil"
   , ifreq    = [(toGroupName $ "burning oil" <+> tshow n, 1)]
-  , iflavour = zipFancy [BrYellow]
+  , iflavour = zipPlain [BrYellow]
   , icount   = intToDice (n * 8)
   , irarity  = [(1, 1)]
   , iverbHit = "sear"
@@ -58,7 +58,7 @@ firecracker n = ItemKind
   , iflavour = zipPlain [brightCol !! ((n + 2) `mod` length brightCol)]
   , icount   = if n <= 3 then 1 `d` min 2 n else 2 + 1 `d` 2
   , irarity  = [(1, 1)]
-  , iverbHit = "crack"
+  , iverbHit = if n >= 4 then "singe" else "crack"
   , iweight  = 1
   , idamage  = 0
   , iaspects = [AddShine $ intToDice $ 1 + n `div` 2]
@@ -77,32 +77,177 @@ firecracker3 = firecracker 3
 firecracker2 = firecracker 2
 firecracker1 = firecracker 1
 
--- * Assorted immediate effect blasts
+-- * Focused blasts
 
-violentChemical = ItemKind
+spreadFragmentation = ItemKind
   { isymbol  = '*'
-  , iname    = "deflagration burst"
-  , ifreq    = [("violent chemical", 1)]
-  , iflavour = zipPlain [BrBlack]
-  , icount   = 16  -- strong and wide, but few, so not always hits target
+  , iname    = "fragmentation burst"
+  , ifreq    = [("violent fragmentation", 1)]
+  , iflavour = zipPlain [Red]  -- flying shards; some fire and smoke
+  , icount   = 16  -- strong but few, so not always hits target
   , irarity  = [(1, 1)]
   , iverbHit = "tear apart"
   , iweight  = 1
-  , idamage  = 0
-  , iaspects = [AddShine 10]
-  , ieffects = [ RefillHP (-5)  -- deadly; adjacent actor hit by 2 on average
-               , PushActor (ThrowMod 400 25)  -- 1 step, fast
-               , DropItem 1 maxBound COrgan "temporary condition"
-               , DropItem 1 maxBound COrgan "impressed" ]  -- shocking
-  , ifeature = [toLinger 20, Fragile, Blast]  -- 4 steps, 1 turn
+  , idamage  = 5 `d` 1  -- deadly and adjacent actor hit by 2 on average;
+                        -- however, armour can block completely with ease
+  , iaspects = [AddShine 3, AddHurtMelee $ -15 * 5]
+  , ieffects = [DropItem 1 maxBound COrgan "temporary condition"]
+  , ifeature = [toLinger 20, Lobable, Fragile, Blast]  -- 4 steps, 1 turn
   , idesc    = ""
   , ikit     = []
   }
+spreadFragmentation8 = spreadFragmentation
+  { iname    = "fragmentation burst"
+  , ifreq    = [("fragmentation", 1)]
+  , icount   = 8
+  , ifeature = [toLinger 10, Lobable, Fragile, Blast]  -- 2 steps, 1 turn
+      -- smaller radius, so worse for area effect, but twice the direct damage
+  }
+focusedFragmentation = ItemKind
+  { isymbol  = '`'
+  , iname    = "deflagration ignition"  -- black powder
+  , ifreq    = [("focused fragmentation", 1)]
+  , iflavour = zipPlain [BrYellow]
+  , icount   = 4  -- 32 in total vs 16; on average 4 hits
+  , irarity  = [(1, 1)]
+  , iverbHit = "ignite"
+  , iweight  = 1
+  , idamage  = 0
+  , iaspects = []
+  , ieffects = [OnSmash $ Explode "fragmentation"]
+  , ifeature = [toLinger 0, Fragile, Blast]  -- 0 steps, 1 turn
+      -- when the target position is occupied, the explosion starts one step
+      -- away, hence we set range to 0 steps, to limit dispersal
+  , idesc    = ""
+  , ikit     = []
+  }
+spreadConcussion = ItemKind
+  { isymbol  = '*'
+  , iname    = "concussion blast"
+  , ifreq    = [("violent concussion", 1)]
+  , iflavour = zipPlain [Magenta]  -- mosty shock wave; some fire and smoke
+  , icount   = 16
+  , irarity  = [(1, 1)]
+  , iverbHit = "shock"
+  , iweight  = 1
+  , idamage  = 1 `d` 1  -- only air pressure, so not as deadly as fragmentation,
+                        -- but armour can't block completely with ease
+  , iaspects = [AddShine 3, AddHurtMelee $ -8 * 5]
+  , ieffects = [ DropItem maxBound 1 CEqp "misc armor"
+               , PushActor (ThrowMod 400 25)  -- 1 step, fast; after DropItem
+                   -- this produces spam for braced actors; too bad
+               , DropItem 1 maxBound COrgan "temporary condition" ]
+  , ifeature = [toLinger 20, Lobable, Fragile, Blast]  -- 4 steps, 1 turn
+      -- outdoors it has short range, but we only model indoors in the game;
+      -- it's much faster than black powder shock wave, but we are beyond
+      -- human-noticeable speed differences on short distances anyway
+  , idesc    = ""
+  , ikit     = []
+  }
+spreadConcussion8 = spreadConcussion
+  { iname    = "concussion blast"
+  , ifreq    = [("concussion", 1)]
+  , icount   = 8
+  , ifeature = [toLinger 10, Lobable, Fragile, Blast]  -- 2 steps, 1 turn
+  }
+focusedConcussion = ItemKind
+  { isymbol  = '`'
+  , iname    = "detonation ignition"  -- nitroglycerine
+  , ifreq    = [("focused concussion", 1)]
+  , iflavour = zipPlain [BrYellow]
+  , icount   = 4
+  , irarity  = [(1, 1)]
+  , iverbHit = "ignite"
+  , iweight  = 1
+  , idamage  = 0
+  , iaspects = []
+  , ieffects = [OnSmash $ Explode "concussion"]
+  , ifeature = [toLinger 0, Fragile, Blast]  -- 0 steps, 1 turn
+  , idesc    = ""
+  , ikit     = []
+  }
+spreadFlash = ItemKind
+  { isymbol  = '`'
+  , iname    = "magnesium flash"
+  , ifreq    = [("violent flash", 1)]
+  , iflavour = zipPlain [BrWhite]  -- very brigh flash
+  , icount   = 16
+  , irarity  = [(1, 1)]
+  , iverbHit = "dazzle"
+  , iweight  = 1
+  , idamage  = 0
+  , iaspects = [AddShine 5]
+  , ieffects = [toOrganGameTurn "blind" 10, toOrganGameTurn "weakened" 30]
+                 -- Wikipedia says: blind for five seconds and afterimage
+                 -- for much longer, harming aim
+  , ifeature = [toLinger 20, Fragile, Blast]  -- 4 steps, 1 turn
+  , idesc    = "A flash of fire."
+  , ikit     = []
+  }
+spreadFlash8 = spreadFlash
+  { iname    = "spark"
+  , ifreq    = [("spark", 1)]
+  , icount   = 8
+  , iverbHit = "blind"
+  , ifeature = [toLinger 10, Fragile, Blast]  -- 2 steps, 1 turn
+  }
+focusedFlash = ItemKind
+  { isymbol  = '`'
+  , iname    = "magnesium ignition"
+  , ifreq    = [("focused flash", 1)]
+  , iflavour = zipPlain [BrYellow]
+  , icount   = 4
+  , irarity  = [(1, 1)]
+  , iverbHit = "ignite"
+  , iweight  = 1
+  , idamage  = 0
+  , iaspects = []
+  , ieffects = [OnSmash $ Explode "spark"]
+  , ifeature = [toLinger 0, Fragile, Blast]  -- 0 steps, 1 turn
+  , idesc    = ""
+  , ikit     = []
+  }
+singleSpark = spreadFlash
+  { iname    = "single spark"
+  , ifreq    = [("single spark", 1)]
+  , icount   = 1
+  , iverbHit = "spark"
+  , iaspects = [AddShine 3]
+  , ieffects = []
+  , ifeature = [toLinger 5, Fragile, Blast]  -- 1 step, 1 turn
+  , idesc    = "A glowing ember."
+  , ikit     = []
+  }
+glassPiece = ItemKind
+  { isymbol  = '*'
+  , iname    = "glass piece"
+  , ifreq    = [("glass hail", 1)]
+  , iflavour = zipPlain [Blue]
+  , icount   = 8
+  , irarity  = [(1, 1)]
+  , iverbHit = "cut"
+  , iweight  = 1
+  , idamage  = 1 `d` 1
+  , iaspects = [AddHurtMelee $ -17 * 5]
+  , ieffects = [RefillHP (-1)]
+  , ifeature = [toLinger 20, Fragile, Blast]  -- 4 steps, 1 turn
+  , idesc    = "Swift, sharp edges."
+  , ikit     = []
+  }
+focusedGlass = glassPiece  -- when blowing up windows
+  { ifreq    = [("focused glass hail", 1)]
+  , icount   = 4
+  , ieffects = [RefillHP (-1), OnSmash $ Explode "glass hail"]
+  , ifeature = [toLinger 0, Fragile, Blast]  -- 0 steps, 1 turn
+  }
+
+-- * Assorted immediate effect blasts
+
 fragrance = ItemKind
   { isymbol  = '`'
   , iname    = "fragrance"  -- instant, fast fragrance
   , ifreq    = [("fragrance", 1)]
-  , iflavour = zipFancy [Magenta]
+  , iflavour = zipPlain [Magenta]
   , icount   = 12
   , irarity  = [(1, 1)]
   , iverbHit = "engulf"
@@ -120,7 +265,7 @@ pheromone = ItemKind
   { isymbol  = '`'
   , iname    = "musky whiff"  -- a kind of mist rather than fragrance
   , ifreq    = [("pheromone", 1)]
-  , iflavour = zipFancy [BrMagenta]
+  , iflavour = zipPlain [BrMagenta]
   , icount   = 16
   , irarity  = [(1, 1)]
   , iverbHit = "tempt"
@@ -136,7 +281,7 @@ mistCalming = ItemKind  -- unused
   { isymbol  = '`'
   , iname    = "mist"
   , ifreq    = [("calming mist", 1)]
-  , iflavour = zipFancy [BrGreen]
+  , iflavour = zipPlain [BrGreen]
   , icount   = 8
   , irarity  = [(1, 1)]
   , iverbHit = "sooth"
@@ -152,7 +297,7 @@ odorDistressing = ItemKind
   { isymbol  = '`'
   , iname    = "distressing whiff"
   , ifreq    = [("distressing odor", 1)]
-  , iflavour = zipFancy [BrRed]
+  , iflavour = zipFancy [BrRed]  -- salmon
   , icount   = 8
   , irarity  = [(1, 1)]
   , iverbHit = "distress"
@@ -184,7 +329,7 @@ mistHealing2 = ItemKind
   { isymbol  = '`'
   , iname    = "mist"
   , ifreq    = [("healing mist 2", 1)]
-  , iflavour = zipFancy [BrGreen]
+  , iflavour = zipPlain [Green]
   , icount   = 8
   , irarity  = [(1, 1)]
   , iverbHit = "revitalize"
@@ -200,7 +345,7 @@ mistWounding = ItemKind
   { isymbol  = '`'
   , iname    = "mist"
   , ifreq    = [("wounding mist", 1)]
-  , iflavour = zipFancy [BrRed]
+  , iflavour = zipPlain [BrRed]
   , icount   = 8
   , irarity  = [(1, 1)]
   , iverbHit = "devitalize"
@@ -216,7 +361,7 @@ distortion = ItemKind
   { isymbol  = 'v'
   , iname    = "vortex"
   , ifreq    = [("distortion", 1)]
-  , iflavour = zipFancy [White]
+  , iflavour = zipPlain [White]
   , icount   = 8  -- braced are immune to Teleport; avoid failure messages
   , irarity  = [(1, 1)]
   , iverbHit = "engulf"
@@ -228,22 +373,6 @@ distortion = ItemKind
   , idesc    = "The air shifts oddly, as though light is being warped."
   , ikit     = []
   }
-glassPiece = ItemKind  -- when blowing up windows
-  { isymbol  = '*'
-  , iname    = "glass piece"
-  , ifreq    = [("glass piece", 1)]
-  , iflavour = zipPlain [BrBlue]
-  , icount   = 16
-  , irarity  = [(1, 1)]
-  , iverbHit = "cut"
-  , iweight  = 1
-  , idamage  = 0
-  , iaspects = []
-  , ieffects = [RefillHP (-1)]  -- high velocity, so can't do idamage
-  , ifeature = [toLinger 20, Fragile, Blast]  -- 4 steps, 1 turn
-  , idesc    = "Swift, sharp edges."
-  , ikit     = []
-  }
 smoke = ItemKind  -- when stuff burns out  -- unused
   { isymbol  = '`'
   , iname    = "smoke"
@@ -251,7 +380,7 @@ smoke = ItemKind  -- when stuff burns out  -- unused
   , iflavour = zipPlain [BrBlack]
   , icount   = 16
   , irarity  = [(1, 1)]
-  , iverbHit = "choke"  -- or obscure
+  , iverbHit = "choke"  -- or "obscure"
   , iweight  = 1
   , idamage  = 0
   , iaspects = []
@@ -292,44 +421,29 @@ glue = ItemKind
   , idesc    = "Thick and clinging."
   , ikit     = []
   }
-singleSpark = ItemKind
-  { isymbol  = '`'
-  , iname    = "single spark"
-  , ifreq    = [("single spark", 1)]
-  , iflavour = zipPlain [BrWhite]
-  , icount   = 1
+waste = ItemKind
+  { isymbol  = '*'
+  , iname    = "waste"
+  , ifreq    = [("waste", 1)]
+  , iflavour = zipPlain [Brown]
+  , icount   = 16
   , irarity  = [(1, 1)]
-  , iverbHit = "spark"
+  , iverbHit = "splosh"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [AddShine 4]
-  , ieffects = []
-  , ifeature = [toLinger 5, Fragile, Blast]  -- 1 step, 1 turn
-  , idesc    = "A glowing ember."
-  , ikit     = []
-  }
-spark = ItemKind
-  { isymbol  = '`'
-  , iname    = "spark"
-  , ifreq    = [("spark", 1)]
-  , iflavour = zipPlain [BrWhite]
-  , icount   = 12
-  , irarity  = [(1, 1)]
-  , iverbHit = "scorch"
-  , iweight  = 1
-  , idamage  = 0
-  , iaspects = [AddShine 4]
+  , iaspects = []
   , ieffects = [Burn 1]
-  , ifeature = [toLinger 10, Fragile, Blast]  -- 2 steps, 1 turn
-  , idesc    = "A flash of fire."
+  , ifeature = [toLinger 10, Fragile, Blast]
+  , idesc    = "Sodden and foul-smelling."
   , ikit     = []
   }
 
--- * Temporary condition blasts strictly matching the aspects
+-- * Temporary condition blasts
 
 -- Almost all have @toLinger 10@, that travels 2 steps in 1 turn.
 -- These are very fast projectiles, not getting into the way of big
 -- actors and not burdening the engine for long.
+-- A few are slower 'mists'.
 
 denseShower = ItemKind
   { isymbol  = '`'
@@ -367,7 +481,7 @@ protectingBalmMelee = ItemKind
   { isymbol  = '`'
   , iname    = "balm droplet"
   , ifreq    = [("melee protective balm", 1)]
-  , iflavour = zipPlain [Brown]
+  , iflavour = zipFancy [Brown]
   , icount   = 16
   , irarity  = [(1, 1)]
   , iverbHit = "balm"
@@ -399,7 +513,7 @@ vulnerabilityBalm = ItemKind
   { isymbol  = '?'
   , iname    = "PhD defense question"
   , ifreq    = [("PhD defense question", 1)]
-  , iflavour = zipPlain [BrRed]
+  , iflavour = zipFancy [BrRed]
   , icount   = 16
   , irarity  = [(1, 1)]
   , iverbHit = "nag"
@@ -432,7 +546,7 @@ hasteSpray = ItemKind
   { isymbol  = '`'
   , iname    = "haste spray"
   , ifreq    = [("haste spray", 1)]
-  , iflavour = zipPlain [BrYellow]
+  , iflavour = zipFancy [BrYellow]
   , icount   = 16
   , irarity  = [(1, 1)]
   , iverbHit = "haste"
@@ -457,7 +571,7 @@ slownessMist = ItemKind
   , iaspects = []
   , ieffects = [toOrganGameTurn "slowed" (3 + 1 `d` 3)]
   , ifeature = [toVelocity 5, Fragile, Blast]
-                 -- 1 step, 1 turn, mist
+                 -- 1 step, 1 turn, mist, slow
   , idesc    = "Clammy fog, making each movement an effort."
   , ikit     = []
   }
@@ -465,7 +579,7 @@ eyeDrop = ItemKind
   { isymbol  = '`'
   , iname    = "eye drop"
   , ifreq    = [("eye drop", 1)]
-  , iflavour = zipPlain [BrCyan]
+  , iflavour = zipFancy [BrCyan]
   , icount   = 16
   , irarity  = [(1, 1)]
   , iverbHit = "cleanse"
@@ -481,7 +595,7 @@ ironFiling = ItemKind
   { isymbol  = '`'
   , iname    = "iron filing"
   , ifreq    = [("iron filing", 1)]
-  , iflavour = zipPlain [Brown]
+  , iflavour = zipPlain [Red]
   , icount   = 16
   , irarity  = [(1, 1)]
   , iverbHit = "blind"
@@ -497,7 +611,7 @@ smellyDroplet = ItemKind
   { isymbol  = '`'
   , iname    = "smelly droplet"
   , ifreq    = [("smelly droplet", 1)]
-  , iflavour = zipPlain [Blue]
+  , iflavour = zipFancy [Blue]
   , icount   = 16
   , irarity  = [(1, 1)]
   , iverbHit = "sensitize"
@@ -513,7 +627,7 @@ eyeShine = ItemKind
   { isymbol  = '`'
   , iname    = "eye shine"
   , ifreq    = [("eye shine", 1)]
-  , iflavour = zipPlain [Cyan]
+  , iflavour = zipFancy [Cyan]
   , icount   = 16
   , irarity  = [(1, 1)]
   , iverbHit = "smear"
@@ -525,14 +639,11 @@ eyeShine = ItemKind
   , idesc    = "They almost glow in the dark."
   , ikit     = []
   }
-
--- * Assorted temporary condition blasts or related (also, matching flasks)
-
 whiskeySpray = ItemKind
   { isymbol  = '`'
   , iname    = "whiskey spray"
   , ifreq    = [("whiskey spray", 1)]
-  , iflavour = zipPlain [Brown]
+  , iflavour = zipFancy [Brown]
   , icount   = 16
   , irarity  = [(1, 1)]
   , iverbHit = "inebriate"
@@ -544,27 +655,11 @@ whiskeySpray = ItemKind
   , idesc    = "It burns in the best way."
   , ikit     = []
   }
-waste = ItemKind
-  { isymbol  = '*'
-  , iname    = "waste"
-  , ifreq    = [("waste", 1)]
-  , iflavour = zipPlain [Brown]
-  , icount   = 16
-  , irarity  = [(1, 1)]
-  , iverbHit = "splosh"
-  , iweight  = 1
-  , idamage  = 0
-  , iaspects = []
-  , ieffects = [Burn 1]
-  , ifeature = [toLinger 10, Fragile, Blast]
-  , idesc    = "Sodden and foul-smelling."
-  , ikit     = []
-  }
 youthSprinkle = ItemKind
   { isymbol  = '`'
   , iname    = "youth sprinkle"
   , ifreq    = [("youth sprinkle", 1)]
-  , iflavour = zipPlain [BrGreen]
+  , iflavour = zipFancy [BrGreen]
   , icount   = 16
   , irarity  = [(1, 1)]
   , iverbHit = "sprinkle"
@@ -580,7 +675,7 @@ poisonCloud = ItemKind
   { isymbol  = '`'
   , iname    = "poison cloud"
   , ifreq    = [("poison cloud", 1)]
-  , iflavour = zipPlain [BrMagenta]
+  , iflavour = zipFancy [BrMagenta]
   , icount   = 16
   , irarity  = [(1, 1)]
   , iverbHit = "poison"
@@ -596,7 +691,7 @@ mistAntiSlow = ItemKind
   { isymbol  = '`'
   , iname    = "mist"
   , ifreq    = [("anti-slow mist", 1)]
-  , iflavour = zipPlain [BrYellow]
+  , iflavour = zipFancy [BrYellow]
   , icount   = 8
   , irarity  = [(1, 1)]
   , iverbHit = "propel"
@@ -612,7 +707,7 @@ mistAntidote = ItemKind
   { isymbol  = '`'
   , iname    = "mist"
   , ifreq    = [("antidote mist", 1)]
-  , iflavour = zipPlain [BrBlue]
+  , iflavour = zipFancy [BrBlue]
   , icount   = 8
   , irarity  = [(1, 1)]
   , iverbHit = "cure"
