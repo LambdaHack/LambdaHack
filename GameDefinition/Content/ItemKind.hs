@@ -1424,7 +1424,8 @@ gemTemplate = ItemKind
   , ikit     = []
   }
 gem1 = gemTemplate
-  { ifreq    = [("treasure", 100), ("gem", 100), ("any jewelry", 100)]
+  { ifreq    = [ ("treasure", 100), ("gem", 100), ("any jewelry", 100)
+               , ("valuable", 100) ]
   , irarity  = [(3, 0), (10, 24)]
   , iaspects = [AddShine 1, AddSpeed (-1)]
                  -- reflects strongly, distracts; so it glows in the dark,
@@ -1432,15 +1433,18 @@ gem1 = gemTemplate
   , ieffects = [RefillCalm (-1)]  -- minor effect to ensure no id-on-pickup
   }
 gem2 = gem1
-  { ifreq    = [("treasure", 100), ("gem", 100), ("any jewelry", 100)]
+  { ifreq    = [ ("treasure", 100), ("gem", 100), ("any jewelry", 100)
+               , ("valuable", 100) ]
   , irarity  = [(5, 0), (10, 28)]
   }
 gem3 = gem1
-  { ifreq    = [("treasure", 100), ("gem", 100), ("any jewelry", 100)]
+  { ifreq    = [ ("treasure", 100), ("gem", 100), ("any jewelry", 100)
+               , ("valuable", 100) ]
   , irarity  = [(7, 0), (10, 32)]
   }
 gem4 = gem1
-  { ifreq    = [("treasure", 100), ("gem", 100), ("any jewelry", 100)]
+  { ifreq    = [ ("treasure", 100), ("gem", 100), ("any jewelry", 100)
+               , ("valuable", 100) ]
   , irarity  = [(9, 0), (10, 100)]
   }
 gem5 = gem1
@@ -1471,7 +1475,7 @@ currencyTemplate = ItemKind
   , ikit     = []
   }
 currency = currencyTemplate
-  { ifreq    = [("treasure", 100), ("currency", 100)]
+  { ifreq    = [("treasure", 100), ("currency", 100), ("valuable", 1)]
   , iaspects = [AddShine 1, AddSpeed (-1)]
   , ieffects = [RefillCalm (-1)]
   }
