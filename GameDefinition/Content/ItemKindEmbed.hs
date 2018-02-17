@@ -56,7 +56,7 @@ obscenePictogram = ItemKind
   , ieffects = [ Recharging $ Temporary "enter destructive rage at the sight of an obscene pictogram"
                , Recharging $ RefillCalm (-20)
                , Recharging $ OneOf
-                   [ toOrganActorTurn "strengthened" (3 + 1 `d` 2)
+                   [ toOrganGood "strengthened" (3 + 1 `d` 2)
                    , CreateItem CInv "sandstone rock" timerNone ] ]
   , ifeature = [Durable]
   , idesc    = "It's not even anatomically possible."
@@ -75,8 +75,8 @@ subtleFresco = ItemKind
   , iaspects = [Timeout 7]
   , ieffects = [ Temporary "feel refreshed by the subtle fresco"
                , RefillCalm 2
-               , Recharging $ toOrganActorTurn "far-sighted" (3 + 1 `d` 2)
-               , Recharging $ toOrganActorTurn "keen-smelling" (3 + 1 `d` 2) ]
+               , Recharging $ toOrganGood "far-sighted" (3 + 1 `d` 2)
+               , Recharging $ toOrganGood "keen-smelling" (3 + 1 `d` 2) ]
   , ifeature = [Durable]
   , idesc    = "Expensive yet tasteful."
   , ikit     = []
@@ -100,7 +100,7 @@ treasureCacheTrap = ItemKind
   , iweight  = 1000
   , idamage  = 0
   , iaspects = []
-  , ieffects = [OneOf [ toOrganGameTurn "blind" (40 + 1 `d` 10)
+  , ieffects = [OneOf [ toOrganBad "blind" (40 + 1 `d` 10)
                       , RefillCalm (-99)
                       , Explode "focused concussion"
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1)
@@ -189,7 +189,7 @@ rubble = ItemKind
   , iaspects = []
   , ieffects = [OneOf [ Explode "focused glass hail"
                       , Summon "animal" $ 1 `dL` 2
-                      , toOrganNone "poisoned"
+                      , toOrganNoTimer "poisoned"
                       , CreateItem CGround "common item" timerNone
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1)
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1) ]]
@@ -216,17 +216,17 @@ doorwayTrapTemplate = ItemKind
   }
 doorwayTrap1 = doorwayTrapTemplate
   { ifreq    = [("doorway trap", 50)]
-  , ieffects = [toOrganGameTurn "blind" $ (1 `dL` 4) * 10]
+  , ieffects = [toOrganBad "blind" $ (1 `dL` 4) * 10]
   -- , idesc    = ""
   }
 doorwayTrap2 = doorwayTrapTemplate
   { ifreq    = [("doorway trap", 25)]
-  , ieffects = [toOrganGameTurn "slowed" $ (1 `dL` 4) * 10]
+  , ieffects = [toOrganBad "slowed" $ (1 `dL` 4) * 10]
   -- , idesc    = ""
   }
 doorwayTrap3 = doorwayTrapTemplate
   { ifreq    = [("doorway trap", 25)]
-  , ieffects = [toOrganGameTurn "weakened" $ (1 `dL` 4) * 10 ]
+  , ieffects = [toOrganBad "weakened" $ (1 `dL` 4) * 10 ]
   -- , idesc    = ""
   }
 stairsUp = ItemKind
@@ -285,7 +285,7 @@ staircaseTrapDown = staircaseTrapUp
   { ifreq    = [("staircase trap down", 1)]
   , iverbHit = "open up under"
   , ieffects = [ Temporary "tumble down the stairwell"
-               , toOrganActorTurn "drunk" (20 + 1 `d` 5) ]
+               , toOrganGood "drunk" (20 + 1 `d` 5) ]
   , idesc    = "A treacherous slab, to teach those who are too proud."
   }
 pulpit = ItemKind
@@ -300,7 +300,7 @@ pulpit = ItemKind
   , idamage  = 0
   , iaspects = []
   , ieffects = [ CreateItem CGround "any scroll" timerNone
-               , toOrganGameTurn "defenseless" $ (1 `dL` 6) * 10
+               , toOrganBad "defenseless" $ (1 `dL` 6) * 10
                , Explode "PhD defense question" ]
   , ifeature = []  -- not Durable, springs at most once
   , idesc    = "A dark wood stand, where strange priests once preached."

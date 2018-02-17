@@ -13,7 +13,7 @@ module Game.LambdaHack.Content.ItemKind
   , itemTrajectory, totalRange, damageUsefulness
   , tmpNoLonger, tmpLess, toVelocity, toLinger
   , timerNone, isTimerNone, foldTimer
-  , toOrganGameTurn, toOrganActorTurn, toOrganNone
+  , toOrganBad, toOrganGood, toOrganNoTimer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , meanAspect, boostItemKind, majorEffect
@@ -399,22 +399,22 @@ foldTimer a fgame factor tim = case tim of
   TimerGameTurn nDm -> fgame nDm
   TimerActorTurn nDm -> factor nDm
 
-toOrganGameTurn :: GroupName ItemKind -> Dice.Dice -> Effect
-toOrganGameTurn grp nDm =
+toOrganBad :: GroupName ItemKind -> Dice.Dice -> Effect
+toOrganBad grp nDm =
   assert (Dice.minDice nDm > 0
           `blame` "dice at organ creation should always roll above zero"
           `swith` (grp, nDm))
   $ CreateItem COrgan grp (TimerGameTurn nDm)
 
-toOrganActorTurn :: GroupName ItemKind -> Dice.Dice -> Effect
-toOrganActorTurn grp nDm =
+toOrganGood :: GroupName ItemKind -> Dice.Dice -> Effect
+toOrganGood grp nDm =
   assert (Dice.minDice nDm > 0
           `blame` "dice at organ creation should always roll above zero"
           `swith` (grp, nDm))
   $ CreateItem COrgan grp (TimerActorTurn nDm)
 
-toOrganNone :: GroupName ItemKind -> Effect
-toOrganNone grp = CreateItem COrgan grp TimerNone
+toOrganNoTimer :: GroupName ItemKind -> Effect
+toOrganNoTimer grp = CreateItem COrgan grp TimerNone
 
 -- | Catch invalid item kind definitions.
 validateSingle :: ItemKind -> [Text]
