@@ -37,6 +37,8 @@ data StateClient = StateClient
   { seps          :: Int            -- ^ a parameter of the aiming digital line
   , stargetD      :: EM.EnumMap ActorId TgtAndPath
                                     -- ^ targets of our actors in the dungeon
+  , sfleeD        :: EM.EnumMap ActorId Point
+                                    -- ^ the position when fleeing requested
   , sexplored     :: ES.EnumSet LevelId
                                     -- ^ the set of fully explored levels
   , sbfsD         :: EM.EnumMap ActorId BfsAndPath
@@ -87,6 +89,7 @@ emptyStateClient _sside =
   StateClient
     { seps = fromEnum _sside
     , stargetD = EM.empty
+    , sfleeD = EM.empty
     , sexplored = ES.empty
     , sbfsD = EM.empty
     , sundo = []
@@ -143,6 +146,7 @@ instance Binary StateClient where
   put StateClient{..} = do
     put seps
     put stargetD
+    put sfleeD
     put sexplored
     put sundo
     put sdiscoBenefit
@@ -161,6 +165,7 @@ instance Binary StateClient where
   get = do
     seps <- get
     stargetD <- get
+    sfleeD <- get
     sexplored <- get
     sundo <- get
     sdiscoBenefit <- get

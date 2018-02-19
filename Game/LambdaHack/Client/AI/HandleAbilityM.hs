@@ -98,8 +98,7 @@ actionStrategy aid retry = do
   condSupport3 <- condSupport 3 aid
   canDeAmbientL <- getsState $ canDeAmbientList body
   actorSk <- currentSkillsClient aid
-  condCanProject <-
-    condCanProjectM (EM.findWithDefault 0 AbProject actorSk) aid
+  condCanProject <- condCanProjectM (EM.findWithDefault 0 AbProject actorSk) aid
   condAdjTriggerable <- condAdjTriggerableM aid
   condBlocksFriends <- condBlocksFriendsM aid
   condNoEqpWeapon <- condNoEqpWeaponM aid
@@ -791,12 +790,12 @@ applyItem aid applyGroup = do
 -- If low on health or alone, flee in panic, close to the path to target
 -- and as far from the attackers, as possible. Usually fleeing from
 -- foes will lead towards friends, but we don't insist on that.
--- We use chess distances, not pathfinding, because melee can happen
--- at path distance 2.
 flee :: MonadClient m
      => ActorId -> [(Int, Point)] -> m (Strategy RequestAnyAbility)
 flee aid fleeL = do
   b <- getsState $ getActorBody aid
+  -- Regardless is fleeing accomplished, mark the need.
+  modifyClient $ \cli -> cli {sfleeD = EM.insert aid (bpos b) (sfleeD cli)}
   let vVic = map (second (`vectorToFrom` bpos b)) fleeL
       str = liftFrequency $ toFreq "flee" vVic
   mapStrategyM (moveOrRunAid aid) str

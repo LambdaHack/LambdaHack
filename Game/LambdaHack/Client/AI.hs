@@ -45,7 +45,7 @@ queryAI aid = do
   (aidToMove2, treq2) <-
     case treq of
       RequestAnyAbility ReqWait | mleader == Just aid -> do
-        -- leader waits; a waste; try once to pick a yet different leader
+        -- Leader waits; a waste; try once to pick a yet different leader.
         modifyClient $ \cli -> cli {_sleader = mleader}  -- undo previous choice
         pickActorAndAction (Just (aidToMove, treq)) aid
       _ -> return (aidToMove, treq)
