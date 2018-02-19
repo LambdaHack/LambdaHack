@@ -66,6 +66,8 @@ pickAction aid retry = do
   let !_A = assert (isNothing (btrajectory body) && not (bproj body)
                     `blame` "AI gets to manually move its trajectory actors"
                     `swith` (aid, bfid body, side)) ()
+  -- Reset fleeing flag. May then be set in @flee@.
+  modifyClient $ \cli -> cli {sfleeD = EM.delete aid (sfleeD cli)}
   stratAction <- actionStrategy aid retry
   let bestAction = bestVariant stratAction
       !_A = assert (not (nullFreq bestAction)  -- equiv to nullStrategy
@@ -794,7 +796,7 @@ flee :: MonadClient m
      => ActorId -> [(Int, Point)] -> m (Strategy RequestAnyAbility)
 flee aid fleeL = do
   b <- getsState $ getActorBody aid
-  -- Regardless is fleeing accomplished, mark the need.
+  -- Regardless if fleeing accomplished, mark the need.
   modifyClient $ \cli -> cli {sfleeD = EM.insert aid (bpos b) (sfleeD cli)}
   let vVic = map (second (`vectorToFrom` bpos b)) fleeL
       str = liftFrequency $ toFreq "flee" vVic
