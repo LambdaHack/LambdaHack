@@ -192,6 +192,7 @@ targetStrategy aid = do
   explored <- getsClient sexplored
   isStairPos <- getsState $ \s lid p -> isStair lid p s
   discoBenefit <- getsClient sdiscoBenefit
+  fleeD <- getsClient sfleeD
   s <- getState
   getKind <- getsState $ flip getIidKind
   let lidExplored = ES.member (blid b) explored
@@ -322,6 +323,8 @@ targetStrategy aid = do
                    || mleader == Just aid)  -- a leader, never follow
       updateTgt :: TgtAndPath -> m (Strategy TgtAndPath)
       updateTgt TgtAndPath{tapPath=NoPath} = pickNewTarget
+      updateTgt _ | EM.member aid fleeD = pickNewTarget
+        -- forget enemy positions to prevent attacking them again soon
       updateTgt tap@TgtAndPath{tapPath=AndPath{..},tapTgt} = case tapTgt of
         TEnemy a permit -> do
           body <- getsState $ getActorBody a
