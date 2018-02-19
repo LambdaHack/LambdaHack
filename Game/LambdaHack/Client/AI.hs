@@ -24,6 +24,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 
 -- | Handle the move of an actor under AI control (regardless if the whole
@@ -41,13 +42,19 @@ queryAI aid = do
   -- @condInMelee@ will most proably be needed in the following functions,
   -- but even if not, it's OK, it's not forced, because wrapped in @Maybe@:
   udpdateCondInMelee aid
-  (aidToMove, treq) <- pickActorAndAction Nothing aid
+  (aidToMove, treq, oldFlee) <- pickActorAndAction Nothing aid
   (aidToMove2, treq2) <-
     case treq of
       RequestAnyAbility ReqWait | mleader == Just aid -> do
         -- Leader waits; a waste; try once to pick a yet different leader.
-        modifyClient $ \cli -> cli {_sleader = mleader}  -- undo previous choice
-        pickActorAndAction (Just (aidToMove, treq)) aid
+        -- Undo state changes in @pickAction@:
+        modifyClient $ \cli -> cli
+          { _sleader = mleader
+          , sfleeD = case oldFlee of
+              Just p -> EM.insert aidToMove p $ sfleeD cli
+              Nothing -> EM.delete aidToMove $ sfleeD cli }
+        (a, t, _) <- pickActorAndAction (Just (aidToMove, treq)) aid
+        return (a, t)
       _ -> return (aidToMove, treq)
   return ( ReqAITimed treq2
          , if aidToMove2 /= aid then Just aidToMove2 else Nothing )
@@ -55,8 +62,8 @@ queryAI aid = do
 -- | Pick an actor to move and an action for him to perform, given an optional
 -- previous candidate actor and action and the server-proposed actor.
 pickActorAndAction :: MonadClient m
-                     => Maybe (ActorId, RequestAnyAbility) -> ActorId
-                     -> m (ActorId, RequestAnyAbility)
+                   => Maybe (ActorId, RequestAnyAbility) -> ActorId
+                   -> m (ActorId, RequestAnyAbility, Maybe Point)
 -- This inline speeds up execution by 10% and increases allocation by 15%,
 -- despite probably bloating executable:
 {-# INLINE pickActorAndAction #-}
@@ -68,11 +75,12 @@ pickActorAndAction maid aid = do
     else do
       setTargetFromTactics aid
       return aid
+  oldFlee <- getsClient $ EM.lookup aidToMove . sfleeD
   treq <- case maid of
     Just (aidOld, treqOld) | aidToMove == aidOld ->
       return treqOld  -- no better leader found
     _ -> pickAction aidToMove (isJust maid)
-  return (aidToMove, treq)
+  return (aidToMove, treq, oldFlee)
 
 -- | Check if any non-dying foe (projectile or not) is adjacent
 -- to any of our normal actors (whether they can melee or just need to flee,
