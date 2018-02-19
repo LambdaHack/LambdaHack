@@ -98,6 +98,7 @@ pickActorToMove maidToAvoid = do
             _ -> Nothing
       oursTgtRaw <- mapM refresh ours
       scondInMelee <- getsClient scondInMelee
+      fleeD <- getsClient sfleeD
       let oursTgt = mapMaybe goodGeneric oursTgtRaw
           -- This should be kept in sync with @actionStrategy@.
           actorVulnerable ((aid, body), _) = do
@@ -143,6 +144,7 @@ pickActorToMove maidToAvoid = do
                     | otherwise ->
                       not condInMelee
                       && heavilyDistressed
+                      && not (EM.member aid fleeD)
                       -- Make him a leader even if can't delight, etc.
                       -- because he may instead take off light or otherwise
                       -- cope with being pummeled by projectiles.
@@ -150,6 +152,7 @@ pickActorToMove maidToAvoid = do
                       -- to flee, but may cover himself otherwise.
                       -- && (not condCanProject || canFleeFromLight)
               && condCanFlee
+          actorFled ((aid, _), _) = EM.member aid fleeD
           actorHearning (_, TgtAndPath{ tapTgt=TPoint TEnemyPos{} _ _
                                       , tapPath=NoPath }) =
             return False
@@ -167,7 +170,8 @@ pickActorToMove maidToAvoid = do
           -- even if his target is distant
           actorMeleeing ((aid, _), _) = condAnyFoeAdjM aid
       (oursVulnerable, oursSafe) <- partitionM actorVulnerable oursTgt
-      (oursMeleeing, oursNotMeleeing) <- partitionM actorMeleeing oursSafe
+      let (oursFled, oursNotFled) = partition actorFled oursSafe
+      (oursMeleeing, oursNotMeleeing) <- partitionM actorMeleeing oursNotFled
       (oursHearing, oursNotHearing) <- partitionM actorHearning oursNotMeleeing
       let actorRanged ((aid, body), _) =
             not $ actorCanMelee actorAspect aid body
@@ -258,6 +262,7 @@ pickActorToMove maidToAvoid = do
                        , oursSupport
                        , oursNoSupport
                        , oursPos
+                       , oursFled  -- if just fled, keep him safe, out of action
                        , oursMeleeing ++ oursTEnemyBlocked
                            -- make melee a leader to displace or at least melee
                            -- without overhead if all others blocked
