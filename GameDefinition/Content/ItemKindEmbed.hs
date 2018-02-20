@@ -299,8 +299,10 @@ pulpit = ItemKind
   , iweight  = 10000
   , idamage  = 0
   , iaspects = []
-  , ieffects = [ CreateItem CGround "any scroll" timerNone
-               , toOrganBad "defenseless" $ (1 `dL` 6) * 10
+  , ieffects = [ OneOf [ CreateItem CGround "any scroll" timerNone
+                       , Detect 20
+                       , toOrganBad "defenseless" $ (1 `dL` 6) * 10
+                       , toOrganGood "drunk" (20 + 1 `d` 5) ]
                , Explode "PhD defense question" ]
   , ifeature = []  -- not Durable, springs at most once
   , idesc    = "A dark wood stand, where strange priests once preached."
