@@ -128,9 +128,9 @@ rollSpawnPos COps{coTileSpeedup} visible
       middlePos = Point (lxsize `div` 2) (lysize `div` 2)
       distantMiddle d p _ = chessDist p middlePos < d
       condList | mobile =
-        [ distantSo (<= 10)
-        , distantSo (<= 15)
+        [ distantSo (<= 15)
         , distantSo (<= 20)
+        , distantSo (<= 25)
         ]
                | otherwise =
         [ distantMiddle 10
