@@ -36,7 +36,7 @@ import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
-import           Game.LambdaHack.Content.CaveKind (cactorCoeff, cactorFreq)
+import qualified Game.LambdaHack.Content.CaveKind as CK
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
@@ -59,12 +59,12 @@ spawnMonster = do
   let ck = okind cocave lkind
   lvlSpawned <- getsServer $ fromMaybe 0 . EM.lookup arena . snumSpawned
   rc <- rndToAction
-        $ monsterGenChance ldepth totalDepth lvlSpawned (cactorCoeff ck)
+        $ monsterGenChance ldepth totalDepth lvlSpawned (CK.cactorCoeff ck)
   when rc $ do
     modifyServer $ \ser ->
       ser {snumSpawned = EM.insert arena (lvlSpawned + 1) $ snumSpawned ser}
     localTime <- getsState $ getLocalTime arena
-    maid <- addAnyActor False (cactorFreq ck) arena localTime Nothing
+    maid <- addAnyActor False (CK.cactorFreq ck) arena localTime Nothing
     case maid of
       Nothing -> return ()
       Just aid -> do
@@ -247,6 +247,7 @@ udpateCalm target deltaCalm = do
 
 leadLevelSwitch :: MonadServerAtomic m => m ()
 leadLevelSwitch = do
+  COps{cocave} <- getsState scops
   let canSwitch fact = fst (autoDungeonLevel fact)
                        -- a hack to help AI, until AI client can switch levels
                        || case fleaderMode (gplayer fact) of
@@ -264,6 +265,8 @@ leadLevelSwitch = do
                 ourLvl (lid, lvl) =
                   ( lid
                   , ( lexpl lvl <= lseen lvl  -- all seen
+                      || CK.cactorCoeff (okind cocave $ lkind lvl) > 150
+                         && not (fhasGender $ gplayer fact)
                     , -- Drama levels ignored, hence @Regular@.
                       fidActorRegularIds (bfid body) lid s ) )
                 oursRaw = map ourLvl $ EM.assocs $ sdungeon s

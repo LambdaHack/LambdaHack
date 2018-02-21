@@ -41,6 +41,7 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.CaveKind as CK
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.TileKind (isUknownSpace)
@@ -225,7 +226,9 @@ furthestKnown aid = do
 -- so we don't do this in AI, so AI is at a disadvantage.
 closestUnknown :: MonadClient m => ActorId -> m (Maybe Point)
 closestUnknown aid = do
+  COps{cocave} <- getsState scops
   body <- getsState $ getActorBody aid
+  fact <- getsState $ (EM.! bfid body) . sfactionD
   lvl <- getLevel $ blid body
   bfs <- getCacheBfs aid
   let closestPoss = PointArray.minIndexesA bfs
@@ -234,6 +237,11 @@ closestUnknown aid = do
   if lexpl lvl <= lseen lvl
        -- Some unknown may still be visible and even pathable, but we already
        -- know from global level info that they are blocked.
+     || CK.cactorCoeff (okind cocave $ lkind lvl) > 150
+        && not (fhasGender $ gplayer fact)
+       -- Not to burrow through a labyrinth instead of leaving it for
+       -- the human player and to prevent AI losing time there instead
+       -- of congregating at exits.
      || dist >= apartBfs
        -- Global level info may tell us that terrain was changed and so
        -- some new explorable tile appeared, but we don't care about those
