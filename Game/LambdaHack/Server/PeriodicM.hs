@@ -16,6 +16,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Int (Int64)
+import           Data.Ord
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.Actor
@@ -252,37 +253,35 @@ leadLevelSwitch = do
                             LeaderNull -> False
                             LeaderAI _ -> True
                             LeaderUI _ -> False
-      flipFaction fact | not $ canSwitch fact = return ()
-      flipFaction fact =
+      flipFaction (_, fact) | not $ canSwitch fact = return ()
+      flipFaction (fid, fact) =
         case gleader fact of
           Nothing -> return ()
           Just leader -> do
             body <- getsState $ getActorBody leader
-            s <- getState
+            s <- getsServer $ (EM.! fid) . sclientStates
             let leaderStuck = waitedLastTurn body
                 ourLvl (lid, lvl) =
                   ( lid
-                  , EM.size (lfloor lvl)
-                  , -- Drama levels skipped, hence @Regular@.
-                    fidActorRegularIds (bfid body) lid s )
-            ours <- getsState $ map ourLvl . EM.assocs . sdungeon
-            -- Non-humans, being born in the dungeon, have a rough idea of
-            -- the number of items left on the level and will focus
-            -- on levels they started exploring and that have few items
-            -- left. This is to to explore them completely, leave them
-            -- once and for all and concentrate forces on another level.
-            -- In addition, sole stranded actors tend to become leaders
+                  , ( lexpl lvl <= lseen lvl  -- all seen
+                    , -- Drama levels ignored, hence @Regular@.
+                      fidActorRegularIds (bfid body) lid s ) )
+                oursRaw = map ourLvl $ EM.assocs $ sdungeon s
+                (oursSeen, oursNotSeen) = partition (fst . snd) oursRaw
+                -- Only the shallowest not fully explored level is permitted.
+                f (lid, _) = abs $ fromEnum lid
+                ours = oursSeen ++ take 1 (sortBy (comparing f) $ oursNotSeen)
+            -- Sole stranded actors tend to become leaders
             -- so that they can join the main force ASAP.
             let freqList = [ (k, (lid, a))
-                           | (lid, itemN, a : rest) <- ours
+                           | (lid, (_, a : rest)) <- ours
                            , lid /= blid body || not leaderStuck
                            , let len = 1 + min 7 (length rest)
-                                 divisor = 3 * itemN + len
-                                 k = 1000000 `div` divisor ]
+                                 k = 1000000 `div` len ]
             unless (null freqList) $ do
               (lid, a) <- rndToAction $ frequency
                                       $ toFreq "leadLevel" freqList
               unless (lid == blid body) $  -- flip levels rather than actors
                 supplantLeader (bfid body) a
   factionD <- getsState sfactionD
-  mapM_ flipFaction $ EM.elems factionD
+  mapM_ flipFaction $ EM.assocs factionD
