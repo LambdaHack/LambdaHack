@@ -649,7 +649,7 @@ flashBomb = fragmentationBomb
   , idesc    = ""
   }
 firecrackerBomb = fragmentationBomb
-  { iname = "firecracker roll"  -- not fireworks, as they require outdoors
+  { iname = "roll"  -- not fireworks, as they require outdoors
   , iflavour = zipPlain [BrMagenta]
   , irarity  = [(1, 5), (5, 5)]  -- a toy, if deadly
   , iverbHit = "crack"  -- a pun, matches the verb from "ItemKindBlast"
