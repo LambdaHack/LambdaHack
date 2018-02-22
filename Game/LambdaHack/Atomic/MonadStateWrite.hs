@@ -301,7 +301,7 @@ addAis ais = do
     let f = case jkind item of
           IdentityObvious _ -> id
           IdentityCovered ix _ ->
-            updateItemIxMap $ EM.insertWith (ES.union) ix (ES.singleton iid)
+            updateItemIxMap $ EM.insertWith ES.union ix (ES.singleton iid)
     modifyState $ f . updateItemD (EM.insertWith h iid item)
 
 itemsMatch :: Item -> Item -> Bool

@@ -154,7 +154,7 @@ opick ContentData{groupFreq} !cgroup !p =
                  $ filter (p . snd . snd) freqRaw
       in if nullFreq freq
          then return Nothing
-         else fmap (Just . fst) $ frequency freq
+         else Just . fst <$> frequency freq
     _ -> return Nothing
 
 -- | Fold over all content elements of @a@.

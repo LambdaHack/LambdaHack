@@ -79,7 +79,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdCreateItem iid _item kit c -> do
     updateItemSlot c iid
     case c of
-      CActor aid store -> do
+      CActor aid store ->
         case store of
           COrgan -> do
             itemKind <- getsState $ getIidKind iid
@@ -694,7 +694,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
   mleader <- getsClient sleader
   ItemSlots itemSlots <- getsSession sslots
   case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! SItem of
-    Just _l -> do
+    Just _l ->
       -- So far organs can't be put into backpack, so no need to call
       -- @updateItemSlot@ to add or reassign lore category.
       if cstore1 == CGround && Just aid == mleader && not underAI then
@@ -801,7 +801,7 @@ quitFactionUI fid toSt = do
                     ["this particular loot is worth"]
                     ++ (if k > 1 then [ MU.Cardinal k, "times"] else [])
                     ++ [MU.CarWs worth currencyName]
-                          | otherwise = makeSentence $
+                          | otherwise = makeSentence
                     ["this item is not worth any", MU.Ws currencyName]
               promptAdd lootMsg
               slides <- overlayToSlideshow (lysize + 1) keys (ov, [])
@@ -1115,7 +1115,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     sbUI <- getsSession $ getActorUI source
     spart <- partActorLeader source sbUI
     let object = MU.AW $ MU.Text $ TK.tname $ okind cotile $ lvl `at` pos
-    msgAdd $! makeSentence $
+    msgAdd $! makeSentence
       [MU.SubjectVerbSg spart "painfully collide", "with", object]
 
 ppSfxMsg :: MonadClientUI m => SfxMsg -> m Text
@@ -1229,7 +1229,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
       tbUI <- getsSession $ getActorUI target
       spart <- partActorLeader source sbUI
       tpart <- partActorLeader target tbUI
-      return $! makeSentence $
+      return $! makeSentence
         [MU.SubjectVerbSg spart "painfully collide", "with", tpart]
     else return ""
 

@@ -266,7 +266,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                 -> ( Either Text ([ItemId], ItemBag, SingleItemSlots)
                    , (ItemDialogMode, Either K.KM SlotChar) )
       getResult ekm iids = (Right (iids, bagAll, bagItemSlotsAll), (cCur, ekm))
-      filterP iid kit = psuitFun (itemToF iid) kit
+      filterP iid = psuitFun (itemToF iid)
       bagAllSuit = EM.filterWithKey filterP bagAll
       lSlots = case cCur of
         MOrgans -> mergeItemSlots itemToF organPartySet [ itemSlots EM.! SOrgan

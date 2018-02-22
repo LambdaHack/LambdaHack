@@ -70,7 +70,7 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
                     else gname (factionD EM.! fid)]
         _ -> []
       ts = lsource
-           ++ (take maxWordsToShow effTs)
+           ++ take maxWordsToShow effTs
            ++ ["(...)" | length effTs > maxWordsToShow && maxWordsToShow > 1]
            ++ [timer | maxWordsToShow > 1]
       unique = IK.Unique `elem` IK.ifeature itemKind
@@ -163,8 +163,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
                           ++ [onSmash | detLev >= DetailAll]
                      else [damage]
       splitTry ass =
-        let splits = map (\detLev -> splitAE detLev ass)
-                         [minBound..maxBound]
+        let splits = map (`splitAE` ass) [minBound..maxBound]
             splitsToTry = drop (fromEnum detailLevel) splits
         in case filter (/= []) splitsToTry of
              detNonEmpty : _ -> detNonEmpty

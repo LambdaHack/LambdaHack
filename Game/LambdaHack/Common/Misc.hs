@@ -47,7 +47,7 @@ newtype LevelId = LevelId Int
 
 instance Enum LevelId where
   fromEnum (LevelId n) = n
-  toEnum n = LevelId n  -- picks the main branch of the dungeon
+  toEnum = LevelId  -- picks the main branch of the dungeon
 
 -- | A unique identifier of an actor in the dungeon.
 newtype ActorId = ActorId Int

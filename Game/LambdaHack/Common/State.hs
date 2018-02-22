@@ -282,10 +282,9 @@ aspectRecordFromItem iid item s =
   let kindId = case jkind item of
         IdentityObvious ik -> ik
         IdentityCovered ix ik -> fromMaybe ik $ ix `EM.lookup` sdiscoKind s
-  in case EM.lookup iid (sdiscoAspect s) of
-    Just ar -> ar
-    Nothing -> let COps{coItemSpeedup} = scops s
-               in IA.kmMean $ IK.getKindMean kindId coItemSpeedup
+      COps{coItemSpeedup} = scops s
+      mean = IA.kmMean $ IK.getKindMean kindId coItemSpeedup
+  in fromMaybe mean $ EM.lookup iid $ sdiscoAspect s
 
 aspectRecordFromIid :: ItemId -> State -> IA.AspectRecord
 aspectRecordFromIid iid s = aspectRecordFromItem iid (getItemBody iid s) s

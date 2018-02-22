@@ -10,7 +10,7 @@ import Game.LambdaHack.Common.Prelude
 
 import           Control.Concurrent.Async
 import qualified Control.Exception as Ex
-import qualified GHC.IO.Handle as GHC.IO.Handle
+import qualified GHC.IO.Handle
 import qualified Options.Applicative as OA
 import           System.Exit
 import           System.FilePath

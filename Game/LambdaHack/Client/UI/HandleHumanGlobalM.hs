@@ -989,7 +989,7 @@ alterWithPointerHuman ts = do
       t = lvl `at` tpos
   if px >= 0 && py - mapStartY >= 0
      && px < lxsize && py - mapStartY < lysize
-  then do
+  then
     alterTileAtPos ts tpos $ "the" <+> TK.tname (okind cotile t)
   else do
     stopPlayBack

@@ -116,7 +116,7 @@ mergeItemSlots :: (ItemId -> ItemFull) -> ES.EnumSet ItemId -> [SingleItemSlots]
 mergeItemSlots itemToF partySet ems =
   let renumberSlot n SlotChar{slotPrefix, slotChar} =
         SlotChar{slotPrefix = slotPrefix + n * 1000000, slotChar}
-      renumberMap (n, em1) = EM.mapKeys (renumberSlot n) em1
-      rms = map renumberMap $ zip [0..] ems
+      renumberMap n em1 = EM.mapKeys (renumberSlot n) em1
+      rms = zipWith renumberMap [0..] ems
       em = EM.unionsWith (\_ _ -> error "mergeItemSlots: duplicate keys") rms
   in sortSlotMap itemToF partySet em

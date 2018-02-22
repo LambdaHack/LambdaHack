@@ -216,9 +216,9 @@ chooseItemDialogMode c = do
                void $ pickLeader True newAid
                return $ Right c2
         MStats -> error $ "" `showFailure` ggi
-        MLore slore -> displayLore ix0 $ \_ ->
-          (makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
-                        , MU.Text (ppSLore slore), "lore" ])
+        MLore slore -> displayLore ix0 $ const $
+          makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
+                       , MU.Text (ppSLore slore), "lore" ]
     (Left err, (MStats, ekm)) -> case ekm of
       Right slot0 -> assert (err == "stats") $ do
         let statListBound = length statSlots - 1
@@ -244,9 +244,8 @@ chooseItemDialogMode c = do
                 K.Down -> displayOneStat $ slotIndex + 1
                 K.Esc -> failWith "never mind"
                 _ -> error $ "" `showFailure` km
-            slotIndex0 = case elemIndex slot0 allSlots of
-              Just ix -> ix
-              Nothing -> error "displayOneStat: illegal slot"
+            slotIndex0 = fromMaybe (error "displayOneStat: illegal slot")
+                         $ elemIndex slot0 allSlots
         displayOneStat slotIndex0
       Left _ -> failWith "never mind"
     (Left err, _) -> failWith err

@@ -1458,7 +1458,7 @@ effectTemporary execSfx source iid c = do
       case iid `EM.lookup` borgan b of
         Just _ -> return ()  -- still some copies left of a multi-copy tmp organ
         Nothing -> execSfx  -- last copy just destroyed
-    _ -> do
+    _ ->
       execSfx
   return UseUp  -- temporary, so usually used up just by sitting there
 
@@ -1470,7 +1470,7 @@ effectComposite recursiveCall l = do
   let f :: IK.Effect -> m UseResult -> m UseResult
       f eff result = do
         ur <- recursiveCall eff
-        when (ur == UseUp) $ void $ result  -- UseResult comes from the first
+        when (ur == UseUp) $ void result  -- UseResult comes from the first
         return ur
   foldr f (return UseDud) l
   -- no @execSfx@, because individual effects sent them

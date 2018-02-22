@@ -266,7 +266,7 @@ endClip updatePerFid = do
   -- periodic actions could have invalidated them.
   factionD <- getsState sfactionD
   mapM_ updatePerFid (EM.keys factionD)
-  unless breakLoop2 $ do  -- if by chance requested and periodic saves coincide
+  unless breakLoop2 $  -- if by chance requested and periodic saves coincide
     -- Periodic save needs to be at the end, so that restore can start
     -- at the beginning.
     when (clipN `mod` rwriteSaveClips == 0) $ writeSaveAll False
@@ -400,9 +400,9 @@ setTrajectory aid b = do
         -- @Nothing@ trajectory of a projectile signals an obstacle hit.
         -- The second call of @actorDying@ above will catch the dead projectile.
         execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
-        if bproj b then do
+        if bproj b then
           -- Lose HP due to hitting an obstacle.
-          when (bhp b > oneM) $ do
+          when (bhp b > oneM) $
             execUpdAtomic $ UpdRefillHP aid minusM
         else do
           execSfxAtomic $ SfxCollideTile aid tpos

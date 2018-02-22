@@ -127,7 +127,7 @@ standardKeys = KeyKind $ map evalKeyDef $
           , ChooseItemMenu MOwned ))
   , ("@", ( [CmdItem, CmdDashboard]
           , "describe organs of the leader"
-          , ChooseItemMenu (MOrgans) ))
+          , ChooseItemMenu MOrgans ))
   , ("#", ( [CmdItem, CmdDashboard]
           , "show stat summary of the leader"
           , ChooseItemMenu MStats ))

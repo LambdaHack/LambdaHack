@@ -368,7 +368,7 @@ printScreen FrontendSession{..} = do
     SDL.Raw.Enum.SDL_PIXELFORMAT_ARGB8888
     (SDL.Raw.Types.surfacePixels surfaceOut)
     (sw * 4)
-  withCString fileName $ \fileNameCString -> do
+  withCString fileName $ \fileNameCString ->
     void $! SDL.Raw.Video.saveBMP ptrOut fileNameCString
   SDL.Raw.Video.freeSurface ptrOut
 

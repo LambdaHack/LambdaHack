@@ -273,7 +273,7 @@ leadLevelSwitch = do
                 (oursSeen, oursNotSeen) = partition (fst . snd) oursRaw
                 -- Only the shallowest not fully explored level is permitted.
                 f (lid, _) = abs $ fromEnum lid
-                ours = oursSeen ++ take 1 (sortBy (comparing f) $ oursNotSeen)
+                ours = oursSeen ++ take 1 (sortBy (comparing f) oursNotSeen)
             -- Sole stranded actors tend to become leaders
             -- so that they can join the main force ASAP.
             let freqList = [ (k, (lid, a))
