@@ -7,11 +7,10 @@ LambdaHack
 
 LambdaHack is a Haskell[1] game engine library for ASCII roguelike[2]
 games of arbitrary theme, size and complexity, with optional
-tactical squad combat. It's packaged together with a little
-example dungeon crawler in fantasy setting that can be
-tried out in the browser.
-(http://lambdahack.github.io --- It runs fastest
-on Chrome. Keyboard commands and savefiles are supported
+tactical squad combat. It's packaged together with a sample
+dungeon crawler in fantasy setting that can be
+tried out in the browser: http://lambdahack.github.io
+(It runs fastest on Chrome. Keyboard commands and savefiles are supported
 only on recent enough versions of browsers.
 Mouse should work everywhere.)
 
@@ -69,19 +68,17 @@ Installation of the sample game from binary archives
 
 The game runs rather slowly in the browser (fastest on Chrome)
 and you are limited to only one font, though it's scalable.
-Keyboard input and saving game progress requires recent enough
-version of a browser (but mouse input is enough to play the game).
 Also, savefiles are prone to corruption on the browser,
 e.g., when it's closed while the game is still saving progress
 (which takes a long time). Hence, after trying out the game,
 you may prefer to use a native binary for your architecture, if it exists.
 
-Pre-compiled game binaries for some platforms are available through
+Pre-compiled game binaries are available through
 the release page[11] (and continuously from AppVeyor[18]).
 Note that Windows binaries no longer work on Windows XP, since Cygwin
-and MSYS2 dropped support for XP). To use a pre-compiled binary archive,
-unpack it and run the executable in the unpacked directory.
-Or use program shortcuts from the installer, if available.
+and MSYS2 dropped support for XP. To use a pre-compiled binary archive,
+unpack it and run the executable in the unpacked directory
+or use program shortcuts from the installer, if available.
 
 On Linux, make sure you have the SDL2 libraries installed on your system
 (e.g., libsdl2-2.0-0, libsdl2-ttf-2.0-0 on Ubuntu; also libdw1).
@@ -93,8 +90,8 @@ Screen and keyboard configuration
 ---------------------------------
 
 The game UI can be configured via a config file.
-A file with the default settings, the same that is built into the binary,
-is in [GameDefinition/config.ui.default](https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/config.ui.default).
+The default settings, the same that are built into the binary,
+are in [GameDefinition/config.ui.default](https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/config.ui.default).
 When the game is run for the first time, the file is copied to the default
 user data folder, which is `~/.LambdaHack/` on Linux,
 `C:\Users\<username>\AppData\Roaming\LambdaHack\`
@@ -104,14 +101,11 @@ or something else altogether) on Windows, and in RMB menu, under
 
 Screen font can be changed by editing the config file in the user
 data folder. For a small game window, the highly optimized
-bitmap fonts 16x16x.fon, 8x8x.fon and 8x8xb.fon are the best,
+16x16x.fon and 8x8x.fon bitmap fonts are the best,
 but for larger window sizes or if you require international characters
 (e.g. to give custom names to player characters), a modern scalable font
 supplied with the game is the only option. The game window automatically
-scales according to the specified font size. Display on SDL2
-and in the browser is superior to all the other frontends,
-due to custom square font and less intrusive ways of highlighting
-interesting squares.
+scales according to the specified font size.
 
 If you don't have a numeric keypad, you can use mouse or laptop keys
 (uk8o79jl) for movement or you can enable the Vi keys (aka roguelike keys)
@@ -144,9 +138,7 @@ for your OS. On Linux, remember to install the -dev versions as well,
 e.g., libsdl2-dev and libsdl2-ttf-dev on Ubuntu Linux 16.04.
 (Compilation to JavaScript for the browser is more complicated
 and requires the ghcjs[15] compiler and optionally the Google Closure
-Compiler[16] as well. See the
-[Makefile](https://github.com/LambdaHack/LambdaHack/blob/master/Makefile)
-for more details.)
+Compiler[16] as well.)
 
 The latest official version of the LambdaHack library can be downloaded,
 compiled for SDL2 and installed automatically by Cabal from Hackage[3]
@@ -160,10 +152,10 @@ and run Cabal from the main directory
 
     cabal install
 
-There is a built-in line terminal frontend, suitable for teletype terminals
-or a keyboard and a printer (but it's going to use a lot of paper,
-unless you disable animations with `--noAnim`). To compile with
-one of the less rudimentary terminal frontends (in which case you are
+There is a built-in black and white line terminal frontend, suitable
+for teletype terminals or a keyboard and a printer (but it's going to use
+a lot of paper, unless you disable animations with `--noAnim`). To compile
+with one of the less rudimentary terminal frontends (in which case you are
 on your own regarding font choice and color setup and you won't have
 the spiffy colorful squares around special positions, only crude highlights),
 use Cabal flags, e.g,
@@ -218,11 +210,11 @@ you are editing. Put big formatting changes in separate commits.
 
 Haddocks are provided for all module headers and for all functions and types
 from major modules, in particular the modules that are interfaces
-for a whole directory of modules. Apart of that only very important
+for a whole directory of modules. Apart of that, only very important
 functions and types are distinguished by having a haddock.
 If minor ones have comments, they should not be haddocks
 and they are permitted to describe implementation details and be out of date.
-Prefer assertions in place of comments, unless too verbose.
+Prefer assertions to comments, unless too verbose.
 
 
 Further information
