@@ -9,26 +9,12 @@ version:       0.8.0.0
 synopsis:      A game engine library for tactical squad ASCII roguelike dungeon crawlers
 description:   LambdaHack is a Haskell game engine library for ASCII roguelike
                games of arbitrary theme, size and complexity, with optional
-               tactical squad combat. It's packaged together with a little
-               example dungeon crawler in fantasy setting that can be
-               tried out in the browser.
-               (<http://lambdahack.github.io> --- It runs fastest
-               on Chrome. Keyboard commands and savefiles are supported
-               only on recent enough versions of browsers.
+               tactical squad combat. It's packaged together with a sample
+               dungeon crawler in fantasy setting that can be tried out
+               in the browser: <http://lambdahack.github.io>
+               (It runs fastest on Chrome. Keyboard commands and savefiles
+               are supported only on recent enough versions of browsers.
                Mouse should work everywhere.)
-               .
-               To use the engine, you need to specify the content to be
-               procedurally generated. You specify what the game world
-               is made of (entities, their relations, physics and lore)
-               and the engine builds the world and runs it.
-               The library lets you compile a ready-to-play game binary,
-               using either the supplied or a custom-made main loop.
-               Several frontends are available (SDL2 is the default
-               for desktop and there is a JavaScript browser frontend)
-               and many other generic engine components are easily overridden,
-               but the fundamental source of flexibility lies
-               in the strict and type-safe separation of code from the content
-               and of clients (human and AI-controlled) from the server.
                .
                Please see the changelog file for recent improvements
                and the issue tracker for short-term plans. Long term goals
