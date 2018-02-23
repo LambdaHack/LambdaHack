@@ -34,11 +34,11 @@ which in its most complex form looks as follows.
 
     *@12        4d1+5% Calm: 20/60 HP: 33/50 Target: basilisk  [**__]
 
-The line starts with the list of party members, with the leader highlighted.
-Most commands involve only the leader, including movement with keyboard's
-keypad or `LMB` (left mouse button). If more heroes are selected, e.g.,
-by clicking on the list with `RMB` (right mouse button), they run together
-whenever `:` or `RMB` over map area is pressed.
+The line starts with the list of party members, with the current leader
+highlighted. Most commands involve only the leader, including movement
+with keyboard's keypad or `LMB` (left mouse button). If more heroes
+are selected, e.g., by clicking on the list with `RMB` (right mouse button),
+they run together whenever `:` or `RMB` over map area is pressed.
 
 Next on the status line is the damage of the currently best melee weapon
 the leader can use, then his current and maximum Calm (morale, composure,
@@ -57,9 +57,9 @@ leader name. Weapon damage and other item stats are displayed using
 the dice notation `xdy`, which means `x` rolls of `y`-sided dice.
 A variant denoted `xdLy` is additionally scaled by the level depth
 in proportion to the maximal level depth (at the first level it's
-always zero, then it grows up to full rolled value at the last level).
+always one, then it grows up to full rolled value at the last level).
 Section [Monsters](#monsters) below describes combat resolution in detail,
-including the percentage bonus seen in the example.
+including the percentage damage bonus seen in the example.
 
 The second, upper status line describes the current level in relation
 to the party.
@@ -72,7 +72,7 @@ The `X-hair` (aiming crosshair) is the common focus of the whole party,
 marked on the map and manipulated with mouse or movement keys in aiming mode.
 In this example, the corsshair points at an exact position on the map
 and at the end of the status line comes the length of the shortest
-path from the leader to the spot position and the straight-line distance
+path from the leader position to the spot and the straight-line distance
 between the two points.
 
 
@@ -117,7 +117,7 @@ Basic Commands
 This section is a copy of the first two screens of in-game help
 and a screen introducing mouse commands. The help pages are
 automatically generated based on a game's keybinding content and
-on overrides in the player's config file. The remaiing in-game help screens,
+on overrides in the player's config file. The remaining in-game help screens,
 not shown here, list all game commands grouped by categories, in detail.
 A text snapshot of the complete in-game help is in
 [InGameHelp.txt](InGameHelp.txt).
@@ -134,44 +134,42 @@ Go-to with LMB (left mouse button). Run collectively with RMB.
                1 2 3          j k l          b j n
 
 In aiming mode, the same keys (and mouse) move the x-hair (aiming crosshair).
-Press 'KP_5' ('5' on keypad, if present) to wait, bracing for impact,
+Press 'KP_5' ('5' on keypad, or 'i' or '.') to wait, bracing for impact,
 which reduces any damage taken and prevents displacement by foes. Press
 'C-KP_5' (the same key with Control) to wait 0.1 of a turn, without bracing.
 You displace enemies by running into them with Shift/Control or RMB. Search,
 open, descend and attack by bumping into walls, doors, stairs and enemies.
-The best item to attack with is automatically chosen from among
-weapons in your personal equipment and your unwounded organs.
+The best item to attack with is automatically chosen from among weapons
+in your personal equipment and your body parts.
 
 The following commands, joined with the basic set above, let you accomplish
 anything in the game, though not necessarily with the fewest keystrokes.
 You can also play the game exclusively with a mouse, or both mouse and
-keyboard. See the ending help screens for mouse commands.
-Lastly, you can select a command with arrows or mouse directly from the help
-screen and execute it on the spot.
+keyboard. See the ending help screens for mouse commands. Lastly, you can
+select a command with arrows or mouse directly from the help screen
+or the dashboard and execute it on the spot.
 
     keys         command
     g or ,       grab item(s)
-    c            close door
-    P            manage item pack of the leader
-    KP_* or !    cycle x-hair among enemies
-    +            swerve the aiming line
     ESC          cancel aiming/open main menu
-    RET or INS   accept target/open help
+    RET or INS   accept target/open dashboard
     SPACE        clear messages/display history
     S-TAB        cycle among all party members
-    =            select (or deselect) party member
+    KP_* or !    cycle x-hair among enemies
+    C-c          open or close or alter
+    +            swerve the aiming line
 
 Screen area and UI mode (aiming/exploration) determine mouse click effects.
 Here is an overview of effects of each button over most of the game map area.
 The list includes not only left and right buttons, but also the optional
 middle mouse button (MMB) and even the mouse wheel, which is normally used
-over menus, to page-scroll them, rather than over game map.
+over menus, to page-scroll them.
 For mice without RMB, one can use C-LMB (Control key and left mouse button).
 
     keys         command
     LMB          set x-hair to enemy/go to pointer for 25 steps
     RMB or C-LMB fling at enemy/run to pointer collectively for 25 steps
-    C-RMB        open or close door
+    C-RMB        open or close or alter at pointer
     MMB          snap x-hair to floor under pointer
     WHEEL-UP     swerve the aiming line
     WHEEL-DN     unswerve the aiming line
@@ -214,9 +212,8 @@ introduction. The subsequent game scenarios gradually introduce
 squad combat, stealth, opportunity fire, asymmetric battles and more.
 Starting from the second scenario, the player controls a whole team
 of characters and will develop his repertoire of squad formations,
-varying, depending on environment, the bound length, the preferred
-rendezvous locations and the use of light sources. The last scenario
-takes place in a multi-floor setting, giving player the choice
+preferred rendezvous locations and the use of light sources. The last
+scenario takes place in a multi-floor setting, giving player the choice
 of exploration of a single level at a time or portions of many levels
 along a single staircase and also of guarding staircases against
 enemies from other levels or, inversely, avoiding the staircases.
@@ -231,7 +228,7 @@ day and night. While heroes pay attention to all other party members
 and take care to move one at a time, monsters don't care about each other
 and all move at once, sometimes brutally colliding by accident.
 
-When the hero bumps into a monster or a monster attacks the hero,
+When a hero bumps into a monster or a monster attacks the hero,
 melee combat occurs. Heroes and monsters running into one another
 (with the `Shift` or `Control` key) do not inflict damage, but change places.
 This gives the opponent a free blow, but can improve the tactical situation
@@ -266,12 +263,12 @@ have other effects, beneficial, detrimental or mixed.
 
 In-game detailed item descriptions contain melee and ranged damage estimates.
 They do not take into account damage from effects and, if bonuses are not
-known, they are guessed based on average bonuses for that kind of item.
+known, guesses are based on averages for the item kind in question.
 The displayed figures are rounded, but the game internally keeps track
 of minute fractions of HP.
 
 The stress of combat drains Calm, gradually limiting the use of items and,
-if Calm reaches zero and the actor is sufficiently impressed by his foes,
+if Calm reaches zero and the actor is impressed by his foes,
 making him defect and surrender to their domination.
 Whenever the monster's or hero's hit points reach zero,
 the combatant is incapacitated and promptly dies.
@@ -293,7 +290,7 @@ of heroes lost, are awarded only if you win. The score is heavily
 modified by the chosen game difficulty, but not by any other challenges.
 
 When all your heroes fall, you are going to invariably see a new foolhardy
-party of adventurers clamoring to be led into danger. They start
+party of adventurers clamoring to be led into the unknown. They start
 their conquest from a new entrance, with no experience and no equipment,
 and new, undaunted enemies bar their way. Lead the new hopeful explorers
 with wisdom and fortitude!
