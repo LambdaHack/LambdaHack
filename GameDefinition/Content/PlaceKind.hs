@@ -395,7 +395,7 @@ staircase6 = staircase
 staircase7 = staircase
   { pfreq    = [("staircase", 100)]
   , pfence   = FGround
-  , ptopLeft = [ "O·I·<·>·I·O"
+  , ptopLeft = [ "I·O·<·>·O·I"
                ]
   }
 staircase8 = staircase
