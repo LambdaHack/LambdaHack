@@ -109,7 +109,7 @@ standardKeys = KeyKind $ map evalKeyDef $
             , Macro ["C-KP_5", "V"] ))
 
   -- Item use, continued
-  , ("^", ( [CmdItem], "sort items by kind and stats", SortSlots))
+  , ("^", ( [CmdItem], "sort items by ownership, kind and stats", SortSlots))
   , ("P", ( [CmdItem, CmdDashboard]
           , "manage item pack of the leader"
           , ChooseItemMenu (MStore CInv) ))
@@ -179,7 +179,7 @@ standardKeys = KeyKind $ map evalKeyDef $
             , "set x-hair to nearest upstairs"
             , XhairStair True ))
   , ("C-}", ( [CmdAim]
-            , "set x-hair to nearest downstairs"
+            , "set x-hair to nearest dnstairs"
             , XhairStair False ))
   , ("<", ([CmdAim], "move aiming one level up" , AimAscend 1))
   , ("C-<", ( [CmdNoHelp], "move aiming 10 levels up"

@@ -140,7 +140,7 @@ keyHelp cops keyb@Binding{..} offset = assert (offset > 0) $
       , "Here is an overview of effects of each button over most of the game map area."
       , "The list includes not only left and right buttons, but also the optional"
       , "middle mouse button (MMB) and even the mouse wheel, which is normally used"
-      , "over menus, to page-scroll them, rather than over game map."
+      , "over menus, to page-scroll them."
       , "For mice without RMB, one can use C-LMB (Control key and left mouse button)."
       , ""
       ]
