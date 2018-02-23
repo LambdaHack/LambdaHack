@@ -14,7 +14,15 @@ in the browser: http://lambdahack.github.io
 are supported only on recent enough versions of browsers.
 Mouse should work everywhere.)
 
-![gameplay screenshot](https://raw.githubusercontent.com/LambdaHack/media/master/screenshot/crawl-0.6.0.0-8x8xb.png)
+As an example of the engine's capabilities, here is a showcase of shooting down explosive projectiles. A couple were shot down close enough to enemies to harm them. Others exploded closer to our party members and took out of the air the projectiles that would otherwise harm them.
+
+![gameplay screenshot](https://raw.githubusercontent.com/LambdaHack/media/master/screenshot/allureofthestars.com.shooting.down.explosives.gif)
+
+This was a semi-automatic stealthy speedrun of the escape scenario of the sample game that comes with the engine. Small fixed font. The enemy gang has a huge numerical and equipment superiority. Our team loots the area on auto-pilot until the first foe is spotted. Then they scout out enemy positions. Then hero 1 draws enemies and unfortunately enemy fire as well, which is when he valiantly shoots down explosives to avoid the worst damage. Then heroine 2 sneaks behind enemy lines to reach the remaining treasure. That accomplished, the captain signals retreat and leaves for the next area (the zoo).
+
+
+Using the engine
+----------------
 
 To use the engine, you need to specify the content to be
 procedurally generated. You specify what the game world
