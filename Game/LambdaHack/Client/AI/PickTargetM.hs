@@ -189,14 +189,12 @@ targetStrategy aid = do
         tMelee <- targetableMelee aidE body
         return $! targetableRanged body || tMelee
   nearbyFoes <- filterM targetableEnemy allFoes
-  explored <- getsClient sexplored
   isStairPos <- getsState $ \s lid p -> isStair lid p s
   discoBenefit <- getsClient sdiscoBenefit
   fleeD <- getsClient sfleeD
   s <- getState
   getKind <- getsState $ flip getIidKind
-  let lidExplored = ES.member (blid b) explored
-      desirableBagFloor bag = any (\iid ->
+  let desirableBagFloor bag = any (\iid ->
         let Benefit{benPickup} = discoBenefit EM.! iid
         in desirableItem canEscape benPickup (getKind iid)) $ EM.keys bag
       desirableFloor (_, (_, bag)) = desirableBagFloor bag
@@ -276,15 +274,15 @@ targetStrategy aid = do
                               -- if initial altering, consider carefully below
                       then vToTgt vOld
                       else do
-                        upos <- if lidExplored
-                                then return Nothing
-                                else closestUnknown aid -- modifies sexplored
+                        upos <- closestUnknown aid
                         case upos of
                           Nothing -> do
-                            explored2 <- getsClient sexplored
-                            let allExplored2 = ES.size explored2
-                                               == EM.size dungeon
-                            if allExplored2 || nullFreq ctriggers then do
+                            modifyClient $ \cli -> cli {sexplored =
+                              ES.insert (blid b) (sexplored cli)}
+                            explored <- getsClient sexplored
+                            let allExplored =
+                                  ES.size explored == EM.size dungeon
+                            if allExplored || nullFreq ctriggers then do
                               -- All stones turned, time to win or die.
                               afoes <- closestFoes allFoes aid
                               case afoes of
@@ -406,7 +404,7 @@ targetStrategy aid = do
           TUnknown ->
             let lvl2 = sdungeon s EM.! lid
                 t = lvl2 `at` pos
-            in if lidExplored
+            in if lexpl lvl2 <= lseen lvl2
                   || not (isUknownSpace t)
                   || condEnoughGear && tileAdj (isStairPos lid) pos
                        -- the unknown may be on the other side of the level
@@ -414,19 +412,20 @@ targetStrategy aid = do
                        -- looks silly
                then pickNewTarget  -- others will notice soon enough
                else return $! returN "TUnknown" tap
-          TKnown ->  -- e.g., staircase or first unknown tile of an area
+          TKnown -> do  -- e.g., staircase or first unknown tile of an area
+            explored <- getsClient sexplored
             let allExplored = ES.size explored == EM.size dungeon
                 lvl2 = sdungeon s EM.! lid
-            in if bpos b == pos
-                  || isStuck
-                  || alterSkill < fromEnum (lalter PointArray.! pos)
-                       -- tile was searched or altered or skill lowered
-                  || Tile.isWalkable coTileSpeedup (lvl2 `at` pos)
-                     && not allExplored  -- not patrolling explored dungeon
-                       -- tile is no longer unwalkable, so was explored
-                       -- so time to recalculate target
-               then pickNewTarget  -- others unconcerned
-               else return $! returN "TKnown" tap
+            if bpos b == pos
+               || isStuck
+               || alterSkill < fromEnum (lalter PointArray.! pos)
+                    -- tile was searched or altered or skill lowered
+               || Tile.isWalkable coTileSpeedup (lvl2 `at` pos)
+                  && not allExplored  -- not patrolling explored dungeon
+                    -- tile is no longer unwalkable, so was explored
+                    -- so time to recalculate target
+            then pickNewTarget  -- others unconcerned
+            else return $! returN "TKnown" tap
           TAny -> pickNewTarget  -- reset elsewhere or carried over from UI
         TVector{} -> if pathLen > 1
                      then return $! returN "TVector" tap

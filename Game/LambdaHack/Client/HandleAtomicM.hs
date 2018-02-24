@@ -39,8 +39,9 @@ import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import qualified Game.LambdaHack.Content.CaveKind as CK
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
-import           Game.LambdaHack.Content.ModeKind (ModeKind)
+import           Game.LambdaHack.Content.ModeKind (ModeKind, fhasGender)
 import           Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | Client monad for saving and restarting games.
@@ -170,7 +171,8 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdCoverSeed c iid seed -> coverSeed c iid seed
   UpdPerception lid outPer inPer -> perception lid outPer inPer
   UpdRestart side sfper s scurChal soptions -> do
-    COps{comode} <- getsState scops
+    COps{cocave, comode} <- getsState scops
+    fact <- getsState $ (EM.! side) . sfactionD
     snxtChal <- getsClient snxtChal
     svictories <- getsClient svictories
     let f acc _p i _a = i : acc
@@ -180,8 +182,15 @@ cmdAtomicSemCli oldState cmd = case cmd of
           Nothing -> 0
           Just cm -> fromMaybe 0 (M.lookup snxtChal cm)
         (snxtScenario, _) = minimumBy (comparing g) modes
+        h lvl = CK.cactorCoeff (okind cocave $ lkind lvl) > 150
+                && not (fhasGender $ gplayer fact)
+          -- Not to burrow through a labyrinth instead of leaving it for
+          -- the human player and to prevent AI losing time there instead
+          -- of congregating at exits.
+        sexplored = EM.keysSet $ EM.filter h $ sdungeon s
         cli = emptyStateClient side
-    putClient cli { sfper
+    putClient cli { sexplored
+                  , sfper
                   -- , sundo = [UpdAtomic cmd]
                   , scurChal
                   , snxtChal
