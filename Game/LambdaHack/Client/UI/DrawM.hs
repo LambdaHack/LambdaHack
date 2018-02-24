@@ -374,7 +374,6 @@ drawFrameStatus drawnLevelId = do
   (mtgtDesc, mtargetHP) <-
     maybe (return (Nothing, Nothing)) targetDescLeader mleader
   (xhairDesc, mxhairHP) <- targetDescXhair
-  sexplored <- getsClient sexplored
   lvl <- getLevel drawnLevelId
   (mblid, mbpos, mbodyUI) <- case mleader of
     Just leader -> do
@@ -385,8 +384,7 @@ drawFrameStatus drawnLevelId = do
   let widthX = 80
       widthTgt = 39
       widthStats = widthX - widthTgt - 1
-      arenaStatus = drawArenaStatus cops (ES.member drawnLevelId sexplored) lvl
-                                    widthStats
+      arenaStatus = drawArenaStatus cops lvl widthStats
       displayPathText mp mt =
         let (plen, llen) = case (mp, mbfs, mbpos) of
               (Just target, Just bfs, Just bpos)
@@ -488,14 +486,13 @@ drawBaseFrame dm drawnLevelId = do
 
 -- Comfortably accomodates 3-digit level numbers and 25-character
 -- level descriptions (currently enforced max).
-drawArenaStatus :: COps -> Bool -> Level -> Int -> AttrLine
+drawArenaStatus :: COps -> Level -> Int -> AttrLine
 drawArenaStatus COps{cocave}
-                explored
                 Level{lkind, ldepth=Dice.AbsDepth ld, lseen, lexpl}
                 width =
   let ck = okind cocave lkind
       seenN = 100 * lseen `div` max 1 lexpl
-      seenTxt | explored || seenN >= 100 = "all"
+      seenTxt | seenN >= 100 = "all"
               | otherwise = T.justifyLeft 3 ' ' (tshow seenN <> "%")
       lvlN = T.justifyLeft 2 ' ' (tshow ld)
       seenStatus = "[" <> seenTxt <+> "seen]"
