@@ -42,7 +42,8 @@ warrior = ItemKind
                , AddAbility AbAlter 2 ]
   , ieffects = []
   , ifeature = [Durable]
-  , idesc    = "A hardened veteran of combat."
+  , idesc    = ""
+  -- , idesc    = "A hardened veteran of combat."
   , ikit     = [ ("fist", COrgan), ("foot", COrgan), ("eye 6", COrgan)
                , ("sapient brain", COrgan) ]
   }

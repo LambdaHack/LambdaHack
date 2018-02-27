@@ -1269,13 +1269,13 @@ hammer2 = hammer
   { ifreq    = [("common item", 3), ("starting weapon", 1)]
   , iweight  = 2000
   , idamage  = 12 `d` 1
-  -- , idesc    = ""
+  , idesc    = "Upon closer inspection, this hammer turns out particularly deadly, with one thick and sturdy and two long and sharp points."
   }
 hammer3 = hammer
   { ifreq    = [("common item", 1)]
   , iweight  = 2400
   , idamage  = 16 `d` 1
-  -- , idesc    = ""
+  , idesc    = "This hammer sports a long metal handle that increases durability and momentum of the sharpened head's swing."
   }
 hammerParalyze = hammer
   { iname    = "Concussion Hammer"
@@ -1285,7 +1285,7 @@ hammerParalyze = hammer
   , iaspects = iaspects hammer ++ [Timeout 7]
   , ieffects = ieffects hammer ++ [Recharging $ Paralyze 10]
   , ifeature = [Unique] ++ ifeature hammer
-  -- , idesc    = ""
+  , idesc    = "A huge shapeless lump of steel on a long pole. Nobody remains standing after this hammer connects."
   }
 hammerSpark = hammer
   { iname    = "Grand Smithhammer"
@@ -1297,7 +1297,7 @@ hammerSpark = hammer
       -- we can't use a focused explosion, because it would harm the hammer
       -- wielder as well, unlike this one
   , ifeature = [Unique] ++ ifeature hammer
-  -- , idesc    = ""
+  , idesc    = "Smiths of old wielded this hammer and its sparks christened many a potent blade."
   }
 sword = ItemKind
   { isymbol  = symbolEdged
