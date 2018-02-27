@@ -167,6 +167,13 @@ loopUpd updConn = do
       handleFid :: (FactionId, Faction) -> m ()
       {-# NOINLINE handleFid #-}
       handleFid (fid, fact) = handleFidUpd updatePerFid fid fact
+      loopConditionally = do
+        factionD <- getsState sfactionD
+        -- Update perception one last time to satisfy save/resume assertions.
+        mapM_ updatePerFid (EM.keys factionD)
+        modifyServer $ \ser -> ser { sbreakLoop = False
+                                   , sbreakASAP = False }
+        endOrLoop loopUpdConn (restartGame updConn loopUpdConn)
       loopUpdConn = do
         factionD <- getsState sfactionD
         -- Start handling actors with the single UI faction (positive ID),
@@ -177,12 +184,8 @@ loopUpd updConn = do
         mapM_ handleFid $ EM.toDescList factionD
         breakASAP <- getsServer sbreakASAP
         breakLoop <- getsServer sbreakLoop
-        if breakASAP || breakLoop then do
-          -- Update perception one last time to satisfy save/resume assertions.
-          mapM_ updatePerFid (EM.keys factionD)
-          modifyServer $ \ser -> ser { sbreakLoop = False
-                                     , sbreakASAP = False }
-          endOrLoop loopUpdConn (restartGame updConn loopUpdConn)
+        if breakASAP || breakLoop
+        then loopConditionally
         else do
           -- Projectiles are processed last and not at all if the UI leader
           -- decides to save or exit or restart or if there is game over.
@@ -193,8 +196,12 @@ loopUpd updConn = do
           mapM_ (\fid -> mapM_ (`handleTrajectories` fid) arenas)
                 (EM.keys factionD)
           endClip updatePerFid  -- must be last, in case performs a bkp save
-          -- Process next iteration.
-          loopUpdConn
+          -- The condition can be changed in @handleTrajectories@ by pushing
+          -- onto an escape and in @endClip@.
+          breakLoop2 <- getsServer sbreakLoop
+          if breakLoop2
+          then loopConditionally
+          else loopUpdConn  -- process next iteration unconditionally
   loopUpdConn
 
 -- | Handle the end of every clip. Do whatever has to be done
