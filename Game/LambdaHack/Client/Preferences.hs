@@ -79,7 +79,8 @@ effectToBenefit cops fact insideRecharging eff =
     IK.Summon grp d ->  -- contrived by not taking into account alliances
                         -- and not checking if enemies also control that group
       let ben = Dice.meanDice d * 200  -- the new actor can have, say, 10HP
-      in if grp `elem` fgroups (gplayer fact) then (ben, -ben) else (-ben, ben)
+      in if grp `elem` fgroups (gplayer fact) then (ben, -1) else (-ben, 1)
+        -- prefer applying to flinging summoning items; further, but more robust
     IK.Ascend{} -> (-99, 99)  -- note the reversed values:
                               -- only change levels sensibly, in teams,
                               -- and don't remove enemy too far, he may be
