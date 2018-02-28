@@ -130,12 +130,13 @@ placeItemsInDungeon :: forall m. MonadServerAtomic m
 placeItemsInDungeon alliancePositions = do
   COps{cocave, coTileSpeedup} <- getsState scops
   totalDepth <- getsState stotalDepth
-  let initialItems (lid, Level{..}) = do
+  let initialItems (lid, Level{lkind, ldepth, lxsize, lysize, ltile}) = do
         litemNum <- rndToAction $ castDice ldepth totalDepth
                                   (citemNum $ okind cocave lkind)
         let placeItems :: Int -> m ()
             placeItems n | n == litemNum = return ()
             placeItems !n = do
+              Level{lfloor} <- getLevel lid
               -- We ensure that there are no big regions without items at all.
               let dist !p _ =
                     let f !k _ b = chessDist p k > 6 && b
