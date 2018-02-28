@@ -242,7 +242,7 @@ populateDungeon = do
                $ concatMap getEntryLevels needInitialCrew
       hasActorsOnArena lid (_, fact) =
         any ((== lid) . g) $ ginitialWolf fact
-      initialActors lid = do
+      initialActorPositions lid = do
         lvl <- getLevel lid
         let arenaFactions = filter (hasActorsOnArena lid) needInitialCrew
             indexff (fid, _) = findIndex ((== fid) . fst) arenaFactions
@@ -251,16 +251,18 @@ populateDungeon = do
                            indexff ff3 < indexff ff2
                            && isAllied fact2 fid3) arenaFactions
             arenaAlliances = filter representsAlliance arenaFactions
+        entryPoss <- rndToAction
+                     $ findEntryPoss cops lid lvl (length arenaAlliances)
+        let usedPoss = zip3 arenaAlliances entryPoss [0..]
+        return $! (lid, usedPoss)
+      initialActors (lid, usedPoss) = do
+        let arenaFactions = filter (hasActorsOnArena lid) needInitialCrew
             placeAlliance ((fid3, _), ppos, timeOffset) =
               mapM_ (\(fid4, fact4) ->
                       when (isAllied fact4 fid3 || fid4 == fid3) $
                         placeActors lid ((fid4, fact4), ppos, timeOffset))
                     arenaFactions
-        entryPoss <- rndToAction
-                     $ findEntryPoss cops lid lvl (length arenaAlliances)
-        let usedPoss = zip3 arenaAlliances entryPoss [0..]
         mapM_ placeAlliance usedPoss
-        return $! (lid, usedPoss)
       placeActors lid ((fid3, fact3), ppos, timeOffset) = do
         localTime <- getsState $ getLocalTime lid
         let clipInTurn = timeTurn `timeFit` timeClip
@@ -282,11 +284,12 @@ populateDungeon = do
               mleader <- getsState $ gleader . (EM.! fid3) . sfactionD
               when (isNothing mleader) $ supplantLeader fid3 aid
               return True
-  lposs <- mapM initialActors arenas
+  lposs <- mapM initialActorPositions arenas
   let alliancePositions =
         EM.fromList $ map (second $ map $ \(_, l, _) -> l) lposs
   placeItemsInDungeon alliancePositions
   embedItemsInDungeon
+  mapM_ initialActors lposs
 
 -- | Find starting postions for all factions. Try to make them distant
 -- from each other. Place as many of the factions, as possible,
