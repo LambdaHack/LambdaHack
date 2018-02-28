@@ -636,7 +636,7 @@ spotItem verbose iid kit c = do
                 bag <- getsState $ getFloorBag lid p
                 modifySession $ \sess ->
                   sess {sxhair = TPoint (TItem bag) lidV p}
-          itemVerbMU iid kit "be spotted" c
+          itemVerbMU iid kit "be located" c
           stopPlayBack
         _ -> return ()
     _ -> return ()  -- this item or another with the same @iid@
