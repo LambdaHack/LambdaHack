@@ -138,25 +138,24 @@ placeItemsInDungeon alliancePositions = do
             placeItems !n = do
               Level{lfloor} <- getLevel lid
               -- We ensure that there are no big regions without items at all.
-              let dist !p _ =
+              let distAndOften !p !t =
                     let f !k _ b = chessDist p k > 6 && b
-                    in EM.foldrWithKey f True lfloor
+                    in Tile.isOftenItem coTileSpeedup t
+                       && EM.foldrWithKey f True lfloor
                   alPos = EM.findWithDefault [] lid alliancePositions
-                  distAlliance !p _ =
+                  -- Don't generate items around initial actors or in tiles.
+                  distAllianceAndNotFloor !p _ =
                     let f !k b = chessDist p k > 4 && b
-                    in foldr f True alPos
-                  notM !p _ = p `EM.notMember` lfloor
+                    in p `EM.notMember` lfloor && foldr f True alPos
               pos <- rndToAction $ findPosTry2 200 ltile
                 (\_ !t -> Tile.isWalkable coTileSpeedup t
                           && not (Tile.isNoItem coTileSpeedup t))
                 -- If there are very many items, some regions may be very rich,
                 -- but let's try to spread at least the initial items evenly.
-                ([dist | n * 100 < lxsize * lysize]
-                 ++ [\_ !t -> Tile.isOftenItem coTileSpeedup t]
-                 ++ [notM])
-                -- Don't generate items under actors (unless very many actors).
-                distAlliance
-                [distAlliance, notM]
+                ([distAndOften | n * 100 < lxsize * lysize]
+                 ++ [\_ !t -> Tile.isOftenItem coTileSpeedup t])
+                distAllianceAndNotFloor
+                [distAllianceAndNotFloor]
               createLevelItem pos lid
               placeItems (n + 1)
         placeItems 0
