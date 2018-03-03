@@ -88,9 +88,9 @@ spreadFragmentation = ItemKind
   , irarity  = [(1, 1)]
   , iverbHit = "tear apart"
   , iweight  = 1
-  , idamage  = 5 `d` 1  -- deadly and adjacent actor hit by 2 on average;
-                        -- however, armour can block completely with ease
-  , iaspects = [AddShine 3, AddHurtMelee $ -15 * 5]
+  , idamage  = 3 `d` 1  -- deadly and adjacent actor hit by 2 on average;
+                        -- however, moderate armour blocks completely
+  , iaspects = [AddShine 3, AddHurtMelee $ -12 * 5]
   , ieffects = [DropItem 1 maxBound COrgan "temporary condition"]
   , ifeature = [toLinger 20, Lobable, Fragile, Blast]  -- 4 steps, 1 turn
   , idesc    = ""
@@ -131,7 +131,7 @@ spreadConcussion = ItemKind
   , iverbHit = "shock"
   , iweight  = 1
   , idamage  = 1 `d` 1  -- only air pressure, so not as deadly as fragmentation,
-                        -- but armour can't block completely with ease
+                        -- but armour can't block completely that easily
   , iaspects = [AddShine 3, AddHurtMelee $ -8 * 5]
   , ieffects = [ DropItem maxBound 1 CEqp "misc armor"
                , PushActor (ThrowMod 400 25)  -- 1 step, fast; after DropItem
@@ -228,7 +228,7 @@ glassPiece = ItemKind
   , iverbHit = "cut"
   , iweight  = 1
   , idamage  = 1 `d` 1
-  , iaspects = [AddHurtMelee $ -17 * 5]
+  , iaspects = [AddHurtMelee $ -15 * 5]  -- brittle, not too dense; armor blocks
   , ieffects = [RefillHP (-1)]
   , ifeature = [toLinger 20, Fragile, Blast]  -- 4 steps, 1 turn
   , idesc    = "Swift, sharp edges."
