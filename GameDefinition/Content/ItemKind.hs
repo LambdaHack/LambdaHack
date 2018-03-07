@@ -333,7 +333,7 @@ flaskTemplate = ItemKind
   , ikit     = []
   }
 flask1 = flaskTemplate
-  { ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , irarity  = [(10, 5)]
   , ieffects = [ toOrganGood "strengthened" (20 + 1 `d` 5)
                , toOrganNoTimer "regenerating"
@@ -341,25 +341,25 @@ flask1 = flaskTemplate
   , ifeature = [ELabel "of strength renewal brew"] ++ ifeature flaskTemplate
   }
 flask2 = flaskTemplate
-  { ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , ieffects = [ toOrganBad "weakened" (20 + 1 `d` 5)
                , OnSmash (Explode "sparse shower") ]
   , ifeature = [ELabel "of weakness brew"] ++ ifeature flaskTemplate
   }
 flask3 = flaskTemplate
-  { ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , ieffects = [ toOrganGood "protected from melee" (20 + 1 `d` 5)
                , OnSmash (Explode "melee protective balm") ]
   , ifeature = [ELabel "of melee protective balm"] ++ ifeature flaskTemplate
   }
 flask4 = flaskTemplate
-  { ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , ieffects = [ toOrganGood "protected from ranged" (20 + 1 `d` 5)
                , OnSmash (Explode "ranged protective balm") ]
   , ifeature = [ELabel "of ranged protective balm"] ++ ifeature flaskTemplate
   }
 flask5 = flaskTemplate
-  { ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , ieffects = [ toOrganBad "defenseless" (20 + 1 `d` 5)
                , Impress
                , DetectExit 20
@@ -367,7 +367,7 @@ flask5 = flaskTemplate
   , ifeature = [ELabel "of PhD defense questions"] ++ ifeature flaskTemplate
   }
 flask6 = flaskTemplate
-  { ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , irarity  = [(10, 7)]
   , ieffects = [ toOrganGood "resolute" (200 + 1 `d` 50)
                    -- long, for scouting and has to recharge
@@ -376,14 +376,14 @@ flask6 = flaskTemplate
   , ifeature = [ELabel "of resolution"] ++ ifeature flaskTemplate
   }
 flask7 = flaskTemplate
-  { ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , icount   = 1  -- too poweful en masse
   , ieffects = [ toOrganGood "hasted" (20 + 1 `d` 5)
                , OnSmash (Explode "haste spray") ]
   , ifeature = [ELabel "of haste brew"] ++ ifeature flaskTemplate
   }
 flask8 = flaskTemplate
-  { ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , irarity  = [(1, 12), (10, 2)]
   , ieffects = [ toOrganBad "slowed" (20 + 1 `d` 5)
                , toOrganNoTimer "regenerating", toOrganNoTimer "regenerating"  -- x2
@@ -393,13 +393,13 @@ flask8 = flaskTemplate
   , ifeature = [ELabel "of lethargy brew"] ++ ifeature flaskTemplate
   }
 flask9 = flaskTemplate
-  { ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , ieffects = [ toOrganGood "far-sighted" (40 + 1 `d` 10)
                , OnSmash (Explode "eye drop") ]
   , ifeature = [ELabel "of eye drops"] ++ ifeature flaskTemplate
   }
 flask10 = flaskTemplate
-  { ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , irarity  = [(10, 2)]  -- not very useful right now
   , ieffects = [ toOrganGood "keen-smelling" (40 + 1 `d` 10)
                , DetectActor 10
@@ -407,7 +407,7 @@ flask10 = flaskTemplate
   , ifeature = [ELabel "of smelly concoction"] ++ ifeature flaskTemplate
   }
 flask11 = flaskTemplate
-  { ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , irarity  = [(10, 2)]  -- not very useful right now
   , ieffects = [ toOrganGood "shiny-eyed" (40 + 1 `d` 10)
                , OnSmash (Explode "eye shine") ]
@@ -415,7 +415,7 @@ flask11 = flaskTemplate
   }
 flask12 = flaskTemplate
   { iname    = "bottle"
-  , ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  , ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , icount   = 1 `d` 3  -- the only one sometimes giving away its identity
   , ieffects = [ toOrganGood "drunk" (20 + 1 `d` 5)
                , Burn 1, RefillHP 3
@@ -423,7 +423,7 @@ flask12 = flaskTemplate
   , ifeature = [ELabel "of whiskey"] ++ ifeature flaskTemplate
   }
 flask13 = flaskTemplate
-  { ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , icount   = 1
   , ieffects = [ toOrganGood "drunk" (20 + 1 `d` 5)
                , Burn 1, RefillHP 3
@@ -438,46 +438,46 @@ flask13 = flaskTemplate
 -- healing effect is enough. OTOH, throwing a harmful flask at many enemies
 -- at once is not easy to arrange, so these explostions can stay powerful.
 flask14 = flaskTemplate
-  { ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , irarity  = [(1, 2), (10, 10)]
   , ieffects = [ toOrganNoTimer "regenerating", toOrganNoTimer "regenerating"  -- x2
                , OnSmash (Explode "youth sprinkle") ]
   , ifeature = [ELabel "of regeneration brew"] ++ ifeature flaskTemplate
  }
 flask15 = flaskTemplate
-  { ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , ieffects = [ toOrganNoTimer "poisoned", toOrganNoTimer "poisoned"  -- x2
                , OnSmash (Explode "poison cloud") ]
   , ifeature = [ELabel "of poison"] ++ ifeature flaskTemplate
   }
 flask16 = flaskTemplate
-  { ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , ieffects = [ toOrganNoTimer "poisoned"
                , OnSmash (Explode "poison cloud") ]
   , ifeature = [ELabel "of weak poison"] ++ ifeature flaskTemplate
   }
 flask17 = flaskTemplate
-  { ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , irarity  = [(10, 3)]
   , ieffects = [ toOrganNoTimer "slow resistant"
                , OnSmash (Explode "anti-slow mist") ]
   , ifeature = [ELabel "of slow resistance"] ++ ifeature flaskTemplate
   }
 flask18 = flaskTemplate
-  { ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , irarity  = [(10, 3)]
   , ieffects = [ toOrganNoTimer "poison resistant"
                , OnSmash (Explode "antidote mist") ]
   , ifeature = [ELabel "of poison resistance"] ++ ifeature flaskTemplate
   }
 flask19 = flaskTemplate
-  { ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , ieffects = [ toOrganBad "blind" (40 + 1 `d` 10)
                , OnSmash (Explode "iron filing") ]
   , ifeature = [ELabel "of blindness"] ++ ifeature flaskTemplate
   }
 flask20 = flaskTemplate
-  { ifreq    = [("common item", 100), ("flask", 100), ("any vial", 100)]
+  { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , ieffects = [ toOrganNoTimer "poisoned"
                , toOrganBad "weakened" (20 + 1 `d` 5)
                , toOrganBad "defenseless" (20 + 1 `d` 5)
@@ -602,7 +602,7 @@ fragmentationBomb = ItemKind
       -- shards, so it's not obvious if it's a weapon or just storage method;
       -- deflagration, not detonation, so large mass and hard container
       -- required not to burn harmlessly; improvised short fuze
-  , ifreq    = [("common item", 100), ("explosive", 100)]
+  , ifreq    = [("common item", 100), ("explosive", 200)]
   , iflavour = zipPlain [Red]
   , icount   = 1 `dL` 4  -- many, because not very intricate
   , irarity  = [(5, 5), (10, 5)]

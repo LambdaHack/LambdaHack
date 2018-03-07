@@ -551,7 +551,7 @@ hardwiredItemGroups =
   ["temporary condition", "common item"]
     -- the others are optional:
     -- "curious item", "treasure", "any scroll", "any vial",
-    -- "potion", "flask", "any jewelry"
+    -- "potion", "explosive", "any jewelry"
   -- Assorted:
   ++ ["bonus HP", "currency", "impressed", "mobile"]
 
