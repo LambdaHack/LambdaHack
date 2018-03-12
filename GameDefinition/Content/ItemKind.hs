@@ -1453,7 +1453,7 @@ gem5 = gem1
                , ("valuable", 100) ]
   , iflavour = zipPlain [BrYellow]
   , irarity  = [(1, 40), (10, 40)]
-  , ieffects = [RefillCalm 5, RefillHP 15]
+  , ieffects = [RefillCalm 10, RefillHP 40]
   , ifeature = [ELabel "of youth", Applicable, Precious]  -- not hidden
   , idesc    = "A crystal vial of amber liquid, supposedly granting eternal youth and fetching 100 gold per piece. The main effect seems to be mild euphoria, but it admittedly heals minor ailments rather well."
   }
