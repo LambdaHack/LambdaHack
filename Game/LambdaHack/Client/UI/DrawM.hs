@@ -24,6 +24,7 @@ import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
 import           Data.Word (Word16)
+import           Game.LambdaHack.Client.UI.UIOptions
 import           GHC.Exts (inline)
 import qualified NLP.Miniutter.English as MU
 
@@ -500,10 +501,11 @@ drawArenaStatus COps{cocave}
               $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' (cname ck))
                 <+> seenStatus
 
-drawLeaderStatus :: MonadClient m => Int -> m AttrLine
+drawLeaderStatus :: MonadClientUI m => Int -> m AttrLine
 drawLeaderStatus waitT = do
   let calmHeaderText = "Calm"
       hpHeaderText = "HP"
+  UIOptions{uhpWarningPercent} <- getsSession sUIOptions
   mleader <- getsClient sleader
   case mleader of
     Just leader -> do
@@ -513,10 +515,10 @@ drawLeaderStatus waitT = do
                         in if length t > 3
                            then if x > 0 then "***" else "---"
                            else t
-          (darkL, bracedL, hpDelta, calmDelta,
+          (bhpM, darkL, bracedL, hpDelta, calmDelta,
            ahpS, bhpS, acalmS, bcalmS) =
             let b@Actor{bhp, bcalm} = getActorBody leader s
-            in ( not (actorInAmbient b s)
+            in ( bhp, not (actorInAmbient b s)
                , braced b, bhpDelta b, bcalmDelta b
                , showTrunc $ IA.aMaxHP ar, showTrunc (bhp `divUp` oneM)
                , showTrunc $ IA.aMaxCalm ar, showTrunc (bcalm `divUp` oneM))
@@ -531,6 +533,10 @@ drawLeaderStatus waitT = do
             | snd resCurrentTurn > 0 || snd resPreviousTurn > 0
               = addColor Color.BrGreen
             | otherwise = stringToAL  -- only if nothing at all noteworthy
+          checkWarning =
+            if bhpM <= xM (uhpWarningPercent * IA.aMaxHP ar `div` 100)
+            then addColor Color.Red
+            else stringToAL
           calmAddAttr = checkDelta calmDelta
           -- We only show ambient light, because in fact client can't tell
           -- if a tile is lit, because it it's seen it may be due to ambient
@@ -550,7 +556,7 @@ drawLeaderStatus waitT = do
                             else "/") <> ahpS
           justifyRight n t = replicate (n - length t) ' ' ++ t
       return $! calmHeader <> stringToAL (justifyRight 7 calmText)
-                <+:> hpHeader <> stringToAL (justifyRight 7 hpText)
+                <+:> hpHeader <> checkWarning (justifyRight 7 hpText)
     Nothing -> return $! stringToAL (calmHeaderText ++ ":  --/--")
                          <+:> stringToAL (hpHeaderText <> ":  --/--")
 
