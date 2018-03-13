@@ -33,23 +33,26 @@ import           Game.LambdaHack.Content.RuleKind
 -- | Options that affect the UI of the client.
 data UIOptions = UIOptions
   { -- commands
-    uCommands      :: [(K.KM, CmdTriple)]
+    uCommands         :: [(K.KM, CmdTriple)]
     -- hero names
-  , uHeroNames     :: [(Int, (Text, Text))]
+  , uHeroNames        :: [(Int, (Text, Text))]
     -- ui
-  , uVi            :: Bool  -- ^ the option for Vi keys takes precendence
-  , uLaptop        :: Bool  -- ^ because the laptop keys are the default
-  , uGtkFontFamily :: Text
-  , uSdlFontFile   :: Text
-  , uSdlTtfSizeAdd :: Int
-  , uSdlFonSizeAdd :: Int
-  , uFontSize      :: Int
-  , uColorIsBold   :: Bool
-  , uHistoryMax    :: Int
-  , uMaxFps        :: Int
-  , uNoAnim        :: Bool
-  , uRunStopMsgs   :: Bool
-  , uCmdline       :: [String]  -- ^ Hardwired commandline arguments to process.
+  , uVi               :: Bool  -- ^ the option for Vi keys takes precendence
+  , uLaptop           :: Bool  -- ^ because the laptop keys are the default
+  , uGtkFontFamily    :: Text
+  , uSdlFontFile      :: Text
+  , uSdlTtfSizeAdd    :: Int
+  , uSdlFonSizeAdd    :: Int
+  , uFontSize         :: Int
+  , uColorIsBold      :: Bool
+  , uHistoryMax       :: Int
+  , uMaxFps           :: Int
+  , uNoAnim           :: Bool
+  , uRunStopMsgs      :: Bool
+  , uhpWarningPercent :: Int
+      -- ^ HP percent at which warning is emitted.
+  , uCmdline          :: [String]
+      -- ^ Hardwired commandline arguments to process.
   }
   deriving (Show, Generic)
 
@@ -97,6 +100,7 @@ parseConfig cfg =
       uMaxFps = max 1 $ getOption "maxFps"
       uNoAnim = getOption "noAnim"
       uRunStopMsgs = getOption "runStopMsgs"
+      uhpWarningPercent = getOption "hpWarningPercent"
       uCmdline = words $ getOption "overrideCmdline"
   in UIOptions{..}
 
