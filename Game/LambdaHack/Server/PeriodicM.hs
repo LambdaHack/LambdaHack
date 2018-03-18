@@ -260,31 +260,35 @@ leadLevelSwitch = do
           Nothing -> return ()
           Just leader -> do
             body <- getsState $ getActorBody leader
+            let !_A = assert (fid == bfid body) ()
             s <- getsServer $ (EM.! fid) . sclientStates
             let leaderStuck = waitedLastTurn body
-                ourLvl (lid, lvl) =
-                  ( lid
-                  , ( lexpl lvl <= lseen lvl  -- all seen
-                      || CK.cactorCoeff (okind cocave $ lkind lvl) > 150
-                         && not (fhasGender $ gplayer fact)
-                    , -- Drama levels ignored, hence @Regular@.
-                      fidActorRegularIds (bfid body) lid s ) )
-                oursRaw = map ourLvl $ EM.assocs $ sdungeon s
+                oursRaw =
+                  [ (lid, (allSeen, as))
+                  | (lid, lvl) <- EM.assocs $ sdungeon s
+                  , lid /= blid body || not leaderStuck
+                  , let as = -- Drama levels ignored, hence @Regular@.
+                             fidActorRegularIds fid lid s
+                  , not (null as)
+                  , let allSeen =
+                          lexpl lvl <= lseen lvl
+                          || CK.cactorCoeff (okind cocave $ lkind lvl) > 150
+                             && not (fhasGender $ gplayer fact)
+                  ]
                 (oursSeen, oursNotSeen) = partition (fst . snd) oursRaw
                 -- Only the shallowest not fully explored level is permitted.
                 f (lid, _) = abs $ fromEnum lid
                 ours = oursSeen ++ take 1 (sortBy (comparing f) oursNotSeen)
-            -- Sole stranded actors tend to become leaders
+            -- Sole stranded actors tend to become (or stay) leaders
             -- so that they can join the main force ASAP.
             let freqList = [ (k, (lid, a))
                            | (lid, (_, a : rest)) <- ours
-                           , lid /= blid body || not leaderStuck
                            , let len = 1 + min 7 (length rest)
                                  k = 1000000 `div` len ]
             unless (null freqList) $ do
               (lid, a) <- rndToAction $ frequency
                                       $ toFreq "leadLevel" freqList
               unless (lid == blid body) $  -- flip levels rather than actors
-                supplantLeader (bfid body) a
+                supplantLeader fid a
   factionD <- getsState sfactionD
   mapM_ flipFaction $ EM.assocs factionD
