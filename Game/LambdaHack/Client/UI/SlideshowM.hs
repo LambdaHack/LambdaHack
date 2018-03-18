@@ -216,7 +216,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
              | otherwise = maybe initIx (+ initIx) (M.lookup menuName menuIxMap)
   (km, pointer) <- if null frs
                    then return (Left K.escKM, menuIx)
-                   else page menuIx
+                   else page $ min maxIx menuIx
   unless (menuName == "") $
     modifySession $ \sess ->
       sess {smenuIxMap = M.insert menuName (pointer - initIx) menuIxMap}
