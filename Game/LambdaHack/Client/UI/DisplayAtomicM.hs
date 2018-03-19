@@ -1146,7 +1146,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
                  then MU.Text $ tshow grp
                  else MU.Ws $ MU.Text $ tshow grp
     return $! makeSentence ["you hear", verb, object]
-  SfxFizzles -> return "It doesn't work."
+  SfxFizzles -> return "It didn't work."
   SfxNothingHappens -> return "Nothing happens."
   SfxVoidDetection d -> do
     let object = detectToObject d
