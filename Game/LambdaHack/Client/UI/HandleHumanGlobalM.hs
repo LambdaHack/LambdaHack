@@ -1013,7 +1013,7 @@ helpHuman cmdAction = do
   ekm <- displayChoiceScreen "help" ColorFull True sli [K.spaceKM, K.escKM]
   case ekm of
     Left km -> case km `M.lookup` bcmdMap keyb of
-      _ | km == K.escKM -> return $ Left Nothing
+      _ | km `elem` [K.escKM, K.spaceKM] -> return $ Left Nothing
       Just (_desc, _cats, cmd) -> cmdAction cmd
       Nothing -> weaveJust <$> failWith "never mind"
     Right _slot -> error $ "" `showFailure` ekm
