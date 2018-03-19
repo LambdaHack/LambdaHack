@@ -1061,8 +1061,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           subject <- partActorLeader aid bUI
           let verb = MU.Text $ detectToVerb d
               object = MU.Ws $ MU.Text $ detectToObject d
-          displayMore ColorFull $
-            makeSentence [MU.SubjectVerbSg subject verb, object]
+          msgAdd $ makeSentence [MU.SubjectVerbSg subject verb, object]
+          displayMore ColorFull ""
         IK.SendFlying{} | bproj b -> return ()
         IK.SendFlying{} -> actorVerbMU aid bUI "be sent flying"
         IK.PushActor{} | bproj b -> return ()
