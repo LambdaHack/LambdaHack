@@ -137,12 +137,8 @@ effectToBenefit cops fact insideRecharging eff =
     IK.DropItem{} -> delta (-10)  -- depends a lot on what is dropped
     IK.PolyItem -> (1, 0)  -- may fizzle, so AI never uses (could loop)
     IK.Identify -> (1, 0)  -- may fizzle, so AI never uses (could loop)
-    IK.Detect radius -> (fromIntegral radius * 2, 0)
-    IK.DetectActor radius -> (fromIntegral radius, 0)
-    IK.DetectItem radius -> (fromIntegral radius, 0)
-    IK.DetectExit radius -> (fromIntegral radius, 0)
-    IK.DetectHidden radius -> (fromIntegral radius, 0)
-    IK.DetectEmbed radius -> (fromIntegral radius, 0)
+    IK.Detect IK.DetectAll radius -> (fromIntegral radius * 2, 0)
+    IK.Detect _ radius -> (fromIntegral radius, 0)
     IK.SendFlying _ -> (1, -10)  -- very context dependent, but it's better
     IK.PushActor _ -> (1, -10)   -- to be the one that decides and not the one
     IK.PullActor _ -> (1, -10)   -- that is interrupted in the middle of fleeing

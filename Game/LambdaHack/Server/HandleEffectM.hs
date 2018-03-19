@@ -14,8 +14,7 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectAscend, findStairExit, switchLevels1, switchLevels2, effectEscape
   , effectParalyze, effectInsertMove, effectTeleport, effectCreateItem
   , effectDropItem, allGroupItems, effectPolyItem, effectIdentify, identifyIid
-  , effectDetect, effectDetectX, effectDetectActor, effectDetectItem
-  , effectDetectExit, effectDetectHidden, effectDetectEmbed
+  , effectDetect, effectDetectX
   , effectSendFlying, sendFlyingVector, effectDropBestWeapon
   , effectActivateInv, effectTransformContainer, effectApplyPerfume, effectOneOf
   , effectRecharging, effectTemporary, effectComposite
@@ -295,12 +294,7 @@ effectSem source target iid c recharged periodic effect = do
     IK.DropItem n k store grp -> effectDropItem execSfx n k store grp target
     IK.PolyItem -> effectPolyItem execSfx source target
     IK.Identify -> effectIdentify execSfx iid source target
-    IK.Detect radius -> effectDetect execSfx radius target
-    IK.DetectActor radius -> effectDetectActor execSfx radius target
-    IK.DetectItem radius -> effectDetectItem execSfx radius target
-    IK.DetectExit radius -> effectDetectExit execSfx radius target
-    IK.DetectHidden radius -> effectDetectHidden execSfx radius target pos
-    IK.DetectEmbed radius -> effectDetectEmbed execSfx radius target
+    IK.Detect d radius -> effectDetect execSfx d radius target pos
     IK.SendFlying tmod ->
       effectSendFlying execSfx tmod source target Nothing
     IK.PushActor tmod ->
@@ -1187,8 +1181,39 @@ identifyIid iid c itemKindId = do
 -- ** Detect
 
 effectDetect :: MonadServerAtomic m
-             => m () -> Int -> ActorId -> m UseResult
-effectDetect = effectDetectX (const True) (const $ return False)
+             => m () -> IK.DetectKind -> Int -> ActorId -> Point -> m UseResult
+effectDetect execSfx d radius target pos = do
+  COps{coTileSpeedup} <- getsState scops
+  b <- getsState $ getActorBody target
+  lvl <- getLevel $ blid b
+  let (predicate, action) = case d of
+        IK.DetectAll -> (const True, const $ return False)
+        IK.DetectActor -> ((`EM.member` lactor lvl), const $ return False)
+        IK.DetectItem -> ((`EM.member` lfloor lvl), const $ return False)
+        IK.DetectExit ->
+          let (ls1, ls2) = lstair lvl
+          in ((`elem` ls1 ++ ls2 ++ lescape lvl), const $ return False)
+        IK.DetectHidden ->
+          let predicateH p = Tile.isHideAs coTileSpeedup $ lvl `at` p
+              revealEmbed p = do
+                embeds <- getsState $ getEmbedBag (blid b) p
+                unless (EM.null embeds) $ do
+                  s <- getState
+                  let ais = map (\iid -> (iid, getItemBody iid s))
+                                (EM.keys embeds)
+                  execUpdAtomic $ UpdSpotItemBag (CEmbed (blid b) p) embeds ais
+              actionH l = do
+                let f p = when (p /= pos) $ do
+                      let t = lvl `at` p
+                      execUpdAtomic $ UpdSearchTile target p t
+                      -- This is safe searching; embedded items
+                      -- are not triggered, but they are revealed.
+                      revealEmbed p
+                mapM_ f l
+                return $! not $ null l
+          in (predicateH, actionH)
+        IK.DetectEmbed -> ((`EM.member` lembed lvl), const $ return False)
+  effectDetectX predicate action execSfx radius target
 
 effectDetectX :: MonadServerAtomic m
               => (Point -> Bool) -> ([Point] -> m Bool)
@@ -1224,70 +1249,6 @@ effectDetectX predicate action execSfx radius target = do
   else
     execSfxAtomic $ SfxMsgFid (bfid b) SfxVoidDetection
   return UseUp  -- even if nothing spotted, in itself it's still useful data
-
--- ** DetectActor
-
-effectDetectActor :: MonadServerAtomic m
-                  => m () -> Int -> ActorId -> m UseResult
-effectDetectActor execSfx radius target = do
-  b <- getsState $ getActorBody target
-  Level{lactor} <- getLevel $ blid b
-  effectDetectX (`EM.member` lactor) (const $ return False)
-                execSfx radius target
-
--- ** DetectItem
-
-effectDetectItem :: MonadServerAtomic m => m () -> Int -> ActorId -> m UseResult
-effectDetectItem execSfx radius target = do
-  b <- getsState $ getActorBody target
-  Level{lfloor} <- getLevel $ blid b
-  effectDetectX (`EM.member` lfloor) (const $ return False)
-                execSfx radius target
-
--- ** DetectExit
-
-effectDetectExit :: MonadServerAtomic m => m () -> Int -> ActorId -> m UseResult
-effectDetectExit execSfx radius target = do
-  b <- getsState $ getActorBody target
-  Level{lstair=(ls1, ls2), lescape} <- getLevel $ blid b
-  effectDetectX (`elem` ls1 ++ ls2 ++ lescape) (const $ return False)
-                execSfx radius target
-
--- ** DetectHidden
-
-effectDetectHidden :: MonadServerAtomic m
-                   => m () -> Int -> ActorId -> Point -> m UseResult
-effectDetectHidden execSfx radius target pos = do
-  COps{coTileSpeedup} <- getsState scops
-  b <- getsState $ getActorBody target
-  lvl <- getLevel $ blid b
-  let predicate p = Tile.isHideAs coTileSpeedup $ lvl `at` p
-      revealEmbed p = do
-        embeds <- getsState $ getEmbedBag (blid b) p
-        unless (EM.null embeds) $ do
-          s <- getState
-          let ais = map (\iid -> (iid, getItemBody iid s)) (EM.keys embeds)
-          execUpdAtomic $ UpdSpotItemBag (CEmbed (blid b) p) embeds ais
-      action l = do
-        let f p = when (p /= pos) $ do
-              let t = lvl `at` p
-              execUpdAtomic $ UpdSearchTile target p t
-              -- This is safe searching; embedded items are not triggered,
-              -- but they are revealed.
-              revealEmbed p
-        mapM_ f l
-        return $! not $ null l
-  effectDetectX predicate action execSfx radius target
-
--- ** DetectEmbed
-
-effectDetectEmbed :: MonadServerAtomic m
-                  => m () -> Int -> ActorId -> m UseResult
-effectDetectEmbed execSfx radius target = do
-  b <- getsState $ getActorBody target
-  Level{lembed} <- getLevel $ blid b
-  effectDetectX (`EM.member` lembed) (const $ return False)
-                execSfx radius target
 
 -- ** SendFlying
 

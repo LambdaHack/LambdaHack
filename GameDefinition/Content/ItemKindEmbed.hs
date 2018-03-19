@@ -37,7 +37,8 @@ scratchOnWall = ItemKind
   , iweight  = 1000
   , idamage  = 0
   , iaspects = []
-  , ieffects = [Temporary "start making sense of the scratches", DetectHidden 3]
+  , ieffects = [ Temporary "start making sense of the scratches"
+               , Detect DetectHidden 3 ]
   , ifeature = [Durable]
   , idesc    = "A seemingly random series of scratches, carved deep into the wall."
   , ikit     = []
@@ -121,7 +122,7 @@ signboardExit = ItemKind
   , iweight  = 10000
   , idamage  = 0
   , iaspects = []
-  , ieffects = [DetectExit 100]
+  , ieffects = [Detect DetectExit 100]
   , ifeature = [Durable]
   , idesc    = "A battered sign, carved by unknown hands."
   , ikit     = []
@@ -129,7 +130,7 @@ signboardExit = ItemKind
 signboardMap = signboardExit
   { iname    = "signboard with a map"
   , ifreq    = [("signboard", 20)]
-  , ieffects = [DetectEmbed 12]
+  , ieffects = [Detect DetectEmbed 12]
   , idesc    = ""
   }
 fireSmall = ItemKind
@@ -300,7 +301,7 @@ pulpit = ItemKind
   , idamage  = 0
   , iaspects = []
   , ieffects = [ OneOf [ CreateItem CGround "any scroll" timerNone
-                       , Detect 20
+                       , Detect DetectAll 20
                        , toOrganBad "defenseless" $ (1 `dL` 6) * 10
                        , toOrganGood "drunk" (20 + 1 `d` 5) ]
                , Explode "PhD defense question" ]

@@ -2,7 +2,7 @@
 -- | The type of kinds of weapons, treasure, organs, blasts, etc.
 module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..), makeData
-  , Effect(..), TimerDice, ThrowMod(..), Feature(..)
+  , Effect(..), DetectKind(..), TimerDice, ThrowMod(..), Feature(..)
   , ItemSpeedup, emptyItemSpeedup, getKindMean, speedupItem
   , boostItemKindList, forApplyEffect, onlyMinorEffects
   , filterRecharging, stripRecharging, stripOnSmash
@@ -96,12 +96,7 @@ data Effect =
   | Identify
       -- ^ find a suitable (i.e., not identified) item, starting from
       --   the floor, and identify it
-  | Detect Int            -- ^ detect all on the map in the given radius
-  | DetectActor Int       -- ^ detect actors on the map in the given radius
-  | DetectItem Int        -- ^ detect items on the map in the given radius
-  | DetectExit Int        -- ^ detect exits on the map in the given radius
-  | DetectHidden Int      -- ^ detect hidden tiles on the map in the radius
-  | DetectEmbed Int       -- ^ detect embedded items on the map in the radius
+  | Detect DetectKind Int -- ^ detect something on the map in the given radius
   | SendFlying ThrowMod   -- ^ send an actor flying (push or pull, depending)
   | PushActor ThrowMod    -- ^ push an actor
   | PullActor ThrowMod    -- ^ pull an actor
@@ -120,6 +115,15 @@ data Effect =
       --   unless Durable and not Fragile, and shows message with
       --   this verb at last copy activation or at each activation
       --   unless Durable and Fragile
+  deriving (Show, Eq, Generic)
+
+data DetectKind =
+    DetectAll
+  | DetectActor
+  | DetectItem
+  | DetectExit
+  | DetectHidden
+  | DetectEmbed
   deriving (Show, Eq, Generic)
 
 -- | Specification of how to randomly roll a timer at item creation
@@ -182,6 +186,8 @@ instance NFData ItemKind
 
 instance NFData Effect
 
+instance NFData DetectKind
+
 instance NFData TimerDice
 
 instance NFData ThrowMod
@@ -189,6 +195,8 @@ instance NFData ThrowMod
 instance NFData Feature
 
 instance Binary Effect
+
+instance Binary DetectKind
 
 instance Binary TimerDice
 

@@ -1,6 +1,6 @@
 -- | Description of effects.
 module Game.LambdaHack.Client.UI.EffectDescription
-  ( DetailLevel(..), effectToSuffix
+  ( DetailLevel(..), effectToSuffix, detectToObject, detectToVerb
   , slotToSentence, slotToName, slotToDesc, slotToDecorator, statSlots
   , kindAspectToSuffix, featureToSuff, featureToSentence, affixDice
 #ifdef EXPOSE_INTERNAL
@@ -92,14 +92,8 @@ effectToSuffix detailLevel effect =
       in "of" <+> verb <+> ntxt <+> tshow grp <+> fromStore
     PolyItem -> "of repurpose on the ground"
     Identify -> "of identify"
-    Detect radius -> "of detection" <+> wrapInParens (tshow radius)
-    DetectActor radius -> "of actor detection" <+> wrapInParens (tshow radius)
-    DetectItem radius -> "of item detection" <+> wrapInParens (tshow radius)
-    DetectExit radius -> "of exit detection" <+> wrapInParens (tshow radius)
-    DetectHidden radius ->
-      "of secrets detection" <+> wrapInParens (tshow radius)
-    DetectEmbed radius ->
-      "of interesting terrain detection" <+> wrapInParens (tshow radius)
+    Detect d radius ->
+      "of" <+> detectToObject d <+> "detection" <+> wrapInParens (tshow radius)
     SendFlying tmod -> "of impact" <+> tmodToSuff "" tmod
     PushActor tmod -> "of pushing" <+> tmodToSuff "" tmod
     PullActor tmod -> "of pulling" <+> tmodToSuff "" tmod
@@ -118,6 +112,24 @@ effectToSuffix detailLevel effect =
     Temporary _ -> ""  -- only printed on destruction
     Composite effs -> T.intercalate " and then "
                     $ filter (/= "") $ map (effectToSuffix detailLevel) effs
+
+detectToObject :: DetectKind -> Text
+detectToObject d = case d of
+  DetectAll -> ""
+  DetectActor -> "actor"
+  DetectItem -> "item"
+  DetectExit -> "exit"
+  DetectHidden -> "secret"
+  DetectEmbed -> "interesting feature"
+
+detectToVerb :: DetectKind -> Text
+detectToVerb d = case d of
+  DetectAll -> "perceive surrounding area"
+  DetectActor -> "spy nearby"
+  DetectItem -> "detect nearby"
+  DetectExit -> "learn nearby"
+  DetectHidden -> "uncover nearby"
+  DetectEmbed -> "map"
 
 slotToSentence :: EqpSlot -> Text
 slotToSentence es = case es of

@@ -28,6 +28,7 @@ import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Animation
+import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
@@ -1055,30 +1056,12 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             [ MU.SubjectVerbSg subject "look at"
             , MU.WownW pronoun $ MU.Text "inventory"
             , "intensely" ]
-        IK.Detect{} -> do
+        IK.Detect d _ -> do
           subject <- partActorLeader aid bUI
-          let verb = "perceive nearby area"
-          displayMore ColorFull $ makeSentence [MU.SubjectVerbSg subject verb]
-        IK.DetectActor{} -> do
-          subject <- partActorLeader aid bUI
-          let verb = "hear nearby actors"
-          displayMore ColorFull $ makeSentence [MU.SubjectVerbSg subject verb]
-        IK.DetectItem{} -> do
-          subject <- partActorLeader aid bUI
-          let verb = "detect nearby items"
-          displayMore ColorFull $ makeSentence [MU.SubjectVerbSg subject verb]
-        IK.DetectExit{} -> do
-          subject <- partActorLeader aid bUI
-          let verb = "learn nearby exits"
-          displayMore ColorFull $ makeSentence [MU.SubjectVerbSg subject verb]
-        IK.DetectHidden{} -> do
-          subject <- partActorLeader aid bUI
-          let verb = "uncover nearby secrets"
-          displayMore ColorFull $ makeSentence [MU.SubjectVerbSg subject verb]
-        IK.DetectEmbed{} -> do
-          subject <- partActorLeader aid bUI
-          let verb = "map nearby interesting terrain"
-          displayMore ColorFull $ makeSentence [MU.SubjectVerbSg subject verb]
+          let verb = MU.Text $ detectToVerb d
+              object = MU.Ws $ MU.Text $ detectToObject d
+          displayMore ColorFull $
+            makeSentence [MU.SubjectVerbSg subject verb, object]
         IK.SendFlying{} | bproj b -> return ()
         IK.SendFlying{} -> actorVerbMU aid bUI "be sent flying"
         IK.PushActor{} | bproj b -> return ()
