@@ -93,7 +93,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
                   verb = MU.Text $
                     "become" <+> case fst kit of
                                    1 -> if more then "more" else ""
-                                   k -> if more then "additionally" else ""
+                                   k -> (if more then "additionally" else "")
                                         <+> tshow k <> "-fold"
               -- This describes all such items already among organs,
               -- which is useful, because it shows "charging".
