@@ -1213,12 +1213,12 @@ effectDetect execSfx d radius target pos = do
                 return $! not $ null l
           in (predicateH, actionH)
         IK.DetectEmbed -> ((`EM.member` lembed lvl), const $ return False)
-  effectDetectX predicate action execSfx radius target
+  effectDetectX d predicate action execSfx radius target
 
 effectDetectX :: MonadServerAtomic m
-              => (Point -> Bool) -> ([Point] -> m Bool)
+              => IK.DetectKind -> (Point -> Bool) -> ([Point] -> m Bool)
               -> m () -> Int -> ActorId -> m UseResult
-effectDetectX predicate action execSfx radius target = do
+effectDetectX d predicate action execSfx radius target = do
   b <- getsState $ getActorBody target
   Level{lxsize, lysize} <- getLevel $ blid b
   sperFidOld <- getsServer sperFid
@@ -1247,7 +1247,7 @@ effectDetectX predicate action execSfx radius target = do
       modifyServer $ \ser -> ser {sperFid = sperFidOld}
       execSendPer (bfid b) (blid b) inPer emptyPer perOld
   else
-    execSfxAtomic $ SfxMsgFid (bfid b) SfxVoidDetection
+    execSfxAtomic $ SfxMsgFid (bfid b) $ SfxVoidDetection d
   return UseUp  -- even if nothing spotted, in itself it's still useful data
 
 -- ** SendFlying

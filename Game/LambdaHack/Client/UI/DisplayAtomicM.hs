@@ -19,6 +19,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Key (mapWithKeyM_)
 import qualified Data.Map.Strict as M
+import qualified Data.Text as T
 import           Data.Tuple
 import           GHC.Exts (inline)
 import qualified NLP.Miniutter.English as MU
@@ -1147,7 +1148,11 @@ ppSfxMsg sfxMsg = case sfxMsg of
     return $! makeSentence ["you hear", verb, object]
   SfxFizzles -> return "It doesn't work."
   SfxNothingHappens -> return "Nothing happens."
-  SfxVoidDetection -> return "Nothing new detected."
+  SfxVoidDetection d -> do
+    let object = detectToObject d
+        noNewObject | T.null object = ["nothing new"]
+                    | otherwise = ["no new", MU.Text object]
+    return $! makeSentence $ noNewObject ++ ["detected"]
   SfxUnimpressed aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
     case msbUI of

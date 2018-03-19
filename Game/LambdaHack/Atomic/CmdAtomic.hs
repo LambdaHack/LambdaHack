@@ -154,7 +154,7 @@ data SfxMsg =
   | SfxLoudSummon Bool (GroupName ItemKind) Dice.Dice
   | SfxFizzles
   | SfxNothingHappens
-  | SfxVoidDetection
+  | SfxVoidDetection IK.DetectKind
   | SfxUnimpressed ActorId
   | SfxSummonLackCalm ActorId
   | SfxLevelNoMore
