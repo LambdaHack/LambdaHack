@@ -1104,7 +1104,7 @@ pickDroppable aid b = do
   then return $! CActor aid CGround
   else do
     ps <- getsState $ nearbyFreePoints validTile (bpos b) (blid b)
-    return $! case ps of
+    return $! case filter (adjacent $ bpos b) $ take 8 ps of
       [] -> CActor aid CGround  -- fallback; still correct, though not ideal
       pos : _ -> CFloor (blid b) pos
 
