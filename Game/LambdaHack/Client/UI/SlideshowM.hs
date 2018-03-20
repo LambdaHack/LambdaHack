@@ -220,7 +220,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                  -- this may be negative, from different context
   (km, pointer) <- if null frs
                    then return (Left K.escKM, menuIx)
-                   else page $ max 0 $ min maxIx menuIx
+                   else page $ max clearIx $ min maxIx menuIx
                           -- the saved index could be from different context
   unless (menuName == "") $
     modifySession $ \sess ->
