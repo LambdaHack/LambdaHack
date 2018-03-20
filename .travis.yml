@@ -222,7 +222,8 @@ script:
    else exit 7
    fi
 
- - travis_retry travis_wait 40 cabal build   # this builds our library and executables (including tests/benchmarks)
+ - travis_retry travis_wait 40 cabal build lib:LambdaHack
+ - cabal build exe:LambdaHack
 
  - cabal test || exit 7
 
