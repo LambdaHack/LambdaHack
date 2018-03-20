@@ -1035,21 +1035,10 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.DropItem _ _ COrgan _ -> return ()
         IK.DropItem{} -> actorVerbMU aid bUI "be stripped"
         IK.PolyItem -> do
-          localTime <- getsState $ getLocalTime $ blid b
-          bag <- getsState $ getBodyStoreBag b CGround
-          case EM.assocs bag of
-            [] -> return ()  -- invisible items?
-            (iid, kit) : _ -> do
-              subject <- partActorLeader aid bUI
-              factionD <- getsState sfactionD
-              itemFull <- getsState $ itemToFull iid
-              let (_, _, name, aEText) =
-                    partItemShort side factionD localTime itemFull kit
-                  verb = "repurpose"
-                  store = MU.Text $ ppCStoreIn CGround
-              msgAdd $ makeSentence
-                [ MU.SubjectVerbSg subject verb
-                , "the", name, aEText, store ]
+          subject <- partActorLeader aid bUI
+          let ppstore = MU.Text $ ppCStoreIn CGround
+          msgAdd $ makeSentence
+            [MU.SubjectVerbSg subject "repurpose", "what lies", ppstore]
         IK.Identify -> do
           subject <- partActorLeader aid bUI
           pronoun <- partPronounLeader aid bUI
