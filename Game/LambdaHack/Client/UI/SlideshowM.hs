@@ -130,6 +130,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
       initIx = case findIndex (isRight . fst) allOKX of
         Just p -> p
         _ -> length allOKX
+      clearIx = if initIx > maxIx then 0 else initIx
       page :: Int -> m (Either K.KM SlotChar, Int)
       page pointer = assert (pointer >= 0) $ case findKYX pointer frs of
         Nothing -> error $ "no menu keys" `showFailure` frs
@@ -187,7 +188,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                   K.Unknown "SAFE_SPACE" ->
                     if firstItemOfNextPage <= maxIx
                     then page firstItemOfNextPage
-                    else page $ min maxIx initIx
+                    else page clearIx
                   _ | ikm `elem` keys ->
                     return (Left ikm, pointer)
                   K.Up -> case findIndex xix $ reverse $ take ixOnPage kyxs of
@@ -200,22 +201,23 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                     Just ix -> page (pointer + ix + 1)
                   K.Right -> if pointer == maxIx then page 0
                              else page (min maxIx (pointer + 1))
-                  K.Home -> page $ min maxIx initIx
+                  K.Home -> page clearIx
                   K.End -> page maxIx
                   _ | K.key ikm `elem` [K.PgUp, K.WheelNorth] ->
                     page (max 0 (pointer - ixOnPage - 1))
                   _ | K.key ikm `elem` [K.PgDn, K.WheelSouth] ->
                     page (min maxIx firstItemOfNextPage)
-                  K.Space -> if pointer == maxIx then page $ min maxIx initIx
+                  K.Space -> if pointer == maxIx then page clearIx
                              else page maxIx
                   _ -> error $ "unknown key" `showFailure` ikm
           pkm <- promptGetKey dm ov1 sfBlank legalKeys
           interpretKey pkm
   menuIxMap <- getsSession smenuIxMap
   -- Beware, values in @menuIxMap@ may be negative (meaning: a key, not slot).
-  let menuIx | menuName == "" = initIx
-             | otherwise = maybe initIx (+ initIx) (M.lookup menuName menuIxMap)
-                             -- this may be negative, from different context
+  let menuIx | menuName == "" = clearIx
+             | otherwise =
+               maybe clearIx (+ initIx) (M.lookup menuName menuIxMap)
+                 -- this may be negative, from different context
   (km, pointer) <- if null frs
                    then return (Left K.escKM, menuIx)
                    else page $ max 0 $ min maxIx menuIx
