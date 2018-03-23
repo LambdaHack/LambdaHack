@@ -129,7 +129,7 @@ scrapRepetition History{ newReport = Report newMsgs
   case (reverse newMsgs, oldMsgs) of
     -- We take into account only the last message of the old report,
     -- because we don't wanto to modify the old report too much,
-    -- but at least the most obvious immediate duplication should be noted.
+    -- but at least the most obvious consecutive duplication should be noted.
     -- We move the whole message to the new report, becuase it should not
     -- vanish from the screen.
     (RepMsgN s1 n1 : rest1, RepMsgN s2 n2 : rest2) | s1 == s2 ->
@@ -173,7 +173,8 @@ renderTimeReport !t (Report r') =
      else [stringToAL (show turns ++ ": ") ++ renderReport rep]
 
 lengthHistory :: History -> Int
-lengthHistory History{archivedHistory} = RB.length archivedHistory
+lengthHistory History{oldReport, archivedHistory} =
+  RB.length archivedHistory + if nullReport oldReport then 0 else 1
 
 -- | Render history as many lines of text. New report is not rendered.
 -- It's expected to be empty when history is shown.
