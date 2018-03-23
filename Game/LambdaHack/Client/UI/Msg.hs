@@ -81,12 +81,10 @@ nullReport (Report l) = null l
 
 -- | Add a message to the end of the report.
 snocReport :: Report -> Msg -> Report
-snocReport (Report !r) y = case r of
-  _ | null $ msgLine y -> Report r
-  RepMsgN x n : xns | x == y -> Report $ RepMsgN x (n + 1) : xns
-  xns -> Report $ RepMsgN y 1 : xns
+snocReport (Report !r) y =
+  if null $ msgLine y then Report r else Report $ RepMsgN y 1 : r
 
--- | Add a message to the start of report. Does not recognize repetitions.
+-- | Add a message to the start of report.
 consReport :: Msg -> Report -> Report
 consReport Msg{msgLine=[]} rep = rep
 consReport y (Report r) = Report $ r ++ [RepMsgN y 1]
@@ -129,11 +127,25 @@ scrapRepetition History{ newReport = Report newMsgs
                        , oldReport = Report oldMsgs
                        , .. } =
   case (reverse newMsgs, oldMsgs) of
+    -- We take into account only the last message of the old report,
+    -- because we don't wanto to modify the old report too much,
+    -- but at least the most obvious immediate duplication should be noted.
+    -- We move the whole message to the new report, becuase it should not
+    -- vanish from the screen.
     (RepMsgN s1 n1 : rest1, RepMsgN s2 n2 : rest2) | s1 == s2 ->
       let newR = Report $ reverse $ RepMsgN s1 (n1 + n2) : rest1
           oldR = Report rest2
       in Just History{newReport = newR, oldReport = oldR, ..}
-    _ -> Nothing
+    (RepMsgN s1 n1 : rest1, _) ->
+      let f (RepMsgN s2 _) = s1 == s2
+      in case break f rest1 of
+        (_, []) -> Nothing
+        -- We keep the oldest occurence of the message, to avoid visual
+        -- disruption by moving the message around.
+        (noDup, RepMsgN s2 n2 : rest2) ->
+          let newR = Report $ reverse $ noDup ++ RepMsgN s2 (n1 + n2) : rest2
+          in Just History{newReport = newR, oldReport = Report oldMsgs, ..}
+    _ -> Nothing  -- empty new report
 
 -- | Add a message to the new report of history, eliminating a possible
 -- duplicate and noting its existence in the result.
