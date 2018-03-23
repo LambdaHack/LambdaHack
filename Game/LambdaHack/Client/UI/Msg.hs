@@ -138,21 +138,20 @@ instance Binary History
 emptyHistory :: Int -> History
 emptyHistory size = History timeZero emptyReport $ RB.empty size U.empty
 
--- | Add a report to history, handling repetitions.
+-- | Add a report to history, handling repetitions and filtering prompts.
 addReport :: History -> Time -> Report -> History
-addReport histOld@(History oldT oldRep@(Report h) hRest) !time rep@(Report m) =
-  if null m then histOld else
-    case (reverse m, h) of
-      (RepMsgN s1 n1 : rs, RepMsgN s2 n2 : hhs) | s1 == s2 ->
-        let rephh = Report $ RepMsgN s2 (n1 + n2) : hhs
-        in if null rs
-           then History oldT rephh hRest
-           else let repr = Report $ reverse rs
-                    lU = reverse $ map attrLineToU $ renderTimeReport oldT rephh
-                in History time repr $ foldl' (flip RB.cons) hRest lU
-      (_, []) -> History time rep hRest
-      _ -> let lU = reverse $ map attrLineToU $ renderTimeReport oldT oldRep
-           in History time rep $ foldl' (flip RB.cons) hRest lU
+addReport h _ (Report []) = h
+addReport (History oldT oldR'@(Report oldMsgs) hRest)
+          !newT newR'@(Report newMsgs) =
+  let renderAppend oldR newR =
+        let lU = map attrLineToU $ renderTimeReport oldT oldR
+        in History newT newR $ foldl' (flip RB.cons) hRest (reverse lU)
+  in case (reverse oldMsgs, newMsgs) of
+      (RepMsgN s1 n1 : rest1, RepMsgN s2 n2 : rest2) | s1 == s2 ->
+        let oldR = Report $ reverse rest1
+            newR = Report $ RepMsgN s2 (n1 + n2) : rest2
+        in renderAppend oldR newR
+      _ -> renderAppend oldR' newR'
 
 renderTimeReport :: Time -> Report -> [AttrLine]
 renderTimeReport !t (Report r') =
