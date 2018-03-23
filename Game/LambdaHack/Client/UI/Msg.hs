@@ -5,15 +5,14 @@ module Game.LambdaHack.Client.UI.Msg
   ( -- * Msg
     Msg, toMsg, toPrompt
     -- * Report
-  , RepMsgN, Report, emptyReport, nullReport, snocReport, consReport
-  , renderReport, findInReport
+  , Report, nullReport, consReport, renderReport, findInReport
     -- * History
   , History, newReport, emptyHistory, addToReport, archiveReport, lengthHistory
   , renderHistory
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , UAttrLine, uToAttrLine, attrLineToU
-  , renderRepetition, scrapRepetition, renderTimeReport
+  , UAttrLine, RepMsgN, uToAttrLine, attrLineToU
+  , emptyReport, snocReport, renderRepetition, scrapRepetition, renderTimeReport
 #endif
   ) where
 
