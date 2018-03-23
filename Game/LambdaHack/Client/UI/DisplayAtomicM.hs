@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.DisplayAtomicM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , updateItemSlot, markDisplayNeeded, lookAtMove
-  , actorVerbMU, aidVerbMU, itemVerbMU, itemAidVerbMU, msgDuplicateScrap
+  , actorVerbMU, aidVerbMU, aidVerbDuplicateMU, itemVerbMU, itemAidVerbMU
   , createActorUI, destroyActorUI, spotItem, moveActor, displaceActorUI
   , moveItemUI, quitFactionUI, discover, ppSfxMsg, strike
 #endif
@@ -196,8 +196,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
                      && inline isAtWar fact (bfid b)  -- costly
         anyCloseFoes <- getsState $ any closeFoe . EM.elems . sactorD
         unless anyCloseFoes $ do  -- obvious where the feeling comes from
-          aidVerbMU aid "hear something"
-          duplicated <- msgDuplicateScrap
+          duplicated <- aidVerbDuplicateMU aid "hear something"
           unless duplicated stopPlayBack
   UpdTrajectory _ _ mt ->  -- if projectile dies just after, force one frame
     when (maybe True (null . fst) mt) pushFrame
@@ -416,6 +415,12 @@ aidVerbMU aid verb = do
   bUI <- getsSession $ getActorUI aid
   actorVerbMU aid bUI verb
 
+aidVerbDuplicateMU :: MonadClientUI m => ActorId -> MU.Part -> m Bool
+aidVerbDuplicateMU aid verb = do
+  bUI <- getsSession $ getActorUI aid
+  subject <- partActorLeader aid bUI
+  msgAddDuplicate $ makeSentence [MU.SubjectVerbSg subject verb]
+
 itemVerbMU :: MonadClientUI m
            => ItemId -> ItemQuant -> MU.Part -> Container -> m ()
 itemVerbMU iid kit@(k, _) verb c = assert (k > 0) $ do
@@ -466,24 +471,6 @@ itemAidVerbMU aid verb iid ek cstore = do
                 in MU.Phrase ["the", name, stats]
           msg = makeSentence [MU.SubjectVerbSg subject verb, object]
       msgAdd msg
-
-msgDuplicateScrap :: MonadClientUI m => m Bool
-msgDuplicateScrap = do
-  report <- getsSession $ newReport . shistory
-  history <- getsSession shistory
-  let (lastMsg, repRest) = lastMsgOfReport report
-      repLast = lastReportOfHistory history
-  case incrementInReport (== lastMsg) repRest of
-    Just repIncr -> do
-      let hist = replaceNewReportOfHistory repIncr history
-      modifySession $ \sess -> sess {shistory = hist}
-      return True
-    Nothing -> case incrementInReport (== lastMsg) repLast of
-      Just repIncr -> do
-        let historyIncr = replaceLastReportsOfHistory repRest repIncr history
-        modifySession $ \sess -> sess {shistory = historyIncr}
-        return True
-      Nothing -> return False
 
 createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 createActorUI born aid body = do

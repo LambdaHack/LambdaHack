@@ -6,10 +6,9 @@ module Game.LambdaHack.Client.UI.Msg
     Msg, toMsg, toPrompt
     -- * Report
   , RepMsgN, Report, emptyReport, nullReport, snocReport, consReport
-  , renderReport, findInReport, incrementInReport, lastMsgOfReport
+  , renderReport, findInReport
     -- * History
   , History, newReport, emptyHistory, addToReport, archiveReport, lengthHistory
-  , lastReportOfHistory, replaceLastReportsOfHistory, replaceNewReportOfHistory
   , renderHistory
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -106,21 +105,6 @@ renderRepetition (RepMsgN s n) = msgLine s ++ stringToAL ("<x" ++ show n ++ ">")
 findInReport :: (AttrLine -> Bool) -> Report -> Maybe Msg
 findInReport f (Report xns) = find (f . msgLine) $ map repMsg xns
 
-incrementInReport :: (AttrLine -> Bool) -> Report -> Maybe Report
-incrementInReport f (Report xns) =
-  case break (f . msgLine . repMsg) xns of
-    (pre, msg : post) ->
-      Just $ Report $ pre ++ msg {_repN = _repN msg + 1} : post
-    _ -> Nothing
-
-lastMsgOfReport :: Report -> (AttrLine, Report)
-lastMsgOfReport (Report rep) = case rep of
-  [] -> ([], Report [])
-  RepMsgN lmsg 1 : repRest -> (msgLine lmsg, Report repRest)
-  RepMsgN lmsg n : repRest ->
-    let !repMsg = RepMsgN lmsg (n - 1)
-    in (msgLine lmsg, Report $ repMsg : repRest)
-
 -- * History
 
 -- | The history of reports. This is a ring buffer of the given length
@@ -143,8 +127,8 @@ emptyHistory size = History emptyReport timeZero emptyReport timeZero
 
 scrapRepetition :: History -> Maybe History
 scrapRepetition History{ newReport = Report newMsgs
-                      , oldReport = Report oldMsgs
-                      , .. } =
+                       , oldReport = Report oldMsgs
+                       , .. } =
   case (reverse newMsgs, oldMsgs) of
     (RepMsgN s1 n1 : rest1, RepMsgN s2 n2 : rest2) | s1 == s2 ->
       let newR = Report $ reverse $ RepMsgN s1 (n1 + n2) : rest1
@@ -179,16 +163,6 @@ renderTimeReport !t (Report r') =
 
 lengthHistory :: History -> Int
 lengthHistory History{archivedHistory} = RB.length archivedHistory
-
-lastReportOfHistory :: History -> Report
-lastReportOfHistory (History _ _ r _ _) = r
-
-replaceLastReportsOfHistory :: Report -> Report -> History -> History
-replaceLastReportsOfHistory rep0 rep (History _ t _ t2 rb) =
-  History rep0 t rep t2 rb
-
-replaceNewReportOfHistory :: Report -> History -> History
-replaceNewReportOfHistory rep0 (History _ t r t2 rb) = History rep0 t r t2 rb
 
 -- | Render history as many lines of text. New report is not rendered.
 -- It's expected to be empty when history is shown.
