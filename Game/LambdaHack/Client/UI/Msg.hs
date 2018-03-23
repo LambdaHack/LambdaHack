@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI.Msg
   , snocReport, consReportNoScrub
   , renderReport, findInReport, incrementInReport, lastMsgOfReport
     -- * History
-  , History, emptyHistory, addReport, lengthHistory
+  , History, emptyHistory, addToReport, archiveReport, lengthHistory
   , lastReportOfHistory, replaceLastReportOfHistory, renderHistory
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -85,7 +85,7 @@ nullReport (Report l) = null l
 singletonReport :: Msg -> Report
 singletonReport = snocReport emptyReport
 
--- | Add a message to the end of report.
+-- | Add a message to the start of the report.
 snocReport :: Report -> Msg -> Report
 snocReport (Report !r) y = case r of
   _ | null $ msgLine y -> Report r
@@ -129,23 +129,30 @@ lastMsgOfReport (Report rep) = case rep of
 -- * History
 
 -- | The history of reports. This is a ring buffer of the given length
-data History = History Time Report (RB.RingBuffer UAttrLine)
+data History = History Report Time Report (RB.RingBuffer UAttrLine)
   deriving (Show, Generic)
 
 instance Binary History
 
 -- | Empty history of reports of the given maximal length.
 emptyHistory :: Int -> History
-emptyHistory size = History timeZero emptyReport $ RB.empty size U.empty
+emptyHistory size = History emptyReport timeZero emptyReport
+                    $ RB.empty size U.empty
 
--- | Add a report to history, handling repetitions and filtering prompts.
-addReport :: History -> Time -> Report -> History
-addReport h _ (Report []) = h
-addReport (History oldT oldR'@(Report oldMsgs) hRest)
-          !newT newR'@(Report newMsgs) =
+-- | Add a message to the current report of history.
+addToReport :: History -> Msg -> History
+addToReport (History r t oldR hRest) msg =
+  History r t (snocReport oldR msg) hRest
+
+-- | Archive report to history, handling repetitions and filtering prompts.
+archiveReport :: History -> Time -> History
+archiveReport h@(History (Report []) _ _ _) _ = h
+archiveReport (History newR'@(Report newMsgs) oldT oldR'@(Report oldMsgs) hRest)
+              !newT =
   let renderAppend oldR newR =
         let lU = map attrLineToU $ renderTimeReport oldT oldR
-        in History newT newR $ foldl' (flip RB.cons) hRest (reverse lU)
+        in History emptyReport newT newR
+           $ foldl' (flip RB.cons) hRest (reverse lU)
   in case (reverse oldMsgs, newMsgs) of
       (RepMsgN s1 n1 : rest1, RepMsgN s2 n2 : rest2) | s1 == s2 ->
         let oldR = Report $ reverse rest1
@@ -162,15 +169,15 @@ renderTimeReport !t (Report r') =
      else [stringToAL (show turns ++ ": ") ++ renderReport rep]
 
 lengthHistory :: History -> Int
-lengthHistory (History _ r rs) = RB.length rs + if nullReport r then 0 else 1
+lengthHistory (History _ _ r rs) = RB.length rs + if nullReport r then 0 else 1
 
 lastReportOfHistory :: History -> Report
-lastReportOfHistory (History _ r _) = r
+lastReportOfHistory (History _ _ r _) = r
 
 replaceLastReportOfHistory :: Report -> History -> History
-replaceLastReportOfHistory rep (History t _r rb) = History t rep rb
+replaceLastReportOfHistory rep (History r t _ rb) = History r t rep rb
 
 -- | Render history as many lines of text, wrapping if necessary.
 renderHistory :: History -> [AttrLine]
-renderHistory (History t r rb) =
+renderHistory (History _ t r rb) =
   map uToAttrLine (RB.toList rb) ++ renderTimeReport t r

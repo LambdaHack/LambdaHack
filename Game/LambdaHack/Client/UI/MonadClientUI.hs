@@ -296,9 +296,8 @@ defaultHistory uHistoryMax = liftIO $ do
   timezone <- getTimeZone utcTime
   let curDate = take 19 $ show $ utcToLocalTime timezone utcTime
       emptyHist = emptyHistory uHistoryMax
-  return $! addReport emptyHist timeZero
-         $ singletonReport $ toMsg $ stringToAL
-         $ "Human history log started on " ++ curDate ++ "."
+      msg = toMsg $ stringToAL $ "History log started on " ++ curDate ++ "."
+  return $! addToReport emptyHist msg
 
 tellAllClipPS :: MonadClientUI m => m ()
 tellAllClipPS = do

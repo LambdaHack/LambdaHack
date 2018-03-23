@@ -54,12 +54,10 @@ promptAddAttr :: MonadClientUI m => AttrLine -> m ()
 promptAddAttr msg = modifySession $ \sess ->
   sess {_sreport = snocReport (sreport sess) (toPrompt msg)}
 
--- | Store current report in the history and reset report.
+-- | Store current report in the history.
 recordHistory :: MonadClientUI m => m ()
 recordHistory = do
   time <- getsState stime
-  sessionUI <- getSession
-  unless (nullReport $ sreport sessionUI) $ do
-    let nhistory = addReport (shistory sessionUI) time (sreport sessionUI)
-    modifySession $ \sess -> sess { _sreport = emptyReport
-                                  , shistory = nhistory }
+  shistory <- getsSession shistory
+  let nhistory = archiveReport shistory time
+  modifySession $ \sess -> sess {shistory = nhistory}
