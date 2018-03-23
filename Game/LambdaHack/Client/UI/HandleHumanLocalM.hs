@@ -88,7 +88,7 @@ macroHuman kms = do
   modifySession $ \sess -> sess {slastPlay = map K.mkKM kms ++ slastPlay sess}
   UIOptions{uRunStopMsgs} <- getsSession sUIOptions
   when uRunStopMsgs $
-    promptAdd $ "Macro activated:" <+> T.pack (intercalate " " kms)
+    promptAdd1 $ "Macro activated:" <+> T.pack (intercalate " " kms)
 
 -- * SortSlots
 
@@ -97,7 +97,7 @@ sortSlotsHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   sortSlots (bfid b) (Just b)
-  promptAdd "Items sorted by kind and stats."
+  promptAdd1 "Items sorted by kind and stats."
 
 -- * ChooseItem
 
@@ -175,7 +175,7 @@ chooseItemDialogMode c = do
                 keys = [K.spaceKM, K.escKM]
                        ++ [K.upKM | slotIndex /= 0]
                        ++ [K.downKM | slotIndex /= lSlotsBound]
-            promptAdd $ promptFun $ itemKind itemFull2
+            promptAdd0 $ promptFun $ itemKind itemFull2
             slides <- overlayToSlideshow (lysize + 1) keys (ov, [])
             km <- getConfirms ColorFull keys slides
             case K.key km of
@@ -235,7 +235,7 @@ chooseItemDialogMode c = do
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= statListBound]
-              promptAdd prompt2
+              promptAdd0 prompt2
               slides <- overlayToSlideshow (lysize + 1) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
               case K.key km of
@@ -509,9 +509,9 @@ selectAid leader = do
             else ES.insert leader
   modifySession $ \sess -> sess {sselected = upd $ sselected sess}
   let subject = partActor bodyUI
-  promptAdd $ makeSentence [subject, if wasMemeber
-                                     then "deselected"
-                                     else "selected"]
+  promptAdd1 $ makeSentence [subject, if wasMemeber
+                                      then "deselected"
+                                      else "selected"]
 
 -- * SelectNone
 
@@ -528,9 +528,9 @@ selectNoneHuman = do
             else ES.difference
   modifySession $ \sess -> sess {sselected = upd (sselected sess) ours}
   let subject = "all party members on the level"
-  promptAdd $ makeSentence [subject, if wasNone
-                                     then "selected"
-                                     else "deselected"]
+  promptAdd1 $ makeSentence [subject, if wasNone
+                                      then "selected"
+                                      else "deselected"]
 
 -- * SelectWithPointer
 
@@ -581,14 +581,14 @@ recordHuman = do
     0 -> do
       let slastRecord = LastRecord [] [] maxK
       modifySession $ \sess -> sess {slastRecord}
-      promptAdd $ "Macro will be recorded for up to"
-                  <+> tshow maxK
-                  <+> "actions. Stop recording with the same key."
+      promptAdd0 $ "Macro will be recorded for up to"
+                   <+> tshow maxK
+                   <+> "actions. Stop recording with the same key."
     _ -> do
       let slastRecord = LastRecord seqPrevious [] 0
       modifySession $ \sess -> sess {slastRecord}
-      promptAdd $ "Macro recording stopped after"
-                  <+> tshow (maxK - k - 1) <+> "actions."
+      promptAdd0 $ "Macro recording stopped after"
+                   <+> tshow (maxK - k - 1) <+> "actions."
 
 -- * History
 
@@ -609,16 +609,16 @@ historyHuman = do
         , MU.Text (tshow turnsLocal) <> ")" ]
       kxs = [ (Right sn, (slotPrefix sn, 0, lxsize))
             | sn <- take (length rh) intSlots ]
-  promptAdd msg
+  promptAdd0 msg
   okxs <- overlayToSlideshow (lysize + 3) [K.escKM] (rh, kxs)
   let displayAllHistory = do
         ekm <- displayChoiceScreen "history" ColorFull True okxs
                                    [K.spaceKM, K.escKM]
         case ekm of
           Left km | km == K.escKM ->
-            promptAdd "Try to survive a few seconds more, if you can."
+            promptAdd0 "Try to survive a few seconds more, if you can."
           Left km | km == K.spaceKM ->  -- click in any unused space
-            promptAdd "Steady on."
+            promptAdd0 "Steady on."
           Right SlotChar{..} | slotChar == 'a' ->
             displayOneReport slotPrefix
           _ -> error $ "" `showFailure` ekm
@@ -634,14 +634,14 @@ historyHuman = do
               , "record of all history follows" ]
             keys = [K.spaceKM, K.escKM] ++ [K.upKM | histSlot /= 0]
                                         ++ [K.downKM | histSlot /= histBound]
-        promptAdd prompt
+        promptAdd0 prompt
         slides <- overlayToSlideshow (lysize + 1) keys (ov0, [])
         km <- getConfirms ColorFull keys slides
         case K.key km of
           K.Space -> displayAllHistory
           K.Up -> displayOneReport $ histSlot - 1
           K.Down -> displayOneReport $ histSlot + 1
-          K.Esc -> promptAdd "Try to learn from your previous mistakes."
+          K.Esc -> promptAdd0 "Try to learn from your previous mistakes."
           _ -> error $ "" `showFailure` km
   displayAllHistory
 
@@ -675,7 +675,7 @@ cancelHuman = do
   saimMode <- getsSession saimMode
   when (isJust saimMode) $ do
     clearAimMode
-    promptAdd "Target not set."
+    promptAdd1 "Target not set."
 
 -- * Accept
 
@@ -700,7 +700,7 @@ endAimingMsg = do
   (mtargetMsg, _) <- targetDescLeader leader
   let targetMsg = fromJust mtargetMsg
   subject <- partAidLeader leader
-  promptAdd $
+  promptAdd1 $
     makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
 
 -- * TgtClear
@@ -739,7 +739,7 @@ doLook = do
       tileBlurb <- lookAtTile canSee p leader lidV
       actorsBlurb <- lookAtActors p lidV
       itemsBlurb <- lookAtItems canSee p leader
-      promptAdd $! tileBlurb <+> actorsBlurb <+> itemsBlurb
+      promptAdd1 $! tileBlurb <+> actorsBlurb <+> itemsBlurb
 
 -- * MoveXhair
 

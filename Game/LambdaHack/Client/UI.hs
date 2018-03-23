@@ -177,6 +177,6 @@ humanCommand = do
           Left Nothing -> loop
           Left (Just err) -> do
             stopPlayBack
-            promptAdd $ showFailError err
+            promptAdd1 $ showFailError err
             loop
   loop

@@ -290,7 +290,7 @@ pickNumber askNumber kAll = assert (kAll >= 1) $ do
       frontKeyKeys = shownKeys ++ map K.mkChar ['0'..'9']
       gatherNumber kCur = assert (1 <= kCur && kCur <= kAll) $ do
         let kprompt = "Choose number:" <+> tshow kCur
-        promptAdd kprompt
+        promptAdd0 kprompt
         sli <- reportToSlideshow shownKeys
         ekkm <- displayChoiceScreen "" ColorFull False
                                     sli frontKeyKeys

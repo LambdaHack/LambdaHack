@@ -72,7 +72,7 @@ promptGetKey dm ov onBlank frontKeyKeys = do
       displayFrames lidV [Just frontKeyFrame]
       modifySession $ \sess -> sess {slastPlay = kms}
       UIOptions{uRunStopMsgs} <- getsSession sUIOptions
-      when uRunStopMsgs $ promptAdd $ "Voicing '" <> tshow km <> "'."
+      when uRunStopMsgs $ promptAdd0 $ "Voicing '" <> tshow km <> "'."
       return km
     _ : _ -> do
       -- We can't continue playback, so wipe out old slastPlay, srunning, etc.

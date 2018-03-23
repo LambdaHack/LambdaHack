@@ -477,7 +477,7 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
       (keyLabelsRaw, keys) = partitionEithers $ map (defLabel . snd) keyDefs
       keyLabels = filter (not . T.null) keyLabelsRaw
       choice = T.intercalate " " $ map wrapB $ nub keyLabels
-  promptAdd $ prompt <+> choice
+  promptAdd0 $ prompt <+> choice
   lidV <- viewedLevelUI
   Level{lysize} <- getLevel lidV
   ekm <- do

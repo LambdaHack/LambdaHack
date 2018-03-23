@@ -1,6 +1,6 @@
 -- | Monadic operations on game messages.
 module Game.LambdaHack.Client.UI.MsgM
-  ( msgAddDuplicate, msgAdd, promptAddDuplicate, promptAdd
+  ( msgAddDuplicate, msgAdd, promptAddDuplicate, promptAdd1, promptAdd0
   , promptMainKeys, recordHistory
   ) where
 
@@ -23,7 +23,7 @@ import           Game.LambdaHack.Common.State
 msgAddDuplicate :: MonadClientUI m => Text -> m Bool
 msgAddDuplicate msg = do
   history <- getsSession shistory
-  let (nhistory, duplicate) = addToReport history (toMsg $ textToAL msg)
+  let (nhistory, duplicate) = addToReport history (toMsg $ textToAL msg) 1
   modifySession $ \sess -> sess {shistory = nhistory}
   return duplicate
 
@@ -32,16 +32,21 @@ msgAdd :: MonadClientUI m => Text -> m ()
 msgAdd = void <$> msgAddDuplicate
 
 -- | Add a prompt to the current report.
-promptAddDuplicate :: MonadClientUI m => Text -> m Bool
-promptAddDuplicate msg = do
+promptAddDuplicate :: MonadClientUI m => Text -> Int -> m Bool
+promptAddDuplicate msg n = do
   history <- getsSession shistory
-  let (nhistory, duplicate) = addToReport history (toPrompt $ textToAL msg)
+  let (nhistory, duplicate) = addToReport history (toPrompt $ textToAL msg) n
   modifySession $ \sess -> sess {shistory = nhistory}
   return duplicate
 
 -- | Add a prompt to the current report. Do not report if it was a duplicate.
-promptAdd :: MonadClientUI m => Text -> m ()
-promptAdd = void <$> promptAddDuplicate
+promptAdd1 :: MonadClientUI m => Text -> m ()
+promptAdd1 = void <$> flip promptAddDuplicate 1
+
+-- | Add a prompt to the current report with 0 copies for the purpose
+-- of collating cuplicates. Do not report if it was a duplicate.
+promptAdd0 :: MonadClientUI m => Text -> m ()
+promptAdd0 = void <$> flip promptAddDuplicate 0
 
 -- | Add a prompt with basic keys description.
 promptMainKeys :: MonadClientUI m => m ()
@@ -62,7 +67,7 @@ promptMainKeys = do
            | otherwise =
         "Aim" <+> tgtKindDescription xhair
         <+> "with" <+> moveKeys <+> "keys or mouse." <+> moreHelp
-  void $ promptAdd keys
+  void $ promptAdd0 keys
 
 -- | Store new report in the history and archive old report.
 recordHistory :: MonadClientUI m => m ()

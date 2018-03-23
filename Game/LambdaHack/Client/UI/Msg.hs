@@ -80,9 +80,9 @@ nullReport :: Report -> Bool
 nullReport (Report l) = null l
 
 -- | Add a message to the end of the report.
-snocReport :: Report -> Msg -> Report
-snocReport (Report !r) y =
-  if null $ msgLine y then Report r else Report $ RepMsgN y 1 : r
+snocReport :: Report -> Msg -> Int -> Report
+snocReport (Report !r) y n =
+  if null $ msgLine y then Report r else Report $ RepMsgN y n : r
 
 -- | Add a message to the start of report.
 consReport :: Msg -> Report -> Report
@@ -96,6 +96,7 @@ renderReport (Report (x : xs)) =
   renderReport (Report xs) <+:> renderRepetition x
 
 renderRepetition :: RepMsgN -> AttrLine
+renderRepetition (RepMsgN s 0) = msgLine s
 renderRepetition (RepMsgN s 1) = msgLine s
 renderRepetition (RepMsgN s n) = msgLine s ++ stringToAL ("<x" ++ show n ++ ">")
 
@@ -152,9 +153,9 @@ scrapRepetition History{ newReport = Report newMsgs
 
 -- | Add a message to the new report of history, eliminating a possible
 -- duplicate and noting its existence in the result.
-addToReport :: History -> Msg -> (History, Bool)
-addToReport History{..} msg =
-  let newH = History{newReport = snocReport newReport msg, ..}
+addToReport :: History -> Msg -> Int -> (History, Bool)
+addToReport History{..} msg n =
+  let newH = History{newReport = snocReport newReport msg n, ..}
   in case scrapRepetition newH of
     Just scrappedH -> (scrappedH, True)
     Nothing -> (newH, False)

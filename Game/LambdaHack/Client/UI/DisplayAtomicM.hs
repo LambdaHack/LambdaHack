@@ -343,15 +343,15 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
       lid <- getArenaUI
       lvl <- getLevel lid
       mode <- getGameMode
-      promptAdd $ "Continuing" <+> mname mode <> "."
-                  <+> mdesc mode <+> cdesc (okind cocave $ lkind lvl)
-                  <+> "Are you up for the challenge?"
+      promptAdd0 $ "Continuing" <+> mname mode <> "."
+                   <+> mdesc mode <+> cdesc (okind cocave $ lkind lvl)
+                   <+> "Are you up for the challenge?"
       slides <- reportToSlideshow [K.spaceKM, K.escKM]
       km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
-      if km == K.escKM then addPressedEsc else promptAdd "Prove yourself!"
+      if km == K.escKM then addPressedEsc else promptAdd0 "Prove yourself!"
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> frontendShutdown
-  UpdWriteSave -> when verbose $ promptAdd "Saving backup."
+  UpdWriteSave -> when verbose $ promptAdd1 "Saving backup."
 
 updateItemSlot :: MonadClientUI m => Container -> ItemId -> m ()
 updateItemSlot c iid = do
@@ -792,7 +792,7 @@ quitFactionUI fid toSt = do
                     ++ [MU.CarWs worth currencyName]
                           | otherwise = makeSentence
                     ["this item is not worth any", MU.Ws currencyName]
-              promptAdd lootMsg
+              promptAdd0 lootMsg
               slides <- overlayToSlideshow (lysize + 1) keys (ov, [])
               km <- getConfirms ColorFull keys slides
               case K.key km of
@@ -813,7 +813,7 @@ quitFactionUI fid toSt = do
                            , MU.CarWs total currencyName
                            , "out of the rumoured total"
                            , MU.CarWs dungeonTotal currencyName ]
-              promptAdd spoilsMsg
+              promptAdd0 spoilsMsg
               ItemSlots itemSlots <- getsSession sslots
               let lSlots = EM.filter (`EM.member` itemBag)
                            $ itemSlots EM.! SItem
@@ -845,7 +845,7 @@ quitFactionUI fid toSt = do
             scoreSlides <- scoreToSlideshow total status
             void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
           -- The last prompt stays onscreen during shutdown, etc.
-          promptAdd pp
+          promptAdd0 pp
           partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
           void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
       unless (fmap stOutcome toSt == Just Camping) $

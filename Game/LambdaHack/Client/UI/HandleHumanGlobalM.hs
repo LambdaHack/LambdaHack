@@ -848,7 +848,7 @@ alterDirHuman ts = do
              : map (K.KM K.NoModifier) (K.dirAllKey uVi uLaptop)
       prompt = makePhrase
         ["Where to", verb1 <> "? [movement key] [pointer]"]
-  promptAdd prompt
+  promptAdd0 prompt
   slides <- reportToSlideshow [K.escKM]
   km <- getConfirms ColorFull keys slides
   case K.key km of
@@ -1422,7 +1422,7 @@ nxtGameMode COps{comode} snxtScenario =
 gameExitHuman :: MonadClientUI m => m ReqUI
 gameExitHuman = do
   -- Announce before the saving started, since it can take a while.
-  promptAdd "Saving game. The program stops now."
+  promptAdd1 "Saving game. The program stops now."
   return ReqUIGameSaveAndExit
 
 -- * GameSave
@@ -1430,7 +1430,7 @@ gameExitHuman = do
 gameSaveHuman :: MonadClientUI m => m ReqUI
 gameSaveHuman = do
   -- Announce before the saving started, since it can take a while.
-  promptAdd "Saving game backup."
+  promptAdd1 "Saving game backup."
   return ReqUIGameSave
 
 -- * Tactic
