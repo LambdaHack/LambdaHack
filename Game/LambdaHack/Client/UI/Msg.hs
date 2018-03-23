@@ -9,12 +9,12 @@ module Game.LambdaHack.Client.UI.Msg
   , renderReport, findInReport, incrementInReport, lastMsgOfReport
     -- * History
   , History, newReport, emptyHistory, addToReport, archiveReport, lengthHistory
-  , lastReportOfHistory, replaceLastReportOfHistory, replaceNewReportOfHistory
+  , lastReportOfHistory, replaceLastReportsOfHistory, replaceNewReportOfHistory
   , renderHistory
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , UAttrLine, uToAttrLine, attrLineToU
-  , renderRepetition, renderTimeReport,
+  , renderRepetition, scrapRepetition, renderTimeReport
 #endif
   ) where
 
@@ -141,27 +141,33 @@ emptyHistory :: Int -> History
 emptyHistory size = History emptyReport timeZero emptyReport timeZero
                     $ RB.empty size U.empty
 
--- | Add a message to the new report of history.
-addToReport :: History -> Msg -> History
-addToReport History{..} msg = History{newReport = snocReport newReport msg, ..}
+scrapRepetition :: History -> Maybe History
+scrapRepetition History{ newReport = Report newMsgs
+                      , oldReport = Report oldMsgs
+                      , .. } =
+  case (reverse newMsgs, oldMsgs) of
+    (RepMsgN s1 n1 : rest1, RepMsgN s2 n2 : rest2) | s1 == s2 ->
+      let newR = Report $ reverse $ RepMsgN s1 (n1 + n2) : rest1
+          oldR = Report rest2
+      in Just History{newReport = newR, oldReport = oldR, ..}
+    _ -> Nothing
 
--- | Archive old report to history, handling repetitions and filtering prompts.
+-- | Add a message to the new report of history, eliminating a possible
+-- duplicate.
+addToReport :: History -> Msg -> History
+addToReport History{..} msg =
+  let newH = History{newReport = snocReport newReport msg, ..}
+  in case scrapRepetition newH of
+    Just scrappedH -> scrappedH
+    Nothing -> newH
+
+-- | Archive old report to history, filtering out prompts.
 archiveReport :: History -> Time -> History
 archiveReport h@History{newReport=Report []} _ = h
-archiveReport History{ newReport = newReport@(Report newMsgs)
-                     , oldReport = oldReport@(Report oldMsgs)
-                     , .. }
-              !newT =
-  let renderAppend oldR newR =
-        let lU = map attrLineToU $ renderTimeReport oldTime oldR
-        in History emptyReport newT newR newTime
-           $ foldl' (flip RB.cons) archivedHistory (reverse lU)
-  in case (reverse oldMsgs, newMsgs) of
-      (RepMsgN s1 n1 : rest1, RepMsgN s2 n2 : rest2) | s1 == s2 ->
-        let oldR = Report $ reverse rest1
-            newR = Report $ RepMsgN s2 (n1 + n2) : rest2
-        in renderAppend oldR newR
-      _ -> renderAppend oldReport newReport
+archiveReport History{..} !newT =
+  let lU = map attrLineToU $ renderTimeReport oldTime oldReport
+  in History emptyReport newT newReport newTime
+     $ foldl' (flip RB.cons) archivedHistory (reverse lU)
 
 renderTimeReport :: Time -> Report -> [AttrLine]
 renderTimeReport !t (Report r') =
@@ -177,8 +183,8 @@ lengthHistory History{archivedHistory} = RB.length archivedHistory
 lastReportOfHistory :: History -> Report
 lastReportOfHistory (History _ _ r _ _) = r
 
-replaceLastReportOfHistory :: Report -> Report -> History -> History
-replaceLastReportOfHistory rep0 rep (History _ t _ t2 rb) =
+replaceLastReportsOfHistory :: Report -> Report -> History -> History
+replaceLastReportsOfHistory rep0 rep (History _ t _ t2 rb) =
   History rep0 t rep t2 rb
 
 replaceNewReportOfHistory :: Report -> History -> History

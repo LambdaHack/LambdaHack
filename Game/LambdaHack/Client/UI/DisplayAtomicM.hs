@@ -480,7 +480,7 @@ msgDuplicateScrap = do
       return True
     Nothing -> case incrementInReport (== lastMsg) repLast of
       Just repIncr -> do
-        let historyIncr = replaceLastReportOfHistory repRest repIncr history
+        let historyIncr = replaceLastReportsOfHistory repRest repIncr history
         modifySession $ \sess -> sess {shistory = historyIncr}
         return True
       Nothing -> return False
