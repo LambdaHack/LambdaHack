@@ -119,7 +119,7 @@ humanCommand = do
                                 , shintMode = HintAbsent }
   let loop :: m ReqUI
       loop = do
-        report <- getsSession sreport
+        report <- getsSession $ newReport . shistory
         hintMode <- getsSession shintMode
         -- Hints are not considered non-empty reports.
         modifySession $ \sess -> sess {sreportNull =

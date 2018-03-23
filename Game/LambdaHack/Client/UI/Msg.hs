@@ -9,8 +9,9 @@ module Game.LambdaHack.Client.UI.Msg
   , snocReport, consReportNoScrub
   , renderReport, findInReport, incrementInReport, lastMsgOfReport
     -- * History
-  , History, emptyHistory, addToReport, archiveReport, lengthHistory
-  , lastReportOfHistory, replaceLastReportOfHistory, renderHistory
+  , History, newReport, emptyHistory, addToReport, archiveReport, lengthHistory
+  , lastReportOfHistory, replaceLastReportOfHistory, replaceNewReportOfHistory
+  , renderHistory
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , UAttrLine, uToAttrLine, attrLineToU
@@ -181,8 +182,11 @@ lengthHistory History{archivedHistory} = RB.length archivedHistory
 lastReportOfHistory :: History -> Report
 lastReportOfHistory (History _ _ r _) = r
 
-replaceLastReportOfHistory :: Report -> History -> History
-replaceLastReportOfHistory rep (History r t _ rb) = History r t rep rb
+replaceLastReportOfHistory :: Report -> Report -> History -> History
+replaceLastReportOfHistory rep0 rep (History _ t _ rb) = History rep0 t rep rb
+
+replaceNewReportOfHistory :: Report -> History -> History
+replaceNewReportOfHistory rep0 (History _ t r rb) = History rep0 t r rb
 
 -- | Render history as many lines of text. New report is not rendered.
 -- It's expected to be empty when history is shown.

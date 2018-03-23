@@ -469,19 +469,19 @@ itemAidVerbMU aid verb iid ek cstore = do
 
 msgDuplicateScrap :: MonadClientUI m => m Bool
 msgDuplicateScrap = do
-  report <- getsSession sreport
+  report <- getsSession $ newReport . shistory
   history <- getsSession shistory
   let (lastMsg, repRest) = lastMsgOfReport report
       repLast = lastReportOfHistory history
   case incrementInReport (== lastMsg) repRest of
     Just repIncr -> do
-      modifySession $ \sess -> sess {_sreport = repIncr}
+      let hist = replaceNewReportOfHistory repIncr history
+      modifySession $ \sess -> sess {shistory = hist}
       return True
     Nothing -> case incrementInReport (== lastMsg) repLast of
       Just repIncr -> do
-        let historyIncr = replaceLastReportOfHistory repIncr history
-        modifySession $ \sess -> sess { _sreport = repRest
-                                      , shistory = historyIncr }
+        let historyIncr = replaceLastReportOfHistory repRest repIncr history
+        modifySession $ \sess -> sess {shistory = historyIncr}
         return True
       Nothing -> return False
 

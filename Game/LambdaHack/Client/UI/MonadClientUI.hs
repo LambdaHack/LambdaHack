@@ -163,7 +163,7 @@ revCmdMap = do
 
 getReportUI :: MonadClientUI m => m Report
 getReportUI = do
-  report <- getsSession sreport
+  report <- getsSession $ newReport . shistory
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact

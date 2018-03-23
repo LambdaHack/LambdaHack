@@ -2,7 +2,7 @@
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
   ( SessionUI(..), AimMode(..), RunParams(..), LastRecord(..), HintMode(..)
-  , sreport, emptySessionUI, toggleMarkVision, toggleMarkSmell, getActorUI
+  , emptySessionUI, toggleMarkVision, toggleMarkSmell, getActorUI
   ) where
 
 import Prelude ()
@@ -50,7 +50,6 @@ data SessionUI = SessionUI
                                     -- ^ the set of currently selected actors
   , srunning       :: Maybe RunParams
                                     -- ^ parameters of the current run, if any
-  , _sreport       :: Report        -- ^ current messages
   , shistory       :: History       -- ^ history of messages
   , spointer       :: Point         -- ^ mouse pointer position
   , slastRecord    :: LastRecord    -- ^ state of key sequence recording
@@ -102,9 +101,6 @@ data HintMode =
   | HintWiped
   deriving (Eq, Enum, Bounded)
 
-sreport :: SessionUI -> Report
-sreport = _sreport
-
 emptySessionUI :: UIOptions -> SessionUI
 emptySessionUI sUIOptions =
   SessionUI
@@ -122,7 +118,6 @@ emptySessionUI sUIOptions =
     , sitemSel = Nothing
     , sselected = ES.empty
     , srunning = Nothing
-    , _sreport = emptyReport
     , shistory = emptyHistory 0
     , spointer = originPoint
     , slastRecord = LastRecord [] [] 0
@@ -163,7 +158,6 @@ instance Binary SessionUI where
     put sitemSel
     put sselected
     put srunning
-    put _sreport
     put shistory
     put smarkVision
     put smarkSmell
@@ -177,7 +171,6 @@ instance Binary SessionUI where
     sitemSel <- get
     sselected <- get
     srunning <- get
-    _sreport <- get
     shistory <- get
     smarkVision <- get
     smarkSmell <- get

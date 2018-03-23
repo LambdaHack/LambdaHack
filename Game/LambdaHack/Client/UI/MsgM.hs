@@ -21,12 +21,12 @@ import           Game.LambdaHack.Common.State
 -- | Add a message to the current report.
 msgAdd :: MonadClientUI m => Text -> m ()
 msgAdd msg = modifySession $ \sess ->
-  sess {_sreport = snocReport (sreport sess) (toMsg $ textToAL msg)}
+  sess {shistory = addToReport (shistory sess) (toMsg $ textToAL msg)}
 
 -- | Add a prompt to the current report.
 promptAdd :: MonadClientUI m => Text -> m ()
 promptAdd msg = modifySession $ \sess ->
-  sess {_sreport = snocReport (sreport sess) (toPrompt $ textToAL msg)}
+  sess {shistory = addToReport (shistory sess) (toPrompt $ textToAL msg)}
 
 -- | Add a prompt with basic keys description.
 promptMainKeys :: MonadClientUI m => m ()
@@ -52,7 +52,7 @@ promptMainKeys = do
 -- | Add a prompt to the current report.
 promptAddAttr :: MonadClientUI m => AttrLine -> m ()
 promptAddAttr msg = modifySession $ \sess ->
-  sess {_sreport = snocReport (sreport sess) (toPrompt msg)}
+  sess {shistory = addToReport (shistory sess) (toPrompt msg)}
 
 -- | Store new report in the history and archive old report.
 recordHistory :: MonadClientUI m => m ()
