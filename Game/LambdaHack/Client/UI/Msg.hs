@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.Msg
   ( -- * Msg
     Msg, toMsg, toPrompt
     -- * Report
-  , RepMsgN, Report, emptyReport, nullReport, snocReport, consReportNoScrub
+  , RepMsgN, Report, emptyReport, nullReport, snocReport, consReport
   , renderReport, findInReport, incrementInReport, lastMsgOfReport
     -- * History
   , History, newReport, emptyHistory, addToReport, archiveReport, lengthHistory
@@ -81,18 +81,17 @@ emptyReport = Report []
 nullReport :: Report -> Bool
 nullReport (Report l) = null l
 
--- | Add a message to the start of the report.
+-- | Add a message to the end of the report.
 snocReport :: Report -> Msg -> Report
 snocReport (Report !r) y = case r of
   _ | null $ msgLine y -> Report r
   RepMsgN x n : xns | x == y -> Report $ RepMsgN x (n + 1) : xns
   xns -> Report $ RepMsgN y 1 : xns
 
--- | Add a message to the end of report. Does not delete old prompt messages
--- nor handle repetitions.
-consReportNoScrub :: Msg -> Report -> Report
-consReportNoScrub Msg{msgLine=[]} rep = rep
-consReportNoScrub y (Report r) = Report $ r ++ [RepMsgN y 1]
+-- | Add a message to the start of report. Does not recognize repetitions.
+consReport :: Msg -> Report -> Report
+consReport Msg{msgLine=[]} rep = rep
+consReport y (Report r) = Report $ r ++ [RepMsgN y 1]
 
 -- | Render a report as a (possibly very long) 'AttrLine'.
 renderReport :: Report -> AttrLine
