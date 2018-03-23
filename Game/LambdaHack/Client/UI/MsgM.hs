@@ -1,6 +1,7 @@
 -- | Monadic operations on game messages.
 module Game.LambdaHack.Client.UI.MsgM
-  ( msgAdd, promptAdd, promptMainKeys, promptAddAttr, recordHistory
+  ( msgAddDuplicate, msgAdd, promptAddDuplicate, promptAdd
+  , promptMainKeys, recordHistory
   ) where
 
 import Prelude ()
@@ -19,14 +20,28 @@ import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 
 -- | Add a message to the current report.
+msgAddDuplicate :: MonadClientUI m => Text -> m Bool
+msgAddDuplicate msg = do
+  history <- getsSession shistory
+  let (nhistory, duplicate) = addToReport history (toMsg $ textToAL msg)
+  modifySession $ \sess -> sess {shistory = nhistory}
+  return duplicate
+
+-- | Add a message to the current report. Do not report if it was a duplicate.
 msgAdd :: MonadClientUI m => Text -> m ()
-msgAdd msg = modifySession $ \sess ->
-  sess {shistory = addToReport (shistory sess) (toMsg $ textToAL msg)}
+msgAdd = void <$> msgAddDuplicate
 
 -- | Add a prompt to the current report.
+promptAddDuplicate :: MonadClientUI m => Text -> m Bool
+promptAddDuplicate msg = do
+  history <- getsSession shistory
+  let (nhistory, duplicate) = addToReport history (toPrompt $ textToAL msg)
+  modifySession $ \sess -> sess {shistory = nhistory}
+  return duplicate
+
+-- | Add a prompt to the current report. Do not report if it was a duplicate.
 promptAdd :: MonadClientUI m => Text -> m ()
-promptAdd msg = modifySession $ \sess ->
-  sess {shistory = addToReport (shistory sess) (toPrompt $ textToAL msg)}
+promptAdd = void <$> promptAddDuplicate
 
 -- | Add a prompt with basic keys description.
 promptMainKeys :: MonadClientUI m => m ()
@@ -47,17 +62,11 @@ promptMainKeys = do
            | otherwise =
         "Aim" <+> tgtKindDescription xhair
         <+> "with" <+> moveKeys <+> "keys or mouse." <+> moreHelp
-  promptAdd keys
-
--- | Add a prompt to the current report.
-promptAddAttr :: MonadClientUI m => AttrLine -> m ()
-promptAddAttr msg = modifySession $ \sess ->
-  sess {shistory = addToReport (shistory sess) (toPrompt msg)}
+  void $ promptAdd keys
 
 -- | Store new report in the history and archive old report.
 recordHistory :: MonadClientUI m => m ()
 recordHistory = do
   time <- getsState stime
-  shistory <- getsSession shistory
-  let nhistory = archiveReport shistory time
-  modifySession $ \sess -> sess {shistory = nhistory}
+  history <- getsSession shistory
+  modifySession $ \sess -> sess {shistory = archiveReport history time}

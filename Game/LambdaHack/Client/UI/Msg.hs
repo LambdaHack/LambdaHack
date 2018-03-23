@@ -153,13 +153,13 @@ scrapRepetition History{ newReport = Report newMsgs
     _ -> Nothing
 
 -- | Add a message to the new report of history, eliminating a possible
--- duplicate.
-addToReport :: History -> Msg -> History
+-- duplicate and noting its existence in the result.
+addToReport :: History -> Msg -> (History, Bool)
 addToReport History{..} msg =
   let newH = History{newReport = snocReport newReport msg, ..}
   in case scrapRepetition newH of
-    Just scrappedH -> scrappedH
-    Nothing -> newH
+    Just scrappedH -> (scrappedH, True)
+    Nothing -> (newH, False)
 
 -- | Archive old report to history, filtering out prompts.
 archiveReport :: History -> Time -> History
