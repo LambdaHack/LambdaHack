@@ -140,26 +140,27 @@ emptyHistory size = History timeZero emptyReport $ RB.empty size U.empty
 
 -- | Add a report to history, handling repetitions.
 addReport :: History -> Time -> Report -> History
-addReport histOld@(History oldT oldRep@(Report h) hRest) !time (Report m') =
-  let rep@(Report m) = Report $ filter (msgHist . repMsg) m'
-  in if null m then histOld else
+addReport histOld@(History oldT oldRep@(Report h) hRest) !time rep@(Report m) =
+  if null m then histOld else
     case (reverse m, h) of
-      -- This and the previous @==@ almost fully evaluates history.
       (RepMsgN s1 n1 : rs, RepMsgN s2 n2 : hhs) | s1 == s2 ->
         let rephh = Report $ RepMsgN s2 (n1 + n2) : hhs
         in if null rs
            then History oldT rephh hRest
            else let repr = Report $ reverse rs
-                    !lU = attrLineToU $ renderTimeReport oldT rephh
-                in History time repr $ RB.cons lU hRest
+                    lU = reverse $ map attrLineToU $ renderTimeReport oldT rephh
+                in History time repr $ foldl' (flip RB.cons) hRest lU
       (_, []) -> History time rep hRest
-      _ -> let !lU = attrLineToU $ renderTimeReport oldT oldRep
-           in History time rep $ RB.cons lU hRest
+      _ -> let lU = reverse $ map attrLineToU $ renderTimeReport oldT oldRep
+           in History time rep $ foldl' (flip RB.cons) hRest lU
 
-renderTimeReport :: Time -> Report -> AttrLine
-renderTimeReport !t !r =
+renderTimeReport :: Time -> Report -> [AttrLine]
+renderTimeReport !t (Report r') =
   let turns = t `timeFitUp` timeTurn
-  in stringToAL (show turns ++ ": ") ++ renderReport r
+      rep = Report $ filter (msgHist . repMsg) r'
+  in if nullReport rep
+     then []
+     else [stringToAL (show turns ++ ": ") ++ renderReport rep]
 
 lengthHistory :: History -> Int
 lengthHistory (History _ r rs) = RB.length rs + if nullReport r then 0 else 1
@@ -173,4 +174,4 @@ replaceLastReportOfHistory rep (History t _r rb) = History t rep rb
 -- | Render history as many lines of text, wrapping if necessary.
 renderHistory :: History -> [AttrLine]
 renderHistory (History t r rb) =
-  map uToAttrLine (RB.toList rb) ++ [renderTimeReport t r]
+  map uToAttrLine (RB.toList rb) ++ renderTimeReport t r
