@@ -128,12 +128,13 @@ scrapRepetition History{ newReport = Report newMsgs
                        , .. } =
   case (reverse newMsgs, oldMsgs) of
     -- We take into account only the last message of the old report,
-    -- because we don't wanto to modify the old report too much,
-    -- but at least the most obvious consecutive duplication should be noted.
-    -- We move the whole message to the new report, becuase it should not
+    -- and the first of the new report, because we don't want
+    -- to modify the old report too much, but at least the most obvious
+    -- consecutive duplication should be noted.
+    -- We move the whole message to the new report, because it should not
     -- vanish from the screen.
-    (RepMsgN s1 n1 : rest1, RepMsgN s2 n2 : rest2) | s1 == s2 ->
-      let newR = Report $ reverse $ RepMsgN s1 (n1 + n2) : rest1
+    ([RepMsgN s1 n1], RepMsgN s2 n2 : rest2) | s1 == s2 ->
+      let newR = Report [RepMsgN s1 (n1 + n2)]
           oldR = Report rest2
       in Just History{newReport = newR, oldReport = oldR, ..}
     (RepMsgN s1 n1 : rest1, _) ->
