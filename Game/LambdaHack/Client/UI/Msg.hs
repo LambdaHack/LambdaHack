@@ -129,36 +129,43 @@ lastMsgOfReport (Report rep) = case rep of
 -- * History
 
 -- | The history of reports. This is a ring buffer of the given length
-data History = History Report Time Report (RB.RingBuffer UAttrLine)
+-- containing old archived history and two most recent reports stored
+-- separately.
+data History = History
+  { newReport       :: Report
+  , oldTime         :: Time
+  , oldReport       :: Report
+  , archivedHistory :: RB.RingBuffer UAttrLine }
   deriving (Show, Generic)
 
 instance Binary History
 
--- | Empty history of reports of the given maximal length.
+-- | Empty history of the given maximal length.
 emptyHistory :: Int -> History
 emptyHistory size = History emptyReport timeZero emptyReport
                     $ RB.empty size U.empty
 
--- | Add a message to the current report of history.
+-- | Add a message to the new report of history.
 addToReport :: History -> Msg -> History
-addToReport (History r t oldR hRest) msg =
-  History r t (snocReport oldR msg) hRest
+addToReport History{..} msg = History{newReport = snocReport newReport msg, ..}
 
--- | Archive report to history, handling repetitions and filtering prompts.
+-- | Archive old report to history, handling repetitions and filtering prompts.
 archiveReport :: History -> Time -> History
-archiveReport h@(History (Report []) _ _ _) _ = h
-archiveReport (History newR'@(Report newMsgs) oldT oldR'@(Report oldMsgs) hRest)
+archiveReport h@History{newReport=Report []} _ = h
+archiveReport History{ newReport = newReport@(Report newMsgs)
+                     , oldReport = oldReport@(Report oldMsgs)
+                     , .. }
               !newT =
   let renderAppend oldR newR =
-        let lU = map attrLineToU $ renderTimeReport oldT oldR
+        let lU = map attrLineToU $ renderTimeReport oldTime oldR
         in History emptyReport newT newR
-           $ foldl' (flip RB.cons) hRest (reverse lU)
+           $ foldl' (flip RB.cons) archivedHistory (reverse lU)
   in case (reverse oldMsgs, newMsgs) of
       (RepMsgN s1 n1 : rest1, RepMsgN s2 n2 : rest2) | s1 == s2 ->
         let oldR = Report $ reverse rest1
             newR = Report $ RepMsgN s2 (n1 + n2) : rest2
         in renderAppend oldR newR
-      _ -> renderAppend oldR' newR'
+      _ -> renderAppend oldReport newReport
 
 renderTimeReport :: Time -> Report -> [AttrLine]
 renderTimeReport !t (Report r') =
@@ -169,7 +176,7 @@ renderTimeReport !t (Report r') =
      else [stringToAL (show turns ++ ": ") ++ renderReport rep]
 
 lengthHistory :: History -> Int
-lengthHistory (History _ _ r rs) = RB.length rs + if nullReport r then 0 else 1
+lengthHistory History{archivedHistory} = RB.length archivedHistory
 
 lastReportOfHistory :: History -> Report
 lastReportOfHistory (History _ _ r _) = r
@@ -177,7 +184,8 @@ lastReportOfHistory (History _ _ r _) = r
 replaceLastReportOfHistory :: Report -> History -> History
 replaceLastReportOfHistory rep (History r t _ rb) = History r t rep rb
 
--- | Render history as many lines of text, wrapping if necessary.
+-- | Render history as many lines of text. New report is not rendered.
+-- It's expected to be empty when history is shown.
 renderHistory :: History -> [AttrLine]
-renderHistory (History _ t r rb) =
-  map uToAttrLine (RB.toList rb) ++ renderTimeReport t r
+renderHistory History{..} = map uToAttrLine (RB.toList archivedHistory)
+                            ++ renderTimeReport oldTime oldReport

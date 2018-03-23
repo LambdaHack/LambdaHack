@@ -54,7 +54,7 @@ promptAddAttr :: MonadClientUI m => AttrLine -> m ()
 promptAddAttr msg = modifySession $ \sess ->
   sess {_sreport = snocReport (sreport sess) (toPrompt msg)}
 
--- | Store current report in the history.
+-- | Store new report in the history and archive old report.
 recordHistory :: MonadClientUI m => m ()
 recordHistory = do
   time <- getsState stime
