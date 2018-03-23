@@ -162,11 +162,14 @@ addToReport History{..} msg n =
 
 -- | Archive old report to history, filtering out prompts.
 archiveReport :: History -> Time -> History
-archiveReport h@History{newReport=Report []} _ = h
-archiveReport History{..} !newT =
-  let lU = map attrLineToU $ renderTimeReport oldTime oldReport
-  in History emptyReport newT newReport newTime
-     $ foldl' (flip RB.cons) archivedHistory (reverse lU)
+archiveReport History{newReport=Report newMsgs, ..} !newT =
+  let f (RepMsgN _ n) = n > 0
+      newReportNon0 = Report $ filter f newMsgs
+  in if nullReport newReportNon0
+     then History{newReport=newReportNon0, ..}
+     else let lU = map attrLineToU $ renderTimeReport oldTime oldReport
+          in History emptyReport newT newReportNon0 newTime
+             $ foldl' (flip RB.cons) archivedHistory (reverse lU)
 
 renderTimeReport :: Time -> Report -> [AttrLine]
 renderTimeReport !t (Report r') =
