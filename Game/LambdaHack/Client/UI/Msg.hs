@@ -85,14 +85,12 @@ nullReport (Report l) = null l
 singletonReport :: Msg -> Report
 singletonReport = snocReport emptyReport
 
--- | Add a message to the end of report. Deletes old prompt messages.
+-- | Add a message to the end of report.
 snocReport :: Report -> Msg -> Report
-snocReport (Report !r) y =
-  let scrubPrompts = filter (msgHist . repMsg)
-  in case scrubPrompts r of
-    _ | null $ msgLine y -> Report r
-    RepMsgN x n : xns | x == y -> Report $ RepMsgN x (n + 1) : xns
-    xns -> Report $ RepMsgN y 1 : xns
+snocReport (Report !r) y = case r of
+  _ | null $ msgLine y -> Report r
+  RepMsgN x n : xns | x == y -> Report $ RepMsgN x (n + 1) : xns
+  xns -> Report $ RepMsgN y 1 : xns
 
 -- | Add a message to the end of report. Does not delete old prompt messages
 -- nor handle repetitions.
