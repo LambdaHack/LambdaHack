@@ -126,13 +126,15 @@ scrapRepetition :: History -> Maybe History
 scrapRepetition History{ newReport = Report newMsgs
                        , oldReport = Report oldMsgs
                        , .. } =
-  case (reverse newMsgs, oldMsgs) of
+  case (newMsgs, oldMsgs) of
     -- We take into account only the last message of the old report,
     -- and the first of the new report, because we don't want
     -- to modify the old report too much, but at least the most obvious
     -- consecutive duplication should be noted.
     -- We move the whole message to the new report, because it should not
-    -- vanish from the screen.
+    -- vanish from the screen. In this way the message may be passed
+    -- along many reports and, e.g., reduce disturbance over many turns,
+    -- as for "X hears something".
     ([RepMsgN s1 n1], RepMsgN s2 n2 : rest2) | s1 == s2 ->
       let newR = Report [RepMsgN s1 (n1 + n2)]
           oldR = Report rest2
@@ -141,10 +143,10 @@ scrapRepetition History{ newReport = Report newMsgs
       let f (RepMsgN s2 _) = s1 == s2
       in case break f rest1 of
         (_, []) -> Nothing
-        -- We keep the oldest occurence of the message, to avoid visual
-        -- disruption by moving the message around.
+        -- We keep the older (and so, oldest) occurence of the message,
+        -- to avoid visual disruption by moving the message around.
         (noDup, RepMsgN s2 n2 : rest2) ->
-          let newR = Report $ reverse $ noDup ++ RepMsgN s2 (n1 + n2) : rest2
+          let newR = Report $ noDup ++ RepMsgN s2 (n1 + n2) : rest2
           in Just History{newReport = newR, oldReport = Report oldMsgs, ..}
     _ -> Nothing  -- empty new report
 
