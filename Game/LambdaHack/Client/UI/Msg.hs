@@ -127,28 +127,29 @@ scrapRepetition :: History -> Maybe History
 scrapRepetition History{ newReport = Report newMsgs
                        , oldReport = Report oldMsgs
                        , .. } =
-  case (newMsgs, oldMsgs) of
-    -- We take into account only the last message of the old report,
-    -- and the first of the new report, because we don't want
-    -- to modify the old report too much, but at least the most obvious
-    -- consecutive duplication should be noted.
-    -- We move the whole message to the new report, because it should not
+  case newMsgs of
+    -- We take into account only first message of the new report,
+    -- because others were deduplicated as they were added.
+    -- We keep the message in the new report, because it should not
     -- vanish from the screen. In this way the message may be passed
     -- along many reports and, e.g., reduce disturbance over many turns,
     -- as for "X hears something".
-    ([RepMsgN s1 n1], RepMsgN s2 n2 : rest2) | s1 == s2 ->
-      let newR = Report [RepMsgN s1 (n1 + n2)]
-          oldR = Report rest2
-      in Just History{newReport = newR, oldReport = oldR, ..}
-    (RepMsgN s1 n1 : rest1, _) ->
+    RepMsgN s1 n1 : rest1 ->
       let f (RepMsgN s2 _) = s1 == s2
       in case break f rest1 of
-        (_, []) -> Nothing
-        -- We keep the older (and so, oldest) occurence of the message,
-        -- to avoid visual disruption by moving the message around.
-        (noDup, RepMsgN s2 n2 : rest2) ->
-          let newR = Report $ noDup ++ RepMsgN s2 (n1 + n2) : rest2
-          in Just History{newReport = newR, oldReport = Report oldMsgs, ..}
+        (_, []) -> case break f oldMsgs of
+          (_, []) -> Nothing
+          (noDup, RepMsgN _ n2 : rest2) ->
+            -- We keep the occurence of the message in the new report only.
+            let newReport = Report $ RepMsgN s1 (n1 + n2) : rest1
+                oldReport = Report $ noDup ++ rest2
+            in Just History{..}
+        (noDup, RepMsgN _ n2 : rest2) ->
+          -- We keep the older (and so, oldest) occurence of the message,
+          -- to avoid visual disruption by moving the message around.
+          let newReport = Report $ noDup ++ RepMsgN s1 (n1 + n2) : rest2
+              oldReport = Report oldMsgs
+          in Just History{..}
     _ -> Nothing  -- empty new report
 
 -- | Add a message to the new report of history, eliminating a possible
