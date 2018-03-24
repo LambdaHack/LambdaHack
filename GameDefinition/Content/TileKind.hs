@@ -246,14 +246,14 @@ tree = TileKind
   }
 treeBurnt = tree
   { tname    = "burnt tree"
-  , tfreq    = [("ambushSet", 3), ("zooSet", 3), ("tree with fire", 30)]
+  , tfreq    = [("ambushSet", 3), ("zooSet", 7), ("tree with fire", 30)]
   , tcolor   = BrBlack
   , tcolor2  = BrBlack
   , tfeature = Dark : tfeature tree
   }
 treeBurning = tree
   { tname    = "burning tree"
-  , tfreq    = [("ambushSet", 30), ("zooSet", 30), ("tree with fire", 70)]
+  , tfreq    = [("ambushSet", 30), ("zooSet", 70), ("tree with fire", 70)]
   , tcolor   = BrRed
   , tcolor2  = Red
   , talter   = 5
@@ -456,7 +456,7 @@ pillarIce = TileKind
 pulpit = TileKind
   { tsymbol  = '%'
   , tname    = "pulpit"
-  , tfreq    = [("pulpit", 1), ("zooSet", 2)]
+  , tfreq    = [("pulpit", 1)]
   , tcolor   = BrYellow
   , tcolor2  = Brown
   , talter   = 5
@@ -524,7 +524,7 @@ floorSmoke = TileKind
   }
 floorSmokeDark = floorSmoke
   { tname    = "lingering smoke"
-  , tfreq    = [("ambushSet", 60), ("zooSet", 30), ("battleSet", 5)]
+  , tfreq    = [("ambushSet", 60), ("zooSet", 20), ("battleSet", 5)]
   , tfeature = Dark : tfeature floorSmoke
   }
 
@@ -565,7 +565,7 @@ floorArena = floorCorridor
   { tsymbol  = floorSymbol
   , tname    = "stone floor"
   , tfreq    = [ ("floorArenaLit", 1), ("rubbleSpiceOrNot", 30)
-               , ("arenaSetLit", 1), ("emptySet", 97), ("zooSet", 1000) ]
+               , ("arenaSetLit", 1), ("emptySet", 97), ("zooSet", 600) ]
   }
 floorNoise = floorArena
   { tname    = "damp stone floor"
