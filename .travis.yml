@@ -121,15 +121,15 @@ install:
  - sed -i 's/^jobsColon/jobs:/' ${HOME}/.cabal/config
  - |
    if [ $GTKVTY = "gtk" ]; then
-     cabal install --only-dependencies --dry -v --constraint="binary>=0.8" --force-reinstalls gtk2hs-buildtools > installplan.txt
-     cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v --force-reinstalls >> installplan.txt
-   elif [ $GTKVTY = "gtk-v2" ]; then
      cabal install --only-dependencies --dry -v gtk2hs-buildtools > installplan.txt
      cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
+   elif [ $GTKVTY = "gtk-v2" ]; then
+     cabal install --only-dependencies --dry -v2 gtk2hs-buildtools > installplan.txt
+     cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v2 >> installplan.txt
    elif [ $GTKVTY = "sdl" ]; then
      cabal install -fsdl --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
    elif [ $GTKVTY = "sdl-v2" ]; then
-     cabal install -fsdl --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
+     cabal install -fsdl --only-dependencies --enable-tests --enable-benchmarks --dry -v2 >> installplan.txt
    elif [ $GTKVTY = "vty" ]; then
      cabal install -fvty --only-dependencies --enable-tests --enable-benchmarks --dry -v > installplan.txt
    elif [ $GTKVTY = "curses" ]; then
@@ -160,8 +160,8 @@ install:
      rm -rf $HOME/.cabsnap;
      mkdir -p $HOME/.ghc $HOME/.cabal/lib $HOME/.cabal/share $HOME/.cabal/bin;
      if [ $GTKVTY = "gtk" ]; then
-       cabal install --constraint="binary>=0.8" --force-reinstalls gtk2hs-buildtools;
-       cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls;
+       cabal install gtk2hs-buildtools;
+       cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks;
      elif [ $GTKVTY = "gtk-v2" ]; then
        cabal install -v2 gtk2hs-buildtools;
        cabal install -v2 -fgtk --only-dependencies --enable-tests --enable-benchmarks;
@@ -202,23 +202,23 @@ script:
 
  - |
    if [ $GTKVTY = "gtk" ]; then
-     cabal configure -fgtk --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
+     cabal configure -fgtk --enable-tests --enable-benchmarks -v
    elif [ $GTKVTY = "gtk-v2" ]; then
      cabal configure -fgtk --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
    elif [ $GTKVTY = "sdl" ]; then
-     cabal configure -fsdl --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
+     cabal configure -fsdl --enable-tests --enable-benchmarks -v
    elif [ $GTKVTY = "sdl-v2" ]; then
      cabal configure -fsdl --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
    elif [ $GTKVTY = "vty" ]; then
-     cabal configure -fvty --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
+     cabal configure -fvty --enable-tests --enable-benchmarks -v
    elif [ $GTKVTY = "curses" ]; then
-     cabal configure -fcurses -f-release --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
+     cabal configure -fcurses -f-release --enable-tests --enable-benchmarks -v
    elif [ $GTKVTY = "noopt" ]; then
-     cabal configure -fgtk --ghc-options="-O0 -fno-ignore-asserts" --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
+     cabal configure -fgtk --ghc-options="-O0 -fno-ignore-asserts" --enable-tests --enable-benchmarks -v
    elif [ $GTKVTY = "opt2" ]; then
-     cabal configure -fgtk --ghc-options="-O2 -fno-ignore-asserts" --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
+     cabal configure -fgtk --ghc-options="-O2 -fno-ignore-asserts" --enable-tests --enable-benchmarks -v
    elif [ $GTKVTY = "asserts" ]; then
-     cabal configure -fgtk -fwith_expensive_assertions --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
+     cabal configure -fgtk -fwith_expensive_assertions --enable-tests --enable-benchmarks -v
    else exit 7
    fi
 
