@@ -216,7 +216,7 @@ script:
    elif [ $GTKVTY = "noopt" ]; then
      cabal configure -fgtk --ghc-options="-O0 -fno-ignore-asserts" --enable-tests --enable-benchmarks -v
    elif [ $GTKVTY = "opt2" ]; then
-     cabal configure -fgtk --ghc-options="-O2 -fno-ignore-asserts" --enable-tests --enable-benchmarks -v
+     cabal configure -fgtk --ghc-options="-O2 -fno-ignore-asserts" --enable-tests --enable-benchmarks
    elif [ $GTKVTY = "asserts" ]; then
      cabal configure -fgtk -fwith_expensive_assertions --enable-tests --enable-benchmarks -v
    else exit 7
