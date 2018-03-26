@@ -146,15 +146,14 @@ flingTs = [TriggerItem { tiverb = "fling"
 
 applyIK :: [TriggerItem] -> CmdTriple
 applyIK ts =
-  let apply = Apply ts
-  in ([], descIs ts, ByItemMode
-       { ts
-       , notChosen = ComposeUnlessError (ChooseItemApply ts) apply
-       , chosen = apply })
+  ([], descIs ts, ByItemMode
+    { ts
+    , notChosen = ComposeUnlessError (ChooseItemApply ts) Apply
+    , chosen = Apply })
 
 applyI :: [TriggerItem] -> CmdTriple
 applyI ts =
-  let apply = Compose2ndLocal (Apply ts) ItemClear
+  let apply = Compose2ndLocal Apply ItemClear
   in ([], descIs ts, ByItemMode
        { ts
        , notChosen = ComposeUnlessError (ChooseItemApply ts) apply

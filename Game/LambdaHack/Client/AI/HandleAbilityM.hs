@@ -713,7 +713,7 @@ applyItem aid applyGroup = do
                      heavilyDistressed condNotCalmEnough ar
       permittedActor itemFull kit =
         either (const False) id
-        $ permittedApply localTime skill calmE " " itemFull kit
+        $ permittedApply localTime skill calmE itemFull kit
       -- Both effects tweak items, which is only situationally beneficial
       -- and not really the best idea while in combat.
       getTweak IK.PolyItem = True

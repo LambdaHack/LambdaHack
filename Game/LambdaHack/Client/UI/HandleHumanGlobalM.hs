@@ -430,7 +430,7 @@ moveSearchAlter dir = do
       canApplyEmbeds = any canApplyEmbed $ EM.assocs embeds
       canApplyEmbed (iid, kit) =
         let itemFull = itemToF iid
-            legal = permittedApply localTime applySkill calmE " " itemFull kit
+            legal = permittedApply localTime applySkill calmE itemFull kit
         -- Let even completely unskilled actors trigger basic embeds.
         in either (const False) (const True) legal
       modifiable = Tile.isDoor coTileSpeedup t
@@ -799,9 +799,8 @@ projectItem (fromCStore, (iid, itemFull)) = do
 
 -- * Apply
 
-applyHuman :: MonadClientUI m
-           => [TriggerItem] -> m (FailOrCmd (RequestTimed 'AbApply))
-applyHuman ts = do
+applyHuman :: MonadClientUI m => m (FailOrCmd (RequestTimed 'AbApply))
+applyHuman = do
   itemSel <- getsSession sitemSel
   case itemSel of
     Just (fromCStore, iid) -> do
@@ -812,21 +811,20 @@ applyHuman ts = do
         Nothing -> failWith "no item to apply"
         Just kit -> do
           itemFull <- getsState $ itemToFull iid
-          let i = (fromCStore, (iid, (itemFull, kit)))
-          applyItem ts i
+          applyItem (fromCStore, (iid, (itemFull, kit)))
     Nothing -> failWith "no item to apply"
 
 applyItem :: MonadClientUI m
-          => [TriggerItem] -> (CStore, (ItemId, ItemFullKit))
+          => (CStore, (ItemId, ItemFullKit))
           -> m (FailOrCmd (RequestTimed 'AbApply))
-applyItem ts (fromCStore, (iid, (itemFull, kit))) = do
+applyItem (fromCStore, (iid, (itemFull, kit))) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   ar <- getsState $ getActorAspect leader
   let calmE = calmEnough b ar
   if not calmE && fromCStore == CSha then failSer ItemNotCalm
   else do
-    p <- permittedApplyClient $ triggerSymbols ts
+    p <- permittedApplyClient
     case p itemFull kit of
       Left reqFail -> failSer reqFail
       Right _ -> return $ Right $ ReqApply iid fromCStore

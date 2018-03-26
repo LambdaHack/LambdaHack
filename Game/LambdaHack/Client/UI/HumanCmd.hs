@@ -112,7 +112,7 @@ data HumanCmd =
   | ContinueToXhair
   | MoveItem [CStore] CStore (Maybe MU.Part) Bool
   | Project
-  | Apply [TriggerItem]
+  | Apply
   | AlterDir [TriggerTile]
   | AlterWithPointer [TriggerTile]
   | Help

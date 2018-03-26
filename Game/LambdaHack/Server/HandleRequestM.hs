@@ -440,7 +440,7 @@ reqAlterFail source tpos = do
         mapM_ tryApplyEmbed $ EM.assocs embeds
       tryApplyEmbed (iid, kit) = do
         let itemFull@ItemFull{itemKind} = itemToF iid
-            legal = permittedApply localTime applySkill calmE " " itemFull kit
+            legal = permittedApply localTime applySkill calmE itemFull kit
         -- Let even completely unskilled actors trigger basic embeds.
         case legal of
           Left ApplyNoEffects -> return ()  -- pure flavour embed
@@ -683,7 +683,7 @@ reqApply aid iid cstore = do
         actorSk <- currentSkillsServer aid
         localTime <- getsState $ getLocalTime (blid b)
         let skill = EM.findWithDefault 0 Ability.AbApply actorSk
-            legal = permittedApply localTime skill calmE " " itemFull kit
+            legal = permittedApply localTime skill calmE itemFull kit
         case legal of
           Left reqFail -> execFailure aid req reqFail
           Right _ -> applyItem aid iid cstore

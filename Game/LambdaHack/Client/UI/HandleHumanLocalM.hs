@@ -421,13 +421,16 @@ chooseItemApplyHuman ts = do
       (verb1, object1) = case ts of
         [] -> ("apply", "item")
         tr : _ -> (tiverb tr, tiobject tr)
+      triggerSyms = triggerSymbols ts
       prompt = makePhrase ["What", object1, "to", verb1]
       promptGeneric = "What to apply"
       psuit :: m Suitability
       psuit = do
-        mp <- permittedApplyClient $ triggerSymbols ts
+        mp <- permittedApplyClient
         return $ SuitsSomething $ \itemFull kit ->
-          either (const False) id $ mp itemFull kit
+          either (const False) id (mp itemFull kit)
+          && (null triggerSyms
+              || IK.isymbol (itemKind itemFull) `elem` triggerSyms)
   ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
   case ggi of
     Right ((iid, _itemFull), (MStore fromCStore, _)) -> do
@@ -437,9 +440,8 @@ chooseItemApplyHuman ts = do
     _ -> error $ "" `showFailure` ggi
 
 permittedApplyClient :: MonadClientUI m
-                     => [Char]
-                     -> m (ItemFull -> ItemQuant -> Either ReqFailure Bool)
-permittedApplyClient triggerSyms = do
+                     => m (ItemFull -> ItemQuant -> Either ReqFailure Bool)
+permittedApplyClient = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   ar <- getsState $ getActorAspect leader
@@ -447,7 +449,7 @@ permittedApplyClient triggerSyms = do
   let skill = EM.findWithDefault 0 AbApply actorSk
       calmE = calmEnough b ar
   localTime <- getsState $ getLocalTime (blid b)
-  return $ permittedApply localTime skill calmE triggerSyms
+  return $ permittedApply localTime skill calmE
 
 -- * PickLeader
 

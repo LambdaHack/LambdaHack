@@ -152,23 +152,22 @@ permittedProject forced skill calmE itemFull@ItemFull{itemKind} =
     | not forced
       && IK.Lobable `elem` IK.ifeature itemKind
       && skill < 3 -> Left ProjectLobable
-    | otherwise ->
-      let legal = permittedPrecious calmE forced itemFull
-      in case legal of
-        Left{} -> legal
-        Right False -> legal
-        Right True -> Right $ case IK.getEqpSlot itemKind of
-          Just IA.EqpSlotLightSource -> True
-          Just _ -> False
-          Nothing -> not (IK.goesIntoEqp itemKind)
+    | otherwise -> 
+        let goodSlot = case IK.getEqpSlot itemKind of
+              Just IA.EqpSlotLightSource -> True
+              Just _ -> False
+              Nothing -> not (IK.goesIntoEqp itemKind)
+        in if not goodSlot
+           then Right False
+           else permittedPrecious calmE forced itemFull
 
 permittedProjectAI :: Int -> Bool -> ItemFull -> Bool
 permittedProjectAI skill calmE itemFull =
   either (const False) id $ permittedProject False skill calmE itemFull
 
-permittedApply :: Time -> Int -> Bool-> [Char] -> ItemFull -> ItemQuant
+permittedApply :: Time -> Int -> Bool-> ItemFull -> ItemQuant
                -> Either ReqFailure Bool
-permittedApply localTime skill calmE triggerSyms
+permittedApply localTime skill calmE
                itemFull@ItemFull{itemKind, itemSuspect} kit =
   if | IK.isymbol itemKind == '?' && skill < 2 -> Left ApplyRead
      -- ApplyRead has precedence for the case of embedced items that
@@ -186,9 +185,4 @@ permittedApply localTime skill calmE triggerSyms
      | otherwise ->
        if null (IK.ieffects itemKind) && not itemSuspect
        then Left ApplyNoEffects
-       else let legal = permittedPrecious calmE False itemFull
-            in case legal of
-              Left{} -> legal
-              Right False -> legal
-              Right True -> Right $
-                null triggerSyms || IK.isymbol itemKind `elem` triggerSyms
+       else permittedPrecious calmE False itemFull
