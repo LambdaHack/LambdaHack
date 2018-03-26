@@ -74,7 +74,7 @@ pickWeaponM mdiscoBenefit kitAss actorSk source = do
   ar <- getsState $ getActorAspect source
   let calmE = calmEnough sb ar
       forced = bproj sb
-      permitted = permittedPrecious calmE forced
+      permitted = permittedPrecious forced calmE
       preferredPrecious = either (const False) id . permitted
       permAssocs = filter (preferredPrecious . fst . snd) kitAss
       strongest = strongestMelee mdiscoBenefit localTime permAssocs

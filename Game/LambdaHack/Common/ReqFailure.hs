@@ -138,7 +138,7 @@ showReqFailure reqFailure = case reqFailure of
 -- The item should not be applied nor thrown because it's too delicate
 -- to operate when not calm or becuse it's too precious to identify by use.
 permittedPrecious :: Bool -> Bool -> ItemFull -> Either ReqFailure Bool
-permittedPrecious calmE forced itemFull =
+permittedPrecious forced calmE itemFull =
   let isPrecious = IK.Precious `elem` IK.ifeature (itemKind itemFull)
   in if not calmE && not forced && isPrecious
      then Left NotCalmPrecious
@@ -160,7 +160,7 @@ permittedProject forced skill calmE itemFull@ItemFull{itemKind} =
               Nothing ->  IK.goesIntoEqp itemKind
         in if badSlot
            then Right False
-           else permittedPrecious calmE forced itemFull
+           else permittedPrecious forced calmE itemFull
 
 permittedProjectAI :: Int -> Bool -> ItemFull -> Bool
 permittedProjectAI skill calmE itemFull =
@@ -186,4 +186,4 @@ permittedApply localTime skill calmE
      | otherwise ->
        if null (IK.ieffects itemKind) && not itemSuspect
        then Left ApplyNoEffects
-       else permittedPrecious calmE False itemFull
+       else permittedPrecious False calmE itemFull
