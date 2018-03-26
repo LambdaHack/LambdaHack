@@ -317,7 +317,7 @@ projectFail source tpxy eps center iid cstore blast = do
           let skill = EM.findWithDefault 0 Ability.AbProject actorSk
               forced = blast || bproj sb
               calmE = calmEnough sb ar
-              legal = permittedProject forced skill calmE "" itemFull
+              legal = permittedProject forced skill calmE itemFull
           case legal of
             Left reqFail -> return $ Just reqFail
             Right _ -> do

@@ -755,9 +755,8 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
 
 -- * Project
 
-projectHuman :: MonadClientUI m
-             => [TriggerItem] -> m (FailOrCmd (RequestTimed 'AbProject))
-projectHuman ts = do
+projectHuman :: MonadClientUI m => m (FailOrCmd (RequestTimed 'AbProject))
+projectHuman = do
   itemSel <- getsSession sitemSel
   case itemSel of
     Just (fromCStore, iid) -> do
@@ -769,20 +768,20 @@ projectHuman ts = do
         Just _kit -> do
           itemFull <- getsState $ itemToFull iid
           let i = (fromCStore, (iid, itemFull))
-          projectItem ts i
+          projectItem i
     Nothing -> failWith "no item to fling"
 
 projectItem :: MonadClientUI m
-            => [TriggerItem] -> (CStore, (ItemId, ItemFull))
+            => (CStore, (ItemId, ItemFull))
             -> m (FailOrCmd (RequestTimed 'AbProject))
-projectItem ts (fromCStore, (iid, itemFull)) = do
+projectItem (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   ar <- getsState $ getActorAspect leader
   let calmE = calmEnough b ar
   if not calmE && fromCStore == CSha then failSer ItemNotCalm
   else do
-    mpsuitReq <- psuitReq ts
+    mpsuitReq <- psuitReq
     case mpsuitReq of
       Left err -> failWith err
       Right psuitReqFun ->

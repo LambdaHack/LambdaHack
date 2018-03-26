@@ -83,7 +83,7 @@ cmdAction cmd = case cmd of
   MoveItem cLegalRaw toCStore mverb auto ->
     weaveJust
     <$> (fmapTimedToUI <$> moveItemHuman cLegalRaw toCStore mverb auto)
-  Project ts -> weaveJust <$> (fmapTimedToUI <$> projectHuman ts)
+  Project -> weaveJust <$> (fmapTimedToUI <$> projectHuman)
   Apply ts -> weaveJust <$> (fmapTimedToUI <$> applyHuman ts)
   AlterDir ts -> weaveJust <$> (fmapTimedToUI <$> alterDirHuman ts)
   AlterWithPointer ts -> weaveJust

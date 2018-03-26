@@ -264,14 +264,17 @@ chooseItemProjectHuman ts = do
       (verb1, object1) = case ts of
         [] -> ("aim", "item")
         tr : _ -> (tiverb tr, tiobject tr)
-  mpsuitReq <- psuitReq ts
+      triggerSyms = triggerSymbols ts
+  mpsuitReq <- psuitReq
   case mpsuitReq of
     -- If xhair aim invalid, no item is considered a (suitable) missile.
     Left err -> failMsg err
     Right psuitReqFun -> do
       let psuit =
             return $ SuitsSomething $ \itemFull _kit ->
-              either (const False) snd . psuitReqFun $ itemFull
+              either (const False) snd (psuitReqFun itemFull)
+              && (null triggerSyms
+                  || IK.isymbol (itemKind itemFull) `elem` triggerSyms)
           prompt = makePhrase ["What", object1, "to", verb1]
           promptGeneric = "What to fling"
       ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
@@ -282,16 +285,15 @@ chooseItemProjectHuman ts = do
         Left err -> failMsg err
         _ -> error $ "" `showFailure` ggi
 
-permittedProjectClient :: MonadClientUI m
-                       => [Char] -> m (ItemFull -> Either ReqFailure Bool)
-permittedProjectClient triggerSyms = do
+permittedProjectClient :: MonadClientUI m=> m (ItemFull -> Either ReqFailure Bool)
+permittedProjectClient = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   ar <- getsState $ getActorAspect leader
   actorSk <- leaderSkillsClientUI
   let skill = EM.findWithDefault 0 AbProject actorSk
       calmE = calmEnough b ar
-  return $ permittedProject False skill calmE triggerSyms
+  return $ permittedProject False skill calmE
 
 projectCheck :: MonadClientUI m => Point -> m (Maybe ReqFailure)
 projectCheck tpos = do
@@ -381,9 +383,8 @@ posFromXhair = do
     Left cause -> return $ Left cause
 
 psuitReq :: MonadClientUI m
-         => [TriggerItem]
-         -> m (Either Text (ItemFull -> Either ReqFailure (Point, Bool)))
-psuitReq ts = do
+         => m (Either Text (ItemFull -> Either ReqFailure (Point, Bool)))
+psuitReq = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   lidV <- viewedLevelUI
@@ -391,7 +392,7 @@ psuitReq ts = do
   then return $ Left "can't project on remote levels"
   else do
     mpos <- posFromXhair
-    p <- permittedProjectClient $ triggerSymbols ts
+    p <- permittedProjectClient
     case mpos of
       Left err -> return $ Left err
       Right pos -> return $ Right $ \itemFull ->

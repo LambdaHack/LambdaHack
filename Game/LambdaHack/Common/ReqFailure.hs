@@ -6,7 +6,6 @@ module Game.LambdaHack.Common.ReqFailure
   , permittedPrecious, permittedProject, permittedProjectAI, permittedApply
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , permittedPreciousAI
 #endif
   ) where
 
@@ -147,18 +146,8 @@ permittedPrecious calmE forced itemFull =
                        ItemDiscoFull{} -> True
                        _ -> not isPrecious
 
-permittedPreciousAI :: Bool -> ItemFull -> Bool
-permittedPreciousAI calmE itemFull =
-  let isPrecious = IK.Precious `elem` IK.ifeature (itemKind itemFull)
-  in if not calmE && isPrecious then False
-     else IK.Durable `elem` IK.ifeature (itemKind itemFull)
-          || case itemDisco itemFull of
-               ItemDiscoFull{} -> True
-               _ -> not isPrecious
-
-permittedProject :: Bool -> Int -> Bool -> [Char] -> ItemFull
-                 -> Either ReqFailure Bool
-permittedProject forced skill calmE triggerSyms itemFull@ItemFull{itemKind} =
+permittedProject :: Bool -> Int -> Bool -> ItemFull -> Either ReqFailure Bool
+permittedProject forced skill calmE itemFull@ItemFull{itemKind} =
  if | not forced && skill < 1 -> Left ProjectUnskilled
     | not forced
       && IK.Lobable `elem` IK.ifeature itemKind
@@ -168,21 +157,14 @@ permittedProject forced skill calmE triggerSyms itemFull@ItemFull{itemKind} =
       in case legal of
         Left{} -> legal
         Right False -> legal
-        Right True -> Right $
-          if | null triggerSyms ->
-               case IK.getEqpSlot itemKind of
-                 Just IA.EqpSlotLightSource -> True
-                 Just _ -> False
-                 Nothing -> not (IK.goesIntoEqp itemKind)
-             | otherwise -> IK.isymbol itemKind `elem` triggerSyms
+        Right True -> Right $ case IK.getEqpSlot itemKind of
+          Just IA.EqpSlotLightSource -> True
+          Just _ -> False
+          Nothing -> not (IK.goesIntoEqp itemKind)
 
--- Speedup.
 permittedProjectAI :: Int -> Bool -> ItemFull -> Bool
 permittedProjectAI skill calmE itemFull =
- if | skill < 1 -> False
-    | IK.Lobable `elem` IK.ifeature (itemKind itemFull)
-      && skill < 3 -> False
-    | otherwise -> permittedPreciousAI calmE itemFull
+  either (const False) id $ permittedProject False skill calmE itemFull
 
 permittedApply :: Time -> Int -> Bool-> [Char] -> ItemFull -> ItemQuant
                -> Either ReqFailure Bool
