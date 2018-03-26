@@ -138,14 +138,25 @@ showReqFailure reqFailure = case reqFailure of
 -- The item should not be applied nor thrown because it's too delicate
 -- to operate when not calm or becuse it's too precious to identify by use.
 permittedPrecious :: Bool -> Bool -> ItemFull -> Either ReqFailure Bool
-permittedPrecious forced calmE itemFull =
-  let isPrecious = IK.Precious `elem` IK.ifeature (itemKind itemFull)
-  in if not calmE && not forced && isPrecious
+permittedPrecious forced calmE ItemFull{itemKind, itemDisco} =
+  let isPrecious = IK.Precious `elem` IK.ifeature itemKind
+  in if not forced && not calmE && isPrecious
      then Left NotCalmPrecious
-     else Right $ IK.Durable `elem` IK.ifeature (itemKind itemFull)
-                  || case itemDisco itemFull of
+     else Right $ IK.Durable `elem` IK.ifeature itemKind
+                  || case itemDisco of
                        ItemDiscoFull{} -> True
                        _ -> not isPrecious
+
+-- Simplified, faster version, for inner AI loop.
+permittedPreciousAI :: Bool -> ItemFull -> Bool
+permittedPreciousAI calmE ItemFull{itemKind, itemDisco} =
+  let isPrecious = IK.Precious `elem` IK.ifeature itemKind
+  in if not calmE && isPrecious
+     then False
+     else IK.Durable `elem` IK.ifeature itemKind
+          || case itemDisco of
+               ItemDiscoFull{} -> True
+               _ -> not isPrecious
 
 permittedProject :: Bool -> Int -> Bool -> ItemFull -> Either ReqFailure Bool
 permittedProject forced skill calmE itemFull@ItemFull{itemKind} =
@@ -162,9 +173,13 @@ permittedProject forced skill calmE itemFull@ItemFull{itemKind} =
            then Right False
            else permittedPrecious forced calmE itemFull
 
+-- Simplified, faster and more permissive version, for inner AI loop.
 permittedProjectAI :: Int -> Bool -> ItemFull -> Bool
-permittedProjectAI skill calmE itemFull =
-  either (const False) id $ permittedProject False skill calmE itemFull
+permittedProjectAI skill calmE itemFull@ItemFull{itemKind} =
+ if | skill < 1 -> False
+    | IK.Lobable `elem` IK.ifeature itemKind
+      && skill < 3 -> False
+    | otherwise -> permittedPreciousAI calmE itemFull
 
 permittedApply :: Time -> Int -> Bool-> ItemFull -> ItemQuant
                -> Either ReqFailure Bool
